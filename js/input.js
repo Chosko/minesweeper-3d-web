@@ -174,7 +174,7 @@ export class Input {
     try {
       const r = c.requestPointerLock();
       if (r && typeof r.catch === 'function') r.catch(() => this.o.onLockError?.());
-    } catch (err) {
+    } catch {
       this.o.onLockError?.();
     }
   }

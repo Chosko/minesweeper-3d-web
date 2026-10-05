@@ -4,7 +4,7 @@ import { Game, createGameFromMinePositions } from './logic.js';
 import { BoardRenderer } from './render.js';
 import { FlyCamera, MouseActions, Input, SPACING_MIN, SPACING_MAX, SPACING_START } from './input.js';
 import { pickCell, pickCellBrute } from './picking.js';
-import { UI, clampSettings, recordBest, getBest, fmtTime, loadLookSettings, NO_MOUSE_MSG } from './ui.js';
+import { UI, clampSettings, recordBest, fmtTime, loadLookSettings, NO_MOUSE_MSG } from './ui.js';
 import * as audio from './audio.js';
 
 const canvas = document.getElementById('scene');
@@ -71,7 +71,7 @@ function onAction(type) {
     if (r.exploded) boom();
     else if (r.revealed > 0) sfx.chord(r.revealed);
   }
-  if (g.version === v0 && typeof sfx.noop === 'function') sfx.noop(); // action changed nothing
+  if (g.version === v0 && before === 'playing' && g.state === 'playing' && typeof sfx.noop === 'function') sfx.noop(); // action changed nothing
   if (before === 'playing' && g.state !== 'playing') { endGame(minesBefore); afterEndGame(); }
 }
 /** Best-time bookkeeping after endGame (kept outside endGame, which the visuals code also touches). */
@@ -206,15 +206,11 @@ function startGame(settings) {
 /**
  * Start camera. Original: camera (0, 10, -8M), grid centre at s=1.1 is (0.2X-3.2, 0.2Y-3.2, 0.2Z-3.2)
  * (M = max(X,Y,Z)). The port centres the grid on the origin, so the camera is shifted by minus that
- * centre. x/y are then snapped to the nearest cell column so the crosshair starts on a cube.
+ * centre. No snapping: the start view must equal the original's, even if it isn't aimed at a cell.
  */
 function startCameraPos(X, Y, Z) {
-  const M = Math.max(X, Y, Z), p = 4 * SPACING_START;
-  const snap = (v, N) => {
-    const i = Math.min(N - 1, Math.max(0, Math.round(v / p + (N - 1) / 2)));
-    return (i - (N - 1) / 2) * p;
-  };
-  return [snap(3.2 - 0.2 * X, X), snap(13.2 - 0.2 * Y, Y), -8 * M + 3.2 - 0.2 * Z];
+  const M = Math.max(X, Y, Z);
+  return [3.2 - 0.2 * X, 13.2 - 0.2 * Y, -8 * M + 3.2 - 0.2 * Z];
 }
 
 function enterPlaying() {
@@ -267,7 +263,7 @@ window.addEventListener('resize', () => { renderer.resize(); needRender = true; 
 let reloading = false;
 window.addEventListener('beforeunload', (e) => {
   // Ctrl is a game key, and Ctrl+W cannot be intercepted: ask before leaving a game.
-  if (!reloading && S.game && S.mode !== 'menu') {
+  if (!reloading && S.game && S.started && !S.endState && S.mode !== 'menu' && S.mode !== 'ctxlost') {
     e.preventDefault();
     e.returnValue = '';
   }
@@ -276,8 +272,18 @@ window.addEventListener('beforeunload', (e) => {
 // WebGL context loss: keep the page, offer a reload.
 canvas.addEventListener('webglcontextlost', (e) => {
   e.preventDefault();
+  // Dead canvas: leave every game mode (so lock changes/keys can't resume) and disable other overlays.
+  S.mode = 'ctxlost';
+  mouse.reset();
   input.exitLock();
+  for (const id of ['pause', 'ready', 'menu', 'controls-modal']) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    if (id !== 'menu') el.classList.add('hidden');
+    el.inert = true;
+  }
   document.getElementById('ctx-lost').classList.remove('hidden');
+  document.getElementById('ctx-lost-btn').focus({ preventScroll: true });
 });
 document.getElementById('ctx-lost-btn').addEventListener('click', () => { reloading = true; location.reload(); });
 

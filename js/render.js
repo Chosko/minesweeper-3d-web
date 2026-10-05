@@ -490,15 +490,22 @@ export class BoardRenderer {
       // Opaque under Shift: mines, hidden cells (Ctrl) + the aimed cell's neighbourhood.
       const B = this._base;
       let c = 0;
-      for (let i = 0; i < n; i++) { const kd = K[i]; if (kd === K_MINE || (kd === K_HIDDEN && (ctrl || this._effHidden))) B[c++] = i; }
+      // During an end-of-game wave, cells with an old layer may still be drawn as their old tile:
+      // over-include them (the shader decides opacity per pass).
+      const O = this._eff ? this.stateData : null;
+      for (let i = 0; i < n; i++) {
+        const kd = K[i];
+        if (kd === K_MINE || (kd === K_HIDDEN && (ctrl || this._effHidden)) || (O && O[i * 4 + 3] > 0 && kd > K_NUMBER)) B[c++] = i;
+      }
       this._baseLen = c;
       this._applyShiftOpaque();
       return;
     }
     let c = 0;
+    const O = this._eff ? this.stateData : null; // see above: old (closed / flag) tiles during a wave
     for (let i = 0; i < n; i++) {
       const kd = K[i];
-      if ((kd === K_HIDDEN && !ctrl && !this._effHidden) || (kd === K_NUMBER && space)) continue;
+      if (((kd === K_HIDDEN && !ctrl && !this._effHidden) || (kd === K_NUMBER && space)) && !(O && O[i * 4 + 3] > 0)) continue;
       L[c++] = i;
     }
     this._commit(this.attrOpaque, this.meshOpaque, c);
@@ -673,13 +680,15 @@ export class BoardRenderer {
     counts.fill(0);
     let c = 0, idx = 0;
     const maxKind = shift ? K_NUMBER : -1;
+    // during a wave, cells not yet reached are drawn with their old closed / flag tile (transparent under Shift)
+    const O = shift && this._eff ? this.stateData : null;
     for (let k = 0; k < Z; k++) {
       const kz = qz[k];
       for (let j = 0; j < Y; j++) {
         const kyz = kz + qy[j];
         for (let i = 0; i < X; i++, idx++) {
           const kd = K[idx];
-          if (shift ? kd > maxKind : kd !== K_NUMBER) continue;
+          if ((shift ? kd > maxKind : kd !== K_NUMBER) && !(O && O[idx * 4 + 3] > 0)) continue;
           const key = kyz + qx[i];
           keys[c] = key; cand[c++] = idx; counts[key]++;
         }
@@ -707,7 +716,8 @@ export class BoardRenderer {
       if (t >= e.dur) {
         this._eff = null;
         this.uniforms.uEff.value = 0;
-        if (this._effHidden) { this._effHidden = false; if (this.game) this._rebuildOpaque(); }
+        this._effHidden = false;
+        if (this.game) { this._rebuildOpaque(); this._transDirty = true; }
       } else this.uniforms.uEffT.value = t;
     }
     if (this._conf) {
