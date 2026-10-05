@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Minesweeper 3D</title>
+  <meta name="description" content="Minesweeper in three dimensions: fly around a 3D grid of cubes and clear the mines. A web port of the XNA game Minesweeper 3D.">
+  <meta name="theme-color" content="#c8e1ff">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 4 58 18v28L32 60 6 46V18z' fill='%233f78e0'/%3E%3Cpath d='M32 4 58 18 32 32 6 18z' fill='%239cc4ff'/%3E%3Cpath d='M32 32v28L6 46V18z' fill='%232b5cb8'/%3E%3Ccircle cx='45' cy='38' r='7' fill='%231b1b1b'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three/three.module.min.js" } }
+  </script>
+</head>
+<body>
+  <canvas id="scene" aria-label="3D minesweeper board"></canvas>
+
+  <!-- In-game HUD -->
+  <div id="hud" class="hidden" aria-live="off">
+    <div class="hud-panel hud-stats">
+      <div class="stat"><span class="stat-label">Time</span><span id="hud-time" class="stat-value">0.00</span></div>
+      <div class="stat"><span class="stat-label">Mines</span><span id="hud-mines" class="stat-value">0</span></div>
+      <div class="stat stat-small"><span class="stat-label">Board</span><span id="hud-size" class="stat-value">-</span></div>
+    </div>
+    <div class="hud-panel hud-tools">
+      <span class="kbd-hint"><kbd>H</kbd> help</span>
+      <span class="kbd-hint"><kbd>M</kbd> <span id="hud-sound">sound on</span></span>
+      <span class="kbd-hint"><kbd>F</kbd> fullscreen</span>
+      <span class="kbd-hint"><kbd>Esc</kbd> menu</span>
+    </div>
+    <div id="crosshair" aria-hidden="true"></div>
+    <div id="mode-chips" aria-hidden="true">
+      <span id="chip-shift" class="chip">Shift: neighbours only</span>
+      <span id="chip-space" class="chip">Space: see through revealed</span>
+      <span id="chip-ctrl" class="chip">Ctrl: show hidden</span>
+    </div>
+  </div>
+
+  <!-- Controls help (toggle with H) -->
+  <aside id="help" class="hud-panel hidden" aria-label="Controls">
+    <h3>Controls</h3>
+    <dl class="controls">
+      <dt>Mouse</dt><dd>Look around</dd>
+      <dt><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></dt><dd>Fly forward / left / back / right</dd>
+      <dt><kbd>Q</kbd> <kbd>E</kbd></dt><dd>Move down / up</dd>
+      <dt>Left click</dt><dd>Reveal the aimed cube</dd>
+      <dt>Right click</dt><dd>Flag / unflag (on a number: flag or unflag all its closed neighbours)</dd>
+      <dt>Left + Right</dt><dd>Chord: reveal neighbours of a satisfied number</dd>
+      <dt>Wheel</dt><dd>Change spacing between cubes</dd>
+      <dt>Hold <kbd>Shift</kbd></dt><dd>Fade everything except the aimed cube's neighbours</dd>
+      <dt>Hold <kbd>Space</kbd></dt><dd>Aim through revealed numbers (they fade)</dd>
+      <dt>Hold <kbd>Ctrl</kbd></dt><dd>Show hidden cells (empty and completed ones)</dd>
+      <dt><kbd>F</kbd> / <kbd>M</kbd></dt><dd>Fullscreen / sound on-off</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Pause menu</dd>
+    </dl>
+    <p class="help-foot">Actions fire when the mouse button is released. <kbd>H</kbd> hides this panel.</p>
+  </aside>
+
+  <!-- End-of-game banner (non-blocking) -->
+  <div id="banner" class="hidden" role="status">
+    <div id="banner-title">You won!</div>
+    <div id="banner-sub">Time 0.00 s</div>
+    <div class="banner-hint">Keep flying to inspect the board &middot; <kbd>Esc</kbd> for Play again / Main menu</div>
+  </div>
+
+  <div id="flash" aria-hidden="true"></div>
+
+  <!-- Main menu -->
+  <section id="menu" class="overlay" aria-label="Main menu">
+    <div class="menu-card">
+      <header class="menu-head">
+        <div class="logo" aria-hidden="true">
+          <svg viewBox="0 0 64 64"><path d="M32 4 58 18v28L32 60 6 46V18z" fill="#3f78e0"/><path d="M32 4 58 18 32 32 6 18z" fill="#9cc4ff"/><path d="M32 32v28L6 46V18z" fill="#2b5cb8"/><text x="45" y="47" font-size="20" font-weight="800" text-anchor="middle" fill="#fff" font-family="system-ui,sans-serif">3</text></svg>
+        </div>
+        <div>
+          <h1>Minesweeper <span class="accent">3D</span></h1>
+          <p class="subtitle">Fly through a cube of cubes. Every cell has up to 26 neighbours.</p>
+        </div>
+      </header>
+
+      <div class="presets">
+        <div class="preset-group">
+          <h2>2D classic</h2>
+          <button class="preset" data-preset="9,9,1,10"><span class="p-name">Beginner</span><span class="p-dims">9 &times; 9 &times; 1 &middot; 10 mines</span></button>
+          <button class="preset" data-preset="16,16,1,40"><span class="p-name">Intermediate</span><span class="p-dims">16 &times; 16 &times; 1 &middot; 40 mines</span></button>
+          <button class="preset" data-preset="30,16,1,99"><span class="p-name">Expert</span><span class="p-dims">30 &times; 16 &times; 1 &middot; 99 mines</span></button>
+        </div>
+        <div class="preset-group">
+          <h2>Double layer</h2>
+          <button class="preset" data-preset="8,8,2,10"><span class="p-name">Beginner</span><span class="p-dims">8 &times; 8 &times; 2 &middot; 10 mines</span></button>
+          <button class="preset" data-preset="14,14,2,60"><span class="p-name">Intermediate</span><span class="p-dims">14 &times; 14 &times; 2 &middot; 60 mines</span></button>
+          <button class="preset" data-preset="25,16,2,130"><span class="p-name">Expert</span><span class="p-dims">25 &times; 16 &times; 2 &middot; 130 mines</span></button>
+        </div>
+        <div class="preset-group">
+          <h2>3D</h2>
+          <button class="preset" data-preset="6,6,6,10"><span class="p-name">Beginner</span><span class="p-dims">6 &times; 6 &times; 6 &middot; 10 mines</span></button>
+          <button class="preset" data-preset="8,8,8,40"><span class="p-name">Intermediate</span><span class="p-dims">8 &times; 8 &times; 8 &middot; 40 mines</span></button>
+          <button class="preset" data-preset="12,12,8,130"><span class="p-name">Expert</span><span class="p-dims">12 &times; 12 &times; 8 &middot; 130 mines</span></button>
+        </div>
+      </div>
+
+      <form id="custom" class="custom" novalidate>
+        <h2>Custom</h2>
+        <div class="custom-row">
+          <label>Width<input id="c-x" type="number" min="1" max="100" step="1" inputmode="numeric" value="10"></label>
+          <label>Height<input id="c-y" type="number" min="1" max="100" step="1" inputmode="numeric" value="10"></label>
+          <label>Depth<input id="c-z" type="number" min="1" max="100" step="1" inputmode="numeric" value="10"></label>
+          <label>Mines<input id="c-m" type="number" min="1" max="1000" step="1" inputmode="numeric" value="25"></label>
+          <div class="custom-actions">
+            <button type="button" id="c-random" class="btn btn-ghost">Random</button>
+            <button type="submit" id="c-start" class="btn btn-primary">Start</button>
+          </div>
+        </div>
+        <p id="c-info" class="custom-info">1000 cells &middot; mine density 2.5%</p>
+      </form>
+
+      <footer class="menu-foot">
+        <button type="button" id="menu-help" class="link-btn">Controls</button>
+        <span class="sep">&middot;</span>
+        <button type="button" id="menu-sound" class="link-btn">Sound: on</button>
+        <span class="sep">&middot;</span>
+        <span>Web port of the 2011 XNA game <a href="https://github.com/Chosko/minesweeper-3d" target="_blank" rel="noopener">Minesweeper 3D</a> by Chosko</span>
+      </footer>
+      <p id="touch-note" class="touch-note hidden">This game needs a mouse and keyboard.</p>
+    </div>
+  </section>
+
+  <!-- Click to play -->
+  <section id="ready" class="overlay hidden" aria-label="Click to play">
+    <button id="ready-btn" class="ready-card" type="button">
+      <span class="ready-title">Click to play</span>
+      <span id="ready-board" class="ready-board">9 &times; 9 &times; 1 &middot; 10 mines</span>
+      <span class="ready-keys"><kbd>Mouse</kbd> look &middot; <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> fly &middot; <kbd>Q</kbd>/<kbd>E</kbd> down/up &middot; <kbd>Esc</kbd> pause</span>
+      <span id="ready-msg" class="ready-msg"></span>
+    </button>
+  </section>
+
+  <!-- Pause / end menu -->
+  <section id="pause" class="overlay hidden" aria-label="Pause menu">
+    <div class="pause-card">
+      <h2 id="pause-title">Paused</h2>
+      <p id="pause-sub" class="pause-sub">Time 0.00 &middot; 10 mines left</p>
+      <div class="pause-buttons">
+        <button id="p-resume" class="btn btn-primary" type="button">Resume</button>
+        <button id="p-restart" class="btn" type="button">Restart</button>
+        <button id="p-menu" class="btn btn-ghost" type="button">Main menu</button>
+      </div>
+      <div class="pause-help">
+        <dl class="controls compact">
+          <dt>Mouse</dt><dd>Look</dd>
+          <dt><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> <kbd>Q</kbd><kbd>E</kbd></dt><dd>Fly</dd>
+          <dt>Left / Right</dt><dd>Reveal / Flag</dd>
+          <dt>Left + Right</dt><dd>Chord</dd>
+          <dt>Wheel</dt><dd>Spacing</dd>
+          <dt><kbd>Shift</kbd></dt><dd>Neighbours only</dd>
+          <dt><kbd>Space</kbd></dt><dd>Aim through numbers</dd>
+          <dt><kbd>Ctrl</kbd></dt><dd>Show hidden</dd>
+        </dl>
+      </div>
+      <button type="button" id="p-sound" class="link-btn">Sound: on</button>
+    </div>
+  </section>
+
+  <noscript><div class="noscript">Minesweeper 3D needs JavaScript and WebGL 2.</div></noscript>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
