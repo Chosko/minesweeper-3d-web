@@ -4,8 +4,8 @@ import { Game, createGameFromMinePositions } from './logic.js';
 import { BoardRenderer } from './render.js';
 import { FlyCamera, MouseActions, Input, SPACING_MIN, SPACING_MAX, SPACING_START } from './input.js';
 import { pickCell, pickCellBrute } from './picking.js';
-import { UI, clampSettings } from './ui.js';
-import { Sfx } from './audio.js';
+import { UI, clampSettings, recordBest, getBest, fmtTime, loadLookSettings, NO_MOUSE_MSG } from './ui.js';
+import * as audio from './audio.js';
 
 const canvas = document.getElementById('scene');
 
@@ -25,8 +25,14 @@ try {
   throw err;
 }
 
-const sfx = new Sfx();
+const sfx = audio.sfx ?? new audio.Sfx();
 const cam = new FlyCamera();
+Object.assign(cam, loadLookSettings());
+
+// Pointer lock / input device support
+const LOCK_SUPPORTED = 'requestPointerLock' in Element.prototype;
+const COARSE_ONLY = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(pointer: fine)').matches);
+const NO_MOUSE = !LOCK_SUPPORTED || COARSE_ONLY;
 const S = {
   mode: 'menu', // 'menu' | 'ready' | 'playing' | 'paused'
   settings: null,
@@ -50,6 +56,8 @@ function onAction(type) {
   const before = g.state;
   const minesBefore = g.minesLeft; // original froze the HUD text from the frame before the final action
   const sel = S.selected;
+  const v0 = g.version;
+  if (type !== 'right') renderer.snapshotBeforeAction(); // lets the renderer show wrong flags + reveal wave on a loss
   if (type === 'left') {
     if (!S.started) { S.started = true; S.time = 0; }
     const r = g.leftClick(sel);
@@ -57,13 +65,22 @@ function onAction(type) {
     else if (r.revealed > 0) sfx.reveal(r.revealed);
   } else if (type === 'right') {
     const r = g.rightClick(sel);
-    if (r.flagged || r.unflagged) sfx.flag(r.flagged >= r.unflagged);
+    if (r.flagged || r.unflagged) sfx.flag(r.flagged >= r.unflagged, r.flagged + r.unflagged);
   } else if (type === 'chord') {
     const r = g.chord(sel);
     if (r.exploded) boom();
-    else if (r.revealed > 0) sfx.reveal(r.revealed);
+    else if (r.revealed > 0) sfx.chord(r.revealed);
   }
-  if (before === 'playing' && g.state !== 'playing') endGame(minesBefore);
+  if (g.version === v0 && typeof sfx.noop === 'function') sfx.noop(); // action changed nothing
+  if (before === 'playing' && g.state !== 'playing') { endGame(minesBefore); afterEndGame(); }
+}
+/** Best-time bookkeeping after endGame (kept outside endGame, which the visuals code also touches). */
+function afterEndGame() {
+  const g = S.game;
+  if (!g || g.state !== 'won' || !S.started) return;
+  const r = recordBest(S.settings, S.time);
+  if (r.isNew) ui.setBannerRecord(r.prev === null ? 'New record!' : `New record! (previous ${fmtTime(r.prev)} s)`, true);
+  else ui.setBannerRecord(`Best ${fmtTime(r.best)} s`);
 }
 function boom() { sfx.explode(); ui.flash(); }
 function endGame(minesLeft) {
@@ -80,9 +97,16 @@ const input = new Input({
   isActive: () => S.mode === 'playing',
   onLook: (dx, dy) => cam.look(dx, dy),
   onWheel: (notches) => setSpacing(S.spacing + notches * 0.04),
-  onKey: (code) => {
+  onKey: (code, e) => {
+    if (code === 'Escape') {
+      if (S.mode === 'menu') ui.closeControls();
+      else if (S.mode === 'ready') readyBack();
+      return;
+    }
     if (S.mode !== 'playing' && S.mode !== 'paused' && S.mode !== 'ready') return;
-    if (code === 'KeyH') ui.toggleHelp();
+    // don't steal keys typed into settings controls (e.g. arrow keys on a slider)
+    if (e && e.target && e.target.closest && e.target.closest('input, select, textarea')) return;
+    if (code === 'KeyH') ui.userToggleHelp();
     else if (code === 'KeyM') toggleSound();
     else if (code === 'KeyF') toggleFullscreen();
   },
@@ -96,7 +120,11 @@ const input = new Input({
   onLockError: () => {
     if (S.mode === 'paused' || S.mode === 'ready') {
       S.mode = 'ready';
-      ui.showReady(S.settings, 'The browser needs a moment before locking the mouse again. Click once more.');
+      let msg;
+      if (NO_MOUSE) msg = NO_MOUSE_MSG;
+      else if (performance.now() - input.unlockedAt < 1500) msg = 'The browser needs a moment before locking the mouse again. Click once more.';
+      else msg = 'Could not capture the mouse. Click once more.';
+      ui.showReady(S.settings, msg);
     }
   },
 });
@@ -125,9 +153,30 @@ const ui = new UI({
   onResume: () => { ui.showReady(S.settings); S.mode = 'ready'; input.requestLock(); },
   onRestart: () => { startGame(S.settings); input.requestLock(); },
   onMainMenu: () => showMainMenu(),
+  onReadyBack: () => readyBack(),
   onToggleSound: () => toggleSound(),
+  onLookSettings: (o) => { cam.sensitivity = o.sensitivity; cam.invertY = o.invertY; },
 });
 ui.setSound(sfx.muted);
+ui.setNoMouse(NO_MOUSE);
+if (typeof sfx.setVolume === 'function' && typeof sfx.getVolume === 'function') {
+  ui.initVolume(sfx.getVolume(), (v) => { sfx.setVolume(v); sfx.unlock?.(); });
+}
+
+/** Leave the ready screen: a fresh board goes back to the menu; a game in progress opens the pause menu. */
+function readyBack() {
+  if (S.mode !== 'ready') return;
+  if (S.game && S.started) pause();
+  else showMainMenu();
+}
+
+/** Adaptive resolution: big boards are fill/vertex heavy. */
+function applyPixelRatio(n) {
+  const dpr = window.devicePixelRatio || 1;
+  const cap = n > 50 ** 3 ? 1 : n > 20 ** 3 ? 1.5 : 2;
+  const pr = Math.min(dpr, cap);
+  if (renderer.renderer.getPixelRatio() !== pr) { renderer.renderer.setPixelRatio(pr); renderer.resize(); }
+}
 
 function startGame(settings) {
   const s = clampSettings(settings);
@@ -144,19 +193,36 @@ function startGame(settings) {
   S.spacing = SPACING_START;
   mouse.reset();
   renderer.setGame(g);
-  // Start: (0, 10, -8*max(X,Y,Z)), pitch 0, looking toward +Z (grid is centred on the origin)
-  cam.reset(0, 10, -8 * Math.max(s.X, s.Y, s.Z));
+  applyPixelRatio(g.n);
+  cam.reset(...startCameraPos(s.X, s.Y, s.Z));
   ui.hideBanner();
   ui.setBoard(S.settings);
   ui.updateHud(0, g.minesLeft);
   S.mode = 'ready';
-  ui.showReady(S.settings);
+  ui.showReady(S.settings, NO_MOUSE ? NO_MOUSE_MSG : '');
+  needRender = true;
+}
+
+/**
+ * Start camera. Original: camera (0, 10, -8M), grid centre at s=1.1 is (0.2X-3.2, 0.2Y-3.2, 0.2Z-3.2)
+ * (M = max(X,Y,Z)). The port centres the grid on the origin, so the camera is shifted by minus that
+ * centre. x/y are then snapped to the nearest cell column so the crosshair starts on a cube.
+ */
+function startCameraPos(X, Y, Z) {
+  const M = Math.max(X, Y, Z), p = 4 * SPACING_START;
+  const snap = (v, N) => {
+    const i = Math.min(N - 1, Math.max(0, Math.round(v / p + (N - 1) / 2)));
+    return (i - (N - 1) / 2) * p;
+  };
+  return [snap(3.2 - 0.2 * X, X), snap(13.2 - 0.2 * Y, Y), -8 * M + 3.2 - 0.2 * Z];
 }
 
 function enterPlaying() {
   S.mode = 'playing';
   ui.showPlaying();
-  ui.maybeIntroHelp();
+  // A board full of mines is won before the first click: run the end flow once.
+  const g = S.game;
+  if (g && g.state !== 'playing' && !S.endState) { endGame(g.minesLeft); afterEndGame(); }
 }
 
 function pause() {
@@ -190,20 +256,30 @@ function showMainMenu() {
   S.game = null;
   if (!S.demo) S.demo = makeDemo();
   renderer.setGame(S.demo);
+  applyPixelRatio(S.demo.n);
   renderer.setSelected(-1);
   S.spacing = 1.25;
   ui.hideBanner();
   ui.showMenu();
 }
 
-window.addEventListener('resize', () => renderer.resize());
+window.addEventListener('resize', () => { renderer.resize(); needRender = true; });
+let reloading = false;
 window.addEventListener('beforeunload', (e) => {
-  // Ctrl is a game key, and Ctrl+W cannot be intercepted: ask before leaving a running game.
-  if (S.game && S.started && S.game.state === 'playing' && (S.mode === 'playing' || S.mode === 'paused')) {
+  // Ctrl is a game key, and Ctrl+W cannot be intercepted: ask before leaving a game.
+  if (!reloading && S.game && S.mode !== 'menu') {
     e.preventDefault();
     e.returnValue = '';
   }
 });
+
+// WebGL context loss: keep the page, offer a reload.
+canvas.addEventListener('webglcontextlost', (e) => {
+  e.preventDefault();
+  input.exitLock();
+  document.getElementById('ctx-lost').classList.remove('hidden');
+});
+document.getElementById('ctx-lost-btn').addEventListener('click', () => { reloading = true; location.reload(); });
 
 // ---------- frame loop ----------
 const tmpDir = new THREE.Vector3();
@@ -219,6 +295,7 @@ function updatePick() {
   const o = { x: three.position.x + tmpDir.x * n, y: three.position.y + tmpDir.y * n, z: three.position.z + tmpDir.z * n };
   S.selected = pickCell(g, S.spacing, o, tmpDir, space);
   renderer.setSelected(S.selected);
+  ui.setCrosshair(S.selected >= 0);
 }
 /** Synchronous camera/pick refresh (used by the debug hook between frames). */
 function refresh() {
@@ -231,6 +308,34 @@ function refresh() {
 }
 let last = performance.now();
 const fps = { frames: 0, acc: 0, value: 0 };
+const stats = { renders: 0, skipped: 0 };
+
+// Render on demand: skip the GL draw when nothing visible changed.
+let needRender = true;
+let lastSig = '';
+let lastEnd = null;
+let animUntil = 0; // keep drawing for a while after the game ends (end-of-game effects)
+function rendererAnimating() {
+  if (typeof renderer.needsAnimationFrame === 'function') return !!renderer.needsAnimationFrame();
+  if (typeof renderer.isAnimating === 'function') return !!renderer.isAnimating();
+  if (typeof renderer.isAnimating === 'boolean') return renderer.isAnimating;
+  return null; // unknown
+}
+function shouldRender(now, synced) {
+  if (S.mode === 'menu' || needRender || synced) return true;
+  if (S.endState !== lastEnd) { lastEnd = S.endState; if (S.endState) animUntil = now + 6000; return true; }
+  const anim = rendererAnimating();
+  if (anim === true) return true;
+  if (anim === null) {
+    // No animation hook from the renderer: assume time-based effects may be running.
+    if (now < animUntil) return true;
+    if (S.mode === 'playing' && S.selected >= 0) return true;
+  }
+  const t = renderer.toggles, c = renderer.camera;
+  const sig = `${cam.x},${cam.y},${cam.z},${cam.yaw},${cam.pitch},${S.spacing},${t.shift},${t.space},${t.ctrl},${S.selected},${S.game ? S.game.version : -1},${c.aspect},${S.mode}`;
+  if (sig !== lastSig) { lastSig = sig; return true; }
+  return false;
+}
 
 function frame(now) {
   const rawDt = Math.max(0, (now - last) / 1000);
@@ -256,7 +361,7 @@ function frame(now) {
     ui.setModes(shift, space, ctrl);
   }
   renderer.setSpacing(S.spacing);
-  renderer.sync();
+  const synced = renderer.sync();
 
   // picking: only when something relevant changed
   const g = S.game;
@@ -268,7 +373,11 @@ function frame(now) {
     ui.updateHud(e ? e.time : S.time, e ? e.minesLeft : g.minesLeft);
   }
 
-  renderer.render();
+  if (shouldRender(now, synced)) {
+    needRender = false;
+    renderer.render();
+    stats.renders++;
+  } else stats.skipped++;
   requestAnimationFrame(frame);
 }
 
@@ -286,6 +395,8 @@ window.__ms = {
   get renderer() { return renderer; },
   get camera() { return cam; },
   get fps() { return fps.value; },
+  get frameStats() { return { ...stats }; },
+  startCameraPos,
   THREE,
   start(X, Y, Z, mines, minePositions) { startGame({ X, Y, Z, mines, minePositions }); },
   /** Enter playing mode without pointer lock (headless tests). */

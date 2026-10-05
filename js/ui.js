@@ -1,7 +1,10 @@
 // DOM menus, HUD and overlays. No game rules here.
 const $ = (id) => document.getElementById(id);
 const LS_CUSTOM = 'ms3d.custom';
-const LS_HELP_SEEN = 'ms3d.helpSeen';
+const LS_HINT_DONE = 'ms3d.hintH.done';
+const LS_BEST = 'ms3d.best.'; // + XxYxZxmines
+const LS_SENS = 'ms3d.lookSens';
+const LS_INVERT = 'ms3d.invertY';
 
 export const DIM_MIN = 1, DIM_MAX = 100;
 
@@ -31,13 +34,39 @@ export function clampSettings(s) {
 export const fmtDims = (s) => `${s.X} × ${s.Y} × ${s.Z}`;
 export const fmtTime = (t) => t.toFixed(2);
 
+// ---------- best times (per board size + mine count) ----------
+const bestKey = (s) => `${LS_BEST}${s.X}x${s.Y}x${s.Z}x${s.mines}`;
+export function getBest(s) {
+  const v = parseFloat(lsGet(bestKey(s)));
+  return Number.isFinite(v) && v >= 0 ? v : null;
+}
+/** Record a winning time; returns { best, prev, isNew }. */
+export function recordBest(s, time) {
+  const prev = getBest(s);
+  const isNew = prev === null || time < prev;
+  if (isNew) lsSet(bestKey(s), String(time));
+  return { best: isNew ? time : prev, prev, isNew };
+}
+
+// ---------- look settings ----------
+export function loadLookSettings() {
+  let sens = parseFloat(lsGet(LS_SENS));
+  if (!Number.isFinite(sens)) sens = 1;
+  sens = Math.min(3, Math.max(0.25, sens));
+  return { sensitivity: sens, invertY: lsGet(LS_INVERT) === '1' };
+}
+
+export const NO_MOUSE_MSG = 'Minesweeper 3D needs a mouse and keyboard — open it on a desktop browser.';
+
 export class UI {
   constructor(cb) {
-    this.cb = cb; // { onStart(settings), onReadyClick(), onResume(), onRestart(), onMainMenu(), onToggleSound() }
+    this.cb = cb; // { onStart, onReadyClick, onReadyBack, onResume, onRestart, onMainMenu, onToggleSound, onLookSettings, onVolume }
     this.el = {
       hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), size: $('hud-size'), sound: $('hud-sound'),
       help: $('help'), banner: $('banner'), bannerTitle: $('banner-title'), bannerSub: $('banner-sub'),
       flash: $('flash'), menu: $('menu'), ready: $('ready'), readyBoard: $('ready-board'), readyMsg: $('ready-msg'),
+      bannerRecord: $('banner-record'), crosshair: $('crosshair'), hintH: $('hint-h'),
+      controlsModal: $('controls-modal'),
       pause: $('pause'), pauseCard: document.querySelector('.pause-card'), pauseTitle: $('pause-title'), pauseSub: $('pause-sub'),
       resume: $('p-resume'), restart: $('p-restart'),
       cx: $('c-x'), cy: $('c-y'), cz: $('c-z'), cm: $('c-m'), cinfo: $('c-info'),
@@ -45,8 +74,13 @@ export class UI {
     };
     this._last = { time: '', mines: '' };
     this._helpTimer = 0;
+    this._helpByUser = false; // in-game help panel opened with H
+    this._crossOn = null;
 
     document.querySelectorAll('.preset').forEach((b) => {
+      const best = document.createElement('span');
+      best.className = 'p-best hidden';
+      b.appendChild(best);
       b.addEventListener('click', () => {
         const [X, Y, Z, mines] = b.dataset.preset.split(',').map(Number);
         cb.onStart({ X, Y, Z, mines });
@@ -66,7 +100,13 @@ export class UI {
       lsSet(LS_CUSTOM, JSON.stringify(s));
       cb.onStart(s);
     });
-    $('menu-help').addEventListener('click', () => this.toggleHelp());
+    // Controls modal (main menu): a copy of the in-game help list
+    $('controls-body').appendChild(this.el.help.querySelector('.controls').cloneNode(true));
+    $('menu-help').addEventListener('click', () => this.openControls());
+    $('controls-close').addEventListener('click', () => this.closeControls());
+    this.el.controlsModal.addEventListener('click', (e) => { if (e.target === this.el.controlsModal) this.closeControls(); });
+    $('ready-back').addEventListener('click', () => cb.onReadyBack?.());
+    $('hint-h-close').addEventListener('click', () => this.dismissHint());
     $('menu-sound').addEventListener('click', () => cb.onToggleSound());
     $('p-sound').addEventListener('click', () => cb.onToggleSound());
     $('ready-btn').addEventListener('click', () => cb.onReadyClick());
@@ -74,10 +114,65 @@ export class UI {
     this.el.restart.addEventListener('click', () => cb.onRestart());
     $('p-menu').addEventListener('click', () => cb.onMainMenu());
 
-    if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(pointer: fine)').matches) {
-      $('touch-note').classList.remove('hidden');
+    // look settings
+    const look = loadLookSettings();
+    const sens = $('p-sens'), sensVal = $('p-sens-val'), inv = $('p-invert');
+    sens.value = String(look.sensitivity); inv.checked = look.invertY;
+    const showSens = () => { sensVal.textContent = `${Number(sens.value).toFixed(2)}×`; };
+    showSens();
+    sens.addEventListener('input', () => {
+      showSens(); lsSet(LS_SENS, sens.value);
+      cb.onLookSettings?.({ sensitivity: Number(sens.value), invertY: inv.checked });
+    });
+    inv.addEventListener('change', () => {
+      lsSet(LS_INVERT, inv.checked ? '1' : '0');
+      cb.onLookSettings?.({ sensitivity: Number(sens.value), invertY: inv.checked });
+    });
+    // keyboard on settings controls must not leak into game keys while paused (handled by mode)
+    this.refreshBests();
+  }
+
+  /** Show the "needs mouse and keyboard" banner on the menu. */
+  setNoMouse(on) { $('touch-note').classList.toggle('hidden', !on); }
+
+  /** Volume controls (only shown when the audio module supports it). v in 0..1. */
+  initVolume(v, onChange) {
+    const sliders = [$('menu-vol'), $('p-vol')];
+    const out = $('p-vol-val');
+    const set = (val, from) => {
+      for (const s of sliders) if (s !== from) s.value = String(Math.round(val * 100));
+      out.textContent = `${Math.round(val * 100)}%`;
+    };
+    set(v, null);
+    document.querySelectorAll('.vol, .vol-row').forEach((e) => e.classList.remove('hidden'));
+    for (const s of sliders) {
+      s.addEventListener('input', () => { const val = Number(s.value) / 100; set(val, s); onChange(val); });
     }
   }
+
+  refreshBests() {
+    document.querySelectorAll('.preset').forEach((b) => {
+      const [X, Y, Z, mines] = b.dataset.preset.split(',').map(Number);
+      const best = getBest({ X, Y, Z, mines });
+      const el = b.querySelector('.p-best');
+      if (!el) return;
+      el.textContent = best === null ? '' : `Best ${fmtTime(best)} s`;
+      el.classList.toggle('hidden', best === null);
+    });
+  }
+
+  // ---------- controls modal ----------
+  openControls() {
+    this.el.controlsModal.classList.remove('hidden');
+    $('controls-close').focus({ preventScroll: true });
+  }
+  closeControls() {
+    if (this.el.controlsModal.classList.contains('hidden')) return false;
+    this.el.controlsModal.classList.add('hidden');
+    $('menu-help').focus({ preventScroll: true });
+    return true;
+  }
+  isControlsOpen() { return !this.el.controlsModal.classList.contains('hidden'); }
 
   // ---------- custom panel ----------
   _loadCustom() {
@@ -129,6 +224,9 @@ export class UI {
     this.el.hud.classList.add('hidden');
     this.el.banner.classList.add('hidden');
     this.el.help.classList.add('hidden');
+    this.el.controlsModal.classList.add('hidden');
+    this._helpByUser = false;
+    this.refreshBests();
   }
   showReady(settings, msg = '') {
     this.el.menu.classList.add('hidden');
@@ -137,6 +235,8 @@ export class UI {
     this.el.hud.classList.remove('hidden');
     this.el.readyBoard.textContent = `${fmtDims(settings)} · ${settings.mines} mines`;
     this.el.readyMsg.textContent = msg;
+    this.el.banner.classList.remove('suppressed');
+    this._syncHelp();
   }
   setReadyMessage(msg) { this.el.readyMsg.textContent = msg; }
   showPlaying() {
@@ -144,6 +244,18 @@ export class UI {
     this.el.ready.classList.add('hidden');
     this.el.pause.classList.add('hidden');
     this.el.hud.classList.remove('hidden');
+    this.el.banner.classList.remove('suppressed');
+    this._syncHelp();
+    this.el.hintH.classList.toggle('hidden', !!lsGet(LS_HINT_DONE));
+  }
+  _syncHelp() { if (!this._helpByUser) this.toggleHelp(false); }
+  dismissHint() { lsSet(LS_HINT_DONE, '1'); this.el.hintH.classList.add('hidden'); }
+  /** Crosshair feedback: on = a cell is targeted. Touches the DOM only on change. */
+  setCrosshair(on) {
+    if (on === this._crossOn) return;
+    this._crossOn = on;
+    this.el.crosshair.classList.toggle('on', on);
+    this.el.crosshair.classList.toggle('off', !on);
   }
   showPause({ state, time, minesLeft }) {
     this.el.ready.classList.add('hidden');
@@ -152,6 +264,10 @@ export class UI {
     const ended = state !== 'playing';
     this.el.pauseCard.classList.toggle('won', state === 'won');
     this.el.pauseCard.classList.toggle('lost', state === 'lost');
+    this.el.pauseCard.classList.toggle('ended', ended);
+    this.el.banner.classList.add('suppressed');
+    this.el.resume.classList.toggle('btn-primary', !ended);
+    this.el.restart.classList.toggle('btn-primary', ended);
     this.el.pauseTitle.textContent = state === 'won' ? 'You won!' : state === 'lost' ? 'Game over' : 'Paused';
     this.el.pauseSub.textContent = `Time ${fmtTime(time)} s · ${minesLeft} mine${minesLeft === 1 ? '' : 's'} left`;
     this.el.resume.textContent = ended ? 'Keep looking around' : 'Resume';
@@ -185,18 +301,25 @@ export class UI {
     clearTimeout(this._helpTimer);
     const show = force ?? this.el.help.classList.contains('hidden');
     this.el.help.classList.toggle('hidden', !show);
+    return show;
   }
-  /** Show the help panel for a few seconds the first time a player starts a game. */
-  maybeIntroHelp() {
-    if (lsGet(LS_HELP_SEEN)) return;
-    lsSet(LS_HELP_SEEN, '1');
-    this.toggleHelp(true);
-    this._helpTimer = setTimeout(() => this.el.help.classList.add('hidden'), 9000);
+  /** H key in game: toggle the help panel; remembered so screen changes keep it open. */
+  userToggleHelp() {
+    this._helpByUser = this.toggleHelp();
+    this.dismissHint();
   }
 
+  /** Extra line under the end banner time (best-time info). */
+  setBannerRecord(text, isNew = false) {
+    const r = this.el.bannerRecord;
+    r.textContent = text || '';
+    r.classList.toggle('hidden', !text);
+    r.classList.toggle('new', !!isNew);
+  }
   showBanner(state, time) {
     const b = this.el.banner;
-    b.classList.remove('hidden', 'won', 'lost', 'compact');
+    b.classList.remove('hidden', 'won', 'lost', 'compact', 'suppressed');
+    this.setBannerRecord('');
     b.classList.add(state);
     this.el.bannerTitle.textContent = state === 'won' ? 'You won!' : 'Game over';
     this.el.bannerSub.textContent = `Time ${fmtTime(time)} s`;

@@ -9,18 +9,49 @@ export const L_FLAG = 1;
 export const L_MINE = 2;
 export const L_MINE_EXPLODED = 3;
 export const L_NUM0 = 4; // number n (0..26) -> layer L_NUM0 + n
-export const LAYERS = L_NUM0 + 27;
 
-// Classic palette for 1..8, then distinct hues for 9..26.
-const CLASSIC = ['#1565c0', '#2e7d32', '#d32f2f', '#1a237e', '#8d1c1c', '#00838f', '#212121', '#6d6d6d'];
-export function numberColor(n) {
-  if (n >= 1 && n <= 8) return CLASSIC[n - 1];
-  const t = n - 9; // 0..17
-  const hue = (t * 137.508 + 285) % 360; // golden-angle spread
-  const light = 30 + (t % 3) * 6;
-  const sat = 70 + (t % 2) * 15;
-  return `hsl(${hue.toFixed(0)} ${sat}% ${light}%)`;
+export const L_WRONG_FLAG = L_NUM0 + 27; // loss screen: flag placed on a non-mine (render-only)
+export const LAYERS = L_NUM0 + 28;
+
+// ---- colour helpers (sRGB) ----
+function hexToRgb(hex) { const n = parseInt(hex.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+function rgbToHex([r, g, b]) { return '#' + ((1 << 24) | (Math.round(r) << 16) | (Math.round(g) << 8) | Math.round(b)).toString(16).slice(1); }
+function hslToRgb(h, s, l) {
+  s /= 100; l /= 100;
+  const k = (n) => (n + h / 30) % 12, a = s * Math.min(l, 1 - l);
+  const f = (n) => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+  return [f(0) * 255, f(8) * 255, f(4) * 255];
 }
+function luminance([r, g, b]) {
+  const c = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  return 0.2126 * c(r) + 0.7152 * c(g) + 0.0722 * c(b);
+}
+export function contrastRatio(a, b) {
+  const la = luminance(typeof a === 'string' ? hexToRgb(a) : a), lb = luminance(typeof b === 'string' ? hexToRgb(b) : b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
+// Revealed tile face colours; the darkest point of the face gradient is the contrast reference.
+const REVEALED_BASE = '#eef3fa';
+export const REVEALED_DARK = shade(REVEALED_BASE, -0.06);
+const MIN_CONTRAST = 5.0; // >= 4.5:1 with headroom for face shading / mip blur
+
+// Classic palette for 1..8 (kept recognisable), then distinct hues for 9..26. Every colour is darkened
+// (keeping its hue) until it reaches MIN_CONTRAST against the darkest part of the tile background.
+const CLASSIC = ['#1565c0', '#2e7d32', '#d32f2f', '#1a237e', '#8d1c1c', '#00838f', '#212121', '#6d6d6d'];
+const NUM_COLORS = [];
+for (let n = 1; n <= 26; n++) {
+  let rgb;
+  if (n <= 8) rgb = hexToRgb(CLASSIC[n - 1]);
+  else {
+    const t = n - 9; // 0..17
+    const hue = (t * 137.508 + 285) % 360; // golden-angle spread
+    rgb = hslToRgb(hue, 72 + (t % 2) * 14, 34 + (t % 3) * 5);
+  }
+  for (let it = 0; it < 60 && contrastRatio(rgb, REVEALED_DARK) < MIN_CONTRAST; it++) rgb = rgb.map((v) => v * 0.95);
+  NUM_COLORS[n] = rgbToHex(rgb);
+}
+export function numberColor(n) { return NUM_COLORS[n] || '#212121'; }
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -58,7 +89,7 @@ function drawClosed(ctx) {
   ctx.fill();
 }
 
-function drawRevealedBg(ctx, base = '#eef3fa', edge = '#c4cfdd') {
+function drawRevealedBg(ctx, base = REVEALED_BASE, edge = '#c4cfdd') {
   const S = TILE;
   ctx.fillStyle = '#8f9bb0';
   ctx.fillRect(0, 0, S, S);
@@ -84,25 +115,30 @@ function drawNumber(ctx, n) {
   if (n === 0) return;
   const S = TILE;
   const txt = String(n);
-  const size = txt.length === 1 ? S * 0.68 : S * 0.56;
+  const size = txt.length === 1 ? S * 0.68 : S * 0.62;
   ctx.font = `800 ${size}px "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif`;
   ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
+  // Measure against the alphabetic baseline (the glyph box metrics are relative to the current
+  // baseline) and centre the actual glyph box vertically.
+  ctx.textBaseline = 'alphabetic';
   const m = ctx.measureText(txt);
-  // Vertically centre using the actual glyph box when available
-  let y = S / 2;
-  if (m.actualBoundingBoxAscent !== undefined) {
-    y = S / 2 + (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
-    ctx.textBaseline = 'alphabetic';
-  }
-  const maxW = S * 0.8;
+  let y;
+  if (m.actualBoundingBoxAscent !== undefined) y = S / 2 + (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+  else { ctx.textBaseline = 'middle'; y = S / 2; }
+  const maxW = S * 0.84;
   const sx = m.width > maxW ? maxW / m.width : 1;
   ctx.save();
   ctx.translate(S / 2, 0);
   ctx.scale(sx, 1);
-  ctx.fillStyle = 'rgba(0,0,0,0.18)';
-  ctx.fillText(txt, 4, y + 5);
-  ctx.fillStyle = numberColor(n);
+  const col = numberColor(n);
+  ctx.fillStyle = 'rgba(0,0,0,0.12)';
+  ctx.fillText(txt, 3, y + 4);
+  // thin darker outline of the same hue: thickens the glyph so it survives mip filtering at distance
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = S * (txt.length === 1 ? 0.03 : 0.036);
+  ctx.strokeStyle = shade(col, -0.45);
+  ctx.strokeText(txt, 0, y);
+  ctx.fillStyle = col;
   ctx.fillText(txt, 0, y);
   ctx.restore();
 }
@@ -128,6 +164,10 @@ function drawMineGlyph(ctx) {
 
 function drawFlag(ctx) {
   drawClosed(ctx);
+  drawFlagGlyph(ctx);
+}
+
+function drawFlagGlyph(ctx) {
   const S = TILE;
   ctx.save();
   // base
@@ -147,6 +187,21 @@ function drawFlag(ctx) {
   ctx.restore();
 }
 
+function drawWrongFlag(ctx) {
+  drawRevealedBg(ctx);
+  ctx.save();
+  drawFlagGlyph(ctx);
+  ctx.restore();
+  const S = TILE, a = S * 0.22, b = S * 0.78;
+  ctx.save();
+  ctx.lineCap = 'round';
+  for (const [w, c] of [[S * 0.13, 'rgba(255,255,255,0.95)'], [S * 0.075, '#d50000']]) {
+    ctx.lineWidth = w; ctx.strokeStyle = c;
+    ctx.beginPath(); ctx.moveTo(a, a); ctx.lineTo(b, b); ctx.moveTo(b, a); ctx.lineTo(a, b); ctx.stroke();
+  }
+  ctx.restore();
+}
+
 /** Draws one layer onto a 2D context of size TILE x TILE. */
 export function drawLayer(ctx, layer) {
   ctx.clearRect(0, 0, TILE, TILE);
@@ -154,6 +209,7 @@ export function drawLayer(ctx, layer) {
   else if (layer === L_FLAG) drawFlag(ctx);
   else if (layer === L_MINE) { drawRevealedBg(ctx); drawMineGlyph(ctx); }
   else if (layer === L_MINE_EXPLODED) { drawRevealedBg(ctx, '#ff5a4f', '#b3261e'); drawMineGlyph(ctx); }
+  else if (layer === L_WRONG_FLAG) drawWrongFlag(ctx);
   else drawNumber(ctx, layer - L_NUM0);
 }
 

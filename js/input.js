@@ -7,17 +7,22 @@ export const LOOK_DEG_PER_PX = 0.2;
 export const SPACING_MIN = 1, SPACING_MAX = 10, SPACING_START = 1.1;
 
 export class FlyCamera {
-  constructor() { this.reset(0, 0, 0); }
+  constructor() {
+    this.sensitivity = 1; // multiplier on the original 0.2°/px (UI setting; 1 = original)
+    this.invertY = false; // UI setting; false = original
+    this.reset(0, 0, 0);
+  }
   reset(x, y, z) {
     this.x = x; this.y = y; this.z = z;
     this.pitch = 0; // angle.X : + = looking down
     this.yaw = Math.PI; // angle.Y : PI = looking toward +Z
   }
   look(dxPx, dyPx) {
-    this.pitch += dyPx * LOOK_DEG_PER_PX * DEG;
+    const k = LOOK_DEG_PER_PX * DEG * this.sensitivity;
+    this.pitch += (this.invertY ? -dyPx : dyPx) * k;
     if (this.pitch > Math.PI / 2) this.pitch = Math.PI / 2;
     if (this.pitch < -Math.PI / 2) this.pitch = -Math.PI / 2;
-    this.yaw += dxPx * LOOK_DEG_PER_PX * DEG;
+    this.yaw += dxPx * k;
   }
   /** keys: {w,a,s,d,q,e} booleans */
   move(dt, keys) {
@@ -87,6 +92,7 @@ export class Input {
     this.o = opts;
     this.keys = new Set();
     this.locked = false;
+    this.unlockedAt = -Infinity; // performance.now() of the last pointer-lock release
     const doc = document;
     window.addEventListener('keydown', (e) => {
       if (GAME_KEYS.has(e.code)) {
@@ -106,8 +112,9 @@ export class Input {
     doc.addEventListener('visibilitychange', () => { if (doc.hidden) this.releaseAll(); });
 
     doc.addEventListener('pointerlockchange', () => {
+      const was = this.locked;
       this.locked = doc.pointerLockElement === this.o.canvas;
-      if (!this.locked) this.releaseAll();
+      if (!this.locked) { this.releaseAll(); if (was) this.unlockedAt = performance.now(); }
       this.o.onLockChange?.(this.locked);
     });
     doc.addEventListener('pointerlockerror', () => this.o.onLockError?.());
@@ -136,10 +143,12 @@ export class Input {
       if (!this.o.isActive()) return;
       e.preventDefault();
       // Original: +120 per notch / 3000 = 0.04 per notch; wheel up = larger spacing.
+      // Browsers turn Shift+wheel into horizontal scrolling (deltaX); Shift is a game key here.
+      const wd = (e.deltaY === 0 && e.shiftKey) ? e.deltaX : e.deltaY;
       let notches;
-      if (e.deltaMode === 1) notches = -e.deltaY / 3; // lines
-      else if (e.deltaMode === 2) notches = -e.deltaY; // pages
-      else notches = -e.deltaY / 100; // pixels (~100 per notch in Chromium)
+      if (e.deltaMode === 1) notches = -wd / 3; // lines
+      else if (e.deltaMode === 2) notches = -wd; // pages
+      else notches = -wd / 100; // pixels (~100 per notch in Chromium)
       this.o.onWheel(notches);
     }, { passive: false });
   }
@@ -158,8 +167,10 @@ export class Input {
     return { w: k.has('KeyW'), a: k.has('KeyA'), s: k.has('KeyS'), d: k.has('KeyD'), q: k.has('KeyQ'), e: k.has('KeyE') };
   }
 
+  get lockSupported() { return typeof Element !== 'undefined' && 'requestPointerLock' in Element.prototype; }
   requestLock() {
     const c = this.o.canvas;
+    if (!this.lockSupported) { this.o.onLockError?.(); return; }
     try {
       const r = c.requestPointerLock();
       if (r && typeof r.catch === 'function') r.catch(() => this.o.onLockError?.());

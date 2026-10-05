@@ -6,6 +6,14 @@
   <title>Minesweeper 3D</title>
   <meta name="description" content="Minesweeper in three dimensions: fly around a 3D grid of cubes and clear the mines. A web port of the XNA game Minesweeper 3D.">
   <meta name="theme-color" content="#c8e1ff">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Minesweeper 3D">
+  <meta property="og:description" content="Minesweeper in three dimensions: fly around a 3D grid of cubes and clear the mines.">
+  <meta property="og:url" content="https://minesweeper3d.chosko.com/">
+  <meta property="og:site_name" content="Minesweeper 3D">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Minesweeper 3D">
+  <meta name="twitter:description" content="Minesweeper in three dimensions: fly around a 3D grid of cubes and clear the mines.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 4 58 18v28L32 60 6 46V18z' fill='%233f78e0'/%3E%3Cpath d='M32 4 58 18 32 32 6 18z' fill='%239cc4ff'/%3E%3Cpath d='M32 32v28L6 46V18z' fill='%232b5cb8'/%3E%3Ccircle cx='45' cy='38' r='7' fill='%231b1b1b'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="css/style.css">
   <script type="importmap">
@@ -28,7 +36,8 @@
       <span class="kbd-hint"><kbd>F</kbd> fullscreen</span>
       <span class="kbd-hint"><kbd>Esc</kbd> menu</span>
     </div>
-    <div id="crosshair" aria-hidden="true"></div>
+    <div id="crosshair" class="off" aria-hidden="true"></div>
+    <div id="hint-h" class="hud-panel hidden"><span><kbd>H</kbd> controls</span><button type="button" id="hint-h-close" class="hint-close" aria-label="Dismiss hint">&times;</button></div>
     <div id="mode-chips" aria-hidden="true">
       <span id="chip-shift" class="chip">Shift: neighbours only</span>
       <span id="chip-space" class="chip">Space: see through revealed</span>
@@ -60,6 +69,7 @@
   <div id="banner" class="hidden" role="status">
     <div id="banner-title">You won!</div>
     <div id="banner-sub">Time 0.00 s</div>
+    <div id="banner-record" class="banner-record hidden"></div>
     <div class="banner-hint">Keep flying to inspect the board &middot; <kbd>Esc</kbd> for Play again / Main menu</div>
   </div>
 
@@ -68,6 +78,7 @@
   <!-- Main menu -->
   <section id="menu" class="overlay" aria-label="Main menu">
     <div class="menu-card">
+      <p id="touch-note" class="touch-note hidden" role="alert">Minesweeper 3D needs a mouse and keyboard &mdash; open it on a desktop browser.</p>
       <header class="menu-head">
         <div class="logo" aria-hidden="true">
           <svg viewBox="0 0 64 64"><path d="M32 4 58 18v28L32 60 6 46V18z" fill="#3f78e0"/><path d="M32 4 58 18 32 32 6 18z" fill="#9cc4ff"/><path d="M32 32v28L6 46V18z" fill="#2b5cb8"/><text x="45" y="47" font-size="20" font-weight="800" text-anchor="middle" fill="#fff" font-family="system-ui,sans-serif">3</text></svg>
@@ -118,21 +129,45 @@
         <button type="button" id="menu-help" class="link-btn">Controls</button>
         <span class="sep">&middot;</span>
         <button type="button" id="menu-sound" class="link-btn">Sound: on</button>
+        <label class="vol hidden" title="Volume"><span class="vol-label">Volume</span><input type="range" id="menu-vol" class="vol-range" min="0" max="100" step="1" value="100" aria-label="Volume"></label>
         <span class="sep">&middot;</span>
         <span>Web port of the 2011 XNA game <a href="https://github.com/Chosko/minesweeper-3d" target="_blank" rel="noopener">Minesweeper 3D</a> by Chosko</span>
       </footer>
-      <p id="touch-note" class="touch-note hidden">This game needs a mouse and keyboard.</p>
     </div>
   </section>
 
   <!-- Click to play -->
   <section id="ready" class="overlay hidden" aria-label="Click to play">
-    <button id="ready-btn" class="ready-card" type="button">
-      <span class="ready-title">Click to play</span>
-      <span id="ready-board" class="ready-board">9 &times; 9 &times; 1 &middot; 10 mines</span>
-      <span class="ready-keys"><kbd>Mouse</kbd> look &middot; <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> fly &middot; <kbd>Q</kbd>/<kbd>E</kbd> down/up &middot; <kbd>Esc</kbd> pause</span>
-      <span id="ready-msg" class="ready-msg"></span>
-    </button>
+    <div class="ready-wrap">
+      <button id="ready-btn" class="ready-card" type="button">
+        <span class="ready-title">Click to play</span>
+        <span id="ready-board" class="ready-board">9 &times; 9 &times; 1 &middot; 10 mines</span>
+        <span id="ready-msg" class="ready-msg"></span>
+        <span class="ready-keys">
+          <span><b>Left</b> reveal &middot; <b>Right</b> flag &middot; <b>Left+Right</b> chord</span>
+          <span><kbd>Shift</kbd>/<kbd>Space</kbd>/<kbd>Ctrl</kbd> view modes &middot; <b>Wheel</b> spacing</span>
+          <span><b>Mouse</b> look &middot; <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> fly &middot; <kbd>Q</kbd>/<kbd>E</kbd> down/up &middot; <kbd>Esc</kbd> pause</span>
+        </span>
+        <span class="ready-tip">Tip: press <kbd>F</kbd> for fullscreen &mdash; keeps <kbd>Ctrl</kbd>+<kbd>W</kbd> from closing the tab</span>
+      </button>
+      <button type="button" id="ready-back" class="link-btn ready-back">Back to menu</button>
+    </div>
+  </section>
+
+  <!-- Controls modal (main menu) -->
+  <section id="controls-modal" class="overlay modal hidden" role="dialog" aria-modal="true" aria-labelledby="controls-title">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="controls-title">Controls</h3>
+        <button type="button" id="controls-close" class="hint-close modal-close" aria-label="Close">&times;</button>
+      </div>
+      <div id="controls-body"></div>
+    </div>
+  </section>
+
+  <!-- WebGL context lost -->
+  <section id="ctx-lost" class="overlay hidden" aria-label="Graphics context lost">
+    <button type="button" id="ctx-lost-btn" class="ready-card"><span class="ready-title">Graphics context lost</span><span class="ready-board">Click to reload</span></button>
   </section>
 
   <!-- Pause / end menu -->
@@ -157,6 +192,17 @@
           <dt><kbd>Ctrl</kbd></dt><dd>Show hidden</dd>
         </dl>
       </div>
+      <details class="pause-settings" id="p-settings">
+        <summary>Settings</summary>
+        <div class="settings-grid">
+          <label for="p-sens">Mouse sensitivity</label>
+          <span class="set-ctl"><input type="range" id="p-sens" min="0.25" max="3" step="0.05" value="1"><output id="p-sens-val">1.00&times;</output></span>
+          <label for="p-invert">Invert mouse Y</label>
+          <span class="set-ctl"><input type="checkbox" id="p-invert"></span>
+          <label for="p-vol" class="vol-row hidden">Volume</label>
+          <span class="set-ctl vol-row hidden"><input type="range" id="p-vol" class="vol-range" min="0" max="100" step="1" value="100"><output id="p-vol-val">100%</output></span>
+        </div>
+      </details>
       <button type="button" id="p-sound" class="link-btn">Sound: on</button>
     </div>
   </section>
