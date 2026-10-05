@@ -1,61 +1,151 @@
 # Minesweeper 3D (web)
 
-Minesweeper in three dimensions: a box of up to 100 × 100 × 100 cubes. Every cube has up to 26
-neighbours. You fly through the board in first person and aim with a crosshair.
+Minesweeper in three dimensions. The board is a box of up to 100 × 100 × 100 cubes, and each cube
+has up to 26 neighbours. You fly through the board in first person and aim with a crosshair.
 
-Play it at **https://minesweeper3d.chosko.com**
+**Play it at https://minesweeper3d.chosko.com**
 
-This is a browser port of *Minesweeper 3D*, an XNA/C# game written in 2011 by
-[Chosko](https://github.com/Chosko/minesweeper-3d). Gameplay (rules, navigation and controls)
-follows the original exactly, as described in [`docs/ORIGINAL_SPEC.md`](docs/ORIGINAL_SPEC.md).
-The graphics, menus and sound are new.
+This is a browser port, built with three.js, of *Minesweeper 3D*, an XNA/C# game written in 2011 by
+Chosko ([original repository](https://github.com/Chosko/minesweeper-3d)). There is no build step:
+the site is a set of static files served by GitHub Pages from `main`.
+
+## How to play
+
+The rules are classic Minesweeper with one more dimension:
+
+- A revealed cube shows how many of its **26 neighbours** (the 3 × 3 × 3 block around it) hold a
+  mine, so the number can be anything from 0 to 26.
+- Revealing a 0 opens its neighbours automatically, and the cascade continues from there.
+- Revealing a mine ends the game and shows the whole board.
+- You win when every safe cube has been revealed, and no non-mine cube is flagged. You do not have
+  to flag the mines.
+- **Solved cells hide themselves.** Revealed zeros are invisible. A revealed number disappears once
+  every neighbour is revealed or flagged and its flag count matches the number. This lets you see
+  into the board. Removing a flag next to a hidden cell brings it back, and holding `Ctrl` shows
+  every hidden cell.
+- Mines are placed when the game is created, so the first click is not guaranteed to be safe.
+
+Presets: 2D classic (9×9×1, 16×16×1, 30×16×1), Double layer (8×8×2, 14×14×2, 25×16×2) and 3D
+(6×6×6, 8×8×8, 12×12×8). You can also set a custom size (each side 1–100, any mine count) or roll a
+random board.
 
 ## Controls
 
 | Input | Action |
 |---|---|
-| Mouse | Look around (click the game to capture the mouse) |
+| Mouse | Look around (click "Click to play" to capture the mouse) |
 | `W` `A` `S` `D` | Fly forward / left / back / right (forward follows the view direction) |
 | `Q` / `E` | Move down / up |
 | Left click | Reveal the aimed cube |
-| Right click | Flag / unflag. On a revealed number: flag all its closed neighbours (or unflag them all if they are all flagged) |
-| Left + Right | Chord: reveal the neighbours of a number whose flags are all placed |
+| Right click | Flag / unflag. On a revealed number: flag all its closed neighbours, or unflag them all if they are all already flagged |
+| Left + Right | Chord: when a number has the right count of flags around it, reveal its other neighbours |
 | Mouse wheel | Change the spacing between cubes |
 | Hold `Shift` | Fade everything except the aimed cube and its neighbours |
 | Hold `Space` | Aim through revealed numbers (they fade) |
-| Hold `Ctrl` | Show hidden cells (empty and completed ones) |
-| `H` / `M` / `F` | Help panel / sound on-off / fullscreen |
-| `Esc` | Pause menu (resume, restart, main menu) |
+| Hold `Ctrl` | Show hidden cells (zeros and solved numbers) |
+| `H` | Show / hide the controls panel |
+| `M` | Sound on / off |
+| `F` | Fullscreen |
+| `Esc` | Pause menu (releases the mouse) |
 
-Mouse actions fire when the button is **released**, as in the original. There is no first-click
-safety: mines are placed when the game starts. Some browsers do not let a page block `Ctrl+W`, so
-holding Ctrl while pressing W can close the tab. Fullscreen (`F`) asks the browser to give those keys
-to the game where it can, and the page asks for confirmation before it closes during a game.
+Mouse actions fire when you **release** the button, as in the original. The timer starts on the
+first left-click release.
+
+Some browsers do not let a page block `Ctrl+W`, so pressing W while holding Ctrl can close the tab.
+In fullscreen (`F`), the game asks the browser to pass those keys to the page (Keyboard Lock), where
+the browser supports it. During a game, the page also asks you to confirm before it closes.
+
+## What's new compared to the original
+
+- **Interface:** a main menu with presets and a custom-board form (cell count, mine density and
+  validation hints). The HUD shows time, mines left and board size, with indicators for the
+  Shift/Space/Ctrl view modes. There is an in-game controls panel (`H`) and an end-of-game banner
+  that lets you keep flying around the board.
+- **Pause menu** (`Esc`): resume, restart or return to the main menu. After a game ends, it offers
+  "Play again" and "Keep looking around".
+- **Settings:** mouse sensitivity (0.25×–3×), invert mouse Y and volume. They are saved in
+  `localStorage`. The defaults match the original.
+- **Best times** for each board size and mine count, saved in `localStorage` and shown on the preset
+  buttons.
+- **Sound:** synthesized sound effects (Web Audio, no audio files) for revealing, flagging,
+  chording, actions that change nothing, explosions and wins. They can be muted.
+- **Visual polish:** procedurally drawn tiles with a distinct colour for each number from 1 to 26, a
+  sky gradient, distance fog, per-face shading and crisp tile borders. The aimed cube gets a pulsing
+  outline. Winning plays a pulse wave and confetti. Losing plays a reveal wave from the exploded
+  cell, a screen flash and camera shake, and marks wrong flags. A slowly orbiting demo board sits
+  behind the main menu.
+- **Performance:**
+  - *Instanced rendering:* every cube is drawn by two instanced meshes. Each cell's state is stored
+    in a data texture, transparent cubes are depth-sorted with an exact O(n) counting sort, and a
+    frame is only drawn when something changes. Large boards get an adaptive pixel ratio.
+  - *DDA picking:* the crosshair ray walks the cube lattice (3D-DDA) and stops at the first cube it
+    hits, instead of testing every cube.
+  - *Incremental logic:* counters such as flagged neighbours, unrevealed cells and wrong flags are
+    kept up to date as you play. Flood fill and chording use an explicit stack instead of recursion,
+    and auto-hiding is only re-checked for the cells an action touched. This keeps 100³ boards
+    responsive.
+
+## Gameplay fidelity
+
+The gameplay is the same as the original: rules, mine placement, numbers, auto-hiding, the win
+condition, camera movement (including its quirks), picking, mouse-release actions and the view
+modes. [`docs/ORIGINAL_SPEC.md`](docs/ORIGINAL_SPEC.md) describes the original's behaviour, and the
+rules engine is tested against a direct port of the original logic. The port changes these things
+on purpose:
+
+- **Crash fixes:** the Random button is guarded for tiny boards, a chord with nothing aimed does
+  nothing, and flood fill is iterative, so huge boards cannot overflow the stack.
+- **Re-centred grid:** the board stays centred when the spacing grows. The start camera moves to
+  match and lines up with a column of cubes.
+- **Pause menu instead of `F5` / `Esc`:** the original restarted with `F5` and quit with `Esc`. Here
+  `Esc` opens a menu with resume, restart and main menu.
+- **Draw distance:** the far plane grows with the board instead of being clipped at 300 units.
+- **Minor timing changes the player cannot see:** auto-hiding and the win check run right after each
+  action instead of once per frame, and the timer stops while the game is paused.
+- **Touch devices are not supported:** the game needs a mouse, a keyboard and Pointer Lock. On a
+  touch-only device, the menu says so.
 
 ## Running locally
 
-There is no build step. Serve the folder with any static server, for example:
+There is no build step. Serve the folder with any static web server, for example:
 
 ```sh
-npx http-server -p 8080 -c-1
+npx http-server -c-1
 ```
 
-Then open http://localhost:8080. The game needs WebGL 2. Unit tests for the rules engine run with
-`node --test`.
+Then open the URL it prints (by default http://localhost:8080). The game needs WebGL 2 and does not
+work from `file://`, because ES modules need a server.
 
-## Layout
+## Tests
 
-- `index.html`, `css/style.css`: page, menus and HUD
-- `js/logic.js`: rules engine (no DOM)
-- `js/render.js`: three.js instanced renderer (one cube geometry, per-cell state texture, sorted transparency)
-- `js/picking.js`: crosshair picking (3D-DDA through the cube lattice)
-- `js/input.js`: fly camera, pointer lock, keyboard/mouse handling
-- `js/textures.js`: procedurally drawn tiles
-- `js/audio.js`: synthesized sound effects
-- `js/ui.js`, `js/main.js`: screens and wiring
-- `vendor/three/`: three.js r186 (MIT)
+The rules engine has unit tests that use Node's built-in test runner (no dependencies):
 
-## Credits
+```sh
+node --test
+```
 
-- Original game: *Minesweeper 3D* (XNA, 2011) by Chosko.
-- Rendering: [three.js](https://threejs.org) (MIT license, see `vendor/three/LICENSE`).
+## Project structure
+
+```
+index.html              Page markup: menu, HUD, overlays, pause menu, import map for three.js
+css/style.css           Styles for menus, HUD and overlays
+js/main.js              Entry point: wires logic, renderer, input and UI; frame loop; game flow
+js/logic.js             Rules engine (no DOM): mines, numbers, reveal/flag/chord, auto-hide, win/loss
+js/render.js            three.js instanced renderer, shaders, transparency sort, end-of-game effects
+js/picking.js           Crosshair picking with a 3D-DDA through the cube lattice
+js/input.js             Fly camera, pointer lock, keyboard/mouse state, release-to-act mouse logic
+js/ui.js                Menus, HUD, pause menu, settings, best times (DOM only, no game rules)
+js/textures.js          Procedurally drawn tile textures (canvas 2D -> texture array)
+js/audio.js             Synthesized sound effects (Web Audio)
+tests/logic.test.mjs    Rules engine tests, including comparison with a naive port of the original
+docs/ORIGINAL_SPEC.md   Description of the original game's behaviour
+vendor/three/           three.js r186, a single minified ES module, with its licence
+CNAME, .nojekyll        GitHub Pages configuration (custom domain)
+```
+
+## Credits and licence
+
+- Original game: *Minesweeper 3D* (XNA, 2011) by Chosko: https://github.com/Chosko/minesweeper-3d
+- Rendering: [three.js](https://threejs.org), MIT licence (see [`vendor/three/LICENSE`](vendor/three/LICENSE)).
+- All tile textures are drawn procedurally at runtime, and all sounds are synthesized. The port
+  uses no assets from the original game and no Microsoft (XNA) assets.
