@@ -96,7 +96,7 @@ const input = new Input({
   mouse,
   isActive: () => S.mode === 'playing',
   onLook: (dx, dy) => cam.look(dx, dy),
-  onWheel: (notches) => setSpacing(S.spacing + notches * 0.04),
+  onWheel: (notches) => { setSpacing(S.spacing + notches * 0.04); ui.showSpacing(S.spacing); },
   onKey: (code, e) => {
     if (code === 'Escape') {
       if (S.mode === 'menu') ui.closeControls();

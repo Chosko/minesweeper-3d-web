@@ -10,6 +10,7 @@
   <meta property="og:title" content="Minesweeper 3D">
   <meta property="og:description" content="Minesweeper in three dimensions: fly around a 3D grid of cubes and clear the mines.">
   <meta property="og:url" content="https://minesweeper3d.chosko.com/">
+  <link rel="canonical" href="https://minesweeper3d.chosko.com/">
   <meta property="og:site_name" content="Minesweeper 3D">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Minesweeper 3D">
@@ -42,6 +43,7 @@
       <span id="chip-shift" class="chip">Shift: neighbours only</span>
       <span id="chip-space" class="chip">Space: see through revealed</span>
       <span id="chip-ctrl" class="chip">Ctrl: show hidden</span>
+      <span id="chip-spacing" class="chip chip-soft">Spacing 1.10</span>
     </div>
   </div>
 
@@ -208,6 +210,6 @@
   </section>
 
   <noscript><div class="noscript">Minesweeper 3D needs JavaScript and WebGL 2.</div></noscript>
-  <script type="module" src="js/main.js"></script>
+  <script type="module" src="js/main.js" onerror="document.body.insertAdjacentHTML('beforeend','<div class=&quot;fatal&quot;><div><h2 style=&quot;margin-top:0&quot;>Cannot start Minesweeper 3D</h2><p>The game files failed to load. Check your connection and reload the page.</p></div></div>')"></script>
 </body>
 </html>

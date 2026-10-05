@@ -126,6 +126,12 @@ h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; color: 
 .preset:hover { border-color: var(--blue); background: #fff; box-shadow: 0 8px 18px -10px rgba(43, 92, 184, 0.6); transform: translateY(-1px); }
 .preset:active { transform: translateY(0); }
 .p-name { font-weight: 700; font-size: 16px; }
+.preset.last { border-color: #9cbcf0; }
+.preset.last .p-name::after {
+  content: 'last played'; margin-left: 8px; vertical-align: 2px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--blue); background: rgba(63, 120, 224, 0.1); padding: 2px 6px; border-radius: 999px;
+}
 .p-best { font-size: 12px; font-weight: 600; color: #1f8a3b; font-variant-numeric: tabular-nums; }
 .p-dims { font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 
@@ -281,6 +287,7 @@ h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; color: 
   background: rgba(20, 35, 63, 0.75); color: #fff;
 }
 .chip.on { display: inline-block; }
+.chip.chip-soft { background: rgba(255, 255, 255, 0.85); color: var(--ink); font-variant-numeric: tabular-nums; box-shadow: 0 2px 8px rgba(20, 35, 63, 0.15); }
 
 #help {
   position: fixed; right: 16px; top: 64px; z-index: 11;

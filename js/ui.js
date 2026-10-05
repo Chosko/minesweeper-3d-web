@@ -5,6 +5,7 @@ const LS_HINT_DONE = 'ms3d.hintH.done';
 const LS_BEST = 'ms3d.best.'; // + XxYxZxmines
 const LS_SENS = 'ms3d.lookSens';
 const LS_INVERT = 'ms3d.invertY';
+const LS_LAST_PRESET = 'ms3d.lastPreset';
 
 export const DIM_MIN = 1, DIM_MAX = 100;
 
@@ -83,6 +84,7 @@ export class UI {
       b.appendChild(best);
       b.addEventListener('click', () => {
         const [X, Y, Z, mines] = b.dataset.preset.split(',').map(Number);
+        lsSet(LS_LAST_PRESET, b.dataset.preset);
         cb.onStart({ X, Y, Z, mines });
       });
     });
@@ -98,6 +100,7 @@ export class UI {
       e.preventDefault();
       const s = this._clampCustomFields();
       lsSet(LS_CUSTOM, JSON.stringify(s));
+      lsSet(LS_LAST_PRESET, '');
       cb.onStart(s);
     });
     // Controls modal (main menu): a copy of the in-game help list
@@ -151,7 +154,9 @@ export class UI {
   }
 
   refreshBests() {
+    const last = lsGet(LS_LAST_PRESET);
     document.querySelectorAll('.preset').forEach((b) => {
+      b.classList.toggle('last', !!last && b.dataset.preset === last);
       const [X, Y, Z, mines] = b.dataset.preset.split(',').map(Number);
       const best = getBest({ X, Y, Z, mines });
       const el = b.querySelector('.p-best');
@@ -290,6 +295,14 @@ export class UI {
     this.el.chipShift.classList.toggle('on', shift);
     this.el.chipSpace.classList.toggle('on', space);
     this.el.chipCtrl.classList.toggle('on', ctrl);
+  }
+  /** Brief toast with the current cube spacing (mouse wheel). */
+  showSpacing(v) {
+    const c = $('chip-spacing');
+    c.textContent = `Spacing ${v.toFixed(2)}`;
+    c.classList.add('on');
+    clearTimeout(this._spacingTimer);
+    this._spacingTimer = setTimeout(() => c.classList.remove('on'), 1200);
   }
   setSound(muted) {
     const t = muted ? 'off' : 'on';
