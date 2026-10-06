@@ -4,6 +4,7 @@
 const DEG = Math.PI / 180;
 export const MOVE_SPEED = 50; // units / s
 export const LOOK_DEG_PER_PX = 0.2;
+export const PAD_LOOK_DEG_PER_S = 180; // controller right stick at full deflection (x sensitivity)
 export const SPACING_MIN = 1, SPACING_MAX = 10, SPACING_START = 1.1;
 
 export class FlyCamera {
@@ -37,6 +38,27 @@ export class FlyCamera {
     if (keys.d) { this.x += lx * v; this.z += lz * v; }
     if (keys.q) this.y -= v;
     if (keys.e) this.y += v;
+  }
+  /**
+   * Analog move (controller): f forward, r right, u up, each -1..1. Same forward / right vectors as
+   * move() (including the original's forward-vector quirk); the speed is capped at MOVE_SPEED.
+   */
+  moveAxes(dt, f, r, u) {
+    if (!f && !r && !u) return;
+    let fx = Math.sin(-this.yaw), fy = Math.sin(this.pitch), fz = Math.cos(-this.yaw);
+    const fl = Math.hypot(fx, fy, fz); fx /= fl; fy /= fl; fz /= fl;
+    const lx = Math.cos(this.yaw), lz = Math.sin(this.yaw);
+    let vx = -fx * f + lx * r, vy = -fy * f + u, vz = -fz * f + lz * r;
+    const len = Math.hypot(vx, vy, vz);
+    if (len > 1) { vx /= len; vy /= len; vz /= len; }
+    const v = MOVE_SPEED * dt;
+    this.x += vx * v; this.y += vy * v; this.z += vz * v;
+  }
+  /** Analog look (controller): x/y in -1..1 = fraction of PAD_LOOK_DEG_PER_S; uses sensitivity + invertY. */
+  lookAxes(dt, x, y) {
+    if (!x && !y) return;
+    const px = (PAD_LOOK_DEG_PER_S * dt) / LOOK_DEG_PER_PX;
+    this.look(x * px, y * px);
   }
   /** Apply to a THREE.PerspectiveCamera (rotation.order must be 'YXZ'). View = T(-p)·RotY(yaw)·RotX(pitch). */
   apply(cam) {

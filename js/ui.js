@@ -262,7 +262,9 @@ export class UI {
     this.el.crosshair.classList.toggle('on', on);
     this.el.crosshair.classList.toggle('off', !on);
   }
-  showPause({ state, time, minesLeft }) {
+  showPause({ state, time, minesLeft, note = '' }) {
+    const pn = $('pause-note');
+    pn.textContent = note; pn.classList.toggle('hidden', !note);
     this.el.ready.classList.add('hidden');
     this.el.pause.classList.remove('hidden');
     this.el.hud.classList.remove('hidden');
@@ -341,6 +343,46 @@ export class UI {
     clearTimeout(this._bannerTimer);
     this._bannerTimer = setTimeout(() => b.classList.add('compact'), 4000);
   }
+  /** Short global notice (e.g. "Controller connected"). */
+  toast(msg, ms = 2200) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('on');
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => t.classList.remove('on'), ms);
+  }
+
+  /**
+   * Controller hints. info = { glyphs, mapping } of the active pad, or null to hide them.
+   * Fills the "Controller" section of the help panel and the controls modal, and the ready-card hint.
+   */
+  setPad(info) {
+    const secs = [$('help-pad'), $('modal-pad')], ready = $('ready-pad');
+    if (!info) {
+      for (const el of [...secs, ready]) el.classList.add('hidden');
+      return;
+    }
+    const g = info.glyphs;
+    const k = (t) => `<kbd class="pad">${t}</kbd>`;
+    const note = info.mapping !== 'standard'
+      ? '<p class="pad-note">This controller does not report the standard layout, so some buttons may be unmapped.</p>' : '';
+    const html = `<h3>Controller <span class="pad-name">· ${g.name}</span></h3>${note}
+      <dl class="controls">
+        <dt>Left / right stick</dt><dd>Fly / look around</dd>
+        <dt>${k(g.rt)} / ${k(g.lt)}</dt><dd>Reveal / flag (on release)</dd>
+        <dt>${k(g.lt)} + ${k(g.rt)}</dt><dd>Chord</dd>
+        <dt>${k(g.a)} / ${k(g.b)}</dt><dd>Move up / down</dd>
+        <dt>Hold ${k(g.lb)} ${k(g.rb)} ${k(g.y)}</dt><dd>Neighbours only / aim through numbers / show hidden</dd>
+        <dt>D-pad ↑ ↓</dt><dd>Change spacing</dd>
+        <dt>${k(g.x)}</dt><dd>Show / hide this panel</dd>
+        <dt>${k(g.start)} / ${k(g.back)}</dt><dd>Pause / sound on-off</dd>
+        <dt>Menus</dt><dd>D-pad or left stick to move, ${k(g.a)} select, ${k(g.b)} back</dd>
+      </dl>`;
+    for (const el of secs) { el.innerHTML = html; el.classList.remove('hidden'); }
+    ready.innerHTML = `<b>Controller:</b> ${k(g.a)} play · ${k(g.rt)} reveal · ${k(g.lt)} flag · both chord · ${k(g.start)} pause${note ? '<br>' + note.replace('<p ', '<span ').replace('</p>', '</span>') : ''}`;
+    ready.classList.remove('hidden');
+  }
+
   hideBanner() { clearTimeout(this._bannerTimer); this.el.banner.classList.add('hidden'); }
   flash() {
     const f = this.el.flash;

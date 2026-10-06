@@ -6,6 +6,8 @@ import { FlyCamera, MouseActions, Input, SPACING_MIN, SPACING_MAX, SPACING_START
 import { pickCell, pickCellBrute } from './picking.js';
 import { UI, clampSettings, recordBest, fmtTime, loadLookSettings, NO_MOUSE_MSG } from './ui.js';
 import * as audio from './audio.js';
+import { Controls } from './controls.js';
+import { GamepadReader, BTN, Repeat, stickCurve, padGlyphs, pickInDirection } from './gamepad.js';
 
 const canvas = document.getElementById('scene');
 
@@ -45,7 +47,7 @@ const S = {
   endState: null, // frozen { state, time, minesLeft } once the game is over
   pickKey: '',
   orbit: 0,
-  debugActive: false, // debug hook drives the game without pointer lock
+  lockless: false, // playing without pointer lock (controller session, or the debug hook)
 };
 
 // ---------- actions ----------
@@ -66,6 +68,7 @@ function onAction(type) {
   } else if (type === 'right') {
     const r = g.rightClick(sel);
     if (r.flagged || r.unflagged) sfx.flag(r.flagged >= r.unflagged, r.flagged + r.unflagged);
+    if (padActing && (r.flagged || r.unflagged)) padRumble(PAD_TICK);
   } else if (type === 'chord') {
     const r = g.chord(sel);
     if (r.exploded) boom();
@@ -82,7 +85,7 @@ function afterEndGame() {
   if (r.isNew) ui.setBannerRecord(r.prev === null ? 'New record!' : `New record! (previous ${fmtTime(r.prev)} s)`, true);
   else ui.setBannerRecord(`Best ${fmtTime(r.best)} s`);
 }
-function boom() { sfx.explode(); ui.flash(); }
+function boom() { sfx.explode(); ui.flash(); padRumble(PAD_BOOM); }
 function endGame(minesLeft) {
   const g = S.game;
   S.endState = { state: g.state, time: S.time, minesLeft };
@@ -101,6 +104,7 @@ const input = new Input({
     if (code === 'Escape') {
       if (S.mode === 'menu') ui.closeControls();
       else if (S.mode === 'ready') readyBack();
+      else if (S.mode === 'playing' && S.lockless) pause(); // no pointer lock to release: pause directly
       return;
     }
     if (S.mode !== 'playing' && S.mode !== 'paused' && S.mode !== 'ready') return;
@@ -113,7 +117,7 @@ const input = new Input({
   onLockChange: (locked) => {
     if (locked) {
       if (S.mode === 'ready' || S.mode === 'paused') enterPlaying();
-    } else if (S.mode === 'playing' && !S.debugActive) {
+    } else if (S.mode === 'playing' && !S.lockless) {
       pause();
     }
   },
@@ -128,6 +132,7 @@ const input = new Input({
     }
   },
 });
+const controls = new Controls(input); // keyboard + controller view modes, controller move axes
 
 // Fullscreen + Keyboard Lock (where supported) so Ctrl+W/Ctrl+S etc. reach the game instead of the browser.
 const LOCK_KEYS = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'Space', 'ControlLeft', 'ControlRight', 'ShiftLeft', 'ShiftRight'];
@@ -138,7 +143,7 @@ function toggleFullscreen() {
   if (!el.requestFullscreen) return;
   el.requestFullscreen({ navigationUI: 'hide' }).then(() => {
     navigator.keyboard?.lock?.(LOCK_KEYS).catch(() => {});
-    if (S.mode === 'playing' && !d.pointerLockElement) input.requestLock();
+    if (S.mode === 'playing' && !S.lockless && !d.pointerLockElement) input.requestLock();
   }).catch(() => {});
 }
 document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) navigator.keyboard?.unlock?.(); });
@@ -147,11 +152,12 @@ function setSpacing(s) { S.spacing = Math.min(SPACING_MAX, Math.max(SPACING_MIN,
 function toggleSound() { ui.setSound(sfx.toggleMute()); }
 
 // ---------- screens ----------
+// Clicks made with the controller (A) are not user gestures for pointer lock: they enter lockless play.
 const ui = new UI({
   onStart: (s) => { sfx.unlock(); startGame(s); },
-  onReadyClick: () => { sfx.unlock(); input.requestLock(); },
-  onResume: () => { ui.showReady(S.settings); S.mode = 'ready'; input.requestLock(); },
-  onRestart: () => { startGame(S.settings); input.requestLock(); },
+  onReadyClick: () => { sfx.unlock(); if (padGesture) padResume(); else input.requestLock(); },
+  onResume: () => { if (padGesture) { padResume(); return; } ui.showReady(S.settings); S.mode = 'ready'; input.requestLock(); },
+  onRestart: () => { startGame(S.settings); if (padGesture) padResume(); else input.requestLock(); },
   onMainMenu: () => showMainMenu(),
   onReadyBack: () => readyBack(),
   onToggleSound: () => toggleSound(),
@@ -213,7 +219,10 @@ function startCameraPos(X, Y, Z) {
   return [3.2 - 0.2 * X, 13.2 - 0.2 * Y, -8 * M + 3.2 - 0.2 * Z];
 }
 
-function enterPlaying() {
+function setLockless(on) { S.lockless = on; document.body.classList.toggle('lockless', on); }
+
+function enterPlaying(lockless = false) {
+  setLockless(lockless);
   S.mode = 'playing';
   ui.showPlaying();
   // A board full of mines is won before the first click: run the end flow once.
@@ -221,12 +230,14 @@ function enterPlaying() {
   if (g && g.state !== 'playing' && !S.endState) { endGame(g.minesLeft); afterEndGame(); }
 }
 
-function pause() {
+function pause(note = '') {
   S.mode = 'paused';
   mouse.reset();
+  controls.releasePad();
+  document.body.classList.remove('lockless');
   const g = S.game;
   const e = S.endState;
-  ui.showPause({ state: g.state, time: e ? e.time : S.time, minesLeft: e ? e.minesLeft : g.minesLeft });
+  ui.showPause({ state: g.state, time: e ? e.time : S.time, minesLeft: e ? e.minesLeft : g.minesLeft, note });
 }
 
 function makeDemo() {
@@ -248,7 +259,7 @@ function makeDemo() {
 function showMainMenu() {
   input.exitLock();
   S.mode = 'menu';
-  S.debugActive = false;
+  setLockless(false);
   S.game = null;
   if (!S.demo) S.demo = makeDemo();
   renderer.setGame(S.demo);
@@ -287,6 +298,193 @@ canvas.addEventListener('webglcontextlost', (e) => {
 });
 document.getElementById('ctx-lost-btn').addEventListener('click', () => { reloading = true; location.reload(); });
 
+// ---------- game controller ----------
+const PAD_BOOM = { duration: 400, strongMagnitude: 1, weakMagnitude: 0.6 };
+const PAD_TICK = { duration: 40, strongMagnitude: 0, weakMagnitude: 0.25 };
+let padGesture = false; // a UI click is being made with the controller
+let padActing = false; // a MouseActions call is being made with the controller
+const padSuppress = new Set(); // buttons held through a screen change: ignored until released
+const padRep = {
+  up: new Repeat(), down: new Repeat(), left: new Repeat(), right: new Repeat(),
+  inc: new Repeat(), dec: new Repeat(), spUp: new Repeat(), spDown: new Repeat(),
+};
+const pads = new GamepadReader({
+  onConnect: () => { ui.toast('Controller connected'); updatePadUi(); },
+  onActiveChange: () => updatePadUi(),
+  onDisconnect: (info) => {
+    updatePadUi();
+    if (info.wasActive && S.mode === 'playing') padPause('Controller disconnected');
+    else ui.toast('Controller disconnected');
+  },
+});
+function updatePadUi() {
+  const p = pads.activePad();
+  ui.setPad(p ? { glyphs: padGlyphs(p.id), mapping: p.mapping } : null);
+}
+function padRumble(effect) {
+  const a = pads.activePad()?.vibrationActuator;
+  if (!a || typeof a.playEffect !== 'function') return;
+  try {
+    const r = a.playEffect('dual-rumble', effect);
+    if (r && typeof r.catch === 'function') r.catch(() => {});
+  } catch { /* rumble unsupported */ }
+}
+/** Enter play without pointer lock (controller): from the ready card or the pause menu. */
+function padResume() {
+  if (S.mode !== 'ready' && S.mode !== 'paused') return;
+  sfx.unlock();
+  enterPlaying(true);
+}
+function padPause(note = '') {
+  if (S.mode !== 'playing') return;
+  input.exitLock();
+  pause(note);
+}
+function padClick(el) {
+  padGesture = true;
+  try { el.click(); } finally { padGesture = false; }
+}
+
+// Spatial focus navigation inside the visible overlay.
+const PAD_LAYERS = ['ctx-lost', 'controls-modal', 'pause', 'ready', 'menu'];
+function padLayer() {
+  for (const id of PAD_LAYERS) {
+    const el = document.getElementById(id);
+    if (el && !el.classList.contains('hidden') && !el.inert) return el;
+  }
+  return null;
+}
+function padFocusables(layer) {
+  return [...layer.querySelectorAll('button, input, summary, a[href], select')].filter((el) => {
+    if (el.disabled || el.type === 'hidden') return false;
+    const closed = el.closest('details:not([open])');
+    if (closed && el !== closed.querySelector('summary')) return false;
+    const r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden';
+  });
+}
+function padDefault(layer, items) {
+  const pick = { menu: '.preset.last', ready: '#ready-btn', 'controls-modal': '#controls-close', pause: '#p-resume', 'ctx-lost': '#ctx-lost-btn' }[layer.id];
+  const el = pick && layer.querySelector(pick);
+  if (layer.id === 'pause' && S.game && S.game.state !== 'playing') return document.getElementById('p-restart');
+  return el && items.includes(el) ? el : items[0] || null;
+}
+function padFocus(el) {
+  if (!el) return;
+  document.body.classList.add('pad-nav');
+  el.focus({ preventScroll: true });
+  el.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+}
+/** The focused control of the visible overlay, or null. */
+function padCurrent(layer, items) {
+  const cur = document.activeElement;
+  return cur && layer.contains(cur) && items.includes(cur) ? cur : null;
+}
+function padStep(el, delta) {
+  try { if (delta > 0) el.stepUp(delta); else el.stepDown(-delta); } catch { return; }
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+  el.dispatchEvent(new Event('change', { bubbles: true }));
+}
+function padNav(dir) {
+  const layer = padLayer();
+  if (!layer) return;
+  const items = padFocusables(layer);
+  const cur = padCurrent(layer, items);
+  if (!cur) { padFocus(padDefault(layer, items)); return; }
+  document.body.classList.add('pad-nav');
+  if ((dir === 'left' || dir === 'right') && cur.type === 'range') { padStep(cur, dir === 'right' ? 1 : -1); return; }
+  const from = cur.getBoundingClientRect();
+  const next = pickInDirection(from, items.filter((e) => e !== cur).map((e) => ({ rect: e.getBoundingClientRect(), item: e })), dir);
+  if (next) padFocus(next);
+}
+function padActivate() {
+  const layer = padLayer();
+  if (!layer) return;
+  const items = padFocusables(layer);
+  const cur = padCurrent(layer, items);
+  if (cur) { document.body.classList.add('pad-nav'); padClick(cur); return; }
+  if (layer.id === 'ready') padClick(document.getElementById('ready-btn'));
+  else padFocus(padDefault(layer, items));
+}
+for (const t of ['mousedown', 'mousemove']) {
+  window.addEventListener(t, () => { if (document.body.classList.contains('pad-nav')) document.body.classList.remove('pad-nav'); }, true);
+}
+
+/** One controller poll result -> game / menu actions. Runs once per frame. */
+function handlePad(p, dt, now) {
+  for (const b of padSuppress) if (!p.held[b]) padSuppress.delete(b);
+  const held = (b) => p.held[b] && !padSuppress.has(b);
+  const pressed = (b) => p.pressed[b] && !padSuppress.has(b);
+  if (p.active) needRender = true;
+  const screen = () => `${S.mode}|${ui.isControlsOpen()}`;
+  const before = screen();
+
+  if (pressed(BTN.BACK)) toggleSound();
+  if (S.mode === 'playing') padPlaying(p, held, pressed, dt, now);
+  else padMenus(p, held, pressed, now);
+
+  if (screen() !== before) {
+    for (let b = 0; b < p.held.length; b++) if (p.held[b]) padSuppress.add(b);
+    for (const r of Object.values(padRep)) r.reset();
+  }
+}
+
+function padPlaying(p, held, pressed, dt, now) {
+  if (pressed(BTN.START)) { padPause(); return; }
+  if (pressed(BTN.X)) ui.userToggleHelp();
+  // Triggers drive the same release-based state machine as the mouse (both = chord via its toggle).
+  padActing = true;
+  try {
+    if (pressed(BTN.RT)) mouse.down(0);
+    if (pressed(BTN.LT)) mouse.down(2);
+    if (p.released[BTN.RT]) mouse.up(0);
+    if (p.released[BTN.LT]) mouse.up(2);
+  } finally { padActing = false; }
+  controls.pad.shift = held(BTN.LB);
+  controls.pad.space = held(BTN.RB);
+  controls.pad.ctrl = held(BTN.Y);
+  const [lx, ly] = stickCurve(p.ls[0], p.ls[1]);
+  controls.axes.f = ly ? -ly : 0; // stick up = forward
+  controls.axes.r = lx;
+  controls.axes.u = (held(BTN.A) ? 1 : 0) - (held(BTN.B) ? 1 : 0);
+  const [rx, ry] = stickCurve(p.rs[0], p.rs[1]);
+  cam.lookAxes(dt, rx, ry);
+  const notches = padRep.spUp.update(held(BTN.UP), now) - padRep.spDown.update(held(BTN.DOWN), now);
+  if (notches) { setSpacing(S.spacing + notches * 0.04); ui.showSpacing(S.spacing); }
+}
+
+function padMenus(p, held, pressed, now) {
+  controls.releasePad();
+  const modal = ui.isControlsOpen();
+  if (pressed(BTN.START) && (S.mode === 'ready' || S.mode === 'paused') && !modal) { padResume(); return; }
+  if (pressed(BTN.B)) {
+    if (modal) ui.closeControls();
+    else if (S.mode === 'ready') readyBack();
+    else if (S.mode === 'paused') padResume();
+    return;
+  }
+  if (pressed(BTN.X)) {
+    if (S.mode === 'menu') { if (modal) ui.closeControls(); else ui.openControls(); document.body.classList.add('pad-nav'); }
+    else if (S.mode === 'ready' || S.mode === 'paused') ui.userToggleHelp();
+    return;
+  }
+  if (pressed(BTN.A)) { padActivate(); return; }
+  const [ax, ay] = p.ls, ver = Math.abs(ay) >= Math.abs(ax);
+  const dirs = {
+    up: held(BTN.UP) || (ver && ay < -0.5), down: held(BTN.DOWN) || (ver && ay > 0.5),
+    left: held(BTN.LEFT) || (!ver && ax < -0.5), right: held(BTN.RIGHT) || (!ver && ax > 0.5),
+  };
+  for (const d of ['up', 'down', 'left', 'right']) {
+    for (let n = padRep[d].update(dirs[d], now); n > 0; n--) padNav(d);
+  }
+  // LB / RB step a focused number field (custom board size)
+  const step = padRep.inc.update(held(BTN.RB), now) - padRep.dec.update(held(BTN.LB), now);
+  if (step) {
+    const el = document.activeElement;
+    if (el && el.tagName === 'INPUT' && (el.type === 'number' || el.type === 'range') && padLayer()?.contains(el)) padStep(el, step);
+  }
+}
+
 // ---------- frame loop ----------
 const tmpDir = new THREE.Vector3();
 
@@ -308,7 +506,7 @@ function refresh() {
   if (!S.game || S.mode === 'menu') return;
   cam.apply(renderer.camera);
   const playing = S.mode === 'playing';
-  renderer.setToggles(playing && input.shift, playing && input.space, playing && input.ctrl);
+  renderer.setToggles(playing && controls.shift, playing && controls.space, playing && controls.ctrl);
   renderer.setSpacing(S.spacing);
   updatePick();
 }
@@ -350,6 +548,9 @@ function frame(now) {
   fps.frames++; fps.acc += rawDt;
   if (fps.acc >= 0.5) { fps.value = fps.frames / fps.acc; fps.frames = 0; fps.acc = 0; }
 
+  const pad = pads.poll();
+  if (pad.pad || pad.active) handlePad(pad, dt, now);
+
   const three = renderer.camera;
   const playing = S.mode === 'playing';
   if (S.mode === 'menu') {
@@ -360,9 +561,12 @@ function frame(now) {
     three.updateMatrixWorld(true);
     renderer.setToggles(false, false, false);
   } else {
-    if (playing) cam.move(dt, input.move);
+    if (playing) {
+      cam.move(dt, input.move);
+      if (controls.hasAxes) cam.moveAxes(dt, controls.axes.f, controls.axes.r, controls.axes.u);
+    }
     cam.apply(three);
-    const shift = playing && input.shift, space = playing && input.space, ctrl = playing && input.ctrl;
+    const shift = playing && controls.shift, space = playing && controls.space, ctrl = playing && controls.ctrl;
     renderer.setToggles(shift, space, ctrl);
     ui.setModes(shift, space, ctrl);
   }
@@ -406,7 +610,9 @@ window.__ms = {
   THREE,
   start(X, Y, Z, mines, minePositions) { startGame({ X, Y, Z, mines, minePositions }); },
   /** Enter playing mode without pointer lock (headless tests). */
-  forcePlay() { S.debugActive = true; enterPlaying(); },
+  forcePlay() { enterPlaying(true); },
+  get controls() { return controls; },
+  get pads() { return pads; },
   pause() { pause(); },
   cellCenter,
   moveTo(x, y, z) { cam.x = x; cam.y = y; cam.z = z; refresh(); },

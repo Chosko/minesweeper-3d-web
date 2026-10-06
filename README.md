@@ -55,6 +55,32 @@ Some browsers do not let a page block `Ctrl+W`, so pressing W while holding Ctrl
 In fullscreen (`F`), the game asks the browser to pass those keys to the page (Keyboard Lock), where
 the browser supports it. During a game, the page also asks you to confirm before it closes.
 
+### Game controller
+
+Controllers that the browser exposes with the standard layout work too (Xbox, PlayStation, Switch
+Pro and most others). Press the controller's bottom face button on "Click to play" to start; no mouse
+capture is needed. Labels below use Xbox names; the in-game help shows the labels of the connected
+controller (✕ ○ □ △ / L1 R1 L2 R2 on PlayStation, for example).
+
+| Input | Action |
+|---|---|
+| Left stick | Fly (analog, up to the same 50 units/s as the keys) |
+| Right stick | Look around (uses the mouse sensitivity and invert-Y settings) |
+| `RT` | Reveal (on release, like the left button) |
+| `LT` | Flag / unflag (on release, like the right button) |
+| `LT` + `RT` | Chord (same rules as Left + Right) |
+| `A` / `B` | Move up / down |
+| Hold `LB` / `RB` / `Y` | Shift / Space / Ctrl view modes |
+| D-pad up / down | Change the spacing between cubes (hold to repeat) |
+| `X` | Show / hide the controls panel |
+| `Start` (Menu) | Pause / resume |
+| `Back` (View) | Sound on / off |
+
+In menus, the D-pad or left stick moves the focus, `A` selects and `B` goes back. On a slider, D-pad
+left / right changes the value; on a custom-board field, `LB` / `RB` step the number. The game pauses
+if the controller disconnects during play, and the controller rumbles on an explosion where the
+browser supports it. Some browsers only start sound after a key press or a click.
+
 ## What's new compared to the original
 
 - **Interface:** a main menu with presets and a custom-board form (cell count, mine density and
@@ -102,8 +128,8 @@ on purpose:
 - **Draw distance:** the far plane grows with the board instead of being clipped at 300 units.
 - **Minor timing changes the player cannot see:** auto-hiding and the win check run right after each
   action instead of once per frame, and the timer stops while the game is paused.
-- **Touch devices are not supported:** the game needs a mouse, a keyboard and Pointer Lock. On a
-  touch-only device, the menu says so.
+- **Touch devices are not supported:** the game needs a mouse and keyboard (with Pointer Lock) or a
+  game controller. On a touch-only device, the menu says so.
 
 ## Running locally
 
@@ -118,7 +144,8 @@ work from `file://`, because ES modules need a server.
 
 ## Tests
 
-The rules engine has unit tests that use Node's built-in test runner (no dependencies):
+The rules engine and the controller helpers have unit tests that use Node's built-in test runner
+(no dependencies):
 
 ```sh
 node --test
@@ -134,10 +161,13 @@ js/logic.js             Rules engine (no DOM): mines, numbers, reveal/flag/chord
 js/render.js            three.js instanced renderer, shaders, transparency sort, end-of-game effects
 js/picking.js           Crosshair picking with a 3D-DDA through the cube lattice
 js/input.js             Fly camera, pointer lock, keyboard/mouse state, release-to-act mouse logic
+js/controls.js          Action layer: keyboard + controller view modes, controller move axes
+js/gamepad.js           Controller polling, stick curve, trigger hysteresis, button labels, focus navigation
 js/ui.js                Menus, HUD, pause menu, settings, best times (DOM only, no game rules)
 js/textures.js          Procedurally drawn tile textures (canvas 2D -> texture array)
 js/audio.js             Synthesized sound effects (Web Audio)
 tests/logic.test.mjs    Rules engine tests, including comparison with a naive port of the original
+tests/gamepad.test.mjs  Controller helpers, analog camera moves and trigger -> mouse-action sequences
 docs/ORIGINAL_SPEC.md   Description of the original game's behaviour
 vendor/three/           three.js r186, a single minified ES module, with its licence
 CNAME, .nojekyll        GitHub Pages configuration (custom domain)
