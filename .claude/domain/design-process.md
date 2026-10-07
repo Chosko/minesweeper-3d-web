@@ -35,8 +35,9 @@ Business modelling: in scope
 Covered: direction, target players, 2D logic reference, no-guess and stats,
 campaign structure, 3D rule changes, demo limits, Steam features, web
 version. Awaiting the user on: the proposed main menu, whether first
-launch forces the tutorial level, the demo's free-play cap (research
-running), target platforms, and whether the interview is done.
+launch forces the tutorial level, the demo's free-play cap
+(recommended: lifetime cap of ~20 boards), target platforms, offline play,
+and whether the interview is done.
 
 - `product-design.md`, `technical-direction.md`, `business-model.md` — stubs only.
 
@@ -56,7 +57,8 @@ Next step: continue the interview from the last open questions put to the user.
 - The 3D mode gains a safe first click and a no-guess option, departing from the 2011 original.
 - Revenue: free Steam demo with limitations; full game is a one-time purchase on Steam.
 - The game opens on a main menu; key flows describe expected play, not enforced paths — only campaign locks gate anything.
-- Base price $5.99 USD, one-time purchase.
+- Base price $5.99 USD, one-time purchase; EUR set from Steam's recommended regional price (about €5.89–6.15 per a store-API sample).
+- For PHASE 6: steamworks.js and Greenworks expose no leaderboard API, so Steam leaderboards need a different binding or an added one; Deck Verified needs full controller play at 1280×800.
 - The game stays web-technology based and ships on Steam as a packaged desktop build; the packaging choice belongs to the technical direction.
 - Campaign levels are a fixed sequence, unlocked in order; standard rules on unusual board shapes and holes, which matter most in 3D.
 - Demo: the first campaign levels plus a limited number of free-play boards.
