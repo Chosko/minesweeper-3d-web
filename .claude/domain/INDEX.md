@@ -15,6 +15,7 @@ layer.
 | [design-process.md](./design-process.md) | State of the `/product-design` run: method, phases, current-stage marker, decisions worth keeping |
 | [product-design.md](./product-design.md) | The product design: what Minesweeper 3D is, its players, key flows, design decisions, high-level features |
 | [technical-direction.md](./technical-direction.md) | The product's technical foundations: stack, topology, data, hosting, cross-cutting concerns |
+| [business-model.md](./business-model.md) | The business model: revenue, costs, segments, pricing, go-to-market, unit economics, risks |
 
 ## Features
 
