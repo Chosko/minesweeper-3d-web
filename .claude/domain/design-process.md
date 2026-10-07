@@ -32,10 +32,10 @@ Business modelling: in scope
 
 **PHASE 2 — interview: in progress**
 
-Covered: the product's new direction and its target players. Open: the
-classic 2D mode's reference rules, no-guess and stats, the campaign's shape,
-the mode list beyond 2D/3D/campaign, the key flows, and the business model
-(Steam premium is the working assumption, nothing priced yet).
+Covered: direction, target players, 2D logic reference, no-guess and stats,
+campaign split, 3D rule changes, revenue shape. Open: the key flows, the
+campaign's progression, the demo's limits, price, the fate of the free web
+version, Steam platform features, and the rest of the business model.
 
 - `product-design.md`, `technical-direction.md`, `business-model.md` — stubs only.
 
@@ -48,4 +48,9 @@ Next step: continue the interview from the last open questions put to the user.
 - The existing 3D game is settled and becomes the 3D mode, unchanged in substance.
 - The 2D mode is rebuilt from scratch as real 2D (no 3D rendering) with exact classic Minesweeper logic.
 - Launch scope: 2D mode, 3D mode, campaign of designed levels, local scores.
-- Deferred, mentioned only: backend for global leaderboards, multiplayer, tournaments, events (minesweeper.online-style).
+- Scoped as a game, not a platform: no backend, online services or competitive infrastructure in the design.
+- 2D logic follows Minesweeper Online exactly; visuals are modern and catchy with no decorative excess (the current 3D look is the bar).
+- No-guess boards and competitive stats (3BV, 3BV/s, efficiency, replays) ship at launch.
+- Campaigns are separate per dimension (2D, 3D) and per difficulty; the 3D campaign is the on-ramp, since free 3D play alone is too hard.
+- The 3D mode gains a safe first click and a no-guess option, departing from the 2011 original.
+- Revenue: free Steam demo with limitations; full game is a one-time purchase on Steam.
