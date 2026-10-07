@@ -34,10 +34,9 @@ Business modelling: in scope
 
 Covered: direction, target players, 2D logic reference, no-guess and stats,
 campaign structure, 3D rule changes, demo limits, Steam features, web
-version. Awaiting the user on: the proposed main menu, whether first
-launch forces the tutorial level, the demo's free-play cap
-(recommended: lifetime cap of ~20 boards), target platforms, offline play,
-and whether the interview is done.
+version. Awaiting the user on: the proposed main menu (otherwise
+unchallenged), and Early Access — whether to launch through it and on what
+terms. The interview closes after that, at the user's word.
 
 - `product-design.md`, `technical-direction.md`, `business-model.md` — stubs only.
 
@@ -61,6 +60,9 @@ Next step: continue the interview from the last open questions put to the user.
 - For PHASE 6: steamworks.js and Greenworks expose no leaderboard API, so Steam leaderboards need a different binding or an added one; Deck Verified needs full controller play at 1280×800.
 - The game stays web-technology based and ships on Steam as a packaged desktop build; the packaging choice belongs to the technical direction.
 - Campaign levels are a fixed sequence, unlocked in order; standard rules on unusual board shapes and holes, which matter most in 3D.
-- Demo: the first campaign levels plus a limited number of free-play boards.
+- Demo: unlimited 2D Beginner/Intermediate/Expert and 3D Beginner free play; the first 5 levels of each campaign, unlocked by progression; everything else locked (custom boards, harder 3D presets, pro options such as no-guess).
+- First launch shows the menu, never auto-starts a level; the top button reads Start (first 2D campaign level) until there is progress to Continue.
+- Platforms: Windows at launch; Mac and Linux only if the port is near-free; Steam Deck Verified is a stretch goal riding on controller support; never mobile or touch.
+- The full game plays offline; Steam achievements and leaderboards sync when a connection returns.
 - The free web version stays live until the Steam release, as the author's work-in-progress preview; its post-release fate is open.
 - Steam achievements, cloud saves and Steam leaderboards are in for launch; leaderboards come from Steam, not from a backend of our own.
