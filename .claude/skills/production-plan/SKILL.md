@@ -1,0 +1,443 @@
+---
+name: production-plan
+version: 0.4.1
+type: skill
+description: Write the production plan into .claude/PLAN.md — which low-level feature belongs to which milestone, in what order and after what — confirming each feature's dependency edges with the user. Use it once features are architected and before their tasks are written; stage 4 of the pipeline: sequences feature documents into a plan; its output is what /production-status reads.
+requires: skill:interaction-engine
+---
+
+# /production-plan
+# Global skill: decide which low-level feature belongs to which milestone, in
+# what order, and after what — and write it down as `.claude/PLAN.md`, a
+# third index beside `TASKS.md` and `FEATURES.md`. Stage 4 of the pipeline:
+# sequences the feature documents `/architect` wrote, ahead of `/task-add`.
+# Inherits each feature's milestone from the parenthetical on its
+# `FEATURES.md` `Source:` line, turns each feature document's Dependencies
+# prose into a confirmed edge list, and refuses a dependency cycle and a
+# feature scheduled before something it needs. Re-runnable: a later run
+# reconciles the plan against the current `FEATURES.md` and roadmap behind
+# one approval gate. Requires `/domain-setup`; a roadmap is optional —
+# without one every feature lands in Unscheduled and dependency ordering
+# still works. Sole writer of `PLAN.md`; reads `FEATURES.md`, the feature
+# documents, the roadmap and `TASKS.md` and writes none of them. Commits and
+# pushes exactly what the run wrote by default.
+# Usage: /production-plan                        (build or reconcile the plan)
+#        /production-plan <free-form context>    (placements, orderings, what is active now)
+#        /production-plan amend "<change>"       (reconcile only the features, edges or milestones the change names)
+#        /production-plan --no-commit            (write the plan, run no git command)
+#        /production-plan --no-push              (commit the plan, skip the push)
+#        /production-plan <args> --attended | --unattended
+
+GOAL
+
+- Produce **one ordered plan**: place every architected feature in a
+  milestone or in `Unscheduled`, and order each milestone's feature list.
+  **That order is the priority** — keep no second priority axis, no
+  `P0`/`P1` label, nothing that could contradict the list.
+- Turn the `## Dependencies` prose every feature document carries into a
+  **machine-readable edge list** the plan stores.
+- Refuse the two arrangements that cannot be built: a dependency cycle, and
+  a feature scheduled before something it needs.
+- Stay at **feature-level scheduling, not design and not implementation**.
+  How a feature is built is `/architect`'s; what its tasks are is
+  `/task-add`'s.
+- Read [`.claude/domain/product-workflow.md`](../../.claude/domain/product-workflow.md)
+  in the target project if it has one; this skill is a stage of the pipeline
+  that document describes.
+
+$ARGUMENTS
+
+---
+
+SUPPORTING FILES (read on demand — not up front)
+
+| Read this file | Exactly when |
+| -------------- | ------------ |
+| `../interaction-engine/references/policy.md` | Every run, at ARGUMENT PARSING, to resolve the interaction policy. |
+| `../interaction-engine/references/messages.md` | Every run, before the first question, gate or closing report — every one of them follows it. |
+| `../interaction-engine/references/gates.md` | The policy resolved to `unattended`. |
+| `./reconciling.md` | PHASE 0 finds `.claude/PLAN.md` already exists. Read before PHASE 1 — it carries the five-situation re-run protocol. |
+| `./amend.md` | ARGUMENT PARSING recognised `amend "<change>"`. Read once PHASE 0's gate has passed; it carries the whole amend path — a reconciliation narrowed to what the change names — and replaces every phase for the run. |
+
+A first run — no `PLAN.md` yet — reads neither this table's file nor
+anything else beyond `SKILL.md`.
+
+---
+
+ARGUMENT PARSING
+
+1. **`--no-commit`.** If present, set COMMIT = false and strip it; otherwise
+   COMMIT is true — this skill commits and pushes what it wrote by default.
+   `--no-commit` implies NO_PUSH: nothing is committed, so nothing is there
+   to push.
+   - Accept and strip `--commit`; it is a silent no-op naming the default.
+   - If both `--commit` and `--no-commit` appear, stop with:
+     `--commit and --no-commit cannot be combined. Pick one.`
+2. **`--no-push`.** Strip it. NO_PUSH only matters when COMMIT is true: it
+   skips the pull-at-start / re-sync / push steps of the commit-and-push
+   protocol while still committing as always.
+3. **`--attended` / `--unattended`.** Strip whichever appear. Resolve the
+   run's interaction policy from them, a policy handed down by a parent run
+   and the project's `CLAUDE.md`, per
+   `../interaction-engine/references/policy.md`, which holds their argument
+   errors.
+   - Each gate carries its class tag
+     (`../interaction-engine/references/gates.md`).
+   - This skill cannot park: a run that stops on what waits — an edge to
+     confirm, a milestone-status question included — writes nothing.
+4. **`amend`.** If what remains opens with the literal token `amend`
+   followed by a quoted change, set AMEND = true; the change is the quoted
+   string.
+   - A missing change stops the run with
+     `amend needs the change to make, e.g. /production-plan amend "unschedule crawler-opt-out-page".`
+   - Once PHASE 0's gate has passed and the pull-at-start has run, read
+     `./amend.md` and follow it for the rest of the run. No phase runs — the
+     arm carries what it needs of PHASE 0's read and PHASE 2's validation —
+     and the run ends with COMMIT AND PUSH as any other does.
+5. **Free-form context.** Otherwise, whatever remains is context about the
+   plan — a feature the user wants placed in a particular milestone, an
+   ordering they want, which milestone is being built now, a milestone they
+   consider shipped. Fold it into PHASE 1; do not treat it as a command.
+
+Maintain a `WRITTEN` list of every path this invocation wrote. It drives the
+final report and the optional commit.
+
+---
+
+PHASE 0 — GATE + READ
+
+1. **Gate.** Probe `.claude/FEATURES.md` (Read). If it is missing, stop:
+
+   > This project has no feature index. Run `/domain-setup` first — it creates
+   > `.claude/domain/`, the domain `INDEX.md`, and `.claude/FEATURES.md`. Then
+   > architect at least one feature with `/architect`, and re-run
+   > `/production-plan`.
+
+   Do not proceed and do not create the index yourself. No exceptions. This
+   is the only gate in the skill.
+2. **Do not require a roadmap.** `.claude/domain/product-roadmap.md` is an
+   optional input. Without it every feature lands in `Unscheduled`, and
+   dependency edges and cycle validation still work. When it is absent, say
+   so in one line and carry on; never warn, never refuse, and never point at
+   `/product-roadmap` as a prerequisite.
+3. **Pull at start.** If COMMIT is true and the project's CLAUDE.md does not
+   carry a `## VCS` override (non-git), pull per the commit-and-push
+   protocol: run `git pull` on the current branch. A conflict stops the run
+   here — report the conflict output and tell the user to resolve manually
+   and re-run.
+4. **Read the inputs**, in this order. Every one is **read-only** — this
+   skill writes `.claude/PLAN.md` and nothing else, ever:
+   1. `.claude/FEATURES.md` — every feature slug, its `Status:`, its
+      `Source:` line (including the optional ` (<milestone-slug>)`
+      parenthetical), and its `Tasks:` line.
+   2. Each feature document named by a `Doc:` line — its `## Dependencies`
+      section only, the input to PHASE 1's edge proposal.
+   3. `.claude/domain/product-roadmap.md`, **if present** — the milestone
+      slugs, their order (list position, top to bottom), and their `Covers:`
+      lines.
+   4. `.claude/PLAN.md`, if present — the existing plan and the run's resume
+      state: a re-run proposes changes *against* it rather than from a blank
+      page. If it exists, read `./reconciling.md` before PHASE 1.
+   5. `.claude/TASKS.md` — task statuses, **only** to decide whether to
+      propose a milestone as `[SHIPPED]` in PHASE 1. Nothing else in this
+      skill reads or depends on task state.
+5. **No features at all** — `FEATURES.md` exists but lists none: write
+   nothing, say so in one line ("No features are architected yet — run
+   `/architect` first; there is nothing to plan."), and stop. This is not a
+   refusal and not an error.
+6. Say in two or three lines what you found — first run or reconciliation,
+   how many features, how many milestones (or that there is no roadmap) —
+   then continue.
+
+---
+
+PHASE 1 — PLACE, CONNECT, DECIDE
+
+Assemble the whole proposal in one conversational round. Contribute rather
+than only extract: propose the placement and the ordering with reasons, and
+say what looks wrong.
+
+**1. Milestone inheritance — a lookup, not an inference.** For each feature
+in `FEATURES.md`, read its `Source:` line:
+
+- `Source: product-design.md § <Section> (<milestone-slug>)` → the feature
+  belongs to `<milestone-slug>`. Take it directly; do not re-derive it from
+  the section name, the roadmap's `Covers:` prose, the shape of its
+  document, or anything else.
+- No parenthetical, or `Source: prompt` → the feature starts in
+  `Unscheduled` until placed by hand.
+- A parenthetical naming a milestone the roadmap does not have → place the
+  feature there anyway and say so in one line. A hand-edited or
+  ahead-of-the-roadmap `Source:` must not break the run.
+- **Explicit placement overrides the parenthetical.** The user may place any
+  feature in any milestone — from `$ARGUMENTS` or in this conversation — and
+  that placement wins. Never gate and never refuse an override; **report it
+  plainly** at the approval gate, naming the feature, the milestone its
+  `Source:` implies, and the milestone it is being placed in. Never apply it
+  silently.
+
+**2. Ordering within each milestone.** `Features:` is ordered and the order
+is the priority.
+
+- Propose an order consistent with the dependency edges (step 3) and, where
+  the edges leave a choice, with what unblocks the most work first.
+- Say which constraint is driving each placement.
+- On a reconciliation, start from the existing order and discuss only the
+  delta.
+- Do not invent a priority field, a `P0`/`P1` label, a size, an estimate, or
+  a date. If the user asks for a priority, the answer is a position in the
+  list.
+
+**3. Dependency edges — documents propose, `PLAN.md` records.** For each
+feature, read its document's `## Dependencies` section and propose the edges
+it implies, in machine-readable form:
+
+> `config-export` depends on `settings-store`, `feature-flags`
+> — from its Dependencies section: "needs the settings store to read from,
+> and the flag registry to decide what is exportable".
+
+- The user confirms, edits, adds and removes.
+- **Never rewrite the prose.** It stays the human-facing statement; the edge
+  list is its parsable projection, and drift between them is resolved by
+  re-running this skill, not by editing feature documents.
+- An edge the documents do not state is legitimate: the user may add it.
+- Record only *feature-to-feature* edges. Task-level ordering already has
+  `Preconditions:` in the backlog and is untouched by this skill.
+- **An edge naming a slug that resolves to no feature** — a renamed or
+  deleted feature, or a typo — is **reported and dropped**, never a refusal.
+  Say which edge was dropped and why, and carry on, the same way
+  `/architect`'s iterate guard ignores task IDs that resolve to nothing.
+
+**4. Milestone status.** Use exactly these three values and nothing else:
+
+| Status | Meaning |
+| --- | --- |
+| `[PLANNED]` | Scheduled, not started. |
+| `[ACTIVE]` | Being built now. **At most one milestone at a time.** |
+| `[SHIPPED]` | Delivered. **Terminal — it can never reopen.** |
+
+- A milestone new to the plan starts `[PLANNED]`.
+- `[ACTIVE]` is the user's call — ask which milestone is being built now if
+  it is not obvious and not already recorded. **More than one `[ACTIVE]`**
+  (in the existing plan, or after the user's answer) → report both and ask
+  which one is meant. Do not pick one.
+- **`[SHIPPED]` is proposed, never applied automatically.** Propose it for a
+  milestone only when *every* feature in it is `[DONE]` in `FEATURES.md`, or
+  `[PLANNED]` **and** every task on its `Tasks:` line is `[DONE]` or
+  `[SKIP]` in `TASKS.md` — a `[DONE]` feature already satisfies that same
+  bar, just recorded on `FEATURES.md` instead of derived here. Then ask; the
+  user confirms or declines.
+- **`[SHIPPED]` never reopens.** Not on request, not with a flag. Follow-up
+  work on a shipped milestone is a *new* milestone in the roadmap — the same
+  discipline that makes `[DONE]` terminal for tasks and `[PLANNED]` → `[NEW]`
+  illegal for features. If the user asks, say this and offer the new
+  milestone instead.
+
+**5. Reconciliation** (only when `PHASE 0` found an existing `PLAN.md`).
+Follow `./reconciling.md` and fold its findings into this same proposal.
+Everything — new placements, dropped slugs, re-read edges, added and orphaned
+milestones — lands behind the one approval gate below.
+
+---
+
+PHASE 2 — VALIDATE
+
+Run **before the approval gate and before any write**, on the proposal
+PHASE 1 assembled. Both invariants (1 and 3) **refuse** rather than warn:
+nothing is written, and there is no override flag for either. The only
+refusals in this skill are PHASE 0's gate and these two invariants; an
+explicit placement override, a milestone missing from the roadmap, a
+milestone with no features, an edge slug that resolves to nothing, or a
+missing roadmap are reports and warnings, never refusals.
+
+**1. Cycles.** Walk the whole confirmed edge set, across milestones, and
+detect cycles. On a cycle, report **the actual cycle path** and refuse:
+
+> Refusing to write the plan: the dependencies contain a cycle.
+>
+>   `checkout` → `pricing` → `tax-rules` → `checkout`
+>
+> A cycle cannot be built in any order. Break it by removing one of those
+> edges — usually the one the feature documents state least clearly — and
+> re-run `/production-plan`.
+
+Offer no flag to force past it and no "proceed anyway" option.
+
+**2. Ordering within a milestone.** For each milestone, restrict the edge set
+to the features in that milestone. The milestone's `Features:` list must be a
+**topological order** of those edges: every feature appears after everything
+it depends on. If it is not, report the offending pair and either fix the
+order with the user or stop — never write a list you know violates its own
+edges.
+
+**3. A dependency in a later milestone → refuse outright.** If a feature in
+milestone *i* depends on a feature in milestone *j* where *j* comes after *i*
+in roadmap order, report both features **and both their milestones**, and
+refuse:
+
+> Refusing to write the plan: `m1-mvp`'s `config-export` depends on
+> `sync-engine`, which is scheduled in `m3-teams`. A milestone cannot depend
+> on a later one. Either move `sync-engine` earlier, move `config-export`
+> later, or drop the edge.
+
+A dependency **on a feature in `Unscheduled`** is *not* this refusal:
+`Unscheduled` has no position, so it cannot be "later". Report it as a
+warning — the dependency is unschedulable until that feature is placed — and
+carry on.
+
+**The approval gate.** Once validation passes, present the whole proposal in
+one place and get the user's confirmation:
+
+- Every milestone in order, with its status and its ordered `Features:` list.
+- `Unscheduled`, with its features.
+- Every explicit placement override, naming the `Source:` milestone and the
+  milestone chosen instead.
+- Every edge added, changed or removed this run, and every edge dropped for
+  naming an unresolvable slug.
+- Every status change proposed, `[SHIPPED]` proposals foremost.
+- On a reconciliation, everything `./reconciling.md` turned up.
+
+A `show` reply prints `PLAN.md` as it would be written and asks again.
+
+**This is the run's one and only approval gate.** Do not gate anything
+earlier and do not add a second gate before the write. Gate class:
+`confirmation` when the run is a reconciliation and `./reconciling.md`
+turned up nothing — under `unattended` it then passes on its own and the
+closing report names the commit; `design` otherwise.
+
+---
+
+PHASE 3 — WRITE
+
+- Write exactly one path: **`.claude/PLAN.md`**. Add it to `WRITTEN`. No
+  other phase writes anything.
+- On a re-run, update it in place: keep the milestone blocks, the orderings
+  and the edges that did not change.
+- Never write, under any circumstances, `.claude/FEATURES.md`,
+  `.claude/TASKS.md`, task bodies, the feature documents or anything else
+  under `.claude/domain/features/`, `product-roadmap.md`,
+  `product-design.md`, `technical-direction.md`, or
+  `.claude/domain/INDEX.md`. Report a problem this run notices in another
+  artifact; never fix it here.
+
+### The document schema
+
+````markdown
+# Plan
+
+Roadmap: .claude/domain/product-roadmap.md
+Last reconciled: <YYYY-MM-DD>
+
+---
+
+## <milestone-slug> — <milestone title>
+
+Status: [PLANNED]
+Covers: product-design.md § <Section>, product-design.md § <Section>
+Features: <slug>, <slug>, <slug>
+
+---
+
+## <milestone-slug> — <milestone title>
+
+Status: [ACTIVE]
+Covers: product-design.md § <Section>
+Features: <slug>, <slug>
+
+---
+
+## Unscheduled
+
+Features: <slug>, <slug>
+
+## Dependencies
+
+- <slug>: depends on <slug>, <slug>
+- <slug>: depends on <slug>
+````
+
+Rules the schema is not free to bend:
+
+- **`Roadmap:`** names the roadmap this plan was built against, or the
+  literal `none` when the project has no roadmap.
+- **`Last reconciled:`** is a plain date and is **informational only**.
+  Nothing computes from it, nothing expires because of it, and no reader may
+  treat it as a staleness signal — the real staleness signal is a
+  `FEATURES.md` slug missing from the plan.
+- **Milestones appear in roadmap order**, top to bottom, separated by `---`.
+  The order comes from the roadmap's list positions, never from the slugs.
+- **`Status:`** is exactly one of `[PLANNED]` / `[ACTIVE]` / `[SHIPPED]`, on
+  every milestone block. Never on `Unscheduled`.
+- **`Covers:`** is **derived** — rewritten from the roadmap's own `Covers:`
+  lines on every run, section names only, with the roadmap's scope prose left
+  where it belongs. It is never a source of truth: never hand-edit it and
+  never let the user's edits to it survive a run. Omit the line entirely
+  when there is no roadmap.
+- **`Features:`** is a comma-separated, **ordered** list of feature slugs.
+  The order is the priority. A milestone with no features carries
+  `Features: none`.
+- **`Unscheduled`** is a block with `Features:` and nothing else — no
+  `Status:`, no `Covers:`. Write it even when empty (`Features: none`).
+- **`## Dependencies` is one flat edge list at the end of the document**, one
+  line per dependent feature, and there is **no `Depends:` line on a
+  feature**: `PLAN.md` must not become a second index keyed by feature slug,
+  and every edge stays in one place, where a cycle is visible to a human
+  reader. A feature with no dependencies gets no line.
+- **No dates, no estimates, no sizing, no percentages, no priority labels,
+  and no readiness or coverage rollups.** Readiness, coverage and per-feature
+  task counts are computed at read time by whatever reports the plan.
+- **Never rename a feature slug or a milestone slug, or reuse one for
+  something else.** Slugs are stable identifiers, like task IDs.
+
+**Closing report.** State:
+
+- Every milestone, in order, with its status and its ordered features.
+- Everything in `Unscheduled`, and what would place it (a `Source:`
+  parenthetical from `/architect`, or an explicit placement here).
+- Every placement override applied.
+- Every edge added, changed, removed or dropped.
+- Every status change written, and every `[SHIPPED]` proposal the user
+  declined.
+- Every warning raised — an unscheduled dependency, a milestone slug absent
+  from the roadmap, a milestone with no features.
+- The paths written (`WRITTEN`).
+- The next step: `/task-add feature=<slug>` for the first feature of the
+  `[ACTIVE]` milestone.
+- When `WRITTEN` is non-empty and `--no-commit` was passed: an explicit
+  reminder that nothing was committed.
+
+---
+
+COMMIT AND PUSH (unless `--no-commit` was passed)
+
+If COMMIT is false (`--no-commit` was passed), run no git/VCS command at
+all. The plan is left uncommitted for the user to review.
+
+If COMMIT is true (the default; the pull-at-start from PHASE 0 already
+ran):
+
+1. If `WRITTEN` is empty — validation refused, the user declined at the gate,
+   or a re-run changed nothing — make no commit and no push. Say so and stop.
+2. Stage EXACTLY the paths in `WRITTEN` — `.claude/PLAN.md` — and commit
+   once:
+
+   ```
+   git add -- .claude/PLAN.md
+   git commit -m "Update the production plan"
+   ```
+
+   Never use `git add -A`, `git add .`, or `git add -u`. On a non-git VCS,
+   use the project's `## VCS` mapping in CLAUDE.md (git→`cm`).
+3. On commit success, report the commit hash (`git rev-parse --short HEAD`).
+   Then, unless NO_PUSH is true or the non-git VCS exemption applies,
+   re-sync (`git pull` again — other commits may have landed while the run
+   was in progress; a conflict aborts the merge, leaves the local commit
+   intact and is reported, not pushed) and then `git push`.
+4. On commit failure (e.g. a pre-commit hook rejects the commit): surface
+   the exact output. Do NOT retry, amend, or use `--no-verify` /
+   `--no-gpg-sign`. Files remain staged but uncommitted; tell the user.
+5. On push failure (rejected, no upstream, no remote) or a pre-push
+   conflict: surface the exact output. Never retry, never force-push. The
+   commit exists locally; tell the user it needs a manual sync + push.
+
+Never branch or tag.

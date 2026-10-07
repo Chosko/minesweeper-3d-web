@@ -1,0 +1,74 @@
+# No-test-suite mode
+
+Read this when the project has no test suite at all (no test runner
+detectable AND no test directory like `tests/`, `test/`, `__tests__/`,
+`spec/`), or when CLAUDE.md declares a `skip-tests` testing policy. The
+tests-first flow cannot run; switch to interactive mode.
+
+0. **If `CLAUDE.md` carries `Testing policy for /task-implement:
+   skip-tests` or `skip-tests-unattended`** (see `./testing-policy.md`
+   step 0), skip step 1's A/B question entirely. Tell the user once,
+   briefly: "This project's CLAUDE.md declares a skip-tests testing
+   policy — implementing without tests." (For `skip-tests-unattended`,
+   AUTO_CONFIRM is already true per step 0 — add ", unattended (no
+   per-task confirmation)" to that same sentence.) Go straight to step 3
+   (skip-tests mode).
+
+1. Otherwise, tell the user once, up front:
+
+   > This project has no detectable test suite. Without tests, I can't
+   > follow the tests-first sequence (write test → implement → watch it
+   > pass). Two options:
+   >
+   > A. **Set up a test suite now.** I can scaffold one for the project's
+   >    language (e.g. pytest for Python, Jest for JS) — installing the
+   >    dev dependency, adding a config, and creating a `tests/` directory.
+   >    From then on, the run uses full test mode.
+   >
+   > B. **Skip test phases.** I'll implement each change without writing or
+   >    running tests. Each still gets its own commit, but I'll ask you to
+   >    confirm before starting each one — without tests, I can't
+   >    self-verify the implementation, so a human review point is
+   >    important.
+   >
+   > Which would you like?
+
+   Suggest option A only when scaffolding is genuinely straightforward for
+   the language at hand. If the project's language has no obvious default
+   test framework, mention that and let the user direct.
+
+   Under the `unattended` policy this is a real decision with nothing yet to
+   park, so the run stops here with the question, per
+   `../../interaction-engine/references/gates.md` § *Real decisions*.
+
+2. Do as the user tells. If they pick A, scaffold the suite first (in its
+   own commit, separate from any change), then proceed in full test mode.
+   If they pick B, proceed in skip-tests mode.
+
+3. **Skip-tests mode** for the rest of the run:
+   - Unless AUTO_CONFIRM is true (a `-y` flag or a `skip-tests-unattended`
+     policy marker), before each unit of work briefly summarize what you're
+     about to change and ask "Proceed?" Wait for explicit approval before
+     editing any file. When AUTO_CONFIRM is true, skip this prompt — state
+     the one-line summary anyway so the user can see what's about to happen,
+     then proceed without waiting. Gate class: `confirmation`
+     (`../../interaction-engine/references/gates.md`) — under the
+     `unattended` policy the prompt passes on its own and is one *For the
+     record* line; the one-line summary is still stated.
+   - Skip Steps 2, 4 and 5 of `./tests-first.md` (anything test-related).
+     Step 3 still runs, and so does every step of the consumer's own.
+   - The commit message should note "(no tests — manual verification
+     pending)" in the body so it's visible later.
+
+Never auto-scaffold a test suite without the user explicitly choosing
+option A.
+
+---
+
+## Per-consumer notes
+
+- **`/task-implement`** — the unit of work is a task: the "Proceed?" prompt
+  comes before each task (BETWEEN TASKS step 4), and its Steps 1, 6 and 7
+  still run. The `all` argument still works in skip-tests mode, but the
+  per-task confirmation prompts still apply (one per task) unless
+  AUTO_CONFIRM or UNATTENDED is true. AUTO_CONFIRM is set by its `-y` flag.

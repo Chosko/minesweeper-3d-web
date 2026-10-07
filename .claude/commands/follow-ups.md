@@ -1,0 +1,97 @@
+---
+name: follow-ups
+version: 0.2.0
+type: command
+description: List what this conversation would lose if it ended now — actions proposed but never executed, outcomes never recorded on disk, decisions written down nowhere — as a numbered list, or exactly `No follow-ups left`. Use it before a session ends, or when a run stopped early.
+---
+
+# /follow-ups
+# Global command: read this conversation and list what it would lose if it
+# ended now. Read-only — no file is opened, nothing is written, nothing is
+# invoked. Takes no arguments. The answer is the bare line `No follow-ups
+# left`, or a numbered list under a `Follow-ups` heading, each item a slash
+# command plus a short "to …" explanation wherever a command fits. Work
+# already tracked on disk is never a follow-up. When the conversation holds a
+# working list, the answer is that list. The numbering is the handle: the user
+# may reply by number, and acting on a reply is the `follow-ups-resolve`
+# skill's, not something this command implements.
+# Usage: /follow-ups
+
+GOAL
+Answer one question: **if this conversation ended right now, what would be
+lost?** An empty answer is a guarantee, not a shrug — it says the session
+can be quit with no information and no operation left behind.
+
+WHAT COUNTS
+Read the conversation, and nothing else. Three kinds of thing are
+follow-ups:
+
+- an **action proposed but never executed** — something this session said
+  it would do, or offered to do, and did not;
+- an **outcome never recorded on disk** — something that happened here and
+  left no trace in a file, an index or a commit;
+- a **decision or fact taken in conversation and written down nowhere** —
+  it exists only in the transcript, and the transcript is what is about to
+  go away.
+
+WHAT DOES NOT
+Work already tracked on disk is not a follow-up. `/runbook-run X to
+continue the implementation` is not one: the runbook already holds those
+steps, and the next session finds them by reading it. But a task created in
+this conversation and not yet appended to the running runbook **is** one —
+nothing on disk connects it to the work in flight, so it can slip out of
+the implementation pipeline unnoticed. The test is not "is it written
+down"; it is "does what is written down lead a later session to it".
+
+THE OUTPUT
+Exactly one of:
+
+- the single line `No follow-ups left`, bare — no heading above it, because a
+  heading over one fixed line adds nothing and other bodies match that line
+  exactly; or
+- the heading `Follow-ups`, then a numbered list, one follow-up per item, so
+  a reader scanning a long turn sees where the list starts.
+
+Nothing else — no preamble, no summary of the conversation, no closing
+offer.
+
+Write each item as a slash command plus a short "to …" explanation wherever
+a command fits the follow-up:
+
+```
+## Follow-ups
+
+1. /task-add feature=password-auth to reconcile tasks 12 and 14, which went
+   stale after the amendment
+2. /runbook-create --append to put task 31 into the runbook this session is
+   running
+```
+
+A free-form item is legal where no command fits. Prefer the command form
+whenever one does.
+
+When the conversation holds a working list — the one the
+`follow-ups-resolve` skill keeps once the user has replied to a Follow-ups
+list — the output is that list in its two-section shape: under the
+`Follow-ups` heading, **Approved** first, then **Awaiting approval**, one
+numbering running across both, and any follow-up the list lacks added under
+**Awaiting approval**. Invoked while a `/runbook-run` is in flight, the
+output is the list collected so far in that same two-section shape — the
+follow-ups the run has printed as they arose, with any approvals already
+given. An empty working list is the line `No follow-ups left`.
+
+A run-closing skill — `/runbook-run`, `/task-implement` — may apply these
+rules as the second group of its own closing report, under this same
+`Follow-ups` heading, its own items folded into the one numbering; this
+command, invoked on its own, is unchanged by that.
+
+THE NUMBERING IS THE HANDLE
+The numbers are there so the user can reply by number — "execute 1 and 2
+now", "insert 3 as the next step in this runbook". Acting on a reply is the
+`follow-ups-resolve` skill's, when it is available; this command does not
+implement it, and does not offer to.
+
+STOP THERE
+Print the line or the list, and stop. Take no argument. Open no project
+file — not `.claude/TASKS.md`, not a runbook, not the index. Write nothing,
+commit nothing, and invoke no other command.
