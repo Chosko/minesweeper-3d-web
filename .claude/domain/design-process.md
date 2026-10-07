@@ -34,9 +34,9 @@ Business modelling: in scope
 
 Covered: direction, target players, 2D logic reference, no-guess and stats,
 campaign structure, 3D rule changes, demo limits, Steam features, web
-version. Awaiting the user on: the proposed main menu, the proposed key
-flows, the demo's free-play cap, the proposed price, and whether the
-interview is done.
+version. Awaiting the user on: the proposed main menu, whether first
+launch forces the tutorial level, the demo's free-play cap (research
+running), target platforms, and whether the interview is done.
 
 - `product-design.md`, `technical-direction.md`, `business-model.md` — stubs only.
 
@@ -55,7 +55,9 @@ Next step: continue the interview from the last open questions put to the user.
 - Campaigns are separate per dimension (2D, 3D) and per difficulty; the 3D campaign is the on-ramp, since free 3D play alone is too hard.
 - The 3D mode gains a safe first click and a no-guess option, departing from the 2011 original.
 - Revenue: free Steam demo with limitations; full game is a one-time purchase on Steam.
-- The game opens on a main menu.
+- The game opens on a main menu; key flows describe expected play, not enforced paths — only campaign locks gate anything.
+- Base price $5.99 USD, one-time purchase.
+- The game stays web-technology based and ships on Steam as a packaged desktop build; the packaging choice belongs to the technical direction.
 - Campaign levels are a fixed sequence, unlocked in order; standard rules on unusual board shapes and holes, which matter most in 3D.
 - Demo: the first campaign levels plus a limited number of free-play boards.
 - The free web version stays live until the Steam release, as the author's work-in-progress preview; its post-release fate is open.
