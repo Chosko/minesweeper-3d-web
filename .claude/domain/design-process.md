@@ -21,8 +21,8 @@ Business modelling: in scope
 | --- | --- | --- |
 | 0 — gate + resume | Verify the domain layer; resume or start fresh | done |
 | 1 — orient + stub | Detect greenfield/brownfield, create the documents | done |
-| 2 — interview | Product, users, experience, big decisions, business model | in progress |
-| 3 — write-back | Fill product-design.md and business-model.md | not started |
+| 2 — interview | Product, users, experience, big decisions, business model | done |
+| 3 — write-back | Fill product-design.md and business-model.md | done |
 | 4 — high-level features | Identify the feature set, user-experience angle | not started |
 | 5 — feature write-back | Record the feature set in product-design.md | not started |
 | 6 — technical direction | Decide the product's technical foundations | not started |
@@ -30,17 +30,14 @@ Business modelling: in scope
 
 ## Current stage
 
-**PHASE 2 — interview: in progress**
+**PHASE 3 — write-back: done**
 
-Covered: direction, target players, 2D logic reference, no-guess and stats,
-campaign structure, 3D rule changes, demo limits, Steam features, web
-version. Awaiting the user on: the proposed main menu (otherwise
-unchallenged), and Early Access — whether to launch through it and on what
-terms. The interview closes after that, at the user's word.
+The interview is closed and written back. Next session opens PHASE 4: identify
+the high-level feature set with the user.
 
-- `product-design.md`, `technical-direction.md`, `business-model.md` — stubs only.
-
-Next step: continue the interview from the last open questions put to the user.
+- `product-design.md` — product, target users, main menu and key flows, design decisions; features pending.
+- `business-model.md` — all sections filled; Early Access is its open decision.
+- `technical-direction.md` — stub only.
 
 ## Decisions worth keeping
 
@@ -65,4 +62,7 @@ Next step: continue the interview from the last open questions put to the user.
 - Platforms: Windows at launch; Mac and Linux only if the port is near-free; Steam Deck Verified is a stretch goal riding on controller support; never mobile or touch.
 - The full game plays offline; Steam achievements and leaderboards sync when a connection returns.
 - The free web version stays live until the Steam release, as the author's work-in-progress preview; its post-release fate is open.
-- Steam achievements, cloud saves and Steam leaderboards are in for launch; leaderboards come from Steam, not from a backend of our own.
+- Steam achievements, cloud saves and Steam leaderboards are in for launch; leaderboards come from Steam because the game has no backend; custom boards get none since they cannot be compared.
+- Early Access is open: if taken, enter it once the core is complete (Classic 2D with no-guess, stats, replays, leaderboards; 3D mode; first part of each campaign; demo), at $4.99 rising to $5.99 at 1.0.
+- Demo free play is unlimited on its unlocked boards, not capped; per-day caps read as free-to-play nagging in a paid game.
+- Rejected: auto-starting the tutorial on first launch; a Continue button before any progress.
