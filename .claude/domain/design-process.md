@@ -23,25 +23,24 @@ Business modelling: in scope
 | 1 — orient + stub | Detect greenfield/brownfield, create the documents | done |
 | 2 — interview | Product, users, experience, big decisions, business model | done |
 | 3 — write-back | Fill product-design.md and business-model.md | done |
-| 4 — high-level features | Identify the feature set, user-experience angle | in progress |
-| 5 — feature write-back | Record the feature set in product-design.md | not started |
-| 6 — technical direction | Decide the product's technical foundations | not started |
+| 4 — high-level features | Identify the feature set, user-experience angle | done |
+| 5 — feature write-back | Record the feature set in product-design.md | done |
+| 6 — technical direction | Decide the product's technical foundations | in progress |
 | 7 — technical write-back | Record the direction in technical-direction.md | not started |
 
 ## Current stage
 
-**PHASE 4 — high-level features: in progress**
+**PHASE 6 — technical direction: in progress**
 
-Agreed so far: main menu and shell, Classic 2D (square, hexagonal and
-triangle grids), 3D mode, surface mode (tiles on 3D shapes, name open),
-campaign system, campaign levels, results and records, replays, Steam
-features, daily board, demo edition; Marathon and Zen after launch. Open:
-how randomized campaign levels stay fair on a leaderboard, the surface mode's
-scope, where hex/triangle grids live, which dimensions get a daily board, and
-any gameplay twist the user finds convincing.
+The feature set is written into `product-design.md`. Technical direction is
+opened: the existing stack and the proposed choices (desktop wrapper, 2D
+renderer, one rules engine over neighbour graphs, local save files, Steam
+binding) are put to the user, with three feature-level leftovers (free-play
+leaderboard ranking, Surface's leaderboards and demo content, a Surface
+campaign).
 
-- `product-design.md` — product, target users, main menu and key flows, design decisions; features pending.
-- `business-model.md` — all sections filled; Early Access is its open decision.
+- `product-design.md` — complete: product, users, flows, decisions, 13 high-level features.
+- `business-model.md` — complete; Early Access open.
 - `technical-direction.md` — stub only.
 
 ## Decisions worth keeping
@@ -74,9 +73,7 @@ any gameplay twist the user finds convincing.
 - No-guess is a switch inside each mode, not a feature of its own.
 - The campaign system and the campaign levels are separate features; designing the levels is a body of work of its own.
 - Controller support covers every mode, 2D included.
-- Campaign levels re-randomize their mines on every attempt within a fixed designed challenge; fixed layouts turn replays into muscle memory.
-- Campaign levels have Steam leaderboards.
-- Hexagonal and triangle grids are in; wraparound boards (edges joining) are not in the game at all.
-- "Manifold" means 2D tiles laid on the surface of 3D models — a mode distinct from the voxel 3D mode, and not to be called "3D".
-- Daily board with its own Steam leaderboard is in for launch; Marathon and Zen come after launch.
+- Surface (the user's "manifold"): 2D tiles laid on 3D models, never called "3D"; wraparound edges were a misreading and are out.
 - No new logic rules (multi-mines, partial-neighbour numbers, liars, row totals): too much brain-puzzle. Gameplay twists are wanted in principle but deferred until one convinces.
+- Campaign levels re-randomize mines per attempt within a designed profile (fixed layouts turn replays into muscle memory), so campaign and daily leaderboards rank by 3BV/s.
+- Endless board, Marathon and Zen are after launch; scanner charges and 3D fog were proposed and set aside.
