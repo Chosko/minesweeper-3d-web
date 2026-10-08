@@ -25,59 +25,30 @@ Business modelling: in scope
 | 3 — write-back | Fill product-design.md and business-model.md | done |
 | 4 — high-level features | Identify the feature set, user-experience angle | done |
 | 5 — feature write-back | Record the feature set in product-design.md | done |
-| 6 — technical direction | Decide the product's technical foundations | in progress |
-| 7 — technical write-back | Record the direction in technical-direction.md | not started |
+| 6 — technical direction | Decide the product's technical foundations | done |
+| 7 — technical write-back | Record the direction in technical-direction.md | done |
 
 ## Current stage
 
-**PHASE 6 — technical direction: in progress**
+**PHASE 7 — technical write-back: done — process complete**
 
-The feature set is written into `product-design.md`. Technical direction is
-agreed on stack, wrapper, renderers, rules engine and the web preview's
-role; awaiting the user's sign-off on the remaining axes (storage, background
-generation, hosting, protocols, cross-cutting) and on closing the phase.
+The product design is complete. Later changes go through
+`/product-design amend "<change>"`.
 
-- `product-design.md` — complete: product, users, flows, decisions, 13 high-level features.
-- `business-model.md` — complete; Early Access open.
-- `technical-direction.md` — stub only.
+- `product-design.md` — product, players, menu and flows, design decisions, 13 high-level features.
+- `business-model.md` — one-time Steam purchase at US$5.99 with a free demo; Early Access open.
+- `technical-direction.md` — JS + three.js + Canvas 2D in Electron, one graph-based rules engine; Steam binding open.
+
+Next step: `/architect <feature>`, then `/task-add feature=<slug>`.
 
 ## Decisions worth keeping
 
-- Goal: become the best Minesweeper game on Steam — a multi-mode game, not a port of the 2011 original.
-- Primary players: Minesweeper enthusiasts choosing between Steam implementations they find unconvincing.
-- The existing 3D game is settled and becomes the 3D mode, unchanged in substance.
-- The 2D mode is rebuilt from scratch as real 2D (no 3D rendering) with exact classic Minesweeper logic.
-- Launch scope: 2D mode, 3D mode, campaign of designed levels, local scores.
-- Scoped as a game, not a platform: no backend, online services or competitive infrastructure in the design.
-- 2D logic follows Minesweeper Online exactly; visuals are modern and catchy with no decorative excess (the current 3D look is the bar).
-- No-guess boards and competitive stats (3BV, 3BV/s, efficiency, replays) ship at launch.
-- Campaigns are separate per dimension (2D, 3D) and per difficulty; the 3D campaign is the on-ramp, since free 3D play alone is too hard.
-- The 3D mode gains a safe first click and a no-guess option, departing from the 2011 original.
-- Revenue: free Steam demo with limitations; full game is a one-time purchase on Steam.
-- The game opens on a main menu; key flows describe expected play, not enforced paths — only campaign locks gate anything.
-- Base price $5.99 USD, one-time purchase; EUR set from Steam's recommended regional price (about €5.89–6.15 per a store-API sample).
-- For PHASE 6: steamworks.js and Greenworks expose no leaderboard API, so Steam leaderboards need a different binding or an added one; Deck Verified needs full controller play at 1280×800.
-- The game stays web-technology based and ships on Steam as a packaged desktop build; the packaging choice belongs to the technical direction.
-- Campaign levels are a fixed sequence, unlocked in order; standard rules on unusual board shapes and holes, which matter most in 3D.
-- Demo: unlimited 2D Beginner/Intermediate/Expert and 3D Beginner free play; the first 5 levels of each campaign, unlocked by progression; everything else locked (custom boards, harder 3D presets, pro options such as no-guess).
-- First launch shows the menu, never auto-starts a level; the top button reads Start (first 2D campaign level) until there is progress to Continue.
-- Platforms: Windows at launch; Mac and Linux only if the port is near-free; Steam Deck Verified is a stretch goal riding on controller support; never mobile or touch.
-- The full game plays offline; Steam achievements and leaderboards sync when a connection returns.
-- The free web version stays live until the Steam release, as the author's work-in-progress preview; its post-release fate is open.
-- Steam achievements, cloud saves and Steam leaderboards are in for launch; leaderboards come from Steam because the game has no backend; custom boards get none since they cannot be compared.
-- Early Access is open: if taken, enter it once the core is complete (Classic 2D with no-guess, stats, replays, leaderboards; 3D mode; first part of each campaign; demo), at $4.99 rising to $5.99 at 1.0.
-- Demo free play is unlimited on its unlocked boards, not capped; per-day caps read as free-to-play nagging in a paid game.
-- Rejected: auto-starting the tutorial on first launch; a Continue button before any progress.
-- No-guess is a switch inside each mode, not a feature of its own.
-- The campaign system and the campaign levels are separate features; designing the levels is a body of work of its own.
-- Controller support covers every mode, 2D included.
-- Surface (the user's "manifold"): 2D tiles laid on 3D models, looking and feeling exactly like the 2D game apart from navigation; never called "3D"; no campaign.
-- No new logic rules (multi-mines, partial-neighbour numbers, liars, row totals): too much brain-puzzle. Gameplay twists are wanted in principle but deferred until one convinces.
-- Campaign levels re-randomize mines per attempt within a designed profile (fixed layouts turn replays into muscle memory), so campaign and daily leaderboards rank by 3BV/s.
-- Endless board, Marathon and Zen are after launch; scanner charges and 3D fog were proposed and set aside.
-- Stack stays: plain JavaScript ES modules, three.js, no bundler for game code; a package manifest only for desktop packaging.
-- Electron is the desktop wrapper: bundled Chromium keeps WebGL identical across machines and has the best Steam overlay support.
-- Classic 2D draws with Canvas 2D; 3D and Surface use three.js.
-- One rules engine over a cell-neighbour graph serves every grid and mode.
-- The Steam binding is open until a spike: steamworks.js lacks leaderboards, so extend it or pick another binding.
-- The GitHub Pages build is the testing preview until release: everything but Steam works there, Steam calls are stubbed and leaderboards are local-only.
+- The 2D mode is built new rather than derived from the 3D game: enthusiasts expect exact classic rules and a real flat board.
+- Free 3D play is too hard alone, so the 3D campaign is its on-ramp.
+- Campaign mines re-randomize per attempt because fixed layouts turn replays into muscle memory; hence campaign and daily leaderboards rank by 3BV/s.
+- The demo is unlimited on its unlocked boards: per-day caps read as free-to-play nagging in a paid game.
+- No variant logic rules: they feel like hardcore brain puzzles, and 14 Minesweeper Variants owns that ground; gameplay twists stay wanted but deferred until one convinces.
+- Scanner charges and 3D fog were proposed and set aside.
+- Leaderboards come from Steam because the game has no backend; custom boards are excluded because they cannot be compared.
+- Electron over Tauri and NW.js: bundled Chromium keeps WebGL identical everywhere, Tauri's system webviews vary on Mac/Linux, NW.js's Greenworks is best-effort.
+- Steam Deck is a stretch goal because Minesweeper with a controller is awkward, even though controllers are supported.
