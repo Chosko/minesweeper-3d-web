@@ -35,7 +35,7 @@ Business modelling: in scope
 The product design is complete. Later changes go through
 `/product-design amend "<change>"`.
 
-- `product-design.md` — product, players, menu and flows, design decisions, 13 high-level features.
+- `product-design.md` — product, players, menu and flows, design decisions, 14 high-level features.
 - `business-model.md` — one-time Steam purchase at US$5.99 with a free demo; Early Access open.
 - `technical-direction.md` — JS + three.js + Canvas 2D in Electron, one graph-based rules engine; Steam binding open.
 

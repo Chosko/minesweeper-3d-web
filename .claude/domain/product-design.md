@@ -138,15 +138,24 @@ level until the player has progress; then *Continue* resumes the next
 unbeaten level or the last mode played. Serves every player and every flow;
 it is where the first-launch flow begins.
 
+### Visual design system
+
+The one visual language every mode and screen is drawn in, held to the visual
+direction under Design decisions: the colour palette and typography; a light
+and a dark theme; the tiles and number colours, with a colour-blind-safe
+number set for the accessibility setting; the menus; the in-game overlay that
+sits over a board (timer, mine counter, pause); and the results screen. Classic
+2D, 3D and Surface each apply it to their own board, so moving between modes
+never feels like moving between games. Serves every player and every flow.
+
 ### Classic 2D
 
 Real, flat Minesweeper whose logic reproduces Minesweeper Online exactly:
 reveal, flag, chord, the safe first click, the timer. The player picks a grid —
 square, hexagonal (6 neighbours) or triangle (12 neighbours) — and a size:
 Beginner, Intermediate, Expert, or a custom size and mine count. A no-guess
-switch generates boards solvable by logic alone. The look is modern and clean,
-with nothing that distracts from reading the board. Serves the enthusiast
-loop.
+switch generates boards solvable by logic alone. It is drawn in the visual
+design system. Serves the enthusiast loop.
 
 ### 3D mode
 
