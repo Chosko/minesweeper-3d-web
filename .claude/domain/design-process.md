@@ -33,11 +33,9 @@ Business modelling: in scope
 **PHASE 6 — technical direction: in progress**
 
 The feature set is written into `product-design.md`. Technical direction is
-opened: the existing stack and the proposed choices (desktop wrapper, 2D
-renderer, one rules engine over neighbour graphs, local save files, Steam
-binding) are put to the user, with three feature-level leftovers (free-play
-leaderboard ranking, Surface's leaderboards and demo content, a Surface
-campaign).
+agreed on stack, wrapper, renderers, rules engine and the web preview's
+role; awaiting the user's sign-off on the remaining axes (storage, background
+generation, hosting, protocols, cross-cutting) and on closing the phase.
 
 - `product-design.md` — complete: product, users, flows, decisions, 13 high-level features.
 - `business-model.md` — complete; Early Access open.
@@ -73,7 +71,13 @@ campaign).
 - No-guess is a switch inside each mode, not a feature of its own.
 - The campaign system and the campaign levels are separate features; designing the levels is a body of work of its own.
 - Controller support covers every mode, 2D included.
-- Surface (the user's "manifold"): 2D tiles laid on 3D models, never called "3D"; wraparound edges were a misreading and are out.
+- Surface (the user's "manifold"): 2D tiles laid on 3D models, looking and feeling exactly like the 2D game apart from navigation; never called "3D"; no campaign.
 - No new logic rules (multi-mines, partial-neighbour numbers, liars, row totals): too much brain-puzzle. Gameplay twists are wanted in principle but deferred until one convinces.
 - Campaign levels re-randomize mines per attempt within a designed profile (fixed layouts turn replays into muscle memory), so campaign and daily leaderboards rank by 3BV/s.
 - Endless board, Marathon and Zen are after launch; scanner charges and 3D fog were proposed and set aside.
+- Stack stays: plain JavaScript ES modules, three.js, no bundler for game code; a package manifest only for desktop packaging.
+- Electron is the desktop wrapper: bundled Chromium keeps WebGL identical across machines and has the best Steam overlay support.
+- Classic 2D draws with Canvas 2D; 3D and Surface use three.js.
+- One rules engine over a cell-neighbour graph serves every grid and mode.
+- The Steam binding is open until a spike: steamworks.js lacks leaderboards, so extend it or pick another binding.
+- The GitHub Pages build is the testing preview until release: everything but Steam works there, Steam calls are stubbed and leaderboards are local-only.

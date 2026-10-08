@@ -94,15 +94,14 @@ demanding, until free 3D play is within reach.
   shapes matter most in 3D.
 - **Standard Minesweeper rules only.** No variant logic rules (multi-mine
   cells, partial-neighbour numbers, lying numbers, row totals). Variety comes
-  from board shapes, grids and ways to play, not from new rules. Boards never
-  wrap around their edges.
+  from board shapes, grids and ways to play, not from new rules.
 - **Local records are the competitive backbone.** Personal bests, stats
   history and replays live on the player's machine (synced by Steam Cloud).
 - **Steam leaderboards cover every comparable board:** the standard
   free-play boards of each mode and grid (with and without no-guess), every
-  campaign level, and each day's daily boards. Campaign levels and daily
-  boards rank by 3BV/s, since every attempt is a different board; the time is
-  still recorded and shown. Custom boards get no leaderboard.
+  campaign level, and each day's daily boards. Free-play boards rank by
+  time; campaign levels and daily boards rank by 3BV/s, since every attempt
+  is a different board, and still record and show the time. Custom boards get no leaderboard.
 - **Visual direction: modern and catchy, with nothing decorative that does not
   serve play.** The current 3D look is the bar for every mode.
 - **Mouse and keyboard first.** Controllers are supported in every mode;
@@ -112,7 +111,8 @@ demanding, until free 3D play is within reach.
 - **A free demo with fixed locks.** The demo offers unlimited 2D Beginner,
   Intermediate and Expert boards on the square grid, unlimited Beginner boards
   on the hexagonal and triangle grids, unlimited 3D Beginner boards, and the
-  first 5 levels of each campaign (unlocked by progression as usual).
+  first shape of the Surface mode, and the first 5 levels of each campaign
+  (unlocked by progression as usual).
   Everything else is locked: custom boards, Intermediate and Expert on the
   hexagonal and triangle grids, the harder 3D presets, and pro options such as
   no-guess.
@@ -163,8 +163,10 @@ and other simple solids at launch, recognisable models possibly later. The
 player turns the object to see every side instead of flying through it. Tiles
 on corners and seams have unusual neighbour counts, and the game makes those
 neighbourhoods readable. Standard rules, a safe first click and a no-guess
-switch, as in the other modes. Distinct from the 3D mode and never called
-"3D". Serves enthusiasts looking for a new challenge between flat 2D and full
+switch, as in the other modes. It looks and feels exactly like the 2D game —
+the same tiles, numbers and interactions — with navigation around the object
+as the only difference. Distinct from the 3D mode and never called "3D". It
+has free play and leaderboards, and no campaign. Serves enthusiasts looking for a new challenge between flat 2D and full
 3D.
 
 ### Campaign system
