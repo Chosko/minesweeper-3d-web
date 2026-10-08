@@ -32,11 +32,13 @@ Business modelling: in scope
 
 **PHASE 4 — high-level features: in progress**
 
-Agreed so far: main menu and shell, Classic 2D, 3D mode, campaign system,
-campaign levels, results and records, replays, Steam features, demo edition.
-Open: extra board topologies, rule variants and play modes (proposals with
-the user), leaderboards on campaign levels, and whether campaign levels have
-fixed mine layouts.
+Agreed so far: main menu and shell, Classic 2D (square, hexagonal and
+triangle grids), 3D mode, surface mode (tiles on 3D shapes, name open),
+campaign system, campaign levels, results and records, replays, Steam
+features, daily board, demo edition; Marathon and Zen after launch. Open:
+how randomized campaign levels stay fair on a leaderboard, the surface mode's
+scope, where hex/triangle grids live, which dimensions get a daily board, and
+any gameplay twist the user finds convincing.
 
 - `product-design.md` — product, target users, main menu and key flows, design decisions; features pending.
 - `business-model.md` — all sections filled; Early Access is its open decision.
@@ -72,3 +74,9 @@ fixed mine layouts.
 - No-guess is a switch inside each mode, not a feature of its own.
 - The campaign system and the campaign levels are separate features; designing the levels is a body of work of its own.
 - Controller support covers every mode, 2D included.
+- Campaign levels re-randomize their mines on every attempt within a fixed designed challenge; fixed layouts turn replays into muscle memory.
+- Campaign levels have Steam leaderboards.
+- Hexagonal and triangle grids are in; wraparound boards (edges joining) are not in the game at all.
+- "Manifold" means 2D tiles laid on the surface of 3D models — a mode distinct from the voxel 3D mode, and not to be called "3D".
+- Daily board with its own Steam leaderboard is in for launch; Marathon and Zen come after launch.
+- No new logic rules (multi-mines, partial-neighbour numbers, liars, row totals): too much brain-puzzle. Gameplay twists are wanted in principle but deferred until one convinces.
