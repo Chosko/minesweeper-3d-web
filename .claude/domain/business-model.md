@@ -16,8 +16,12 @@ Not discussed in depth; what is known:
 - **Build cost** — the author's own time (assumed; team size not discussed).
   Art and audio carry no asset cost: textures are drawn procedurally and
   sounds are synthesized.
+- **Development tooling** — a Claude Max 20x subscription (about US$200 per
+  month at list price — check current pricing), paid only during development,
+  up to the Steam release.
 - **Fixed costs** — Steam Direct's one-time app fee (US$100, recoupable from
-  sales per Valve's terms). No servers, so no running cost at zero players.
+  sales per Valve's terms). No servers, so no running cost at zero players or
+  after release.
 - **Variable costs** — none of its own: no backend, and leaderboards, cloud
   saves and achievements are provided by Steam at no charge to the developer.
   The only per-sale cost is Steam's revenue share.
@@ -74,9 +78,11 @@ At whatever precision is honest — no measurement exists yet:
   Steam services are free to use).
 - **Acquisition cost** — not known; no paid acquisition is planned, so
   acquisition is organic through Steam discovery, wishlists and the demo.
-- **Break-even** — the Steam Direct fee is covered by about 24 full-price
-  sales (calculated). Any return on development time depends on volume, for
-  which there is no estimate.
+- **Break-even** — about 48 full-price sales per month of development
+  (US$200 subscription ÷ US$4.19, calculated), plus about 24 for the Steam
+  Direct fee. A 6-month development comes to about 310 sales (calculated; the
+  duration is an illustration, not a plan). Any return on the author's own
+  time depends on volume, for which there is no estimate.
 
 ## Risks
 

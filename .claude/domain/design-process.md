@@ -23,17 +23,20 @@ Business modelling: in scope
 | 1 — orient + stub | Detect greenfield/brownfield, create the documents | done |
 | 2 — interview | Product, users, experience, big decisions, business model | done |
 | 3 — write-back | Fill product-design.md and business-model.md | done |
-| 4 — high-level features | Identify the feature set, user-experience angle | not started |
+| 4 — high-level features | Identify the feature set, user-experience angle | in progress |
 | 5 — feature write-back | Record the feature set in product-design.md | not started |
 | 6 — technical direction | Decide the product's technical foundations | not started |
 | 7 — technical write-back | Record the direction in technical-direction.md | not started |
 
 ## Current stage
 
-**PHASE 3 — write-back: done**
+**PHASE 4 — high-level features: in progress**
 
-The interview is closed and written back. Next session opens PHASE 4: identify
-the high-level feature set with the user.
+Agreed so far: main menu and shell, Classic 2D, 3D mode, campaign system,
+campaign levels, results and records, replays, Steam features, demo edition.
+Open: extra board topologies, rule variants and play modes (proposals with
+the user), leaderboards on campaign levels, and whether campaign levels have
+fixed mine layouts.
 
 - `product-design.md` — product, target users, main menu and key flows, design decisions; features pending.
 - `business-model.md` — all sections filled; Early Access is its open decision.
@@ -66,3 +69,6 @@ the high-level feature set with the user.
 - Early Access is open: if taken, enter it once the core is complete (Classic 2D with no-guess, stats, replays, leaderboards; 3D mode; first part of each campaign; demo), at $4.99 rising to $5.99 at 1.0.
 - Demo free play is unlimited on its unlocked boards, not capped; per-day caps read as free-to-play nagging in a paid game.
 - Rejected: auto-starting the tutorial on first launch; a Continue button before any progress.
+- No-guess is a switch inside each mode, not a feature of its own.
+- The campaign system and the campaign levels are separate features; designing the levels is a body of work of its own.
+- Controller support covers every mode, 2D included.
