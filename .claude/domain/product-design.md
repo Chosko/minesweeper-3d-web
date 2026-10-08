@@ -39,8 +39,8 @@ campaign's level order (and, in the demo, the demo's locks).
 - **Start / Continue** — on first launch the button reads *Start* and opens
   the first 2D campaign level. Once there is progress it reads *Continue* and
   resumes the next unbeaten campaign level, or the last mode played.
-- **Campaign** — choose 2D or 3D, then a difficulty, then a level from the
-  sequence; locked levels are visible but not playable.
+- **Campaign** — choose 2D or 3D, then a chapter and a level in it; locked
+  levels are visible but not playable.
 - **Classic 2D** — square, hexagonal or triangle grid; Beginner,
   Intermediate, Expert and Custom boards; a no-guess switch.
 - **3D** — the 3D presets and custom boards, with a no-guess switch.
@@ -85,9 +85,10 @@ demanding, until free 3D play is within reach.
 - **No-guess boards and competitive stats are core, not extras.** Every mode
   offers no-guess generation; every game records the stats enthusiasts track
   (3BV, 3BV/s, efficiency) and a replay.
-- **Campaign levels are designed challenges, not fixed boards.** Separate
-  campaigns for 2D and 3D, and per difficulty within each. Levels form a fixed
-  sequence, each unlocked by beating the previous one. A level fixes its board
+- **Campaign levels are designed challenges, not fixed boards.** One campaign
+  per dimension, 2D and 3D, each a single fixed sequence of levels grouped into
+  chapters, with difficulty rising from easy to hard; each level is unlocked by
+  beating the previous one. A level fixes its board
   shape, holes and difficulty profile; its mines are placed afresh on every
   attempt within that profile, so a replay is never solved from memory.
   Levels use standard rules on unusual board shapes and boards with holes —
@@ -171,9 +172,10 @@ has free play and leaderboards, and no campaign. Serves enthusiasts looking for 
 
 ### Campaign system
 
-The structure that carries the player through designed levels: separate
-campaigns for 2D and 3D, each split by difficulty, each a fixed sequence of
-levels where beating one unlocks the next. Locked levels are visible. Each
+The structure that carries the player through designed levels: one campaign
+for 2D and one for 3D, each a single fixed sequence of levels grouped into
+chapters, where beating one level unlocks the next. The player picks a chapter,
+then a level in it; locked levels are visible. Each
 attempt at a level gets a freshly generated board that matches the level's
 designed shape and difficulty profile. Progress is saved and synced. Serves
 the first-launch flow and the 3D on-ramp.
@@ -182,7 +184,8 @@ the first-launch flow and the 3D on-ramp.
 
 The content itself: the designed levels of every campaign, each defined by a
 board shape (often unusual, with holes), a mine density and a difficulty
-profile, ordered so each campaign teaches before it tests. The 3D campaign
+profile, ordered from easy to hard across the campaign's chapters so each
+campaign teaches before it tests. The 3D campaign
 starts with small, oddly shaped boards that teach reading numbers in depth and
 builds towards full free 3D play. The first level of the 2D campaign is a
 gentle introduction for a new player. A body of design work distinct from the
