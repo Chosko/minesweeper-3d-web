@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 83
+Last task number: 90
 
 ---
 
@@ -831,5 +831,75 @@ Target: claude
 Files: .claude/context/app-shell.md, .claude/context/mode3d.md, .claude/context/rendering.md, .claude/context/records.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
 Preconditions: 81, 82
 Feature: 3d-results-records-screens
+
+---
+
+## 84. Electron main process: window, game protocol, window state and crash log
+
+Status: [MISSING]
+Target: claude
+Files: desktop/package.json, desktop/main.js, desktop/protocol.js, desktop/window-state.js, desktop/crash-log.js, desktop/closing.js, tests/desktop-main.test.mjs
+Preconditions: none
+Feature: steam-desktop-host
+
+---
+
+## 85. Steamworks capability adapter, unavailable implementation and the page bridge
+
+Status: [MISSING]
+Target: claude
+Files: desktop/adapter/interface.js, desktop/adapter/unavailable.js, desktop/preload.js, desktop/bridge.js, desktop/main.js, desktop/closing.js, tests/desktop-bridge.test.mjs
+Preconditions: 84
+Feature: steam-desktop-host
+
+---
+
+## 86. Page platform selection, capability flags, overlay pause and the quit flush
+
+Status: [MISSING]
+Target: claude
+Files: js/platform/index.js, js/platform/capabilities.js, js/platform/bridge-client.js, js/shell/pause.js, js/main.js, desktop/closing.js, tests/platform-selection.test.mjs
+Preconditions: 15, 27, 71, 85
+Feature: steam-desktop-host
+
+---
+
+## 87. Windows packaging and the SteamPipe private build
+
+Status: [MISSING]
+Target: claude+human
+Files: desktop/package.json, desktop/build/package.mjs, desktop/steampipe/app_build.vdf, desktop/steampipe/depot_build.vdf, desktop/steampipe/config.example.json, .gitignore
+Preconditions: 84
+Feature: steam-desktop-host
+
+---
+
+## 88. Steamworks binding spike
+
+Status: [MISSING]
+Target: claude+human
+Files: desktop/spike/, desktop/package.json, .claude/domain/features/steam-desktop-host.md, .claude/domain/features/steam-leaderboards.md
+Preconditions: 85, 87
+Feature: steam-desktop-host
+
+---
+
+## 89. Steam adapter implementation on the chosen binding
+
+Status: [MISSING]
+Target: claude+human
+Files: desktop/adapter/steam.js, desktop/adapter/interface.js, desktop/main.js, desktop/closing.js, desktop/package.json, tests/desktop-adapter-steam.test.mjs
+Preconditions: 85, 86, 88
+Feature: steam-desktop-host
+
+---
+
+## 90. Update documentation for feature `steam-desktop-host`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/desktop.md, .claude/context/platform.md, .claude/context/app-shell.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
+Preconditions: 84, 85, 86, 87, 88, 89
+Feature: steam-desktop-host
 
 ---
