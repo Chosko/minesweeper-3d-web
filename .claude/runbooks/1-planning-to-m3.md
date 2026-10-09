@@ -330,7 +330,7 @@ The deliverable is the complete m1 backlog in .claude/TASKS.md: every m1-classic
 ```
 Done: 2026-10-09, commits `cab4f0e`, `99f13ee`, `22f6513`, `118babe`, `e34f82b`, `d520039`, `05cf187`, `b7d6865`, `5700ca2`, `a12cf31`, `63b78fb`, `c85d5e8`, `c605246` (76 files, +2355/-39). Tasks 1–50 written for the 13 m1 features. Open points were settled by the drafts' recommendations: the system font stack (task 1), the Classic 2D controller mapping (task 35), and Retry or a standard board when no-guess generation fails (task 32). Tasks 7 and 37 need a person.
 
-## [ ] 13. Write the m2 tasks
+## [x] 13. Write the m2 tasks
 
 Depends on: 11
 
@@ -358,6 +358,7 @@ Read .claude/PLAN.md first. For every feature it places under m2-3d-joins, in pl
 
 The deliverable is the complete m2 backlog in .claude/TASKS.md: every m2-3d-joins feature planned. Do not add tasks for features of any other milestone.
 ```
+Done: 2026-10-09, commits `423516d`, `de0f486`, `794c264`, `a701815`, `c4326a7`, `f77d530`, `e00deb7` (47 files, +1608/-21). Tasks 51–83 written for the 7 m2 features. The plan puts replay-library before replay-playback, so its Watch button waits for task 79. Task 54 places the board around the first click on the main thread until task 57 moves generation to the worker.
 
 ## [ ] 14. Write the m3 tasks
 
@@ -376,6 +377,7 @@ Context:
     b. Run step 14 as soon as the directory exists, as the runbook allows. The m3 tasks would take the low IDs, and their `Preconditions:` lines could not point at m1 or m2 tasks, which would not exist yet.
     Recommendation: a. It is consistent with step 13's Q2a recommendation.
 - 2026-10-09 unparked with answer: Q1 — the user had the folder created now: `.claude/tasks/` exists and is tracked by `.claude/tasks/.gitkeep` (commit 4df6e70), so /task-add's setup check passes. Q2a — steps run in order 12, 13, 14, so the m3 tasks can name m1 and m2 tasks on their `Preconditions:` lines.
+- 2026-10-09 (from steps 12–13): the m1 tasks are 1–50 and the m2 tasks 51–83 in TASKS.md, so m3 tasks can name them on their `Preconditions:` lines.
 
 ```prompt
 Write the backlog tasks for milestone m3-on-steam.
