@@ -96,7 +96,7 @@ Feature: board-generation
 
 ## 10. Logic-only solver
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/generation/solver.js, tests/generation-solver.test.mjs
 Preconditions: 4
