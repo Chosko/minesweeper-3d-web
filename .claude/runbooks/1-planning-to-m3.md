@@ -127,6 +127,7 @@ Context:
     Recommendation: a. Those times were set without a safe first click, so they are not comparable with new games. Only the web preview has them.
 - 2026-10-09 unparked with answer: Q2a — the 3D first click follows the same rule as Classic 2D (an opening when that rule says so, only the clicked cell on a board too dense); Q3a — no-guess on every preset and on custom boards up to a cell-count limit set from measured generation time, the switch shown disabled with the reason above it; Q4a — the current 3D best times are left behind and 3D records start fresh. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
 - 2026-10-09 parked: approval gate — the m2 3D mode architecture draft, now carrying the Q2a, Q3a and Q4a answers (two documents: 3d-board-graph with a 3D rule profile on the shared engine, js/logic.js retired; 3d-play-flow; the open call is whether they fold into one), waits for approval when the step runs. Consequences it names: the custom-board mine cap drops to every cell but one, and seeded boards no longer match the original game's.
+- 2026-10-09 (from step 8, the user's answer): the three flat "2D" presets of 3D mode (9×9×1, 16×16×1, 30×16×1) are discarded as redundant with Classic 2D; 3D mode keeps 6 presets (double layer and cube).
 
 ```prompt
 /architect "3D mode" m2-3d-joins
@@ -194,7 +195,7 @@ Context:
 /architect "Results and records" m2-3d-joins
 ```
 
-## [P] 8. Architect the Steam features slice for m3
+## [ ] 8. Architect the Steam features slice for m3
 
 Depends on: none
 
@@ -210,6 +211,7 @@ Context: none
     b. Option a plus grind achievements: games played, win streaks and total cells cleared.
     c. Only a handful of firsts (first win in each mode and on each difficulty), with the rest left to m6.
     Recommendation: a. It gives enthusiasts goals they care about without padding, and m6 already brings the full set.
+- 2026-10-09 unparked with answer: Q1 — in 3D mode the first three "2D" presets (9×9×1, 16×16×1, 30×16×1) must be discarded, because they are redundant with Classic 2D; the remaining 6 presets (double layer and cube) get leaderboards, 12 3D boards; Q2a — a small set of about 15–20 milestone achievements. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
 
 ```prompt
 /architect "Steam features" m3-on-steam
@@ -217,7 +219,7 @@ Context: none
 technical-direction.md leaves the Steamworks binding open, to be decided by a spike (steamworks.js lacks a leaderboard API: extend it, or adopt another binding). Do not pick the binding here; raise it as a question if the design cannot proceed around it.
 ```
 
-## [P] 9. Architect the main menu and game shell slice for m3
+## [ ] 9. Architect the main menu and game shell slice for m3
 
 Depends on: none
 
@@ -233,6 +235,7 @@ Context: none
     b. Leave it as an open question in this document and settle it when the roadmap is revised.
     c. Put it in step 3's m1 game-shell instead, hidden on the web build until the desktop build exists.
     Recommendation: a. m3 is the first milestone with a desktop build, so it is the first place Quit is needed. Correcting the roadmap keeps the slice accurate.
+- 2026-10-09 unparked with answer: Q1a — one document here (`leaderboards-menu-entry`) owning the menu entry and its navigation, step 8's `leaderboard-screen` owning the screen; Q2a — Quit goes in this m3 document, shown on the desktop build only, and the m3 slice is corrected afterwards with /product-roadmap. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
 
 ```prompt
 /architect "Main menu and game shell" m3-on-steam
