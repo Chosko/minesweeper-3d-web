@@ -84,8 +84,9 @@ screen router.
 ## Interfaces and contracts
 
 - **Open** — the shell routes to the screen with an optional board identity
-  and returns to the caller on Back. The main menu's Leaderboards entry and,
-  later, the results screen open it this way.
+  and returns to the caller on Back. The main menu's Leaderboards entry
+  opens it with no board; the results screen's *Leaderboard* action
+  (`results-steam-rank`) opens it on the finished game's board.
 - **Reads** — `steam-leaderboards`' entries, own standing, replay fetch and
   availability.
 - **Navigation** — every control reachable by keyboard and controller;

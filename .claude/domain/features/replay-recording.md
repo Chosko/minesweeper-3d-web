@@ -25,8 +25,10 @@ In scope (m2-3d-joins):
   it was played under, an action stream, a movement stream, and check values
   that prove a replay still reproduces.
 - Capture in Classic 2D on the square grid and in the 3D mode, for every
-  game that produces a summary — won, lost or abandoned after its first
-  click.
+  game that ends in play — won, lost, or abandoned by restart or leave after
+  its first click. A game ended by closing the window, the tab or the app
+  has no replay: its recording is lost with the page, and only its summary
+  is recorded at the next launch.
 - Movement capture: the 2D pointer position and the keyboard and controller
   cell cursor, sampled about 20 times a second; the 3D camera position, view
   direction and view mode, sampled about 10 times a second.

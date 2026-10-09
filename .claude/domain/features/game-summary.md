@@ -57,7 +57,8 @@ module tested with Node's built-in runner, beside the rules engine (see
   name, so a custom board that happens to match a standard size is that
   standard board.
 - **Summary builder.** Takes the engine's game summary (or, for an
-  abandoned game, the engine's counts at the moment of abandoning), the
+  abandoned game or a started game's summary so far, the engine's counts at
+  that moment), the
   elapsed time in milliseconds, the board choice, the seed and generator
   version, and returns one summary record with the derived stats filled in.
 - **Stat derivations.** One function per derived stat, shared by every
@@ -95,8 +96,9 @@ module tested with Node's built-in runner, beside the rules engine (see
 - **Derived stats** — pure functions of the summary's own fields, so any
   consumer can recompute them and get the same answer.
 - **Abandoned game** — a game that had its first click and was then
-  restarted or left before a win or loss is summarised with outcome
-  abandoned. A game left before its first click produces no summary.
+  restarted, left, or ended by closing the window, the tab or the app
+  before a win or loss is summarised with outcome abandoned. A game left
+  before its first click produces no summary.
 
 ## Dependencies
 

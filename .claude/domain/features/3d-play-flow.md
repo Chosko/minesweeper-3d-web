@@ -34,7 +34,8 @@ In scope (m2-3d-joins):
 - The no-guess switch on every preset and on custom boards up to a
   cell-count limit, shown disabled with its reason above the limit.
 - The 3D mode's side of the mode contract: reporting game started, finished
-  and abandoned with a summary built through `game-summary`.
+  and abandoned with a summary built through `game-summary`, and returning a
+  started game's summary so far when the shell asks.
 - Leaving the current 3D best times behind: they are neither read, shown
   nor imported.
 
@@ -121,6 +122,9 @@ behaviour.
   the results screen follows it as the m2 Results and records slice
   decides; `game abandoned(summary)` when a started, unfinished game is
   restarted or left. A game left before the first reveal reports nothing.
+  `summary()` returns a started, unfinished game's summary so far, outcome
+  abandoned, so a game ended by closing the window counts as `game-shell`
+  describes; before the first reveal there is none.
 - **Summary** — built by `game-summary` from the engine's summary or
   counts, the elapsed time, the 3D board choice, the seed and the generator
   version. The 3D fields of the board identity belong to the m2 Results and

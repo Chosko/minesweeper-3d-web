@@ -54,8 +54,6 @@ Non-goals:
   [product-roadmap.md § Not now](../product-roadmap.md#not-now).
 - The demo build and its separate app — deferred to `m5-core-complete`.
 - Store page, capsules and trailer — not now.
-- Recording the binding decision in `technical-direction.md` —
-  `/product-design`'s document; the spike's outcome is handed there.
 
 ## Architecture
 
@@ -188,8 +186,8 @@ rules engine imports Electron or the binding.
   steamworks.js extended with leaderboard and shared-file calls, or another
   binding. Decided by the spike; blocks the Steam implementation of the
   adapter and therefore every leaderboard task, but none of the page-side
-  design. The outcome goes to `/product-design` to record in
-  technical-direction.md.
+  design. The spike records the chosen binding in this document, in place
+  of this question.
 - Whether the Steam overlay renders reliably over the Electron window on
   the chosen binding, and which window and GPU settings it needs. Checked
   by the spike; blocks the achievement exit criterion's "shows in Steam's

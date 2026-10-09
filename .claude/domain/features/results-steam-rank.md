@@ -4,7 +4,8 @@ The rank panel on the results screen of the Steam build: after a won game
 on a standard board, the player's global and friends rank on that board's
 Steam leaderboard, filled in while the screen is already open, with the
 move shown when the win improved the player's entry and an offline wording
-when Steam does not answer.
+when Steam does not answer; and a *Leaderboard* action that opens the
+leaderboard screen on the game's board.
 
 ## Purpose
 
@@ -31,12 +32,15 @@ In scope (m3-on-steam):
   and friends rank, labelled "your best", with no move.
 - Waiting about 5 seconds for Steam before showing the offline wording, and
   filling the panel in when a late answer arrives while the screen is open.
+- A *Leaderboard* action on the results screen in the Steam build, after
+  any won or lost game on a board in the catalogue, that opens
+  `leaderboard-screen` on this game's board.
 
 Non-goals:
 
-- A rank panel in the web build — the web preview has only local
-  leaderboards, and a local rank would repeat the personal-best comparison
-  already on the screen.
+- A rank panel or a *Leaderboard* action in the web build — the web
+  preview has only local leaderboards, and a local rank would repeat the
+  personal-best comparison already on the screen.
 - A rank panel after a lost game, on a custom board, or on any board
   without a leaderboard.
 - Where this game's time would have ranked when it did not beat the
@@ -78,6 +82,12 @@ view and flow and reads everything from `steam-leaderboards`.
   outbox, "Rank unavailable offline" otherwise. An answer that arrives later
   still fills the panel in while the results screen is open. Leaving the
   screen stops the resolver and drops its subscription.
+- **Leaderboard action.** A kit button in the results view's actions, after
+  *Records*, shown when the leaderboards capability is present and the
+  game's board has a leaderboard, won or lost. It never takes the default
+  focus off *Play again*. It asks the shell to open the leaderboard screen
+  with this game's board identity; Back from there returns to the results
+  screen, whose flow starts the panel again for the shown summary.
 
 ## Data and state
 
@@ -93,6 +103,8 @@ view and flow and reads everything from `steam-leaderboards`.
 - **Reads** — `steam-leaderboards`' submission state for the summary id and
   its change notification, `standing(board)` for the global and friends
   rank, and the leaderboards capability flag.
+- **Leaderboard** — asks the shell to route to `leaderboard-screen`'s
+  *Open* with the shown summary's board identity.
 - **Failure** — a rejected query or a dead connection ends in the offline
   wording, never an error on the screen; the rest of the results screen and
   its actions are never blocked or delayed by the panel.
@@ -106,14 +118,8 @@ view and flow and reads everything from `steam-leaderboards`.
 - `steam-desktop-host` — the leaderboards capability flag that tells the
   Steam build from the web build.
 - `screen-components` — the panel's composition and its states' look.
+- `leaderboard-screen` — the screen the *Leaderboard* action opens, through
+  its *Open* route with a board identity.
 - `3d-results-records-screens` — the 3D end of game that hands over to the
   same results screen.
 - No external libraries.
-
-## Open questions
-
-- Whether the results screen gets a way to the leaderboard screen, opened
-  on this game's board — `leaderboard-screen` allows that route, the
-  product design names only *Play again* and *Watch replay* one step away,
-  and the panel is non-interactive until it is decided. Blocks only that
-  route.

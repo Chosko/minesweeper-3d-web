@@ -269,7 +269,8 @@ Context: none
 
 Depends on: 3, 14
 
-Context: none
+Context:
+- 2026-10-09 (amend): task 109 also builds the results screen's *Leaderboard* action and now waits on task 104, the leaderboard screen (step 21).
 
 ```prompt
 /task-implement 109 --review

@@ -33,7 +33,8 @@ Non-goals:
 - 3D games on the results screen — deferred to `m2-3d-joins`.
 - Steam global and friends rank — `results-steam-rank`, in `m3-on-steam`.
 - A results screen for abandoned games: restarting or leaving goes where
-  the player asked, and the game is recorded without being shown.
+  the player asked, a game ended by closing the game is recorded at the
+  next launch, and neither is shown.
 - The screen's visual design — `screen-components`.
 
 ## Architecture
@@ -53,7 +54,9 @@ composed from the `screen-components` kit.
 - **Rank panel.** In the Steam build, after a won game on a board with a
   leaderboard, the view carries `results-steam-rank`'s panel below the
   comparison; the flow starts it when the screen shows and stops it when
-  the screen is left.
+  the screen is left. In the same build, after any game on a board with a
+  leaderboard, the actions carry `results-steam-rank`'s *Leaderboard*
+  action, which opens the leaderboard screen on this game's board.
 - **Board shown behind.** In Classic 2D the finished board stays visible
   behind the screen, as the mode left it, so a loss still shows where the
   mines were. Over 3D the screen is opaque and takes over, per

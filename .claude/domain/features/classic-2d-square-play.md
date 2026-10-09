@@ -122,6 +122,10 @@ copied.
   before a win or loss reports the game's summary with outcome abandoned
   before the game is discarded; before the first click nothing is
   reported.
+- **Game in progress** — the mode contract's `summary()` returns a
+  started, unfinished game's summary so far, with outcome abandoned, built
+  the same way as the abandoned report's; before the first click there is
+  none.
 - **Generation failure** — when a no-guess request fails, the session shows
   the failure and offers what `board-generation`'s open question settles;
   the timer never starts on a failed board.

@@ -1089,7 +1089,7 @@ Feature: leaderboards-menu-entry
 Status: [MISSING]
 Target: claude
 Files: js/results/rank-panel.js, js/results/view.js, js/results/flow.js, css/components.css, index.html, tests/results-rank.test.mjs
-Preconditions: 46, 81, 86, 97
+Preconditions: 46, 81, 86, 97, 104
 Feature: results-steam-rank
 
 ---

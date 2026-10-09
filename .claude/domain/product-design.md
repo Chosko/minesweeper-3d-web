@@ -229,9 +229,8 @@ best efficiency — and every exact size, mine count and no-guess setting is
 its own board, custom boards included; a 3D board is named by its X × Y × Z
 size. Win rate and streaks are kept per board and per mode, never combined
 across 2D and 3D, and the Records screen switches between the two modes. A
-game restarted or left after its first click counts as a loss and breaks the
-win streak. Serves the
-enthusiast loop.
+game restarted, left, or ended by closing the game after its first click
+counts as a loss and breaks the win streak. Serves the enthusiast loop.
 
 ### Replays
 

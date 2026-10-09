@@ -117,10 +117,12 @@ owns records.
 - **Queries** — boards played for a mode; a board's bests, counters, win
   rate and history; a mode's overall counters. There is no query across
   modes.
-- **Abandoned 3D game** — a 3D game restarted or left after its first
-  applied reveal is recorded with outcome abandoned and counts as a loss
-  for its board and for the 3D mode. A 3D game left before its first
-  reveal produces no summary.
+- **Abandoned 3D game** — a 3D game restarted, left, or ended by closing
+  the window, the tab or the app after its first applied reveal is recorded
+  with outcome abandoned and counts as a loss for its board and for the 3D
+  mode; a closed game is recorded at the next launch from
+  `personal-records`' game-in-progress marker. A 3D game left before its
+  first reveal produces no summary.
 - **Failure** — as `personal-records`: a refused newer records version
   leaves the stored documents untouched and runs the session with empty
   records that are not saved; an older build meeting the stepped-up format
@@ -135,7 +137,8 @@ owns records.
 - `3d-board-graph` — the engine's counts over the box graph and the 3D
   rule profile's click kinds.
 - `3d-play-flow` — the 3D session's elapsed time, board choice, seed and
-  generator version, and its started, finished and abandoned reports.
+  generator version, its started, finished and abandoned reports, and its
+  summary so far.
 - `platform-storage` — the records format version step.
 - No external libraries.
 

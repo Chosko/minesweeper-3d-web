@@ -35,6 +35,9 @@ In scope (m1-classic-2d):
 - Automatic pause when the window loses focus or the tab is hidden during a
   started, unfinished game, and the leave-page guard for such a game on the
   web build.
+- The in-progress hook that lets `personal-records` keep a started,
+  unfinished game's summary so far, so a game ended by closing the window,
+  the tab or the app counts as a loss.
 - Keyboard and controller navigation on every shell screen: focus order,
   default focus per screen, Back on Esc and the controller's back button,
   and suppression of a button held across a screen change.
@@ -102,13 +105,15 @@ it generalises.
 ## Interfaces and contracts
 
 - **Mode contract** — each mode front-end provides: `open board choice`,
-  `start(choice)`, `pause()`, `resume()`, `restart()`, `leave()`, and reports
-  `game started`, `game finished(summary)`, `game abandoned(summary)` and
-  `can pause` back to the shell. `pause()` stops the mode's timer and stops
-  it accepting board input; `leave()` discards the game and releases
-  everything the mode holds (pointer lock, canvas, worker requests).
-  `restart()` and `leave()` on a started, unfinished game first report
-  `game abandoned` with the game's summary from `game-summary`.
+  `start(choice)`, `pause()`, `resume()`, `restart()`, `leave()`,
+  `summary()`, and reports `game started`, `game finished(summary)`,
+  `game abandoned(summary)` and `can pause` back to the shell. `pause()`
+  stops the mode's timer and stops it accepting board input; `leave()`
+  discards the game and releases everything the mode holds (pointer lock,
+  canvas, worker requests). `restart()` and `leave()` on a started,
+  unfinished game first report `game abandoned` with the game's summary from
+  `game-summary`; `summary()` returns that same summary for a started,
+  unfinished game at any moment, outcome abandoned.
 - **Pause rules** — pause applies only to a started, unfinished game; before
   the first click or after the game ends, the pause key opens the pause card
   without a timer to stop, offering restart and back to menu. While the
@@ -124,6 +129,12 @@ it generalises.
 - **Game abandoned** — the shell records the mode's summary with
   `personal-records` and goes where the player asked, showing no results
   screen.
+- **Game in progress** — at `game started`, at every pause of a started,
+  unfinished game and on the page's `pagehide`, the shell passes the mode's
+  `summary()` to the in-progress hook `personal-records` fills. A game ended
+  by closing the window, the tab or the app is then recorded as abandoned —
+  a loss — at the next launch, with the summary of the last of those
+  moments.
 - **Navigation contract** — every shell screen is fully operable by mouse,
   keyboard and controller; Esc and the controller's back button always mean
   Back or Pause, never a game action.
@@ -142,5 +153,6 @@ it generalises.
 - `classic-2d-square-play` — implements the mode contract for Classic 2D.
 - `results-screen` and `records-screen` — the screens the shell routes to;
   the results screen receives each finished game's summary.
-- `personal-records` — records each abandoned game's summary.
+- `personal-records` — records each abandoned game's summary and keeps a
+  started game's summary so far through the in-progress hook.
 - No external libraries.

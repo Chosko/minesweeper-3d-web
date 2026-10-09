@@ -49,6 +49,7 @@ Next step: `/architect <feature>`, then `/task-add feature=<slug>`.
 - The demo is unlimited on its unlocked boards: per-day caps read as free-to-play nagging in a paid game.
 - No variant logic rules: they feel like hardcore brain puzzles, and 14 Minesweeper Variants owns that ground; gameplay twists stay wanted but deferred until one convinces.
 - Scanner charges and 3D fog were proposed and set aside.
+- Closing the game mid-game counts as a loss, like restarting or leaving: otherwise closing would be a free escape from a losing game and streaks would mean nothing.
 - Leaderboards come from Steam because the game has no backend; custom boards are excluded because they cannot be compared.
 - Electron over Tauri and NW.js: bundled Chromium keeps WebGL identical everywhere, Tauri's system webviews vary on Mac/Linux, NW.js's Greenworks is best-effort.
 - Steam Deck is a stretch goal because Minesweeper with a controller is awkward, even though controllers are supported.

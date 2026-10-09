@@ -26,8 +26,11 @@ In scope (m1-classic-2d):
   best 3BV/s and best efficiency. Each exact board — standard or custom,
   with or without no-guess — has its own.
 - Win rate and win streaks (current and longest) per board and across
-  Classic 2D as a whole. A game abandoned after its first click counts as a
-  loss and breaks the streak.
+  Classic 2D as a whole. A game abandoned after its first click — restarted,
+  left for the menu, or ended by closing the window, the tab or the app —
+  counts as a loss and breaks the streak.
+- The game-in-progress marker through which a game ended by closing the
+  window, the tab or the app is recorded at the next launch.
 - Queries for the records screen: the boards played, each board's bests,
   counts, win rate, streaks and history.
 - Persistence through `platform-storage`, with a versioned records format.
@@ -69,6 +72,15 @@ DOM-free ES module tested in Node; storage is reached only through
 - **Comparison.** For each new summary, the standing best for each of the
   three stats before this game, the difference from it, and whether this
   game set a new best — what the results screen shows.
+- **Game-in-progress marker.** From the game shell's in-progress hook, the
+  store saves a started game's summary so far, outcome abandoned, at its
+  first click, and saves it again at every pause and when the page is
+  hidden or unloaded. Recording that game's own summary — won, lost, or
+  abandoned by restart or leave — clears the marker. At start-up, a marker
+  left behind by a game the window, the tab or the app closed on is
+  recorded as an abandoned game — a loss that ends the streak — and
+  cleared, so its time and counts are those of its last save. A game closed
+  before its first click leaves no marker.
 
 ## Data and state
 
@@ -79,8 +91,11 @@ DOM-free ES module tested in Node; storage is reached only through
 - **History document** — the list of compact summaries (id, board key,
   outcome, time, 3BV, 3BV solved, clicks, end date), appended after every
   game. Grows with play.
-- Both documents are registered with `platform-storage` under their own
-  names and format versions.
+- **Game-in-progress document** — at most one summary, the started game's
+  summary so far; written at its first click and at each save after, and
+  cleared when the game ends.
+- All three documents are registered with `platform-storage` under their
+  own names and format versions.
 - **Source of truth** — the history document. Bests and counters are a
   cache derived from it: when the records document is missing or corrupt
   and the history is intact, they are rebuilt from the history.
@@ -94,6 +109,11 @@ DOM-free ES module tested in Node; storage is reached only through
 - **Queries** — boards played (standard boards first, then custom boards by
   last played), a board's bests, counters, win rate and history; the
   Classic 2D overall counters.
+- **In progress** — `begin(summary)` and `checkpoint(summary)`, called
+  through the game shell's in-progress hook, save the marker; recording the
+  summary with the same id clears it. Settling a leftover marker at
+  start-up goes through `record`, so a marker whose game was already
+  recorded is a no-op.
 - **Change notification** — subscribers are told after each recorded game,
   so an open records screen stays current.
 - **Availability** — when `platform-storage` reports nothing will persist,
@@ -116,11 +136,6 @@ change notification).
 
 ## Open questions
 
-- Whether closing the window or tab during a started, unfinished game
-  counts as a loss like restarting does. Recording it needs a game-in-
-  progress marker saved at the first click and settled at the next launch.
-  Blocks only that case; until settled, a game ended by closing the window
-  is not recorded.
 - How large the history grows before the web build's browser storage
   limit matters, and whether old entries are then thinned. Blocks nothing
   in m1; measured once real history exists.
