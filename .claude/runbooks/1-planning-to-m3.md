@@ -292,7 +292,7 @@ Context: none
 ```
 Done: 2026-10-09, commit `45f69db` (5 files, +138/-4). steam-leaderboards' submitted state now carries the global rank before and after the upload. A results-screen link to the leaderboard screen is left open.
 
-## [ ] 11. Write the production plan
+## [x] 11. Write the production plan
 
 Depends on: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
 
@@ -302,6 +302,7 @@ Context:
 ```prompt
 /production-plan
 ```
+Done: 2026-10-09, commit `ec56d23` (1 file, +93/-0). m1 is ACTIVE with 13 features, m2 has 7 and m3 has 7. Dependencies that the feature documents state in both directions were cut to consumer → provider, and the documents still describe them both ways.
 
 ## [ ] 12. Write the m1 tasks
 
