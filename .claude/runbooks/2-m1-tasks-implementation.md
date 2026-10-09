@@ -231,7 +231,7 @@ Context:
 
 Done: 2026-10-09, commit `883e5d5` (7 files, +1209/-2). Kit classes carry a `ui-` prefix to avoid clashing with `style.css`'s `.btn`/`.stat`; `css/components.css` loads between `tokens.css` and `style.css`. `js/main.js` was left untouched — default-focus wiring via `padDefault` falls to task 19.
 
-## [ ] 18. Implement task 18 — In-game overlay bar component
+## [x] 18. Implement task 18 — In-game overlay bar component
 
 Depends on: 17
 
@@ -242,6 +242,8 @@ Context:
 /task-implement 18 --review
 ```
 
+Done: 2026-10-09, commit `806b2a0` (9 files, +269/-15). The controller's Start button now presses the overlay's pause button during play (it never focuses it). The old `.stat`/`.hud-stats` rules are removed from `style.css`.
+
 ## [ ] 19. Implement task 19 — Main menu, pause card and results layout from the kit
 
 Depends on: 17, 18
@@ -249,6 +251,7 @@ Depends on: 17, 18
 Context:
 - 2026-10-09 (from step 17): every kit class starts with `ui-` (e.g. `.ui-button--primary`, `.ui-menu__item`, `.ui-segmented__option`); `css/components.css` loads between `tokens.css` and `style.css`. Kit controls are native `<button>`/`<input>`, which controller navigation already picks up.
 - 2026-10-09 (from step 17): `js/main.js` was not changed by the kit; a screen sets its default focus by giving a control an id and adding it to `padDefault`'s per-layer map — that wiring is this task's.
+- 2026-10-09 (from step 18): the HUD hint panels (`.hud-tools`, `#hint-h`, `#help`) keep a see-through white background, so their text is hard to read over the sky in dark theme — this restyle could pick them up. `js/main.js` now holds the overlay pause handler and a Start → pause binding during play.
 
 ```prompt
 /task-implement 19 --review
@@ -260,6 +263,7 @@ Depends on: 17, 18, 19
 
 Context:
 - 2026-10-09 (from step 17): only the stylesheet-order line of `.claude/context/app-shell.md` was updated for `css/components.css`; `testing.md` and the rest of `app-shell.md` do not yet describe the kit's new files.
+- 2026-10-09 (from step 18): `.claude/context/app-shell.md` does not yet describe the overlay bar, its `onPause` callback or the new timer format; the overlay's format helpers live in `js/ui/components.js` with tests in `tests/components.test.mjs`.
 
 ```prompt
 /task-implement 20 --review
@@ -330,7 +334,8 @@ Context:
 
 Depends on: 25
 
-Context: none
+Context:
+- 2026-10-09 (from step 18): the controller's Start button presses the overlay's pause button during play (binding in `js/main.js`); the overlay bar reports the press through an `onPause` callback.
 
 ```prompt
 /task-implement 27 --review --rounds 2
