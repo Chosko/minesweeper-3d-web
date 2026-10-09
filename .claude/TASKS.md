@@ -446,7 +446,7 @@ Feature: personal-records
 
 ## 45. Update documentation for feature `personal-records`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/records.md, .claude/context/testing.md, .claude/context/INDEX.md
 Preconditions: 43, 44

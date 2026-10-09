@@ -17,9 +17,12 @@ DOM-free apart from the browser backend's default `localStorage` getter.
   browser backend when first evaluated and re-exports its methods.
 
 The settings store (`settings`, [settings.md](settings.md)), the last mode
-played (`shell.lastMode`) and the last Classic 2D board choice register their
-documents here; `personal-records` will too, replacing the loose
-`localStorage` helpers left in `js/ui.js` ([app-shell.md](app-shell.md)).
+played (`shell.lastMode`), the last Classic 2D board choice and the records
+store (`records`, `records.history`, `records.inProgress`,
+[records.md](records.md)) register their documents here. The loose
+`localStorage` helpers left in `js/ui.js` keep the 3D mode's own keys,
+best times included, which the records leave untouched
+([app-shell.md](app-shell.md)).
 `js/theme.js`, a classic script that cannot import, reads the settings
 document's browser key directly at start-up.
 

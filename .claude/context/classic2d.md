@@ -197,7 +197,9 @@ looks.
   client. Win or loss stops the timer and emits `finished`; `restart` and
   `leave` after the first click and before the end emit `abandoned` first.
   Every summary is `buildSummary` over the engine's counts or summary, the
-  board identity, the seed and the generator version.
+  board identity, the seed, the generator version and the game's id — one
+  `crypto.randomUUID()` drawn when the board arrives, so the in-progress
+  summary and the final one name the same game for the records store.
 - **Timer.** Elapsed time accumulates over running stretches: it starts
   when the board is ready (a pause while generating starts it paused),
   freezes on pause, and keeps its time once stopped; `seconds()` is whole

@@ -204,7 +204,8 @@ the factory tests drive):
 `js/main.js` exports nothing; its surface is `window.__ms` (tests, Playwright):
 - getters `state` (the live `S`), `game`, `renderer`, `camera`, `controls`,
   `pads`, `fps`, `frameStats` (`{renders, skipped}`), `modes` (the mode
-  host), `pauser` (the pause controller), `settings` (the settings store);
+  host), `pauser` (the pause controller), `settings` (the settings store),
+  `records` (the records store);
   `THREE`, `startCameraPos`.
 - `start(X, Y, Z, mines, minePositions?)` → `MODES.start('3d', …)`;
   `forcePlay()` enters lockless play; `pause()` → `PAUSE.pause('key')`.
@@ -301,8 +302,8 @@ Game shell (`js/shell/`, wired in `js/main.js`):
 - **Hand-offs.** `PAUSE.attach(name, listener)`: `finished` for every
   finished game (the shell then routes to `results` once the router has it),
   `abandoned` for every abandoned game, `inProgress` at game started, at every
-  pause of a started, unfinished game and on `pagehide`. No feature attaches to
-  a hand-off.
+  pause of a started, unfinished game and on `pagehide`. The records store
+  attaches to all three (`RECORDS.attach(PAUSE)`, [records.md](records.md)).
 - **Leave-page guard.** `guardLeave` on `beforeunload` is armed by the pause
   controller at game started and removed when the game finishes, is
   abandoned or its mode fails, so it guards only a started, unfinished game
@@ -358,11 +359,15 @@ Game flow (`js/main.js`):
   buttons) sets `muted`; the store's `muted` subscription updates the
   buttons' label (`ui.setSound`).
 - Settings: `SETTINGS` loads before the first screen shows (`await
-  settingsLoaded` before `showMainMenu`); `applySettings` wires the theme,
-  sound, camera, resolution and fullscreen owners, and one
-  `bindSettingControls` binds every `[data-setting]` control — unlocking
-  audio after a volume or mute change. A failed save toasts once that
-  settings will not be kept.
+  Promise.all([settingsLoaded, recordsLoaded])` before `showMainMenu`);
+  `applySettings` wires the theme, sound, camera, resolution and fullscreen
+  owners, and one `bindSettingControls` binds every `[data-setting]`
+  control — unlocking audio after a volume or mute change. A failed save
+  toasts once that settings will not be kept.
+- Records: `RECORDS` (`createRecordsStore`, [records.md](records.md)) loads
+  beside the settings, settling a game the last launch closed on, and is
+  attached to `PAUSE`. A failed records save toasts once that this
+  session's games will not be kept.
 - `onKey` ignores keys whose target is inside `input, select, textarea`, so
   settings sliders do not trigger H/M/F.
 - Controller menus: `LAYER_SCREEN` maps each overlay to its screen, topmost

@@ -79,7 +79,8 @@ browser checks for everything that needs WebGL or the DOM.
 - `tests/records-board.test.mjs` — the board identity (`js/records/board.js`):
   the six frozen fields and the impossible values that throw, the standard
   boards, the key pinned for the standard and custom boards, the same fields
-  giving the same key and every field taking part, the labels (standard,
+  giving the same key and every field taking part, `parseBoardKey` giving
+  back the identity and throwing on a malformed or impossible key, the labels (standard,
   custom, a custom board matching a standard size, standard sizes only on
   the square grid), and the module DOM-free, importing nothing and
   documenting its key format.
@@ -91,6 +92,30 @@ browser checks for everything that needs WebGL or the DOM.
   stats matching the exported functions, best eligibility, the invalid
   inputs that throw, and the module DOM-free and independent of
   `js/logic.js`.
+- `tests/records-model.test.mjs` — the records model
+  (`js/records/model.js`) over built summaries: three bests per board from
+  won games only, replaced only when strictly better and independently, a
+  tie keeping the earlier holder, an unavailable stat never a best, each
+  exact board its own; per-board and Classic 2D overall counters and
+  streaks, derived win rate; the history in play order and compact,
+  JSON-safe form; the comparison against the bests before the game; the same
+  id twice a no-op, unrecordable summaries throwing; the rebuild from history
+  equal to the incremental records; the documents, boards-played order,
+  queries by identity or key returning copies, and the module DOM-free and
+  storage-free.
+- `tests/records-store.test.mjs` — the records store
+  (`js/records/store.js`) over platform storage on the memory backend: the
+  three documents registered at version 1, a single load, use before load
+  throwing, memory-first saves, survival across a reload, `onChange` and a
+  throwing listener, a failed save reported once, a missing or corrupt
+  records document rebuilt from the history, unavailable storage, newer and
+  unreadable documents left untouched with empty unsaved records, the
+  `attach` hooks (abandoned, in-progress begin then checkpoint, the 3D
+  summary ignored), the marker cleared by its own game and kept by another,
+  a late checkpoint not reviving it, a leftover marker settled at load as a
+  streak-ending loss or a no-op when already recorded, three runs through
+  the real mode host and pause controller with a fake mode — closed
+  mid-game, restart, finished — and the queries.
 - `tests/gamepad.test.mjs` — controller helpers (`js/gamepad.js`), analog camera
   (`js/input.js::FlyCamera`), `js/controls.js::Controls`, and trigger sequences
   through `js/input.js::MouseActions`.
@@ -155,7 +180,7 @@ browser checks for everything that needs WebGL or the DOM.
   the memory backend, the timer; the session's closed board, first-click
   request, the delayed "generating" state, the timer starting at the
   board, actions and `changed`, win and loss with `buildSummary`
-  summaries, pause (also while generating), the no-guess and worker
+  summaries, one summary id per game, pause (also while generating), the no-guess and worker
   failures with Retry and Play a standard board, restart and leave
   (abandoned reports, cancelled generation, a late answer dropped), actions
   ignored while generating; both modules DOM-free and reaching generation
@@ -381,10 +406,13 @@ Tests consume, and so pin, these contracts:
   `ASIDE_PREFIX`; `js/platform/memory-backend.js::createMemoryBackend`;
   `js/platform/index.js` exports. Full list in [platform.md](platform.md).
 - `js/records/board.js::createBoardIdentity`, `boardKey` (its pinned
-  format), `boardLabel`, `standardBoard`, `STANDARD_BOARDS`,
+  format), `parseBoardKey`, `boardLabel`, `standardBoard`, `STANDARD_BOARDS`,
   `BOARD_KEY_FORMAT`; `js/records/summary.js::buildSummary` and the record's
   shape, `countedClicks`, `bbbvPerSecond`, `efficiency`, `isBestEligible`,
-  `BEST_STATS`, `OUTCOMES`. Full list in [records.md](records.md).
+  `BEST_STATS`, `OUTCOMES`; `js/records/model.js::createRecordsModel`,
+  `compactSummary`, `rebuildRecords`, `emptyRecords`;
+  `js/records/store.js::createRecordsStore` and the document names and
+  versions. Full list in [records.md](records.md).
 - `js/shell/router.js::createRouter`, `SHELL_SCREENS`;
   `js/shell/navigation.js::FOCUSABLE`, `topLayer`, `resolveFocus`,
   `isBackKey`, `backButtons`, `createHeldSuppressor`;
@@ -407,7 +435,7 @@ Tests consume, and so pin, these contracts:
 Browser hook `js/main.js::window.__ms` (full list in [app-shell.md](app-shell.md)):
 - getters `state`, `game`, `renderer`, `camera`, `controls`, `pads`, `fps`,
   `frameStats`, `modes` (the mode host), `pauser` (the pause controller),
-  `settings` (the settings store);
+  `settings` (the settings store), `records` (the records store);
   `THREE`, `startCameraPos`; `state.mode` is the router's current screen.
 - `start(X, Y, Z, mines, minePositions?)`, `forcePlay()`, `pause()`.
 - `moveTo(x,y,z)`, `look(yaw,pitch)`, `aimAt(idx | [x,y,z])` → selected idx,
@@ -547,7 +575,11 @@ is enforced.
   `generation-*` tests encode.
 - [../domain/features/game-summary.md](../domain/features/game-summary.md)
   — the identity, key, summary, derivation and best-eligibility contracts
-  the `records-*` tests encode.
+  `records-board.test.mjs` and `records-summary.test.mjs` encode.
+- [../domain/features/personal-records.md](../domain/features/personal-records.md)
+  — the bests, counters, history, comparison, persistence, marker and
+  failure contracts `records-model.test.mjs` and `records-store.test.mjs`
+  encode.
 - [../domain/features/design-tokens-and-themes.md](../domain/features/design-tokens-and-themes.md)
   — the contrast contract and applier/reader contracts `tokens.test.mjs` and
   `theme.test.mjs` encode.
@@ -578,7 +610,7 @@ is enforced.
 - [engine.md](engine.md) — `tests/engine-*.test.mjs` pin the cell-graph engine; the fidelity test checks it against the observation file.
 - [generation.md](generation.md) — `tests/generation-*.test.mjs` pin the seeded generator, solver, no-guess loop, worker and client.
 - [platform.md](platform.md) — `tests/platform-*.test.mjs` pin the storage interface, backends and start-up selection.
-- [records.md](records.md) — `tests/records-*.test.mjs` pin the board identity and key, the summary builder and its derived stats.
+- [records.md](records.md) — `tests/records-*.test.mjs` pin the board identity and key, the summary builder and its derived stats, the records model and the records store.
 - [input.md](input.md) — `tests/gamepad.test.mjs` covers gamepad helpers, `FlyCamera`, `Controls`, `MouseActions`.
 - [app-shell.md](app-shell.md) — owns `window.__ms`, the surface Playwright drives,
   the token sheet, theme applier and token reader the token/theme tests pin,
