@@ -351,7 +351,7 @@ Context:
 
 Done: 2026-10-09, commit `36779e9` (10 files, +566/-46). `shell.lastMode` is saved on the mode host's `started` (first click), not on opening a board. The 3D presets moved off `#menu` to a new `board-choice` router screen; Classic 2D, Records and Settings point to a shared `coming-soon` placeholder until their screens exist.
 
-## [ ] 27. Implement task 27 — Pause controller, restart, back to menu and game hand-offs
+## [x] 27. Implement task 27 — Pause controller, restart, back to menu and game hand-offs
 
 Depends on: 25
 
@@ -359,10 +359,13 @@ Context:
 - 2026-10-09 (from step 18): the controller's Start button presses the overlay's pause button during play (binding in `js/main.js`); the overlay bar reports the press through an `onPause` callback.
 - 2026-10-09 (from step 24): the 3D shell registers router screens `menu`, `ready`, `playing`, `paused`, `ctxlost`; `board-choice`, `results`, `records`, `settings` are only named in `SHELL_SCREENS` until their tasks build them. Screens declare their own default focus (see the catalogue comment in `css/components.css`); the controller Back button means Back in menus and Pause in play.
 - 2026-10-09 (from step 25): the mode host exposes `start`, `pause`, `resume`, `restart`, `leave`, `summary`, `on`, `active`, `state` (also as `window.__ms.modes` for Playwright). The host reports `game abandoned` itself from the mode's `summary()` before `restart()`, `leave()` or a replacing `start()`; a mode reports only `started`, `finished`, `canPause`, `failed`. `resume`/`restart` take `{ source: 'pointer' | 'key' | 'pad' }`. Until board choice exists, the 3D mode's "open board choice" goes to the main menu.
+- 2026-10-09 (from step 26): the 3D mode's "open board choice" now goes to the `board-choice` router screen (`#board-choice`), not the main menu; Back from a fresh board's click-to-play card returns there.
 
 ```prompt
 /task-implement 27 --review --rounds 2
 ```
+
+Done: 2026-10-09, commit `48f2301` (11 files, +707/-35). Every pause goes through `js/shell/pause.js` (`window.__ms.pauser`); a finished game routes to the `results` screen only once that screen is registered, and the 3D end banner stays until then. The board is hidden whenever the pause card shows; the leave-page guard is live only while a game is in progress.
 
 ## [ ] 28. Implement task 28 — Update documentation for feature `game-shell`
 
@@ -372,6 +375,7 @@ Context:
 - 2026-10-09 (from step 24): `.claude/context/app-shell.md` and `.claude/context/input.md` still describe the old Esc handling and the `padSuppress`/`padDefault` wiring the router replaced.
 - 2026-10-09 (from step 25): `app-shell.md` and `testing.md` do not yet describe the mode host, the 3D adapter, `window.__ms.modes` or the context-lost "Back to menu" button (`#ctx-lost-menu`).
 - 2026-10-09 (from step 26): `app-shell.md` and `testing.md` still describe `#menu` holding the 3D presets; they now live on the `board-choice` screen, and `coming-soon` is the shared placeholder screen.
+- 2026-10-09 (from step 27): `app-shell.md` and `testing.md` do not yet describe the pause controller (`js/shell/pause.js`, `__ms.pauser`), its hand-offs, the confirmation panel or the in-progress-only leave-page guard.
 
 ```prompt
 /task-implement 28 --review
@@ -460,6 +464,7 @@ Depends on: 18, 26, 27, 32, 33
 Context:
 - 2026-10-09 (from step 25): the mode host exposes `start`, `pause`, `resume`, `restart`, `leave`, `summary`, `on`, `active`, `state` (also as `window.__ms.modes` for Playwright). The host reports `game abandoned` itself from the mode's `summary()` before `restart()`, `leave()` or a replacing `start()`; a mode reports only `started`, `finished`, `canPause`, `failed`. `resume`/`restart` take `{ source: 'pointer' | 'key' | 'pad' }`. Until board choice exists, the 3D mode's "open board choice" goes to the main menu.
 - 2026-10-09 (from step 26): Classic 2D, Records and Settings menu entries go to a shared `coming-soon` router screen (`#coming-soon`, not in `SHELL_SCREENS`) and switch over by themselves once their mode is registered or the router has their screen. The 3D presets live on a `board-choice` router screen (`#board-choice`); the menu module is `js/shell/menu.js`, and `shell.lastMode` (v1, `{ mode }`) is saved on the host's `started`.
+- 2026-10-09 (from step 27): the pause controller `js/shell/pause.js` (`window.__ms.pauser`) owns every pause and offers `pause(source, {note})`, `resume`, `restart`, `toMenu`, `pageHide`, `inProgress` and `attach(name, fn)` for the hand-offs `finished`, `abandoned`, `inProgress` — records and results hook in through `attach`. A finished game routes to the router screen `results` with `{ summary, mode }` once that screen is registered. Restart/Main-menu confirmation is a panel in the pause card (`#pause-confirm`, `UI.showConfirm`/`closeConfirm`/`isConfirmOpen`).
 
 ```prompt
 /task-implement 36 --review
@@ -527,6 +532,7 @@ Depends on: 26, 27, 39, 40
 
 Context:
 - 2026-10-09 (from step 26): Classic 2D, Records and Settings menu entries go to a shared `coming-soon` router screen (`#coming-soon`, not in `SHELL_SCREENS`) and switch over by themselves once their mode is registered or the router has their screen. The 3D presets live on a `board-choice` router screen (`#board-choice`); the menu module is `js/shell/menu.js`, and `shell.lastMode` (v1, `{ mode }`) is saved on the host's `started`.
+- 2026-10-09 (from step 27): the pause controller `js/shell/pause.js` (`window.__ms.pauser`) owns every pause and offers `pause(source, {note})`, `resume`, `restart`, `toMenu`, `pageHide`, `inProgress` and `attach(name, fn)` for the hand-offs `finished`, `abandoned`, `inProgress` — records and results hook in through `attach`. A finished game routes to the router screen `results` with `{ summary, mode }` once that screen is registered. Restart/Main-menu confirmation is a panel in the pause card (`#pause-confirm`, `UI.showConfirm`/`closeConfirm`/`isConfirmOpen`).
 
 ```prompt
 /task-implement 41 --review
@@ -560,6 +566,7 @@ Context:
 - 2026-10-09 (from step 14): documents are registered with `register(name, currentVersion, upgrades, { onIssue }?)` — `upgrades[v]` brings v to v+1 and the chain must be complete at registration; `onIssue({ name, kind })` reports `newer-version`, `corrupt`, `unreadable`, `save-failed`. `save` returns `{ ok: true }` or `{ ok: false, reason }` (`not-serializable`, `write-failed`, `newer-version`); `load`/`save` on an unregistered name throw.
 - 2026-10-09 (from step 15): storage callers import `storage`, `register`, `load`, `save`, `available` from `js/platform/index.js` only — a test fails if any other file under `js/` imports a backend directly.
 - 2026-10-09 (from step 25): the mode host exposes `start`, `pause`, `resume`, `restart`, `leave`, `summary`, `on`, `active`, `state` (also as `window.__ms.modes` for Playwright). The host reports `game abandoned` itself from the mode's `summary()` before `restart()`, `leave()` or a replacing `start()`; a mode reports only `started`, `finished`, `canPause`, `failed`. `resume`/`restart` take `{ source: 'pointer' | 'key' | 'pad' }`. Until board choice exists, the 3D mode's "open board choice" goes to the main menu.
+- 2026-10-09 (from step 27): the pause controller `js/shell/pause.js` (`window.__ms.pauser`) owns every pause and offers `pause(source, {note})`, `resume`, `restart`, `toMenu`, `pageHide`, `inProgress` and `attach(name, fn)` for the hand-offs `finished`, `abandoned`, `inProgress` — records and results hook in through `attach`. A finished game routes to the router screen `results` with `{ summary, mode }` once that screen is registered. Restart/Main-menu confirmation is a panel in the pause card (`#pause-confirm`, `UI.showConfirm`/`closeConfirm`/`isConfirmOpen`).
 
 ```prompt
 /task-implement 44 --review --rounds 2
@@ -581,6 +588,7 @@ Depends on: 19, 27, 36, 44
 
 Context:
 - 2026-10-09 (from step 19): the results layout exists only in the kit gallery (`dev/components.html`, `#g-results`, placeholder content); `index.html` has no results screen yet. Layout classes available: `ui-screen`, `ui-row`, `ui-grid`, `ui-heading`, `ui-text`, `ui-actions`, `ui-stat-row`.
+- 2026-10-09 (from step 27): the pause controller `js/shell/pause.js` (`window.__ms.pauser`) owns every pause and offers `pause(source, {note})`, `resume`, `restart`, `toMenu`, `pageHide`, `inProgress` and `attach(name, fn)` for the hand-offs `finished`, `abandoned`, `inProgress` — records and results hook in through `attach`. A finished game routes to the router screen `results` with `{ summary, mode }` once that screen is registered. Restart/Main-menu confirmation is a panel in the pause card (`#pause-confirm`, `UI.showConfirm`/`closeConfirm`/`isConfirmOpen`).
 
 ```prompt
 /task-implement 46 --review
