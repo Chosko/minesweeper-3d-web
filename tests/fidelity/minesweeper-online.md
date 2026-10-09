@@ -1,7 +1,7 @@
 # Minesweeper Online — observed behaviour
 
-The fidelity reference for the rules engine (task 7) and Classic 2D input
-(task 37): Minesweeper Online (https://minesweeper.online) with its default
+The fidelity reference for the rules engine (task 7), Classic 2D input
+(task 37) and the in-game overlay (task 18): Minesweeper Online (https://minesweeper.online) with its default
 options, played as an anonymous desktop user. One entry per rule, each a
 single behaviour with its date and how it was established.
 
@@ -86,3 +86,8 @@ cells take a mine in every cell. From 7×7 up the cap is, by measured board:
 30×16 → 168, 50×50 → 712, 80×80 → 1659, 90×90 → 2051, 100×100 → 2480
 (density from about 39% down to about 25%). No formula was found; between
 measured points the cap is interpolated.
+
+### Overlay time and mine displays (task 18)
+2026-10-09 · site client code · high confidence.
+The top-area time and mine displays are clamped to 999 and −99: the time
+display stops at 999, and the mine display shows −99 … 999.
