@@ -35,8 +35,8 @@ In scope (m1-classic-2d):
 
 Non-goals:
 
-- Rebinding keys, mouse buttons or controller buttons. The bindings are
-  shown, not edited. Not scheduled in any milestone.
+- Rebinding keys, mouse buttons or controller buttons — `input-rebinding`,
+  in `m3-on-steam`. Here the bindings are shown, not edited.
 - A "Match system" theme option — the theme is Light or Dark only.
 - The colour-blind-safe number set and its accessibility setting — deferred
   to `m6-launch`, unless it falls out of the base palette in m1.
