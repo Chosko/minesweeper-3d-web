@@ -244,7 +244,7 @@ Context:
 
 Done: 2026-10-09, commit `806b2a0` (9 files, +269/-15). The controller's Start button now presses the overlay's pause button during play (it never focuses it). The old `.stat`/`.hud-stats` rules are removed from `style.css`.
 
-## [ ] 19. Implement task 19 — Main menu, pause card and results layout from the kit
+## [x] 19. Implement task 19 — Main menu, pause card and results layout from the kit
 
 Depends on: 17, 18
 
@@ -257,6 +257,8 @@ Context:
 /task-implement 19 --review
 ```
 
+Done: 2026-10-09, commit `52d4788` (8 files, +540/-242). The results layout exists only in the gallery (`dev/components.html#g-results`) — `index.html` has no results screen yet. New kit pieces were added (`ui-field`, `ui-link`, `ui-menu__detail`, layout classes). The pause card's Settings section is now always open; it still uses the shell's `.controls.compact` key list.
+
 ## [ ] 20. Implement task 20 — Update documentation for feature `screen-components`
 
 Depends on: 17, 18, 19
@@ -264,6 +266,7 @@ Depends on: 17, 18, 19
 Context:
 - 2026-10-09 (from step 17): only the stylesheet-order line of `.claude/context/app-shell.md` was updated for `css/components.css`; `testing.md` and the rest of `app-shell.md` do not yet describe the kit's new files.
 - 2026-10-09 (from step 18): `.claude/context/app-shell.md` does not yet describe the overlay bar, its `onPause` callback or the new timer format; the overlay's format helpers live in `js/ui/components.js` with tests in `tests/components.test.mjs`.
+- 2026-10-09 (from step 19): task 19 added kit pieces `ui-field`, `ui-link`, `ui-menu__detail` and layout classes (`ui-screen`, `ui-row`, `ui-grid`, `ui-heading`, `ui-text`, `ui-actions`, `ui-stat-row`), catalogued in `css/components.css` and shown in the gallery; the results layout lives at `dev/components.html#g-results`.
 
 ```prompt
 /task-implement 20 --review
@@ -546,7 +549,8 @@ Context: none
 
 Depends on: 19, 27, 36, 44
 
-Context: none
+Context:
+- 2026-10-09 (from step 19): the results layout exists only in the kit gallery (`dev/components.html`, `#g-results`, placeholder content); `index.html` has no results screen yet. Layout classes available: `ui-screen`, `ui-row`, `ui-grid`, `ui-heading`, `ui-text`, `ui-actions`, `ui-stat-row`.
 
 ```prompt
 /task-implement 46 --review
