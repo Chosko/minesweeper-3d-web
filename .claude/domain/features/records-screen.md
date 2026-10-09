@@ -55,7 +55,8 @@ no framework and no external chart library (see
   read as a picture, with the figures panel and the games list carrying the
   same numbers in text for accessibility.
 - **Recent games list.** The newest games first, paged so a long history
-  stays responsive.
+  stays responsive. Each game's time is shown to the tenth of a second in
+  `results-screen`'s time format (47.3 s).
 - **Live update.** Subscribes to `personal-records`' change notification
   while open.
 
@@ -79,6 +80,7 @@ no framework and no external chart library (see
 - `personal-records` — boards played, bests, counters, history, change
   notification and availability.
 - `game-summary` — board labels and derived stats.
+- `results-screen` — the time format.
 - `screen-components` — every control and surface.
 - `design-tokens-and-themes` — the chart's colours and theme-change
   notification.

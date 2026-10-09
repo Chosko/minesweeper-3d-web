@@ -56,13 +56,15 @@ screen router.
   Classic 2D Expert with no-guess off.
 - **Scope tabs.** Global, Friends and Around me; Global is the default.
 - **Entry list.** One row per entry: rank, player name, time to the
-  hundredth of a second, 3BV/s and efficiency derived from the entry's
+  tenth of a second in `results-screen`'s time format (47.3 s), 3BV/s and
+  efficiency derived from the entry's
   details by `game-summary`'s rules, and *Watch replay*, disabled when the
   entry has no replay. The player's own row is highlighted in every scope.
   Global loads one page at a time with *More* at the end; Friends shows the
   whole friends list; Around me shows a range either side of the player.
-- **Own standing bar.** Above the list, the player's own time and global and
-  friends rank on the chosen board, or "no time yet".
+- **Own standing bar.** Above the list, the player's own time, in the same
+  format as the rows, and global and friends rank on the chosen board, or
+  "no time yet".
 - **Watch replay.** Asks `steam-leaderboards` for the entry's replay and,
   on success, routes to `replay-playback`'s viewer with Back returning here
   on the same board, scope and position. A replay that fails is reported on
@@ -102,6 +104,7 @@ screen router.
 - `replay-playback` — the viewer an entry's replay opens in.
 - `game-summary` and `3d-game-records` — board labels and the 3BV/s and
   efficiency derivations.
+- `results-screen` — the time format.
 - `screen-components` — tabs, switches, list rows, buttons, empty and error
   states.
 - `game-shell` — routing, Back and controller navigation.

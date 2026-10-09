@@ -49,8 +49,10 @@ composed from the `screen-components` kit.
   the comparison is against the bests that stood before this game.
 - **Results view.** The composition from `screen-components`: an outcome
   header, the stat readouts, the three best comparisons, the actions. Time
-  is shown to the tenth of a second (47.3 s); 3BV/s to two decimals; efficiency
-  as a whole percentage. A stat that is not available shows a dash.
+  is shown to the tenth of a second, truncated rather than rounded (47.38 s
+  shows as 47.3 s), while the stored time keeps its millisecond precision;
+  this is the time format every screen that shows a time to the tenth uses.
+  3BV/s is shown to two decimals; efficiency as a whole percentage. A stat that is not available shows a dash.
 - **Rank panel.** In the Steam build, after a won game on a board with a
   leaderboard, the view carries `results-steam-rank`'s panel below the
   comparison; the flow starts it when the screen shows and stops it when

@@ -72,7 +72,11 @@ described in [app-shell.md](../../context/app-shell.md).
   scene's light sky in both themes, by carrying its own themed surface
   rather than drawing directly on the scene. Over either board, the timer
   shows the elapsed time in whole seconds, zero-padded to three digits
-  (047).
+  (047), and stops at 999 while the game's elapsed time keeps counting; the
+  mine counter shows mines left clamped to −99 … 999. Both limits copy the
+  reference game's displays
+  ([tests/fidelity/minesweeper-online.md](../../../tests/fidelity/minesweeper-online.md));
+  the results, records and leaderboard screens show the real time.
 - **Screen compositions.** The main menu, pause card and results screen
   rebuilt from the kit, replacing the shell's existing one-off styles.
 

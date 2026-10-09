@@ -76,7 +76,7 @@ Features: none
 - classic-2d-square-play: depends on cell-graph-rules-engine, board-generation, square-tile-skin, design-tokens-and-themes, screen-components, game-shell, game-summary
 - personal-records: depends on game-summary, platform-storage
 - results-screen: depends on game-summary, personal-records, screen-components, game-shell
-- records-screen: depends on personal-records, game-summary, screen-components, design-tokens-and-themes, game-shell
+- records-screen: depends on personal-records, game-summary, screen-components, design-tokens-and-themes, game-shell, results-screen
 - 3d-board-graph: depends on cell-graph-rules-engine, board-generation
 - 3d-play-flow: depends on 3d-board-graph, board-generation, cell-graph-rules-engine, game-shell, game-summary, settings
 - replay-recording: depends on cell-graph-rules-engine, game-summary, classic-2d-square-play, 3d-play-flow, 3d-board-graph, game-shell
@@ -87,7 +87,7 @@ Features: none
 - steam-desktop-host: depends on platform-storage, replay-library, game-shell
 - steam-cloud-saves: depends on steam-desktop-host, platform-storage, replay-library
 - steam-leaderboards: depends on steam-desktop-host, steam-cloud-saves, replay-playback, replay-recording, replay-library, game-summary, 3d-game-records, personal-records, game-shell, platform-storage
-- leaderboard-screen: depends on steam-leaderboards, replay-playback, game-summary, 3d-game-records, screen-components, game-shell
+- leaderboard-screen: depends on steam-leaderboards, replay-playback, game-summary, 3d-game-records, screen-components, game-shell, results-screen
 - steam-achievements: depends on steam-desktop-host, game-summary, 3d-game-records, personal-records, game-shell
 - leaderboards-menu-entry: depends on game-shell, leaderboard-screen, steam-desktop-host, screen-components
 - results-steam-rank: depends on results-screen, steam-leaderboards, steam-desktop-host, screen-components, 3d-results-records-screens, leaderboard-screen
