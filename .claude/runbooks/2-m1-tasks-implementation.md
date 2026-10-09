@@ -383,7 +383,7 @@ Context:
 
 Done: 2026-10-09, commit `b350387` (5 files, +357/-76).
 
-## [ ] 29. Implement task 29 — Board identity, board key and display label
+## [x] 29. Implement task 29 — Board identity, board key and display label
 
 Depends on: none
 
@@ -393,11 +393,14 @@ Context: none
 /task-implement 29 --review
 ```
 
+Done: 2026-10-09, commit `d67a6cd` (3 files, +216/-1). Board key is `<mode>:<grid>:<width>x<height>:<mines>:<guess|no-guess>` (`BOARD_KEY_FORMAT = 1`). A 3D board (no grid field, per `game-summary`) is currently rejected, so the 3D records work must extend the module.
+
 ## [ ] 30. Implement task 30 — Summary builder, derived stats and best eligibility
 
 Depends on: 6, 29
 
-Context: none
+Context:
+- 2026-10-09 (from step 29): the board key is `<mode>:<grid>:<width>x<height>:<mines>:<guess|no-guess>` (e.g. `classic-2d:square:30x16:99:no-guess`, `BOARD_KEY_FORMAT = 1`), in `js/records/`; Beginner/Intermediate/Expert are recognised only on the square grid; custom labels read like "20 × 12 · 50 mines" (+ " · no-guess"). A 3D board identity (no grid field) is currently rejected.
 
 ```prompt
 /task-implement 30 --review
@@ -407,7 +410,8 @@ Context: none
 
 Depends on: 29, 30
 
-Context: none
+Context:
+- 2026-10-09 (from step 29): `.claude/context/` has no entry yet for `js/records/` (board identity, key and label) or its test file.
 
 ```prompt
 /task-implement 31 --review
@@ -554,7 +558,8 @@ Context: none
 
 Depends on: 30
 
-Context: none
+Context:
+- 2026-10-09 (from step 29): the board key is `<mode>:<grid>:<width>x<height>:<mines>:<guess|no-guess>` (e.g. `classic-2d:square:30x16:99:no-guess`, `BOARD_KEY_FORMAT = 1`), in `js/records/`; Beginner/Intermediate/Expert are recognised only on the square grid; custom labels read like "20 × 12 · 50 mines" (+ " · no-guess"). A 3D board identity (no grid field) is currently rejected.
 
 ```prompt
 /task-implement 43 --review --rounds 2
