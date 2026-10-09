@@ -304,7 +304,7 @@ Context:
 ```
 Done: 2026-10-09, commit `ec56d23` (1 file, +93/-0). m1 is ACTIVE with 13 features, m2 has 7 and m3 has 7. Dependencies that the feature documents state in both directions were cut to consumer → provider, and the documents still describe them both ways.
 
-## [ ] 12. Write the m1 tasks
+## [x] 12. Write the m1 tasks
 
 Depends on: 11
 
@@ -328,6 +328,7 @@ Read .claude/PLAN.md first. For every feature it places under m1-classic-2d, in 
 
 The deliverable is the complete m1 backlog in .claude/TASKS.md: every m1-classic-2d feature planned. Do not add tasks for features of any other milestone.
 ```
+Done: 2026-10-09, commits `cab4f0e`, `99f13ee`, `22f6513`, `118babe`, `e34f82b`, `d520039`, `05cf187`, `b7d6865`, `5700ca2`, `a12cf31`, `63b78fb`, `c85d5e8`, `c605246` (76 files, +2355/-39). Tasks 1–50 written for the 13 m1 features. Open points were settled by the drafts' recommendations: the system font stack (task 1), the Classic 2D controller mapping (task 35), and Retry or a standard board when no-guess generation fails (task 32). Tasks 7 and 37 need a person.
 
 ## [ ] 13. Write the m2 tasks
 
@@ -346,6 +347,7 @@ Context:
     b. Run step 13 first as the runbook allows. The m2 tasks would take IDs 1 onward, and their `Preconditions:` lines could not point at m1 tasks that do not exist yet. Those dependencies would then have to come only from the plan.
     Recommendation: a.
 - 2026-10-09 unparked with answer: Q1 — the user had the folder created now: `.claude/tasks/` exists and is tracked by `.claude/tasks/.gitkeep` (commit 4df6e70), so /task-add's setup check passes. Q2a — steps run in order 12, 13, 14, so the m2 tasks can name m1 tasks on their `Preconditions:` lines.
+- 2026-10-09 (from step 12): the m1 tasks are 1–50 in TASKS.md (every m1 feature [PLANNED]), so m2 tasks can name them on their `Preconditions:` lines.
 
 ```prompt
 Write the backlog tasks for milestone m2-3d-joins.
