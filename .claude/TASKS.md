@@ -76,7 +76,7 @@ Feature: cell-graph-rules-engine
 
 ## 8. Update documentation for feature `cell-graph-rules-engine`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/engine.md, .claude/context/INDEX.md, .claude/context/logic.md, .claude/context/testing.md
 Preconditions: 4, 5, 6, 7

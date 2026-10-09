@@ -1,6 +1,10 @@
-# Logic — rules engine
+# Logic — 3D rules engine
 
 ## OVERVIEW
+
+This file covers the 3D game's engine only; Classic 2D plays through the
+cell-graph rules engine in `js/engine/` ([engine.md](engine.md)). The two
+share no code.
 
 The pure gameplay rules of Minesweeper 3D: mine placement, number computation,
 reveal and flood fill, flags, chord, unlinking (auto-hide), win and loss. No DOM,
