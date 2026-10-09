@@ -127,14 +127,55 @@ browser checks for everything that needs WebGL or the DOM.
   1366×768 and 1280×800, checks it equals `MIN_TILE_SIZE`, and checks every
   state and number shows its glyph at that size in both themes (skipped
   when Playwright or chromium is unavailable).
+- `tests/shell-router.test.mjs` — the screen router (`js/shell/router.js`:
+  the seven feature screens, one screen shown per change with its data, the
+  back stack, unwinding, `replace`, default focus declared or computed, a
+  screen's own Back and the input that asked) and shell navigation
+  (`js/shell/navigation.js`: topmost layer, focus fallback, the focusable
+  selector, held-button suppression across screen changes, Esc and the
+  controller Back buttons); both DOM-free; static checks that every screen
+  change in `js/main.js` goes through the router, each shown screen declares
+  a default focus and Back always resolves through the router. One
+  Playwright test walks menu → screen → Back by keyboard with the default
+  focus on each.
+- `tests/shell-mode-host.test.mjs` — the mode host (`js/shell/mode-host.js`)
+  over a recording fake mode: registration and its refusals, board choice,
+  start/pause/resume/restart/leave, game state from the reports, `summary()`
+  before and after the first click, `abandoned` on restart, leave and a
+  replacing start, reports from an inactive mode ignored, failures (reported
+  or thrown) with the failure screen, listeners; and the 3D adapter
+  (`js/shell/mode-3d.js`): `summary3d`, the contract over a fake flow, its
+  reports and a lost graphics context; both DOM-free, the contract
+  documented in the module, and the shell reaching the 3D game only through
+  the host. One Playwright test starts, pauses, resumes, restarts and leaves
+  the 3D game through the adapter.
+- `tests/shell-menu.test.mjs` — the main menu (`js/shell/menu.js`): the four
+  entries in order, each route (mode board choice, screen, or the shared
+  placeholder), the last mode played as a platform-storage document over the
+  memory backend (recorded on game started, read back at start-up, a
+  malformed document read as none, storage that does not persist never
+  stopping a game); DOM-free; the menu, board-choice and placeholder markup
+  in `index.html`, their router entries and default focus, and their
+  catalogue entries. One Playwright test opens each entry and returns with
+  Back.
+- `tests/shell-pause.test.mjs` — the pause controller (`js/shell/pause.js`)
+  over a real mode host, a fake mode and a recording shell: every pause
+  source, automatic pauses only in play, no pause before the first click or
+  after the end beyond the card, resume through the mode, the restart and
+  back-to-menu confirmations, the `finished` / `abandoned` / `inProgress`
+  hand-offs, routing to `results` once it exists, the leave-page guard armed
+  only during a started, unfinished game; DOM-free; static checks that every
+  pause source in `js/main.js` goes through the controller, that the guard is
+  a listener it arms, and that the confirmation is kit markup. One Playwright
+  test pauses, resumes, restarts and goes back to menu in the 3D game.
 - `.claude/external/run-full-tests.sh` — `cd` to repo root, `exec node --test`.
 - `.claude/external/run-affected-tests.sh <test-file>...` — `node --test` on the
   given files; exits 2 with usage when called with no arguments.
 - Browser verification: ad-hoc Playwright scripts drive `window.__ms`,
   defined at the end of `js/main.js`; the suite's browser tests are the
   reload test in `tests/platform-browser.test.mjs`, the contrast tests in
-  `tests/components.test.mjs` and the minimum-tile-size test in
-  `tests/tile-skin.test.mjs`.
+  `tests/components.test.mjs`, the minimum-tile-size test in
+  `tests/tile-skin.test.mjs` and one flow test in each `tests/shell-*.test.mjs`.
 
 No `package.json`, no dependencies: Node 22 built-in runner (`node:test`,
 `node:assert/strict`). `node --test` with no arguments discovers
@@ -192,10 +233,21 @@ Tests consume, and so pin, these contracts:
   `js/platform/browser-backend.js::createBrowserBackend`, `DOC_PREFIX`,
   `ASIDE_PREFIX`; `js/platform/memory-backend.js::createMemoryBackend`;
   `js/platform/index.js` exports. Full list in [platform.md](platform.md).
+- `js/shell/router.js::createRouter`, `SHELL_SCREENS`;
+  `js/shell/navigation.js::FOCUSABLE`, `topLayer`, `resolveFocus`,
+  `isBackKey`, `backButtons`, `createHeldSuppressor`;
+  `js/shell/mode-host.js::createModeHost`, `MODE_METHODS`, `MODE_EVENTS`;
+  `js/shell/mode-3d.js::create3DMode`, `summary3d`;
+  `js/shell/menu.js::MENU_ENTRIES`, `PLACEHOLDER_SCREEN`, `entryRoute`,
+  `createMenu`, `createLastMode`, `LAST_MODE_DOC`;
+  `js/shell/pause.js::createPauseController`, `PAUSE_SOURCES`,
+  `AUTO_SOURCES`, `HAND_OFFS`, `CONFIRMATIONS`. Full list in
+  [app-shell.md](app-shell.md).
 
 Browser hook `js/main.js::window.__ms` (full list in [app-shell.md](app-shell.md)):
 - getters `state`, `game`, `renderer`, `camera`, `controls`, `pads`, `fps`,
-  `frameStats`; `THREE`, `startCameraPos`.
+  `frameStats`, `modes` (the mode host), `pauser` (the pause controller);
+  `THREE`, `startCameraPos`; `state.mode` is the router's current screen.
 - `start(X, Y, Z, mines, minePositions?)`, `forcePlay()`, `pause()`.
 - `moveTo(x,y,z)`, `look(yaw,pitch)`, `aimAt(idx | [x,y,z])` → selected idx,
   `cellCenter(idx)`.
@@ -266,6 +318,17 @@ Browser hook `js/main.js::window.__ms` (full list in [app-shell.md](app-shell.md
   in the page (`measureContrast`: every visible text run composited over its
   effective background, 4.5:1 or 3:1 for large text and accent labels) and
   write screenshots to a `mkdtemp` directory.
+- Shell tests drive the DOM-free modules with fakes: a recording `fakeMode`
+  whose `play` helper reports a first click, an end or a failure, a recording
+  router and shell callbacks, and the memory storage backend. Their static
+  checks read `js/main.js` and `index.html` as text and slice them between
+  markers — `const SHELL = createRouter(` … `// end of screen table`,
+  `const FLOW_3D = {` … `// end of 3D flow`, and the `index.html` section
+  comments (`<!-- 3D board choice -->`, `<!-- Coming soon -->`,
+  `<!-- Click to play -->`) — so keep those markers when editing. The
+  Playwright flow tests reuse the in-process server and drive the screens'
+  buttons and keys, the mode-host and pause tests also `__ms.modes` /
+  `__ms.pauser`.
 - Tile-skin tests paint onto `fakeContext()`, a Proxy that records every
   call with the fill and stroke style in force, and build skins with an
   injected token function, theme source and canvas factory, so the painter
@@ -321,6 +384,9 @@ is enforced.
 - [../domain/features/square-tile-skin.md](../domain/features/square-tile-skin.md)
   — the drawing, cache, contrast and minimum-size contracts
   `tile-skin.test.mjs` encodes.
+- [../domain/features/game-shell.md](../domain/features/game-shell.md)
+  — the router, Back, mode contract, menu and pause contracts the
+  `shell-*` tests encode.
 - [../domain/INDEX.md](../domain/INDEX.md) — feature documents whose acceptance
   criteria become tests.
 
@@ -333,7 +399,8 @@ is enforced.
 - [input.md](input.md) — `tests/gamepad.test.mjs` covers gamepad helpers, `FlyCamera`, `Controls`, `MouseActions`.
 - [app-shell.md](app-shell.md) — owns `window.__ms`, the surface Playwright drives,
   the token sheet, theme applier and token reader the token/theme tests pin,
-  and the component kit and kit-built screens `components.test.mjs` pins.
+  the component kit and kit-built screens `components.test.mjs` pins, and
+  the game shell (`js/shell/`) the `shell-*` tests pin.
 - [classic2d.md](classic2d.md) — `tests/tile-skin.test.mjs` pins the tile painter, cache and `MIN_TILE_SIZE`.
 - [rendering.md](rendering.md) — no unit tests of the drawing (only the static not-themed checks); verified visually via Playwright screenshots.
 - [audio.md](audio.md) — no unit tests; WebAudio only checkable in a browser.

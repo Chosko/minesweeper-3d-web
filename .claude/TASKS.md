@@ -276,7 +276,7 @@ Feature: game-shell
 
 ## 28. Update documentation for feature `game-shell`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/app-shell.md, .claude/context/input.md, .claude/context/testing.md, .claude/context/INDEX.md
 Preconditions: 24, 25, 26, 27

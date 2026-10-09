@@ -5,18 +5,20 @@
 Everything between the player's devices and a game action or camera pose:
 the free-fly camera, keyboard / mouse / pointer-lock DOM handling, the
 release-based mouse action state machine (shared by the controller triggers),
-the view-mode action layer, controller polling and its pure helpers, and
-crosshair picking.
+the view-mode action layer, controller polling and its pure helpers, the
+shell navigation layer over the controller reader, and crosshair picking.
 
 | File | Implements |
 | --- | --- |
 | `js/input.js` | `FlyCamera`, `MouseActions`, `Input` (DOM listeners), camera / spacing constants |
 | `js/controls.js` | `Controls`: union of keyboard and controller view modes + controller move axes |
 | `js/gamepad.js` | Gamepad API reader, stick curve, trigger hysteresis, auto-repeat, pad glyphs, spatial menu focus search |
+| `js/shell/navigation.js` | Shell navigation: topmost layer, default-focus fallback, Back inputs, held-button suppression across screen changes |
 | `js/picking.js` | `pickCell` (3D-DDA ray walk) and `pickCellBrute` (reference) |
 
 The wiring (which pad button maps to what, menu navigation, the frame loop
-that calls these) lives in `js/main.js` — see [app-shell.md](app-shell.md).
+that calls these) lives in `js/main.js`, and the screen router that Back
+resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md).
 
 ## PUBLIC API
 
@@ -62,6 +64,16 @@ that calls these) lives in `js/main.js` — see [app-shell.md](app-shell.md).
   `poll()` → `{pad, held, pressed, released, ls, rs, active}` (button arrays indexed by `BTN`,
   raw stick pairs). Also `activePad()`, `connected`.
 
+**js/shell/navigation.js** (DOM-free; the shell hands in elements, visibility tests and poll results)
+- `FOCUSABLE` — the selector of native controls menu navigation collects
+  (`button, input, summary, a[href], select`).
+- `topLayer(order, isOpen)` → the first id of `order` (topmost first) that `isOpen` reports, or null.
+- `resolveFocus(target, items)` → `target` when it is in `items`, else `items[0]`, else null.
+- `isBackKey(code)` — Esc is Back on every screen (Pause while playing).
+- `backButtons(screen)` → `[BTN.BACK]` on `'playing'`, else `[BTN.B, BTN.BACK]`.
+- `createHeldSuppressor()` → `update(held)` (once per poll, before acting), `screenChanged()`,
+  `has(b)`, `held(p, b)`, `pressed(p, b)` — the poll's `held` / `pressed` minus suppressed buttons.
+
 **js/picking.js**
 - `js/picking.js::pickCell(game, spacing, o, d, spaceHeld)` → cell index or -1. `o` origin,
   `d` normalized direction (`{x,y,z}`), reads `game.X/Y/Z`, `game.unlinked`, `game.pressed`.
@@ -94,6 +106,13 @@ that calls these) lives in `js/main.js` — see [app-shell.md](app-shell.md).
   pad); one shared `held` array across switches, so a switch or disconnect yields `released` edges.
   Disconnects are processed before connects. LT/RT use `triggerHeld`; other buttons
   `pressed || value > 0.5`. All helpers tolerate NaN / missing fields.
+- **Shell navigation sits between the reader and every action.** `handlePad` calls
+  `nav.update(p.held)` on each poll and reads buttons only through `nav.held` / `nav.pressed`;
+  every screen change (the router's `onChange`) and controls-modal toggle calls `screenChanged()`,
+  so a button held through the change is ignored until released — on the board as in menus. Back
+  is `isBackKey` from the keyboard (`Input`'s `onKey`) and `backButtons(screen)` from the
+  controller: B means Back only off the board, where it is the move-down button. Both resolve
+  through the router in `js/main.js`.
 - **Repeat** fires once on press, then after `delay` every `interval`, at most 4 per tick, and
   resynchronizes after a stall instead of bursting.
 - **Picking geometry.** Grid is centred on the origin: cell (i,j,k) centre = `(i - (X-1)/2) * 4s`,
@@ -126,9 +145,9 @@ additions the spec permits; they must not alter any rule above.
 
 - [logic.md](logic.md) — `pickCell` reads `Game` dimensions and the `unlinked` / `pressed` arrays; `MouseActions` actions become `Game.leftClick` / `rightClick` / `chord` calls in main.
 - [rendering.md](rendering.md) — `FlyCamera.apply` drives the renderer's camera; `Controls.shift/space/ctrl` feed the renderer toggles; the picked cell becomes the renderer's selection.
-- [app-shell.md](app-shell.md) — `js/main.js` constructs every object here, maps pad buttons (`handlePad`), runs menu focus navigation with `pickInDirection` / `Repeat`, and owns the mode / pointer-lock flow.
+- [app-shell.md](app-shell.md) — `js/main.js` constructs every object here, maps pad buttons (`handlePad`), runs menu focus navigation with `pickInDirection` / `Repeat` and the shell navigation helpers, and owns the pointer-lock flow; the screen router and the pause controller decide where Back and pause lead.
 - [audio.md](audio.md) — no direct calls; action results in main trigger sound effects.
-- [testing.md](testing.md) — `tests/gamepad.test.mjs` covers the gamepad helpers, `GamepadReader`, `FlyCamera.moveAxes/lookAxes`, `Controls` and `MouseActions` trigger sequences.
+- [testing.md](testing.md) — `tests/gamepad.test.mjs` covers the gamepad helpers, `GamepadReader`, `FlyCamera.moveAxes/lookAxes`, `Controls` and `MouseActions` trigger sequences; `tests/shell-router.test.mjs` covers the shell navigation helpers.
 
 ## WHEN TO READ THE SOURCE
 
@@ -138,6 +157,7 @@ additions the spec permits; they must not alter any rule above.
 - Changing which keys are captured, swallowed or exempt from `preventDefault` (`GAME_KEYS`, keydown handler).
 - Fixing a pointer-lock failure or re-lock timing issue (`requestLock`, `pointerlockchange`, `unlockedAt`).
 - Supporting a new controller family or mislabelled glyph (`padFamily`, `GLYPHS`).
+- Changing which input means Back, or a controller button that fires on the screen after the one it was pressed on (`js/shell/navigation.js`).
 - Tuning deadzone, trigger thresholds or repeat timing, or a pad that switches / sticks unexpectedly (`GamepadReader.poll`).
 - Fixing a wrong or missed pick, especially at grid edges or axis-aligned rays (`pickCell` DDA setup and step loop).
 - Changing cube size or grid centring — picking geometry must change together with the renderer's cube placement.
