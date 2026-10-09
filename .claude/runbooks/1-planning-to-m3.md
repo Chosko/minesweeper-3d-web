@@ -304,13 +304,19 @@ Context:
 ```
 Done: 2026-10-09, commit `ec56d23` (1 file, +93/-0). m1 is ACTIVE with 13 features, m2 has 7 and m3 has 7. Dependencies that the feature documents state in both directions were cut to consumer → provider, and the documents still describe them both ways.
 
-## [ ] 12. Write the m1 tasks
+## [P] 12. Write the m1 tasks
 
 Depends on: 11
 
 Context:
 - 2026-10-09 Decided by the user: every approval gate a skill in this step raises is approved as drafted, unseen; on each open call take the draft's own recommendation, and answer the gate from this bullet rather than parking. Park only on a real design question.
 - 2026-10-09 (from step 2): the Classic 2D documents pin each two-way rule (first-click guarantee, chording, what a loss shows, what counts as a click, the largest custom board) by a fidelity test that needs one human observation of the live Minesweeper Online, so those tasks need a person (Target claude+human).
+- 2026-10-09 parked: /task-add's setup check stops on the first m1 feature: `.claude/TASKS.md` exists (`Last task number: 0`), but `.claude/tasks/` does not. /task-setup made it empty, and git keeps no empty directory, so a fresh clone always fails the check until the directory holds a tracked file.
+  Q1. How should the backlog directory be restored so step 12 can run?
+    a. Run `/task-setup` again. It is idempotent: it leaves `TASKS.md` and the scripts alone and creates only `.claude/tasks/`. Then re-run step 12. In this same session the directory would then exist and the 13 m1 features would be planned. But an empty directory still cannot be committed, so the problem comes back in the next fresh clone unless the first /task-add commit puts a body file in it, which it does.
+    b. Add a tracked `.claude/tasks/.gitkeep` in its own commit, then re-run step 12. This is outside the /task-add flow, but it fixes the problem for every future clone.
+    c. Something else.
+    Recommendation: a. Once step 12's first /task-add writes `.claude/tasks/1.md` and commits it, git tracks the directory for good. The `.gitkeep` is not needed.
 
 ```prompt
 Write the backlog tasks for milestone m1-classic-2d.
