@@ -140,7 +140,7 @@ Context: none
 
 Done: 2026-10-09, commit `432f20a` (3 files, +691/-1). A frontier group whose layout listing exceeds its search budget is treated as unconstrained — the solver may miss deductions but never makes a wrong one.
 
-## [ ] 11. Implement task 11 — No-guess generation loop and attempt budget
+## [x] 11. Implement task 11 — No-guess generation loop and attempt budget
 
 Depends on: 9, 10
 
@@ -152,11 +152,14 @@ Context:
 /task-implement 11 --review --rounds 2
 ```
 
+Done: 2026-10-09, commit `f7ebe74` (4 files, +208/-4). `generate` takes a graph description (`{ kind: 'square', width, height }`), not a graph object. `ATTEMPT_BUDGET` is 2000 candidates; Expert needs 23 at the median and 433 at worst (2 ms median, 42 ms worst), so the "generating" state is not needed for Expert. `GENERATOR_VERSION` stays 1.
+
 ## [ ] 12. Implement task 12 — Generation worker and message protocol
 
 Depends on: 11
 
-Context: none
+Context:
+- 2026-10-09 (from step 11): `generate({ graph, mineCount, firstClick, noGuess, seed })` is in `js/generation/generate.js`; `graph` is a description `{ kind: 'square', width, height }` (box rejected with `RangeError` for now), and `boardGraph(description)` is exported. Success: `{ ok: true, mines, seed, generatorVersion }` (+ `candidates` when no-guess); budget exhausted: `{ ok: false, reason, seed, generatorVersion, candidates }`. A malformed or impossible request throws `RangeError` — the worker must turn that into a message.
 
 ```prompt
 /task-implement 12 --review --rounds 2
@@ -166,7 +169,8 @@ Context: none
 
 Depends on: 9, 10, 11, 12
 
-Context: none
+Context:
+- 2026-10-09 (from step 11): `.claude/context/testing.md` does not yet mention the generation tests added by task 11; `board-generation.md`'s Timing contract still says Expert "may" need the generating state although the new "Attempt budget and timing" section says it does not (true only for large custom boards).
 
 ```prompt
 /task-implement 13 --review
