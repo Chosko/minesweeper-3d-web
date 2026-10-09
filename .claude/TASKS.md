@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 70
+Last task number: 75
 
 ---
 
@@ -701,5 +701,55 @@ Target: claude
 Files: .claude/context/replay.md, .claude/context/app-shell.md, .claude/context/classic2d.md, .claude/context/mode3d.md, .claude/context/testing.md, .claude/context/INDEX.md
 Preconditions: 65, 66, 67, 68, 69
 Feature: replay-recording
+
+---
+
+## 71. Replay store: blob interface, in-memory and IndexedDB implementations
+
+Status: [MISSING]
+Target: claude
+Files: js/platform/blob-store.js, js/platform/memory-blob-store.js, js/platform/indexeddb-blob-store.js, js/platform/index.js, tests/platform-blob-store.test.mjs
+Preconditions: 14, 15
+Feature: replay-library
+
+---
+
+## 72. Replay library: index, retention, pinning and recovery
+
+Status: [MISSING]
+Target: claude
+Files: js/replay/library.js, tests/replay-library.test.mjs
+Preconditions: 65, 71
+Feature: replay-library
+
+---
+
+## 73. End-of-game hand-off to the replay library
+
+Status: [MISSING]
+Target: claude
+Files: js/results/flow.js, js/shell/pause.js, tests/replay-handoff.test.mjs
+Preconditions: 44, 46, 63, 67, 68, 72
+Feature: replay-library
+
+---
+
+## 74. Library view in the Records screen
+
+Status: [MISSING]
+Target: claude
+Files: js/records/replay-list.js, js/records/screen.js, css/components.css, index.html, tests/records-replays.test.mjs
+Preconditions: 48, 49, 72
+Feature: replay-library
+
+---
+
+## 75. Update documentation for feature `replay-library`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/platform.md, .claude/context/replay.md, .claude/context/app-shell.md, .claude/context/records.md, .claude/context/testing.md, .claude/context/INDEX.md
+Preconditions: 71, 72, 73, 74
+Feature: replay-library
 
 ---

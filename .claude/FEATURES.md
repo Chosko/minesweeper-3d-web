@@ -157,10 +157,10 @@ Tasks: none
 
 ## replay-library — Replay store, retention with pinning, and the library view in Records
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/replay-library.md
 Source: product-design.md § Replays (m2-3d-joins)
-Tasks: none
+Tasks: 71, 72, 73, 74, 75
 
 ---
 
