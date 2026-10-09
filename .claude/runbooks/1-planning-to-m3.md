@@ -214,11 +214,22 @@ Context: none
 technical-direction.md leaves the Steamworks binding open, to be decided by a spike (steamworks.js lacks a leaderboard API: extend it, or adopt another binding). Do not pick the binding here; raise it as a question if the design cannot proceed around it.
 ```
 
-## [ ] 9. Architect the main menu and game shell slice for m3
+## [P] 9. Architect the main menu and game shell slice for m3
 
 Depends on: none
 
 Context: none
+- 2026-10-09 parked: approval gate — the m3 main menu architecture draft (one document, leaderboards-menu-entry: the Leaderboards entry between Records and Settings in both builds, opening step 8's leaderboard-screen) waits for approval when the step runs. With it, two design questions:
+  Q1. How is the m3 menu slice split from step 8's Steam work?
+    a. One document here (`leaderboards-menu-entry`): it owns the menu entry and its navigation, and step 8's `leaderboard-screen` owns the screen.
+    b. Write no document here. The Leaderboards entry is folded into step 8's `leaderboard-screen`. The catch: FEATURES.md would then record no feature for this menu slice, because a feature's Source can name only one section.
+    c. Move the whole Leaderboards screen into this slice, since the technical direction puts screens in the game shell. Step 8 drops `leaderboard-screen` and keeps only the Steam data side (`steam-leaderboards`). This changes step 8's parked draft.
+    Recommendation: a. It keeps the shell work and the Steam work in separate tasks, matches step 8's draft as it stands, and gives the roadmap slice its own entry in FEATURES.md.
+  Q2. Where does Quit go? A fullscreen desktop build needs it, but no roadmap slice includes it.
+    a. Add it to this m3 document, shown on the desktop build only (a web page cannot close itself). Then correct the m3 slice afterwards with /product-roadmap.
+    b. Leave it as an open question in this document and settle it when the roadmap is revised.
+    c. Put it in step 3's m1 game-shell instead, hidden on the web build until the desktop build exists.
+    Recommendation: a. m3 is the first milestone with a desktop build, so it is the first place Quit is needed. Correcting the roadmap keeps the slice accurate.
 
 ```prompt
 /architect "Main menu and game shell" m3-on-steam
