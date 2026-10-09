@@ -28,7 +28,10 @@ browser checks for everything that needs WebGL or the DOM.
   entry in the file is pinned and every profile marker cites an entry.
 - `tests/fidelity/minesweeper-online.md` — the observation file: one entry per
   rule of Minesweeper Online with default options, each with its date, source
-  (client code, help, live play) and confidence, and the tasks it serves.
+  (client code, help, live play) and confidence, and the tasks it serves —
+  the engine rules, and the Classic 2D input entries (which inputs chord,
+  flag timing, pressed feedback, releasing off the pressed cell) and the
+  largest custom board.
 - `tests/generation-placer.test.mjs` — the seeded source
   (`js/generation/random.js`: pinned first outputs, seed range, `int(n)`
   range, no `Math.random`) and the placer (`js/generation/placer.js`):
@@ -142,6 +145,21 @@ browser checks for everything that needs WebGL or the DOM.
   1366×768 and 1280×800, checks it equals `MIN_TILE_SIZE`, and checks every
   state and number shows its glyph at that size in both themes (skipped
   when Playwright or chromium is unavailable).
+- `tests/classic2d-session.test.mjs` — Classic 2D board setup
+  (`js/classic2d/board-setup.js`) and the game session
+  (`js/classic2d/session.js`) over a fake generation client and a fake
+  clock: the standard sizes and no-guess switch mapped to the square graph
+  and the generation request, invalid choices, `CUSTOM_LIMITS` and the mine
+  cap (measured and interpolated, at most the cell count minus one, a dense
+  board keeping no-guess), `normaliseChoice`, the last choice document over
+  the memory backend, the timer; the session's closed board, first-click
+  request, the delayed "generating" state, the timer starting at the
+  board, actions and `changed`, win and loss with `buildSummary`
+  summaries, pause (also while generating), the no-guess and worker
+  failures with Retry and Play a standard board, restart and leave
+  (abandoned reports, cancelled generation, a late answer dropped), actions
+  ignored while generating; both modules DOM-free and reaching generation
+  only through the client.
 - `tests/classic2d-view.test.mjs` — the Classic 2D board view
   (`js/classic2d/board-view.js`) over a fake canvas and a recording fake
   skin, with real engine games: the fit rule (Expert below the overlay bar
@@ -192,6 +210,17 @@ browser checks for everything that needs WebGL or the DOM.
   goes menu → Classic 2D → Expert → first click → pause → resume → back to
   menu and checks the abandoned summary (skipped when Playwright or chromium
   is unavailable).
+- `tests/classic2d-fidelity.test.mjs` — the Classic 2D inputs and custom
+  limits against `tests/fidelity/minesweeper-online.md`: each test cites
+  an entry by heading ("Chording: which inputs chord", "Flag timing",
+  "Pressed feedback", "Releasing off the pressed cell", "Largest custom
+  board") and asserts the pointer state machine or board setup through the
+  reference profile's markers; one test checks that every Classic 2D input
+  entry is pinned and each marker cites its entry. The one deliberate
+  difference — a free cell on boards of up to 36 cells — is pinned as such.
+  One Playwright test checks press feedback and releasing off the pressed
+  cell on the real Beginner board (skipped when Playwright or chromium is
+  unavailable).
 - `tests/shell-router.test.mjs` — the screen router (`js/shell/router.js`:
   the seven feature screens, one screen shown per change with its data, the
   back stack, unwinding, `replace`, default focus declared or computed, a
@@ -244,7 +273,8 @@ browser checks for everything that needs WebGL or the DOM.
   `tests/classic2d-view.test.mjs`, the mouse game in
   `tests/classic2d-pointer.test.mjs`, the keyboard game in
   `tests/classic2d-cursor.test.mjs`, the Classic 2D flow in
-  `tests/classic2d-mode.test.mjs` and one flow test in each `tests/shell-*.test.mjs`.
+  `tests/classic2d-mode.test.mjs`, the input fidelity check in
+  `tests/classic2d-fidelity.test.mjs` and one flow test in each `tests/shell-*.test.mjs`.
 
 No `package.json`, no dependencies: Node 22 built-in runner (`node:test`,
 `node:assert/strict`). `node --test` with no arguments discovers
@@ -301,7 +331,14 @@ Tests consume, and so pin, these contracts:
   `CURSOR_RING`, `PAN_MODIFIER`; `js/classic2d/pointer-input.js::BUTTON`,
   `pointerRules`, `createPointerInput`, `mountPointerInput`;
   `js/classic2d/cursor-input.js::CURSOR_KEYS`, `PAD_MAP`, `STICK_THRESHOLD`,
-  `createCursorInput`, `mountCursorInput`. Full list in [classic2d.md](classic2d.md).
+  `createCursorInput`, `mountCursorInput`;
+  `js/classic2d/board-setup.js::boardSetup`, `validateCustom`,
+  `customMineCap`, `maxMines`, `normaliseChoice`, `createLastChoice`,
+  `STANDARD_SIZES`, `DEFAULT_CHOICE`, `LAST_CHOICE_DOC`;
+  `js/classic2d/session.js::createSession`, `createTimer`,
+  `SESSION_STATE`, `FAILURE_OFFERS`, `GENERATING_DELAY_MS`;
+  `js/classic2d/mode.js::createClassic2DMode`, `MODE_ID`;
+  `js/classic2d/board-choice.js` exports. Full list in [classic2d.md](classic2d.md).
 - `js/platform/storage.js::createStorage` (`register`, `load`, `save`,
   `available`, the issue kinds and save reasons);
   `js/platform/browser-backend.js::createBrowserBackend`, `DOC_PREFIX`,
@@ -355,7 +392,10 @@ Browser hook `js/main.js::window.__ms` (full list in [app-shell.md](app-shell.md
   `tests/fidelity/minesweeper-online.md`, and a failure there is fixed in the
   engine against the file, never by editing the file, unless a feature
   document records the difference as deliberate. The fix ships as a new
-  rules version; every earlier version's tests stay and keep passing.
+  rules version; every earlier version's tests stay and keep passing. The
+  same oracle rule holds for the Classic 2D inputs and custom limits in
+  `tests/classic2d-fidelity.test.mjs`, fixed in the pointer input, board
+  setup or profile markers.
 - Generation determinism: the same request, seed and `GENERATOR_VERSION`
   give the same board. The generation tests pin exact outputs — the seeded
   source's first values, a placed Expert board, an accepted no-guess board —
@@ -474,6 +514,10 @@ is enforced.
 - [../domain/features/square-tile-skin.md](../domain/features/square-tile-skin.md)
   — the drawing, cache, contrast and minimum-size contracts
   `tile-skin.test.mjs` encodes.
+- [../domain/features/classic-2d-square-play.md](../domain/features/classic-2d-square-play.md)
+  — the board setup, session, board view, input and mode contracts the
+  `classic2d-*` tests encode, and the deliberate free-cell difference the
+  fidelity test pins.
 - [../domain/features/game-shell.md](../domain/features/game-shell.md)
   — the router, Back, mode contract, menu and pause contracts the
   `shell-*` tests encode.
@@ -492,7 +536,7 @@ is enforced.
   the token sheet, theme applier and token reader the token/theme tests pin,
   the component kit and kit-built screens `components.test.mjs` pins, and
   the game shell (`js/shell/`) the `shell-*` tests pin.
-- [classic2d.md](classic2d.md) — `tests/classic2d-view.test.mjs` pins the board view; `tests/tile-skin.test.mjs` the tile painter, cache and `MIN_TILE_SIZE`.
+- [classic2d.md](classic2d.md) — `tests/classic2d-*.test.mjs` pin the session and board setup, board view, pointer and cursor inputs and the mode, and check the inputs and custom limits against the observation file; `tests/tile-skin.test.mjs` the tile painter, cache and `MIN_TILE_SIZE`.
 - [rendering.md](rendering.md) — no unit tests of the drawing (only the static not-themed checks); verified visually via Playwright screenshots.
 - [audio.md](audio.md) — no unit tests; WebAudio only checkable in a browser.
 

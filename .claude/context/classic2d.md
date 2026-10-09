@@ -1,12 +1,25 @@
-# Classic 2D — Canvas board
+# Classic 2D — board setup, session and Canvas board
 
 ## OVERVIEW
 
-The Canvas 2D side of Classic 2D, independent of three.js: the board view
-that lays the board out, hit-tests and scrolls it, and the tile skin it asks
-to paint each tile. The view owns where tiles go and the input that moves
-the board; the skin owns how a tile looks.
+The Classic 2D mode, independent of three.js: the board setup that turns a
+board choice into a board request, the session that owns one game from
+closed board to result, the board view that lays the board out, hit-tests
+and scrolls it, the pointer and cursor inputs, the tile skin the view asks
+to paint each tile, and the mode that joins them behind the game shell's
+contract. The session owns the game and its timer; the view owns where
+tiles go and the input that moves the board; the skin owns how a tile
+looks.
 
+- `js/classic2d/board-setup.js` — board choice → board request: the
+  standard sizes, the custom-board limits and their validation, the square
+  grid and records board identity of a choice, and the last board choice as
+  a platform-storage document. DOM-free.
+- `js/classic2d/session.js` — the game session and its timer: the closed
+  board, the first-click board request through the generation client, the
+  slow-answer "generating" state, the failure offer, actions, pause, win or
+  loss, restart and leave with their summaries. DOM-free; generation is
+  reached only through the client.
 - `js/classic2d/board-view.js` — the board view: the fit rule, the layout,
   `cellAt`, per-cell redraw from the engine's change lists, scrolling and
   panning, the hidden board while paused, and `mountBoardView`, the browser
@@ -34,6 +47,43 @@ the board; the skin owns how a tile looks.
   ([app-shell.md](app-shell.md)). DOM-free at import.
 
 ## PUBLIC API
+
+`js/classic2d/board-setup.js` exports
+- `MODE` (`'classic-2d'`), `GRID` (`'square'`), `BOARD_SIZES`
+  (`beginner`, `intermediate`, `expert`, `custom`), `STANDARD_SIZES`
+  (`{width, height, mines}` per standard size, from the records'
+  `STANDARD_BOARDS`), `DEFAULT_CHOICE` (Beginner, custom 30 × 16 / 99,
+  no-guess off).
+- `customMineCap(width, height)` — the reference site's mine cap;
+  `maxMines(width, height)` — the cap here, at most the cell count minus
+  one; `validateCustom({width, height, mines})` → `{ok: true}` or `{ok:
+  false, field, reason}`; `normaliseChoice(choice)` → a plain valid copy or
+  null.
+- `boardSetup(choice)` → frozen `{choice, width, height, mines, noGuess,
+  identity, grid, request(firstClick, seed)}` — `grid` the square grid
+  ([engine.md](engine.md)), `identity` the records board identity
+  ([records.md](records.md)), `request` the generation request
+  ([generation.md](generation.md)); an invalid choice throws a
+  `RangeError`. A choice is `{size, custom, noGuess}`.
+- `LAST_CHOICE_DOC` (`'classic2d.lastChoice'`), `LAST_CHOICE_VERSION` (1),
+  `createLastChoice({storage})` → `{current, load(), save(choice)}`
+  ([platform.md](platform.md)).
+
+`js/classic2d/session.js` exports
+- `SESSION_STATE` (`ready`, `generating`, `playing`, `failed`, `won`,
+  `lost`, `left`), `FAILURE_OFFERS` (`retry`, `standard`),
+  `GENERATING_DELAY_MS` (200), `SESSION_EVENTS` (`generating`, `started`,
+  `changed`, `failed`, `finished`, `abandoned`).
+- `createTimer({now})` → `{start, pause, resume, stop, elapsedMs(),
+  seconds(), started, running, stopped}`.
+- `createSession({choice, client, clock?, randomSeed?,
+  generatingDelayMs?})` → `{state, choice, setup, game, seed,
+  generatorVersion, generatingShown, paused, failure, minesLeft,
+  elapsedMs(), seconds(), on(type, fn) → off, reveal(c), toggleFlag(c),
+  chord(c), retry(), playStandard(), pause(), resume(), restart(), leave(),
+  summary()}` — `client` is the generation client `{request, cancel}`;
+  `clock` `{now, setTimeout, clearTimeout}`. The module head comment is the
+  contract.
 
 `js/classic2d/board-view.js` exports
 - `fitTileSize(cols, rows, width, height, min = MIN_TILE_SIZE)` — the
@@ -123,6 +173,35 @@ the board; the skin owns how a tile looks.
 
 ## INTERNAL PATTERNS
 
+- **Board setup and limits.** The standard sizes are the records'
+  standard boards. A custom board is 1 to 100 a side (`CUSTOM_LIMITS` in
+  `js/engine/profiles.js`, citing "Largest custom board" in
+  `tests/fidelity/minesweeper-online.md`); its mines run from 0 to the
+  smaller of the site's cap — every cell up to 36 cells, then the measured
+  caps interpolated by cell count, rounded down — and the cell count minus
+  one, so the first click is always safe. No-guess is never refused up
+  front, however dense the board: a failed no-guess request gets the
+  session's failure offer. A stored choice that does not normalise reads
+  as `DEFAULT_CHOICE`, and an invalid one is never saved.
+- **Session.** A session opens a closed board (`ready`). Before the first
+  reveal a flag or chord goes straight to the engine, with no request
+  and no event; the first reveal sends the board request for its cell
+  with a fresh seed (`generating`), and actions are ignored until the
+  answer. The "generating" event shows only after `GENERATING_DELAY_MS`
+  and hides when the answer arrives. A board starts the timer and emits `started` then
+  `changed` (`playing`); a failure — a no-guess board not found or the
+  worker failing — emits `failed` with both offers, and the timer never
+  starts: `retry` asks again with a new seed, `playStandard` turns no-guess
+  off for the same size, both for the same first cell. A request token
+  drops a late answer after `restart` or `leave`, which also cancel the
+  client. Win or loss stops the timer and emits `finished`; `restart` and
+  `leave` after the first click and before the end emit `abandoned` first.
+  Every summary is `buildSummary` over the engine's counts or summary, the
+  board identity, the seed and the generator version.
+- **Timer.** Elapsed time accumulates over running stretches: it starts
+  when the board is ready (a pause while generating starts it paused),
+  freezes on pause, and keeps its time once stopped; `seconds()` is whole
+  seconds for the overlay, `elapsedMs()` whole milliseconds for the result.
 - **Fit rule.** The view fits the board to whatever area it is given;
   `MIN_TILE_SIZE` was measured for the area below the overlay bar with
   16 px margins
@@ -219,8 +298,11 @@ the board; the skin owns how a tile looks.
 ## DOMAIN DEPENDENCIES
 
 - [../domain/features/classic-2d-square-play.md](../domain/features/classic-2d-square-play.md)
-  — the board view: fitting, scrolling or panning, hit-testing, per-cell
-  redraw, the board hidden while paused.
+  — board setup and its custom limits (and the free cell kept on small
+  boards, a deliberate difference from the reference), the game session,
+  timer and failure offer, the board view (fitting, scrolling or panning,
+  hit-testing, per-cell redraw, the board hidden while paused), the
+  pointer and cursor inputs and the mode.
 - [../domain/features/square-tile-skin.md](../domain/features/square-tile-skin.md)
   — the states, the drawing contract, the cache and its invalidation, the
   contrast contract and the minimum tile size.
@@ -234,19 +316,38 @@ the board; the skin owns how a tile looks.
   tokens), `js/tokens.js` (`token`, `onThemeChange`, `FALLBACK_COLOR`) and
   `js/theme.js` (`msTheme.current()`).
 - [engine.md](engine.md) — the cell-state vocabulary the tile states mirror,
-  the square grid's index layout the view hit-tests in, and the `changed`
-  lists it redraws from.
+  the square grid's index layout the view hit-tests in, the `changed`
+  lists it redraws from, the game the session holds, and the profile
+  markers (`CUSTOM_LIMITS`, the input markers) board setup and the inputs
+  read.
+- [generation.md](generation.md) — the generation client and request the
+  session's first click goes through.
+- [records.md](records.md) — `STANDARD_BOARDS`, the board identity and
+  `buildSummary` behind every session summary.
+- [platform.md](platform.md) — the storage the last board choice is a
+  document in.
 - [rendering.md](rendering.md) — the 3D tile atlas, a separate palette the
   skin neither reads nor feeds.
 - [input.md](input.md) — `Repeat`, `stickCurve`, `BTN` and the
   `GamepadReader` poll the cursor input reads, and the shell's Back buttons
   it leaves unmapped.
-- [testing.md](testing.md) — `tests/classic2d-view.test.mjs` pins the
-  board view; `tests/classic2d-cursor.test.mjs` the cursor input; `tests/tile-skin.test.mjs` the painter, the cache and
-  `MIN_TILE_SIZE`; `tests/tokens.test.mjs` the tile tokens.
+- [testing.md](testing.md) — `tests/classic2d-session.test.mjs` pins board
+  setup, the last choice, the timer and the session;
+  `tests/classic2d-view.test.mjs` the board view;
+  `tests/classic2d-pointer.test.mjs` the pointer input;
+  `tests/classic2d-cursor.test.mjs` the cursor input;
+  `tests/classic2d-mode.test.mjs` the mode and board choice;
+  `tests/classic2d-fidelity.test.mjs` the inputs and custom limits against
+  the fidelity observations; `tests/tile-skin.test.mjs` the painter, the
+  cache and `MIN_TILE_SIZE`; `tests/tokens.test.mjs` the tile tokens.
 
 ## WHEN TO READ THE SOURCE
 
+- Changing a session state, event or the first-click flow (`createSession`
+  and its head comment in `session.js`).
+- Changing the custom limits or the stored choice (`customMineCap`,
+  `normaliseChoice` in `board-setup.js`, `CUSTOM_LIMITS` in
+  `js/engine/profiles.js`).
 - Changing the fit rule, the layout or what triggers a full repaint
   (`boardLayout`, `repaint`, `resize` in `board-view.js`).
 - Changing a pointer gesture or adding an input rule (`createPointerInput`,

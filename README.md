@@ -1,7 +1,12 @@
 # Minesweeper 3D (web)
 
-Minesweeper in three dimensions. The board is a box of up to 100 × 100 × 100 cubes, and each cube
-has up to 26 neighbours. You fly through the board in first person and aim with a crosshair.
+Minesweeper in two modes, both picked from the main menu:
+
+- **Classic 2D** — flat Minesweeper on a square grid that plays like Minesweeper Online with its
+  default options, with mouse, keyboard or controller.
+- **3D** — Minesweeper in three dimensions. The board is a box of up to 100 × 100 × 100 cubes, and
+  each cube has up to 26 neighbours. You fly through the board in first person and aim with a
+  crosshair.
 
 **Play it at https://minesweeper3d.chosko.com**
 
@@ -9,7 +14,44 @@ This is a browser port, built with three.js, of *Minesweeper 3D*, an XNA/C# game
 Chosko ([original repository](https://github.com/Chosko/minesweeper-3d)). There is no build step:
 the site is a set of static files served by GitHub Pages from `main`.
 
-## How to play
+## Classic 2D
+
+Pick a board, switch **No-guess board** on or off, and play:
+
+| Board | Size | Mines |
+|---|---|---|
+| Beginner | 9 × 9 | 10 |
+| Intermediate | 16 × 16 | 40 |
+| Expert | 30 × 16 | 99 |
+| Custom | width and height 1–100 each | up to the board's limit, shown under the fields |
+
+- The board starts closed. It is generated around your first click, so the first click is always
+  safe, and the timer starts once the board is ready.
+- **No-guess** boards can be solved from the first click by logic alone. If no such board is found,
+  the game offers to try again or to play a standard board of the same size.
+- A custom board takes as many mines as Minesweeper Online allows for its size, but always keeps
+  one cell free for the first click.
+- The board is scaled to fit the window. A board too large to fit scrolls: use the mouse wheel
+  (`Shift` + wheel scrolls sideways) or drag with `Shift` held.
+- Pausing hides the board. The board choice you made last is preselected next time.
+
+| Input | Action |
+|---|---|
+| Left or middle button | Reveal on release; on a revealed number, chord on release |
+| Right button | Flag / unflag, on the press |
+| Left + Right | Chord, on the left release |
+| Drag to another cell before releasing | The action applies to the cell you release on; release off the board to cancel |
+| Arrow keys | Move the cell cursor (hold to repeat) |
+| `Space` / `Enter` | Reveal under the cursor |
+| `F` | Flag / unflag under the cursor |
+| `D` | Chord under the cursor |
+| `Esc` | Pause |
+
+A press shows the cell (or, for a chord, its closed neighbours) pressed until you release. On a
+controller, the D-pad or left stick moves the cursor, `A` or `RT` reveals, `X` or `LT` flags, `Y`
+or `LT` + `RT` chords, and `Start`, `B` or `Back` pauses.
+
+## 3D: how to play
 
 The rules are classic Minesweeper with one more dimension:
 
@@ -29,7 +71,7 @@ Presets: 2D classic (9×9×1, 16×16×1, 30×16×1), Double layer (8×8×2, 14×
 (6×6×6, 8×8×8, 12×12×8). You can also set a custom size (each side 1–100, any mine count) or roll a
 random board.
 
-## Controls
+## 3D controls
 
 | Input | Action |
 |---|---|
@@ -158,6 +200,8 @@ index.html              Page markup: menu, HUD, overlays, pause menu, import map
 css/style.css           Styles for menus, HUD and overlays
 js/main.js              Entry point: wires logic, renderer, input and UI; frame loop; game flow
 js/logic.js             Rules engine (no DOM): mines, numbers, reveal/flag/chord, auto-hide, win/loss
+js/classic2d/           Classic 2D mode: board setup, game session and timer, Canvas board view, mouse,
+                        keyboard and controller input, tile skin
 js/render.js            three.js instanced renderer, shaders, transparency sort, end-of-game effects
 js/picking.js           Crosshair picking with a 3D-DDA through the cube lattice
 js/input.js             Fly camera, pointer lock, keyboard/mouse state, release-to-act mouse logic

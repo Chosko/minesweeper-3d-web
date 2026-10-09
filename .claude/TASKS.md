@@ -376,7 +376,7 @@ Feature: classic-2d-square-play
 
 ## 38. Update documentation for feature `classic-2d-square-play`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/classic2d.md, .claude/context/INDEX.md, .claude/context/testing.md, .claude/context/app-shell.md, README.md
 Preconditions: 32, 33, 34, 35, 36, 37
