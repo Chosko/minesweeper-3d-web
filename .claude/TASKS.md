@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 94
+Last task number: 99
 
 ---
 
@@ -941,5 +941,55 @@ Target: claude
 Files: .claude/context/desktop.md, .claude/context/platform.md, .claude/context/replay.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
 Preconditions: 91, 92, 93
 Feature: steam-cloud-saves
+
+---
+
+## 95. Leaderboard catalogue, eligibility and score details
+
+Status: [MISSING]
+Target: claude
+Files: js/leaderboards/catalogue.js, js/leaderboards/details.js, js/leaderboards/eligibility.js, tests/leaderboards-catalogue.test.mjs
+Preconditions: 30, 61, 62
+Feature: steam-leaderboards
+
+---
+
+## 96. Leaderboard outbox, verifier gate and submission state
+
+Status: [MISSING]
+Target: claude
+Files: js/leaderboards/outbox.js, js/leaderboards/submit.js, js/leaderboards/state.js, js/results/flow.js, tests/leaderboards-submit.test.mjs
+Preconditions: 14, 71, 73, 76, 95
+Feature: steam-leaderboards
+
+---
+
+## 97. Steam submitter, best cache, reader and replay fetcher
+
+Status: [MISSING]
+Target: claude+human
+Files: js/leaderboards/steam-submitter.js, js/leaderboards/best-cache.js, js/leaderboards/reader.js, js/leaderboards/replay-fetch.js, js/leaderboards/index.js, js/platform/index.js, tests/leaderboards-steam.test.mjs
+Preconditions: 89, 92, 96
+Feature: steam-leaderboards
+
+---
+
+## 98. Local leaderboards stand-in for the web build
+
+Status: [MISSING]
+Target: claude
+Files: js/leaderboards/local.js, js/leaderboards/index.js, js/platform/index.js, tests/leaderboards-local.test.mjs
+Preconditions: 44, 72, 86, 95
+Feature: steam-leaderboards
+
+---
+
+## 99. Update documentation for feature `steam-leaderboards`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/leaderboards.md, .claude/context/app-shell.md, .claude/context/platform.md, .claude/context/testing.md, .claude/context/INDEX.md
+Preconditions: 95, 96, 97, 98
+Feature: steam-leaderboards
 
 ---

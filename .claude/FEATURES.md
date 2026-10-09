@@ -202,10 +202,10 @@ Tasks: 91, 92, 93, 94
 
 ## steam-leaderboards — Free-play Steam leaderboards: catalogue, verified submission with replay, offline outbox, queries
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/steam-leaderboards.md
 Source: product-design.md § Steam features (m3-on-steam)
-Tasks: none
+Tasks: 95, 96, 97, 98, 99
 
 ---
 
