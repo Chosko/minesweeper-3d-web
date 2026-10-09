@@ -211,10 +211,10 @@ Tasks: 95, 96, 97, 98, 99
 
 ## leaderboard-screen — Leaderboard screen: board picker, global, friends and around-me rankings, watch an entry's replay
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/leaderboard-screen.md
 Source: product-design.md § Steam features (m3-on-steam)
-Tasks: none
+Tasks: 104, 105, 106
 
 ---
 

@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 103
+Last task number: 106
 
 ---
 
@@ -1031,5 +1031,35 @@ Target: claude
 Files: .claude/context/achievements.md, .claude/context/app-shell.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
 Preconditions: 100, 101, 102
 Feature: steam-achievements
+
+---
+
+## 104. Leaderboard screen: board picker, scope tabs, entries and states
+
+Status: [MISSING]
+Target: claude
+Files: js/leaderboards/screen.js, js/shell/router.js, index.html, css/components.css, tests/leaderboards-screen.test.mjs, .claude/domain/features/leaderboard-screen.md, .claude/domain/features/steam-leaderboards.md
+Preconditions: 17, 24, 61, 97, 98
+Feature: leaderboard-screen
+
+---
+
+## 105. Watch replay from a leaderboard entry
+
+Status: [MISSING]
+Target: claude
+Files: js/leaderboards/screen.js, js/replay/viewer.js, js/shell/router.js, tests/leaderboards-screen.test.mjs
+Preconditions: 77, 78, 104
+Feature: leaderboard-screen
+
+---
+
+## 106. Update documentation for feature `leaderboard-screen`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/leaderboards.md, .claude/context/app-shell.md, .claude/context/replay.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
+Preconditions: 104, 105
+Feature: leaderboard-screen
 
 ---
