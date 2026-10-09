@@ -30,7 +30,7 @@ Context:
 The product design leaves open how players choose between the light and dark themes and whether the 3D scene gets both; the roadmap defers that question to this design. Ask it rather than deciding it.
 ```
 
-## [ ] 2. Architect the Classic 2D slice for m1
+## [P] 2. Architect the Classic 2D slice for m1
 
 Depends on: none
 
@@ -45,6 +45,7 @@ Context:
     b. In advance, with a marked starting cell the player must open first. There's no wait, but the opening is forced.
     Recommendation: a. The player keeps a free first click and it matches the safe-first-click flow. If Minesweeper Online's no-guess mode turns out to do b, choosing a here is a deliberate difference from the reference, recorded in the document.
 - 2026-10-09 unparked with answer: Q2a — Minesweeper Online with its default options is the reference, each rule pinned by a fidelity test; Q3a — with no-guess on, the board is generated when the first click lands. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
+- 2026-10-09 parked: approval gate — the Classic 2D architecture draft, now carrying the Q2a and Q3a answers (three documents: cell-graph-rules-engine, board-generation, classic-2d-square-play; the open call is whether board generation folds into the rules engine), waits for approval when the step runs.
 
 ```prompt
 /architect "Classic 2D" m1-classic-2d
