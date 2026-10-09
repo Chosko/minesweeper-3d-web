@@ -28,3 +28,30 @@ Source: product-design.md § Visual design system (m1-classic-2d)
 Tasks: none
 
 ---
+
+## cell-graph-rules-engine — Rules engine over a cell graph, with the square grid
+
+Status: [NEW]
+Doc: .claude/domain/features/cell-graph-rules-engine.md
+Source: product-design.md § Classic 2D (m1-classic-2d)
+Tasks: none
+
+---
+
+## board-generation — Seeded board generation, safe first click and no-guess solver
+
+Status: [NEW]
+Doc: .claude/domain/features/board-generation.md
+Source: product-design.md § Classic 2D (m1-classic-2d)
+Tasks: none
+
+---
+
+## classic-2d-square-play — Classic 2D on the square grid: board, input, timer
+
+Status: [NEW]
+Doc: .claude/domain/features/classic-2d-square-play.md
+Source: product-design.md § Classic 2D (m1-classic-2d)
+Tasks: none
+
+---

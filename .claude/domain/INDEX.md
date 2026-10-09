@@ -20,6 +20,9 @@ layer.
 | [features/design-tokens-and-themes.md](./features/design-tokens-and-themes.md) | Design tokens (palette, type, spacing, motion) with light and dark values, and how the chosen theme is applied |
 | [features/square-tile-skin.md](./features/square-tile-skin.md) | Classic 2D square tiles in every state and the number colours, in both themes |
 | [features/screen-components.md](./features/screen-components.md) | The DOM component kit and the m1 screens built from it: main menu, in-game overlay, results screen |
+| [features/cell-graph-rules-engine.md](./features/cell-graph-rules-engine.md) | The one rules engine over a graph of cells, the square-grid graph, and the reference ruleset pinned by fidelity tests |
+| [features/board-generation.md](./features/board-generation.md) | Seeded deterministic mine placement around the first click, the no-guess solver, and the generation worker |
+| [features/classic-2d-square-play.md](./features/classic-2d-square-play.md) | Classic 2D on the square grid: board choice, start-of-game flow, Canvas 2D board, mouse, keyboard and controller input, timer |
 
 ## Features
 

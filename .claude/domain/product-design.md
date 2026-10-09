@@ -77,7 +77,7 @@ demanding, until free 3D play is within reach.
 - **Fully playable offline.** Achievements and leaderboard submissions sync
   when a connection returns.
 - **The 2D mode is real, classic Minesweeper.** Its logic reproduces
-  Minesweeper Online exactly. It is drawn as a flat 2D board, never as a 3D
+  Minesweeper Online, played with its default options, exactly. It is drawn as a flat 2D board, never as a 3D
   scene. It is built new and does not derive from the 3D mode.
 - **The 3D mode is the existing 3D game, made one mode among several.** Its
   look, controls and feel are kept. Its rules change in two ways: the first
@@ -153,7 +153,8 @@ chosen theme. Serves every player and every flow.
 
 ### Classic 2D
 
-Real, flat Minesweeper whose logic reproduces Minesweeper Online exactly:
+Real, flat Minesweeper whose logic reproduces Minesweeper Online, with its
+default options, exactly:
 reveal, flag, chord, the safe first click, the timer. The player picks a grid —
 square, hexagonal (6 neighbours) or triangle (12 neighbours) — and a size:
 Beginner, Intermediate, Expert, or a custom size and mine count. A no-guess
