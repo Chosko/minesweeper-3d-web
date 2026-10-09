@@ -25,7 +25,7 @@ Features: 3d-board-graph, 3d-play-flow, 3d-game-records, replay-recording, repla
 
 Status: [PLANNED]
 Covers: product-design.md § Steam features, product-design.md § Main menu and game shell, product-design.md § Results and records
-Features: steam-desktop-host, steam-cloud-saves, steam-leaderboards, steam-achievements, leaderboard-screen, leaderboards-menu-entry, results-steam-rank
+Features: steam-desktop-host, steam-cloud-saves, steam-leaderboards, steam-achievements, leaderboard-screen, leaderboards-menu-entry, results-steam-rank, input-rebinding
 
 ---
 
@@ -91,3 +91,4 @@ Features: none
 - steam-achievements: depends on steam-desktop-host, game-summary, 3d-game-records, personal-records, game-shell
 - leaderboards-menu-entry: depends on game-shell, leaderboard-screen, steam-desktop-host, screen-components
 - results-steam-rank: depends on results-screen, steam-leaderboards, steam-desktop-host, screen-components, 3d-results-records-screens
+- input-rebinding: depends on settings, classic-2d-square-play, 3d-play-flow, game-shell, screen-components
