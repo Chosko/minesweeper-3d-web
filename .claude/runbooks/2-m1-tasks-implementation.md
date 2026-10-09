@@ -638,7 +638,7 @@ Context:
 
 Done: 2026-10-09, commit `681482b` (7 files, +725/-5). Wrong premise fixed: `js/classic2d/session.js` minted a new id on every `summary()` call, so the in-progress marker never matched; each game now has one id. Won and lost games are not recorded yet — recording a result is left to task 46's results flow. `js/shell/pause.js` was left unchanged: the store tells new games from continuing ones by id.
 
-## [ ] 45. Implement task 45 — Update documentation for feature `personal-records`
+## [x] 45. Implement task 45 — Update documentation for feature `personal-records`
 
 Depends on: 43, 44
 
@@ -649,6 +649,8 @@ Context:
 ```prompt
 /task-implement 45 --review
 ```
+
+Done: 2026-10-09, commit `fd1d596` (7 files, +205/-40). Wrong premise in `platform.md`: the `js/ui.js` localStorage helpers were not replaced by personal-records — they still hold the 3D mode's keys and best times.
 
 ## [ ] 46. Implement task 46 — Results flow and results view
 
