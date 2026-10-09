@@ -23,11 +23,20 @@ Context:
 The product design leaves open how players choose between the light and dark themes and whether the 3D scene gets both; the roadmap defers that question to this design. Ask it rather than deciding it.
 ```
 
-## [ ] 2. Architect the Classic 2D slice for m1
+## [P] 2. Architect the Classic 2D slice for m1
 
 Depends on: none
 
-Context: none
+Context:
+- 2026-10-09 parked: approval gate — the architecture draft for the Classic 2D slice (three documents: cell-graph-rules-engine, board-generation, classic-2d-square-play) waits for approval when the step runs. With it, two design questions:
+  Q2. "Matches Minesweeper Online on every action" needs one fixed reference, because that site lets players change several options. Which configuration is the reference?
+    a. Minesweeper Online with its default options. Each rule and limit gets pinned by a fidelity test written against the live site: what the first click guarantees (just safe, or always an opening), whether a left click on a satisfied number chords, what happens to wrong flags on a loss, and the largest custom board allowed.
+    b. A specific configuration you name.
+    Recommendation: a. The defaults are what most enthusiasts play, and each pinned value becomes a test instead of a guess in the design.
+  Q3. With no-guess on, when is the board generated?
+    a. When the first click lands. The board is built around that cell in the worker. Expert may show a short "generating" pause, and the timer starts once the board is ready.
+    b. In advance, with a marked starting cell the player must open first. There's no wait, but the opening is forced.
+    Recommendation: a. The player keeps a free first click and it matches the safe-first-click flow. If Minesweeper Online's no-guess mode turns out to do b, choosing a here is a deliberate difference from the reference, recorded in the document.
 
 ```prompt
 /architect "Classic 2D" m1-classic-2d
