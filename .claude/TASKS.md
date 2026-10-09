@@ -66,7 +66,7 @@ Feature: cell-graph-rules-engine
 
 ## 7. Fidelity tests for the reference ruleset
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: tests/fidelity/minesweeper-online.md, tests/engine-fidelity.test.mjs, js/engine/rules.js, js/engine/profiles.js, js/engine/metrics.js
 Preconditions: 5, 6
