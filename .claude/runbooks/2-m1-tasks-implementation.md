@@ -167,7 +167,7 @@ Context:
 
 Done: 2026-10-09, commit `fdb56e5` (4 files, +347/-1). The worker turns a `RangeError` from `generate` into a failure result `{ ok: false, rejected: true, reason, generatorVersion }` rather than an error; the client does not handle `messageerror`.
 
-## [ ] 13. Implement task 13 — Update documentation for feature `board-generation`
+## [x] 13. Implement task 13 — Update documentation for feature `board-generation`
 
 Depends on: 9, 10, 11, 12
 
@@ -178,6 +178,8 @@ Context:
 ```prompt
 /task-implement 13 --review
 ```
+
+Done: 2026-10-09, commit `8a02e54` (5 files, +219/-9). Also corrected `board-generation.md`'s Timing contract: only large custom no-guess boards may need the "generating" state.
 
 ## [ ] 14. Implement task 14 — Storage interface and document versioning
 
