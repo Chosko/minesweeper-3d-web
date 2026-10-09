@@ -455,7 +455,7 @@ Context:
 
 Done: 2026-10-09, commit `ea4b341` (6 files, +933/-20). The view fits whatever area its container gives it, so the mode screen must supply the viewport below the 64 px bar with 16 px margins (Expert = 41 px there). Drag-pan is Shift + primary drag (`PAN_MODIFIER = 'shiftKey'`). `mountBoardView`, `ensureVisible` and `setHidden` exist but nothing calls them yet.
 
-## [ ] 34. Implement task 34 — Classic 2D pointer input state machine
+## [x] 34. Implement task 34 — Classic 2D pointer input state machine
 
 Depends on: 33
 
@@ -466,6 +466,8 @@ Context:
 /task-implement 34 --review --rounds 2
 ```
 
+Done: 2026-10-09, commit `122f2f1` (9 files, +1000/-15). Input behaviour is read from four new profile markers (`revealInputs`, `flagToggle`, `pressFeedback`, `releaseOffCell`) plus `chordInputs`. Left+right on a closed cell acts only on the left release, as a chord on a revealed number — unrecorded in the reference, so an implementer's choice. Input uses mouse events, not pointer events.
+
 ## [ ] 35. Implement task 35 — Classic 2D keyboard and controller cursor
 
 Depends on: 24, 33
@@ -473,6 +475,7 @@ Depends on: 24, 33
 Context:
 - 2026-10-09 (from step 24): the controller Back button (`BTN.BACK`) means Back in menus and Pause in play (it no longer toggles sound); an Esc within 500 ms of pointer-lock release is ignored because that Esc already meant Pause.
 - 2026-10-09 (from step 33): the board view provides `ensureVisible(c)` for the cursor follow; nothing calls it yet.
+- 2026-10-09 (from step 34): pointer input is `mountPointerInput` and uses mouse events; the view now has `setPressed` for press feedback.
 
 ```prompt
 /task-implement 35 --review
@@ -488,6 +491,7 @@ Context:
 - 2026-10-09 (from step 27): the pause controller `js/shell/pause.js` (`window.__ms.pauser`) owns every pause and offers `pause(source, {note})`, `resume`, `restart`, `toMenu`, `pageHide`, `inProgress` and `attach(name, fn)` for the hand-offs `finished`, `abandoned`, `inProgress` — records and results hook in through `attach`. A finished game routes to the router screen `results` with `{ summary, mode }` once that screen is registered. Restart/Main-menu confirmation is a panel in the pause card (`#pause-confirm`, `UI.showConfirm`/`closeConfirm`/`isConfirmOpen`).
 - 2026-10-09 (from step 32): the session's first reveal returns a Promise of its result (`null` if the board failed or the request was cancelled); every other action returns the engine's result at once. `createLastChoice` saves/loads the last board choice, but nothing calls `load()` when the mode opens — that wiring is task 36's. Choosing "Play a standard board" after a failed no-guess board turns no-guess off for the rest of the session.
 - 2026-10-09 (from step 33): the board view fits whatever area its container gives it — the mode screen must give it the window below the 64 px overlay bar with 16 px margins (where `MIN_TILE_SIZE` = 41 px was measured). `mountBoardView` (resize, DPR, wheel, shift-drag wiring) and `setHidden(bool)` for pause exist but nothing calls them yet.
+- 2026-10-09 (from step 34): `mountPointerInput` (mousedown on the canvas, mousemove/mouseup/blur on the page) sends actions to the session and pressed cells to the view's `setPressed`; redrawing the view when the session reports changes is not wired — this task must do it.
 
 ```prompt
 /task-implement 36 --review
@@ -512,6 +516,7 @@ Depends on: 51, 34, 36
 
 Context:
 - 2026-10-09 (from step 32): custom-board mine caps for 37–48-cell boards were never measured and are interpolated between 36 cells (a mine in every cell) and 7×7's 19, so the cap falls as the board grows in that range (6×7 allows 28); the limits live in the `customLimits` setting of rule profile v1, linked to "Largest custom board". Confirm or replace them here.
+- 2026-10-09 (from step 34): pointer behaviour reads profile markers `revealInputs`, `flagToggle`, `pressFeedback`, `releaseOffCell` and `chordInputs` in `js/engine/profiles.js`, each citing its fidelity entry — pin these here. Left+right on a closed cell acts only on the left release, as a chord on a revealed number, never a reveal; the reference does not record this case.
 
 ```prompt
 /task-implement 37 --review
