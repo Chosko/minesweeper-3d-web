@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 23
+Last task number: 28
 
 ---
 
@@ -231,5 +231,55 @@ Target: claude
 Files: .claude/context/classic2d.md, .claude/context/INDEX.md, .claude/context/testing.md, .claude/context/rendering.md
 Preconditions: 21, 22
 Feature: square-tile-skin
+
+---
+
+## 24. Screen router and shell navigation
+
+Status: [MISSING]
+Target: claude
+Files: js/shell/router.js, js/shell/navigation.js, js/main.js, js/ui.js, index.html, tests/shell-router.test.mjs
+Preconditions: 19
+Feature: game-shell
+
+---
+
+## 25. Mode host contract and the 3D adapter
+
+Status: [MISSING]
+Target: claude
+Files: js/shell/mode-host.js, js/shell/mode-3d.js, js/main.js, js/ui.js, tests/shell-mode-host.test.mjs
+Preconditions: 24
+Feature: game-shell
+
+---
+
+## 26. Main menu entries and the last mode played
+
+Status: [MISSING]
+Target: claude
+Files: index.html, js/shell/menu.js, js/ui.js, css/components.css, tests/shell-menu.test.mjs
+Preconditions: 15, 24, 25
+Feature: game-shell
+
+---
+
+## 27. Pause controller, restart, back to menu and game hand-offs
+
+Status: [MISSING]
+Target: claude
+Files: js/shell/pause.js, js/shell/mode-host.js, js/shell/mode-3d.js, js/main.js, index.html, tests/shell-pause.test.mjs
+Preconditions: 25
+Feature: game-shell
+
+---
+
+## 28. Update documentation for feature `game-shell`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/app-shell.md, .claude/context/input.md, .claude/context/testing.md, .claude/context/INDEX.md
+Preconditions: 24, 25, 26, 27
+Feature: game-shell
 
 ---

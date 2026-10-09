@@ -58,10 +58,10 @@ Tasks: none
 
 ## game-shell — Main menu, screen routing, mode host and the shared pause flow
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/game-shell.md
 Source: product-design.md § Main menu and game shell (m1-classic-2d)
-Tasks: none
+Tasks: 24, 25, 26, 27, 28
 
 ---
 
