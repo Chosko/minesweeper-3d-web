@@ -11,6 +11,5 @@ File: .claude/runbooks/1-planning-to-m3.md
 Created: 2026-10-08
 Source: /product-roadmap conversation
 Steps: 11/17
-Parked: steps 12, 13, 14
 
 ---

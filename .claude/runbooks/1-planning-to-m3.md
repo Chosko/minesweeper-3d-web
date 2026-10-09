@@ -304,7 +304,7 @@ Context:
 ```
 Done: 2026-10-09, commit `ec56d23` (1 file, +93/-0). m1 is ACTIVE with 13 features, m2 has 7 and m3 has 7. Dependencies that the feature documents state in both directions were cut to consumer → provider, and the documents still describe them both ways.
 
-## [P] 12. Write the m1 tasks
+## [ ] 12. Write the m1 tasks
 
 Depends on: 11
 
@@ -317,6 +317,7 @@ Context:
     b. Add a tracked `.claude/tasks/.gitkeep` in its own commit, then re-run step 12. This is outside the /task-add flow, but it fixes the problem for every future clone.
     c. Something else.
     Recommendation: a. Once step 12's first /task-add writes `.claude/tasks/1.md` and commits it, git tracks the directory for good. The `.gitkeep` is not needed.
+- 2026-10-09 unparked with answer: Q1 — the user had the folder created now: `.claude/tasks/` exists and is tracked by `.claude/tasks/.gitkeep` (commit 4df6e70), so /task-add's setup check passes.
 
 ```prompt
 Write the backlog tasks for milestone m1-classic-2d.
@@ -328,7 +329,7 @@ Read .claude/PLAN.md first. For every feature it places under m1-classic-2d, in 
 The deliverable is the complete m1 backlog in .claude/TASKS.md: every m1-classic-2d feature planned. Do not add tasks for features of any other milestone.
 ```
 
-## [P] 13. Write the m2 tasks
+## [ ] 13. Write the m2 tasks
 
 Depends on: 11
 
@@ -344,6 +345,7 @@ Context:
     a. Run step 12 (m1) before step 13 (m2), even though step 13 lists only step 11 as its dependency. Every m2 feature depends on m1 features (for example, 3d-play-flow depends on game-shell, settings and game-summary). If m1 tasks exist first, the m2 tasks can name them on their `Preconditions:` lines, and the task IDs come out in milestone order.
     b. Run step 13 first as the runbook allows. The m2 tasks would take IDs 1 onward, and their `Preconditions:` lines could not point at m1 tasks that do not exist yet. Those dependencies would then have to come only from the plan.
     Recommendation: a.
+- 2026-10-09 unparked with answer: Q1 — the user had the folder created now: `.claude/tasks/` exists and is tracked by `.claude/tasks/.gitkeep` (commit 4df6e70), so /task-add's setup check passes. Q2a — steps run in order 12, 13, 14, so the m2 tasks can name m1 tasks on their `Preconditions:` lines.
 
 ```prompt
 Write the backlog tasks for milestone m2-3d-joins.
@@ -355,7 +357,7 @@ Read .claude/PLAN.md first. For every feature it places under m2-3d-joins, in pl
 The deliverable is the complete m2 backlog in .claude/TASKS.md: every m2-3d-joins feature planned. Do not add tasks for features of any other milestone.
 ```
 
-## [P] 14. Write the m3 tasks
+## [ ] 14. Write the m3 tasks
 
 Depends on: 11
 
@@ -371,6 +373,7 @@ Context:
     a. Run 12 (m1), then 13 (m2), then 14 (m3), even though step 14 lists only step 11 as its dependency. Every m3 feature depends on m1 and m2 features (for example, steam-desktop-host depends on platform-storage, replay-library and game-shell, and results-steam-rank depends on 3d-results-records-screens). With the earlier tasks already in place, the m3 tasks can name them on their `Preconditions:` lines, and task IDs come out in milestone order.
     b. Run step 14 as soon as the directory exists, as the runbook allows. The m3 tasks would take the low IDs, and their `Preconditions:` lines could not point at m1 or m2 tasks, which would not exist yet.
     Recommendation: a. It is consistent with step 13's Q2a recommendation.
+- 2026-10-09 unparked with answer: Q1 — the user had the folder created now: `.claude/tasks/` exists and is tracked by `.claude/tasks/.gitkeep` (commit 4df6e70), so /task-add's setup check passes. Q2a — steps run in order 12, 13, 14, so the m3 tasks can name m1 and m2 tasks on their `Preconditions:` lines.
 
 ```prompt
 Write the backlog tasks for milestone m3-on-steam.
