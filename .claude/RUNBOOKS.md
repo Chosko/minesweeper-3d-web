@@ -1,6 +1,6 @@
 # Runbooks
 
-Last runbook number: 3
+Last runbook number: 4
 
 ---
 
@@ -31,5 +31,15 @@ File: .claude/runbooks/3-m2-tasks-implementation.md
 Created: 2026-10-09
 Source: /runbook-create interview (runbook planning-to-m3 step 16)
 Steps: 0/33
+
+---
+
+## 4. m3-tasks-implementation — Implement every task of milestone m3-on-steam
+
+Status: [PENDING]
+File: .claude/runbooks/4-m3-tasks-implementation.md
+Created: 2026-10-09
+Source: /runbook-create interview (runbook planning-to-m3 step 17)
+Steps: 0/27
 
 ---
