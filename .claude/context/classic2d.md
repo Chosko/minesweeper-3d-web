@@ -11,6 +11,10 @@ the board; the skin owns how a tile looks.
   `cellAt`, per-cell redraw from the engine's change lists, scrolling and
   panning, the hidden board while paused, and `mountBoardView`, the browser
   wiring around it. DOM-free at import.
+- `js/classic2d/pointer-input.js` — the mouse input: a press-and-release
+  state machine over the buttons, its rules read from the reference
+  profile, and `mountPointerInput`, its wiring to the view and the session.
+  DOM-free at import.
 - `js/classic2d/tile-skin.js` — the stateless tile painter, the tile cache
   that pre-renders every state and number, and the shared minimum tile size.
   It holds no palette: every colour is a tile or number token from
@@ -34,7 +38,7 @@ the board; the skin owns how a tile looks.
   height, pixelRatio), setGame(game), update(changed), repaint(), cellAt(x,
   y), cellRect(c) → {x, y, size}, scroll, scrollTo, scrollBy, pan(dx, dy),
   wheel(event) → taken, ensureVisible(c) → scrolled, setHidden(hidden),
-  hidden, layout, pixelRatio, canvas, dispose}` — `grid` is the square grid
+  setPressed(cells), pressed, hidden, layout, pixelRatio, canvas, dispose}` — `grid` is the square grid
   ([engine.md](engine.md)); `game` is the engine game whose `cellState` /
   `cellNumber` it draws; `createSkin` defaults to `createTileSkin`, `token`
   to the token reader. Positions are canvas CSS pixels.
@@ -42,6 +46,18 @@ the board; the skin owns how a tile looks.
   `destroy()`: a canvas filling `container`, refitted on container resize
   and device-pixel-ratio change, scrolled by the wheel and panned by a
   primary-button drag with `PAN_MODIFIER` held.
+
+`js/classic2d/pointer-input.js` exports
+- `BUTTON` (`LEFT` 0, `MIDDLE` 1, `RIGHT` 2).
+- `pointerRules(profile?)` → the frozen input rules `{chordInputs,
+  revealInputs, flagToggle, pressFeedback, releaseOffCell}` of a rule
+  profile, the reference one by default ([engine.md](engine.md)).
+- `createPointerInput({graph, game, onPress, onAction, rules?, active?})` →
+  `{down(button, c), up(button, c), move(c), reset(), holding}` — `c` the
+  cell under the pointer or -1; `onPress(cells)` on every change of the
+  pressed set; `onAction(kind, c)` with `'reveal' | 'toggleFlag' | 'chord'`.
+- `mountPointerInput({view, session, graph?, win?, rules?})` →
+  `{input, destroy()}`.
 
 `js/classic2d/tile-skin.js` exports
 - `MIN_TILE_SIZE` (41) — the smallest tile size the board view allows,
@@ -84,6 +100,18 @@ the board; the skin owns how a tile looks.
   overflows (a line is a tile, a page is the view, shift turns a vertical
   wheel horizontal); `ensureVisible` scrolls the least that shows a cell's
   whole tile, for the cursor.
+- **Pressed feedback.** `setPressed` redraws only the cells that gain or
+  lose the press; a pressed cell draws as `pressed` only while the game
+  has it closed, and `setGame` clears the set.
+- **Pointer input.** Reveal and chord act on the release of the last reveal
+  button, a flag on the right press; a left + right gesture acts on the left
+  release, as a chord only. Every branch reads a profile marker, so a rule
+  change is a profile change, not a new state machine. The mounted input
+  listens for `mousedown` on the canvas and `mousemove` / `mouseup` / `blur`
+  on the page (a second button held during the first fires no
+  `pointerdown`), suppresses the context menu, takes input only while the
+  session is `ready` or `playing` and not paused, and leaves a
+  `PAN_MODIFIER` + primary press on a scrolling board to the pan.
 - **Hidden.** While hidden (the game is paused) a repaint draws the
   background only and `update` draws nothing; showing repaints the board.
 - **The engine is the source.** The view keeps no cell state; every tile is
@@ -148,6 +176,8 @@ the board; the skin owns how a tile looks.
 
 - Changing the fit rule, the layout or what triggers a full repaint
   (`boardLayout`, `repaint`, `resize` in `board-view.js`).
+- Changing a pointer gesture or adding an input rule (`createPointerInput`,
+  `pointerRules`, the profile markers in `js/engine/profiles.js`).
 - Adding board input that competes with panning (`mountBoardView`'s pointer
   and wheel listeners, `PAN_MODIFIER`).
 - Changing how a state looks, or adding a state (the `paintTileWith` switch

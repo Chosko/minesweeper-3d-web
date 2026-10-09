@@ -23,10 +23,13 @@
 //   cellRect(c)          { x, y, size } of a cell's tile in canvas CSS pixels.
 //   scroll, scrollTo(x, y), scrollBy(dx, dy), pan(dx, dy), wheel(event), ensureVisible(c)
 //   setHidden(hidden)    a hidden board shows the background only (the game is paused).
-//   layout, pixelRatio, hidden, canvas, dispose()
+//   setPressed(cells)    the cells a held button presses (js/classic2d/pointer-input.js); a closed
+//                        one is drawn in the skin's pressed state. setGame clears them.
+//   layout, pixelRatio, hidden, pressed, canvas, dispose()
 
 import { MIN_TILE_SIZE, createTileSkin } from './tile-skin.js';
 import { token as readerToken } from '../tokens.js';
+import { CELL } from '../engine/rules.js';
 
 /** The design token the area around the board is filled with. */
 export const BOARD_BACKGROUND = '--color-board-frame';
@@ -34,6 +37,7 @@ export const BOARD_BACKGROUND = '--color-board-frame';
 /** The key a pointer drag must hold to pan the board instead of playing it. */
 export const PAN_MODIFIER = 'shiftKey';
 
+const PRESSED = 'pressed';
 const LINE = 1;
 const PAGE = 2;
 
@@ -87,6 +91,7 @@ export function createBoardView({ canvas, grid, createSkin = createTileSkin, tok
   let sized = false;
   let game = null;
   let hidden = false;
+  let pressed = new Set();
   const scroll = { x: 0, y: 0 };
 
   const skin = createSkin({ redraw: () => repaint() });
@@ -101,7 +106,8 @@ export function createBoardView({ canvas, grid, createSkin = createTileSkin, tok
     const y = tileY(row);
     const t = layout.tile;
     if (x <= -t || y <= -t || x >= layout.width || y >= layout.height) return;
-    skin.drawTile(ctx, x, y, t, game.cellState(c), game.cellNumber(c), ratio);
+    const state = game.cellState(c);
+    skin.drawTile(ctx, x, y, t, state === CELL.CLOSED && pressed.has(c) ? PRESSED : state, game.cellNumber(c), ratio);
   }
 
   function repaint() {
@@ -194,11 +200,21 @@ export function createBoardView({ canvas, grid, createSkin = createTileSkin, tok
     get layout() { return layout; },
     get pixelRatio() { return ratio; },
     get hidden() { return hidden; },
+    get pressed() { return [...pressed]; },
     get scroll() { return { x: scroll.x, y: scroll.y }; },
     resize,
     setGame(next) {
       game = next ?? null;
+      pressed = new Set();
       repaint();
+    },
+    /** Shows `cells` pressed, redrawing only the cells that gain or lose the press. */
+    setPressed(cells) {
+      const next = new Set(cells);
+      const touched = [...pressed].filter((c) => !next.has(c));
+      for (const c of next) if (!pressed.has(c)) touched.push(c);
+      pressed = next;
+      update(touched);
     },
     update,
     repaint,

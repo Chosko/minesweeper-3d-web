@@ -1,9 +1,9 @@
 // Rule profiles: the table of rulesets the engine plays, keyed by profile and rules version (no DOM).
 //
 // A profile entry holds its current version and every version it has; each version is a frozen
-// record of the behaviours that ruleset marks. js/engine/rules.js reads the markers it branches
-// on; the rest record the reference behaviour the engine implements, so a fidelity test can pin
-// each one. `fidelity` maps every marker to the heading of its entry in
+// record of the behaviours that ruleset marks. js/engine/rules.js and the Classic 2D input
+// (js/classic2d/pointer-input.js) read the markers they branch on; the rest record the reference
+// behaviour the engine implements, so a fidelity test can pin each one. `fidelity` maps every marker to the heading of its entry in
 // tests/fidelity/minesweeper-online.md, the oracle for the reference profile.
 
 export const REFERENCE_PROFILE = 'minesweeper-online';
@@ -21,6 +21,17 @@ const reference1 = {
   chordInputs: ['left', 'middle', 'left+right'],
   // A right press on a revealed number.
   rightPressOnNumber: 'nothing',
+  // Mouse input on the Classic 2D board; js/classic2d/pointer-input.js reads these markers.
+  // The buttons whose release opens a closed cell.
+  revealInputs: ['left', 'middle'],
+  // When the right button toggles a flag: on its press, also while left is held on a closed cell.
+  flagToggle: 'right-press',
+  // What shows pressed while a reveal button is held: a closed, unflagged cell itself; nothing on
+  // a flag; a revealed number's closed, unflagged neighbours, whatever the flag count.
+  pressFeedback: { closed: 'cell', flagged: 'none', number: 'closed-unflagged-neighbours' },
+  // Moving while held presses the cell under the pointer and the release acts there; off the
+  // board nothing is pressed and the release does nothing.
+  releaseOffCell: 'press-follows-pointer',
   // A chord compares the flag count only: with a matching count a wrong flag opens a mine.
   chordCountsFlagsOnly: true,
   // A chord whose flag count differs from the number.
@@ -61,6 +72,10 @@ const reference1 = {
   fidelity: {
     chordInputs: 'Chording: which inputs chord',
     rightPressOnNumber: 'Chording: which inputs chord',
+    revealInputs: 'Chording: which inputs chord',
+    flagToggle: 'Flag timing',
+    pressFeedback: 'Pressed feedback',
+    releaseOffCell: 'Releasing off the pressed cell',
     chordCountsFlagsOnly: 'Chording on a wrong flag',
     chordOnFlagCountMismatch: 'Chording with a wrong flag count',
     flagRevealedCell: 'Flagging a revealed cell',

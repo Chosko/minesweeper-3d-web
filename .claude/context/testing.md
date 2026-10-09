@@ -156,6 +156,16 @@ browser checks for everything that needs WebGL or the DOM.
   Expert in both themes, a theme-change repaint, a 100 × 100 board scrolled
   by wheel, shift-drag and `ensureVisible`, and a refit on window resize,
   with screenshots (skipped when Playwright or chromium is unavailable).
+- `tests/classic2d-pointer.test.mjs` — the Classic 2D pointer input
+  (`js/classic2d/pointer-input.js`) over real engine games: the profile's
+  input markers and their fidelity entries, pressed feedback, reveal,
+  middle as left, chord on a number, left + right through the left
+  release, the flag on the right press (also under a held left), moving and
+  releasing off the board, inactive boards and `reset`, rules other than
+  the reference; the board view's `setPressed`; the mounted wiring over
+  `EventTarget` fakes (context menu, shift-pan presses ignored, blur,
+  `destroy`); DOM-free. One Playwright test plays a fixed Beginner board by
+  mouse to a win (skipped when Playwright or chromium is unavailable).
 - `tests/shell-router.test.mjs` — the screen router (`js/shell/router.js`:
   the seven feature screens, one screen shown per change with its data, the
   back stack, unwinding, `replace`, default focus declared or computed, a
@@ -205,7 +215,8 @@ browser checks for everything that needs WebGL or the DOM.
   reload test in `tests/platform-browser.test.mjs`, the contrast tests in
   `tests/components.test.mjs`, the minimum-tile-size test in
   `tests/tile-skin.test.mjs`, the board test in
-  `tests/classic2d-view.test.mjs` and one flow test in each `tests/shell-*.test.mjs`.
+  `tests/classic2d-view.test.mjs`, the mouse game in
+  `tests/classic2d-pointer.test.mjs` and one flow test in each `tests/shell-*.test.mjs`.
 
 No `package.json`, no dependencies: Node 22 built-in runner (`node:test`,
 `node:assert/strict`). `node --test` with no arguments discovers
@@ -259,7 +270,8 @@ Tests consume, and so pin, these contracts:
   (`drawTile`, `invalidate`, `cacheKey`, `dispose`), `TILE_STATES`,
   `MIN_TILE_SIZE`; `js/classic2d/board-view.js::fitTileSize`,
   `boardLayout`, `cellAtLayout`, `createBoardView`, `BOARD_BACKGROUND`,
-  `PAN_MODIFIER`. Full list in [classic2d.md](classic2d.md).
+  `PAN_MODIFIER`; `js/classic2d/pointer-input.js::BUTTON`, `pointerRules`,
+  `createPointerInput`, `mountPointerInput`. Full list in [classic2d.md](classic2d.md).
 - `js/platform/storage.js::createStorage` (`register`, `load`, `save`,
   `available`, the issue kinds and save reasons);
   `js/platform/browser-backend.js::createBrowserBackend`, `DOC_PREFIX`,

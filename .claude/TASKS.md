@@ -336,7 +336,7 @@ Feature: classic-2d-square-play
 
 ## 34. Classic 2D pointer input state machine
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/classic2d/pointer-input.js, js/classic2d/board-view.js, js/engine/profiles.js, tests/classic2d-pointer.test.mjs
 Preconditions: 33

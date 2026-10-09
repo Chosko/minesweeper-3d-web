@@ -47,13 +47,16 @@ Rule profiles (`js/engine/profiles.js`)
 - `getRuleProfile(id, version?)` — the current version when omitted;
   `RangeError` on an unknown profile or a version this build lacks.
 - A profile records `id`, `version` and its behaviour markers:
-  `chordInputs`, `rightPressOnNumber`, `chordCountsFlagsOnly`,
+  `chordInputs`, `rightPressOnNumber`, `revealInputs`, `flagToggle`,
+  `pressFeedback`, `releaseOffCell`, `chordCountsFlagsOnly`,
   `chordOnFlagCountMismatch`, `flagRevealedCell`, `lossView`, `firstClick`,
   `clickCounting`, `customLimits`, plus `fidelity` mapping every marker to
   its heading in `tests/fidelity/minesweeper-online.md`. The engine branches
-  on `flagRevealedCell` and applies `clickCounting`; the rest record
-  reference behaviour that tests pin and other areas (input, board
-  generation, board setup) honour.
+  on `flagRevealedCell` and applies `clickCounting`; the Classic 2D pointer
+  input reads `chordInputs`, `revealInputs`, `flagToggle`, `pressFeedback`
+  and `releaseOffCell` ([classic2d.md](classic2d.md)); the rest record
+  reference behaviour that tests pin and other areas (board generation,
+  board setup) honour.
 - `CUSTOM_LIMITS` — the reference profile's current `customLimits`: side
   `minSide .. maxSide`, a mine in every cell up to `everyCellUpTo` cells,
   then the measured `mineCaps` (`[cells, cap]`) that Classic 2D board setup
