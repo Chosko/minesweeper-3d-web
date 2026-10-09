@@ -128,7 +128,7 @@ Context: none
 
 Done: 2026-10-09, commit `2fa1e77` (4 files, +255/-1). The random source is mulberry32; `GENERATOR_VERSION` (1, in `js/generation/placer.js`) must be bumped on any change to the algorithm or draw order.
 
-## [ ] 10. Implement task 10 — Logic-only solver
+## [x] 10. Implement task 10 — Logic-only solver
 
 Depends on: 4
 
@@ -138,12 +138,15 @@ Context: none
 /task-implement 10 --review --rounds 2
 ```
 
+Done: 2026-10-09, commit `432f20a` (3 files, +691/-1). A frontier group whose layout listing exceeds its search budget is treated as unconstrained — the solver may miss deductions but never makes a wrong one.
+
 ## [ ] 11. Implement task 11 — No-guess generation loop and attempt budget
 
 Depends on: 9, 10
 
 Context:
 - 2026-10-09 (from step 9): the placer is `placeMines({ graph, mineCount, firstClick, source })` in `js/generation/placer.js`, returning an ascending `Int32Array` that `supplyBoard` accepts directly; impossible or malformed requests throw `RangeError`. The source is mulberry32 seeded with a 0..2^32−1 integer; `GENERATOR_VERSION` is exported from the placer.
+- 2026-10-09 (from step 10): the solver is `solve({ graph, mines, firstClick })` in `js/generation/solver.js`, returning `{ cleared, unresolved, deductions: { single, subset, global } }`; `solveFrom({ graph, mineCount, firstClick, open, groupBudget? })` learns numbers only through `open(c)`. An Expert solve takes about 12 ms typically, about 50 ms at worst.
 
 ```prompt
 /task-implement 11 --review --rounds 2
