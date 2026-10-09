@@ -547,7 +547,7 @@ Context:
 
 Done: 2026-10-09, commit `9604d25` (5 files, +213/-24). Also corrected the README input table: releasing on another cell moves the action there; only releasing off the board cancels it.
 
-## [ ] 39. Implement task 39 — Settings schema and store
+## [x] 39. Implement task 39 — Settings schema and store
 
 Depends on: 15
 
@@ -559,12 +559,15 @@ Context:
 /task-implement 39 --review
 ```
 
+Done: 2026-10-09, commit `acc9a17` (4 files, +488/-1). The store takes its storage by injection, so nothing uses it yet. Old `ms3d.*` keys are migrated only when no settings document exists and loading reported no trouble. `set()` before `load()` throws; a `set()` during `load()` waits for it.
+
 ## [ ] 40. Implement task 40 — Settings appliers: theme, audio, look, resolution, fullscreen
 
 Depends on: 2, 39
 
 Context:
 - 2026-10-09 (from step 2): the theme applier is `js/theme.js`, a plain script run before stylesheets and exposed as `window.msTheme` (`current()`, `setTheme()`, `onChange()`, `createThemeApplier()`); `readStoredTheme()` there returns nothing for now and is the hook for the stored theme setting.
+- 2026-10-09 (from step 39): `createSettingsStore({ storage, legacy?, onNotKept? })` takes storage by injection and nothing creates it yet — this task must create it in `js/main.js` from the platform `storage` and await `load()` before the first screen. `set()` before `load()` throws; a `set()` during `load()` waits for it.
 
 ```prompt
 /task-implement 40 --review
@@ -578,6 +581,7 @@ Context:
 - 2026-10-09 (from step 26): Classic 2D, Records and Settings menu entries go to a shared `coming-soon` router screen (`#coming-soon`, not in `SHELL_SCREENS`) and switch over by themselves once their mode is registered or the router has their screen. The 3D presets live on a `board-choice` router screen (`#board-choice`); the menu module is `js/shell/menu.js`, and `shell.lastMode` (v1, `{ mode }`) is saved on the host's `started`.
 - 2026-10-09 (from step 27): the pause controller `js/shell/pause.js` (`window.__ms.pauser`) owns every pause and offers `pause(source, {note})`, `resume`, `restart`, `toMenu`, `pageHide`, `inProgress` and `attach(name, fn)` for the hand-offs `finished`, `abandoned`, `inProgress` — records and results hook in through `attach`. A finished game routes to the router screen `results` with `{ summary, mode }` once that screen is registered. Restart/Main-menu confirmation is a panel in the pause card (`#pause-confirm`, `UI.showConfirm`/`closeConfirm`/`isConfirmOpen`).
 - 2026-10-09 (from step 36): Classic 2D's router screens are `classic-2d-choice` (`#c2d-choice`) and `classic-2d` (`#c2d`, board area `#c2d-board`); the pause controller's "board in play" check covers both `playing` and `classic-2d`. Until the `results` screen is registered, a finished 2D board stays on screen and the pause card ("You won!"/"Game over") offers Play again with the same board choice.
+- 2026-10-09 (from step 39): the settings store's `onNotKept({ reason })` fires at most once per store, on the first failed save — connect it to the "settings will not be kept" message.
 
 ```prompt
 /task-implement 41 --review
