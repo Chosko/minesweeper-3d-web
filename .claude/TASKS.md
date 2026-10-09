@@ -426,7 +426,7 @@ Feature: settings
 
 ## 43. Records model: bests, counters, history and comparison
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/records/model.js, tests/records-model.test.mjs
 Preconditions: 30

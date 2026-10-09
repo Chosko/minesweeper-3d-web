@@ -8,6 +8,7 @@ import {
   boardKey,
   boardLabel,
   standardBoard,
+  parseBoardKey,
 } from '../js/records/board.js';
 
 const square = (width, height, mines, noGuess = false) =>
@@ -90,6 +91,23 @@ test('key: every field takes part, so distinct boards get distinct keys', () => 
 
 test('key: an impossible identity throws a range error rather than giving a key', () => {
   assert.throws(() => boardKey({ mode: 'classic-2d', grid: 'square', width: 9, height: 9, mines: 81, noGuess: false }), RangeError);
+});
+
+test('key: parsing a key gives back the identity it was made from', () => {
+  for (const id of [square(9, 9, 10), square(30, 16, 99, true), square(2, 1, 1, true),
+    createBoardIdentity({ mode: 'classic-2d', grid: 'hex-2', width: 5, height: 4, mines: 0, noGuess: false })]) {
+    const parsed = parseBoardKey(boardKey(id));
+    assert.deepEqual(parsed, id);
+    assert.ok(Object.isFrozen(parsed));
+  }
+});
+
+test('key: a malformed or impossible key throws a range error', () => {
+  for (const key of ['', 'classic-2d', 'classic-2d:square:9x9:10', 'classic-2d:square:9x9:10:maybe',
+    'classic-2d:square:9x9:81:guess', 'classic-2d:square:09x9:10:guess', 'classic-2d:square:9x9:10:guess:x',
+    'Classic:square:9x9:10:guess', 'classic-2d:square:9by9:10:guess', 42, null]) {
+    assert.throws(() => parseBoardKey(key), RangeError, String(key));
+  }
 });
 
 // ---------- label ----------

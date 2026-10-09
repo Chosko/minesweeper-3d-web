@@ -64,6 +64,18 @@ export function boardKey(identity) {
   return `${id.mode}:${id.grid}:${id.width}x${id.height}:${id.mines}:${id.noGuess ? 'no-guess' : 'guess'}`;
 }
 
+const KEY = /^([^:]+):([^:]+):([1-9][0-9]*)x([1-9][0-9]*):(0|[1-9][0-9]*):(guess|no-guess)$/;
+
+// The identity a board key names — the inverse of boardKey. A malformed key, or one naming an
+// impossible board, throws a RangeError.
+export function parseBoardKey(key) {
+  const m = typeof key === 'string' ? KEY.exec(key) : null;
+  if (!m) throw new RangeError(`not a board key: ${JSON.stringify(key)}`);
+  return createBoardIdentity({
+    mode: m[1], grid: m[2], width: Number(m[3]), height: Number(m[4]), mines: Number(m[5]), noGuess: m[6] === 'no-guess',
+  });
+}
+
 // "Expert", "Expert · no-guess", "20 × 12 · 50 mines", "2 × 1 · 1 mine · no-guess".
 export function boardLabel(identity) {
   const id = createBoardIdentity(identity);
