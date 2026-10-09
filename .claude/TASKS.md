@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 90
+Last task number: 94
 
 ---
 
@@ -901,5 +901,45 @@ Target: claude
 Files: .claude/context/desktop.md, .claude/context/platform.md, .claude/context/app-shell.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
 Preconditions: 84, 85, 86, 87, 88, 89
 Feature: steam-desktop-host
+
+---
+
+## 91. Main-process file service and the bridge's storage and blob operations
+
+Status: [MISSING]
+Target: claude
+Files: desktop/file-service.js, desktop/bridge.js, desktop/preload.js, tests/desktop-file-service.test.mjs
+Preconditions: 85
+Feature: steam-cloud-saves
+
+---
+
+## 92. Steam document storage, Steam blob store and the quit flush
+
+Status: [MISSING]
+Target: claude
+Files: js/platform/steam-storage.js, js/platform/steam-blob-store.js, js/platform/index.js, tests/platform-steam-storage.test.mjs
+Preconditions: 14, 71, 86, 91
+Feature: steam-cloud-saves
+
+---
+
+## 93. Steam Auto-Cloud configuration and quota
+
+Status: [MISSING]
+Target: claude+human
+Files: dev/measure-cloud-quota.mjs, .claude/domain/features/steam-cloud-saves.md, .claude/domain/features/replay-library.md
+Preconditions: 72, 87, 92
+Feature: steam-cloud-saves
+
+---
+
+## 94. Update documentation for feature `steam-cloud-saves`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/desktop.md, .claude/context/platform.md, .claude/context/replay.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
+Preconditions: 91, 92, 93
+Feature: steam-cloud-saves
 
 ---
