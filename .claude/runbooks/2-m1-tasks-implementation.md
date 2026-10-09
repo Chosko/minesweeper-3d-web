@@ -652,7 +652,7 @@ Context:
 
 Done: 2026-10-09, commit `fd1d596` (7 files, +205/-40). Wrong premise in `platform.md`: the `js/ui.js` localStorage helpers were not replaced by personal-records — they still hold the 3D mode's keys and best times.
 
-## [ ] 46. Implement task 46 — Results flow and results view
+## [x] 46. Implement task 46 — Results flow and results view
 
 Depends on: 19, 27, 36, 44
 
@@ -667,11 +667,14 @@ Context:
 /task-implement 46 --review
 ```
 
+Done: 2026-10-09, commit `b515c50` (12 files, +690/-46). Step 27's premise changed: the pause controller no longer routes to `results` (its `router` option is gone). The results flow attaches to the `finished` hand-off, records the game, and routes with `{ summary, mode, comparison, saved, notSaved }`. 3D summaries are ignored, so 3D keeps its old end-of-game flow until m2.
+
 ## [ ] 47. Implement task 47 — Update documentation for feature `results-screen`
 
 Depends on: 46
 
-Context: none
+Context:
+- 2026-10-09 (from step 46): `.claude/context/app-shell.md` still says `results` is unregistered and that the pause controller routes to it; the results flow now attaches to the `finished` hand-off, records the game and routes to `results` with `{ summary, mode, comparison, saved, notSaved }`, and 3D summaries are ignored (3D keeps its old end flow). New kit element `ui-stat__detail` (with `data-new-best`) is in the `css/components.css` catalogue.
 
 ```prompt
 /task-implement 47 --review
@@ -685,6 +688,7 @@ Context:
 - 2026-10-09 (from step 26): Classic 2D, Records and Settings menu entries go to a shared `coming-soon` router screen (`#coming-soon`, not in `SHELL_SCREENS`) and switch over by themselves once their mode is registered or the router has their screen. The 3D presets live on a `board-choice` router screen (`#board-choice`); the menu module is `js/shell/menu.js`, and `shell.lastMode` (v1, `{ mode }`) is saved on the host's `started`.
 - 2026-10-09 (from step 43): `js/records/model.js` exports `createRecordsModel({ records?, history? })` (rebuilds records from history when only history is given) with `record(summary)` → comparison, `documents()` → `{ records, history }`, and queries `boardsPlayed()`, `bests(board)`, `counters(board)`, `winRate(board)`, `history(board)`, `overall(mode = 'classic-2d')`, `overallWinRate(mode)` (board as identity or key); standalone `rebuildRecords(history)`, `compactSummary(summary)`, `emptyRecords()`. Comparison per stat is `{ best, value, difference, newBest }` (value/difference null for a lost or abandoned game). Use `parseBoardKey` from `js/records/board.js` rather than parsing keys.
 - 2026-10-09 (from step 44): the records store is created in `js/main.js` (loaded with settings before the first screen), attached to the pause controller and exposed as `window.__ms.records`; it only clears the in-progress marker when a game finishes — recording a won/lost result is this task's job. Documents are `records`, `records.history`, `records.inProgress` (v1); `settled()` awaits queued saves; `available()` is false when stored records were refused.
+- 2026-10-09 (from step 46): the results screen's Records action routes with `{ boardKey }` — today to the coming-soon placeholder, which leaves the mode; Back re-shows the results from the flow's own copy of the last game, and Play again calls `MODES.start('classic-2d', LAST_CHOICE_2D.current)` when no mode is active. Once the records screen is registered, check this round trip still works.
 
 ```prompt
 /task-implement 48 --review
