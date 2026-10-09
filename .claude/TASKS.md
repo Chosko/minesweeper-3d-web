@@ -136,7 +136,7 @@ Feature: board-generation
 
 ## 14. Storage interface and document versioning
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/platform/storage.js, js/platform/memory-backend.js, tests/platform-storage.test.mjs
 Preconditions: none
