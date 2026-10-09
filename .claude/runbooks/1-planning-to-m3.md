@@ -360,7 +360,7 @@ The deliverable is the complete m2 backlog in .claude/TASKS.md: every m2-3d-join
 ```
 Done: 2026-10-09, commits `423516d`, `de0f486`, `794c264`, `a701815`, `c4326a7`, `f77d530`, `e00deb7` (47 files, +1608/-21). Tasks 51–83 written for the 7 m2 features. The plan puts replay-library before replay-playback, so its Watch button waits for task 79. Task 54 places the board around the first click on the main thread until task 57 moves generation to the worker.
 
-## [ ] 14. Write the m3 tasks
+## [x] 14. Write the m3 tasks
 
 Depends on: 11
 
@@ -388,6 +388,7 @@ Read .claude/PLAN.md first. For every feature it places under m3-on-steam, in pl
 
 The deliverable is the complete m3 backlog in .claude/TASKS.md: every m3-on-steam feature planned. Do not add tasks for features of any other milestone.
 ```
+Done: 2026-10-09, commits `844a7e7`, `93a038e`, `d6de44d`, `60e088c`, `112f4d7`, `13d4015`, `6125f67` (41 files, +1375/-21). Tasks 84–110 written for the 7 m3 features. The desktop host lives in `desktop/` with its own package.json. Tasks 87, 88, 89, 93, 97 and 102 need a person.
 
 ## [ ] 15. Create the m1-tasks-implementation runbook
 
