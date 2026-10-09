@@ -311,7 +311,7 @@ Context: none
 
 Done: 2026-10-09, commit `c9b5043` (5 files, +145/-7).
 
-## [ ] 24. Implement task 24 — Screen router and shell navigation
+## [x] 24. Implement task 24 — Screen router and shell navigation
 
 Depends on: 19
 
@@ -321,11 +321,14 @@ Context: none
 /task-implement 24 --review
 ```
 
+Done: 2026-10-09, commit `54b3c86` (9 files, +627/-72). The controller's Back button no longer toggles sound: it means Back in menus and pauses in play. Esc on the pause card goes to the "Click to play" card, since a key press cannot re-grab pointer lock. `S.mode` now reads the router's current screen.
+
 ## [ ] 25. Implement task 25 — Mode host contract and the 3D adapter
 
 Depends on: 24
 
-Context: none
+Context:
+- 2026-10-09 (from step 24): the 3D shell registers router screens `menu`, `ready`, `playing`, `paused`, `ctxlost`; `board-choice`, `results`, `records`, `settings` are only named in `SHELL_SCREENS` until their tasks build them. Screens declare their own default focus (see the catalogue comment in `css/components.css`); the controller Back button means Back in menus and Pause in play.
 
 ```prompt
 /task-implement 25 --review --rounds 2
@@ -337,6 +340,7 @@ Depends on: 15, 24, 25
 
 Context:
 - 2026-10-09 (from step 15): storage callers import `storage`, `register`, `load`, `save`, `available` from `js/platform/index.js` only — a test fails if any other file under `js/` imports a backend directly.
+- 2026-10-09 (from step 24): the 3D shell registers router screens `menu`, `ready`, `playing`, `paused`, `ctxlost`; `board-choice`, `results`, `records`, `settings` are only named in `SHELL_SCREENS` until their tasks build them. Screens declare their own default focus (see the catalogue comment in `css/components.css`); the controller Back button means Back in menus and Pause in play.
 
 ```prompt
 /task-implement 26 --review
@@ -348,6 +352,7 @@ Depends on: 25
 
 Context:
 - 2026-10-09 (from step 18): the controller's Start button presses the overlay's pause button during play (binding in `js/main.js`); the overlay bar reports the press through an `onPause` callback.
+- 2026-10-09 (from step 24): the 3D shell registers router screens `menu`, `ready`, `playing`, `paused`, `ctxlost`; `board-choice`, `results`, `records`, `settings` are only named in `SHELL_SCREENS` until their tasks build them. Screens declare their own default focus (see the catalogue comment in `css/components.css`); the controller Back button means Back in menus and Pause in play.
 
 ```prompt
 /task-implement 27 --review --rounds 2
@@ -357,7 +362,8 @@ Context:
 
 Depends on: 24, 25, 26, 27
 
-Context: none
+Context:
+- 2026-10-09 (from step 24): `.claude/context/app-shell.md` and `.claude/context/input.md` still describe the old Esc handling and the `padSuppress`/`padDefault` wiring the router replaced.
 
 ```prompt
 /task-implement 28 --review
@@ -432,7 +438,8 @@ Context: none
 
 Depends on: 24, 33
 
-Context: none
+Context:
+- 2026-10-09 (from step 24): the controller Back button (`BTN.BACK`) means Back in menus and Pause in play (it no longer toggles sound); an Esc within 500 ms of pointer-lock release is ignored because that Esc already meant Pause.
 
 ```prompt
 /task-implement 35 --review
