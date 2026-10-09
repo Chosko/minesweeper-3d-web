@@ -16,7 +16,7 @@ Feature: design-tokens-and-themes
 
 ## 2. Theme applier and token reader
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/theme.js, js/tokens.js, index.html, tests/theme.test.mjs
 Preconditions: 1
