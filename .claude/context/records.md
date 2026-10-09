@@ -1,11 +1,13 @@
-# Records — board identity, summary record, personal records
+# Records — board identity, summary record, personal records, records screen
 
 ## OVERVIEW
 
 The records every records consumer shares: which board a game was played
 on, the one summary record of a played game, the stats derived from it, and
 the player's personal records — bests, counters and history — kept through
-platform storage. DOM-free throughout; nothing here draws.
+platform storage; and the Records screen that shows them (`records-screen`).
+DOM-free throughout, apart from the records view's binder and the history
+chart, which draws on the canvas it is handed.
 
 - `js/records/board.js` — the board identity, its key, the key's parser and
   the display label. Imports nothing.
@@ -19,6 +21,15 @@ platform storage. DOM-free throughout; nothing here draws.
   of the personal records, persisting the model's documents and the
   game-in-progress marker through platform storage. Imports only
   `model.js`; storage is handed in.
+- `js/records/screen.js` — the Records screen: its content
+  (`recordsContent`), the screen controller and the view binder that fills
+  `#records`. Imports `board.js`, `summary.js`, `history-chart.js`, the
+  results screen's formats (`js/results/view.js`) and the kit's
+  `bindSegmented`; the records store is handed in.
+- `js/records/history-chart.js` — the history chart (3BV/s and efficiency
+  per won game, on a canvas, no chart library) and the recent games list's
+  paging. Imports `summary.js`, the results formats and the token reader
+  (`js/tokens.js`).
 
 `js/main.js` builds the one store (`RECORDS`) over the platform `storage`,
 awaits its `load()` beside the settings store's before the first screen,
@@ -27,8 +38,11 @@ attaches it to the pause controller and exposes it as `__ms.records`
 the end of a game ([classic2d.md](classic2d.md)). The store records
 abandoned games and the settled marker itself; a finished game is recorded
 only by a caller of `record()` — the results flow (`results-screen`) — since
-the `finished` hand-off only clears the marker. `records-screen` reads the
-queries.
+the `finished` hand-off only clears the marker. The Records screen reads the
+queries: `js/main.js` builds `RECORDS_PAGE` over the store and the
+`#records` view and shows it on the shell's `records` route, from the main
+menu's Records entry or the results screen's Records button
+([app-shell.md](app-shell.md)).
 
 ## PUBLIC API
 
@@ -134,6 +148,47 @@ Store (`js/records/store.js`)
 - The model's queries, delegated: `boardsPlayed`, `bests`, `counters`,
   `winRate`, `history`, `overall`, `overallWinRate`.
 
+Records screen (`js/records/screen.js`; its head comment documents the
+content shape)
+- `RECORDS_SCREEN` — `'records'`, the router screen; `EMPTY_TEXT`.
+- `pickerBoards(records)` → `[{ key, label, board }]`: Beginner,
+  Intermediate and Expert, each without no-guess then with it, then every
+  custom board played in `boardsPlayed()` order.
+- `lastBoardPlayed(records)` → the key of the board whose latest game ended
+  last, or null.
+- `recordsContent(records, { boardKey?, notSaved?, page? })` → the screen's
+  content: the picker's `boards`, the chosen `board`, `empty`, the three
+  `bests` with their dates, the board's `counters`, the Classic 2D
+  `overall` figures, `notes`, the `chart` (`{ points, text }`) and the
+  `games` list page (`{ headers, rows, page, pages, label, hasPrev,
+  hasNext }`). Never throws.
+- `formatDate(iso)` → `"9 Oct 2026"`; `formatWinRate(rate)` → whole percent;
+  a missing value is the results screen's `DASH`.
+- `createRecordsScreen({ records, view })` → `show({ boardKey }?)`, `hide()`,
+  `select(key)`, `showPage(n)`, `board`, `page`.
+- `createRecordsView({ root, onSelect, onBack, onPage, chart? })` →
+  `show(content)`, `hide()`; fills `#records` by id; `chart` defaults to a
+  `createHistoryChart` over `#records-chart`.
+
+History chart (`js/records/history-chart.js`)
+- `chartPoints(history)` → `[{ id, rate, efficiency }]`, the won games in
+  play order.
+- `niceCeiling(v)` → the smallest 1, 2, 2.5 or 5 × 10^k at or above `v`
+  (1 for nothing).
+- `chartScale(points, { width, height })` → `{ plot, rateMax,
+  efficiencyMax, rate, efficiency }` in CSS pixels; a missing value is a
+  null point.
+- `chartText(points)` → the text alternative; `NO_WON_GAMES` without a won
+  game.
+- `drawHistoryChart(ctx, { width, height, pixelRatio, points, token })`;
+  `CHART_TOKENS` — the tokens it draws in (`--color-accent` 3BV/s,
+  `--color-success` efficiency, `--color-border` grid, `--color-ink-muted`
+  labels, the `xs` sans font).
+- `createHistoryChart({ canvas, token?, onThemeChange?, pixelRatio?,
+  observeResize? })` → `draw(points)`, `destroy()`.
+- `pageOf(items, page, size = PAGE_SIZE)` → `{ items, page, pages, from,
+  to, total, hasPrev, hasNext }`; `PAGE_SIZE` — 10.
+
 ## INTERNAL PATTERNS
 
 - **Identity, not names.** A board is its six fields; every exact
@@ -188,6 +243,39 @@ Store (`js/records/store.js`)
   whose id is already recorded changes nothing, and an unreadable one is
   dropped. This relies on every summary of one game carrying the same id,
   which Classic 2D's session gives it.
+- **The screen opens on a board.** `show({ boardKey })` opens on the board
+  asked for (the results screen passes its game's board), else on the last
+  board played, else on Beginner; a board asked for that is not in the
+  picker joins it. The picker's options are rebuilt only when the board list
+  changes, so focus stays on the chosen option.
+- **Live update.** While shown, the controller subscribes to the store's
+  `onChange` and redraws the chosen board on the same games page on every
+  newly recorded game; `hide` unsubscribes. `show` and `select` start on the
+  first games page.
+- **Never blocks.** Every store query is wrapped: unreadable records show the
+  empty state over the standard boards, and Back always works. A board with
+  no games is the empty state, which hides the bests, counters and history.
+  When `records.available()` is false, the first show of the session carries
+  the results screen's `notSaved` note, for that visit only.
+- **Formats are the results screen's.** Times, 3BV/s and efficiency go
+  through `formatTime`, `formatRate` and `formatEfficiency` from
+  `js/results/view.js`; the screen defines only the date and win-rate
+  formats.
+- **The chart is a picture; the text carries the numbers.** The canvas is
+  `role="img"` with `chartText` as its `aria-label` and fallback content;
+  the figures panel and the games list carry the same numbers as text.
+  3BV/s reads against the left axis and efficiency against the right (at
+  least 100%); the games spread evenly left to right, one game in the
+  middle, and a missing value is a gap in its line.
+- **Chart colours are tokens.** The chart reads every colour and its font
+  through the token reader, holds no literal colour, and redraws its last
+  points on every theme change and every resize of its canvas box (a
+  `ResizeObserver`), sized at the device pixel ratio; a canvas with no size
+  is skipped. The view draws it after the screen shows.
+- **Paged games list.** Every game of the board, newest first, `PAGE_SIZE`
+  per page, a page past the end clamped to the last; Newer and Older call
+  `onPage`, and a pager button that ends while focused hands focus to the
+  other.
 
 ## DOMAIN DEPENDENCIES
 
@@ -199,6 +287,9 @@ Store (`js/records/store.js`)
   game-in-progress marker, availability and the newer-version refusal.
 - [../domain/features/cell-graph-rules-engine.md](../domain/features/cell-graph-rules-engine.md)
   — what 3BV, 3BV solved and a counted click are.
+- [../domain/features/records-screen.md](../domain/features/records-screen.md)
+  — the Records screen's content, board picker, history chart, recent games
+  list, live update, empty state and navigation.
 
 ## CROSS-REFERENCES
 
@@ -209,12 +300,16 @@ Store (`js/records/store.js`)
 - [platform.md](platform.md) — `register`, `load`, `save`, `available` and
   the `newer-version` issue the store relies on.
 - [app-shell.md](app-shell.md) — the pause controller's hand-offs the store
-  attaches to; `RECORDS` in `js/main.js` and `__ms.records`.
+  attaches to; `RECORDS` and `RECORDS_PAGE` in `js/main.js`,
+  `__ms.records`; the `records` route, its default focus and Back; the
+  results screen's formats and `NOTES` the Records screen reuses; the token
+  reader the chart draws through; the `#records` kit markup.
 - [classic2d.md](classic2d.md) — the session whose summaries carry one id
   per game.
 - [testing.md](testing.md) — `tests/records-board.test.mjs`,
   `tests/records-summary.test.mjs`, `tests/records-model.test.mjs`,
-  `tests/records-store.test.mjs`.
+  `tests/records-store.test.mjs`, `tests/records-screen.test.mjs`,
+  `tests/records-history.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 
@@ -232,3 +327,8 @@ Store (`js/records/store.js`)
   `attach`, `keepMarker` and `doLoad`.
 - Wiring a mode's end of game to the builder or the store beyond the API
   above.
+- Changing what the Records screen shows or how it picks its board: the
+  head comment and `recordsContent` in `screen.js`; its markup is `#records`
+  in `index.html`, catalogued in `css/components.css`.
+- Changing the chart's drawing, scale or colours: `drawHistoryChart` and
+  `chartScale` in `history-chart.js`.

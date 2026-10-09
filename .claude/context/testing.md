@@ -116,6 +116,33 @@ browser checks for everything that needs WebGL or the DOM.
   streak-ending loss or a no-op when already recorded, three runs through
   the real mode host and pause controller with a fake mode — closed
   mid-game, restart, finished — and the queries.
+- `tests/records-screen.test.mjs` — the Records screen
+  (`js/records/screen.js`) over a records model or a fake store: the picker's
+  standard then custom boards, the last board played, the board opened (asked
+  for, last played, Beginner), the bests with dates, counters and Classic 2D
+  overall figures, the results screen's time format, the date, win-rate and
+  dash formats, the empty state, unreadable records never throwing or
+  blocking Back, the not-saving notice told once, the controller's live
+  update and unsubscribe, a new custom board joining the picker live, and
+  the module DOM-free apart from the view binder; static checks of the
+  `#records` kit markup, its router entry, default focus, controller layer
+  and Back in `js/main.js`, and its catalogue entry. One Playwright test
+  opens the screen from the menu on the last board played, chooses a board
+  in the picker and returns with Back (skipped when Playwright or chromium
+  is unavailable).
+- `tests/records-history.test.mjs` — the history chart and games list
+  (`js/records/history-chart.js` and its use in `js/records/screen.js`): the
+  chart points, `niceCeiling`, the scale (both axes, one game in the middle,
+  gaps, efficiency above 100%), the text alternative, drawing over a fake
+  canvas in the `CHART_TOKENS` colours, the module DOM-free with no chart
+  library and no literal colour, sizing at the pixel ratio and redrawing on
+  a theme change and a resize until destroyed; `pageOf` and a long history
+  paged fast; the games list newest first in the results formats, paged and
+  clamped; unreadable history; the controller's paging and live redraw; the
+  `#records-history` markup and the view's chart and pager wiring. One
+  Playwright test charts a seeded history in both themes (saving
+  screenshots) and pages the games list by keyboard (skipped when
+  Playwright or chromium is unavailable).
 - `tests/results.test.mjs` — the results screen (`js/results/`): the time
   format (tenths, truncated, the one time formatter in the view), signed
   differences, 3BV/s, efficiency and the dash; `resultsContent` for a win
@@ -128,8 +155,8 @@ browser checks for everything that needs WebGL or the DOM.
   router entry, default focus, controller layer and the flow on the
   hand-off in `js/main.js`, and the `ui-stat__detail` catalogue entry. One
   Playwright test wins a fixed Beginner board through the shell, checks the
-  results screen, then Play again (skipped when Playwright or chromium is
-  unavailable).
+  results screen, opens Records on that board and returns with Back, then
+  Play again (skipped when Playwright or chromium is unavailable).
 - `tests/gamepad.test.mjs` — controller helpers (`js/gamepad.js`), analog camera
   (`js/input.js::FlyCamera`), `js/controls.js::Controls`, and trigger sequences
   through `js/input.js::MouseActions`.
@@ -349,7 +376,9 @@ browser checks for everything that needs WebGL or the DOM.
   `tests/classic2d-cursor.test.mjs`, the Classic 2D flow in
   `tests/classic2d-mode.test.mjs`, the input fidelity check in
   `tests/classic2d-fidelity.test.mjs`, the won game through the results
-  screen in `tests/results.test.mjs`, one flow test in each `tests/shell-*.test.mjs`, the
+  screen in `tests/results.test.mjs`, the Records screen tests in
+  `tests/records-screen.test.mjs` and `tests/records-history.test.mjs`, one
+  flow test in each `tests/shell-*.test.mjs`, the
   theme-and-resolution test in `tests/settings-appliers.test.mjs` and the two page tests in
   `tests/settings-page.test.mjs`.
 
@@ -428,7 +457,13 @@ Tests consume, and so pin, these contracts:
   `BEST_STATS`, `OUTCOMES`; `js/records/model.js::createRecordsModel`,
   `compactSummary`, `rebuildRecords`, `emptyRecords`;
   `js/records/store.js::createRecordsStore` and the document names and
-  versions. Full list in [records.md](records.md).
+  versions; `js/records/screen.js::recordsContent`, `createRecordsScreen`,
+  `createRecordsView`, `pickerBoards`, `lastBoardPlayed`, `formatDate`,
+  `formatWinRate`, `RECORDS_SCREEN`, `EMPTY_TEXT`;
+  `js/records/history-chart.js::chartPoints`, `niceCeiling`, `chartScale`,
+  `chartText`, `drawHistoryChart`, `createHistoryChart`, `pageOf`,
+  `CHART_TOKENS`, `PAGE_SIZE`, `NO_WON_GAMES`. Full list in
+  [records.md](records.md).
 - `js/shell/router.js::createRouter`, `SHELL_SCREENS`;
   `js/shell/navigation.js::FOCUSABLE`, `topLayer`, `resolveFocus`,
   `isBackKey`, `backButtons`, `createHeldSuppressor`;
@@ -623,6 +658,10 @@ is enforced.
 - [../domain/features/results-screen.md](../domain/features/results-screen.md)
   — the record-before-show flow, content, time format, actions and failure
   note `results.test.mjs` encodes.
+- [../domain/features/records-screen.md](../domain/features/records-screen.md)
+  — the picker, figures, history chart, games list, live update, empty
+  state and navigation `records-screen.test.mjs` and
+  `records-history.test.mjs` encode.
 - [../domain/INDEX.md](../domain/INDEX.md) — feature documents whose acceptance
   criteria become tests.
 
@@ -632,7 +671,7 @@ is enforced.
 - [engine.md](engine.md) — `tests/engine-*.test.mjs` pin the cell-graph engine; the fidelity test checks it against the observation file.
 - [generation.md](generation.md) — `tests/generation-*.test.mjs` pin the seeded generator, solver, no-guess loop, worker and client.
 - [platform.md](platform.md) — `tests/platform-*.test.mjs` pin the storage interface, backends and start-up selection.
-- [records.md](records.md) — `tests/records-*.test.mjs` pin the board identity and key, the summary builder and its derived stats, the records model and the records store.
+- [records.md](records.md) — `tests/records-*.test.mjs` pin the board identity and key, the summary builder and its derived stats, the records model, the records store, the Records screen and its history chart and games list.
 - [input.md](input.md) — `tests/gamepad.test.mjs` covers gamepad helpers, `FlyCamera`, `Controls`, `MouseActions`.
 - [app-shell.md](app-shell.md) — owns `window.__ms`, the surface Playwright drives,
   the token sheet, theme applier and token reader the token/theme tests pin,

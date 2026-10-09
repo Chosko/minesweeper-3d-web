@@ -496,7 +496,7 @@ Feature: records-screen
 
 ## 50. Update documentation for feature `records-screen`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/records.md, .claude/context/app-shell.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
 Preconditions: 48, 49

@@ -16,7 +16,8 @@ theme, the debug hook, and the static-site files.
   `'3d'` and the Classic 2D mode as `'classic-2d'`), `PAUSE` (pause
   controller), `MENU`, `LAST_MODE`, `LAST_CHOICE_2D` and `CHOICE_2D` (the
   Classic 2D board choice binder), `RECORDS` (the records store), `RESULTS`
-  (the results flow) and `RESULTS_VIEW`; holds the
+  (the results flow), `RESULTS_VIEW` and `RECORDS_PAGE` (the Records
+  screen's controller over its view, [records.md](records.md)); holds the
   single state object `S`; runs the `requestAnimationFrame` loop; exposes
   `window.__ms`. Also maps controller polls to game and menu actions
   (`handlePad`, `padPlaying`, `padMenus`).
@@ -57,9 +58,9 @@ theme, the debug hook, and the static-site files.
   `css/components.css`, then `css/style.css`, then the module graph. The HUD
   overlay bar, the main menu (`#menu`), the 3D board choice
   (`#board-choice`), the Classic 2D board choice (`#c2d-choice`), the
-  placeholder screen (`#coming-soon`), the Settings page (`#settings`, its
-  controls generated into `#settings-body`), the results screen
-  (`#results`) and the pause card (`#pause-card`) are kit markup
+  placeholder screen (`#coming-soon`), the Records screen (`#records`), the
+  Settings page (`#settings`, its controls generated into
+  `#settings-body`), the results screen (`#results`) and the pause card (`#pause-card`) are kit markup
   (§ Component kit). `#c2d` is the Classic 2D board layer: the board area
   `#c2d-board` and the generating / failed-board card `#c2d-status`.
 - `css/tokens.css` — the design tokens, the single source of every shared
@@ -83,10 +84,12 @@ theme, the debug hook, and the static-site files.
 - `css/style.css` — shell styling: positioning of the fixed layers (the
   Classic 2D board layer and its board area below the overlay bar), the
   menu-screen backdrop shared by `#menu`, `#board-choice`, `#coming-soon`,
-  `#c2d-choice` and `#settings`,
+  `#c2d-choice`, `#settings` and `#records`,
   the translucent backdrop shared by `#pause`, `#ready` and `#results`,
   the ready/help/banner/controls/ctx-lost overlays and the HUD placement; the
-  kit-built screens carry no one-off rules of their own. Declares no
+  kit-built screens carry no one-off rules of their own, apart from the
+  Records screen's chart box (`#records-chart`) and games table
+  (`#records-games`). Declares no
   custom properties and reads only tokens from `css/tokens.css`. Layered
   fixed overlays use the `--z-*` tokens (HUD 10, help 11, banner 12, flash
   15, overlays 20, controls modal 30, ctx-lost 40, toast 45, fatal 50).
@@ -186,7 +189,9 @@ theme, the debug hook, and the static-site files.
   `onRestart`, `onMainMenu`, `onPause` (the overlay bar's pause button),
   `onToggleSound`, `onRetry2D`, `onStandard2D` (the failed Classic 2D
   board's offer). Methods: screens `showMenu`, `showBoardChoice`,
-  `showBoardChoice2D`, `showComingSoon(title)`, `showSettings` (its bindings
+  `showBoardChoice2D`, `showComingSoon(title)`, `showRecords` (the menu
+  backdrop with the other menu screens hidden; the records view fills and
+  shows `#records`), `showSettings` (its bindings
   in the active controller's glyphs),
   `showReady(settings, msg)`, `showPlaying`, `showClassic2D` (positions
   `#c2d-board` 16 px below the overlay bar), `showPause({state,time,minesLeft,note})`;
@@ -249,8 +254,8 @@ Game shell (`js/shell/`, wired in `js/main.js`):
 - **The router owns the screen.** Every screen change is `SHELL.go`; nothing
   else toggles a screen. `S.mode` is a getter over `SHELL.current`, so it is
   always the router's screen: `'menu' | 'board-choice' | 'coming-soon' |
-  'classic-2d-choice' | 'settings' | 'ready' | 'playing' | 'classic-2d' |
-  'paused' | 'results' | 'ctxlost'`; `records` is not registered. In the 3D game only `playing` moves the
+  'records' | 'classic-2d-choice' | 'settings' | 'ready' | 'playing' |
+  'classic-2d' | 'paused' | 'results' | 'ctxlost'`. In the 3D game only `playing` moves the
   camera, runs the timer and accepts actions (`hasSelection`,
   `Input.isActive`); the Classic 2D board takes input and runs its timer on
   `classic-2d`.
@@ -264,7 +269,8 @@ Game shell (`js/shell/`, wired in `js/main.js`):
 - **Back inputs.** `shellBack(source)` closes the controls modal or the pause
   confirmation first, then calls `SHELL.back`. Esc (`isBackKey`) reaches it
   through `Input`'s `onKey`; the board choice's, placeholder's and Settings
-  page's Back buttons through `onBack`; the controller's back buttons through
+  page's Back buttons through `onBack`, the Records screen's Back
+  (`#records-back`) through its view's `onBack`; the controller's back buttons through
   `padMenus` (on the Classic 2D board `padBoard2D` turns them into Pause
   through `#hud-pause`, as `padPlaying` does in 3D). In pointer-locked play the browser consumes Esc to release the
   lock, and `onLockChange` pauses instead; `resumeFromPause` ignores a
@@ -274,7 +280,9 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   to its first focusable control. Defaults: menu the last mode played
   (`[data-entry][data-last]`), board choice the last played board
   (`[data-preset][data-last]`), Classic 2D board choice the last board
-  choice (`[data-size][data-last]`), placeholder its Back, Settings the look
+  choice (`[data-size][data-last]`), placeholder its Back, Records the
+  chosen board in the picker (`#records-picker [aria-checked="true"]`),
+  Settings the look
   sensitivity slider (`#set-lookSensitivity`), ready `#ready-btn`,
   pause Cancel while the confirmation shows, else Play again once the game
   ended, else Resume; results Play again (`#r-again`); ctx-lost its reload
@@ -311,7 +319,10 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   → `MENU.open(id)`: a registered mode opens its board choice through the
   host, a registered screen is routed to, anything else goes to
   `coming-soon` with the entry's title. Classic 2D and 3D open their board
-  choices; Settings routes to the Settings page, Records to the placeholder.
+  choices; Settings routes to the Settings page, Records to the Records
+  screen (`records`, opening on the last board played). No current entry
+  reaches the placeholder; it stays the route for an entry whose screen is
+  not registered.
   `LAST_MODE` stores the mode of every started
   game in the platform-storage document `shell.lastMode`; at boot `load()`
   marks the entry and refocuses it if the player has not moved yet.
@@ -345,8 +356,8 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   over the finished Classic 2D board. Its actions: Play again →
   `RESULTS.playAgain` → `PAUSE.restart`, or `MODES.start('classic-2d',
   LAST_CHOICE_2D.current)` once the mode was left; Records →
-  `openRecords` routes to the menu's Records route with this board's
-  `boardKey` (the placeholder until `records` is registered); Back to menu
+  `openRecords` routes to the Records screen with this board's `boardKey`,
+  so it opens on that board, and Back from it returns to `results`; Back to menu
   and Back → `showMainMenu`. Returning to `results` without data shows
   `RESULTS.current` again.
 - **Leave-page guard.** `guardLeave` on `beforeunload` is armed by the pause
@@ -481,6 +492,16 @@ Component kit (`css/components.css`, catalogue in its head comment):
   `data-last` with a "Last played" line once the player has played.
 - Placeholder (`#coming-soon`): the one "coming soon" screen, a `ui-card
   ui-screen` whose title and text name the entry, with a primary Back.
+- Records screen (`#records`, filled by `createRecordsView`,
+  [records.md](records.md)): a `ui-card ui-screen--wide` with the board
+  picker (`#records-picker`, a `ui-segmented` generated per board), the
+  figures `ui-panel` (board label, empty state, `rec-*` bests and
+  counters), the history `ui-panel` (`#records-history`: the chart canvas
+  `#records-chart`, the `#records-games` table and the Newer / Older pager
+  `#records-prev` / `#records-next`), the Classic 2D overall `ui-panel`
+  (`ro-*`), the `#records-note` `ui-text--warning` line and a primary Back
+  (`#records-back`). Its show and hide go through the router's `records`
+  entry, which hands the asked-for `boardKey` to `RECORDS_PAGE.show`.
 - Settings page (`#settings`): a `ui-card ui-screen--wide` whose
   `#settings-body` `UI` fills at construction with `settingsPageHtml()` — a
   `ui-grid` of Controls, Graphics, Theme and Audio `ui-panel` sections, one
@@ -546,6 +567,8 @@ Gameplay fidelity to the original game is the overriding rule.
 - [../domain/features/results-screen.md](../domain/features/results-screen.md)
   — the results flow (record before show), the screen's content and time
   format, its actions and the failure note.
+- [../domain/features/records-screen.md](../domain/features/records-screen.md)
+  — the Records screen: where it is opened from, its board, Back and focus.
 - [../domain/INDEX.md](../domain/INDEX.md) — product domain index.
 
 ## CROSS-REFERENCES
@@ -566,8 +589,10 @@ Gameplay fidelity to the original game is the overriding rule.
 - [settings.md](settings.md) — the settings store, appliers, the Settings
   page markup and binder, and the bindings source `js/ui.js` reads.
 - [records.md](records.md) — the records store the shell loads and attaches,
-  whose `record` and comparison the results flow uses, and the board label
-  and key the results screen shows and routes with.
+  whose `record` and comparison the results flow uses, the board label
+  and key the results screen shows and routes with, and the Records screen
+  (`js/records/screen.js`, `js/records/history-chart.js`) the `records`
+  route shows.
 - [testing.md](testing.md) — browser tests drive the game through `window.__ms`;
   `tests/shell-*.test.mjs` pin the router, navigation, mode host, 3D adapter,
   menu and pause controller; `tests/tokens.test.mjs` and
@@ -575,7 +600,8 @@ Gameplay fidelity to the original game is the overriding rule.
   `tests/components.test.mjs` pins the kit, its helpers, the overlay bar, the
   kit-built screens and their contrast; `tests/settings-*.test.mjs` pin the
   Settings screen's wiring and the pause-card shortcuts;
-  `tests/results.test.mjs` pins the results flow, view and screen.
+  `tests/results.test.mjs` pins the results flow, view and screen;
+  `tests/records-screen.test.mjs` the `records` route's wiring.
 
 ## WHEN TO READ THE SOURCE
 

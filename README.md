@@ -51,6 +51,23 @@ A press shows the cell (or, for a chord, its closed neighbours) pressed until yo
 controller, the D-pad or left stick moves the cursor, `A` or `RT` reveals, `X` or `LT` flags, `Y`
 or `LT` + `RT` chords, and `Start`, `B` or `Back` pauses.
 
+## Records
+
+Every Classic 2D game is recorded in the browser. **Records**, on the main menu or on the screen
+shown after a game, opens the Records screen:
+
+- Pick a board: Beginner, Intermediate and Expert, each with and without no-guess, then every custom
+  board you have played. The screen opens on the board you played last, or on the board of the game
+  you just finished.
+- For that board: the best time, best 3BV/s and best efficiency with their dates, games played,
+  wins, win rate, and the current and longest winning streak. The Classic 2D totals across every
+  board are shown too.
+- A chart of 3BV/s and efficiency over your won games, and a list of your recent games, newest
+  first, ten to a page, with each game's outcome, time, 3BV/s and efficiency.
+
+The screen updates as games are recorded and follows the Light / Dark theme. It works with the
+mouse, the keyboard or a controller; `Esc` or `B` goes back.
+
 ## 3D: how to play
 
 The rules are classic Minesweeper with one more dimension:
@@ -202,6 +219,8 @@ js/main.js              Entry point: wires logic, renderer, input and UI; frame 
 js/logic.js             Rules engine (no DOM): mines, numbers, reveal/flag/chord, auto-hide, win/loss
 js/classic2d/           Classic 2D mode: board setup, game session and timer, Canvas board view, mouse,
                         keyboard and controller input, tile skin
+js/records/             Personal records: board identity, game summary, bests and history, Records screen
+                        and its history chart
 js/render.js            three.js instanced renderer, shaders, transparency sort, end-of-game effects
 js/picking.js           Crosshair picking with a 3D-DDA through the cube lattice
 js/input.js             Fly camera, pointer lock, keyboard/mouse state, release-to-act mouse logic
