@@ -43,6 +43,7 @@ layer.
 | [features/leaderboard-screen.md](./features/leaderboard-screen.md) | The leaderboard screen: 2D \| 3D board picker, global, friends and around-me rankings, own standing, watching an entry's replay |
 | [features/steam-achievements.md](./features/steam-achievements.md) | The m3 achievement catalogue for Classic 2D and 3D, per-game evaluation, unlocking through Steam and catch-up from history |
 | [features/leaderboards-menu-entry.md](./features/leaderboards-menu-entry.md) | The m3 main menu additions: the Leaderboards entry opening the leaderboard screen, and Quit on the desktop build |
+| [features/results-steam-rank.md](./features/results-steam-rank.md) | The Steam build's rank panel on the results screen: global and friends rank after a won standard-board game, the move on an improved entry, the wait and offline wording |
 
 ## Features
 

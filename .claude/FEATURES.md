@@ -235,3 +235,12 @@ Source: product-design.md § Main menu and game shell (m3-on-steam)
 Tasks: none
 
 ---
+
+## results-steam-rank — Steam global and friends rank panel on the results screen after a won game
+
+Status: [NEW]
+Doc: .claude/domain/features/results-steam-rank.md
+Source: product-design.md § Results and records (m3-on-steam)
+Tasks: none
+
+---

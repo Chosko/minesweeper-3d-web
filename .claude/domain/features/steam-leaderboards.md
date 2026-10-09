@@ -47,8 +47,8 @@ Non-goals:
 - Hexagonal, triangle and Surface leaderboards — deferred to `m6-launch`.
 - Custom boards — no leaderboard, by product decision.
 - Showing leaderboards — `leaderboard-screen`.
-- The Steam global and friends rank on the results screen — the Results and
-  records slice of m3-on-steam; this feature provides the query it reads.
+- The Steam global and friends rank on the results screen —
+  `results-steam-rank`; this feature provides the state and query it reads.
 - Server-side anti-cheat — there is no server; client-side replay checks
   are the whole defence.
 
@@ -133,7 +133,8 @@ only through `steam-desktop-host`'s bridge and capability adapter.
   verification and upload run in the background. Submitting the same
   summary id twice is a no-op.
 - **Submission state** — for a summary id: not eligible, pending, submitted
-  (with the resulting global rank), or rejected by verification. Change
+  (with the global rank before and after the upload, as Steam reports
+  them; none before on a first entry), or rejected by verification. Change
   notification after each state change, so a screen showing the game can
   update.
 - **Entries** — `entries(board, scope, range)` → the entries and the

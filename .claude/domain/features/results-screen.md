@@ -31,7 +31,7 @@ Non-goals:
 
 - *Watch replay* — deferred to `m2-3d-joins`.
 - 3D games on the results screen — deferred to `m2-3d-joins`.
-- Steam global and friends rank — deferred to `m3-on-steam`.
+- Steam global and friends rank — `results-steam-rank`, in `m3-on-steam`.
 - A results screen for abandoned games: restarting or leaving goes where
   the player asked, and the game is recorded without being shown.
 - The screen's visual design — `screen-components`.
@@ -50,6 +50,10 @@ composed from the `screen-components` kit.
   header, the stat readouts, the three best comparisons, the actions. Time
   is shown to the hundredth of a second; 3BV/s to two decimals; efficiency
   as a whole percentage. A stat that is not available shows a dash.
+- **Rank panel.** In the Steam build, after a won game on a board with a
+  leaderboard, the view carries `results-steam-rank`'s panel below the
+  comparison; the flow starts it when the screen shows and stops it when
+  the screen is left.
 - **Board shown behind.** In Classic 2D the finished board stays visible
   behind the screen, as the mode left it, so a loss still shows where the
   mines were. Over 3D the screen is opaque and takes over, per
