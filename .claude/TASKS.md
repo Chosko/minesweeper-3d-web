@@ -206,7 +206,7 @@ Feature: screen-components
 
 ## 21. Tile and number colour tokens
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: css/tokens.css, tests/tokens.test.mjs
 Preconditions: 1

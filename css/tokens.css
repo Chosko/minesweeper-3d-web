@@ -27,6 +27,35 @@
   --color-warning: #9a5b00;
   --color-focus-ring: #3f78e0;
 
+  /* ---------- tiles (Classic 2D square skin) ----------
+     One fill per state, the glyph colours drawn on them, and the board
+     frame and gap between tiles. */
+  --color-tile-closed: #6fa3f7;
+  --color-tile-edge: #3f78e0;
+  --color-tile-pressed: #c9dbf7;
+  --color-tile-revealed: #eef3fa;
+  --color-tile-flagged: #6fa3f7;
+  --color-tile-flag: #d32f2f;
+  --color-tile-mine: #eef3fa;
+  --color-tile-mine-glyph: #212121;
+  --color-tile-exploded: #ff3b30;
+  --color-tile-wrong-flag: #eef3fa;
+  --color-tile-wrong-flag-mark: #c62828;
+  --color-board-frame: #2b5cb8;
+  --color-board-gap: #9fb7dd;
+
+  /* ---------- numbers 1–8 on the revealed tile ----------
+     Start from the 3D number hues (js/textures.js); each reaches 4.5:1
+     against --color-tile-revealed. */
+  --color-number-1: #1565c0;
+  --color-number-2: #2e7d32;
+  --color-number-3: #c62828;
+  --color-number-4: #1a237e;
+  --color-number-5: #8d1c1c;
+  --color-number-6: #00727d;
+  --color-number-7: #212121;
+  --color-number-8: #6d6d6d;
+
   /* ---------- typography ---------- */
   --font-family-sans: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-family-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
@@ -106,6 +135,29 @@
   --color-danger: #ff7b7b;
   --color-warning: #f2b75a;
   --color-focus-ring: #93b6f6;
+
+  --color-tile-closed: #3a5a92;
+  --color-tile-edge: #2a4475;
+  --color-tile-pressed: #2c3e60;
+  --color-tile-revealed: #1b2740;
+  --color-tile-flagged: #3a5a92;
+  --color-tile-flag: #ff7b7b;
+  --color-tile-mine: #1b2740;
+  --color-tile-mine-glyph: #e6edf8;
+  --color-tile-exploded: #b3261e;
+  --color-tile-wrong-flag: #1b2740;
+  --color-tile-wrong-flag-mark: #ff7b7b;
+  --color-board-frame: #0a1222;
+  --color-board-gap: #101a2c;
+
+  --color-number-1: #82b1ff;
+  --color-number-2: #81c784;
+  --color-number-3: #ff8a80;
+  --color-number-4: #b39ddb;
+  --color-number-5: #ffab91;
+  --color-number-6: #4dd0e1;
+  --color-number-7: #eceff1;
+  --color-number-8: #a0a8b4;
 
   --elevation-1: 0 1px 2px rgba(0, 0, 0, 0.4);
   --elevation-2: 0 8px 24px -12px rgba(0, 0, 0, 0.6);

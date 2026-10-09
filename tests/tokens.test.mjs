@@ -96,6 +96,25 @@ test('tokens.css declares the full token set on :root', () => {
   assert.equal(light.get('--font-numeric-tabular'), 'tabular-nums');
 });
 
+const TILE_TOKENS = [
+  '--color-tile-closed', '--color-tile-edge', '--color-tile-pressed', '--color-tile-revealed',
+  '--color-tile-flagged', '--color-tile-flag', '--color-tile-mine', '--color-tile-mine-glyph',
+  '--color-tile-exploded', '--color-tile-wrong-flag', '--color-tile-wrong-flag-mark',
+  '--color-board-frame', '--color-board-gap',
+];
+const NUMBER_TOKENS = Array.from({ length: 8 }, (_, i) => `--color-number-${i + 1}`);
+
+test('tile tokens cover every state, the board frame and gap, and numbers 1–8, in both themes', () => {
+  for (const theme of ['light', 'dark']) {
+    for (const name of [...TILE_TOKENS, ...NUMBER_TOKENS]) {
+      assert.ok(THEMES[theme].has(name), `${theme} theme declares ${name}`);
+      assert.equal(parseColor(THEMES[theme].get(name))[3], 1, `${theme} ${name} is opaque`);
+    }
+  }
+  const numbers = new Set(NUMBER_TOKENS.map((n) => THEMES.light.get(n).toLowerCase()));
+  assert.equal(numbers.size, 8, 'the eight light number colours are distinct');
+});
+
 test('token names are semantic, never named after a hue', () => {
   const hues = /(^|-)(red|green|blue|navy|sky|yellow|orange|amber|purple|pink|teal|cyan|gr[ae]y|white|black)(-|$)/;
   for (const name of THEMES.light.keys()) assert.doesNotMatch(name.slice(2), hues, name);
@@ -141,6 +160,15 @@ for (const theme of ['light', 'dark']) {
     }
     const label = contrast(p.c('--color-accent-ink'), p.c('--color-accent'));
     assert.ok(label >= 3, `--color-accent-ink on --color-accent: ${label.toFixed(2)}:1`);
+  });
+
+  test(`${theme}: every number colour meets 4.5:1 on the revealed tile`, () => {
+    const t = THEMES[theme];
+    const revealed = parseColor(t.get('--color-tile-revealed'));
+    for (const n of NUMBER_TOKENS) {
+      const r = contrast(parseColor(t.get(n)), revealed);
+      assert.ok(r >= 4.5, `${n} on --color-tile-revealed: ${r.toFixed(2)}:1`);
+    }
   });
 }
 
