@@ -90,7 +90,7 @@ Context: none
 ```
 Done: struck — Task 7 no longer needs a person (it reads tests/fidelity/minesweeper-online.md); the prompt runs as step 51, without the Needs: agent+human line.
 
-## [ ] 51. Implement task 7 — Fidelity tests for the reference ruleset
+## [x] 51. Implement task 7 — Fidelity tests for the reference ruleset
 
 Depends on: 5, 6
 
@@ -101,6 +101,8 @@ Context:
 ```prompt
 /task-implement 7 --review --rounds 2
 ```
+
+Done: 2026-10-09, commit `08b9578` (2 files, +318/-1). The task body expected engine corrections; none were needed — every fidelity test passed against the engine as it stood. A coverage test now requires one fidelity test per "task 7" entry in the observation file and that every profile `fidelity` marker cites an existing heading.
 
 ## [ ] 8. Implement task 8 — Update documentation for feature `cell-graph-rules-engine`
 
