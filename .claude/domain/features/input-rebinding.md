@@ -41,9 +41,10 @@ Non-goals:
 - Rebinding axes: mouse movement, the mouse wheel (3D spacing), the
   controller's sticks. They keep their fixed roles; the d-pad's cursor
   moves in Classic 2D are buttons and are rebindable.
-- Rebinding the shell's inputs: menu navigation, Back and Pause (Esc, the
-  controller's back and Start buttons) are fixed and reserved, so the
-  player can never lose the way out of a screen.
+- Rebinding the shell's inputs and each mode's shortcuts outside its
+  catalogue: menu navigation, Back, Pause, help, sound, fullscreen and the
+  3D spacing buttons keep their inputs, which are reserved, so the player
+  can never lose the way out of a screen.
 - Changing what an action does. The rules, the release-based mouse actions
   and their chord gestures, the 3D view modes' held behaviour and every
   control the original spec pins stay as they are; rebinding changes only
@@ -126,10 +127,14 @@ the game shell, settings stored behind the platform layer (see
   last input on keyboard and mouse together, or on the controller, so each
   mode stays playable on each device; reset restores the catalogue's
   defaults for one mode and device.
-- **Reserved inputs** — Esc, the controller's back and Start buttons, the
-  controller's home button, and keys the browser or the system keeps for
-  itself (Tab, the Meta keys, function keys used for fullscreen and
-  developer tools). Mouse movement, the wheel and the sticks are not inputs
+- **Reserved inputs** — in every mode, Esc and the controller's Start and
+  home buttons; per mode, every input that mode's play gives to something
+  outside its catalogue (the controller's B, the shell's Back, in Classic
+  2D; the help, sound and fullscreen shortcuts and the 3D d-pad spacing
+  buttons); and keys the browser or the system keeps for itself (Tab, the
+  Meta keys, function keys used for fullscreen and developer tools). A
+  button reserved in one mode may be a default binding in the other — B
+  moves down in 3D. Mouse movement, the wheel and the sticks are not inputs
   here at all.
 - **Change notification** — the resolver subscribes to the overrides
   setting through the settings store; modes read the resolver on each
