@@ -15,6 +15,11 @@ the board; the skin owns how a tile looks.
   state machine over the buttons, its rules read from the reference
   profile, and `mountPointerInput`, its wiring to the view and the session.
   DOM-free at import.
+- `js/classic2d/cursor-input.js` — the keyboard and controller input: a cell
+  cursor with auto-repeat for held directions, reveal / flag / chord on keys
+  and buttons with the mouse's press feedback and release rules, and
+  `mountCursorInput`, its wiring to the view and the session. DOM-free at
+  import.
 - `js/classic2d/tile-skin.js` — the stateless tile painter, the tile cache
   that pre-renders every state and number, and the shared minimum tile size.
   It holds no palette: every colour is a tile or number token from
@@ -32,13 +37,15 @@ the board; the skin owns how a tile looks.
 - `cellAtLayout(layout, scroll, cols, rows, x, y)` — the cell index under a
   canvas position, or -1.
 - `BOARD_BACKGROUND` (`--color-board-frame`) — the token the area around
-  the board is filled with; `PAN_MODIFIER` (`shiftKey`) — the key a drag
+  the board is filled with; `CURSOR_RING` (`--color-focus-ring`) — the
+  token the cursor's focus ring is drawn in; `PAN_MODIFIER` (`shiftKey`) — the key a drag
   holds to pan.
 - `createBoardView({canvas, grid, createSkin, token})` → `{resize(width,
   height, pixelRatio), setGame(game), update(changed), repaint(), cellAt(x,
   y), cellRect(c) → {x, y, size}, scroll, scrollTo, scrollBy, pan(dx, dy),
   wheel(event) → taken, ensureVisible(c) → scrolled, setHidden(hidden),
-  setPressed(cells), pressed, hidden, layout, pixelRatio, canvas, dispose}` — `grid` is the square grid
+  setPressed(cells), pressed, setCursor(c), cursor, hidden, layout,
+  pixelRatio, canvas, dispose}` — `grid` is the square grid
   ([engine.md](engine.md)); `game` is the engine game whose `cellState` /
   `cellNumber` it draws; `createSkin` defaults to `createTileSkin`, `token`
   to the token reader. Positions are canvas CSS pixels.
@@ -58,6 +65,18 @@ the board; the skin owns how a tile looks.
   pressed set; `onAction(kind, c)` with `'reveal' | 'toggleFlag' | 'chord'`.
 - `mountPointerInput({view, session, graph?, win?, rules?})` →
   `{input, destroy()}`.
+
+`js/classic2d/cursor-input.js` exports
+- `CURSOR_KEYS` (key code → `up`/`down`/`left`/`right`/`reveal`/`flag`/
+  `chord`), `PAD_MAP` (`BTN` index → the same), `STICK_THRESHOLD`.
+- `createCursorInput({grid, game, onPress, onAction, onCursor?, rules?,
+  active?, delay?, interval?})` → `{cell, setCell(c), move(dx, dy),
+  hold(source, dir), let(source, dir), tick(now), down(source, button),
+  up(source, button), pad(poll, now), reset(), holding, moving}` — `button`
+  is `'reveal' | 'flag' | 'chord'`; `poll` is a `GamepadReader` poll
+  (`held`, `ls`) after the shell's held-button suppression.
+- `mountCursorInput({view, session, grid?, win?, rules?, delay?,
+  interval?})` → `{input, pad(poll, now?), destroy()}`.
 
 `js/classic2d/tile-skin.js` exports
 - `MIN_TILE_SIZE` (41) — the smallest tile size the board view allows,
@@ -103,6 +122,9 @@ the board; the skin owns how a tile looks.
 - **Pressed feedback.** `setPressed` redraws only the cells that gain or
   lose the press; a pressed cell draws as `pressed` only while the game
   has it closed, and `setGame` clears the set.
+- **Focus ring.** `setCursor` redraws the cell the ring leaves and the one
+  it enters; the ring is stroked inside its own tile after the tile, so a
+  cell redraw is enough to move it.
 - **Pointer input.** Reveal and chord act on the release of the last reveal
   button, a flag on the right press; a left + right gesture acts on the left
   release, as a chord only. Every branch reads a profile marker, so a rule
@@ -112,6 +134,20 @@ the board; the skin owns how a tile looks.
   `pointerdown`), suppresses the context menu, takes input only while the
   session is `ready` or `playing` and not paused, and leaves a
   `PAN_MODIFIER` + primary press on a scrolling board to the pan.
+- **Cursor input.** Space / Enter and A / RT only reveal (no "smart"
+  button: nothing on a number), F and X / LT flag (as the right button, on
+  the press), D and Y only chord; a reveal and a flag held together (both
+  triggers) are left + right, chording when the profile's `chordInputs` has
+  `left+right`. B, Start and Back are the shell's and unmapped. Press
+  feedback (`pressFeedback`) and a held press under a moving cursor
+  (`releaseOffCell`) read the same profile markers as the pointer input. Directions repeat through `Repeat` from `js/gamepad.js`, the left
+  stick through `stickCurve` past `STICK_THRESHOLD`; the mounted input
+  ignores the system key repeat and ticks on animation frames while a
+  direction key is held, and the controller reaches it only through
+  `pad(poll)`, which the mode's integration is to call from the shell's
+  poll. Each move draws the ring on the
+  new cell and calls `ensureVisible`; input is taken only while the session
+  is `ready` or `playing` and not paused.
 - **Hidden.** While hidden (the game is paused) a repaint draws the
   background only and `update` draws nothing; showing repaints the board.
 - **The engine is the source.** The view keeps no cell state; every tile is
@@ -168,8 +204,11 @@ the board; the skin owns how a tile looks.
   lists it redraws from.
 - [rendering.md](rendering.md) — the 3D tile atlas, a separate palette the
   skin neither reads nor feeds.
+- [input.md](input.md) — `Repeat`, `stickCurve`, `BTN` and the
+  `GamepadReader` poll the cursor input reads, and the shell's Back buttons
+  it leaves unmapped.
 - [testing.md](testing.md) — `tests/classic2d-view.test.mjs` pins the
-  board view; `tests/tile-skin.test.mjs` the painter, the cache and
+  board view; `tests/classic2d-cursor.test.mjs` the cursor input; `tests/tile-skin.test.mjs` the painter, the cache and
   `MIN_TILE_SIZE`; `tests/tokens.test.mjs` the tile tokens.
 
 ## WHEN TO READ THE SOURCE
@@ -178,6 +217,8 @@ the board; the skin owns how a tile looks.
   (`boardLayout`, `repaint`, `resize` in `board-view.js`).
 - Changing a pointer gesture or adding an input rule (`createPointerInput`,
   `pointerRules`, the profile markers in `js/engine/profiles.js`).
+- Changing a key or controller binding, or the cursor's repeat
+  (`CURSOR_KEYS`, `PAD_MAP`, `createCursorInput`).
 - Adding board input that competes with panning (`mountBoardView`'s pointer
   and wheel listeners, `PAN_MODIFIER`).
 - Changing how a state looks, or adding a state (the `paintTileWith` switch

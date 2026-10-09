@@ -163,11 +163,12 @@ copied.
   game.
 - No external libraries.
 
-## Open questions
+## Controller mapping and held buttons
 
-- Controller mapping on the board: which buttons reveal, flag and chord,
-  and whether a single "smart" button (reveal on closed, chord on numbers)
-  is offered. Blocks the controller input task; the mapping must not clash
-  with the shell's menu buttons.
-- Whether a press-and-hold on the controller shows the same pressed-cell
-  feedback as a held mouse button.
+Settled: on the board, A or RT reveals, X or LT flags, and Y or both
+triggers chord; no single "smart" button is offered, so a reveal never
+chords a number and a chord never reveals. The
+triggers match the 3D mode's trigger-as-mouse-button feel, and the face
+buttons avoid B and Start, which keep their shell meanings (back and pause)
+and never act on the board. Holding a reveal or chord button shows the same
+pressed feedback as a held mouse button, and the action happens on release.

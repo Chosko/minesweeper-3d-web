@@ -147,6 +147,7 @@ additions the spec permits; they must not alter any rule above.
 - [rendering.md](rendering.md) — `FlyCamera.apply` drives the renderer's camera; `Controls.shift/space/ctrl` feed the renderer toggles; the picked cell becomes the renderer's selection.
 - [app-shell.md](app-shell.md) — `js/main.js` constructs every object here, maps pad buttons (`handlePad`), runs menu focus navigation with `pickInDirection` / `Repeat` and the shell navigation helpers, and owns the pointer-lock flow; the screen router and the pause controller decide where Back and pause lead.
 - [audio.md](audio.md) — no direct calls; action results in main trigger sound effects.
+- [classic2d.md](classic2d.md) — the Classic 2D cursor input reuses `BTN`, `Repeat` and `stickCurve` and reads `GamepadReader` polls; B, Start and Back stay the shell's there too.
 - [testing.md](testing.md) — `tests/gamepad.test.mjs` covers the gamepad helpers, `GamepadReader`, `FlyCamera.moveAxes/lookAxes`, `Controls` and `MouseActions` trigger sequences; `tests/shell-router.test.mjs` covers the shell navigation helpers.
 
 ## WHEN TO READ THE SOURCE

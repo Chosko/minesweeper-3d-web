@@ -346,7 +346,7 @@ Feature: classic-2d-square-play
 
 ## 35. Classic 2D keyboard and controller cursor
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/classic2d/cursor-input.js, js/classic2d/board-view.js, tests/classic2d-cursor.test.mjs, .claude/domain/features/classic-2d-square-play.md
 Preconditions: 24, 33

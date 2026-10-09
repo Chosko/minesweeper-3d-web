@@ -166,6 +166,18 @@ browser checks for everything that needs WebGL or the DOM.
   `EventTarget` fakes (context menu, shift-pan presses ignored, blur,
   `destroy`); DOM-free. One Playwright test plays a fixed Beginner board by
   mouse to a win (skipped when Playwright or chromium is unavailable).
+- `tests/classic2d-cursor.test.mjs` — the Classic 2D cursor input
+  (`js/classic2d/cursor-input.js`) over real engine games: moving and
+  clamping, auto-repeat of held directions, Space / Enter / F / D and the
+  controller buttons (A / RT, X / LT, Y, both triggers; B, Start and Back
+  unmapped) through `pad(poll)` with poll-shaped `held` arrays, the d-pad
+  and the left stick, pressed feedback, press-follows-cursor, inactive
+  boards and `reset`; the board view's focus ring (`setCursor`,
+  `CURSOR_RING`); the mounted wiring over `EventTarget` fakes with a fake
+  `requestAnimationFrame` (system key repeat ignored, modified keys and Esc
+  left alone, blur, `destroy`); DOM-free and reusing `Repeat` /
+  `stickCurve`. One Playwright test plays a fixed Beginner board by
+  keyboard to a win (skipped when Playwright or chromium is unavailable).
 - `tests/shell-router.test.mjs` — the screen router (`js/shell/router.js`:
   the seven feature screens, one screen shown per change with its data, the
   back stack, unwinding, `replace`, default focus declared or computed, a
@@ -216,7 +228,8 @@ browser checks for everything that needs WebGL or the DOM.
   `tests/components.test.mjs`, the minimum-tile-size test in
   `tests/tile-skin.test.mjs`, the board test in
   `tests/classic2d-view.test.mjs`, the mouse game in
-  `tests/classic2d-pointer.test.mjs` and one flow test in each `tests/shell-*.test.mjs`.
+  `tests/classic2d-pointer.test.mjs`, the keyboard game in
+  `tests/classic2d-cursor.test.mjs` and one flow test in each `tests/shell-*.test.mjs`.
 
 No `package.json`, no dependencies: Node 22 built-in runner (`node:test`,
 `node:assert/strict`). `node --test` with no arguments discovers
@@ -270,8 +283,10 @@ Tests consume, and so pin, these contracts:
   (`drawTile`, `invalidate`, `cacheKey`, `dispose`), `TILE_STATES`,
   `MIN_TILE_SIZE`; `js/classic2d/board-view.js::fitTileSize`,
   `boardLayout`, `cellAtLayout`, `createBoardView`, `BOARD_BACKGROUND`,
-  `PAN_MODIFIER`; `js/classic2d/pointer-input.js::BUTTON`, `pointerRules`,
-  `createPointerInput`, `mountPointerInput`. Full list in [classic2d.md](classic2d.md).
+  `CURSOR_RING`, `PAN_MODIFIER`; `js/classic2d/pointer-input.js::BUTTON`,
+  `pointerRules`, `createPointerInput`, `mountPointerInput`;
+  `js/classic2d/cursor-input.js::CURSOR_KEYS`, `PAD_MAP`, `STICK_THRESHOLD`,
+  `createCursorInput`, `mountCursorInput`. Full list in [classic2d.md](classic2d.md).
 - `js/platform/storage.js::createStorage` (`register`, `load`, `save`,
   `available`, the issue kinds and save reasons);
   `js/platform/browser-backend.js::createBrowserBackend`, `DOC_PREFIX`,

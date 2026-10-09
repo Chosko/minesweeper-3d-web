@@ -25,7 +25,9 @@
 //   setHidden(hidden)    a hidden board shows the background only (the game is paused).
 //   setPressed(cells)    the cells a held button presses (js/classic2d/pointer-input.js); a closed
 //                        one is drawn in the skin's pressed state. setGame clears them.
-//   layout, pixelRatio, hidden, pressed, canvas, dispose()
+//   setCursor(c)         the keyboard and controller cursor (js/classic2d/cursor-input.js), drawn
+//                        as a focus ring inside cell c's tile; -1 for none.
+//   layout, pixelRatio, hidden, pressed, cursor, canvas, dispose()
 
 import { MIN_TILE_SIZE, createTileSkin } from './tile-skin.js';
 import { token as readerToken } from '../tokens.js';
@@ -33,6 +35,9 @@ import { CELL } from '../engine/rules.js';
 
 /** The design token the area around the board is filled with. */
 export const BOARD_BACKGROUND = '--color-board-frame';
+
+/** The design token the cursor's focus ring is drawn in. */
+export const CURSOR_RING = '--color-focus-ring';
 
 /** The key a pointer drag must hold to pan the board instead of playing it. */
 export const PAN_MODIFIER = 'shiftKey';
@@ -92,6 +97,7 @@ export function createBoardView({ canvas, grid, createSkin = createTileSkin, tok
   let game = null;
   let hidden = false;
   let pressed = new Set();
+  let cursor = -1;
   const scroll = { x: 0, y: 0 };
 
   const skin = createSkin({ redraw: () => repaint() });
@@ -108,6 +114,12 @@ export function createBoardView({ canvas, grid, createSkin = createTileSkin, tok
     if (x <= -t || y <= -t || x >= layout.width || y >= layout.height) return;
     const state = game.cellState(c);
     skin.drawTile(ctx, x, y, t, state === CELL.CLOSED && pressed.has(c) ? PRESSED : state, game.cellNumber(c), ratio);
+    if (c === cursor) {
+      const w = Math.max(2, Math.round(t / 12));
+      ctx.strokeStyle = token(CURSOR_RING);
+      ctx.lineWidth = w;
+      ctx.strokeRect(x + w / 2, y + w / 2, t - w, t - w);
+    }
   }
 
   function repaint() {
@@ -201,6 +213,7 @@ export function createBoardView({ canvas, grid, createSkin = createTileSkin, tok
     get pixelRatio() { return ratio; },
     get hidden() { return hidden; },
     get pressed() { return [...pressed]; },
+    get cursor() { return cursor; },
     get scroll() { return { x: scroll.x, y: scroll.y }; },
     resize,
     setGame(next) {
@@ -214,6 +227,14 @@ export function createBoardView({ canvas, grid, createSkin = createTileSkin, tok
       const touched = [...pressed].filter((c) => !next.has(c));
       for (const c of next) if (!pressed.has(c)) touched.push(c);
       pressed = next;
+      update(touched);
+    },
+    /** Moves the focus ring to cell c (-1 hides it), redrawing the cells it leaves and enters. */
+    setCursor(c) {
+      const next = Number.isInteger(c) && c >= 0 && c < count ? c : -1;
+      if (next === cursor) return;
+      const touched = [cursor, next];
+      cursor = next;
       update(touched);
     },
     update,
