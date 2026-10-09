@@ -1,7 +1,7 @@
 # Runbook: m3-tasks-implementation
 
 Created: 2026-10-09 · Source: /runbook-create interview (runbook planning-to-m3 step 17) · Model: opus
-Last step number: 27
+Last step number: 31
 
 ## [ ] 1. Implement task 84 — Electron main process: window, game protocol, window state and crash log
 
@@ -283,4 +283,44 @@ Context: none
 
 ```prompt
 /task-implement 110 --review
+```
+
+## [ ] 28. Implement task 111 — Action catalogue, bindings resolver and the bindings setting
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 111 --review
+```
+
+## [ ] 29. Implement task 112 — Classic 2D and 3D input read their actions through the bindings
+
+Depends on: 28
+
+Context: none
+
+```prompt
+/task-implement 112 --review
+```
+
+## [ ] 30. Implement task 113 — Rebinding controls on the Settings page
+
+Depends on: 28, 29
+
+Context: none
+
+```prompt
+/task-implement 113 --review
+```
+
+## [ ] 31. Implement task 114 — Update documentation for feature `input-rebinding`
+
+Depends on: 28, 29, 30
+
+Context: none
+
+```prompt
+/task-implement 114 --review
 ```
