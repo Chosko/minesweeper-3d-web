@@ -286,7 +286,7 @@ Feature: game-shell
 
 ## 29. Board identity, board key and display label
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/records/board.js, tests/records-board.test.mjs
 Preconditions: none
