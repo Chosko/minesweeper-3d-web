@@ -31,10 +31,10 @@ Tasks: none
 
 ## cell-graph-rules-engine — Rules engine over a cell graph, with the square grid
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/cell-graph-rules-engine.md
 Source: product-design.md § Classic 2D (m1-classic-2d)
-Tasks: none
+Tasks: 4, 5, 6, 7, 8
 
 ---
 
