@@ -531,7 +531,7 @@ Context:
 
 Done: 2026-10-09, commit `818648d` (2 files, +562/-1). No production fix was needed: the input markers, pointer state machine and `customLimits` already match the fidelity file. Step 32's interpolated 37–48-cell mine caps are confirmed (the file says to interpolate). The cursor-ring visibility question from step 36 was not addressed.
 
-## [ ] 38. Implement task 38 — Update documentation for feature `classic-2d-square-play`
+## [x] 38. Implement task 38 — Update documentation for feature `classic-2d-square-play`
 
 Depends on: 32, 33, 34, 35, 36, 37
 
@@ -544,6 +544,8 @@ Context:
 ```prompt
 /task-implement 38 --review
 ```
+
+Done: 2026-10-09, commit `9604d25` (5 files, +213/-24). Also corrected the README input table: releasing on another cell moves the action there; only releasing off the board cancels it.
 
 ## [ ] 39. Implement task 39 — Settings schema and store
 
