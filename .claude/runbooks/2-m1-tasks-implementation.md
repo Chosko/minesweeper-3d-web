@@ -367,7 +367,7 @@ Context:
 
 Done: 2026-10-09, commit `48f2301` (11 files, +707/-35). Every pause goes through `js/shell/pause.js` (`window.__ms.pauser`); a finished game routes to the `results` screen only once that screen is registered, and the 3D end banner stays until then. The board is hidden whenever the pause card shows; the leave-page guard is live only while a game is in progress.
 
-## [ ] 28. Implement task 28 — Update documentation for feature `game-shell`
+## [x] 28. Implement task 28 — Update documentation for feature `game-shell`
 
 Depends on: 24, 25, 26, 27
 
@@ -380,6 +380,8 @@ Context:
 ```prompt
 /task-implement 28 --review
 ```
+
+Done: 2026-10-09, commit `b350387` (5 files, +357/-76).
 
 ## [ ] 29. Implement task 29 — Board identity, board key and display label
 
