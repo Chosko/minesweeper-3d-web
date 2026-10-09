@@ -1,5 +1,5 @@
 // DOM menus, HUD and overlays. No game rules here.
-import { formatOverlayTime, formatMineCount } from './ui/components.js';
+import { formatOverlayTime, formatMineCount, formatSliderValue } from './ui/components.js';
 
 const $ = (id) => document.getElementById(id);
 const LS_CUSTOM = 'ms3d.custom';
@@ -70,8 +70,8 @@ export class UI {
       flash: $('flash'), menu: $('menu'), ready: $('ready'), readyBoard: $('ready-board'), readyMsg: $('ready-msg'),
       bannerRecord: $('banner-record'), crosshair: $('crosshair'), hintH: $('hint-h'),
       controlsModal: $('controls-modal'),
-      pause: $('pause'), pauseCard: document.querySelector('.pause-card'), pauseTitle: $('pause-title'), pauseSub: $('pause-sub'),
-      resume: $('p-resume'), restart: $('p-restart'),
+      pause: $('pause'), pauseTitle: $('pause-title'), pauseSub: $('pause-sub'),
+      resume: $('p-resume'), restart: $('p-restart'), pauseMenu: $('p-menu'), pauseActions: $('pause-actions'),
       cx: $('c-x'), cy: $('c-y'), cz: $('c-z'), cm: $('c-m'), cinfo: $('c-info'),
       chipShift: $('chip-shift'), chipSpace: $('chip-space'), chipCtrl: $('chip-ctrl'),
     };
@@ -80,10 +80,14 @@ export class UI {
     this._helpByUser = false; // in-game help panel opened with H
     this._crossOn = null;
 
-    document.querySelectorAll('.preset').forEach((b) => {
-      const best = document.createElement('span');
-      best.className = 'p-best hidden';
-      b.appendChild(best);
+    document.querySelectorAll('[data-preset]').forEach((b) => {
+      for (const kind of ['best', 'last']) {
+        const line = document.createElement('span');
+        line.className = 'ui-menu__detail hidden';
+        line.dataset[kind] = '';
+        if (kind === 'last') line.textContent = 'Last played';
+        b.appendChild(line);
+      }
       b.addEventListener('click', () => {
         const [X, Y, Z, mines] = b.dataset.preset.split(',').map(Number);
         lsSet(LS_LAST_PRESET, b.dataset.preset);
@@ -124,7 +128,7 @@ export class UI {
     const look = loadLookSettings();
     const sens = $('p-sens'), sensVal = $('p-sens-val'), inv = $('p-invert');
     sens.value = String(look.sensitivity); inv.checked = look.invertY;
-    const showSens = () => { sensVal.textContent = `${Number(sens.value).toFixed(2)}×`; };
+    const showSens = () => { sensVal.textContent = formatSliderValue(sens.value, { format: 'multiplier', step: sens.step }); };
     showSens();
     sens.addEventListener('input', () => {
       showSens(); lsSet(LS_SENS, sens.value);
@@ -144,13 +148,13 @@ export class UI {
   /** Volume controls (only shown when the audio module supports it). v in 0..1. */
   initVolume(v, onChange) {
     const sliders = [$('menu-vol'), $('p-vol')];
-    const out = $('p-vol-val');
+    const outs = [$('menu-vol-val'), $('p-vol-val')];
     const set = (val, from) => {
       for (const s of sliders) if (s !== from) s.value = String(Math.round(val * 100));
-      out.textContent = `${Math.round(val * 100)}%`;
+      for (const o of outs) o.textContent = formatSliderValue(val * 100, { format: 'percent' });
     };
     set(v, null);
-    document.querySelectorAll('.vol, .vol-row').forEach((e) => e.classList.remove('hidden'));
+    document.querySelectorAll('[data-volume]').forEach((e) => e.classList.remove('hidden'));
     for (const s of sliders) {
       s.addEventListener('input', () => { const val = Number(s.value) / 100; set(val, s); onChange(val); });
     }
@@ -158,11 +162,13 @@ export class UI {
 
   refreshBests() {
     const last = lsGet(LS_LAST_PRESET);
-    document.querySelectorAll('.preset').forEach((b) => {
-      b.classList.toggle('last', !!last && b.dataset.preset === last);
+    document.querySelectorAll('[data-preset]').forEach((b) => {
+      const isLast = !!last && b.dataset.preset === last;
+      b.toggleAttribute('data-last', isLast);
+      b.querySelector('[data-last]')?.classList.toggle('hidden', !isLast);
       const [X, Y, Z, mines] = b.dataset.preset.split(',').map(Number);
       const best = getBest({ X, Y, Z, mines });
-      const el = b.querySelector('.p-best');
+      const el = b.querySelector('[data-best]');
       if (!el) return;
       el.textContent = best === null ? '' : `Best ${fmtTime(best)} s`;
       el.classList.toggle('hidden', best === null);
@@ -196,7 +202,7 @@ export class UI {
   }
   _setCustom(s) {
     this.el.cx.value = s.X; this.el.cy.value = s.Y; this.el.cz.value = s.Z; this.el.cm.value = s.mines;
-    for (const el of [this.el.cx, this.el.cy, this.el.cz, this.el.cm]) el.classList.remove('clamped');
+    for (const el of [this.el.cx, this.el.cy, this.el.cz, this.el.cm]) el.removeAttribute('data-adjusted');
     this._updateCustomInfo();
   }
   _clampCustomFields() {
@@ -204,7 +210,7 @@ export class UI {
     const s = clampSettings(raw);
     const pairs = [[this.el.cx, raw.X, s.X], [this.el.cy, raw.Y, s.Y], [this.el.cz, raw.Z, s.Z], [this.el.cm, raw.mines, s.mines]];
     for (const [el, a, b] of pairs) {
-      if (a !== b) { el.value = b; el.classList.add('clamped'); setTimeout(() => el.classList.remove('clamped'), 900); }
+      if (a !== b) { el.value = b; el.setAttribute('data-adjusted', ''); setTimeout(() => el.removeAttribute('data-adjusted'), 900); }
     }
     this._updateCustomInfo();
     return s;
@@ -221,7 +227,8 @@ export class UI {
     else if (!Number.isFinite(raw.mines) || raw.mines < 1 || raw.mines > n) { msg = `Mines must be 1–${n.toLocaleString('en-US')}. ` + msg; warn = true; }
     else if (n > 250000) { msg += ' · very large board, may run slowly'; warn = true; }
     this.el.cinfo.textContent = msg;
-    this.el.cinfo.classList.toggle('warn', warn);
+    this.el.cinfo.classList.toggle('ui-text--warning', warn);
+    this.el.cinfo.classList.toggle('ui-text--muted', !warn);
   }
 
   // ---------- screens ----------
@@ -272,12 +279,13 @@ export class UI {
     this.el.pause.classList.remove('hidden');
     this.el.hud.classList.remove('hidden');
     const ended = state !== 'playing';
-    this.el.pauseCard.classList.toggle('won', state === 'won');
-    this.el.pauseCard.classList.toggle('lost', state === 'lost');
-    this.el.pauseCard.classList.toggle('ended', ended);
     this.el.banner.classList.add('suppressed');
-    this.el.resume.classList.toggle('btn-primary', !ended);
-    this.el.restart.classList.toggle('btn-primary', ended);
+    // The primary action leads: Resume while playing, Play again once the game ended.
+    const [first, second] = ended ? [this.el.restart, this.el.resume] : [this.el.resume, this.el.restart];
+    first.classList.replace('ui-button--secondary', 'ui-button--primary');
+    second.classList.replace('ui-button--primary', 'ui-button--secondary');
+    this.el.pauseActions.insertBefore(first, this.el.pauseMenu);
+    this.el.pauseActions.insertBefore(second, this.el.pauseMenu);
     this.el.pauseTitle.textContent = state === 'won' ? 'You won!' : state === 'lost' ? 'Game over' : 'Paused';
     this.el.pauseSub.textContent = `Time ${fmtTime(time)} s · ${minesLeft} mine${minesLeft === 1 ? '' : 's'} left`;
     this.el.resume.textContent = ended ? 'Keep looking around' : 'Resume';

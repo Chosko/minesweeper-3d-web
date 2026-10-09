@@ -31,7 +31,11 @@ const COMPONENTS = {
   'ui-segmented': { interactive: true, control: '.ui-segmented__option' },
   'ui-stat': { interactive: false },
   'ui-overlay-bar': { interactive: false },
+  'ui-field': { interactive: true, control: '.ui-field__input' },
+  'ui-link': { interactive: true, control: '.ui-link' },
 };
+// Screen compositions: layout-only classes the screens are assembled with.
+const COMPOSITIONS = ['ui-screen', 'ui-row', 'ui-grid', 'ui-heading', 'ui-text', 'ui-actions', 'ui-stat-row'];
 const STATES = ['hover', 'active', 'focus', 'disabled'];
 
 // css rules as [selector, body] pairs (top level and inside @media).
@@ -100,7 +104,7 @@ test('every interactive component has hover, pressed, focused and disabled state
     assert.match(own, /:active/, `${name} pressed`);
     assert.match(own, /:focus-visible/, `${name} keyboard focus`);
     assert.match(own, /body\.pad-nav [^,]*:focus\b/, `${name} controller focus`);
-    assert.match(own, /:disabled/, `${name} disabled`);
+    assert.match(own, /:disabled|\[aria-disabled="true"\]/, `${name} disabled`);
   }
 });
 
@@ -154,8 +158,9 @@ test('the gallery renders every component, and every interactive one in every st
     if (!c.interactive) continue;
     const forced = new Set(found.map((t) => t.attrs['data-force']).filter(Boolean));
     for (const s of ['hover', 'active', 'focus']) assert.ok(forced.has(s), `${name} shown ${s}`);
-    assert.ok(found.some((t) => 'disabled' in t.attrs), `${name} shown disabled`);
-    assert.ok(found.some((t) => !('disabled' in t.attrs) && !t.attrs['data-force']), `${name} shown at rest`);
+    const off = (t) => 'disabled' in t.attrs || t.attrs['aria-disabled'] === 'true';
+    assert.ok(found.some(off), `${name} shown disabled`);
+    assert.ok(found.some((t) => !off(t) && !t.attrs['data-force']), `${name} shown at rest`);
   }
 });
 
@@ -173,21 +178,21 @@ test('the gallery preview hooks mirror the real pseudo-classes', () => {
 const PAD_SELECTOR = read('js/main.js').match(/padFocusables[\s\S]*?querySelectorAll\('([^']+)'\)/)[1];
 const PAD_TAGS = PAD_SELECTOR.split(',').map((s) => s.trim());
 
-function accessibleName(t) {
+function accessibleName(t, src = GALLERY, all = TAGS) {
   if (t.attrs['aria-label']) return t.attrs['aria-label'];
   if (t.attrs['aria-labelledby']) {
     const ids = t.attrs['aria-labelledby'].split(/\s+/);
-    for (const id of ids) assert.ok(TAGS.some((x) => x.attrs.id === id), `aria-labelledby target #${id} exists`);
+    for (const id of ids) assert.ok(all.some((x) => x.attrs.id === id), `aria-labelledby target #${id} exists`);
     return ids.join(' ');
   }
-  if (t.attrs.id && TAGS.some((x) => x.tag === 'label' && x.attrs.for === t.attrs.id)) return 'label[for]';
-  if (t.tag === 'button') {
-    const close = GALLERY.indexOf('</button>', t.end);
-    const text = GALLERY.slice(t.end, close).replace(/<[^>]+>/g, '').trim();
+  if (t.attrs.id && all.some((x) => x.tag === 'label' && x.attrs.for === t.attrs.id)) return 'label[for]';
+  if (t.tag === 'button' || t.tag === 'a') {
+    const close = src.indexOf(`</${t.tag}>`, t.end);
+    const text = src.slice(t.end, close).replace(/<[^>]+>/g, '').trim();
     if (text) return text;
   }
   // a wrapping <label>
-  const before = GALLERY.slice(0, t.index);
+  const before = src.slice(0, t.index);
   if (before.lastIndexOf('<label') > before.lastIndexOf('</label>')) return 'wrapping label';
   return '';
 }
@@ -196,6 +201,10 @@ test('every interactive control is reachable by the controller layer and has an 
   for (const [name, c] of Object.entries(COMPONENTS)) {
     if (!c.interactive) continue;
     for (const t of TAGS.filter((x) => hasClasses(x, c.control))) {
+      if (t.tag === 'a' && !('href' in t.attrs)) {
+        assert.equal(t.attrs['aria-disabled'], 'true', `${name} without href is the disabled link`);
+        continue;
+      }
       const kind = t.tag === 'a' ? 'a[href]' : t.tag;
       assert.ok(PAD_TAGS.includes(kind), `${name} is a <${t.tag}>, which padFocusables (${PAD_SELECTOR}) collects`);
       assert.ok(accessibleName(t), `${name} <${t.tag}> has an accessible name`);
@@ -389,6 +398,95 @@ test('the controller pauses through the overlay pause button', () => {
   assert.match(playing, /pressed\(BTN\.START\)\)\s*\{\s*padClick\(document\.getElementById\('hud-pause'\)\)/,
     'START in play activates #hud-pause, the same control keyboard and mouse use');
   assert.match(main, /function padClick\(el\)[\s*\S]*?el\.click\(\)/, 'padClick activates the element');
+});
+
+// ---------------------------------------------------------------- screens composed from the kit
+
+const section = (src, start, end) => src.slice(src.indexOf(start), src.indexOf(end));
+const SCREENS = {
+  menu: section(INDEX, '<section id="menu"', '<!-- Click to play -->'),
+  pause: section(INDEX, '<section id="pause"', '<noscript>'),
+};
+const RESULTS = section(GALLERY, '<!-- composition: results -->', '<!-- /composition: results -->');
+const classesOf = (t) => (t.attrs.class ?? '').split(/\s+/).filter(Boolean);
+const STYLE = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
+
+test('the catalogue documents the screen compositions and the kit styles them', () => {
+  const head = RAW.match(/^\/\*([\s\S]*?)\*\//)[1];
+  for (const name of COMPOSITIONS) {
+    assert.ok(head.includes(name), `catalogue documents ${name}`);
+    assert.ok(rulesFor(`.${name}`).length > 0, `${name} is styled in components.css`);
+  }
+  for (const screen of ['Main menu', 'Pause card', 'Results screen']) assert.ok(head.includes(screen), `catalogue documents the ${screen} composition`);
+});
+
+test('the main menu and the pause card are built only from kit classes', () => {
+  // Allowed besides ui-*: the shell's visibility utility and the shared controls list of the help panel.
+  const allowed = new Set(['hidden', 'controls', 'compact']);
+  for (const [name, html] of Object.entries(SCREENS)) {
+    assert.ok(html.length > 200, `${name} found in index.html`);
+    const [root, ...inner] = tags(html);
+    assert.deepEqual(classesOf(root).filter((c) => c !== 'hidden'), ['overlay'], `#${name} is a shell overlay layer`);
+    const card = inner.find((t) => classesOf(t).includes('ui-card'));
+    assert.ok(card, `#${name} holds a ui-card`);
+    assert.ok(card.attrs['aria-labelledby'], `#${name} card is named by its title`);
+    for (const t of inner) {
+      for (const c of classesOf(t)) assert.ok(c.startsWith('ui-') || allowed.has(c), `#${name} <${t.tag} class="${c}"> is not a kit class`);
+    }
+  }
+});
+
+test('the shell stylesheet keeps none of the one-off menu and pause rules', () => {
+  const gone = ['.menu-card', '.pause-card', '.preset', '.btn', '.custom', '.menu-head', '.menu-foot', '.subtitle', '.logo',
+    '.pause-buttons', '.pause-help', '.pause-settings', '.pause-sub', '.pause-note', '.settings-grid', '.set-ctl', '.vol',
+    '.touch-note', '.p-name', '.p-dims', '.p-best', '#pause-title', '.sep'];
+  const selectors = rules(STYLE).map(([sel]) => sel);
+  for (const g of gone) {
+    const re = new RegExp(`${g.replace(/[.#]/g, '\\$&')}(?![\\w-])`);
+    assert.ok(!selectors.some((sel) => re.test(sel)), `css/style.css still styles ${g}`);
+  }
+  assert.ok(!selectors.some((sel) => /(^|[\s,])h[12]\b/.test(sel)), 'css/style.css still styles headings globally');
+});
+
+test('every control on the menu and the pause card is named and reachable by keyboard and controller', () => {
+  for (const [name, html] of Object.entries(SCREENS)) {
+    const all = tags(html);
+    const controls = all.filter((t) => ['button', 'input', 'select', 'summary'].includes(t.tag) || (t.tag === 'a' && 'href' in t.attrs));
+    assert.ok(controls.length >= 4, `#${name} has its controls`);
+    for (const t of controls) {
+      const kind = t.tag === 'a' ? 'a[href]' : t.tag;
+      assert.ok(PAD_TAGS.includes(kind), `#${name} <${t.tag}> is collected by padFocusables`);
+      assert.ok(!('tabindex' in t.attrs) || Number(t.attrs.tabindex) >= 0, `#${name} <${t.tag}> stays in the tab order`);
+      assert.ok(accessibleName(t, html, all), `#${name} <${t.tag} id="${t.attrs.id ?? ''}"> has an accessible name`);
+      if (t.tag === 'button') assert.ok(['button', 'submit'].includes(t.attrs.type), `#${name} button declares its type`);
+      const kit = classesOf(t).some((c) => c.startsWith('ui-'));
+      const wrapped = t.tag === 'input' && /ui-(toggle|slider|field)__input/.test(t.attrs.class ?? '');
+      assert.ok(kit || wrapped, `#${name} <${t.tag} id="${t.attrs.id ?? ''}"> is a kit control`);
+    }
+  }
+  const main = read('js/main.js');
+  const map = main.match(/const pick = (\{[^}]*\})\[layer\.id\]/)[1];
+  const pick = Object.fromEntries([...map.matchAll(/'?([\w-]+)'?\s*:\s*'([^']+)'/g)].map((m) => [m[1], m[2]]));
+  assert.equal(pick.pause, '#p-resume', 'the pause card focuses Resume by default');
+  assert.ok(SCREENS.pause.includes('id="p-resume"') && SCREENS.pause.includes('id="p-restart"'));
+  assert.match(pick.menu, /data-preset/, 'the menu focuses the last played board by default');
+});
+
+test('the gallery holds the results screen composition with placeholder content', () => {
+  assert.ok(RESULTS.length > 200, 'dev/components.html marks the results composition');
+  const all = tags(RESULTS);
+  const card = all.find((t) => classesOf(t).includes('ui-card') && classesOf(t).includes('ui-screen'));
+  assert.ok(card && card.attrs['aria-labelledby'], 'a named ui-card screen');
+  assert.ok(all.some((t) => classesOf(t).includes('ui-card__title') && t.attrs.id === card.attrs['aria-labelledby']), 'its title names it');
+  const row = all.find((t) => classesOf(t).includes('ui-stat-row'));
+  assert.ok(row, 'stat readouts sit in a ui-stat-row');
+  assert.ok(all.filter((t) => classesOf(t).includes('ui-stat')).length >= 4, 'at least four stat readouts');
+  const actions = all.find((t) => classesOf(t).includes('ui-actions'));
+  assert.ok(actions, 'the actions sit in ui-actions');
+  const buttons = all.filter((t) => t.tag === 'button' && t.index > actions.index);
+  assert.ok(buttons.some((t) => classesOf(t).includes('ui-button--primary')), 'a primary action');
+  assert.ok(buttons.some((t) => classesOf(t).includes('ui-button--secondary')), 'a secondary action');
+  for (const t of all) for (const c of classesOf(t)) assert.ok(c.startsWith('ui-'), `results composition uses kit class ${c} only`);
 });
 
 // ---------------------------------------------------------------- helpers: DOM binding on fakes
@@ -674,6 +772,115 @@ test('in a browser, the overlay bar over the 3D scene meets the contrast contrac
     // The pause button pauses the game.
     await page.click('#hud-pause');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'paused');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+// The debug hook's surface, pinned so the screen rebuild leaves it unchanged.
+const MS_HOOK = ['state', 'game', 'renderer', 'camera', 'fps', 'frameStats', 'startCameraPos', 'THREE', 'start', 'forcePlay',
+  'controls', 'pads', 'pause', 'cellCenter', 'moveTo', 'look', 'aimAt', 'mouseDown', 'mouseUp', 'click', 'key', 'wheel',
+  'selected', 'pickBrute', 'pickWith', 'info'];
+
+test('in a browser, the menu, the pause card and the results layout meet the contrast contract in both themes', async (t) => {
+  const playwright = await loadPlaywright();
+  if (!playwright) {
+    t.skip('Playwright is not installed');
+    return;
+  }
+  let browser;
+  try {
+    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  } catch (error) {
+    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
+    return;
+  }
+  const server = await serve();
+  const shots = mkdtempSync(join(tmpdir(), 'ms3d-screens-'));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const frames = (page) => page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+  // Contrast of the text inside one element, and the focus ring a keyboard focus draws there.
+  const check = async (page, selector, label, theme) => {
+    await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
+    await frames(page);
+    const shot = await page.locator(selector).screenshot({ path: join(shots, `${label}-${theme}.png`) });
+    assert.ok(shot.length > 1000, `${label} ${theme}: screenshot taken`);
+    const { runs } = await page.evaluate(measureContrast);
+    const own = await page.evaluate((sel) => [...document.querySelectorAll(`${sel} *`)]
+      .filter((e) => [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()))
+      .map((e) => e.textContent.trim().slice(0, 30)), selector);
+    const mine = runs.filter((r) => own.includes(r.text));
+    assert.ok(mine.length >= 5, `${label} ${theme}: its text is measured (${mine.length})`);
+    const failing = mine.filter((r) => r.ratio < r.min).map((r) => `${r.text}: ${r.ratio.toFixed(2)}:1 < ${r.min}`);
+    assert.deepEqual(failing, [], `${label} ${theme}: text below the contrast contract`);
+    return shot;
+  };
+  const ring = (page) => page.evaluate(() => {
+    const s = getComputedStyle(document.activeElement);
+    return { id: document.activeElement.id, style: s.outlineStyle, width: parseFloat(s.outlineWidth) };
+  });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined);
+    assert.deepEqual(await page.evaluate(() => Object.keys(globalThis.__ms)), MS_HOOK, 'the __ms hook is unchanged');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
+
+    const menu = {};
+    for (const theme of ['light', 'dark']) menu[theme] = await check(page, '#menu .ui-card', 'menu', theme);
+    assert.notDeepEqual(menu.light, menu.dark, 'the menu follows the theme');
+    // Keyboard focus shows the kit ring on every control of the menu, in tab order.
+    const menuControls = await page.evaluate(() => [...document.querySelectorAll('#menu button, #menu input, #menu a[href]')]
+      .filter((e) => e.getBoundingClientRect().width > 0).length);
+    await page.evaluate(() => document.activeElement?.blur());
+    for (let i = 0; i < menuControls; i++) {
+      await page.keyboard.press('Tab');
+      const f = await ring(page);
+      assert.ok(f.style !== 'none' && f.width >= 2, `menu control #${f.id || i} shows a focus ring (${f.style} ${f.width})`);
+    }
+
+    // menu → ready → playing → pause, as before.
+    await page.click('#menu [data-preset="6,6,6,10"]');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'ready');
+    await page.evaluate(() => globalThis.__ms.forcePlay());
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'playing');
+    await page.click('#hud-pause');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'paused');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'p-resume', 'Resume takes the focus');
+    assert.ok(await page.evaluate(() => document.getElementById('p-resume').classList.contains('ui-button--primary')), 'Resume is the primary action');
+    const pause = {};
+    for (const theme of ['light', 'dark']) pause[theme] = await check(page, '#pause .ui-card', 'pause', theme);
+    assert.notDeepEqual(pause.light, pause.dark, 'the pause card follows the theme');
+    await page.keyboard.press('Tab');
+    const f = await ring(page);
+    assert.ok(f.style !== 'none' && f.width >= 2, `pause control #${f.id} shows a focus ring`);
+    await page.click('#p-menu');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu', 'Main menu returns to the menu');
+
+    // An ended game: the pause card leads with Play again.
+    await page.evaluate(() => {
+      globalThis.__ms.start(3, 3, 1, 1, [0]);
+      globalThis.__ms.forcePlay();
+      globalThis.__ms.aimAt(0);
+      globalThis.__ms.click('left');
+      globalThis.__ms.pause();
+    });
+    assert.equal(await page.evaluate(() => globalThis.__ms.game.state), 'lost');
+    const order = await page.evaluate(() => [...document.querySelectorAll('#pause .ui-actions button')].map((b) => [b.id, b.className]));
+    assert.equal(order[0][0], 'p-restart', 'Play again comes first once the game ended');
+    assert.match(order[0][1], /ui-button--primary/);
+    assert.match(order.find(([id]) => id === 'p-resume')[1], /ui-button--secondary/);
+
+    const results = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+    results.on('pageerror', (e) => errors.push(e.message));
+    await results.goto(`${base}/dev/components.html`);
+    const layout = {};
+    for (const theme of ['light', 'dark']) layout[theme] = await check(results, '#g-results', 'results', theme);
+    assert.notDeepEqual(layout.light, layout.dark, 'the results layout follows the theme');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

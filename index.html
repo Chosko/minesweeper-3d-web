@@ -85,63 +85,65 @@
 
   <!-- Main menu -->
   <section id="menu" class="overlay" aria-label="Main menu">
-    <div class="menu-card">
-      <p id="touch-note" class="touch-note hidden" role="alert">Minesweeper 3D needs a mouse and keyboard &mdash; open it on a desktop browser.</p>
-      <header class="menu-head">
-        <div class="logo" aria-hidden="true">
-          <svg viewBox="0 0 64 64"><path d="M32 4 58 18v28L32 60 6 46V18z" fill="#3f78e0"/><path d="M32 4 58 18 32 32 6 18z" fill="#9cc4ff"/><path d="M32 32v28L6 46V18z" fill="#2b5cb8"/><text x="45" y="47" font-size="20" font-weight="800" text-anchor="middle" fill="#fff" font-family="system-ui,sans-serif">3</text></svg>
-        </div>
+    <section class="ui-card ui-screen ui-screen--wide" aria-labelledby="menu-title">
+      <p id="touch-note" class="ui-panel ui-text ui-text--warning hidden" role="alert">Minesweeper 3D needs a mouse and keyboard &mdash; open it on a desktop browser.</p>
+      <div class="ui-row">
+        <svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true"><path d="M32 4 58 18v28L32 60 6 46V18z" fill="#3f78e0"/><path d="M32 4 58 18 32 32 6 18z" fill="#9cc4ff"/><path d="M32 32v28L6 46V18z" fill="#2b5cb8"/><text x="45" y="47" font-size="20" font-weight="800" text-anchor="middle" fill="#fff" font-family="system-ui,sans-serif">3</text></svg>
         <div>
-          <h1>Minesweeper <span class="accent">3D</span></h1>
-          <p class="subtitle">Fly through a cube of cubes. Every cell has up to 26 neighbours.</p>
-        </div>
-      </header>
-
-      <div class="presets">
-        <div class="preset-group">
-          <h2>2D classic</h2>
-          <button class="preset" data-preset="9,9,1,10"><span class="p-name">Beginner</span><span class="p-dims">9 &times; 9 &times; 1 &middot; 10 mines</span></button>
-          <button class="preset" data-preset="16,16,1,40"><span class="p-name">Intermediate</span><span class="p-dims">16 &times; 16 &times; 1 &middot; 40 mines</span></button>
-          <button class="preset" data-preset="30,16,1,99"><span class="p-name">Expert</span><span class="p-dims">30 &times; 16 &times; 1 &middot; 99 mines</span></button>
-        </div>
-        <div class="preset-group">
-          <h2>Double layer</h2>
-          <button class="preset" data-preset="8,8,2,10"><span class="p-name">Beginner</span><span class="p-dims">8 &times; 8 &times; 2 &middot; 10 mines</span></button>
-          <button class="preset" data-preset="14,14,2,60"><span class="p-name">Intermediate</span><span class="p-dims">14 &times; 14 &times; 2 &middot; 60 mines</span></button>
-          <button class="preset" data-preset="25,16,2,130"><span class="p-name">Expert</span><span class="p-dims">25 &times; 16 &times; 2 &middot; 130 mines</span></button>
-        </div>
-        <div class="preset-group">
-          <h2>3D</h2>
-          <button class="preset" data-preset="6,6,6,10"><span class="p-name">Beginner</span><span class="p-dims">6 &times; 6 &times; 6 &middot; 10 mines</span></button>
-          <button class="preset" data-preset="8,8,8,40"><span class="p-name">Intermediate</span><span class="p-dims">8 &times; 8 &times; 8 &middot; 40 mines</span></button>
-          <button class="preset" data-preset="12,12,8,130"><span class="p-name">Expert</span><span class="p-dims">12 &times; 12 &times; 8 &middot; 130 mines</span></button>
+          <h1 class="ui-card__title" id="menu-title">Minesweeper 3D</h1>
+          <p class="ui-text ui-text--muted">Fly through a cube of cubes. Every cell has up to 26 neighbours.</p>
         </div>
       </div>
 
-      <form id="custom" class="custom" novalidate>
-        <h2>Custom</h2>
-        <div class="custom-row">
-          <label>Width<input id="c-x" type="number" min="1" max="100" step="1" inputmode="numeric" value="10"></label>
-          <label>Height<input id="c-y" type="number" min="1" max="100" step="1" inputmode="numeric" value="10"></label>
-          <label>Depth<input id="c-z" type="number" min="1" max="100" step="1" inputmode="numeric" value="10"></label>
-          <label>Mines<input id="c-m" type="number" min="1" max="1000" step="1" inputmode="numeric" value="25"></label>
-          <div class="custom-actions">
-            <button type="button" id="c-random" class="btn btn-ghost">Random</button>
-            <button type="submit" id="c-start" class="btn btn-primary">Start</button>
+      <div class="ui-grid">
+        <div>
+          <h2 class="ui-heading" id="menu-2d">2D classic</h2>
+          <div class="ui-menu" role="group" aria-labelledby="menu-2d">
+            <button type="button" class="ui-menu__item" data-preset="9,9,1,10"><span class="ui-menu__label">Beginner</span><span class="ui-menu__detail">9 &times; 9 &times; 1 &middot; 10 mines</span></button>
+            <button type="button" class="ui-menu__item" data-preset="16,16,1,40"><span class="ui-menu__label">Intermediate</span><span class="ui-menu__detail">16 &times; 16 &times; 1 &middot; 40 mines</span></button>
+            <button type="button" class="ui-menu__item" data-preset="30,16,1,99"><span class="ui-menu__label">Expert</span><span class="ui-menu__detail">30 &times; 16 &times; 1 &middot; 99 mines</span></button>
           </div>
         </div>
-        <p id="c-info" class="custom-info">1000 cells &middot; mine density 2.5%</p>
+        <div>
+          <h2 class="ui-heading" id="menu-double">Double layer</h2>
+          <div class="ui-menu" role="group" aria-labelledby="menu-double">
+            <button type="button" class="ui-menu__item" data-preset="8,8,2,10"><span class="ui-menu__label">Beginner</span><span class="ui-menu__detail">8 &times; 8 &times; 2 &middot; 10 mines</span></button>
+            <button type="button" class="ui-menu__item" data-preset="14,14,2,60"><span class="ui-menu__label">Intermediate</span><span class="ui-menu__detail">14 &times; 14 &times; 2 &middot; 60 mines</span></button>
+            <button type="button" class="ui-menu__item" data-preset="25,16,2,130"><span class="ui-menu__label">Expert</span><span class="ui-menu__detail">25 &times; 16 &times; 2 &middot; 130 mines</span></button>
+          </div>
+        </div>
+        <div>
+          <h2 class="ui-heading" id="menu-3d">3D</h2>
+          <div class="ui-menu" role="group" aria-labelledby="menu-3d">
+            <button type="button" class="ui-menu__item" data-preset="6,6,6,10"><span class="ui-menu__label">Beginner</span><span class="ui-menu__detail">6 &times; 6 &times; 6 &middot; 10 mines</span></button>
+            <button type="button" class="ui-menu__item" data-preset="8,8,8,40"><span class="ui-menu__label">Intermediate</span><span class="ui-menu__detail">8 &times; 8 &times; 8 &middot; 40 mines</span></button>
+            <button type="button" class="ui-menu__item" data-preset="12,12,8,130"><span class="ui-menu__label">Expert</span><span class="ui-menu__detail">12 &times; 12 &times; 8 &middot; 130 mines</span></button>
+          </div>
+        </div>
+      </div>
+
+      <form id="custom" class="ui-panel" aria-labelledby="custom-title" novalidate>
+        <h2 class="ui-heading" id="custom-title">Custom</h2>
+        <div class="ui-row">
+          <label class="ui-field"><span class="ui-field__label">Width</span><input id="c-x" class="ui-field__input" type="number" min="1" max="100" step="1" inputmode="numeric" value="10"></label>
+          <label class="ui-field"><span class="ui-field__label">Height</span><input id="c-y" class="ui-field__input" type="number" min="1" max="100" step="1" inputmode="numeric" value="10"></label>
+          <label class="ui-field"><span class="ui-field__label">Depth</span><input id="c-z" class="ui-field__input" type="number" min="1" max="100" step="1" inputmode="numeric" value="10"></label>
+          <label class="ui-field"><span class="ui-field__label">Mines</span><input id="c-m" class="ui-field__input" type="number" min="1" max="1000" step="1" inputmode="numeric" value="25"></label>
+          <div class="ui-actions ui-actions--row">
+            <button type="button" id="c-random" class="ui-button ui-button--secondary">Random</button>
+            <button type="submit" id="c-start" class="ui-button ui-button--primary">Start</button>
+          </div>
+        </div>
+        <p id="c-info" class="ui-text ui-text--muted">1000 cells &middot; mine density 2.5%</p>
       </form>
 
-      <footer class="menu-foot">
-        <button type="button" id="menu-help" class="link-btn">Controls</button>
-        <span class="sep">&middot;</span>
-        <button type="button" id="menu-sound" class="link-btn">Sound: on</button>
-        <label class="vol hidden" title="Volume"><span class="vol-label">Volume</span><input type="range" id="menu-vol" class="vol-range" min="0" max="100" step="1" value="100" aria-label="Volume"></label>
-        <span class="sep">&middot;</span>
-        <span>Web port of the 2011 XNA game <a href="https://github.com/Chosko/minesweeper-3d" target="_blank" rel="noopener">Minesweeper 3D</a> by Chosko</span>
-      </footer>
-    </div>
+      <div class="ui-row">
+        <button type="button" id="menu-help" class="ui-button ui-button--secondary">Controls</button>
+        <button type="button" id="menu-sound" class="ui-button ui-button--secondary">Sound: on</button>
+        <div class="ui-slider hidden" data-volume><label class="ui-slider__label" for="menu-vol">Volume</label><output class="ui-slider__value" id="menu-vol-val" for="menu-vol">100%</output><input type="range" id="menu-vol" class="ui-slider__input" min="0" max="100" step="1" value="100" data-format="percent"></div>
+      </div>
+      <p class="ui-text ui-text--muted">Web port of the 2011 XNA game <a class="ui-link" href="https://github.com/Chosko/minesweeper-3d" target="_blank" rel="noopener">Minesweeper 3D</a> by Chosko</p>
+    </section>
   </section>
 
   <!-- Click to play -->
@@ -182,16 +184,16 @@
 
   <!-- Pause / end menu -->
   <section id="pause" class="overlay hidden" aria-label="Pause menu">
-    <div class="pause-card">
-      <h2 id="pause-title">Paused</h2>
-      <p id="pause-sub" class="pause-sub">Time 0.00 &middot; 10 mines left</p>
-      <p id="pause-note" class="pause-note hidden" role="alert"></p>
-      <div class="pause-buttons">
-        <button id="p-resume" class="btn btn-primary" type="button">Resume</button>
-        <button id="p-restart" class="btn" type="button">Restart</button>
-        <button id="p-menu" class="btn btn-ghost" type="button">Main menu</button>
+    <section id="pause-card" class="ui-card ui-screen" aria-labelledby="pause-title">
+      <h2 class="ui-card__title" id="pause-title">Paused</h2>
+      <p id="pause-sub" class="ui-text ui-text--muted">Time 0.00 &middot; 10 mines left</p>
+      <p id="pause-note" class="ui-text ui-text--warning hidden" role="alert"></p>
+      <div id="pause-actions" class="ui-actions">
+        <button id="p-resume" class="ui-button ui-button--primary" type="button">Resume</button>
+        <button id="p-restart" class="ui-button ui-button--secondary" type="button">Restart</button>
+        <button id="p-menu" class="ui-button ui-button--secondary" type="button">Main menu</button>
       </div>
-      <div class="pause-help">
+      <div class="ui-panel">
         <dl class="controls compact">
           <dt>Mouse</dt><dd>Look</dd>
           <dt><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> <kbd>Q</kbd><kbd>E</kbd></dt><dd>Fly</dd>
@@ -203,19 +205,16 @@
           <dt><kbd>Ctrl</kbd></dt><dd>Show hidden</dd>
         </dl>
       </div>
-      <details class="pause-settings" id="p-settings">
-        <summary>Settings</summary>
-        <div class="settings-grid">
-          <label for="p-sens">Mouse sensitivity</label>
-          <span class="set-ctl"><input type="range" id="p-sens" min="0.25" max="3" step="0.05" value="1"><output id="p-sens-val">1.00&times;</output></span>
-          <label for="p-invert">Invert mouse Y</label>
-          <span class="set-ctl"><input type="checkbox" id="p-invert"></span>
-          <label for="p-vol" class="vol-row hidden">Volume</label>
-          <span class="set-ctl vol-row hidden"><input type="range" id="p-vol" class="vol-range" min="0" max="100" step="1" value="100"><output id="p-vol-val">100%</output></span>
-        </div>
-      </details>
-      <button type="button" id="p-sound" class="link-btn">Sound: on</button>
-    </div>
+      <div class="ui-panel ui-actions" role="group" aria-labelledby="p-settings-title">
+        <h3 class="ui-heading" id="p-settings-title">Settings</h3>
+        <div class="ui-slider"><label class="ui-slider__label" for="p-sens">Mouse sensitivity</label><output class="ui-slider__value" id="p-sens-val" for="p-sens">1.00&times;</output><input type="range" id="p-sens" class="ui-slider__input" min="0.25" max="3" step="0.05" value="1" data-format="multiplier"></div>
+        <label class="ui-toggle"><input type="checkbox" role="switch" id="p-invert" class="ui-toggle__input"><span class="ui-toggle__label">Invert mouse Y</span></label>
+        <div class="ui-slider hidden" data-volume><label class="ui-slider__label" for="p-vol">Volume</label><output class="ui-slider__value" id="p-vol-val" for="p-vol">100%</output><input type="range" id="p-vol" class="ui-slider__input" min="0" max="100" step="1" value="100" data-format="percent"></div>
+      </div>
+      <div class="ui-actions ui-actions--row">
+        <button type="button" id="p-sound" class="ui-button ui-button--secondary">Sound: on</button>
+      </div>
+    </section>
   </section>
 
   <noscript><div class="noscript">Minesweeper 3D needs JavaScript and WebGL 2.</div></noscript>

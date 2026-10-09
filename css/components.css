@@ -38,6 +38,9 @@
               </div>
      Role:    group; each item a button (native)
      Name:    group: aria-label; item: its text
+     Detail:  an item whose text is <span class="ui-menu__label">…</span>
+              followed by one or more <span class="ui-menu__detail">…</span>
+              stacks them, the details as smaller muted lines.
 
    ui-card — raised surface for a screen's content (menu, pause, results)
      Element: <section class="ui-card" aria-labelledby="…">
@@ -89,6 +92,22 @@
      Role:    group
      Name:    aria-labelledby → the label
 
+   ui-field — labelled number entry
+     Element: <label class="ui-field">
+                <span class="ui-field__label">…</span>
+                <input type="number" class="ui-field__input" min max step>
+              </label>
+     Role:    spinbutton (native)
+     Name:    the wrapping label's text
+     Flag:    data-adjusted on the input marks a value the screen just
+              corrected (warning border).
+
+   ui-link — inline link inside text
+     Element: <a class="ui-link" href="…">…</a>
+     Role:    link (native)
+     Name:    its text
+     Disabled: drop href and set aria-disabled="true" (no longer focusable).
+
    ui-overlay-bar — in-game timer, mine counter and pause, over either board
      Element: <div class="ui-overlay-bar" role="group" aria-label="Game">
                 <div class="ui-stat" role="group" aria-labelledby="T">
@@ -108,6 +127,38 @@
               formatMineCount(minesLeft) (js/ui/components.js); the clamps
               are display-only. The bar carries its own opaque surface, so
               it reads the same over the 3D scene and over a plain board.
+
+   Screen compositions. Layout-only classes a screen is assembled with; they
+   carry no colour of their own beyond the text roles of ui-heading and
+   ui-text.
+     ui-screen         a screen's card column: <section class="ui-card
+                       ui-screen" aria-labelledby="…">; ui-screen--wide for
+                       the main menu.
+     ui-row            a horizontal group that wraps (title with logo,
+                       fields, footer actions).
+     ui-grid           equal columns that collapse to one on a narrow screen.
+     ui-heading        a section heading inside a card (h2/h3).
+     ui-text           body text; ui-text--muted secondary, ui-text--warning
+                       a warning line.
+     ui-actions        a column of buttons, the first the primary action;
+                       ui-actions--row lays them in a row.
+     ui-stat-row       a row of ui-stat readouts.
+
+   Main menu (index.html #menu): ui-card ui-screen--wide holding the title
+     row, one ui-menu per board family in a ui-grid, the custom board as a
+     ui-panel of ui-field entries with ui-actions--row (Random, Start), and a
+     ui-row footer (Controls, Sound, volume ui-slider, credit ui-link).
+     Default focus: the last played board, else the first item.
+   Pause card (index.html #pause): ui-card ui-screen holding the title,
+     ui-text status lines, ui-actions (Resume primary while playing, Play
+     again primary and first once the game ended, Main menu), the controls
+     list in a ui-panel, a Settings ui-panel (ui-slider, ui-toggle) and the
+     Sound button. Default focus: Resume, or Play again once ended.
+   Results screen (dev/components.html #g-results, placeholder content the
+     results-screen feature fills): ui-card ui-screen holding the outcome
+     title, a ui-text board line, a ui-stat-row of the game's stats, a
+     ui-panel with a ui-stat-row of the best comparisons, and ui-actions--row
+     (Play again primary, Main menu secondary).
 */
 
 /* ---------- buttons ---------- */
@@ -198,6 +249,19 @@
   border-style: dashed;
   color: var(--color-ink-muted);
   cursor: not-allowed;
+}
+
+.ui-menu__item:has(.ui-menu__detail) {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+.ui-menu__label { font-weight: var(--font-weight-bold); }
+.ui-menu__detail {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-ink-muted);
+  font-variant-numeric: var(--font-numeric-tabular);
 }
 
 /* ---------- surfaces ---------- */
@@ -389,6 +453,60 @@
   cursor: not-allowed;
 }
 
+/* ---------- number field ---------- */
+.ui-field {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  color: var(--color-ink);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+.ui-field__input {
+  appearance: none;
+  width: 96px;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  border: 2px solid var(--color-ink-muted);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  color: var(--color-ink);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: var(--font-numeric-tabular);
+  user-select: text;
+}
+.ui-field__input:hover:not(:disabled), .ui-field__input[data-force~="hover"] {
+  border-color: var(--color-accent-strong);
+}
+.ui-field__input:active:not(:disabled), .ui-field__input[data-force~="active"] {
+  border-color: var(--color-ink);
+}
+.ui-field__input[data-adjusted] { border-color: var(--color-warning); }
+.ui-field__input:disabled {
+  border-style: dashed;
+  background: var(--color-surface-sunken);
+  color: var(--color-ink-muted);
+  cursor: not-allowed;
+}
+.ui-field:has(.ui-field__input:disabled) { color: var(--color-ink-muted); }
+
+/* ---------- link ---------- */
+.ui-link {
+  color: var(--color-accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.ui-link:hover, .ui-link[data-force~="hover"] { text-decoration-thickness: 2px; }
+.ui-link:active, .ui-link[data-force~="active"] { color: var(--color-ink); }
+.ui-link[aria-disabled="true"] {
+  color: var(--color-ink-muted);
+  text-decoration-style: dashed;
+  cursor: not-allowed;
+}
+
 /* ---------- stat readout ---------- */
 .ui-stat {
   display: inline-flex;
@@ -427,13 +545,64 @@
   padding: var(--space-2) var(--space-4);
 }
 
+/* ---------- screen compositions ---------- */
+.ui-screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: min(560px, 100%);
+  margin: auto;
+}
+.ui-screen--wide { width: min(880px, 100%); }
+.ui-screen > .ui-card__title { margin: 0; }
+.ui-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.ui-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+.ui-heading {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-ink-muted);
+}
+.ui-text {
+  margin: 0;
+  font-size: var(--font-size-md);
+  color: var(--color-ink);
+}
+.ui-text--muted { color: var(--color-ink-muted); }
+.ui-text--warning { color: var(--color-warning); font-weight: var(--font-weight-bold); }
+.ui-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+}
+.ui-actions--row { flex-direction: row; flex-wrap: wrap; align-items: center; }
+.ui-stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-6);
+}
+
 /* ---------- focus ring (keyboard and controller) ---------- */
 .ui-button--primary:focus-visible, .ui-button--primary[data-force~="focus"], body.pad-nav .ui-button--primary:focus,
 .ui-button--secondary:focus-visible, .ui-button--secondary[data-force~="focus"], body.pad-nav .ui-button--secondary:focus,
 .ui-menu__item:focus-visible, .ui-menu__item[data-force~="focus"], body.pad-nav .ui-menu__item:focus,
 .ui-toggle__input:focus-visible, .ui-toggle__input[data-force~="focus"], body.pad-nav .ui-toggle__input:focus,
 .ui-slider__input:focus-visible, .ui-slider__input[data-force~="focus"], body.pad-nav .ui-slider__input:focus,
-.ui-segmented__option:focus-visible, .ui-segmented__option[data-force~="focus"], body.pad-nav .ui-segmented__option:focus {
+.ui-segmented__option:focus-visible, .ui-segmented__option[data-force~="focus"], body.pad-nav .ui-segmented__option:focus,
+.ui-field__input:focus-visible, .ui-field__input[data-force~="focus"], body.pad-nav .ui-field__input:focus,
+.ui-link:focus-visible, .ui-link[data-force~="focus"], body.pad-nav .ui-link:focus {
   outline: 3px solid var(--color-focus-ring);
   outline-offset: 2px;
   box-shadow: none;

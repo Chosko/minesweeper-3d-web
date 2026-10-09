@@ -186,7 +186,7 @@ Feature: screen-components
 
 ## 19. Main menu, pause card and results layout from the kit
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, css/style.css, css/components.css, js/ui.js, js/main.js
 Preconditions: 17, 18

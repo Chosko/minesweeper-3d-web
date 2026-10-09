@@ -365,7 +365,7 @@ function padFocusables(layer) {
   });
 }
 function padDefault(layer, items) {
-  const pick = { menu: '.preset.last', ready: '#ready-btn', 'controls-modal': '#controls-close', pause: '#p-resume', 'ctx-lost': '#ctx-lost-btn' }[layer.id];
+  const pick = { menu: '[data-preset][data-last]', ready: '#ready-btn', 'controls-modal': '#controls-close', pause: '#p-resume', 'ctx-lost': '#ctx-lost-btn' }[layer.id];
   const el = pick && layer.querySelector(pick);
   if (layer.id === 'pause' && S.game && S.game.state !== 'playing') return document.getElementById('p-restart');
   return el && items.includes(el) ? el : items[0] || null;
