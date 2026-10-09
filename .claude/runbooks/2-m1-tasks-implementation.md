@@ -575,7 +575,7 @@ Context:
 
 Done: 2026-10-09, commit `2b2c638` (9 files, +527/-56). Auto resolution keeps the existing board-size cap (2 → 1.5 above 20³ → 1 above 50³), not the task's plain `min(devicePixelRatio, 2)`. `js/theme.js` reads `ms3d:doc:settings` v1 straight from localStorage at start-up. A saved "fullscreen on" is reset to off at start-up, since browsers refuse fullscreen without a gesture.
 
-## [ ] 41. Implement task 41 — Settings page and pause-card shortcuts
+## [x] 41. Implement task 41 — Settings page and pause-card shortcuts
 
 Depends on: 26, 27, 39, 40
 
@@ -590,12 +590,15 @@ Context:
 /task-implement 41 --review
 ```
 
+Done: 2026-10-09, commit `8bdfd88` (10 files, +815/-93). Every setting control (page, pause card, menu volume) carries `data-setting` and is bound by one `bindSettingControls(...)`; the old `onLookSettings`/`UI.setLook`/`UI.initVolume` path is gone. The page is generated from the schema by `js/settings/page.js`, and one bindings table (`js/settings/bindings.js`) feeds every help surface.
+
 ## [ ] 42. Implement task 42 — Update documentation for feature `settings`
 
 Depends on: 39, 40, 41
 
 Context:
 - 2026-10-09 (from step 40): `.claude/context/app-shell.md` still mentions `loadLookSettings`, and `audio.md` still says volume/mute are saved under `ms3d.*` keys; `js/theme.js` now reads `ms3d:doc:settings` v1 at start-up, and Auto resolution keeps the board-size cap (2 → 1.5 above 20³ → 1 above 50³).
+- 2026-10-09 (from step 41): `app-shell.md` still describes the Settings placeholder, `onLookSettings` and `initVolume`, all now gone: controls carry `data-setting` and one `bindSettingControls(...)` in `js/main.js` binds them; `js/settings/page.js` generates the page into `#settings-body`; `js/settings/bindings.js` feeds the in-game help, controls modal, controller help and the page's bindings list.
 
 ```prompt
 /task-implement 42 --review
