@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Component kit gallery — Minesweeper 3D</title>
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <style>
+    body {
+      margin: 0;
+      padding: var(--space-6);
+      background: var(--color-backdrop);
+      color: var(--color-ink);
+      font-family: var(--font-family-sans);
+    }
+    h1 { margin: 0 0 var(--space-2); font-size: var(--font-size-2xl); }
+    .intro { margin: 0 0 var(--space-6); color: var(--color-ink-muted); }
+    .bar { display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-6); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--space-6); }
+    .states { display: grid; grid-template-columns: 90px 1fr; align-items: center; gap: var(--space-3) var(--space-4); }
+    .state { font-size: var(--font-size-sm); color: var(--color-ink-muted); }
+    .stats { display: flex; gap: var(--space-6); }
+    .wide { grid-column: 1 / -1; }
+    .states > .ui-segmented { justify-self: start; }
+  </style>
+</head>
+<body>
+  <h1>Component kit</h1>
+  <p class="intro">Every component of <code>css/components.css</code> in every state. Hover, pressed and focused are previewed with <code>data-force</code>.</p>
+
+  <div class="bar">
+    <span id="theme-label">Theme</span>
+    <div class="ui-segmented" role="radiogroup" aria-labelledby="theme-label" id="theme-switch">
+      <button type="button" role="radio" aria-checked="true" class="ui-segmented__option" data-value="light">Light</button>
+      <button type="button" role="radio" aria-checked="false" class="ui-segmented__option" data-value="dark">Dark</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <section class="ui-card" aria-labelledby="g-primary">
+      <h2 class="ui-card__title" id="g-primary">Primary button</h2>
+      <div class="states">
+        <span class="state">At rest</span><div><button type="button" class="ui-button ui-button--primary">Play</button></div>
+        <span class="state">Hover</span><div><button type="button" class="ui-button ui-button--primary" data-force="hover">Play</button></div>
+        <span class="state">Pressed</span><div><button type="button" class="ui-button ui-button--primary" data-force="active">Play</button></div>
+        <span class="state">Focused</span><div><button type="button" class="ui-button ui-button--primary" data-force="focus">Play</button></div>
+        <span class="state">Disabled</span><div><button type="button" class="ui-button ui-button--primary" disabled>Play</button></div>
+      </div>
+    </section>
+
+    <section class="ui-card" aria-labelledby="g-secondary">
+      <h2 class="ui-card__title" id="g-secondary">Secondary button</h2>
+      <div class="states">
+        <span class="state">At rest</span><div><button type="button" class="ui-button ui-button--secondary">Back</button></div>
+        <span class="state">Hover</span><div><button type="button" class="ui-button ui-button--secondary" data-force="hover">Back</button></div>
+        <span class="state">Pressed</span><div><button type="button" class="ui-button ui-button--secondary" data-force="active">Back</button></div>
+        <span class="state">Focused</span><div><button type="button" class="ui-button ui-button--secondary" data-force="focus">Back</button></div>
+        <span class="state">Disabled</span><div><button type="button" class="ui-button ui-button--secondary" disabled>Back</button></div>
+      </div>
+    </section>
+
+    <section class="ui-card" aria-labelledby="g-menu">
+      <h2 class="ui-card__title" id="g-menu">Menu list</h2>
+      <div class="ui-menu" role="group" aria-label="Main menu">
+        <button type="button" class="ui-menu__item">Classic 2D — at rest</button>
+        <button type="button" class="ui-menu__item" data-force="hover">3D — hover</button>
+        <button type="button" class="ui-menu__item" data-force="active">Records — pressed</button>
+        <button type="button" class="ui-menu__item" data-force="focus">Settings — focused</button>
+        <button type="button" class="ui-menu__item" disabled>Campaign — disabled</button>
+      </div>
+    </section>
+
+    <section class="ui-card" aria-labelledby="g-surfaces">
+      <h2 class="ui-card__title" id="g-surfaces">Card and panel</h2>
+      <p>A card holds a screen's content.</p>
+      <div class="ui-panel">
+        <p>A panel groups content inside a card.</p>
+        <div class="stats">
+          <div class="ui-stat" role="group" aria-labelledby="st-time"><span class="ui-stat__label" id="st-time">Time</span><span class="ui-stat__value">047</span></div>
+          <div class="ui-stat" role="group" aria-labelledby="st-mines"><span class="ui-stat__label" id="st-mines">Mines</span><span class="ui-stat__value">-12</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="ui-card" aria-labelledby="g-toggle">
+      <h2 class="ui-card__title" id="g-toggle">Toggle</h2>
+      <div class="states">
+        <span class="state">Off</span><div><label class="ui-toggle"><input type="checkbox" role="switch" class="ui-toggle__input"><span class="ui-toggle__label">Sound</span></label></div>
+        <span class="state">On</span><div><label class="ui-toggle"><input type="checkbox" role="switch" class="ui-toggle__input" checked><span class="ui-toggle__label">Invert Y</span></label></div>
+        <span class="state">Hover</span><div><label class="ui-toggle"><input type="checkbox" role="switch" class="ui-toggle__input" data-force="hover"><span class="ui-toggle__label">Sound</span></label></div>
+        <span class="state">Pressed</span><div><label class="ui-toggle"><input type="checkbox" role="switch" class="ui-toggle__input" data-force="active" checked><span class="ui-toggle__label">Sound</span></label></div>
+        <span class="state">Focused</span><div><label class="ui-toggle"><input type="checkbox" role="switch" class="ui-toggle__input" data-force="focus"><span class="ui-toggle__label">Sound</span></label></div>
+        <span class="state">Disabled</span><div><label class="ui-toggle"><input type="checkbox" role="switch" class="ui-toggle__input" disabled><span class="ui-toggle__label">Sound</span></label></div>
+      </div>
+    </section>
+
+    <section class="ui-card" aria-labelledby="g-slider">
+      <h2 class="ui-card__title" id="g-slider">Slider</h2>
+      <div class="states">
+        <span class="state">At rest</span><div class="ui-slider"><label class="ui-slider__label" for="sl-1">Volume</label><output class="ui-slider__value" for="sl-1"></output><input type="range" id="sl-1" class="ui-slider__input" min="0" max="1" step="0.01" value="0.6" data-format="percent"></div>
+        <span class="state">Hover</span><div class="ui-slider"><label class="ui-slider__label" for="sl-2">Sensitivity</label><output class="ui-slider__value" for="sl-2"></output><input type="range" id="sl-2" class="ui-slider__input" min="0.25" max="3" step="0.05" value="1" data-format="multiplier" data-force="hover"></div>
+        <span class="state">Pressed</span><div class="ui-slider"><label class="ui-slider__label" for="sl-3">Volume</label><output class="ui-slider__value" for="sl-3"></output><input type="range" id="sl-3" class="ui-slider__input" min="0" max="100" step="1" value="30" data-format="percent" data-force="active"></div>
+        <span class="state">Focused</span><div class="ui-slider"><label class="ui-slider__label" for="sl-4">Delay</label><output class="ui-slider__value" for="sl-4"></output><input type="range" id="sl-4" class="ui-slider__input" min="0" max="10" step="1" value="4" data-unit=" s" data-force="focus"></div>
+        <span class="state">Disabled</span><div class="ui-slider"><label class="ui-slider__label" for="sl-5">Volume</label><output class="ui-slider__value" for="sl-5"></output><input type="range" id="sl-5" class="ui-slider__input" min="0" max="100" step="1" value="50" data-format="percent" disabled></div>
+      </div>
+    </section>
+
+    <section class="ui-card wide" aria-labelledby="g-segmented">
+      <h2 class="ui-card__title" id="g-segmented">Segmented choice</h2>
+      <div class="states">
+        <span class="state">At rest</span>
+        <div class="ui-segmented" role="radiogroup" aria-label="Board size">
+          <button type="button" role="radio" aria-checked="true" class="ui-segmented__option" data-value="beginner">Beginner</button>
+          <button type="button" role="radio" aria-checked="false" class="ui-segmented__option" data-value="intermediate">Intermediate</button>
+          <button type="button" role="radio" aria-checked="false" class="ui-segmented__option" data-value="expert">Expert</button>
+        </div>
+        <span class="state">Hover</span>
+        <div class="ui-segmented" role="radiogroup" aria-label="Board size, hover">
+          <button type="button" role="radio" aria-checked="true" class="ui-segmented__option" data-value="beginner">Beginner</button>
+          <button type="button" role="radio" aria-checked="false" class="ui-segmented__option" data-value="intermediate" data-force="hover">Intermediate</button>
+        </div>
+        <span class="state">Pressed</span>
+        <div class="ui-segmented" role="radiogroup" aria-label="Board size, pressed">
+          <button type="button" role="radio" aria-checked="true" class="ui-segmented__option" data-value="beginner">Beginner</button>
+          <button type="button" role="radio" aria-checked="false" class="ui-segmented__option" data-value="intermediate" data-force="active">Intermediate</button>
+        </div>
+        <span class="state">Focused</span>
+        <div class="ui-segmented" role="radiogroup" aria-label="Board size, focused">
+          <button type="button" role="radio" aria-checked="true" class="ui-segmented__option" data-value="beginner" data-force="focus">Beginner</button>
+          <button type="button" role="radio" aria-checked="false" class="ui-segmented__option" data-value="intermediate">Intermediate</button>
+        </div>
+        <span class="state">Disabled</span>
+        <div class="ui-segmented" role="radiogroup" aria-label="Board size, disabled option">
+          <button type="button" role="radio" aria-checked="true" class="ui-segmented__option" data-value="beginner">Beginner</button>
+          <button type="button" role="radio" aria-checked="false" class="ui-segmented__option" data-value="custom" disabled>Custom</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script type="module">
+    import { initComponents } from '../js/ui/components.js';
+    initComponents(document);
+    const sw = document.getElementById('theme-switch');
+    const sync = (theme) => {
+      for (const o of sw.querySelectorAll('.ui-segmented__option')) {
+        const on = o.dataset.value === theme;
+        o.setAttribute('aria-checked', String(on));
+        o.tabIndex = on ? 0 : -1;
+      }
+    };
+    sync(globalThis.msTheme.current());
+    globalThis.msTheme.onChange(sync);
+    sw.addEventListener('change', (e) => globalThis.msTheme.setTheme(e.detail.value));
+    const wanted = new URLSearchParams(location.search).get('theme');
+    if (wanted) globalThis.msTheme.setTheme(wanted);
+  </script>
+</body>
+</html>

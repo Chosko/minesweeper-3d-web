@@ -17,7 +17,7 @@ hook, and the static-site files.
   importmap maps `three` to `vendor/three/three.module.min.js` (vendored
   three.js r186, no build step); a module `onerror` shows a `.fatal` card.
   Head order: classic `js/theme.js`, then `css/tokens.css`, then
-  `css/style.css`, then the module graph.
+  `css/components.css`, then `css/style.css`, then the module graph.
 - `css/tokens.css` — the design tokens, the single source of every shared
   visual value: palette (`--color-*`), typography (`--font-*`), spacing
   (`--space-*`), radii (`--radius-*`), elevation (`--elevation-*`), motion

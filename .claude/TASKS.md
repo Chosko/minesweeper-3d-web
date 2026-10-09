@@ -166,7 +166,7 @@ Feature: platform-storage
 
 ## 17. Component kit: styles, markup patterns and focus contract
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: css/components.css, js/ui/components.js, dev/components.html, tests/components.test.mjs, index.html
 Preconditions: 1, 2
