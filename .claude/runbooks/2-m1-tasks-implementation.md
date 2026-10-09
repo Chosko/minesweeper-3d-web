@@ -423,7 +423,7 @@ Context:
 
 Done: 2026-10-09, commit `31e0488` (4 files, +141/-2).
 
-## [ ] 32. Implement task 32 — Classic 2D board setup, game session and timer
+## [x] 32. Implement task 32 — Classic 2D board setup, game session and timer
 
 Depends on: 5, 6, 12, 15, 30
 
@@ -432,10 +432,13 @@ Context:
 - 2026-10-09 (from step 6): `game.counts()` returns `{ bbbv, bbbvSolved, clicks }` at any time (`bbbv` is `null` until mines are placed); `game.summary()` is `null` until a win or loss. `createGame` takes an optional `dimensions` object (e.g. `{ width, height }`) for the summary.
 - 2026-10-09 (from step 12): the page-side client is `createGenerationClient({ createWorker })` in `js/generation/client.js`, returning `{ request, cancel }`. `request` resolves with `generate`'s result or a failure (`rejected: true` for an impossible request) and rejects only if the worker itself fails; a new request cancels the one in flight; `cancel()` resolves the pending request with `{ ok: false, cancelled: true }` and terminates the worker. This task is the client's first caller.
 - 2026-10-09 (from step 30): `buildSummary({ engine, outcome?, elapsedMs, board, seed, generatorVersion, endedAt?, id? })` is in `js/records/summary.js`; `engine` is the engine's `summary()` (won/lost) or `counts()` (abandoned), and `counts()` before the first click returns `null`. The summary stores a plain board-identity copy (not the key), an ISO `endedAt`, and unrounded `bbbvPerSecond`/`efficiency` (null when the divisor is zero). `isBestEligible(summary, stat)` takes one of `BEST_STATS = ['time', 'bbbvPerSecond', 'efficiency']`.
+- 2026-10-09 (from step 29): board identity, key and label live in `js/records/`; the key is `<mode>:<grid>:<width>x<height>:<mines>:<guess|no-guess>` (e.g. `classic-2d:square:30x16:99:no-guess`).
 
 ```prompt
 /task-implement 32 --review --rounds 2
 ```
+
+Done: 2026-10-09, commit `752e280` (9 files, +1079/-14). Custom limits live as a `customLimits` setting on rule profile v1 (no rules-version bump); mine caps for unmeasured 37–48-cell boards are interpolated, so the cap falls as the board grows there. Custom boards accept 0 mines. The first reveal returns a Promise; the last board choice is saved but nothing loads it yet.
 
 ## [ ] 33. Implement task 33 — Classic 2D Canvas board view
 
@@ -444,6 +447,7 @@ Depends on: 22, 32
 Context:
 - 2026-10-09 (from step 22): `MIN_TILE_SIZE` (41 px) assumes the board fits the full viewport below the 64 px overlay bar with 16 px between window edges, bar and board — use that fit rule or re-measure. The skin exports `paintTile`, `paintTileWith(token, …)`, `TILE_STATES` (engine cell states plus `pressed`) and `createTileSkin({ token, onThemeChange, currentTheme, createCanvas, redraw })` → `{ drawTile(ctx, x, y, size, state, number, pixelRatio), cacheKey, invalidate, dispose }`.
 - 2026-10-09 (from step 23): `.claude/context/classic2d.md` exists and describes only the tile skin, saying the board renderer is still to be built — update it when the renderer lands.
+- 2026-10-09 (from step 32): the session's first reveal returns a Promise of its result (`null` if the board failed or the request was cancelled); every other action returns the engine's result at once. `createLastChoice` saves/loads the last board choice, but nothing calls `load()` when the mode opens — that wiring is task 36's. Choosing "Play a standard board" after a failed no-guess board turns no-guess off for the rest of the session.
 
 ```prompt
 /task-implement 33 --review
@@ -478,6 +482,7 @@ Context:
 - 2026-10-09 (from step 25): the mode host exposes `start`, `pause`, `resume`, `restart`, `leave`, `summary`, `on`, `active`, `state` (also as `window.__ms.modes` for Playwright). The host reports `game abandoned` itself from the mode's `summary()` before `restart()`, `leave()` or a replacing `start()`; a mode reports only `started`, `finished`, `canPause`, `failed`. `resume`/`restart` take `{ source: 'pointer' | 'key' | 'pad' }`. Until board choice exists, the 3D mode's "open board choice" goes to the main menu.
 - 2026-10-09 (from step 26): Classic 2D, Records and Settings menu entries go to a shared `coming-soon` router screen (`#coming-soon`, not in `SHELL_SCREENS`) and switch over by themselves once their mode is registered or the router has their screen. The 3D presets live on a `board-choice` router screen (`#board-choice`); the menu module is `js/shell/menu.js`, and `shell.lastMode` (v1, `{ mode }`) is saved on the host's `started`.
 - 2026-10-09 (from step 27): the pause controller `js/shell/pause.js` (`window.__ms.pauser`) owns every pause and offers `pause(source, {note})`, `resume`, `restart`, `toMenu`, `pageHide`, `inProgress` and `attach(name, fn)` for the hand-offs `finished`, `abandoned`, `inProgress` — records and results hook in through `attach`. A finished game routes to the router screen `results` with `{ summary, mode }` once that screen is registered. Restart/Main-menu confirmation is a panel in the pause card (`#pause-confirm`, `UI.showConfirm`/`closeConfirm`/`isConfirmOpen`).
+- 2026-10-09 (from step 32): the session's first reveal returns a Promise of its result (`null` if the board failed or the request was cancelled); every other action returns the engine's result at once. `createLastChoice` saves/loads the last board choice, but nothing calls `load()` when the mode opens — that wiring is task 36's. Choosing "Play a standard board" after a failed no-guess board turns no-guess off for the rest of the session.
 
 ```prompt
 /task-implement 36 --review
@@ -500,7 +505,8 @@ Done: struck — Task 37 no longer needs a person (it reads tests/fidelity/mines
 
 Depends on: 51, 34, 36
 
-Context: none
+Context:
+- 2026-10-09 (from step 32): custom-board mine caps for 37–48-cell boards were never measured and are interpolated between 36 cells (a mine in every cell) and 7×7's 19, so the cap falls as the board grows in that range (6×7 allows 28); the limits live in the `customLimits` setting of rule profile v1, linked to "Largest custom board". Confirm or replace them here.
 
 ```prompt
 /task-implement 37 --review
@@ -510,7 +516,8 @@ Context: none
 
 Depends on: 32, 33, 34, 35, 36, 37
 
-Context: none
+Context:
+- 2026-10-09 (from step 32): `classic2d.md` and its INDEX row still say `js/classic2d/` holds only the tile skin; `engine.md` (limits setting) and `generation.md` (session as the client's caller) were already updated by task 32.
 
 ```prompt
 /task-implement 38 --review
