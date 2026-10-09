@@ -39,8 +39,7 @@ The product design leaves open how players choose between the light and dark the
 ```
 Done: 2026-10-09, commit `f76e17f` (6 files, +358/-5). Three documents written; the prompt's open theme question was already settled in Context, so nothing was asked.
 
-
-## [ ] 2. Architect the Classic 2D slice for m1
+## [x] 2. Architect the Classic 2D slice for m1
 
 Depends on: none
 
@@ -61,6 +60,7 @@ Context:
 ```prompt
 /architect "Classic 2D" m1-classic-2d
 ```
+Done: 2026-10-09, commit `419c404` (6 files, +477/-2). Board generation stays its own document. The rules are not yet observed: each one that could go two ways is a fidelity test needing one human observation of the live Minesweeper Online.
 
 ## [ ] 3. Architect the main menu and game shell slice for m1
 
@@ -299,6 +299,7 @@ Depends on: 11
 
 Context:
 - 2026-10-09 Decided by the user: every approval gate a skill in this step raises is approved as drafted, unseen; on each open call take the draft's own recommendation, and answer the gate from this bullet rather than parking. Park only on a real design question.
+- 2026-10-09 (from step 2): the Classic 2D documents pin each two-way rule (first-click guarantee, chording, what a loss shows, what counts as a click, the largest custom board) by a fidelity test that needs one human observation of the live Minesweeper Online, so those tasks need a person (Target claude+human).
 
 ```prompt
 Write the backlog tasks for milestone m1-classic-2d.
