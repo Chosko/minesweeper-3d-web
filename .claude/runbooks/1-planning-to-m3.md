@@ -51,7 +51,7 @@ Context:
 /architect "Classic 2D" m1-classic-2d
 ```
 
-## [ ] 3. Architect the main menu and game shell slice for m1
+## [P] 3. Architect the main menu and game shell slice for m1
 
 Depends on: none
 
@@ -67,6 +67,8 @@ Context:
     c. No. The board stays visible behind the pause menu in both modes.
     Recommendation: a. Times feed personal bests, and later Steam leaderboards. A visible board with a stopped clock would let a player study it for free, and treating every mode the same keeps records comparable.
 - 2026-10-09 unparked with answer: Q2a — no rebinding in m1 (sensitivity, invert Y and a read-only bindings list; rebinding is a non-goal with no milestone yet); Q3a — the board is hidden while paused, in every mode. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
+- 2026-10-09 (from step 1): the visual design system draft leaves the Settings page out, so the settings feature must store the theme value and show the light/dark theme control (the user's decision: the theme is chosen on the Settings page).
+- 2026-10-09 parked: approval gate — the m1 main menu and game shell architecture draft, now carrying the Q2a and Q3a answers and the theme control (three documents: game-shell, settings, platform-storage; the open call is whether platform storage folds into settings), waits for approval when the step runs. The draft records two open points: the theme control's values wait on step 1's first-launch theme question, and Quit is in no milestone's slice though the m3 Electron build needs it.
 
 ```prompt
 /architect "Main menu and game shell" m1-classic-2d
