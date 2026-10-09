@@ -592,7 +592,7 @@ Context:
 
 Done: 2026-10-09, commit `8bdfd88` (10 files, +815/-93). Every setting control (page, pause card, menu volume) carries `data-setting` and is bound by one `bindSettingControls(...)`; the old `onLookSettings`/`UI.setLook`/`UI.initVolume` path is gone. The page is generated from the schema by `js/settings/page.js`, and one bindings table (`js/settings/bindings.js`) feeds every help surface.
 
-## [ ] 42. Implement task 42 — Update documentation for feature `settings`
+## [x] 42. Implement task 42 — Update documentation for feature `settings`
 
 Depends on: 39, 40, 41
 
@@ -603,6 +603,8 @@ Context:
 ```prompt
 /task-implement 42 --review
 ```
+
+Done: 2026-10-09, commit `8e1889b` (8 files, +374/-81). Also updated `platform.md`, which still said nothing used platform storage.
 
 ## [ ] 43. Implement task 43 — Records model: bests, counters, history and comparison
 
