@@ -59,6 +59,20 @@ browser checks for everything that needs WebGL or the DOM.
   (`js/generation/client.js`) over a fake worker: lazy worker reuse,
   cancellation, one request in flight, stale replies ignored, worker errors,
   the module-worker default, and no generation import on the main thread.
+- `tests/platform-storage.test.mjs` — the storage interface
+  (`js/platform/storage.js`) over the memory backend: registration and its
+  malformed declarations, `{ version, data }` round-trips, no cache, every
+  upgrade path saved back, async steps, a failed save-back, newer documents
+  refused on load and save, corrupt and unreadable documents kept aside,
+  failing `onIssue` handlers, failed and non-serialisable saves, the memory
+  backend itself, and that `js/platform/` is DOM-free.
+- `tests/platform-browser.test.mjs` — the browser backend
+  (`js/platform/browser-backend.js`) over a `FakeStorage` with an optional
+  quota: namespaced keys, the legacy `ms3d.*` keys never touched, blocked,
+  throwing, missing and full storage, the kept-aside copy, the platform
+  module's start-up selection (`js/platform/index.js`), that no other module
+  imports a backend, and one Playwright test that a saved document survives
+  a page reload (skipped when Playwright or chromium is unavailable).
 - `tests/gamepad.test.mjs` — controller helpers (`js/gamepad.js`), analog camera
   (`js/input.js::FlyCamera`), `js/controls.js::Controls`, and trigger sequences
   through `js/input.js::MouseActions`.
@@ -79,8 +93,9 @@ browser checks for everything that needs WebGL or the DOM.
 - `.claude/external/run-full-tests.sh` — `cd` to repo root, `exec node --test`.
 - `.claude/external/run-affected-tests.sh <test-file>...` — `node --test` on the
   given files; exits 2 with usage when called with no arguments.
-- Browser verification: no test file in the repo; ad-hoc Playwright scripts
-  drive `window.__ms`, defined at the end of `js/main.js`.
+- Browser verification: ad-hoc Playwright scripts drive `window.__ms`,
+  defined at the end of `js/main.js`; the one browser test in the suite is
+  the reload test in `tests/platform-browser.test.mjs`.
 
 No `package.json`, no dependencies: Node 22 built-in runner (`node:test`,
 `node:assert/strict`). `node --test` with no arguments discovers
@@ -125,6 +140,11 @@ Tests consume, and so pin, these contracts:
   and the `globalThis.msTheme` it installs; `js/tokens.js::createTokenReader`
   (`{root, getStyle, theme, dev, log}` → `token`, `onThemeChange`),
   `FALLBACK_COLOR`; the `<head>` order in `index.html`.
+- `js/platform/storage.js::createStorage` (`register`, `load`, `save`,
+  `available`, the issue kinds and save reasons);
+  `js/platform/browser-backend.js::createBrowserBackend`, `DOC_PREFIX`,
+  `ASIDE_PREFIX`; `js/platform/memory-backend.js::createMemoryBackend`;
+  `js/platform/index.js` exports. Full list in [platform.md](platform.md).
 
 Browser hook `js/main.js::window.__ms` (full list in [app-shell.md](app-shell.md)):
 - getters `state`, `game`, `renderer`, `camera`, `controls`, `pads`, `fps`,
@@ -175,6 +195,11 @@ Browser hook `js/main.js::window.__ms` (full list in [app-shell.md](app-shell.md
   `actions > 5000`, so do not make the action generator skip more often.
 - Performance budget: 100×100×100 / 1000 mines construct < 1 s, construct +
   zero-region click < 2 s; mines == n on 10^6 cells < 2 s.
+- Storage tests inject the backend: the memory backend (its `documents` /
+  `aside` Maps edited directly) for the interface, a `FakeStorage` passed
+  through `getStorage` for the browser backend. The platform-module tests
+  swap `globalThis.localStorage` and import `js/platform/index.js` with a
+  distinct query string, so each import evaluates the selection afresh.
 - Gamepad tests use a `fakePad` object (17 buttons, 4 axes, `mapping: 'standard'`)
   and a mutable `list` returned by `getGamepads`; no browser globals needed.
 - `FlyCamera.moveAxes` is tested for exact equality with `move()` under keys,
@@ -225,6 +250,8 @@ is enforced.
 - [../domain/features/design-tokens-and-themes.md](../domain/features/design-tokens-and-themes.md)
   — the contrast contract and applier/reader contracts `tokens.test.mjs` and
   `theme.test.mjs` encode.
+- [../domain/features/platform-storage.md](../domain/features/platform-storage.md)
+  — the versioning and failure contracts the `platform-*` tests encode.
 - [../domain/INDEX.md](../domain/INDEX.md) — feature documents whose acceptance
   criteria become tests.
 
@@ -233,6 +260,7 @@ is enforced.
 - [logic.md](logic.md) — `tests/logic.test.mjs` pins the engine API and checks it against the naive port.
 - [engine.md](engine.md) — `tests/engine-*.test.mjs` pin the cell-graph engine; the fidelity test checks it against the observation file.
 - [generation.md](generation.md) — `tests/generation-*.test.mjs` pin the seeded generator, solver, no-guess loop, worker and client.
+- [platform.md](platform.md) — `tests/platform-*.test.mjs` pin the storage interface, backends and start-up selection.
 - [input.md](input.md) — `tests/gamepad.test.mjs` covers gamepad helpers, `FlyCamera`, `Controls`, `MouseActions`.
 - [app-shell.md](app-shell.md) — owns `window.__ms`, the surface Playwright drives,
   and the token sheet, theme applier and token reader the token/theme tests pin.

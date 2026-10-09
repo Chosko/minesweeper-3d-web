@@ -156,7 +156,7 @@ Feature: platform-storage
 
 ## 16. Update documentation for feature `platform-storage`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/platform.md, .claude/context/INDEX.md, .claude/context/testing.md
 Preconditions: 14, 15
