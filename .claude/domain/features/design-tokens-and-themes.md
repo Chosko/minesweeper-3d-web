@@ -121,8 +121,8 @@ bundler, Canvas 2D for Classic 2D and DOM screens in the game shell (see
   changes it.
 - No external libraries.
 
-## Open questions
+## Typeface
 
-- Typeface: keep the current system font stack, or ship a bundled typeface
-  for a more distinctive look (licence and file-size cost on the web
-  build). Blocks only the typography token values, not the structure.
+The typography tokens use the current system font stack; no typeface is
+bundled, because a bundled one brings licence and web-build size cost for no
+gameplay gain. Swapping it later changes only token values, not structure.

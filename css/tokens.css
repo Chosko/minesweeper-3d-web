@@ -1,0 +1,113 @@
+/* Design tokens: the single source of truth for every shared visual value.
+   Light values on :root; dark values under :root[data-theme="dark"].
+   Low-fidelity pass: the dark palette, elevation and motion values are
+   placeholders that meet the contrast contract (tests/tokens.test.mjs).
+   The 3D scene (js/render.js, js/textures.js) never reads these tokens. */
+
+:root {
+  color-scheme: light;
+
+  /* ---------- palette ---------- */
+  --color-backdrop: rgb(200, 225, 255);
+  --color-backdrop-highlight: rgb(222, 238, 255);
+  --color-backdrop-shade: rgb(178, 207, 246);
+  --color-surface: rgba(255, 255, 255, 0.78);
+  --color-surface-border: rgba(255, 255, 255, 0.9);
+  --color-surface-raised: #ffffff;
+  --color-surface-sunken: rgba(227, 238, 255, 0.7);
+  --color-border: #c8d6ee;
+  --color-ink: #14233f;
+  --color-ink-muted: #4a5b7a;
+  --color-accent: #3f78e0;
+  --color-accent-strong: #2b5cb8;
+  --color-accent-soft: #e3eeff;
+  --color-accent-ink: #ffffff;
+  --color-success: #1f8a3b;
+  --color-danger: #c62828;
+  --color-warning: #9a5b00;
+  --color-focus-ring: #3f78e0;
+
+  /* ---------- typography ---------- */
+  --font-family-sans: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-family-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --font-size-xs: 11px;
+  --font-size-sm: 13px;
+  --font-size-md: 15px;
+  --font-size-lg: 18px;
+  --font-size-xl: 24px;
+  --font-size-2xl: 32px;
+  --font-size-3xl: 40px;
+  --font-weight-regular: 400;
+  --font-weight-medium: 600;
+  --font-weight-bold: 700;
+  --font-weight-heavy: 800;
+  --font-weight-ultra: 900;
+  --font-numeric-tabular: tabular-nums;
+
+  /* ---------- spacing ---------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* ---------- radii ---------- */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+
+  /* ---------- elevation ---------- */
+  --elevation-1: 0 1px 2px rgba(20, 45, 95, 0.08);
+  --elevation-2: 0 8px 24px -12px rgba(20, 45, 95, 0.45);
+  --elevation-3: 0 24px 60px -18px rgba(20, 45, 95, 0.45), 0 2px 6px rgba(20, 45, 95, 0.12);
+
+  /* ---------- motion ---------- */
+  --duration-fast: 0.08s;
+  --duration-base: 0.15s;
+  --duration-slow: 0.25s;
+  --easing-standard: ease;
+  --easing-out: ease-out;
+  --easing-overshoot: cubic-bezier(.2, 1.4, .4, 1);
+
+  /* ---------- z-layers (bottom to top) ---------- */
+  --z-hud: 10;
+  --z-help: 11;
+  --z-banner: 12;
+  --z-flash: 15;
+  --z-overlay: 20;
+  --z-modal: 30;
+  --z-context-lost: 40;
+  --z-toast: 45;
+  --z-fatal: 50;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-backdrop: #0f1a2e;
+  --color-backdrop-highlight: #1a2a47;
+  --color-backdrop-shade: #0a1222;
+  --color-surface: rgba(22, 34, 58, 0.82);
+  --color-surface-border: rgba(255, 255, 255, 0.08);
+  --color-surface-raised: #22324f;
+  --color-surface-sunken: rgba(10, 18, 34, 0.55);
+  --color-border: #3a4c6e;
+  --color-ink: #e6edf8;
+  --color-ink-muted: #a9b7d0;
+  --color-accent: #6c9cf0;
+  --color-accent-strong: #93b6f6;
+  --color-accent-soft: #263a5e;
+  --color-accent-ink: #0b1426;
+  --color-success: #5fd27f;
+  --color-danger: #ff7b7b;
+  --color-warning: #f2b75a;
+  --color-focus-ring: #93b6f6;
+
+  --elevation-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --elevation-2: 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+  --elevation-3: 0 24px 60px -18px rgba(0, 0, 0, 0.7), 0 2px 6px rgba(0, 0, 0, 0.4);
+}

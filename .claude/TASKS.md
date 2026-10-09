@@ -6,7 +6,7 @@ Last task number: 114
 
 ## 1. Token sheet with light and dark values
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: css/tokens.css, css/style.css, index.html, tests/tokens.test.mjs, .claude/domain/features/design-tokens-and-themes.md
 Preconditions: none
