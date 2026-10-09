@@ -468,7 +468,7 @@ Context:
 
 Done: 2026-10-09, commit `122f2f1` (9 files, +1000/-15). Input behaviour is read from four new profile markers (`revealInputs`, `flagToggle`, `pressFeedback`, `releaseOffCell`) plus `chordInputs`. Left+right on a closed cell acts only on the left release, as a chord on a revealed number — unrecorded in the reference, so an implementer's choice. Input uses mouse events, not pointer events.
 
-## [ ] 35. Implement task 35 — Classic 2D keyboard and controller cursor
+## [x] 35. Implement task 35 — Classic 2D keyboard and controller cursor
 
 Depends on: 24, 33
 
@@ -481,6 +481,8 @@ Context:
 /task-implement 35 --review
 ```
 
+Done: 2026-10-09, commit `d9997f5` (9 files, +1137/-17). Unlike the mouse, keyboard/controller reveal inputs (A, RT, Space, Enter) never chord a revealed number; chording is Y, D, or both triggers held together. The cursor ring is always visible, starting top-left.
+
 ## [ ] 36. Implement task 36 — Classic 2D mode: board choice screen and shell integration
 
 Depends on: 18, 26, 27, 32, 33
@@ -492,6 +494,7 @@ Context:
 - 2026-10-09 (from step 32): the session's first reveal returns a Promise of its result (`null` if the board failed or the request was cancelled); every other action returns the engine's result at once. `createLastChoice` saves/loads the last board choice, but nothing calls `load()` when the mode opens — that wiring is task 36's. Choosing "Play a standard board" after a failed no-guess board turns no-guess off for the rest of the session.
 - 2026-10-09 (from step 33): the board view fits whatever area its container gives it — the mode screen must give it the window below the 64 px overlay bar with 16 px margins (where `MIN_TILE_SIZE` = 41 px was measured). `mountBoardView` (resize, DPR, wheel, shift-drag wiring) and `setHidden(bool)` for pause exist but nothing calls them yet.
 - 2026-10-09 (from step 34): `mountPointerInput` (mousedown on the canvas, mousemove/mouseup/blur on the page) sends actions to the session and pressed cells to the view's `setPressed`; redrawing the view when the session reports changes is not wired — this task must do it.
+- 2026-10-09 (from step 35): keyboard/controller cursor is `mountCursorInput`; the controller reaches it only through its `pad(poll)` — this task must call it from the shell's controller poll, mount/unmount it and reset it on pause, or the controller does nothing on the board. The view has `setCursor` for the ring.
 
 ```prompt
 /task-implement 36 --review
@@ -517,6 +520,7 @@ Depends on: 51, 34, 36
 Context:
 - 2026-10-09 (from step 32): custom-board mine caps for 37–48-cell boards were never measured and are interpolated between 36 cells (a mine in every cell) and 7×7's 19, so the cap falls as the board grows in that range (6×7 allows 28); the limits live in the `customLimits` setting of rule profile v1, linked to "Largest custom board". Confirm or replace them here.
 - 2026-10-09 (from step 34): pointer behaviour reads profile markers `revealInputs`, `flagToggle`, `pressFeedback`, `releaseOffCell` and `chordInputs` in `js/engine/profiles.js`, each citing its fidelity entry — pin these here. Left+right on a closed cell acts only on the left release, as a chord on a revealed number, never a reveal; the reference does not record this case.
+- 2026-10-09 (from step 35): keyboard/controller reveal inputs (A, RT, Space, Enter) never chord a revealed number; chording is Y, D, or both triggers held (LT flags on press; the release chord follows the profile's left+right rule, while Y and D chord regardless).
 
 ```prompt
 /task-implement 37 --review
