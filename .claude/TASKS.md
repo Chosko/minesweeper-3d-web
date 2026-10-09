@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 47
+Last task number: 50
 
 ---
 
@@ -471,5 +471,35 @@ Target: claude
 Files: .claude/context/app-shell.md, .claude/context/testing.md, .claude/context/INDEX.md
 Preconditions: 46
 Feature: results-screen
+
+---
+
+## 48. Records view: board picker and figures
+
+Status: [MISSING]
+Target: claude
+Files: js/records/screen.js, index.html, js/shell/menu.js, css/components.css, tests/records-screen.test.mjs
+Preconditions: 26, 44, 46
+Feature: records-screen
+
+---
+
+## 49. Records history chart and recent games list
+
+Status: [MISSING]
+Target: claude
+Files: js/records/history-chart.js, js/records/screen.js, tests/records-history.test.mjs
+Preconditions: 2, 48
+Feature: records-screen
+
+---
+
+## 50. Update documentation for feature `records-screen`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/records.md, .claude/context/app-shell.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
+Preconditions: 48, 49
+Feature: records-screen
 
 ---

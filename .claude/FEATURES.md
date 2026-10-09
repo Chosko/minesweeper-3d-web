@@ -112,10 +112,10 @@ Tasks: 46, 47
 
 ## records-screen — Records screen: bests, win rate, streaks and stats history per board
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/records-screen.md
 Source: product-design.md § Results and records (m1-classic-2d)
-Tasks: none
+Tasks: 48, 49, 50
 
 ---
 
