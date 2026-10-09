@@ -1,13 +1,16 @@
-# Classic 2D — square tile skin
+# Classic 2D — Canvas board
 
 ## OVERVIEW
 
-The Canvas 2D side of Classic 2D, independent of three.js. Only the tile
-skin exists: how a square tile looks in every state and how the numbers 1–8
-are coloured, in both themes. The board renderer that lays out the board,
-hit-tests and calls the skin per tile is not built yet; when it lands it
-owns layout and input, and the skin keeps appearance only.
+The Canvas 2D side of Classic 2D, independent of three.js: the board view
+that lays the board out, hit-tests and scrolls it, and the tile skin it asks
+to paint each tile. The view owns where tiles go and the input that moves
+the board; the skin owns how a tile looks.
 
+- `js/classic2d/board-view.js` — the board view: the fit rule, the layout,
+  `cellAt`, per-cell redraw from the engine's change lists, scrolling and
+  panning, the hidden board while paused, and `mountBoardView`, the browser
+  wiring around it. DOM-free at import.
 - `js/classic2d/tile-skin.js` — the stateless tile painter, the tile cache
   that pre-renders every state and number, and the shared minimum tile size.
   It holds no palette: every colour is a tile or number token from
@@ -16,12 +19,36 @@ owns layout and input, and the skin keeps appearance only.
 
 ## PUBLIC API
 
+`js/classic2d/board-view.js` exports
+- `fitTileSize(cols, rows, width, height, min = MIN_TILE_SIZE)` — the
+  largest whole tile at which the board fits the area, never below `min`.
+- `boardLayout({cols, rows, width, height, min})` → frozen `{width, height,
+  tile, boardWidth, boardHeight, offsetX, offsetY, maxScrollX, maxScrollY,
+  scrolls}`.
+- `cellAtLayout(layout, scroll, cols, rows, x, y)` — the cell index under a
+  canvas position, or -1.
+- `BOARD_BACKGROUND` (`--color-board-frame`) — the token the area around
+  the board is filled with; `PAN_MODIFIER` (`shiftKey`) — the key a drag
+  holds to pan.
+- `createBoardView({canvas, grid, createSkin, token})` → `{resize(width,
+  height, pixelRatio), setGame(game), update(changed), repaint(), cellAt(x,
+  y), cellRect(c) → {x, y, size}, scroll, scrollTo, scrollBy, pan(dx, dy),
+  wheel(event) → taken, ensureVisible(c) → scrolled, setHidden(hidden),
+  hidden, layout, pixelRatio, canvas, dispose}` — `grid` is the square grid
+  ([engine.md](engine.md)); `game` is the engine game whose `cellState` /
+  `cellNumber` it draws; `createSkin` defaults to `createTileSkin`, `token`
+  to the token reader. Positions are canvas CSS pixels.
+- `mountBoardView({container, grid, win, ...})` → the view plus
+  `destroy()`: a canvas filling `container`, refitted on container resize
+  and device-pixel-ratio change, scrolled by the wheel and panned by a
+  primary-button drag with `PAN_MODIFIER` held.
+
 `js/classic2d/tile-skin.js` exports
-- `MIN_TILE_SIZE` (41) — the smallest tile size the Classic 2D renderer
-  allows, shared by the skin and the renderer.
+- `MIN_TILE_SIZE` (41) — the smallest tile size the board view allows,
+  shared by the skin and the view.
 - `TILE_STATES` — `closed`, `pressed`, `revealed`, `flagged`, `mine`,
   `exploded`, `wrong-flag`: the rules engine's cell states
-  ([engine.md](engine.md), `CELL`) plus `pressed`, the renderer's feedback
+  ([engine.md](engine.md), `CELL`) plus `pressed`, the board's feedback
   under a held click or chord.
 - `paintTile(ctx, x, y, size, state, number)` — paints one tile at `x, y`,
   `size` CSS pixels on a Canvas 2D context, reading tokens through the
@@ -30,12 +57,37 @@ owns layout and input, and the skin keeps appearance only.
   injected `token(name)` function.
 - `createTileSkin({token, onThemeChange, currentTheme, createCanvas, redraw})`
   → `{paintTile, drawTile(ctx, x, y, size, state, number, pixelRatio = 1),
-  invalidate, cacheKey, dispose}` — one skin per renderer. Every option
+  invalidate, cacheKey, dispose}` — one skin per board view. Every option
   defaults to the browser one (token reader, `globalThis.msTheme.current()`,
-  `OffscreenCanvas` or a `<canvas>`); `redraw` is the renderer's callback.
+  `OffscreenCanvas` or a `<canvas>`); `redraw` is the board view's
+  full repaint.
 
 ## INTERNAL PATTERNS
 
+- **Fit rule.** The view fits the board to whatever area it is given;
+  `MIN_TILE_SIZE` was measured for the area below the overlay bar with
+  16 px margins
+  ([square-tile-skin.md § Minimum tile size](../domain/features/square-tile-skin.md)).
+  A board that fits is centred and
+  never scrolls; one that does not keeps `MIN_TILE_SIZE`, starts at its
+  top-left corner and scrolls on the overflowing axis only. Tiles sit edge
+  to edge.
+- **Redraw.** `update(changed)` draws only the listed cells that are in
+  view, through the skin's `drawTile`; a full repaint (background plus every
+  visible tile) happens on `resize` with a new size or pixel ratio, on
+  `setGame`, on a scroll, on showing a hidden board and on a theme change,
+  which reaches the view as the skin's `redraw` callback. The background
+  token is read on every full repaint. The canvas is sized in device pixels
+  with a `setTransform(ratio…)`; all drawing is in CSS pixels.
+- **Scrolling.** The scroll position is whole CSS pixels clamped to
+  `0..maxScroll`, re-clamped on resize. The wheel scrolls only a board that
+  overflows (a line is a tile, a page is the view, shift turns a vertical
+  wheel horizontal); `ensureVisible` scrolls the least that shows a cell's
+  whole tile, for the cursor.
+- **Hidden.** While hidden (the game is paused) a repaint draws the
+  background only and `update` draws nothing; showing repaints the board.
+- **The engine is the source.** The view keeps no cell state; every tile is
+  read from the game when drawn.
 - **Painter.** Each state is a flat fill plus at most a simple edge and a
   plain glyph — no gradients, shadows or patterns. Closed and flagged tiles
   carry an edge (`--color-tile-edge`, width `max(2, round(size / 12))`), so
@@ -68,6 +120,9 @@ owns layout and input, and the skin keeps appearance only.
 
 ## DOMAIN DEPENDENCIES
 
+- [../domain/features/classic-2d-square-play.md](../domain/features/classic-2d-square-play.md)
+  — the board view: fitting, scrolling or panning, hit-testing, per-cell
+  redraw, the board hidden while paused.
 - [../domain/features/square-tile-skin.md](../domain/features/square-tile-skin.md)
   — the states, the drawing contract, the cache and its invalidation, the
   contrast contract and the minimum tile size.
@@ -80,14 +135,21 @@ owns layout and input, and the skin keeps appearance only.
 - [app-shell.md](app-shell.md) — owns `css/tokens.css` (the tile and number
   tokens), `js/tokens.js` (`token`, `onThemeChange`, `FALLBACK_COLOR`) and
   `js/theme.js` (`msTheme.current()`).
-- [engine.md](engine.md) — the cell-state vocabulary the tile states mirror.
+- [engine.md](engine.md) — the cell-state vocabulary the tile states mirror,
+  the square grid's index layout the view hit-tests in, and the `changed`
+  lists it redraws from.
 - [rendering.md](rendering.md) — the 3D tile atlas, a separate palette the
   skin neither reads nor feeds.
-- [testing.md](testing.md) — `tests/tile-skin.test.mjs` pins the painter,
-  the cache and `MIN_TILE_SIZE`; `tests/tokens.test.mjs` the tile tokens.
+- [testing.md](testing.md) — `tests/classic2d-view.test.mjs` pins the
+  board view; `tests/tile-skin.test.mjs` the painter, the cache and
+  `MIN_TILE_SIZE`; `tests/tokens.test.mjs` the tile tokens.
 
 ## WHEN TO READ THE SOURCE
 
+- Changing the fit rule, the layout or what triggers a full repaint
+  (`boardLayout`, `repaint`, `resize` in `board-view.js`).
+- Adding board input that competes with panning (`mountBoardView`'s pointer
+  and wheel listeners, `PAN_MODIFIER`).
 - Changing how a state looks, or adding a state (the `paintTileWith` switch
   and `TILE_STATES`, which the cache builds from).
 - Changing the cache key or what invalidates it (`drawTile`, the

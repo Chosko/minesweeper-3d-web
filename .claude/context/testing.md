@@ -142,6 +142,20 @@ browser checks for everything that needs WebGL or the DOM.
   1366×768 and 1280×800, checks it equals `MIN_TILE_SIZE`, and checks every
   state and number shows its glyph at that size in both themes (skipped
   when Playwright or chromium is unavailable).
+- `tests/classic2d-view.test.mjs` — the Classic 2D board view
+  (`js/classic2d/board-view.js`) over a fake canvas and a recording fake
+  skin, with real engine games: the fit rule (Expert below the overlay bar
+  gets `MIN_TILE_SIZE`, never smaller), centred and scrolling layouts,
+  `cellAt` in a fitted and a scrolled board, `cellRect`, the canvas sized at
+  the pixel ratio, the background token, only changed cells redrawn after
+  an action, full repaints on resize, pixel ratio and the skin's theme
+  redraw, only visible tiles drawn, clamped scrolling, the wheel, panning,
+  `ensureVisible`, the hidden board, and the module DOM-free with no
+  literal colour. One Playwright test mounts the view below a 64 px bar
+  with 16 px margins and checks tile size and pixel colours of Beginner and
+  Expert in both themes, a theme-change repaint, a 100 × 100 board scrolled
+  by wheel, shift-drag and `ensureVisible`, and a refit on window resize,
+  with screenshots (skipped when Playwright or chromium is unavailable).
 - `tests/shell-router.test.mjs` — the screen router (`js/shell/router.js`:
   the seven feature screens, one screen shown per change with its data, the
   back stack, unwinding, `replace`, default focus declared or computed, a
@@ -190,7 +204,8 @@ browser checks for everything that needs WebGL or the DOM.
   defined at the end of `js/main.js`; the suite's browser tests are the
   reload test in `tests/platform-browser.test.mjs`, the contrast tests in
   `tests/components.test.mjs`, the minimum-tile-size test in
-  `tests/tile-skin.test.mjs` and one flow test in each `tests/shell-*.test.mjs`.
+  `tests/tile-skin.test.mjs`, the board test in
+  `tests/classic2d-view.test.mjs` and one flow test in each `tests/shell-*.test.mjs`.
 
 No `package.json`, no dependencies: Node 22 built-in runner (`node:test`,
 `node:assert/strict`). `node --test` with no arguments discovers
@@ -242,7 +257,9 @@ Tests consume, and so pin, these contracts:
   [app-shell.md](app-shell.md).
 - `js/classic2d/tile-skin.js::paintTile`, `paintTileWith`, `createTileSkin`
   (`drawTile`, `invalidate`, `cacheKey`, `dispose`), `TILE_STATES`,
-  `MIN_TILE_SIZE`. Full list in [classic2d.md](classic2d.md).
+  `MIN_TILE_SIZE`; `js/classic2d/board-view.js::fitTileSize`,
+  `boardLayout`, `cellAtLayout`, `createBoardView`, `BOARD_BACKGROUND`,
+  `PAN_MODIFIER`. Full list in [classic2d.md](classic2d.md).
 - `js/platform/storage.js::createStorage` (`register`, `load`, `save`,
   `available`, the issue kinds and save reasons);
   `js/platform/browser-backend.js::createBrowserBackend`, `DOC_PREFIX`,
@@ -357,6 +374,11 @@ Browser hook `js/main.js::window.__ms` (full list in [app-shell.md](app-shell.md
   injected token function, theme source and canvas factory, so the painter
   and cache run in Node; the browser test reuses the in-process server and
   counts glyph-coloured pixels per tile.
+- Board-view tests build the view with a fake canvas (a recording Proxy
+  context) and a `createSkin` that records every `drawTile` and hands back
+  the `redraw` callback, so layout, hit-testing and redraw run in Node; the
+  browser test mounts it in `dev/components.html` with `mountBoardView`
+  and keeps it on `globalThis.__view` for `page.evaluate`.
 - Untested by Node beyond the static and stub checks above: `js/render.js`,
   `js/textures.js`, `js/picking.js`, `js/ui.js`, `js/main.js`, `js/audio.js`
   — verify in the browser. Computed styles and the rendered theme are
@@ -428,7 +450,7 @@ is enforced.
   the token sheet, theme applier and token reader the token/theme tests pin,
   the component kit and kit-built screens `components.test.mjs` pins, and
   the game shell (`js/shell/`) the `shell-*` tests pin.
-- [classic2d.md](classic2d.md) — `tests/tile-skin.test.mjs` pins the tile painter, cache and `MIN_TILE_SIZE`.
+- [classic2d.md](classic2d.md) — `tests/classic2d-view.test.mjs` pins the board view; `tests/tile-skin.test.mjs` the tile painter, cache and `MIN_TILE_SIZE`.
 - [rendering.md](rendering.md) — no unit tests of the drawing (only the static not-themed checks); verified visually via Playwright screenshots.
 - [audio.md](audio.md) — no unit tests; WebAudio only checkable in a browser.
 

@@ -326,7 +326,7 @@ Feature: classic-2d-square-play
 
 ## 33. Classic 2D Canvas board view
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/classic2d/board-view.js, tests/classic2d-view.test.mjs
 Preconditions: 22, 32
