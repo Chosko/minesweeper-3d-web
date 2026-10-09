@@ -290,7 +290,6 @@ export class UI {
     this.el.pauseSub.textContent = `Time ${fmtTime(time)} s · ${minesLeft} mine${minesLeft === 1 ? '' : 's'} left`;
     this.el.resume.textContent = ended ? 'Keep looking around' : 'Resume';
     this.el.restart.textContent = ended ? 'Play again' : 'Restart';
-    (ended ? this.el.restart : this.el.resume).focus({ preventScroll: true });
   }
   isPauseVisible() { return !this.el.pause.classList.contains('hidden'); }
 
@@ -387,8 +386,8 @@ export class UI {
         <dt>Hold ${k(g.lb)} ${k(g.rb)} ${k(g.y)}</dt><dd>Neighbours only / aim through numbers / show hidden</dd>
         <dt>D-pad ↑ ↓</dt><dd>Change spacing</dd>
         <dt>${k(g.x)}</dt><dd>Show / hide this panel</dd>
-        <dt>${k(g.start)} / ${k(g.back)}</dt><dd>Pause / sound on-off</dd>
-        <dt>Menus</dt><dd>D-pad or left stick to move, ${k(g.a)} select, ${k(g.b)} back</dd>
+        <dt>${k(g.start)} / ${k(g.back)}</dt><dd>Pause</dd>
+        <dt>Menus</dt><dd>D-pad or left stick to move, ${k(g.a)} select, ${k(g.b)} / ${k(g.back)} back</dd>
       </dl>`;
     for (const el of secs) { el.innerHTML = html; el.classList.remove('hidden'); }
     ready.innerHTML = `<b>Controller:</b> ${k(g.a)} play · ${k(g.rt)} reveal · ${k(g.lt)} flag · both chord · ${k(g.start)} pause${note ? '<br>' + note.replace('<p ', '<span ').replace('</p>', '</span>') : ''}`;

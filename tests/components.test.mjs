@@ -10,6 +10,7 @@ import {
   bindSlider, bindSegmented, initComponents, formatOverlayTime, formatMineCount,
 } from '../js/ui/components.js';
 import { UI } from '../js/ui.js';
+import { FOCUSABLE } from '../js/shell/navigation.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (f) => readFileSync(join(ROOT, f), 'utf8');
@@ -90,7 +91,7 @@ test('the stylesheet head documents every component as the catalogue', () => {
     assert.ok(at >= 0, `catalogue documents ${name}`);
   }
   for (const word of ['Element', 'Role', 'Name']) assert.match(text, new RegExp(word), `catalogue states each component's ${word}`);
-  assert.match(text, /padDefault/, 'catalogue states how a screen declares its default focus target');
+  assert.match(text, /defaultFocus/, 'catalogue states how a screen declares its default focus target');
   for (const name of Object.keys(COMPONENTS)) {
     assert.ok(rulesFor(`.${name}`).length > 0, `${name} is styled`);
   }
@@ -174,8 +175,8 @@ test('the gallery preview hooks mirror the real pseudo-classes', () => {
   }
 });
 
-// The shell's controller navigation collects these elements (padFocusables).
-const PAD_SELECTOR = read('js/main.js').match(/padFocusables[\s\S]*?querySelectorAll\('([^']+)'\)/)[1];
+// The shell's controller navigation collects these elements.
+const PAD_SELECTOR = FOCUSABLE;
 const PAD_TAGS = PAD_SELECTOR.split(',').map((s) => s.trim());
 
 function accessibleName(t, src = GALLERY, all = TAGS) {
@@ -465,11 +466,10 @@ test('every control on the menu and the pause card is named and reachable by key
     }
   }
   const main = read('js/main.js');
-  const map = main.match(/const pick = (\{[^}]*\})\[layer\.id\]/)[1];
-  const pick = Object.fromEntries([...map.matchAll(/'?([\w-]+)'?\s*:\s*'([^']+)'/g)].map((m) => [m[1], m[2]]));
-  assert.equal(pick.pause, '#p-resume', 'the pause card focuses Resume by default');
+  const line = (name) => main.match(new RegExp(`\\b${name}: \\{[^\\n]*defaultFocus: ([^\\n]*)`))[1];
+  assert.match(line('paused'), /'#p-resume'/, 'the pause card focuses Resume by default');
   assert.ok(SCREENS.pause.includes('id="p-resume"') && SCREENS.pause.includes('id="p-restart"'));
-  assert.match(pick.menu, /data-preset/, 'the menu focuses the last played board by default');
+  assert.match(line('menu'), /^'[^']*data-preset/, 'the menu focuses the last played board by default');
 });
 
 test('the gallery holds the results screen composition with placeholder content', () => {
@@ -836,7 +836,8 @@ test('in a browser, the menu, the pause card and the results layout meet the con
     // Keyboard focus shows the kit ring on every control of the menu, in tab order.
     const menuControls = await page.evaluate(() => [...document.querySelectorAll('#menu button, #menu input, #menu a[href]')]
       .filter((e) => e.getBoundingClientRect().width > 0).length);
-    await page.evaluate(() => document.activeElement?.blur());
+    // The menu opens with its default target focused: start the Tab walk from the menu layer's top instead.
+    await page.mouse.click(2, 2);
     for (let i = 0; i < menuControls; i++) {
       await page.keyboard.press('Tab');
       const f = await ring(page);

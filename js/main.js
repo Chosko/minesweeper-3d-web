@@ -8,6 +8,8 @@ import { UI, clampSettings, recordBest, fmtTime, loadLookSettings, NO_MOUSE_MSG 
 import * as audio from './audio.js';
 import { Controls } from './controls.js';
 import { GamepadReader, BTN, Repeat, stickCurve, padGlyphs, pickInDirection } from './gamepad.js';
+import { createRouter } from './shell/router.js';
+import { FOCUSABLE, topLayer, resolveFocus, isBackKey, backButtons, createHeldSuppressor } from './shell/navigation.js';
 
 const canvas = document.getElementById('scene');
 
@@ -35,8 +37,8 @@ Object.assign(cam, loadLookSettings());
 const LOCK_SUPPORTED = 'requestPointerLock' in Element.prototype;
 const COARSE_ONLY = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(pointer: fine)').matches);
 const NO_MOUSE = !LOCK_SUPPORTED || COARSE_ONLY;
+// S.mode is the router's current screen: 'menu' | 'ready' | 'playing' | 'paused' | 'ctxlost' (defined below).
 const S = {
-  mode: 'menu', // 'menu' | 'ready' | 'playing' | 'paused'
   settings: null,
   game: null,
   demo: null,
@@ -101,12 +103,7 @@ const input = new Input({
   onLook: (dx, dy) => cam.look(dx, dy),
   onWheel: (notches) => { setSpacing(S.spacing + notches * 0.04); ui.showSpacing(S.spacing); },
   onKey: (code, e) => {
-    if (code === 'Escape') {
-      if (S.mode === 'menu') ui.closeControls();
-      else if (S.mode === 'ready') readyBack();
-      else if (S.mode === 'playing' && S.lockless) pause(); // no pointer lock to release: pause directly
-      return;
-    }
+    if (isBackKey(code)) { shellBack('key'); return; }
     if (S.mode !== 'playing' && S.mode !== 'paused' && S.mode !== 'ready') return;
     // don't steal keys typed into settings controls (e.g. arrow keys on a slider)
     if (e && e.target && e.target.closest && e.target.closest('input, select, textarea')) return;
@@ -123,12 +120,11 @@ const input = new Input({
   },
   onLockError: () => {
     if (S.mode === 'paused' || S.mode === 'ready') {
-      S.mode = 'ready';
       let msg;
       if (NO_MOUSE) msg = NO_MOUSE_MSG;
       else if (performance.now() - input.unlockedAt < 1500) msg = 'The browser needs a moment before locking the mouse again. Click once more.';
       else msg = 'Could not capture the mouse. Click once more.';
-      ui.showReady(S.settings, msg);
+      SHELL.go('ready', { data: { msg } });
     }
   },
 });
@@ -156,7 +152,7 @@ function toggleSound() { ui.setSound(sfx.toggleMute()); }
 const ui = new UI({
   onStart: (s) => { sfx.unlock(); startGame(s); },
   onReadyClick: () => { sfx.unlock(); if (padGesture) padResume(); else input.requestLock(); },
-  onResume: () => { if (padGesture) { padResume(); return; } ui.showReady(S.settings); S.mode = 'ready'; input.requestLock(); },
+  onResume: () => { if (padGesture) { padResume(); return; } SHELL.go('ready'); input.requestLock(); },
   onRestart: () => { startGame(S.settings); if (padGesture) padResume(); else input.requestLock(); },
   onMainMenu: () => showMainMenu(),
   onPause: () => padPause(),
@@ -168,6 +164,34 @@ ui.setSound(sfx.muted);
 ui.setNoMouse(NO_MOUSE);
 if (typeof sfx.setVolume === 'function' && typeof sfx.getVolume === 'function') {
   ui.initVolume(sfx.getVolume(), (v) => { sfx.setVolume(v); sfx.unlock?.(); });
+}
+
+// ---------- screen router ----------
+// Every screen change goes through SHELL; each screen declares its default focus and its Back.
+const SHELL = createRouter({
+  screens: {
+    menu: { defaultFocus: '[data-preset][data-last]', show: () => { leaveForMenu(); ui.showMenu(); } },
+    ready: { defaultFocus: '#ready-btn', show: (d = {}) => ui.showReady(S.settings, d.msg ?? ''), back: () => readyBack() },
+    playing: { defaultFocus: null, show: (d = {}) => { setLockless(!!d.lockless); ui.showPlaying(); endIfDecided(); }, back: () => padPause() },
+    paused: { defaultFocus: () => (S.game && S.game.state !== 'playing' ? '#p-restart' : '#p-resume'), show: (d = {}) => { stopPlayInput(); ui.showPause(pauseInfo(d.note)); }, back: ({ source }) => resumeFromPause(source) },
+    ctxlost: { defaultFocus: '#ctx-lost-btn', show: () => showContextLost(), back: () => {} },
+  },
+  focus: (target, name) => focusScreen(target, name),
+  onChange: () => { layerChanged(); needRender = true; },
+});
+// end of screen table
+Object.defineProperty(S, 'mode', { get: () => SHELL.current, enumerable: true });
+
+/** Back from the keyboard (Esc) or the controller: the topmost layer first, then the router. */
+function shellBack(source) {
+  if (ui.closeControls()) return;
+  SHELL.back(source);
+}
+/** Back from the pause card: the controller resumes; the keyboard goes to the click-to-play card. */
+function resumeFromPause(source) {
+  if (source === 'pad') { padResume(); return; }
+  if (performance.now() - input.unlockedAt < 500) return; // the Esc that released the pointer lock already meant Pause
+  SHELL.go('ready');
 }
 
 /** Leave the ready screen: a fresh board goes back to the menu; a game in progress opens the pause menu. */
@@ -205,8 +229,7 @@ function startGame(settings) {
   ui.hideBanner();
   ui.setBoard(S.settings);
   ui.updateHud(0, g.minesLeft);
-  S.mode = 'ready';
-  ui.showReady(S.settings, NO_MOUSE ? NO_MOUSE_MSG : '');
+  SHELL.go('ready', { data: { msg: NO_MOUSE ? NO_MOUSE_MSG : '' } });
   needRender = true;
 }
 
@@ -222,23 +245,26 @@ function startCameraPos(X, Y, Z) {
 
 function setLockless(on) { S.lockless = on; document.body.classList.toggle('lockless', on); }
 
+/** The ready card hands over to play; resuming from the pause card unwinds back to play. */
 function enterPlaying(lockless = false) {
-  setLockless(lockless);
-  S.mode = 'playing';
-  ui.showPlaying();
-  // A board full of mines is won before the first click: run the end flow once.
+  SHELL.go('playing', { data: { lockless }, replace: SHELL.current === 'ready' });
+}
+/** A board full of mines is won before the first click: run the end flow once. */
+function endIfDecided() {
   const g = S.game;
   if (g && g.state !== 'playing' && !S.endState) { endGame(g.minesLeft); afterEndGame(); }
 }
 
-function pause(note = '') {
-  S.mode = 'paused';
+function pause(note = '') { SHELL.go('paused', { data: { note } }); }
+function stopPlayInput() {
   mouse.reset();
   controls.releasePad();
   document.body.classList.remove('lockless');
+}
+function pauseInfo(note = '') {
   const g = S.game;
   const e = S.endState;
-  ui.showPause({ state: g.state, time: e ? e.time : S.time, minesLeft: e ? e.minesLeft : g.minesLeft, note });
+  return { state: g.state, time: e ? e.time : S.time, minesLeft: e ? e.minesLeft : g.minesLeft, note };
 }
 
 function makeDemo() {
@@ -257,9 +283,10 @@ function makeDemo() {
   return g;
 }
 
-function showMainMenu() {
+function showMainMenu() { SHELL.go('menu'); }
+/** Release the game and put the decorative demo board behind the menu. */
+function leaveForMenu() {
   input.exitLock();
-  S.mode = 'menu';
   setLockless(false);
   S.game = null;
   if (!S.demo) S.demo = makeDemo();
@@ -268,7 +295,6 @@ function showMainMenu() {
   renderer.setSelected(-1);
   S.spacing = 1.25;
   ui.hideBanner();
-  ui.showMenu();
 }
 
 window.addEventListener('resize', () => { renderer.resize(); needRender = true; });
@@ -284,8 +310,10 @@ window.addEventListener('beforeunload', (e) => {
 // WebGL context loss: keep the page, offer a reload.
 canvas.addEventListener('webglcontextlost', (e) => {
   e.preventDefault();
-  // Dead canvas: leave every game mode (so lock changes/keys can't resume) and disable other overlays.
-  S.mode = 'ctxlost';
+  SHELL.go('ctxlost');
+});
+/** Dead canvas: leave every game mode (so lock changes/keys can't resume) and disable other overlays. */
+function showContextLost() {
   mouse.reset();
   input.exitLock();
   for (const id of ['pause', 'ready', 'menu', 'controls-modal']) {
@@ -295,8 +323,7 @@ canvas.addEventListener('webglcontextlost', (e) => {
     el.inert = true;
   }
   document.getElementById('ctx-lost').classList.remove('hidden');
-  document.getElementById('ctx-lost-btn').focus({ preventScroll: true });
-});
+}
 document.getElementById('ctx-lost-btn').addEventListener('click', () => { reloading = true; location.reload(); });
 
 // ---------- game controller ----------
@@ -304,7 +331,7 @@ const PAD_BOOM = { duration: 400, strongMagnitude: 1, weakMagnitude: 0.6 };
 const PAD_TICK = { duration: 40, strongMagnitude: 0, weakMagnitude: 0.25 };
 let padGesture = false; // a UI click is being made with the controller
 let padActing = false; // a MouseActions call is being made with the controller
-const padSuppress = new Set(); // buttons held through a screen change: ignored until released
+const nav = createHeldSuppressor(); // buttons held through a screen change: ignored until released
 const padRep = {
   up: new Repeat(), down: new Repeat(), left: new Repeat(), right: new Repeat(),
   inc: new Repeat(), dec: new Repeat(), spUp: new Repeat(), spDown: new Repeat(),
@@ -346,17 +373,20 @@ function padClick(el) {
   try { el.click(); } finally { padGesture = false; }
 }
 
-// Spatial focus navigation inside the visible overlay.
-const PAD_LAYERS = ['ctx-lost', 'controls-modal', 'pause', 'ready', 'menu'];
+// Spatial focus navigation inside the topmost visible overlay (its screen, or the controls modal).
+const LAYER_SCREEN = { 'ctx-lost': 'ctxlost', 'controls-modal': null, pause: 'paused', ready: 'ready', menu: 'menu' };
+const SCREEN_LAYER = Object.fromEntries(Object.entries(LAYER_SCREEN).filter(([, s]) => s).map(([l, s]) => [s, l]));
+const MODAL_FOCUS = '#controls-close';
+function layerOpen(id) {
+  const el = document.getElementById(id);
+  return !!el && !el.classList.contains('hidden') && !el.inert;
+}
 function padLayer() {
-  for (const id of PAD_LAYERS) {
-    const el = document.getElementById(id);
-    if (el && !el.classList.contains('hidden') && !el.inert) return el;
-  }
-  return null;
+  const id = topLayer(Object.keys(LAYER_SCREEN), layerOpen);
+  return id && document.getElementById(id);
 }
 function padFocusables(layer) {
-  return [...layer.querySelectorAll('button, input, summary, a[href], select')].filter((el) => {
+  return [...layer.querySelectorAll(FOCUSABLE)].filter((el) => {
     if (el.disabled || el.type === 'hidden') return false;
     const closed = el.closest('details:not([open])');
     if (closed && el !== closed.querySelector('summary')) return false;
@@ -364,11 +394,23 @@ function padFocusables(layer) {
     return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden';
   });
 }
+/** The layer's declared default target: its screen's (SHELL), or the controls modal's close button. */
 function padDefault(layer, items) {
-  const pick = { menu: '[data-preset][data-last]', ready: '#ready-btn', 'controls-modal': '#controls-close', pause: '#p-resume', 'ctx-lost': '#ctx-lost-btn' }[layer.id];
-  const el = pick && layer.querySelector(pick);
-  if (layer.id === 'pause' && S.game && S.game.state !== 'playing') return document.getElementById('p-restart');
-  return el && items.includes(el) ? el : items[0] || null;
+  const screen = LAYER_SCREEN[layer.id];
+  const target = screen ? SHELL.defaultFocus(screen) : MODAL_FOCUS;
+  return resolveFocus(target && layer.querySelector(target), items);
+}
+/** The router's focus hand-off: the screen's default target, or its layer's first control. */
+function focusScreen(target, name) {
+  const layer = document.getElementById(SCREEN_LAYER[name]);
+  if (!target || !layer) return;
+  const el = resolveFocus(layer.querySelector(target), padFocusables(layer));
+  el?.focus({ preventScroll: true });
+}
+/** The screen or the topmost layer changed: drop held controller buttons and menu repeats. */
+function layerChanged() {
+  nav.screenChanged();
+  for (const r of Object.values(padRep)) r.reset();
 }
 function padFocus(el) {
   if (!el) return;
@@ -413,25 +455,21 @@ for (const t of ['mousedown', 'mousemove']) {
 
 /** One controller poll result -> game / menu actions. Runs once per frame. */
 function handlePad(p, dt, now) {
-  for (const b of padSuppress) if (!p.held[b]) padSuppress.delete(b);
-  const held = (b) => p.held[b] && !padSuppress.has(b);
-  const pressed = (b) => p.pressed[b] && !padSuppress.has(b);
+  nav.update(p.held);
+  const held = (b) => nav.held(p, b);
+  const pressed = (b) => nav.pressed(p, b);
   if (p.active) needRender = true;
-  const screen = () => `${S.mode}|${ui.isControlsOpen()}`;
-  const before = screen();
+  const modal = ui.isControlsOpen();
 
-  if (pressed(BTN.BACK)) toggleSound();
   if (S.mode === 'playing') padPlaying(p, held, pressed, dt, now);
   else padMenus(p, held, pressed, now);
 
-  if (screen() !== before) {
-    for (let b = 0; b < p.held.length; b++) if (p.held[b]) padSuppress.add(b);
-    for (const r of Object.values(padRep)) r.reset();
-  }
+  if (ui.isControlsOpen() !== modal) layerChanged(); // screen changes report through the router
 }
 
 function padPlaying(p, held, pressed, dt, now) {
   if (pressed(BTN.START)) { padClick(document.getElementById('hud-pause')); return; } // the overlay's pause button
+  if (backButtons(S.mode).some(pressed)) { padClick(document.getElementById('hud-pause')); return; } // Back while playing = Pause
   if (pressed(BTN.X)) ui.userToggleHelp();
   // Triggers drive the same release-based state machine as the mouse (both = chord via its toggle).
   padActing = true;
@@ -458,12 +496,7 @@ function padMenus(p, held, pressed, now) {
   controls.releasePad();
   const modal = ui.isControlsOpen();
   if (pressed(BTN.START) && (S.mode === 'ready' || S.mode === 'paused') && !modal) { padResume(); return; }
-  if (pressed(BTN.B)) {
-    if (modal) ui.closeControls();
-    else if (S.mode === 'ready') readyBack();
-    else if (S.mode === 'paused') padResume();
-    return;
-  }
+  if (backButtons(S.mode).some(pressed)) { shellBack('pad'); return; }
   if (pressed(BTN.X)) {
     if (S.mode === 'menu') { if (modal) ui.closeControls(); else ui.openControls(); document.body.classList.add('pad-nav'); }
     else if (S.mode === 'ready' || S.mode === 'paused') ui.userToggleHelp();

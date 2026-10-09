@@ -236,7 +236,7 @@ Feature: square-tile-skin
 
 ## 24. Screen router and shell navigation
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/shell/router.js, js/shell/navigation.js, js/main.js, js/ui.js, index.html, tests/shell-router.test.mjs
 Preconditions: 19

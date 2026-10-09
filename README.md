@@ -74,9 +74,9 @@ controller (✕ ○ □ △ / L1 R1 L2 R2 on PlayStation, for example).
 | D-pad up / down | Change the spacing between cubes (hold to repeat) |
 | `X` | Show / hide the controls panel |
 | `Start` (Menu) | Pause / resume |
-| `Back` (View) | Sound on / off |
+| `Back` (View) | Pause; in menus, back |
 
-In menus, the D-pad or left stick moves the focus, `A` selects and `B` goes back. On a slider, D-pad
+In menus, the D-pad or left stick moves the focus, `A` selects and `B` or `Back` goes back. On a slider, D-pad
 left / right changes the value; on a custom-board field, `LB` / `RB` step the number. The game pauses
 if the controller disconnects during play, and the controller rumbles on an explosion where the
 browser supports it. Some browsers only start sound after a key press or a click.

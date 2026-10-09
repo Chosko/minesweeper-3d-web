@@ -16,9 +16,10 @@
 
    Focus and controller navigation. Every interactive control is a native
    <button> or <input>, which the shell's controller navigation collects
-   (padFocusables in js/main.js) and skips while disabled. A screen declares
-   its default focus target by giving that control an id and naming it for
-   the screen's layer in padDefault (js/main.js). The selected segmented
+   (FOCUSABLE in js/shell/navigation.js) and skips while disabled. A screen
+   declares its default focus target by giving that control an id and naming
+   it as the screen's defaultFocus in the router's screen table (js/main.js);
+   the router focuses it on every change to that screen. The selected segmented
    option is the only option in the Tab order (arrow keys move the
    selection); controller navigation reaches every option.
 
