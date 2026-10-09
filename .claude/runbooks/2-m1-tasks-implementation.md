@@ -52,7 +52,7 @@ Context: none
 
 Done: 2026-10-09, commit `ab088b4` (4 files, +294/-1). Graph arrays are private: callers read through `degree(i)`, `neighbour(i, k)`, `forEachNeighbour(i, fn)` (or `neighbours(i)`, a copy); neighbours run in reading order, ascending by index; neighbour symmetry is not enforced.
 
-## [ ] 5. Implement task 5 — Rules engine: game state, actions and the first-click hand-off
+## [x] 5. Implement task 5 — Rules engine: game state, actions and the first-click hand-off
 
 Depends on: 4
 
@@ -62,11 +62,14 @@ Context: none
 /task-implement 5 --review --rounds 2
 ```
 
+Done: 2026-10-09, commit `115752d` (4 files, +753/-1). Every action returns `{changed, ended, boardNeeded}`; `changed` is an `Int32Array` view of one reused buffer, so callers must read or copy it before the next action. A chord opening several mines explodes only the first in neighbour order.
+
 ## [ ] 6. Implement task 6 — Board metrics, click counts and the game summary
 
 Depends on: 5
 
-Context: none
+Context:
+- 2026-10-09 (from step 5): a flag toggle on a revealed cell is still recorded in the rules engine's action stream as a no-op; the reference never counts a right click on a revealed cell, so the click counts must not count it (or must drop it from the stream).
 
 ```prompt
 /task-implement 6 --review --rounds 2
@@ -89,7 +92,8 @@ Done: struck — Task 7 no longer needs a person (it reads tests/fidelity/minesw
 
 Depends on: 5, 6
 
-Context: none
+Context:
+- 2026-10-09 (from step 5): each reference behaviour is a marker on the `minesweeper-online` profile, cited through `profile.fidelity` to its heading in `tests/fidelity/minesweeper-online.md`; the engine acts only on `flagRevealedCell`, the other markers are descriptive and left for this task to pin.
 
 ```prompt
 /task-implement 7 --review --rounds 2
@@ -340,7 +344,8 @@ Context: none
 
 Depends on: 5, 6, 12, 15, 30
 
-Context: none
+Context:
+- 2026-10-09 (from step 5): rules-engine actions return `{changed, ended, boardNeeded}`; `changed` is an `Int32Array` view of one buffer reused by every action, so read or copy it before the next action. The first reveal returns `boardNeeded: c` and the board is handed over with `supplyBoard(c, mines)`.
 
 ```prompt
 /task-implement 32 --review --rounds 2
