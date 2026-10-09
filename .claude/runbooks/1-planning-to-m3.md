@@ -62,11 +62,24 @@ Context:
 /architect "Main menu and game shell" m1-classic-2d
 ```
 
-## [ ] 4. Architect the results and records slice for m1
+## [P] 4. Architect the results and records slice for m1
 
 Depends on: none
 
-Context: none
+Context:
+- 2026-10-09 parked: approval gate — the architecture draft for the m1 results and records slice (four documents: game-summary, personal-records, results-screen, records-screen; the open call is whether game-summary folds into personal-records) waits for approval when the step runs. With it, three design questions:
+  Q2. Which personal bests are kept for each board?
+    a. Three separate bests per board: fastest time, best 3BV/s and best efficiency. The results screen compares the game against each one.
+    b. Fastest time only. 3BV/s and efficiency appear only in stats history.
+    Recommendation: a. This is what Minesweeper Online keeps, and it is what enthusiasts grind for. 3BV/s matters most on boards where the time alone says little.
+  Q3. Do custom boards get personal bests?
+    a. Yes. Each exact width, height, mine count and no-guess setting counts as its own board, with its own bests and history.
+    b. No. Custom games appear only in stats history and win rate.
+    Recommendation: a. Enthusiasts do play fixed custom sizes, and the current 3D game already keeps a best time for every exact size. Leaderboards still skip custom boards, as the product design says.
+  Q4. A game is started (first click made) but then restarted or left for the menu before it is won or lost. Does it count in win rate and streaks?
+    a. Yes, as a loss. It also breaks the win streak.
+    b. No. The game is not recorded at all.
+    Recommendation: a. Otherwise a player can protect a streak or a win rate by restarting a game that is going badly. A game abandoned before the first click is never counted.
 
 ```prompt
 /architect "Results and records" m1-classic-2d
