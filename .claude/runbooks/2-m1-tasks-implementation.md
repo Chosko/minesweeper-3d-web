@@ -193,7 +193,7 @@ Context: none
 
 Done: 2026-10-09, commit `55a3412` (4 files, +576/-1). The backend contract deals in text (`read`/`write`/`keepAside`/`available`, sync or async, may throw); `storage.js` owns the `{ version, data }` JSON. Saving over a stored document newer than the game knows is refused; a backend read that throws is kept aside like a corrupt document.
 
-## [ ] 15. Implement task 15 — Browser storage implementation and start-up selection
+## [x] 15. Implement task 15 — Browser storage implementation and start-up selection
 
 Depends on: 14
 
@@ -203,6 +203,8 @@ Context:
 ```prompt
 /task-implement 15 --review
 ```
+
+Done: 2026-10-09, commit `4e53023` (4 files, +480/-1). Documents live under `ms3d:doc:<name>` and corrupt text is kept aside under `ms3d:aside:<name>`, clear of the old `ms3d.*` keys. Kept-aside text is not deleted by the owner's next save.
 
 ## [ ] 16. Implement task 16 — Update documentation for feature `platform-storage`
 
@@ -309,7 +311,8 @@ Context: none
 
 Depends on: 15, 24, 25
 
-Context: none
+Context:
+- 2026-10-09 (from step 15): storage callers import `storage`, `register`, `load`, `save`, `available` from `js/platform/index.js` only — a test fails if any other file under `js/` imports a backend directly.
 
 ```prompt
 /task-implement 26 --review
@@ -457,6 +460,7 @@ Depends on: 15
 
 Context:
 - 2026-10-09 (from step 14): documents are registered with `register(name, currentVersion, upgrades, { onIssue }?)` — `upgrades[v]` brings v to v+1 and the chain must be complete at registration; `onIssue({ name, kind })` reports `newer-version`, `corrupt`, `unreadable`, `save-failed`. `save` returns `{ ok: true }` or `{ ok: false, reason }` (`not-serializable`, `write-failed`, `newer-version`); `load`/`save` on an unregistered name throw.
+- 2026-10-09 (from step 15): storage callers import `storage`, `register`, `load`, `save`, `available` from `js/platform/index.js` only — a test fails if any other file under `js/` imports a backend directly.
 
 ```prompt
 /task-implement 39 --review
@@ -509,6 +513,7 @@ Depends on: 15, 27, 43
 
 Context:
 - 2026-10-09 (from step 14): documents are registered with `register(name, currentVersion, upgrades, { onIssue }?)` — `upgrades[v]` brings v to v+1 and the chain must be complete at registration; `onIssue({ name, kind })` reports `newer-version`, `corrupt`, `unreadable`, `save-failed`. `save` returns `{ ok: true }` or `{ ok: false, reason }` (`not-serializable`, `write-failed`, `newer-version`); `load`/`save` on an unregistered name throw.
+- 2026-10-09 (from step 15): storage callers import `storage`, `register`, `load`, `save`, `available` from `js/platform/index.js` only — a test fails if any other file under `js/` imports a backend directly.
 
 ```prompt
 /task-implement 44 --review --rounds 2
