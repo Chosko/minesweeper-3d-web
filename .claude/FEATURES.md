@@ -175,10 +175,10 @@ Tasks: 61, 62, 63, 64
 
 ## 3d-results-records-screens — 3D results screen after the end effect, and the Records 2D | 3D switch
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/3d-results-records-screens.md
 Source: product-design.md § Results and records (m2-3d-joins)
-Tasks: none
+Tasks: 81, 82, 83
 
 ---
 

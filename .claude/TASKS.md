@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 80
+Last task number: 83
 
 ---
 
@@ -801,5 +801,35 @@ Target: claude
 Files: .claude/context/replay.md, .claude/context/app-shell.md, .claude/context/rendering.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
 Preconditions: 76, 77, 78, 79
 Feature: replay-playback
+
+---
+
+## 81. 3D end sequence and the results takeover
+
+Status: [MISSING]
+Target: claude
+Files: js/mode3d/session.js, js/shell/mode-3d.js, js/main.js, js/ui.js, js/render.js, index.html, js/results/view.js, css/components.css, tests/mode3d-end.test.mjs
+Preconditions: 46, 62, 68
+Feature: 3d-results-records-screens
+
+---
+
+## 82. Records 2D | 3D switch and the 3D board picker
+
+Status: [MISSING]
+Target: claude
+Files: js/records/screen.js, js/records/replay-list.js, js/results/view.js, index.html, css/components.css, tests/records-screen-3d.test.mjs
+Preconditions: 49, 61, 63, 74
+Feature: 3d-results-records-screens
+
+---
+
+## 83. Update documentation for feature `3d-results-records-screens`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/app-shell.md, .claude/context/mode3d.md, .claude/context/rendering.md, .claude/context/records.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
+Preconditions: 81, 82
+Feature: 3d-results-records-screens
 
 ---
