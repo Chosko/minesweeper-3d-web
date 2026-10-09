@@ -236,7 +236,7 @@ technical-direction.md leaves the Steamworks binding open, to be decided by a sp
 ```
 Done: 2026-10-09, commit `a7aff97` (7 files, +804/-0). Five documents, 18 leaderboards and 17 achievements. A win is uploaded only after the replay verifier confirms it and only when it beats the player's own Steam best. technical-direction.md still says the binding spike comes before this architecture, which is now out of date.
 
-## [ ] 9. Architect the main menu and game shell slice for m3
+## [x] 9. Architect the main menu and game shell slice for m3
 
 Depends on: none
 
@@ -258,6 +258,7 @@ Context: none
 ```prompt
 /architect "Main menu and game shell" m3-on-steam
 ```
+Done: 2026-10-09, commit `1d613a3` (6 files, +133/-24). Leaderboards entry, plus a desktop-only Quit with no confirmation. The roadmap's m3 shell slice still needs Quit added via /product-roadmap.
 
 ## [ ] 10. Architect the results and records slice for m3
 
