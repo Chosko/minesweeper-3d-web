@@ -386,7 +386,7 @@ Feature: classic-2d-square-play
 
 ## 39. Settings schema and store
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/settings/schema.js, js/settings/store.js, tests/settings-store.test.mjs
 Preconditions: 15
