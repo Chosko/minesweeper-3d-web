@@ -116,7 +116,7 @@ Feature: board-generation
 
 ## 12. Generation worker and message protocol
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/generation/worker.js, js/generation/client.js, tests/generation-client.test.mjs
 Preconditions: 11
