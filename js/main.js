@@ -4,7 +4,7 @@ import { Game, createGameFromMinePositions } from './logic.js';
 import { BoardRenderer } from './render.js';
 import { FlyCamera, MouseActions, Input, SPACING_MIN, SPACING_MAX, SPACING_START } from './input.js';
 import { pickCell, pickCellBrute } from './picking.js';
-import { UI, clampSettings, recordBest, fmtTime, loadLookSettings, NO_MOUSE_MSG } from './ui.js';
+import { UI, clampSettings, recordBest, fmtTime, NO_MOUSE_MSG } from './ui.js';
 import * as audio from './audio.js';
 import { Controls } from './controls.js';
 import { GamepadReader, BTN, Repeat, stickCurve, padGlyphs, pickInDirection } from './gamepad.js';
@@ -15,6 +15,8 @@ import { create3DMode } from './shell/mode-3d.js';
 import { createMenu, createLastMode } from './shell/menu.js';
 import { createPauseController } from './shell/pause.js';
 import { storage } from './platform/index.js';
+import { createSettingsStore } from './settings/store.js';
+import { applySettings, pixelRatioFor } from './settings/appliers.js';
 import { createClassic2DMode } from './classic2d/mode.js';
 import { bindBoardChoice } from './classic2d/board-choice.js';
 import { createLastChoice, DEFAULT_CHOICE } from './classic2d/board-setup.js';
@@ -39,7 +41,6 @@ try {
 
 const sfx = audio.sfx ?? new audio.Sfx();
 const cam = new FlyCamera();
-Object.assign(cam, loadLookSettings());
 
 // Pointer lock / input device support
 const LOCK_SUPPORTED = 'requestPointerLock' in Element.prototype;
@@ -142,20 +143,22 @@ const controls = new Controls(input); // keyboard + controller view modes, contr
 
 // Fullscreen + Keyboard Lock (where supported) so Ctrl+W/Ctrl+S etc. reach the game instead of the browser.
 const LOCK_KEYS = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'Space', 'ControlLeft', 'ControlRight', 'ShiftLeft', 'ShiftRight'];
-function toggleFullscreen() {
+// The fullscreen setting's applier calls these; F flips the setting.
+function enterFullscreen() {
   const d = document;
-  if (d.fullscreenElement) { d.exitFullscreen?.().catch(() => {}); return; }
   const el = d.documentElement;
-  if (!el.requestFullscreen) return;
-  el.requestFullscreen({ navigationUI: 'hide' }).then(() => {
+  if (!el.requestFullscreen) return Promise.reject(new Error('fullscreen is not supported'));
+  return el.requestFullscreen({ navigationUI: 'hide' }).then(() => {
     navigator.keyboard?.lock?.(LOCK_KEYS).catch(() => {});
     if (S.mode === 'playing' && !S.lockless && !d.pointerLockElement) input.requestLock();
-  }).catch(() => {});
+  });
 }
+function exitFullscreen() { return document.exitFullscreen?.(); }
+function toggleFullscreen() { SETTINGS.set('fullscreen', !document.fullscreenElement); }
 document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) navigator.keyboard?.unlock?.(); });
 
 function setSpacing(s) { S.spacing = Math.min(SPACING_MAX, Math.max(SPACING_MIN, s)); }
-function toggleSound() { ui.setSound(sfx.toggleMute()); }
+function toggleSound() { SETTINGS.set('muted', !SETTINGS.get('muted')); }
 
 // ---------- screens ----------
 // Clicks made with the controller (A) are not user gestures for pointer lock: they enter lockless play.
@@ -170,14 +173,33 @@ const ui = new UI({
   onPause: () => PAUSE.pause(padGesture ? 'pad' : 'button'),
   onReadyBack: () => readyBack(),
   onToggleSound: () => toggleSound(),
-  onLookSettings: (o) => { cam.sensitivity = o.sensitivity; cam.invertY = o.invertY; },
+  onLookSettings: (o) => { SETTINGS.set('lookSensitivity', o.sensitivity); SETTINGS.set('invertY', o.invertY); },
   onRetry2D: () => mode2d.retry(),
   onStandard2D: () => mode2d.playStandard(),
 });
-ui.setSound(sfx.muted);
 ui.setNoMouse(NO_MOUSE);
-if (typeof sfx.setVolume === 'function' && typeof sfx.getVolume === 'function') {
-  ui.initVolume(sfx.getVolume(), (v) => { sfx.setVolume(v); sfx.unlock?.(); });
+
+// ---------- settings ----------
+// The store loads before the first screen shows; each setting's owner applies it by subscribing.
+const SETTINGS = createSettingsStore({
+  storage,
+  onNotKept: () => ui.toast('Settings cannot be saved in this browser — changes last until you close the game.', 4000),
+});
+const settingsLoaded = SETTINGS.load();
+applySettings(SETTINGS, {
+  theme: globalThis.msTheme,
+  sfx: typeof sfx.setVolume === 'function' ? sfx : null,
+  camera: cam,
+  resolution: () => applyPixelRatio(),
+  fullscreen: { doc: document, enter: enterFullscreen, exit: exitFullscreen },
+});
+SETTINGS.onChange('muted', (m) => ui.setSound(m));
+const showLook = () => ui.setLook({ sensitivity: SETTINGS.get('lookSensitivity'), invertY: SETTINGS.get('invertY') });
+SETTINGS.onChange('lookSensitivity', showLook);
+SETTINGS.onChange('invertY', showLook);
+if (typeof sfx.setVolume === 'function') {
+  ui.initVolume(SETTINGS.get('volume'), (v) => { SETTINGS.set('volume', v); sfx.unlock?.(); });
+  SETTINGS.onChange('volume', (v) => ui.setVolume(v));
 }
 
 // ---------- screen router ----------
@@ -290,12 +312,12 @@ function readyBack() {
   else SHELL.go('board-choice');
 }
 
-/** Adaptive resolution: big boards are fill/vertex heavy. */
-function applyPixelRatio(n) {
-  const dpr = window.devicePixelRatio || 1;
-  const cap = n > 50 ** 3 ? 1 : n > 20 ** 3 ? 1.5 : 2;
-  const pr = Math.min(dpr, cap);
-  if (renderer.renderer.getPixelRatio() !== pr) { renderer.renderer.setPixelRatio(pr); renderer.resize(); }
+/** The render resolution setting's pixel ratio for the board shown (n cells; Auto: big boards are fill/vertex heavy). */
+let boardCells = 0;
+function applyPixelRatio(n = boardCells) {
+  boardCells = n;
+  const pr = pixelRatioFor(SETTINGS.get('renderResolution'), window.devicePixelRatio, n);
+  if (renderer.setPixelRatio(pr)) needRender = true;
 }
 
 function startGame(settings) {
@@ -760,6 +782,7 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
+await settingsLoaded;
 showMainMenu();
 mode2d.loadChoice();
 const bootFocus = document.activeElement;
@@ -832,4 +855,6 @@ window.__ms = {
   get modes() { return MODES; },
   /** The pause controller: pause/resume/restart/toMenu/pageHide and the hand-offs (attach). */
   get pauser() { return PAUSE; },
+  /** The settings store: get/set/onChange. */
+  get settings() { return SETTINGS; },
 };

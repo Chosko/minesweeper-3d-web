@@ -371,6 +371,14 @@ export class BoardRenderer {
     this.scene.add(this.confetti);
   }
 
+  /** Set the drawing buffer's pixel ratio and resize to it; false when it already had that ratio. */
+  setPixelRatio(pr) {
+    if (this.renderer.getPixelRatio() === pr) return false;
+    this.renderer.setPixelRatio(pr);
+    this.resize();
+    return true;
+  }
+
   resize() {
     const w = window.innerWidth, h = window.innerHeight;
     this.renderer.setSize(w, h, false);

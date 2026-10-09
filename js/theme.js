@@ -5,7 +5,8 @@
      setTheme(theme)  — unknown values are Light, never thrown
      onChange(listener) -> unsubscribe; fires after the attribute changes
      createThemeApplier(opts) — the factory, for tests
-   This feature reads the theme preference and never writes it. */
+   The theme preference is the settings feature's; this script reads it and
+   never writes it. */
 (function (global) {
   'use strict';
 
@@ -16,10 +17,20 @@
     return THEMES.indexOf(value) >= 0 ? value : FALLBACK;
   }
 
-  // The stored-theme getter. It reads nothing until the settings feature
-  // wires its stored value in here, so start-up applies Light.
+  // The stored-theme getter: the theme of the settings document
+  // (js/settings/store.js), read straight from the web build's storage —
+  // the document's key and format are js/platform/browser-backend.js's, and
+  // only the version the store reads is used. Anything unusable reads as no
+  // theme, so start-up applies Light.
+  var SETTINGS_KEY = 'ms3d:doc:settings';
+  var SETTINGS_VERSION = 1;
+
   function readStoredTheme() {
-    return null;
+    var text = global.localStorage ? global.localStorage.getItem(SETTINGS_KEY) : null;
+    if (!text) return null;
+    var doc = JSON.parse(text);
+    if (!doc || doc.version !== SETTINGS_VERSION || !doc.data) return null;
+    return doc.data.theme;
   }
 
   function createThemeApplier(opts) {

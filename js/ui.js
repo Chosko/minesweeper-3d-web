@@ -5,8 +5,6 @@ const $ = (id) => document.getElementById(id);
 const LS_CUSTOM = 'ms3d.custom';
 const LS_HINT_DONE = 'ms3d.hintH.done';
 const LS_BEST = 'ms3d.best.'; // + XxYxZxmines
-const LS_SENS = 'ms3d.lookSens';
-const LS_INVERT = 'ms3d.invertY';
 const LS_LAST_PRESET = 'ms3d.lastPreset';
 
 export const DIM_MIN = 1, DIM_MAX = 100;
@@ -49,14 +47,6 @@ export function recordBest(s, time) {
   const isNew = prev === null || time < prev;
   if (isNew) lsSet(bestKey(s), String(time));
   return { best: isNew ? time : prev, prev, isNew };
-}
-
-// ---------- look settings ----------
-export function loadLookSettings() {
-  let sens = parseFloat(lsGet(LS_SENS));
-  if (!Number.isFinite(sens)) sens = 1;
-  sens = Math.min(3, Math.max(0.25, sens));
-  return { sensitivity: sens, invertY: lsGet(LS_INVERT) === '1' };
 }
 
 export const NO_MOUSE_MSG = 'Minesweeper 3D needs a mouse and keyboard — open it on a desktop browser.';
@@ -144,18 +134,15 @@ export class UI {
     this.el.confirmYes.addEventListener('click', () => this._closeConfirm('onYes'));
     $('p-confirm-no').addEventListener('click', () => this._closeConfirm('onNo'));
 
-    // look settings
-    const look = loadLookSettings();
+    // look settings: the controls report changes; setLook shows the current values
     const sens = $('p-sens'), sensVal = $('p-sens-val'), inv = $('p-invert');
-    sens.value = String(look.sensitivity); inv.checked = look.invertY;
-    const showSens = () => { sensVal.textContent = formatSliderValue(sens.value, { format: 'multiplier', step: sens.step }); };
-    showSens();
+    this._showSens = () => { sensVal.textContent = formatSliderValue(sens.value, { format: 'multiplier', step: sens.step }); };
+    this._showSens();
     sens.addEventListener('input', () => {
-      showSens(); lsSet(LS_SENS, sens.value);
+      this._showSens();
       cb.onLookSettings?.({ sensitivity: Number(sens.value), invertY: inv.checked });
     });
     inv.addEventListener('change', () => {
-      lsSet(LS_INVERT, inv.checked ? '1' : '0');
       cb.onLookSettings?.({ sensitivity: Number(sens.value), invertY: inv.checked });
     });
     // keyboard on settings controls must not leak into game keys while paused (handled by mode)
@@ -165,6 +152,13 @@ export class UI {
   /** Show the "needs mouse and keyboard" banner on the menu. */
   setNoMouse(on) { $('touch-note').classList.toggle('hidden', !on); }
 
+  /** Show the look settings on the pause card's controls. */
+  setLook({ sensitivity, invertY }) {
+    $('p-sens').value = String(sensitivity);
+    $('p-invert').checked = invertY;
+    this._showSens();
+  }
+
   /** Volume controls (only shown when the audio module supports it). v in 0..1. */
   initVolume(v, onChange) {
     const sliders = [$('menu-vol'), $('p-vol')];
@@ -173,12 +167,16 @@ export class UI {
       for (const s of sliders) if (s !== from) s.value = String(Math.round(val * 100));
       for (const o of outs) o.textContent = formatSliderValue(val * 100, { format: 'percent' });
     };
+    this._showVolume = (val) => set(val, null);
     set(v, null);
     document.querySelectorAll('[data-volume]').forEach((e) => e.classList.remove('hidden'));
     for (const s of sliders) {
       s.addEventListener('input', () => { const val = Number(s.value) / 100; set(val, s); onChange(val); });
     }
   }
+
+  /** Show volume v (0..1) on the volume sliders, once initVolume has run. */
+  setVolume(v) { this._showVolume?.(v); }
 
   /** Mark the main menu entry of the last mode played (null: none). */
   setLastMode(mode) {

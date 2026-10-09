@@ -396,7 +396,7 @@ Feature: settings
 
 ## 40. Settings appliers: theme, audio, look, resolution, fullscreen
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/settings/appliers.js, js/theme.js, js/audio.js, js/ui.js, js/render.js, js/main.js, tests/settings-appliers.test.mjs
 Preconditions: 2, 39

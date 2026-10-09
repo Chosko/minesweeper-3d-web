@@ -7,13 +7,13 @@
 //                                 shared instance (also exported as `sfx`), so the
 //                                 class methods and the free functions below share
 //                                 one AudioContext / mute / volume state.
-//   .muted                        boolean (persisted in localStorage 'ms3d.muted')
+//   .muted                        boolean (default false)
 //   .unlock()                     create/resume the AudioContext; call from a user
 //                                 gesture (e.g. the "Click to play" click). Also done
 //                                 automatically on the first pointerdown/keydown.
-//   .setMuted(m: boolean)         persisted
+//   .setMuted(m: boolean)         unmuting creates/resumes the AudioContext
 //   .toggleMute() -> boolean      returns the new muted state
-//   .setVolume(v: number)         0..1, persisted in localStorage 'ms3d.volume' (default 0.7)
+//   .setVolume(v: number)         0..1 (default 0.7)
 //   .getVolume() -> number        0..1
 //   .reveal(count = 1)            cell(s) opened; scales with log(count), whoosh/cascade for floods
 //   .flag(on = true, count = 1)   flag placed (on) / removed (!on); count > 1 = mass flag (richer)
@@ -27,11 +27,12 @@
 //   playReveal(count = 1), playFlag(on = true, count = 1), playChord(count = 0),
 //   playNoop(), playExplode(), playWin()
 //
+// Volume and mute are the settings store's (js/settings/store.js), applied through setVolume and
+// setMuted (js/settings/appliers.js); this module keeps no copy of them anywhere.
+//
 // Signal chain: voices -> bus -> DynamicsCompressor -> master (volume) -> destination.
 // ---------------------------------------------------------------------------
 
-const LS_MUTE = 'ms3d.muted';
-const LS_VOL = 'ms3d.volume';
 const DEFAULT_VOLUME = 0.7;
 const MAX_VOICES = 48;
 
@@ -51,13 +52,8 @@ export class Sfx {
     this.noiseBuf = null;
     this.voices = 0;
     this._last = Object.create(null); // per-sound throttle timestamps (ctx time)
-    try { this.muted = localStorage.getItem(LS_MUTE) === '1'; } catch { this.muted = false; }
-    let v = DEFAULT_VOLUME;
-    try {
-      const s = localStorage.getItem(LS_VOL);
-      if (s !== null && s !== '' && Number.isFinite(+s)) v = clamp(+s, 0, 1);
-    } catch { /* ignore */ }
-    this.volume = v;
+    this.muted = false;
+    this.volume = DEFAULT_VOLUME;
     this._installAutoUnlock();
   }
 
@@ -133,9 +129,9 @@ export class Sfx {
   }
 
   setMuted(m) {
+    const unmuting = this.muted && !m;
     this.muted = !!m;
-    try { localStorage.setItem(LS_MUTE, this.muted ? '1' : '0'); } catch { /* ignore */ }
-    if (!this.muted) this._ensure(); // toggling is a user gesture: good time to unlock
+    if (unmuting) this._ensure(); // toggling is a user gesture: good time to unlock
     this._applyGain();
   }
   toggleMute() { this.setMuted(!this.muted); return this.muted; }
@@ -144,7 +140,6 @@ export class Sfx {
     v = Number(v);
     if (!Number.isFinite(v)) return;
     this.volume = clamp(v, 0, 1);
-    try { localStorage.setItem(LS_VOL, String(this.volume)); } catch { /* ignore */ }
     this._applyGain();
   }
   getVolume() { return this.volume; }
