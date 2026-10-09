@@ -699,7 +699,7 @@ Context:
 
 Done: 2026-10-09, commit `f4241e0` (10 files, +696/-23). The results screen's Records button now opens the records screen on the game's board (Back and Play again still work); no menu entry leads to coming-soon any more, but it stays as a fallback. "Last board played" means the board whose latest game ended last (Beginner with no games); the not-saved note shows once per session.
 
-## [ ] 49. Implement task 49 — Records history chart and recent games list
+## [x] 49. Implement task 49 — Records history chart and recent games list
 
 Depends on: 2, 48
 
@@ -710,12 +710,15 @@ Context:
 /task-implement 49 --review
 ```
 
+Done: 2026-10-09, commit `7461820` (9 files, +798/-17). The chart reuses `--color-accent` (3BV/s) and `--color-success` (efficiency); no new chart tokens. History entries don't store 3BV/s or efficiency, so each game's values are recomputed through `js/records/summary.js`.
+
 ## [ ] 50. Implement task 50 — Update documentation for feature `records-screen`
 
 Depends on: 48, 49
 
 Context:
 - 2026-10-09 (from step 48): `.claude/context/app-shell.md` still says Records goes to the coming-soon placeholder and has no row for `js/records/screen.js`; coming-soon is now reached by no menu entry and is kept only as a fallback; `js/ui.js` gained `showRecords`.
+- 2026-10-09 (from step 49): `records.md` and `testing.md` do not yet mention `js/records/history-chart.js` (chart, scaling, text alternative, paging; screen controller gained `showPage(n)`), the `#records-history` markup or the new chart test.
 
 ```prompt
 /task-implement 50 --review
