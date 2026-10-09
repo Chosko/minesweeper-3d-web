@@ -336,7 +336,7 @@ Context:
 
 Done: 2026-10-09, commit `9655f20` (7 files, +762/-18). The host, not the mode, reports `game abandoned` (from the mode's `summary()`) before `restart()`, `leave()` or a replacing `start()`; a mode only reports `started`, `finished`, `canPause`, `failed`. The context-lost screen gained a "Back to menu" button.
 
-## [ ] 26. Implement task 26 — Main menu entries and the last mode played
+## [x] 26. Implement task 26 — Main menu entries and the last mode played
 
 Depends on: 15, 24, 25
 
@@ -348,6 +348,8 @@ Context:
 ```prompt
 /task-implement 26 --review
 ```
+
+Done: 2026-10-09, commit `36779e9` (10 files, +566/-46). `shell.lastMode` is saved on the mode host's `started` (first click), not on opening a board. The 3D presets moved off `#menu` to a new `board-choice` router screen; Classic 2D, Records and Settings point to a shared `coming-soon` placeholder until their screens exist.
 
 ## [ ] 27. Implement task 27 — Pause controller, restart, back to menu and game hand-offs
 
@@ -369,6 +371,7 @@ Depends on: 24, 25, 26, 27
 Context:
 - 2026-10-09 (from step 24): `.claude/context/app-shell.md` and `.claude/context/input.md` still describe the old Esc handling and the `padSuppress`/`padDefault` wiring the router replaced.
 - 2026-10-09 (from step 25): `app-shell.md` and `testing.md` do not yet describe the mode host, the 3D adapter, `window.__ms.modes` or the context-lost "Back to menu" button (`#ctx-lost-menu`).
+- 2026-10-09 (from step 26): `app-shell.md` and `testing.md` still describe `#menu` holding the 3D presets; they now live on the `board-choice` screen, and `coming-soon` is the shared placeholder screen.
 
 ```prompt
 /task-implement 28 --review
@@ -456,6 +459,7 @@ Depends on: 18, 26, 27, 32, 33
 
 Context:
 - 2026-10-09 (from step 25): the mode host exposes `start`, `pause`, `resume`, `restart`, `leave`, `summary`, `on`, `active`, `state` (also as `window.__ms.modes` for Playwright). The host reports `game abandoned` itself from the mode's `summary()` before `restart()`, `leave()` or a replacing `start()`; a mode reports only `started`, `finished`, `canPause`, `failed`. `resume`/`restart` take `{ source: 'pointer' | 'key' | 'pad' }`. Until board choice exists, the 3D mode's "open board choice" goes to the main menu.
+- 2026-10-09 (from step 26): Classic 2D, Records and Settings menu entries go to a shared `coming-soon` router screen (`#coming-soon`, not in `SHELL_SCREENS`) and switch over by themselves once their mode is registered or the router has their screen. The 3D presets live on a `board-choice` router screen (`#board-choice`); the menu module is `js/shell/menu.js`, and `shell.lastMode` (v1, `{ mode }`) is saved on the host's `started`.
 
 ```prompt
 /task-implement 36 --review
@@ -521,7 +525,8 @@ Context:
 
 Depends on: 26, 27, 39, 40
 
-Context: none
+Context:
+- 2026-10-09 (from step 26): Classic 2D, Records and Settings menu entries go to a shared `coming-soon` router screen (`#coming-soon`, not in `SHELL_SCREENS`) and switch over by themselves once their mode is registered or the router has their screen. The 3D presets live on a `board-choice` router screen (`#board-choice`); the menu module is `js/shell/menu.js`, and `shell.lastMode` (v1, `{ mode }`) is saved on the host's `started`.
 
 ```prompt
 /task-implement 41 --review
@@ -595,7 +600,8 @@ Context: none
 
 Depends on: 26, 44, 46
 
-Context: none
+Context:
+- 2026-10-09 (from step 26): Classic 2D, Records and Settings menu entries go to a shared `coming-soon` router screen (`#coming-soon`, not in `SHELL_SCREENS`) and switch over by themselves once their mode is registered or the router has their screen. The 3D presets live on a `board-choice` router screen (`#board-choice`); the menu module is `js/shell/menu.js`, and `shell.lastMode` (v1, `{ mode }`) is saved on the host's `started`.
 
 ```prompt
 /task-implement 48 --review
