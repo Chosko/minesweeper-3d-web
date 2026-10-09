@@ -118,3 +118,21 @@ Source: product-design.md § Results and records (m1-classic-2d)
 Tasks: none
 
 ---
+
+## 3d-board-graph — The 3D box on the shared rules engine, with the 3D rule profile
+
+Status: [NEW]
+Doc: .claude/domain/features/3d-board-graph.md
+Source: product-design.md § 3D mode (m2-3d-joins)
+Tasks: none
+
+---
+
+## 3d-play-flow — 3D board choice, safe first click, no-guess switch and results hand-off
+
+Status: [NEW]
+Doc: .claude/domain/features/3d-play-flow.md
+Source: product-design.md § 3D mode (m2-3d-joins)
+Tasks: none
+
+---

@@ -30,6 +30,8 @@ layer.
 | [features/personal-records.md](./features/personal-records.md) | Personal bests per board, stats history, win rate and streaks: rules, stored documents, the comparison against bests |
 | [features/results-screen.md](./features/results-screen.md) | The end-of-game results screen: stats shown, the three-best comparison, Play again, Records, Back to menu |
 | [features/records-screen.md](./features/records-screen.md) | The Records screen: board picker, bests, win rate, streaks, history chart and recent games |
+| [features/3d-board-graph.md](./features/3d-board-graph.md) | The 3D box as a cell graph on the shared rules engine, the 3D rule profile (auto-hide, right-click on revealed cells) and the 3D state view |
+| [features/3d-play-flow.md](./features/3d-play-flow.md) | 3D board choice, the safe first click and generation flow, the no-guess switch and its size limit, and the 3D mode's hand-off to results |
 
 ## Features
 

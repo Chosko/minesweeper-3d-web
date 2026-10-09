@@ -75,7 +75,9 @@ module run unchanged under Node's test runner (see
   as the existing engine does, so an Expert or large custom board updates
   without allocation.
 - **Rules.** The actions — reveal, toggle flag, chord — applied to the state
-  under the reference ruleset. Flood fill is iterative. Each action returns
+  under the game's rule profile, chosen at creation: Classic 2D plays the
+  reference profile, the 3D mode the 3D profile `3d-board-graph` defines.
+  Flood fill is iterative. Each action returns
   what changed, so the renderer redraws only those cells and the audio layer
   can pick a sound, the same pattern [logic.md](../../context/logic.md)
   describes for the 3D engine.

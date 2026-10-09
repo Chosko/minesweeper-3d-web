@@ -169,8 +169,9 @@ design system. Serves the enthusiast loop.
 The existing 3D game as one mode among several: a box of cubes, each with up
 to 26 neighbours, flown through in first person, with solved cells hiding
 themselves and the Shift / Space / Ctrl view modes for seeing inside. The
-first click is always safe, and a no-guess switch is available. Presets from
-small to very large, plus custom boards. Serves the 3D on-ramp, once the
+first click is always safe, and a no-guess switch is available. Six presets —
+Beginner, Intermediate and Expert in a double layer and in a cube — plus
+custom boards; flat boards are Classic 2D's. Serves the 3D on-ramp, once the
 campaign has taught the player to read numbers in depth.
 
 ### Surface

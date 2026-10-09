@@ -39,9 +39,9 @@ Non-goals:
   `m4-campaigns`.
 - Daily boards from the date — deferred to `m5-core-complete`; they reuse
   the seeded generator unchanged.
-- The 3D mode's safe first click and no-guess switch — the 3D mode slice of
-  `m2-3d-joins`. The generator works over any cell graph, so this is a
-  wiring task there, not a redesign.
+- The 3D mode's safe first click and no-guess switch — `3d-play-flow`
+  (m2-3d-joins). The generator works over any cell graph; the 3D mode adds
+  only the box graph description and the dense fallback.
 - Hexagonal and triangle grids — deferred to `m6-launch`.
 - Pre-generating a no-guess board with a forced starting cell. The board is
   generated when the first click lands, so the player keeps a free first
@@ -62,7 +62,9 @@ daily board, which never play through the engine's actions.
 - **Placer.** Given a cell graph, a mine count, a first-click cell and a
   seeded source, draws a mine set that honours the first-click guarantee.
   The excluded region (the cell, or the cell and its neighbours) follows
-  the pinned reference rule.
+  the pinned reference rule; a request that allows the dense fallback
+  (the 3D mode's, see `3d-play-flow`) excludes the cell alone when the
+  mine count leaves no room for its neighbours.
 - **Solver.** Given a graph, a mine set and a first-click cell, plays the
   board by deduction alone: single-cell rules first, then subset and
   overlapping-constraint reasoning between neighbouring numbers, then the
@@ -78,8 +80,9 @@ daily board, which never play through the engine's actions.
 
 ## Data and state
 
-- **Request** — graph description (for m1: square, width, height), mine
-  count, first-click cell, no-guess on or off, seed.
+- **Request** — graph description (square: width, height; box: X, Y, Z),
+  mine count, first-click cell, whether the dense fallback is allowed,
+  no-guess on or off, seed.
 - **Result** — the mine set as cell indices, the seed, the generator
   version, and for no-guess boards the number of candidates tried.
 - The seed of every game is chosen by the caller (random for free play) and
@@ -97,7 +100,8 @@ daily board, which never play through the engine's actions.
   the generator promises an answer or a failure within its attempt budget,
   never an open-ended wait.
 - **Failure** — an impossible request (more mines than the first-click
-  guarantee leaves room for) is rejected at once with a reason. A no-guess
+  guarantee leaves room for, after the dense fallback when the request
+  allows it) is rejected at once with a reason. A no-guess
   request that exhausts its budget returns a failure, not a board that
   needs a guess; the caller decides what the player is offered.
 - **Cancel** — a cancelled request never delivers a result.
