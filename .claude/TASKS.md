@@ -176,7 +176,7 @@ Feature: screen-components
 
 ## 18. In-game overlay bar component
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: css/components.css, index.html, js/ui.js, css/style.css, dev/components.html
 Preconditions: 17

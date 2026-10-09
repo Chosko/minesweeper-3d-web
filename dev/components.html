@@ -107,6 +107,21 @@
       </div>
     </section>
 
+    <section class="ui-card wide" aria-labelledby="g-overlay">
+      <h2 class="ui-card__title" id="g-overlay">Overlay bar</h2>
+      <div class="ui-overlay-bar" role="group" aria-label="Game">
+        <div class="ui-stat" role="group" aria-labelledby="ov-time"><span class="ui-stat__label" id="ov-time">Time</span><span class="ui-stat__value">047</span></div>
+        <div class="ui-stat" role="group" aria-labelledby="ov-mines"><span class="ui-stat__label" id="ov-mines">Mines</span><span class="ui-stat__value">-12</span></div>
+        <button type="button" class="ui-button ui-button--secondary ui-overlay-bar__pause" aria-label="Pause game">Pause</button>
+      </div>
+      <div class="states">
+        <span class="state">Hover</span><div><button type="button" class="ui-button ui-button--secondary ui-overlay-bar__pause" aria-label="Pause game" data-force="hover">Pause</button></div>
+        <span class="state">Pressed</span><div><button type="button" class="ui-button ui-button--secondary ui-overlay-bar__pause" aria-label="Pause game" data-force="active">Pause</button></div>
+        <span class="state">Focused</span><div><button type="button" class="ui-button ui-button--secondary ui-overlay-bar__pause" aria-label="Pause game" data-force="focus">Pause</button></div>
+        <span class="state">Disabled</span><div><button type="button" class="ui-button ui-button--secondary ui-overlay-bar__pause" aria-label="Pause game" disabled>Pause</button></div>
+      </div>
+    </section>
+
     <section class="ui-card wide" aria-labelledby="g-segmented">
       <h2 class="ui-card__title" id="g-segmented">Segmented choice</h2>
       <div class="states">

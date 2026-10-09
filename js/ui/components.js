@@ -61,6 +61,20 @@ export function segmentedState(count, selected) {
   return Array.from({ length: count }, (_, i) => ({ checked: i === selected, tabIndex: i === tabbable ? 0 : -1 }));
 }
 
+/**
+ * Overlay bar timer text: whole elapsed seconds, zero-padded to three digits
+ * ('047'), stopping at '999'. Display only — the caller keeps the real time.
+ */
+export function formatOverlayTime(seconds) {
+  const s = Number.isNaN(seconds) ? 0 : Math.min(999, Math.max(0, Math.floor(seconds)));
+  return String(s).padStart(3, '0');
+}
+
+/** Overlay bar mine counter text: mines left clamped to -99 … 999. */
+export function formatMineCount(minesLeft) {
+  return String(Math.min(999, Math.max(-99, Math.trunc(minesLeft))));
+}
+
 // ---------------------------------------------------------------- DOM binding
 
 // CustomEvent exists in browsers and in Node 19+; the fallback keeps the

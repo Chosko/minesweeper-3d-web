@@ -1,4 +1,6 @@
 // DOM menus, HUD and overlays. No game rules here.
+import { formatOverlayTime, formatMineCount } from './ui/components.js';
+
 const $ = (id) => document.getElementById(id);
 const LS_CUSTOM = 'ms3d.custom';
 const LS_HINT_DONE = 'ms3d.hintH.done';
@@ -61,7 +63,7 @@ export const NO_MOUSE_MSG = 'Minesweeper 3D needs a mouse and keyboard — open 
 
 export class UI {
   constructor(cb) {
-    this.cb = cb; // { onStart, onReadyClick, onReadyBack, onResume, onRestart, onMainMenu, onToggleSound, onLookSettings, onVolume }
+    this.cb = cb; // { onStart, onReadyClick, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSound, onLookSettings, onVolume }
     this.el = {
       hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), size: $('hud-size'), sound: $('hud-sound'),
       help: $('help'), banner: $('banner'), bannerTitle: $('banner-title'), bannerSub: $('banner-sub'),
@@ -116,6 +118,7 @@ export class UI {
     this.el.resume.addEventListener('click', () => cb.onResume());
     this.el.restart.addEventListener('click', () => cb.onRestart());
     $('p-menu').addEventListener('click', () => cb.onMainMenu());
+    $('hud-pause').addEventListener('click', () => cb.onPause?.());
 
     // look settings
     const look = loadLookSettings();
@@ -285,8 +288,9 @@ export class UI {
 
   // ---------- HUD ----------
   setBoard(settings) { this.el.size.textContent = fmtDims(settings); }
+  /** Overlay bar readouts: the display formats clamp; `time` itself is never clamped. */
   updateHud(time, minesLeft) {
-    const t = fmtTime(time), m = String(minesLeft);
+    const t = formatOverlayTime(time), m = formatMineCount(minesLeft);
     if (t !== this._last.time) { this.el.time.textContent = t; this._last.time = t; }
     if (m !== this._last.mines) {
       this.el.mines.textContent = m; this._last.mines = m;

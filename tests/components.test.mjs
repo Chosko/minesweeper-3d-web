@@ -7,8 +7,9 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { tmpdir } from 'node:os';
 import {
   decimalsOf, formatSliderValue, segmentedTargetIndex, segmentedState,
-  bindSlider, bindSegmented, initComponents,
+  bindSlider, bindSegmented, initComponents, formatOverlayTime, formatMineCount,
 } from '../js/ui/components.js';
+import { UI } from '../js/ui.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (f) => readFileSync(join(ROOT, f), 'utf8');
@@ -29,6 +30,7 @@ const COMPONENTS = {
   'ui-slider': { interactive: true, control: '.ui-slider__input' },
   'ui-segmented': { interactive: true, control: '.ui-segmented__option' },
   'ui-stat': { interactive: false },
+  'ui-overlay-bar': { interactive: false },
 };
 const STATES = ['hover', 'active', 'focus', 'disabled'];
 
@@ -261,6 +263,134 @@ test('segmentedState checks one option and keeps only it in the tab order', () =
   assert.deepEqual(segmentedState(2, -1).map((s) => s.tabIndex), [0, -1], 'nothing selected: the first is tabbable');
 });
 
+// ---------------------------------------------------------------- overlay bar
+
+test('formatOverlayTime shows whole elapsed seconds, three digits, stopping at 999', () => {
+  assert.equal(formatOverlayTime(0), '000');
+  assert.equal(formatOverlayTime(0.99), '000');
+  assert.equal(formatOverlayTime(1), '001');
+  assert.equal(formatOverlayTime(47.8), '047');
+  assert.equal(formatOverlayTime(123.4), '123');
+  assert.equal(formatOverlayTime(998.999), '998');
+  assert.equal(formatOverlayTime(999), '999');
+  assert.equal(formatOverlayTime(999.6), '999');
+  assert.equal(formatOverlayTime(1000), '999', 'the display stops at 999');
+  assert.equal(formatOverlayTime(86400), '999');
+  assert.equal(formatOverlayTime(Infinity), '999');
+  assert.equal(formatOverlayTime(-3), '000');
+  assert.equal(formatOverlayTime(NaN), '000');
+});
+
+test('formatMineCount shows mines left clamped to -99 … 999', () => {
+  assert.equal(formatMineCount(0), '0');
+  assert.equal(formatMineCount(10), '10');
+  assert.equal(formatMineCount(-12), '-12');
+  assert.equal(formatMineCount(-99), '-99');
+  assert.equal(formatMineCount(-100), '-99', 'below -99');
+  assert.equal(formatMineCount(-5000), '-99');
+  assert.equal(formatMineCount(999), '999');
+  assert.equal(formatMineCount(1000), '999', 'above 999');
+  assert.equal(formatMineCount(250000), '999');
+});
+
+test('the overlay formats copy the reference game displays the fidelity file records', () => {
+  const file = read('tests/fidelity/minesweeper-online.md');
+  const entry = file.split(/^### /m).find((part) => part.startsWith('Overlay time and mine displays'));
+  assert.ok(entry, 'tests/fidelity/minesweeper-online.md records the overlay displays');
+  assert.match(entry, /999/);
+  assert.match(entry, /−99/);
+});
+
+test('the overlay bar is documented with its stats and its pause button', () => {
+  const head = RAW.match(/^\/\*([\s\S]*?)\*\//)[1];
+  const doc = head.slice(head.indexOf('ui-overlay-bar'));
+  for (const part of ['ui-stat', 'ui-stat__value', 'ui-overlay-bar__pause', 'aria-label', 'formatOverlayTime', 'formatMineCount']) {
+    assert.ok(doc.includes(part), `overlay bar pattern names ${part}`);
+  }
+  const bar = rulesFor('.ui-overlay-bar').find(([sel]) => sel === '.ui-overlay-bar');
+  assert.ok(bar, '.ui-overlay-bar is styled');
+  assert.match(bar[1], /background\s*:\s*var\(--color-surface-raised\)/, 'the bar carries its own surface');
+});
+
+test('the overlay surface is opaque in both themes, so the scene behind it never shows through', () => {
+  const sheet = read('css/tokens.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const light = sheet.match(/:root\s*\{([\s\S]*?)\}/)[1];
+  const dark = sheet.match(/:root\[data-theme="dark"\]\s*\{([\s\S]*?)\}/)[1];
+  for (const [theme, block] of [['light', light], ['dark', dark]]) {
+    const value = block.match(/--color-surface-raised\s*:\s*([^;]+);/)[1].trim();
+    assert.match(value, /^#[0-9a-f]{6}$|^rgb\(/i, `${theme}: --color-surface-raised is opaque (${value})`);
+  }
+});
+
+// The in-game HUD in index.html, parsed with the gallery's tag reader.
+const INDEX = read('index.html');
+const HUD = INDEX.slice(INDEX.indexOf('<div id="hud"'), INDEX.indexOf('<div id="crosshair"'));
+const HUD_TAGS = tags(HUD);
+
+test('the 3D HUD renders through the overlay bar: timer, mine counter and a named pause button', () => {
+  const bar = HUD_TAGS.find((t) => hasClasses(t, '.ui-overlay-bar'));
+  assert.ok(bar, '#hud holds a .ui-overlay-bar');
+  for (const id of ['hud-time', 'hud-mines']) {
+    const value = HUD_TAGS.find((t) => t.attrs.id === id);
+    assert.ok(value && hasClasses(value, '.ui-stat__value'), `#${id} is a stat value`);
+    assert.ok(value.index > bar.index, `#${id} sits in the overlay bar`);
+  }
+  assert.ok(HUD_TAGS.filter((t) => hasClasses(t, '.ui-stat')).every((t) => t.attrs.role === 'group' && t.attrs['aria-labelledby']));
+  const pause = HUD_TAGS.find((t) => hasClasses(t, '.ui-overlay-bar__pause'));
+  assert.ok(pause, 'the overlay bar has a pause button');
+  assert.equal(pause.tag, 'button');
+  assert.equal(pause.attrs.type, 'button');
+  assert.ok(pause.attrs.id, 'the pause button has an id for the shell to wire');
+  assert.match(pause.attrs['aria-label'] ?? '', /pause/i, 'the pause button is named');
+  assert.equal(HUD.match(/id="hud-time"[^>]*>([^<]*)</)[1], '000', 'the timer starts in the overlay format');
+  assert.doesNotMatch(HUD, /class="stat\b|hud-stats/, 'the one-off HUD stat markup is gone');
+});
+
+test('the gallery shows the overlay bar with its pause button in every state', () => {
+  const bars = TAGS.filter((t) => hasClasses(t, '.ui-overlay-bar'));
+  assert.ok(bars.length > 0, 'gallery shows the overlay bar');
+  const pauses = TAGS.filter((t) => hasClasses(t, '.ui-overlay-bar__pause'));
+  for (const p of pauses) assert.ok(hasClasses(p, '.ui-button.ui-button--secondary'), 'the pause button is a secondary button');
+  const forced = new Set(pauses.map((t) => t.attrs['data-force']).filter(Boolean));
+  for (const s of ['hover', 'active', 'focus']) assert.ok(forced.has(s), `pause shown ${s}`);
+  assert.ok(pauses.some((t) => 'disabled' in t.attrs), 'pause shown disabled');
+});
+
+test('UI.updateHud writes the overlay formats and keeps the negative mine flag', () => {
+  const cls = new Set();
+  const fake = {
+    _last: { time: '', mines: '' },
+    el: {
+      time: { textContent: '' },
+      mines: { textContent: '', classList: { toggle: (c, on) => (on ? cls.add(c) : cls.delete(c)) } },
+    },
+  };
+  UI.prototype.updateHud.call(fake, 47.83, 10);
+  assert.equal(fake.el.time.textContent, '047');
+  assert.equal(fake.el.mines.textContent, '10');
+  UI.prototype.updateHud.call(fake, 1234.5, -150);
+  assert.equal(fake.el.time.textContent, '999');
+  assert.equal(fake.el.mines.textContent, '-99');
+  assert.ok(cls.has('negative'));
+  UI.prototype.updateHud.call(fake, 0, 1200);
+  assert.equal(fake.el.mines.textContent, '999');
+  assert.ok(!cls.has('negative'));
+});
+
+test('the shell wires the overlay pause button to pause the game', () => {
+  const ui = read('js/ui.js');
+  assert.match(ui, /hud-pause[\s\S]*onPause/, 'js/ui.js calls onPause from the pause button');
+  assert.match(read('js/main.js'), /onPause\s*:/, 'js/main.js handles onPause');
+});
+
+test('the controller pauses through the overlay pause button', () => {
+  const main = read('js/main.js');
+  const playing = main.slice(main.indexOf('function padPlaying'), main.indexOf('function padMenus'));
+  assert.match(playing, /pressed\(BTN\.START\)\)\s*\{\s*padClick\(document\.getElementById\('hud-pause'\)\)/,
+    'START in play activates #hud-pause, the same control keyboard and mouse use');
+  assert.match(main, /function padClick\(el\)[\s*\S]*?el\.click\(\)/, 'padClick activates the element');
+});
+
 // ---------------------------------------------------------------- helpers: DOM binding on fakes
 
 class FakeEl {
@@ -489,6 +619,61 @@ test('in a browser, the gallery renders in both themes and its text meets the co
       for (const f of focus) assert.ok(f.style !== 'none' && f.width >= 2, `${theme}: ${f.cls} shows a focus ring`);
     }
     assert.notDeepEqual(images.light, images.dark, 'the themes render differently');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test('in a browser, the overlay bar over the 3D scene meets the contrast contract in both themes', async (t) => {
+  const playwright = await loadPlaywright();
+  if (!playwright) {
+    t.skip('Playwright is not installed');
+    return;
+  }
+  let browser;
+  try {
+    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  } catch (error) {
+    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
+    return;
+  }
+  const server = await serve();
+  const shots = mkdtempSync(join(tmpdir(), 'ms3d-overlay-'));
+  try {
+    const page = await browser.newPage({ viewport: { width: 1100, height: 700 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined);
+    await page.evaluate(() => { globalThis.__ms.start(9, 9, 9, 10); globalThis.__ms.forcePlay(); });
+    // A running time past the display limit: the overlay stops at 999, the game keeps the real time.
+    await page.evaluate(() => { globalThis.__ms.state.time = 1234.5; });
+    await page.waitForFunction(() => document.getElementById('hud-time').textContent === '999');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.time), 1234.5);
+    const images = {};
+    for (const theme of ['light', 'dark']) {
+      await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+      const bar = page.locator('#hud .ui-overlay-bar');
+      images[theme] = await bar.screenshot({ path: join(shots, `overlay-${theme}.png`) });
+      await page.screenshot({ path: join(shots, `overlay-scene-${theme}.png`) });
+      const background = await page.evaluate(() => getComputedStyle(document.querySelector('#hud .ui-overlay-bar')).backgroundColor);
+      assert.match(background, /^rgb\(/, `${theme}: the overlay surface is opaque (${background})`);
+      const { runs: text } = await page.evaluate(measureContrast);
+      const own = await page.evaluate(() => [...document.querySelectorAll('#hud .ui-overlay-bar *')]
+        .filter((e) => [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()))
+        .map((e) => e.textContent.trim().slice(0, 30)));
+      const barRuns = text.filter((r) => own.includes(r.text));
+      assert.ok(barRuns.length >= 4, `${theme}: the overlay shows its labels and values (${barRuns.length})`);
+      const failing = barRuns.filter((r) => r.ratio < r.min).map((r) => `${r.text}: ${r.ratio.toFixed(2)}:1 < ${r.min}`);
+      assert.deepEqual(failing, [], `${theme}: overlay text below the contrast contract`);
+    }
+    assert.notDeepEqual(images.light, images.dark, 'the overlay follows the theme');
+    // The pause button pauses the game.
+    await page.click('#hud-pause');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'paused');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

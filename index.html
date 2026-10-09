@@ -29,10 +29,11 @@
 
   <!-- In-game HUD -->
   <div id="hud" class="hidden" aria-live="off">
-    <div class="hud-panel hud-stats">
-      <div class="stat"><span class="stat-label">Time</span><span id="hud-time" class="stat-value">0.00</span></div>
-      <div class="stat"><span class="stat-label">Mines</span><span id="hud-mines" class="stat-value">0</span></div>
-      <div class="stat stat-small"><span class="stat-label">Board</span><span id="hud-size" class="stat-value">-</span></div>
+    <div class="ui-overlay-bar hud-bar" role="group" aria-label="Game">
+      <div class="ui-stat" role="group" aria-labelledby="hud-time-label"><span class="ui-stat__label" id="hud-time-label">Time</span><span id="hud-time" class="ui-stat__value">000</span></div>
+      <div class="ui-stat" role="group" aria-labelledby="hud-mines-label"><span class="ui-stat__label" id="hud-mines-label">Mines</span><span id="hud-mines" class="ui-stat__value">0</span></div>
+      <div class="ui-stat hud-board" role="group" aria-labelledby="hud-size-label"><span class="ui-stat__label" id="hud-size-label">Board</span><span id="hud-size" class="ui-stat__value">-</span></div>
+      <button type="button" id="hud-pause" class="ui-button ui-button--secondary ui-overlay-bar__pause" aria-label="Pause game">Pause</button>
     </div>
     <div class="hud-panel hud-tools">
       <span class="kbd-hint"><kbd>H</kbd> help</span>

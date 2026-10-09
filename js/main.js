@@ -159,6 +159,7 @@ const ui = new UI({
   onResume: () => { if (padGesture) { padResume(); return; } ui.showReady(S.settings); S.mode = 'ready'; input.requestLock(); },
   onRestart: () => { startGame(S.settings); if (padGesture) padResume(); else input.requestLock(); },
   onMainMenu: () => showMainMenu(),
+  onPause: () => padPause(),
   onReadyBack: () => readyBack(),
   onToggleSound: () => toggleSound(),
   onLookSettings: (o) => { cam.sensitivity = o.sensitivity; cam.invertY = o.invertY; },
@@ -430,7 +431,7 @@ function handlePad(p, dt, now) {
 }
 
 function padPlaying(p, held, pressed, dt, now) {
-  if (pressed(BTN.START)) { padPause(); return; }
+  if (pressed(BTN.START)) { padClick(document.getElementById('hud-pause')); return; } // the overlay's pause button
   if (pressed(BTN.X)) ui.userToggleHelp();
   // Triggers drive the same release-based state machine as the mouse (both = chord via its toggle).
   padActing = true;

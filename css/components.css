@@ -88,6 +88,26 @@
               </div>
      Role:    group
      Name:    aria-labelledby → the label
+
+   ui-overlay-bar — in-game timer, mine counter and pause, over either board
+     Element: <div class="ui-overlay-bar" role="group" aria-label="Game">
+                <div class="ui-stat" role="group" aria-labelledby="T">
+                  <span class="ui-stat__label" id="T">Time</span>
+                  <span class="ui-stat__value">047</span>
+                </div>
+                <div class="ui-stat" role="group" aria-labelledby="M">
+                  <span class="ui-stat__label" id="M">Mines</span>
+                  <span class="ui-stat__value">-12</span>
+                </div>
+                <button type="button" aria-label="Pause game"
+                        class="ui-button ui-button--secondary ui-overlay-bar__pause">Pause</button>
+              </div>
+     Role:    group; stats as ui-stat; pause a button (native)
+     Name:    group: aria-label; pause: aria-label
+     Values:  the timer shows formatOverlayTime(seconds) and the counter
+              formatMineCount(minesLeft) (js/ui/components.js); the clamps
+              are display-only. The bar carries its own opaque surface, so
+              it reads the same over the 3D scene and over a plain board.
 */
 
 /* ---------- buttons ---------- */
@@ -388,6 +408,23 @@
   font-variant-numeric: var(--font-numeric-tabular);
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
+}
+
+/* ---------- overlay bar ---------- */
+.ui-overlay-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-raised);
+  color: var(--color-ink);
+  box-shadow: var(--elevation-2);
+}
+.ui-overlay-bar__pause {
+  min-height: 40px;
+  padding: var(--space-2) var(--space-4);
 }
 
 /* ---------- focus ring (keyboard and controller) ---------- */
