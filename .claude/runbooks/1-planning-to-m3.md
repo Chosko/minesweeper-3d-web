@@ -85,11 +85,24 @@ Context:
 /architect "Results and records" m1-classic-2d
 ```
 
-## [ ] 5. Architect the 3D mode slice for m2
+## [P] 5. Architect the 3D mode slice for m2
 
 Depends on: none
 
-Context: none
+Context:
+- 2026-10-09 parked: approval gate — the architecture draft for the m2 3D mode slice (two documents: 3d-board-graph, putting the 3D box on the shared rules engine and retiring js/logic.js; 3d-play-flow, covering the deferred safe first click, the no-guess switch and the shared results; the open call is whether they fold into one) waits for approval when the step runs. The draft builds on the m1 designs of steps 2 and 4, still unapproved, and uses provisional names for them. With it, three design questions:
+  Q2. With 26 neighbours, how safe is the 3D first click?
+    a. Same rule as Classic 2D. If that rule is "always an opening", the clicked cell and all its neighbours are mine-free. On a board too dense to leave room, only the clicked cell is.
+    b. Only the clicked cell is guaranteed safe.
+    Recommendation: a. It keeps one rule across modes. An opening also matters more in 3D, where a lone number tells the player almost nothing.
+  Q3. Is no-guess offered on every 3D board, including custom boards up to 100×100×100?
+    a. Every preset, plus custom boards up to a cell-count limit the design sets from measured generation time. Above it, the switch is shown but disabled, with the reason.
+    b. Every board, with no limit, behind a "generating" pause the player can cancel.
+    Recommendation: a. A no-guess solver on a million-cell 3D board could run for minutes. A shown limit is better than a pause the player cannot predict.
+  Q4. The current 3D game keeps a best time per exact board size in browser storage. What happens to those times?
+    a. Leave them behind. 3D records start fresh under the new rules.
+    b. Import them as fastest-time personal bests, with no 3BV or efficiency.
+    Recommendation: a. Those times were set without a safe first click, so they are not comparable with new games. Only the web preview has them.
 
 ```prompt
 /architect "3D mode" m2-3d-joins
