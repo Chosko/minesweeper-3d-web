@@ -16,10 +16,12 @@ DOM-free apart from the browser backend's default `localStorage` getter.
 - `js/platform/index.js` — the selector: builds the one `storage` over the
   browser backend when first evaluated and re-exports its methods.
 
-Nothing in the app imports it yet; the persisting features (`settings`,
-`personal-records`, `game-shell`, `classic-2d-square-play`) register their
-documents here and replace the loose `localStorage` helpers in
-`js/audio.js` and `js/ui.js` ([audio.md](audio.md), [app-shell.md](app-shell.md)).
+The settings store (`settings`, [settings.md](settings.md)), the last mode
+played (`shell.lastMode`) and the last Classic 2D board choice register their
+documents here; `personal-records` will too, replacing the loose
+`localStorage` helpers left in `js/ui.js` ([app-shell.md](app-shell.md)).
+`js/theme.js`, a classic script that cannot import, reads the settings
+document's browser key directly at start-up.
 
 ## PUBLIC API
 
@@ -112,8 +114,10 @@ Memory backend (`js/platform/memory-backend.js`)
 
 - [testing.md](testing.md) — `tests/platform-storage.test.mjs`,
   `tests/platform-browser.test.mjs`.
-- [app-shell.md](app-shell.md), [audio.md](audio.md) — the `ms3d.*`
-  `localStorage` helpers this layer replaces.
+- [app-shell.md](app-shell.md) — the `ms3d.*` `localStorage` helpers this
+  layer replaces.
+- [settings.md](settings.md) — the settings document and the legacy keys it
+  carries over once.
 
 ## WHEN TO READ THE SOURCE
 

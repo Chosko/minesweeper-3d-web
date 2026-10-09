@@ -16,7 +16,7 @@ draws the sky gradient, the win confetti and the loss camera shake.
 `js/render.js` (only `js/main.js` calls it):
 - `js/render.js::BoardRenderer(canvas)` — creates the `WebGLRenderer`, scene, `PerspectiveCamera`
   (fov 45, rotation order `YXZ`), tile atlas, sky and confetti. Public fields read elsewhere:
-  `renderer` (the three.js renderer; main sets its pixel ratio), `camera` (main writes its pose),
+  `renderer` (the three.js renderer), `camera` (main writes its pose),
   `toggles` `{shift, space, ctrl}`, `stats` `{opaque, trans, sortMs}` (exposed via `__ms`).
 - `BoardRenderer.setGame(game)` — disposes the previous board, allocates state texture, instance
   lists and sort scratch for `game.n` cells, writes every cell, calls `game.consumeDirty()`, resets
@@ -38,6 +38,8 @@ draws the sky gradient, the win confetti and the loss camera shake.
   without a game); used for far plane, fog and confetti size.
 - `BoardRenderer.isAnimating()` — `true` while the selection pulse, a wave, confetti or shake needs
   frames; main's render-on-demand loop polls it.
+- `BoardRenderer.setPixelRatio(pr)` — sets the drawing buffer's pixel ratio and resizes; returns
+  `false` when it already had that ratio (main then skips the redraw).
 - `BoardRenderer.resize()` — sizes to `window.innerWidth/innerHeight`, updates the aspect.
 - `BoardRenderer.render()` — ticks effects, adjusts far plane and fog, re-sorts transparent cubes
   if needed, applies shake for this frame only, draws.
@@ -78,6 +80,11 @@ draws the sky gradient, the win confetti and the loss camera shake.
   XNA winding. Atlas rows are top-first and `flipY = false`, so v = 0 is the image top.
 - **Colour space.** Tiles and state use `NoColorSpace`; shaders output raw sRGB.
 - **Number colours** are darkened until ≥ 5:1 contrast against `REVEALED_DARK`.
+- **Render resolution.** The pixel ratio is the player's 3D resolution setting
+  ([settings.md](settings.md), where `pixelRatioFor` states Auto, Sharp and Fast):
+  `js/main.js::applyPixelRatio` computes it for the board shown (game or menu demo) — Auto lowers it
+  on big boards, which are fill/vertex heavy — and calls `setPixelRatio`, at each new board and
+  whenever the setting changes. The renderer itself never reads the setting.
 - **Not themed.** The 3D palette — the atlas tiles, number colours, sky and effects — is the same
   under the light and the dark theme. It lives in `js/textures.js` and the shaders, never reads
   `css/tokens.css` and never subscribes to theme changes; it is separate from the tile and number
@@ -98,13 +105,16 @@ draws the sky gradient, the win confetti and the loss camera shake.
 
 - [logic.md](logic.md) — supplies the board arrays, `version`, dirty list and `coords()` this area reads.
 - [app-shell.md](app-shell.md) — `js/main.js` owns the renderer: calls `sync`/`render` per frame,
-  `snapshotBeforeAction` before reveals, polls `isAnimating`, exposes `stats` via `__ms`.
+  `snapshotBeforeAction` before reveals, polls `isAnimating`, sets the pixel ratio, exposes `stats`
+  via `__ms`.
+- [settings.md](settings.md) — the render resolution setting and `pixelRatioFor`.
 - [input.md](input.md) — camera and modifier state feed `camera`, `setToggles`, `setSpacing`,
   `setSelected`; picking must use the same pitch and Space/hidden visibility rules.
 - [audio.md](audio.md) — no direct link; win/loss sounds fire alongside the waves from main.
 - [classic2d.md](classic2d.md) — the Classic 2D tile skin, a separate themed palette from tokens.
 - [testing.md](testing.md) — no unit tests cover the drawing, only static checks that the 3D scene stays
-  unthemed; verification is visual via Playwright.
+  unthemed; `tests/settings-appliers.test.mjs` pins `pixelRatioFor` and, in a browser, a resolution
+  change applying at once; verification is visual via Playwright.
 
 ## When to read the source
 

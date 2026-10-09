@@ -416,7 +416,7 @@ Feature: settings
 
 ## 42. Update documentation for feature `settings`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/settings.md, .claude/context/app-shell.md, .claude/context/audio.md, .claude/context/rendering.md, .claude/context/INDEX.md, .claude/context/testing.md
 Preconditions: 39, 40, 41

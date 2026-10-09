@@ -10,7 +10,8 @@ design tokens and the light/dark theme, the debug hook, and the static-site
 files.
 
 - `js/main.js` — entry module. Builds `BoardRenderer`, `FlyCamera`, `Input`,
-  `MouseActions`, `Controls`, `GamepadReader`, `UI`, and the shell objects
+  `MouseActions`, `Controls`, `GamepadReader`, `UI`, the settings store
+  `SETTINGS` ([settings.md](settings.md)), and the shell objects
   `SHELL` (router), `MODES` (mode host, with the 3D adapter registered as
   `'3d'` and the Classic 2D mode as `'classic-2d'`), `PAUSE` (pause
   controller), `MENU`, `LAST_MODE`, `LAST_CHOICE_2D` and `CHOICE_2D` (the
@@ -36,9 +37,10 @@ files.
   - `pause.js` — the pause controller: pause, resume, restart, back to menu,
     the confirmations, the game hand-offs and the leave-page guard
     (`createPauseController`); its rules are documented in its head comment.
-- `js/ui.js` — DOM only, no game rules: class `UI`, settings clamping, random
-  board, best times and look settings in `localStorage`. Formats the overlay
-  bar and slider readouts with the kit helpers from `js/ui/components.js`.
+- `js/ui.js` — DOM only, no game rules: class `UI`, board-settings clamping,
+  random board, best times in `localStorage`. Formats the overlay bar with the
+  kit helpers from `js/ui/components.js`; fills the Settings page and the help
+  lists from `js/settings/page.js` and `js/settings/bindings.js`.
 - `index.html` — every overlay is static markup toggled by the `.hidden` class;
   importmap maps `three` to `vendor/three/three.module.min.js` (vendored
   three.js r186, no build step); a module `onerror` shows a `.fatal` card.
@@ -46,8 +48,9 @@ files.
   `css/components.css`, then `css/style.css`, then the module graph. The HUD
   overlay bar, the main menu (`#menu`), the 3D board choice
   (`#board-choice`), the Classic 2D board choice (`#c2d-choice`), the
-  placeholder screen (`#coming-soon`) and the pause card (`#pause-card`) are
-  kit markup (§ Component kit). `#c2d` is the Classic 2D board layer: the
+  placeholder screen (`#coming-soon`), the Settings page (`#settings`, its
+  controls generated into `#settings-body`) and the pause card
+  (`#pause-card`) are kit markup (§ Component kit). `#c2d` is the Classic 2D board layer: the
   board area `#c2d-board` and the generating / failed-board card
   `#c2d-status`.
 - `css/tokens.css` — the design tokens, the single source of every shared
@@ -70,16 +73,16 @@ files.
   opens it in Dark.
 - `css/style.css` — shell styling: positioning of the fixed layers (the
   Classic 2D board layer and its board area below the overlay bar), the
-  menu-screen backdrop shared by `#menu`, `#board-choice`, `#coming-soon`
-  and `#c2d-choice`,
+  menu-screen backdrop shared by `#menu`, `#board-choice`, `#coming-soon`,
+  `#c2d-choice` and `#settings`,
   the ready/help/banner/controls/ctx-lost overlays and the HUD placement; the
   kit-built screens carry no one-off rules of their own. Declares no
   custom properties and reads only tokens from `css/tokens.css`. Layered
   fixed overlays use the `--z-*` tokens (HUD 10, help 11, banner 12, flash
   15, overlays 20, controls modal 30, ctx-lost 40, toast 45, fatal 50).
 - `js/theme.js` — theme applier, a classic (non-module) script run before
-  first paint: sets the root `data-theme` attribute (`light` | `dark`) and
-  exposes `globalThis.msTheme`.
+  first paint: sets the root `data-theme` attribute (`light` | `dark`) from
+  the saved settings document and exposes `globalThis.msTheme`.
 - `js/tokens.js` — token reader (ES module) for consumers that cannot read
   stylesheet values directly, chiefly Canvas renderers.
 - `404.html` — redirects to `/` (GitHub Pages). `CNAME` = `minesweeper3d.chosko.com`;
@@ -149,14 +152,14 @@ files.
 - `fmtDims(s)`, `fmtTime(t)` (2 decimals), `NO_MOUSE_MSG`.
 - `getBest(s)` → seconds or null; `recordBest(s, time)` → `{ best, prev, isNew }`,
   writes `ms3d.best.<X>x<Y>x<Z>x<mines>` only when faster.
-- `loadLookSettings()` → `{ sensitivity (0.25..3), invertY }`.
 - `UI` constructor `(cb)` with callbacks `onMenuEntry(id)`, `onBack` (the
-  board choice's and placeholder's Back buttons), `onStart(settings)`,
-  `onReadyClick`, `onReadyBack`, `onResume`, `onRestart`, `onMainMenu`,
-  `onPause` (the overlay bar's pause button), `onToggleSound`,
-  `onLookSettings({sensitivity, invertY})`, `onRetry2D`, `onStandard2D`
-  (the failed Classic 2D board's offer). Methods: screens `showMenu`,
-  `showBoardChoice`, `showBoardChoice2D`, `showComingSoon(title)`,
+  board choice's, placeholder's and Settings page's Back buttons),
+  `onStart(settings)`, `onReadyClick`, `onReadyBack`, `onResume`,
+  `onRestart`, `onMainMenu`, `onPause` (the overlay bar's pause button),
+  `onToggleSound`, `onRetry2D`, `onStandard2D` (the failed Classic 2D
+  board's offer). Methods: screens `showMenu`, `showBoardChoice`,
+  `showBoardChoice2D`, `showComingSoon(title)`, `showSettings` (its bindings
+  in the active controller's glyphs),
   `showReady(settings, msg)`, `showPlaying`, `showClassic2D` (positions
   `#c2d-board` 16 px below the overlay bar), `showPause({state,time,minesLeft,note})`;
   Classic 2D `setBoardText(text)`, `setBoardStatus({generating, failure})`; menu
@@ -167,9 +170,10 @@ files.
   `setModes`, `setCrosshair`, `showSpacing`, `setSound(muted)`; help
   `toggleHelp`, `userToggleHelp`, `dismissHint`; banner `showBanner(state,time)`,
   `setBannerRecord`, `hideBanner`; `flash`, `toast(msg, ms)`, `setPad(info|null)`,
-  `setNoMouse`, `initVolume(v, onChange)`, `openControls`/`closeControls`
+  `setNoMouse`, `openControls`/`closeControls`
   (→ false when already closed)/`isControlsOpen`, `isPauseVisible`,
-  `setReadyMessage`.
+  `setReadyMessage`. `setPad` also redraws the Settings page's bindings
+  while it shows.
 
 `js/ui/components.js` exports
 - `formatOverlayTime(seconds)` → whole seconds, three digits, stopping at
@@ -200,7 +204,8 @@ the factory tests drive):
 `js/main.js` exports nothing; its surface is `window.__ms` (tests, Playwright):
 - getters `state` (the live `S`), `game`, `renderer`, `camera`, `controls`,
   `pads`, `fps`, `frameStats` (`{renders, skipped}`), `modes` (the mode
-  host), `pauser` (the pause controller); `THREE`, `startCameraPos`.
+  host), `pauser` (the pause controller), `settings` (the settings store);
+  `THREE`, `startCameraPos`.
 - `start(X, Y, Z, mines, minePositions?)` → `MODES.start('3d', …)`;
   `forcePlay()` enters lockless play; `pause()` → `PAUSE.pause('key')`.
 - camera/aim: `moveTo`, `look(yaw, pitch)`, `aimAt(idx | [x,y,z])` → selected idx,
@@ -215,9 +220,8 @@ Game shell (`js/shell/`, wired in `js/main.js`):
 - **The router owns the screen.** Every screen change is `SHELL.go`; nothing
   else toggles a screen. `S.mode` is a getter over `SHELL.current`, so it is
   always the router's screen: `'menu' | 'board-choice' | 'coming-soon' |
-  'classic-2d-choice' | 'ready' | 'playing' | 'classic-2d' | 'paused' |
-  'ctxlost'`; `results`, `records` and
-  `settings` are not registered. In the 3D game only `playing` moves the
+  'classic-2d-choice' | 'settings' | 'ready' | 'playing' | 'classic-2d' |
+  'paused' | 'ctxlost'`; `results` and `records` are not registered. In the 3D game only `playing` moves the
   camera, runs the timer and accepts actions (`hasSelection`,
   `Input.isActive`); the Classic 2D board takes input and runs its timer on
   `classic-2d`.
@@ -230,8 +234,8 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   `ctxlost` → menu — else the stacked screen.
 - **Back inputs.** `shellBack(source)` closes the controls modal or the pause
   confirmation first, then calls `SHELL.back`. Esc (`isBackKey`) reaches it
-  through `Input`'s `onKey`; the board choice's and placeholder's Back
-  buttons through `onBack`; the controller's back buttons through
+  through `Input`'s `onKey`; the board choice's, placeholder's and Settings
+  page's Back buttons through `onBack`; the controller's back buttons through
   `padMenus` (on the Classic 2D board `padBoard2D` turns them into Pause
   through `#hud-pause`, as `padPlaying` does in 3D). In pointer-locked play the browser consumes Esc to release the
   lock, and `onLockChange` pauses instead; `resumeFromPause` ignores a
@@ -241,7 +245,8 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   to its first focusable control. Defaults: menu the last mode played
   (`[data-entry][data-last]`), board choice the last played board
   (`[data-preset][data-last]`), Classic 2D board choice the last board
-  choice (`[data-size][data-last]`), placeholder its Back, ready `#ready-btn`,
+  choice (`[data-size][data-last]`), placeholder its Back, Settings the look
+  sensitivity slider (`#set-lookSensitivity`), ready `#ready-btn`,
   pause Cancel while the confirmation shows, else Play again once the game
   ended, else Resume; ctx-lost its reload button.
 - **Mode host.** The shell reaches a game only through `MODES`: the menu's
@@ -276,7 +281,8 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   → `MENU.open(id)`: a registered mode opens its board choice through the
   host, a registered screen is routed to, anything else goes to
   `coming-soon` with the entry's title. Classic 2D and 3D open their board
-  choices; Records and Settings route to the placeholder. `LAST_MODE` stores the mode of every started
+  choices; Settings routes to the Settings page, Records to the placeholder.
+  `LAST_MODE` stores the mode of every started
   game in the platform-storage document `shell.lastMode`; at boot `load()`
   marks the entry and refocuses it if the player has not moved yet.
 - **Pause controller.** `PAUSE` is the one owner of pause, resume, restart and
@@ -343,8 +349,20 @@ Game flow (`js/main.js`):
   any change the signature does not capture; every router change sets it.
 - Picking is cached by `S.pickKey` (camera, spacing, `version`, Space, aspect);
   ray origin is the camera position pushed to the near plane.
-- `applyPixelRatio(n)` caps DPR at 1 above 50³ cells, 1.5 above 20³, else 2.
-- Fullscreen (`F`) also requests Keyboard Lock on WASD/QE/Space/Ctrl/Shift.
+- `applyPixelRatio(n)` sets the renderer's pixel ratio from the render
+  resolution setting for the board shown (`pixelRatioFor`, [settings.md](settings.md));
+  `startGame` and the menu demo call it with their cell count.
+- Fullscreen (`F`) sets the fullscreen setting, whose applier calls
+  `enterFullscreen` (which also requests Keyboard Lock on
+  WASD/QE/Space/Ctrl/Shift) or `exitFullscreen`. Sound (`M`, the Sound
+  buttons) sets `muted`; the store's `muted` subscription updates the
+  buttons' label (`ui.setSound`).
+- Settings: `SETTINGS` loads before the first screen shows (`await
+  settingsLoaded` before `showMainMenu`); `applySettings` wires the theme,
+  sound, camera, resolution and fullscreen owners, and one
+  `bindSettingControls` binds every `[data-setting]` control — unlocking
+  audio after a volume or mute change. A failed save toasts once that
+  settings will not be kept.
 - `onKey` ignores keys whose target is inside `input, select, textarea`, so
   settings sliders do not trigger H/M/F.
 - Controller menus: `LAYER_SCREEN` maps each overlay to its screen, topmost
@@ -354,8 +372,10 @@ Game flow (`js/main.js`):
   `layerChanged`, which suppresses the buttons held at the last poll until
   released (`nav`, a held suppressor) and resets the menu repeats.
 - UI help panel: `_helpByUser` keeps an H-opened panel open across screens;
-  screen methods otherwise hide it. The controls modal body is cloned from
-  `#help .controls` at construction, so edit the list in `#help` only.
+  screen methods otherwise hide it. Its controls list and the controller
+  section are generated from the bindings source (`js/settings/bindings.js`),
+  and the controls modal body is cloned from `#help .controls` at
+  construction, so edit a binding's text in `BINDINGS` only.
 - Banner goes `compact` after 4 s and is `suppressed` while the pause card shows.
 
 Component kit (`css/components.css`, catalogue in its head comment):
@@ -410,6 +430,11 @@ Component kit (`css/components.css`, catalogue in its head comment):
   `data-last` with a "Last played" line once the player has played.
 - Placeholder (`#coming-soon`): the one "coming soon" screen, a `ui-card
   ui-screen` whose title and text name the entry, with a primary Back.
+- Settings page (`#settings`): a `ui-card ui-screen--wide` whose
+  `#settings-body` `UI` fills at construction with `settingsPageHtml()` — a
+  `ui-grid` of Controls, Graphics, Theme and Audio `ui-panel` sections, one
+  `data-setting` control per setting — and a Bindings panel
+  (`#settings-bindings`) redrawn by `showSettings`; a primary Back.
 - Pause card (`#pause-card`): a `ui-card ui-screen` with `ui-text` status
   lines, `#pause-actions` (`showPause` moves the primary action first —
   Resume while playing, Play again once ended — before Main menu), the
@@ -417,18 +442,20 @@ Component kit (`css/components.css`, catalogue in its head comment):
   `showConfirm`: the message, `#p-confirm-yes` labelled with the action,
   `#p-confirm-no` Cancel), the controls list and a Settings `ui-panel` (look
   sensitivity and volume sliders, invert-Y toggle), then the Sound button.
-  Volume sliders on the menu and the pause card carry `data-volume` and stay
-  hidden until `initVolume`.
+  Those shortcuts and the main menu's volume slider carry `data-setting` and
+  are bound to the settings store like the Settings page's controls.
 - Results screen: a layout only — the gallery's `#g-results` composition
   with placeholder content (outcome title, board line, a `ui-stat-row` of
   the game's stats, a `ui-panel` of best comparisons, Play again / Main
   menu); no game screen uses it.
 - Theme: `js/theme.js` runs synchronously in `<head>`, so the root
   `data-theme` attribute is set before any stylesheet paints. Its stored-theme
-  getter returns nothing until the settings feature wires the stored value in,
-  so start-up applies Light; the applier reads the preference and never writes
-  it. Switching theme is only the attribute change — every shell colour
-  follows through the `:root[data-theme="dark"]` overrides.
+  getter (`readStoredTheme`) reads the theme of the settings document
+  (`ms3d:doc:settings`, version 1) straight from `localStorage`; anything
+  unusable applies Light. It never writes the preference: the settings
+  store owns it and drives `setTheme` through its applier. Switching theme
+  is only the attribute change — every shell colour follows through the
+  `:root[data-theme="dark"]` overrides.
 - Styling values: a new colour, size, radius, shadow, duration or z-index goes
   into `css/tokens.css` (with a dark value for a colour) and `css/style.css`
   or `css/components.css` reads it by `var(--…)`; `tests/tokens.test.mjs` and
@@ -436,10 +463,10 @@ Component kit (`css/components.css`, catalogue in its head comment):
   stylesheet or a read of an undeclared token.
 - The 3D scene (`js/render.js`, `js/textures.js`) keeps its own palette: it
   never reads tokens and never subscribes to theme changes.
-- `localStorage` keys are all `ms3d.*` (custom, hintH.done, best.*, lookSens,
-  invertY, lastPreset); access is try/catch-wrapped (`lsGet`/`lsSet`). The
-  last mode played is a platform-storage document (`shell.lastMode`), not an
-  `ms3d.*` key.
+- `js/ui.js`'s `localStorage` keys are all `ms3d.*` (custom, hintH.done,
+  best.*, lastPreset); access is try/catch-wrapped (`lsGet`/`lsSet`). The
+  last mode played (`shell.lastMode`) and the settings (`settings`) are
+  platform-storage documents, not `ms3d.*` keys.
 
 ## DOMAIN DEPENDENCIES
 
@@ -460,6 +487,8 @@ Gameplay fidelity to the original game is the overriding rule.
 - [../domain/features/screen-components.md](../domain/features/screen-components.md)
   — the kit's component set, states, focus and controller contract, the
   overlay bar's display formats and the screens composed from the kit.
+- [../domain/features/settings.md](../domain/features/settings.md) — the
+  Settings page, the pause-card shortcuts and the start-up order.
 - [../domain/INDEX.md](../domain/INDEX.md) — product domain index.
 
 ## CROSS-REFERENCES
@@ -475,13 +504,17 @@ Gameplay fidelity to the original game is the overriding rule.
 - [platform.md](platform.md) — `createLastMode` registers and saves the
   `shell.lastMode` document through the storage interface.
 - [audio.md](audio.md) — `sfx` calls: `unlock`, `reveal`, `flag`, `chord`,
-  `explode`, `win`, `noop`, `toggleMute`, `setVolume`/`getVolume`.
+  `explode`, `win`, `noop`; volume and mute reach it through the settings
+  appliers.
+- [settings.md](settings.md) — the settings store, appliers, the Settings
+  page markup and binder, and the bindings source `js/ui.js` reads.
 - [testing.md](testing.md) — browser tests drive the game through `window.__ms`;
   `tests/shell-*.test.mjs` pin the router, navigation, mode host, 3D adapter,
   menu and pause controller; `tests/tokens.test.mjs` and
   `tests/theme.test.mjs` pin the token sheet, the applier and the reader;
   `tests/components.test.mjs` pins the kit, its helpers, the overlay bar, the
-  kit-built screens and their contrast.
+  kit-built screens and their contrast; `tests/settings-*.test.mjs` pin the
+  Settings screen's wiring and the pause-card shortcuts.
 
 ## WHEN TO READ THE SOURCE
 
@@ -498,7 +531,7 @@ Gameplay fidelity to the original game is the overriding rule.
 - Changing timer start/freeze, end-of-game flow, or best-time recording.
 - Adding a `__ms` hook method or changing what `info()` reports.
 - Debugging frames that do not redraw (or never stop redrawing): `shouldRender`.
-- Adding a menu entry, preset, settings control, HUD element or overlay (HTML
+- Adding a menu entry, preset, HUD element or overlay (HTML
   + `UI.el` + CSS z-index layer + a router screen and `LAYER_SCREEN` entry
   for controller navigation; a menu entry also goes in `MENU_ENTRIES`).
 - Adding or changing a kit component or composition, or building a new
@@ -507,5 +540,8 @@ Gameplay fidelity to the original game is the overriding rule.
   `dev/components.html`.
 - Changing controller button mapping in menus or play (`padPlaying`, `padMenus`).
 - Changing deploy behaviour (custom domain, 404 redirect, vendored three.js path).
-- Adding or renaming a token, or wiring the stored theme preference into the
-  applier (`readStoredTheme` in `js/theme.js`).
+- Adding or renaming a token, or changing how start-up reads the stored
+  theme (`readStoredTheme` in `js/theme.js`, kept in step with the settings
+  document's key and version).
+- Adding a setting or a setting control: [settings.md](settings.md) first,
+  then the `// ---------- settings ----------` block of `js/main.js`.

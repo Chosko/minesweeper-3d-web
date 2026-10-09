@@ -262,6 +262,40 @@ browser checks for everything that needs WebGL or the DOM.
   pause source in `js/main.js` goes through the controller, that the guard is
   a listener it arms, and that the confirmation is kit markup. One Playwright
   test pauses, resumes, restarts and goes back to menu in the 3D game.
+- `tests/settings-store.test.mjs` — the schema (`js/settings/schema.js`:
+  every setting's type, range or values and default, `isValid`) and the
+  store (`js/settings/store.js`) over the memory backend: missing, invalid
+  and non-object documents filled with defaults, `get` before load and on an
+  unknown key, validated whole-document saves, a rejected value kept out,
+  a set during load, re-setting the current value, `onChange` at load, after
+  load and its unsubscribe and listener isolation, the legacy carry-over
+  (read once, the old readers' clamping and `'1'` flags, garbage and
+  throwing readers), unreadable, non-persisting and newer storage, the
+  failed save reported once, and the document registered once.
+- `tests/settings-appliers.test.mjs` — the appliers (`js/settings/appliers.js`)
+  over a store on the memory backend and recording owners: `pixelRatioFor`
+  per resolution, the resolution, theme, audio and look appliers at load and
+  on change, unsubscribes, fullscreen requested inside the setting's call,
+  exited, followed when the browser leaves or refuses, `applySettings`; the
+  module DOM-free and the store importing no applier; the theme script
+  (`js/theme.js` in `node:vm`) starting from the document the store saved
+  through the browser backend and falling back to Light; the sound module
+  and `js/ui.js` keeping no settings keys of their own. One Playwright test
+  applies a theme and a resolution change at once.
+- `tests/settings-page.test.mjs` — the bindings source
+  (`js/settings/bindings.js`: every mode × device, the Classic 2D keyboard
+  rows naming every `CURSOR_KEYS` key, `bindingsListHtml` keys, glyphs and
+  escaping, the in-game help reading it) and the page
+  (`js/settings/page.js`): the four sections holding every setting once,
+  each control's kind and range from the schema, kit-only markup, the
+  bindings section per device in the pad's glyphs, `bindSettingControls`
+  over stub elements showing loaded and later values, writing at once and
+  reporting the change, refusing an unknown setting; static checks of the
+  `#settings` markup, the pause-card and menu `data-setting` shortcuts, the
+  menu entry's route, focus, Back and controller layer, and the catalogue
+  entry. Two Playwright tests: Settings from the menu, Dark chosen and
+  applied before the menu shows after a reload; and the page operated by a
+  fake controller.
 - `.claude/external/run-full-tests.sh` — `cd` to repo root, `exec node --test`.
 - `.claude/external/run-affected-tests.sh <test-file>...` — `node --test` on the
   given files; exits 2 with usage when called with no arguments.
@@ -274,7 +308,9 @@ browser checks for everything that needs WebGL or the DOM.
   `tests/classic2d-pointer.test.mjs`, the keyboard game in
   `tests/classic2d-cursor.test.mjs`, the Classic 2D flow in
   `tests/classic2d-mode.test.mjs`, the input fidelity check in
-  `tests/classic2d-fidelity.test.mjs` and one flow test in each `tests/shell-*.test.mjs`.
+  `tests/classic2d-fidelity.test.mjs`, one flow test in each `tests/shell-*.test.mjs`, the
+  theme-and-resolution test in `tests/settings-appliers.test.mjs` and the two page tests in
+  `tests/settings-page.test.mjs`.
 
 No `package.json`, no dependencies: Node 22 built-in runner (`node:test`,
 `node:assert/strict`). `node --test` with no arguments discovers
@@ -359,10 +395,19 @@ Tests consume, and so pin, these contracts:
   `js/shell/pause.js::createPauseController`, `PAUSE_SOURCES`,
   `AUTO_SOURCES`, `HAND_OFFS`, `CONFIRMATIONS`. Full list in
   [app-shell.md](app-shell.md).
+- `js/settings/schema.js::SCHEMA`, `SETTING_KEYS`, `DEFAULTS`, `isValid`;
+  `js/settings/store.js::createSettingsStore`, `SETTINGS_DOC`,
+  `SETTINGS_VERSION`, `LEGACY_KEYS`; `js/settings/appliers.js` exports;
+  `js/settings/page.js::SETTINGS_SECTIONS`, `settingControl`,
+  `settingControlHtml`, `settingsPageHtml`, `bindingsSectionHtml`,
+  `bindSettingControls`; `js/settings/bindings.js::BINDINGS`,
+  `bindingRows`, `bindingsListHtml`; the `ms3d:doc:settings` key
+  `js/theme.js` reads. Full list in [settings.md](settings.md).
 
 Browser hook `js/main.js::window.__ms` (full list in [app-shell.md](app-shell.md)):
 - getters `state`, `game`, `renderer`, `camera`, `controls`, `pads`, `fps`,
-  `frameStats`, `modes` (the mode host), `pauser` (the pause controller);
+  `frameStats`, `modes` (the mode host), `pauser` (the pause controller),
+  `settings` (the settings store);
   `THREE`, `startCameraPos`; `state.mode` is the router's current screen.
 - `start(X, Y, Z, mines, minePositions?)`, `forcePlay()`, `pause()`.
 - `moveTo(x,y,z)`, `look(yaw,pitch)`, `aimAt(idx | [x,y,z])` → selected idx,
@@ -521,6 +566,9 @@ is enforced.
 - [../domain/features/game-shell.md](../domain/features/game-shell.md)
   — the router, Back, mode contract, menu and pause contracts the
   `shell-*` tests encode.
+- [../domain/features/settings.md](../domain/features/settings.md)
+  — the schema, store, carry-over, failure, applier and page contracts the
+  `settings-*` tests encode.
 - [../domain/INDEX.md](../domain/INDEX.md) — feature documents whose acceptance
   criteria become tests.
 
@@ -538,7 +586,9 @@ is enforced.
   the game shell (`js/shell/`) the `shell-*` tests pin.
 - [classic2d.md](classic2d.md) — `tests/classic2d-*.test.mjs` pin the session and board setup, board view, pointer and cursor inputs and the mode, and check the inputs and custom limits against the observation file; `tests/tile-skin.test.mjs` the tile painter, cache and `MIN_TILE_SIZE`.
 - [rendering.md](rendering.md) — no unit tests of the drawing (only the static not-themed checks); verified visually via Playwright screenshots.
-- [audio.md](audio.md) — no unit tests; WebAudio only checkable in a browser.
+- [audio.md](audio.md) — no unit tests of the sounds; WebAudio only checkable in a browser.
+- [settings.md](settings.md) — `tests/settings-*.test.mjs` pin the schema, store, appliers, page,
+  binder and bindings source.
 
 ## WHEN TO READ THE SOURCE
 

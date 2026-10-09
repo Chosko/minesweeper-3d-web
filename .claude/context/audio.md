@@ -3,16 +3,19 @@
 ## OVERVIEW
 
 Synthesized sound effects for game events, built entirely from WebAudio
-oscillators and filtered noise (no audio assets), plus the persisted mute and
-volume settings.
+oscillators and filtered noise (no audio assets), plus the mute and volume
+they play at. The values belong to the settings store
+([settings.md](settings.md)); this module only applies them.
 
 | File | Implements |
 | --- | --- |
-| `js/audio.js` | `Sfx` singleton, exported `sfx` instance, free-function wrappers, master signal chain, mute/volume persistence, auto-unlock |
+| `js/audio.js` | `Sfx` singleton, exported `sfx` instance, free-function wrappers, master signal chain, mute/volume gain, auto-unlock |
 
-The only consumer is `js/main.js` (event-to-sound mapping, mute toggle, volume
-slider wiring); the mute label and volume sliders are drawn by `js/ui.js`
-(`setSound`, `initVolume`) — see [app-shell.md](app-shell.md).
+The only consumers are `js/main.js` (event-to-sound mapping, `unlock`) and the
+settings appliers (`js/settings/appliers.js`), which call `setVolume` and
+`setMuted` with the store's values at start-up and on every change. The mute
+label and volume sliders are bound to the store, not to this module — see
+[app-shell.md](app-shell.md).
 
 ## PUBLIC API
 
@@ -21,11 +24,11 @@ slider wiring); the mute label and volume sliders are drawn by `js/ui.js`
 - `js/audio.js::sfx` — that instance, created at module load. `main.js` uses
   `audio.sfx ?? new audio.Sfx()`.
 
-**Settings** (all write-through to `localStorage`, all safe before any AudioContext exists)
-- `Sfx.muted` — boolean field, read directly by `main.js` for the initial HUD label.
-- `Sfx.setMuted(m)` — stores `'1'`/`'0'` under `ms3d.muted`; unmuting also creates/resumes the context; ramps master gain.
-- `Sfx.toggleMute() -> boolean` — returns the new muted state (fed to `ui.setSound`).
-- `Sfx.setVolume(v)` — clamps to 0..1, ignores non-finite input, stores under `ms3d.volume`; ramps master gain.
+**Mute and volume** (in memory only, all safe before any AudioContext exists)
+- `Sfx.muted` — boolean field, default false.
+- `Sfx.setMuted(m)` — unmuting (muted → unmuted) also creates/resumes the context; ramps master gain.
+- `Sfx.toggleMute() -> boolean` — returns the new muted state; the game mutes through the `muted` setting, not this.
+- `Sfx.setVolume(v)` — clamps to 0..1, ignores non-finite input; ramps master gain.
 - `Sfx.getVolume() -> number` — 0..1, default 0.7.
 - `Sfx.unlock()` — creates/resumes the AudioContext; no-op while muted. Call from a user gesture.
 
@@ -72,8 +75,10 @@ not these.
 - **`_setContext(c)`** builds the whole chain on any context (documented as
   "possibly offline"), resetting voice count and throttle timestamps — the hook
   for rendering sounds into an `OfflineAudioContext`.
-- **Environment safety:** `localStorage` and `window` access are guarded
-  (try/catch, `typeof window` checks), so the module imports under
+- **No storage:** the module reads and writes no `localStorage` key; mute and
+  volume start at their defaults until the settings appliers set them.
+- **Environment safety:** `window` access is guarded (`typeof window`
+  checks), so the module imports under
   `node --test` without a DOM; it then reports unmuted, volume 0.7, and every
   sound no-ops.
 - Event semantics (what counts as reveal vs chord vs noop, flag direction for
@@ -92,21 +97,25 @@ not these.
 
 - [logic.md](logic.md) — `Game.leftClick/rightClick/chord` results
   (`revealed`, `flagged`, `unflagged`, `exploded`, `version`) are what pick the sound.
-- [app-shell.md](app-shell.md) — `main.js` maps actions to sounds, wires the
-  M key / sound buttons to `toggleMute`, volume sliders to `setVolume`, and
-  calls `unlock()` on start, ready-click and controller resume.
+- [app-shell.md](app-shell.md) — `main.js` maps actions to sounds and calls
+  `unlock()` on start, ready-click, controller resume and after a volume or
+  mute change; the M key and Sound buttons set the `muted` setting.
+- [settings.md](settings.md) — the store holding `volume` and `muted`, and
+  `applyAudio`, which drives `setVolume` / `setMuted`.
 - [input.md](input.md) — the keyboard/pointer gestures that trigger auto-unlock
   and the actions that produce sounds originate there.
 - [rendering.md](rendering.md) — no direct link; the loss flash and reveal
   wave run alongside `explode()` but are driven from `main.js`.
-- [testing.md](testing.md) — no automated tests cover `js/audio.js`; verify by ear in a browser.
+- [testing.md](testing.md) — no automated tests cover the sounds; verify by ear in a browser.
+  `tests/settings-appliers.test.mjs` checks that the module keeps no `localStorage` keys.
 
 ## WHEN TO READ THE SOURCE
 
 - Retuning or redesigning a specific sound (frequencies, envelopes, timing, gain levels).
 - Adding a new sound effect: copy the `_ok()` + `_throttle()` gate and use the primitives.
-- Changing the volume curve, compressor settings, or the localStorage keys / defaults.
-- Debugging silence: autoplay policy, suspended context, mute persisted as `'1'`,
+- Changing the volume curve, compressor settings, or the module's starting defaults
+  (the saved defaults are the settings schema's).
+- Debugging silence: autoplay policy, suspended context, the `muted` setting on,
   voice cap reached, or a throttle swallowing rapid calls.
 - Rendering sounds offline (e.g. for an automated audio test) through `_setContext`.
 - Changing what happens on unmute or making unlock work while muted.
