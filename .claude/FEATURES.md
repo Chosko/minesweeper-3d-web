@@ -163,3 +163,21 @@ Source: product-design.md § Replays (m2-3d-joins)
 Tasks: none
 
 ---
+
+## 3d-game-records — 3D board identity and 3D games in bests, history, win rate and streaks per mode
+
+Status: [NEW]
+Doc: .claude/domain/features/3d-game-records.md
+Source: product-design.md § Results and records (m2-3d-joins)
+Tasks: none
+
+---
+
+## 3d-results-records-screens — 3D results screen after the end effect, and the Records 2D | 3D switch
+
+Status: [NEW]
+Doc: .claude/domain/features/3d-results-records-screens.md
+Source: product-design.md § Results and records (m2-3d-joins)
+Tasks: none
+
+---

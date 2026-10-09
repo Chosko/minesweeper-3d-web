@@ -81,7 +81,8 @@ demanding, until free 3D play is within reach.
   scene. It is built new and does not derive from the 3D mode.
 - **The 3D mode is the existing 3D game, made one mode among several.** Its
   look, controls and feel are kept. Its rules change in two ways: the first
-  click is always safe, and a no-guess option is available.
+  click is always safe, and a no-guess option is available. Its games end on
+  the shared results screen.
 - **No-guess boards and competitive stats are core, not extras.** Every mode
   offers no-guess generation; every game records the stats enthusiasts track
   (3BV, 3BV/s, efficiency) and a replay.
@@ -171,7 +172,10 @@ to 26 neighbours, flown through in first person, with solved cells hiding
 themselves and the Shift / Space / Ctrl view modes for seeing inside. The
 first click is always safe, and a no-guess switch is available. Six presets —
 Beginner, Intermediate and Expert in a double layer and in a cube — plus
-custom boards; flat boards are Classic 2D's. Serves the 3D on-ramp, once the
+custom boards; flat boards are Classic 2D's. When a game ends, its win or
+loss effect plays — on a loss, the wave that shows where the mines were —
+and then the results screen takes over; the finished board is not flown
+around afterwards. Serves the 3D on-ramp, once the
 campaign has taught the player to read numbers in depth.
 
 ### Surface
@@ -222,8 +226,11 @@ personal bests, and the Steam global and friends rank — with *Play again* and
 per board, stats history (3BV/s and efficiency over time, win rate, streaks).
 Each board keeps three bests from won games — fastest time, best 3BV/s and
 best efficiency — and every exact size, mine count and no-guess setting is
-its own board, custom boards included. A game restarted or left after its
-first click counts as a loss and breaks the win streak. Serves the
+its own board, custom boards included; a 3D board is named by its X × Y × Z
+size. Win rate and streaks are kept per board and per mode, never combined
+across 2D and 3D, and the Records screen switches between the two modes. A
+game restarted or left after its first click counts as a loss and breaks the
+win streak. Serves the
 enthusiast loop.
 
 ### Replays

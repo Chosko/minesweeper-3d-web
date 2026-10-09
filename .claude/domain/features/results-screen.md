@@ -50,8 +50,10 @@ composed from the `screen-components` kit.
   header, the stat readouts, the three best comparisons, the actions. Time
   is shown to the hundredth of a second; 3BV/s to two decimals; efficiency
   as a whole percentage. A stat that is not available shows a dash.
-- **Board shown behind.** The finished board stays visible behind the
-  screen, as the mode left it, so a loss still shows where the mines were.
+- **Board shown behind.** In Classic 2D the finished board stays visible
+  behind the screen, as the mode left it, so a loss still shows where the
+  mines were. Over 3D the screen is opaque and takes over, per
+  `3d-results-records-screens`.
 
 ## Data and state
 

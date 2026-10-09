@@ -35,6 +35,8 @@ layer.
 | [features/replay-recording.md](./features/replay-recording.md) | The replay format and its capture during 2D and 3D play: mines, rules version, timed actions, sampled cursor and camera movement, check values |
 | [features/replay-playback.md](./features/replay-playback.md) | The replay simulator and verifier, and the replay viewer with its controls, entered from the results screen and the library |
 | [features/replay-library.md](./features/replay-library.md) | The replay store behind the platform layer, retention of the newest 100 plus pinned replays, best and hand pinning, and the library view in Records |
+| [features/3d-game-records.md](./features/3d-game-records.md) | The 3D board identity and labels, 3D summaries, and 3D games in bests, history, win rate and streaks kept per board and per mode |
+| [features/3d-results-records-screens.md](./features/3d-results-records-screens.md) | The 3D end of game: end effect, then the results screen taking over; the Records screen's 2D \| 3D switch and 3D board picker |
 
 ## Features
 
