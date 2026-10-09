@@ -108,11 +108,21 @@ Context:
 /architect "3D mode" m2-3d-joins
 ```
 
-## [ ] 6. Architect the replays slice for m2
+## [P] 6. Architect the replays slice for m2
 
 Depends on: none
 
-Context: none
+Context:
+- 2026-10-09 parked: approval gate — the architecture draft for the m2 replays slice (three documents: replay-recording, replay-playback, replay-library; the open call is whether recording and playback merge into one) waits for approval when the step runs. The draft builds on the unapproved m1 and m2 designs of steps 2–5 and uses provisional names for them. With it, two design questions:
+  Q2. Besides the actions, what does a replay record?
+    a. Movement too: the mouse cursor path in 2D and the camera position and view direction in 3D, sampled several times a second. Watching a replay then looks like watching the player.
+    b. Actions only, with their times. Playback shows cells opening and flags appearing, with no cursor or camera movement.
+    Recommendation: a. The replay viewers enthusiasts already use (Minesweeper Online, Arbiter) show cursor movement, and much of what makes a fast game impressive is the movement between clicks. Sampled movement stays small for 2D. For very long 3D games the design would set a sampling rate and say how big a replay can get.
+  Q3. Which replays does the library keep?
+    a. The most recent games, up to a fixed count, plus pinned replays that are never removed. A personal-best game is pinned automatically, and the player can pin any replay by hand.
+    b. Every replay, forever. Storage grows without limit.
+    c. Only replays the player chooses to save. Everything else is gone once the results screen closes.
+    Recommendation: a. This keeps "every game is recorded" without unbounded growth on the web build's limited browser storage and, later, in Steam Cloud. Records that matter can never be lost to the rolling limit.
 
 ```prompt
 /architect "Replays" m2-3d-joins
