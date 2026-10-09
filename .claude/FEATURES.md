@@ -22,10 +22,10 @@ Tasks: none
 
 ## screen-components — Component kit for the menu, overlay and results screens
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/screen-components.md
 Source: product-design.md § Visual design system (m1-classic-2d)
-Tasks: none
+Tasks: 17, 18, 19, 20
 
 ---
 

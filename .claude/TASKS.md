@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 16
+Last task number: 20
 
 ---
 
@@ -161,5 +161,45 @@ Target: claude
 Files: .claude/context/platform.md, .claude/context/INDEX.md, .claude/context/testing.md
 Preconditions: 14, 15
 Feature: platform-storage
+
+---
+
+## 17. Component kit: styles, markup patterns and focus contract
+
+Status: [MISSING]
+Target: claude
+Files: css/components.css, js/ui/components.js, dev/components.html, tests/components.test.mjs, index.html
+Preconditions: 1, 2
+Feature: screen-components
+
+---
+
+## 18. In-game overlay bar component
+
+Status: [MISSING]
+Target: claude
+Files: css/components.css, index.html, js/ui.js, css/style.css, dev/components.html
+Preconditions: 17
+Feature: screen-components
+
+---
+
+## 19. Main menu, pause card and results layout from the kit
+
+Status: [MISSING]
+Target: claude
+Files: index.html, css/style.css, css/components.css, js/ui.js, js/main.js
+Preconditions: 17, 18
+Feature: screen-components
+
+---
+
+## 20. Update documentation for feature `screen-components`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/app-shell.md, .claude/context/testing.md, .claude/context/INDEX.md
+Preconditions: 17, 18, 19
+Feature: screen-components
 
 ---
