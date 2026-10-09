@@ -4,7 +4,7 @@ Created: 2026-10-08 · Source: /product-roadmap conversation · Model: opus
 Last step number: 17
 Sequencing: /production-plan must see every architected feature, and tasks are written only after the plan orders them.
 
-## [ ] 1. Architect the visual design system slice for m1
+## [P] 1. Architect the visual design system slice for m1
 
 Depends on: none
 
@@ -17,6 +17,12 @@ Context:
     c. Yes, now. The 3D scene follows the theme already in m1. This contradicts the m1 slice ("the 3D mode keeps its current look"), so the roadmap would need revising first.
     Recommendation: a. The product design says the 3D look is kept and is the bar for every mode, and the roadmap keeps the scene untouched through m2. The overlay drawn over the 3D board still follows the theme, so the switch between modes stays consistent.
 - 2026-10-09 unparked with answer: Q1a — the 3D scene keeps its one current look under both themes; only the menus, the in-game overlay and the results screen around it follow the chosen theme.
+- 2026-10-09 parked: approval gate — the architecture draft for the m1 visual design system (three documents: design-tokens-and-themes, square-tile-skin, screen-components; the open call is whether the component kit merges into tokens-and-themes) waits for approval when the step runs. It carries Q1a above. It leaves the Settings page out, so step 3's settings feature must store a theme value and show a theme control. With it, one design question:
+  Q2. Which theme does a player see on first launch, before they pick one in Settings?
+    a. The operating system's light or dark preference, until the player picks one. Settings offers Light, Dark and "Match system".
+    b. Light, which matches today's look. Settings offers Light and Dark only.
+    c. Dark. Settings offers Light and Dark only.
+    Recommendation: a. It costs one extra option, it respects the player's system choice, and the Electron build reads the same preference as the browser.
 
 ```prompt
 /architect "Visual design system" m1-classic-2d
