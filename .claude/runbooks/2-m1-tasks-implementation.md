@@ -669,7 +669,7 @@ Context:
 
 Done: 2026-10-09, commit `b515c50` (12 files, +690/-46). Step 27's premise changed: the pause controller no longer routes to `results` (its `router` option is gone). The results flow attaches to the `finished` hand-off, records the game, and routes with `{ summary, mode, comparison, saved, notSaved }`. 3D summaries are ignored, so 3D keeps its old end-of-game flow until m2.
 
-## [ ] 47. Implement task 47 — Update documentation for feature `results-screen`
+## [x] 47. Implement task 47 — Update documentation for feature `results-screen`
 
 Depends on: 46
 
@@ -679,6 +679,8 @@ Context:
 ```prompt
 /task-implement 47 --review
 ```
+
+Done: 2026-10-09, commit `3d28aa4` (4 files, +115/-33).
 
 ## [ ] 48. Implement task 48 — Records view: board picker and figures
 
