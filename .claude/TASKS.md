@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 38
+Last task number: 42
 
 ---
 
@@ -381,5 +381,45 @@ Target: claude
 Files: .claude/context/classic2d.md, .claude/context/INDEX.md, .claude/context/testing.md, .claude/context/app-shell.md, README.md
 Preconditions: 32, 33, 34, 35, 36, 37
 Feature: classic-2d-square-play
+
+---
+
+## 39. Settings schema and store
+
+Status: [MISSING]
+Target: claude
+Files: js/settings/schema.js, js/settings/store.js, tests/settings-store.test.mjs
+Preconditions: 15
+Feature: settings
+
+---
+
+## 40. Settings appliers: theme, audio, look, resolution, fullscreen
+
+Status: [MISSING]
+Target: claude
+Files: js/settings/appliers.js, js/theme.js, js/audio.js, js/ui.js, js/render.js, js/main.js, tests/settings-appliers.test.mjs
+Preconditions: 2, 39
+Feature: settings
+
+---
+
+## 41. Settings page and pause-card shortcuts
+
+Status: [MISSING]
+Target: claude
+Files: js/settings/page.js, js/settings/bindings.js, index.html, js/ui.js, js/shell/menu.js, css/components.css, tests/settings-page.test.mjs
+Preconditions: 26, 27, 39, 40
+Feature: settings
+
+---
+
+## 42. Update documentation for feature `settings`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/settings.md, .claude/context/app-shell.md, .claude/context/audio.md, .claude/context/rendering.md, .claude/context/INDEX.md, .claude/context/testing.md
+Preconditions: 39, 40, 41
+Feature: settings
 
 ---
