@@ -139,10 +139,10 @@ Tasks: 56, 57, 58, 59, 60
 
 ## replay-recording — Replay format and recording of actions and movement in 2D and 3D
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/replay-recording.md
 Source: product-design.md § Replays (m2-3d-joins)
-Tasks: none
+Tasks: 65, 66, 67, 68, 69, 70
 
 ---
 

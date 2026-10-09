@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 64
+Last task number: 70
 
 ---
 
@@ -641,5 +641,65 @@ Target: claude
 Files: .claude/context/records.md, .claude/context/mode3d.md, .claude/context/testing.md, .claude/context/INDEX.md
 Preconditions: 61, 62, 63
 Feature: 3d-game-records
+
+---
+
+## 65. Replay format: header, streams, encoder and decoder
+
+Status: [MISSING]
+Target: claude
+Files: js/replay/format.js, tests/replay-format.test.mjs
+Preconditions: 5, 29, 61
+Feature: replay-recording
+
+---
+
+## 66. Recorder and sealer
+
+Status: [MISSING]
+Target: claude
+Files: js/replay/recorder.js, tests/replay-recorder.test.mjs
+Preconditions: 30, 53, 65
+Feature: replay-recording
+
+---
+
+## 67. Classic 2D capture and the replay on the mode contract
+
+Status: [MISSING]
+Target: claude
+Files: js/replay/sampler-2d.js, js/classic2d/session.js, js/classic2d/mode.js, js/shell/mode-host.js, js/shell/pause.js, tests/replay-2d.test.mjs
+Preconditions: 35, 36, 66
+Feature: replay-recording
+
+---
+
+## 68. 3D capture: recorder and camera sampler
+
+Status: [MISSING]
+Target: claude
+Files: js/replay/sampler-3d.js, js/mode3d/session.js, js/shell/mode-3d.js, tests/replay-3d.test.mjs
+Preconditions: 62, 66, 67
+Feature: replay-recording
+
+---
+
+## 69. Replay determinism tests and the measured recording constants
+
+Status: [MISSING]
+Target: claude
+Files: tests/replay-determinism.test.mjs, tests/fixtures/replays/, dev/measure-replays.mjs, js/replay/recorder.js, js/replay/format.js, js/replay/sampler-2d.js, js/replay/sampler-3d.js, .claude/domain/features/replay-recording.md
+Preconditions: 67, 68
+Feature: replay-recording
+
+---
+
+## 70. Update documentation for feature `replay-recording`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/replay.md, .claude/context/app-shell.md, .claude/context/classic2d.md, .claude/context/mode3d.md, .claude/context/testing.md, .claude/context/INDEX.md
+Preconditions: 65, 66, 67, 68, 69
+Feature: replay-recording
 
 ---
