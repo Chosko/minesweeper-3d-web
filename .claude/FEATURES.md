@@ -13,10 +13,10 @@ Tasks: 1, 2, 3
 
 ## square-tile-skin — Square tile and number colours for Classic 2D
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/square-tile-skin.md
 Source: product-design.md § Visual design system (m1-classic-2d)
-Tasks: none
+Tasks: 21, 22, 23
 
 ---
 

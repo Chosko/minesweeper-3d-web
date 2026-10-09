@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 20
+Last task number: 23
 
 ---
 
@@ -201,5 +201,35 @@ Target: claude
 Files: .claude/context/app-shell.md, .claude/context/testing.md, .claude/context/INDEX.md
 Preconditions: 17, 18, 19
 Feature: screen-components
+
+---
+
+## 21. Tile and number colour tokens
+
+Status: [MISSING]
+Target: claude
+Files: css/tokens.css, tests/tokens.test.mjs
+Preconditions: 1
+Feature: square-tile-skin
+
+---
+
+## 22. Tile painter, tile cache and minimum tile size
+
+Status: [MISSING]
+Target: claude
+Files: js/classic2d/tile-skin.js, tests/tile-skin.test.mjs, .claude/domain/features/square-tile-skin.md
+Preconditions: 2, 5, 21
+Feature: square-tile-skin
+
+---
+
+## 23. Update documentation for feature `square-tile-skin`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/classic2d.md, .claude/context/INDEX.md, .claude/context/testing.md, .claude/context/rendering.md
+Preconditions: 21, 22
+Feature: square-tile-skin
 
 ---
