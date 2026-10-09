@@ -85,10 +85,10 @@ Tasks: 14, 15, 16
 
 ## game-summary — Board identity, game summary and the derived stats 3BV/s and efficiency
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/game-summary.md
 Source: product-design.md § Results and records (m1-classic-2d)
-Tasks: none
+Tasks: 29, 30, 31
 
 ---
 

@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 28
+Last task number: 31
 
 ---
 
@@ -281,5 +281,35 @@ Target: claude
 Files: .claude/context/app-shell.md, .claude/context/input.md, .claude/context/testing.md, .claude/context/INDEX.md
 Preconditions: 24, 25, 26, 27
 Feature: game-shell
+
+---
+
+## 29. Board identity, board key and display label
+
+Status: [MISSING]
+Target: claude
+Files: js/records/board.js, tests/records-board.test.mjs
+Preconditions: none
+Feature: game-summary
+
+---
+
+## 30. Summary builder, derived stats and best eligibility
+
+Status: [MISSING]
+Target: claude
+Files: js/records/summary.js, tests/records-summary.test.mjs
+Preconditions: 6, 29
+Feature: game-summary
+
+---
+
+## 31. Update documentation for feature `game-summary`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/records.md, .claude/context/INDEX.md, .claude/context/testing.md
+Preconditions: 29, 30
+Feature: game-summary
 
 ---
