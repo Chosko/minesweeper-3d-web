@@ -181,3 +181,48 @@ Source: product-design.md § Results and records (m2-3d-joins)
 Tasks: none
 
 ---
+
+## steam-desktop-host — Electron host for Windows, Steamworks capability adapter, page bridge and SteamPipe build
+
+Status: [NEW]
+Doc: .claude/domain/features/steam-desktop-host.md
+Source: product-design.md § Steam features (m3-on-steam)
+Tasks: none
+
+---
+
+## steam-cloud-saves — Save files in the user-data directory, synced by Steam Auto-Cloud
+
+Status: [NEW]
+Doc: .claude/domain/features/steam-cloud-saves.md
+Source: product-design.md § Steam features (m3-on-steam)
+Tasks: none
+
+---
+
+## steam-leaderboards — Free-play Steam leaderboards: catalogue, verified submission with replay, offline outbox, queries
+
+Status: [NEW]
+Doc: .claude/domain/features/steam-leaderboards.md
+Source: product-design.md § Steam features (m3-on-steam)
+Tasks: none
+
+---
+
+## leaderboard-screen — Leaderboard screen: board picker, global, friends and around-me rankings, watch an entry's replay
+
+Status: [NEW]
+Doc: .claude/domain/features/leaderboard-screen.md
+Source: product-design.md § Steam features (m3-on-steam)
+Tasks: none
+
+---
+
+## steam-achievements — The m3 milestone achievements for Classic 2D and 3D, evaluated per game and caught up from history
+
+Status: [NEW]
+Doc: .claude/domain/features/steam-achievements.md
+Source: product-design.md § Steam features (m3-on-steam)
+Tasks: none
+
+---

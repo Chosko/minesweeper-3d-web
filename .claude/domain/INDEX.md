@@ -37,6 +37,11 @@ layer.
 | [features/replay-library.md](./features/replay-library.md) | The replay store behind the platform layer, retention of the newest 100 plus pinned replays, best and hand pinning, and the library view in Records |
 | [features/3d-game-records.md](./features/3d-game-records.md) | The 3D board identity and labels, 3D summaries, and 3D games in bests, history, win rate and streaks kept per board and per mode |
 | [features/3d-results-records-screens.md](./features/3d-results-records-screens.md) | The 3D end of game: end effect, then the results screen taking over; the Records screen's 2D \| 3D switch and 3D board picker |
+| [features/steam-desktop-host.md](./features/steam-desktop-host.md) | The Windows Electron host: game window, Steamworks capability adapter and binding spike, the page bridge, platform selection, overlay, SteamPipe build |
+| [features/steam-cloud-saves.md](./features/steam-cloud-saves.md) | The Steam build's storage: documents and replays as files in the save directory, safe writes, Steam Auto-Cloud sync and quota |
+| [features/steam-leaderboards.md](./features/steam-leaderboards.md) | The 18 free-play leaderboards, replay-verified submission with attached replay, the offline outbox, entry and replay queries, the web stand-in |
+| [features/leaderboard-screen.md](./features/leaderboard-screen.md) | The leaderboard screen: 2D \| 3D board picker, global, friends and around-me rankings, own standing, watching an entry's replay |
+| [features/steam-achievements.md](./features/steam-achievements.md) | The m3 achievement catalogue for Classic 2D and 3D, per-game evaluation, unlocking through Steam and catch-up from history |
 
 ## Features
 
