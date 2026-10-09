@@ -415,7 +415,7 @@ This step creates the runbook only. Never run it.
 ```
 Done: 2026-10-09, commit `b6c7f33` (2 files, +519/-1). Runbook 2, m1-tasks-implementation: 50 steps of `/task-implement <n> --review` (per the user's correction), with steps 7 and 37 needing agent+human. /runbook-create adds its own block to RUNBOOKS.md, so that commit also captured this runbook's in-flight [RUNNING] status.
 
-## [ ] 16. Create the m2-tasks-implementation runbook
+## [x] 16. Create the m2-tasks-implementation runbook
 
 Depends on: 13
 
@@ -438,6 +438,7 @@ Answers to its interview, so it needs to ask nothing:
 
 This step creates the runbook only. Never run it.
 ```
+Done: 2026-10-09, commit `6f4edfc` (2 files, +345/-1). Runbook 3, m2-tasks-implementation: 33 steps of `/task-implement <n> --review`, where step id is task number minus 50. No step needs a person.
 
 ## [ ] 17. Create the m3-tasks-implementation runbook
 
