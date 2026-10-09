@@ -131,7 +131,7 @@ Context:
 /architect "3D mode" m2-3d-joins
 ```
 
-## [ ] 6. Architect the replays slice for m2
+## [P] 6. Architect the replays slice for m2
 
 Depends on: none
 
@@ -147,6 +147,15 @@ Context:
     c. Only replays the player chooses to save. Everything else is gone once the results screen closes.
     Recommendation: a. This keeps "every game is recorded" without unbounded growth on the web build's limited browser storage and, later, in Steam Cloud. Records that matter can never be lost to the rolling limit.
 - 2026-10-09 unparked with answer: Q2a — replays record movement too (the 2D cursor path, the 3D camera position and view direction, sampled several times a second); Q3a — the library keeps the most recent games up to a fixed count plus pinned replays, a personal-best game pinned automatically and any replay pinnable by hand. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
+- 2026-10-09 parked: approval gate — the m2 replays architecture draft, now carrying Q2a and Q3a (the mine positions stored in the header, movement sampled about 20/s in 2D and 10/s in 3D, retention of the newest 100 unpinned plus pinned replays), waits for approval when the step runs. It puts two requirements on other steps: step 2's rules engine keeps every shipped rules version frozen, and step 3's storage gains a large-binary store (IndexedDB on the web). With it, two design questions:
+  Q2. Should recording and playback merge into one document, or stay separate beside the library?
+    a. Keep three documents: replay-recording, replay-playback, replay-library.
+    b. Merge recording and playback into one, beside the library.
+    Recommendation: a. Recording runs inside live play and owns the format, while playback is a separate read-only mode. Merging them would mix two different runtime settings into one set of tasks.
+  Q3. How do replays keep playing correctly after game updates?
+    a. Store the mine positions and the actions, and replay them on the engine. Each shipped version of the rules is frozen: any rule change ships as a new version and the engine keeps the old ones. Replays stay small, and step 2's engine design takes on this requirement.
+    b. Store what each action changed on the board, so the replay plays without the engine. Old replays never depend on old rule versions, but they get larger and the format is harder to keep stable.
+    Recommendation: a. It keeps replays small, and the check values in the format catch any replay that can no longer be reproduced.
 
 ```prompt
 /architect "Replays" m2-3d-joins
