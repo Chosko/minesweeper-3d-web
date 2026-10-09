@@ -62,7 +62,7 @@ Context:
 ```
 Done: 2026-10-09, commit `419c404` (6 files, +477/-2). Board generation stays its own document. The rules are not yet observed: each one that could go two ways is a fidelity test needing one human observation of the live Minesweeper Online.
 
-## [ ] 3. Architect the main menu and game shell slice for m1
+## [x] 3. Architect the main menu and game shell slice for m1
 
 Depends on: none
 
@@ -86,6 +86,7 @@ Context:
 ```prompt
 /architect "Main menu and game shell" m1-classic-2d
 ```
+Done: 2026-10-09, commit `d6e77d8` (6 files, +392/-0). Platform storage kept its own document. Decided by the agent, unasked: graphics settings are fullscreen plus a 3D render resolution of Auto (the current adaptive behaviour), Sharp or Fast.
 
 ## [ ] 4. Architect the results and records slice for m1
 
