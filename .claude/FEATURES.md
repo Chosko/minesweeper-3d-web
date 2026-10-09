@@ -121,10 +121,10 @@ Tasks: 48, 49, 50
 
 ## 3d-board-graph — The 3D box on the shared rules engine, with the 3D rule profile
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/3d-board-graph.md
 Source: product-design.md § 3D mode (m2-3d-joins)
-Tasks: none
+Tasks: 51, 52, 53, 54, 55
 
 ---
 

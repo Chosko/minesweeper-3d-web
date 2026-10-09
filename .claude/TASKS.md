@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 50
+Last task number: 55
 
 ---
 
@@ -501,5 +501,55 @@ Target: claude
 Files: .claude/context/records.md, .claude/context/app-shell.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
 Preconditions: 48, 49
 Feature: records-screen
+
+---
+
+## 51. Box graph provider
+
+Status: [MISSING]
+Target: claude
+Files: js/engine/box-grid.js, tests/engine-box-grid.test.mjs
+Preconditions: 4
+Feature: 3d-board-graph
+
+---
+
+## 52. 3D rule profile: revealed-cell flagging, chord, auto-hide and win
+
+Status: [MISSING]
+Target: claude
+Files: js/engine/profiles.js, js/engine/rules.js, js/engine/metrics.js, tests/engine-3d-profile.test.mjs
+Preconditions: 5, 6, 51
+Feature: 3d-board-graph
+
+---
+
+## 53. 3D state view and the large-board memory check
+
+Status: [MISSING]
+Target: claude
+Files: js/engine/state-view-3d.js, tests/engine-3d-view.test.mjs, .claude/domain/features/3d-board-graph.md
+Preconditions: 52
+Feature: 3d-board-graph
+
+---
+
+## 54. 3D front-end on the shared engine and retirement of the 3D engine
+
+Status: [MISSING]
+Target: claude
+Files: js/main.js, js/render.js, js/picking.js, js/ui.js, js/shell/mode-3d.js, js/logic.js, tests/logic.test.mjs
+Preconditions: 9, 25, 27, 53
+Feature: 3d-board-graph
+
+---
+
+## 55. Update documentation for feature `3d-board-graph`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/engine.md, .claude/context/logic.md, .claude/context/rendering.md, .claude/context/input.md, .claude/context/app-shell.md, .claude/context/testing.md, .claude/context/INDEX.md
+Preconditions: 51, 52, 53, 54
+Feature: 3d-board-graph
 
 ---
