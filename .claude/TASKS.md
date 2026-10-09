@@ -296,7 +296,7 @@ Feature: game-summary
 
 ## 30. Summary builder, derived stats and best eligibility
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/records/summary.js, tests/records-summary.test.mjs
 Preconditions: 6, 29
