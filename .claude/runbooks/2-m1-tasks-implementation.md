@@ -409,7 +409,7 @@ Context:
 
 Done: 2026-10-09, commit `279a4ab` (3 files, +365/-1). Passing `counts()` before the first click (`bbbv` null) returns `null` rather than throwing. The stored summary holds a plain copy of the board identity, not the board key; `bbbvPerSecond` and `efficiency` are unrounded, or `null` when their divisor is zero.
 
-## [ ] 31. Implement task 31 — Update documentation for feature `game-summary`
+## [x] 31. Implement task 31 — Update documentation for feature `game-summary`
 
 Depends on: 29, 30
 
@@ -420,6 +420,8 @@ Context:
 ```prompt
 /task-implement 31 --review
 ```
+
+Done: 2026-10-09, commit `31e0488` (4 files, +141/-2).
 
 ## [ ] 32. Implement task 32 — Classic 2D board setup, game session and timer
 
