@@ -209,7 +209,7 @@ Context:
 ```
 Done: 2026-10-09, commit `7fd415d` (6 files, +323/-6). Two documents. The results screen takes over after a fixed end delay of about one second, and results-screen.md now keeps the board visible behind it in Classic 2D only.
 
-## [ ] 8. Architect the Steam features slice for m3
+## [x] 8. Architect the Steam features slice for m3
 
 Depends on: none
 
@@ -234,6 +234,7 @@ Context: none
 
 technical-direction.md leaves the Steamworks binding open, to be decided by a spike (steamworks.js lacks a leaderboard API: extend it, or adopt another binding). Do not pick the binding here; raise it as a question if the design cannot proceed around it.
 ```
+Done: 2026-10-09, commit `a7aff97` (7 files, +804/-0). Five documents, 18 leaderboards and 17 achievements. A win is uploaded only after the replay verifier confirms it and only when it beats the player's own Steam best. technical-direction.md still says the binding spike comes before this architecture, which is now out of date.
 
 ## [ ] 9. Architect the main menu and game shell slice for m3
 
@@ -283,6 +284,7 @@ Context: none
     Recommendation: a. It never leaves a spinner on a dead connection and still shows a slow answer.
 - 2026-10-09 Decided by the user: every approval gate a skill in this step raises is approved as drafted, unseen; on each open call take the draft's own recommendation, and answer the gate from this bullet rather than parking. Park only on a real design question.
 - 2026-10-09 unparked with answer: Q2a — after a win that does not beat the best, the panel shows the standing global and friends rank labelled "your best", the move shown only when the entry improved; Q3b — no rank panel on the web build; Q4a — its own document, results-steam-rank; Q5a — the panel waits about 5 seconds, a late answer still filling it in while the player is on the results screen. The approval gate is answered by the user's standing decision above.
+- 2026-10-09 (from step 8): steam-leaderboards provides the `standing(board)` query the results-screen rank reads, and uploads a win only when it beats the player's own Steam best.
 
 ```prompt
 /architect "Results and records" m3-on-steam
