@@ -86,7 +86,7 @@ Feature: cell-graph-rules-engine
 
 ## 9. Seeded source and standard mine placer
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/generation/random.js, js/generation/placer.js, tests/generation-placer.test.mjs
 Preconditions: 4, 5
