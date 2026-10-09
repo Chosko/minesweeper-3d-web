@@ -74,7 +74,7 @@ Context:
 /architect "Main menu and game shell" m1-classic-2d
 ```
 
-## [ ] 4. Architect the results and records slice for m1
+## [P] 4. Architect the results and records slice for m1
 
 Depends on: none
 
@@ -93,6 +93,7 @@ Context:
     b. No. The game is not recorded at all.
     Recommendation: a. Otherwise a player can protect a streak or a win rate by restarting a game that is going badly. A game abandoned before the first click is never counted.
 - 2026-10-09 unparked with answer: Q2a — three separate bests per board (fastest time, best 3BV/s, best efficiency), each compared on the results screen; Q3a — custom boards get personal bests, each exact width, height, mine count and no-guess setting its own board; Q4a — a game started (first click made) and then restarted or left counts as a loss and breaks the win streak. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
+- 2026-10-09 parked: approval gate — the m1 results and records architecture draft, now carrying the Q2a, Q3a and Q4a answers (four documents: game-summary, personal-records, results-screen, records-screen; the open call is whether game-summary folds into personal-records), waits for approval when the step runs. It records two open points: whether closing the window mid-game counts as a loss, and who owns the shared storage interface (step 3's draft gives it to platform-storage).
 
 ```prompt
 /architect "Results and records" m1-classic-2d
