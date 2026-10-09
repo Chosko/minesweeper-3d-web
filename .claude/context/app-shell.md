@@ -1,10 +1,11 @@
-# App shell — game flow, frame loop, menus and HUD
+# App shell — game flow, frame loop, menus, HUD and theming
 
 ## OVERVIEW
 
 The glue that turns the rules engine, renderer, input and audio into a game:
 screen modes, the per-frame loop, action dispatch, timer, end of game, best
-times, menus/HUD/overlays, the debug hook, and the static-site files.
+times, menus/HUD/overlays, design tokens and the light/dark theme, the debug
+hook, and the static-site files.
 
 - `js/main.js` — entry module. Builds `BoardRenderer`, `FlyCamera`, `Input`,
   `MouseActions`, `Controls`, `GamepadReader`, `UI`; holds the single state
@@ -15,8 +16,22 @@ times, menus/HUD/overlays, the debug hook, and the static-site files.
 - `index.html` — every overlay is static markup toggled by the `.hidden` class;
   importmap maps `three` to `vendor/three/three.module.min.js` (vendored
   three.js r186, no build step); a module `onerror` shows a `.fatal` card.
-- `css/style.css` — layered fixed overlays (z-index: HUD 10, help 11, banner 12,
-  flash 15, overlays 20, controls modal 30, ctx-lost 40, toast 45, fatal 50).
+  Head order: classic `js/theme.js`, then `css/tokens.css`, then
+  `css/style.css`, then the module graph.
+- `css/tokens.css` — the design tokens, the single source of every shared
+  visual value: palette (`--color-*`), typography (`--font-*`), spacing
+  (`--space-*`), radii (`--radius-*`), elevation (`--elevation-*`), motion
+  (`--duration-*`, `--easing-*`) and z-layers (`--z-*`). Light values on
+  `:root`, dark overrides under `:root[data-theme="dark"]`.
+- `css/style.css` — shell styling; declares no custom properties and reads
+  only tokens from `css/tokens.css`. Layered fixed overlays use the `--z-*`
+  tokens (HUD 10, help 11, banner 12, flash 15, overlays 20, controls modal 30,
+  ctx-lost 40, toast 45, fatal 50).
+- `js/theme.js` — theme applier, a classic (non-module) script run before
+  first paint: sets the root `data-theme` attribute (`light` | `dark`) and
+  exposes `globalThis.msTheme`.
+- `js/tokens.js` — token reader (ES module) for consumers that cannot read
+  stylesheet values directly, chiefly Canvas renderers.
 - `404.html` — redirects to `/` (GitHub Pages). `CNAME` = `minesweeper3d.chosko.com`;
   `.nojekyll` disables Jekyll processing so files are served as-is.
 
@@ -39,6 +54,21 @@ times, menus/HUD/overlays, the debug hook, and the static-site files.
   `setBannerRecord`, `hideBanner`; `flash`, `toast(msg, ms)`, `setPad(info|null)`,
   `setNoMouse`, `initVolume(v, onChange)`, `openControls`/`closeControls`/
   `isControlsOpen`, `refreshBests`, `isPauseVisible`, `setReadyMessage`.
+
+`js/theme.js` — `globalThis.msTheme` (also `createThemeApplier({root, readStored?, onError?})`,
+the factory tests drive):
+- `current()` → `'light' | 'dark'`; `setTheme(theme)` — an unknown value is
+  `light`, never thrown; a no-op when unchanged.
+- `onChange(listener)` → unsubscribe; listeners run after the attribute
+  changes, and a throwing listener does not stop the others.
+
+`js/tokens.js` exports
+- `token(name)` → the token's computed value on the document root for the
+  active theme (`name` with or without the leading `--`); an unknown token
+  returns `FALLBACK_COLOR` (`#ff00ff`), logging once per name only in development (hostname
+  localhost, 127.0.0.1, [::1] or empty).
+- `onThemeChange(listener)` → unsubscribe (delegates to `msTheme.onChange`).
+- `createTokenReader({root, getStyle, theme, dev?, log?})` — the factory behind both.
 
 `js/main.js` exports nothing; its surface is `window.__ms` (tests, Playwright):
 - getters `state` (the live `S`), `game`, `renderer`, `camera`, `controls`,
@@ -101,6 +131,18 @@ times, menus/HUD/overlays, the debug hook, and the static-site files.
   screen methods otherwise hide it. The controls modal body is cloned from
   `#help .controls` at construction, so edit the list in `#help` only.
 - Banner goes `compact` after 4 s and is `suppressed` while the pause card shows.
+- Theme: `js/theme.js` runs synchronously in `<head>`, so the root
+  `data-theme` attribute is set before any stylesheet paints. Its stored-theme
+  getter returns nothing until the settings feature wires the stored value in,
+  so start-up applies Light; the applier reads the preference and never writes
+  it. Switching theme is only the attribute change — every shell colour
+  follows through the `:root[data-theme="dark"]` overrides.
+- Styling values: a new colour, size, radius, shadow, duration or z-index goes
+  into `css/tokens.css` (with a dark value for a colour) and `css/style.css`
+  reads it by `var(--…)`; `tests/tokens.test.mjs` rejects a custom property
+  declared in `css/style.css` or a read of an undeclared token.
+- The 3D scene (`js/render.js`, `js/textures.js`) keeps its own palette: it
+  never reads tokens and never subscribes to theme changes.
 - `localStorage` keys are all `ms3d.*` (custom, hintH.done, best.*, lookSens,
   invertY, lastPreset); access is try/catch-wrapped (`lsGet`/`lsSet`).
 
@@ -114,8 +156,10 @@ Gameplay fidelity to the original game is the overriding rule.
   - "Rules" — Timer (starts on first left release over a selected cell, chords
     do not start it, 2 decimals, freezes on win/loss) and HUD contents.
   - "Controls" — start camera position, Esc/F5 replaced by the pause menu.
-- [../domain/INDEX.md](../domain/INDEX.md) — product domain index (no rules file
-  specific to this area).
+- [../domain/features/design-tokens-and-themes.md](../domain/features/design-tokens-and-themes.md)
+  — token categories, the contrast contract, the theme preference's owner
+  (the settings feature) and the applier/reader contracts.
+- [../domain/INDEX.md](../domain/INDEX.md) — product domain index.
 
 ## CROSS-REFERENCES
 
@@ -128,7 +172,9 @@ Gameplay fidelity to the original game is the overriding rule.
   gamepad helpers and `pickCell`/`pickCellBrute`.
 - [audio.md](audio.md) — `sfx` calls: `unlock`, `reveal`, `flag`, `chord`,
   `explode`, `win`, `noop`, `toggleMute`, `setVolume`/`getVolume`.
-- [testing.md](testing.md) — browser tests drive the game through `window.__ms`.
+- [testing.md](testing.md) — browser tests drive the game through `window.__ms`;
+  `tests/tokens.test.mjs` and `tests/theme.test.mjs` pin the token sheet, the
+  applier and the reader.
 
 ## WHEN TO READ THE SOURCE
 
@@ -140,3 +186,5 @@ Gameplay fidelity to the original game is the overriding rule.
   + CSS z-index layer + `PAD_LAYERS`/`padDefault` for controller navigation).
 - Changing controller button mapping in menus or play (`padPlaying`, `padMenus`).
 - Changing deploy behaviour (custom domain, 404 redirect, vendored three.js path).
+- Adding or renaming a token, or wiring the stored theme preference into the
+  applier (`readStoredTheme` in `js/theme.js`).

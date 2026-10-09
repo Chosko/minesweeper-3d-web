@@ -26,7 +26,7 @@ Feature: design-tokens-and-themes
 
 ## 3. Update documentation for feature `design-tokens-and-themes`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/app-shell.md, .claude/context/testing.md, .claude/context/INDEX.md
 Preconditions: 1, 2

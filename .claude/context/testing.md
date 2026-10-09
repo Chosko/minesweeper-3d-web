@@ -11,6 +11,20 @@ browser checks for everything that needs WebGL or the DOM.
 - `tests/gamepad.test.mjs` — controller helpers (`js/gamepad.js`), analog camera
   (`js/input.js::FlyCamera`), `js/controls.js::Controls`, and trigger sequences
   through `js/input.js::MouseActions`.
+- `tests/tokens.test.mjs` — the token sheet (`css/tokens.css`, parsed as text):
+  full token set on `:root`, semantic (non-hue) names, a dark value for every
+  colour token, z-layer order, WCAG contrast per theme (4.5:1 body text, 3:1
+  large text and essential glyphs, on every surface), `css/style.css` declaring
+  no variables and reading only declared tokens, `index.html` loading
+  `css/tokens.css` before `css/style.css`, and the 3D scene not reading tokens.
+- `tests/theme.test.mjs` — the theme applier (`js/theme.js`, run in a `node:vm`
+  context against a stub root) and the token reader (`js/tokens.js`): Light
+  before first paint, stored-getter fallback (missing, unknown, throwing),
+  `setTheme` normalisation and listener order/isolation, `index.html` running
+  the applier as a classic script before the stylesheets and module graph,
+  `token()` values per theme, `onThemeChange` timing, the visible fallback
+  colour and its development-only log, no copy of token values in
+  `js/tokens.js`, and the 3D renderer never subscribing to theme changes.
 - `.claude/external/run-full-tests.sh` — `cd` to repo root, `exec node --test`.
 - `.claude/external/run-affected-tests.sh <test-file>...` — `node --test` on the
   given files; exits 2 with usage when called with no arguments.
@@ -38,6 +52,12 @@ Tests consume, and so pin, these contracts:
   (`down(b)`/`up(b)`, callback receives `'left'|'right'|'chord'`), `MOVE_SPEED`,
   `LOOK_DEG_PER_PX`, `PAD_LOOK_DEG_PER_S`; `js/controls.js::Controls`
   (`shift`/`space`/`ctrl` union, `pad`, `axes`, `hasAxes`, `releasePad()`).
+- `css/tokens.css` token names and values (`:root` and
+  `:root[data-theme="dark"]`); `js/theme.js::createThemeApplier`
+  (`{root, readStored, onError}` → `apply`, `current`, `setTheme`, `onChange`)
+  and the `globalThis.msTheme` it installs; `js/tokens.js::createTokenReader`
+  (`{root, getStyle, theme, dev, log}` → `token`, `onThemeChange`),
+  `FALLBACK_COLOR`; the `<head>` order in `index.html`.
 
 Browser hook `js/main.js::window.__ms` (full list in [app-shell.md](app-shell.md)):
 - getters `state`, `game`, `renderer`, `camera`, `controls`, `pads`, `fps`,
@@ -73,8 +93,14 @@ Browser hook `js/main.js::window.__ms` (full list in [app-shell.md](app-shell.md
   and a mutable `list` returned by `getGamepads`; no browser globals needed.
 - `FlyCamera.moveAxes` is tested for exact equality with `move()` under keys,
   so the original forward-vector quirk is covered there.
+- Static-file tests read `css/*.css`, `index.html` and `js/*.js` as text with
+  `readFileSync`; CSS comments are stripped before parsing. Classic scripts
+  (`js/theme.js`) run in a `node:vm` context whose global carries a stub
+  `document.documentElement`; DOM-free factories take stub roots and
+  `getStyle` functions instead of browser globals.
 - Untested by Node: `js/render.js`, `js/textures.js`, `js/picking.js`,
-  `js/ui.js`, `js/main.js`, `js/audio.js` — verify in the browser.
+  `js/ui.js`, `js/main.js`, `js/audio.js` — verify in the browser. Computed
+  styles and the rendered theme are browser-only too.
 
 Browser verification (Playwright):
 - Playwright 1.56 is installed globally (`/opt/node22/lib/node_modules/playwright`,
@@ -104,6 +130,9 @@ is enforced.
   - "Controls" — release-to-act chord state machine (`MouseActions` test),
     50 u/s movement, look rates, pitch clamp (`FlyCamera` tests); picking
     exclusions (browser `pickWith`/`aimAt`).
+- [../domain/features/design-tokens-and-themes.md](../domain/features/design-tokens-and-themes.md)
+  — the contrast contract and applier/reader contracts `tokens.test.mjs` and
+  `theme.test.mjs` encode.
 - [../domain/INDEX.md](../domain/INDEX.md) — feature documents whose acceptance
   criteria become tests.
 
@@ -111,7 +140,8 @@ is enforced.
 
 - [logic.md](logic.md) — `tests/logic.test.mjs` pins the engine API and checks it against the naive port.
 - [input.md](input.md) — `tests/gamepad.test.mjs` covers gamepad helpers, `FlyCamera`, `Controls`, `MouseActions`.
-- [app-shell.md](app-shell.md) — owns `window.__ms`, the surface Playwright drives.
+- [app-shell.md](app-shell.md) — owns `window.__ms`, the surface Playwright drives,
+  and the token sheet, theme applier and token reader the token/theme tests pin.
 - [rendering.md](rendering.md) — no unit tests; verified visually via Playwright screenshots.
 - [audio.md](audio.md) — no unit tests; WebAudio only checkable in a browser.
 
@@ -128,3 +158,6 @@ is enforced.
 - Writing a Playwright script that needs a hook method not listed above, or
   changing `__ms` (read the end of `js/main.js`).
 - Investigating a perf-test timeout on slower hardware.
+- A contrast failure in `tests/tokens.test.mjs`: the message names the theme,
+  token pair and ratio; read the colour parser there before changing a value
+  format in `css/tokens.css`.

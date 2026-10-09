@@ -1,7 +1,7 @@
 # Context index
 
 Layout: flat
-Last updated: 2026-10-07
+Last updated: 2026-10-09
 
 Navigation layer for the Minesweeper 3D web port. Read this index, then only
 the context files relevant to the task. Gameplay rules are defined in
@@ -13,6 +13,6 @@ the context files relevant to the task. Gameplay rules are defined in
 | [logic.md](logic.md) | Rules engine `js/logic.js`: mine placement, reveal/flood fill, flags, chord, unlinking, win/loss | done |
 | [rendering.md](rendering.md) | `js/render.js` + `js/textures.js`: instanced cubes, shaders, transparency sort, effects, render-on-demand | done |
 | [input.md](input.md) | `js/input.js`, `js/controls.js`, `js/gamepad.js`, `js/picking.js`: camera, mouse release/chord state machine, gamepad, DDA picking | done |
-| [app-shell.md](app-shell.md) | `js/main.js`, `js/ui.js`, `index.html`, `css/style.css`, `404.html`, deploy files: game flow, frame loop, menus/HUD, `__ms` debug hook | done |
+| [app-shell.md](app-shell.md) | `js/main.js`, `js/ui.js`, `js/theme.js`, `js/tokens.js`, `index.html`, `css/tokens.css`, `css/style.css`, `404.html`, deploy files: game flow, frame loop, menus/HUD, design tokens and light/dark theme, `__ms` debug hook | done |
 | [audio.md](audio.md) | `js/audio.js`: synthesized WebAudio sound effects, volume/mute | done |
-| [testing.md](testing.md) | `tests/*.test.mjs`, `.claude/external/` test scripts, Playwright via `__ms` | done |
+| [testing.md](testing.md) | `tests/*.test.mjs` (logic, gamepad, tokens, theme), `.claude/external/` test scripts, Playwright via `__ms` | done |
