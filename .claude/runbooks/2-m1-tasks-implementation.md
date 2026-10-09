@@ -274,7 +274,7 @@ Context:
 
 Done: 2026-10-09, commit `b801916` (4 files, +161/-25).
 
-## [ ] 21. Implement task 21 — Tile and number colour tokens
+## [x] 21. Implement task 21 — Tile and number colour tokens
 
 Depends on: 1
 
@@ -284,11 +284,14 @@ Context: none
 /task-implement 21 --review
 ```
 
+Done: 2026-10-09, commit `84f8fc5` (3 files, +81/-1). Tokens carry the sheet's `--color-` prefix (`--color-tile-*`, `--color-board-frame`, `--color-board-gap`, `--color-number-1`…`-8`), not the task body's bare `tile-closed`/`number-3`. Light numbers 3 and 6 are darker than the 3D hues to pass 4.5:1.
+
 ## [ ] 22. Implement task 22 — Tile painter, tile cache and minimum tile size
 
 Depends on: 2, 5, 21
 
-Context: none
+Context:
+- 2026-10-09 (from step 21): tile tokens are `--color-tile-*` (a fill per state plus `tile-edge`, `tile-flag`, `tile-mine-glyph`, `tile-wrong-flag-mark`), `--color-board-frame`, `--color-board-gap` and `--color-number-1`…`--color-number-8` — note the `--color-` prefix, not the task body's bare names.
 
 ```prompt
 /task-implement 22 --review
