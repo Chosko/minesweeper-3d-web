@@ -561,7 +561,7 @@ Context:
 
 Done: 2026-10-09, commit `acc9a17` (4 files, +488/-1). The store takes its storage by injection, so nothing uses it yet. Old `ms3d.*` keys are migrated only when no settings document exists and loading reported no trouble. `set()` before `load()` throws; a `set()` during `load()` waits for it.
 
-## [ ] 40. Implement task 40 — Settings appliers: theme, audio, look, resolution, fullscreen
+## [x] 40. Implement task 40 — Settings appliers: theme, audio, look, resolution, fullscreen
 
 Depends on: 2, 39
 
@@ -573,6 +573,8 @@ Context:
 /task-implement 40 --review
 ```
 
+Done: 2026-10-09, commit `2b2c638` (9 files, +527/-56). Auto resolution keeps the existing board-size cap (2 → 1.5 above 20³ → 1 above 50³), not the task's plain `min(devicePixelRatio, 2)`. `js/theme.js` reads `ms3d:doc:settings` v1 straight from localStorage at start-up. A saved "fullscreen on" is reset to off at start-up, since browsers refuse fullscreen without a gesture.
+
 ## [ ] 41. Implement task 41 — Settings page and pause-card shortcuts
 
 Depends on: 26, 27, 39, 40
@@ -582,6 +584,7 @@ Context:
 - 2026-10-09 (from step 27): the pause controller `js/shell/pause.js` (`window.__ms.pauser`) owns every pause and offers `pause(source, {note})`, `resume`, `restart`, `toMenu`, `pageHide`, `inProgress` and `attach(name, fn)` for the hand-offs `finished`, `abandoned`, `inProgress` — records and results hook in through `attach`. A finished game routes to the router screen `results` with `{ summary, mode }` once that screen is registered. Restart/Main-menu confirmation is a panel in the pause card (`#pause-confirm`, `UI.showConfirm`/`closeConfirm`/`isConfirmOpen`).
 - 2026-10-09 (from step 36): Classic 2D's router screens are `classic-2d-choice` (`#c2d-choice`) and `classic-2d` (`#c2d`, board area `#c2d-board`); the pause controller's "board in play" check covers both `playing` and `classic-2d`. Until the `results` screen is registered, a finished 2D board stays on screen and the pause card ("You won!"/"Game over") offers Play again with the same board choice.
 - 2026-10-09 (from step 39): the settings store's `onNotKept({ reason })` fires at most once per store, on the first failed save — connect it to the "settings will not be kept" message.
+- 2026-10-09 (from step 40): `js/main.js` creates the settings store and awaits `load()` before the first screen; F and M change the stored setting and the appliers act on it; `window.__ms.settings` is the test hook. A saved fullscreen-on is reset to off at start-up.
 
 ```prompt
 /task-implement 41 --review
@@ -591,7 +594,8 @@ Context:
 
 Depends on: 39, 40, 41
 
-Context: none
+Context:
+- 2026-10-09 (from step 40): `.claude/context/app-shell.md` still mentions `loadLookSettings`, and `audio.md` still says volume/mute are saved under `ms3d.*` keys; `js/theme.js` now reads `ms3d:doc:settings` v1 at start-up, and Auto resolution keeps the board-size cap (2 → 1.5 above 20³ → 1 above 50³).
 
 ```prompt
 /task-implement 42 --review
