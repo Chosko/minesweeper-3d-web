@@ -29,8 +29,7 @@ In scope (m2-3d-joins):
 - The start-of-game flow: a closed box, the first reveal, generation around
   it, the "generating" state, the timer starting when the board is ready.
 - The first-click guarantee in 3D: the same rule as Classic 2D's pinned
-  reference rule, degrading to the clicked cell alone on a board too dense
-  to leave room.
+  reference rule — the clicked cell is safe, not necessarily an opening.
 - The no-guess switch on every preset and on custom boards up to a
   cell-count limit, shown disabled with its reason above the limit.
 - The 3D mode's side of the mode contract: reporting game started, finished
@@ -98,12 +97,10 @@ behaviour.
 ## Interfaces and contracts
 
 - **First-click guarantee** — the 3D game asks `board-generation` for a
-  board with the same first-click rule Classic 2D pins (an opening — the
-  clicked cell and all its neighbours mine-free — or the clicked cell
-  alone, whichever the reference observation says). When the mine count
-  leaves no room for the clicked cell and its neighbours, the guarantee
-  falls back to the clicked cell alone; the request never fails for
-  density below the mine cap.
+  board with the same first-click rule Classic 2D pins: the clicked cell
+  alone is mine-free, so the first click is safe but not always an
+  opening. The request never fails for density below the mine cap of
+  every cell but one.
 - **No-guess availability** — offered on every preset, and on a custom
   board whose cell count is at or below the no-guess limit. Above it the
   switch is shown disabled, with the reason ("No-guess is available up to

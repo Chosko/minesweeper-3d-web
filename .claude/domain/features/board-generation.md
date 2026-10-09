@@ -41,11 +41,13 @@ Non-goals:
   the seeded generator unchanged.
 - The 3D mode's safe first click and no-guess switch — `3d-play-flow`
   (m2-3d-joins). The generator works over any cell graph; the 3D mode adds
-  only the box graph description and the dense fallback.
+  only the box graph description.
 - Hexagonal and triangle grids — deferred to `m6-launch`.
 - Pre-generating a no-guess board with a forced starting cell. The board is
   generated when the first click lands, so the player keeps a free first
-  click.
+  click. Minesweeper Online's no-guess mode marks a starting cell its server
+  chooses (`tests/fidelity/minesweeper-online.md`), so generating at the
+  first click is a deliberate difference from the reference.
 
 ## Architecture
 
@@ -60,11 +62,10 @@ daily board, which never play through the engine's actions.
   32-bit or wider seed. Part of the generator version: changing it bumps
   the version.
 - **Placer.** Given a cell graph, a mine count, a first-click cell and a
-  seeded source, draws a mine set that honours the first-click guarantee.
-  The excluded region (the cell, or the cell and its neighbours) follows
-  the pinned reference rule; a request that allows the dense fallback
-  (the 3D mode's, see `3d-play-flow`) excludes the cell alone when the
-  mine count leaves no room for its neighbours.
+  seeded source, draws a mine set that honours the first-click guarantee:
+  the first-click cell alone is excluded, as the pinned reference rule
+  says, and its neighbours may hold mines, so the first click is safe but
+  not always an opening.
 - **Solver.** Given a graph, a mine set and a first-click cell, plays the
   board by deduction alone: single-cell rules first, then subset and
   overlapping-constraint reasoning between neighbouring numbers, then the
@@ -81,8 +82,7 @@ daily board, which never play through the engine's actions.
 ## Data and state
 
 - **Request** — graph description (square: width, height; box: X, Y, Z),
-  mine count, first-click cell, whether the dense fallback is allowed,
-  no-guess on or off, seed.
+  mine count, first-click cell, no-guess on or off, seed.
 - **Result** — the mine set as cell indices, the seed, the generator
   version, and for no-guess boards the number of candidates tried.
 - The seed of every game is chosen by the caller (random for free play) and
@@ -100,8 +100,8 @@ daily board, which never play through the engine's actions.
   the generator promises an answer or a failure within its attempt budget,
   never an open-ended wait.
 - **Failure** — an impossible request (more mines than the first-click
-  guarantee leaves room for, after the dense fallback when the request
-  allows it) is rejected at once with a reason. A no-guess
+  guarantee leaves room for: every cell but the first-click cell) is
+  rejected at once with a reason. A no-guess
   request that exhausts its budget returns a failure, not a board that
   needs a guess; the caller decides what the player is offered.
 - **Cancel** — a cancelled request never delivers a result.
@@ -129,6 +129,3 @@ click lands.
 - The attempt budget and the time Expert no-guess generation actually
   takes. Fixed by measurement once the solver exists; blocks the budget
   constant and whether the "generating" state is ever needed in practice.
-- Whether Minesweeper Online's own no-guess mode uses a forced starting
-  cell. If it does, generating at the first click is a deliberate difference
-  from the reference and is recorded as one.

@@ -67,8 +67,8 @@ Feature: cell-graph-rules-engine
 ## 7. Fidelity tests for the reference ruleset
 
 Status: [MISSING]
-Target: claude+human
-Files: tests/fidelity/minesweeper-online.md, tests/engine-fidelity.test.mjs, js/engine/rules.js, js/engine/profiles.js, js/engine/metrics.js, .claude/domain/features/cell-graph-rules-engine.md
+Target: claude
+Files: tests/fidelity/minesweeper-online.md, tests/engine-fidelity.test.mjs, js/engine/rules.js, js/engine/profiles.js, js/engine/metrics.js
 Preconditions: 5, 6
 Feature: cell-graph-rules-engine
 
@@ -367,7 +367,7 @@ Feature: classic-2d-square-play
 ## 37. Classic 2D input fidelity tests
 
 Status: [MISSING]
-Target: claude+human
+Target: claude
 Files: tests/fidelity/minesweeper-online.md, tests/classic2d-fidelity.test.mjs, js/classic2d/pointer-input.js, js/classic2d/board-setup.js, js/engine/profiles.js
 Preconditions: 7, 34, 36
 Feature: classic-2d-square-play

@@ -109,10 +109,3 @@ module tested with Node's built-in runner, beside the rules engine (see
 - No external libraries.
 
 Consumed by `personal-records`, `results-screen` and `records-screen`.
-
-## Open questions
-
-- Which clicks efficiency counts — every click, or effective clicks only —
-  is the engine's pinned reference observation; until it is recorded the
-  efficiency figure cannot be fidelity-tested. Blocks the efficiency test,
-  not the builder.

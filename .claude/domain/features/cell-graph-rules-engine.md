@@ -14,7 +14,8 @@ roadmap's first exit criterion holds it to that on every action. Enthusiasts
 notice a rule that is subtly wrong before anything else, so this engine's
 first job is fidelity, and fidelity is checked rather than asserted: every
 rule whose behaviour the reference could plausibly do two ways is pinned by
-a fidelity test written from an observation of the live site.
+a fidelity test against the reference's behaviour as recorded in
+`tests/fidelity/minesweeper-online.md`.
 
 The engine is graph-based, rather than a square-grid engine, because
 [technical-direction.md](../technical-direction.md) makes one engine serve
@@ -134,24 +135,32 @@ live side by side until the 3D mode moves over.
   count, 3BV, 3BV solved, click counts. `game-summary` derives 3BV/s and
   efficiency from it, or from the counts of an abandoned game, and the
   caller's elapsed time.
-- **Reference ruleset, pinned by fidelity tests.** Each of these is
-  observed once on Minesweeper Online with its default options, the
-  observation is recorded beside the test, and a Node test asserts the
-  engine reproduces it:
-  - what the first click guarantees — a safe cell, or always an opening
-    (`board-generation` implements it; the guarantee is stated here);
-  - whether a left click on a revealed, satisfied number chords, and which
-    inputs chord at all;
-  - what a chord does when its flags are wrong;
-  - what the board shows on a loss: unflagged mines, wrong flags, the
-    exploded mine;
-  - what counts as a click for efficiency, and whether wasted clicks count;
-  - whether flagging is possible on a revealed cell (it is not expected to
-    be).
-  A rule the engine plays differently from the observation is a defect,
-  never a design choice, unless a feature document records it as a
-  deliberate difference. Its fix ships as a new rules version; the tests of
-  every earlier version stay and keep passing.
+- **Reference ruleset, pinned by fidelity tests.** Each rule below is
+  recorded, dated, in `tests/fidelity/minesweeper-online.md` — settled from
+  Minesweeper Online's client code, its help pages and live play with its
+  default options — and a Node test asserts the engine reproduces it. The
+  file is the oracle:
+  - the first click is always safe but not always an opening — only the
+    clicked cell is guaranteed mine-free (`board-generation` implements it;
+    the guarantee is stated here);
+  - releasing the left or the middle button on a revealed number chords,
+    and so does left + right, through the left release; a right press on a
+    number does nothing;
+  - a chord counts flags only: when the flag count equals the number, every
+    unflagged closed neighbour opens, so a wrong flag opens a mine and the
+    game is lost; when the count differs nothing opens and the click counts
+    as a wasted chord;
+  - on a loss the opened mine shows exploded, every unflagged mine is
+    revealed, each wrong flag shows crossed out, each correct flag stays a
+    flagged cell, and every other closed cell stays closed;
+  - efficiency counts every recorded click — reveal, flag, chord and the
+    ineffective chord, wasted clicks included; a right click on a revealed
+    cell is never counted;
+  - a revealed cell cannot be flagged.
+  A rule the engine plays differently from the file is a defect, corrected
+  in the engine against the file, never a design choice, unless a feature
+  document records it as a deliberate difference. Its fix ships as a new
+  rules version; the tests of every earlier version stay and keep passing.
 
 ## Dependencies
 
@@ -161,10 +170,3 @@ live side by side until the 3D mode moves over.
 
 Consumed by `classic-2d-square-play` (drives the actions and draws the
 state) and by `game-summary` (reads the game summary and counts).
-
-## Open questions
-
-- The fidelity observations themselves. Each pinned rule above needs one
-  recorded observation of Minesweeper Online with default options, made by a
-  person on the live site; until then its test cannot be written. Blocks the
-  fidelity tests, not the engine's structure.

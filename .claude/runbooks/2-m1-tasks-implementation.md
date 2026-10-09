@@ -1,7 +1,7 @@
 # Runbook: m1-tasks-implementation
 
 Created: 2026-10-09 · Source: /runbook-create interview (runbook planning-to-m3 step 15) · Model: opus
-Last step number: 50
+Last step number: 52
 
 ## [ ] 1. Implement task 1 — Token sheet with light and dark values
 
@@ -63,11 +63,22 @@ Context: none
 /task-implement 6 --review
 ```
 
-## [ ] 7. Implement task 7 — Fidelity tests for the reference ruleset
+## [x] 7. Implement task 7 — Fidelity tests for the reference ruleset
 
 Depends on: 5, 6
 
 Needs: agent+human
+
+Context: none
+
+```prompt
+/task-implement 7 --review
+```
+Done: struck — Task 7 no longer needs a person (it reads tests/fidelity/minesweeper-online.md); the prompt runs as step 51, without the Needs: agent+human line.
+
+## [ ] 51. Implement task 7 — Fidelity tests for the reference ruleset
+
+Depends on: 5, 6
 
 Context: none
 
@@ -365,11 +376,22 @@ Context: none
 /task-implement 36 --review
 ```
 
-## [ ] 37. Implement task 37 — Classic 2D input fidelity tests
+## [x] 37. Implement task 37 — Classic 2D input fidelity tests
 
 Depends on: 7, 34, 36
 
 Needs: agent+human
+
+Context: none
+
+```prompt
+/task-implement 37 --review
+```
+Done: struck — Task 37 no longer needs a person (it reads tests/fidelity/minesweeper-online.md); the prompt runs as step 52, without the Needs: agent+human line.
+
+## [ ] 52. Implement task 37 — Classic 2D input fidelity tests
+
+Depends on: 51, 34, 36
 
 Context: none
 

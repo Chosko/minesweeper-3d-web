@@ -21,16 +21,17 @@ flow, input feel, the board on screen and the timer — and it is where
 In scope (m1-classic-2d):
 
 - Board choice: Beginner (9 × 9, 10 mines), Intermediate (16 × 16, 40),
-  Expert (30 × 16, 99) and Custom (width, height, mines within the
-  reference's limits), plus the no-guess switch.
+  Expert (30 × 16, 99) and Custom (width and height each 1 to 100, mines
+  within the limit Board setup states), plus the no-guess switch.
 - The start-of-game flow: a closed board, the first click, board
   generation around it, the timer starting once the board is ready.
 - The Canvas 2D board: layout and scaling to the window, scrolling or
   panning for boards larger than the screen, hit-testing, and per-cell
   redraw from the engine's change lists through `square-tile-skin`.
 - Mouse input reproducing the reference's feel: press feedback on button
-  down, action on release, the chord gestures the reference accepts, and
-  cancelling by moving off a cell before release.
+  down, reveal and chord on release and a flag on the right press, the
+  chord gestures the reference accepts (left or middle on a number,
+  left + right), and cancelling by moving off a cell before release.
 - Keyboard and controller play: a visible cell cursor moved by arrow keys,
   d-pad or stick, with reveal, flag and chord on buttons, so Classic 2D is
   fully playable with a controller.
@@ -66,8 +67,13 @@ copied.
 
 - **Board setup.** Turns the chosen size and no-guess switch into a board
   request: the square graph from `cell-graph-rules-engine` and the
-  generation options. Validates custom sizes against the reference's
-  limits.
+  generation options. Validates custom boards: width and height 1 to 100
+  each, and a mine count up to the smaller of Minesweeper Online's
+  size-dependent cap, recorded in `tests/fidelity/minesweeper-online.md`,
+  and the cell count minus one. The site takes a mine in every cell on
+  boards of up to 36 cells; this game keeps one cell free so the first
+  click is always safe — a deliberate difference from the reference, and
+  the same rule as 3D custom boards.
 - **Game session.** Owns one game from closed board to result: holds the
   engine, makes the first-click request to the generation worker, shows the
   "generating" state when the answer is slow, starts the timer once the
@@ -130,11 +136,13 @@ copied.
   the failure and offers what `board-generation`'s open question settles;
   the timer never starts on a failed board.
 - **Input fidelity** — every reference behaviour this feature owns (which
-  inputs chord, press feedback, release-off-cell cancelling, the largest
-  custom board) is pinned by a fidelity test in the same way as the engine's
-  rules, from a recorded observation of Minesweeper Online with default
-  options. Pointer behaviour is checked with Playwright; the state machine
-  itself is DOM-free and tested in Node.
+  inputs chord, when a flag toggles, press feedback, release-off-cell
+  cancelling, the largest custom board) is pinned by a fidelity test in the
+  same way as the engine's rules, against the behaviour recorded in
+  `tests/fidelity/minesweeper-online.md`; a failing test is resolved by
+  correcting the game against the file, apart from the deliberate
+  difference Board setup records. Pointer behaviour is checked with
+  Playwright; the state machine itself is DOM-free and tested in Node.
 - **Controller parity** — every action available to the mouse is
   available on the controller.
 
