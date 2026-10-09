@@ -366,7 +366,7 @@ Feature: classic-2d-square-play
 
 ## 37. Classic 2D input fidelity tests
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: tests/fidelity/minesweeper-online.md, tests/classic2d-fidelity.test.mjs, js/classic2d/pointer-input.js, js/classic2d/board-setup.js, js/engine/profiles.js
 Preconditions: 7, 34, 36
