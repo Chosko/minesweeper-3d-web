@@ -4,7 +4,7 @@ Created: 2026-10-08 · Source: /product-roadmap conversation · Model: opus
 Last step number: 17
 Sequencing: /production-plan must see every architected feature, and tasks are written only after the plan orders them.
 
-## [P] 1. Architect the visual design system slice for m1
+## [ ] 1. Architect the visual design system slice for m1
 
 Depends on: none
 
@@ -29,6 +29,7 @@ Context:
     a. Three documents: design-tokens-and-themes, square-tile-skin and screen-components.
     b. Two documents, with the component kit merged into design-tokens-and-themes.
     Recommendation: a. The tokens feed both the Canvas board and the DOM screens, and only the screens need the kit, so the 2D board can be built without waiting for it.
+- 2026-10-09 unparked with answer: Q1a — three documents: design-tokens-and-themes, square-tile-skin and screen-components. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
 
 ```prompt
 /architect "Visual design system" m1-classic-2d
@@ -131,7 +132,7 @@ Context:
 /architect "3D mode" m2-3d-joins
 ```
 
-## [P] 6. Architect the replays slice for m2
+## [ ] 6. Architect the replays slice for m2
 
 Depends on: none
 
@@ -156,12 +157,13 @@ Context:
     a. Store the mine positions and the actions, and replay them on the engine. Each shipped version of the rules is frozen: any rule change ships as a new version and the engine keeps the old ones. Replays stay small, and step 2's engine design takes on this requirement.
     b. Store what each action changed on the board, so the replay plays without the engine. Old replays never depend on old rule versions, but they get larger and the format is harder to keep stable.
     Recommendation: a. It keeps replays small, and the check values in the format catch any replay that can no longer be reproduced.
+- 2026-10-09 unparked with answer: Q2a — keep three documents: replay-recording, replay-playback, replay-library; Q3a — store the mine positions and the actions and replay them on the engine, each shipped rules version frozen and kept by the engine (step 2's engine design takes on this requirement). The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
 
 ```prompt
 /architect "Replays" m2-3d-joins
 ```
 
-## [P] 7. Architect the results and records slice for m2
+## [ ] 7. Architect the results and records slice for m2
 
 Depends on: none
 
@@ -186,6 +188,7 @@ Context:
     a. After the effect has played (about a second, with input frozen). The loss wave is now the player's only look at where the mines were.
     b. Straight away. The effect is cut.
     Recommendation: a. It keeps the moment that shows the player why they lost, at the cost of a short delay.
+- 2026-10-09 unparked with answer: Q2a — keep two documents, the records data and the screens; Q3a — the 3D results screen appears after the end effect has played (about a second, input frozen), the loss wave being the player's only look at the mines. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
 
 ```prompt
 /architect "Results and records" m2-3d-joins
