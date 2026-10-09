@@ -49,7 +49,7 @@ campaign's level order (and, in the demo, the demo's locks).
 - **Records** — personal bests, stats history and the replay library.
 - **Leaderboards** — Steam global and friends rankings, with the replay
   attached to each entry.
-- **Settings** — controls, graphics, audio, accessibility.
+- **Settings** — controls, graphics, theme, audio, accessibility.
 - **Quit.**
 - Achievements have no menu entry; they live in Steam's overlay.
 - In the demo only, a **Buy full game** entry; locked content stays visible in
@@ -131,8 +131,8 @@ Listed in the order a player meets them. The last two are after launch.
 
 Everything around a game: the main menu (Start / Continue, every mode, Records,
 Leaderboards, Settings, Quit), pausing and resuming, restarting, returning to
-the menu, and the settings — controls, graphics, audio and accessibility
-(colour-blind-safe numbers). Input is mouse and keyboard first, with
+the menu, and the settings — controls, graphics, the light or dark theme,
+audio and accessibility (colour-blind-safe numbers). Input is mouse and keyboard first, with
 controller play available in every mode. *Start* opens the first 2D campaign
 level until the player has progress; then *Continue* resumes the next
 unbeaten level or the last mode played. Serves every player and every flow;
@@ -142,7 +142,7 @@ it is where the first-launch flow begins.
 
 The one visual language every mode and screen is drawn in, held to the visual
 direction under Design decisions: the colour palette and typography; a light
-and a dark theme; the tiles and number colours, with a colour-blind-safe
+and a dark theme, which the player picks on the Settings page; the tiles and number colours, with a colour-blind-safe
 number set for the accessibility setting; the menus; the in-game overlay that
 sits over a board (timer, mine counter, pause); and the results screen. Classic
 2D, 3D and Surface each apply it to their own board, so moving between modes
