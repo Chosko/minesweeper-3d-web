@@ -9,8 +9,7 @@ Sources:
 - **client code** — the site's published game client (`/js/index-1036.js`,
   `/js/en-1036.js`, `/css/styles-1036.css`), read for default settings.
 - **help** — the site's own help and guides pages.
-
-## Settled
+- **live play** — anonymous games in a desktop Chromium, default options.
 
 ### Chording: which inputs chord (task 7, task 37)
 2026-10-09 · client code + help · high confidence.
@@ -61,18 +60,29 @@ No-guess mode provides a marked starting cell chosen by the server. This game
 generates the no-guess board when the first click lands instead (the user's
 decision), a deliberate difference from the reference.
 
-## Still open — need a person on the live site
+### First-click guarantee (task 7)
+2026-10-09 · live play · high confidence.
+The first click is always safe, but not always an opening. Of 18 first
+clicks (6 each on Beginner, Intermediate and Expert) all were safe; 4 opened
+an area and 14 revealed a single number (1–4).
 
-The site serves headless browsers a page without the game client, so these
-could not be observed without evading its bot detection.
+### Chording on a wrong flag (task 7)
+2026-10-09 · live play · high confidence.
+When the flag count matches the number, the chord opens every unflagged
+neighbour even if a flag is wrong; it opens the mine and the game is lost.
 
-- **First-click guarantee** (task 7): only safe, or always an opening.
-  Boards are generated server-side and no documentation says. The help's
-  advice to open corners "to get openings" hints that an opening is not
-  guaranteed; unconfirmed.
-- **The board after a loss** (task 7): the client has three end states (mine,
-  exploded mine, wrong flag), but which cells the server reveals on a loss
-  (all unflagged mines? correct flags kept as flags?) was not seen.
-- **Largest custom board** (task 37): the client caps width and height at
-  100 each and mines at 2480 and at width × height; the server may cap mine
-  density further. Medium confidence on the client caps.
+### The board after a loss (task 7)
+2026-10-09 · live play · high confidence.
+The mine that was opened shows as an exploded mine. Every unflagged mine is
+revealed as a plain mine. A wrong flag becomes a crossed-out mine. A correct
+flag stays a closed, flagged cell. Every other closed cell stays closed.
+
+### Largest custom board (task 37)
+2026-10-09 · live play · high confidence for the measured points.
+Width and height are 1–100 each; larger values are refused. The server lowers
+the mine count to a cap that depends on the board's size. Boards of up to 36
+cells take a mine in every cell. From 7×7 up the cap is, by measured board:
+7×7 → 19, 8×8 → 24, 9×9 → 31, 10×10 → 38, 16×16 → 96, 20×20 → 140,
+30×16 → 168, 50×50 → 712, 80×80 → 1659, 90×90 → 2051, 100×100 → 2480
+(density from about 39% down to about 25%). No formula was found; between
+measured points the cap is interpolated.
