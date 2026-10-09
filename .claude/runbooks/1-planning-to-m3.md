@@ -115,7 +115,7 @@ Context:
 ```
 Done: 2026-10-09, commit `a33a66e` (12 files, +494/-30). game-summary kept its own document, and game-shell and classic-2d-square-play now report abandoned games. Decided by the agent, unasked: only wins set a best, a tie keeps the earlier best, and records cannot be reset. A game whose window is closed mid-play is not recorded until that question is settled.
 
-## [ ] 5. Architect the 3D mode slice for m2
+## [x] 5. Architect the 3D mode slice for m2
 
 Depends on: none
 
@@ -141,6 +141,7 @@ Context:
 ```prompt
 /architect "3D mode" m2-3d-joins
 ```
+Done: 2026-10-09, commit `624f3b5` (7 files, +348/-10). Two documents, with six 3D presets. Rule changes the draft did not spell out: a seed no longer reproduces an original board, a finished board ignores clicks, the timer starts on the first applied reveal, and flags placed before it are kept.
 
 ## [ ] 6. Architect the replays slice for m2
 
