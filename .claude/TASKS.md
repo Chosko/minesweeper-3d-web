@@ -476,7 +476,7 @@ Feature: results-screen
 
 ## 48. Records view: board picker and figures
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/records/screen.js, index.html, js/shell/menu.js, css/components.css, tests/records-screen.test.mjs
 Preconditions: 26, 44, 46

@@ -372,7 +372,9 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
 
     // Records, then Back: the results screen shows again, and Play again still starts the same choice.
     await page.click('#r-records');
-    assert.equal(await mode(), 'coming-soon', 'the placeholder while the records screen has not landed');
+    assert.equal(await mode(), 'records', 'the records screen');
+    assert.equal(await page.evaluate(() => document.getElementById('records-board').textContent), 'Beginner', 'on this board');
+    assert.equal(await page.evaluate(() => document.querySelector('#rec-games .ui-stat__value').textContent), '1');
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'results');
     assert.equal(await page.evaluate(() => document.getElementById('results-title').textContent), 'You won!');

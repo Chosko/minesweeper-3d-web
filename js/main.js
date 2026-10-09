@@ -19,6 +19,7 @@ import { createSettingsStore } from './settings/store.js';
 import { createRecordsStore } from './records/store.js';
 import { createResultsFlow } from './results/flow.js';
 import { createResultsView, resultsContent } from './results/view.js';
+import { createRecordsScreen, createRecordsView } from './records/screen.js';
 import { applySettings, pixelRatioFor } from './settings/appliers.js';
 import { bindSettingControls } from './settings/page.js';
 import { createClassic2DMode } from './classic2d/mode.js';
@@ -50,7 +51,7 @@ const cam = new FlyCamera();
 const LOCK_SUPPORTED = 'requestPointerLock' in Element.prototype;
 const COARSE_ONLY = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(pointer: fine)').matches);
 const NO_MOUSE = !LOCK_SUPPORTED || COARSE_ONLY;
-// S.mode is the router's current screen: 'menu' | 'board-choice' | 'coming-soon' | 'classic-2d-choice' | 'settings' | 'ready' |
+// S.mode is the router's current screen: 'menu' | 'board-choice' | 'coming-soon' | 'records' | 'classic-2d-choice' | 'settings' | 'ready' |
 // 'playing' | 'classic-2d' | 'paused' | 'results' | 'ctxlost' (defined below).
 const S = {
   settings: null,
@@ -209,6 +210,7 @@ const SHELL = createRouter({
     menu: { defaultFocus: '[data-entry][data-last]', show: () => { MODES.leave(); showMenuBackdrop(); ui.showMenu(); } },
     'board-choice': { defaultFocus: '[data-preset][data-last]', show: () => { MODES.leave(); showMenuBackdrop(); ui.showBoardChoice(); } },
     'coming-soon': { defaultFocus: '#coming-soon-back', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showComingSoon(d.title ?? 'This screen'); } },
+    records: { defaultFocus: '#records-picker [aria-checked="true"]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showRecords(); RECORDS_PAGE.show({ boardKey: d.boardKey }); }, hide: () => RECORDS_PAGE.hide() },
     settings: { defaultFocus: '#set-lookSensitivity', show: () => { MODES.leave(); showMenuBackdrop(); ui.showSettings(); } },
     'classic-2d-choice': { defaultFocus: '[data-size][data-last]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showBoardChoice2D(); showChoice2D(d.choice ?? LAST_CHOICE_2D.current); } },
     ready: { defaultFocus: '#ready-btn', show: (d = {}) => ui.showReady(S.settings, d.msg ?? ''), back: () => readyBack() },
@@ -311,6 +313,16 @@ const RESULTS_VIEW = createResultsView({
   onPlayAgain: () => RESULTS.playAgain(padGesture ? 'pad' : 'pointer'),
   onRecords: () => RESULTS.openRecords(),
   onMenu: () => RESULTS.toMenu(),
+});
+
+// ---------- records screen ----------
+// The board picker and the chosen board's figures, redrawn live while open; Back is the back stack.
+const RECORDS_PAGE = createRecordsScreen({ records: RECORDS,
+  view: createRecordsView({
+    root: document.getElementById('records'),
+    onSelect: (key) => RECORDS_PAGE.select(key),
+    onBack: () => shellBack('pointer'),
+  }),
 });
 
 // ---------- main menu ----------
@@ -443,7 +455,7 @@ function makeDemo() {
 
 function showMainMenu() { SHELL.go('menu'); }
 /** The menu screens show the decorative demo board behind them. */
-const BACKDROP_SCREENS = new Set(['menu', 'board-choice', 'coming-soon', 'classic-2d-choice', 'settings']);
+const BACKDROP_SCREENS = new Set(['menu', 'board-choice', 'coming-soon', 'records', 'classic-2d-choice', 'settings']);
 function onBackdrop() { return BACKDROP_SCREENS.has(S.mode); }
 /** The 3D leave: drop the game and release pointer lock and lockless play. */
 function leaveGame() {
@@ -484,7 +496,7 @@ canvas.addEventListener('webglcontextlost', (e) => {
 function showContextLost() {
   mouse.reset();
   input.exitLock();
-  for (const id of ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'settings', 'c2d-choice', 'c2d', 'controls-modal']) {
+  for (const id of ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'records', 'settings', 'c2d-choice', 'c2d', 'controls-modal']) {
     const el = document.getElementById(id);
     if (!el) continue;
     if (id !== 'menu') el.classList.add('hidden');
@@ -495,7 +507,7 @@ function showContextLost() {
 /** Leaving the context-lost screen (back to the menu): the other overlays are live again. */
 function hideContextLost() {
   document.getElementById('ctx-lost').classList.add('hidden');
-  for (const id of ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'settings', 'c2d-choice', 'c2d', 'controls-modal']) {
+  for (const id of ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'records', 'settings', 'c2d-choice', 'c2d', 'controls-modal']) {
     const el = document.getElementById(id);
     if (el) el.inert = false;
   }
@@ -549,7 +561,7 @@ function padClick(el) {
 // Spatial focus navigation inside the topmost visible overlay (its screen, or the controls modal).
 const LAYER_SCREEN = {
   'ctx-lost': 'ctxlost', 'controls-modal': null, pause: 'paused', ready: 'ready', results: 'results',
-  'coming-soon': 'coming-soon', settings: 'settings', 'board-choice': 'board-choice', 'c2d-choice': 'classic-2d-choice', c2d: 'classic-2d', menu: 'menu',
+  'coming-soon': 'coming-soon', records: 'records', settings: 'settings', 'board-choice': 'board-choice', 'c2d-choice': 'classic-2d-choice', c2d: 'classic-2d', menu: 'menu',
 };
 const SCREEN_LAYER = Object.fromEntries(Object.entries(LAYER_SCREEN).filter(([, s]) => s).map(([l, s]) => [s, l]));
 const MODAL_FOCUS = '#controls-close';

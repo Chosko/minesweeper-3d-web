@@ -254,7 +254,7 @@ test('in a browser, the menu shows the four entries, each routes, and Back retur
     const ms = (fn, arg) => page.evaluate(fn, arg);
     const mode = () => ms(() => globalThis.__ms.state.mode);
     const active = () => ms(() => document.activeElement?.id || '');
-    const shown = () => ms(() => ['menu', 'board-choice', 'coming-soon', 'c2d-choice', 'ready', 'pause']
+    const shown = () => ms(() => ['menu', 'board-choice', 'coming-soon', 'records', 'c2d-choice', 'ready', 'pause']
       .filter((id) => !document.getElementById(id).classList.contains('hidden')));
     const backdrop = () => ms(() => globalThis.__ms.renderer.game === globalThis.__ms.state.demo);
 
@@ -275,22 +275,20 @@ test('in a browser, the menu shows the four entries, each routes, and Back retur
     assert.equal(await mode(), 'menu', 'Back returns to the menu');
     assert.deepEqual(await shown(), ['menu']);
 
-    // Records: the placeholder, by mouse, keyboard and Back button.
+    // Records: its screen, by mouse, keyboard and Back.
     await page.click('#menu-entry-records');
-    assert.equal(await mode(), 'coming-soon');
-    assert.deepEqual(await shown(), ['coming-soon']);
-    assert.equal(await ms(() => document.getElementById('coming-soon-title').textContent), 'Records');
-    assert.equal(await active(), 'coming-soon-back');
-    await page.click('#coming-soon-back');
-    assert.equal(await mode(), 'menu', 'Back returns to the menu');
+    assert.equal(await mode(), 'records');
+    assert.deepEqual(await shown(), ['records']);
+    assert.ok(await backdrop(), 'the backdrop stays behind the records screen');
+    await page.keyboard.press('Escape');
+    assert.equal(await mode(), 'menu', 'Esc is Back');
     assert.deepEqual(await shown(), ['menu']);
 
     await page.focus('#menu-entry-records');
     await page.keyboard.press('Enter');
-    assert.equal(await mode(), 'coming-soon');
-    assert.equal(await ms(() => document.getElementById('coming-soon-title').textContent), 'Records');
-    await page.keyboard.press('Escape');
-    assert.equal(await mode(), 'menu', 'Esc is Back');
+    assert.equal(await mode(), 'records');
+    await page.click('#records-back');
+    assert.equal(await mode(), 'menu', 'Back returns to the menu');
 
     // Settings: its page, over the backdrop; Esc is Back.
     await page.focus('#menu-entry-settings');

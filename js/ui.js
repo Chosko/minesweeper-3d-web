@@ -62,7 +62,7 @@ export class UI {
       help: $('help'), banner: $('banner'), bannerTitle: $('banner-title'), bannerSub: $('banner-sub'),
       flash: $('flash'), menu: $('menu'), ready: $('ready'), readyBoard: $('ready-board'), readyMsg: $('ready-msg'),
       boardChoice: $('board-choice'), comingSoon: $('coming-soon'), comingSoonTitle: $('coming-soon-title'),
-      settings: $('settings'), settingsBindings: null,
+      settings: $('settings'), settingsBindings: null, records: $('records'),
       comingSoonText: $('coming-soon-text'),
       bannerRecord: $('banner-record'), crosshair: $('crosshair'), hintH: $('hint-h'),
       controlsModal: $('controls-modal'),
@@ -230,9 +230,9 @@ export class UI {
   }
 
   // ---------- screens ----------
-  /** Hide the menu screens (main menu, board choice, placeholder) before another screen shows. */
+  /** Hide the menu screens (main menu, board choices, placeholder, records, settings) before another screen shows. */
   _hideMenus() {
-    for (const el of [this.el.menu, this.el.boardChoice, this.el.comingSoon, this.el.c2dChoice, this.el.settings]) el.classList.add('hidden');
+    for (const el of [this.el.menu, this.el.boardChoice, this.el.comingSoon, this.el.records, this.el.c2dChoice, this.el.settings]) el.classList.add('hidden');
   }
   /** Hide the Classic 2D board layer and give the overlay bar back to the 3D game. */
   _hide2D() {
@@ -265,6 +265,11 @@ export class UI {
     this.el.comingSoonTitle.textContent = title;
     this.el.comingSoonText.textContent = `${title} is coming soon.`;
     this.el.comingSoon.classList.remove('hidden');
+  }
+  /** The records screen's place over the menu backdrop; the records view fills and shows #records. */
+  showRecords() {
+    this.showMenu();
+    this._hideMenus();
   }
   /** The Settings page, over the menu backdrop; its bindings in the active controller's glyphs. */
   showSettings() {
