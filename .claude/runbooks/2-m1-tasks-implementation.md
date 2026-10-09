@@ -606,7 +606,7 @@ Context:
 
 Done: 2026-10-09, commit `8e1889b` (8 files, +374/-81). Also updated `platform.md`, which still said nothing used platform storage.
 
-## [ ] 43. Implement task 43 — Records model: bests, counters, history and comparison
+## [x] 43. Implement task 43 — Records model: bests, counters, history and comparison
 
 Depends on: 30
 
@@ -618,6 +618,8 @@ Context:
 /task-implement 43 --review --rounds 2
 ```
 
+Done: 2026-10-09, commit `f9b6329` (5 files, +557/-1). Added `parseBoardKey` to `js/records/board.js` so bests and counters can be rebuilt from the history alone. Overall counters are kept per mode (`records.overall[mode]`). Recording the same id twice recomputes the original comparison from the earlier history.
+
 ## [ ] 44. Implement task 44 — Records store: persistence, recovery and the abandoned-game hook
 
 Depends on: 15, 27, 43
@@ -628,6 +630,7 @@ Context:
 - 2026-10-09 (from step 25): the mode host exposes `start`, `pause`, `resume`, `restart`, `leave`, `summary`, `on`, `active`, `state` (also as `window.__ms.modes` for Playwright). The host reports `game abandoned` itself from the mode's `summary()` before `restart()`, `leave()` or a replacing `start()`; a mode reports only `started`, `finished`, `canPause`, `failed`. `resume`/`restart` take `{ source: 'pointer' | 'key' | 'pad' }`. Until board choice exists, the 3D mode's "open board choice" goes to the main menu.
 - 2026-10-09 (from step 27): the pause controller `js/shell/pause.js` (`window.__ms.pauser`) owns every pause and offers `pause(source, {note})`, `resume`, `restart`, `toMenu`, `pageHide`, `inProgress` and `attach(name, fn)` for the hand-offs `finished`, `abandoned`, `inProgress` — records and results hook in through `attach`. A finished game routes to the router screen `results` with `{ summary, mode }` once that screen is registered. Restart/Main-menu confirmation is a panel in the pause card (`#pause-confirm`, `UI.showConfirm`/`closeConfirm`/`isConfirmOpen`).
 - 2026-10-09 (from step 36): Classic 2D's router screens are `classic-2d-choice` (`#c2d-choice`) and `classic-2d` (`#c2d`, board area `#c2d-board`); the pause controller's "board in play" check covers both `playing` and `classic-2d`. Until the `results` screen is registered, a finished 2D board stays on screen and the pause card ("You won!"/"Game over") offers Play again with the same board choice.
+- 2026-10-09 (from step 43): `js/records/model.js` exports `createRecordsModel({ records?, history? })` (rebuilds records from history when only history is given) with `record(summary)` → comparison, `documents()` → `{ records, history }`, and queries `boardsPlayed()`, `bests(board)`, `counters(board)`, `winRate(board)`, `history(board)`, `overall(mode = 'classic-2d')`, `overallWinRate(mode)` (board as identity or key); standalone `rebuildRecords(history)`, `compactSummary(summary)`, `emptyRecords()`. Comparison per stat is `{ best, value, difference, newBest }` (value/difference null for a lost or abandoned game). Use `parseBoardKey` from `js/records/board.js` rather than parsing keys.
 
 ```prompt
 /task-implement 44 --review --rounds 2
@@ -637,7 +640,8 @@ Context:
 
 Depends on: 43, 44
 
-Context: none
+Context:
+- 2026-10-09 (from step 43): `.claude/context/records.md` and `testing.md` do not yet describe `js/records/model.js`, `parseBoardKey` or the new model tests.
 
 ```prompt
 /task-implement 45 --review
@@ -651,6 +655,7 @@ Context:
 - 2026-10-09 (from step 19): the results layout exists only in the kit gallery (`dev/components.html`, `#g-results`, placeholder content); `index.html` has no results screen yet. Layout classes available: `ui-screen`, `ui-row`, `ui-grid`, `ui-heading`, `ui-text`, `ui-actions`, `ui-stat-row`.
 - 2026-10-09 (from step 27): the pause controller `js/shell/pause.js` (`window.__ms.pauser`) owns every pause and offers `pause(source, {note})`, `resume`, `restart`, `toMenu`, `pageHide`, `inProgress` and `attach(name, fn)` for the hand-offs `finished`, `abandoned`, `inProgress` — records and results hook in through `attach`. A finished game routes to the router screen `results` with `{ summary, mode }` once that screen is registered. Restart/Main-menu confirmation is a panel in the pause card (`#pause-confirm`, `UI.showConfirm`/`closeConfirm`/`isConfirmOpen`).
 - 2026-10-09 (from step 36): Classic 2D's router screens are `classic-2d-choice` (`#c2d-choice`) and `classic-2d` (`#c2d`, board area `#c2d-board`); the pause controller's "board in play" check covers both `playing` and `classic-2d`. Until the `results` screen is registered, a finished 2D board stays on screen and the pause card ("You won!"/"Game over") offers Play again with the same board choice.
+- 2026-10-09 (from step 43): `js/records/model.js` exports `createRecordsModel({ records?, history? })` (rebuilds records from history when only history is given) with `record(summary)` → comparison, `documents()` → `{ records, history }`, and queries `boardsPlayed()`, `bests(board)`, `counters(board)`, `winRate(board)`, `history(board)`, `overall(mode = 'classic-2d')`, `overallWinRate(mode)` (board as identity or key); standalone `rebuildRecords(history)`, `compactSummary(summary)`, `emptyRecords()`. Comparison per stat is `{ best, value, difference, newBest }` (value/difference null for a lost or abandoned game). Use `parseBoardKey` from `js/records/board.js` rather than parsing keys.
 
 ```prompt
 /task-implement 46 --review
@@ -672,6 +677,7 @@ Depends on: 26, 44, 46
 
 Context:
 - 2026-10-09 (from step 26): Classic 2D, Records and Settings menu entries go to a shared `coming-soon` router screen (`#coming-soon`, not in `SHELL_SCREENS`) and switch over by themselves once their mode is registered or the router has their screen. The 3D presets live on a `board-choice` router screen (`#board-choice`); the menu module is `js/shell/menu.js`, and `shell.lastMode` (v1, `{ mode }`) is saved on the host's `started`.
+- 2026-10-09 (from step 43): `js/records/model.js` exports `createRecordsModel({ records?, history? })` (rebuilds records from history when only history is given) with `record(summary)` → comparison, `documents()` → `{ records, history }`, and queries `boardsPlayed()`, `bests(board)`, `counters(board)`, `winRate(board)`, `history(board)`, `overall(mode = 'classic-2d')`, `overallWinRate(mode)` (board as identity or key); standalone `rebuildRecords(history)`, `compactSummary(summary)`, `emptyRecords()`. Comparison per stat is `{ best, value, difference, newBest }` (value/difference null for a lost or abandoned game). Use `parseBoardKey` from `js/records/board.js` rather than parsing keys.
 
 ```prompt
 /task-implement 48 --review
