@@ -15,7 +15,7 @@ Context: none
 
 Done: 2026-10-09, commit `b310c42` (6 files, +386/-120). Dark values sit under `:root[data-theme="dark"]`; token names carry no hue words (heaviest weight is `--font-weight-ultra`). Many light-only colours in `css/style.css` stay hard-coded, so dark theme is incomplete until `screen-components` moves them to tokens; `--color-focus-ring` is defined but not yet used.
 
-## [ ] 2. Implement task 2 — Theme applier and token reader
+## [x] 2. Implement task 2 — Theme applier and token reader
 
 Depends on: 1
 
@@ -25,6 +25,8 @@ Context:
 ```prompt
 /task-implement 2 --review
 ```
+
+Done: 2026-10-09, commit `fbbe64d` (5 files, +314/-1). `readStoredTheme()` in `js/theme.js` returns nothing, so the page always starts Light — that function is where settings hooks its stored theme; the applier is exposed as `window.msTheme` (`current`, `setTheme`, `onChange`, `createThemeApplier`).
 
 ## [ ] 3. Implement task 3 — Update documentation for feature `design-tokens-and-themes`
 
@@ -427,7 +429,8 @@ Context: none
 
 Depends on: 2, 39
 
-Context: none
+Context:
+- 2026-10-09 (from step 2): the theme applier is `js/theme.js`, a plain script run before stylesheets and exposed as `window.msTheme` (`current()`, `setTheme()`, `onChange()`, `createThemeApplier()`); `readStoredTheme()` there returns nothing for now and is the hook for the stored theme setting.
 
 ```prompt
 /task-implement 40 --review
