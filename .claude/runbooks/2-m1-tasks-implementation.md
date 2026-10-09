@@ -40,7 +40,7 @@ Context: none
 
 Done: 2026-10-09, commit `3f1bd9b` (4 files, +94/-13).
 
-## [ ] 4. Implement task 4 — Cell graph and square-grid provider
+## [x] 4. Implement task 4 — Cell graph and square-grid provider
 
 Depends on: none
 
@@ -49,6 +49,8 @@ Context: none
 ```prompt
 /task-implement 4 --review
 ```
+
+Done: 2026-10-09, commit `ab088b4` (4 files, +294/-1). Graph arrays are private: callers read through `degree(i)`, `neighbour(i, k)`, `forEachNeighbour(i, fn)` (or `neighbours(i)`, a copy); neighbours run in reading order, ascending by index; neighbour symmetry is not enforced.
 
 ## [ ] 5. Implement task 5 — Rules engine: game state, actions and the first-click hand-off
 
