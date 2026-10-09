@@ -48,7 +48,8 @@ no framework and no external chart library (see
 - **Records view.** The board picker, the figures panel and the history
   area, from `screen-components`' segmented choice, cards and stat
   readouts. Opens on the board it was asked for, otherwise on the last
-  board played.
+  board played. The fastest-time best is shown in `results-screen`'s time
+  format (47.3 s).
 - **History chart.** A small line chart of 3BV/s and efficiency per won
   game, drawn on a canvas from design tokens in both themes, redrawn on
   theme change. It follows the kit's conventions and is owned here; it is

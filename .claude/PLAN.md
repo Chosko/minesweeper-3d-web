@@ -80,7 +80,7 @@ Features: none
 - 3d-board-graph: depends on cell-graph-rules-engine, board-generation
 - 3d-play-flow: depends on 3d-board-graph, board-generation, cell-graph-rules-engine, game-shell, game-summary, settings
 - replay-recording: depends on cell-graph-rules-engine, game-summary, classic-2d-square-play, 3d-play-flow, 3d-board-graph, game-shell
-- replay-library: depends on platform-storage, replay-recording, personal-records, game-summary, records-screen, screen-components, game-shell
+- replay-library: depends on platform-storage, replay-recording, personal-records, game-summary, records-screen, screen-components, game-shell, results-screen
 - replay-playback: depends on replay-recording, replay-library, cell-graph-rules-engine, 3d-board-graph, classic-2d-square-play, 3d-play-flow, square-tile-skin, screen-components, results-screen, game-shell
 - 3d-game-records: depends on game-summary, personal-records, 3d-board-graph, 3d-play-flow, platform-storage
 - 3d-results-records-screens: depends on 3d-game-records, results-screen, records-screen, 3d-play-flow, game-shell, screen-components, replay-playback, replay-library
