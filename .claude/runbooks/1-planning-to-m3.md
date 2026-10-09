@@ -161,7 +161,7 @@ Context:
 /architect "Replays" m2-3d-joins
 ```
 
-## [ ] 7. Architect the results and records slice for m2
+## [P] 7. Architect the results and records slice for m2
 
 Depends on: none
 
@@ -177,6 +177,15 @@ Context:
     c. Keep the banner, and show the full results only from the pause menu.
     Recommendation: a. It keeps the 3D mode's current feel, which the product design says to keep, and still gives 3D the same results screen as 2D.
 - 2026-10-09 unparked with answer: Q2a — win rate and streaks are kept per mode and per board, never combined; Q3b — the results screen takes over completely when a 3D game ends, and flying around the finished board is no longer possible. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
+- 2026-10-09 parked: approval gate — the m2 results and records architecture draft, now carrying Q2a and Q3b (3D boards identified by X×Y×Z, mines and no-guess; the results screen takes over and the end banner and finished-board flying go; the Records screen gains a 2D | 3D switch; product-design.md § 3D mode and § Results and records edited to match), waits for approval when the step runs. With it, two design questions:
+  Q2. Should the two documents merge into one?
+    a. Keep two: the records data and the screens.
+    b. Merge them into one document.
+    Recommendation: a. The records part is plain logic that can be tested without a browser. The screens part needs browser tests and depends on the menu and results screen designs from m1. Keeping them apart gives cleaner task boundaries.
+  Q3. Today a 3D game ends with an effect: on a loss, a wave spreads across the board and shows where the mines were, and the camera shakes; on a win, confetti. With the results screen taking over completely, when does it appear?
+    a. After the effect has played (about a second, with input frozen). The loss wave is now the player's only look at where the mines were.
+    b. Straight away. The effect is cut.
+    Recommendation: a. It keeps the moment that shows the player why they lost, at the cost of a short delay.
 
 ```prompt
 /architect "Results and records" m2-3d-joins
