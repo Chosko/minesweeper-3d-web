@@ -30,8 +30,8 @@ In scope (m3-on-steam):
 
 Non-goals:
 
-- The Leaderboards entry in the main menu — the Main menu and game shell
-  slice of m3-on-steam; this screen provides the route it opens.
+- The Leaderboards entry in the main menu — `leaderboards-menu-entry`;
+  this screen provides the route it opens.
 - Ranks on the results screen — the Results and records slice of
   m3-on-steam.
 - Campaign, daily, hexagonal, triangle and Surface leaderboards — deferred

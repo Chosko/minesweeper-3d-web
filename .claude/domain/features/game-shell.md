@@ -42,11 +42,11 @@ In scope (m1-classic-2d):
 Non-goals:
 
 - Start / Continue and the Campaign entry — deferred to `m4-campaigns`.
-- The Leaderboards entry — deferred to `m3-on-steam`.
+- The Leaderboards entry and Quit — deferred to `m3-on-steam`
+  (`leaderboards-menu-entry`).
 - The Daily entry and the demo's menu entries (*Buy full game*, visible
   locks) — deferred to `m5-core-complete`.
 - The Surface entry and grid choice in Classic 2D — deferred to `m6-launch`.
-- Quit. The web build has no window to close; see Open questions.
 - The records screen's contents and the results screen — Results and
   records (m1-classic-2d). The shell only routes to them.
 - The look of any screen — `screen-components`.
@@ -144,9 +144,3 @@ it generalises.
   the results screen receives each finished game's summary.
 - `personal-records` — records each abandoned game's summary.
 - No external libraries.
-
-## Open questions
-
-- Quit is in no milestone's scope slice, yet the m3-on-steam Electron build
-  needs a way to close the game. Blocks only the Steam build; to be settled
-  when `m3-on-steam` is architected, by adding Quit to its slice.

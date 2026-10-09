@@ -42,6 +42,7 @@ layer.
 | [features/steam-leaderboards.md](./features/steam-leaderboards.md) | The 18 free-play leaderboards, replay-verified submission with attached replay, the offline outbox, entry and replay queries, the web stand-in |
 | [features/leaderboard-screen.md](./features/leaderboard-screen.md) | The leaderboard screen: 2D \| 3D board picker, global, friends and around-me rankings, own standing, watching an entry's replay |
 | [features/steam-achievements.md](./features/steam-achievements.md) | The m3 achievement catalogue for Classic 2D and 3D, per-game evaluation, unlocking through Steam and catch-up from history |
+| [features/leaderboards-menu-entry.md](./features/leaderboards-menu-entry.md) | The m3 main menu additions: the Leaderboards entry opening the leaderboard screen, and Quit on the desktop build |
 
 ## Features
 

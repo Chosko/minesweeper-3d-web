@@ -48,8 +48,8 @@ Non-goals:
 - Leaderboard logic and the leaderboard screen — `steam-leaderboards`,
   `leaderboard-screen`.
 - Achievement definitions and unlocking — `steam-achievements`.
-- A Quit entry in the main menu — part of the Main menu and game shell
-  slice, not of this one; see Open questions.
+- The Quit entry in the main menu — `leaderboards-menu-entry`; this
+  feature answers its quit request.
 - Mac and Linux builds and Steam Deck — not now, per
   [product-roadmap.md § Not now](../product-roadmap.md#not-now).
 - The demo build and its separate app — deferred to `m5-core-complete`.
@@ -113,7 +113,8 @@ rules engine imports Electron or the binding.
   the bridge: present, it selects the Steam implementations of storage, the
   replay store, leaderboards and achievements; absent, it selects the
   browser implementations and the local stand-ins. It publishes capability
-  flags (Steam present, achievements, leaderboards, shared files, cloud)
+  flags (desktop host, Steam present, achievements, leaderboards, shared
+  files, cloud)
   that callers read instead of testing for the platform.
 - **Steam start-up.** The packaged build asks Steam to relaunch it through
   the Steam client when started outside it; a development run uses a local
@@ -148,17 +149,19 @@ rules engine imports Electron or the binding.
 - **Bridge requests** — a fixed list: Steam state; achievements (set,
   store, read); leaderboards (find, upload, download, attach); shared files
   (write and share, download); storage and blob-store file operations for
-  `steam-cloud-saves`; and the quit hand-shake. Every request resolves with
-  a result or rejects with a typed error — `unavailable`, `offline`,
-  `not-found`, `invalid`, `failed` — and never throws into the page.
+  `steam-cloud-saves`; the quit hand-shake; and quit, which runs the same
+  sequence as closing the window. Every request resolves with a result or
+  rejects with a typed error — `unavailable`, `offline`, `not-found`,
+  `invalid`, `failed` — and never throws into the page.
 - **Bridge events** — Steam state changed (logged on or off), overlay
   activated, flush requested before quit.
 - **Capability flags** — read by `steam-cloud-saves`, `steam-leaderboards`,
-  `leaderboard-screen` and `steam-achievements` to choose behaviour; no
-  caller tests for Electron or the bridge directly.
-- **Quit** — closing the window asks the page to flush pending saves; the
-  host waits for the answer, bounded by a short timeout, then shuts Steam
-  down and exits, so Steam Cloud's exit sync sees the final files.
+  `leaderboard-screen`, `steam-achievements` and `leaderboards-menu-entry`
+  to choose behaviour; no caller tests for Electron or the bridge directly.
+- **Quit** — closing the window, or the page's quit request, asks the page
+  to flush pending saves; the host waits for the answer, bounded by a short
+  timeout, then shuts Steam down and exits, so Steam Cloud's exit sync sees
+  the final files.
 - **Offline** — the game starts and plays with Steam offline or absent.
   Calls that need the Steam network reject with `offline`; callers queue or
   degrade as their own documents say.
@@ -191,6 +194,3 @@ rules engine imports Electron or the binding.
   the chosen binding, and which window and GPU settings it needs. Checked
   by the spike; blocks the achievement exit criterion's "shows in Steam's
   overlay".
-- Whether the main menu gains a Quit entry for the desktop build. Closing
-  the window quits cleanly meanwhile; settled with the Main menu and game
-  shell slice, as `game-shell`'s own open question asks.
