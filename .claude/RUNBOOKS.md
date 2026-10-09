@@ -6,11 +6,11 @@ Last runbook number: 4
 
 ## 1. planning-to-m3 — Architect, plan and task milestones m1–m3, and author their implementation runbooks
 
-Status: [RUNNING]
+Status: [DONE]
 File: .claude/runbooks/1-planning-to-m3.md
 Created: 2026-10-08
 Source: /product-roadmap conversation
-Steps: 16/17
+Steps: 17/17
 
 ---
 

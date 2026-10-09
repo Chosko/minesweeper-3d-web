@@ -440,7 +440,7 @@ This step creates the runbook only. Never run it.
 ```
 Done: 2026-10-09, commit `6f4edfc` (2 files, +345/-1). Runbook 3, m2-tasks-implementation: 33 steps of `/task-implement <n> --review`, where step id is task number minus 50. No step needs a person.
 
-## [ ] 17. Create the m3-tasks-implementation runbook
+## [x] 17. Create the m3-tasks-implementation runbook
 
 Depends on: 14
 
@@ -463,3 +463,4 @@ Answers to its interview, so it needs to ask nothing:
 
 This step creates the runbook only. Never run it.
 ```
+Done: 2026-10-09, commit `b209cef` (2 files, +297/-1). Runbook 4, m3-tasks-implementation: 27 steps of `/task-implement <n> --review`, where step n is task n+83. Six steps need a person. Steps 12 and 17 rely on m1/m2 tasks that lie outside the runbook.
