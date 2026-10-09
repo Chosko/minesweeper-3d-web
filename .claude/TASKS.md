@@ -126,7 +126,7 @@ Feature: board-generation
 
 ## 13. Update documentation for feature `board-generation`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/generation.md, .claude/context/INDEX.md, .claude/context/testing.md
 Preconditions: 9, 10, 11, 12

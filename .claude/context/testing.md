@@ -29,6 +29,36 @@ browser checks for everything that needs WebGL or the DOM.
 - `tests/fidelity/minesweeper-online.md` — the observation file: one entry per
   rule of Minesweeper Online with default options, each with its date, source
   (client code, help, live play) and confidence, and the tasks it serves.
+- `tests/generation-placer.test.mjs` — the seeded source
+  (`js/generation/random.js`: pinned first outputs, seed range, `int(n)`
+  range, no `Math.random`) and the placer (`js/generation/placer.js`):
+  distinct ascending cells never on the first click, the pinned Expert board,
+  every other cell reachable (neighbours included), the densest legal board,
+  impossible and malformed requests, a non-square graph, the rules engine
+  accepting the mine set, and the version-bump rule stated in the module
+  headers.
+- `tests/generation-solver.test.mjs` — the solver (`js/generation/solver.js`)
+  on hand-built boards with a known answer (single-cell only, the 1-2-1 wall
+  through the subset stage, the remaining-mine count through the global
+  stage, exactly one guess, a guess only at the end), agreement with an
+  exhaustive reference on random small square boards and a 4 × 4 torus, that
+  it learns the board only through `open()` on deduced-safe cells, that a
+  group over its enumeration budget only loses deductions, an Expert board
+  within a second.
+- `tests/generation-noguess.test.mjs` — `generate()`
+  (`js/generation/generate.js`): a standard board is the placer's first
+  draw, the pinned no-guess board, candidates drawn one after another from
+  one source, every accepted Beginner/Intermediate/Expert no-guess board
+  (300/150/60 seeds) clearing with the solver, the exhausted-budget failure,
+  rejected requests, the recorded attempt budget, DOM-free and independent
+  of `js/logic.js`.
+- `tests/generation-client.test.mjs` — the worker handler
+  (`js/generation/worker.js::handleMessage`: reply per id, agreement with
+  Node `generate()`, structured-clone data, rejected requests as failure
+  messages, no state between requests) and the client
+  (`js/generation/client.js`) over a fake worker: lazy worker reuse,
+  cancellation, one request in flight, stale replies ignored, worker errors,
+  the module-worker default, and no generation import on the main thread.
 - `tests/gamepad.test.mjs` — controller helpers (`js/gamepad.js`), analog camera
   (`js/input.js::FlyCamera`), `js/controls.js::Controls`, and trigger sequences
   through `js/input.js::MouseActions`.
@@ -81,6 +111,14 @@ Tests consume, and so pin, these contracts:
   the game's actions, queries, `counts()`, `summary()`, `actions()`;
   `js/engine/metrics.js::createBoardMetrics`, `createClickCounts`,
   `CLICK_KINDS`. Full list in [engine.md](engine.md).
+- `js/generation/random.js::createSeededSource` (its pinned output stream);
+  `js/generation/placer.js::placeMines`, `GENERATOR_VERSION`;
+  `js/generation/solver.js::solve`, `solveFrom`;
+  `js/generation/generate.js::generate`, `boardGraph`, `ATTEMPT_BUDGET`;
+  `js/generation/worker.js::handleMessage` and the `{ id, request }` /
+  `{ id, result | error }` messages; `js/generation/client.js::
+  createGenerationClient`, `createModuleWorker`. Full list in
+  [generation.md](generation.md).
 - `css/tokens.css` token names and values (`:root` and
   `:root[data-theme="dark"]`); `js/theme.js::createThemeApplier`
   (`{root, readStored, onError}` → `apply`, `current`, `setTheme`, `onChange`)
@@ -120,6 +158,16 @@ Browser hook `js/main.js::window.__ms` (full list in [app-shell.md](app-shell.md
   engine against the file, never by editing the file, unless a feature
   document records the difference as deliberate. The fix ships as a new
   rules version; every earlier version's tests stay and keep passing.
+- Generation determinism: the same request, seed and `GENERATOR_VERSION`
+  give the same board. The generation tests pin exact outputs — the seeded
+  source's first values, a placed Expert board, an accepted no-guess board —
+  so a change that moves any of them is a generator change: bump
+  `GENERATOR_VERSION` and re-pin, never re-pin alone. Seeds are fixed
+  integers; nothing reads `Math.random`.
+- Solver tests build boards from row strings (`'*'` a mine, `'o'` the first
+  click, `'.'` safe) and check the solver against an exhaustive reference;
+  the client tests drive a fake worker that answers through `handleMessage`
+  after a macrotask (or on `flush()` when held).
 - Engine tests build boards from row strings (`'*'` a mine) over
   `createSquareGrid`, and use `cellGraphFromLists` for non-square graphs.
 - The randomized test runs 400 seeds × 40 actions and asserts per-cell
@@ -171,6 +219,9 @@ is enforced.
 - [../domain/features/cell-graph-rules-engine.md](../domain/features/cell-graph-rules-engine.md)
   — the engine behaviours, 3BV and click-count definitions and the fidelity
   rule the `engine-*` tests encode.
+- [../domain/features/board-generation.md](../domain/features/board-generation.md)
+  — the determinism, failure, cancel and solver-correctness contracts the
+  `generation-*` tests encode.
 - [../domain/features/design-tokens-and-themes.md](../domain/features/design-tokens-and-themes.md)
   — the contrast contract and applier/reader contracts `tokens.test.mjs` and
   `theme.test.mjs` encode.
@@ -181,6 +232,7 @@ is enforced.
 
 - [logic.md](logic.md) — `tests/logic.test.mjs` pins the engine API and checks it against the naive port.
 - [engine.md](engine.md) — `tests/engine-*.test.mjs` pin the cell-graph engine; the fidelity test checks it against the observation file.
+- [generation.md](generation.md) — `tests/generation-*.test.mjs` pin the seeded generator, solver, no-guess loop, worker and client.
 - [input.md](input.md) — `tests/gamepad.test.mjs` covers gamepad helpers, `FlyCamera`, `Controls`, `MouseActions`.
 - [app-shell.md](app-shell.md) — owns `window.__ms`, the surface Playwright drives,
   and the token sheet, theme applier and token reader the token/theme tests pin.
@@ -196,6 +248,10 @@ is enforced.
   it, then fix the engine.
 - A randomized-test failure: read `assertSame` output (seed, action, cell) and
   replay that seed with both engines.
+- A pinned generation output fails: decide whether the change is a generator
+  change (bump `GENERATOR_VERSION`, re-pin) or a regression; a solver
+  failure prints the seed — replay it with `solve()` and read
+  `js/generation/solver.js`.
 - Changing placement or rng use in `Game` (seed streams must stay aligned with
   `naivePlace`).
 - Adding a gamepad family, button mapping or trigger threshold (`padFamily`

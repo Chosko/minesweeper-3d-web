@@ -94,11 +94,11 @@ daily board, which never play through the engine's actions.
 - **Generate** — request in, result out, as plain messages between the page
   and the worker. Determinism contract: same request, same generator version
   → same result, in the worker and in Node.
-- **Timing** — Beginner and Intermediate boards, no-guess or not, answer
-  fast enough that no pause shows. An Expert or large custom no-guess board
-  may take long enough that the caller shows a short "generating" state;
-  the generator promises an answer or a failure within its attempt budget,
-  never an open-ended wait.
+- **Timing** — Beginner, Intermediate and Expert boards, no-guess or not,
+  answer fast enough that no pause shows (measured in § Attempt budget and
+  timing). A large custom no-guess board may take long enough that the
+  caller shows a short "generating" state; the generator promises an answer
+  or a failure within its attempt budget, never an open-ended wait.
 - **Failure** — an impossible request (more mines than the first-click
   guarantee leaves room for: every cell but the first-click cell) is
   rejected at once with a reason. A no-guess
@@ -134,5 +134,4 @@ under Node 22, over a fixed set of 1000 seeds: a board takes a median of 23
 candidates and at worst 433 (about 1 candidate in 36 clears), in a median of
 2 ms and at worst about 40 ms. The attempt budget is 2000 candidates, over
 four times the worst seen; 2000 failing Expert candidates take about 0.2 to
-0.3 s, which bounds a failure's wait. At these times the "generating" state
-is not needed for Expert.
+0.3 s, which bounds a failure's wait.
