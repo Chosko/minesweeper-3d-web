@@ -146,7 +146,7 @@ Feature: platform-storage
 
 ## 15. Browser storage implementation and start-up selection
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/platform/browser-backend.js, js/platform/index.js, tests/platform-browser.test.mjs
 Preconditions: 14
