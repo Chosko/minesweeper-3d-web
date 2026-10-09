@@ -3,7 +3,7 @@
 Created: 2026-10-09 · Source: /runbook-create interview (runbook planning-to-m3 step 15) · Model: opus
 Last step number: 52
 
-## [ ] 1. Implement task 1 — Token sheet with light and dark values
+## [x] 1. Implement task 1 — Token sheet with light and dark values
 
 Depends on: none
 
@@ -13,11 +13,14 @@ Context: none
 /task-implement 1 --review
 ```
 
+Done: 2026-10-09, commit `b310c42` (6 files, +386/-120). Dark values sit under `:root[data-theme="dark"]`; token names carry no hue words (heaviest weight is `--font-weight-ultra`). Many light-only colours in `css/style.css` stay hard-coded, so dark theme is incomplete until `screen-components` moves them to tokens; `--color-focus-ring` is defined but not yet used.
+
 ## [ ] 2. Implement task 2 — Theme applier and token reader
 
 Depends on: 1
 
-Context: none
+Context:
+- 2026-10-09 (from step 1): the token sheet's colour tokens are `--color-backdrop/-highlight/-shade`, `--color-surface`, `-surface-border`, `-surface-raised`, `-surface-sunken`, `--color-border`, `--color-ink`, `-ink-muted`, `--color-accent`, `-accent-strong`, `-accent-soft`, `-accent-ink`, `--color-success`, `-danger`, `-warning`, `--color-focus-ring`; the rest are `--font-*`, `--space-*`, `--radius-*`, `--elevation-1..3`, `--duration-*`, `--easing-*`, `--z-*`. Dark values are under `:root[data-theme="dark"]`. The token reader should use these names.
 
 ```prompt
 /task-implement 2 --review
@@ -180,7 +183,8 @@ Context: none
 
 Depends on: 1, 2
 
-Context: none
+Context:
+- 2026-10-09 (from step 1): many light-only colours in `css/style.css` (translucent card, panel and banner backgrounds, chips, toast) are still hard-coded, so the dark theme looks wrong there until this feature moves them to tokens. `--color-focus-ring` (opaque `#3f78e0`, chosen to pass 3:1) is defined but `style.css` does not use it yet. White text on the primary button is 4.22:1, tested at the 3:1 bold-label threshold.
 
 ```prompt
 /task-implement 17 --review
