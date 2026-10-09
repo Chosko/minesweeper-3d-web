@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 99
+Last task number: 103
 
 ---
 
@@ -991,5 +991,45 @@ Target: claude
 Files: .claude/context/leaderboards.md, .claude/context/app-shell.md, .claude/context/platform.md, .claude/context/testing.md, .claude/context/INDEX.md
 Preconditions: 95, 96, 97, 98
 Feature: steam-leaderboards
+
+---
+
+## 100. Achievement catalogue and evaluator
+
+Status: [MISSING]
+Target: claude
+Files: js/achievements/catalogue.js, js/achievements/evaluate.js, tests/achievements-evaluate.test.mjs, .claude/domain/features/steam-achievements.md
+Preconditions: 30, 43, 62
+Feature: steam-achievements
+
+---
+
+## 101. Achievement unlocker, catch-up and the end-of-game hook
+
+Status: [MISSING]
+Target: claude
+Files: js/achievements/unlock.js, js/achievements/index.js, js/results/flow.js, js/platform/index.js, tests/achievements-unlock.test.mjs
+Preconditions: 44, 73, 86, 100
+Feature: steam-achievements
+
+---
+
+## 102. Steamworks achievement definitions, threshold calibration and overlay check
+
+Status: [MISSING]
+Target: claude+human
+Files: js/achievements/catalogue.js, tests/achievements-evaluate.test.mjs, .claude/domain/features/steam-achievements.md
+Preconditions: 87, 89, 101
+Feature: steam-achievements
+
+---
+
+## 103. Update documentation for feature `steam-achievements`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/achievements.md, .claude/context/app-shell.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
+Preconditions: 100, 101, 102
+Feature: steam-achievements
 
 ---
