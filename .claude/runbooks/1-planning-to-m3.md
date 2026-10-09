@@ -72,7 +72,7 @@ Context:
 /architect "Main menu and game shell" m1-classic-2d
 ```
 
-## [P] 4. Architect the results and records slice for m1
+## [ ] 4. Architect the results and records slice for m1
 
 Depends on: none
 
@@ -90,12 +90,13 @@ Context:
     a. Yes, as a loss. It also breaks the win streak.
     b. No. The game is not recorded at all.
     Recommendation: a. Otherwise a player can protect a streak or a win rate by restarting a game that is going badly. A game abandoned before the first click is never counted.
+- 2026-10-09 unparked with answer: Q2a — three separate bests per board (fastest time, best 3BV/s, best efficiency), each compared on the results screen; Q3a — custom boards get personal bests, each exact width, height, mine count and no-guess setting its own board; Q4a — a game started (first click made) and then restarted or left counts as a loss and breaks the win streak. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
 
 ```prompt
 /architect "Results and records" m1-classic-2d
 ```
 
-## [P] 5. Architect the 3D mode slice for m2
+## [ ] 5. Architect the 3D mode slice for m2
 
 Depends on: none
 
@@ -113,6 +114,7 @@ Context:
     a. Leave them behind. 3D records start fresh under the new rules.
     b. Import them as fastest-time personal bests, with no 3BV or efficiency.
     Recommendation: a. Those times were set without a safe first click, so they are not comparable with new games. Only the web preview has them.
+- 2026-10-09 unparked with answer: Q2a — the 3D first click follows the same rule as Classic 2D (an opening when that rule says so, only the clicked cell on a board too dense); Q3a — no-guess on every preset and on custom boards up to a cell-count limit set from measured generation time, the switch shown disabled with the reason above it; Q4a — the current 3D best times are left behind and 3D records start fresh. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
 
 ```prompt
 /architect "3D mode" m2-3d-joins
