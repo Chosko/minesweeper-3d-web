@@ -682,7 +682,7 @@ Context:
 
 Done: 2026-10-09, commit `3d28aa4` (4 files, +115/-33).
 
-## [ ] 48. Implement task 48 — Records view: board picker and figures
+## [x] 48. Implement task 48 — Records view: board picker and figures
 
 Depends on: 26, 44, 46
 
@@ -691,16 +691,20 @@ Context:
 - 2026-10-09 (from step 43): `js/records/model.js` exports `createRecordsModel({ records?, history? })` (rebuilds records from history when only history is given) with `record(summary)` → comparison, `documents()` → `{ records, history }`, and queries `boardsPlayed()`, `bests(board)`, `counters(board)`, `winRate(board)`, `history(board)`, `overall(mode = 'classic-2d')`, `overallWinRate(mode)` (board as identity or key); standalone `rebuildRecords(history)`, `compactSummary(summary)`, `emptyRecords()`. Comparison per stat is `{ best, value, difference, newBest }` (value/difference null for a lost or abandoned game). Use `parseBoardKey` from `js/records/board.js` rather than parsing keys.
 - 2026-10-09 (from step 44): the records store is created in `js/main.js` (loaded with settings before the first screen), attached to the pause controller and exposed as `window.__ms.records`; it only clears the in-progress marker when a game finishes — recording a won/lost result is this task's job. Documents are `records`, `records.history`, `records.inProgress` (v1); `settled()` awaits queued saves; `available()` is false when stored records were refused.
 - 2026-10-09 (from step 46): the results screen's Records action routes with `{ boardKey }` — today to the coming-soon placeholder, which leaves the mode; Back re-shows the results from the flow's own copy of the last game, and Play again calls `MODES.start('classic-2d', LAST_CHOICE_2D.current)` when no mode is active. Once the records screen is registered, check this round trip still works.
+- 2026-10-09 (from step 46): correction to the step-44 bullet above — recording won/lost results is already done by the results flow (task 46), not by this task.
 
 ```prompt
 /task-implement 48 --review
 ```
 
+Done: 2026-10-09, commit `f4241e0` (10 files, +696/-23). The results screen's Records button now opens the records screen on the game's board (Back and Play again still work); no menu entry leads to coming-soon any more, but it stays as a fallback. "Last board played" means the board whose latest game ended last (Beginner with no games); the not-saved note shows once per session.
+
 ## [ ] 49. Implement task 49 — Records history chart and recent games list
 
 Depends on: 2, 48
 
-Context: none
+Context:
+- 2026-10-09 (from step 48): the records screen is `js/records/screen.js` (router screen with `#records`, `UI.showRecords`); the board picker is the kit's segmented control and wraps with many custom boards; best dates show as "9 Oct 2026"; opening the screen ends the active mode.
 
 ```prompt
 /task-implement 49 --review
@@ -710,7 +714,8 @@ Context: none
 
 Depends on: 48, 49
 
-Context: none
+Context:
+- 2026-10-09 (from step 48): `.claude/context/app-shell.md` still says Records goes to the coming-soon placeholder and has no row for `js/records/screen.js`; coming-soon is now reached by no menu entry and is kept only as a fallback; `js/ui.js` gained `showRecords`.
 
 ```prompt
 /task-implement 50 --review
