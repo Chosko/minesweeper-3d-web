@@ -247,9 +247,9 @@ Tasks: 109, 110
 
 ## input-rebinding — Rebinding keys, mouse buttons and controller buttons for Classic 2D and 3D in Settings
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/input-rebinding.md
 Source: product-design.md § Main menu and game shell (m3-on-steam)
-Tasks: none
+Tasks: 111, 112, 113, 114
 
 ---

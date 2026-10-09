@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 110
+Last task number: 114
 
 ---
 
@@ -1101,5 +1101,45 @@ Target: claude
 Files: .claude/context/app-shell.md, .claude/context/leaderboards.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
 Preconditions: 109
 Feature: results-steam-rank
+
+---
+
+## 111. Action catalogue, bindings resolver and the bindings setting
+
+Status: [MISSING]
+Target: claude
+Files: js/settings/bindings.js, js/settings/resolver.js, js/settings/schema.js, js/settings/store.js, js/ui.js, tests/settings-bindings.test.mjs
+Preconditions: 35, 39, 41
+Feature: input-rebinding
+
+---
+
+## 112. Classic 2D and 3D input read their actions through the bindings
+
+Status: [MISSING]
+Target: claude
+Files: js/input.js, js/controls.js, js/main.js, js/shell/mode-3d.js, js/classic2d/pointer-input.js, js/classic2d/cursor-input.js, tests/input-bindings.test.mjs
+Preconditions: 37, 59, 111
+Feature: input-rebinding
+
+---
+
+## 113. Rebinding controls on the Settings page
+
+Status: [MISSING]
+Target: claude
+Files: js/settings/page.js, js/settings/rebind-panel.js, index.html, css/components.css, tests/settings-rebind.test.mjs
+Preconditions: 111, 112
+Feature: input-rebinding
+
+---
+
+## 114. Update documentation for feature `input-rebinding`
+
+Status: [MISSING]
+Target: claude
+Files: README.md, .claude/context/input.md, .claude/context/app-shell.md, .claude/context/testing.md, .claude/context/INDEX.md
+Preconditions: 111, 112, 113
+Feature: input-rebinding
 
 ---
