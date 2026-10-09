@@ -48,8 +48,8 @@ Non-goals:
 - Mine placement, the safe first click and no-guess generation —
   `board-generation`.
 - The timer, input mapping and drawing — `classic-2d-square-play`.
-- Derived stats (3BV/s, efficiency), personal bests and stats history —
-  Results and records (m1-classic-2d).
+- Derived stats (3BV/s, efficiency) — `game-summary`; personal bests and
+  stats history — `personal-records`.
 - Recording and playing back replays — `m2-3d-joins`. The action stream is
   the hook they will use; no replay format is defined here.
 - Variant rules of any kind — rejected by the product design.
@@ -102,7 +102,7 @@ live side by side until the 3D mode moves over.
   indices. In memory only, for the length of a game; the timing of each
   action belongs to the caller.
 - Nothing is persisted by the engine. The finished game's summary is handed
-  to Results and records, which owns persistence.
+  to `game-summary`; `personal-records` owns persistence.
 
 ## Interfaces and contracts
 
@@ -123,8 +123,9 @@ live side by side until the 3D mode moves over.
   `square-tile-skin` paints; mines left (mines minus flags, may go
   negative); phase; counts.
 - **Game summary** — at win or loss: outcome, board dimensions and mine
-  count, 3BV, 3BV solved, click counts. Results and records derives 3BV/s
-  and efficiency from it and the caller's elapsed time.
+  count, 3BV, 3BV solved, click counts. `game-summary` derives 3BV/s and
+  efficiency from it, or from the counts of an abandoned game, and the
+  caller's elapsed time.
 - **Reference ruleset, pinned by fidelity tests.** Each of these is
   observed once on Minesweeper Online with its default options, the
   observation is recorded beside the test, and a Node test asserts the
@@ -150,7 +151,7 @@ live side by side until the 3D mode moves over.
 - No external libraries.
 
 Consumed by `classic-2d-square-play` (drives the actions and draws the
-state) and by Results and records (reads the game summary).
+state) and by `game-summary` (reads the game summary and counts).
 
 ## Open questions
 

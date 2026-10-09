@@ -82,3 +82,39 @@ Source: product-design.md § Main menu and game shell (m1-classic-2d)
 Tasks: none
 
 ---
+
+## game-summary — Board identity, game summary and the derived stats 3BV/s and efficiency
+
+Status: [NEW]
+Doc: .claude/domain/features/game-summary.md
+Source: product-design.md § Results and records (m1-classic-2d)
+Tasks: none
+
+---
+
+## personal-records — Personal bests, stats history, win rate and streaks per board, persisted locally
+
+Status: [NEW]
+Doc: .claude/domain/features/personal-records.md
+Source: product-design.md § Results and records (m1-classic-2d)
+Tasks: none
+
+---
+
+## results-screen — End-of-game results screen with the personal-best comparison
+
+Status: [NEW]
+Doc: .claude/domain/features/results-screen.md
+Source: product-design.md § Results and records (m1-classic-2d)
+Tasks: none
+
+---
+
+## records-screen — Records screen: bests, win rate, streaks and stats history per board
+
+Status: [NEW]
+Doc: .claude/domain/features/records-screen.md
+Source: product-design.md § Results and records (m1-classic-2d)
+Tasks: none
+
+---

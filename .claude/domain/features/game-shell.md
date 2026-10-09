@@ -103,21 +103,27 @@ it generalises.
 
 - **Mode contract** — each mode front-end provides: `open board choice`,
   `start(choice)`, `pause()`, `resume()`, `restart()`, `leave()`, and reports
-  `game started`, `game finished(record)` and `can pause` back to the shell.
-  `pause()` stops the mode's timer and stops it accepting board input;
-  `leave()` discards the game and releases everything the mode holds
-  (pointer lock, canvas, worker requests).
+  `game started`, `game finished(summary)`, `game abandoned(summary)` and
+  `can pause` back to the shell. `pause()` stops the mode's timer and stops
+  it accepting board input; `leave()` discards the game and releases
+  everything the mode holds (pointer lock, canvas, worker requests).
+  `restart()` and `leave()` on a started, unfinished game first report
+  `game abandoned` with the game's summary from `game-summary`.
 - **Pause rules** — pause applies only to a started, unfinished game; before
   the first click or after the game ends, the pause key opens the pause card
   without a timer to stop, offering restart and back to menu. While the
   pause card shows, the board is hidden in every mode.
 - **Restart** — discards the current game and starts a new one with the same
-  board choice; during a started, unfinished game it asks for confirmation.
+  board choice; during a started, unfinished game it asks for confirmation,
+  saying the game will count as a loss.
 - **Back to menu** — leaves the mode and returns to the main menu; during a
-  started, unfinished game it asks for confirmation.
-- **Game finished** — the shell forwards the mode's finished-game record to
-  Results and records and routes to the results screen; *Play again* comes
-  back as `start` with the same choice.
+  started, unfinished game it asks for confirmation, saying the game will
+  count as a loss.
+- **Game finished** — the shell hands the mode's summary to `results-screen`
+  and routes to it; *Play again* comes back as `start` with the same choice.
+- **Game abandoned** — the shell records the mode's summary with
+  `personal-records` and goes where the player asked, showing no results
+  screen.
 - **Navigation contract** — every shell screen is fully operable by mouse,
   keyboard and controller; Esc and the controller's back button always mean
   Back or Pause, never a game action.
@@ -134,8 +140,9 @@ it generalises.
   the 3D adapter reads.
 - `platform-storage` — the last mode played.
 - `classic-2d-square-play` — implements the mode contract for Classic 2D.
-- Results and records (m1-classic-2d) — the results and records screens the
-  shell routes to, and the finished-game records it forwards.
+- `results-screen` and `records-screen` — the screens the shell routes to;
+  the results screen receives each finished game's summary.
+- `personal-records` — records each abandoned game's summary.
 - No external libraries.
 
 ## Open questions

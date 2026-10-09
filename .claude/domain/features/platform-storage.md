@@ -63,7 +63,7 @@ sound module ([app-shell.md](../../context/app-shell.md),
 
 ## Data and state
 
-- **Documents** — one per concern: settings, personal bests and stats
+- **Documents** — one per concern: settings, personal records, stats
   history, the last mode played, each mode's last board choice. Each is
   stored as `{ version, data }`.
 - **Source of truth** — the stored document between sessions; the owning

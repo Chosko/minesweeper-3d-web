@@ -26,6 +26,10 @@ layer.
 | [features/game-shell.md](./features/game-shell.md) | The main menu, screen routing, the mode host contract, and the shared pause, restart and back-to-menu flow |
 | [features/settings.md](./features/settings.md) | The Settings page and settings store: controls, graphics, theme and audio, defaults, persistence and change notification |
 | [features/platform-storage.md](./features/platform-storage.md) | The platform layer's storage interface: versioned documents, the browser implementation, failure handling |
+| [features/game-summary.md](./features/game-summary.md) | Board identity, the summary of a won, lost or abandoned game, and how 3BV/s, efficiency and best eligibility are derived |
+| [features/personal-records.md](./features/personal-records.md) | Personal bests per board, stats history, win rate and streaks: rules, stored documents, the comparison against bests |
+| [features/results-screen.md](./features/results-screen.md) | The end-of-game results screen: stats shown, the three-best comparison, Play again, Records, Back to menu |
+| [features/records-screen.md](./features/records-screen.md) | The Records screen: board picker, bests, win rate, streaks, history chart and recent games |
 
 ## Features
 

@@ -93,6 +93,6 @@ described in [app-shell.md](../../context/app-shell.md).
 - Main menu and game shell (m1-classic-2d) — hosts the screens, owns their
   behaviour and controller navigation, and builds the Settings page from
   this kit.
-- Results and records (m1-classic-2d) — supplies the content the results
-  screen shows.
+- `results-screen` — supplies the content and behaviour of the results
+  screen.
 - No external libraries.

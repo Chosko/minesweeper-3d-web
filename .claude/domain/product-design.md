@@ -216,10 +216,14 @@ leaderboard, ranked by 3BV/s. Gives enthusiasts a reason to return every day.
 ### Results and records
 
 The end-of-game screen — time, 3BV, 3BV/s, efficiency, the comparison with the
-personal best, and the Steam global and friends rank — with *Play again* and
+personal bests, and the Steam global and friends rank — with *Play again* and
 *Watch replay* one step away. Behind it, the Records screen: personal bests
 per board, stats history (3BV/s and efficiency over time, win rate, streaks).
-Serves the enthusiast loop.
+Each board keeps three bests from won games — fastest time, best 3BV/s and
+best efficiency — and every exact size, mine count and no-guess setting is
+its own board, custom boards included. A game restarted or left after its
+first click counts as a loss and breaks the win streak. Serves the
+enthusiast loop.
 
 ### Replays
 

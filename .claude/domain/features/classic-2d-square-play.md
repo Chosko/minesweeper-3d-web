@@ -37,7 +37,8 @@ In scope (m1-classic-2d):
 - The timer and mine counter, fed to the in-game overlay.
 - Pause, restart and back to menu, as the game shell asks; the board is
   hidden while paused.
-- Handing the finished game to Results and records.
+- Handing every finished or abandoned game's summary on, through
+  `game-summary`.
 
 Non-goals:
 
@@ -101,8 +102,9 @@ copied.
   the mode reopens on the player's last choice.
 - **Source of truth** — the engine for cell and game state; this feature
   derives nothing from the canvas.
-- The finished-game record (summary, elapsed time, board choice, seed,
-  generator version) is handed to Results and records, which persists it.
+- The game's summary — built by `game-summary` from the engine's summary
+  or counts, the elapsed time, board choice, seed and generator version — is
+  handed to the game shell; `personal-records` persists it.
 
 ## Interfaces and contracts
 
@@ -113,9 +115,13 @@ copied.
   click or after the game ends.
 - **Overlay feed** — timer and mines left, pushed to the in-game overlay
   from `screen-components` whenever they change.
-- **Game finished** — one event per game with the finished-game record, sent
-  to Results and records; the results screen it opens offers *Play again*,
-  which comes back here as a new start with the same choice.
+- **Game finished** — one event per won or lost game with its summary, sent
+  to the game shell, which opens `results-screen`; its *Play again* comes
+  back here as a new start with the same choice.
+- **Game abandoned** — a restart or back to menu after the first click and
+  before a win or loss reports the game's summary with outcome abandoned
+  before the game is discarded; before the first click nothing is
+  reported.
 - **Generation failure** — when a no-guess request fails, the session shows
   the failure and offers what `board-generation`'s open question settles;
   the timer never starts on a failed board.
@@ -140,8 +146,8 @@ copied.
 - Main menu and game shell (m1-classic-2d) — entry from the menu, pause,
   restart, back to menu, settings storage, controller navigation outside
   the board.
-- Results and records (m1-classic-2d) — receives the finished game and
-  shows the results screen.
+- `game-summary` — builds the summary of each finished or abandoned
+  game.
 - No external libraries.
 
 ## Open questions
