@@ -105,6 +105,9 @@ demanding, until free 3D play is within reach.
   is a different board, and still record and show the time. Custom boards get no leaderboard.
 - **Visual direction: modern and catchy, with nothing decorative that does not
   serve play.** The current 3D look is the bar for every mode.
+- **Pausing hides the board in every mode.** The clock stops and the board
+  is covered, so pausing never buys free study time and records stay
+  comparable across modes.
 - **Mouse and keyboard first.** Controllers are supported in every mode;
   touch and mobile are not.
 - **Platforms.** Windows at launch. Mac and Linux only if the port is close to

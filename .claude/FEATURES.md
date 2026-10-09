@@ -55,3 +55,30 @@ Source: product-design.md § Classic 2D (m1-classic-2d)
 Tasks: none
 
 ---
+
+## game-shell — Main menu, screen routing, mode host and the shared pause flow
+
+Status: [NEW]
+Doc: .claude/domain/features/game-shell.md
+Source: product-design.md § Main menu and game shell (m1-classic-2d)
+Tasks: none
+
+---
+
+## settings — Settings page and store: controls, graphics, theme, audio
+
+Status: [NEW]
+Doc: .claude/domain/features/settings.md
+Source: product-design.md § Main menu and game shell (m1-classic-2d)
+Tasks: none
+
+---
+
+## platform-storage — Versioned document storage behind the platform layer, browser implementation
+
+Status: [NEW]
+Doc: .claude/domain/features/platform-storage.md
+Source: product-design.md § Main menu and game shell (m1-classic-2d)
+Tasks: none
+
+---

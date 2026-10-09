@@ -23,6 +23,9 @@ layer.
 | [features/cell-graph-rules-engine.md](./features/cell-graph-rules-engine.md) | The one rules engine over a graph of cells, the square-grid graph, and the reference ruleset pinned by fidelity tests |
 | [features/board-generation.md](./features/board-generation.md) | Seeded deterministic mine placement around the first click, the no-guess solver, and the generation worker |
 | [features/classic-2d-square-play.md](./features/classic-2d-square-play.md) | Classic 2D on the square grid: board choice, start-of-game flow, Canvas 2D board, mouse, keyboard and controller input, timer |
+| [features/game-shell.md](./features/game-shell.md) | The main menu, screen routing, the mode host contract, and the shared pause, restart and back-to-menu flow |
+| [features/settings.md](./features/settings.md) | The Settings page and settings store: controls, graphics, theme and audio, defaults, persistence and change notification |
+| [features/platform-storage.md](./features/platform-storage.md) | The platform layer's storage interface: versioned documents, the browser implementation, failure handling |
 
 ## Features
 
