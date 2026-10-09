@@ -51,8 +51,9 @@ composed from the `screen-components` kit.
   header, the stat readouts, the three best comparisons, the actions. Time
   is shown to the tenth of a second, truncated rather than rounded (47.38 s
   shows as 47.3 s), while the stored time keeps its millisecond precision;
-  this is the one format for every time the game shows outside the in-game
-  overlay, whose timer keeps whole seconds (`screen-components`). 3BV/s is
+  this is the one format for every time the game shows except the in-game
+  overlay's timer and the replay viewer's playback clock, which keep the
+  overlay's whole seconds (`screen-components`, `replay-playback`). 3BV/s is
   shown to two decimals; efficiency as a whole percentage. A stat that is
   not available shows a dash.
 - **Rank panel.** In the Steam build, after a won game on a board with a

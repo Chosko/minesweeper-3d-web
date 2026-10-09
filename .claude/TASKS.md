@@ -769,7 +769,7 @@ Feature: replay-playback
 Status: [MISSING]
 Target: claude
 Files: js/replay/viewer.js, js/replay/clock.js, js/replay/viewer-2d.js, js/shell/router.js, index.html, css/components.css, tests/replay-viewer.test.mjs
-Preconditions: 24, 33, 72, 76
+Preconditions: 18, 24, 33, 46, 72, 76
 Feature: replay-playback
 
 ---

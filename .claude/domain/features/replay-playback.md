@@ -78,7 +78,9 @@ and is never paused into hiding the board.
   is ignored. After the point where a replay's movement was capped, the
   camera holds its last recorded position.
 - **Playback controls and overlay.** Composed from `screen-components`;
-  the overlay reads its figures from the simulator.
+  the overlay reads its figures from the simulator. The replay clock is
+  shown in the in-game overlay's timer format, as `screen-components`
+  § Architecture (Overlay bar) defines it.
 
 ## Data and state
 
@@ -101,7 +103,9 @@ and is never paused into hiding the board.
   hand-off, so it plays even when it could not be saved. Back returns to the
   results screen.
 - **End of replay** — the final board stays, with the outcome and the
-  recorded time; play restarts from the beginning, Back leaves.
+  recorded time, shown in `results-screen`'s time format
+  (§ Architecture, Results view); play restarts from the beginning, Back
+  leaves.
 - **Failure** — a replay from a newer build, or one that names a rules
   version this build does not have, is not played and the viewer says it
   was made by a newer version; a replay that fails verification is not
@@ -119,8 +123,10 @@ and is never paused into hiding the board.
 - `3d-play-flow` — the 3D scene and renderer, reused with the camera driven
   by the replay.
 - `square-tile-skin` — tile painting, through the board view.
-- `screen-components` — playback controls, overlay and messages.
-- `results-screen` — hosts the *Watch replay* action.
+- `screen-components` — playback controls, overlay and messages, and the
+  overlay's timer format for the replay clock.
+- `results-screen` — hosts the *Watch replay* action, and its time format
+  for the recorded time at the end of a replay.
 - `game-shell` — routing, Back and controller navigation.
 - No external libraries.
 
