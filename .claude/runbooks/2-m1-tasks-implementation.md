@@ -104,7 +104,7 @@ Context:
 
 Done: 2026-10-09, commit `08b9578` (2 files, +318/-1). The task body expected engine corrections; none were needed — every fidelity test passed against the engine as it stood. A coverage test now requires one fidelity test per "task 7" entry in the observation file and that every profile `fidelity` marker cites an existing heading.
 
-## [ ] 8. Implement task 8 — Update documentation for feature `cell-graph-rules-engine`
+## [x] 8. Implement task 8 — Update documentation for feature `cell-graph-rules-engine`
 
 Depends on: 4, 5, 6, 7
 
@@ -113,6 +113,8 @@ Context: none
 ```prompt
 /task-implement 8 --review
 ```
+
+Done: 2026-10-09, commit `9fa13ed` (5 files, +236/-11).
 
 ## [ ] 9. Implement task 9 — Seeded source and standard mine placer
 
