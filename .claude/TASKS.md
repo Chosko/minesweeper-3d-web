@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 31
+Last task number: 38
 
 ---
 
@@ -311,5 +311,75 @@ Target: claude
 Files: .claude/context/records.md, .claude/context/INDEX.md, .claude/context/testing.md
 Preconditions: 29, 30
 Feature: game-summary
+
+---
+
+## 32. Classic 2D board setup, game session and timer
+
+Status: [MISSING]
+Target: claude
+Files: js/classic2d/session.js, js/classic2d/board-setup.js, js/engine/profiles.js, tests/classic2d-session.test.mjs, .claude/domain/features/board-generation.md, .claude/domain/features/classic-2d-square-play.md
+Preconditions: 5, 6, 12, 15, 30
+Feature: classic-2d-square-play
+
+---
+
+## 33. Classic 2D Canvas board view
+
+Status: [MISSING]
+Target: claude
+Files: js/classic2d/board-view.js, tests/classic2d-view.test.mjs
+Preconditions: 22, 32
+Feature: classic-2d-square-play
+
+---
+
+## 34. Classic 2D pointer input state machine
+
+Status: [MISSING]
+Target: claude
+Files: js/classic2d/pointer-input.js, js/classic2d/board-view.js, js/engine/profiles.js, tests/classic2d-pointer.test.mjs
+Preconditions: 33
+Feature: classic-2d-square-play
+
+---
+
+## 35. Classic 2D keyboard and controller cursor
+
+Status: [MISSING]
+Target: claude
+Files: js/classic2d/cursor-input.js, js/classic2d/board-view.js, tests/classic2d-cursor.test.mjs, .claude/domain/features/classic-2d-square-play.md
+Preconditions: 24, 33
+Feature: classic-2d-square-play
+
+---
+
+## 36. Classic 2D mode: board choice screen and shell integration
+
+Status: [MISSING]
+Target: claude
+Files: js/classic2d/mode.js, js/classic2d/board-choice.js, index.html, js/shell/menu.js, css/components.css, tests/classic2d-mode.test.mjs
+Preconditions: 18, 26, 27, 32, 33
+Feature: classic-2d-square-play
+
+---
+
+## 37. Classic 2D input fidelity tests
+
+Status: [MISSING]
+Target: claude+human
+Files: tests/fidelity/minesweeper-online.md, tests/classic2d-fidelity.test.mjs, js/classic2d/pointer-input.js, js/classic2d/board-setup.js, js/engine/profiles.js
+Preconditions: 7, 34, 36
+Feature: classic-2d-square-play
+
+---
+
+## 38. Update documentation for feature `classic-2d-square-play`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/classic2d.md, .claude/context/INDEX.md, .claude/context/testing.md, .claude/context/app-shell.md, README.md
+Preconditions: 32, 33, 34, 35, 36, 37
+Feature: classic-2d-square-play
 
 ---

@@ -49,10 +49,10 @@ Tasks: 9, 10, 11, 12, 13
 
 ## classic-2d-square-play — Classic 2D on the square grid: board, input, timer
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/classic-2d-square-play.md
 Source: product-design.md § Classic 2D (m1-classic-2d)
-Tasks: none
+Tasks: 32, 33, 34, 35, 36, 37, 38
 
 ---
 
