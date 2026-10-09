@@ -191,11 +191,22 @@ Context:
 /architect "Results and records" m2-3d-joins
 ```
 
-## [ ] 8. Architect the Steam features slice for m3
+## [P] 8. Architect the Steam features slice for m3
 
 Depends on: none
 
 Context: none
+- 2026-10-09 parked: approval gate — the m3 Steam architecture draft (five documents: steam-desktop-host, steam-cloud-saves, steam-leaderboards, leaderboard-screen, steam-achievements; open calls on merging leaderboard-screen into steam-leaderboards or steam-cloud-saves into steam-desktop-host) waits for approval when the step runs. It leaves the Steamworks binding to a spike behind a capability adapter, which must happen before the leaderboard tasks; leaderboard wins are verified by re-running their replay. With it, two design questions:
+  Q1. Which 3D presets get Steam leaderboards? The 3D mode has nine presets: three flat "2D classic" boards (9×9×1, 16×16×1, 30×16×1), three double-layer boards and three cubes. Each preset would get two boards, with no-guess on and off.
+    a. All nine presets, so 18 3D boards (24 boards in total with the six 2D ones).
+    b. Only the six true 3D presets (double layer and cube), so 12 3D boards.
+    c. Only the three cube presets, so 6 3D boards.
+    Recommendation: a. The product design gives every standard free-play board a leaderboard. The flat presets played in 3D aren't comparable with Classic 2D times, because the controls are different.
+  Q2. What kind of achievements go into the m3 set for Classic 2D and 3D?
+    a. A small set of about 15–20 milestones: a first win on each board, Expert wins with no-guess off, 3BV/s and efficiency thresholds, a win without placing any flag, and wins on each 3D preset.
+    b. Option a plus grind achievements: games played, win streaks and total cells cleared.
+    c. Only a handful of firsts (first win in each mode and on each difficulty), with the rest left to m6.
+    Recommendation: a. It gives enthusiasts goals they care about without padding, and m6 already brings the full set.
 
 ```prompt
 /architect "Steam features" m3-on-steam
