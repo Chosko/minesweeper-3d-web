@@ -228,10 +228,14 @@ enthusiast loop.
 
 ### Replays
 
-Every finished game is recorded. The player can watch any game back, keep it
-in a replay library, and watch the replay attached to a leaderboard entry —
-their own or someone else's. Replays survive game updates. Serves the
-enthusiast loop and keeps leaderboards honest.
+Every finished game is recorded, movement included — the cursor in 2D, the
+camera in 3D — so watching it back looks like watching the player. The
+player can watch any game back, keep it in a replay library, and watch the
+replay attached to a leaderboard entry — their own or someone else's. The
+library keeps the most recent games and every pinned replay: a game that
+set a personal best is pinned automatically, and the player can pin any
+other. Replays survive game updates. Serves the enthusiast loop and keeps
+leaderboards honest.
 
 ### Steam features
 

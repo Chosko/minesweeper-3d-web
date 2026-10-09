@@ -136,3 +136,30 @@ Source: product-design.md § 3D mode (m2-3d-joins)
 Tasks: none
 
 ---
+
+## replay-recording — Replay format and recording of actions and movement in 2D and 3D
+
+Status: [NEW]
+Doc: .claude/domain/features/replay-recording.md
+Source: product-design.md § Replays (m2-3d-joins)
+Tasks: none
+
+---
+
+## replay-playback — Replay simulator, verifier and the replay viewer
+
+Status: [NEW]
+Doc: .claude/domain/features/replay-playback.md
+Source: product-design.md § Replays (m2-3d-joins)
+Tasks: none
+
+---
+
+## replay-library — Replay store, retention with pinning, and the library view in Records
+
+Status: [NEW]
+Doc: .claude/domain/features/replay-library.md
+Source: product-design.md § Replays (m2-3d-joins)
+Tasks: none
+
+---

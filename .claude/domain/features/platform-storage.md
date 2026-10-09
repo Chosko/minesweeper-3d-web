@@ -37,8 +37,8 @@ Non-goals:
   platform layer — `m3-on-steam`.
 - What each document holds — the owning feature (`settings`, Results and
   records, `classic-2d-square-play`, `game-shell`) defines its own content.
-- Replay storage — `m2-3d-joins`, which may need a different shape for many
-  larger documents.
+- Replay storage — `replay-library` (m2-3d-joins) adds a large-binary
+  replay store beside this document interface.
 
 ## Architecture
 

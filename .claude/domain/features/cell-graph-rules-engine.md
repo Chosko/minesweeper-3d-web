@@ -50,8 +50,8 @@ Non-goals:
 - The timer, input mapping and drawing — `classic-2d-square-play`.
 - Derived stats (3BV/s, efficiency) — `game-summary`; personal bests and
   stats history — `personal-records`.
-- Recording and playing back replays — `m2-3d-joins`. The action stream is
-  the hook they will use; no replay format is defined here.
+- Recording and playing back replays — `replay-recording` and
+  `replay-playback` (m2-3d-joins); no replay format is defined here.
 - Variant rules of any kind — rejected by the product design.
 
 ## Architecture
@@ -75,9 +75,13 @@ module run unchanged under Node's test runner (see
   as the existing engine does, so an Expert or large custom board updates
   without allocation.
 - **Rules.** The actions — reveal, toggle flag, chord — applied to the state
-  under the game's rule profile, chosen at creation: Classic 2D plays the
-  reference profile, the 3D mode the 3D profile `3d-board-graph` defines.
-  Flood fill is iterative. Each action returns
+  under the game's rule profile and rules version, chosen at creation:
+  Classic 2D plays the reference profile, the 3D mode the 3D profile
+  `3d-board-graph` defines, each at its current version unless a replay
+  names another. Every shipped version of a profile is frozen and kept: a
+  rule change, a fidelity fix included, ships as a new version beside the
+  old ones, so replays recorded under any of them still reproduce
+  (`replay-recording`). Flood fill is iterative. Each action returns
   what changed, so the renderer redraws only those cells and the audio layer
   can pick a sound, the same pattern [logic.md](../../context/logic.md)
   describes for the 3D engine.
@@ -108,9 +112,11 @@ live side by side until the 3D mode moves over.
 
 ## Interfaces and contracts
 
-- **Create** — from a graph and a mine count, in *awaiting first click*; or
-  from a graph and a full mine set, for tests and later replays, directly in
-  *playing*. Invalid input — a mine count outside what the board and the
+- **Create** — from a graph, a rule profile with an optional rules version
+  (the current one by default) and a mine count, in *awaiting first click*;
+  or from a graph, a profile and version and a full mine set, for tests and
+  replays, directly in *playing*. A rules version the build does not have is
+  refused. Invalid input — a mine count outside what the board and the
   first-click guarantee allow, a mine index out of range or repeated —
   throws a range error, never a half-built game.
 - **First-click hand-off** — the first reveal returns "board needed at cell
@@ -144,7 +150,8 @@ live side by side until the 3D mode moves over.
     be).
   A rule the engine plays differently from the observation is a defect,
   never a design choice, unless a feature document records it as a
-  deliberate difference.
+  deliberate difference. Its fix ships as a new rules version; the tests of
+  every earlier version stay and keep passing.
 
 ## Dependencies
 

@@ -32,6 +32,9 @@ layer.
 | [features/records-screen.md](./features/records-screen.md) | The Records screen: board picker, bests, win rate, streaks, history chart and recent games |
 | [features/3d-board-graph.md](./features/3d-board-graph.md) | The 3D box as a cell graph on the shared rules engine, the 3D rule profile (auto-hide, right-click on revealed cells) and the 3D state view |
 | [features/3d-play-flow.md](./features/3d-play-flow.md) | 3D board choice, the safe first click and generation flow, the no-guess switch and its size limit, and the 3D mode's hand-off to results |
+| [features/replay-recording.md](./features/replay-recording.md) | The replay format and its capture during 2D and 3D play: mines, rules version, timed actions, sampled cursor and camera movement, check values |
+| [features/replay-playback.md](./features/replay-playback.md) | The replay simulator and verifier, and the replay viewer with its controls, entered from the results screen and the library |
+| [features/replay-library.md](./features/replay-library.md) | The replay store behind the platform layer, retention of the newest 100 plus pinned replays, best and hand pinning, and the library view in Records |
 
 ## Features
 
