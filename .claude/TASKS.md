@@ -56,7 +56,7 @@ Feature: cell-graph-rules-engine
 
 ## 6. Board metrics, click counts and the game summary
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/engine/metrics.js, js/engine/rules.js, js/engine/profiles.js, tests/engine-metrics.test.mjs
 Preconditions: 5

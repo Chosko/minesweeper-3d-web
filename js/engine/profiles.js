@@ -37,6 +37,15 @@ const reference1 = {
   },
   // Only the first-click cell is guaranteed mine-free; board-generation implements it.
   firstClick: 'safe-cell',
+  // What counts as a click for efficiency: every recorded reveal, flag and chord, wasted ones
+  // included. A reveal or chord that opens nothing and a flag click that removes a flag are
+  // wasted; a right click on a revealed cell is no click at all. js/engine/rules.js applies it.
+  clickCounting: {
+    counted: ['reveal', 'flag', 'chord'],
+    wastedIncluded: true,
+    wasted: { reveal: 'opens-nothing', flag: 'removes-a-flag', chord: 'opens-nothing' },
+    flagOnRevealedCell: 'not-counted',
+  },
   fidelity: {
     chordInputs: 'Chording: which inputs chord',
     rightPressOnNumber: 'Chording: which inputs chord',
@@ -45,6 +54,7 @@ const reference1 = {
     flagRevealedCell: 'Flagging a revealed cell',
     lossView: 'The board after a loss',
     firstClick: 'First-click guarantee',
+    clickCounting: 'What counts as a click for efficiency',
   },
 };
 

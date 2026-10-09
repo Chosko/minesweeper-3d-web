@@ -12,14 +12,21 @@
 // where `changed` lists the cells whose visual state changed (an Int32Array view of one buffer
 // reused by every action: read or copy it before the next action), `ended` is true when the
 // action won or lost the game, and `boardNeeded` is the requested cell or -1. An action outside
-// *playing* (other than the first reveal's request) changes nothing and is not recorded.
+// *playing* (other than the first reveal's request) changes nothing and is not recorded, and
+// neither is a flag toggle on a cell the profile does not let be flagged (a revealed cell).
 //
 // State is flat typed arrays over the cell index (`state`, read-only for callers); flood fill is
 // an iterative queue walk in the graph's neighbour order. Actions allocate nothing per cell.
 // The ordered stream of applied actions is kept for the game; the same board and the same
 // actions always give the same game.
+//
+// Counts (js/engine/metrics.js): the board's 3BV once the mines are placed, the 3BV solved so
+// far, and every recorded action as one click, effective or wasted by the profile's
+// `clickCounting` rule. counts() reads them at any time; summary() is the game summary at a win
+// or a loss (null before): outcome, board dimensions, mine count, 3BV, 3BV solved, clicks.
 
 import { getRuleProfile } from './profiles.js';
+import { createBoardMetrics, createClickCounts } from './metrics.js';
 
 export const PHASE = Object.freeze({
   AWAITING_FIRST_CLICK: 'awaiting-first-click',
@@ -38,7 +45,7 @@ export const CELL = Object.freeze({
   WRONG_FLAG: 'wrong-flag',
 });
 
-const KIND_NAMES = ['reveal', 'flag', 'chord'];
+const KIND_NAMES = ['reveal', 'flag', 'chord']; // also the click kinds of js/engine/metrics.js
 const K_REVEAL = 0, K_FLAG = 1, K_CHORD = 2;
 
 function checkGraph(graph) {
@@ -68,7 +75,23 @@ function checkMineSet(count, mines) {
   return list;
 }
 
-function build(graph, profileId, version, mineCount) {
+// Board dimensions for the summary: a plain object of positive integers (e.g. { width, height });
+// by default the cell count. Returned frozen.
+function checkDimensions(graph, dimensions) {
+  if (dimensions === undefined) return Object.freeze({ cells: graph.count });
+  if (dimensions === null || typeof dimensions !== 'object' || Array.isArray(dimensions)
+    || Object.keys(dimensions).length === 0) {
+    throw new RangeError('board dimensions must be an object of positive integers');
+  }
+  const out = {};
+  for (const [k, v] of Object.entries(dimensions)) {
+    if (!Number.isInteger(v) || v < 1) throw new RangeError(`board dimension ${k} must be a positive integer`);
+    out[k] = v;
+  }
+  return Object.freeze(out);
+}
+
+function build(graph, profileId, version, mineCount, dimensions) {
   const profile = getRuleProfile(profileId, version);
   const n = graph.count;
 
@@ -88,6 +111,9 @@ function build(graph, profileId, version, mineCount) {
   let stamp = 0;
   let changedLen = 0;
 
+  let metrics = null; // board metrics, once the mines are placed
+  const clicks = createClickCounts();
+
   let actKinds = new Uint8Array(64);
   let actCells = new Int32Array(64);
   let actLen = 0;
@@ -101,6 +127,7 @@ function build(graph, profileId, version, mineCount) {
     for (const m of list) {
       for (let k = 0, d = graph.degree(m); k < d; k++) number[graph.neighbour(m, k)]++;
     }
+    metrics = createBoardMetrics(graph, mine, number);
   }
 
   function record(kind, c) {
@@ -126,7 +153,7 @@ function build(graph, profileId, version, mineCount) {
   // Opens a closed, unflagged safe cell and flood-fills through zeros. Iterative.
   function open(c) {
     let head = 0, tail = 0;
-    revealed[c] = 1; safeLeft--; touch(c);
+    revealed[c] = 1; safeLeft--; touch(c); metrics.opened(c);
     queue[tail++] = c;
     while (head < tail) {
       const cur = queue[head++];
@@ -134,7 +161,7 @@ function build(graph, profileId, version, mineCount) {
       for (let k = 0, d = graph.degree(cur); k < d; k++) {
         const nb = graph.neighbour(cur, k);
         if (revealed[nb] || flagged[nb] || mine[nb]) continue;
-        revealed[nb] = 1; safeLeft--; touch(nb);
+        revealed[nb] = 1; safeLeft--; touch(nb); metrics.opened(nb);
         queue[tail++] = nb;
       }
     }
@@ -164,7 +191,9 @@ function build(graph, profileId, version, mineCount) {
   function applyReveal(c) {
     begin();
     record(K_REVEAL, c);
-    if (revealed[c] || flagged[c]) return result(false);
+    const wasted = revealed[c] || flagged[c];
+    clicks.add('reveal', wasted);
+    if (wasted) return result(false);
     if (mine[c]) { lose(c); return result(true); }
     open(c);
     return settle();
@@ -202,9 +231,10 @@ function build(graph, profileId, version, mineCount) {
     toggleFlag(c) {
       checkCell(c);
       if (phase !== PHASE.PLAYING) return nothing();
+      if (revealed[c] && !profile.flagRevealedCell) return nothing();
       begin();
       record(K_FLAG, c);
-      if (revealed[c] && !profile.flagRevealedCell) return result(false);
+      clicks.add('flag', flagged[c] === 1);
       flagged[c] ^= 1;
       flagCount += flagged[c] ? 1 : -1;
       touch(c);
@@ -216,11 +246,11 @@ function build(graph, profileId, version, mineCount) {
       if (phase !== PHASE.PLAYING) return nothing();
       begin();
       record(K_CHORD, c);
-      if (!revealed[c]) return result(false);
+      if (!revealed[c]) { clicks.add('chord', true); return result(false); }
       const d = graph.degree(c);
       let flags = 0;
       for (let k = 0; k < d; k++) flags += flagged[graph.neighbour(c, k)];
-      if (flags !== number[c]) return result(false);
+      if (flags !== number[c]) { clicks.add('chord', true); return result(false); }
       let hit = -1;
       for (let k = 0; k < d; k++) {
         const nb = graph.neighbour(c, k);
@@ -228,6 +258,7 @@ function build(graph, profileId, version, mineCount) {
         if (mine[nb]) { if (hit < 0) hit = nb; continue; }
         open(nb);
       }
+      clicks.add('chord', changedLen === 0 && hit < 0);
       if (hit >= 0) { lose(hit); return result(true); }
       return settle();
     },
@@ -249,6 +280,29 @@ function build(graph, profileId, version, mineCount) {
       return revealed[c] ? number[c] : -1;
     },
 
+    // The counts so far: { bbbv (null until the mines are placed), bbbvSolved, clicks }, where
+    // clicks is { reveal, flag, chord }, each { effective, wasted }.
+    counts() {
+      return Object.freeze({
+        bbbv: metrics ? metrics.bbbv : null,
+        bbbvSolved: metrics ? metrics.solved : 0,
+        clicks: clicks.snapshot(),
+      });
+    },
+
+    // The game summary at a win or a loss; null while the game has not ended.
+    summary() {
+      if (phase !== PHASE.WON && phase !== PHASE.LOST) return null;
+      return Object.freeze({
+        outcome: phase === PHASE.WON ? 'won' : 'lost',
+        dimensions,
+        mineCount,
+        bbbv: metrics.bbbv,
+        bbbvSolved: metrics.solved,
+        clicks: clicks.snapshot(),
+      });
+    },
+
     // The applied actions in order: [{ kind: 'reveal' | 'flag' | 'chord', cell }].
     actions() {
       const out = new Array(actLen);
@@ -260,18 +314,18 @@ function build(graph, profileId, version, mineCount) {
   return { game: Object.freeze(game), placeMines, start: () => { phase = PHASE.PLAYING; } };
 }
 
-// A game awaiting its first click: { graph, profile, version?, mineCount }.
-export function createGame({ graph, profile, version, mineCount } = {}) {
+// A game awaiting its first click: { graph, profile, version?, mineCount, dimensions? }.
+export function createGame({ graph, profile, version, mineCount, dimensions } = {}) {
   checkGraph(graph);
   checkMineCount(graph.count, mineCount);
-  return build(graph, profile, version, mineCount).game;
+  return build(graph, profile, version, mineCount, checkDimensions(graph, dimensions)).game;
 }
 
-// A game playing a full mine set from the start: { graph, profile, version?, mines }.
-export function createGameWithMines({ graph, profile, version, mines } = {}) {
+// A game playing a full mine set from the start: { graph, profile, version?, mines, dimensions? }.
+export function createGameWithMines({ graph, profile, version, mines, dimensions } = {}) {
   checkGraph(graph);
   const list = checkMineSet(graph.count, mines);
-  const g = build(graph, profile, version, list.length);
+  const g = build(graph, profile, version, list.length, checkDimensions(graph, dimensions));
   g.placeMines(list);
   g.start();
   return g.game;
