@@ -4,7 +4,7 @@ Created: 2026-10-08 · Source: /product-roadmap conversation · Model: opus
 Last step number: 17
 Sequencing: /production-plan must see every architected feature, and tasks are written only after the plan orders them.
 
-## [P] 1. Architect the visual design system slice for m1
+## [ ] 1. Architect the visual design system slice for m1
 
 Depends on: none
 
@@ -23,6 +23,7 @@ Context:
     b. Light, which matches today's look. Settings offers Light and Dark only.
     c. Dark. Settings offers Light and Dark only.
     Recommendation: a. It costs one extra option, it respects the player's system choice, and the Electron build reads the same preference as the browser.
+- 2026-10-09 unparked with answer: Q2b — the first-launch theme is Light; Settings offers Light and Dark only, with no "Match system" option. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
 
 ```prompt
 /architect "Visual design system" m1-classic-2d
@@ -124,7 +125,7 @@ Context:
 /architect "3D mode" m2-3d-joins
 ```
 
-## [P] 6. Architect the replays slice for m2
+## [ ] 6. Architect the replays slice for m2
 
 Depends on: none
 
@@ -139,12 +140,13 @@ Context:
     b. Every replay, forever. Storage grows without limit.
     c. Only replays the player chooses to save. Everything else is gone once the results screen closes.
     Recommendation: a. This keeps "every game is recorded" without unbounded growth on the web build's limited browser storage and, later, in Steam Cloud. Records that matter can never be lost to the rolling limit.
+- 2026-10-09 unparked with answer: Q2a — replays record movement too (the 2D cursor path, the 3D camera position and view direction, sampled several times a second); Q3a — the library keeps the most recent games up to a fixed count plus pinned replays, a personal-best game pinned automatically and any replay pinnable by hand. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
 
 ```prompt
 /architect "Replays" m2-3d-joins
 ```
 
-## [P] 7. Architect the results and records slice for m2
+## [ ] 7. Architect the results and records slice for m2
 
 Depends on: none
 
@@ -159,6 +161,7 @@ Context:
     b. The results screen takes over completely when the game ends, and flying around the finished board is no longer possible.
     c. Keep the banner, and show the full results only from the pause menu.
     Recommendation: a. It keeps the 3D mode's current feel, which the product design says to keep, and still gives 3D the same results screen as 2D.
+- 2026-10-09 unparked with answer: Q2a — win rate and streaks are kept per mode and per board, never combined; Q3b — the results screen takes over completely when a 3D game ends, and flying around the finished board is no longer possible. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
 
 ```prompt
 /architect "Results and records" m2-3d-joins
