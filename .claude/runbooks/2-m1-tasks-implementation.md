@@ -395,16 +395,19 @@ Context: none
 
 Done: 2026-10-09, commit `d67a6cd` (3 files, +216/-1). Board key is `<mode>:<grid>:<width>x<height>:<mines>:<guess|no-guess>` (`BOARD_KEY_FORMAT = 1`). A 3D board (no grid field, per `game-summary`) is currently rejected, so the 3D records work must extend the module.
 
-## [ ] 30. Implement task 30 — Summary builder, derived stats and best eligibility
+## [x] 30. Implement task 30 — Summary builder, derived stats and best eligibility
 
 Depends on: 6, 29
 
 Context:
 - 2026-10-09 (from step 29): the board key is `<mode>:<grid>:<width>x<height>:<mines>:<guess|no-guess>` (e.g. `classic-2d:square:30x16:99:no-guess`, `BOARD_KEY_FORMAT = 1`), in `js/records/`; Beginner/Intermediate/Expert are recognised only on the square grid; custom labels read like "20 × 12 · 50 mines" (+ " · no-guess"). A 3D board identity (no grid field) is currently rejected.
+- 2026-10-09 (from step 6): the rules engine's `game.counts()` returns `{ bbbv, bbbvSolved, clicks }` (`bbbv` null until mines are placed) and `game.summary()` is null until a win or loss; every action in the engine's stream is exactly one counted click (flag toggles on revealed cells are dropped). `createGame` takes an optional `dimensions` object (e.g. `{ width, height }`).
 
 ```prompt
 /task-implement 30 --review
 ```
+
+Done: 2026-10-09, commit `279a4ab` (3 files, +365/-1). Passing `counts()` before the first click (`bbbv` null) returns `null` rather than throwing. The stored summary holds a plain copy of the board identity, not the board key; `bbbvPerSecond` and `efficiency` are unrounded, or `null` when their divisor is zero.
 
 ## [ ] 31. Implement task 31 — Update documentation for feature `game-summary`
 
@@ -412,6 +415,7 @@ Depends on: 29, 30
 
 Context:
 - 2026-10-09 (from step 29): `.claude/context/` has no entry yet for `js/records/` (board identity, key and label) or its test file.
+- 2026-10-09 (from step 30): `buildSummary({ engine, outcome?, elapsedMs, board, seed, generatorVersion, endedAt?, id? })` is in `js/records/summary.js`; `engine` is the engine's `summary()` (won/lost) or `counts()` (abandoned), and `counts()` before the first click returns `null`. The summary stores a plain board-identity copy (not the key), an ISO `endedAt`, and unrounded `bbbvPerSecond`/`efficiency` (null when the divisor is zero). `isBestEligible(summary, stat)` takes one of `BEST_STATS = ['time', 'bbbvPerSecond', 'efficiency']`.
 
 ```prompt
 /task-implement 31 --review
@@ -425,6 +429,7 @@ Context:
 - 2026-10-09 (from step 5): rules-engine actions return `{changed, ended, boardNeeded}`; `changed` is an `Int32Array` view of one buffer reused by every action, so read or copy it before the next action. The first reveal returns `boardNeeded: c` and the board is handed over with `supplyBoard(c, mines)`.
 - 2026-10-09 (from step 6): `game.counts()` returns `{ bbbv, bbbvSolved, clicks }` at any time (`bbbv` is `null` until mines are placed); `game.summary()` is `null` until a win or loss. `createGame` takes an optional `dimensions` object (e.g. `{ width, height }`) for the summary.
 - 2026-10-09 (from step 12): the page-side client is `createGenerationClient({ createWorker })` in `js/generation/client.js`, returning `{ request, cancel }`. `request` resolves with `generate`'s result or a failure (`rejected: true` for an impossible request) and rejects only if the worker itself fails; a new request cancels the one in flight; `cancel()` resolves the pending request with `{ ok: false, cancelled: true }` and terminates the worker. This task is the client's first caller.
+- 2026-10-09 (from step 30): `buildSummary({ engine, outcome?, elapsedMs, board, seed, generatorVersion, endedAt?, id? })` is in `js/records/summary.js`; `engine` is the engine's `summary()` (won/lost) or `counts()` (abandoned), and `counts()` before the first click returns `null`. The summary stores a plain board-identity copy (not the key), an ISO `endedAt`, and unrounded `bbbvPerSecond`/`efficiency` (null when the divisor is zero). `isBestEligible(summary, stat)` takes one of `BEST_STATS = ['time', 'bbbvPerSecond', 'efficiency']`.
 
 ```prompt
 /task-implement 32 --review --rounds 2
@@ -560,6 +565,7 @@ Depends on: 30
 
 Context:
 - 2026-10-09 (from step 29): the board key is `<mode>:<grid>:<width>x<height>:<mines>:<guess|no-guess>` (e.g. `classic-2d:square:30x16:99:no-guess`, `BOARD_KEY_FORMAT = 1`), in `js/records/`; Beginner/Intermediate/Expert are recognised only on the square grid; custom labels read like "20 × 12 · 50 mines" (+ " · no-guess"). A 3D board identity (no grid field) is currently rejected.
+- 2026-10-09 (from step 30): `buildSummary({ engine, outcome?, elapsedMs, board, seed, generatorVersion, endedAt?, id? })` is in `js/records/summary.js`; `engine` is the engine's `summary()` (won/lost) or `counts()` (abandoned), and `counts()` before the first click returns `null`. The summary stores a plain board-identity copy (not the key), an ISO `endedAt`, and unrounded `bbbvPerSecond`/`efficiency` (null when the divisor is zero). `isBestEligible(summary, stat)` takes one of `BEST_STATS = ['time', 'bbbvPerSecond', 'efficiency']`.
 
 ```prompt
 /task-implement 43 --review --rounds 2
