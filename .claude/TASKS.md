@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 45
+Last task number: 47
 
 ---
 
@@ -451,5 +451,25 @@ Target: claude
 Files: .claude/context/records.md, .claude/context/testing.md, .claude/context/INDEX.md
 Preconditions: 43, 44
 Feature: personal-records
+
+---
+
+## 46. Results flow and results view
+
+Status: [MISSING]
+Target: claude
+Files: js/results/flow.js, js/results/view.js, index.html, css/components.css, tests/results.test.mjs
+Preconditions: 19, 27, 36, 44
+Feature: results-screen
+
+---
+
+## 47. Update documentation for feature `results-screen`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/app-shell.md, .claude/context/testing.md, .claude/context/INDEX.md
+Preconditions: 46
+Feature: results-screen
 
 ---

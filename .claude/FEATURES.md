@@ -103,10 +103,10 @@ Tasks: 43, 44, 45
 
 ## results-screen — End-of-game results screen with the personal-best comparison
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/results-screen.md
 Source: product-design.md § Results and records (m1-classic-2d)
-Tasks: none
+Tasks: 46, 47
 
 ---
 
