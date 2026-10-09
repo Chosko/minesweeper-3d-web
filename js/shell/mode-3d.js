@@ -3,7 +3,7 @@
 // pointer-lock and end-of-game flow, handed in by js/main.js:
 //   openBoardChoice()  show the 3D presets and custom board
 //   start(choice)      build the board and show its click-to-play card
-//   pause(note)        show the pause card (the timer runs only while playing)
+//   pause(note)        show the pause card over the hidden board (the timer runs only while playing)
 //   resume(source)     'pad': lockless play; 'pointer': the click-to-play card re-acquires pointer
 //                      lock; 'key': the click-to-play card
 //   restart(source)    a new board with the same settings, entered as resume(source) enters play

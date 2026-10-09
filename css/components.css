@@ -164,7 +164,10 @@
      ui-text status lines, ui-actions (Resume primary while playing, Play
      again primary and first once the game ended, Main menu), the controls
      list in a ui-panel, a Settings ui-panel (ui-slider, ui-toggle) and the
-     Sound button. Default focus: Resume, or Play again once ended.
+     Sound button. While restart or Main menu asks for confirmation, a
+     ui-panel ui-actions (a ui-text line, the action as primary, Cancel)
+     shows in place of the actions. Default focus: Resume, or Play again once
+     ended; Cancel while the confirmation shows.
    Results screen (dev/components.html #g-results, placeholder content the
      results-screen feature fills): ui-card ui-screen holding the outcome
      title, a ui-text board line, a ui-stat-row of the game's stats, a

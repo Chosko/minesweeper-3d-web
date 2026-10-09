@@ -74,6 +74,7 @@ export class UI {
       controlsModal: $('controls-modal'),
       pause: $('pause'), pauseTitle: $('pause-title'), pauseSub: $('pause-sub'),
       resume: $('p-resume'), restart: $('p-restart'), pauseMenu: $('p-menu'), pauseActions: $('pause-actions'),
+      confirm: $('pause-confirm'), confirmText: $('pause-confirm-text'), confirmYes: $('p-confirm-yes'),
       cx: $('c-x'), cy: $('c-y'), cz: $('c-z'), cm: $('c-m'), cinfo: $('c-info'),
       chipShift: $('chip-shift'), chipSpace: $('chip-space'), chipCtrl: $('chip-ctrl'),
     };
@@ -135,6 +136,9 @@ export class UI {
     this.el.restart.addEventListener('click', () => cb.onRestart());
     $('p-menu').addEventListener('click', () => cb.onMainMenu());
     $('hud-pause').addEventListener('click', () => cb.onPause?.());
+    this._confirm = null; // { onYes, onNo } while the pause card's confirmation is open
+    this.el.confirmYes.addEventListener('click', () => this._closeConfirm('onYes'));
+    $('p-confirm-no').addEventListener('click', () => this._closeConfirm('onNo'));
 
     // look settings
     const look = loadLookSettings();
@@ -313,6 +317,7 @@ export class UI {
     this.el.crosshair.classList.toggle('off', !on);
   }
   showPause({ state, time, minesLeft, note = '' }) {
+    this._resetConfirm();
     const pn = $('pause-note');
     pn.textContent = note; pn.classList.toggle('hidden', !note);
     this._hideMenus();
@@ -333,6 +338,31 @@ export class UI {
     this.el.restart.textContent = ended ? 'Play again' : 'Restart';
   }
   isPauseVisible() { return !this.el.pause.classList.contains('hidden'); }
+  /** Ask on the pause card, in place of its actions: onYes on confirm, onNo on Cancel or Back. */
+  showConfirm({ message, confirmLabel }, onYes, onNo) {
+    this._confirm = { onYes, onNo };
+    this.el.confirmText.textContent = message;
+    this.el.confirmYes.textContent = confirmLabel;
+    this.el.pauseActions.classList.add('hidden');
+    this.el.confirm.classList.remove('hidden');
+  }
+  isConfirmOpen() { return this._confirm !== null && this.isPauseVisible(); }
+  /** Cancel an open confirmation (Back); false when none is open. */
+  closeConfirm() {
+    if (!this.isConfirmOpen()) return false;
+    this._closeConfirm('onNo');
+    return true;
+  }
+  _closeConfirm(answer) {
+    const c = this._confirm;
+    this._resetConfirm();
+    c?.[answer]?.();
+  }
+  _resetConfirm() {
+    this._confirm = null;
+    this.el.confirm.classList.add('hidden');
+    this.el.pauseActions.classList.remove('hidden');
+  }
 
   // ---------- HUD ----------
   setBoard(settings) { this.el.size.textContent = fmtDims(settings); }

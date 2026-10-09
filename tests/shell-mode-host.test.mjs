@@ -355,7 +355,7 @@ test('the shell reaches the 3D game only through the mode host', () => {
   assert.equal([...MAIN.replace(flow, '').matchAll(/\bstartGame\(/g)].length, 1, 'only the 3D flow calls startGame');
   assert.match(MAIN, /start\(X, Y, Z, mines, minePositions\) \{ MODES\.start\('3d'/, 'the debug hook starts through the host');
   assert.match(MAIN, /onStart: \(s\) => \{[^}]*MODES\.start\('3d', s\)/, 'the menu starts a game through the host');
-  assert.match(MAIN, /onRestart: \(\) => MODES\.restart\(\{ source: padGesture \? 'pad' : 'pointer' \}\)/, 'restart goes through the host');
+  assert.match(MAIN, /onRestart: \(\) => PAUSE\.restart\(padGesture \? 'pad' : 'pointer'\)/, 'restart goes through the pause controller');
   assert.match(MAIN, /menu: \{[^\n]*MODES\.leave\(\)/, 'the menu leaves the active mode');
   assert.match(MAIN, /MODES\.on\('failed'/, 'a mode failure routes to its failure screen');
 });
@@ -462,9 +462,10 @@ test('in a browser, the 3D game starts, pauses, resumes, restarts and leaves thr
     assert.ok(resumed.mode === 'playing' ? resumed.locked : resumed.mode === 'ready',
       `play under pointer lock, or the click-to-play card when the browser refuses it (${JSON.stringify(resumed)})`);
 
-    // restart from the pause card abandons the started game
+    // restart from the pause card, once confirmed, abandons the started game
     await ms(() => globalThis.__ms.pause());
     await ms(() => document.getElementById('p-restart').click());
+    await ms(() => document.getElementById('p-confirm-yes').click());
     assert.ok(['ready', 'playing'].includes(await mode()), 'a new board, entered as resume enters play');
     assert.deepEqual(await events(), ['started', 'canPause', 'abandoned', 'canPause']);
     assert.equal(await ms(() => globalThis.__ms.state.started), false);
@@ -478,6 +479,7 @@ test('in a browser, the 3D game starts, pauses, resumes, restarts and leaves thr
       globalThis.__ms.pause();
     }, BOARD);
     await ms(() => document.getElementById('p-menu').click());
+    await ms(() => document.getElementById('p-confirm-yes').click());
     assert.equal(await mode(), 'menu');
     assert.equal(await ms(() => globalThis.__ms.modes.active), null);
     assert.equal(await ms(() => globalThis.__ms.game), null);

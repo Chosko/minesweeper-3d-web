@@ -266,7 +266,7 @@ Feature: game-shell
 
 ## 27. Pause controller, restart, back to menu and game hand-offs
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/shell/pause.js, js/shell/mode-host.js, js/shell/mode-3d.js, js/main.js, index.html, tests/shell-pause.test.mjs
 Preconditions: 25

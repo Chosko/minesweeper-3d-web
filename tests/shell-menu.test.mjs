@@ -311,7 +311,12 @@ test('in a browser, the menu shows the four entries, each routes, and Back retur
     await ms(() => { globalThis.__ms.forcePlay(); globalThis.__ms.aimAt(0); globalThis.__ms.click('left'); });
     await page.waitForFunction(() => localStorage.getItem('ms3d:doc:shell.lastMode') !== null);
     assert.deepEqual(await ms(() => JSON.parse(localStorage.getItem('ms3d:doc:shell.lastMode'))), { version: 1, data: { mode: '3d' } });
-    await ms(() => { globalThis.__ms.pause(); document.getElementById('p-menu').click(); });
+    await ms(() => {
+      globalThis.__ms.pause();
+      document.getElementById('p-menu').click();
+      // a started, unfinished game asks first (the first click may also have ended it)
+      if (!document.getElementById('pause-confirm').classList.contains('hidden')) document.getElementById('p-confirm-yes').click();
+    });
     assert.equal(await mode(), 'menu');
     assert.equal(await active(), 'menu-entry-3d', 'the menu focuses the last mode played');
     assert.ok(await ms(() => !document.querySelector('#menu-entry-3d [data-last]').classList.contains('hidden')), '3D is marked last played');
