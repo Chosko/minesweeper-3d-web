@@ -316,11 +316,12 @@ const RESULTS_VIEW = createResultsView({
 });
 
 // ---------- records screen ----------
-// The board picker and the chosen board's figures, redrawn live while open; Back is the back stack.
+// The board picker, the chosen board's figures and history, redrawn live while open; Back is the back stack.
 const RECORDS_PAGE = createRecordsScreen({ records: RECORDS,
   view: createRecordsView({
     root: document.getElementById('records'),
     onSelect: (key) => RECORDS_PAGE.select(key),
+    onPage: (page) => RECORDS_PAGE.showPage(page),
     onBack: () => shellBack('pointer'),
   }),
 });

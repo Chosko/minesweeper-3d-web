@@ -169,9 +169,14 @@
      js/records/screen.js), a ui-panel of the chosen board's figures (its
      label as ui-heading, a ui-text--muted empty state, a ui-stat-row of the
      three bests each with its date as ui-stat__detail, and a ui-stat-row of
-     games, wins, win rate and streaks), a ui-panel of the Classic 2D
-     overall figures, a ui-text--warning note and ui-actions--row (Back
-     primary). Default focus: the chosen board in the picker.
+     games, wins, win rate and streaks), a ui-panel of the board's history
+     (ui-heading, the chart as a <canvas role="img"> whose aria-label is
+     its text alternative, drawn by js/records/history-chart.js, a table
+     of recent games captioned by its ui-text--muted range, and a
+     ui-actions--row of the Newer and Older pager buttons, secondary), a
+     ui-panel of the Classic 2D overall figures, a ui-text--warning note
+     and ui-actions--row (Back primary). Default focus: the chosen board in
+     the picker.
    Settings page (index.html #settings): ui-card ui-screen--wide holding the
      title, a ui-grid of ui-panel sections (Controls, Graphics, Theme,
      Audio), each a ui-heading and one control per setting generated from

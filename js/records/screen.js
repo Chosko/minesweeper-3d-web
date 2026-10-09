@@ -9,24 +9,35 @@
 // js/results/view.js), 3BV/s and efficiency in its formats too; a date is "9 Oct 2026"; a win rate
 // a whole percentage; anything missing DASH.
 //
-// recordsContent(records, { boardKey, notSaved }) → { boards: [{ key, label, selected }],
+// recordsContent(records, { boardKey, notSaved, page }) → { boards: [{ key, label, selected }],
 //   board: { key, label }, empty, emptyText, bests: [{ stat, label, value, date }],
-//   counters: [{ key, label, value }], overallTitle, overall: [{ key, label, value }], notes }
+//   counters: [{ key, label, value }], overallTitle, overall: [{ key, label, value }], notes,
+//   chart: { points, text }, games: { headers, rows: [{ id, outcome, time, rate, efficiency }],
+//   page, pages, label, hasPrev, hasNext } }
+// The history is the chosen board's (js/records/history-chart.js): the chart's points are its won
+// games in play order with their text alternative; the games list is every game, newest first,
+// paged (pageOf, page clamped to the last).
 // A board with no games is empty. Records that cannot be read (a query throws) are empty too, over
 // the standard boards, and never throw: the screen always shows and Back always works.
 //
-// createRecordsScreen({ records, view }) → { show({ boardKey }?), hide(), select(key), board }:
-// show draws the content through view.show(content) and subscribes to records.onChange, redrawing
-// the chosen board on every newly recorded game; hide unsubscribes and calls view.hide(). When
+// createRecordsScreen({ records, view }) → { show({ boardKey }?), hide(), select(key), showPage(n),
+// board, page }: show draws the content through view.show(content) and subscribes to
+// records.onChange, redrawing the chosen board on every newly recorded game (on the same games
+// page); show and select start on the first games page; hide unsubscribes and calls view.hide(). When
 // records are not being saved (records.available() false) the first show of the session carries
 // the results screen's notSaved note, kept for that visit only.
 //
-// createRecordsView({ root, onSelect, onBack }) → { show(content), hide() }: fills #records by id;
-// the picker is a kit segmented choice whose options are rebuilt only when the board list changes.
+// createRecordsView({ root, onSelect, onBack, onPage, chart? }) → { show(content), hide() }: fills
+// #records by id; the picker is a kit segmented choice whose options are rebuilt only when the board
+// list changes; the chart (createHistoryChart over #records-chart by default) is drawn after the
+// screen shows; the Newer and Older buttons call onPage with the page to show, and a pager button
+// that ends while focused hands focus to the other.
 
 import { STANDARD_BOARDS, boardKey, boardLabel, createBoardIdentity, parseBoardKey } from './board.js';
 import { DASH, NOTES, formatTime, formatRate, formatEfficiency } from '../results/view.js';
 import { bindSegmented } from '../ui/components.js';
+import { bbbvPerSecond, efficiency } from './summary.js';
+import { chartPoints, chartText, pageOf, createHistoryChart } from './history-chart.js';
 
 export const RECORDS_SCREEN = 'records';
 export const EMPTY_TEXT = 'No games on this board yet.';
@@ -61,6 +72,8 @@ const COUNTERS = Object.freeze([
   { key: 'longestStreak', label: 'Longest streak' },
 ]);
 const EMPTY_COUNTERS = Object.freeze({ games: 0, wins: 0, currentStreak: 0, longestStreak: 0 });
+const OUTCOME_LABELS = Object.freeze({ won: 'Won', lost: 'Lost', abandoned: 'Abandoned' });
+const GAME_HEADERS = Object.freeze(['Outcome', 'Time', '3BV/s', 'Efficiency']);
 
 const attempt = (fn, fallback) => { try { return fn(); } catch { return fallback; } };
 const entry = (board) => ({ key: boardKey(board), label: boardLabel(board), board });
@@ -91,7 +104,23 @@ const counterFigures = (counters, rate) => COUNTERS.map(({ key, label }) => ({
   key, label, value: key === 'winRate' ? formatWinRate(rate) : String(counters[key] ?? 0),
 }));
 
-export function recordsContent(records, { boardKey: asked = null, notSaved = false } = {}) {
+const gameRow = (e) => ({
+  id: e.id, outcome: OUTCOME_LABELS[e.outcome] ?? e.outcome, time: formatTime(e.elapsedMs),
+  rate: formatRate(attempt(() => bbbvPerSecond(e), null)), efficiency: formatEfficiency(attempt(() => efficiency(e), null)),
+});
+
+function gamesList(history, page) {
+  const p = pageOf(history.toReversed(), page);
+  return {
+    headers: [...GAME_HEADERS],
+    rows: p.items.map(gameRow),
+    page: p.page, pages: p.pages,
+    label: p.total ? `Games ${p.from}–${p.to} of ${p.total}` : '',
+    hasPrev: p.hasPrev, hasNext: p.hasNext,
+  };
+}
+
+export function recordsContent(records, { boardKey: asked = null, notSaved = false, page = 0 } = {}) {
   const boards = pickerBoards(records);
   let key = (asked && keyOf(asked)) || lastBoardPlayed(records) || boards[0].key;
   if (!boards.some((b) => b.key === key)) boards.push(entry(parseBoardKey(key)));
@@ -99,6 +128,8 @@ export function recordsContent(records, { boardKey: asked = null, notSaved = fal
   const counters = attempt(() => records.counters(key), EMPTY_COUNTERS);
   const bests = attempt(() => records.bests(key), {});
   const overall = attempt(() => records.overall(MODE), EMPTY_COUNTERS);
+  const history = attempt(() => records.history(key), []);
+  const points = chartPoints(history);
   return {
     boards: boards.map((b) => ({ key: b.key, label: b.label, selected: b.key === key })),
     board: { key, label: chosen.label },
@@ -112,31 +143,38 @@ export function recordsContent(records, { boardKey: asked = null, notSaved = fal
     overallTitle: 'Classic 2D overall',
     overall: counterFigures(overall, attempt(() => records.overallWinRate(MODE), null)),
     notes: notSaved ? [NOTES.notSaved] : [],
+    chart: { points, text: chartText(points) },
+    games: gamesList(history, page),
   };
 }
 
 export function createRecordsScreen({ records, view }) {
   let board = null;
+  let page = 0;
   let off = null;
   let notSaved = false;
   let told = false;
   const draw = () => {
-    const content = recordsContent(records, { boardKey: board, notSaved });
+    const content = recordsContent(records, { boardKey: board, notSaved, page });
     board = content.board.key;
+    page = content.games.page;
     view.show(content);
   };
   const unsubscribe = () => { if (off) { off(); off = null; } };
   return {
     get board() { return board; },
+    get page() { return page; },
     show({ boardKey: key = null } = {}) {
       unsubscribe();
       board = key;
+      page = 0;
       notSaved = !told && !attempt(() => records.available(), false);
       if (notSaved) told = true;
       off = records.onChange(() => draw());
       draw();
     },
-    select(key) { board = key; draw(); },
+    select(key) { board = key; page = 0; draw(); },
+    showPage(n) { page = n; draw(); },
     hide() {
       unsubscribe();
       notSaved = false;
@@ -145,15 +183,42 @@ export function createRecordsScreen({ records, view }) {
   };
 }
 
-export function createRecordsView({ root, onSelect, onBack }) {
+export function createRecordsView({ root, onSelect, onBack, onPage, chart = null }) {
   const $ = (id) => root.querySelector(`#${id}`);
   const picker = $('records-picker');
+  const canvas = $('records-chart');
+  const history = chart ?? createHistoryChart({ canvas });
+  const prev = $('records-prev');
+  const next = $('records-next');
+  let page = 0;
   let pickerKeys = '';
   let unbind = () => {};
   const fill = (prefix, figures) => {
     for (const f of figures) $(`${prefix}-${f.key}`).querySelector('.ui-stat__value').textContent = f.value;
   };
   $('records-back').addEventListener('click', () => onBack());
+  prev.addEventListener('click', () => onPage(page - 1));
+  next.addEventListener('click', () => onPage(page + 1));
+
+  const showGames = (games) => {
+    const doc = root.ownerDocument;
+    page = games.page;
+    $('records-games-body').replaceChildren(...games.rows.map((g) => {
+      const tr = doc.createElement('tr');
+      for (const text of [g.outcome, g.time, g.rate, g.efficiency]) {
+        const td = doc.createElement('td');
+        td.textContent = text;
+        tr.append(td);
+      }
+      return tr;
+    }));
+    $('records-page').textContent = games.label;
+    const focused = doc.activeElement;
+    prev.disabled = !games.hasPrev;
+    next.disabled = !games.hasNext;
+    if (focused === prev && prev.disabled && !next.disabled) next.focus({ preventScroll: true });
+    if (focused === next && next.disabled && !prev.disabled) prev.focus({ preventScroll: true });
+  };
 
   const buildPicker = (boards) => {
     const hadFocus = picker.contains(root.ownerDocument.activeElement);
@@ -191,6 +256,10 @@ export function createRecordsView({ root, onSelect, onBack }) {
       empty.classList.toggle('hidden', !content.empty);
       $('records-bests').classList.toggle('hidden', content.empty);
       $('records-counters').classList.toggle('hidden', content.empty);
+      $('records-history').classList.toggle('hidden', content.empty);
+      canvas.setAttribute('aria-label', content.chart.text);
+      canvas.textContent = content.chart.text;
+      showGames(content.games);
       for (const b of content.bests) {
         const el = $(`rec-${b.stat}`);
         el.querySelector('.ui-stat__value').textContent = b.value;
@@ -203,6 +272,7 @@ export function createRecordsView({ root, onSelect, onBack }) {
       note.textContent = content.notes.join(' ');
       note.classList.toggle('hidden', !content.notes.length);
       root.classList.remove('hidden');
+      if (!content.empty) history.draw(content.chart.points);
     },
     hide() { root.classList.add('hidden'); },
   };

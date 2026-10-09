@@ -273,6 +273,19 @@
           <div id="rec-longestStreak" class="ui-stat" role="group" aria-labelledby="rec-longestStreak-label"><span class="ui-stat__label" id="rec-longestStreak-label">Longest streak</span><span class="ui-stat__value">0</span></div>
         </div>
       </div>
+      <div id="records-history" class="ui-panel" role="group" aria-labelledby="records-history-title">
+        <h3 class="ui-heading" id="records-history-title">History</h3>
+        <canvas id="records-chart" role="img" aria-label="No won games on this board yet, so there is nothing to chart.">No won games on this board yet, so there is nothing to chart.</canvas>
+        <table id="records-games">
+          <caption class="ui-text ui-text--muted" id="records-page"></caption>
+          <thead><tr><th scope="col">Outcome</th><th scope="col">Time</th><th scope="col">3BV/s</th><th scope="col">Efficiency</th></tr></thead>
+          <tbody id="records-games-body"></tbody>
+        </table>
+        <div class="ui-actions ui-actions--row">
+          <button type="button" id="records-prev" class="ui-button ui-button--secondary" disabled>Newer</button>
+          <button type="button" id="records-next" class="ui-button ui-button--secondary" disabled>Older</button>
+        </div>
+      </div>
       <div id="records-overall" class="ui-panel" role="group" aria-labelledby="records-overall-title">
         <h3 class="ui-heading" id="records-overall-title">Classic 2D overall</h3>
         <div class="ui-stat-row">

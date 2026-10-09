@@ -486,7 +486,7 @@ Feature: records-screen
 
 ## 49. Records history chart and recent games list
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/records/history-chart.js, js/records/screen.js, tests/records-history.test.mjs
 Preconditions: 2, 48

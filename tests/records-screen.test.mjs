@@ -268,7 +268,11 @@ test('the records screen is the kit composition: picker, figures, overall, empty
     assert.ok(RECORDS_HTML.includes(`id="${id}"`), `#${id}`);
   }
   const buttons = [...RECORDS_HTML.matchAll(/<button[^>]*>/g)].map((m) => m[0]);
-  assert.deepEqual(buttons, ['<button type="button" id="records-back" class="ui-button ui-button--primary">']);
+  assert.deepEqual(buttons, [
+    '<button type="button" id="records-prev" class="ui-button ui-button--secondary" disabled>',
+    '<button type="button" id="records-next" class="ui-button ui-button--secondary" disabled>',
+    '<button type="button" id="records-back" class="ui-button ui-button--primary">',
+  ]);
 });
 
 test('the shell registers the records screen, its default focus on the picker, its controller layer and Back', () => {
