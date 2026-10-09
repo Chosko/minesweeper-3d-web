@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 108
+Last task number: 110
 
 ---
 
@@ -1081,5 +1081,25 @@ Target: claude
 Files: .claude/context/app-shell.md, .claude/context/testing.md, README.md
 Preconditions: 107
 Feature: leaderboards-menu-entry
+
+---
+
+## 109. Steam rank panel on the results screen
+
+Status: [MISSING]
+Target: claude
+Files: js/results/rank-panel.js, js/results/view.js, js/results/flow.js, css/components.css, index.html, tests/results-rank.test.mjs
+Preconditions: 46, 81, 86, 97
+Feature: results-steam-rank
+
+---
+
+## 110. Update documentation for feature `results-steam-rank`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/app-shell.md, .claude/context/leaderboards.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
+Preconditions: 109
+Feature: results-steam-rank
 
 ---
