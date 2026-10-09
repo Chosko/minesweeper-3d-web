@@ -99,7 +99,7 @@ Context:
 /architect "Results and records" m1-classic-2d
 ```
 
-## [ ] 5. Architect the 3D mode slice for m2
+## [P] 5. Architect the 3D mode slice for m2
 
 Depends on: none
 
@@ -118,6 +118,7 @@ Context:
     b. Import them as fastest-time personal bests, with no 3BV or efficiency.
     Recommendation: a. Those times were set without a safe first click, so they are not comparable with new games. Only the web preview has them.
 - 2026-10-09 unparked with answer: Q2a — the 3D first click follows the same rule as Classic 2D (an opening when that rule says so, only the clicked cell on a board too dense); Q3a — no-guess on every preset and on custom boards up to a cell-count limit set from measured generation time, the switch shown disabled with the reason above it; Q4a — the current 3D best times are left behind and 3D records start fresh. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
+- 2026-10-09 parked: approval gate — the m2 3D mode architecture draft, now carrying the Q2a, Q3a and Q4a answers (two documents: 3d-board-graph with a 3D rule profile on the shared engine, js/logic.js retired; 3d-play-flow; the open call is whether they fold into one), waits for approval when the step runs. Consequences it names: the custom-board mine cap drops to every cell but one, and seeded boards no longer match the original game's.
 
 ```prompt
 /architect "3D mode" m2-3d-joins
