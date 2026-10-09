@@ -4,10 +4,10 @@
 
 ## design-tokens-and-themes — Design tokens and the light and dark themes
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/design-tokens-and-themes.md
 Source: product-design.md § Visual design system (m1-classic-2d)
-Tasks: none
+Tasks: 1, 2, 3
 
 ---
 
