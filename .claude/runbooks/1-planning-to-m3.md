@@ -42,11 +42,21 @@ Context:
 /architect "Classic 2D" m1-classic-2d
 ```
 
-## [ ] 3. Architect the main menu and game shell slice for m1
+## [P] 3. Architect the main menu and game shell slice for m1
 
 Depends on: none
 
-Context: none
+Context:
+- 2026-10-09 parked: approval gate — the architecture draft for the m1 main menu and game shell slice (three documents: game-shell, settings, platform-storage; the open call is whether platform storage stays its own document or folds into settings) waits for approval when the step runs. With it, two design questions:
+  Q2. Should the controls settings let players rebind keys, mouse buttons and controller buttons in m1?
+    a. No. m1 keeps look sensitivity and invert Y plus a read-only list of the bindings. Rebinding is a non-goal with no milestone named yet.
+    b. Yes. Rebinding for keyboard, mouse and controller in both modes is part of m1.
+    Recommendation: a. The roadmap's m1 slice only asks for "settings for controls", and the current game has no rebinding. Rebinding across two modes and three input devices is a sizeable piece that does not affect the m1 exit criteria.
+  Q3. While a game is paused, is the board hidden?
+    a. Yes, in every mode. The pause screen covers the board while the timer is stopped. For 3D this changes current behaviour, where the scene stays visible behind the pause card.
+    b. Only in Classic 2D. 3D keeps its current pause.
+    c. No. The board stays visible behind the pause menu in both modes.
+    Recommendation: a. Times feed personal bests, and later Steam leaderboards. A visible board with a stopped clock would let a player study it for free, and treating every mode the same keeps records comparable.
 
 ```prompt
 /architect "Main menu and game shell" m1-classic-2d
