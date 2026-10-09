@@ -4,7 +4,7 @@ Created: 2026-10-08 · Source: /product-roadmap conversation · Model: opus
 Last step number: 17
 Sequencing: /production-plan must see every architected feature, and tasks are written only after the plan orders them.
 
-## [P] 1. Architect the visual design system slice for m1
+## [ ] 1. Architect the visual design system slice for m1
 
 Depends on: none
 
@@ -16,6 +16,7 @@ Context:
     b. Yes, eventually. This design defines a dark variant of the scene's colours (sky, fog, cube and number tints) as theme colours. It is applied later, outside m1, at a milestone the roadmap would then name.
     c. Yes, now. The 3D scene follows the theme already in m1. This contradicts the m1 slice ("the 3D mode keeps its current look"), so the roadmap would need revising first.
     Recommendation: a. The product design says the 3D look is kept and is the bar for every mode, and the roadmap keeps the scene untouched through m2. The overlay drawn over the 3D board still follows the theme, so the switch between modes stays consistent.
+- 2026-10-09 unparked with answer: Q1a — the 3D scene keeps its one current look under both themes; only the menus, the in-game overlay and the results screen around it follow the chosen theme.
 
 ```prompt
 /architect "Visual design system" m1-classic-2d
@@ -23,7 +24,7 @@ Context:
 The product design leaves open how players choose between the light and dark themes and whether the 3D scene gets both; the roadmap defers that question to this design. Ask it rather than deciding it.
 ```
 
-## [P] 2. Architect the Classic 2D slice for m1
+## [ ] 2. Architect the Classic 2D slice for m1
 
 Depends on: none
 
@@ -37,12 +38,13 @@ Context:
     a. When the first click lands. The board is built around that cell in the worker. Expert may show a short "generating" pause, and the timer starts once the board is ready.
     b. In advance, with a marked starting cell the player must open first. There's no wait, but the opening is forced.
     Recommendation: a. The player keeps a free first click and it matches the safe-first-click flow. If Minesweeper Online's no-guess mode turns out to do b, choosing a here is a deliberate difference from the reference, recorded in the document.
+- 2026-10-09 unparked with answer: Q2a — Minesweeper Online with its default options is the reference, each rule pinned by a fidelity test; Q3a — with no-guess on, the board is generated when the first click lands. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
 
 ```prompt
 /architect "Classic 2D" m1-classic-2d
 ```
 
-## [P] 3. Architect the main menu and game shell slice for m1
+## [ ] 3. Architect the main menu and game shell slice for m1
 
 Depends on: none
 
@@ -57,6 +59,7 @@ Context:
     b. Only in Classic 2D. 3D keeps its current pause.
     c. No. The board stays visible behind the pause menu in both modes.
     Recommendation: a. Times feed personal bests, and later Steam leaderboards. A visible board with a stopped clock would let a player study it for free, and treating every mode the same keeps records comparable.
+- 2026-10-09 unparked with answer: Q2a — no rebinding in m1 (sensitivity, invert Y and a read-only bindings list; rebinding is a non-goal with no milestone yet); Q3a — the board is hidden while paused, in every mode. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
 
 ```prompt
 /architect "Main menu and game shell" m1-classic-2d
