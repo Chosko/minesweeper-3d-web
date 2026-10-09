@@ -295,9 +295,10 @@ test('every screen change in the shell goes through the router', () => {
 });
 
 test('the shell declares a default focus for each screen it shows', () => {
-  const decl = Object.fromEntries([...SCREEN_TABLE.matchAll(/\b([\w]+): \{[^\n]*?defaultFocus: (?:'([^']+)'|null|\(\))/g)]
+  const decl = Object.fromEntries([...SCREEN_TABLE.matchAll(/'?\b([\w-]+)'?: \{[^\n]*?defaultFocus: (?:'([^']+)'|null|\(\))/g)]
     .map((m) => [m[1], m[2] ?? null]));
-  assert.match(decl.menu, /data-preset/, 'the menu focuses the last played board');
+  assert.equal(decl.menu, '[data-entry][data-last]', 'the menu focuses the last mode played');
+  assert.match(decl['board-choice'], /data-preset/, 'the 3D board choice focuses the last played board');
   assert.equal(decl.ready, '#ready-btn');
   assert.equal(decl.ctxlost, '#ctx-lost-btn');
   assert.match(SCREEN_TABLE, /paused: \{[^\n]*defaultFocus: \(\) =>[^\n]*'#p-restart'[^\n]*'#p-resume'/, 'pause: Resume, or Play again once ended');
@@ -364,7 +365,7 @@ test('in a browser, the keyboard walks menu → screen → Back with the default
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     const mode = () => page.evaluate(() => globalThis.__ms.state.mode);
     const active = () => page.evaluate(() => document.activeElement?.id || document.activeElement?.dataset?.preset || '');
-    const shown = () => page.evaluate(() => ['menu', 'ready', 'pause', 'ctx-lost']
+    const shown = () => page.evaluate(() => ['menu', 'board-choice', 'coming-soon', 'ready', 'pause', 'ctx-lost']
       .filter((id) => !document.getElementById(id).classList.contains('hidden')));
 
     assert.equal(await mode(), 'menu');
@@ -372,21 +373,28 @@ test('in a browser, the keyboard walks menu → screen → Back with the default
     const first = await active();
     assert.ok(first, 'the menu focuses its default target');
 
-    // menu → ready by keyboard
+    // menu → 3D board choice → ready by keyboard
+    await page.focus('#menu-entry-3d');
+    await page.keyboard.press('Enter');
+    assert.equal(await mode(), 'board-choice');
+    assert.deepEqual(await shown(), ['board-choice'], 'exactly one screen');
     await page.keyboard.press('Enter');
     assert.equal(await mode(), 'ready');
     assert.deepEqual(await shown(), ['ready'], 'exactly one screen');
     assert.equal(await active(), 'ready-btn', 'the ready card focuses its button');
 
-    // Back by keyboard
+    // Back by keyboard: the board choice it came from, on the board just chosen, then the menu
+    await page.keyboard.press('Escape');
+    assert.equal(await mode(), 'board-choice');
+    assert.deepEqual(await shown(), ['board-choice']);
+    assert.equal(await page.evaluate(() => document.activeElement?.hasAttribute('data-last')), true, 'the last played board takes the focus');
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'menu');
     assert.deepEqual(await shown(), ['menu']);
     assert.equal(await active(), first, 'Back returns to the menu and its default focus');
 
     // Esc while playing pauses; the controls modal on the menu closes on Esc before anything else.
-    await page.keyboard.press('Enter');
-    await page.evaluate(() => globalThis.__ms.forcePlay());
+    await page.evaluate(() => { globalThis.__ms.start(5, 5, 5, 5); globalThis.__ms.forcePlay(); });
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'paused', 'Esc while playing means Pause');
     assert.equal(await active(), 'p-resume');

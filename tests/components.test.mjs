@@ -405,7 +405,8 @@ test('the controller pauses through the overlay pause button', () => {
 
 const section = (src, start, end) => src.slice(src.indexOf(start), src.indexOf(end));
 const SCREENS = {
-  menu: section(INDEX, '<section id="menu"', '<!-- Click to play -->'),
+  menu: section(INDEX, '<section id="menu"', '<!-- 3D board choice -->'),
+  'board-choice': section(INDEX, '<section id="board-choice"', '<!-- Coming soon -->'),
   pause: section(INDEX, '<section id="pause"', '<noscript>'),
 };
 const RESULTS = section(GALLERY, '<!-- composition: results -->', '<!-- /composition: results -->');
@@ -466,10 +467,11 @@ test('every control on the menu and the pause card is named and reachable by key
     }
   }
   const main = read('js/main.js');
-  const line = (name) => main.match(new RegExp(`\\b${name}: \\{[^\\n]*defaultFocus: ([^\\n]*)`))[1];
+  const line = (name) => main.match(new RegExp(`'?\\b${name}'?: \\{[^\\n]*defaultFocus: ([^\\n]*)`))[1];
   assert.match(line('paused'), /'#p-resume'/, 'the pause card focuses Resume by default');
   assert.ok(SCREENS.pause.includes('id="p-resume"') && SCREENS.pause.includes('id="p-restart"'));
-  assert.match(line('menu'), /^'[^']*data-preset/, 'the menu focuses the last played board by default');
+  assert.match(line('menu'), /^'\[data-entry\]\[data-last\]'/, 'the menu focuses the last mode played by default');
+  assert.match(line('board-choice'), /^'[^']*data-preset/, 'the 3D board choice focuses the last played board by default');
 });
 
 test('the gallery holds the results screen composition with placeholder content', () => {
@@ -844,8 +846,9 @@ test('in a browser, the menu, the pause card and the results layout meet the con
       assert.ok(f.style !== 'none' && f.width >= 2, `menu control #${f.id || i} shows a focus ring (${f.style} ${f.width})`);
     }
 
-    // menu → ready → playing → pause, as before.
-    await page.click('#menu [data-preset="6,6,6,10"]');
+    // menu → 3D board choice → ready → playing → pause, as before.
+    await page.click('#menu-entry-3d');
+    await page.click('#board-choice [data-preset="6,6,6,10"]');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'ready');
     await page.evaluate(() => globalThis.__ms.forcePlay());
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'playing');

@@ -63,11 +63,13 @@ export const NO_MOUSE_MSG = 'Minesweeper 3D needs a mouse and keyboard — open 
 
 export class UI {
   constructor(cb) {
-    this.cb = cb; // { onStart, onReadyClick, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSound, onLookSettings, onVolume }
+    this.cb = cb; // { onMenuEntry, onBack, onStart, onReadyClick, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSound, onLookSettings, onVolume }
     this.el = {
       hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), size: $('hud-size'), sound: $('hud-sound'),
       help: $('help'), banner: $('banner'), bannerTitle: $('banner-title'), bannerSub: $('banner-sub'),
       flash: $('flash'), menu: $('menu'), ready: $('ready'), readyBoard: $('ready-board'), readyMsg: $('ready-msg'),
+      boardChoice: $('board-choice'), comingSoon: $('coming-soon'), comingSoonTitle: $('coming-soon-title'),
+      comingSoonText: $('coming-soon-text'),
       bannerRecord: $('banner-record'), crosshair: $('crosshair'), hintH: $('hint-h'),
       controlsModal: $('controls-modal'),
       pause: $('pause'), pauseTitle: $('pause-title'), pauseSub: $('pause-sub'),
@@ -80,6 +82,16 @@ export class UI {
     this._helpByUser = false; // in-game help panel opened with H
     this._crossOn = null;
 
+    // main menu entries: each a route (the shell decides where); the last mode played is marked
+    document.querySelectorAll('[data-entry]').forEach((b) => {
+      const line = document.createElement('span');
+      line.className = 'ui-menu__detail hidden';
+      line.dataset.last = '';
+      line.textContent = 'Last played';
+      b.appendChild(line);
+      b.addEventListener('click', () => cb.onMenuEntry?.(b.dataset.entry));
+    });
+    for (const id of ['board-choice-back', 'coming-soon-back']) $(id).addEventListener('click', () => cb.onBack?.());
     document.querySelectorAll('[data-preset]').forEach((b) => {
       for (const kind of ['best', 'last']) {
         const line = document.createElement('span');
@@ -160,6 +172,15 @@ export class UI {
     }
   }
 
+  /** Mark the main menu entry of the last mode played (null: none). */
+  setLastMode(mode) {
+    document.querySelectorAll('[data-entry]').forEach((b) => {
+      const isLast = !!mode && b.dataset.entry === mode;
+      b.toggleAttribute('data-last', isLast);
+      b.querySelector('[data-last]')?.classList.toggle('hidden', !isLast);
+    });
+  }
+
   refreshBests() {
     const last = lsGet(LS_LAST_PRESET);
     document.querySelectorAll('[data-preset]').forEach((b) => {
@@ -232,7 +253,12 @@ export class UI {
   }
 
   // ---------- screens ----------
+  /** Hide the menu screens (main menu, board choice, placeholder) before another screen shows. */
+  _hideMenus() {
+    for (const el of [this.el.menu, this.el.boardChoice, this.el.comingSoon]) el.classList.add('hidden');
+  }
   showMenu() {
+    this._hideMenus();
     this.el.menu.classList.remove('hidden');
     this.el.ready.classList.add('hidden');
     this.el.pause.classList.add('hidden');
@@ -243,8 +269,22 @@ export class UI {
     this._helpByUser = false;
     this.refreshBests();
   }
+  /** The 3D board choice: the presets and the custom board, over the menu backdrop. */
+  showBoardChoice() {
+    this.showMenu();
+    this._hideMenus();
+    this.el.boardChoice.classList.remove('hidden');
+  }
+  /** The placeholder for an entry whose screen has not landed yet. */
+  showComingSoon(title) {
+    this.showMenu();
+    this._hideMenus();
+    this.el.comingSoonTitle.textContent = title;
+    this.el.comingSoonText.textContent = `${title} is coming soon.`;
+    this.el.comingSoon.classList.remove('hidden');
+  }
   showReady(settings, msg = '') {
-    this.el.menu.classList.add('hidden');
+    this._hideMenus();
     this.el.pause.classList.add('hidden');
     this.el.ready.classList.remove('hidden');
     this.el.hud.classList.remove('hidden');
@@ -255,7 +295,7 @@ export class UI {
   }
   setReadyMessage(msg) { this.el.readyMsg.textContent = msg; }
   showPlaying() {
-    this.el.menu.classList.add('hidden');
+    this._hideMenus();
     this.el.ready.classList.add('hidden');
     this.el.pause.classList.add('hidden');
     this.el.hud.classList.remove('hidden');
@@ -275,6 +315,7 @@ export class UI {
   showPause({ state, time, minesLeft, note = '' }) {
     const pn = $('pause-note');
     pn.textContent = note; pn.classList.toggle('hidden', !note);
+    this._hideMenus();
     this.el.ready.classList.add('hidden');
     this.el.pause.classList.remove('hidden');
     this.el.hud.classList.remove('hidden');

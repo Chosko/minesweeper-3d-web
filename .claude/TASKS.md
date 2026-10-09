@@ -256,7 +256,7 @@ Feature: game-shell
 
 ## 26. Main menu entries and the last mode played
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, js/shell/menu.js, js/ui.js, css/components.css, tests/shell-menu.test.mjs
 Preconditions: 15, 24, 25

@@ -12,6 +12,8 @@ import { createRouter } from './shell/router.js';
 import { FOCUSABLE, topLayer, resolveFocus, isBackKey, backButtons, createHeldSuppressor } from './shell/navigation.js';
 import { createModeHost } from './shell/mode-host.js';
 import { create3DMode } from './shell/mode-3d.js';
+import { createMenu, createLastMode } from './shell/menu.js';
+import { storage } from './platform/index.js';
 
 const canvas = document.getElementById('scene');
 
@@ -39,7 +41,8 @@ Object.assign(cam, loadLookSettings());
 const LOCK_SUPPORTED = 'requestPointerLock' in Element.prototype;
 const COARSE_ONLY = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(pointer: fine)').matches);
 const NO_MOUSE = !LOCK_SUPPORTED || COARSE_ONLY;
-// S.mode is the router's current screen: 'menu' | 'ready' | 'playing' | 'paused' | 'ctxlost' (defined below).
+// S.mode is the router's current screen: 'menu' | 'board-choice' | 'coming-soon' | 'ready' | 'playing' | 'paused' |
+// 'ctxlost' (defined below).
 const S = {
   settings: null,
   game: null,
@@ -153,6 +156,8 @@ function toggleSound() { ui.setSound(sfx.toggleMute()); }
 // ---------- screens ----------
 // Clicks made with the controller (A) are not user gestures for pointer lock: they enter lockless play.
 const ui = new UI({
+  onMenuEntry: (id) => MENU.open(id),
+  onBack: () => shellBack('pointer'),
   onStart: (s) => { sfx.unlock(); MODES.start('3d', s); },
   onReadyClick: () => { sfx.unlock(); if (padGesture) padResume(); else input.requestLock(); },
   onResume: () => MODES.resume({ source: padGesture ? 'pad' : 'pointer' }),
@@ -173,7 +178,9 @@ if (typeof sfx.setVolume === 'function' && typeof sfx.getVolume === 'function') 
 // Every screen change goes through SHELL; each screen declares its default focus and its Back.
 const SHELL = createRouter({
   screens: {
-    menu: { defaultFocus: '[data-preset][data-last]', show: () => { MODES.leave(); showMenuBackdrop(); ui.showMenu(); } },
+    menu: { defaultFocus: '[data-entry][data-last]', show: () => { MODES.leave(); showMenuBackdrop(); ui.showMenu(); } },
+    'board-choice': { defaultFocus: '[data-preset][data-last]', show: () => { MODES.leave(); showMenuBackdrop(); ui.showBoardChoice(); } },
+    'coming-soon': { defaultFocus: '#coming-soon-back', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showComingSoon(d.title ?? 'This screen'); } },
     ready: { defaultFocus: '#ready-btn', show: (d = {}) => ui.showReady(S.settings, d.msg ?? ''), back: () => readyBack() },
     playing: { defaultFocus: null, show: (d = {}) => { setLockless(!!d.lockless); ui.showPlaying(); endIfDecided(); }, back: () => padPause() },
     paused: { defaultFocus: () => (S.game && S.game.state !== 'playing' ? '#p-restart' : '#p-resume'), show: (d = {}) => { stopPlayInput(); ui.showPause(pauseInfo(d.note)); }, back: ({ source }) => resumeFromPause(source) },
@@ -190,7 +197,7 @@ Object.defineProperty(S, 'mode', { get: () => SHELL.current, enumerable: true })
 const MODES = createModeHost();
 let contextLost = false;
 const FLOW_3D = {
-  openBoardChoice: () => showMainMenu(), // the 3D presets and custom board are on the main menu
+  openBoardChoice: () => SHELL.go('board-choice'), // the 3D presets and custom board
   start: (settings) => startGame(settings),
   pause: (note) => SHELL.go('paused', { data: { note } }),
   resume: (source) => resumeGame(source),
@@ -202,6 +209,12 @@ const FLOW_3D = {
 // end of 3D flow
 const mode3d = MODES.register('3d', (report) => create3DMode(FLOW_3D, report));
 MODES.on('failed', ({ screen }) => SHELL.go(screen ?? 'menu'));
+
+// ---------- main menu ----------
+// Each entry is a route; the last mode played is kept through platform storage and marked on the menu.
+const MENU = createMenu({ router: SHELL, modes: MODES });
+const LAST_MODE = createLastMode({ storage, modes: MODES });
+MODES.on('started', ({ mode }) => ui.setLastMode(mode));
 
 /** Back from the keyboard (Esc) or the controller: the topmost layer first, then the router. */
 function shellBack(source) {
@@ -221,11 +234,11 @@ function resumeGame(source) {
   if (source === 'pointer') input.requestLock();
 }
 
-/** Leave the ready screen: a fresh board goes back to the menu; a game in progress opens the pause menu. */
+/** Leave the ready screen: a fresh board goes back to the 3D board choice; a game in progress opens the pause menu. */
 function readyBack() {
   if (S.mode !== 'ready') return;
   if (S.game && S.started) pause();
-  else showMainMenu();
+  else SHELL.go('board-choice');
 }
 
 /** Adaptive resolution: big boards are fill/vertex heavy. */
@@ -311,6 +324,9 @@ function makeDemo() {
 }
 
 function showMainMenu() { SHELL.go('menu'); }
+/** The menu screens show the decorative demo board behind them. */
+const BACKDROP_SCREENS = new Set(['menu', 'board-choice', 'coming-soon']);
+function onBackdrop() { return BACKDROP_SCREENS.has(S.mode); }
 /** The 3D leave: drop the game and release pointer lock and lockless play. */
 function leaveGame() {
   input.exitLock();
@@ -331,7 +347,7 @@ window.addEventListener('resize', () => { renderer.resize(); needRender = true; 
 let reloading = false;
 window.addEventListener('beforeunload', (e) => {
   // Ctrl is a game key, and Ctrl+W cannot be intercepted: ask before leaving a game.
-  if (!reloading && S.game && S.started && !S.endState && S.mode !== 'menu' && S.mode !== 'ctxlost') {
+  if (!reloading && S.game && S.started && !S.endState && !onBackdrop() && S.mode !== 'ctxlost') {
     e.preventDefault();
     e.returnValue = '';
   }
@@ -348,7 +364,7 @@ canvas.addEventListener('webglcontextlost', (e) => {
 function showContextLost() {
   mouse.reset();
   input.exitLock();
-  for (const id of ['pause', 'ready', 'menu', 'controls-modal']) {
+  for (const id of ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'controls-modal']) {
     const el = document.getElementById(id);
     if (!el) continue;
     if (id !== 'menu') el.classList.add('hidden');
@@ -359,7 +375,7 @@ function showContextLost() {
 /** Leaving the context-lost screen (back to the menu): the other overlays are live again. */
 function hideContextLost() {
   document.getElementById('ctx-lost').classList.add('hidden');
-  for (const id of ['pause', 'ready', 'menu', 'controls-modal']) {
+  for (const id of ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'controls-modal']) {
     const el = document.getElementById(id);
     if (el) el.inert = false;
   }
@@ -416,7 +432,10 @@ function padClick(el) {
 }
 
 // Spatial focus navigation inside the topmost visible overlay (its screen, or the controls modal).
-const LAYER_SCREEN = { 'ctx-lost': 'ctxlost', 'controls-modal': null, pause: 'paused', ready: 'ready', menu: 'menu' };
+const LAYER_SCREEN = {
+  'ctx-lost': 'ctxlost', 'controls-modal': null, pause: 'paused', ready: 'ready',
+  'coming-soon': 'coming-soon', 'board-choice': 'board-choice', menu: 'menu',
+};
 const SCREEN_LAYER = Object.fromEntries(Object.entries(LAYER_SCREEN).filter(([, s]) => s).map(([l, s]) => [s, l]));
 const MODAL_FOCUS = '#controls-close';
 function layerOpen(id) {
@@ -579,7 +598,7 @@ function updatePick() {
 }
 /** Synchronous camera/pick refresh (used by the debug hook between frames). */
 function refresh() {
-  if (!S.game || S.mode === 'menu') return;
+  if (!S.game || onBackdrop()) return;
   cam.apply(renderer.camera);
   const playing = S.mode === 'playing';
   renderer.setToggles(playing && controls.shift, playing && controls.space, playing && controls.ctrl);
@@ -602,7 +621,7 @@ function rendererAnimating() {
   return null; // unknown
 }
 function shouldRender(now, synced) {
-  if (S.mode === 'menu' || needRender || synced) return true;
+  if (onBackdrop() || needRender || synced) return true;
   if (S.endState !== lastEnd) { lastEnd = S.endState; if (S.endState) animUntil = now + 6000; return true; }
   const anim = rendererAnimating();
   if (anim === true) return true;
@@ -629,7 +648,7 @@ function frame(now) {
 
   const three = renderer.camera;
   const playing = S.mode === 'playing';
-  if (S.mode === 'menu') {
+  if (onBackdrop()) {
     S.orbit += dt * 0.12;
     const r = 62;
     three.position.set(Math.sin(S.orbit) * r, 24 + Math.sin(S.orbit * 0.7) * 10, Math.cos(S.orbit) * r);
@@ -651,7 +670,7 @@ function frame(now) {
 
   // picking: only when something relevant changed
   const g = S.game;
-  if (g && S.mode !== 'menu') {
+  if (g && !onBackdrop()) {
     updatePick();
     // timer: runs only while actually playing (not paused / not on overlays), frozen at the end
     if (playing && S.started && !S.endState) S.time += Math.min(rawDt, 1);
@@ -668,6 +687,11 @@ function frame(now) {
 }
 
 showMainMenu();
+const bootFocus = document.activeElement;
+LAST_MODE.load().then((mode) => {
+  ui.setLastMode(mode);
+  if (SHELL.current === 'menu' && document.activeElement === bootFocus) SHELL.refocus(); // the player has not moved yet
+});
 requestAnimationFrame(frame);
 
 // ---------- debug / test hook ----------

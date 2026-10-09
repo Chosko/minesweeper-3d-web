@@ -146,10 +146,20 @@
      ui-stat-row       a row of ui-stat readouts.
 
    Main menu (index.html #menu): ui-card ui-screen--wide holding the title
-     row, one ui-menu per board family in a ui-grid, the custom board as a
-     ui-panel of ui-field entries with ui-actions--row (Random, Start), and a
-     ui-row footer (Controls, Sound, volume ui-slider, credit ui-link).
-     Default focus: the last played board, else the first item.
+     row, one ui-menu of the entries (Classic 2D, 3D, Records, Settings; each
+     a route, data-entry naming it, the last mode played marked with a
+     "Last played" ui-menu__detail) and a ui-row footer (Controls, Sound,
+     volume ui-slider, credit ui-link). Default focus: the last mode played
+     (data-last), else the first entry.
+   3D board choice (index.html #board-choice): ui-card ui-screen--wide
+     holding the title, one ui-menu per board family in a ui-grid, the custom
+     board as a ui-panel of ui-field entries with ui-actions--row (Random,
+     Start), and ui-actions--row (Back). Default focus: the last played
+     board, else the first item.
+   Coming soon (index.html #coming-soon): the one placeholder every menu
+     entry whose screen has not landed routes to; ui-card ui-screen holding
+     the entry's name as title, a ui-text line and ui-actions (Back primary).
+     Default focus: Back.
    Pause card (index.html #pause): ui-card ui-screen holding the title,
      ui-text status lines, ui-actions (Resume primary while playing, Play
      again primary and first once the game ended, Main menu), the controls

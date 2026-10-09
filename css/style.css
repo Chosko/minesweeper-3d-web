@@ -45,7 +45,7 @@ kbd {
   z-index: var(--z-overlay);
   overflow-y: auto;
 }
-#menu { background: linear-gradient(180deg, rgba(200, 225, 255, 0.15), rgba(200, 225, 255, 0.35)); }
+#menu, #board-choice, #coming-soon { background: linear-gradient(180deg, rgba(200, 225, 255, 0.15), rgba(200, 225, 255, 0.35)); }
 #pause, #ready { background: rgba(170, 200, 240, 0.35); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
 
 @keyframes pop { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: none; } }

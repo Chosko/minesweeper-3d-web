@@ -95,26 +95,46 @@
         </div>
       </div>
 
+      <div class="ui-menu" role="group" aria-label="Play">
+        <button type="button" class="ui-menu__item" id="menu-entry-classic-2d" data-entry="classic-2d"><span class="ui-menu__label">Classic 2D</span><span class="ui-menu__detail">The classic game on a flat board</span></button>
+        <button type="button" class="ui-menu__item" id="menu-entry-3d" data-entry="3d"><span class="ui-menu__label">3D</span><span class="ui-menu__detail">Fly through a cube of cubes</span></button>
+        <button type="button" class="ui-menu__item" id="menu-entry-records" data-entry="records"><span class="ui-menu__label">Records</span><span class="ui-menu__detail">Your best times and stats</span></button>
+        <button type="button" class="ui-menu__item" id="menu-entry-settings" data-entry="settings"><span class="ui-menu__label">Settings</span><span class="ui-menu__detail">Controls, graphics, theme and audio</span></button>
+      </div>
+
+      <div class="ui-row">
+        <button type="button" id="menu-help" class="ui-button ui-button--secondary">Controls</button>
+        <button type="button" id="menu-sound" class="ui-button ui-button--secondary">Sound: on</button>
+        <div class="ui-slider hidden" data-volume><label class="ui-slider__label" for="menu-vol">Volume</label><output class="ui-slider__value" id="menu-vol-val" for="menu-vol">100%</output><input type="range" id="menu-vol" class="ui-slider__input" min="0" max="100" step="1" value="100" data-format="percent"></div>
+      </div>
+      <p class="ui-text ui-text--muted">Web port of the 2011 XNA game <a class="ui-link" href="https://github.com/Chosko/minesweeper-3d" target="_blank" rel="noopener">Minesweeper 3D</a> by Chosko</p>
+    </section>
+  </section>
+
+  <!-- 3D board choice -->
+  <section id="board-choice" class="overlay hidden" aria-label="3D board choice">
+    <section class="ui-card ui-screen ui-screen--wide" aria-labelledby="board-choice-title">
+      <h2 class="ui-card__title" id="board-choice-title">3D</h2>
       <div class="ui-grid">
         <div>
-          <h2 class="ui-heading" id="menu-2d">2D classic</h2>
-          <div class="ui-menu" role="group" aria-labelledby="menu-2d">
+          <h2 class="ui-heading" id="bc-2d">2D classic</h2>
+          <div class="ui-menu" role="group" aria-labelledby="bc-2d">
             <button type="button" class="ui-menu__item" data-preset="9,9,1,10"><span class="ui-menu__label">Beginner</span><span class="ui-menu__detail">9 &times; 9 &times; 1 &middot; 10 mines</span></button>
             <button type="button" class="ui-menu__item" data-preset="16,16,1,40"><span class="ui-menu__label">Intermediate</span><span class="ui-menu__detail">16 &times; 16 &times; 1 &middot; 40 mines</span></button>
             <button type="button" class="ui-menu__item" data-preset="30,16,1,99"><span class="ui-menu__label">Expert</span><span class="ui-menu__detail">30 &times; 16 &times; 1 &middot; 99 mines</span></button>
           </div>
         </div>
         <div>
-          <h2 class="ui-heading" id="menu-double">Double layer</h2>
-          <div class="ui-menu" role="group" aria-labelledby="menu-double">
+          <h2 class="ui-heading" id="bc-double">Double layer</h2>
+          <div class="ui-menu" role="group" aria-labelledby="bc-double">
             <button type="button" class="ui-menu__item" data-preset="8,8,2,10"><span class="ui-menu__label">Beginner</span><span class="ui-menu__detail">8 &times; 8 &times; 2 &middot; 10 mines</span></button>
             <button type="button" class="ui-menu__item" data-preset="14,14,2,60"><span class="ui-menu__label">Intermediate</span><span class="ui-menu__detail">14 &times; 14 &times; 2 &middot; 60 mines</span></button>
             <button type="button" class="ui-menu__item" data-preset="25,16,2,130"><span class="ui-menu__label">Expert</span><span class="ui-menu__detail">25 &times; 16 &times; 2 &middot; 130 mines</span></button>
           </div>
         </div>
         <div>
-          <h2 class="ui-heading" id="menu-3d">3D</h2>
-          <div class="ui-menu" role="group" aria-labelledby="menu-3d">
+          <h2 class="ui-heading" id="bc-3d">3D</h2>
+          <div class="ui-menu" role="group" aria-labelledby="bc-3d">
             <button type="button" class="ui-menu__item" data-preset="6,6,6,10"><span class="ui-menu__label">Beginner</span><span class="ui-menu__detail">6 &times; 6 &times; 6 &middot; 10 mines</span></button>
             <button type="button" class="ui-menu__item" data-preset="8,8,8,40"><span class="ui-menu__label">Intermediate</span><span class="ui-menu__detail">8 &times; 8 &times; 8 &middot; 40 mines</span></button>
             <button type="button" class="ui-menu__item" data-preset="12,12,8,130"><span class="ui-menu__label">Expert</span><span class="ui-menu__detail">12 &times; 12 &times; 8 &middot; 130 mines</span></button>
@@ -137,12 +157,20 @@
         <p id="c-info" class="ui-text ui-text--muted">1000 cells &middot; mine density 2.5%</p>
       </form>
 
-      <div class="ui-row">
-        <button type="button" id="menu-help" class="ui-button ui-button--secondary">Controls</button>
-        <button type="button" id="menu-sound" class="ui-button ui-button--secondary">Sound: on</button>
-        <div class="ui-slider hidden" data-volume><label class="ui-slider__label" for="menu-vol">Volume</label><output class="ui-slider__value" id="menu-vol-val" for="menu-vol">100%</output><input type="range" id="menu-vol" class="ui-slider__input" min="0" max="100" step="1" value="100" data-format="percent"></div>
+      <div class="ui-actions ui-actions--row">
+        <button type="button" id="board-choice-back" class="ui-button ui-button--secondary">Back</button>
       </div>
-      <p class="ui-text ui-text--muted">Web port of the 2011 XNA game <a class="ui-link" href="https://github.com/Chosko/minesweeper-3d" target="_blank" rel="noopener">Minesweeper 3D</a> by Chosko</p>
+    </section>
+  </section>
+
+  <!-- Coming soon -->
+  <section id="coming-soon" class="overlay hidden" aria-label="Coming soon">
+    <section class="ui-card ui-screen" aria-labelledby="coming-soon-title">
+      <h2 class="ui-card__title" id="coming-soon-title">Coming soon</h2>
+      <p id="coming-soon-text" class="ui-text ui-text--muted">This part of the game is coming soon.</p>
+      <div class="ui-actions">
+        <button type="button" id="coming-soon-back" class="ui-button ui-button--primary">Back</button>
+      </div>
     </section>
   </section>
 
@@ -161,7 +189,7 @@
         <span id="ready-pad" class="ready-pad hidden"></span>
         <span class="ready-tip">Tip: press <kbd>F</kbd> for fullscreen &mdash; keeps <kbd>Ctrl</kbd>+<kbd>W</kbd> from closing the tab</span>
       </button>
-      <button type="button" id="ready-back" class="link-btn ready-back">Back to menu</button>
+      <button type="button" id="ready-back" class="link-btn ready-back">Back</button>
     </div>
   </section>
 
