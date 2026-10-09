@@ -316,7 +316,7 @@ Feature: game-summary
 
 ## 32. Classic 2D board setup, game session and timer
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/classic2d/session.js, js/classic2d/board-setup.js, js/engine/profiles.js, tests/classic2d-session.test.mjs, .claude/domain/features/board-generation.md, .claude/domain/features/classic-2d-square-play.md
 Preconditions: 5, 6, 12, 15, 30

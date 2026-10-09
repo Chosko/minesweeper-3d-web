@@ -49,10 +49,15 @@ Rule profiles (`js/engine/profiles.js`)
 - A profile records `id`, `version` and its behaviour markers:
   `chordInputs`, `rightPressOnNumber`, `chordCountsFlagsOnly`,
   `chordOnFlagCountMismatch`, `flagRevealedCell`, `lossView`, `firstClick`,
-  `clickCounting`, plus `fidelity` mapping every marker to its heading in
-  `tests/fidelity/minesweeper-online.md`. The engine branches on
-  `flagRevealedCell` and applies `clickCounting`; the rest record reference
-  behaviour that tests pin and other areas (input, board generation) honour.
+  `clickCounting`, `customLimits`, plus `fidelity` mapping every marker to
+  its heading in `tests/fidelity/minesweeper-online.md`. The engine branches
+  on `flagRevealedCell` and applies `clickCounting`; the rest record
+  reference behaviour that tests pin and other areas (input, board
+  generation, board setup) honour.
+- `CUSTOM_LIMITS` — the reference profile's current `customLimits`: side
+  `minSide .. maxSide`, a mine in every cell up to `everyCellUpTo` cells,
+  then the measured `mineCaps` (`[cells, cap]`) that Classic 2D board setup
+  interpolates.
 
 Game (`js/engine/rules.js`)
 - `createGame({ graph, profile, version?, mineCount, dimensions? })` — phase

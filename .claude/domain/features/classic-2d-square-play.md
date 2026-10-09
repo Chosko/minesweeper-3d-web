@@ -133,8 +133,9 @@ copied.
   the same way as the abandoned report's; before the first click there is
   none.
 - **Generation failure** — when a no-guess request fails, the session shows
-  the failure and offers what `board-generation`'s open question settles;
-  the timer never starts on a failed board.
+  the failure and offers *Retry* (a new seed) or *Play a standard board*
+  (the same size, no-guess off), as `board-generation` § Failure offer
+  settles; the timer never starts on a failed board.
 - **Input fidelity** — every reference behaviour this feature owns (which
   inputs chord, when a flag toggles, press feedback, release-off-cell
   cancelling, the largest custom board) is pinned by a fidelity test in the

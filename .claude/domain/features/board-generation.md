@@ -121,11 +121,12 @@ daily board, which never play through the engine's actions.
 Consumed by `classic-2d-square-play`, which asks for a board when the first
 click lands.
 
-## Open questions
+## Failure offer
 
-- What the player is offered when a no-guess request fails — retry, or a
-  standard board — and whether high-density custom boards should refuse the
-  no-guess switch up front. Blocks the failure message, not the generator.
+Settled: when a no-guess request fails, the player is offered *Retry* (the
+same board request with a new seed) or *Play a standard board* (the same
+size with no-guess off). High-density custom boards do not refuse the
+no-guess switch up front; the failure offer covers them.
 
 ## Attempt budget and timing
 

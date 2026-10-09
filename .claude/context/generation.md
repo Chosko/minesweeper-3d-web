@@ -19,9 +19,9 @@ graph and the square-grid provider ([engine.md](engine.md)).
 - `js/generation/client.js` — the page-side client: one request in flight,
   cancellation.
 
-Nothing in the app calls it yet; `classic-2d-square-play` will ask for a
-board when the engine's first reveal returns "board needed at c", and hand
-the mine set back with the engine's `supplyBoard`.
+Its caller is the Classic 2D game session (`js/classic2d/session.js`), which
+asks for a board when the engine's first reveal returns "board needed at c"
+and hands the mine set back with the engine's `supplyBoard`.
 
 ## PUBLIC API
 

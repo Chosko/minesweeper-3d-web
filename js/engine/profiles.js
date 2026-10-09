@@ -46,6 +46,18 @@ const reference1 = {
     wasted: { reveal: 'opens-nothing', flag: 'removes-a-flag', chord: 'opens-nothing' },
     flagOnRevealedCell: 'not-counted',
   },
+  // The custom board limits board setup validates against: width and height `minSide` to `maxSide`;
+  // boards of up to `everyCellUpTo` cells take a mine in every cell; above that the site's mine cap
+  // is measured at `mineCaps` ([cells, cap], ascending) and interpolated by cell count between them.
+  customLimits: {
+    minSide: 1,
+    maxSide: 100,
+    everyCellUpTo: 36,
+    mineCaps: [
+      [49, 19], [64, 24], [81, 31], [100, 38], [256, 96], [400, 140], [480, 168],
+      [2500, 712], [6400, 1659], [8100, 2051], [10000, 2480],
+    ],
+  },
   fidelity: {
     chordInputs: 'Chording: which inputs chord',
     rightPressOnNumber: 'Chording: which inputs chord',
@@ -55,12 +67,16 @@ const reference1 = {
     lossView: 'The board after a loss',
     firstClick: 'First-click guarantee',
     clickCounting: 'What counts as a click for efficiency',
+    customLimits: 'Largest custom board',
   },
 };
 
 export const PROFILES = deepFreeze({
   [REFERENCE_PROFILE]: { current: 1, versions: { 1: reference1 } },
 });
+
+// The reference profile's custom board limits (its current version), for board setup.
+export const CUSTOM_LIMITS = PROFILES[REFERENCE_PROFILE].versions[PROFILES[REFERENCE_PROFILE].current].customLimits;
 
 // The rule profile `id` at `version` (its current version when omitted). An unknown profile or a
 // version this build does not have is refused with a RangeError.
