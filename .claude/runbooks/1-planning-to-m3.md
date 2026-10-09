@@ -355,12 +355,22 @@ Read .claude/PLAN.md first. For every feature it places under m2-3d-joins, in pl
 The deliverable is the complete m2 backlog in .claude/TASKS.md: every m2-3d-joins feature planned. Do not add tasks for features of any other milestone.
 ```
 
-## [ ] 14. Write the m3 tasks
+## [P] 14. Write the m3 tasks
 
 Depends on: 11
 
 Context:
 - 2026-10-09 Decided by the user: every approval gate a skill in this step raises is approved as drafted, unseen; on each open call take the draft's own recommendation, and answer the gate from this bullet rather than parking. Park only on a real design question.
+- 2026-10-09 parked: the same /task-add setup block as steps 12 and 13 (`.claude/tasks/` missing on a fresh clone).
+  Q1. How should the backlog directory be restored so step 14 can run?
+    a. Run `/task-setup` again in the session that re-runs the step. It is idempotent and only creates `.claude/tasks/`. The first /task-add commit then tracks a body file, so later clones keep the directory.
+    b. Add a tracked `.claude/tasks/.gitkeep` in its own commit before steps 12–14 run again. This fixes every fresh clone at once, but it sits outside the /task-add flow.
+    c. Something else.
+    Recommendation: give the same answer as steps 12 and 13's Q1 and apply it once for all three. If those steps re-run in separate fresh sessions, b is safer, because a has to be repeated in every fresh clone until a /task-add commit lands.
+  Q2. In what order should steps 12, 13 and 14 run once the directory exists?
+    a. Run 12 (m1), then 13 (m2), then 14 (m3), even though step 14 lists only step 11 as its dependency. Every m3 feature depends on m1 and m2 features (for example, steam-desktop-host depends on platform-storage, replay-library and game-shell, and results-steam-rank depends on 3d-results-records-screens). With the earlier tasks already in place, the m3 tasks can name them on their `Preconditions:` lines, and task IDs come out in milestone order.
+    b. Run step 14 as soon as the directory exists, as the runbook allows. The m3 tasks would take the low IDs, and their `Preconditions:` lines could not point at m1 or m2 tasks, which would not exist yet.
+    Recommendation: a. It is consistent with step 13's Q2a recommendation.
 
 ```prompt
 Write the backlog tasks for milestone m3-on-steam.
