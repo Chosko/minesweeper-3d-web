@@ -94,10 +94,10 @@ Tasks: 29, 30, 31
 
 ## personal-records — Personal bests, stats history, win rate and streaks per board, persisted locally
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/personal-records.md
 Source: product-design.md § Results and records (m1-classic-2d)
-Tasks: none
+Tasks: 43, 44, 45
 
 ---
 

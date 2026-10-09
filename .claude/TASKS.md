@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 42
+Last task number: 45
 
 ---
 
@@ -421,5 +421,35 @@ Target: claude
 Files: .claude/context/settings.md, .claude/context/app-shell.md, .claude/context/audio.md, .claude/context/rendering.md, .claude/context/INDEX.md, .claude/context/testing.md
 Preconditions: 39, 40, 41
 Feature: settings
+
+---
+
+## 43. Records model: bests, counters, history and comparison
+
+Status: [MISSING]
+Target: claude
+Files: js/records/model.js, tests/records-model.test.mjs
+Preconditions: 30
+Feature: personal-records
+
+---
+
+## 44. Records store: persistence, recovery and the abandoned-game hook
+
+Status: [MISSING]
+Target: claude
+Files: js/records/store.js, js/shell/pause.js, tests/records-store.test.mjs
+Preconditions: 15, 27, 43
+Feature: personal-records
+
+---
+
+## 45. Update documentation for feature `personal-records`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/records.md, .claude/context/testing.md, .claude/context/INDEX.md
+Preconditions: 43, 44
+Feature: personal-records
 
 ---
