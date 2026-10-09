@@ -30,6 +30,7 @@ Context:
     b. Two documents, with the component kit merged into design-tokens-and-themes.
     Recommendation: a. The tokens feed both the Canvas board and the DOM screens, and only the screens need the kit, so the 2D board can be built without waiting for it.
 - 2026-10-09 unparked with answer: Q1a — three documents: design-tokens-and-themes, square-tile-skin and screen-components. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
+- 2026-10-09 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision; on each open call in the draft take the draft's recommendation. This supersedes any earlier bullet saying the gate is asked when the step runs. Park only on a real design question.
 
 ```prompt
 /architect "Visual design system" m1-classic-2d
@@ -37,7 +38,7 @@ Context:
 The product design leaves open how players choose between the light and dark themes and whether the 3D scene gets both; the roadmap defers that question to this design. Ask it rather than deciding it.
 ```
 
-## [P] 2. Architect the Classic 2D slice for m1
+## [ ] 2. Architect the Classic 2D slice for m1
 
 Depends on: none
 
@@ -53,12 +54,13 @@ Context:
     Recommendation: a. The player keeps a free first click and it matches the safe-first-click flow. If Minesweeper Online's no-guess mode turns out to do b, choosing a here is a deliberate difference from the reference, recorded in the document.
 - 2026-10-09 unparked with answer: Q2a — Minesweeper Online with its default options is the reference, each rule pinned by a fidelity test; Q3a — with no-guess on, the board is generated when the first click lands. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
 - 2026-10-09 parked: approval gate — the Classic 2D architecture draft, now carrying the Q2a and Q3a answers (three documents: cell-graph-rules-engine, board-generation, classic-2d-square-play; the open call is whether board generation folds into the rules engine), waits for approval when the step runs.
+- 2026-10-09 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision; on each open call in the draft take the draft's recommendation. This supersedes any earlier bullet saying the gate is asked when the step runs. Park only on a real design question.
 
 ```prompt
 /architect "Classic 2D" m1-classic-2d
 ```
 
-## [P] 3. Architect the main menu and game shell slice for m1
+## [ ] 3. Architect the main menu and game shell slice for m1
 
 Depends on: none
 
@@ -77,12 +79,13 @@ Context:
 - 2026-10-09 (from step 1): the visual design system draft leaves the Settings page out, so the settings feature must store the theme value and show the light/dark theme control (the user's decision: the theme is chosen on the Settings page).
 - 2026-10-09 parked: approval gate — the m1 main menu and game shell architecture draft, now carrying the Q2a and Q3a answers and the theme control (three documents: game-shell, settings, platform-storage; the open call is whether platform storage folds into settings), waits for approval when the step runs. The draft records two open points: the theme control's values wait on step 1's first-launch theme question, and Quit is in no milestone's slice though the m3 Electron build needs it.
 - 2026-10-09 (from step 1): the user answered the first-launch theme question — Light by default, and the theme control offers Light and Dark only, no "Match system".
+- 2026-10-09 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision; on each open call in the draft take the draft's recommendation. This supersedes any earlier bullet saying the gate is asked when the step runs. Park only on a real design question.
 
 ```prompt
 /architect "Main menu and game shell" m1-classic-2d
 ```
 
-## [P] 4. Architect the results and records slice for m1
+## [ ] 4. Architect the results and records slice for m1
 
 Depends on: none
 
@@ -102,12 +105,13 @@ Context:
     Recommendation: a. Otherwise a player can protect a streak or a win rate by restarting a game that is going badly. A game abandoned before the first click is never counted.
 - 2026-10-09 unparked with answer: Q2a — three separate bests per board (fastest time, best 3BV/s, best efficiency), each compared on the results screen; Q3a — custom boards get personal bests, each exact width, height, mine count and no-guess setting its own board; Q4a — a game started (first click made) and then restarted or left counts as a loss and breaks the win streak. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
 - 2026-10-09 parked: approval gate — the m1 results and records architecture draft, now carrying the Q2a, Q3a and Q4a answers (four documents: game-summary, personal-records, results-screen, records-screen; the open call is whether game-summary folds into personal-records), waits for approval when the step runs. It records two open points: whether closing the window mid-game counts as a loss, and who owns the shared storage interface (step 3's draft gives it to platform-storage).
+- 2026-10-09 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision; on each open call in the draft take the draft's recommendation. This supersedes any earlier bullet saying the gate is asked when the step runs. Park only on a real design question.
 
 ```prompt
 /architect "Results and records" m1-classic-2d
 ```
 
-## [P] 5. Architect the 3D mode slice for m2
+## [ ] 5. Architect the 3D mode slice for m2
 
 Depends on: none
 
@@ -128,6 +132,7 @@ Context:
 - 2026-10-09 unparked with answer: Q2a — the 3D first click follows the same rule as Classic 2D (an opening when that rule says so, only the clicked cell on a board too dense); Q3a — no-guess on every preset and on custom boards up to a cell-count limit set from measured generation time, the switch shown disabled with the reason above it; Q4a — the current 3D best times are left behind and 3D records start fresh. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
 - 2026-10-09 parked: approval gate — the m2 3D mode architecture draft, now carrying the Q2a, Q3a and Q4a answers (two documents: 3d-board-graph with a 3D rule profile on the shared engine, js/logic.js retired; 3d-play-flow; the open call is whether they fold into one), waits for approval when the step runs. Consequences it names: the custom-board mine cap drops to every cell but one, and seeded boards no longer match the original game's.
 - 2026-10-09 (from step 8, the user's answer): the three flat "2D" presets of 3D mode (9×9×1, 16×16×1, 30×16×1) are discarded as redundant with Classic 2D; 3D mode keeps 6 presets (double layer and cube).
+- 2026-10-09 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision; on each open call in the draft take the draft's recommendation. This supersedes any earlier bullet saying the gate is asked when the step runs. Park only on a real design question.
 
 ```prompt
 /architect "3D mode" m2-3d-joins
@@ -159,6 +164,7 @@ Context:
     b. Store what each action changed on the board, so the replay plays without the engine. Old replays never depend on old rule versions, but they get larger and the format is harder to keep stable.
     Recommendation: a. It keeps replays small, and the check values in the format catch any replay that can no longer be reproduced.
 - 2026-10-09 unparked with answer: Q2a — keep three documents: replay-recording, replay-playback, replay-library; Q3a — store the mine positions and the actions and replay them on the engine, each shipped rules version frozen and kept by the engine (step 2's engine design takes on this requirement). The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
+- 2026-10-09 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision; on each open call in the draft take the draft's recommendation. This supersedes any earlier bullet saying the gate is asked when the step runs. Park only on a real design question.
 
 ```prompt
 /architect "Replays" m2-3d-joins
@@ -190,6 +196,7 @@ Context:
     b. Straight away. The effect is cut.
     Recommendation: a. It keeps the moment that shows the player why they lost, at the cost of a short delay.
 - 2026-10-09 unparked with answer: Q2a — keep two documents, the records data and the screens; Q3a — the 3D results screen appears after the end effect has played (about a second, input frozen), the loss wave being the player's only look at the mines. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
+- 2026-10-09 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision; on each open call in the draft take the draft's recommendation. This supersedes any earlier bullet saying the gate is asked when the step runs. Park only on a real design question.
 
 ```prompt
 /architect "Results and records" m2-3d-joins
@@ -212,6 +219,7 @@ Context: none
     c. Only a handful of firsts (first win in each mode and on each difficulty), with the rest left to m6.
     Recommendation: a. It gives enthusiasts goals they care about without padding, and m6 already brings the full set.
 - 2026-10-09 unparked with answer: Q1 — in 3D mode the first three "2D" presets (9×9×1, 16×16×1, 30×16×1) must be discarded, because they are redundant with Classic 2D; the remaining 6 presets (double layer and cube) get leaderboards, 12 3D boards; Q2a — a small set of about 15–20 milestone achievements. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
+- 2026-10-09 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision; on each open call in the draft take the draft's recommendation. This supersedes any earlier bullet saying the gate is asked when the step runs. Park only on a real design question.
 
 ```prompt
 /architect "Steam features" m3-on-steam
@@ -236,6 +244,7 @@ Context: none
     c. Put it in step 3's m1 game-shell instead, hidden on the web build until the desktop build exists.
     Recommendation: a. m3 is the first milestone with a desktop build, so it is the first place Quit is needed. Correcting the roadmap keeps the slice accurate.
 - 2026-10-09 unparked with answer: Q1a — one document here (`leaderboards-menu-entry`) owning the menu entry and its navigation, step 8's `leaderboard-screen` owning the screen; Q2a — Quit goes in this m3 document, shown on the desktop build only, and the m3 slice is corrected afterwards with /product-roadmap. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
+- 2026-10-09 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision; on each open call in the draft take the draft's recommendation. This supersedes any earlier bullet saying the gate is asked when the step runs. Park only on a real design question.
 
 ```prompt
 /architect "Main menu and game shell" m3-on-steam
@@ -264,6 +273,7 @@ Context: none
     a. About 5 seconds. A late answer still fills the panel in if the player is still on the results screen.
     b. No limit. It shows "ranking…" until the answer arrives or the player leaves the screen.
     Recommendation: a. It never leaves a spinner on a dead connection and still shows a slow answer.
+- 2026-10-09 Decided by the user: every approval gate a skill in this step raises is approved as drafted, unseen; on each open call take the draft's own recommendation, and answer the gate from this bullet rather than parking. Park only on a real design question.
 
 ```prompt
 /architect "Results and records" m3-on-steam
@@ -273,7 +283,8 @@ Context: none
 
 Depends on: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
 
-Context: none
+Context:
+- 2026-10-09 Decided by the user: every approval gate a skill in this step raises is approved as drafted, unseen; on each open call take the draft's own recommendation, and answer the gate from this bullet rather than parking. Park only on a real design question.
 
 ```prompt
 /production-plan
@@ -283,7 +294,8 @@ Context: none
 
 Depends on: 11
 
-Context: none
+Context:
+- 2026-10-09 Decided by the user: every approval gate a skill in this step raises is approved as drafted, unseen; on each open call take the draft's own recommendation, and answer the gate from this bullet rather than parking. Park only on a real design question.
 
 ```prompt
 Write the backlog tasks for milestone m1-classic-2d.
@@ -299,7 +311,8 @@ The deliverable is the complete m1 backlog in .claude/TASKS.md: every m1-classic
 
 Depends on: 11
 
-Context: none
+Context:
+- 2026-10-09 Decided by the user: every approval gate a skill in this step raises is approved as drafted, unseen; on each open call take the draft's own recommendation, and answer the gate from this bullet rather than parking. Park only on a real design question.
 
 ```prompt
 Write the backlog tasks for milestone m2-3d-joins.
@@ -315,7 +328,8 @@ The deliverable is the complete m2 backlog in .claude/TASKS.md: every m2-3d-join
 
 Depends on: 11
 
-Context: none
+Context:
+- 2026-10-09 Decided by the user: every approval gate a skill in this step raises is approved as drafted, unseen; on each open call take the draft's own recommendation, and answer the gate from this bullet rather than parking. Park only on a real design question.
 
 ```prompt
 Write the backlog tasks for milestone m3-on-steam.
@@ -333,6 +347,7 @@ Depends on: 12
 
 Context:
 - 2026-10-09 Correction from the user: every task gets a review/iterate round — each step's prompt is `/task-implement <n> --review`, not the bare `/task-implement <n>`.
+- 2026-10-09 Decided by the user: every approval gate a skill in this step raises is approved as drafted, unseen; on each open call take the draft's own recommendation, and answer the gate from this bullet rather than parking. Park only on a real design question.
 
 ```prompt
 Create the runbook that implements milestone m1-classic-2d. Read .claude/PLAN.md and .claude/TASKS.md first.
@@ -356,6 +371,7 @@ Depends on: 13
 
 Context:
 - 2026-10-09 Correction from the user: every task gets a review/iterate round — each step's prompt is `/task-implement <n> --review`, not the bare `/task-implement <n>`.
+- 2026-10-09 Decided by the user: every approval gate a skill in this step raises is approved as drafted, unseen; on each open call take the draft's own recommendation, and answer the gate from this bullet rather than parking. Park only on a real design question.
 
 ```prompt
 Create the runbook that implements milestone m2-3d-joins. Read .claude/PLAN.md and .claude/TASKS.md first.
@@ -379,6 +395,7 @@ Depends on: 14
 
 Context:
 - 2026-10-09 Correction from the user: every task gets a review/iterate round — each step's prompt is `/task-implement <n> --review`, not the bare `/task-implement <n>`.
+- 2026-10-09 Decided by the user: every approval gate a skill in this step raises is approved as drafted, unseen; on each open call take the draft's own recommendation, and answer the gate from this bullet rather than parking. Park only on a real design question.
 
 ```prompt
 Create the runbook that implements milestone m3-on-steam. Read .claude/PLAN.md and .claude/TASKS.md first.
