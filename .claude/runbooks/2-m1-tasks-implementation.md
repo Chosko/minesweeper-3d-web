@@ -50,7 +50,7 @@ Depends on: 4
 Context: none
 
 ```prompt
-/task-implement 5 --review
+/task-implement 5 --review --rounds 2
 ```
 
 ## [ ] 6. Implement task 6 — Board metrics, click counts and the game summary
@@ -60,7 +60,7 @@ Depends on: 5
 Context: none
 
 ```prompt
-/task-implement 6 --review
+/task-implement 6 --review --rounds 2
 ```
 
 ## [x] 7. Implement task 7 — Fidelity tests for the reference ruleset
@@ -83,7 +83,7 @@ Depends on: 5, 6
 Context: none
 
 ```prompt
-/task-implement 7 --review
+/task-implement 7 --review --rounds 2
 ```
 
 ## [ ] 8. Implement task 8 — Update documentation for feature `cell-graph-rules-engine`
@@ -113,7 +113,7 @@ Depends on: 4
 Context: none
 
 ```prompt
-/task-implement 10 --review
+/task-implement 10 --review --rounds 2
 ```
 
 ## [ ] 11. Implement task 11 — No-guess generation loop and attempt budget
@@ -123,7 +123,7 @@ Depends on: 9, 10
 Context: none
 
 ```prompt
-/task-implement 11 --review
+/task-implement 11 --review --rounds 2
 ```
 
 ## [ ] 12. Implement task 12 — Generation worker and message protocol
@@ -133,7 +133,7 @@ Depends on: 11
 Context: none
 
 ```prompt
-/task-implement 12 --review
+/task-implement 12 --review --rounds 2
 ```
 
 ## [ ] 13. Implement task 13 — Update documentation for feature `board-generation`
@@ -153,7 +153,7 @@ Depends on: none
 Context: none
 
 ```prompt
-/task-implement 14 --review
+/task-implement 14 --review --rounds 2
 ```
 
 ## [ ] 15. Implement task 15 — Browser storage implementation and start-up selection
@@ -263,7 +263,7 @@ Depends on: 24
 Context: none
 
 ```prompt
-/task-implement 25 --review
+/task-implement 25 --review --rounds 2
 ```
 
 ## [ ] 26. Implement task 26 — Main menu entries and the last mode played
@@ -283,7 +283,7 @@ Depends on: 25
 Context: none
 
 ```prompt
-/task-implement 27 --review
+/task-implement 27 --review --rounds 2
 ```
 
 ## [ ] 28. Implement task 28 — Update documentation for feature `game-shell`
@@ -333,7 +333,7 @@ Depends on: 5, 6, 12, 15, 30
 Context: none
 
 ```prompt
-/task-implement 32 --review
+/task-implement 32 --review --rounds 2
 ```
 
 ## [ ] 33. Implement task 33 — Classic 2D Canvas board view
@@ -353,7 +353,7 @@ Depends on: 33
 Context: none
 
 ```prompt
-/task-implement 34 --review
+/task-implement 34 --review --rounds 2
 ```
 
 ## [ ] 35. Implement task 35 — Classic 2D keyboard and controller cursor
@@ -456,7 +456,7 @@ Depends on: 30
 Context: none
 
 ```prompt
-/task-implement 43 --review
+/task-implement 43 --review --rounds 2
 ```
 
 ## [ ] 44. Implement task 44 — Records store: persistence, recovery and the abandoned-game hook
@@ -466,7 +466,7 @@ Depends on: 15, 27, 43
 Context: none
 
 ```prompt
-/task-implement 44 --review
+/task-implement 44 --review --rounds 2
 ```
 
 ## [ ] 45. Implement task 45 — Update documentation for feature `personal-records`

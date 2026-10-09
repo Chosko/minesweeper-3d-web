@@ -20,7 +20,7 @@ Depends on: 1
 Context: none
 
 ```prompt
-/task-implement 52 --review
+/task-implement 52 --review --rounds 2
 ```
 
 ## [ ] 3. Implement task 53 — 3D state view and the large-board memory check
@@ -40,7 +40,7 @@ Depends on: 3
 Context: none
 
 ```prompt
-/task-implement 54 --review
+/task-implement 54 --review --rounds 2
 ```
 
 ## [ ] 5. Implement task 55 — Update documentation for feature `3d-board-graph`
@@ -70,7 +70,7 @@ Depends on: 4, 6
 Context: none
 
 ```prompt
-/task-implement 57 --review
+/task-implement 57 --review --rounds 2
 ```
 
 ## [ ] 8. Implement task 58 — No-guess cell-count limit for 3D boards
@@ -130,7 +130,7 @@ Depends on: 11
 Context: none
 
 ```prompt
-/task-implement 63 --review
+/task-implement 63 --review --rounds 2
 ```
 
 ## [ ] 14. Implement task 64 — Update documentation for feature `3d-game-records`
@@ -150,7 +150,7 @@ Depends on: 11
 Context: none
 
 ```prompt
-/task-implement 65 --review
+/task-implement 65 --review --rounds 2
 ```
 
 ## [ ] 16. Implement task 66 — Recorder and sealer
@@ -160,7 +160,7 @@ Depends on: 3, 15
 Context: none
 
 ```prompt
-/task-implement 66 --review
+/task-implement 66 --review --rounds 2
 ```
 
 ## [ ] 17. Implement task 67 — Classic 2D capture and the replay on the mode contract
@@ -190,7 +190,7 @@ Depends on: 17, 18
 Context: none
 
 ```prompt
-/task-implement 69 --review
+/task-implement 69 --review --rounds 2
 ```
 
 ## [ ] 20. Implement task 70 — Update documentation for feature `replay-recording`
@@ -220,7 +220,7 @@ Depends on: 15, 21
 Context: none
 
 ```prompt
-/task-implement 72 --review
+/task-implement 72 --review --rounds 2
 ```
 
 ## [ ] 23. Implement task 73 — End-of-game hand-off to the replay library
@@ -260,7 +260,7 @@ Depends on: 3, 15, 19
 Context: none
 
 ```prompt
-/task-implement 76 --review
+/task-implement 76 --review --rounds 2
 ```
 
 ## [ ] 27. Implement task 77 — Replay viewer screen with the 2D viewer, controls and overlay

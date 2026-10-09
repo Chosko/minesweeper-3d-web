@@ -20,7 +20,7 @@ Depends on: 1
 Context: none
 
 ```prompt
-/task-implement 85 --review
+/task-implement 85 --review --rounds 2
 ```
 
 ## [ ] 3. Implement task 86 — Page platform selection, capability flags, overlay pause and the quit flush
@@ -30,7 +30,7 @@ Depends on: 2
 Context: none
 
 ```prompt
-/task-implement 86 --review
+/task-implement 86 --review --rounds 2
 ```
 
 ## [ ] 4. Implement task 87 — Windows packaging and the SteamPipe private build
@@ -66,7 +66,7 @@ Needs: agent+human
 Context: none
 
 ```prompt
-/task-implement 89 --review
+/task-implement 89 --review --rounds 2
 ```
 
 ## [ ] 7. Implement task 90 — Update documentation for feature `steam-desktop-host`
@@ -86,7 +86,7 @@ Depends on: 2
 Context: none
 
 ```prompt
-/task-implement 91 --review
+/task-implement 91 --review --rounds 2
 ```
 
 ## [ ] 9. Implement task 92 — Steam document storage, Steam blob store and the quit flush
@@ -138,7 +138,7 @@ Depends on: 12
 Context: none
 
 ```prompt
-/task-implement 96 --review
+/task-implement 96 --review --rounds 2
 ```
 
 ## [ ] 14. Implement task 97 — Steam submitter, best cache, reader and replay fetcher
@@ -150,7 +150,7 @@ Needs: agent+human
 Context: none
 
 ```prompt
-/task-implement 97 --review
+/task-implement 97 --review --rounds 2
 ```
 
 ## [ ] 15. Implement task 98 — Local leaderboards stand-in for the web build
@@ -293,7 +293,7 @@ Depends on: none
 Context: none
 
 ```prompt
-/task-implement 111 --review
+/task-implement 111 --review --rounds 2
 ```
 
 ## [ ] 29. Implement task 112 — Classic 2D and 3D input read their actions through the bindings
@@ -303,7 +303,7 @@ Depends on: 28
 Context: none
 
 ```prompt
-/task-implement 112 --review
+/task-implement 112 --review --rounds 2
 ```
 
 ## [ ] 30. Implement task 113 — Rebinding controls on the Settings page
