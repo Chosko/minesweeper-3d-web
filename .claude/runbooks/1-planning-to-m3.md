@@ -260,7 +260,7 @@ Context: none
 ```
 Done: 2026-10-09, commit `1d613a3` (6 files, +133/-24). Leaderboards entry, plus a desktop-only Quit with no confirmation. The roadmap's m3 shell slice still needs Quit added via /product-roadmap.
 
-## [ ] 10. Architect the results and records slice for m3
+## [x] 10. Architect the results and records slice for m3
 
 Depends on: none
 
@@ -290,6 +290,7 @@ Context: none
 ```prompt
 /architect "Results and records" m3-on-steam
 ```
+Done: 2026-10-09, commit `45f69db` (5 files, +138/-4). steam-leaderboards' submitted state now carries the global rank before and after the upload. A results-screen link to the leaderboard screen is left open.
 
 ## [ ] 11. Write the production plan
 
