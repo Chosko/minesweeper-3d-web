@@ -176,7 +176,7 @@ Context:
 ```
 Done: 2026-10-09, commit `233bb38` (8 files, +490/-15). The large-file replay store (IndexedDB) lives in replay-library, not in platform-storage. Decided by the agent, unasked: games abandoned after their first click are recorded too, and an auto-pinned personal-best replay stays pinned after the best is beaten.
 
-## [ ] 7. Architect the results and records slice for m2
+## [x] 7. Architect the results and records slice for m2
 
 Depends on: none
 
@@ -207,6 +207,7 @@ Context:
 ```prompt
 /architect "Results and records" m2-3d-joins
 ```
+Done: 2026-10-09, commit `7fd415d` (6 files, +323/-6). Two documents. The results screen takes over after a fixed end delay of about one second, and results-screen.md now keeps the board visible behind it in Classic 2D only.
 
 ## [ ] 8. Architect the Steam features slice for m3
 
