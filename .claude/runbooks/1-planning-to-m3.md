@@ -250,7 +250,7 @@ Context: none
 /architect "Main menu and game shell" m3-on-steam
 ```
 
-## [P] 10. Architect the results and records slice for m3
+## [ ] 10. Architect the results and records slice for m3
 
 Depends on: none
 
@@ -274,6 +274,7 @@ Context: none
     b. No limit. It shows "ranking…" until the answer arrives or the player leaves the screen.
     Recommendation: a. It never leaves a spinner on a dead connection and still shows a slow answer.
 - 2026-10-09 Decided by the user: every approval gate a skill in this step raises is approved as drafted, unseen; on each open call take the draft's own recommendation, and answer the gate from this bullet rather than parking. Park only on a real design question.
+- 2026-10-09 unparked with answer: Q2a — after a win that does not beat the best, the panel shows the standing global and friends rank labelled "your best", the move shown only when the entry improved; Q3b — no rank panel on the web build; Q4a — its own document, results-steam-rank; Q5a — the panel waits about 5 seconds, a late answer still filling it in while the player is on the results screen. The approval gate is answered by the user's standing decision above.
 
 ```prompt
 /architect "Results and records" m3-on-steam
