@@ -116,7 +116,7 @@ Context: none
 
 Done: 2026-10-09, commit `9fa13ed` (5 files, +236/-11).
 
-## [ ] 9. Implement task 9 — Seeded source and standard mine placer
+## [x] 9. Implement task 9 — Seeded source and standard mine placer
 
 Depends on: 4, 5
 
@@ -125,6 +125,8 @@ Context: none
 ```prompt
 /task-implement 9 --review
 ```
+
+Done: 2026-10-09, commit `2fa1e77` (4 files, +255/-1). The random source is mulberry32; `GENERATOR_VERSION` (1, in `js/generation/placer.js`) must be bumped on any change to the algorithm or draw order.
 
 ## [ ] 10. Implement task 10 — Logic-only solver
 
@@ -140,7 +142,8 @@ Context: none
 
 Depends on: 9, 10
 
-Context: none
+Context:
+- 2026-10-09 (from step 9): the placer is `placeMines({ graph, mineCount, firstClick, source })` in `js/generation/placer.js`, returning an ascending `Int32Array` that `supplyBoard` accepts directly; impossible or malformed requests throw `RangeError`. The source is mulberry32 seeded with a 0..2^32−1 integer; `GENERATOR_VERSION` is exported from the placer.
 
 ```prompt
 /task-implement 11 --review --rounds 2
