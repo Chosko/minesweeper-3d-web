@@ -27,7 +27,7 @@ layer.
 | [features/settings.md](./features/settings.md) | The Settings page and settings store: controls, graphics, theme and audio, defaults, persistence and change notification |
 | [features/platform-storage.md](./features/platform-storage.md) | The platform layer's storage interface: versioned documents, the browser implementation, failure handling |
 | [features/game-summary.md](./features/game-summary.md) | Board identity, the summary of a won, lost or abandoned game, and how 3BV/s, efficiency and best eligibility are derived |
-| [features/personal-records.md](./features/personal-records.md) | Personal bests per board, stats history, win rate and streaks: rules, stored documents, the comparison against bests |
+| [features/personal-records.md](./features/personal-records.md) | Personal bests per board, stats history, win rate and streaks: rules, stored documents, the game-in-progress marker that records a closed game as a loss, the comparison against bests |
 | [features/results-screen.md](./features/results-screen.md) | The end-of-game results screen: stats shown, the three-best comparison, Play again, Records, Back to menu |
 | [features/records-screen.md](./features/records-screen.md) | The Records screen: board picker, bests, win rate, streaks, history chart and recent games |
 | [features/3d-board-graph.md](./features/3d-board-graph.md) | The 3D box as a cell graph on the shared rules engine, the 3D rule profile (auto-hide, right-click on revealed cells) and the 3D state view |
@@ -43,7 +43,7 @@ layer.
 | [features/leaderboard-screen.md](./features/leaderboard-screen.md) | The leaderboard screen: 2D \| 3D board picker, global, friends and around-me rankings, own standing, watching an entry's replay |
 | [features/steam-achievements.md](./features/steam-achievements.md) | The m3 achievement catalogue for Classic 2D and 3D, per-game evaluation, unlocking through Steam and catch-up from history |
 | [features/leaderboards-menu-entry.md](./features/leaderboards-menu-entry.md) | The m3 main menu additions: the Leaderboards entry opening the leaderboard screen, and Quit on the desktop build |
-| [features/results-steam-rank.md](./features/results-steam-rank.md) | The Steam build's rank panel on the results screen: global and friends rank after a won standard-board game, the move on an improved entry, the wait and offline wording |
+| [features/results-steam-rank.md](./features/results-steam-rank.md) | The Steam build's rank panel on the results screen: global and friends rank after a won standard-board game, the move on an improved entry, the wait and offline wording, and the *Leaderboard* action that opens this game's board |
 | [features/input-rebinding.md](./features/input-rebinding.md) | Rebinding keys, mouse buttons and controller buttons for Classic 2D and 3D: the action catalogue, the bindings resolver, clashes and reserved inputs, and the rebinding controls in Settings |
 
 ## Features
