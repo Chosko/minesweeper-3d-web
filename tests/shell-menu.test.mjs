@@ -275,7 +275,7 @@ test('in a browser, the menu shows the four entries, each routes, and Back retur
     assert.equal(await mode(), 'menu', 'Back returns to the menu');
     assert.deepEqual(await shown(), ['menu']);
 
-    // Records and Settings: the placeholder, by mouse, keyboard and Back button.
+    // Records: the placeholder, by mouse, keyboard and Back button.
     await page.click('#menu-entry-records');
     assert.equal(await mode(), 'coming-soon');
     assert.deepEqual(await shown(), ['coming-soon']);
@@ -292,11 +292,12 @@ test('in a browser, the menu shows the four entries, each routes, and Back retur
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'menu', 'Esc is Back');
 
+    // Settings: its page, over the backdrop; Esc is Back.
     await page.focus('#menu-entry-settings');
     await page.keyboard.press('Enter');
-    assert.equal(await ms(() => document.getElementById('coming-soon-title').textContent), 'Settings');
-    assert.ok(await backdrop(), 'the backdrop stays behind the placeholder');
-    await page.keyboard.press('Enter'); // the focused Back button
+    assert.equal(await mode(), 'settings');
+    assert.ok(await backdrop(), 'the backdrop stays behind the Settings page');
+    await page.keyboard.press('Escape');
     assert.equal(await mode(), 'menu');
 
     // 3D: the 3D presets and custom board, Back by keyboard and by its button.

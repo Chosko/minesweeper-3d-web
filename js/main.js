@@ -17,6 +17,7 @@ import { createPauseController } from './shell/pause.js';
 import { storage } from './platform/index.js';
 import { createSettingsStore } from './settings/store.js';
 import { applySettings, pixelRatioFor } from './settings/appliers.js';
+import { bindSettingControls } from './settings/page.js';
 import { createClassic2DMode } from './classic2d/mode.js';
 import { bindBoardChoice } from './classic2d/board-choice.js';
 import { createLastChoice, DEFAULT_CHOICE } from './classic2d/board-setup.js';
@@ -46,7 +47,7 @@ const cam = new FlyCamera();
 const LOCK_SUPPORTED = 'requestPointerLock' in Element.prototype;
 const COARSE_ONLY = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(pointer: fine)').matches);
 const NO_MOUSE = !LOCK_SUPPORTED || COARSE_ONLY;
-// S.mode is the router's current screen: 'menu' | 'board-choice' | 'coming-soon' | 'classic-2d-choice' | 'ready' |
+// S.mode is the router's current screen: 'menu' | 'board-choice' | 'coming-soon' | 'classic-2d-choice' | 'settings' | 'ready' |
 // 'playing' | 'classic-2d' | 'paused' | 'ctxlost' (defined below).
 const S = {
   settings: null,
@@ -173,7 +174,6 @@ const ui = new UI({
   onPause: () => PAUSE.pause(padGesture ? 'pad' : 'button'),
   onReadyBack: () => readyBack(),
   onToggleSound: () => toggleSound(),
-  onLookSettings: (o) => { SETTINGS.set('lookSensitivity', o.sensitivity); SETTINGS.set('invertY', o.invertY); },
   onRetry2D: () => mode2d.retry(),
   onStandard2D: () => mode2d.playStandard(),
 });
@@ -194,13 +194,10 @@ applySettings(SETTINGS, {
   fullscreen: { doc: document, enter: enterFullscreen, exit: exitFullscreen },
 });
 SETTINGS.onChange('muted', (m) => ui.setSound(m));
-const showLook = () => ui.setLook({ sensitivity: SETTINGS.get('lookSensitivity'), invertY: SETTINGS.get('invertY') });
-SETTINGS.onChange('lookSensitivity', showLook);
-SETTINGS.onChange('invertY', showLook);
-if (typeof sfx.setVolume === 'function') {
-  ui.initVolume(SETTINGS.get('volume'), (v) => { SETTINGS.set('volume', v); sfx.unlock?.(); });
-  SETTINGS.onChange('volume', (v) => ui.setVolume(v));
-}
+// Every setting control — the Settings page, the pause card's shortcuts, the menu's volume — is bound to the store.
+bindSettingControls(document.querySelectorAll('[data-setting]'), SETTINGS, {
+  onUserChange: (key) => { if (key === 'volume' || key === 'muted') sfx.unlock?.(); },
+});
 
 // ---------- screen router ----------
 // Every screen change goes through SHELL; each screen declares its default focus and its Back.
@@ -209,6 +206,7 @@ const SHELL = createRouter({
     menu: { defaultFocus: '[data-entry][data-last]', show: () => { MODES.leave(); showMenuBackdrop(); ui.showMenu(); } },
     'board-choice': { defaultFocus: '[data-preset][data-last]', show: () => { MODES.leave(); showMenuBackdrop(); ui.showBoardChoice(); } },
     'coming-soon': { defaultFocus: '#coming-soon-back', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showComingSoon(d.title ?? 'This screen'); } },
+    settings: { defaultFocus: '#set-lookSensitivity', show: () => { MODES.leave(); showMenuBackdrop(); ui.showSettings(); } },
     'classic-2d-choice': { defaultFocus: '[data-size][data-last]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showBoardChoice2D(); showChoice2D(d.choice ?? LAST_CHOICE_2D.current); } },
     ready: { defaultFocus: '#ready-btn', show: (d = {}) => ui.showReady(S.settings, d.msg ?? ''), back: () => readyBack() },
     playing: { defaultFocus: null, show: (d = {}) => { setLockless(!!d.lockless); ui.showPlaying(); endIfDecided(); }, back: ({ source }) => PAUSE.pause(source === 'pointer' ? 'button' : source) },
@@ -411,7 +409,7 @@ function makeDemo() {
 
 function showMainMenu() { SHELL.go('menu'); }
 /** The menu screens show the decorative demo board behind them. */
-const BACKDROP_SCREENS = new Set(['menu', 'board-choice', 'coming-soon', 'classic-2d-choice']);
+const BACKDROP_SCREENS = new Set(['menu', 'board-choice', 'coming-soon', 'classic-2d-choice', 'settings']);
 function onBackdrop() { return BACKDROP_SCREENS.has(S.mode); }
 /** The 3D leave: drop the game and release pointer lock and lockless play. */
 function leaveGame() {
@@ -452,7 +450,7 @@ canvas.addEventListener('webglcontextlost', (e) => {
 function showContextLost() {
   mouse.reset();
   input.exitLock();
-  for (const id of ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'c2d-choice', 'c2d', 'controls-modal']) {
+  for (const id of ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'settings', 'c2d-choice', 'c2d', 'controls-modal']) {
     const el = document.getElementById(id);
     if (!el) continue;
     if (id !== 'menu') el.classList.add('hidden');
@@ -463,7 +461,7 @@ function showContextLost() {
 /** Leaving the context-lost screen (back to the menu): the other overlays are live again. */
 function hideContextLost() {
   document.getElementById('ctx-lost').classList.add('hidden');
-  for (const id of ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'c2d-choice', 'c2d', 'controls-modal']) {
+  for (const id of ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'settings', 'c2d-choice', 'c2d', 'controls-modal']) {
     const el = document.getElementById(id);
     if (el) el.inert = false;
   }
@@ -517,7 +515,7 @@ function padClick(el) {
 // Spatial focus navigation inside the topmost visible overlay (its screen, or the controls modal).
 const LAYER_SCREEN = {
   'ctx-lost': 'ctxlost', 'controls-modal': null, pause: 'paused', ready: 'ready',
-  'coming-soon': 'coming-soon', 'board-choice': 'board-choice', 'c2d-choice': 'classic-2d-choice', c2d: 'classic-2d', menu: 'menu',
+  'coming-soon': 'coming-soon', settings: 'settings', 'board-choice': 'board-choice', 'c2d-choice': 'classic-2d-choice', c2d: 'classic-2d', menu: 'menu',
 };
 const SCREEN_LAYER = Object.fromEntries(Object.entries(LAYER_SCREEN).filter(([, s]) => s).map(([l, s]) => [s, l]));
 const MODAL_FOCUS = '#controls-close';

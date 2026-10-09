@@ -95,20 +95,7 @@
   <!-- Controls help (toggle with H) -->
   <aside id="help" class="hud-panel hidden" aria-label="Controls">
     <h3>Controls</h3>
-    <dl class="controls">
-      <dt>Mouse</dt><dd>Look around</dd>
-      <dt><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></dt><dd>Fly forward / left / back / right</dd>
-      <dt><kbd>Q</kbd> <kbd>E</kbd></dt><dd>Move down / up</dd>
-      <dt>Left click</dt><dd>Reveal the aimed cube</dd>
-      <dt>Right click</dt><dd>Flag / unflag (on a number: flag or unflag all its closed neighbours)</dd>
-      <dt>Left + Right</dt><dd>Chord: reveal neighbours of a satisfied number</dd>
-      <dt>Wheel</dt><dd>Change spacing between cubes</dd>
-      <dt>Hold <kbd>Shift</kbd></dt><dd>Fade everything except the aimed cube's neighbours</dd>
-      <dt>Hold <kbd>Space</kbd></dt><dd>Aim through revealed numbers (they fade)</dd>
-      <dt>Hold <kbd>Ctrl</kbd></dt><dd>Show hidden cells (empty and completed ones)</dd>
-      <dt><kbd>F</kbd> / <kbd>M</kbd></dt><dd>Fullscreen / sound on-off</dd>
-      <dt><kbd>Esc</kbd></dt><dd>Pause menu</dd>
-    </dl>
+    <dl class="controls"></dl>
     <div id="help-pad" class="pad-section hidden"></div>
     <p class="help-foot">Actions fire when the mouse button is released. <kbd>H</kbd> hides this panel.</p>
   </aside>
@@ -146,7 +133,7 @@
       <div class="ui-row">
         <button type="button" id="menu-help" class="ui-button ui-button--secondary">Controls</button>
         <button type="button" id="menu-sound" class="ui-button ui-button--secondary">Sound: on</button>
-        <div class="ui-slider hidden" data-volume><label class="ui-slider__label" for="menu-vol">Volume</label><output class="ui-slider__value" id="menu-vol-val" for="menu-vol">100%</output><input type="range" id="menu-vol" class="ui-slider__input" min="0" max="100" step="1" value="100" data-format="percent"></div>
+        <div class="ui-slider" data-setting="volume"><label class="ui-slider__label" for="menu-vol">Volume</label><output class="ui-slider__value" id="menu-vol-val" for="menu-vol">70%</output><input type="range" id="menu-vol" class="ui-slider__input" min="0" max="100" step="1" value="70" data-format="percent" data-scale="100"></div>
       </div>
       <p class="ui-text ui-text--muted">Web port of the 2011 XNA game <a class="ui-link" href="https://github.com/Chosko/minesweeper-3d" target="_blank" rel="noopener">Minesweeper 3D</a> by Chosko</p>
     </section>
@@ -254,6 +241,17 @@
     </div>
   </section>
 
+  <!-- Settings -->
+  <section id="settings" class="overlay hidden" aria-label="Settings">
+    <section class="ui-card ui-screen ui-screen--wide" aria-labelledby="settings-title">
+      <h2 class="ui-card__title" id="settings-title">Settings</h2>
+      <div id="settings-body"></div>
+      <div class="ui-actions ui-actions--row">
+        <button type="button" id="settings-back" class="ui-button ui-button--primary">Back</button>
+      </div>
+    </section>
+  </section>
+
   <!-- Pause / end menu -->
   <section id="pause" class="overlay hidden" aria-label="Pause menu">
     <section id="pause-card" class="ui-card ui-screen" aria-labelledby="pause-title">
@@ -284,9 +282,9 @@
       </div>
       <div class="ui-panel ui-actions" role="group" aria-labelledby="p-settings-title">
         <h3 class="ui-heading" id="p-settings-title">Settings</h3>
-        <div class="ui-slider"><label class="ui-slider__label" for="p-sens">Mouse sensitivity</label><output class="ui-slider__value" id="p-sens-val" for="p-sens">1.00&times;</output><input type="range" id="p-sens" class="ui-slider__input" min="0.25" max="3" step="0.05" value="1" data-format="multiplier"></div>
-        <label class="ui-toggle"><input type="checkbox" role="switch" id="p-invert" class="ui-toggle__input"><span class="ui-toggle__label">Invert mouse Y</span></label>
-        <div class="ui-slider hidden" data-volume><label class="ui-slider__label" for="p-vol">Volume</label><output class="ui-slider__value" id="p-vol-val" for="p-vol">100%</output><input type="range" id="p-vol" class="ui-slider__input" min="0" max="100" step="1" value="100" data-format="percent"></div>
+        <div class="ui-slider" data-setting="lookSensitivity"><label class="ui-slider__label" for="p-sens">Look sensitivity</label><output class="ui-slider__value" id="p-sens-val" for="p-sens">1.00&times;</output><input type="range" id="p-sens" class="ui-slider__input" min="0.25" max="3" step="0.05" value="1" data-format="multiplier"></div>
+        <label class="ui-toggle" data-setting="invertY"><input type="checkbox" role="switch" id="p-invert" class="ui-toggle__input"><span class="ui-toggle__label">Invert look Y</span></label>
+        <div class="ui-slider" data-setting="volume"><label class="ui-slider__label" for="p-vol">Volume</label><output class="ui-slider__value" id="p-vol-val" for="p-vol">70%</output><input type="range" id="p-vol" class="ui-slider__input" min="0" max="100" step="1" value="70" data-format="percent" data-scale="100"></div>
       </div>
       <div class="ui-actions ui-actions--row">
         <button type="button" id="p-sound" class="ui-button ui-button--secondary">Sound: on</button>

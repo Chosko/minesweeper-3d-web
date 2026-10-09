@@ -1,5 +1,8 @@
 // DOM menus, HUD and overlays. No game rules here.
-import { formatOverlayTime, formatMineCount, formatSliderValue } from './ui/components.js';
+import { formatOverlayTime, formatMineCount } from './ui/components.js';
+import { GLYPHS } from './gamepad.js';
+import { bindingRows, bindingsListHtml } from './settings/bindings.js';
+import { settingsPageHtml, bindingsSectionHtml } from './settings/page.js';
 
 const $ = (id) => document.getElementById(id);
 const LS_CUSTOM = 'ms3d.custom';
@@ -53,12 +56,13 @@ export const NO_MOUSE_MSG = 'Minesweeper 3D needs a mouse and keyboard — open 
 
 export class UI {
   constructor(cb) {
-    this.cb = cb; // { onMenuEntry, onBack, onStart, onReadyClick, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSound, onLookSettings, onVolume, onRetry2D, onStandard2D }
+    this.cb = cb; // { onMenuEntry, onBack, onStart, onReadyClick, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSound, onRetry2D, onStandard2D }
     this.el = {
       hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), size: $('hud-size'), sound: $('hud-sound'),
       help: $('help'), banner: $('banner'), bannerTitle: $('banner-title'), bannerSub: $('banner-sub'),
       flash: $('flash'), menu: $('menu'), ready: $('ready'), readyBoard: $('ready-board'), readyMsg: $('ready-msg'),
       boardChoice: $('board-choice'), comingSoon: $('coming-soon'), comingSoonTitle: $('coming-soon-title'),
+      settings: $('settings'), settingsBindings: null,
       comingSoonText: $('coming-soon-text'),
       bannerRecord: $('banner-record'), crosshair: $('crosshair'), hintH: $('hint-h'),
       controlsModal: $('controls-modal'),
@@ -84,7 +88,7 @@ export class UI {
       b.appendChild(line);
       b.addEventListener('click', () => cb.onMenuEntry?.(b.dataset.entry));
     });
-    for (const id of ['board-choice-back', 'coming-soon-back']) $(id).addEventListener('click', () => cb.onBack?.());
+    for (const id of ['board-choice-back', 'coming-soon-back', 'settings-back']) $(id).addEventListener('click', () => cb.onBack?.());
     document.querySelectorAll('[data-preset]').forEach((b) => {
       for (const kind of ['best', 'last']) {
         const line = document.createElement('span');
@@ -114,6 +118,12 @@ export class UI {
       lsSet(LS_LAST_PRESET, '');
       cb.onStart(s);
     });
+    // The in-game help and the Settings page read one bindings source (js/settings/bindings.js);
+    // the Settings page's controls are generated from the settings schema and bound by the shell.
+    this.el.help.querySelector('.controls').innerHTML = bindingsListHtml(bindingRows('3d', 'keyboard'));
+    $('settings-body').innerHTML = settingsPageHtml();
+    this.el.settingsBindings = $('settings-bindings');
+    this._glyphs = GLYPHS.generic; // the active controller's, for the bindings shown
     // Controls modal (main menu): a copy of the in-game help list
     $('controls-body').appendChild(this.el.help.querySelector('.controls').cloneNode(true));
     $('menu-help').addEventListener('click', () => this.openControls());
@@ -133,50 +143,11 @@ export class UI {
     this._confirm = null; // { onYes, onNo } while the pause card's confirmation is open
     this.el.confirmYes.addEventListener('click', () => this._closeConfirm('onYes'));
     $('p-confirm-no').addEventListener('click', () => this._closeConfirm('onNo'));
-
-    // look settings: the controls report changes; setLook shows the current values
-    const sens = $('p-sens'), sensVal = $('p-sens-val'), inv = $('p-invert');
-    this._showSens = () => { sensVal.textContent = formatSliderValue(sens.value, { format: 'multiplier', step: sens.step }); };
-    this._showSens();
-    sens.addEventListener('input', () => {
-      this._showSens();
-      cb.onLookSettings?.({ sensitivity: Number(sens.value), invertY: inv.checked });
-    });
-    inv.addEventListener('change', () => {
-      cb.onLookSettings?.({ sensitivity: Number(sens.value), invertY: inv.checked });
-    });
-    // keyboard on settings controls must not leak into game keys while paused (handled by mode)
     this.refreshBests();
   }
 
   /** Show the "needs mouse and keyboard" banner on the menu. */
   setNoMouse(on) { $('touch-note').classList.toggle('hidden', !on); }
-
-  /** Show the look settings on the pause card's controls. */
-  setLook({ sensitivity, invertY }) {
-    $('p-sens').value = String(sensitivity);
-    $('p-invert').checked = invertY;
-    this._showSens();
-  }
-
-  /** Volume controls (only shown when the audio module supports it). v in 0..1. */
-  initVolume(v, onChange) {
-    const sliders = [$('menu-vol'), $('p-vol')];
-    const outs = [$('menu-vol-val'), $('p-vol-val')];
-    const set = (val, from) => {
-      for (const s of sliders) if (s !== from) s.value = String(Math.round(val * 100));
-      for (const o of outs) o.textContent = formatSliderValue(val * 100, { format: 'percent' });
-    };
-    this._showVolume = (val) => set(val, null);
-    set(v, null);
-    document.querySelectorAll('[data-volume]').forEach((e) => e.classList.remove('hidden'));
-    for (const s of sliders) {
-      s.addEventListener('input', () => { const val = Number(s.value) / 100; set(val, s); onChange(val); });
-    }
-  }
-
-  /** Show volume v (0..1) on the volume sliders, once initVolume has run. */
-  setVolume(v) { this._showVolume?.(v); }
 
   /** Mark the main menu entry of the last mode played (null: none). */
   setLastMode(mode) {
@@ -261,7 +232,7 @@ export class UI {
   // ---------- screens ----------
   /** Hide the menu screens (main menu, board choice, placeholder) before another screen shows. */
   _hideMenus() {
-    for (const el of [this.el.menu, this.el.boardChoice, this.el.comingSoon, this.el.c2dChoice]) el.classList.add('hidden');
+    for (const el of [this.el.menu, this.el.boardChoice, this.el.comingSoon, this.el.c2dChoice, this.el.settings]) el.classList.add('hidden');
   }
   /** Hide the Classic 2D board layer and give the overlay bar back to the 3D game. */
   _hide2D() {
@@ -294,6 +265,13 @@ export class UI {
     this.el.comingSoonTitle.textContent = title;
     this.el.comingSoonText.textContent = `${title} is coming soon.`;
     this.el.comingSoon.classList.remove('hidden');
+  }
+  /** The Settings page, over the menu backdrop; its bindings in the active controller's glyphs. */
+  showSettings() {
+    this.showMenu();
+    this._hideMenus();
+    this.el.settingsBindings.innerHTML = bindingsSectionHtml(this._glyphs);
+    this.el.settings.classList.remove('hidden');
   }
   /** The Classic 2D board choice, over the menu backdrop. */
   showBoardChoice2D() {
@@ -485,6 +463,8 @@ export class UI {
    */
   setPad(info) {
     const secs = [$('help-pad'), $('modal-pad')], ready = $('ready-pad');
+    this._glyphs = info ? info.glyphs : GLYPHS.generic;
+    if (!this.el.settings.classList.contains('hidden')) this.el.settingsBindings.innerHTML = bindingsSectionHtml(this._glyphs);
     if (!info) {
       for (const el of [...secs, ready]) el.classList.add('hidden');
       return;
@@ -494,17 +474,7 @@ export class UI {
     const note = info.mapping !== 'standard'
       ? '<p class="pad-note">This controller does not report the standard layout, so some buttons may be unmapped.</p>' : '';
     const html = `<h3>Controller <span class="pad-name">· ${g.name}</span></h3>${note}
-      <dl class="controls">
-        <dt>Left / right stick</dt><dd>Fly / look around</dd>
-        <dt>${k(g.rt)} / ${k(g.lt)}</dt><dd>Reveal / flag (on release)</dd>
-        <dt>${k(g.lt)} + ${k(g.rt)}</dt><dd>Chord</dd>
-        <dt>${k(g.a)} / ${k(g.b)}</dt><dd>Move up / down</dd>
-        <dt>Hold ${k(g.lb)} ${k(g.rb)} ${k(g.y)}</dt><dd>Neighbours only / aim through numbers / show hidden</dd>
-        <dt>D-pad ↑ ↓</dt><dd>Change spacing</dd>
-        <dt>${k(g.x)}</dt><dd>Show / hide this panel</dd>
-        <dt>${k(g.start)} / ${k(g.back)}</dt><dd>Pause</dd>
-        <dt>Menus</dt><dd>D-pad or left stick to move, ${k(g.a)} select, ${k(g.b)} / ${k(g.back)} back</dd>
-      </dl>`;
+      <dl class="controls">${bindingsListHtml(bindingRows('3d', 'controller'), g)}</dl>`;
     for (const el of secs) { el.innerHTML = html; el.classList.remove('hidden'); }
     ready.innerHTML = `<b>Controller:</b> ${k(g.a)} play · ${k(g.rt)} reveal · ${k(g.lt)} flag · both chord · ${k(g.start)} pause${note ? '<br>' + note.replace('<p ', '<span ').replace('</p>', '</span>') : ''}`;
     ready.classList.remove('hidden');

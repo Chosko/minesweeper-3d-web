@@ -160,6 +160,14 @@
      entry whose screen has not landed routes to; ui-card ui-screen holding
      the entry's name as title, a ui-text line and ui-actions (Back primary).
      Default focus: Back.
+   Settings page (index.html #settings): ui-card ui-screen--wide holding the
+     title, a ui-grid of ui-panel sections (Controls, Graphics, Theme,
+     Audio), each a ui-heading and one control per setting generated from
+     the settings schema by js/settings/page.js (ui-slider for a number,
+     ui-toggle for a boolean, ui-segmented for a choice, each root carrying
+     data-setting), a ui-panel of the read-only bindings of each mode per
+     input device (the help panel's controls list), and ui-actions--row
+     (Back primary). Default focus: the look sensitivity slider.
    Classic 2D board choice (index.html #c2d-choice): ui-card ui-screen--wide
      holding the title, one ui-menu of the standard sizes (data-size; the
      last board choice marked data-last with a "Last played"
@@ -175,8 +183,9 @@
    Pause card (index.html #pause): ui-card ui-screen holding the title,
      ui-text status lines, ui-actions (Resume primary while playing, Play
      again primary and first once the game ended, Main menu), the controls
-     list in a ui-panel, a Settings ui-panel (ui-slider, ui-toggle) and the
-     Sound button. While restart or Main menu asks for confirmation, a
+     list in a ui-panel, a Settings ui-panel (the look sensitivity,
+     invert Y and volume controls, data-setting like the Settings page's)
+     and the Sound button. While restart or Main menu asks for confirmation, a
      ui-panel ui-actions (a ui-text line, the action as primary, Cancel)
      shows in place of the actions. Default focus: Resume, or Play again once
      ended; Cancel while the confirmation shows.

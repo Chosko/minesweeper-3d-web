@@ -406,7 +406,7 @@ Feature: settings
 
 ## 41. Settings page and pause-card shortcuts
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/settings/page.js, js/settings/bindings.js, index.html, js/ui.js, js/shell/menu.js, css/components.css, tests/settings-page.test.mjs
 Preconditions: 26, 27, 39, 40
