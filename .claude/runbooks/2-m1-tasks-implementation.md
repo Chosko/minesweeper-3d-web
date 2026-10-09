@@ -286,7 +286,7 @@ Context: none
 
 Done: 2026-10-09, commit `84f8fc5` (3 files, +81/-1). Tokens carry the sheet's `--color-` prefix (`--color-tile-*`, `--color-board-frame`, `--color-board-gap`, `--color-number-1`…`-8`), not the task body's bare `tile-closed`/`number-3`. Light numbers 3 and 6 are darker than the 3D hues to pass 4.5:1.
 
-## [ ] 22. Implement task 22 — Tile painter, tile cache and minimum tile size
+## [x] 22. Implement task 22 — Tile painter, tile cache and minimum tile size
 
 Depends on: 2, 5, 21
 
@@ -296,6 +296,8 @@ Context:
 ```prompt
 /task-implement 22 --review
 ```
+
+Done: 2026-10-09, commit `3dd3839` (4 files, +664/-6). `MIN_TILE_SIZE` is 41 px, measured for Expert fitting below a 64 px overlay bar with 16 px gaps in the full viewport (bar height taken from the gallery page) — the Classic 2D board view must use the same fit rule or re-measure it.
 
 ## [ ] 23. Implement task 23 — Update documentation for feature `square-tile-skin`
 
@@ -406,7 +408,8 @@ Context:
 
 Depends on: 22, 32
 
-Context: none
+Context:
+- 2026-10-09 (from step 22): `MIN_TILE_SIZE` (41 px) assumes the board fits the full viewport below the 64 px overlay bar with 16 px between window edges, bar and board — use that fit rule or re-measure. The skin exports `paintTile`, `paintTileWith(token, …)`, `TILE_STATES` (engine cell states plus `pressed`) and `createTileSkin({ token, onThemeChange, currentTheme, createCanvas, redraw })` → `{ drawTile(ctx, x, y, size, state, number, pixelRatio), cacheKey, invalidate, dispose }`.
 
 ```prompt
 /task-implement 33 --review
