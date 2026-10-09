@@ -515,7 +515,7 @@ Context: none
 ```
 Done: struck — Task 37 no longer needs a person (it reads tests/fidelity/minesweeper-online.md); the prompt runs as step 52, without the Needs: agent+human line.
 
-## [ ] 52. Implement task 37 — Classic 2D input fidelity tests
+## [x] 52. Implement task 37 — Classic 2D input fidelity tests
 
 Depends on: 51, 34, 36
 
@@ -529,6 +529,8 @@ Context:
 /task-implement 37 --review
 ```
 
+Done: 2026-10-09, commit `818648d` (2 files, +562/-1). No production fix was needed: the input markers, pointer state machine and `customLimits` already match the fidelity file. Step 32's interpolated 37–48-cell mine caps are confirmed (the file says to interpolate). The cursor-ring visibility question from step 36 was not addressed.
+
 ## [ ] 38. Implement task 38 — Update documentation for feature `classic-2d-square-play`
 
 Depends on: 32, 33, 34, 35, 36, 37
@@ -537,6 +539,7 @@ Context:
 - 2026-10-09 (from step 32): `classic2d.md` and its INDEX row still say `js/classic2d/` holds only the tile skin; `engine.md` (limits setting) and `generation.md` (session as the client's caller) were already updated by task 32.
 - 2026-10-09 (from step 33): `classic2d.md` and `testing.md` now describe the board view but not `session.js`/`board-setup.js` (task 32), and `testing.md` does not list `tests/classic2d-session.test.mjs`.
 - 2026-10-09 (from step 36): task 36 already fixed two stale passages in `.claude/context/`; the mode adds router screens `classic-2d-choice`/`classic-2d`, a `#c2d-status` generating/failure card, and updated `tests/shell-menu.test.mjs`.
+- 2026-10-09 (from step 52): `.claude/context/testing.md` does not yet list `tests/classic2d-fidelity.test.mjs`.
 
 ```prompt
 /task-implement 38 --review
