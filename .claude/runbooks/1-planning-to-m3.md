@@ -8,7 +8,8 @@ Sequencing: /production-plan must see every architected feature, and tasks are w
 
 Depends on: none
 
-Context: none
+Context:
+- 2026-10-09 Decided by the user: players choose the light or dark theme on the Settings page. Whether the 3D scene gets both themes is still open — ask it.
 
 ```prompt
 /architect "Visual design system" m1-classic-2d
@@ -170,7 +171,8 @@ The deliverable is the complete m3 backlog in .claude/TASKS.md: every m3-on-stea
 
 Depends on: 12
 
-Context: none
+Context:
+- 2026-10-09 Correction from the user: every task gets a review/iterate round — each step's prompt is `/task-implement <n> --review`, not the bare `/task-implement <n>`.
 
 ```prompt
 Create the runbook that implements milestone m1-classic-2d. Read .claude/PLAN.md and .claude/TASKS.md first.
@@ -192,7 +194,8 @@ This step creates the runbook only. Never run it.
 
 Depends on: 13
 
-Context: none
+Context:
+- 2026-10-09 Correction from the user: every task gets a review/iterate round — each step's prompt is `/task-implement <n> --review`, not the bare `/task-implement <n>`.
 
 ```prompt
 Create the runbook that implements milestone m2-3d-joins. Read .claude/PLAN.md and .claude/TASKS.md first.
@@ -214,7 +217,8 @@ This step creates the runbook only. Never run it.
 
 Depends on: 14
 
-Context: none
+Context:
+- 2026-10-09 Correction from the user: every task gets a review/iterate round — each step's prompt is `/task-implement <n> --review`, not the bare `/task-implement <n>`.
 
 ```prompt
 Create the runbook that implements milestone m3-on-steam. Read .claude/PLAN.md and .claude/TASKS.md first.
