@@ -4,12 +4,18 @@ Created: 2026-10-08 · Source: /product-roadmap conversation · Model: opus
 Last step number: 17
 Sequencing: /production-plan must see every architected feature, and tasks are written only after the plan orders them.
 
-## [ ] 1. Architect the visual design system slice for m1
+## [P] 1. Architect the visual design system slice for m1
 
 Depends on: none
 
 Context:
 - 2026-10-09 Decided by the user: players choose the light or dark theme on the Settings page. Whether the 3D scene gets both themes is still open — ask it.
+- 2026-10-09 parked: Background: the design system gives every mode and screen a light and a dark theme. The 3D mode is the existing 3D game, and the product design says its look is kept. That look is light: a pale sky-blue background with fog, and number colours tuned against light revealed cubes. In m1 the roadmap says the 3D mode keeps its current look, and in m2 it rules out any visual redesign of the 3D scene. So the open point is what the 3D scene shows when a player has chosen the dark theme.
+  Q1. Does the 3D scene get both themes?
+    a. No. The 3D scene keeps its one current look under both themes. Only the menus, the in-game overlay and the results screen around it follow the chosen theme.
+    b. Yes, eventually. This design defines a dark variant of the scene's colours (sky, fog, cube and number tints) as theme colours. It is applied later, outside m1, at a milestone the roadmap would then name.
+    c. Yes, now. The 3D scene follows the theme already in m1. This contradicts the m1 slice ("the 3D mode keeps its current look"), so the roadmap would need revising first.
+    Recommendation: a. The product design says the 3D look is kept and is the bar for every mode, and the roadmap keeps the scene untouched through m2. The overlay drawn over the 3D board still follows the theme, so the switch between modes stays consistent.
 
 ```prompt
 /architect "Visual design system" m1-classic-2d
