@@ -390,7 +390,7 @@ The deliverable is the complete m3 backlog in .claude/TASKS.md: every m3-on-stea
 ```
 Done: 2026-10-09, commits `844a7e7`, `93a038e`, `d6de44d`, `60e088c`, `112f4d7`, `13d4015`, `6125f67` (41 files, +1375/-21). Tasks 84–110 written for the 7 m3 features. The desktop host lives in `desktop/` with its own package.json. Tasks 87, 88, 89, 93, 97 and 102 need a person.
 
-## [ ] 15. Create the m1-tasks-implementation runbook
+## [x] 15. Create the m1-tasks-implementation runbook
 
 Depends on: 12
 
@@ -413,6 +413,7 @@ Answers to its interview, so it needs to ask nothing:
 
 This step creates the runbook only. Never run it.
 ```
+Done: 2026-10-09, commit `b6c7f33` (2 files, +519/-1). Runbook 2, m1-tasks-implementation: 50 steps of `/task-implement <n> --review` (per the user's correction), with steps 7 and 37 needing agent+human. /runbook-create adds its own block to RUNBOOKS.md, so that commit also captured this runbook's in-flight [RUNNING] status.
 
 ## [ ] 16. Create the m2-tasks-implementation runbook
 
