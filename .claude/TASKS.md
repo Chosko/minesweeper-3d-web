@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 8
+Last task number: 13
 
 ---
 
@@ -81,5 +81,55 @@ Target: claude
 Files: .claude/context/engine.md, .claude/context/INDEX.md, .claude/context/logic.md, .claude/context/testing.md
 Preconditions: 4, 5, 6, 7
 Feature: cell-graph-rules-engine
+
+---
+
+## 9. Seeded source and standard mine placer
+
+Status: [MISSING]
+Target: claude
+Files: js/generation/random.js, js/generation/placer.js, tests/generation-placer.test.mjs
+Preconditions: 4, 5
+Feature: board-generation
+
+---
+
+## 10. Logic-only solver
+
+Status: [MISSING]
+Target: claude
+Files: js/generation/solver.js, tests/generation-solver.test.mjs
+Preconditions: 4
+Feature: board-generation
+
+---
+
+## 11. No-guess generation loop and attempt budget
+
+Status: [MISSING]
+Target: claude
+Files: js/generation/generate.js, tests/generation-noguess.test.mjs, .claude/domain/features/board-generation.md
+Preconditions: 9, 10
+Feature: board-generation
+
+---
+
+## 12. Generation worker and message protocol
+
+Status: [MISSING]
+Target: claude
+Files: js/generation/worker.js, js/generation/client.js, tests/generation-client.test.mjs
+Preconditions: 11
+Feature: board-generation
+
+---
+
+## 13. Update documentation for feature `board-generation`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/generation.md, .claude/context/INDEX.md, .claude/context/testing.md
+Preconditions: 9, 10, 11, 12
+Feature: board-generation
 
 ---

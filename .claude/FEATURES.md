@@ -40,10 +40,10 @@ Tasks: 4, 5, 6, 7, 8
 
 ## board-generation — Seeded board generation, safe first click and no-guess solver
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/board-generation.md
 Source: product-design.md § Classic 2D (m1-classic-2d)
-Tasks: none
+Tasks: 9, 10, 11, 12, 13
 
 ---
 
