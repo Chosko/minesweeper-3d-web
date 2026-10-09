@@ -4,7 +4,7 @@ Created: 2026-10-08 · Source: /product-roadmap conversation · Model: opus
 Last step number: 17
 Sequencing: /production-plan must see every architected feature, and tasks are written only after the plan orders them.
 
-## [ ] 1. Architect the visual design system slice for m1
+## [x] 1. Architect the visual design system slice for m1
 
 Depends on: none
 
@@ -37,6 +37,8 @@ Context:
 
 The product design leaves open how players choose between the light and dark themes and whether the 3D scene gets both; the roadmap defers that question to this design. Ask it rather than deciding it.
 ```
+Done: 2026-10-09, commit `f76e17f` (6 files, +358/-5). Three documents written; the prompt's open theme question was already settled in Context, so nothing was asked.
+
 
 ## [ ] 2. Architect the Classic 2D slice for m1
 
