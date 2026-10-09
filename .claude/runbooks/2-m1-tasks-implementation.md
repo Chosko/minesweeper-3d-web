@@ -28,7 +28,7 @@ Context:
 
 Done: 2026-10-09, commit `fbbe64d` (5 files, +314/-1). `readStoredTheme()` in `js/theme.js` returns nothing, so the page always starts Light — that function is where settings hooks its stored theme; the applier is exposed as `window.msTheme` (`current`, `setTheme`, `onChange`, `createThemeApplier`).
 
-## [ ] 3. Implement task 3 — Update documentation for feature `design-tokens-and-themes`
+## [x] 3. Implement task 3 — Update documentation for feature `design-tokens-and-themes`
 
 Depends on: 1, 2
 
@@ -37,6 +37,8 @@ Context: none
 ```prompt
 /task-implement 3 --review
 ```
+
+Done: 2026-10-09, commit `3f1bd9b` (4 files, +94/-13).
 
 ## [ ] 4. Implement task 4 — Cell graph and square-grid provider
 
