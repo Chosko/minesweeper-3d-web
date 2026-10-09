@@ -254,7 +254,7 @@ test('in a browser, the menu shows the four entries, each routes, and Back retur
     const ms = (fn, arg) => page.evaluate(fn, arg);
     const mode = () => ms(() => globalThis.__ms.state.mode);
     const active = () => ms(() => document.activeElement?.id || '');
-    const shown = () => ms(() => ['menu', 'board-choice', 'coming-soon', 'ready', 'pause']
+    const shown = () => ms(() => ['menu', 'board-choice', 'coming-soon', 'c2d-choice', 'ready', 'pause']
       .filter((id) => !document.getElementById(id).classList.contains('hidden')));
     const backdrop = () => ms(() => globalThis.__ms.renderer.game === globalThis.__ms.state.demo);
 
@@ -266,11 +266,20 @@ test('in a browser, the menu shows the four entries, each routes, and Back retur
     assert.equal(await active(), 'menu-entry-classic-2d');
     assert.ok(await backdrop(), 'the demo board is the menu backdrop');
 
-    // Classic 2D, Records and Settings: the placeholder, by mouse, keyboard and Back button.
+    // Classic 2D: its board choice, Back by its button.
     await page.click('#menu-entry-classic-2d');
+    assert.equal(await mode(), 'classic-2d-choice');
+    assert.deepEqual(await shown(), ['c2d-choice']);
+    assert.ok(await backdrop(), 'the backdrop stays behind the board choice');
+    await page.click('#c2d-choice-back');
+    assert.equal(await mode(), 'menu', 'Back returns to the menu');
+    assert.deepEqual(await shown(), ['menu']);
+
+    // Records and Settings: the placeholder, by mouse, keyboard and Back button.
+    await page.click('#menu-entry-records');
     assert.equal(await mode(), 'coming-soon');
     assert.deepEqual(await shown(), ['coming-soon']);
-    assert.equal(await ms(() => document.getElementById('coming-soon-title').textContent), 'Classic 2D');
+    assert.equal(await ms(() => document.getElementById('coming-soon-title').textContent), 'Records');
     assert.equal(await active(), 'coming-soon-back');
     await page.click('#coming-soon-back');
     assert.equal(await mode(), 'menu', 'Back returns to the menu');

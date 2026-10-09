@@ -15,6 +15,9 @@ import { create3DMode } from './shell/mode-3d.js';
 import { createMenu, createLastMode } from './shell/menu.js';
 import { createPauseController } from './shell/pause.js';
 import { storage } from './platform/index.js';
+import { createClassic2DMode } from './classic2d/mode.js';
+import { bindBoardChoice } from './classic2d/board-choice.js';
+import { createLastChoice, DEFAULT_CHOICE } from './classic2d/board-setup.js';
 
 const canvas = document.getElementById('scene');
 
@@ -42,8 +45,8 @@ Object.assign(cam, loadLookSettings());
 const LOCK_SUPPORTED = 'requestPointerLock' in Element.prototype;
 const COARSE_ONLY = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(pointer: fine)').matches);
 const NO_MOUSE = !LOCK_SUPPORTED || COARSE_ONLY;
-// S.mode is the router's current screen: 'menu' | 'board-choice' | 'coming-soon' | 'ready' | 'playing' | 'paused' |
-// 'ctxlost' (defined below).
+// S.mode is the router's current screen: 'menu' | 'board-choice' | 'coming-soon' | 'classic-2d-choice' | 'ready' |
+// 'playing' | 'classic-2d' | 'paused' | 'ctxlost' (defined below).
 const S = {
   settings: null,
   game: null,
@@ -168,6 +171,8 @@ const ui = new UI({
   onReadyBack: () => readyBack(),
   onToggleSound: () => toggleSound(),
   onLookSettings: (o) => { cam.sensitivity = o.sensitivity; cam.invertY = o.invertY; },
+  onRetry2D: () => mode2d.retry(),
+  onStandard2D: () => mode2d.playStandard(),
 });
 ui.setSound(sfx.muted);
 ui.setNoMouse(NO_MOUSE);
@@ -182,9 +187,11 @@ const SHELL = createRouter({
     menu: { defaultFocus: '[data-entry][data-last]', show: () => { MODES.leave(); showMenuBackdrop(); ui.showMenu(); } },
     'board-choice': { defaultFocus: '[data-preset][data-last]', show: () => { MODES.leave(); showMenuBackdrop(); ui.showBoardChoice(); } },
     'coming-soon': { defaultFocus: '#coming-soon-back', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showComingSoon(d.title ?? 'This screen'); } },
+    'classic-2d-choice': { defaultFocus: '[data-size][data-last]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showBoardChoice2D(); showChoice2D(d.choice ?? LAST_CHOICE_2D.current); } },
     ready: { defaultFocus: '#ready-btn', show: (d = {}) => ui.showReady(S.settings, d.msg ?? ''), back: () => readyBack() },
     playing: { defaultFocus: null, show: (d = {}) => { setLockless(!!d.lockless); ui.showPlaying(); endIfDecided(); }, back: ({ source }) => PAUSE.pause(source === 'pointer' ? 'button' : source) },
-    paused: { defaultFocus: () => (ui.isConfirmOpen() ? '#p-confirm-no' : S.game && S.game.state !== 'playing' ? '#p-restart' : '#p-resume'), show: (d = {}) => { stopPlayInput(); setBoardHidden(true); ui.showPause(pauseInfo(d.note)); }, hide: () => setBoardHidden(false), back: ({ source }) => resumeFromPause(source) },
+    'classic-2d': { defaultFocus: null, show: () => ui.showClassic2D(), back: ({ source }) => PAUSE.pause(source === 'pointer' ? 'button' : source) },
+    paused: { defaultFocus: () => (ui.isConfirmOpen() ? '#p-confirm-no' : gameOver() ? '#p-restart' : '#p-resume'), show: (d = {}) => { stopPlayInput(); setBoardHidden(true); ui.showPause(pauseInfo(d.note)); }, hide: () => setBoardHidden(false), back: ({ source }) => resumeFromPause(source) },
     ctxlost: { defaultFocus: '#ctx-lost-btn', show: () => showContextLost(), hide: () => hideContextLost(), back: () => showMainMenu() },
   },
   focus: (target, name) => focusScreen(target, name),
@@ -209,6 +216,31 @@ const FLOW_3D = {
 };
 // end of 3D flow
 const mode3d = MODES.register('3d', (report) => create3DMode(FLOW_3D, report));
+// Classic 2D: the mode drives its own board; the shell hands it the board area, the overlay bar and
+// its screens. The last board choice is a platform-storage document.
+const LAST_CHOICE_2D = createLastChoice({ storage });
+const FLOW_2D = {
+  openBoardChoice: (choice) => SHELL.go('classic-2d-choice', { data: { choice } }),
+  show: () => SHELL.go('classic-2d'),
+  container: () => document.getElementById('c2d-board'),
+  hud: ({ seconds, minesLeft }) => ui.updateHud(seconds, minesLeft),
+  board: ({ width, height }) => ui.setBoardText(`${width} × ${height}`),
+  generating: (shown) => { board2d.generating = shown; ui.setBoardStatus(board2d); },
+  failed: (failure) => {
+    board2d.failure = failure;
+    ui.setBoardStatus(board2d);
+    if (failure) document.getElementById('c2d-retry').focus({ preventScroll: true });
+  },
+};
+const board2d = { generating: false, failure: null };
+const mode2d = MODES.register('classic-2d', (report) => createClassic2DMode(report, { flow: FLOW_2D, lastChoice: LAST_CHOICE_2D }));
+/** The board choice on `choice`; the default choice of a player who never played is not "last played". */
+function showChoice2D(choice) { CHOICE_2D.show(choice, { played: choice !== DEFAULT_CHOICE }); }
+const CHOICE_2D = bindBoardChoice({
+  root: document.getElementById('c2d-choice'),
+  onStart: (choice) => { sfx.unlock(); MODES.start('classic-2d', choice); },
+  onBack: () => shellBack('pointer'),
+});
 MODES.on('failed', ({ screen }) => SHELL.go(screen ?? 'menu'));
 
 // ---------- pause controller ----------
@@ -218,7 +250,7 @@ const PAUSE = createPauseController({
   router: SHELL,
   showCard: ({ note }) => showPauseCard(note),
   isPaused: () => S.mode === 'paused',
-  onBoard: () => S.mode === 'playing',
+  onBoard: () => S.mode === 'playing' || S.mode === 'classic-2d',
   confirm: (request, proceed) => { ui.showConfirm(request, proceed, () => SHELL.refocus()); SHELL.refocus(); },
   goMenu: () => showMainMenu(),
   guard: (on) => (on ? window.addEventListener('beforeunload', guardLeave) : window.removeEventListener('beforeunload', guardLeave)),
@@ -317,14 +349,23 @@ function showPauseCard(note = '') {
   input.exitLock();
   if (SHELL.current !== 'paused') SHELL.go('paused', { data: { note } });
 }
-/** While the pause card shows the board is hidden. */
-function setBoardHidden(on) { canvas.style.visibility = on ? 'hidden' : ''; }
+/** While the pause card shows the board is hidden, in every mode. */
+function setBoardHidden(on) {
+  canvas.style.visibility = on ? 'hidden' : '';
+  if (MODES.active === 'classic-2d') mode2d.hideBoard(on);
+}
+/** Whether the active game is over (the pause card then leads with Play again). */
+function gameOver() {
+  if (MODES.active === 'classic-2d') return mode2d.status()?.state !== 'playing';
+  return !!S.game && S.game.state !== 'playing';
+}
 function stopPlayInput() {
   mouse.reset();
   controls.releasePad();
   document.body.classList.remove('lockless');
 }
 function pauseInfo(note = '') {
+  if (MODES.active === 'classic-2d') return { ...mode2d.status(), note };
   const g = S.game;
   const e = S.endState;
   return { state: g.state, time: e ? e.time : S.time, minesLeft: e ? e.minesLeft : g.minesLeft, note };
@@ -348,7 +389,7 @@ function makeDemo() {
 
 function showMainMenu() { SHELL.go('menu'); }
 /** The menu screens show the decorative demo board behind them. */
-const BACKDROP_SCREENS = new Set(['menu', 'board-choice', 'coming-soon']);
+const BACKDROP_SCREENS = new Set(['menu', 'board-choice', 'coming-soon', 'classic-2d-choice']);
 function onBackdrop() { return BACKDROP_SCREENS.has(S.mode); }
 /** The 3D leave: drop the game and release pointer lock and lockless play. */
 function leaveGame() {
@@ -389,7 +430,7 @@ canvas.addEventListener('webglcontextlost', (e) => {
 function showContextLost() {
   mouse.reset();
   input.exitLock();
-  for (const id of ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'controls-modal']) {
+  for (const id of ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'c2d-choice', 'c2d', 'controls-modal']) {
     const el = document.getElementById(id);
     if (!el) continue;
     if (id !== 'menu') el.classList.add('hidden');
@@ -400,7 +441,7 @@ function showContextLost() {
 /** Leaving the context-lost screen (back to the menu): the other overlays are live again. */
 function hideContextLost() {
   document.getElementById('ctx-lost').classList.add('hidden');
-  for (const id of ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'controls-modal']) {
+  for (const id of ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'c2d-choice', 'c2d', 'controls-modal']) {
     const el = document.getElementById(id);
     if (el) el.inert = false;
   }
@@ -423,7 +464,7 @@ const pads = new GamepadReader({
   onActiveChange: () => updatePadUi(),
   onDisconnect: (info) => {
     updatePadUi();
-    if (info.wasActive && S.mode === 'playing') PAUSE.pause('pad', { note: 'Controller disconnected' });
+    if (info.wasActive && (S.mode === 'playing' || S.mode === 'classic-2d')) PAUSE.pause('pad', { note: 'Controller disconnected' });
     else ui.toast('Controller disconnected');
   },
 });
@@ -454,7 +495,7 @@ function padClick(el) {
 // Spatial focus navigation inside the topmost visible overlay (its screen, or the controls modal).
 const LAYER_SCREEN = {
   'ctx-lost': 'ctxlost', 'controls-modal': null, pause: 'paused', ready: 'ready',
-  'coming-soon': 'coming-soon', 'board-choice': 'board-choice', menu: 'menu',
+  'coming-soon': 'coming-soon', 'board-choice': 'board-choice', 'c2d-choice': 'classic-2d-choice', c2d: 'classic-2d', menu: 'menu',
 };
 const SCREEN_LAYER = Object.fromEntries(Object.entries(LAYER_SCREEN).filter(([, s]) => s).map(([l, s]) => [s, l]));
 const MODAL_FOCUS = '#controls-close';
@@ -543,6 +584,7 @@ function handlePad(p, dt, now) {
   const modal = ui.isControlsOpen();
 
   if (S.mode === 'playing') padPlaying(p, held, pressed, dt, now);
+  else if (S.mode === 'classic-2d') padBoard2D(p, held, pressed, now);
   else padMenus(p, held, pressed, now);
 
   if (ui.isControlsOpen() !== modal) layerChanged(); // screen changes report through the router
@@ -571,6 +613,17 @@ function padPlaying(p, held, pressed, dt, now) {
   cam.lookAxes(dt, rx, ry);
   const notches = padRep.spUp.update(held(BTN.UP), now) - padRep.spDown.update(held(BTN.DOWN), now);
   if (notches) { setSpacing(S.spacing + notches * 0.04); ui.showSpacing(S.spacing); }
+}
+
+/**
+ * The Classic 2D board: Start and the back buttons pause through the overlay's pause button, a
+ * failed board's offer is a menu, and everything else goes to the board's cursor input.
+ */
+function padBoard2D(p, held, pressed, now) {
+  controls.releasePad();
+  if (pressed(BTN.START) || backButtons(S.mode).some(pressed)) { padClick(document.getElementById('hud-pause')); return; }
+  if (board2d.failure) { padMenus(p, held, pressed, now); return; }
+  mode2d.pad({ ...p, held: p.held.map((_, b) => held(b)) }, now);
 }
 
 function padMenus(p, held, pressed, now) {
@@ -665,6 +718,7 @@ function frame(now) {
 
   const pad = pads.poll();
   if (pad.pad || pad.active) handlePad(pad, dt, now);
+  if (MODES.active === 'classic-2d') mode2d.tick();
 
   const three = renderer.camera;
   const playing = S.mode === 'playing';
@@ -707,6 +761,7 @@ function frame(now) {
 }
 
 showMainMenu();
+mode2d.loadChoice();
 const bootFocus = document.activeElement;
 LAST_MODE.load().then((mode) => {
   ui.setLastMode(mode);

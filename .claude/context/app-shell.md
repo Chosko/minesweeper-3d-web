@@ -12,7 +12,9 @@ files.
 - `js/main.js` — entry module. Builds `BoardRenderer`, `FlyCamera`, `Input`,
   `MouseActions`, `Controls`, `GamepadReader`, `UI`, and the shell objects
   `SHELL` (router), `MODES` (mode host, with the 3D adapter registered as
-  `'3d'`), `PAUSE` (pause controller), `MENU` and `LAST_MODE`; holds the
+  `'3d'` and the Classic 2D mode as `'classic-2d'`), `PAUSE` (pause
+  controller), `MENU`, `LAST_MODE`, `LAST_CHOICE_2D` and `CHOICE_2D` (the
+  Classic 2D board choice binder); holds the
   single state object `S`; runs the `requestAnimationFrame` loop; exposes
   `window.__ms`. Also maps controller polls to game and menu actions
   (`handlePad`, `padPlaying`, `padMenus`).
@@ -43,8 +45,11 @@ files.
   Head order: classic `js/theme.js`, then `css/tokens.css`, then
   `css/components.css`, then `css/style.css`, then the module graph. The HUD
   overlay bar, the main menu (`#menu`), the 3D board choice
-  (`#board-choice`), the placeholder screen (`#coming-soon`) and the pause
-  card (`#pause-card`) are kit markup (§ Component kit).
+  (`#board-choice`), the Classic 2D board choice (`#c2d-choice`), the
+  placeholder screen (`#coming-soon`) and the pause card (`#pause-card`) are
+  kit markup (§ Component kit). `#c2d` is the Classic 2D board layer: the
+  board area `#c2d-board` and the generating / failed-board card
+  `#c2d-status`.
 - `css/tokens.css` — the design tokens, the single source of every shared
   visual value: palette (`--color-*`), typography (`--font-*`), spacing
   (`--space-*`), radii (`--radius-*`), elevation (`--elevation-*`), motion
@@ -63,8 +68,10 @@ files.
   screen layout (`#g-results`), with a Light/Dark switch. Loads only
   `js/theme.js`, `css/tokens.css` and `css/components.css`; `?theme=dark`
   opens it in Dark.
-- `css/style.css` — shell styling: positioning of the fixed layers, the
-  menu-screen backdrop shared by `#menu`, `#board-choice` and `#coming-soon`,
+- `css/style.css` — shell styling: positioning of the fixed layers (the
+  Classic 2D board layer and its board area below the overlay bar), the
+  menu-screen backdrop shared by `#menu`, `#board-choice`, `#coming-soon`
+  and `#c2d-choice`,
   the ready/help/banner/controls/ctx-lost overlays and the HUD placement; the
   kit-built screens carry no one-off rules of their own. Declares no
   custom properties and reads only tokens from `css/tokens.css`. Layered
@@ -147,9 +154,12 @@ files.
   board choice's and placeholder's Back buttons), `onStart(settings)`,
   `onReadyClick`, `onReadyBack`, `onResume`, `onRestart`, `onMainMenu`,
   `onPause` (the overlay bar's pause button), `onToggleSound`,
-  `onLookSettings({sensitivity, invertY})`. Methods: screens `showMenu`,
-  `showBoardChoice`, `showComingSoon(title)`, `showReady(settings, msg)`,
-  `showPlaying`, `showPause({state,time,minesLeft,note})`; menu
+  `onLookSettings({sensitivity, invertY})`, `onRetry2D`, `onStandard2D`
+  (the failed Classic 2D board's offer). Methods: screens `showMenu`,
+  `showBoardChoice`, `showBoardChoice2D`, `showComingSoon(title)`,
+  `showReady(settings, msg)`, `showPlaying`, `showClassic2D` (positions
+  `#c2d-board` 16 px below the overlay bar), `showPause({state,time,minesLeft,note})`;
+  Classic 2D `setBoardText(text)`, `setBoardStatus({generating, failure})`; menu
   `setLastMode(mode|null)`, `refreshBests`; pause confirmation
   `showConfirm({message, confirmLabel}, onYes, onNo)`, `isConfirmOpen`,
   `closeConfirm` (→ false when none is open); HUD `setBoard`,
@@ -205,27 +215,33 @@ Game shell (`js/shell/`, wired in `js/main.js`):
 - **The router owns the screen.** Every screen change is `SHELL.go`; nothing
   else toggles a screen. `S.mode` is a getter over `SHELL.current`, so it is
   always the router's screen: `'menu' | 'board-choice' | 'coming-soon' |
-  'ready' | 'playing' | 'paused' | 'ctxlost'`; `results`, `records` and
-  `settings` are not registered. Only `playing` moves the camera, runs the timer and accepts actions
-  (`hasSelection`, `Input.isActive`).
+  'classic-2d-choice' | 'ready' | 'playing' | 'classic-2d' | 'paused' |
+  'ctxlost'`; `results`, `records` and
+  `settings` are not registered. In the 3D game only `playing` moves the
+  camera, runs the timer and accepts actions (`hasSelection`,
+  `Input.isActive`); the Classic 2D board takes input and runs its timer on
+  `classic-2d`.
 - **Back stack.** `go` stacks the screen it leaves; going to a screen already
   on the stack unwinds to it; `replace` swaps without stacking (the ready card
   hands over to `playing` that way). Back is the screen's own `back` when it
   declares one — `ready` → `readyBack` (board choice for a fresh board, pause
-  for a started game), `playing` → pause, `paused` → `resumeFromPause`,
+  for a started game), `playing` and `classic-2d` → pause, `paused` →
+  `resumeFromPause`,
   `ctxlost` → menu — else the stacked screen.
 - **Back inputs.** `shellBack(source)` closes the controls modal or the pause
   confirmation first, then calls `SHELL.back`. Esc (`isBackKey`) reaches it
   through `Input`'s `onKey`; the board choice's and placeholder's Back
   buttons through `onBack`; the controller's back buttons through
-  `padMenus`. In pointer-locked play the browser consumes Esc to release the
+  `padMenus` (on the Classic 2D board `padBoard2D` turns them into Pause
+  through `#hud-pause`, as `padPlaying` does in 3D). In pointer-locked play the browser consumes Esc to release the
   lock, and `onLockChange` pauses instead; `resumeFromPause` ignores a
   keyboard Back within 500 ms of the unlock, so that Esc does not also resume.
 - **Focus.** Each screen declares `defaultFocus`; the router's `focus`
   hand-off (`focusScreen`) resolves it inside the screen's layer, falling back
   to its first focusable control. Defaults: menu the last mode played
   (`[data-entry][data-last]`), board choice the last played board
-  (`[data-preset][data-last]`), placeholder its Back, ready `#ready-btn`,
+  (`[data-preset][data-last]`), Classic 2D board choice the last board
+  choice (`[data-size][data-last]`), placeholder its Back, ready `#ready-btn`,
   pause Cancel while the confirmation shows, else Play again once the game
   ended, else Resume; ctx-lost its reload button.
 - **Mode host.** The shell reaches a game only through `MODES`: the menu's
@@ -245,11 +261,22 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   (releases lock and lockless play, drops the game). `onAction` calls
   `mode3d.gameStarted()` on the first left release and `endGame` calls
   `mode3d.gameEnded()`.
+- **The Classic 2D mode.** `FLOW_2D` in `js/main.js` is the shell side
+  handed to `createClassic2DMode` ([classic2d.md](classic2d.md)): board
+  choice routes to `classic-2d-choice` with the last board choice (loaded at
+  boot by `mode2d.loadChoice()`); `show` routes to `classic-2d`, whose Back
+  pauses; the board area is `#c2d-board`; the overlay bar's timer and
+  counter come from `hud`, fed by `mode2d.tick()` every frame. The paused
+  screen's `setBoardHidden` also hides the 2D board, and `pauseInfo` /
+  `gameOver` read `mode2d.status()`. On `classic-2d` the controller goes to
+  `padBoard2D`: Start and B/Back pause through `#hud-pause`, a failed
+  board's offer is navigated as a menu, and every other poll goes to
+  `mode2d.pad` after held-button suppression.
 - **Main menu.** Four kit entries (`data-entry`) clicked through `onMenuEntry`
   → `MENU.open(id)`: a registered mode opens its board choice through the
   host, a registered screen is routed to, anything else goes to
-  `coming-soon` with the entry's title. Classic 2D, Records and Settings
-  route to the placeholder. `LAST_MODE` stores the mode of every started
+  `coming-soon` with the entry's title. Classic 2D and 3D open their board
+  choices; Records and Settings route to the placeholder. `LAST_MODE` stores the mode of every started
   game in the platform-storage document `shell.lastMode`; at boot `load()`
   marks the entry and refocuses it if the player has not moved yet.
 - **Pause controller.** `PAUSE` is the one owner of pause, resume, restart and
@@ -375,6 +402,12 @@ Component kit (`css/components.css`, catalogue in its head comment):
   `data-last` on the last played board), the custom board as a `ui-panel` of
   `ui-field` entries with Random/Start in `ui-actions--row`, and a Back
   button. The custom info line toggles `ui-text--warning` / `ui-text--muted`.
+- Classic 2D board choice (`#c2d-choice`): a `ui-card ui-screen--wide` with
+  one `ui-menu` of the standard sizes (`data-size`), the custom board as a
+  `ui-panel` of `ui-field` entries with Start (`data-size="custom"`) and an
+  info line (`ui-text--warning` on an invalid board), the no-guess
+  `ui-toggle` and Back; `bindBoardChoice` marks the last board choice
+  `data-last` with a "Last played" line once the player has played.
 - Placeholder (`#coming-soon`): the one "coming soon" screen, a `ui-card
   ui-screen` whose title and text name the entry, with a primary Back.
 - Pause card (`#pause-card`): a `ui-card ui-screen` with `ui-text` status

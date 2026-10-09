@@ -20,6 +20,13 @@ the board; the skin owns how a tile looks.
   and buttons with the mouse's press feedback and release rules, and
   `mountCursorInput`, its wiring to the view and the session. DOM-free at
   import.
+- `js/classic2d/mode.js` — the Classic 2D mode behind the game shell's mode
+  contract: one session, board view and pointer / cursor inputs per game,
+  the overlay feed, pause by hiding the board. DOM-free: the shell hands in
+  its flow.
+- `js/classic2d/board-choice.js` — the board choice screen: the custom-board
+  info line and validation, the choice its fields describe, and
+  `bindBoardChoice`, which touches only the elements it is handed.
 - `js/classic2d/tile-skin.js` — the stateless tile painter, the tile cache
   that pre-renders every state and number, and the shared minimum tile size.
   It holds no palette: every colour is a tile or number token from
@@ -77,6 +84,23 @@ the board; the skin owns how a tile looks.
   (`held`, `ls`) after the shell's held-button suppression.
 - `mountCursorInput({view, session, grid?, win?, rules?, delay?,
   interval?})` → `{input, pad(poll, now?), destroy()}`.
+
+`js/classic2d/mode.js` exports
+- `MODE_ID` (`'classic-2d'`); `createClassic2DMode(report, {flow,
+  lastChoice, createClient?, mount?, clock?, randomSeed?,
+  generatingDelayMs?})` → the contract methods plus `hideBoard(hidden)`,
+  `tick()`, `pad(poll, now)`, `retry()`, `playStandard()`, `loadChoice()`,
+  `status()` → `{state, time, minesLeft}`, `boardHidden`. `flow` is
+  `{openBoardChoice(choice), show(), container(), hud({seconds, minesLeft}),
+  board({width, height, mines}), generating(shown), failed(failure|null)}`;
+  `mount` defaults to `{board: mountBoardView, pointer: mountPointerInput,
+  cursor: mountCursorInput}`. The module head comment is the contract.
+
+`js/classic2d/board-choice.js` exports
+- `CHOICE_SIZES`, `sizeLabel(size)`, `customStatus(custom)` → `{ok, field,
+  max, text}`, `readChoice({size, fields, noGuess}, fallbackCustom?)` → a
+  board choice or null, `bindBoardChoice({root, onStart, onBack})` →
+  `{show(choice, {played}), destroy()}`.
 
 `js/classic2d/tile-skin.js` exports
 - `MIN_TILE_SIZE` (41) — the smallest tile size the board view allows,
@@ -144,10 +168,20 @@ the board; the skin owns how a tile looks.
   stick through `stickCurve` past `STICK_THRESHOLD`; the mounted input
   ignores the system key repeat and ticks on animation frames while a
   direction key is held, and the controller reaches it only through
-  `pad(poll)`, which the mode's integration is to call from the shell's
-  poll. Each move draws the ring on the
+  `pad(poll)`, which the shell's poll calls through the mode. Each move draws the ring on the
   new cell and calls `ensureVisible`; input is taken only while the session
   is `ready` or `playing` and not paused.
+- **The mode.** `start` normalises the choice, saves it as the last board
+  choice and mounts a fresh view and inputs; the inputs see the session
+  through a gate that reads paused while the board is hidden and redraws a
+  flag placed before the first reveal (the session emits no event then).
+  The session's `changed` redraws the listed cells and pushes the overlay;
+  its board arriving reports started and can-pause, a win or loss can-pause
+  false and finished. `restart` and `leave` leave the session (cancelling a
+  pending generation) and destroy the view and inputs, releasing the
+  canvas; `restart` reopens the session's own choice. `hideBoard` pauses
+  the session with the board (a no-op before the first click or after the
+  end) and drops held inputs.
 - **Hidden.** While hidden (the game is paused) a repaint draws the
   background only and `update` draws nothing; showing repaints the board.
 - **The engine is the source.** The view keeps no cell state; every tile is

@@ -27,6 +27,47 @@
 <body>
   <canvas id="scene" aria-label="3D minesweeper board"></canvas>
 
+  <!-- Classic 2D board choice -->
+  <section id="c2d-choice" class="overlay hidden" aria-label="Classic 2D board choice">
+    <section class="ui-card ui-screen ui-screen--wide" aria-labelledby="c2d-choice-title">
+      <h2 class="ui-card__title" id="c2d-choice-title">Classic 2D</h2>
+      <div class="ui-menu" role="group" aria-label="Board size">
+        <button type="button" class="ui-menu__item" data-size="beginner"><span class="ui-menu__label">Beginner</span><span class="ui-menu__detail">9 &times; 9 &middot; 10 mines</span></button>
+        <button type="button" class="ui-menu__item" data-size="intermediate"><span class="ui-menu__label">Intermediate</span><span class="ui-menu__detail">16 &times; 16 &middot; 40 mines</span></button>
+        <button type="button" class="ui-menu__item" data-size="expert"><span class="ui-menu__label">Expert</span><span class="ui-menu__detail">30 &times; 16 &middot; 99 mines</span></button>
+      </div>
+      <form id="c2d-custom" class="ui-panel" aria-labelledby="c2d-custom-title" novalidate>
+        <h2 class="ui-heading" id="c2d-custom-title">Custom</h2>
+        <div class="ui-row">
+          <label class="ui-field"><span class="ui-field__label">Width</span><input id="c2d-width" data-field="width" class="ui-field__input" type="number" min="1" max="100" step="1" inputmode="numeric" value="30"></label>
+          <label class="ui-field"><span class="ui-field__label">Height</span><input id="c2d-height" data-field="height" class="ui-field__input" type="number" min="1" max="100" step="1" inputmode="numeric" value="16"></label>
+          <label class="ui-field"><span class="ui-field__label">Mines</span><input id="c2d-mines" data-field="mines" class="ui-field__input" type="number" min="0" max="99" step="1" inputmode="numeric" value="99"></label>
+          <div class="ui-actions ui-actions--row">
+            <button type="submit" id="c2d-start" class="ui-button ui-button--primary" data-size="custom">Start</button>
+          </div>
+        </div>
+        <p id="c2d-info" class="ui-text ui-text--muted" data-info>480 cells &middot; up to 99 mines</p>
+      </form>
+      <label class="ui-toggle"><input type="checkbox" role="switch" id="c2d-noguess" class="ui-toggle__input" data-noguess><span class="ui-toggle__label">No-guess board</span></label>
+      <div class="ui-actions ui-actions--row">
+        <button type="button" id="c2d-choice-back" class="ui-button ui-button--secondary" data-back>Back</button>
+      </div>
+    </section>
+  </section>
+
+  <!-- Classic 2D board -->
+  <section id="c2d" class="hidden" aria-label="Classic 2D board">
+    <div id="c2d-board"></div>
+    <section id="c2d-status" class="ui-card ui-screen hidden" aria-labelledby="c2d-status-title" role="status">
+      <h2 class="ui-card__title" id="c2d-status-title">Generating the board&hellip;</h2>
+      <p id="c2d-status-text" class="ui-text ui-text--muted hidden"></p>
+      <div id="c2d-offer" class="ui-actions ui-actions--row hidden">
+        <button type="button" id="c2d-retry" class="ui-button ui-button--primary">Retry</button>
+        <button type="button" id="c2d-standard" class="ui-button ui-button--secondary">Play a standard board</button>
+      </div>
+    </section>
+  </section>
+
   <!-- In-game HUD -->
   <div id="hud" class="hidden" aria-live="off">
     <div class="ui-overlay-bar hud-bar" role="group" aria-label="Game">

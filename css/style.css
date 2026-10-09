@@ -45,7 +45,7 @@ kbd {
   z-index: var(--z-overlay);
   overflow-y: auto;
 }
-#menu, #board-choice, #coming-soon { background: linear-gradient(180deg, rgba(200, 225, 255, 0.15), rgba(200, 225, 255, 0.35)); }
+#menu, #board-choice, #coming-soon, #c2d-choice { background: linear-gradient(180deg, rgba(200, 225, 255, 0.15), rgba(200, 225, 255, 0.35)); }
 #pause, #ready { background: rgba(170, 200, 240, 0.35); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
 
 @keyframes pop { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: none; } }
@@ -106,6 +106,13 @@ kbd {
 .controls dd { margin: 0; color: var(--color-ink-muted); }
 .controls.compact { grid-template-columns: max-content 1fr max-content 1fr; font-size: 13px; }
 
+/* ---------- Classic 2D board ---------- */
+/* The board layer covers the 3D scene; the board area is the window below the overlay bar with
+   --space-4 margins (its top is set from the bar when the board shows). */
+#c2d { position: fixed; inset: 0; background: var(--color-backdrop); }
+#c2d-board { position: absolute; top: 96px; left: var(--space-4); right: var(--space-4); bottom: var(--space-4); }
+#c2d-status { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+
 /* ---------- HUD ---------- */
 #hud { position: fixed; inset: 0; pointer-events: none; z-index: var(--z-hud); }
 .hud-panel {
@@ -119,6 +126,7 @@ kbd {
 .hud-bar { position: absolute; top: 16px; left: 16px; pointer-events: auto; }
 .hud-board .ui-stat__value { font-size: var(--font-size-md); color: var(--color-ink-muted); }
 #hud-mines.negative { color: var(--color-danger); }
+#hud.hud--2d .hud-tools, #hud.hud--2d #crosshair, #hud.hud--2d #mode-chips, #hud.hud--2d #hint-h { display: none; }
 .hud-tools { position: absolute; top: 16px; right: 16px; padding: 8px 12px; display: flex; gap: 12px; font-size: 13px; color: var(--color-ink-muted); }
 .kbd-hint { white-space: nowrap; }
 

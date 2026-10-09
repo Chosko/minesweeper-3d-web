@@ -178,6 +178,20 @@ browser checks for everything that needs WebGL or the DOM.
   left alone, blur, `destroy`); DOM-free and reusing `Repeat` /
   `stickCurve`. One Playwright test plays a fixed Beginner board by
   keyboard to a win (skipped when Playwright or chromium is unavailable).
+- `tests/classic2d-mode.test.mjs` — the Classic 2D mode
+  (`js/classic2d/mode.js`) over a real mode host and pause controller with
+  recording mounts, flow and generation clients and a fake clock: the
+  contract, the board choice preselected from the last choice, `summary()`
+  before the first click and mid-game (equal to the abandoned report),
+  started / can-pause / finished, redraw and the overlay feed, pause hiding
+  the board and freezing the timer, restart and leave releasing the canvas
+  and the pending generation, Play again, the no-guess failure offer, the
+  controller poll; the board choice helpers (`js/classic2d/board-choice.js`)
+  against `CUSTOM_LIMITS`; the `#c2d-choice` / `#c2d` markup, the router
+  entries and controller layers, the catalogue entry. One Playwright test
+  goes menu → Classic 2D → Expert → first click → pause → resume → back to
+  menu and checks the abandoned summary (skipped when Playwright or chromium
+  is unavailable).
 - `tests/shell-router.test.mjs` — the screen router (`js/shell/router.js`:
   the seven feature screens, one screen shown per change with its data, the
   back stack, unwinding, `replace`, default focus declared or computed, a
@@ -229,7 +243,8 @@ browser checks for everything that needs WebGL or the DOM.
   `tests/tile-skin.test.mjs`, the board test in
   `tests/classic2d-view.test.mjs`, the mouse game in
   `tests/classic2d-pointer.test.mjs`, the keyboard game in
-  `tests/classic2d-cursor.test.mjs` and one flow test in each `tests/shell-*.test.mjs`.
+  `tests/classic2d-cursor.test.mjs`, the Classic 2D flow in
+  `tests/classic2d-mode.test.mjs` and one flow test in each `tests/shell-*.test.mjs`.
 
 No `package.json`, no dependencies: Node 22 built-in runner (`node:test`,
 `node:assert/strict`). `node --test` with no arguments discovers

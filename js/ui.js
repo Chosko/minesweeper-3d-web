@@ -63,7 +63,7 @@ export const NO_MOUSE_MSG = 'Minesweeper 3D needs a mouse and keyboard — open 
 
 export class UI {
   constructor(cb) {
-    this.cb = cb; // { onMenuEntry, onBack, onStart, onReadyClick, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSound, onLookSettings, onVolume }
+    this.cb = cb; // { onMenuEntry, onBack, onStart, onReadyClick, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSound, onLookSettings, onVolume, onRetry2D, onStandard2D }
     this.el = {
       hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), size: $('hud-size'), sound: $('hud-sound'),
       help: $('help'), banner: $('banner'), bannerTitle: $('banner-title'), bannerSub: $('banner-sub'),
@@ -77,6 +77,8 @@ export class UI {
       confirm: $('pause-confirm'), confirmText: $('pause-confirm-text'), confirmYes: $('p-confirm-yes'),
       cx: $('c-x'), cy: $('c-y'), cz: $('c-z'), cm: $('c-m'), cinfo: $('c-info'),
       chipShift: $('chip-shift'), chipSpace: $('chip-space'), chipCtrl: $('chip-ctrl'),
+      c2dChoice: $('c2d-choice'), c2d: $('c2d'), c2dBoard: $('c2d-board'), c2dStatus: $('c2d-status'),
+      c2dStatusTitle: $('c2d-status-title'), c2dStatusText: $('c2d-status-text'), c2dOffer: $('c2d-offer'),
     };
     this._last = { time: '', mines: '' };
     this._helpTimer = 0;
@@ -136,6 +138,8 @@ export class UI {
     this.el.restart.addEventListener('click', () => cb.onRestart());
     $('p-menu').addEventListener('click', () => cb.onMainMenu());
     $('hud-pause').addEventListener('click', () => cb.onPause?.());
+    $('c2d-retry').addEventListener('click', () => cb.onRetry2D?.());
+    $('c2d-standard').addEventListener('click', () => cb.onStandard2D?.());
     this._confirm = null; // { onYes, onNo } while the pause card's confirmation is open
     this.el.confirmYes.addEventListener('click', () => this._closeConfirm('onYes'));
     $('p-confirm-no').addEventListener('click', () => this._closeConfirm('onNo'));
@@ -259,10 +263,16 @@ export class UI {
   // ---------- screens ----------
   /** Hide the menu screens (main menu, board choice, placeholder) before another screen shows. */
   _hideMenus() {
-    for (const el of [this.el.menu, this.el.boardChoice, this.el.comingSoon]) el.classList.add('hidden');
+    for (const el of [this.el.menu, this.el.boardChoice, this.el.comingSoon, this.el.c2dChoice]) el.classList.add('hidden');
+  }
+  /** Hide the Classic 2D board layer and give the overlay bar back to the 3D game. */
+  _hide2D() {
+    this.el.c2d.classList.add('hidden');
+    this.el.hud.classList.remove('hud--2d');
   }
   showMenu() {
     this._hideMenus();
+    this._hide2D();
     this.el.menu.classList.remove('hidden');
     this.el.ready.classList.add('hidden');
     this.el.pause.classList.add('hidden');
@@ -287,8 +297,44 @@ export class UI {
     this.el.comingSoonText.textContent = `${title} is coming soon.`;
     this.el.comingSoon.classList.remove('hidden');
   }
+  /** The Classic 2D board choice, over the menu backdrop. */
+  showBoardChoice2D() {
+    this.showMenu();
+    this._hideMenus();
+    this.el.c2dChoice.classList.remove('hidden');
+  }
+  /**
+   * The Classic 2D board: the overlay bar without the 3D tools, and the board area filling the
+   * window below it with --space-4 (16 px) margins.
+   */
+  showClassic2D() {
+    this._hideMenus();
+    this.el.ready.classList.add('hidden');
+    this.el.pause.classList.add('hidden');
+    this.el.banner.classList.add('hidden');
+    this.el.hintH.classList.add('hidden');
+    this.toggleHelp(false);
+    this._helpByUser = false;
+    this.el.hud.classList.add('hud--2d');
+    this.el.hud.classList.remove('hidden');
+    this.el.c2d.classList.remove('hidden');
+    const bar = this.el.hud.querySelector('.ui-overlay-bar').getBoundingClientRect();
+    this.el.c2dBoard.style.top = `${Math.round(bar.bottom) + 16}px`;
+  }
+  /** The board the overlay bar names, as text ("30 × 16"). */
+  setBoardText(text) { this.el.size.textContent = text; }
+  /** Classic 2D: the "generating" card of a slow first click, or a failed board and its offer. */
+  setBoardStatus({ generating = false, failure = null } = {}) {
+    const on = generating || !!failure;
+    this.el.c2dStatus.classList.toggle('hidden', !on);
+    this.el.c2dStatusTitle.textContent = failure ? 'No board found' : 'Generating the board…';
+    this.el.c2dStatusText.textContent = failure ? 'No no-guess board was found for this first click. Try again, or play a standard board of the same size.' : '';
+    this.el.c2dStatusText.classList.toggle('hidden', !failure);
+    this.el.c2dOffer.classList.toggle('hidden', !failure);
+  }
   showReady(settings, msg = '') {
     this._hideMenus();
+    this._hide2D();
     this.el.pause.classList.add('hidden');
     this.el.ready.classList.remove('hidden');
     this.el.hud.classList.remove('hidden');
@@ -300,6 +346,7 @@ export class UI {
   setReadyMessage(msg) { this.el.readyMsg.textContent = msg; }
   showPlaying() {
     this._hideMenus();
+    this._hide2D();
     this.el.ready.classList.add('hidden');
     this.el.pause.classList.add('hidden');
     this.el.hud.classList.remove('hidden');

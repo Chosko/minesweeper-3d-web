@@ -160,6 +160,18 @@
      entry whose screen has not landed routes to; ui-card ui-screen holding
      the entry's name as title, a ui-text line and ui-actions (Back primary).
      Default focus: Back.
+   Classic 2D board choice (index.html #c2d-choice): ui-card ui-screen--wide
+     holding the title, one ui-menu of the standard sizes (data-size; the
+     last board choice marked data-last with a "Last played"
+     ui-menu__detail), the custom board as a ui-panel of ui-field entries
+     (width, height, mines) with ui-actions--row (Start, data-size="custom")
+     and a ui-text info line that turns ui-text--warning on a board outside
+     the custom limits, the no-guess ui-toggle, and ui-actions--row (Back).
+     Default focus: the last board choice, else the first item.
+   Classic 2D board status (index.html #c2d-status): ui-card ui-screen over
+     the board while a slow first click generates its board, or after a
+     failed no-guess board with ui-actions--row (Retry primary, Play a
+     standard board).
    Pause card (index.html #pause): ui-card ui-screen holding the title,
      ui-text status lines, ui-actions (Resume primary while playing, Play
      again primary and first once the game ended, Main menu), the controls

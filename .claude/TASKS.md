@@ -356,7 +356,7 @@ Feature: classic-2d-square-play
 
 ## 36. Classic 2D mode: board choice screen and shell integration
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/classic2d/mode.js, js/classic2d/board-choice.js, index.html, js/shell/menu.js, css/components.css, tests/classic2d-mode.test.mjs
 Preconditions: 18, 26, 27, 32, 33
