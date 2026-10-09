@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 106
+Last task number: 108
 
 ---
 
@@ -1061,5 +1061,25 @@ Target: claude
 Files: .claude/context/leaderboards.md, .claude/context/app-shell.md, .claude/context/replay.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
 Preconditions: 104, 105
 Feature: leaderboard-screen
+
+---
+
+## 107. Leaderboards and Quit entries in the main menu
+
+Status: [MISSING]
+Target: claude
+Files: js/shell/menu.js, index.html, js/shell/router.js, tests/shell-menu.test.mjs
+Preconditions: 26, 86, 104
+Feature: leaderboards-menu-entry
+
+---
+
+## 108. Update documentation for feature `leaderboards-menu-entry`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/app-shell.md, .claude/context/testing.md, README.md
+Preconditions: 107
+Feature: leaderboards-menu-entry
 
 ---

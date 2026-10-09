@@ -229,10 +229,10 @@ Tasks: 100, 101, 102, 103
 
 ## leaderboards-menu-entry — Leaderboards entry in the main menu, and Quit on the desktop build
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/leaderboards-menu-entry.md
 Source: product-design.md § Main menu and game shell (m3-on-steam)
-Tasks: none
+Tasks: 107, 108
 
 ---
 
