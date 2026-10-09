@@ -154,7 +154,7 @@ Context:
 
 Done: 2026-10-09, commit `f7ebe74` (4 files, +208/-4). `generate` takes a graph description (`{ kind: 'square', width, height }`), not a graph object. `ATTEMPT_BUDGET` is 2000 candidates; Expert needs 23 at the median and 433 at worst (2 ms median, 42 ms worst), so the "generating" state is not needed for Expert. `GENERATOR_VERSION` stays 1.
 
-## [ ] 12. Implement task 12 — Generation worker and message protocol
+## [x] 12. Implement task 12 — Generation worker and message protocol
 
 Depends on: 11
 
@@ -165,12 +165,15 @@ Context:
 /task-implement 12 --review --rounds 2
 ```
 
+Done: 2026-10-09, commit `fdb56e5` (4 files, +347/-1). The worker turns a `RangeError` from `generate` into a failure result `{ ok: false, rejected: true, reason, generatorVersion }` rather than an error; the client does not handle `messageerror`.
+
 ## [ ] 13. Implement task 13 — Update documentation for feature `board-generation`
 
 Depends on: 9, 10, 11, 12
 
 Context:
 - 2026-10-09 (from step 11): `.claude/context/testing.md` does not yet mention the generation tests added by task 11; `board-generation.md`'s Timing contract still says Expert "may" need the generating state although the new "Attempt budget and timing" section says it does not (true only for large custom boards).
+- 2026-10-09 (from step 12): `.claude/context/testing.md` does not yet list `tests/generation-client.test.mjs`; the worker/client message protocol is documented only in the headers of `js/generation/worker.js` and `client.js`.
 
 ```prompt
 /task-implement 13 --review
@@ -364,6 +367,7 @@ Depends on: 5, 6, 12, 15, 30
 Context:
 - 2026-10-09 (from step 5): rules-engine actions return `{changed, ended, boardNeeded}`; `changed` is an `Int32Array` view of one buffer reused by every action, so read or copy it before the next action. The first reveal returns `boardNeeded: c` and the board is handed over with `supplyBoard(c, mines)`.
 - 2026-10-09 (from step 6): `game.counts()` returns `{ bbbv, bbbvSolved, clicks }` at any time (`bbbv` is `null` until mines are placed); `game.summary()` is `null` until a win or loss. `createGame` takes an optional `dimensions` object (e.g. `{ width, height }`) for the summary.
+- 2026-10-09 (from step 12): the page-side client is `createGenerationClient({ createWorker })` in `js/generation/client.js`, returning `{ request, cancel }`. `request` resolves with `generate`'s result or a failure (`rejected: true` for an impossible request) and rejects only if the worker itself fails; a new request cancels the one in flight; `cancel()` resolves the pending request with `{ ok: false, cancelled: true }` and terminates the worker. This task is the client's first caller.
 
 ```prompt
 /task-implement 32 --review --rounds 2
