@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 55
+Last task number: 60
 
 ---
 
@@ -551,5 +551,55 @@ Target: claude
 Files: .claude/context/engine.md, .claude/context/logic.md, .claude/context/rendering.md, .claude/context/input.md, .claude/context/app-shell.md, .claude/context/testing.md, .claude/context/INDEX.md
 Preconditions: 51, 52, 53, 54
 Feature: 3d-board-graph
+
+---
+
+## 56. 3D board choice: presets, custom boards and the no-guess switch
+
+Status: [MISSING]
+Target: claude
+Files: js/mode3d/board-choice.js, index.html, js/ui.js, js/shell/menu.js, css/components.css, tests/mode3d-board-choice.test.mjs
+Preconditions: 26, 54
+Feature: 3d-play-flow
+
+---
+
+## 57. 3D game session: safe first click, generation and timer
+
+Status: [MISSING]
+Target: claude
+Files: js/mode3d/session.js, js/main.js, js/ui.js, js/shell/mode-3d.js, tests/mode3d-session.test.mjs
+Preconditions: 12, 54, 56
+Feature: 3d-play-flow
+
+---
+
+## 58. No-guess cell-count limit for 3D boards
+
+Status: [MISSING]
+Target: claude
+Files: js/mode3d/board-choice.js, dev/measure-noguess-3d.mjs, tests/mode3d-noguess-limit.test.mjs, .claude/domain/features/3d-play-flow.md
+Preconditions: 11, 57
+Feature: 3d-play-flow
+
+---
+
+## 59. 3D mode adapter on the session
+
+Status: [MISSING]
+Target: claude
+Files: js/shell/mode-3d.js, js/shell/mode-host.js, js/main.js, tests/shell-mode-3d.test.mjs
+Preconditions: 27, 30, 57
+Feature: 3d-play-flow
+
+---
+
+## 60. Update documentation for feature `3d-play-flow`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/mode3d.md, .claude/context/app-shell.md, .claude/context/input.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
+Preconditions: 56, 57, 58, 59
+Feature: 3d-play-flow
 
 ---
