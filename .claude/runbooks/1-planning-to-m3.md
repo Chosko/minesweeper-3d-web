@@ -4,7 +4,7 @@ Created: 2026-10-08 · Source: /product-roadmap conversation · Model: opus
 Last step number: 17
 Sequencing: /production-plan must see every architected feature, and tasks are written only after the plan orders them.
 
-## [ ] 1. Architect the visual design system slice for m1
+## [P] 1. Architect the visual design system slice for m1
 
 Depends on: none
 
@@ -24,6 +24,11 @@ Context:
     c. Dark. Settings offers Light and Dark only.
     Recommendation: a. It costs one extra option, it respects the player's system choice, and the Electron build reads the same preference as the browser.
 - 2026-10-09 unparked with answer: Q2b — the first-launch theme is Light; Settings offers Light and Dark only, with no "Match system" option. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
+- 2026-10-09 parked: approval gate — the m1 visual design system architecture draft, now carrying Q1a and Q2b (Light the default and the fallback, the theme switched by one root attribute applied before first paint; step 3's settings stores 'light' or 'dark'), waits for approval when the step runs. With it, one design question on the split:
+  Q1. How should the visual design system be split into documents?
+    a. Three documents: design-tokens-and-themes, square-tile-skin and screen-components.
+    b. Two documents, with the component kit merged into design-tokens-and-themes.
+    Recommendation: a. The tokens feed both the Canvas board and the DOM screens, and only the screens need the kit, so the 2D board can be built without waiting for it.
 
 ```prompt
 /architect "Visual design system" m1-classic-2d
@@ -70,6 +75,7 @@ Context:
 - 2026-10-09 unparked with answer: Q2a — no rebinding in m1 (sensitivity, invert Y and a read-only bindings list; rebinding is a non-goal with no milestone yet); Q3a — the board is hidden while paused, in every mode. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
 - 2026-10-09 (from step 1): the visual design system draft leaves the Settings page out, so the settings feature must store the theme value and show the light/dark theme control (the user's decision: the theme is chosen on the Settings page).
 - 2026-10-09 parked: approval gate — the m1 main menu and game shell architecture draft, now carrying the Q2a and Q3a answers and the theme control (three documents: game-shell, settings, platform-storage; the open call is whether platform storage folds into settings), waits for approval when the step runs. The draft records two open points: the theme control's values wait on step 1's first-launch theme question, and Quit is in no milestone's slice though the m3 Electron build needs it.
+- 2026-10-09 (from step 1): the user answered the first-launch theme question — Light by default, and the theme control offers Light and Dark only, no "Match system".
 
 ```prompt
 /architect "Main menu and game shell" m1-classic-2d
