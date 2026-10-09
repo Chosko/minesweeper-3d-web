@@ -28,6 +28,10 @@ In scope (m1-classic-2d):
   current look — the pale sky-blue, deep-blue accent and dark navy ink of
   the existing menus — so the light theme reads as the game players already
   know.
+- Low-fidelity values: the full token structure and names, with plain,
+  functional values. Where a value is a visual-design judgement — the dark
+  palette, elevation shadows, motion durations and easings — it is a simple
+  placeholder that still meets the contrast contract in its theme.
 - Theme application: Light is the default and the fallback; the active
   theme is set by one attribute on the document root, applied before first
   paint so no screen flashes the wrong theme.
@@ -37,6 +41,8 @@ In scope (m1-classic-2d):
 
 Non-goals:
 
+- High-fidelity visual dressing — a later pass from the approved designs.
+  The designs under iteration are not an input to this feature's tasks.
 - The 3D scene. It keeps its one current look — sky gradient, fog, cube
   tiles and number colours — under both themes. Only the menus, the in-game
   overlay and the results screen around it follow the theme. This is a

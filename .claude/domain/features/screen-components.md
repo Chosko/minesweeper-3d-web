@@ -23,13 +23,20 @@ In scope (m1-classic-2d):
   options), numeric stat readout, and the in-game overlay bar.
 - States for every interactive component: default, hover, pressed, focused
   (a visible focus ring for keyboard and controller) and disabled.
-- The visual design of the m1 screens: the main menu, the in-game overlay
+- The m1 screens composed from the kit: the main menu, the in-game overlay
   over both the Classic 2D board and the 3D board, the pause card and the
   results screen.
 - Both themes for all of the above, from `design-tokens-and-themes`.
+- Low-fidelity styling: plain, functional components and screens, every
+  state distinct and legible, with simple placeholder values wherever a
+  value is a visual-design judgement (relief, shadows, motion). The
+  accessibility, overlay-readability and controller-parity contracts hold
+  in full.
 
 Non-goals:
 
+- High-fidelity visual dressing — a later pass from the approved designs.
+  The designs under iteration are not an input to this feature's tasks.
 - The Settings page's layout and behaviour — the Main menu and game shell
   settings feature (m1-classic-2d) builds it from these components.
 - What each screen does — menu entries and their flow, pause and restart
@@ -63,7 +70,9 @@ described in [app-shell.md](../../context/app-shell.md).
 - **Overlay bar.** The in-game overlay — timer, mine counter, pause — as one
   component that sits over either board and stays readable over the 3D
   scene's light sky in both themes, by carrying its own themed surface
-  rather than drawing directly on the scene.
+  rather than drawing directly on the scene. Over either board, the timer
+  shows the elapsed time in whole seconds, zero-padded to three digits
+  (047).
 - **Screen compositions.** The main menu, pause card and results screen
   rebuilt from the kit, replacing the shell's existing one-off styles.
 

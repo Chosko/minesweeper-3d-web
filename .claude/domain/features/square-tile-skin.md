@@ -28,9 +28,15 @@ In scope (m1-classic-2d):
   owns layout and hit-testing while this feature owns appearance.
 - Legibility down to the smallest tile size Classic 2D uses for an Expert or
   large custom board.
+- Low-fidelity drawing: every state drawn plainly — a flat fill, a simple
+  edge and a plain glyph — with simple placeholder values wherever a colour
+  is a visual-design judgement, the dark tile and number set among them,
+  each still meeting the contrast contract.
 
 Non-goals:
 
+- High-fidelity visual dressing — a later pass from the approved designs.
+  The designs under iteration are not an input to this feature's tasks.
 - The 3D cube tiles. The 3D scene keeps its current tile atlas and number
   colours under both themes ([rendering.md](../../context/rendering.md)).
 - Hexagonal and triangle tiles, and Surface tiles — deferred to `m6-launch`.
@@ -56,8 +62,9 @@ palette.
 - **Number palette.** Eight number colours per theme, defined as tokens.
   The light set starts from the current 3D number hues (blue, green, red,
   navy, maroon, teal, near-black, grey) so the two modes read alike; the
-  dark set is tuned against the dark revealed tile. Both are checked against
-  the contrast contract the way the 3D palette is today.
+  dark set is a simple placeholder set chosen against the dark revealed
+  tile. Both are checked against the contrast contract the way the 3D
+  palette is today.
 
 ## Data and state
 

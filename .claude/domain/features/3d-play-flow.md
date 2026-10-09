@@ -111,9 +111,9 @@ behaviour.
   handled exactly as Classic 2D handles it, by the rule `board-generation`
   records.
 - **Timer** — starts when the first reveal is applied to the generated
-  board, and is shown with two decimals as today. A left release on a
-  flagged cell before that, and any chord, does not start it. Flags may be
-  placed before the first reveal and are kept.
+  board, and is shown in the overlay in the timer format `screen-components`
+  sets. A left release on a flagged cell before that, and any chord, does
+  not start it. Flags may be placed before the first reveal and are kept.
 - **Mode contract** — `game started` at the first applied reveal; `game
   finished(summary)` at a win or loss, once the end effect has played, so
   the results screen follows it as the m2 Results and records slice
