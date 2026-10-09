@@ -1,6 +1,6 @@
 # Runbooks
 
-Last runbook number: 2
+Last runbook number: 3
 
 ---
 
@@ -21,5 +21,15 @@ File: .claude/runbooks/2-m1-tasks-implementation.md
 Created: 2026-10-09
 Source: /runbook-create interview (runbook planning-to-m3 step 15)
 Steps: 15/17
+
+---
+
+## 3. m2-tasks-implementation — Implement every task of milestone m2-3d-joins
+
+Status: [PENDING]
+File: .claude/runbooks/3-m2-tasks-implementation.md
+Created: 2026-10-09
+Source: /runbook-create interview (runbook planning-to-m3 step 16)
+Steps: 0/33
 
 ---
