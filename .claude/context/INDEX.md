@@ -16,6 +16,6 @@ the context files relevant to the task. Gameplay rules are defined in
 | [logic.md](logic.md) | 3D rules engine `js/logic.js`: mine placement, reveal/flood fill, flags, chord, unlinking, win/loss | done |
 | [rendering.md](rendering.md) | `js/render.js` + `js/textures.js`: instanced cubes, shaders, transparency sort, effects, render-on-demand | done |
 | [input.md](input.md) | `js/input.js`, `js/controls.js`, `js/gamepad.js`, `js/picking.js`: camera, mouse release/chord state machine, gamepad, DDA picking | done |
-| [app-shell.md](app-shell.md) | `js/main.js`, `js/ui.js`, `js/theme.js`, `js/tokens.js`, `index.html`, `css/tokens.css`, `css/style.css`, `404.html`, deploy files: game flow, frame loop, menus/HUD, design tokens and light/dark theme, `__ms` debug hook | done |
+| [app-shell.md](app-shell.md) | `js/main.js`, `js/ui.js`, `js/ui/components.js`, `js/theme.js`, `js/tokens.js`, `index.html`, `css/tokens.css`, `css/components.css`, `css/style.css`, `dev/components.html`, `404.html`, deploy files: game flow, frame loop, menus/HUD, component kit and its gallery, overlay bar, kit-built main menu and pause card, design tokens and light/dark theme, `__ms` debug hook | done |
 | [audio.md](audio.md) | `js/audio.js`: synthesized WebAudio sound effects, volume/mute | done |
-| [testing.md](testing.md) | `tests/*.test.mjs` (logic, engine, fidelity, generation, platform, gamepad, tokens, theme), `tests/fidelity/` observations, `.claude/external/` test scripts, Playwright via `__ms` | done |
+| [testing.md](testing.md) | `tests/*.test.mjs` (logic, engine, fidelity, generation, platform, gamepad, tokens, theme, components), `tests/fidelity/` observations, `.claude/external/` test scripts, Playwright via `__ms` and the contrast checks | done |

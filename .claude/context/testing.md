@@ -90,12 +90,31 @@ browser checks for everything that needs WebGL or the DOM.
   `token()` values per theme, `onThemeChange` timing, the visible fallback
   colour and its development-only log, no copy of token values in
   `js/tokens.js`, and the 3D renderer never subscribing to theme changes.
+- `tests/components.test.mjs` — the component kit (`css/components.css`,
+  `js/ui/components.js`, `dev/components.html`): tokens only, no literal
+  colour, no theme-specific rule, no animation; the head-comment catalogue
+  documents every component and composition; every interactive component's
+  states and focus ring; the `<head>` order of `index.html` and the gallery;
+  the gallery showing every component in every state, the overlay bar and
+  the results layout; controller reachability and accessible names; the
+  helpers (`decimalsOf`, `formatSliderValue`, `segmentedTargetIndex`,
+  `segmentedState`, `formatOverlayTime`, `formatMineCount`, the binders over
+  stub elements); the HUD overlay bar markup, `UI.updateHud`'s formats and
+  the pause wiring (`onPause`, controller START); the main menu and pause
+  card built only from kit classes with no one-off rules left in
+  `css/style.css`. Three Playwright tests check the WCAG contrast contract
+  in both themes on rendered pages: the gallery (plus a visible focus ring
+  on every forced-focus control), the overlay bar over the running 3D scene
+  (opaque surface, timer pinned at `999`, pause through the button), and the
+  menu, pause card and results layout (plus focus rings and an unchanged
+  `__ms` key list); each skips when Playwright or chromium is unavailable.
 - `.claude/external/run-full-tests.sh` — `cd` to repo root, `exec node --test`.
 - `.claude/external/run-affected-tests.sh <test-file>...` — `node --test` on the
   given files; exits 2 with usage when called with no arguments.
 - Browser verification: ad-hoc Playwright scripts drive `window.__ms`,
-  defined at the end of `js/main.js`; the one browser test in the suite is
-  the reload test in `tests/platform-browser.test.mjs`.
+  defined at the end of `js/main.js`; the suite's browser tests are the
+  reload test in `tests/platform-browser.test.mjs` and the contrast tests in
+  `tests/components.test.mjs`.
 
 No `package.json`, no dependencies: Node 22 built-in runner (`node:test`,
 `node:assert/strict`). `node --test` with no arguments discovers
@@ -140,6 +159,11 @@ Tests consume, and so pin, these contracts:
   and the `globalThis.msTheme` it installs; `js/tokens.js::createTokenReader`
   (`{root, getStyle, theme, dev, log}` → `token`, `onThemeChange`),
   `FALLBACK_COLOR`; the `<head>` order in `index.html`.
+- The kit's class names and markup patterns as catalogued in
+  `css/components.css`, the gallery's coverage of them, the
+  `js/ui/components.js` exports, the HUD ids (`#hud-time`, `#hud-mines`,
+  `#hud-pause`) and `UI.prototype.updateHud`. Full list in
+  [app-shell.md](app-shell.md).
 - `js/platform/storage.js::createStorage` (`register`, `load`, `save`,
   `available`, the issue kinds and save reasons);
   `js/platform/browser-backend.js::createBrowserBackend`, `DOC_PREFIX`,
@@ -209,9 +233,20 @@ Browser hook `js/main.js::window.__ms` (full list in [app-shell.md](app-shell.md
   (`js/theme.js`) run in a `node:vm` context whose global carries a stub
   `document.documentElement`; DOM-free factories take stub roots and
   `getStyle` functions instead of browser globals.
-- Untested by Node: `js/render.js`, `js/textures.js`, `js/picking.js`,
-  `js/ui.js`, `js/main.js`, `js/audio.js` — verify in the browser. Computed
-  styles and the rendered theme are browser-only too.
+- Kit tests parse markup and CSS as text: `COMPONENTS` (component → root
+  class, interactive control) and `COMPOSITIONS` are the catalogue's mirror,
+  so a new kit piece is added there too; `UI` methods are called through
+  `UI.prototype.<method>.call(fake)` with a fake `el`, since `js/ui.js`
+  imports without a DOM. The Playwright tests serve the repo root from an
+  in-process `node:http` server on a free port, load Playwright by
+  `import('playwright')` falling back to the global install, measure contrast
+  in the page (`measureContrast`: every visible text run composited over its
+  effective background, 4.5:1 or 3:1 for large text and accent labels) and
+  write screenshots to a `mkdtemp` directory.
+- Untested by Node beyond the static and stub checks above: `js/render.js`,
+  `js/textures.js`, `js/picking.js`, `js/ui.js`, `js/main.js`, `js/audio.js`
+  — verify in the browser. Computed styles and the rendered theme are
+  browser-only too.
 
 Browser verification (Playwright):
 - Playwright 1.56 is installed globally (`/opt/node22/lib/node_modules/playwright`,
@@ -252,6 +287,9 @@ is enforced.
   `theme.test.mjs` encode.
 - [../domain/features/platform-storage.md](../domain/features/platform-storage.md)
   — the versioning and failure contracts the `platform-*` tests encode.
+- [../domain/features/screen-components.md](../domain/features/screen-components.md)
+  — the kit, state, focus, overlay and contrast contracts
+  `components.test.mjs` encodes.
 - [../domain/INDEX.md](../domain/INDEX.md) — feature documents whose acceptance
   criteria become tests.
 
@@ -263,7 +301,8 @@ is enforced.
 - [platform.md](platform.md) — `tests/platform-*.test.mjs` pin the storage interface, backends and start-up selection.
 - [input.md](input.md) — `tests/gamepad.test.mjs` covers gamepad helpers, `FlyCamera`, `Controls`, `MouseActions`.
 - [app-shell.md](app-shell.md) — owns `window.__ms`, the surface Playwright drives,
-  and the token sheet, theme applier and token reader the token/theme tests pin.
+  the token sheet, theme applier and token reader the token/theme tests pin,
+  and the component kit and kit-built screens `components.test.mjs` pins.
 - [rendering.md](rendering.md) — no unit tests; verified visually via Playwright screenshots.
 - [audio.md](audio.md) — no unit tests; WebAudio only checkable in a browser.
 
@@ -290,3 +329,6 @@ is enforced.
 - A contrast failure in `tests/tokens.test.mjs`: the message names the theme,
   token pair and ratio; read the colour parser there before changing a value
   format in `css/tokens.css`.
+- A browser contrast failure in `tests/components.test.mjs`: the message lists
+  the failing text runs per theme; read `measureContrast` there and the
+  screenshots it saved before changing a token or a kit rule.

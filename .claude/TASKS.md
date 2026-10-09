@@ -196,7 +196,7 @@ Feature: screen-components
 
 ## 20. Update documentation for feature `screen-components`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/app-shell.md, .claude/context/testing.md, .claude/context/INDEX.md
 Preconditions: 17, 18, 19
