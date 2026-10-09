@@ -88,7 +88,7 @@ Context:
 ```
 Done: 2026-10-09, commit `d6e77d8` (6 files, +392/-0). Platform storage kept its own document. Decided by the agent, unasked: graphics settings are fullscreen plus a 3D render resolution of Auto (the current adaptive behaviour), Sharp or Fast.
 
-## [ ] 4. Architect the results and records slice for m1
+## [x] 4. Architect the results and records slice for m1
 
 Depends on: none
 
@@ -113,6 +113,7 @@ Context:
 ```prompt
 /architect "Results and records" m1-classic-2d
 ```
+Done: 2026-10-09, commit `a33a66e` (12 files, +494/-30). game-summary kept its own document, and game-shell and classic-2d-square-play now report abandoned games. Decided by the agent, unasked: only wins set a best, a tie keeps the earlier best, and records cannot be reset. A game whose window is closed mid-play is not recorded until that question is settled.
 
 ## [ ] 5. Architect the 3D mode slice for m2
 
