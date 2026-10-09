@@ -466,7 +466,7 @@ Feature: results-screen
 
 ## 47. Update documentation for feature `results-screen`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/app-shell.md, .claude/context/testing.md, .claude/context/INDEX.md
 Preconditions: 46

@@ -116,6 +116,20 @@ browser checks for everything that needs WebGL or the DOM.
   streak-ending loss or a no-op when already recorded, three runs through
   the real mode host and pause controller with a fake mode — closed
   mid-game, restart, finished — and the queries.
+- `tests/results.test.mjs` — the results screen (`js/results/`): the time
+  format (tenths, truncated, the one time formatter in the view), signed
+  differences, 3BV/s, efficiency and the dash; `resultsContent` for a win
+  (stats and the three bests with their differences and new bests), a loss
+  (3BV solved, no comparison), a missing stat and a failed recording; the
+  flow over a real records store — recorded before the screen shows and
+  routed with the comparison, the 3D summary ignored, a throwing recording
+  still routed, "not being saved" told once, Play again / Records / Back to
+  menu — and DOM-free; static checks of the `#results` kit markup, its
+  router entry, default focus, controller layer and the flow on the
+  hand-off in `js/main.js`, and the `ui-stat__detail` catalogue entry. One
+  Playwright test wins a fixed Beginner board through the shell, checks the
+  results screen, then Play again (skipped when Playwright or chromium is
+  unavailable).
 - `tests/gamepad.test.mjs` — controller helpers (`js/gamepad.js`), analog camera
   (`js/input.js::FlyCamera`), `js/controls.js::Controls`, and trigger sequences
   through `js/input.js::MouseActions`.
@@ -226,7 +240,8 @@ browser checks for everything that needs WebGL or the DOM.
   recording mounts, flow and generation clients and a fake clock: the
   contract, the board choice preselected from the last choice, `summary()`
   before the first click and mid-game (equal to the abandoned report),
-  started / can-pause / finished, redraw and the overlay feed, pause hiding
+  started / can-pause / finished (recorded and routed by the results flow),
+  redraw and the overlay feed, pause hiding
   the board and freezing the timer, restart and leave releasing the canvas
   and the pending generation, Play again, the no-guess failure offer, the
   controller poll; the board choice helpers (`js/classic2d/board-choice.js`)
@@ -282,7 +297,7 @@ browser checks for everything that needs WebGL or the DOM.
   source, automatic pauses only in play, no pause before the first click or
   after the end beyond the card, resume through the mode, the restart and
   back-to-menu confirmations, the `finished` / `abandoned` / `inProgress`
-  hand-offs, routing to `results` once it exists, the leave-page guard armed
+  hand-offs with the controller itself routing nowhere, the leave-page guard armed
   only during a started, unfinished game; DOM-free; static checks that every
   pause source in `js/main.js` goes through the controller, that the guard is
   a listener it arms, and that the confirmation is kit markup. One Playwright
@@ -333,7 +348,8 @@ browser checks for everything that needs WebGL or the DOM.
   `tests/classic2d-pointer.test.mjs`, the keyboard game in
   `tests/classic2d-cursor.test.mjs`, the Classic 2D flow in
   `tests/classic2d-mode.test.mjs`, the input fidelity check in
-  `tests/classic2d-fidelity.test.mjs`, one flow test in each `tests/shell-*.test.mjs`, the
+  `tests/classic2d-fidelity.test.mjs`, the won game through the results
+  screen in `tests/results.test.mjs`, one flow test in each `tests/shell-*.test.mjs`, the
   theme-and-resolution test in `tests/settings-appliers.test.mjs` and the two page tests in
   `tests/settings-page.test.mjs`.
 
@@ -421,7 +437,10 @@ Tests consume, and so pin, these contracts:
   `js/shell/menu.js::MENU_ENTRIES`, `PLACEHOLDER_SCREEN`, `entryRoute`,
   `createMenu`, `createLastMode`, `LAST_MODE_DOC`;
   `js/shell/pause.js::createPauseController`, `PAUSE_SOURCES`,
-  `AUTO_SOURCES`, `HAND_OFFS`, `CONFIRMATIONS`. Full list in
+  `AUTO_SOURCES`, `HAND_OFFS`, `CONFIRMATIONS`;
+  `js/results/flow.js::createResultsFlow`, `RESULTS_SCREEN`;
+  `js/results/view.js::resultsContent`, `createResultsView`, `formatTime`
+  and the other formats, `DASH`, `NOTES`. Full list in
   [app-shell.md](app-shell.md).
 - `js/settings/schema.js::SCHEMA`, `SETTING_KEYS`, `DEFAULTS`, `isValid`;
   `js/settings/store.js::createSettingsStore`, `SETTINGS_DOC`,
@@ -601,6 +620,9 @@ is enforced.
 - [../domain/features/settings.md](../domain/features/settings.md)
   — the schema, store, carry-over, failure, applier and page contracts the
   `settings-*` tests encode.
+- [../domain/features/results-screen.md](../domain/features/results-screen.md)
+  — the record-before-show flow, content, time format, actions and failure
+  note `results.test.mjs` encodes.
 - [../domain/INDEX.md](../domain/INDEX.md) — feature documents whose acceptance
   criteria become tests.
 
@@ -614,8 +636,9 @@ is enforced.
 - [input.md](input.md) — `tests/gamepad.test.mjs` covers gamepad helpers, `FlyCamera`, `Controls`, `MouseActions`.
 - [app-shell.md](app-shell.md) — owns `window.__ms`, the surface Playwright drives,
   the token sheet, theme applier and token reader the token/theme tests pin,
-  the component kit and kit-built screens `components.test.mjs` pins, and
-  the game shell (`js/shell/`) the `shell-*` tests pin.
+  the component kit and kit-built screens `components.test.mjs` pins,
+  the game shell (`js/shell/`) the `shell-*` tests pin, and the results
+  flow and screen (`js/results/`) `results.test.mjs` pins.
 - [classic2d.md](classic2d.md) — `tests/classic2d-*.test.mjs` pin the session and board setup, board view, pointer and cursor inputs and the mode, and check the inputs and custom limits against the observation file; `tests/tile-skin.test.mjs` the tile painter, cache and `MIN_TILE_SIZE`.
 - [rendering.md](rendering.md) — no unit tests of the drawing (only the static not-themed checks); verified visually via Playwright screenshots.
 - [audio.md](audio.md) — no unit tests of the sounds; WebAudio only checkable in a browser.

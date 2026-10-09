@@ -4,10 +4,10 @@
 
 The glue that turns the rules engine, renderer, input and audio into a game:
 the game shell (screen router, mode host, main menu, pause controller), the
-3D game flow, the per-frame loop, action dispatch, timer, end of game, best
-times, menus/HUD/overlays, the DOM component kit the screens are built from,
-design tokens and the light/dark theme, the debug hook, and the static-site
-files.
+results flow and screen, the 3D game flow, the per-frame loop, action
+dispatch, timer, end of game, best times, menus/HUD/overlays, the DOM
+component kit the screens are built from, design tokens and the light/dark
+theme, the debug hook, and the static-site files.
 
 - `js/main.js` — entry module. Builds `BoardRenderer`, `FlyCamera`, `Input`,
   `MouseActions`, `Controls`, `GamepadReader`, `UI`, the settings store
@@ -15,7 +15,8 @@ files.
   `SHELL` (router), `MODES` (mode host, with the 3D adapter registered as
   `'3d'` and the Classic 2D mode as `'classic-2d'`), `PAUSE` (pause
   controller), `MENU`, `LAST_MODE`, `LAST_CHOICE_2D` and `CHOICE_2D` (the
-  Classic 2D board choice binder); holds the
+  Classic 2D board choice binder), `RECORDS` (the records store), `RESULTS`
+  (the results flow) and `RESULTS_VIEW`; holds the
   single state object `S`; runs the `requestAnimationFrame` loop; exposes
   `window.__ms`. Also maps controller polls to game and menu actions
   (`handlePad`, `padPlaying`, `padMenus`).
@@ -37,6 +38,14 @@ files.
   - `pause.js` — the pause controller: pause, resume, restart, back to menu,
     the confirmations, the game hand-offs and the leave-page guard
     (`createPauseController`); its rules are documented in its head comment.
+- `js/results/` — the results screen (`results-screen`), DOM-free apart from
+  the view's binder:
+  - `flow.js` — the results flow on the `finished` hand-off: records the
+    game, then routes to `results` (`createResultsFlow`, `RESULTS_SCREEN`).
+  - `view.js` — the screen's content and its time, rate and efficiency
+    formats (`resultsContent`, `formatTime`, …) and the binder that fills
+    `#results` (`createResultsView`); the formats are documented in its head
+    comment.
 - `js/ui.js` — DOM only, no game rules: class `UI`, board-settings clamping,
   random board, best times in `localStorage`. Formats the overlay bar with the
   kit helpers from `js/ui/components.js`; fills the Settings page and the help
@@ -49,10 +58,10 @@ files.
   overlay bar, the main menu (`#menu`), the 3D board choice
   (`#board-choice`), the Classic 2D board choice (`#c2d-choice`), the
   placeholder screen (`#coming-soon`), the Settings page (`#settings`, its
-  controls generated into `#settings-body`) and the pause card
-  (`#pause-card`) are kit markup (§ Component kit). `#c2d` is the Classic 2D board layer: the
-  board area `#c2d-board` and the generating / failed-board card
-  `#c2d-status`.
+  controls generated into `#settings-body`), the results screen
+  (`#results`) and the pause card (`#pause-card`) are kit markup
+  (§ Component kit). `#c2d` is the Classic 2D board layer: the board area
+  `#c2d-board` and the generating / failed-board card `#c2d-status`.
 - `css/tokens.css` — the design tokens, the single source of every shared
   visual value: palette (`--color-*`), typography (`--font-*`), spacing
   (`--space-*`), radii (`--radius-*`), elevation (`--elevation-*`), motion
@@ -75,6 +84,7 @@ files.
   Classic 2D board layer and its board area below the overlay bar), the
   menu-screen backdrop shared by `#menu`, `#board-choice`, `#coming-soon`,
   `#c2d-choice` and `#settings`,
+  the translucent backdrop shared by `#pause`, `#ready` and `#results`,
   the ready/help/banner/controls/ctx-lost overlays and the HUD placement; the
   kit-built screens carry no one-off rules of their own. Declares no
   custom properties and reads only tokens from `css/tokens.css`. Layered
@@ -140,11 +150,29 @@ files.
 - `PAUSE_SOURCES` (`key`, `pad`, `button`, `blur`, `hidden`), `AUTO_SOURCES`
   (`blur`, `hidden`), `HAND_OFFS` (`finished`, `abandoned`, `inProgress`),
   `CONFIRMATIONS` (`restart`, `menu`: `{action, message, confirmLabel}`).
-- `createPauseController({modes, router?, showCard, isPaused?, onBoard?,
-  confirm, goMenu, guard?})` → `inProgress`, `pause(source, {note})` →
+- `createPauseController({modes, showCard, isPaused?, onBoard?, confirm,
+  goMenu, guard?})` → `inProgress`, `pause(source, {note})` →
   whether the card opened, `resume(source)`, `restart(source)`, `toMenu()`,
   `pageHide()`, `attach(handOff, listener)` → detach, `dispose()`. Hand-off
   listeners receive `(summary, mode)`.
+
+`js/results/flow.js`
+- `RESULTS_SCREEN` = `'results'`.
+- `createResultsFlow({records, router, restart(source, current), goMenu})` →
+  `attach(pauser)` → detach, `finished(summary, mode)` → the routed data
+  `{summary, mode, comparison, saved, notSaved}` or null, `current` (the
+  data last shown), `playAgain(source)`, `openRecords()`, `toMenu()`.
+
+`js/results/view.js`
+- `formatTime(ms)` (tenths, truncated: `"47.3 s"`), `formatTimeDifference`,
+  `formatRate` / `formatRateDifference` (two decimals),
+  `formatEfficiency` / `formatEfficiencyDifference` (whole percent); a
+  missing value is `DASH`. `NOTES` (`notRecorded`, `notSaved`).
+- `resultsContent({summary, comparison?, saved?, notSaved?})` → `{outcome,
+  title, board, stats: [{key, label, value, shown}], bests: [{stat, label,
+  best, difference, newBest}] | null, notes}`.
+- `createResultsView({root, onPlayAgain, onRecords, onMenu})` → `show(content)`,
+  `hide()`.
 
 `js/ui.js` exports (consumed by `js/main.js`)
 - `DIM_MIN`/`DIM_MAX` (1/100); `clampSettings(s)` → `{X,Y,Z,mines}` integers,
@@ -222,7 +250,7 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   else toggles a screen. `S.mode` is a getter over `SHELL.current`, so it is
   always the router's screen: `'menu' | 'board-choice' | 'coming-soon' |
   'classic-2d-choice' | 'settings' | 'ready' | 'playing' | 'classic-2d' |
-  'paused' | 'ctxlost'`; `results` and `records` are not registered. In the 3D game only `playing` moves the
+  'paused' | 'results' | 'ctxlost'`; `records` is not registered. In the 3D game only `playing` moves the
   camera, runs the timer and accepts actions (`hasSelection`,
   `Input.isActive`); the Classic 2D board takes input and runs its timer on
   `classic-2d`.
@@ -232,7 +260,7 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   declares one — `ready` → `readyBack` (board choice for a fresh board, pause
   for a started game), `playing` and `classic-2d` → pause, `paused` →
   `resumeFromPause`,
-  `ctxlost` → menu — else the stacked screen.
+  `results` → menu, `ctxlost` → menu — else the stacked screen.
 - **Back inputs.** `shellBack(source)` closes the controls modal or the pause
   confirmation first, then calls `SHELL.back`. Esc (`isBackKey`) reaches it
   through `Input`'s `onKey`; the board choice's, placeholder's and Settings
@@ -249,7 +277,8 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   choice (`[data-size][data-last]`), placeholder its Back, Settings the look
   sensitivity slider (`#set-lookSensitivity`), ready `#ready-btn`,
   pause Cancel while the confirmation shows, else Play again once the game
-  ended, else Resume; ctx-lost its reload button.
+  ended, else Resume; results Play again (`#r-again`); ctx-lost its reload
+  button.
 - **Mode host.** The shell reaches a game only through `MODES`: the menu's
   board choice, `start` (`onStart`, `__ms.start`), pause/resume/restart
   (through the pause controller) and `leave`. Every menu screen's `show`
@@ -300,10 +329,26 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   `#pause-confirm` panel in place of `#pause-actions`) and refocuses; Back or
   Cancel closes it. Outside such a game they proceed at once.
 - **Hand-offs.** `PAUSE.attach(name, listener)`: `finished` for every
-  finished game (the shell then routes to `results` once the router has it),
-  `abandoned` for every abandoned game, `inProgress` at game started, at every
-  pause of a started, unfinished game and on `pagehide`. The records store
-  attaches to all three (`RECORDS.attach(PAUSE)`, [records.md](records.md)).
+  finished game, `abandoned` for every abandoned game, `inProgress` at game
+  started, at every pause of a started, unfinished game and on `pagehide`.
+  The controller routes nowhere itself. The records store attaches to all
+  three (`RECORDS.attach(PAUSE)`, [records.md](records.md)) and the results
+  flow to `finished` (`RESULTS.attach(PAUSE)`).
+- **Results flow.** `RESULTS.finished(summary, mode)` records the summary
+  with `RECORDS.record` first, so the comparison is against the bests that
+  stood before this game, then routes to `results` with `{summary, mode,
+  comparison, saved, notSaved}`. A summary that is not a record — the 3D
+  adapter's `summary3d` — is ignored, so the 3D game keeps its own end flow
+  (banner and pause card). A recording that throws still routes, with no
+  comparison and `saved` false; `notSaved` is set on the first results
+  screen of a session whose records store is unavailable. The screen shows
+  over the finished Classic 2D board. Its actions: Play again →
+  `RESULTS.playAgain` → `PAUSE.restart`, or `MODES.start('classic-2d',
+  LAST_CHOICE_2D.current)` once the mode was left; Records →
+  `openRecords` routes to the menu's Records route with this board's
+  `boardKey` (the placeholder until `records` is registered); Back to menu
+  and Back → `showMainMenu`. Returning to `results` without data shows
+  `RESULTS.current` again.
 - **Leave-page guard.** `guardLeave` on `beforeunload` is armed by the pause
   controller at game started and removed when the game finishes, is
   abandoned or its mode fails, so it guards only a started, unfinished game
@@ -389,7 +434,8 @@ Component kit (`css/components.css`, catalogue in its head comment):
   change for every screen using it. Components: `ui-button--primary`,
   `ui-button--secondary`, `ui-menu` (items `ui-menu__item`, optional
   `ui-menu__label` + `ui-menu__detail` lines), `ui-card` / `ui-card__title`,
-  `ui-panel`, `ui-toggle`, `ui-slider`, `ui-segmented`, `ui-stat`,
+  `ui-panel`, `ui-toggle`, `ui-slider`, `ui-segmented`, `ui-stat`
+  (optional `ui-stat__detail` line, `data-new-best` in bold ink),
   `ui-field` (number entry; `data-adjusted` marks a value just corrected),
   `ui-link`, `ui-overlay-bar`. Layout compositions: `ui-screen`
   (`--wide` for the main menu and the board choice), `ui-row`, `ui-grid`,
@@ -449,10 +495,13 @@ Component kit (`css/components.css`, catalogue in its head comment):
   sensitivity and volume sliders, invert-Y toggle), then the Sound button.
   Those shortcuts and the main menu's volume slider carry `data-setting` and
   are bound to the settings store like the Settings page's controls.
-- Results screen: a layout only — the gallery's `#g-results` composition
-  with placeholder content (outcome title, board line, a `ui-stat-row` of
-  the game's stats, a `ui-panel` of best comparisons, Play again / Main
-  menu); no game screen uses it.
+- Results screen (`#results`, filled by `createResultsView`; the gallery's
+  `#g-results` shows it with placeholder content): a `ui-card ui-screen`
+  with the outcome title, the board line, a `ui-stat-row` of `rs-*` stats
+  (`rs-bbbvSolved` only on a loss), the `#results-bests` `ui-panel` of `rb-*`
+  bests on a win, each with a `ui-stat__detail` difference led by "New best"
+  when set, the `#results-note` `ui-text--warning` line, and Play again
+  (`#r-again`, primary), Records (`#r-records`), Back to menu (`#r-menu`).
 - Theme: `js/theme.js` runs synchronously in `<head>`, so the root
   `data-theme` attribute is set before any stylesheet paints. Its stored-theme
   getter (`readStoredTheme`) reads the theme of the settings document
@@ -494,6 +543,9 @@ Gameplay fidelity to the original game is the overriding rule.
   overlay bar's display formats and the screens composed from the kit.
 - [../domain/features/settings.md](../domain/features/settings.md) — the
   Settings page, the pause-card shortcuts and the start-up order.
+- [../domain/features/results-screen.md](../domain/features/results-screen.md)
+  — the results flow (record before show), the screen's content and time
+  format, its actions and the failure note.
 - [../domain/INDEX.md](../domain/INDEX.md) — product domain index.
 
 ## CROSS-REFERENCES
@@ -513,13 +565,17 @@ Gameplay fidelity to the original game is the overriding rule.
   appliers.
 - [settings.md](settings.md) — the settings store, appliers, the Settings
   page markup and binder, and the bindings source `js/ui.js` reads.
+- [records.md](records.md) — the records store the shell loads and attaches,
+  whose `record` and comparison the results flow uses, and the board label
+  and key the results screen shows and routes with.
 - [testing.md](testing.md) — browser tests drive the game through `window.__ms`;
   `tests/shell-*.test.mjs` pin the router, navigation, mode host, 3D adapter,
   menu and pause controller; `tests/tokens.test.mjs` and
   `tests/theme.test.mjs` pin the token sheet, the applier and the reader;
   `tests/components.test.mjs` pins the kit, its helpers, the overlay bar, the
   kit-built screens and their contrast; `tests/settings-*.test.mjs` pin the
-  Settings screen's wiring and the pause-card shortcuts.
+  Settings screen's wiring and the pause-card shortcuts;
+  `tests/results.test.mjs` pins the results flow, view and screen.
 
 ## WHEN TO READ THE SOURCE
 
@@ -531,6 +587,9 @@ Gameplay fidelity to the original game is the overriding rule.
   `js/shell/mode-3d.js` as the worked example.
 - Attaching a feature to a game's end, abandonment or progress: the hand-offs
   in the head comment of `js/shell/pause.js`.
+- Changing what the results screen shows, its formats or its actions: the
+  head comments of `js/results/view.js` and `js/results/flow.js`, and the
+  `results` wiring in `js/main.js`.
 - Changing pause rules, confirmations or the leave-page guard: `js/shell/pause.js`
   and the `PAUSE` wiring in `js/main.js`.
 - Changing timer start/freeze, end-of-game flow, or best-time recording.
