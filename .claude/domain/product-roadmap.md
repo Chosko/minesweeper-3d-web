@@ -108,7 +108,11 @@ Covers:
 - product-design.md § Steam features — free-play leaderboards with attached
   replays, cloud saves, and achievements for the 2D and 3D modes. Windows
   only. No campaign or daily leaderboards, no campaign achievements.
-- product-design.md § Main menu and game shell — the Leaderboards entry.
+- product-design.md § Main menu and game shell — the Leaderboards entry;
+  the Quit entry, on the desktop build only; and, in Settings, rebinding
+  keys, mouse buttons and controller buttons for Classic 2D and 3D. No Quit
+  entry on the web preview, no Start/Continue, Campaign, Daily or Surface
+  entries.
 - product-design.md § Results and records — the Steam global and friends
   rank on the results screen.
 
