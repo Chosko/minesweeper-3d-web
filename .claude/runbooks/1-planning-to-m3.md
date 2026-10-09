@@ -128,11 +128,21 @@ Context:
 /architect "Replays" m2-3d-joins
 ```
 
-## [ ] 7. Architect the results and records slice for m2
+## [P] 7. Architect the results and records slice for m2
 
 Depends on: none
 
-Context: none
+Context:
+- 2026-10-09 parked: approval gate — the architecture draft for the m2 results and records slice (two documents: 3d-game-records, 3d-results-records-screens; the open call is whether they merge into one) waits for approval when the step runs. The draft extends step 4's unapproved m1 design and defers the old 3D best-time question to step 5's Q4. With it, two design questions:
+  Q2. Once 3D games count in records, how are win rate and win streaks kept?
+    a. Separately for each mode, and within each mode for each board. A 3D loss never breaks a 2D streak, and the two are never combined.
+    b. One overall win rate and one overall streak across both modes, plus per-board figures.
+    Recommendation: a. 3D boards are much harder and have different win rates. Combining them would make a 2D streak or win rate meaningless to an enthusiast tracking it.
+  Q3. Today, when a 3D game ends, a short banner appears and the player can keep flying around the finished board to see where the mines were. How does the new results screen fit with that?
+    a. The results screen opens as a panel over the scene. The player can close it to fly around the finished board and open it again with one key or button. Play again and Watch replay stay one step away.
+    b. The results screen takes over completely when the game ends, and flying around the finished board is no longer possible.
+    c. Keep the banner, and show the full results only from the pause menu.
+    Recommendation: a. It keeps the 3D mode's current feel, which the product design says to keep, and still gives 3D the same results screen as 2D.
 
 ```prompt
 /architect "Results and records" m2-3d-joins
