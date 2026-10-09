@@ -36,7 +36,7 @@ Feature: design-tokens-and-themes
 
 ## 4. Cell graph and square-grid provider
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/engine/graph.js, js/engine/square-grid.js, tests/engine-graph.test.mjs
 Preconditions: none
