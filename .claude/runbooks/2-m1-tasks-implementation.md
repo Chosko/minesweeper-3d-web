@@ -483,7 +483,7 @@ Context:
 
 Done: 2026-10-09, commit `d9997f5` (9 files, +1137/-17). Unlike the mouse, keyboard/controller reveal inputs (A, RT, Space, Enter) never chord a revealed number; chording is Y, D, or both triggers held together. The cursor ring is always visible, starting top-left.
 
-## [ ] 36. Implement task 36 — Classic 2D mode: board choice screen and shell integration
+## [x] 36. Implement task 36 — Classic 2D mode: board choice screen and shell integration
 
 Depends on: 18, 26, 27, 32, 33
 
@@ -499,6 +499,8 @@ Context:
 ```prompt
 /task-implement 36 --review
 ```
+
+Done: 2026-10-09, commit `590582b` (14 files, +1167/-38). Classic 2D uses its own router screens `classic-2d-choice` (`#c2d-choice`) and `classic-2d` (`#c2d`), not `board-choice`/`playing`. Until the results screen exists, a finished 2D board stays on screen and the pause card offers Play again. Added a generation-failure card (Retry / Play a standard board), not in the task body. The cursor ring was not visible in a screenshot — possibly the focus-ring and tile-edge tokens share #3f78e0.
 
 ## [x] 37. Implement task 37 — Classic 2D input fidelity tests
 
@@ -521,6 +523,7 @@ Context:
 - 2026-10-09 (from step 32): custom-board mine caps for 37–48-cell boards were never measured and are interpolated between 36 cells (a mine in every cell) and 7×7's 19, so the cap falls as the board grows in that range (6×7 allows 28); the limits live in the `customLimits` setting of rule profile v1, linked to "Largest custom board". Confirm or replace them here.
 - 2026-10-09 (from step 34): pointer behaviour reads profile markers `revealInputs`, `flagToggle`, `pressFeedback`, `releaseOffCell` and `chordInputs` in `js/engine/profiles.js`, each citing its fidelity entry — pin these here. Left+right on a closed cell acts only on the left release, as a chord on a revealed number, never a reveal; the reference does not record this case.
 - 2026-10-09 (from step 35): keyboard/controller reveal inputs (A, RT, Space, Enter) never chord a revealed number; chording is Y, D, or both triggers held (LT flags on press; the release chord follows the profile's left+right rule, while Y and D chord regardless).
+- 2026-10-09 (from step 36): in a screenshot after an arrow-key move the Classic 2D cursor ring was not visible; unverified cause — `--color-focus-ring` and `--color-tile-edge` are both `#3f78e0`. The mode wiring is in place (screens `classic-2d-choice`, `classic-2d`).
 
 ```prompt
 /task-implement 37 --review
@@ -533,6 +536,7 @@ Depends on: 32, 33, 34, 35, 36, 37
 Context:
 - 2026-10-09 (from step 32): `classic2d.md` and its INDEX row still say `js/classic2d/` holds only the tile skin; `engine.md` (limits setting) and `generation.md` (session as the client's caller) were already updated by task 32.
 - 2026-10-09 (from step 33): `classic2d.md` and `testing.md` now describe the board view but not `session.js`/`board-setup.js` (task 32), and `testing.md` does not list `tests/classic2d-session.test.mjs`.
+- 2026-10-09 (from step 36): task 36 already fixed two stale passages in `.claude/context/`; the mode adds router screens `classic-2d-choice`/`classic-2d`, a `#c2d-status` generating/failure card, and updated `tests/shell-menu.test.mjs`.
 
 ```prompt
 /task-implement 38 --review
@@ -568,6 +572,7 @@ Depends on: 26, 27, 39, 40
 Context:
 - 2026-10-09 (from step 26): Classic 2D, Records and Settings menu entries go to a shared `coming-soon` router screen (`#coming-soon`, not in `SHELL_SCREENS`) and switch over by themselves once their mode is registered or the router has their screen. The 3D presets live on a `board-choice` router screen (`#board-choice`); the menu module is `js/shell/menu.js`, and `shell.lastMode` (v1, `{ mode }`) is saved on the host's `started`.
 - 2026-10-09 (from step 27): the pause controller `js/shell/pause.js` (`window.__ms.pauser`) owns every pause and offers `pause(source, {note})`, `resume`, `restart`, `toMenu`, `pageHide`, `inProgress` and `attach(name, fn)` for the hand-offs `finished`, `abandoned`, `inProgress` — records and results hook in through `attach`. A finished game routes to the router screen `results` with `{ summary, mode }` once that screen is registered. Restart/Main-menu confirmation is a panel in the pause card (`#pause-confirm`, `UI.showConfirm`/`closeConfirm`/`isConfirmOpen`).
+- 2026-10-09 (from step 36): Classic 2D's router screens are `classic-2d-choice` (`#c2d-choice`) and `classic-2d` (`#c2d`, board area `#c2d-board`); the pause controller's "board in play" check covers both `playing` and `classic-2d`. Until the `results` screen is registered, a finished 2D board stays on screen and the pause card ("You won!"/"Game over") offers Play again with the same board choice.
 
 ```prompt
 /task-implement 41 --review
@@ -604,6 +609,7 @@ Context:
 - 2026-10-09 (from step 15): storage callers import `storage`, `register`, `load`, `save`, `available` from `js/platform/index.js` only — a test fails if any other file under `js/` imports a backend directly.
 - 2026-10-09 (from step 25): the mode host exposes `start`, `pause`, `resume`, `restart`, `leave`, `summary`, `on`, `active`, `state` (also as `window.__ms.modes` for Playwright). The host reports `game abandoned` itself from the mode's `summary()` before `restart()`, `leave()` or a replacing `start()`; a mode reports only `started`, `finished`, `canPause`, `failed`. `resume`/`restart` take `{ source: 'pointer' | 'key' | 'pad' }`. Until board choice exists, the 3D mode's "open board choice" goes to the main menu.
 - 2026-10-09 (from step 27): the pause controller `js/shell/pause.js` (`window.__ms.pauser`) owns every pause and offers `pause(source, {note})`, `resume`, `restart`, `toMenu`, `pageHide`, `inProgress` and `attach(name, fn)` for the hand-offs `finished`, `abandoned`, `inProgress` — records and results hook in through `attach`. A finished game routes to the router screen `results` with `{ summary, mode }` once that screen is registered. Restart/Main-menu confirmation is a panel in the pause card (`#pause-confirm`, `UI.showConfirm`/`closeConfirm`/`isConfirmOpen`).
+- 2026-10-09 (from step 36): Classic 2D's router screens are `classic-2d-choice` (`#c2d-choice`) and `classic-2d` (`#c2d`, board area `#c2d-board`); the pause controller's "board in play" check covers both `playing` and `classic-2d`. Until the `results` screen is registered, a finished 2D board stays on screen and the pause card ("You won!"/"Game over") offers Play again with the same board choice.
 
 ```prompt
 /task-implement 44 --review --rounds 2
@@ -626,6 +632,7 @@ Depends on: 19, 27, 36, 44
 Context:
 - 2026-10-09 (from step 19): the results layout exists only in the kit gallery (`dev/components.html`, `#g-results`, placeholder content); `index.html` has no results screen yet. Layout classes available: `ui-screen`, `ui-row`, `ui-grid`, `ui-heading`, `ui-text`, `ui-actions`, `ui-stat-row`.
 - 2026-10-09 (from step 27): the pause controller `js/shell/pause.js` (`window.__ms.pauser`) owns every pause and offers `pause(source, {note})`, `resume`, `restart`, `toMenu`, `pageHide`, `inProgress` and `attach(name, fn)` for the hand-offs `finished`, `abandoned`, `inProgress` — records and results hook in through `attach`. A finished game routes to the router screen `results` with `{ summary, mode }` once that screen is registered. Restart/Main-menu confirmation is a panel in the pause card (`#pause-confirm`, `UI.showConfirm`/`closeConfirm`/`isConfirmOpen`).
+- 2026-10-09 (from step 36): Classic 2D's router screens are `classic-2d-choice` (`#c2d-choice`) and `classic-2d` (`#c2d`, board area `#c2d-board`); the pause controller's "board in play" check covers both `playing` and `classic-2d`. Until the `results` screen is registered, a finished 2D board stays on screen and the pause card ("You won!"/"Game over") offers Play again with the same board choice.
 
 ```prompt
 /task-implement 46 --review
