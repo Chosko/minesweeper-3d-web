@@ -328,12 +328,22 @@ Read .claude/PLAN.md first. For every feature it places under m1-classic-2d, in 
 The deliverable is the complete m1 backlog in .claude/TASKS.md: every m1-classic-2d feature planned. Do not add tasks for features of any other milestone.
 ```
 
-## [ ] 13. Write the m2 tasks
+## [P] 13. Write the m2 tasks
 
 Depends on: 11
 
 Context:
 - 2026-10-09 Decided by the user: every approval gate a skill in this step raises is approved as drafted, unseen; on each open call take the draft's own recommendation, and answer the gate from this bullet rather than parking. Park only on a real design question.
+- 2026-10-09 parked: the same /task-add setup block as step 12 (`.claude/tasks/` missing on a fresh clone).
+  Q1. How should the backlog directory be restored so step 13 can run?
+    a. Run `/task-setup` again in the session that runs the step. It is idempotent and only creates `.claude/tasks/`. After that, the first /task-add commit tracks a body file, which fixes the problem for good.
+    b. Add a tracked `.claude/tasks/.gitkeep` in its own commit before step 13 runs again. This fixes every future clone right away, but it happens outside the /task-add flow.
+    c. Something else.
+    Recommendation: answer this together with step 12's Q1 and use the same answer (that question recommended a). Option b is the safer choice if steps 12 and 13 are re-run in separate fresh sessions, because option a has to be repeated in every fresh clone until the first /task-add commit lands.
+  Q2. In what order should steps 12 and 13 run once the directory exists?
+    a. Run step 12 (m1) before step 13 (m2), even though step 13 lists only step 11 as its dependency. Every m2 feature depends on m1 features (for example, 3d-play-flow depends on game-shell, settings and game-summary). If m1 tasks exist first, the m2 tasks can name them on their `Preconditions:` lines, and the task IDs come out in milestone order.
+    b. Run step 13 first as the runbook allows. The m2 tasks would take IDs 1 onward, and their `Preconditions:` lines could not point at m1 tasks that do not exist yet. Those dependencies would then have to come only from the plan.
+    Recommendation: a.
 
 ```prompt
 Write the backlog tasks for milestone m2-3d-joins.
