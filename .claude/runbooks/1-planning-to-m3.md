@@ -235,11 +235,29 @@ Context: none
 /architect "Main menu and game shell" m3-on-steam
 ```
 
-## [ ] 10. Architect the results and records slice for m3
+## [P] 10. Architect the results and records slice for m3
 
 Depends on: none
 
 Context: none
+- 2026-10-09 parked: approval gate — the m3 results and records architecture draft (one document, results-steam-rank: a global and friends rank panel after a won game on a standard board, filled in without blocking the screen, offline wins queued; it needs step 8's Steam link to return both ranks) waits for approval when the step runs. With it, four design questions:
+  Q2. Steam keeps only each player's best entry per board. What does the panel show after a win that does not beat that best?
+    a. The player's current standing rank, global and friends, labelled "your best". A move like #120 → #87 appears only when the win improved the entry.
+    b. Where this game's time would have ranked, plus the standing rank. This needs extra leaderboard downloads to locate the time.
+    c. No panel unless the win improved the entry.
+    Recommendation: a. It is honest and cheap, and the leaderboard screen covers the rest.
+  Q3. What does the rank panel show on the web preview, which has only local leaderboards?
+    a. One "local" rank: this game among the player's own games on this board. No friends rank.
+    b. No rank panel at all on the web build.
+    Recommendation: b. A local rank just repeats the personal-best comparison already on the results screen, and the web preview is only a testing build.
+  Q4. Should this be its own document, or fold into step 8's work?
+    a. Its own document (`results-steam-rank`), so this roadmap slice gets its own entry in the feature index.
+    b. Fold it into step 8's `steam-leaderboards`. The catch is that the feature index would then have no entry for this slice, because each entry can name only one source section.
+    Recommendation: a. It matches step 9's answer for the same situation and keeps results-screen work separate from Steam work.
+  Q5. How long does the panel wait for Steam before it gives up and shows the offline wording?
+    a. About 5 seconds. A late answer still fills the panel in if the player is still on the results screen.
+    b. No limit. It shows "ranking…" until the answer arrives or the player leaves the screen.
+    Recommendation: a. It never leaves a spinner on a dead connection and still shows a slow answer.
 
 ```prompt
 /architect "Results and records" m3-on-steam
