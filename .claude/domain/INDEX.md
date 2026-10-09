@@ -17,6 +17,9 @@ layer.
 | [technical-direction.md](./technical-direction.md) | The product's technical foundations: stack, topology, data, hosting, cross-cutting concerns |
 | [business-model.md](./business-model.md) | The business model: revenue, costs, segments, pricing, go-to-market, unit economics, risks |
 | [product-roadmap.md](./product-roadmap.md) | The product roadmap: ordered milestones, their goals, exit criteria, rationale and the scope slice each takes of each high-level feature |
+| [features/design-tokens-and-themes.md](./features/design-tokens-and-themes.md) | Design tokens (palette, type, spacing, motion) with light and dark values, and how the chosen theme is applied |
+| [features/square-tile-skin.md](./features/square-tile-skin.md) | Classic 2D square tiles in every state and the number colours, in both themes |
+| [features/screen-components.md](./features/screen-components.md) | The DOM component kit and the m1 screens built from it: main menu, in-game overlay, results screen |
 
 ## Features
 
