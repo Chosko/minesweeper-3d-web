@@ -17,6 +17,8 @@ import { createPauseController } from './shell/pause.js';
 import { storage } from './platform/index.js';
 import { createSettingsStore } from './settings/store.js';
 import { createRecordsStore } from './records/store.js';
+import { createResultsFlow } from './results/flow.js';
+import { createResultsView, resultsContent } from './results/view.js';
 import { applySettings, pixelRatioFor } from './settings/appliers.js';
 import { bindSettingControls } from './settings/page.js';
 import { createClassic2DMode } from './classic2d/mode.js';
@@ -49,7 +51,7 @@ const LOCK_SUPPORTED = 'requestPointerLock' in Element.prototype;
 const COARSE_ONLY = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(pointer: fine)').matches);
 const NO_MOUSE = !LOCK_SUPPORTED || COARSE_ONLY;
 // S.mode is the router's current screen: 'menu' | 'board-choice' | 'coming-soon' | 'classic-2d-choice' | 'settings' | 'ready' |
-// 'playing' | 'classic-2d' | 'paused' | 'ctxlost' (defined below).
+// 'playing' | 'classic-2d' | 'paused' | 'results' | 'ctxlost' (defined below).
 const S = {
   settings: null,
   game: null,
@@ -213,6 +215,7 @@ const SHELL = createRouter({
     playing: { defaultFocus: null, show: (d = {}) => { setLockless(!!d.lockless); ui.showPlaying(); endIfDecided(); }, back: ({ source }) => PAUSE.pause(source === 'pointer' ? 'button' : source) },
     'classic-2d': { defaultFocus: null, show: () => ui.showClassic2D(), back: ({ source }) => PAUSE.pause(source === 'pointer' ? 'button' : source) },
     paused: { defaultFocus: () => (ui.isConfirmOpen() ? '#p-confirm-no' : gameOver() ? '#p-restart' : '#p-resume'), show: (d = {}) => { stopPlayInput(); setBoardHidden(true); ui.showPause(pauseInfo(d.note)); }, hide: () => setBoardHidden(false), back: ({ source }) => resumeFromPause(source) },
+    results: { defaultFocus: '#r-again', show: (d) => RESULTS_VIEW.show(resultsContent(d ?? RESULTS.current)), hide: () => RESULTS_VIEW.hide(), back: () => RESULTS.toMenu() },
     ctxlost: { defaultFocus: '#ctx-lost-btn', show: () => showContextLost(), hide: () => hideContextLost(), back: () => showMainMenu() },
   },
   focus: (target, name) => focusScreen(target, name),
@@ -268,7 +271,6 @@ MODES.on('failed', ({ screen }) => SHELL.go(screen ?? 'menu'));
 // The one owner of pause, resume, restart and back to menu, and of the game hand-offs.
 const PAUSE = createPauseController({
   modes: MODES,
-  router: SHELL,
   showCard: ({ note }) => showPauseCard(note),
   isPaused: () => S.mode === 'paused',
   onBoard: () => S.mode === 'playing' || S.mode === 'classic-2d',
@@ -289,6 +291,27 @@ const RECORDS = createRecordsStore({
 });
 const recordsLoaded = RECORDS.load();
 RECORDS.attach(PAUSE);
+
+// ---------- results ----------
+// A finished Classic 2D game is recorded, then the results screen shows over the finished board.
+// Play again restarts the finished game's board choice, or starts it again once the mode was left
+// (back from Records).
+const RESULTS = createResultsFlow({
+  records: RECORDS,
+  router: SHELL,
+  restart: (source, { mode }) => {
+    if (MODES.active) PAUSE.restart(source);
+    else if (mode === 'classic-2d') MODES.start(mode, LAST_CHOICE_2D.current);
+  },
+  goMenu: () => showMainMenu(),
+});
+RESULTS.attach(PAUSE);
+const RESULTS_VIEW = createResultsView({
+  root: document.getElementById('results'),
+  onPlayAgain: () => RESULTS.playAgain(padGesture ? 'pad' : 'pointer'),
+  onRecords: () => RESULTS.openRecords(),
+  onMenu: () => RESULTS.toMenu(),
+});
 
 // ---------- main menu ----------
 // Each entry is a route; the last mode played is kept through platform storage and marked on the menu.
@@ -525,7 +548,7 @@ function padClick(el) {
 
 // Spatial focus navigation inside the topmost visible overlay (its screen, or the controls modal).
 const LAYER_SCREEN = {
-  'ctx-lost': 'ctxlost', 'controls-modal': null, pause: 'paused', ready: 'ready',
+  'ctx-lost': 'ctxlost', 'controls-modal': null, pause: 'paused', ready: 'ready', results: 'results',
   'coming-soon': 'coming-soon', settings: 'settings', 'board-choice': 'board-choice', 'c2d-choice': 'classic-2d-choice', c2d: 'classic-2d', menu: 'menu',
 };
 const SCREEN_LAYER = Object.fromEntries(Object.entries(LAYER_SCREEN).filter(([, s]) => s).map(([l, s]) => [s, l]));

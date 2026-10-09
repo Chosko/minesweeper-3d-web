@@ -92,6 +92,9 @@
               </div>
      Role:    group
      Name:    aria-labelledby → the label
+     Detail:  an optional <span class="ui-stat__detail">…</span> after the
+              value adds a smaller muted line (a best's difference);
+              data-new-best on it sets it in bold ink.
 
    ui-field — labelled number entry
      Element: <label class="ui-field">
@@ -189,11 +192,13 @@
      ui-panel ui-actions (a ui-text line, the action as primary, Cancel)
      shows in place of the actions. Default focus: Resume, or Play again once
      ended; Cancel while the confirmation shows.
-   Results screen (dev/components.html #g-results, placeholder content the
-     results-screen feature fills): ui-card ui-screen holding the outcome
-     title, a ui-text board line, a ui-stat-row of the game's stats, a
-     ui-panel with a ui-stat-row of the best comparisons, and ui-actions--row
-     (Play again primary, Main menu secondary).
+   Results screen (index.html #results, filled by js/results/view.js; the
+     gallery's #g-results shows it with placeholder content): ui-card
+     ui-screen holding the outcome title, a ui-text board line, a ui-stat-row
+     of the game's stats, a ui-panel with a ui-stat-row of the best
+     comparisons (each ui-stat with a ui-stat__detail difference line), a
+     ui-text--warning note, and ui-actions--row (Play again primary, Records,
+     Back to menu). Default focus: Play again.
 */
 
 /* ---------- buttons ---------- */
@@ -561,6 +566,16 @@
   font-variant-numeric: var(--font-numeric-tabular);
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
+}
+.ui-stat__detail {
+  font-family: var(--font-family-mono);
+  font-variant-numeric: var(--font-numeric-tabular);
+  font-size: var(--font-size-sm);
+  color: var(--color-ink-muted);
+}
+.ui-stat__detail[data-new-best] {
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink);
 }
 
 /* ---------- overlay bar ---------- */

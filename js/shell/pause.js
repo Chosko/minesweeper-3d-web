@@ -1,6 +1,6 @@
 // Pause controller: the one owner of pause, resume, restart and back to menu for every mode, and
 // the shell's hand-offs of a game's summary. DOM-free: the shell hands in the mode host, the pause
-// card, the confirmation prompt, the router and the leave-page guard.
+// card, the confirmation prompt and the leave-page guard.
 //
 // Pause rules. Pause applies only to a started, unfinished game (`inProgress`): it asks the active
 // mode to pause (the mode stops its timer and board input), shows the pause card and passes the
@@ -12,8 +12,8 @@
 // the game will count as a loss.
 //
 // Hand-offs, the attachment points later features fill (attach(name, listener)):
-//   finished(summary, mode)    every finished game; the shell then routes to the `results` screen
-//                              with { summary, mode } once the router has one
+//   finished(summary, mode)    every finished game; the results flow (js/results/flow.js) records
+//                              it and routes to the `results` screen
 //   abandoned(summary, mode)   every abandoned game (restart, back to menu, a replacing start);
 //                              no results screen
 //   inProgress(summary, mode)  at game started, at every pause of a started, unfinished game and
@@ -34,13 +34,13 @@ export const CONFIRMATIONS = Object.freeze({
 });
 
 /**
- * modes: the mode host. router: { has, go } (the results route). showCard({ note }): show the pause
+ * modes: the mode host. showCard({ note }): show the pause
  * card over the hidden board. isPaused(): whether the pause card already shows. onBoard(): whether the board is in play.
  * confirm(request, proceed): ask `request` (one of CONFIRMATIONS) and call proceed() on yes.
  * goMenu(): show the main menu. guard(on): arm or disarm the leave-page guard.
  */
 export function createPauseController({
-  modes, router = null, showCard, isPaused = () => false, onBoard = () => true, confirm, goMenu, guard = () => {},
+  modes, showCard, isPaused = () => false, onBoard = () => true, confirm, goMenu, guard = () => {},
 }) {
   const listeners = Object.fromEntries(HAND_OFFS.map((h) => [h, new Set()]));
   const handOff = (name, summary, mode) => {
@@ -54,11 +54,7 @@ export function createPauseController({
 
   const offs = [
     modes.on('started', ({ mode, summary }) => { guard(true); handOff('inProgress', summary, mode); }),
-    modes.on('finished', ({ mode, summary }) => {
-      guard(false);
-      handOff('finished', summary, mode);
-      if (router?.has('results')) router.go('results', { data: { summary, mode } });
-    }),
+    modes.on('finished', ({ mode, summary }) => { guard(false); handOff('finished', summary, mode); }),
     modes.on('abandoned', ({ mode, summary }) => { guard(false); handOff('abandoned', summary, mode); }),
     modes.on('failed', () => guard(false)),
   ];

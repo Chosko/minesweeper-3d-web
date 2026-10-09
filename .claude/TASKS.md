@@ -456,7 +456,7 @@ Feature: personal-records
 
 ## 46. Results flow and results view
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/results/flow.js, js/results/view.js, index.html, css/components.css, tests/results.test.mjs
 Preconditions: 19, 27, 36, 44

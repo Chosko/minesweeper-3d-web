@@ -15,6 +15,8 @@ import { CHOICE_SIZES, customStatus, readChoice, sizeLabel } from '../js/classic
 import { createLastChoice, DEFAULT_CHOICE, LAST_CHOICE_DOC, maxMines } from '../js/classic2d/board-setup.js';
 import { createModeHost, MODE_METHODS } from '../js/shell/mode-host.js';
 import { createPauseController } from '../js/shell/pause.js';
+import { createResultsFlow } from '../js/results/flow.js';
+import { createRecordsStore } from '../js/records/store.js';
 import { CUSTOM_LIMITS } from '../js/engine/profiles.js';
 import { CELL } from '../js/engine/rules.js';
 import { createStorage } from '../js/platform/storage.js';
@@ -292,15 +294,18 @@ test('restart and leave release the canvas and any pending generation', async ()
   assert.equal(flow.calls.filter((c) => c[0] === 'generating').every((c) => c[1] === false), true, 'no slow request was shown');
 });
 
-test('a finished game reports its summary and routes to the results route; Play again starts the same choice', async () => {
+test('a finished game reports its summary and the results flow routes it; Play again starts the same choice', async () => {
   const { host, act, events, board } = setup({ choice: CUSTOM_3X3, mines: [0, 8] });
   const routes = [];
   const handed = [];
-  const pauser = createPauseController({
-    modes: host, router: { has: (n) => n === 'results', go: (n, o) => routes.push([n, o.data]) },
-    showCard() {}, confirm: (r, yes) => yes(), goMenu() {},
-  });
+  const pauser = createPauseController({ modes: host, showCard() {}, confirm: (r, yes) => yes(), goMenu() {} });
   pauser.attach('finished', (summary, mode) => handed.push([summary.outcome, mode]));
+  const records = createRecordsStore({ storage: createStorage({ backend: createMemoryBackend() }) });
+  await records.load();
+  createResultsFlow({
+    records, router: { has: (n) => n === 'results', go: (n, o) => routes.push([n, o.data]) },
+    restart: (source) => pauser.restart(source), goMenu() {},
+  }).attach(pauser);
   await act('reveal', 2);
   act('reveal', 0);
   const finished = events.find((e) => e[0] === 'finished');
@@ -313,6 +318,7 @@ test('a finished game reports its summary and routes to the results route; Play 
   assert.equal(routes[0][0], 'results');
   assert.equal(routes[0][1].mode, 'classic-2d');
   assert.equal(routes[0][1].summary.outcome, 'lost');
+  assert.equal(records.counters(routes[0][1].summary.board).games, 1, 'recorded before the screen shows');
 
   const old = board();
   pauser.restart('pointer'); // Play again

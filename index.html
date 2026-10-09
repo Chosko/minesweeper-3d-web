@@ -252,6 +252,36 @@
     </section>
   </section>
 
+  <!-- Results -->
+  <section id="results" class="overlay hidden" aria-label="Results">
+    <section class="ui-card ui-screen" aria-labelledby="results-title">
+      <h2 class="ui-card__title" id="results-title">You won!</h2>
+      <p id="results-board" class="ui-text ui-text--muted">Beginner</p>
+      <div class="ui-stat-row">
+        <div id="rs-time" class="ui-stat" role="group" aria-labelledby="rs-time-label"><span class="ui-stat__label" id="rs-time-label">Time</span><span class="ui-stat__value">&mdash;</span></div>
+        <div id="rs-bbbv" class="ui-stat" role="group" aria-labelledby="rs-bbbv-label"><span class="ui-stat__label" id="rs-bbbv-label">3BV</span><span class="ui-stat__value">&mdash;</span></div>
+        <div id="rs-bbbvSolved" class="ui-stat hidden" role="group" aria-labelledby="rs-bbbvSolved-label"><span class="ui-stat__label" id="rs-bbbvSolved-label">3BV solved</span><span class="ui-stat__value">&mdash;</span></div>
+        <div id="rs-bbbvPerSecond" class="ui-stat" role="group" aria-labelledby="rs-bbbvPerSecond-label"><span class="ui-stat__label" id="rs-bbbvPerSecond-label">3BV/s</span><span class="ui-stat__value">&mdash;</span></div>
+        <div id="rs-efficiency" class="ui-stat" role="group" aria-labelledby="rs-efficiency-label"><span class="ui-stat__label" id="rs-efficiency-label">Efficiency</span><span class="ui-stat__value">&mdash;</span></div>
+      </div>
+      <div id="results-bests" class="ui-panel" role="group" aria-labelledby="results-bests-title">
+        <h3 class="ui-heading" id="results-bests-title">Your bests on this board</h3>
+        <div class="ui-stat-row">
+          <div id="rb-time" class="ui-stat" role="group" aria-labelledby="rb-time-label"><span class="ui-stat__label" id="rb-time-label">Best time</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail">&mdash;</span></div>
+          <div id="rb-bbbvPerSecond" class="ui-stat" role="group" aria-labelledby="rb-bbbvPerSecond-label"><span class="ui-stat__label" id="rb-bbbvPerSecond-label">Best 3BV/s</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail">&mdash;</span></div>
+          <div id="rb-efficiency" class="ui-stat" role="group" aria-labelledby="rb-efficiency-label"><span class="ui-stat__label" id="rb-efficiency-label">Best efficiency</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail">&mdash;</span></div>
+        </div>
+      </div>
+      <p id="results-note" class="ui-text ui-text--warning hidden" role="status"></p>
+      <div class="ui-actions ui-actions--row">
+        <button type="button" id="r-again" class="ui-button ui-button--primary">Play again</button>
+        <button type="button" id="r-records" class="ui-button ui-button--secondary">Records</button>
+        <button type="button" id="r-menu" class="ui-button ui-button--secondary">Back to menu</button>
+      </div>
+    </section>
+  </section>
+  <!-- /Results -->
+
   <!-- Pause / end menu -->
   <section id="pause" class="overlay hidden" aria-label="Pause menu">
     <section id="pause-card" class="ui-card ui-screen" aria-labelledby="pause-title">

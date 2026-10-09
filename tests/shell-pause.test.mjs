@@ -9,6 +9,7 @@ import { createPauseController, PAUSE_SOURCES, AUTO_SOURCES, HAND_OFFS, CONFIRMA
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
+const SRC = read('js/shell/pause.js');
 
 // A fake mode behind the real host: records every contract call; `play` drives its game.
 function fakeMode() {
@@ -37,15 +38,14 @@ function fakeMode() {
 }
 
 // The controller over a host with one fake mode, and a recording shell around it.
-function setup({ results = false } = {}) {
+function setup() {
   const modes = createModeHost();
   const fake = fakeMode();
   modes.register('a', fake.factory);
-  const shell = { cards: [], asked: [], menus: 0, guard: [], routes: [], paused: false, onBoard: true, answer: true };
+  const shell = { cards: [], asked: [], menus: 0, guard: [], paused: false, onBoard: true, answer: true };
   const handOffs = [];
   const pauser = createPauseController({
     modes,
-    router: { has: (n) => results && n === 'results', go: (n, o) => shell.routes.push([n, o]) },
     showCard: (o) => { shell.cards.push(o); shell.paused = true; },
     isPaused: () => shell.paused,
     onBoard: () => shell.onBoard,
@@ -195,7 +195,6 @@ test('back to menu of a started, unfinished game asks first, then leaves the mod
   assert.equal(modes.active, null);
   assert.equal(calls().at(-1), 'leave');
   assert.equal(handOffs.filter(([h]) => h === 'abandoned').length, 1);
-  assert.equal(shell.routes.length, 0, 'no results screen for an abandoned game');
 });
 
 test('back to menu before the first click or after the end asks nothing', () => {
@@ -216,19 +215,14 @@ test('back to menu before the first click or after the end asks nothing', () => 
 
 // ---------------------------------------------------------------- hand-offs
 
-test('game finished hands the summary off and routes to the results screen once there is one', () => {
-  const without = setup();
-  without.modes.start('a', 1);
-  without.fake.play.click();
-  without.fake.play.end('won');
-  assert.deepEqual(without.handOffs.at(-1), ['finished', { mode: 'fake', outcome: 'won', choice: 1, time: 0 }, 'a']);
-  assert.deepEqual(without.shell.routes, [], 'no results screen yet: the mode keeps its own end of game');
-  const withResults = setup({ results: true });
-  withResults.modes.start('a', 1);
-  withResults.fake.play.click();
-  withResults.fake.play.end('lost');
-  const summary = { mode: 'fake', outcome: 'lost', choice: 1, time: 0 };
-  assert.deepEqual(withResults.shell.routes, [['results', { data: { summary, mode: 'a' } }]]);
+test('game finished hands the summary off; the controller itself routes nowhere', () => {
+  const { modes, fake, shell, handOffs } = setup();
+  modes.start('a', 1);
+  fake.play.click();
+  fake.play.end('won');
+  assert.deepEqual(handOffs.at(-1), ['finished', { mode: 'fake', outcome: 'won', choice: 1, time: 0 }, 'a']);
+  assert.deepEqual(shell.cards, [], 'no pause card: the results flow attached to the hand-off shows the results');
+  assert.doesNotMatch(SRC, /router/, 'the results flow, not the controller, routes to the results screen');
 });
 
 test('the in-progress hand-off gets the summary at game started, at every pause and on pagehide', () => {
