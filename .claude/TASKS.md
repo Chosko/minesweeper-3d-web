@@ -306,7 +306,7 @@ Feature: game-summary
 
 ## 31. Update documentation for feature `game-summary`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/records.md, .claude/context/INDEX.md, .claude/context/testing.md
 Preconditions: 29, 30

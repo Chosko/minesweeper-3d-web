@@ -73,6 +73,21 @@ browser checks for everything that needs WebGL or the DOM.
   module's start-up selection (`js/platform/index.js`), that no other module
   imports a backend, and one Playwright test that a saved document survives
   a page reload (skipped when Playwright or chromium is unavailable).
+- `tests/records-board.test.mjs` — the board identity (`js/records/board.js`):
+  the six frozen fields and the impossible values that throw, the standard
+  boards, the key pinned for the standard and custom boards, the same fields
+  giving the same key and every field taking part, the labels (standard,
+  custom, a custom board matching a standard size, standard sizes only on
+  the square grid), and the module DOM-free, importing nothing and
+  documenting its key format.
+- `tests/records-summary.test.mjs` — the summary builder
+  (`js/records/summary.js`) over real engine games: won, lost and abandoned
+  records with every field, no summary before the first click, a stated
+  outcome agreeing with the engine, default id and end date, counted clicks,
+  3BV/s and efficiency, zero divisors as not available, the built record's
+  stats matching the exported functions, best eligibility, the invalid
+  inputs that throw, and the module DOM-free and independent of
+  `js/logic.js`.
 - `tests/gamepad.test.mjs` — controller helpers (`js/gamepad.js`), analog camera
   (`js/input.js::FlyCamera`), `js/controls.js::Controls`, and trigger sequences
   through `js/input.js::MouseActions`.
@@ -233,6 +248,11 @@ Tests consume, and so pin, these contracts:
   `js/platform/browser-backend.js::createBrowserBackend`, `DOC_PREFIX`,
   `ASIDE_PREFIX`; `js/platform/memory-backend.js::createMemoryBackend`;
   `js/platform/index.js` exports. Full list in [platform.md](platform.md).
+- `js/records/board.js::createBoardIdentity`, `boardKey` (its pinned
+  format), `boardLabel`, `standardBoard`, `STANDARD_BOARDS`,
+  `BOARD_KEY_FORMAT`; `js/records/summary.js::buildSummary` and the record's
+  shape, `countedClicks`, `bbbvPerSecond`, `efficiency`, `isBestEligible`,
+  `BEST_STATS`, `OUTCOMES`. Full list in [records.md](records.md).
 - `js/shell/router.js::createRouter`, `SHELL_SCREENS`;
   `js/shell/navigation.js::FOCUSABLE`, `topLayer`, `resolveFocus`,
   `isBackKey`, `backButtons`, `createHeldSuppressor`;
@@ -289,6 +309,9 @@ Browser hook `js/main.js::window.__ms` (full list in [app-shell.md](app-shell.md
   after a macrotask (or on `flush()` when held).
 - Engine tests build boards from row strings (`'*'` a mine) over
   `createSquareGrid`, and use `cellGraphFromLists` for non-square graphs.
+  The summary tests reuse the pattern (`playing(rows)`) to play real engine
+  games and feed their `summary()` / `counts()` to the builder, with a fixed
+  `endedAt` and `id`.
 - The randomized test runs 400 seeds × 40 actions and asserts per-cell
   equality via `assertSame` plus `minesLeft == mines - flagCount`; it requires
   `actions > 5000`, so do not make the action generator skip more often.
@@ -373,6 +396,9 @@ is enforced.
 - [../domain/features/board-generation.md](../domain/features/board-generation.md)
   — the determinism, failure, cancel and solver-correctness contracts the
   `generation-*` tests encode.
+- [../domain/features/game-summary.md](../domain/features/game-summary.md)
+  — the identity, key, summary, derivation and best-eligibility contracts
+  the `records-*` tests encode.
 - [../domain/features/design-tokens-and-themes.md](../domain/features/design-tokens-and-themes.md)
   — the contrast contract and applier/reader contracts `tokens.test.mjs` and
   `theme.test.mjs` encode.
@@ -396,6 +422,7 @@ is enforced.
 - [engine.md](engine.md) — `tests/engine-*.test.mjs` pin the cell-graph engine; the fidelity test checks it against the observation file.
 - [generation.md](generation.md) — `tests/generation-*.test.mjs` pin the seeded generator, solver, no-guess loop, worker and client.
 - [platform.md](platform.md) — `tests/platform-*.test.mjs` pin the storage interface, backends and start-up selection.
+- [records.md](records.md) — `tests/records-*.test.mjs` pin the board identity and key, the summary builder and its derived stats.
 - [input.md](input.md) — `tests/gamepad.test.mjs` covers gamepad helpers, `FlyCamera`, `Controls`, `MouseActions`.
 - [app-shell.md](app-shell.md) — owns `window.__ms`, the surface Playwright drives,
   the token sheet, theme applier and token reader the token/theme tests pin,
