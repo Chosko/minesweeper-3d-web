@@ -98,8 +98,11 @@ palette.
   the paint call per tile.
 - No external libraries.
 
-## Open questions
+## Minimum tile size
 
-- Smallest legible tile size: fix the number after testing an Expert board
-  on a 1366×768 window and on a Steam Deck–sized screen. Blocks the
-  minimum-size constant.
+Settled by measurement: the minimum tile size is 41 px (`MIN_TILE_SIZE`),
+the tile an Expert board (30 × 16) gets fitted below the overlay bar, with
+16 px between the window edges, the bar and the board, in a 1366×768 window
+and in a 1280×800 window standing in for the Steam Deck screen — 41 px in
+both. Screenshots at that size show every state and number legible in both
+themes.

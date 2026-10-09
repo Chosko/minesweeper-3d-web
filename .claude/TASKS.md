@@ -216,7 +216,7 @@ Feature: square-tile-skin
 
 ## 22. Tile painter, tile cache and minimum tile size
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/classic2d/tile-skin.js, tests/tile-skin.test.mjs, .claude/domain/features/square-tile-skin.md
 Preconditions: 2, 5, 21
