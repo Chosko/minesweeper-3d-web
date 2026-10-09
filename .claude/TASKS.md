@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 60
+Last task number: 64
 
 ---
 
@@ -601,5 +601,45 @@ Target: claude
 Files: .claude/context/mode3d.md, .claude/context/app-shell.md, .claude/context/input.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
 Preconditions: 56, 57, 58, 59
 Feature: 3d-play-flow
+
+---
+
+## 61. 3D board identity, board key and labels
+
+Status: [MISSING]
+Target: claude
+Files: js/records/board.js, tests/records-board-3d.test.mjs
+Preconditions: 29, 56
+Feature: 3d-game-records
+
+---
+
+## 62. 3D summaries and the 3D mode's summary hand-off
+
+Status: [MISSING]
+Target: claude
+Files: js/records/summary.js, js/shell/mode-3d.js, tests/records-summary-3d.test.mjs, .claude/domain/features/3d-game-records.md
+Preconditions: 7, 30, 52, 59, 61
+Feature: 3d-game-records
+
+---
+
+## 63. Per-mode counters, mode-filtered board listing and the records format step
+
+Status: [MISSING]
+Target: claude
+Files: js/records/model.js, js/records/store.js, tests/records-model-3d.test.mjs
+Preconditions: 43, 44, 61
+Feature: 3d-game-records
+
+---
+
+## 64. Update documentation for feature `3d-game-records`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/records.md, .claude/context/mode3d.md, .claude/context/testing.md, .claude/context/INDEX.md
+Preconditions: 61, 62, 63
+Feature: 3d-game-records
 
 ---

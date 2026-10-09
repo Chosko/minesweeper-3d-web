@@ -166,10 +166,10 @@ Tasks: none
 
 ## 3d-game-records — 3D board identity and 3D games in bests, history, win rate and streaks per mode
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/3d-game-records.md
 Source: product-design.md § Results and records (m2-3d-joins)
-Tasks: none
+Tasks: 61, 62, 63, 64
 
 ---
 
