@@ -299,7 +299,7 @@ Context:
 
 Done: 2026-10-09, commit `3dd3839` (4 files, +664/-6). `MIN_TILE_SIZE` is 41 px, measured for Expert fitting below a 64 px overlay bar with 16 px gaps in the full viewport (bar height taken from the gallery page) — the Classic 2D board view must use the same fit rule or re-measure it.
 
-## [ ] 23. Implement task 23 — Update documentation for feature `square-tile-skin`
+## [x] 23. Implement task 23 — Update documentation for feature `square-tile-skin`
 
 Depends on: 21, 22
 
@@ -308,6 +308,8 @@ Context: none
 ```prompt
 /task-implement 23 --review
 ```
+
+Done: 2026-10-09, commit `c9b5043` (5 files, +145/-7).
 
 ## [ ] 24. Implement task 24 — Screen router and shell navigation
 
@@ -410,6 +412,7 @@ Depends on: 22, 32
 
 Context:
 - 2026-10-09 (from step 22): `MIN_TILE_SIZE` (41 px) assumes the board fits the full viewport below the 64 px overlay bar with 16 px between window edges, bar and board — use that fit rule or re-measure. The skin exports `paintTile`, `paintTileWith(token, …)`, `TILE_STATES` (engine cell states plus `pressed`) and `createTileSkin({ token, onThemeChange, currentTheme, createCanvas, redraw })` → `{ drawTile(ctx, x, y, size, state, number, pixelRatio), cacheKey, invalidate, dispose }`.
+- 2026-10-09 (from step 23): `.claude/context/classic2d.md` exists and describes only the tile skin, saying the board renderer is still to be built — update it when the renderer lands.
 
 ```prompt
 /task-implement 33 --review
