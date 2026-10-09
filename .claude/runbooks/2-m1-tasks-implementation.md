@@ -218,7 +218,7 @@ Context: none
 
 Done: 2026-10-09, commit `ba52e5b` (4 files, +159/-4). Also corrected `testing.md`'s "no browser test file" claim: `tests/platform-browser.test.mjs` runs a Playwright reload check.
 
-## [ ] 17. Implement task 17 — Component kit: styles, markup patterns and focus contract
+## [x] 17. Implement task 17 — Component kit: styles, markup patterns and focus contract
 
 Depends on: 1, 2
 
@@ -229,11 +229,14 @@ Context:
 /task-implement 17 --review
 ```
 
+Done: 2026-10-09, commit `883e5d5` (7 files, +1209/-2). Kit classes carry a `ui-` prefix to avoid clashing with `style.css`'s `.btn`/`.stat`; `css/components.css` loads between `tokens.css` and `style.css`. `js/main.js` was left untouched — default-focus wiring via `padDefault` falls to task 19.
+
 ## [ ] 18. Implement task 18 — In-game overlay bar component
 
 Depends on: 17
 
-Context: none
+Context:
+- 2026-10-09 (from step 17): every kit class starts with `ui-` (e.g. `.ui-button--primary`, `.ui-menu__item`, `.ui-segmented__option`); `css/components.css` loads between `tokens.css` and `style.css`. Kit controls are native `<button>`/`<input>`, which controller navigation already picks up.
 
 ```prompt
 /task-implement 18 --review
@@ -243,7 +246,9 @@ Context: none
 
 Depends on: 17, 18
 
-Context: none
+Context:
+- 2026-10-09 (from step 17): every kit class starts with `ui-` (e.g. `.ui-button--primary`, `.ui-menu__item`, `.ui-segmented__option`); `css/components.css` loads between `tokens.css` and `style.css`. Kit controls are native `<button>`/`<input>`, which controller navigation already picks up.
+- 2026-10-09 (from step 17): `js/main.js` was not changed by the kit; a screen sets its default focus by giving a control an id and adding it to `padDefault`'s per-layer map — that wiring is this task's.
 
 ```prompt
 /task-implement 19 --review
@@ -253,7 +258,8 @@ Context: none
 
 Depends on: 17, 18, 19
 
-Context: none
+Context:
+- 2026-10-09 (from step 17): only the stylesheet-order line of `.claude/context/app-shell.md` was updated for `css/components.css`; `testing.md` and the rest of `app-shell.md` do not yet describe the kit's new files.
 
 ```prompt
 /task-implement 20 --review
