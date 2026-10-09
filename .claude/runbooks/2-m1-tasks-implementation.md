@@ -64,7 +64,7 @@ Context: none
 
 Done: 2026-10-09, commit `115752d` (4 files, +753/-1). Every action returns `{changed, ended, boardNeeded}`; `changed` is an `Int32Array` view of one reused buffer, so callers must read or copy it before the next action. A chord opening several mines explodes only the first in neighbour order.
 
-## [ ] 6. Implement task 6 — Board metrics, click counts and the game summary
+## [x] 6. Implement task 6 — Board metrics, click counts and the game summary
 
 Depends on: 5
 
@@ -74,6 +74,8 @@ Context:
 ```prompt
 /task-implement 6 --review --rounds 2
 ```
+
+Done: 2026-10-09, commit `0d737e1` (5 files, +522/-16). A flag toggle on a revealed cell is dropped from the action stream, so every action is one counted click. `createGame`/`createGameWithMines` take an optional `dimensions` (e.g. `{ width, height }`, default `{ cells: <count> }`) since the engine sees only a cell graph.
 
 ## [x] 7. Implement task 7 — Fidelity tests for the reference ruleset
 
@@ -94,6 +96,7 @@ Depends on: 5, 6
 
 Context:
 - 2026-10-09 (from step 5): each reference behaviour is a marker on the `minesweeper-online` profile, cited through `profile.fidelity` to its heading in `tests/fidelity/minesweeper-online.md`; the engine acts only on `flagRevealedCell`, the other markers are descriptive and left for this task to pin.
+- 2026-10-09 (from step 6): the wasted-click rule is recorded on the profile as `clickCounting` (fidelity heading "What counts as a click for efficiency") but built into the engine, not read at run time — pin it here. Wasted: a reveal that opens nothing; a flag removal; a chord with a wrong flag count, nothing to open, or on a closed cell. A reveal or chord that opens a mine is effective. An opening counts as 3BV-solved only when every zero cell in it is open.
 
 ```prompt
 /task-implement 7 --review --rounds 2
@@ -346,6 +349,7 @@ Depends on: 5, 6, 12, 15, 30
 
 Context:
 - 2026-10-09 (from step 5): rules-engine actions return `{changed, ended, boardNeeded}`; `changed` is an `Int32Array` view of one buffer reused by every action, so read or copy it before the next action. The first reveal returns `boardNeeded: c` and the board is handed over with `supplyBoard(c, mines)`.
+- 2026-10-09 (from step 6): `game.counts()` returns `{ bbbv, bbbvSolved, clicks }` at any time (`bbbv` is `null` until mines are placed); `game.summary()` is `null` until a win or loss. `createGame` takes an optional `dimensions` object (e.g. `{ width, height }`) for the summary.
 
 ```prompt
 /task-implement 32 --review --rounds 2
