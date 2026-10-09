@@ -712,7 +712,7 @@ Context:
 
 Done: 2026-10-09, commit `7461820` (9 files, +798/-17). The chart reuses `--color-accent` (3BV/s) and `--color-success` (efficiency); no new chart tokens. History entries don't store 3BV/s or efficiency, so each game's values are recomputed through `js/records/summary.js`.
 
-## [ ] 50. Implement task 50 — Update documentation for feature `records-screen`
+## [x] 50. Implement task 50 — Update documentation for feature `records-screen`
 
 Depends on: 48, 49
 
@@ -723,3 +723,5 @@ Context:
 ```prompt
 /task-implement 50 --review
 ```
+
+Done: 2026-10-09, commit `87dc43d` (6 files, +216/-32).
