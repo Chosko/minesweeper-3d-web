@@ -76,10 +76,10 @@ Tasks: none
 
 ## platform-storage — Versioned document storage behind the platform layer, browser implementation
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/platform-storage.md
 Source: product-design.md § Main menu and game shell (m1-classic-2d)
-Tasks: none
+Tasks: 14, 15, 16
 
 ---
 

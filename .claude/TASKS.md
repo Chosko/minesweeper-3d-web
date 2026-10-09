@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 13
+Last task number: 16
 
 ---
 
@@ -131,5 +131,35 @@ Target: claude
 Files: .claude/context/generation.md, .claude/context/INDEX.md, .claude/context/testing.md
 Preconditions: 9, 10, 11, 12
 Feature: board-generation
+
+---
+
+## 14. Storage interface and document versioning
+
+Status: [MISSING]
+Target: claude
+Files: js/platform/storage.js, js/platform/memory-backend.js, tests/platform-storage.test.mjs
+Preconditions: none
+Feature: platform-storage
+
+---
+
+## 15. Browser storage implementation and start-up selection
+
+Status: [MISSING]
+Target: claude
+Files: js/platform/browser-backend.js, js/platform/index.js, tests/platform-browser.test.mjs
+Preconditions: 14
+Feature: platform-storage
+
+---
+
+## 16. Update documentation for feature `platform-storage`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/platform.md, .claude/context/INDEX.md, .claude/context/testing.md
+Preconditions: 14, 15
+Feature: platform-storage
 
 ---
