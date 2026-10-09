@@ -46,7 +46,7 @@ Feature: cell-graph-rules-engine
 
 ## 5. Rules engine: game state, actions and the first-click hand-off
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/engine/rules.js, js/engine/profiles.js, tests/engine-rules.test.mjs
 Preconditions: 4
