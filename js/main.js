@@ -10,6 +10,8 @@ import { Controls } from './controls.js';
 import { GamepadReader, BTN, Repeat, stickCurve, padGlyphs, pickInDirection } from './gamepad.js';
 import { createRouter } from './shell/router.js';
 import { FOCUSABLE, topLayer, resolveFocus, isBackKey, backButtons, createHeldSuppressor } from './shell/navigation.js';
+import { createModeHost } from './shell/mode-host.js';
+import { create3DMode } from './shell/mode-3d.js';
 
 const canvas = document.getElementById('scene');
 
@@ -63,7 +65,7 @@ function onAction(type) {
   const v0 = g.version;
   if (type !== 'right') renderer.snapshotBeforeAction(); // lets the renderer show wrong flags + reveal wave on a loss
   if (type === 'left') {
-    if (!S.started) { S.started = true; S.time = 0; }
+    if (!S.started) { S.started = true; S.time = 0; mode3d.gameStarted(); }
     const r = g.leftClick(sel);
     if (r.exploded) boom();
     else if (r.revealed > 0) sfx.reveal(r.revealed);
@@ -93,6 +95,7 @@ function endGame(minesLeft) {
   S.endState = { state: g.state, time: S.time, minesLeft };
   if (g.state === 'won') sfx.win();
   ui.showBanner(g.state, S.time);
+  mode3d.gameEnded();
 }
 
 const mouse = new MouseActions(onAction, hasSelection);
@@ -150,10 +153,10 @@ function toggleSound() { ui.setSound(sfx.toggleMute()); }
 // ---------- screens ----------
 // Clicks made with the controller (A) are not user gestures for pointer lock: they enter lockless play.
 const ui = new UI({
-  onStart: (s) => { sfx.unlock(); startGame(s); },
+  onStart: (s) => { sfx.unlock(); MODES.start('3d', s); },
   onReadyClick: () => { sfx.unlock(); if (padGesture) padResume(); else input.requestLock(); },
-  onResume: () => { if (padGesture) { padResume(); return; } SHELL.go('ready'); input.requestLock(); },
-  onRestart: () => { startGame(S.settings); if (padGesture) padResume(); else input.requestLock(); },
+  onResume: () => MODES.resume({ source: padGesture ? 'pad' : 'pointer' }),
+  onRestart: () => MODES.restart({ source: padGesture ? 'pad' : 'pointer' }),
   onMainMenu: () => showMainMenu(),
   onPause: () => padPause(),
   onReadyBack: () => readyBack(),
@@ -170,17 +173,35 @@ if (typeof sfx.setVolume === 'function' && typeof sfx.getVolume === 'function') 
 // Every screen change goes through SHELL; each screen declares its default focus and its Back.
 const SHELL = createRouter({
   screens: {
-    menu: { defaultFocus: '[data-preset][data-last]', show: () => { leaveForMenu(); ui.showMenu(); } },
+    menu: { defaultFocus: '[data-preset][data-last]', show: () => { MODES.leave(); showMenuBackdrop(); ui.showMenu(); } },
     ready: { defaultFocus: '#ready-btn', show: (d = {}) => ui.showReady(S.settings, d.msg ?? ''), back: () => readyBack() },
     playing: { defaultFocus: null, show: (d = {}) => { setLockless(!!d.lockless); ui.showPlaying(); endIfDecided(); }, back: () => padPause() },
     paused: { defaultFocus: () => (S.game && S.game.state !== 'playing' ? '#p-restart' : '#p-resume'), show: (d = {}) => { stopPlayInput(); ui.showPause(pauseInfo(d.note)); }, back: ({ source }) => resumeFromPause(source) },
-    ctxlost: { defaultFocus: '#ctx-lost-btn', show: () => showContextLost(), back: () => {} },
+    ctxlost: { defaultFocus: '#ctx-lost-btn', show: () => showContextLost(), hide: () => hideContextLost(), back: () => showMainMenu() },
   },
   focus: (target, name) => focusScreen(target, name),
   onChange: () => { layerChanged(); needRender = true; },
 });
 // end of screen table
 Object.defineProperty(S, 'mode', { get: () => SHELL.current, enumerable: true });
+
+// ---------- mode host ----------
+// The shell reaches a game only through MODES; the 3D game is registered through its adapter.
+const MODES = createModeHost();
+let contextLost = false;
+const FLOW_3D = {
+  openBoardChoice: () => showMainMenu(), // the 3D presets and custom board are on the main menu
+  start: (settings) => startGame(settings),
+  pause: (note) => SHELL.go('paused', { data: { note } }),
+  resume: (source) => resumeGame(source),
+  restart: (source) => { startGame(S.settings); if (source === 'pad') padResume(); else input.requestLock(); }, // entered as resume enters play
+  leave: () => leaveGame(),
+  snapshot: () => ({ settings: S.settings, started: S.started, time: S.time, endState: S.endState }),
+  contextLost: () => contextLost,
+};
+// end of 3D flow
+const mode3d = MODES.register('3d', (report) => create3DMode(FLOW_3D, report));
+MODES.on('failed', ({ screen }) => SHELL.go(screen ?? 'menu'));
 
 /** Back from the keyboard (Esc) or the controller: the topmost layer first, then the router. */
 function shellBack(source) {
@@ -191,7 +212,13 @@ function shellBack(source) {
 function resumeFromPause(source) {
   if (source === 'pad') { padResume(); return; }
   if (performance.now() - input.unlockedAt < 500) return; // the Esc that released the pointer lock already meant Pause
+  MODES.resume({ source: 'key' });
+}
+/** The 3D resume: a controller enters lockless play; otherwise the click-to-play card, which takes pointer lock. */
+function resumeGame(source) {
+  if (source === 'pad') { sfx.unlock(); enterPlaying(true); return; }
   SHELL.go('ready');
+  if (source === 'pointer') input.requestLock();
 }
 
 /** Leave the ready screen: a fresh board goes back to the menu; a game in progress opens the pause menu. */
@@ -255,7 +282,7 @@ function endIfDecided() {
   if (g && g.state !== 'playing' && !S.endState) { endGame(g.minesLeft); afterEndGame(); }
 }
 
-function pause(note = '') { SHELL.go('paused', { data: { note } }); }
+function pause(note = '') { MODES.pause({ note }); }
 function stopPlayInput() {
   mouse.reset();
   controls.releasePad();
@@ -284,17 +311,20 @@ function makeDemo() {
 }
 
 function showMainMenu() { SHELL.go('menu'); }
-/** Release the game and put the decorative demo board behind the menu. */
-function leaveForMenu() {
+/** The 3D leave: drop the game and release pointer lock and lockless play. */
+function leaveGame() {
   input.exitLock();
   setLockless(false);
   S.game = null;
+  ui.hideBanner();
+}
+/** Put the decorative demo board behind the menu. */
+function showMenuBackdrop() {
   if (!S.demo) S.demo = makeDemo();
   renderer.setGame(S.demo);
   applyPixelRatio(S.demo.n);
   renderer.setSelected(-1);
   S.spacing = 1.25;
-  ui.hideBanner();
 }
 
 window.addEventListener('resize', () => { renderer.resize(); needRender = true; });
@@ -307,10 +337,12 @@ window.addEventListener('beforeunload', (e) => {
   }
 });
 
-// WebGL context loss: keep the page, offer a reload.
+// WebGL context loss: keep the page, offer a reload or the menu. In a 3D game it is the mode's failure.
 canvas.addEventListener('webglcontextlost', (e) => {
   e.preventDefault();
-  SHELL.go('ctxlost');
+  contextLost = true;
+  if (MODES.active === '3d') mode3d.contextLost();
+  else SHELL.go('ctxlost');
 });
 /** Dead canvas: leave every game mode (so lock changes/keys can't resume) and disable other overlays. */
 function showContextLost() {
@@ -324,7 +356,16 @@ function showContextLost() {
   }
   document.getElementById('ctx-lost').classList.remove('hidden');
 }
+/** Leaving the context-lost screen (back to the menu): the other overlays are live again. */
+function hideContextLost() {
+  document.getElementById('ctx-lost').classList.add('hidden');
+  for (const id of ['pause', 'ready', 'menu', 'controls-modal']) {
+    const el = document.getElementById(id);
+    if (el) el.inert = false;
+  }
+}
 document.getElementById('ctx-lost-btn').addEventListener('click', () => { reloading = true; location.reload(); });
+document.getElementById('ctx-lost-menu').addEventListener('click', () => showMainMenu());
 
 // ---------- game controller ----------
 const PAD_BOOM = { duration: 400, strongMagnitude: 1, weakMagnitude: 0.6 };
@@ -357,9 +398,10 @@ function padRumble(effect) {
     if (r && typeof r.catch === 'function') r.catch(() => {});
   } catch { /* rumble unsupported */ }
 }
-/** Enter play without pointer lock (controller): from the ready card or the pause menu. */
+/** Enter play without pointer lock (controller): from the ready card, or resume from the pause menu. */
 function padResume() {
-  if (S.mode !== 'ready' && S.mode !== 'paused') return;
+  if (S.mode === 'paused') { MODES.resume({ source: 'pad' }); return; }
+  if (S.mode !== 'ready') return;
   sfx.unlock();
   enterPlaying(true);
 }
@@ -642,7 +684,7 @@ window.__ms = {
   get frameStats() { return { ...stats }; },
   startCameraPos,
   THREE,
-  start(X, Y, Z, mines, minePositions) { startGame({ X, Y, Z, mines, minePositions }); },
+  start(X, Y, Z, mines, minePositions) { MODES.start('3d', { X, Y, Z, mines, minePositions }); },
   /** Enter playing mode without pointer lock (headless tests). */
   forcePlay() { enterPlaying(true); },
   get controls() { return controls; },
@@ -687,4 +729,6 @@ window.__ms = {
       cam: { x: cam.x, y: cam.y, z: cam.z, yaw: cam.yaw, pitch: cam.pitch }, stats: { ...renderer.stats }, fps: fps.value,
     };
   },
+  /** The mode host: start/pause/resume/restart/leave/summary and the mode reports (on). */
+  get modes() { return MODES; },
 };

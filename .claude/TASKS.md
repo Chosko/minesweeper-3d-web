@@ -246,7 +246,7 @@ Feature: game-shell
 
 ## 25. Mode host contract and the 3D adapter
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/shell/mode-host.js, js/shell/mode-3d.js, js/main.js, js/ui.js, tests/shell-mode-host.test.mjs
 Preconditions: 24
