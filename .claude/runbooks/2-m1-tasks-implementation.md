@@ -323,7 +323,7 @@ Context: none
 
 Done: 2026-10-09, commit `54b3c86` (9 files, +627/-72). The controller's Back button no longer toggles sound: it means Back in menus and pauses in play. Esc on the pause card goes to the "Click to play" card, since a key press cannot re-grab pointer lock. `S.mode` now reads the router's current screen.
 
-## [ ] 25. Implement task 25 — Mode host contract and the 3D adapter
+## [x] 25. Implement task 25 — Mode host contract and the 3D adapter
 
 Depends on: 24
 
@@ -334,6 +334,8 @@ Context:
 /task-implement 25 --review --rounds 2
 ```
 
+Done: 2026-10-09, commit `9655f20` (7 files, +762/-18). The host, not the mode, reports `game abandoned` (from the mode's `summary()`) before `restart()`, `leave()` or a replacing `start()`; a mode only reports `started`, `finished`, `canPause`, `failed`. The context-lost screen gained a "Back to menu" button.
+
 ## [ ] 26. Implement task 26 — Main menu entries and the last mode played
 
 Depends on: 15, 24, 25
@@ -341,6 +343,7 @@ Depends on: 15, 24, 25
 Context:
 - 2026-10-09 (from step 15): storage callers import `storage`, `register`, `load`, `save`, `available` from `js/platform/index.js` only — a test fails if any other file under `js/` imports a backend directly.
 - 2026-10-09 (from step 24): the 3D shell registers router screens `menu`, `ready`, `playing`, `paused`, `ctxlost`; `board-choice`, `results`, `records`, `settings` are only named in `SHELL_SCREENS` until their tasks build them. Screens declare their own default focus (see the catalogue comment in `css/components.css`); the controller Back button means Back in menus and Pause in play.
+- 2026-10-09 (from step 25): the mode host exposes `start`, `pause`, `resume`, `restart`, `leave`, `summary`, `on`, `active`, `state` (also as `window.__ms.modes` for Playwright). The host reports `game abandoned` itself from the mode's `summary()` before `restart()`, `leave()` or a replacing `start()`; a mode reports only `started`, `finished`, `canPause`, `failed`. `resume`/`restart` take `{ source: 'pointer' | 'key' | 'pad' }`. Until board choice exists, the 3D mode's "open board choice" goes to the main menu.
 
 ```prompt
 /task-implement 26 --review
@@ -353,6 +356,7 @@ Depends on: 25
 Context:
 - 2026-10-09 (from step 18): the controller's Start button presses the overlay's pause button during play (binding in `js/main.js`); the overlay bar reports the press through an `onPause` callback.
 - 2026-10-09 (from step 24): the 3D shell registers router screens `menu`, `ready`, `playing`, `paused`, `ctxlost`; `board-choice`, `results`, `records`, `settings` are only named in `SHELL_SCREENS` until their tasks build them. Screens declare their own default focus (see the catalogue comment in `css/components.css`); the controller Back button means Back in menus and Pause in play.
+- 2026-10-09 (from step 25): the mode host exposes `start`, `pause`, `resume`, `restart`, `leave`, `summary`, `on`, `active`, `state` (also as `window.__ms.modes` for Playwright). The host reports `game abandoned` itself from the mode's `summary()` before `restart()`, `leave()` or a replacing `start()`; a mode reports only `started`, `finished`, `canPause`, `failed`. `resume`/`restart` take `{ source: 'pointer' | 'key' | 'pad' }`. Until board choice exists, the 3D mode's "open board choice" goes to the main menu.
 
 ```prompt
 /task-implement 27 --review --rounds 2
@@ -364,6 +368,7 @@ Depends on: 24, 25, 26, 27
 
 Context:
 - 2026-10-09 (from step 24): `.claude/context/app-shell.md` and `.claude/context/input.md` still describe the old Esc handling and the `padSuppress`/`padDefault` wiring the router replaced.
+- 2026-10-09 (from step 25): `app-shell.md` and `testing.md` do not yet describe the mode host, the 3D adapter, `window.__ms.modes` or the context-lost "Back to menu" button (`#ctx-lost-menu`).
 
 ```prompt
 /task-implement 28 --review
@@ -449,7 +454,8 @@ Context:
 
 Depends on: 18, 26, 27, 32, 33
 
-Context: none
+Context:
+- 2026-10-09 (from step 25): the mode host exposes `start`, `pause`, `resume`, `restart`, `leave`, `summary`, `on`, `active`, `state` (also as `window.__ms.modes` for Playwright). The host reports `game abandoned` itself from the mode's `summary()` before `restart()`, `leave()` or a replacing `start()`; a mode reports only `started`, `finished`, `canPause`, `failed`. `resume`/`restart` take `{ source: 'pointer' | 'key' | 'pad' }`. Until board choice exists, the 3D mode's "open board choice" goes to the main menu.
 
 ```prompt
 /task-implement 36 --review
@@ -548,6 +554,7 @@ Depends on: 15, 27, 43
 Context:
 - 2026-10-09 (from step 14): documents are registered with `register(name, currentVersion, upgrades, { onIssue }?)` — `upgrades[v]` brings v to v+1 and the chain must be complete at registration; `onIssue({ name, kind })` reports `newer-version`, `corrupt`, `unreadable`, `save-failed`. `save` returns `{ ok: true }` or `{ ok: false, reason }` (`not-serializable`, `write-failed`, `newer-version`); `load`/`save` on an unregistered name throw.
 - 2026-10-09 (from step 15): storage callers import `storage`, `register`, `load`, `save`, `available` from `js/platform/index.js` only — a test fails if any other file under `js/` imports a backend directly.
+- 2026-10-09 (from step 25): the mode host exposes `start`, `pause`, `resume`, `restart`, `leave`, `summary`, `on`, `active`, `state` (also as `window.__ms.modes` for Playwright). The host reports `game abandoned` itself from the mode's `summary()` before `restart()`, `leave()` or a replacing `start()`; a mode reports only `started`, `finished`, `canPause`, `failed`. `resume`/`restart` take `{ source: 'pointer' | 'key' | 'pad' }`. Until board choice exists, the 3D mode's "open board choice" goes to the main menu.
 
 ```prompt
 /task-implement 44 --review --rounds 2
