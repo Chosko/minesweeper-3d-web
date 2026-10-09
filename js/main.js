@@ -16,6 +16,7 @@ import { createMenu, createLastMode } from './shell/menu.js';
 import { createPauseController } from './shell/pause.js';
 import { storage } from './platform/index.js';
 import { createSettingsStore } from './settings/store.js';
+import { createRecordsStore } from './records/store.js';
 import { applySettings, pixelRatioFor } from './settings/appliers.js';
 import { bindSettingControls } from './settings/page.js';
 import { createClassic2DMode } from './classic2d/mode.js';
@@ -278,6 +279,16 @@ const PAUSE = createPauseController({
 window.addEventListener('blur', () => PAUSE.pause('blur'));
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') PAUSE.pause('hidden'); });
 window.addEventListener('pagehide', () => PAUSE.pageHide());
+
+// ---------- personal records ----------
+// The records store loads before the first screen, settling a game the last launch closed on, and
+// keeps every abandoned game and the game in progress through the pause controller's hand-offs.
+const RECORDS = createRecordsStore({
+  storage,
+  onNotSaved: () => ui.toast('Records cannot be saved in this browser — this session\'s games will not be kept.', 4000),
+});
+const recordsLoaded = RECORDS.load();
+RECORDS.attach(PAUSE);
 
 // ---------- main menu ----------
 // Each entry is a route; the last mode played is kept through platform storage and marked on the menu.
@@ -780,7 +791,7 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-await settingsLoaded;
+await Promise.all([settingsLoaded, recordsLoaded]);
 showMainMenu();
 mode2d.loadChoice();
 const bootFocus = document.activeElement;
@@ -855,4 +866,6 @@ window.__ms = {
   get pauser() { return PAUSE; },
   /** The settings store: get/set/onChange. */
   get settings() { return SETTINGS; },
+  /** The records store: record/begin/checkpoint, the queries and onChange. */
+  get records() { return RECORDS; },
 };

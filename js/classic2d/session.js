@@ -25,7 +25,8 @@
 // first click and before the end emit `abandoned` { summary } first; before the first click nothing
 // is reported. Both cancel a pending generation. summary() is the game's summary so far: null
 // before the first click, outcome abandoned while playing, the finished summary after the end.
-// Summaries are built by js/records/summary.js's buildSummary.
+// Summaries are built by js/records/summary.js's buildSummary; every summary of one game carries
+// the same id, so the in-progress summary and the final one name the same game.
 
 import { createGame, PHASE } from '../engine/rules.js';
 import { getRuleProfile, REFERENCE_PROFILE } from '../engine/profiles.js';
@@ -111,6 +112,7 @@ export function createSession({
   let generatorVersion;
   let failure;
   let finalSummary;
+  let gameId; // the id every summary of this game carries, set when its board arrives
   let firstCell;
   let token = 0; // identifies the board request in flight; a stale answer is dropped
   let delayHandle = null;
@@ -131,6 +133,7 @@ export function createSession({
     generatorVersion = null;
     failure = null;
     finalSummary = null;
+    gameId = null;
     firstCell = -1;
   }
 
@@ -143,7 +146,7 @@ export function createSession({
   }
 
   function summaryOf(engine) {
-    return buildSummary({ engine, elapsedMs: timer.elapsedMs(), board: setup.identity, seed, generatorVersion });
+    return buildSummary({ engine, elapsedMs: timer.elapsedMs(), board: setup.identity, seed, generatorVersion, id: gameId });
   }
 
   function afterAction(result) {
@@ -182,6 +185,7 @@ export function createSession({
         if (!result || !result.ok) return fail(result?.reason ?? 'no board');
         seed = result.seed;
         generatorVersion = result.generatorVersion;
+        gameId = globalThis.crypto.randomUUID();
         const r = game.supplyBoard(firstCell, result.mines);
         state = SESSION_STATE.PLAYING;
         timer.start();

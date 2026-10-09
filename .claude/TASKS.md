@@ -436,7 +436,7 @@ Feature: personal-records
 
 ## 44. Records store: persistence, recovery and the abandoned-game hook
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/records/store.js, js/shell/pause.js, tests/records-store.test.mjs
 Preconditions: 15, 27, 43

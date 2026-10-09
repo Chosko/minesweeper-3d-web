@@ -511,6 +511,22 @@ test('session: restart after the first click emits game abandoned with its summa
   assert.equal(h.s.summary(), null);
 });
 
+test('session: every summary of one game carries the same id, and the next game a new one', async () => {
+  const h = session({ size: 'custom', custom: { width: 4, height: 1, mines: 1 }, noGuess: false });
+  await startWith(h, 0, [2]);
+  const first = h.s.summary();
+  assert.equal(typeof first.id, 'string');
+  h.clock.advance(300);
+  assert.equal(h.s.summary().id, first.id);
+  h.s.restart();
+  assert.equal(h.of('abandoned')[0].payload.summary.id, first.id);
+  await startWith(h, 0, [2]);
+  const second = h.s.summary();
+  assert.notEqual(second.id, first.id);
+  h.s.reveal(2);
+  assert.equal(h.of('finished')[0].payload.summary.id, second.id);
+});
+
 test('session: leave after the first click emits game abandoned; after leaving nothing is accepted', async () => {
   const h = session({ size: 'custom', custom: { width: 4, height: 1, mines: 1 }, noGuess: false });
   await startWith(h, 0, [2]);
