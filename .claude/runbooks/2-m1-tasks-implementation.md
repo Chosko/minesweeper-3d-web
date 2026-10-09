@@ -181,7 +181,7 @@ Context:
 
 Done: 2026-10-09, commit `8a02e54` (5 files, +219/-9). Also corrected `board-generation.md`'s Timing contract: only large custom no-guess boards may need the "generating" state.
 
-## [ ] 14. Implement task 14 — Storage interface and document versioning
+## [x] 14. Implement task 14 — Storage interface and document versioning
 
 Depends on: none
 
@@ -191,11 +191,14 @@ Context: none
 /task-implement 14 --review --rounds 2
 ```
 
+Done: 2026-10-09, commit `55a3412` (4 files, +576/-1). The backend contract deals in text (`read`/`write`/`keepAside`/`available`, sync or async, may throw); `storage.js` owns the `{ version, data }` JSON. Saving over a stored document newer than the game knows is refused; a backend read that throws is kept aside like a corrupt document.
+
 ## [ ] 15. Implement task 15 — Browser storage implementation and start-up selection
 
 Depends on: 14
 
-Context: none
+Context:
+- 2026-10-09 (from step 14): a backend implements `read(name)` → stored text or undefined, `write(name, text)`, `keepAside(name)` and `available()` (do writes persist); methods may be sync or async and may throw. `storage.js` does the `{ version, data }` JSON serialisation, so the backend stores plain text.
 
 ```prompt
 /task-implement 15 --review
@@ -452,7 +455,8 @@ Context: none
 
 Depends on: 15
 
-Context: none
+Context:
+- 2026-10-09 (from step 14): documents are registered with `register(name, currentVersion, upgrades, { onIssue }?)` — `upgrades[v]` brings v to v+1 and the chain must be complete at registration; `onIssue({ name, kind })` reports `newer-version`, `corrupt`, `unreadable`, `save-failed`. `save` returns `{ ok: true }` or `{ ok: false, reason }` (`not-serializable`, `write-failed`, `newer-version`); `load`/`save` on an unregistered name throw.
 
 ```prompt
 /task-implement 39 --review
@@ -503,7 +507,8 @@ Context: none
 
 Depends on: 15, 27, 43
 
-Context: none
+Context:
+- 2026-10-09 (from step 14): documents are registered with `register(name, currentVersion, upgrades, { onIssue }?)` — `upgrades[v]` brings v to v+1 and the chain must be complete at registration; `onIssue({ name, kind })` reports `newer-version`, `corrupt`, `unreadable`, `save-failed`. `save` returns `{ ok: true }` or `{ ok: false, reason }` (`not-serializable`, `write-failed`, `newer-version`); `load`/`save` on an unregistered name throw.
 
 ```prompt
 /task-implement 44 --review --rounds 2
