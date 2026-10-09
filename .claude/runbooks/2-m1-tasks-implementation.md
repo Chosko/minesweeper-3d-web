@@ -206,7 +206,7 @@ Context:
 
 Done: 2026-10-09, commit `4e53023` (4 files, +480/-1). Documents live under `ms3d:doc:<name>` and corrupt text is kept aside under `ms3d:aside:<name>`, clear of the old `ms3d.*` keys. Kept-aside text is not deleted by the owner's next save.
 
-## [ ] 16. Implement task 16 — Update documentation for feature `platform-storage`
+## [x] 16. Implement task 16 — Update documentation for feature `platform-storage`
 
 Depends on: 14, 15
 
@@ -215,6 +215,8 @@ Context: none
 ```prompt
 /task-implement 16 --review
 ```
+
+Done: 2026-10-09, commit `ba52e5b` (4 files, +159/-4). Also corrected `testing.md`'s "no browser test file" claim: `tests/platform-browser.test.mjs` runs a Playwright reload check.
 
 ## [ ] 17. Implement task 17 — Component kit: styles, markup patterns and focus contract
 
