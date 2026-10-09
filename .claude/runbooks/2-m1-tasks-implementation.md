@@ -259,7 +259,7 @@ Context:
 
 Done: 2026-10-09, commit `52d4788` (8 files, +540/-242). The results layout exists only in the gallery (`dev/components.html#g-results`) — `index.html` has no results screen yet. New kit pieces were added (`ui-field`, `ui-link`, `ui-menu__detail`, layout classes). The pause card's Settings section is now always open; it still uses the shell's `.controls.compact` key list.
 
-## [ ] 20. Implement task 20 — Update documentation for feature `screen-components`
+## [x] 20. Implement task 20 — Update documentation for feature `screen-components`
 
 Depends on: 17, 18, 19
 
@@ -271,6 +271,8 @@ Context:
 ```prompt
 /task-implement 20 --review
 ```
+
+Done: 2026-10-09, commit `b801916` (4 files, +161/-25).
 
 ## [ ] 21. Implement task 21 — Tile and number colour tokens
 
