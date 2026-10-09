@@ -100,7 +100,10 @@ loop.
 
 - **Steamworks binding** — steamworks.js lacks a leaderboard API: either
   extend it with leaderboard and attachment calls, or adopt another binding.
-  Decided by a spike before the Steam features are architected.
+  The Steam features are built against a capability adapter that hides the
+  binding ([steam-desktop-host](./features/steam-desktop-host.md)). The
+  binding spike, backlog task 88, decides it, records the chosen binding in
+  that feature document, and lands before the Steam leaderboard tasks.
 - **Mac and Linux builds, Steam Deck** — pending how cheap each turns out to
   be.
 - **Early Access** — open in [business-model.md](./business-model.md); it
