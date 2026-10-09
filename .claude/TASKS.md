@@ -106,7 +106,7 @@ Feature: board-generation
 
 ## 11. No-guess generation loop and attempt budget
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/generation/generate.js, tests/generation-noguess.test.mjs, .claude/domain/features/board-generation.md
 Preconditions: 9, 10

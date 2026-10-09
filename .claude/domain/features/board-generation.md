@@ -126,6 +126,13 @@ click lands.
 - What the player is offered when a no-guess request fails — retry, or a
   standard board — and whether high-density custom boards should refuse the
   no-guess switch up front. Blocks the failure message, not the generator.
-- The attempt budget and the time Expert no-guess generation actually
-  takes. Fixed by measurement once the solver exists; blocks the budget
-  constant and whether the "generating" state is ever needed in practice.
+
+## Attempt budget and timing
+
+Settled by measurement of Expert no-guess generation (30 × 16, 99 mines)
+under Node 22, over a fixed set of 1000 seeds: a board takes a median of 23
+candidates and at worst 433 (about 1 candidate in 36 clears), in a median of
+2 ms and at worst about 40 ms. The attempt budget is 2000 candidates, over
+four times the worst seen; 2000 failing Expert candidates take about 0.2 to
+0.3 s, which bounds a failure's wait. At these times the "generating" state
+is not needed for Expert.
