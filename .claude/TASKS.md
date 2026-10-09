@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 75
+Last task number: 80
 
 ---
 
@@ -751,5 +751,55 @@ Target: claude
 Files: .claude/context/platform.md, .claude/context/replay.md, .claude/context/app-shell.md, .claude/context/records.md, .claude/context/testing.md, .claude/context/INDEX.md
 Preconditions: 71, 72, 73, 74
 Feature: replay-library
+
+---
+
+## 76. Replay simulator and verifier
+
+Status: [MISSING]
+Target: claude
+Files: js/replay/simulator.js, js/replay/verify.js, tests/replay-simulator.test.mjs, .claude/domain/features/replay-playback.md
+Preconditions: 53, 65, 69
+Feature: replay-playback
+
+---
+
+## 77. Replay viewer screen with the 2D viewer, controls and overlay
+
+Status: [MISSING]
+Target: claude
+Files: js/replay/viewer.js, js/replay/clock.js, js/replay/viewer-2d.js, js/shell/router.js, index.html, css/components.css, tests/replay-viewer.test.mjs
+Preconditions: 24, 33, 72, 76
+Feature: replay-playback
+
+---
+
+## 78. 3D replay viewer
+
+Status: [MISSING]
+Target: claude
+Files: js/replay/viewer-3d.js, js/replay/viewer.js, js/render.js, js/main.js, tests/replay-viewer-3d.test.mjs
+Preconditions: 59, 77
+Feature: replay-playback
+
+---
+
+## 79. Watch replay on the results screen and from the library
+
+Status: [MISSING]
+Target: claude
+Files: js/results/view.js, js/results/flow.js, js/records/replay-list.js, tests/results-watch.test.mjs
+Preconditions: 73, 74, 77
+Feature: replay-playback
+
+---
+
+## 80. Update documentation for feature `replay-playback`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/replay.md, .claude/context/app-shell.md, .claude/context/rendering.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
+Preconditions: 76, 77, 78, 79
+Feature: replay-playback
 
 ---
