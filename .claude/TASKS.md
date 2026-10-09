@@ -226,7 +226,7 @@ Feature: square-tile-skin
 
 ## 23. Update documentation for feature `square-tile-skin`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/classic2d.md, .claude/context/INDEX.md, .claude/context/testing.md, .claude/context/rendering.md
 Preconditions: 21, 22

@@ -78,6 +78,12 @@ draws the sky gradient, the win confetti and the loss camera shake.
   XNA winding. Atlas rows are top-first and `flipY = false`, so v = 0 is the image top.
 - **Colour space.** Tiles and state use `NoColorSpace`; shaders output raw sRGB.
 - **Number colours** are darkened until ≥ 5:1 contrast against `REVEALED_DARK`.
+- **Not themed.** The 3D palette — the atlas tiles, number colours, sky and effects — is the same
+  under the light and the dark theme. It lives in `js/textures.js` and the shaders, never reads
+  `css/tokens.css` and never subscribes to theme changes; it is separate from the tile and number
+  tokens the Classic 2D tile skin draws with ([classic2d.md](classic2d.md)); neither feeds the
+  other. `tests/tokens.test.mjs` and `tests/theme.test.mjs` check
+  that the 3D scene reads no token and subscribes to no theme change.
 
 ## Domain dependencies
 
@@ -96,7 +102,9 @@ draws the sky gradient, the win confetti and the loss camera shake.
 - [input.md](input.md) — camera and modifier state feed `camera`, `setToggles`, `setSpacing`,
   `setSelected`; picking must use the same pitch and Space/hidden visibility rules.
 - [audio.md](audio.md) — no direct link; win/loss sounds fire alongside the waves from main.
-- [testing.md](testing.md) — no unit tests cover this area; verification is visual via Playwright.
+- [classic2d.md](classic2d.md) — the Classic 2D tile skin, a separate themed palette from tokens.
+- [testing.md](testing.md) — no unit tests cover the drawing, only static checks that the 3D scene stays
+  unthemed; verification is visual via Playwright.
 
 ## When to read the source
 

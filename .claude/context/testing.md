@@ -79,7 +79,10 @@ browser checks for everything that needs WebGL or the DOM.
 - `tests/tokens.test.mjs` — the token sheet (`css/tokens.css`, parsed as text):
   full token set on `:root`, semantic (non-hue) names, a dark value for every
   colour token, z-layer order, WCAG contrast per theme (4.5:1 body text, 3:1
-  large text and essential glyphs, on every surface), `css/style.css` declaring
+  large text and essential glyphs, on every surface), the tile tokens (every
+  tile state, the board frame and gap, numbers 1–8, opaque, in both themes;
+  eight distinct light number colours, each 4.5:1 on the revealed tile),
+  `css/style.css` declaring
   no variables and reading only declared tokens, `index.html` loading
   `css/tokens.css` before `css/style.css`, and the 3D scene not reading tokens.
 - `tests/theme.test.mjs` — the theme applier (`js/theme.js`, run in a `node:vm`
@@ -108,13 +111,30 @@ browser checks for everything that needs WebGL or the DOM.
   (opaque surface, timer pinned at `999`, pause through the button), and the
   menu, pause card and results layout (plus focus rings and an unchanged
   `__ms` key list); each skips when Playwright or chromium is unavailable.
+- `tests/tile-skin.test.mjs` — the Classic 2D tile skin
+  (`js/classic2d/tile-skin.js`) over a recording fake Canvas 2D context and
+  the token maps parsed from `css/tokens.css` per theme: the states are the
+  engine cell states plus `pressed`, each state's own tile tokens in both
+  themes, a number's digit in its own colour and no glyph for zero, the edge
+  that tells closed from revealed, plain drawing (no gradients, shadows or
+  patterns), the placeholder for an unknown state or number, `paintTile`
+  reading through the token reader, the cache (every state and number
+  pre-rendered once, a redraw only image copies, keyed by size, pixel ratio
+  and theme, dropped on a theme change before the renderer's redraw,
+  `dispose` unsubscribing), `MIN_TILE_SIZE` a positive integer, and the
+  module DOM-free at import with no literal colour and no three.js. One
+  Playwright test measures the Expert tile below the overlay bar at
+  1366×768 and 1280×800, checks it equals `MIN_TILE_SIZE`, and checks every
+  state and number shows its glyph at that size in both themes (skipped
+  when Playwright or chromium is unavailable).
 - `.claude/external/run-full-tests.sh` — `cd` to repo root, `exec node --test`.
 - `.claude/external/run-affected-tests.sh <test-file>...` — `node --test` on the
   given files; exits 2 with usage when called with no arguments.
 - Browser verification: ad-hoc Playwright scripts drive `window.__ms`,
   defined at the end of `js/main.js`; the suite's browser tests are the
-  reload test in `tests/platform-browser.test.mjs` and the contrast tests in
-  `tests/components.test.mjs`.
+  reload test in `tests/platform-browser.test.mjs`, the contrast tests in
+  `tests/components.test.mjs` and the minimum-tile-size test in
+  `tests/tile-skin.test.mjs`.
 
 No `package.json`, no dependencies: Node 22 built-in runner (`node:test`,
 `node:assert/strict`). `node --test` with no arguments discovers
@@ -164,6 +184,9 @@ Tests consume, and so pin, these contracts:
   `js/ui/components.js` exports, the HUD ids (`#hud-time`, `#hud-mines`,
   `#hud-pause`) and `UI.prototype.updateHud`. Full list in
   [app-shell.md](app-shell.md).
+- `js/classic2d/tile-skin.js::paintTile`, `paintTileWith`, `createTileSkin`
+  (`drawTile`, `invalidate`, `cacheKey`, `dispose`), `TILE_STATES`,
+  `MIN_TILE_SIZE`. Full list in [classic2d.md](classic2d.md).
 - `js/platform/storage.js::createStorage` (`register`, `load`, `save`,
   `available`, the issue kinds and save reasons);
   `js/platform/browser-backend.js::createBrowserBackend`, `DOC_PREFIX`,
@@ -243,6 +266,11 @@ Browser hook `js/main.js::window.__ms` (full list in [app-shell.md](app-shell.md
   in the page (`measureContrast`: every visible text run composited over its
   effective background, 4.5:1 or 3:1 for large text and accent labels) and
   write screenshots to a `mkdtemp` directory.
+- Tile-skin tests paint onto `fakeContext()`, a Proxy that records every
+  call with the fill and stroke style in force, and build skins with an
+  injected token function, theme source and canvas factory, so the painter
+  and cache run in Node; the browser test reuses the in-process server and
+  counts glyph-coloured pixels per tile.
 - Untested by Node beyond the static and stub checks above: `js/render.js`,
   `js/textures.js`, `js/picking.js`, `js/ui.js`, `js/main.js`, `js/audio.js`
   — verify in the browser. Computed styles and the rendered theme are
@@ -290,6 +318,9 @@ is enforced.
 - [../domain/features/screen-components.md](../domain/features/screen-components.md)
   — the kit, state, focus, overlay and contrast contracts
   `components.test.mjs` encodes.
+- [../domain/features/square-tile-skin.md](../domain/features/square-tile-skin.md)
+  — the drawing, cache, contrast and minimum-size contracts
+  `tile-skin.test.mjs` encodes.
 - [../domain/INDEX.md](../domain/INDEX.md) — feature documents whose acceptance
   criteria become tests.
 
@@ -303,7 +334,8 @@ is enforced.
 - [app-shell.md](app-shell.md) — owns `window.__ms`, the surface Playwright drives,
   the token sheet, theme applier and token reader the token/theme tests pin,
   and the component kit and kit-built screens `components.test.mjs` pins.
-- [rendering.md](rendering.md) — no unit tests; verified visually via Playwright screenshots.
+- [classic2d.md](classic2d.md) — `tests/tile-skin.test.mjs` pins the tile painter, cache and `MIN_TILE_SIZE`.
+- [rendering.md](rendering.md) — no unit tests of the drawing (only the static not-themed checks); verified visually via Playwright screenshots.
 - [audio.md](audio.md) — no unit tests; WebAudio only checkable in a browser.
 
 ## WHEN TO READ THE SOURCE
