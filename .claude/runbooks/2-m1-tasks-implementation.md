@@ -440,7 +440,7 @@ Context:
 
 Done: 2026-10-09, commit `752e280` (9 files, +1079/-14). Custom limits live as a `customLimits` setting on rule profile v1 (no rules-version bump); mine caps for unmeasured 37–48-cell boards are interpolated, so the cap falls as the board grows there. Custom boards accept 0 mines. The first reveal returns a Promise; the last board choice is saved but nothing loads it yet.
 
-## [ ] 33. Implement task 33 — Classic 2D Canvas board view
+## [x] 33. Implement task 33 — Classic 2D Canvas board view
 
 Depends on: 22, 32
 
@@ -453,11 +453,14 @@ Context:
 /task-implement 33 --review
 ```
 
+Done: 2026-10-09, commit `ea4b341` (6 files, +933/-20). The view fits whatever area its container gives it, so the mode screen must supply the viewport below the 64 px bar with 16 px margins (Expert = 41 px there). Drag-pan is Shift + primary drag (`PAN_MODIFIER = 'shiftKey'`). `mountBoardView`, `ensureVisible` and `setHidden` exist but nothing calls them yet.
+
 ## [ ] 34. Implement task 34 — Classic 2D pointer input state machine
 
 Depends on: 33
 
-Context: none
+Context:
+- 2026-10-09 (from step 33): drag-panning is Shift + primary-button drag (`PAN_MODIFIER = 'shiftKey'`) — pointer input must ignore shift-drag presses on a board that scrolls. `createBoardView` is DOM-free; browser wiring is `mountBoardView`.
 
 ```prompt
 /task-implement 34 --review --rounds 2
@@ -469,6 +472,7 @@ Depends on: 24, 33
 
 Context:
 - 2026-10-09 (from step 24): the controller Back button (`BTN.BACK`) means Back in menus and Pause in play (it no longer toggles sound); an Esc within 500 ms of pointer-lock release is ignored because that Esc already meant Pause.
+- 2026-10-09 (from step 33): the board view provides `ensureVisible(c)` for the cursor follow; nothing calls it yet.
 
 ```prompt
 /task-implement 35 --review
@@ -483,6 +487,7 @@ Context:
 - 2026-10-09 (from step 26): Classic 2D, Records and Settings menu entries go to a shared `coming-soon` router screen (`#coming-soon`, not in `SHELL_SCREENS`) and switch over by themselves once their mode is registered or the router has their screen. The 3D presets live on a `board-choice` router screen (`#board-choice`); the menu module is `js/shell/menu.js`, and `shell.lastMode` (v1, `{ mode }`) is saved on the host's `started`.
 - 2026-10-09 (from step 27): the pause controller `js/shell/pause.js` (`window.__ms.pauser`) owns every pause and offers `pause(source, {note})`, `resume`, `restart`, `toMenu`, `pageHide`, `inProgress` and `attach(name, fn)` for the hand-offs `finished`, `abandoned`, `inProgress` — records and results hook in through `attach`. A finished game routes to the router screen `results` with `{ summary, mode }` once that screen is registered. Restart/Main-menu confirmation is a panel in the pause card (`#pause-confirm`, `UI.showConfirm`/`closeConfirm`/`isConfirmOpen`).
 - 2026-10-09 (from step 32): the session's first reveal returns a Promise of its result (`null` if the board failed or the request was cancelled); every other action returns the engine's result at once. `createLastChoice` saves/loads the last board choice, but nothing calls `load()` when the mode opens — that wiring is task 36's. Choosing "Play a standard board" after a failed no-guess board turns no-guess off for the rest of the session.
+- 2026-10-09 (from step 33): the board view fits whatever area its container gives it — the mode screen must give it the window below the 64 px overlay bar with 16 px margins (where `MIN_TILE_SIZE` = 41 px was measured). `mountBoardView` (resize, DPR, wheel, shift-drag wiring) and `setHidden(bool)` for pause exist but nothing calls them yet.
 
 ```prompt
 /task-implement 36 --review
@@ -518,6 +523,7 @@ Depends on: 32, 33, 34, 35, 36, 37
 
 Context:
 - 2026-10-09 (from step 32): `classic2d.md` and its INDEX row still say `js/classic2d/` holds only the tile skin; `engine.md` (limits setting) and `generation.md` (session as the client's caller) were already updated by task 32.
+- 2026-10-09 (from step 33): `classic2d.md` and `testing.md` now describe the board view but not `session.js`/`board-setup.js` (task 32), and `testing.md` does not list `tests/classic2d-session.test.mjs`.
 
 ```prompt
 /task-implement 38 --review
