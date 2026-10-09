@@ -143,7 +143,7 @@ Context:
 ```
 Done: 2026-10-09, commit `624f3b5` (7 files, +348/-10). Two documents, with six 3D presets. Rule changes the draft did not spell out: a seed no longer reproduces an original board, a finished board ignores clicks, the timer starts on the first applied reveal, and flags placed before it are kept.
 
-## [ ] 6. Architect the replays slice for m2
+## [x] 6. Architect the replays slice for m2
 
 Depends on: none
 
@@ -174,6 +174,7 @@ Context:
 ```prompt
 /architect "Replays" m2-3d-joins
 ```
+Done: 2026-10-09, commit `233bb38` (8 files, +490/-15). The large-file replay store (IndexedDB) lives in replay-library, not in platform-storage. Decided by the agent, unasked: games abandoned after their first click are recorded too, and an auto-pinned personal-best replay stays pinned after the best is beaten.
 
 ## [ ] 7. Architect the results and records slice for m2
 
@@ -225,6 +226,7 @@ Context: none
     Recommendation: a. It gives enthusiasts goals they care about without padding, and m6 already brings the full set.
 - 2026-10-09 unparked with answer: Q1 — in 3D mode the first three "2D" presets (9×9×1, 16×16×1, 30×16×1) must be discarded, because they are redundant with Classic 2D; the remaining 6 presets (double layer and cube) get leaderboards, 12 3D boards; Q2a — a small set of about 15–20 milestone achievements. The architecture approval gate was not answered here: it is asked, with its draft, when the step runs.
 - 2026-10-09 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision; on each open call in the draft take the draft's recommendation. This supersedes any earlier bullet saying the gate is asked when the step runs. Park only on a real design question.
+- 2026-10-09 (from step 6): replay-recording specifies a replay verifier that re-runs a replay on the engine without drawing anything, for leaderboard replay checks to reuse.
 
 ```prompt
 /architect "Steam features" m3-on-steam
