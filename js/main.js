@@ -115,7 +115,6 @@ function endGame() {
   S.endState = { state: g.state, time: S.time, minesLeft: minesBefore };
   if (g.state === 'won') sfx.win();
   ui.showBanner(g.state, S.time);
-  mode3d.gameEnded();
 }
 
 const mouse = new MouseActions(onAction, hasSelection);
@@ -243,9 +242,12 @@ const FLOW_3D = {
   start: (settings) => startGame(settings),
   pause: (note) => showPauseCard(note),
   resume: (source) => resumeGame(source),
-  restart: (source) => { startGame(board3dChoice); if (source === 'pad') padResume(); else input.requestLock(); }, // entered as resume enters play
+  restart: (source) => { // entered as resume enters play
+    const play = startGame(board3dChoice);
+    if (source === 'pad') padResume(); else input.requestLock();
+    return play;
+  },
   leave: () => leaveGame(),
-  snapshot: () => ({ settings: S.settings, started: S.started, time: S.time, endState: S.endState }),
   contextLost: () => contextLost,
 };
 // end of 3D flow
@@ -393,7 +395,7 @@ function startGame(settings) {
   const play = createSession({ board: { ...s, noGuess, minePositions: settings.minePositions }, client: GEN_3D });
   play.on('generating', ({ shown }) => { if (S.play === play) { board3d.generating = shown; showStatus3D(); } });
   play.on('failed', (failure) => { if (S.play === play) { board3d.failure = failure; showStatus3D(); } });
-  play.on('started', () => { if (S.play === play) { S.started = true; mode3d.gameStarted(); } });
+  play.on('started', () => { if (S.play === play) S.started = true; });
   play.on('finished', () => { if (S.play === play) endGame(); });
   const g = play.view;
   S.settings = { X: s.X, Y: s.Y, Z: s.Z, mines: play.mines };
@@ -417,6 +419,7 @@ function startGame(settings) {
   ui.updateHud(0, g.minesLeft);
   SHELL.go('ready', { data: { msg: NO_MOUSE ? NO_MOUSE_MSG : '' } });
   needRender = true;
+  return play; // the adapter reports from it, after the listeners above
 }
 
 /** The 3D game's timer runs only while its board is in play; every screen change keeps it in step. */

@@ -1,52 +1,108 @@
-// The 3D mode behind the mode-host contract: an adapter over the 3D game in js/main.js, which plays
-// it through the 3D game session (js/mode3d/session.js). `flow` is the game's own start, pause,
-// pointer-lock and end-of-game flow, handed in by js/main.js:
+// The 3D mode behind the mode-host contract: an adapter over the 3D game session
+// (js/mode3d/session.js) that js/main.js builds and shows. `flow` is the game's own screens and
+// pointer-lock flow, handed in by js/main.js:
 //   openBoardChoice()  show the 3D presets and custom board
-//   start(choice)      build the board and show its click-to-play card
-//   pause(note)        show the pause card over the hidden board (the timer runs only while playing)
+//   start(choice)      open the board's session and show its click-to-play card; returns the session
+//   pause(note)        show the pause card over the hidden board
 //   resume(source)     'pad': lockless play; 'pointer': the click-to-play card re-acquires pointer
 //                      lock; 'key': the click-to-play card
-//   restart(source)    a new board with the same settings, entered as resume(source) enters play
+//   restart(source)    a new session of the same board, entered as resume(source) enters play;
+//                      returns the session
 //   leave()            drop the game, release pointer lock and lockless play
-//   snapshot()         { settings, started, time, endState } of the current game
 //   contextLost()      whether the WebGL context is gone
+//
+// The adapter listens to the session it holds and to no other. At the session's `started` — the
+// first reveal applied to the generated board — it reports started and canPause(true); at its
+// `finished` it reports canPause(false) and finished(summary), after the listeners js/main.js
+// added before handing the session over have played the end effect. The host reports abandoned
+// from summary() when a started, unfinished game is restarted or left; a game left before its
+// first applied reveal reports nothing. pause() pauses the session, so its timer stops and a
+// pending board request keeps running; the timer resumes with play. restart() and leave() leave
+// the session, cancelling a pending generation. A lost graphics context — at start() or through
+// contextLost() — is reported as failed, and leaves the session.
 
 /**
- * The 3D game's summary: the fields the game has — outcome, dimensions, mines and time.
- * Null before the first click.
+ * The 3D game's summary: the fields the 3D game reports — outcome, dimensions, mines and time.
+ * `board` is the session's { X, Y, Z, mines }; `outcome` 'won' or 'lost' once finished, otherwise
+ * the game so far is abandoned. Null before the first applied reveal.
  */
-export function summary3d({ settings, started, time, endState }) {
-  if (!settings || (!started && !endState)) return null;
+export function summary3d({ board, started, outcome, elapsedMs }) {
+  if (!board || !started) return null;
   return {
     mode: '3d',
-    outcome: endState ? endState.state : 'abandoned',
-    dimensions: { X: settings.X, Y: settings.Y, Z: settings.Z },
-    mines: settings.mines,
-    time: endState ? endState.time : time,
+    outcome: outcome ?? 'abandoned',
+    dimensions: { X: board.X, Y: board.Y, Z: board.Z },
+    mines: board.mines,
+    time: elapsedMs / 1000,
   };
 }
 
 /**
  * The 3D mode for `createModeHost().register('3d', (report) => create3DMode(flow, report))`.
- * js/main.js calls gameStarted(), gameEnded() and contextLost() from the game's own flow.
+ * js/main.js calls contextLost() when the WebGL context is lost during a 3D game.
  */
 export function create3DMode(flow, report) {
-  const summary = () => summary3d(flow.snapshot());
+  let game = null; // { session, started, outcome, offs }
+
+  function drop() {
+    if (!game) return;
+    const g = game;
+    game = null;
+    for (const off of g.offs) off();
+    g.session.leave();
+  }
+
+  function attach(session) {
+    drop();
+    const g = { session, started: false, outcome: null, offs: [] };
+    g.offs.push(
+      session.on('started', () => {
+        g.started = true;
+        report.started();
+        report.canPause(true);
+      }),
+      session.on('finished', ({ state }) => {
+        g.outcome = state;
+        report.canPause(false);
+        report.finished(summary());
+      }),
+    );
+    game = g;
+  }
+
+  function summary() {
+    if (!game) return null;
+    const { session, started, outcome } = game;
+    return summary3d({ board: session.board, started, outcome, elapsedMs: session.elapsedMs() });
+  }
+
   const failed = () => report.failed('graphics context lost');
+
   return {
     failureScreen: 'ctxlost',
     openBoardChoice() { flow.openBoardChoice(); },
     start(choice) {
+      drop();
       if (flow.contextLost()) { failed(); return; }
-      flow.start(choice);
+      attach(flow.start(choice));
     },
-    pause(opts = {}) { flow.pause(opts.note ?? ''); },
+    pause(opts = {}) {
+      game?.session.pause();
+      flow.pause(opts.note ?? '');
+    },
     resume(opts = {}) { flow.resume(opts.source ?? 'pointer'); },
-    restart(opts = {}) { flow.restart(opts.source ?? 'pointer'); },
-    leave() { flow.leave(); },
+    restart(opts = {}) {
+      drop();
+      attach(flow.restart(opts.source ?? 'pointer'));
+    },
+    leave() {
+      drop();
+      flow.leave();
+    },
     summary,
-    gameStarted() { report.started(); report.canPause(true); },
-    gameEnded() { report.canPause(false); report.finished(summary()); },
-    contextLost() { failed(); },
+    contextLost() {
+      game?.session.leave();
+      failed();
+    },
   };
 }

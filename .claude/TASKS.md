@@ -86,7 +86,7 @@ Feature: 3d-play-flow
 
 ## 59. 3D mode adapter on the session
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/shell/mode-3d.js, js/shell/mode-host.js, js/main.js, tests/shell-mode-3d.test.mjs
 Preconditions: 57
