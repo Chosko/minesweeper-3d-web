@@ -36,7 +36,7 @@ Feature: 3d-board-graph
 
 ## 54. 3D front-end on the shared engine and retirement of the 3D engine
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/main.js, js/render.js, js/picking.js, js/ui.js, js/shell/mode-3d.js, js/logic.js, tests/logic.test.mjs
 Preconditions: 53

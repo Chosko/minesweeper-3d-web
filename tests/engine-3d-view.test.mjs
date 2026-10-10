@@ -11,7 +11,6 @@ import { createBoxGrid } from '../js/engine/box-grid.js';
 import { PROFILE_3D } from '../js/engine/profiles.js';
 import { createGame, createGameWithMines, PHASE } from '../js/engine/rules.js';
 import { createStateView3D } from '../js/engine/state-view-3d.js';
-import { Game } from '../js/logic.js';
 
 const arr = (a) => Array.from(a);
 const sorted = (a) => arr(a).sort((x, y) => x - y);
@@ -103,7 +102,7 @@ test('chord opens the unflagged neighbours and the win reads as won', () => {
   assert.ok(sorted(view.consumeDirty()).includes(2));
 });
 
-test('a loss reads as the 3D engine presented it: every cell pressed, no flag, none unlinked, all dirty', () => {
+test('a loss reads as the 3D front-end presents it: every cell pressed, no flag, none unlinked, all dirty', () => {
   const { view, game } = setup(5, 1, 1, [2, 4]); // 0 (0), 1 (1), 2 (mine), 3 (2), 4 (mine)
   view.apply(game.reveal(0));
   view.apply(game.toggleFlag(3)); // a wrong flag
@@ -193,11 +192,10 @@ function retainedBytes(build) {
   return { kept, bytes: process.memoryUsage().arrayBuffers - before };
 }
 
-test('memory: a 100 x 100 x 100 game on the shared engine against the 3D engine', () => {
+test('memory: a 100 x 100 x 100 game on the shared engine', () => {
   const S = 100, n = S * S * S;
   const mines = [];
   for (let c = 1; c < n; c += 50) mines.push(c); // 20 000 mines, cell 0 safe
-  const old = retainedBytes(() => new Game(S, S, S, mines.length, Math.random, mines));
   const box = retainedBytes(() => createBoxGrid(S, S, S));
   const game = retainedBytes(() => createGameWithMines({ graph: box.kept.graph, profile: PROFILE_3D, mines }));
   const view = retainedBytes(() => {
@@ -206,11 +204,10 @@ test('memory: a 100 x 100 x 100 game on the shared engine against the 3D engine'
     v.number; // the view's number array is built
     return v;
   });
-  assert.ok(old.kept && view.kept);
-  // 3D engine (js/logic.js): 24 bytes a cell. Shared engine: box graph 0, game with the 3D
-  // profile and its counts 31 bytes a cell, state view 6 bytes a cell — 37 in all.
+  assert.ok(view.kept);
+  // Box graph 0, game with the 3D profile and its counts 31 bytes a cell, state view 6 bytes a
+  // cell — 37 in all.
   const near = (m, perCell, what) => assert.ok(Math.abs(m.bytes - perCell * n) < 0.5 * MB, `${what} retained ${m.bytes} bytes`);
-  near(old, 24, '3D engine');
   near(box, 0, 'box graph');
   near(game, 31, 'shared engine game');
   near(view, 6, '3D state view');

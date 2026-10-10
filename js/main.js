@@ -1,6 +1,5 @@
 // Entry point: wires game logic, renderer, input and UI together.
 import * as THREE from 'three';
-import { Game, createGameFromMinePositions } from './logic.js';
 import { BoardRenderer } from './render.js';
 import { FlyCamera, MouseActions, Input, SPACING_MIN, SPACING_MAX, SPACING_START } from './input.js';
 import { pickCell, pickCellBrute } from './picking.js';
@@ -11,7 +10,7 @@ import { GamepadReader, BTN, Repeat, stickCurve, padGlyphs, pickInDirection } fr
 import { createRouter } from './shell/router.js';
 import { FOCUSABLE, topLayer, resolveFocus, isBackKey, backButtons, createHeldSuppressor } from './shell/navigation.js';
 import { createModeHost } from './shell/mode-host.js';
-import { create3DMode } from './shell/mode-3d.js';
+import { create3DMode, create3DGame } from './shell/mode-3d.js';
 import { createMenu, createLastMode } from './shell/menu.js';
 import { createPauseController } from './shell/pause.js';
 import { storage } from './platform/index.js';
@@ -55,7 +54,8 @@ const NO_MOUSE = !LOCK_SUPPORTED || COARSE_ONLY;
 // 'playing' | 'classic-2d' | 'paused' | 'results' | 'ctxlost' (defined below).
 const S = {
   settings: null,
-  game: null,
+  game: null, // the 3D state view of the game shown (create3DGame's view), or null
+  play: null, // that game's actions (create3DGame)
   demo: null,
   spacing: SPACING_START,
   selected: -1,
@@ -70,7 +70,7 @@ const S = {
 // ---------- actions ----------
 function hasSelection() { return S.selected >= 0 && S.game && S.mode === 'playing'; }
 function onAction(type) {
-  const g = S.game;
+  const g = S.game, play = S.play;
   if (!g || S.selected < 0) return;
   const before = g.state;
   const minesBefore = g.minesLeft; // original froze the HUD text from the frame before the final action
@@ -79,15 +79,15 @@ function onAction(type) {
   if (type !== 'right') renderer.snapshotBeforeAction(); // lets the renderer show wrong flags + reveal wave on a loss
   if (type === 'left') {
     if (!S.started) { S.started = true; S.time = 0; mode3d.gameStarted(); }
-    const r = g.leftClick(sel);
+    const r = play.reveal(sel);
     if (r.exploded) boom();
     else if (r.revealed > 0) sfx.reveal(r.revealed);
   } else if (type === 'right') {
-    const r = g.rightClick(sel);
+    const r = play.toggleFlag(sel);
     if (r.flagged || r.unflagged) sfx.flag(r.flagged >= r.unflagged, r.flagged + r.unflagged);
     if (padActing && (r.flagged || r.unflagged)) padRumble(PAD_TICK);
   } else if (type === 'chord') {
-    const r = g.chord(sel);
+    const r = play.chord(sel);
     if (r.exploded) boom();
     else if (r.revealed > 0) sfx.chord(r.revealed);
   }
@@ -214,7 +214,7 @@ const SHELL = createRouter({
     settings: { defaultFocus: '#set-lookSensitivity', show: () => { MODES.leave(); showMenuBackdrop(); ui.showSettings(); } },
     'classic-2d-choice': { defaultFocus: '[data-size][data-last]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showBoardChoice2D(); showChoice2D(d.choice ?? LAST_CHOICE_2D.current); } },
     ready: { defaultFocus: '#ready-btn', show: (d = {}) => ui.showReady(S.settings, d.msg ?? ''), back: () => readyBack() },
-    playing: { defaultFocus: null, show: (d = {}) => { setLockless(!!d.lockless); ui.showPlaying(); endIfDecided(); }, back: ({ source }) => PAUSE.pause(source === 'pointer' ? 'button' : source) },
+    playing: { defaultFocus: null, show: (d = {}) => { setLockless(!!d.lockless); ui.showPlaying(); }, back: ({ source }) => PAUSE.pause(source === 'pointer' ? 'button' : source) },
     'classic-2d': { defaultFocus: null, show: () => ui.showClassic2D(), back: ({ source }) => PAUSE.pause(source === 'pointer' ? 'button' : source) },
     paused: { defaultFocus: () => (ui.isConfirmOpen() ? '#p-confirm-no' : gameOver() ? '#p-restart' : '#p-resume'), show: (d = {}) => { stopPlayInput(); setBoardHidden(true); ui.showPause(pauseInfo(d.note)); }, hide: () => setBoardHidden(false), back: ({ source }) => resumeFromPause(source) },
     results: { defaultFocus: '#r-again', show: (d) => RESULTS_VIEW.show(resultsContent(d ?? RESULTS.current)), hide: () => RESULTS_VIEW.hide(), back: () => RESULTS.toMenu() },
@@ -367,10 +367,10 @@ function applyPixelRatio(n = boardCells) {
 
 function startGame(settings) {
   const s = clampSettings(settings);
-  let g;
-  if (settings.minePositions) g = createGameFromMinePositions(s.X, s.Y, s.Z, settings.minePositions);
-  else g = new Game(s.X, s.Y, s.Z, s.mines);
-  S.settings = { X: s.X, Y: s.Y, Z: s.Z, mines: g.mines };
+  const play = create3DGame({ ...s, minePositions: settings.minePositions }); // a mine set is the debug hook's fixed board
+  const g = play.view;
+  S.settings = { X: s.X, Y: s.Y, Z: s.Z, mines: play.mines };
+  S.play = play;
   S.game = g;
   S.started = false;
   S.time = 0;
@@ -405,11 +405,6 @@ function setLockless(on) { S.lockless = on; document.body.classList.toggle('lock
 function enterPlaying(lockless = false) {
   SHELL.go('playing', { data: { lockless }, replace: SHELL.current === 'ready' });
 }
-/** A board full of mines is won before the first click: run the end flow once. */
-function endIfDecided() {
-  const g = S.game;
-  if (g && g.state !== 'playing' && !S.endState) { endGame(g.minesLeft); afterEndGame(); }
-}
 
 /** The pause card: pointer lock released, the card shown once. */
 function showPauseCard(note = '') {
@@ -439,18 +434,22 @@ function pauseInfo(note = '') {
 }
 
 function makeDemo() {
-  const g = new Game(7, 7, 7, 30);
+  const mines = new Set();
+  while (mines.size < 30) mines.add(Math.floor(Math.random() * 343));
+  const play = create3DGame({ X: 7, Y: 7, Z: 7, minePositions: [...mines] });
+  const g = play.view;
   // reveal a few safe cells on the outer shell and flag a few mines, purely decorative
   const shell = (idx) => {
     const [i, j, k] = g.coords(idx);
     return i === 0 || j === 0 || k === 0 || i === 6 || j === 6 || k === 6;
   };
-  for (let t = 0; t < 400 && g.unpressedCount > g.n * 0.55; t++) {
+  const closed = () => { let c = 0; for (let idx = 0; idx < g.n; idx++) c += !g.pressed[idx]; return c; };
+  for (let t = 0; t < 400 && closed() > g.n * 0.55; t++) {
     const idx = Math.floor(Math.random() * g.n);
-    if (shell(idx) && g.number[idx] > 0 && !g.pressed[idx]) g.leftClick(idx);
+    if (shell(idx) && g.number[idx] > 0 && !g.pressed[idx]) play.reveal(idx);
   }
   let flags = 0;
-  for (let idx = 0; idx < g.n && flags < 8; idx++) if (g.number[idx] === -1 && shell(idx) && Math.random() < 0.5) { g.rightClick(idx); flags++; }
+  for (let idx = 0; idx < g.n && flags < 8; idx++) if (g.number[idx] === -1 && shell(idx) && Math.random() < 0.5) { play.toggleFlag(idx); flags++; }
   return g;
 }
 
@@ -463,6 +462,7 @@ function leaveGame() {
   input.exitLock();
   setLockless(false);
   S.game = null;
+  S.play = null;
   ui.hideBanner();
 }
 /** Put the decorative demo board behind the menu. */

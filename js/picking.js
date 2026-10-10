@@ -17,7 +17,7 @@ function rayBox(ox, oy, oz, idx_, idy, idz, minx, miny, minz, maxx, maxy, maxz) 
 }
 
 /**
- * @param game logic Game
+ * @param game the 3D state view (js/engine/state-view-3d.js)
  * @param spacing grid spacing s
  * @param o ray origin {x,y,z}
  * @param d normalized ray direction {x,y,z}

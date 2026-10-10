@@ -82,10 +82,10 @@ The rules are classic Minesweeper with one more dimension:
   every neighbour is revealed or flagged and its flag count matches the number. This lets you see
   into the board. Removing a flag next to a hidden cell brings it back, and holding `Ctrl` shows
   every hidden cell.
-- Mines are placed when the game is created, so the first click is not guaranteed to be safe.
+- Mines are placed around your first click, so the first click is always safe.
 
 Presets: 2D classic (9×9×1, 16×16×1, 30×16×1), Double layer (8×8×2, 14×14×2, 25×16×2) and 3D
-(6×6×6, 8×8×8, 12×12×8). You can also set a custom size (each side 1–100, any mine count) or roll a
+(6×6×6, 8×8×8, 12×12×8). You can also set a custom size (each side 1–100, up to one fewer mine than cells) or roll a
 random board.
 
 ## 3D controls
@@ -172,12 +172,14 @@ browser supports it. Some browsers only start sound after a key press or a click
 
 ## Gameplay fidelity
 
-The gameplay is the same as the original: rules, mine placement, numbers, auto-hiding, the win
+The gameplay is the same as the original: rules, numbers, auto-hiding, the win
 condition, camera movement (including its quirks), picking, mouse-release actions and the view
 modes. [`docs/ORIGINAL_SPEC.md`](docs/ORIGINAL_SPEC.md) describes the original's behaviour, and the
 rules engine is tested against a direct port of the original logic. The port changes these things
 on purpose:
 
+- **Safe first click:** mines are placed around the first click, so a board holds at most one
+  fewer mine than cells, and a finished board takes no more clicks.
 - **Crash fixes:** the Random button is guarded for tiny boards, a chord with nothing aimed does
   nothing, and flood fill is iterative, so huge boards cannot overflow the stack.
 - **Re-centred grid:** the board stays centred when the spacing grows. The start camera moves to
@@ -215,8 +217,7 @@ node --test
 ```
 index.html              Page markup: menu, HUD, overlays, pause menu, import map for three.js
 css/style.css           Styles for menus, HUD and overlays
-js/main.js              Entry point: wires logic, renderer, input and UI; frame loop; game flow
-js/logic.js             Rules engine (no DOM): mines, numbers, reveal/flag/chord, auto-hide, win/loss
+js/main.js              Entry point: wires the game, renderer, input and UI; frame loop; game flow
 js/classic2d/           Classic 2D mode: board setup, game session and timer, Canvas board view, mouse,
                         keyboard and controller input, tile skin
 js/records/             Personal records: board identity, game summary, bests and history, Records screen
@@ -229,7 +230,6 @@ js/gamepad.js           Controller polling, stick curve, trigger hysteresis, but
 js/ui.js                Menus, HUD, pause menu, settings, best times (DOM only, no game rules)
 js/textures.js          Procedurally drawn tile textures (canvas 2D -> texture array)
 js/audio.js             Synthesized sound effects (Web Audio)
-tests/logic.test.mjs    Rules engine tests, including comparison with a naive port of the original
 tests/gamepad.test.mjs  Controller helpers, analog camera moves and trigger -> mouse-action sequences
 docs/ORIGINAL_SPEC.md   Description of the original game's behaviour
 vendor/three/           three.js r186, a single minified ES module, with its licence

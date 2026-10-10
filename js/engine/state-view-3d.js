@@ -2,8 +2,7 @@
 // game of the shared rules engine (js/engine/rules.js) on the box graph (js/engine/box-grid.js)
 // (no DOM).
 //
-// It mirrors what those modules read from js/logic.js's Game, under the same names, so they
-// change only where they obtain the game:
+// It serves what those modules read, under the names they read:
 //   X, Y, Z, n, idx(i, j, k), coords(c)  — the box and its index layout;
 //   number    Int8Array, -1 on a mine, else the neighbouring mine count (all 0 until the
 //             mines are placed);
@@ -16,7 +15,7 @@
 //   dirty     a copy of the cells changed since the last consumeDirty(); consumeDirty() returns
 //             that copy and clears the set. One consumer drains it: the renderer.
 //
-// A loss reads as the 3D engine presented it: every cell pressed, no cell flagged or unlinked,
+// A loss reads as the 3D front-end presents it: every cell pressed, no cell flagged or unlinked,
 // and every cell dirty. The engine's own arrays are left as the loss left them.
 //
 // The view learns of changes through apply(result): whoever drives the game passes it the

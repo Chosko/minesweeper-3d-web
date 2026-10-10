@@ -23,7 +23,7 @@ export function randomSettings() {
   const Y = randInt(1, Math.max(1, 29 - Z));
   const X = Math.min(DIM_MAX, randInt(1, Math.max(1, 29 - (Z - Y))));
   const n = X * Y * Z;
-  const mines = Math.min(n, randInt(1, Math.max(1, Math.floor(n / 5) - 1)));
+  const mines = Math.min(n - 1, randInt(1, Math.max(1, Math.floor(n / 5) - 1)));
   return { X, Y, Z, mines };
 }
 
@@ -31,7 +31,7 @@ export function clampSettings(s) {
   const dim = (v) => Math.min(DIM_MAX, Math.max(DIM_MIN, Math.round(Number.isFinite(v) ? v : 1)));
   const X = dim(s.X), Y = dim(s.Y), Z = dim(s.Z);
   const n = X * Y * Z;
-  const mines = Math.min(n, Math.max(1, Math.round(Number.isFinite(s.mines) ? s.mines : 1)));
+  const mines = Math.min(n - 1, Math.max(1, Math.round(Number.isFinite(s.mines) ? s.mines : 1))); // the first click is safe
   return { X, Y, Z, mines };
 }
 
@@ -217,12 +217,12 @@ export class UI {
     const raw = this._readCustom();
     const s = clampSettings(raw);
     const n = s.X * s.Y * s.Z;
-    this.el.cm.max = String(n);
+    this.el.cm.max = String(n - 1);
     let msg = `${n.toLocaleString('en-US')} cells · mine density ${((100 * s.mines) / n).toFixed(1)}%`;
     let warn = false;
     const bad = [raw.X, raw.Y, raw.Z].some((v) => !Number.isFinite(v) || v < DIM_MIN || v > DIM_MAX);
     if (bad) { msg = `Each dimension must be ${DIM_MIN}–${DIM_MAX}. ` + msg; warn = true; }
-    else if (!Number.isFinite(raw.mines) || raw.mines < 1 || raw.mines > n) { msg = `Mines must be 1–${n.toLocaleString('en-US')}. ` + msg; warn = true; }
+    else if (!Number.isFinite(raw.mines) || raw.mines < 1 || raw.mines > n - 1) { msg = `Mines must be 1–${(n - 1).toLocaleString('en-US')}. ` + msg; warn = true; }
     else if (n > 250000) { msg += ' · very large board, may run slowly'; warn = true; }
     this.el.cinfo.textContent = msg;
     this.el.cinfo.classList.toggle('ui-text--warning', warn);

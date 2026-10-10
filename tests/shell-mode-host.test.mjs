@@ -1,14 +1,21 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { join, dirname, normalize, extname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createModeHost, MODE_METHODS, MODE_EVENTS } from '../js/shell/mode-host.js';
-import { create3DMode, summary3d } from '../js/shell/mode-3d.js';
+import { create3DMode, summary3d, create3DGame } from '../js/shell/mode-3d.js';
+import { createBoxGrid } from '../js/engine/box-grid.js';
+import { PHASE } from '../js/engine/rules.js';
+import { placeMines } from '../js/generation/placer.js';
+import { createSeededSource } from '../js/generation/random.js';
+import { clampSettings } from '../js/ui.js';
+import { pickCell, pickCellBrute } from '../js/picking.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
+const MAIN_SRC = () => read('js/main.js');
 
 // A fake mode: records every contract call; `play` drives its game the way a board would.
 function fakeMode(extra = {}) {
@@ -334,9 +341,119 @@ test('mode host and 3D adapter are DOM-free', () => {
     const src = read(f).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
     assert.doesNotMatch(src, /\b(document|window|navigator)\b/, `${f} touches no browser global`);
     assert.doesNotMatch(src, /from ['"]three['"]/, `${f} does not import three.js`);
-    assert.doesNotMatch(src, /^import /m, `${f} imports nothing`);
+  }
+  assert.doesNotMatch(read('js/shell/mode-host.js'), /^import /m, 'the mode host imports nothing');
+  for (const [, from] of read('js/shell/mode-3d.js').matchAll(/^import .* from '([^']+)';$/gm)) {
+    assert.match(from, /^\.\.\/(engine|generation)\//, `the 3D adapter imports only the engine and generation (${from})`);
   }
 });
+
+// ---------------------------------------------------------------- the 3D game on the shared engine
+
+const seeded = (seed) => ({ randomSeed: () => seed });
+
+test('a 3D game from a mine count awaits the first click; the standard placer answers it from its seeded source', () => {
+  const d = create3DGame({ X: 4, Y: 3, Z: 2, mines: 6 }, seeded(1234));
+  const { view } = d;
+  assert.equal(view.phase, PHASE.AWAITING_FIRST_CLICK);
+  assert.equal(view.state, 'playing');
+  assert.equal(d.mines, 6);
+  assert.equal(d.seed, null, 'no board before the first click');
+  assert.equal(view.version, 0);
+  const first = view.idx(1, 1, 1);
+  const r = d.reveal(first);
+  assert.equal(d.seed, 1234);
+  const box = createBoxGrid(4, 3, 2);
+  const expected = placeMines({ graph: box.graph, mineCount: 6, firstClick: first, source: createSeededSource(1234) });
+  const mines = [];
+  for (let c = 0; c < view.n; c++) if (view.number[c] === -1) mines.push(c);
+  assert.deepEqual(mines, Array.from(expected), 'the mines are the standard placer\'s, around the first click');
+  assert.equal(view.pressed[first], 1, 'the first click is safe and revealed');
+  assert.notEqual(view.phase, PHASE.AWAITING_FIRST_CLICK);
+  assert.ok(view.version > 0, 'the action reached the state view');
+  assert.ok(view.dirty.includes(first));
+  assert.equal(r.exploded, false);
+  assert.ok(r.revealed >= 1);
+});
+
+test('a 3D game from a fixed mine set plays from the start: a mine loses', () => {
+  const d = create3DGame({ X: 5, Y: 1, Z: 1, mines: 99, minePositions: [4] });
+  assert.equal(d.view.phase, PHASE.PLAYING);
+  assert.equal(d.mines, 1, 'the mine count is the mine set\'s');
+  assert.deepEqual(Array.from(d.view.number), [0, 0, 0, 1, -1]);
+  const r = d.reveal(4);
+  assert.equal(r.exploded, true);
+  assert.equal(d.view.state, 'lost');
+  assert.equal(d.view.explodedIdx, 4);
+  assert.deepEqual(Array.from(d.view.pressed), [1, 1, 1, 1, 1], 'a loss reads as every cell pressed');
+});
+
+test('a 3D game from a fixed mine set: opening every safe cell wins, and the result counts what it opened', () => {
+  const d = create3DGame({ X: 5, Y: 1, Z: 1, minePositions: [4] });
+  const r = d.reveal(0);
+  assert.equal(r.exploded, false);
+  assert.equal(r.revealed, 4, 'the flood opened cells 0 to 3');
+  assert.equal(r.ended, true);
+  assert.equal(d.view.state, 'won');
+});
+
+test('a 3D game counts flags placed and removed, from a closed cell and from a revealed one', () => {
+  // 3 x 1 x 1: cells 0 (mine), 1 (1), 2 (1)
+  const d = create3DGame({ X: 3, Y: 1, Z: 1, minePositions: [0] });
+  assert.equal(d.reveal(1).revealed, 1);
+  assert.equal(d.reveal(1).revealed, 0, 'a second reveal opens nothing');
+  const v0 = d.view.version;
+  let r = d.toggleFlag(1); // a revealed cell: flags every closed neighbour
+  assert.deepEqual([r.flagged, r.unflagged], [2, 0]);
+  assert.ok(d.view.version > v0, 'the flag reached the state view');
+  r = d.toggleFlag(1); // every closed neighbour is flagged: unflags them all
+  assert.deepEqual([r.flagged, r.unflagged], [0, 2]);
+  r = d.toggleFlag(0); // a closed cell
+  assert.deepEqual([r.flagged, r.unflagged], [1, 0]);
+  assert.equal(d.view.flagged[0], 1);
+  r = d.chord(1);
+  assert.equal(r.exploded, false);
+  assert.equal(r.revealed, 1, 'the chord opened the far cell');
+  assert.equal(d.view.pressed[2], 1);
+  assert.equal(d.view.state, 'won');
+});
+
+test('picking over the 3D state view skips hidden cells', () => {
+  // 3 x 1 x 1: cells 0 (0), 1 (1), 2 (mine); a ray along +x through every cube, spacing 1
+  const d = create3DGame({ X: 3, Y: 1, Z: 1, minePositions: [2] });
+  const o = { x: -20, y: 0, z: 0 }, dir = { x: 1, y: 0, z: 0 };
+  const pick = (space = false) => [pickCell(d.view, 1, o, dir, space), pickCellBrute(d.view, 1, o, dir, space)];
+  assert.deepEqual(pick(), [0, 0]);
+  d.reveal(0);
+  assert.equal(d.view.unlinked[0], 1, 'the revealed zero is hidden');
+  assert.deepEqual(pick(), [1, 1], 'the hidden cell cannot be picked: the ray reaches the cell behind it');
+  assert.deepEqual(pick(true), [2, 2], 'with Space held, revealed cells are skipped too');
+});
+
+test('a 3D game rejects more mines than every cell but one', () => {
+  assert.throws(() => create3DGame({ X: 2, Y: 2, Z: 2, mines: 8 }), RangeError);
+  assert.doesNotThrow(() => create3DGame({ X: 2, Y: 2, Z: 2, mines: 7 }));
+});
+
+test('custom 3D boards accept at most cells minus one mines', () => {
+  assert.deepEqual(clampSettings({ X: 2, Y: 2, Z: 2, mines: 8 }), { X: 2, Y: 2, Z: 2, mines: 7 });
+  assert.deepEqual(clampSettings({ X: 2, Y: 2, Z: 2, mines: 7 }), { X: 2, Y: 2, Z: 2, mines: 7 });
+  assert.equal(clampSettings({ X: 10, Y: 10, Z: 10, mines: 5000 }).mines, 999);
+  assert.equal(clampSettings({ X: 3, Y: 3, Z: 3, mines: 0 }).mines, 1);
+  assert.match(read('js/ui.js'), /raw\.mines > n - 1/, 'the custom board\'s info line warns past cells minus one');
+});
+
+test('the 3D engine is retired: js/logic.js and its tests are gone and nothing imports them', () => {
+  assert.equal(existsSync(join(ROOT, 'js/logic.js')), false);
+  assert.equal(existsSync(join(ROOT, 'tests/logic.test.mjs')), false);
+  const files = (dir) => readdirSync(join(ROOT, dir), { recursive: true })
+    .filter((f) => /\.(m?js|html)$/.test(f)).map((f) => join(dir, String(f)));
+  for (const f of ['index.html', ...files('js'), ...files('tests'), ...files('dev')]) {
+    assert.doesNotMatch(read(f), /(import|from)\s*\(?\s*['"][^'"]*logic(\.js|\.test\.mjs)['"]/, `${f} imports no 3D engine`);
+  }
+  assert.match(MAIN_SRC(), /import \{[^}]*create3DGame[^}]*\} from '\.\/shell\/mode-3d\.js'/, 'js/main.js builds the 3D game on the shared engine');
+});
+
 
 test('the contract is documented in the mode-host module', () => {
   const head = read('js/shell/mode-host.js').split('export ')[0];
@@ -497,6 +614,69 @@ test('in a browser, the 3D game starts, pauses, resumes, restarts and leaves thr
     assert.equal(await ms(() => document.getElementById('ctx-lost').classList.contains('hidden')), true);
     await ms(() => globalThis.__ms.modes.start('3d', { X: 3, Y: 3, Z: 3, mines: 1 }));
     assert.equal(await mode(), 'ctxlost', 'a dead canvas cannot start a 3D game, and says so');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+test('in a browser, a 3D game on the shared engine plays a fixed mine set to a win and to a loss', async (t) => {
+  const playwright = await loadPlaywright();
+  if (!playwright) {
+    t.skip('Playwright is not installed');
+    return;
+  }
+  let browser;
+  try {
+    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  } catch (error) {
+    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
+    return;
+  }
+  const server = await serve();
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined);
+    const ms = (fn, arg) => page.evaluate(fn, arg);
+    const frames = (n) => ms((k) => new Promise((r) => { const f = () => (--k <= 0 ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); }), n);
+    const play = (board, cells) => ms(([b, cs]) => {
+      globalThis.__ms.start(b.X, b.Y, b.Z, b.mines, b.minePositions);
+      globalThis.__ms.forcePlay();
+      for (const [cell, kind] of cs) {
+        if (globalThis.__ms.aimAt(cell) !== cell) return `cell ${cell} could not be aimed at`;
+        globalThis.__ms.click(kind);
+      }
+      const g = globalThis.__ms.game;
+      return { state: g.state, pressed: Array.from(g.pressed), flagged: Array.from(g.flagged), minesLeft: g.minesLeft, version: g.version };
+    }, [board, cells]);
+
+    // a 3 x 3 x 1 board, the mine in a corner: flag it, then open the far corner's zero region
+    const BOARD = { X: 3, Y: 3, Z: 1, mines: 1, minePositions: [0] };
+    const won = await play(BOARD, [[0, 'right'], [8, 'left']]);
+    assert.equal(won.state, 'won', JSON.stringify(won));
+    assert.deepEqual(won.flagged, [1, 0, 0, 0, 0, 0, 0, 0, 0]);
+    assert.deepEqual(won.pressed, [0, 1, 1, 1, 1, 1, 1, 1, 1]);
+    assert.equal(won.minesLeft, 0);
+    await frames(3);
+    assert.equal(await ms(() => document.getElementById('hud-mines').textContent), '0', 'the HUD reads the state view');
+    assert.equal(await ms(() => globalThis.__ms.state.endState?.state), 'won');
+
+    const lost = await play(BOARD, [[4, 'left'], [0, 'left']]);
+    assert.equal(lost.state, 'lost', JSON.stringify(lost));
+    assert.deepEqual(lost.pressed, [1, 1, 1, 1, 1, 1, 1, 1, 1], 'a loss shows the whole board');
+    assert.equal(await ms(() => globalThis.__ms.game.explodedIdx), 0);
+    assert.equal(await ms(() => globalThis.__ms.state.endState?.state), 'lost');
+
+    // from a mine count, the first click is always safe
+    for (let i = 0; i < 5; i++) {
+      const first = await play({ X: 3, Y: 3, Z: 3, mines: 26 }, [[7, 'left']]);
+      assert.equal(first.state, 'won', 'with every other cell a mine, the safe first click wins');
+    }
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
