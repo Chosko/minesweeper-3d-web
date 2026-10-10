@@ -271,7 +271,7 @@ Context:
 
 Done: 2026-10-10, commit `bc0d94b` (15 files, +747/-29). Quanta changed while the format stayed at version 1 (2D 1/64 cell, 3D angles 1/8192 turn; intervals 50/100 ms kept), safe only because no replay is saved yet; no compression. The "recorded games" are simulated by a seeded player, not human-played (no human games exist).
 
-## [ ] 20. Implement task 70 — Update documentation for feature `replay-recording`
+## [x] 20. Implement task 70 — Update documentation for feature `replay-recording`
 
 Depends on: 15, 16, 17, 18, 19
 
@@ -283,6 +283,8 @@ Context:
 ```prompt
 /task-implement 70 --review
 ```
+
+Done: 2026-10-10, commit `1c518f9` (7 files, +401/-63). Step 17's note was wrong: `3d-play-flow.md` already named the new adapter contract.
 
 ## [ ] 21. Implement task 71 — Replay store: blob interface, in-memory and IndexedDB implementations
 
