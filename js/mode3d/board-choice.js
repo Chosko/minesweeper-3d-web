@@ -39,8 +39,9 @@
 export const DIM_MIN = 1;
 export const DIM_MAX = 100;
 
-/** The largest custom board, in cells, that offers no-guess. */
-export const NOGUESS_CELL_LIMIT = 1000;
+/** The largest custom board, in cells, that offers no-guess: 20 × 20 × 20, where the slowest no-guess
+ *  request at the presets' densities takes about half a second (dev/measure-noguess-3d.mjs). */
+export const NOGUESS_CELL_LIMIT = 8000;
 
 export const LAST_CHOICE_DOC = 'mode3d.lastChoice';
 export const LAST_CHOICE_VERSION = 1;

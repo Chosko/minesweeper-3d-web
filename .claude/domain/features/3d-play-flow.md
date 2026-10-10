@@ -104,9 +104,11 @@ behaviour.
 - **No-guess availability** — offered on every preset, and on a custom
   board whose cell count is at or below the no-guess limit. Above it the
   switch is shown disabled, with the reason ("No-guess is available up to
-  N cells") shown above it. The limit is one constant, set from measured
-  generation time so that a board at the limit answers within the
-  generator's attempt budget.
+  N cells") shown above it. The limit is one constant, 8,000 cells
+  (20 × 20 × 20), set by wait: `dev/measure-noguess-3d.mjs` times no-guess
+  requests on box boards of growing size at the presets' densities, which
+  meet the attempt budget at every size, and the slowest request at the
+  limit takes about half a second.
 - **No-guess failure** — a no-guess request that exhausts its budget is
   handled exactly as Classic 2D handles it, by the rule `board-generation`
   records.
@@ -147,9 +149,3 @@ behaviour.
 - `settings` — look sensitivity, invert Y, audio and render resolution,
   read as today.
 - No external libraries.
-
-## Open questions
-
-- The no-guess cell-count limit. Set by measuring no-guess generation time
-  on 3D boards once the solver exists; blocks the constant and the disabled
-  switch's message, not the flow.
