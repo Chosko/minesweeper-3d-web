@@ -6,7 +6,7 @@ Last task number: 114
 
 ## 51. Box graph provider
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/engine/box-grid.js, tests/engine-box-grid.test.mjs
 Preconditions: none

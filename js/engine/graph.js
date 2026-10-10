@@ -10,6 +10,10 @@
 // are private copies, so the graph can be shared read-only by the engine, the generator and
 // the renderer without anyone mutating it. Hot loops use degree(i) / neighbour(i, k) or
 // forEachNeighbour; neighbours(i) allocates a copy and is for callers, not hot loops.
+//
+// The cell-graph interface is the frozen object's members — count, edgeCount, maxDegree,
+// degree, neighbour, neighbours, forEachNeighbour — not this storage: a provider may serve
+// them computed instead (js/engine/box-grid.js enumerates its neighbours from fixed offsets).
 
 function checkCount(count) {
   if (!Number.isInteger(count) || count < 0) throw new RangeError('cell count must be an integer >= 0');
