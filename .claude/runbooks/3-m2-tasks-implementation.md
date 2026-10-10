@@ -160,7 +160,7 @@ Context:
 
 Done: 2026-10-10, commit `8deb5ef` (4 files, +294/-28). The 3D key is `3d:<w>x<h>x<d>:<mines>:<guess|no-guess>` (identity with mode `3d`, no grid); `BOARD_KEY_FORMAT` stays 1.
 
-## [ ] 12. Implement task 62 — 3D summaries and the 3D mode's summary hand-off
+## [x] 12. Implement task 62 — 3D summaries and the 3D mode's summary hand-off
 
 Depends on: 2, 9, 11
 
@@ -171,6 +171,8 @@ Context:
 /task-implement 62 --review
 ```
 
+Done: 2026-10-10, commit `c6ebe6c` (18 files, +404/-104). Finished 3D games are now records and reach the shared results screen immediately (before task 81): pointer lock stays on, "Play again" after Records → Back does nothing, and 3D boards can show in the 2D board list; a fixed debug board has no summary.
+
 ## [ ] 13. Implement task 63 — Per-mode counters, mode-filtered board listing and the records format step
 
 Depends on: 11
@@ -178,6 +180,7 @@ Depends on: 11
 Context:
 - 2026-10-10 (from runbook m1-tasks-implementation, step 43): the m1 records model already keeps overall counters per mode (`records.overall[mode]`, `overall(mode = 'classic-2d')`, `overallWinRate(mode)` in `js/records/model.js`); only `classic-2d` exists so far.
 - 2026-10-10 (from step 11): `js/records/board.js` gained `MODE_3D`, `PRESETS_3D` (a tested copy of the presets in `js/mode3d/board-choice.js`) and `preset3D()`; the 3D key is `3d:<w>x<h>x<d>:<mines>:<guess|no-guess>`; `BOARD_KEY_FORMAT` stays 1 and `standardBoard()` still returns null for a 3D board — bumping the records format and 3D board ordering are this task's.
+- 2026-10-10 (from step 12): finished and abandoned 3D games are already saved into the records file under 3D overall counters, before this task's format step — the step must expect 3D overall counters already present; 3D boards can also appear in the Records screen's 2D board list until per-mode listing lands.
 
 ```prompt
 /task-implement 63 --review --rounds 2
@@ -358,7 +361,8 @@ Context: none
 
 Depends on: 12, 18
 
-Context: none
+Context:
+- 2026-10-10 (from step 12): finished 3D games already reach the shared results screen with no end delay; until this task: pointer lock stays on over it, and "Play again" does nothing after Records → Back. The debug hook's fixed 3D board has no seed or generator version, so its summary is null and it never reaches records or the results screen — a Playwright test that wins a fixed 3D board and expects the results screen must handle this.
 
 ```prompt
 /task-implement 81 --review
@@ -368,7 +372,8 @@ Context: none
 
 Depends on: 11, 13, 24
 
-Context: none
+Context:
+- 2026-10-10 (from step 12): 3D boards can show up in the Records screen's 2D board list until the per-mode listing (task 63) and this switch land.
 
 ```prompt
 /task-implement 82 --review
