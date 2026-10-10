@@ -176,7 +176,7 @@ Feature: replay-recording
 
 ## 68. 3D capture: recorder and camera sampler
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/replay/sampler-3d.js, js/mode3d/session.js, js/shell/mode-3d.js, tests/replay-3d.test.mjs
 Preconditions: 62, 66, 67

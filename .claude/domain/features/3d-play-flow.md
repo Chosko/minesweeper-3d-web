@@ -117,10 +117,12 @@ behaviour.
   sets. A left release on a flagged cell before that, and any chord, does
   not start it. Flags may be placed before the first reveal and are kept.
 - **Mode contract** — `game started` at the first applied reveal; `game
-  finished(summary)` at a win or loss, once the end effect has played, so
-  the results screen follows it as the m2 Results and records slice
-  decides; `game abandoned(summary)` when a started, unfinished game is
-  restarted or left. A game left before the first reveal reports nothing.
+  finished(summary, replay)` at a win or loss, once the end effect has
+  played, so the results screen follows it as the m2 Results and records
+  slice decides; `game abandoned(summary, replay)` when a started,
+  unfinished game is restarted or left, the replay being the game's sealed
+  recording from `replay-recording`. A game left before the first reveal
+  reports nothing.
   `summary()` returns a started, unfinished game's summary so far, outcome
   abandoned, so a game ended by closing the window counts as `game-shell`
   describes; before the first reveal there is none.

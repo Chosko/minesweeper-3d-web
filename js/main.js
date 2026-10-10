@@ -12,6 +12,7 @@ import { FOCUSABLE, topLayer, resolveFocus, isBackKey, backButtons, createHeldSu
 import { createModeHost } from './shell/mode-host.js';
 import { create3DMode } from './shell/mode-3d.js';
 import { createSession, create3DGame } from './mode3d/session.js';
+import { createSampler3D } from './replay/sampler-3d.js';
 import { createGenerationClient } from './generation/client.js';
 import { createMenu, createLastMode, createLastBoardChoice } from './shell/menu.js';
 import { createPauseController } from './shell/pause.js';
@@ -249,6 +250,7 @@ const FLOW_3D = {
   },
   leave: () => leaveGame(),
   contextLost: () => contextLost,
+  sampler: (session) => createSampler3D({ session, camera: cam, controls, spacing: () => S.spacing }),
 };
 // end of 3D flow
 const mode3d = MODES.register('3d', (report) => create3DMode(FLOW_3D, report));
@@ -882,6 +884,7 @@ function frame(now) {
     renderer.setToggles(shift, space, ctrl);
     ui.setModes(shift, space, ctrl);
   }
+  if (MODES.active === '3d') mode3d.tick(); // the replay's camera sampler
   renderer.setSpacing(S.spacing);
   const synced = renderer.sync();
 

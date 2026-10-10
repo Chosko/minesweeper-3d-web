@@ -35,12 +35,28 @@
 // pause() stops the timer; during generation the request keeps running and the timer stays
 // unstarted. restart() opens a fresh closed box and leave() ends the session; both cancel a
 // pending generation, and a late answer is dropped.
+//
+// Recording (js/replay/recorder.js): each closed box opens a recorder, which restart() discards and
+// leave() stops, so a game left by the 3D mode (a lost graphics context) still seals what it
+// recorded until then; it goes with the session. Every action the session hands to the engine while the game accepts actions is
+// recorded at that point, at the timer's elapsed time: when the board arrives, the flags placed
+// before the first reveal, in the order they were placed, then the first reveal, all at 0 (a
+// reveal of a flagged cell or a chord before it changes nothing and is not recorded); the rest
+// while playing. The board's mines, seed and generator version are added when it arrives, and a
+// board played standard after a failure starts a new recording of the standard board. `recording`
+// is true while the game is started, unpaused and unfinished, and only then do recordSample(values)
+// and recordView(mode) — the movement sampler's feed (js/replay/sampler-3d.js) — record, at the
+// timer's elapsed time. replay(summary) seals the recording with the game's summary (the 3D mode
+// builds it): { blob, listing }, or null without a summary, before the board arrived or once the
+// recorder failed; sealing again returns the same replay.
 
 import { createBoxGrid } from '../engine/box-grid.js';
-import { PROFILE_3D } from '../engine/profiles.js';
+import { PROFILE_3D, getRuleProfile } from '../engine/profiles.js';
 import { createGame, createGameWithMines, PHASE } from '../engine/rules.js';
 import { createStateView3D } from '../engine/state-view-3d.js';
 import { createTimer, FAILURE_OFFERS, GENERATING_DELAY_MS } from '../classic2d/session.js';
+import { MODE_3D } from '../records/board.js';
+import { startRecording } from '../replay/recorder.js';
 
 export { FAILURE_OFFERS, GENERATING_DELAY_MS };
 
@@ -61,6 +77,9 @@ const defaultClock = {
   setTimeout: (fn, ms) => setTimeout(fn, ms),
   clearTimeout: (h) => clearTimeout(h),
 };
+
+// The session's action names → the replay's action kinds.
+const RECORDED_KIND = Object.freeze({ reveal: 'reveal', toggleFlag: 'flag', chord: 'chord' });
 
 const defaultSeed = () => globalThis.crypto.getRandomValues(new Uint32Array(1))[0];
 
@@ -106,6 +125,8 @@ export function create3DGame({ X, Y, Z, mines, minePositions }) {
     chord(c) { return apply(game.chord(c)); },
     counts: () => game.counts(),
     engineSummary: () => game.summary(),
+    /** The engine's per-cell state arrays (revealed, flagged, hidden, …), for sealing a replay. */
+    engineState: game.state,
   };
 }
 
@@ -139,6 +160,19 @@ export function createSession({
   let token = 0; // identifies the board request in flight; a stale answer is dropped
   let delayHandle = null;
   let generatingShown = false;
+  let recorder = null; // this box's recording
+
+  function record() {
+    const profile = getRuleProfile(PROFILE_3D);
+    recorder = startRecording({
+      mode: MODE_3D,
+      graph: { kind: 'box', x: X, y: Y, z: Z },
+      board: { mode: MODE_3D, width: X, height: Y, depth: Z, mines: board.mines, noGuess: board.noGuess },
+      profile: { id: profile.id, version: profile.version },
+    });
+  }
+
+  const recording = () => state === SESSION_STATE.PLAYING && !paused && recorder !== null;
 
   // The view: the closed box with the flags placed before the first reveal, then the board's own
   // view. One object, so its readers never change; version and dirty span the hand-over.
@@ -177,6 +211,7 @@ export function createSession({
     generatorVersion = null;
     failure = null;
     firstCell = -1;
+    record();
   }
 
   function checkCell(c) {
@@ -204,8 +239,10 @@ export function createSession({
   function begin(mines) {
     const before = base + inner().version;
     play = create3DGame({ X, Y, Z, minePositions: mines });
-    for (const c of preOrder) { play.toggleFlag(c); markOwn(c); }
+    recorder?.boardArrived({ mines, seed, generatorVersion });
+    for (const c of preOrder) { recorder?.action('flag', c, 0); play.toggleFlag(c); markOwn(c); }
     base = before + 1;
+    recorder?.action('reveal', firstCell, 0);
     const r = play.reveal(firstCell);
     state = SESSION_STATE.PLAYING;
     timer.start();
@@ -281,6 +318,7 @@ export function createSession({
       return fixed ? begin(fixed) : requestBoard();
     }
     if (state !== SESSION_STATE.PLAYING) return null;
+    recorder?.action(RECORDED_KIND[kind], c, timer.elapsedMs());
     return afterAction(play[kind](c));
   }
 
@@ -326,6 +364,13 @@ export function createSession({
     seconds: () => timer.seconds(),
     counts: () => (play ? play.counts() : null),
     engineSummary: () => (play ? play.engineSummary() : null),
+    get recording() { return recording(); },
+    recordSample(values) { if (recording()) recorder.sample(values, timer.elapsedMs()); },
+    recordView(mode) { if (recording()) recorder.view(mode, timer.elapsedMs()); },
+    replay(summary) {
+      if (!summary || !play || !recorder) return null;
+      return recorder.seal(summary, play.engineState);
+    },
 
     on(type, fn) {
       if (!listeners[type]) throw new Error(`unknown session event "${type}"`);
@@ -346,6 +391,7 @@ export function createSession({
     playStandard() {
       if (state !== SESSION_STATE.FAILED) return null;
       board = Object.freeze({ ...board, noGuess: false });
+      record();
       return requestBoard();
     },
 
