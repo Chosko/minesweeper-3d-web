@@ -188,7 +188,7 @@ Context:
 
 Done: 2026-10-10, commit `4335f35` (6 files, +322/-38). Records format is version 2; the upgrade from 1 keeps 3D counters already present rather than zeroing them; the board list takes a mode defaulting to Classic 2D, so 3D boards no longer show in the 2D list.
 
-## [ ] 14. Implement task 64 — Update documentation for feature `3d-game-records`
+## [x] 14. Implement task 64 — Update documentation for feature `3d-game-records`
 
 Depends on: 11, 12, 13
 
@@ -199,6 +199,8 @@ Context:
 ```prompt
 /task-implement 64 --review
 ```
+
+Done: 2026-10-10, commit `9c04729` (5 files, +155/-75).
 
 ## [ ] 15. Implement task 65 — Replay format: header, streams, encoder and decoder
 
