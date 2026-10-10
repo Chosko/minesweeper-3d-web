@@ -13,9 +13,11 @@
 //
 // Hand-offs, the attachment points later features fill (attach(name, listener)):
 //   finished(summary, mode, replay)   every finished game; the results flow (js/results/flow.js)
-//                                     records it and routes to the `results` screen
+//                                     records it, routes to the `results` screen and adds the
+//                                     replay to the replay library
 //   abandoned(summary, mode, replay)  every abandoned game (restart, back to menu, a replacing
-//                                     start); no results screen
+//                                     start); no results screen. The records store records it and
+//                                     the results flow adds the replay to the replay library
 //   replay is the game's sealed replay ({ blob, listing }, js/replay/recorder.js), or null when
 //   its mode passed none.
 //   inProgress(summary, mode)  at game started, at every pause of a started, unfinished game and

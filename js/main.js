@@ -16,10 +16,11 @@ import { createSampler3D } from './replay/sampler-3d.js';
 import { createGenerationClient } from './generation/client.js';
 import { createMenu, createLastMode, createLastBoardChoice } from './shell/menu.js';
 import { createPauseController } from './shell/pause.js';
-import { storage } from './platform/index.js';
+import { storage, blobStore } from './platform/index.js';
 import { createSettingsStore } from './settings/store.js';
 import { createRecordsStore } from './records/store.js';
 import { createResultsFlow } from './results/flow.js';
+import { createReplayLibrary } from './replay/library.js';
 import { createResultsView, resultsContent } from './results/view.js';
 import { createRecordsScreen, createRecordsView } from './records/screen.js';
 import { applySettings, pixelRatioFor } from './settings/appliers.js';
@@ -313,12 +314,19 @@ const RECORDS = createRecordsStore({
 const recordsLoaded = RECORDS.load();
 RECORDS.attach(PAUSE);
 
+// ---------- replay library ----------
+// Every kept replay; loads in the background, and the results flow waits for it before adding one.
+const REPLAYS = createReplayLibrary({ storage, blobStore });
+REPLAYS.load();
+
 // ---------- results ----------
-// A finished game is recorded, then the results screen shows over the finished board.
+// A finished game is recorded, then the results screen shows over the finished board. Every
+// finished and abandoned game's replay is then added to the replay library.
 // Play again restarts the finished game's board choice, or starts it again once the mode was left
 // (back from Records).
 const RESULTS = createResultsFlow({
   records: RECORDS,
+  replays: REPLAYS,
   router: SHELL,
   restart: (source, { mode }) => {
     if (MODES.active) PAUSE.restart(source);

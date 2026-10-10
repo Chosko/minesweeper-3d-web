@@ -189,7 +189,7 @@ test('the shell routes the new screens, declares their default focus and lets th
   assert.match(MAIN, /'board-choice': 'board-choice'/, 'the controller reaches the board choice');
   assert.match(MAIN, /'coming-soon': 'coming-soon'/, 'the controller reaches the placeholder');
   assert.match(MAIN, /openBoardChoice: \(\) => SHELL\.go\('board-choice'/, 'the 3D mode opens its board choice');
-  assert.match(MAIN, /import \{ storage \} from '\.\/platform\/index\.js'/, 'the last mode goes through platform storage');
+  assert.match(MAIN, /import \{ storage(, [^}]*)? \} from '\.\/platform\/index\.js'/, 'the last mode goes through platform storage');
 });
 
 test('the catalogue documents the main menu, the 3D board choice and the placeholder', () => {

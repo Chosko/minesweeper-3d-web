@@ -226,7 +226,7 @@ Feature: replay-library
 
 ## 73. End-of-game hand-off to the replay library
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/results/flow.js, js/shell/pause.js, tests/replay-handoff.test.mjs
 Preconditions: 63, 67, 68, 72
