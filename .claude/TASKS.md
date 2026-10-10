@@ -216,7 +216,7 @@ Feature: replay-library
 
 ## 72. Replay library: index, retention, pinning and recovery
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/replay/library.js, tests/replay-library.test.mjs
 Preconditions: 65, 71
