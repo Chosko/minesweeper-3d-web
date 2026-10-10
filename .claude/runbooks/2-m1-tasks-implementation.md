@@ -4,7 +4,7 @@ Created: 2026-10-09 · Source: /runbook-create interview (runbook planning-to-m3
 Last step number: 55
 Archive: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52
 
-## [ ] 53. Fix the Classic 2D keyboard/controller cursor ring if it is invisible
+## [x] 53. Fix the Classic 2D keyboard/controller cursor ring if it is invisible
 
 Depends on: none
 
@@ -13,6 +13,8 @@ Context: none
 ```prompt
 /quick-implement "Make the Classic 2D keyboard/controller cursor ring visible. When step 36 of this runbook (task 36) was implemented, a Playwright screenshot taken after an arrow-key move on a Classic 2D board showed no visible cursor ring. The cause is unverified; the suspicion is that `--color-focus-ring` and `--color-tile-edge` in `css/tokens.css` are both `#3f78e0`, so the ring the board view draws via `setCursor` blends into the tile edges. First reproduce it in a real browser: open Classic 2D, start a Beginner board, move the cursor with the arrow keys, and screenshot in both light and dark themes. If the ring is in fact visible, report that and make no change. If it is not, fix it with the smallest change (a distinct ring colour or a thicker/offset ring), keep every contrast check in `tests/tokens.test.mjs` passing, and add a browser test that asserts the ring pixels differ from the tile edge after an arrow-key move." feature=classic-2d-square-play
 ```
+
+Done: 2026-10-10, commit `0fbb8a6` (5 files, +113/-7). The light-theme ring was invisible (dark was fine); the ring now draws in a new board-only token `--color-tile-cursor` (light #14233f, dark #93b6f6), leaving `--color-focus-ring` unchanged.
 
 ## [ ] 54. Settle a pending generation request when the worker reply cannot be decoded
 
