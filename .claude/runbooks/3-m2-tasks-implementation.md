@@ -311,7 +311,7 @@ Context:
 
 Done: 2026-10-10, commit `f6a2db9` (3 files, +781/-1). An unreadable, corrupt or newer index puts the library in memory-only mode and leaves stored data untouched, so start-up reconciliation can never delete pinned blobs.
 
-## [ ] 23. Implement task 73 — End-of-game hand-off to the replay library
+## [x] 23. Implement task 73 — End-of-game hand-off to the replay library
 
 Depends on: 13, 17, 18, 22
 
@@ -322,12 +322,15 @@ Context:
 /task-implement 73 --review
 ```
 
+Done: 2026-10-10, commit `a15fe60` (6 files, +328/-15). `js/main.js` passes no `onNotSaved` to the library, so a failed replay save is not yet shown to the player (left to task 74).
+
 ## [ ] 24. Implement task 74 — Library view in the Records screen
 
 Depends on: 22
 
 Context:
 - 2026-10-10 (from step 22): `js/replay/library.js` exports `createReplayLibrary({ storage, blobStore, onNotSaved })` with `load()`, `add(blob, listing, setBest)` (takes the recorder's `seal()` pair), `pin(id)`, `unpin(id)`, `forBoard(boardKey)`, `has(id)`, `bytes(id)`, `onChange(fn)` (`{kind:'add'|'pin'|'unpin', id}` or `{kind:'remove', ids}`), `available()`, `settled()`; pin reasons `'best'` and `'hand'`; when nothing can be saved the library runs in memory and `available()` reports it; a replay whose blob write failed is served by `bytes(id)` for the session while `has(id)` stays false.
+- 2026-10-10 (from step 23): the replay library is created in `js/main.js` as `REPLAYS = createReplayLibrary({ storage, blobStore })`, loaded at boot without awaiting, and passed to the results flow; no `onNotSaved` is wired yet, so the "replays not saved" notice to the player falls to this task.
 
 ```prompt
 /task-implement 74 --review
@@ -340,6 +343,7 @@ Depends on: 21, 22, 23, 24
 Context:
 - 2026-10-10 (from step 21): `.claude/context/platform.md` and `testing.md` do not yet describe the `blobStore` platform export (in-memory and IndexedDB implementations) or its tests.
 - 2026-10-10 (from step 22): `.claude/context/replay.md` and `testing.md` do not yet describe the replay library (`js/replay/library.js`, index document `replays.library` v1).
+- 2026-10-10 (from step 23): `.claude/context/app-shell.md` still says no listener reads or stores the replay; the results flow (`js/results/flow.js`) now hands finished and abandoned replays to the library.
 
 ```prompt
 /task-implement 75 --review
