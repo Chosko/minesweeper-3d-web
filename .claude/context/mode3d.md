@@ -90,8 +90,9 @@ three to the screens, the renderer and the pointer-lock flow
   `failureScreen: 'ctxlost'`; plus `contextLost()`, which `js/main.js` calls
   when the WebGL context is lost during a 3D game. `summary()` and the
   finished and abandoned reports carry `buildSummary`'s record over the 3D
-  board identity, one id per game: null before the first applied reveal,
-  and null throughout on a fixed board, which has no seed.
+  board identity — mode `3d`, the session board's X, Y, Z as width, height,
+  depth ([records.md](records.md)) — one id per game: null before the first
+  applied reveal, and null throughout on a fixed board, which has no seed.
 
 ## INTERNAL PATTERNS
 
@@ -156,6 +157,9 @@ three to the screens, the renderer and the pointer-lock flow
   the presets, the custom limits, no-guess availability and its limit, the
   first-click guarantee, the timer, the mode contract's reports, pause and
   failure.
+- [../domain/features/3d-game-records.md](../domain/features/3d-game-records.md)
+  — the 3D summaries the adapter hands off and the 3D board identity they
+  carry.
 - [../domain/features/game-shell.md](../domain/features/game-shell.md) — the
   mode contract and the last board choice mechanism.
 - [../domain/features/board-generation.md](../domain/features/board-generation.md)
@@ -176,9 +180,12 @@ three to the screens, the renderer and the pointer-lock flow
   `js/main.js`; the mode host and `createLastBoardChoice`.
 - [platform.md](platform.md) — the storage the last 3D choice is a document
   in.
+- [records.md](records.md) — the 3D board identity, `buildSummary` and
+  `MODE_3D` the adapter's summaries are built with, and `PRESETS_3D`, kept
+  equal to `PRESETS` by a test.
 - [testing.md](testing.md) — `tests/mode3d-board-choice.test.mjs`,
-  `tests/mode3d-session.test.mjs`, `tests/mode3d-noguess-limit.test.mjs`
-  and `tests/shell-mode-3d.test.mjs`.
+  `tests/mode3d-session.test.mjs`, `tests/mode3d-noguess-limit.test.mjs`,
+  `tests/shell-mode-3d.test.mjs` and `tests/records-summary-3d.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 

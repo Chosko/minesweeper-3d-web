@@ -104,6 +104,15 @@ browser checks for everything that needs WebGL or the DOM.
   custom, a custom board matching a standard size, standard sizes only on
   the square grid), and the module DOM-free, importing nothing and
   documenting its key format.
+- `tests/records-board-3d.test.mjs` — the 3D board identity
+  (`js/records/board.js`): `MODE_3D`, the six frozen fields with no grid,
+  dimensions 1 .. 100 and mines 1 .. cells − 1, a 2D identity unchanged;
+  `PRESETS_3D` equal to the 3D board choice's `PRESETS` and `preset3D`
+  recognising them by exact size and mine count, never for a 2D board; the
+  3D key pinned for the presets and custom boards, never equal to a 2D key,
+  every field taking part, parsed back and throwing on a malformed or
+  impossible key; the preset and custom labels, a custom board matching a
+  preset labelled as it; and the 3D key form documented in the module.
 - `tests/records-summary.test.mjs` — the summary builder
   (`js/records/summary.js`) over real engine games: won, lost and abandoned
   records with every field, no summary before the first click, a stated
@@ -131,19 +140,32 @@ browser checks for everything that needs WebGL or the DOM.
   equal to the incremental records; the documents, boards-played order,
   queries by identity or key returning copies, and the module DOM-free and
   storage-free.
+- `tests/records-model-3d.test.mjs` — 3D boards in the records
+  (`js/records/model.js`, `js/records/store.js`): bests and the comparison
+  on 3D boards, each 3D board, its no-guess twin and a 2D board keeping
+  their own; per-mode overall counters, a 3D game never moving a Classic 2D
+  streak nor the reverse, an abandoned 3D game a loss for its board and
+  mode, every mode at zero from the start; `boardsPlayed` by mode — the 3D
+  presets in menu order then custom boards by last played, Classic 2D the
+  default and no mode listing another's boards; the per-mode counters
+  rebuilt from the history; and the records format step — `RECORDS_VERSION`
+  2, `upgradeRecords` carrying m1 boards and Classic 2D counters over,
+  starting 3D at zero and keeping 3D counters already present, an m1
+  document loaded and saved back at the new version, a newer document
+  refused untouched, and an m1 build refusing the stepped-up document.
 - `tests/records-store.test.mjs` — the records store
   (`js/records/store.js`) over platform storage on the memory backend: the
-  three documents registered at version 1, a single load, use before load
-  throwing, memory-first saves, survival across a reload, `onChange` and a
-  throwing listener, a failed save reported once, a missing or corrupt
+  three documents registered at their versions, a single load, use before
+  load throwing, memory-first saves, survival across a reload, `onChange`
+  and a throwing listener, a failed save reported once, a missing or corrupt
   records document rebuilt from the history, unavailable storage, newer and
   unreadable documents left untouched with empty unsaved records, the
-  `attach` hooks (abandoned, in-progress begin then checkpoint, the 3D
-  summary ignored), the marker cleared by its own game and kept by another,
-  a late checkpoint not reviving it, a leftover marker settled at load as a
-  streak-ending loss or a no-op when already recorded, three runs through
-  the real mode host and pause controller with a fake mode — closed
-  mid-game, restart, finished — and the queries.
+  `attach` hooks (abandoned, in-progress begin then checkpoint, a fixed 3D
+  board's null summary ignored), the marker cleared by its own game and kept
+  by another, a late checkpoint not reviving it, a leftover marker settled
+  at load as a streak-ending loss or a no-op when already recorded, three
+  runs through the real mode host and pause controller with a fake mode —
+  closed mid-game, restart, finished — and the queries.
 - `tests/records-screen.test.mjs` — the Records screen
   (`js/records/screen.js`) over a records model or a fake store: the picker's
   standard then custom boards, the last board played, the board opened (asked
@@ -541,12 +563,13 @@ Tests consume, and so pin, these contracts:
   `js/platform/browser-backend.js::createBrowserBackend`, `DOC_PREFIX`,
   `ASIDE_PREFIX`; `js/platform/memory-backend.js::createMemoryBackend`;
   `js/platform/index.js` exports. Full list in [platform.md](platform.md).
-- `js/records/board.js::createBoardIdentity`, `boardKey` (its pinned
-  format), `parseBoardKey`, `boardLabel`, `standardBoard`, `STANDARD_BOARDS`,
+- `js/records/board.js::createBoardIdentity`, `boardKey` (its pinned 2D
+  and 3D forms), `parseBoardKey`, `boardLabel`, `standardBoard`,
+  `STANDARD_BOARDS`, `preset3D`, `PRESETS_3D`, `MODE_3D`,
   `BOARD_KEY_FORMAT`; `js/records/summary.js::buildSummary` and the record's
   shape, `countedClicks`, `bbbvPerSecond`, `efficiency`, `isBestEligible`,
   `BEST_STATS`, `OUTCOMES`; `js/records/model.js::createRecordsModel`,
-  `compactSummary`, `rebuildRecords`, `emptyRecords`;
+  `compactSummary`, `rebuildRecords`, `emptyRecords`, `upgradeRecords`;
   `js/records/store.js::createRecordsStore` and the document names and
   versions; `js/records/screen.js::recordsContent`, `createRecordsScreen`,
   `createRecordsView`, `pickerBoards`, `lastBoardPlayed`, `formatDate`,

@@ -136,7 +136,7 @@ Feature: 3d-game-records
 
 ## 64. Update documentation for feature `3d-game-records`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/records.md, .claude/context/mode3d.md, .claude/context/testing.md, .claude/context/INDEX.md
 Preconditions: 61, 62, 63
