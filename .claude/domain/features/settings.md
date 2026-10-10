@@ -8,10 +8,11 @@ player changes it.
 
 [product-design.md § Main menu and game shell](../product-design.md#main-menu-and-game-shell)
 lists controls, graphics, the light or dark theme, audio and accessibility as
-the game's settings. Today the look sensitivity, invert Y and volume live in
-the pause card and the theme does not exist; this feature gives them one
-page reached from the main menu, one store with defaults and validation, and
-one way for the rest of the game to read a value and hear when it changes.
+the game's settings. This feature gives them one page reached from the main
+menu, one store with defaults and validation that keeps them in one settings
+document, and one way for the rest of the game to read a value and hear when
+it changes; the pause card keeps quick access to look sensitivity, invert Y
+and volume through the same store.
 
 ## Scope and non-goals
 
@@ -48,8 +49,7 @@ Non-goals:
 Built within the recorded technical direction — plain DOM and ES modules in
 the game shell, with storage behind the platform layer (see
 [technical-direction.md](../technical-direction.md)). It takes over the
-settings handling now spread across the shell's UI module and the sound
-module ([app-shell.md](../../context/app-shell.md),
+settings handling for the shell's UI module and the sound module ([app-shell.md](../../context/app-shell.md),
 [audio.md](../../context/audio.md)).
 
 - **Settings schema.** One declaration of every setting: its key, type,
