@@ -156,7 +156,7 @@ Feature: replay-recording
 
 ## 66. Recorder and sealer
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/replay/recorder.js, tests/replay-recorder.test.mjs
 Preconditions: 53, 65
