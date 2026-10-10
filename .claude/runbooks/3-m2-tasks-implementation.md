@@ -256,7 +256,7 @@ Context:
 
 Done: 2026-10-10, commit `c8b5b2b` (7 files, +551/-17). 3D flags placed before the first reveal are recorded at time 0 when the board arrives, every toggle in order; 3D `leave()` stops but keeps the recording (unlike Classic 2D) so a lost graphics context still yields a replay.
 
-## [ ] 19. Implement task 69 — Replay determinism tests and the measured recording constants
+## [x] 19. Implement task 69 — Replay determinism tests and the measured recording constants
 
 Depends on: 17, 18
 
@@ -269,6 +269,8 @@ Context:
 /task-implement 69 --review --rounds 2
 ```
 
+Done: 2026-10-10, commit `bc0d94b` (15 files, +747/-29). Quanta changed while the format stayed at version 1 (2D 1/64 cell, 3D angles 1/8192 turn; intervals 50/100 ms kept), safe only because no replay is saved yet; no compression. The "recorded games" are simulated by a seeded player, not human-played (no human games exist).
+
 ## [ ] 20. Implement task 70 — Update documentation for feature `replay-recording`
 
 Depends on: 15, 16, 17, 18, 19
@@ -276,6 +278,7 @@ Depends on: 15, 16, 17, 18, 19
 Context:
 - 2026-10-10 (from step 17): `.claude/context/app-shell.md`, `.claude/context/classic2d.md` and `3d-play-flow.md`'s 3D adapter contract lines still describe the mode contract before `replay` was added beside `summary` in finished/abandoned reports.
 - 2026-10-10 (from step 18): `.claude/context/mode3d.md` and `testing.md` still describe the old 3D contract and do not list task 68's test file; the 3D adapter gained `replay(summary)`, `tick()` and an optional `flow.sampler(session)`, and `js/main.js's frame loop calls `mode3d.tick()`.
+- 2026-10-10 (from step 19): `.claude/context/testing.md` does not yet list task 69's determinism test, the fixtures in `tests/fixtures/replays/` or `dev/measure-replays.mjs`; the recording constants now live in the feature document's "Recording constants" section (2D 50 ms at 1/64 cell; 3D 100 ms, 1/16 cell, 1/8192 turn; 2 MB cap; no compression).
 
 ```prompt
 /task-implement 70 --review
@@ -345,7 +348,8 @@ Context: none
 
 Depends on: 22, 26
 
-Context: none
+Context:
+- 2026-10-10 (from step 19): equal movement samples are not stored, so playback that interpolates straight across the gap after a still stretch makes the pointer drift through pauses (p95 3.2 px vs 2.7 px if playback holds the last sample until one interval before the next stored one); holding needs playback to know the sampling interval (2D 50 ms, 3D 100 ms), which the header does not store — an `/architect amend feature=replay-playback` was suggested, not yet made.
 
 ```prompt
 /task-implement 77 --review
