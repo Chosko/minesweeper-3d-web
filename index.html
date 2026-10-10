@@ -145,14 +145,6 @@
       <h2 class="ui-card__title" id="board-choice-title">3D</h2>
       <div class="ui-grid">
         <div>
-          <h2 class="ui-heading" id="bc-2d">2D classic</h2>
-          <div class="ui-menu" role="group" aria-labelledby="bc-2d">
-            <button type="button" class="ui-menu__item" data-preset="9,9,1,10"><span class="ui-menu__label">Beginner</span><span class="ui-menu__detail">9 &times; 9 &times; 1 &middot; 10 mines</span></button>
-            <button type="button" class="ui-menu__item" data-preset="16,16,1,40"><span class="ui-menu__label">Intermediate</span><span class="ui-menu__detail">16 &times; 16 &times; 1 &middot; 40 mines</span></button>
-            <button type="button" class="ui-menu__item" data-preset="30,16,1,99"><span class="ui-menu__label">Expert</span><span class="ui-menu__detail">30 &times; 16 &times; 1 &middot; 99 mines</span></button>
-          </div>
-        </div>
-        <div>
           <h2 class="ui-heading" id="bc-double">Double layer</h2>
           <div class="ui-menu" role="group" aria-labelledby="bc-double">
             <button type="button" class="ui-menu__item" data-preset="8,8,2,10"><span class="ui-menu__label">Beginner</span><span class="ui-menu__detail">8 &times; 8 &times; 2 &middot; 10 mines</span></button>
@@ -161,32 +153,35 @@
           </div>
         </div>
         <div>
-          <h2 class="ui-heading" id="bc-3d">3D</h2>
-          <div class="ui-menu" role="group" aria-labelledby="bc-3d">
+          <h2 class="ui-heading" id="bc-cube">Cube</h2>
+          <div class="ui-menu" role="group" aria-labelledby="bc-cube">
             <button type="button" class="ui-menu__item" data-preset="6,6,6,10"><span class="ui-menu__label">Beginner</span><span class="ui-menu__detail">6 &times; 6 &times; 6 &middot; 10 mines</span></button>
             <button type="button" class="ui-menu__item" data-preset="8,8,8,40"><span class="ui-menu__label">Intermediate</span><span class="ui-menu__detail">8 &times; 8 &times; 8 &middot; 40 mines</span></button>
             <button type="button" class="ui-menu__item" data-preset="12,12,8,130"><span class="ui-menu__label">Expert</span><span class="ui-menu__detail">12 &times; 12 &times; 8 &middot; 130 mines</span></button>
           </div>
         </div>
       </div>
+      <label class="ui-toggle"><input type="checkbox" role="switch" id="bc-noguess" class="ui-toggle__input" data-noguess="presets"><span class="ui-toggle__label">No-guess board</span></label>
 
       <form id="custom" class="ui-panel" aria-labelledby="custom-title" novalidate>
         <h2 class="ui-heading" id="custom-title">Custom</h2>
         <div class="ui-row">
-          <label class="ui-field"><span class="ui-field__label">Width</span><input id="c-x" class="ui-field__input" type="number" min="1" max="100" step="1" inputmode="numeric" value="10"></label>
-          <label class="ui-field"><span class="ui-field__label">Height</span><input id="c-y" class="ui-field__input" type="number" min="1" max="100" step="1" inputmode="numeric" value="10"></label>
-          <label class="ui-field"><span class="ui-field__label">Depth</span><input id="c-z" class="ui-field__input" type="number" min="1" max="100" step="1" inputmode="numeric" value="10"></label>
-          <label class="ui-field"><span class="ui-field__label">Mines</span><input id="c-m" class="ui-field__input" type="number" min="1" max="1000" step="1" inputmode="numeric" value="25"></label>
+          <label class="ui-field"><span class="ui-field__label">Width</span><input id="c-x" data-field="X" class="ui-field__input" type="number" min="1" max="100" step="1" inputmode="numeric" value="10"></label>
+          <label class="ui-field"><span class="ui-field__label">Height</span><input id="c-y" data-field="Y" class="ui-field__input" type="number" min="1" max="100" step="1" inputmode="numeric" value="10"></label>
+          <label class="ui-field"><span class="ui-field__label">Depth</span><input id="c-z" data-field="Z" class="ui-field__input" type="number" min="1" max="100" step="1" inputmode="numeric" value="10"></label>
+          <label class="ui-field"><span class="ui-field__label">Mines</span><input id="c-m" data-field="mines" class="ui-field__input" type="number" min="1" max="999" step="1" inputmode="numeric" value="25"></label>
           <div class="ui-actions ui-actions--row">
-            <button type="button" id="c-random" class="ui-button ui-button--secondary">Random</button>
-            <button type="submit" id="c-start" class="ui-button ui-button--primary">Start</button>
+            <button type="button" id="c-random" class="ui-button ui-button--secondary" data-random>Random</button>
+            <button type="submit" id="c-start" class="ui-button ui-button--primary" data-preset="custom">Start</button>
           </div>
         </div>
-        <p id="c-info" class="ui-text ui-text--muted">1000 cells &middot; mine density 2.5%</p>
+        <p id="c-info" class="ui-text ui-text--muted" data-info>1,000 cells &middot; up to 999 mines</p>
+        <p id="c-noguess-reason" class="ui-text ui-text--muted hidden" data-noguess-reason></p>
+        <label class="ui-toggle"><input type="checkbox" role="switch" id="c-noguess" class="ui-toggle__input" data-noguess="custom"><span class="ui-toggle__label">No-guess custom board</span></label>
       </form>
 
       <div class="ui-actions ui-actions--row">
-        <button type="button" id="board-choice-back" class="ui-button ui-button--secondary">Back</button>
+        <button type="button" id="board-choice-back" class="ui-button ui-button--secondary" data-back>Back</button>
       </div>
     </section>
   </section>

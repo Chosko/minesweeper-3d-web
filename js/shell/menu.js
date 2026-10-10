@@ -1,4 +1,4 @@
-// Main menu: its entries, where each leads, and the last mode played.
+// Main menu: its entries, where each leads, the last mode played and each mode's last board choice.
 // DOM-free: the router, the mode host and the storage interface are handed in by the shell.
 
 /**
@@ -47,6 +47,35 @@ export function createMenu({ router, modes, entries = MENU_ENTRIES }) {
       if (r.mode) modes.openBoardChoice(r.mode);
       else router.go(r.screen, r.data === undefined ? undefined : { data: r.data });
       return r;
+    },
+  };
+}
+
+/**
+ * A mode's last board choice, kept in that mode's own platform-storage document `doc`. Registers
+ * the document with `storage`; `normalise(choice)` returns a valid choice as a plain copy or null.
+ * `current` is `fallback` until a choice is loaded or saved; `played` says whether one was.
+ * `load()` reads the stored choice (`fallback` when there is none or it is malformed);
+ * `save(choice)` records a valid choice at once and rejects an invalid one with a RangeError.
+ */
+export function createLastBoardChoice({ storage, doc, version = 1, normalise, fallback }) {
+  storage.register(doc, version);
+  let current = fallback;
+  let played = false;
+  return {
+    get current() { return current; },
+    get played() { return played; },
+    async load() {
+      const c = normalise(await storage.load(doc));
+      if (c) [current, played] = [c, true];
+      else if (!played) current = fallback;
+      return current;
+    },
+    async save(choice) {
+      const c = normalise(choice);
+      if (!c) throw new RangeError(`invalid board choice: ${JSON.stringify(choice)}`);
+      [current, played] = [c, true];
+      return storage.save(doc, c);
     },
   };
 }

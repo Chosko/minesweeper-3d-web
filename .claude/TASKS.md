@@ -56,7 +56,7 @@ Feature: 3d-board-graph
 
 ## 56. 3D board choice: presets, custom boards and the no-guess switch
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/mode3d/board-choice.js, index.html, js/ui.js, js/shell/menu.js, css/components.css, tests/mode3d-board-choice.test.mjs
 Preconditions: 54

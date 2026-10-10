@@ -3,29 +3,16 @@ import { formatOverlayTime, formatMineCount } from './ui/components.js';
 import { GLYPHS } from './gamepad.js';
 import { bindingRows, bindingsListHtml } from './settings/bindings.js';
 import { settingsPageHtml, bindingsSectionHtml } from './settings/page.js';
+import { DIM_MIN, DIM_MAX } from './mode3d/board-choice.js';
 
 const $ = (id) => document.getElementById(id);
-const LS_CUSTOM = 'ms3d.custom';
 const LS_HINT_DONE = 'ms3d.hintH.done';
 const LS_BEST = 'ms3d.best.'; // + XxYxZxmines
-const LS_LAST_PRESET = 'ms3d.lastPreset';
 
-export const DIM_MIN = 1, DIM_MAX = 100;
+export { DIM_MIN, DIM_MAX };
 
 function lsGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, v); } catch { /* ignore */ } }
-
-const randInt = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1)); // inclusive
-
-/** Random board, original formula (Menu.cs Random_Click), with guards for tiny boards. */
-export function randomSettings() {
-  const Z = randInt(1, 29);
-  const Y = randInt(1, Math.max(1, 29 - Z));
-  const X = Math.min(DIM_MAX, randInt(1, Math.max(1, 29 - (Z - Y))));
-  const n = X * Y * Z;
-  const mines = Math.min(n - 1, randInt(1, Math.max(1, Math.floor(n / 5) - 1)));
-  return { X, Y, Z, mines };
-}
 
 export function clampSettings(s) {
   const dim = (v) => Math.min(DIM_MAX, Math.max(DIM_MIN, Math.round(Number.isFinite(v) ? v : 1)));
@@ -56,7 +43,7 @@ export const NO_MOUSE_MSG = 'Minesweeper 3D needs a mouse and keyboard — open 
 
 export class UI {
   constructor(cb) {
-    this.cb = cb; // { onMenuEntry, onBack, onStart, onReadyClick, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSound, onRetry2D, onStandard2D }
+    this.cb = cb; // { onMenuEntry, onBack, onReadyClick, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSound, onRetry2D, onStandard2D }
     this.el = {
       hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), size: $('hud-size'), sound: $('hud-sound'),
       help: $('help'), banner: $('banner'), bannerTitle: $('banner-title'), bannerSub: $('banner-sub'),
@@ -69,7 +56,6 @@ export class UI {
       pause: $('pause'), pauseTitle: $('pause-title'), pauseSub: $('pause-sub'),
       resume: $('p-resume'), restart: $('p-restart'), pauseMenu: $('p-menu'), pauseActions: $('pause-actions'),
       confirm: $('pause-confirm'), confirmText: $('pause-confirm-text'), confirmYes: $('p-confirm-yes'),
-      cx: $('c-x'), cy: $('c-y'), cz: $('c-z'), cm: $('c-m'), cinfo: $('c-info'),
       chipShift: $('chip-shift'), chipSpace: $('chip-space'), chipCtrl: $('chip-ctrl'),
       c2dChoice: $('c2d-choice'), c2d: $('c2d'), c2dBoard: $('c2d-board'), c2dStatus: $('c2d-status'),
       c2dStatusTitle: $('c2d-status-title'), c2dStatusText: $('c2d-status-text'), c2dOffer: $('c2d-offer'),
@@ -88,36 +74,7 @@ export class UI {
       b.appendChild(line);
       b.addEventListener('click', () => cb.onMenuEntry?.(b.dataset.entry));
     });
-    for (const id of ['board-choice-back', 'coming-soon-back', 'settings-back']) $(id).addEventListener('click', () => cb.onBack?.());
-    document.querySelectorAll('[data-preset]').forEach((b) => {
-      for (const kind of ['best', 'last']) {
-        const line = document.createElement('span');
-        line.className = 'ui-menu__detail hidden';
-        line.dataset[kind] = '';
-        if (kind === 'last') line.textContent = 'Last played';
-        b.appendChild(line);
-      }
-      b.addEventListener('click', () => {
-        const [X, Y, Z, mines] = b.dataset.preset.split(',').map(Number);
-        lsSet(LS_LAST_PRESET, b.dataset.preset);
-        cb.onStart({ X, Y, Z, mines });
-      });
-    });
-    // custom
-    const saved = this._loadCustom();
-    this._setCustom(saved);
-    for (const inp of [this.el.cx, this.el.cy, this.el.cz, this.el.cm]) {
-      inp.addEventListener('input', () => this._updateCustomInfo());
-      inp.addEventListener('change', () => this._clampCustomFields());
-    }
-    $('c-random').addEventListener('click', () => { this._setCustom(randomSettings()); });
-    $('custom').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const s = this._clampCustomFields();
-      lsSet(LS_CUSTOM, JSON.stringify(s));
-      lsSet(LS_LAST_PRESET, '');
-      cb.onStart(s);
-    });
+    for (const id of ['coming-soon-back', 'settings-back']) $(id).addEventListener('click', () => cb.onBack?.());
     // The in-game help and the Settings page read one bindings source (js/settings/bindings.js);
     // the Settings page's controls are generated from the settings schema and bound by the shell.
     this.el.help.querySelector('.controls').innerHTML = bindingsListHtml(bindingRows('3d', 'keyboard'));
@@ -143,7 +100,6 @@ export class UI {
     this._confirm = null; // { onYes, onNo } while the pause card's confirmation is open
     this.el.confirmYes.addEventListener('click', () => this._closeConfirm('onYes'));
     $('p-confirm-no').addEventListener('click', () => this._closeConfirm('onNo'));
-    this.refreshBests();
   }
 
   /** Show the "needs mouse and keyboard" banner on the menu. */
@@ -155,21 +111,6 @@ export class UI {
       const isLast = !!mode && b.dataset.entry === mode;
       b.toggleAttribute('data-last', isLast);
       b.querySelector('[data-last]')?.classList.toggle('hidden', !isLast);
-    });
-  }
-
-  refreshBests() {
-    const last = lsGet(LS_LAST_PRESET);
-    document.querySelectorAll('[data-preset]').forEach((b) => {
-      const isLast = !!last && b.dataset.preset === last;
-      b.toggleAttribute('data-last', isLast);
-      b.querySelector('[data-last]')?.classList.toggle('hidden', !isLast);
-      const [X, Y, Z, mines] = b.dataset.preset.split(',').map(Number);
-      const best = getBest({ X, Y, Z, mines });
-      const el = b.querySelector('[data-best]');
-      if (!el) return;
-      el.textContent = best === null ? '' : `Best ${fmtTime(best)} s`;
-      el.classList.toggle('hidden', best === null);
     });
   }
 
@@ -185,49 +126,6 @@ export class UI {
     return true;
   }
   isControlsOpen() { return !this.el.controlsModal.classList.contains('hidden'); }
-
-  // ---------- custom panel ----------
-  _loadCustom() {
-    try {
-      const v = JSON.parse(lsGet(LS_CUSTOM));
-      if (v && typeof v === 'object') return clampSettings(v);
-    } catch { /* ignore */ }
-    return { X: 10, Y: 10, Z: 10, mines: 25 };
-  }
-  _readCustom() {
-    const n = (el) => parseInt(el.value, 10);
-    return { X: n(this.el.cx), Y: n(this.el.cy), Z: n(this.el.cz), mines: n(this.el.cm) };
-  }
-  _setCustom(s) {
-    this.el.cx.value = s.X; this.el.cy.value = s.Y; this.el.cz.value = s.Z; this.el.cm.value = s.mines;
-    for (const el of [this.el.cx, this.el.cy, this.el.cz, this.el.cm]) el.removeAttribute('data-adjusted');
-    this._updateCustomInfo();
-  }
-  _clampCustomFields() {
-    const raw = this._readCustom();
-    const s = clampSettings(raw);
-    const pairs = [[this.el.cx, raw.X, s.X], [this.el.cy, raw.Y, s.Y], [this.el.cz, raw.Z, s.Z], [this.el.cm, raw.mines, s.mines]];
-    for (const [el, a, b] of pairs) {
-      if (a !== b) { el.value = b; el.setAttribute('data-adjusted', ''); setTimeout(() => el.removeAttribute('data-adjusted'), 900); }
-    }
-    this._updateCustomInfo();
-    return s;
-  }
-  _updateCustomInfo() {
-    const raw = this._readCustom();
-    const s = clampSettings(raw);
-    const n = s.X * s.Y * s.Z;
-    this.el.cm.max = String(n - 1);
-    let msg = `${n.toLocaleString('en-US')} cells · mine density ${((100 * s.mines) / n).toFixed(1)}%`;
-    let warn = false;
-    const bad = [raw.X, raw.Y, raw.Z].some((v) => !Number.isFinite(v) || v < DIM_MIN || v > DIM_MAX);
-    if (bad) { msg = `Each dimension must be ${DIM_MIN}–${DIM_MAX}. ` + msg; warn = true; }
-    else if (!Number.isFinite(raw.mines) || raw.mines < 1 || raw.mines > n - 1) { msg = `Mines must be 1–${(n - 1).toLocaleString('en-US')}. ` + msg; warn = true; }
-    else if (n > 250000) { msg += ' · very large board, may run slowly'; warn = true; }
-    this.el.cinfo.textContent = msg;
-    this.el.cinfo.classList.toggle('ui-text--warning', warn);
-    this.el.cinfo.classList.toggle('ui-text--muted', !warn);
-  }
 
   // ---------- screens ----------
   /** Hide the menu screens (main menu, board choices, placeholder, records, settings) before another screen shows. */
@@ -250,7 +148,6 @@ export class UI {
     this.el.help.classList.add('hidden');
     this.el.controlsModal.classList.add('hidden');
     this._helpByUser = false;
-    this.refreshBests();
   }
   /** The 3D board choice: the presets and the custom board, over the menu backdrop. */
   showBoardChoice() {

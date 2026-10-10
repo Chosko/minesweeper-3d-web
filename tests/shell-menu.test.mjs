@@ -166,10 +166,10 @@ test('index.html shows the four entries as one kit menu, matching the entry tabl
   assert.doesNotMatch(MENU, /data-preset|id="custom"/, 'the 3D presets and custom board left the main menu');
 });
 
-test('the 3D board choice holds the existing presets and custom board, and a Back button', () => {
+test('the 3D board choice holds the presets and custom board, and a Back button', () => {
   assert.ok(BOARD.length > 500, 'index.html has the 3D board choice');
   assert.match(BOARD, /class="overlay hidden"/);
-  assert.equal([...BOARD.matchAll(/data-preset="/g)].length, 9, 'the nine presets');
+  assert.equal([...BOARD.matchAll(/data-preset="\d/g)].length, 6, 'the six presets');
   assert.match(BOARD, /<form id="custom"/);
   assert.match(BOARD, /id="board-choice-back"/);
 });
@@ -413,18 +413,18 @@ test('in a browser, a controller alone walks the 3D board choice and the placeho
       assert.equal(await focused(), 'menu-entry-3d', 'the D-pad moves down the menu');
       await press(PAD_BTN.A);
       assert.equal(await mode(), 'board-choice', 'A opens the 3D board choice');
-      assert.equal(await focused(), '9,9,1,10', 'the first preset takes the focus when none was played');
+      assert.equal(await focused(), '8,8,2,10', 'the first preset takes the focus when none was played');
 
       await press(PAD_BTN.DOWN);
-      assert.equal(await focused(), '16,16,1,40', 'down moves to the next preset');
+      assert.equal(await focused(), '14,14,2,60', 'down moves to the next preset');
       await press(PAD_BTN.DOWN);
-      assert.equal(await focused(), '30,16,1,99');
+      assert.equal(await focused(), '25,16,2,130');
       await press(PAD_BTN.UP);
-      assert.equal(await focused(), '16,16,1,40', 'up moves back');
+      assert.equal(await focused(), '14,14,2,60', 'up moves back');
       await press(PAD_BTN.RIGHT);
       const across = await focused();
       assert.match(across, /^\d+,\d+,\d+,\d+$/, 'right moves to another preset');
-      assert.notEqual(across, '16,16,1,40');
+      assert.notEqual(across, '14,14,2,60');
       assert.equal(await mode(), 'board-choice', 'moving changes no screen');
 
       await press(PAD_BTN.A);

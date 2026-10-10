@@ -11,7 +11,7 @@ import { createRouter } from './shell/router.js';
 import { FOCUSABLE, topLayer, resolveFocus, isBackKey, backButtons, createHeldSuppressor } from './shell/navigation.js';
 import { createModeHost } from './shell/mode-host.js';
 import { create3DMode, create3DGame } from './shell/mode-3d.js';
-import { createMenu, createLastMode } from './shell/menu.js';
+import { createMenu, createLastMode, createLastBoardChoice } from './shell/menu.js';
 import { createPauseController } from './shell/pause.js';
 import { storage } from './platform/index.js';
 import { createSettingsStore } from './settings/store.js';
@@ -24,6 +24,10 @@ import { bindSettingControls } from './settings/page.js';
 import { createClassic2DMode } from './classic2d/mode.js';
 import { bindBoardChoice } from './classic2d/board-choice.js';
 import { createLastChoice, DEFAULT_CHOICE } from './classic2d/board-setup.js';
+import {
+  bindBoardChoice as bindBoardChoice3D, boardOf, normaliseChoice as normaliseChoice3D, DEFAULT_CHOICE as DEFAULT_CHOICE_3D,
+  LAST_CHOICE_DOC as LAST_CHOICE_DOC_3D, LAST_CHOICE_VERSION as LAST_CHOICE_VERSION_3D,
+} from './mode3d/board-choice.js';
 
 const canvas = document.getElementById('scene');
 
@@ -170,7 +174,6 @@ function toggleSound() { SETTINGS.set('muted', !SETTINGS.get('muted')); }
 const ui = new UI({
   onMenuEntry: (id) => MENU.open(id),
   onBack: () => shellBack('pointer'),
-  onStart: (s) => { sfx.unlock(); MODES.start('3d', s); },
   onReadyClick: () => { sfx.unlock(); if (padGesture) padResume(); else input.requestLock(); },
   onResume: () => PAUSE.resume(padGesture ? 'pad' : 'pointer'),
   onRestart: () => PAUSE.restart(padGesture ? 'pad' : 'pointer'),
@@ -208,7 +211,7 @@ bindSettingControls(document.querySelectorAll('[data-setting]'), SETTINGS, {
 const SHELL = createRouter({
   screens: {
     menu: { defaultFocus: '[data-entry][data-last]', show: () => { MODES.leave(); showMenuBackdrop(); ui.showMenu(); } },
-    'board-choice': { defaultFocus: '[data-preset][data-last]', show: () => { MODES.leave(); showMenuBackdrop(); ui.showBoardChoice(); } },
+    'board-choice': { defaultFocus: '[data-preset][data-last]', show: () => { MODES.leave(); showMenuBackdrop(); ui.showBoardChoice(); CHOICE_3D.show(LAST_CHOICE_3D.current, { played: LAST_CHOICE_3D.played }); } },
     'coming-soon': { defaultFocus: '#coming-soon-back', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showComingSoon(d.title ?? 'This screen'); } },
     records: { defaultFocus: '#records-picker [aria-checked="true"]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showRecords(); RECORDS_PAGE.show({ boardKey: d.boardKey }); }, hide: () => RECORDS_PAGE.hide() },
     settings: { defaultFocus: '#set-lookSensitivity', show: () => { MODES.leave(); showMenuBackdrop(); ui.showSettings(); } },
@@ -242,6 +245,13 @@ const FLOW_3D = {
 };
 // end of 3D flow
 const mode3d = MODES.register('3d', (report) => create3DMode(FLOW_3D, report));
+// The 3D board choice; the last 3D choice is a platform-storage document kept by the shell.
+const LAST_CHOICE_3D = createLastBoardChoice({ storage, doc: LAST_CHOICE_DOC_3D, version: LAST_CHOICE_VERSION_3D, normalise: normaliseChoice3D, fallback: DEFAULT_CHOICE_3D });
+const CHOICE_3D = bindBoardChoice3D({
+  root: document.getElementById('board-choice'),
+  onStart: (choice) => { sfx.unlock(); LAST_CHOICE_3D.save(choice).catch(() => {}); MODES.start('3d', boardOf(choice)); }, // storage never stops a game
+  onBack: () => shellBack('pointer'),
+});
 // Classic 2D: the mode drives its own board; the shell hands it the board area, the overlay bar and
 // its screens. The last board choice is a platform-storage document.
 const LAST_CHOICE_2D = createLastChoice({ storage });
@@ -827,7 +837,7 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-await Promise.all([settingsLoaded, recordsLoaded]);
+await Promise.all([settingsLoaded, recordsLoaded, LAST_CHOICE_3D.load().catch(() => {})]);
 showMainMenu();
 mode2d.loadChoice();
 const bootFocus = document.activeElement;

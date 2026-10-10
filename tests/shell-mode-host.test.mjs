@@ -11,6 +11,7 @@ import { PHASE } from '../js/engine/rules.js';
 import { placeMines } from '../js/generation/placer.js';
 import { createSeededSource } from '../js/generation/random.js';
 import { clampSettings } from '../js/ui.js';
+import { customStatus } from '../js/mode3d/board-choice.js';
 import { pickCell, pickCellBrute } from '../js/picking.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -440,7 +441,11 @@ test('custom 3D boards accept at most cells minus one mines', () => {
   assert.deepEqual(clampSettings({ X: 2, Y: 2, Z: 2, mines: 7 }), { X: 2, Y: 2, Z: 2, mines: 7 });
   assert.equal(clampSettings({ X: 10, Y: 10, Z: 10, mines: 5000 }).mines, 999);
   assert.equal(clampSettings({ X: 3, Y: 3, Z: 3, mines: 0 }).mines, 1);
-  assert.match(read('js/ui.js'), /raw\.mines > n - 1/, 'the custom board\'s info line warns past cells minus one');
+  const over = customStatus({ X: 2, Y: 2, Z: 2, mines: 8 });
+  assert.equal(over.ok, false, 'the custom board\'s info line warns past cells minus one');
+  assert.equal(over.field, 'mines');
+  assert.match(over.text, /from 1 to 7\b/);
+  assert.equal(customStatus({ X: 2, Y: 2, Z: 2, mines: 7 }).ok, true);
 });
 
 test('the 3D engine is retired: js/logic.js and its tests are gone and nothing imports them', () => {
@@ -471,7 +476,7 @@ test('the shell reaches the 3D game only through the mode host', () => {
   assert.ok(flow.length > 100, 'js/main.js declares the 3D flow');
   assert.equal([...MAIN.replace(flow, '').matchAll(/\bstartGame\(/g)].length, 1, 'only the 3D flow calls startGame');
   assert.match(MAIN, /start\(X, Y, Z, mines, minePositions\) \{ MODES\.start\('3d'/, 'the debug hook starts through the host');
-  assert.match(MAIN, /onStart: \(s\) => \{[^}]*MODES\.start\('3d', s\)/, 'the menu starts a game through the host');
+  assert.match(MAIN, /onStart: \(choice\) => \{[^\n]*MODES\.start\('3d', boardOf\(choice\)\)/, 'the board choice starts a game through the host');
   assert.match(MAIN, /onRestart: \(\) => PAUSE\.restart\(padGesture \? 'pad' : 'pointer'\)/, 'restart goes through the pause controller');
   assert.match(MAIN, /menu: \{[^\n]*MODES\.leave\(\)/, 'the menu leaves the active mode');
   assert.match(MAIN, /MODES\.on\('failed'/, 'a mode failure routes to its failure screen');
