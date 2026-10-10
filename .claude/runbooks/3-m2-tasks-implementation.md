@@ -115,7 +115,7 @@ Context:
 /task-implement 58 --review
 ```
 
-## [ ] 9. Implement task 59 — 3D mode adapter on the session
+## [x] 9. Implement task 59 — 3D mode adapter on the session
 
 Depends on: 7
 
@@ -126,6 +126,8 @@ Context:
 /task-implement 59 --review
 ```
 
+Done: 2026-10-10, commit `96ea1e2` (5 files, +466/-238). The adapter still reports `summary3d` fields (now taking `{board, started, outcome, elapsedMs}` from the session), not the `game-summary` builder, per the task's own deferral; it listens to the session returned by `FLOW_3D.start`/`restart`.
+
 ## [ ] 10. Implement task 60 — Update documentation for feature `3d-play-flow`
 
 Depends on: 6, 7, 8, 9
@@ -133,6 +135,7 @@ Depends on: 6, 7, 8, 9
 Context:
 - 2026-10-10 (from step 6): the board choice has two no-guess switches — one under the presets, always available, and one inside the custom panel, disabled above the cell limit — where `3d-play-flow` speaks of one; `.claude/context/app-shell.md` and `testing.md` still describe the old 3D board choice.
 - 2026-10-10 (from step 7): `.claude/context/app-shell.md` still places `create3DGame` in `mode-3d.js` and best times in `localStorage`; `generation.md` lists only square boards, though the worker now takes a `box` description; the 3D timer is the session clock, starting when the board arrives.
+- 2026-10-10 (from step 9): `.claude/context/app-shell.md` (around lines 144–150, 319–320) still describes the old `summary3d` signature, `snapshot` and `gameStarted`/`gameEnded`; `testing.md` (around line 332) still places the 3D adapter tests in `shell-mode-host` (they are in `tests/shell-mode-3d.test.mjs`).
 
 ```prompt
 /task-implement 60 --review
@@ -153,7 +156,8 @@ Context:
 
 Depends on: 2, 9, 11
 
-Context: none
+Context:
+- 2026-10-10 (from step 9): the 3D adapter (`js/shell/mode-3d.js`) still reports `summary3d` fields (`{board, started, outcome, elapsedMs}`) rather than the `game-summary` builder; it listens to the session's `started`/`finished` events, the session being returned by `FLOW_3D.start`/`restart` in `js/main.js`.
 
 ```prompt
 /task-implement 62 --review
