@@ -286,7 +286,7 @@ Context:
 
 Done: 2026-10-10, commit `1c518f9` (7 files, +401/-63). Step 17's note was wrong: `3d-play-flow.md` already named the new adapter contract.
 
-## [ ] 21. Implement task 71 — Replay store: blob interface, in-memory and IndexedDB implementations
+## [x] 21. Implement task 71 — Replay store: blob interface, in-memory and IndexedDB implementations
 
 Depends on: none
 
@@ -296,11 +296,14 @@ Context: none
 /task-implement 71 --review
 ```
 
+Done: 2026-10-10, commit `cf6597b` (6 files, +595/-4).
+
 ## [ ] 22. Implement task 72 — Replay library: index, retention, pinning and recovery
 
 Depends on: 15, 21
 
-Context: none
+Context:
+- 2026-10-10 (from step 21): import `blobStore` from `js/platform/index.js` (its methods are not re-exported individually). `put`/`delete` never reject (`{ ok }` or `{ ok: false, reason: 'write-failed', error }`); `get` and `list` reject when the store cannot read, so a rejected `list` at start-up must not be treated as an empty store or reconciliation would drop index entries; `available()` returns a Promise.
 
 ```prompt
 /task-implement 72 --review --rounds 2
@@ -330,7 +333,8 @@ Context: none
 
 Depends on: 21, 22, 23, 24
 
-Context: none
+Context:
+- 2026-10-10 (from step 21): `.claude/context/platform.md` and `testing.md` do not yet describe the `blobStore` platform export (in-memory and IndexedDB implementations) or its tests.
 
 ```prompt
 /task-implement 75 --review
