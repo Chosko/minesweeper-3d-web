@@ -5,11 +5,9 @@ import { createServer } from 'node:http';
 import { join, dirname, normalize, extname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createModeHost, MODE_METHODS, MODE_EVENTS } from '../js/shell/mode-host.js';
-import { create3DMode, summary3d, create3DGame } from '../js/shell/mode-3d.js';
-import { createBoxGrid } from '../js/engine/box-grid.js';
+import { create3DMode, summary3d } from '../js/shell/mode-3d.js';
+import { create3DGame } from '../js/mode3d/session.js';
 import { PHASE } from '../js/engine/rules.js';
-import { placeMines } from '../js/generation/placer.js';
-import { createSeededSource } from '../js/generation/random.js';
 import { clampSettings } from '../js/ui.js';
 import { customStatus } from '../js/mode3d/board-choice.js';
 import { pickCell, pickCellBrute } from '../js/picking.js';
@@ -351,32 +349,6 @@ test('mode host and 3D adapter are DOM-free', () => {
 
 // ---------------------------------------------------------------- the 3D game on the shared engine
 
-const seeded = (seed) => ({ randomSeed: () => seed });
-
-test('a 3D game from a mine count awaits the first click; the standard placer answers it from its seeded source', () => {
-  const d = create3DGame({ X: 4, Y: 3, Z: 2, mines: 6 }, seeded(1234));
-  const { view } = d;
-  assert.equal(view.phase, PHASE.AWAITING_FIRST_CLICK);
-  assert.equal(view.state, 'playing');
-  assert.equal(d.mines, 6);
-  assert.equal(d.seed, null, 'no board before the first click');
-  assert.equal(view.version, 0);
-  const first = view.idx(1, 1, 1);
-  const r = d.reveal(first);
-  assert.equal(d.seed, 1234);
-  const box = createBoxGrid(4, 3, 2);
-  const expected = placeMines({ graph: box.graph, mineCount: 6, firstClick: first, source: createSeededSource(1234) });
-  const mines = [];
-  for (let c = 0; c < view.n; c++) if (view.number[c] === -1) mines.push(c);
-  assert.deepEqual(mines, Array.from(expected), 'the mines are the standard placer\'s, around the first click');
-  assert.equal(view.pressed[first], 1, 'the first click is safe and revealed');
-  assert.notEqual(view.phase, PHASE.AWAITING_FIRST_CLICK);
-  assert.ok(view.version > 0, 'the action reached the state view');
-  assert.ok(view.dirty.includes(first));
-  assert.equal(r.exploded, false);
-  assert.ok(r.revealed >= 1);
-});
-
 test('a 3D game from a fixed mine set plays from the start: a mine loses', () => {
   const d = create3DGame({ X: 5, Y: 1, Z: 1, mines: 99, minePositions: [4] });
   assert.equal(d.view.phase, PHASE.PLAYING);
@@ -456,7 +428,7 @@ test('the 3D engine is retired: js/logic.js and its tests are gone and nothing i
   for (const f of ['index.html', ...files('js'), ...files('tests'), ...files('dev')]) {
     assert.doesNotMatch(read(f), /(import|from)\s*\(?\s*['"][^'"]*logic(\.js|\.test\.mjs)['"]/, `${f} imports no 3D engine`);
   }
-  assert.match(MAIN_SRC(), /import \{[^}]*create3DGame[^}]*\} from '\.\/shell\/mode-3d\.js'/, 'js/main.js builds the 3D game on the shared engine');
+  assert.match(MAIN_SRC(), /import \{[^}]*create3DGame[^}]*\} from '\.\/mode3d\/session\.js'/, 'js/main.js builds the 3D game on the shared engine');
 });
 
 
@@ -677,10 +649,11 @@ test('in a browser, a 3D game on the shared engine plays a fixed mine set to a w
     assert.equal(await ms(() => globalThis.__ms.game.explodedIdx), 0);
     assert.equal(await ms(() => globalThis.__ms.state.endState?.state), 'lost');
 
-    // from a mine count, the first click is always safe
+    // from a mine count, the first click is always safe: the worker's board arrives, then the reveal
     for (let i = 0; i < 5; i++) {
-      const first = await play({ X: 3, Y: 3, Z: 3, mines: 26 }, [[7, 'left']]);
-      assert.equal(first.state, 'won', 'with every other cell a mine, the safe first click wins');
+      await play({ X: 3, Y: 3, Z: 3, mines: 26 }, [[7, 'left']]);
+      await page.waitForFunction(() => globalThis.__ms.state.endState !== null, null, { timeout: 15000 });
+      assert.equal(await ms(() => globalThis.__ms.game.state), 'won', 'with every other cell a mine, the safe first click wins');
     }
     assert.deepEqual(errors, []);
   } finally {

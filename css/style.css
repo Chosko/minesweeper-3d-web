@@ -119,6 +119,7 @@ kbd {
 #c2d { position: fixed; inset: 0; background: var(--color-backdrop); }
 #c2d-board { position: absolute; top: 96px; left: var(--space-4); right: var(--space-4); bottom: var(--space-4); }
 #c2d-status { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+#m3d-status { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: var(--z-overlay); }
 
 /* ---------- HUD ---------- */
 #hud { position: fixed; inset: 0; pointer-events: none; z-index: var(--z-hud); }

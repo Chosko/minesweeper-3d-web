@@ -10,6 +10,7 @@
 // bumping GENERATOR_VERSION in js/generation/placer.js.
 
 import { createSquareGrid } from '../engine/square-grid.js';
+import { createBoxGrid } from '../engine/box-grid.js';
 import { createSeededSource } from './random.js';
 import { placeMines, GENERATOR_VERSION } from './placer.js';
 import { solve } from './solver.js';
@@ -24,10 +25,12 @@ export const ATTEMPT_BUDGET = 2000;
 
 // boardGraph(description) → the cell graph of a graph description.
 //   { kind: 'square', width, height } — the 8-neighbour square grid (js/engine/square-grid.js).
+//   { kind: 'box', X, Y, Z }          — the 26-neighbour box (js/engine/box-grid.js).
 // Throws RangeError on any other description.
 export function boardGraph(description) {
   if (!description || typeof description !== 'object') throw new RangeError('a graph description is required');
   if (description.kind === 'square') return createSquareGrid(description.width, description.height).graph;
+  if (description.kind === 'box') return createBoxGrid(description.X, description.Y, description.Z).graph;
   throw new RangeError(`unknown graph kind ${JSON.stringify(description.kind)}`);
 }
 

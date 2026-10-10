@@ -7,7 +7,6 @@ import { DIM_MIN, DIM_MAX } from './mode3d/board-choice.js';
 
 const $ = (id) => document.getElementById(id);
 const LS_HINT_DONE = 'ms3d.hintH.done';
-const LS_BEST = 'ms3d.best.'; // + XxYxZxmines
 
 export { DIM_MIN, DIM_MAX };
 
@@ -25,25 +24,11 @@ export function clampSettings(s) {
 export const fmtDims = (s) => `${s.X} × ${s.Y} × ${s.Z}`;
 export const fmtTime = (t) => t.toFixed(2);
 
-// ---------- best times (per board size + mine count) ----------
-const bestKey = (s) => `${LS_BEST}${s.X}x${s.Y}x${s.Z}x${s.mines}`;
-export function getBest(s) {
-  const v = parseFloat(lsGet(bestKey(s)));
-  return Number.isFinite(v) && v >= 0 ? v : null;
-}
-/** Record a winning time; returns { best, prev, isNew }. */
-export function recordBest(s, time) {
-  const prev = getBest(s);
-  const isNew = prev === null || time < prev;
-  if (isNew) lsSet(bestKey(s), String(time));
-  return { best: isNew ? time : prev, prev, isNew };
-}
-
 export const NO_MOUSE_MSG = 'Minesweeper 3D needs a mouse and keyboard — open it on a desktop browser.';
 
 export class UI {
   constructor(cb) {
-    this.cb = cb; // { onMenuEntry, onBack, onReadyClick, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSound, onRetry2D, onStandard2D }
+    this.cb = cb; // { onMenuEntry, onBack, onReadyClick, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSound, onRetry2D, onStandard2D, onRetry3D, onStandard3D }
     this.el = {
       hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), size: $('hud-size'), sound: $('hud-sound'),
       help: $('help'), banner: $('banner'), bannerTitle: $('banner-title'), bannerSub: $('banner-sub'),
@@ -59,6 +44,7 @@ export class UI {
       chipShift: $('chip-shift'), chipSpace: $('chip-space'), chipCtrl: $('chip-ctrl'),
       c2dChoice: $('c2d-choice'), c2d: $('c2d'), c2dBoard: $('c2d-board'), c2dStatus: $('c2d-status'),
       c2dStatusTitle: $('c2d-status-title'), c2dStatusText: $('c2d-status-text'), c2dOffer: $('c2d-offer'),
+      m3dStatus: $('m3d-status'), m3dStatusTitle: $('m3d-status-title'), m3dStatusText: $('m3d-status-text'), m3dOffer: $('m3d-offer'),
     };
     this._last = { time: '', mines: '' };
     this._helpTimer = 0;
@@ -97,6 +83,8 @@ export class UI {
     $('hud-pause').addEventListener('click', () => cb.onPause?.());
     $('c2d-retry').addEventListener('click', () => cb.onRetry2D?.());
     $('c2d-standard').addEventListener('click', () => cb.onStandard2D?.());
+    $('m3d-retry').addEventListener('click', () => cb.onRetry3D?.());
+    $('m3d-standard').addEventListener('click', () => cb.onStandard3D?.());
     this._confirm = null; // { onYes, onNo } while the pause card's confirmation is open
     this.el.confirmYes.addEventListener('click', () => this._closeConfirm('onYes'));
     $('p-confirm-no').addEventListener('click', () => this._closeConfirm('onNo'));
@@ -202,13 +190,17 @@ export class UI {
   /** The board the overlay bar names, as text ("30 × 16"). */
   setBoardText(text) { this.el.size.textContent = text; }
   /** Classic 2D: the "generating" card of a slow first click, or a failed board and its offer. */
-  setBoardStatus({ generating = false, failure = null } = {}) {
+  setBoardStatus(status) { this._boardStatus('c2d', status); }
+  /** 3D: the "generating" card of a slow first click, or a failed board and its offer, over the box. */
+  setBoardStatus3D(status) { this._boardStatus('m3d', status); }
+  _boardStatus(prefix, { generating = false, failure = null } = {}) {
     const on = generating || !!failure;
-    this.el.c2dStatus.classList.toggle('hidden', !on);
-    this.el.c2dStatusTitle.textContent = failure ? 'No board found' : 'Generating the board…';
-    this.el.c2dStatusText.textContent = failure ? 'No no-guess board was found for this first click. Try again, or play a standard board of the same size.' : '';
-    this.el.c2dStatusText.classList.toggle('hidden', !failure);
-    this.el.c2dOffer.classList.toggle('hidden', !failure);
+    const el = (name) => this.el[`${prefix}${name}`];
+    el('Status').classList.toggle('hidden', !on);
+    el('StatusTitle').textContent = failure ? 'No board found' : 'Generating the board…';
+    el('StatusText').textContent = failure ? 'No no-guess board was found for this first click. Try again, or play a standard board of the same size.' : '';
+    el('StatusText').classList.toggle('hidden', !failure);
+    el('Offer').classList.toggle('hidden', !failure);
   }
   showReady(settings, msg = '') {
     this._hideMenus();

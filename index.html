@@ -68,6 +68,16 @@
     </section>
   </section>
 
+  <!-- 3D board status: a slow first click's generation, or a failed board and its offer -->
+  <section id="m3d-status" class="ui-card ui-screen hidden" aria-labelledby="m3d-status-title" role="status">
+    <h2 class="ui-card__title" id="m3d-status-title">Generating the board&hellip;</h2>
+    <p id="m3d-status-text" class="ui-text ui-text--muted hidden"></p>
+    <div id="m3d-offer" class="ui-actions ui-actions--row hidden">
+      <button type="button" id="m3d-retry" class="ui-button ui-button--primary">Retry</button>
+      <button type="button" id="m3d-standard" class="ui-button ui-button--secondary">Play a standard board</button>
+    </div>
+  </section>
+
   <!-- In-game HUD -->
   <div id="hud" class="hidden" aria-live="off">
     <div class="ui-overlay-bar hud-bar" role="group" aria-label="Game">

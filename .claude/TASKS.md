@@ -66,7 +66,7 @@ Feature: 3d-play-flow
 
 ## 57. 3D game session: safe first click, generation and timer
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/mode3d/session.js, js/main.js, js/ui.js, js/shell/mode-3d.js, tests/mode3d-session.test.mjs
 Preconditions: 54, 56

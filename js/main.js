@@ -3,14 +3,16 @@ import * as THREE from 'three';
 import { BoardRenderer } from './render.js';
 import { FlyCamera, MouseActions, Input, SPACING_MIN, SPACING_MAX, SPACING_START } from './input.js';
 import { pickCell, pickCellBrute } from './picking.js';
-import { UI, clampSettings, recordBest, fmtTime, NO_MOUSE_MSG } from './ui.js';
+import { UI, clampSettings, NO_MOUSE_MSG } from './ui.js';
 import * as audio from './audio.js';
 import { Controls } from './controls.js';
 import { GamepadReader, BTN, Repeat, stickCurve, padGlyphs, pickInDirection } from './gamepad.js';
 import { createRouter } from './shell/router.js';
 import { FOCUSABLE, topLayer, resolveFocus, isBackKey, backButtons, createHeldSuppressor } from './shell/navigation.js';
 import { createModeHost } from './shell/mode-host.js';
-import { create3DMode, create3DGame } from './shell/mode-3d.js';
+import { create3DMode } from './shell/mode-3d.js';
+import { createSession, create3DGame } from './mode3d/session.js';
+import { createGenerationClient } from './generation/client.js';
 import { createMenu, createLastMode, createLastBoardChoice } from './shell/menu.js';
 import { createPauseController } from './shell/pause.js';
 import { storage } from './platform/index.js';
@@ -58,13 +60,13 @@ const NO_MOUSE = !LOCK_SUPPORTED || COARSE_ONLY;
 // 'playing' | 'classic-2d' | 'paused' | 'results' | 'ctxlost' (defined below).
 const S = {
   settings: null,
-  game: null, // the 3D state view of the game shown (create3DGame's view), or null
-  play: null, // that game's actions (create3DGame)
+  game: null, // the 3D state view of the game shown (its session's view), or null
+  play: null, // that game's session (js/mode3d/session.js): actions, timer, board request
   demo: null,
   spacing: SPACING_START,
   selected: -1,
-  started: false,
-  time: 0,
+  started: false, // the first reveal has been applied to the generated board
+  time: 0, // the session's timer in seconds, read once per frame while it runs
   endState: null, // frozen { state, time, minesLeft } once the game is over
   pickKey: '',
   orbit: 0,
@@ -73,43 +75,44 @@ const S = {
 
 // ---------- actions ----------
 function hasSelection() { return S.selected >= 0 && S.game && S.mode === 'playing'; }
+let minesBefore = 0; // the HUD's mines left before the last action (the original froze it from the frame before the final action)
+/**
+ * The only dispatcher to the 3D game: the session takes the action, or refuses it (null) while the
+ * board is generated. The first reveal answers once its board has arrived; the end of the game
+ * comes through the session's `finished`.
+ */
 function onAction(type) {
   const g = S.game, play = S.play;
   if (!g || S.selected < 0) return;
   const before = g.state;
-  const minesBefore = g.minesLeft; // original froze the HUD text from the frame before the final action
+  minesBefore = g.minesLeft;
   const sel = S.selected;
   const v0 = g.version;
   if (type !== 'right') renderer.snapshotBeforeAction(); // lets the renderer show wrong flags + reveal wave on a loss
-  if (type === 'left') {
-    if (!S.started) { S.started = true; S.time = 0; mode3d.gameStarted(); }
-    const r = play.reveal(sel);
-    if (r.exploded) boom();
-    else if (r.revealed > 0) sfx.reveal(r.revealed);
-  } else if (type === 'right') {
-    const r = play.toggleFlag(sel);
+  const r = type === 'left' ? play.reveal(sel) : type === 'right' ? play.toggleFlag(sel) : play.chord(sel);
+  if (r && typeof r.then === 'function') {
+    r.then((res) => { if (res && S.play === play) actionSounds(type, res); });
+    return;
+  }
+  if (!r) return;
+  actionSounds(type, r);
+  if (g.version === v0 && before === 'playing' && g.state === 'playing' && typeof sfx.noop === 'function') sfx.noop(); // action changed nothing
+}
+function actionSounds(type, r) {
+  if (type === 'right') {
     if (r.flagged || r.unflagged) sfx.flag(r.flagged >= r.unflagged, r.flagged + r.unflagged);
     if (padActing && (r.flagged || r.unflagged)) padRumble(PAD_TICK);
-  } else if (type === 'chord') {
-    const r = play.chord(sel);
-    if (r.exploded) boom();
-    else if (r.revealed > 0) sfx.chord(r.revealed);
+  } else if (r.exploded) boom();
+  else if (r.revealed > 0) {
+    if (type === 'left') sfx.reveal(r.revealed);
+    else sfx.chord(r.revealed);
   }
-  if (g.version === v0 && before === 'playing' && g.state === 'playing' && typeof sfx.noop === 'function') sfx.noop(); // action changed nothing
-  if (before === 'playing' && g.state !== 'playing') { endGame(minesBefore); afterEndGame(); }
-}
-/** Best-time bookkeeping after endGame (kept outside endGame, which the visuals code also touches). */
-function afterEndGame() {
-  const g = S.game;
-  if (!g || g.state !== 'won' || !S.started) return;
-  const r = recordBest(S.settings, S.time);
-  if (r.isNew) ui.setBannerRecord(r.prev === null ? 'New record!' : `New record! (previous ${fmtTime(r.prev)} s)`, true);
-  else ui.setBannerRecord(`Best ${fmtTime(r.best)} s`);
 }
 function boom() { sfx.explode(); ui.flash(); padRumble(PAD_BOOM); }
-function endGame(minesLeft) {
+function endGame() {
   const g = S.game;
-  S.endState = { state: g.state, time: S.time, minesLeft };
+  S.time = S.play.elapsedMs() / 1000;
+  S.endState = { state: g.state, time: S.time, minesLeft: minesBefore };
   if (g.state === 'won') sfx.win();
   ui.showBanner(g.state, S.time);
   mode3d.gameEnded();
@@ -134,7 +137,7 @@ const input = new Input({
   onLockChange: (locked) => {
     if (locked) {
       if (S.mode === 'ready' || S.mode === 'paused') enterPlaying();
-    } else if (S.mode === 'playing' && !S.lockless) {
+    } else if (S.mode === 'playing' && !S.lockless && !board3d.failure) { // a failed board released the lock for its offer
       PAUSE.pause('key'); // the browser's own Esc released the lock
     }
   },
@@ -183,6 +186,8 @@ const ui = new UI({
   onToggleSound: () => toggleSound(),
   onRetry2D: () => mode2d.retry(),
   onStandard2D: () => mode2d.playStandard(),
+  onRetry3D: () => retry3D('retry'),
+  onStandard3D: () => retry3D('standard'),
 });
 ui.setNoMouse(NO_MOUSE);
 
@@ -224,7 +229,7 @@ const SHELL = createRouter({
     ctxlost: { defaultFocus: '#ctx-lost-btn', show: () => showContextLost(), hide: () => hideContextLost(), back: () => showMainMenu() },
   },
   focus: (target, name) => focusScreen(target, name),
-  onChange: () => { layerChanged(); needRender = true; },
+  onChange: () => { layerChanged(); needRender = true; sync3D(); },
 });
 // end of screen table
 Object.defineProperty(S, 'mode', { get: () => SHELL.current, enumerable: true });
@@ -238,7 +243,7 @@ const FLOW_3D = {
   start: (settings) => startGame(settings),
   pause: (note) => showPauseCard(note),
   resume: (source) => resumeGame(source),
-  restart: (source) => { startGame(S.settings); if (source === 'pad') padResume(); else input.requestLock(); }, // entered as resume enters play
+  restart: (source) => { startGame(board3dChoice); if (source === 'pad') padResume(); else input.requestLock(); }, // entered as resume enters play
   leave: () => leaveGame(),
   snapshot: () => ({ settings: S.settings, started: S.started, time: S.time, endState: S.endState }),
   contextLost: () => contextLost,
@@ -375,11 +380,24 @@ function applyPixelRatio(n = boardCells) {
   if (renderer.setPixelRatio(pr)) needRender = true;
 }
 
+// The 3D game asks the generation worker for its boards; one client, released by each session's leave.
+const GEN_3D = createGenerationClient();
+const board3d = { generating: false, failure: null }; // the 3D board status card: a slow first click, a failed board
+let board3dChoice = null; // the board a restart plays again: S.settings and the no-guess switch
+
 function startGame(settings) {
   const s = clampSettings(settings);
-  const play = create3DGame({ ...s, minePositions: settings.minePositions }); // a mine set is the debug hook's fixed board
+  S.play?.leave();
+  const noGuess = !!settings.noGuess;
+  // a mine set is the debug hook's fixed board
+  const play = createSession({ board: { ...s, noGuess, minePositions: settings.minePositions }, client: GEN_3D });
+  play.on('generating', ({ shown }) => { if (S.play === play) { board3d.generating = shown; showStatus3D(); } });
+  play.on('failed', (failure) => { if (S.play === play) { board3d.failure = failure; showStatus3D(); } });
+  play.on('started', () => { if (S.play === play) { S.started = true; mode3d.gameStarted(); } });
+  play.on('finished', () => { if (S.play === play) endGame(); });
   const g = play.view;
   S.settings = { X: s.X, Y: s.Y, Z: s.Z, mines: play.mines };
+  board3dChoice = { ...S.settings, noGuess };
   S.play = play;
   S.game = g;
   S.started = false;
@@ -388,6 +406,8 @@ function startGame(settings) {
   S.selected = -1;
   S.pickKey = '';
   S.spacing = SPACING_START;
+  board3d.generating = false;
+  board3d.failure = null;
   mouse.reset();
   renderer.setGame(g);
   applyPixelRatio(g.n);
@@ -397,6 +417,37 @@ function startGame(settings) {
   ui.updateHud(0, g.minesLeft);
   SHELL.go('ready', { data: { msg: NO_MOUSE ? NO_MOUSE_MSG : '' } });
   needRender = true;
+}
+
+/** The 3D game's timer runs only while its board is in play; every screen change keeps it in step. */
+function sync3D() {
+  const play = S.play;
+  if (!play) return;
+  if (S.mode === 'playing') play.resume();
+  else play.pause();
+  if (S.started && !S.endState) S.time = play.elapsedMs() / 1000;
+  showStatus3D();
+}
+/** The 3D board status card shows over the box in play; a failed board releases pointer lock for its offer. */
+function showStatus3D() {
+  const on = S.mode === 'playing' && !!S.play;
+  ui.setBoardStatus3D(on ? board3d : {});
+  if (on && board3d.failure) {
+    input.exitLock();
+    document.getElementById('m3d-retry').focus({ preventScroll: true });
+  }
+}
+/** The failed board's offer: Retry with a new seed, or the same size with no-guess off. */
+function retry3D(kind) {
+  const play = S.play;
+  if (!play || !board3d.failure) return;
+  board3d.failure = null;
+  const r = kind === 'retry' ? play.retry() : play.playStandard();
+  if (kind === 'standard') board3dChoice = { ...board3dChoice, noGuess: false }; // a restart keeps the standard board
+  showStatus3D();
+  if (padGesture) setLockless(true);
+  else if (!S.lockless) input.requestLock();
+  r?.then((res) => { if (res && S.play === play) actionSounds('left', res); });
 }
 
 /**
@@ -471,8 +522,12 @@ function onBackdrop() { return BACKDROP_SCREENS.has(S.mode); }
 function leaveGame() {
   input.exitLock();
   setLockless(false);
+  S.play?.leave();
   S.game = null;
   S.play = null;
+  board3d.generating = false;
+  board3d.failure = null;
+  ui.setBoardStatus3D({});
   ui.hideBanner();
 }
 /** Put the decorative demo board behind the menu. */
@@ -507,7 +562,7 @@ canvas.addEventListener('webglcontextlost', (e) => {
 function showContextLost() {
   mouse.reset();
   input.exitLock();
-  for (const id of ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'records', 'settings', 'c2d-choice', 'c2d', 'controls-modal']) {
+  for (const id of ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'records', 'settings', 'c2d-choice', 'c2d', 'm3d-status', 'controls-modal']) {
     const el = document.getElementById(id);
     if (!el) continue;
     if (id !== 'menu') el.classList.add('hidden');
@@ -518,7 +573,7 @@ function showContextLost() {
 /** Leaving the context-lost screen (back to the menu): the other overlays are live again. */
 function hideContextLost() {
   document.getElementById('ctx-lost').classList.add('hidden');
-  for (const id of ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'records', 'settings', 'c2d-choice', 'c2d', 'controls-modal']) {
+  for (const id of ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'records', 'settings', 'c2d-choice', 'c2d', 'm3d-status', 'controls-modal']) {
     const el = document.getElementById(id);
     if (el) el.inert = false;
   }
@@ -572,7 +627,7 @@ function padClick(el) {
 // Spatial focus navigation inside the topmost visible overlay (its screen, or the controls modal).
 const LAYER_SCREEN = {
   'ctx-lost': 'ctxlost', 'controls-modal': null, pause: 'paused', ready: 'ready', results: 'results',
-  'coming-soon': 'coming-soon', records: 'records', settings: 'settings', 'board-choice': 'board-choice', 'c2d-choice': 'classic-2d-choice', c2d: 'classic-2d', menu: 'menu',
+  'coming-soon': 'coming-soon', records: 'records', settings: 'settings', 'board-choice': 'board-choice', 'c2d-choice': 'classic-2d-choice', c2d: 'classic-2d', 'm3d-status': 'playing', menu: 'menu',
 };
 const SCREEN_LAYER = Object.fromEntries(Object.entries(LAYER_SCREEN).filter(([, s]) => s).map(([l, s]) => [s, l]));
 const MODAL_FOCUS = '#controls-close';
@@ -668,6 +723,7 @@ function handlePad(p, dt, now) {
 }
 
 function padPlaying(p, held, pressed, dt, now) {
+  if (board3d.failure) { padFailed3D(p, held, pressed, now); return; }
   if (pressed(BTN.START)) { padClick(document.getElementById('hud-pause')); return; } // the overlay's pause button
   if (backButtons(S.mode).some(pressed)) { padClick(document.getElementById('hud-pause')); return; } // Back while playing = Pause
   if (pressed(BTN.X)) ui.userToggleHelp();
@@ -701,6 +757,13 @@ function padBoard2D(p, held, pressed, now) {
   if (pressed(BTN.START) || backButtons(S.mode).some(pressed)) { padClick(document.getElementById('hud-pause')); return; }
   if (board2d.failure) { padMenus(p, held, pressed, now); return; }
   mode2d.pad({ ...p, held: p.held.map((_, b) => held(b)) }, now);
+}
+
+/** A failed 3D board: Start and the back buttons pause; its offer is navigated as a menu. */
+function padFailed3D(p, held, pressed, now) {
+  controls.releasePad();
+  if (pressed(BTN.START) || backButtons(S.mode).some(pressed)) { padClick(document.getElementById('hud-pause')); return; }
+  padMenus(p, held, pressed, now);
 }
 
 function padMenus(p, held, pressed, now) {
@@ -823,8 +886,8 @@ function frame(now) {
   const g = S.game;
   if (g && !onBackdrop()) {
     updatePick();
-    // timer: runs only while actually playing (not paused / not on overlays), frozen at the end
-    if (playing && S.started && !S.endState) S.time += Math.min(rawDt, 1);
+    // the timer is the session's: it runs only while playing (sync3D), frozen at the end
+    if (playing && S.started && !S.endState) S.time = S.play.elapsedMs() / 1000;
     const e = S.endState;
     ui.updateHud(e ? e.time : S.time, e ? e.minesLeft : g.minesLeft);
   }
