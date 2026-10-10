@@ -93,7 +93,7 @@ Context:
 
 Done: 2026-10-10, commit `328822e` (11 files, +1134/-162). Flags before the first reveal are held by the session (`js/mode3d/session.js`), not the engine, and applied before the reveal once the board arrives; `create3DGame` moved to `js/mode3d/session.js`; the generation worker gained the `box` board description.
 
-## [P] 8. Implement task 58 — No-guess cell-count limit for 3D boards
+## [ ] 8. Implement task 58 — No-guess cell-count limit for 3D boards
 
 Depends on: 7
 
@@ -110,6 +110,7 @@ Context:
     a. Leave them to a follow-up (`/architect amend feature=3d-play-flow "no-guess on boards with a 2-cell axis"`) and keep this task to the cell-count limit.
     b. Also disable no-guess on every board with a 2-cell axis in this task. That is a design change beyond the task's scope.
     Recommendation: a.
+- 2026-10-10 unparked with answer: P1: Q1a, Q2a
 
 ```prompt
 /task-implement 58 --review
