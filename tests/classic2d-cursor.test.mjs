@@ -362,8 +362,8 @@ function ringView(rows = CORNER) {
 
 const rings = (canvas) => canvas.ctx.calls.filter((c) => c.op === 'strokeRect' && c.stroke === '#0000ff');
 
-test('the board view draws the cursor as a focus ring from the focus-ring token, redrawing only the two cells a move touches', () => {
-  assert.equal(CURSOR_RING, '--color-focus-ring');
+test('the board view draws the cursor as a focus ring from the tile-cursor token, redrawing only the two cells a move touches', () => {
+  assert.equal(CURSOR_RING, '--color-tile-cursor');
   const css = readFileSync(join(ROOT, 'css/tokens.css'), 'utf8');
   assert.match(css, new RegExp(`${CURSOR_RING}:`), 'the token exists');
   const v = ringView();
@@ -690,6 +690,59 @@ test('in a browser, a Beginner game on a fixed board is played by keyboard to a 
     }
     assert.equal(await page.evaluate(() => globalThis.__play.session.state), 'won');
     assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test('in a browser, the cursor ring an arrow key moves stands out from the tile edge in both themes', async (t) => {
+  const playwright = await loadPlaywright();
+  if (!playwright) {
+    t.skip('Playwright is not installed');
+    return;
+  }
+  let browser;
+  try {
+    browser = await playwright.chromium.launch();
+  } catch (error) {
+    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
+    return;
+  }
+  const server = await serve();
+  try {
+    for (const theme of ['light', 'dark']) {
+      const page = await browser.newPage({ viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 });
+      const errors = [];
+      page.on('pageerror', (e) => errors.push(e.message));
+      await page.goto(`http://127.0.0.1:${server.address().port}/dev/components.html`);
+      await page.evaluate((th) => document.documentElement.setAttribute('data-theme', th), theme);
+      await page.evaluate(mountGame);
+      await page.keyboard.press('ArrowRight');
+      await page.keyboard.press('ArrowDown');
+      const seen = await page.evaluate(() => {
+        const { view } = globalThis.__play;
+        const ctx = view.canvas.getContext('2d');
+        // The middle of a tile's left band, where both the edge and the ring are drawn.
+        const band = (c) => {
+          const r = view.cellRect(c);
+          const w = Math.max(2, Math.round(r.size / 12));
+          return [...ctx.getImageData(Math.floor(r.x + w / 2), Math.floor(r.y + r.size / 2), 1, 1).data.slice(0, 3)];
+        };
+        const probe = document.createElement('div');
+        probe.style.color = getComputedStyle(document.documentElement).getPropertyValue('--color-tile-edge');
+        document.body.append(probe);
+        const edge = getComputedStyle(probe).color.match(/\d+/g).slice(0, 3).map(Number);
+        probe.remove();
+        return { cursor: view.cursor, ring: band(view.cursor), neighbour: band(view.cursor + 1), edge };
+      });
+      assert.equal(seen.cursor, 10, `${theme}: the arrows moved the cursor to (1, 1)`);
+      assert.deepEqual(seen.neighbour, seen.edge, `${theme}: a closed tile's band is the tile edge`);
+      assert.notDeepEqual(seen.ring, seen.edge, `${theme}: the ring differs from the tile edge`);
+      assert.notDeepEqual(seen.ring, seen.neighbour, `${theme}: the ring differs from its neighbour's band`);
+      assert.deepEqual(errors, []);
+      await page.close();
+    }
   } finally {
     await browser.close();
     await new Promise((resolve) => server.close(resolve));
