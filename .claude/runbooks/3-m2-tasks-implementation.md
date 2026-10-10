@@ -41,7 +41,7 @@ Context:
 
 Done: 2026-10-10, commit `cd6ac10` (4 files, +339/-6). The shared engine uses about 37 bytes a cell on a 100³ board against the 3D engine's 24 (about 13 MB more); the size consequence is left open in `3d-board-graph.md` § Large-board memory. The view sees no change on its own: its driver must call `view.apply(result)` after every action.
 
-## [ ] 4. Implement task 54 — 3D front-end on the shared engine and retirement of the 3D engine
+## [x] 4. Implement task 54 — 3D front-end on the shared engine and retirement of the 3D engine
 
 Depends on: 3
 
@@ -52,11 +52,14 @@ Context:
 /task-implement 54 --review --rounds 2
 ```
 
+Done: 2026-10-10, commit `5b88d74` (11 files, +286/-797). The 3D game is built by `create3DGame` in `js/shell/mode-3d.js` (state view in `S.game`, actions in `S.play`); two behaviour changes are unrecorded in any feature document: a flag before the first click does nothing, and a 1×1×1 custom board gets 0 mines.
+
 ## [ ] 5. Implement task 55 — Update documentation for feature `3d-board-graph`
 
 Depends on: 1, 2, 3, 4
 
-Context: none
+Context:
+- 2026-10-10 (from step 4): `.claude/context/*` still describes the deleted `js/logic.js`; two behaviour changes need recording or deciding: right-click flagging before the first click now does nothing (the old engine allowed it), and a 1×1×1 custom board gets 0 mines with the info line "Mines must be 1–0".
 
 ```prompt
 /task-implement 55 --review
@@ -66,7 +69,8 @@ Context: none
 
 Depends on: 4
 
-Context: none
+Context:
+- 2026-10-10 (from step 4): a 1×1×1 custom board cannot meet the 1-to-cells-minus-one mine range (it gets 0 mines, info line "Mines must be 1–0"); the custom-board rules here should settle it.
 
 ```prompt
 /task-implement 56 --review
