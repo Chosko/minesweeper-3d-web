@@ -248,9 +248,9 @@ asserted.
 
 ## CROSS-REFERENCES
 
-- [app-shell.md](app-shell.md) — `create3DGame` in `js/shell/mode-3d.js`
-  builds the 3D game (box graph, 3D profile, placer, state view) and drives
-  its actions.
+- [mode3d.md](mode3d.md) — `create3DGame` in `js/mode3d/session.js`
+  builds the 3D game (box graph, 3D profile, state view) and the 3D session
+  drives its actions.
 - [rendering.md](rendering.md), [input.md](input.md) — the 3D renderer and
   picking read the 3D state view.
 - [testing.md](testing.md) — `tests/engine-*.test.mjs` and the fidelity

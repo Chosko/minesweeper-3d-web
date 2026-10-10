@@ -96,7 +96,7 @@ Feature: 3d-play-flow
 
 ## 60. Update documentation for feature `3d-play-flow`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/mode3d.md, .claude/context/app-shell.md, .claude/context/input.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
 Preconditions: 56, 57, 58, 59

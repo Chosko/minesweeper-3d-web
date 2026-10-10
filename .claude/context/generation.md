@@ -19,11 +19,11 @@ rules engine's game state — it reuses only the cell graph and its providers
 - `js/generation/client.js` — the page-side client: one request in flight,
   cancellation.
 
-Its callers answer the engine's first reveal, "board needed at c", and hand
-the mine set back with the engine's `supplyBoard`: the Classic 2D game
-session (`js/classic2d/session.js`) through the client, and the 3D game
-(`create3DGame` in `js/shell/mode-3d.js`, [app-shell.md](app-shell.md)),
-which calls the standard placer directly on the box graph.
+Both callers ask through the client when a game's first reveal needs a
+board: the Classic 2D game session (`js/classic2d/session.js`), which hands
+the mine set back with the engine's `supplyBoard`, and the 3D game session
+(`js/mode3d/session.js`, [mode3d.md](mode3d.md)), which plays a new game
+built from the mine set.
 
 ## PUBLIC API
 
@@ -58,8 +58,9 @@ Solver (`js/generation/solver.js`)
 
 Generate (`js/generation/generate.js`)
 - `generate({ graph, mineCount, firstClick, noGuess, seed })`. `graph` is a
-  description: `{ kind: 'square', width, height }` (the only kind; the box
-  graph arrives with the 3D mode). `noGuess` must be a boolean.
+  description: `{ kind: 'square', width, height }` (the 8-neighbour square
+  grid) or `{ kind: 'box', X, Y, Z }` (the 26-neighbour box), built by
+  `boardGraph`. `noGuess` must be a boolean.
   - success `{ ok: true, mines, seed, generatorVersion }`, plus
     `candidates` (tried, the accepted one included) for no-guess;
   - budget exhausted (no-guess only) `{ ok: false, reason, seed,
@@ -142,8 +143,9 @@ Client (`js/generation/client.js`)
 
 ## CROSS-REFERENCES
 
-- [engine.md](engine.md) — the cell graph and square grid generation runs
-  over, and `supplyBoard`, which takes the mine set.
+- [engine.md](engine.md) — the cell graph, square grid and box graph
+  generation runs over, and `supplyBoard`, which takes the mine set.
+- [mode3d.md](mode3d.md) — the 3D session's box requests.
 - [testing.md](testing.md) — `tests/generation-*.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
@@ -152,7 +154,7 @@ Client (`js/generation/client.js`)
   the module header first; it states what forces a bump.
 - Adding a deduction to the solver, or a solver-correctness failure: read
   `solver.js` stages 1–3 and `enumerate`.
-- Adding a graph description kind (the 3D box graph) to `boardGraph`.
+- Adding a graph description kind to `boardGraph`.
 - Changing the attempt budget: re-measure as the comment beside
   `ATTEMPT_BUDGET` records.
 - Wiring the client into a game (`classic-2d-square-play`): read

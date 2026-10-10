@@ -82,11 +82,27 @@ The rules are classic Minesweeper with one more dimension:
   every neighbour is revealed or flagged and its flag count matches the number. This lets you see
   into the board. Removing a flag next to a hidden cell brings it back, and holding `Ctrl` shows
   every hidden cell.
-- Mines are placed around your first click, so the first click is always safe.
+- The box starts closed. The board is generated around your first click, so the first click is
+  always safe, and the timer starts once the board is ready. Flags placed before that are kept.
 
-Presets: 2D classic (9×9×1, 16×16×1, 30×16×1), Double layer (8×8×2, 14×14×2, 25×16×2) and 3D
-(6×6×6, 8×8×8, 12×12×8). You can also set a custom size (each side 1–100, up to one fewer mine than cells) or roll a
-random board.
+Pick a board and play:
+
+| Board | Size | Mines |
+|---|---|---|
+| Double layer Beginner | 8 × 8 × 2 | 10 |
+| Double layer Intermediate | 14 × 14 × 2 | 60 |
+| Double layer Expert | 25 × 16 × 2 | 130 |
+| Cube Beginner | 6 × 6 × 6 | 10 |
+| Cube Intermediate | 8 × 8 × 8 | 40 |
+| Cube Expert | 12 × 12 × 8 | 130 |
+| Custom | each side 1–100 | up to one fewer than the cells |
+
+- **Random** fills the custom fields with a random board.
+- **No-guess board:** one switch under the presets applies to the preset you pick; the custom board
+  has its own, available up to 8,000 cells (20 × 20 × 20) and shown disabled, with that limit, on a
+  larger board. A no-guess board can be solved from the first click by logic alone; if none is
+  found, the game offers to try again or to play a standard board of the same size.
+- The board choice you made last is preselected next time.
 
 ## 3D controls
 
@@ -142,7 +158,7 @@ browser supports it. Some browsers only start sound after a key press or a click
 
 ## What's new compared to the original
 
-- **Interface:** a main menu with presets and a custom-board form (cell count, mine density and
+- **Interface:** a main menu with presets and a custom-board form (cell count, mine limit and
   validation hints). The HUD shows time, mines left and board size, with indicators for the
   Shift/Space/Ctrl view modes. There is an in-game controls panel (`H`) and an end-of-game banner
   that lets you keep flying around the board.
@@ -150,8 +166,6 @@ browser supports it. Some browsers only start sound after a key press or a click
   "Play again" and "Keep looking around".
 - **Settings:** mouse sensitivity (0.25×–3×), invert mouse Y and volume. They are saved in
   `localStorage`. The defaults match the original.
-- **Best times** for each board size and mine count, saved in `localStorage` and shown on the preset
-  buttons.
 - **Sound:** synthesized sound effects (Web Audio, no audio files) for revealing, flagging,
   chording, actions that change nothing, explosions and wins. They can be muted.
 - **Visual polish:** procedurally drawn tiles with a distinct colour for each number from 1 to 26, a
@@ -218,6 +232,8 @@ node --test
 index.html              Page markup: menu, HUD, overlays, pause menu, import map for three.js
 css/style.css           Styles for menus, HUD and overlays
 js/main.js              Entry point: wires the game, renderer, input and UI; frame loop; game flow
+js/mode3d/              3D mode: board choice and no-guess switch, game session (first click, generation,
+                        timer)
 js/classic2d/           Classic 2D mode: board setup, game session and timer, Canvas board view, mouse,
                         keyboard and controller input, tile skin
 js/records/             Personal records: board identity, game summary, bests and history, Records screen
@@ -227,7 +243,7 @@ js/picking.js           Crosshair picking with a 3D-DDA through the cube lattice
 js/input.js             Fly camera, pointer lock, keyboard/mouse state, release-to-act mouse logic
 js/controls.js          Action layer: keyboard + controller view modes, controller move axes
 js/gamepad.js           Controller polling, stick curve, trigger hysteresis, button labels, focus navigation
-js/ui.js                Menus, HUD, pause menu, settings, best times (DOM only, no game rules)
+js/ui.js                Menus, HUD, pause menu, settings (DOM only, no game rules)
 js/textures.js          Procedurally drawn tile textures (canvas 2D -> texture array)
 js/audio.js             Synthesized sound effects (Web Audio)
 tests/gamepad.test.mjs  Controller helpers, analog camera moves and trigger -> mouse-action sequences

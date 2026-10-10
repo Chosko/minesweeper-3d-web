@@ -4,17 +4,20 @@
 
 The glue that turns the rules engine, renderer, input and audio into a game:
 the game shell (screen router, mode host, main menu, pause controller), the
-results flow and screen, the 3D game flow, the per-frame loop, action
-dispatch, timer, end of game, best times, menus/HUD/overlays, the DOM
-component kit the screens are built from, design tokens and the light/dark
-theme, the debug hook, and the static-site files.
+results flow and screen, the 3D game's wiring to the screens, renderer and
+pointer lock (the 3D board choice, session and adapter themselves are
+[mode3d.md](mode3d.md)), the per-frame loop, action dispatch, end of game,
+menus/HUD/overlays, the DOM component kit the screens are built from, design
+tokens and the light/dark theme, the debug hook, and the static-site files.
 
 - `js/main.js` — entry module. Builds `BoardRenderer`, `FlyCamera`, `Input`,
   `MouseActions`, `Controls`, `GamepadReader`, `UI`, the settings store
   `SETTINGS` ([settings.md](settings.md)), and the shell objects
   `SHELL` (router), `MODES` (mode host, with the 3D adapter registered as
   `'3d'` and the Classic 2D mode as `'classic-2d'`), `PAUSE` (pause
-  controller), `MENU`, `LAST_MODE`, `LAST_CHOICE_2D` and `CHOICE_2D` (the
+  controller), `MENU`, `LAST_MODE`, `LAST_CHOICE_3D` and `CHOICE_3D` (the 3D
+  board choice binder), `GEN_3D` (the 3D game's generation client),
+  `LAST_CHOICE_2D` and `CHOICE_2D` (the
   Classic 2D board choice binder), `RECORDS` (the records store), `RESULTS`
   (the results flow), `RESULTS_VIEW` and `RECORDS_PAGE` (the Records
   screen's controller over its view, [records.md](records.md)); holds the
@@ -31,12 +34,12 @@ theme, the debug hook, and the static-site files.
   - `mode-host.js` — the mode contract and the registry the shell reaches
     every mode through (`createModeHost`, `MODE_METHODS`, `MODE_EVENTS`); the
     contract is documented in its head comment.
-  - `mode-3d.js` — the 3D adapter: the 3D game behind the mode contract,
-    and the 3D game itself on the shared rules engine (`create3DMode`,
-    `create3DGame`, `summary3d`).
-  - `menu.js` — the main menu's entries and routes, and the last mode played
-    (`MENU_ENTRIES`, `PLACEHOLDER_SCREEN`, `entryRoute`, `createMenu`,
-    `createLastMode`).
+  - `mode-3d.js` — the 3D adapter: the 3D game session behind the mode
+    contract (`create3DMode`, `summary3d`; [mode3d.md](mode3d.md)).
+  - `menu.js` — the main menu's entries and routes, the last mode played
+    and each mode's last board choice (`MENU_ENTRIES`,
+    `PLACEHOLDER_SCREEN`, `entryRoute`, `createMenu`, `createLastMode`,
+    `createLastBoardChoice`).
   - `pause.js` — the pause controller: pause, resume, restart, back to menu,
     the confirmations, the game hand-offs and the leave-page guard
     (`createPauseController`); its rules are documented in its head comment.
@@ -48,8 +51,8 @@ theme, the debug hook, and the static-site files.
     formats (`resultsContent`, `formatTime`, …) and the binder that fills
     `#results` (`createResultsView`); the formats are documented in its head
     comment.
-- `js/ui.js` — DOM only, no game rules: class `UI`, board-settings clamping,
-  random board, best times in `localStorage`. Formats the overlay bar with the
+- `js/ui.js` — DOM only, no game rules: class `UI`, board-settings clamping
+  and the help hint's `localStorage` flag. Formats the overlay bar with the
   kit helpers from `js/ui/components.js`; fills the Settings page and the help
   lists from `js/settings/page.js` and `js/settings/bindings.js`.
 - `index.html` — every overlay is static markup toggled by the `.hidden` class;
@@ -63,7 +66,8 @@ theme, the debug hook, and the static-site files.
   Settings page (`#settings`, its controls generated into
   `#settings-body`), the results screen (`#results`) and the pause card (`#pause-card`) are kit markup
   (§ Component kit). `#c2d` is the Classic 2D board layer: the board area
-  `#c2d-board` and the generating / failed-board card `#c2d-status`.
+  `#c2d-board` and the generating / failed-board card `#c2d-status`;
+  `#m3d-status` is the same card over the 3D box.
 - `css/tokens.css` — the design tokens, the single source of every shared
   visual value: palette (`--color-*`), typography (`--font-*`), spacing
   (`--space-*`), radii (`--radius-*`), elevation (`--elevation-*`), motion
@@ -129,25 +133,8 @@ theme, the debug hook, and the static-site files.
   `finished(summary)`, `canPause(bool)`, `failed(reason)`; it may declare
   `failureScreen`.
 
-`js/shell/mode-3d.js`
-- `create3DGame({X, Y, Z, mines, minePositions?}, {randomSeed?})` → `{view,
-  mines, seed, reveal(c), toggleFlag(c), chord(c)}`: the box graph
-  (`js/engine/box-grid.js`) and the 3D rule profile on the shared engine,
-  with `view` the 3D state view the renderer, picking and HUD read
-  ([engine.md](engine.md)). From `mines` it awaits the first click, whose
-  board request it answers with the standard placer
-  (`js/generation/placer.js`) around that cell from a seeded source (`seed`,
-  null until then); from `minePositions` it plays that board from the start.
-  Each action passes the engine's result to the view and returns `{changed,
-  ended, exploded, revealed, flagged, unflagged}` — the counts of cells newly
-  opened, flagged and unflagged, which drive the sound effects.
-- `summary3d({settings, started, time, endState})` → `{mode: '3d', outcome,
-  dimensions: {X,Y,Z}, mines, time}`, or null before the first click.
-- `create3DMode(flow, report)` — the contract over `flow` (`openBoardChoice`,
-  `start`, `pause(note)`, `resume(source)`, `restart(source)`, `leave`,
-  `snapshot`, `contextLost`); `failureScreen: 'ctxlost'`; plus
-  `gameStarted()`, `gameEnded()`, `contextLost()` which `js/main.js` calls
-  from the game's own flow.
+`js/shell/mode-3d.js` — `create3DMode(flow, report)` and `summary3d`, with
+the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
 
 `js/shell/menu.js`
 - `MENU_ENTRIES` — `classic-2d` (mode), `3d` (mode), `records` (screen),
@@ -159,6 +146,11 @@ theme, the debug hook, and the static-site files.
 - `LAST_MODE_DOC` = `'shell.lastMode'`, `LAST_MODE_VERSION` = 1;
   `createLastMode({storage, modes})` → `current`, `record(mode)`, `load()`
   (null when nothing or a malformed document is stored), `dispose()`.
+- `createLastBoardChoice({storage, doc, version?, normalise, fallback})` →
+  `current` (`fallback` until loaded or saved), `played`, `load()`,
+  `save(choice)` (a `RangeError` on a choice `normalise` refuses): a mode's
+  last board choice in its own document; the 3D mode keeps
+  `mode3d.lastChoice` with it.
 
 `js/shell/pause.js`
 - `PAUSE_SOURCES` (`key`, `pad`, `button`, `blur`, `hidden`), `AUTO_SOURCES`
@@ -189,28 +181,27 @@ theme, the debug hook, and the static-site files.
   `hide()`.
 
 `js/ui.js` exports (consumed by `js/main.js`)
-- `DIM_MIN`/`DIM_MAX` (1/100); `clampSettings(s)` → `{X,Y,Z,mines}` integers,
-  dims 1..100, mines 1..X*Y*Z − 1, since the first click is safe (a 1×1×1
-  board clamps to 0 mines, and its custom info line reads "Mines must be
-  1–0"). `randomSettings()` — original Random formula, mines capped at
-  X*Y*Z − 1.
+- `DIM_MIN`/`DIM_MAX` (1/100, re-exported from `js/mode3d/board-choice.js`);
+  `clampSettings(s)` → `{X,Y,Z,mines}` integers, dims 1..100, mines
+  1..X*Y*Z − 1, since the first click is safe (a 1×1×1 board clamps to 0
+  mines). `startGame` clamps with it; the board choice validates first.
 - `fmtDims(s)`, `fmtTime(t)` (2 decimals), `NO_MOUSE_MSG`.
-- `getBest(s)` → seconds or null; `recordBest(s, time)` → `{ best, prev, isNew }`,
-  writes `ms3d.best.<X>x<Y>x<Z>x<mines>` only when faster.
 - `UI` constructor `(cb)` with callbacks `onMenuEntry(id)`, `onBack` (the
-  board choice's, placeholder's and Settings page's Back buttons),
-  `onStart(settings)`, `onReadyClick`, `onReadyBack`, `onResume`,
+  placeholder's and Settings page's Back buttons), `onReadyClick`,
+  `onReadyBack`, `onResume`,
   `onRestart`, `onMainMenu`, `onPause` (the overlay bar's pause button),
   `onToggleSound`, `onRetry2D`, `onStandard2D` (the failed Classic 2D
-  board's offer). Methods: screens `showMenu`, `showBoardChoice`,
+  board's offer), `onRetry3D`, `onStandard3D` (the failed 3D board's
+  offer). Methods: screens `showMenu`, `showBoardChoice`,
   `showBoardChoice2D`, `showComingSoon(title)`, `showRecords` (the menu
   backdrop with the other menu screens hidden; the records view fills and
   shows `#records`), `showSettings` (its bindings
   in the active controller's glyphs),
   `showReady(settings, msg)`, `showPlaying`, `showClassic2D` (positions
   `#c2d-board` 16 px below the overlay bar), `showPause({state,time,minesLeft,note})`;
-  Classic 2D `setBoardText(text)`, `setBoardStatus({generating, failure})`; menu
-  `setLastMode(mode|null)`, `refreshBests`; pause confirmation
+  Classic 2D `setBoardText(text)`, `setBoardStatus({generating, failure})`;
+  3D `setBoardStatus3D({generating, failure})` (`#m3d-status`); menu
+  `setLastMode(mode|null)`; pause confirmation
   `showConfirm({message, confirmLabel}, onYes, onNo)`, `isConfirmOpen`,
   `closeConfirm` (→ false when none is open); HUD `setBoard`,
   `updateHud(time, minesLeft)` (overlay formats, DOM write only on change),
@@ -292,7 +283,7 @@ Game shell (`js/shell/`, wired in `js/main.js`):
 - **Focus.** Each screen declares `defaultFocus`; the router's `focus`
   hand-off (`focusScreen`) resolves it inside the screen's layer, falling back
   to its first focusable control. Defaults: menu the last mode played
-  (`[data-entry][data-last]`), board choice the last played board
+  (`[data-entry][data-last]`), 3D board choice the last board choice
   (`[data-preset][data-last]`), Classic 2D board choice the last board
   choice (`[data-size][data-last]`), placeholder its Back, Records the
   chosen board in the picker (`#records-picker [aria-checked="true"]`),
@@ -302,7 +293,7 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   ended, else Resume; results Play again (`#r-again`); ctx-lost its reload
   button.
 - **Mode host.** The shell reaches a game only through `MODES`: the menu's
-  board choice, `start` (`onStart`, `__ms.start`), pause/resume/restart
+  board choice, `start` (the board choices' `onStart`, `__ms.start`), pause/resume/restart
   (through the pause controller) and `leave`. Every menu screen's `show`
   calls `MODES.leave()`. The host keeps the active mode and its game state
   from the mode's reports, reports `abandoned` on the mode's behalf (restart,
@@ -310,14 +301,17 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   from an inactive mode, and turns a throwing `start` into `failed`.
   `MODES.on('failed')` routes to the mode's `failureScreen`.
 - **The 3D adapter.** `FLOW_3D` in `js/main.js` is the 3D game's own flow
-  handed to `create3DMode`: board choice routes to `board-choice`; `start` is
-  `startGame`; `pause` shows the pause card; `resume` is `resumeGame`
-  (controller → lockless play, otherwise the click-to-play card, which
-  requests pointer lock for a pointer resume); `restart` starts the same
-  settings and enters play the way resume does; `leave` is `leaveGame`
-  (releases lock and lockless play, drops the game). `onAction` calls
-  `mode3d.gameStarted()` on the first left release and `endGame` calls
-  `mode3d.gameEnded()`.
+  handed to `create3DMode` ([mode3d.md](mode3d.md)): board choice routes to
+  `board-choice`, whose `show` fills `CHOICE_3D` from `LAST_CHOICE_3D`;
+  `start` is `startGame`, which returns the new session; `pause` shows the
+  pause card; `resume` is `resumeGame` (controller → lockless play,
+  otherwise the click-to-play card, which requests pointer lock for a
+  pointer resume); `restart` starts a session of the same board (with
+  no-guess off once the player took the failed board's standard offer) and
+  enters play the way resume does; `leave` is `leaveGame` (leaves the
+  session, releases lock and lockless play, hides `#m3d-status`). The
+  adapter reports started, finished and abandoned from the session's own
+  events; `js/main.js` calls nothing on it but `contextLost()`.
 - **The Classic 2D mode.** `FLOW_2D` in `js/main.js` is the shell side
   handed to `createClassic2DMode` ([classic2d.md](classic2d.md)): board
   choice routes to `classic-2d-choice` with the last board choice (loaded at
@@ -391,27 +385,40 @@ Game shell (`js/shell/`, wired in `js/main.js`):
 Game flow (`js/main.js`):
 - 3D transitions: `startGame` → `ready`; pointer lock acquired
   (`onLockChange`) or `padResume` → `enterPlaying` → `playing`; pause →
-  `paused`.
+  `paused`. A failed board releases pointer lock for its offer, and that
+  release does not pause.
+- Board status: `board3d` holds `{generating, failure}` from the session's
+  `generating` and `failed` events; `showStatus3D` shows `#m3d-status` from
+  it only while `playing`, and on a failure exits pointer lock and focuses
+  Retry. `retry3D` answers the offer (`onRetry3D` / `onStandard3D`) and
+  re-enters play. On a failed board the controller goes to `padFailed3D`:
+  Start and the back buttons pause, the offer is navigated as a menu.
+- `sync3D` runs on every router change: it resumes the session on
+  `playing` and pauses it everywhere else, so the session's timer runs only
+  in play, and refreshes the status card.
 - `S.lockless`: play without pointer lock (controller, `forcePlay`). Mirrors
   `body.lockless`; when set, losing lock does not pause and Esc pauses directly.
   A UI click made with controller A sets `padGesture`, which routes resume/
   restart to lockless play because it is not a user gesture for pointer lock.
-- `startGame` builds the game with `create3DGame` (the debug hook's
-  `minePositions` give a fixed board): `S.play` holds its actions and
-  `S.game` its 3D state view, which every reader of the board uses.
+- `startGame(settings)` leaves the previous session and opens a new one
+  (`createSession` over `GEN_3D`; the debug hook's `minePositions` give a
+  fixed board), subscribes to its events, and returns it: `S.play` holds the
+  session and `S.game` its 3D state view, which every reader of the board
+  uses. `S.started` is set at the session's `started` — the first reveal
+  applied to the generated board.
 - `onAction(type)` is the only dispatcher to the game (wired as `MouseActions`'
   callback): `'left'` → `S.play.reveal`, `'right'` → `toggleFlag`,
-  `'chord'` → `chord`; a flag before the first click does nothing, as on
-  every engine profile. Calls `renderer.snapshotBeforeAction()` before left/chord, sets
-  `S.started` on any left release (timer starts even if nothing happens; chords
-  do not start it), plays SFX from the result objects, `sfx.noop` when `version`
-  is unchanged, and on a `playing → won/lost` transition runs
-  `endGame(minesBefore)` then `afterEndGame()`.
+  `'chord'` → `chord`. Calls `renderer.snapshotBeforeAction()` before
+  left/chord and plays SFX from the result (`actionSounds`) — for the first
+  reveal once its board has arrived, as the session answers it with a
+  Promise; a null result (generating, failed, paused) does nothing, and
+  `sfx.noop` plays when `version` is unchanged in play. The end of the game
+  comes through the session's `finished`, which runs `endGame`.
 - End state freeze: `endGame` stores `S.endState = {state, time, minesLeft}`,
-  with `minesLeft` taken from before the final action (original HUD froze on the
-  previous frame). HUD, pause card and timer read `S.endState` once set; the
-  timer advances only when `playing && started && !endState`, clamped to 1 s/frame.
-- `afterEndGame` (best times) is kept separate from `endGame`.
+  with `time` the session's elapsed time and `minesLeft` taken from before
+  the final action (original HUD froze on the previous frame). HUD, pause
+  card and timer read `S.endState` once set; until then the frame loop
+  reads `S.time` from `S.play.elapsedMs()` while `playing && started`.
 - `startCameraPos(X,Y,Z)` = original `(0, 10, -8M)` shifted by minus the original
   grid centre at spacing 1.1, because the port centres the grid on the origin.
   No snapping to a cell. Spacing resets to `SPACING_START` per game; the menu
@@ -498,12 +505,16 @@ Component kit (`css/components.css`, catalogue in its head comment):
   `ui-menu` of the four entries (`data-entry`; `UI` appends a "Last played"
   `ui-menu__detail` line and sets `data-last` on the last mode played) and a
   `ui-row` footer (Controls, Sound, volume `ui-slider`, credit `ui-link`).
-- 3D board choice (`#board-choice`): a `ui-card ui-screen--wide` with one
-  `ui-menu` per board family in a `ui-grid` (items carry `data-preset`; `UI`
-  appends a "Best" and a "Last played" `ui-menu__detail` line and sets
-  `data-last` on the last played board), the custom board as a `ui-panel` of
-  `ui-field` entries with Random/Start in `ui-actions--row`, and a Back
-  button. The custom info line toggles `ui-text--warning` / `ui-text--muted`.
+- 3D board choice (`#board-choice`, bound by `bindBoardChoice` of
+  `js/mode3d/board-choice.js`, [mode3d.md](mode3d.md)): a `ui-card
+  ui-screen--wide` with one `ui-menu` per board family (Double layer, Cube)
+  in a `ui-grid` (items carry `data-preset`; the binder appends a "Last
+  played" `ui-menu__detail` line and sets `data-last` on the last board
+  choice) and the presets' no-guess `ui-toggle` under it, the custom board
+  as a `ui-panel` of `ui-field` entries with Random/Start in
+  `ui-actions--row`, its info line (`ui-text--warning` on an invalid or very
+  large board), the custom board's no-guess `ui-toggle` under the line
+  giving the cell-count limit while it is disabled, and a Back button.
 - Classic 2D board choice (`#c2d-choice`): a `ui-card ui-screen--wide` with
   one `ui-menu` of the standard sizes (`data-size`), the custom board as a
   `ui-panel` of `ui-field` entries with Start (`data-size="custom"`) and an
@@ -558,21 +569,24 @@ Component kit (`css/components.css`, catalogue in its head comment):
   stylesheet or a read of an undeclared token.
 - The 3D scene (`js/render.js`, `js/textures.js`) keeps its own palette: it
   never reads tokens and never subscribes to theme changes.
-- `js/ui.js`'s `localStorage` keys are all `ms3d.*` (custom, hintH.done,
-  best.*, lastPreset); access is try/catch-wrapped (`lsGet`/`lsSet`). The
-  last mode played (`shell.lastMode`) and the settings (`settings`) are
-  platform-storage documents, not `ms3d.*` keys.
+- `js/ui.js`'s one `localStorage` key is `ms3d.hintH.done`; access is
+  try/catch-wrapped (`lsGet`/`lsSet`). Nothing reads, writes, shows or imports the
+  `ms3d.custom`, `ms3d.best.*` (the per-size 3D best times) and
+  `ms3d.lastPreset` keys left in browsers; they stay where they are. The last mode played (`shell.lastMode`), the
+  last 3D board choice (`mode3d.lastChoice`) and the settings (`settings`)
+  are platform-storage documents, not `ms3d.*` keys.
 
 ## DOMAIN DEPENDENCIES
 
 Gameplay fidelity to the original game is the overriding rule.
 
 - [../../docs/ORIGINAL_SPEC.md](../../docs/ORIGINAL_SPEC.md):
-  - "Grid & geometry" — preset list (mirrored in `index.html` `data-preset`),
-    custom limits, Random formula, spacing start/clamp/wheel step.
-  - "Rules" — Timer (starts on first left release over a selected cell, chords
-    do not start it, 2 decimals, freezes on win/loss) and HUD contents.
+  - "Grid & geometry" — spacing start/clamp/wheel step.
+  - "Rules" — the timer freezing on win/loss, and HUD contents.
   - "Controls" — start camera position, Esc/F5 replaced by the pause menu.
+- [../domain/features/3d-play-flow.md](../domain/features/3d-play-flow.md) —
+  the 3D presets, no-guess switch, generating state, timer start and the 3D
+  mode's reports, which `js/main.js` wires ([mode3d.md](mode3d.md)).
 - [../domain/features/game-shell.md](../domain/features/game-shell.md) — the
   screens, router and Back rules, the mode contract, the main menu and its
   placeholder, the pause rules, confirmations, hand-offs and leave-page guard.
@@ -593,9 +607,12 @@ Gameplay fidelity to the original game is the overriding rule.
 
 ## CROSS-REFERENCES
 
-- [engine.md](engine.md) — `create3DGame` plays the box graph and the 3D rule
-  profile on the shared engine; main reads the 3D state view's `state`,
-  `minesLeft`, `version`.
+- [mode3d.md](mode3d.md) — the 3D board choice, the session `startGame`
+  opens and the adapter `FLOW_3D` is handed to.
+- [engine.md](engine.md) — the 3D state view, whose `state`, `minesLeft`
+  and `version` main reads through the session's `view`.
+- [generation.md](generation.md) — `createGenerationClient`, behind
+  `GEN_3D`.
 - [rendering.md](rendering.md) — main owns `BoardRenderer`: `setGame`, `setToggles`,
   `setSpacing`, `setSelected`, `sync`, `render`, `snapshotBeforeAction`, `isAnimating`.
 - [input.md](input.md) — `FlyCamera`, `Input` callbacks (`onLook`, `onWheel`,
@@ -616,7 +633,8 @@ Gameplay fidelity to the original game is the overriding rule.
   route shows.
 - [testing.md](testing.md) — browser tests drive the game through `window.__ms`;
   `tests/shell-*.test.mjs` pin the router, navigation, mode host, 3D adapter,
-  menu and pause controller; `tests/tokens.test.mjs` and
+  menu and pause controller; `tests/mode3d-*.test.mjs` the 3D board choice
+  and session and their wiring here; `tests/tokens.test.mjs` and
   `tests/theme.test.mjs` pin the token sheet, the applier and the reader;
   `tests/components.test.mjs` pins the kit, its helpers, the overlay bar, the
   kit-built screens and their contrast; `tests/settings-*.test.mjs` pin the
@@ -639,7 +657,10 @@ Gameplay fidelity to the original game is the overriding rule.
   `results` wiring in `js/main.js`.
 - Changing pause rules, confirmations or the leave-page guard: `js/shell/pause.js`
   and the `PAUSE` wiring in `js/main.js`.
-- Changing timer start/freeze, end-of-game flow, or best-time recording.
+- Changing the 3D end-of-game flow or the frozen HUD (`endGame`,
+  `S.endState`), the board status card (`showStatus3D`, `retry3D`) or how
+  the session's timer follows the screens (`sync3D`); the timer's start is
+  the session's ([mode3d.md](mode3d.md)).
 - Adding a `__ms` hook method or changing what `info()` reports.
 - Debugging frames that do not redraw (or never stop redrawing): `shouldRender`.
 - Adding a menu entry, preset, HUD element or overlay (HTML

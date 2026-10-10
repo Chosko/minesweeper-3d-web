@@ -87,8 +87,11 @@ resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md).
   button only clears `toggle`. A release without a matching `down` is ignored. Every fire is gated on
   `hasSelection()`. The controller triggers drive this same instance (RT = button 0, LT = button 2),
   so chord semantics stay identical across devices — do not build a second state machine.
-- **Timer start is not here.** `MouseActions` only emits `'left'`; the "first left release starts
-  the timer" rule is applied by the `onAction` handler in `js/main.js`.
+- **Game rules are not here.** `MouseActions` only emits `'left'`, `'right'` and `'chord'`;
+  `onAction` in `js/main.js` hands each to the 3D game session (`js/mode3d/session.js`,
+  [mode3d.md](mode3d.md)) as `reveal` / `toggleFlag` / `chord`. The session decides what a gesture
+  does before the board exists — a flag is kept, a chord or a release on a flag does nothing, the
+  first reveal asks for the board — and starts the timer when that board arrives.
 - **Camera conventions.** `pitch` + = down, `yaw` PI = +Z; `apply()` negates both into a `'YXZ'`
   Euler. `move()` and `moveAxes()` deliberately share the original forward-vector quirk (no
   cos(pitch) on XZ); W moves along `-forward`. Q/E and the `u` axis are world-vertical.
@@ -144,7 +147,7 @@ additions the spec permits; they must not alter any rule above.
 
 ## CROSS-REFERENCES
 
-- [engine.md](engine.md) — `pickCell` reads the 3D state view's dimensions and its `unlinked` / `pressed` arrays; `MouseActions` actions become the 3D game's `reveal` / `toggleFlag` / `chord` calls in main ([app-shell.md](app-shell.md)).
+- [engine.md](engine.md) — `pickCell` reads the 3D state view's dimensions and its `unlinked` / `pressed` arrays; `MouseActions` actions become the 3D game session's `reveal` / `toggleFlag` / `chord` calls in main ([app-shell.md](app-shell.md), [mode3d.md](mode3d.md)).
 - [rendering.md](rendering.md) — `FlyCamera.apply` drives the renderer's camera; `Controls.shift/space/ctrl` feed the renderer toggles; the picked cell becomes the renderer's selection.
 - [app-shell.md](app-shell.md) — `js/main.js` constructs every object here, maps pad buttons (`handlePad`), runs menu focus navigation with `pickInDirection` / `Repeat` and the shell navigation helpers, and owns the pointer-lock flow; the screen router and the pause controller decide where Back and pause lead.
 - [audio.md](audio.md) — no direct calls; action results in main trigger sound effects.
