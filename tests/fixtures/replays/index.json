@@ -1,0 +1,26 @@
+[
+  {
+    "file": "2d-beginner-won.msrp",
+    "note": "2D Beginner, won with wasted clicks"
+  },
+  {
+    "file": "2d-intermediate-lost.msrp",
+    "note": "2D Intermediate, lost"
+  },
+  {
+    "file": "2d-expert-abandoned.msrp",
+    "note": "2D Expert, abandoned"
+  },
+  {
+    "file": "3d-double-beginner-won.msrp",
+    "note": "3D double layer Beginner, won, flags before the first reveal"
+  },
+  {
+    "file": "3d-cube-beginner-lost.msrp",
+    "note": "3D cube Beginner, lost with wasted clicks"
+  },
+  {
+    "file": "3d-cube-intermediate-abandoned.msrp",
+    "note": "3D cube Intermediate, abandoned"
+  }
+]

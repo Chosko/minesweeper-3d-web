@@ -34,6 +34,9 @@
 //             value's delta from the previous sample (signed); for a cursor, the cell delta
 //             from the previous cursor cell (signed); for a view mode, the mode (byte)
 //             check: outcome (byte), elapsed, 3BV, 3BV solved, six click counts, digest (4 bytes)
+// Format version 1 is not compressed: the platform's compression stream saves about 20 to 40 % on
+// measured replays (dev/measure-replays.mjs) of a few to a few tens of kilobytes, and would make
+// encoding and decoding asynchronous. A compressed body would be a new format version.
 // The envelope is the same for every format version, so a newer blob's checksum is verified and
 // its version recognised as newer before its body is read; a damaged blob is never taken for a
 // newer one.

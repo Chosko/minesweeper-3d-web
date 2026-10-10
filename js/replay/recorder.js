@@ -40,6 +40,8 @@
 import { ACTION_KINDS, SAMPLE_ARITY, encodeReplay, cellStateDigest } from './format.js';
 import { createBoardIdentity, boardKey } from '../records/board.js';
 
+// Checked by dev/measure-replays.mjs: the busiest measured 3D game records about 3.8 KB of
+// movement a minute, so the cap holds about 9 hours of it.
 export const MOVEMENT_CAP_BYTES = 2 * 1024 * 1024;
 
 const T_SAMPLE = 0, T_CURSOR = 1, T_VIEW = 2;

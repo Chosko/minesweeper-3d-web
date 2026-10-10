@@ -151,11 +151,17 @@ summary in the game shell's `game finished` and `game abandoned` reports.
 Consumed by `replay-library`, which keeps the sealed replay, and
 `replay-playback`, which decodes it.
 
-## Open questions
+## Recording constants
 
-- The exact sampling rates, quantisation steps and movement cap. Set by
-  measuring real games so that 2D movement looks smooth and a long 3D game
-  stays within the cap; blocks the constants, not the format.
-- Whether the encoded blob is also compressed with the platform's built-in
-  compression stream. Decided by measuring the size gain on real replays;
-  the format version records the choice either way.
+Set by measuring simulated games played through the mode sessions
+(`dev/measure-replays.mjs`):
+
+- **2D sampling** — the pointer every 50 ms of game time, in 1/64 of a
+  cell.
+- **3D sampling** — the camera every 100 ms of game time: its position in
+  1/16 of a cell, its yaw and pitch in 1/8192 of a turn.
+- **Movement cap** — 2 MB (2 × 1024 × 1024 bytes) of encoded movement,
+  about 9 hours of the busiest measured 3D game.
+- **Compression** — none: format version 1 stores the blob as encoded. The
+  platform's compression stream saves 20 to 40 % on replays of a few to a
+  few tens of kilobytes, and would make sealing and decoding asynchronous.

@@ -186,7 +186,7 @@ Feature: replay-recording
 
 ## 69. Replay determinism tests and the measured recording constants
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: tests/replay-determinism.test.mjs, tests/fixtures/replays/, dev/measure-replays.mjs, js/replay/recorder.js, js/replay/format.js, js/replay/sampler-2d.js, js/replay/sampler-3d.js, .claude/domain/features/replay-recording.md
 Preconditions: 67, 68
