@@ -4,7 +4,7 @@
 
 ## design-tokens-and-themes — Design tokens and the light and dark themes
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/design-tokens-and-themes.md
 Source: product-design.md § Visual design system (m1-classic-2d)
 Tasks: 1, 2, 3
@@ -13,7 +13,7 @@ Tasks: 1, 2, 3
 
 ## square-tile-skin — Square tile and number colours for Classic 2D
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/square-tile-skin.md
 Source: product-design.md § Visual design system (m1-classic-2d)
 Tasks: 21, 22, 23
@@ -22,7 +22,7 @@ Tasks: 21, 22, 23
 
 ## screen-components — Component kit for the menu, overlay and results screens
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/screen-components.md
 Source: product-design.md § Visual design system (m1-classic-2d)
 Tasks: 17, 18, 19, 20
@@ -31,7 +31,7 @@ Tasks: 17, 18, 19, 20
 
 ## cell-graph-rules-engine — Rules engine over a cell graph, with the square grid
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/cell-graph-rules-engine.md
 Source: product-design.md § Classic 2D (m1-classic-2d)
 Tasks: 4, 5, 6, 7, 8
@@ -40,7 +40,7 @@ Tasks: 4, 5, 6, 7, 8
 
 ## board-generation — Seeded board generation, safe first click and no-guess solver
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/board-generation.md
 Source: product-design.md § Classic 2D (m1-classic-2d)
 Tasks: 9, 10, 11, 12, 13
@@ -49,7 +49,7 @@ Tasks: 9, 10, 11, 12, 13
 
 ## classic-2d-square-play — Classic 2D on the square grid: board, input, timer
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/classic-2d-square-play.md
 Source: product-design.md § Classic 2D (m1-classic-2d)
 Tasks: 32, 33, 34, 35, 36, 37, 38
@@ -58,7 +58,7 @@ Tasks: 32, 33, 34, 35, 36, 37, 38
 
 ## game-shell — Main menu, screen routing, mode host and the shared pause flow
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/game-shell.md
 Source: product-design.md § Main menu and game shell (m1-classic-2d)
 Tasks: 24, 25, 26, 27, 28
@@ -67,7 +67,7 @@ Tasks: 24, 25, 26, 27, 28
 
 ## settings — Settings page and store: controls, graphics, theme, audio
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/settings.md
 Source: product-design.md § Main menu and game shell (m1-classic-2d)
 Tasks: 39, 40, 41, 42
@@ -76,7 +76,7 @@ Tasks: 39, 40, 41, 42
 
 ## platform-storage — Versioned document storage behind the platform layer, browser implementation
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/platform-storage.md
 Source: product-design.md § Main menu and game shell (m1-classic-2d)
 Tasks: 14, 15, 16
@@ -85,7 +85,7 @@ Tasks: 14, 15, 16
 
 ## game-summary — Board identity, game summary and the derived stats 3BV/s and efficiency
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/game-summary.md
 Source: product-design.md § Results and records (m1-classic-2d)
 Tasks: 29, 30, 31
@@ -94,7 +94,7 @@ Tasks: 29, 30, 31
 
 ## personal-records — Personal bests, stats history, win rate and streaks per board, persisted locally
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/personal-records.md
 Source: product-design.md § Results and records (m1-classic-2d)
 Tasks: 43, 44, 45
@@ -103,7 +103,7 @@ Tasks: 43, 44, 45
 
 ## results-screen — End-of-game results screen with the personal-best comparison
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/results-screen.md
 Source: product-design.md § Results and records (m1-classic-2d)
 Tasks: 46, 47
@@ -112,7 +112,7 @@ Tasks: 46, 47
 
 ## records-screen — Records screen: bests, win rate, streaks and stats history per board
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/records-screen.md
 Source: product-design.md § Results and records (m1-classic-2d)
 Tasks: 48, 49, 50
