@@ -13,11 +13,24 @@
 
 export const CLICK_KINDS = Object.freeze(['reveal', 'flag', 'chord']);
 
+// Writes cell c's neighbours into `buf` in the graph's order and returns their count; one
+// module-level collector keeps the graph's callback site monomorphic.
+let fillBuf = null, fillLen = 0;
+function collect(x) { fillBuf[fillLen++] = x; }
+function fillNeighbours(graph, c, buf) {
+  fillBuf = buf; fillLen = 0;
+  graph.forEachNeighbour(c, collect);
+  return fillLen;
+}
+
 // `mine` and `number` are the engine's flat per-cell arrays, with the mines already placed.
 export function createBoardMetrics(graph, mine, number) {
   const n = graph.count;
   const opening = new Int32Array(n).fill(-1); // opening id of each safe zero cell
   const queue = new Int32Array(n);
+  // One neighbour walk per cell into a buffer, not one graph call per neighbour slot.
+  const nbBuf = new Int32Array(Math.max(1, graph.maxDegree));
+  const fill = (c) => fillNeighbours(graph, c, nbBuf);
   const closedZeros = [];
   for (let s = 0; s < n; s++) {
     if (mine[s] || number[s] !== 0 || opening[s] >= 0) continue;
@@ -27,8 +40,8 @@ export function createBoardMetrics(graph, mine, number) {
     while (head < tail) {
       const cur = queue[head++];
       size++;
-      for (let k = 0, d = graph.degree(cur); k < d; k++) {
-        const nb = graph.neighbour(cur, k);
+      for (let k = 0, d = fill(cur); k < d; k++) {
+        const nb = nbBuf[k];
         if (number[nb] === 0 && !mine[nb] && opening[nb] < 0) { opening[nb] = id; queue[tail++] = nb; }
       }
     }
@@ -42,7 +55,7 @@ export function createBoardMetrics(graph, mine, number) {
   for (let c = 0; c < n; c++) {
     if (mine[c] || number[c] === 0) continue;
     let reached = false;
-    for (let k = 0, d = graph.degree(c); k < d && !reached; k++) reached = opening[graph.neighbour(c, k)] >= 0;
+    for (let k = 0, d = fill(c); k < d && !reached; k++) reached = opening[nbBuf[k]] >= 0;
     if (!reached) { isolated[c] = 1; isolatedCount++; }
   }
 

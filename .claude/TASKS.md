@@ -16,7 +16,7 @@ Feature: 3d-board-graph
 
 ## 52. 3D rule profile: revealed-cell flagging, chord, auto-hide and win
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/engine/profiles.js, js/engine/rules.js, js/engine/metrics.js, tests/engine-3d-profile.test.mjs
 Preconditions: 51

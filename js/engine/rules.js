@@ -13,10 +13,17 @@
 // reused by every action: read or copy it before the next action), `ended` is true when the
 // action won or lost the game, and `boardNeeded` is the requested cell or -1. An action outside
 // *playing* (other than the first reveal's request) changes nothing and is not recorded, and
-// neither is a flag toggle on a cell the profile does not let be flagged (a revealed cell).
+// neither is a flag toggle on a revealed cell under a profile that does not flag from one.
 //
-// State is flat typed arrays over the cell index (`state`, read-only for callers); flood fill is
-// an iterative queue walk in the graph's neighbour order. Actions allocate nothing per cell.
+// Profile markers the engine branches on: `flagRevealedCell` ('neighbours': a flag click on a
+// revealed cell flags its closed neighbours, or unflags them all), `zeroFloodStopsAtFlag` (a zero
+// with a flagged neighbour does not spread), `revealOnRevealedZero` ('chord'), `autoHide` (the
+// per-cell `hidden` state, kept after every action while playing and reported among the changed
+// cells; shown again at a loss) and `clickCounting`. The reference profile never sets `hidden`.
+//
+// State is flat typed arrays over the cell index (`state`, read-only for callers); flood fill and
+// hide propagation are iterative walks in the graph's neighbour order. Actions allocate nothing
+// per cell.
 // The ordered stream of applied actions is kept for the game; the same board and the same
 // actions always give the same game.
 //
@@ -44,6 +51,16 @@ export const CELL = Object.freeze({
   EXPLODED: 'exploded',
   WRONG_FLAG: 'wrong-flag',
 });
+
+// Writes cell c's neighbours into `buf` in the graph's order and returns their count. One
+// module-level collector keeps the graph's callback site monomorphic across games.
+let fillBuf = null, fillLen = 0;
+function collect(x) { fillBuf[fillLen++] = x; }
+function fillNeighbours(graph, c, buf) {
+  fillBuf = buf; fillLen = 0;
+  graph.forEachNeighbour(c, collect);
+  return fillLen;
+}
 
 const KIND_NAMES = ['reveal', 'flag', 'chord']; // also the click kinds of js/engine/metrics.js
 const K_REVEAL = 0, K_FLAG = 1, K_CHORD = 2;
@@ -99,10 +116,27 @@ function build(graph, profileId, version, mineCount, dimensions) {
   const number = new Uint8Array(n);
   const revealed = new Uint8Array(n);
   const flagged = new Uint8Array(n);
+  const hidden = new Uint8Array(n);
   const mark = new Uint32Array(n); // per-action dedupe stamp for `changed`
   const queue = new Int32Array(n);
   const changedBuf = new Int32Array(n);
-  const state = Object.freeze({ mine, number, revealed, flagged });
+  const state = Object.freeze({ mine, number, revealed, flagged, hidden });
+
+  const flagsNeighbours = profile.flagRevealedCell === 'neighbours';
+  const stopAtFlag = profile.zeroFloodStopsAtFlag === true;
+  const chordsRevealedZero = profile.revealOnRevealedZero === 'chord';
+  const autoHide = profile.autoHide === true;
+  // Flagged-neighbour count per cell, for the profiles that read it.
+  const flagNb = stopAtFlag || chordsRevealedZero || autoHide ? new Uint8Array(n) : null;
+  const hideMark = autoHide ? new Uint32Array(n) : null; // per-action dedupe stamp for hideQueue
+  const hideQueue = autoHide ? new Int32Array(n) : null; // cells to check for hiding this action
+  let hideLen = 0;
+
+  // Two neighbour buffers for the hot loops: one walk resolves a cell's neighbours once instead of
+  // once per slot. A loop over buffer A may call code that fills buffer B, never A.
+  const nbA = new Int32Array(Math.max(1, graph.maxDegree));
+  const nbB = new Int32Array(Math.max(1, graph.maxDegree));
+  const fill = (c, buf) => fillNeighbours(graph, c, buf);
 
   let phase = PHASE.AWAITING_FIRST_CLICK;
   let flagCount = 0;
@@ -125,7 +159,7 @@ function build(graph, profileId, version, mineCount, dimensions) {
   function placeMines(list) {
     for (const m of list) mine[m] = 1;
     for (const m of list) {
-      for (let k = 0, d = graph.degree(m); k < d; k++) number[graph.neighbour(m, k)]++;
+      for (let k = 0, d = fill(m, nbA); k < d; k++) number[nbA[k]]++;
     }
     metrics = createBoardMetrics(graph, mine, number);
   }
@@ -142,8 +176,9 @@ function build(graph, profileId, version, mineCount, dimensions) {
 
   function begin() {
     changedLen = 0;
+    hideLen = 0;
     stamp++;
-    if (stamp === 0xffffffff) { mark.fill(0); stamp = 1; }
+    if (stamp === 0xffffffff) { mark.fill(0); if (hideMark) hideMark.fill(0); stamp = 1; }
   }
 
   function touch(c) {
@@ -157,23 +192,74 @@ function build(graph, profileId, version, mineCount, dimensions) {
     queue[tail++] = c;
     while (head < tail) {
       const cur = queue[head++];
-      if (number[cur] !== 0) continue;
-      for (let k = 0, d = graph.degree(cur); k < d; k++) {
-        const nb = graph.neighbour(cur, k);
-        if (revealed[nb] || flagged[nb] || mine[nb]) continue;
+      if (number[cur] !== 0 || (stopAtFlag && flagNb[cur] !== 0)) continue;
+      for (let k = 0, d = fill(cur, nbA); k < d; k++) {
+        const nb = nbA[k];
+        if (revealed[nb]) { if (autoHide) queueHide(nb); continue; }
+        if (flagged[nb] || mine[nb]) continue;
         revealed[nb] = 1; safeLeft--; touch(nb); metrics.opened(nb);
         queue[tail++] = nb;
       }
     }
   }
 
-  // The loss view: the exploded mine, every unflagged mine, every wrong flag change look.
+  // Flags (on = 1) or unflags (on = 0) a closed cell. Unflagging shows its hidden neighbours.
+  function setFlag(c, on) {
+    flagged[c] = on;
+    flagCount += on ? 1 : -1;
+    touch(c);
+    if (!flagNb) return;
+    for (let k = 0, d = fill(c, nbB); k < d; k++) {
+      const nb = nbB[k];
+      if (on) { flagNb[nb]++; continue; }
+      flagNb[nb]--;
+      if (hidden[nb]) { hidden[nb] = 0; touch(nb); }
+    }
+  }
+
+  // Queues `c` for a hide check, at most once per action.
+  function queueHide(c) {
+    if (hideMark[c] !== stamp) { hideMark[c] = stamp; hideQueue[hideLen++] = c; }
+  }
+
+  // Hides `c` when it is revealed, unflagged, its flag count equals its number and it is a zero or
+  // every neighbour is revealed or flagged.
+  function tryHide(c) {
+    if (!revealed[c] || flagged[c] || hidden[c] || flagNb[c] !== number[c]) return;
+    if (number[c] !== 0) {
+      for (let k = 0, d = fill(c, nbB); k < d; k++) {
+        const nb = nbB[k];
+        if (!revealed[nb] && !flagged[nb]) return;
+      }
+    }
+    hidden[c] = 1;
+    touch(c);
+  }
+
+  // Auto-hide after an action: only a changed cell or its neighbour can newly qualify, and a cell
+  // that hides changes no other cell's condition, so one pass over them is the fixed point. After
+  // an opening action the flood already queued the revealed neighbours of every zero it spread
+  // from, so only the other opened cells have their neighbours walked here.
+  function hidePass(opening) {
+    const len = changedLen;
+    for (let t = 0; t < len; t++) {
+      const c = changedBuf[t];
+      queueHide(c);
+      if (opening && number[c] === 0 && flagNb[c] === 0) continue;
+      for (let k = 0, d = fill(c, nbA); k < d; k++) queueHide(nbA[k]);
+    }
+    for (let t = 0; t < hideLen; t++) tryHide(hideQueue[t]);
+  }
+
+  // The loss view: the exploded mine, every unflagged mine, every wrong flag change look; every
+  // hidden cell is shown again.
   function lose(c) {
     exploded = c;
     phase = PHASE.LOST;
     touch(c);
     for (let i = 0; i < n; i++) {
       if (mine[i] ? !flagged[i] : flagged[i]) touch(i);
+      if (hidden[i]) { hidden[i] = 0; touch(i); }
     }
   }
 
@@ -183,14 +269,31 @@ function build(graph, profileId, version, mineCount, dimensions) {
 
   const nothing = () => { changedLen = 0; return result(false); };
 
-  function settle() {
+  // Ends an action that did not lose: auto-hide, then the win check. `opening` is false for a flag
+  // action, whose changed cells were not opened.
+  function settle(opening = true) {
+    if (autoHide && phase === PHASE.PLAYING) hidePass(opening);
     if (phase === PHASE.PLAYING && safeLeft === 0) phase = PHASE.WON;
     return result(phase !== PHASE.PLAYING);
+  }
+
+  // Opens every closed, unflagged neighbour of a revealed zero with no flagged neighbour.
+  function openAround(c) {
+    if (flagNb[c] !== 0) return;
+    for (let k = 0, d = fill(c, nbB); k < d; k++) {
+      const nb = nbB[k];
+      if (!revealed[nb] && !flagged[nb]) open(nb);
+    }
   }
 
   function applyReveal(c) {
     begin();
     record(K_REVEAL, c);
+    if (chordsRevealedZero && revealed[c] && number[c] === 0) {
+      openAround(c);
+      clicks.add('reveal', changedLen === 0);
+      return settle();
+    }
     const wasted = revealed[c] || flagged[c];
     clicks.add('reveal', wasted);
     if (wasted) return result(false);
@@ -231,14 +334,29 @@ function build(graph, profileId, version, mineCount, dimensions) {
     toggleFlag(c) {
       checkCell(c);
       if (phase !== PHASE.PLAYING) return nothing();
-      if (revealed[c] && !profile.flagRevealedCell) return nothing();
+      if (revealed[c] && !flagsNeighbours) return nothing();
       begin();
       record(K_FLAG, c);
+      if (revealed[c]) {
+        // One flag click: flag every closed, unflagged neighbour, or unflag them all.
+        let flaggedAny = false;
+        const d = graph.degree(c);
+        for (let k = 0; k < d; k++) {
+          const nb = graph.neighbour(c, k);
+          if (!revealed[nb] && !flagged[nb]) { setFlag(nb, 1); flaggedAny = true; }
+        }
+        if (!flaggedAny) {
+          for (let k = 0; k < d; k++) {
+            const nb = graph.neighbour(c, k);
+            if (!revealed[nb]) setFlag(nb, 0);
+          }
+        }
+        clicks.add('flag', !flaggedAny);
+        return settle(false);
+      }
       clicks.add('flag', flagged[c] === 1);
-      flagged[c] ^= 1;
-      flagCount += flagged[c] ? 1 : -1;
-      touch(c);
-      return result(false);
+      setFlag(c, flagged[c] ^ 1);
+      return settle(false);
     },
 
     chord(c) {

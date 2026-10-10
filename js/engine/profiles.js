@@ -3,10 +3,13 @@
 // A profile entry holds its current version and every version it has; each version is a frozen
 // record of the behaviours that ruleset marks. js/engine/rules.js and the Classic 2D input
 // (js/classic2d/pointer-input.js) read the markers they branch on; the rest record the reference
-// behaviour the engine implements, so a fidelity test can pin each one. `fidelity` maps every marker to the heading of its entry in
-// tests/fidelity/minesweeper-online.md, the oracle for the reference profile.
+// behaviour the engine implements, so a fidelity test can pin each one. `fidelity` maps every marker to the rule it was
+// fixed against: for the reference profile the heading of its entry in tests/fidelity/minesweeper-online.md, for the 3D
+// profile the rule of docs/ORIGINAL_SPEC.md (the original 3D game) it reproduces, or the deliberate difference of
+// .claude/domain/features/3d-board-graph.md it follows.
 
 export const REFERENCE_PROFILE = 'minesweeper-online';
+export const PROFILE_3D = 'minesweeper-3d';
 
 const deepFreeze = (o) => {
   for (const v of Object.values(o)) if (v && typeof v === 'object') deepFreeze(v);
@@ -86,8 +89,65 @@ const reference1 = {
   },
 };
 
+// The 3D game's rules (docs/ORIGINAL_SPEC.md § Rules) on the shared engine, with the m2 rules change:
+// a safe first click, mines from board-generation, no action after the game ends.
+const original3d1 = {
+  id: PROFILE_3D,
+  version: 1,
+  // A flag click on a revealed cell flags every closed, unflagged neighbour, or unflags every closed
+  // neighbour when all are already flagged.
+  flagRevealedCell: 'neighbours',
+  // A zero with a flagged neighbour does not spread a flood fill (or a chord's flood) further.
+  zeroFloodStopsAtFlag: true,
+  // A reveal on a revealed zero chords it: the original's left click on a pressed zero.
+  revealOnRevealedZero: 'chord',
+  // Auto-hide (unlinking), kept after every action while playing: a revealed, unflagged cell whose
+  // flagged-neighbour count equals its number hides when it is a zero or when every neighbour is
+  // revealed or flagged; unflagging a cell shows its hidden neighbours again.
+  autoHide: true,
+  // A chord compares the flag count only: with a matching count a wrong flag opens a mine.
+  chordCountsFlagsOnly: true,
+  // A chord whose flag count differs from the number.
+  chordOnFlagCountMismatch: 'nothing-opens',
+  // Won when every safe cell is revealed and no safe cell is flagged; flags on mines not required.
+  win: 'safe-cells-revealed',
+  // The board after a loss: every hidden cell is shown again; the engine's visual-state query
+  // reports the exploded mine, the mines and the wrong flags as on every profile.
+  lossView: {
+    explodedMine: true,
+    unflaggedMinesRevealed: true,
+    wrongFlagsCrossed: true,
+    correctFlagsKept: true,
+    hiddenShown: true,
+  },
+  // Only the first-click cell is guaranteed mine-free; board-generation implements it.
+  firstClick: 'safe-cell',
+  // The reference rule applied to the 3D actions: every recorded reveal, flag and chord is one
+  // click. A flag click on a revealed cell is one flag click however many neighbours it changes,
+  // wasted when it flags none.
+  clickCounting: {
+    counted: ['reveal', 'flag', 'chord'],
+    wastedIncluded: true,
+    wasted: { reveal: 'opens-nothing', flag: 'flags-nothing', chord: 'opens-nothing' },
+    flagOnRevealedCell: 'one-flag-click',
+  },
+  fidelity: {
+    flagRevealedCell: 'Rules: rightClick',
+    zeroFloodStopsAtFlag: 'Rules: chord',
+    revealOnRevealedZero: 'Rules: leftClick',
+    autoHide: 'Rules: Unlinking (auto-hide)',
+    chordCountsFlagsOnly: 'Rules: chord',
+    chordOnFlagCountMismatch: 'Rules: chord',
+    win: 'Rules: Win',
+    lossView: 'Rules: Lose',
+    firstClick: '3d-board-graph: Deliberate differences',
+    clickCounting: '3d-board-graph: Data and state',
+  },
+};
+
 export const PROFILES = deepFreeze({
   [REFERENCE_PROFILE]: { current: 1, versions: { 1: reference1 } },
+  [PROFILE_3D]: { current: 1, versions: { 1: original3d1 } },
 });
 
 // The reference profile's custom board limits (its current version), for board setup.
