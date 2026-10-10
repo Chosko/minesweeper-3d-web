@@ -324,7 +324,7 @@ Context:
 
 Done: 2026-10-10, commit `a15fe60` (6 files, +328/-15). `js/main.js` passes no `onNotSaved` to the library, so a failed replay save is not yet shown to the player (left to task 74).
 
-## [ ] 24. Implement task 74 — Library view in the Records screen
+## [x] 24. Implement task 74 — Library view in the Records screen
 
 Depends on: 22
 
@@ -335,6 +335,8 @@ Context:
 ```prompt
 /task-implement 74 --review
 ```
+
+Done: 2026-10-10, commit `2436aaf` (8 files, +740/-40). The viewer route is named `replay` (`REPLAY_SCREEN`); Watch appears only once that route is registered. Unpin clears every pin reason, including "best".
 
 ## [ ] 25. Implement task 75 — Update documentation for feature `replay-library`
 
@@ -365,6 +367,7 @@ Depends on: 22, 26
 
 Context:
 - 2026-10-10 (from step 19): equal movement samples are not stored, so playback that interpolates straight across the gap after a still stretch makes the pointer drift through pauses (p95 3.2 px vs 2.7 px if playback holds the last sample until one interval before the next stored one); holding needs playback to know the sampling interval (2D 50 ms, 3D 100 ms), which the header does not store — an `/architect amend feature=replay-playback` was suggested, not yet made.
+- 2026-10-10 (from step 24): the replay viewer route is named `'replay'` (`REPLAY_SCREEN` in `js/records/replay-list.js`); Records' Watch navigates there with `{ replayId, returnTo: { screen: 'records', data: { boardKey } } }` and Watch only shows while `router.has('replay')` is true, so the viewer must register under exactly that name.
 
 ```prompt
 /task-implement 77 --review
@@ -384,7 +387,8 @@ Context: none
 
 Depends on: 23, 24, 27
 
-Context: none
+Context:
+- 2026-10-10 (from step 24): the replay viewer route is named `'replay'` (`REPLAY_SCREEN` in `js/records/replay-list.js`); Records' Watch navigates there with `{ replayId, returnTo: { screen: 'records', data: { boardKey } } }` and Watch only shows while `router.has('replay')` is true, so the viewer must register under exactly that name.
 
 ```prompt
 /task-implement 79 --review
