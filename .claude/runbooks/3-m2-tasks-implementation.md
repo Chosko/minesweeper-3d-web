@@ -202,7 +202,7 @@ Context:
 
 Done: 2026-10-10, commit `9c04729` (5 files, +155/-75).
 
-## [ ] 15. Implement task 65 — Replay format: header, streams, encoder and decoder
+## [x] 15. Implement task 65 — Replay format: header, streams, encoder and decoder
 
 Depends on: 11
 
@@ -212,11 +212,14 @@ Context: none
 /task-implement 65 --review --rounds 2
 ```
 
+Done: 2026-10-10, commit `0f238d7` (3 files, +735/-1). The blob is not compressed (left open for task 69); action kinds use the engine names `reveal | flag | chord`.
+
 ## [ ] 16. Implement task 66 — Recorder and sealer
 
 Depends on: 3, 15
 
-Context: none
+Context:
+- 2026-10-10 (from step 15): `js/replay/format.js` exports `encodeReplay`, `decodeReplay`, `createReplayDecoder({current, decoders, upgrades})`, `ReplayNewerVersionError`, `ReplayUnreadableError` and `cellStateDigest(state)` (FNV-1a over revealed/flagged/hidden bits — the sealer should use it); a replay is `{header, actions, movement, check}`, action kinds `reveal | flag | chord`, `header.movementEndedAt` null when movement was not capped.
 
 ```prompt
 /task-implement 66 --review --rounds 2
@@ -226,7 +229,8 @@ Context: none
 
 Depends on: 16
 
-Context: none
+Context:
+- 2026-10-10 (from step 15): replay movement events — `sample` holds 2 integers in 2D (already quantised by the sampler), `cursor` (2D only) carries a cell; action kinds are `reveal | flag | chord`.
 
 ```prompt
 /task-implement 67 --review
@@ -236,7 +240,8 @@ Context: none
 
 Depends on: 12, 16, 17
 
-Context: none
+Context:
+- 2026-10-10 (from step 15): replay movement events — `sample` holds 5 integers in 3D (already quantised by the sampler), `view` (3D only) carries a mode byte 0–255.
 
 ```prompt
 /task-implement 68 --review
@@ -246,7 +251,8 @@ Context: none
 
 Depends on: 17, 18
 
-Context: none
+Context:
+- 2026-10-10 (from step 15): the replay blob is not compressed; whether to compress stays an open question in the `replay-recording` feature document for this task to settle.
 
 ```prompt
 /task-implement 69 --review --rounds 2
