@@ -341,8 +341,10 @@ test('in a browser, the menu shows the four entries, each routes, and Back retur
 });
 
 // A fake standard controller in the page: `navigator.getGamepads` returns it, and the shell's
-// per-frame poll reads its buttons. press(button) holds a button for two frames, then releases it
-// for two, so held-button suppression across a screen change never swallows the next press.
+// per-frame poll reads its buttons. press(button) holds a button for exactly one poll — it is
+// released in the animation frame whose poll read it, so menu auto-repeat never fires however slow
+// the machine — then waits two more frames, so held-button suppression across a screen change
+// never swallows the next press.
 const PAD_BTN = { A: 0, B: 1, BACK: 8, UP: 12, DOWN: 13, LEFT: 14, RIGHT: 15 };
 function installFakePad() {
   const pad = {
@@ -365,11 +367,19 @@ async function controllerPage(browser, base, { route } = {}) {
     const step = (left) => (left ? requestAnimationFrame(() => step(left - 1)) : done());
     step(count);
   }), n);
-  const setButton = (b, on) => page.evaluate(([i, v]) => {
-    Object.assign(globalThis.__fakePad.buttons[i], { pressed: v, touched: v, value: v ? 1 : 0 });
-    globalThis.__fakePad.timestamp++;
-  }, [b, on]);
-  const press = async (b) => { await setButton(b, true); await frames(2); await setButton(b, false); await frames(2); };
+  // The shell's frame loop registers its next animation frame before this callback, so within one
+  // frame its poll reads the button pressed and this callback releases it straight after.
+  const press = async (b) => {
+    await page.evaluate((i) => new Promise((done) => {
+      const set = (v) => {
+        Object.assign(globalThis.__fakePad.buttons[i], { pressed: v, touched: v, value: v ? 1 : 0 });
+        globalThis.__fakePad.timestamp++;
+      };
+      set(true);
+      requestAnimationFrame(() => { set(false); done(); });
+    }), b);
+    await frames(2);
+  };
   const mode = () => page.evaluate(() => globalThis.__ms.state.mode);
   const focused = () => page.evaluate(() => {
     const el = document.activeElement;
