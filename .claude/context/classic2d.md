@@ -94,8 +94,10 @@ looks.
 - `cellAtLayout(layout, scroll, cols, rows, x, y)` — the cell index under a
   canvas position, or -1.
 - `BOARD_BACKGROUND` (`--color-board-frame`) — the token the area around
-  the board is filled with; `CURSOR_RING` (`--color-focus-ring`) — the
-  token the cursor's focus ring is drawn in; `PAN_MODIFIER` (`shiftKey`) — the key a drag
+  the board is filled with; `CURSOR_RING` (`--color-tile-cursor`) — the
+  board-only token the cursor's focus ring is drawn in, distinct from the
+  tile edge it covers (the shell's focus outlines keep
+  `--color-focus-ring`); `PAN_MODIFIER` (`shiftKey`) — the key a drag
   holds to pan.
 - `createBoardView({canvas, grid, createSkin, token})` → `{resize(width,
   height, pixelRatio), setGame(game), update(changed), repaint(), cellAt(x,

@@ -165,7 +165,9 @@ browser checks for everything that needs WebGL or the DOM.
   colour token, z-layer order, WCAG contrast per theme (4.5:1 body text, 3:1
   large text and essential glyphs, on every surface), the tile tokens (every
   tile state, the board frame and gap, numbers 1–8, opaque, in both themes;
-  eight distinct light number colours, each 4.5:1 on the revealed tile),
+  eight distinct light number colours, each 4.5:1 on the revealed tile;
+  the cursor ring `--color-tile-cursor` 3:1 on the tile edge and on the
+  closed, pressed and revealed tiles),
   `css/style.css` declaring
   no variables and reading only declared tokens, `index.html` loading
   `css/tokens.css` before `css/style.css`, and the 3D scene not reading tokens.
@@ -260,8 +262,10 @@ browser checks for everything that needs WebGL or the DOM.
   `CURSOR_RING`); the mounted wiring over `EventTarget` fakes with a fake
   `requestAnimationFrame` (system key repeat ignored, modified keys and Esc
   left alone, blur, `destroy`); DOM-free and reusing `Repeat` /
-  `stickCurve`. One Playwright test plays a fixed Beginner board by
-  keyboard to a win (skipped when Playwright or chromium is unavailable).
+  `stickCurve`. Two Playwright tests (skipped when Playwright or chromium
+  is unavailable): one plays a fixed Beginner board by keyboard to a win;
+  one moves the cursor by arrow key in both themes and checks the ring's
+  pixels differ from the tile edge and from a neighbouring closed tile.
 - `tests/classic2d-mode.test.mjs` — the Classic 2D mode
   (`js/classic2d/mode.js`) over a real mode host and pause controller with
   recording mounts, flow and generation clients and a fake clock: the

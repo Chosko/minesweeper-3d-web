@@ -1,7 +1,7 @@
 # Context index
 
 Layout: flat
-Last updated: 2026-10-09
+Last updated: 2026-10-10
 
 Navigation layer for the Minesweeper 3D web port. Read this index, then only
 the context files relevant to the task. Gameplay rules are defined in

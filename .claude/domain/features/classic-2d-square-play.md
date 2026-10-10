@@ -90,8 +90,10 @@ copied.
   reveal, flag and chord, what shows as pressed while a button is held, and
   what releasing elsewhere does.
 - **Cursor input.** A cell cursor driven by keyboard and controller, with
-  auto-repeat for held directions, drawn as a focus ring over the board.
-  Pointer and cursor input both end in the same engine actions.
+  auto-repeat for held directions, drawn as a focus ring over the board in
+  a board-only cursor colour distinct from the tile edge it covers, so the
+  ring shows on every tile state in both themes. Pointer and cursor input
+  both end in the same engine actions.
 - **Timer.** Elapsed play time measured from the moment the board is ready,
   paused while the game is paused, stopped at win or loss; displayed in
   whole seconds in the overlay and kept at millisecond resolution for the
