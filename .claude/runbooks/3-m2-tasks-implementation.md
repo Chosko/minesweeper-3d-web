@@ -28,7 +28,7 @@ Context:
 
 Done: 2026-10-10, commit `f526267` (5 files, +747/-23). The 3D profile is `minesweeper-3d` (`PROFILE_3D`); under it `reveal()` on a revealed zero expands like a chord (not in the task body, needed by the original tests), and a chord through a wrong flag still opens every safe neighbour before losing, unlike the original game.
 
-## [ ] 3. Implement task 53 — 3D state view and the large-board memory check
+## [x] 3. Implement task 53 — 3D state view and the large-board memory check
 
 Depends on: 2
 
@@ -39,11 +39,14 @@ Context:
 /task-implement 53 --review
 ```
 
+Done: 2026-10-10, commit `cd6ac10` (4 files, +339/-6). The shared engine uses about 37 bytes a cell on a 100³ board against the 3D engine's 24 (about 13 MB more); the size consequence is left open in `3d-board-graph.md` § Large-board memory. The view sees no change on its own: its driver must call `view.apply(result)` after every action.
+
 ## [ ] 4. Implement task 54 — 3D front-end on the shared engine and retirement of the 3D engine
 
 Depends on: 3
 
-Context: none
+Context:
+- 2026-10-10 (from step 3): the engine has no change hook, so the 3D state view (`js/engine/state-view-3d.js`, same field names as the old 3D engine plus `phase`) only updates when its driver calls `view.apply(result)` with every action's result, e.g. `view.apply(game.reveal(c))`; wire this in `js/main.js` or the renderer sees no change.
 
 ```prompt
 /task-implement 54 --review --rounds 2
