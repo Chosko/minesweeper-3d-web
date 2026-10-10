@@ -21,16 +21,29 @@
 // generating, failed, paused, ended or left) returns null. `changed` is the engine's shared buffer:
 // read or copy it before the next action.
 //
-// Win or loss stops the timer and emits `finished` { summary }. restart() and leave() after the
-// first click and before the end emit `abandoned` { summary } first; before the first click nothing
-// is reported. Both cancel a pending generation. summary() is the game's summary so far: null
-// before the first click, outcome abandoned while playing, the finished summary after the end.
-// Summaries are built by js/records/summary.js's buildSummary; every summary of one game carries
-// the same id, so the in-progress summary and the final one name the same game.
+// Win or loss stops the timer and emits `finished` { summary, replay }. restart() and leave() after
+// the first click and before the end emit `abandoned` { summary, replay } first; before the first
+// click nothing is reported. Both cancel a pending generation. summary() is the game's summary so
+// far: null before the first click, outcome abandoned while playing, the finished summary after the
+// end. Summaries are built by js/records/summary.js's buildSummary; every summary of one game
+// carries the same id, so the in-progress summary and the final one name the same game.
+//
+// Recording (js/replay/recorder.js): each closed board opens a recorder, and restart() and leave()
+// discard it. Every action the session hands to the engine while the game accepts actions is
+// recorded at that point, at the timer's elapsed time: the first reveal at 0 (a flag or chord
+// before it changes nothing and is not recorded), the rest while playing. The board's mines, seed
+// and generator version are added when it arrives, and a board played standard after a failure
+// starts a new recording of the standard board with its first reveal. `recording` is true while
+// the game is started, unpaused and unfinished, and only then do recordSample(values) and
+// recordCursor(cell) — the movement sampler's feed (js/replay/sampler-2d.js) — record, at the
+// timer's elapsed time.
+// replay(summary = summary()) seals the recording with that summary: { blob, listing }, or null
+// before the first click or once the recorder failed; sealing again returns the same replay.
 
 import { createGame, PHASE } from '../engine/rules.js';
 import { getRuleProfile, REFERENCE_PROFILE } from '../engine/profiles.js';
 import { buildSummary } from '../records/summary.js';
+import { startRecording } from '../replay/recorder.js';
 import { boardSetup } from './board-setup.js';
 
 export const SESSION_STATE = Object.freeze({
@@ -56,6 +69,9 @@ const defaultClock = {
   setTimeout: (fn, ms) => setTimeout(fn, ms),
   clearTimeout: (h) => clearTimeout(h),
 };
+
+// The session's action names → the replay's action kinds.
+const RECORDED_KIND = Object.freeze({ reveal: 'reveal', toggleFlag: 'flag', chord: 'chord' });
 
 const defaultSeed = () => globalThis.crypto.getRandomValues(new Uint32Array(1))[0];
 
@@ -117,6 +133,24 @@ export function createSession({
   let token = 0; // identifies the board request in flight; a stale answer is dropped
   let delayHandle = null;
   let generatingShown = false;
+  let recorder = null; // this board's recording; null once the session is left
+
+  function record() {
+    recorder = startRecording({
+      mode: setup.identity.mode,
+      graph: { kind: 'square', width: setup.width, height: setup.height },
+      board: setup.identity,
+      profile: { id: profile.id, version: profile.version },
+    });
+    if (firstCell >= 0) recorder.action('reveal', firstCell, 0);
+  }
+
+  const recording = () => state === SESSION_STATE.PLAYING && !paused && recorder !== null;
+
+  function replayOf(summary) {
+    if (!summary || gameId === null || !recorder) return null;
+    return recorder.seal(summary, game);
+  }
 
   const emit = (type, payload) => {
     for (const fn of [...listeners[type]]) {
@@ -135,6 +169,7 @@ export function createSession({
     finalSummary = null;
     gameId = null;
     firstCell = -1;
+    record();
   }
 
   function hideGenerating() {
@@ -154,7 +189,7 @@ export function createSession({
       timer.stop();
       state = game.phase === PHASE.WON ? SESSION_STATE.WON : SESSION_STATE.LOST;
       finalSummary = summaryOf(game.summary());
-      emit('finished', { summary: finalSummary });
+      emit('finished', { summary: finalSummary, replay: replayOf(finalSummary) });
     }
   }
 
@@ -186,6 +221,7 @@ export function createSession({
         seed = result.seed;
         generatorVersion = result.generatorVersion;
         gameId = globalThis.crypto.randomUUID();
+        recorder?.boardArrived({ mines: result.mines, seed, generatorVersion });
         const r = game.supplyBoard(firstCell, result.mines);
         state = SESSION_STATE.PLAYING;
         timer.start();
@@ -215,7 +251,13 @@ export function createSession({
   function abandonIfStarted() {
     if (state !== SESSION_STATE.PLAYING) return;
     const summary = summaryOf(game.counts());
-    if (summary) emit('abandoned', { summary });
+    if (summary) emit('abandoned', { summary, replay: replayOf(summary) });
+  }
+
+  function currentSummary() {
+    if (finalSummary) return finalSummary;
+    if (state !== SESSION_STATE.PLAYING) return null;
+    return summaryOf(game.counts());
   }
 
   function act(kind, c) {
@@ -225,9 +267,11 @@ export function createSession({
       const r = game.reveal(c);
       if (r.boardNeeded < 0) return r;
       firstCell = r.boardNeeded;
+      recorder?.action('reveal', firstCell, 0);
       return requestBoard();
     }
     if (state !== SESSION_STATE.PLAYING) return null;
+    recorder?.action(RECORDED_KIND[kind], c, timer.elapsedMs());
     const r = game[kind](c);
     emit('changed', { changed: r.changed, ended: r.ended });
     afterAction(r);
@@ -249,6 +293,10 @@ export function createSession({
     get minesLeft() { return game.minesLeft; },
     elapsedMs: () => timer.elapsedMs(),
     seconds: () => timer.seconds(),
+    get recording() { return recording(); },
+    recordSample(values) { if (recording()) recorder.sample(values, timer.elapsedMs()); },
+    recordCursor(c) { if (recording()) recorder.cursor(c, timer.elapsedMs()); },
+    replay: (summary = currentSummary()) => replayOf(summary),
 
     on(type, fn) {
       if (!listeners[type]) throw new Error(`unknown session event "${type}"`);
@@ -269,6 +317,7 @@ export function createSession({
     playStandard() {
       if (state !== SESSION_STATE.FAILED) return null;
       setup = boardSetup({ ...setup.choice, noGuess: false });
+      record();
       return requestBoard();
     },
 
@@ -298,12 +347,9 @@ export function createSession({
       dropPending();
       timer.stop();
       state = SESSION_STATE.LEFT;
+      recorder = null;
     },
 
-    summary() {
-      if (finalSummary) return finalSummary;
-      if (state !== SESSION_STATE.PLAYING) return null;
-      return summaryOf(game.counts());
-    },
+    summary: currentSummary,
   };
 }

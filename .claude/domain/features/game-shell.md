@@ -106,14 +106,17 @@ it generalises.
 
 - **Mode contract** — each mode front-end provides: `open board choice`,
   `start(choice)`, `pause()`, `resume()`, `restart()`, `leave()`,
-  `summary()`, and reports `game started`, `game finished(summary)`,
-  `game abandoned(summary)` and `can pause` back to the shell. `pause()`
-  stops the mode's timer and stops it accepting board input; `leave()`
-  discards the game and releases everything the mode holds (pointer lock,
-  canvas, worker requests). `restart()` and `leave()` on a started,
-  unfinished game first report `game abandoned` with the game's summary from
-  `game-summary`; `summary()` returns that same summary for a started,
-  unfinished game at any moment, outcome abandoned.
+  `summary()`, and reports `game started`, `game finished(summary, replay)`,
+  `game abandoned(summary, replay)` and `can pause` back to the shell, the
+  replay being the game's sealed recording from `replay-recording`, or none
+  from a mode that does not record. `pause()` stops the mode's timer and
+  stops it accepting board input; `leave()` discards the game and releases
+  everything the mode holds (pointer lock, canvas, worker requests).
+  `restart()` and `leave()` on a started, unfinished game first report
+  `game abandoned` with the game's summary from `game-summary` and its
+  replay; a game left before its first click reports nothing. `summary()`
+  returns that same summary for a started, unfinished game at any moment,
+  outcome abandoned.
 - **Pause rules** — pause applies only to a started, unfinished game; before
   the first click or after the game ends, the pause key opens the pause card
   without a timer to stop, offering restart and back to menu. While the

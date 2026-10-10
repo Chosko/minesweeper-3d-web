@@ -12,18 +12,23 @@
 //   leave()             discard the game and release everything the mode holds
 //                       (pointer lock, canvas, worker requests)
 //   summary()           the game's summary so far: null before the first click
+//   replay(summary)     optional: the game's replay sealed with that summary (js/replay/recorder.js),
+//                       or null; a mode without it records no replays
 //   failureScreen       the router screen the shell shows when the mode reports a failure
 // and reports back through `report`:
-//   report.started()          the first click started the game
-//   report.finished(summary)  the game ended; the summary carries its outcome
-//   report.canPause(bool)     whether a pause now stops a running game
-//   report.failed(reason)     the mode cannot run (it failed to start, or lost what it runs on)
+//   report.started()                  the first click started the game
+//   report.finished(summary, replay)  the game ended; the summary carries its outcome, the
+//                                     replay is the sealed recording or absent
+//   report.canPause(bool)             whether a pause now stops a running game
+//   report.failed(reason)             the mode cannot run (it failed to start, or lost what it
+//                                     runs on)
 // The host reports `abandoned` on the mode's behalf: restart(), leave() and a new start() on a
 // started, unfinished game first report `abandoned` with summary(), outcome abandoned — the
-// outcome summary() also has for such a game at any moment. Reports from a mode that is not the
-// active one are ignored. The shell listens with on(event, listener): `started`, `finished`,
-// `abandoned` ({ mode, summary }), `canPause` ({ mode, canPause }) and `failed`
-// ({ mode, reason, screen }).
+// outcome summary() also has for such a game at any moment — and replay(summary). A game left
+// before its first click reports nothing. Reports from a mode that is not the active one are
+// ignored. The shell listens with on(event, listener): `started` ({ mode, summary }), `finished`
+// and `abandoned` ({ mode, summary, replay }, replay null when the mode passed none), `canPause`
+// ({ mode, canPause }) and `failed` ({ mode, reason, screen }).
 
 /** The methods every mode provides. */
 export const MODE_METHODS = Object.freeze(['openBoardChoice', 'start', 'pause', 'resume', 'restart', 'leave', 'summary']);
@@ -55,8 +60,14 @@ export function createModeHost() {
     if (!s) return null;
     return inProgress() ? { ...s, outcome: 'abandoned' } : s;
   };
+  const replayOf = (mode, s) => {
+    if (!s || typeof mode?.replay !== 'function') return null;
+    try { return mode.replay(s) ?? null; } catch (err) { console.error(err); return null; }
+  };
   const abandonIfInProgress = () => {
-    if (inProgress()) emit('abandoned', { mode: active, summary: summary() });
+    if (!inProgress()) return;
+    const s = summary();
+    emit('abandoned', { mode: active, summary: s, replay: replayOf(current(), s) });
   };
   const setCanPause = (id, value) => {
     if (game.canPause === value) return;
@@ -72,10 +83,10 @@ export function createModeHost() {
         game.started = true;
         emit('started', { mode: id, summary: summary() });
       },
-      finished(s) {
+      finished(s, replay) {
         if (!live()) return;
         game.finished = true;
-        emit('finished', { mode: id, summary: s ?? modes.get(id).summary() });
+        emit('finished', { mode: id, summary: s ?? modes.get(id).summary(), replay: replay ?? null });
       },
       canPause(value) { if (live()) setCanPause(id, !!value); },
       failed(reason) {

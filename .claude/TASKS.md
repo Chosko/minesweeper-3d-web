@@ -166,7 +166,7 @@ Feature: replay-recording
 
 ## 67. Classic 2D capture and the replay on the mode contract
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/replay/sampler-2d.js, js/classic2d/session.js, js/classic2d/mode.js, js/shell/mode-host.js, js/shell/pause.js, tests/replay-2d.test.mjs
 Preconditions: 66

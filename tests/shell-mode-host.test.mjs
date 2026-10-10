@@ -155,7 +155,7 @@ test('game finished carries the summary; a finished game is never abandoned', ()
   fakes.a.play.click();
   fakes.a.play.end('won');
   const fin = events.find(([t]) => t === 'finished')[1];
-  assert.deepEqual(fin, { mode: 'a', summary: { mode: 'fake', outcome: 'won', choice: 1, time: 12.5 } });
+  assert.deepEqual(fin, { mode: 'a', summary: { mode: 'fake', outcome: 'won', choice: 1, time: 12.5 }, replay: null });
   assert.equal(host.state.finished, true);
   assert.equal(host.summary().outcome, 'won');
   host.restart();
@@ -174,7 +174,7 @@ test('restart on a started, unfinished game first reports game abandoned with it
   host.restart();
   assert.deepEqual(order, ['abandoned', 'restart']);
   const ab = events.find(([t]) => t === 'abandoned')[1];
-  assert.deepEqual(ab, { mode: 'a', summary: { mode: 'fake', outcome: 'abandoned', choice: 5, time: 12.5 } });
+  assert.deepEqual(ab, { mode: 'a', summary: { mode: 'fake', outcome: 'abandoned', choice: 5, time: 12.5 }, replay: null });
   assert.deepEqual(host.state, { mode: 'a', started: false, finished: false, canPause: false });
   assert.equal(host.summary(), null, 'the new game has not been clicked');
 });

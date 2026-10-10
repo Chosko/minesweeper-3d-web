@@ -173,7 +173,7 @@ test('start shows the board in the container, mounts the inputs, feeds the overl
   assert.equal(board().grid.height, 16);
   assert.ok(board().game, 'the closed board is drawn');
   assert.equal(pointer().view, board());
-  assert.equal(cursor().view, board());
+  assert.equal(Object.getPrototypeOf(cursor().view), board(), 'the cursor input draws on the board view');
   assert.deepEqual(flow.calls.filter((c) => c[0] === 'show').length, 1);
   assert.deepEqual(flow.calls.find((c) => c[0] === 'board'), ['board', { width: 30, height: 16, mines: 99 }]);
   assert.deepEqual(flow.huds.at(-1), { seconds: 0, minesLeft: 99 });

@@ -12,10 +12,12 @@
 // the game will count as a loss.
 //
 // Hand-offs, the attachment points later features fill (attach(name, listener)):
-//   finished(summary, mode)    every finished game; the results flow (js/results/flow.js) records
-//                              it and routes to the `results` screen
-//   abandoned(summary, mode)   every abandoned game (restart, back to menu, a replacing start);
-//                              no results screen
+//   finished(summary, mode, replay)   every finished game; the results flow (js/results/flow.js)
+//                                     records it and routes to the `results` screen
+//   abandoned(summary, mode, replay)  every abandoned game (restart, back to menu, a replacing
+//                                     start); no results screen
+//   replay is the game's sealed replay ({ blob, listing }, js/replay/recorder.js), or null when
+//   its mode passed none.
 //   inProgress(summary, mode)  at game started, at every pause of a started, unfinished game and
 //                              on pagehide, so a game ended by closing the page counts as a loss
 // The leave-page guard is armed (guard(true)) at game started and disarmed when the game
@@ -43,9 +45,9 @@ export function createPauseController({
   modes, showCard, isPaused = () => false, onBoard = () => true, confirm, goMenu, guard = () => {},
 }) {
   const listeners = Object.fromEntries(HAND_OFFS.map((h) => [h, new Set()]));
-  const handOff = (name, summary, mode) => {
+  const handOff = (name, summary, mode, replay = null) => {
     for (const fn of [...listeners[name]]) {
-      try { fn(summary, mode); } catch (err) { console.error(err); }
+      try { fn(summary, mode, replay); } catch (err) { console.error(err); }
     }
   };
   const inProgress = () => { const s = modes.state; return s.mode !== null && s.started && !s.finished; };
@@ -54,8 +56,8 @@ export function createPauseController({
 
   const offs = [
     modes.on('started', ({ mode, summary }) => { guard(true); handOff('inProgress', summary, mode); }),
-    modes.on('finished', ({ mode, summary }) => { guard(false); handOff('finished', summary, mode); }),
-    modes.on('abandoned', ({ mode, summary }) => { guard(false); handOff('abandoned', summary, mode); }),
+    modes.on('finished', ({ mode, summary, replay }) => { guard(false); handOff('finished', summary, mode, replay); }),
+    modes.on('abandoned', ({ mode, summary, replay }) => { guard(false); handOff('abandoned', summary, mode, replay); }),
     modes.on('failed', () => guard(false)),
   ];
 
