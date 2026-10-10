@@ -16,7 +16,7 @@ Context: none
 
 Done: 2026-10-10, commit `0fbb8a6` (5 files, +113/-7). The light-theme ring was invisible (dark was fine); the ring now draws in a new board-only token `--color-tile-cursor` (light #14233f, dark #93b6f6), leaving `--color-focus-ring` unchanged.
 
-## [ ] 54. Settle a pending generation request when the worker reply cannot be decoded
+## [x] 54. Settle a pending generation request when the worker reply cannot be decoded
 
 Depends on: none
 
@@ -25,6 +25,8 @@ Context: none
 ```prompt
 /quick-implement "In `js/generation/client.js`, handle the worker's `messageerror` event. Today a reply the page cannot decode leaves the pending `request()` promise waiting until `cancel()` is called (raised by the reviewer of task 12, deliberately left unfixed then). On `messageerror`, settle the pending request exactly as a worker failure is settled today — `request` rejects only when the worker itself fails, so reject it the same way — and leave the client ready for the next request. Add a Node unit test with a fake worker that emits `messageerror`." feature=board-generation
 ```
+
+Done: 2026-10-10, commit `edb769a` (3 files, +75/-5).
 
 ## [ ] 55. Add a controller browser test for the board-choice and coming-soon screens
 
