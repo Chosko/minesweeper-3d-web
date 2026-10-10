@@ -206,7 +206,7 @@ Feature: replay-recording
 
 ## 71. Replay store: blob interface, in-memory and IndexedDB implementations
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/platform/blob-store.js, js/platform/memory-blob-store.js, js/platform/indexeddb-blob-store.js, js/platform/index.js, tests/platform-blob-store.test.mjs
 Preconditions: none
