@@ -196,7 +196,7 @@ Feature: replay-recording
 
 ## 70. Update documentation for feature `replay-recording`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/replay.md, .claude/context/app-shell.md, .claude/context/classic2d.md, .claude/context/mode3d.md, .claude/context/testing.md, .claude/context/INDEX.md
 Preconditions: 65, 66, 67, 68, 69

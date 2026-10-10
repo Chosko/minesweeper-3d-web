@@ -18,8 +18,8 @@ looks.
 - `js/classic2d/session.js` — the game session and its timer: the closed
   board, the first-click board request through the generation client, the
   slow-answer "generating" state, the failure offer, actions, pause, win or
-  loss, restart and leave with their summaries. DOM-free; generation is
-  reached only through the client.
+  loss, restart and leave with their summaries and replays, and the game's
+  replay recorder. DOM-free; generation is reached only through the client.
 - `js/classic2d/board-view.js` — the board view: the fit rule, the layout,
   `cellAt`, per-cell redraw from the engine's change lists, scrolling and
   panning, the hidden board while paused, and `mountBoardView`, the browser
@@ -34,9 +34,9 @@ looks.
   `mountCursorInput`, its wiring to the view and the session. DOM-free at
   import.
 - `js/classic2d/mode.js` — the Classic 2D mode behind the game shell's mode
-  contract: one session, board view and pointer / cursor inputs per game,
-  the overlay feed, pause by hiding the board. DOM-free: the shell hands in
-  its flow.
+  contract: one session, board view, pointer / cursor inputs and movement
+  sampler per game, the overlay feed, pause by hiding the board. DOM-free:
+  the shell hands in its flow.
 - `js/classic2d/board-choice.js` — the board choice screen: the custom-board
   info line and validation, the choice its fields describe, and
   `bindBoardChoice`, which touches only the elements it is handed.
@@ -81,9 +81,12 @@ looks.
   generatorVersion, generatingShown, paused, failure, minesLeft,
   elapsedMs(), seconds(), on(type, fn) → off, reveal(c), toggleFlag(c),
   chord(c), retry(), playStandard(), pause(), resume(), restart(), leave(),
-  summary()}` — `client` is the generation client `{request, cancel}`;
-  `clock` `{now, setTimeout, clearTimeout}`. The module head comment is the
-  contract.
+  summary(), recording, recordSample(values), recordCursor(cell),
+  replay(summary?)}` — `client` is the generation client `{request,
+  cancel}`; `clock` `{now, setTimeout, clearTimeout}`. `finished` and
+  `abandoned` carry `{summary, replay}`; `replay(summary = summary())` is
+  the recording sealed with that summary, `{blob, listing}`, or null
+  ([replay.md](replay.md)). The module head comment is the contract.
 
 `js/classic2d/board-view.js` exports
 - `fitTileSize(cols, rows, width, height, min = MIN_TILE_SIZE)` — the
@@ -142,11 +145,13 @@ looks.
   lastChoice, createClient?, mount?, clock?, randomSeed?,
   generatingDelayMs?})` → the contract methods plus `hideBoard(hidden)`,
   `tick()`, `pad(poll, now)`, `retry()`, `playStandard()`, `loadChoice()`,
-  `status()` → `{state, time, minesLeft}`, `boardHidden`. `flow` is
+  `status()` → `{state, time, minesLeft}`, `boardHidden`; the contract's
+  optional `replay(summary)` is the session's. `flow` is
   `{openBoardChoice(choice), show(), container(), hud({seconds, minesLeft}),
   board({width, height, mines}), generating(shown), failed(failure|null)}`;
   `mount` defaults to `{board: mountBoardView, pointer: mountPointerInput,
-  cursor: mountCursorInput}`. The module head comment is the contract.
+  cursor: mountCursorInput, sampler: mountSampler2D}`; without `sampler`
+  no movement is recorded. The module head comment is the contract.
 
 `js/classic2d/board-choice.js` exports
 - `CHOICE_SIZES`, `sizeLabel(size)`, `customStatus(custom)` → `{ok, field,
@@ -202,6 +207,18 @@ looks.
   board identity, the seed, the generator version and the game's id — one
   `crypto.randomUUID()` drawn when the board arrives, so the in-progress
   summary and the final one name the same game for the records store.
+- **Recording.** Each closed board opens a recorder
+  (`startRecording`, [replay.md](replay.md)); `restart` and `leave` discard
+  it after sealing the abandoned game's replay. The first reveal is recorded
+  at time 0 (a flag or chord before it changes nothing and is not recorded),
+  every later action the session hands to the engine at the timer's elapsed
+  time, wasted ones included. The mines, seed and generator version are
+  added when the board arrives; a board played standard after a no-guess
+  failure starts a new recording of the standard board with its first
+  reveal. `recording` is true while the game is started, unpaused and
+  unfinished, and only then do the sampler's `recordSample` and
+  `recordCursor` record. `finished` and `abandoned` carry the replay sealed
+  with their summary.
 - **Timer.** Elapsed time accumulates over running stretches: it starts
   when the board is ready (a pause while generating starts it paused),
   freezes on pause, and keeps its time once stopped; `seconds()` is whole
@@ -255,16 +272,18 @@ looks.
   new cell and calls `ensureVisible`; input is taken only while the session
   is `ready` or `playing` and not paused.
 - **The mode.** `start` normalises the choice, saves it as the last board
-  choice and mounts a fresh view and inputs; the inputs see the session
-  through a gate that reads paused while the board is hidden and redraws a
-  flag placed before the first reveal (the session emits no event then).
-  The session's `changed` redraws the listed cells and pushes the overlay;
-  its board arriving reports started and can-pause, a win or loss can-pause
-  false and finished. `restart` and `leave` leave the session (cancelling a
-  pending generation) and destroy the view and inputs, releasing the
-  canvas; `restart` reopens the session's own choice. `hideBoard` pauses
-  the session with the board (a no-op before the first click or after the
-  end) and drops held inputs.
+  choice and mounts a fresh view, inputs and movement sampler; the inputs
+  see the session through a gate that reads paused while the board is
+  hidden and redraws a flag placed before the first reveal (the session
+  emits no event then). `tick()` drives the sampler every frame, and the
+  cursor input's moves reach it beside the view. The session's `changed`
+  redraws the listed cells and pushes the overlay; its board arriving
+  reports started and can-pause, a win or loss can-pause false and finished
+  with the session's replay. `restart` and `leave` leave the session
+  (cancelling a pending generation) and destroy the view, inputs and
+  sampler, releasing the canvas; `restart` reopens the session's own
+  choice. `hideBoard` pauses the session with the board (a no-op before the
+  first click or after the end) and drops held inputs.
 - **Hidden.** While hidden (the game is paused) a repaint draws the
   background only and `update` draws nothing; showing repaints the board.
 - **The engine is the source.** The view keeps no cell state; every tile is
@@ -307,6 +326,9 @@ looks.
   timer and failure offer, the board view (fitting, scrolling or panning,
   hit-testing, per-cell redraw, the board hidden while paused), the
   pointer and cursor inputs and the mode.
+- [../domain/features/replay-recording.md](../domain/features/replay-recording.md)
+  — what the 2D session records, the pointer and cursor sampling and the
+  replay on the mode's reports.
 - [../domain/features/square-tile-skin.md](../domain/features/square-tile-skin.md)
   — the states, the drawing contract, the cache and its invalidation, the
   contrast contract and the minimum tile size.
@@ -330,6 +352,8 @@ looks.
   `buildSummary` behind every session summary.
 - [platform.md](platform.md) — the storage the last board choice is a
   document in.
+- [replay.md](replay.md) — the recorder the session feeds and seals, and
+  the 2D movement sampler the mode mounts.
 - [rendering.md](rendering.md) — the 3D tile atlas, a separate palette the
   skin neither reads nor feeds.
 - [input.md](input.md) — `Repeat`, `stickCurve`, `BTN` and the
@@ -342,8 +366,10 @@ looks.
   `tests/classic2d-cursor.test.mjs` the cursor input;
   `tests/classic2d-mode.test.mjs` the mode and board choice;
   `tests/classic2d-fidelity.test.mjs` the inputs and custom limits against
-  the fidelity observations; `tests/tile-skin.test.mjs` the painter, the
-  cache and `MIN_TILE_SIZE`; `tests/tokens.test.mjs` the tile tokens.
+  the fidelity observations; `tests/replay-2d.test.mjs` the session's
+  recording, the sampler and the replay on the mode's reports;
+  `tests/tile-skin.test.mjs` the painter, the cache and `MIN_TILE_SIZE`;
+  `tests/tokens.test.mjs` the tile tokens.
 
 ## WHEN TO READ THE SOURCE
 

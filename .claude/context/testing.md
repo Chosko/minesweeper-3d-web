@@ -358,8 +358,9 @@ browser checks for everything that needs WebGL or the DOM.
   over a recording fake mode: registration and its refusals, board choice,
   start/pause/resume/restart/leave, game state from the reports, `summary()`
   before and after the first click, `abandoned` on restart, leave and a
-  replacing start, reports from an inactive mode ignored, failures (reported
-  or thrown) with the failure screen, listeners; DOM-free, the contract
+  replacing start, each `finished` and `abandoned` carrying `replay: null`
+  for a mode that passes none, reports from an inactive mode ignored,
+  failures (reported or thrown) with the failure screen, listeners; DOM-free, the contract
   documented in the module, and the shell reaching the 3D game only through
   the host. The 3D game on the shared engine (`create3DGame` of
   `js/mode3d/session.js`): a fixed mine set played to a loss and to a win
@@ -412,6 +413,66 @@ browser checks for everything that needs WebGL or the DOM.
   dev/measure-noguess-3d.mjs [seeds]` times no-guess requests on box boards
   of growing size at the presets' densities, the measurement behind
   `NOGUESS_CELL_LIMIT`; its head comment says how to read it.
+- `tests/replay-format.test.mjs` — the replay format
+  (`js/replay/format.js`): exact round-trips of 2D and 3D replays (mines
+  given in any order come back ascending), an empty, an abandoned and a
+  capped movement stream, compact delta encoding of large times and long
+  streams, the action kinds, movement types and sample arity, the encoder's
+  `RangeError` on a malformed replay, the cursor event on the square graph
+  and the view-mode event on the box only, a newer version refused with its
+  own error, an older one decoded and upgraded step by step, a throwing
+  upgrade step, a missing decoder and a corrupt blob unreadable, an
+  `ArrayBuffer` accepted, and `cellStateDigest`.
+- `tests/replay-recorder.test.mjs` — the recorder and sealer
+  (`js/replay/recorder.js`): every action recorded in order with its time,
+  the board's arrival completing the header, a backwards time held, an
+  equal sample not stored, typed buffers growing through thousands of
+  events, the movement cap (2 MB by default) marking where movement ended
+  while actions go on, sealing a win, a loss and an abandon — listing
+  fields, size, the same replay on a second seal — that decode and
+  reproduce, a game left before its first click sealing to nothing, a 3D
+  game's samples, view modes and hidden state in the digest, and failures
+  (a bad feed, an unencodable seal, a summary for another board, bad header
+  fields) dropping the replay, reported once, never thrown into play.
+- `tests/replay-2d.test.mjs` — Classic 2D capture
+  (`js/replay/sampler-2d.js`, `js/classic2d/session.js`,
+  `js/classic2d/mode.js`) with a fake clock: `boardPoint` in cell units on
+  and off the board, a recorded 2D game sealed at the win, nothing recorded
+  before the first click and the recorder discarded on restart, a no-guess
+  failure played standard, the sampler's schedule across frame jitter,
+  `mountSampler2D` reading the last pointer position through the view, and
+  the replay beside the summary in the mode's finished and abandoned
+  reports through the mode host and the pause controller, null from a mode
+  that passes none.
+- `tests/replay-3d.test.mjs` — 3D capture (`js/replay/sampler-3d.js`,
+  `js/mode3d/session.js`, `js/shell/mode-3d.js`) with a fake clock:
+  `cameraSample` and `viewMode`, a recorded 3D game with flags before the
+  first reveal at time 0 sealed at the win, a loss and an abandon
+  reproducing their check values, restart discarding and leave stopping the
+  recording, a no-guess failure played standard, a fixed board recording
+  but unsealed, the sampler's schedule, and the adapter's finished and
+  abandoned reports with their replay, `tick()` driving the sampler and a
+  lost graphics context after the first reveal abandoning the game with its
+  replay.
+- `tests/replay-determinism.test.mjs` — the recording constants equal to
+  the measured ones and the blob uncompressed; applying each replay's
+  actions to a game built from its header reproduces its check values, on
+  the recorded games under `tests/fixtures/replays/` and on games recorded
+  now through the real sessions, samplers and recorder by
+  `dev/measure-replays.mjs`'s simulated player, which it imports.
+- `tests/fixtures/replays/` — recorded games, one `.msrp` blob each, listed
+  in `index.json` with a note (2D and 3D, each with a win, a loss, an
+  abandon and wasted clicks; a 3D game with flags before the first reveal).
+  Written by `node dev/measure-replays.mjs --write-fixtures` only when the
+  format changes, never by a test, so a replay recorded by an earlier build
+  keeps reproducing.
+- `dev/measure-replays.mjs` — not a test: `node dev/measure-replays.mjs`
+  plays seeded simulated games through the real sessions, samplers and
+  recorder and prints replay sizes, compressed and not, and playback error
+  per candidate sampling interval and quantisation step — the measurement
+  behind the sampler constants, `MOVEMENT_CAP_BYTES` and the uncompressed
+  blob; its head comment says how the constants are chosen and how to read
+  it.
 - `tests/shell-menu.test.mjs` — the main menu (`js/shell/menu.js`): the four
   entries in order, each route (mode board choice, screen, or the shared
   placeholder), the last mode played as a platform-storage document over the
@@ -774,6 +835,9 @@ is enforced.
 - [../domain/features/3d-play-flow.md](../domain/features/3d-play-flow.md)
   — the presets, custom limits, no-guess limit, first-click flow, timer and
   the 3D mode's reports the `mode3d-*` and `shell-mode-3d` tests encode.
+- [../domain/features/replay-recording.md](../domain/features/replay-recording.md)
+  — the format, recording, cap, failure and determinism contracts and the
+  measured recording constants the `replay-*` tests encode.
 - [../domain/features/settings.md](../domain/features/settings.md)
   — the schema, store, carry-over, failure, applier and page contracts the
   `settings-*` tests encode.
@@ -801,6 +865,7 @@ is enforced.
   flow and screen (`js/results/`) `results.test.mjs` pins.
 - [mode3d.md](mode3d.md) — `tests/mode3d-*.test.mjs` pin the 3D board choice, its no-guess limit and the session; `tests/shell-mode-3d.test.mjs` the adapter.
 - [classic2d.md](classic2d.md) — `tests/classic2d-*.test.mjs` pin the session and board setup, board view, pointer and cursor inputs and the mode, and check the inputs and custom limits against the observation file; `tests/tile-skin.test.mjs` the tile painter, cache and `MIN_TILE_SIZE`.
+- [replay.md](replay.md) — `tests/replay-*.test.mjs` pin the format, the recorder and sealer, 2D and 3D capture and determinism over `tests/fixtures/replays/`; `dev/measure-replays.mjs` is the measurement behind the recording constants.
 - [rendering.md](rendering.md) — no unit tests of the drawing (only the static not-themed checks); verified visually via Playwright screenshots.
 - [audio.md](audio.md) — no unit tests of the sounds; WebAudio only checkable in a browser.
 - [settings.md](settings.md) — `tests/settings-*.test.mjs` pin the schema, store, appliers, page,
@@ -826,6 +891,10 @@ is enforced.
 - Investigating a perf-test timeout on slower hardware.
 - A failure in `tests/mode3d-noguess-limit.test.mjs`: re-run
   `node dev/measure-noguess-3d.mjs` before moving `NOGUESS_CELL_LIMIT`.
+- A failure in `tests/replay-determinism.test.mjs`: a fixture that no
+  longer reproduces means the engine or the format changed under recorded
+  replays — fix the regression, or add a format version and its upgrade;
+  re-run `node dev/measure-replays.mjs` before moving a recording constant.
 - A contrast failure in `tests/tokens.test.mjs`: the message names the theme,
   token pair and ratio; read the colour parser there before changing a value
   format in `css/tokens.css`.

@@ -20,11 +20,12 @@ three to the screens, the renderer and the pointer-lock flow
   (`create3DGame`) and the game session (`createSession`): the closed box,
   flags before the first reveal, the board request through the generation
   client, the slow-answer "generating" state, the failure offer, the timer,
-  pause, restart and leave. DOM-free; generation is reached only through the
-  client.
+  pause, restart and leave, and the game's replay recorder. DOM-free;
+  generation is reached only through the client.
 - `js/shell/mode-3d.js` — the 3D adapter: the session behind the mode
   contract (`create3DMode`), reporting summaries built by
-  `js/records/summary.js`. DOM-free; imports the records' summary builder
+  `js/records/summary.js` with the session's sealed replays, and driving the
+  session's movement sampler. DOM-free; imports the records' summary builder
   and `MODE_3D`.
 
 ## PUBLIC API
@@ -67,7 +68,8 @@ three to the screens, the renderer and the pointer-lock flow
   `minePositions` it plays that board from the start. Each action returns
   `{changed, ended, exploded, revealed, flagged, unflagged, boardNeeded}` —
   the counts of cells newly opened, flagged and unflagged, which drive the
-  sound effects.
+  sound effects. `engineState` is the engine's per-cell state arrays, which
+  a replay is sealed from.
 - `createSession({board, client, clock?, randomSeed?, generatingDelayMs?})`
   → session. `board` is `boardOf(choice)`; with `minePositions` (the debug
   hook's fixed board) that board is played and nothing is requested.
@@ -76,7 +78,10 @@ three to the screens, the renderer and the pointer-lock flow
   `failure`, `elapsedMs()`, `seconds()`, `counts()` and `engineSummary()`
   (the engine's, null before the board arrives), `on(event, fn)` → unsubscribe,
   `reveal(c)`, `toggleFlag(c)`, `chord(c)`, `retry()`, `playStandard()`,
-  `pause()`, `resume()`, `restart()`, `leave()`.
+  `pause()`, `resume()`, `restart()`, `leave()`, `recording`,
+  `recordSample(values)`, `recordView(mode)`, `replay(summary)` → the
+  recording sealed with that summary, `{blob, listing}`, or null
+  ([replay.md](replay.md)).
 - `SESSION_STATE` (`ready`, `generating`, `playing`, `failed`, `won`,
   `lost`, `left`); `SESSION_EVENTS` (`generating` `{shown}`, `started`
   `{changed}`, `failed` `{reason, offers}`, `finished` `{state}`);
@@ -86,13 +91,18 @@ three to the screens, the renderer and the pointer-lock flow
 `js/shell/mode-3d.js`
 - `create3DMode(flow, report)` — the contract over `flow`
   (`openBoardChoice`, `start(choice)` → session, `pause(note)`,
-  `resume(source)`, `restart(source)` → session, `leave`, `contextLost`);
-  `failureScreen: 'ctxlost'`; plus `contextLost()`, which `js/main.js` calls
-  when the WebGL context is lost during a 3D game. `summary()` and the
-  finished and abandoned reports carry `buildSummary`'s record over the 3D
-  board identity — mode `3d`, the session board's X, Y, Z as width, height,
-  depth ([records.md](records.md)) — one id per game: null before the first
-  applied reveal, and null throughout on a fixed board, which has no seed.
+  `resume(source)`, `restart(source)` → session, `leave`, `contextLost`,
+  and the optional `sampler(session)` → the session's movement sampler, an
+  object with `tick()` and optionally `destroy()`; without it no movement is
+  recorded); `failureScreen: 'ctxlost'`; plus `contextLost()`, which
+  `js/main.js` calls when the WebGL context is lost during a 3D game,
+  `replay(summary)`, the session's sealed replay or null, and `tick()`,
+  which drives the sampler and which `js/main.js` calls every frame.
+  `summary()` and the finished and abandoned reports carry `buildSummary`'s
+  record over the 3D board identity — mode `3d`, the session board's X, Y,
+  Z as width, height, depth ([records.md](records.md)) — one id per game:
+  null before the first applied reveal, and null throughout on a fixed
+  board, which has no seed.
 
 ## INTERNAL PATTERNS
 
@@ -141,13 +151,28 @@ three to the screens, the renderer and the pointer-lock flow
   answer is dropped by its request token.
 - **The adapter** listens only to the session it holds. At the session's
   `started` it reports `started` and `canPause(true)`; at `finished` it
-  reports `canPause(false)` and `finished(summary)`, after the listeners
-  `js/main.js` added before handing the session over have played the end
-  effect. `summary()` is the started, unfinished game's summary, outcome
-  `abandoned`, from which the host reports `abandoned` on restart or leave;
-  before the first applied reveal there is none and nothing is reported. A
-  lost graphics context — at `start` or through `contextLost()` — reports
-  `failed` and leaves the session.
+  reports `canPause(false)` and `finished(summary, replay)`, after the
+  listeners `js/main.js` added before handing the session over have played
+  the end effect. `summary()` is the started, unfinished game's summary,
+  outcome `abandoned`, from which, with `replay(summary)`, the host reports
+  `abandoned` on restart or leave; before the first applied reveal there is
+  none and nothing is reported. The adapter builds a sampler with each
+  session through `flow.sampler` and drops it on restart and leave. A lost
+  graphics context — at `start` or through `contextLost()` — reports
+  `failed` and leaves the session, whose recording still seals what it
+  recorded until then.
+- **Recording.** Each closed box opens a recorder (`startRecording`,
+  [replay.md](replay.md)), which `restart()` discards and `leave()` stops.
+  When the board arrives the flags placed before the first reveal are
+  recorded in the order they were placed, then the first reveal, all at
+  time 0 (a reveal of a flagged cell or a chord before it changes nothing
+  and is not recorded); every later action the session hands to the engine
+  at the timer's elapsed time. The mines, seed and generator version are
+  added when the board arrives; a board played standard after a failure
+  starts a new recording of the standard board. `recording` is true while
+  the game is started, unpaused and unfinished, and only then do the
+  sampler's `recordSample` and `recordView` record. A fixed board records
+  its actions but has no summary to seal with, so it has no replay.
 - **No old best times.** The mode keeps no best times of its own; the
   rule for the `ms3d.best.*` keys is [app-shell.md](app-shell.md)'s.
 
@@ -162,6 +187,9 @@ three to the screens, the renderer and the pointer-lock flow
   carry.
 - [../domain/features/game-shell.md](../domain/features/game-shell.md) — the
   mode contract and the last board choice mechanism.
+- [../domain/features/replay-recording.md](../domain/features/replay-recording.md)
+  — what the 3D session records, the camera and view-mode sampling and the
+  replay on the adapter's reports.
 - [../domain/features/board-generation.md](../domain/features/board-generation.md)
   — the request, the no-guess failure rule and the attempt budget.
 - [../../docs/ORIGINAL_SPEC.md](../../docs/ORIGINAL_SPEC.md) "Grid &
@@ -180,12 +208,15 @@ three to the screens, the renderer and the pointer-lock flow
   `js/main.js`; the mode host and `createLastBoardChoice`.
 - [platform.md](platform.md) — the storage the last 3D choice is a document
   in.
+- [replay.md](replay.md) — the recorder the session feeds and seals, and
+  the camera sampler `flow.sampler` builds.
 - [records.md](records.md) — the 3D board identity, `buildSummary` and
   `MODE_3D` the adapter's summaries are built with, and `PRESETS_3D`, kept
   equal to `PRESETS` by a test.
 - [testing.md](testing.md) — `tests/mode3d-board-choice.test.mjs`,
   `tests/mode3d-session.test.mjs`, `tests/mode3d-noguess-limit.test.mjs`,
-  `tests/shell-mode-3d.test.mjs` and `tests/records-summary-3d.test.mjs`.
+  `tests/shell-mode-3d.test.mjs`, `tests/records-summary-3d.test.mjs` and
+  `tests/replay-3d.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 

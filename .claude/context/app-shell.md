@@ -129,9 +129,13 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
   `active`, `state` (`{mode, started, finished, canPause}`),
   `on(event, listener)` → unsubscribe, `openBoardChoice(id)`,
   `start(id, choice)`, `pause(opts)`, `resume(opts)`, `restart(opts)`,
-  `leave()`, `summary()`. A mode reports through `report.started()`,
-  `finished(summary)`, `canPause(bool)`, `failed(reason)`; it may declare
-  `failureScreen`.
+  `leave()`, `summary()`. A mode may also provide `replay(summary)`, the
+  game's replay sealed with that summary ([replay.md](replay.md)), or null;
+  a mode without it records no replays. A mode reports through
+  `report.started()`, `finished(summary, replay)`, `canPause(bool)`,
+  `failed(reason)`; it may declare `failureScreen`. Listeners of `finished`
+  and `abandoned` receive `{mode, summary, replay}`, `replay` null when the
+  mode passed none.
 
 `js/shell/mode-3d.js` — `create3DMode(flow, report)`, with
 the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
@@ -159,8 +163,10 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
 - `createPauseController({modes, showCard, isPaused?, onBoard?, confirm,
   goMenu, guard?})` → `inProgress`, `pause(source, {note})` →
   whether the card opened, `resume(source)`, `restart(source)`, `toMenu()`,
-  `pageHide()`, `attach(handOff, listener)` → detach, `dispose()`. Hand-off
-  listeners receive `(summary, mode)`.
+  `pageHide()`, `attach(handOff, listener)` → detach, `dispose()`.
+  `finished` and `abandoned` listeners receive `(summary, mode, replay)`,
+  `replay` the sealed `{blob, listing}` or null; `inProgress` listeners
+  `(summary, mode)`.
 
 `js/results/flow.js`
 - `RESULTS_SCREEN` = `'results'`.
@@ -297,7 +303,9 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   (through the pause controller) and `leave`. Every menu screen's `show`
   calls `MODES.leave()`. The host keeps the active mode and its game state
   from the mode's reports, reports `abandoned` on the mode's behalf (restart,
-  leave or a replacing start of a started, unfinished game), ignores reports
+  leave or a replacing start of a started, unfinished game) with the mode's
+  `summary()` and `replay(summary)` — a `replay` that throws reports null —
+  ignores reports
   from an inactive mode, and turns a throwing `start` into `failed`.
   `MODES.on('failed')` routes to the mode's `failureScreen`.
 - **The 3D adapter.** `FLOW_3D` in `js/main.js` is the 3D game's own flow
@@ -311,13 +319,19 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   enters play the way resume does; `leave` is `leaveGame` (leaves the
   session, releases lock and lockless play, hides `#m3d-status`). The
   adapter reports started, finished and abandoned from the session's own
-  events; `js/main.js` calls nothing on it but `contextLost()`.
+  events, each `finished` and `abandoned` carrying the session's sealed
+  replay. `FLOW_3D.sampler` builds the session's camera sampler
+  (`createSampler3D`, [replay.md](replay.md)) over the camera, the controls
+  and `S.spacing`; `js/main.js` calls nothing on the adapter but
+  `contextLost()` and `mode3d.tick()`, which the frame loop calls every
+  frame while the 3D mode is active to drive that sampler.
 - **The Classic 2D mode.** `FLOW_2D` in `js/main.js` is the shell side
   handed to `createClassic2DMode` ([classic2d.md](classic2d.md)): board
   choice routes to `classic-2d-choice` with the last board choice (loaded at
   boot by `mode2d.loadChoice()`); `show` routes to `classic-2d`, whose Back
   pauses; the board area is `#c2d-board`; the overlay bar's timer and
-  counter come from `hud`, fed by `mode2d.tick()` every frame. The paused
+  counter come from `hud`, fed by `mode2d.tick()` every frame, which also
+  drives the mode's movement sampler ([replay.md](replay.md)). The paused
   screen's `setBoardHidden` also hides the 2D board, and `pauseInfo` /
   `gameOver` read `mode2d.status()`. On `classic-2d` the controller goes to
   `padBoard2D`: Start and B/Back pause through `#hud-pause`, a failed
@@ -350,11 +364,13 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   `#pause-confirm` panel in place of `#pause-actions`) and refocuses; Back or
   Cancel closes it. Outside such a game they proceed at once.
 - **Hand-offs.** `PAUSE.attach(name, listener)`: `finished` for every
-  finished game, `abandoned` for every abandoned game, `inProgress` at game
-  started, at every pause of a started, unfinished game and on `pagehide`.
-  The controller routes nowhere itself. The records store attaches to all
-  three (`RECORDS.attach(PAUSE)`, [records.md](records.md)) and the results
-  flow to `finished` (`RESULTS.attach(PAUSE)`).
+  finished game, `abandoned` for every abandoned game, both with the game's
+  sealed replay beside its summary, `inProgress` at game started, at every
+  pause of a started, unfinished game and on `pagehide`. The controller
+  routes nowhere itself. The records store attaches to all three
+  (`RECORDS.attach(PAUSE)`, [records.md](records.md)) and the results flow
+  to `finished` (`RESULTS.attach(PAUSE)`); no listener reads or stores the
+  replay ([replay.md](replay.md)).
 - **Results flow.** `RESULTS.finished(summary, mode)` records the summary
   with `RECORDS.record` first, so the comparison is against the bests that
   stood before this game, then routes to `results` with `{summary, mode,
@@ -598,6 +614,9 @@ Gameplay fidelity to the original game is the overriding rule.
   overlay bar's display formats and the screens composed from the kit.
 - [../domain/features/settings.md](../domain/features/settings.md) — the
   Settings page, the pause-card shortcuts and the start-up order.
+- [../domain/features/replay-recording.md](../domain/features/replay-recording.md)
+  — the replay beside the summary in the mode contract's `game finished` and
+  `game abandoned` reports.
 - [../domain/features/results-screen.md](../domain/features/results-screen.md)
   — the results flow (record before show), the screen's content and time
   format, its actions and the failure note.
@@ -626,6 +645,8 @@ Gameplay fidelity to the original game is the overriding rule.
   appliers.
 - [settings.md](settings.md) — the settings store, appliers, the Settings
   page markup and binder, and the bindings source `js/ui.js` reads.
+- [replay.md](replay.md) — the replay the mode contract and hand-offs carry,
+  and `createSampler3D`, which `FLOW_3D.sampler` builds.
 - [records.md](records.md) — the records store the shell loads and attaches,
   whose `record` and comparison the results flow uses, the board label
   and key the results screen shows and routes with, and the Records screen
@@ -640,7 +661,9 @@ Gameplay fidelity to the original game is the overriding rule.
   kit-built screens and their contrast; `tests/settings-*.test.mjs` pin the
   Settings screen's wiring and the pause-card shortcuts;
   `tests/results.test.mjs` pins the results flow, view and screen;
-  `tests/records-screen.test.mjs` the `records` route's wiring.
+  `tests/records-screen.test.mjs` the `records` route's wiring;
+  `tests/replay-2d.test.mjs` the replay on the mode host and the pause
+  controller's hand-offs.
 
 ## WHEN TO READ THE SOURCE
 
