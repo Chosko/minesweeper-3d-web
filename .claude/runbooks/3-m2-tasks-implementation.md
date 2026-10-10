@@ -338,7 +338,7 @@ Context:
 
 Done: 2026-10-10, commit `2436aaf` (8 files, +740/-40). The viewer route is named `replay` (`REPLAY_SCREEN`); Watch appears only once that route is registered. Unpin clears every pin reason, including "best".
 
-## [ ] 25. Implement task 75 — Update documentation for feature `replay-library`
+## [x] 25. Implement task 75 — Update documentation for feature `replay-library`
 
 Depends on: 21, 22, 23, 24
 
@@ -350,6 +350,8 @@ Context:
 ```prompt
 /task-implement 75 --review
 ```
+
+Done: 2026-10-10, commit `44d2159` (7 files, +376/-82).
 
 ## [ ] 26. Implement task 76 — Replay simulator and verifier
 
