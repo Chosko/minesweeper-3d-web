@@ -67,7 +67,7 @@ Context:
 
 Done: 2026-10-10, commit `c31e009` (11 files, +240/-220). The two step-4 behaviour changes are recorded in `app-shell.md`, not decided; `3d-board-graph.md` still calls the old 3D engine current (an /architect amend is needed).
 
-## [ ] 6. Implement task 56 — 3D board choice: presets, custom boards and the no-guess switch
+## [x] 6. Implement task 56 — 3D board choice: presets, custom boards and the no-guess switch
 
 Depends on: 4
 
@@ -78,11 +78,14 @@ Context:
 /task-implement 56 --review
 ```
 
+Done: 2026-10-10, commit `41326ce` (10 files, +764/-144). A 1×1×1 custom board is refused; there are two no-guess switches (presets always on, custom disabled above the limit), not the single one `3d-play-flow` describes; the last choice uses a new generic `createLastBoardChoice` in `js/shell/menu.js`.
+
 ## [ ] 7. Implement task 57 — 3D game session: safe first click, generation and timer
 
 Depends on: 4, 6
 
-Context: none
+Context:
+- 2026-10-10 (from step 6): the 3D board choice no longer reads or shows old best times; `recordBest` at the end of a 3D game is untouched and is this task's to handle.
 
 ```prompt
 /task-implement 57 --review --rounds 2
@@ -92,7 +95,8 @@ Context: none
 
 Depends on: 7
 
-Context: none
+Context:
+- 2026-10-10 (from step 6): `NOGUESS_CELL_LIMIT` is a placeholder 1000, exported once from `js/mode3d/board-choice.js`; replace the value there.
 
 ```prompt
 /task-implement 58 --review
@@ -112,7 +116,8 @@ Context: none
 
 Depends on: 6, 7, 8, 9
 
-Context: none
+Context:
+- 2026-10-10 (from step 6): the board choice has two no-guess switches — one under the presets, always available, and one inside the custom panel, disabled above the cell limit — where `3d-play-flow` speaks of one; `.claude/context/app-shell.md` and `testing.md` still describe the old 3D board choice.
 
 ```prompt
 /task-implement 60 --review
