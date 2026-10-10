@@ -147,7 +147,7 @@ Context:
 
 Done: 2026-10-10, commit `7560679` (11 files, +425/-137).
 
-## [ ] 11. Implement task 61 — 3D board identity, board key and labels
+## [x] 11. Implement task 61 — 3D board identity, board key and labels
 
 Depends on: 6
 
@@ -157,6 +157,8 @@ Context:
 ```prompt
 /task-implement 61 --review
 ```
+
+Done: 2026-10-10, commit `8deb5ef` (4 files, +294/-28). The 3D key is `3d:<w>x<h>x<d>:<mines>:<guess|no-guess>` (identity with mode `3d`, no grid); `BOARD_KEY_FORMAT` stays 1.
 
 ## [ ] 12. Implement task 62 — 3D summaries and the 3D mode's summary hand-off
 
@@ -175,6 +177,7 @@ Depends on: 11
 
 Context:
 - 2026-10-10 (from runbook m1-tasks-implementation, step 43): the m1 records model already keeps overall counters per mode (`records.overall[mode]`, `overall(mode = 'classic-2d')`, `overallWinRate(mode)` in `js/records/model.js`); only `classic-2d` exists so far.
+- 2026-10-10 (from step 11): `js/records/board.js` gained `MODE_3D`, `PRESETS_3D` (a tested copy of the presets in `js/mode3d/board-choice.js`) and `preset3D()`; the 3D key is `3d:<w>x<h>x<d>:<mines>:<guess|no-guess>`; `BOARD_KEY_FORMAT` stays 1 and `standardBoard()` still returns null for a 3D board — bumping the records format and 3D board ordering are this task's.
 
 ```prompt
 /task-implement 63 --review --rounds 2
@@ -184,7 +187,8 @@ Context:
 
 Depends on: 11, 12, 13
 
-Context: none
+Context:
+- 2026-10-10 (from step 11): `.claude/context/records.md` does not yet describe the 3D identity API added to `js/records/board.js` (`MODE_3D`, `PRESETS_3D`, `preset3D()`, the 3D key form).
 
 ```prompt
 /task-implement 64 --review
