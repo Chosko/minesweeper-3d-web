@@ -93,12 +93,23 @@ Context:
 
 Done: 2026-10-10, commit `328822e` (11 files, +1134/-162). Flags before the first reveal are held by the session (`js/mode3d/session.js`), not the engine, and applied before the reveal once the board arrives; `create3DGame` moved to `js/mode3d/session.js`; the generation worker gained the `box` board description.
 
-## [ ] 8. Implement task 58 — No-guess cell-count limit for 3D boards
+## [P] 8. Implement task 58 — No-guess cell-count limit for 3D boards
 
 Depends on: 7
 
 Context:
 - 2026-10-10 (from step 6): `NOGUESS_CELL_LIMIT` is a placeholder 1000, exported once from `js/mode3d/board-choice.js`; replace the value there.
+- 2026-10-10 parked: The task was supposed to set the no-guess cell-count limit for custom 3D boards from a measurement. The measurement contradicts the premise: at the presets' densities (up to 16%), bigger boards need no more generation tries than small ones — every request from 10 × 10 × 10 to 70 × 70 × 70 succeeded within a few dozen of the 2000 allowed tries; only small, dense boards (4 × 4 × 4 to 6 × 6 × 6 at 15%) need hundreds. Successful requests: the slowest takes about 0.3 s at 1,000 cells, 0.5 s at 8,000, 1 s at 27,000, and 2–3 s at 125,000–343,000. Failed requests (a board too dense) use all 2000 tries before failing: 2–40 s at 1,000–125,000 cells, about 5–6 minutes at 1,000,000. So "a board at the limit answers within the attempt budget" holds at every size, and the limit has to be set by an acceptable wait instead.
+  Second finding: a box with any axis exactly 2 cells long can never be a no-guess board — two stacked cells share every neighbour, so a mine in one is always a coin flip (8 × 8 × 2: 0 of 50 seeds, at every density). This includes the three double-layer presets, which the design says offer no-guess; a no-guess game on them always ends in the failure offer after several seconds. Work so far (`dev/measure-noguess-3d.mjs`) is on branch `park/task-58`; task 58 is `[PARKED]` in TASKS.md.
+  Q1. What should set the no-guess cell-count limit?
+    a. A short successful wait: 8,000 cells (20 × 20 × 20), where the slowest request at preset densities takes about 0.5 s.
+    b. A one-second successful wait: 27,000 cells (30 × 30 × 30).
+    c. No limit: no-guess on every custom board (1,000,000 cells), relying on the generating state and the failure offer. The disabled switch would never show, which changes the feature document's design.
+    Recommendation: a.
+  Q2. What happens to boards with a 2-cell axis, double-layer presets included?
+    a. Leave them to a follow-up (`/architect amend feature=3d-play-flow "no-guess on boards with a 2-cell axis"`) and keep this task to the cell-count limit.
+    b. Also disable no-guess on every board with a 2-cell axis in this task. That is a design change beyond the task's scope.
+    Recommendation: a.
 
 ```prompt
 /task-implement 58 --review
