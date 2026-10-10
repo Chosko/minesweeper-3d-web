@@ -54,7 +54,7 @@ Context:
 
 Done: 2026-10-10, commit `5b88d74` (11 files, +286/-797). The 3D game is built by `create3DGame` in `js/shell/mode-3d.js` (state view in `S.game`, actions in `S.play`); two behaviour changes are unrecorded in any feature document: a flag before the first click does nothing, and a 1×1×1 custom board gets 0 mines.
 
-## [ ] 5. Implement task 55 — Update documentation for feature `3d-board-graph`
+## [x] 5. Implement task 55 — Update documentation for feature `3d-board-graph`
 
 Depends on: 1, 2, 3, 4
 
@@ -64,6 +64,8 @@ Context:
 ```prompt
 /task-implement 55 --review
 ```
+
+Done: 2026-10-10, commit `c31e009` (11 files, +240/-220). The two step-4 behaviour changes are recorded in `app-shell.md`, not decided; `3d-board-graph.md` still calls the old 3D engine current (an /architect amend is needed).
 
 ## [ ] 6. Implement task 56 — 3D board choice: presets, custom boards and the no-guess switch
 
