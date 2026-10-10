@@ -76,7 +76,7 @@ Feature: 3d-play-flow
 
 ## 58. No-guess cell-count limit for 3D boards
 
-Status: [MISSING]
+Status: [PARKED]
 Target: claude
 Files: js/mode3d/board-choice.js, dev/measure-noguess-3d.mjs, tests/mode3d-noguess-limit.test.mjs, .claude/domain/features/3d-play-flow.md
 Preconditions: 57
