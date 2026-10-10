@@ -173,7 +173,7 @@ Context:
 
 Done: 2026-10-10, commit `c6ebe6c` (18 files, +404/-104). Finished 3D games are now records and reach the shared results screen immediately (before task 81): pointer lock stays on, "Play again" after Records → Back does nothing, and 3D boards can show in the 2D board list; a fixed debug board has no summary.
 
-## [ ] 13. Implement task 63 — Per-mode counters, mode-filtered board listing and the records format step
+## [x] 13. Implement task 63 — Per-mode counters, mode-filtered board listing and the records format step
 
 Depends on: 11
 
@@ -186,12 +186,15 @@ Context:
 /task-implement 63 --review --rounds 2
 ```
 
+Done: 2026-10-10, commit `4335f35` (6 files, +322/-38). Records format is version 2; the upgrade from 1 keeps 3D counters already present rather than zeroing them; the board list takes a mode defaulting to Classic 2D, so 3D boards no longer show in the 2D list.
+
 ## [ ] 14. Implement task 64 — Update documentation for feature `3d-game-records`
 
 Depends on: 11, 12, 13
 
 Context:
 - 2026-10-10 (from step 11): `.claude/context/records.md` does not yet describe the 3D identity API added to `js/records/board.js` (`MODE_3D`, `PRESETS_3D`, `preset3D()`, the 3D key form).
+- 2026-10-10 (from step 13): `.claude/context/` records, platform and testing files are untouched by task 63 — records format is version 2 (`upgradeRecords` adds zeroed 3D counters, keeping any already present), `emptyRecords()` holds both modes, and the board list takes a mode (default Classic 2D).
 
 ```prompt
 /task-implement 64 --review
@@ -374,6 +377,7 @@ Depends on: 11, 13, 24
 
 Context:
 - 2026-10-10 (from step 12): 3D boards can show up in the Records screen's 2D board list until the per-mode listing (task 63) and this switch land.
+- 2026-10-10 (from step 13): the board list now takes a mode (default Classic 2D) and the Records screen calls it without one, so 3D boards no longer appear in the 2D list; step 12's note to the contrary no longer holds.
 
 ```prompt
 /task-implement 82 --review
