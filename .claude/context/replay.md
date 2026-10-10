@@ -1,14 +1,16 @@
-# Replay — format, recorder and sealer, movement samplers
+# Replay — format, recorder and sealer, movement samplers, library
 
 ## OVERVIEW
 
-Replay recording: every Classic 2D and 3D game that ends in play — won,
-lost, or abandoned after its first click — becomes one compact, versioned
-binary replay holding the board's mines, the rules version, every action
-with its time and the player's movement, sealed at the end of the game and
-handed on beside its summary. A replay plays back on the engine, so nothing
-in it depends on the generator. All of `js/replay/` is DOM-free, apart from
-the 2D sampler's browser wiring.
+Replay recording and the replay library: every Classic 2D and 3D game that
+ends in play — won, lost, or abandoned after its first click — becomes one
+compact, versioned binary replay holding the board's mines, the rules
+version, every action with its time and the player's movement, sealed at
+the end of the game and handed on beside its summary; the library keeps it,
+pinning personal bests and the replays the player pins and keeping the
+newest 100 others. A replay plays back on the engine, so nothing in it
+depends on the generator. All of `js/replay/` is DOM-free, apart from the
+2D sampler's browser wiring.
 
 - `js/replay/format.js` — the replay object, the binary blob's layout, the
   encoder, and the decoder `replay-playback` shares: one decoder per format
@@ -21,13 +23,21 @@ the 2D sampler's browser wiring.
   cursor's cell, and `mountSampler2D`, its browser wiring.
 - `js/replay/sampler-3d.js` — the 3D movement sampler: the camera position,
   yaw and pitch on a schedule and the view mode.
+- `js/replay/library.js` — the replay library: the one owner and only
+  writer of the replay store (the platform blob store) and of the library
+  index document, `replays.library`; retention, pinning, start-up
+  reconciliation and the failure rules. Storage and the blob store are
+  handed in.
 
 The sessions own their recorder and the modes their sampler
 ([classic2d.md](classic2d.md), [mode3d.md](mode3d.md)); the sealed replay
 travels on the mode contract's `finished` and `abandoned` reports and the
-pause controller's hand-offs ([app-shell.md](app-shell.md)). No hand-off
-listener reads or stores it; storing replays is `replay-library`, watching
-them `replay-playback`.
+pause controller's hand-offs to the results flow, which adds it to the
+library once its summary is recorded ([app-shell.md](app-shell.md)).
+`js/main.js` builds the one library (`REPLAYS`) over the platform `storage`
+and `blobStore` ([platform.md](platform.md)); the Records screen's library
+view lists, pins and unpins its replays ([records.md](records.md)).
+Watching them is `replay-playback`.
 
 ## PUBLIC API
 
@@ -99,6 +109,28 @@ them `replay-playback`.
 - `createSampler3D({session, camera, controls, spacing, interval?, steps?})`
   → `{tick()}`; `spacing` is a getter.
 
+`js/replay/library.js`
+- `LIBRARY_DOC` (`'replays.library'`), `LIBRARY_VERSION` (1),
+  `RETAINED_UNPINNED` (100), `PIN_BEST` (`'best'`), `PIN_HAND` (`'hand'`).
+- `createReplayLibrary({storage, blobStore, onNotSaved?})` → library;
+  registers `LIBRARY_DOC` at creation. `onNotSaved({reason})` is called at
+  most once, the first time a blob write or an index save fails.
+  - `load()` → Promise, awaited before use; repeated calls share it.
+  - `add(blob, listing, setBest)` → Promise; `listing` the recorder's
+    listing fields, `setBest` pins with `PIN_BEST`. An id already added is a
+    no-op.
+  - `pin(id)` adds `PIN_HAND`; `unpin(id)` clears every reason, then
+    applies retention; both → Promise, and change nothing for an unknown id.
+  - `forBoard(boardKey)` → frozen entries `{id, boardKey, mode, outcome,
+    elapsedMs, bbbvPerSecond, efficiency, endedAt, size, pins}`, newest end
+    date first; `has(id)`; `bytes(id)` → Promise of the bytes or
+    `undefined`, rejecting when the store cannot read.
+  - `onChange(fn)` → unsubscribe; `fn` gets `{kind: 'add' | 'pin' |
+    'unpin', id}` or `{kind: 'remove', ids}` (oldest first).
+  - `available()` → whether replays are saved this session; `settled()` →
+    Promise of every queued operation finishing.
+  - `add`, `pin` and `unpin` before `load()` throw.
+
 ## INTERNAL PATTERNS
 
 - **The blob.** `'MSRP'`, the format version, the body, then a CRC-32 of
@@ -148,6 +180,31 @@ them `replay-playback`.
   header's graph, mine set, profile and rules version reproduces the check
   values exactly; recorded games under `tests/fixtures/replays/` keep a
   replay recorded by an earlier build reproducing.
+- **The library index.** One document, `{entries: [...]}`, each entry the
+  listing fields plus `pins`, the list of its reasons; saved whole after
+  every change. The index says which replays are kept and pinned, the blob
+  store holds their bytes under the replay id; the view and retention read
+  only the index. Operations run one after another in a queue, in the order
+  asked, and subscribers are told after each change; one that throws is
+  logged and the others still run.
+- **Adding.** The blob is written first, then the index entry, then the
+  index saved, then retention applied. A failed blob write leaves no entry,
+  is reported once and keeps the bytes for `bytes(id)` this session.
+- **Retention.** After each add and unpin, unpinned entries beyond the
+  newest `RETAINED_UNPINNED` by end date, across both modes, leave the
+  index, the index is saved, then their blobs are deleted, oldest first. A
+  blob whose delete fails is an orphan the next start-up deletes. Pinned
+  replays are never removed by retention or by a storage failure; a best
+  pin stays when the best is later beaten.
+- **Start-up.** `load()` reads the index once and reconciles it with the
+  store: a blob with no entry is deleted, an entry with no blob dropped and
+  the index saved; a store that cannot list skips reconciliation, so a read
+  failure drops nothing.
+- **Not saving.** When the storage or the blob store does not persist, or
+  the stored index is newer than this build, unreadable or corrupt, the
+  session runs an in-memory library that saves nothing (`available()`
+  false) and leaves the stored index and blobs untouched, so a newer
+  build's library and every pinned replay survive.
 
 ## DOMAIN DEPENDENCIES
 
@@ -155,6 +212,9 @@ them `replay-playback`.
   — the format, capture, movement sampling, size limit, sealing, the mode
   contract extension, determinism and failure contracts, and the measured
   recording constants.
+- [../domain/features/replay-library.md](../domain/features/replay-library.md)
+  — the replay store, the library index, retention, best and hand pinning,
+  the hand-off, availability and the failure rules.
 - [../domain/technical-direction.md](../domain/technical-direction.md) —
   format versions on every saved file, and the engine keeping every shipped
   rules version.
@@ -164,13 +224,17 @@ them `replay-playback`.
 - [engine.md](engine.md) — `CLICK_KINDS`, rule profiles and their versions,
   the game's state arrays the digest reads.
 - [records.md](records.md) — the board identity, `boardKey` and the summary
-  record a replay is sealed with.
+  record a replay is sealed with; the comparison whose new bests pin a
+  replay; the Records screen's library view.
+- [platform.md](platform.md) — the storage interface the index is a
+  document of, and the blob store the replays are kept in.
 - [classic2d.md](classic2d.md) — the 2D session's recorder and the mode's
   sampler.
 - [mode3d.md](mode3d.md) — the 3D session's recorder and the adapter's
   sampler.
 - [app-shell.md](app-shell.md) — the replay on the mode contract, the
-  hand-offs, and the frame loop that ticks the 3D sampler.
+  hand-offs, the results flow that adds it to the library, `REPLAYS` in
+  `js/main.js`, and the frame loop that ticks the 3D sampler.
 - [testing.md](testing.md) — `tests/replay-*.test.mjs`,
   `tests/fixtures/replays/` and `dev/measure-replays.mjs`.
 
@@ -186,3 +250,8 @@ them `replay-playback`.
   head comment of `js/classic2d/session.js` or `js/mode3d/session.js`.
 - A determinism failure: read `tests/replay-determinism.test.mjs` and the
   failing fixture's entry in `tests/fixtures/replays/index.json`.
+- Changing an index entry's fields: bump `LIBRARY_VERSION` and register its
+  upgrade step in `createReplayLibrary`; read `entryOf`, `isEntry` and
+  `doLoad` in `library.js`.
+- Changing retention, pinning or the failure rules: `retain`, `reconcile`
+  and `doLoad` in `library.js`, and its head comment.

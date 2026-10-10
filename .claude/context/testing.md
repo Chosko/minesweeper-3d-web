@@ -96,6 +96,21 @@ browser checks for everything that needs WebGL or the DOM.
   module's start-up selection (`js/platform/index.js`), that no other module
   imports a backend, and one Playwright test that a saved document survives
   a page reload (skipped when Playwright or chromium is unavailable).
+- `tests/platform-blob-store.test.mjs` — the blob store
+  (`js/platform/blob-store.js`, `memory-blob-store.js`,
+  `indexeddb-blob-store.js`): asynchronous calls, byte-for-byte and empty
+  round-trips, a missing name, the store's own copies (a view onto a larger
+  buffer too), replacement, sorted listing, delete, bad names and bytes
+  thrown at once, refused writes reported and failed reads rejected, the
+  seeded memory implementation, the opened implementation persisting and
+  the memory fallback when opening throws, rejects or gives nothing, calls
+  waiting for the one open, IndexedDB refusing to open (missing, blocked,
+  failed), the fixed database names, the platform module's `blobStore`
+  falling back to memory without IndexedDB and writing nothing to
+  `localStorage`, that only `js/platform/index.js` imports an
+  implementation and the interface and memory store are DOM-free, and one
+  Playwright test that a blob survives a page reload in IndexedDB (skipped
+  when Playwright or chromium is unavailable).
 - `tests/records-board.test.mjs` — the board identity (`js/records/board.js`):
   the six frozen fields and the impossible values that throw, the standard
   boards, the key pinned for the standard and custom boards, the same fields
@@ -193,6 +208,19 @@ browser checks for everything that needs WebGL or the DOM.
   Playwright test charts a seeded history in both themes (saving
   screenshots) and pages the games list by keyboard (skipped when
   Playwright or chromium is unavailable).
+- `tests/records-replays.test.mjs` — the library view
+  (`js/records/replay-list.js` and its place in `js/records/screen.js`)
+  over a fake replay library: the board's rows, their fields and order, the
+  pin state, the pinned-first filter, the empty state and a missing or
+  broken library, Pin / Unpin and the live redraw through the library's
+  change notification, Watch on the replays, bests and recent games only
+  once the `replay` route is registered and routing back to the board, the
+  not-saving notice told once and not to a screen left before the load;
+  the module DOM-free apart from its binder; static checks of the
+  `#records-replays` markup, the wiring in `js/main.js` and the catalogue
+  entry. One Playwright test lists, pins by keyboard keeping focus,
+  filters, watches and shows the empty state (skipped when Playwright or
+  chromium is unavailable).
 - `tests/results.test.mjs` — the results screen (`js/results/`): the time
   format (tenths, truncated, the one time formatter in the view), signed
   differences, 3BV/s, efficiency and the dash; `resultsContent` for a win
@@ -460,6 +488,30 @@ browser checks for everything that needs WebGL or the DOM.
   the recorded games under `tests/fixtures/replays/` and on games recorded
   now through the real sessions, samplers and recorder by
   `dev/measure-replays.mjs`'s simulated player, which it imports.
+- `tests/replay-library.test.mjs` — the replay library
+  (`js/replay/library.js`) over platform storage on the memory backend and
+  the memory blob store: the registered, versioned index and its entry
+  fields, one load, use before load throwing, add's order (blob, entry,
+  retention) and the blob under the replay id, a repeated or concurrent
+  add written once, best pinning, the newest 100 unpinned kept across both
+  modes by end date with pinned replays never deleted, hand pin and unpin
+  (retention after unpin, unknown ids), `forBoard`, `has` and `bytes`, the
+  entries as copies, change notification with a throwing subscriber,
+  start-up reconciliation both ways and a store that cannot list, a
+  missing or malformed index, a store or index that cannot persist, a
+  failed blob write or index save reported once, a newer, unreadable or
+  corrupt index left untouched, no pinned replay lost to a failure, and the
+  module DOM-free.
+- `tests/replay-handoff.test.mjs` — the end-of-game hand-off
+  (`js/results/flow.js`) over fakes and over the real library: finished and
+  abandoned games recorded first, then their replay added with its listing
+  fields, pinned when the comparison shows a new best, a throwing recording
+  still adding it unpinned, both hand-offs attached and detached, a dropped
+  replay or a summary that is not a record adding nothing, a throwing or
+  rejecting library changing nothing else, a flow with no library, a
+  session that saves nothing and a failed save keeping the replay for the
+  session, and the static check that `js/main.js` builds the library over
+  `storage` and `blobStore` and hands it to the results flow.
 - `tests/fixtures/replays/` — recorded games, one `.msrp` blob each, listed
   in `index.json` with a note (2D and 3D, each with a win, a loss, an
   abandon and wasted clicks; a 3D game with flags before the first reveal).
@@ -538,7 +590,8 @@ browser checks for everything that needs WebGL or the DOM.
   given files; exits 2 with usage when called with no arguments.
 - Browser verification: ad-hoc Playwright scripts drive `window.__ms`,
   defined at the end of `js/main.js`; the suite's browser tests are the
-  reload test in `tests/platform-browser.test.mjs`, the contrast tests in
+  reload tests in `tests/platform-browser.test.mjs` and
+  `tests/platform-blob-store.test.mjs`, the contrast tests in
   `tests/components.test.mjs`, the minimum-tile-size test in
   `tests/tile-skin.test.mjs`, the board test in
   `tests/classic2d-view.test.mjs`, the mouse game in
@@ -547,7 +600,8 @@ browser checks for everything that needs WebGL or the DOM.
   `tests/classic2d-mode.test.mjs`, the input fidelity check in
   `tests/classic2d-fidelity.test.mjs`, the won game through the results
   screen in `tests/results.test.mjs`, the Records screen tests in
-  `tests/records-screen.test.mjs` and `tests/records-history.test.mjs`, one
+  `tests/records-screen.test.mjs`, `tests/records-history.test.mjs` and
+  `tests/records-replays.test.mjs`, one
   flow test in each `tests/shell-*.test.mjs`, the 3D tests in
   `tests/mode3d-board-choice.test.mjs` and `tests/mode3d-session.test.mjs`, the
   theme-and-resolution test in `tests/settings-appliers.test.mjs` and the two page tests in
@@ -623,7 +677,14 @@ Tests consume, and so pin, these contracts:
   `available`, the issue kinds and save reasons);
   `js/platform/browser-backend.js::createBrowserBackend`, `DOC_PREFIX`,
   `ASIDE_PREFIX`; `js/platform/memory-backend.js::createMemoryBackend`;
-  `js/platform/index.js` exports. Full list in [platform.md](platform.md).
+  `js/platform/blob-store.js::createBlobStore`;
+  `js/platform/memory-blob-store.js::createMemoryBlobStore`;
+  `js/platform/indexeddb-blob-store.js::openIndexedDBBlobStore`, `DB_NAME`,
+  `STORE_NAME`; `js/platform/index.js` exports. Full list in
+  [platform.md](platform.md).
+- `js/replay/library.js::createReplayLibrary`, `LIBRARY_DOC`,
+  `LIBRARY_VERSION`, `RETAINED_UNPINNED`, `PIN_BEST`, `PIN_HAND`. Full list
+  in [replay.md](replay.md).
 - `js/records/board.js::createBoardIdentity`, `boardKey` (its pinned 2D
   and 3D forms), `parseBoardKey`, `boardLabel`, `standardBoard`,
   `STANDARD_BOARDS`, `preset3D`, `PRESETS_3D`, `MODE_3D`,
@@ -637,7 +698,10 @@ Tests consume, and so pin, these contracts:
   `formatWinRate`, `RECORDS_SCREEN`, `EMPTY_TEXT`;
   `js/records/history-chart.js::chartPoints`, `niceCeiling`, `chartScale`,
   `chartText`, `drawHistoryChart`, `createHistoryChart`, `pageOf`,
-  `CHART_TOKENS`, `PAGE_SIZE`, `NO_WON_GAMES`. Full list in
+  `CHART_TOKENS`, `PAGE_SIZE`, `NO_WON_GAMES`;
+  `js/records/replay-list.js::replayList`, `pinState`, `togglePin`,
+  `watchRoute`, `createReplayListView`, `REPLAY_SCREEN`,
+  `REPLAYS_EMPTY_TEXT`, `REPLAYS_NOT_SAVED`. Full list in
   [records.md](records.md).
 - `js/shell/router.js::createRouter`, `SHELL_SCREENS`;
   `js/shell/navigation.js::FOCUSABLE`, `topLayer`, `resolveFocus`,
@@ -721,9 +785,13 @@ Browser hook `js/main.js::window.__ms` (full list in [app-shell.md](app-shell.md
   zero-region click < 2 s; mines == n on 10^6 cells < 2 s.
 - Storage tests inject the backend: the memory backend (its `documents` /
   `aside` Maps edited directly) for the interface, a `FakeStorage` passed
-  through `getStorage` for the browser backend. The platform-module tests
-  swap `globalThis.localStorage` and import `js/platform/index.js` with a
-  distinct query string, so each import evaluates the selection afresh.
+  through `getStorage` for the browser backend. Blob store and library
+  tests inject the memory blob store, its `blobs` Map edited directly and
+  `failWrites` / `failReads` standing in for a failing IndexedDB. The
+  platform-module tests swap `globalThis.localStorage` and import
+  `js/platform/index.js` with a distinct query string, so each import
+  evaluates the selection afresh; Node has no `indexedDB`, so the module's
+  `blobStore` is the memory fallback there.
 - Gamepad tests use a `fakePad` object (17 buttons, 4 axes, `mapping: 'standard'`)
   and a mutable `list` returned by `getGamepads`; no browser globals needed.
 - `FlyCamera.moveAxes` is tested for exact equality with `move()` under keys,
@@ -838,6 +906,10 @@ is enforced.
 - [../domain/features/replay-recording.md](../domain/features/replay-recording.md)
   — the format, recording, cap, failure and determinism contracts and the
   measured recording constants the `replay-*` tests encode.
+- [../domain/features/replay-library.md](../domain/features/replay-library.md)
+  — the replay store, index, retention, pinning, hand-off, library view and
+  failure contracts `platform-blob-store`, `replay-library`,
+  `replay-handoff` and `records-replays` encode.
 - [../domain/features/settings.md](../domain/features/settings.md)
   — the schema, store, carry-over, failure, applier and page contracts the
   `settings-*` tests encode.
@@ -855,17 +927,18 @@ is enforced.
 
 - [engine.md](engine.md) — `tests/engine-*.test.mjs` pin the cell-graph engine, the box graph, the 3D profile and the 3D state view; the fidelity test checks the reference profile against the observation file, the naive port the 3D profile.
 - [generation.md](generation.md) — `tests/generation-*.test.mjs` pin the seeded generator, solver, no-guess loop, worker and client.
-- [platform.md](platform.md) — `tests/platform-*.test.mjs` pin the storage interface, backends and start-up selection.
-- [records.md](records.md) — `tests/records-*.test.mjs` pin the board identity and key, the summary builder and its derived stats, the records model, the records store, the Records screen and its history chart and games list.
+- [platform.md](platform.md) — `tests/platform-*.test.mjs` pin the storage interface, backends, the blob store and its implementations, and start-up selection.
+- [records.md](records.md) — `tests/records-*.test.mjs` pin the board identity and key, the summary builder and its derived stats, the records model, the records store, the Records screen, its history chart and games list, and its library view.
 - [input.md](input.md) — `tests/gamepad.test.mjs` covers gamepad helpers, `FlyCamera`, `Controls`, `MouseActions`.
 - [app-shell.md](app-shell.md) — owns `window.__ms`, the surface Playwright drives,
   the token sheet, theme applier and token reader the token/theme tests pin,
   the component kit and kit-built screens `components.test.mjs` pins,
   the game shell (`js/shell/`) the `shell-*` tests pin, and the results
-  flow and screen (`js/results/`) `results.test.mjs` pins.
+  flow and screen (`js/results/`) `results.test.mjs` pins, with the flow's
+  hand-off to the replay library in `replay-handoff.test.mjs`.
 - [mode3d.md](mode3d.md) — `tests/mode3d-*.test.mjs` pin the 3D board choice, its no-guess limit and the session; `tests/shell-mode-3d.test.mjs` the adapter.
 - [classic2d.md](classic2d.md) — `tests/classic2d-*.test.mjs` pin the session and board setup, board view, pointer and cursor inputs and the mode, and check the inputs and custom limits against the observation file; `tests/tile-skin.test.mjs` the tile painter, cache and `MIN_TILE_SIZE`.
-- [replay.md](replay.md) — `tests/replay-*.test.mjs` pin the format, the recorder and sealer, 2D and 3D capture and determinism over `tests/fixtures/replays/`; `dev/measure-replays.mjs` is the measurement behind the recording constants.
+- [replay.md](replay.md) — `tests/replay-*.test.mjs` pin the format, the recorder and sealer, 2D and 3D capture, determinism over `tests/fixtures/replays/`, the replay library and the end-of-game hand-off to it; `dev/measure-replays.mjs` is the measurement behind the recording constants.
 - [rendering.md](rendering.md) — no unit tests of the drawing (only the static not-themed checks); verified visually via Playwright screenshots.
 - [audio.md](audio.md) — no unit tests of the sounds; WebAudio only checkable in a browser.
 - [settings.md](settings.md) — `tests/settings-*.test.mjs` pin the schema, store, appliers, page,

@@ -18,7 +18,8 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
   controller), `MENU`, `LAST_MODE`, `LAST_CHOICE_3D` and `CHOICE_3D` (the 3D
   board choice binder), `GEN_3D` (the 3D game's generation client),
   `LAST_CHOICE_2D` and `CHOICE_2D` (the
-  Classic 2D board choice binder), `RECORDS` (the records store), `RESULTS`
+  Classic 2D board choice binder), `RECORDS` (the records store), `REPLAYS`
+  (the replay library, [replay.md](replay.md)), `RESULTS`
   (the results flow), `RESULTS_VIEW` and `RECORDS_PAGE` (the Records
   screen's controller over its view, [records.md](records.md)); holds the
   single state object `S`; runs the `requestAnimationFrame` loop; exposes
@@ -45,8 +46,10 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
     (`createPauseController`); its rules are documented in its head comment.
 - `js/results/` — the results screen (`results-screen`), DOM-free apart from
   the view's binder:
-  - `flow.js` — the results flow on the `finished` hand-off: records the
-    game, then routes to `results` (`createResultsFlow`, `RESULTS_SCREEN`).
+  - `flow.js` — the results flow on the `finished` and `abandoned`
+    hand-offs: records the game, routes a finished one to `results`, then
+    adds the game's replay to the replay library (`createResultsFlow`,
+    `RESULTS_SCREEN`).
   - `view.js` — the screen's content and its time, rate and efficiency
     formats (`resultsContent`, `formatTime`, …) and the binder that fills
     `#results` (`createResultsView`); the formats are documented in its head
@@ -93,8 +96,8 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
   the translucent backdrop shared by `#pause`, `#ready` and `#results`,
   the ready/help/banner/controls/ctx-lost overlays and the HUD placement; the
   kit-built screens carry no one-off rules of their own, apart from the
-  Records screen's chart box (`#records-chart`) and games table
-  (`#records-games`). Declares no
+  Records screen's chart box (`#records-chart`), games table
+  (`#records-games`) and replays table (`#records-replays-table`). Declares no
   custom properties and reads only tokens from `css/tokens.css`. Layered
   fixed overlays use the `--z-*` tokens (HUD 10, help 11, banner 12, flash
   15, overlays 20, controls modal 30, ctx-lost 40, toast 45, fatal 50).
@@ -170,10 +173,13 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
 
 `js/results/flow.js`
 - `RESULTS_SCREEN` = `'results'`.
-- `createResultsFlow({records, router, restart(source, current), goMenu})` →
-  `attach(pauser)` → detach, `finished(summary, mode)` → the routed data
-  `{summary, mode, comparison, saved, notSaved}` or null, `current` (the
-  data last shown), `playAgain(source)`, `openRecords()`, `toMenu()`.
+- `createResultsFlow({records, replays?, router, restart(source, current),
+  goMenu})` → `attach(pauser)` → detach (both hand-offs),
+  `finished(summary, mode, replay?)` → the routed data `{summary, mode,
+  comparison, saved, notSaved}` or null, `abandoned(summary, mode,
+  replay?)`, `current` (the data last shown), `playAgain(source)`,
+  `openRecords()`, `toMenu()`. `replays` is the replay library; without it
+  no replay is kept.
 
 `js/results/view.js`
 - `formatTime(ms)` (tenths, truncated: `"47.3 s"`), `formatTimeDifference`,
@@ -369,10 +375,10 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   pause of a started, unfinished game and on `pagehide`. The controller
   routes nowhere itself. The records store attaches to all three
   (`RECORDS.attach(PAUSE)`, [records.md](records.md)) and the results flow
-  to `finished` (`RESULTS.attach(PAUSE)`); no listener reads or stores the
-  replay ([replay.md](replay.md)).
-- **Results flow.** `RESULTS.finished(summary, mode)` records the summary
-  with `RECORDS.record` first, so the comparison is against the bests that
+  to `finished` and `abandoned` (`RESULTS.attach(PAUSE)`); the results flow
+  is the one listener that reads the replay.
+- **Results flow.** `RESULTS.finished(summary, mode, replay)` records the
+  summary with `RECORDS.record` first, so the comparison is against the bests that
   stood before this game, then routes to `results` with `{summary, mode,
   comparison, saved, notSaved}`, for a finished 3D game as for Classic 2D.
   A summary that is not a record — a fixed 3D board's null — is ignored, so
@@ -385,7 +391,13 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   `openRecords` routes to the Records screen with this board's `boardKey`,
   so it opens on that board, and Back from it returns to `results`; Back to menu
   and Back → `showMainMenu`. Returning to `results` without data shows
-  `RESULTS.current` again.
+  `RESULTS.current` again. `RESULTS.abandoned(summary, mode, replay)`
+  records the summary (a no-op when the records store already recorded it) and
+  shows nothing. After either records, the sealed replay, when there is
+  one, is added to `REPLAYS` once it has loaded, pinned as a best when the
+  comparison shows a new best on any of the board's three stats
+  ([replay.md](replay.md)); a library that throws or rejects is logged and
+  changes nothing else.
 - **Leave-page guard.** `guardLeave` on `beforeunload` is armed by the pause
   controller at game started and removed when the game finishes, is
   abandoned or its mode fails, so it guards only a started, unfinished game
@@ -467,6 +479,10 @@ Game flow (`js/main.js`):
   beside the settings, settling a game the last launch closed on, and is
   attached to `PAUSE`. A failed records save toasts once that this
   session's games will not be kept.
+- Replays: `REPLAYS` (`createReplayLibrary` over `storage` and `blobStore`,
+  [replay.md](replay.md)) loads in the background. A failed replay save
+  toasts once that this session's replays will not be kept, and the replay
+  stays watchable this session.
 - `onKey` ignores keys whose target is inside `input, select, textarea`, so
   settings sliders do not trigger H/M/F.
 - Controller menus: `LAYER_SCREEN` maps each overlay to its screen, topmost
@@ -545,10 +561,16 @@ Component kit (`css/components.css`, catalogue in its head comment):
   figures `ui-panel` (board label, empty state, `rec-*` bests and
   counters), the history `ui-panel` (`#records-history`: the chart canvas
   `#records-chart`, the `#records-games` table and the Newer / Older pager
-  `#records-prev` / `#records-next`), the Classic 2D overall `ui-panel`
+  `#records-prev` / `#records-next`, and the games table's Replay column
+  `#records-games-replay`), the replays `ui-panel` (`#records-replays`: the
+  Pinned first `ui-toggle` `#records-pinned-first`, the empty state
+  `#records-replays-empty` and the `#records-replays-table` list with its
+  Watch and Pin / Unpin buttons), the Classic 2D overall `ui-panel`
   (`ro-*`), the `#records-note` `ui-text--warning` line and a primary Back
   (`#records-back`). Its show and hide go through the router's `records`
   entry, which hands the asked-for `boardKey` to `RECORDS_PAGE.show`.
+  `RECORDS_PAGE` is handed `REPLAYS` and the router `SHELL`, which decides
+  where Watch shows ([records.md](records.md)).
 - Settings page (`#settings`): a `ui-card ui-screen--wide` whose
   `#settings-body` `UI` fills at construction with `settingsPageHtml()` — a
   `ui-grid` of Controls, Graphics, Theme and Audio `ui-panel` sections, one
@@ -617,6 +639,9 @@ Gameplay fidelity to the original game is the overriding rule.
 - [../domain/features/replay-recording.md](../domain/features/replay-recording.md)
   — the replay beside the summary in the mode contract's `game finished` and
   `game abandoned` reports.
+- [../domain/features/replay-library.md](../domain/features/replay-library.md)
+  — the end-of-game hand-off to the library, best pinning, the session-only
+  replay and the not-saved report.
 - [../domain/features/results-screen.md](../domain/features/results-screen.md)
   — the results flow (record before show), the screen's content and time
   format, its actions and the failure note.
@@ -646,7 +671,8 @@ Gameplay fidelity to the original game is the overriding rule.
 - [settings.md](settings.md) — the settings store, appliers, the Settings
   page markup and binder, and the bindings source `js/ui.js` reads.
 - [replay.md](replay.md) — the replay the mode contract and hand-offs carry,
-  and `createSampler3D`, which `FLOW_3D.sampler` builds.
+  `createSampler3D`, which `FLOW_3D.sampler` builds, and the replay library
+  behind `REPLAYS`.
 - [records.md](records.md) — the records store the shell loads and attaches,
   whose `record` and comparison the results flow uses, the board label
   and key the results screen shows and routes with, and the Records screen
@@ -661,9 +687,11 @@ Gameplay fidelity to the original game is the overriding rule.
   kit-built screens and their contrast; `tests/settings-*.test.mjs` pin the
   Settings screen's wiring and the pause-card shortcuts;
   `tests/results.test.mjs` pins the results flow, view and screen;
-  `tests/records-screen.test.mjs` the `records` route's wiring;
+  `tests/records-screen.test.mjs` the `records` route's wiring and
+  `tests/records-replays.test.mjs` the replays panel's markup and wiring;
   `tests/replay-2d.test.mjs` the replay on the mode host and the pause
-  controller's hand-offs.
+  controller's hand-offs; `tests/replay-handoff.test.mjs` the results flow's
+  hand-off to the replay library and `REPLAYS` in `js/main.js`.
 
 ## WHEN TO READ THE SOURCE
 

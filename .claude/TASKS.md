@@ -246,7 +246,7 @@ Feature: replay-library
 
 ## 75. Update documentation for feature `replay-library`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/platform.md, .claude/context/replay.md, .claude/context/app-shell.md, .claude/context/records.md, .claude/context/testing.md, .claude/context/INDEX.md
 Preconditions: 71, 72, 73, 74

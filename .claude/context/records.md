@@ -1,13 +1,14 @@
-# Records — board identity, summary record, personal records, records screen
+# Records — board identity, summary record, personal records, records screen, library view
 
 ## OVERVIEW
 
 The records every records consumer shares: which board a game was played
 on, the one summary record of a played game, the stats derived from it, and
 the player's personal records — bests, counters and history — kept through
-platform storage; and the Records screen that shows them (`records-screen`).
-DOM-free throughout, apart from the records view's binder and the history
-chart, which draws on the canvas it is handed.
+platform storage; and the Records screen that shows them (`records-screen`),
+with the chosen board's kept replays (`replay-library`'s library view).
+DOM-free throughout, apart from the records and replay-list view binders
+and the history chart, which draws on the canvas it is handed.
 
 - `js/records/board.js` — the board identity in its 2D and 3D forms, its
   key, the key's parser, the display label, the standard boards and the 3D
@@ -25,9 +26,14 @@ chart, which draws on the canvas it is handed.
   `model.js`; storage is handed in.
 - `js/records/screen.js` — the Records screen: its content
   (`recordsContent`), the screen controller and the view binder that fills
-  `#records`. Imports `board.js`, `summary.js`, `history-chart.js`, the
-  results screen's formats (`js/results/view.js`) and the kit's
-  `bindSegmented`; the records store is handed in.
+  `#records`. Imports `board.js`, `summary.js`, `history-chart.js`,
+  `replay-list.js`, the results screen's formats (`js/results/view.js`) and
+  the kit's `bindSegmented`; the records store, the replay library and the
+  router are handed in.
+- `js/records/replay-list.js` — the library view: the chosen board's kept
+  replays as rows, the pin toggle, the Watch route, and the binder that
+  fills `#records-replays`. Imports the results formats and the library's
+  `PIN_BEST` ([replay.md](replay.md)); the library is handed in.
 - `js/records/history-chart.js` — the history chart (3BV/s and efficiency
   per won game, on a canvas, no chart library) and the recent games list's
   paging. Imports `summary.js`, the results formats and the token reader
@@ -42,10 +48,10 @@ attaches it to the pause controller and exposes it as `__ms.records`
 abandoned games and the settled marker itself; a finished game is recorded
 only by a caller of `record()` — the results flow (`results-screen`) — since
 the `finished` hand-off only clears the marker. The Records screen reads the
-queries: `js/main.js` builds `RECORDS_PAGE` over the store and the
-`#records` view and shows it on the shell's `records` route, from the main
-menu's Records entry or the results screen's Records button
-([app-shell.md](app-shell.md)).
+queries: `js/main.js` builds `RECORDS_PAGE` over the store, the replay
+library `REPLAYS`, the router and the `#records` view and shows it on the
+shell's `records` route, from the main menu's Records entry or the results
+screen's Records button ([app-shell.md](app-shell.md)).
 
 ## PUBLIC API
 
@@ -189,19 +195,41 @@ content shape)
   custom board played in `boardsPlayed()` order — Classic 2D boards only.
 - `lastBoardPlayed(records)` → the key of the Classic 2D board whose latest
   game ended last, or null.
-- `recordsContent(records, { boardKey?, notSaved?, page? })` → the screen's
-  content: the picker's `boards`, the chosen `board`, `empty`, the three
-  `bests` with their dates, the board's `counters`, the Classic 2D
-  `overall` figures, `notes`, the `chart` (`{ points, text }`) and the
-  `games` list page (`{ headers, rows, page, pages, label, hasPrev,
-  hasNext }`). Never throws.
+- `recordsContent(records, { boardKey?, notSaved?, page?, replays?,
+  pinnedFirst?, canWatch?, replaysNotSaved? })` → the screen's content: the
+  picker's `boards`, the chosen `board`, `empty`, the three `bests` with
+  their dates and `watch`, the board's `counters`, the Classic 2D `overall`
+  figures, `notes`, the `chart` (`{ points, text }`), the `games` list page
+  (`{ headers, rows, page, pages, label, hasPrev, hasNext }`, each row with
+  its `watch`), the library view `replays` (`replayList`) and `canWatch`. A
+  best's or a game's `watch` is its summary id when `canWatch` and the
+  library keeps its replay, else null. Never throws.
 - `formatDate(iso)` → `"9 Oct 2026"`; `formatWinRate(rate)` → whole percent;
   a missing value is the results screen's `DASH`.
-- `createRecordsScreen({ records, view })` → `show({ boardKey }?)`, `hide()`,
-  `select(key)`, `showPage(n)`, `board`, `page`.
-- `createRecordsView({ root, onSelect, onBack, onPage, chart? })` →
-  `show(content)`, `hide()`; fills `#records` by id; `chart` defaults to a
-  `createHistoryChart` over `#records-chart`.
+- `createRecordsScreen({ records, view, replays?, router? })` →
+  `show({ boardKey }?)`, `hide()`, `select(key)`, `showPage(n)`,
+  `togglePin(id)`, `setPinnedFirst(on)`, `watch(id)`, `board`, `page`.
+- `createRecordsView({ root, onSelect, onBack, onPage, onWatch?,
+  onTogglePin?, onPinnedFirst?, chart? })` → `show(content)`, `hide()`;
+  fills `#records` by id, the replays panel through `createReplayListView`;
+  `chart` defaults to a `createHistoryChart` over `#records-chart`.
+
+Library view (`js/records/replay-list.js`; its head comment documents the
+row shape)
+- `REPLAY_SCREEN` — `'replay'`, the replay viewer's router screen
+  (`replay-playback`); `REPLAYS_EMPTY_TEXT`; `REPLAYS_NOT_SAVED`;
+  `REPLAY_HEADERS`.
+- `replayList(library, boardKey, { pinnedFirst, canWatch, formatDate,
+  outcomeLabel })` → `{ rows: [{ id, date, outcome, time, rate, efficiency,
+  pinned, pin, action, actionLabel, watch }], empty, emptyText,
+  pinnedFirst, canWatch }`. Never throws.
+- `pinState(pins)` → `'Not pinned'`, `'Pinned'` or `'Pinned · best'`.
+- `togglePin(library, row)` → `unpin(id)` for a pinned row, `pin(id)`
+  otherwise.
+- `watchRoute(replayId, returnTo)` → `{ screen: REPLAY_SCREEN, data: {
+  replayId, returnTo } }`.
+- `createReplayListView({ root, onWatch, onTogglePin, onPinnedFirst })` →
+  `show(list)`.
 
 History chart (`js/records/history-chart.js`)
 - `chartPoints(history)` → `[{ id, rate, efficiency }]`, the won games in
@@ -316,6 +344,22 @@ History chart (`js/records/history-chart.js`)
   per page, a page past the end clamped to the last; Newer and Older call
   `onPage`, and a pager button that ends while focused hands focus to the
   other.
+- **The library view.** The chosen board's kept replays (the library's
+  `forBoard`), newest first, or pinned ones first under the Pinned first
+  filter, each group newest first, in the results formats; a missing or
+  broken library is the empty state. Pin adds the hand pin and Unpin clears
+  every reason. While shown, the controller also subscribes to the library's
+  `onChange` and redraws on every add, pin, unpin and removal, so a pin
+  toggled from the screen redraws through that notification; a rebuilt list
+  keeps focus on the button of the replay that had it.
+- **Watch waits for the viewer.** Watch shows on the replays, the bests and
+  the games list (its Replay column) only when the router registers
+  `REPLAY_SCREEN`, and on a best or a game only when its replay is kept;
+  `watch(id)` routes there with this screen on its board to return to.
+- **Replays not saved, told once.** Once the library has loaded, a library
+  that is not saving adds `REPLAYS_NOT_SAVED` to the notes on the first
+  visit of the session only; a visit left before the load settles is not
+  told.
 
 ## DOMAIN DEPENDENCIES
 
@@ -333,6 +377,9 @@ History chart (`js/records/history-chart.js`)
 - [../domain/features/records-screen.md](../domain/features/records-screen.md)
   — the Records screen's content, board picker, history chart, recent games
   list, live update, empty state and navigation.
+- [../domain/features/replay-library.md](../domain/features/replay-library.md)
+  — the library view: the board's replays, their fields, pin state and
+  filter, Watch and Pin / Unpin, and Watch on the bests and recent games.
 
 ## CROSS-REFERENCES
 
@@ -342,6 +389,8 @@ History chart (`js/records/history-chart.js`)
   record carries.
 - [platform.md](platform.md) — `register`, `load`, `save`, `available` and
   the `newer-version` issue the store relies on.
+- [replay.md](replay.md) — the replay library the library view reads and
+  pins through, and the results flow's best pinning from the comparison.
 - [app-shell.md](app-shell.md) — the pause controller's hand-offs the store
   attaches to; `RECORDS` and `RECORDS_PAGE` in `js/main.js`,
   `__ms.records`; the `records` route, its default focus and Back; the
@@ -356,7 +405,8 @@ History chart (`js/records/history-chart.js`)
   `tests/records-board-3d.test.mjs`, `tests/records-summary.test.mjs`,
   `tests/records-summary-3d.test.mjs`, `tests/records-model.test.mjs`,
   `tests/records-model-3d.test.mjs`, `tests/records-store.test.mjs`,
-  `tests/records-screen.test.mjs`, `tests/records-history.test.mjs`.
+  `tests/records-screen.test.mjs`, `tests/records-history.test.mjs`,
+  `tests/records-replays.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 
@@ -380,5 +430,8 @@ History chart (`js/records/history-chart.js`)
 - Changing what the Records screen shows or how it picks its board: the
   head comment and `recordsContent` in `screen.js`; its markup is `#records`
   in `index.html`, catalogued in `css/components.css`.
+- Changing the library view's rows, order or buttons: the head comment of
+  `replay-list.js`; how the screen composes it, `createRecordsScreen` and
+  `createRecordsView` in `screen.js`.
 - Changing the chart's drawing, scale or colours: `drawHistoryChart` and
   `chartScale` in `history-chart.js`.
