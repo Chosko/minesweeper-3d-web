@@ -4,13 +4,15 @@
 // createGenerationClient({ createWorker }) → { request, cancel }; one client per game.
 //   request(req) → Promise of the worker's result: generate()'s result, or a failure
 //                  { ok: false, reason, ... } (see worker.js). Rejects only when the worker itself
-//                  fails (load error, unexpected exception). One request is in flight at a time:
+//                  fails (load error, unexpected exception, a reply the page cannot decode); a
+//                  worker failure other than an error reply also drops the worker, so the next
+//                  request starts a fresh one. One request is in flight at a time:
 //                  a new request cancels the one in flight.
 //   cancel()     → the request in flight, if any, resolves { ok: false, cancelled: true,
 //                  reason: 'cancelled' } and never delivers its result. The worker is terminated,
 //                  so its work stops too; the next request starts a fresh one.
 // createWorker defaults to createModuleWorker; tests pass a fake with postMessage, terminate,
-// onmessage and onerror.
+// onmessage, onerror and onmessageerror.
 
 export function createModuleWorker() {
   return new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
@@ -25,6 +27,7 @@ export function createGenerationClient({ createWorker = createModuleWorker } = {
     if (worker) {
       worker.onmessage = null;
       worker.onerror = null;
+      worker.onmessageerror = null;
       worker.terminate();
       worker = null;
     }
@@ -34,6 +37,12 @@ export function createGenerationClient({ createWorker = createModuleWorker } = {
     const pending = inFlight;
     inFlight = null;
     return pending;
+  }
+
+  function fail(message) {
+    const pending = settle();
+    dropWorker();
+    pending?.reject(new Error(message));
   }
 
   function ensureWorker() {
@@ -48,10 +57,9 @@ export function createGenerationClient({ createWorker = createModuleWorker } = {
     };
     worker.onerror = (event) => {
       event?.preventDefault?.();
-      const pending = settle();
-      dropWorker();
-      pending?.reject(new Error(event?.message || 'generation worker failed'));
+      fail(event?.message || 'generation worker failed');
     };
+    worker.onmessageerror = () => fail('generation worker reply could not be decoded');
     return worker;
   }
 

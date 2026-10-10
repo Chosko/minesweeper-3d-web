@@ -61,6 +61,7 @@ browser checks for everything that needs WebGL or the DOM.
   messages, no state between requests) and the client
   (`js/generation/client.js`) over a fake worker: lazy worker reuse,
   cancellation, one request in flight, stale replies ignored, worker errors,
+  undecodable replies (`messageerror`, the fake worker's `onmessageerror`),
   the module-worker default, and no generation import on the main thread.
 - `tests/platform-storage.test.mjs` — the storage interface
   (`js/platform/storage.js`) over the memory backend: registration and its
@@ -165,7 +166,9 @@ browser checks for everything that needs WebGL or the DOM.
   colour token, z-layer order, WCAG contrast per theme (4.5:1 body text, 3:1
   large text and essential glyphs, on every surface), the tile tokens (every
   tile state, the board frame and gap, numbers 1–8, opaque, in both themes;
-  eight distinct light number colours, each 4.5:1 on the revealed tile),
+  eight distinct light number colours, each 4.5:1 on the revealed tile;
+  the cursor ring `--color-tile-cursor` 3:1 on the tile edge and on the
+  closed, pressed and revealed tiles),
   `css/style.css` declaring
   no variables and reading only declared tokens, `index.html` loading
   `css/tokens.css` before `css/style.css`, and the 3D scene not reading tokens.
@@ -260,8 +263,10 @@ browser checks for everything that needs WebGL or the DOM.
   `CURSOR_RING`); the mounted wiring over `EventTarget` fakes with a fake
   `requestAnimationFrame` (system key repeat ignored, modified keys and Esc
   left alone, blur, `destroy`); DOM-free and reusing `Repeat` /
-  `stickCurve`. One Playwright test plays a fixed Beginner board by
-  keyboard to a win (skipped when Playwright or chromium is unavailable).
+  `stickCurve`. Two Playwright tests (skipped when Playwright or chromium
+  is unavailable): one plays a fixed Beginner board by keyboard to a win;
+  one moves the cursor by arrow key in both themes and checks the ring's
+  pixels differ from the tile edge and from a neighbouring closed tile.
 - `tests/classic2d-mode.test.mjs` — the Classic 2D mode
   (`js/classic2d/mode.js`) over a real mode host and pause controller with
   recording mounts, flow and generation clients and a fake clock: the
@@ -317,8 +322,15 @@ browser checks for everything that needs WebGL or the DOM.
   malformed document read as none, storage that does not persist never
   stopping a game); DOM-free; the menu, board-choice and placeholder markup
   in `index.html`, their router entries and default focus, and their
-  catalogue entries. One Playwright test opens each entry and returns with
-  Back.
+  catalogue entries. Two Playwright tests: one opens each entry and returns
+  with Back; one drives the 3D board choice and the placeholder with a fake
+  controller alone (`page.addInitScript` stubs `navigator.getGamepads`;
+  `press` holds a button for exactly one poll, so menu auto-repeat and
+  held-button suppression never interfere) and reaches `coming-soon` by
+  serving `js/shell/menu.js` through `page.route` with the Records entry
+  naming an unregistered screen — the router refuses unknown screens, so
+  the placeholder is only reachable through the menu's `entryRoute`
+  fallback.
 - `tests/shell-pause.test.mjs` — the pause controller (`js/shell/pause.js`)
   over a real mode host, a fake mode and a recording shell: every pause
   source, automatic pauses only in play, no pause before the first click or

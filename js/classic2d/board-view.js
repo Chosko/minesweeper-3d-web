@@ -36,8 +36,8 @@ import { CELL } from '../engine/rules.js';
 /** The design token the area around the board is filled with. */
 export const BOARD_BACKGROUND = '--color-board-frame';
 
-/** The design token the cursor's focus ring is drawn in. */
-export const CURSOR_RING = '--color-focus-ring';
+/** The design token the cursor's focus ring is drawn in, distinct from the tile edge it covers. */
+export const CURSOR_RING = '--color-tile-cursor';
 
 /** The key a pointer drag must hold to pan the board instead of playing it. */
 export const PAN_MODIFIER = 'shiftKey';

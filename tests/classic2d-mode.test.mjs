@@ -534,6 +534,9 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'paused');
     assert.equal(await active(), 'p-resume');
+    // The HUD shows the paused time once a frame has run since the pause; before that it may
+    // still show the previous second, which the next frame would update.
+    await ms(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
     const frozen = await ms(() => document.getElementById('hud-time').textContent);
     await page.waitForTimeout(1200);
     assert.equal(await ms(() => document.getElementById('hud-time').textContent), frozen, 'the timer is frozen while paused');

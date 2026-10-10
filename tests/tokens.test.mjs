@@ -97,7 +97,7 @@ test('tokens.css declares the full token set on :root', () => {
 });
 
 const TILE_TOKENS = [
-  '--color-tile-closed', '--color-tile-edge', '--color-tile-pressed', '--color-tile-revealed',
+  '--color-tile-closed', '--color-tile-edge', '--color-tile-cursor', '--color-tile-pressed', '--color-tile-revealed',
   '--color-tile-flagged', '--color-tile-flag', '--color-tile-mine', '--color-tile-mine-glyph',
   '--color-tile-exploded', '--color-tile-wrong-flag', '--color-tile-wrong-flag-mark',
   '--color-board-frame', '--color-board-gap',
@@ -168,6 +168,15 @@ for (const theme of ['light', 'dark']) {
     for (const n of NUMBER_TOKENS) {
       const r = contrast(parseColor(t.get(n)), revealed);
       assert.ok(r >= 4.5, `${n} on --color-tile-revealed: ${r.toFixed(2)}:1`);
+    }
+  });
+
+  test(`${theme}: the cursor ring meets 3:1 on the tile edge and every tile it can sit on`, () => {
+    const t = THEMES[theme];
+    const ring = parseColor(t.get('--color-tile-cursor'));
+    for (const bg of ['--color-tile-edge', '--color-tile-closed', '--color-tile-pressed', '--color-tile-revealed']) {
+      const r = contrast(ring, parseColor(t.get(bg)));
+      assert.ok(r >= 3, `--color-tile-cursor on ${bg}: ${r.toFixed(2)}:1`);
     }
   });
 }

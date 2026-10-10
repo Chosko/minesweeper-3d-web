@@ -28,10 +28,11 @@
   --color-focus-ring: #3f78e0;
 
   /* ---------- tiles (Classic 2D square skin) ----------
-     One fill per state, the glyph colours drawn on them, and the board
-     frame and gap between tiles. */
+     One fill per state, the glyph colours drawn on them, the cursor ring,
+     and the board frame and gap between tiles. */
   --color-tile-closed: #6fa3f7;
   --color-tile-edge: #3f78e0;
+  --color-tile-cursor: #14233f;
   --color-tile-pressed: #c9dbf7;
   --color-tile-revealed: #eef3fa;
   --color-tile-flagged: #6fa3f7;
@@ -138,6 +139,7 @@
 
   --color-tile-closed: #3a5a92;
   --color-tile-edge: #2a4475;
+  --color-tile-cursor: #93b6f6;
   --color-tile-pressed: #2c3e60;
   --color-tile-revealed: #1b2740;
   --color-tile-flagged: #3a5a92;

@@ -342,7 +342,10 @@ test('in a browser, a theme change and a resolution change apply at once', async
     assert.equal(canvasWidth, 900, 'the drawing buffer follows the new ratio');
 
     // The saved theme is on the root before any module runs.
-    await page.waitForTimeout(50); // the saves settle
+    await page.waitForFunction(() => { // the saves have landed
+      const doc = JSON.parse(localStorage.getItem('ms3d:doc:settings') ?? 'null');
+      return doc?.data?.theme === 'dark' && doc?.data?.renderResolution === 'fast';
+    });
     await page.route('**/js/main.js', (route) => route.abort());
     await page.reload();
     assert.equal(await theme(), 'dark', 'the start-up getter reads the saved theme');

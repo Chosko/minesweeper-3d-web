@@ -19,6 +19,7 @@ function fakeWorkerFactory({ hold = false } = {}) {
       terminated: false,
       onmessage: null,
       onerror: null,
+      onmessageerror: null,
       pending: [],
       postMessage(data) {
         const msg = structuredClone(data);
@@ -35,6 +36,9 @@ function fakeWorkerFactory({ hold = false } = {}) {
       },
       fail(message) {
         w.onerror?.({ message, preventDefault() {} });
+      },
+      undecodable() {
+        w.onmessageerror?.({ data: null });
       },
       terminate() { w.terminated = true; },
     };
@@ -212,6 +216,31 @@ test('client: a worker error rejects the request in flight and drops the worker'
   assert.equal(fake.workers.length, 2, 'the next request starts a fresh worker');
   fake.workers[1].flush();
   assert.equal((await next).ok, true);
+});
+
+test('client: a reply the page cannot decode rejects the request and drops the worker', async () => {
+  const fake = fakeWorkerFactory({ hold: true });
+  const client = createGenerationClient({ createWorker: fake.create });
+  const req = { graph: square(9, 9), mineCount: 10, firstClick: 0, noGuess: false, seed: 1 };
+  const p = client.request(req);
+  const first = fake.workers[0];
+  first.undecodable();
+  await assert.rejects(p, Error);
+  assert.equal(first.terminated, true);
+  assert.equal(first.onmessageerror, null, 'the dropped worker\'s handlers are detached');
+  const next = client.request(req);
+  assert.equal(fake.workers.length, 2, 'the next request starts a fresh worker');
+  fake.workers[1].flush();
+  assert.equal((await next).ok, true);
+});
+
+test('client: a messageerror with no request in flight is harmless', async () => {
+  const fake = fakeWorkerFactory();
+  const client = createGenerationClient({ createWorker: fake.create });
+  const req = { graph: square(9, 9), mineCount: 10, firstClick: 0, noGuess: false, seed: 1 };
+  assert.equal((await client.request(req)).ok, true);
+  assert.doesNotThrow(() => fake.workers[0].undecodable());
+  assert.equal((await client.request(req)).ok, true);
 });
 
 test('client: an unexpected worker error reply rejects the request', async () => {
