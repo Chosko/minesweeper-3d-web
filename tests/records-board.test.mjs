@@ -80,7 +80,7 @@ test('key: every field takes part, so distinct boards get distinct keys', () => 
   const base = { mode: 'classic-2d', grid: 'square', width: 30, height: 16, mines: 99, noGuess: false };
   const variants = [
     base,
-    { ...base, mode: '3d' },
+    { ...base, mode: 'daily-2d' },
     { ...base, grid: 'hex' },
     { ...base, width: 16, height: 30 },
     { ...base, mines: 98 },

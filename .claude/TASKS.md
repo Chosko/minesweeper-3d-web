@@ -106,7 +106,7 @@ Feature: 3d-play-flow
 
 ## 61. 3D board identity, board key and labels
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/records/board.js, tests/records-board-3d.test.mjs
 Preconditions: 56
