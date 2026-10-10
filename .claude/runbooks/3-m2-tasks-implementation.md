@@ -241,7 +241,7 @@ Context:
 
 Done: 2026-10-10, commit `41d1284` (10 files, +583/-60). Classic 2D records only the first reveal at time 0 (its engine ignores flags or chords before it), not every pre-timer action; finished/abandoned reports carry `replay` beside `summary`; sampling is 50 ms game time at 1/16-cell quantum, chosen here, not by the feature document.
 
-## [ ] 18. Implement task 68 — 3D capture: recorder and camera sampler
+## [x] 18. Implement task 68 — 3D capture: recorder and camera sampler
 
 Depends on: 12, 16, 17
 
@@ -254,6 +254,8 @@ Context:
 /task-implement 68 --review
 ```
 
+Done: 2026-10-10, commit `c8b5b2b` (7 files, +551/-17). 3D flags placed before the first reveal are recorded at time 0 when the board arrives, every toggle in order; 3D `leave()` stops but keeps the recording (unlike Classic 2D) so a lost graphics context still yields a replay.
+
 ## [ ] 19. Implement task 69 — Replay determinism tests and the measured recording constants
 
 Depends on: 17, 18
@@ -261,6 +263,7 @@ Depends on: 17, 18
 Context:
 - 2026-10-10 (from step 15): the replay blob is not compressed; whether to compress stays an open question in the `replay-recording` feature document for this task to settle.
 - 2026-10-10 (from step 17): the Classic 2D sampling constants (50 ms of game time between pointer samples, quantum 1/16 of a cell) were chosen by task 67, not the feature document; this task's measurements should revisit them.
+- 2026-10-10 (from step 18): the 3D sampler constants chosen by task 68 — 100 ms interval, position in 1/16 cell (cell units), yaw/pitch in 1/4096 turn (yaw keeps whole turns), view mode bits Shift 1, Space 2, Ctrl 4 — are this task's to measure and settle. 3D flags before the first reveal are recorded at time 0 when the board arrives, so replaying the action stream must reproduce click counts and the digest with them.
 
 ```prompt
 /task-implement 69 --review --rounds 2
@@ -272,6 +275,7 @@ Depends on: 15, 16, 17, 18, 19
 
 Context:
 - 2026-10-10 (from step 17): `.claude/context/app-shell.md`, `.claude/context/classic2d.md` and `3d-play-flow.md`'s 3D adapter contract lines still describe the mode contract before `replay` was added beside `summary` in finished/abandoned reports.
+- 2026-10-10 (from step 18): `.claude/context/mode3d.md` and `testing.md` still describe the old 3D contract and do not list task 68's test file; the 3D adapter gained `replay(summary)`, `tick()` and an optional `flow.sampler(session)`, and `js/main.js's frame loop calls `mode3d.tick()`.
 
 ```prompt
 /task-implement 70 --review
