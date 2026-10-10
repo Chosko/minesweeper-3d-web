@@ -131,7 +131,7 @@ Context:
 
 Done: 2026-10-10, commit `96ea1e2` (5 files, +466/-238). The adapter still reports `summary3d` fields (now taking `{board, started, outcome, elapsedMs}` from the session), not the `game-summary` builder, per the task's own deferral; it listens to the session returned by `FLOW_3D.start`/`restart`.
 
-## [ ] 10. Implement task 60 — Update documentation for feature `3d-play-flow`
+## [x] 10. Implement task 60 — Update documentation for feature `3d-play-flow`
 
 Depends on: 6, 7, 8, 9
 
@@ -144,6 +144,8 @@ Context:
 ```prompt
 /task-implement 60 --review
 ```
+
+Done: 2026-10-10, commit `7560679` (11 files, +425/-137).
 
 ## [ ] 11. Implement task 61 — 3D board identity, board key and labels
 
