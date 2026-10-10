@@ -93,7 +93,7 @@ Context:
 
 Done: 2026-10-10, commit `328822e` (11 files, +1134/-162). Flags before the first reveal are held by the session (`js/mode3d/session.js`), not the engine, and applied before the reveal once the board arrives; `create3DGame` moved to `js/mode3d/session.js`; the generation worker gained the `box` board description.
 
-## [ ] 8. Implement task 58 — No-guess cell-count limit for 3D boards
+## [x] 8. Implement task 58 — No-guess cell-count limit for 3D boards
 
 Depends on: 7
 
@@ -116,6 +116,8 @@ Context:
 /task-implement 58 --review
 ```
 
+Done: 2026-10-10, commit `00d38d6` (6 files, +105/-32). `NOGUESS_CELL_LIMIT` is 8,000 cells, set by an acceptable wait (about 0.5 s), not the attempt budget — the task's premise that the budget bounds it was wrong; boards with a 2-cell axis (double-layer presets included) can never be no-guess, left to an /architect amend.
+
 ## [x] 9. Implement task 59 — 3D mode adapter on the session
 
 Depends on: 7
@@ -137,6 +139,7 @@ Context:
 - 2026-10-10 (from step 6): the board choice has two no-guess switches — one under the presets, always available, and one inside the custom panel, disabled above the cell limit — where `3d-play-flow` speaks of one; `.claude/context/app-shell.md` and `testing.md` still describe the old 3D board choice.
 - 2026-10-10 (from step 7): `.claude/context/app-shell.md` still places `create3DGame` in `mode-3d.js` and best times in `localStorage`; `generation.md` lists only square boards, though the worker now takes a `box` description; the 3D timer is the session clock, starting when the board arrives.
 - 2026-10-10 (from step 9): `.claude/context/app-shell.md` (around lines 144–150, 319–320) still describes the old `summary3d` signature, `snapshot` and `gameStarted`/`gameEnded`; `testing.md` (around line 332) still places the 3D adapter tests in `shell-mode-host` (they are in `tests/shell-mode-3d.test.mjs`).
+- 2026-10-10 (from step 8): `3d-play-flow.md` § No-guess availability now states the 8,000-cell limit, set by wait; it still says every preset offers no-guess, though boards with a 2-cell axis (the double-layer presets) never can — that is left to `/architect amend feature=3d-play-flow`, not this task.
 
 ```prompt
 /task-implement 60 --review
