@@ -107,7 +107,8 @@ Context: none
 
 Depends on: 6
 
-Context: none
+Context:
+- 2026-10-10 (from runbook m1-tasks-implementation, step 29): the m1 board-identity module in `js/records/board.js` (board key `<mode>:<grid>:<width>x<height>:<mines>:<guess|no-guess>`, `BOARD_KEY_FORMAT = 1`, plus `parseBoardKey`) requires a grid field, so it currently rejects a 3D board identity (no grid field, per `game-summary`). This task must extend it rather than add a parallel module.
 
 ```prompt
 /task-implement 61 --review
@@ -127,7 +128,8 @@ Context: none
 
 Depends on: 11
 
-Context: none
+Context:
+- 2026-10-10 (from runbook m1-tasks-implementation, step 43): the m1 records model already keeps overall counters per mode (`records.overall[mode]`, `overall(mode = 'classic-2d')`, `overallWinRate(mode)` in `js/records/model.js`); only `classic-2d` exists so far.
 
 ```prompt
 /task-implement 63 --review --rounds 2
