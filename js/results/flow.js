@@ -22,8 +22,10 @@
 //   current                   the data of the results screen last shown, or null; the screen is
 //                             shown again from it when Back returns to it without data.
 //   playAgain(source)         restart(source, current).
-//   openRecords()             the records screen on this game's board ({ boardKey }), or the
-//                             menu's placeholder while that screen has not landed.
+//   openRecords()             routes as the menu's Records entry does, with this game's board
+//                             ({ boardKey }): the records screen (js/records/screen.js), or the
+//                             menu's placeholder on a router without it. Nothing before a
+//                             results screen has shown.
 //   toMenu()                  goMenu().
 
 import { boardKey } from '../records/board.js';

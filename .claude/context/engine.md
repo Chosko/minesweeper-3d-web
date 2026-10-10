@@ -169,6 +169,8 @@ asserted.
   share no code.
 - [testing.md](testing.md) — `tests/engine-*.test.mjs` and the fidelity
   observation file.
+- [generation.md](generation.md) — the board-generation modules that consume
+  the engine: placer, solver, generate loop, worker and client.
 
 ## WHEN TO READ THE SOURCE
 
