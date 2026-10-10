@@ -8,13 +8,14 @@
 //               session's records stay correct in memory.
 //
 //   load()               → Promise, awaited before the first screen; repeated calls return the
-//                          first call's Promise. Reads the three documents once. A missing or
-//                          corrupt records document beside an intact history is rebuilt from the
-//                          history and saved. A records or history document newer than this build,
-//                          or one whose entries the model cannot read, is refused: the session
-//                          runs on empty records and nothing is saved, so the stored documents
-//                          stay untouched. A leftover game-in-progress marker
-//                          is then recorded through record() — an abandoned game, a loss — and
+//                          first call's Promise. Reads the three documents once; an m1 records
+//                          document (version 1) is stepped up by upgradeRecords and saved back.
+//                          A missing or corrupt records document beside an intact history is
+//                          rebuilt from the history and saved. A records or history document newer
+//                          than this build, or one whose entries the model cannot read, is
+//                          refused: the session runs on empty records and nothing is saved, so the
+//                          stored documents stay untouched. A leftover game-in-progress marker is
+//                          then recorded through record() — an abandoned game, a loss — and
 //                          cleared; a marker whose id is already recorded changes nothing.
 //   record(summary)      → the model's comparison. Updates memory first, notifies, then saves the
 //                          records and history documents, and clears the marker when it holds the
@@ -33,14 +34,14 @@
 //                          marker of that game (recording a finished game is the results flow's
 //                          record() call). A summary that is not a record (a fixed 3D board's
 //                          null) is ignored.
-//   boardsPlayed(), bests(board), counters(board), winRate(board), history(board),
+//   boardsPlayed(mode?), bests(board), counters(board), winRate(board), history(board),
 //   overall(mode?), overallWinRate(mode?) — the model's queries.
 // record, begin and checkpoint before load() throw: that is a programming error.
 
-import { createRecordsModel } from './model.js';
+import { createRecordsModel, upgradeRecords } from './model.js';
 
 export const RECORDS_DOC = 'records';
-export const RECORDS_VERSION = 1;
+export const RECORDS_VERSION = 2;
 export const HISTORY_DOC = 'records.history';
 export const HISTORY_VERSION = 1;
 export const IN_PROGRESS_DOC = 'records.inProgress';
@@ -56,7 +57,7 @@ const isRecordSummary = (s) => isPlainObject(s) && typeof s.id === 'string' && i
 export function createRecordsStore({ storage, onNotSaved = () => {} }) {
   const newer = new Set();
   const watch = { onIssue: (issue) => { if (issue.kind === 'newer-version') newer.add(issue.name); } };
-  storage.register(RECORDS_DOC, RECORDS_VERSION, {}, watch);
+  storage.register(RECORDS_DOC, RECORDS_VERSION, { 1: upgradeRecords }, watch);
   storage.register(HISTORY_DOC, HISTORY_VERSION, {}, watch);
   storage.register(IN_PROGRESS_DOC, IN_PROGRESS_VERSION, {}, watch);
 

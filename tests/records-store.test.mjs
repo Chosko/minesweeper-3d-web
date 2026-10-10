@@ -59,13 +59,13 @@ function fakePauser() {
 
 // ---------- registration and load ----------
 
-test('the three documents are registered under their own names at version 1', () => {
+test('the three documents are registered under their own names at their versions', () => {
   const names = [];
   const storage = { register: (name, version) => names.push([name, version]), load: async () => undefined, save: async () => ({ ok: true }), available: () => true };
   createRecordsStore({ storage });
-  assert.deepEqual(names.sort(), [[HISTORY_DOC, 1], [IN_PROGRESS_DOC, 1], [RECORDS_DOC, 1]].sort());
+  assert.deepEqual(names.sort(), [[HISTORY_DOC, 1], [IN_PROGRESS_DOC, 1], [RECORDS_DOC, 2]].sort());
   assert.equal(new Set([RECORDS_DOC, HISTORY_DOC, IN_PROGRESS_DOC]).size, 3);
-  assert.deepEqual([RECORDS_VERSION, HISTORY_VERSION, IN_PROGRESS_VERSION], [1, 1, 1]);
+  assert.deepEqual([RECORDS_VERSION, HISTORY_VERSION, IN_PROGRESS_VERSION], [2, 1, 1]);
 });
 
 test('load reads each document once, however often it is called', async () => {
@@ -108,7 +108,7 @@ test('record updates memory first, then saves both documents', async () => {
   await store.settled();
   const model = createRecordsModel();
   model.record(g);
-  assert.deepEqual(stored(backend, RECORDS_DOC), { version: 1, data: model.documents().records });
+  assert.deepEqual(stored(backend, RECORDS_DOC), { version: RECORDS_VERSION, data: model.documents().records });
   assert.deepEqual(stored(backend, HISTORY_DOC), { version: 1, data: model.documents().history });
 });
 
@@ -181,7 +181,7 @@ for (const [label, records] of [['missing', undefined], ['corrupt', '{not json']
     assert.deepEqual(store.counters(BEGINNER), { games: 4, wins: 3, currentStreak: 2, longestStreak: 2 });
     assert.deepEqual(store.overall(), model.overall());
     await store.settled();
-    assert.deepEqual(stored(backend, RECORDS_DOC), { version: 1, data: expected });
+    assert.deepEqual(stored(backend, RECORDS_DOC), { version: RECORDS_VERSION, data: expected });
   });
 }
 
@@ -213,7 +213,7 @@ for (const name of [RECORDS_DOC, HISTORY_DOC]) {
     const { records, history } = model.documents();
     const marker = game({ outcome: 'abandoned' });
     const initial = {
-      [RECORDS_DOC]: doc(name === RECORDS_DOC ? 2 : 1, records),
+      [RECORDS_DOC]: doc(RECORDS_VERSION + (name === RECORDS_DOC ? 1 : 0), records),
       [HISTORY_DOC]: doc(name === HISTORY_DOC ? 2 : 1, history),
       [IN_PROGRESS_DOC]: doc(1, marker),
     };
@@ -326,7 +326,7 @@ test('a leftover marker is recorded as an abandoned game that ends the streak, a
   const { records, history } = model.documents();
   const marker = game({ outcome: 'abandoned', ms: 4321, id: 'closed' });
   const backend = createMemoryBackend({
-    initial: { [RECORDS_DOC]: doc(1, records), [HISTORY_DOC]: doc(1, history), [IN_PROGRESS_DOC]: doc(1, marker) },
+    initial: { [RECORDS_DOC]: doc(RECORDS_VERSION, records), [HISTORY_DOC]: doc(1, history), [IN_PROGRESS_DOC]: doc(1, marker) },
   });
   const { store } = open(backend);
   await store.load();
@@ -347,7 +347,7 @@ test('a leftover marker whose game was already recorded is a no-op', async () =>
   const { records, history } = model.documents();
   const backend = createMemoryBackend({
     initial: {
-      [RECORDS_DOC]: doc(1, records), [HISTORY_DOC]: doc(1, history),
+      [RECORDS_DOC]: doc(RECORDS_VERSION, records), [HISTORY_DOC]: doc(1, history),
       [IN_PROGRESS_DOC]: doc(1, { ...g, outcome: 'abandoned' }),
     },
   });
@@ -464,7 +464,7 @@ for (const [label, entries] of [['an empty object', [{}]], ['null', [null]]]) {
     model.record(game());
     for (const records of [undefined, model.documents().records]) {
       const initial = { [HISTORY_DOC]: doc(1, entries), [IN_PROGRESS_DOC]: doc(1, game({ outcome: 'abandoned' })) };
-      if (records) initial[RECORDS_DOC] = doc(1, records);
+      if (records) initial[RECORDS_DOC] = doc(RECORDS_VERSION, records);
       const backend = createMemoryBackend({ initial: { ...initial } });
       const { store } = open(backend);
       await store.load();

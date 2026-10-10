@@ -278,7 +278,7 @@ test('documents: plain, serialisable, and the board record carries its identity'
   const docs = m.documents();
   assert.deepEqual(JSON.parse(JSON.stringify(docs)), docs);
   assert.deepEqual(docs.records.boards[boardKey(CUSTOM_A)].board, { ...CUSTOM_A });
-  assert.deepEqual(Object.keys(docs.records.overall), ['classic-2d']);
+  assert.deepEqual(Object.keys(docs.records.overall), ['classic-2d', '3d']);
 });
 
 // ---------- queries ----------

@@ -4,23 +4,31 @@
 //   history — every recorded summary in play order, in compact form
 //             { id, boardKey, outcome, elapsedMs, bbbv, bbbvSolved, clicks, endedAt };
 //   records — { boards: { [boardKey]: { board, bests, counters } }, overall: { [mode]: counters } }
-//             where bests is { time, bbbvPerSecond, efficiency }, each null or the holding
-//             game's { id, value, endedAt }, and counters is
-//             { games, wins, currentStreak, longestStreak }.
+//             where overall holds every mode in MODES, bests is
+//             { time, bbbvPerSecond, efficiency }, each null or the holding game's
+//             { id, value, endedAt }, and counters is { games, wins, currentStreak, longestStreak }.
 // The history is the source of truth: the records are a cache derived from it entry by entry,
 // so rebuildRecords(history) always equals the records maintained game by game.
 //
 // Rules. A best comes from best-eligible won games only (isBestEligible, js/records/summary.js)
 // and is replaced only by a strictly better value — lower time, higher 3BV/s or efficiency — so
 // a tie keeps the earlier holder. Every game counts in its board's counters and its mode's
-// overall counters; a win extends the current streak, a loss or an abandoned game ends it. Win
-// rate is derived from games and wins, never stored. The comparison of a game is made against
-// the bests that stood before it, and recording a summary id already in the history changes
-// nothing and returns that game's original comparison, recomputed from the history before it.
+// overall counters only — no figure combines Classic 2D and 3D; a win extends the current streak,
+// a loss or an abandoned game ends it. Win rate is derived from games and wins, never stored. The
+// comparison of a game is made against the bests that stood before it, and recording a summary id
+// already in the history changes nothing and returns that game's original comparison, recomputed
+// from the history before it.
+//
+// upgradeRecords(records) is the records format step from the m1 records, whose overall counters
+// held Classic 2D only: every board and every mode's counters carry over unchanged, and a mode
+// without counters starts at zero.
 
 import { BEST_STATS, OUTCOMES, isBestEligible, bbbvPerSecond, efficiency } from './summary.js';
-import { STANDARD_BOARDS, boardKey, parseBoardKey, standardBoard } from './board.js';
+import { STANDARD_BOARDS, PRESETS_3D, MODE_3D, boardKey, parseBoardKey, standardBoard, preset3D } from './board.js';
 import { CLICK_KINDS } from '../engine/metrics.js';
+
+export const MODE_CLASSIC_2D = 'classic-2d';
+export const MODES = Object.freeze([MODE_CLASSIC_2D, MODE_3D]);
 
 const STAT_VALUE = { time: (e) => e.elapsedMs, bbbvPerSecond, efficiency };
 const BETTER = { time: (a, b) => a < b, bbbvPerSecond: (a, b) => a > b, efficiency: (a, b) => a > b };
@@ -49,7 +57,16 @@ function checkClicks(clicks) {
 const rate = (c) => (c.games === 0 ? null : c.wins / c.games);
 
 export function emptyRecords() {
-  return { boards: {}, overall: {} };
+  return { boards: {}, overall: Object.fromEntries(MODES.map((mode) => [mode, emptyCounters()])) };
+}
+
+// The records format step from m1: a copy of `records` with zeroed counters for every mode that
+// has none. Anything that is not records is returned as it is.
+export function upgradeRecords(records) {
+  if (!records || typeof records !== 'object' || !records.overall || typeof records.overall !== 'object') return records;
+  const out = clone(records);
+  for (const mode of MODES) out.overall[mode] ??= emptyCounters();
+  return out;
 }
 
 // The history entry of a summary built by buildSummary. Throws a RangeError on anything that is
@@ -152,16 +169,19 @@ export function createRecordsModel({ records, history } = {}) {
       return comparison;
     },
 
-    // Standard boards first, in STANDARD_BOARDS order and without no-guess before with it; then
-    // custom boards, the most recently played first.
-    boardsPlayed() {
+    // The boards played in `mode`: its named boards first — Classic 2D's standard boards in
+    // STANDARD_BOARDS order, 3D's presets in PRESETS_3D order — each without no-guess before with
+    // it; then custom boards, the most recently played first.
+    boardsPlayed(mode = MODE_CLASSIC_2D) {
       const last = new Map();
       hist.forEach((e, i) => last.set(e.boardKey, i));
+      const [named, list] = mode === MODE_3D ? [preset3D, PRESETS_3D] : [standardBoard, STANDARD_BOARDS];
       const rank = (b) => {
-        const s = standardBoard(b);
-        return s ? STANDARD_BOARDS.indexOf(s) * 2 + (b.noGuess ? 1 : 0) : Infinity;
+        const s = named(b);
+        return s ? list.indexOf(s) * 2 + (b.noGuess ? 1 : 0) : Infinity;
       };
       return Object.entries(recs.boards)
+        .filter(([, rec]) => rec.board.mode === mode)
         .map(([key, rec]) => ({ key, board: { ...rec.board }, rank: rank(rec.board), last: last.get(key) ?? -1 }))
         .sort((a, b) => (a.rank !== b.rank ? (a.rank < b.rank ? -1 : 1) : b.last - a.last))
         .map(({ key, board }) => ({ key, board }));
@@ -186,11 +206,11 @@ export function createRecordsModel({ records, history } = {}) {
       return clone(hist.filter((e) => e.boardKey === key));
     },
 
-    overall(mode = 'classic-2d') {
+    overall(mode = MODE_CLASSIC_2D) {
       return { ...(recs.overall[mode] ?? emptyCounters()) };
     },
 
-    overallWinRate(mode = 'classic-2d') {
+    overallWinRate(mode = MODE_CLASSIC_2D) {
       return rate(this.overall(mode));
     },
 

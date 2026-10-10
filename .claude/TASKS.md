@@ -126,7 +126,7 @@ Feature: 3d-game-records
 
 ## 63. Per-mode counters, mode-filtered board listing and the records format step
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/records/model.js, js/records/store.js, tests/records-model-3d.test.mjs
 Preconditions: 61
