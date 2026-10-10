@@ -339,3 +339,128 @@ test('in a browser, the menu shows the four entries, each routes, and Back retur
     server.close();
   }
 });
+
+// A fake standard controller in the page: `navigator.getGamepads` returns it, and the shell's
+// per-frame poll reads its buttons. press(button) holds a button for two frames, then releases it
+// for two, so held-button suppression across a screen change never swallows the next press.
+const PAD_BTN = { A: 0, B: 1, BACK: 8, UP: 12, DOWN: 13, LEFT: 14, RIGHT: 15 };
+function installFakePad() {
+  const pad = {
+    id: 'Fake pad (STANDARD GAMEPAD)', index: 0, connected: true, mapping: 'standard', timestamp: 0,
+    buttons: Array.from({ length: 17 }, () => ({ pressed: false, touched: false, value: 0 })),
+    axes: [0, 0, 0, 0],
+  };
+  globalThis.__fakePad = pad;
+  Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad, null, null, null] });
+}
+async function controllerPage(browser, base, { route } = {}) {
+  const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.addInitScript(installFakePad);
+  if (route) await page.route(route.url, route.handler);
+  await page.goto(`${base}/index.html`);
+  await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.pads.connected);
+  const frames = (n) => page.evaluate((count) => new Promise((done) => {
+    const step = (left) => (left ? requestAnimationFrame(() => step(left - 1)) : done());
+    step(count);
+  }), n);
+  const setButton = (b, on) => page.evaluate(([i, v]) => {
+    Object.assign(globalThis.__fakePad.buttons[i], { pressed: v, touched: v, value: v ? 1 : 0 });
+    globalThis.__fakePad.timestamp++;
+  }, [b, on]);
+  const press = async (b) => { await setButton(b, true); await frames(2); await setButton(b, false); await frames(2); };
+  const mode = () => page.evaluate(() => globalThis.__ms.state.mode);
+  const focused = () => page.evaluate(() => {
+    const el = document.activeElement;
+    return el?.dataset?.preset ?? el?.id ?? '';
+  });
+  return { page, errors, press, mode, focused };
+}
+
+test('in a browser, a controller alone walks the 3D board choice and the placeholder', async (t) => {
+  const playwright = await loadPlaywright();
+  if (!playwright) {
+    t.skip('Playwright is not installed');
+    return;
+  }
+  let browser;
+  try {
+    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  } catch (error) {
+    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
+    return;
+  }
+  const server = await serve();
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    // ---- 3D board choice: move between presets, confirm one, Back to the menu.
+    {
+      const { errors, press, mode, focused, page } = await controllerPage(browser, base);
+      assert.equal(await mode(), 'menu');
+      assert.equal(await focused(), 'menu-entry-classic-2d');
+      await press(PAD_BTN.DOWN);
+      assert.equal(await focused(), 'menu-entry-3d', 'the D-pad moves down the menu');
+      await press(PAD_BTN.A);
+      assert.equal(await mode(), 'board-choice', 'A opens the 3D board choice');
+      assert.equal(await focused(), '9,9,1,10', 'the first preset takes the focus when none was played');
+
+      await press(PAD_BTN.DOWN);
+      assert.equal(await focused(), '16,16,1,40', 'down moves to the next preset');
+      await press(PAD_BTN.DOWN);
+      assert.equal(await focused(), '30,16,1,99');
+      await press(PAD_BTN.UP);
+      assert.equal(await focused(), '16,16,1,40', 'up moves back');
+      await press(PAD_BTN.RIGHT);
+      const across = await focused();
+      assert.match(across, /^\d+,\d+,\d+,\d+$/, 'right moves to another preset');
+      assert.notEqual(across, '16,16,1,40');
+      assert.equal(await mode(), 'board-choice', 'moving changes no screen');
+
+      await press(PAD_BTN.A);
+      assert.equal(await mode(), 'ready', 'A confirms the focused preset');
+      const [X, Y, Z, mines] = across.split(',').map(Number);
+      assert.deepEqual(await page.evaluate(() => globalThis.__ms.state.settings), { X, Y, Z, mines }, 'the confirmed preset is the board');
+
+      await press(PAD_BTN.BACK);
+      assert.equal(await mode(), 'board-choice', 'Back on a fresh board returns to the board choice');
+      assert.equal(await focused(), across, 'the preset just played keeps the focus');
+      await press(PAD_BTN.BACK);
+      assert.equal(await mode(), 'menu', 'Back returns to the menu');
+      assert.deepEqual(errors, []);
+      await page.close();
+    }
+
+    // ---- Placeholder: an entry whose screen is not registered falls back to it; B leaves it.
+    {
+      const route = {
+        url: '**/js/shell/menu.js',
+        handler: async (r) => {
+          const response = await r.fetch();
+          const source = await response.text();
+          const body = source.replace("screen: 'records' }", "screen: 'records-not-registered' }");
+          assert.notEqual(body, source, 'the Records entry was pointed at an unregistered screen');
+          await r.fulfill({ response, body });
+        },
+      };
+      const { errors, press, mode, focused, page } = await controllerPage(browser, base, { route });
+      assert.equal(await mode(), 'menu');
+      await press(PAD_BTN.DOWN);
+      await press(PAD_BTN.DOWN);
+      assert.equal(await focused(), 'menu-entry-records');
+      await press(PAD_BTN.A);
+      assert.equal(await mode(), 'coming-soon', 'an entry without its screen opens the placeholder');
+      assert.ok(await page.evaluate(() => !document.getElementById('coming-soon').classList.contains('hidden')));
+      assert.equal(await page.evaluate(() => document.getElementById('coming-soon-title').textContent), 'Records');
+      assert.equal(await focused(), 'coming-soon-back', 'its Back button takes the focus');
+      await press(PAD_BTN.B);
+      assert.equal(await mode(), 'menu', 'B is Back: the placeholder returns to the menu');
+      assert.ok(await page.evaluate(() => document.getElementById('coming-soon').classList.contains('hidden')));
+      assert.deepEqual(errors, []);
+      await page.close();
+    }
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
