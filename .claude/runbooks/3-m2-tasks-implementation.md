@@ -3,7 +3,7 @@
 Created: 2026-10-09 · Source: /runbook-create interview (runbook planning-to-m3 step 16) · Model: opus
 Last step number: 33
 
-## [ ] 1. Implement task 51 — Box graph provider
+## [x] 1. Implement task 51 — Box graph provider
 
 Depends on: none
 
@@ -13,11 +13,14 @@ Context: none
 /task-implement 51 --review
 ```
 
+Done: 2026-10-10, commit `4506451` (4 files, +351/-1). The box graph computes neighbours from 26 offsets and stores no neighbour lists (not `createCellGraph`); neighbour order at edges and corners follows the original 3D game, not ascending.
+
 ## [ ] 2. Implement task 52 — 3D rule profile: revealed-cell flagging, chord, auto-hide and win
 
 Depends on: 1
 
-Context: none
+Context:
+- 2026-10-10 (from step 1): `js/engine/box-grid.js` exports `createBoxGrid(X, Y, Z)`, returning a frozen `{ X, Y, Z, graph, index(i, j, k), coords(idx) }`; build on these names. The rules engine takes the rule profile by its name, not as an object.
 
 ```prompt
 /task-implement 52 --review --rounds 2
