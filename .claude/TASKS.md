@@ -116,7 +116,7 @@ Feature: 3d-game-records
 
 ## 62. 3D summaries and the 3D mode's summary hand-off
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/records/summary.js, js/shell/mode-3d.js, tests/records-summary-3d.test.mjs, .claude/domain/features/3d-game-records.md
 Preconditions: 52, 59, 61

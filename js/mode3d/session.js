@@ -29,6 +29,8 @@
 // (null when the board failed or the request was cancelled), except on a fixed board, which
 // answers at once. An action the session does not accept (while generating, failed, paused,
 // ended or left) returns null. A win or loss stops the timer and emits `finished` { state }.
+// counts() and engineSummary() are the engine's counts and summary of the game on the board
+// (js/engine/rules.js), null before it arrives; the 3D mode builds the game's summary from them.
 //
 // pause() stops the timer; during generation the request keeps running and the timer stays
 // unstarted. restart() opens a fresh closed box and leave() ends the session; both cancel a
@@ -69,14 +71,16 @@ const defaultSeed = () => globalThis.crypto.getRandomValues(new Uint32Array(1))[
  * a mine set (`minePositions`) it plays that board from the start. reveal(c), toggleFlag(c) and
  * chord(c) apply the action, pass its result to the view and return { changed, ended, exploded,
  * revealed, flagged, unflagged, boardNeeded }: the cells newly opened, flagged and unflagged by it.
- * `mines` is the board's mine count.
+ * `mines` is the board's mine count. counts() and engineSummary() are the engine's counts and its
+ * summary at a win or a loss, whose dimensions are { width: X, height: Y, depth: Z }.
  */
 export function create3DGame({ X, Y, Z, mines, minePositions }) {
   const box = createBoxGrid(X, Y, Z);
   const graph = box.graph;
+  const dimensions = { width: X, height: Y, depth: Z };
   const game = minePositions
-    ? createGameWithMines({ graph, profile: PROFILE_3D, mines: minePositions })
-    : createGame({ graph, profile: PROFILE_3D, mineCount: mines });
+    ? createGameWithMines({ graph, profile: PROFILE_3D, mines: minePositions, dimensions })
+    : createGame({ graph, profile: PROFILE_3D, mineCount: mines, dimensions });
   const view = createStateView3D(game, box);
   const { revealed: open, flagged: flags } = game.state;
   const opened = new Uint8Array(graph.count); // revealed as of the last action
@@ -100,6 +104,8 @@ export function create3DGame({ X, Y, Z, mines, minePositions }) {
     reveal(c) { return apply(game.reveal(c)); },
     toggleFlag(c) { return apply(game.toggleFlag(c)); },
     chord(c) { return apply(game.chord(c)); },
+    counts: () => game.counts(),
+    engineSummary: () => game.summary(),
   };
 }
 
@@ -318,6 +324,8 @@ export function createSession({
     get failure() { return failure; },
     elapsedMs: () => timer.elapsedMs(),
     seconds: () => timer.seconds(),
+    counts: () => (play ? play.counts() : null),
+    engineSummary: () => (play ? play.engineSummary() : null),
 
     on(type, fn) {
       if (!listeners[type]) throw new Error(`unknown session event "${type}"`);

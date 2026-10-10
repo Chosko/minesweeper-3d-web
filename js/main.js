@@ -312,7 +312,7 @@ const recordsLoaded = RECORDS.load();
 RECORDS.attach(PAUSE);
 
 // ---------- results ----------
-// A finished Classic 2D game is recorded, then the results screen shows over the finished board.
+// A finished game is recorded, then the results screen shows over the finished board.
 // Play again restarts the finished game's board choice, or starts it again once the mode was left
 // (back from Records).
 const RESULTS = createResultsFlow({

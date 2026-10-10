@@ -112,6 +112,14 @@ browser checks for everything that needs WebGL or the DOM.
   stats matching the exported functions, best eligibility, the invalid
   inputs that throw, and the module DOM-free and importing no separate 3D
   engine module.
+- `tests/records-summary-3d.test.mjs` — 3D summaries: the builder over real
+  3D games (`create3DGame`) with the 3D board identity — won, lost and
+  abandoned records, no summary before the first click, a right-click on a
+  revealed cell counted as one flag click in efficiency, invalid 3D input
+  that throws, safe cells spanning the depth — and the 3D adapter
+  (`create3DMode`) over a real session and the mode host: the started
+  game's summary so far, game finished and game abandoned on restart with
+  the builder's summary and one id per game, and a fixed board's null.
 - `tests/records-model.test.mjs` — the records model
   (`js/records/model.js`) over built summaries: three bests per board from
   won games only, replaced only when strictly better and independently, a
@@ -169,7 +177,8 @@ browser checks for everything that needs WebGL or the DOM.
   (stats and the three bests with their differences and new bests), a loss
   (3BV solved, no comparison), a missing stat and a failed recording; the
   flow over a real records store — recorded before the screen shows and
-  routed with the comparison, the 3D summary ignored, a throwing recording
+  routed with the comparison, a 3D record recorded and routed, a fixed 3D
+  board's null summary ignored, a throwing recording
   still routed, "not being saved" told once, Play again / Records / Back to
   menu — and DOM-free; static checks of the `#results` kit markup, its
   router entry, default focus, controller layer and the flow on the
@@ -338,7 +347,7 @@ browser checks for everything that needs WebGL or the DOM.
   them. One Playwright test plays a fixed mine set on the shared engine to a
   win and to a loss.
 - `tests/shell-mode-3d.test.mjs` — the 3D adapter (`js/shell/mode-3d.js`)
-  over a fake session and a fake flow: `summary3d`, the contract, pause
+  over a fake session and a fake flow: the builder's summaries, the contract, pause
   reaching the session without cancelling a pending board request, started
   and can-pause at the first applied reveal, `summary()` so far, finished at
   a win or loss, abandoned on restart and leave of a started game and
@@ -550,7 +559,7 @@ Tests consume, and so pin, these contracts:
   `js/shell/navigation.js::FOCUSABLE`, `topLayer`, `resolveFocus`,
   `isBackKey`, `backButtons`, `createHeldSuppressor`;
   `js/shell/mode-host.js::createModeHost`, `MODE_METHODS`, `MODE_EVENTS`;
-  `js/shell/mode-3d.js::create3DMode`, `summary3d`;
+  `js/shell/mode-3d.js::create3DMode`;
   `js/shell/menu.js::MENU_ENTRIES`, `PLACEHOLDER_SCREEN`, `entryRoute`,
   `createMenu`, `createLastMode`, `LAST_MODE_DOC`, `createLastBoardChoice`;
   `js/shell/pause.js::createPauseController`, `PAUSE_SOURCES`,

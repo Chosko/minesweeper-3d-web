@@ -263,14 +263,13 @@ test('attach: the in-progress hook begins the marker, then checkpoints it; detac
   assert.equal(store.counters(BEGINNER).games, 0);
 });
 
-test('attach: a summary that is not a record (the 3D mode) is ignored by both hooks', async () => {
+test('attach: a summary that is not a record (a fixed 3D board\'s null) is ignored by both hooks', async () => {
   const { store, backend } = open();
   await store.load();
   const pauser = fakePauser();
   store.attach(pauser);
-  const s3d = { outcome: 'abandoned', mode: '3d', time: 12 };
-  assert.doesNotThrow(() => pauser.fire('inProgress', s3d, '3d'));
-  assert.doesNotThrow(() => pauser.fire('abandoned', s3d, '3d'));
+  assert.doesNotThrow(() => pauser.fire('inProgress', null, '3d'));
+  assert.doesNotThrow(() => pauser.fire('abandoned', null, '3d'));
   await store.settled();
   assert.equal(store.counters(BEGINNER).games, 0);
   assert.equal(backend.documents.has(IN_PROGRESS_DOC), false);

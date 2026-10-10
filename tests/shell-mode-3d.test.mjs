@@ -5,22 +5,34 @@ import { createServer } from 'node:http';
 import { join, dirname, normalize, extname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createModeHost, MODE_METHODS, MODE_EVENTS } from '../js/shell/mode-host.js';
-import { create3DMode, summary3d } from '../js/shell/mode-3d.js';
+import { create3DMode } from '../js/shell/mode-3d.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 
-// A fake 3D game session (js/mode3d/session.js): its board, a settable clock, its events, and a
-// record of the calls the adapter makes on it.
+// A fake 3D game session (js/mode3d/session.js): its board, seed and generator version, a settable
+// clock, the engine's counts and summary, its events, and a record of the calls the adapter makes
+// on it.
+const CLICKS = Object.freeze({ reveal: { effective: 2, wasted: 0 }, flag: { effective: 1, wasted: 1 }, chord: { effective: 0, wasted: 0 } });
 function fakeSession(board = { X: 4, Y: 5, Z: 6, mines: 7, noGuess: false }) {
   const listeners = { generating: new Set(), started: new Set(), failed: new Set(), finished: new Set() };
   const s = {
     board,
+    seed: 99,
+    generatorVersion: 1,
     ms: 0,
+    outcome: null,
     calls: [],
     elapsedMs: () => s.ms,
+    counts: () => ({ bbbv: 10, bbbvSolved: 4, clicks: CLICKS }),
+    engineSummary: () => (s.outcome
+      ? { outcome: s.outcome, dimensions: { width: 4, height: 5, depth: 6 }, mineCount: 7, bbbv: 10, bbbvSolved: s.outcome === 'won' ? 10 : 4, clicks: CLICKS }
+      : null),
     on(type, fn) { listeners[type].add(fn); return () => listeners[type].delete(fn); },
-    emit(type, payload) { for (const fn of [...listeners[type]]) fn(payload); },
+    emit(type, payload) {
+      if (type === 'finished') s.outcome = payload.state;
+      for (const fn of [...listeners[type]]) fn(payload);
+    },
     listening: () => Object.values(listeners).reduce((n, set) => n + set.size, 0),
     pause() { s.calls.push('pause'); },
     resume() { s.calls.push('resume'); },
@@ -28,6 +40,18 @@ function fakeSession(board = { X: 4, Y: 5, Z: 6, mines: 7, noGuess: false }) {
   };
   return s;
 }
+
+// The summary the builder makes of the fake session's game, without its id and end time.
+const BOARD_3D = { mode: '3d', width: 4, height: 5, depth: 6, mines: 7, noGuess: false };
+const plain = (summary) => ({ ...summary, id: undefined, endedAt: undefined });
+const expected = (outcome, elapsedMs) => {
+  const bbbvSolved = outcome === 'won' ? 10 : 4;
+  return {
+    id: undefined, board: BOARD_3D, outcome, elapsedMs, bbbv: 10, bbbvSolved, clicks: CLICKS,
+    bbbvPerSecond: elapsedMs === 0 ? null : bbbvSolved / (elapsedMs / 1000), efficiency: (100 * bbbvSolved) / 4,
+    seed: 99, generatorVersion: 1, endedAt: undefined,
+  };
+};
 
 // A fake shell flow: records every call; start and restart hand back a new fake session.
 function fakeFlow() {
@@ -60,18 +84,6 @@ function setup() {
 }
 
 const CHOICE = { X: 4, Y: 5, Z: 6, mines: 7, noGuess: false };
-
-// ---------------------------------------------------------------- the summary
-
-test('the 3D summary has the fields the game reports today: outcome, dimensions, mines, time', () => {
-  const board = { X: 4, Y: 5, Z: 6, mines: 7, noGuess: true };
-  assert.equal(summary3d({ board, started: false, outcome: null, elapsedMs: 0 }), null, 'nothing before the first applied reveal');
-  assert.equal(summary3d({ board: null, started: true, outcome: null, elapsedMs: 0 }), null);
-  assert.deepEqual(summary3d({ board, started: true, outcome: null, elapsedMs: 3250 }),
-    { mode: '3d', outcome: 'abandoned', dimensions: { X: 4, Y: 5, Z: 6 }, mines: 7, time: 3.25 });
-  assert.deepEqual(summary3d({ board, started: true, outcome: 'lost', elapsedMs: 8500 }),
-    { mode: '3d', outcome: 'lost', dimensions: { X: 4, Y: 5, Z: 6 }, mines: 7, time: 8.5 });
-});
 
 // ---------------------------------------------------------------- the contract
 
@@ -112,7 +124,7 @@ test('game started is reported at the first applied reveal, with can pause', () 
   flow.session.ms = 1500;
   flow.session.emit('started', { changed: new Int32Array(0) });
   assert.deepEqual(types(), ['started', 'canPause']);
-  assert.deepEqual(events[0][1].summary, { mode: '3d', outcome: 'abandoned', dimensions: { X: 4, Y: 5, Z: 6 }, mines: 7, time: 1.5 });
+  assert.deepEqual(plain(events[0][1].summary), expected('abandoned', 1500), 'the builder\'s summary so far');
   assert.equal(host.state.canPause, true);
 });
 
@@ -122,8 +134,9 @@ test('summary() is the started game\'s summary so far, outcome abandoned', () =>
   assert.equal(mode.summary(), null);
   flow.session.emit('started', {});
   flow.session.ms = 4200;
-  assert.deepEqual(mode.summary(), { mode: '3d', outcome: 'abandoned', dimensions: { X: 4, Y: 5, Z: 6 }, mines: 7, time: 4.2 });
-  assert.deepEqual(host.summary(), mode.summary());
+  assert.deepEqual(plain(mode.summary()), expected('abandoned', 4200));
+  assert.deepEqual(plain(host.summary()), plain(mode.summary()));
+  assert.equal(host.summary().id, mode.summary().id, 'every summary of one game carries the same id');
 });
 
 test('game finished carries the outcome at a win or a loss, and the game can no longer pause', () => {
@@ -134,8 +147,10 @@ test('game finished carries the outcome at a win or a loss, and the game can no 
     flow.session.ms = 9000;
     flow.session.emit('finished', { state });
     assert.deepEqual(types(), ['started', 'canPause', 'canPause', 'finished']);
-    assert.deepEqual(events.at(-1)[1].summary, { mode: '3d', outcome: state, dimensions: { X: 4, Y: 5, Z: 6 }, mines: 7, time: 9 });
-    assert.equal(mode.summary().outcome, state);
+    assert.deepEqual(plain(events.at(-1)[1].summary), expected(state, 9000));
+    assert.equal(events.at(-1)[1].summary.id, events[0][1].summary.id, 'the finished summary names the started game');
+    flow.session.ms = 12000;
+    assert.deepEqual(mode.summary(), events.at(-1)[1].summary, 'summary() after the end is the finished summary');
     assert.equal(host.state.canPause, false);
     host.leave();
     assert.equal(types().includes('abandoned'), false, 'a finished game is never abandoned');
@@ -149,14 +164,15 @@ test('restart and leave of a started, unfinished game report game abandoned', ()
   flow.session.ms = 2000;
   host.restart({ source: 'pointer' });
   assert.deepEqual(types(), ['started', 'canPause', 'abandoned', 'canPause']);
-  assert.deepEqual(events[2][1].summary, { mode: '3d', outcome: 'abandoned', dimensions: { X: 4, Y: 5, Z: 6 }, mines: 7, time: 2 });
+  assert.deepEqual(plain(events[2][1].summary), expected('abandoned', 2000));
   assert.deepEqual(flow.sessions[0].calls, ['leave'], 'the old session is left, cancelling a pending generation');
   assert.equal(host.summary(), null, 'the new board has not started');
   flow.session.emit('started', {});
   flow.session.ms = 500;
   host.leave();
   assert.deepEqual(types().slice(-2), ['abandoned', 'canPause']);
-  assert.equal(events.at(-2)[1].summary.time, 0.5);
+  assert.equal(events.at(-2)[1].summary.elapsedMs, 500);
+  assert.notEqual(events.at(-2)[1].summary.id, events[2][1].summary.id, 'the restarted board is another game');
   assert.deepEqual(flow.sessions[1].calls, ['leave']);
 });
 
@@ -196,12 +212,12 @@ test('a lost graphics context is a start or play failure, and cancels a pending 
   assert.deepEqual(flow.session.calls, ['leave'], 'the session is left: its pending board request is cancelled');
 });
 
-test('the 3D adapter is DOM-free and imports at most the 3D session', () => {
+test('the 3D adapter is DOM-free and imports at most the 3D session and the records\' summary and board', () => {
   const src = read('js/shell/mode-3d.js').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
   assert.doesNotMatch(src, /\b(document|window|navigator)\b/, 'the 3D adapter touches no browser global');
   assert.doesNotMatch(src, /from ['"]three['"]/, 'the 3D adapter does not import three.js');
   for (const [, from] of read('js/shell/mode-3d.js').matchAll(/^import .* from '([^']+)';$/gm)) {
-    assert.match(from, /^\.\.\/mode3d\/session\.js$/, `the 3D adapter imports only the 3D session (${from})`);
+    assert.match(from, /^\.\.\/(mode3d\/session|records\/summary|records\/board)\.js$/, `the 3D adapter imports only the 3D session and the records' summary and board (${from})`);
   }
 });
 
@@ -299,10 +315,7 @@ test('in a browser, the 3D game starts, pauses, resumes, restarts and leaves thr
     const t0 = await ms(() => globalThis.__ms.state.time);
     await frames(10);
     assert.equal(await ms(() => globalThis.__ms.state.time), t0, 'the timer is stopped while paused');
-    const sum = await ms(() => globalThis.__ms.modes.summary());
-    assert.deepEqual({ ...sum, time: undefined },
-      { mode: '3d', outcome: 'abandoned', dimensions: { X: 5, Y: 1, Z: 1 }, mines: 1, time: undefined });
-    assert.equal(sum.time, t0);
+    assert.equal(await ms(() => globalThis.__ms.modes.summary()), null, 'a fixed board, which no generator made, has no summary');
 
     // resume from a controller enters lockless play, as today
     await ms(() => globalThis.__ms.modes.resume({ source: 'pad' }));
@@ -342,17 +355,18 @@ test('in a browser, the 3D game starts, pauses, resumes, restarts and leaves thr
     assert.equal(await ms(() => globalThis.__ms.state.lockless), false);
     assert.deepEqual((await events()).slice(-3), ['canPause', 'abandoned', 'canPause']);
 
-    // a win reports game finished with its summary, and leaving afterwards abandons nothing
+    // a win reports game finished — a fixed board with no summary — and leaving afterwards abandons nothing
     const won = await ms((b) => {
       globalThis.__ms.modes.start('3d', b);
       globalThis.__ms.forcePlay();
       globalThis.__ms.aimAt(0);
       globalThis.__ms.click('left');
       const [type, e] = globalThis.__events.at(-1);
+      const state = globalThis.__ms.game.state;
       globalThis.__ms.modes.leave();
-      return { type, outcome: e.summary?.outcome, mode: e.summary?.mode, last: globalThis.__events.at(-1)[0] };
+      return { type, summary: e.summary, state, last: globalThis.__events.at(-1)[0] };
     }, BOARD);
-    assert.deepEqual(won, { type: 'finished', outcome: 'won', mode: '3d', last: 'finished' });
+    assert.deepEqual(won, { type: 'finished', summary: null, state: 'won', last: 'finished' });
 
     // a lost graphics context is the 3D mode's failure; its screen offers back to menu
     await ms(() => { globalThis.__ms.modes.start('3d', { X: 3, Y: 3, Z: 3, mines: 1 }); globalThis.__ms.forcePlay(); });

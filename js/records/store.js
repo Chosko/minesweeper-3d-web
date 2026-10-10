@@ -31,8 +31,8 @@
 //                          `abandoned` records the summary; `inProgress` calls begin() for a new
 //                          game and checkpoint() for the marker's game; `finished` clears the
 //                          marker of that game (recording a finished game is the results flow's
-//                          record() call). A summary that is not a record (the 3D mode's) is
-//                          ignored.
+//                          record() call). A summary that is not a record (a fixed 3D board's
+//                          null) is ignored.
 //   boardsPlayed(), bests(board), counters(board), winRate(board), history(board),
 //   overall(mode?), overallWinRate(mode?) — the model's queries.
 // record, begin and checkpoint before load() throw: that is a programming error.

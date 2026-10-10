@@ -13,8 +13,8 @@
 //   finished(summary, mode)   records, then routes to RESULTS_SCREEN with { summary, mode,
 //                             comparison, saved, notSaved }; returns that data. Recording happens
 //                             before the screen shows, so the comparison is against the bests that
-//                             stood before this game. A summary that is not a record (the 3D
-//                             mode's) is ignored: no recording, no results screen, null.
+//                             stood before this game. A summary that is not a record (a fixed
+//                             3D board's null) is ignored: no recording, no results screen, null.
 //                             A recording that throws routes anyway, with comparison null and saved
 //                             false. notSaved is true on the first results screen of a session whose
 //                             records are not being saved (records.available() false), so the

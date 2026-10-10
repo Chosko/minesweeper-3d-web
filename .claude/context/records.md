@@ -144,7 +144,7 @@ Store (`js/records/store.js`)
   ([app-shell.md](app-shell.md)): `abandoned` records the summary;
   `inProgress` calls `begin` for a new game and `checkpoint` for the
   marker's game; `finished` clears that game's marker and records nothing.
-  A summary that is not a record (the 3D mode's) is ignored.
+  A summary that is not a record (a fixed 3D board's null) is ignored.
 - The model's queries, delegated: `boardsPlayed`, `bests`, `counters`,
   `winRate`, `history`, `overall`, `overallWinRate`.
 

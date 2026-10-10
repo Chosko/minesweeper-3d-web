@@ -174,11 +174,23 @@ test('the flow records a finished game before the results screen shows, and rout
   assert.equal(pauser.hooks.finished.size, 0);
 });
 
-test('a finished 3D game is not a record: no recording, no results screen', () => {
+test('a finished 3D game is recorded and routed to the results screen like a 2D game', () => {
   const records = fakeRecords();
   const router = fakeRouter();
   const flow = createResultsFlow({ records, router, restart() {}, goMenu() {} });
-  assert.equal(flow.finished({ mode: '3d', outcome: 'won', dimensions: { X: 6, Y: 6, Z: 6 }, mines: 10, time: 12 }, '3d'), null);
+  const board = createBoardIdentity({ mode: '3d', width: 6, height: 6, depth: 6, mines: 10, noGuess: false });
+  const s = summary({ id: 'g3', board: { ...board } });
+  const data = flow.finished(s, '3d');
+  assert.deepEqual(records.calls, [['record', 'g3'], ['available']]);
+  assert.deepEqual(router.routes, [['results', { summary: s, mode: '3d', comparison, saved: true, notSaved: false }]]);
+  assert.equal(data.summary, s);
+});
+
+test('a fixed 3D board\'s null summary is not a record: no recording, no results screen', () => {
+  const records = fakeRecords();
+  const router = fakeRouter();
+  const flow = createResultsFlow({ records, router, restart() {}, goMenu() {} });
+  assert.equal(flow.finished(null, '3d'), null);
   assert.deepEqual(records.calls, []);
   assert.deepEqual(router.routes, []);
 });

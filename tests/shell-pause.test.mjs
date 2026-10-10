@@ -379,7 +379,7 @@ test('in a browser, the 3D game pauses, resumes, restarts and goes back to menu 
     await ms(() => {
       globalThis.__hand = [];
       for (const h of ['finished', 'abandoned', 'inProgress']) {
-        globalThis.__ms.pauser.attach(h, (summary) => globalThis.__hand.push([h, summary.outcome]));
+        globalThis.__ms.pauser.attach(h, (summary) => globalThis.__hand.push([h, summary?.outcome ?? null]));
       }
     });
     const hand = () => ms(() => globalThis.__hand.map(([h]) => h));

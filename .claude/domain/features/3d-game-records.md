@@ -148,9 +148,6 @@ one.
 
 ## Open questions
 
-- Which clicks efficiency counts is the engine's pinned reference
-  observation from Classic 2D; 3D has no reference implementation to
-  observe, so 3D efficiency applies the 2D rule to the 3D profile's
-  actions. Whether the 3D right-click on a revealed cell should count as a
-  click at all is undecided until the 2D rule is pinned. Blocks the 3D
-  efficiency test, not the builder.
+None. 3D efficiency applies the 2D click rule pinned from Classic 2D's
+reference observation to the 3D profile's actions, and counts a right-click
+on a revealed cell as one flag click.

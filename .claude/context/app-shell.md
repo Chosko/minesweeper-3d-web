@@ -35,7 +35,7 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
     every mode through (`createModeHost`, `MODE_METHODS`, `MODE_EVENTS`); the
     contract is documented in its head comment.
   - `mode-3d.js` — the 3D adapter: the 3D game session behind the mode
-    contract (`create3DMode`, `summary3d`; [mode3d.md](mode3d.md)).
+    contract (`create3DMode`; [mode3d.md](mode3d.md)).
   - `menu.js` — the main menu's entries and routes, the last mode played
     and each mode's last board choice (`MENU_ENTRIES`,
     `PLACEHOLDER_SCREEN`, `entryRoute`, `createMenu`, `createLastMode`,
@@ -133,7 +133,7 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
   `finished(summary)`, `canPause(bool)`, `failed(reason)`; it may declare
   `failureScreen`.
 
-`js/shell/mode-3d.js` — `create3DMode(flow, report)` and `summary3d`, with
+`js/shell/mode-3d.js` — `create3DMode(flow, report)`, with
 the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
 
 `js/shell/menu.js`
@@ -358,12 +358,12 @@ Game shell (`js/shell/`, wired in `js/main.js`):
 - **Results flow.** `RESULTS.finished(summary, mode)` records the summary
   with `RECORDS.record` first, so the comparison is against the bests that
   stood before this game, then routes to `results` with `{summary, mode,
-  comparison, saved, notSaved}`. A summary that is not a record — the 3D
-  adapter's `summary3d` — is ignored, so the 3D game keeps its own end flow
-  (banner and pause card). A recording that throws still routes, with no
-  comparison and `saved` false; `notSaved` is set on the first results
-  screen of a session whose records store is unavailable. The screen shows
-  over the finished Classic 2D board. Its actions: Play again →
+  comparison, saved, notSaved}`, for a finished 3D game as for Classic 2D.
+  A summary that is not a record — a fixed 3D board's null — is ignored, so
+  that game keeps the 3D end flow (banner and pause card). A recording that
+  throws still routes, with no comparison and `saved` false; `notSaved` is
+  set on the first results screen of a session whose records store is
+  unavailable. The screen shows over the finished board. Its actions: Play again →
   `RESULTS.playAgain` → `PAUSE.restart`, or `MODES.start('classic-2d',
   LAST_CHOICE_2D.current)` once the mode was left; Records →
   `openRecords` routes to the Records screen with this board's `boardKey`,

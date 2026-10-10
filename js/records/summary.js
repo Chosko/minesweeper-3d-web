@@ -3,7 +3,8 @@
 // buildSummary turns what the rules engine reports at the end of a game — its summary() at a
 // win or a loss, or its counts() for a game abandoned after the first click — plus the elapsed
 // time, the board identity (js/records/board.js), the seed and the generator version into one
-// plain, serialisable record:
+// plain, serialisable record. The board is a 2D board or a 3D board choice (mode 3d, X, Y, Z as
+// width, height, depth), the engine's counts then being over the box graph:
 //   { id, board, outcome, elapsedMs, bbbv, bbbvSolved, clicks, bbbvPerSecond, efficiency,
 //     seed, generatorVersion, endedAt }
 // clicks is { reveal, flag, chord }, each { effective, wasted }; endedAt is an ISO 8601 string.
@@ -12,9 +13,10 @@
 // The derived stats are pure functions of the record's own fields, so every consumer gets the
 // same answer: 3BV/s = 3BV solved ÷ elapsed seconds, efficiency = 3BV solved ÷ counted clicks
 // as a percentage. The engine already counts clicks by the reference profile's `clickCounting`
-// rule (js/engine/profiles.js), so every click it reports counts, wasted ones included. A zero
-// divisor makes a stat null — not available — never 0 or infinity. Only won games are eligible
-// for a personal best, and only on a stat that is available.
+// rule (js/engine/profiles.js), so every click it reports counts, wasted ones included; the 3D
+// profile applies that rule to its own actions, a right-click on a revealed cell being one flag
+// click. A zero divisor makes a stat null — not available — never 0 or infinity. Only won games
+// are eligible for a personal best, and only on a stat that is available.
 
 import { CLICK_KINDS } from '../engine/metrics.js';
 import { createBoardIdentity } from './board.js';
@@ -42,14 +44,22 @@ function checkClicks(clicks) {
   return out;
 }
 
+const cellsOf = (board) => board.width * board.height * (board.depth ?? 1);
+const sizeText = (d) => (d.depth === undefined ? `${d.width} × ${d.height}` : `${d.width} × ${d.height} × ${d.depth}`);
+
 // The engine's summary carries the board it was played on; it has to be the board named.
 function checkEngineBoard(engine, board) {
   if (engine.mineCount !== undefined && engine.mineCount !== board.mines) {
     throw new RangeError(`the game has ${engine.mineCount} mines, the board ${board.mines}`);
   }
   const dims = engine.dimensions;
-  if (dims && dims.width !== undefined && (dims.width !== board.width || dims.height !== board.height)) {
-    throw new RangeError(`the game is ${dims.width} × ${dims.height}, the board ${board.width} × ${board.height}`);
+  if (!dims) return;
+  if (dims.width !== undefined
+    && (dims.width !== board.width || dims.height !== board.height || dims.depth !== board.depth)) {
+    throw new RangeError(`the game is ${sizeText(dims)}, the board ${sizeText(board)}`);
+  }
+  if (dims.cells !== undefined && dims.cells !== cellsOf(board)) {
+    throw new RangeError(`the game has ${dims.cells} cells, the board ${cellsOf(board)}`);
   }
 }
 
@@ -70,7 +80,7 @@ export function buildSummary({ engine, outcome, elapsedMs, board, seed, generato
 
   const identity = createBoardIdentity(board);
   checkEngineBoard(engine, identity);
-  const safe = identity.width * identity.height - identity.mines;
+  const safe = cellsOf(identity) - identity.mines;
   const bbbv = count('bbbv', engine.bbbv, safe);
   if (bbbv < 1) throw new RangeError('summary bbbv must be at least 1 on a board with a safe cell');
   const bbbvSolved = count('bbbvSolved', engine.bbbvSolved, bbbv);

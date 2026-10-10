@@ -20,29 +20,23 @@
 // pending board request keeps running; the timer resumes with play. restart() and leave() leave
 // the session, cancelling a pending generation. A lost graphics context — at start() or through
 // contextLost() — is reported as failed, and leaves the session.
+//
+// Summaries are built by js/records/summary.js's buildSummary from the session's engine counts
+// (outcome abandoned) or engine summary (won or lost), its elapsed time, its board as the 3D board
+// identity, its seed and its generator version: null before the first applied reveal, the summary
+// so far while playing, the finished summary after the end. Every summary of one game carries the
+// same id. A fixed board (the debug hook's mine set) was made by no generator, has no seed and so
+// has no summary: null throughout.
 
-/**
- * The 3D game's summary: the fields the 3D game reports — outcome, dimensions, mines and time.
- * `board` is the session's { X, Y, Z, mines }; `outcome` 'won' or 'lost' once finished, otherwise
- * the game so far is abandoned. Null before the first applied reveal.
- */
-export function summary3d({ board, started, outcome, elapsedMs }) {
-  if (!board || !started) return null;
-  return {
-    mode: '3d',
-    outcome: outcome ?? 'abandoned',
-    dimensions: { X: board.X, Y: board.Y, Z: board.Z },
-    mines: board.mines,
-    time: elapsedMs / 1000,
-  };
-}
+import { MODE_3D } from '../records/board.js';
+import { buildSummary } from '../records/summary.js';
 
 /**
  * The 3D mode for `createModeHost().register('3d', (report) => create3DMode(flow, report))`.
  * js/main.js calls contextLost() when the WebGL context is lost during a 3D game.
  */
 export function create3DMode(flow, report) {
-  let game = null; // { session, started, outcome, offs }
+  let game = null; // { session, started, id, final, offs }
 
   function drop() {
     if (!game) return;
@@ -52,28 +46,44 @@ export function create3DMode(flow, report) {
     g.session.leave();
   }
 
+  // The game's summary from the builder: the engine's summary once finished, its counts before.
+  function build(g, engine) {
+    const { session } = g;
+    if (session.seed === null || session.generatorVersion === null) return null; // a fixed board
+    const { X, Y, Z, mines, noGuess } = session.board;
+    return buildSummary({
+      engine,
+      elapsedMs: session.elapsedMs(),
+      board: { mode: MODE_3D, width: X, height: Y, depth: Z, mines, noGuess },
+      seed: session.seed,
+      generatorVersion: session.generatorVersion,
+      id: g.id,
+    });
+  }
+
   function attach(session) {
     drop();
-    const g = { session, started: false, outcome: null, offs: [] };
+    const g = { session, started: false, id: null, final: undefined, offs: [] };
     g.offs.push(
       session.on('started', () => {
         g.started = true;
+        g.id = globalThis.crypto.randomUUID();
         report.started();
         report.canPause(true);
       }),
-      session.on('finished', ({ state }) => {
-        g.outcome = state;
+      session.on('finished', () => {
+        g.final = build(g, session.engineSummary());
         report.canPause(false);
-        report.finished(summary());
+        report.finished(g.final);
       }),
     );
     game = g;
   }
 
   function summary() {
-    if (!game) return null;
-    const { session, started, outcome } = game;
-    return summary3d({ board: session.board, started, outcome, elapsedMs: session.elapsedMs() });
+    if (!game || !game.started) return null;
+    if (game.final !== undefined) return game.final;
+    return build(game, game.session.counts());
   }
 
   const failed = () => report.failed('graphics context lost');

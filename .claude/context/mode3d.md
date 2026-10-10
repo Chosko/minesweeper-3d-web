@@ -23,8 +23,9 @@ three to the screens, the renderer and the pointer-lock flow
   pause, restart and leave. DOM-free; generation is reached only through the
   client.
 - `js/shell/mode-3d.js` — the 3D adapter: the session behind the mode
-  contract (`create3DMode`) and the 3D game's summary (`summary3d`).
-  DOM-free; imports nothing.
+  contract (`create3DMode`), reporting summaries built by
+  `js/records/summary.js`. DOM-free; imports the records' summary builder
+  and `MODE_3D`.
 
 ## PUBLIC API
 
@@ -72,7 +73,8 @@ three to the screens, the renderer and the pointer-lock flow
   hook's fixed board) that board is played and nothing is requested.
   Session: `view` (one object for the whole session), `state`, `board`,
   `mines`, `seed`, `generatorVersion`, `generatingShown`, `paused`,
-  `failure`, `elapsedMs()`, `seconds()`, `on(event, fn)` → unsubscribe,
+  `failure`, `elapsedMs()`, `seconds()`, `counts()` and `engineSummary()`
+  (the engine's, null before the board arrives), `on(event, fn)` → unsubscribe,
   `reveal(c)`, `toggleFlag(c)`, `chord(c)`, `retry()`, `playStandard()`,
   `pause()`, `resume()`, `restart()`, `leave()`.
 - `SESSION_STATE` (`ready`, `generating`, `playing`, `failed`, `won`,
@@ -82,14 +84,14 @@ three to the screens, the renderer and the pointer-lock flow
   `js/classic2d/session.js`.
 
 `js/shell/mode-3d.js`
-- `summary3d({board, started, outcome, elapsedMs})` → `{mode: '3d',
-  outcome, dimensions: {X, Y, Z}, mines, time}` (time in seconds; outcome
-  `abandoned` until finished), or null before the first applied reveal.
 - `create3DMode(flow, report)` — the contract over `flow`
   (`openBoardChoice`, `start(choice)` → session, `pause(note)`,
   `resume(source)`, `restart(source)` → session, `leave`, `contextLost`);
   `failureScreen: 'ctxlost'`; plus `contextLost()`, which `js/main.js` calls
-  when the WebGL context is lost during a 3D game.
+  when the WebGL context is lost during a 3D game. `summary()` and the
+  finished and abandoned reports carry `buildSummary`'s record over the 3D
+  board identity, one id per game: null before the first applied reveal,
+  and null throughout on a fixed board, which has no seed.
 
 ## INTERNAL PATTERNS
 
