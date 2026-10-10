@@ -353,7 +353,7 @@ Context:
 
 Done: 2026-10-10, commit `44d2159` (7 files, +376/-82).
 
-## [ ] 26. Implement task 76 — Replay simulator and verifier
+## [x] 26. Implement task 76 — Replay simulator and verifier
 
 Depends on: 3, 15, 19
 
@@ -362,6 +362,8 @@ Context: none
 ```prompt
 /task-implement 76 --review --rounds 2
 ```
+
+Done: 2026-10-10, commit `05f9eeb` (7 files, +778/-8). The engine gained `game.snapshot()`/`restore()` (outside the task's files); snapshots every 2,000 actions on boards of 8,000+ cells under a 64 MB cap not in the task; `verify()` accepts a recorded time at or after the last action's, since real sessions can stop the timer slightly after it.
 
 ## [ ] 27. Implement task 77 — Replay viewer screen with the 2D viewer, controls and overlay
 
@@ -400,7 +402,8 @@ Context:
 
 Depends on: 26, 27, 28, 29
 
-Context: none
+Context:
+- 2026-10-10 (from step 26): `.claude/context/engine.md` and `replay.md` do not yet describe the engine's `game.snapshot()`/`restore()` (and metrics `save()`/`restore()`), the replay simulator or the verifier; the feature document gained a `## Snapshot interval` section.
 
 ```prompt
 /task-implement 80 --review
