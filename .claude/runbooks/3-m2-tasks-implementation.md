@@ -214,7 +214,7 @@ Context: none
 
 Done: 2026-10-10, commit `0f238d7` (3 files, +735/-1). The blob is not compressed (left open for task 69); action kinds use the engine names `reveal | flag | chord`.
 
-## [ ] 16. Implement task 66 — Recorder and sealer
+## [x] 16. Implement task 66 — Recorder and sealer
 
 Depends on: 3, 15
 
@@ -225,12 +225,15 @@ Context:
 /task-implement 66 --review --rounds 2
 ```
 
+Done: 2026-10-10, commit `3ac9382` (3 files, +565/-1). The recorder gained `cursor(cell, time)` and `view(mode, time)`, not named in the task; gating recording to when the game accepts actions is left to the sessions (tasks 67, 68).
+
 ## [ ] 17. Implement task 67 — Classic 2D capture and the replay on the mode contract
 
 Depends on: 16
 
 Context:
 - 2026-10-10 (from step 15): replay movement events — `sample` holds 2 integers in 2D (already quantised by the sampler), `cursor` (2D only) carries a cell; action kinds are `reveal | flag | chord`.
+- 2026-10-10 (from step 16): `js/replay/recorder.js` exports `startRecording({mode, graph, board, profile}, {onFailure, movementCap})` and `MOVEMENT_CAP_BYTES` (2 MiB); methods `boardArrived({mines, seed, generatorVersion})`, `action(kind, cell, time)`, `sample(values, time)`, `cursor(cell, time)`, `view(mode, time)`, `seal(summary, game)` (frozen `{blob, listing}`, or null before the first click or after a failure), `stats()`, `failed`. The recorder records whatever it is handed: recording only while the game accepts actions, and passing time 0 before the timer starts, are the session's job.
 
 ```prompt
 /task-implement 67 --review
@@ -242,6 +245,7 @@ Depends on: 12, 16, 17
 
 Context:
 - 2026-10-10 (from step 15): replay movement events — `sample` holds 5 integers in 3D (already quantised by the sampler), `view` (3D only) carries a mode byte 0–255.
+- 2026-10-10 (from step 16): `js/replay/recorder.js` exports `startRecording({mode, graph, board, profile}, {onFailure, movementCap})` and `MOVEMENT_CAP_BYTES` (2 MiB); methods `boardArrived({mines, seed, generatorVersion})`, `action(kind, cell, time)`, `sample(values, time)`, `cursor(cell, time)`, `view(mode, time)`, `seal(summary, game)` (frozen `{blob, listing}`, or null before the first click or after a failure), `stats()`, `failed`. The recorder records whatever it is handed: recording only while the game accepts actions, and passing time 0 before the timer starts, are the session's job.
 
 ```prompt
 /task-implement 68 --review
