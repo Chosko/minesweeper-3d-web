@@ -137,7 +137,9 @@ it generalises.
   moments.
 - **Navigation contract** — every shell screen is fully operable by mouse,
   keyboard and controller; Esc and the controller's back button always mean
-  Back or Pause, never a game action.
+  Back or Pause, never a game action. Controller operability is checked in
+  a real browser with a controller alone, on the board choice and on the
+  placeholder screen.
 - **Failure** — a mode that fails to start (for example a lost graphics
   context in 3D) reports it; the shell shows the mode's failure screen and
   offers back to menu. A failure in one mode never leaves the shell

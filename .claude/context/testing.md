@@ -322,8 +322,15 @@ browser checks for everything that needs WebGL or the DOM.
   malformed document read as none, storage that does not persist never
   stopping a game); DOM-free; the menu, board-choice and placeholder markup
   in `index.html`, their router entries and default focus, and their
-  catalogue entries. One Playwright test opens each entry and returns with
-  Back.
+  catalogue entries. Two Playwright tests: one opens each entry and returns
+  with Back; one drives the 3D board choice and the placeholder with a fake
+  controller alone (`page.addInitScript` stubs `navigator.getGamepads`;
+  `press` holds a button for exactly one poll, so menu auto-repeat and
+  held-button suppression never interfere) and reaches `coming-soon` by
+  serving `js/shell/menu.js` through `page.route` with the Records entry
+  naming an unregistered screen — the router refuses unknown screens, so
+  the placeholder is only reachable through the menu's `entryRoute`
+  fallback.
 - `tests/shell-pause.test.mjs` — the pause controller (`js/shell/pause.js`)
   over a real mode host, a fake mode and a recording shell: every pause
   source, automatic pauses only in play, no pause before the first click or

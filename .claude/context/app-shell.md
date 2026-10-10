@@ -322,7 +322,9 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   choices; Settings routes to the Settings page, Records to the Records
   screen (`records`, opening on the last board played). No current entry
   reaches the placeholder; it stays the route for an entry whose screen is
-  not registered.
+  not registered, and `tests/shell-menu.test.mjs` exercises it by serving
+  a menu whose Records entry names an unregistered screen (the router
+  itself throws on an unknown screen).
   `LAST_MODE` stores the mode of every started
   game in the platform-storage document `shell.lastMode`; at boot `load()`
   marks the entry and refocuses it if the player has not moved yet.
