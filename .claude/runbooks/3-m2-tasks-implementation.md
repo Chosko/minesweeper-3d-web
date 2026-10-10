@@ -227,7 +227,7 @@ Context:
 
 Done: 2026-10-10, commit `3ac9382` (3 files, +565/-1). The recorder gained `cursor(cell, time)` and `view(mode, time)`, not named in the task; gating recording to when the game accepts actions is left to the sessions (tasks 67, 68).
 
-## [ ] 17. Implement task 67 — Classic 2D capture and the replay on the mode contract
+## [x] 17. Implement task 67 — Classic 2D capture and the replay on the mode contract
 
 Depends on: 16
 
@@ -239,6 +239,8 @@ Context:
 /task-implement 67 --review
 ```
 
+Done: 2026-10-10, commit `41d1284` (10 files, +583/-60). Classic 2D records only the first reveal at time 0 (its engine ignores flags or chords before it), not every pre-timer action; finished/abandoned reports carry `replay` beside `summary`; sampling is 50 ms game time at 1/16-cell quantum, chosen here, not by the feature document.
+
 ## [ ] 18. Implement task 68 — 3D capture: recorder and camera sampler
 
 Depends on: 12, 16, 17
@@ -246,6 +248,7 @@ Depends on: 12, 16, 17
 Context:
 - 2026-10-10 (from step 15): replay movement events — `sample` holds 5 integers in 3D (already quantised by the sampler), `view` (3D only) carries a mode byte 0–255.
 - 2026-10-10 (from step 16): `js/replay/recorder.js` exports `startRecording({mode, graph, board, profile}, {onFailure, movementCap})` and `MOVEMENT_CAP_BYTES` (2 MiB); methods `boardArrived({mines, seed, generatorVersion})`, `action(kind, cell, time)`, `sample(values, time)`, `cursor(cell, time)`, `view(mode, time)`, `seal(summary, game)` (frozen `{blob, listing}`, or null before the first click or after a failure), `stats()`, `failed`. The recorder records whatever it is handed: recording only while the game accepts actions, and passing time 0 before the timer starts, are the session's job.
+- 2026-10-10 (from step 17): Classic 2D records only its first reveal at time 0 because its engine ignores earlier flags; the 3D session applies flags before its first reveal, so this task must decide how those are recorded. Mode contract: finished/abandoned reports carry `replay` beside `summary`, the pause controller hands off `(summary, mode, replay)`, and a mode supplies the abandoned game's replay via an optional `replay(summary)` method (the 3D adapter reports null until this task). The 2D sampler runs from the mode's per-frame `tick()` at 50 ms game time; `3d-play-flow.md`'s adapter contract lines still describe the old contract.
 
 ```prompt
 /task-implement 68 --review
@@ -257,6 +260,7 @@ Depends on: 17, 18
 
 Context:
 - 2026-10-10 (from step 15): the replay blob is not compressed; whether to compress stays an open question in the `replay-recording` feature document for this task to settle.
+- 2026-10-10 (from step 17): the Classic 2D sampling constants (50 ms of game time between pointer samples, quantum 1/16 of a cell) were chosen by task 67, not the feature document; this task's measurements should revisit them.
 
 ```prompt
 /task-implement 69 --review --rounds 2
@@ -266,7 +270,8 @@ Context:
 
 Depends on: 15, 16, 17, 18, 19
 
-Context: none
+Context:
+- 2026-10-10 (from step 17): `.claude/context/app-shell.md`, `.claude/context/classic2d.md` and `3d-play-flow.md`'s 3D adapter contract lines still describe the mode contract before `replay` was added beside `summary` in finished/abandoned reports.
 
 ```prompt
 /task-implement 70 --review
