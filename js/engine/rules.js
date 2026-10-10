@@ -27,6 +27,12 @@
 // The ordered stream of applied actions is kept for the game; the same board and the same
 // actions always give the same game.
 //
+// snapshot() copies the game's whole state — cells, phase, counts and the action stream — into a
+// frozen object, and restore(snapshot) sets the same game back to it, so a replay can seek
+// backwards without playing from the start. A snapshot is one byte a cell (two under a profile
+// that keeps flagged-neighbour counts) plus the board's openings; the action stream is shared with the game and copied only when play goes on after a
+// restore. Only the game that took a snapshot restores it.
+//
 // Counts (js/engine/metrics.js): the board's 3BV once the mines are placed, the 3BV solved so
 // far, and every recorded action as one click, effective or wasted by the profile's
 // `clickCounting` rule. counts() reads them at any time; summary() is the game summary at a win
@@ -151,12 +157,17 @@ function build(graph, profileId, version, mineCount, dimensions) {
   let actKinds = new Uint8Array(64);
   let actCells = new Int32Array(64);
   let actLen = 0;
+  let actShared = false; // after a restore, a snapshot may hold the stream past actLen: copy before writing
+
+  let placed = null; // the mine list, once placed
+  const snapshots = new WeakSet(); // the snapshots this game took
 
   const checkCell = (c) => {
     if (!Number.isInteger(c) || c < 0 || c >= n) throw new RangeError(`cell index ${c} is out of range`);
   };
 
   function placeMines(list) {
+    placed = list;
     for (const m of list) mine[m] = 1;
     for (const m of list) {
       for (let k = 0, d = fill(m, nbA); k < d; k++) number[nbA[k]]++;
@@ -165,9 +176,11 @@ function build(graph, profileId, version, mineCount, dimensions) {
   }
 
   function record(kind, c) {
-    if (actLen === actKinds.length) {
-      const k2 = new Uint8Array(actLen * 2); k2.set(actKinds); actKinds = k2;
-      const c2 = new Int32Array(actLen * 2); c2.set(actCells); actCells = c2;
+    if (actLen === actKinds.length || actShared) {
+      const size = Math.max(64, actLen === actKinds.length ? actLen * 2 : actKinds.length);
+      const k2 = new Uint8Array(size); k2.set(actKinds.subarray(0, actLen)); actKinds = k2;
+      const c2 = new Int32Array(size); c2.set(actCells.subarray(0, actLen)); actCells = c2;
+      actShared = false;
     }
     actKinds[actLen] = kind;
     actCells[actLen] = c;
@@ -426,6 +439,41 @@ function build(graph, profileId, version, mineCount, dimensions) {
       const out = new Array(actLen);
       for (let i = 0; i < actLen; i++) out[i] = { kind: KIND_NAMES[actKinds[i]], cell: actCells[i] };
       return out;
+    },
+
+    // The whole game state as a frozen copy: revealed, flagged and hidden packed one byte a cell,
+    // the flagged-neighbour counts, the scalars, the board metrics' and click counts' progress, and the action stream so far.
+    snapshot() {
+      const cells = new Uint8Array(n);
+      for (let i = 0; i < n; i++) cells[i] = revealed[i] | (flagged[i] << 1) | (hidden[i] << 2);
+      const snap = Object.freeze({
+        cells, flagNb: flagNb ? flagNb.slice() : null, phase, flagCount, safeLeft, exploded,
+        mines: placed,
+        metrics: metrics ? metrics.save() : null,
+        clicks: clicks.save(),
+        actKinds, actCells, actLen,
+      });
+      snapshots.add(snap);
+      return snap;
+    },
+
+    // Sets the game back to a snapshot it took. RangeError on any other object.
+    restore(snap) {
+      if (!snapshots.has(snap)) throw new RangeError('a game restores only a snapshot it took');
+      if (snap.mines && !placed) placeMines(snap.mines);
+      if (!snap.mines && placed) { mine.fill(0); number.fill(0); placed = null; metrics = null; }
+      if (snap.metrics) metrics.restore(snap.metrics);
+      clicks.restore(snap.clicks);
+      const { cells } = snap;
+      for (let i = 0; i < n; i++) {
+        const b = cells[i];
+        revealed[i] = b & 1; flagged[i] = (b >> 1) & 1; hidden[i] = (b >> 2) & 1;
+      }
+      if (flagNb) flagNb.set(snap.flagNb);
+      ({ phase, flagCount, safeLeft, exploded } = snap);
+      actKinds = snap.actKinds; actCells = snap.actCells; actLen = snap.actLen;
+      actShared = true;
+      changedLen = 0;
     },
   };
 

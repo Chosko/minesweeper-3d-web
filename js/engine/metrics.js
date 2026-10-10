@@ -5,7 +5,8 @@
 // every opening's reach (a number with no zero neighbour) counts once. createBoardMetrics
 // computes it once the mines are placed and tracks 3BV solved as cells open: an opening is
 // solved when every zero in it is open (a flag can hold one closed), a cell outside every
-// opening when it opens.
+// opening when it opens. save() and restore() copy that progress out and back, for the rules
+// engine's game snapshots.
 //
 // Click counts tally effective and wasted clicks per action kind. Which clicks count and which
 // are wasted is the rule profile's `clickCounting` marker (js/engine/profiles.js); the rules
@@ -70,13 +71,19 @@ export function createBoardMetrics(graph, mine, number) {
       const id = opening[c];
       if (id >= 0) { if (--left[id] === 0) solved++; } else if (isolated[c]) solved++;
     },
+    // The progress so far as a frozen copy, and setting it back to one of this board's copies.
+    save() { return Object.freeze({ left: left.slice(), solved }); },
+    restore(saved) { left.set(saved.left); solved = saved.solved; },
   };
 }
 
-// Effective and wasted clicks per kind; snapshot() is a frozen copy.
+// Effective and wasted clicks per kind; snapshot() is a frozen copy; save() and restore() copy
+// the tally out and back.
 export function createClickCounts() {
   const tally = new Uint32Array(CLICK_KINDS.length * 2);
   return {
+    save() { return tally.slice(); },
+    restore(saved) { tally.set(saved); },
     add(kind, wasted) {
       const k = CLICK_KINDS.indexOf(kind);
       if (k < 0) throw new RangeError(`unknown click kind "${kind}"`);

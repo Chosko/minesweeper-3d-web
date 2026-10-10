@@ -137,5 +137,14 @@ and is never paused into hiding the board.
   follows the recorded camera until it is settled.
 - Whether playback plays the game's sound effects, derived from the actions.
   Blocks only audio in the viewer.
-- How often the simulator snapshots a large 3D board so seeking stays quick
-  without holding too much memory. Set by measurement on the largest boards.
+
+## Snapshot interval
+
+Measured on the largest 3D boards (100 × 100 × 100, at the presets' mine
+densities): a backward seek costs about 25 ms of restoring a snapshot and
+comparing every cell, plus 4 to 6 µs for each action replayed after it, and a
+snapshot holds about 2 MB. A board of 8,000 cells or more keeps a snapshot
+every 2,000 actions, which holds a backward seek there to about 40 ms; a
+smaller board replays from the start, within about 15 ms. A game's snapshots
+stay within 64 MB: a stream long enough to pass that spaces them further
+apart, evenly.

@@ -256,7 +256,7 @@ Feature: replay-library
 
 ## 76. Replay simulator and verifier
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/replay/simulator.js, js/replay/verify.js, tests/replay-simulator.test.mjs, .claude/domain/features/replay-playback.md
 Preconditions: 53, 65, 69
