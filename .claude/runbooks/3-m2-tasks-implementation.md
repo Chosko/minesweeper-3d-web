@@ -80,7 +80,7 @@ Context:
 
 Done: 2026-10-10, commit `41326ce` (10 files, +764/-144). A 1×1×1 custom board is refused; there are two no-guess switches (presets always on, custom disabled above the limit), not the single one `3d-play-flow` describes; the last choice uses a new generic `createLastBoardChoice` in `js/shell/menu.js`.
 
-## [ ] 7. Implement task 57 — 3D game session: safe first click, generation and timer
+## [x] 7. Implement task 57 — 3D game session: safe first click, generation and timer
 
 Depends on: 4, 6
 
@@ -90,6 +90,8 @@ Context:
 ```prompt
 /task-implement 57 --review --rounds 2
 ```
+
+Done: 2026-10-10, commit `328822e` (11 files, +1134/-162). Flags before the first reveal are held by the session (`js/mode3d/session.js`), not the engine, and applied before the reveal once the board arrives; `create3DGame` moved to `js/mode3d/session.js`; the generation worker gained the `box` board description.
 
 ## [ ] 8. Implement task 58 — No-guess cell-count limit for 3D boards
 
@@ -106,7 +108,8 @@ Context:
 
 Depends on: 7
 
-Context: none
+Context:
+- 2026-10-10 (from step 7): `create3DGame` lives in `js/mode3d/session.js` (moved out of `js/shell/mode-3d.js` to avoid an adapter↔session import cycle); the adapter still reports `summary3d` fields.
 
 ```prompt
 /task-implement 59 --review
@@ -118,6 +121,7 @@ Depends on: 6, 7, 8, 9
 
 Context:
 - 2026-10-10 (from step 6): the board choice has two no-guess switches — one under the presets, always available, and one inside the custom panel, disabled above the cell limit — where `3d-play-flow` speaks of one; `.claude/context/app-shell.md` and `testing.md` still describe the old 3D board choice.
+- 2026-10-10 (from step 7): `.claude/context/app-shell.md` still places `create3DGame` in `mode-3d.js` and best times in `localStorage`; `generation.md` lists only square boards, though the worker now takes a `box` description; the 3D timer is the session clock, starting when the board arrives.
 
 ```prompt
 /task-implement 60 --review
