@@ -149,9 +149,18 @@ rules change:
 Consumed by `3d-play-flow`, which drives the game, and through it by the
 existing 3D renderer, picking and HUD.
 
-## Open questions
+## Large-board memory
 
-- Whether the shared engine's typed-array state holds a 100 × 100 × 100
-  board, with the 3D profile's hidden flag and the engine's counts, within
-  the memory the 3D engine uses today. Measured once the profile exists;
-  blocks only the largest custom boards.
+Measured on a 100 × 100 × 100 board (one million cells) with a game in
+progress, as bytes retained in typed arrays
+(`tests/engine-3d-view.test.mjs`):
+
+- the 3D engine ([logic.md](../../context/logic.md)): 24 MB, 24 bytes a
+  cell;
+- the shared engine: 37 MB, 37 bytes a cell — the box graph 0 bytes a
+  cell, since its neighbours are not stored; the game with the 3D
+  profile's hidden flag and the engine's counts 31 bytes a cell; the 3D
+  state view 6 bytes a cell, and 2 more once the game is lost.
+
+The shared engine holds about 13 MB more than the 3D engine on the largest
+custom board, 15 MB after a loss.

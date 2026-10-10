@@ -26,7 +26,7 @@ Feature: 3d-board-graph
 
 ## 53. 3D state view and the large-board memory check
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/engine/state-view-3d.js, tests/engine-3d-view.test.mjs, .claude/domain/features/3d-board-graph.md
 Preconditions: 52
