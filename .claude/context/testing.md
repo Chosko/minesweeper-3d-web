@@ -61,6 +61,7 @@ browser checks for everything that needs WebGL or the DOM.
   messages, no state between requests) and the client
   (`js/generation/client.js`) over a fake worker: lazy worker reuse,
   cancellation, one request in flight, stale replies ignored, worker errors,
+  undecodable replies (`messageerror`, the fake worker's `onmessageerror`),
   the module-worker default, and no generation import on the main thread.
 - `tests/platform-storage.test.mjs` — the storage interface
   (`js/platform/storage.js`) over the memory backend: registration and its

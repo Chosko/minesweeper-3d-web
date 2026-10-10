@@ -81,10 +81,13 @@ Client (`js/generation/client.js`)
 - `createGenerationClient({ createWorker? })` → `{ request, cancel }`, one
   per game. `createWorker` defaults to `createModuleWorker()` (module worker
   on `worker.js`); tests pass a fake with `postMessage`, `terminate`,
-  `onmessage`, `onerror`.
+  `onmessage`, `onerror`, `onmessageerror`.
 - `request(req)` → Promise of the worker's result, success or failure
   alike; rejects only when the worker itself fails (load error, `error`
-  reply). A new request cancels the one in flight.
+  reply, or a reply the page cannot decode — `messageerror`). A worker
+  `error` or `messageerror` also detaches and terminates the worker, so the
+  next request starts a fresh one; with no request in flight it is
+  harmless. A new request cancels the one in flight.
 - `cancel()` — the request in flight resolves `{ ok: false, cancelled:
   true, reason: 'cancelled' }` and never delivers its result; the worker is
   terminated and the next request starts a fresh one. Harmless when idle.
