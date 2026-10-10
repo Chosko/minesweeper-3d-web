@@ -15,7 +15,7 @@ Context: none
 
 Done: 2026-10-10, commit `4506451` (4 files, +351/-1). The box graph computes neighbours from 26 offsets and stores no neighbour lists (not `createCellGraph`); neighbour order at edges and corners follows the original 3D game, not ascending.
 
-## [ ] 2. Implement task 52 — 3D rule profile: revealed-cell flagging, chord, auto-hide and win
+## [x] 2. Implement task 52 — 3D rule profile: revealed-cell flagging, chord, auto-hide and win
 
 Depends on: 1
 
@@ -26,11 +26,14 @@ Context:
 /task-implement 52 --review --rounds 2
 ```
 
+Done: 2026-10-10, commit `f526267` (5 files, +747/-23). The 3D profile is `minesweeper-3d` (`PROFILE_3D`); under it `reveal()` on a revealed zero expands like a chord (not in the task body, needed by the original tests), and a chord through a wrong flag still opens every safe neighbour before losing, unlike the original game.
+
 ## [ ] 3. Implement task 53 — 3D state view and the large-board memory check
 
 Depends on: 2
 
-Context: none
+Context:
+- 2026-10-10 (from step 2): the engine `state` carries `hidden`, a `Uint8Array` on every profile (set only by the 3D profile `minesweeper-3d`, `PROFILE_3D` in `js/engine/profiles.js`); the state view reads hidden cells from there.
 
 ```prompt
 /task-implement 53 --review
