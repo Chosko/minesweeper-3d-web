@@ -16,11 +16,11 @@ Steps: 17/17
 
 ## 2. m1-tasks-implementation — Implement every task of milestone m1-classic-2d
 
-Status: [DONE]
+Status: [PENDING]
 File: .claude/runbooks/2-m1-tasks-implementation.md
 Created: 2026-10-09
 Source: /runbook-create interview (runbook planning-to-m3 step 15)
-Steps: 52/52
+Steps: 52/55
 
 ---
 
