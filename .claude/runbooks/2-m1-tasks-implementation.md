@@ -28,7 +28,7 @@ Context: none
 
 Done: 2026-10-10, commit `edb769a` (3 files, +75/-5).
 
-## [ ] 55. Add a controller browser test for the board-choice and coming-soon screens
+## [x] 55. Add a controller browser test for the board-choice and coming-soon screens
 
 Depends on: none
 
@@ -37,3 +37,5 @@ Context: none
 ```prompt
 /quick-implement "Add a Playwright browser test that drives the shell with a controller only, through a fake gamepad (stub `navigator.getGamepads` in the page). Cover the 3D `board-choice` screen (`#board-choice`, reached from the main menu's 3D entry): move between presets, confirm one, and press Back to return to the menu. Cover the `coming-soon` placeholder (`#coming-soon`): no current menu entry reaches it any more, since every entry has its own screen, so reach it the way the router falls back for a screen that is not registered, and check that Back leaves it. Controller navigation lives in `js/shell/navigation.js`; the Back button means Back in menus. This gap was deferred by the review of task 26. Test-only: change no production code unless the test exposes a real bug, and report any such bug." feature=game-shell
 ```
+
+Done: 2026-10-10, commit `fe8a30e` (2 files, +176/-0). The prompt's premise was wrong: the router throws on an unregistered screen; the `coming-soon` fallback is the menu's `entryRoute`, which the test reaches by intercepting `js/shell/menu.js` to point Records at an unregistered screen.
