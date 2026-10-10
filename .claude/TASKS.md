@@ -146,7 +146,7 @@ Feature: 3d-game-records
 
 ## 65. Replay format: header, streams, encoder and decoder
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/replay/format.js, tests/replay-format.test.mjs
 Preconditions: 61
