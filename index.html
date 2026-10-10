@@ -283,13 +283,22 @@
         <canvas id="records-chart" role="img" aria-label="No won games on this board yet, so there is nothing to chart.">No won games on this board yet, so there is nothing to chart.</canvas>
         <table id="records-games">
           <caption class="ui-text ui-text--muted" id="records-page"></caption>
-          <thead><tr><th scope="col">Outcome</th><th scope="col">Time</th><th scope="col">3BV/s</th><th scope="col">Efficiency</th></tr></thead>
+          <thead><tr><th scope="col">Outcome</th><th scope="col">Time</th><th scope="col">3BV/s</th><th scope="col">Efficiency</th><th scope="col" id="records-games-replay" class="hidden">Replay</th></tr></thead>
           <tbody id="records-games-body"></tbody>
         </table>
         <div class="ui-actions ui-actions--row">
           <button type="button" id="records-prev" class="ui-button ui-button--secondary" disabled>Newer</button>
           <button type="button" id="records-next" class="ui-button ui-button--secondary" disabled>Older</button>
         </div>
+      </div>
+      <div id="records-replays" class="ui-panel" role="group" aria-labelledby="records-replays-title">
+        <h3 class="ui-heading" id="records-replays-title">Replays</h3>
+        <label class="ui-toggle"><input type="checkbox" role="switch" id="records-pinned-first" class="ui-toggle__input"><span class="ui-toggle__label">Pinned first</span></label>
+        <p id="records-replays-empty" class="ui-text ui-text--muted hidden">No replays kept for this board yet.</p>
+        <table id="records-replays-table">
+          <thead><tr><th scope="col">Date</th><th scope="col">Outcome</th><th scope="col">Time</th><th scope="col">3BV/s</th><th scope="col">Efficiency</th><th scope="col">Pin</th><th scope="col">Actions</th></tr></thead>
+          <tbody id="records-replays-body"></tbody>
+        </table>
       </div>
       <div id="records-overall" class="ui-panel" role="group" aria-labelledby="records-overall-title">
         <h3 class="ui-heading" id="records-overall-title">Classic 2D overall</h3>

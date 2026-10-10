@@ -236,7 +236,7 @@ Feature: replay-library
 
 ## 74. Library view in the Records screen
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/records/replay-list.js, js/records/screen.js, css/components.css, index.html, tests/records-replays.test.mjs
 Preconditions: 72

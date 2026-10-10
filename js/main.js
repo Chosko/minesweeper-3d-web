@@ -316,7 +316,12 @@ RECORDS.attach(PAUSE);
 
 // ---------- replay library ----------
 // Every kept replay; loads in the background, and the results flow waits for it before adding one.
-const REPLAYS = createReplayLibrary({ storage, blobStore });
+// A replay that cannot be saved stays watchable this session; the Records screen also says so once.
+const REPLAYS = createReplayLibrary({
+  storage,
+  blobStore,
+  onNotSaved: () => ui.toast('Replays cannot be saved in this browser — this session\'s replays will not be kept.', 4000),
+});
 REPLAYS.load();
 
 // ---------- results ----------
@@ -343,12 +348,16 @@ const RESULTS_VIEW = createResultsView({
 });
 
 // ---------- records screen ----------
-// The board picker, the chosen board's figures and history, redrawn live while open; Back is the back stack.
-const RECORDS_PAGE = createRecordsScreen({ records: RECORDS,
+// The board picker, the chosen board's figures, history and kept replays, redrawn live while open;
+// Watch shows once the replay viewer's route is registered; Back is the back stack.
+const RECORDS_PAGE = createRecordsScreen({ records: RECORDS, replays: REPLAYS, router: SHELL,
   view: createRecordsView({
     root: document.getElementById('records'),
     onSelect: (key) => RECORDS_PAGE.select(key),
     onPage: (page) => RECORDS_PAGE.showPage(page),
+    onWatch: (id) => RECORDS_PAGE.watch(id),
+    onTogglePin: (id) => RECORDS_PAGE.togglePin(id),
+    onPinnedFirst: (on) => RECORDS_PAGE.setPinnedFirst(on),
     onBack: () => shellBack('pointer'),
   }),
 });
