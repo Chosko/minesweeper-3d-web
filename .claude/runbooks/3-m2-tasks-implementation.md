@@ -298,7 +298,7 @@ Context: none
 
 Done: 2026-10-10, commit `cf6597b` (6 files, +595/-4).
 
-## [ ] 22. Implement task 72 — Replay library: index, retention, pinning and recovery
+## [x] 22. Implement task 72 — Replay library: index, retention, pinning and recovery
 
 Depends on: 15, 21
 
@@ -309,11 +309,14 @@ Context:
 /task-implement 72 --review --rounds 2
 ```
 
+Done: 2026-10-10, commit `f6a2db9` (3 files, +781/-1). An unreadable, corrupt or newer index puts the library in memory-only mode and leaves stored data untouched, so start-up reconciliation can never delete pinned blobs.
+
 ## [ ] 23. Implement task 73 — End-of-game hand-off to the replay library
 
 Depends on: 13, 17, 18, 22
 
-Context: none
+Context:
+- 2026-10-10 (from step 22): `js/replay/library.js` exports `createReplayLibrary({ storage, blobStore, onNotSaved })` with `load()`, `add(blob, listing, setBest)` (takes the recorder's `seal()` pair), `pin(id)`, `unpin(id)`, `forBoard(boardKey)`, `has(id)`, `bytes(id)`, `onChange(fn)` (`{kind:'add'|'pin'|'unpin', id}` or `{kind:'remove', ids}`), `available()`, `settled()`; pin reasons `'best'` and `'hand'`; when nothing can be saved the library runs in memory and `available()` reports it; a replay whose blob write failed is served by `bytes(id)` for the session while `has(id)` stays false.
 
 ```prompt
 /task-implement 73 --review
@@ -323,7 +326,8 @@ Context: none
 
 Depends on: 22
 
-Context: none
+Context:
+- 2026-10-10 (from step 22): `js/replay/library.js` exports `createReplayLibrary({ storage, blobStore, onNotSaved })` with `load()`, `add(blob, listing, setBest)` (takes the recorder's `seal()` pair), `pin(id)`, `unpin(id)`, `forBoard(boardKey)`, `has(id)`, `bytes(id)`, `onChange(fn)` (`{kind:'add'|'pin'|'unpin', id}` or `{kind:'remove', ids}`), `available()`, `settled()`; pin reasons `'best'` and `'hand'`; when nothing can be saved the library runs in memory and `available()` reports it; a replay whose blob write failed is served by `bytes(id)` for the session while `has(id)` stays false.
 
 ```prompt
 /task-implement 74 --review
@@ -335,6 +339,7 @@ Depends on: 21, 22, 23, 24
 
 Context:
 - 2026-10-10 (from step 21): `.claude/context/platform.md` and `testing.md` do not yet describe the `blobStore` platform export (in-memory and IndexedDB implementations) or its tests.
+- 2026-10-10 (from step 22): `.claude/context/replay.md` and `testing.md` do not yet describe the replay library (`js/replay/library.js`, index document `replays.library` v1).
 
 ```prompt
 /task-implement 75 --review
