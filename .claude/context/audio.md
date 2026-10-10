@@ -95,9 +95,9 @@ not these.
 
 ## CROSS-REFERENCES
 
-- [logic.md](logic.md) — `Game.leftClick/rightClick/chord` results
-  (`revealed`, `flagged`, `unflagged`, `exploded`, `version`) are what pick the sound.
-- [app-shell.md](app-shell.md) — `main.js` maps actions to sounds and calls
+- [app-shell.md](app-shell.md) — `main.js` maps actions to sounds — the 3D game's
+  `reveal`/`toggleFlag`/`chord` results (`revealed`, `flagged`, `unflagged`, `exploded`) and the
+  state view's `version` pick the sound — and calls
   `unlock()` on start, ready-click, controller resume and after a volume or
   mute change; the M key and Sound buttons set the `muted` setting.
 - [settings.md](settings.md) — the store holding `volume` and `muted`, and

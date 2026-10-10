@@ -5,14 +5,33 @@
 Two layers: Node unit tests for the DOM-free modules, and Playwright-driven
 browser checks for everything that needs WebGL or the DOM.
 
-- `tests/logic.test.mjs` — 3D rules engine (`js/logic.js`): geometry, placement,
-  flood fill, chord, right-click, unlinking, win/loss, dirty tracking, a
-  randomized comparison against a naive port of the original, a performance test.
 - `tests/engine-graph.test.mjs` — the cell graph (`js/engine/graph.js`) and the
   square-grid provider (`js/engine/square-grid.js`): construction from lists
   and flat arrays, immutability, invalid input, index/colRow round-trip,
   neighbour counts and the pinned neighbour order, symmetry, large-board build
-  time, and that `js/engine/` is DOM-free and independent of `js/logic.js`.
+  time, and that `js/engine/` is DOM-free and imports no separate 3D engine module.
+- `tests/engine-box-grid.test.mjs` — the box graph provider
+  (`js/engine/box-grid.js`): dimensions 1 .. 100, immutability, the index
+  layout and `coords` round-trip, the pinned neighbour order and every access
+  path against a reference enumeration, range checks, neighbour counts
+  (7/11/17/26) and symmetry, 1 × 1 × 1 and 1 × 1 × N boxes, a
+  100 × 100 × 100 build without per-cell allocation, the rules engine, placer
+  and solver taking the box graph unchanged, DOM-free.
+- `tests/engine-3d-profile.test.mjs` — the 3D rule profile
+  (`minesweeper-3d`) on the box graph: the profile entry, numbers, no mines
+  placed by the engine, the mine cap, the flood that stops at a zero with a
+  flagged neighbour, reveal on a revealed zero, chord, mass flag and unflag
+  from a revealed cell, auto-hide and un-hide, the win without flags, the
+  loss, changed cells, counts (a flag click on a revealed cell is one click,
+  3BV over the box), a 100 × 100 × 100 performance test, and a randomized
+  comparison against a naive full-pass port of the original while the game
+  is playing.
+- `tests/engine-3d-view.test.mjs` — the 3D state view
+  (`js/engine/state-view-3d.js`): geometry, a fresh view, pressed, flagged
+  and unlinked after reveal, flag, mass flag, chord, hide and un-hide, the
+  win and the loss presentation, awaiting the first click, the dirty drain,
+  the change counter, the graph check, and the 100 × 100 × 100 memory
+  figures the 3D board graph feature document records.
 - `tests/engine-rules.test.mjs` — the rules engine (`js/engine/rules.js`,
   `js/engine/profiles.js`): the profile table, creation from a mine count or a
   mine set, the first-click hand-off, reveal/flood fill, flags, chord, the loss
@@ -53,8 +72,8 @@ browser checks for everything that needs WebGL or the DOM.
   draw, the pinned no-guess board, candidates drawn one after another from
   one source, every accepted Beginner/Intermediate/Expert no-guess board
   (300/150/60 seeds) clearing with the solver, the exhausted-budget failure,
-  rejected requests, the recorded attempt budget, DOM-free and independent
-  of `js/logic.js`.
+  rejected requests, the recorded attempt budget, DOM-free and importing no separate
+  3D engine module.
 - `tests/generation-client.test.mjs` — the worker handler
   (`js/generation/worker.js::handleMessage`: reply per id, agreement with
   Node `generate()`, structured-clone data, rejected requests as failure
@@ -91,8 +110,8 @@ browser checks for everything that needs WebGL or the DOM.
   outcome agreeing with the engine, default id and end date, counted clicks,
   3BV/s and efficiency, zero divisors as not available, the built record's
   stats matching the exported functions, best eligibility, the invalid
-  inputs that throw, and the module DOM-free and independent of
-  `js/logic.js`.
+  inputs that throw, and the module DOM-free and importing no separate 3D
+  engine module.
 - `tests/records-model.test.mjs` — the records model
   (`js/records/model.js`) over built summaries: three bests per board from
   won games only, replaced only when strictly better and independently, a
@@ -313,8 +332,15 @@ browser checks for everything that needs WebGL or the DOM.
   (`js/shell/mode-3d.js`): `summary3d`, the contract over a fake flow, its
   reports and a lost graphics context; both DOM-free, the contract
   documented in the module, and the shell reaching the 3D game only through
-  the host. One Playwright test starts, pauses, resumes, restarts and leaves
-  the 3D game through the adapter.
+  the host. The 3D game (`create3DGame`): the first click answered by the
+  standard placer from its seeded source, a fixed mine set played to a loss
+  and to a win with the result's counts, flags placed and removed, picking
+  over the state view skipping hidden cells, the mine cap and the custom
+  board's limit, and no separate 3D engine module or its tests present, with nothing
+  importing them.
+  Playwright tests start, pause, resume, restart and leave the 3D game
+  through the adapter, and play a fixed mine set on the shared engine to a
+  win and to a loss.
 - `tests/shell-menu.test.mjs` — the main menu (`js/shell/menu.js`): the four
   entries in order, each route (mode board choice, screen, or the shared
   placeholder), the last mode played as a platform-storage document over the
@@ -401,12 +427,6 @@ No `package.json`, no dependencies: Node 22 built-in runner (`node:test`,
 ## PUBLIC API
 
 Tests consume, and so pin, these contracts:
-- `js/logic.js::Game` (`new Game(X, Y, Z, mines, rng)`) and
-  `js/logic.js::createGameFromMinePositions(X, Y, Z, mineIdxList)`; members
-  `n`, `idx`, `coords`, `neighbors`, `number`, `pressed`/`flagged`/`unlinked`
-  (0/1 arrays), `leftClick`/`chord` → `{exploded, revealed}`, `rightClick` →
-  `{flagged, unflagged}`, `state`, `explodedIdx`, `flagCount`, `minesLeft`,
-  `unpressedCount`, `version`, `dirty`, `consumeDirty()`.
 - `js/gamepad.js::stickCurve`, `triggerHeld`, `Repeat`, `padFamily`,
   `padGlyphs`, `pickInDirection`, `GamepadReader` (injected `getGamepads`,
   `onConnect`, `onDisconnect`, `onActiveChange`; `poll()` →
@@ -416,9 +436,12 @@ Tests consume, and so pin, these contracts:
   `LOOK_DEG_PER_PX`, `PAD_LOOK_DEG_PER_S`; `js/controls.js::Controls`
   (`shift`/`space`/`ctrl` union, `pad`, `axes`, `hasAxes`, `releasePad()`).
 - `js/engine/graph.js::createCellGraph`, `cellGraphFromLists`;
-  `js/engine/square-grid.js::createSquareGrid` (index layout and neighbour
-  order); `js/engine/profiles.js::PROFILES`, `REFERENCE_PROFILE`,
-  `getRuleProfile` and every marker's `fidelity` heading;
+  `js/engine/square-grid.js::createSquareGrid` and
+  `js/engine/box-grid.js::createBoxGrid` (index layout and neighbour order);
+  `js/engine/profiles.js::PROFILES`, `REFERENCE_PROFILE`, `PROFILE_3D`,
+  `getRuleProfile` and every marker's `fidelity` citation;
+  `js/engine/state-view-3d.js::createStateView3D` and the members the 3D
+  front-end reads;
   `js/engine/rules.js::createGame`, `createGameWithMines`, `PHASE`, `CELL` and
   the game's actions, queries, `counts()`, `summary()`, `actions()`;
   `js/engine/metrics.js::createBoardMetrics`, `createClickCounts`,
@@ -480,7 +503,7 @@ Tests consume, and so pin, these contracts:
   `js/shell/navigation.js::FOCUSABLE`, `topLayer`, `resolveFocus`,
   `isBackKey`, `backButtons`, `createHeldSuppressor`;
   `js/shell/mode-host.js::createModeHost`, `MODE_METHODS`, `MODE_EVENTS`;
-  `js/shell/mode-3d.js::create3DMode`, `summary3d`;
+  `js/shell/mode-3d.js::create3DMode`, `create3DGame`, `summary3d`;
   `js/shell/menu.js::MENU_ENTRIES`, `PLACEHOLDER_SCREEN`, `entryRoute`,
   `createMenu`, `createLastMode`, `LAST_MODE_DOC`;
   `js/shell/pause.js::createPauseController`, `PAUSE_SOURCES`,
@@ -517,15 +540,16 @@ Browser hook `js/main.js::window.__ms` (full list in [app-shell.md](app-shell.md
 - **Testing policy is full-tdd** (`CLAUDE.md` "Tasks implementation"): every
   task runs tests first — write/extend the failing test, then implement, then
   run `.claude/external/run-full-tests.sh`.
-- Determinism: randomness is injected. `mulberry32(seed)` for seeded runs,
-  `seq([...])` for exact rng values; deterministic boards via
-  `createGameFromMinePositions` (helper `G`).
-- `NaiveGame` in `tests/logic.test.mjs` is the fidelity oracle for
-  `js/logic.js`: a direct port of the original
+- Determinism: randomness is injected. `mulberry32(seed)` for seeded runs;
+  deterministic 3D boards via `createGameWithMines` over a box graph (helper
+  `G` in `tests/engine-3d-profile.test.mjs`).
+- `NaiveGame` in `tests/engine-3d-profile.test.mjs` is the oracle for the 3D
+  profile while a game is playing: a direct port of the original
   `Cell.cs`/`Grid.cs`/`Minesweeper.cs` frame logic (recursive click,
-  exception-based explosion, full unlink passes until stable). `naivePlace`
-  mirrors `Grid.cs` linear-probe placement. Never "fix" the oracle to match
-  the engine; the engine must match the oracle.
+  exception-based explosion, full unlink passes until stable) over a fixed
+  mine set. Never "fix" the oracle to match the engine; the engine must match
+  the oracle, except where the 3D board graph feature document records a
+  deliberate difference, which is tested as the new rule.
 - The fidelity observation, not the engine, is the oracle for the
   cell-graph engine: `tests/engine-fidelity.test.mjs` parses
   `tests/fidelity/minesweeper-online.md`, and a failure there is fixed in the
@@ -626,16 +650,20 @@ Browser verification (Playwright):
 Gameplay fidelity to the original is the overriding rule; tests are where it
 is enforced.
 - [../../docs/ORIGINAL_SPEC.md](../../docs/ORIGINAL_SPEC.md):
-  - "Mines & numbers" — linear-probe placement, 26-neighbourhood, no
-    first-click safety (placement tests, `naivePlace`).
+  - "Mines & numbers" — 26-neighbourhood (box graph tests).
   - "Rules" — leftClick/chord/rightClick/unlinking/win/lose semantics
-    (`NaiveGame`, rule tests); timer start rule (browser only).
+    (`NaiveGame`, the 3D profile's rule tests); timer start rule (browser
+    only).
   - "Controls" — release-to-act chord state machine (`MouseActions` test),
     50 u/s movement, look rates, pitch clamp (`FlyCamera` tests); picking
     exclusions (browser `pickWith`/`aimAt`).
 - [../domain/features/cell-graph-rules-engine.md](../domain/features/cell-graph-rules-engine.md)
   — the engine behaviours, 3BV and click-count definitions and the fidelity
   rule the `engine-*` tests encode.
+- [../domain/features/3d-board-graph.md](../domain/features/3d-board-graph.md)
+  — the box graph, 3D profile, state view, deliberate differences and memory
+  figures `engine-box-grid`, `engine-3d-profile` and `engine-3d-view`
+  encode.
 - [../domain/features/board-generation.md](../domain/features/board-generation.md)
   — the determinism, failure, cancel and solver-correctness contracts the
   `generation-*` tests encode.
@@ -679,8 +707,7 @@ is enforced.
 
 ## CROSS-REFERENCES
 
-- [logic.md](logic.md) — `tests/logic.test.mjs` pins the engine API and checks it against the naive port.
-- [engine.md](engine.md) — `tests/engine-*.test.mjs` pin the cell-graph engine; the fidelity test checks it against the observation file.
+- [engine.md](engine.md) — `tests/engine-*.test.mjs` pin the cell-graph engine, the box graph, the 3D profile and the 3D state view; the fidelity test checks the reference profile against the observation file, the naive port the 3D profile.
 - [generation.md](generation.md) — `tests/generation-*.test.mjs` pin the seeded generator, solver, no-guess loop, worker and client.
 - [platform.md](platform.md) — `tests/platform-*.test.mjs` pin the storage interface, backends and start-up selection.
 - [records.md](records.md) — `tests/records-*.test.mjs` pin the board identity and key, the summary builder and its derived stats, the records model, the records store, the Records screen and its history chart and games list.
@@ -698,19 +725,17 @@ is enforced.
 
 ## WHEN TO READ THE SOURCE
 
-- Adding a rule change to the 3D engine: extend `NaiveGame` only if the original
+- Adding a rule change to the 3D profile: extend `NaiveGame` only if the original
   behaves that way, then add a focused test next to the matching section.
 - A fidelity-test failure: read the cited entry in
   `tests/fidelity/minesweeper-online.md` and the profile marker that cites
   it, then fix the engine.
 - A randomized-test failure: read `assertSame` output (seed, action, cell) and
-  replay that seed with both engines.
+  replay that seed with the engine and `NaiveGame`.
 - A pinned generation output fails: decide whether the change is a generator
   change (bump `GENERATOR_VERSION`, re-pin) or a regression; a solver
   failure prints the seed — replay it with `solve()` and read
   `js/generation/solver.js`.
-- Changing placement or rng use in `Game` (seed streams must stay aligned with
-  `naivePlace`).
 - Adding a gamepad family, button mapping or trigger threshold (`padFamily`
   cases, `fakePad`, `press`).
 - Writing a Playwright script that needs a hook method not listed above, or

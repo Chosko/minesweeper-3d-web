@@ -76,7 +76,8 @@ resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md).
 
 **js/picking.js**
 - `js/picking.js::pickCell(game, spacing, o, d, spaceHeld)` → cell index or -1. `o` origin,
-  `d` normalized direction (`{x,y,z}`), reads `game.X/Y/Z`, `game.unlinked`, `game.pressed`.
+  `d` normalized direction (`{x,y,z}`), reads `game.X/Y/Z`, `game.unlinked`, `game.pressed` — `game` is the 3D state view
+  (`js/engine/state-view-3d.js`, [engine.md](engine.md)).
 - `js/picking.js::pickCellBrute(...)` — same signature and result; O(n), used only by the debug hook.
 
 ## INTERNAL PATTERNS
@@ -143,7 +144,7 @@ additions the spec permits; they must not alter any rule above.
 
 ## CROSS-REFERENCES
 
-- [logic.md](logic.md) — `pickCell` reads `Game` dimensions and the `unlinked` / `pressed` arrays; `MouseActions` actions become `Game.leftClick` / `rightClick` / `chord` calls in main.
+- [engine.md](engine.md) — `pickCell` reads the 3D state view's dimensions and its `unlinked` / `pressed` arrays; `MouseActions` actions become the 3D game's `reveal` / `toggleFlag` / `chord` calls in main ([app-shell.md](app-shell.md)).
 - [rendering.md](rendering.md) — `FlyCamera.apply` drives the renderer's camera; `Controls.shift/space/ctrl` feed the renderer toggles; the picked cell becomes the renderer's selection.
 - [app-shell.md](app-shell.md) — `js/main.js` constructs every object here, maps pad buttons (`handlePad`), runs menu focus navigation with `pickInDirection` / `Repeat` and the shell navigation helpers, and owns the pointer-lock flow; the screen router and the pause controller decide where Back and pause lead.
 - [audio.md](audio.md) — no direct calls; action results in main trigger sound effects.

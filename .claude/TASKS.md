@@ -46,7 +46,7 @@ Feature: 3d-board-graph
 
 ## 55. Update documentation for feature `3d-board-graph`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/engine.md, .claude/context/logic.md, .claude/context/rendering.md, .claude/context/input.md, .claude/context/app-shell.md, .claude/context/testing.md, .claude/context/INDEX.md
 Preconditions: 51, 52, 53, 54

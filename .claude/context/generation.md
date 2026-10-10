@@ -2,13 +2,13 @@
 
 ## OVERVIEW
 
-Where every Classic 2D board's mines come from: a seeded, deterministic
+Where every board's mines come from: a seeded, deterministic
 generator that places mines around the first click and, with no-guess on,
 a logic-only solver that accepts only boards it clears from the first
 click. All of it runs in a Web Worker; the page talks to it through a
-client. DOM-free (except `client.js`'s `new Worker`), independent of
-`js/logic.js` and of the rules engine's game state — it reuses only the cell
-graph and the square-grid provider ([engine.md](engine.md)).
+client. DOM-free (except `client.js`'s `new Worker`), independent of the
+rules engine's game state — it reuses only the cell graph and its providers
+([engine.md](engine.md)).
 
 - `js/generation/random.js` — the seeded source (mulberry32).
 - `js/generation/placer.js` — the standard placer and `GENERATOR_VERSION`.
@@ -19,9 +19,11 @@ graph and the square-grid provider ([engine.md](engine.md)).
 - `js/generation/client.js` — the page-side client: one request in flight,
   cancellation.
 
-Its caller is the Classic 2D game session (`js/classic2d/session.js`), which
-asks for a board when the engine's first reveal returns "board needed at c"
-and hands the mine set back with the engine's `supplyBoard`.
+Its callers answer the engine's first reveal, "board needed at c", and hand
+the mine set back with the engine's `supplyBoard`: the Classic 2D game
+session (`js/classic2d/session.js`) through the client, and the 3D game
+(`create3DGame` in `js/shell/mode-3d.js`, [app-shell.md](app-shell.md)),
+which calls the standard placer directly on the box graph.
 
 ## PUBLIC API
 

@@ -31,8 +31,9 @@ theme, the debug hook, and the static-site files.
   - `mode-host.js` — the mode contract and the registry the shell reaches
     every mode through (`createModeHost`, `MODE_METHODS`, `MODE_EVENTS`); the
     contract is documented in its head comment.
-  - `mode-3d.js` — the 3D adapter: the existing 3D game behind the mode
-    contract (`create3DMode`, `summary3d`).
+  - `mode-3d.js` — the 3D adapter: the 3D game behind the mode contract,
+    and the 3D game itself on the shared rules engine (`create3DMode`,
+    `create3DGame`, `summary3d`).
   - `menu.js` — the main menu's entries and routes, and the last mode played
     (`MENU_ENTRIES`, `PLACEHOLDER_SCREEN`, `entryRoute`, `createMenu`,
     `createLastMode`).
@@ -129,9 +130,19 @@ theme, the debug hook, and the static-site files.
   `failureScreen`.
 
 `js/shell/mode-3d.js`
+- `create3DGame({X, Y, Z, mines, minePositions?}, {randomSeed?})` → `{view,
+  mines, seed, reveal(c), toggleFlag(c), chord(c)}`: the box graph
+  (`js/engine/box-grid.js`) and the 3D rule profile on the shared engine,
+  with `view` the 3D state view the renderer, picking and HUD read
+  ([engine.md](engine.md)). From `mines` it awaits the first click, whose
+  board request it answers with the standard placer
+  (`js/generation/placer.js`) around that cell from a seeded source (`seed`,
+  null until then); from `minePositions` it plays that board from the start.
+  Each action passes the engine's result to the view and returns `{changed,
+  ended, exploded, revealed, flagged, unflagged}` — the counts of cells newly
+  opened, flagged and unflagged, which drive the sound effects.
 - `summary3d({settings, started, time, endState})` → `{mode: '3d', outcome,
-  dimensions: {X,Y,Z}, mines, time}`, or null before the first click unless
-  the board was decided without one.
+  dimensions: {X,Y,Z}, mines, time}`, or null before the first click.
 - `create3DMode(flow, report)` — the contract over `flow` (`openBoardChoice`,
   `start`, `pause(note)`, `resume(source)`, `restart(source)`, `leave`,
   `snapshot`, `contextLost`); `failureScreen: 'ctxlost'`; plus
@@ -179,7 +190,10 @@ theme, the debug hook, and the static-site files.
 
 `js/ui.js` exports (consumed by `js/main.js`)
 - `DIM_MIN`/`DIM_MAX` (1/100); `clampSettings(s)` → `{X,Y,Z,mines}` integers,
-  dims 1..100, mines 1..X*Y*Z. `randomSettings()` — original Random formula.
+  dims 1..100, mines 1..X*Y*Z − 1, since the first click is safe (a 1×1×1
+  board clamps to 0 mines, and its custom info line reads "Mines must be
+  1–0"). `randomSettings()` — original Random formula, mines capped at
+  X*Y*Z − 1.
 - `fmtDims(s)`, `fmtTime(t)` (2 decimals), `NO_MOUSE_MSG`.
 - `getBest(s)` → seconds or null; `recordBest(s, time)` → `{ best, prev, isNew }`,
   writes `ms3d.best.<X>x<Y>x<Z>x<mines>` only when faster.
@@ -382,8 +396,13 @@ Game flow (`js/main.js`):
   `body.lockless`; when set, losing lock does not pause and Esc pauses directly.
   A UI click made with controller A sets `padGesture`, which routes resume/
   restart to lockless play because it is not a user gesture for pointer lock.
-- `onAction(type)` is the only dispatcher to `Game` (wired as `MouseActions`'
-  callback): calls `renderer.snapshotBeforeAction()` before left/chord, sets
+- `startGame` builds the game with `create3DGame` (the debug hook's
+  `minePositions` give a fixed board): `S.play` holds its actions and
+  `S.game` its 3D state view, which every reader of the board uses.
+- `onAction(type)` is the only dispatcher to the game (wired as `MouseActions`'
+  callback): `'left'` → `S.play.reveal`, `'right'` → `toggleFlag`,
+  `'chord'` → `chord`; a flag before the first click does nothing, as on
+  every engine profile. Calls `renderer.snapshotBeforeAction()` before left/chord, sets
   `S.started` on any left release (timer starts even if nothing happens; chords
   do not start it), plays SFX from the result objects, `sfx.noop` when `version`
   is unchanged, and on a `playing → won/lost` transition runs
@@ -392,13 +411,12 @@ Game flow (`js/main.js`):
   with `minesLeft` taken from before the final action (original HUD froze on the
   previous frame). HUD, pause card and timer read `S.endState` once set; the
   timer advances only when `playing && started && !endState`, clamped to 1 s/frame.
-- `afterEndGame` (best times) is kept separate from `endGame`; a board that is
-  already won at creation (all mines) runs both once when `playing` shows
-  (`endIfDecided`).
+- `afterEndGame` (best times) is kept separate from `endGame`.
 - `startCameraPos(X,Y,Z)` = original `(0, 10, -8M)` shifted by minus the original
   grid centre at spacing 1.1, because the port centres the grid on the origin.
   No snapping to a cell. Spacing resets to `SPACING_START` per game; the menu
-  screens' demo board (`makeDemo`, 7³/30, decorative) uses 1.25 and an
+  screens' demo board (`makeDemo`, 7³/30, a random mine set through
+  `create3DGame`, decorative) uses 1.25 and an
   orbiting camera.
 - Render on demand: `shouldRender` draws when on a menu screen (`onBackdrop`), `needRender` is set,
   `renderer.sync()` reported changes, `endState` changed, `renderer.isAnimating()`
@@ -575,8 +593,9 @@ Gameplay fidelity to the original game is the overriding rule.
 
 ## CROSS-REFERENCES
 
-- [logic.md](logic.md) — `startGame` constructs `Game`/`createGameFromMinePositions`;
-  `onAction` calls `leftClick`/`rightClick`/`chord`; reads `state`, `minesLeft`, `version`.
+- [engine.md](engine.md) — `create3DGame` plays the box graph and the 3D rule
+  profile on the shared engine; main reads the 3D state view's `state`,
+  `minesLeft`, `version`.
 - [rendering.md](rendering.md) — main owns `BoardRenderer`: `setGame`, `setToggles`,
   `setSpacing`, `setSelected`, `sync`, `render`, `snapshotBeforeAction`, `isAnimating`.
 - [input.md](input.md) — `FlyCamera`, `Input` callbacks (`onLook`, `onWheel`,

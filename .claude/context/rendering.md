@@ -55,14 +55,15 @@ draws the sky gradient, the win confetti and the loss camera shake.
 
 ## Internal patterns
 
-- **Game read contract.** The renderer reads `game.n/X/Y/Z`, `flagged`, `pressed`, `number`,
+- **Game read contract.** `game` is the 3D state view (`js/engine/state-view-3d.js`,
+  [engine.md](engine.md)). The renderer reads `game.n/X/Y/Z`, `flagged`, `pressed`, `number`,
   `unlinked`, `explodedIdx`, `state`, `version`, `coords(idx)`, `consumeDirty()`. It never mutates
   game state; it owns the only `consumeDirty()` consumer, so nothing else may call it.
 - **State texture.** RGBA8, width `STATE_W` = 1024, texel = cell index. R = tile layer, G = kind,
   A = previous layer + 1 for cells whose tile changes during an end-of-game wave (0 = none).
   Selection and toggles touch only uniforms; no per-frame O(n) JS work.
 - **Cell index order** is `i + X*(j + Y*k)`; the vertex shader decodes it the same way. Keep in
-  step with `js/logic.js`.
+  step with the box graph provider (`js/engine/box-grid.js`).
 - **Two passes, shader decides.** `uPass` 0 (opaque, depth write) keeps instances with alpha 1;
   pass 1 (transparent, no depth write) keeps alpha < 1. Lists may over-include; culled instances
   are moved off-screen. The alpha table in the vertex shader implements the spec's drawing rules.
@@ -103,7 +104,8 @@ draws the sky gradient, the win confetti and the loss camera shake.
 
 ## Cross-references
 
-- [logic.md](logic.md) — supplies the board arrays, `version`, dirty list and `coords()` this area reads.
+- [engine.md](engine.md) — the 3D state view supplies the board arrays, `version`, dirty list and
+  `coords()` this area reads.
 - [app-shell.md](app-shell.md) — `js/main.js` owns the renderer: calls `sync`/`render` per frame,
   `snapshotBeforeAction` before reveals, polls `isAnimating`, sets the pixel ratio, exposes `stats`
   via `__ms`.

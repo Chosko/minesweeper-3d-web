@@ -13,7 +13,7 @@ chart, which draws on the canvas it is handed.
   the display label. Imports nothing.
 - `js/records/summary.js` — the summary builder, the derived stats and best
   eligibility. Imports `CLICK_KINDS` from `js/engine/metrics.js` and the
-  identity from `board.js`; never `js/logic.js`.
+  identity from `board.js`.
 - `js/records/model.js` — the records model: bests, counters, history and
   the comparison, held in memory as two plain documents. Imports
   `summary.js`, `board.js` and `CLICK_KINDS`; no storage.
