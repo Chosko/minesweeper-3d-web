@@ -276,7 +276,7 @@ Feature: replay-playback
 
 ## 78. 3D replay viewer
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/replay/viewer-3d.js, js/replay/viewer.js, js/render.js, js/main.js, tests/replay-viewer-3d.test.mjs
 Preconditions: 59, 77

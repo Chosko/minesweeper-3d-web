@@ -22,6 +22,8 @@ import { createRecordsStore } from './records/store.js';
 import { createResultsFlow } from './results/flow.js';
 import { createReplayLibrary } from './replay/library.js';
 import { createReplayViewer, createReplayView } from './replay/viewer.js';
+import { mountViewer2D } from './replay/viewer-2d.js';
+import { createViewer3D } from './replay/viewer-3d.js';
 import { REPLAY_SCREEN } from './records/replay-list.js';
 import { createResultsView, resultsContent } from './results/view.js';
 import { createRecordsScreen, createRecordsView } from './records/screen.js';
@@ -327,6 +329,40 @@ const REPLAYS = createReplayLibrary({
 });
 REPLAYS.load();
 
+// ---------- 3D replay ----------
+// A 3D replay draws on the renderer with its own camera, placed from the recording each frame; player
+// input never moves it. Leaving the replay gives the renderer back the board it drew before.
+const REPLAY_SPACING = SPACING_START;
+const replayCam = new FlyCamera();
+const replay3d = { view: null, toggles: { shift: false, space: false, ctrl: false }, pickKey: '' };
+const REPLAY_SCENE = {
+  show(view) {
+    replay3d.view = view;
+    replay3d.pickKey = '';
+    replayCam.reset(...startCameraPos(view.X, view.Y, view.Z));
+    renderer.setGame(view);
+    applyPixelRatio(view.n);
+    needRender = true;
+  },
+  camera(pose, toggles) {
+    if (pose) Object.assign(replayCam, pose);
+    replay3d.toggles = toggles;
+    needRender = true;
+  },
+  hide() {
+    replay3d.view = null;
+    const g = S.game ?? S.demo;
+    if (g) { renderer.setGame(g); applyPixelRatio(g.n); }
+    S.pickKey = '';
+    needRender = true;
+  },
+};
+/** The replay viewer's box viewer; with the graphics context gone it is a mode's failure, and nothing mounts. */
+function mountReplay3D({ sim }) {
+  if (contextLost) { SHELL.go('ctxlost'); return { draw() {}, destroy() {} }; }
+  return createViewer3D({ sim, scene: REPLAY_SCENE, spacing: REPLAY_SPACING });
+}
+
 // ---------- replay viewer ----------
 // A shell screen over the replay library: it verifies the replay, then plays it on its own board
 // view; it reports nothing to records, plays no sound and never pauses. Back is the screen it came from.
@@ -340,6 +376,7 @@ const REPLAY_VIEWER = createReplayViewer({
     onSeek: (ms) => REPLAY_VIEWER.seek(ms),
     onBack: () => shellBack('pointer'),
   }),
+  viewers: { square: mountViewer2D, box: mountReplay3D },
 });
 
 // ---------- results ----------
@@ -843,18 +880,32 @@ function padMenus(p, held, pressed, now) {
 // ---------- frame loop ----------
 const tmpDir = new THREE.Vector3();
 
+/** The cell under the crosshair of the renderer's camera, on `g` drawn at `spacing`. */
+function aimedCell(g, spacing, space) {
+  const three = renderer.camera;
+  three.getWorldDirection(tmpDir);
+  const n = three.near;
+  const o = { x: three.position.x + tmpDir.x * n, y: three.position.y + tmpDir.y * n, z: three.position.z + tmpDir.z * n };
+  return pickCell(g, spacing, o, tmpDir, space);
+}
 function updatePick() {
   const g = S.game, three = renderer.camera;
   const space = renderer.toggles.space;
   const key = `${cam.x},${cam.y},${cam.z},${cam.yaw},${cam.pitch},${S.spacing},${g.version},${space},${three.aspect}`;
   if (key === S.pickKey) return;
   S.pickKey = key;
-  three.getWorldDirection(tmpDir);
-  const n = three.near;
-  const o = { x: three.position.x + tmpDir.x * n, y: three.position.y + tmpDir.y * n, z: three.position.z + tmpDir.z * n };
-  S.selected = pickCell(g, S.spacing, o, tmpDir, space);
+  S.selected = aimedCell(g, S.spacing, space);
   renderer.setSelected(S.selected);
   ui.setCrosshair(S.selected >= 0);
+}
+/** A 3D replay aims as its player did: the recorded camera's cell glows. */
+function updateReplayPick() {
+  const v = replay3d.view, c = replayCam;
+  const space = renderer.toggles.space;
+  const key = `${c.x},${c.y},${c.z},${c.yaw},${c.pitch},${v.version},${space},${renderer.camera.aspect}`;
+  if (key === replay3d.pickKey) return;
+  replay3d.pickKey = key;
+  renderer.setSelected(aimedCell(v, REPLAY_SPACING, space));
 }
 /** Synchronous camera/pick refresh (used by the debug hook between frames). */
 function refresh() {
@@ -917,6 +968,10 @@ function frame(now) {
     three.lookAt(0, 0, 0);
     three.updateMatrixWorld(true);
     renderer.setToggles(false, false, false);
+  } else if (replay3d.view) {
+    replayCam.apply(three); // the recorded camera and view mode
+    const t = replay3d.toggles;
+    renderer.setToggles(t.shift, t.space, t.ctrl);
   } else {
     if (playing) {
       cam.move(dt, input.move);
@@ -928,12 +983,13 @@ function frame(now) {
     ui.setModes(shift, space, ctrl);
   }
   if (MODES.active === '3d') mode3d.tick(); // the replay's camera sampler
-  renderer.setSpacing(S.spacing);
+  renderer.setSpacing(replay3d.view ? REPLAY_SPACING : S.spacing);
   const synced = renderer.sync();
 
   // picking: only when something relevant changed
   const g = S.game;
-  if (g && !onBackdrop()) {
+  if (replay3d.view) updateReplayPick();
+  else if (g && !onBackdrop()) {
     updatePick();
     // the timer is the session's: it runs only while playing (sync3D), frozen at the end
     if (playing && S.started && !S.endState) S.time = S.play.elapsedMs() / 1000;

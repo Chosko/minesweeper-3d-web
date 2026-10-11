@@ -478,6 +478,7 @@ export class BoardRenderer {
     this._lastState = g.state;
     if (prev === 'playing' && g.state === 'lost') this._beginLoss(dirty);
     else if (prev === 'playing' && g.state === 'won') this._beginWin();
+    else if (prev !== 'playing' && g.state === 'playing') this._endEffects(); // a replay seeking back before its end
     this._snap = null;
     for (let t = 0; t < dirty.length; t++) this._writeCell(dirty[t]);
     if (g.explodedIdx >= 0) this._writeCell(g.explodedIdx);
@@ -577,6 +578,14 @@ export class BoardRenderer {
   }
 
   _clearOldLayers() { const D = this.stateData; for (let o = 3; o < D.length; o += 4) D[o] = 0; }
+
+  /** Drops the end-of-game wave, confetti, shake and wrong flags at once. */
+  _endEffects() {
+    this._clearOldLayers();
+    this._eff = null; this._conf = null; this._shake = null; this._wrong = null; this._effHidden = false;
+    this.uniforms.uEff.value = 0;
+    this.confetti.visible = false;
+  }
 
   _beginLoss(dirty) {
     const g = this.game, D = this.stateData, K = this.kind, N = g.number, n = this.n;

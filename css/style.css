@@ -124,6 +124,7 @@ kbd {
 #c2d-status { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
 #m3d-status { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: var(--z-overlay); }
 #replay { position: fixed; inset: 0; z-index: var(--z-overlay); background: var(--color-backdrop); }
+#replay.replay--scene { background: transparent; }
 .replay-bar { position: absolute; top: 16px; left: 16px; }
 #replay-board { position: absolute; top: 96px; left: var(--space-4); right: var(--space-4); bottom: 200px; overflow: hidden; }
 #replay-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }

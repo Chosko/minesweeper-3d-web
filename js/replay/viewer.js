@@ -25,8 +25,9 @@
 //            → the board area, render(state).
 //   viewers  { [graph kind]: ({ container, sim }) → { draw(frame), place?(), destroy() } }; place()
 //            runs on the frames that draw nothing, to follow a board view that refitted. Classic 2D's
-//            square is js/replay/viewer-2d.js. A replay with no viewer for its graph says
-//            FAILURES.unsupported.
+//            square is js/replay/viewer-2d.js; the 3D box is js/replay/viewer-3d.js, which js/main.js
+//            mounts on its renderer. A replay with no viewer for its graph says FAILURES.unsupported.
+//            A mount that leaves the screen (a lost graphics context) is destroyed and nothing plays.
 //   show({ replay?, replayId?, returnTo? }) → Promise once the replay plays or has failed; returnTo
 //            the { screen, data } Back goes to (the main menu when none). The replay starts paused at
 //            its beginning, at 1×.
@@ -48,7 +49,8 @@
 // #replay by id: the overlay bar (#rp-clock, #rp-mines, #rp-bbbv, #rp-rate, Back #rp-back), the board
 // area #replay-board, the message card #replay-message (loading or failure, its Back
 // #replay-message-back), and the controls #replay-controls (#rp-prev, #rp-play, #rp-next, the speed
-// choice #rp-speed, the seek bar #rp-seek, the end line #replay-end). While it shows, REPLAY_KEYS
+// choice #rp-speed, the seek bar #rp-seek, the end line #replay-end). A 3D replay marks #replay
+// replay--scene, which lets the 3D scene behind it show. While it shows, REPLAY_KEYS
 // typed anywhere but in a field reach onCommand; Space and Enter on a button keep their own click.
 
 import { createSimulator, REFUSAL } from './simulator.js';
@@ -206,7 +208,9 @@ export function createReplayViewer({ library, router, view, viewers = { square: 
       clock = createPlaybackClock({ duration: sim.duration });
       const container = view.ready({ duration: sim.duration, kind: sim.replay.header.graph.kind });
       status = 'ready';
-      board = mount({ container, sim });
+      const mounted = mount({ container, sim });
+      if (mine !== opening) { mounted.destroy(); return; } // mounting left the screen (a lost graphics context)
+      board = mounted;
       render();
       refocus();
     },
@@ -307,6 +311,7 @@ export function createReplayView({ root, win = globalThis, onCommand, onSpeed, o
   };
 
   const card = (title, text) => {
+    root.classList.remove('replay--scene');
     el.messageTitle.textContent = title;
     el.messageText.textContent = text;
     el.messageText.classList.toggle('hidden', !text);
@@ -322,12 +327,14 @@ export function createReplayView({ root, win = globalThis, onCommand, onSpeed, o
     close() {
       win.removeEventListener('keydown', onKey);
       root.classList.add('hidden');
+      root.classList.remove('replay--scene');
       el.message.classList.add('hidden');
       for (const k of Object.keys(shown)) delete shown[k];
     },
     loading() { card('Opening the replay…', ''); },
     failed(message) { card('This replay cannot be played', message); },
-    ready({ duration }) {
+    ready({ duration, kind }) {
+      root.classList.toggle('replay--scene', kind === 'box');
       el.message.classList.add('hidden');
       el.controls.classList.remove('hidden');
       const step = seekStep(duration);
