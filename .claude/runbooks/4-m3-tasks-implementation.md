@@ -1,7 +1,47 @@
 # Runbook: m3-tasks-implementation
 
 Created: 2026-10-09 · Source: /runbook-create interview (runbook planning-to-m3 step 17) · Model: opus
-Last step number: 31
+Last step number: 35
+
+## [ ] 32. Implement task 115 — Three cube 3D presets and no no-guess on a side of 2
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 115 --review
+```
+
+## [ ] 33. Implement task 116 — Update documentation for feature `3d-play-flow`
+
+Depends on: 32
+
+Context: none
+
+```prompt
+/task-implement 116 --review
+```
+
+## [ ] 34. Implement task 117 — Movement playback holds each sample, then interpolates
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 117 --review
+```
+
+## [ ] 35. Implement task 118 — Update documentation for feature `replay-playback`
+
+Depends on: 34
+
+Context: none
+
+```prompt
+/task-implement 118 --review
+```
 
 ## [ ] 1. Implement task 84 — Electron main process: window, game protocol, window state and crash log
 
@@ -125,7 +165,8 @@ Context: none
 
 Depends on: none
 
-Context: none
+Context:
+- 2026-10-11 (amend): task 95 was re-planned for the three 3D cube presets (12 catalogue boards, not 18) and waits on task 115, which step 32 runs.
 
 ```prompt
 /task-implement 95 --review
@@ -147,7 +188,8 @@ Depends on: 6, 9, 13
 
 Needs: agent+human
 
-Context: none
+Context:
+- 2026-10-11 (amend): task 97 was re-planned for 12 leaderboards, not 18, after the double-layer 3D presets were dropped.
 
 ```prompt
 /task-implement 97 --review --rounds 2
@@ -177,7 +219,8 @@ Context: none
 
 Depends on: none
 
-Context: none
+Context:
+- 2026-10-11 (amend): task 100 was re-planned for 14 achievements (a win on each of the three 3D cube presets) and waits on task 115, which step 32 runs.
 
 ```prompt
 /task-implement 100 --review
@@ -219,7 +262,8 @@ Context: none
 
 Depends on: 14, 15
 
-Context: none
+Context:
+- 2026-10-11 (amend): task 104 was re-planned so the 3D board picker lists the three cube presets only.
 
 ```prompt
 /task-implement 104 --review

@@ -24,8 +24,8 @@ In scope (m2-3d-joins):
 
 - The 3D board identity: mode 3D, X, Y and Z, mine count and the no-guess
   setting. Every exact combination is its own board, preset or custom; the
-  six presets are recognised from their exact size and mine count.
-- 3D display labels: "Cube Expert", "Double layer Beginner · no-guess",
+  three cube presets are recognised from their exact size and mine count.
+- 3D display labels: "Cube Expert", "Cube Beginner · no-guess",
   "10 × 10 × 10 · 80 mines".
 - Building a summary from a 3D game: the engine's summary or counts, the
   3D session's elapsed time, its board choice, seed and generator version.
@@ -64,10 +64,11 @@ owns records.
   mode 3D, width X, height Y, depth Z, mines and no-guess, with no grid
   field. Its key is derived the same way and carries the mode, so a 3D key
   never equals a 2D key; Classic 2D keys are unchanged. The label names a
-  preset as "Double layer" or "Cube" followed by Beginner, Intermediate or
-  Expert, recognised from the exact size and mine count `3d-play-flow`
-  lists, and any other board by its size and mine count. A custom board
-  that matches a preset exactly is that preset's board.
+  preset as "Cube" followed by Beginner, Intermediate or Expert, recognised
+  from the exact size and mine count `3d-play-flow` lists, and any other
+  board by its size and mine count — a double-layer board, whose sizes
+  `3d-play-flow` does not offer as presets, included. A custom board that
+  matches a preset exactly is that preset's board.
 - **3D summary.** `game-summary`'s builder accepts the 3D board choice. The
   engine's counts over the box graph (`3d-board-graph`) give 3BV, 3BV
   solved and clicks by kind; 3BV/s, efficiency and best eligibility are the
@@ -84,10 +85,9 @@ owns records.
   from won games, strictly better replaces, a tie keeps the earlier holder,
   and every recorded 3D summary returns the comparison against the bests
   that stood before it.
-- **Board listing.** The boards-played query takes a mode: for 3D, the six
-  presets in the order double layer Beginner, Intermediate, Expert, then
-  cube Beginner, Intermediate, Expert — each with and without no-guess —
-  then custom 3D boards by last played.
+- **Board listing.** The boards-played query takes a mode: for 3D, the
+  three presets in the order cube Beginner, Intermediate, Expert — each with
+  and without no-guess — then custom 3D boards by last played.
 
 ## Data and state
 

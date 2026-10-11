@@ -49,8 +49,9 @@ composed from the `screen-components` kit and routed by `game-shell`'s
 screen router.
 
 - **Board picker.** A 2D | 3D switch, the standard boards of the chosen
-  mode (Beginner, Intermediate, Expert in Classic 2D; the six double-layer
-  and cube presets in 3D) and a no-guess on/off switch. Only boards in
+  mode (Beginner, Intermediate, Expert in Classic 2D; the three cube
+  presets, Beginner, Intermediate and Expert, in 3D) and a no-guess on/off
+  switch. Only boards in
   `steam-leaderboards`' catalogue are offered. It opens on the board passed
   by the route, or else on the board last viewed here this session, or else
   Classic 2D Expert with no-guess off.

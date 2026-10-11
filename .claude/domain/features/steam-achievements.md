@@ -1,8 +1,8 @@
 # Steam achievements
 
-The first set of Steam achievements: about seventeen milestones for Classic
+The first set of Steam achievements: about fourteen milestones for Classic
 2D and 3D play — first wins, a no-guess-off Expert win, 3BV/s and efficiency
-thresholds, a win without flags, and a win on each 3D preset — evaluated
+thresholds, a win without flags, and a win on each 3D cube preset — evaluated
 from each finished game's summary, unlocked through Steam and shown by its
 overlay, and caught up from the stats history whenever a game ran without
 Steam.
@@ -40,8 +40,8 @@ no-guess on or off unless stated:
   of at least 100 % and of at least 150 % (two).
 - **No flags** — a Classic 2D Intermediate or Expert win without placing a
   flag.
-- **3D presets** — a win on each of the six 3D presets: double layer and
-  cube, Beginner, Intermediate and Expert (six).
+- **3D presets** — a win on each of the three 3D cube presets: Beginner,
+  Intermediate and Expert (three).
 - **3D speed** — a cube Expert win at 3BV/s of at least a set threshold.
 
 Non-goals:

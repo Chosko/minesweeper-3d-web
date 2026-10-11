@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 114
+Last task number: 118
 
 ---
 
@@ -449,7 +449,7 @@ Feature: steam-cloud-saves
 Status: [MISSING]
 Target: claude
 Files: js/leaderboards/catalogue.js, js/leaderboards/details.js, js/leaderboards/eligibility.js, tests/leaderboards-catalogue.test.mjs
-Preconditions: 61, 62
+Preconditions: 61, 62, 115
 Feature: steam-leaderboards
 
 ---
@@ -499,7 +499,7 @@ Feature: steam-leaderboards
 Status: [MISSING]
 Target: claude
 Files: js/achievements/catalogue.js, js/achievements/evaluate.js, tests/achievements-evaluate.test.mjs, .claude/domain/features/steam-achievements.md
-Preconditions: 62
+Preconditions: 62, 115
 Feature: steam-achievements
 
 ---
@@ -641,5 +641,45 @@ Target: claude
 Files: README.md, .claude/context/input.md, .claude/context/app-shell.md, .claude/context/testing.md, .claude/context/INDEX.md
 Preconditions: 111, 112, 113
 Feature: input-rebinding
+
+---
+
+## 115. Three cube 3D presets and no no-guess on a side of 2
+
+Status: [MISSING]
+Target: claude
+Files: js/mode3d/board-choice.js, js/records/board.js, js/records/model.js, js/records/screen.js, index.html, css/components.css, tests/mode3d-board-choice.test.mjs, tests/records-board-3d.test.mjs, tests/records-model-3d.test.mjs, tests/records-screen-3d.test.mjs
+Preconditions: none
+Feature: 3d-play-flow
+
+---
+
+## 116. Update documentation for feature `3d-play-flow`
+
+Status: [MISSING]
+Target: claude
+Files: README.md, .claude/context/mode3d.md, .claude/context/records.md, .claude/context/testing.md, .claude/context/app-shell.md, .claude/context/INDEX.md
+Preconditions: 115
+Feature: 3d-play-flow
+
+---
+
+## 117. Movement playback holds each sample, then interpolates
+
+Status: [MISSING]
+Target: claude
+Files: js/replay/format.js, js/replay/viewer-2d.js, js/replay/viewer-3d.js, tests/replay-format.test.mjs, tests/replay-viewer.test.mjs, tests/replay-viewer-3d.test.mjs
+Preconditions: none
+Feature: replay-playback
+
+---
+
+## 118. Update documentation for feature `replay-playback`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/replay.md, .claude/context/testing.md, .claude/context/INDEX.md
+Preconditions: 117
+Feature: replay-playback
 
 ---

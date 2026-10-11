@@ -24,10 +24,10 @@ leaderboard logic; the screen is `leaderboard-screen`.
 
 In scope (m3-on-steam):
 
-- The leaderboard catalogue: 18 boards — Classic 2D square Beginner,
-  Intermediate and Expert, and the six 3D presets (double layer and cube,
-  Beginner, Intermediate and Expert), each with no-guess on and off — and
-  the stable Steam leaderboard name of each.
+- The leaderboard catalogue: 12 boards — Classic 2D square Beginner,
+  Intermediate and Expert, and the three 3D cube presets (Beginner,
+  Intermediate and Expert), each with no-guess on and off — and the stable
+  Steam leaderboard name of each.
 - Eligibility: which finished games are submitted.
 - Submission: replay verification, score and details upload, replay
   sharing and attachment.
@@ -41,6 +41,8 @@ Non-goals:
 
 - The flat 3D presets (9 × 9 × 1, 16 × 16 × 1, 30 × 16 × 1) — dropped from
   the 3D mode, and redundant with Classic 2D's boards.
+- Double-layer 3D boards (8 × 8 × 2, 14 × 14 × 2, 25 × 16 × 2) — not 3D
+  presets (`3d-play-flow`), so custom boards here.
 - Campaign-level and daily-board leaderboards, ranked by 3BV/s — deferred
   to `m4-campaigns` and `m5-core-complete`; the catalogue gains entries,
   the mechanism stays.
@@ -122,7 +124,7 @@ only through `steam-desktop-host`'s bridge and capability adapter.
 - **Outbox blob store** — the pending replays, one per outbox entry, deleted
   once the entry is submitted or dropped.
 - **Shared replay files** — in Steam remote storage, one per leaderboard,
-  replaced when a new best is attached. At most 18 files.
+  replaced when a new best is attached. At most 12 files.
 - **Best cache** — in memory for the session.
 
 ## Interfaces and contracts

@@ -130,10 +130,10 @@ Tasks: 51, 52, 53, 54, 55
 
 ## 3d-play-flow — 3D board choice, safe first click, no-guess switch and results hand-off
 
-Status: [ITERATED]
+Status: [PLANNED]
 Doc: .claude/domain/features/3d-play-flow.md
 Source: product-design.md § 3D mode (m2-3d-joins)
-Tasks: 56, 57, 58, 59, 60
+Tasks: 56, 57, 58, 59, 60, 115, 116
 
 ---
 
@@ -148,10 +148,10 @@ Tasks: 65, 66, 67, 68, 69, 70
 
 ## replay-playback — Replay simulator, verifier and the replay viewer
 
-Status: [ITERATED]
+Status: [PLANNED]
 Doc: .claude/domain/features/replay-playback.md
 Source: product-design.md § Replays (m2-3d-joins)
-Tasks: 76, 77, 78, 79, 80
+Tasks: 76, 77, 78, 79, 80, 117, 118
 
 ---
 
