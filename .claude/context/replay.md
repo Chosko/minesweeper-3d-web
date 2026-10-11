@@ -15,7 +15,8 @@ wiring, the viewer screen's view binder and the 2D viewer's mount.
 
 - `js/replay/format.js` — the replay object, the binary blob's layout, the
   encoder, and the decoder `replay-playback` shares: one decoder per format
-  version plus the upgrade steps to the current one; the final-state digest.
+  version plus the upgrade steps to the current one, and each version's
+  movement sampling intervals; the final-state digest.
 - `js/replay/recorder.js` — the recorder and sealer: one recorder per game
   session, fed actions and movement on the game clock, sealing to the blob
   and its listing fields; the movement cap.
@@ -79,16 +80,21 @@ view's Watch open it ([app-shell.md](app-shell.md)).
     `view` 3D only.
   - `check` — `{outcome, elapsedMs, bbbv, bbbvSolved, clicks: {reveal, flag,
     chord: {effective, wasted}}, digest}`.
+  - `sampleIntervalMs` — on a decoded replay only: its movement sampling
+    interval, which the blob does not store and the encoder ignores.
 - `REPLAY_FORMAT_VERSION` (1), `ACTION_KINDS` (the engine's `CLICK_KINDS`),
   `MOVEMENT_TYPES` (`sample`, `cursor`, `view`), `SAMPLE_ARITY` (`square`
   2, `box` 5).
+- `sampleIntervalMs(version, mode)` → the movement sampling interval in ms
+  a replay of that mode was recorded at under that format version (version
+  1: 2D 50, 3D 100), `undefined` for a version this build does not know.
 - `encodeReplay(replay, {version?})` → `Uint8Array`; a `RangeError` on a
   replay it cannot write. `version` stamps another version on the current
   body, for the decoder's version tests only.
 - `decodeReplay(blob)` — `Uint8Array` or `ArrayBuffer` → the replay at the
-  current version; throws `ReplayNewerVersionError` (`storedVersion`,
-  `currentVersion`) for a newer blob and `ReplayUnreadableError` for
-  anything else it cannot read.
+  current version, carrying `sampleIntervalMs`; throws
+  `ReplayNewerVersionError` (`storedVersion`, `currentVersion`) for a newer
+  blob and `ReplayUnreadableError` for anything else it cannot read.
 - `createReplayDecoder({current, decoders, upgrades})` — a decoder over a
   set of versions; `decodeReplay` is it over this build's.
 - `cellStateDigest({revealed, flagged, hidden})` → a 32-bit FNV-1a of one
@@ -209,16 +215,19 @@ view's Watch open it ([app-shell.md](app-shell.md)).
   `ready({duration, kind})` → the board area, `render(state)`, `destroy`.
 
 `js/replay/viewer-2d.js`
-- `movementTrack(movement)`, `pointerAt(track, t)` → `[x, y]` in cells or
-  null, `cursorAt(track, t)` → cell or -1, `pointerPixel(layout, scroll,
-  point)` → canvas CSS pixels.
+- `movementTrack(movement, interval?)` — `interval` the replay's
+  `sampleIntervalMs`, the 2D sampler's `SAMPLE_INTERVAL_MS` when not given;
+  `pointerAt(track, t)` → `[x, y]` in cells or null, `cursorAt(track, t)` →
+  cell or -1, `pointerPixel(layout, scroll, point)` → canvas CSS pixels.
 - `createViewer2D({view, sim, pointer})` → `{track, draw(frame), place(),
   destroy()}`; `mountViewer2D({container, sim, win?})` mounts the board
   view (no play input) and the `.replay-pointer` element.
 
 `js/replay/viewer-3d.js`
-- `cameraTrack(movement, cappedAt?)`, `cameraAt(track, t)` → `[x, y, z,
-  yaw, pitch]` in cells and radians or null, `viewModeAt(track, t)`,
+- `cameraTrack(movement, cappedAt?, interval?)` — `cappedAt` the header's
+  `movementEndedAt`, `interval` the replay's `sampleIntervalMs`, the 3D
+  sampler's `SAMPLE_INTERVAL_MS` when not given; `cameraAt(track, t)` →
+  `[x, y, z, yaw, pitch]` in cells and radians or null, `viewModeAt(track, t)`,
   `viewToggles(mode)` → `{shift, space, ctrl}`, `worldPose(sample, box,
   spacing)` → `{x, y, z, yaw, pitch}` in world units.
 - `createViewer3D({sim, scene, spacing})` → `{track, view, draw(frame),
@@ -235,8 +244,10 @@ view's Watch open it ([app-shell.md](app-shell.md)).
   checksum is verified and a newer version recognised before its body is
   read; a damaged blob is never taken for a newer one. Each version keeps
   its decoder (`DECODERS`), and `UPGRADES[v]` turns a version-v replay into
-  v + 1; a new version adds a decoder and an upgrade step, never edits an
-  old one.
+  v + 1; a new version adds a decoder, an upgrade step and its sampling
+  intervals (`SAMPLE_INTERVALS_MS`), never edits an old one. The decoder
+  gives each replay the interval of its mode under the version it was
+  stored at, so a replay keeps the interval it was recorded at.
 - **The game clock.** Every time is the session timer's elapsed time,
   floored, so paused time is absent from a replay; a time that runs
   backwards is held at its stream's previous time. Actions before the timer
@@ -326,15 +337,24 @@ view's Watch open it ([app-shell.md](app-shell.md)).
 - **A shell screen, not a mode.** The viewer plays no game of its own,
   records nothing, plays no sound and is never paused; a replay still
   loading when the screen closes is dropped.
+- **Hold, then interpolate.** The recorder stores no sample equal to the
+  previous one, so a gap between two samples longer than the replay's
+  sampling interval is a still stretch. Between two samples, the 2D
+  pointer (`pointerAt`) and the 3D camera (`cameraAt`) hold the earlier one
+  until one interval before the later one, then interpolate linearly to
+  it; across a gap of one interval or less they interpolate throughout.
+  After the last sample both hold it. The 2D cursor and the 3D view mode
+  are events and switch at their recorded times.
 - **2D playback.** The Classic 2D board view draws the simulator's game
-  from each frame's `changed`; the recorded pointer is interpolated
-  linearly between samples and the recorded cursor is the focus ring; on a
-  board that scrolls, the view follows the pointer's cell, else the
-  cursor's.
-- **3D playback.** The renderer draws the 3D state view over the
-  simulator's game; the camera is the recorded position, yaw and pitch,
-  interpolated between samples and held at the last one recorded before a
-  movement cap, with the recorded view mode applied; player input never
+  from each frame's `changed`; the recorded pointer is placed by hold,
+  then interpolate, at the replay's sampling interval, and the recorded
+  cursor is the focus ring; on a board that scrolls, the view follows the
+  pointer's cell, else the cursor's.
+- **3D playback.** The renderer draws the 3D state view over the simulator's
+  game; the camera is the recorded position, yaw and pitch, placed by hold,
+  then interpolate, at the replay's sampling interval — the first sample
+  before it is recorded, and from a movement cap on the last one recorded
+  before the cap — with the recorded view mode applied; player input never
   reaches it. Crossing the end of the game either way marks every cell, so
   the loss view comes and goes whole.
 
@@ -386,7 +406,10 @@ view's Watch open it ([app-shell.md](app-shell.md)).
   `readBodyV1` first; regenerate the fixtures only for a new format.
 - Changing a sampling interval, a quantisation step, the movement cap or
   compression: re-run `node dev/measure-replays.mjs` and read its head
-  comment (how the constants are chosen).
+  comment (how the constants are chosen). The current format version's
+  intervals in `format.js` must equal the samplers' `SAMPLE_INTERVAL_MS`
+  (`tests/replay-format.test.mjs`), so a new interval comes with a new
+  format version.
 - Changing what a session records or when: the recording paragraph in the
   head comment of `js/classic2d/session.js` or `js/mode3d/session.js`.
 - A determinism failure: read `tests/replay-determinism.test.mjs` and the
@@ -401,5 +424,6 @@ view's Watch open it ([app-shell.md](app-shell.md)).
   constants come from feature replay-playback § Snapshot interval.
 - Changing a control, a key or button, the overlay or the failure lines:
   the head comment of `viewer.js` and the `replay` wiring in `js/main.js`.
-- Changing how a viewer draws or places the camera: `viewer-2d.js` or
-  `viewer-3d.js`, and `REPLAY_SCENE` / `mountReplay3D` in `js/main.js`.
+- Changing how a viewer draws or places the pointer or camera:
+  `viewer-2d.js` or `viewer-3d.js` (`pointerAt`, `cameraAt` and their head
+  comments), and `REPLAY_SCENE` / `mountReplay3D` in `js/main.js`.

@@ -493,7 +493,10 @@ browser checks for everything that needs WebGL or the DOM.
   (`js/replay/format.js`): exact round-trips of 2D and 3D replays (mines
   given in any order come back ascending), an empty, an abandoned and a
   capped movement stream, compact delta encoding of large times and long
-  streams, the action kinds, movement types and sample arity, the encoder's
+  streams, the action kinds, movement types and sample arity, the movement
+  sampling interval the decoder gives each replay by mode and format
+  version (equal to the samplers' constants at the current version, never
+  stored in the blob), the encoder's
   `RangeError` on a malformed replay, the cursor event on the square graph
   and the view-mode event on the box only, a newer version refused with its
   own error, an older one decoded and upgraded step by step, a throwing
@@ -576,35 +579,40 @@ browser checks for everything that needs WebGL or the DOM.
   first check value that differs, an elapsed time never before the last
   action, each refusal (newer format, profile or rules version,
   unreadable), and both modules DOM-free.
-- `tests/replay-viewer.test.mjs` — the replay viewer
-  (`js/replay/clock.js`, `js/replay/viewer-2d.js`, `js/replay/viewer.js`):
-  the clock's speeds, advance, end and restart, seek and speed bounds; the
-  replay clock in the overlay timer format, the overlay figures and the end
-  line in the results time format; the 2D pointer interpolated between
-  samples, the cursor as the focus ring, the pointer placed through the
-  board layout and scroll and following a refit while paused, the view
-  following the pointer, else the cursor, on a scrolling board; opening
-  from a blob, a replay object, the hand-off's `{blob}` or a library id,
-  verification first and each failure line with Back still working, no
-  viewer for the graph, a replay still loading when the screen closes;
-  ticks driving the clock and the simulator, the end of a replay, seek and
-  step, the seek bar step, keyboard and controller commands, a lost game's
-  loss view; the viewer reaching no records, sound or pause; static checks
-  of the `#replay` kit markup and its wiring in `js/main.js`. One
-  Playwright test plays a recorded 2D fixture through to the end (skipped
-  when Playwright or chromium is unavailable).
+- `tests/replay-viewer.test.mjs` — the replay viewer (`js/replay/clock.js`,
+  `js/replay/viewer-2d.js`, `js/replay/viewer.js`): the clock's speeds,
+  advance, end and restart, seek and speed bounds; the replay clock in the
+  overlay timer format, the overlay figures and the end line in the results
+  time format; the 2D pointer held through a still stretch and interpolated
+  over the last sampling interval before the next sample, across a shorter
+  gap throughout, at the replay's interval or the 2D sampler's by default,
+  the cursor as the focus ring, the pointer placed through the board layout
+  and scroll and following a refit while paused, the view following the
+  pointer, else the cursor, on a scrolling board; opening from a blob, a
+  replay object, the hand-off's `{blob}` or a library id, verification first
+  and each failure line with Back still working, no viewer for the graph, a
+  replay still loading when the screen closes; ticks driving the clock and
+  the simulator, the end of a replay, seek and step, the seek bar step,
+  keyboard and controller commands, a lost game's loss view; the viewer
+  reaching no records, sound or pause; static checks of the `#replay` kit
+  markup and its wiring in `js/main.js`. One Playwright test plays a
+  recorded 2D fixture through to the end (skipped when Playwright or
+  chromium is unavailable).
 - `tests/replay-viewer-3d.test.mjs` — the 3D viewer
-  (`js/replay/viewer-3d.js`): the recorded camera interpolated in cells and
-  radians, whole turns kept, held after the movement cap (also on a capped
-  fixture), the recorded view mode, the camera in world units at any
-  spacing; drawing the simulator's 3D state view with its changes, every
-  cell when the game crosses its end either way, a viewer that leaves the
-  screen while it mounts dropped, `replay--scene`; DOM-free and reaching no
-  records, sound, pause or player input; static checks of the box viewer,
-  the replay camera and a lost graphics context in `js/main.js`. One
-  Playwright test plays a recorded 3D fixture through to the end on the
-  renderer, seeks back past the end and loses the graphics context
-  (skipped when Playwright or chromium is unavailable).
+  (`js/replay/viewer-3d.js`): the recorded camera in cells and radians, held
+  through a still stretch and interpolated over the last sampling interval
+  before the next sample, across a shorter gap throughout, at the replay's
+  interval or the 3D sampler's by default, whole turns kept, held after the
+  movement cap (also on a capped fixture), the recorded view mode, the
+  camera in world units at any spacing; drawing the simulator's 3D state
+  view with its changes, every cell when the game crosses its end either
+  way, a viewer that leaves the screen while it mounts dropped,
+  `replay--scene`; DOM-free and reaching no records, sound, pause or player
+  input; static checks of the box viewer, the replay camera and a lost
+  graphics context in `js/main.js`. One Playwright test plays a recorded 3D
+  fixture through to the end on the renderer, seeks back past the end and
+  loses the graphics context (skipped when Playwright or chromium is
+  unavailable).
 - `tests/fixtures/replays/` — recorded games, one `.msrp` blob each, listed
   in `index.json` with a note (2D and 3D, each with a win, a loss, an
   abandon and wasted clicks; a 3D game with flags before the first reveal).
