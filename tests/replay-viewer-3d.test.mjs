@@ -1,5 +1,6 @@
 // 3D replay viewer (replay-playback): the recorded camera track (js/replay/viewer-3d.js) — position,
-// yaw and pitch interpolated between samples, held after the movement cap, the recorded view mode,
+// yaw and pitch held through a still stretch and interpolated over the last sampling interval
+// before the next sample, held after the movement cap, the recorded view mode,
 // the camera in world units — the 3D viewer over the simulator's 3D state view, its wiring in
 // js/main.js (the box viewer, the replay camera that ignores player input, a lost graphics context),
 // and in a browser a recorded 3D replay from tests/fixtures/replays/ played through to the end.
@@ -50,6 +51,33 @@ test('the yaw keeps its whole turns, so the camera turns the way it was turned',
   const track = cameraTrack([sample(0, [0, 0, 0, ANGLE_STEPS - 64, 0]), sample(100, [0, 0, 0, ANGLE_STEPS + 64, 0])]);
   const yaw = cameraAt(track, 50)[3];
   assert.ok(near(yaw, TURN), `through a whole turn, not back across it (${yaw})`);
+});
+
+test('the recorded camera holds each sample, then interpolates over the last interval before the next', () => {
+  const track = cameraTrack([sample(0, [0, 0, 0, 0, 0]), sample(100, [16, 0, 0, 0, 0]), sample(600, [48, 16, 0, ANGLE_STEPS / 4, 0])], null, 100);
+  assert.equal(track.interval, 100);
+  assert.deepEqual(cameraAt(track, 50), [0.5, 0, 0, 0, 0], 'a gap of exactly one interval interpolates throughout');
+  assert.deepEqual(cameraAt(track, 300), [1, 0, 0, 0, 0], 'a still stretch holds the earlier sample');
+  assert.deepEqual(cameraAt(track, 500), [1, 0, 0, 0, 0], 'held until one interval before the next sample');
+  const mid = cameraAt(track, 550);
+  assert.deepEqual(mid.slice(0, 3), [2, 0.5, 0], 'then interpolated linearly to it');
+  assert.ok(near(mid[3], TURN / 8));
+  assert.deepEqual(cameraAt(track, 600).slice(0, 3), [3, 1, 0]);
+});
+
+test('across a gap shorter than the interval the camera interpolates throughout', () => {
+  const track = cameraTrack([sample(0, [0, 0, 0, 0, 0]), sample(100, [16, 0, 0, 0, 0]), sample(400, [64, 0, 0, 0, 0])], null, 200);
+  assert.deepEqual(cameraAt(track, 50), [0.5, 0, 0, 0, 0]);
+  assert.deepEqual(cameraAt(track, 200), [1, 0, 0, 0, 0], 'a longer gap holds until one interval before');
+  assert.deepEqual(cameraAt(track, 300), [2.5, 0, 0, 0, 0]);
+});
+
+test('the camera track takes the 3D recording interval unless given one; the 3D viewer takes the replay\'s', () => {
+  assert.equal(cameraTrack([]).interval, 100);
+  const sim = createSimulator(blobOf(CUBE));
+  const viewer = createViewer3D({ sim, scene: fakeScene(), spacing: 1 });
+  assert.equal(sim.replay.sampleIntervalMs, 100);
+  assert.equal(viewer.track.interval, sim.replay.sampleIntervalMs);
 });
 
 test('after the point where the movement was capped, the camera holds its last recorded position', () => {
@@ -276,7 +304,7 @@ test('in a browser, a recorded 3D replay plays from its fixture through to the e
       const m = await import('/js/replay/viewer-3d.js');
       const { decodeReplay } = await import('/js/replay/format.js');
       const replay = decodeReplay(new Uint8Array(await (await fetch('/tests/fixtures/replays/3d-cube-beginner-lost.msrp')).arrayBuffer()));
-      const track = m.cameraTrack(replay.movement, replay.header.movementEndedAt);
+      const track = m.cameraTrack(replay.movement, replay.header.movementEndedAt, replay.sampleIntervalMs);
       const { SPACING_START } = await import('/js/input.js');
       return m.worldPose(m.cameraAt(track, time), { X: 6, Y: 6, Z: 6 }, SPACING_START);
     }, t);

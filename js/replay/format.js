@@ -23,6 +23,9 @@
 //   check    { outcome, elapsedMs, bbbv, bbbvSolved, clicks, digest } — outcome won, lost or
 //            abandoned; clicks { reveal, flag, chord } each { effective, wasted }; digest is
 //            cellStateDigest of the final state.
+// A decoded replay also carries sampleIntervalMs, its movement sampling interval: the recording
+// constant for its mode under the format version it was stored at (sampleIntervalMs(version,
+// mode)). The blob does not store it and the encoder ignores it.
 //
 // Blob layout (all integers unsigned LEB128 varints unless noted; signed ones zigzag-encoded):
 //   envelope  'MSRP' · format version · body · CRC-32 of everything before it (4 bytes, LE)
@@ -55,6 +58,16 @@ export const REPLAY_FORMAT_VERSION = 1;
 export const ACTION_KINDS = CLICK_KINDS;
 export const MOVEMENT_TYPES = Object.freeze(['sample', 'cursor', 'view']);
 export const SAMPLE_ARITY = Object.freeze({ square: 2, box: 5 });
+
+// The movement sampling interval in ms each format version was recorded at, 2D and 3D: the
+// samplers' SAMPLE_INTERVAL_MS (js/replay/sampler-2d.js, js/replay/sampler-3d.js) at that version.
+const SAMPLE_INTERVALS_MS = Object.freeze({ 1: Object.freeze({ '2d': 50, '3d': 100 }) });
+
+// The movement sampling interval of a replay of this mode stored at this format version, or
+// undefined for a version this build does not know.
+export function sampleIntervalMs(version, mode) {
+  return SAMPLE_INTERVALS_MS[version]?.[mode === MODE_3D ? '3d' : '2d'];
+}
 
 const GRAPH_KINDS = ['square', 'box'];
 const MAGIC = [0x4d, 0x53, 0x52, 0x50]; // 'MSRP'
@@ -422,7 +435,10 @@ function readBodyV1(r) {
   for (const k of CLICK_KINDS) clicks[k] = { effective: r.uint(), wasted: r.uint() };
   const digest = r.u32();
   if (!r.done) fail('trailing bytes');
-  return { header, actions, movement, check: { outcome, elapsedMs, bbbv, bbbvSolved, clicks, digest } };
+  return {
+    header, actions, movement, check: { outcome, elapsedMs, bbbv, bbbvSolved, clicks, digest },
+    sampleIntervalMs: sampleIntervalMs(1, mode),
+  };
 }
 
 const DECODERS = Object.freeze({ 1: readBodyV1 });

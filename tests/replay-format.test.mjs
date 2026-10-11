@@ -1,15 +1,18 @@
 // The replay format (js/replay/format.js): the versioned binary blob — header, delta-encoded
 // action and movement streams, check values — its encoder, and the decoder replay-playback
 // shares: exact round-trips for 2D and 3D replays, an empty and a capped movement stream, the
+// movement sampling interval the decoder gives each replay by mode and format version, the
 // per-version upgrade path, a newer version refused with its own error and a corrupt blob
 // reported as unreadable.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   REPLAY_FORMAT_VERSION, ACTION_KINDS, MOVEMENT_TYPES, SAMPLE_ARITY,
-  encodeReplay, decodeReplay, createReplayDecoder, cellStateDigest,
+  encodeReplay, decodeReplay, createReplayDecoder, cellStateDigest, sampleIntervalMs,
   ReplayNewerVersionError, ReplayUnreadableError,
 } from '../js/replay/format.js';
+import { SAMPLE_INTERVAL_MS as INTERVAL_2D } from '../js/replay/sampler-2d.js';
+import { SAMPLE_INTERVAL_MS as INTERVAL_3D } from '../js/replay/sampler-3d.js';
 import { createBoardIdentity, MODE_3D } from '../js/records/board.js';
 import { REFERENCE_PROFILE, PROFILE_3D } from '../js/engine/profiles.js';
 import { createGameWithMines } from '../js/engine/rules.js';
@@ -86,20 +89,20 @@ test('a 2D replay round-trips exactly, mines given in any order come back ascend
   const r = replay2D();
   const bytes = encodeReplay(r);
   assert.ok(bytes instanceof Uint8Array);
-  assert.deepEqual(decodeReplay(bytes), r);
+  assert.deepEqual(decodeReplay(bytes), { ...r, sampleIntervalMs: 50 });
 });
 
 test('a 3D replay round-trips exactly with its box graph, view-mode events and samples', () => {
   const r = replay3D();
   const back = decodeReplay(encodeReplay(r));
-  assert.deepEqual(back, { ...r, header: { ...r.header, mines: [0, 500, 1151] } });
+  assert.deepEqual(back, { ...r, header: { ...r.header, mines: [0, 500, 1151] }, sampleIntervalMs: 100 });
   assert.equal(back.header.graph.kind, 'box');
   assert.deepEqual(back.header.board, r.header.board);
 });
 
 test('an empty movement stream round-trips', () => {
   const r = replay2D({ movement: [] });
-  assert.deepEqual(decodeReplay(encodeReplay(r)), r);
+  assert.deepEqual(decodeReplay(encodeReplay(r)), { ...r, sampleIntervalMs: 50 });
 });
 
 test('a game abandoned after its first reveal round-trips', () => {
@@ -108,7 +111,7 @@ test('a game abandoned after its first reveal round-trips', () => {
     movement: [],
     check: { outcome: 'abandoned', elapsedMs: 0, bbbv: 12, bbbvSolved: 1, clicks: clicks(1, 0, 0), digest: 1 },
   });
-  assert.deepEqual(decodeReplay(encodeReplay(r)), r);
+  assert.deepEqual(decodeReplay(encodeReplay(r)), { ...r, sampleIntervalMs: 50 });
 });
 
 test('a capped movement stream records where movement ended, actions continue after it', () => {
@@ -118,7 +121,7 @@ test('a capped movement stream records where movement ended, actions continue af
   });
   const back = decodeReplay(encodeReplay(r));
   assert.equal(back.header.movementEndedAt, 300);
-  assert.deepEqual(back, r);
+  assert.deepEqual(back, { ...r, sampleIntervalMs: 100 });
 });
 
 test('large times and long streams are delta-encoded compactly and round-trip', () => {
@@ -130,7 +133,7 @@ test('large times and long streams are delta-encoded compactly and round-trip', 
     check: { ...replay3D().check, elapsedMs: 3 * 3600 * 1000 },
   });
   const bytes = encodeReplay(r);
-  assert.deepEqual(decodeReplay(bytes), r);
+  assert.deepEqual(decodeReplay(bytes), { ...r, sampleIntervalMs: 100 });
   assert.ok(bytes.length < movement.length * 12, `${bytes.length} bytes for ${movement.length} samples`);
 });
 
@@ -139,6 +142,26 @@ test('the vocabularies: action kinds, movement types and the sample arity per gr
   assert.deepEqual(MOVEMENT_TYPES, ['sample', 'cursor', 'view']);
   assert.deepEqual(SAMPLE_ARITY, { square: 2, box: 5 });
   assert.equal(REPLAY_FORMAT_VERSION, 1);
+});
+
+// ---------- the movement sampling interval ----------
+
+test('the decoder gives each replay its movement sampling interval: 2D 50 ms, 3D 100 ms under version 1', () => {
+  assert.equal(decodeReplay(encodeReplay(replay2D())).sampleIntervalMs, 50);
+  assert.equal(decodeReplay(encodeReplay(replay3D())).sampleIntervalMs, 100);
+  assert.equal(sampleIntervalMs(1, 'classic-2d'), 50);
+  assert.equal(sampleIntervalMs(1, MODE_3D), 100);
+  assert.equal(sampleIntervalMs(REPLAY_FORMAT_VERSION + 1, MODE_3D), undefined, 'no interval for an unknown version');
+});
+
+test('the current version\'s intervals are the samplers\' recording constants', () => {
+  assert.equal(sampleIntervalMs(REPLAY_FORMAT_VERSION, 'classic-2d'), INTERVAL_2D);
+  assert.equal(sampleIntervalMs(REPLAY_FORMAT_VERSION, MODE_3D), INTERVAL_3D);
+});
+
+test('the interval is not stored: a decoded replay re-encodes to the same bytes', () => {
+  const bytes = encodeReplay(replay3D());
+  assert.deepEqual(encodeReplay(decodeReplay(bytes)), bytes);
 });
 
 // ---------- the encoder refuses what it cannot write ----------

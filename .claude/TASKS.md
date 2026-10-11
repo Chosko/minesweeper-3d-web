@@ -666,7 +666,7 @@ Feature: 3d-play-flow
 
 ## 117. Movement playback holds each sample, then interpolates
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/replay/format.js, js/replay/viewer-2d.js, js/replay/viewer-3d.js, tests/replay-format.test.mjs, tests/replay-viewer.test.mjs, tests/replay-viewer-3d.test.mjs
 Preconditions: none

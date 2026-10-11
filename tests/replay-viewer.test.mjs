@@ -129,17 +129,35 @@ const movement = [
   { time: 500, type: 'sample', values: [-64, 640] },
 ];
 
-test('the recorded pointer is interpolated linearly between samples, in cells', () => {
-  const track = movementTrack(movement);
+test('the recorded pointer holds each sample, then interpolates over the last interval before the next, in cells', () => {
+  const track = movementTrack(movement, 50);
+  assert.equal(track.interval, 50);
   assert.equal(pointerAt(track, 0), null, 'no pointer before the first sample');
   assert.equal(pointerAt(track, 99.9), null);
   assert.deepEqual(pointerAt(track, 100), [1, 2]);
-  assert.deepEqual(pointerAt(track, 125), [1.5, 1]);
+  assert.deepEqual(pointerAt(track, 125), [1.5, 1], 'a gap of exactly one interval interpolates throughout');
   assert.deepEqual(pointerAt(track, 150), [2, 0]);
-  assert.deepEqual(pointerAt(track, 325), [0.5, 5]);
+  assert.deepEqual(pointerAt(track, 325), [2, 0], 'a still stretch holds the earlier sample');
+  assert.deepEqual(pointerAt(track, 450), [2, 0], 'held until one interval before the next sample');
+  assert.deepEqual(pointerAt(track, 475), [0.5, 5], 'then interpolated linearly to it');
   assert.deepEqual(pointerAt(track, 500), [-1, 10], 'off the board stays off the board');
   assert.deepEqual(pointerAt(track, 9000), [-1, 10], 'the last sample holds');
   assert.equal(pointerAt(movementTrack([]), 10), null);
+});
+
+test('across a gap shorter than the interval the pointer interpolates throughout', () => {
+  const track = movementTrack(movement, 100);
+  assert.deepEqual(pointerAt(track, 125), [1.5, 1]);
+  assert.deepEqual(pointerAt(track, 399), [2, 0], 'a longer gap holds until one interval before');
+  assert.deepEqual(pointerAt(track, 450), [0.5, 5]);
+});
+
+test('the pointer track takes the 2D recording interval unless given one; the 2D viewer takes the replay\'s', () => {
+  assert.equal(movementTrack(movement).interval, 50);
+  const sim = createSimulator(blobOf(WON));
+  const v = createViewer2D({ view: fakeView(), sim, pointer: fakePointer() });
+  assert.equal(sim.replay.sampleIntervalMs, 50);
+  assert.equal(v.track.interval, sim.replay.sampleIntervalMs);
 });
 
 test('the recorded keyboard and controller cursor is the last cursor cell at or before the time', () => {

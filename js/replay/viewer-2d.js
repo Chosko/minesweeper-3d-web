@@ -2,11 +2,16 @@
 // with the recorded pointer and the recorded keyboard and controller cursor. DOM-free at import:
 // createViewer2D is driven by calls; mountViewer2D is its browser wiring.
 //
-// movementTrack(movement) → track: the replay's movement stream (js/replay/format.js) split into its
-//   pointer samples and cursor cells, for lookups by time.
+// movementTrack(movement, interval?) → track: the replay's movement stream (js/replay/format.js)
+//   split into its pointer samples and cursor cells, for lookups by time; interval is the replay's
+//   movement sampling interval (its sampleIntervalMs), js/replay/sampler-2d.js SAMPLE_INTERVAL_MS
+//   when not given.
 // pointerAt(track, t) → [x, y] the recorded pointer at replay time t in cells from the board's
-//   top-left corner, interpolated linearly between the samples around t and held at the last one;
-//   null before the first sample. Off the board the values run below 0 or past the board's size.
+//   top-left corner. Between two samples it holds the earlier one until one interval before the
+//   later one, then interpolates linearly to it (throughout, across a gap of one interval or less):
+//   the recorder stores no sample equal to the previous one, so a longer gap is a still stretch.
+//   Held at the last sample; null before the first. Off the board the values run below 0 or past
+//   the board's size.
 // cursorAt(track, t) → the cell of the last cursor event at or before t, or -1.
 // pointerPixel(layout, scroll, [x, y]) → { x, y } that point in canvas CSS pixels, through the board
 //   view's layout and scroll (the inverse of js/replay/sampler-2d.js boardPoint).
@@ -17,7 +22,8 @@
 //   sim      the simulator (js/replay/simulator.js).
 //   pointer  { place(x, y), hide() } — the pointer drawn over the board, in canvas CSS pixels.
 //   draw(frame) a simulator frame: redraws the cells it changed, moves the focus ring to the recorded
-//            cursor and the pointer to its interpolated position; on a board that scrolls, the view
+//            cursor and the pointer to its position at the frame's time (pointerAt, at the
+//            replay's sampling interval); on a board that scrolls, the view
 //            follows the pointer's cell, else the cursor's.
 //   place()  re-places the pointer when the board view's layout or scroll moved since it was last
 //            placed (a refit or a scroll while paused); call it every frame nothing is drawn.
@@ -26,13 +32,14 @@
 // container (js/classic2d/board-view.js mountBoardView, no play input) and the pointer as an element
 // over it.
 
-import { SAMPLE_STEPS } from './sampler-2d.js';
+import { SAMPLE_STEPS, SAMPLE_INTERVAL_MS } from './sampler-2d.js';
 import { mountBoardView } from '../classic2d/board-view.js';
 
-export function movementTrack(movement) {
+export function movementTrack(movement, interval = SAMPLE_INTERVAL_MS) {
   const samples = movement.filter((e) => e.type === 'sample');
   const cursors = movement.filter((e) => e.type === 'cursor');
   return Object.freeze({
+    interval,
     sampleTimes: Float64Array.from(samples, (e) => e.time),
     xs: Float64Array.from(samples, (e) => e.values[0] / SAMPLE_STEPS),
     ys: Float64Array.from(samples, (e) => e.values[1] / SAMPLE_STEPS),
@@ -52,11 +59,13 @@ function countAtOrBefore(times, t) {
 }
 
 export function pointerAt(track, t) {
-  const { sampleTimes: times, xs, ys } = track;
+  const { sampleTimes: times, xs, ys, interval } = track;
   const i = countAtOrBefore(times, t) - 1;
   if (i < 0) return null;
-  if (i === times.length - 1 || times[i] === t) return [xs[i], ys[i]];
-  const k = (t - times[i]) / (times[i + 1] - times[i]);
+  if (i === times.length - 1) return [xs[i], ys[i]];
+  const from = Math.max(times[i], times[i + 1] - interval);
+  if (t <= from) return [xs[i], ys[i]];
+  const k = (t - from) / (times[i + 1] - from);
   return [xs[i] + (xs[i + 1] - xs[i]) * k, ys[i] + (ys[i + 1] - ys[i]) * k];
 }
 
@@ -70,7 +79,7 @@ export function pointerPixel(layout, scroll, [x, y]) {
 }
 
 export function createViewer2D({ view, sim, pointer }) {
-  const track = movementTrack(sim.replay.movement);
+  const track = movementTrack(sim.replay.movement, sim.replay.sampleIntervalMs);
   const { width, height } = sim.grid;
   view.setGame(sim.game);
 

@@ -1,14 +1,20 @@
 // The replay viewer's 3D viewer: a 3D replay drawn by the 3D renderer over the simulator's 3D state
-// view, with the camera placed from the recorded position, yaw and pitch, interpolated between
-// samples, and the recorded view mode applied. Player camera input never reaches it. DOM-free:
-// createViewer3D is driven by calls; js/main.js hands it the scene.
+// view, with the camera placed from the recorded position, yaw and pitch, held through still
+// stretches and interpolated between samples, and the recorded view mode applied. Player camera
+// input never reaches it. DOM-free: createViewer3D is driven by calls; js/main.js hands it the
+// scene.
 //
-// cameraTrack(movement, cappedAt?) → track: the replay's movement stream (js/replay/format.js) split
-//   into its camera samples and view modes, for lookups by time; cappedAt is the header's
-//   movementEndedAt (null when the movement was not capped).
+// cameraTrack(movement, cappedAt?, interval?) → track: the replay's movement stream
+//   (js/replay/format.js) split into its camera samples and view modes, for lookups by time;
+//   cappedAt is the header's movementEndedAt (null when the movement was not capped), interval the
+//   replay's movement sampling interval (its sampleIntervalMs), js/replay/sampler-3d.js
+//   SAMPLE_INTERVAL_MS when not given.
 // cameraAt(track, t) → [x, y, z, yaw, pitch] the recorded camera at replay time t: the position in
-//   cells (cell (i, j, k)'s centre is (i, j, k)), yaw and pitch in radians, interpolated linearly
-//   between the samples around t; the first sample before it, the last one after it. From the cap
+//   cells (cell (i, j, k)'s centre is (i, j, k)), yaw and pitch in radians. Between two samples it
+//   holds the earlier one until one interval before the later one, then interpolates linearly to
+//   it (throughout, across a gap of one interval or less): the recorder stores no sample equal to
+//   the previous one, so a longer gap is a still stretch. The first sample before it, the last one
+//   after it. From the cap
 //   on, the last sample recorded before it, so the camera holds its last recorded position. Null
 //   when the replay holds no sample.
 // viewModeAt(track, t) → the view mode of the last view event at or before t (js/replay/sampler-3d.js
@@ -29,17 +35,18 @@
 //   destroy() hides the scene.
 
 import { createStateView3D } from '../engine/state-view-3d.js';
-import { POSITION_STEPS, ANGLE_STEPS, VIEW_MODE } from './sampler-3d.js';
+import { POSITION_STEPS, ANGLE_STEPS, VIEW_MODE, SAMPLE_INTERVAL_MS } from './sampler-3d.js';
 
 const TURN = 2 * Math.PI;
 
-export function cameraTrack(movement, cappedAt = null) {
+export function cameraTrack(movement, cappedAt = null, interval = SAMPLE_INTERVAL_MS) {
   const samples = movement.filter((e) => e.type === 'sample');
   const views = movement.filter((e) => e.type === 'view');
   const column = (k, unit) => Float64Array.from(samples, (e) => e.values[k] * unit);
   const cell = 1 / POSITION_STEPS, angle = TURN / ANGLE_STEPS;
   return Object.freeze({
     cappedAt: cappedAt ?? null,
+    interval,
     sampleTimes: Float64Array.from(samples, (e) => e.time),
     values: Object.freeze([column(0, cell), column(1, cell), column(2, cell), column(3, angle), column(4, angle)]),
     viewTimes: Float64Array.from(views, (e) => e.time),
@@ -60,13 +67,15 @@ function countAtOrBefore(times, t) {
 const at = (values, i) => values.map((v) => v[i]);
 
 export function cameraAt(track, t) {
-  const { sampleTimes: times, values, cappedAt } = track;
+  const { sampleTimes: times, values, cappedAt, interval } = track;
   if (times.length === 0) return null;
   if (cappedAt !== null && t >= cappedAt) return at(values, Math.max(0, countAtOrBefore(times, cappedAt) - 1));
   const i = countAtOrBefore(times, t) - 1;
   if (i < 0) return at(values, 0);
-  if (i === times.length - 1 || times[i] === t) return at(values, i);
-  const k = (t - times[i]) / (times[i + 1] - times[i]);
+  if (i === times.length - 1) return at(values, i);
+  const from = Math.max(times[i], times[i + 1] - interval);
+  if (t <= from) return at(values, i);
+  const k = (t - from) / (times[i + 1] - from);
   return values.map((v) => v[i] + (v[i + 1] - v[i]) * k);
 }
 
@@ -86,7 +95,7 @@ export function worldPose([x, y, z, yaw, pitch], { X, Y, Z }, spacing) {
 
 export function createViewer3D({ sim, scene, spacing }) {
   const { replay, grid } = sim;
-  const track = cameraTrack(replay.movement, replay.header.movementEndedAt);
+  const track = cameraTrack(replay.movement, replay.header.movementEndedAt, replay.sampleIntervalMs);
   const view = createStateView3D(sim.game, grid);
   let every = null; // every cell, built the first time the game crosses its end
   let ended = view.state !== 'playing';
