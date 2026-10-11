@@ -1,7 +1,7 @@
 # 3D play flow
 
 The 3D mode's game from board choice to result under the game's rules: the
-six 3D presets and custom boards with a no-guess switch, a first click that
+three 3D cube presets and custom boards with a no-guess switch, a first click that
 is always safe because the board is generated around it, the timer starting
 once that board is ready, and every finished or abandoned game handed to the
 shared results and records like a Classic 2D game.
@@ -21,17 +21,16 @@ game shell — while the scene, camera and controls stay as they are.
 
 In scope (m2-3d-joins):
 
-- Board choice: six presets — double layer Beginner (8 × 8 × 2, 10 mines),
-  Intermediate (14 × 14 × 2, 60), Expert (25 × 16 × 2, 130), and cube
-  Beginner (6 × 6 × 6, 10), Intermediate (8 × 8 × 8, 40), Expert
-  (12 × 12 × 8, 130) — plus Custom and the Random fill, and the no-guess
-  switch.
+- Board choice: three presets — cube Beginner (6 × 6 × 6, 10 mines),
+  Intermediate (8 × 8 × 8, 40) and Expert (12 × 12 × 8, 130) — plus Custom
+  and the Random fill, and the no-guess switch.
 - The start-of-game flow: a closed box, the first reveal, generation around
   it, the "generating" state, the timer starting when the board is ready.
 - The first-click guarantee in 3D: the same rule as Classic 2D's pinned
   reference rule — the clicked cell is safe, not necessarily an opening.
-- The no-guess switch on every preset and on custom boards up to a
-  cell-count limit, shown disabled with its reason above the limit.
+- The no-guess switch on every preset, and on custom boards up to a
+  cell-count limit and with no side of exactly 2 cells, shown disabled with
+  its reason otherwise.
 - The 3D mode's side of the mode contract: reporting game started, finished
   and abandoned with a summary built through `game-summary`, and returning a
   started game's summary so far when the shell asks.
@@ -42,6 +41,12 @@ Non-goals:
 
 - The flat 3D presets (9 × 9 × 1, 16 × 16 × 1, 30 × 16 × 1) — dropped;
   flat boards are Classic 2D's.
+- Double-layer presets (8 × 8 × 2, 14 × 14 × 2, 25 × 16 × 2) — dropped: a
+  box with a side of exactly 2 cells is never a no-guess board, because two
+  stacked cells share every neighbour and a mine in one of them is always a
+  coin flip. Records and replays already made on those sizes stay in the
+  history as custom boards, since the preset labels and listing in
+  `3d-game-records` recognise only the presets listed here.
 - The 3D scene's look, the camera, view modes and controls — kept as they
   are, per the m2 slice.
 - 3D board identities, 3D personal bests and history, and the 3D results
@@ -67,7 +72,7 @@ behaviour.
 - **3D board choice.** The 3D menu's presets, custom fields, Random fill
   and no-guess switch. Validates custom sizes (each dimension 1 to 100,
   mines 1 to cells minus one) and decides whether no-guess is available for
-  the chosen size. Remembers the last 3D choice through the shell's
+  the chosen size, by the availability rule under Interfaces and contracts. Remembers the last 3D choice through the shell's
   last-board-choice mechanism.
 - **3D game session.** Owns one 3D game: builds the box graph and the game
   awaiting its first click, shows the closed box, and on the first reveal
@@ -85,7 +90,8 @@ behaviour.
 ## Data and state
 
 - **Board choice** — X, Y, Z, mine count and no-guess. The last 3D choice
-  is persisted per mode, as `game-shell` describes.
+  is persisted per mode, as `game-shell` describes. A remembered choice
+  naming a preset that is no longer offered opens on cube Beginner.
 - **Session** — the game, the pending generation request, the timer, and
   the seed and generator version of the board once it arrives. In memory
   only.
@@ -102,9 +108,14 @@ behaviour.
   opening. The request never fails for density below the mine cap of
   every cell but one.
 - **No-guess availability** — offered on every preset, and on a custom
-  board whose cell count is at or below the no-guess limit. Above it the
-  switch is shown disabled, with the reason ("No-guess is available up to
-  N cells") shown above it. The limit is one constant, 8,000 cells
+  board whose cell count is at or below the no-guess limit and none of
+  whose sides is exactly 2 cells. Otherwise the custom switch is shown
+  disabled, with its reason shown above it: "No-guess isn't available when
+  a side is 2 cells" when a side is 2 — it takes precedence, as no smaller
+  size of that shape would help — and "No-guess is available up to N
+  cells" above the limit. The side rule holds at every density: on
+  8 × 8 × 2, no seed of 50 gave a no-guess board. A side of 1 is a flat
+  board and keeps no-guess. The limit is one constant, 8,000 cells
   (20 × 20 × 20), set by wait: `dev/measure-noguess-3d.mjs` times no-guess
   requests on box boards of growing size at the presets' densities, which
   meet the attempt budget at every size, and the slowest request at the

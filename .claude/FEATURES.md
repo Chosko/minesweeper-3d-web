@@ -130,7 +130,7 @@ Tasks: 51, 52, 53, 54, 55
 
 ## 3d-play-flow — 3D board choice, safe first click, no-guess switch and results hand-off
 
-Status: [DONE]
+Status: [ITERATED]
 Doc: .claude/domain/features/3d-play-flow.md
 Source: product-design.md § 3D mode (m2-3d-joins)
 Tasks: 56, 57, 58, 59, 60

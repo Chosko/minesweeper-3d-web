@@ -170,8 +170,9 @@ design system. Serves the enthusiast loop.
 The existing 3D game as one mode among several: a box of cubes, each with up
 to 26 neighbours, flown through in first person, with solved cells hiding
 themselves and the Shift / Space / Ctrl view modes for seeing inside. The
-first click is always safe, and a no-guess switch is available. Six presets —
-Beginner, Intermediate and Expert in a double layer and in a cube — plus
+first click is always safe, and a no-guess switch is available, except on a
+box with a side of exactly 2 cells, which can never be solved without
+guessing. Three presets — Beginner, Intermediate and Expert cubes — plus
 custom boards; flat boards are Classic 2D's. When a game ends, its win or
 loss effect plays — on a loss, the wave that shows where the mines were —
 and then the results screen takes over; the finished board is not flown
