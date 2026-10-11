@@ -22,14 +22,14 @@ In scope (m1-classic-2d):
 - On a win, the comparison with each of the three bests — fastest time,
   best 3BV/s, best efficiency — showing the standing best and the
   difference, and marking each new best.
-- Actions: *Play again* (default focus), *Records* (opens the records
+- Actions: *Play again* (default focus), *Watch replay* (when the game
+  handed over its replay — `replay-playback`), *Records* (opens the records
   screen on this board), *Back to menu*.
 - Telling the player once when records are not being saved this session.
 - Mouse, keyboard and controller operation, per the shell's navigation.
 
 Non-goals:
 
-- *Watch replay* — deferred to `m2-3d-joins`.
 - 3D games on the results screen — deferred to `m2-3d-joins`.
 - Steam global and friends rank — `results-steam-rank`, in `m3-on-steam`.
 - A results screen for abandoned games: restarting or leaving goes where
@@ -77,6 +77,10 @@ composed from the `screen-components` kit.
 - **Show** — from the game shell with a won or lost summary; the shell
   routes here and back.
 - **Play again** — asks the shell to start the same board choice again.
+- **Watch replay** — shown only when the finished game handed over a sealed
+  replay and the shell has the replay viewer's route; asks the shell to open
+  `replay-playback`'s viewer with that replay, returning to this screen. It
+  plays the game's own replay even when the library could not save it.
 - **Records** — asks the shell to route to `records-screen`, opened on this
   game's board.
 - **Back to menu** — asks the shell to return to the main menu.
