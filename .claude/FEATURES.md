@@ -148,7 +148,7 @@ Tasks: 65, 66, 67, 68, 69, 70
 
 ## replay-playback — Replay simulator, verifier and the replay viewer
 
-Status: [DONE]
+Status: [ITERATED]
 Doc: .claude/domain/features/replay-playback.md
 Source: product-design.md § Replays (m2-3d-joins)
 Tasks: 76, 77, 78, 79, 80

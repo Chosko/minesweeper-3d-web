@@ -55,7 +55,10 @@ and is never paused into hiding the board.
 
 - **Replay decoder.** The format decoder shared with `replay-recording`:
   reads any known format version, upgrading older ones, and refuses a newer
-  one.
+  one. It gives each decoded replay its movement sampling interval — the
+  recording constant for the replay's mode under its format version
+  (`replay-recording` § Recording constants), since the header does not
+  store it.
 - **Replay simulator.** Builds the graph from the header, creates a game
   from the header's mine set under the recorded rule profile and rules
   version, and applies the action stream up to a requested time, returning
@@ -68,13 +71,20 @@ and is never paused into hiding the board.
 - **Playback clock.** Advances replay time at the chosen speed while
   playing, and drives the simulator and the movement interpolation once per
   frame.
+- **Movement interpolation.** The recorder does not store a sample equal to
+  the previous one, so a gap longer than the sampling interval is a still
+  stretch. Between two stored samples, playback holds the earlier one until
+  one sampling interval before the later one, then interpolates linearly to
+  it; across a gap of one interval or less it interpolates throughout. The
+  2D cursor cell and the 3D view mode are events and switch at their
+  recorded times.
 - **2D viewer.** The Classic 2D board view in a read-only configuration,
   fed by the simulator's changes, with the recorded pointer drawn as a
-  cursor between samples by linear interpolation, and the recorded
+  cursor placed by the movement interpolation, and the recorded
   keyboard and controller cursor drawn as the focus ring.
 - **3D viewer.** The 3D renderer over the simulator's 3D state view, with
-  the camera placed from the recorded position and direction, interpolated
-  between samples, and the recorded view mode applied. Player camera input
+  the camera placed from the recorded position and direction by the
+  movement interpolation, and the recorded view mode applied. Player camera input
   is ignored. After the point where a replay's movement was capped, the
   camera holds its last recorded position.
 - **Playback controls and overlay.** Composed from `screen-components`;
