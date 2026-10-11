@@ -3,7 +3,7 @@
 Created: 2026-10-09 · Source: /runbook-create interview (runbook planning-to-m3 step 17) · Model: opus
 Last step number: 35
 
-## [ ] 32. Implement task 115 — Three cube 3D presets and no no-guess on a side of 2
+## [x] 32. Implement task 115 — Three cube 3D presets and no no-guess on a side of 2
 
 Depends on: none
 
@@ -13,11 +13,14 @@ Context: none
 /task-implement 115 --review
 ```
 
+Done: 2026-10-11, commit `b6a5977` (14 files, +211/-156). A remembered double-layer choice falls back to cube Beginner via `normaliseChoice`, dropping its saved custom fields; the 3D board choice is now a single Cube menu (no second column).
+
 ## [ ] 33. Implement task 116 — Update documentation for feature `3d-play-flow`
 
 Depends on: 32
 
-Context: none
+Context:
+- 2026-10-11 (from step 32): `noGuessReason(choice)` now takes the choice (side-of-2 line on a custom board with a side of 2, else the cell-limit line); the 3D board choice is a single Cube menu (the `ui-grid` second column is gone); the double-layer replay fixture is kept as a custom 8×8×2 board. `mode3d.md`, `records.md` and `README.md` still describe six presets.
 
 ```prompt
 /task-implement 116 --review
