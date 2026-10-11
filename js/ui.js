@@ -238,7 +238,7 @@ export class UI {
     this.el.pause.classList.remove('hidden');
     this.el.hud.classList.remove('hidden');
     const ended = state !== 'playing';
-    // The primary action leads: Resume while playing, Play again once the game ended.
+    // The primary action leads: Resume while playing, Play again once the game ended, which has nothing to resume.
     const [first, second] = ended ? [this.el.restart, this.el.resume] : [this.el.resume, this.el.restart];
     first.classList.replace('ui-button--secondary', 'ui-button--primary');
     second.classList.replace('ui-button--primary', 'ui-button--secondary');
@@ -246,7 +246,7 @@ export class UI {
     this.el.pauseActions.insertBefore(second, this.el.pauseMenu);
     this.el.pauseTitle.textContent = state === 'won' ? 'You won!' : state === 'lost' ? 'Game over' : 'Paused';
     this.el.pauseSub.textContent = `Time ${fmtTime(time)} s · ${minesLeft} mine${minesLeft === 1 ? '' : 's'} left`;
-    this.el.resume.textContent = ended ? 'Keep looking around' : 'Resume';
+    this.el.resume.classList.toggle('hidden', ended);
     this.el.restart.textContent = ended ? 'Play again' : 'Restart';
   }
   isPauseVisible() { return !this.el.pause.classList.contains('hidden'); }

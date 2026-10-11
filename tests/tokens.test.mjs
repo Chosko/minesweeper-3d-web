@@ -132,8 +132,9 @@ test('every colour token has both a light and a dark value', () => {
 
 test('the z-layers stack the overlays in order', () => {
   const z = (n) => Number(THEMES.light.get(`--z-${n}`));
-  const order = ['hud', 'help', 'banner', 'flash', 'overlay', 'modal', 'context-lost', 'toast', 'fatal'];
+  const order = ['hud', 'help', 'flash', 'overlay', 'modal', 'context-lost', 'toast', 'fatal'];
   for (let i = 1; i < order.length; i++) assert.ok(z(order[i]) > z(order[i - 1]), `${order[i]} above ${order[i - 1]}`);
+  assert.equal(THEMES.light.get('--z-banner'), undefined, 'no layer for the removed end banner');
 });
 
 // ---------- contrast contract ----------

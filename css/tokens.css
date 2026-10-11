@@ -106,7 +106,6 @@
   /* ---------- z-layers (bottom to top) ---------- */
   --z-hud: 10;
   --z-help: 11;
-  --z-banner: 12;
   --z-flash: 15;
   --z-overlay: 20;
   --z-modal: 30;

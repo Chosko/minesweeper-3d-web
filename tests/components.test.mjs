@@ -470,6 +470,7 @@ test('every control on the menu and the pause card is named and reachable by key
   const line = (name) => main.match(new RegExp(`'?\\b${name}'?: \\{[^\\n]*defaultFocus: ([^\\n]*)`))[1];
   assert.match(line('paused'), /'#p-resume'/, 'the pause card focuses Resume by default');
   assert.ok(SCREENS.pause.includes('id="p-resume"') && SCREENS.pause.includes('id="p-restart"'));
+  assert.doesNotMatch(read('js/ui.js'), /Keep looking around/, 'an ended game offers no look-around resume');
   assert.match(line('menu'), /^'\[data-entry\]\[data-last\]'/, 'the menu focuses the last mode played by default');
   assert.match(line('board-choice'), /^'[^']*data-preset/, 'the 3D board choice focuses the last played board by default');
 });
@@ -878,7 +879,11 @@ test('in a browser, the menu, the pause card and the results layout meet the con
     const order = await page.evaluate(() => [...document.querySelectorAll('#pause .ui-actions button')].map((b) => [b.id, b.className]));
     assert.equal(order[0][0], 'p-restart', 'Play again comes first once the game ended');
     assert.match(order[0][1], /ui-button--primary/);
-    assert.match(order.find(([id]) => id === 'p-resume')[1], /ui-button--secondary/);
+    assert.equal(await page.evaluate(() => document.getElementById('p-resume').offsetParent), null, 'an ended game has nothing to resume');
+    assert.equal(await page.evaluate(() => document.getElementById('p-restart').textContent), 'Play again');
+    // Back on an ended game's card goes to the main menu, asking nothing.
+    await page.keyboard.press('Escape');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu', 'Back leaves an ended game for the menu');
 
     const results = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     results.on('pageerror', (e) => errors.push(e.message));

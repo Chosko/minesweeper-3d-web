@@ -444,8 +444,9 @@ function shellBack(source) {
   if (ui.closeControls() || ui.closeConfirm()) return;
   SHELL.back(source);
 }
-/** Back from the pause card: the controller resumes; the keyboard goes to the click-to-play card. */
+/** Back from the pause card: an ended game goes to the menu; the controller resumes; the keyboard goes to the click-to-play card. */
 function resumeFromPause(source) {
+  if (gameOver()) { PAUSE.toMenu(); return; }
   if (source === 'pad') { padResume(); return; }
   if (performance.now() - input.unlockedAt < 500) return; // the Esc that released the pointer lock already meant Pause
   PAUSE.resume('key');
