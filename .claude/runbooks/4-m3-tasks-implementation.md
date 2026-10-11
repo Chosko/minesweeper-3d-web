@@ -40,7 +40,7 @@ Context: none
 
 Done: 2026-10-11, commit `3788ef0` (7 files, +143/-40). The interval comes from a fixed per-format-version table, `sampleIntervalMs(version, mode)` in `js/replay/format.js`, so a later sampler change never alters old replays; a new format version needs its own row.
 
-## [ ] 35. Implement task 118 — Update documentation for feature `replay-playback`
+## [x] 35. Implement task 118 — Update documentation for feature `replay-playback`
 
 Depends on: 34
 
@@ -50,6 +50,8 @@ Context:
 ```prompt
 /task-implement 118 --review
 ```
+
+Done: 2026-10-11, commit `4132d08` (4 files, +85/-53).
 
 ## [ ] 1. Implement task 84 — Electron main process: window, game protocol, window state and crash log
 
