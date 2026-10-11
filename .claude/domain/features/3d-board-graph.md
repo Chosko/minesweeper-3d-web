@@ -54,8 +54,9 @@ Built within the recorded technical direction — a DOM-free JavaScript ES
 module beside the rules engine, run unchanged under Node's test runner (see
 [technical-direction.md](../technical-direction.md)). It extends
 `cell-graph-rules-engine` with one more graph provider and one more rule
-profile, and replaces the 3D engine described in
-[logic.md](../../context/logic.md).
+profile in place of a separate 3D engine: the 3D game has no engine of its
+own ([logic.md](../../context/logic.md)) and runs on the shared engine
+through `create3DGame` ([mode3d.md](../../context/mode3d.md)).
 
 - **Box graph provider.** Builds the graph of an X × Y × Z box and maps
   between a cell index and its (i, j, k) coordinates. It keeps the current
@@ -83,10 +84,10 @@ profile, and replaces the 3D engine described in
 - **3D state view.** The read surface the 3D front-end consumes: per cell,
   number, revealed, flagged and hidden; the game's phase, exploded cell,
   mines left and a change counter; and the cells changed since the last
-  read. It is the same information [rendering.md](../../context/rendering.md)
-  and [app-shell.md](../../context/app-shell.md) read from the 3D engine
-  today, served by the shared engine, so the renderer, picking and HUD keep
-  their logic.
+  read. It carries the information the 3D renderer, picking and HUD
+  ([rendering.md](../../context/rendering.md),
+  [app-shell.md](../../context/app-shell.md)) are written against, served by
+  the shared engine.
 
 Deliberate differences from the original game, all following from the m2
 rules change:
@@ -96,6 +97,11 @@ rules change:
   gone, so a seed no longer reproduces an original game's board.
 - **At most every cell but one is a mine** on a custom board, since the
   first click must be safe. The original allowed every cell.
+- **No flag before the first click.** A right-click while the game awaits
+  its first click does nothing in the engine, as on every engine profile;
+  the original flagged the cell. The player still sees such flags kept:
+  `3d-play-flow`'s session holds them and puts them on the board when it
+  arrives, before the first reveal.
 - **No action after the game ends.** A click after a win or a loss changes
   nothing, as on every engine profile; the original let the board be
   clicked and unflagged after it ended. The results screen takes over once
@@ -130,13 +136,11 @@ rules change:
   gesture is, as it does today ([input.md](../../context/input.md)).
 - **3D state view** — read-only; the change set is drained by one consumer,
   the renderer.
-- **Rule tests** — every rule case the 3D engine's tests cover today is
-  ported to the 3D profile, built from fixed mine sets, except the cases
-  this document records as deliberate differences, which are rewritten to
-  the new rule.
-- **Retirement** — once the 3D mode plays on the shared engine, the
-  separate 3D engine and its tests are removed; nothing else may depend on
-  it.
+- **Rule tests** — the 3D profile's tests cover every rule case of the
+  separate 3D engine's tests, built from fixed mine sets, with the cases
+  this document records as deliberate differences written to the new rule.
+- **Retirement** — the separate 3D engine and its tests are removed;
+  nothing may depend on a 3D engine of its own.
 
 ## Dependencies
 
@@ -155,12 +159,13 @@ Measured on a 100 × 100 × 100 board (one million cells) with a game in
 progress, as bytes retained in typed arrays
 (`tests/engine-3d-view.test.mjs`):
 
-- the 3D engine ([logic.md](../../context/logic.md)): 24 MB, 24 bytes a
-  cell;
+- the retired separate 3D engine: 24 MB, 24 bytes a cell;
 - the shared engine: 37 MB, 37 bytes a cell — the box graph 0 bytes a
   cell, since its neighbours are not stored; the game with the 3D
   profile's hidden flag and the engine's counts 31 bytes a cell; the 3D
   state view 6 bytes a cell, and 2 more once the game is lost.
 
-The shared engine holds about 13 MB more than the 3D engine on the largest
-custom board, 15 MB after a loss.
+The shared engine holds about 13 MB more than the separate 3D engine did on
+the largest custom board, 15 MB after a loss. The 100-per-side limit stands
+and the extra memory is accepted: neither the custom-board limit nor the
+engine's per-cell state is cut to recover it.
