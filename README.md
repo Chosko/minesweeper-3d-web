@@ -53,15 +53,16 @@ or `LT` + `RT` chords, and `Start`, `B` or `Back` pauses.
 
 ## Records
 
-Every Classic 2D game is recorded in the browser. **Records**, on the main menu or on the screen
-shown after a game, opens the Records screen:
+Every Classic 2D and 3D game is recorded in the browser. **Records**, on the main menu or on the
+screen shown after a game, opens the Records screen:
 
-- Pick a board: Beginner, Intermediate and Expert, each with and without no-guess, then every custom
-  board you have played. The screen opens on the board you played last, or on the board of the game
-  you just finished.
+- Pick a mode with the **2D | 3D** switch, then a board: in 2D, Beginner, Intermediate and Expert,
+  in 3D, the six double layer and cube boards, each with and without no-guess, then every custom
+  board of that mode you have played. The screen opens on the board you played last, in its mode,
+  or on the board of the game you just finished.
 - For that board: the best time, best 3BV/s and best efficiency with their dates, games played,
-  wins, win rate, and the current and longest winning streak. The Classic 2D totals across every
-  board are shown too.
+  wins, win rate, and the current and longest winning streak. The chosen mode's totals across every
+  board are shown too; 2D and 3D are never added together.
 - A chart of 3BV/s and efficiency over your won games, and a list of your recent games, newest
   first, ten to a page, with each game's outcome, time, 3BV/s and efficiency.
 
@@ -107,6 +108,10 @@ The rules are classic Minesweeper with one more dimension:
   every hidden cell.
 - The box starts closed. The board is generated around your first click, so the first click is
   always safe, and the timer starts once the board is ready. Flags placed before that are kept.
+- When the game ends, the board freezes for about a second while the end effect plays (the loss
+  wave showing where the mines were, or the win confetti). Then the screen shown after a game takes
+  over the whole window, as in Classic 2D: time, 3BV, 3BV/s, efficiency and, on a win, your bests
+  on that board, with **Play again**, **Watch replay**, **Records** and **Back to menu**.
 
 Pick a board and play:
 
@@ -183,10 +188,9 @@ browser supports it. Some browsers only start sound after a key press or a click
 
 - **Interface:** a main menu with presets and a custom-board form (cell count, mine limit and
   validation hints). The HUD shows time, mines left and board size, with indicators for the
-  Shift/Space/Ctrl view modes. There is an in-game controls panel (`H`) and an end-of-game banner
-  that lets you keep flying around the board.
-- **Pause menu** (`Esc`): resume, restart or return to the main menu. After a game ends, it offers
-  "Play again" and "Keep looking around".
+  Shift/Space/Ctrl view modes. There is an in-game controls panel (`H`), and a results screen
+  after every game.
+- **Pause menu** (`Esc`): resume, restart or return to the main menu.
 - **Settings:** mouse sensitivity (0.25×–3×), invert mouse Y and volume. They are saved in
   `localStorage`. The defaults match the original.
 - **Sound:** synthesized sound effects (Web Audio, no audio files) for revealing, flagging,

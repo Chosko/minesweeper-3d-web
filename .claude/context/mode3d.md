@@ -23,7 +23,8 @@ three to the screens, the renderer and the pointer-lock flow
   pause, restart and leave, and the game's replay recorder. DOM-free;
   generation is reached only through the client.
 - `js/shell/mode-3d.js` — the 3D adapter: the session behind the mode
-  contract (`create3DMode`), reporting summaries built by
+  contract (`create3DMode`), running the end delay between the session's
+  end and the finished report, reporting summaries built by
   `js/records/summary.js` with the session's sealed replays, and driving the
   session's movement sampler. DOM-free; imports the records' summary builder
   and `MODE_3D`.
@@ -92,12 +93,18 @@ three to the screens, the renderer and the pointer-lock flow
 - `create3DMode(flow, report)` — the contract over `flow`
   (`openBoardChoice`, `start(choice)` → session, `pause(note)`,
   `resume(source)`, `restart(source)` → session, `leave`, `contextLost`,
-  and the optional `sampler(session)` → the session's movement sampler, an
+  the optional `sampler(session)` → the session's movement sampler, an
   object with `tick()` and optionally `destroy()`; without it no movement is
-  recorded); `failureScreen: 'ctxlost'`; plus `contextLost()`, which
-  `js/main.js` calls when the WebGL context is lost during a 3D game,
-  `replay(summary)`, the session's sealed replay or null, and `tick()`,
-  which drives the sampler and which `js/main.js` calls every frame.
+  recorded; the optional `release()`, which releases pointer lock before the
+  results screen takes over; and the optional `clock` `{setTimeout,
+  clearTimeout}` the end delay runs on, the global timers by default);
+  `failureScreen: 'ctxlost'`; plus `contextLost()`, which `js/main.js`
+  calls when the WebGL context is lost during a 3D game, `replay(summary)`,
+  the session's sealed replay or null, `tick()`, which drives the sampler
+  and which `js/main.js` calls every frame, `ending` — true while the end
+  delay runs — and `finishNow()`, which cuts a running end delay short.
+- `END_DELAY_MS` = 1000 — how long the end effect plays before the game is
+  reported finished, for a win and a loss alike.
   `summary()` and the finished and abandoned reports carry `buildSummary`'s
   record over the 3D board identity — mode `3d`, the session board's X, Y,
   Z as width, height, depth ([records.md](records.md)) — one id per game:
@@ -150,17 +157,24 @@ three to the screens, the renderer and the pointer-lock flow
 - **Restart and leave** cancel a pending request (`client.cancel()`); a late
   answer is dropped by its request token.
 - **The adapter** listens only to the session it holds. At the session's
-  `started` it reports `started` and `canPause(true)`; at `finished` it
-  reports `canPause(false)` and `finished(summary, replay)`, after the
-  listeners `js/main.js` added before handing the session over have played
-  the end effect. `summary()` is the started, unfinished game's summary,
+  `started` it reports `started` and `canPause(true)`. At `finished` —
+  after the listeners `js/main.js` added before handing the session over
+  have started the end effect — it builds the summary, reports
+  `canPause(false)` and runs the end delay (`ending` true): a `pause()` is
+  ignored, and after `END_DELAY_MS` on `flow.clock` — whether or not the
+  tab draws frames — it calls `flow.release()` and reports
+  `finished(summary, replay)` once. `restart` and `leave` cancel a running
+  end delay; `js/main.js` offers neither while `ending`, and `finishNow()`
+  (the page going away) reports the game finished at once, so a game in its
+  end delay is never reported abandoned. `summary()` is the started, unfinished game's summary,
   outcome `abandoned`, from which, with `replay(summary)`, the host reports
   `abandoned` on restart or leave; before the first applied reveal there is
   none and nothing is reported. The adapter builds a sampler with each
   session through `flow.sampler` and drops it on restart and leave. A lost
   graphics context — at `start` or through `contextLost()` — reports
   `failed` and leaves the session, whose recording still seals what it
-  recorded until then.
+  recorded until then; during the end delay the game is reported finished
+  first, so its summary is still recorded.
 - **Recording.** Each closed box opens a recorder (`startRecording`,
   [replay.md](replay.md)), which `restart()` discards and `leave()` stops.
   When the board arrives the flags placed before the first reveal are
@@ -182,6 +196,8 @@ three to the screens, the renderer and the pointer-lock flow
   the presets, the custom limits, no-guess availability and its limit, the
   first-click guarantee, the timer, the mode contract's reports, pause and
   failure.
+- [../domain/features/3d-results-records-screens.md](../domain/features/3d-results-records-screens.md)
+  — the end delay, input during it and the finished report after it.
 - [../domain/features/3d-game-records.md](../domain/features/3d-game-records.md)
   — the 3D summaries the adapter hands off and the 3D board identity they
   carry.
@@ -215,8 +231,8 @@ three to the screens, the renderer and the pointer-lock flow
   equal to `PRESETS` by a test.
 - [testing.md](testing.md) — `tests/mode3d-board-choice.test.mjs`,
   `tests/mode3d-session.test.mjs`, `tests/mode3d-noguess-limit.test.mjs`,
-  `tests/shell-mode-3d.test.mjs`, `tests/records-summary-3d.test.mjs` and
-  `tests/replay-3d.test.mjs`.
+  `tests/shell-mode-3d.test.mjs`, `tests/mode3d-end.test.mjs`,
+  `tests/records-summary-3d.test.mjs` and `tests/replay-3d.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 
@@ -227,5 +243,6 @@ three to the screens, the renderer and the pointer-lock flow
   read its head comment before touching `NOGUESS_CELL_LIMIT`.
 - Changing a session state, event or the first-click flow (`createSession`
   and its head comment in `session.js`).
-- Changing what the 3D mode reports to the shell (`create3DMode` and its
-  head comment in `js/shell/mode-3d.js`).
+- Changing what the 3D mode reports to the shell or the end delay
+  (`create3DMode`, `END_DELAY_MS` and the head comment in
+  `js/shell/mode-3d.js`).

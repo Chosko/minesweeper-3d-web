@@ -195,6 +195,20 @@ browser checks for everything that needs WebGL or the DOM.
   opens the screen from the menu on the last board played, chooses a board
   in the picker and returns with Back (skipped when Playwright or chromium
   is unavailable).
+- `tests/records-screen-3d.test.mjs` — the Records screen for 3D
+  (`js/records/screen.js`) over a records model or a fake store: the 2D | 3D
+  switch and the content's chosen mode, the 3D picker's six presets with and
+  without no-guess then the custom 3D boards played under their 3D labels,
+  a board key alone setting the switch, a mode alone opening on its last
+  board played or its first board, the last game played choosing mode and
+  board, the chosen 3D board's figures and the 3D overall figures,
+  `setMode` on the first games page, Open taking a mode beside a board key,
+  Watch from a 3D board returning there, and the results screen's Records
+  opening a 3D game's board; static checks of the `#records-mode` kit
+  markup above the picker, the `records` route passing mode and board, the
+  switch's wiring and its catalogue entry. One Playwright test operates the
+  switch by mouse, keyboard and controller (skipped when Playwright or
+  chromium is unavailable).
 - `tests/records-history.test.mjs` — the history chart and games list
   (`js/records/history-chart.js` and its use in `js/records/screen.js`): the
   chart points, `niceCeiling`, the scale (both axes, one game in the middle,
@@ -236,6 +250,23 @@ browser checks for everything that needs WebGL or the DOM.
   Playwright test wins a fixed Beginner board through the shell, checks the
   results screen, opens Records on that board and returns with Back, then
   Play again (skipped when Playwright or chromium is unavailable).
+- `tests/mode3d-end.test.mjs` — the 3D end sequence and the results
+  takeover (`js/shell/mode-3d.js`, `js/main.js`, `js/results/view.js`) over
+  a fake session and a fake clock: `END_DELAY_MS` one second for a win and
+  a loss, can-pause off at once and finished reported once after the delay
+  with the game's summary at its end, a pause ignored during the delay, a
+  hidden tab still reporting at the delay's end, a lost graphics context
+  reporting finished before the failure, a page going away ending the delay
+  as finished, never abandoned, a fixed board still reported finished, and
+  a game no longer held reporting nothing; static checks that the end
+  banner, its compact form and its best-time line are gone, that every
+  pause in `js/main.js` goes through `pauseGame`, that Esc, the controller
+  and camera movement are ignored during the delay, that the 3D flow
+  releases pointer lock, that no frame is drawn under a 3D game's results
+  screen and that the results screen takes over on an opaque surface over
+  3D only. One Playwright test wins and loses a 3D board through the shell
+  and lands on the results screen over the scene (skipped when Playwright
+  or chromium is unavailable).
 - `tests/results-watch.test.mjs` — Watch replay on the results screen
   (`js/results/flow.js`, `js/results/view.js`): offered only for a game
   that handed over its replay and while the viewer's route is registered,
@@ -410,13 +441,14 @@ browser checks for everything that needs WebGL or the DOM.
 - `tests/shell-mode-3d.test.mjs` — the 3D adapter (`js/shell/mode-3d.js`)
   over a fake session and a fake flow: the builder's summaries, the contract, pause
   reaching the session without cancelling a pending board request, started
-  and can-pause at the first applied reveal, `summary()` so far, finished at
-  a win or loss, abandoned on restart and leave of a started game and
+  and can-pause at the first applied reveal, `summary()` so far, finished
+  after the end delay at a win or loss, abandoned on restart and leave of a started game and
   nothing before the first applied reveal, reports of a session no longer
   held ignored, a lost graphics context; DOM-free, importing at most the
   session; static checks that `js/main.js` hands the adapter each session
   and leaves the reports to it. One Playwright test starts, pauses,
-  resumes, restarts and leaves the 3D game through the adapter.
+  resumes, restarts and leaves the 3D game through the adapter, and ends a
+  fixed board, which has no results screen, on the pause card.
 - `tests/mode3d-board-choice.test.mjs` — the 3D board choice
   (`js/mode3d/board-choice.js`): the six presets and no flat one, custom
   validation per field, the one-cell board refused, the very-large-board
@@ -603,9 +635,10 @@ browser checks for everything that needs WebGL or the DOM.
   back-to-menu confirmations, the `finished` / `abandoned` / `inProgress`
   hand-offs with the controller itself routing nowhere, the leave-page guard armed
   only during a started, unfinished game; DOM-free; static checks that every
-  pause source in `js/main.js` goes through the controller, that the guard is
+  pause source in `js/main.js` goes through `pauseGame` to the controller, that the guard is
   a listener it arms, and that the confirmation is kit markup. One Playwright
-  test pauses, resumes, restarts and goes back to menu in the 3D game.
+  test pauses, resumes, restarts and goes back to menu in the 3D game, and
+  ends a fixed board, which has no results screen, on the pause card.
 - `tests/settings-store.test.mjs` — the schema (`js/settings/schema.js`:
   every setting's type, range or values and default, `isValid`) and the
   store (`js/settings/store.js`) over the memory backend: missing, invalid
@@ -656,7 +689,8 @@ browser checks for everything that needs WebGL or the DOM.
   `tests/classic2d-fidelity.test.mjs`, the won game through the results
   screen in `tests/results.test.mjs`, the Records screen tests in
   `tests/records-screen.test.mjs`, `tests/records-history.test.mjs` and
-  `tests/records-replays.test.mjs`, the replay viewer tests in
+  `tests/records-replays.test.mjs` and `tests/records-screen-3d.test.mjs`,
+  the 3D end of game in `tests/mode3d-end.test.mjs`, the replay viewer tests in
   `tests/replay-viewer.test.mjs`, `tests/replay-viewer-3d.test.mjs` and
   `tests/results-watch.test.mjs`, one
   flow test in each `tests/shell-*.test.mjs`, the 3D tests in
@@ -971,6 +1005,10 @@ is enforced.
 - [../domain/features/3d-play-flow.md](../domain/features/3d-play-flow.md)
   — the presets, custom limits, no-guess limit, first-click flow, timer and
   the 3D mode's reports the `mode3d-*` and `shell-mode-3d` tests encode.
+- [../domain/features/3d-results-records-screens.md](../domain/features/3d-results-records-screens.md)
+  — the 3D end delay, input during it, the results takeover and the Records
+  screen's mode switch and 3D picker `mode3d-end` and `records-screen-3d`
+  encode.
 - [../domain/features/replay-recording.md](../domain/features/replay-recording.md)
   — the format, recording, cap, failure and determinism contracts and the
   measured recording constants the `replay-*` tests encode.
@@ -1008,10 +1046,10 @@ is enforced.
   the game shell (`js/shell/`) the `shell-*` tests pin, and the results
   flow and screen (`js/results/`) `results.test.mjs` pins, with the flow's
   hand-off to the replay library in `replay-handoff.test.mjs`.
-- [mode3d.md](mode3d.md) — `tests/mode3d-*.test.mjs` pin the 3D board choice, its no-guess limit and the session; `tests/shell-mode-3d.test.mjs` the adapter.
+- [mode3d.md](mode3d.md) — `tests/mode3d-*.test.mjs` pin the 3D board choice, its no-guess limit, the session and the end sequence; `tests/shell-mode-3d.test.mjs` the adapter.
 - [classic2d.md](classic2d.md) — `tests/classic2d-*.test.mjs` pin the session and board setup, board view, pointer and cursor inputs and the mode, and check the inputs and custom limits against the observation file; `tests/tile-skin.test.mjs` the tile painter, cache and `MIN_TILE_SIZE`.
 - [replay.md](replay.md) — `tests/replay-*.test.mjs` pin the format, the recorder and sealer, 2D and 3D capture, determinism over `tests/fixtures/replays/`, the replay library and the end-of-game hand-off to it, the simulator and verifier, the viewer and its 2D and 3D viewers; `tests/results-watch.test.mjs` pins Watch replay; `dev/measure-replays.mjs` is the measurement behind the recording constants.
-- [rendering.md](rendering.md) — no unit tests of the drawing (only the static not-themed checks); verified visually via Playwright screenshots, and a 3D replay played on the renderer in `tests/replay-viewer-3d.test.mjs`.
+- [rendering.md](rendering.md) — no unit tests of the drawing (only the static not-themed checks); verified visually via Playwright screenshots, a 3D replay played on the renderer in `tests/replay-viewer-3d.test.mjs`, and no frame drawn under a 3D game's results screen in `tests/mode3d-end.test.mjs`.
 - [audio.md](audio.md) — no unit tests of the sounds; WebAudio only checkable in a browser.
 - [settings.md](settings.md) — `tests/settings-*.test.mjs` pin the schema, store, appliers, page,
   binder and bindings source.

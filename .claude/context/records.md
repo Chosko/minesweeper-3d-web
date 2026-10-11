@@ -6,7 +6,8 @@ The records every records consumer shares: which board a game was played
 on, the one summary record of a played game, the stats derived from it, and
 the player's personal records — bests, counters and history — kept through
 platform storage; and the Records screen that shows them (`records-screen`),
-with the chosen board's kept replays (`replay-library`'s library view).
+for Classic 2D or 3D through its 2D | 3D switch, with the chosen board's
+kept replays (`replay-library`'s library view).
 DOM-free throughout, apart from the records and replay-list view binders
 and the history chart, which draws on the canvas it is handed.
 
@@ -190,16 +191,22 @@ Store (`js/records/store.js`)
 Records screen (`js/records/screen.js`; its head comment documents the
 content shape)
 - `RECORDS_SCREEN` — `'records'`, the router screen; `EMPTY_TEXT`.
-- `pickerBoards(records)` → `[{ key, label, board }]`: Beginner,
-  Intermediate and Expert, each without no-guess then with it, then every
-  custom board played in `boardsPlayed()` order — Classic 2D boards only.
-- `lastBoardPlayed(records)` → the key of the Classic 2D board whose latest
-  game ended last, or null.
-- `recordsContent(records, { boardKey?, notSaved?, page?, replays?,
+- `RECORDS_MODES` — the switch's modes in order, frozen `{ value, label,
+  overallTitle }`: `classic-2d` "2D" "Classic 2D overall", `3d` "3D" "3D
+  overall".
+- `pickerBoards(records, mode = 'classic-2d')` → `[{ key, label, board }]`:
+  the mode's named boards — Classic 2D's Beginner, Intermediate and Expert,
+  3D's six presets in `PRESETS_3D` order — each without no-guess then with
+  it, then every custom board of the mode played, in `boardsPlayed(mode)`
+  order.
+- `lastBoardPlayed(records, mode?)` → the key of the board whose latest
+  game ended last — in that mode, or in either without one — or null.
+- `recordsContent(records, { mode?, boardKey?, notSaved?, page?, replays?,
   pinnedFirst?, canWatch?, replaysNotSaved? })` → the screen's content: the
+  chosen `mode`, the switch's `modes` (`{ value, label, selected }`), the
   picker's `boards`, the chosen `board`, `empty`, the three `bests` with
-  their dates and `watch`, the board's `counters`, the Classic 2D `overall`
-  figures, `notes`, the `chart` (`{ points, text }`), the `games` list page
+  their dates and `watch`, the board's `counters`, the chosen mode's
+  `overallTitle` and `overall` figures, `notes`, the `chart` (`{ points, text }`), the `games` list page
   (`{ headers, rows, page, pages, label, hasPrev, hasNext }`, each row with
   its `watch`), the library view `replays` (`replayList`) and `canWatch`. A
   best's or a game's `watch` is its summary id when `canWatch` and the
@@ -207,12 +214,15 @@ content shape)
 - `formatDate(iso)` → `"9 Oct 2026"`; `formatWinRate(rate)` → whole percent;
   a missing value is the results screen's `DASH`.
 - `createRecordsScreen({ records, view, replays?, router? })` →
-  `show({ boardKey }?)`, `hide()`, `select(key)`, `showPage(n)`,
-  `togglePin(id)`, `setPinnedFirst(on)`, `watch(id)`, `board`, `page`.
-- `createRecordsView({ root, onSelect, onBack, onPage, onWatch?,
+  `show({ mode, boardKey }?)`, `hide()`, `select(key)`, `setMode(mode)`,
+  `showPage(n)`, `togglePin(id)`, `setPinnedFirst(on)`, `watch(id)`,
+  `mode`, `board`, `page`.
+- `createRecordsView({ root, onSelect, onMode?, onBack, onPage, onWatch?,
   onTogglePin?, onPinnedFirst?, chart? })` → `show(content)`, `hide()`;
   fills `#records` by id, the replays panel through `createReplayListView`;
-  `chart` defaults to a `createHistoryChart` over `#records-chart`.
+  the 2D | 3D switch (`#records-mode`, its two options in the markup) shows
+  `content.mode` and calls `onMode(mode)`; `chart` defaults to a
+  `createHistoryChart` over `#records-chart`.
 
 Library view (`js/records/replay-list.js`; its head comment documents the
 row shape)
@@ -311,17 +321,25 @@ History chart (`js/records/history-chart.js`)
   whose id is already recorded changes nothing, and an unreadable one is
   dropped. This relies on every summary of one game carrying the same id,
   which Classic 2D's session and the 3D adapter give it.
-- **The screen opens on a board.** `show({ boardKey })` opens on the board
-  asked for (the results screen passes its game's board), else on the last
-  board played, else on Beginner; a board asked for that is not in the
-  picker joins it. The picker's options are rebuilt only when the board list
-  changes, so focus stays on the chosen option.
+- **The screen opens on a mode and a board.** `show({ mode, boardKey })`
+  opens on the board asked for (the results screen passes its game's
+  board), whose key sets the mode — a disagreeing `mode` is ignored; else
+  on the mode asked for and its last board played; else on the last board
+  played in either mode and its mode; a mode with nothing played opens on
+  its first named board, and with no mode asked and nothing played the
+  screen opens on Classic 2D's Beginner. A board asked for that is not in
+  the picker joins it. The picker's options are rebuilt only when the board
+  list changes, so focus stays on the chosen option.
+- **The mode switch.** `setMode(mode)` — the switch's choice — shows that
+  mode's last board played, or its first named board, with the mode's
+  boards in the picker and its overall figures; it does nothing for the
+  mode already shown or an unknown one. No figure combines the two modes.
 - **Live update.** While shown, the controller subscribes to the store's
   `onChange` and redraws the chosen board on the same games page on every
-  newly recorded game; `hide` unsubscribes. `show` and `select` start on the
-  first games page.
+  newly recorded game; `hide` unsubscribes. `show`, `select` and `setMode`
+  start on the first games page.
 - **Never blocks.** Every store query is wrapped: unreadable records show the
-  empty state over the standard boards, and Back always works. A board with
+  empty state over the chosen mode's named boards, and Back always works. A board with
   no games is the empty state, which hides the bests, counters and history.
   When `records.available()` is false, the first show of the session carries
   the results screen's `notSaved` note, for that visit only.
@@ -379,6 +397,9 @@ History chart (`js/records/history-chart.js`)
 - [../domain/features/records-screen.md](../domain/features/records-screen.md)
   — the Records screen's content, board picker, history chart, recent games
   list, live update, empty state and navigation.
+- [../domain/features/3d-results-records-screens.md](../domain/features/3d-results-records-screens.md)
+  — the Records screen's 2D | 3D switch, the 3D board picker, the chosen
+  mode's overall figures and the mode the screen opens on.
 - [../domain/features/replay-library.md](../domain/features/replay-library.md)
   — the library view: the board's replays, their fields, pin state and
   filter, Watch and Pin / Unpin, and Watch on the bests and recent games.
@@ -407,7 +428,8 @@ History chart (`js/records/history-chart.js`)
   `tests/records-board-3d.test.mjs`, `tests/records-summary.test.mjs`,
   `tests/records-summary-3d.test.mjs`, `tests/records-model.test.mjs`,
   `tests/records-model-3d.test.mjs`, `tests/records-store.test.mjs`,
-  `tests/records-screen.test.mjs`, `tests/records-history.test.mjs`,
+  `tests/records-screen.test.mjs`, `tests/records-screen-3d.test.mjs`,
+  `tests/records-history.test.mjs`,
   `tests/records-replays.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
@@ -429,8 +451,9 @@ History chart (`js/records/history-chart.js`)
   `attach`, `keepMarker` and `doLoad`.
 - Wiring a mode's end of game to the builder or the store beyond the API
   above.
-- Changing what the Records screen shows or how it picks its board: the
-  head comment and `recordsContent` in `screen.js`; its markup is `#records`
+- Changing what the Records screen shows or how it picks its mode and
+  board: the head comment, `recordsContent` and `RECORDS_MODES` in
+  `screen.js`; its markup is `#records`
   in `index.html`, catalogued in `css/components.css`.
 - Changing the library view's rows, order or buttons: the head comment of
   `replay-list.js`; how the screen composes it, `createRecordsScreen` and

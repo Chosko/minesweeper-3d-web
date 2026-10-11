@@ -98,14 +98,16 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
   `replay--scene` — its board area, controls and `.replay-pointer`), the
   menu-screen backdrop shared by `#menu`, `#board-choice`, `#coming-soon`,
   `#c2d-choice`, `#settings` and `#records`,
-  the translucent backdrop shared by `#pause`, `#ready` and `#results`,
-  the ready/help/banner/controls/ctx-lost overlays and the HUD placement; the
+  the translucent backdrop shared by `#pause`, `#ready` and `#results`, the
+  results screen's opaque takeover surface over a 3D game
+  (`#results.results--takeover`, `--color-backdrop` with no blur), the
+  ready/help/controls/ctx-lost overlays and the HUD placement; the
   kit-built screens carry no one-off rules of their own, apart from the
   Records screen's chart box (`#records-chart`), games table
   (`#records-games`) and replays table (`#records-replays-table`). Declares no
   custom properties and reads only tokens from `css/tokens.css`. Layered
-  fixed overlays use the `--z-*` tokens (HUD 10, help 11, banner 12, flash
-  15, overlays 20, controls modal 30, ctx-lost 40, toast 45, fatal 50).
+  fixed overlays use the `--z-*` tokens (HUD 10, help 11, flash 15,
+  overlays 20, controls modal 30, ctx-lost 40, toast 45, fatal 50).
 - `js/theme.js` — theme applier, a classic (non-module) script run before
   first paint: sets the root `data-theme` attribute (`light` | `dark`) from
   the saved settings document and exposes `globalThis.msTheme`.
@@ -195,9 +197,11 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   missing value is `DASH`. `NOTES` (`notRecorded`, `notSaved`).
 - `resultsContent({summary, comparison?, saved?, notSaved?, watch?})` →
   `{outcome, title, board, stats: [{key, label, value, shown}], bests:
-  [{stat, label, best, difference, newBest}] | null, notes, watch}`.
+  [{stat, label, best, difference, newBest}] | null, notes, watch,
+  takeover}`; `takeover` is true for a 3D game's summary.
 - `createResultsView({root, onPlayAgain, onWatch?, onRecords, onMenu})` →
-  `show(content)`, `hide()`; `#r-watch` shows only while `content.watch`.
+  `show(content)`, `hide()`; `#r-watch` shows only while `content.watch`,
+  and the root carries `results--takeover` while `content.takeover`.
 
 `js/ui.js` exports (consumed by `js/main.js`)
 - `DIM_MIN`/`DIM_MAX` (1/100, re-exported from `js/mode3d/board-choice.js`);
@@ -225,8 +229,8 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   `closeConfirm` (→ false when none is open); HUD `setBoard`,
   `updateHud(time, minesLeft)` (overlay formats, DOM write only on change),
   `setModes`, `setCrosshair`, `showSpacing`, `setSound(muted)`; help
-  `toggleHelp`, `userToggleHelp`, `dismissHint`; banner `showBanner(state,time)`,
-  `setBannerRecord`, `hideBanner`; `flash`, `toast(msg, ms)`, `setPad(info|null)`,
+  `toggleHelp`, `userToggleHelp`, `dismissHint`; `flash`, `toast(msg, ms)`,
+  `setPad(info|null)`,
   `setNoMouse`, `openControls`/`closeControls`
   (→ false when already closed)/`isControlsOpen`, `isPauseVisible`,
   `setReadyMessage`. `setPad` also redraws the Settings page's bindings
@@ -267,7 +271,7 @@ the factory tests drive):
 - `watch(data)` → `SHELL.go('replay', {data})`, `data` the viewer route's
   `{replay | replayId, returnTo}`.
 - `start(X, Y, Z, mines, minePositions?)` → `MODES.start('3d', …)`;
-  `forcePlay()` enters lockless play; `pause()` → `PAUSE.pause('key')`.
+  `forcePlay()` enters lockless play; `pause()` → `pauseGame('key')`.
 - camera/aim: `moveTo`, `look(yaw, pitch)`, `aimAt(idx | [x,y,z])` → selected idx,
   `cellCenter(idx)`; each calls the synchronous `refresh()` first.
 - actions: `mouseDown(b)`, `mouseUp(b)`, `click('left'|'right'|'chord')`,
@@ -293,8 +297,9 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   `resumeFromPause`,
   `results` → menu, `replay` → its `returnTo` (the menu when none),
   `ctxlost` → menu — else the stacked screen.
-- **Back inputs.** `shellBack(source)` closes the controls modal or the pause
-  confirmation first, then calls `SHELL.back`. Esc (`isBackKey`) reaches it
+- **Back inputs.** `shellBack(source)` does nothing during the 3D end delay;
+  otherwise it closes the controls modal or the pause confirmation first,
+  then calls `SHELL.back`. Esc (`isBackKey`) reaches it
   through `Input`'s `onKey`; the board choice's, placeholder's and Settings
   page's Back buttons through `onBack`, the Records screen's Back
   (`#records-back`) through its view's `onBack`; the controller's back buttons through
@@ -333,15 +338,19 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   otherwise the click-to-play card, which requests pointer lock for a
   pointer resume); `restart` starts a session of the same board (with
   no-guess off once the player took the failed board's standard offer) and
-  enters play the way resume does; `leave` is `leaveGame` (leaves the
-  session, releases lock and lockless play, hides `#m3d-status`). The
-  adapter reports started, finished and abandoned from the session's own
-  events, each `finished` and `abandoned` carrying the session's sealed
-  replay. `FLOW_3D.sampler` builds the session's camera sampler
-  (`createSampler3D`, [replay.md](replay.md)) over the camera, the controls
-  and `S.spacing`; `js/main.js` calls nothing on the adapter but
-  `contextLost()` and `mode3d.tick()`, which the frame loop calls every
-  frame while the 3D mode is active to drive that sampler.
+  enters play the way resume does (`enterPlay3D`: a controller enters
+  lockless play, otherwise pointer lock is asked for); `leave` is
+  `leaveGame` (leaves the session, releases lock and lockless play, hides
+  `#m3d-status`); `release` exits pointer lock before the results screen
+  takes over. The adapter reports started, finished and abandoned from the
+  session's own events, each `finished` and `abandoned` carrying the
+  session's sealed replay, `finished` only after its end delay
+  ([mode3d.md](mode3d.md)). `FLOW_3D.sampler` builds the session's camera
+  sampler (`createSampler3D`, [replay.md](replay.md)) over the camera, the
+  controls and `S.spacing`; `js/main.js` reads `mode3d.ending` and calls
+  nothing on the adapter but `contextLost()`, `finishNow()` and
+  `mode3d.tick()`, which the frame loop calls every frame while the 3D mode
+  is active to drive that sampler.
 - **The Classic 2D mode.** `FLOW_2D` in `js/main.js` is the shell side
   handed to `createClassic2DMode` ([classic2d.md](classic2d.md)): board
   choice routes to `classic-2d-choice` with the last board choice (loaded at
@@ -359,7 +368,7 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   host, a registered screen is routed to, anything else goes to
   `coming-soon` with the entry's title. Classic 2D and 3D open their board
   choices; Settings routes to the Settings page, Records to the Records
-  screen (`records`, opening on the last board played). No current entry
+  screen (`records`, opening on the last board played and its mode). No current entry
   reaches the placeholder; it stays the route for an entry whose screen is
   not registered, and `tests/shell-menu.test.mjs` exercises it by serving
   a menu whose Records entry names an unregistered screen (the router
@@ -368,9 +377,11 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   game in the platform-storage document `shell.lastMode`; at boot `load()`
   marks the entry and refocuses it if the player has not moved yet.
 - **Pause controller.** `PAUSE` is the one owner of pause, resume, restart and
-  back to menu. Every pause source goes through `PAUSE.pause(source)`: the
-  overlay's pause button (`onPause`), Esc/Back in play, pointer-lock loss,
-  controller disconnect (with a note), `blur` and `visibilitychange` hidden.
+  back to menu. Every pause source goes through `pauseGame(source)`, which
+  opens nothing during the 3D end delay and otherwise calls
+  `PAUSE.pause(source)`: the overlay's pause button (`onPause`), Esc/Back in
+  play, pointer-lock loss, controller disconnect (with a note), `blur`,
+  `visibilitychange` hidden and `__ms.pause()`.
   A started, unfinished game pauses through the mode; before the first click
   or after the end an asked-for pause only opens the card, and an automatic
   one (blur, hidden) does nothing — nor while the board is not in play.
@@ -393,15 +404,19 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   stood before this game, then routes to `results` with `{summary, mode,
   comparison, saved, notSaved, watch}`, for a finished 3D game as for
   Classic 2D.
-  A summary that is not a record — a fixed 3D board's null — is ignored, so
-  that game keeps the 3D end flow (banner and pause card). A recording that
+  A summary that is not a record — a fixed 3D board's null — is ignored, and
+  `js/main.js` ends that game on the pause card instead. A recording that
   throws still routes, with no comparison and `saved` false; `notSaved` is
   set on the first results screen of a session whose records store is
-  unavailable. The screen shows over the finished board. Its actions: Play again →
-  `RESULTS.playAgain` → `PAUSE.restart`, or `MODES.start('classic-2d',
-  LAST_CHOICE_2D.current)` once the mode was left; Records →
-  `openRecords` routes to the Records screen with this board's `boardKey`,
-  so it opens on that board, and Back from it returns to `results`; Watch
+  unavailable. The screen shows over the finished Classic 2D board; over a
+  3D game it takes over on an opaque surface and the 3D scene stops
+  rendering under it (`shouldRender`), and a finished 3D game is never
+  returned to. Its actions: Play again → `RESULTS.playAgain` →
+  `PAUSE.restart`, or, once the mode was left, `MODES.start('classic-2d',
+  LAST_CHOICE_2D.current)` or `MODES.start('3d', board3dChoice)` entered
+  through `enterPlay3D`; Records → `openRecords` routes to the Records
+  screen with this board's `boardKey`, so it opens on that board and its
+  mode, and Back from it returns to `results`; Watch
   replay (shown when the routed data's `watch` is set) → `RESULTS.watch()`
   routes to `replay` with `{replay, returnTo: {screen: 'results'}}`, the
   shown game's own sealed replay, so it plays whether or not the library
@@ -441,7 +456,9 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   controller at game started and removed when the game finishes, is
   abandoned or its mode fails, so it guards only a started, unfinished game
   (Ctrl is a game key and Ctrl+W cannot be intercepted). The context-lost
-  reload sets `reloading` to bypass it.
+  reload sets `reloading` to bypass it, and it does not guard a 3D game in
+  its end delay, which `pagehide` finishes at once (`mode3d.finishNow()`)
+  so it is recorded finished, not abandoned.
 - **Context loss.** `webglcontextlost` sets `contextLost`; in a 3D game the
   adapter reports `failed` and the host routes to `ctxlost`, otherwise the
   shell routes there directly; a later 3D `start` fails at once. The
@@ -483,16 +500,26 @@ Game flow (`js/main.js`):
   comes through the session's `finished`, which runs `endGame`.
 - End state freeze: `endGame` stores `S.endState = {state, time, minesLeft}`,
   with `time` the session's elapsed time and `minesLeft` taken from before
-  the final action (original HUD froze on the previous frame). HUD, pause
-  card and timer read `S.endState` once set; until then the frame loop
-  reads `S.time` from `S.play.elapsedMs()` while `playing && started`.
+  the final action (original HUD froze on the previous frame), and plays
+  the win sound. HUD, pause card and timer read `S.endState` once set;
+  until then the frame loop reads `S.time` from `S.play.elapsedMs()` while
+  `playing && started`.
+- 3D end sequence: while the adapter's end delay runs (`ending3D()`, the 3D
+  mode active and `mode3d.ending`) the end effect plays and every input is
+  ignored — `Input.isActive` is false, so no board action or mouse look;
+  the frame loop neither moves the camera nor changes the view mode
+  (`setToggles`, `setModes`); `padPlaying` releases the pad's held controls
+  and reads nothing; `shellBack` and `pauseGame` do nothing. After the
+  delay the adapter releases pointer lock and reports finished, and the
+  results flow routes to `results`.
 - `startCameraPos(X,Y,Z)` = original `(0, 10, -8M)` shifted by minus the original
   grid centre at spacing 1.1, because the port centres the grid on the origin.
   No snapping to a cell. Spacing resets to `SPACING_START` per game; the menu
   screens' demo board (`makeDemo`, 7³/30, a random mine set through
   `create3DGame`, decorative) uses 1.25 and an
   orbiting camera.
-- Render on demand: `shouldRender` draws when on a menu screen (`onBackdrop`), `needRender` is set,
+- Render on demand: `shouldRender` never draws while `results` shows a 3D
+  game; otherwise it draws when on a menu screen (`onBackdrop`), `needRender` is set,
   `renderer.sync()` reported changes, `endState` changed, `renderer.isAnimating()`
   is true, or the signature string (camera, spacing, toggles, selection,
   `game.version`, aspect, mode) changed. The `animUntil` 6 s fallback applies
@@ -535,7 +562,6 @@ Game flow (`js/main.js`):
   section are generated from the bindings source (`js/settings/bindings.js`),
   and the controls modal body is cloned from `#help .controls` at
   construction, so edit a binding's text in `BINDINGS` only.
-- Banner goes `compact` after 4 s and is `suppressed` while the pause card shows.
 
 Component kit (`css/components.css`, catalogue in its head comment):
 - The catalogue is the contract: a screen uses a component by its class and
@@ -595,8 +621,10 @@ Component kit (`css/components.css`, catalogue in its head comment):
 - Placeholder (`#coming-soon`): the one "coming soon" screen, a `ui-card
   ui-screen` whose title and text name the entry, with a primary Back.
 - Records screen (`#records`, filled by `createRecordsView`,
-  [records.md](records.md)): a `ui-card ui-screen--wide` with the board
-  picker (`#records-picker`, a `ui-segmented` generated per board), the
+  [records.md](records.md)): a `ui-card ui-screen--wide` with the 2D | 3D
+  switch (`#records-mode`, a `ui-segmented` whose two options are in the
+  markup), the board picker (`#records-picker`, a `ui-segmented` generated
+  per board of the chosen mode), the
   figures `ui-panel` (board label, empty state, `rec-*` bests and
   counters), the history `ui-panel` (`#records-history`: the chart canvas
   `#records-chart`, the `#records-games` table and the Newer / Older pager
@@ -604,10 +632,11 @@ Component kit (`css/components.css`, catalogue in its head comment):
   `#records-games-replay`), the replays `ui-panel` (`#records-replays`: the
   Pinned first `ui-toggle` `#records-pinned-first`, the empty state
   `#records-replays-empty` and the `#records-replays-table` list with its
-  Watch and Pin / Unpin buttons), the Classic 2D overall `ui-panel`
+  Watch and Pin / Unpin buttons), the chosen mode's overall `ui-panel`
   (`ro-*`), the `#records-note` `ui-text--warning` line and a primary Back
   (`#records-back`). Its show and hide go through the router's `records`
-  entry, which hands the asked-for `boardKey` to `RECORDS_PAGE.show`.
+  entry, which hands the asked-for `mode` and `boardKey` to
+  `RECORDS_PAGE.show`; the switch calls `RECORDS_PAGE.setMode`.
   `RECORDS_PAGE` is handed `REPLAYS` and the router `SHELL`, which decides
   where Watch shows ([records.md](records.md)).
 - Settings page (`#settings`): a `ui-card ui-screen--wide` whose
@@ -699,6 +728,9 @@ Gameplay fidelity to the original game is the overriding rule.
   format, its actions and the failure note.
 - [../domain/features/records-screen.md](../domain/features/records-screen.md)
   — the Records screen: where it is opened from, its board, Back and focus.
+- [../domain/features/3d-results-records-screens.md](../domain/features/3d-results-records-screens.md)
+  — the 3D end sequence, the results screen's takeover of the 3D scene and
+  the Records screen opened on a mode.
 - [../domain/features/replay-playback.md](../domain/features/replay-playback.md)
   — the replay viewer screen, its entry points from the results screen and
   the library, Back, and a lost graphics context in the 3D viewer.
@@ -743,7 +775,9 @@ Gameplay fidelity to the original game is the overriding rule.
   kit-built screens and their contrast; `tests/settings-*.test.mjs` pin the
   Settings screen's wiring and the pause-card shortcuts;
   `tests/results.test.mjs` pins the results flow, view and screen;
-  `tests/records-screen.test.mjs` the `records` route's wiring and
+  `tests/mode3d-end.test.mjs` the 3D end sequence and the results takeover;
+  `tests/records-screen.test.mjs` and `tests/records-screen-3d.test.mjs` the
+  `records` route's wiring and
   `tests/records-replays.test.mjs` the replays panel's markup and wiring;
   `tests/replay-2d.test.mjs` the replay on the mode host and the pause
   controller's hand-offs; `tests/replay-handoff.test.mjs` the results flow's
@@ -769,7 +803,8 @@ Gameplay fidelity to the original game is the overriding rule.
 - Changing pause rules, confirmations or the leave-page guard: `js/shell/pause.js`
   and the `PAUSE` wiring in `js/main.js`.
 - Changing the 3D end-of-game flow or the frozen HUD (`endGame`,
-  `S.endState`), the board status card (`showStatus3D`, `retry3D`) or how
+  `S.endState`, `ending3D`, `pauseGame`, the `MODES.on('finished')` pause
+  card for a fixed board), the board status card (`showStatus3D`, `retry3D`) or how
   the session's timer follows the screens (`sync3D`); the timer's start is
   the session's ([mode3d.md](mode3d.md)).
 - Changing how the replay viewer is wired — its route, viewers, the 3D

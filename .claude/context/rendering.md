@@ -88,6 +88,11 @@ draws the sky gradient, the win confetti and the loss camera shake.
   through `setToggles`, and the recorded camera's aimed cell through `setSelected`
   ([app-shell.md](app-shell.md), [replay.md](replay.md)). The renderer cannot tell a replay from
   play; leaving the replay hands it back the game or demo board it drew before.
+- **End of a 3D game.** The win or loss effect plays for the 3D mode's end delay
+  (`END_DELAY_MS`, [mode3d.md](mode3d.md)) with the camera and the view-mode toggles frozen as the
+  game ended; the results screen then takes over, and `js/main.js`'s `shouldRender` draws no frame
+  while it shows a 3D game, so the scene, and an effect still running, stay paused behind it
+  ([app-shell.md](app-shell.md)). The renderer is not told: it simply is not called.
 - **Render resolution.** The pixel ratio is the player's 3D resolution setting
   ([settings.md](settings.md), where `pixelRatioFor` states Auto, Sharp and Fast):
   `js/main.js::applyPixelRatio` computes it for the board shown (game or menu demo) — Auto lowers it
@@ -115,7 +120,8 @@ draws the sky gradient, the win confetti and the loss camera shake.
   `coords()` this area reads.
 - [app-shell.md](app-shell.md) — `js/main.js` owns the renderer: calls `sync`/`render` per frame,
   `snapshotBeforeAction` before reveals, polls `isAnimating`, sets the pixel ratio, exposes `stats`
-  via `__ms`, and drives it from a replay's recorded camera in the 3D replay viewer.
+  via `__ms`, drives it from a replay's recorded camera in the 3D replay viewer, and stops drawing
+  while the results screen shows a 3D game.
 - [replay.md](replay.md) — the 3D viewer whose state view and recorded camera the renderer draws.
 - [settings.md](settings.md) — the render resolution setting and `pixelRatioFor`.
 - [input.md](input.md) — camera and modifier state feed `camera`, `setToggles`, `setSpacing`,
@@ -125,7 +131,8 @@ draws the sky gradient, the win confetti and the loss camera shake.
 - [testing.md](testing.md) — no unit tests cover the drawing, only static checks that the 3D scene stays
   unthemed; `tests/settings-appliers.test.mjs` pins `pixelRatioFor` and, in a browser, a resolution
   change applying at once; `tests/replay-viewer-3d.test.mjs` plays a 3D replay on the renderer in a
-  browser; verification is visual via Playwright.
+  browser; `tests/mode3d-end.test.mjs` checks that no frame is drawn under a 3D game's results
+  screen; verification is visual via Playwright.
 
 ## When to read the source
 

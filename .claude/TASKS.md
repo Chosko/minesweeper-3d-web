@@ -326,7 +326,7 @@ Feature: 3d-results-records-screens
 
 ## 83. Update documentation for feature `3d-results-records-screens`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/app-shell.md, .claude/context/mode3d.md, .claude/context/rendering.md, .claude/context/records.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
 Preconditions: 81, 82
