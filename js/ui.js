@@ -31,12 +31,12 @@ export class UI {
     this.cb = cb; // { onMenuEntry, onBack, onReadyClick, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSound, onRetry2D, onStandard2D, onRetry3D, onStandard3D }
     this.el = {
       hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), size: $('hud-size'), sound: $('hud-sound'),
-      help: $('help'), banner: $('banner'), bannerTitle: $('banner-title'), bannerSub: $('banner-sub'),
+      help: $('help'),
       flash: $('flash'), menu: $('menu'), ready: $('ready'), readyBoard: $('ready-board'), readyMsg: $('ready-msg'),
       boardChoice: $('board-choice'), comingSoon: $('coming-soon'), comingSoonTitle: $('coming-soon-title'),
       settings: $('settings'), settingsBindings: null, records: $('records'),
       comingSoonText: $('coming-soon-text'),
-      bannerRecord: $('banner-record'), crosshair: $('crosshair'), hintH: $('hint-h'),
+      crosshair: $('crosshair'), hintH: $('hint-h'),
       controlsModal: $('controls-modal'),
       pause: $('pause'), pauseTitle: $('pause-title'), pauseSub: $('pause-sub'),
       resume: $('p-resume'), restart: $('p-restart'), pauseMenu: $('p-menu'), pauseActions: $('pause-actions'),
@@ -132,7 +132,6 @@ export class UI {
     this.el.ready.classList.add('hidden');
     this.el.pause.classList.add('hidden');
     this.el.hud.classList.add('hidden');
-    this.el.banner.classList.add('hidden');
     this.el.help.classList.add('hidden');
     this.el.controlsModal.classList.add('hidden');
     this._helpByUser = false;
@@ -177,7 +176,6 @@ export class UI {
     this._hideMenus();
     this.el.ready.classList.add('hidden');
     this.el.pause.classList.add('hidden');
-    this.el.banner.classList.add('hidden');
     this.el.hintH.classList.add('hidden');
     this.toggleHelp(false);
     this._helpByUser = false;
@@ -210,7 +208,6 @@ export class UI {
     this.el.hud.classList.remove('hidden');
     this.el.readyBoard.textContent = `${fmtDims(settings)} · ${settings.mines} mines`;
     this.el.readyMsg.textContent = msg;
-    this.el.banner.classList.remove('suppressed');
     this._syncHelp();
   }
   setReadyMessage(msg) { this.el.readyMsg.textContent = msg; }
@@ -220,7 +217,6 @@ export class UI {
     this.el.ready.classList.add('hidden');
     this.el.pause.classList.add('hidden');
     this.el.hud.classList.remove('hidden');
-    this.el.banner.classList.remove('suppressed');
     this._syncHelp();
     this.el.hintH.classList.toggle('hidden', !!lsGet(LS_HINT_DONE));
   }
@@ -242,7 +238,6 @@ export class UI {
     this.el.pause.classList.remove('hidden');
     this.el.hud.classList.remove('hidden');
     const ended = state !== 'playing';
-    this.el.banner.classList.add('suppressed');
     // The primary action leads: Resume while playing, Play again once the game ended.
     const [first, second] = ended ? [this.el.restart, this.el.resume] : [this.el.resume, this.el.restart];
     first.classList.replace('ui-button--secondary', 'ui-button--primary');
@@ -323,25 +318,6 @@ export class UI {
     this.dismissHint();
   }
 
-  /** Extra line under the end banner time (best-time info). */
-  setBannerRecord(text, isNew = false) {
-    const r = this.el.bannerRecord;
-    r.textContent = text || '';
-    r.classList.toggle('hidden', !text);
-    r.classList.toggle('new', !!isNew);
-  }
-  showBanner(state, time) {
-    const b = this.el.banner;
-    b.classList.remove('hidden', 'won', 'lost', 'compact', 'suppressed');
-    this.setBannerRecord('');
-    b.classList.add(state);
-    this.el.bannerTitle.textContent = state === 'won' ? 'You won!' : 'Game over';
-    this.el.bannerSub.textContent = `Time ${fmtTime(time)} s`;
-    // restart the entry animation
-    b.style.animation = 'none'; void b.offsetWidth; b.style.animation = '';
-    clearTimeout(this._bannerTimer);
-    this._bannerTimer = setTimeout(() => b.classList.add('compact'), 4000);
-  }
   /** Short global notice (e.g. "Controller connected"). */
   toast(msg, ms = 2200) {
     const t = $('toast');
@@ -374,7 +350,6 @@ export class UI {
     ready.classList.remove('hidden');
   }
 
-  hideBanner() { clearTimeout(this._bannerTimer); this.el.banner.classList.add('hidden'); }
   flash() {
     const f = this.el.flash;
     f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');

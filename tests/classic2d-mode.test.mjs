@@ -427,7 +427,7 @@ test('index.html holds the Classic 2D board layer with its generating and failur
 test('the shell registers the mode, routes its screens and reaches the board with the controller', () => {
   const table = MAIN.slice(MAIN.indexOf('const SHELL = createRouter('), MAIN.indexOf('// end of screen table'));
   assert.match(table, /'classic-2d-choice': \{[^\n]*defaultFocus: '\[data-size\]\[data-last\]'/, 'the board choice focuses the last choice');
-  assert.match(table, /'classic-2d': \{[^\n]*defaultFocus: null[^\n]*back: \(\{ source \}\) => PAUSE\.pause\(/, 'Back on the board is Pause');
+  assert.match(table, /'classic-2d': \{[^\n]*defaultFocus: null[^\n]*back: \(\{ source \}\) => pauseGame\(/, 'Back on the board is Pause');
   assert.match(MAIN, /MODES\.register\('classic-2d', \(report\) => createClassic2DMode\(report, /);
   assert.match(MAIN, /c2d: 'classic-2d'/, 'the board layer is a controller layer');
   assert.match(MAIN, /'c2d-choice': 'classic-2d-choice'/, 'the controller reaches the board choice');

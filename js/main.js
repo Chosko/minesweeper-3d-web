@@ -115,19 +115,26 @@ function actionSounds(type, r) {
   }
 }
 function boom() { sfx.explode(); ui.flash(); padRumble(PAD_BOOM); }
+/**
+ * The end of the 3D game: the HUD freezes and the end effect plays; the 3D mode's end delay then
+ * hands over to the results screen. Until then input is ignored (ending3D).
+ */
 function endGame() {
   const g = S.game;
   S.time = S.play.elapsedMs() / 1000;
   S.endState = { state: g.state, time: S.time, minesLeft: minesBefore };
   if (g.state === 'won') sfx.win();
-  ui.showBanner(g.state, S.time);
 }
+/** The 3D game's end delay is running: no board action, camera movement, view-mode key, Back or pause. */
+function ending3D() { return MODES.active === '3d' && mode3d.ending; }
+/** Every pause goes through here: none is offered while the 3D end delay runs. */
+function pauseGame(source, opts) { return ending3D() ? false : PAUSE.pause(source, opts); }
 
 const mouse = new MouseActions(onAction, hasSelection);
 const input = new Input({
   canvas,
   mouse,
-  isActive: () => S.mode === 'playing',
+  isActive: () => S.mode === 'playing' && !ending3D(),
   onLook: (dx, dy) => cam.look(dx, dy),
   onWheel: (notches) => { setSpacing(S.spacing + notches * 0.04); ui.showSpacing(S.spacing); },
   onKey: (code, e) => {
@@ -143,7 +150,7 @@ const input = new Input({
     if (locked) {
       if (S.mode === 'ready' || S.mode === 'paused') enterPlaying();
     } else if (S.mode === 'playing' && !S.lockless && !board3d.failure) { // a failed board released the lock for its offer
-      PAUSE.pause('key'); // the browser's own Esc released the lock
+      pauseGame('key'); // the browser's own Esc released the lock
     }
   },
   onLockError: () => {
@@ -186,7 +193,7 @@ const ui = new UI({
   onResume: () => PAUSE.resume(padGesture ? 'pad' : 'pointer'),
   onRestart: () => PAUSE.restart(padGesture ? 'pad' : 'pointer'),
   onMainMenu: () => PAUSE.toMenu(),
-  onPause: () => PAUSE.pause(padGesture ? 'pad' : 'button'),
+  onPause: () => pauseGame(padGesture ? 'pad' : 'button'),
   onReadyBack: () => readyBack(),
   onToggleSound: () => toggleSound(),
   onRetry2D: () => mode2d.retry(),
@@ -227,8 +234,8 @@ const SHELL = createRouter({
     settings: { defaultFocus: '#set-lookSensitivity', show: () => { MODES.leave(); showMenuBackdrop(); ui.showSettings(); } },
     'classic-2d-choice': { defaultFocus: '[data-size][data-last]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showBoardChoice2D(); showChoice2D(d.choice ?? LAST_CHOICE_2D.current); } },
     ready: { defaultFocus: '#ready-btn', show: (d = {}) => ui.showReady(S.settings, d.msg ?? ''), back: () => readyBack() },
-    playing: { defaultFocus: null, show: (d = {}) => { setLockless(!!d.lockless); ui.showPlaying(); }, back: ({ source }) => PAUSE.pause(source === 'pointer' ? 'button' : source) },
-    'classic-2d': { defaultFocus: null, show: () => ui.showClassic2D(), back: ({ source }) => PAUSE.pause(source === 'pointer' ? 'button' : source) },
+    playing: { defaultFocus: null, show: (d = {}) => { setLockless(!!d.lockless); ui.showPlaying(); }, back: ({ source }) => pauseGame(source === 'pointer' ? 'button' : source) },
+    'classic-2d': { defaultFocus: null, show: () => ui.showClassic2D(), back: ({ source }) => pauseGame(source === 'pointer' ? 'button' : source) },
     paused: { defaultFocus: () => (ui.isConfirmOpen() ? '#p-confirm-no' : gameOver() ? '#p-restart' : '#p-resume'), show: (d = {}) => { stopPlayInput(); setBoardHidden(true); ui.showPause(pauseInfo(d.note)); }, hide: () => setBoardHidden(false), back: ({ source }) => resumeFromPause(source) },
     results: { defaultFocus: '#r-again', show: (d) => RESULTS_VIEW.show(resultsContent(d ?? RESULTS.current)), hide: () => RESULTS_VIEW.hide(), back: () => RESULTS.toMenu() },
     [REPLAY_SCREEN]: { defaultFocus: () => REPLAY_VIEWER.defaultFocus(), show: (d = {}) => { REPLAY_VIEWER.show(d); }, hide: () => REPLAY_VIEWER.hide(), back: () => REPLAY_VIEWER.back() },
@@ -251,10 +258,11 @@ const FLOW_3D = {
   resume: (source) => resumeGame(source),
   restart: (source) => { // entered as resume enters play
     const play = startGame(board3dChoice);
-    if (source === 'pad') padResume(); else input.requestLock();
+    enterPlay3D(source);
     return play;
   },
   leave: () => leaveGame(),
+  release: () => input.exitLock(), // the results screen takes over
   contextLost: () => contextLost,
   sampler: (session) => createSampler3D({ session, camera: cam, controls, spacing: () => S.spacing }),
 };
@@ -293,6 +301,8 @@ const CHOICE_2D = bindBoardChoice({
   onBack: () => shellBack('pointer'),
 });
 MODES.on('failed', ({ screen }) => SHELL.go(screen ?? 'menu'));
+// A 3D game with no summary (the debug hook's fixed board) has no results screen: it ends on the pause card.
+MODES.on('finished', ({ mode, summary }) => { if (mode === '3d' && !summary) showPauseCard(); });
 
 // ---------- pause controller ----------
 // The one owner of pause, resume, restart and back to menu, and of the game hand-offs.
@@ -305,9 +315,9 @@ const PAUSE = createPauseController({
   goMenu: () => showMainMenu(),
   guard: (on) => (on ? window.addEventListener('beforeunload', guardLeave) : window.removeEventListener('beforeunload', guardLeave)),
 });
-window.addEventListener('blur', () => PAUSE.pause('blur'));
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') PAUSE.pause('hidden'); });
-window.addEventListener('pagehide', () => PAUSE.pageHide());
+window.addEventListener('blur', () => pauseGame('blur'));
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') pauseGame('hidden'); });
+window.addEventListener('pagehide', () => { if (ending3D()) mode3d.finishNow(); PAUSE.pageHide(); }); // a game in its end delay is finished, not lost
 
 // ---------- personal records ----------
 // The records store loads before the first screen, settling a game the last launch closed on, and
@@ -380,11 +390,12 @@ const REPLAY_VIEWER = createReplayViewer({
 });
 
 // ---------- results ----------
-// A finished game is recorded, then the results screen shows over the finished board. Every
-// finished and abandoned game's replay is then added to the replay library.
+// A finished game is recorded, then the results screen shows over the finished Classic 2D board,
+// or takes over the 3D scene, which stops rendering under it. Every finished and abandoned game's
+// replay is then added to the replay library.
 // Play again restarts the finished game's board choice, or starts it again once the mode was left
-// (back from Records). Watch replay plays the game just finished from its own replay; Back returns
-// to the results screen.
+// (back from Records); a 3D game is entered as resume enters play. Watch replay plays the game just
+// finished from its own replay; Back returns to the results screen.
 const RESULTS = createResultsFlow({
   records: RECORDS,
   replays: REPLAYS,
@@ -392,6 +403,7 @@ const RESULTS = createResultsFlow({
   restart: (source, { mode }) => {
     if (MODES.active) PAUSE.restart(source);
     else if (mode === 'classic-2d') MODES.start(mode, LAST_CHOICE_2D.current);
+    else if (mode === '3d' && board3dChoice) { MODES.start(mode, board3dChoice); enterPlay3D(source); }
   },
   goMenu: () => showMainMenu(),
 });
@@ -427,6 +439,7 @@ MODES.on('started', ({ mode }) => ui.setLastMode(mode));
 
 /** Back from the keyboard (Esc) or the controller: the topmost layer first, then the router. */
 function shellBack(source) {
+  if (ending3D()) return;
   if (ui.closeControls() || ui.closeConfirm()) return;
   SHELL.back(source);
 }
@@ -446,7 +459,7 @@ function resumeGame(source) {
 /** Leave the ready screen: a fresh board goes back to the 3D board choice; a game in progress opens the pause menu. */
 function readyBack() {
   if (S.mode !== 'ready') return;
-  if (S.game && S.started) PAUSE.pause('key');
+  if (S.game && S.started) pauseGame('key');
   else SHELL.go('board-choice');
 }
 
@@ -490,7 +503,6 @@ function startGame(settings) {
   renderer.setGame(g);
   applyPixelRatio(g.n);
   cam.reset(...startCameraPos(s.X, s.Y, s.Z));
-  ui.hideBanner();
   ui.setBoard(S.settings);
   ui.updateHud(0, g.minesLeft);
   SHELL.go('ready', { data: { msg: NO_MOUSE ? NO_MOUSE_MSG : '' } });
@@ -540,6 +552,8 @@ function startCameraPos(X, Y, Z) {
 }
 
 function setLockless(on) { S.lockless = on; document.body.classList.toggle('lockless', on); }
+/** A new 3D board entered as resume enters play: a controller enters lockless play, otherwise pointer lock is asked for. */
+function enterPlay3D(source) { if (source === 'pad') padResume(); else input.requestLock(); }
 
 /** The ready card hands over to play; resuming from the pause card unwinds back to play. */
 function enterPlaying(lockless = false) {
@@ -607,7 +621,6 @@ function leaveGame() {
   board3d.generating = false;
   board3d.failure = null;
   ui.setBoardStatus3D({});
-  ui.hideBanner();
 }
 /** Put the decorative demo board behind the menu. */
 function showMenuBackdrop() {
@@ -625,7 +638,7 @@ let reloading = false;
  * Ctrl is a game key, and Ctrl+W cannot be intercepted.
  */
 function guardLeave(e) {
-  if (reloading) return;
+  if (reloading || ending3D()) return; // a game in its end delay is over: nothing to lose
   e.preventDefault();
   e.returnValue = '';
 }
@@ -675,7 +688,7 @@ const pads = new GamepadReader({
   onActiveChange: () => updatePadUi(),
   onDisconnect: (info) => {
     updatePadUi();
-    if (info.wasActive && (S.mode === 'playing' || S.mode === 'classic-2d')) PAUSE.pause('pad', { note: 'Controller disconnected' });
+    if (info.wasActive && (S.mode === 'playing' || S.mode === 'classic-2d')) pauseGame('pad', { note: 'Controller disconnected' });
     else ui.toast('Controller disconnected');
   },
 });
@@ -803,6 +816,7 @@ function handlePad(p, dt, now) {
 }
 
 function padPlaying(p, held, pressed, dt, now) {
+  if (ending3D()) { controls.releasePad(); return; } // the end delay: Start, Back, triggers and sticks are ignored
   if (board3d.failure) { padFailed3D(p, held, pressed, now); return; }
   if (pressed(BTN.START)) { padClick(document.getElementById('hud-pause')); return; } // the overlay's pause button
   if (backButtons(S.mode).some(pressed)) { padClick(document.getElementById('hud-pause')); return; } // Back while playing = Pause
@@ -914,7 +928,7 @@ function refresh() {
   if (!S.game || onBackdrop()) return;
   cam.apply(renderer.camera);
   const playing = S.mode === 'playing';
-  renderer.setToggles(playing && controls.shift, playing && controls.space, playing && controls.ctrl);
+  if (!ending3D()) renderer.setToggles(playing && controls.shift, playing && controls.space, playing && controls.ctrl);
   renderer.setSpacing(S.spacing);
   updatePick();
 }
@@ -934,6 +948,7 @@ function rendererAnimating() {
   return null; // unknown
 }
 function shouldRender(now, synced) {
+  if (S.mode === 'results' && RESULTS.current?.mode === '3d') return false; // the results screen takes over the 3D scene
   if (onBackdrop() || needRender || synced) return true;
   if (S.endState !== lastEnd) { lastEnd = S.endState; if (S.endState) animUntil = now + 6000; return true; }
   const anim = rendererAnimating();
@@ -975,14 +990,17 @@ function frame(now) {
     const t = replay3d.toggles;
     renderer.setToggles(t.shift, t.space, t.ctrl);
   } else {
-    if (playing) {
+    const frozen = ending3D(); // the end delay: the camera and the view mode stay as the game ended
+    if (playing && !frozen) {
       cam.move(dt, input.move);
       if (controls.hasAxes) cam.moveAxes(dt, controls.axes.f, controls.axes.r, controls.axes.u);
     }
     cam.apply(three);
-    const shift = playing && controls.shift, space = playing && controls.space, ctrl = playing && controls.ctrl;
-    renderer.setToggles(shift, space, ctrl);
-    ui.setModes(shift, space, ctrl);
+    if (!frozen) {
+      const shift = playing && controls.shift, space = playing && controls.space, ctrl = playing && controls.ctrl;
+      renderer.setToggles(shift, space, ctrl);
+      ui.setModes(shift, space, ctrl);
+    }
   }
   if (MODES.active === '3d') mode3d.tick(); // the replay's camera sampler
   renderer.setSpacing(replay3d.view ? REPLAY_SPACING : S.spacing);
@@ -1036,7 +1054,7 @@ window.__ms = {
   forcePlay() { enterPlaying(true); },
   get controls() { return controls; },
   get pads() { return pads; },
-  pause() { PAUSE.pause('key'); },
+  pause() { pauseGame('key'); },
   cellCenter,
   moveTo(x, y, z) { cam.x = x; cam.y = y; cam.z = z; refresh(); },
   look(yaw, pitch) { cam.yaw = yaw; cam.pitch = pitch; refresh(); },

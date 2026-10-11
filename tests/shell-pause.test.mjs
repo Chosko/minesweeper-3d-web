@@ -295,11 +295,12 @@ const MAIN = read('js/main.js');
 
 test('every pause source in the shell goes through the pause controller', () => {
   assert.match(MAIN, /createPauseController\(/);
-  assert.match(MAIN, /onPause: \(\) => PAUSE\.pause\(/, 'the overlay pause button (and controller START through it)');
-  assert.match(MAIN, /playing: \{[^\n]*back: \(\{ source \}\) => PAUSE\.pause\(source/, 'Esc and the controller back button in play');
-  assert.match(MAIN, /addEventListener\('blur', \(\) => PAUSE\.pause\('blur'\)\)/, 'window blur');
-  assert.match(MAIN, /visibilitychange[^\n]*PAUSE\.pause\('hidden'\)/, 'tab hidden');
-  assert.match(MAIN, /addEventListener\('pagehide', \(\) => PAUSE\.pageHide\(\)\)/, 'pagehide');
+  assert.match(MAIN, /function pauseGame\(source, opts\) \{[^\n]*PAUSE\.pause\(source, opts\)/, 'one way to the pause controller');
+  assert.match(MAIN, /onPause: \(\) => pauseGame\(/, 'the overlay pause button (and controller START through it)');
+  assert.match(MAIN, /playing: \{[^\n]*back: \(\{ source \}\) => pauseGame\(source/, 'Esc and the controller back button in play');
+  assert.match(MAIN, /addEventListener\('blur', \(\) => pauseGame\('blur'\)\)/, 'window blur');
+  assert.match(MAIN, /visibilitychange[^\n]*pauseGame\('hidden'\)/, 'tab hidden');
+  assert.match(MAIN, /addEventListener\('pagehide', \(\) => \{[^\n]*PAUSE\.pageHide\(\); \}\)/, 'pagehide');
   assert.match(MAIN, /onRestart: \(\) => PAUSE\.restart\(/);
   assert.match(MAIN, /onMainMenu: \(\) => PAUSE\.toMenu\(\)/);
   assert.match(MAIN, /onResume: \(\) => PAUSE\.resume\(/);
@@ -480,9 +481,9 @@ test('in a browser, the 3D game pauses, resumes, restarts and goes back to menu 
     await startAndClick();
     await ms(() => { globalThis.__ms.aimAt(4); globalThis.__ms.click('left'); });
     assert.equal(await ms(() => globalThis.__ms.game.state), 'lost');
-    assert.equal((await hand()).at(-1), 'finished');
+    await page.waitForFunction(() => globalThis.__hand.at(-1)[0] === 'finished', null, { timeout: 5000 });
     assert.equal(await guarded(), false);
-    await ms(() => globalThis.__ms.pause());
+    assert.equal(await mode(), 'paused', 'a fixed board has no results screen: it ends on the pause card');
     assert.equal(await boardHidden(), true, 'an ended game is hidden under the card too');
     await ms(() => document.getElementById('p-restart').click());
     assert.equal(await visible('pause-confirm'), false, 'no confirmation once the game ended');

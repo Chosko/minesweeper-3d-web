@@ -10,6 +10,16 @@ import { create3DGame, createSession } from '../js/mode3d/session.js';
 import { createModeHost, MODE_EVENTS } from '../js/shell/mode-host.js';
 import { create3DMode } from '../js/shell/mode-3d.js';
 
+// The 3D mode's end delay on a clock the test fires: endDelay() ends every pending one.
+function endClock() {
+  const pending = [];
+  return {
+    setTimeout: (fn) => { pending.push(fn); return fn; },
+    clearTimeout: (fn) => { const i = pending.indexOf(fn); if (i >= 0) pending.splice(i, 1); },
+    endDelay: () => { for (const fn of pending.splice(0)) fn(); },
+  };
+}
+
 const cube = (X, Y, Z, mines, noGuess = false) =>
   createBoardIdentity({ mode: MODE_3D, width: X, height: Y, depth: Z, mines, noGuess });
 
@@ -150,6 +160,7 @@ function play3D() {
     start: (choice) => open(choice),
     restart: () => open({ X: 5, Y: 1, Z: 1, mines: 1, noGuess: true }),
     contextLost: () => false,
+    clock: endClock(),
   };
   host.register('3d', (report) => create3DMode(flow, report));
   host.start('3d', { X: 5, Y: 1, Z: 1, mines: 1, noGuess: true });
@@ -157,6 +168,7 @@ function play3D() {
     host, events,
     get session() { return session; },
     advance: (ms) => { t += ms; },
+    endDelay: () => flow.clock.endDelay(),
     of: (type) => events.filter(([ty]) => ty === type).map(([, e]) => e.summary),
   };
 }
@@ -193,6 +205,8 @@ test('the 3D mode reports game finished with the builder\'s summary, its outcome
   p.advance(3000);
   p.session.toggleFlag(1); // a right-click on a revealed cell: one flag click
   p.session.reveal(4);
+  assert.deepEqual(p.of('finished'), [], 'the end effect plays first');
+  p.endDelay();
   const [finished] = p.of('finished');
   assert.equal(finished.outcome, 'won');
   assert.equal(finished.elapsedMs, 3000);
@@ -228,12 +242,14 @@ test('a fixed 3D board, which no generator made, has no summary', () => {
   const flow = {
     openBoardChoice() {}, pause() {}, resume() {}, leave() {}, restart() {}, contextLost: () => false,
     start: (choice) => { session = createSession({ board: choice, client: rowClient() }); return session; },
+    clock: endClock(),
   };
   host.register('3d', (report) => create3DMode(flow, report));
   host.start('3d', { X: 5, Y: 1, Z: 1, mines: 1, minePositions: ROW.mines });
   session.reveal(0);
   assert.equal(host.summary(), null);
   session.reveal(4);
+  flow.clock.endDelay();
   assert.deepEqual(events.map(([t]) => t), ['started', 'canPause', 'canPause', 'finished']);
   assert.equal(events.at(-1)[1].summary, null);
 });

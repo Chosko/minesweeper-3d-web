@@ -871,8 +871,9 @@ test('in a browser, the menu, the pause card and the results layout meet the con
       globalThis.__ms.forcePlay();
       globalThis.__ms.aimAt(0);
       globalThis.__ms.click('left');
-      globalThis.__ms.pause();
     });
+    // a fixed board has no results screen: after the end delay it ends on the pause card
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'paused', null, { timeout: 5000 });
     assert.equal(await page.evaluate(() => globalThis.__ms.game.state), 'lost');
     const order = await page.evaluate(() => [...document.querySelectorAll('#pause .ui-actions button')].map((b) => [b.id, b.className]));
     assert.equal(order[0][0], 'p-restart', 'Play again comes first once the game ended');

@@ -306,7 +306,7 @@ Feature: replay-playback
 
 ## 81. 3D end sequence and the results takeover
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/mode3d/session.js, js/shell/mode-3d.js, js/main.js, js/ui.js, js/render.js, index.html, js/results/view.js, css/components.css, tests/mode3d-end.test.mjs
 Preconditions: 62, 68

@@ -57,6 +57,8 @@ kbd {
 #records-replays-table td .ui-button + .ui-button { margin-left: var(--space-2); }
 #records-bests .ui-stat > .ui-button { align-self: flex-start; }
 #pause, #ready, #results { background: rgba(170, 200, 240, 0.35); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+/* Over a 3D game the results screen takes over: an opaque surface in the chosen theme, no scene behind it. */
+#results.results--takeover { background: var(--color-backdrop); backdrop-filter: none; -webkit-backdrop-filter: none; }
 
 @keyframes pop { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: none; } }
 
@@ -184,35 +186,6 @@ kbd {
 #help .controls { font-size: 13px; }
 .help-foot { margin: 10px 0 0; font-size: 12px; color: var(--color-ink-muted); }
 
-/* ---------- end banner ---------- */
-#banner {
-  position: fixed; left: 50%; top: 18%;
-  transform: translateX(-50%);
-  z-index: var(--z-banner);
-  pointer-events: none;
-  text-align: center;
-  padding: 18px 34px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: var(--elevation-3);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  animation: bannerIn 0.45s cubic-bezier(.2,1.4,.4,1);
-}
-@keyframes bannerIn { from { opacity: 0; transform: translate(-50%, -14px) scale(0.92); } to { opacity: 1; transform: translateX(-50%); } }
-#banner-title { font-size: 44px; font-weight: 900; letter-spacing: -0.02em; line-height: 1.1; }
-#banner.won #banner-title { color: var(--color-success); }
-#banner.lost #banner-title { color: var(--color-danger); }
-#banner-sub { font: 700 18px var(--font-family-mono); color: var(--color-ink); margin-top: 4px; }
-.banner-hint { font-size: 13px; color: var(--color-ink-muted); margin-top: 8px; }
-.banner-record { font-size: 15px; font-weight: 700; color: var(--color-ink-muted); margin-top: 4px; }
-.banner-record.new { color: #b26a00; }
-#banner.suppressed { display: none; }
-#banner.compact .banner-record { font-size: 13px; }
-#banner.compact { top: auto; bottom: 64px; padding: 10px 22px; }
-#banner.compact #banner-title { font-size: 22px; }
-#banner.compact #banner-sub { font-size: 14px; }
-
 #flash { position: fixed; inset: 0; pointer-events: none; z-index: var(--z-flash); opacity: 0; background: radial-gradient(circle at 50% 50%, rgba(255, 245, 200, 0.95), rgba(255, 90, 40, 0.75) 45%, rgba(160, 0, 0, 0.55)); }
 #flash.go { animation: flash 0.9s ease-out; }
 @keyframes flash { 0% { opacity: 0.95; } 100% { opacity: 0; } }
@@ -224,7 +197,6 @@ kbd {
 @media (max-width: 760px) {
   .controls.compact { grid-template-columns: max-content 1fr; }
   .hud-tools { display: none; }
-  #banner-title { font-size: 32px; }
 }
 @media (max-height: 600px) {
   .ready-card { padding: 18px 24px; gap: 8px; }

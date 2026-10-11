@@ -13,19 +13,27 @@
 //   sampler(session)   optional: the session's movement sampler (js/replay/sampler-3d.js), or an
 //                      object with tick() and optionally destroy(); without it, no movement is
 //                      recorded
+//   release()          optional: release pointer lock before the results screen takes over
+//   clock              optional: { setTimeout(fn, ms), clearTimeout(h) } for the end delay; the
+//                      global timers by default
 //
 // The adapter listens to the session it holds and to no other. At the session's `started` — the
-// first reveal applied to the generated board — it reports started and canPause(true); at its
-// `finished` it reports canPause(false) and finished(summary, replay), after the listeners
-// js/main.js added before handing the session over have played the end effect. The host reports
-// abandoned from summary() and replay(summary) when a started, unfinished game is restarted or
-// left; a game left before its first applied reveal reports nothing. The replay is the session's
-// recording sealed with the summary (js/mode3d/session.js), null when there is no summary.
-// pause() pauses the session, so its timer stops and a pending board request keeps running; the
-// timer resumes with play. restart() and leave() leave the session, cancelling a pending
-// generation and discarding its recording, and drop its sampler. tick() drives the sampler (call
-// it every frame). A lost graphics context — at start() or through contextLost() — is reported as
-// failed, and leaves the session.
+// first reveal applied to the generated board — it reports started and canPause(true). At its
+// `finished` — after the listeners js/main.js added before handing the session over have started
+// the end effect — it reports canPause(false) and the end sequence runs (`ending` true): the
+// summary is the game's at its end, a pause is ignored, and after END_DELAY_MS, on the clock and so
+// whether or not the tab is drawing frames, it calls flow.release() and reports
+// finished(summary, replay) once. The shell offers no restart or leave while `ending`. The host
+// reports abandoned from summary() and replay(summary) when a started, unfinished game is
+// restarted or left; a game left before its first applied reveal reports nothing. The replay is
+// the session's recording sealed with the summary (js/mode3d/session.js), null when there is no
+// summary. pause() pauses the session, so its timer stops and a pending board request keeps
+// running; the timer resumes with play. restart() and leave() leave the session, cancelling a
+// pending generation or end delay and discarding its recording, and drop its sampler. tick()
+// drives the sampler (call it every frame). A lost graphics context — at start() or through
+// contextLost() — is reported as failed, and leaves the session; during the end delay the game is
+// first reported finished, so its summary is still recorded. finishNow() cuts a running end delay
+// short — the page is going away — so the game is reported finished, never left unfinished.
 //
 // Summaries are built by js/records/summary.js's buildSummary from the session's engine counts
 // (outcome abandoned) or engine summary (won or lost), its elapsed time, its board as the 3D board
@@ -37,17 +45,27 @@
 import { MODE_3D } from '../records/board.js';
 import { buildSummary } from '../records/summary.js';
 
+/** How long the end effect plays before the results screen takes over, for a win and a loss alike. */
+export const END_DELAY_MS = 1000;
+
+const globalClock = {
+  setTimeout: (fn, ms) => globalThis.setTimeout(fn, ms),
+  clearTimeout: (h) => globalThis.clearTimeout(h),
+};
+
 /**
  * The 3D mode for `createModeHost().register('3d', (report) => create3DMode(flow, report))`.
  * js/main.js calls contextLost() when the WebGL context is lost during a 3D game.
  */
 export function create3DMode(flow, report) {
-  let game = null; // { session, sampler, started, id, final, offs }
+  const clock = flow.clock ?? globalClock;
+  let game = null; // { session, sampler, started, id, final, ending, offs }
 
   function drop() {
     if (!game) return;
     const g = game;
     game = null;
+    if (g.ending) { clock.clearTimeout(g.ending.handle); g.ending = null; }
     for (const off of g.offs) off();
     g.sampler?.destroy?.();
     g.session.leave();
@@ -71,7 +89,7 @@ export function create3DMode(flow, report) {
   function attach(session) {
     drop();
     const sampler = typeof flow.sampler === 'function' ? flow.sampler(session) : null;
-    const g = { session, sampler, started: false, id: null, final: undefined, offs: [] };
+    const g = { session, sampler, started: false, id: null, final: undefined, ending: null, offs: [] };
     g.offs.push(
       session.on('started', () => {
         g.started = true;
@@ -82,10 +100,19 @@ export function create3DMode(flow, report) {
       session.on('finished', () => {
         g.final = build(g, session.engineSummary());
         report.canPause(false);
-        report.finished(g.final, replay(g.final));
+        g.ending = { handle: clock.setTimeout(() => finish(g), END_DELAY_MS) };
       }),
     );
     game = g;
+  }
+
+  // The end delay is over (or cut short by a lost context): game finished, once.
+  function finish(g) {
+    if (game !== g || !g.ending) return;
+    clock.clearTimeout(g.ending.handle);
+    g.ending = null;
+    flow.release?.();
+    report.finished(g.final, replay(g.final));
   }
 
   function summary() {
@@ -109,7 +136,10 @@ export function create3DMode(flow, report) {
       if (flow.contextLost()) { failed(); return; }
       attach(flow.start(choice));
     },
+    /** Whether the end sequence is running: the game is over and the results screen not yet shown. */
+    get ending() { return !!game?.ending; },
     pause(opts = {}) {
+      if (game?.ending) return;
       game?.session.pause();
       flow.pause(opts.note ?? '');
     },
@@ -122,10 +152,13 @@ export function create3DMode(flow, report) {
       drop();
       flow.leave();
     },
+    /** The page is going away: a running end delay ends now, so the game is reported finished. */
+    finishNow() { if (game?.ending) finish(game); },
     summary,
     replay,
     tick() { game?.sampler?.tick(); },
     contextLost() {
+      if (game?.ending) finish(game);
       game?.session.leave();
       failed();
     },

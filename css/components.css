@@ -223,7 +223,9 @@
      of the game's stats, a ui-panel with a ui-stat-row of the best
      comparisons (each ui-stat with a ui-stat__detail difference line), a
      ui-text--warning note, and ui-actions--row (Play again primary, Records,
-     Back to menu). Default focus: Play again.
+     Back to menu). Default focus: Play again. Over Classic 2D the finished
+     board shows behind it; over a 3D game it takes over on an opaque surface
+     (results--takeover, css/style.css).
    Replay viewer (index.html #replay, filled by js/replay/viewer.js): a
      ui-overlay-bar of the replay's figures (Time in the overlay's timer
      format, Mines, 3BV solved / 3BV, 3BV/s) with a secondary Back, the board

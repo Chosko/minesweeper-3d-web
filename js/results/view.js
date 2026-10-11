@@ -11,16 +11,18 @@
 //
 // resultsContent({ summary, comparison, saved, notSaved, watch }) → the screen's content:
 //   { outcome, title, board, stats: [{ key, label, value, shown }], bests: [{ stat, label, best,
-//     difference, newBest }] | null, notes: [text], watch }
+//     difference, newBest }] | null, notes: [text], watch, takeover }
 // The bests show on a win with a comparison (the bests that stood before this game); notes say
 // that the result could not be saved (saved false) or that records are not being saved this
-// session (notSaved, told once by the flow); watch is whether Watch replay shows (the flow's watch).
+// session (notSaved, told once by the flow); watch is whether Watch replay shows (the flow's watch);
+// takeover is whether the screen takes over on an opaque surface — a 3D game's, whose scene is not
+// seen behind it, where the Classic 2D board stays visible behind the screen.
 //
 // createResultsView({ root, onPlayAgain, onWatch?, onRecords, onMenu }) → { show(content), hide() }:
 // fills the #results markup by id and calls back on its actions; Watch replay (#r-watch) shows only
-// while content.watch.
+// while content.watch, and the root carries `results--takeover` while content.takeover.
 
-import { boardLabel } from '../records/board.js';
+import { boardLabel, MODE_3D } from '../records/board.js';
 
 export const DASH = '—';
 const MINUS = '−';
@@ -84,6 +86,7 @@ export function resultsContent({ summary, comparison = null, saved = true, notSa
     bests,
     notes,
     watch: watch === true,
+    takeover: summary.board?.mode === MODE_3D,
   };
 }
 
@@ -116,6 +119,7 @@ export function createResultsView({ root, onPlayAgain, onWatch = () => {}, onRec
       note.textContent = content.notes.join(' ');
       note.classList.toggle('hidden', !content.notes.length);
       $('r-watch').classList.toggle('hidden', !content.watch);
+      root.classList.toggle('results--takeover', !!content.takeover);
       root.classList.remove('hidden');
     },
     hide() { root.classList.add('hidden'); },

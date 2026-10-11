@@ -5,7 +5,7 @@ import { createServer } from 'node:http';
 import { join, dirname, normalize, extname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createModeHost, MODE_METHODS, MODE_EVENTS } from '../js/shell/mode-host.js';
-import { create3DMode } from '../js/shell/mode-3d.js';
+import { create3DMode, END_DELAY_MS } from '../js/shell/mode-3d.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -53,12 +53,24 @@ const expected = (outcome, elapsedMs) => {
   };
 };
 
+// A clock whose timers fire when the test advances it (the end delay).
+function fakeClock() {
+  let now = 0;
+  const timers = new Set();
+  return {
+    setTimeout(fn, ms) { const t = { at: now + ms, fn }; timers.add(t); return t; },
+    clearTimeout(t) { timers.delete(t); },
+    advance(ms) { now += ms; for (const t of [...timers]) if (t.at <= now) { timers.delete(t); t.fn(); } },
+  };
+}
+
 // A fake shell flow: records every call; start and restart hand back a new fake session.
 function fakeFlow() {
   const calls = [];
   const sessions = [];
   const next = () => { const s = fakeSession(); sessions.push(s); return s; };
   const flow = {
+    clock: fakeClock(),
     lost: false,
     sessions,
     get session() { return sessions.at(-1); },
@@ -146,6 +158,8 @@ test('game finished carries the outcome at a win or a loss, and the game can no 
     flow.session.emit('started', {});
     flow.session.ms = 9000;
     flow.session.emit('finished', { state });
+    assert.deepEqual(types(), ['started', 'canPause', 'canPause'], 'pause stops at once; the end effect plays first');
+    flow.clock.advance(END_DELAY_MS);
     assert.deepEqual(types(), ['started', 'canPause', 'canPause', 'finished']);
     assert.deepEqual(plain(events.at(-1)[1].summary), expected(state, 9000));
     assert.equal(events.at(-1)[1].summary.id, events[0][1].summary.id, 'the finished summary names the started game');
@@ -355,18 +369,23 @@ test('in a browser, the 3D game starts, pauses, resumes, restarts and leaves thr
     assert.equal(await ms(() => globalThis.__ms.state.lockless), false);
     assert.deepEqual((await events()).slice(-3), ['canPause', 'abandoned', 'canPause']);
 
-    // a win reports game finished — a fixed board with no summary — and leaving afterwards abandons nothing
-    const won = await ms((b) => {
+    // a win reports game finished after the end delay — a fixed board with no summary, which ends on
+    // the pause card — and leaving afterwards abandons nothing
+    await ms((b) => {
       globalThis.__ms.modes.start('3d', b);
       globalThis.__ms.forcePlay();
       globalThis.__ms.aimAt(0);
       globalThis.__ms.click('left');
-      const [type, e] = globalThis.__events.at(-1);
-      const state = globalThis.__ms.game.state;
-      globalThis.__ms.modes.leave();
-      return { type, summary: e.summary, state, last: globalThis.__events.at(-1)[0] };
     }, BOARD);
-    assert.deepEqual(won, { type: 'finished', summary: null, state: 'won', last: 'finished' });
+    assert.equal(await ms(() => globalThis.__ms.game.state), 'won');
+    await page.waitForFunction(() => globalThis.__events.at(-1)[0] === 'finished', null, { timeout: 5000 });
+    assert.equal(await mode(), 'paused', 'a fixed board, which has no results, ends on the pause card');
+    const won = await ms(() => {
+      const [type, e] = globalThis.__events.at(-1);
+      globalThis.__ms.modes.leave();
+      return { type, summary: e.summary, last: globalThis.__events.at(-1)[0] };
+    });
+    assert.deepEqual(won, { type: 'finished', summary: null, last: 'finished' });
 
     // a lost graphics context is the 3D mode's failure; its screen offers back to menu
     await ms(() => { globalThis.__ms.modes.start('3d', { X: 3, Y: 3, Z: 3, mines: 1 }); globalThis.__ms.forcePlay(); });

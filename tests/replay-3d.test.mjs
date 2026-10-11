@@ -10,7 +10,7 @@ import {
   cameraSample, viewMode, createSampler3D, SAMPLE_INTERVAL_MS, POSITION_STEPS, ANGLE_STEPS, VIEW_MODE,
 } from '../js/replay/sampler-3d.js';
 import { createSession } from '../js/mode3d/session.js';
-import { create3DMode } from '../js/shell/mode-3d.js';
+import { create3DMode, END_DELAY_MS } from '../js/shell/mode-3d.js';
 import { createModeHost } from '../js/shell/mode-host.js';
 import { decodeReplay, cellStateDigest } from '../js/replay/format.js';
 import { createGameWithMines } from '../js/engine/rules.js';
@@ -311,6 +311,7 @@ function shell3D() {
     restart: () => open(),
     leave() {},
     contextLost: () => false,
+    clock,
     sampler(session) {
       const s = { session, ticks: 0, destroyed: false, tick() { s.ticks += 1; }, destroy() { s.destroyed = true; } };
       samplers.push(s);
@@ -334,6 +335,8 @@ test('the 3D adapter: finished carries the replay beside the summary; tick() dri
   clock.advance(400);
   session.reveal(1);
   await settle();
+  assert.equal(handed.finished.length, 0, 'the end effect plays first');
+  clock.advance(END_DELAY_MS);
   assert.equal(handed.finished.length, 1);
   const { summary, replay, mode: id } = handed.finished[0];
   assert.equal(id, '3d');
