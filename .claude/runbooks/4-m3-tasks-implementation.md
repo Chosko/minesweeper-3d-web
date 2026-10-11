@@ -15,7 +15,7 @@ Context: none
 
 Done: 2026-10-11, commit `b6a5977` (14 files, +211/-156). A remembered double-layer choice falls back to cube Beginner via `normaliseChoice`, dropping its saved custom fields; the 3D board choice is now a single Cube menu (no second column).
 
-## [ ] 33. Implement task 116 — Update documentation for feature `3d-play-flow`
+## [x] 33. Implement task 116 — Update documentation for feature `3d-play-flow`
 
 Depends on: 32
 
@@ -25,6 +25,8 @@ Context:
 ```prompt
 /task-implement 116 --review
 ```
+
+Done: 2026-10-11, commit `222b091` (7 files, +84/-66).
 
 ## [ ] 34. Implement task 117 — Movement playback holds each sample, then interpolates
 
