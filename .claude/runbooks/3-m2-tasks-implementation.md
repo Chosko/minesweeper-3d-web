@@ -365,7 +365,7 @@ Context: none
 
 Done: 2026-10-10, commit `05f9eeb` (7 files, +778/-8). The engine gained `game.snapshot()`/`restore()` (outside the task's files); snapshots every 2,000 actions on boards of 8,000+ cells under a 64 MB cap not in the task; `verify()` accepts a recorded time at or after the last action's, since real sessions can stop the timer slightly after it.
 
-## [ ] 27. Implement task 77 — Replay viewer screen with the 2D viewer, controls and overlay
+## [x] 27. Implement task 77 — Replay viewer screen with the 2D viewer, controls and overlay
 
 Depends on: 22, 26
 
@@ -377,11 +377,14 @@ Context:
 /task-implement 77 --review
 ```
 
+Done: 2026-10-11, commit `2c6d68b` (11 files, +1276/-4). The viewer is registered as `replay` in `js/main.js`, so Watch is live on Records; non-2D replays show "cannot be played here yet" until a 3D viewer registers; pointer interpolation stays linear (the step-19 hold amendment is still unmade).
+
 ## [ ] 28. Implement task 78 — 3D replay viewer
 
 Depends on: 9, 27
 
-Context: none
+Context:
+- 2026-10-11 (from step 27): the replay viewer refuses any board that is not the 2D square grid with "This replay cannot be played here yet." until a 3D viewer is registered under the `box` graph kind; the viewer is registered in `js/main.js` as `[REPLAY_SCREEN]`.
 
 ```prompt
 /task-implement 78 --review
@@ -404,6 +407,7 @@ Depends on: 26, 27, 28, 29
 
 Context:
 - 2026-10-10 (from step 26): `.claude/context/engine.md` and `replay.md` do not yet describe the engine's `game.snapshot()`/`restore()` (and metrics `save()`/`restore()`), the replay simulator or the verifier; the feature document gained a `## Snapshot interval` section.
+- 2026-10-11 (from step 27): the context files do not yet cover the replay viewer screen, the `__ms` debug-hook members `replayViewer` and `watch(data)`, or the Records Watch wording; "task 18's formatter" is `formatOverlayTime` in `js/ui/components.js`.
 
 ```prompt
 /task-implement 80 --review
