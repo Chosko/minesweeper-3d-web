@@ -1,16 +1,17 @@
-# Replay — format, recorder and sealer, movement samplers, library
+# Replay — format, recorder and sealer, movement samplers, library, playback
 
 ## OVERVIEW
 
-Replay recording and the replay library: every Classic 2D and 3D game that
-ends in play — won, lost, or abandoned after its first click — becomes one
-compact, versioned binary replay holding the board's mines, the rules
-version, every action with its time and the player's movement, sealed at
-the end of the game and handed on beside its summary; the library keeps it,
-pinning personal bests and the replays the player pins and keeping the
-newest 100 others. A replay plays back on the engine, so nothing in it
-depends on the generator. All of `js/replay/` is DOM-free, apart from the
-2D sampler's browser wiring.
+Replay recording, the replay library and replay playback: every Classic
+2D and 3D game that ends in play — won, lost, or abandoned after its first
+click — becomes one compact, versioned binary replay holding the board's
+mines, the rules version, every action with its time and the player's
+movement, sealed at the end of the game and handed on beside its summary;
+the library keeps it, pinning personal bests and the replays the player
+pins and keeping the newest 100 others; the replay viewer verifies a replay
+and plays it back on the engine, so nothing in it depends on the generator.
+All of `js/replay/` is DOM-free, apart from the 2D sampler's browser
+wiring, the viewer screen's view binder and the 2D viewer's mount.
 
 - `js/replay/format.js` — the replay object, the binary blob's layout, the
   encoder, and the decoder `replay-playback` shares: one decoder per format
@@ -28,6 +29,22 @@ depends on the generator. All of `js/replay/` is DOM-free, apart from the
   index document, `replays.library`; retention, pinning, start-up
   reconciliation and the failure rules. Storage and the blob store are
   handed in.
+- `js/replay/simulator.js` — the simulator: a replay played again on the
+  engine to any point in its time, with engine-state snapshots for backward
+  seeks; `openReplay`, which refuses what this build cannot play.
+- `js/replay/verify.js` — the verifier: runs the simulator to the end and
+  compares the game with the replay's check values.
+- `js/replay/clock.js` — the playback clock: replay time at the chosen
+  speed while playing.
+- `js/replay/viewer.js` — the replay viewer screen: opening and verifying a
+  replay, the clock driving the simulator once per frame, the controls,
+  keyboard and controller commands, the overlay figures and the end line;
+  `createReplayView`, the binder that fills `#replay`.
+- `js/replay/viewer-2d.js` — the 2D viewer: the Classic 2D board view,
+  read-only, with the recorded pointer and cursor; `mountViewer2D`.
+- `js/replay/viewer-3d.js` — the 3D viewer: the 3D state view over the
+  simulator's game and the recorded camera and view mode, for a scene
+  `js/main.js` hands in.
 
 The sessions own their recorder and the modes their sampler
 ([classic2d.md](classic2d.md), [mode3d.md](mode3d.md)); the sealed replay
@@ -37,7 +54,10 @@ library once its summary is recorded ([app-shell.md](app-shell.md)).
 `js/main.js` builds the one library (`REPLAYS`) over the platform `storage`
 and `blobStore` ([platform.md](platform.md)); the Records screen's library
 view lists, pins and unpins its replays ([records.md](records.md)).
-Watching them is `replay-playback`.
+`js/main.js` also builds the one viewer (`REPLAY_VIEWER`) on the router's
+`replay` screen, with the 2D viewer for square graphs and its own scene and
+camera for box graphs; the results screen's *Watch replay* and the library
+view's Watch open it ([app-shell.md](app-shell.md)).
 
 ## PUBLIC API
 
@@ -131,6 +151,79 @@ Watching them is `replay-playback`.
     Promise of every queued operation finishing.
   - `add`, `pin` and `unpin` before `load()` throw.
 
+`js/replay/simulator.js` (its head comment is the authority for the frame)
+- `SNAPSHOT_MIN_CELLS` (8000), `SNAPSHOT_INTERVAL` (2000 actions),
+  `SNAPSHOT_MEMORY` (64 MB); `REFUSAL` (`NEWER` `'newer-version'`,
+  `UNREADABLE` `'unreadable'`); `ReplayRefusedError` (`reason`).
+- `openReplay(input)` — a blob or a replay object → `{ok: true, replay}`, a
+  fresh decoded copy, or `{ok: false, reason, message}`: `NEWER` for a newer
+  format version or a rule profile or rules version this build lacks,
+  `UNREADABLE` for anything else.
+- `createSimulator(input, {snapshotInterval?, snapshotMinCells?,
+  snapshotMemory?})` → `{replay, grid, game, duration, length, seek(t),
+  seekIndex(i), indexAt(t), stats()}`; throws `ReplayRefusedError` where
+  `openReplay` refuses. `duration` is the check's elapsed time, or the last
+  action's time when later; `game` is the engine game, read-only for
+  callers, always the same object.
+- A frame (`seek`, `seekIndex`) is `{time, index, phase, minesLeft,
+  explodedCell, bbbv, bbbvSolved, clicks, state, game, changed}`, `changed`
+  an ascending `Int32Array` of the cells whose look moved since the last
+  frame.
+- `simulate(input, upTo)` → a fresh simulator's frame at `upTo`.
+
+`js/replay/verify.js`
+- `verify(input)` → `{ok: true, result: 'reproduces'}`, `{ok: false,
+  result: 'differs', field, expected, actual}` for the first check value
+  that differs (`outcome`, `elapsedMs`, `bbbv`, `bbbvSolved`,
+  `clicks.<kind>.<effective|wasted>`, `digest`), or `{ok: false, result:
+  'refused', reason, message}`.
+
+`js/replay/clock.js`
+- `SPEEDS` (`[0.5, 1, 2, 4]`), `DEFAULT_SPEED` (1).
+- `createPlaybackClock({duration, speed?})` → `duration`, `time`, `speed`,
+  `playing`, `ended`, `advance(ms)`, `play()` (from the beginning at the
+  end), `pause()`, `toggle()`, `setSpeed(s)`, `faster()`, `slower()`,
+  `seek(t)`.
+
+`js/replay/viewer.js` (its head comment is the authority for the screen)
+- `FAILURES` (`newer`, `unreproducible`, `unreadable`, `unsupported`),
+  `COMMANDS` (`toggle`, `prev`, `next`, `start`, `end`, `slower`,
+  `faster`), `REPLAY_KEYS` (Space and K toggle, ←/→ step, Home/End, Minus
+  and Equal change speed), `REPLAY_PAD` (Start and Y toggle, LB/RB step,
+  LT/RT change speed), `SEEK_STEP_MIN_MS` (100).
+- `prepareReplay({replay?, replayId?}, {library})` → Promise of `{ok: true,
+  sim}` or `{ok: false, reason, message}`; `replay` is a blob, a replay
+  object or the results hand-off's `{blob}`, `replayId` is fetched with
+  `library.bytes`.
+- `clockText(ms)` (`formatOverlayTime`), `overlayFigures(frame, ms)` →
+  `{clock, mines, bbbv, rate}`, `endLine(check)` → `{outcome, time, text}`
+  (`formatTime` of `js/results/view.js`), `seekStep(duration)`.
+- `createReplayViewer({library, router, view, viewers?})` → `state`,
+  `show({replay?, replayId?, returnTo?})`, `hide()`, `tick(ms)`,
+  `command(name)`, `seek(ms)`, `setSpeed(s)`, `key(code)`, `pad(pressed)`,
+  `back()`, `defaultFocus()`. `viewers` maps a graph kind to `({container,
+  sim}) → {draw(frame), place?(), destroy()}`; the default is `{square:
+  mountViewer2D}`.
+- `createReplayView({root, win?, onCommand, onSpeed, onSeek, onBack})` →
+  the binder of `#replay`: `open`, `close`, `loading`, `failed(message)`,
+  `ready({duration, kind})` → the board area, `render(state)`, `destroy`.
+
+`js/replay/viewer-2d.js`
+- `movementTrack(movement)`, `pointerAt(track, t)` → `[x, y]` in cells or
+  null, `cursorAt(track, t)` → cell or -1, `pointerPixel(layout, scroll,
+  point)` → canvas CSS pixels.
+- `createViewer2D({view, sim, pointer})` → `{track, draw(frame), place(),
+  destroy()}`; `mountViewer2D({container, sim, win?})` mounts the board
+  view (no play input) and the `.replay-pointer` element.
+
+`js/replay/viewer-3d.js`
+- `cameraTrack(movement, cappedAt?)`, `cameraAt(track, t)` → `[x, y, z,
+  yaw, pitch]` in cells and radians or null, `viewModeAt(track, t)`,
+  `viewToggles(mode)` → `{shift, space, ctrl}`, `worldPose(sample, box,
+  spacing)` → `{x, y, z, yaw, pitch}` in world units.
+- `createViewer3D({sim, scene, spacing})` → `{track, view, draw(frame),
+  destroy()}`; `scene` is `{show(view), camera(pose, toggles), hide()}`.
+
 ## INTERNAL PATTERNS
 
 - **The blob.** `'MSRP'`, the format version, the body, then a CRC-32 of
@@ -205,6 +298,45 @@ Watching them is `replay-playback`.
   session runs an in-memory library that saves nothing (`available()`
   false) and leaves the stored index and blobs untouched, so a newer
   build's library and every pinned replay survive.
+- **Refused before played.** The viewer verifies every replay before it
+  plays: a newer format, profile or rules version says it was made by a
+  newer version, a check value that differs says it can no longer be
+  reproduced, anything else — a missing stored replay too — says it cannot
+  be read, and a graph kind with no viewer says it cannot be played here.
+  Back works in every case.
+- **Seeking.** Forwards, the simulator applies the actions in between.
+  Backwards, it restores the nearest engine-state snapshot at or before the
+  target (the game's `snapshot()` / `restore()`, [engine.md](engine.md))
+  and replays from there. The start is always kept; a board of
+  `SNAPSHOT_MIN_CELLS` or more also keeps one every `SNAPSHOT_INTERVAL`
+  actions as playback first passes it, spaced further apart, evenly, when
+  they would pass `SNAPSHOT_MEMORY`. The verifier keeps only the start.
+- **The cell look.** The simulator tracks each cell's drawn look (closed,
+  revealed, revealed and hidden, flagged, and the loss view's mine,
+  exploded mine and wrong flag), so a frame's `changed` holds exactly the
+  cells a board view must redraw; after a restore it compares every cell.
+- **The viewer's frame.** `tick(ms)` runs once per frame from the frame
+  loop: while playing it advances the clock and, when the time moved, seeks
+  the simulator and hands the frame to the mounted viewer; while paused it
+  only calls the viewer's `place()`. A replay opens paused at its start, at
+  1×. Previous and next pause and move to the time of the action before or
+  after the current time; the seek bar steps 1% of the replay, at least
+  `SEEK_STEP_MIN_MS`. At the end the final board stays with the end line;
+  play restarts from the beginning.
+- **A shell screen, not a mode.** The viewer plays no game of its own,
+  records nothing, plays no sound and is never paused; a replay still
+  loading when the screen closes is dropped.
+- **2D playback.** The Classic 2D board view draws the simulator's game
+  from each frame's `changed`; the recorded pointer is interpolated
+  linearly between samples and the recorded cursor is the focus ring; on a
+  board that scrolls, the view follows the pointer's cell, else the
+  cursor's.
+- **3D playback.** The renderer draws the 3D state view over the
+  simulator's game; the camera is the recorded position, yaw and pitch,
+  interpolated between samples and held at the last one recorded before a
+  movement cap, with the recorded view mode applied; player input never
+  reaches it. Crossing the end of the game either way marks every cell, so
+  the loss view comes and goes whole.
 
 ## DOMAIN DEPENDENCIES
 
@@ -215,6 +347,9 @@ Watching them is `replay-playback`.
 - [../domain/features/replay-library.md](../domain/features/replay-library.md)
   — the replay store, the library index, retention, best and hand pinning,
   the hand-off, availability and the failure rules.
+- [../domain/features/replay-playback.md](../domain/features/replay-playback.md)
+  — the simulator, verifier, viewer, controls, overlay, entry points and
+  failure contracts, and the measured snapshot interval.
 - [../domain/technical-direction.md](../domain/technical-direction.md) —
   format versions on every saved file, and the engine keeping every shipped
   rules version.
@@ -222,21 +357,27 @@ Watching them is `replay-playback`.
 ## CROSS-REFERENCES
 
 - [engine.md](engine.md) — `CLICK_KINDS`, rule profiles and their versions,
-  the game's state arrays the digest reads.
+  the game's state arrays the digest reads, `createGameWithMines` and the
+  game's `snapshot()` / `restore()` the simulator plays on, and the 3D
+  state view the 3D viewer draws.
 - [records.md](records.md) — the board identity, `boardKey` and the summary
   record a replay is sealed with; the comparison whose new bests pin a
   replay; the Records screen's library view.
 - [platform.md](platform.md) — the storage interface the index is a
   document of, and the blob store the replays are kept in.
-- [classic2d.md](classic2d.md) — the 2D session's recorder and the mode's
-  sampler.
+- [classic2d.md](classic2d.md) — the 2D session's recorder, the mode's
+  sampler, and the board view the 2D viewer mounts.
 - [mode3d.md](mode3d.md) — the 3D session's recorder and the adapter's
   sampler.
 - [app-shell.md](app-shell.md) — the replay on the mode contract, the
-  hand-offs, the results flow that adds it to the library, `REPLAYS` in
-  `js/main.js`, and the frame loop that ticks the 3D sampler.
+  hand-offs, the results flow that adds it to the library and opens the
+  viewer, `REPLAYS` and `REPLAY_VIEWER` in `js/main.js`, the 3D replay
+  scene and camera, and the frame loop that ticks the 3D sampler and the
+  viewer.
+- [rendering.md](rendering.md) — the renderer the 3D viewer draws on.
 - [testing.md](testing.md) — `tests/replay-*.test.mjs`,
-  `tests/fixtures/replays/` and `dev/measure-replays.mjs`.
+  `tests/results-watch.test.mjs`, `tests/fixtures/replays/` and
+  `dev/measure-replays.mjs`.
 
 ## WHEN TO READ THE SOURCE
 
@@ -255,3 +396,10 @@ Watching them is `replay-playback`.
   `doLoad` in `library.js`.
 - Changing retention, pinning or the failure rules: `retain`, `reconcile`
   and `doLoad` in `library.js`, and its head comment.
+- Changing seeking, the snapshot constants or what a frame reports: the
+  head comment of `simulator.js` and `goTo` / `changedCells`; the
+  constants come from feature replay-playback § Snapshot interval.
+- Changing a control, a key or button, the overlay or the failure lines:
+  the head comment of `viewer.js` and the `replay` wiring in `js/main.js`.
+- Changing how a viewer draws or places the camera: `viewer-2d.js` or
+  `viewer-3d.js`, and `REPLAY_SCENE` / `mountReplay3D` in `js/main.js`.

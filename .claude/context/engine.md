@@ -146,6 +146,12 @@ Game (`js/engine/rules.js`)
   bbbv, bbbvSolved, clicks }` at a win or loss, null before.
 - `actions()` → the applied action stream `[{ kind: 'reveal' | 'flag' |
   'chord', cell }]` in order.
+- `snapshot()` → a frozen copy of the whole game state — cells, phase,
+  counts, 3BV progress and the action stream; `restore(snapshot)` sets the
+  same game back to it (a `RangeError` on a snapshot another game took).
+  The action stream is shared with the snapshot and copied only when play
+  goes on after a restore. The replay simulator seeks backwards with them
+  ([replay.md](replay.md)).
 - `clicks` is `{ reveal, flag, chord }`, each `{ effective, wasted }`.
 
 3D state view (`js/engine/state-view-3d.js`)
@@ -167,8 +173,11 @@ Game (`js/engine/rules.js`)
   loss left them.
 
 Metrics (`js/engine/metrics.js`)
-- `createBoardMetrics(graph, mine, number)` → `{ bbbv, solved, opened(c) }`.
-- `createClickCounts()` → `{ add(kind, wasted), snapshot() }`;
+- `createBoardMetrics(graph, mine, number)` → `{ bbbv, solved, opened(c),
+  save(), restore(saved) }`; `save` / `restore` copy the 3BV progress out
+  and back for the game's snapshots.
+- `createClickCounts()` → `{ add(kind, wasted), snapshot(), save(),
+  restore(saved) }`;
   `CLICK_KINDS` = `['reveal', 'flag', 'chord']`.
 
 ## INTERNAL PATTERNS

@@ -19,12 +19,14 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
   board choice binder), `GEN_3D` (the 3D game's generation client),
   `LAST_CHOICE_2D` and `CHOICE_2D` (the
   Classic 2D board choice binder), `RECORDS` (the records store), `REPLAYS`
-  (the replay library, [replay.md](replay.md)), `RESULTS`
+  (the replay library, [replay.md](replay.md)), `REPLAY_VIEWER` (the
+  replay viewer, [replay.md](replay.md)) and `REPLAY_SCENE` (the 3D replay's
+  scene and camera), `RESULTS`
   (the results flow), `RESULTS_VIEW` and `RECORDS_PAGE` (the Records
   screen's controller over its view, [records.md](records.md)); holds the
   single state object `S`; runs the `requestAnimationFrame` loop; exposes
   `window.__ms`. Also maps controller polls to game and menu actions
-  (`handlePad`, `padPlaying`, `padMenus`).
+  (`handlePad`, `padPlaying`, `padMenus`, `padReplay`).
 - `js/shell/` — the game shell's DOM-free modules; `js/main.js` hands each
   its screens, elements and callbacks:
   - `router.js` — the screen router and back stack (`createRouter`,
@@ -48,8 +50,8 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
   the view's binder:
   - `flow.js` — the results flow on the `finished` and `abandoned`
     hand-offs: records the game, routes a finished one to `results`, then
-    adds the game's replay to the replay library (`createResultsFlow`,
-    `RESULTS_SCREEN`).
+    adds the game's replay to the replay library; *Watch replay* opens the
+    replay viewer on that replay (`createResultsFlow`, `RESULTS_SCREEN`).
   - `view.js` — the screen's content and its time, rate and efficiency
     formats (`resultsContent`, `formatTime`, …) and the binder that fills
     `#results` (`createResultsView`); the formats are documented in its head
@@ -67,7 +69,8 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
   (`#board-choice`), the Classic 2D board choice (`#c2d-choice`), the
   placeholder screen (`#coming-soon`), the Records screen (`#records`), the
   Settings page (`#settings`, its controls generated into
-  `#settings-body`), the results screen (`#results`) and the pause card (`#pause-card`) are kit markup
+  `#settings-body`), the results screen (`#results`), the replay viewer
+  (`#replay`) and the pause card (`#pause-card`) are kit markup
   (§ Component kit). `#c2d` is the Classic 2D board layer: the board area
   `#c2d-board` and the generating / failed-board card `#c2d-status`;
   `#m3d-status` is the same card over the 3D box.
@@ -90,7 +93,9 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
   `js/theme.js`, `css/tokens.css` and `css/components.css`; `?theme=dark`
   opens it in Dark.
 - `css/style.css` — shell styling: positioning of the fixed layers (the
-  Classic 2D board layer and its board area below the overlay bar), the
+  Classic 2D board layer and its board area below the overlay bar, and the
+  replay viewer's layer — opaque, or transparent over the 3D scene under
+  `replay--scene` — its board area, controls and `.replay-pointer`), the
   menu-screen backdrop shared by `#menu`, `#board-choice`, `#coming-soon`,
   `#c2d-choice`, `#settings` and `#records`,
   the translucent backdrop shared by `#pause`, `#ready` and `#results`,
@@ -176,21 +181,23 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
 - `createResultsFlow({records, replays?, router, restart(source, current),
   goMenu})` → `attach(pauser)` → detach (both hand-offs),
   `finished(summary, mode, replay?)` → the routed data `{summary, mode,
-  comparison, saved, notSaved}` or null, `abandoned(summary, mode,
+  comparison, saved, notSaved, watch}` or null, `abandoned(summary, mode,
   replay?)`, `current` (the data last shown), `playAgain(source)`,
-  `openRecords()`, `toMenu()`. `replays` is the replay library; without it
-  no replay is kept.
+  `openRecords()`, `watch()`, `toMenu()`. `replays` is the replay library;
+  without it no replay is kept. `watch` is whether *Watch replay* is
+  offered: the game handed over its sealed replay and the router has the
+  replay viewer's route (`REPLAY_SCREEN`, [records.md](records.md)).
 
 `js/results/view.js`
 - `formatTime(ms)` (tenths, truncated: `"47.3 s"`), `formatTimeDifference`,
   `formatRate` / `formatRateDifference` (two decimals),
   `formatEfficiency` / `formatEfficiencyDifference` (whole percent); a
   missing value is `DASH`. `NOTES` (`notRecorded`, `notSaved`).
-- `resultsContent({summary, comparison?, saved?, notSaved?})` → `{outcome,
-  title, board, stats: [{key, label, value, shown}], bests: [{stat, label,
-  best, difference, newBest}] | null, notes}`.
-- `createResultsView({root, onPlayAgain, onRecords, onMenu})` → `show(content)`,
-  `hide()`.
+- `resultsContent({summary, comparison?, saved?, notSaved?, watch?})` →
+  `{outcome, title, board, stats: [{key, label, value, shown}], bests:
+  [{stat, label, best, difference, newBest}] | null, notes, watch}`.
+- `createResultsView({root, onPlayAgain, onWatch?, onRecords, onMenu})` →
+  `show(content)`, `hide()`; `#r-watch` shows only while `content.watch`.
 
 `js/ui.js` exports (consumed by `js/main.js`)
 - `DIM_MIN`/`DIM_MAX` (1/100, re-exported from `js/mode3d/board-choice.js`);
@@ -255,8 +262,10 @@ the factory tests drive):
 - getters `state` (the live `S`), `game`, `renderer`, `camera`, `controls`,
   `pads`, `fps`, `frameStats` (`{renders, skipped}`), `modes` (the mode
   host), `pauser` (the pause controller), `settings` (the settings store),
-  `records` (the records store);
+  `records` (the records store), `replayViewer` (`REPLAY_VIEWER`);
   `THREE`, `startCameraPos`.
+- `watch(data)` → `SHELL.go('replay', {data})`, `data` the viewer route's
+  `{replay | replayId, returnTo}`.
 - `start(X, Y, Z, mines, minePositions?)` → `MODES.start('3d', …)`;
   `forcePlay()` enters lockless play; `pause()` → `PAUSE.pause('key')`.
 - camera/aim: `moveTo`, `look(yaw, pitch)`, `aimAt(idx | [x,y,z])` → selected idx,
@@ -272,7 +281,7 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   else toggles a screen. `S.mode` is a getter over `SHELL.current`, so it is
   always the router's screen: `'menu' | 'board-choice' | 'coming-soon' |
   'records' | 'classic-2d-choice' | 'settings' | 'ready' | 'playing' |
-  'classic-2d' | 'paused' | 'results' | 'ctxlost'`. In the 3D game only `playing` moves the
+  'classic-2d' | 'paused' | 'results' | 'replay' | 'ctxlost'`. In the 3D game only `playing` moves the
   camera, runs the timer and accepts actions (`hasSelection`,
   `Input.isActive`); the Classic 2D board takes input and runs its timer on
   `classic-2d`.
@@ -282,7 +291,8 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   declares one — `ready` → `readyBack` (board choice for a fresh board, pause
   for a started game), `playing` and `classic-2d` → pause, `paused` →
   `resumeFromPause`,
-  `results` → menu, `ctxlost` → menu — else the stacked screen.
+  `results` → menu, `replay` → its `returnTo` (the menu when none),
+  `ctxlost` → menu — else the stacked screen.
 - **Back inputs.** `shellBack(source)` closes the controls modal or the pause
   confirmation first, then calls `SHELL.back`. Esc (`isBackKey`) reaches it
   through `Input`'s `onKey`; the board choice's, placeholder's and Settings
@@ -302,8 +312,9 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   Settings the look
   sensitivity slider (`#set-lookSensitivity`), ready `#ready-btn`,
   pause Cancel while the confirmation shows, else Play again once the game
-  ended, else Resume; results Play again (`#r-again`); ctx-lost its reload
-  button.
+  ended, else Resume; results Play again (`#r-again`); replay viewer Play
+  (`#rp-play`), or the message's Back (`#replay-message-back`) while a
+  replay opens or cannot play; ctx-lost its reload button.
 - **Mode host.** The shell reaches a game only through `MODES`: the menu's
   board choice, `start` (the board choices' `onStart`, `__ms.start`), pause/resume/restart
   (through the pause controller) and `leave`. Every menu screen's `show`
@@ -380,7 +391,8 @@ Game shell (`js/shell/`, wired in `js/main.js`):
 - **Results flow.** `RESULTS.finished(summary, mode, replay)` records the
   summary with `RECORDS.record` first, so the comparison is against the bests that
   stood before this game, then routes to `results` with `{summary, mode,
-  comparison, saved, notSaved}`, for a finished 3D game as for Classic 2D.
+  comparison, saved, notSaved, watch}`, for a finished 3D game as for
+  Classic 2D.
   A summary that is not a record — a fixed 3D board's null — is ignored, so
   that game keeps the 3D end flow (banner and pause card). A recording that
   throws still routes, with no comparison and `saved` false; `notSaved` is
@@ -389,7 +401,11 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   `RESULTS.playAgain` → `PAUSE.restart`, or `MODES.start('classic-2d',
   LAST_CHOICE_2D.current)` once the mode was left; Records →
   `openRecords` routes to the Records screen with this board's `boardKey`,
-  so it opens on that board, and Back from it returns to `results`; Back to menu
+  so it opens on that board, and Back from it returns to `results`; Watch
+  replay (shown when the routed data's `watch` is set) → `RESULTS.watch()`
+  routes to `replay` with `{replay, returnTo: {screen: 'results'}}`, the
+  shown game's own sealed replay, so it plays whether or not the library
+  saved it, and Back from the viewer returns to `results`; Back to menu
   and Back → `showMainMenu`. Returning to `results` without data shows
   `RESULTS.current` again. `RESULTS.abandoned(summary, mode, replay)`
   records the summary (a no-op when the records store already recorded it) and
@@ -398,6 +414,29 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   comparison shows a new best on any of the board's three stats
   ([replay.md](replay.md)); a library that throws or rejects is logged and
   changes nothing else.
+- **Replay viewer.** `REPLAY_VIEWER` (`createReplayViewer`,
+  [replay.md](replay.md)) is the router's `replay` screen
+  (`REPLAY_SCREEN`), over `REPLAYS` and `SHELL`, its view bound to
+  `#replay`, its viewers `{square: mountViewer2D, box: mountReplay3D}`. It
+  is opened by the results screen's Watch replay with the replay itself and
+  by the Records screen's Watch with a replay id (`RECORDS_PAGE.watch`,
+  [records.md](records.md)), each returning to the screen it came from;
+  its Back buttons go through `shellBack`. The frame loop calls
+  `REPLAY_VIEWER.tick` every frame while `replay` shows; on `replay` the
+  controller goes to `padReplay`, which hands `REPLAY_PAD` buttons to the
+  viewer and navigates the screen as a menu otherwise. `LAYER_SCREEN` maps
+  `#replay` to `replay`. It is a shell screen, not a mode: it reaches no
+  mode, records nothing and plays no sound.
+- **3D replay scene.** `mountReplay3D` mounts `createViewer3D` on
+  `REPLAY_SCENE`, which hands the renderer the replay's 3D state view, drawn
+  at `REPLAY_SPACING` (`SPACING_START`) with its own `FlyCamera`
+  (`replayCam`) reset to the start position; each frame the loop applies
+  the recorded camera and view mode in place of the player's and glows the
+  recorded camera's aimed cell (`updateReplayPick`). Player input never
+  moves it. `hide()` gives the renderer back the game or the menu demo it
+  drew before. With the graphics context already lost, `mountReplay3D`
+  routes to `ctxlost` and mounts nothing; a context lost during a replay
+  routes there as on any non-3D-game screen.
 - **Leave-page guard.** `guardLeave` on `beforeunload` is armed by the pause
   controller at game started and removed when the game finishes, is
   abandoned or its mode fails, so it guards only a started, unfinished game
@@ -591,7 +630,20 @@ Component kit (`css/components.css`, catalogue in its head comment):
   (`rs-bbbvSolved` only on a loss), the `#results-bests` `ui-panel` of `rb-*`
   bests on a win, each with a `ui-stat__detail` difference led by "New best"
   when set, the `#results-note` `ui-text--warning` line, and Play again
-  (`#r-again`, primary), Records (`#r-records`), Back to menu (`#r-menu`).
+  (`#r-again`, primary), Watch replay (`#r-watch`, hidden until offered),
+  Records (`#r-records`), Back to menu (`#r-menu`).
+- Replay viewer (`#replay`, filled by `createReplayView`,
+  [replay.md](replay.md)): a `ui-overlay-bar` of the replay's figures —
+  Time (`#rp-clock`, the overlay timer format), Mines (`#rp-mines`), 3BV
+  solved / 3BV (`#rp-bbbv`), 3BV/s (`#rp-rate`) — with a secondary Back
+  (`#rp-back`); the board area `#replay-board`; the `ui-card ui-screen`
+  message `#replay-message` while a replay opens or when it cannot play,
+  with a primary Back; and the `ui-panel` of controls `#replay-controls`:
+  the end line `#replay-end`, Previous (`#rp-prev`), Play / Pause
+  (`#rp-play`, primary), Next (`#rp-next`), the speed `ui-segmented`
+  (`#rp-speed`: 0.5×, 1×, 2×, 4×) and the seek `ui-slider` (`#rp-seek`,
+  its value `#rp-position`). A 3D replay marks `#replay` `replay--scene`,
+  so the 3D scene shows behind it.
 - Theme: `js/theme.js` runs synchronously in `<head>`, so the root
   `data-theme` attribute is set before any stylesheet paints. Its stored-theme
   getter (`readStoredTheme`) reads the theme of the settings document
@@ -647,6 +699,9 @@ Gameplay fidelity to the original game is the overriding rule.
   format, its actions and the failure note.
 - [../domain/features/records-screen.md](../domain/features/records-screen.md)
   — the Records screen: where it is opened from, its board, Back and focus.
+- [../domain/features/replay-playback.md](../domain/features/replay-playback.md)
+  — the replay viewer screen, its entry points from the results screen and
+  the library, Back, and a lost graphics context in the 3D viewer.
 - [../domain/INDEX.md](../domain/INDEX.md) — product domain index.
 
 ## CROSS-REFERENCES
@@ -671,8 +726,9 @@ Gameplay fidelity to the original game is the overriding rule.
 - [settings.md](settings.md) — the settings store, appliers, the Settings
   page markup and binder, and the bindings source `js/ui.js` reads.
 - [replay.md](replay.md) — the replay the mode contract and hand-offs carry,
-  `createSampler3D`, which `FLOW_3D.sampler` builds, and the replay library
-  behind `REPLAYS`.
+  `createSampler3D`, which `FLOW_3D.sampler` builds, the replay library
+  behind `REPLAYS`, and the viewer, 2D viewer and 3D viewer behind
+  `REPLAY_VIEWER`.
 - [records.md](records.md) — the records store the shell loads and attaches,
   whose `record` and comparison the results flow uses, the board label
   and key the results screen shows and routes with, and the Records screen
@@ -691,7 +747,11 @@ Gameplay fidelity to the original game is the overriding rule.
   `tests/records-replays.test.mjs` the replays panel's markup and wiring;
   `tests/replay-2d.test.mjs` the replay on the mode host and the pause
   controller's hand-offs; `tests/replay-handoff.test.mjs` the results flow's
-  hand-off to the replay library and `REPLAYS` in `js/main.js`.
+  hand-off to the replay library and `REPLAYS` in `js/main.js`;
+  `tests/replay-viewer.test.mjs` and `tests/replay-viewer-3d.test.mjs` the
+  `replay` route, its markup, `padReplay`, the frame-loop tick and the 3D
+  replay scene; `tests/results-watch.test.mjs` Watch replay on the results
+  screen.
 
 ## WHEN TO READ THE SOURCE
 
@@ -712,6 +772,10 @@ Gameplay fidelity to the original game is the overriding rule.
   `S.endState`), the board status card (`showStatus3D`, `retry3D`) or how
   the session's timer follows the screens (`sync3D`); the timer's start is
   the session's ([mode3d.md](mode3d.md)).
+- Changing how the replay viewer is wired — its route, viewers, the 3D
+  replay scene and camera, or its controller mapping: the
+  `// ---------- 3D replay ----------` and `// ---------- replay viewer
+  ----------` blocks of `js/main.js`, `padReplay` and the frame loop.
 - Adding a `__ms` hook method or changing what `info()` reports.
 - Debugging frames that do not redraw (or never stop redrawing): `shouldRender`.
 - Adding a menu entry, preset, HUD element or overlay (HTML

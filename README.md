@@ -68,6 +68,29 @@ shown after a game, opens the Records screen:
 The screen updates as games are recorded and follows the Light / Dark theme. It works with the
 mouse, the keyboard or a controller; `Esc` or `B` goes back.
 
+## Replays
+
+Every Classic 2D and 3D game you finish, or leave after its first click, is kept as a replay in the
+browser: your personal bests and the replays you pin are always kept, along with your newest 100
+others. **Watch replay** on the screen shown after a game plays that game again; on the Records
+screen, the chosen board's replays are listed with **Watch** and **Pin** / **Unpin**, and a best or a
+recent game with a kept replay can be watched too.
+
+A replay plays on the same board view as the game: in Classic 2D with your pointer and cursor, in 3D
+with the camera flying as you flew it. The bar at the top shows the time, mines left, 3BV solved
+and 3BV/s so far. A replay made by a newer version of the game, or one that no longer plays out the
+same, is not played and the viewer says why.
+
+| Keyboard | Controller | Action |
+|---|---|---|
+| `Space` / `K` | `Start` / `Y` | Play / pause; at the end, play again from the start |
+| `←` / `→` | `LB` / `RB` | Previous / next action |
+| `Home` / `End` | | Start / end of the replay |
+| `-` / `=` | `LT` / `RT` | Slower / faster (0.5×, 1×, 2×, 4×) |
+| `Esc` | `B` | Back to the screen you came from |
+
+The seek bar moves to any point in the replay.
+
 ## 3D: how to play
 
 The rules are classic Minesweeper with one more dimension:
@@ -238,6 +261,8 @@ js/classic2d/           Classic 2D mode: board setup, game session and timer, Ca
                         keyboard and controller input, tile skin
 js/records/             Personal records: board identity, game summary, bests and history, Records screen
                         and its history chart
+js/replay/              Replays: format, recording, the replay library, simulator and verifier, the replay
+                        viewer with its 2D and 3D viewers
 js/render.js            three.js instanced renderer, shaders, transparency sort, end-of-game effects
 js/picking.js           Crosshair picking with a 3D-DDA through the cube lattice
 js/input.js             Fly camera, pointer lock, keyboard/mouse state, release-to-act mouse logic

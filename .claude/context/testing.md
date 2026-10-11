@@ -236,6 +236,16 @@ browser checks for everything that needs WebGL or the DOM.
   Playwright test wins a fixed Beginner board through the shell, checks the
   results screen, opens Records on that board and returns with Back, then
   Play again (skipped when Playwright or chromium is unavailable).
+- `tests/results-watch.test.mjs` — Watch replay on the results screen
+  (`js/results/flow.js`, `js/results/view.js`): offered only for a game
+  that handed over its replay and while the viewer's route is registered,
+  the content carrying it, the route opened with the finished game's own
+  replay, saved or not, and the results screen to return to, Back
+  returning there; the `#r-watch` markup beside Play again and its wiring
+  in `js/main.js`. One Playwright test wins a fixed Beginner board through
+  the shell, watches it from the results screen by mouse, keyboard and
+  controller, then again from the Records screen's library view (skipped
+  when Playwright or chromium is unavailable).
 - `tests/gamepad.test.mjs` — controller helpers (`js/gamepad.js`), analog camera
   (`js/input.js::FlyCamera`), `js/controls.js::Controls`, and trigger sequences
   through `js/input.js::MouseActions`.
@@ -512,6 +522,51 @@ browser checks for everything that needs WebGL or the DOM.
   session that saves nothing and a failed save keeping the replay for the
   session, and the static check that `js/main.js` builds the library over
   `storage` and `blobStore` and hands it to the results flow.
+- `tests/replay-simulator.test.mjs` — the simulator and verifier
+  (`js/replay/simulator.js`, `js/replay/verify.js`) and the engine game's
+  `snapshot()` / `restore()` behind them: a restore setting state, counts,
+  phase and action stream back with play going on from there, a later
+  snapshot surviving a restore to an earlier one, another game's snapshot
+  refused; `simulate` on every recorded game under
+  `tests/fixtures/replays/` at several times against a game played to that
+  time, pure and deterministic for a blob or a replay alike; forward and
+  backward seeks and `seekIndex` with the cells changed between them, from
+  the start on a small board and from the nearest periodic snapshot on a
+  large one, the default snapshot sizing and the memory budget spacing them
+  out, the constants equal to the measured ones; `verify` on every fixture
+  and a large synthetic won and lost game, a tampered replay reporting the
+  first check value that differs, an elapsed time never before the last
+  action, each refusal (newer format, profile or rules version,
+  unreadable), and both modules DOM-free.
+- `tests/replay-viewer.test.mjs` — the replay viewer
+  (`js/replay/clock.js`, `js/replay/viewer-2d.js`, `js/replay/viewer.js`):
+  the clock's speeds, advance, end and restart, seek and speed bounds; the
+  replay clock in the overlay timer format, the overlay figures and the end
+  line in the results time format; the 2D pointer interpolated between
+  samples, the cursor as the focus ring, the pointer placed through the
+  board layout and scroll and following a refit while paused, the view
+  following the pointer, else the cursor, on a scrolling board; opening
+  from a blob, a replay object, the hand-off's `{blob}` or a library id,
+  verification first and each failure line with Back still working, no
+  viewer for the graph, a replay still loading when the screen closes;
+  ticks driving the clock and the simulator, the end of a replay, seek and
+  step, the seek bar step, keyboard and controller commands, a lost game's
+  loss view; the viewer reaching no records, sound or pause; static checks
+  of the `#replay` kit markup and its wiring in `js/main.js`. One
+  Playwright test plays a recorded 2D fixture through to the end (skipped
+  when Playwright or chromium is unavailable).
+- `tests/replay-viewer-3d.test.mjs` — the 3D viewer
+  (`js/replay/viewer-3d.js`): the recorded camera interpolated in cells and
+  radians, whole turns kept, held after the movement cap (also on a capped
+  fixture), the recorded view mode, the camera in world units at any
+  spacing; drawing the simulator's 3D state view with its changes, every
+  cell when the game crosses its end either way, a viewer that leaves the
+  screen while it mounts dropped, `replay--scene`; DOM-free and reaching no
+  records, sound, pause or player input; static checks of the box viewer,
+  the replay camera and a lost graphics context in `js/main.js`. One
+  Playwright test plays a recorded 3D fixture through to the end on the
+  renderer, seeks back past the end and loses the graphics context
+  (skipped when Playwright or chromium is unavailable).
 - `tests/fixtures/replays/` — recorded games, one `.msrp` blob each, listed
   in `index.json` with a note (2D and 3D, each with a win, a loss, an
   abandon and wasted clicks; a 3D game with flags before the first reveal).
@@ -601,7 +656,9 @@ browser checks for everything that needs WebGL or the DOM.
   `tests/classic2d-fidelity.test.mjs`, the won game through the results
   screen in `tests/results.test.mjs`, the Records screen tests in
   `tests/records-screen.test.mjs`, `tests/records-history.test.mjs` and
-  `tests/records-replays.test.mjs`, one
+  `tests/records-replays.test.mjs`, the replay viewer tests in
+  `tests/replay-viewer.test.mjs`, `tests/replay-viewer-3d.test.mjs` and
+  `tests/results-watch.test.mjs`, one
   flow test in each `tests/shell-*.test.mjs`, the 3D tests in
   `tests/mode3d-board-choice.test.mjs` and `tests/mode3d-session.test.mjs`, the
   theme-and-resolution test in `tests/settings-appliers.test.mjs` and the two page tests in
@@ -683,8 +740,16 @@ Tests consume, and so pin, these contracts:
   `STORE_NAME`; `js/platform/index.js` exports. Full list in
   [platform.md](platform.md).
 - `js/replay/library.js::createReplayLibrary`, `LIBRARY_DOC`,
-  `LIBRARY_VERSION`, `RETAINED_UNPINNED`, `PIN_BEST`, `PIN_HAND`. Full list
-  in [replay.md](replay.md).
+  `LIBRARY_VERSION`, `RETAINED_UNPINNED`, `PIN_BEST`, `PIN_HAND`;
+  `js/replay/simulator.js::openReplay`, `createSimulator`, `simulate`,
+  `REFUSAL`, the snapshot constants; `js/replay/verify.js::verify`;
+  `js/replay/clock.js::createPlaybackClock`, `SPEEDS`;
+  `js/replay/viewer.js::createReplayViewer`, `createReplayView`,
+  `prepareReplay`, `overlayFigures`, `endLine`, `clockText`, `seekStep`,
+  `FAILURES`, `REPLAY_KEYS`, `REPLAY_PAD`;
+  `js/replay/viewer-2d.js` and `js/replay/viewer-3d.js` exports; the
+  engine game's `snapshot()` / `restore()`. Full list in
+  [replay.md](replay.md).
 - `js/records/board.js::createBoardIdentity`, `boardKey` (its pinned 2D
   and 3D forms), `parseBoardKey`, `boardLabel`, `standardBoard`,
   `STANDARD_BOARDS`, `preset3D`, `PRESETS_3D`, `MODE_3D`,
@@ -712,7 +777,7 @@ Tests consume, and so pin, these contracts:
   `createMenu`, `createLastMode`, `LAST_MODE_DOC`, `createLastBoardChoice`;
   `js/shell/pause.js::createPauseController`, `PAUSE_SOURCES`,
   `AUTO_SOURCES`, `HAND_OFFS`, `CONFIRMATIONS`;
-  `js/results/flow.js::createResultsFlow`, `RESULTS_SCREEN`;
+  `js/results/flow.js::createResultsFlow` (its `watch()` too), `RESULTS_SCREEN`;
   `js/results/view.js::resultsContent`, `createResultsView`, `formatTime`
   and the other formats, `DASH`, `NOTES`. Full list in
   [app-shell.md](app-shell.md).
@@ -728,8 +793,11 @@ Tests consume, and so pin, these contracts:
 Browser hook `js/main.js::window.__ms` (full list in [app-shell.md](app-shell.md)):
 - getters `state`, `game`, `renderer`, `camera`, `controls`, `pads`, `fps`,
   `frameStats`, `modes` (the mode host), `pauser` (the pause controller),
-  `settings` (the settings store), `records` (the records store);
-  `THREE`, `startCameraPos`; `state.mode` is the router's current screen.
+  `settings` (the settings store), `records` (the records store),
+  `replayViewer` (the replay viewer); `THREE`, `startCameraPos`;
+  `state.mode` is the router's current screen.
+- `watch(data)` opens the replay viewer with its route's `{replay |
+  replayId, returnTo}`.
 - `start(X, Y, Z, mines, minePositions?)`, `forcePlay()`, `pause()`.
 - `moveTo(x,y,z)`, `look(yaw,pitch)`, `aimAt(idx | [x,y,z])` → selected idx,
   `cellCenter(idx)`.
@@ -910,6 +978,10 @@ is enforced.
   — the replay store, index, retention, pinning, hand-off, library view and
   failure contracts `platform-blob-store`, `replay-library`,
   `replay-handoff` and `records-replays` encode.
+- [../domain/features/replay-playback.md](../domain/features/replay-playback.md)
+  — the simulator, verifier, snapshot interval, viewer, controls, overlay,
+  entry points and failure contracts `replay-simulator`, `replay-viewer`,
+  `replay-viewer-3d` and `results-watch` encode.
 - [../domain/features/settings.md](../domain/features/settings.md)
   — the schema, store, carry-over, failure, applier and page contracts the
   `settings-*` tests encode.
@@ -938,8 +1010,8 @@ is enforced.
   hand-off to the replay library in `replay-handoff.test.mjs`.
 - [mode3d.md](mode3d.md) — `tests/mode3d-*.test.mjs` pin the 3D board choice, its no-guess limit and the session; `tests/shell-mode-3d.test.mjs` the adapter.
 - [classic2d.md](classic2d.md) — `tests/classic2d-*.test.mjs` pin the session and board setup, board view, pointer and cursor inputs and the mode, and check the inputs and custom limits against the observation file; `tests/tile-skin.test.mjs` the tile painter, cache and `MIN_TILE_SIZE`.
-- [replay.md](replay.md) — `tests/replay-*.test.mjs` pin the format, the recorder and sealer, 2D and 3D capture, determinism over `tests/fixtures/replays/`, the replay library and the end-of-game hand-off to it; `dev/measure-replays.mjs` is the measurement behind the recording constants.
-- [rendering.md](rendering.md) — no unit tests of the drawing (only the static not-themed checks); verified visually via Playwright screenshots.
+- [replay.md](replay.md) — `tests/replay-*.test.mjs` pin the format, the recorder and sealer, 2D and 3D capture, determinism over `tests/fixtures/replays/`, the replay library and the end-of-game hand-off to it, the simulator and verifier, the viewer and its 2D and 3D viewers; `tests/results-watch.test.mjs` pins Watch replay; `dev/measure-replays.mjs` is the measurement behind the recording constants.
+- [rendering.md](rendering.md) — no unit tests of the drawing (only the static not-themed checks); verified visually via Playwright screenshots, and a 3D replay played on the renderer in `tests/replay-viewer-3d.test.mjs`.
 - [audio.md](audio.md) — no unit tests of the sounds; WebAudio only checkable in a browser.
 - [settings.md](settings.md) — `tests/settings-*.test.mjs` pin the schema, store, appliers, page,
   binder and bindings source.
@@ -968,6 +1040,10 @@ is enforced.
   longer reproduces means the engine or the format changed under recorded
   replays — fix the regression, or add a format version and its upgrade;
   re-run `node dev/measure-replays.mjs` before moving a recording constant.
+- A failure in the snapshot-constants test of
+  `tests/replay-simulator.test.mjs`: the constants are measured — read
+  feature replay-playback § Snapshot interval and the simulator's head
+  comment before moving one.
 - A contrast failure in `tests/tokens.test.mjs`: the message names the theme,
   token pair and ratio; read the colour parser there before changing a value
   format in `css/tokens.css`.

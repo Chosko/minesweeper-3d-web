@@ -352,10 +352,12 @@ History chart (`js/records/history-chart.js`)
   `onChange` and redraws on every add, pin, unpin and removal, so a pin
   toggled from the screen redraws through that notification; a rebuilt list
   keeps focus on the button of the replay that had it.
-- **Watch waits for the viewer.** Watch shows on the replays, the bests and
+- **Watch opens the viewer.** Watch shows on the replays, the bests and
   the games list (its Replay column) only when the router registers
-  `REPLAY_SCREEN`, and on a best or a game only when its replay is kept;
-  `watch(id)` routes there with this screen on its board to return to.
+  `REPLAY_SCREEN`, which the shell does ([app-shell.md](app-shell.md)), and
+  on a best or a game only when its replay is kept; `watch(id)` routes to
+  the replay viewer ([replay.md](replay.md)) with the replay id and this
+  screen on its board to return to.
 - **Replays not saved, told once.** Once the library has loaded, a library
   that is not saving adds `REPLAYS_NOT_SAVED` to the notes on the first
   visit of the session only; a visit left before the load settles is not

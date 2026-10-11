@@ -23,8 +23,9 @@ draws the sky gradient, the win confetti and the loss camera shake.
   effects and selection.
 - `BoardRenderer.disposeGame()` — removes and disposes the board meshes and state texture.
 - `BoardRenderer.sync()` — once per frame: if `game.version` changed, consumes the dirty list,
-  rewrites those cells, starts the win/loss effect on a `playing`→`won`/`lost` transition, rebuilds
-  the opaque list. Returns `true` when anything changed.
+  rewrites those cells, starts the win/loss effect on a `playing`→`won`/`lost` transition, drops
+  every end-of-game effect at once (`_endEffects`) on a `won`/`lost`→`playing` one (a replay seeking
+  back before its end), rebuilds the opaque list. Returns `true` when anything changed.
 - `BoardRenderer.snapshotBeforeAction()` — call right before a reveal action (left click / chord,
   not right click); copies `flagged`/`pressed` so a loss can show wrong flags and animate exactly.
   No-op unless `game.state === 'playing'`.
@@ -81,6 +82,12 @@ draws the sky gradient, the win confetti and the loss camera shake.
   XNA winding. Atlas rows are top-first and `flipY = false`, so v = 0 is the image top.
 - **Colour space.** Tiles and state use `NoColorSpace`; shaders output raw sRGB.
 - **Number colours** are darkened until ≥ 5:1 contrast against `REVEALED_DARK`.
+- **Replay-driven camera.** A 3D replay draws through the same renderer: `js/main.js`'s
+  `REPLAY_SCENE` hands it the replay's 3D state view with `setGame`, and each frame writes the
+  recorded camera (a separate `FlyCamera` at `SPACING_START`) to `camera` and the recorded view mode
+  through `setToggles`, and the recorded camera's aimed cell through `setSelected`
+  ([app-shell.md](app-shell.md), [replay.md](replay.md)). The renderer cannot tell a replay from
+  play; leaving the replay hands it back the game or demo board it drew before.
 - **Render resolution.** The pixel ratio is the player's 3D resolution setting
   ([settings.md](settings.md), where `pixelRatioFor` states Auto, Sharp and Fast):
   `js/main.js::applyPixelRatio` computes it for the board shown (game or menu demo) — Auto lowers it
@@ -108,7 +115,8 @@ draws the sky gradient, the win confetti and the loss camera shake.
   `coords()` this area reads.
 - [app-shell.md](app-shell.md) — `js/main.js` owns the renderer: calls `sync`/`render` per frame,
   `snapshotBeforeAction` before reveals, polls `isAnimating`, sets the pixel ratio, exposes `stats`
-  via `__ms`.
+  via `__ms`, and drives it from a replay's recorded camera in the 3D replay viewer.
+- [replay.md](replay.md) — the 3D viewer whose state view and recorded camera the renderer draws.
 - [settings.md](settings.md) — the render resolution setting and `pixelRatioFor`.
 - [input.md](input.md) — camera and modifier state feed `camera`, `setToggles`, `setSpacing`,
   `setSelected`; picking must use the same pitch and Space/hidden visibility rules.
@@ -116,7 +124,8 @@ draws the sky gradient, the win confetti and the loss camera shake.
 - [classic2d.md](classic2d.md) — the Classic 2D tile skin, a separate themed palette from tokens.
 - [testing.md](testing.md) — no unit tests cover the drawing, only static checks that the 3D scene stays
   unthemed; `tests/settings-appliers.test.mjs` pins `pixelRatioFor` and, in a browser, a resolution
-  change applying at once; verification is visual via Playwright.
+  change applying at once; `tests/replay-viewer-3d.test.mjs` plays a 3D replay on the renderer in a
+  browser; verification is visual via Playwright.
 
 ## When to read the source
 

@@ -296,7 +296,7 @@ Feature: replay-playback
 
 ## 80. Update documentation for feature `replay-playback`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/replay.md, .claude/context/app-shell.md, .claude/context/rendering.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
 Preconditions: 76, 77, 78, 79
