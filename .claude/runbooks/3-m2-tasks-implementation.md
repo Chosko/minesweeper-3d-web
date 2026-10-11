@@ -421,7 +421,7 @@ Context:
 
 Done: 2026-10-11, commit `40ecf89` (9 files, +400/-67). `results-screen.md` still lists *Watch replay* as deferred though it has shipped (an /architect amend).
 
-## [ ] 31. Implement task 81 — 3D end sequence and the results takeover
+## [x] 31. Implement task 81 — 3D end sequence and the results takeover
 
 Depends on: 12, 18
 
@@ -433,6 +433,8 @@ Context:
 ```prompt
 /task-implement 81 --review
 ```
+
+Done: 2026-10-11, commit `e6f546b` (15 files, +636/-127). The 1 s end delay (`END_DELAY_MS`) lives in the 3D adapter; a fixed debug board (no seed, no summary) ends on the pause card, not the results screen; closing the page during the delay records the game as finished.
 
 ## [ ] 32. Implement task 82 — Records 2D | 3D switch and the 3D board picker
 
@@ -450,7 +452,8 @@ Context:
 
 Depends on: 31, 32
 
-Context: none
+Context:
+- 2026-10-11 (from step 31): the context files and README still describe the old 3D end banner; the end delay is `END_DELAY_MS` (1 s) in `js/shell/mode-3d.js`, with `ending3D()` in `js/main.js` gating input, and the takeover style is `#results.results--takeover` in `css/style.css`. The `--z-banner` token and its tokens-test entry remain with no banner using them.
 
 ```prompt
 /task-implement 83 --review
