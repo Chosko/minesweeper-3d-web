@@ -405,7 +405,7 @@ Context:
 
 Done: 2026-10-11, commit `be02fb3` (8 files, +379/-19). Library-side Watch needed no code change; the results screen's Watch plays the finished game's own sealed replay even when the library could not save it.
 
-## [ ] 30. Implement task 80 — Update documentation for feature `replay-playback`
+## [x] 30. Implement task 80 — Update documentation for feature `replay-playback`
 
 Depends on: 26, 27, 28, 29
 
@@ -418,6 +418,8 @@ Context:
 ```prompt
 /task-implement 80 --review
 ```
+
+Done: 2026-10-11, commit `40ecf89` (9 files, +400/-67). `results-screen.md` still lists *Watch replay* as deferred though it has shipped (an /architect amend).
 
 ## [ ] 31. Implement task 81 — 3D end sequence and the results takeover
 
