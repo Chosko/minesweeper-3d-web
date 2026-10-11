@@ -286,7 +286,7 @@ Feature: replay-playback
 
 ## 79. Watch replay on the results screen and from the library
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/results/view.js, js/results/flow.js, js/records/replay-list.js, tests/results-watch.test.mjs
 Preconditions: 73, 74, 77

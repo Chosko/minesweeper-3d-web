@@ -9,15 +9,16 @@
 // 3BV/s shows two decimals and efficiency a whole percentage; a stat that is not available shows
 // DASH.
 //
-// resultsContent({ summary, comparison, saved, notSaved }) → the screen's content:
+// resultsContent({ summary, comparison, saved, notSaved, watch }) → the screen's content:
 //   { outcome, title, board, stats: [{ key, label, value, shown }], bests: [{ stat, label, best,
-//     difference, newBest }] | null, notes: [text] }
+//     difference, newBest }] | null, notes: [text], watch }
 // The bests show on a win with a comparison (the bests that stood before this game); notes say
 // that the result could not be saved (saved false) or that records are not being saved this
-// session (notSaved, told once by the flow).
+// session (notSaved, told once by the flow); watch is whether Watch replay shows (the flow's watch).
 //
-// createResultsView({ root, onPlayAgain, onRecords, onMenu }) → { show(content), hide() }: fills
-// the #results markup by id and calls back on its three actions.
+// createResultsView({ root, onPlayAgain, onWatch?, onRecords, onMenu }) → { show(content), hide() }:
+// fills the #results markup by id and calls back on its actions; Watch replay (#r-watch) shows only
+// while content.watch.
 
 import { boardLabel } from '../records/board.js';
 
@@ -56,7 +57,7 @@ const BESTS = Object.freeze([
   { stat: 'efficiency', label: 'Best efficiency', format: formatEfficiency, difference: formatEfficiencyDifference },
 ]);
 
-export function resultsContent({ summary, comparison = null, saved = true, notSaved = false }) {
+export function resultsContent({ summary, comparison = null, saved = true, notSaved = false, watch = false }) {
   const won = summary.outcome === 'won';
   const count = (v) => (missing(v) ? DASH : String(v));
   const stats = [
@@ -82,16 +83,18 @@ export function resultsContent({ summary, comparison = null, saved = true, notSa
     stats,
     bests,
     notes,
+    watch: watch === true,
   };
 }
 
 /** The best's detail line: its difference, led by "New best" when the game set one. */
 const bestDetail = (b) => (b.newBest ? (b.difference === DASH ? 'New best' : `New best · ${b.difference}`) : b.difference);
 
-export function createResultsView({ root, onPlayAgain, onRecords, onMenu }) {
+export function createResultsView({ root, onPlayAgain, onWatch = () => {}, onRecords, onMenu }) {
   const $ = (id) => root.querySelector(`#${id}`);
   const value = (id) => $(id).querySelector('.ui-stat__value');
   $('r-again').addEventListener('click', () => onPlayAgain());
+  $('r-watch').addEventListener('click', () => onWatch());
   $('r-records').addEventListener('click', () => onRecords());
   $('r-menu').addEventListener('click', () => onMenu());
   return {
@@ -112,6 +115,7 @@ export function createResultsView({ root, onPlayAgain, onRecords, onMenu }) {
       const note = $('results-note');
       note.textContent = content.notes.join(' ');
       note.classList.toggle('hidden', !content.notes.length);
+      $('r-watch').classList.toggle('hidden', !content.watch);
       root.classList.remove('hidden');
     },
     hide() { root.classList.add('hidden'); },

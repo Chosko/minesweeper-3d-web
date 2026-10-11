@@ -152,7 +152,7 @@ test('a dropped replay adds nothing and leaves the summary and the records as th
   flow.abandoned(summary({ id: 'g2', outcome: 'abandoned' }), 'classic-2d', null);
   await tick();
   assert.deepEqual(log, [['record', 'g1'], ['record', 'g2']]);
-  assert.deepEqual(router.routes, [['results', { summary: s, mode: 'classic-2d', comparison: comparisonOf(), saved: true, notSaved: false }]]);
+  assert.deepEqual(router.routes, [['results', { summary: s, mode: 'classic-2d', comparison: comparisonOf(), saved: true, notSaved: false, watch: false }]]);
   assert.equal(data.summary, s);
 });
 

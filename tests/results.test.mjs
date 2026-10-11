@@ -168,7 +168,7 @@ test('the flow records a finished game before the results screen shows, and rout
   for (const fn of pauser.hooks.finished) fn(s, 'classic-2d');
   assert.deepEqual(order, ['record', 'route']);
   assert.equal(RESULTS_SCREEN, 'results');
-  assert.deepEqual(router.routes, [['results', { summary: s, mode: 'classic-2d', comparison, saved: true, notSaved: false }]]);
+  assert.deepEqual(router.routes, [['results', { summary: s, mode: 'classic-2d', comparison, saved: true, notSaved: false, watch: false }]]);
   assert.equal(flow.current.summary, s);
   detach();
   assert.equal(pauser.hooks.finished.size, 0);
@@ -182,7 +182,7 @@ test('a finished 3D game is recorded and routed to the results screen like a 2D 
   const s = summary({ id: 'g3', board: { ...board } });
   const data = flow.finished(s, '3d');
   assert.deepEqual(records.calls, [['record', 'g3'], ['available']]);
-  assert.deepEqual(router.routes, [['results', { summary: s, mode: '3d', comparison, saved: true, notSaved: false }]]);
+  assert.deepEqual(router.routes, [['results', { summary: s, mode: '3d', comparison, saved: true, notSaved: false, watch: false }]]);
   assert.equal(data.summary, s);
 });
 
@@ -240,13 +240,13 @@ const INDEX = read('index.html');
 const MAIN = read('js/main.js');
 const RESULTS_HTML = INDEX.slice(INDEX.indexOf('<section id="results"'), INDEX.indexOf('<!-- /Results -->'));
 
-test('the results screen is the kit composition: outcome, board, stats, bests, note and three actions', () => {
+test('the results screen is the kit composition: outcome, board, stats, bests, note and its actions', () => {
   assert.ok(RESULTS_HTML.length > 400, 'index.html holds #results');
   assert.match(RESULTS_HTML, /^<section id="results" class="overlay hidden"/);
   const classes = [...RESULTS_HTML.matchAll(/class="([^"]*)"/g)].flatMap((m) => m[1].split(/\s+/));
   for (const c of classes) assert.ok(c.startsWith('ui-') || c === 'hidden' || c === 'overlay', `kit class only: ${c}`);
   for (const id of ['results-title', 'results-board', 'rs-time', 'rs-bbbv', 'rs-bbbvSolved', 'rs-bbbvPerSecond', 'rs-efficiency',
-    'results-bests', 'rb-time', 'rb-bbbvPerSecond', 'rb-efficiency', 'results-note', 'r-again', 'r-records', 'r-menu']) {
+    'results-bests', 'rb-time', 'rb-bbbvPerSecond', 'rb-efficiency', 'results-note', 'r-again', 'r-watch', 'r-records', 'r-menu']) {
     assert.ok(RESULTS_HTML.includes(`id="${id}"`), `#${id}`);
   }
   assert.match(RESULTS_HTML, /class="ui-card ui-screen" aria-labelledby="results-title"/);
@@ -254,6 +254,7 @@ test('the results screen is the kit composition: outcome, board, stats, bests, n
     .map((m) => [m[1], m[2], m[3]]);
   assert.deepEqual(buttons, [
     ['r-again', 'ui-button--primary', 'Play again'],
+    ['r-watch', 'ui-button--secondary hidden', 'Watch replay'],
     ['r-records', 'ui-button--secondary', 'Records'],
     ['r-menu', 'ui-button--secondary', 'Back to menu'],
   ]);

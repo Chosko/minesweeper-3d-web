@@ -383,7 +383,8 @@ const REPLAY_VIEWER = createReplayViewer({
 // A finished game is recorded, then the results screen shows over the finished board. Every
 // finished and abandoned game's replay is then added to the replay library.
 // Play again restarts the finished game's board choice, or starts it again once the mode was left
-// (back from Records).
+// (back from Records). Watch replay plays the game just finished from its own replay; Back returns
+// to the results screen.
 const RESULTS = createResultsFlow({
   records: RECORDS,
   replays: REPLAYS,
@@ -398,6 +399,7 @@ RESULTS.attach(PAUSE);
 const RESULTS_VIEW = createResultsView({
   root: document.getElementById('results'),
   onPlayAgain: () => RESULTS.playAgain(padGesture ? 'pad' : 'pointer'),
+  onWatch: () => RESULTS.watch(),
   onRecords: () => RESULTS.openRecords(),
   onMenu: () => RESULTS.toMenu(),
 });
