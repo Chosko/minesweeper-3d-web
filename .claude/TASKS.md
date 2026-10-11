@@ -316,7 +316,7 @@ Feature: 3d-results-records-screens
 
 ## 82. Records 2D | 3D switch and the 3D board picker
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/records/screen.js, js/records/replay-list.js, js/results/view.js, index.html, css/components.css, tests/records-screen-3d.test.mjs
 Preconditions: 61, 63, 74

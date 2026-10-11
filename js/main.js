@@ -230,7 +230,7 @@ const SHELL = createRouter({
     menu: { defaultFocus: '[data-entry][data-last]', show: () => { MODES.leave(); showMenuBackdrop(); ui.showMenu(); } },
     'board-choice': { defaultFocus: '[data-preset][data-last]', show: () => { MODES.leave(); showMenuBackdrop(); ui.showBoardChoice(); CHOICE_3D.show(LAST_CHOICE_3D.current, { played: LAST_CHOICE_3D.played }); } },
     'coming-soon': { defaultFocus: '#coming-soon-back', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showComingSoon(d.title ?? 'This screen'); } },
-    records: { defaultFocus: '#records-picker [aria-checked="true"]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showRecords(); RECORDS_PAGE.show({ boardKey: d.boardKey }); }, hide: () => RECORDS_PAGE.hide() },
+    records: { defaultFocus: '#records-picker [aria-checked="true"]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showRecords(); RECORDS_PAGE.show({ mode: d.mode, boardKey: d.boardKey }); }, hide: () => RECORDS_PAGE.hide() },
     settings: { defaultFocus: '#set-lookSensitivity', show: () => { MODES.leave(); showMenuBackdrop(); ui.showSettings(); } },
     'classic-2d-choice': { defaultFocus: '[data-size][data-last]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showBoardChoice2D(); showChoice2D(d.choice ?? LAST_CHOICE_2D.current); } },
     ready: { defaultFocus: '#ready-btn', show: (d = {}) => ui.showReady(S.settings, d.msg ?? ''), back: () => readyBack() },
@@ -423,6 +423,7 @@ const RECORDS_PAGE = createRecordsScreen({ records: RECORDS, replays: REPLAYS, r
   view: createRecordsView({
     root: document.getElementById('records'),
     onSelect: (key) => RECORDS_PAGE.select(key),
+    onMode: (mode) => RECORDS_PAGE.setMode(mode),
     onPage: (page) => RECORDS_PAGE.showPage(page),
     onWatch: (id) => RECORDS_PAGE.watch(id),
     onTogglePin: (id) => RECORDS_PAGE.togglePin(id),

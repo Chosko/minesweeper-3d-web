@@ -1,16 +1,21 @@
-// Records screen: the board picker, the chosen board's figures and the Classic 2D overall figures,
-// read from the records store. recordsContent() and the screen controller are DOM-free;
-// createRecordsView() binds the #records markup handed in.
+// Records screen: the 2D | 3D switch, the board picker, the chosen board's figures and the chosen
+// mode's overall figures, read from the records store. recordsContent() and the screen controller
+// are DOM-free; createRecordsView() binds the #records markup handed in.
 //
-// The picker lists Beginner, Intermediate and Expert, each without no-guess then with it, then every
-// custom board played (most recently played first), labelled by boardLabel. The screen opens on the
-// board it was asked for (a board key), otherwise on the last board played — the board whose latest
-// game ended last — otherwise on Beginner. Times show in the results screen's format (formatTime,
-// js/results/view.js), 3BV/s and efficiency in its formats too; a date is "9 Oct 2026"; a win rate
-// a whole percentage; anything missing DASH.
+// The switch chooses a mode (RECORDS_MODES: Classic 2D, 3D) and the picker lists that mode's boards:
+// for Classic 2D, Beginner, Intermediate and Expert, for 3D the six presets (PRESETS_3D order), each
+// without no-guess then with it, then every custom board of the mode played (boardsPlayed(mode),
+// most recently played first), labelled by boardLabel. The screen opens on the board it was asked
+// for (a board key, which also sets the mode), otherwise on the mode asked for and its last board
+// played, otherwise on the last board played in either mode — the board whose latest game ended
+// last — and its mode; a mode with nothing played opens on its first board, and with no mode asked
+// and nothing played the screen opens on Classic 2D's Beginner. Times show in the results screen's
+// format (formatTime, js/results/view.js), 3BV/s and efficiency in its formats too; a date is
+// "9 Oct 2026"; a win rate a whole percentage; anything missing DASH.
 //
-// recordsContent(records, { boardKey, notSaved, page, replays, pinnedFirst, canWatch, replaysNotSaved })
-//   → { boards: [{ key, label, selected }], board: { key, label }, empty, emptyText,
+// recordsContent(records, { mode, boardKey, notSaved, page, replays, pinnedFirst, canWatch,
+//   replaysNotSaved }) → { mode, modes: [{ value, label, selected }], boards: [{ key, label, selected }],
+//   board: { key, label }, empty, emptyText,
 //   bests: [{ stat, label, value, date, watch }], counters: [{ key, label, value }], overallTitle,
 //   overall: [{ key, label, value }], notes, chart: { points, text },
 //   games: { headers, rows: [{ id, outcome, time, rate, efficiency, watch }], page, pages, label,
@@ -22,13 +27,14 @@
 // games in play order with their text alternative; the games list is every game, newest first,
 // paged (pageOf, page clamped to the last).
 // A board with no games is empty. Records that cannot be read (a query throws) are empty too, over
-// the standard boards, and never throw: the screen always shows and Back always works.
+// the chosen mode's named boards, and never throw: the screen always shows and Back always works.
 //
-// createRecordsScreen({ records, view }) → { show({ boardKey }?), hide(), select(key), showPage(n),
-// board, page }: show draws the content through view.show(content) and subscribes to
-// records.onChange, redrawing the chosen board on every newly recorded game (on the same games
-// page); show and select start on the first games page; hide unsubscribes and calls view.hide(). When
-// records are not being saved (records.available() false) the first show of the session carries
+// createRecordsScreen({ records, view }) → { show({ mode, boardKey }?), hide(), select(key),
+// setMode(mode), showPage(n), mode, board, page }: show draws the content through view.show(content)
+// and subscribes to records.onChange, redrawing the chosen board on every newly recorded game (on
+// the same games page); show, select and setMode start on the first games page; setMode shows the
+// mode's last board played, or its first board, and does nothing for the mode already shown or an
+// unknown one; hide unsubscribes and calls view.hide(). When records are not being saved (records.available() false) the first show of the session carries
 // the results screen's notSaved note, kept for that visit only.
 // With a replay library (replays), show also subscribes to its onChange, redrawing on every add,
 // pin, unpin and removal; togglePin(id) pins or unpins a listed replay (the list redraws through
@@ -38,15 +44,17 @@
 // registers REPLAY_SCREEN, Watch is offered and watch(id) routes to the replay viewer with the
 // replay id and this screen on its board to return to (watchRoute); without, watch does nothing.
 //
-// createRecordsView({ root, onSelect, onBack, onPage, onWatch?, onTogglePin?, onPinnedFirst?, chart? })
-// → { show(content), hide() }: fills #records by id, the replays panel through
-// createReplayListView; a best and a recent game whose watch is set get a Watch button calling
-// onWatch(id), and the games list gains its Replay column while content.canWatch; the picker is a kit segmented choice whose options are rebuilt only when the board
-// list changes; the chart (createHistoryChart over #records-chart by default) is drawn after the
+// createRecordsView({ root, onSelect, onBack, onPage, onMode?, onWatch?, onTogglePin?, onPinnedFirst?,
+// chart? }) → { show(content), hide() }: fills #records by id, the replays panel through
+// createReplayListView; the 2D | 3D switch (#records-mode, a kit segmented choice whose two options
+// are in the markup) shows content.mode and calls onMode(mode); a best and a recent game whose
+// watch is set get a Watch button calling onWatch(id), and the games list gains its Replay column
+// while content.canWatch; the picker is a kit segmented choice whose options are rebuilt only when
+// the board list changes; the chart (createHistoryChart over #records-chart by default) is drawn after the
 // screen shows; the Newer and Older buttons call onPage with the page to show, and a pager button
 // that ends while focused hands focus to the other.
 
-import { STANDARD_BOARDS, boardKey, boardLabel, createBoardIdentity, parseBoardKey } from './board.js';
+import { MODE_3D, PRESETS_3D, STANDARD_BOARDS, boardKey, boardLabel, createBoardIdentity, parseBoardKey } from './board.js';
 import { DASH, NOTES, formatTime, formatRate, formatEfficiency } from '../results/view.js';
 import { bindSegmented } from '../ui/components.js';
 import { bbbvPerSecond, efficiency } from './summary.js';
@@ -55,7 +63,13 @@ import { REPLAY_SCREEN, REPLAYS_NOT_SAVED, replayList, togglePin, watchRoute, cr
 
 export const RECORDS_SCREEN = 'records';
 export const EMPTY_TEXT = 'No games on this board yet.';
-const MODE = 'classic-2d';
+const MODE_2D = 'classic-2d';
+/** The switch's modes, in order. */
+export const RECORDS_MODES = Object.freeze([
+  Object.freeze({ value: MODE_2D, label: '2D', overallTitle: 'Classic 2D overall' }),
+  Object.freeze({ value: MODE_3D, label: '3D', overallTitle: '3D overall' }),
+]);
+const isMode = (mode) => RECORDS_MODES.some((m) => m.value === mode);
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /** A date as "9 Oct 2026", in local time. */
@@ -70,8 +84,12 @@ export function formatWinRate(rate) {
   return rate === null || rate === undefined || !Number.isFinite(rate) ? DASH : `${Math.round(rate * 100)}%`;
 }
 
-const STANDARD = STANDARD_BOARDS.flatMap(({ width, height, mines }) => [false, true].map((noGuess) =>
-  createBoardIdentity({ mode: MODE, grid: 'square', width, height, mines, noGuess })));
+const NAMED = Object.freeze({
+  [MODE_2D]: STANDARD_BOARDS.flatMap(({ width, height, mines }) => [false, true].map((noGuess) =>
+    createBoardIdentity({ mode: MODE_2D, grid: 'square', width, height, mines, noGuess }))),
+  [MODE_3D]: PRESETS_3D.flatMap(({ width, height, depth, mines }) => [false, true].map((noGuess) =>
+    createBoardIdentity({ mode: MODE_3D, width, height, depth, mines, noGuess }))),
+});
 
 const BESTS = Object.freeze([
   { stat: 'time', label: 'Best time', format: formatTime },
@@ -94,21 +112,22 @@ const attempt = (fn, fallback) => { try { return fn(); } catch { return fallback
 const entry = (board) => ({ key: boardKey(board), label: boardLabel(board), board });
 const keyOf = (key) => attempt(() => boardKey(parseBoardKey(key)), null);
 
-/** The picker's boards: the six standard boards, then every custom board played. */
-export function pickerBoards(records) {
-  const list = STANDARD.map(entry);
+/** The picker's boards for a mode: its named boards, then every custom board of the mode played. */
+export function pickerBoards(records, mode = MODE_2D) {
+  const list = NAMED[mode].map(entry);
   const keys = new Set(list.map((b) => b.key));
-  for (const { key, board } of attempt(() => records.boardsPlayed(), [])) {
+  for (const { key, board } of attempt(() => records.boardsPlayed(mode), [])) {
     if (!keys.has(key)) { keys.add(key); list.push(entry(board)); }
   }
   return list;
 }
 
-/** The key of the board whose latest game ended last, or null before any game. */
-export function lastBoardPlayed(records) {
+/** The key of the board whose latest game ended last — in the mode given, else in either — or null. */
+export function lastBoardPlayed(records, mode = null) {
   let last = null;
   let at = '';
-  for (const { key } of attempt(() => records.boardsPlayed(), [])) {
+  const played = (mode ? [mode] : RECORDS_MODES.map((m) => m.value)).flatMap((m) => attempt(() => records.boardsPlayed(m), []));
+  for (const { key } of played) {
     const end = attempt(() => records.history(key).at(-1)?.endedAt, null);
     if (typeof end === 'string' && (last === null || end > at)) { last = key; at = end; }
   }
@@ -136,20 +155,31 @@ function gamesList(history, page, kept) {
   };
 }
 
+/** The board and mode to show: the key asked for, else the mode's last board, else the last board played. */
+function choose(records, asked, mode) {
+  const key = (asked && keyOf(asked)) || (isMode(mode) ? lastBoardPlayed(records, mode) : lastBoardPlayed(records));
+  if (key) return { key, mode: parseBoardKey(key).mode };
+  const m = isMode(mode) ? mode : MODE_2D;
+  return { key: boardKey(NAMED[m][0]), mode: m };
+}
+
 export function recordsContent(records, {
-  boardKey: asked = null, notSaved = false, page = 0, replays = null, pinnedFirst = false, canWatch = false, replaysNotSaved = false,
+  mode: askedMode = null, boardKey: asked = null, notSaved = false, page = 0, replays = null, pinnedFirst = false, canWatch = false,
+  replaysNotSaved = false,
 } = {}) {
-  const boards = pickerBoards(records);
-  let key = (asked && keyOf(asked)) || lastBoardPlayed(records) || boards[0].key;
+  const { key, mode } = choose(records, asked, askedMode);
+  const boards = pickerBoards(records, mode);
   if (!boards.some((b) => b.key === key)) boards.push(entry(parseBoardKey(key)));
   const chosen = boards.find((b) => b.key === key);
   const counters = attempt(() => records.counters(key), EMPTY_COUNTERS);
   const bests = attempt(() => records.bests(key), {});
-  const overall = attempt(() => records.overall(MODE), EMPTY_COUNTERS);
+  const overall = attempt(() => records.overall(mode), EMPTY_COUNTERS);
   const history = attempt(() => records.history(key), []);
   const points = chartPoints(history);
   const kept = (id) => (canWatch && typeof id === 'string' && attempt(() => replays.has(id), false) ? id : null);
   return {
+    mode,
+    modes: RECORDS_MODES.map((m) => ({ value: m.value, label: m.label, selected: m.value === mode })),
     boards: boards.map((b) => ({ key: b.key, label: b.label, selected: b.key === key })),
     board: { key, label: chosen.label },
     empty: !(counters.games > 0),
@@ -159,8 +189,8 @@ export function recordsContent(records, {
       return { stat, label, value: format(best ? best.value : null), date: best ? formatDate(best.endedAt) : DASH, watch: kept(best?.id) };
     }),
     counters: counterFigures(counters, attempt(() => records.winRate(key), null)),
-    overallTitle: 'Classic 2D overall',
-    overall: counterFigures(overall, attempt(() => records.overallWinRate(MODE), null)),
+    overallTitle: RECORDS_MODES.find((m) => m.value === mode).overallTitle,
+    overall: counterFigures(overall, attempt(() => records.overallWinRate(mode), null)),
     notes: [...(notSaved ? [NOTES.notSaved] : []), ...(replaysNotSaved ? [REPLAYS_NOT_SAVED] : [])],
     chart: { points, text: chartText(points) },
     games: gamesList(history, page, kept),
@@ -170,6 +200,7 @@ export function recordsContent(records, {
 }
 
 export function createRecordsScreen({ records, view, replays = null, router = null }) {
+  let mode = null;
   let board = null;
   let page = 0;
   let offs = [];
@@ -182,7 +213,8 @@ export function createRecordsScreen({ records, view, replays = null, router = nu
   let content = null;
   const canWatch = () => attempt(() => router.has(REPLAY_SCREEN), false);
   const draw = () => {
-    content = recordsContent(records, { boardKey: board, notSaved, page, replays, pinnedFirst, canWatch: canWatch(), replaysNotSaved });
+    content = recordsContent(records, { mode, boardKey: board, notSaved, page, replays, pinnedFirst, canWatch: canWatch(), replaysNotSaved });
+    mode = content.mode;
     board = content.board.key;
     page = content.games.page;
     view.show(content);
@@ -199,11 +231,13 @@ export function createRecordsScreen({ records, view, replays = null, router = nu
     });
   };
   return {
+    get mode() { return mode; },
     get board() { return board; },
     get page() { return page; },
-    show({ boardKey: key = null } = {}) {
+    show({ mode: m = null, boardKey: key = null } = {}) {
       unsubscribe();
       visit++;
+      mode = m;
       board = key;
       page = 0;
       notSaved = !told && !attempt(() => records.available(), false);
@@ -214,6 +248,13 @@ export function createRecordsScreen({ records, view, replays = null, router = nu
       checkReplays(visit);
     },
     select(key) { board = key; page = 0; draw(); },
+    setMode(m) {
+      if (!isMode(m) || m === mode) return;
+      mode = m;
+      board = null;
+      page = 0;
+      draw();
+    },
     showPage(n) { page = n; draw(); },
     setPinnedFirst(on) { pinnedFirst = !!on; draw(); },
     async togglePin(id) {
@@ -236,7 +277,7 @@ export function createRecordsScreen({ records, view, replays = null, router = nu
 }
 
 export function createRecordsView({
-  root, onSelect, onBack, onPage, onWatch = () => {}, onTogglePin = () => {}, onPinnedFirst = () => {}, chart = null,
+  root, onSelect, onMode = () => {}, onBack, onPage, onWatch = () => {}, onTogglePin = () => {}, onPinnedFirst = () => {}, chart = null,
 }) {
   const $ = (id) => root.querySelector(`#${id}`);
   const list = createReplayListView({ root, onWatch, onTogglePin, onPinnedFirst });
@@ -250,6 +291,8 @@ export function createRecordsView({
     b.addEventListener('click', () => onWatch(id));
     return b;
   };
+  const modes = $('records-mode');
+  bindSegmented(modes, { onChange: (mode) => onMode(mode) });
   const picker = $('records-picker');
   const canvas = $('records-chart');
   const history = chart ?? createHistoryChart({ canvas });
@@ -313,6 +356,11 @@ export function createRecordsView({
 
   return {
     show(content) {
+      for (const o of modes.querySelectorAll('.ui-segmented__option')) {
+        const on = o.dataset.value === content.mode;
+        o.setAttribute('aria-checked', String(on));
+        o.tabIndex = on ? 0 : -1;
+      }
       const keys = content.boards.map((b) => b.key).join('\n');
       if (keys !== pickerKeys) {
         pickerKeys = keys;

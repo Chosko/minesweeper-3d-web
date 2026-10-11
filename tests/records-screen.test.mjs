@@ -269,6 +269,8 @@ test('the records screen is the kit composition: picker, figures, overall, empty
   }
   const buttons = [...RECORDS_HTML.matchAll(/<button[^>]*>/g)].map((m) => m[0]);
   assert.deepEqual(buttons, [
+    '<button type="button" class="ui-segmented__option" role="radio" aria-checked="true" data-value="classic-2d">',
+    '<button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="3d">',
     '<button type="button" id="records-prev" class="ui-button ui-button--secondary" disabled>',
     '<button type="button" id="records-next" class="ui-button ui-button--secondary" disabled>',
     '<button type="button" id="records-back" class="ui-button ui-button--primary">',
