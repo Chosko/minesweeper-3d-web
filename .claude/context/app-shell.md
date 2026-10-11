@@ -294,7 +294,7 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   hands over to `playing` that way). Back is the screen's own `back` when it
   declares one — `ready` → `readyBack` (board choice for a fresh board, pause
   for a started game), `playing` and `classic-2d` → pause, `paused` →
-  `resumeFromPause`,
+  `resumeFromPause` (the main menu once the game has ended, else resume),
   `results` → menu, `replay` → its `returnTo` (the menu when none),
   `ctxlost` → menu — else the stacked screen.
 - **Back inputs.** `shellBack(source)` does nothing during the 3D end delay;
@@ -646,7 +646,8 @@ Component kit (`css/components.css`, catalogue in its head comment):
   (`#settings-bindings`) redrawn by `showSettings`; a primary Back.
 - Pause card (`#pause-card`): a `ui-card ui-screen` with `ui-text` status
   lines, `#pause-actions` (`showPause` moves the primary action first —
-  Resume while playing, Play again once ended — before Main menu), the
+  Resume while playing, Play again once ended, when Resume is hidden —
+  before Main menu), the
   confirmation panel `#pause-confirm` (`ui-panel ui-actions`, hidden until
   `showConfirm`: the message, `#p-confirm-yes` labelled with the action,
   `#p-confirm-no` Cancel), the controls list and a Settings `ui-panel` (look

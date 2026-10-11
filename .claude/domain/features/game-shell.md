@@ -119,8 +119,9 @@ it generalises.
   outcome abandoned.
 - **Pause rules** — pause applies only to a started, unfinished game; before
   the first click or after the game ends, the pause key opens the pause card
-  without a timer to stop, offering restart and back to menu. While the
-  pause card shows, the board is hidden in every mode.
+  without a timer to stop, offering restart and back to menu, and Back on
+  it goes to the main menu. While the pause card shows, the board is hidden
+  in every mode.
 - **Restart** — discards the current game and starts a new one with the same
   board choice; during a started, unfinished game it asks for confirmation,
   saying the game will count as a loss.
