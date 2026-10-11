@@ -155,12 +155,12 @@
      volume ui-slider, credit ui-link). Default focus: the last mode played
      (data-last), else the first entry.
    3D board choice (index.html #board-choice): ui-card ui-screen--wide
-     holding the title, one ui-menu per board family (Double layer, Cube) in
-     a ui-grid and the presets' no-guess ui-toggle under it, the custom board
+     holding the title, the Cube presets as a ui-heading and a ui-menu with
+     the presets' no-guess ui-toggle under it, the custom board
      as a ui-panel of ui-field entries with ui-actions--row (Random, Start),
      an info line (ui-text--warning on an invalid board) and the custom
-     board's no-guess ui-toggle under a ui-text--muted line giving the
-     cell-count limit while it is disabled, and ui-actions--row
+     board's no-guess ui-toggle under a ui-text--muted line giving why while
+     it is disabled (a side of 2 cells, or the cell-count limit), and ui-actions--row
      (Back); js/mode3d/board-choice.js marks the last board choice data-last
      with a "Last played" line once the player has played. Default focus:
      the last board choice, else the first item.

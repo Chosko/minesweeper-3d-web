@@ -169,7 +169,7 @@ test('index.html shows the four entries as one kit menu, matching the entry tabl
 test('the 3D board choice holds the presets and custom board, and a Back button', () => {
   assert.ok(BOARD.length > 500, 'index.html has the 3D board choice');
   assert.match(BOARD, /class="overlay hidden"/);
-  assert.equal([...BOARD.matchAll(/data-preset="\d/g)].length, 6, 'the six presets');
+  assert.equal([...BOARD.matchAll(/data-preset="\d/g)].length, 3, 'the three cube presets');
   assert.match(BOARD, /<form id="custom"/);
   assert.match(BOARD, /id="board-choice-back"/);
 });
@@ -413,28 +413,25 @@ test('in a browser, a controller alone walks the 3D board choice and the placeho
       assert.equal(await focused(), 'menu-entry-3d', 'the D-pad moves down the menu');
       await press(PAD_BTN.A);
       assert.equal(await mode(), 'board-choice', 'A opens the 3D board choice');
-      assert.equal(await focused(), '8,8,2,10', 'the first preset takes the focus when none was played');
+      assert.equal(await focused(), '6,6,6,10', 'the first preset takes the focus when none was played');
 
       await press(PAD_BTN.DOWN);
-      assert.equal(await focused(), '14,14,2,60', 'down moves to the next preset');
+      assert.equal(await focused(), '8,8,8,40', 'down moves to the next preset');
       await press(PAD_BTN.DOWN);
-      assert.equal(await focused(), '25,16,2,130');
+      assert.equal(await focused(), '12,12,8,130');
       await press(PAD_BTN.UP);
-      assert.equal(await focused(), '14,14,2,60', 'up moves back');
-      await press(PAD_BTN.RIGHT);
-      const across = await focused();
-      assert.match(across, /^\d+,\d+,\d+,\d+$/, 'right moves to another preset');
-      assert.notEqual(across, '14,14,2,60');
+      const chosen = await focused();
+      assert.equal(chosen, '8,8,8,40', 'up moves back');
       assert.equal(await mode(), 'board-choice', 'moving changes no screen');
 
       await press(PAD_BTN.A);
       assert.equal(await mode(), 'ready', 'A confirms the focused preset');
-      const [X, Y, Z, mines] = across.split(',').map(Number);
+      const [X, Y, Z, mines] = chosen.split(',').map(Number);
       assert.deepEqual(await page.evaluate(() => globalThis.__ms.state.settings), { X, Y, Z, mines }, 'the confirmed preset is the board');
 
       await press(PAD_BTN.BACK);
       assert.equal(await mode(), 'board-choice', 'Back on a fresh board returns to the board choice');
-      assert.equal(await focused(), across, 'the preset just played keeps the focus');
+      assert.equal(await focused(), chosen, 'the preset just played keeps the focus');
       await press(PAD_BTN.BACK);
       assert.equal(await mode(), 'menu', 'Back returns to the menu');
       assert.deepEqual(errors, []);

@@ -1,7 +1,7 @@
-// The 3D board choice (js/mode3d/board-choice.js): the six presets, the validated custom board,
-// the Random fill, the no-guess switch and its cell-count limit, the last 3D board choice kept
-// through the shell's last-board-choice mechanism (js/shell/menu.js), and the screen's markup and
-// wiring in index.html and js/main.js.
+// The 3D board choice (js/mode3d/board-choice.js): the three cube presets, the validated custom
+// board, the Random fill, the no-guess switch with its cell-count limit and its side-of-2 rule, the
+// last 3D board choice kept through the shell's last-board-choice mechanism (js/shell/menu.js), and
+// the screen's markup and wiring in index.html and js/main.js.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync, statSync } from 'node:fs';
@@ -24,24 +24,22 @@ const strip = (src) => src.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
 
 // ---------------------------------------------------------------- presets
 
-test('the 3D board choice offers the six double layer and cube presets, and no flat preset', () => {
+test('the 3D board choice offers the three cube presets, and no flat or double layer preset', () => {
   const rows = PRESETS.map((p) => [p.id, p.family, p.name, p.X, p.Y, p.Z, p.mines]);
   assert.deepEqual(rows, [
-    ['double-beginner', 'double', 'Beginner', 8, 8, 2, 10],
-    ['double-intermediate', 'double', 'Intermediate', 14, 14, 2, 60],
-    ['double-expert', 'double', 'Expert', 25, 16, 2, 130],
     ['cube-beginner', 'cube', 'Beginner', 6, 6, 6, 10],
     ['cube-intermediate', 'cube', 'Intermediate', 8, 8, 8, 40],
     ['cube-expert', 'cube', 'Expert', 12, 12, 8, 130],
   ]);
-  assert.ok(PRESETS.every((p) => p.Z > 1), 'the flat 3D presets are gone');
-  assert.deepEqual(FAMILIES.map((f) => f.id), ['double', 'cube']);
+  assert.ok(PRESETS.every((p) => [p.X, p.Y, p.Z].every((side) => side > 2)), 'no flat or double layer preset');
+  assert.deepEqual(FAMILIES.map((f) => [f.id, f.label]), [['cube', 'Cube']]);
   assert.deepEqual(BOARD_SIZES, [...PRESETS.map((p) => p.id), 'custom']);
   assert.ok(Object.isFrozen(PRESETS) && PRESETS.every(Object.isFrozen));
-  assert.equal(presetKey(PRESETS[3]), '6,6,6,10');
+  assert.equal(presetKey(PRESETS[0]), '6,6,6,10');
   assert.equal(presetByKey('12,12,8,130').id, 'cube-expert');
   assert.equal(presetByKey('9,9,1,10'), null, 'a flat preset is no preset');
-  assert.equal(presetLabel(PRESETS[2]), '25 × 16 × 2 · 130 mines');
+  assert.equal(presetByKey('8,8,2,10'), null, 'a double layer board is no preset');
+  assert.equal(presetLabel(PRESETS[2]), '12 × 12 × 8 · 130 mines');
   for (const p of PRESETS) assert.equal(validateCustom(p).ok, true, `${p.id} is a valid board`);
 });
 
@@ -108,11 +106,34 @@ test('no-guess is available on every preset and on a custom board up to the cell
   for (const p of PRESETS) {
     assert.equal(noGuessAvailable({ size: p.id, custom: { X: 100, Y: 100, Z: 100, mines: 1 }, noGuess: true }), true, p.id);
   }
-  assert.equal(noGuessAvailable({ size: 'custom', custom: { X: 1, Y: 1, Z: 2, mines: 1 }, noGuess: true }), true);
+  assert.equal(noGuessAvailable({ size: 'custom', custom: { X: 1, Y: 1, Z: 3, mines: 1 }, noGuess: true }), true);
   const over = { size: 'custom', custom: { X: 100, Y: 100, Z: 100, mines: 1 }, noGuess: true };
   assert.equal(noGuessAvailable(over), false, 'above the limit');
-  assert.equal(noGuessAvailable(custom(2)), true);
-  assert.equal(noGuessReason(), `No-guess is available up to ${NOGUESS_CELL_LIMIT.toLocaleString('en-US')} cells`);
+  assert.equal(noGuessAvailable(custom(3)), true);
+  const limit = `No-guess is available up to ${NOGUESS_CELL_LIMIT.toLocaleString('en-US')} cells`;
+  assert.equal(noGuessReason(), limit);
+  assert.equal(noGuessReason(over), limit);
+});
+
+test('no-guess is not available on a custom board with a side of 2 cells; a side of 1 keeps it', () => {
+  const custom = (X, Y, Z, mines = 1) => ({ size: 'custom', custom: { X, Y, Z, mines }, noGuess: true });
+  const SIDE_2 = 'No-guess isn\'t available when a side is 2 cells';
+  for (const [X, Y, Z] of [[2, 1, 1], [1, 2, 1], [1, 1, 2], [8, 8, 2], [14, 14, 2], [25, 16, 2], [2, 10, 10], [10, 2, 10], [2, 2, 2]]) {
+    for (const mines of [1, Math.floor((X * Y * Z) / 6) || 1, X * Y * Z - 1]) {
+      assert.equal(noGuessAvailable(custom(X, Y, Z, mines)), false, `${X} × ${Y} × ${Z}, ${mines} mines`);
+    }
+    assert.equal(noGuessReason(custom(X, Y, Z)), SIDE_2, `${X} × ${Y} × ${Z}`);
+  }
+  for (const [X, Y, Z] of [[1, 1, 3], [3, 1, 1], [10, 10, 1], [1, 30, 16], [3, 3, 3], [20, 20, 20]]) {
+    assert.equal(noGuessAvailable(custom(X, Y, Z)), true, `${X} × ${Y} × ${Z}`);
+  }
+  const large = custom(100, 100, 2);
+  assert.equal(noGuessAvailable(large), false);
+  assert.equal(noGuessReason(large), SIDE_2, 'a side of 2 takes precedence over the cell limit');
+  assert.equal(normaliseChoice(custom(8, 8, 2, 10)).noGuess, false, 'normalising drops no-guess on a side of 2');
+  for (const p of PRESETS) {
+    assert.equal(noGuessAvailable({ size: p.id, custom: { X: 2, Y: 2, Z: 2, mines: 1 }, noGuess: true }), true, `${p.id} keeps no-guess`);
+  }
 });
 
 test('the no-guess limit is one exported constant, read everywhere from js/mode3d/board-choice.js', () => {
@@ -141,19 +162,22 @@ test('the no-guess limit is one exported constant, read everywhere from js/mode3
 // ---------------------------------------------------------------- the choice
 
 test('a choice is X, Y, Z, mines and no-guess; normalising drops no-guess on a custom board above the limit', () => {
-  assert.deepEqual(DEFAULT_CHOICE, { size: 'double-beginner', custom: { X: 10, Y: 10, Z: 10, mines: 25 }, noGuess: false });
-  assert.equal(normaliseChoice(DEFAULT_CHOICE).size, 'double-beginner');
+  assert.deepEqual(DEFAULT_CHOICE, { size: 'cube-beginner', custom: { X: 10, Y: 10, Z: 10, mines: 25 }, noGuess: false });
+  assert.equal(normaliseChoice(DEFAULT_CHOICE).size, 'cube-beginner');
   assert.equal(normaliseChoice(null), null);
   assert.equal(normaliseChoice({ size: 'flat-beginner', custom: DEFAULT_CHOICE.custom, noGuess: false }), null);
+  for (const size of ['double-beginner', 'double-intermediate', 'double-expert']) {
+    assert.equal(normaliseChoice({ size, custom: DEFAULT_CHOICE.custom, noGuess: false }), null, `${size} is no longer offered`);
+  }
   assert.equal(normaliseChoice({ size: 'custom', custom: { X: 0, Y: 1, Z: 1, mines: 1 }, noGuess: false }), null);
   assert.equal(normaliseChoice({ size: 'cube-expert', custom: DEFAULT_CHOICE.custom, noGuess: 'yes' }), null);
   assert.deepEqual(normaliseChoice({ size: 'cube-expert', noGuess: true }),
     { size: 'cube-expert', custom: DEFAULT_CHOICE.custom, noGuess: true }, 'a preset without custom fields takes the default');
   const big = { X: 100, Y: 100, Z: 100, mines: 10 };
   assert.equal(normaliseChoice({ size: 'custom', custom: big, noGuess: true }).noGuess, false, 'no no-guess above the limit');
-  assert.equal(normaliseChoice({ size: 'double-expert', custom: big, noGuess: true }).noGuess, true, 'a preset keeps it');
+  assert.equal(normaliseChoice({ size: 'cube-expert', custom: big, noGuess: true }).noGuess, true, 'a preset keeps it');
 
-  assert.deepEqual(boardOf({ size: 'double-intermediate', custom: big, noGuess: true }), { X: 14, Y: 14, Z: 2, mines: 60, noGuess: true });
+  assert.deepEqual(boardOf({ size: 'cube-intermediate', custom: big, noGuess: true }), { X: 8, Y: 8, Z: 8, mines: 40, noGuess: true });
   assert.deepEqual(boardOf({ size: 'custom', custom: { X: 3, Y: 4, Z: 5, mines: 7 }, noGuess: false }), { X: 3, Y: 4, Z: 5, mines: 7, noGuess: false });
   assert.deepEqual(boardOf({ size: 'custom', custom: big, noGuess: true }).noGuess, false);
   assert.throws(() => boardOf({ size: 'custom', custom: { X: 1, Y: 1, Z: 1, mines: 1 }, noGuess: false }), RangeError);
@@ -220,6 +244,16 @@ test('a malformed stored 3D choice falls back to the default; the 2D choice is a
   assert.notEqual(LAST_CHOICE_DOC, doc2d, 'each mode keeps its own last board choice');
 });
 
+test('a remembered double layer choice opens on cube Beginner', async () => {
+  for (const size of ['double-beginner', 'double-intermediate', 'double-expert']) {
+    const data = { size, custom: { X: 4, Y: 5, Z: 6, mines: 11 }, noGuess: true };
+    const last = lastChoice(memoryStorage({ [LAST_CHOICE_DOC]: JSON.stringify({ version: LAST_CHOICE_VERSION, data }) }));
+    const choice = await last.load();
+    assert.equal(choice.size, 'cube-beginner', size);
+    assert.deepEqual(boardOf(choice), { X: 6, Y: 6, Z: 6, mines: 10, noGuess: false });
+  }
+});
+
 // ---------------------------------------------------------------- markup and wiring
 
 const INDEX = read('index.html');
@@ -227,13 +261,15 @@ const MAIN = read('js/main.js');
 const UI_SRC = strip(read('js/ui.js'));
 const BOARD = INDEX.slice(INDEX.indexOf('<section id="board-choice"'), INDEX.indexOf('<!-- Coming soon -->'));
 
-test('index.html offers the six presets by family, the custom board, Random, the no-guess switch and Back', () => {
+test('index.html offers the three cube presets, the custom board, Random, the no-guess switch and Back', () => {
   const presets = [...BOARD.matchAll(/<button type="button" class="ui-menu__item" data-preset="([\d,]+)"><span class="ui-menu__label">([^<]+)<\/span><span class="ui-menu__detail">([^<]+)<\/span><\/button>/g)];
   assert.deepEqual(presets.map((m) => m[1]), PRESETS.map(presetKey));
   assert.deepEqual(presets.map((m) => m[2]), PRESETS.map((p) => p.name));
   assert.deepEqual(presets.map((m) => m[3].replace(/&times;/g, '×').replace(/&middot;/g, '·')), PRESETS.map(presetLabel));
   for (const f of FAMILIES) assert.match(BOARD, new RegExp(`<h2 class="ui-heading" id="bc-${f.id}">${f.label}</h2>`));
   assert.doesNotMatch(BOARD, /data-preset="\d+,\d+,1,\d+"/, 'no flat preset');
+  assert.doesNotMatch(BOARD, /data-preset="\d+,\d+,2,\d+"|bc-double|Double layer/, 'no double layer group');
+  assert.doesNotMatch(read('css/components.css'), /Double layer|bc-double/, 'no double layer group in the styles');
   for (const [f, id] of [['X', 'c-x'], ['Y', 'c-y'], ['Z', 'c-z'], ['mines', 'c-m']]) {
     assert.match(BOARD, new RegExp(`<input id="${id}" data-field="${f}" class="ui-field__input" type="number"`), f);
   }
@@ -337,7 +373,7 @@ test('in a browser, the custom board validates, the switch follows the limit and
 
     await page.click('#menu-entry-3d');
     assert.equal(await mode(), 'board-choice');
-    assert.equal(await ms(() => document.activeElement?.dataset.preset), '8,8,2,10', 'the first preset takes the focus when none was played');
+    assert.equal(await ms(() => document.activeElement?.dataset.preset), '6,6,6,10', 'the first preset takes the focus when none was played');
     assert.equal(await ms(() => [...document.querySelectorAll('#board-choice [data-preset] [data-last]')].filter((l) => !l.classList.contains('hidden')).length), 0,
       'nothing is "Last played" before a game');
     assert.equal(await ms(() => document.querySelectorAll('#board-choice [data-best]').length), 0, 'no best times');
@@ -362,9 +398,9 @@ test('in a browser, the custom board validates, the switch follows the limit and
     await page.fill('#c-m', '50');
     assert.match(await info(), /^1,000,000 cells/);
     assert.deepEqual(await sw(), { disabled: true, checked: false, reason: `No-guess is available up to ${NOGUESS_CELL_LIMIT.toLocaleString('en-US')} cells` });
-    await page.fill('#c-x', '2');
-    await page.fill('#c-y', '2');
-    await page.fill('#c-z', '2');
+    await page.fill('#c-x', '3');
+    await page.fill('#c-y', '3');
+    await page.fill('#c-z', '3');
     await page.fill('#c-m', '3');
     assert.deepEqual(await sw(), { disabled: false, checked: false, reason: '' });
     await page.check('#c-noguess');
@@ -372,9 +408,14 @@ test('in a browser, the custom board validates, the switch follows the limit and
     await page.fill('#c-y', '100');
     assert.deepEqual(await sw(), { disabled: true, checked: false, reason: `No-guess is available up to ${NOGUESS_CELL_LIMIT.toLocaleString('en-US')} cells` });
     assert.equal(await ms(() => document.getElementById('bc-noguess').disabled), false, 'the presets keep their switch above the limit');
-    await page.fill('#c-x', '2');
-    await page.fill('#c-y', '2');
-    assert.equal((await sw()).checked, true, 'the custom board\'s choice comes back at or below the limit');
+    await page.fill('#c-z', '2');
+    assert.deepEqual(await sw(), { disabled: true, checked: false, reason: 'No-guess isn\'t available when a side is 2 cells' },
+      'a side of 2 takes precedence over the cell limit');
+    await page.fill('#c-x', '3');
+    await page.fill('#c-y', '3');
+    assert.deepEqual(await sw(), { disabled: true, checked: false, reason: 'No-guess isn\'t available when a side is 2 cells' });
+    await page.fill('#c-z', '3');
+    assert.equal((await sw()).checked, true, 'the custom board\'s choice comes back on a board that offers it');
 
     // Random fills valid fields.
     await page.click('#c-random');
@@ -412,13 +453,13 @@ test('in a browser, the custom board validates, the switch follows the limit and
     await page.focus('#bc-noguess');
     await page.keyboard.press('Space');
     assert.equal(await ms(() => document.getElementById('bc-noguess').checked), false);
-    await page.click('#board-choice [data-preset="14,14,2,60"]');
+    await page.click('#board-choice [data-preset="8,8,8,40"]');
     assert.equal(await mode(), 'ready');
-    await page.waitForFunction(() => JSON.parse(localStorage.getItem('ms3d:doc:mode3d.lastChoice')).data.size === 'double-intermediate');
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem('ms3d:doc:mode3d.lastChoice')).data.size === 'cube-intermediate');
     assert.equal(await ms(() => JSON.parse(localStorage.getItem('ms3d:doc:mode3d.lastChoice')).data.noGuess), false);
     await page.click('#ready-back');
-    assert.equal(await ms(() => document.activeElement?.dataset.preset), '14,14,2,60');
-    assert.equal(await ms(() => document.querySelector('[data-preset="14,14,2,60"] [data-last]').classList.contains('hidden')), false);
+    assert.equal(await ms(() => document.activeElement?.dataset.preset), '8,8,8,40');
+    assert.equal(await ms(() => document.querySelector('[data-preset="8,8,8,40"] [data-last]').classList.contains('hidden')), false);
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

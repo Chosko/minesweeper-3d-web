@@ -1,4 +1,4 @@
-// 3D board choice: the six presets, a custom board, the Random fill and the no-guess switch,
+// 3D board choice: the three cube presets, a custom board, the Random fill and the no-guess switch,
 // preselected from the last 3D board choice. Touches only the elements it is handed.
 //
 // A board choice is { size, custom, noGuess }: `size` one of BOARD_SIZES (a preset id or
@@ -7,18 +7,21 @@
 //
 // Custom boards take each dimension DIM_MIN to DIM_MAX and 1 to cells − 1 mines: one cell stays
 // free because the first click is always safe, so a one-cell board takes no mine count at all.
-// No-guess is offered on every preset, and on a custom board of at most NOGUESS_CELL_LIMIT cells.
+// No-guess is offered on every preset, and on a custom board of at most NOGUESS_CELL_LIMIT cells with
+// no side of exactly 2 cells: two cells stacked along such a side share every neighbour, so a mine in
+// one of them is always a guess.
 //
 // Pure helpers:
 //   PRESETS, FAMILIES        the presets in menu order, each { id, family, name, X, Y, Z, mines },
 //                            and their families { id, label }.
 //   presetKey(p) / presetByKey(key)   '6,6,6,10', the preset items' data-preset value.
-//   presetLabel(p)           '8 × 8 × 2 · 10 mines'.
+//   presetLabel(p)           '6 × 6 × 6 · 10 mines'.
 //   validateCustom(board)    { ok: true } or { ok: false, field, reason }; field 'X' | 'Y' | 'Z' | 'mines'.
 //   customStatus(board)      { ok, field, max, text, warn? }: the info line under the custom fields;
 //                            `max` the mine limit (null while the size is invalid).
 //   noGuessAvailable(choice) whether the switch is offered for that choice.
-//   noGuessReason()          the line shown above the disabled switch.
+//   noGuessReason(choice?)   the line shown above the disabled switch: the side-of-2 line when a
+//                            side is 2, else the cell-limit line.
 //   normaliseChoice(choice)  a valid choice as a plain copy, or null.
 //   readChoice({ size, fields, noGuess }, fallbackCustom?)  the choice the fields describe, or null.
 //   boardOf(choice)          { X, Y, Z, mines, noGuess } of the board to play.
@@ -29,8 +32,8 @@
 //             (form) with its submit button [data-preset="custom"], inputs
 //             [data-field="X|Y|Z|mines"], Random [data-random], the info line [data-info], the
 //             presets' no-guess switch [data-noguess="presets"], the custom board's no-guess
-//             switch [data-noguess="custom"] — disabled above NOGUESS_CELL_LIMIT, its reason
-//             line [data-noguess-reason] above it — and Back [data-back].
+//             switch [data-noguess="custom"] — disabled above NOGUESS_CELL_LIMIT or on a side of
+//             2 cells, its reason line [data-noguess-reason] above it — and Back [data-back].
 //   show(choice, { played })  fills the fields and the switch from `choice` and marks its item
 //             data-last, the screen's default focus; the "Last played" line shows only when
 //             `played` (default true).
@@ -48,21 +51,17 @@ export const LAST_CHOICE_VERSION = 1;
 
 const preset = (id, family, name, X, Y, Z, mines) => Object.freeze({ id, family, name, X, Y, Z, mines });
 export const PRESETS = Object.freeze([
-  preset('double-beginner', 'double', 'Beginner', 8, 8, 2, 10),
-  preset('double-intermediate', 'double', 'Intermediate', 14, 14, 2, 60),
-  preset('double-expert', 'double', 'Expert', 25, 16, 2, 130),
   preset('cube-beginner', 'cube', 'Beginner', 6, 6, 6, 10),
   preset('cube-intermediate', 'cube', 'Intermediate', 8, 8, 8, 40),
   preset('cube-expert', 'cube', 'Expert', 12, 12, 8, 130),
 ]);
 export const FAMILIES = Object.freeze([
-  Object.freeze({ id: 'double', label: 'Double layer' }),
   Object.freeze({ id: 'cube', label: 'Cube' }),
 ]);
 export const BOARD_SIZES = Object.freeze([...PRESETS.map((p) => p.id), 'custom']);
 
 export const DEFAULT_CHOICE = Object.freeze({
-  size: 'double-beginner',
+  size: 'cube-beginner',
   custom: Object.freeze({ X: 10, Y: 10, Z: 10, mines: 25 }),
   noGuess: false,
 });
@@ -104,13 +103,17 @@ export function customStatus(board) {
   return status;
 }
 
+const sideOf2 = (choice) => choice?.size === 'custom' && [choice.custom?.X, choice.custom?.Y, choice.custom?.Z].includes(2);
+
 export function noGuessAvailable(choice) {
   if (choice?.size !== 'custom') return true;
   const { X, Y, Z } = choice.custom ?? {};
-  return dim(X) && dim(Y) && dim(Z) && X * Y * Z <= NOGUESS_CELL_LIMIT;
+  return dim(X) && dim(Y) && dim(Z) && !sideOf2(choice) && X * Y * Z <= NOGUESS_CELL_LIMIT;
 }
 
-export const noGuessReason = () => `No-guess is available up to ${n(NOGUESS_CELL_LIMIT)} cells`;
+export const noGuessReason = (choice) => (sideOf2(choice)
+  ? 'No-guess isn\'t available when a side is 2 cells'
+  : `No-guess is available up to ${n(NOGUESS_CELL_LIMIT)} cells`);
 
 export function normaliseChoice(choice) {
   if (!choice || typeof choice !== 'object') return null;
@@ -164,7 +167,7 @@ export function bindBoardChoice({ root, onStart, onBack }) {
   const random = root.querySelector('[data-random]');
   const back = root.querySelector('[data-back]');
   let last = null;
-  let wanted = false; // the custom board's no-guess choice, kept while the board is above the limit
+  let wanted = false; // the custom board's no-guess choice, kept while the board does not offer it
 
   for (const b of items) {
     if (!b.classList.contains('ui-menu__item')) continue;
@@ -185,10 +188,11 @@ export function bindBoardChoice({ root, onStart, onBack }) {
     info.classList.toggle('ui-text--muted', !warn);
     if (s.max !== null) inputs[3].max = String(s.max);
     for (const [i, f] of FIELDS.entries()) inputs[i].toggleAttribute('data-adjusted', s.field === f);
-    const available = s.max === null || noGuessAvailable({ size: 'custom', custom });
+    const choice = { size: 'custom', custom };
+    const available = s.max === null || noGuessAvailable(choice);
     noGuess.disabled = !available;
     noGuess.checked = available && wanted;
-    reason.textContent = available ? '' : noGuessReason();
+    reason.textContent = available ? '' : noGuessReason(choice);
     reason.classList.toggle('hidden', available);
     return s;
   };

@@ -67,12 +67,14 @@ const TURN = 2 * Math.PI;
 // ---------- the games ----------
 
 // The recorded games kept as test fixtures (tests/replay-determinism.test.mjs): per mode a win, a
-// loss, an abandon and wasted clicks; in 3D flags placed before the first reveal.
+// loss, an abandon and wasted clicks; in 3D flags placed before the first reveal. A 3D game names a
+// preset id as its board, or carries its own `size` [X, Y, Z, mines] — the 8 × 8 × 2 custom board
+// that keeps the double layer Beginner fixture.
 export const FIXTURE_GAMES = Object.freeze([
   { kind: '2d', board: 'beginner', seed: 11, outcome: 'won', waste: true, note: '2D Beginner, won with wasted clicks' },
   { kind: '2d', board: 'intermediate', seed: 12, outcome: 'lost', stopAfter: 30, note: '2D Intermediate, lost' },
   { kind: '2d', board: 'expert', seed: 13, outcome: 'abandoned', stopAfter: 40, note: '2D Expert, abandoned' },
-  { kind: '3d', board: 'double-beginner', seed: 21, outcome: 'won', preFlags: true, note: '3D double layer Beginner, won, flags before the first reveal' },
+  { kind: '3d', board: 'double-beginner', size: [8, 8, 2, 10], seed: 21, outcome: 'won', preFlags: true, note: '3D double layer Beginner, won, flags before the first reveal' },
   { kind: '3d', board: 'cube-beginner', seed: 22, outcome: 'lost', stopAfter: 12, waste: true, note: '3D cube Beginner, lost with wasted clicks' },
   { kind: '3d', board: 'cube-intermediate', seed: 23, outcome: 'abandoned', stopAfter: 25, note: '3D cube Intermediate, abandoned' },
 ].map(Object.freeze));
@@ -262,9 +264,8 @@ export async function playGame3D(spec, { interval = INTERVAL_3D, steps = { posit
   const rng = createRandom(spec.seed);
   const clock = fakeClock();
   const client = generatingClient();
-  const preset = PRESETS.find((p) => p.id === spec.board);
-  const { X, Y, Z } = preset;
-  const session = createSession3D({ board: { X, Y, Z, mines: preset.mines, noGuess: false }, client, clock, randomSeed: () => spec.seed });
+  const [X, Y, Z, mines] = spec.size ?? (({ X, Y, Z, mines }) => [X, Y, Z, mines])(PRESETS.find((p) => p.id === spec.board));
+  const session = createSession3D({ board: { X, Y, Z, mines, noGuess: false }, client, clock, randomSeed: () => spec.seed });
   const box = createBoxGrid(X, Y, Z);
   const n = X * Y * Z;
   const p = 4 * SPACING;
@@ -351,7 +352,7 @@ export async function playGame3D(spec, { interval = INTERVAL_3D, steps = { posit
   const summary = buildSummary({
     engine,
     elapsedMs: session.elapsedMs(),
-    board: { mode: MODE_3D, width: X, height: Y, depth: Z, mines: preset.mines, noGuess: false },
+    board: { mode: MODE_3D, width: X, height: Y, depth: Z, mines, noGuess: false },
     seed: session.seed,
     generatorVersion: session.generatorVersion,
   });

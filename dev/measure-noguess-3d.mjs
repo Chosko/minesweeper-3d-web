@@ -12,8 +12,8 @@
 
 import { generate, ATTEMPT_BUDGET } from '../js/generation/generate.js';
 
-// The 3D presets' densities: the cube presets (4.6 %, 7.8 %, 11.3 %) and the double layer's
-// Intermediate and Expert (15.3 %, 16.3 %); the original's default custom board is 2.5 %.
+// The densities measured: the cube presets' (4.6 %, 7.8 %, 11.3 %), two denser ones (15.3 %,
+// 16.3 %) and the original's default custom board (2.5 %).
 export const DENSITIES = Object.freeze([0.025, 0.05, 0.08, 0.11, 0.15, 0.163]);
 
 // Box boards in growing cell count. None has a 2-cell axis: two cells stacked along such an axis

@@ -22,7 +22,7 @@ const preset = (family, name, noGuess = false) => {
 };
 
 const BEGINNER_2D = square(9, 9, 10);
-const DL_BEGINNER = preset('Double layer', 'Beginner');
+const CUBE_BEGINNER = preset('Cube', 'Beginner');
 const CUBE_EXPERT = preset('Cube', 'Expert');
 const CUSTOM_3D_A = box(10, 10, 3, 20);
 const CUSTOM_3D_B = box(5, 5, 5, 12, true);
@@ -33,7 +33,7 @@ let nextId = 1;
 let clock = Date.parse('2026-10-01T00:00:00.000Z');
 
 // A summary through the real builder; `clicks` the reveal count (efficiency = 100 × solved / clicks).
-function game({ board = DL_BEGINNER, outcome = 'won', ms = 10000, bbbv = 20, clicks = 20, id } = {}) {
+function game({ board = CUBE_BEGINNER, outcome = 'won', ms = 10000, bbbv = 20, clicks = 20, id } = {}) {
   const bbbvSolved = outcome === 'won' ? bbbv : Math.max(0, bbbv - 5);
   const engine = {
     bbbv, bbbvSolved,
@@ -60,7 +60,7 @@ test('3D bests: from won games only, strictly better replaces, a tie keeps the e
   const m = createRecordsModel();
   m.record(game({ outcome: 'lost', ms: 1000 }));
   m.record(game({ outcome: 'abandoned', ms: 500 }));
-  assert.deepEqual(m.bests(DL_BEGINNER), { time: null, bbbvPerSecond: null, efficiency: null });
+  assert.deepEqual(m.bests(CUBE_BEGINNER), { time: null, bbbvPerSecond: null, efficiency: null });
   const first = game({ ms: 8000, bbbv: 20, clicks: 25 });
   const c1 = m.record(first);
   assert.deepEqual([c1.time.newBest, c1.time.best, c1.time.value], [true, null, 8000]);
@@ -69,26 +69,26 @@ test('3D bests: from won games only, strictly better replaces, a tie keeps the e
   assert.equal(c2.time.newBest, false);
   assert.deepEqual(c2.time.best, { id: first.id, value: 8000, endedAt: first.endedAt });
   assert.equal(c2.time.difference, 0);
-  assert.equal(m.bests(DL_BEGINNER).time.id, first.id);
+  assert.equal(m.bests(CUBE_BEGINNER).time.id, first.id);
   const better = game({ ms: 7000, bbbv: 20, clicks: 20 });
   const c3 = m.record(better);
   assert.equal(c3.time.newBest, true);
   assert.equal(c3.time.best.value, 8000, 'compared against the best that stood before it');
   assert.equal(c3.time.difference, -1000);
-  assert.deepEqual(m.bests(DL_BEGINNER).time, { id: better.id, value: 7000, endedAt: better.endedAt });
-  assert.equal(m.bests(DL_BEGINNER).efficiency.id, better.id);
+  assert.deepEqual(m.bests(CUBE_BEGINNER).time, { id: better.id, value: 7000, endedAt: better.endedAt });
+  assert.equal(m.bests(CUBE_BEGINNER).efficiency.id, better.id);
 });
 
 test('3D bests are per board: a 3D board and its no-guess twin and a 2D board keep their own', () => {
   const m = createRecordsModel();
-  const a = game({ board: DL_BEGINNER, ms: 9000 });
-  const b = game({ board: preset('Double layer', 'Beginner', true), ms: 5000 });
+  const a = game({ board: CUBE_BEGINNER, ms: 9000 });
+  const b = game({ board: preset('Cube', 'Beginner', true), ms: 5000 });
   const c = game({ board: BEGINNER_2D, ms: 3000 });
   for (const g of [a, b, c]) m.record(g);
-  assert.equal(m.bests(DL_BEGINNER).time.id, a.id);
-  assert.equal(m.bests(preset('Double layer', 'Beginner', true)).time.id, b.id);
+  assert.equal(m.bests(CUBE_BEGINNER).time.id, a.id);
+  assert.equal(m.bests(preset('Cube', 'Beginner', true)).time.id, b.id);
   assert.equal(m.bests(BEGINNER_2D).time.id, c.id);
-  assert.equal(m.history(DL_BEGINNER).length, 1);
+  assert.equal(m.history(CUBE_BEGINNER).length, 1);
 });
 
 // ---------- mode separation ----------
@@ -97,7 +97,7 @@ test('a summary updates its board and its own mode only: a 3D loss never moves a
   const m = createRecordsModel();
   m.record(game({ board: BEGINNER_2D }));
   m.record(game({ board: BEGINNER_2D }));
-  m.record(game({ board: DL_BEGINNER, outcome: 'lost' }));
+  m.record(game({ board: CUBE_BEGINNER, outcome: 'lost' }));
   assert.deepEqual(m.overall('classic-2d'), { games: 2, wins: 2, currentStreak: 2, longestStreak: 2 });
   assert.equal(m.overallWinRate('classic-2d'), 1);
   assert.deepEqual(m.overall(MODE_3D), { games: 1, wins: 0, currentStreak: 0, longestStreak: 0 });
@@ -109,12 +109,12 @@ test('a summary updates its board and its own mode only: a 3D loss never moves a
 
 test('a 3D win extends the 3D streaks only; a 2D loss never moves a 3D streak', () => {
   const m = createRecordsModel();
-  m.record(game({ board: DL_BEGINNER }));
+  m.record(game({ board: CUBE_BEGINNER }));
   m.record(game({ board: CUBE_EXPERT }));
   m.record(game({ board: BEGINNER_2D, outcome: 'lost' }));
-  m.record(game({ board: DL_BEGINNER }));
+  m.record(game({ board: CUBE_BEGINNER }));
   assert.deepEqual(m.overall(MODE_3D), { games: 3, wins: 3, currentStreak: 3, longestStreak: 3 });
-  assert.deepEqual(m.counters(DL_BEGINNER), { games: 2, wins: 2, currentStreak: 2, longestStreak: 2 });
+  assert.deepEqual(m.counters(CUBE_BEGINNER), { games: 2, wins: 2, currentStreak: 2, longestStreak: 2 });
   assert.deepEqual(m.counters(CUBE_EXPERT), { games: 1, wins: 1, currentStreak: 1, longestStreak: 1 });
   assert.deepEqual(m.overall('classic-2d'), { games: 1, wins: 0, currentStreak: 0, longestStreak: 0 });
 });
@@ -143,26 +143,33 @@ test('every mode has its own overall counters from the start, at zero', () => {
 
 // ---------- boards played ----------
 
-test('boards played for 3D: the six presets in menu order, without no-guess first, then custom by last played', () => {
+test('boards played for 3D: the three cube presets in menu order, without no-guess first, then custom by last played', () => {
   const m = createRecordsModel();
   const presets = PRESETS_3D.flatMap((p) => [false, true].map((ng) => box(p.width, p.height, p.depth, p.mines, ng)));
   const order = [CUSTOM_3D_A, ...[...presets].reverse(), BEGINNER_2D, CUSTOM_3D_B, CUSTOM_3D_A];
   for (const board of order) m.record(game({ board }));
   const keys = m.boardsPlayed(MODE_3D).map((b) => b.key);
   assert.deepEqual(keys, [...presets.map(boardKey), boardKey(CUSTOM_3D_A), boardKey(CUSTOM_3D_B)]);
-  assert.deepEqual(PRESETS_3D.map((p) => `${p.family} ${p.name}`), [
-    'Double layer Beginner', 'Double layer Intermediate', 'Double layer Expert',
-    'Cube Beginner', 'Cube Intermediate', 'Cube Expert',
-  ]);
+  assert.deepEqual(PRESETS_3D.map((p) => `${p.family} ${p.name}`), ['Cube Beginner', 'Cube Intermediate', 'Cube Expert']);
   assert.deepEqual(m.boardsPlayed(MODE_3D).at(-1).board, { ...CUSTOM_3D_B });
+});
+
+test('boards played for 3D: a former double layer board is listed with the custom boards, by last played', () => {
+  const m = createRecordsModel();
+  const formerDouble = box(8, 8, 2, 10);
+  const formerDoubleNoGuess = box(25, 16, 2, 130, true);
+  for (const board of [formerDouble, CUSTOM_3D_A, CUBE_EXPERT, formerDoubleNoGuess, CUBE_BEGINNER]) m.record(game({ board }));
+  assert.deepEqual(m.boardsPlayed(MODE_3D).map((b) => b.key),
+    [CUBE_BEGINNER, CUBE_EXPERT, formerDoubleNoGuess, CUSTOM_3D_A, formerDouble].map(boardKey));
+  assert.equal(m.history(formerDouble).length, 1, 'its game stays in the history');
 });
 
 test('boards played takes a mode and never lists another mode\'s boards; Classic 2D is the default', () => {
   const m = createRecordsModel();
-  for (const board of [DL_BEGINNER, BEGINNER_2D, CUSTOM_3D_A]) m.record(game({ board }));
+  for (const board of [CUBE_BEGINNER, BEGINNER_2D, CUSTOM_3D_A]) m.record(game({ board }));
   assert.deepEqual(m.boardsPlayed('classic-2d').map((b) => b.key), [boardKey(BEGINNER_2D)]);
   assert.deepEqual(m.boardsPlayed().map((b) => b.key), [boardKey(BEGINNER_2D)]);
-  assert.deepEqual(m.boardsPlayed(MODE_3D).map((b) => b.key), [boardKey(DL_BEGINNER), boardKey(CUSTOM_3D_A)]);
+  assert.deepEqual(m.boardsPlayed(MODE_3D).map((b) => b.key), [boardKey(CUBE_BEGINNER), boardKey(CUSTOM_3D_A)]);
 });
 
 // ---------- rebuild ----------
@@ -170,7 +177,7 @@ test('boards played takes a mode and never lists another mode\'s boards; Classic
 test('rebuilding from the history rebuilds the per-mode counters', () => {
   const m = createRecordsModel();
   const games = [
-    game({ board: BEGINNER_2D }), game({ board: DL_BEGINNER }), game({ board: DL_BEGINNER, outcome: 'abandoned' }),
+    game({ board: BEGINNER_2D }), game({ board: CUBE_BEGINNER }), game({ board: CUBE_BEGINNER, outcome: 'abandoned' }),
     game({ board: BEGINNER_2D, outcome: 'lost' }), game({ board: CUBE_EXPERT }), game({ board: CUSTOM_3D_A }),
   ];
   for (const g of games) m.record(g);
@@ -207,7 +214,7 @@ test('the upgrade carries every m1 board and the Classic 2D counters over and st
 test('the upgrade keeps 3D counters a records document already carries', () => {
   const m = createRecordsModel();
   m.record(game({ board: BEGINNER_2D }));
-  m.record(game({ board: DL_BEGINNER }));
+  m.record(game({ board: CUBE_BEGINNER }));
   const { records } = m.documents();
   assert.deepEqual(upgradeRecords(records), records);
 });
@@ -230,7 +237,7 @@ test('loading an m1 records document carries it over and saves it back at the ne
   await store.settled();
   assert.deepEqual(stored(backend, RECORDS_DOC), { version: RECORDS_VERSION, data: upgradeRecords(records) });
   assert.deepEqual(stored(backend, HISTORY_DOC), { version: 1, data: history });
-  store.record(game({ board: DL_BEGINNER }));
+  store.record(game({ board: CUBE_BEGINNER }));
   assert.deepEqual(store.overall(MODE_3D), { games: 1, wins: 1, currentStreak: 1, longestStreak: 1 });
   assert.deepEqual(store.overall('classic-2d'), records.overall['classic-2d']);
 });
@@ -243,14 +250,14 @@ test('a records document newer than this build is refused and left untouched', a
   await store.load();
   assert.equal(store.available(), false);
   assert.deepEqual(store.boardsPlayed(), []);
-  store.record(game({ board: DL_BEGINNER }));
+  store.record(game({ board: CUBE_BEGINNER }));
   await store.settled();
   assert.deepEqual(Object.fromEntries(backend.documents), initial);
 });
 
 test('an m1 build meeting the stepped-up records document refuses it and never overwrites it', async () => {
   const m = createRecordsModel();
-  m.record(game({ board: DL_BEGINNER }));
+  m.record(game({ board: CUBE_BEGINNER }));
   const text = doc(RECORDS_VERSION, m.documents().records);
   const backend = createMemoryBackend({ initial: { [RECORDS_DOC]: text } });
   const issues = [];

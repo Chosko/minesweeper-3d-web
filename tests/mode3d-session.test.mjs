@@ -147,7 +147,7 @@ test('the session opens a closed box awaiting its first click, from the board ch
   const { session } = sessionOf(choice);
   const v = session.view;
   assert.equal(session.state, SESSION_STATE.READY);
-  assert.deepEqual([v.X, v.Y, v.Z, v.n], [8, 8, 2, 128]);
+  assert.deepEqual([v.X, v.Y, v.Z, v.n], [6, 6, 6, 216]);
   assert.equal(v.phase, PHASE.AWAITING_FIRST_CLICK);
   assert.equal(v.state, 'playing');
   assert.equal(v.minesLeft, 10);

@@ -4,9 +4,9 @@
 // It takes one of two forms, chosen by its mode:
 //   2D — mode, grid, width, height, mines and noGuess. Beginner, Intermediate and Expert are
 //        recognised from their exact size and mine count on the square grid.
-//   3D — mode `3d`, width (X), height (Y), depth (Z), mines and noGuess, with no grid. The six
-//        presets, "Double layer" and "Cube" each Beginner, Intermediate and Expert, are
-//        recognised from their exact size and mine count.
+//   3D — mode `3d`, width (X), height (Y), depth (Z), mines and noGuess, with no grid. The three
+//        presets, "Cube" Beginner, Intermediate and Expert, are recognised from their exact size
+//        and mine count.
 // A name is never stored, so a custom board that matches a standard board or a preset is that
 // board.
 //
@@ -34,9 +34,6 @@ export const STANDARD_BOARDS = Object.freeze([
 // (js/mode3d/board-choice.js, kept equal by a test).
 const preset = (family, name, width, height, depth, mines) => Object.freeze({ family, name, width, height, depth, mines });
 export const PRESETS_3D = Object.freeze([
-  preset('Double layer', 'Beginner', 8, 8, 2, 10),
-  preset('Double layer', 'Intermediate', 14, 14, 2, 60),
-  preset('Double layer', 'Expert', 25, 16, 2, 130),
   preset('Cube', 'Beginner', 6, 6, 6, 10),
   preset('Cube', 'Intermediate', 8, 8, 8, 40),
   preset('Cube', 'Expert', 12, 12, 8, 130),
@@ -143,7 +140,7 @@ export function parseBoardKey(key) {
 const minesText = (mines) => `${mines} ${mines === 1 ? 'mine' : 'mines'}`;
 
 // "Expert", "Expert · no-guess", "20 × 12 · 50 mines", "2 × 1 · 1 mine · no-guess";
-// "Cube Expert", "Double layer Beginner · no-guess", "10 × 10 × 10 · 80 mines".
+// "Cube Expert", "Cube Beginner · no-guess", "10 × 10 × 10 · 80 mines".
 export function boardLabel(identity) {
   const id = createBoardIdentity(identity);
   let base;

@@ -23,7 +23,8 @@ const board2D = (width, height, mines, noGuess = false) => createBoardIdentity({
 const board3D = (width, height, depth, mines, noGuess = false) => createBoardIdentity({ mode: MODE_3D, width, height, depth, mines, noGuess });
 const BEGINNER = board2D(9, 9, 10);
 const CUSTOM_2D = board2D(20, 12, 50);
-const DL_BEGINNER = board3D(8, 8, 2, 10);
+const CUBE_BEGINNER = board3D(6, 6, 6, 10);
+const FORMER_DOUBLE = board3D(8, 8, 2, 10);
 const CUBE_EXPERT_NG = board3D(12, 12, 8, 130, true);
 const CUSTOM_3D = board3D(10, 10, 10, 80);
 const clicks = (n) => ({ reveal: { effective: n, wasted: 0 }, flag: { effective: 0, wasted: 0 }, chord: { effective: 0, wasted: 0 } });
@@ -76,7 +77,7 @@ function fakeView() {
   const shown = [];
   return { shown, show(c) { shown.push(c); }, hide() {} };
 }
-const PRESET_LABELS = ['Double layer Beginner', 'Double layer Intermediate', 'Double layer Expert', 'Cube Beginner', 'Cube Intermediate', 'Cube Expert']
+const PRESET_LABELS = ['Cube Beginner', 'Cube Intermediate', 'Cube Expert']
   .flatMap((l) => [l, `${l} · no-guess`]);
 const value = (list, key) => list.find((s) => s.key === key || s.stat === key).value;
 
@@ -90,17 +91,29 @@ test('the switch offers 2D and 3D; the content carries the chosen mode', () => {
   assert.equal(recordsContent(fakeStore()).mode, 'classic-2d');
 });
 
-test('the 3D picker lists the six presets with and without no-guess, then the custom 3D boards played, under their 3D labels', () => {
+test('the 3D picker lists the three cube presets with and without no-guess, then the custom 3D boards played, under their 3D labels', () => {
   const store = fakeStore({ games: [game(CUSTOM_3D), game(BEGINNER), game(CUSTOM_2D), game(CUBE_EXPERT_NG)] });
   const three = pickerBoards(store, '3d');
   assert.deepEqual(three.map((b) => b.label), [...PRESET_LABELS, '10 × 10 × 10 · 80 mines']);
-  assert.equal(three[0].key, boardKey(DL_BEGINNER));
+  assert.equal(three[0].key, boardKey(CUBE_BEGINNER));
   assert.equal(new Set(three.map((b) => b.key)).size, three.length, 'a preset played is not listed twice');
   const two = pickerBoards(store, 'classic-2d');
   assert.ok(two.every((b) => b.board.mode === 'classic-2d'), 'no 3D board in the 2D picker');
   assert.equal(two.at(-1).label, '20 × 12 · 50 mines');
   assert.deepEqual(pickerBoards(store).map((b) => b.key), two.map((b) => b.key), 'Classic 2D by default');
   assert.deepEqual(pickerBoards(brokenStore(), '3d').map((b) => b.label), PRESET_LABELS, 'unreadable records: the presets');
+});
+
+test('the 3D picker lists a former double layer board with the custom boards, under its size', () => {
+  const store = fakeStore({ games: [
+    game(FORMER_DOUBLE, { endedAt: '2026-10-07T12:00:00.000Z' }),
+    game(CUSTOM_3D, { endedAt: '2026-10-08T12:00:00.000Z' }),
+  ] });
+  const three = pickerBoards(store, '3d');
+  assert.deepEqual(three.map((b) => b.label), [...PRESET_LABELS, '10 × 10 × 10 · 80 mines', '8 × 8 × 2 · 10 mines']);
+  const c = recordsContent(store, { boardKey: boardKey(FORMER_DOUBLE) });
+  assert.equal(c.board.label, '8 × 8 × 2 · 10 mines');
+  assert.equal(c.board.key, '3d:8x8x2:10:guess', 'its records keep their board key');
 });
 
 // ---------------------------------------------------------------- open rules
@@ -115,7 +128,7 @@ test('a board key alone sets the switch from its mode', () => {
   const custom = recordsContent(store, { boardKey: boardKey(CUSTOM_3D) });
   assert.equal(custom.mode, '3d');
   assert.equal(custom.boards.at(-1).key, boardKey(CUSTOM_3D), 'a 3D board asked for joins the 3D picker');
-  assert.equal(recordsContent(store, { mode: 'classic-2d', boardKey: boardKey(DL_BEGINNER) }).mode, '3d', 'the key carries its mode');
+  assert.equal(recordsContent(store, { mode: 'classic-2d', boardKey: boardKey(CUBE_BEGINNER) }).mode, '3d', 'the key carries its mode');
 });
 
 test('a mode alone opens on its last board played, else on its first board', () => {
@@ -126,7 +139,7 @@ test('a mode alone opens on its last board played, else on its first board', () 
   ] });
   assert.equal(recordsContent(store, { mode: '3d' }).board.key, boardKey(CUSTOM_3D));
   assert.equal(recordsContent(store, { mode: 'classic-2d' }).board.key, boardKey(BEGINNER));
-  assert.equal(recordsContent(fakeStore({ games: [game(BEGINNER)] }), { mode: '3d' }).board.key, boardKey(DL_BEGINNER));
+  assert.equal(recordsContent(fakeStore({ games: [game(BEGINNER)] }), { mode: '3d' }).board.key, boardKey(CUBE_BEGINNER));
   assert.equal(lastBoardPlayed(store, '3d'), boardKey(CUSTOM_3D));
   assert.equal(lastBoardPlayed(store, 'classic-2d'), boardKey(BEGINNER));
 });
@@ -151,14 +164,14 @@ test('without a mode or a board the screen opens on the mode and board of the la
 
 test("the figures panel shows the chosen 3D board's figures and the 3D overall figures", () => {
   const store = fakeStore({ games: [
-    game(DL_BEGINNER, { elapsedMs: 30000, endedAt: '2026-10-07T12:00:00.000Z' }),
-    game(DL_BEGINNER, { outcome: 'lost', endedAt: '2026-10-08T12:00:00.000Z' }),
+    game(CUBE_BEGINNER, { elapsedMs: 30000, endedAt: '2026-10-07T12:00:00.000Z' }),
+    game(CUBE_BEGINNER, { outcome: 'lost', endedAt: '2026-10-08T12:00:00.000Z' }),
     game(CUSTOM_3D, { endedAt: '2026-10-08T13:00:00.000Z' }),
     game(BEGINNER, { endedAt: '2026-10-09T12:00:00.000Z' }),
     game(BEGINNER, { endedAt: '2026-10-09T13:00:00.000Z' }),
   ] });
   const library = fakeLibrary();
-  const c = recordsContent(store, { boardKey: boardKey(DL_BEGINNER), replays: library });
+  const c = recordsContent(store, { boardKey: boardKey(CUBE_BEGINNER), replays: library });
   assert.equal(value(c.bests, 'time'), '30.0 s');
   assert.deepEqual(c.counters.map((s) => [s.key, s.value]), [
     ['games', '2'], ['wins', '1'], ['winRate', '50%'], ['currentStreak', '0'], ['longestStreak', '1'],
@@ -169,7 +182,7 @@ test("the figures panel shows the chosen 3D board's figures and the 3D overall f
   ], 'the 3D games only');
   assert.equal(c.games.rows.length, 2, 'the games list reads the chosen board');
   assert.equal(c.chart.points.length, 1, 'the chart reads the chosen board');
-  assert.deepEqual(library.asked, [boardKey(DL_BEGINNER)], 'the library view reads the chosen board');
+  assert.deepEqual(library.asked, [boardKey(CUBE_BEGINNER)], 'the library view reads the chosen board');
   const two = recordsContent(store, { mode: 'classic-2d' });
   assert.equal(two.overallTitle, 'Classic 2D overall');
   assert.equal(value(two.overall, 'games'), '2');
@@ -194,11 +207,11 @@ test('the mode switch shows the chosen mode on its last board played, on the fir
   assert.equal(screen.page, 0);
   assert.equal(view.shown.at(-1).mode, '3d');
   assert.ok(view.shown.at(-1).boards.every((b) => b.key.startsWith('3d:')));
-  screen.select(boardKey(DL_BEGINNER));
-  assert.equal(view.shown.at(-1).board.label, 'Double layer Beginner');
+  screen.select(boardKey(CUBE_BEGINNER));
+  assert.equal(view.shown.at(-1).board.label, 'Cube Beginner');
   assert.equal(screen.mode, '3d', 'a board chosen in the picker keeps the mode');
   store.record(game(BEGINNER, { endedAt: '2026-10-09T14:00:00.000Z' }));
-  assert.equal(view.shown.at(-1).board.key, boardKey(DL_BEGINNER), 'a game recorded live keeps the chosen board');
+  assert.equal(view.shown.at(-1).board.key, boardKey(CUBE_BEGINNER), 'a game recorded live keeps the chosen board');
   screen.setMode('classic-2d');
   assert.equal(screen.board, boardKey(BEGINNER));
   const shown = view.shown.length;
@@ -224,14 +237,14 @@ test('Open takes an optional mode beside the optional board key', () => {
 });
 
 test("Watch from a 3D board returns to the Records screen on that board, and so on 3D", () => {
-  const store = fakeStore({ games: [game(DL_BEGINNER)] });
+  const store = fakeStore({ games: [game(CUBE_BEGINNER)] });
   const routes = [];
   const router = { has: () => true, go: (screen, opts) => routes.push({ screen, ...opts }) };
   const screen = createRecordsScreen({ records: store, view: fakeView(), router });
   screen.show({ mode: '3d' });
   screen.watch('g-x');
   const back = routes.at(-1).data.returnTo;
-  assert.equal(back.data.boardKey, boardKey(DL_BEGINNER));
+  assert.equal(back.data.boardKey, boardKey(CUBE_BEGINNER));
   assert.equal(recordsContent(store, back.data).mode, '3d');
 });
 
@@ -360,7 +373,7 @@ test('in a browser, mouse, keyboard and controller operate the 2D | 3D switch', 
     assert.equal(await checked(), '3d');
     assert.equal(await boardShown(), 'Cube Beginner');
     assert.equal(await overallTitle(), '3D overall');
-    assert.equal(await firstOption(), 'Double layer Beginner');
+    assert.equal(await firstOption(), 'Cube Beginner');
 
     // Mouse.
     await page.click('#records-mode [data-value="classic-2d"]');

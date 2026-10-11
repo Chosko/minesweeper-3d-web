@@ -646,7 +646,7 @@ Feature: input-rebinding
 
 ## 115. Three cube 3D presets and no no-guess on a side of 2
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/mode3d/board-choice.js, js/records/board.js, js/records/model.js, js/records/screen.js, index.html, css/components.css, tests/mode3d-board-choice.test.mjs, tests/records-board-3d.test.mjs, tests/records-model-3d.test.mjs, tests/records-screen-3d.test.mjs
 Preconditions: none
