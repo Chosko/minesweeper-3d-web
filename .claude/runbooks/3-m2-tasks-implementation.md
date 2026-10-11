@@ -379,7 +379,7 @@ Context:
 
 Done: 2026-10-11, commit `2c6d68b` (11 files, +1276/-4). The viewer is registered as `replay` in `js/main.js`, so Watch is live on Records; non-2D replays show "cannot be played here yet" until a 3D viewer registers; pointer interpolation stays linear (the step-19 hold amendment is still unmade).
 
-## [ ] 28. Implement task 78 — 3D replay viewer
+## [x] 28. Implement task 78 — 3D replay viewer
 
 Depends on: 9, 27
 
@@ -389,6 +389,8 @@ Context:
 ```prompt
 /task-implement 78 --review
 ```
+
+Done: 2026-10-11, commit `a09374a` (7 files, +527/-12). A 3D replay is drawn at `SPACING_START` (replays record no spacing) with its own camera; a lost graphics context during a replay goes to the 3D context-lost screen, whose Back leads to the main menu, not the replay's origin.
 
 ## [ ] 29. Implement task 79 — Watch replay on the results screen and from the library
 
@@ -408,6 +410,7 @@ Depends on: 26, 27, 28, 29
 Context:
 - 2026-10-10 (from step 26): `.claude/context/engine.md` and `replay.md` do not yet describe the engine's `game.snapshot()`/`restore()` (and metrics `save()`/`restore()`), the replay simulator or the verifier; the feature document gained a `## Snapshot interval` section.
 - 2026-10-11 (from step 27): the context files do not yet cover the replay viewer screen, the `__ms` debug-hook members `replayViewer` and `watch(data)`, or the Records Watch wording; "task 18's formatter" is `formatOverlayTime` in `js/ui/components.js`.
+- 2026-10-11 (from step 28): the 3D viewer is registered as `box: mountReplay3D` in the `viewers` map passed to `createReplayViewer` (`square` for 2D), not as the route itself; `replay.md`, `rendering.md`, `app-shell.md` and `testing.md` do not yet describe it; `js/render.js` clears end-of-game effects when a board returns from ended to playing (a seek back past the end).
 
 ```prompt
 /task-implement 80 --review
@@ -419,6 +422,7 @@ Depends on: 12, 18
 
 Context:
 - 2026-10-10 (from step 12): finished 3D games already reach the shared results screen with no end delay; until this task: pointer lock stays on over it, and "Play again" does nothing after Records → Back. The debug hook's fixed 3D board has no seed or generator version, so its summary is null and it never reaches records or the results screen — a Playwright test that wins a fixed 3D board and expects the results screen must handle this.
+- 2026-10-11 (from step 28): `js/render.js` now clears the end-of-game wave, confetti, shake and wrong flags when a board goes from ended back to playing (a replay seeking back past its end) — the end sequence here must stay compatible with that.
 
 ```prompt
 /task-implement 81 --review
