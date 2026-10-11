@@ -450,7 +450,7 @@ Context:
 
 Done: 2026-10-11, commit `c66f181` (7 files, +494/-47). When a board key and a mode disagree, the key's mode wins; the 3D picker always lists the six 3D presets (with and without no-guess) before custom boards played.
 
-## [ ] 33. Implement task 83 — Update documentation for feature `3d-results-records-screens`
+## [x] 33. Implement task 83 — Update documentation for feature `3d-results-records-screens`
 
 Depends on: 31, 32
 
@@ -461,3 +461,5 @@ Context:
 ```prompt
 /task-implement 83 --review
 ```
+
+Done: 2026-10-11, commit `5ff5219` (8 files, +233/-109).
