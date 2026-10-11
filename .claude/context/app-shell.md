@@ -604,14 +604,15 @@ Component kit (`css/components.css`, catalogue in its head comment):
   `ui-row` footer (Controls, Sound, volume `ui-slider`, credit `ui-link`).
 - 3D board choice (`#board-choice`, bound by `bindBoardChoice` of
   `js/mode3d/board-choice.js`, [mode3d.md](mode3d.md)): a `ui-card
-  ui-screen--wide` with one `ui-menu` per board family (Double layer, Cube)
-  in a `ui-grid` (items carry `data-preset`; the binder appends a "Last
+  ui-screen--wide` with the Cube heading over one `ui-menu` of the three
+  cube presets (items carry `data-preset`; the binder appends a "Last
   played" `ui-menu__detail` line and sets `data-last` on the last board
   choice) and the presets' no-guess `ui-toggle` under it, the custom board
   as a `ui-panel` of `ui-field` entries with Random/Start in
   `ui-actions--row`, its info line (`ui-text--warning` on an invalid or very
   large board), the custom board's no-guess `ui-toggle` under the line
-  giving the cell-count limit while it is disabled, and a Back button.
+  giving its reason — a side of 2 cells or the cell-count limit — while it
+  is disabled, and a Back button.
 - Classic 2D board choice (`#c2d-choice`): a `ui-card ui-screen--wide` with
   one `ui-menu` of the standard sizes (`data-size`), the custom board as a
   `ui-panel` of `ui-field` entries with Start (`data-size="custom"`) and an

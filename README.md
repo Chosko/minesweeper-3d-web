@@ -57,9 +57,10 @@ Every Classic 2D and 3D game is recorded in the browser. **Records**, on the mai
 screen shown after a game, opens the Records screen:
 
 - Pick a mode with the **2D | 3D** switch, then a board: in 2D, Beginner, Intermediate and Expert,
-  in 3D, the six double layer and cube boards, each with and without no-guess, then every custom
-  board of that mode you have played. The screen opens on the board you played last, in its mode,
-  or on the board of the game you just finished.
+  in 3D, the three cube boards, each with and without no-guess, then every custom board of that
+  mode you have played, the former double layer boards (8 × 8 × 2, 14 × 14 × 2, 25 × 16 × 2) among
+  them. The screen opens on the board you played last, in its mode, or on the board of the game
+  you just finished.
 - For that board: the best time, best 3BV/s and best efficiency with their dates, games played,
   wins, win rate, and the current and longest winning streak. The chosen mode's totals across every
   board are shown too; 2D and 3D are never added together.
@@ -117,9 +118,6 @@ Pick a board and play:
 
 | Board | Size | Mines |
 |---|---|---|
-| Double layer Beginner | 8 × 8 × 2 | 10 |
-| Double layer Intermediate | 14 × 14 × 2 | 60 |
-| Double layer Expert | 25 × 16 × 2 | 130 |
 | Cube Beginner | 6 × 6 × 6 | 10 |
 | Cube Intermediate | 8 × 8 × 8 | 40 |
 | Cube Expert | 12 × 12 × 8 | 130 |
@@ -127,9 +125,11 @@ Pick a board and play:
 
 - **Random** fills the custom fields with a random board.
 - **No-guess board:** one switch under the presets applies to the preset you pick; the custom board
-  has its own, available up to 8,000 cells (20 × 20 × 20) and shown disabled, with that limit, on a
-  larger board. A no-guess board can be solved from the first click by logic alone; if none is
-  found, the game offers to try again or to play a standard board of the same size.
+  has its own, available up to 8,000 cells (20 × 20 × 20) and shown disabled, with the reason, on a
+  larger board or on one with a side of exactly 2 cells — two cells stacked along such a side share
+  every neighbour, so a mine in one of them is always a guess. A no-guess board can be solved from
+  the first click by logic alone; if none is found, the game offers to try again or to play a
+  standard board of the same size.
 - The board choice you made last is preselected next time.
 
 ## 3D controls

@@ -12,8 +12,8 @@ DOM-free throughout, apart from the records and replay-list view binders
 and the history chart, which draws on the canvas it is handed.
 
 - `js/records/board.js` — the board identity in its 2D and 3D forms, its
-  key, the key's parser, the display label, the standard boards and the 3D
-  presets. Imports nothing.
+  key, the key's parser, the display label, the standard boards and the
+  three cube 3D presets. Imports nothing.
 - `js/records/summary.js` — the summary builder, the derived stats and best
   eligibility. Imports `CLICK_KINDS` from `js/engine/metrics.js` and the
   identity from `board.js`.
@@ -79,17 +79,17 @@ Board identity (`js/records/board.js`)
   board throws a `RangeError`.
 - `boardLabel(identity)` → `"Expert"`, `"Expert · no-guess"`,
   `"20 × 12 · 50 mines"`, `"2 × 1 · 1 mine · no-guess"`; `"Cube Expert"`,
-  `"Double layer Beginner · no-guess"`, `"10 × 10 × 10 · 80 mines"`.
+  `"Cube Beginner · no-guess"`, `"10 × 10 × 10 · 80 mines"`; a former
+  double layer board is a custom board, `"8 × 8 × 2 · 10 mines"`.
 - `standardBoard(identity)` → the matching `STANDARD_BOARDS` entry, or null
   for a custom or 3D board. `STANDARD_BOARDS` — frozen
   `{ name, width, height, mines }` for Beginner 9 × 9 / 10, Intermediate
   16 × 16 / 40, Expert 30 × 16 / 99.
 - `preset3D(identity)` → the matching `PRESETS_3D` entry, or null for a
   custom 3D or a 2D board. `PRESETS_3D` — frozen
-  `{ family, name, width, height, depth, mines }` in menu order: Double
-  layer Beginner 8 × 8 × 2 / 10, Intermediate 14 × 14 × 2 / 60, Expert
-  25 × 16 × 2 / 130; Cube Beginner 6 × 6 × 6 / 10, Intermediate 8 × 8 × 8 /
-  40, Expert 12 × 12 × 8 / 130 — the 3D board choice's `PRESETS`
+  `{ family, name, width, height, depth, mines }` in menu order: Cube
+  Beginner 6 × 6 × 6 / 10, Intermediate 8 × 8 × 8 / 40, Expert
+  12 × 12 × 8 / 130 — the 3D board choice's `PRESETS`
   ([mode3d.md](mode3d.md)).
 - `boardKey`, `boardLabel`, `standardBoard` and `preset3D` validate through
   `createBoardIdentity`, so any object carrying a form's fields works and an
@@ -196,9 +196,9 @@ content shape)
   overall".
 - `pickerBoards(records, mode = 'classic-2d')` → `[{ key, label, board }]`:
   the mode's named boards — Classic 2D's Beginner, Intermediate and Expert,
-  3D's six presets in `PRESETS_3D` order — each without no-guess then with
-  it, then every custom board of the mode played, in `boardsPlayed(mode)`
-  order.
+  3D's three cube presets in `PRESETS_3D` order — each without no-guess
+  then with it, then every custom board of the mode played, in
+  `boardsPlayed(mode)` order.
 - `lastBoardPlayed(records, mode?)` → the key of the board whose latest
   game ended last — in that mode, or in either without one — or null.
 - `recordsContent(records, { mode?, boardKey?, notSaved?, page?, replays?,
@@ -267,7 +267,10 @@ History chart (`js/records/history-chart.js`)
   and a 3D board, keep separate records. The standard names are recognised
   from size and mine count on the `square` grid only, the 3D preset names
   from size and mine count, and neither is ever stored, so a custom board
-  matching a standard board or a preset is that board.
+  matching a standard board or a preset is that board. A board whose
+  preset was dropped keeps its key, records and history and reads as a
+  custom board: a former double layer board (8 × 8 × 2, 14 × 14 × 2,
+  25 × 16 × 2) is labelled by its size and listed with the custom boards.
 - **Key format is stored data.** Records and history are indexed by
   `boardKey`, and the records document's board identity is rebuilt with
   `parseBoardKey`, so the format changes only together with a records format

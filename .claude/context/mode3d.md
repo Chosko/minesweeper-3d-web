@@ -11,9 +11,9 @@ the session behind the game shell's mode contract. `js/main.js` wires the
 three to the screens, the renderer and the pointer-lock flow
 ([app-shell.md](app-shell.md)).
 
-- `js/mode3d/board-choice.js` — the six presets (double layer and cube
-  families), the custom board's validation, the Random fill, the no-guess
-  switch and its cell-count limit, the last 3D board choice's document name,
+- `js/mode3d/board-choice.js` — the three cube presets, the custom board's
+  validation, the Random fill, the no-guess switch with its cell-count limit
+  and side-of-2 rule, the last 3D board choice's document name,
   and `bindBoardChoice`, the binder over the `#board-choice` screen. Its
   helpers are DOM-free; the binder touches only the elements it is handed.
 - `js/mode3d/session.js` — the 3D game on the shared engine
@@ -32,28 +32,31 @@ three to the screens, the renderer and the pointer-lock flow
 ## PUBLIC API
 
 `js/mode3d/board-choice.js`
-- `PRESETS` — six frozen `{id, family, name, X, Y, Z, mines}` in menu order:
-  double layer Beginner 8 × 8 × 2 / 10, Intermediate 14 × 14 × 2 / 60,
-  Expert 25 × 16 × 2 / 130; cube Beginner 6 × 6 × 6 / 10, Intermediate
-  8 × 8 × 8 / 40, Expert 12 × 12 × 8 / 130. `FAMILIES` (`double` "Double
-  layer", `cube` "Cube"); `BOARD_SIZES` (the preset ids plus `'custom'`).
+- `PRESETS` — three frozen `{id, family, name, X, Y, Z, mines}` in menu
+  order: cube Beginner 6 × 6 × 6 / 10, Intermediate 8 × 8 × 8 / 40, Expert
+  12 × 12 × 8 / 130. `FAMILIES` (`cube` "Cube"); `BOARD_SIZES` (the preset
+  ids plus `'custom'`).
 - A board choice is `{size, custom: {X, Y, Z, mines}, noGuess}`; `custom` is
   kept beside a preset so the custom fields reopen as the player left them.
-  `DEFAULT_CHOICE` is double layer Beginner, custom 10 × 10 × 10 / 25,
-  no-guess off.
+  `DEFAULT_CHOICE` is cube Beginner, custom 10 × 10 × 10 / 25, no-guess off.
 - `DIM_MIN` / `DIM_MAX` (1 / 100); `validateCustom(board)` → `{ok: true}` or
   `{ok: false, field: 'X'|'Y'|'Z'|'mines', reason}` — mines 1 to cells − 1,
   so a one-cell board is refused. `customStatus(board)` → `{ok, field, max,
   text, warn?}`, the info line under the fields (a warning above 250,000
   cells).
 - `NOGUESS_CELL_LIMIT` = 8000 (20 × 20 × 20); `noGuessAvailable(choice)` —
-  true on every preset and on a custom board of at most that many cells;
-  `noGuessReason()` — "No-guess is available up to 8,000 cells".
-- `normaliseChoice(choice)` → a valid plain copy or null, with no-guess
-  dropped on a custom board above the limit; `readChoice({size, fields,
-  noGuess}, fallbackCustom?)`; `boardOf(choice)` → `{X, Y, Z, mines,
-  noGuess}` (a `RangeError` on an invalid choice); `randomBoard(random?)` —
-  the original Random formula, always a valid board.
+  true on every preset and on a custom board of at most that many cells
+  with no side of exactly 2 (a side of 1 keeps it); `noGuessReason(choice)`
+  — "No-guess isn't available when a side is 2 cells" on a custom board
+  with a side of 2, which takes precedence, else "No-guess is available up
+  to 8,000 cells".
+- `normaliseChoice(choice)` → a valid plain copy or null — null for a
+  `size` outside `BOARD_SIZES`, such as a dropped double layer preset's id —
+  with no-guess dropped on a custom board that does not offer it;
+  `readChoice({size, fields, noGuess}, fallbackCustom?)`; `boardOf(choice)`
+  → `{X, Y, Z, mines, noGuess}` (a `RangeError` on an invalid choice);
+  `randomBoard(random?)` — the original Random formula, always a valid
+  board.
 - `presetKey(p)` (`'6,6,6,10'`, the items' `data-preset`), `presetByKey`,
   `presetLabel(p)`.
 - `LAST_CHOICE_DOC` = `'mode3d.lastChoice'`, `LAST_CHOICE_VERSION` = 1.
@@ -116,17 +119,22 @@ three to the screens, the renderer and the pointer-lock flow
 - **Two no-guess switches.** The presets' switch (`data-noguess="presets"`)
   is always enabled and applies to whichever preset is clicked. The custom
   board's switch (`data-noguess="custom"`) is disabled above
-  `NOGUESS_CELL_LIMIT`, with the reason line shown above it; the player's
-  wish is kept while it is disabled and comes back when the board shrinks.
-  Both are filled from the last choice's `noGuess`. The limit is read from
-  the one exported constant; `dev/measure-noguess-3d.mjs` is the measurement
-  behind it.
+  `NOGUESS_CELL_LIMIT` or on a side of 2 cells, with `noGuessReason`'s line
+  shown above it; the player's wish is kept while it is disabled and comes
+  back when the board offers no-guess again. Both are filled from the last
+  choice's `noGuess`. A side of 2 is refused because two cells stacked along
+  it share every neighbour, so a mine in one of them is always a guess. The
+  limit is read from the one exported constant;
+  `dev/measure-noguess-3d.mjs` is the measurement behind it.
 - **Last board choice.** `js/main.js` keeps it with the shell's
   `createLastBoardChoice` (`js/shell/menu.js`) in the `mode3d.lastChoice`
-  platform-storage document, loaded before the first screen. Picking a board
-  saves the choice (a failed save never stops the game) and starts
-  `MODES.start('3d', boardOf(choice))`; the board choice's `show` marks it
-  `data-last`, with "Last played" only once a choice was played or loaded.
+  platform-storage document, loaded before the first screen; a stored
+  choice `normaliseChoice` refuses — one naming a dropped double layer
+  preset among them — falls back to `DEFAULT_CHOICE`, cube Beginner, as if
+  nothing were stored. Picking a board saves the choice (a failed save
+  never stops the game) and starts `MODES.start('3d', boardOf(choice))`;
+  the board choice's `show` marks it `data-last`, with "Last played" only
+  once a choice was played or loaded.
 - **Closed box, then a board.** The session opens on a game awaiting its
   first click, whose view shows the closed box. Flags may be placed and
   removed; a left release on a flagged cell, and any chord, does nothing.

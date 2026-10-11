@@ -126,8 +126,10 @@ browser checks for everything that needs WebGL or the DOM.
   recognising them by exact size and mine count, never for a 2D board; the
   3D key pinned for the presets and custom boards, never equal to a 2D key,
   every field taking part, parsed back and throwing on a malformed or
-  impossible key; the preset and custom labels, a custom board matching a
-  preset labelled as it; and the 3D key form documented in the module.
+  impossible key, a former double layer board keeping its key; the preset
+  and custom labels, a custom board matching a preset labelled as it, a
+  former double layer board labelled as custom; and the 3D key form
+  documented in the module.
 - `tests/records-summary.test.mjs` — the summary builder
   (`js/records/summary.js`) over real engine games: won, lost and abandoned
   records with every field, no summary before the first click, a stated
@@ -161,7 +163,8 @@ browser checks for everything that needs WebGL or the DOM.
   their own; per-mode overall counters, a 3D game never moving a Classic 2D
   streak nor the reverse, an abandoned 3D game a loss for its board and
   mode, every mode at zero from the start; `boardsPlayed` by mode — the 3D
-  presets in menu order then custom boards by last played, Classic 2D the
+  cube presets in menu order then custom boards by last played, a former
+  double layer board among them, Classic 2D the
   default and no mode listing another's boards; the per-mode counters
   rebuilt from the history; and the records format step — `RECORDS_VERSION`
   2, `upgradeRecords` carrying m1 boards and Classic 2D counters over,
@@ -197,8 +200,9 @@ browser checks for everything that needs WebGL or the DOM.
   is unavailable).
 - `tests/records-screen-3d.test.mjs` — the Records screen for 3D
   (`js/records/screen.js`) over a records model or a fake store: the 2D | 3D
-  switch and the content's chosen mode, the 3D picker's six presets with and
-  without no-guess then the custom 3D boards played under their 3D labels,
+  switch and the content's chosen mode, the 3D picker's three cube presets
+  with and without no-guess then the custom 3D boards played under their 3D
+  labels, a former double layer board among them under its size,
   a board key alone setting the switch, a mode alone opening on its last
   board played or its first board, the last game played choosing mode and
   board, the chosen 3D board's figures and the 3D overall figures,
@@ -450,17 +454,19 @@ browser checks for everything that needs WebGL or the DOM.
   resumes, restarts and leaves the 3D game through the adapter, and ends a
   fixed board, which has no results screen, on the pause card.
 - `tests/mode3d-board-choice.test.mjs` — the 3D board choice
-  (`js/mode3d/board-choice.js`): the six presets and no flat one, custom
-  validation per field, the one-cell board refused, the very-large-board
-  warning, no-guess on every preset and on custom boards up to the limit,
-  the limit as one exported constant, choice normalising and `readChoice`,
-  Random by the original formula, the last 3D choice through
-  `createLastBoardChoice` over the memory backend (a malformed one falls
-  back to the default, a document apart from the 2D choice), the
+  (`js/mode3d/board-choice.js`): the three cube presets and no flat or
+  double layer one, custom validation per field, the one-cell board
+  refused, the very-large-board warning, no-guess on every preset and on
+  custom boards up to the limit, none on a side of 2 cells with its reason
+  line and a side of 1 keeping it, the limit as one exported constant,
+  choice normalising and `readChoice`, Random by the original formula, the
+  last 3D choice through `createLastBoardChoice` over the memory backend (a
+  malformed one, or one naming a double layer preset, falls back to cube
+  Beginner, a document apart from the 2D choice), the
   `index.html` markup, the old best times not read, the binder touching
   only its elements, and the shell's wiring. One Playwright test validates
-  the custom board, follows the switch across the limit and restores the
-  choice.
+  the custom board, follows the switch across the limit and onto a side of
+  2 cells and restores the choice.
 - `tests/mode3d-session.test.mjs` — the 3D game session
   (`js/mode3d/session.js`) over a fake generation client and a fake clock:
   the 3D game awaiting its first click, the generator's `box` description
