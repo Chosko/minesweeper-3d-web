@@ -121,7 +121,7 @@ Tasks: 48, 49, 50
 
 ## 3d-board-graph — The 3D box on the shared rules engine, with the 3D rule profile
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/3d-board-graph.md
 Source: product-design.md § 3D mode (m2-3d-joins)
 Tasks: 51, 52, 53, 54, 55
@@ -130,7 +130,7 @@ Tasks: 51, 52, 53, 54, 55
 
 ## 3d-play-flow — 3D board choice, safe first click, no-guess switch and results hand-off
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/3d-play-flow.md
 Source: product-design.md § 3D mode (m2-3d-joins)
 Tasks: 56, 57, 58, 59, 60
@@ -139,7 +139,7 @@ Tasks: 56, 57, 58, 59, 60
 
 ## replay-recording — Replay format and recording of actions and movement in 2D and 3D
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/replay-recording.md
 Source: product-design.md § Replays (m2-3d-joins)
 Tasks: 65, 66, 67, 68, 69, 70
@@ -148,7 +148,7 @@ Tasks: 65, 66, 67, 68, 69, 70
 
 ## replay-playback — Replay simulator, verifier and the replay viewer
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/replay-playback.md
 Source: product-design.md § Replays (m2-3d-joins)
 Tasks: 76, 77, 78, 79, 80
@@ -157,7 +157,7 @@ Tasks: 76, 77, 78, 79, 80
 
 ## replay-library — Replay store, retention with pinning, and the library view in Records
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/replay-library.md
 Source: product-design.md § Replays (m2-3d-joins)
 Tasks: 71, 72, 73, 74, 75
@@ -166,7 +166,7 @@ Tasks: 71, 72, 73, 74, 75
 
 ## 3d-game-records — 3D board identity and 3D games in bests, history, win rate and streaks per mode
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/3d-game-records.md
 Source: product-design.md § Results and records (m2-3d-joins)
 Tasks: 61, 62, 63, 64
@@ -175,7 +175,7 @@ Tasks: 61, 62, 63, 64
 
 ## 3d-results-records-screens — 3D results screen after the end effect, and the Records 2D | 3D switch
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/3d-results-records-screens.md
 Source: product-design.md § Results and records (m2-3d-joins)
 Tasks: 81, 82, 83
