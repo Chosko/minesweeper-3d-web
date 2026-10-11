@@ -436,7 +436,7 @@ Context:
 
 Done: 2026-10-11, commit `e6f546b` (15 files, +636/-127). The 1 s end delay (`END_DELAY_MS`) lives in the 3D adapter; a fixed debug board (no seed, no summary) ends on the pause card, not the results screen; closing the page during the delay records the game as finished.
 
-## [ ] 32. Implement task 82 — Records 2D | 3D switch and the 3D board picker
+## [x] 32. Implement task 82 — Records 2D | 3D switch and the 3D board picker
 
 Depends on: 11, 13, 24
 
@@ -448,12 +448,15 @@ Context:
 /task-implement 82 --review
 ```
 
+Done: 2026-10-11, commit `c66f181` (7 files, +494/-47). When a board key and a mode disagree, the key's mode wins; the 3D picker always lists the six 3D presets (with and without no-guess) before custom boards played.
+
 ## [ ] 33. Implement task 83 — Update documentation for feature `3d-results-records-screens`
 
 Depends on: 31, 32
 
 Context:
 - 2026-10-11 (from step 31): the context files and README still describe the old 3D end banner; the end delay is `END_DELAY_MS` (1 s) in `js/shell/mode-3d.js`, with `ending3D()` in `js/main.js` gating input, and the takeover style is `#results.results--takeover` in `css/style.css`. The `--z-banner` token and its tokens-test entry remain with no banner using them.
+- 2026-10-11 (from step 32): `.claude/context/records.md` still describes the Records screen as Classic 2D only; the records route now passes a mode, the 2D | 3D switch calls the screen's mode setter, a 3D board key selects 3D by itself (the key's mode wins over a disagreeing mode), and the 3D picker lists the six presets with and without no-guess, then custom boards played.
 
 ```prompt
 /task-implement 83 --review
