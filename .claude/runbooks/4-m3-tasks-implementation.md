@@ -28,7 +28,7 @@ Context:
 
 Done: 2026-10-11, commit `222b091` (7 files, +84/-66).
 
-## [ ] 34. Implement task 117 — Movement playback holds each sample, then interpolates
+## [x] 34. Implement task 117 — Movement playback holds each sample, then interpolates
 
 Depends on: none
 
@@ -38,11 +38,14 @@ Context: none
 /task-implement 117 --review
 ```
 
+Done: 2026-10-11, commit `3788ef0` (7 files, +143/-40). The interval comes from a fixed per-format-version table, `sampleIntervalMs(version, mode)` in `js/replay/format.js`, so a later sampler change never alters old replays; a new format version needs its own row.
+
 ## [ ] 35. Implement task 118 — Update documentation for feature `replay-playback`
 
 Depends on: 34
 
-Context: none
+Context:
+- 2026-10-11 (from step 34): a decoded replay carries `sampleIntervalMs` (from `sampleIntervalMs(version, mode)` in `js/replay/format.js`, a per-format-version table: v1 2D 50 ms, 3D 100 ms; not stored in the blob); `movementTrack` and `cameraTrack` take the interval (fallback `SAMPLE_INTERVAL_MS`); `.claude/context/replay.md` does not yet describe either or the hold-then-interpolate rule.
 
 ```prompt
 /task-implement 118 --review
