@@ -448,7 +448,7 @@ test('in a browser, a seeded history is charted in both themes and its games lis
     const label = () => page.evaluate(() => document.getElementById('records-page').textContent);
     let r = await rows();
     assert.equal(r.length, 10);
-    assert.deepEqual(r[0], ['Lost', '13.9 s', (6 / 13.9).toFixed(2), `${Math.round(600 / 22)}%`], 'the newest game first');
+    assert.deepEqual(r[0], ['Lost', '13.9 s', (6 / 13.9).toFixed(2), `${Math.round(600 / 22)}%`, ''], 'the newest game first, its Replay cell empty: no replay is kept');
     assert.equal(await label(), 'Games 1–10 of 24');
     assert.equal(await page.evaluate(() => document.getElementById('records-prev').disabled), true);
 

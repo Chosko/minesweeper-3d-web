@@ -266,7 +266,7 @@ Feature: replay-playback
 
 ## 77. Replay viewer screen with the 2D viewer, controls and overlay
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/replay/viewer.js, js/replay/clock.js, js/replay/viewer-2d.js, js/shell/router.js, index.html, css/components.css, tests/replay-viewer.test.mjs
 Preconditions: 72, 76

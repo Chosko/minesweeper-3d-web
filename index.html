@@ -318,6 +318,45 @@
   </section>
   <!-- /Records -->
 
+  <!-- Replay viewer -->
+  <section id="replay" class="hidden" aria-label="Replay">
+    <div class="ui-overlay-bar replay-bar" role="group" aria-label="Replay">
+      <div class="ui-stat" role="group" aria-labelledby="rp-clock-label"><span class="ui-stat__label" id="rp-clock-label">Time</span><span id="rp-clock" class="ui-stat__value">000</span></div>
+      <div class="ui-stat" role="group" aria-labelledby="rp-mines-label"><span class="ui-stat__label" id="rp-mines-label">Mines</span><span id="rp-mines" class="ui-stat__value">0</span></div>
+      <div class="ui-stat" role="group" aria-labelledby="rp-bbbv-label"><span class="ui-stat__label" id="rp-bbbv-label">3BV</span><span id="rp-bbbv" class="ui-stat__value">&mdash;</span></div>
+      <div class="ui-stat" role="group" aria-labelledby="rp-rate-label"><span class="ui-stat__label" id="rp-rate-label">3BV/s</span><span id="rp-rate" class="ui-stat__value">&mdash;</span></div>
+      <button type="button" id="rp-back" class="ui-button ui-button--secondary">Back</button>
+    </div>
+    <div id="replay-board"></div>
+    <section id="replay-message" class="ui-card ui-screen hidden" aria-labelledby="replay-message-title" role="status">
+      <h2 class="ui-card__title" id="replay-message-title">Opening the replay&hellip;</h2>
+      <p id="replay-message-text" class="ui-text hidden"></p>
+      <div class="ui-actions">
+        <button type="button" id="replay-message-back" class="ui-button ui-button--primary">Back</button>
+      </div>
+    </section>
+    <div id="replay-controls" class="ui-panel hidden" role="group" aria-label="Playback">
+      <p id="replay-end" class="ui-text hidden" role="status"></p>
+      <div class="ui-row">
+        <button type="button" id="rp-prev" class="ui-button ui-button--secondary" aria-label="Previous action">Previous</button>
+        <button type="button" id="rp-play" class="ui-button ui-button--primary">Play</button>
+        <button type="button" id="rp-next" class="ui-button ui-button--secondary" aria-label="Next action">Next</button>
+        <div id="rp-speed" class="ui-segmented" role="radiogroup" aria-label="Speed">
+          <button type="button" role="radio" aria-checked="false" class="ui-segmented__option" data-value="0.5" tabindex="-1">0.5&times;</button>
+          <button type="button" role="radio" aria-checked="true" class="ui-segmented__option" data-value="1">1&times;</button>
+          <button type="button" role="radio" aria-checked="false" class="ui-segmented__option" data-value="2" tabindex="-1">2&times;</button>
+          <button type="button" role="radio" aria-checked="false" class="ui-segmented__option" data-value="4" tabindex="-1">4&times;</button>
+        </div>
+      </div>
+      <div class="ui-slider">
+        <label class="ui-slider__label" for="rp-seek">Position</label>
+        <output class="ui-slider__value" for="rp-seek" id="rp-position">000 / 000</output>
+        <input id="rp-seek" class="ui-slider__input" type="range" min="0" max="0" step="1" value="0">
+      </div>
+    </div>
+  </section>
+  <!-- /Replay viewer -->
+
   <!-- Results -->
   <section id="results" class="overlay hidden" aria-label="Results">
     <section class="ui-card ui-screen" aria-labelledby="results-title">

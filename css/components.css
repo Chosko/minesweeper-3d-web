@@ -224,6 +224,15 @@
      comparisons (each ui-stat with a ui-stat__detail difference line), a
      ui-text--warning note, and ui-actions--row (Play again primary, Records,
      Back to menu). Default focus: Play again.
+   Replay viewer (index.html #replay, filled by js/replay/viewer.js): a
+     ui-overlay-bar of the replay's figures (Time in the overlay's timer
+     format, Mines, 3BV solved / 3BV, 3BV/s) with a secondary Back, the board
+     area, a ui-card ui-screen message while the replay opens or when it
+     cannot play (a ui-text reason and Back primary), and a ui-panel of the
+     playback controls: a ui-text end line, a ui-row of Previous, Play /
+     Pause (primary) and Next with the speed as a ui-segmented choice (0.5×,
+     1×, 2×, 4×), and the seek bar as a ui-slider. Default focus: Play, or
+     the message's Back.
 */
 
 /* ---------- buttons ---------- */

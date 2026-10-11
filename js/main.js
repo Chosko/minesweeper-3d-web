@@ -21,6 +21,8 @@ import { createSettingsStore } from './settings/store.js';
 import { createRecordsStore } from './records/store.js';
 import { createResultsFlow } from './results/flow.js';
 import { createReplayLibrary } from './replay/library.js';
+import { createReplayViewer, createReplayView } from './replay/viewer.js';
+import { REPLAY_SCREEN } from './records/replay-list.js';
 import { createResultsView, resultsContent } from './results/view.js';
 import { createRecordsScreen, createRecordsView } from './records/screen.js';
 import { applySettings, pixelRatioFor } from './settings/appliers.js';
@@ -227,6 +229,7 @@ const SHELL = createRouter({
     'classic-2d': { defaultFocus: null, show: () => ui.showClassic2D(), back: ({ source }) => PAUSE.pause(source === 'pointer' ? 'button' : source) },
     paused: { defaultFocus: () => (ui.isConfirmOpen() ? '#p-confirm-no' : gameOver() ? '#p-restart' : '#p-resume'), show: (d = {}) => { stopPlayInput(); setBoardHidden(true); ui.showPause(pauseInfo(d.note)); }, hide: () => setBoardHidden(false), back: ({ source }) => resumeFromPause(source) },
     results: { defaultFocus: '#r-again', show: (d) => RESULTS_VIEW.show(resultsContent(d ?? RESULTS.current)), hide: () => RESULTS_VIEW.hide(), back: () => RESULTS.toMenu() },
+    [REPLAY_SCREEN]: { defaultFocus: () => REPLAY_VIEWER.defaultFocus(), show: (d = {}) => { REPLAY_VIEWER.show(d); }, hide: () => REPLAY_VIEWER.hide(), back: () => REPLAY_VIEWER.back() },
     ctxlost: { defaultFocus: '#ctx-lost-btn', show: () => showContextLost(), hide: () => hideContextLost(), back: () => showMainMenu() },
   },
   focus: (target, name) => focusScreen(target, name),
@@ -323,6 +326,21 @@ const REPLAYS = createReplayLibrary({
   onNotSaved: () => ui.toast('Replays cannot be saved in this browser — this session\'s replays will not be kept.', 4000),
 });
 REPLAYS.load();
+
+// ---------- replay viewer ----------
+// A shell screen over the replay library: it verifies the replay, then plays it on its own board
+// view; it reports nothing to records, plays no sound and never pauses. Back is the screen it came from.
+const REPLAY_VIEWER = createReplayViewer({
+  library: REPLAYS,
+  router: SHELL,
+  view: createReplayView({
+    root: document.getElementById('replay'),
+    onCommand: (name) => REPLAY_VIEWER.command(name),
+    onSpeed: (speed) => REPLAY_VIEWER.setSpeed(speed),
+    onSeek: (ms) => REPLAY_VIEWER.seek(ms),
+    onBack: () => shellBack('pointer'),
+  }),
+});
 
 // ---------- results ----------
 // A finished game is recorded, then the results screen shows over the finished board. Every
@@ -648,7 +666,7 @@ function padClick(el) {
 
 // Spatial focus navigation inside the topmost visible overlay (its screen, or the controls modal).
 const LAYER_SCREEN = {
-  'ctx-lost': 'ctxlost', 'controls-modal': null, pause: 'paused', ready: 'ready', results: 'results',
+  'ctx-lost': 'ctxlost', 'controls-modal': null, replay: 'replay', pause: 'paused', ready: 'ready', results: 'results',
   'coming-soon': 'coming-soon', records: 'records', settings: 'settings', 'board-choice': 'board-choice', 'c2d-choice': 'classic-2d-choice', c2d: 'classic-2d', 'm3d-status': 'playing', menu: 'menu',
 };
 const SCREEN_LAYER = Object.fromEntries(Object.entries(LAYER_SCREEN).filter(([, s]) => s).map(([l, s]) => [s, l]));
@@ -739,6 +757,7 @@ function handlePad(p, dt, now) {
 
   if (S.mode === 'playing') padPlaying(p, held, pressed, dt, now);
   else if (S.mode === 'classic-2d') padBoard2D(p, held, pressed, now);
+  else if (S.mode === REPLAY_SCREEN) padReplay(p, held, pressed, now);
   else padMenus(p, held, pressed, now);
 
   if (ui.isControlsOpen() !== modal) layerChanged(); // screen changes report through the router
@@ -779,6 +798,12 @@ function padBoard2D(p, held, pressed, now) {
   if (pressed(BTN.START) || backButtons(S.mode).some(pressed)) { padClick(document.getElementById('hud-pause')); return; }
   if (board2d.failure) { padMenus(p, held, pressed, now); return; }
   mode2d.pad({ ...p, held: p.held.map((_, b) => held(b)) }, now);
+}
+
+/** The replay viewer: Start / Y play and pause, LB / RB step, LT / RT change speed; the rest is menu navigation. */
+function padReplay(p, held, pressed, now) {
+  controls.releasePad();
+  if (!REPLAY_VIEWER.pad(pressed)) padMenus(p, held, pressed, now);
 }
 
 /** A failed 3D board: Start and the back buttons pause; its offer is navigated as a menu. */
@@ -881,6 +906,7 @@ function frame(now) {
   const pad = pads.poll();
   if (pad.pad || pad.active) handlePad(pad, dt, now);
   if (MODES.active === 'classic-2d') mode2d.tick();
+  if (S.mode === REPLAY_SCREEN) REPLAY_VIEWER.tick(rawDt * 1000);
 
   const three = renderer.camera;
   const playing = S.mode === 'playing';
@@ -1000,4 +1026,7 @@ window.__ms = {
   get settings() { return SETTINGS; },
   /** The records store: record/begin/checkpoint, the queries and onChange. */
   get records() { return RECORDS; },
+  get replayViewer() { return REPLAY_VIEWER; },
+  /** Opens the replay viewer: `data` is its route's { replay | replayId, returnTo }. */
+  watch: (data) => SHELL.go(REPLAY_SCREEN, { data }),
 };
