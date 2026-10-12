@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 140
+Last task number: 141
 
 ---
 
@@ -879,5 +879,14 @@ Status: [MISSING]
 Target: claude
 Files: js/shell/mode-3d.js, js/render.js, js/main.js, js/results/view.js, js/results/flow.js, index.html, css/style.css, tests/mode3d-end.test.mjs, tests/shell-mode-3d.test.mjs, tests/results.test.mjs, README.md, .claude/domain/features/3d-results-records-screens.md, .claude/domain/features/results-screen.md, .claude/domain/features/3d-board-graph.md, .claude/domain/product-design.md
 Preconditions: none
+
+---
+
+## 141. 3D readability
+
+Status: [MISSING]
+Target: claude+human
+Files: js/readability.js, js/render.js, js/main.js, js/ui.js, js/settings/bindings.js, index.html, css/style.css, tests/readability-3d.test.mjs, tests/components.test.mjs, tests/replay-viewer-3d.test.mjs, docs/ORIGINAL_SPEC.md, README.md, .claude/domain/product-design.md
+Preconditions: 125
 
 ---
