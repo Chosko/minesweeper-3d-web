@@ -27,7 +27,19 @@ const CUBE_EXPERT = preset('Cube', 'Expert');
 const CUSTOM_3D_A = box(10, 10, 3, 20);
 const CUSTOM_3D_B = box(5, 5, 5, 12, true);
 
-const ZERO = { games: 0, wins: 0, currentStreak: 0, longestStreak: 0 };
+// The counters as the model keeps them: the reference figures, then the completed games' ones.
+const C = (games, wins, currentStreak, longestStreak, completed, currentCompletedStreak, longestCompletedStreak) =>
+  ({ games, wins, currentStreak, longestStreak, completed, currentCompletedStreak, longestCompletedStreak });
+const ZERO = C(0, 0, 0, 0, 0, 0, 0);
+// A records document as versions 1 and 2 kept it: counters without the completed games' figures.
+const COMPLETED_FIELDS = ['completed', 'currentCompletedStreak', 'longestCompletedStreak'];
+function withoutCompleted(records) {
+  const strip = (c) => Object.fromEntries(Object.entries(c).filter(([k]) => !COMPLETED_FIELDS.includes(k)));
+  return {
+    boards: Object.fromEntries(Object.entries(records.boards).map(([k, r]) => [k, { ...r, counters: strip(r.counters) }])),
+    overall: Object.fromEntries(Object.entries(records.overall).map(([k, c]) => [k, strip(c)])),
+  };
+}
 
 let nextId = 1;
 let clock = Date.parse('2026-10-01T00:00:00.000Z');
@@ -98,13 +110,15 @@ test('a summary updates its board and its own mode only: a 3D loss never moves a
   m.record(game({ board: BEGINNER_2D }));
   m.record(game({ board: BEGINNER_2D }));
   m.record(game({ board: CUBE_BEGINNER, outcome: 'lost' }));
-  assert.deepEqual(m.overall('classic-2d'), { games: 2, wins: 2, currentStreak: 2, longestStreak: 2 });
+  assert.deepEqual(m.overall('classic-2d'), C(2, 2, 2, 2, 2, 2, 2));
   assert.equal(m.overallWinRate('classic-2d'), 1);
-  assert.deepEqual(m.overall(MODE_3D), { games: 1, wins: 0, currentStreak: 0, longestStreak: 0 });
+  assert.equal(m.overallCompletedWinRate('classic-2d'), 1);
+  assert.deepEqual(m.overall(MODE_3D), C(1, 0, 0, 0, 1, 0, 0));
   assert.equal(m.overallWinRate(MODE_3D), 0);
+  assert.equal(m.overallCompletedWinRate(MODE_3D), 0);
   m.record(game({ board: BEGINNER_2D }));
-  assert.deepEqual(m.overall('classic-2d'), { games: 3, wins: 3, currentStreak: 3, longestStreak: 3 });
-  assert.deepEqual(m.counters(BEGINNER_2D), { games: 3, wins: 3, currentStreak: 3, longestStreak: 3 });
+  assert.deepEqual(m.overall('classic-2d'), C(3, 3, 3, 3, 3, 3, 3));
+  assert.deepEqual(m.counters(BEGINNER_2D), C(3, 3, 3, 3, 3, 3, 3));
 });
 
 test('a 3D win extends the 3D streaks only; a 2D loss never moves a 3D streak', () => {
@@ -113,13 +127,13 @@ test('a 3D win extends the 3D streaks only; a 2D loss never moves a 3D streak', 
   m.record(game({ board: CUBE_EXPERT }));
   m.record(game({ board: BEGINNER_2D, outcome: 'lost' }));
   m.record(game({ board: CUBE_BEGINNER }));
-  assert.deepEqual(m.overall(MODE_3D), { games: 3, wins: 3, currentStreak: 3, longestStreak: 3 });
-  assert.deepEqual(m.counters(CUBE_BEGINNER), { games: 2, wins: 2, currentStreak: 2, longestStreak: 2 });
-  assert.deepEqual(m.counters(CUBE_EXPERT), { games: 1, wins: 1, currentStreak: 1, longestStreak: 1 });
-  assert.deepEqual(m.overall('classic-2d'), { games: 1, wins: 0, currentStreak: 0, longestStreak: 0 });
+  assert.deepEqual(m.overall(MODE_3D), C(3, 3, 3, 3, 3, 3, 3));
+  assert.deepEqual(m.counters(CUBE_BEGINNER), C(2, 2, 2, 2, 2, 2, 2));
+  assert.deepEqual(m.counters(CUBE_EXPERT), C(1, 1, 1, 1, 1, 1, 1));
+  assert.deepEqual(m.overall('classic-2d'), C(1, 0, 0, 0, 1, 0, 0));
 });
 
-test('a 3D game abandoned after its first reveal is a loss for its board and the 3D mode only', () => {
+test('a 3D game abandoned after its first reveal is a loss for its board and the 3D mode only, and no completed game', () => {
   const m = createRecordsModel();
   m.record(game({ board: BEGINNER_2D }));
   m.record(game({ board: CUBE_EXPERT }));
@@ -127,9 +141,11 @@ test('a 3D game abandoned after its first reveal is a loss for its board and the
   const abandoned = game({ board: CUBE_EXPERT, outcome: 'abandoned', ms: 100 });
   const c = m.record(abandoned);
   assert.equal(c.time.newBest, false);
-  assert.deepEqual(m.counters(CUBE_EXPERT), { games: 3, wins: 2, currentStreak: 0, longestStreak: 2 });
-  assert.deepEqual(m.overall(MODE_3D), { games: 3, wins: 2, currentStreak: 0, longestStreak: 2 });
-  assert.deepEqual(m.overall('classic-2d'), { games: 1, wins: 1, currentStreak: 1, longestStreak: 1 });
+  assert.deepEqual(m.counters(CUBE_EXPERT), C(3, 2, 0, 2, 2, 2, 2));
+  assert.deepEqual(m.overall(MODE_3D), C(3, 2, 0, 2, 2, 2, 2));
+  assert.deepEqual(m.overall('classic-2d'), C(1, 1, 1, 1, 1, 1, 1));
+  assert.equal(m.completedWinRate(CUBE_EXPERT), 1);
+  assert.equal(m.winRate(CUBE_EXPERT), 2 / 3);
   assert.equal(m.history(CUBE_EXPERT).at(-1).outcome, 'abandoned');
 });
 
@@ -138,6 +154,7 @@ test('every mode has its own overall counters from the start, at zero', () => {
   assert.deepEqual(m.overall('classic-2d'), ZERO);
   assert.deepEqual(m.overall(MODE_3D), ZERO);
   assert.equal(m.overallWinRate(MODE_3D), null);
+  assert.equal(m.overallCompletedWinRate(MODE_3D), null);
   assert.deepEqual(emptyRecords().overall, { 'classic-2d': ZERO, [MODE_3D]: ZERO });
 });
 
@@ -174,7 +191,7 @@ test('boards played takes a mode and never lists another mode\'s boards; Classic
 
 // ---------- rebuild ----------
 
-test('rebuilding from the history rebuilds the per-mode counters', () => {
+test('rebuilding from the history rebuilds the per-mode counters, the completed ones included', () => {
   const m = createRecordsModel();
   const games = [
     game({ board: BEGINNER_2D }), game({ board: CUBE_BEGINNER }), game({ board: CUBE_BEGINNER, outcome: 'abandoned' }),
@@ -184,8 +201,9 @@ test('rebuilding from the history rebuilds the per-mode counters', () => {
   const { records, history } = m.documents();
   assert.deepEqual(rebuildRecords(history), records);
   const rebuilt = createRecordsModel({ history });
-  assert.deepEqual(rebuilt.overall(MODE_3D), { games: 4, wins: 3, currentStreak: 2, longestStreak: 2 });
-  assert.deepEqual(rebuilt.overall('classic-2d'), { games: 2, wins: 1, currentStreak: 0, longestStreak: 1 });
+  assert.deepEqual(rebuilt.overall(MODE_3D), C(4, 3, 2, 2, 3, 3, 3));
+  assert.deepEqual(rebuilt.overall('classic-2d'), C(2, 1, 0, 1, 2, 0, 1));
+  assert.deepEqual(rebuilt.counters(CUBE_BEGINNER), C(2, 1, 0, 1, 1, 1, 1));
 });
 
 // ---------- the records format step ----------
@@ -195,11 +213,12 @@ function m1Documents() {
   const m = createRecordsModel();
   for (const g of [game({ board: BEGINNER_2D, ms: 9000 }), game({ board: BEGINNER_2D, outcome: 'lost' }), game({ board: square(20, 12, 50) })]) m.record(g);
   const { records, history } = m.documents();
-  return { records: { boards: records.boards, overall: { 'classic-2d': records.overall['classic-2d'] } }, history };
+  const old = withoutCompleted(records);
+  return { records: { boards: old.boards, overall: { 'classic-2d': old.overall['classic-2d'] } }, history, current: records };
 }
 
-test('the records format steps up once from m1', () => {
-  assert.equal(RECORDS_VERSION, 2);
+test('the records format steps up from m1, then again for the completed games\' counters', () => {
+  assert.equal(RECORDS_VERSION, 3);
 });
 
 test('the upgrade carries every m1 board and the Classic 2D counters over and starts 3D at zero', () => {
@@ -223,23 +242,24 @@ test('the upgrade of an empty m1 document gives empty records', () => {
   assert.deepEqual(upgradeRecords({ boards: {}, overall: {} }), emptyRecords());
 });
 
-test('loading an m1 records document carries it over and saves it back at the new version', async () => {
-  const { records, history } = m1Documents();
+test('loading an m1 records document carries it over, derives the completed counters from the history and saves it back at the current version', async () => {
+  const { records, history, current } = m1Documents();
   const backend = createMemoryBackend({ initial: { [RECORDS_DOC]: doc(1, records), [HISTORY_DOC]: doc(1, history) } });
   const { store } = open(backend);
   await store.load();
   assert.equal(store.available(), true);
-  assert.deepEqual(store.overall('classic-2d'), records.overall['classic-2d']);
+  assert.deepEqual(store.overall('classic-2d'), current.overall['classic-2d']);
+  assert.deepEqual(store.overall('classic-2d'), C(3, 2, 1, 1, 3, 1, 1));
   assert.deepEqual(store.overall(MODE_3D), ZERO);
-  assert.deepEqual(store.counters(BEGINNER_2D), records.boards[boardKey(BEGINNER_2D)].counters);
+  assert.deepEqual(store.counters(BEGINNER_2D), current.boards[boardKey(BEGINNER_2D)].counters);
   assert.deepEqual(store.bests(BEGINNER_2D), records.boards[boardKey(BEGINNER_2D)].bests);
   assert.deepEqual(store.boardsPlayed('classic-2d').map((b) => b.key).sort(), Object.keys(records.boards).sort());
   await store.settled();
-  assert.deepEqual(stored(backend, RECORDS_DOC), { version: RECORDS_VERSION, data: upgradeRecords(records) });
+  assert.deepEqual(stored(backend, RECORDS_DOC), { version: RECORDS_VERSION, data: current });
   assert.deepEqual(stored(backend, HISTORY_DOC), { version: 1, data: history });
   store.record(game({ board: CUBE_BEGINNER }));
-  assert.deepEqual(store.overall(MODE_3D), { games: 1, wins: 1, currentStreak: 1, longestStreak: 1 });
-  assert.deepEqual(store.overall('classic-2d'), records.overall['classic-2d']);
+  assert.deepEqual(store.overall(MODE_3D), C(1, 1, 1, 1, 1, 1, 1));
+  assert.deepEqual(store.overall('classic-2d'), current.overall['classic-2d']);
 });
 
 test('a records document newer than this build is refused and left untouched', async () => {

@@ -10,8 +10,18 @@
 // board is not in play. While the first click's board is being generated, Back (Esc, the
 // controller's back button) cancels the generation instead of pausing; every pause source still
 // pauses. The board is hidden whenever the pause card shows. Resume always goes through the mode.
-// Restart and back to menu during a started, unfinished game ask for confirmation first, saying
-// the game will count as a loss.
+// Main menu during a started, unfinished game asks for confirmation first, saying the game will
+// count as a loss. Restart (the pause card's Restart, F2, Start + Y) of such a game proceeds at once
+// and still reports it abandoned, a loss; the first such restart of the session (the controller's
+// life, one load of the game) calls restarted() so the shell can say once that it counted as a loss
+// (RESTART_NOTICE). Under the "Always ask before restarting" setting (askRestart()) restart asks
+// the same confirmation first, from the pause card — a restart from play pauses to show it — and
+// nothing is said after. A restart before the first click, while the first board is generated or
+// after the end abandons nothing: it never asks and says nothing.
+//
+// The restart inputs (restartInput): F2 and the controller's Start + Y restart in play and on the
+// pause card (RESTART_SCREENS); R on the results screen is Play again; nothing elsewhere, nor while
+// the shell blocks them (the 3D end delay, an open confirmation or controls modal).
 //
 // Hand-offs, the attachment points later features fill (attach(name, listener)):
 //   finished(summary, mode, replay)   every finished game; the results flow (js/results/flow.js)
@@ -33,22 +43,40 @@ export const PAUSE_SOURCES = Object.freeze(['key', 'pad', 'button', 'blur', 'hid
 export const AUTO_SOURCES = Object.freeze(['blur', 'hidden']);
 /** The hand-offs a feature can attach to. */
 export const HAND_OFFS = Object.freeze(['finished', 'abandoned', 'inProgress']);
-/** The confirmations restart and back to menu ask during a started, unfinished game. */
+/** The confirmations back to menu, and restart under "Always ask", ask during a started, unfinished game. */
 export const CONFIRMATIONS = Object.freeze({
   restart: Object.freeze({ action: 'restart', message: 'Restart this game? It will count as a loss.', confirmLabel: 'Restart' }),
   menu: Object.freeze({ action: 'menu', message: 'Leave this game for the main menu? It will count as a loss.', confirmLabel: 'Main menu' }),
 });
+/** What the shell says once per session, at the first restart that abandons a game. */
+export const RESTART_NOTICE = 'That game counted as a loss. Turn on "Always ask before restarting" in Settings to be asked first.';
+/** The shell screens where F2 and Start + Y restart: play in either mode and the pause card. */
+export const RESTART_SCREENS = Object.freeze(['playing', 'classic-2d', 'paused']);
+
+/**
+ * What a restart input does on `screen`: 'restart' for F2 ('F2') or Start + Y ('pad') in play or
+ * on the pause card, 'playAgain' for R ('KeyR') on the results screen, else null — and null for any
+ * input while `blocked`.
+ */
+export function restartInput(input, { screen, blocked = false }) {
+  if (blocked) return null;
+  if ((input === 'F2' || input === 'pad') && RESTART_SCREENS.includes(screen)) return 'restart';
+  if (input === 'KeyR' && screen === 'results') return 'playAgain';
+  return null;
+}
 
 /**
  * modes: the mode host. showCard({ note }): show the pause
  * card over the hidden board. isPaused(): whether the pause card already shows. onBoard(): whether the board is in play.
- * confirm(request, proceed): ask `request` (one of CONFIRMATIONS) and call proceed() on yes.
+ * confirm(request, proceed): ask `request` (one of CONFIRMATIONS) on the pause card and call proceed() on yes.
  * goMenu(): show the main menu. guard(on): arm or disarm the leave-page guard.
  * cancelGeneration(): cancel the active mode's board being generated; whether there was one.
+ * askRestart(): whether the "Always ask before restarting" setting is on.
+ * restarted(): the first restart of the session that abandoned a game without asking.
  */
 export function createPauseController({
   modes, showCard, isPaused = () => false, onBoard = () => true, confirm, goMenu, guard = () => {},
-  cancelGeneration = () => false,
+  cancelGeneration = () => false, askRestart = () => false, restarted = () => {},
 }) {
   const listeners = Object.fromEntries(HAND_OFFS.map((h) => [h, new Set()]));
   const handOff = (name, summary, mode, replay = null) => {
@@ -59,6 +87,7 @@ export function createPauseController({
   const inProgress = () => { const s = modes.state; return s.mode !== null && s.started && !s.finished; };
   const keep = () => { if (inProgress()) handOff('inProgress', modes.summary(), modes.active); };
   const guarded = (request, proceed) => { if (inProgress()) confirm(request, proceed); else proceed(); };
+  let told = false; // restarted() is called once per session
 
   const offs = [
     modes.on('started', ({ mode, summary }) => { guard(true); handOff('inProgress', summary, mode); }),
@@ -94,10 +123,23 @@ export function createPauseController({
     },
     /** Resume through the mode; source is 'pointer' | 'key' | 'pad'. */
     resume(source = 'pointer') { if (modes.active !== null) modes.resume({ source }); },
-    /** A new game with the same board choice, after confirmation during a started, unfinished game. */
+    /**
+     * A new game with the same board choice; source is 'pointer' | 'key' | 'pad'. A started,
+     * unfinished game is abandoned at once, or after confirmation on the pause card under "Always ask".
+     */
     restart(source = 'pointer') {
       if (modes.active === null) return;
-      guarded(CONFIRMATIONS.restart, () => modes.restart({ source }));
+      if (!inProgress()) { modes.restart({ source }); return; }
+      if (askRestart()) {
+        if (!isPaused()) this.pause(source === 'pointer' ? 'button' : source);
+        confirm(CONFIRMATIONS.restart, () => modes.restart({ source }));
+        return;
+      }
+      modes.restart({ source });
+      if (!told) {
+        told = true;
+        restarted();
+      }
     },
     /** Leave the mode for the main menu, after confirmation during a started, unfinished game. */
     toMenu() {

@@ -22,8 +22,10 @@ In scope (m1-classic-2d):
 - The Settings page, reached from the main menu, built from
   `screen-components` and fully operable by mouse, keyboard and controller.
 - Controls: look sensitivity and invert Y, which apply to mouse and
-  controller look in 3D, and a read-only list of the bindings for each mode
-  and input device, drawn from the same source as the in-game help.
+  controller look in 3D; "Always ask before restarting", which brings back
+  the confirmation before a restart abandons a started game (`game-shell`
+  § Restart); and a read-only list of the bindings for each mode and input
+  device, drawn from the same source as the in-game help.
 - Graphics: fullscreen, and the 3D render resolution — Auto (the current
   adaptive pixel-ratio cap), Sharp (the highest the screen allows) and Fast
   (one device pixel per CSS pixel).
@@ -81,8 +83,9 @@ settings handling for the shell's UI module and the sound module ([app-shell.md]
 - **Saved settings** — one versioned settings document: look sensitivity
   (0.25–3, default 1), invert Y (default off), fullscreen (default off),
   render resolution (Auto, Sharp or Fast; default Auto), theme (light or
-  dark; default light), volume (0–1, default 0.7) and mute (default off).
-  Persisted through `platform-storage`.
+  dark; default light), volume (0–1, default 0.7), mute (default off) and
+  always ask before restarting (default off). Persisted through
+  `platform-storage`.
 - **In memory** — the validated current values, the single source of truth
   while the game runs.
 - **Carried-over values** — on first start with no settings document, the

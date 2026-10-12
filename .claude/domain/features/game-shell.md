@@ -30,8 +30,10 @@ In scope (m1-classic-2d):
   resumes, restarts and leaves a game, implemented by the Classic 2D
   front-end and by an adapter over the existing 3D game.
 - Pause and resume, restart, and Main menu, from the pause card and from
-  the keyboard and controller. While paused the board is hidden in every
-  mode and the timer keeps running.
+  the keyboard and controller: `F2` and the controller's Start + Y restart
+  in play and on the pause card, and `R` on the results screen is *Play
+  again*. While paused the board is hidden in every mode and the timer
+  keeps running.
 - Automatic pause when the window loses focus or the tab is hidden during a
   started, unfinished game, and the leave-page guard for such a game on the
   web build.
@@ -139,8 +141,21 @@ it generalises.
   overlay's pause button, Start, focus loss and tab hide still pause. While
   the pause card shows, the board is hidden in every mode.
 - **Restart** — discards the current game and starts a new one with the same
-  board choice; during a started, unfinished game it asks for confirmation,
-  saying the game will count as a loss.
+  board choice, from the pause card's Restart, `F2` or the controller's
+  Start + Y (`Y` pressed while `Start` is held; `Start` alone pauses and
+  `Y` alone keeps its play meaning). A started, unfinished game is
+  abandoned at once — still a loss — with no confirmation; the first such
+  restart after each load of the game shows one toast saying the game
+  counted as a loss and that the "Always ask before restarting" setting
+  brings the confirmation back. Under that setting every restart of a
+  started, unfinished game first asks for confirmation on the pause card,
+  saying the game will count as a loss — `F2` and Start + Y in play open
+  the pause card with the question showing — and no toast shows. A restart
+  before the first click, while the first board is generated or after the
+  end abandons nothing and neither asks nor shows the toast. `F2` and
+  Start + Y do nothing during the 3D end delay, while a confirmation or the
+  controls modal shows, or on a screen with no game; `R` and `Home` in 3D
+  play keep returning the camera to the start view.
 - **Main menu** — leaves the mode and returns to the main menu; during a
   started, unfinished game it asks for confirmation, saying the game will
   count as a loss.

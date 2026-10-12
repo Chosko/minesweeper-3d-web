@@ -18,7 +18,7 @@ import { createGenerationClient } from './generation/client.js';
 import { createMenu, createLastMode, createLastBoardChoice } from './shell/menu.js';
 import { createFirstUse, stripShown, hidCube, aimHintCell, createDwell, AIM_DWELL_MS } from './shell/first-use.js';
 import { createActiveDevice, hintText } from './settings/bindings.js';
-import { createPauseController } from './shell/pause.js';
+import { createPauseController, restartInput, RESTART_NOTICE } from './shell/pause.js';
 import { createLockFallback } from './shell/lock-fallback.js';
 import { bindScenePalette } from './shell/scene-palette.js';
 import { token, onThemeChange } from './tokens.js';
@@ -154,6 +154,20 @@ function ending3D() { return MODES.active === '3d' && mode3d.ending; }
 function pauseGame(source, opts) { return ending3D() ? false : PAUSE.pause(source, opts); }
 /** Back on the board (Esc, the controller's back button): cancels a board being generated, else pauses. */
 function backGame(source) { return ending3D() ? false : PAUSE.back(source === 'pointer' ? 'button' : source); }
+/** F2, Start + Y and R do nothing during the 3D end delay or while a confirmation or the controls modal shows. */
+function restartBlocked() { return ending3D() || ui.isConfirmOpen() || ui.isControlsOpen(); }
+/**
+ * F2 (in play and on the pause card: restart) and R (on the results screen: Play again), without
+ * Ctrl, Alt or Meta; whether the key acted. F2's browser default is always prevented.
+ */
+function restartKey(code, e) {
+  if (e?.ctrlKey || e?.altKey || e?.metaKey) return false;
+  if (code === 'F2') e?.preventDefault();
+  const action = restartInput(code, { screen: S.mode, blocked: restartBlocked() });
+  if (action === 'restart') PAUSE.restart('key');
+  else if (action === 'playAgain') RESULTS.playAgain('key');
+  return action !== null;
+}
 let cancelledAt = -Infinity; // performance.now() of the last cancelled 3D generation
 /**
  * Cancel the active mode's board being generated, back to its closed board; whether there was one.
@@ -180,6 +194,7 @@ const input = new Input({
   onKey: (code, e) => {
     if (isBackKey(code)) { shellBack('key'); return; }
     if ((code === 'Home' || code === 'KeyR') && input.o.isActive()) { placeAtSpawn(); return; } // back to the start view, in 3D play only
+    if (restartKey(code, e)) return; // F2 restarts in play and on the pause card; R plays again on the results screen
     if (S.mode === 'classic-2d') used2D(); // the first key of a Classic 2D game brings its hint strip
     const dir = arrowDirection(code);
     if (dir) { keyNav(dir, e); return; }
@@ -411,6 +426,8 @@ const PAUSE = createPauseController({
   goMenu: () => showMainMenu(),
   guard: (on) => (on ? window.addEventListener('beforeunload', guardLeave) : window.removeEventListener('beforeunload', guardLeave)),
   cancelGeneration: () => cancelGeneration(),
+  askRestart: () => SETTINGS.get('confirmRestart'), // "Always ask before restarting"
+  restarted: () => ui.toast(RESTART_NOTICE, 5000), // once per session
 });
 window.addEventListener('blur', () => pauseGame('blur'));
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') pauseGame('hidden'); });
@@ -1027,6 +1044,14 @@ function handlePad(p, dt, now) {
   const pressed = (b) => nav.pressed(p, b);
   if (p.active) needRender = true;
   const modal = ui.isControlsOpen();
+  // Start + Y: Y pressed while Start is held restarts, in play and on the pause card. Start's own
+  // press already paused (or resumed), so Start is read unsuppressed; the buttons still held are
+  // suppressed so Y does not act on the new board.
+  if (p.held[BTN.START] && pressed(BTN.Y) && restartInput('pad', { screen: S.mode, blocked: restartBlocked() })) {
+    PAUSE.restart('pad');
+    layerChanged();
+    return;
+  }
 
   if (S.mode === 'playing') padPlaying(p, held, pressed, dt, now);
   else if (S.mode === 'classic-2d') padBoard2D(p, held, pressed, now);

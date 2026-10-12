@@ -34,6 +34,9 @@ function game({ outcome = 'won', ms = 10000, bbbv = 20, clicks = 20, id, pauses 
 }
 
 const doc = (version, data) => JSON.stringify({ version, data });
+// The counters as the store reports them: the reference figures, then the completed games' ones.
+const C = (games, wins, currentStreak, longestStreak, completed, currentCompletedStreak, longestCompletedStreak) =>
+  ({ games, wins, currentStreak, longestStreak, completed, currentCompletedStreak, longestCompletedStreak });
 const stored = (backend, name) => {
   const text = backend.documents.get(name);
   return text === undefined ? undefined : JSON.parse(text);
@@ -63,9 +66,9 @@ test('the three documents are registered under their own names at their versions
   const names = [];
   const storage = { register: (name, version) => names.push([name, version]), load: async () => undefined, save: async () => ({ ok: true }), available: () => true };
   createRecordsStore({ storage });
-  assert.deepEqual(names.sort(), [[HISTORY_DOC, 1], [IN_PROGRESS_DOC, 1], [RECORDS_DOC, 2]].sort());
+  assert.deepEqual(names.sort(), [[HISTORY_DOC, 1], [IN_PROGRESS_DOC, 1], [RECORDS_DOC, 3]].sort());
   assert.equal(new Set([RECORDS_DOC, HISTORY_DOC, IN_PROGRESS_DOC]).size, 3);
-  assert.deepEqual([RECORDS_VERSION, HISTORY_VERSION, IN_PROGRESS_VERSION], [2, 1, 1]);
+  assert.deepEqual([RECORDS_VERSION, HISTORY_VERSION, IN_PROGRESS_VERSION], [3, 1, 1]);
 });
 
 test('load reads each document once, however often it is called', async () => {
@@ -91,7 +94,9 @@ test('a fresh install has empty records and writes nothing at load', async () =>
   const { store, backend } = open();
   await store.load();
   assert.deepEqual(store.boardsPlayed(), []);
-  assert.deepEqual(store.overall(), { games: 0, wins: 0, currentStreak: 0, longestStreak: 0 });
+  assert.deepEqual(store.overall(), C(0, 0, 0, 0, 0, 0, 0));
+  assert.equal(store.completedWinRate(BEGINNER), null);
+  assert.equal(store.overallCompletedWinRate(), null);
   await store.settled();
   assert.equal(backend.documents.size, 0);
 });
@@ -121,7 +126,7 @@ test('recorded games survive a reload; the same id recorded twice is a no-op', a
   await first.store.settled();
   const again = open(first.backend);
   await again.store.load();
-  assert.deepEqual(again.store.counters(BEGINNER), { games: 2, wins: 1, currentStreak: 0, longestStreak: 1 });
+  assert.deepEqual(again.store.counters(BEGINNER), C(2, 1, 0, 1, 2, 0, 1));
   let changes = 0;
   again.store.onChange(() => changes++);
   assert.deepEqual(again.store.record(g), c1);
@@ -178,12 +183,67 @@ for (const [label, records] of [['missing', undefined], ['corrupt', '{not json']
     const { store, backend } = open(createMemoryBackend({ initial }));
     await store.load();
     assert.deepEqual(store.bests(BEGINNER), model.bests(BEGINNER));
-    assert.deepEqual(store.counters(BEGINNER), { games: 4, wins: 3, currentStreak: 2, longestStreak: 2 });
+    assert.deepEqual(store.counters(BEGINNER), C(4, 3, 2, 2, 4, 2, 2));
     assert.deepEqual(store.overall(), model.overall());
     await store.settled();
     assert.deepEqual(stored(backend, RECORDS_DOC), { version: RECORDS_VERSION, data: expected });
   });
 }
+
+// ---------- the completed games' counters ----------
+
+// A records document as version 2 kept it: counters without the completed games' figures.
+const COMPLETED_FIELDS = ['completed', 'currentCompletedStreak', 'longestCompletedStreak'];
+function version2(records) {
+  const strip = (c) => Object.fromEntries(Object.entries(c).filter(([k]) => !COMPLETED_FIELDS.includes(k)));
+  return {
+    boards: Object.fromEntries(Object.entries(records.boards).map(([k, r]) => [k, { ...r, counters: strip(r.counters) }])),
+    overall: Object.fromEntries(Object.entries(records.overall).map(([k, c]) => [k, strip(c)])),
+  };
+}
+
+test('a records document saved before the completed counters gains them from the history and is saved back at the new version', async () => {
+  const model = createRecordsModel();
+  for (const outcome of ['won', 'abandoned', 'won', 'lost', 'won', 'abandoned']) model.record(game({ outcome }));
+  const { records, history } = model.documents();
+  const old = version2(records);
+  assert.equal(old.boards[Object.keys(old.boards)[0]].counters.completed, undefined);
+  const backend = createMemoryBackend({ initial: { [RECORDS_DOC]: doc(2, old), [HISTORY_DOC]: doc(1, history) } });
+  const { store } = open(backend);
+  await store.load();
+  assert.equal(store.available(), true);
+  assert.deepEqual(store.counters(BEGINNER), C(6, 3, 0, 1, 4, 1, 2));
+  assert.equal(store.completedWinRate(BEGINNER), 3 / 4);
+  assert.equal(store.winRate(BEGINNER), 3 / 6, 'the reference win rate is unchanged');
+  assert.deepEqual(store.overall(), records.overall['classic-2d']);
+  assert.equal(store.overallCompletedWinRate(), 3 / 4);
+  await store.settled();
+  assert.deepEqual(stored(backend, RECORDS_DOC), { version: RECORDS_VERSION, data: records });
+
+  // A build of the previous records version meets the stepped-up document: refused as newer, never overwritten.
+  const text = backend.documents.get(RECORDS_DOC);
+  const issues = [];
+  const older = createStorage({ backend });
+  older.register(RECORDS_DOC, 2, { 1: (r) => r }, { onIssue: (i) => issues.push(i.kind) });
+  assert.equal(await older.load(RECORDS_DOC), undefined);
+  assert.deepEqual(await older.save(RECORDS_DOC, old), { ok: false, reason: 'newer-version' });
+  assert.ok(issues.includes('newer-version'));
+  assert.equal(backend.documents.get(RECORDS_DOC), text);
+});
+
+test('a version 2 records document with no history keeps its counters and seeds the completed ones from them', async () => {
+  const model = createRecordsModel();
+  for (const outcome of ['won', 'abandoned', 'won', 'won']) model.record(game({ outcome }));
+  const old = version2(model.documents().records);
+  const { store } = open(createMemoryBackend({ initial: { [RECORDS_DOC]: doc(2, old) } }));
+  await store.load();
+  assert.deepEqual(store.counters(BEGINNER), C(4, 3, 2, 2, 4, 2, 2), 'nothing to tell completed games apart: the reference figures');
+  assert.equal(store.completedWinRate(BEGINNER), store.winRate(BEGINNER));
+  store.record(game());
+  store.record(game({ outcome: 'lost' }));
+  assert.deepEqual(store.counters(BEGINNER), C(6, 4, 0, 3, 6, 0, 3));
+  assert.ok(store.completedWinRate(BEGINNER) <= 1, 'wins never exceed completed games');
+});
 
 // ---------- availability ----------
 
@@ -274,7 +334,7 @@ test('attach: the abandoned-game hook records the summary', async () => {
   const pauser = fakePauser();
   store.attach(pauser);
   pauser.fire('abandoned', game({ outcome: 'abandoned' }));
-  assert.deepEqual(store.counters(BEGINNER), { games: 1, wins: 0, currentStreak: 0, longestStreak: 0 });
+  assert.deepEqual(store.counters(BEGINNER), C(1, 0, 0, 0, 0, 0, 0));
 });
 
 test('attach: the in-progress hook begins the marker, then checkpoints it; detach stops both hooks', async () => {
@@ -366,7 +426,7 @@ test('a leftover marker is recorded as an abandoned game that ends the streak, a
   });
   const { store } = open(backend);
   await store.load();
-  assert.deepEqual(store.counters(BEGINNER), { games: 3, wins: 2, currentStreak: 0, longestStreak: 2 });
+  assert.deepEqual(store.counters(BEGINNER), C(3, 2, 0, 2, 2, 2, 2), 'no completed game: the completed streak stands');
   const last = store.history(BEGINNER).at(-1);
   assert.equal(last.id, 'closed');
   assert.equal(last.outcome, 'abandoned');
@@ -389,7 +449,7 @@ test('a leftover marker whose game was already recorded is a no-op', async () =>
   });
   const { store } = open(backend);
   await store.load();
-  assert.deepEqual(store.counters(BEGINNER), { games: 1, wins: 1, currentStreak: 1, longestStreak: 1 });
+  assert.deepEqual(store.counters(BEGINNER), C(1, 1, 1, 1, 1, 1, 1));
   assert.equal(store.history(BEGINNER).length, 1);
 });
 
@@ -425,7 +485,7 @@ test('a game closed mid-game through the real shell is settled as a loss by a se
   // Launch 2: a new storage and store over the same backend.
   const second = open(backend);
   await second.store.load();
-  assert.deepEqual(second.store.counters(BEGINNER), { games: 2, wins: 1, currentStreak: 0, longestStreak: 1 });
+  assert.deepEqual(second.store.counters(BEGINNER), C(2, 1, 0, 1, 1, 1, 1));
   const closed = second.store.history(BEGINNER).at(-1);
   assert.equal(closed.id, 'closed-tab');
   assert.equal(closed.outcome, 'abandoned');

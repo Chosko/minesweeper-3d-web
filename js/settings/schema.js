@@ -16,6 +16,7 @@ export const SCHEMA = Object.freeze({
   theme: choice('theme', ['light', 'dark'], 'light'),
   volume: number('volume', 0, 1, 0.7),
   muted: boolean('muted', false),
+  confirmRestart: boolean('confirmRestart', false),
 });
 
 export const SETTING_KEYS = Object.freeze(Object.keys(SCHEMA));

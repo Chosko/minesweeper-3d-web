@@ -392,10 +392,9 @@ test('in a browser, the 3D game starts, pauses, resumes, restarts and leaves thr
     await page.waitForTimeout(300);
     assert.ok(await ms(() => globalThis.__ms.state.play.elapsedMs()) >= r0 + 300, 'no screen change stops the clock, the click-to-play card neither');
 
-    // restart from the pause card, once confirmed, abandons the started game
+    // restart from the pause card abandons the started game at once
     await ms(() => globalThis.__ms.pause());
     await ms(() => document.getElementById('p-restart').click());
-    await ms(() => document.getElementById('p-confirm-yes').click());
     assert.ok(['ready', 'playing'].includes(await mode()), 'a new board, entered as resume enters play');
     assert.deepEqual(await events(), ['started', 'canPause', 'abandoned', 'canPause']);
     assert.equal(await ms(() => globalThis.__ms.state.started), false);

@@ -230,6 +230,19 @@ test('the next-target line after a loss: the streak it ended, else the best to b
   assert.equal(firstGame.next, 'Win this board to set a best');
 });
 
+test('the board\'s standing after a won or lost game: the reference win rate and longest streak, each with its completed-games figure beside it', () => {
+  const standing = { winRate: 4 / 6, completedWinRate: 0.8, longestStreak: 4, longestCompletedStreak: 5 };
+  const won = resultsContent({ summary: summary(), comparison, saved: true, standing });
+  assert.equal(won.standing, 'Win rate 67% (completed games 80%) · Longest streak 4 (completed games 5)');
+  const lost = resultsContent({ summary: lostSummary(), comparison: lostComparison, saved: true, standing });
+  assert.equal(lost.standing, won.standing, 'a loss shows the same line');
+  const none = resultsContent({ summary: lostSummary(), comparison: lostComparison, saved: true,
+    standing: { winRate: 0, completedWinRate: null, longestStreak: 0, longestCompletedStreak: 0 } });
+  assert.equal(none.standing, `Win rate 0% (completed games ${DASH}) · Longest streak 0 (completed games 0)`);
+  assert.equal(resultsContent({ summary: summary(), comparison: null, saved: false }).standing, null, 'a failed recording shows no figures line');
+  assert.equal(resultsContent({ summary: summary(), comparison }).standing, null, 'nor does a game the flow gave none');
+});
+
 test('a stat that is not available shows a dash', () => {
   const c = resultsContent({ summary: summary({ bbbvPerSecond: null, efficiency: null }), comparison, saved: true });
   assert.equal(statValue(c, 'bbbvPerSecond').value, DASH);
@@ -311,10 +324,22 @@ test('the view colours a win\'s deltas, greys a loss\'s panel under its note, an
   assert.equal(root.el('results-bests').classList.contains('ui-panel--muted'), false);
 });
 
+test('the view shows the standing line under the next target, and hides it when there is none', () => {
+  const root = fakeRoot();
+  const view = createResultsView({ root, onPlayAgain() {}, onRecords() {}, onMenu() {} });
+  const standing = { winRate: 0.5, completedWinRate: 1, longestStreak: 2, longestCompletedStreak: 3 };
+  view.show(resultsContent({ summary: summary(), comparison, saved: true, standing }));
+  assert.equal(root.el('results-standing').textContent, 'Win rate 50% (completed games 100%) · Longest streak 2 (completed games 3)');
+  assert.equal(root.el('results-standing').classList.contains('hidden'), false);
+  view.show(resultsContent({ summary: summary(), comparison: null, saved: false }));
+  assert.equal(root.el('results-standing').classList.contains('hidden'), true);
+});
+
 // ---------------------------------------------------------------- flow
 
-const STREAK_BEFORE = { games: 5, wins: 3, currentStreak: 2, longestStreak: 4 };
-const STREAK_AFTER = { games: 6, wins: 4, currentStreak: 3, longestStreak: 4 };
+const STREAK_BEFORE = { games: 5, wins: 3, currentStreak: 2, longestStreak: 4, completed: 4, currentCompletedStreak: 2, longestCompletedStreak: 5 };
+const STREAK_AFTER = { games: 6, wins: 4, currentStreak: 3, longestStreak: 4, completed: 5, currentCompletedStreak: 3, longestCompletedStreak: 5 };
+const STANDING = { winRate: 4 / 6, completedWinRate: 4 / 5, longestStreak: 4, longestCompletedStreak: 5 };
 const HISTORY = [
   { id: 'h1', outcome: 'won', elapsedMs: 52000 },
   { id: 'h2', outcome: 'won', elapsedMs: 47380 }, // a tie ranks the earlier game first
@@ -331,6 +356,8 @@ function fakeRecords({ fail = false, available = true, history = HISTORY } = {})
     available() { calls.push(['available']); return available; },
     counters(board) { calls.push(['counters', board.mode]); return recorded ? STREAK_AFTER : STREAK_BEFORE; },
     history(board) { calls.push(['history', board.mode]); return history; },
+    winRate(board) { calls.push(['winRate', board.mode]); return STANDING.winRate; },
+    completedWinRate(board) { calls.push(['completedWinRate', board.mode]); return STANDING.completedWinRate; },
   };
 }
 function fakeRouter(screens = ['results', 'coming-soon']) {
@@ -360,7 +387,7 @@ test('the flow records a finished game before the results screen shows, and rout
   assert.equal(RESULTS_SCREEN, 'results');
   assert.deepEqual(router.routes, [['results', {
     summary: s, mode: 'classic-2d', comparison, saved: true, notSaved: false, watch: false,
-    rank: { position: 3, of: 4 }, streak: { before: 2, current: 3, longest: 4 },
+    rank: { position: 3, of: 4 }, streak: { before: 2, current: 3, longest: 4 }, standing: STANDING,
   }]]);
   assert.equal(flow.current.summary, s);
   detach();
@@ -371,7 +398,9 @@ test('the flow reads the board\'s streak before recording and its history after,
   const records = fakeRecords();
   const flow = createResultsFlow({ records, router: fakeRouter(), restart() {}, goMenu() {} });
   const data = flow.finished(summary(), 'classic-2d');
-  assert.deepEqual(records.calls, [['counters', 'classic-2d'], ['record', 'g1'], ['counters', 'classic-2d'], ['history', 'classic-2d'], ['available']]);
+  assert.deepEqual(records.calls, [['counters', 'classic-2d'], ['record', 'g1'], ['counters', 'classic-2d'], ['history', 'classic-2d'],
+    ['winRate', 'classic-2d'], ['completedWinRate', 'classic-2d'], ['available']]);
+  assert.deepEqual(data.standing, STANDING, 'the board\'s standing counting this game');
   // 1 + the earlier won games at or below 47 380 ms (h2's tie, h4) of the board's 4 won games, this one included
   assert.deepEqual(data.rank, { position: 3, of: 4 });
   assert.deepEqual(data.streak, { before: 2, current: 3, longest: 4 });
@@ -379,24 +408,25 @@ test('the flow reads the board\'s streak before recording and its history after,
   assert.deepEqual(fastest.rank, { position: 1, of: 5 }, 'a game missing from the history still counts itself');
 });
 
-test('a loss has no rank but its streak; a failed recording has neither', () => {
+test('a loss has no rank but its streak and standing; a failed recording has none of them', () => {
   const lost = createResultsFlow({ records: fakeRecords(), router: fakeRouter(), restart() {}, goMenu() {} })
     .finished(summary({ outcome: 'lost' }), 'classic-2d');
   assert.equal(lost.rank, null);
   assert.deepEqual(lost.streak, { before: 2, current: 3, longest: 4 });
+  assert.deepEqual(lost.standing, STANDING);
   const failed = createResultsFlow({ records: fakeRecords({ fail: true }), router: fakeRouter(), restart() {}, goMenu() {} })
     .finished(summary(), 'classic-2d');
-  assert.deepEqual([failed.rank, failed.streak], [null, null]);
+  assert.deepEqual([failed.rank, failed.streak, failed.standing], [null, null, null]);
 });
 
 test('a records query that throws leaves its figure out and never stops the results screen', () => {
-  const records = { ...fakeRecords(), counters() { throw new Error('broken'); }, history() { throw new Error('broken'); } };
+  const records = { ...fakeRecords(), counters() { throw new Error('broken'); }, history() { throw new Error('broken'); }, winRate() { throw new Error('broken'); } };
   const router = fakeRouter();
   const error = console.error;
   console.error = () => {};
   try {
     const data = createResultsFlow({ records, router, restart() {}, goMenu() {} }).finished(summary(), 'classic-2d');
-    assert.deepEqual([data.rank, data.streak, data.saved], [null, null, true]);
+    assert.deepEqual([data.rank, data.streak, data.standing, data.saved], [null, null, null, true]);
     assert.equal(router.routes.length, 1);
   } finally {
     console.error = error;
@@ -410,10 +440,11 @@ test('a finished 3D game is recorded and routed to the results screen like a 2D 
   const board = createBoardIdentity({ mode: '3d', width: 6, height: 6, depth: 6, mines: 10, noGuess: false });
   const s = summary({ id: 'g3', board: { ...board } });
   const data = flow.finished(s, '3d');
-  assert.deepEqual(records.calls, [['counters', '3d'], ['record', 'g3'], ['counters', '3d'], ['history', '3d'], ['available']]);
+  assert.deepEqual(records.calls, [['counters', '3d'], ['record', 'g3'], ['counters', '3d'], ['history', '3d'], ['winRate', '3d'],
+    ['completedWinRate', '3d'], ['available']]);
   assert.deepEqual(router.routes, [['results', {
     summary: s, mode: '3d', comparison, saved: true, notSaved: false, watch: false,
-    rank: { position: 4, of: 5 }, streak: { before: 2, current: 3, longest: 4 },
+    rank: { position: 4, of: 5 }, streak: { before: 2, current: 3, longest: 4 }, standing: STANDING,
   }]]);
   assert.equal(data.summary, s);
 });
@@ -483,13 +514,15 @@ test('the results screen is the kit composition: outcome, board, stats, bests, n
   }
   // The card reads top to bottom: outcome and board, the new-best banner, the game's own stats, the
   // second row, the next target, the bests panel (its not-eligible label first), the notes, the actions.
-  const order = ['results-title', 'results-board', 'results-banner', 'results-stats', 'results-figures', 'results-next',
-    'results-bests', 'results-bests-note', 'rb-time', 'results-note', 'r-again'];
+  const order = ['results-title', 'results-board', 'results-banner', 'results-stats', 'results-figures', 'results-next', 'results-standing',
+    'results-bests', 'results-bests-note', 'rb-time', 'results-note', 'r-again', 'results-keys'];
   const at = order.map((id) => RESULTS_HTML.indexOf(`id="${id}"`));
   assert.ok(at.every((i) => i >= 0), `every part is in the markup: ${order.filter((_, k) => at[k] < 0)}`);
   assert.deepEqual([...at].sort((a, b) => a - b), at, 'in reading order');
   assert.match(RESULTS_HTML, /<p id="results-banner" class="ui-banner hidden" role="status">/);
   assert.match(RESULTS_HTML, /<div id="results-stats" class="ui-stat-row">/);
+  assert.match(RESULTS_HTML, /<p id="results-standing" class="ui-text ui-text--muted hidden"><\/p>/);
+  assert.match(RESULTS_HTML, /<span class="ui-text ui-text--muted" id="results-keys">R: Play again<\/span>/, 'the hint names R');
   assert.match(RESULTS_HTML, /<p id="results-bests-note" class="ui-text ui-text--muted hidden">Not eligible — only won games set bests<\/p>/);
   assert.match(RESULTS_HTML, /class="ui-card ui-screen" aria-labelledby="results-title"/);
   const buttons = [...RESULTS_HTML.matchAll(/<button type="button" id="(r-[a-z]+)" class="ui-button ([^"]+)">([^<]+)</g)]
@@ -645,11 +678,14 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
     await page.mouse.click(centres[first].x, centres[first].y);
     await page.waitForFunction(() => globalThis.__ms.modes.state.started);
     assert.equal(await hudClicks(), '1', 'the first click is counted as it is made');
-    for (let c = 0; c < 81 && (await mode()) === 'classic-2d'; c++) {
-      if (mines.includes(c)) continue;
-      await page.mouse.click(centres[c].x, centres[c].y);
-    }
-    await page.waitForFunction(() => globalThis.__ms.state.mode === 'results');
+    const clearBoard = async () => {
+      for (let c = 0; c < 81 && (await mode()) === 'classic-2d'; c++) {
+        if (mines.includes(c)) continue;
+        await page.mouse.click(centres[c].x, centres[c].y);
+      }
+      await page.waitForFunction(() => globalThis.__ms.state.mode === 'results');
+    };
+    await clearBoard();
     const made = await hudClicks();
 
     const shown = await page.evaluate(() => {
@@ -667,6 +703,7 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
         sizes: [document.querySelector('#rs-time .ui-stat__value'), document.querySelector('#rb-time .ui-stat__value')]
           .map((e) => parseFloat(getComputedStyle(e).fontSize)),
         clicks: globalThis.__ms.records.history('classic-2d:square:9x9:10:guess').at(-1).clicks,
+        standing: visible('results-standing') && text('results-standing'),
       };
     });
     assert.equal(shown.title, 'You won!');
@@ -681,6 +718,7 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
     assert.equal(shown.figures, `${formatClicks(shown.clicks)} · #1 of 1 on this board`);
     assert.equal(shown.figures.split(' ')[1], made, 'the overlay, frozen at the end, and the card count the same clicks');
     assert.equal(shown.next, `Beat ${shown.time} for a new best · streak 1`);
+    assert.equal(shown.standing, 'Win rate 100% (completed games 100%) · Longest streak 1 (completed games 1)');
     assert.deepEqual([shown.notEligible, shown.muted], [false, false], 'a win is eligible');
     assert.ok(shown.sizes[0] > shown.sizes[1], `the game's own figures are larger than the bests (${shown.sizes})`);
     assert.equal(shown.bests, true, 'the comparison shows on a win');
@@ -705,6 +743,20 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
     assert.deepEqual(await page.evaluate(() => ({ ...globalThis.__ms.modes.state })),
       { mode: 'classic-2d', started: false, finished: false, canPause: false }, 'a fresh game of the same choice');
     assert.equal(await page.evaluate(() => document.getElementById('hud-size').textContent), '9 × 9');
+
+    // The same board won again: R plays again as the focused Play again's Enter does; with Ctrl it is the browser's.
+    await page.mouse.click(centres[first].x, centres[first].y);
+    await page.waitForFunction(() => globalThis.__ms.modes.state.started);
+    await clearBoard();
+    assert.equal(await page.evaluate(() => {
+      const e = new KeyboardEvent('keydown', { code: 'KeyR', key: 'r', ctrlKey: true, bubbles: true, cancelable: true });
+      window.dispatchEvent(e);
+      return globalThis.__ms.state.mode;
+    }), 'results', 'Ctrl+R is left to the browser');
+    await page.keyboard.press('KeyR');
+    assert.equal(await mode(), 'classic-2d', 'R plays again');
+    assert.deepEqual(await page.evaluate(() => ({ ...globalThis.__ms.modes.state })),
+      { mode: 'classic-2d', started: false, finished: false, canPause: false }, 'a fresh game of the same choice');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

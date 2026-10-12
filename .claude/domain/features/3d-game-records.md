@@ -33,7 +33,8 @@ In scope (m2-3d-joins):
   unchanged.
 - Recording 3D summaries in `personal-records`: the three bests per 3D
   board, the stats history, and win rate and streaks per 3D board and for
-  the 3D mode as a whole.
+  the 3D mode as a whole, each with its completed games' figures (completed
+  win rate, best completed streak) beside it.
 - Mode separation: Classic 2D and 3D each keep their own overall counters,
   and no figure combines the two.
 - The records format version step that adds the 3D overall counters, with
@@ -79,8 +80,10 @@ owns records.
   per mode: the m1 Classic 2D overall counters stay as they are, and the 3D
   mode gets its own. Recording a summary updates its board's counters and
   its own mode's overall counters only. A win extends both current
-  streaks it touches; a loss, or a 3D game abandoned after its first
-  reveal, ends them.
+  streaks it touches and both current completed streaks; a loss ends all
+  of them; a 3D game abandoned after its first reveal ends the current
+  streaks and leaves the completed streaks as they were, being no
+  completed game.
 - **Bests and comparison.** Unchanged in rule: three bests per 3D board
   from won games, strictly better replaces, a tie keeps the earlier holder,
   and every recorded 3D summary returns the comparison against the bests
@@ -97,9 +100,11 @@ owns records.
   board identity.
 - **Records document** — per board key as in m1, for 2D and 3D boards
   alike, plus overall counters per mode (Classic 2D and 3D). Its format
-  version steps up once for the per-mode counters; loading an m1 document
+  version steps up for the per-mode counters — loading an m1 document
   carries every board and the Classic 2D overall counters over unchanged
-  and starts the 3D overall counters at zero.
+  and starts the 3D overall counters at zero — and again for the completed
+  games' counters, which loading an earlier document derives from the
+  history (`personal-records` § Data and state, Source of truth).
 - **History document** — unchanged in shape; 3D games are appended with
   their 3D board keys. It stays the source of truth, and rebuilding the
   records document from it rebuilds the per-mode counters too.
@@ -115,8 +120,8 @@ owns records.
 - **Record** — `record(summary)` for 2D and 3D summaries alike; same
   idempotence and comparison as m1.
 - **Queries** — boards played for a mode; a board's bests, counters, win
-  rate and history; a mode's overall counters. There is no query across
-  modes.
+  rate, completed win rate and history; a mode's overall counters, win rate
+  and completed win rate. There is no query across modes.
 - **Abandoned 3D game** — a 3D game restarted, left, or ended by closing
   the window, the tab or the app after its first applied reveal is recorded
   with outcome abandoned and counts as a loss for its board and for the 3D

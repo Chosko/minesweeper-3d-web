@@ -104,6 +104,10 @@ test('bests: every exact board keeps its own', () => {
 
 // ---------- counters ----------
 
+// The counters as the model keeps them: the reference figures, then the completed games' ones.
+const C = (games, wins, currentStreak, longestStreak, completed, currentCompletedStreak, longestCompletedStreak) =>
+  ({ games, wins, currentStreak, longestStreak, completed, currentCompletedStreak, longestCompletedStreak });
+
 test('counters: games, wins and streaks per board; a loss or an abandoned game ends the streak', () => {
   const m = createRecordsModel();
   const seq = ['won', 'won', 'lost', 'won', 'won', 'won', 'abandoned', 'won'];
@@ -113,8 +117,25 @@ test('counters: games, wins and streaks per board; a loss or an abandoned game e
   seq.forEach((outcome, i) => {
     m.record(game({ outcome }));
     const [games, wins, currentStreak, longestStreak] = expected[i];
-    assert.deepEqual(m.counters(BEGINNER), { games, wins, currentStreak, longestStreak }, `after game ${i + 1}`);
+    const c = m.counters(BEGINNER);
+    assert.deepEqual({ games: c.games, wins: c.wins, currentStreak: c.currentStreak, longestStreak: c.longestStreak },
+      { games, wins, currentStreak, longestStreak }, `after game ${i + 1}`);
   });
+});
+
+test('counters: completed games are won or lost; a win extends the completed streak, a loss ends it, an abandoned game leaves it', () => {
+  const m = createRecordsModel();
+  const seq = ['won', 'won', 'lost', 'won', 'won', 'won', 'abandoned', 'won', 'abandoned', 'lost'];
+  const expected = [
+    C(1, 1, 1, 1, 1, 1, 1), C(2, 2, 2, 2, 2, 2, 2), C(3, 2, 0, 2, 3, 0, 2), C(4, 3, 1, 2, 4, 1, 2),
+    C(5, 4, 2, 2, 5, 2, 2), C(6, 5, 3, 3, 6, 3, 3), C(7, 5, 0, 3, 6, 3, 3), C(8, 6, 1, 3, 7, 4, 4),
+    C(9, 6, 0, 3, 7, 4, 4), C(10, 6, 0, 3, 8, 0, 4),
+  ];
+  seq.forEach((outcome, i) => {
+    m.record(game({ outcome }));
+    assert.deepEqual(m.counters(BEGINNER), expected[i], `after game ${i + 1}`);
+  });
+  assert.deepEqual(m.overall(), expected.at(-1), 'the mode overall counts the same way');
 });
 
 test('counters: Classic 2D overall counts every board, its streak across boards', () => {
@@ -123,17 +144,20 @@ test('counters: Classic 2D overall counts every board, its streak across boards'
   m.record(game({ board: EXPERT }));
   m.record(game({ board: CUSTOM_A, outcome: 'lost' }));
   m.record(game({ board: BEGINNER }));
-  assert.deepEqual(m.overall(), { games: 4, wins: 3, currentStreak: 1, longestStreak: 2 });
-  assert.deepEqual(m.counters(BEGINNER), { games: 2, wins: 2, currentStreak: 2, longestStreak: 2 });
-  assert.deepEqual(m.counters(EXPERT), { games: 1, wins: 1, currentStreak: 1, longestStreak: 1 });
+  m.record(game({ board: EXPERT, outcome: 'abandoned' }));
+  assert.deepEqual(m.overall(), C(5, 3, 0, 2, 4, 1, 2));
+  assert.deepEqual(m.counters(BEGINNER), C(2, 2, 2, 2, 2, 2, 2));
+  assert.deepEqual(m.counters(EXPERT), C(2, 1, 0, 1, 1, 1, 1));
 });
 
 test('counters: a board never played has zero counters and no win rate', () => {
   const m = createRecordsModel();
-  assert.deepEqual(m.counters(EXPERT), { games: 0, wins: 0, currentStreak: 0, longestStreak: 0 });
+  assert.deepEqual(m.counters(EXPERT), C(0, 0, 0, 0, 0, 0, 0));
   assert.equal(m.winRate(EXPERT), null);
-  assert.deepEqual(m.overall(), { games: 0, wins: 0, currentStreak: 0, longestStreak: 0 });
+  assert.equal(m.completedWinRate(EXPERT), null);
+  assert.deepEqual(m.overall(), C(0, 0, 0, 0, 0, 0, 0));
   assert.equal(m.overallWinRate(), null);
+  assert.equal(m.overallCompletedWinRate(), null);
 });
 
 test('win rate: derived from games and wins, never stored', () => {
@@ -144,6 +168,19 @@ test('win rate: derived from games and wins, never stored', () => {
   assert.equal(m.winRate(EXPERT), 1);
   assert.equal(m.overallWinRate(), 0.6);
   assert.doesNotMatch(JSON.stringify(m.documents()), /winRate|rate/i);
+});
+
+test('completed win rate: wins over completed games, per board and per mode, null with none completed', () => {
+  const m = createRecordsModel();
+  for (const outcome of ['won', 'lost', 'won', 'abandoned', 'abandoned']) m.record(game({ outcome }));
+  m.record(game({ board: EXPERT, outcome: 'abandoned' }));
+  assert.equal(m.winRate(BEGINNER), 0.4);
+  assert.equal(m.completedWinRate(BEGINNER), 2 / 3);
+  assert.equal(m.winRate(EXPERT), 0, 'an abandoned game counts as a loss in the reference win rate');
+  assert.equal(m.completedWinRate(EXPERT), null, 'and is no completed game');
+  assert.equal(m.overallWinRate(), 2 / 6);
+  assert.equal(m.overallCompletedWinRate(), 2 / 3);
+  assert.equal(m.overallCompletedWinRate('3d'), null, 'no figure combines the two modes');
 });
 
 // ---------- history ----------
@@ -295,6 +332,9 @@ test('rebuild: bests and counters rebuilt from the history alone equal the incre
   const rebuilt = createRecordsModel({ history: docs.history });
   assert.deepEqual(rebuilt.documents(), docs);
   assert.ok(docs.records.boards[boardKey(EXPERT)].counters.games > 0);
+  const expert = docs.records.boards[boardKey(EXPERT)].counters;
+  assert.ok(expert.completed > 0 && expert.completed < expert.games, 'the completed counters are rebuilt too');
+  assert.ok(docs.records.overall['classic-2d'].longestCompletedStreak >= docs.records.overall['classic-2d'].longestStreak);
 });
 
 test('rebuild: an empty history gives empty records', () => {

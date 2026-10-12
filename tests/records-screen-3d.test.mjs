@@ -51,14 +51,17 @@ function fakeStore({ games = [], available = true } = {}) {
     onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },
     record(s) { const c = model.record(s); for (const fn of listeners) fn(c, s); return c; },
   };
-  for (const q of ['boardsPlayed', 'bests', 'counters', 'winRate', 'history', 'overall', 'overallWinRate']) store[q] = (...a) => model[q](...a);
+  for (const q of ['boardsPlayed', 'bests', 'counters', 'winRate', 'completedWinRate', 'history', 'overall', 'overallWinRate', 'overallCompletedWinRate']) {
+    store[q] = (...a) => model[q](...a);
+  }
   return store;
 }
 function brokenStore() {
   const fail = () => { throw new RangeError('records: unreadable'); };
   return {
     available: () => false, onChange: () => () => {},
-    boardsPlayed: fail, bests: fail, counters: fail, winRate: fail, history: fail, overall: fail, overallWinRate: fail,
+    boardsPlayed: fail, bests: fail, counters: fail, winRate: fail, completedWinRate: fail, history: fail, overall: fail, overallWinRate: fail,
+    overallCompletedWinRate: fail,
   };
 }
 /** A fake replay library recording the boards it is asked for. */
@@ -167,6 +170,7 @@ test("the figures panel shows the chosen 3D board's figures and the 3D overall f
     game(CUBE_BEGINNER, { elapsedMs: 30000, endedAt: '2026-10-07T12:00:00.000Z' }),
     game(CUBE_BEGINNER, { outcome: 'lost', endedAt: '2026-10-08T12:00:00.000Z' }),
     game(CUSTOM_3D, { endedAt: '2026-10-08T13:00:00.000Z' }),
+    game(CUSTOM_3D, { outcome: 'abandoned', endedAt: '2026-10-08T14:00:00.000Z' }),
     game(BEGINNER, { endedAt: '2026-10-09T12:00:00.000Z' }),
     game(BEGINNER, { endedAt: '2026-10-09T13:00:00.000Z' }),
   ] });
@@ -174,12 +178,14 @@ test("the figures panel shows the chosen 3D board's figures and the 3D overall f
   const c = recordsContent(store, { boardKey: boardKey(CUBE_BEGINNER), replays: library });
   assert.equal(value(c.bests, 'time'), '30.000 s');
   assert.deepEqual(c.counters.map((s) => [s.key, s.value]), [
-    ['games', '2'], ['wins', '1'], ['winRate', '50%'], ['currentStreak', '0'], ['longestStreak', '1'],
+    ['games', '2'], ['wins', '1'], ['winRate', '50%'], ['completedWinRate', '50%'], ['currentStreak', '0'], ['longestStreak', '1'],
+    ['longestCompletedStreak', '1'],
   ]);
   assert.equal(c.overallTitle, '3D overall');
   assert.deepEqual(c.overall.map((s) => [s.key, s.value]), [
-    ['games', '3'], ['wins', '2'], ['winRate', '67%'], ['currentStreak', '1'], ['longestStreak', '1'],
-  ], 'the 3D games only');
+    ['games', '4'], ['wins', '2'], ['winRate', '50%'], ['completedWinRate', '67%'], ['currentStreak', '0'], ['longestStreak', '1'],
+    ['longestCompletedStreak', '1'],
+  ], 'the 3D games only, the restarted one left out of the completed figures');
   assert.equal(c.games.rows.length, 2, 'the games list reads the chosen board');
   assert.equal(c.chart.points.length, 1, 'the chart reads the chosen board');
   assert.deepEqual(library.asked, [boardKey(CUBE_BEGINNER)], 'the library view reads the chosen board');
@@ -374,6 +380,9 @@ test('in a browser, mouse, keyboard and controller operate the 2D | 3D switch', 
     assert.equal(await boardShown(), 'Cube Beginner');
     assert.equal(await overallTitle(), '3D overall');
     assert.equal(await firstOption(), 'Cube Beginner');
+    const figure = (id) => ms((i) => document.querySelector(`#${i} .ui-stat__value`).textContent, id);
+    assert.equal(await figure('rec-completedWinRate'), '100%', 'the 3D board\'s completed-games figures');
+    assert.equal(await figure('ro-longestCompletedStreak'), '1');
 
     // Mouse.
     await page.click('#records-mode [data-value="classic-2d"]');

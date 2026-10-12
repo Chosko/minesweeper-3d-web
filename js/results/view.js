@@ -11,8 +11,8 @@
 // precision and a sign, truncated toward zero for time; one that is zero at that precision reads
 // EQUAL_BEST ("= best"), with no sign and no number.
 //
-// resultsContent({ summary, comparison, saved, notSaved, watch, rank, streak }) → the screen's
-// content, top to bottom:
+// resultsContent({ summary, comparison, saved, notSaved, watch, rank, streak, standing }) → the
+// screen's content, top to bottom:
 //   { outcome, title, board,
 //     banner      "New best time and 3BV/s!" naming the bests this game set, or null;
 //     stats       [{ key, label, value, shown, newBest }] — the game's own figures, newBest marking
@@ -21,6 +21,11 @@
 //                 the counted clicks, then the reveal, flag and chord clicks (effective plus wasted)
 //                 and the wasted total; on a win the rank "#3 of 12 on this board", else null;
 //     next        the next-target line, or null without a comparison;
+//     standing    the board's figures counting this game, the reference figure first and its
+//                 completed-games figure beside it: "Win rate 67% (completed games 80%) · Longest
+//                 streak 4 (completed games 5)", from the flow's standing { winRate,
+//                 completedWinRate, longestStreak, longestCompletedStreak }; null without one (a
+//                 recording that failed);
 //     eligible, bestsNote, bests  [{ stat, label, best, difference, newBest, direction, detail }]
 //                 | null — the bests panel;
 //     notes: [text], watch, takeover }
@@ -79,6 +84,10 @@ export function formatTime(ms) {
 }
 /** A signed time difference, truncated toward zero: -1270 ms → "−1.270 s". */
 export function formatTimeDifference(ms) { return difference(ms, formatTime, formatTime(0)); }
+/** A win rate (0..1) as a whole percentage: 2/3 → "67%". */
+export function formatWinRate(rate) {
+  return rate === null || rate === undefined || !Number.isFinite(rate) ? DASH : `${Math.round(rate * 100)}%`;
+}
 /** 3BV/s to two decimals. */
 export function formatRate(v) { return missing(v) ? DASH : v.toFixed(2); }
 export function formatRateDifference(v) { return difference(v, (a) => a.toFixed(2), '0.00'); }
@@ -116,7 +125,16 @@ const BESTS = Object.freeze([
 
 const listed = (names) => (names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`);
 
-export function resultsContent({ summary, comparison = null, saved = true, notSaved = false, watch = false, rank = null, streak = null }) {
+/** The standing line: each reference figure with its completed-games figure beside it. */
+function standingText(s) {
+  const count = (v) => (Number.isInteger(v) ? String(v) : DASH);
+  return `Win rate ${formatWinRate(s.winRate)} (completed games ${formatWinRate(s.completedWinRate)})`
+    + ` · Longest streak ${count(s.longestStreak)} (completed games ${count(s.longestCompletedStreak)})`;
+}
+
+export function resultsContent({
+  summary, comparison = null, saved = true, notSaved = false, watch = false, rank = null, streak = null, standing = null,
+}) {
   const won = summary.outcome === 'won';
   const count = (v) => (missing(v) ? DASH : String(v));
   const setBest = (stat) => won && comparison?.[stat]?.newBest === true;
@@ -168,6 +186,7 @@ export function resultsContent({ summary, comparison = null, saved = true, notSa
     stats,
     figures: { clicks: formatClicks(summary.clicks), rank: won ? rankText(rank) : null },
     next,
+    standing: saved && standing ? standingText(standing) : null,
     eligible: won,
     bestsNote: won ? null : NOT_ELIGIBLE,
     bests,
@@ -200,6 +219,7 @@ export function createResultsView({ root, onPlayAgain, onWatch = () => {}, onRec
       }
       line('results-figures', [content.figures.clicks, content.figures.rank].filter(Boolean).join(' · '));
       line('results-next', content.next);
+      line('results-standing', content.standing);
       const panel = $('results-bests');
       panel.classList.toggle('hidden', !content.bests);
       panel.classList.toggle('ui-panel--muted', !!content.bests && !content.eligible);

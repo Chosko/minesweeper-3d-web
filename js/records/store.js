@@ -10,8 +10,11 @@
 //   load()               → Promise, awaited before the first screen; repeated calls return the
 //                          first call's Promise. Reads the three documents once; an m1 records
 //                          document (version 1) is stepped up by upgradeRecords and saved back.
-//                          A missing or corrupt records document beside an intact history is
-//                          rebuilt from the history and saved. A records or history document newer
+//                          A missing or corrupt records document beside an intact history, or one
+//                          whose counters lack the completed games' figures (versions 1 and 2), is
+//                          rebuilt from the history and saved; with no history such a document
+//                          keeps its counters and seeds the completed figures from the reference
+//                          ones (createRecordsModel). A records or history document newer
 //                          than this build, or one whose entries the model cannot read, is
 //                          refused: the session runs on empty records and nothing is saved, so the
 //                          stored documents stay untouched. A leftover game-in-progress marker is
@@ -34,20 +37,26 @@
 //                          marker of that game (recording a finished game is the results flow's
 //                          record() call). A summary that is not a record (a fixed 3D board's
 //                          null) is ignored.
-//   boardsPlayed(mode?), bests(board), counters(board), winRate(board), history(board),
-//   overall(mode?), overallWinRate(mode?) — the model's queries.
+//   boardsPlayed(mode?), bests(board), counters(board), winRate(board), completedWinRate(board),
+//   history(board), overall(mode?), overallWinRate(mode?), overallCompletedWinRate(mode?) — the
+//   model's queries.
 // record, begin and checkpoint before load() throw: that is a programming error.
 
-import { createRecordsModel, upgradeRecords } from './model.js';
+import { createRecordsModel, upgradeRecords, hasCompletedCounters } from './model.js';
 
 export const RECORDS_DOC = 'records';
-export const RECORDS_VERSION = 2;
+export const RECORDS_VERSION = 3;
 export const HISTORY_DOC = 'records.history';
 export const HISTORY_VERSION = 1;
 export const IN_PROGRESS_DOC = 'records.inProgress';
 export const IN_PROGRESS_VERSION = 1;
 
-const QUERIES = ['boardsPlayed', 'bests', 'counters', 'winRate', 'history', 'overall', 'overallWinRate'];
+const QUERIES = [
+  'boardsPlayed', 'bests', 'counters', 'winRate', 'completedWinRate', 'history', 'overall', 'overallWinRate', 'overallCompletedWinRate',
+];
+// The records format steps: 1 → 2 adds the 3D overall counters; 2 → 3 changes nothing itself, as
+// the completed games' counters come from the history, which load() rebuilds the records from.
+const UPGRADES = { 1: upgradeRecords, 2: (records) => records };
 
 const isPlainObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const isRecordsDoc = (v) => isPlainObject(v) && isPlainObject(v.boards) && isPlainObject(v.overall);
@@ -57,7 +66,7 @@ const isRecordSummary = (s) => isPlainObject(s) && typeof s.id === 'string' && i
 export function createRecordsStore({ storage, onNotSaved = () => {} }) {
   const newer = new Set();
   const watch = { onIssue: (issue) => { if (issue.kind === 'newer-version') newer.add(issue.name); } };
-  storage.register(RECORDS_DOC, RECORDS_VERSION, { 1: upgradeRecords }, watch);
+  storage.register(RECORDS_DOC, RECORDS_VERSION, UPGRADES, watch);
   storage.register(HISTORY_DOC, HISTORY_VERSION, {}, watch);
   storage.register(IN_PROGRESS_DOC, IN_PROGRESS_VERSION, {}, watch);
 
@@ -103,7 +112,7 @@ export function createRecordsStore({ storage, onNotSaved = () => {} }) {
       try {
         if (Array.isArray(history)) {
           if (!history.every(isHistoryEntry)) throw new RangeError('records: unreadable history entry');
-          const intact = isRecordsDoc(records);
+          const intact = isRecordsDoc(records) && hasCompletedCounters(records);
           model = createRecordsModel(intact ? { records, history } : { history });
           ids = new Set(model.documents().history.map((e) => e.id));
           if (!intact && history.length > 0) save(RECORDS_DOC, model.documents().records);

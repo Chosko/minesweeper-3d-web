@@ -49,7 +49,9 @@ function fakeStore({ games = [], available = true } = {}) {
     onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },
     record(s) { const c = model.record(s); for (const fn of listeners) fn(c, s); return c; },
   };
-  for (const q of ['boardsPlayed', 'bests', 'counters', 'winRate', 'history', 'overall', 'overallWinRate']) store[q] = (...a) => model[q](...a);
+  for (const q of ['boardsPlayed', 'bests', 'counters', 'winRate', 'completedWinRate', 'history', 'overall', 'overallWinRate', 'overallCompletedWinRate']) {
+    store[q] = (...a) => model[q](...a);
+  }
   return store;
 }
 /** A store whose stored records could not be read: every query throws. */
@@ -57,7 +59,8 @@ function brokenStore() {
   const fail = () => { throw new RangeError('records: unreadable'); };
   return {
     available: () => false, onChange: () => () => {},
-    boardsPlayed: fail, bests: fail, counters: fail, winRate: fail, history: fail, overall: fail, overallWinRate: fail,
+    boardsPlayed: fail, bests: fail, counters: fail, winRate: fail, completedWinRate: fail, history: fail, overall: fail, overallWinRate: fail,
+    overallCompletedWinRate: fail,
   };
 }
 const STANDARD_LABELS = ['Beginner', 'Beginner · no-guess', 'Intermediate', 'Intermediate · no-guess', 'Expert', 'Expert · no-guess'];
@@ -118,9 +121,26 @@ test('the figures panel shows the three bests with their dates, games, wins, win
   assert.equal(stat(c.bests, 'efficiency').value, '80.0%', 'efficiency to one decimal');
   assert.equal(stat(c.bests, 'efficiency').date, formatDate('2026-10-07T12:00:00.000Z'), 'a tie keeps the earlier holder');
   assert.deepEqual(c.counters.map((s) => [s.key, s.value]), [
-    ['games', '4'], ['wins', '3'], ['winRate', '75%'], ['currentStreak', '1'], ['longestStreak', '2'],
+    ['games', '4'], ['wins', '3'], ['winRate', '75%'], ['completedWinRate', '75%'], ['currentStreak', '1'], ['longestStreak', '2'],
+    ['longestCompletedStreak', '2'],
   ]);
-  assert.deepEqual(c.counters.map((s) => s.label), ['Games', 'Wins', 'Win rate', 'Current streak', 'Longest streak']);
+  assert.deepEqual(c.counters.map((s) => s.label), [
+    'Games', 'Wins', 'Win rate', 'Win rate, completed games', 'Current streak', 'Longest streak', 'Best streak, completed games',
+  ]);
+});
+
+test('the completed-games win rate and best streak sit beside the reference ones, leaving restarted games out', () => {
+  const outcomes = ['won', 'abandoned', 'won', 'abandoned', 'won', 'lost', 'abandoned', 'won'];
+  const store = fakeStore({ games: outcomes.map((outcome) => game(BEGINNER, { outcome })) });
+  const c = recordsContent(store, { boardKey: boardKey(BEGINNER) });
+  assert.equal(stat(c.counters, 'winRate').value, '50%', 'the reference win rate counts a restart as a loss');
+  assert.equal(stat(c.counters, 'completedWinRate').value, '80%', 'four wins of five completed games');
+  assert.equal(stat(c.counters, 'longestStreak').value, '1');
+  assert.equal(stat(c.counters, 'longestCompletedStreak').value, '3', 'a restart leaves the completed streak alone');
+  assert.equal(stat(c.overall, 'completedWinRate').value, '80%');
+  assert.equal(stat(c.overall, 'longestCompletedStreak').value, '3');
+  const abandonedOnly = recordsContent(fakeStore({ games: [game(CUSTOM, { outcome: 'abandoned' })] }), { boardKey: boardKey(CUSTOM) });
+  assert.equal(stat(abandonedOnly.counters, 'completedWinRate').value, DASH, 'no completed game: no completed win rate');
 });
 
 test("the fastest-time best goes through the results screen's time formatter", () => {
@@ -135,7 +155,8 @@ test('the overall panel shows the Classic 2D totals across every board', () => {
   const store = fakeStore({ games: [game(BEGINNER), game(CUSTOM, { outcome: 'lost' }), game(EXPERT_NG), game(EXPERT_NG)] });
   const c = recordsContent(store, { boardKey: boardKey(CUSTOM) });
   assert.deepEqual(c.overall.map((s) => [s.key, s.value]), [
-    ['games', '4'], ['wins', '3'], ['winRate', '75%'], ['currentStreak', '2'], ['longestStreak', '2'],
+    ['games', '4'], ['wins', '3'], ['winRate', '75%'], ['completedWinRate', '75%'], ['currentStreak', '2'], ['longestStreak', '2'],
+    ['longestCompletedStreak', '2'],
   ]);
   assert.equal(c.overallTitle, 'Classic 2D overall');
 });
@@ -154,7 +175,7 @@ test('a board with no games shows the empty state, and a best not yet set shows 
   const c = recordsContent(fakeStore({ games: [game(CUSTOM)] }), { boardKey: boardKey(BEGINNER) });
   assert.equal(c.empty, true);
   assert.equal(c.emptyText, EMPTY_TEXT);
-  assert.deepEqual(c.counters.map((s) => s.value), ['0', '0', DASH, '0', '0']);
+  assert.deepEqual(c.counters.map((s) => s.value), ['0', '0', DASH, DASH, '0', '0', '0']);
   const lostOnly = recordsContent(fakeStore({ games: [game(BEGINNER, { outcome: 'lost' })] }), { boardKey: boardKey(BEGINNER) });
   assert.equal(lostOnly.empty, false);
   assert.deepEqual(lostOnly.bests.map((b) => [b.value, b.date]), [[DASH, DASH], [DASH, DASH], [DASH, DASH]]);
@@ -263,9 +284,14 @@ test('the records screen is the kit composition: picker, figures, overall, empty
   assert.match(RECORDS_HTML, /class="ui-card ui-screen ui-screen--wide" aria-labelledby="records-title"/);
   assert.match(RECORDS_HTML, /<div id="records-picker" class="ui-segmented" role="radiogroup" aria-label="Board"><\/div>/);
   for (const id of ['records-title', 'records-picker', 'records-figures', 'records-board', 'records-empty', 'records-bests', 'records-counters',
-    'rec-time', 'rec-bbbvPerSecond', 'rec-efficiency', 'rec-games', 'rec-wins', 'rec-winRate', 'rec-currentStreak', 'rec-longestStreak',
-    'records-overall', 'ro-games', 'ro-wins', 'ro-winRate', 'ro-currentStreak', 'ro-longestStreak', 'records-note', 'records-back']) {
+    'rec-time', 'rec-bbbvPerSecond', 'rec-efficiency', 'rec-games', 'rec-wins', 'rec-winRate', 'rec-completedWinRate', 'rec-currentStreak',
+    'rec-longestStreak', 'rec-longestCompletedStreak', 'records-overall', 'ro-games', 'ro-wins', 'ro-winRate', 'ro-completedWinRate',
+    'ro-currentStreak', 'ro-longestStreak', 'ro-longestCompletedStreak', 'records-note', 'records-back']) {
     assert.ok(RECORDS_HTML.includes(`id="${id}"`), `#${id}`);
+  }
+  for (const prefix of ['rec', 'ro']) {
+    assert.match(RECORDS_HTML, new RegExp(`id="${prefix}-completedWinRate-label">Win rate, completed games<`));
+    assert.match(RECORDS_HTML, new RegExp(`id="${prefix}-longestCompletedStreak-label">Best streak, completed games<`));
   }
   const buttons = [...RECORDS_HTML.matchAll(/<button[^>]*>/g)].map((m) => m[0]);
   assert.deepEqual(buttons, [
@@ -394,6 +420,9 @@ test('in a browser, the menu opens the records screen on the last board played, 
     });
     assert.equal(await value('rec-games'), '2');
     assert.equal(await value('rec-winRate'), '50%');
+    assert.equal(await value('rec-completedWinRate'), '50%', 'the completed-games figures show beside the reference ones');
+    assert.equal(await value('rec-longestCompletedStreak'), '1');
+    assert.equal(await value('ro-completedWinRate'), '67%');
 
     await page.click('#records-back');
     assert.equal(await mode(), 'menu', 'the Back button returns to the menu');

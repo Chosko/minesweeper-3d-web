@@ -161,7 +161,9 @@ browser checks for everything that needs WebGL or the DOM.
   won games only, replaced only when strictly better and independently, a
   tie keeping the earlier holder, an unavailable stat never a best, each
   exact board its own; per-board and Classic 2D overall counters and
-  streaks, derived win rate; the history in play order and compact,
+  streaks, derived win rate; the completed counters (a win extends the
+  completed streak, a loss ends it, an abandoned game leaves it) and the
+  completed win rate per board and per mode; the history in play order and compact,
   JSON-safe form, carrying each game's pause count and paused time, an
   entry or summary without them reading as none; the comparison against the bests before the game; the same
   id twice a no-op, unrecordable summaries throwing; the rebuild from history
@@ -176,18 +178,23 @@ browser checks for everything that needs WebGL or the DOM.
   mode, every mode at zero from the start; `boardsPlayed` by mode — the 3D
   cube presets in menu order then custom boards by last played, a former
   double layer board among them, Classic 2D the
-  default and no mode listing another's boards; the per-mode counters
-  rebuilt from the history; and the records format step — `RECORDS_VERSION`
-  2, `upgradeRecords` carrying m1 boards and Classic 2D counters over,
-  starting 3D at zero and keeping 3D counters already present, an m1
-  document loaded and saved back at the new version, a newer document
-  refused untouched, and an m1 build refusing the stepped-up document.
+  default and no mode listing another's boards; the per-mode counters,
+  completed ones included, rebuilt from the history; and the records format
+  steps — `RECORDS_VERSION` 3, `upgradeRecords` carrying m1 boards and
+  Classic 2D counters over, starting 3D at zero and keeping 3D counters
+  already present, an m1 document loaded with its completed counters
+  derived from the history and saved back at the current version, a newer
+  document refused untouched, and an m1 build refusing the stepped-up
+  document.
 - `tests/records-store.test.mjs` — the records store
   (`js/records/store.js`) over platform storage on the memory backend: the
   three documents registered at their versions, a single load, use before
   load throwing, memory-first saves, survival across a reload, `onChange`
   and a throwing listener, a failed save reported once, a missing or corrupt
-  records document rebuilt from the history, unavailable storage, newer and
+  records document rebuilt from the history, a version 2 document gaining
+  its completed counters from the history and saved back at version 3
+  (which a version 2 build refuses as newer) or, with no history, keeping
+  its counters with the completed ones at zero, unavailable storage, newer and
   unreadable documents left untouched with empty unsaved records, the
   `attach` hooks (abandoned, in-progress begin then checkpoint, a fixed 3D
   board's null summary ignored), the marker cleared by its own game and kept
@@ -201,7 +208,8 @@ browser checks for everything that needs WebGL or the DOM.
   (`js/records/screen.js`) over a records model or a fake store: the picker's
   standard then custom boards, the last board played, the board opened (asked
   for, last played, Beginner), the bests with dates, counters and Classic 2D
-  overall figures, the results screen's time format, the date, win-rate and
+  overall figures, the completed-games win rate and best streak beside the
+  reference ones and their labels, the results screen's time format, the date, win-rate and
   dash formats, the empty state, unreadable records never throwing or
   blocking Back, the not-saving notice told once, the controller's live
   update and unsubscribe, a new custom board joining the picker live, and
@@ -218,7 +226,8 @@ browser checks for everything that needs WebGL or the DOM.
   labels, a former double layer board among them under its size,
   a board key alone setting the switch, a mode alone opening on its last
   board played or its first board, the last game played choosing mode and
-  board, the chosen 3D board's figures and the 3D overall figures,
+  board, the chosen 3D board's figures and the 3D overall figures (the
+  completed ones leaving a restarted game out),
   `setMode` on the first games page, Open taking a mode beside a board key,
   Watch from a 3D board returning there, and the results screen's Records
   opening a 3D game's board; static checks of the `#records-mode` kit
@@ -261,26 +270,31 @@ browser checks for everything that needs WebGL or the DOM.
   bests, the banner and highlighted stats, the second row with the rank),
   a loss (3BV solved, the greyed not-eligible comparison with the pace and
   its dash with no 3BV solved, no best yet), the next-target line in each
-  of its forms, a missing stat and a failed recording; `createResultsView`
+  of its forms, the standing line (win rate and longest streak, each with
+  its completed-games figure), a missing stat, and a failed recording (no
+  standing line); `createResultsView`
   over a fake root (a win's `data-delta` per best, a loss's
   `ui-panel--muted` and not-eligible note, a win's colours cleared on the
-  next loss); the flow over fakes
-  — the streak read before recording and the counters and history after,
+  next loss), the standing line shown and hidden; the flow over fakes
+  — the streak read before recording and the counters, history, win rate
+  and completed win rate after,
   the rank with ties to the earlier game, recorded before the screen shows
-  and routed with the comparison, rank and streak, a 3D record recorded and
+  and routed with the comparison, rank, streak and standing, a 3D record recorded and
   routed, a fixed 3D board's null summary ignored, a throwing recording or
   query still routed, "not being saved" told once, Play again / Records /
   Back to menu — and DOM-free; static checks of the `#results` kit markup
-  in reading order, its router entry, default focus, controller layer and
+  in reading order with its `R: Play again` hint, its router entry, default focus, controller layer and
   the flow on the hand-off in `js/main.js`, the `ui-stat__detail`,
   `data-delta`, `ui-panel--muted` and `ui-banner` catalogue entries and
   gallery, and the delta colours' 4.5:1 contrast on the bests panel in
   both themes. One Playwright test wins a fixed Beginner board through the
   shell with the overlay's click count checked before the first click,
   after it and at the end, checks the results screen (formats, banner,
-  highlights, second row, next target, the game's figures larger than the
-  bests), opens Records on that board and returns with Back, then Play
-  again (skipped when Playwright or chromium is unavailable).
+  highlights, second row, next target, standing line, the game's figures
+  larger than the bests), opens Records on that board and returns with
+  Back, plays again with Enter, wins the same board again, leaves Ctrl+R
+  to the browser and plays again with `R` (skipped when Playwright or
+  chromium is unavailable).
 - `tests/mode3d-end.test.mjs` — the 3D end sequence and the results
   takeover (`js/shell/mode-3d.js`, `js/main.js`, `js/results/view.js`) over
   a fake session and a fake clock: `END_DELAY_MS` one second for a win and
@@ -865,25 +879,33 @@ browser checks for everything that needs WebGL or the DOM.
   manual ones counted alike with the clock running through them, automatic
   pauses only in play, no pause before the first click or
   after the end beyond the card, Back cancelling a board being generated
-  while every pause source still pauses, resume through the mode, the restart and
-  back-to-menu confirmations, the `finished` / `abandoned` / `inProgress`
+  while every pause source still pauses, resume through the mode, restart
+  proceeding at once and reporting the game abandoned, the once-per-session
+  restart notice, the restart confirmation under "Always ask" (from play it
+  pauses first) and the back-to-menu one under either setting,
+  `restartInput` for F2, Start + Y and R on every screen, the `finished` / `abandoned` / `inProgress`
   hand-offs with the controller itself routing nowhere, the leave-page guard armed
   only during a started, unfinished game; DOM-free; static checks that every
   pause source in `js/main.js` goes through `pauseGame` to the controller
   and every Back on the board (the lock-release Esc and the controller's
   back button included) through `backGame`, that the board status cards
   stack above the pause card, that the guard is
-  a listener it arms, and that the confirmation is kit markup. Two
+  a listener it arms, and that the confirmation is kit markup. Three
   Playwright tests: one pauses (the clock running on, the key, blur and
-  tab-hide pauses counted alike), resumes, restarts and goes back to menu in
-  the 3D game, and ends a fixed board, which has no results screen, on the
-  pause card; one, over stand-in generation workers, cancels the Classic 2D
-  generating card by Cancel and Esc (before and after it shows), meets the
-  failure offer with Retry then Play a standard board focused, leaves by
-  its Main menu, and finds an offer arriving while paused above the
-  pause card.
+  tab-hide pauses counted alike), resumes, restarts — at once with its
+  toast once, by `F2`, and under "Always ask" through the confirmation,
+  `F2` in play opening it — keeps `R` and `Home` returning the camera, goes
+  back to menu in the 3D game, and ends a fixed board, which has no results
+  screen, on the pause card; one, over stand-in generation workers,
+  cancels the Classic 2D generating card by Cancel and Esc (before and
+  after it shows), meets the failure offer with Retry then Play a standard
+  board focused, leaves by its Main menu, and finds an offer arriving while
+  paused above the pause card; one restarts a Classic 2D game by `F2` in
+  play and on the pause card and by a fake controller's Start + Y, `F2`
+  doing nothing on the main menu.
 - `tests/settings-store.test.mjs` — the schema (`js/settings/schema.js`:
-  every setting's type, range or values and default, `isValid`) and the
+  every setting's type, range or values and default, `isValid`, the
+  `confirmRestart` boolean with no legacy key) and the
   store (`js/settings/store.js`) over the memory backend: missing, invalid
   and non-object documents filled with defaults, `get` before load and on an
   unknown key, validated whole-document saves, a rejected value kept out,
@@ -905,9 +927,11 @@ browser checks for everything that needs WebGL or the DOM.
 - `tests/settings-page.test.mjs` — the bindings source
   (`js/settings/bindings.js`: every mode × device, the Classic 2D keyboard
   rows naming every `CURSOR_KEYS` key, the 3D right-click and `{lt}` on a
-  number rows, `bindingsListHtml` keys, glyphs and
+  number rows, both modes' `[F2]` and `{start} + {y}` Restart rows,
+  `bindingsListHtml` keys, glyphs and
   escaping, the in-game help reading it through `bindingsHtml`) and the page
   (`js/settings/page.js`): the four sections holding every setting once,
+  the "Always ask before restarting" toggle in Controls,
   Audio's Sound (the `muted` toggle, on while not muted, both ways through
   the binder) before Volume and no Mute label, the Theme control named by
   its section heading with no label of its own, each control's kind and
@@ -944,7 +968,7 @@ browser checks for everything that needs WebGL or the DOM.
   `tests/replay-viewer.test.mjs`, `tests/replay-viewer-3d.test.mjs` and
   `tests/results-watch.test.mjs`, the
   flow tests in `tests/shell-*.test.mjs` (one per file, two in
-  `tests/shell-first-use.test.mjs` and `tests/shell-pause.test.mjs`, three in `tests/shell-help.test.mjs`), the spawn and
+  `tests/shell-first-use.test.mjs`, three in `tests/shell-pause.test.mjs` and `tests/shell-help.test.mjs`), the spawn and
   return-to-start test in `tests/camera-spawn.test.mjs`, the 3D tests in
   `tests/mode3d-board-choice.test.mjs` and `tests/mode3d-session.test.mjs`, the
   theme-and-resolution test in `tests/settings-appliers.test.mjs` and the two page tests in

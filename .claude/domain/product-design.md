@@ -240,7 +240,12 @@ its own board, custom boards included; a 3D board is named by its X × Y × Z
 size. Win rate and streaks are kept per board and per mode, never combined
 across 2D and 3D, and the Records screen switches between the two modes. A
 game restarted, left, or ended by closing the game after its first click
-counts as a loss and breaks the win streak. Serves the enthusiast loop.
+counts as a loss and breaks the win streak. Beside those reference figures
+each board and mode keeps the completed games' ones — a win rate over the
+games played to a win or a loss, and the best streak among them, which a
+restarted or left game neither extends nor breaks — so a player who
+restarts bad openings keeps figures that mean something. Serves the
+enthusiast loop.
 
 ### Replays
 

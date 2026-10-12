@@ -39,6 +39,9 @@ read-only bindings list. Every module is DOM-free; `js/main.js` wires them
 Schema (`js/settings/schema.js`)
 - `SCHEMA` — frozen `{ key, type: 'number' | 'boolean' | 'choice', min?,
   max?, values?, default }` per setting; `SETTING_KEYS`, `DEFAULTS`.
+  `confirmRestart` (boolean, default off) is "Always ask before
+  restarting", read by the pause controller's `askRestart`
+  ([app-shell.md](app-shell.md)); it has no legacy key.
 - `isValid(key, value)` — number finite and inside `min..max` inclusive,
   boolean a boolean, choice one of `values`; false for an unknown key.
 
@@ -77,7 +80,8 @@ Appliers (`js/settings/appliers.js`) — each returns its unsubscribe
   — every owner given, one unsubscribe for all.
 
 Page (`js/settings/page.js`)
-- `SETTINGS_SECTIONS` — Controls (`lookSensitivity`, `invertY`), Graphics
+- `SETTINGS_SECTIONS` — Controls (`lookSensitivity`, `invertY`,
+  `confirmRestart`), Graphics
   (`fullscreen`, `renderResolution`), Theme (`theme`), Audio (`muted`,
   `volume`); `SETTING_LABELS` (`muted` reads Sound), `CHOICE_LABELS`.
 - `settingControl(key)` → `{ key, kind: 'slider' | 'toggle' | 'segmented',
@@ -105,7 +109,7 @@ Bindings (`js/settings/bindings.js`)
   `controller`), `BINDINGS[mode][device]` — frozen `[input, action]` rows.
   In row text `[Key]` is a keyboard key and `{name}` a controller button by
   its standard-mapping name (`a`, `b`, `x`, `y`, `lb`, `rb`, `lt`, `rt`,
-  `start`, `back`).
+  `start`, `back`). Both modes list `[F2]` and `{start} + {y}` as Restart.
 - `bindingRows(mode, device)` — throws on an unknown mode or device.
 - `bindingsListHtml(rows, glyphs = GLYPHS.generic)` — `<dt>`/`<dd>` pairs,
   keys as `<kbd>`, buttons as `<kbd class="pad">` in the given glyphs, text

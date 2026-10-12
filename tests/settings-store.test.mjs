@@ -38,6 +38,7 @@ const EXPECTED_DEFAULTS = {
   theme: 'light',
   volume: 0.7,
   muted: false,
+  confirmRestart: false,
 };
 
 // ---------------------------------------------------------------- schema
@@ -50,7 +51,7 @@ test('the schema declares every setting with its type, range or values, and defa
     { type: 'number', min: 0.25, max: 3 },
   );
   assert.deepEqual({ type: SCHEMA.volume.type, min: SCHEMA.volume.min, max: SCHEMA.volume.max }, { type: 'number', min: 0, max: 1 });
-  for (const key of ['invertY', 'fullscreen', 'muted']) assert.equal(SCHEMA[key].type, 'boolean');
+  for (const key of ['invertY', 'fullscreen', 'muted', 'confirmRestart']) assert.equal(SCHEMA[key].type, 'boolean');
   assert.equal(SCHEMA.renderResolution.type, 'choice');
   assert.deepEqual([...SCHEMA.renderResolution.values], ['auto', 'sharp', 'fast']);
   assert.equal(SCHEMA.theme.type, 'choice');
@@ -79,6 +80,22 @@ test('isValid checks type and range or values', () => {
   assert.ok(!isValid('renderResolution', 'Sharp'));
   assert.ok(!isValid('theme', 'system'));
   assert.ok(!isValid('nope', 1));
+});
+
+test('"Always ask before restarting" is a boolean, off by default, validated and saved like any setting, with no legacy key', async () => {
+  assert.equal(SCHEMA.confirmRestart.type, 'boolean');
+  assert.equal(DEFAULTS.confirmRestart, false);
+  assert.ok(isValid('confirmRestart', true));
+  assert.ok(!isValid('confirmRestart', 'yes'));
+  assert.ok(!isValid('confirmRestart', 1));
+  assert.ok(!Object.hasOwn(LEGACY_KEYS, 'confirmRestart'), 'no legacy carry-over');
+  const { store, stored } = setup({ initial: { [SETTINGS_DOC]: raw(SETTINGS_VERSION, { confirmRestart: 'on' }) } });
+  await store.load();
+  assert.equal(store.get('confirmRestart'), false, 'an invalid stored value reads as the default');
+  assert.deepEqual(await store.set('confirmRestart', 1), { ok: false, reason: 'invalid' });
+  assert.deepEqual(await store.set('confirmRestart', true), { ok: true });
+  assert.equal(store.get('confirmRestart'), true);
+  assert.equal(stored().data.confirmRestart, true);
 });
 
 // ---------------------------------------------------------------- load

@@ -137,11 +137,14 @@ Model (`js/records/model.js`)
     boards, the most recently played first.
   - `bests(board)` → `{ time, bbbvPerSecond, efficiency }`, each null or
     the holding game's `{ id, value, endedAt }`.
-  - `counters(board)` → `{ games, wins, currentStreak, longestStreak }`;
-    `winRate(board)` → wins ÷ games, null for no games.
+  - `counters(board)` → `{ games, wins, currentStreak, longestStreak,
+    completed, currentCompletedStreak, longestCompletedStreak }`;
+    `winRate(board)` → wins ÷ games, null for no games;
+    `completedWinRate(board)` → wins ÷ completed games, null for none.
   - `history(board)` → the board's compact entries in play order.
-  - `overall(mode = 'classic-2d')`, `overallWinRate(mode)` — the mode's
-    counters across its boards.
+  - `overall(mode = 'classic-2d')`, `overallWinRate(mode)`,
+    `overallCompletedWinRate(mode)` — the mode's counters across its
+    boards.
   - `documents()` → `{ records, history }`, the two documents to persist.
 - The comparison: per stat in `BEST_STATS`, `{ best, value, difference,
   newBest }` — the best that stood before this game (or null), the game's
@@ -161,11 +164,17 @@ Model (`js/records/model.js`)
   copy with every board and every mode's counters carried over unchanged
   and zeroed counters for a mode that has none; anything that is not
   records is returned as it is.
+- `hasCompletedCounters(records)` → whether every board's and mode's
+  counters carry the completed games' fields. `createRecordsModel` seeds
+  missing ones from the reference figures (`completed` from `games`, the
+  completed streaks from the streaks), so wins never exceed completed.
 
 Store (`js/records/store.js`)
 - `createRecordsStore({ storage, onNotSaved? })` → store. Registers three
-  documents: `RECORDS_DOC` `records` at `RECORDS_VERSION` 2, with
-  `upgradeRecords` as its step from version 1; `HISTORY_DOC`
+  documents: `RECORDS_DOC` `records` at `RECORDS_VERSION` 3, with
+  `upgradeRecords` as its step from version 1 and an unchanging step from
+  version 2 (the completed counters come from the history at load);
+  `HISTORY_DOC`
   `records.history` at `HISTORY_VERSION` 1; `IN_PROGRESS_DOC`
   `records.inProgress` at `IN_PROGRESS_VERSION` 1.
   `onNotSaved({ reason })` is called at most once per store, at the first
@@ -191,7 +200,8 @@ Store (`js/records/store.js`)
   marker's game; `finished` clears that game's marker and records nothing.
   A summary that is not a record (a fixed 3D board's null) is ignored.
 - The model's queries, delegated: `boardsPlayed(mode?)`, `bests`,
-  `counters`, `winRate`, `history`, `overall`, `overallWinRate`.
+  `counters`, `winRate`, `completedWinRate`, `history`, `overall`,
+  `overallWinRate`, `overallCompletedWinRate`.
 
 Records screen (`js/records/screen.js`; its head comment documents the
 content shape)
@@ -210,14 +220,16 @@ content shape)
   pinnedFirst?, canWatch?, replaysNotSaved? })` → the screen's content: the
   chosen `mode`, the switch's `modes` (`{ value, label, selected }`), the
   picker's `boards`, the chosen `board`, `empty`, the three `bests` with
-  their dates and `watch`, the board's `counters`, the chosen mode's
+  their dates and `watch`, the board's `counters` (games, wins, win rate,
+  completed win rate, current, longest and best completed streak), the chosen mode's
   `overallTitle` and `overall` figures, `notes`, the `chart` (`{ points, text }`), the `games` list page
   (`{ headers, rows, page, pages, label, hasPrev, hasNext }`, each row with
   its `watch`), the library view `replays` (`replayList`) and `canWatch`. A
   best's or a game's `watch` is its summary id when `canWatch` and the
   library keeps its replay, else null. Never throws.
-- `formatDate(iso)` → `"9 Oct 2026"`; `formatWinRate(rate)` → whole percent;
-  a missing value is the results screen's `DASH`.
+- `formatDate(iso)` → `"9 Oct 2026"`; `formatWinRate(rate)` → whole percent
+  (re-exported from `js/results/view.js`); a missing value is the results
+  screen's `DASH`.
 - `createRecordsScreen({ records, view, replays?, router? })` →
   `show({ mode, boardKey }?)`, `hide()`, `select(key)`, `setMode(mode)`,
   `showPage(n)`, `togglePin(id)`, `setPinnedFirst(on)`, `watch(id)`,
@@ -303,8 +315,10 @@ History chart (`js/records/history-chart.js`)
   tie keeps the earlier holder. Every game counts in its board's counters
   and its own mode's overall counters only — no figure combines Classic 2D
   and 3D, so a 3D loss never moves a Classic 2D streak; a win extends the
-  current streak, a loss or an abandoned game ends it. Win rate is derived,
-  never stored.
+  current streak, a loss or an abandoned game ends it. A won or lost game is
+  completed: it counts in `completed`, a win extends the completed streak
+  and a loss ends it, while an abandoned game leaves it as it was. Win rate
+  and completed win rate are derived, never stored.
 - **Comparison against the past.** A game is compared with the bests that
   stood before it. A repeated id recomputes the original comparison from the
   history entries before it, so recording is idempotent.
@@ -314,10 +328,13 @@ History chart (`js/records/history-chart.js`)
   records correct and reports once through `onNotSaved`.
 - **Start-up load.** The three documents are read once. A version 1 records
   document — Classic 2D overall counters only — is stepped up by
-  `upgradeRecords` through the platform's upgrade and saved back at version
-  2, which a version 1 build then refuses as newer and never overwrites. A
-  missing or corrupt records document beside an intact history is rebuilt
-  from the history and saved. A records or history document newer than this
+  `upgradeRecords` through the platform's upgrade and saved back at the
+  current version, which an older build then refuses as newer and never
+  overwrites. A missing or corrupt records document beside an intact
+  history, or one whose counters lack the completed fields
+  (`hasCompletedCounters` false: a version 1 or 2 document), is rebuilt
+  from the history and saved; with no history it keeps its counters, the
+  completed ones seeded from the reference ones. A records or history document newer than this
   build (the platform's `newer-version` issue), or a history the model
   cannot read, is refused: the session runs on empty records, `available()`
   is false and nothing is saved, so the stored documents stay untouched.

@@ -693,13 +693,15 @@ test('one vocabulary: Back returns one step, Main menu goes to the menu, and no 
   }
 });
 
-test('Restart discards an unfinished game; Play again starts the same choice once it ended', () => {
+test('Restart discards an unfinished game; Play again starts the same choice once it ended; the help names only the restart keys', () => {
   const ui = read('js/ui.js');
   assert.match(ui, /this\.el\.restart\.textContent = ended \? 'Play again' : 'Restart';/, 'the pause card swaps them on the moment');
   assert.match(read('js/shell/pause.js'), /message: 'Restart this game\? It will count as a loss\.', confirmLabel: 'Restart'/);
   assert.match(read('js/shell/pause.js'), /'Leave this game for the main menu\? It will count as a loss\.'/);
   assert.match(read('index.html'), /id="r-again"[^>]*>Play again</);
-  assert.doesNotMatch(read('js/settings/bindings.js'), /Restart|Play again|New game/, 'no help line names either for another moment');
+  const lines = read('js/settings/bindings.js').split('\n').filter((l) => /Restart|Play again|New game/.test(l));
+  assert.ok(lines.length > 0 && lines.every((l) => /^\s*\['(\[F2\]|\{start\} \+ \{y\})', 'Restart: a new board of the same choice'\],$/.test(l)),
+    'only the F2 and Start + Y rows name a restart; no help line names Play again or a new game');
 });
 
 test('in a browser, the "Esc: Back" hints meet the contrast contract in both themes', async (t) => {

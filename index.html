@@ -285,8 +285,10 @@
           <div id="rec-games" class="ui-stat" role="group" aria-labelledby="rec-games-label"><span class="ui-stat__label" id="rec-games-label">Games</span><span class="ui-stat__value">0</span></div>
           <div id="rec-wins" class="ui-stat" role="group" aria-labelledby="rec-wins-label"><span class="ui-stat__label" id="rec-wins-label">Wins</span><span class="ui-stat__value">0</span></div>
           <div id="rec-winRate" class="ui-stat" role="group" aria-labelledby="rec-winRate-label"><span class="ui-stat__label" id="rec-winRate-label">Win rate</span><span class="ui-stat__value">&mdash;</span></div>
+          <div id="rec-completedWinRate" class="ui-stat" role="group" aria-labelledby="rec-completedWinRate-label"><span class="ui-stat__label" id="rec-completedWinRate-label">Win rate, completed games</span><span class="ui-stat__value">&mdash;</span></div>
           <div id="rec-currentStreak" class="ui-stat" role="group" aria-labelledby="rec-currentStreak-label"><span class="ui-stat__label" id="rec-currentStreak-label">Current streak</span><span class="ui-stat__value">0</span></div>
           <div id="rec-longestStreak" class="ui-stat" role="group" aria-labelledby="rec-longestStreak-label"><span class="ui-stat__label" id="rec-longestStreak-label">Longest streak</span><span class="ui-stat__value">0</span></div>
+          <div id="rec-longestCompletedStreak" class="ui-stat" role="group" aria-labelledby="rec-longestCompletedStreak-label"><span class="ui-stat__label" id="rec-longestCompletedStreak-label">Best streak, completed games</span><span class="ui-stat__value">0</span></div>
         </div>
       </div>
       <div id="records-history" class="ui-panel" role="group" aria-labelledby="records-history-title">
@@ -317,8 +319,10 @@
           <div id="ro-games" class="ui-stat" role="group" aria-labelledby="ro-games-label"><span class="ui-stat__label" id="ro-games-label">Games</span><span class="ui-stat__value">0</span></div>
           <div id="ro-wins" class="ui-stat" role="group" aria-labelledby="ro-wins-label"><span class="ui-stat__label" id="ro-wins-label">Wins</span><span class="ui-stat__value">0</span></div>
           <div id="ro-winRate" class="ui-stat" role="group" aria-labelledby="ro-winRate-label"><span class="ui-stat__label" id="ro-winRate-label">Win rate</span><span class="ui-stat__value">&mdash;</span></div>
+          <div id="ro-completedWinRate" class="ui-stat" role="group" aria-labelledby="ro-completedWinRate-label"><span class="ui-stat__label" id="ro-completedWinRate-label">Win rate, completed games</span><span class="ui-stat__value">&mdash;</span></div>
           <div id="ro-currentStreak" class="ui-stat" role="group" aria-labelledby="ro-currentStreak-label"><span class="ui-stat__label" id="ro-currentStreak-label">Current streak</span><span class="ui-stat__value">0</span></div>
           <div id="ro-longestStreak" class="ui-stat" role="group" aria-labelledby="ro-longestStreak-label"><span class="ui-stat__label" id="ro-longestStreak-label">Longest streak</span><span class="ui-stat__value">0</span></div>
+          <div id="ro-longestCompletedStreak" class="ui-stat" role="group" aria-labelledby="ro-longestCompletedStreak-label"><span class="ui-stat__label" id="ro-longestCompletedStreak-label">Best streak, completed games</span><span class="ui-stat__value">0</span></div>
         </div>
       </div>
       <p id="records-note" class="ui-text ui-text--warning hidden" role="status"></p>
@@ -390,6 +394,7 @@
       </div>
       <p id="results-figures" class="ui-text ui-text--muted"></p>
       <p id="results-next" class="ui-text hidden"></p>
+      <p id="results-standing" class="ui-text ui-text--muted hidden"></p>
       <div id="results-bests" class="ui-panel" role="group" aria-labelledby="results-bests-title">
         <h3 class="ui-heading" id="results-bests-title">Your bests on this board</h3>
         <p id="results-bests-note" class="ui-text ui-text--muted hidden">Not eligible — only won games set bests</p>
@@ -406,6 +411,7 @@
         <button type="button" id="r-records" class="ui-button ui-button--secondary">Records</button>
         <button type="button" id="r-menu" class="ui-button ui-button--secondary">Main menu</button>
         <span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>
+        <span class="ui-text ui-text--muted" id="results-keys">R: Play again</span>
       </div>
     </section>
   </section>

@@ -67,6 +67,30 @@ test('the 3D keyboard bindings name Home and R, which return the camera to the s
   assert.equal(bindingRows('classic-2d', 'keyboard').some(([input]) => input.includes('[Home]')), false, 'not in Classic 2D');
 });
 
+test('both modes list F2 as Restart on the keyboard and Start + Y on the controller', () => {
+  for (const mode of BINDING_MODES) {
+    const key = bindingRows(mode.id, 'keyboard').find(([input]) => input === '[F2]');
+    assert.ok(key, `${mode.id} keyboard lists F2`);
+    assert.match(key[1], /^Restart/);
+    const pad = bindingRows(mode.id, 'controller').find(([input]) => input === '{start} + {y}');
+    assert.ok(pad, `${mode.id} controller lists Start + Y`);
+    assert.match(pad[1], /^Restart/);
+  }
+  assert.match(bindingsHtml('classic-2d', 'controller', GLYPHS.xbox), /<kbd class="pad">Menu<\/kbd> \+ <kbd class="pad">Y<\/kbd>/);
+  const html = bindingsSectionHtml(GLYPHS.xbox);
+  assert.equal(html.match(/<kbd>F2<\/kbd>/g).length, 2, 'the Settings bindings section shows F2 for both modes');
+});
+
+test('the "Always ask before restarting" toggle sits in the Controls section, off by default', () => {
+  assert.match(SETTING_LABELS.confirmRestart, /^Always ask before restarting/);
+  const c = settingControl('confirmRestart');
+  assert.equal(c.kind, 'toggle');
+  assert.equal(c.inverted, undefined, 'on while the setting is on');
+  const html = settingsPageHtml();
+  const controls = html.slice(html.indexOf('id="set-sec-controls"'), html.indexOf('id="set-sec-graphics"'));
+  assert.match(controls, /<label class="ui-toggle" data-setting="confirmRestart"><input type="checkbox" role="switch" id="set-confirmRestart" class="ui-toggle__input"><span class="ui-toggle__label">Always ask before restarting<\/span><\/label>/);
+});
+
 test('the 3D bindings say what a right-click and {lt} on a number do, and that a second one takes back only those flags', () => {
   const right = bindingRows('3d', 'keyboard').find(([input]) => input === 'Right click');
   assert.deepEqual([...right], ['Right click', 'Flag / unflag. On a number: flag all its closed neighbours; right-click it again to take back only those flags']);
@@ -98,7 +122,7 @@ test('the in-game help reads the same bindings source', () => {
 test('the page has the controls, graphics, theme and audio sections, holding every setting once', () => {
   assert.deepEqual(SETTINGS_SECTIONS.map((s) => s.title), ['Controls', 'Graphics', 'Theme', 'Audio']);
   assert.deepEqual(SETTINGS_SECTIONS.map((s) => s.settings), [
-    ['lookSensitivity', 'invertY'], ['fullscreen', 'renderResolution'], ['theme'], ['muted', 'volume'],
+    ['lookSensitivity', 'invertY', 'confirmRestart'], ['fullscreen', 'renderResolution'], ['theme'], ['muted', 'volume'],
   ]);
   assert.deepEqual(SETTINGS_SECTIONS.flatMap((s) => s.settings).sort(), [...SETTING_KEYS].sort(), 'every schema entry has its control');
   for (const key of SETTING_KEYS) assert.ok(SETTING_LABELS[key], `${key} has a label`);

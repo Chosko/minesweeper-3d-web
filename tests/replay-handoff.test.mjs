@@ -47,8 +47,10 @@ function fakeRecords(log, { comparison = comparisonOf(), fail = false } = {}) {
   return {
     record(s) { log.push(['record', s.id]); if (fail) throw new RangeError('broken'); return comparison; },
     available() { return true; },
-    counters() { return { games: 1, wins: 1, currentStreak: 1, longestStreak: 1 }; },
+    counters() { return { games: 1, wins: 1, currentStreak: 1, longestStreak: 1, completed: 1, currentCompletedStreak: 1, longestCompletedStreak: 1 }; },
     history() { return []; },
+    winRate() { return 1; },
+    completedWinRate() { return 1; },
   };
 }
 function fakeLibrary(log, { failAdd = false, rejectAdd = false } = {}) {
@@ -157,6 +159,7 @@ test('a dropped replay adds nothing and leaves the summary and the records as th
   assert.deepEqual(router.routes, [['results', {
     summary: s, mode: 'classic-2d', comparison: comparisonOf(), saved: true, notSaved: false, watch: false,
     rank: s.outcome === 'won' ? { position: 1, of: 1 } : null, streak: { before: 1, current: 1, longest: 1 },
+    standing: { winRate: 1, completedWinRate: 1, longestStreak: 1, longestCompletedStreak: 1 },
   }]]);
   assert.equal(data.summary, s);
 });

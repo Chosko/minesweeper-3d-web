@@ -61,7 +61,7 @@ pressed, flagged, unlinked, selected, nearSelected. No question marks.
 - **Left Ctrl held**: hidden cells (revealed zeros + unlinked) drawn opaque with their number texture.
   - Web port: drawn as ghosts at alpha 0.25 instead, sorted back-to-front with the other transparent cubes, so the cubes behind them stay visible.
 - Selected cell tinted (1, 0.8, 0.8) (pinkish).
-- Esc / F5 in the original = exit / restart. Web port: pause menu instead (resume, back to start in 3D, restart, main menu).
+- Esc / F5 in the original = exit / restart. Web port: Esc opens a pause menu (resume, back to start in 3D, restart, main menu), and F2 restarts at once (R on the results screen, Start + Y on a controller).
 
 ## Drawing rules (per cell)
 | State | Visual | Alpha |

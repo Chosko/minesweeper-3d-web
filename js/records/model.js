@@ -8,7 +8,8 @@
 //   records — { boards: { [boardKey]: { board, bests, counters } }, overall: { [mode]: counters } }
 //             where overall holds every mode in MODES, bests is
 //             { time, bbbvPerSecond, efficiency }, each null or the holding game's
-//             { id, value, endedAt }, and counters is { games, wins, currentStreak, longestStreak }.
+//             { id, value, endedAt }, and counters is { games, wins, currentStreak, longestStreak,
+//             completed, currentCompletedStreak, longestCompletedStreak }.
 // The history is the source of truth: the records are a cache derived from it entry by entry,
 // so rebuildRecords(history) always equals the records maintained game by game.
 //
@@ -16,14 +17,21 @@
 // and is replaced only by a strictly better value — lower time, higher 3BV/s or efficiency — so
 // a tie keeps the earlier holder. Every game counts in its board's counters and its mode's
 // overall counters only — no figure combines Classic 2D and 3D; a win extends the current streak,
-// a loss or an abandoned game ends it. Win rate is derived from games and wins, never stored. The
-// comparison of a game is made against the bests that stood before it, and recording a summary id
-// already in the history changes nothing and returns that game's original comparison, recomputed
-// from the history before it.
+// a loss or an abandoned game ends it. A completed game is one played to a win or a loss: it counts
+// in `completed`, and a win extends the completed streak, a loss ends it, while an abandoned game
+// (restart, back to menu, a replacing start, a closed page) leaves it as it was. Win rate (wins ÷
+// games) and completed win rate (wins ÷ completed games) are derived, never stored, each null with
+// nothing to divide by. The comparison of a game is made against the bests that stood before it,
+// and recording a summary id already in the history changes nothing and returns that game's
+// original comparison, recomputed from the history before it.
 //
 // upgradeRecords(records) is the records format step from the m1 records, whose overall counters
 // held Classic 2D only: every board and every mode's counters carry over unchanged, and a mode
-// without counters starts at zero.
+// without counters starts at zero. hasCompletedCounters(records) tells whether every board's and
+// mode's counters carry the completed games' figures, which records saved before them lack: the
+// records store rebuilds such records from the history. Records handed to createRecordsModel
+// without them, with no history to derive them from, take them from the reference figures:
+// completed games as games, the completed streaks as the streaks, so wins never exceed completed.
 
 import { BEST_STATS, OUTCOMES, isBestEligible, bbbvPerSecond, efficiency } from './summary.js';
 import { STANDARD_BOARDS, PRESETS_3D, MODE_3D, boardKey, parseBoardKey, standardBoard, preset3D } from './board.js';
@@ -37,7 +45,10 @@ const BETTER = { time: (a, b) => a < b, bbbvPerSecond: (a, b) => a > b, efficien
 
 const clone = (v) => structuredClone(v);
 const emptyBests = () => Object.fromEntries(BEST_STATS.map((stat) => [stat, null]));
-const emptyCounters = () => ({ games: 0, wins: 0, currentStreak: 0, longestStreak: 0 });
+const emptyCounters = () => ({
+  games: 0, wins: 0, currentStreak: 0, longestStreak: 0, completed: 0, currentCompletedStreak: 0, longestCompletedStreak: 0,
+});
+const COMPLETED_FIELDS = Object.freeze(['completed', 'currentCompletedStreak', 'longestCompletedStreak']);
 const tally = (name, v, max = Infinity) => {
   if (!Number.isInteger(v) || v < 0 || v > max) {
     throw new RangeError(`summary ${name} must be an integer from 0 to ${max}, got ${v}`);
@@ -57,6 +68,7 @@ function checkClicks(clicks) {
 }
 
 const rate = (c) => (c.games === 0 ? null : c.wins / c.games);
+const completedRate = (c) => (c.completed === 0 ? null : c.wins / c.completed);
 
 export function emptyRecords() {
   return { boards: {}, overall: Object.fromEntries(MODES.map((mode) => [mode, emptyCounters()])) };
@@ -68,6 +80,33 @@ export function upgradeRecords(records) {
   if (!records || typeof records !== 'object' || !records.overall || typeof records.overall !== 'object') return records;
   const out = clone(records);
   for (const mode of MODES) out.overall[mode] ??= emptyCounters();
+  return out;
+}
+
+const completeCounters = (c) => c !== null && typeof c === 'object' && COMPLETED_FIELDS.every((k) => Number.isInteger(c[k]));
+
+// Whether every board's and every mode's counters in `records` carry the completed games' figures.
+export function hasCompletedCounters(records) {
+  return Object.values(records.boards).every((rec) => completeCounters(rec?.counters))
+    && Object.values(records.overall).every(completeCounters);
+}
+
+// Counters carrying every field: a missing completed figure is seeded from its reference figure.
+function filledCounters(c) {
+  const out = { ...emptyCounters(), ...c };
+  if (!completeCounters(c)) {
+    out.completed = out.games;
+    out.currentCompletedStreak = out.currentStreak;
+    out.longestCompletedStreak = out.longestStreak;
+  }
+  return out;
+}
+
+// A copy of `records` whose counters all carry every field (filledCounters).
+function filled(records) {
+  const out = clone(records);
+  for (const rec of Object.values(out.boards)) rec.counters = filledCounters(rec.counters);
+  for (const mode of Object.keys(out.overall)) out.overall[mode] = filledCounters(out.overall[mode]);
   return out;
 }
 
@@ -121,12 +160,16 @@ function compare(bests, entry) {
 
 function count(counters, outcome) {
   counters.games += 1;
+  if (outcome !== 'abandoned') counters.completed += 1;
   if (outcome === 'won') {
     counters.wins += 1;
     counters.currentStreak += 1;
     counters.longestStreak = Math.max(counters.longestStreak, counters.currentStreak);
+    counters.currentCompletedStreak += 1;
+    counters.longestCompletedStreak = Math.max(counters.longestCompletedStreak, counters.currentCompletedStreak);
   } else {
     counters.currentStreak = 0;
+    if (outcome === 'lost') counters.currentCompletedStreak = 0;
   }
 }
 
@@ -156,7 +199,7 @@ const keyOf = (board) => (typeof board === 'string' ? boardKey(parseBoardKey(boa
 // records, the records are rebuilt from it. Every query returns a copy.
 export function createRecordsModel({ records, history } = {}) {
   const hist = history ? history.map((e) => ({ ...clone(e), ...pauseFields(e) })) : [];
-  const recs = records ? clone(records) : rebuildRecords(hist);
+  const recs = records ? filled(records) : rebuildRecords(hist);
   const index = new Map(hist.map((e, i) => [e.id, i]));
 
   // The comparison the entry at `i` got: against the bests of its board before it.
@@ -211,6 +254,10 @@ export function createRecordsModel({ records, history } = {}) {
       return rate(this.counters(board));
     },
 
+    completedWinRate(board) {
+      return completedRate(this.counters(board));
+    },
+
     history(board) {
       const key = keyOf(board);
       return clone(hist.filter((e) => e.boardKey === key));
@@ -222,6 +269,10 @@ export function createRecordsModel({ records, history } = {}) {
 
     overallWinRate(mode = MODE_CLASSIC_2D) {
       return rate(this.overall(mode));
+    },
+
+    overallCompletedWinRate(mode = MODE_CLASSIC_2D) {
+      return completedRate(this.overall(mode));
     },
 
     // The two documents to persist.

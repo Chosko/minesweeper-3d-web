@@ -28,7 +28,8 @@ In scope (m2-3d-joins):
   actions as Classic 2D's (`results-screen`) — outcome, board label, the
   new-best banner, time, 3BV (and 3BV solved on a loss), 3BV/s, efficiency,
   the second row of clicks and, on a win, the board rank, the next-target
-  line, the three-best comparison (on a loss greyed and not eligible, with
+  line, the board's win rate and longest streak each with its completed
+  games' figure beside it, the three-best comparison (on a loss greyed and not eligible, with
   the pace), *Play again*, *Watch replay*, *Records* and *Main menu*.
 - The results screen covering the 3D scene completely; the end banner and
   flying around the finished board are removed.
@@ -79,7 +80,8 @@ described in [app-shell.md](../../context/app-shell.md) and
   choice above its board picker. The picker lists the chosen mode's boards
   from `3d-game-records`' mode-filtered listing; 3D boards use the 3D
   labels. The figures panel shows the chosen board's figures and the chosen
-  mode's overall figures. The history chart and recent games list are
+  mode's overall figures, the completed games' win rate and best streak
+  among them as in 2D. The history chart and recent games list are
   unchanged, read for the chosen board.
 
 ## Data and state

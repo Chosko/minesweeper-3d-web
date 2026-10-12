@@ -5,7 +5,9 @@ import { createServer } from 'node:http';
 import { join, dirname, normalize, extname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createModeHost } from '../js/shell/mode-host.js';
-import { createPauseController, PAUSE_SOURCES, AUTO_SOURCES, HAND_OFFS, CONFIRMATIONS } from '../js/shell/pause.js';
+import {
+  createPauseController, PAUSE_SOURCES, AUTO_SOURCES, HAND_OFFS, CONFIRMATIONS, RESTART_NOTICE, RESTART_SCREENS, restartInput,
+} from '../js/shell/pause.js';
 import { createTimer } from '../js/classic2d/session.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -43,7 +45,10 @@ function setup() {
   const modes = createModeHost();
   const fake = fakeMode();
   modes.register('a', fake.factory);
-  const shell = { cards: [], asked: [], menus: 0, guard: [], paused: false, onBoard: true, answer: true, generating: false, cancels: 0 };
+  const shell = {
+    cards: [], asked: [], menus: 0, guard: [], paused: false, onBoard: true, answer: true, generating: false, cancels: 0,
+    alwaysAsk: false, notices: 0,
+  };
   const handOffs = [];
   const pauser = createPauseController({
     modes,
@@ -53,6 +58,8 @@ function setup() {
     confirm: (req, proceed) => { shell.asked.push(req); if (shell.answer) proceed(); },
     goMenu: () => { shell.menus++; },
     guard: (on) => shell.guard.push(on),
+    askRestart: () => shell.alwaysAsk,
+    restarted: () => { shell.notices++; },
     cancelGeneration: () => {
       if (!shell.generating) return false;
       shell.generating = false;
@@ -220,32 +227,122 @@ test('resume goes through the mode with its source', () => {
 
 // ---------------------------------------------------------------- restart and back to menu
 
-test('restart of a started, unfinished game asks first, saying it counts as a loss', () => {
+test('restart of a started, unfinished game proceeds at once and reports it abandoned, a loss', () => {
+  for (const source of ['pointer', 'key', 'pad']) {
+    const { modes, fake, shell, pauser, handOffs } = setup();
+    modes.start('a', 7);
+    fake.play.click();
+    pauser.restart(source);
+    assert.deepEqual(shell.asked, [], 'no confirmation');
+    assert.deepEqual(shell.cards, [], 'no pause card');
+    assert.deepEqual(fake.calls.at(-1), ['restart', { source }]);
+    assert.deepEqual(handOffs.filter(([h]) => h === 'abandoned').map(([, s]) => s.outcome), ['abandoned']);
+    assert.equal(pauser.inProgress, false);
+    assert.equal(shell.menus, 0, 'restart stays in the mode');
+  }
+});
+
+test('the first restart that abandons a game in a session tells once that it counted as a loss; later ones say nothing', () => {
+  const { modes, fake, shell, pauser } = setup();
+  modes.start('a', 1);
+  pauser.restart('key');
+  assert.equal(shell.notices, 0, 'a restart before the first click abandons nothing');
+  shell.generating = true; // a board being generated: the game has not started
+  pauser.restart('key');
+  assert.equal(shell.notices, 0);
+  fake.play.click();
+  fake.play.end('lost');
+  pauser.restart('key');
+  assert.equal(shell.notices, 0, 'a restart after the end abandons nothing');
+  fake.play.click();
+  pauser.restart('key');
+  assert.equal(shell.notices, 1, 'the first restart of a started, unfinished game');
+  for (let i = 0; i < 3; i++) {
+    fake.play.click();
+    pauser.restart(i % 2 ? 'pad' : 'pointer');
+  }
+  assert.equal(shell.notices, 1, 'once per session');
+  assert.match(RESTART_NOTICE, /counted as a loss/);
+  assert.match(RESTART_NOTICE, /Always ask before restarting/);
+});
+
+test('under "Always ask", restart of a started, unfinished game asks first on the pause card, and says nothing after', () => {
   const { modes, fake, shell, pauser, handOffs, calls } = setup();
+  shell.alwaysAsk = true;
   modes.start('a', 7);
   fake.play.click();
+  shell.paused = true; // the pause card's Restart
   shell.answer = false;
-  pauser.restart('pad');
+  pauser.restart('pointer');
   assert.deepEqual(shell.asked, [CONFIRMATIONS.restart]);
+  assert.match(CONFIRMATIONS.restart.message, /count as a loss/);
   assert.ok(!calls().includes('restart'), 'declined: the game goes on');
   assert.equal(pauser.inProgress, true);
   shell.answer = true;
-  pauser.restart('pad');
-  assert.deepEqual(fake.calls.at(-1), ['restart', { source: 'pad' }]);
-  assert.deepEqual(handOffs.filter(([h]) => h === 'abandoned').map(([, s]) => s.outcome), ['abandoned']);
-  assert.equal(pauser.inProgress, false);
-  assert.equal(shell.menus, 0, 'restart stays in the mode');
+  pauser.restart('pointer');
+  assert.deepEqual(fake.calls.at(-1), ['restart', { source: 'pointer' }]);
+  assert.deepEqual(handOffs.filter(([h]) => h === 'abandoned').length, 1);
+  assert.equal(shell.notices, 0, 'no toast: the player was asked');
 });
 
-test('restart before the first click or after the end asks nothing', () => {
+test('under "Always ask", F2 or Start + Y in play opens the pause card with the question showing', () => {
+  for (const source of ['key', 'pad']) {
+    const { modes, fake, shell, pauser } = setup();
+    shell.alwaysAsk = true;
+    shell.answer = false;
+    modes.start('a', 7);
+    fake.play.click();
+    pauser.restart(source);
+    assert.deepEqual(fake.calls.at(-1), ['pause', { note: '', source }], 'the game pauses first');
+    assert.deepEqual(shell.cards, [{ note: '' }]);
+    assert.deepEqual(shell.asked, [CONFIRMATIONS.restart], 'then the card asks');
+    assert.equal(pauser.inProgress, true);
+  }
+});
+
+test('under "Always ask", a restart before the first click or after the end still asks nothing', () => {
   const { modes, fake, shell, pauser } = setup();
+  shell.alwaysAsk = true;
   modes.start('a', 1);
   pauser.restart();
   fake.play.click();
   fake.play.end('won');
   pauser.restart('key');
   assert.deepEqual(shell.asked, []);
+  assert.deepEqual(shell.cards, []);
   assert.deepEqual(fake.calls.filter(([c]) => c === 'restart'), [['restart', { source: 'pointer' }], ['restart', { source: 'key' }]]);
+});
+
+test('back to menu of a started, unfinished game asks whatever the "Always ask" setting', () => {
+  for (const alwaysAsk of [false, true]) {
+    const { modes, fake, shell, pauser } = setup();
+    shell.alwaysAsk = alwaysAsk;
+    modes.start('a', 1);
+    fake.play.click();
+    shell.answer = false;
+    pauser.toMenu();
+    assert.deepEqual(shell.asked, [CONFIRMATIONS.menu]);
+    assert.match(CONFIRMATIONS.menu.message, /count as a loss/);
+    assert.equal(modes.active, 'a');
+    assert.equal(shell.notices, 0);
+  }
+});
+
+test('the restart inputs: F2 and Start + Y in play and on the pause card, R on the results screen, nothing elsewhere or while blocked', () => {
+  assert.deepEqual([...RESTART_SCREENS], ['playing', 'classic-2d', 'paused']);
+  for (const screen of RESTART_SCREENS) {
+    assert.equal(restartInput('F2', { screen }), 'restart', `F2 on ${screen}`);
+    assert.equal(restartInput('pad', { screen }), 'restart', `Start + Y on ${screen}`);
+    assert.equal(restartInput('F2', { screen, blocked: true }), null, 'nothing during the 3D end delay, a confirmation or the controls modal');
+    assert.equal(restartInput('KeyR', { screen }), null, 'R keeps the 3D camera\'s back to start in play');
+  }
+  assert.equal(restartInput('KeyR', { screen: 'results' }), 'playAgain');
+  assert.equal(restartInput('KeyR', { screen: 'results', blocked: true }), null);
+  assert.equal(restartInput('F2', { screen: 'results' }), null);
+  assert.equal(restartInput('pad', { screen: 'results' }), null, 'no controller restart on the results screen');
+  for (const screen of ['menu', 'board-choice', 'classic-2d-choice', 'ready', 'records', 'settings', 'replay', 'coming-soon']) {
+    for (const input of ['F2', 'pad', 'KeyR']) assert.equal(restartInput(input, { screen }), null, `${input} on ${screen}`);
+  }
 });
 
 test('back to menu of a started, unfinished game asks first, then leaves the mode', () => {
@@ -534,7 +631,28 @@ test('in a browser, the 3D game pauses, resumes, restarts and goes back to menu 
     });
     assert.equal(await guarded(), true);
 
-    // restart asks first; Cancel keeps the game, Restart abandons it
+    // restart abandons the game at once, with no confirmation, and says once that it counted as a loss
+    const toast = () => ms(() => { const t = document.getElementById('toast'); return t.classList.contains('on') ? t.textContent : null; });
+    await ms(() => document.getElementById('p-restart').click());
+    assert.equal(await visible('pause-confirm'), false, 'restart asks nothing');
+    assert.ok(['ready', 'playing'].includes(await mode()), 'a new board with the same choice');
+    assert.equal(await ms(() => globalThis.__ms.state.started), false);
+    assert.equal((await hand()).at(-1), 'abandoned');
+    assert.equal(await guarded(), false, 'disarmed once the game is abandoned');
+    assert.match(await toast(), /counted as a loss[\s\S]*Always ask before restarting/, 'the first restart of the session says so');
+    await ms(() => document.getElementById('toast').classList.remove('on'));
+
+    // F2 in play restarts at once too, with no second toast
+    await startAndClick();
+    await page.keyboard.press('F2');
+    assert.equal((await hand()).at(-1), 'abandoned', 'F2 abandons the game');
+    assert.equal(await ms(() => globalThis.__ms.state.started), false, 'a new board of the same choice');
+    assert.equal(await toast(), null, 'once per session');
+
+    // under "Always ask" the pause card's Restart asks first; Cancel keeps the game, Restart abandons it
+    await ms(() => globalThis.__ms.settings.set('confirmRestart', true));
+    await startAndClick();
+    await ms(() => globalThis.__ms.pause());
     await ms(() => document.getElementById('p-restart').click());
     assert.equal(await visible('pause-confirm'), true, 'restart asks for confirmation');
     assert.match(await ms(() => document.getElementById('pause-confirm').textContent), /count as a loss/);
@@ -546,9 +664,29 @@ test('in a browser, the 3D game pauses, resumes, restarts and goes back to menu 
     await ms(() => document.getElementById('p-restart').click());
     await ms(() => document.getElementById('p-confirm-yes').click());
     assert.ok(['ready', 'playing'].includes(await mode()), 'a new board with the same choice');
-    assert.equal(await ms(() => globalThis.__ms.state.started), false);
     assert.equal((await hand()).at(-1), 'abandoned');
-    assert.equal(await guarded(), false, 'disarmed once the game is abandoned');
+    // and F2 in play opens the pause card with the question showing
+    await startAndClick();
+    await page.keyboard.press('F2');
+    assert.equal(await mode(), 'paused', 'F2 pauses');
+    assert.equal(await visible('pause-confirm'), true, 'with the confirmation showing');
+    await page.keyboard.press('F2');
+    assert.equal(await ms(() => globalThis.__ms.state.started), true, 'F2 does nothing while the confirmation shows');
+    await page.keyboard.press('Escape');
+    assert.equal(await visible('pause-confirm'), false);
+    await ms(() => globalThis.__ms.pauser.resume('pad'));
+    await ms(() => globalThis.__ms.settings.set('confirmRestart', false));
+
+    // R and Home in 3D play still return the camera to the start view, and restart nothing
+    const spawn = await ms(() => { const p = globalThis.__ms.spawnPose(5, 1, 1); return [p.x, p.y, p.z]; });
+    const camAt = () => ms(() => { const c = globalThis.__ms.camera; return [c.x, c.y, c.z]; });
+    for (const key of ['KeyR', 'Home']) {
+      await ms(() => globalThis.__ms.moveTo(40, 40, 40));
+      await page.keyboard.press(key);
+      assert.deepEqual((await camAt()).map((v) => +v.toFixed(3)), spawn.map((v) => +v.toFixed(3)), `${key} returns the camera`);
+      assert.equal(await mode(), 'playing');
+      assert.equal(await ms(() => globalThis.__ms.state.started), true, `${key} restarts nothing`);
+    }
 
     // Esc closes an open confirmation instead of resuming
     await startAndClick();
@@ -715,6 +853,96 @@ test('in a browser, the Classic 2D generating card cancels by Cancel and Esc, an
     assert.equal(await mode(), 'menu');
     assert.equal(await shown('c2d-status'), false);
     assert.deepEqual(await ms(() => globalThis.__hand), []);
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+test('in a browser, F2 and the controller\'s Start + Y restart a Classic 2D game at once; Y alone and Start alone keep their meanings', async (t) => {
+  const playwright = await loadPlaywright();
+  if (!playwright) {
+    t.skip('Playwright is not installed');
+    return;
+  }
+  let browser;
+  try {
+    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  } catch (error) {
+    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
+    return;
+  }
+  const server = await serve();
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(() => {
+      const buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
+      const pad = { id: 'Xbox Wireless Controller (STANDARD GAMEPAD Vendor: 045e)', index: 0, connected: true, mapping: 'standard', axes: [0, 0, 0, 0], buttons, timestamp: 0 };
+      navigator.getGamepads = () => [pad];
+      globalThis.__pad = { press(i, on) { buttons[i].pressed = on; buttons[i].value = on ? 1 : 0; pad.timestamp++; } };
+    });
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined);
+    const ms = (fn, arg) => page.evaluate(fn, arg);
+    await ms(() => {
+      globalThis.__hand = [];
+      for (const h of ['finished', 'abandoned']) globalThis.__ms.pauser.attach(h, () => globalThis.__hand.push(h));
+    });
+    const mode = () => ms(() => globalThis.__ms.state.mode);
+    const started = () => ms(() => globalThis.__ms.modes.state.started);
+    const hand = () => ms(() => globalThis.__hand);
+    const frames = (n) => ms((k) => new Promise((r) => { const f = () => (--k <= 0 ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); }), n);
+    const pad = async (button, on) => { await ms(([b, o]) => globalThis.__pad.press(b, o), [button, on]); await frames(2); };
+    const START = 9;
+    const Y = 3;
+    const begin = async () => {
+      const box = await page.locator('#c2d-board canvas').boundingBox();
+      await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+      await page.waitForFunction(() => globalThis.__ms.modes.state.started);
+    };
+
+    await page.click('#menu-entry-classic-2d');
+    if (await page.isChecked('#c2d-noguess')) await page.click('#c2d-noguess');
+    await page.click('#c2d-choice [data-size="beginner"]');
+    assert.equal(await mode(), 'classic-2d');
+
+    // F2 in play: a new board of the same choice at once, the old game abandoned.
+    await begin();
+    await page.keyboard.press('F2');
+    assert.equal(await mode(), 'classic-2d', 'no pause card, no confirmation');
+    assert.equal(await started(), false, 'a fresh game');
+    assert.deepEqual(await hand(), ['abandoned']);
+    assert.equal(await ms(() => document.getElementById('hud-size').textContent), '9 × 9', 'the same board choice');
+
+    // Start + Y: Start pauses on its press; Y while it is held restarts.
+    await begin();
+    await pad(START, true);
+    assert.equal(await mode(), 'paused', 'Start alone pauses');
+    await pad(Y, true);
+    assert.equal(await started(), false, 'Y while Start is held restarts');
+    assert.equal(await mode(), 'classic-2d', 'back on a fresh board');
+    assert.deepEqual(await hand(), ['abandoned', 'abandoned']);
+    await pad(Y, false);
+    await pad(START, false);
+    assert.equal(await mode(), 'classic-2d', 'letting go acts on nothing');
+
+    // F2 on the pause card restarts too; nothing on a screen with no game.
+    await begin();
+    await page.keyboard.press('Escape');
+    assert.equal(await mode(), 'paused');
+    await page.keyboard.press('F2');
+    assert.equal(await started(), false);
+    assert.deepEqual(await hand(), ['abandoned', 'abandoned', 'abandoned']);
+    await page.keyboard.press('Escape');
+    assert.equal(await mode(), 'paused', 'Esc on the fresh board pauses');
+    await page.click('#p-menu');
+    assert.equal(await mode(), 'menu', 'a game not started leaves with no confirmation');
+    await page.keyboard.press('F2');
+    assert.equal(await mode(), 'menu', 'F2 does nothing on the main menu');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

@@ -20,9 +20,12 @@ In scope (m1-classic-2d):
   no-guess, then every custom board played, labelled by its size and mine
   count.
 - For the chosen board: the three bests with their dates, games played,
-  wins, win rate, current and longest streak.
+  wins, win rate, current and longest streak, with the completed games'
+  win rate beside the win rate and their best streak beside the longest
+  streak, labelled for what they leave out ("Win rate, completed games",
+  "Best streak, completed games").
 - The Classic 2D overall figures: games, wins, win rate, current and
-  longest streak.
+  longest streak, with the same two completed games' figures.
 - Stats history for the chosen board: 3BV/s and efficiency of won games
   over time as a chart, and a list of recent games with their outcome,
   time, 3BV/s and efficiency.

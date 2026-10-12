@@ -199,9 +199,15 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
 `js/shell/pause.js`
 - `PAUSE_SOURCES` (`key`, `pad`, `button`, `blur`, `hidden`), `AUTO_SOURCES`
   (`blur`, `hidden`), `HAND_OFFS` (`finished`, `abandoned`, `inProgress`),
-  `CONFIRMATIONS` (`restart`, `menu`: `{action, message, confirmLabel}`).
+  `CONFIRMATIONS` (`restart`, `menu`: `{action, message, confirmLabel}`),
+  `RESTART_NOTICE` (the once-per-session toast text), `RESTART_SCREENS`
+  (`playing`, `classic-2d`, `paused`).
+- `restartInput(input, {screen, blocked?})` → `'restart'` for `'F2'` or
+  `'pad'` (Start + Y) on a `RESTART_SCREENS` screen, `'playAgain'` for
+  `'KeyR'` on `results`, else null; null for any input while `blocked`.
 - `createPauseController({modes, showCard, isPaused?, onBoard?, confirm,
-  goMenu, guard?, cancelGeneration?})` → `inProgress`, `pause(source,
+  goMenu, guard?, cancelGeneration?, askRestart?, restarted?})` →
+  `inProgress`, `pause(source,
   {note})` → whether the card opened, `back(source)` — Back on the board:
   `cancelGeneration()` when a board is being generated, else `pause` —
   `resume(source)`, `restart(source)`, `toMenu()`,
@@ -215,7 +221,8 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
 - `createResultsFlow({records, replays?, router, restart(source, current),
   goMenu})` → `attach(pauser)` → detach (both hand-offs),
   `finished(summary, mode, replay?)` → the routed data `{summary, mode,
-  comparison, saved, notSaved, watch}` or null, `abandoned(summary, mode,
+  comparison, saved, notSaved, watch, rank, streak, standing}` or null,
+  `abandoned(summary, mode,
   replay?)`, `current` (the data last shown), `playAgain(source)`,
   `openRecords()`, `watch()`, `toMenu()`. `replays` is the replay library;
   without it no replay is kept. `watch` is whether *Watch replay* is
@@ -230,9 +237,12 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   (`"= best"`), a missing value is `DASH`. `formatClicks(clicks)` →
   `"Clicks 183 (L 183 · R 0 · D 0 · wasted 0)"`. `NOTES` (`notRecorded`,
   `notSaved`), `NOT_ELIGIBLE`, `FIRST_BEST`.
+- `formatWinRate(rate)` → a whole percentage (`"67%"`), `DASH` for null;
+  the Records screen re-exports it.
 - `resultsContent({summary, comparison?, saved?, notSaved?, watch?, rank?,
-  streak?})` → `{outcome, title, board, banner, stats: [{key, label, value,
-  shown, newBest}], figures: {clicks, rank}, next, eligible, bestsNote,
+  streak?, standing?})` → `{outcome, title, board, banner, stats: [{key,
+  label, value, shown, newBest}], figures: {clicks, rank}, next, standing,
+  eligible, bestsNote,
   bests: [{stat, label, best, difference, newBest, direction, detail}] |
   null, notes, watch, takeover}`; the head comment documents each field
   (the loss comparison and its pace, the delta direction, the next-target
@@ -505,10 +515,24 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   one (blur, hidden) does nothing — nor while the board is not in play.
   Nothing pauses twice. While `paused` shows, the canvas is hidden and play
   input is dropped. Esc on the card of a game in play: Back inputs above.
-- **Confirmation.** Restart and back to menu during a started, unfinished game
-  call `confirm`, which shows `ui.showConfirm` on the pause card (the
+- **Confirmation.** Back to menu during a started, unfinished game calls
+  `confirm`, which shows `ui.showConfirm` on the pause card (the
   `#pause-confirm` panel in place of `#pause-actions`) and refocuses; Back or
-  Cancel closes it. Outside such a game they proceed at once.
+  Cancel closes it. Restart of such a game proceeds at once, the first one
+  of the page's life calling `restarted` → `ui.toast(RESTART_NOTICE)`;
+  under the `confirmRestart` setting (`askRestart`) it calls `confirm` too,
+  pausing first when the card is not showing. Outside such a game both
+  proceed at once.
+- **Restart keys.** `restartKey(code, e)` in `Input`'s `onKey`, after the
+  3D `Home` / `R` camera return: `F2` (its default always prevented) →
+  `PAUSE.restart('key')` in play and on the pause card, `R` →
+  `RESULTS.playAgain('key')` on `results`, through `restartInput`, never
+  with Ctrl, Alt or Meta. `handlePad` reads Start + Y first: `Y` pressed
+  while `Start` is held (read unsuppressed, as Start's own press already
+  paused or resumed) → `PAUSE.restart('pad')`, then `layerChanged()` so
+  the held buttons do not act on the new board. `restartBlocked()` — the
+  3D end delay, an open confirmation or the controls modal — stops all
+  three.
 - **Hand-offs.** `PAUSE.attach(name, listener)`: `finished` for every
   finished game, `abandoned` for every abandoned game, both with the game's
   sealed replay beside its summary, `inProgress` at game started, at every
@@ -521,9 +545,12 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   board's `counters` (the streak before), records the
   summary with `RECORDS.record`, so the comparison is against the bests that
   stood before this game, reads the board's `counters` and `history` (the
-  streak after and a win's rank by time), then routes to `results` with
-  `{summary, mode, comparison, saved, notSaved, watch, rank, streak}`, for a
-  finished 3D game as for Classic 2D.
+  streak after and a win's rank by time) and its `winRate` and
+  `completedWinRate`, then routes to `results` with `{summary, mode,
+  comparison, saved, notSaved, watch, rank, streak, standing}` — `standing`
+  the board's `{winRate, completedWinRate, longestStreak,
+  longestCompletedStreak}` counting this game, null when recording failed or
+  a query threw — for a finished 3D game as for Classic 2D.
   A summary that is not a record — a fixed 3D board's null — is ignored, and
   `js/main.js` ends that game on the pause card instead. A recording that
   throws still routes, with no comparison and `saved` false; `notSaved` is
@@ -531,7 +558,7 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   unavailable. The screen shows over the finished Classic 2D board; over a
   3D game it takes over on an opaque surface and the 3D scene stops
   rendering under it (`shouldRender`), and a finished 3D game is never
-  returned to. Its actions: Play again → `RESULTS.playAgain` →
+  returned to. Its actions: Play again (and `R`) → `RESULTS.playAgain` →
   `PAUSE.restart`, or, once the mode was left, `MODES.start('classic-2d',
   LAST_CHOICE_2D.current)` or `MODES.start('3d', board3dChoice)` entered
   through `enterPlay3D`; Records → `openRecords` routes to the Records

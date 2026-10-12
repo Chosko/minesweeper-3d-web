@@ -29,6 +29,11 @@ In scope (m1-classic-2d):
   Classic 2D as a whole. A game abandoned after its first click — restarted,
   left for the menu, or ended by closing the window, the tab or the app —
   counts as a loss and breaks the streak.
+- Beside them, the completed games' figures per board and across Classic 2D
+  as a whole: the completed games count, the completed win rate and the
+  current and best completed streak. A completed game is one played to a
+  win or a loss; an abandoned game is not completed, and neither extends
+  nor breaks the completed streak.
 - The game-in-progress marker through which a game ended by closing the
   window, the tab or the app is recorded at the next launch.
 - Queries for the records screen: the boards played, each board's bests,
@@ -63,9 +68,11 @@ DOM-free ES module tested in Node; storage is reached only through
   bests. A won game replaces a best only when strictly better; a tie keeps
   the earlier holder.
 - **Counters.** Per board and for Classic 2D as a whole: games, wins,
-  current streak and longest streak. A win extends the current streak; a
-  loss or an abandoned game ends it. Win rate is derived from games and
-  wins, never stored.
+  current streak, longest streak, completed games, current completed streak
+  and longest completed streak. A win extends both current streaks; a loss
+  ends both; an abandoned game ends the current streak and leaves the
+  completed streak as it was. Win rate (wins over games) and completed win
+  rate (wins over completed games) are derived, never stored.
 - **History.** Every recorded summary, in the order played, kept in
   compact form: enough to redraw 3BV/s and efficiency over time and to
   list recent games.
@@ -99,8 +106,10 @@ DOM-free ES module tested in Node; storage is reached only through
 - All three documents are registered with `platform-storage` under their
   own names and format versions.
 - **Source of truth** — the history document. Bests and counters are a
-  cache derived from it: when the records document is missing or corrupt
-  and the history is intact, they are rebuilt from the history.
+  cache derived from it: when the records document is missing or corrupt,
+  or its counters lack the completed games' figures (a records document
+  saved before them, stepped up to the current records version), and the
+  history is intact, they are rebuilt from the history and saved back.
 - **In memory** — both documents, for the whole session.
 
 ## Interfaces and contracts
@@ -109,8 +118,9 @@ DOM-free ES module tested in Node; storage is reached only through
   won, lost and abandoned games alike. Recording the same summary id twice
   is a no-op that returns the original comparison.
 - **Queries** — boards played (standard boards first, then custom boards by
-  last played), a board's bests, counters, win rate and history; the
-  Classic 2D overall counters.
+  last played), a board's bests, counters, win rate, completed win rate and
+  history; the Classic 2D overall counters, win rate and completed win
+  rate.
 - **In progress** — `begin(summary)` and `checkpoint(summary)`, called
   through the game shell's in-progress hook, save the marker; recording the
   summary with the same id clears it. Settling a leftover marker at

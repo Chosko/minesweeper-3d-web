@@ -720,7 +720,6 @@ test('in a browser, a failed no-guess 3D board offers Retry and a standard board
     // a restart plays the standard board again
     await ms(() => globalThis.__ms.pause());
     await ms(() => document.getElementById('p-restart').click());
-    await ms(() => document.getElementById('p-confirm-yes').click());
     assert.equal(await ms(() => globalThis.__ms.state.play.board.noGuess), false, 'a restart keeps no-guess off');
     assert.equal(await shown('m3d-status'), false);
     assert.deepEqual(errors, []);

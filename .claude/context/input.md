@@ -141,7 +141,8 @@ resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md).
 - **DOM gating.** Mouse move / buttons are processed only when `locked && isActive()`; the wheel and
   `preventDefault` on game keys only when `isActive()`. `GAME_KEYS` (WASDQE, Space, Shift, Ctrl) are
   tracked in `keys` always; Ctrl+other keys are swallowed while active, and so are `RETURN_KEYS`
-  (`Home`, `KeyR`: back to the start view in main's `onKey`). `onKey` skips auto-repeat,
+  (`Home`, `KeyR`: back to the start view in main's `onKey`, ahead of its `F2` restart and the
+  results screen's `R`, [app-shell.md](app-shell.md)). `onKey` skips auto-repeat,
   except for the arrow keys (`ARROW_KEYS`), whose repeats are the shell's held focus moves.
   Mouse deltas > 400 px are discarded (post-lock spikes).
 - **Wheel notches.** Normalized by `deltaMode` (pixels / 100, lines / 3, pages / 1), sign flipped

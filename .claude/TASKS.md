@@ -785,7 +785,7 @@ Preconditions: none
 
 ## 130. One-key restart and completed-games stats
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/shell/pause.js, js/main.js, js/classic2d/mode.js, js/classic2d/cursor-input.js, js/ui.js, js/settings/schema.js, js/settings/page.js, js/settings/store.js, js/settings/bindings.js, js/records/model.js, js/records/store.js, js/records/screen.js, js/results/flow.js, js/results/view.js, index.html, tests/shell-pause.test.mjs, tests/settings-store.test.mjs, tests/settings-page.test.mjs, tests/records-model.test.mjs, tests/records-model-3d.test.mjs, tests/records-store.test.mjs, tests/records-screen.test.mjs, tests/records-screen-3d.test.mjs, tests/results.test.mjs, tests/classic2d-mode.test.mjs, README.md, docs/ORIGINAL_SPEC.md, .claude/domain/product-design.md, .claude/domain/features/game-shell.md, .claude/domain/features/personal-records.md, .claude/domain/features/3d-game-records.md, .claude/domain/features/records-screen.md, .claude/domain/features/3d-results-records-screens.md, .claude/domain/features/results-screen.md, .claude/domain/features/settings.md
 Preconditions: none

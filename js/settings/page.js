@@ -30,7 +30,7 @@ import { BINDING_MODES, BINDING_DEVICES, bindingRows, bindingsListHtml } from '.
 import { formatSliderValue, decimalsOf, segmentedState, bindSegmented } from '../ui/components.js';
 
 export const SETTINGS_SECTIONS = Object.freeze([
-  Object.freeze({ id: 'controls', title: 'Controls', settings: Object.freeze(['lookSensitivity', 'invertY']) }),
+  Object.freeze({ id: 'controls', title: 'Controls', settings: Object.freeze(['lookSensitivity', 'invertY', 'confirmRestart']) }),
   Object.freeze({ id: 'graphics', title: 'Graphics', settings: Object.freeze(['fullscreen', 'renderResolution']) }),
   Object.freeze({ id: 'theme', title: 'Theme', settings: Object.freeze(['theme']) }),
   Object.freeze({ id: 'audio', title: 'Audio', settings: Object.freeze(['muted', 'volume']) }),
@@ -44,6 +44,7 @@ export const SETTING_LABELS = Object.freeze({
   theme: 'Theme',
   volume: 'Volume',
   muted: 'Sound',
+  confirmRestart: 'Always ask before restarting',
 });
 
 /** Toggles shown on while their stored boolean is false. */

@@ -12,7 +12,10 @@
 // last — and its mode; a mode with nothing played opens on its first board, and with no mode asked
 // and nothing played the screen opens on Classic 2D's Beginner. Times show in the results screen's
 // format (formatTime, js/results/view.js), 3BV/s and efficiency in its formats too; a date is
-// "9 Oct 2026"; a win rate a whole percentage; anything missing DASH.
+// "9 Oct 2026"; a win rate a whole percentage; anything missing DASH. The counters of the board and
+// of the mode overall show the completed games' win rate and best streak beside the reference win
+// rate and longest streak, labelled for what they leave out (games abandoned by a restart, Back to
+// menu or a closed page).
 //
 // recordsContent(records, { mode, boardKey, notSaved, page, replays, pinnedFirst, canWatch,
 //   replaysNotSaved }) → { mode, modes: [{ value, label, selected }], boards: [{ key, label, selected }],
@@ -56,7 +59,7 @@
 // that ends while focused hands focus to the other.
 
 import { MODE_3D, PRESETS_3D, STANDARD_BOARDS, boardKey, boardLabel, createBoardIdentity, parseBoardKey } from './board.js';
-import { DASH, NOTES, formatTime, formatRate, formatEfficiency } from '../results/view.js';
+import { DASH, NOTES, formatTime, formatRate, formatEfficiency, formatWinRate } from '../results/view.js';
 import { bindSegmented } from '../ui/components.js';
 import { bbbvPerSecond, efficiency } from './summary.js';
 import { chartPoints, chartText, pageOf, createHistoryChart } from './history-chart.js';
@@ -80,10 +83,7 @@ export function formatDate(iso) {
   if (Number.isNaN(d.getTime())) return DASH;
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
-/** A win rate (0..1) as a whole percentage. */
-export function formatWinRate(rate) {
-  return rate === null || rate === undefined || !Number.isFinite(rate) ? DASH : `${Math.round(rate * 100)}%`;
-}
+export { formatWinRate };
 
 const NAMED = Object.freeze({
   [MODE_2D]: STANDARD_BOARDS.flatMap(({ width, height, mines }) => [false, true].map((noGuess) =>
@@ -100,11 +100,16 @@ const BESTS = Object.freeze([
 const COUNTERS = Object.freeze([
   { key: 'games', label: 'Games' },
   { key: 'wins', label: 'Wins' },
-  { key: 'winRate', label: 'Win rate' },
+  { key: 'winRate', label: 'Win rate', rate: true },
+  { key: 'completedWinRate', label: 'Win rate, completed games', rate: true },
   { key: 'currentStreak', label: 'Current streak' },
   { key: 'longestStreak', label: 'Longest streak' },
+  { key: 'longestCompletedStreak', label: 'Best streak, completed games' },
 ]);
-const EMPTY_COUNTERS = Object.freeze({ games: 0, wins: 0, currentStreak: 0, longestStreak: 0 });
+const EMPTY_COUNTERS = Object.freeze({
+  games: 0, wins: 0, currentStreak: 0, longestStreak: 0, completed: 0, currentCompletedStreak: 0, longestCompletedStreak: 0,
+});
+const NO_RATES = Object.freeze({ winRate: null, completedWinRate: null });
 const OUTCOME_LABELS = Object.freeze({ won: 'Won', lost: 'Lost', abandoned: 'Abandoned' });
 const outcomeLabel = (outcome) => OUTCOME_LABELS[outcome] ?? outcome;
 const GAME_HEADERS = Object.freeze(['Outcome', 'Time', '3BV/s', 'Efficiency']);
@@ -135,8 +140,9 @@ export function lastBoardPlayed(records, mode = null) {
   return last;
 }
 
-const counterFigures = (counters, rate) => COUNTERS.map(({ key, label }) => ({
-  key, label, value: key === 'winRate' ? formatWinRate(rate) : String(counters[key] ?? 0),
+// rates: { winRate, completedWinRate }, each 0..1 or null.
+const counterFigures = (counters, rates) => COUNTERS.map(({ key, label, rate }) => ({
+  key, label, value: rate ? formatWinRate(rates[key]) : String(counters[key] ?? 0),
 }));
 
 const gameRow = (e, kept) => ({
@@ -189,9 +195,11 @@ export function recordsContent(records, {
       const best = bests?.[stat] ?? null;
       return { stat, label, value: format(best ? best.value : null), date: best ? formatDate(best.endedAt) : DASH, watch: kept(best?.id) };
     }),
-    counters: counterFigures(counters, attempt(() => records.winRate(key), null)),
+    counters: counterFigures(counters, attempt(() => ({ winRate: records.winRate(key), completedWinRate: records.completedWinRate(key) }), NO_RATES)),
     overallTitle: RECORDS_MODES.find((m) => m.value === mode).overallTitle,
-    overall: counterFigures(overall, attempt(() => records.overallWinRate(mode), null)),
+    overall: counterFigures(overall, attempt(() => ({
+      winRate: records.overallWinRate(mode), completedWinRate: records.overallCompletedWinRate(mode),
+    }), NO_RATES)),
     notes: [...(notSaved ? [NOTES.notSaved] : []), ...(replaysNotSaved ? [REPLAYS_NOT_SAVED] : [])],
     chart: { points, text: chartText(points) },
     games: gamesList(history, page, kept),

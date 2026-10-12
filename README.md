@@ -47,10 +47,12 @@ Pick a board, switch **No-guess board** on or off, and play:
 | `F` | Flag / unflag under the cursor |
 | `D` | Chord under the cursor |
 | `Esc` | Pause |
+| `F2` | Restart: a new board of the same choice |
 
 A press shows the cell (or, for a chord, its closed neighbours) pressed until you release. On a
 controller, the D-pad or left stick moves the cursor, `A` or `RT` reveals, `X` or `LT` flags, `Y`
-or `LT` + `RT` chords, and `Start`, `B` or `Back` pauses.
+or `LT` + `RT` chords, `Start`, `B` or `Back` pauses, and `Y` pressed while `Start` is held
+restarts.
 
 ## Records
 
@@ -63,8 +65,10 @@ screen shown after a game, opens the Records screen:
   them. The screen opens on the board you played last, in its mode, or on the board of the game
   you just finished.
 - For that board: the best time, best 3BV/s and best efficiency with their dates, games played,
-  wins, win rate, and the current and longest winning streak. The chosen mode's totals across every
-  board are shown too; 2D and 3D are never added together.
+  wins, win rate, and the current and longest winning streak. A restarted or abandoned game counts
+  as a loss there; beside them, the win rate and the best streak over completed games (won or lost)
+  leave those games out. The chosen mode's totals across every board are shown too; 2D and 3D are
+  never added together.
 - A chart of 3BV/s and efficiency over your won games, and a list of your recent games, newest
   first, ten to a page, with each game's outcome, time, 3BV/s and efficiency.
 
@@ -113,9 +117,10 @@ The rules are classic Minesweeper with one more dimension:
 - When the game ends, the board freezes for about a second while the end effect plays (the loss
   wave showing where the mines were, or the win confetti). Then the screen shown after a game takes
   over the whole window, as in Classic 2D: time (to the thousandth of a second), 3BV, 3BV/s,
-  efficiency, your clicks, the game's rank on that board after a win, the time to beat next, and
-  your bests on that board (greyed after a loss, with the pace you were on), with **Play again**,
-  **Watch replay**, **Records** and **Main menu**.
+  efficiency, your clicks, the game's rank on that board after a win, the time to beat next, your
+  win rate and longest streak on that board each beside its figure over completed games, and your
+  bests on that board (greyed after a loss, with the pace you were on), with **Play again** (or
+  `R`), **Watch replay**, **Records** and **Main menu**.
 
 Pick a board and play:
 
@@ -154,6 +159,7 @@ Pick a board and play:
 | `M` | Sound on / off |
 | `F` | Fullscreen |
 | `Esc` | Pause menu (releases the mouse) |
+| `F2` | Restart: a new board of the same choice |
 
 Mouse actions fire when you **release** the button, as in the original. The timer starts on the
 first left-click release.
@@ -182,6 +188,7 @@ controller (✕ ○ □ △ / L1 R1 L2 R2 on PlayStation, for example).
 | D-pad up / down | Change the spacing between cubes (hold to repeat) |
 | `X` | Show / hide the controls panel |
 | `Start` (Menu) | Pause / resume |
+| `Start` + `Y` | Restart: `Y` pressed while `Start` is held |
 | `Back` (View) | Pause; in menus, back |
 
 In menus, the D-pad or left stick moves the focus, `A` selects and `B` or `Back` goes back. On a slider, D-pad
@@ -245,9 +252,12 @@ on purpose:
   placed; the original unflagged them all. The cubes it changes flash, even behind other cubes, and
   the flag sound grows with how many there were. Replays recorded before this change still play
   with the original rule.
-- **Pause menu instead of `F5` / `Esc`:** the original restarted with `F5` and quit with `Esc`. Here
-  `Esc` opens a menu with resume, back to start (3D), restart and main menu. The timer keeps running
-  while the game is paused, and each game records its pauses.
+- **`F2` and a pause menu instead of `F5` / `Esc`:** the original restarted with `F5` and quit with
+  `Esc`. Here `F2` restarts at once (`R` on the screen shown after a game), and `Esc` opens a menu
+  with resume, back to start (3D), restart and main menu. A restart of a started game counts as a
+  loss, which the first restart of each visit says once; the **Always ask before restarting**
+  setting asks before each one instead. Main menu always asks. The timer keeps running while the
+  game is paused, and each game records its pauses.
 - **Draw distance:** the far plane grows with the board instead of being clipped at 300 units.
 - **Minor timing changes the player cannot see:** auto-hiding and the win check run right after each
   action instead of once per frame.

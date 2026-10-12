@@ -26,8 +26,11 @@ In scope (m1-classic-2d):
   ("Clicks 183 (L 183 · R 0 · D 0 · wasted 0)": the counted clicks, then the
   reveal, flag and chord clicks and the wasted total) and, on a win, the
   game's rank by time among the board's won games ("#3 of 12 on this
-  board"); the next-target line; then the bests panel. The card shows no
-  IOE.
+  board"); the next-target line; the board's standing counting this game —
+  its win rate and longest streak, each with its completed games' figure
+  beside it ("Win rate 67% (completed games 80%) · Longest streak 4
+  (completed games 5)", `personal-records`); then the bests panel. The
+  card shows no IOE.
 - The comparison with each of the three bests — fastest time, best 3BV/s,
   best efficiency — showing the standing best and the difference. On a win
   each difference is coloured (better in the success colour, worse in the
@@ -44,9 +47,10 @@ In scope (m1-classic-2d):
   best 7" (the streak ended and the board's longest); after any other loss
   "Beat 48.213 s for a new best", or "Win this board to set a best" when
   the board has no best time.
-- Actions: *Play again* (default focus), *Watch replay* (when the game
-  handed over its replay — `replay-playback`), *Records* (opens the records
-  screen on this board), *Main menu*.
+- Actions: *Play again* (default focus, and `R` on the keyboard, which the
+  screen's hint names), *Watch replay* (when the game handed over its
+  replay — `replay-playback`), *Records* (opens the records screen on this
+  board), *Main menu*.
 - Telling the player once when records are not being saved this session.
 - Mouse, keyboard and controller operation, per the shell's navigation.
 
@@ -67,8 +71,9 @@ composed from the `screen-components` kit.
 
 - **Results flow.** On the shell's game-finished hand-off, reads the
   board's current streak from `personal-records`, records the summary, then
-  reads the board's counters and history, and fills and shows the screen
-  with the summary, the comparison, the streak and the rank. Recording
+  reads the board's counters, history, win rate and completed win rate, and
+  fills and shows the screen with the summary, the comparison, the streak,
+  the standing and the rank. Recording
   happens before the screen shows, so the comparison is against the bests
   that stood before this game. The rank is 1 + the board's earlier won
   games whose time is at or below this game's (a tie ranks the earlier game
@@ -102,14 +107,16 @@ composed from the `screen-components` kit.
 
 ## Data and state
 
-- No persisted state. The shown summary, comparison, streak and rank are
-  held while the screen is open.
+- No persisted state. The shown summary, comparison, streak, standing and
+  rank are held while the screen is open.
 
 ## Interfaces and contracts
 
 - **Show** — from the game shell with a won or lost summary; the shell
   routes here and back.
-- **Play again** — asks the shell to start the same board choice again.
+- **Play again** — asks the shell to start the same board choice again,
+  from the button or `R`; the game has ended, so nothing counts as a
+  loss.
 - **Watch replay** — shown only when the finished game handed over a sealed
   replay and the shell has the replay viewer's route; asks the shell to open
   `replay-playback`'s viewer with that replay, returning to this screen. It
@@ -118,8 +125,8 @@ composed from the `screen-components` kit.
   game's board.
 - **Main menu** — asks the shell to return to the main menu.
 - **Failure** — when recording fails, the screen still shows the game's own
-  stats, without a comparison or a next-target line and with the rank as a
-  dash, and says the result could not be saved.
+  stats, without a comparison, a next-target line or the standing line and
+  with the rank as a dash, and says the result could not be saved.
 
 ## Dependencies
 

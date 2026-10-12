@@ -46,6 +46,7 @@ export const BINDINGS = Object.freeze({
       ['Wheel / [Shift] + drag', 'Scroll a board larger than the window'],
       ['[H] / [M]', 'Help / sound on-off'],
       ['[Esc]', 'Pause menu'],
+      ['[F2]', 'Restart: a new board of the same choice'],
     ]),
     controller: rows([
       ['D-pad / left stick', 'Move the cursor'],
@@ -54,6 +55,7 @@ export const BINDINGS = Object.freeze({
       ['{y}', 'Chord'],
       ['{lt} + {rt}', 'Chord'],
       ['{start} / {b} / {back}', 'Pause'],
+      ['{start} + {y}', 'Restart: a new board of the same choice'],
     ]),
   }),
   '3d': Object.freeze({
@@ -71,6 +73,7 @@ export const BINDINGS = Object.freeze({
       ['Hold [Ctrl]', 'Show hidden cells (empty and completed ones)'],
       ['[H] / [M] / [F]', 'Help / sound on-off / fullscreen'],
       ['[Esc]', 'Pause menu'],
+      ['[F2]', 'Restart: a new board of the same choice'],
     ]),
     controller: rows([
       ['Left / right stick', 'Fly / look around'],
@@ -82,6 +85,7 @@ export const BINDINGS = Object.freeze({
       ['D-pad ↑ ↓', 'Change spacing'],
       ['{x}', 'Show / hide the controls help'],
       ['{start} / {back}', 'Pause'],
+      ['{start} + {y}', 'Restart: a new board of the same choice'],
       ['Menus', 'D-pad or left stick to move, {a} select, {b} / {back} back'],
     ]),
   }),
