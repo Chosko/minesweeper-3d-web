@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 150
+Last task number: 151
 
 ---
 
@@ -969,5 +969,14 @@ Status: [MISSING]
 Target: claude
 Files: js/replay/viewer.js, js/replay/clock.js, js/replay/viewer-2d.js, js/replay/viewer-3d.js, js/replay/simulator.js, js/engine/metrics.js, js/render.js, js/input.js, js/ui.js, js/results/flow.js, js/results/view.js, js/records/replay-list.js, js/records/screen.js, js/main.js, index.html, css/tokens.css, css/components.css, css/style.css, tests/replay-viewer.test.mjs, tests/replay-2d.test.mjs, tests/replay-viewer-3d.test.mjs, tests/replay-simulator.test.mjs, tests/engine-metrics.test.mjs, tests/results-watch.test.mjs, tests/results.test.mjs, tests/records-replays.test.mjs, tests/tokens.test.mjs, README.md, .claude/domain/features/replay-playback.md, .claude/domain/features/replay-library.md, .claude/domain/features/results-screen.md, .claude/domain/features/3d-results-records-screens.md
 Preconditions: none
+
+---
+
+## 151. Daily board, board codes and challenge links
+
+Status: [MISSING]
+Target: claude
+Files: js/records/board-code.js, js/shell/daily.js, js/shell/challenge.js, js/classic2d/session.js, js/classic2d/mode.js, js/classic2d/board-choice.js, js/classic2d/board-view.js, js/mode3d/session.js, js/mode3d/board-choice.js, js/shell/mode-3d.js, js/render.js, js/shell/menu.js, js/shell/router.js, js/records/board.js, js/records/summary.js, js/records/model.js, js/records/store.js, js/records/screen.js, js/records/replay-list.js, js/records/history-chart.js, js/results/view.js, js/results/flow.js, js/replay/viewer.js, js/replay/recorder.js, js/replay/library.js, js/ui/components.js, js/main.js, js/ui.js, index.html, css/components.css, css/style.css, dev/components.html, tests/records-board-code.test.mjs, tests/shell-daily.test.mjs, tests/shell-challenge.test.mjs, tests/records-board.test.mjs, tests/records-summary.test.mjs, tests/records-model.test.mjs, tests/records-store.test.mjs, tests/records-screen.test.mjs, tests/records-screen-3d.test.mjs, tests/records-replays.test.mjs, tests/records-history.test.mjs, tests/classic2d-session.test.mjs, tests/classic2d-mode.test.mjs, tests/mode3d-session.test.mjs, tests/mode3d-board-choice.test.mjs, tests/shell-mode-3d.test.mjs, tests/shell-menu.test.mjs, tests/results.test.mjs, tests/replay-viewer.test.mjs, tests/replay-library.test.mjs, tests/components.test.mjs, README.md, .claude/domain/features/board-generation.md, .claude/domain/features/game-shell.md, .claude/domain/features/classic-2d-square-play.md, .claude/domain/features/3d-play-flow.md, .claude/domain/features/game-summary.md, .claude/domain/features/personal-records.md, .claude/domain/features/3d-game-records.md, .claude/domain/features/records-screen.md, .claude/domain/features/3d-results-records-screens.md, .claude/domain/features/results-screen.md, .claude/domain/features/replay-playback.md, .claude/domain/features/replay-library.md, .claude/domain/features/screen-components.md
+Preconditions: 138
 
 ---
