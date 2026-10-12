@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 122
+Last task number: 123
 
 ---
 
@@ -716,6 +716,15 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: js/shell/history.js, js/shell/navigation.js, js/main.js, js/input.js, js/ui/components.js, js/settings/page.js, index.html, css/style.css, css/components.css, tests/shell-history.test.mjs, tests/shell-router.test.mjs, tests/components.test.mjs, tests/settings-page.test.mjs, .claude/domain/features/game-shell.md, .claude/domain/features/settings.md
+Preconditions: none
+
+---
+
+## 123. Wording and small shell fixes
+
+Status: [MISSING]
+Target: claude
+Files: js/main.js, js/shell/lock-fallback.js, js/input.js, js/ui.js, js/ui/components.js, js/settings/page.js, js/mode3d/board-choice.js, js/settings/bindings.js, index.html, css/style.css, tests/components.test.mjs, tests/settings-page.test.mjs, tests/mode3d-board-choice.test.mjs, tests/shell-lock-fallback.test.mjs, tests/input-drag-look.test.mjs, .claude/domain/features/screen-components.md, .claude/domain/features/game-shell.md, .claude/domain/features/results-screen.md, .claude/domain/features/3d-play-flow.md, .claude/domain/features/settings.md
 Preconditions: none
 
 ---
