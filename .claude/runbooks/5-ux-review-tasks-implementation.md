@@ -76,7 +76,7 @@ Context: none
 
 Done: 2026-10-12, commit `52bb58a` (10 files, +118/-22).
 
-## [ ] 7. Implement task 125 — 3D spawn framing and world reference
+## [x] 7. Implement task 125 — 3D spawn framing and world reference
 
 Depends on: none
 
@@ -85,6 +85,8 @@ Context: none
 ```prompt
 /task-implement 125 --review
 ```
+
+Done: 2026-10-12, commit `83512b5` (21 files, +634/-49). Wrong premise: the body's framing criteria conflict — the closest framing distance can put the camera below the top face or in front of the side face — so the spawn distance is the larger of the framing distance and a face-clearance distance, and the box fills about 74% of the view instead of 80% on 12×12×8 at 16:9. Decision: the `__ms.startCameraPos` debug hook is now `__ms.spawnPose(X, Y, Z)`; task 146's Hints were updated.
 
 ## [ ] 8. Implement task 126 — 3D small feedback
 
