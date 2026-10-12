@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 149
+Last task number: 150
 
 ---
 
@@ -960,5 +960,14 @@ Status: [MISSING]
 Target: claude
 Files: js/records/stats.js, js/records/export.js, js/records/screen.js, js/records/history-chart.js, js/results/flow.js, js/replay/library.js, js/settings/page.js, js/ui/components.js, js/main.js, index.html, css/components.css, css/style.css, dev/components.html, tests/records-stats.test.mjs, tests/records-export.test.mjs, tests/records-screen.test.mjs, tests/records-screen-3d.test.mjs, tests/records-history.test.mjs, tests/results.test.mjs, tests/replay-library.test.mjs, tests/settings-page.test.mjs, tests/components.test.mjs, README.md, .claude/domain/features/records-screen.md, .claude/domain/features/replay-library.md, .claude/domain/features/settings.md
 Preconditions: 128, 131, 148
+
+---
+
+## 150. Replay viewer as a study tool
+
+Status: [MISSING]
+Target: claude
+Files: js/replay/viewer.js, js/replay/clock.js, js/replay/viewer-2d.js, js/replay/viewer-3d.js, js/replay/simulator.js, js/engine/metrics.js, js/render.js, js/input.js, js/ui.js, js/results/flow.js, js/results/view.js, js/records/replay-list.js, js/records/screen.js, js/main.js, index.html, css/tokens.css, css/components.css, css/style.css, tests/replay-viewer.test.mjs, tests/replay-2d.test.mjs, tests/replay-viewer-3d.test.mjs, tests/replay-simulator.test.mjs, tests/engine-metrics.test.mjs, tests/results-watch.test.mjs, tests/results.test.mjs, tests/records-replays.test.mjs, tests/tokens.test.mjs, README.md, .claude/domain/features/replay-playback.md, .claude/domain/features/replay-library.md, .claude/domain/features/results-screen.md, .claude/domain/features/3d-results-records-screens.md
+Preconditions: none
 
 ---
