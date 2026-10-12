@@ -28,7 +28,7 @@ Context: none
 
 Done: 2026-10-12, commit `d1f4691` (16 files, +350/-48). Wrong premise: the four scrims were not every light tint over the scene — the gradient behind the menu screens in css/style.css is still hard-coded light blue, and the context-lost card stays near-white in the dark theme; both left for a task of their own.
 
-## [ ] 3. Implement task 121 — No-guess default, switch copy, generating flow
+## [x] 3. Implement task 121 — No-guess default, switch copy, generating flow
 
 Depends on: none
 
@@ -37,6 +37,8 @@ Context: none
 ```prompt
 /task-implement 121 --review
 ```
+
+Done: 2026-10-12, commit `03e8e72` (31 files, +1046/-193). Decisions: the component-kit test now allows exactly one keyframed animation, the `ui-spinner` turn; `#c2d-status` moved out of `#c2d` so it can sit above the pause card; the density threshold and no-guess hint copy live in js/classic2d/board-setup.js and the 3D board choice imports them.
 
 ## [ ] 4. Implement task 122 — Menu keyboard navigation and browser Back
 
