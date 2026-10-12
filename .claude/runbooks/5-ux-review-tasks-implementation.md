@@ -160,7 +160,7 @@ Context: none
 
 Done: 2026-10-12, commit `3993c79` (24 files, +979/-74). Wrong premise: the first-use key `ms3d.hintH.done` no longer lives in js/ui.js — task 119 replaced it with the `shell.firstUse` document, which the reset clears (the old key is still removed). Decision: with the Settings confirmation open, every Back input closes the confirmation first.
 
-## [ ] 14. Implement task 132 — Shell without WebGL 2
+## [x] 14. Implement task 132 — Shell without WebGL 2
 
 Depends on: none
 
@@ -169,6 +169,8 @@ Context: none
 ```prompt
 /task-implement 132 --review
 ```
+
+Done: 2026-10-12, commit `028a535` (17 files, +506/-74). Decisions: without WebGL 2, js/main.js replaces `MODES.start` with a version that ignores `'3d'` (mode-host untouched); the renderer is created under `THREE.setConsoleFunction` so only the expected WebGL 2 refusal is kept off the console.
 
 ## [ ] 15. Implement task 133 — Returning-player surfaces
 
