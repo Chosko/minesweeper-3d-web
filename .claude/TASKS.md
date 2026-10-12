@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 132
+Last task number: 133
 
 ---
 
@@ -806,6 +806,15 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: js/main.js, js/shell/menu.js, js/ui.js, js/replay/viewer.js, index.html, css/style.css, tests/shell-menu.test.mjs, tests/replay-viewer.test.mjs, README.md, .claude/domain/features/game-shell.md, .claude/domain/features/replay-playback.md
+Preconditions: none
+
+---
+
+## 133. Returning-player surfaces
+
+Status: [MISSING]
+Target: claude
+Files: js/shell/returning.js, js/records/typical-bbbv.js, dev/measure-typical-bbbv.mjs, js/main.js, js/ui.js, js/mode3d/board-choice.js, js/classic2d/board-choice.js, index.html, css/style.css, tests/shell-returning.test.mjs, tests/shell-menu.test.mjs, tests/mode3d-board-choice.test.mjs, tests/classic2d-mode.test.mjs, tests/components.test.mjs, .claude/domain/features/game-shell.md, .claude/domain/features/3d-play-flow.md, .claude/domain/features/classic-2d-square-play.md
 Preconditions: none
 
 ---
