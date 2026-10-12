@@ -219,40 +219,42 @@ The approved items group into the tasks below. Each row is one backlog task; ord
 
 | Task | Closes | Area | Size | Order and notes |
 | --- | --- | --- | --- | --- |
-| W-01 Mode-aware help and first-use hints | P-01, P-02, P-28, P-31, P-42, I-17 | Shell | Medium | Phase 1, first: one bindings component for the pause card, Controls panel and H panel, device glyphs, the 3D rules block, hint strips |
-| W-02 Dark theme completion | P-03, P-06 | Shell | Small | Phase 1 |
-| W-03 Shell without WebGL 2 | P-04 | Shell | Small | Phase 2 |
-| W-04 No-guess default, switch copy, generating flow | P-05, P-11 | Shell | Small | Phase 1 |
-| W-05 Menu keyboard navigation and browser Back | P-07, P-61 | Shell | Small | Phase 1 |
-| W-06 Returning-player surfaces | P-08, P-54 | Shell, Records | Small | Phase 2: preset detail lines, menu session strip, quick play |
-| W-07 Wording and small shell fixes | P-10, P-12, P-13 | Shell | Small | Phase 1 |
-| W-08 2D board scale, framed panel, cursor ring | P-14, P-15 | Classic 2D | Medium | Phase 2 |
-| W-09 2D sound | P-62 | Classic 2D | Small | Phase 2 |
-| W-10 2D tile art parity with 3D | P-63 | Classic 2D | Medium | Phase 2 |
-| W-11 2D end-of-game moment and the faster loop | P-64, I-07 | Classic 2D, shell | Small | Phase 2 |
-| W-12 Custom form: at least one mine | P-16 | Classic 2D | Small | Phase 1 |
-| W-13 Generation pipeline | P-17, P-34, I-11 | Generation | Medium | Phase 2: synchronous standard placement, warm worker, background pre-generation for a marked start cell, reliable status card with Cancel |
-| W-14 3D spawn framing and world reference | P-24, P-27 | 3D | Small | Phase 1 |
-| W-15 3D flight: fly-through fade, forward follows the view, spacing, FOV | P-25, P-26, P-30, P-32 | 3D | Medium | Phase 3 |
-| W-16 Look at the board and end delay | P-22 | 3D, results | Medium | Phase 3 |
+| W-01 Mode-aware help and first-use hints · task 119 | P-01, P-02, P-28, P-31, P-42, I-17 | Shell | Medium | Phase 1, first: one bindings component for the pause card, Controls panel and H panel, device glyphs, the 3D rules block, hint strips |
+| W-02 Dark theme completion · task 120 | P-03, P-06 | Shell | Small | Phase 1 |
+| W-03 Shell without WebGL 2 · task 132 | P-04 | Shell | Small | Phase 2 |
+| W-04 No-guess default, switch copy, generating flow · task 121 | P-05, P-11 | Shell | Small | Phase 1 |
+| W-05 Menu keyboard navigation and browser Back · task 122 | P-07, P-61 | Shell | Small | Phase 1 |
+| W-06 Returning-player surfaces · task 133 | P-08, P-54 | Shell, Records | Small | Phase 2: preset detail lines, menu session strip, quick play |
+| W-07 Wording and small shell fixes · task 123 | P-10, P-12, P-13 | Shell | Small | Phase 1 |
+| W-08 2D board scale, framed panel, cursor ring · task 134 | P-14, P-15 | Classic 2D | Medium | Phase 2 |
+| W-09 2D sound · task 135 | P-62 | Classic 2D | Small | Phase 2 |
+| W-10 2D tile art parity with 3D · task 136 | P-63 | Classic 2D | Medium | Phase 2 |
+| W-11 2D end-of-game moment and the faster loop · task 137 | P-64, I-07 | Classic 2D, shell | Small | Phase 2 |
+| W-12 Custom form: at least one mine · task 124 | P-16 | Classic 2D | Small | Phase 1 |
+| W-13 Generation pipeline · task 138 | P-17, P-34, I-11 | Generation | Medium | Phase 2: synchronous standard placement, warm worker, background pre-generation for a marked start cell, reliable status card with Cancel |
+| W-14 3D spawn framing and world reference · task 125 | P-24, P-27 | 3D | Small | Phase 1 |
+| W-15 3D flight: fly-through fade, forward follows the view, spacing, FOV · task 139 | P-25, P-26, P-30, P-32 | 3D | Medium | Phase 3 |
+| W-16 Look at the board and end delay · task 140 | P-22 | 3D, results | Medium | Phase 3 |
 | W-17 Cube preset re-tune and first-box presets | P-20, I-02 | 3D | Small | Phase 1 |
-| W-18 3D readability | P-23 | 3D | Iterative | Phase 3, attended: readout, wireframe, layer tint, depth dimming, one iteration at a time with feedback |
-| W-19 3D small feedback | P-29, P-35, P-36 | 3D | Small | Phase 1 |
-| W-20 Right-click on a number | P-21 | 3D | Small | Phase 1: undo-last-batch on the second right-click, flash, count-scaled sound, counter tint, help copy |
+| W-18 3D readability · task 141 | P-23 | 3D | Iterative | Phase 3, attended: readout, wireframe, layer tint, depth dimming, one iteration at a time with feedback |
+| W-19 3D small feedback · task 126 | P-29, P-35, P-36 | 3D | Small | Phase 1 |
+| W-20 Right-click on a number · task 127 | P-21 | 3D | Small | Phase 1: undo-last-batch on the second right-click, flash, count-scaled sound, counter tint, help copy |
 | W-21 Learn 3D guided board | I-01 | 3D | Medium | Phase 3, after W-01 and W-17 |
-| W-22 Touch Classic 2D and touch-safe 3D entry | P-37, P-38, P-39, P-45 | Input | Medium | Phase 4 |
-| W-23 Touch controls for 3D | I-14 | Input, 3D | Large | Phase 4, after W-22 and W-15 |
-| W-24 Keyboard-only 3D | P-40 | Input, 3D | Medium | Phase 4; free keys only, mouse play untouched |
-| W-25 Controller walk, pad-aware Records and viewer, haptics | P-41, I-18 | Input | Small | Phase 4 |
-| W-26 Focus containment in overlays | P-43 | Input | Small | Phase 4 |
-| W-27 Results precision, figures and hierarchy | P-33, P-46, P-47, P-51, P-65, I-08 | Results | Medium | Phase 1 |
-| W-28 Pause keeps the clock running, pauses recorded | P-48 | Session | Small | Phase 1 |
-| W-29 One-key restart and completed-games stats | I-06, P-55 | Session, Records | Small | Phase 1 |
-| W-30 Records layout, pagination and lists | P-53, P-67, P-68, P-69 | Records | Medium | Phase 5 |
-| W-31 Richer Records and local top-10 | I-05, I-09 | Records | Medium | Phase 5, after W-30 |
-| W-32 Replay viewer as a study tool | P-52, P-66, I-10 | Replay | Medium | Phase 5 |
-| W-33 Daily board, board codes and challenge links | I-03, I-04 | Generation, shell, Records | Medium | Phase 5, after W-13 |
-| W-34 Orbit camera mode | I-15 | 3D, input | Medium | Phase 4, after W-24 |
-| W-35 Reset all data | P-70 | Settings | Small | Phase 1 |
+| W-22 Touch Classic 2D and touch-safe 3D entry · task 142 | P-37, P-38, P-39, P-45 | Input | Medium | Phase 4 |
+| W-23 Touch controls for 3D · task 147 | I-14 | Input, 3D | Large | Phase 4, after W-22 and W-15 |
+| W-24 Keyboard-only 3D · task 143 | P-40 | Input, 3D | Medium | Phase 4; free keys only, mouse play untouched |
+| W-25 Controller walk, pad-aware Records and viewer, haptics · task 144 | P-41, I-18 | Input | Small | Phase 4 |
+| W-26 Focus containment in overlays · task 145 | P-43 | Input | Small | Phase 4 |
+| W-27 Results precision, figures and hierarchy · task 128 | P-33, P-46, P-47, P-51, P-65, I-08 | Results | Medium | Phase 1 |
+| W-28 Pause keeps the clock running, pauses recorded · task 129 | P-48 | Session | Small | Phase 1 |
+| W-29 One-key restart and completed-games stats · task 130 | I-06, P-55 | Session, Records | Small | Phase 1 |
+| W-30 Records layout, pagination and lists · task 148 | P-53, P-67, P-68, P-69 | Records | Medium | Phase 5 |
+| W-31 Richer Records and local top-10 · task 149 | I-05, I-09 | Records | Medium | Phase 5, after W-30 |
+| W-32 Replay viewer as a study tool · task 150 | P-52, P-66, I-10 | Replay | Medium | Phase 5 |
+| W-33 Daily board, board codes and challenge links · task 151 | I-03, I-04 | Generation, shell, Records | Medium | Phase 5, after W-13 |
+| W-34 Orbit camera mode · task 146 | I-15 | 3D, input | Medium | Phase 4, after W-24 |
+| W-35 Reset all data · task 131 | P-70 | Settings | Small | Phase 1 |
 
 Phase 1 is thirteen small tasks and one medium (W-01) that every later help-related change builds on. Phase 2 brings Classic 2D to parity with 3D. Phase 3 is the 3D experience, with W-18 attended. Phase 4 opens the locked-out input classes. Phase 5 is the long tail for enthusiasts.
+
+The tasks live in the repository backlog (`.claude/TASKS.md`, bodies under `.claude/tasks/`), each citing this document by P, I and W ids, and run in order through runbook 5, `ux-review-tasks-implementation` (`.claude/runbooks/5-ux-review-tasks-implementation.md`): one `/task-implement N --review` step per task, task 141's step attended, and a final step that checks the built game against this document and writes `docs/UX_REVIEW_DRIFT.md`. A copy of this document is committed as `docs/UX_REVIEW.md`. W-17 and W-21 wait on the first-box preset decision (a 4 × 4 × 2 box can never be no-guess) and are appended to the runbook before its final step once written.
