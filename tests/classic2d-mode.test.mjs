@@ -417,6 +417,25 @@ test('the board choice offers the three standard sizes and a validated custom bo
   assert.match(tooMany.text, /mines/i);
   assert.equal(customStatus({ width: NaN, height: 5, mines: 1 }).ok, false);
 
+  // At least one mine: the 1-to-max range line, the no-room line, and both counts pluralised.
+  assert.deepEqual(customStatus({ width: 30, height: 16, mines: 0 }), {
+    ok: false, field: 'mines', max: maxMines(30, 16), text: 'Mines must be a whole number from 1 to 168 on a 30 × 16 board.',
+  });
+  assert.deepEqual(customStatus({ width: 100, height: 100, mines: 0 }).text, 'Mines must be a whole number from 1 to 2,480 on a 100 × 100 board.');
+  assert.deepEqual(customStatus({ width: 1, height: 1, mines: 0 }), {
+    ok: false, field: 'mines', max: 0, text: 'A 1 × 1 board has no room for a mine beside the safe first click — make it at least 2 cells.',
+  });
+  assert.equal(customStatus({ width: 1, height: 1, mines: 1 }).field, 'mines');
+  assert.deepEqual(customStatus({ width: 1, height: 2, mines: 1 }), { ok: true, field: null, max: 1, text: '2 cells · up to 1 mine' });
+  assert.equal(customStatus({ width: 2, height: 1, mines: 1 }).text, '2 cells · up to 1 mine');
+  assert.equal(customStatus({ width: 3, height: 1, mines: 1 }).text, '3 cells · up to 2 mines');
+  for (const custom of [{ width: 1, height: 1, mines: 0 }, { width: 9, height: 9, mines: 0 }, { width: 1, height: 2, mines: 1 }]) {
+    const { text } = customStatus(custom);
+    assert.doesNotMatch(text, /\bfrom 0 to 0\b|\b1 mines\b|\b1 cells\b/, text);
+  }
+  assert.equal(readChoice({ size: 'custom', fields: { width: '9', height: '9', mines: '0' }, noGuess: false }), null, 'a 0-mine board is no choice');
+  assert.equal(readChoice({ size: 'custom', fields: { width: '1', height: '1', mines: '0' }, noGuess: false }), null, 'a 1 × 1 board is no choice');
+
   assert.deepEqual(readChoice({ size: 'expert', fields: { width: '20', height: '10', mines: '30' }, noGuess: true }),
     { size: 'expert', custom: { width: 20, height: 10, mines: 30 }, noGuess: true });
   assert.equal(readChoice({ size: 'custom', fields: { width: '200', height: '10', mines: '30' }, noGuess: false }), null,
@@ -464,6 +483,7 @@ test('index.html builds the Classic 2D board choice from kit components', () => 
     assert.match(CHOICE, new RegExp(`<label class="ui-field"><span class="ui-field__label">[^<]+</span><input id="c2d-${f}" data-field="${f}" class="ui-field__input" type="number"`), f);
   }
   assert.match(CHOICE, new RegExp(`id="c2d-width"[^>]*min="${CUSTOM_LIMITS.minSide}" max="${CUSTOM_LIMITS.maxSide}"`));
+  assert.match(CHOICE, /id="c2d-mines"[^>]*min="1"/, 'a custom board takes at least one mine');
   assert.match(CHOICE, /<button type="submit" id="c2d-start" class="ui-button ui-button--primary" data-size="custom">/);
   assert.match(CHOICE, /<label class="ui-toggle"><input type="checkbox" role="switch" id="c2d-noguess" class="ui-toggle__input"/);
   // The switch sits directly under the sizes, with its helper line, before the custom panel (as in 3D).

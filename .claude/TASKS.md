@@ -731,7 +731,7 @@ Preconditions: none
 
 ## 124. Custom form: at least one mine
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/classic2d/board-setup.js, js/classic2d/board-choice.js, index.html, tests/classic2d-session.test.mjs, tests/classic2d-mode.test.mjs, tests/classic2d-fidelity.test.mjs, tests/records-board.test.mjs, .claude/domain/features/classic-2d-square-play.md
 Preconditions: none

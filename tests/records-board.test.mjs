@@ -102,6 +102,16 @@ test('key: parsing a key gives back the identity it was made from', () => {
   }
 });
 
+test('key: a 0-mine 2D board, which the custom form refuses, still builds and round-trips so its earned entries keep loading', () => {
+  for (const [width, height] of [[1, 1], [9, 9]]) {
+    const id = square(width, height, 0);
+    const key = boardKey(id);
+    assert.equal(key, `classic-2d:square:${width}x${height}:0:guess`);
+    assert.deepEqual(parseBoardKey(key), id);
+    assert.equal(boardLabel(parseBoardKey(key)), `${width} × ${height} · 0 mines`);
+  }
+});
+
 test('key: a malformed or impossible key throws a range error', () => {
   for (const key of ['', 'classic-2d', 'classic-2d:square:9x9:10', 'classic-2d:square:9x9:10:maybe',
     'classic-2d:square:9x9:81:guess', 'classic-2d:square:09x9:10:guess', 'classic-2d:square:9x9:10:guess:x',

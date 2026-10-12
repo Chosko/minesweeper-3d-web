@@ -7,8 +7,9 @@
 //
 // Custom boards are validated against the reference profile's CUSTOM_LIMITS
 // (js/engine/profiles.js, citing "Largest custom board" in tests/fidelity/minesweeper-online.md):
-// width and height 1 to 100 each, and a mine count up to the smaller of the site's size-dependent
-// cap and the cell count minus one. The site takes a mine in every cell on boards of up to 36
+// width and height 1 to 100 each, and a mine count from 1 up to the smaller of the site's
+// size-dependent cap and the cell count minus one, so a 1 × 1 board is refused and the smallest is
+// 1 × 2 or 2 × 1 with 1 mine. The site takes a mine in every cell on boards of up to 36
 // cells; this game keeps one cell free so the first click is always safe. A dense custom board
 // keeps the no-guess switch: a no-guess request that fails gets the session's failure offer. Above
 // NOGUESS_DENSITY_HINT mines per cell, the board choice of either mode shows DENSITY_HINT_TEXT for a
@@ -77,8 +78,11 @@ export function validateCustom(custom) {
   if (!side(width)) return { ok: false, field: 'width', reason: `width must be a whole number from ${range}` };
   if (!side(height)) return { ok: false, field: 'height', reason: `height must be a whole number from ${range}` };
   const max = maxMines(width, height);
-  if (!Number.isInteger(mines) || mines < 0 || mines > max) {
-    return { ok: false, field: 'mines', reason: `mines must be a whole number from 0 to ${max} on a ${width} × ${height} board` };
+  if (max < 1) {
+    return { ok: false, field: 'mines', reason: `A ${width} × ${height} board has no room for a mine beside the safe first click — make it at least 2 cells` };
+  }
+  if (!Number.isInteger(mines) || mines < 1 || mines > max) {
+    return { ok: false, field: 'mines', reason: `Mines must be a whole number from 1 to ${max.toLocaleString('en-US')} on a ${width} × ${height} board` };
   }
   return { ok: true };
 }

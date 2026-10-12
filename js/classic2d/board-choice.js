@@ -6,8 +6,10 @@
 //   sizeLabel(size)          '30 × 16 · 99 mines'.
 //   customStatus(custom)     { ok, field, max, text } for a custom { width, height, mines }: the info
 //                            line under the custom fields, validated against CUSTOM_LIMITS
-//                            (js/classic2d/board-setup.js validateCustom); `max` is the mine limit
-//                            for that width and height (null while the size is invalid).
+//                            (js/classic2d/board-setup.js validateCustom) — a refusal's reason as a
+//                            sentence, or '2 cells · up to 1 mine' with both counts pluralised;
+//                            `max` is the mine limit for that width and height (null while the size
+//                            is invalid).
 //   readChoice({ size, fields, noGuess }, fallbackCustom?)  the board choice the screen's fields
 //                            describe, or null. A standard size keeps the fields' custom board
 //                            when it is valid, else `fallbackCustom`; 'custom' needs valid fields.
@@ -39,6 +41,7 @@ export function sizeLabel(size) {
 }
 
 const side = (v) => Number.isInteger(v) && v >= CUSTOM_LIMITS.minSide && v <= CUSTOM_LIMITS.maxSide;
+const count = (v, noun) => `${v.toLocaleString('en-US')} ${v === 1 ? noun : `${noun}s`}`;
 
 export function customStatus(custom) {
   const { width, height } = custom ?? {};
@@ -46,7 +49,7 @@ export function customStatus(custom) {
   const max = side(width) && side(height) ? maxMines(width, height) : null;
   if (!v.ok) return { ok: false, field: v.field, max, text: `${v.reason[0].toUpperCase()}${v.reason.slice(1)}.` };
   const cells = width * height;
-  return { ok: true, field: null, max, text: `${cells.toLocaleString('en-US')} cells · up to ${max.toLocaleString('en-US')} mines` };
+  return { ok: true, field: null, max, text: `${count(cells, 'cell')} · up to ${count(max, 'mine')}` };
 }
 
 const int = (v) => (typeof v === 'number' ? v : /^\s*-?\d+\s*$/.test(String(v)) ? parseInt(v, 10) : NaN);

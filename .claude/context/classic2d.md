@@ -162,7 +162,8 @@ looks.
 
 `js/classic2d/board-choice.js` exports
 - `CHOICE_SIZES`, `sizeLabel(size)`, `customStatus(custom)` → `{ok, field,
-  max, text}`, `readChoice({size, fields, noGuess}, fallbackCustom?)` → a
+  max, text}` (text: the refusal as a sentence, or "2 cells · up to 1 mine",
+  both counts pluralised), `readChoice({size, fields, noGuess}, fallbackCustom?)` → a
   board choice or null, `densityHintShown(custom, noGuess)`,
   `bindBoardChoice({root, onStart, onBack})` → `{show(choice, {played}),
   destroy()}` — the density hint `[data-density-hint]` follows the fields
@@ -192,10 +193,14 @@ looks.
 - **Board setup and limits.** The standard sizes are the records'
   standard boards. A custom board is 1 to 100 a side (`CUSTOM_LIMITS` in
   `js/engine/profiles.js`, citing "Largest custom board" in
-  `tests/fidelity/minesweeper-online.md`); its mines run from 0 to the
+  `tests/fidelity/minesweeper-online.md`); its mines run from 1 to the
   smaller of the site's cap — every cell up to 36 cells, then the measured
   caps interpolated by cell count, rounded down — and the cell count minus
-  one, so the first click is always safe. No-guess is never refused up
+  one, so the first click is always safe. A 1 × 1 board is refused on the
+  mines field ("no room for a mine beside the safe first click", the 3D
+  form's wording), after the side checks; the smallest is 1 × 2. The
+  records identity still accepts 0 mines, so entries earned on such
+  boards keep loading. No-guess is never refused up
   front, however dense the board: above `NOGUESS_DENSITY_HINT` the board
   choice shows its hint, and a failed no-guess request gets the session's
   failure offer. A stored choice that does not normalise reads as

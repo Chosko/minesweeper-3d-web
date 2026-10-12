@@ -175,7 +175,6 @@ test('custom limits: the mine count is capped at the smaller of the site cap and
   assert.equal(maxMines(100, 100), 2480);
   assert.deepEqual(validateCustom({ width: 9, height: 9, mines: 31 }), { ok: true });
   assert.deepEqual(validateCustom({ width: 6, height: 6, mines: 35 }), { ok: true });
-  assert.deepEqual(validateCustom({ width: 1, height: 1, mines: 0 }), { ok: true });
   assert.deepEqual(validateCustom({ width: 100, height: 100, mines: 2480 }), { ok: true });
   const bad = [
     [{ width: 0, height: 9, mines: 1 }, 'width'],
@@ -194,6 +193,40 @@ test('custom limits: the mine count is capped at the smaller of the site cap and
     assert.equal(v.field, field, JSON.stringify(custom));
     assert.equal(typeof v.reason, 'string');
   }
+});
+
+test('custom limits: a custom board takes at least one mine, so the smallest is 1 × 2 or 2 × 1 with 1 mine', () => {
+  assert.deepEqual(validateCustom({ width: 1, height: 2, mines: 1 }), { ok: true });
+  assert.deepEqual(validateCustom({ width: 2, height: 1, mines: 1 }), { ok: true });
+  assert.deepEqual(validateCustom({ width: 9, height: 9, mines: 0 }), {
+    ok: false, field: 'mines', reason: 'Mines must be a whole number from 1 to 31 on a 9 × 9 board',
+  });
+  assert.deepEqual(validateCustom({ width: 100, height: 100, mines: 0 }), {
+    ok: false, field: 'mines', reason: 'Mines must be a whole number from 1 to 2,480 on a 100 × 100 board',
+  });
+  assert.equal(validateCustom({ width: 2, height: 1, mines: 0 }).reason, 'Mines must be a whole number from 1 to 1 on a 2 × 1 board');
+  const noRoom = 'A 1 × 1 board has no room for a mine beside the safe first click — make it at least 2 cells';
+  for (const mines of [0, 1, -1, NaN]) {
+    assert.deepEqual(validateCustom({ width: 1, height: 1, mines }), { ok: false, field: 'mines', reason: noRoom }, `1 × 1 with ${mines}`);
+  }
+  // The side checks run first: a refused side is never reported as no room.
+  assert.equal(validateCustom({ width: 0, height: 1, mines: 0 }).field, 'width');
+  assert.equal(validateCustom({ width: 1, height: 0, mines: 0 }).field, 'height');
+  // The upper bound is unchanged.
+  assert.equal(maxMines(1, 1), 0);
+  assert.equal(maxMines(1, 2), 1);
+  assert.equal(validateCustom({ width: 1, height: 2, mines: 2 }).field, 'mines');
+});
+
+test('custom limits: a 0-mine or 1 × 1 custom choice is no choice — no board setup, no session', () => {
+  for (const custom of [{ width: 9, height: 9, mines: 0 }, { width: 1, height: 1, mines: 0 }, { width: 1, height: 1, mines: 1 }]) {
+    const choice = { size: 'custom', custom, noGuess: false };
+    assert.equal(normaliseChoice(choice), null, JSON.stringify(custom));
+    assert.equal(normaliseChoice({ ...choice, size: 'expert' }), null, `a standard size with ${JSON.stringify(custom)}`);
+    assert.throws(() => boardSetup(choice), RangeError, JSON.stringify(custom));
+    assert.throws(() => createSession({ choice, client: fakeClient(), clock: fakeClock() }), RangeError, JSON.stringify(custom));
+  }
+  assert.doesNotThrow(() => boardSetup({ size: 'custom', custom: { width: 1, height: 2, mines: 1 }, noGuess: false }));
 });
 
 test('custom limits: a dense custom board keeps the no-guess switch — nothing refuses it up front', () => {
@@ -252,7 +285,18 @@ test('last choice: a malformed document reads as the default; an invalid choice 
   const backend = createMemoryBackend({ initial: { [LAST_CHOICE_DOC]: JSON.stringify({ version: 1, data: { size: 'huge' } }) } });
   const last = createLastChoice({ storage: createStorage({ backend }) });
   assert.deepEqual(await last.load(), DEFAULT_CHOICE);
-  await assert.rejects(last.save({ size: 'custom', custom: { width: 0, height: 1, mines: 0 }, noGuess: false }), RangeError);
+  await assert.rejects(last.save({ size: 'custom', custom: { width: 0, height: 1, mines: 1 }, noGuess: false }), RangeError);
+});
+
+test('last choice: a stored 0-mine or 1 × 1 custom choice reads as the default and is never saved', async () => {
+  for (const custom of [{ width: 9, height: 9, mines: 0 }, { width: 1, height: 1, mines: 0 }]) {
+    const stored = { size: 'custom', custom, noGuess: false };
+    const backend = createMemoryBackend({ initial: { [LAST_CHOICE_DOC]: JSON.stringify({ version: 1, data: stored }) } });
+    const last = createLastChoice({ storage: createStorage({ backend }) });
+    assert.deepEqual(await last.load(), DEFAULT_CHOICE, JSON.stringify(custom));
+    await assert.rejects(last.save(stored), RangeError, JSON.stringify(custom));
+    assert.deepEqual(last.current, DEFAULT_CHOICE);
+  }
 });
 
 // ---------- timer ----------
@@ -709,7 +753,7 @@ test('session: flags and chords before the first reveal follow the engine (nothi
 });
 
 test('session: an invalid choice throws at creation', () => {
-  assert.throws(() => createSession({ choice: { size: 'custom', custom: { width: 0, height: 1, mines: 0 }, noGuess: false }, client: fakeClient(), clock: fakeClock() }), RangeError);
+  assert.throws(() => createSession({ choice: { size: 'custom', custom: { width: 0, height: 1, mines: 1 }, noGuess: false }, client: fakeClient(), clock: fakeClock() }), RangeError);
 });
 
 test('session: the session and board setup are DOM-free and talk to generation only through the client', () => {

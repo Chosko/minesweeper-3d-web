@@ -21,8 +21,9 @@ flow, input feel, the board on screen and the timer — and it is where
 In scope (m1-classic-2d):
 
 - Board choice: Beginner (9 × 9, 10 mines), Intermediate (16 × 16, 40),
-  Expert (30 × 16, 99) and Custom (width and height each 1 to 100, mines
-  within the limit Board setup states), plus the no-guess switch.
+  Expert (30 × 16, 99) and Custom (width and height each 1 to 100, at
+  least one mine and at most the limit Board setup states), plus the
+  no-guess switch.
 - The start-of-game flow: a closed board, the first click, board
   generation around it, the timer starting once the board is ready. The
   "generating" card's *Cancel* goes back to the closed board, recording
@@ -70,12 +71,17 @@ copied.
 - **Board setup.** Turns the chosen size and no-guess switch into a board
   request: the square graph from `cell-graph-rules-engine` and the
   generation options. Validates custom boards: width and height 1 to 100
-  each, and a mine count up to the smaller of Minesweeper Online's
+  each, and a mine count from 1 up to the smaller of Minesweeper Online's
   size-dependent cap, recorded in `tests/fidelity/minesweeper-online.md`,
   and the cell count minus one. The site takes a mine in every cell on
   boards of up to 36 cells; this game keeps one cell free so the first
   click is always safe — a deliberate difference from the reference, and
-  the same rule as 3D custom boards.
+  the same rule as 3D custom boards. A 1 × 1 board therefore has no room
+  for a mine and is refused on the mines field, so the smallest custom
+  board is 1 × 2 or 2 × 1 with 1 mine. The refusals read as the 3D form's:
+  "Mines must be a whole number from 1 to <max> on a <width> × <height>
+  board", and "A 1 × 1 board has no room for a mine beside the safe first
+  click — make it at least 2 cells".
 - **Game session.** Owns one game from closed board to result: holds the
   engine, makes the first-click request to the generation worker, shows the
   "generating" state when the answer is slow, starts the timer once the

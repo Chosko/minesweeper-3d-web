@@ -378,9 +378,11 @@ test('fidelity "Largest custom board": width and height 1 to 100 each, larger re
   assert.equal(CUSTOM_LIMITS.minSide, minSide);
   assert.equal(CUSTOM_LIMITS.maxSide, maxSide);
 
-  for (const [width, height] of [[minSide, minSide], [maxSide, maxSide], [maxSide, minSide], [minSide, maxSide]]) {
-    assert.deepEqual(validateCustom({ width, height, mines: 0 }), { ok: true });
+  for (const [width, height] of [[maxSide, maxSide], [maxSide, minSide], [minSide, maxSide], [minSide, minSide + 1], [minSide + 1, minSide]]) {
+    assert.deepEqual(validateCustom({ width, height, mines: 1 }), { ok: true }, `${width} × ${height}`);
   }
+  // A 1 × 1 board has both sides in range; it is refused on the mines field — no room for a mine.
+  assert.equal(validateCustom({ width: minSide, height: minSide, mines: 1 }).field, 'mines');
   assert.equal(validateCustom({ width: maxSide + 1, height: 10, mines: 1 }).field, 'width');
   assert.equal(validateCustom({ width: 10, height: maxSide + 1, mines: 1 }).field, 'height');
   assert.equal(validateCustom({ width: minSide - 1, height: 10, mines: 1 }).field, 'width');
@@ -414,7 +416,9 @@ test('fidelity "Largest custom board": up to 36 cells the cap is the cell count 
     assert.ok(cells <= everyCellUpTo);
     assert.equal(customMineCap(width, height), cells, `${width}×${height}: the site takes a mine in every cell`);
     assert.equal(maxMines(width, height), cells - 1, `${width}×${height}: this game keeps one cell free`);
-    assert.deepEqual(validateCustom({ width, height, mines: cells - 1 }), { ok: true });
+    // At least one mine, so the one-cell board takes none and is refused.
+    if (cells > 1) assert.deepEqual(validateCustom({ width, height, mines: cells - 1 }), { ok: true });
+    else assert.equal(validateCustom({ width, height, mines: 0 }).field, 'mines', '1×1 has no room for a mine');
     assert.equal(validateCustom({ width, height, mines: cells }).field, 'mines', `${width}×${height} refuses a mine in every cell`);
   }
 });
