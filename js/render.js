@@ -205,16 +205,41 @@ void main() {
   vDir = (uCamWorld * vec4(v.xyz / v.w, 0.0)).xyz;
   gl_Position = vec4(p, 0.9999, 1.0);
 }`;
+// The ground grid, drawn with the sky so it lies behind every cube, writes no depth and is never
+// picked: faint lines on a horizontal plane below the box, fading toward the sky with distance, so its
+// far edge reads as a horizon line. Its ink comes from the scene palette's horizon stop (darker on a
+// light sky, lighter on a dark one).
 const SKY_FRAG = /* glsl */ `
 precision highp float;
 in vec3 vDir;
 out vec4 outColor;
+uniform vec4 uGround; // plane height, line step, fade distance, on (1) / off (0)
+uniform vec3 uEye;
 ${SKY_GLSL}
+vec3 groundGrid(vec3 sky, vec3 dir) {
+  float dy = abs(dir.y) < 1e-6 ? -1e-6 : dir.y;
+  float t = (uGround.x - uEye.y) / dy;
+  float far = uGround.z;
+  vec2 c = (uEye.xz + dir.xz * clamp(t, 0.0, far)) / uGround.y;
+  vec2 w = fwidth(c);
+  vec2 g = abs(fract(c - 0.5) - 0.5) / max(w, vec2(1e-4));
+  // lines about a pixel wide, faded out where they would crowd into moire
+  float line = (1.0 - min(min(g.x, g.y), 1.0)) * (1.0 - smoothstep(0.25, 0.6, max(w.x, w.y)));
+  float fade = step(0.0, t) * (1.0 - smoothstep(0.55 * far, far, t)) * uGround.w;
+  float lum = dot(uSkyHorizon, vec3(0.2126, 0.7152, 0.0722));
+  vec3 ink = lum > 0.5 ? uSkyHorizon * 0.55 : mix(uSkyHorizon, vec3(1.0), 0.3);
+  return mix(sky, ink, fade * (0.08 + 0.32 * line));
+}
 void main() {
   // tiny ordered-noise dither hides 8-bit banding in the smooth gradient
   float n = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))) - 0.5;
-  outColor = vec4(skyColor(normalize(vDir).y) + n / 255.0, 1.0);
+  vec3 dir = normalize(vDir);
+  outColor = vec4(groundGrid(skyColor(dir.y), dir) + n / 255.0, 1.0);
 }`;
+// The ground grid's plane lies this far (world units) below the box's bottom, at the current spacing.
+const GROUND_GAP = 12;
+// Its fade distance from the camera: at least this, and further out for a far camera or a big box.
+const GROUND_FADE_MIN = 400;
 
 // Confetti: one Points draw call, motion fully in the vertex shader (ballistic + drag + flutter).
 const CONF_N = 600;
@@ -344,7 +369,10 @@ export class BoardRenderer {
   _buildSky() {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute([-1, -1, 0, 3, -1, 0, -1, 3, 0], 3));
-    this.skyUniforms = { uInvProj: { value: new THREE.Matrix4() }, uCamWorld: { value: new THREE.Matrix4() }, ...this.skyPalette };
+    this.skyUniforms = {
+      uInvProj: { value: new THREE.Matrix4() }, uCamWorld: { value: new THREE.Matrix4() }, ...this.skyPalette,
+      uGround: { value: new THREE.Vector4(0, 1, GROUND_FADE_MIN, 0) }, uEye: { value: new THREE.Vector3() },
+    };
     const m = new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3, vertexShader: SKY_VERT, fragmentShader: SKY_FRAG,
       uniforms: this.skyUniforms, depthTest: false, depthWrite: false,
@@ -677,6 +705,21 @@ export class BoardRenderer {
     if (changed && this.game && this.toggles.shift) this._applyShiftOpaque();
   }
 
+  /**
+   * The ground grid under the board: its plane GROUND_GAP below the box's bottom at the current spacing,
+   * a line step of a power-of-two count of lattice pitches that grows with the box, faded out from the
+   * camera at a distance that keeps the box and its surroundings on it. Off without a board.
+   */
+  _placeGround(dist, R) {
+    const g = this.game, u = this.skyUniforms;
+    u.uEye.value.copy(this.camera.position);
+    if (!g) { u.uGround.value.w = 0; return; }
+    const p = 4 * this.spacing;
+    const bottom = ((g.Y - 1) * p) / 2 + 2;
+    const cells = 2 ** Math.max(1, Math.round(Math.log2(Math.max(g.X, g.Z) / 3)));
+    u.uGround.value.set(-bottom - GROUND_GAP, cells * p, Math.max(GROUND_FADE_MIN, 4 * (dist + R)), 1);
+  }
+
   /** Board half-extent (radius of bounding sphere) for the current spacing. */
   boardRadius() {
     const g = this.game; if (!g) return 10;
@@ -793,6 +836,7 @@ export class BoardRenderer {
         shaken = true;
       }
     }
+    this._placeGround(dist, R);
     this.skyUniforms.uInvProj.value.copy(cam.projectionMatrixInverse);
     this.skyUniforms.uCamWorld.value.copy(cam.matrixWorld);
     this.renderer.render(this.scene, cam);

@@ -25,14 +25,27 @@ resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md).
 **js/input.js**
 - Constants: `MOVE_SPEED` (50 u/s), `LOOK_DEG_PER_PX` (0.2), `PAD_LOOK_DEG_PER_S` (180),
   `SPACING_MIN` / `SPACING_MAX` / `SPACING_START` (1 / 10 / 1.1). The caller clamps spacing.
+  Spawn: `SPAWN_PITCH_DEG` (15), `SPAWN_YAW_DEG` (20), `SPAWN_MARGIN` (0.1 of the view per side),
+  `SPAWN_FACE_CLEARANCE` (0.1 of the box's half size).
 - `js/input.js::FlyCamera` — state `x, y, z, pitch` (+ = looking down), `yaw` (PI = facing +Z);
   settings `sensitivity` (multiplier, 1 = original) and `invertY`.
   - `reset(x, y, z)` — position, pitch 0, yaw PI.
+  - `place({x, y, z, yaw, pitch})` — takes a pose (`spawnPose`'s).
   - `look(dxPx, dyPx)` — mouse look; clamps pitch to ±PI/2.
   - `move(dt, keys)` — `keys` = `{w,a,s,d,q,e}` booleans.
   - `moveAxes(dt, f, r, u)` — analog move, each -1..1, speed capped at `MOVE_SPEED`.
   - `lookAxes(dt, x, y)` — analog look as a fraction of `PAD_LOOK_DEG_PER_S`, routed through `look()`.
   - `apply(cam)` — writes position / rotation (order `'YXZ'`) to a `THREE.PerspectiveCamera`, updates its world matrix.
+- `js/input.js::spawnPose({X, Y, Z}, spacing, fovDeg, aspect)` → `{x, y, z, yaw, pitch}` — pure:
+  looks down `SPAWN_PITCH_DEG` and `SPAWN_YAW_DEG` off the original +Z view (yaw `PI - 20°`, so the
+  -X side face shows), the screen centre through the centre of the near face's centre cube (cell
+  `floor(X/2), floor(Y/2), 0`), from the closest distance that keeps all eight corners of the box
+  within `SPAWN_MARGIN` of the view's edges — or further out when the camera would not yet clear the
+  top and side face planes by `SPAWN_FACE_CLEARANCE`, which is what binds at wide fields of view.
+- `js/input.js::offscreenArrow(pose, {X, Y, Z}, spacing, fovDeg, aspect)` → null while any part of
+  the box's bounding box is in the (far-less) frustum — each face clipped against the frustum planes
+  in camera space — else the screen angle toward the box centre, `atan2(up, right)` in camera space
+  (0 = right, PI/2 = up), which for a centre behind the camera is the shortest turn's way.
 - `js/input.js::MouseActions(onAction, hasSelection)` — `down(button)`, `up(button)`
   (0 = left, 2 = right; other buttons ignored), `reset()` (forget held state without firing).
   Calls `onAction('left' | 'right' | 'chord')`; the caller acts on its own current selection.
@@ -122,7 +135,8 @@ resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md).
   3D camera sampler reads the resulting `Controls.space` like any view mode.
 - **DOM gating.** Mouse move / buttons are processed only when `locked && isActive()`; the wheel and
   `preventDefault` on game keys only when `isActive()`. `GAME_KEYS` (WASDQE, Space, Shift, Ctrl) are
-  tracked in `keys` always; Ctrl+other keys are swallowed while active. `onKey` skips auto-repeat,
+  tracked in `keys` always; Ctrl+other keys are swallowed while active, and so are `RETURN_KEYS`
+  (`Home`, `KeyR`: back to the start view in main's `onKey`). `onKey` skips auto-repeat,
   except for the arrow keys (`ARROW_KEYS`), whose repeats are the shell's held focus moves.
   Mouse deltas > 400 px are discarded (post-lock spikes).
 - **Wheel notches.** Normalized by `deltaMode` (pixels / 100, lines / 3, pages / 1), sign flipped
@@ -158,7 +172,8 @@ resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md).
 Gameplay fidelity to the original game is the overriding rule:
 [../../docs/ORIGINAL_SPEC.md](../../docs/ORIGINAL_SPEC.md). This area enforces:
 - **Controls (must be preserved)** — 0.2°/px look, pitch clamp ±90°, WASD/QE at 50 u/s, the
-  forward-vector quirk, start orientation toward +Z (`FlyCamera`).
+  forward-vector quirk (`FlyCamera`). The start pose is the spec's web-port change: the framed
+  three-quarter `spawnPose`, not the original's straight view toward +Z.
 - **Mouse actions fire on button release** — left / right / chord-toggle sequence (`MouseActions`).
 - **Picking** — ray from screen centre, nearest cube, exclusion of unlinked cells and of pressed
   cells while Space is held (`pickCell`).

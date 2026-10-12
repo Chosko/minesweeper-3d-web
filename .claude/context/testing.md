@@ -284,6 +284,21 @@ browser checks for everything that needs WebGL or the DOM.
 - `tests/gamepad.test.mjs` — controller helpers (`js/gamepad.js`), analog camera
   (`js/input.js::FlyCamera`), `js/controls.js::Controls`, and trigger sequences
   through `js/input.js::MouseActions`.
+- `tests/camera-spawn.test.mjs` — the 3D spawn pose (`js/input.js::spawnPose`)
+  for the cube presets and 1 × 1 × 2, 30 × 16 × 1, 100 × 100 × 100 and
+  2 × 9 × 40 at 16:9, 4:3, 21:9 and 9:16 and 45° and 90°, against
+  three.js's own projection (vendored `three.module.min.js`): its named
+  angles, every corner inside the margin, the camera beyond the near, top
+  and one side face planes, no closer pose unless the face clearance binds,
+  and `pickCell` aiming at the near face's centre cube; the spacing;
+  `FlyCamera.place`; the off-screen arrow (`offscreenArrow`) hidden with any
+  part of the box in view and its angle right, left, up, down and behind;
+  static checks that every start goes through `placeAtSpawn` and of the
+  Home / R wiring. One Playwright test: the framed start, Home and R
+  returning during play at the current spacing with Home's default stopped,
+  the arrow, nothing while paused or in the end delay, and the pause card's
+  "Back to start" after Resume, resuming, absent on an ended game and in
+  Classic 2D (skipped when Playwright or chromium is unavailable).
 - `tests/input-drag-look.test.mjs` — the drag-to-look gesture (`DragLook`
   in `js/input.js`) over real `MouseActions`: a press released under the
   threshold reveals, flags or chords as in locked play; past the threshold
@@ -832,7 +847,8 @@ browser checks for everything that needs WebGL or the DOM.
   `tests/replay-viewer.test.mjs`, `tests/replay-viewer-3d.test.mjs` and
   `tests/results-watch.test.mjs`, the
   flow tests in `tests/shell-*.test.mjs` (one per file, two in
-  `tests/shell-first-use.test.mjs` and `tests/shell-pause.test.mjs`, three in `tests/shell-help.test.mjs`), the 3D tests in
+  `tests/shell-first-use.test.mjs` and `tests/shell-pause.test.mjs`, three in `tests/shell-help.test.mjs`), the spawn and
+  return-to-start test in `tests/camera-spawn.test.mjs`, the 3D tests in
   `tests/mode3d-board-choice.test.mjs` and `tests/mode3d-session.test.mjs`, the
   theme-and-resolution test in `tests/settings-appliers.test.mjs` and the two page tests in
   `tests/settings-page.test.mjs`.
@@ -848,7 +864,8 @@ Tests consume, and so pin, these contracts:
   `padGlyphs`, `pickInDirection`, `GamepadReader` (injected `getGamepads`,
   `onConnect`, `onDisconnect`, `onActiveChange`; `poll()` →
   `{pad, pressed, held, released}`), `BTN`, `STICK_DEADZONE`.
-- `js/input.js::FlyCamera.move`/`moveAxes`/`lookAxes`, `MouseActions`
+- `js/input.js::FlyCamera.move`/`moveAxes`/`lookAxes`/`place`, `spawnPose`,
+  `offscreenArrow`, the `SPAWN_*` constants, `MouseActions`
   (`down(b)`/`up(b)`, callback receives `'left'|'right'|'chord'`), `MOVE_SPEED`,
   `LOOK_DEG_PER_PX`, `PAD_LOOK_DEG_PER_S`; `js/controls.js::Controls`
   (`shift`/`space`/`ctrl` union, `pad`, `axes`, `hasAxes`, `releasePad()`).
@@ -967,7 +984,7 @@ Browser hook `js/main.js::window.__ms` (full list in [app-shell.md](app-shell.md
 - getters `state`, `game`, `renderer`, `camera`, `controls`, `pads`, `fps`,
   `frameStats`, `modes` (the mode host), `pauser` (the pause controller),
   `settings` (the settings store), `records` (the records store),
-  `replayViewer` (the replay viewer); `THREE`, `startCameraPos`;
+  `replayViewer` (the replay viewer); `THREE`, `spawnPose(X, Y, Z)`;
   `state.mode` is the router's current screen.
 - `watch(data)` opens the replay viewer with its route's `{replay |
   replayId, returnTo}`.

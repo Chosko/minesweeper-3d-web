@@ -139,6 +139,7 @@ Pick a board and play:
 | Mouse | Look around (click "Click to play" to capture the mouse; where the browser blocks the capture, "Play with drag-to-look" turns the view while a button is held and dragged) |
 | `W` `A` `S` `D` | Fly forward / left / back / right (forward follows the view direction) |
 | `Q` / `E` | Move down / up |
+| `Home` / `R` | Back to the start view |
 | Left click | Reveal the aimed cube |
 | Right click | Flag / unflag. On a revealed number: flag all its closed neighbours, or unflag them all if they are all already flagged |
 | Left + Right | Chord: when a number has the right count of flags around it, reveal its other neighbours |
@@ -190,7 +191,7 @@ browser supports it. Some browsers only start sound after a key press or a click
   validation hints). The HUD shows time, mines left and board size, with indicators for the
   Shift/Space/Ctrl view modes. There is an in-game controls panel (`H`), and a results screen
   after every game.
-- **Pause menu** (`Esc`): resume, restart or return to the main menu.
+- **Pause menu** (`Esc`): resume, go back to the start view (3D), restart or return to the main menu.
 - **Settings:** mouse sensitivity (0.25×–3×), invert mouse Y and volume. They are saved in
   `localStorage`. The defaults match the original.
 - **Sound:** synthesized sound effects (Web Audio, no audio files) for revealing, flagging,
@@ -223,10 +224,14 @@ on purpose:
   fewer mine than cells, and a finished board takes no more clicks.
 - **Crash fixes:** the Random button is guarded for tiny boards, a chord with nothing aimed does
   nothing, and flood fill is iterative, so huge boards cannot overflow the stack.
-- **Re-centred grid:** the board stays centred when the spacing grows. The start camera moves to
-  match and lines up with a column of cubes.
+- **Re-centred grid:** the board stays centred when the spacing grows.
+- **Framed start view:** a 3D game starts from a three-quarter view that fits the whole box, looking
+  down onto it so three faces show, with the crosshair on the near face's centre cube, instead of
+  the original's straight view level with the top row. `Home` / `R` and the pause menu's "Back to
+  start" return there, an arrow on the crosshair points toward the box while it is out of view, and
+  a faint ground grid lies below the box.
 - **Pause menu instead of `F5` / `Esc`:** the original restarted with `F5` and quit with `Esc`. Here
-  `Esc` opens a menu with resume, restart and main menu.
+  `Esc` opens a menu with resume, back to start (3D), restart and main menu.
 - **Draw distance:** the far plane grows with the board instead of being clipped at 300 units.
 - **Minor timing changes the player cannot see:** auto-hiding and the win check run right after each
   action instead of once per frame, and the timer stops while the game is paused.

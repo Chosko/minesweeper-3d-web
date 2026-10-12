@@ -740,7 +740,7 @@ Preconditions: none
 
 ## 125. 3D spawn framing and world reference
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/input.js, js/main.js, js/render.js, js/ui.js, js/settings/bindings.js, index.html, css/style.css, tests/camera-spawn.test.mjs, tests/components.test.mjs, tests/settings-page.test.mjs, tests/replay-viewer-3d.test.mjs, docs/ORIGINAL_SPEC.md, README.md, .claude/domain/product-design.md
 Preconditions: none

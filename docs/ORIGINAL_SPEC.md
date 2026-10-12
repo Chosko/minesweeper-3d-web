@@ -42,6 +42,7 @@ pressed, flagged, unlinked, selected, nearSelected. No question marks.
 
 ## Controls (must be preserved)
 - Free-fly FPS camera (pointer lock). Start: position (0, 10, -8*max(X,Y,Z)) (adjust if grid is re-centred), pitch 0, looking toward +Z at the grid.
+  - Web port: a game starts framed from a three-quarter view instead — the whole box in view, looking down onto it and turned off the straight +Z view so three faces show, the crosshair on the near face's centre cube; `Home` / `R` and the pause card's "Back to start" return there.
 - Mouse look 0.2° per pixel, mouse right → turn right, mouse down → look down, pitch clamp ±90°.
 - W forward along view direction, S back, A strafe left, D strafe right, Q world down, E world up; 50 units/s.
   - Original quirk: forward vector = normalize(sin(yaw'), sin(pitch), cos(yaw')) (no cos(pitch) on XZ). Keep it.
@@ -57,7 +58,7 @@ pressed, flagged, unlinked, selected, nearSelected. No question marks.
 - **Space held**: crosshair passes through revealed cells; revealed numbers drawn at alpha 0.2.
 - **Left Ctrl held**: hidden cells (revealed zeros + unlinked) drawn opaque with their number texture.
 - Selected cell tinted (1, 0.8, 0.8) (pinkish).
-- Esc / F5 in the original = exit / restart. Web port: pause menu instead (resume, restart, main menu).
+- Esc / F5 in the original = exit / restart. Web port: pause menu instead (resume, back to start in 3D, restart, main menu).
 
 ## Drawing rules (per cell)
 | State | Visual | Alpha |

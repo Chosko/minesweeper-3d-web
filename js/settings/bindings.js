@@ -61,6 +61,7 @@ export const BINDINGS = Object.freeze({
       ['Mouse', 'Look around'],
       ['[W][A][S][D]', 'Fly forward / left / back / right'],
       ['[Q] [E]', 'Move down / up'],
+      ['[Home] / [R]', 'Back to the start view'],
       ['Left click', 'Reveal the aimed cube'],
       ['Right click', 'Flag / unflag (on a number: flag or unflag all its closed neighbours)'],
       ['Left + Right', 'Chord: reveal neighbours of a satisfied number'],

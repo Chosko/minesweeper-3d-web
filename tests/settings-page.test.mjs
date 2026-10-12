@@ -59,6 +59,14 @@ test('the Classic 2D keyboard bindings name every key the cursor input acts on',
   }
 });
 
+test('the 3D keyboard bindings name Home and R, which return the camera to the start view', () => {
+  const rows = bindingRows('3d', 'keyboard').filter(([input]) => input.includes('[Home]'));
+  assert.equal(rows.length, 1, 'one row');
+  assert.match(rows[0][0], /^\[Home\] \/ \[R\]$/);
+  assert.match(rows[0][1], /[Bb]ack to the start view/);
+  assert.equal(bindingRows('classic-2d', 'keyboard').some(([input]) => input.includes('[Home]')), false, 'not in Classic 2D');
+});
+
 test('bindingsListHtml renders keys as <kbd>, controller buttons as the pad\'s glyphs, and escapes text', () => {
   const html = bindingsListHtml([['[W][A] then Left & right', 'Fly <fast>'], ['{rt} / {lt}', 'Reveal with {a}']], GLYPHS.playstation);
   assert.equal(html,

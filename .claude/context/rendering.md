@@ -4,7 +4,8 @@
 
 Draws the board with three.js: every cube comes from two instanced meshes sharing one cube
 geometry, with per-cell state in a data texture and all visual effects in GLSL3 shaders. Also
-draws the sky gradient, the win confetti and the loss camera shake.
+draws the sky gradient with the ground grid below the board, the win confetti and the loss camera
+shake.
 
 - `js/render.js` — `BoardRenderer`: cube geometry, cell/sky/confetti shaders, opaque and
   transparent instance lists, back-to-front sort, end-of-game waves, selection glow.
@@ -77,6 +78,15 @@ draws the sky gradient, the win confetti and the loss camera shake.
 - **Transparent sort** is an O(n) counting sort on quantised L1 lattice distance to the camera
   (`SORT_BUCKETS` = 65536), farthest first — an exact painter's order for equal cubes on a
   lattice. Re-sorts only when `_transDirty` or the camera moved.
+- **Ground grid.** Drawn in the sky's fullscreen pass (`SKY_FRAG`'s `groundGrid`), so it lies behind
+  every cube, writes no depth and is never picked: the view ray meets a horizontal plane
+  `GROUND_GAP` (12) below the box's bottom at the current spacing; lines every power-of-two count of
+  lattice pitches (growing with the box), antialiased with `fwidth` and faded out where they crowd,
+  plus a faint fill, all fading toward the sky from 0.55 of the fade distance to it
+  (`max(GROUND_FADE_MIN` 400`, 4 × (camera distance + board radius))`), which reads as a horizon. Its
+  ink is the palette's horizon stop, darkened on a light sky and lightened on a dark one.
+  `_placeGround` sets `uGround` / `uEye` each `render()`; off without a board. The view modes, the
+  effects and the shake leave it as it is.
 - **Visual-only tiles.** After a win, unflagged mines draw the flag tile; after a loss, flags on
   non-mines draw `L_WRONG_FLAG`. Neither changes game state.
 - **Waves.** `uEff` 1 = win pulse, 2 = loss reveal; delay per cell of distance from an origin
@@ -147,8 +157,8 @@ draws the sky gradient, the win confetti and the loss camera shake.
 - Changing what a cell looks like or its alpha under Shift/Space/Ctrl (vertex shader `VERT`,
   `_writeCell`, `_rebuildOpaque`, `_applyShiftOpaque`, `_updateTransparent` must stay in step).
 - Adding a tile (new layer in `js/textures.js`, bump `LAYERS`, map it in `_writeCell`).
-- Tuning win/loss waves, confetti, shake, fog, sky or selection glow (`_beginWin`, `_beginLoss`,
-  `_waveSetup`, `_tickEffects`, `render`, shader constants).
+- Tuning win/loss waves, confetti, shake, fog, sky, ground grid or selection glow (`_beginWin`,
+  `_beginLoss`, `_waveSetup`, `_tickEffects`, `render`, `_placeGround`, shader constants).
 - Debugging transparency artefacts or sort cost (`_updateTransparent`).
 - Changing cell indexing, board dimensions limits (state texture height) or spacing math.
 - Fixing mirrored or rotated numbers on a face (`createCubeGeometry`).

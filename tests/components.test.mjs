@@ -510,6 +510,7 @@ test('every control on the menu and the pause card is named and reachable by key
   const line = (name) => main.match(new RegExp(`'?\\b${name}'?: \\{[^\\n]*defaultFocus: ([^\\n]*)`))[1];
   assert.match(line('paused'), /'#p-resume'/, 'the pause card focuses Resume by default');
   assert.ok(SCREENS.pause.includes('id="p-resume"') && SCREENS.pause.includes('id="p-restart"'));
+  assert.match(SCREENS.pause, /id="p-resume"[^\n]*\n\s*<button id="p-home" class="ui-button ui-button--secondary" type="button">Back to start<\/button>/, 'Back to start follows Resume');
   assert.doesNotMatch(read('js/ui.js'), /Keep looking around/, 'an ended game offers no look-around resume');
   assert.match(line('menu'), /^'\[data-entry\]\[data-last\]'/, 'the menu focuses the last mode played by default');
   assert.match(line('board-choice'), /^'[^']*data-preset/, 'the 3D board choice focuses the last played board by default');
@@ -932,7 +933,7 @@ test('in a browser, the overlay bar over the 3D scene meets the contrast contrac
 });
 
 // The debug hook's surface, pinned so the screen rebuild leaves it unchanged.
-const MS_HOOK = ['state', 'game', 'renderer', 'camera', 'fps', 'frameStats', 'startCameraPos', 'THREE', 'start', 'forcePlay',
+const MS_HOOK = ['state', 'game', 'renderer', 'camera', 'fps', 'frameStats', 'spawnPose', 'THREE', 'start', 'forcePlay',
   'controls', 'pads', 'pause', 'cellCenter', 'moveTo', 'look', 'aimAt', 'mouseDown', 'mouseUp', 'click', 'key', 'wheel',
   'selected', 'pickBrute', 'pickWith', 'info', 'modes', 'pauser', 'settings', 'records', 'replayViewer', 'watch'];
 

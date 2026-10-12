@@ -262,7 +262,8 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   controller offer `#ready-blocked` while `blocked`), `showPlaying`,
   `showClassic2D` (positions `#c2d-board` 16 px below the overlay bar),
   `showPause({state,time,minesLeft,note,mode})` (the board line, the mode's
-  bindings, the look settings only for `'3d'`), `showReplay` (hides the
+  bindings, the look settings only for `'3d'`, "Back to start" only for a 3D
+  game in play), `showReplay` (hides the
   game's HUD, help panel, hint strip and toast);
   Classic 2D `setBoard2D(board)`, `setBoardStatus({generating, failure})`;
   3D `setBoardStatus3D({generating, failure})` (`#m3d-status`); menu
@@ -270,7 +271,8 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   `showConfirm({message, confirmLabel}, onYes, onNo)`, `isConfirmOpen`,
   `closeConfirm` (→ false when none is open); HUD `setBoard(board)` (3D),
   `updateHud(time, minesLeft)` (overlay formats, DOM write only on change),
-  `setModes`, `setCrosshair`, `showSpacing`, `setSound(muted)` (also the HUD
+  `setModes`, `setCrosshair`, `setArrow(angle|null)` (the off-screen arrow `#crosshair-arrow` beside
+  the crosshair, turned to `angle`; DOM write only on change), `showSpacing`, `setSound(muted)` (also the HUD
   strip's sound label); help `toggleHelp`, `userToggleHelp`,
   `setHintStrip(on)` (the strip steps aside while the help panel is open),
   `dismissHint`,
@@ -333,7 +335,8 @@ the factory tests drive):
   `pads`, `fps`, `frameStats` (`{renders, skipped}`), `modes` (the mode
   host), `pauser` (the pause controller), `settings` (the settings store),
   `records` (the records store), `replayViewer` (`REPLAY_VIEWER`);
-  `THREE`, `startCameraPos`.
+  `THREE`, `spawnPose(X, Y, Z)` (the spawn pose of that box at the current spacing, field of view
+  and aspect).
 - `watch(data)` → `SHELL.go('replay', {data})`, `data` the viewer route's
   `{replay | replayId, returnTo}`.
 - `start(X, Y, Z, mines, minePositions?)` → `MODES.start('3d', …)`;
@@ -542,7 +545,7 @@ Game shell (`js/shell/`, wired in `js/main.js`):
 - **3D replay scene.** `mountReplay3D` mounts `createViewer3D` on
   `REPLAY_SCENE`, which hands the renderer the replay's 3D state view, drawn
   at `REPLAY_SPACING` (`SPACING_START`) with its own `FlyCamera`
-  (`replayCam`) reset to the start position; each frame the loop applies
+  (`replayCam`) placed at the box's spawn pose until its first sample; each frame the loop applies
   the recorded camera and view mode in place of the player's and glows the
   recorded camera's aimed cell (`updateReplayPick`). Player input never
   moves it. `hide()` gives the renderer back the game or the menu demo it
@@ -632,9 +635,16 @@ Game flow (`js/main.js`):
   and reads nothing; `shellBack` and `pauseGame` do nothing. After the
   delay the adapter releases pointer lock and reports finished, and the
   results flow routes to `results`.
-- `startCameraPos(X,Y,Z)` = original `(0, 10, -8M)` shifted by minus the original
-  grid centre at spacing 1.1, because the port centres the grid on the origin.
-  No snapping to a cell. Spacing resets to `SPACING_START` per game; the menu
+- `placeAtSpawn()` puts the camera at the game's spawn pose (`spawnPose`, [input.md](input.md)) at
+  the current spacing and the renderer camera's field of view and aspect: `startGame` (every new
+  game, Play again, Restart, the debug hook's `start`), `retry3D` (the failure offer's Retry and
+  standard board), and the return to start — `Home` / `R` in `onKey` while `Input.isActive` (so never
+  paused or in the end delay), and the pause card's "Back to start" (`onBackToStart`, which then
+  resumes as Resume does). The return is a jump the 3D sampler records as ordinary movement.
+  In play the frame loop's `updateArrow` hands `ui.setArrow` the off-screen arrow's angle
+  (`offscreenArrow`), keyed on the camera, spacing, box, field of view and aspect like
+  `updatePick`, and null off play, while paused and during the end delay.
+  Spacing resets to `SPACING_START` per game; the menu
   screens' demo board (`makeDemo`, 7³/30, a random mine set through
   `create3DGame`, decorative) uses 1.25 and an
   orbiting camera.
@@ -810,7 +820,7 @@ Component kit (`css/components.css`, catalogue in its head comment):
 - Pause card (`#pause-card`): a `ui-card ui-screen` with `ui-text` status
   lines, `#pause-actions` (`showPause` moves the primary action first —
   Resume while playing, Play again once ended, when Resume is hidden —
-  before Main menu), the
+  before Main menu; `#p-home` "Back to start" follows Resume and shows only for a 3D game in play), the
   confirmation panel `#pause-confirm` (`ui-panel ui-actions`, hidden until
   `showConfirm`: the message, `#p-confirm-yes` labelled with the action,
   `#p-confirm-no` Cancel), the board line `#pause-board` (as the overlay bar
@@ -872,7 +882,8 @@ Gameplay fidelity to the original game is the overriding rule.
 - [../../docs/ORIGINAL_SPEC.md](../../docs/ORIGINAL_SPEC.md):
   - "Grid & geometry" — spacing start/clamp/wheel step.
   - "Rules" — the timer freezing on win/loss, and HUD contents.
-  - "Controls" — start camera position, Esc/F5 replaced by the pause menu.
+  - "Controls" — the original's start pose with its web-port note (the framed spawn and the return
+    to it), Esc/F5 replaced by the pause menu.
 - [../domain/features/3d-play-flow.md](../domain/features/3d-play-flow.md) —
   the 3D presets, no-guess switch, generating state, timer start and the 3D
   mode's reports, which `js/main.js` wires ([mode3d.md](mode3d.md)).

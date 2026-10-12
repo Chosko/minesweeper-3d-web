@@ -1,7 +1,7 @@
 // Entry point: wires game logic, renderer, input and UI together.
 import * as THREE from 'three';
 import { BoardRenderer } from './render.js';
-import { FlyCamera, MouseActions, Input, SPACING_MIN, SPACING_MAX, SPACING_START } from './input.js';
+import { FlyCamera, MouseActions, Input, SPACING_MIN, SPACING_MAX, SPACING_START, spawnPose, offscreenArrow } from './input.js';
 import { pickCell, pickCellBrute } from './picking.js';
 import { UI, clampSettings, NO_MOUSE_MSG } from './ui.js';
 import * as audio from './audio.js';
@@ -81,6 +81,7 @@ const S = {
   time: 0, // the session's timer in seconds, read once per frame while it runs
   endState: null, // frozen { state, time, minesLeft } once the game is over
   pickKey: '',
+  arrowKey: '', // the off-screen arrow's inputs when last drawn
   orbit: 0,
   lockless: false, // playing without pointer lock (controller session, drag-to-look, or the debug hook)
   dragLook: false, // drag-to-look play: the browser blocks pointer lock; ends when the game is left
@@ -169,6 +170,7 @@ const input = new Input({
   onWheel: (notches) => { setSpacing(S.spacing + notches * 0.04); ui.showSpacing(S.spacing); },
   onKey: (code, e) => {
     if (isBackKey(code)) { shellBack('key'); return; }
+    if ((code === 'Home' || code === 'KeyR') && input.o.isActive()) { placeAtSpawn(); return; } // back to the start view, in 3D play only
     if (S.mode === 'classic-2d') used2D(); // the first key of a Classic 2D game brings its hint strip
     const dir = arrowDirection(code);
     if (dir) { keyNav(dir, e); return; }
@@ -225,6 +227,7 @@ const ui = new UI({
   onReadyClick: () => { sfx.unlock(); if (padGesture) padResume(); else input.requestLock(); },
   onReadyDrag: () => enterDragLook(),
   onResume: () => PAUSE.resume(padGesture ? 'pad' : 'pointer'),
+  onBackToStart: () => { placeAtSpawn(); PAUSE.resume(padGesture ? 'pad' : 'pointer'); }, // a 3D game in play: resumes as Resume does
   onRestart: () => PAUSE.restart(padGesture ? 'pad' : 'pointer'),
   onMainMenu: () => PAUSE.toMenu(),
   onPause: () => pauseGame(padGesture ? 'pad' : 'button'),
@@ -471,7 +474,7 @@ const REPLAY_SCENE = {
   show(view) {
     replay3d.view = view;
     replay3d.pickKey = '';
-    replayCam.reset(...startCameraPos(view.X, view.Y, view.Z));
+    replayCam.place(spawnPose(view, REPLAY_SPACING, renderer.camera.fov, renderer.camera.aspect)); // until its first sample
     renderer.setGame(view);
     applyPixelRatio(view.n);
     needRender = true;
@@ -644,7 +647,7 @@ function startGame(settings) {
   mouse.reset();
   renderer.setGame(g);
   applyPixelRatio(g.n);
-  cam.reset(...startCameraPos(s.X, s.Y, s.Z));
+  placeAtSpawn();
   ui.setBoard(board3dChoice);
   ui.updateHud(0, g.minesLeft);
   SHELL.go('ready', { data: { msg: NO_MOUSE ? NO_MOUSE_MSG : '' } });
@@ -678,6 +681,7 @@ function retry3D(kind) {
   board3d.failure = null;
   const r = kind === 'retry' ? play.retry() : play.playStandard();
   if (kind === 'standard') { board3dChoice = { ...board3dChoice, noGuess: false }; ui.setBoard(board3dChoice); } // a restart keeps the standard board
+  placeAtSpawn();
   showStatus3D();
   if (padGesture || S.lockless) {
     if (S.mode === 'paused') PAUSE.resume('pad');
@@ -687,13 +691,15 @@ function retry3D(kind) {
 }
 
 /**
- * Start camera. Original: camera (0, 10, -8M), grid centre at s=1.1 is (0.2X-3.2, 0.2Y-3.2, 0.2Z-3.2)
- * (M = max(X,Y,Z)). The port centres the grid on the origin, so the camera is shifted by minus that
- * centre. No snapping: the start view must equal the original's, even if it isn't aimed at a cell.
+ * The camera at the game's spawn pose (js/input.js spawnPose): the whole box framed from three
+ * quarters, at the current spacing and the window's field of view and aspect. Every start and the
+ * return to start (Home, R, the pause card's "Back to start") come through here.
  */
-function startCameraPos(X, Y, Z) {
-  const M = Math.max(X, Y, Z);
-  return [3.2 - 0.2 * X, 13.2 - 0.2 * Y, -8 * M + 3.2 - 0.2 * Z];
+function placeAtSpawn() {
+  if (!S.game) return;
+  const three = renderer.camera;
+  cam.place(spawnPose(S.game, S.spacing, three.fov, three.aspect));
+  needRender = true;
 }
 
 function setLockless(on) {
@@ -1121,6 +1127,14 @@ function updatePick() {
   renderer.setSelected(S.selected);
   ui.setCrosshair(S.selected >= 0);
 }
+/** The off-screen arrow on the crosshair ring, toward the box while none of it is in view; only in 3D play. */
+function updateArrow(on) {
+  const g = S.game, three = renderer.camera;
+  const key = on ? `${cam.x},${cam.y},${cam.z},${cam.yaw},${cam.pitch},${S.spacing},${g.X},${g.Y},${g.Z},${three.fov},${three.aspect}` : '';
+  if (key === S.arrowKey) return;
+  S.arrowKey = key;
+  ui.setArrow(on ? offscreenArrow(cam, g, S.spacing, three.fov, three.aspect) : null);
+}
 /** A 3D replay aims as its player did: the recorded camera's cell glows. */
 function updateReplayPick() {
   const v = replay3d.view, c = replayCam;
@@ -1223,6 +1237,7 @@ function frame(now) {
   if (replay3d.view) updateReplayPick();
   else if (g && !onBackdrop()) {
     updatePick();
+    updateArrow(playing && !ending3D());
     // the timer is the session's: it runs only while playing (sync3D), frozen at the end
     if (playing && S.started && !S.endState) S.time = S.play.elapsedMs() / 1000;
     const e = S.endState;
@@ -1261,7 +1276,8 @@ window.__ms = {
   get camera() { return cam; },
   get fps() { return fps.value; },
   get frameStats() { return { ...stats }; },
-  startCameraPos,
+  /** The spawn pose of an X × Y × Z box at the current spacing, field of view and aspect. */
+  spawnPose: (X, Y, Z) => spawnPose({ X, Y, Z }, S.spacing, renderer.camera.fov, renderer.camera.aspect),
   THREE,
   start(X, Y, Z, mines, minePositions) { MODES.start('3d', { X, Y, Z, mines, minePositions }); },
   /** Enter playing mode without pointer lock (headless tests). */

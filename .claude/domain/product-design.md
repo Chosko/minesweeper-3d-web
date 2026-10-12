@@ -80,9 +80,13 @@ demanding, until free 3D play is within reach.
   Minesweeper Online, played with its default options, exactly. It is drawn as a flat 2D board, never as a 3D
   scene. It is built new and does not derive from the 3D mode.
 - **The 3D mode is the existing 3D game, made one mode among several.** Its
-  look, controls and feel are kept. Its rules change in two ways: the first
-  click is always safe, and a no-guess option is available. Its games end on
-  the shared results screen.
+  look, controls and feel are kept, except that a game starts framed from a
+  three-quarter view with the whole box in sight instead of the original's
+  start pose, and the scene gains a return to that view (a key and a pause
+  card action), an arrow toward the box while it is out of view, and a faint
+  ground grid below it. Its rules change in two ways: the first click is
+  always safe, and a no-guess option is available. Its games end on the shared
+  results screen.
 - **No-guess boards and competitive stats are core, not extras.** Every mode
   offers no-guess generation; every game records the stats enthusiasts track
   (3BV, 3BV/s, efficiency) and a replay.

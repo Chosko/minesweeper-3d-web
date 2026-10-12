@@ -46,10 +46,10 @@ export class UI {
       boardChoice: $('board-choice'), comingSoon: $('coming-soon'), comingSoonTitle: $('coming-soon-title'),
       settings: $('settings'), settingsBindings: null, records: $('records'),
       comingSoonText: $('coming-soon-text'),
-      crosshair: $('crosshair'),
+      crosshair: $('crosshair'), crosshairArrow: $('crosshair-arrow'),
       controlsModal: $('controls-modal'),
       pause: $('pause'), pauseTitle: $('pause-title'), pauseSub: $('pause-sub'),
-      resume: $('p-resume'), restart: $('p-restart'), pauseMenu: $('p-menu'), pauseActions: $('pause-actions'),
+      resume: $('p-resume'), home: $('p-home'), restart: $('p-restart'), pauseMenu: $('p-menu'), pauseActions: $('pause-actions'),
       confirm: $('pause-confirm'), confirmText: $('pause-confirm-text'), confirmYes: $('p-confirm-yes'),
       chipShift: $('chip-shift'), chipSpace: $('chip-space'), chipCtrl: $('chip-ctrl'),
       c2dChoice: $('c2d-choice'), c2d: $('c2d'), c2dBoard: $('c2d-board'), c2dStatus: $('c2d-status'),
@@ -62,6 +62,7 @@ export class UI {
     this._helpTimer = 0;
     this._helpByUser = false; // in-game help panel opened with H
     this._crossOn = null;
+    this._arrow = null; // the off-screen arrow's angle shown, or null while hidden
     this._mode = '3d'; // the game mode the help surfaces show: 'classic-2d' | '3d'
     this._device = 'keyboard'; // the active device: 'keyboard' (and mouse) | 'controller'
     this._glyphs = GLYPHS.generic; // the active controller's, for the bindings shown
@@ -97,6 +98,7 @@ export class UI {
     $('ready-btn').addEventListener('click', () => cb.onReadyClick());
     $('ready-drag').addEventListener('click', () => cb.onReadyDrag?.());
     this.el.resume.addEventListener('click', () => cb.onResume());
+    this.el.home.addEventListener('click', () => cb.onBackToStart?.());
     this.el.restart.addEventListener('click', () => cb.onRestart());
     $('p-menu').addEventListener('click', () => cb.onMainMenu());
     $('hud-pause').addEventListener('click', () => cb.onPause?.());
@@ -300,6 +302,17 @@ export class UI {
     this.el.crosshair.classList.toggle('on', on);
     this.el.crosshair.classList.toggle('off', !on);
   }
+  /**
+   * The off-screen arrow on the crosshair ring: `angle` in radians on screen (0 = right, PI/2 = up)
+   * toward the box, or null to hide it. Touches the DOM only on change.
+   */
+  setArrow(angle) {
+    if (angle === this._arrow) return;
+    this._arrow = angle;
+    const el = this.el.crosshairArrow;
+    el.classList.toggle('hidden', angle === null);
+    if (angle !== null) el.style.transform = `rotate(${-angle}rad)`;
+  }
   showPause({ state, time, minesLeft, note = '', mode = this._mode }) {
     this._setMode(mode);
     this._resetConfirm();
@@ -315,6 +328,7 @@ export class UI {
     first.classList.replace('ui-button--secondary', 'ui-button--primary');
     second.classList.replace('ui-button--primary', 'ui-button--secondary');
     this.el.pauseActions.insertBefore(first, this.el.pauseMenu);
+    this.el.pauseActions.insertBefore(this.el.home, this.el.pauseMenu);
     this.el.pauseActions.insertBefore(second, this.el.pauseMenu);
     this.el.pauseTitle.textContent = state === 'won' ? 'You won!' : state === 'lost' ? 'Game over' : 'Paused';
     this.el.pauseSub.textContent = `Time ${fmtTime(time)} s · ${minesLeft} mine${minesLeft === 1 ? '' : 's'} left`;
@@ -322,6 +336,7 @@ export class UI {
     // The look settings only on a 3D game's pause card; volume and Sound in both modes.
     for (const key of ['lookSensitivity', 'invertY']) this.el.pause.querySelector(`[data-setting="${key}"]`).classList.toggle('hidden', mode !== '3d');
     this.el.resume.classList.toggle('hidden', ended);
+    this.el.home.classList.toggle('hidden', ended || mode !== '3d'); // back to the 3D start view, while the box is in play
     this.el.restart.textContent = ended ? 'Play again' : 'Restart';
   }
   isPauseVisible() { return !this.el.pause.classList.contains('hidden'); }

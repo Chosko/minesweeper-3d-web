@@ -18,6 +18,11 @@ export class FlyCamera {
     this.pitch = 0; // angle.X : + = looking down
     this.yaw = Math.PI; // angle.Y : PI = looking toward +Z
   }
+  /** Take a pose { x, y, z, yaw, pitch } (spawnPose's). */
+  place({ x, y, z, yaw, pitch }) {
+    this.x = x; this.y = y; this.z = z;
+    this.yaw = yaw; this.pitch = pitch;
+  }
   look(dxPx, dyPx) {
     const k = LOOK_DEG_PER_PX * DEG * this.sensitivity;
     this.pitch += (this.invertY ? -dyPx : dyPx) * k;
@@ -66,6 +71,110 @@ export class FlyCamera {
     cam.rotation.set(-this.pitch, -this.yaw, 0, 'YXZ');
     cam.updateMatrixWorld(true);
   }
+}
+
+// ---------- the spawn pose and the off-screen arrow (pure) ----------
+// A box is { X, Y, Z } drawn as the renderer and picking draw it: cell (i,j,k) centre
+// (i - (X-1)/2) * 4s, cube edge 4, so its bounding box is ±((side-1) * 4s / 2 + 2) on each axis.
+
+/** The spawn looks down onto the box by this much (FlyCamera pitch, + = down). */
+export const SPAWN_PITCH_DEG = 15;
+/** The spawn is turned this much around the vertical from the original's straight view toward +Z. */
+export const SPAWN_YAW_DEG = 20;
+/** Fraction of the view kept clear on each side of the framed box, horizontally and vertically. */
+export const SPAWN_MARGIN = 0.1;
+/**
+ * The spawn camera lies beyond the near, top and side face planes by at least this fraction of the
+ * box's half size on that axis, so the three faces are seen, not grazed.
+ */
+export const SPAWN_FACE_CLEARANCE = 0.1;
+
+/** The camera's forward, right and up unit vectors for a FlyCamera yaw and pitch (apply()'s rotation). */
+function viewBasis(yaw, pitch) {
+  const cp = Math.cos(pitch), sp = Math.sin(pitch), cy = Math.cos(yaw), sy = Math.sin(yaw);
+  return {
+    f: [cp * sy, -sp, -cp * cy],
+    r: [cy, 0, sy],
+    u: [sp * sy, cp, -sp * cy],
+  };
+}
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+function halfSize(X, Y, Z, spacing) {
+  const p = 4 * spacing;
+  return [((X - 1) * p) / 2 + 2, ((Y - 1) * p) / 2 + 2, ((Z - 1) * p) / 2 + 2];
+}
+
+/**
+ * The pose a 3D game starts from: a three-quarter view down onto the box (SPAWN_PITCH_DEG, and
+ * SPAWN_YAW_DEG off the original's view toward +Z), the screen centre on the centre of the near face's
+ * centre cube (index floor(side / 2) across and up), from the closest distance that keeps all eight
+ * corners inside the view with SPAWN_MARGIN on each side at this vertical field of view (degrees) and
+ * aspect — or further out when the camera would not yet see the top and side faces
+ * (SPAWN_FACE_CLEARANCE). Returns { x, y, z, yaw, pitch } in FlyCamera's convention.
+ */
+export function spawnPose({ X, Y, Z }, spacing, fovDeg, aspect) {
+  const p = 4 * spacing;
+  const [hx, hy, hz] = halfSize(X, Y, Z, spacing);
+  const t = [(Math.floor(X / 2) - (X - 1) / 2) * p, (Math.floor(Y / 2) - (Y - 1) / 2) * p, -((Z - 1) / 2) * p];
+  const yaw = Math.PI - SPAWN_YAW_DEG * DEG, pitch = SPAWN_PITCH_DEG * DEG;
+  const { f, r, u } = viewBasis(yaw, pitch);
+  const lim = 1 - 2 * SPAWN_MARGIN;
+  const tanV = Math.tan((fovDeg * DEG) / 2) * lim, tanH = tanV * aspect;
+  // A corner at offset d from the aim point projects inside the margin once its depth d·f + D covers
+  // its sideways offsets: D >= |d·r| / tanH - d·f and D >= |d·u| / tanV - d·f.
+  let dist = 0;
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
+    const d = [sx * hx - t[0], sy * hy - t[1], sz * hz - t[2]];
+    const depth = dot(d, f);
+    dist = Math.max(dist, Math.abs(dot(d, r)) / tanH - depth, Math.abs(dot(d, u)) / tanV - depth);
+  }
+  // Seeing the top face and the side face the yaw turns toward: the camera clears their planes.
+  const k = 1 + SPAWN_FACE_CLEARANCE;
+  dist = Math.max(dist, (hy * k - t[1]) / -f[1], (hx * k + t[0]) / f[0], (hz * k + t[2]) / f[2]);
+  return { x: t[0] - dist * f[0], y: t[1] - dist * f[1], z: t[2] - dist * f[2], yaw, pitch };
+}
+
+/**
+ * The off-screen arrow: null while any part of the box's bounding box is inside the view (the
+ * frustum of this vertical field of view, in degrees, and aspect, from the camera's position on);
+ * otherwise the screen angle toward the box centre, in radians, 0 = right and PI/2 = up. A centre
+ * behind the camera gives the way the shortest turn toward it goes. `pose` is { x, y, z, yaw, pitch }.
+ */
+export function offscreenArrow(pose, { X, Y, Z }, spacing, fovDeg, aspect) {
+  const { f, r, u } = viewBasis(pose.yaw, pose.pitch);
+  const [hx, hy, hz] = halfSize(X, Y, Z, spacing);
+  const tanV = Math.tan((fovDeg * DEG) / 2), tanH = tanV * aspect;
+  const local = (x, y, z) => {
+    const d = [x - pose.x, y - pose.y, z - pose.z];
+    return [dot(d, r), dot(d, u), dot(d, f)];
+  };
+  const c = [];
+  for (let n = 0; n < 8; n++) c.push(local(n & 1 ? hx : -hx, n & 2 ? hy : -hy, n & 4 ? hz : -hz));
+  // The frustum as half-spaces in camera space (a·p >= 0); a box face clipped against all of them that
+  // keeps any area means that part of the box is in view. The frustum has no far side, so a box that
+  // meets it always does so through a face.
+  const planes = [[0, 0, 1], [1, 0, tanH], [-1, 0, tanH], [0, 1, tanV], [0, -1, tanV]];
+  const faces = [[0, 2, 3, 1], [4, 5, 7, 6], [0, 1, 5, 4], [2, 6, 7, 3], [0, 4, 6, 2], [1, 3, 7, 5]];
+  for (const face of faces) {
+    let poly = face.map((n) => c[n]);
+    for (const pl of planes) {
+      const out = [];
+      for (let i = 0; i < poly.length; i++) {
+        const a = poly[i], b = poly[(i + 1) % poly.length];
+        const da = dot(pl, a), db = dot(pl, b);
+        if (da >= 0) out.push(a);
+        if ((da >= 0) !== (db >= 0)) {
+          const s = da / (da - db);
+          out.push([a[0] + (b[0] - a[0]) * s, a[1] + (b[1] - a[1]) * s, a[2] + (b[2] - a[2]) * s]);
+        }
+      }
+      poly = out;
+      if (!poly.length) break;
+    }
+    if (poly.length >= 3) return null;
+  }
+  const [cx, cy] = local(0, 0, 0);
+  return Math.atan2(cy, cx);
 }
 
 /**
@@ -179,6 +288,8 @@ const GAME_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'Spac
   'ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight']);
 // The arrow keys reach onKey on every keydown, the browser's key repeats included: they move menu focus.
 const ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
+// Back to the start view (onKey): the browser's own Home scrolling is stopped while play is active.
+const RETURN_KEYS = new Set(['Home', 'KeyR']);
 
 /**
  * DOM input: keyboard state, pointer lock, mouse buttons/look/wheel.
@@ -200,7 +311,8 @@ export class Input {
       if (GAME_KEYS.has(e.code)) {
         if (this.o.isActive()) e.preventDefault();
         this.keys.add(e.code);
-      } else if (e.ctrlKey && this.o.isActive()) {
+      } else if (RETURN_KEYS.has(e.code) && this.o.isActive()) e.preventDefault();
+      else if (e.ctrlKey && this.o.isActive()) {
         // Ctrl is the "show hidden cells" key: swallow Ctrl+<key> browser shortcuts where allowed
         e.preventDefault();
       }

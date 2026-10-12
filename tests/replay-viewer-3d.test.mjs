@@ -228,6 +228,9 @@ test('the shell registers the 3D viewer under the box graph, with its own camera
   assert.match(block, /viewers: \{ square: mountViewer2D, box: mountReplay3D \}/);
   assert.match(MAIN, /createViewer3D\(\{ sim, scene: REPLAY_SCENE, spacing: REPLAY_SPACING \}\)/);
   assert.match(MAIN, /const replayCam = new FlyCamera\(\)/);
+  const show = MAIN.slice(MAIN.indexOf('const REPLAY_SCENE = {'), MAIN.indexOf('hide()', MAIN.indexOf('const REPLAY_SCENE = {')));
+  assert.match(show, /replayCam\.place\(spawnPose\(view, REPLAY_SPACING, renderer\.camera\.fov, renderer\.camera\.aspect\)\)/,
+    'before its first sample the replay\'s camera is at the spawn pose a game starts at');
   assert.match(MAIN, /const REPLAY_SPACING = SPACING_START;/, 'drawn at the spacing a game starts at');
   const loop = MAIN.slice(MAIN.indexOf('function frame(now)'), MAIN.indexOf('requestAnimationFrame(frame);\n}'));
   const branch = loop.slice(loop.indexOf('} else if (replay3d.view) {'), loop.indexOf('} else {', loop.indexOf('} else if (replay3d.view) {')));
