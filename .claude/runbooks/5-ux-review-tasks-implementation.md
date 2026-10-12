@@ -4,7 +4,7 @@ Created: 2026-10-12 · Source: /runbook-create interview · Model: opus
 Last step number: 38
 Sequencing: Run in list order, one step at a time: most tasks edit js/main.js, index.html and css/style.css, and each body says whichever of two overlapping tasks lands second merges around the first; task 119's help component is reused by many later tasks, so it goes first.
 
-## [ ] 1. Implement task 119 — Mode-aware help and first-use hints
+## [x] 1. Implement task 119 — Mode-aware help and first-use hints
 
 Depends on: none
 
@@ -13,6 +13,8 @@ Context: none
 ```prompt
 /task-implement 119 --review
 ```
+
+Done: 2026-10-12, commit `828a0a4` (22 files, +1652/-170). Decisions: only the hint strip's × dismisses it, H (controller X in 3D) merely hides it while the help panel is open; F no longer toggles fullscreen anywhere in Classic 2D, since F flags there.
 
 ## [ ] 2. Implement task 120 — Dark theme completion
 
