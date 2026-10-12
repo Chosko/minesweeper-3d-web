@@ -112,7 +112,7 @@ Context: none
 
 Done: 2026-10-12, commit `528646d` (25 files, +895/-137). Decisions: the undo-last-batch rule ships as 3D rules version 2, with version 1 (unflag every neighbour) kept for earlier replays; per-cell memory rose by one byte (32 a cell for the game, 38 in all). Wrong premise: the mines counter's below-zero red tint already met contrast in both themes, so nothing was fixed there.
 
-## [ ] 10. Implement task 128 — Results precision, figures and hierarchy
+## [x] 10. Implement task 128 — Results precision, figures and hierarchy
 
 Depends on: none
 
@@ -121,6 +121,8 @@ Context: none
 ```prompt
 /task-implement 128 --review
 ```
+
+Done: 2026-10-12, commit `95ec66a` (37 files, +960/-258). Decisions: the light-theme `--color-success` was darkened to `#187a33` so delta text meets 4.5:1, which also recolours the Records history chart's green line; the replay viewer's visible position readout stays in whole seconds, only the slider's screen-reader text carries thousandths.
 
 ## [ ] 11. Implement task 129 — Pause keeps the clock running, pauses recorded
 
