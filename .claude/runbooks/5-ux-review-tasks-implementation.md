@@ -1,7 +1,7 @@
 # Runbook: ux-review-tasks-implementation
 
 Created: 2026-10-12 · Source: /runbook-create interview · Model: opus
-Last step number: 36
+Last step number: 37
 Sequencing: Run in list order, one step at a time: most tasks edit js/main.js, index.html and css/style.css, and each body says whichever of two overlapping tasks lands second merges around the first; task 119's help component is reused by many later tasks, so it goes first.
 
 ## [ ] 1. Implement task 119 — Mode-aware help and first-use hints
@@ -356,7 +356,72 @@ Context: none
 /task-implement 153 --review
 ```
 
-## [ ] 34. Check the result against the UX review
+## [ ] 37. Check the result against the UX review
+
+Depends on: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 35, 36
+
+Context: none
+
+```prompt
+Audit the implemented game against the game director's UX review and write the
+findings down. This step reports; it fixes nothing — no code, test, task or
+feature-document edit.
+
+Read first: docs/UX_REVIEW.md in full. For navigation in the codebase, read
+CLAUDE.md and .claude/context/INDEX.md, then only the context files you need.
+The backlog tasks that implemented the review are in .claude/TASKS.md (bodies
+in .claude/tasks/<N>.md); each body names the P-nn / I-nn items it closes and
+the files it touched, which tells you where to look.
+
+What to check, three groups:
+1. Every P-nn and I-nn row that § "Approved scope and work plan" approves
+   (its opening paragraph lists the exclusions; everything else numbered is
+   approved). For each, compare the implemented game with the row's proposed
+   solution and with any decision that bears on it.
+2. Every row of the "Decisions taken" table (under § Priorities): does the
+   game follow the decision and its stated effect?
+3. The conditions in the opening paragraph of § "Approved scope and work
+   plan" (P-21 built as undo-last-batch plus visibility, never a certainty
+   gate; P-23 built in attended iterations; P-45 only where it degrades nothing
+   on normal pointers; P-25 the fade, not half speed; P-26 forward vector
+   changed with no new setting and Q/E staying world up and down).
+
+How to check: read the code the relevant tasks touched, and play the build.
+Serve the repository root as static files with `python3 -m http.server <port>`
+(in the background) and drive it in headless Chromium with Playwright,
+imported from /opt/node-tools/node_modules/playwright/index.js, launching
+Chromium with the args `--use-gl=angle --use-angle=swiftshader
+--enable-unsafe-swiftshader --ignore-gpu-blocklist`. The tests under tests/
+show how the project drives the game — including the `__ms` debug hook (for
+example tests/classic2d-mode.test.mjs) and a faked gamepad
+(tests/gamepad.test.mjs); reuse their patterns. Keep any scratch scripts out
+of the repository.
+
+Classify each item as exactly one of:
+- implemented as specified;
+- implemented with drift — say what differs from the proposed solution or
+  decision;
+- missing;
+- defective — a bug found while checking it, with steps to reproduce.
+Also list (a) defects found outside the numbered items, with steps to
+reproduce, and (b) every feature document under .claude/domain/ left
+inconsistent with what the code does, naming the passage and the behaviour.
+
+Run the project's full test suite (`node --test` from the repository root)
+and record the result: pass/fail counts and the names of any failing tests.
+
+Write the report to docs/UX_REVIEW_DRIFT.md: a short verdict on top (overall
+state and the counts per status), then tables with the columns item, status,
+evidence (file:line or the observed in-game behaviour), what to do — one
+table per group above, one for the outside defects, one for the inconsistent
+feature documents — and the test-suite result. Commit only that file and push
+the current branch.
+
+The closing report names the counts per status and the five most important
+findings.
+```
+
+## [x] 34. Check the result against the UX review
 
 Depends on: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33
 
@@ -420,6 +485,8 @@ the current branch.
 The closing report names the counts per status and the five most important
 findings.
 ```
+
+Done: struck — its Depends on omits steps 35 and 36, appended after it was written; superseded by its corrected copy, step 37.
 
 ## Do not re-propose
 
