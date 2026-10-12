@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 125
+Last task number: 126
 
 ---
 
@@ -743,6 +743,15 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: js/input.js, js/main.js, js/render.js, js/ui.js, js/settings/bindings.js, index.html, css/style.css, tests/camera-spawn.test.mjs, tests/components.test.mjs, tests/settings-page.test.mjs, tests/replay-viewer-3d.test.mjs, docs/ORIGINAL_SPEC.md, README.md, .claude/domain/product-design.md
+Preconditions: none
+
+---
+
+## 126. 3D small feedback
+
+Status: [MISSING]
+Target: claude
+Files: js/render.js, js/main.js, js/input.js, js/ui.js, index.html, tests/render-3d-feedback.test.mjs, tests/shell-pause-esc.test.mjs, tests/replay-viewer-3d.test.mjs, docs/ORIGINAL_SPEC.md, README.md, .claude/domain/product-design.md
 Preconditions: none
 
 ---
