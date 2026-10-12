@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 142
+Last task number: 143
 
 ---
 
@@ -896,6 +896,15 @@ Preconditions: 125
 Status: [MISSING]
 Target: claude
 Files: js/classic2d/touch-input.js, js/classic2d/board-view.js, js/classic2d/mode.js, js/main.js, js/ui.js, index.html, css/style.css, css/components.css, tests/classic2d-touch.test.mjs, tests/classic2d-view.test.mjs, tests/classic2d-mode.test.mjs, tests/components.test.mjs, README.md, .claude/domain/product-design.md, .claude/domain/business-model.md, .claude/domain/features/classic-2d-square-play.md, .claude/domain/features/game-shell.md, .claude/domain/features/3d-play-flow.md, .claude/domain/features/screen-components.md
+Preconditions: none
+
+---
+
+## 143. Keyboard-only 3D
+
+Status: [MISSING]
+Target: claude
+Files: js/input.js, js/main.js, js/settings/bindings.js, js/ui.js, index.html, tests/input-keyboard-3d.test.mjs, tests/gamepad.test.mjs, tests/settings-page.test.mjs, tests/replay-3d.test.mjs, README.md, docs/ORIGINAL_SPEC.md, .claude/domain/features/settings.md, .claude/domain/features/3d-play-flow.md
 Preconditions: none
 
 ---
