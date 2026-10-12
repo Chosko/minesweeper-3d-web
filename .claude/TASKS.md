@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 145
+Last task number: 146
 
 ---
 
@@ -924,5 +924,14 @@ Status: [MISSING]
 Target: claude
 Files: js/shell/navigation.js, js/main.js, js/ui.js, tests/shell-router.test.mjs, tests/shell-focus-containment.test.mjs, tests/shell-pause.test.mjs, .claude/domain/features/game-shell.md
 Preconditions: none
+
+---
+
+## 146. Orbit camera mode
+
+Status: [MISSING]
+Target: claude
+Files: js/input.js, js/main.js, js/settings/schema.js, js/settings/page.js, js/settings/appliers.js, js/settings/bindings.js, js/ui.js, index.html, tests/camera-orbit.test.mjs, tests/settings-store.test.mjs, tests/settings-appliers.test.mjs, tests/settings-page.test.mjs, tests/replay-3d.test.mjs, tests/gamepad.test.mjs, README.md, docs/ORIGINAL_SPEC.md, .claude/domain/product-design.md, .claude/domain/features/settings.md, .claude/domain/features/3d-results-records-screens.md
+Preconditions: 143
 
 ---
