@@ -437,7 +437,7 @@ function answer2D(answer) {
   if (S.mode === 'paused') PAUSE.resume(padGesture ? 'pad' : 'pointer');
   answer();
 }
-const mode2d = MODES.register('classic-2d', (report) => createClassic2DMode(report, { flow: FLOW_2D, lastChoice: LAST_CHOICE_2D }));
+const mode2d = MODES.register('classic-2d', (report) => createClassic2DMode(report, { flow: FLOW_2D, lastChoice: LAST_CHOICE_2D, sound: sfx }));
 /**
  * The board choice on `choice`; the default choice of a player who never played is not "last
  * played". Each size's detail line is read from the records each time it shows.

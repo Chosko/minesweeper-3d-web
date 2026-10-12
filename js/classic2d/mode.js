@@ -2,7 +2,7 @@
 // cursor inputs behind the game shell's mode contract (js/shell/mode-host.js). DOM-free: the shell
 // hands in its flow; the mounts default to the browser ones and are only called by start().
 //
-// createClassic2DMode(report, { flow, lastChoice, createClient?, mount?, clock?, randomSeed?,
+// createClassic2DMode(report, { flow, lastChoice, createClient?, mount?, sound?, clock?, randomSeed?,
 //                               generatingDelayMs? }) → mode
 //   flow        the shell's side:
 //                 openBoardChoice(choice)  show the board choice preselected with `choice`
@@ -29,6 +29,15 @@
 //   createClient  () → a generation client (js/generation/client.js), one per game.
 //   mount       { board: mountBoardView, pointer: mountPointerInput, cursor: mountCursorInput,
 //               sampler: mountSampler2D }; without `sampler`, no movement is recorded.
+//   sound       the sound sink (js/audio.js's sfx: reveal, flag, chord, noop, explode, win); every
+//               action the inputs take plays the 3D game's cue for its outcome (js/main.js), read
+//               from the engine's changed cells: reveal(count) or chord(count) for the cells
+//               opened, flag(on, count) for flags placed or removed, explode() alone for a loss,
+//               noop() for an action while playing that changed no cell, then win() once at a
+//               win. The first reveal's cue plays when its board arrives, not when the game was
+//               restarted or left first; a flag or chord before the first reveal changes nothing
+//               and a refused action (null) is silent. A cue never changes or gates an action;
+//               without a sink nothing plays.
 //   clock, randomSeed, generatingDelayMs  passed to the session.
 //
 // The contract: openBoardChoice(), start(choice), pause(), resume(), restart(), leave(), summary(),
@@ -56,6 +65,7 @@
 // card.
 
 import { createSession, SESSION_STATE } from './session.js';
+import { CELL, PHASE } from '../engine/rules.js';
 import { normaliseChoice } from './board-setup.js';
 import { mountBoardView } from './board-view.js';
 import { mountPointerInput } from './pointer-input.js';
@@ -72,6 +82,7 @@ export function createClassic2DMode(report, {
   lastChoice,
   createClient = () => createGenerationClient(),
   mount = BROWSER_MOUNTS,
+  sound = null,
   clock,
   randomSeed,
   generatingDelayMs,
@@ -79,6 +90,27 @@ export function createClassic2DMode(report, {
   let game = null; // { session, view, pointer, cursor, sampler, offs }
   let hidden = false;
   let shown = { seconds: null, minesLeft: null, clicks: null };
+
+  // The cue of an action's result, as the 3D game plays it; `before` is the session's state before it.
+  function cue(session, kind, { changed, ended }, before) {
+    const g = session.game;
+    if (changed.length === 0) {
+      if (before === SESSION_STATE.PLAYING && session.state === SESSION_STATE.PLAYING) sound.noop();
+      return;
+    }
+    if (kind === 'toggleFlag') {
+      let on = 0;
+      for (const c of changed) if (g.cellState(c) === CELL.FLAGGED) on += 1;
+      sound.flag(on >= changed.length - on, changed.length);
+    } else if (g.phase === PHASE.LOST) {
+      sound.explode();
+    } else {
+      let opened = 0;
+      for (const c of changed) if (g.cellState(c) === CELL.REVEALED) opened += 1;
+      if (opened > 0) sound[kind === 'chord' ? 'chord' : 'reveal'](opened);
+    }
+    if (ended && g.phase === PHASE.WON) sound.win();
+  }
 
   const push = () => {
     if (!game) return;
@@ -130,10 +162,15 @@ export function createClassic2DMode(report, {
     const act = (kind) => (c) => {
       const before = session.state;
       const r = session[kind](c);
-      if (before === SESSION_STATE.READY && r && !(r instanceof Promise) && r.changed?.length) {
+      if (r instanceof Promise) {
+        if (sound) r.then((res) => { if (res) cue(session, kind, res, before); });
+        return r;
+      }
+      if (before === SESSION_STATE.READY && r?.changed?.length) {
         view.update(r.changed);
         push();
       }
+      if (sound && r) cue(session, kind, r, before);
       return r;
     };
     const gate = Object.create(session, {

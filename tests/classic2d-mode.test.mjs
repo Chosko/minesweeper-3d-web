@@ -16,6 +16,7 @@ import {
   createLastChoice, DEFAULT_CHOICE, LAST_CHOICE_DOC, maxMines, NOGUESS_DENSITY_HINT, DENSITY_HINT_TEXT, NOGUESS_HELP_TEXT,
 } from '../js/classic2d/board-setup.js';
 import { createModeHost, MODE_METHODS } from '../js/shell/mode-host.js';
+import { createPointerInput, BUTTON } from '../js/classic2d/pointer-input.js';
 import { createPauseController } from '../js/shell/pause.js';
 import { createResultsFlow } from '../js/results/flow.js';
 import { createRecordsStore } from '../js/records/store.js';
@@ -78,6 +79,14 @@ function defaultMines(req) {
   return out;
 }
 
+// A recording sound sink standing in for js/audio.js's sfx: every cue called, with its arguments.
+function fakeSound() {
+  const calls = [];
+  const sound = { calls };
+  for (const cue of ['reveal', 'flag', 'chord', 'noop', 'explode', 'win']) sound[cue] = (...args) => { calls.push([cue, ...args]); };
+  return sound;
+}
+
 // Recording mounts standing in for mountBoardView / mountPointerInput / mountCursorInput.
 function mounts() {
   const log = { boards: [], pointers: [], cursors: [] };
@@ -134,7 +143,7 @@ const CUSTOM_3X3 = { size: 'custom', custom: { width: 3, height: 3, mines: 2 }, 
 const memoryLastChoice = (initial) => createLastChoice({ storage: createStorage({ backend: createMemoryBackend({ initial }) }) });
 
 // A mode registered on a real host, with a recording flow, mounts and clients.
-function setup({ mines = null, hold = false, choice = null, lastChoice = memoryLastChoice() } = {}) {
+function setup({ mines = null, hold = false, choice = null, lastChoice = memoryLastChoice(), sound = null } = {}) {
   const host = createModeHost();
   const flow = fakeFlow();
   const { log, mount } = mounts();
@@ -142,7 +151,7 @@ function setup({ mines = null, hold = false, choice = null, lastChoice = memoryL
   const clock = fakeClock();
   let seed = 7;
   const mode = host.register(MODE_ID, (report) => createClassic2DMode(report, {
-    flow, lastChoice, mount, clock, createClient: cl.create, randomSeed: () => seed++,
+    flow, lastChoice, mount, clock, createClient: cl.create, randomSeed: () => seed++, ...(sound ? { sound } : {}),
   }));
   const events = [];
   for (const e of ['started', 'finished', 'abandoned', 'canPause', 'failed']) host.on(e, (p) => events.push([e, p]));
@@ -462,6 +471,154 @@ test('the cursor\'s ring reaches the movement sampler as well as the view: its c
   view.setCursor(5);
   assert.deepEqual(samples, [4, -1, 5]);
   assert.deepEqual(log.boards.at(-1).cursors, [4, -1, 5], 'and the board draws it');
+});
+
+// ---------------------------------------------------------------- sound
+
+// CUSTOM_3X3 with the first reveal on cell 8: mines on 0 and 1 (defaultMines), so
+//   * * 1
+//   2 2 1
+//   0 0 0
+// the first reveal floods six cells and leaves cell 2 the last safe one.
+const BOARD = [0, 1];
+
+for (const via of ['pointer', 'cursor']) {
+  test(`every ${via} action plays the 3D game's cue for its outcome: a flag on and off, a reveal and a chord with their counts, the no-op, then the win`, async () => {
+    const sound = fakeSound();
+    const t = setup({ choice: CUSTOM_3X3, sound });
+    const act = (kind, c) => t[via]().session[kind](c);
+    act('chord', 4);
+    act('toggleFlag', 0);
+    assert.deepEqual(sound.calls, [], 'a chord or a flag before the first reveal changes nothing (the reference) and is silent');
+    const first = act('reveal', 8);
+    assert.ok(first instanceof Promise);
+    assert.deepEqual(sound.calls, [], 'the first reveal waits for its board');
+    await settle();
+    assert.deepEqual(sound.calls.splice(0), [['reveal', 6]], 'heard when the board arrives, with the cells it opened');
+    act('toggleFlag', 1);
+    assert.deepEqual(sound.calls.splice(0), [['flag', true, 1]]);
+    act('reveal', 4);
+    act('chord', 4);
+    assert.deepEqual(sound.calls.splice(0), [['noop'], ['noop']], 'a reveal on a number and a chord short of its flags change no cell');
+    act('chord', 5);
+    assert.deepEqual(sound.calls.splice(0), [['chord', 1], ['win']], 'the winning chord\'s cue, then the win once');
+    assert.equal(act('reveal', 0), null);
+    assert.deepEqual(sound.calls, [], 'the ended game refuses the action, silently');
+  });
+}
+
+test('a reveal or a chord that loses plays the explosion alone; a reveal that wins plays its cue, then the win', async () => {
+  const lost = fakeSound();
+  let t = setup({ choice: CUSTOM_3X3, sound: lost });
+  t.act('reveal', 8);
+  await settle();
+  t.act('reveal', 0);
+  assert.deepEqual(lost.calls, [['reveal', 6], ['explode']]);
+
+  const chorded = fakeSound();
+  t = setup({ choice: CUSTOM_3X3, sound: chorded });
+  t.act('reveal', 8);
+  await settle();
+  t.act('toggleFlag', 2); // a wrong flag: the chord on the 1 beside it opens the mine
+  t.act('chord', 5);
+  assert.deepEqual(chorded.calls, [['reveal', 6], ['flag', true, 1], ['explode']]);
+  assert.equal(t.mode.status().state, 'lost');
+
+  const won = fakeSound();
+  t = setup({ choice: CUSTOM_3X3, sound: won });
+  t.act('reveal', 8);
+  await settle();
+  t.act('reveal', 2);
+  assert.deepEqual(won.calls, [['reveal', 6], ['reveal', 1], ['win']]);
+  assert.equal(t.mode.status().state, 'won');
+});
+
+test('the first reveal is heard when its board arrives, and not when the game was restarted or left before it did', async () => {
+  const sound = fakeSound();
+  const t = setup({ choice: CUSTOM_3X3, sound, hold: true });
+  const answer = (client) => client.answer({ ok: true, mines: BOARD, seed: 7, generatorVersion: 1 });
+  t.act('reveal', 8);
+  answer(t.cl.made.at(-1));
+  t.host.restart({ source: 'pointer' }); // before the answer is read
+  await settle();
+  assert.deepEqual(sound.calls, [], 'restarted before the board arrived: silent');
+
+  t.act('reveal', 8);
+  answer(t.cl.made.at(-1));
+  await settle();
+  assert.deepEqual(sound.calls.splice(0), [['reveal', 6]]);
+
+  t.host.restart({ source: 'pointer' });
+  t.act('reveal', 8);
+  answer(t.cl.made.at(-1));
+  t.mode.leave();
+  await settle();
+  assert.deepEqual(sound.calls, [], 'left before the board arrived: silent');
+});
+
+test('no cue for a press cancelled off the board, nor for an action the session refuses', async () => {
+  const sound = fakeSound();
+  const t = setup({ choice: CUSTOM_3X3, sound, hold: true });
+  const gate = t.pointer().session;
+  const input = createPointerInput({
+    graph: gate.setup.grid.graph, game: () => gate.game, onPress() {}, onAction: (kind, c) => gate[kind](c),
+  });
+  input.down(BUTTON.LEFT, 8);
+  input.move(-1);
+  input.up(BUTTON.LEFT, -1);
+  assert.equal(t.cl.made.at(-1).requests.length, 0, 'the press moved off the board did nothing');
+  input.down(BUTTON.LEFT, 8);
+  input.up(BUTTON.LEFT, 8);
+  assert.equal(gate.reveal(4), null, 'generating');
+  assert.equal(gate.toggleFlag(0), null);
+  t.cl.made.at(-1).answer({ ok: true, mines: BOARD, seed: 7, generatorVersion: 1 });
+  await settle();
+  assert.deepEqual(sound.calls.splice(0), [['reveal', 6]]);
+  t.mode.pause();
+  assert.equal(gate.reveal(2), null, 'paused: the board hidden');
+  assert.equal(gate.toggleFlag(1), null);
+  assert.equal(gate.chord(5), null);
+  t.mode.resume();
+  t.mode.leave();
+  assert.equal(gate.reveal(2), null, 'left');
+  assert.deepEqual(sound.calls, []);
+
+  const failed = fakeSound();
+  const f = setup({ choice: CUSTOM_3X3, sound: failed, hold: true });
+  f.act('reveal', 8);
+  f.cl.made.at(-1).answer({ ok: false, reason: 'no board' });
+  await settle();
+  assert.equal(f.act('reveal', 4), null, 'failed');
+  assert.equal(f.act('toggleFlag', 0), null);
+  assert.deepEqual(failed.calls, []);
+});
+
+test('a mode without a sound sink plays the same game exactly as one with it', async () => {
+  const play = async (t) => {
+    t.act('toggleFlag', 0);
+    t.act('reveal', 8);
+    await settle();
+    t.act('reveal', 4);
+    t.act('toggleFlag', 1);
+    t.act('chord', 5);
+    const s = t.events.find(([e]) => e === 'finished')[1].summary;
+    return { updates: t.board().updates, huds: t.flow.huds, outcome: s.outcome, clicks: s.clicks, bbbv: s.bbbv };
+  };
+  const silent = await play(setup({ choice: CUSTOM_3X3 }));
+  const sound = fakeSound();
+  const heard = await play(setup({ choice: CUSTOM_3X3, sound }));
+  assert.equal(silent.outcome, 'won');
+  assert.deepEqual(heard, silent);
+  assert.deepEqual(sound.calls, [['reveal', 6], ['noop'], ['flag', true, 1], ['chord', 1], ['win']]);
+});
+
+test('the shell hands the mode the one sound instance the settings drive; the mode and the replay viewers import no sound', () => {
+  const main = read('js/main.js');
+  assert.match(main, /MODES\.register\('classic-2d', \(report\) => createClassic2DMode\(report, \{[^}]*sound: sfx[^}]*\}\)\)/);
+  assert.match(main, /const sfx = audio\.sfx \?\? new audio\.Sfx\(\);/, 'the instance applyAudio drives');
+  for (const file of ['js/classic2d/mode.js', 'js/replay/viewer.js', 'js/replay/viewer-2d.js']) {
+    assert.doesNotMatch(read(file), /^import [^;]*audio\.js/m, `${file} imports no sound`);
+  }
 });
 
 // ---------------------------------------------------------------- board choice
@@ -879,6 +1036,121 @@ test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800 in both themes: 
         await page.close();
       }
     }
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+test('in a browser, a Classic 2D Beginner game played by mouse and by keyboard calls the cues on the one sound instance, muted while the setting is on', async (t) => {
+  const playwright = await loadPlaywright();
+  if (!playwright) {
+    t.skip('Playwright is not installed');
+    return;
+  }
+  let browser;
+  try {
+    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  } catch (error) {
+    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
+    return;
+  }
+  const server = await serve();
+  try {
+    const page = await browser.newPage({ viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined);
+    const ms = (fn, arg) => page.evaluate(fn, arg);
+    // Spy on the cues of the sound module's one instance, which js/main.js plays and applyAudio drives.
+    await ms(async () => {
+      const { sfx } = await import('/js/audio.js');
+      globalThis.__cues = [];
+      for (const cue of ['reveal', 'flag', 'chord', 'noop', 'explode', 'win']) {
+        const real = sfx[cue].bind(sfx);
+        sfx[cue] = (...args) => { globalThis.__cues.push([cue, ...args]); return real(...args); };
+      }
+    });
+    const cues = () => ms(() => globalThis.__cues.splice(0));
+    const muted = () => ms(async () => (await import('/js/audio.js')).sfx.muted);
+    // The board's cells, read from the canvas: the closed ones, and a cell's centre on the page.
+    const closedCells = () => ms(() => {
+      const canvas = document.querySelector('#c2d-board canvas');
+      const l = globalThis.__ms.board2D.layout;
+      const ratio = canvas.width / canvas.getBoundingClientRect().width;
+      const hex = getComputedStyle(document.documentElement).getPropertyValue('--color-tile-closed').trim().replace('#', '');
+      const want = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+      const ctx = canvas.getContext('2d');
+      const out = [];
+      for (let c = 0; c < 81; c++) {
+        const x = Math.round((l.offsetX + (c % 9) * l.tile + l.tile * 0.2) * ratio);
+        const y = Math.round((l.offsetY + Math.floor(c / 9) * l.tile + l.tile * 0.2) * ratio);
+        const [r, g, b] = ctx.getImageData(x, y, 1, 1).data;
+        if (Math.abs(want[0] - r) + Math.abs(want[1] - g) + Math.abs(want[2] - b) <= 6) out.push(c);
+      }
+      return out;
+    });
+    const centre = (c) => ms((cell) => {
+      const box = document.querySelector('#c2d-board canvas').getBoundingClientRect();
+      const l = globalThis.__ms.board2D.layout;
+      return { x: box.left + l.offsetX + ((cell % 9) + 0.5) * l.tile, y: box.top + l.offsetY + (Math.floor(cell / 9) + 0.5) * l.tile };
+    }, c);
+    const frames = () => ms(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+
+    await page.click('#menu-entry-classic-2d');
+    await page.click('#c2d-choice [data-size="beginner"]');
+    assert.equal(await ms(() => globalThis.__ms.state.mode), 'classic-2d');
+
+    // By mouse: the first click is heard when its board arrives; a right click flags and unflags.
+    let p = await centre(40);
+    await page.mouse.click(p.x, p.y);
+    await page.waitForFunction(() => globalThis.__ms.modes.state.started);
+    await page.waitForFunction(() => globalThis.__cues.length > 0);
+    let heard = await cues();
+    assert.equal(heard.length, 1);
+    assert.equal(heard[0][0], 'reveal');
+    assert.ok(heard[0][1] >= 1, 'with the cells it opened');
+    await frames();
+    const closed = await closedCells();
+    assert.ok(closed.length > 0);
+    p = await centre(closed[0]);
+    await page.mouse.click(p.x, p.y, { button: 'right' });
+    await page.mouse.click(p.x, p.y, { button: 'right' });
+    assert.deepEqual(await cues(), [['flag', true, 1], ['flag', false, 1]]);
+
+    // Muted by the setting: the same instance reports muted, and is still the one played.
+    await ms(() => globalThis.__ms.settings.set('muted', true));
+    assert.equal(await muted(), true);
+    await page.mouse.click(p.x, p.y, { button: 'right' });
+    assert.deepEqual(await cues(), [['flag', true, 1]], 'played on the muted instance, which stays silent');
+    await ms(() => globalThis.__ms.settings.set('muted', false));
+    assert.equal(await muted(), false);
+
+    // By keyboard, on a new board: Space's first reveal, then F on a closed cell.
+    await ms(() => globalThis.__ms.modes.restart({ source: 'key' }));
+    await page.waitForFunction(() => !globalThis.__ms.modes.state.started);
+    await cues();
+    await page.keyboard.press('Space');
+    await page.waitForFunction(() => globalThis.__ms.modes.state.started);
+    await page.waitForFunction(() => globalThis.__cues.length > 0);
+    heard = await cues();
+    assert.equal(heard.length, 1);
+    assert.equal(heard[0][0], 'reveal', 'the keyboard\'s first reveal is heard');
+    await frames();
+    const target = (await closedCells())[0];
+    for (let step = 0; step < 32; step++) {
+      const c = await ms(() => globalThis.__ms.board2D.cursor);
+      const dc = (target % 9) - (c % 9);
+      const dr = Math.floor(target / 9) - Math.floor(c / 9);
+      if (!dc && !dr) break;
+      await page.keyboard.press(dc > 0 ? 'ArrowRight' : dc < 0 ? 'ArrowLeft' : dr > 0 ? 'ArrowDown' : 'ArrowUp');
+    }
+    assert.equal(await ms(() => globalThis.__ms.board2D.cursor), target);
+    await page.keyboard.press('KeyF');
+    await page.keyboard.press('KeyF');
+    assert.deepEqual(await cues(), [['flag', true, 1], ['flag', false, 1]]);
+    assert.deepEqual(errors, []);
   } finally {
     await browser.close();
     server.close();

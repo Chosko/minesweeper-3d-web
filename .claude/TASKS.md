@@ -830,7 +830,7 @@ Preconditions: none
 
 ## 135. 2D sound
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/classic2d/mode.js, js/main.js, tests/classic2d-mode.test.mjs, .claude/domain/features/classic-2d-square-play.md
 Preconditions: none

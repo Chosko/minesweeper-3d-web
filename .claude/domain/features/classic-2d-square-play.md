@@ -43,6 +43,11 @@ In scope (m1-classic-2d):
   d-pad or stick, with reveal, flag and chord on buttons, so Classic 2D is
   fully playable with a controller.
 - The timer, mine counter and click counter, fed to the in-game overlay.
+- Sound: each action, by mouse, keyboard or controller, plays the
+  synthesized cue the 3D game plays for the same outcome — reveal and chord
+  scaled by the cells opened, a flag placed or removed, a no-op, the
+  explosion of a loss and the win — at the shared volume and mute
+  settings, with no setting of its own.
 - Pause, restart and back to menu, as the game shell asks; the board is
   hidden while paused.
 - Handing every finished or abandoned game's summary on, through
@@ -199,6 +204,8 @@ copied.
   the board.
 - `game-summary` — builds the summary of each finished or abandoned
   game.
+- The sound module (`js/audio.js`) — the 3D game's synthesized cues, played
+  at the volume and mute the settings apply.
 - No external libraries.
 
 ## Controller mapping and held buttons
