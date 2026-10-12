@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 144
+Last task number: 145
 
 ---
 
@@ -914,6 +914,15 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: js/gamepad.js, js/shell/navigation.js, js/main.js, js/records/screen.js, js/classic2d/cursor-input.js, js/classic2d/mode.js, js/ui.js, index.html, css/style.css, tests/shell-router.test.mjs, tests/gamepad.test.mjs, tests/records-screen.test.mjs, tests/classic2d-cursor.test.mjs, tests/shell-pad-walk.test.mjs, README.md
+Preconditions: none
+
+---
+
+## 145. Focus containment in overlays
+
+Status: [MISSING]
+Target: claude
+Files: js/shell/navigation.js, js/main.js, js/ui.js, tests/shell-router.test.mjs, tests/shell-focus-containment.test.mjs, tests/shell-pause.test.mjs, .claude/domain/features/game-shell.md
 Preconditions: none
 
 ---
