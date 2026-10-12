@@ -361,7 +361,7 @@ test('the shell mirrors its stack in window.history and routes popstate to the b
   assert.match(MAIN, /onChange: \(\) => \{[^\n]*HISTORY\.sync\(\)/, 'every router change syncs the history');
   assert.match(MAIN, /HISTORY\.start\(performance\.getEntriesByType\?\.\('navigation'\)\[0\]\?\.type\)/);
   const back = MAIN.slice(MAIN.indexOf('function historyBack('), MAIN.indexOf('\n}\n', MAIN.indexOf('function historyBack(')));
-  assert.match(back, /if \(ending3D\(\)\) return;/, 'nothing during the 3D end delay');
+  assert.match(back, /if \(endDelay\(\)\) return;/, 'nothing during an end delay');
   assert.match(back, /ui\.closeControls\(\) \|\| ui\.closeConfirm\(\)/, 'the controls modal or the confirmation closes first');
   assert.match(back, /S\.mode === 'playing' \|\| S\.mode === 'classic-2d'\) \{ pauseGame\('button'\)/, 'the board pauses as an asked-for pause');
   assert.match(back, /S\.mode === 'paused'/, 'the pause card holds the game');
@@ -371,7 +371,7 @@ test('the shell mirrors its stack in window.history and routes popstate to the b
 
 test('the leave-page guard is unchanged', () => {
   assert.match(MAIN, /guard: \(on\) => \(on \? window\.addEventListener\('beforeunload', guardLeave\) : window\.removeEventListener\('beforeunload', guardLeave\)\)/);
-  assert.match(MAIN, /function guardLeave\(e\) \{\s*if \(reloading \|\| ending3D\(\)\) return;/);
+  assert.match(MAIN, /function guardLeave\(e\) \{\s*if \(reloading \|\| endDelay\(\)\) return;/);
 });
 
 // ---------------------------------------------------------------- browser: page.goBack()

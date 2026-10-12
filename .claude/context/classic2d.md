@@ -37,8 +37,12 @@ looks.
   import.
 - `js/classic2d/mode.js` — the Classic 2D mode behind the game shell's mode
   contract: one session, board view, pointer / cursor inputs and movement
-  sampler per game, the overlay feed, pause by hiding the board. DOM-free:
-  the shell hands in its flow.
+  sampler per game, the overlay feed, pause by hiding the board, the end
+  delay with its end effect. DOM-free: the shell hands in its flow.
+- `js/classic2d/end-effect.js` — the end effect: the 3D win and loss waves
+  and the win confetti at board scale, as tile states, pulse strengths and
+  confetti pieces over time, and their drawing onto a Canvas 2D context.
+  DOM-free and token-free.
 - `js/classic2d/board-choice.js` — the board choice screen: the custom-board
   info line and validation, the choice its fields describe, and
   `bindBoardChoice`, which touches only the elements it is handed.
@@ -138,7 +142,8 @@ looks.
   scale, setGame(game), update(changed), repaint(), cellAt(x, y),
   cellRect(c) → {x, y, size}, scroll, scrollTo, scrollBy, pan(dx, dy),
   wheel(event) → taken, ensureVisible(c) → scrolled, setHidden(hidden),
-  setPressed(cells), pressed, setCursor(c), cursor, hidden, layout,
+  setPressed(cells), pressed, setCursor(c), cursor, showEffect(effect, t),
+  effect, hidden, layout,
   pixelRatio, canvas, dispose}` — `onLayout(layout)` after every refit — `grid` is the square grid
   ([engine.md](engine.md)); `game` is the engine game whose `cellState` /
   `cellNumber` it draws; `createSkin` defaults to `createTileSkin`, `token`
@@ -176,9 +181,11 @@ looks.
   whether the ring shows.
 
 `js/classic2d/mode.js` exports
-- `MODE_ID` (`'classic-2d'`); `createClassic2DMode(report, {flow,
-  lastChoice, createClient?, mount?, clock?, randomSeed?,
-  generatingDelayMs?})` → the contract methods plus `hideBoard(hidden)`,
+- `MODE_ID` (`'classic-2d'`), `END_DELAY_MS` (1000, the 2D end delay);
+  `createClassic2DMode(report, {flow,
+  lastChoice, createClient?, mount?, sound?, clock?, randomSeed?,
+  generatingDelayMs?})` → the contract methods plus `ending`, `finishNow()`,
+  `hideBoard(hidden)`,
   `tick()`, `pad(poll, now)`, `setScale(scale)`, `retry()`, `playStandard()`,
   `cancelGeneration()` → whether a board being generated was cancelled,
   `loadChoice()`, `status()` → `{state, time, minesLeft}`, `boardHidden`, `boardView` (the
@@ -194,7 +201,21 @@ looks.
   panel), `scrolled` each scroll the player made;
   `mount` defaults to `{board: mountBoardView, pointer: mountPointerInput,
   cursor: mountCursorInput, sampler: mountSampler2D}`; without `sampler`
-  no movement is recorded. The module head comment is the contract.
+  no movement is recorded; `clock` (`{now, setTimeout, clearTimeout}`) is
+  the session's and the end delay's. The module head comment is the contract.
+
+`js/classic2d/end-effect.js` exports
+- `WIN`, `LOSS`, `WAVE_STEP_MS` (60), `WAVE_SHARE` (0.6), `PULSE`
+  (`{peakMs, widthMs, alpha}`), `PULSE_COLOR` (`--color-tile-bevel-light`),
+  `CONFETTI_COLORS` (`--color-number-1`…`-7`), `CONFETTI_COUNT`.
+- `createEndEffect({kind, cols, rows, origin, duration, random?})` → a
+  frozen effect (an origin outside the board is the centre);
+  `reachMs(effect, c)`, `preLossState(state)`, `wonState(state)`,
+  `shownState(effect, c, state, t)`, `pulseAlpha(effect, c, t)`,
+  `confettiAt(effect, t, {width, height, tile})` → `[{x, y, size, angle,
+  color, alpha}]` inside the board's rectangle, `done(effect, t)`,
+  `drawPulse(ctx, x, y, size, alpha, colour)`, `drawConfetti(ctx, pieces,
+  colours, x, y)`. The module head comment is the contract.
 
 `js/classic2d/board-choice.js` exports
 - `CHOICE_SIZES`, `sizeLabel(size)`, `customStatus(custom)` → `{ok, field,
@@ -353,12 +374,35 @@ looks.
   sampler every frame, and the cursor's ring reaches it beside the view:
   its cell while shown, -1 when hidden. The session's `changed`
   redraws the listed cells and pushes the overlay; its board arriving
-  reports started and can-pause, a win or loss can-pause false and finished
-  with the session's replay. `restart` and `leave` leave the session
-  (cancelling a pending generation) and destroy the view, inputs and
+  reports started and can-pause.
+- **End delay.** A win or loss reports can-pause false at once and runs
+  the end delay (`ending`): the view plays the end effect
+  (`createEndEffect`, `WIN` from the last action's cell the inputs took,
+  `LOSS` from the exploded tile nearest it), `tick()` drawing each frame at
+  the mode clock's time since the end (`view.showEffect(effect, t)`); after
+  `END_DELAY_MS` on the clock — frames drawn or not — or at `finishNow()`
+  (any press of the player's, `pagehide`), the view is drawn in its end
+  state (`showEffect(null)`) and finished is reported once with the
+  session's summary and replay at the end. A pause and `hideBoard` are
+  ignored during it; `restart` and `leave` cancel it.
+- **Restart and leave.** `restart` and `leave` leave the session
+  (cancelling a pending generation or end delay) and destroy the view, inputs and
   sampler, releasing the canvas; `restart` reopens the session's own
   choice. `hideBoard` pauses the session with the board (a no-op before the
   first click or after the end) and drops held inputs.
+- **End effect.** The 3D waves at board scale (`js/classic2d/end-effect.js`):
+  each tile is reached at a delay proportional to its distance in tiles
+  from the origin, at most `WAVE_STEP_MS` per tile and so that the farthest
+  tile is reached by `WAVE_SHARE` of the delay. A loss's changed tiles keep
+  their pre-loss tile (a mine closed, a wrong flag flagged) until reached;
+  a win's pulse brightens each tile as it passes (`PULSE_COLOR`) and its
+  closed mines turn to flags, and its confetti bursts from the origin and
+  falls over the board's rectangle (`CONFETTI_COLORS`), pieces outside it
+  left out. The view draws the effect over the skin's static tiles: the
+  tiles from `shownState`, the pulse after each tile, the confetti after
+  all tiles clipped to the view; a full repaint (resize, scroll, theme)
+  draws the same moment. Without an effect a won game's closed tiles (its
+  unflagged mines) are drawn as flags (`wonState`).
 - **Hidden.** While hidden (the game is paused) a repaint draws the
   background only and `update` draws nothing; showing repaints the board.
 - **The engine is the source.** The view keeps no cell state; every tile is
@@ -443,10 +487,11 @@ looks.
   it leaves unmapped.
 - [testing.md](testing.md) — `tests/classic2d-session.test.mjs` pins board
   setup, the last choice, the timer and the session;
-  `tests/classic2d-view.test.mjs` the board view;
+  `tests/classic2d-view.test.mjs` the board view and its end-effect drawing;
+  `tests/classic2d-end-effect.test.mjs` the end effect;
   `tests/classic2d-pointer.test.mjs` the pointer input;
   `tests/classic2d-cursor.test.mjs` the cursor input;
-  `tests/classic2d-mode.test.mjs` the mode and board choice;
+  `tests/classic2d-mode.test.mjs` the mode, its end delay and board choice;
   `tests/classic2d-fidelity.test.mjs` the inputs and custom limits against
   the fidelity observations; `tests/replay-2d.test.mjs` the session's
   recording, the sampler and the replay on the mode's reports;
@@ -463,6 +508,10 @@ looks.
 - Changing the fit rule, the cap, the frame, the layout, the marks or what
   triggers a full repaint (`boardLayout`, `panelRect`, `clipMarks`,
   `repaint`, `resize`, `setScale` in `board-view.js`).
+- Tuning the end effect — the wave's speed, the pulse, the confetti — or
+  the 2D end delay (`end-effect.js`; `END_DELAY_MS` and the `finished`
+  handler in `mode.js`; `showEffect`, `drawCell` and `drawEffectLayer` in
+  `board-view.js`).
 - Changing a pointer gesture or adding an input rule (`createPointerInput`,
   `pointerRules`, the profile markers in `js/engine/profiles.js`).
 - Changing a key or controller binding, or the cursor's repeat

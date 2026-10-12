@@ -150,7 +150,8 @@ behaviour.
   not start it. Flags may be placed before the first reveal and are kept.
 - **Mode contract** — `game started` at the first applied reveal; `game
   finished(summary, replay)` at a win or loss, once the end effect has
-  played, so the results screen follows it as the m2 Results and records
+  played or the player cut the end delay short, so the results screen
+  follows it as the m2 Results and records
   slice decides; `game abandoned(summary, replay)` when a started,
   unfinished game is restarted or left, the replay being the game's sealed
   recording from `replay-recording`. A game left before the first reveal

@@ -47,8 +47,8 @@ In scope (m1-classic-2d):
   best 7" (the streak ended and the board's longest); after any other loss
   "Beat 48.213 s for a new best", or "Win this board to set a best" when
   the board has no best time.
-- Actions: *Play again* (default focus, and `R` on the keyboard, which the
-  screen's hint names), *Watch replay* (when the game handed over its
+- Actions: *Play again* (default focus, and `Enter` or `R` on the keyboard;
+  the screen's hint names `R`), *Watch replay* (when the game handed over its
   replay — `replay-playback`), *Records* (opens the records screen on this
   board), *Main menu*.
 - Telling the player once when records are not being saved this session.
@@ -115,8 +115,10 @@ composed from the `screen-components` kit.
 - **Show** — from the game shell with a won or lost summary; the shell
   routes here and back.
 - **Play again** — asks the shell to start the same board choice again,
-  from the button or `R`; the game has ended, so nothing counts as a
-  loss.
+  from the button, `Enter` or `R`; `Enter` is Play again while the focus
+  is on Play again or on no action, and on another focused action
+  activates that action; key repeats do nothing. The game has ended, so
+  nothing counts as a loss.
 - **Watch replay** — shown only when the finished game handed over a sealed
   replay and the shell has the replay viewer's route; asks the shell to open
   `replay-playback`'s viewer with that replay, returning to this screen. It

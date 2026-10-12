@@ -285,18 +285,29 @@ browser checks for everything that needs WebGL or the DOM.
   and routed with the comparison, rank, streak and standing, a 3D record recorded and
   routed, a fixed 3D board's null summary ignored, a throwing recording or
   query still routed, "not being saved" told once, Play again / Records /
-  Back to menu — and DOM-free; static checks of the `#results` kit markup
+  Back to menu — and DOM-free; the keys — `resultsEnter` (Play again on
+  Play again or no focus, another action's own Enter, a repeat ignored),
+  `R` as Play again on `results` only through `restartInput` and the one
+  `KeyR` in `js/main.js`, and a key that ended the end delay
+  (`createEndSkip`) consumed through its repeat and release so it does
+  not also play again; static checks of the `#results` kit markup
   in reading order with its `R: Play again` hint, its router entry, default focus, controller layer and
   the flow on the hand-off in `js/main.js`, the `ui-stat__detail`,
   `data-delta`, `ui-panel--muted` and `ui-banner` catalogue entries and
   gallery, and the delta colours' 4.5:1 contrast on the bests panel in
   both themes. One Playwright test wins a fixed Beginner board through the
   shell with the overlay's click count checked before the first click,
-  after it and at the end, checks the results screen (formats, banner,
+  after it and at the end, the win's end effect on the board and the
+  results card only after the end delay, checks the results screen
+  (formats, banner,
   highlights, second row, next target, standing line, the game's figures
   larger than the bests), opens Records on that board and returns with
-  Back, plays again with Enter, wins the same board again, leaves Ctrl+R
-  to the browser and plays again with `R` (skipped when Playwright or
+  Back, plays again with Enter, wins the same board again and cuts its end
+  delay with `R` (the card at once, the held, repeating and released `R`
+  not playing again), leaves Ctrl+R to the browser and plays again with
+  `R`, then loses — the loss wave from the exploded tile, a click during
+  the delay showing the card at once, the game recorded lost — and Enter on
+  a focused Main menu goes to the menu (skipped when Playwright or
   chromium is unavailable).
 - `tests/mode3d-end.test.mjs` — the 3D end sequence and the results
   takeover (`js/shell/mode-3d.js`, `js/main.js`, `js/results/view.js`) over
@@ -306,16 +317,30 @@ browser checks for everything that needs WebGL or the DOM.
   hidden tab still reporting at the delay's end, a lost graphics context
   reporting finished before the failure, a page going away ending the delay
   as finished, never abandoned, a fixed board still reported finished, and
-  a game no longer held reporting nothing; static checks that the end
+  a game no longer held reporting nothing; the skip over the adapter
+  (`createEndSkip` as `js/main.js` builds it): a key, mouse button or
+  controller button pressed during the delay reporting finished at once
+  and consumed, a held key's repeat, a release and a still poll neither
+  ending it, the skipping mouse press consumed through its release and
+  trusted clicks until the next press, key or controller press (a script's
+  click going through), every click consumed during the delay, `reset()`
+  forgetting a release lost to another tab, and a lock released during the delay
+  ending it; static checks that the end
   banner, its compact form and its best-time line are gone, that every
-  pause in `js/main.js` goes through `pauseGame`, that Esc, the controller
-  and camera movement are ignored during the delay, that the 3D flow
+  pause in `js/main.js` goes through `pauseGame` and `endDelay()` reads
+  either mode's `ending`, that the skip's listeners swallow in the capture
+  phase and `handlePad` and `onLockChange` feed it, that Back, the browser's
+  Back and camera movement are ignored during the delay, that the 3D flow
   releases pointer lock, that no frame is drawn under a 3D game's results
   screen and that the results screen takes over on an opaque surface over
   3D only. One Playwright test wins and loses a 3D board through the shell
   and lands on the results screen over the scene, the overlay's frozen
   click count matching the recorded game's and the card carrying the click
-  row, the rank, the banner and the next target (skipped when Playwright
+  row, the rank, the banner and the next target; another, over a stand-in
+  pointer lock, wins a board and clicks during the delay — the results at
+  once, recorded won — plays again with `R`, entering locked play with the
+  ready card never shown, then, the lock refused, plays again with Enter
+  and gets the ready card with its message (both skipped when Playwright
   or chromium is unavailable).
 - `tests/results-watch.test.mjs` — Watch replay on the results screen
   (`js/results/flow.js`, `js/results/view.js`): offered only for a game
@@ -513,6 +538,16 @@ browser checks for everything that needs WebGL or the DOM.
   (abandoned reports, cancelled generation, a late answer dropped), actions
   ignored while generating; both modules DOM-free and reaching generation
   only through the client.
+- `tests/classic2d-end-effect.test.mjs` — the Classic 2D end effect
+  (`js/classic2d/end-effect.js`): the 2D `END_DELAY_MS` about one second
+  and of the 3D one's order, the loss wave's reach (zero at the exploded
+  tile, proportional to the distance, at most `WAVE_STEP_MS` a tile, the
+  farthest tile within the delay on Beginner, Expert and 100 × 100 from
+  corners, centre and edge), pre-loss and won states, the win pulse
+  passing the origin first and gone at the end, the centre for an unknown
+  origin, the confetti inside the board's rectangle on boards from 2 × 1
+  to 100 × 100 and none at the end, `done`, drawing with the colours
+  handed in, and the module DOM-free with no literal colour.
 - `tests/classic2d-view.test.mjs` — the Classic 2D board view
   (`js/classic2d/board-view.js`) over a fake canvas and a recording fake
   skin, with real engine games: the fit rule (the 26 px floor, the cap per
@@ -528,7 +563,12 @@ browser checks for everything that needs WebGL or the DOM.
   theme redraw, only visible tiles drawn, clamped scrolling, the wheel,
   panning, `ensureVisible`, a clipped board's edge shadows and scroll bars
   (`clipMarks`, drawn only when it scrolls and kept over a redrawn tile),
-  the ring shown and hidden redrawing one cell, the hidden board, and the
+  the ring shown and hidden redrawing one cell, the hidden board, the end
+  effect (a loss's changed tiles drawn pre-loss until the wave reaches
+  them, a redraw and a resize keeping the moment, the full end state at its
+  end; a win's pulse at its origin first, its confetti clipped to the board
+  in view, its mines turning to flags and the won board's end state with
+  every unflagged mine a flag; none on a hidden board), and the
   module DOM-free with no literal colour. One Playwright test mounts the
   view below a 64 px bar with 16 px margins and checks tile size and pixel
   colours of Beginner and Expert in both themes (a tile's centre halfway
@@ -571,7 +611,13 @@ browser checks for everything that needs WebGL or the DOM.
   contract, the board choice preselected from the last choice, `summary()`
   before the first click and mid-game (equal to the abandoned report),
   started / can-pause / finished (recorded and routed by the results flow),
-  redraw and the overlay feed with its click count (none before the first
+  the end delay (`END_DELAY_MS`: can-pause off at once, finished once after
+  the delay on the fake clock with the summary and replay at the end,
+  frames drawn or not, a pause and `hideBoard` ignored and no action
+  taken during it, `restart` and `leave` cancelling it, `finishNow()`
+  finishing at once and only during it, the board's end effect from the
+  last action's cell or the exploded tile drawn each tick and ended in the
+  end state), redraw and the overlay feed with its click count (none before the first
   click, wasted clicks counted, frozen at the end), pause hiding
   the board while the time the pause card shows runs on, restart and leave releasing the canvas
   and the pending generation, Play again, the no-guess failure offer and

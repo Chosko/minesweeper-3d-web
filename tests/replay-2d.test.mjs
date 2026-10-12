@@ -11,7 +11,7 @@ import {
 } from '../js/replay/sampler-2d.js';
 import { boardLayout } from '../js/classic2d/board-view.js';
 import { createSession } from '../js/classic2d/session.js';
-import { createClassic2DMode } from '../js/classic2d/mode.js';
+import { createClassic2DMode, END_DELAY_MS } from '../js/classic2d/mode.js';
 import { createModeHost } from '../js/shell/mode-host.js';
 import { createPauseController } from '../js/shell/pause.js';
 import { decodeReplay, cellStateDigest } from '../js/replay/format.js';
@@ -281,7 +281,7 @@ test('mountSampler2D: the last pointer position over the page, read through the 
 function mounts() {
   const log = { samplers: [] };
   const board = () => ({
-    setGame() {}, update() {}, setHidden() {}, setPressed() {}, setCursor(c) { log.cursorSet = c; }, ensureVisible() {}, destroy() {},
+    setGame() {}, update() {}, setHidden() {}, setPressed() {}, setCursor(c) { log.cursorSet = c; }, ensureVisible() {}, showEffect() {}, destroy() {},
   });
   const input = ({ view }) => ({ view, input: { reset() {} }, destroy() {}, pad() {} });
   const sampler = ({ view, session }) => {
@@ -328,6 +328,7 @@ test('the mode: finished carries the replay beside the summary, through the host
   clock.advance(400);
   sampler.session.reveal(0);
   await settle();
+  clock.advance(END_DELAY_MS); // the end effect plays first
   assert.equal(handed.finished.length, 1);
   const { summary, replay, mode: id } = handed.finished[0];
   assert.equal(id, 'classic-2d');

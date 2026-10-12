@@ -50,6 +50,11 @@ In scope (m1-classic-2d):
   settings, with no setting of its own.
 - Pause, restart and back to menu, as the game shell asks; the board is
   hidden while paused.
+- The end-of-game moment: at a win or a loss the board plays the 3D game's
+  end effect at board scale for a short end delay — on a win a pulse wave
+  from the last action's cell and confetti over the board, on a loss the
+  reveal wave from the exploded tile — before the results screen; any
+  click, key or controller button cuts the delay short.
 - Handing every finished or abandoned game's summary on, through
   `game-summary`.
 
@@ -163,8 +168,13 @@ copied.
   engine's click counts the summary carries, wasted ones included), pushed
   to the in-game overlay from `screen-components` whenever they change.
 - **Game finished** — one event per won or lost game with its summary, sent
-  to the game shell, which opens `results-screen`; its *Play again* comes
-  back here as a new start with the same choice.
+  to the game shell, which opens `results-screen`, after a short end delay
+  (about one second, a named constant of the mode) in which the win
+  confetti or the loss reveal wave plays on the board; any click, key or
+  controller button during the delay ends it at once and does nothing else.
+  A game in its end delay is finished, never abandoned: the page going away
+  ends the delay and reports it finished. Its *Play again* comes back here
+  as a new start with the same choice.
 - **Game abandoned** — a restart or back to menu after the first click and
   before a win or loss reports the game's summary with outcome abandoned
   before the game is discarded; before the first click nothing is

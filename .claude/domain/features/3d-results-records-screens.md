@@ -21,9 +21,10 @@ contents and look stay `results-screen`'s, `records-screen`'s and
 
 In scope (m2-3d-joins):
 
-- The 3D end of game: input frozen while the end effect plays — the loss
-  wave showing where the mines were with the camera shake, or the win
-  confetti — then the results screen.
+- The 3D end of game: the end effect plays — the loss wave showing where
+  the mines were with the camera shake, or the win confetti — then the
+  results screen; any click, key or controller button during the effect
+  shows the results screen at once and does nothing else.
 - The results screen for won and lost 3D games: the same contents and
   actions as Classic 2D's (`results-screen`) — outcome, board label, the
   new-best banner, time, 3BV (and 3BV solved on a loss), 3BV/s, efficiency,
@@ -65,9 +66,10 @@ described in [app-shell.md](../../context/app-shell.md) and
 - **3D end sequence.** At a win or loss the 3D session stops the timer,
   freezes the HUD's end state as today, and stops accepting board actions
   and camera movement. The renderer plays the end effect it plays today.
-  After a fixed end delay of about one second the mode releases pointer
-  lock and reports `game finished(summary)` to the shell. The delay is one
-  constant shared by win and loss.
+  After a fixed end delay of about one second — or at once, when the
+  player presses any mouse button, key or controller button during it —
+  the mode releases pointer lock and reports `game finished(summary)` to
+  the shell. The delay is one constant shared by win and loss.
 - **Results takeover.** `results-screen` shows over 3D on an opaque surface
   in the chosen theme; the 3D scene is not visible behind it and stops
   rendering while it shows. Its flow — record first, then show the summary
@@ -96,16 +98,20 @@ described in [app-shell.md](../../context/app-shell.md) and
 - **Game finished, 3D** — reported once, after the end delay, with the won
   or lost summary. Nothing during the delay can restart or leave the game,
   so a finished 3D game is never reported abandoned.
-- **Input during the delay** — board actions, camera movement and view-mode
-  keys are ignored; pause is not offered, since the game's timer has
-  stopped; Esc and the controller's Start are ignored until the results
-  screen shows.
+- **Input during the delay** — any click, key or controller button ends
+  the delay at once and shows the results screen; that input does nothing
+  else — no board action, pause, Back or restart — and neither its release,
+  its auto-repeat nor a held button reaches the results screen. Camera
+  movement and view-mode keys are ignored; pause is not offered, since the
+  game's timer has stopped.
 - **Hidden tab** — when the tab is hidden during the delay, the results
   screen is shown when it returns; the summary is recorded at the end of
   the delay whatever the tab's visibility.
-- **Play again** — asks the shell to start the same 3D board choice; the
-  3D mode re-acquires pointer lock, or enters lockless play from a
-  controller, as its start does today.
+- **Play again** — asks the shell to start the same 3D board choice; with
+  a pointer or the keyboard, its activation is the pointer-lock gesture, so
+  play starts with no click-to-play card when the lock is granted, and the
+  card stays the fallback, with its message, when it is refused; a
+  controller enters lockless play.
 - **Records** — opens `records-screen` on 3D and on this game's board.
 - **Watch replay** — `replay-playback`'s action, unchanged; Back returns to
   the results screen.

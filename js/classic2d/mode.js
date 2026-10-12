@@ -38,24 +38,33 @@
 //               restarted or left first; a flag or chord before the first reveal changes nothing
 //               and a refused action (null) is silent. A cue never changes or gates an action;
 //               without a sink nothing plays.
-//   clock, randomSeed, generatingDelayMs  passed to the session.
+//   clock       { now, setTimeout, clearTimeout }: the session's and the end delay's; the global
+//               ones by default.
+//   randomSeed, generatingDelayMs  passed to the session.
 //
 // The contract: openBoardChoice(), start(choice), pause(), resume(), restart(), leave(), summary(),
 // replay(summary). The mode reports started and canPause(true) when the first click's board
-// arrives, and finished(summary, replay) and canPause(false) at a win or a loss; the host reports
-// abandoned from summary() and replay(summary), the session's recording sealed with that summary
-// (null before the first click). start() mounts a fresh board view, inputs and movement sampler in
-// the container; restart() and leave() destroy them (releasing the canvas) and leave the session,
-// cancelling a pending generation and discarding its recording; restart() then starts the same
-// choice again — the session's, so a board played standard after a no-guess failure stays
-// standard.
+// arrives. At a win or a loss it reports canPause(false) at once and the end delay runs (`ending`
+// true): for END_DELAY_MS, on the clock and so whether or not frames are drawn, the board plays
+// the end effect (js/classic2d/end-effect.js) — the win pulse from the last action's cell and
+// confetti, or the loss reveal wave from the exploded tile — then is drawn in its end state, and
+// the mode reports finished(summary, replay) once, with the game's summary and replay at its end.
+// During the delay a pause is ignored and the board takes no action; finishNow() ends it at once
+// (any press of the player's, the page going away), so the game is reported finished, never left
+// unfinished. The host reports abandoned from summary() and replay(summary), the session's
+// recording sealed with that summary (null before the first click). start() mounts a fresh board
+// view, inputs and movement sampler in the container; restart() and leave() destroy them
+// (releasing the canvas) and leave the session, cancelling a pending generation or end delay and
+// discarding its recording; restart() then starts the same choice again — the session's, so a
+// board played standard after a no-guess failure stays standard.
 //
 // Shell side: setScale(scale) refits the open board at another board scale. hideBoard(hidden) hides
 // the board whenever the pause card shows — the session pauses
 // with it, its clock running on (a no-op before the first click and after the end), the inputs drop what they hold and
 // take nothing while it is hidden; pause() is hideBoard(true) and resume() hideBoard(false) plus
-// flow.show(). tick() pushes the timer, mine counter and click count to flow.hud when any changed and drives
-// the movement sampler (call it every frame); every action pushes them at once. The cursor input's
+// flow.show(); neither hides the board during the end delay. tick() pushes the timer, mine counter and click count to flow.hud when any changed,
+// draws the end effect's frame during the end delay and drives the movement sampler (call it every
+// frame); every action pushes them at once. The cursor input's
 // ring reaches the sampler as well as the view: its cell while it shows, -1 when it hides. pad(poll, now) hands the shell's controller poll
 // to the cursor input. retry() and playStandard() answer a failed board's offer; flow.failed's
 // failure carries its `count` of failures in a row. cancelGeneration() cancels the first click's
@@ -72,10 +81,31 @@ import { mountPointerInput } from './pointer-input.js';
 import { mountCursorInput } from './cursor-input.js';
 import { mountSampler2D } from '../replay/sampler-2d.js';
 import { createGenerationClient } from '../generation/client.js';
+import { createEndEffect, WIN, LOSS } from './end-effect.js';
 
 export const MODE_ID = 'classic-2d';
 
+/** How long the end effect plays before the game is reported finished, for a win and a loss alike. */
+export const END_DELAY_MS = 1000;
+
 const BROWSER_MOUNTS = Object.freeze({ board: mountBoardView, pointer: mountPointerInput, cursor: mountCursorInput, sampler: mountSampler2D });
+const globalClock = {
+  now: () => globalThis.performance.now(),
+  setTimeout: (fn, ms) => globalThis.setTimeout(fn, ms),
+  clearTimeout: (h) => globalThis.clearTimeout(h),
+};
+
+// The exploded tile nearest the last action's cell (a chord can open more than one mine).
+function explodedNear(game, cols, count, last) {
+  let best = -1;
+  let bestD = Infinity;
+  for (let c = 0; c < count; c++) {
+    if (game.cellState(c) !== CELL.EXPLODED) continue;
+    const d = last < 0 ? 0 : Math.hypot((c % cols) - (last % cols), Math.floor(c / cols) - Math.floor(last / cols));
+    if (d < bestD) { best = c; bestD = d; }
+  }
+  return best;
+}
 
 export function createClassic2DMode(report, {
   flow,
@@ -87,7 +117,8 @@ export function createClassic2DMode(report, {
   randomSeed,
   generatingDelayMs,
 }) {
-  let game = null; // { session, view, pointer, cursor, sampler, offs }
+  const time = clock ?? globalClock;
+  let game = null; // { session, view, pointer, cursor, sampler, offs, last, ending }
   let hidden = false;
   let shown = { seconds: null, minesLeft: null, clicks: null };
 
@@ -124,6 +155,7 @@ export function createClassic2DMode(report, {
     if (!game) return;
     const g = game;
     game = null;
+    if (g.ending) { time.clearTimeout(g.ending.handle); g.ending = null; }
     g.session.leave();
     for (const off of g.offs) off();
     g.pointer.destroy();
@@ -159,7 +191,9 @@ export function createClassic2DMode(report, {
     view.setGame(session.game);
     // The inputs see the board paused while it is hidden, whatever the session's own state. An
     // action before the first reveal (a flag) changes the board without a session event: redraw it.
+    let last = -1; // the cell of the last action the inputs took: the win pulse's origin
     const act = (kind) => (c) => {
+      last = c;
       const before = session.state;
       const r = session[kind](c);
       if (r instanceof Promise) {
@@ -188,15 +222,37 @@ export function createClassic2DMode(report, {
     const offs = [
       session.on('started', () => { report.started(); report.canPause(true); }),
       session.on('changed', ({ changed }) => { view.update(changed); push(); }),
-      session.on('finished', ({ summary, replay }) => { push(); report.canPause(false); report.finished(summary, replay); }),
+      session.on('finished', ({ summary, replay }) => {
+        push();
+        report.canPause(false);
+        const g = game;
+        if (g?.session !== session) return;
+        const { width: cols, height: rows } = session.setup;
+        const won = session.state === SESSION_STATE.WON;
+        const origin = won ? last : explodedNear(session.game, cols, cols * rows, last);
+        const effect = createEndEffect({ kind: won ? WIN : LOSS, cols, rows, origin, duration: END_DELAY_MS });
+        g.ending = { summary, replay, effect, t0: time.now(), handle: time.setTimeout(() => finish(g), END_DELAY_MS) };
+        view.showEffect(effect, 0);
+      }),
       session.on('generating', ({ shown: on }) => flow.generating(on)),
       session.on('failed', (failure) => flow.failed(failure)),
     ];
-    game = { session, view, pointer, cursor, sampler, offs };
+    game = { session, view, pointer, cursor, sampler, offs, ending: null };
     push();
   }
 
+  // The end delay is over, or cut short: the board in its end state, then game finished, once.
+  function finish(g) {
+    if (game !== g || !g.ending) return;
+    const { summary, replay, handle } = g.ending;
+    time.clearTimeout(handle);
+    g.ending = null;
+    g.view.showEffect(null);
+    report.finished(summary, replay);
+  }
+
   function hideBoard(on) {
+    if (game?.ending) return; // the end delay: the board stays shown, playing its end effect
     hidden = !!on;
     if (!game) return;
     if (hidden) {
@@ -236,11 +292,16 @@ export function createClassic2DMode(report, {
     },
     summary() { return game ? game.session.summary() : null; },
     replay(summary) { return game ? game.session.replay(summary) : null; },
+    /** Whether the end delay is running: the game is over and not yet reported finished. */
+    get ending() { return !!game?.ending; },
+    /** Ends a running end delay now (a press of the player's, the page going away): game finished, once. */
+    finishNow() { if (game?.ending) finish(game); },
 
     hideBoard,
     setScale(scale) { game?.view.setScale(scale); },
     tick() {
       push();
+      if (game?.ending) game.view.showEffect(game.ending.effect, time.now() - game.ending.t0);
       game?.sampler?.tick();
     },
     pad(poll, now) { game?.cursor.pad(poll, now); },

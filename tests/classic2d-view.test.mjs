@@ -20,8 +20,10 @@ import {
 import { SCHEMA } from '../js/settings/schema.js';
 import { MIN_TILE_SIZE } from '../js/classic2d/tile-skin.js';
 import { createSquareGrid } from '../js/engine/square-grid.js';
-import { createGameWithMines } from '../js/engine/rules.js';
+import { createGameWithMines, CELL } from '../js/engine/rules.js';
 import { REFERENCE_PROFILE } from '../js/engine/profiles.js';
+import { createEndEffect, reachMs, WIN, LOSS, PULSE_COLOR, CONFETTI_COLORS } from '../js/classic2d/end-effect.js';
+import { END_DELAY_MS } from '../js/classic2d/mode.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -325,6 +327,117 @@ test('after an action only the changed cells are repainted, in the engine\'s sta
   skin.draws.length = 0;
   view.update([]);
   assert.equal(skin.draws.length, 0, 'nothing changed, nothing drawn');
+});
+
+// ---------- the end effect ----------
+
+// The cell each recorded draw is at, from its position.
+const drawnStates = (view, skin, grid) => {
+  const out = new Map();
+  for (const d of skin.draws) {
+    const c = view.cellAt(d.x + 1, d.y + 1);
+    if (c >= 0) out.set(c, d.state);
+  }
+  assert.equal(out.size > 0 && grid.width > 0, true);
+  return out;
+};
+
+test('during a loss\'s end effect each tile the loss changed keeps its pre-loss tile until the wave reaches it; the end state shows at the delay\'s end', () => {
+  const { view, skin, grid } = makeView();
+  const { game } = beginnerGame();
+  view.setGame(game);
+  const wrong = grid.index(6, 8);
+  game.toggleFlag(wrong); // a flag on a safe cell: a wrong flag at the loss
+  game.reveal(grid.index(0, 0));
+  const boom = grid.index(8, 4);
+  const r = game.reveal(boom);
+  assert.equal(game.cellState(boom), CELL.EXPLODED);
+  const effect = createEndEffect({ kind: LOSS, cols: 9, rows: 9, origin: boom, duration: END_DELAY_MS });
+  const mineNear = grid.index(8, 3);
+  const mineFar = grid.index(8, 0);
+
+  view.update(r.changed); // the session's changed event redraws the loss in its end state …
+  skin.draws.length = 0;
+  view.showEffect(effect, 0); // … and the effect starting at once repaints the board from the wave
+  let shown = drawnStates(view, skin, grid);
+  assert.equal(shown.size, 81, 'the whole board is repainted');
+  assert.equal(shown.get(boom), CELL.EXPLODED, 'the exploded tile shows at once');
+  assert.equal(shown.get(mineNear), CELL.CLOSED, 'a mine keeps its closed tile');
+  assert.equal(shown.get(mineFar), CELL.CLOSED);
+  assert.equal(shown.get(wrong), CELL.FLAGGED, 'a wrong flag keeps its flag');
+  assert.equal(shown.get(grid.index(0, 0)), game.cellState(grid.index(0, 0)), 'a tile the loss did not change is drawn as it is');
+
+  skin.draws.length = 0;
+  view.showEffect(effect, reachMs(effect, mineNear));
+  shown = drawnStates(view, skin, grid);
+  assert.equal(shown.get(mineNear), CELL.MINE, 'reached: the end state');
+  assert.equal(shown.get(mineFar), CELL.CLOSED, 'not yet reached');
+  assert.ok(reachMs(effect, mineFar) > reachMs(effect, mineNear));
+
+  skin.draws.length = 0;
+  view.update([mineFar]); // a redraw during the effect draws the tile the wave shows
+  assert.deepEqual(skin.draws.map((d) => d.state), [CELL.CLOSED]);
+  skin.draws.length = 0;
+  view.resize(620, 500, 1); // so does a resize, and a scroll or a theme change, which repaint
+  assert.equal(drawnStates(view, skin, grid).get(mineFar), CELL.CLOSED);
+  assert.equal(drawnStates(view, skin, grid).get(mineNear), CELL.MINE);
+
+  skin.draws.length = 0;
+  view.showEffect(null);
+  shown = drawnStates(view, skin, grid);
+  assert.equal(shown.size, 81, 'the end of the delay repaints the whole board');
+  for (let c = 0; c < 81; c++) assert.equal(shown.get(c), game.cellState(c), `cell ${c} in its end state`);
+  assert.equal(view.effect, null, 'no effect left running');
+});
+
+test('a win\'s end effect brightens the tiles the pulse is passing and throws confetti over the board\'s own rectangle only', () => {
+  const { view, skin, canvas, grid } = makeView({ token: (name) => (name === PULSE_COLOR ? '#fefefe' : CONFETTI_COLORS.includes(name) ? '#c0ffee' : '#111111') });
+  const { game } = beginnerGame();
+  view.setGame(game);
+  for (let c = 0; c < 81 && game.phase !== 'won'; c++) if (game.cellState(c) === CELL.CLOSED && c % 9 !== 8 && c !== grid.index(7, 0)) game.reveal(c);
+  assert.equal(game.phase, 'won');
+  const mine = grid.index(8, 8);
+  assert.equal(game.cellState(mine), CELL.CLOSED, 'the engine leaves an unflagged mine closed at a win');
+  const origin = grid.index(2, 3);
+  const effect = createEndEffect({ kind: WIN, cols: 9, rows: 9, origin, duration: END_DELAY_MS, random: () => 0.5 });
+  canvas.ctx.calls.length = 0;
+  skin.draws.length = 0;
+  view.showEffect(effect, 140);
+  assert.equal(skin.draws.length, 81, 'the end-state tiles are the skin\'s static tiles');
+  assert.equal(drawnStates(view, skin, grid).get(mine), CELL.CLOSED, 'a mine the wave has not reached is still closed');
+  const pulses = canvas.ctx.calls.filter((c) => c.op === 'fillRect' && c.fill === '#fefefe');
+  const at = view.cellRect(origin);
+  assert.ok(pulses.some((c) => c.args[0] === at.x && c.args[1] === at.y), 'the pulse brightens the origin first');
+  const far = view.cellRect(grid.index(8, 8));
+  assert.equal(pulses.some((c) => c.args[0] === far.x && c.args[1] === far.y), false, 'not yet the far corner');
+  const pieces = canvas.ctx.calls.filter((c) => c.op === 'fillRect' && c.fill === '#c0ffee');
+  assert.ok(pieces.length > 0, 'confetti is drawn');
+  const clip = canvas.ctx.calls.findLast((c) => c.op === 'rect');
+  const { viewX, viewY, viewWidth, viewHeight } = view.layout;
+  assert.deepEqual(clip.args, [viewX, viewY, viewWidth, viewHeight], 'clipped to the board\'s rectangle in view');
+  for (const t of canvas.ctx.calls.filter((c) => c.op === 'translate')) {
+    assert.ok(t.args[0] >= viewX && t.args[0] <= viewX + viewWidth && t.args[1] >= viewY && t.args[1] <= viewY + viewHeight, 'each piece over the board');
+  }
+  skin.draws.length = 0;
+  view.showEffect(effect, reachMs(effect, mine));
+  assert.equal(drawnStates(view, skin, grid).get(mine), CELL.FLAGGED, 'reached: shown as its end-state flag');
+  canvas.ctx.calls.length = 0;
+  skin.draws.length = 0;
+  view.showEffect(null);
+  assert.equal(canvas.ctx.calls.some((c) => c.op === 'fillRect' && (c.fill === '#fefefe' || c.fill === '#c0ffee')), false, 'nothing of the effect is left');
+  const shown = drawnStates(view, skin, grid);
+  for (let c = 0; c < 81; c++) {
+    assert.equal(shown.get(c), game.cellState(c) === CELL.CLOSED ? CELL.FLAGGED : game.cellState(c), `cell ${c}: the won board's end state, every unflagged mine a flag`);
+  }
+});
+
+test('a hidden board draws no effect', () => {
+  const { view, skin } = makeView();
+  view.setGame(beginnerGame().game);
+  view.setHidden(true);
+  skin.draws.length = 0;
+  view.showEffect(createEndEffect({ kind: WIN, cols: 9, rows: 9, origin: 0, duration: END_DELAY_MS }), 100);
+  assert.equal(skin.draws.length, 0);
 });
 
 test('resize, a pixel-ratio change and a theme change repaint the whole board', () => {

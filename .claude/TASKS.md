@@ -848,7 +848,7 @@ Preconditions: none
 
 ## 137. 2D end-of-game moment and the faster loop
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/classic2d/end-effect.js, js/classic2d/board-view.js, js/classic2d/mode.js, js/shell/mode-3d.js, js/shell/mode-host.js, js/main.js, js/results/view.js, js/results/flow.js, tests/classic2d-end-effect.test.mjs, tests/classic2d-mode.test.mjs, tests/classic2d-view.test.mjs, tests/mode3d-end.test.mjs, tests/shell-mode-3d.test.mjs, tests/results.test.mjs, README.md, .claude/domain/features/classic-2d-square-play.md, .claude/domain/features/3d-results-records-screens.md, .claude/domain/features/3d-play-flow.md, .claude/domain/features/results-screen.md
 Preconditions: none

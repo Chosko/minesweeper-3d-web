@@ -35,6 +35,11 @@ Pick a board, switch **No-guess board** on or off, and play:
   (`Shift` + wheel scrolls sideways) or drag with `Shift` held.
 - Pausing hides the board while the timer keeps running; each game records its pauses. The board
   choice you made last is preselected next time.
+- When the game ends, the board plays the 3D game's end effect for about a second — on a win a
+  pulse spreading from your last click with confetti over the board and every mine shown flagged,
+  on a loss a wave from the exploded mine showing where the mines were — then the results card
+  shows over it, with **Play again** (or `Enter` or `R`). Any click, key or controller button
+  skips the effect.
 
 | Input | Action |
 |---|---|
@@ -115,12 +120,14 @@ The rules are classic Minesweeper with one more dimension:
 - The box starts closed. The board is generated around your first click, so the first click is
   always safe, and the timer starts once the board is ready. Flags placed before that are kept.
 - When the game ends, the board freezes for about a second while the end effect plays (the loss
-  wave showing where the mines were, or the win confetti). Then the screen shown after a game takes
-  over the whole window, as in Classic 2D: time (to the thousandth of a second), 3BV, 3BV/s,
-  efficiency, your clicks, the game's rank on that board after a win, the time to beat next, your
-  win rate and longest streak on that board each beside its figure over completed games, and your
-  bests on that board (greyed after a loss, with the pace you were on), with **Play again** (or
-  `R`), **Watch replay**, **Records** and **Main menu**.
+  wave showing where the mines were, or the win confetti); any click, key or controller button
+  skips it. Then the screen shown after a game takes over the whole window, as in Classic 2D: time
+  (to the thousandth of a second), 3BV, 3BV/s, efficiency, your clicks, the game's rank on that
+  board after a win, the time to beat next, your win rate and longest streak on that board each
+  beside its figure over completed games, and your bests on that board (greyed after a loss, with
+  the pace you were on), with **Play again** (or `Enter` or `R`), **Watch replay**, **Records** and
+  **Main menu**. Play again with the mouse or the keyboard captures the mouse at once, with no
+  "Click to play" card unless the browser refuses the capture.
 
 Pick a board and play:
 
@@ -295,8 +302,8 @@ css/style.css           Styles for menus, HUD and overlays
 js/main.js              Entry point: wires the game, renderer, input and UI; frame loop; game flow
 js/mode3d/              3D mode: board choice and no-guess switch, game session (first click, generation,
                         timer)
-js/classic2d/           Classic 2D mode: board setup, game session and timer, Canvas board view, mouse,
-                        keyboard and controller input, tile skin
+js/classic2d/           Classic 2D mode: board setup, game session and timer, Canvas board view and its
+                        end-of-game effect, mouse, keyboard and controller input, tile skin
 js/records/             Personal records: board identity, game summary, bests and history, Records screen
                         and its history chart
 js/replay/              Replays: format, recording, the replay library, simulator and verifier, the replay

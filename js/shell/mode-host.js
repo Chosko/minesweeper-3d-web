@@ -14,6 +14,10 @@
 //   summary()           the game's summary so far: null before the first click
 //   replay(summary)     optional: the game's replay sealed with that summary (js/replay/recorder.js),
 //                       or null; a mode without it records no replays
+//   ending              optional: whether the game's end delay runs — the game is over, its
+//                       finished report waiting for the end effect to play
+//   finishNow()         optional, with `ending`: end a running end delay at once, reporting the
+//                       game finished (a press of the player's, the page going away)
 //   failureScreen       the router screen the shell shows when the mode reports a failure
 // and reports back through `report`:
 //   report.started()                  the first click started the game

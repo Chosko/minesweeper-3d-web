@@ -35,7 +35,8 @@
 // drives the sampler (call it every frame). A lost graphics context — at start() or through
 // contextLost() — is reported as failed, and leaves the session; during the end delay the game is
 // first reported finished, so its summary is still recorded. finishNow() cuts a running end delay
-// short — the page is going away — so the game is reported finished, never left unfinished.
+// short — a press of the player's (js/shell/end-skip.js), the page going away — so the game is
+// reported finished, never left unfinished.
 //
 // Summaries are built by js/records/summary.js's buildSummary from the session's engine counts
 // (outcome abandoned) or engine summary (won or lost), its elapsed time and its pause spans up to
@@ -157,7 +158,7 @@ export function create3DMode(flow, report) {
       drop();
       flow.leave();
     },
-    /** The page is going away: a running end delay ends now, so the game is reported finished. */
+    /** A press of the player's, or the page going away: a running end delay ends now, so the game is reported finished. */
     finishNow() { if (game?.ending) finish(game); },
     summary,
     replay,

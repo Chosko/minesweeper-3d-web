@@ -21,6 +21,7 @@ import { createFirstUse, stripShown, hidCube, aimHintCell, createDwell, AIM_DWEL
 import { createActiveDevice, hintText } from './settings/bindings.js';
 import { createPauseController, restartInput, RESTART_NOTICE } from './shell/pause.js';
 import { createLockFallback } from './shell/lock-fallback.js';
+import { createEndSkip } from './shell/end-skip.js';
 import { bindScenePalette } from './shell/scene-palette.js';
 import { token, onThemeChange } from './tokens.js';
 import { storage, blobStore } from './platform/index.js';
@@ -34,7 +35,7 @@ import { mountViewer2D } from './replay/viewer-2d.js';
 import { panelRect } from './classic2d/board-view.js';
 import { createViewer3D } from './replay/viewer-3d.js';
 import { REPLAY_SCREEN } from './records/replay-list.js';
-import { createResultsView, resultsContent } from './results/view.js';
+import { createResultsView, resultsContent, resultsEnter } from './results/view.js';
 import { createRecordsScreen, createRecordsView } from './records/screen.js';
 import { applySettings, pixelRatioFor } from './settings/appliers.js';
 import { bindSettingControls } from './settings/page.js';
@@ -158,7 +159,7 @@ function noteAutoHide(r) {
 }
 /**
  * The end of the 3D game: the HUD freezes and the end effect plays; the 3D mode's end delay then
- * hands over to the results screen. Until then input is ignored (ending3D).
+ * hands over to the results screen. Until then a press ends the delay and nothing else acts (endDelay).
  */
 function endGame() {
   const g = S.game;
@@ -171,14 +172,20 @@ function clicks3D() {
   const counts = S.play?.counts();
   return counts ? countedClicks(counts.clicks) : 0;
 }
-/** The 3D game's end delay is running: no board action, camera movement, view-mode key, Back or pause. */
-function ending3D() { return MODES.active === '3d' && mode3d.ending; }
-/** Every pause goes through here: none is offered while the 3D end delay runs. */
-function pauseGame(source, opts) { return ending3D() ? false : PAUSE.pause(source, opts); }
+/** The mode whose game the shell is hosting (js/shell/mode-3d.js or js/classic2d/mode.js), or null. */
+function activeMode() { return MODES.active === '3d' ? mode3d : MODES.active === 'classic-2d' ? mode2d : null; }
+/**
+ * The active game's end delay is running, in either mode: the game is over and its results screen
+ * not yet shown. No board action, camera movement, view-mode key, Back or pause; a press ends it
+ * (END_SKIP).
+ */
+function endDelay() { return !!activeMode()?.ending; }
+/** Every pause goes through here: none is offered while an end delay runs. */
+function pauseGame(source, opts) { return endDelay() ? false : PAUSE.pause(source, opts); }
 /** Back on the board (Esc, the controller's back button): cancels a board being generated, else pauses. */
-function backGame(source) { return ending3D() ? false : PAUSE.back(source === 'pointer' ? 'button' : source); }
-/** F2, Start + Y and R do nothing during the 3D end delay or while a confirmation or the controls modal shows. */
-function restartBlocked() { return ending3D() || ui.isConfirmOpen() || ui.isControlsOpen(); }
+function backGame(source) { return endDelay() ? false : PAUSE.back(source === 'pointer' ? 'button' : source); }
+/** F2, Start + Y and R do nothing during an end delay or while a confirmation or the controls modal shows. */
+function restartBlocked() { return endDelay() || ui.isConfirmOpen() || ui.isControlsOpen(); }
 /**
  * F2 (in play and on the pause card: restart) and R (on the results screen: Play again), without
  * Ctrl, Alt or Meta; whether the key acted. F2's browser default is always prevented.
@@ -210,7 +217,7 @@ const LOCK_FALLBACK = createLockFallback();
 const input = new Input({
   canvas,
   mouse,
-  isActive: () => S.mode === 'playing' && !ending3D(),
+  isActive: () => S.mode === 'playing' && !endDelay(),
   isDragLook: () => S.dragLook && S.lockless,
   onLook: (dx, dy) => cam.look(dx, dy),
   onWheel: (notches) => { setSpacing(S.spacing + notches * 0.04); ui.showSpacing(S.spacing); },
@@ -232,6 +239,7 @@ const input = new Input({
     if (locked) {
       LOCK_FALLBACK.locked();
       if (S.mode === 'ready' || S.mode === 'paused') enterPlaying();
+    } else if (END_SKIP.lockLost()) { // the browser's Esc, whose key press the page never sees, ends the end delay
     } else if (S.mode === 'playing' && !S.lockless && !board3d.failure) { // a failed board released the lock for its offer
       if (performance.now() - cancelledAt < 500) SHELL.go('ready', { replace: true }); // the Esc that cancelled the board
       else if (!document.hasFocus()) pauseGame('key'); // the window lost focus
@@ -468,7 +476,22 @@ const PAUSE = createPauseController({
 });
 window.addEventListener('blur', () => pauseGame('blur'));
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') pauseGame('hidden'); });
-window.addEventListener('pagehide', () => { if (ending3D()) mode3d.finishNow(); PAUSE.pageHide(); }); // a game in its end delay is finished, not lost
+window.addEventListener('pagehide', () => { if (endDelay()) activeMode().finishNow(); PAUSE.pageHide(); }); // a game in its end delay is finished, not lost
+
+// ---------- the end delay's skip ----------
+// A mouse button, key or controller button pressed during either mode's end delay ends it at once
+// (the mode's finishNow: the results flow records, then shows, the results card) and does nothing
+// else: END_SKIP (js/shell/end-skip.js) consumes the press with its release, auto-repeat and click,
+// swallowed here before any other listener sees them. The controller's is read in handlePad.
+const END_SKIP = createEndSkip({ ending: () => endDelay(), skip: () => activeMode()?.finishNow() });
+const swallow = (e) => { e.preventDefault(); e.stopImmediatePropagation(); };
+window.addEventListener('keydown', (e) => { if (END_SKIP.keyDown(e)) swallow(e); }, true);
+window.addEventListener('keyup', (e) => { if (END_SKIP.keyUp(e)) swallow(e); }, true);
+for (const type of ['pointerdown', 'mousedown']) window.addEventListener(type, (e) => { if (END_SKIP.press()) swallow(e); }, true);
+for (const type of ['pointerup', 'mouseup']) window.addEventListener(type, (e) => { if (END_SKIP.release(e)) swallow(e); }, true);
+for (const type of ['click', 'auxclick', 'contextmenu']) window.addEventListener(type, (e) => { if (END_SKIP.click(e)) swallow(e); }, true);
+window.addEventListener('blur', () => END_SKIP.reset()); // releases that land elsewhere are never seen
+document.addEventListener('visibilitychange', () => { if (document.hidden) END_SKIP.reset(); });
 
 // ---------- personal records ----------
 // The records store loads before the first screen, settling a game the last launch closed on, and
@@ -635,6 +658,15 @@ const RESULTS_VIEW = createResultsView({
   onRecords: () => RESULTS.openRecords(),
   onMenu: () => RESULTS.toMenu(),
 });
+// Enter on the results screen is Play again while the focus is on Play again or on no action; on
+// another action it activates that one, as a button does; its auto-repeat does nothing.
+window.addEventListener('keydown', (e) => {
+  if (S.mode !== 'results' || (e.code !== 'Enter' && e.code !== 'NumpadEnter') || e.ctrlKey || e.altKey || e.metaKey) return;
+  const action = resultsEnter({ focused: document.activeElement?.id || null, repeat: e.repeat });
+  if (!action) return;
+  e.preventDefault();
+  if (action === 'playAgain') RESULTS.playAgain('key');
+});
 
 // ---------- records screen ----------
 // The board picker, the chosen board's figures, history and kept replays, redrawn live while open;
@@ -692,7 +724,7 @@ function playAgainFromMenu(source) {
 
 /** Back from the keyboard (Esc) or the controller: the topmost layer first, then the router. */
 function shellBack(source) {
-  if (ending3D()) return;
+  if (endDelay()) return;
   if (ui.closeControls() || ui.closeConfirm() || ui.closeResetConfirm()) return;
   SHELL.back(source);
 }
@@ -703,7 +735,7 @@ function shellBack(source) {
  * sync restores the entry it consumed whenever the screen stays.
  */
 function historyBack() {
-  if (ending3D()) return;
+  if (endDelay()) return;
   if (ui.closeControls() || ui.closeConfirm() || ui.closeResetConfirm()) return;
   if (S.mode === 'playing' || S.mode === 'classic-2d') { pauseGame('button'); return; }
   if (S.mode === 'paused' && !gameOver()) return;
@@ -843,12 +875,14 @@ function setLockless(on) {
 }
 /**
  * A new 3D board entered as resume enters play: a controller, or drag-to-look play, enters lockless
- * play; otherwise pointer lock is asked for.
+ * play; otherwise the click or key that asked is the pointer-lock gesture: the ready card waits
+ * unseen, so a granted lock enters play with no card shown, and a refused one shows it with its
+ * message (onLockError).
  */
 function enterPlay3D(source) {
   if (S.dragLook) enterPlaying(true);
   else if (source === 'pad') padResume();
-  else input.requestLock();
+  else { ui.setReadyPending(true); input.requestLock(); }
 }
 /** The ready card's "Play with drag-to-look": lockless play the mouse drives by dragging, until the game is left. */
 function enterDragLook() {
@@ -945,7 +979,7 @@ let reloading = false;
  * Ctrl is a game key, and Ctrl+W cannot be intercepted.
  */
 function guardLeave(e) {
-  if (reloading || ending3D()) return; // a game in its end delay is over: nothing to lose
+  if (reloading || endDelay()) return; // a game in its end delay is over: nothing to lose
   e.preventDefault();
   e.returnValue = '';
 }
@@ -1146,6 +1180,8 @@ function handlePad(p, dt, now) {
   const held = (b) => nav.held(p, b);
   const pressed = (b) => nav.pressed(p, b);
   if (p.active) needRender = true;
+  // An end delay: a button pressed ends it and does nothing else; the held ones stay off the results card.
+  if (END_SKIP.pad(p.pressed.some((_, b) => pressed(b)))) { controls.releasePad(); return; }
   const modal = ui.isControlsOpen();
   // Start + Y: Y pressed while Start is held restarts, in play and on the pause card. Start's own
   // press already paused (or resumed), so Start is read unsuppressed; the buttons still held are
@@ -1165,7 +1201,6 @@ function handlePad(p, dt, now) {
 }
 
 function padPlaying(p, held, pressed, dt, now) {
-  if (ending3D()) { controls.releasePad(); return; } // the end delay: Start, Back, triggers and sticks are ignored
   if (board3d.failure || board3d.generating) { padStatus3D(p, held, pressed, now); return; }
   if (pressed(BTN.START)) { padClick(document.getElementById('hud-pause')); return; } // the overlay's pause button
   if (backButtons(S.mode).some(pressed)) { backGame('pad'); return; } // Back while playing = Pause, or cancels a board being generated
@@ -1292,7 +1327,7 @@ function refresh() {
   if (!S.game || onBackdrop()) return;
   cam.apply(renderer.camera);
   const playing = S.mode === 'playing';
-  if (!ending3D()) renderer.setToggles(playing && controls.shift, playing && controls.space, playing && controls.ctrl);
+  if (!endDelay()) renderer.setToggles(playing && controls.shift, playing && controls.space, playing && controls.ctrl);
   renderer.setSpacing(S.spacing);
   updatePick();
 }
@@ -1375,7 +1410,7 @@ function frame(now) {
     const t = replay3d.toggles;
     renderer.setToggles(t.shift, t.space, t.ctrl);
   } else {
-    const frozen = ending3D(); // the end delay: the camera and the view mode stay as the game ended
+    const frozen = endDelay(); // the end delay: the camera and the view mode stay as the game ended
     if (playing && !frozen) {
       cam.move(dt, input.move);
       if (controls.hasAxes) cam.moveAxes(dt, controls.axes.f, controls.axes.r, controls.axes.u);
@@ -1396,12 +1431,12 @@ function frame(now) {
   if (replay3d.view) updateReplayPick();
   else if (g && !onBackdrop()) {
     updatePick();
-    updateArrow(playing && !ending3D());
+    updateArrow(playing && !endDelay());
     // the timer is the session's: it runs through pauses, frozen at the end
     if (S.play && S.started && !S.endState) S.time = S.play.elapsedMs() / 1000;
     const e = S.endState;
     ui.updateHud(e ? e.time : S.time, e ? e.minesLeft : g.minesLeft, e ? e.clicks : clicks3D());
-    if (playing && !ending3D()) aimHint(g, now);
+    if (playing && !endDelay()) aimHint(g, now);
     else AIM_DWELL.reset();
   }
 

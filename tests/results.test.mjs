@@ -10,7 +10,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   formatTime, formatTimeDifference, formatRate, formatRateDifference, formatEfficiency,
   formatEfficiencyDifference, formatClicks, resultsContent, createResultsView, DASH, NOTES, EQUAL_BEST, NOT_ELIGIBLE,
+  RESULTS_ACTIONS, resultsEnter,
 } from '../js/results/view.js';
+import { restartInput } from '../js/shell/pause.js';
+import { createEndSkip } from '../js/shell/end-skip.js';
 import { pauseLine } from '../js/ui.js';
 import { createResultsFlow, RESULTS_SCREEN } from '../js/results/flow.js';
 import { createBoardIdentity } from '../js/records/board.js';
@@ -497,6 +500,48 @@ test('the flow is DOM-free', () => {
   assert.doesNotMatch(read('js/results/flow.js'), /document|window/);
 });
 
+// ---------------------------------------------------------------- the keys
+
+test('Enter is Play again while the focus is on Play again or on no action; on another action it keeps that action\'s meaning; its repeat does nothing', () => {
+  assert.deepEqual(RESULTS_ACTIONS, ['r-again', 'r-watch', 'r-records', 'r-menu']);
+  assert.equal(resultsEnter({ focused: 'r-again' }), 'playAgain', 'its default focus');
+  assert.equal(resultsEnter({ focused: null }), 'playAgain', 'no focus');
+  assert.equal(resultsEnter({ focused: 'results' }), 'playAgain', 'the card itself, no action');
+  for (const id of ['r-watch', 'r-records', 'r-menu']) assert.equal(resultsEnter({ focused: id }), null, `${id} is activated by its own Enter`);
+  for (const focused of [null, 'r-again', 'r-menu']) assert.equal(resultsEnter({ focused, repeat: true }), 'ignore', 'a key repeat activates nothing');
+});
+
+test('R and Enter play again on the results screen only, through the one R binding and the Enter handler', () => {
+  assert.equal(restartInput('KeyR', { screen: 'results' }), 'playAgain');
+  for (const screen of ['classic-2d', 'playing', 'paused', 'menu', 'records']) assert.equal(restartInput('KeyR', { screen }), null, `R on ${screen}`);
+  const src = MAIN.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+  assert.equal(src.match(/'KeyR'/g).length, 1, 'R is bound once in js/main.js: the 3D camera return; results reach R through restartInput');
+  const enter = src.slice(src.indexOf('resultsEnter({'), src.indexOf('});', src.indexOf('resultsEnter({')));
+  assert.match(src, /if \(S\.mode !== 'results' \|\| \(e\.code !== 'Enter' && e\.code !== 'NumpadEnter'\)/, 'Enter acts on the results screen only');
+  assert.match(enter, /focused: document\.activeElement\?\.id/);
+  assert.match(src, /if \(action === 'playAgain'\) RESULTS\.playAgain\('key'\)/);
+});
+
+test('a key that ended the end delay does not also play again: its press, repeat and release are consumed; a fresh press is not', () => {
+  let ending = true;
+  const skips = [];
+  const skip = createEndSkip({ ending: () => ending, skip: () => { skips.push('skip'); ending = false; } });
+  for (const code of ['Enter', 'KeyR']) {
+    ending = true;
+    skips.length = 0;
+    assert.equal(skip.keyDown({ code, repeat: false }), true, `${code} ends the delay and is consumed`);
+    assert.deepEqual(skips, ['skip']);
+    assert.equal(ending, false, 'the results card now shows');
+    assert.equal(skip.keyDown({ code, repeat: true }), true, 'its auto-repeat does not reach the card');
+    assert.equal(skip.keyUp({ code }), true, 'nor its release');
+    assert.equal(skip.keyDown({ code, repeat: false }), false, 'a fresh press reaches the card: Play again');
+    assert.equal(skip.keyUp({ code }), false);
+    assert.deepEqual(skips, ['skip'], 'one skip');
+  }
+  assert.match(MAIN, /window\.addEventListener\('keydown', \(e\) => \{ if \(END_SKIP\.keyDown\(e\)\) swallow\(e\); \}, true\)/,
+    'the shell consumes it in the capture phase, before the results screen\'s keys see it');
+});
+
 // ---------------------------------------------------------------- markup and wiring
 
 const INDEX = read('index.html');
@@ -677,12 +722,40 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
     await page.mouse.click(centres[first].x, centres[first].y);
     await page.waitForFunction(() => globalThis.__ms.modes.state.started);
     assert.equal(await hudClicks(), '1', 'the first click is counted as it is made');
-    const clearBoard = async () => {
-      for (let c = 0; c < 81 && (await mode()) === 'classic-2d'; c++) {
-        if (mines.includes(c)) continue;
-        await page.mouse.click(centres[c].x, centres[c].y);
+    // Clicks `cells` in the page, in one task, until the end effect starts — the click the mounted
+    // input takes, by mouse events at the cell centres — then, in that same task so it lands inside
+    // the end delay however slow the machine, presses `skip`: a key code, 'mouse', or nothing.
+    const ending = () => page.evaluate(() => globalThis.__ms.board2D?.effect?.kind ?? null);
+    const playInPage = (cells, skip = null) => page.evaluate(({ points, skip: press }) => {
+      const m = globalThis.__ms;
+      const canvas = document.querySelector('#c2d-board canvas');
+      const mouse = (type, p, buttons) => new MouseEvent(type, { bubbles: true, cancelable: true, clientX: p.x, clientY: p.y, button: 0, buttons });
+      for (const p of points) {
+        if (m.board2D.effect) break;
+        canvas.dispatchEvent(mouse('mousedown', p, 1));
+        canvas.dispatchEvent(mouse('mouseup', p, 0));
       }
+      const out = { effect: m.board2D.effect?.kind ?? null, origin: m.board2D.effect?.origin ?? null, mode: m.state.mode, at: performance.now() };
+      if (press === 'mouse') {
+        const p = points[0];
+        canvas.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, clientX: p.x, clientY: p.y, button: 0, buttons: 1 }));
+        out.afterPress = m.state.mode;
+        canvas.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true, clientX: p.x, clientY: p.y, button: 0, buttons: 0 }));
+        canvas.dispatchEvent(mouse('click', p, 0));
+      } else if (press) {
+        document.body.dispatchEvent(new KeyboardEvent('keydown', { code: press, key: 'r', bubbles: true, cancelable: true }));
+        out.afterPress = m.state.mode;
+      }
+      return out;
+    }, { points: cells.map((c) => centres[c]), skip });
+    const safe = () => [...Array(81).keys()].filter((c) => !mines.includes(c));
+    const clearBoard = async () => {
+      const won = await playInPage(safe());
+      assert.deepEqual([won.effect, won.mode], ['win', 'classic-2d'], 'the win confetti plays on the board during the end delay');
       await page.waitForFunction(() => globalThis.__ms.state.mode === 'results');
+      const waited = await page.evaluate(() => performance.now()) - won.at;
+      assert.ok(waited >= 700, `the results card shows after the end delay (${waited.toFixed(0)} ms)`);
+      assert.equal(await ending(), null, 'the board is left in its end state');
     };
     await clearBoard();
     const made = await hudClicks();
@@ -743,10 +816,21 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
       { mode: 'classic-2d', started: false, finished: false, canPause: false }, 'a fresh game of the same choice');
     assert.equal(await page.evaluate(() => document.getElementById('hud-size').textContent), '9 × 9');
 
-    // The same board won again: R plays again as the focused Play again's Enter does; with Ctrl it is the browser's.
+    // The same board won again, its end delay cut short by R: the card shows at once, and the R that
+    // ended the delay — held, repeating, released — does not also play again; a fresh R does, as the
+    // focused Play again's Enter does; with Ctrl it is the browser's.
     await page.mouse.click(centres[first].x, centres[first].y);
     await page.waitForFunction(() => globalThis.__ms.modes.state.started);
-    await clearBoard();
+    const skipped = await playInPage(safe(), 'KeyR');
+    assert.deepEqual([skipped.effect, skipped.mode], ['win', 'classic-2d'], 'the end delay runs');
+    assert.equal(skipped.afterPress, 'results', 'a key during the end delay shows the card at once');
+    assert.equal(await page.evaluate(() => globalThis.__ms.modes.state.finished), true, 'the game is finished');
+    await page.evaluate(() => {
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyR', key: 'r', repeat: true, bubbles: true, cancelable: true }));
+      document.body.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyR', key: 'r', bubbles: true, cancelable: true }));
+    });
+    assert.equal(await mode(), 'results', 'the R that ended the delay, repeating and released, does not play again');
+    assert.equal(await page.evaluate(() => globalThis.__ms.records.counters('classic-2d:square:9x9:10:guess').games), 2, 'recorded once, finished');
     assert.equal(await page.evaluate(() => {
       const e = new KeyboardEvent('keydown', { code: 'KeyR', key: 'r', ctrlKey: true, bubbles: true, cancelable: true });
       window.dispatchEvent(e);
@@ -756,6 +840,22 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
     assert.equal(await mode(), 'classic-2d', 'R plays again');
     assert.deepEqual(await page.evaluate(() => ({ ...globalThis.__ms.modes.state })),
       { mode: 'classic-2d', started: false, finished: false, canPause: false }, 'a fresh game of the same choice');
+
+    // A loss: the reveal wave plays from the exploded tile; a click during the delay shows the card at
+    // once and acts on nothing; Enter on another focused action keeps that action's meaning.
+    await page.mouse.click(centres[first].x, centres[first].y);
+    await page.waitForFunction(() => globalThis.__ms.modes.state.started);
+    const lost = await playInPage([mines[0]], 'mouse');
+    assert.deepEqual([lost.effect, lost.mode], ['loss', 'classic-2d'], 'the loss reveal wave plays on the board');
+    assert.equal(lost.origin, mines[0], 'from the exploded tile');
+    assert.equal(lost.afterPress, 'results', 'a click during the end delay shows the card at once');
+    assert.equal(await mode(), 'results');
+    assert.equal(await page.evaluate(() => document.getElementById('results-title').textContent), 'Game over');
+    assert.equal(await ending(), null, 'the board is drawn in its end state');
+    assert.equal(await page.evaluate(() => globalThis.__ms.records.history('classic-2d:square:9x9:10:guess').at(-1).outcome), 'lost', 'recorded finished, as lost');
+    await page.evaluate(() => document.getElementById('r-menu').focus());
+    await page.keyboard.press('Enter');
+    assert.equal(await mode(), 'menu', 'Enter on Main menu goes to the menu, not Play again');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

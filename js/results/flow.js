@@ -51,7 +51,9 @@
 //   and changes nothing else.
 //   current                   the data of the results screen last shown, or null; the screen is
 //                             shown again from it when Back returns to it without data.
-//   playAgain(source)         restart(source, current).
+//   playAgain(source)         restart(source, current): Play again by click, Enter or R ('pointer',
+//                             'key') or the controller ('pad'); the shell enters a 3D board with
+//                             the activation as its pointer-lock gesture.
 //   openRecords()             routes as the menu's Records entry does, with this game's board
 //                             ({ boardKey }): the records screen (js/records/screen.js), or the
 //                             menu's placeholder on a router without it. Nothing before a

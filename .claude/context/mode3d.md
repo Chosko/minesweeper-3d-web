@@ -194,7 +194,8 @@ three to the screens, the renderer and the pointer-lock flow
   tab draws frames — it calls `flow.release()` and reports
   `finished(summary, replay)` once. `restart` and `leave` cancel a running
   end delay; `js/main.js` offers neither while `ending`, and `finishNow()`
-  (the page going away) reports the game finished at once, so a game in its
+  (a press of the player's during the delay, the page going away —
+  [app-shell.md](app-shell.md)) reports the game finished at once, so a game in its
   end delay is never reported abandoned. `summary()` is the started, unfinished game's summary,
   outcome `abandoned`, from which, with `replay(summary)`, the host reports
   `abandoned` on restart or leave; before the first applied reveal there is

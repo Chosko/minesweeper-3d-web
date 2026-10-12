@@ -330,7 +330,7 @@ export class UI {
     this._hide2D();
     this._setMode('3d');
     this.el.pause.classList.add('hidden');
-    this.el.ready.classList.remove('hidden');
+    this.el.ready.classList.remove('hidden', 'ready--pending');
     this.el.hud.classList.remove('hidden');
     this.el.readyBoard.textContent = boardLine3D(settings, { mines: true });
     this.el.readyMsg.textContent = msg;
@@ -338,6 +338,12 @@ export class UI {
     this.el.readyBlocked.classList.toggle('hidden', !blocked);
     this._syncHelp();
   }
+  /**
+   * The ready card waits unseen (`ready--pending`) while a pointer-lock request the player's own
+   * click or key made is answered: a granted lock enters play with no card shown; the next
+   * showReady (a refusal's message) shows it.
+   */
+  setReadyPending(on) { this.el.ready.classList.toggle('ready--pending', !!on); }
   setReadyMessage(msg) { this.el.readyMsg.textContent = msg; }
   showPlaying() {
     this._hideMenus();

@@ -10,7 +10,8 @@ import { createServer } from 'node:http';
 import { join, dirname, normalize, extname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { createClassic2DMode, MODE_ID } from '../js/classic2d/mode.js';
+import { createClassic2DMode, MODE_ID, END_DELAY_MS } from '../js/classic2d/mode.js';
+import { WIN, LOSS } from '../js/classic2d/end-effect.js';
 import { CHOICE_SIZES, customStatus, readChoice, sizeLabel, densityHintShown } from '../js/classic2d/board-choice.js';
 import {
   createLastChoice, DEFAULT_CHOICE, LAST_CHOICE_DOC, maxMines, NOGUESS_DENSITY_HINT, DENSITY_HINT_TEXT, NOGUESS_HELP_TEXT,
@@ -43,6 +44,7 @@ function fakeClock(start = 1000) {
       t += ms;
       for (const [h, timer] of [...timers]) if (timer.at <= t) { timers.delete(h); timer.fn(); }
     },
+    get pending() { return timers.size; },
   };
 }
 
@@ -93,8 +95,9 @@ function mounts() {
   const board = ({ container, grid, ...options }) => {
     const v = {
       container, grid, options, game: null, hidden: false, updates: [], destroyed: false, canvas: { id: 'canvas' },
-      scales: [], cursors: [],
+      scales: [], cursors: [], effects: [],
       setGame(g) { v.game = g; },
+      showEffect(e, t) { v.effects.push([e, t]); },
       update(changed) { v.updates.push([...changed]); },
       setHidden(h) { v.hidden = !!h; },
       setScale(scale) { v.scales.push(scale); },
@@ -265,7 +268,8 @@ test('the overlay\'s click count: none before the first click, every counted cli
   act('toggleFlag', 0);
   assert.equal(flow.huds.at(-1).clicks, 3);
   act('reveal', 8); // a mine: lost
-  assert.ok(events.some((e) => e[0] === 'finished'));
+  assert.equal(mode.ending, true, 'the game is over, in its end delay');
+  assert.ok(events.some((e) => e[0] === 'canPause' && e[1].canPause === false));
   const frozen = flow.huds.at(-1);
   assert.equal(frozen.clicks, 4, 'the losing click is counted');
   clock.advance(5000);
@@ -340,7 +344,7 @@ test('restart and leave release the canvas and any pending generation', async ()
 });
 
 test('a finished game reports its summary and the results flow routes it; Play again starts the same choice', async () => {
-  const { host, act, events, board } = setup({ choice: CUSTOM_3X3, mines: [0, 8] });
+  const { host, act, events, board, clock } = setup({ choice: CUSTOM_3X3, mines: [0, 8] });
   const routes = [];
   const handed = [];
   const pauser = createPauseController({ modes: host, showCard() {}, confirm: (r, yes) => yes(), goMenu() {} });
@@ -353,6 +357,7 @@ test('a finished game reports its summary and the results flow routes it; Play a
   }).attach(pauser);
   await act('reveal', 2);
   act('reveal', 0);
+  clock.advance(END_DELAY_MS);
   const finished = events.find((e) => e[0] === 'finished');
   assert.ok(finished, 'game finished is reported');
   assert.equal(finished[1].summary.outcome, 'lost');
@@ -371,6 +376,121 @@ test('a finished game reports its summary and the results flow routes it; Play a
   assert.notEqual(board(), old);
   assert.equal(board().grid.width, 3, 'the same board choice');
   assert.equal(events.filter((e) => e[0] === 'abandoned').length, 0, 'a finished game is never abandoned');
+});
+
+// ---------------------------------------------------------------- the end delay
+
+// CUSTOM_3X3, first reveal on cell 8, mines on 0 and 1 (defaultMines): cell 2 wins, cell 0 loses.
+async function endedGame(outcome) {
+  const t = setup({ choice: CUSTOM_3X3 });
+  await t.act('reveal', 8);
+  t.clock.advance(3000);
+  t.act('reveal', outcome === 'won' ? 2 : 0);
+  return t;
+}
+
+test('at a win or a loss the game stops being pausable at once, and is reported finished once, after the 2D end delay on the mode\'s clock', async () => {
+  for (const outcome of ['won', 'lost']) {
+    const { events, mode, clock, host } = await endedGame(outcome);
+    const types = () => events.map(([e]) => e);
+    assert.deepEqual(types(), ['started', 'canPause', 'canPause'], `${outcome}: pause is not offered, and nothing is finished yet`);
+    assert.equal(events.at(-1)[1].canPause, false);
+    assert.equal(mode.ending, true, 'the end delay is running');
+    assert.equal(mode.status().state, outcome, 'the game is over');
+    const atEnd = mode.summary();
+    clock.advance(END_DELAY_MS - 1);
+    assert.equal(types().includes('finished'), false, 'the end effect plays for the whole delay');
+    clock.advance(1);
+    assert.deepEqual(types(), ['started', 'canPause', 'canPause', 'finished']);
+    assert.equal(mode.ending, false);
+    const { summary, replay } = events.at(-1)[1];
+    assert.deepEqual(summary, atEnd, 'the summary is the game\'s at its end');
+    assert.equal(summary.outcome, outcome);
+    assert.equal(summary.elapsedMs, 3000, 'the time stopped at the end, not at the end of the delay');
+    assert.ok(replay?.blob, 'the replay goes beside it');
+    assert.equal(replay.listing.id, summary.id);
+    clock.advance(10 * END_DELAY_MS);
+    assert.equal(types().filter((e) => e === 'finished').length, 1, 'reported once');
+    assert.equal(host.summary().outcome, outcome);
+  }
+});
+
+test('the end delay runs on the mode\'s clock whether or not frames are drawn', async () => {
+  const { events, clock } = await endedGame('won');
+  clock.advance(END_DELAY_MS); // no tick(): a hidden tab draws no frames
+  assert.equal(events.at(-1)[0], 'finished');
+});
+
+test('during the end delay a pause is ignored and the board takes no action', async () => {
+  const { host, mode, board, pointer, act, events, clock, flow } = await endedGame('lost');
+  const hud = flow.huds.at(-1);
+  host.pause({ source: 'key' });
+  mode.hideBoard(true);
+  assert.equal(board().hidden, false, 'the board stays shown');
+  assert.equal(pointer().session.paused, false);
+  assert.equal(act('reveal', 4), null, 'no action');
+  assert.equal(act('toggleFlag', 3), null);
+  clock.advance(500);
+  mode.tick();
+  assert.deepEqual(flow.huds.at(-1), hud, 'the overlay stays frozen');
+  clock.advance(END_DELAY_MS);
+  assert.equal(events.filter(([e]) => e === 'finished').length, 1);
+});
+
+test('restart and leave cancel the end delay: nothing is reported finished later', async () => {
+  for (const how of ['restart', 'leave']) {
+    const { host, clock, events, mode } = await endedGame('won');
+    if (how === 'restart') host.restart({ source: 'pointer' });
+    else host.leave();
+    assert.equal(mode.ending, false);
+    clock.advance(10 * END_DELAY_MS);
+    assert.equal(events.some(([e]) => e === 'finished'), false, `${how}: the delay is cancelled with the game`);
+    assert.equal(clock.pending, 0);
+  }
+});
+
+test('finishNow() ends the delay at once: the game is reported finished once, never abandoned', async () => {
+  const { mode, clock, events, host } = await endedGame('won');
+  const atEnd = mode.summary();
+  mode.finishNow();
+  assert.equal(events.at(-1)[0], 'finished');
+  assert.deepEqual(events.at(-1)[1].summary, atEnd);
+  assert.equal(mode.ending, false);
+  assert.equal(host.summary().outcome, 'won', 'the in-progress hand-off now sees a finished game');
+  mode.finishNow();
+  clock.advance(10 * END_DELAY_MS);
+  assert.equal(events.filter(([e]) => e === 'finished').length, 1, 'reported once');
+  assert.equal(events.some(([e]) => e === 'abandoned'), false);
+  const playing = setup({ choice: CUSTOM_3X3 });
+  await playing.act('reveal', 8);
+  playing.mode.finishNow();
+  assert.equal(playing.events.some(([e]) => e === 'finished'), false, 'a game not in its end delay is not finished by it');
+});
+
+test('the board plays the end effect through the delay, from the last action\'s cell or the exploded tile, and ends in its end state', async () => {
+  const won = await endedGame('won');
+  const effects = won.board().effects;
+  assert.equal(effects.length, 1, 'the effect starts with the delay');
+  const [effect, t0] = effects[0];
+  assert.equal(effect.kind, WIN);
+  assert.equal(effect.origin, 2, 'the win pulse starts at the last action\'s cell');
+  assert.equal(effect.duration, END_DELAY_MS);
+  assert.equal(t0, 0);
+  won.clock.advance(250);
+  won.mode.tick();
+  assert.deepEqual(effects.at(-1), [effect, 250], 'each frame draws it at the time on the mode\'s clock');
+  won.clock.advance(END_DELAY_MS);
+  assert.deepEqual(effects.at(-1), [null, undefined], 'the board is left in its end state, no effect running');
+  const frames = effects.length;
+  won.mode.tick();
+  assert.equal(effects.length, frames, 'no more effect frames');
+
+  const lost = await endedGame('lost');
+  const [loss] = lost.board().effects[0];
+  assert.equal(loss.kind, LOSS);
+  assert.equal(loss.origin, 0, 'the loss wave starts at the exploded tile');
+  lost.mode.finishNow();
+  assert.deepEqual(lost.board().effects.at(-1), [null, undefined], 'cut short, the board is drawn in its end state at once');
 });
 
 test('a no-guess failure shows its offer; a standard board keeps no-guess off for the rest of the session', async () => {
@@ -601,6 +721,7 @@ test('a mode without a sound sink plays the same game exactly as one with it', a
     t.act('reveal', 4);
     t.act('toggleFlag', 1);
     t.act('chord', 5);
+    t.clock.advance(END_DELAY_MS);
     const s = t.events.find(([e]) => e === 'finished')[1].summary;
     return { updates: t.board().updates, huds: t.flow.huds, outcome: s.outcome, clicks: s.clicks, bbbv: s.bbbv };
   };

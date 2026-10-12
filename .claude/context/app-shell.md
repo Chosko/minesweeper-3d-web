@@ -23,7 +23,8 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
   replay viewer, [replay.md](replay.md)) and `REPLAY_SCENE` (the 3D replay's
   scene and camera), `RESULTS`
   (the results flow), `RESULTS_VIEW` and `RECORDS_PAGE` (the Records
-  screen's controller over its view, [records.md](records.md)); holds the
+  screen's controller over its view, [records.md](records.md)), `END_SKIP`
+  (the end delay's skip, both modes); holds the
   single state object `S`; runs the `requestAnimationFrame` loop; exposes
   `window.__ms`. Also maps controller polls to game and menu actions
   (`handlePad`, `padPlaying`, `padMenus`, `padReplay`).
@@ -54,6 +55,10 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
   - `lock-fallback.js` — the 3D ready card's pointer-lock refusal counter
     (`createLockFallback`, `LOCK_MESSAGES`, `RELOCK_COOLDOWN_MS`): which
     message a refusal shows and when the page counts as blocked; pure.
+  - `end-skip.js` — the end delay's skip (`createEndSkip`): which key,
+    mouse and controller events during either mode's end delay end it, and
+    which events of the press that ended it are consumed; pure, its rules
+    in its head comment.
   - `pause.js` — the pause controller: pause, resume, restart, back to menu,
     the confirmations, the game hand-offs and the leave-page guard
     (`createPauseController`); its rules are documented in its head comment.
@@ -179,7 +184,9 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
   `start(id, choice)`, `pause(opts)`, `resume(opts)`, `restart(opts)`,
   `leave()`, `summary()`. A mode may also provide `replay(summary)`, the
   game's replay sealed with that summary ([replay.md](replay.md)), or null;
-  a mode without it records no replays. A mode reports through
+  a mode without it records no replays; and `ending` with `finishNow()`,
+  its end delay and the cut that reports the game finished at once (both
+  modes have them). A mode reports through
   `report.started()`, `finished(summary, replay)`, `canPause(bool)`,
   `failed(reason)`; it may declare `failureScreen`. Listeners of `finished`
   and `abandoned` receive `{mode, summary, replay}`, `replay` null when the
@@ -229,6 +236,17 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   `playAgainLabel(board)` → `'Play again: Expert · no-guess'`;
   `returningMenu({last, records, missing?, now?})` → `{ strip, again }`,
   `again` null for a 3D board when `missing` holds `'webgl2'`.
+
+`js/shell/end-skip.js`
+- `createEndSkip({ending, skip})` → `{keyDown({code, repeat}), keyUp({code}),
+  press(), release({buttons}), click({isTrusted}), pad(pressed), lockLost(),
+  reset()}`, each → whether the event is consumed (`lockLost` → whether it
+  skipped). During `ending()` a fresh key, mouse or controller press calls
+  `skip()` and every click is consumed; the press that skipped stays
+  consumed through its auto-repeat, its release and its trusted clicks
+  (until the next mouse, key or controller press); a key already repeating
+  is consumed until its release, which goes through; `reset()` forgets the
+  releases it waits for.
 
 `js/shell/pause.js`
 - `PAUSE_SOURCES` (`key`, `pad`, `button`, `blur`, `hidden`), `AUTO_SOURCES`
@@ -286,6 +304,10 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   the root carries `results--takeover` while `content.takeover`, the bests
   panel `ui-panel--muted` while not eligible, an improved stat
   `data-new-best` and a best's detail `data-delta`.
+- `RESULTS_ACTIONS` (`r-again`, `r-watch`, `r-records`, `r-menu`);
+  `resultsEnter({focused, repeat})` → `'playAgain'` with the focus on Play
+  again or on no action, null on another action (its own activation),
+  `'ignore'` for an auto-repeat.
 
 `js/ui.js` exports (consumed by `js/main.js`)
 - `DIM_MIN`/`DIM_MAX` (1/100, re-exported from `js/mode3d/board-choice.js`);
@@ -315,7 +337,10 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   warning closed),
   `showReady(board, msg, {rules, blocked})` (the board line with its mines, the
   "How 3D works" block `#ready-rules` while `rules`, the drag-to-look and
-  controller offer `#ready-blocked` while `blocked`), `showPlaying`,
+  controller offer `#ready-blocked` while `blocked`; it clears the pending
+  state), `setReadyPending(on)` (the ready card waiting unseen,
+  `ready--pending`, for a pointer lock the player's activation asked for),
+  `showPlaying`,
   `showClassic2D` (the board layer, the overlay bar in its 2D style),
   `panelFrame2D()` → the frame the panel takes around the board (`PANEL_INSET`
   9 px each side, the bar's measured height and `PANEL_GAP` 8 px on top, at
@@ -444,7 +469,7 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   goes to `HISTORY.popstate`, and `HISTORY.start` stamps the base entry at
   boot from the navigation entry's type. The URL never changes; a reload
   opens the main menu.
-- **Back inputs.** `shellBack(source)` does nothing during the 3D end delay;
+- **Back inputs.** `shellBack(source)` does nothing during an end delay;
   otherwise it closes the controls modal, the pause confirmation or the
   Settings page's Reset all data confirmation first, then calls
   `SHELL.back`. Esc (`isBackKey`) reaches it
@@ -454,7 +479,8 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   `padMenus` (on the Classic 2D board `padBoard2D`, and `padPlaying` in 3D,
   turn them into `backGame('pad')`). In pointer-locked play the browser
   consumes Esc to release the lock, and `onLockChange` calls
-  `backGame('key')` instead — a lock lost with the window's focus pauses,
+  `backGame('key')` instead — during the 3D end delay the release ends the
+  delay (`END_SKIP.lockLost()`, End delay below), a lock lost with the window's focus pauses,
   and a release right after a cancelled 3D generation goes to the
   click-to-play card. On the pause card of a game in play every Esc resumes
   (`PAUSE.resume('key')`), however soon after the release, except the press
@@ -466,7 +492,7 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   `onKey`; a browser that delivered one would do so with the lock still held,
   which `escResumes` refuses. The browser's
   Back (and a mouse's back button) is `historyBack`, run by `HISTORY` on a
-  `popstate` back: nothing during the 3D end delay, the controls modal or
+  `popstate` back: nothing during an end delay, the controls modal or
   either confirmation closes first, the board (`playing`, `classic-2d`) pauses
   through `pauseGame('button')`, the pause card of an unfinished game and a
   started game's ready card hold the game, anything else is
@@ -504,8 +530,12 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   otherwise the click-to-play card, which requests pointer lock for a
   pointer resume); `restart` starts a session of the same board (with
   no-guess off once the player took the failed board's standard offer) and
-  enters play the way resume does (`enterPlay3D`: a controller enters
-  lockless play, otherwise pointer lock is asked for); `leave` is
+  enters play the way resume does (`enterPlay3D`: a controller, or
+  drag-to-look play, enters lockless play; otherwise the click or key that
+  asked is the pointer-lock gesture — the ready card waits unseen
+  (`ui.setReadyPending(true)`, `#ready.ready--pending`) while pointer lock
+  is asked for, so a granted lock enters play with no card shown and a
+  refusal's `onLockError` shows it with its message); `leave` is
   `leaveGame` (leaves the session, releases lock and lockless play, hides
   `#m3d-status`); `release` exits pointer lock before the results screen
   takes over. The adapter reports started, finished and abandoned from the
@@ -513,10 +543,10 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   session's sealed replay, `finished` only after its end delay
   ([mode3d.md](mode3d.md)). `FLOW_3D.sampler` builds the session's camera
   sampler (`createSampler3D`, [replay.md](replay.md)) over the camera, the
-  controls and `S.spacing`; `js/main.js` reads `mode3d.ending` and calls
-  nothing on the adapter but `contextLost()`, `finishNow()`,
-  `cancelGeneration()` and `mode3d.tick()`, which the frame loop calls every frame while the 3D mode
-  is active to drive that sampler.
+  controls and `S.spacing`; `js/main.js` reads `mode3d.ending` (through
+  `endDelay()`) and calls nothing on the adapter but `contextLost()`,
+  `finishNow()`, `cancelGeneration()` and `mode3d.tick()`, which the frame
+  loop calls every frame while the 3D mode is active to drive that sampler.
 - **The Classic 2D mode.** `FLOW_2D` in `js/main.js` is the shell side
   handed to `createClassic2DMode` ([classic2d.md](classic2d.md)): board
   choice routes to `classic-2d-choice` with the last board choice (loaded at
@@ -531,7 +561,9 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   board and the replay viewer at once; the overlay bar names the board
   through `board` (`ui.setBoard2D`, with " · no-guess"); its timer and
   counter come from `hud`, fed by `mode2d.tick()` every frame, which also
-  drives the mode's movement sampler ([replay.md](replay.md)). The paused
+  drives the mode's movement sampler ([replay.md](replay.md)) and draws the
+  board's end effect during the 2D end delay (`mode2d.ending`, read through
+  `endDelay()` as the 3D adapter's is). The paused
   screen's `setBoardHidden` also hides the 2D board, and `pauseInfo` /
   `gameOver` read `mode2d.status()`. `board2d` holds `{generating, failure}`
   from `FLOW_2D`; `showStatus2D` shows `#c2d-status` — the generating card on
@@ -569,7 +601,7 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   choices' `show` receive `presetDetails(CHOICE_ITEMS[mode], RECORDS)`.
 - **Pause controller.** `PAUSE` is the one owner of pause, resume, restart and
   back to menu. Every pause source goes through `pauseGame(source)`, which
-  opens nothing during the 3D end delay and otherwise calls
+  opens nothing during an end delay and otherwise calls
   `PAUSE.pause(source)`: the overlay's pause button (`onPause`), controller
   disconnect (with a note), `blur`, `visibilitychange` hidden and
   `__ms.pause()`. Esc/Back on the board and pointer-lock loss go through
@@ -594,11 +626,16 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   3D `Home` / `R` camera return: `F2` (its default always prevented) →
   `PAUSE.restart('key')` in play and on the pause card, `R` →
   `RESULTS.playAgain('key')` on `results`, through `restartInput`, never
-  with Ctrl, Alt or Meta. `handlePad` reads Start + Y first: `Y` pressed
+  with Ctrl, Alt or Meta. `Enter` on `results` (its own `keydown` listener,
+  `resultsEnter` in `js/results/view.js`) is `RESULTS.playAgain('key')`
+  while the focus is on Play again or on no action, its default prevented;
+  on another focused action it is that button's own activation, and its
+  auto-repeat is prevented and does nothing. `handlePad` reads Start + Y
+  first (after the end delay's skip): `Y` pressed
   while `Start` is held (read unsuppressed, as Start's own press already
   paused or resumed) → `PAUSE.restart('pad')`, then `layerChanged()` so
-  the held buttons do not act on the new board. `restartBlocked()` — the
-  3D end delay, an open confirmation or the controls modal — stops all
+  the held buttons do not act on the new board. `restartBlocked()` — an
+  end delay, an open confirmation or the controls modal — stops all
   three.
 - **Hand-offs.** `PAUSE.attach(name, listener)`: `finished` for every
   finished game, `abandoned` for every abandoned game, both with the game's
@@ -625,7 +662,7 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   unavailable. The screen shows over the finished Classic 2D board; over a
   3D game it takes over on an opaque surface and the 3D scene stops
   rendering under it (`shouldRender`), and a finished 3D game is never
-  returned to. Its actions: Play again (and `R`) → `RESULTS.playAgain` →
+  returned to. Its actions: Play again (and `Enter`, `R`) → `RESULTS.playAgain` →
   `PAUSE.restart`, or, once the mode was left, `MODES.start('classic-2d',
   LAST_CHOICE_2D.current)` or `MODES.start('3d', board3dChoice)` entered
   through `enterPlay3D`; Records → `openRecords` routes to the Records
@@ -675,9 +712,25 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   controller at game started and removed when the game finishes, is
   abandoned or its mode fails, so it guards only a started, unfinished game
   (Ctrl is a game key and Ctrl+W cannot be intercepted). The context-lost
-  reload and Reset all data's reload set `reloading` to bypass it, and it does not guard a 3D game in
-  its end delay, which `pagehide` finishes at once (`mode3d.finishNow()`)
-  so it is recorded finished, not abandoned.
+  reload and Reset all data's reload set `reloading` to bypass it, and it does not guard a game in
+  its end delay (`endDelay()`, either mode), which `pagehide` finishes at once
+  (`activeMode().finishNow()`) so it is recorded finished, not abandoned.
+- **End delay.** Both modes end a won or lost game with an end delay before
+  reporting it finished: `activeMode()` is the hosted mode (`mode3d` or
+  `mode2d`) and `endDelay()` its `ending`. While it runs no board action,
+  pause, Back or restart is offered, and a press ends it: `END_SKIP`
+  (`createEndSkip` over `endDelay()`, skipping with
+  `activeMode()?.finishNow()`) is fed by capturing `keydown` / `keyup`,
+  `pointerdown` / `mousedown`, `pointerup` / `mouseup` and `click` /
+  `auxclick` / `contextmenu` listeners on `window`, which swallow
+  (`preventDefault`, `stopImmediatePropagation`) every event it reports
+  consumed — the press that ended the delay with its auto-repeat, release
+  and click, and every press, repeat and click during it — so it reaches no
+  other listener; `handlePad` hands it each poll first (a button pressed
+  ends it; the held ones are kept off the results card by the screen
+  change's held-button suppression), and `onLockChange` a lock released
+  during the delay (the browser's Esc); `blur` and the tab hiding call
+  `END_SKIP.reset()`. The finished report then routes to `results` at once.
 - **Context loss.** `webglcontextlost` sets `contextLost`; in a 3D game the
   adapter reports `failed` and the host routes to `ctxlost`, otherwise the
   shell routes there directly; a later 3D `start` fails at once. The
@@ -752,14 +805,15 @@ Game flow (`js/main.js`):
   the win sound. HUD, pause card and timer read `S.endState` once set;
   until then the frame loop reads `S.time` from `S.play.elapsedMs()` once
   the game has started, paused or not.
-- 3D end sequence: while the adapter's end delay runs (`ending3D()`, the 3D
-  mode active and `mode3d.ending`) the end effect plays and every input is
-  ignored — `Input.isActive` is false, so no board action or mouse look;
-  the frame loop neither moves the camera nor changes the view mode
-  (`setToggles`, `setModes`); `padPlaying` releases the pad's held controls
-  and reads nothing; `shellBack` and `pauseGame` do nothing. After the
-  delay the adapter releases pointer lock and reports finished, and the
-  results flow routes to `results`.
+- 3D end sequence: while the adapter's end delay runs (`endDelay()`, the 3D
+  mode active and `mode3d.ending`) the end effect plays and a press ends it
+  (End delay above); nothing else acts — `Input.isActive` is false, so no
+  board action or mouse look; the frame loop neither moves the camera nor
+  changes the view mode (`setToggles`, `setModes`); `handlePad` releases
+  the pad's held controls and reads nothing else; `shellBack` and
+  `pauseGame` do nothing. After the delay, or at the press, the adapter
+  releases pointer lock and reports finished, and the results flow routes
+  to `results`.
 - `placeAtSpawn()` puts the camera at the game's spawn pose (`spawnPose`, [input.md](input.md)) at
   the current spacing and the renderer camera's field of view and aspect: `startGame` (every new
   game, Play again, Restart, the debug hook's `start`), `retry3D` (the failure offer's Retry and
@@ -1144,8 +1198,11 @@ Gameplay fidelity to the original game is the overriding rule.
 - Changing what the browser's Back does or how the session history mirrors
   the back stack: the head comment of `js/shell/history.js` and
   `historyBack` in `js/main.js`.
+- Changing what a press during an end delay does: `js/shell/end-skip.js`
+  and the end-delay block of `js/main.js` (`END_SKIP`, `endDelay`,
+  `activeMode`).
 - Changing the 3D end-of-game flow or the frozen HUD (`endGame`,
-  `S.endState`, `ending3D`, `pauseGame`, the `MODES.on('finished')` pause
+  `S.endState`, `endDelay`, `pauseGame`, the `MODES.on('finished')` pause
   card for a fixed board), the board status card (`showStatus3D`, `retry3D`) or how
   the session's timer follows the screens (`sync3D`); the timer's start is
   the session's ([mode3d.md](mode3d.md)).

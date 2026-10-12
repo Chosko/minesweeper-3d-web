@@ -38,11 +38,21 @@
 //                        one is drawn in the skin's pressed state. setGame clears them.
 //   setCursor(c)         the keyboard and controller cursor (js/classic2d/cursor-input.js), drawn
 //                        as a focus ring inside cell c's tile; -1 for none.
-//   layout, pixelRatio, hidden, pressed, cursor, scale, canvas, dispose()
+//   showEffect(effect, t)  the end effect (js/classic2d/end-effect.js) at t ms: repaints the board
+//                        with each tile as the effect shows it (a loss's pre-loss tiles before its
+//                        wave arrives), the win pulse over the tiles and the confetti over the
+//                        board's rectangle, clipped to the view; every redraw until the next call
+//                        draws that moment. showEffect(null) repaints the board in its end state.
+//                        The effect never touches the game: every tile is still read from it.
+//   A won game's unflagged mines (its closed cells) are drawn as flags, the skin's static tile.
+//   layout, pixelRatio, hidden, pressed, cursor, effect, scale, canvas, dispose()
 
 import { MIN_TILE_SIZE, createTileSkin } from './tile-skin.js';
 import { token as readerToken } from '../tokens.js';
-import { CELL } from '../engine/rules.js';
+import { CELL, PHASE } from '../engine/rules.js';
+import {
+  shownState, wonState, pulseAlpha, confettiAt, drawPulse, drawConfetti, PULSE_COLOR, CONFETTI_COLORS,
+} from './end-effect.js';
 
 /** The design token the area around the board is filled with. */
 export const BOARD_BACKGROUND = '--color-board-frame';
@@ -201,6 +211,9 @@ export function createBoardView({
   let pressed = new Set();
   let cursor = -1;
   let marks = null; // the scrolled board's marks for the current layout and scroll, or null
+  let effect = null; // the end effect playing, or null
+  let effectT = 0; // the moment of it drawn, in ms
+  let pulse = null; // the pulse colour, read with each effect frame
   const scroll = { x: 0, y: 0 };
 
   const skin = createSkin({ redraw: () => repaint() });
@@ -265,8 +278,11 @@ export function createBoardView({
     const y = tileY(row);
     const t = layout.tile;
     if (x <= layout.viewX - t || y <= layout.viewY - t || x >= layout.viewX + layout.viewWidth || y >= layout.viewY + layout.viewHeight) return false;
-    const state = game.cellState(c);
+    let state = game.cellState(c);
+    if (effect) state = shownState(effect, c, state, effectT);
+    else if (game.phase === PHASE.WON) state = wonState(state);
     skin.drawTile(ctx, x, y, t, state === CELL.CLOSED && pressed.has(c) ? PRESSED : state, game.cellNumber(c), ratio);
+    if (effect) drawPulse(ctx, x, y, t, pulseAlpha(effect, c, effectT), pulse ?? (pulse = token(PULSE_COLOR)));
     if (c === cursor) {
       const w = Math.max(2, Math.round(t / 12));
       ctx.strokeStyle = token(CURSOR_RING);
@@ -295,8 +311,19 @@ export function createBoardView({
       for (let col = c0; col <= c1; col++) drawCell(col + cols * row);
     }
     ctx.restore();
+    if (effect) drawEffectLayer();
     marks = markRects();
     drawMarks();
+  }
+
+  // The end effect's confetti over the board's rectangle, clipped to the part in view.
+  function drawEffectLayer() {
+    const pieces = confettiAt(effect, effectT, { width: layout.boardWidth, height: layout.boardHeight, tile: layout.tile });
+    if (!pieces.length) return;
+    ctx.save();
+    clipTo(layout.viewX, layout.viewY, layout.viewWidth, layout.viewHeight);
+    drawConfetti(ctx, pieces, CONFETTI_COLORS.map((name) => token(name)), tileX(0), tileY(0));
+    ctx.restore();
   }
 
   function update(changed) {
@@ -396,6 +423,7 @@ export function createBoardView({
     get hidden() { return hidden; },
     get pressed() { return [...pressed]; },
     get cursor() { return cursor; },
+    get effect() { return effect; },
     get scale() { return scale; },
     get scroll() { return { x: scroll.x, y: scroll.y }; },
     resize,
@@ -403,6 +431,7 @@ export function createBoardView({
     setGame(next) {
       game = next ?? null;
       pressed = new Set();
+      effect = null;
       repaint();
     },
     /** Shows `cells` pressed, redrawing only the cells that gain or lose the press. */
@@ -423,6 +452,13 @@ export function createBoardView({
     },
     update,
     repaint,
+    /** Draws the end effect at t ms over the whole board; null ends it in the board's end state. */
+    showEffect(next, t = 0) {
+      effect = next ?? null;
+      effectT = t;
+      pulse = null; // read again each frame: the theme may have changed
+      repaint();
+    },
     cellAt: (x, y) => cellAtLayout(layout, scroll, cols, rows, x, y),
     cellRect,
     scrollTo,

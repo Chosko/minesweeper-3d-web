@@ -141,7 +141,8 @@ shake.
   seek never leaves a pulsing cube. Otherwise the renderer cannot tell a replay from
   play; leaving the replay hands it back the game or demo board it drew before.
 - **End of a 3D game.** The win or loss effect plays for the 3D mode's end delay
-  (`END_DELAY_MS`, [mode3d.md](mode3d.md)) with the camera and the view-mode toggles frozen as the
+  (`END_DELAY_MS`, [mode3d.md](mode3d.md)), or until a press of the player's cuts it short, with the
+  camera and the view-mode toggles frozen as the
   game ended; the results screen then takes over, and `js/main.js`'s `shouldRender` draws no frame
   while it shows a 3D game, so the scene, and an effect still running, stay paused behind it
   ([app-shell.md](app-shell.md)). The renderer is not told: it simply is not called.

@@ -51,6 +51,9 @@
 // while content.watch, the root carries `results--takeover` while content.takeover, the bests
 // panel `ui-panel--muted` while not eligible, each improved stat `data-new-best` and each best's
 // detail `data-delta` (its direction).
+//
+// Keys: Play again is also Enter (resultsEnter, wired by js/main.js) and R (js/shell/pause.js
+// restartInput); Enter on another focused action activates that action.
 
 import { boardLabel, MODE_3D } from '../records/board.js';
 import { countedClicks } from '../records/summary.js';
@@ -194,6 +197,20 @@ export function resultsContent({
     watch: watch === true,
     takeover: summary.board?.mode === MODE_3D,
   };
+}
+
+/** The results screen's actions by id: Play again (its default focus), Watch replay, Records, Main menu. */
+export const RESULTS_ACTIONS = Object.freeze(['r-again', 'r-watch', 'r-records', 'r-menu']);
+
+/**
+ * What Enter does on the results screen, given the id of the focused element (null for none):
+ * 'playAgain' while the focus is on Play again or on no action; null while another action has it,
+ * which Enter then activates as a button does; 'ignore' for a key's auto-repeat, which activates
+ * nothing. R is Play again through the shell's restart keys (js/shell/pause.js restartInput).
+ */
+export function resultsEnter({ focused = null, repeat = false } = {}) {
+  if (repeat) return 'ignore';
+  return focused !== RESULTS_ACTIONS[0] && RESULTS_ACTIONS.includes(focused) ? null : 'playAgain';
 }
 
 export function createResultsView({ root, onPlayAgain, onWatch = () => {}, onRecords, onMenu }) {

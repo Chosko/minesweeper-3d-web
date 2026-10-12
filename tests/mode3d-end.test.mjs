@@ -11,6 +11,7 @@ import { join, dirname, normalize, extname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createModeHost, MODE_EVENTS } from '../js/shell/mode-host.js';
 import { create3DMode, END_DELAY_MS } from '../js/shell/mode-3d.js';
+import { createEndSkip } from '../js/shell/end-skip.js';
 import { resultsContent, createResultsView } from '../js/results/view.js';
 import { createBoardIdentity } from '../js/records/board.js';
 
@@ -189,8 +190,97 @@ test('a page going away during the delay ends it now: the game is reported finis
 });
 
 test('js/main.js ends the delay on pagehide before keeping the game, and the leave-page guard does not prompt during it', () => {
-  assert.match(MAIN, /addEventListener\('pagehide', \(\) => \{ if \(ending3D\(\)\) mode3d\.finishNow\(\); PAUSE\.pageHide\(\); \}\)/);
-  assert.match(fnBody(MAIN, 'guardLeave'), /ending3D\(\)/);
+  assert.match(MAIN, /addEventListener\('pagehide', \(\) => \{ if \(endDelay\(\)\) activeMode\(\)\.finishNow\(\); PAUSE\.pageHide\(\); \}\)/);
+  assert.match(fnBody(MAIN, 'guardLeave'), /endDelay\(\)/);
+});
+
+// ---------------------------------------------------------------- a press ends the delay
+
+// The 3D adapter in its end delay, behind the shell's skip as js/main.js builds it.
+function skipping(state) {
+  const ctx = ended(state);
+  const skip = createEndSkip({ ending: () => ctx.mode.ending, skip: () => ctx.mode.finishNow() });
+  return { ...ctx, skip };
+}
+
+test('a key, a mouse button or a controller button pressed during the 3D end delay reports the game finished at once, and is consumed', () => {
+  const presses = {
+    key: (s) => s.keyDown({ code: 'KeyW', repeat: false }),
+    'mouse button': (s) => s.press(),
+    'controller button': (s) => s.pad(true),
+  };
+  for (const [what, press] of Object.entries(presses)) {
+    for (const state of ['won', 'lost']) {
+      const { skip, types, events, mode, clock, log } = skipping(state);
+      assert.equal(press(skip), true, `${what}: consumed, so nothing else acts on it`);
+      assert.deepEqual(types(), ['started', 'canPause', 'canPause', 'finished'], `${what}: finished at once`);
+      assert.equal(events.at(-1)[1].summary.outcome, state);
+      assert.deepEqual(log.slice(-2), [['release'], ['finished']], 'pointer lock released for the results screen');
+      assert.equal(mode.ending, false);
+      clock.advance(10 * END_DELAY_MS);
+      assert.equal(types().filter((t) => t === 'finished').length, 1, 'reported once');
+      assert.equal(types().includes('abandoned'), false);
+    }
+  }
+});
+
+test('nothing but a fresh press ends the delay: a key held from the game, a release and a still controller poll do not', () => {
+  const { skip, types, mode } = skipping('won');
+  assert.equal(skip.keyDown({ code: 'KeyW', repeat: true }), true, 'a held key\'s auto-repeat is consumed …');
+  assert.equal(skip.release({ buttons: 0 }), true, 'a release is consumed …');
+  assert.equal(skip.pad(false), true, 'a controller poll with nothing pressed is consumed …');
+  assert.equal(skip.click(), true);
+  assert.equal(mode.ending, true, '… and none of them ends the delay');
+  assert.equal(types().includes('finished'), false);
+  assert.equal(skip.keyUp({ code: 'KeyW' }), false, 'the held key\'s release goes through');
+  assert.equal(skip.keyDown({ code: 'KeyW', repeat: false }), true, 'pressed again, it is a fresh press');
+  assert.equal(types().at(-1), 'finished');
+});
+
+test('the mouse press that ended the delay is consumed whole: its release and its click, then nothing more', () => {
+  const { skip, mode } = skipping('lost');
+  assert.equal(skip.press(), true);
+  assert.equal(mode.ending, false);
+  assert.equal(skip.press(), true, 'the same press seen as mousedown after pointerdown');
+  assert.equal(skip.release({ buttons: 1 }), true, 'a button released while another is held');
+  assert.equal(skip.release({ buttons: 0 }), true, 'the last button released');
+  assert.equal(skip.click(), true, 'the click it brings');
+  assert.equal(skip.click(), true, 'and a right button\'s auxclick and context menu');
+  assert.equal(skip.press(), false, 'a fresh press reaches the results card');
+  assert.equal(skip.release({ buttons: 0 }), false);
+  assert.equal(skip.click(), false, 'and so does its click');
+  const again = skipping('won').skip;
+  again.press();
+  again.release({ buttons: 0 });
+  assert.equal(again.keyDown({ code: 'Enter', repeat: false }), false, 'a key press ends the skipping gesture too …');
+  assert.equal(again.click(), false, '… so Enter\'s own click on a focused button goes through');
+
+  const pad = skipping('won').skip;
+  pad.press();
+  pad.release({ buttons: 0 });
+  assert.equal(pad.click({ isTrusted: true }), true, 'the gesture\'s own click is consumed');
+  assert.equal(pad.click({ isTrusted: false }), false, 'a script\'s click — the controller\'s A on a focused button — goes through');
+  assert.equal(pad.pad(true), false, 'a controller press after the delay is the shell\'s …');
+  assert.equal(pad.click({ isTrusted: true }), false, '… and ends the skipping gesture');
+});
+
+test('during the delay every click is consumed, a script\'s too; losing focus forgets the releases it waited for', () => {
+  const { skip } = skipping('won');
+  assert.equal(skip.click({ isTrusted: false }), true, 'the overlay\'s pause button clicked by script does nothing');
+  assert.equal(skip.keyDown({ code: 'ControlLeft', repeat: false }), true, 'Ctrl ends the delay');
+  skip.reset(); // its release lands in another tab
+  assert.equal(skip.keyDown({ code: 'ControlLeft', repeat: false }), false, 'the next Ctrl press reaches the game');
+  assert.equal(skip.keyUp({ code: 'ControlLeft' }), false);
+  assert.match(MAIN, /window\.addEventListener\('blur', \(\) => END_SKIP\.reset\(\)\)/);
+  assert.match(MAIN, /addEventListener\('visibilitychange', \(\) => \{ if \(document\.hidden\) END_SKIP\.reset\(\); \}\)/);
+  assert.match(MAIN, /if \(END_SKIP\.click\(e\)\) swallow\(e\)/, 'the click\'s isTrusted reaches the skip');
+});
+
+test('the pointer lock released during the delay — the browser\'s Esc, whose key the page never sees — ends it', () => {
+  const { skip, types } = skipping('won');
+  assert.equal(skip.lockLost(), true);
+  assert.equal(types().at(-1), 'finished');
+  assert.equal(skip.lockLost(), false, 'outside the delay a lost lock is the shell\'s as before');
 });
 
 test('a fixed board, which has no summary, still ends its delay with game finished', () => {
@@ -232,16 +322,31 @@ test('the end banner, its compact form and its best-time line are gone', () => {
 test('every pause in js/main.js goes through the guard that ignores it during the end delay', () => {
   assert.equal(MAIN.match(/PAUSE\.pause\(/g).length, 1, 'PAUSE.pause is called in one place');
   const guard = fnBody(MAIN, 'pauseGame');
-  assert.match(guard, /ending3D\(\)/);
+  assert.match(guard, /endDelay\(\)/);
   assert.match(guard, /PAUSE\.pause\(/);
-  assert.match(fnBody(MAIN, 'ending3D'), /mode3d\.ending/);
+  assert.match(fnBody(MAIN, 'endDelay'), /activeMode\(\)\?\.ending/, 'either mode\'s end delay');
+  assert.match(fnBody(MAIN, 'activeMode'), /mode3d/);
+  assert.match(fnBody(MAIN, 'activeMode'), /mode2d/);
 });
 
-test('Esc, the controller and camera movement are ignored during the end delay', () => {
-  assert.match(fnBody(MAIN, 'shellBack'), /ending3D\(\)/, 'Back (Esc, the controller\'s back buttons) is ignored');
-  assert.match(fnBody(MAIN, 'padPlaying'), /ending3D\(\)/, 'the controller\'s Start, triggers and sticks are ignored');
-  assert.match(MAIN, /isActive: \(\) => S\.mode === 'playing' && !ending3D\(\)/, 'mouse look, wheel and buttons are ignored');
-  assert.match(fnBody(MAIN, 'frame'), /ending3D\(\)/, 'camera movement and view-mode keys are ignored');
+test('during the end delay a press ends it and nothing else acts: the shell consumes it before any other listener', () => {
+  assert.match(MAIN, /const END_SKIP = createEndSkip\(\{ ending: \(\) => endDelay\(\), skip: \(\) => activeMode\(\)\?\.finishNow\(\) \}\)/);
+  for (const type of ['keydown', 'keyup']) assert.match(MAIN, new RegExp(`window\\.addEventListener\\('${type}', \\(e\\) => \\{ if \\(END_SKIP\\.key(Down|Up)\\(e\\)\\) swallow\\(e\\); \\}, true\\)`), `${type} in the capture phase`);
+  assert.match(MAIN, /for \(const type of \['pointerdown', 'mousedown'\]\) window\.addEventListener\(type, \(e\) => \{ if \(END_SKIP\.press\(\)\) swallow\(e\); \}, true\)/);
+  assert.match(MAIN, /for \(const type of \['pointerup', 'mouseup'\]\)/);
+  assert.match(MAIN, /for \(const type of \['click', 'auxclick', 'contextmenu'\]\)/);
+  assert.match(MAIN, /const swallow = \(e\) => \{ e\.preventDefault\(\); e\.stopImmediatePropagation\(\); \}/);
+  const pad = fnBody(MAIN, 'handlePad');
+  assert.ok(pad.indexOf('END_SKIP.pad(') >= 0 && pad.indexOf('END_SKIP.pad(') < pad.indexOf('restartInput('), 'the controller: before Start + Y and every screen');
+  assert.match(MAIN, /onLockChange: \(locked\) => \{[\s\S]*?END_SKIP\.lockLost\(\)/, 'the browser\'s Esc releasing the lock');
+});
+
+test('Back, camera movement and the view-mode keys are ignored during the end delay', () => {
+  assert.match(fnBody(MAIN, 'shellBack'), /endDelay\(\)/, 'Back (Esc, the controller\'s back buttons) is ignored');
+  assert.match(fnBody(MAIN, 'historyBack'), /endDelay\(\)/, 'the browser\'s Back too');
+  assert.match(MAIN, /isActive: \(\) => S\.mode === 'playing' && !endDelay\(\)/, 'mouse look, wheel and buttons are ignored');
+  assert.match(fnBody(MAIN, 'frame'), /endDelay\(\)/, 'camera movement and view-mode keys are ignored');
+  assert.doesNotMatch(MAIN, /ending3D/, 'one end-delay test for both modes');
 });
 
 test('the 3D flow releases pointer lock for the results screen', () => {
@@ -379,7 +484,8 @@ test('in a browser, a 3D board won and lost ends on the results screen, which ta
     assert.equal(bombs.length, 3);
     const safe = [...Array(8).keys()].filter((c) => !bombs.includes(c));
     // the win and, in the same task, everything the end delay must ignore: the board is still shown,
-    // nothing is finished, and Esc, the pause button, blur and a hidden tab offer no pause
+    // nothing is finished, and a pause, a hidden tab, blur and the overlay's pause button clicked by
+    // script (a click with no press, which would end the delay) offer no pause
     const during = await ms((cs) => {
       const m = globalThis.__ms;
       for (const c of cs) { if (!m.game.pressed[c]) { m.aimAt(c); m.click('left'); } }
@@ -387,7 +493,6 @@ test('in a browser, a 3D board won and lost ends on the results screen, which ta
       out.cam = { ...m.info().cam };
       const modes = [];
       m.pause(); modes.push(m.state.mode);
-      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' })); modes.push(m.state.mode);
       Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
       document.dispatchEvent(new Event('visibilitychange'));
       delete document.visibilityState;
@@ -407,7 +512,7 @@ test('in a browser, a 3D board won and lost ends on the results screen, which ta
     assert.equal(during.state, 'won');
     assert.equal(during.finished, false, 'game finished waits for the end delay');
     assert.equal(during.endState, 'won', 'the HUD\'s end state is frozen');
-    assert.deepEqual(during.modes, ['playing', 'playing', 'playing', 'playing', 'playing'], 'no pause is offered');
+    assert.deepEqual(during.modes, ['playing', 'playing', 'playing', 'playing'], 'no pause is offered');
     if (during.frameAt - during.endedAt < 1000) assert.equal(during.modeAfter, 'playing');
     assert.deepEqual(during.camAfter, during.cam, 'the camera does not move');
 
@@ -483,6 +588,125 @@ test('in a browser, a 3D board won and lost ends on the results screen, which ta
     await ms(() => document.getElementById('r-again').click());
     assert.ok(['ready', 'playing'].includes(await mode()));
     assert.equal(await ms(() => globalThis.__ms.state.started), false);
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+test('in a browser, a press during the 3D end delay shows the results at once; R plays again, entering play with no ready card when the lock is granted and the ready card when it is refused', async (t) => {
+  const playwright = await loadPlaywright();
+  if (!playwright) {
+    t.skip('Playwright is not installed');
+    return;
+  }
+  let browser;
+  try {
+    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  } catch (error) {
+    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
+    return;
+  }
+  const server = await serve();
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    // A stand-in pointer lock the test grants or refuses; each request notes whether the ready card
+    // was visible when the activation asked for the lock.
+    await page.addInitScript(() => {
+      let locked = null;
+      globalThis.__lock = { grant: true, asks: [] };
+      Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked });
+      Element.prototype.requestPointerLock = function requestPointerLock() {
+        const ready = document.getElementById('ready');
+        globalThis.__lock.asks.push({ readyShown: !ready.classList.contains('hidden') && getComputedStyle(ready).visibility !== 'hidden' });
+        if (!globalThis.__lock.grant) {
+          setTimeout(() => document.dispatchEvent(new Event('pointerlockerror')), 0);
+          return Promise.reject(new Error('refused'));
+        }
+        locked = this;
+        setTimeout(() => document.dispatchEvent(new Event('pointerlockchange')), 0);
+        return Promise.resolve();
+      };
+      document.exitPointerLock = () => { locked = null; setTimeout(() => document.dispatchEvent(new Event('pointerlockchange')), 0); };
+    });
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+    const ms = (fn, arg) => page.evaluate(fn, arg);
+    const mode = () => ms(() => globalThis.__ms.state.mode);
+    await ms(() => {
+      globalThis.__hand = [];
+      globalThis.__ms.pauser.attach('finished', (s) => globalThis.__hand.push(['finished', s?.outcome ?? null]));
+      globalThis.__ms.pauser.attach('abandoned', (s) => globalThis.__hand.push(['abandoned', s?.outcome ?? null]));
+      // the ready card seen on any frame
+      globalThis.__readySeen = 0;
+      const look = () => {
+        const r = document.getElementById('ready');
+        if (!r.classList.contains('hidden') && getComputedStyle(r).visibility !== 'hidden') globalThis.__readySeen += 1;
+        requestAnimationFrame(look);
+      };
+      requestAnimationFrame(look);
+    });
+
+    // A row of eight with three mines, generated around the first click on cell 0, every safe cell
+    // revealed in one task: a win. With `press`, a mouse press follows in that same task, so it lands
+    // inside the end delay however slow the machine.
+    const BOARD = { X: 8, Y: 1, Z: 1, mines: 3 };
+    const winBoard = async (press = false) => {
+      await ms(() => { globalThis.__ms.aimAt(0); globalThis.__ms.click('left'); });
+      await page.waitForFunction(() => globalThis.__ms.state.started, null, { timeout: 15000 });
+      return ms((withPress) => {
+        const m = globalThis.__ms;
+        for (let c = 0; c < m.game.n; c++) {
+          if (m.game.state !== 'playing') break;
+          if (m.game.pressed[c] || m.game.number[c] === -1) continue;
+          m.aimAt(c);
+          m.click('left');
+        }
+        const out = { state: m.game.state, mode: m.state.mode, finished: m.modes.state.finished };
+        if (withPress) {
+          const canvas = document.querySelector('canvas');
+          const at = { bubbles: true, cancelable: true, clientX: 550, clientY: 450, button: 0 };
+          canvas.dispatchEvent(new PointerEvent('pointerdown', { ...at, buttons: 1 }));
+          out.afterPress = m.state.mode;
+          canvas.dispatchEvent(new PointerEvent('pointerup', { ...at, buttons: 0 }));
+          canvas.dispatchEvent(new MouseEvent('click', at));
+        }
+        return out;
+      }, press);
+    };
+    await ms((b) => { globalThis.__ms.modes.start('3d', b); globalThis.__ms.forcePlay(); }, BOARD);
+
+    // ---- a click during the delay: the results screen at once, the game recorded finished
+    const won = await winBoard(true);
+    assert.deepEqual({ ...won, afterPress: undefined }, { state: 'won', mode: 'playing', finished: false, afterPress: undefined }, 'the end delay runs');
+    assert.equal(won.afterPress, 'results', 'a press ends the end delay at once');
+    assert.deepEqual(await ms(() => globalThis.__hand), [['finished', 'won']], 'recorded once, as won');
+    assert.equal(await ms(() => document.getElementById('results-title').textContent), 'You won!');
+    assert.equal(await ms(() => document.activeElement.id), 'r-again', 'the click acted on nothing on the card');
+
+    // ---- R plays again; the key is the pointer-lock gesture: granted, play starts with no ready card
+    await ms(() => { globalThis.__readySeen = 0; });
+    await page.keyboard.press('KeyR');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing');
+    assert.equal(await ms(() => globalThis.__ms.state.started), false, 'a new board');
+    assert.deepEqual(await ms(() => globalThis.__ms.state.settings), { X: 8, Y: 1, Z: 1, mines: 3 }, 'of the same choice');
+    assert.equal(await ms(() => globalThis.__ms.state.lockless), false, 'in locked play');
+    assert.deepEqual(await ms(() => globalThis.__lock.asks.at(-1)), { readyShown: false }, 'the ready card is not shown when the lock is asked for');
+    assert.equal(await ms(() => globalThis.__readySeen), 0, 'nor on any frame after');
+
+    // ---- the next win, its delay played out; Enter on Play again with the lock refused: the ready card, with its message
+    assert.equal((await winBoard()).state, 'won');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'results', null, { timeout: 5000 });
+    await ms(() => { globalThis.__lock.grant = false; });
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => document.getElementById('ready-msg').textContent !== '');
+    assert.equal(await mode(), 'ready', 'the ready card is the fallback');
+    assert.equal(await ms(() => getComputedStyle(document.getElementById('ready')).visibility), 'visible');
+    assert.equal(await ms(() => globalThis.__ms.state.started), false, 'on a new board');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
