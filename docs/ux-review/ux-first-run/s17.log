@@ -1,0 +1,192 @@
+A1 restart unstarted -> mode playing lock true ready card visible false
+body:
+TIME
+000
+MINES
+10
+BOARD
+6 × 6 × 6
+Pause
+H help
+M sound on
+F fullscreen
+Esc menu
+H controls
+×
+A1 click after -> mode playing lock true started false game state playing
+started now true
+A2 resume -> mode playing lock true
+body:
+TIME
+003
+MINES
+10
+BOARD
+6 × 6 × 6
+Pause
+H help
+M sound on
+F fullscreen
+Esc menu
+H controls
+×
+A3 beforeunload prevented in 3D true
+ended after 3 clicks: lost
+mode +300ms results
+mode +2.8s results
+results body:
+TIME
+017
+MINES
+10
+BOARD
+6 × 6 × 6
+Pause
+H help
+M sound on
+F fullscreen
+Esc menu
+H controls
+×
+Game over
+
+Cube Beginner
+
+TIME
+17.3 s
+3BV
+20
+3BV SOLVED
+1
+3BV/S
+0.06
+EFFICIENCY
+25%
+Play again
+Watch replay
+Records
+Back to menu
+results focus r-again
+replay mode replay
+replay body:
+TIME
+017
+MINES
+10
+BOARD
+6 × 6 × 6
+Pause
+H help
+M sound on
+F fullscreen
+Esc menu
+H controls
+×
+TIME
+000
+MINES
+10
+3BV
+1 / 20
+3BV/S
+—
+Back
+Previous
+Play
+Next
+0.5×
+1×
+2×
+4×
+Position
+000 / 017
+Esc from replay -> mode results
+records mode records
+records body:
+Records
+2D
+3D
+Cube Beginner
+Cube Beginner · no-guess
+Cube Intermediate
+Cube Intermediate · no-guess
+Cube Expert
+Cube Expert · no-guess
+CUBE BEGINNER
+BEST TIME
+—
+—
+BEST 3BV/S
+—
+—
+BEST EFFICIENCY
+—
+—
+GAMES
+1
+WINS
+0
+WIN RATE
+0%
+CURRENT STREAK
+0
+LONGEST STREAK
+0
+HISTORY
+Games 1–1 of 1
+Outcome	Time	3BV/s	Efficiency	Replay
+Lost	17.3 s	0.06	25%	Watch
+Newer
+Older
+REPLAYS
+Pinned first
+Date	Outcome	Time	3BV/s	Efficiency	Pin	Actions
+11 Oct 2026	Lost	17.3 s	0.06	25%	Not pinned	WatchPin
+3D OVERALL
+GAMES
+1
+WINS
+0
+WIN RATE
+0%
+CURRENT STREAK
+0
+LONGEST STREAK
+0
+Back
+Esc from records -> mode results
+menu badges [
+  [ 'menu-entry-classic-2d', 'none/visible' ],
+  [ 'menu-entry-3d', 'block/visible' ],
+  [ 'menu-entry-records', 'none/visible' ],
+  [ 'menu-entry-settings', 'none/visible' ],
+  [ 'menu-help', 'none' ],
+  [ 'menu-sound', 'none' ]
+]
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+page.click: Timeout 120000ms exceeded.
+Call log:
+[2m  - waiting for locator('#menu-entry-3d')[22m
+[2m    - locator resolved to <button data-last="" type="button" data-entry="3d" id="menu-entry-3d" class="ui-menu__item">…</button>[22m
+[2m  - attempting click action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not visible[22m
+[2m    - retrying click action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not visible[22m
+[2m    - retrying click action[22m
+[2m      - waiting 100ms[22m
+[2m    224 × waiting for element to be visible, enabled and stable[22m
+[2m        - element is not visible[22m
+[2m      - retrying click action[22m
+[2m        - waiting 500ms[22m
+
+    at /tmp/claude-0/-home-user-minesweeper-3d-web/9dfa886f-25e5-5ab6-b45a-705c23db85f6/scratchpad/ux-first-run/s17-3d-returning.mjs:67:12 {
+  name: 'TimeoutError'
+}
+
+Node.js v22.22.0

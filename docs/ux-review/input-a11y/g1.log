@@ -1,0 +1,70 @@
+menu menu focus button#menu-entry-classic-2d[ui-menu__item] "Classic 2D
+The classic game on" pad-nav false
+shot g-01-menu
+DOWN → button#menu-entry-3d[ui-menu__item] "3D
+Fly through a cube of cubes"
+shot g-02-menu-padfocus
+hold DOWN 900ms → button#menu-entry-records[ui-menu__item] "Records
+Your best times and st"
+UPx3 → button#menu-entry-classic-2d[ui-menu__item] "Classic 2D
+The classic game on"
+stick down → a#[ui-link] "Minesweeper 3D"
+B on menu → menu a#[ui-link] "Minesweeper 3D"
+settings settings focus input#set-lookSensitivity[ui-slider__input] "1"
+slider after RIGHTx2 1.1
+DOWN → input#set-invertY[ui-toggle__input] "on"
+A on toggle → checked true
+DOWNx2 → input#set-muted[ui-toggle__input] "on"
+RIGHT on segmented → input#set-volume[ui-slider__input] "70" Auto
+shot g-03-settings-pad
+B → menu focus button#menu-entry-classic-2d[ui-menu__item] "Classic 2D
+The classic game on"
+3D choice board-choice focus button#[ui-menu__item] "Beginner
+6 × 6 × 6 · 10 mines"
+DOWNx3 → input#bc-noguess[ui-toggle__input] "on"
+A on noguess → checked true
+DOWN → input#c-x[ui-field__input] "10"
+RBx2 → value 12
+LB → value 11
+hold RB 900ms → value 12
+RIGHT → input#c-y[ui-field__input] "10"
+DOWN → input#c-noguess[ui-toggle__input] "on"
+shot g-04-custom-pad
+B → menu
+ready ready focus button#ready-btn[ready-card] "Click to play
+6 × 6 × 6 · 10 m"
+shot g-05-ready-pad
+ready-pad text Controller: A play · RT reveal · LT flag · both chord · Menu pause
+A on ready → playing lockless true
+shot g-06-playing-pad
+help visible true
+shot g-07-help-xbox
+help pad text CONTROLLER · Xbox controller | Left / right stick | Fly / look around | RT / LT | Reveal / flag (on release) | LT + RT | Chord | A / B | Move up / down | Hold LB RB Y | Neighbours only / aim through numbers / show hidden | D-pad ↑ ↓ | Change spacing | X | Show / hide the controls help | Menu / View | Pause | Menus | D-pad or left stick to move, A select, B / View back
+cam before {"x":2,"y":12,"z":-46,"yaw":3.141592653589793,"pitch":0} after right stick {"x":2,"y":12,"z":-46,"yaw":3.480494298266793,"pitch":0}
+after 0.1 deflection {"x":2,"y":12,"z":-46,"yaw":3.480494298266793,"pitch":0}
+after left stick fwd {"x":0.33774294206474775,"y":12,"z":-41.28439807942354,"yaw":3.480494298266793,"pitch":0}
+RT held: info {"mode":"playing","selected":0,"time":0,"started":false,"spacing":1.1,"gameState":"playing","minesLeft":10,"hud":["000","10"],"cam":{"x":0.33774294206474775,"y":12,"z":-41.28439807942354,"yaw":-2.7833694209940343,"pitch":0.6182410842896093},"stats":{"opaque":216,"trans":0,"sortMs":0},"fps":1.3636983499250181}
+RT released: info {"mode":"playing","selected":-1,"time":0.023,"started":true,"spacing":1.1,"gameState":"playing","minesLeft":10,"hud":["000","10"],"cam":{"x":0.33774294206474775,"y":12,"z":-41.28439807942354,"yaw":-2.7833694209940343,"pitch":0.6182410842896093},"stats":{"opaque":118,"trans":0,"sortMs":0},"fps":2.181738845860123}
+shot g-08-after-rt
+aim idx 1
+after LT: mines hud 6
+LB held chips [ 'Shift: neighbours only' ]
+shot g-09-lb-held
+spacing chip Spacing 1.14
+START → paused focus button#p-resume[ui-button] "Resume"
+shot g-10-pause-pad
+START again → playing
+BACK → paused focus button#p-resume[ui-button] "Resume"
+B in pause → playing
+paused paused button#p-resume[ui-button] "Resume"
+A held on Resume → mode playing
+A released → playing
+after disconnect → paused note Controller disconnected toast Controller connected
+shot g-11-disconnect
+reconnected true mode paused focus button#p-resume[ui-button] "Resume"
+shot g-12-reconnected
+A →  playing
+help pad text PS CONTROLLER · PlayStation controller | Left / right stick | Fly / look around | R2 / L2 | Reveal / flag (on release) | L2 + R2 | Chord | ✕ / ○ | Move up / down | Hold L1 R1 △ | Neighbours only / aim through numbers / show hidden | D-pad ↑ ↓ | Change spacing | □ | Show / hide the controls help | Options / Share | Pause | Menus | D-pad or left stick to move, ✕ select, ○ / Share back
+shot g-13-help-ps
+vibration used? undefined
+errors []

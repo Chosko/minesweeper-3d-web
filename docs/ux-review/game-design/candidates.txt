@@ -1,0 +1,36 @@
+
+=== 3D 6x6x6/14: 216 cells, 14 mines, density 6.48 %, expected neighbours mined (interior) 1.69, P(zero | interior) 17.5 %
+  first click face-centre  standard: opening 38 %, revealed med 1 (p10 1, p90 167), visible med 1, visible numbers med 1, 3BV med 40, max number med/max 4/7, standard board solvable by logic 38 %, unresolved by logic med 106 %, gen ms med/p90/worst 0.0/0.1/5
+  first click face-centre  no-guess: opening 100 %, revealed med 150 (p10 112, p90 179), visible med 87, visible numbers med 87, 3BV med 39, max number med/max 4/7, candidates med/p90/worst 2/10/17, gen ms med/p90/worst 1.1/9.8/51
+
+=== 3D 6x6x6/18: 216 cells, 18 mines, density 8.33 %, expected neighbours mined (interior) 2.17, P(zero | interior) 10.4 %
+  first click face-centre  standard: opening 25 %, revealed med 1 (p10 1, p90 125), visible med 1, visible numbers med 1, 3BV med 55, max number med/max 5/8, standard board solvable by logic 25 %, unresolved by logic med 109 %, gen ms med/p90/worst 0.0/0.0/0
+  first click face-centre  no-guess: opening 100 %, revealed med 119 (p10 50, p90 152), visible med 75, visible numbers med 75, 3BV med 56, max number med/max 5/8, candidates med/p90/worst 3/9/26, gen ms med/p90/worst 1.3/14.3/45
+
+=== 3D 5x5x5/8: 125 cells, 8 mines, density 6.40 %, expected neighbours mined (interior) 1.66, P(zero | interior) 17.9 %
+  first click face-centre  standard: opening 22 %, revealed med 1 (p10 1, p90 102), visible med 1, visible numbers med 1, 3BV med 24, max number med/max 4/5, standard board solvable by logic 12 %, unresolved by logic med 106 %, gen ms med/p90/worst 0.0/0.0/0
+  first click face-centre  no-guess: opening 100 %, revealed med 95 (p10 74, p90 107), visible med 51, visible numbers med 51, 3BV med 19, max number med/max 4/7, candidates med/p90/worst 5/11/14, gen ms med/p90/worst 0.6/3.7/15
+
+=== 3D 7x7x7/25: 343 cells, 25 mines, density 7.29 %, expected neighbours mined (interior) 1.90, P(zero | interior) 14.0 %
+  first click face-centre  standard: opening 20 %, revealed med 1 (p10 1, p90 168), visible med 1, visible numbers med 1, 3BV med 75, max number med/max 5/7, standard board solvable by logic 20 %, unresolved by logic med 108 %, gen ms med/p90/worst 0.0/0.0/0
+  first click face-centre  no-guess: opening 100 %, revealed med 176 (p10 94, p90 238), visible med 117, visible numbers med 117, 3BV med 75, max number med/max 5/8, candidates med/p90/worst 4/10/19, gen ms med/p90/worst 0.9/4.7/9
+
+=== 3D 8x8x8/50: 512 cells, 50 mines, density 9.77 %, expected neighbours mined (interior) 2.54, P(zero | interior) 6.9 %
+  first click face-centre  standard: opening 17 %, revealed med 1 (p10 1, p90 64), visible med 1, visible numbers med 1, 3BV med 177, max number med/max 7/9, standard board solvable by logic 8 %, unresolved by logic med 111 %, gen ms med/p90/worst 0.0/0.0/0
+  first click face-centre  no-guess: opening 100 %, revealed med 101 (p10 51, p90 214), visible med 75, visible numbers med 75, 3BV med 170, max number med/max 7/9, candidates med/p90/worst 8/18/31, gen ms med/p90/worst 3.9/21.3/35
+
+=== 3D 10x10x10/80: 1000 cells, 80 mines, density 8.00 %, expected neighbours mined (interior) 2.08, P(zero | interior) 11.4 %
+  first click face-centre  standard: opening 23 %, revealed med 1 (p10 1, p90 486), visible med 1, visible numbers med 1, 3BV med 262, max number med/max 7/9, standard board solvable by logic 23 %, unresolved by logic med 109 %, gen ms med/p90/worst 0.0/0.1/2
+  first click face-centre  no-guess: opening 100 %, revealed med 463 (p10 143, p90 642), visible med 335, visible numbers med 335, 3BV med 249, max number med/max 7/10, candidates med/p90/worst 3/7/16, gen ms med/p90/worst 1.8/5.1/53
+
+=== 3D 10x10x10/100: 1000 cells, 100 mines, density 10.00 %, expected neighbours mined (interior) 2.60, P(zero | interior) 6.5 %
+  first click face-centre  standard: opening 20 %, revealed med 1 (p10 1, p90 175), visible med 1, visible numbers med 1, 3BV med 357, max number med/max 8/10, standard board solvable by logic 20 %, unresolved by logic med 111 %, gen ms med/p90/worst 0.0/0.0/0
+  first click face-centre  no-guess: opening 100 %, revealed med 150 (p10 39, p90 334), visible med 121, visible numbers med 121, 3BV med 352, max number med/max 8/10, candidates med/p90/worst 5/16/22, gen ms med/p90/worst 5.3/13.0/71
+
+=== 3D 12x12x8/100: 1152 cells, 100 mines, density 8.68 %, expected neighbours mined (interior) 2.26, P(zero | interior) 9.4 %
+  first click face-centre  standard: opening 18 %, revealed med 1 (p10 1, p90 348), visible med 1, visible numbers med 1, 3BV med 337, max number med/max 7/10, standard board solvable by logic 15 %, unresolved by logic med 109 %, gen ms med/p90/worst 0.0/0.0/0
+  first click face-centre  no-guess: opening 100 %, revealed med 372 (p10 87, p90 606), visible med 263, visible numbers med 263, 3BV med 329, max number med/max 7/9, candidates med/p90/worst 5/14/20, gen ms med/p90/worst 5.4/13.5/54
+
+=== 3D 4x4x4/3: 64 cells, 3 mines, density 4.69 %, expected neighbours mined (interior) 1.22, P(zero | interior) 28.7 %
+  first click face-centre  standard: opening 43 %, revealed med 1 (p10 1, p90 56), visible med 1, visible numbers med 1, 3BV med 10, max number med/max 2/3, standard board solvable by logic 45 %, unresolved by logic med 103 %, gen ms med/p90/worst 0.0/0.0/0
+  first click face-centre  no-guess: opening 93 %, revealed med 54 (p10 44, p90 59), visible med 23, visible numbers med 23, 3BV med 8, max number med/max 2/3, candidates med/p90/worst 2/7/13, gen ms med/p90/worst 0.2/0.6/3

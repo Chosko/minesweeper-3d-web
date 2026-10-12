@@ -1,0 +1,212 @@
+in 2D {
+  mode: 'classic-2d',
+  hud: { t: '000', m: '10' },
+  modeState: {
+    mode: 'classic-2d',
+    started: false,
+    finished: false,
+    canPause: false
+  }
+} focus body#[] "TIME
+000
+MINES
+10
+BOARD
+9 × 9
+"
+after first Space {
+  mode: 'classic-2d',
+  hud: { t: '002', m: '10' },
+  modeState: {
+    mode: 'classic-2d',
+    started: true,
+    finished: false,
+    canPause: true
+  }
+}
+shot k-04-c2d-first-reveal
+after F {
+  mode: 'classic-2d',
+  hud: { t: '002', m: '9' },
+  modeState: {
+    mode: 'classic-2d',
+    started: true,
+    finished: false,
+    canPause: true
+  }
+}
+after F again (unflag) {
+  mode: 'classic-2d',
+  hud: { t: '002', m: '10' },
+  modeState: {
+    mode: 'classic-2d',
+    started: true,
+    finished: false,
+    canPause: true
+  }
+}
+after Esc paused focus button#p-resume[ui-button] "Resume"
+shot k-05-c2d-paused
+TAB ORDER pause:
+ button#p-restart[ui-button] "Restart"
+ button#p-menu[ui-button] "Main menu"
+ input#p-sens[ui-slider__input] "1"
+ input#p-invert[ui-toggle__input] "on"
+ input#p-vol[ui-slider__input] "70"
+ button#p-sound[ui-button] "Sound: on"
+ body#[] "TIME
+002
+MINES
+10
+BOARD
+9 × 9
+"
+ button#hud-pause[ui-button] "Pause"
+ button#p-resume[ui-button] "Resume"
+ button#p-restart[ui-button] "Restart"
+after 2nd Esc classic-2d focus body#[] "TIME
+003
+MINES
+10
+BOARD
+9 × 9
+"
+end mode classic-2d focus body#[] "TIME
+015
+MINES
+10
+BOARD
+9 × 9
+"
+shot k-06-results
+results title You won!
+TAB ORDER results:
+ button#hud-pause[ui-button] "Pause"
+ button#p-resume[ui-button] "Resume"
+ button#p-restart[ui-button] "Restart"
+ button#p-menu[ui-button] "Main menu"
+ input#p-sens[ui-slider__input] "1"
+ input#p-invert[ui-toggle__input] "on"
+replay mode paused focus input#p-invert[ui-toggle__input] "on"
+shot k-07-replay
+replay playing? pos { pos: '000 / 000', play: 'Play', end: '' }
+replay after keys { pos: '000 / 000', speed: '1×' }
+shot k-08-replay-end
+replay end text 
+after Esc from replay classic-2d focus body#[] "TIME
+016
+MINES
+10
+BOARD
+9 × 9
+"
+records classic-2d focus body#[] "TIME
+017
+MINES
+10
+BOARD
+9 × 9
+"
+shot k-09-records
+TAB ORDER records:
+ button#hud-pause[ui-button] "Pause"
+ button#p-resume[ui-button] "Resume"
+ button#p-restart[ui-button] "Restart"
+ button#p-menu[ui-button] "Main menu"
+ input#p-sens[ui-slider__input] "1"
+ input#p-invert[ui-toggle__input] "on"
+ input#p-vol[ui-slider__input] "70"
+ button#p-sound[ui-button] "Sound: on"
+ body#[] "TIME
+017
+MINES
+10
+BOARD
+9 × 9
+"
+ button#hud-pause[ui-button] "Pause"
+ button#p-resume[ui-button] "Resume"
+ button#p-restart[ui-button] "Restart"
+ button#p-menu[ui-button] "Main menu"
+ input#p-sens[ui-slider__input] "1"
+ input#p-invert[ui-toggle__input] "on"
+ input#p-vol[ui-slider__input] "70"
+ button#p-sound[ui-button] "Sound: on"
+ body#[] "TIME
+017
+MINES
+10
+BOARD
+9 × 9
+"
+ button#hud-pause[ui-button] "Pause"
+ button#p-resume[ui-button] "Resume"
+records mode after ArrowRight 2D focus button#p-resume[ui-button] "Resume"
+chart aria No won games on this board yet, so there is nothing to chart.
+after Esc from records classic-2d focus body#[] "TIME
+017
+MINES
+10
+BOARD
+9 × 9
+"
+settings classic-2d focus body#[] "TIME
+018
+MINES
+10
+BOARD
+9 × 9
+"
+shot k-10-settings
+TAB ORDER settings:
+ button#hud-pause[ui-button] "Pause"
+ button#p-resume[ui-button] "Resume"
+ button#p-restart[ui-button] "Restart"
+ button#p-menu[ui-button] "Main menu"
+ input#p-sens[ui-slider__input] "1"
+ input#p-invert[ui-toggle__input] "on"
+ input#p-vol[ui-slider__input] "70"
+ button#p-sound[ui-button] "Sound: on"
+ body#[] "TIME
+020
+MINES
+10
+BOARD
+9 × 9
+"
+ button#hud-pause[ui-button] "Pause"
+ button#p-resume[ui-button] "Resume"
+ button#p-restart[ui-button] "Restart"
+ button#p-menu[ui-button] "Main menu"
+ input#p-sens[ui-slider__input] "1"
+ input#p-invert[ui-toggle__input] "on"
+ input#p-vol[ui-slider__input] "70"
+settings body text ControlsLook sensitivity1.00×Invert look YGraphicsFullscreen3D resolutionAutoSharpFastThemeThemeLightDarkAudioVolume70%MuteBindings
+after Esc from settings classic-2d focus body#[] "TIME
+020
+MINES
+10
+BOARD
+9 × 9
+"
+controls modal open? false focus body#[] "TIME
+021
+MINES
+10
+BOARD
+9 × 9
+"
+shot k-11-controls-modal
+TAB in modal:
+ button#hud-pause[ui-button] "Pause"
+ button#p-resume[ui-button] "Resume"
+ button#p-restart[ui-button] "Restart"
+ button#p-menu[ui-button] "Main menu"
+modal closed? true focus body#[] "TIME
+022
+MINES
+10
+BOARD
+9 × 9
+"
+errors []

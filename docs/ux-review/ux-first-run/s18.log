@@ -1,0 +1,22 @@
+eager 0: started=true pixel=56,124,201,255
+eager 1: started=true pixel=238,243,250,255
+eager 2: started=true pixel=56,124,201,255
+eager 3: started=true pixel=56,124,201,255
+settings api [ 'load', 'get', 'set', 'onChange' ]
+theme now dark
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+page.screenshot: Timeout 30000ms exceeded.
+Call log:
+[2m  - taking page screenshot[22m
+[2m  - waiting for fonts to load...[22m
+[2m  - fonts loaded[22m
+
+    at shot (/tmp/claude-0/-home-user-minesweeper-3d-web/9dfa886f-25e5-5ab6-b45a-705c23db85f6/scratchpad/ux-first-run/lib.mjs:15:42)
+    at /tmp/claude-0/-home-user-minesweeper-3d-web/9dfa886f-25e5-5ab6-b45a-705c23db85f6/scratchpad/ux-first-run/s18-viewports.mjs:40:7 {
+  name: 'TimeoutError'
+}
+
+Node.js v22.22.0

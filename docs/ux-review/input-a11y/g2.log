@@ -1,0 +1,121 @@
+2D choice classic-2d-choice focus button#[ui-menu__item] "Beginner
+9 × 9 · 10 mines"
+DOWNx3 → button#c2d-start[ui-button] "Start"
+RB → width 30
+DOWN → input#c2d-mines[ui-field__input] "99"
+DOWN → button#c2d-choice-back[ui-button] "Back"
+A → noguess false
+UPx5 → button#[ui-menu__item] "Beginner
+9 × 9 · 10 mines"
+A on beginner → {
+  t: '000',
+  m: '10',
+  mode: 'classic-2d',
+  st: {
+    mode: 'classic-2d',
+    started: false,
+    finished: false,
+    canPause: false
+  }
+} focus body#[pad-nav] "TIME
+000
+MINES
+10
+BOARD
+9 × 9
+"
+shot g2-01-2d-pad
+after A → {
+  t: '001',
+  m: '10',
+  mode: 'classic-2d',
+  st: {
+    mode: 'classic-2d',
+    started: true,
+    finished: false,
+    canPause: true
+  }
+}
+shot g2-02-2d-pad-reveal
+X → flag {
+  t: '006',
+  m: '9',
+  mode: 'classic-2d',
+  st: {
+    mode: 'classic-2d',
+    started: true,
+    finished: false,
+    canPause: true
+  }
+}
+LT → flag {
+  t: '006',
+  m: '9',
+  mode: 'classic-2d',
+  st: {
+    mode: 'classic-2d',
+    started: true,
+    finished: false,
+    canPause: true
+  }
+}
+Y chord {
+  t: '007',
+  m: '10',
+  mode: 'classic-2d',
+  st: {
+    mode: 'classic-2d',
+    started: true,
+    finished: false,
+    canPause: true
+  }
+}
+LT+RT {
+  t: '011',
+  m: '9',
+  mode: 'classic-2d',
+  st: {
+    mode: 'classic-2d',
+    started: true,
+    finished: false,
+    canPause: true
+  }
+}
+shot g2-03-2d-pad-cursor
+START → paused button#p-resume[ui-button] "Resume"
+B → classic-2d
+BACK → paused
+RT press {
+  t: '029',
+  m: '9',
+  mode: 'classic-2d',
+  st: {
+    mode: 'classic-2d',
+    started: true,
+    finished: false,
+    canPause: true
+  }
+} release {
+  t: '029',
+  m: '9',
+  mode: 'classic-2d',
+  st: {
+    mode: 'classic-2d',
+    started: true,
+    finished: false,
+    canPause: true
+  }
+}
+ended true 1 results focus button#r-again[ui-button] "Play again"
+shot g2-04-results-pad
+B on results → menu button#menu-entry-classic-2d[ui-menu__item] "Classic 2D
+The classic game on"
+records records focus button#[ui-segmented__option] "Beginner"
+RIGHT → button#[ui-segmented__option] "Beginner · no-guess" Beginner
+DOWN → input#records-pinned-first[ui-toggle__input] "on"
+DOWN → button#records-back[ui-button] "Back"
+DOWN → button#records-back[ui-button] "Back"
+DOWN → button#records-back[ui-button] "Back"
+shot g2-05-records-pad
+B → menu
+errors []

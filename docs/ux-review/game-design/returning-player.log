@@ -1,0 +1,74 @@
+before first reveal: HUD [ '000', '3' ] time 0
+after pre-flag: HUD [ '000', '3' ] minesLeft 2 stats {
+  n: 64,
+  X: 4,
+  Y: 4,
+  Z: 4,
+  revealed: 0,
+  visible: 0,
+  visibleNumbers: 0,
+  hidden: 0,
+  flags: 1,
+  max: 0,
+  hist: {},
+  phase: 'awaiting-first-click',
+  minesLeft: 2
+}
+after chord/left on pre-flag: started? false time 0
+after first reveal: flags kept? 1 HUD [ '000', '2' ] time 0.082
+sweep 1: { clicks: 12, rounds: 1, phase: 'won' } {
+  n: 64,
+  X: 4,
+  Y: 4,
+  Z: 4,
+  revealed: 61,
+  visible: 33,
+  visibleNumbers: 33,
+  hidden: 28,
+  flags: 0,
+  max: 1,
+  hist: { '1': 33 },
+  phase: 'won',
+  minesLeft: 3
+}
+win 1: results after 1712 ms (page clock, from sweep end)
+win 1: You won! | 4 × 4 × 4 · 3 mines · no-guess | TIME | 1.8 s | 3BV | 12 | 3BV/S | 6.54 | EFFICIENCY | 80% | YOUR BESTS ON THIS BOARD | BEST TIME | — | New best | BEST 3BV/S | — | New best | BEST EFFICIENCY | — | New best | Play again | Watch replay | Records | Back to menu
+after Play again: mode playing HUD [ '000', '3' ]
+sweep 2: { clicks: 4, rounds: 1, phase: 'won' }
+win 2: results after 4500 ms (page clock, from sweep end)
+win 2: You won! | 4 × 4 × 4 · 3 mines · no-guess | TIME | 0.9 s | 3BV | 5 | 3BV/S | 5.42 | EFFICIENCY | 100% | YOUR BESTS ON THIS BOARD | BEST TIME | 1.8 s | New best · −0.9 s | BEST 3BV/S | 6.54 | −1.11 | BEST EFFICIENCY | 80% | New best · +20% | Play again | Watch replay | Records | Back to menu
+after mine click phase: lost
+loss: results after 3559 ms (page clock, from sweep end)
+loss: Game over | 4 × 4 × 4 · 3 mines · no-guess | TIME | 0.2 s | 3BV | 9 | 3BV SOLVED | 1 | 3BV/S | 4.15 | EFFICIENCY | 50% | Play again | Watch replay | Records | Back to menu
+after reload mode: menu
+Records (opens on last board): Records | 2D | 3D | Cube Beginner | Cube Beginner · no-guess | Cube Intermediate | Cube Intermediate · no-guess | Cube Expert | Cube Expert · no-guess | 4 × 4 × 4 · 3 mines · no-guess | 4 × 4 × 4 · 3 MINES · NO-GUESS | BEST TIME | 0.9 s | 11 Oct 2026 | Watch | BEST 3BV/S | 6.54 | 11 Oct 2026 | Watch | BEST EFFICIENCY | 100% | 11 Oct 2026 | Watch | GAMES | 4 | WINS | 2 | WIN RATE | 50% | CURRENT STREAK | 0 | LONGEST STREAK | 2 | HISTORY | Games 1–4 of 4 | Outcome	Time	3BV/s	Efficiency	Replay | Abandoned	3.2 s	0.31	100%	 | Lost	0.2 s	4.15	50%	Watch | Won	0.9 s	5.42	100%	Watch | Won	1.8 s	6.54	80%	Watch | Newer | Older | REPLAYS | Pinned first | Date	Outcome	Time	3BV/s	Efficiency	Pin	Actions | 11 Oct 2026	Lost	0.2 s	4.15	50%	Not pinned	WatchPin | 11 Oct 2026	Won	0.9 s	5.42	100%	Pinned · best	WatchUnpin | 11 Oct 2026	Won	1.8 s	6.54	80%	Pinned · best	WatchUnpin | 3D OVERALL | GAMES | 4 | WINS | 2 | WIN RATE | 50% | CURRENT STREAK | 0 | LONGEST STREAK | 2 | Back
+Records 2D: Records | 2D | 3D | Beginner | Beginner · no-guess | Intermediate | Intermediate · no-guess | Expert | Expert · no-guess | BEGINNER | No games on this board yet. | REPLAYS | Pinned first | No replays kept for this board yet. | CLASSIC 2D OVERALL | GAMES | 0 | WINS | 0 | WIN RATE | — | CURRENT STREAK | 0 | LONGEST STREAK | 0 | Back
+2D 2x2/0 info: 4 cells · up to 3 mines
+2D mode: classic-2d
+2D win: results after 1355 ms (page clock, from sweep end)
+2D win: You won! | 2 × 2 · 0 mines | TIME | 0.0 s | 3BV | 1 | 3BV/S | 1000.00 | EFFICIENCY | 100% | YOUR BESTS ON THIS BOARD | BEST TIME | — | New best | BEST 3BV/S | — | New best | BEST EFFICIENCY | — | New best | Play again | Watch replay | Records | Back to menu
+Records from results: Records | 2D | 3D | Beginner | Beginner · no-guess | Intermediate | Intermediate · no-guess | Expert | Expert · no-guess | 2 × 2 · 0 mines | 2 × 2 · 0 MINES | BEST TIME | 0.0 s | 11 Oct 2026 | Watch | BEST 3BV/S | 1000.00 | 11 Oct 2026 | Watch | BEST EFFICIENCY | 100% | 11 Oct 2026 | Watch | GAMES | 1 | WINS | 1 | WIN RATE | 100% | CURRENT STREAK | 1 | LONGEST STREAK | 1 | HISTORY | Games 1–1 of 1 | Outcome	Time	3BV/s	Efficiency	Replay | Won	0.0 s	1000.00	100%	Watch | Newer | Older | REPLAYS | Pinned first | Date	Outcome	Time	3BV/s	Efficiency	Pin	Actions | 11 Oct 2026	Won	0.0 s	1000.00	100%	Pinned · best	WatchUnpin | CLASSIC 2D OVERALL | GAMES | 1 | WINS | 1 | WIN RATE | 100% | CURRENT STREAK | 1 | LONGEST STREAK | 1 | Back
+3D chord test: {
+  c: 2,
+  number: 1,
+  mines: 1,
+  closedBefore: 1,
+  closedAfter: 0,
+  phase: 'playing',
+  hiddenNow: true
+}
+flag-all spam: { rightClicks: 45, minesLeft: -5 } HUD [ '002', '10' ] {
+  n: 216,
+  X: 6,
+  Y: 6,
+  Z: 6,
+  revealed: 195,
+  visible: 75,
+  visibleNumbers: 75,
+  hidden: 120,
+  flags: 15,
+  max: 4,
+  hist: { '1': 40, '2': 22, '3': 8, '4': 5 },
+  phase: 'playing',
+  minesLeft: -5
+}

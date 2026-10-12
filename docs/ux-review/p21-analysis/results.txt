@@ -1,0 +1,124 @@
+
+=== Cube Beginner 6x6x6/10 — STANDARD (100 boards; 216 cells, 206 safe)
+  first click reveals 43 % of safe cells; visible numbers after it (median) 1; anti-chord fires on 10 % of them at once; a flag-all right-click on one of them places 9.0 wrong flags on average
+  ANTI-CHORD spam: revealed when stuck mean 48 % (median 0 %, p10 0 %, p90 100 %); boards fully solved 35 %; passes median 1 (max 5); chords fired median 0; auto-flag clicks median 0
+  CURRENT-RULE spam: lost 0 %, solved 0 %, oscillating at cap 100 %, revealed mean 43 %, wrong-flag clicks median 100, passes median 200
+  ALTERNATIVE-B spam: lost 48 %, solved 1 %, oscillating at cap 51 %, revealed mean 43 %, passes median 200
+  CURRENT-RULE spam, two-phase (all right-clicks, then all chords): lost 48 %, solved 0 %, oscillating at cap 52 %, revealed mean 43 %, passes median 200
+  ALTERNATIVE-B spam, two-phase: lost 48 %, solved 0 %, oscillating at cap 52 %, revealed mean 43 %, passes median 200
+  CHORD-ONLY spam (no flags): revealed mean 43 %, solved 0 %
+  TRIVIAL-LOGIC solver: resolved mean 48 %, cleared 35 %, boards differing from anti-chord spam: 0
+  FULL solver: cleared 49 %; deductions needing subset/global reasoning 1.6 % of all; boards needing at least one 14 %; median per-board multi share 0.0 %
+
+=== Cube Beginner 6x6x6/10 — NO-GUESS (100 boards; 216 cells, 206 safe)
+  first click reveals 87 % of safe cells; visible numbers after it (median) 92; anti-chord fires on 22 % of them at once; a flag-all right-click on one of them places 2.1 wrong flags on average
+  ANTI-CHORD spam: revealed when stuck mean 98 % (median 100 %, p10 94 %, p90 100 %); boards fully solved 70 %; passes median 3 (max 6); chords fired median 12; auto-flag clicks median 9
+  CURRENT-RULE spam: lost 0 %, solved 0 %, oscillating at cap 100 %, revealed mean 87 %, wrong-flag clicks median 8202, passes median 200
+  ALTERNATIVE-B spam: lost 98 %, solved 1 %, oscillating at cap 1 %, revealed mean 88 %, passes median 2
+  CURRENT-RULE spam, two-phase (all right-clicks, then all chords): lost 99 %, solved 0 %, oscillating at cap 1 %, revealed mean 88 %, passes median 1
+  ALTERNATIVE-B spam, two-phase: lost 97 %, solved 0 %, oscillating at cap 3 %, revealed mean 88 %, passes median 9
+  CHORD-ONLY spam (no flags): revealed mean 87 %, solved 0 %
+  TRIVIAL-LOGIC solver: resolved mean 98 %, cleared 70 %, boards differing from anti-chord spam: 0
+  FULL solver: cleared 100 %; deductions needing subset/global reasoning 1.7 % of all; boards needing at least one 30 %; median per-board multi share 0.0 %
+
+=== Cube Beginner re-tune 6x6x6/16 — STANDARD (100 boards; 216 cells, 200 safe)
+  first click reveals 18 % of safe cells; visible numbers after it (median) 1; anti-chord fires on 3 % of them at once; a flag-all right-click on one of them places 12.2 wrong flags on average
+  ANTI-CHORD spam: revealed when stuck mean 22 % (median 1 %, p10 1 %, p90 91 %); boards fully solved 5 %; passes median 1 (max 7); chords fired median 0; auto-flag clicks median 0
+  CURRENT-RULE spam: lost 0 %, solved 0 %, oscillating at cap 100 %, revealed mean 18 %, wrong-flag clicks median 100, passes median 200
+  ALTERNATIVE-B spam: lost 26 %, solved 0 %, oscillating at cap 74 %, revealed mean 18 %, passes median 200
+  CURRENT-RULE spam, two-phase (all right-clicks, then all chords): lost 28 %, solved 0 %, oscillating at cap 72 %, revealed mean 18 %, passes median 200
+  ALTERNATIVE-B spam, two-phase: lost 25 %, solved 0 %, oscillating at cap 75 %, revealed mean 18 %, passes median 200
+  CHORD-ONLY spam (no flags): revealed mean 18 %, solved 0 %
+  TRIVIAL-LOGIC solver: resolved mean 22 %, cleared 5 %, boards differing from anti-chord spam: 0
+  FULL solver: cleared 28 %; deductions needing subset/global reasoning 10.2 % of all; boards needing at least one 23 %; median per-board multi share 0.0 %
+
+=== Cube Beginner re-tune 6x6x6/16 — NO-GUESS (100 boards; 216 cells, 200 safe)
+  first click reveals 61 % of safe cells; visible numbers after it (median) 78; anti-chord fires on 9 % of them at once; a flag-all right-click on one of them places 4.1 wrong flags on average
+  ANTI-CHORD spam: revealed when stuck mean 76 % (median 86 %, p10 31 %, p90 100 %); boards fully solved 29 %; passes median 4 (max 10); chords fired median 13; auto-flag clicks median 7
+  CURRENT-RULE spam: lost 0 %, solved 0 %, oscillating at cap 100 %, revealed mean 61 %, wrong-flag clicks median 8301, passes median 200
+  ALTERNATIVE-B spam: lost 93 %, solved 0 %, oscillating at cap 7 %, revealed mean 62 %, passes median 3
+  CURRENT-RULE spam, two-phase (all right-clicks, then all chords): lost 98 %, solved 0 %, oscillating at cap 2 %, revealed mean 62 %, passes median 1
+  ALTERNATIVE-B spam, two-phase: lost 85 %, solved 0 %, oscillating at cap 15 %, revealed mean 61 %, passes median 9
+  CHORD-ONLY spam (no flags): revealed mean 61 %, solved 0 %
+  TRIVIAL-LOGIC solver: resolved mean 76 %, cleared 29 %, boards differing from anti-chord spam: 0
+  FULL solver: cleared 100 %; deductions needing subset/global reasoning 9.5 % of all; boards needing at least one 71 %; median per-board multi share 9.8 %
+
+=== Cube Intermediate 8x8x8/40 — STANDARD (100 boards; 512 cells, 472 safe)
+  first click reveals 12 % of safe cells; visible numbers after it (median) 1; anti-chord fires on 2 % of them at once; a flag-all right-click on one of them places 12.8 wrong flags on average
+  ANTI-CHORD spam: revealed when stuck mean 19 % (median 0 %, p10 0 %, p90 99 %); boards fully solved 9 %; passes median 1 (max 11); chords fired median 0; auto-flag clicks median 0
+  CURRENT-RULE spam: lost 0 %, solved 0 %, oscillating at cap 100 %, revealed mean 12 %, wrong-flag clicks median 100, passes median 200
+  ALTERNATIVE-B spam: lost 20 %, solved 0 %, oscillating at cap 80 %, revealed mean 12 %, passes median 200
+  CURRENT-RULE spam, two-phase (all right-clicks, then all chords): lost 22 %, solved 0 %, oscillating at cap 78 %, revealed mean 12 %, passes median 200
+  ALTERNATIVE-B spam, two-phase: lost 20 %, solved 0 %, oscillating at cap 80 %, revealed mean 12 %, passes median 200
+  CHORD-ONLY spam (no flags): revealed mean 12 %, solved 0 %
+  TRIVIAL-LOGIC solver: resolved mean 19 %, cleared 9 %, boards differing from anti-chord spam: 0
+  FULL solver: cleared 20 %; deductions needing subset/global reasoning 3.2 % of all; boards needing at least one 14 %; median per-board multi share 0.0 %
+
+=== Cube Intermediate 8x8x8/40 — NO-GUESS (100 boards; 512 cells, 472 safe)
+  first click reveals 48 % of safe cells; visible numbers after it (median) 177; anti-chord fires on 9 % of them at once; a flag-all right-click on one of them places 4.9 wrong flags on average
+  ANTI-CHORD spam: revealed when stuck mean 77 % (median 99 %, p10 16 %, p90 100 %); boards fully solved 47 %; passes median 6 (max 14); chords fired median 56; auto-flag clicks median 33
+  CURRENT-RULE spam: lost 0 %, solved 0 %, oscillating at cap 100 %, revealed mean 48 %, wrong-flag clicks median 19106, passes median 200
+  ALTERNATIVE-B spam: lost 91 %, solved 0 %, oscillating at cap 9 %, revealed mean 49 %, passes median 2
+  CURRENT-RULE spam, two-phase (all right-clicks, then all chords): lost 98 %, solved 0 %, oscillating at cap 2 %, revealed mean 49 %, passes median 1
+  ALTERNATIVE-B spam, two-phase: lost 89 %, solved 0 %, oscillating at cap 11 %, revealed mean 49 %, passes median 8
+  CHORD-ONLY spam (no flags): revealed mean 48 %, solved 0 %
+  TRIVIAL-LOGIC solver: resolved mean 77 %, cleared 47 %, boards differing from anti-chord spam: 0
+  FULL solver: cleared 100 %; deductions needing subset/global reasoning 4.6 % of all; boards needing at least one 53 %; median per-board multi share 1.4 %
+
+=== Cube re-tune 10x10x10/100 — STANDARD (100 boards; 1000 cells, 900 safe)
+  first click reveals 4 % of safe cells; visible numbers after it (median) 1; anti-chord fires on 1 % of them at once; a flag-all right-click on one of them places 13.3 wrong flags on average
+  ANTI-CHORD spam: revealed when stuck mean 9 % (median 0 %, p10 0 %, p90 30 %); boards fully solved 3 %; passes median 1 (max 19); chords fired median 0; auto-flag clicks median 0
+  CURRENT-RULE spam: lost 0 %, solved 0 %, oscillating at cap 100 %, revealed mean 4 %, wrong-flag clicks median 100, passes median 200
+  ALTERNATIVE-B spam: lost 16 %, solved 0 %, oscillating at cap 84 %, revealed mean 4 %, passes median 200
+  CURRENT-RULE spam, two-phase (all right-clicks, then all chords): lost 18 %, solved 0 %, oscillating at cap 82 %, revealed mean 4 %, passes median 200
+  ALTERNATIVE-B spam, two-phase: lost 15 %, solved 0 %, oscillating at cap 85 %, revealed mean 4 %, passes median 200
+  CHORD-ONLY spam (no flags): revealed mean 4 %, solved 0 %
+  TRIVIAL-LOGIC solver: resolved mean 9 %, cleared 3 %, boards differing from anti-chord spam: 0
+  FULL solver: cleared 18 %; deductions needing subset/global reasoning 9.6 % of all; boards needing at least one 15 %; median per-board multi share 0.0 %
+
+=== Cube re-tune 10x10x10/100 — NO-GUESS (100 boards; 1000 cells, 900 safe)
+  first click reveals 20 % of safe cells; visible numbers after it (median) 126; anti-chord fires on 4 % of them at once; a flag-all right-click on one of them places 6.5 wrong flags on average
+  ANTI-CHORD spam: revealed when stuck mean 52 % (median 46 %, p10 4 %, p90 100 %); boards fully solved 26 %; passes median 7 (max 21); chords fired median 28; auto-flag clicks median 15
+  CURRENT-RULE spam: lost 0 %, solved 0 %, oscillating at cap 100 %, revealed mean 20 %, wrong-flag clicks median 15316, passes median 200
+  ALTERNATIVE-B spam: lost 80 %, solved 0 %, oscillating at cap 20 %, revealed mean 20 %, passes median 3
+  CURRENT-RULE spam, two-phase (all right-clicks, then all chords): lost 98 %, solved 0 %, oscillating at cap 2 %, revealed mean 20 %, passes median 1
+  ALTERNATIVE-B spam, two-phase: lost 70 %, solved 0 %, oscillating at cap 30 %, revealed mean 20 %, passes median 10
+  CHORD-ONLY spam (no flags): revealed mean 20 %, solved 0 %
+  TRIVIAL-LOGIC solver: resolved mean 52 %, cleared 26 %, boards differing from anti-chord spam: 0
+  FULL solver: cleared 100 %; deductions needing subset/global reasoning 7.5 % of all; boards needing at least one 74 %; median per-board multi share 6.7 %
+
+=== Cube Expert 12x12x8/130 — STANDARD (100 boards; 1152 cells, 1022 safe)
+  first click reveals 2 % of safe cells; visible numbers after it (median) 1; anti-chord fires on 0 % of them at once; a flag-all right-click on one of them places 13.6 wrong flags on average
+  ANTI-CHORD spam: revealed when stuck mean 4 % (median 0 %, p10 0 %, p90 15 %); boards fully solved 0 %; passes median 1 (max 15); chords fired median 0; auto-flag clicks median 0
+  CURRENT-RULE spam: lost 0 %, solved 0 %, oscillating at cap 100 %, revealed mean 2 %, wrong-flag clicks median 100, passes median 200
+  ALTERNATIVE-B spam: lost 10 %, solved 0 %, oscillating at cap 90 %, revealed mean 2 %, passes median 200
+  CURRENT-RULE spam, two-phase (all right-clicks, then all chords): lost 15 %, solved 0 %, oscillating at cap 85 %, revealed mean 2 %, passes median 200
+  ALTERNATIVE-B spam, two-phase: lost 9 %, solved 0 %, oscillating at cap 91 %, revealed mean 2 %, passes median 200
+  CHORD-ONLY spam (no flags): revealed mean 2 %, solved 0 %
+  TRIVIAL-LOGIC solver: resolved mean 4 %, cleared 0 %, boards differing from anti-chord spam: 0
+  FULL solver: cleared 11 %; deductions needing subset/global reasoning 11.1 % of all; boards needing at least one 14 %; median per-board multi share 0.0 %
+
+=== Cube Expert 12x12x8/130 — NO-GUESS (100 boards; 1152 cells, 1022 safe)
+  first click reveals 14 % of safe cells; visible numbers after it (median) 103; anti-chord fires on 3 % of them at once; a flag-all right-click on one of them places 7.1 wrong flags on average
+  ANTI-CHORD spam: revealed when stuck mean 34 % (median 16 %, p10 4 %, p90 99 %); boards fully solved 6 %; passes median 3 (max 28); chords fired median 2; auto-flag clicks median 2
+  CURRENT-RULE spam: lost 0 %, solved 0 %, oscillating at cap 100 %, revealed mean 14 %, wrong-flag clicks median 12407, passes median 200
+  ALTERNATIVE-B spam: lost 74 %, solved 0 %, oscillating at cap 26 %, revealed mean 14 %, passes median 3
+  CURRENT-RULE spam, two-phase (all right-clicks, then all chords): lost 98 %, solved 0 %, oscillating at cap 2 %, revealed mean 14 %, passes median 1
+  ALTERNATIVE-B spam, two-phase: lost 57 %, solved 0 %, oscillating at cap 43 %, revealed mean 14 %, passes median 12
+  CHORD-ONLY spam (no flags): revealed mean 14 %, solved 0 %
+  TRIVIAL-LOGIC solver: resolved mean 34 %, cleared 6 %, boards differing from anti-chord spam: 0
+  FULL solver: cleared 100 %; deductions needing subset/global reasoning 10.4 % of all; boards needing at least one 94 %; median per-board multi share 10.3 %
+
+=== 2D Expert 30x16/99 — STANDARD (100 boards; 480 cells, 381 safe)
+  first click reveals 3 % of safe cells; visible numbers after it (median) 1; anti-chord fires on 4 % of them at once; a flag-all right-click on one of them places 5.2 wrong flags on average
+  ANTI-CHORD spam: revealed when stuck mean 8 % (median 0 %, p10 0 %, p90 34 %); boards fully solved 0 %; passes median 1 (max 26); chords fired median 0; auto-flag clicks median 0
+  CHORD-ONLY spam (no flags): revealed mean 3 %, solved 0 %
+  TRIVIAL-LOGIC solver: resolved mean 8 %, cleared 0 %, boards differing from anti-chord spam: 0
+  FULL solver: cleared 3 %; deductions needing subset/global reasoning 5.9 % of all; boards needing at least one 17 %; median per-board multi share 0.0 %
+
+=== 2D Expert 30x16/99 — NO-GUESS (100 boards; 480 cells, 381 safe)
+  first click reveals 11 % of safe cells; visible numbers after it (median) 24; anti-chord fires on 20 % of them at once; a flag-all right-click on one of them places 1.6 wrong flags on average
+  ANTI-CHORD spam: revealed when stuck mean 50 % (median 55 %, p10 8 %, p90 90 %); boards fully solved 1 %; passes median 15 (max 36); chords fired median 55; auto-flag clicks median 40
+  CHORD-ONLY spam (no flags): revealed mean 11 %, solved 0 %
+  TRIVIAL-LOGIC solver: resolved mean 50 %, cleared 1 %, boards differing from anti-chord spam: 0
+  FULL solver: cleared 100 %; deductions needing subset/global reasoning 5.1 % of all; boards needing at least one 99 %; median per-board multi share 4.6 %

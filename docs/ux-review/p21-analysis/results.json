@@ -1,0 +1,756 @@
+[
+ {
+  "preset": "Cube Beginner 6x6x6/10",
+  "noGuess": false,
+  "N": 100,
+  "fails": 0,
+  "safe": 206,
+  "cells": 216,
+  "firstClickFrac": 0.42956310679611653,
+  "visNums": 1,
+  "fireable": 0.10164703674515355,
+  "wrongPerClick": 8.960249843727786,
+  "anti": {
+   "meanFrac": 0.4820873786407763,
+   "medFrac": 0.0048543689320388345,
+   "p10": 0.0048543689320388345,
+   "p90": 1,
+   "solved": 0.35,
+   "passes": 1,
+   "passesMax": 5,
+   "chords": 0,
+   "flagClicks": 0
+  },
+  "current": {
+   "lost": 0,
+   "solved": 0,
+   "capped": 1,
+   "meanFrac": 0.42956310679611653,
+   "wrongClicks": 100,
+   "passes": 200
+  },
+  "B": {
+   "lost": 0.48,
+   "solved": 0.01,
+   "capped": 0.51,
+   "meanFrac": 0.43436893203883487,
+   "passes": 200
+  },
+  "current2": {
+   "lost": 0.48,
+   "solved": 0,
+   "capped": 0.52,
+   "meanFrac": 0.43359223300970867,
+   "passes": 200
+  },
+  "B2": {
+   "lost": 0.48,
+   "solved": 0,
+   "capped": 0.52,
+   "meanFrac": 0.4328640776699027,
+   "passes": 200
+  },
+  "chordOnly": {
+   "meanFrac": 0.42956310679611653,
+   "solved": 0
+  },
+  "trivial": {
+   "meanFrac": 0.4820873786407763,
+   "cleared": 0.35,
+   "mismatch": 0
+  },
+  "full": {
+   "cleared": 0.49,
+   "multiShare": 0.01613668723303275,
+   "boardsNeedingMulti": 0.14,
+   "medMultiFrac": 0
+  }
+ },
+ {
+  "preset": "Cube Beginner 6x6x6/10",
+  "noGuess": true,
+  "N": 100,
+  "fails": 0,
+  "safe": 206,
+  "cells": 216,
+  "firstClickFrac": 0.869126213592233,
+  "visNums": 92,
+  "fireable": 0.2155244093443369,
+  "wrongPerClick": 2.146146757111419,
+  "anti": {
+   "meanFrac": 0.9760194174757284,
+   "medFrac": 1,
+   "p10": 0.9368932038834952,
+   "p90": 1,
+   "solved": 0.7,
+   "passes": 3,
+   "passesMax": 6,
+   "chords": 12,
+   "flagClicks": 9
+  },
+  "current": {
+   "lost": 0,
+   "solved": 0,
+   "capped": 1,
+   "meanFrac": 0.869126213592233,
+   "wrongClicks": 8202,
+   "passes": 200
+  },
+  "B": {
+   "lost": 0.98,
+   "solved": 0.01,
+   "capped": 0.01,
+   "meanFrac": 0.8804368932038836,
+   "passes": 2
+  },
+  "current2": {
+   "lost": 0.99,
+   "solved": 0,
+   "capped": 0.01,
+   "meanFrac": 0.8771844660194172,
+   "passes": 1
+  },
+  "B2": {
+   "lost": 0.97,
+   "solved": 0,
+   "capped": 0.03,
+   "meanFrac": 0.8754368932038834,
+   "passes": 9
+  },
+  "chordOnly": {
+   "meanFrac": 0.869126213592233,
+   "solved": 0
+  },
+  "trivial": {
+   "meanFrac": 0.9760194174757284,
+   "cleared": 0.7,
+   "mismatch": 0
+  },
+  "full": {
+   "cleared": 1,
+   "multiShare": 0.01669767441860465,
+   "boardsNeedingMulti": 0.3,
+   "medMultiFrac": 0
+  }
+ },
+ {
+  "preset": "Cube Beginner re-tune 6x6x6/16",
+  "noGuess": false,
+  "N": 100,
+  "fails": 0,
+  "safe": 200,
+  "cells": 216,
+  "firstClickFrac": 0.17795000000000027,
+  "visNums": 1,
+  "fireable": 0.026361361156076093,
+  "wrongPerClick": 12.151323627704116,
+  "anti": {
+   "meanFrac": 0.21580000000000024,
+   "medFrac": 0.005,
+   "p10": 0.005,
+   "p90": 0.91,
+   "solved": 0.05,
+   "passes": 1,
+   "passesMax": 7,
+   "chords": 0,
+   "flagClicks": 0
+  },
+  "current": {
+   "lost": 0,
+   "solved": 0,
+   "capped": 1,
+   "meanFrac": 0.17795000000000027,
+   "wrongClicks": 100,
+   "passes": 200
+  },
+  "B": {
+   "lost": 0.26,
+   "solved": 0,
+   "capped": 0.74,
+   "meanFrac": 0.18225000000000022,
+   "passes": 200
+  },
+  "current2": {
+   "lost": 0.28,
+   "solved": 0,
+   "capped": 0.72,
+   "meanFrac": 0.1805500000000002,
+   "passes": 200
+  },
+  "B2": {
+   "lost": 0.25,
+   "solved": 0,
+   "capped": 0.75,
+   "meanFrac": 0.17980000000000027,
+   "passes": 200
+  },
+  "chordOnly": {
+   "meanFrac": 0.17795000000000027,
+   "solved": 0
+  },
+  "trivial": {
+   "meanFrac": 0.21580000000000024,
+   "cleared": 0.05,
+   "mismatch": 0
+  },
+  "full": {
+   "cleared": 0.28,
+   "multiShare": 0.10249169435215946,
+   "boardsNeedingMulti": 0.23,
+   "medMultiFrac": 0
+  }
+ },
+ {
+  "preset": "Cube Beginner re-tune 6x6x6/16",
+  "noGuess": true,
+  "N": 100,
+  "fails": 0,
+  "safe": 200,
+  "cells": 216,
+  "firstClickFrac": 0.6062500000000002,
+  "visNums": 78,
+  "fireable": 0.09051761238089329,
+  "wrongPerClick": 4.075483342267829,
+  "anti": {
+   "meanFrac": 0.7626499999999998,
+   "medFrac": 0.855,
+   "p10": 0.305,
+   "p90": 1,
+   "solved": 0.29,
+   "passes": 4,
+   "passesMax": 10,
+   "chords": 13,
+   "flagClicks": 7
+  },
+  "current": {
+   "lost": 0,
+   "solved": 0,
+   "capped": 1,
+   "meanFrac": 0.6062500000000002,
+   "wrongClicks": 8301,
+   "passes": 200
+  },
+  "B": {
+   "lost": 0.93,
+   "solved": 0,
+   "capped": 0.07,
+   "meanFrac": 0.6182500000000002,
+   "passes": 3
+  },
+  "current2": {
+   "lost": 0.98,
+   "solved": 0,
+   "capped": 0.02,
+   "meanFrac": 0.6187999999999998,
+   "passes": 1
+  },
+  "B2": {
+   "lost": 0.85,
+   "solved": 0,
+   "capped": 0.15,
+   "meanFrac": 0.6115500000000004,
+   "passes": 9
+  },
+  "chordOnly": {
+   "meanFrac": 0.6062500000000002,
+   "solved": 0
+  },
+  "trivial": {
+   "meanFrac": 0.7626499999999998,
+   "cleared": 0.29,
+   "mismatch": 0
+  },
+  "full": {
+   "cleared": 1,
+   "multiShare": 0.09469767441860465,
+   "boardsNeedingMulti": 0.71,
+   "medMultiFrac": 0.09767441860465116
+  }
+ },
+ {
+  "preset": "Cube Intermediate 8x8x8/40",
+  "noGuess": false,
+  "N": 100,
+  "fails": 0,
+  "safe": 472,
+  "cells": 512,
+  "firstClickFrac": 0.11921610169491512,
+  "visNums": 1,
+  "fireable": 0.02157830086253533,
+  "wrongPerClick": 12.830179674156048,
+  "anti": {
+   "meanFrac": 0.18955508474576238,
+   "medFrac": 0.00211864406779661,
+   "p10": 0.00211864406779661,
+   "p90": 0.9915254237288136,
+   "solved": 0.09,
+   "passes": 1,
+   "passesMax": 11,
+   "chords": 0,
+   "flagClicks": 0
+  },
+  "current": {
+   "lost": 0,
+   "solved": 0,
+   "capped": 1,
+   "meanFrac": 0.11921610169491512,
+   "wrongClicks": 100,
+   "passes": 200
+  },
+  "B": {
+   "lost": 0.2,
+   "solved": 0,
+   "capped": 0.8,
+   "meanFrac": 0.1209110169491524,
+   "passes": 200
+  },
+  "current2": {
+   "lost": 0.22,
+   "solved": 0,
+   "capped": 0.78,
+   "meanFrac": 0.12008474576271172,
+   "passes": 200
+  },
+  "B2": {
+   "lost": 0.2,
+   "solved": 0,
+   "capped": 0.8,
+   "meanFrac": 0.11993644067796595,
+   "passes": 200
+  },
+  "chordOnly": {
+   "meanFrac": 0.11921610169491512,
+   "solved": 0
+  },
+  "trivial": {
+   "meanFrac": 0.18955508474576238,
+   "cleared": 0.09,
+   "mismatch": 0
+  },
+  "full": {
+   "cleared": 0.2,
+   "multiShare": 0.03212611844908394,
+   "boardsNeedingMulti": 0.14,
+   "medMultiFrac": 0
+  }
+ },
+ {
+  "preset": "Cube Intermediate 8x8x8/40",
+  "noGuess": true,
+  "N": 100,
+  "fails": 0,
+  "safe": 472,
+  "cells": 512,
+  "firstClickFrac": 0.4840254237288133,
+  "visNums": 177,
+  "fireable": 0.08632423065692212,
+  "wrongPerClick": 4.869705080279964,
+  "anti": {
+   "meanFrac": 0.7705508474576271,
+   "medFrac": 0.989406779661017,
+   "p10": 0.15889830508474576,
+   "p90": 1,
+   "solved": 0.47,
+   "passes": 6,
+   "passesMax": 14,
+   "chords": 56,
+   "flagClicks": 33
+  },
+  "current": {
+   "lost": 0,
+   "solved": 0,
+   "capped": 1,
+   "meanFrac": 0.4840254237288133,
+   "wrongClicks": 19106,
+   "passes": 200
+  },
+  "B": {
+   "lost": 0.91,
+   "solved": 0,
+   "capped": 0.09,
+   "meanFrac": 0.4902330508474572,
+   "passes": 2
+  },
+  "current2": {
+   "lost": 0.98,
+   "solved": 0,
+   "capped": 0.02,
+   "meanFrac": 0.48989406779661004,
+   "passes": 1
+  },
+  "B2": {
+   "lost": 0.89,
+   "solved": 0,
+   "capped": 0.11,
+   "meanFrac": 0.4862923728813559,
+   "passes": 8
+  },
+  "chordOnly": {
+   "meanFrac": 0.4840254237288133,
+   "solved": 0
+  },
+  "trivial": {
+   "meanFrac": 0.7705508474576271,
+   "cleared": 0.47,
+   "mismatch": 0
+  },
+  "full": {
+   "cleared": 1,
+   "multiShare": 0.0460665362035225,
+   "boardsNeedingMulti": 0.53,
+   "medMultiFrac": 0.0136986301369863
+  }
+ },
+ {
+  "preset": "Cube re-tune 10x10x10/100",
+  "noGuess": false,
+  "N": 100,
+  "fails": 0,
+  "safe": 900,
+  "cells": 1000,
+  "firstClickFrac": 0.037266666666666746,
+  "visNums": 1,
+  "fireable": 0.005876783501967946,
+  "wrongPerClick": 13.25795957489762,
+  "anti": {
+   "meanFrac": 0.08904444444444458,
+   "medFrac": 0.0011111111111111111,
+   "p10": 0.0011111111111111111,
+   "p90": 0.3011111111111111,
+   "solved": 0.03,
+   "passes": 1,
+   "passesMax": 19,
+   "chords": 0,
+   "flagClicks": 0
+  },
+  "current": {
+   "lost": 0,
+   "solved": 0,
+   "capped": 1,
+   "meanFrac": 0.037266666666666746,
+   "wrongClicks": 100,
+   "passes": 200
+  },
+  "B": {
+   "lost": 0.16,
+   "solved": 0,
+   "capped": 0.84,
+   "meanFrac": 0.037966666666666746,
+   "passes": 200
+  },
+  "current2": {
+   "lost": 0.18,
+   "solved": 0,
+   "capped": 0.82,
+   "meanFrac": 0.03800000000000007,
+   "passes": 200
+  },
+  "B2": {
+   "lost": 0.15,
+   "solved": 0,
+   "capped": 0.85,
+   "meanFrac": 0.037533333333333405,
+   "passes": 200
+  },
+  "chordOnly": {
+   "meanFrac": 0.037266666666666746,
+   "solved": 0
+  },
+  "trivial": {
+   "meanFrac": 0.08904444444444458,
+   "cleared": 0.03,
+   "mismatch": 0
+  },
+  "full": {
+   "cleared": 0.18,
+   "multiShare": 0.09587365142920698,
+   "boardsNeedingMulti": 0.15,
+   "medMultiFrac": 0
+  }
+ },
+ {
+  "preset": "Cube re-tune 10x10x10/100",
+  "noGuess": true,
+  "N": 100,
+  "fails": 0,
+  "safe": 900,
+  "cells": 1000,
+  "firstClickFrac": 0.1992444444444444,
+  "visNums": 126,
+  "fireable": 0.03624130918792717,
+  "wrongPerClick": 6.490364443110497,
+  "anti": {
+   "meanFrac": 0.5192777777777777,
+   "medFrac": 0.4588888888888889,
+   "p10": 0.043333333333333335,
+   "p90": 1,
+   "solved": 0.26,
+   "passes": 7,
+   "passesMax": 21,
+   "chords": 28,
+   "flagClicks": 15
+  },
+  "current": {
+   "lost": 0,
+   "solved": 0,
+   "capped": 1,
+   "meanFrac": 0.1992444444444444,
+   "wrongClicks": 15316,
+   "passes": 200
+  },
+  "B": {
+   "lost": 0.8,
+   "solved": 0,
+   "capped": 0.2,
+   "meanFrac": 0.20215555555555556,
+   "passes": 3
+  },
+  "current2": {
+   "lost": 0.98,
+   "solved": 0,
+   "capped": 0.02,
+   "meanFrac": 0.20225555555555544,
+   "passes": 1
+  },
+  "B2": {
+   "lost": 0.7,
+   "solved": 0,
+   "capped": 0.3,
+   "meanFrac": 0.20025555555555552,
+   "passes": 10
+  },
+  "chordOnly": {
+   "meanFrac": 0.1992444444444444,
+   "solved": 0
+  },
+  "trivial": {
+   "meanFrac": 0.5192777777777777,
+   "cleared": 0.26,
+   "mismatch": 0
+  },
+  "full": {
+   "cleared": 1,
+   "multiShare": 0.07486486486486486,
+   "boardsNeedingMulti": 0.74,
+   "medMultiFrac": 0.06706706706706707
+  }
+ },
+ {
+  "preset": "Cube Expert 12x12x8/130",
+  "noGuess": false,
+  "N": 100,
+  "fails": 0,
+  "safe": 1022,
+  "cells": 1152,
+  "firstClickFrac": 0.021898238747553797,
+  "visNums": 1,
+  "fireable": 0.004106762643636438,
+  "wrongPerClick": 13.645961425368755,
+  "anti": {
+   "meanFrac": 0.04402152641878668,
+   "medFrac": 0.0009784735812133072,
+   "p10": 0.0009784735812133072,
+   "p90": 0.14774951076320939,
+   "solved": 0,
+   "passes": 1,
+   "passesMax": 15,
+   "chords": 0,
+   "flagClicks": 0
+  },
+  "current": {
+   "lost": 0,
+   "solved": 0,
+   "capped": 1,
+   "meanFrac": 0.021898238747553797,
+   "wrongClicks": 100,
+   "passes": 200
+  },
+  "B": {
+   "lost": 0.1,
+   "solved": 0,
+   "capped": 0.9,
+   "meanFrac": 0.022123287671232856,
+   "passes": 200
+  },
+  "current2": {
+   "lost": 0.15,
+   "solved": 0,
+   "capped": 0.85,
+   "meanFrac": 0.02230919765166339,
+   "passes": 200
+  },
+  "B2": {
+   "lost": 0.09,
+   "solved": 0,
+   "capped": 0.91,
+   "meanFrac": 0.02200587084148726,
+   "passes": 200
+  },
+  "chordOnly": {
+   "meanFrac": 0.021898238747553797,
+   "solved": 0
+  },
+  "trivial": {
+   "meanFrac": 0.04402152641878668,
+   "cleared": 0,
+   "mismatch": 0
+  },
+  "full": {
+   "cleared": 0.11,
+   "multiShare": 0.11065599205610377,
+   "boardsNeedingMulti": 0.14,
+   "medMultiFrac": 0
+  }
+ },
+ {
+  "preset": "Cube Expert 12x12x8/130",
+  "noGuess": true,
+  "N": 100,
+  "fails": 0,
+  "safe": 1022,
+  "cells": 1152,
+  "firstClickFrac": 0.14187866927592957,
+  "visNums": 103,
+  "fireable": 0.026789484396751613,
+  "wrongPerClick": 7.128838470489377,
+  "anti": {
+   "meanFrac": 0.33955968688845395,
+   "medFrac": 0.15655577299412915,
+   "p10": 0.03913894324853229,
+   "p90": 0.9921722113502935,
+   "solved": 0.06,
+   "passes": 3,
+   "passesMax": 28,
+   "chords": 2,
+   "flagClicks": 2
+  },
+  "current": {
+   "lost": 0,
+   "solved": 0,
+   "capped": 1,
+   "meanFrac": 0.14187866927592957,
+   "wrongClicks": 12407,
+   "passes": 200
+  },
+  "B": {
+   "lost": 0.74,
+   "solved": 0,
+   "capped": 0.26,
+   "meanFrac": 0.1444716242661448,
+   "passes": 3
+  },
+  "current2": {
+   "lost": 0.98,
+   "solved": 0,
+   "capped": 0.02,
+   "meanFrac": 0.14478473581213308,
+   "passes": 1
+  },
+  "B2": {
+   "lost": 0.57,
+   "solved": 0,
+   "capped": 0.43,
+   "meanFrac": 0.14275929549902153,
+   "passes": 12
+  },
+  "chordOnly": {
+   "meanFrac": 0.14187866927592957,
+   "solved": 0
+  },
+  "trivial": {
+   "meanFrac": 0.33955968688845395,
+   "cleared": 0.06,
+   "mismatch": 0
+  },
+  "full": {
+   "cleared": 1,
+   "multiShare": 0.10375325803649,
+   "boardsNeedingMulti": 0.94,
+   "medMultiFrac": 0.10338835794960903
+  }
+ },
+ {
+  "preset": "2D Expert 30x16/99",
+  "noGuess": false,
+  "N": 100,
+  "fails": 0,
+  "safe": 381,
+  "cells": 480,
+  "firstClickFrac": 0.028425196850393696,
+  "visNums": 1,
+  "fireable": 0.04198462205103394,
+  "wrongPerClick": 5.1647079269105856,
+  "anti": {
+   "meanFrac": 0.0751181102362205,
+   "medFrac": 0.0026246719160104987,
+   "p10": 0.0026246719160104987,
+   "p90": 0.3359580052493438,
+   "solved": 0,
+   "passes": 1,
+   "passesMax": 26,
+   "chords": 0,
+   "flagClicks": 0
+  },
+  "current": null,
+  "B": null,
+  "current2": null,
+  "B2": null,
+  "chordOnly": {
+   "meanFrac": 0.028425196850393696,
+   "solved": 0
+  },
+  "trivial": {
+   "meanFrac": 0.0751181102362205,
+   "cleared": 0,
+   "mismatch": 0
+  },
+  "full": {
+   "cleared": 0.03,
+   "multiShare": 0.05851830498702796,
+   "boardsNeedingMulti": 0.17,
+   "medMultiFrac": 0
+  }
+ },
+ {
+  "preset": "2D Expert 30x16/99",
+  "noGuess": true,
+  "N": 100,
+  "fails": 0,
+  "safe": 381,
+  "cells": 480,
+  "firstClickFrac": 0.10692913385826765,
+  "visNums": 24,
+  "fireable": 0.1960001091334209,
+  "wrongPerClick": 1.5835326617387961,
+  "anti": {
+   "meanFrac": 0.495249343832021,
+   "medFrac": 0.5511811023622047,
+   "p10": 0.08136482939632546,
+   "p90": 0.9028871391076115,
+   "solved": 0.01,
+   "passes": 15,
+   "passesMax": 36,
+   "chords": 55,
+   "flagClicks": 40
+  },
+  "current": null,
+  "B": null,
+  "current2": null,
+  "B2": null,
+  "chordOnly": {
+   "meanFrac": 0.10692913385826765,
+   "solved": 0
+  },
+  "trivial": {
+   "meanFrac": 0.495249343832021,
+   "cleared": 0.01,
+   "mismatch": 0
+  },
+  "full": {
+   "cleared": 1,
+   "multiShare": 0.05060754102467744,
+   "boardsNeedingMulti": 0.99,
+   "medMultiFrac": 0.04592901878914405
+  }
+ }
+]

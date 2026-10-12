@@ -1,0 +1,46 @@
+light modal open true card rect {"x":380.8984680175781,"y":202.3628387451172,"width":518.203125,"height":398.96026611328125,"top":202.3628387451172,"right":899.1015930175781,"bottom":601.3231048583984,"left":380.8984680175781} opacity 0.769626 modal style {
+  op: '1',
+  bg: 'rgba(150, 185, 235, 0.4)',
+  display: 'flex',
+  z: '30',
+  anim: 'none',
+  transition: 'all'
+}
+shot k4-modal-light
+light inert on menu? false aria-hidden null
+dark modal open true card rect {"x":383.8999938964844,"y":210.83070373535156,"width":512.199951171875,"height":394.338623046875,"top":210.83070373535156,"right":896.0999450683594,"bottom":605.1693267822266,"left":383.8999938964844} opacity 0 modal style {
+  op: '1',
+  bg: 'rgba(150, 185, 235, 0.4)',
+  display: 'flex',
+  z: '30',
+  anim: 'none',
+  transition: 'all'
+}
+shot k4-modal-dark
+dark inert on menu? false aria-hidden null
+landmarks [ 'h1:Minesweeper 3D' ]
+hidden overlays use none
+canvas label 3D minesweeper board canvas role null
+2D board canvas { role: null, label: null, tabindex: null, text: '' }
+hud aria-live off hud-time label hud-time-label
+2D visible kbd hints []
+pause dl text Mouse | Look | WASD QE | Fly | Left / Right | Reveal / Flag | Left + Right | Chord | Wheel | Spacing | Shift | Neighbours only | Space | Aim through numbers | Ctrl | Show hidden
+pause hidden-but-focusable behind { visible: true, inert: false, hudAriaHidden: null }
+beforeunload guard true
+confirm focus button#p-confirm-no[ui-button] "Cancel"
+Tab in confirm → input#p-sens[ui-slider__input] "1"
+Tab → input#p-invert[ui-toggle__input] "on"
+Esc on confirm → mode paused focus button#p-resume[ui-button] "Resume"
+after confirm → menu focus button#menu-entry-classic-2d[ui-menu__item] "Classic 2D
+The classic game on"
+results results live regions []
+Records → Esc →  results focus restored to button#r-again[ui-button] "Play again"
+Shift+Tab from Play again → body#[] "You won!
+
+2 × 1 · 1 mine
+
+TIME"
+ready ready
+Esc on ready → board-choice focus button#[ui-menu__item] "Beginner
+6 × 6 × 6 · 10 mines
+"

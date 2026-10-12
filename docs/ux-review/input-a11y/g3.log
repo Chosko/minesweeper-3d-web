@@ -1,0 +1,41 @@
+menu: stick down 1 frame → button#menu-entry-3d[ui-menu__item] "3D Fly through a cube of cubes"
+2D choice DOWN walk: button#[ui-menu__item] "Intermediate 16 × 16 · 40 mine" → button#[ui-menu__item] "Expert 30 × 16 · 99 mines" → button#c2d-start[ui-button] "Start" → input#c2d-mines[ui-field__input] "99" → button#c2d-choice-back[ui-button] "Back" → button#c2d-choice-back[ui-button] "Back" → button#c2d-choice-back[ui-button] "Back"
+2D choice UP walk: input#c2d-noguess[ui-toggle__input] "on" → input#c2d-width[ui-field__input] "30" → button#[ui-menu__item] "Expert 30 × 16 · 99 mines" → button#[ui-menu__item] "Intermediate 16 × 16 · 40 mine" → button#[ui-menu__item] "Beginner 9 × 9 · 10 mines" → button#[ui-menu__item] "Beginner 9 × 9 · 10 mines" → button#[ui-menu__item] "Beginner 9 × 9 · 10 mines"
+from Expert RIGHT: button#[ui-menu__item] "Expert 30 × 16 · 99 mines" → button#[ui-menu__item] "Expert 30 × 16 · 99 mines" → button#[ui-menu__item] "Expert 30 × 16 · 99 mines"
+from Start DOWN: input#c2d-mines[ui-field__input] "99" → button#c2d-choice-back[ui-button] "Back"
+from Mines DOWN: button#c2d-choice-back[ui-button] "Back" → button#c2d-choice-back[ui-button] "Back"
+from Width LEFT/DOWN: input#c2d-noguess[ui-toggle__input] "on" → button#c2d-choice-back[ui-button] "Back"
+settings DOWN walk: input#set-invertY[ui-toggle__input] "on" → input#set-volume[ui-slider__input] "70" → input#set-muted[ui-toggle__input] "on" → button#settings-back[ui-button] "Back" → button#settings-back[ui-button] "Back" → button#settings-back[ui-button] "Back" → button#settings-back[ui-button] "Back" → button#settings-back[ui-button] "Back"
+settings RIGHT walk: input#set-lookSensitivity[ui-slider__input] "1.05" → input#set-lookSensitivity[ui-slider__input] "1.1" → input#set-lookSensitivity[ui-slider__input] "1.15" → input#set-lookSensitivity[ui-slider__input] "1.2" → input#set-lookSensitivity[ui-slider__input] "1.25"
+from Theme DOWN: button#[ui-segmented__option] "Fast" → input#set-volume[ui-slider__input] "70" → input#set-muted[ui-toggle__input] "on"
+mode results
+records focus button#[ui-segmented__option] "2 × 1 · 1 mine"
+records DOWN walk: button#[ui-button] "Watch" → input#records-pinned-first[ui-toggle__input] "on" → button#records-back[ui-button] "Back" → button#records-back[ui-button] "Back" → button#records-back[ui-button] "Back" → button#records-back[ui-button] "Back" → button#records-back[ui-button] "Back" → button#records-back[ui-button] "Back"
+from Pinned first RIGHT: button#records-back[ui-button] "Back" → button#[ui-button] "Watch" → button#[ui-button] "Unpin"
+from picker RIGHT: button#[ui-segmented__option] "Beginner · no-guess" → button#[ui-segmented__option] "Intermediate"
+then DOWN: button#[ui-button] "Watch" → input#records-pinned-first[ui-toggle__input] "on" → button#records-back[ui-button] "Back"
+shot g3-01-records-walk
+B → results
+results? classic-2d body#[pad-nav] "TIME 000 MINES 1 BOARD 2 × 1 P"
+results RIGHT walk: body#[pad-nav] "TIME 000 MINES 1 BOARD 2 × 1 P" → body#[pad-nav] "TIME 000 MINES 1 BOARD 2 × 1 P" → body#[pad-nav] "TIME 000 MINES 1 BOARD 2 × 1 P" → body#[pad-nav] "TIME 000 MINES 1 BOARD 2 × 1 P"
+results DOWN walk: body#[pad-nav] "TIME 000 MINES 1 BOARD 2 × 1 P" → body#[pad-nav] "TIME 000 MINES 1 BOARD 2 × 1 P"
+replay results button#r-again[ui-button] "Play again"
+START → play btn Play
+RT → speed 1×
+replay walk RIGHT: button#r-watch[ui-button] "Watch replay" → button#r-records[ui-button] "Records" → button#r-records[ui-button] "Records" → button#r-records[ui-button] "Records" → button#r-records[ui-button] "Records"
+replay DOWN: button#r-menu[ui-button] "Back to menu" → button#r-menu[ui-button] "Back to menu"
+B → menu
+B → menu
+ready ready
+held A across ready→playing: mode playing cam y 12 → 12 (moved up while held? false )
+after RT reveal {"s":0,"hud":["000","10"]}
+game view keys/target X,Y,Z,n,idx,coords,number,pressed,flagged,unlinked,phase,state,explodedIdx,minesLeft,version,dirty,consumeDirty
+shot g3-02-3d-after-reveal
+LT+RT chord on nothing: hud ["010","10"]
+Y held chips [ 'Ctrl: show hidden' ]
+RB held chips [ 'Space: see through revealed' ]
+paused paused
+X in pause → help visible true
+confirm? true button#p-confirm-no[ui-button] "Cancel"
+B on confirm → paused confirm? false button#p-resume[ui-button] "Resume"
+errors []

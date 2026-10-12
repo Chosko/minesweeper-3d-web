@@ -1,0 +1,46 @@
+mode after Enter Enter classic-2d started false focus body# "Classic 2D
+      
+  "
+after Space: started true focus body# "Classic 2D
+      
+  "
+after Enter: started true
+mode menu
+3D choice focus button#6,6,6,10 "Beginner6 × 6 × 6 · "
+ArrowDown -> button#6,6,6,10 "Beginner6 × 6 × 6 · "
+ArrowRight -> button#6,6,6,10 "Beginner6 × 6 × 6 · "
+Tab -> button#8,8,8,40 "Intermediate8 × 8 × "
+Tab -> button#12,12,8,130 "Expert12 × 12 × 8 · "
+Tab -> input#bc-noguess "on"
+Tab -> input#c-x "10"
+Tab -> input#c-y "10"
+Tab -> input#c-z "10"
+Tab -> input#c-m "25"
+Tab -> button#c-random "Random"
+Tab -> button#c-start "Start"
+Tab -> input#c-noguess "on"
+Tab -> button#board-choice-back "Back"
+Enter on cube Beginner -> mode ready focus button#ready-btn "Click to play
+      "
+Enter on ready card -> mode playing lock true
+after Esc paused
+mode menu confirm? false
+mode menu
+settings focus input#set-lookSensitivity "1"
+Tab -> input#set-invertY "on"
+Tab -> input#set-fullscreen "on"
+Tab -> button# "Auto"
+Tab -> button# "Light"
+ArrowRight -> button# "Dark"
+ArrowDown -> button# "Light"
+settings scrollable? { sh: 1474, ch: 1474, docSh: 800, inner: 800 }
+Esc from settings -> menu
+records focus button# "Beginner"
+ArrowRight -> button# "Beginner · no-guess"
+ArrowDown -> button# "Intermediate"
+Tab -> input#records-pinned-first "on"
+Tab -> button#records-back "Back"
+Tab -> body# "Classic 2D
+      
+  "
+Esc from records -> menu

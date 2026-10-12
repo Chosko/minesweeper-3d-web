@@ -1,0 +1,26 @@
+import { launch, openPage, mode, shot, setSeed, centres2D, mines2D, analyse, nfPlan, sleep, fastPlay } from './lib.mjs';
+const W = 30, H = 16, M = 99;
+const context = await launch({ fresh: true });
+const page = await openPage(context);
+await page.click('#menu-entry-classic-2d');
+if (await page.isChecked('#c2d-noguess')) await page.click('#c2d-noguess');
+await page.click('#c2d-choice [data-size="expert"]');
+await setSeed(page, 12345);
+const centres = await centres2D(page, W, H);
+const fc = 7 * W + 15;
+const gen = mines2D({ width: W, height: H, mines: M, firstClick: fc, noGuess: false, seed: 12345 });
+const a = analyse({ width: W, height: H, mines: gen.mines });
+await page.mouse.click(centres[fc].x, centres[fc].y);
+await page.waitForFunction(() => globalThis.__ms.modes.state.started);
+const sum = () => page.evaluate(() => { const s = globalThis.__ms.modes.summary?.(); return s && { solved: s.bbbvSolved, bbbv: s.bbbv, clicks: s.clicks }; });
+console.log('after first click', JSON.stringify(await sum()));
+const plan = nfPlan(a, fc);
+const done = await fastPlay(page, centres, plan.slice(0, 5).map((c) => ({ c, kind: 'left' })), { delayMs: 100 });
+console.log('after 5 fast', done, JSON.stringify(await sum()));
+await shot(page, '00-debug-a');
+const done2 = await fastPlay(page, centres, plan.slice(5).map((c) => ({ c, kind: 'left' })), { delayMs: 40 });
+console.log('after rest fast', done2, JSON.stringify(await sum()), 'mode', await mode(page));
+await shot(page, '00-debug-b');
+// which safe cells are still closed? Use the summary: compare with my analysis by probing the canvas? Instead: list plan cells and the game's own view is not reachable; try clicking the remaining with Playwright
+console.log('errors', page.errors);
+await context.close();

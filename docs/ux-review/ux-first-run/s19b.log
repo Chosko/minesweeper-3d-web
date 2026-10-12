@@ -1,0 +1,15 @@
+mode results
+Play again -> mode classic-2d hud TIME 000 MINES 0 BOARD 1 × 1 Pause
+Esc (unstarted 2D) -> mode paused
+Main menu unstarted asks? false mode menu
+choice focus c2d-start fields [ '1', '1', '0' ]
+mode results
+Play again (beginner) -> mode classic-2d hud TIME 000 MINES 10 BOARD 9 × 9 Pause
+menu badges [
+  [ 'menu-entry-classic-2d', 'block' ],
+  [ 'menu-entry-3d', 'none' ],
+  [ 'menu-entry-records', 'none' ],
+  [ 'menu-entry-settings', 'none' ],
+  [ 'menu-help', 'none' ],
+  [ 'menu-sound', 'none' ]
+]

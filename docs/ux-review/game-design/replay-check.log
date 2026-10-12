@@ -1,0 +1,6 @@
+results: Game over | Cube Beginner · no-guess | TIME | 2.0 s | 3BV | 19 | 3BV SOLVED | 1 | 3BV/S | 0.48 | EFFICIENCY | 25% | Play again | Watch replay | Records | Back to menu
+mode: replay
+replay screen text: TIME | 000 | MINES | 10 | 3BV | 1 / 19 | 3BV/S | — | Back | Previous | Play | Next | 0.5× | 1× | 2× | 4× | Position | 000 / 002
+replay end text: TIME | 002 | MINES | 8 | 3BV | 1 / 19 | 3BV/S | 0.48 | Back | Lost · 2.0 s | Previous | Play | Next | 0.5× | 1× | 2× | 4× | Position | 002 / 002
+back to: results
+after Play again (3D): playing ready visible: false

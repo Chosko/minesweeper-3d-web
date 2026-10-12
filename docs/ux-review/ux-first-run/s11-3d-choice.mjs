@@ -1,0 +1,13 @@
+import { launch, shot, mode, visText } from './lib.mjs';
+const { browser, page } = await launch();
+await page.click('#menu-entry-3d'); await page.waitForTimeout(500);
+console.log('mode', await mode(page));
+console.log('innerText:\n' + await page.evaluate(() => document.getElementById('board-choice').innerText));
+console.log('controls', JSON.stringify(await visText(page, '#board-choice'), null, 1));
+console.log('focused', await page.evaluate(() => document.activeElement?.id || document.activeElement?.dataset?.preset));
+await shot(page, '30-3d-choice');
+const ids = await page.evaluate(() => [...document.querySelectorAll('#board-choice input, #board-choice button')].map(e => [e.tagName, e.id, e.type, e.dataset.preset || '', e.textContent.trim().slice(0,30)]));
+console.log(ids);
+const f = await page.evaluate(() => ({ x: document.querySelector('#board-choice input[data-field="x"], #bc-x, #custom-x')?.id }));
+console.log(f);
+await browser.close();

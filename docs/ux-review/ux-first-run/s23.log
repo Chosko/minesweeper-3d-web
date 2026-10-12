@@ -1,0 +1,49 @@
+lock denied: mode ready lock false
+body:
+TIME
+000
+MINES
+10
+BOARD
+6 × 6 × 6
+Pause
+H help
+M sound on
+F fullscreen
+Esc menu
+Click to play
+6 × 6 × 6 · 10 mines
+Could not capture the mouse. Click once more.
+Left reveal · Right flag · Left+Right chord
+Shift/Space/Ctrl view modes · Wheel spacing
+Mouse look · WASD fly · Q/E down/up · Esc pause
+Tip: press F for fullscreen — keeps Ctrl+W from closing the tab
+Back
+second click: mode ready
+PAGEERROR THREE.WebGLRenderer: Error creating WebGL context.
+no webgl: has __ms false
+body:
+3
+Minesweeper 3D
+
+Fly through a cube of cubes. Every cell has up to 26 neighbours.
+
+Classic 2D
+The classic game on a flat board
+3D
+Fly through a cube of cubes
+Records
+Your best times and stats
+Settings
+Controls, graphics, theme and audio
+Controls
+Sound: on
+Volume
+70%
+
+Web port of the 2011 XNA game Minesweeper 3D by Chosko
+
+Cannot start Minesweeper 3D
+
+This game needs WebGL 2. Please try an up-to-date browser, or enable hardware acceleration.
+2D not reachable: page.click: Timeout 5000ms exceeded.

@@ -1,0 +1,23 @@
+custom info: 125 cells · up to 124 mines | reason:  | custom noguess disabled? false
+side 2 reason: No-guess isn't available when a side is 2 cells disabled true
+27000 cells reason: No-guess is available up to 8,000 cells disabled true info 27,000 cells · up to 26,999 mines
+5x5x5/90 reason:  checked true
+mode: ready ready: 5 × 5 × 5 · 90 mines
+3D dense no-guess: generating shown after ms 224 failure after ms 5545
+3D failure card: No board found | No no-guess board was found for this first click. Try again, or play a standard board of the same size. | Retry | Play a standard board
+after standard: started? { mode: '3d', started: true, finished: false, canPause: true } status hidden true
+2D custom info: Mines must be a whole number from 0 to 31 on a 9 × 9 board.
+2D mode: classic-2d-choice
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+locator.boundingBox: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('#c2d-board canvas')[22m
+
+    at /tmp/claude-0/-home-user-minesweeper-3d-web/9dfa886f-25e5-5ab6-b45a-705c23db85f6/scratchpad/game-design/failure-offer.mjs:54:53 {
+  name: 'TimeoutError'
+}
+
+Node.js v22.22.0

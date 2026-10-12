@@ -1,0 +1,26 @@
+import { launch, shot, mode } from './lib.mjs';
+const { browser, page } = await launch();
+await page.evaluate(() => globalThis.__ms.settings.set('theme', 'dark')); await page.waitForTimeout(400);
+await page.click('#menu-entry-classic-2d'); await page.waitForTimeout(300);
+await shot(page, '83-c2d-choice-dark');
+await page.click('#c2d-choice [data-size="expert"]'); await page.waitForTimeout(800);
+await shot(page, '82-c2d-expert-dark');
+await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+await shot(page, '82-c2d-paused-dark');
+await page.click('#p-menu'); await page.waitForTimeout(300);
+if (!(await page.evaluate(() => document.getElementById('pause-confirm').classList.contains('hidden')))) await page.click('#p-confirm-yes');
+await page.waitForTimeout(300);
+await page.click('#menu-entry-3d'); await page.waitForTimeout(300);
+await shot(page, '83-3d-choice-dark');
+await page.click('#board-choice [data-preset="6,6,6,10"]'); await page.waitForTimeout(800);
+await shot(page, '84-3d-ready-dark');
+await page.mouse.click(640, 400); await page.waitForTimeout(500);
+await page.evaluate(() => { globalThis.__ms.aimAt([2,2,0]); globalThis.__ms.click('left'); }); await page.waitForTimeout(1200);
+await shot(page, '84-3d-playing-dark');
+for (const vp of [{width:1920,height:1080},{width:1024,height:768}]) { await page.setViewportSize(vp); await page.waitForTimeout(1000); await shot(page, `85-3d-playing-${vp.width}`); }
+await page.setViewportSize({width:1280,height:800}); await page.waitForTimeout(500);
+await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+await shot(page, '86-3d-paused-dark');
+await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+console.log('Esc on pause resumes? mode', await mode(page));
+await browser.close();

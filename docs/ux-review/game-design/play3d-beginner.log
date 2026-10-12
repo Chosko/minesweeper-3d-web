@@ -1,0 +1,82 @@
+mode after 3D: board-choice
+noguess default (presets): false
+noguess default (custom): false
+custom defaults: 10,10,10,25 1,000 cells · up to 999 mines
+mode after preset: ready
+ready text: Click to play
+6 × 6 × 6 · 10 mines
+Left reveal · Right flag · Left+Right chord
+Shift/Space/Ctrl view modes · Wheel spacing
+Mouse look · WASD fly · Q/E down/up · Esc pause
+Tip: press F for fullscreen — keeps Ctrl+W from closing the tab
+Back
+mode playing: playing {
+  mode: 'playing',
+  selected: 33,
+  time: 0,
+  started: false,
+  spacing: 1.1,
+  gameState: 'playing',
+  minesLeft: 10,
+  hud: [ '000', '10' ],
+  cam: { x: 2, y: 12, z: -46, yaw: 3.141592653589793, pitch: 0 },
+  stats: { opaque: 216, trans: 0, sortMs: 0 },
+  fps: 2.6085822355549797
+}
+aimed at 27
+first reveal applied in ms 46
+after first click: {
+  n: 216,
+  X: 6,
+  Y: 6,
+  Z: 6,
+  revealed: 1,
+  visible: 1,
+  visibleNumbers: 1,
+  hidden: 0,
+  flags: 0,
+  max: 1,
+  hist: { '1': 1 },
+  phase: 'playing',
+  minesLeft: 10
+} {
+  mode: 'playing',
+  selected: 27,
+  time: 0.617,
+  started: true,
+  spacing: 1.1,
+  gameState: 'playing',
+  minesLeft: 10,
+  hud: [ '000', '10' ],
+  cam: {
+    x: 2,
+    y: 12,
+    z: -46,
+    yaw: 3.1380838960592548,
+    pitch: 0.17026414829784317
+  },
+  stats: { opaque: 216, trans: 0, sortMs: 0 },
+  fps: 43.127695480967624
+}
+spacing after wheel +10: 1.5
+right-click on revealed number: null {
+  n: 216,
+  X: 6,
+  Y: 6,
+  Z: 6,
+  revealed: 1,
+  visible: 1,
+  visibleNumbers: 1,
+  hidden: 0,
+  flags: 0,
+  max: 1,
+  hist: { '1': 1 },
+  phase: 'playing',
+  minesLeft: 10
+}
+mode after Esc: paused Paused | Time 26.34 s · 10 mines left | Resume | Restart | Main menu | Mouse | Look | WASD QE | Fly | Left / Right | Reveal / Flag | Left + Right | Chord | Wheel | Spacing | Shift | Neighbours only | Space | Aim through numbers | Ctrl | Show hidden | SETTINGS | Look sensitivity | 1.00× | Invert look Y | Volume | 70% | Sound: on
+mode after resume: playing
+mine aimed: 187
+results shown after ms: 5955
+results text: Game over | Cube Beginner | TIME | 26.6 s | 3BV | 29 | 3BV SOLVED | 0 | 3BV/S | 0.00 | EFFICIENCY | 0% | Play again | Watch replay | Records | Back to menu
+after Play again mode: playing ms 454

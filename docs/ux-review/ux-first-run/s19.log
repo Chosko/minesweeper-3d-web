@@ -1,0 +1,119 @@
+1x1 mode classic-2d hud TIME 000 MINES 0 BOARD 1 × 1 Pause
+after click mode results
+body:
+TIME
+000
+MINES
+0
+BOARD
+1 × 1
+Pause
+You won!
+
+1 × 1 · 0 mines
+
+TIME
+0.0 s
+3BV
+1
+3BV/S
+1000.00
+EFFICIENCY
+100%
+YOUR BESTS ON THIS BOARD
+BEST TIME
+—
+New best
+BEST 3BV/S
+—
+New best
+BEST EFFICIENCY
+—
+New best
+Play again
+Watch replay
+Records
+Back to menu
+records body:
+Records
+2D
+3D
+Beginner
+Beginner · no-guess
+Intermediate
+Intermediate · no-guess
+Expert
+Expert · no-guess
+1 × 1 · 0 mines
+1 × 1 · 0 MINES
+BEST TIME
+0.0 s
+11 Oct 2026
+Watch
+BEST 3BV/S
+1000.00
+11 Oct 2026
+Watch
+BEST EFFICIENCY
+100%
+11 Oct 2026
+Watch
+GAMES
+1
+WINS
+1
+WIN RATE
+100%
+CURRENT STREAK
+1
+LONGEST STREAK
+1
+HISTORY
+Games 1–1 of 1
+Outcome	Time	3BV/s	Efficiency	Replay
+Won	0.0 s	1000.00	100%	Watch
+Newer
+Older
+REPLAYS
+Pinned first
+Date	Outcome	Time	3BV/s	Efficiency	Pin	Actions
+11 Oct 2026	Won	0.0 s	1000.00	100%	Pinned · best	WatchUnpin
+CLASSIC 2D OVERALL
+GAMES
+1
+WINS
+1
+WIN RATE
+100%
+CURRENT STREAK
+1
+LONGEST STREAK
+1
+Back
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+page.click: Timeout 120000ms exceeded.
+Call log:
+[2m  - waiting for locator('#menu-entry-classic-2d')[22m
+[2m    - locator resolved to <button data-last="" type="button" class="ui-menu__item" data-entry="classic-2d" id="menu-entry-classic-2d">…</button>[22m
+[2m  - attempting click action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not visible[22m
+[2m    - retrying click action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not visible[22m
+[2m    - retrying click action[22m
+[2m      - waiting 100ms[22m
+[2m    176 × waiting for element to be visible, enabled and stable[22m
+[2m        - element is not visible[22m
+[2m      - retrying click action[22m
+[2m        - waiting 500ms[22m
+
+    at /tmp/claude-0/-home-user-minesweeper-3d-web/9dfa886f-25e5-5ab6-b45a-705c23db85f6/scratchpad/ux-first-run/s19-2d-win.mjs:20:12 {
+  name: 'TimeoutError'
+}
+
+Node.js v22.22.0

@@ -1,0 +1,30 @@
+2x2x2 info 8 cells · up to 7 mines
+mode ready
+attempt 0 -> playing
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+page.click: Timeout 120000ms exceeded.
+Call log:
+[2m  - waiting for locator('#r-again')[22m
+[2m    - locator resolved to <button id="r-again" type="button" class="ui-button ui-button--primary">Play again</button>[22m
+[2m  - attempting click action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not visible[22m
+[2m    - retrying click action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not visible[22m
+[2m    - retrying click action[22m
+[2m      - waiting 100ms[22m
+[2m    69 × waiting for element to be visible, enabled and stable[22m
+[2m       - element is not visible[22m
+[2m     - retrying click action[22m
+[2m       - waiting 500ms[22m
+
+    at /tmp/claude-0/-home-user-minesweeper-3d-web/9dfa886f-25e5-5ab6-b45a-705c23db85f6/scratchpad/ux-first-run/s20-3d-win.mjs:24:14 {
+  name: 'TimeoutError'
+}
+
+Node.js v22.22.0

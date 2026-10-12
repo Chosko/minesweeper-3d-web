@@ -1,0 +1,95 @@
+3D choice board-choice focus button#[ui-menu__item] "Beginner
+6 × 6 × 6 · 10 mines"
+shot k3-01-board-choice
+TAB 3D choice:
+ button#[ui-menu__item] "Intermediate
+8 × 8 × 8 · 40 mi"
+ button#[ui-menu__item] "Expert
+12 × 12 × 8 · 130 mines"
+ input#bc-noguess[ui-toggle__input] "on"
+ input#c-x[ui-field__input] "10"
+ input#c-y[ui-field__input] "10"
+ input#c-z[ui-field__input] "10"
+ input#c-m[ui-field__input] "25"
+ button#c-random[ui-button] "Random"
+ button#c-start[ui-button] "Start"
+ input#c-noguess[ui-toggle__input] "on"
+ button#board-choice-back[ui-button] "Back"
+ body#[] "3D
+CUBE
+Beginner
+6 × 6 × 6 · 1"
+ button#[ui-menu__item] "Beginner
+6 × 6 × 6 · 10 mines"
+ button#[ui-menu__item] "Intermediate
+8 × 8 × 8 · 40 mi"
+after ArrowDown on preset button#[ui-menu__item] "Beginner
+6 × 6 × 6 · 10 mines"
+after Enter on Beginner ready focus button#ready-btn[ready-card] "Click to play
+6 × 6 × 6 · 10 m"
+shot k3-02-ready
+ready text Click to play | 6 × 6 × 6 · 10 mines | Left reveal · Right flag · Left+Right chord | Shift/Space/Ctrl view modes · Wheel spacing | Mouse look · WASD fly · Q/E down/up · Esc pause | Tip: press F for fullscreen — keeps Ctrl+W from closing the tab | Back
+TAB ready:
+ button#ready-back[link-btn] "Back"
+ body#[] "TIME
+000
+MINES
+10
+BOARD
+6 × 6 "
+ button#hud-pause[ui-button] "Pause"
+ button#ready-btn[ready-card] "Click to play
+6 × 6 × 6 · 10 m"
+after Enter on Click to play playing focus body#[] "TIME
+000
+MINES
+10
+BOARD
+6 × 6 " locked true msg 
+shot k3-03-after-enter
+shot k3-05-playing
+info {"mode":"playing","selected":33,"time":0,"started":false,"spacing":1.1,"gameState":"playing","minesLeft":10,"hud":["000","10"],"cam":{"x":2,"y":12,"z":-46,"yaw":3.141592653589793,"pitch":0},"stats":{"opaque":216,"trans":0,"sortMs":0},"fps":1.8181818181818181}
+selected before 33
+cam after W {"x":2.0000000000000027,"y":12,"z":-10.164999999999779,"yaw":3.141592653589793,"pitch":0} selected 33
+shot k3-06-after-w
+cam after ArrowLeft {"x":2.0000000000000027,"y":12,"z":-10.164999999999779,"yaw":3.141592653589793,"pitch":0}
+help visible true
+shot k3-07-help
+help text CONTROLS | Mouse | Look around | WASD | Fly forward / left / back / right | Q E | Move down / up | Left click | Reveal the aimed cube | Right click | Flag / unflag (on a number: flag or unflag all its closed neighbours) | Left + Right | Chord: reveal neighbours of a satisfied number | Wheel | Change spacing between cubes | Hold Shift | Fade everything except the aimed cube's neighbours | Hold Space | Aim through revealed numbers (they fade) | Hold Ctrl | Show hidden cells (empty and completed ones) | F / M | Fullscreen / sound on-off | Esc | Pause menu | Actions fire when the mouse button is released. H hides this panel.
+sound hud sound off toast 
+fullscreen el true toast 
+after Esc paused focus button#p-resume[ui-button] "Resume"
+shot k3-08-pause3d
+pause text Paused | Time 0.00 s · 10 mines left | Resume | Restart | Main menu | Mouse | Look | WASD QE | Fly | Left / Right | Reveal / Flag | Left + Right | Chord | Wheel | Spacing | Shift | Neighbours only | Space | Aim through numbers | Ctrl | Show hidden | SETTINGS | Look sensitivity | 1.00× | Invert look Y | Volume | 70% | Sound: on
+TAB pause:
+ button#p-restart[ui-button] "Restart"
+ button#p-menu[ui-button] "Main menu"
+ input#p-sens[ui-slider__input] "1"
+ input#p-invert[ui-toggle__input] "on"
+ input#p-vol[ui-slider__input] "70"
+ button#p-sound[ui-button] "Sound: on"
+ body#[] "TIME
+000
+MINES
+10
+BOARD
+6 × 6 "
+ button#hud-pause[ui-button] "Pause"
+ button#p-resume[ui-button] "Resume"
+after Resume playing focus body#[] "TIME
+000
+MINES
+10
+BOARD
+6 × 6 " locked true
+shot k3-09-after-resume
+Esc → paused
+Esc again → paused focus button#p-resume[ui-button] "Resume"
+aimed idx 33
+after mousedown, revealed? {"mode":"playing","selected":33,"time":0,"started":false,"spacing":1.1,"gameState":"playing","minesLeft":10,"hud":["000","10"],"cam":{"x":2.0000000000000027,"y":12,"z":-10.164999999999779,"yaw":-1.5066536695348047,"pitch":1.0554627304827437},"stats":{"opaque":216,"trans":0,"sortMs":0},"fps":59.99999999999997}
+after mouseup {"mode":"playing","selected":-1,"time":1.454,"started":true,"spacing":1.1,"gameState":"playing","minesLeft":10,"hud":["001","10"],"cam":{"x":2.0000000000000027,"y":12,"z":-10.164999999999779,"yaw":-1.5066536695348047,"pitch":1.0554627304827437},"stats":{"opaque":110,"trans":0,"sortMs":0},"fps":59.99612928198042}
+shot k3-10-after-reveal
+confirm shown true focus button#p-confirm-no[ui-button] "Cancel"
+shot k3-11-confirm
+after Esc on confirm paused confirm shown false focus button#p-resume[ui-button] "Resume"
+errors []

@@ -1,0 +1,26 @@
+cursor on board auto
+left pressed (not released) { t: '000', m: '10', started: false, mode: 'classic-2d' }
+shot m-01-pressed
+released off-board { t: '000', m: '10', started: false, mode: 'classic-2d' }
+press at (4,4), release at (5,4) { t: '000', m: '10', started: false, mode: 'classic-2d' }
+shot m-02-after-first
+right pressed (flag on press?) { t: '000', m: '10', started: true, mode: 'classic-2d' }
+context menus not prevented so far: 0
+right click again (unflag) { t: '000', m: '10', started: true, mode: 'classic-2d' }
+middle click { t: '001', m: '10', started: true, mode: 'classic-2d' }
+dblclick { t: '001', m: '10', started: true, mode: 'classic-2d' }
+shot m-03-chord-pressed
+chord { t: '002', m: '10', started: true, mode: 'classic-2d' }
+context menu outside board count 0
+scrollY after wheel 0
+shot m-04-after-mouse
+pause cursor on overlay pointer
+60x60 layout { w: 1248, h: 688, tile: 21, x: 16, y: 96 }
+shot m-05-60x60
+after wheel 500 { x: 16, y: 96 } pageScrollY 0
+after shift+wheel { x: 16, y: 96 }
+after plain drag { x: 16, y: 96 } { t: '000', m: '10', started: true, mode: 'classic-2d' }
+after shift-drag { x: 16, y: 96 } cursor auto
+shot m-06-60x60-scrolled
+shot m-07-60x60-cursor-scrolled
+errors []

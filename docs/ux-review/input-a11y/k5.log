@@ -1,0 +1,4 @@
+light modal card opacity over time 0ms:0 402ms:1 834ms:1 1246ms:1 1654ms:1 2056ms:1 2461ms:1 2874ms:1 3289ms:1 3693ms:1 4107ms:1 4628ms:1 classes overlay modal card transition all modal transition all
+shot k5-modal-light-5s
+dark modal card opacity over time 0ms:0 420ms:0 873ms:0 1276ms:1 1680ms:1 2083ms:1 2485ms:1 2889ms:1 3360ms:1 3768ms:1 4180ms:1 4582ms:1 classes overlay modal card transition all modal transition all
+shot k5-modal-dark-5s

@@ -1,0 +1,60 @@
+
+=== Cube Beginner 6x6x6/10 — STANDARD
+  anti-chord (P-21)    revealed mean 48 % (median 0 %), solved 35 %, spam efficiency median 68 % (3BV median 24), flags per auto-flag click mean 1.07 (median 1, p90 1, max 4), share of auto-flag clicks placing 1 flag 94 %
+  only 2+ flags        revealed mean 45 % (median 0 %), solved 0 %, spam efficiency median 86 % (3BV median 24), flags per auto-flag click mean 2.07 (median 2, p90 2, max 3), share of auto-flag clicks placing 1 flag 0 %
+  only 3+ flags        revealed mean 43 % (median 0 %), solved 0 %, spam efficiency median 100 % (3BV median 24), flags per auto-flag click mean 3.20 (median 3, p90 4, max 4), share of auto-flag clicks placing 1 flag 0 %
+  only <= 3 closed     revealed mean 48 % (median 0 %), solved 35 %, spam efficiency median 68 % (3BV median 24), flags per auto-flag click mean 1.07 (median 1, p90 1, max 3), share of auto-flag clicks placing 1 flag 94 %
+
+=== Cube Beginner 6x6x6/10 — NO-GUESS
+  anti-chord (P-21)    revealed mean 98 % (median 100 %), solved 70 %, spam efficiency median 90 % (3BV median 23), flags per auto-flag click mean 1.06 (median 1, p90 1, max 4), share of auto-flag clicks placing 1 flag 95 %
+  only 2+ flags        revealed mean 90 % (median 93 %), solved 0 %, spam efficiency median 100 % (3BV median 23), flags per auto-flag click mean 2.08 (median 2, p90 2, max 3), share of auto-flag clicks placing 1 flag 0 %
+  only 3+ flags        revealed mean 87 % (median 88 %), solved 0 %, spam efficiency median 100 % (3BV median 23), flags per auto-flag click mean 3.11 (median 3, p90 4, max 4), share of auto-flag clicks placing 1 flag 0 %
+  only <= 3 closed     revealed mean 98 % (median 100 %), solved 70 %, spam efficiency median 90 % (3BV median 23), flags per auto-flag click mean 1.06 (median 1, p90 1, max 3), share of auto-flag clicks placing 1 flag 95 %
+
+=== Cube Beginner re-tune 6x6x6/16 — STANDARD
+  anti-chord (P-21)    revealed mean 22 % (median 1 %), solved 5 %, spam efficiency median 0 % (3BV median 52), flags per auto-flag click mean 1.09 (median 1, p90 1, max 4), share of auto-flag clicks placing 1 flag 92 %
+  only 2+ flags        revealed mean 19 % (median 1 %), solved 0 %, spam efficiency median 0 % (3BV median 52), flags per auto-flag click mean 2.16 (median 2, p90 3, max 4), share of auto-flag clicks placing 1 flag 0 %
+  only 3+ flags        revealed mean 18 % (median 1 %), solved 0 %, spam efficiency median 0 % (3BV median 52), flags per auto-flag click mean 3.40 (median 3, p90 5, max 5), share of auto-flag clicks placing 1 flag 0 %
+  only <= 3 closed     revealed mean 22 % (median 1 %), solved 5 %, spam efficiency median 0 % (3BV median 52), flags per auto-flag click mean 1.09 (median 1, p90 1, max 3), share of auto-flag clicks placing 1 flag 92 %
+
+=== Cube Beginner re-tune 6x6x6/16 — NO-GUESS
+  anti-chord (P-21)    revealed mean 76 % (median 86 %), solved 29 %, spam efficiency median 100 % (3BV median 47), flags per auto-flag click mean 1.11 (median 1, p90 2, max 4), share of auto-flag clicks placing 1 flag 90 %
+  only 2+ flags        revealed mean 65 % (median 71 %), solved 0 %, spam efficiency median 100 % (3BV median 47), flags per auto-flag click mean 2.13 (median 2, p90 3, max 4), share of auto-flag clicks placing 1 flag 0 %
+  only 3+ flags        revealed mean 62 % (median 66 %), solved 0 %, spam efficiency median 100 % (3BV median 47), flags per auto-flag click mean 3.11 (median 3, p90 3, max 5), share of auto-flag clicks placing 1 flag 0 %
+  only <= 3 closed     revealed mean 76 % (median 86 %), solved 29 %, spam efficiency median 100 % (3BV median 47), flags per auto-flag click mean 1.11 (median 1, p90 2, max 3), share of auto-flag clicks placing 1 flag 90 %
+
+=== Cube Intermediate 8x8x8/40 — STANDARD
+  anti-chord (P-21)    revealed mean 19 % (median 0 %), solved 9 %, spam efficiency median 0 % (3BV median 124), flags per auto-flag click mean 1.13 (median 1, p90 2, max 4), share of auto-flag clicks placing 1 flag 89 %
+  only 2+ flags        revealed mean 14 % (median 0 %), solved 0 %, spam efficiency median 0 % (3BV median 124), flags per auto-flag click mean 2.11 (median 2, p90 3, max 4), share of auto-flag clicks placing 1 flag 0 %
+  only 3+ flags        revealed mean 12 % (median 0 %), solved 0 %, spam efficiency median 0 % (3BV median 124), flags per auto-flag click mean 3.00 (median 3, p90 3, max 3), share of auto-flag clicks placing 1 flag 0 %
+  only <= 3 closed     revealed mean 19 % (median 0 %), solved 9 %, spam efficiency median 0 % (3BV median 124), flags per auto-flag click mean 1.12 (median 1, p90 2, max 3), share of auto-flag clicks placing 1 flag 89 %
+
+=== Cube Intermediate 8x8x8/40 — NO-GUESS
+  anti-chord (P-21)    revealed mean 77 % (median 99 %), solved 47 %, spam efficiency median 107 % (3BV median 121), flags per auto-flag click mean 1.11 (median 1, p90 2, max 4), share of auto-flag clicks placing 1 flag 90 %
+  only 2+ flags        revealed mean 55 % (median 62 %), solved 0 %, spam efficiency median 100 % (3BV median 121), flags per auto-flag click mean 2.09 (median 2, p90 2, max 4), share of auto-flag clicks placing 1 flag 0 %
+  only 3+ flags        revealed mean 49 % (median 54 %), solved 0 %, spam efficiency median 100 % (3BV median 121), flags per auto-flag click mean 3.13 (median 3, p90 4, max 4), share of auto-flag clicks placing 1 flag 0 %
+  only <= 3 closed     revealed mean 77 % (median 99 %), solved 47 %, spam efficiency median 107 % (3BV median 121), flags per auto-flag click mean 1.11 (median 1, p90 2, max 3), share of auto-flag clicks placing 1 flag 90 %
+
+=== Cube re-tune 10x10x10/100 — STANDARD
+  anti-chord (P-21)    revealed mean 9 % (median 0 %), solved 3 %, spam efficiency median 100 % (3BV median 369), flags per auto-flag click mean 1.14 (median 1, p90 2, max 3), share of auto-flag clicks placing 1 flag 87 %
+  only 2+ flags        revealed mean 4 % (median 0 %), solved 0 %, spam efficiency median 100 % (3BV median 369), flags per auto-flag click mean 2.08 (median 2, p90 2, max 3), share of auto-flag clicks placing 1 flag 0 %
+  only 3+ flags        revealed mean 4 % (median 0 %), solved 0 %, spam efficiency median 100 % (3BV median 369), flags per auto-flag click mean 3.00 (median 3, p90 3, max 3), share of auto-flag clicks placing 1 flag 0 %
+  only <= 3 closed     revealed mean 9 % (median 0 %), solved 3 %, spam efficiency median 100 % (3BV median 369), flags per auto-flag click mean 1.14 (median 1, p90 2, max 3), share of auto-flag clicks placing 1 flag 87 %
+
+=== Cube re-tune 10x10x10/100 — NO-GUESS
+  anti-chord (P-21)    revealed mean 52 % (median 46 %), solved 26 %, spam efficiency median 117 % (3BV median 348), flags per auto-flag click mean 1.13 (median 1, p90 2, max 5), share of auto-flag clicks placing 1 flag 88 %
+  only 2+ flags        revealed mean 24 % (median 21 %), solved 0 %, spam efficiency median 100 % (3BV median 348), flags per auto-flag click mean 2.15 (median 2, p90 3, max 4), share of auto-flag clicks placing 1 flag 0 %
+  only 3+ flags        revealed mean 21 % (median 18 %), solved 0 %, spam efficiency median 100 % (3BV median 348), flags per auto-flag click mean 3.12 (median 3, p90 4, max 4), share of auto-flag clicks placing 1 flag 0 %
+  only <= 3 closed     revealed mean 52 % (median 46 %), solved 26 %, spam efficiency median 117 % (3BV median 348), flags per auto-flag click mean 1.13 (median 1, p90 2, max 3), share of auto-flag clicks placing 1 flag 88 %
+
+=== Cube Expert 12x12x8/130 — STANDARD
+  anti-chord (P-21)    revealed mean 4 % (median 0 %), solved 0 %, spam efficiency median 100 % (3BV median 502), flags per auto-flag click mean 1.14 (median 1, p90 2, max 5), share of auto-flag clicks placing 1 flag 88 %
+  only 2+ flags        revealed mean 2 % (median 0 %), solved 0 %, spam efficiency median 100 % (3BV median 502), flags per auto-flag click mean 2.00 (median 2, p90 2, max 2), share of auto-flag clicks placing 1 flag 0 %
+  only 3+ flags        revealed mean 2 % (median 0 %), solved 0 %, spam efficiency median 100 % (3BV median 502), flags per auto-flag click mean NaN (median NaN, p90 NaN, max -Infinity), share of auto-flag clicks placing 1 flag NaN %
+  only <= 3 closed     revealed mean 4 % (median 0 %), solved 0 %, spam efficiency median 100 % (3BV median 502), flags per auto-flag click mean 1.14 (median 1, p90 2, max 3), share of auto-flag clicks placing 1 flag 88 %
+
+=== Cube Expert 12x12x8/130 — NO-GUESS
+  anti-chord (P-21)    revealed mean 34 % (median 16 %), solved 6 %, spam efficiency median 100 % (3BV median 481), flags per auto-flag click mean 1.15 (median 1, p90 2, max 6), share of auto-flag clicks placing 1 flag 88 %
+  only 2+ flags        revealed mean 16 % (median 14 %), solved 0 %, spam efficiency median 100 % (3BV median 481), flags per auto-flag click mean 2.20 (median 2, p90 3, max 5), share of auto-flag clicks placing 1 flag 0 %
+  only 3+ flags        revealed mean 15 % (median 12 %), solved 0 %, spam efficiency median 100 % (3BV median 481), flags per auto-flag click mean 3.19 (median 3, p90 4, max 5), share of auto-flag clicks placing 1 flag 0 %
+  only <= 3 closed     revealed mean 34 % (median 16 %), solved 6 %, spam efficiency median 100 % (3BV median 481), flags per auto-flag click mean 1.14 (median 1, p90 2, max 3), share of auto-flag clicks placing 1 flag 88 %

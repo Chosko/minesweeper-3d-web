@@ -1,0 +1,12 @@
+1024x768 menu small fonts {"13px":["The classic game on a fla","Fly through a cube of cub","Your best times and stats","Controls, graphics, theme"]}
+c2d choice small fonts {"13px":["9 × 9 · 10 mines","16 × 16 · 40 mines","30 × 16 · 99 mines","CUSTOM","Width","Width","Height","Height","Mines","Mines"]}
+2D board small fonts {"11px":["TIME","MINES","BOARD"]}
+pause small fonts {"11px":["TIME","MINES","BOARD"],"13px":["Mouse","Look","Fly","Left / Right","Reveal / Flag","Left + Right","Chord","Wheel","Spacing","Shift","Neighbours only","Space","Aim through numbers","Ctrl","Show hidden","SETTINGS"],"10px":["W","A","S","D","Q","E","Shift","Space","Ctrl"]}
+zoom200 menu {"docScrollH":400,"clientH":400,"cardH":536,"overlayScroll":{"sh":568,"ch":400,"oy":"auto"}}
+zoom200 c2d choice {"docScrollH":400,"clientH":400,"cardH":575,"overlayScroll":{"sh":607,"ch":400,"oy":"auto"}}
+zoom200 expert board { w: 608, h: 288, tile: 20 }
+zoom200 pause {"docScrollH":400,"clientH":400,"cardH":805,"overlayScroll":{"sh":837,"ch":400,"oy":"auto"}}
+zoom200 records {"docScrollH":400,"clientH":400,"cardH":637,"overlayScroll":{"sh":669,"ch":400,"oy":"auto"}}
+zoom200 settings {"docScrollH":400,"clientH":400,"cardH":1579,"overlayScroll":{"sh":1611,"ch":400,"oy":"auto"}}
+reduced motion matches true forced true
+theme light

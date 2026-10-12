@@ -1,0 +1,27 @@
+2D classic-2d
+after A 001
+shot g4-01-2d-revealed
+shot g4-02-2d-lt-rt-held
+after LT+RT: mines 10
+shot g4-03-2d-y-held
+shot g4-04-2d-a-held
+confirm focus button#p-confirm-no[ui-button] "Cancel"
+→ menu button#menu-entry-classic-2d[ui-menu__item] "Classic 2D The classic game on"
+results results button#r-again[ui-button] "Play again"
+RIGHT → button#r-watch[ui-button] "Watch replay"
+replay replay focus button#rp-play[ui-button] "Play"
+replay initial { play: 'Play', pos: '000 / 000', speed: '1×', end: '' }
+START → { play: 'Play', pos: '000 / 000', speed: '1×', end: 'Won · 0.0 s' }
+Y → { play: 'Play', pos: '000 / 000', speed: '1×', end: 'Won · 0.0 s' }
+RT → { play: 'Play', pos: '000 / 000', speed: '2×', end: 'Won · 0.0 s' }
+RT → { play: 'Play', pos: '000 / 000', speed: '4×', end: 'Won · 0.0 s' }
+LT → { play: 'Play', pos: '000 / 000', speed: '2×', end: 'Won · 0.0 s' }
+RB → { play: 'Play', pos: '000 / 000', speed: '2×', end: 'Won · 0.0 s' }
+LB → { play: 'Play', pos: '000 / 000', speed: '2×', end: '' }
+replay DOWN walk: input#rp-seek[ui-slider__input] "0" → input#rp-seek[ui-slider__input] "0"
+replay RIGHT walk: input#rp-seek[ui-slider__input] "100" → input#rp-seek[ui-slider__input] "100" → input#rp-seek[ui-slider__input] "100"
+shot g4-05-replay-pad
+B → results button#r-again[ui-button] "Play again"
+3D playing playing hud tools text H help | M sound on | F fullscreen | Esc menu hint-h H controls × hint visible true
+pause dl Mouse | Look | WASD QE | Fly | Left / Right | Reveal / Flag | Left + Right | Chord | Wheel | Spacing | Shift | Neighbours only | Space | Aim through numbers | Ctrl | Show hidden
+errors []

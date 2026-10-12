@@ -1,0 +1,216 @@
+
+### ip-l 664x390 dpr3
+touch note visible true text Minesweeper 3D needs a mouse and keyboard — open it on a desktop browser.
+menu overflow { sw: 664, cw: 664, sh: 390, ch: 390 } small targets [{"id":"menu-vol","w":129,"h":28},{"id":"Minesweeper 3D","w":120,"h":19}] small fonts []
+tap Classic 2D → classic-2d-choice
+choice overflow { sw: 664, cw: 664, sh: 390, ch: 390 } small targets [{"id":"c2d-noguess","w":44,"h":24}]
+width typed 8
+noguess after tap true
+tap Beginner → classic-2d
+board { w: 632, h: 278, x: 16, y: 96, tile: 70 }
+after tap centre {
+  t: '000',
+  m: '10',
+  st: {
+    mode: 'classic-2d',
+    started: false,
+    finished: false,
+    canPause: false
+  }
+}
+long press 700ms: before 10 after {
+  t: '000',
+  m: '10',
+  st: {
+    mode: 'classic-2d',
+    started: false,
+    finished: false,
+    canPause: false
+  }
+}
+two-finger tap {
+  t: '000',
+  m: '10',
+  st: {
+    mode: 'classic-2d',
+    started: false,
+    finished: false,
+    canPause: false
+  }
+}
+tap Pause → paused
+pause overflow { sw: 664, cw: 664, sh: 390, ch: 390 } small [{"id":"hud-pause","w":81,"h":40},{"id":"p-sens","w":476,"h":28},{"id":"p-invert","w":44,"h":24},{"id":"p-vol","w":476,"h":28}]
+→ menu
+expert board { w: 632, h: 278, tile: 21, scrolls: false }
+after swipe: board rect { x: 16, w: 632 } {
+  t: '000',
+  m: '99',
+  st: {
+    mode: 'classic-2d',
+    started: false,
+    finished: false,
+    canPause: false
+  }
+}
+→ menu
+tap 3D → board-choice
+3d choice overflow { sw: 664, cw: 664, sh: 390, ch: 390 } small [{"id":"bc-noguess","w":44,"h":24},{"id":"c-noguess","w":44,"h":24}]
+tap Beginner → ready ready msg Minesweeper 3D needs a mouse and keyboard — open it on a desktop browser.
+tap Click to play → playing msg Minesweeper 3D needs a mouse and keyboard — open it on a desktop browser.
+PHONE IS IN 3D PLAY. lockless false hud-pause visible true small [{"id":"hud-pause","w":81,"h":40},{"id":"hint-h-close","w":28,"h":28}]
+cam before {"x":2,"y":12,"z":-46,"yaw":3.141592653589793,"pitch":0} after touch drag {"x":2,"y":12,"z":-46,"yaw":3.141592653589793,"pitch":0}
+tap centre of scene → {
+  t: '000',
+  m: '10',
+  st: { mode: '3d', started: true, finished: false, canPause: true }
+}
+tap Pause → FAILED: [2m      - <canvas id="scene" width="1328" height="780" data-engine="three.js r186" aria-label="3D minesweeper board"></canvas> intercepts pointer events[22m playing top element at pause btn BUTTON#hud-pause locked true
+→ menu
+records records overflow { sw: 664, cw: 664, sh: 390, ch: 390 } small [{"id":"2D","w":54,"h":36},{"id":"3D","w":54,"h":36},{"id":"Cube Beginner","w":130,"h":36},{"id":"Cube Beginner ","w":201,"h":36},{"id":"Cube Intermedi","w":154,"h":36},{"id":"Cube Intermedi","w":225,"h":36},{"id":"Cube Expert","w":114,"h":36},{"id":"Cube Expert · ","w":186,"h":36},{"id":"records-pinned-first","w":44,"h":24}]
+settings settings overflow { sw: 664, cw: 664, sh: 390, ch: 390 } small [{"id":"set-lookSensitivity","w":249,"h":28},{"id":"set-invertY","w":44,"h":24},{"id":"set-fullscreen","w":44,"h":24},{"id":"Auto","w":66,"h":36},{"id":"Sharp","w":74,"h":36},{"id":"Fast","w":63,"h":36},{"id":"Light","w":68,"h":36},{"id":"Dark","w":66,"h":36},{"id":"set-volume","w":249,"h":28},{"id":"set-muted","w":44,"h":24}]
+controls modal true overflow { sw: 664, cw: 664, sh: 390, ch: 390 }
+errors []
+
+### ipad-p 834x1194 dpr2
+touch note visible true text Minesweeper 3D needs a mouse and keyboard — open it on a desktop browser.
+menu overflow { sw: 834, cw: 834, sh: 1194, ch: 1194 } small targets [{"id":"menu-vol","w":129,"h":28},{"id":"Minesweeper 3D","w":120,"h":19}] small fonts []
+tap Classic 2D → classic-2d-choice
+choice overflow { sw: 834, cw: 834, sh: 1194, ch: 1194 } small targets [{"id":"c2d-noguess","w":44,"h":24}]
+width typed 8
+noguess after tap true
+tap Beginner → classic-2d
+board { w: 802, h: 1082, x: 16, y: 96, tile: 89 }
+after tap centre {
+  t: '001',
+  m: '10',
+  st: {
+    mode: 'classic-2d',
+    started: true,
+    finished: false,
+    canPause: true
+  }
+}
+long press 700ms: before 10 after {
+  t: '002',
+  m: '10',
+  st: {
+    mode: 'classic-2d',
+    started: true,
+    finished: false,
+    canPause: true
+  }
+}
+two-finger tap {
+  t: '003',
+  m: '10',
+  st: {
+    mode: 'classic-2d',
+    started: true,
+    finished: false,
+    canPause: true
+  }
+}
+tap Pause → paused
+pause overflow { sw: 834, cw: 834, sh: 1194, ch: 1194 } small [{"id":"hud-pause","w":81,"h":40},{"id":"p-sens","w":476,"h":28},{"id":"p-invert","w":44,"h":24},{"id":"p-vol","w":476,"h":28}]
+→ menu
+expert board { w: 802, h: 1082, tile: 27, scrolls: false }
+after swipe: board rect { x: 16, w: 802 } {
+  t: '000',
+  m: '99',
+  st: {
+    mode: 'classic-2d',
+    started: false,
+    finished: false,
+    canPause: false
+  }
+}
+→ menu
+tap 3D → board-choice
+3d choice overflow { sw: 834, cw: 834, sh: 1194, ch: 1194 } small [{"id":"bc-noguess","w":44,"h":24},{"id":"c-noguess","w":44,"h":24}]
+tap Beginner → ready ready msg Minesweeper 3D needs a mouse and keyboard — open it on a desktop browser.
+tap Click to play → playing msg Minesweeper 3D needs a mouse and keyboard — open it on a desktop browser.
+PHONE IS IN 3D PLAY. lockless false hud-pause visible true small [{"id":"hud-pause","w":81,"h":40},{"id":"hint-h-close","w":28,"h":28}]
+cam before {"x":2,"y":12,"z":-46,"yaw":3.141592653589793,"pitch":0} after touch drag {"x":2,"y":12,"z":-46,"yaw":3.141592653589793,"pitch":0}
+tap centre of scene → {
+  t: '000',
+  m: '10',
+  st: { mode: '3d', started: true, finished: false, canPause: true }
+}
+tap Pause → FAILED: [2m      - <canvas id="scene" width="1668" height="2388" data-engine="three.js r186" aria-label="3D minesweeper board"></canvas> intercepts pointer events[22m playing top element at pause btn BUTTON#hud-pause locked true
+→ menu
+records records overflow { sw: 834, cw: 834, sh: 1194, ch: 1194 } small [{"id":"2D","w":54,"h":36},{"id":"3D","w":54,"h":36},{"id":"Cube Beginner","w":130,"h":36},{"id":"Cube Beginner ","w":201,"h":36},{"id":"Cube Intermedi","w":154,"h":36},{"id":"Cube Intermedi","w":225,"h":36},{"id":"Cube Expert","w":114,"h":36},{"id":"Cube Expert · ","w":186,"h":36},{"id":"records-pinned-first","w":44,"h":24}]
+settings settings overflow { sw: 834, cw: 834, sh: 1194, ch: 1194 } small [{"id":"set-lookSensitivity","w":206,"h":28},{"id":"set-invertY","w":44,"h":24},{"id":"set-fullscreen","w":44,"h":24},{"id":"Auto","w":66,"h":36},{"id":"Sharp","w":74,"h":36},{"id":"Fast","w":63,"h":36},{"id":"Light","w":68,"h":36},{"id":"Dark","w":66,"h":36},{"id":"set-volume","w":206,"h":28},{"id":"set-muted","w":44,"h":24}]
+controls modal true overflow { sw: 834, cw: 834, sh: 1194, ch: 1194 }
+errors []
+
+### ipad-l 1194x834 dpr2
+touch note visible true text Minesweeper 3D needs a mouse and keyboard — open it on a desktop browser.
+menu overflow { sw: 1194, cw: 1194, sh: 834, ch: 834 } small targets [{"id":"menu-vol","w":129,"h":28},{"id":"Minesweeper 3D","w":120,"h":19}] small fonts []
+tap Classic 2D → classic-2d-choice
+choice overflow { sw: 1194, cw: 1194, sh: 834, ch: 834 } small targets [{"id":"c2d-noguess","w":44,"h":24}]
+width typed 8
+noguess after tap true
+tap Beginner → classic-2d
+board { w: 1162, h: 722, x: 16, y: 96, tile: 129 }
+after tap centre {
+  t: '001',
+  m: '10',
+  st: {
+    mode: 'classic-2d',
+    started: true,
+    finished: false,
+    canPause: true
+  }
+}
+long press 700ms: before 10 after {
+  t: '003',
+  m: '10',
+  st: {
+    mode: 'classic-2d',
+    started: true,
+    finished: false,
+    canPause: true
+  }
+}
+two-finger tap {
+  t: '003',
+  m: '10',
+  st: {
+    mode: 'classic-2d',
+    started: true,
+    finished: false,
+    canPause: true
+  }
+}
+tap Pause → paused
+pause overflow { sw: 1194, cw: 1194, sh: 834, ch: 834 } small [{"id":"hud-pause","w":81,"h":40},{"id":"p-sens","w":476,"h":28},{"id":"p-invert","w":44,"h":24},{"id":"p-vol","w":476,"h":28}]
+→ menu
+expert board { w: 1162, h: 722, tile: 39, scrolls: false }
+after swipe: board rect { x: 16, w: 1162 } {
+  t: '000',
+  m: '99',
+  st: {
+    mode: 'classic-2d',
+    started: false,
+    finished: false,
+    canPause: false
+  }
+}
+→ menu
+tap 3D → board-choice
+3d choice overflow { sw: 1194, cw: 1194, sh: 834, ch: 834 } small [{"id":"bc-noguess","w":44,"h":24},{"id":"c-noguess","w":44,"h":24}]
+tap Beginner → ready ready msg Minesweeper 3D needs a mouse and keyboard — open it on a desktop browser.
+tap Click to play → playing msg Minesweeper 3D needs a mouse and keyboard — open it on a desktop browser.
+PHONE IS IN 3D PLAY. lockless false hud-pause visible true small [{"id":"hud-pause","w":81,"h":40},{"id":"hint-h-close","w":28,"h":28}]
+cam before {"x":2,"y":12,"z":-46,"yaw":3.141592653589793,"pitch":0} after touch drag {"x":2,"y":12,"z":-46,"yaw":3.141592653589793,"pitch":0}
+tap centre of scene → {
+  t: '000',
+  m: '10',
+  st: { mode: '3d', started: true, finished: false, canPause: true }
+}
+tap Pause → FAILED: [2m      - <canvas id="scene" width="2388" height="1668" data-engine="three.js r186" aria-label="3D minesweeper board"></canvas> intercepts pointer events[22m playing top element at pause btn BUTTON#hud-pause locked true
+→ menu
+records records overflow { sw: 1194, cw: 1194, sh: 834, ch: 834 } small [{"id":"2D","w":54,"h":36},{"id":"3D","w":54,"h":36},{"id":"Cube Beginner","w":130,"h":36},{"id":"Cube Beginner ","w":201,"h":36},{"id":"Cube Intermedi","w":154,"h":36},{"id":"Cube Intermedi","w":225,"h":36},{"id":"Cube Expert","w":114,"h":36},{"id":"Cube Expert · ","w":186,"h":36},{"id":"records-pinned-first","w":44,"h":24}]
+settings settings overflow { sw: 1194, cw: 1194, sh: 834, ch: 834 } small [{"id":"set-lookSensitivity","w":232,"h":28},{"id":"set-invertY","w":44,"h":24},{"id":"set-fullscreen","w":44,"h":24},{"id":"Auto","w":66,"h":36},{"id":"Sharp","w":74,"h":36},{"id":"Fast","w":63,"h":36},{"id":"Light","w":68,"h":36},{"id":"Dark","w":66,"h":36},{"id":"set-volume","w":232,"h":28},{"id":"set-muted","w":44,"h":24}]
+controls modal true overflow { sw: 1194, cw: 1194, sh: 834, ch: 834 }
+errors []

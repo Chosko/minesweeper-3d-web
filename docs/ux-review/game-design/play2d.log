@@ -1,0 +1,32 @@
+2D choice focused: beginner noguess default: false
+
+2D beginner noguess=false: canvas 1248x688, tile 138.7 px, HUD [ '000', '10' ]
+  started after ms 125 status card hidden: true HUD [ '000', '10' ]
+  pause card: Paused | Time 4.39 s · 10 mines left | Resume | Restart | Main menu | Mouse | Look | WASD QE | Fly | Left / Right | Reveal / Flag | Left + Right | Chord | Wheel | Spacing | Shift | Neighbours only | Space | Aim through numbers | Ctrl | Show hidden | SETTINGS | Look sensitivity | 1.00× | Invert look Y | Volume | 70% | Sound: on
+
+2D beginner noguess=true: canvas 1248x688, tile 138.7 px, HUD [ '000', '10' ]
+  started after ms 276 status card hidden: true HUD [ '000', '10' ]
+
+2D intermediate noguess=false: canvas 1248x688, tile 78.0 px, HUD [ '000', '40' ]
+  started after ms 96 status card hidden: true HUD [ '000', '40' ]
+
+2D intermediate noguess=true: canvas 1248x688, tile 78.0 px, HUD [ '000', '40' ]
+  started after ms 725 status card hidden: true HUD [ '000', '40' ]
+
+2D expert noguess=false: canvas 1248x688, tile 41.6 px, HUD [ '000', '99' ]
+  started after ms 1324 status card hidden: true HUD [ '001', '99' ]
+
+2D expert noguess=true: canvas 1248x688, tile 41.6 px, HUD [ '000', '99' ]
+  started after ms 978 status card hidden: true HUD [ '000', '99' ]
+after right-click corner HUD [ '007', '10' ]
+after second right-click HUD [ '007', '10' ]
+restart confirm: Restart this game? It will count as a loss. | Restart | Cancel
+after restart mode: classic-2d state {
+  mode: 'classic-2d',
+  started: false,
+  finished: false,
+  canPause: false
+} HUD [ '000', '10' ]
+2D results shown ms after finish detection 4
+2D loss results: Game over | Beginner · no-guess | TIME | 1.0 s | 3BV | 20 | 3BV SOLVED | 2 | 3BV/S | 1.86 | EFFICIENCY | 40% | Play again | Watch replay | Records | Back to menu
+after Play again: classic-2d HUD [ '000', '10' ]

@@ -1,0 +1,12 @@
+Cube Beginner 6x6x6/10 standard: 4840 ms
+Cube Beginner 6x6x6/10 no-guess: 11737 ms
+Cube Beginner re-tune 6x6x6/16 standard: 4357 ms
+Cube Beginner re-tune 6x6x6/16 no-guess: 10715 ms
+Cube Intermediate 8x8x8/40 standard: 6939 ms
+Cube Intermediate 8x8x8/40 no-guess: 22226 ms
+Cube re-tune 10x10x10/100 standard: 5232 ms
+Cube re-tune 10x10x10/100 no-guess: 22052 ms
+Cube Expert 12x12x8/130 standard: 4935 ms
+Cube Expert 12x12x8/130 no-guess: 19372 ms
+2D Expert 30x16/99 standard: 98 ms
+2D Expert 30x16/99 no-guess: 748 ms

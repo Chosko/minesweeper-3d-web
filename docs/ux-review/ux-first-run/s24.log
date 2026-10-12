@@ -1,0 +1,16 @@
+settings back button { backTop: 1423.25, inner: 800, scroller: 'settings', docScroll: 800 }
+c2d-noguess attrs {
+  title: '',
+  aria: null,
+  labelHtml: '<label class="ui-toggle"><input type="checkbox" role="switch" id="c2d-noguess" class="ui-toggle__input" data-noguess="" style=""><span class="ui-toggle__label">No-guess board</span></label>'
+}
+100x100 canvas {
+  cw: 1248,
+  ch: 688,
+  scrollW: 1248,
+  scrollH: 688,
+  clientW: 1248,
+  overflow: 'visible',
+  hudMines: '999',
+  scrollbar: 0
+}

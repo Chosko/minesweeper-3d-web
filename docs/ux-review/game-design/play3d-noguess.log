@@ -1,0 +1,181 @@
+focused on board choice: <button type="button" class="ui-menu__item" data-preset="6,6,6,10" data-last=""><span class="ui-menu__label">Beginner</s
+
+Beginner no-guess=true: first click {
+  idx: 21,
+  started: true,
+  ms: 1584,
+  generatingShown: false,
+  status: '\n' +
+    '    Generating the board…\n' +
+    '    \n' +
+    '    \n' +
+    '      Retry\n' +
+    '      Play a standard board\n' +
+    '    \n' +
+    '  '
+} 
+  stats {
+  n: 216,
+  X: 6,
+  Y: 6,
+  Z: 6,
+  revealed: 196,
+  visible: 95,
+  visibleNumbers: 95,
+  hidden: 101,
+  flags: 0,
+  max: 5,
+  hist: { '1': 59, '2': 25, '3': 8, '4': 2, '5': 1 },
+  phase: 'playing',
+  minesLeft: 10
+} 
+  info {
+  mode: 'playing',
+  selected: 87,
+  time: 1.46,
+  started: true,
+  spacing: 1.1,
+  gameState: 'playing',
+  minesLeft: 10,
+  hud: [ '001', '10' ],
+  cam: {
+    x: 2,
+    y: 12,
+    z: -46,
+    yaw: 3.135878430070596,
+    pitch: 0.273004464101133
+  },
+  stats: { opaque: 115, trans: 0, sortMs: 0 },
+  fps: 0.6316321374431528
+}
+  right-click on revealed number: {
+  c: 12,
+  number: 1,
+  closedNeighbours: 2,
+  minesBefore: 10,
+  minesAfter: 8
+} HUD [ '026', '10' ]
+  after second right-click minesLeft 10
+  confirm text: Leave this game for the main menu? It will count as a loss. | Main menu | Cancel
+  mode after leaving: menu
+
+Intermediate no-guess=true: first click {
+  idx: 36,
+  started: true,
+  ms: 340,
+  generatingShown: false,
+  status: '\n' +
+    '    Generating the board…\n' +
+    '    \n' +
+    '    \n' +
+    '      Retry\n' +
+    '      Play a standard board\n' +
+    '    \n' +
+    '  '
+} 
+  stats {
+  n: 512,
+  X: 8,
+  Y: 8,
+  Z: 8,
+  revealed: 301,
+  visible: 200,
+  visibleNumbers: 200,
+  hidden: 101,
+  flags: 0,
+  max: 5,
+  hist: { '1': 98, '2': 63, '3': 30, '4': 7, '5': 2 },
+  phase: 'playing',
+  minesLeft: 40
+} 
+  info {
+  mode: 'playing',
+  selected: 100,
+  time: 0.57,
+  started: true,
+  spacing: 1.1,
+  gameState: 'playing',
+  minesLeft: 40,
+  hud: [ '000', '40' ],
+  cam: {
+    x: 1.6,
+    y: 11.6,
+    z: -62.4,
+    yaw: 3.1288273895631376,
+    pitch: 0.19737989155531155
+  },
+  stats: { opaque: 411, trans: 0, sortMs: 0 },
+  fps: 4.499775011249456
+}
+  right-click on revealed number: {
+  c: 3,
+  number: 1,
+  closedNeighbours: 4,
+  minesBefore: 40,
+  minesAfter: 36
+} HUD [ '025', '40' ]
+  after second right-click minesLeft 40
+  confirm text: Leave this game for the main menu? It will count as a loss. | Main menu | Cancel
+  mode after leaving: menu
+
+Expert no-guess=true: first click {
+  idx: 78,
+  started: true,
+  ms: 1227,
+  generatingShown: false,
+  status: '\n' +
+    '    Generating the board…\n' +
+    '    \n' +
+    '    \n' +
+    '      Retry\n' +
+    '      Play a standard board\n' +
+    '    \n' +
+    '  '
+} 
+  stats {
+  n: 1152,
+  X: 12,
+  Y: 12,
+  Z: 8,
+  revealed: 176,
+  visible: 148,
+  visibleNumbers: 148,
+  hidden: 28,
+  flags: 0,
+  max: 6,
+  hist: { '1': 53, '2': 49, '3': 28, '4': 13, '5': 3, '6': 2 },
+  phase: 'playing',
+  minesLeft: 130
+} 
+  info {
+  mode: 'playing',
+  selected: 222,
+  time: 1.169,
+  started: true,
+  spacing: 1.1,
+  gameState: 'playing',
+  minesLeft: 130,
+  hud: [ '001', '130' ],
+  cam: {
+    x: 0.7999999999999998,
+    y: 10.799999999999999,
+    z: -94.39999999999999,
+    yaw: 3.1238729894138424,
+    pitch: 0.10841687752874678
+  },
+  stats: { opaque: 1124, trans: 0, sortMs: 0 },
+  fps: 1.6784155756965446
+}
+  right-click on revealed number: {
+  c: 16,
+  number: 2,
+  closedNeighbours: 10,
+  minesBefore: 130,
+  minesAfter: 120
+} HUD [ '034', '130' ]
+  after second right-click minesLeft 130
+  confirm text: Leave this game for the main menu? It will count as a loss. | Main menu | Cancel
+  mode after leaving: menu
+lost: { c: 7, t: 136340, phase: 'lost' }
+results after ms (page clock): 3464.3000000000466
+results: Game over | Cube Beginner | TIME | 0.7 s | 3BV | 23 | 3BV SOLVED | 1 | 3BV/S | 1.37 | EFFICIENCY | 50% | Play again | Watch replay | Records | Back to menu

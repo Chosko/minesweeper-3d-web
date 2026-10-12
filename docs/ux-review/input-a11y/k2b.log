@@ -1,0 +1,144 @@
+focus input#c2d-width[ui-field__input] "30"
+info text 2 cells · up to 1 mines
+mines after ArrowUp 1 info 2 cells · up to 1 mines
+shot k-12-custom-2x1
+after Enter in field classic-2d focus body#[] "TIME
+000
+MINES
+0
+BOARD
+2 × 1
+P"
+shot k-13-2x1-board
+after Space results focus button#r-again[ui-button] "Play again" title You won!
+shot k-14-results-win
+TAB results:
+ button#r-watch[ui-button] "Watch replay"
+ button#r-records[ui-button] "Records"
+ button#r-menu[ui-button] "Back to menu"
+ body#[] "TIME
+000
+MINES
+0
+BOARD
+2 × 1
+P"
+ button#hud-pause[ui-button] "Pause"
+ button#r-again[ui-button] "Play again"
+results text You won! | 2 × 1 · 0 mines | TIME | 0.0 s | 3BV | 1 | 3BV/S | 500.00 | EFFICIENCY | 100% | YOUR BESTS ON THIS BOARD | BEST TIME | — | New best | BEST 3BV/S | — | New best | BEST EFFICIENCY | — | New best | Play again | Watch replay | Records | Back to menu
+after Esc on results menu focus button#menu-entry-classic-2d[ui-menu__item] "Classic 2D
+The classic game on"
+choice focus (last choice custom?) button#c2d-start[ui-button] "Start"
+shot k-15-choice-returning
+mode classic-2d
+mode results focus button#r-again[ui-button] "Play again"
+focus button#r-watch[ui-button] "Watch replay"
+replay replay focus button#rp-play[ui-button] "Play"
+shot k-16-replay
+TAB replay:
+ button#rp-next[ui-button] "Next"
+ button#[ui-segmented__option] "1×"
+ input#rp-seek[ui-slider__input] "0"
+ body#[] "TIME
+000
+MINES
+0
+BOARD
+2 × 1
+P"
+ button#hud-pause[ui-button] "Pause"
+ button#rp-back[ui-button] "Back"
+ button#rp-prev[ui-button] "Previous"
+ button#rp-play[ui-button] "Play"
+ button#rp-next[ui-button] "Next"
+ button#[ui-segmented__option] "1×"
+replay state { pos: '000 / 000', play: 'Play', end: 'Won · 0.0 s', clock: '000' }
+speed 4×
+after Home, → { pos: '000 / 000', end: 'Won · 0.0 s' }
+shot k-17-replay-end
+after Esc from replay results focus button#r-again[ui-button] "Play again"
+records records focus button#[ui-segmented__option] "2 × 1 · 0 mines"
+shot k-18-records
+TAB records:
+ button#[ui-button] "Watch"
+ button#[ui-button] "Watch"
+ button#[ui-button] "Watch"
+ button#[ui-button] "Watch"
+ button#[ui-button] "Watch"
+ input#records-pinned-first[ui-toggle__input] "on"
+ button#[ui-button] "Watch"
+ button#[ui-button] "Unpin"
+ button#[ui-button] "Watch"
+ button#[ui-button] "Unpin"
+ button#records-back[ui-button] "Back"
+ body#[] "Records
+2D
+3D
+Beginner
+Beginne"
+ button#[ui-segmented__option] "2D"
+ button#[ui-segmented__option] "2 × 1 · 0 mines"
+ button#[ui-button] "Watch"
+ button#[ui-button] "Watch"
+ button#[ui-button] "Watch"
+ button#[ui-button] "Watch"
+ button#[ui-button] "Watch"
+ input#records-pinned-first[ui-toggle__input] "on"
+ button#[ui-button] "Watch"
+ button#[ui-button] "Unpin"
+ button#[ui-button] "Watch"
+ button#[ui-button] "Unpin"
+records mode after ArrowRight: 3D focus button#[ui-segmented__option] "3D"
+picker options Beginner, Beginner · no-guess, Intermediate, Intermediate · no-guess, Expert, Expert · no-guess, 2 × 1 · 0 mines*
+chart aria 3BV/s and efficiency over 2 won games, oldest to newest: 3BV/s from 500.00 to 1000.00, latest 1000.00; efficiency from 100% to 100%, latest 100%.
+records games rows Games 1–2 of 2 | Outcome	Time	3BV/s	Efficiency	Replay | Won	0.0 s	1000.00	100%	Watch | Won	0.0 s	500.00	100%	Watch
+replays rows Date	Outcome	Time	3BV/s	Efficiency	Pin	Actions | 11 Oct 2026	Won	0.0 s	1000.00	100%	Pinned · best	WatchUnpin | 11 Oct 2026	Won	0.0 s	500.00	100%	Pinned · best	WatchUnpin
+after Esc from records results focus button#r-again[ui-button] "Play again"
+after 2nd Esc menu focus button#menu-entry-classic-2d[ui-menu__item] "Classic 2D
+The classic game on"
+settings settings focus input#set-lookSensitivity[ui-slider__input] "1"
+shot k-19-settings
+TAB settings:
+ input#set-invertY[ui-toggle__input] "on"
+ input#set-fullscreen[ui-toggle__input] "on"
+ button#[ui-segmented__option] "Auto"
+ button#[ui-segmented__option] "Light"
+ input#set-volume[ui-slider__input] "70"
+ input#set-muted[ui-toggle__input] "on"
+ button#settings-back[ui-button] "Back"
+ body#[] "Settings
+CONTROLS
+Look sensiti"
+ input#set-lookSensitivity[ui-slider__input] "1"
+ input#set-invertY[ui-toggle__input] "on"
+ input#set-fullscreen[ui-toggle__input] "on"
+ button#[ui-segmented__option] "Auto"
+ button#[ui-segmented__option] "Light"
+ input#set-volume[ui-slider__input] "70"
+settings html snippet dt><kbd class="pad">A</kbd> / <kbd class="pad">B</kbd></dt><dd>Move up / down</dd><dt>Hold <kbd class="pad">LB</kbd> <kbd class="pad">RB</kbd> <kbd class="pad">Y</kbd></dt><dd>Neighbours only / aim through numbers / show hidden</dd><dt>D-pad ↑ ↓</dt><dd>Change spacing</dd><dt><kbd class="pad">X</kbd></dt><dd>Show / hide the controls help</dd><dt><kbd class="pad">Start</kbd> / <kbd class="pad">Select</kbd></dt><dd>Pause</dd><dt>Menus</dt><dd>D-pad or left stick to move, <kbd class="pad">A</kbd> select, <kbd class="pad">B</kbd> / <kbd class="pad">Select</kbd> back</dd></dl></div></div></section>
+theme dark
+shot k-20-settings-dark
+after Esc from settings menu focus button#menu-entry-classic-2d[ui-menu__item] "Classic 2D
+The classic game on"
+shot k-21-menu-dark
+controls modal open? true focus button#controls-close[hint-close] "×"
+shot k-22-controls-modal-dark
+TAB in modal:
+ body#[] "3
+Minesweeper 3D
+
+Fly through "
+ button#menu-entry-classic-2d[ui-menu__item] "Classic 2D
+The classic game on"
+ button#menu-entry-3d[ui-menu__item] "3D
+Fly through a cube of cubes"
+ button#menu-entry-records[ui-menu__item] "Records
+Your best times and st"
+ button#menu-entry-settings[ui-menu__item] "Settings
+Controls, graphics, t"
+modal text Mouse | Look around | WASD | Fly forward / left / back / right | Q E | Move down / up | Left click | Reveal the aimed cube | Right click | Flag / unflag (on a number: flag or unflag all its closed neighbours) | Left + Right | Chord: reveal neighbours of a satisfied number | Wheel | Change spacing between cubes | Hold Shift | Fade everything except the aimed cube's neighbours | Hold Space | Aim through revealed numbers (they fade) | Hold Ctrl | Show hidden cells (empty and completed ones) | F / M | Fullscreen / sound on-off | Esc | Pause menu
+modal closed? true focus button#menu-help[ui-button] "Controls"
+loss: ended true after 18 mode results focus button#r-again[ui-button] "Play again" title Game over
+shot k-23-results-loss-dark
+results text Game over | Beginner | TIME | 37.6 s | 3BV | 12 | 3BV SOLVED | 2 | 3BV/S | 0.05 | EFFICIENCY | 67% | Play again | Watch replay | Records | Back to menu
+errors []
