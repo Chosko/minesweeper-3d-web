@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 143
+Last task number: 144
 
 ---
 
@@ -905,6 +905,15 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: js/input.js, js/main.js, js/settings/bindings.js, js/ui.js, index.html, tests/input-keyboard-3d.test.mjs, tests/gamepad.test.mjs, tests/settings-page.test.mjs, tests/replay-3d.test.mjs, README.md, docs/ORIGINAL_SPEC.md, .claude/domain/features/settings.md, .claude/domain/features/3d-play-flow.md
+Preconditions: none
+
+---
+
+## 144. Controller walk, pad-aware Records and viewer, haptics
+
+Status: [MISSING]
+Target: claude
+Files: js/gamepad.js, js/shell/navigation.js, js/main.js, js/records/screen.js, js/classic2d/cursor-input.js, js/classic2d/mode.js, js/ui.js, index.html, css/style.css, tests/shell-router.test.mjs, tests/gamepad.test.mjs, tests/records-screen.test.mjs, tests/classic2d-cursor.test.mjs, tests/shell-pad-walk.test.mjs, README.md
 Preconditions: none
 
 ---
