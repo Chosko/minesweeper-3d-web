@@ -9,8 +9,9 @@ shake.
 
 - `js/render.js` — `BoardRenderer`: cube geometry, cell/sky/confetti shaders, opaque and
   transparent instance lists, back-to-front sort, end-of-game waves, selection glow.
-- `js/textures.js` — procedural tile atlas: every tile drawn on a 2D canvas and packed into one
-  `THREE.DataArrayTexture` (one layer per tile).
+- `js/textures.js` — procedural tile atlas: every tile drawn on a 2D canvas through the shared
+  tile recipe (`js/tile-art.js`, [classic2d.md](classic2d.md)) with the atlas's own literal
+  palette (`ATLAS`), and packed into one `THREE.DataArrayTexture` (one layer per tile).
 
 ## Public API
 
@@ -155,7 +156,9 @@ shake.
   theme change ([app-shell.md](app-shell.md)). The atlas tiles, number colours, selection outline
   and effects are the same under both themes; they live in `js/textures.js` and the shaders,
   separate from the tile and number tokens the Classic 2D tile skin draws with
-  ([classic2d.md](classic2d.md)); neither feeds the other. The renderer never reads
+  ([classic2d.md](classic2d.md)); neither feeds the other. The two share only the drawing:
+  `js/tile-art.js` takes every colour as an argument and reads no token, so the atlas stays
+  unthemed and pixel-identical to its own palette. The renderer never reads
   `css/tokens.css` and never subscribes to theme changes: `tests/tokens.test.mjs` and
   `tests/theme.test.mjs` check that it reads no token and subscribes to no theme change, and that
   its sky carries no constant colour.
@@ -183,7 +186,8 @@ shake.
 - [input.md](input.md) — camera and modifier state feed `camera`, `setToggles`, `setSpacing`,
   `setSelected`; picking must use the same pitch and Space/hidden visibility rules.
 - [audio.md](audio.md) — no direct link; win/loss sounds fire alongside the waves from main.
-- [classic2d.md](classic2d.md) — the Classic 2D tile skin, a separate themed palette from tokens.
+- [classic2d.md](classic2d.md) — the Classic 2D tile skin, a separate themed palette from tokens,
+  and the shared tile recipe `js/tile-art.js` the atlas draws through.
 - [testing.md](testing.md) — `tests/render-3d-feedback.test.mjs` pins `GHOST_ALPHA`, the pulse
   envelope and, in a browser, the ghosts in `stats.trans`, the pulse's `isAnimating()` and its
   ends; static checks that the 3D scene stays unthemed; `tests/settings-appliers.test.mjs` pins
@@ -199,6 +203,9 @@ shake.
 - Tuning or changing the "solved" pulse (`pulseEnvelope` and its constants, `sync`, `_tickPulses`,
   `_dropPulses`, the `PULSE` branch of `VERT`).
 - Adding a tile (new layer in `js/textures.js`, bump `LAYERS`, map it in `_writeCell`).
+- Changing how an atlas tile is drawn: the geometry is `js/tile-art.js`, shared with the Classic 2D
+  tiles, and every atlas layer is pinned pixel for pixel by `tests/tile-skin.test.mjs`; the
+  colours are `ATLAS` in `js/textures.js`.
 - Tuning win/loss waves, confetti, shake, fog, sky, ground grid or selection glow (`_beginWin`,
   `_beginLoss`, `_waveSetup`, `_tickEffects`, `render`, `_placeGround`, shader constants).
 - Debugging transparency artefacts or sort cost (`_updateTransparent`).

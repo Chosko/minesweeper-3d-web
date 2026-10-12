@@ -398,17 +398,22 @@ browser checks for everything that needs WebGL or the DOM.
   full token set on `:root`, semantic (non-hue) names, a dark value for every
   colour token, z-layer order, WCAG contrast per theme (4.5:1 body text, 3:1
   large text and essential glyphs, on every surface), the tile tokens (every
-  tile state, the board frame and gap, numbers 1–8, opaque, in both themes;
-  eight distinct light number colours, each 4.5:1 on the revealed tile;
-  the cursor ring `--color-tile-cursor` 3:1 on the tile edge and on the
-  closed, pressed and revealed tiles),
-  `css/style.css` declaring
+  tile state, the cube-face recipe's bands and shading, the board frame and
+  gap, numbers 1–8, opaque, and the recipe's translucent layers, in both
+  themes; no `--color-tile-edge`; the light recipe tokens equal to the 3D
+  atlas palette `ATLAS` read from `js/textures.js`'s source, the shades
+  computed as the atlas does; dark faces and bands differing from light;
+  eight distinct light number colours, each 4.5:1 on both ends of the
+  shaded revealed face; a lit and a shaded bevel and distinct rims; the
+  cursor ring `--color-tile-cursor` 3:1 on the lit bevel and on the closed
+  face, its shade, the pressed and the revealed tiles), `css/style.css` declaring
   no variables and reading only declared tokens, `index.html` loading
   `css/tokens.css` before `css/style.css`, the sky tokens (`--color-scene-*`,
   opaque, light values the original sky, dark values no lighter than the dark
   backdrop highlight), the backdrop-scrim tokens (translucent, light values the
   original tints) and the Controls modal and overlay scrims reading them with
-  no literal colour, and the 3D renderer not reading tokens.
+  no literal colour, and the 3D renderer and `js/tile-art.js` not reading
+  tokens.
 - `tests/theme.test.mjs` — the theme applier (`js/theme.js`, run in a `node:vm`
   context against a stub root) and the token reader (`js/tokens.js`): Light
   before first paint, stored-getter fallback (missing, unknown, throwing),
@@ -416,11 +421,13 @@ browser checks for everything that needs WebGL or the DOM.
   the applier as a classic script before the stylesheets and module graph,
   `token()` values per theme, `onThemeChange` timing, the visible fallback
   colour and its development-only log, no copy of token values in
-  `js/tokens.js`, the 3D renderer never subscribing to theme changes; the
+  `js/tokens.js`, the 3D renderer and `js/tile-art.js` never subscribing to
+  theme changes; the
   scene palette (`js/shell/scene-palette.js`: `parseRgb`, `scenePalette`,
   `bindScenePalette` handing the renderer the active theme's sky at start-up
   and on a theme change), `js/main.js` binding it with a redraw, the
-  renderer's sky carrying no constant colour, and only the sky being themed.
+  renderer's sky carrying no constant colour, and only the sky being themed
+  (neither the atlas nor the recipe it draws through).
 - `tests/components.test.mjs` — the component kit (`css/components.css`,
   `js/ui/components.js`, `dev/components.html`): tokens only, no literal
   colour, no theme-specific rule, no animation but the `ui-spinner` turn; the head-comment catalogue
@@ -456,21 +463,34 @@ browser checks for everything that needs WebGL or the DOM.
   Playwright or chromium is unavailable.
 - `tests/tile-skin.test.mjs` — the Classic 2D tile skin
   (`js/classic2d/tile-skin.js`) over a recording fake Canvas 2D context and
-  the token maps parsed from `css/tokens.css` per theme: the states are the
-  engine cell states plus `pressed`, each state's own tile tokens in both
-  themes, a number's digit in its own colour and no glyph for zero, the edge
-  that tells closed from revealed, plain drawing (no gradients, shadows or
-  patterns), the placeholder for an unknown state or number, `paintTile`
-  reading through the token reader, the cache (every state and number
-  pre-rendered once, a redraw only image copies, keyed by size, pixel ratio
-  and theme, dropped on a theme change before the renderer's redraw,
-  `dispose` unsubscribing), `MIN_TILE_SIZE` 26, and the
-  module DOM-free at import with no literal colour and no three.js. One
-  Playwright test checks that Expert fits a 1024 px wide window in the
-  framed panel at `MIN_TILE_SIZE` or more — at the floor from the height
-  the measured readouts leave room for, scrolling a pixel below it — and
-  checks every state and number shows its glyph at that size in both
-  themes (skipped when Playwright or chromium is unavailable).
+  the token maps parsed from `css/tokens.css` per theme (the fake records
+  gradients with their stops, answers `measureText` and reports the scale it
+  was set to): the states are the engine cell states plus `pressed`, each
+  state's own tile tokens in both themes drawn at its position, each state
+  drawn through the shared recipe `js/tile-art.js` with its tokens (the
+  skin's trace equal to the recipe's, at pixel ratios 1 and 2), the raised
+  face of closed and flagged, the sunken pressed face, relief and border
+  telling closed from revealed, the 3D number glyph (shadow, outline of its
+  hue, heavy weight) and no glyph for zero, the wrong flag's flag under the
+  cross with no mine, the bands scaling with the tile and whole device
+  pixels at least one wide at 26 px and `MIN_TILE_SIZE`, the placeholder for
+  an unknown state or number, `paintTile` reading through the token reader,
+  the cache (every state and number pre-rendered once, a redraw only image
+  copies, keyed by size, pixel ratio and theme, dropped on a theme change
+  before the renderer's redraw, `dispose` unsubscribing), `MIN_TILE_SIZE`
+  26, the skin DOM-free at import with no literal colour and no three.js,
+  and the recipe importing nothing, reading no token and holding no colour,
+  with the atlas drawing through it and keeping no copy. Two Playwright
+  tests (skipped when Playwright or chromium is unavailable): one checks
+  that Expert fits a 1024 px wide window in the framed panel at
+  `MIN_TILE_SIZE` or more — at the floor from the height the measured
+  readouts leave room for, scrolling a pixel below it — and that every
+  state and number shows its glyph at 26 px and `MIN_TILE_SIZE`, at pixel
+  ratios 1 and 2, in both themes, with screenshots; one digests every 3D
+  atlas layer `drawLayer` draws and compares it with the digests recorded
+  before the atlas drew through the shared recipe, where a probe drawing
+  digests as it did then (skipped otherwise, since text and anti-aliasing
+  depend on the browser).
 - `tests/classic2d-session.test.mjs` — Classic 2D board setup
   (`js/classic2d/board-setup.js`) and the game session
   (`js/classic2d/session.js`) over a fake generation client and a fake
@@ -511,7 +531,8 @@ browser checks for everything that needs WebGL or the DOM.
   the ring shown and hidden redrawing one cell, the hidden board, and the
   module DOM-free with no literal colour. One Playwright test mounts the
   view below a 64 px bar with 16 px margins and checks tile size and pixel
-  colours of Beginner and Expert in both themes, the clear canvas around a
+  colours of Beginner and Expert in both themes (a tile's centre halfway
+  along its face's shading), the clear canvas around a
   board that fits, a theme-change repaint, a 100 × 100 board scrolled by
   wheel, shift-drag and `ensureVisible` with its shaded edge and scroll bar,
   and a refit on window resize, with screenshots (skipped when Playwright
@@ -542,7 +563,7 @@ browser checks for everything that needs WebGL or the DOM.
   tests (skipped when Playwright or chromium is unavailable): one plays a
   fixed Beginner board by keyboard to a win, the ring hidden until the
   first key and by a mouse move; one moves the cursor by arrow key in both
-  themes and checks the ring's pixels differ from the tile edge and from a
+  themes and checks the ring's pixels differ from the lit bevel and from a
   neighbouring closed tile.
 - `tests/classic2d-mode.test.mjs` — the Classic 2D mode
   (`js/classic2d/mode.js`) over a real mode host and pause controller with

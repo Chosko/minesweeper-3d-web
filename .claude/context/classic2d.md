@@ -44,9 +44,15 @@ looks.
   `bindBoardChoice`, which touches only the elements it is handed.
 - `js/classic2d/tile-skin.js` — the stateless tile painter, the tile cache
   that pre-renders every state and number, and the shared minimum tile size.
-  It holds no palette: every colour is a tile or number token from
+  It draws every tile through the shared tile recipe `js/tile-art.js` and
+  holds no palette: every colour is a tile or number token from
   `css/tokens.css` read through the token reader `js/tokens.js`
   ([app-shell.md](app-shell.md)). DOM-free at import.
+- `js/tile-art.js` — the shared tile recipe, the cube face of the 3D atlas
+  ([rendering.md](rendering.md)) at any size: the raised, sunken and
+  revealed faces, the number, mine and flag glyphs and the wrong-flag
+  cross, every colour an argument. It imports nothing — neither three.js
+  nor the token reader — and touches no DOM.
 
 ## PUBLIC API
 
@@ -124,7 +130,7 @@ looks.
   filled with under the tiles; `BOARD_SHADOW` (`--color-board-shadow`) and
   `BOARD_SCROLLBAR` (`--color-board-scrollbar`) — a clipped board's marks; `CURSOR_RING` (`--color-tile-cursor`) — the
   board-only token the cursor's focus ring is drawn in, distinct from the
-  tile edge it covers (the shell's focus outlines keep
+  rim and lit bevel it covers (the shell's focus outlines keep
   `--color-focus-ring`); `PAN_MODIFIER` (`shiftKey`) — the key a drag
   holds to pan.
 - `createBoardView({canvas, grid, createSkin, token, scale, frame,
@@ -357,13 +363,20 @@ looks.
   background only and `update` draws nothing; showing repaints the board.
 - **The engine is the source.** The view keeps no cell state; every tile is
   read from the game when drawn.
-- **Painter.** Each state is a flat fill plus at most a simple edge and a
-  plain glyph — no gradients, shadows or patterns. Closed and flagged tiles
-  carry an edge (`--color-tile-edge`, width `max(2, round(size / 12))`), so
-  closed and revealed differ by more than colour. A revealed number is its
-  digit in `--color-number-<n>`; zero draws no glyph. Tokens used:
-  `--color-tile-{closed,edge,pressed,revealed,flagged,flag,mine,mine-glyph,
-  exploded,wrong-flag,wrong-flag-mark}` and `--color-number-1`…`-8`.
+- **Painter.** Each state is the cube face of the 3D atlas, drawn through
+  `js/tile-art.js` with tokens: closed and flagged the raised face (rim,
+  bevel lit top-left and dark bottom-right, shaded face, gloss), flagged
+  with the 3D flag; pressed the face sunk in (bevel inverted, no gloss,
+  flat face); revealed, mine and wrong flag the revealed face (rim, flat
+  edge, shaded face), exploded its exploded variant; a number is the 3D
+  glyph (heavy weight, a darker outline of its hue, a soft shadow) in
+  `--color-number-<n>`, zero none; the wrong flag is the 3D flag under the
+  3D cross. Closed and revealed differ by relief and border, not colour
+  alone. The painter translates to the tile and passes the recipe one
+  device pixel (from the context's scale), so every rim, border and bevel
+  band is whole device pixels, at least one. Tokens used: the
+  `--color-tile-*` state, recipe and glyph tokens of `css/tokens.css` and
+  `--color-number-1`…`-8`.
 - **Placeholder.** An unknown state, or a revealed number outside 0–8,
   paints `FALLBACK_COLOR` with a black cross — visibly wrong on purpose,
   never blank.
@@ -381,9 +394,11 @@ looks.
   16 px (`--space-4`) window margins, any window 1024 px wide from 520 px
   tall, and plays at 32 px at 1024 × 768. Every state and number is legible
   at it in both themes (the browser test in `tests/tile-skin.test.mjs`).
-- **No second palette.** The module holds no literal colour; a new tile
-  colour is a token in `css/tokens.css` with a dark value, held to the
-  contrast contract by `tests/tokens.test.mjs`.
+- **No second palette.** Neither the skin nor the recipe holds a literal
+  colour; a new tile colour is a token in `css/tokens.css` with a dark
+  value, held to the contrast contract by `tests/tokens.test.mjs`, and its
+  light value is the 3D atlas's own where the atlas has one. The recipe
+  stays token-free, so the 3D atlas draws through it unthemed.
 
 ## DOMAIN DEPENDENCIES
 
@@ -422,7 +437,7 @@ looks.
 - [replay.md](replay.md) — the recorder the session feeds and seals, and
   the 2D movement sampler the mode mounts.
 - [rendering.md](rendering.md) — the 3D tile atlas, a separate palette the
-  skin neither reads nor feeds.
+  skin neither reads nor feeds, drawn through the same `js/tile-art.js`.
 - [input.md](input.md) — `Repeat`, `stickCurve`, `BTN` and the
   `GamepadReader` poll the cursor input reads, and the shell's Back buttons
   it leaves unmapped.
@@ -455,7 +470,9 @@ looks.
 - Adding board input that competes with panning (`mountBoardView`'s pointer
   and wheel listeners, `PAN_MODIFIER`).
 - Changing how a state looks, or adding a state (the `paintTileWith` switch
-  and `TILE_STATES`, which the cache builds from).
+  and `TILE_STATES`, which the cache builds from); a change to the shared
+  geometry in `js/tile-art.js` changes the 3D atlas too, which
+  `tests/tile-skin.test.mjs` pins pixel for pixel.
 - Changing the cache key or what invalidates it (`drawTile`, the
   `onThemeChange` subscription).
 - A legibility failure in the browser test: read its per-tile glyph pixel

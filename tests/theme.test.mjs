@@ -184,7 +184,7 @@ test('js/tokens.js holds no second copy of the token values', () => {
 });
 
 test('the 3D renderer never subscribes to theme changes: the shell hands it the scene palette', () => {
-  for (const f of ['../js/render.js', '../js/textures.js']) {
+  for (const f of ['../js/render.js', '../js/textures.js', '../js/tile-art.js']) {
     assert.doesNotMatch(read(f), /onThemeChange|msTheme|tokens\.js|scene-palette/, f);
   }
 });
@@ -260,6 +260,7 @@ test('the renderer draws the sky, fog and clear colour from the palette it is ha
 
 test('only the sky is themed: the tiles, numbers, selection outline and effects keep one look', () => {
   assert.doesNotMatch(read('../js/textures.js'), /setScenePalette|uSky|scene-palette/, 'the tile atlas is not themed');
+  assert.doesNotMatch(read('../js/tile-art.js'), /setScenePalette|uSky|scene-palette/, 'the recipe the atlas draws through is not themed');
   const src = read('../js/render.js');
   const at = src.indexOf('\n  setScenePalette(');
   assert.ok(at >= 0, 'the renderer defines setScenePalette');

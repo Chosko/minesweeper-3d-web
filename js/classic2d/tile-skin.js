@@ -1,10 +1,16 @@
 // Square tile skin for the Classic 2D Canvas board: the stateless tile
 // painter, the tile cache that pre-renders every state and number, and the
-// shared minimum tile size. Colours come from the tile and number tokens
-// (css/tokens.css) through the token reader; this module holds no palette.
-// The renderer owns layout and hit-testing; the skin owns appearance only.
+// shared minimum tile size. Every tile is drawn from the cube-face recipe the
+// 3D atlas draws from (js/tile-art.js), with the 3D number, flag and mine
+// artwork, so both modes read as one game. Colours come from the tile and
+// number tokens (css/tokens.css) through the token reader; this module holds
+// no palette. The renderer owns layout and hit-testing; the skin owns
+// appearance only.
 
 import { token as readerToken, onThemeChange as readerOnThemeChange, FALLBACK_COLOR } from '../tokens.js';
+import {
+  drawRaisedFace, drawSunkenFace, drawRevealedFace, drawNumberGlyph, drawMineGlyph, drawFlagGlyph, drawCross,
+} from '../tile-art.js';
 
 // The smallest tile size the Classic 2D renderer allows, shared with it: the
 // readable floor a board shrinks to before it scrolls. With it an Expert board
@@ -18,63 +24,51 @@ export const MIN_TILE_SIZE = 26;
 // the renderer's feedback under a held click or chord.
 export const TILE_STATES = Object.freeze(['closed', 'pressed', 'revealed', 'flagged', 'mine', 'exploded', 'wrong-flag']);
 
+// The recipe's palettes, read from the tile and number tokens at paint time.
 const color = (token, name) => token(`--color-${name}`);
+const raised = (token, face) => ({
+  rim: color(token, 'tile-rim'),
+  bevelLight: color(token, 'tile-bevel-light'),
+  bevelDark: color(token, 'tile-bevel-dark'),
+  face: color(token, face),
+  faceShade: color(token, 'tile-face-shade'),
+  gloss: color(token, 'tile-gloss'),
+  glossFade: color(token, 'tile-gloss-fade'),
+});
+const sunken = (token) => ({
+  rim: color(token, 'tile-rim'),
+  bevelLight: color(token, 'tile-bevel-light'),
+  bevelDark: color(token, 'tile-bevel-dark'),
+  face: color(token, 'tile-pressed'),
+});
+const revealed = (token, face) => ({
+  rim: color(token, 'tile-revealed-rim'),
+  edge: color(token, 'tile-revealed-edge'),
+  face: color(token, face),
+  faceShade: color(token, 'tile-revealed-shade'),
+});
+const exploded = (token) => ({
+  rim: color(token, 'tile-revealed-rim'),
+  edge: color(token, 'tile-exploded-edge'),
+  face: color(token, 'tile-exploded'),
+  faceShade: color(token, 'tile-exploded-shade'),
+});
+const mine = (token) => ({ body: color(token, 'tile-mine-glyph'), highlight: color(token, 'tile-mine-highlight') });
+const flag = (token) => ({
+  base: color(token, 'tile-mine-glyph'),
+  shadow: color(token, 'tile-flag-shadow'),
+  cloth: color(token, 'tile-flag'),
+  clothShade: color(token, 'tile-flag-shade'),
+});
+const cross = (token) => ({ outline: color(token, 'tile-wrong-flag-outline'), mark: color(token, 'tile-wrong-flag-mark') });
 
-function fill(ctx, x, y, size, style) {
-  ctx.fillStyle = style;
+// Visibly wrong on purpose, so an unhandled state is noticed on the board.
+function placeholder(ctx, x, y, size) {
+  ctx.fillStyle = FALLBACK_COLOR;
   ctx.fillRect(x, y, size, size);
-}
-
-// The simple edge of a closed tile: a solid border inside the tile.
-function edge(token, ctx, x, y, size) {
-  const w = Math.max(2, Math.round(size / 12));
-  ctx.fillStyle = color(token, 'tile-edge');
-  ctx.fillRect(x, y, size, w);
-  ctx.fillRect(x, y + size - w, size, w);
-  ctx.fillRect(x, y + w, w, size - 2 * w);
-  ctx.fillRect(x + size - w, y + w, w, size - 2 * w);
-}
-
-function flag(token, ctx, x, y, size) {
-  const pole = Math.max(1, Math.round(size / 16));
-  const px = x + size * 0.58;
-  ctx.fillStyle = color(token, 'tile-mine-glyph');
-  ctx.fillRect(Math.round(px), Math.round(y + size * 0.18), pole, Math.round(size * 0.58));
-  ctx.fillRect(Math.round(x + size * 0.3), Math.round(y + size * 0.74), Math.round(size * 0.4), pole);
-  ctx.fillStyle = color(token, 'tile-flag');
-  ctx.beginPath();
-  ctx.moveTo(px, y + size * 0.18);
-  ctx.lineTo(px, y + size * 0.56);
-  ctx.lineTo(x + size * 0.2, y + size * 0.37);
-  ctx.closePath();
-  ctx.fill();
-}
-
-function mine(token, ctx, x, y, size) {
-  const cx = x + size / 2;
-  const cy = y + size / 2;
-  const r = size * 0.24;
-  ctx.fillStyle = color(token, 'tile-mine-glyph');
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = color(token, 'tile-mine-glyph');
-  ctx.lineWidth = Math.max(1, size / 16);
-  ctx.beginPath();
-  for (let i = 0; i < 4; i++) {
-    const a = (i * Math.PI) / 4;
-    const dx = Math.cos(a) * r * 1.45;
-    const dy = Math.sin(a) * r * 1.45;
-    ctx.moveTo(cx - dx, cy - dy);
-    ctx.lineTo(cx + dx, cy + dy);
-  }
-  ctx.stroke();
-}
-
-function cross(ctx, x, y, size, style, width) {
   const m = size * 0.2;
-  ctx.strokeStyle = style;
-  ctx.lineWidth = width;
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = Math.max(2, size / 8);
   ctx.beginPath();
   ctx.moveTo(x + m, y + m);
   ctx.lineTo(x + size - m, y + size - m);
@@ -83,59 +77,56 @@ function cross(ctx, x, y, size, style, width) {
   ctx.stroke();
 }
 
-function digit(token, ctx, x, y, size, n) {
-  ctx.fillStyle = color(token, `number-${n}`);
-  ctx.font = `bold ${Math.round(size * 0.72)}px system-ui, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(String(n), x + size / 2, y + size * 0.54);
-}
-
-// Visibly wrong on purpose, so an unhandled state is noticed on the board.
-function placeholder(ctx, x, y, size) {
-  fill(ctx, x, y, size, FALLBACK_COLOR);
-  cross(ctx, x, y, size, 'black', Math.max(2, size / 8));
-}
-
 const validNumber = (n) => Number.isInteger(n) && n >= 0 && n <= 8;
+
+// One device pixel in the context's CSS pixels, from the scale it draws at, so
+// the recipe's bands snap to whole device pixels.
+function devicePixel(ctx) {
+  const scale = Math.abs(ctx.getTransform?.()?.a ?? 1);
+  return scale > 0 ? 1 / scale : 1;
+}
 
 // Paints one tile with tokens from `token(name)`.
 export function paintTileWith(token, ctx, x, y, size, state, number) {
+  if (!TILE_STATES.includes(state) || (state === 'revealed' && !validNumber(number))) {
+    placeholder(ctx, x, y, size);
+    return;
+  }
+  const px = devicePixel(ctx);
+  ctx.save();
+  ctx.translate(x, y);
   switch (state) {
     case 'closed':
-      fill(ctx, x, y, size, color(token, 'tile-closed'));
-      edge(token, ctx, x, y, size);
-      return;
+      drawRaisedFace(ctx, size, raised(token, 'tile-closed'), px);
+      break;
     case 'pressed':
-      fill(ctx, x, y, size, color(token, 'tile-pressed'));
-      return;
+      drawSunkenFace(ctx, size, sunken(token), px);
+      break;
     case 'revealed':
-      if (!validNumber(number)) break;
-      fill(ctx, x, y, size, color(token, 'tile-revealed'));
-      if (number > 0) digit(token, ctx, x, y, size, number);
-      return;
+      drawRevealedFace(ctx, size, revealed(token, 'tile-revealed'), px);
+      if (number > 0) drawNumberGlyph(ctx, size, number, { color: color(token, `number-${number}`), shadow: color(token, 'tile-number-shadow') });
+      break;
     case 'flagged':
-      fill(ctx, x, y, size, color(token, 'tile-flagged'));
-      edge(token, ctx, x, y, size);
-      flag(token, ctx, x, y, size);
-      return;
+      drawRaisedFace(ctx, size, raised(token, 'tile-flagged'), px);
+      drawFlagGlyph(ctx, size, flag(token));
+      break;
     case 'mine':
-      fill(ctx, x, y, size, color(token, 'tile-mine'));
-      mine(token, ctx, x, y, size);
-      return;
+      drawRevealedFace(ctx, size, revealed(token, 'tile-mine'), px);
+      drawMineGlyph(ctx, size, mine(token));
+      break;
     case 'exploded':
-      fill(ctx, x, y, size, color(token, 'tile-exploded'));
-      mine(token, ctx, x, y, size);
-      return;
+      drawRevealedFace(ctx, size, exploded(token), px);
+      drawMineGlyph(ctx, size, mine(token));
+      break;
     case 'wrong-flag':
-      fill(ctx, x, y, size, color(token, 'tile-wrong-flag'));
-      mine(token, ctx, x, y, size);
-      cross(ctx, x, y, size, color(token, 'tile-wrong-flag-mark'), Math.max(2, size / 10));
-      return;
+      drawRevealedFace(ctx, size, revealed(token, 'tile-wrong-flag'), px);
+      drawFlagGlyph(ctx, size, flag(token));
+      drawCross(ctx, size, cross(token));
+      break;
     default:
       break;
   }
-  placeholder(ctx, x, y, size);
+  ctx.restore();
 }
 
 // Paints one tile of `state` (and `number` when revealed) at x, y, size

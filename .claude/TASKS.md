@@ -839,7 +839,7 @@ Preconditions: none
 
 ## 136. 2D tile art parity with 3D
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/tile-art.js, js/textures.js, js/classic2d/tile-skin.js, css/tokens.css, tests/tile-skin.test.mjs, tests/tokens.test.mjs, tests/theme.test.mjs, .claude/domain/features/square-tile-skin.md
 Preconditions: none

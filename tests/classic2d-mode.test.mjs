@@ -1074,18 +1074,22 @@ test('in a browser, a Classic 2D Beginner game played by mouse and by keyboard c
     });
     const cues = () => ms(() => globalThis.__cues.splice(0));
     const muted = () => ms(async () => (await import('/js/audio.js')).sfx.muted);
-    // The board's cells, read from the canvas: the closed ones, and a cell's centre on the page.
+    // The board's cells, read from the canvas: the closed ones (a tile's centre is halfway along
+    // the closed face's shading), and a cell's centre on the page.
     const closedCells = () => ms(() => {
       const canvas = document.querySelector('#c2d-board canvas');
       const l = globalThis.__ms.board2D.layout;
       const ratio = canvas.width / canvas.getBoundingClientRect().width;
-      const hex = getComputedStyle(document.documentElement).getPropertyValue('--color-tile-closed').trim().replace('#', '');
-      const want = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+      const rgb = (name) => {
+        const hex = getComputedStyle(document.documentElement).getPropertyValue(name).trim().replace('#', '');
+        return [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+      };
+      const want = rgb('--color-tile-closed').map((v, i) => (v + rgb('--color-tile-face-shade')[i]) / 2);
       const ctx = canvas.getContext('2d');
       const out = [];
       for (let c = 0; c < 81; c++) {
-        const x = Math.round((l.offsetX + (c % 9) * l.tile + l.tile * 0.2) * ratio);
-        const y = Math.round((l.offsetY + Math.floor(c / 9) * l.tile + l.tile * 0.2) * ratio);
+        const x = Math.round((l.offsetX + (c % 9) * l.tile + l.tile * 0.5) * ratio);
+        const y = Math.round((l.offsetY + Math.floor(c / 9) * l.tile + l.tile * 0.5) * ratio);
         const [r, g, b] = ctx.getImageData(x, y, 1, 1).data;
         if (Math.abs(want[0] - r) + Math.abs(want[1] - g) + Math.abs(want[2] - b) <= 6) out.push(c);
       }

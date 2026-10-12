@@ -456,20 +456,25 @@ async function loadPlaywright() {
   }
 }
 
-// Runs in the page: the drawn fill of a Beginner tile (col, row), sampled inside its edge, as the
-// tile token it matches ('closed', 'pressed', 'revealed') or the raw colour.
+// Runs in the page: the drawn face of a Beginner tile (col, row), sampled at its centre, as the
+// tile face it matches ('closed', 'pressed', 'revealed') or the raw colour. A shaded face is
+// sampled halfway along its shading, from its colour to its shade.
 async function tileFill([col, row]) {
   const canvas = document.querySelector('#c2d-board canvas');
   const box = canvas.getBoundingClientRect();
   const layout = globalThis.__ms.board2D.layout;
   const ratio = canvas.width / box.width;
-  const x = Math.round((layout.offsetX + col * layout.tile + layout.tile * 0.2) * ratio);
-  const y = Math.round((layout.offsetY + row * layout.tile + layout.tile * 0.2) * ratio);
+  const x = Math.round((layout.offsetX + col * layout.tile + layout.tile * 0.5) * ratio);
+  const y = Math.round((layout.offsetY + row * layout.tile + layout.tile * 0.5) * ratio);
   const [r, g, b] = canvas.getContext('2d').getImageData(x, y, 1, 1).data;
   const style = getComputedStyle(document.documentElement);
-  for (const name of ['closed', 'pressed', 'revealed']) {
+  const rgb = (name) => {
     const hex = style.getPropertyValue(`--color-tile-${name}`).trim().replace('#', '');
-    const t = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    return [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  };
+  const faces = { closed: ['closed', 'face-shade'], pressed: ['pressed', 'pressed'], revealed: ['revealed', 'revealed-shade'] };
+  for (const [name, [face, shade]] of Object.entries(faces)) {
+    const t = rgb(face).map((v, i) => (v + rgb(shade)[i]) / 2);
     if (Math.abs(t[0] - r) + Math.abs(t[1] - g) + Math.abs(t[2] - b) <= 6) return name;
   }
   return `rgb(${r}, ${g}, ${b})`;

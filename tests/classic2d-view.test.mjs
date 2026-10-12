@@ -639,6 +639,8 @@ async function mountBoard({ cols, rows, scroll }) {
   const dpr = view.pixelRatio;
   const rgb = (x, y) => [...ctx.getImageData(Math.round(x * dpr), Math.round(y * dpr), 1, 1).data.slice(0, 3)];
   const hex = (name) => { const v = token(name).trim(); return [1, 3, 5].map((i) => parseInt(v.slice(i, i + 2), 16)); };
+  // A tile's centre is halfway along its face's shading, from the face colour to its shade.
+  const face = (name, shade) => hex(name).map((v, i) => Math.round((v + hex(shade)[i]) / 2));
   const centre = (c) => { const r = view.cellRect(c); return rgb(r.x + r.size / 2, r.y + r.size / 2); };
   const revealedZero = grid.index(0, rows - 1);
   return {
@@ -656,8 +658,8 @@ async function mountBoard({ cols, rows, scroll }) {
         inner: [game.cellState(inner), game.cellNumber(inner)],
       };
     })(),
-    revealed: { want: hex('--color-tile-revealed'), got: centre(revealedZero), cell: revealedZero, state: game.cellState(revealedZero) },
-    closed: { want: hex('--color-tile-closed'), got: centre(grid.index(cols - 1, 1)) },
+    revealed: { want: face('--color-tile-revealed', '--color-tile-revealed-shade'), got: centre(revealedZero), cell: revealedZero, state: game.cellState(revealedZero) },
+    closed: { want: face('--color-tile-closed', '--color-tile-face-shade'), got: centre(grid.index(cols - 1, 1)) },
     topLeftCell: view.cellAt(1, 1),
     middle: (() => {
       const c = view.cellAt(view.layout.width / 2, view.layout.height / 2);
@@ -722,8 +724,9 @@ test('in a browser, Beginner and Expert in both themes and a large scrolled cust
       const v = globalThis.__view;
       const r = v.cellRect(8 * 9);
       const d = v.canvas.getContext('2d').getImageData(Math.round(r.x + r.size / 2), Math.round(r.y + r.size / 2), 1, 1).data;
-      const want = token('--color-tile-revealed').trim();
-      return { got: [d[0], d[1], d[2]], want: [1, 3, 5].map((i) => parseInt(want.slice(i, i + 2), 16)) };
+      const hex = (name) => { const v = token(name).trim(); return [1, 3, 5].map((i) => parseInt(v.slice(i, i + 2), 16)); };
+      const want = hex('--color-tile-revealed').map((v, i) => Math.round((v + hex('--color-tile-revealed-shade')[i]) / 2));
+      return { got: [d[0], d[1], d[2]], want };
     });
     assert.ok(near(after.got, after.want), `repainted in the dark theme ${after.got} ~ ${after.want}`);
 

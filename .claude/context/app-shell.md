@@ -1017,8 +1017,9 @@ Component kit (`css/components.css`, catalogue in its head comment):
   or `css/components.css` reads it by `var(--…)`; `tests/tokens.test.mjs` and
   `tests/components.test.mjs` reject a custom property declared in either
   stylesheet or a read of an undeclared token.
-- The 3D scene (`js/render.js`, `js/textures.js`) never reads tokens and
-  never subscribes to theme changes: its sky, fog and clear colour come from
+- The 3D scene (`js/render.js`, `js/textures.js`, and the tile recipe
+  `js/tile-art.js` the atlas draws through) never reads tokens and never
+  subscribes to theme changes: its sky, fog and clear colour come from
   `bindScenePalette`, and its tiles, numbers and effects keep one palette in
   both themes.
 - `js/ui.js` keeps no `localStorage` key. Nothing reads, writes, shows or

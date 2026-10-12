@@ -97,22 +97,78 @@ test('tokens.css declares the full token set on :root', () => {
 });
 
 const TILE_TOKENS = [
-  '--color-tile-closed', '--color-tile-edge', '--color-tile-cursor', '--color-tile-pressed', '--color-tile-revealed',
+  '--color-tile-closed', '--color-tile-cursor', '--color-tile-pressed', '--color-tile-revealed',
   '--color-tile-flagged', '--color-tile-flag', '--color-tile-mine', '--color-tile-mine-glyph',
   '--color-tile-exploded', '--color-tile-wrong-flag', '--color-tile-wrong-flag-mark',
+  // the cube-face recipe (js/tile-art.js): the raised face's rim, bevel and shading, the
+  // revealed and exploded faces' rim, edge and shading, the flag cloth's shading
+  '--color-tile-rim', '--color-tile-bevel-light', '--color-tile-bevel-dark', '--color-tile-face-shade',
+  '--color-tile-revealed-rim', '--color-tile-revealed-edge', '--color-tile-revealed-shade',
+  '--color-tile-exploded-edge', '--color-tile-exploded-shade', '--color-tile-flag-shade',
   '--color-board-frame', '--color-board-gap',
+];
+// The recipe's translucent layers: the gloss and its fade, the mine's highlight, the flag
+// cloth's and the number's shadows, the wrong-flag cross's outline.
+const TILE_LAYER_TOKENS = [
+  '--color-tile-gloss', '--color-tile-gloss-fade', '--color-tile-mine-highlight', '--color-tile-flag-shadow',
+  '--color-tile-number-shadow', '--color-tile-wrong-flag-outline',
 ];
 const NUMBER_TOKENS = Array.from({ length: 8 }, (_, i) => `--color-number-${i + 1}`);
 
-test('tile tokens cover every state, the board frame and gap, and numbers 1–8, in both themes', () => {
+test('tile tokens cover every state, the cube-face recipe, the board frame and gap, and numbers 1–8, in both themes', () => {
   for (const theme of ['light', 'dark']) {
     for (const name of [...TILE_TOKENS, ...NUMBER_TOKENS]) {
       assert.ok(THEMES[theme].has(name), `${theme} theme declares ${name}`);
       assert.equal(parseColor(THEMES[theme].get(name))[3], 1, `${theme} ${name} is opaque`);
     }
+    for (const name of TILE_LAYER_TOKENS) {
+      assert.ok(THEMES[theme].has(name), `${theme} theme declares ${name}`);
+      assert.doesNotThrow(() => parseColor(THEMES[theme].get(name)), `${theme} ${name} is a colour`);
+    }
   }
+  assert.ok(!THEMES.light.has('--color-tile-edge'), 'the flat edge is gone: the rim and bevel replace it');
   const numbers = new Set(NUMBER_TOKENS.map((n) => THEMES.light.get(n).toLowerCase()));
   assert.equal(numbers.size, 8, 'the eight light number colours are distinct');
+});
+
+// The 3D atlas's own palette (js/textures.js ATLAS), read from its source: the 3D
+// renderer imports three.js and stays unthemed, so it is never imported here.
+const ATLAS_SRC = readFileSync(new URL('../js/textures.js', import.meta.url), 'utf8');
+const ATLAS = (() => {
+  const at = ATLAS_SRC.indexOf('const ATLAS = Object.freeze({');
+  assert.ok(at >= 0, 'js/textures.js declares its literal ATLAS palette');
+  const body = ATLAS_SRC.slice(at, ATLAS_SRC.indexOf('});', at));
+  return new Map([...body.matchAll(/(\w+): '([^']+)'/g)].map((m) => [m[1], m[2]]));
+})();
+
+test('light, the 2D tile looks like the 3D cube: each recipe token is the 3D atlas colour', async () => {
+  const { shade } = await import('../js/tile-art.js');
+  const FACE_SHADE = -0.06; // the atlas shades a revealed face 6% darker toward its bottom-right
+  const same = {
+    '--color-tile-rim': 'rim', '--color-tile-bevel-light': 'bevelLight', '--color-tile-bevel-dark': 'bevelDark',
+    '--color-tile-closed': 'face', '--color-tile-flagged': 'face', '--color-tile-face-shade': 'faceShade',
+    '--color-tile-gloss': 'gloss', '--color-tile-gloss-fade': 'glossFade',
+    '--color-tile-revealed-rim': 'revealedRim', '--color-tile-revealed-edge': 'revealedEdge',
+    '--color-tile-revealed': 'revealed', '--color-tile-mine': 'revealed', '--color-tile-wrong-flag': 'revealed',
+    '--color-tile-exploded': 'exploded', '--color-tile-exploded-edge': 'explodedEdge',
+    '--color-tile-mine-glyph': 'mine', '--color-tile-mine-highlight': 'mineHighlight',
+    '--color-tile-flag': 'flag', '--color-tile-flag-shade': 'flagShade', '--color-tile-flag-shadow': 'flagShadow',
+    '--color-tile-number-shadow': 'numberShadow',
+    '--color-tile-wrong-flag-mark': 'wrongFlagMark', '--color-tile-wrong-flag-outline': 'wrongFlagOutline',
+  };
+  for (const [name, key] of Object.entries(same)) {
+    assert.ok(ATLAS.has(key), `the atlas palette has ${key}`);
+    assert.deepEqual(parseColor(THEMES.light.get(name)), parseColor(ATLAS.get(key)), `light ${name} is the atlas's ${key}`);
+  }
+  assert.equal(THEMES.light.get('--color-tile-revealed-shade'), shade(ATLAS.get('revealed'), FACE_SHADE), 'the revealed face shades as the atlas does');
+  assert.equal(THEMES.light.get('--color-tile-exploded-shade'), shade(ATLAS.get('exploded'), FACE_SHADE), 'the exploded face shades as the atlas does');
+});
+
+test('dark, the recipe is drawn for the dark theme: every face and band differs from its light value', () => {
+  for (const name of ['--color-tile-rim', '--color-tile-bevel-light', '--color-tile-bevel-dark', '--color-tile-closed', '--color-tile-face-shade',
+    '--color-tile-revealed-rim', '--color-tile-revealed-edge', '--color-tile-revealed', '--color-tile-revealed-shade', '--color-tile-pressed']) {
+    assert.notDeepEqual(parseColor(THEMES.dark.get(name)), parseColor(THEMES.light.get(name)), `dark ${name} differs`);
+  }
 });
 
 test('token names are semantic, never named after a hue', () => {
@@ -163,13 +219,23 @@ for (const theme of ['light', 'dark']) {
     assert.ok(label >= 3, `--color-accent-ink on --color-accent: ${label.toFixed(2)}:1`);
   });
 
-  test(`${theme}: every number colour meets 4.5:1 on the revealed tile`, () => {
+  test(`${theme}: every number colour meets 4.5:1 on every point of the shaded revealed face`, () => {
     const t = THEMES[theme];
-    const revealed = parseColor(t.get('--color-tile-revealed'));
-    for (const n of NUMBER_TOKENS) {
-      const r = contrast(parseColor(t.get(n)), revealed);
-      assert.ok(r >= 4.5, `${n} on --color-tile-revealed: ${r.toFixed(2)}:1`);
+    for (const face of ['--color-tile-revealed', '--color-tile-revealed-shade']) {
+      const bg = parseColor(t.get(face));
+      for (const n of NUMBER_TOKENS) {
+        const r = contrast(parseColor(t.get(n)), bg);
+        assert.ok(r >= 4.5, `${n} on ${face}: ${r.toFixed(2)}:1`);
+      }
     }
+  });
+
+  test(`${theme}: closed and revealed differ by relief and border: a bevel lit and shaded, a rim unlike the revealed rim`, () => {
+    const t = THEMES[theme];
+    const lum = (name) => luminance(parseColor(t.get(name)));
+    assert.ok(lum('--color-tile-bevel-light') > lum('--color-tile-closed'), `${theme}: the lit bevel is lighter than the face`);
+    assert.ok(lum('--color-tile-bevel-dark') < lum('--color-tile-face-shade'), `${theme}: the dark bevel is darker than the face`);
+    assert.notDeepEqual(parseColor(t.get('--color-tile-rim')), parseColor(t.get('--color-tile-revealed-rim')), `${theme}: the rims differ`);
   });
 
   test(`${theme}: a scrolling board's shadow and scroll bar are translucent tokens; the bar meets 3:1 on every tile`, () => {
@@ -187,10 +253,10 @@ for (const theme of ['light', 'dark']) {
     }
   });
 
-  test(`${theme}: the cursor ring meets 3:1 on the tile edge and every tile it can sit on`, () => {
+  test(`${theme}: the cursor ring meets 3:1 on the lit bevel it covers and every tile face it can sit on`, () => {
     const t = THEMES[theme];
     const ring = parseColor(t.get('--color-tile-cursor'));
-    for (const bg of ['--color-tile-edge', '--color-tile-closed', '--color-tile-pressed', '--color-tile-revealed']) {
+    for (const bg of ['--color-tile-bevel-light', '--color-tile-closed', '--color-tile-face-shade', '--color-tile-pressed', '--color-tile-revealed']) {
       const r = contrast(ring, parseColor(t.get(bg)));
       assert.ok(r >= 3, `--color-tile-cursor on ${bg}: ${r.toFixed(2)}:1`);
     }
@@ -244,7 +310,7 @@ test('the dark sky sits with the dark backdrop: darker than the light sky, no li
 });
 
 test('the 3D renderer reads no token: the shell hands it the scene palette', () => {
-  for (const f of ['../js/render.js', '../js/textures.js']) {
+  for (const f of ['../js/render.js', '../js/textures.js', '../js/tile-art.js']) {
     const src = readFileSync(new URL(f, import.meta.url), 'utf8');
     assert.doesNotMatch(src, /--color-|data-theme|getPropertyValue/, f);
   }

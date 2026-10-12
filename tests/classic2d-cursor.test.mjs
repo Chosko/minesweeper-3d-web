@@ -771,7 +771,7 @@ test('in a browser, a Beginner game on a fixed board is played by keyboard to a 
   }
 });
 
-test('in a browser, the cursor ring an arrow key moves stands out from the tile edge in both themes', async (t) => {
+test('in a browser, the cursor ring an arrow key moves stands out from the lit bevel of the tile in both themes', async (t) => {
   const playwright = await loadPlaywright();
   if (!playwright) {
     t.skip('Playwright is not installed');
@@ -798,22 +798,22 @@ test('in a browser, the cursor ring an arrow key moves stands out from the tile 
       const seen = await page.evaluate(() => {
         const { view } = globalThis.__play;
         const ctx = view.canvas.getContext('2d');
-        // The middle of a tile's left band, where both the edge and the ring are drawn.
+        // The middle of a tile's left band, where both the lit bevel and the ring are drawn.
         const band = (c) => {
           const r = view.cellRect(c);
           const w = Math.max(2, Math.round(r.size / 12));
           return [...ctx.getImageData(Math.floor(r.x + w / 2), Math.floor(r.y + r.size / 2), 1, 1).data.slice(0, 3)];
         };
         const probe = document.createElement('div');
-        probe.style.color = getComputedStyle(document.documentElement).getPropertyValue('--color-tile-edge');
+        probe.style.color = getComputedStyle(document.documentElement).getPropertyValue('--color-tile-bevel-light');
         document.body.append(probe);
-        const edge = getComputedStyle(probe).color.match(/\d+/g).slice(0, 3).map(Number);
+        const bevel = getComputedStyle(probe).color.match(/\d+/g).slice(0, 3).map(Number);
         probe.remove();
-        return { cursor: view.cursor, ring: band(view.cursor), neighbour: band(view.cursor + 1), edge };
+        return { cursor: view.cursor, ring: band(view.cursor), neighbour: band(view.cursor + 1), bevel };
       });
       assert.equal(seen.cursor, 10, `${theme}: the arrows moved the cursor to (1, 1)`);
-      assert.deepEqual(seen.neighbour, seen.edge, `${theme}: a closed tile's band is the tile edge`);
-      assert.notDeepEqual(seen.ring, seen.edge, `${theme}: the ring differs from the tile edge`);
+      assert.deepEqual(seen.neighbour, seen.bevel, `${theme}: a closed tile's band is its lit bevel`);
+      assert.notDeepEqual(seen.ring, seen.bevel, `${theme}: the ring differs from the lit bevel`);
       assert.notDeepEqual(seen.ring, seen.neighbour, `${theme}: the ring differs from its neighbour's band`);
       assert.deepEqual(errors, []);
       await page.close();
