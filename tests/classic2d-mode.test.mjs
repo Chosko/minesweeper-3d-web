@@ -682,6 +682,11 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
     // The board choice reopens on the last choice.
     await page.click('#menu-entry-classic-2d');
     assert.equal(await active(), 'expert');
+    // Each size carries one detail line under its size line; the abandoned game set no best.
+    const lines = await ms(() => [...document.querySelectorAll('#c2d-choice [data-size] [data-detail]')].map((l) => [l.closest('[data-size]').dataset.size, l.className, l.textContent]));
+    assert.deepEqual(lines.map(([size, cls]) => [size, cls]), [['beginner', 'ui-menu__detail'], ['intermediate', 'ui-menu__detail'], ['expert', 'ui-menu__detail']]);
+    assert.match(lines[2][2], /^21 % mines · ~\d+ 3BV · —$/);
+    assert.equal(await ms(() => document.getElementById('c2d-noguess').checked), false, 'the switch as last played');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

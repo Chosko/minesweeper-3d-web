@@ -49,6 +49,9 @@ kbd {
 }
 #menu, #board-choice, #coming-soon, #c2d-choice, #settings, #records { background: linear-gradient(180deg, rgba(200, 225, 255, 0.15), rgba(200, 225, 255, 0.35)); }
 body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #records) { background: none; }
+/* The main menu's Play again sits at the end of the title row; the session strip under the entries keeps its numbers aligned. */
+#menu-again { margin-inline-start: auto; }
+#menu-strip { font-variant-numeric: var(--font-numeric-tabular); }
 #records-chart { display: block; width: 100%; height: 160px; }
 #records-games, #records-replays-table { width: 100%; border-collapse: collapse; font-variant-numeric: var(--font-numeric-tabular); }
 #records-games caption { caption-side: bottom; text-align: left; padding-top: var(--space-2); }

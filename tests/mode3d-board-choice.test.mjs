@@ -16,6 +16,7 @@ import {
 } from '../js/mode3d/board-choice.js';
 import { NOGUESS_DENSITY_HINT, DENSITY_HINT_TEXT, NOGUESS_HELP_TEXT } from '../js/classic2d/board-setup.js';
 import { createLastBoardChoice } from '../js/shell/menu.js';
+import { typicalBbbv } from '../js/records/typical-bbbv.js';
 import { createStorage } from '../js/platform/storage.js';
 import { createMemoryBackend } from '../js/platform/memory-backend.js';
 
@@ -341,7 +342,7 @@ test('the shell wires the 3D board choice, its last choice and every control', (
   assert.match(MAIN, /import \{[^}]*bindBoardChoice as bindBoardChoice3D[^}]*\} from '\.\/mode3d\/board-choice\.js'/);
   assert.match(MAIN, /createLastBoardChoice\(\{ storage, doc: LAST_CHOICE_DOC_3D/);
   assert.match(MAIN, /LAST_CHOICE_3D\.load\(\)/, 'the last 3D choice is loaded at start-up');
-  assert.match(MAIN, /'board-choice': \{[^\n]*defaultFocus: '\[data-preset\]\[data-last\]'[^\n]*CHOICE_3D\.show\(LAST_CHOICE_3D\.current, \{ played: LAST_CHOICE_3D\.played \}\)/);
+  assert.match(MAIN, /'board-choice': \{[^\n]*defaultFocus: '\[data-preset\]\[data-last\]'[^\n]*CHOICE_3D\.show\(LAST_CHOICE_3D\.current, \{ played: LAST_CHOICE_3D\.played, details: presetDetails\(CHOICE_ITEMS\['3d'\], RECORDS\) \}\)/);
   assert.match(MAIN, /onStart: \(choice\) => \{[^\n]*LAST_CHOICE_3D\.save\(choice\)[^\n]*MODES\.start\('3d', boardOf\(choice\)\)/);
   const head = read('css/components.css').match(/^\/\*([\s\S]*?)\*\//)[1];
   assert.match(head, /3D board choice \(index\.html #board-choice\)[\s\S]*?no-guess ui-toggle[\s\S]*?Default focus: the last board choice/);
@@ -414,6 +415,9 @@ test('in a browser, the custom board validates, the switch follows the limit and
     assert.equal(await ms(() => [...document.querySelectorAll('#board-choice [data-preset] [data-last]')].filter((l) => !l.classList.contains('hidden')).length), 0,
       'nothing is "Last played" before a game');
     assert.equal(await ms(() => document.querySelectorAll('#board-choice [data-best]').length), 0, 'no best times');
+    // Each preset carries one detail line, between its size line and its "Last played" line.
+    assert.deepEqual(await ms(() => [...document.querySelectorAll('#board-choice [data-preset]:not([type="submit"])')].map((b) => [...b.children].map((c) => (c.hasAttribute('data-detail') ? `detail: ${c.textContent}` : c.className)))),
+      PRESETS.map((p) => ['ui-menu__label', 'ui-menu__detail', `detail: ${['4.6', '7.8', '11'][PRESETS.indexOf(p)]} % mines · ~${typicalBbbv({ mode: '3d', width: p.X, height: p.Y, depth: p.Z, mines: p.mines, noGuess: true })} 3BV · —`, 'ui-menu__detail hidden']));
 
     // The fields name what is out of range.
     await page.fill('#c-y', '0');

@@ -187,19 +187,26 @@
      ui-stat-row       a row of ui-stat readouts.
 
    Main menu (index.html #menu): ui-card ui-screen--wide holding the title
-     row, one ui-menu of the entries (Classic 2D, 3D, Records, Settings; each
-     a route, data-entry naming it, the last mode played marked with a
-     "Last played" ui-menu__detail) and a ui-row footer (Controls, Sound,
-     volume ui-slider, credit ui-link). Default focus: the last mode played
+     row (ending in the Play again primary button, "Play again: <board>",
+     which starts the last board played in one step and is hidden while
+     there is none, or for a 3D board without WebGL 2), one ui-menu of the
+     entries (Classic 2D, 3D, Records, Settings; each a route, data-entry
+     naming it, the last mode played marked with a "Last played"
+     ui-menu__detail), the ui-text--muted session strip under it (the last
+     board played, its best, today's games on it and its streak; hidden
+     while there is none) and a ui-row footer (Controls, Sound, volume
+     ui-slider, credit ui-link). Default focus: the last mode played
      (data-last), else the first entry.
    3D board choice (index.html #board-choice): ui-card ui-screen--wide
      holding the title, the presets as a ui-menu named Presets, each item
-     labelled with its family (Cube Beginner, …), with the presets' no-guess ui-toggle under it and its ui-text--muted helper
+     labelled with its family (Cube Beginner, …) over its size line and a
+     detail line (density, typical 3BV, the player's best and streak on the
+     board the presets' switch names, or a dash), with the presets' no-guess ui-toggle under it and its ui-text--muted helper
      line, the custom board as a ui-panel of ui-field entries with
      ui-actions--row (Random, Start), an info line (ui-text--warning on an
      invalid board) and the custom board's no-guess ui-toggle under a
      ui-text--muted line giving why while it is disabled (a side of 2 cells,
-     or the cell-count limit) and over a ui-text--muted density hint shown
+     or the cell-count limit), labelled as keeping separate records, and over a ui-text--muted density hint shown
      above 25 % mines with no-guess on, and ui-actions--row (Back);
      js/mode3d/board-choice.js marks the last board choice data-last with a
      "Last played" line once the player has played. Default focus: the last
@@ -247,8 +254,10 @@
      is always in view (#settings-actions, css/style.css).
      Default focus: the look sensitivity slider.
    Classic 2D board choice (index.html #c2d-choice): ui-card ui-screen--wide
-     holding the title, one ui-menu of the standard sizes (data-size; the
-     last board choice marked data-last with a "Last played"
+     holding the title, one ui-menu of the standard sizes (data-size; each
+     item's size line over a detail line — density, typical 3BV, the
+     player's best and streak on the board the switch names, or a dash —
+     and the last board choice marked data-last with a "Last played"
      ui-menu__detail), the no-guess ui-toggle under it with its
      ui-text--muted helper line, the custom board as a ui-panel of ui-field
      entries (width, height, mines) with ui-actions--row (Start,

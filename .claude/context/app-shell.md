@@ -46,6 +46,11 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
     and each mode's last board choice (`MENU_ENTRIES`,
     `PLACEHOLDER_SCREEN`, `entryRoute`, `createMenu`, `createLastMode`,
     `createLastBoardChoice`).
+  - `returning.js` — the returning player's surfaces as text: each board
+    choice's preset detail lines, and the main menu's session strip and
+    Play again label over the last board played (`CHOICE_ITEMS`,
+    `presetDetails`, `lastBoard`, `returningMenu`); pure, over the records'
+    queries it is handed.
   - `lock-fallback.js` — the 3D ready card's pointer-lock refusal counter
     (`createLockFallback`, `LOCK_MESSAGES`, `RELOCK_COOLDOWN_MS`): which
     message a refusal shows and when the page counts as blocked; pure.
@@ -202,6 +207,26 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   last board choice in its own document; the 3D mode keeps
   `mode3d.lastChoice` with it.
 
+`js/shell/returning.js` (its head comment carries the formats)
+- `densityText(board)` → `'7.8 % mines'` (a whole percent, one decimal
+  below 10 %); `presetDetail(board, records)` → `'7.8 % mines · ~120 3BV ·
+  Best 48.213 s · 3 in a row'` — the 3BV part from `typicalBbbv`
+  ([records.md](records.md)), left out with no entry; the records part
+  `Best <formatTime>` plus ` · <n> in a row` from a current streak of 1, or
+  `—` with no best.
+- `CHOICE_ITEMS` — `{ 'classic-2d': {beginner, intermediate, expert},
+  '3d': {<preset id>} }`, each item's board identity fields without
+  `noGuess`; `presetDetails(items, records)` → `{ [item]: { guess,
+  noGuess } }`, what both board choice binders' `show` take as `details`.
+- `lastBoard(mode, { [mode]: { choice, played } })` → `{ mode, choice,
+  board }` for the last mode played when its choice was played, else null.
+- `sessionStrip(board, records, now?)` → `'Expert · best 13.343 s · today
+  7 games · streak 2'` (today: the history entries' `endedAt` on `now`'s
+  local day; streak: `counters().currentStreak`), null with no board;
+  `playAgainLabel(board)` → `'Play again: Expert · no-guess'`;
+  `returningMenu({last, records, missing?, now?})` → `{ strip, again }`,
+  `again` null for a 3D board when `missing` holds `'webgl2'`.
+
 `js/shell/pause.js`
 - `PAUSE_SOURCES` (`key`, `pad`, `button`, `blur`, `hidden`), `AUTO_SOURCES`
   (`blur`, `hidden`), `HAND_OFFS` (`finished`, `abandoned`, `inProgress`),
@@ -296,7 +321,9 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   game's HUD, help panel, hint strip and toast);
   Classic 2D `setBoard2D(board)`, `setBoardStatus({generating, failure})`;
   3D `setBoardStatus3D({generating, failure})` (`#m3d-status`); menu
-  `setLastMode(mode|null)`; pause confirmation
+  `setLastMode(mode|null)`, `setReturning({strip, again})` (the session
+  strip `#menu-strip` and Play again `#menu-again`, each hidden while
+  null; Play again's click is `onMenuPlayAgain`); pause confirmation
   `showConfirm({message, confirmLabel}, onYes, onNo)`, `isConfirmOpen`,
   `closeConfirm` (→ false when none is open); the Settings page's Reset all
   data confirmation `closeResetConfirm` (→ false when none is open,
@@ -511,6 +538,17 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   `LAST_MODE` stores the mode of every started
   game in the platform-storage document `shell.lastMode`; at boot `load()`
   marks the entry and refocuses it if the player has not moved yet.
+  `lastPlayed()` is the last board played (`lastBoard` over `LAST_MODE`,
+  `LAST_CHOICE_2D` — played once it is not `DEFAULT_CHOICE` — and
+  `LAST_CHOICE_3D.played`); `showReturning()` hands
+  `returningMenu(...)` to `ui.setReturning` on the menu's show, on every
+  `RECORDS.onChange` and once `LAST_MODE.load()` and the 2D last choice
+  have settled. `playAgainFromMenu(source)` (the menu's Play again, only on
+  the menu) unlocks the audio and starts the last board, saving nothing
+  new (the 2D mode's start re-saves the same choice): `MODES.start('classic-2d', choice)`, or for 3D, given
+  `WEBGL2`, `MODES.start('3d', boardOf(choice))` then
+  `enterPlay3D(source)` as the results flow's restart does. Both board
+  choices' `show` receive `presetDetails(CHOICE_ITEMS[mode], RECORDS)`.
 - **Pause controller.** `PAUSE` is the one owner of pause, resume, restart and
   back to menu. Every pause source goes through `pauseGame(source)`, which
   opens nothing during the 3D end delay and otherwise calls
@@ -850,28 +888,34 @@ Component kit (`css/components.css`, catalogue in its head comment):
   first-use hint strip (`#hint-strip`, its text `#hint-strip-text`, its ×
   `#hint-strip-close`) sits at the bottom left of the play area; on the
   Classic 2D board `#c2d.c2d--hint` gives it the room below the board.
-- Main menu (`#menu`): a `ui-card ui-screen--wide` with the title row, one
-  `ui-menu` of the four entries (`data-entry`; `UI` appends a "Last played"
-  `ui-menu__detail` line and sets `data-last` on the last mode played) and a
-  `ui-row` footer (Controls, Sound, volume `ui-slider`, credit `ui-link`).
+- Main menu (`#menu`): a `ui-card ui-screen--wide` with the title row
+  (ending in the primary Play again `#menu-again`, hidden while there is no
+  last board, pushed to the row's end by `css/style.css`), one `ui-menu` of
+  the four entries (`data-entry`; `UI` appends a "Last played"
+  `ui-menu__detail` line and sets `data-last` on the last mode played), the
+  `ui-text--muted` session strip `#menu-strip` under it (hidden while there
+  is no last board) and a `ui-row` footer (Controls, Sound, volume
+  `ui-slider`, credit `ui-link`).
 - 3D board choice (`#board-choice`, bound by `bindBoardChoice` of
   `js/mode3d/board-choice.js`, [mode3d.md](mode3d.md)): a `ui-card
   ui-screen--wide` with one `ui-menu` (`aria-label="Presets"`) of the three
   cube presets, each labelled Cube Beginner, … (`presetTitle`; items carry
-  `data-preset`; the binder appends a "Last
-  played" `ui-menu__detail` line and sets `data-last` on the last board
-  choice) and the presets' no-guess `ui-toggle` under it, the custom board
+  `data-preset`; the binder appends the detail line (`data-detail`) and a
+  "Last played" `ui-menu__detail` line and sets `data-last` on the last
+  board choice) and the presets' no-guess `ui-toggle` under it, the custom board
   as a `ui-panel` of `ui-field` entries with Random/Start in
   `ui-actions--row`, its info line (`ui-text--warning` on an invalid or very
   large board), the custom board's no-guess `ui-toggle` under the line
   giving its reason — a side of 2 cells or the cell-count limit — while it
-  is disabled, and a Back button.
+  is disabled, labelled "No-guess board · separate records", and a Back
+  button.
 - Classic 2D board choice (`#c2d-choice`): a `ui-card ui-screen--wide` with
   one `ui-menu` of the standard sizes (`data-size`), the custom board as a
   `ui-panel` of `ui-field` entries with Start (`data-size="custom"`) and an
   info line (`ui-text--warning` on an invalid board), the no-guess
-  `ui-toggle` and Back; `bindBoardChoice` marks the last board choice
-  `data-last` with a "Last played" line once the player has played.
+  `ui-toggle` and Back; `bindBoardChoice` gives each size its detail line
+  (`data-detail`) and marks the last board choice `data-last` with a "Last
+  played" line once the player has played.
 - Placeholder (`#coming-soon`): the one "coming soon" screen, a `ui-card
   ui-screen` whose title and text name the entry, with a primary Back.
 - Records screen (`#records`, filled by `createRecordsView`,

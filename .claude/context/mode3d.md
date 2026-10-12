@@ -63,8 +63,12 @@ three to the screens, the renderer and the pointer-lock flow
 - `presetKey(p)` (`'6,6,6,10'`, the items' `data-preset`), `presetByKey`,
   `presetLabel(p)`; `presetTitle(p)` → 'Cube Beginner' (family and name: the preset item's label, as results and Records name the board).
 - `LAST_CHOICE_DOC` = `'mode3d.lastChoice'`, `LAST_CHOICE_VERSION` = 1.
-- `bindBoardChoice({root, onStart, onBack})` → `show(choice, {played})`,
-  `destroy()`. Its head comment lists the `data-*` hooks it reads in `root`.
+- `bindBoardChoice({root, onStart, onBack})` → `show(choice, {played,
+  details})`, `destroy()`. Its head comment lists the `data-*` hooks it
+  reads in `root`. `details` (`{ [preset id]: { guess, noGuess } }`, the
+  shell's `presetDetails`, [app-shell.md](app-shell.md)) fills each
+  preset's detail line `[data-detail]` for the presets' switch, refilled on
+  its `change`; the binder never reads the records itself.
 
 `js/mode3d/session.js`
 - `create3DGame({X, Y, Z, mines, minePositions?})` → `{view, mines,
@@ -142,7 +146,10 @@ three to the screens, the renderer and the pointer-lock flow
   nothing were stored. Picking a board saves the choice (a failed save
   never stops the game) and starts `MODES.start('3d', boardOf(choice))`;
   the board choice's `show` marks it `data-last`, with "Last played" only
-  once a choice was played or loaded.
+  once a choice was played or loaded. Each preset item holds its label,
+  its size line, the detail line and the "Last played" line, in that
+  order; the custom board's switch is labelled "No-guess board · separate
+  records", the presets' says it in its helper line.
 - **Closed box, then a board.** The session opens on a game awaiting its
   first click, whose view shows the closed box. Flags may be placed and
   removed; a left release on a flagged cell, and any chord, does nothing.

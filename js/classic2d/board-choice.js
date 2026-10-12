@@ -23,9 +23,13 @@
 //             [data-density-hint] under it, the no-guess switch [data-noguess] (under the sizes,
 //             for every board) and the Back button [data-back]. The info line and the density hint
 //             follow the fields and the switch live; the hint never refuses a board.
-//   show(choice, { played })  fills the fields and the switch from `choice` and marks its size with
-//             data-last, the screen's default focus; its "Last played" detail line shows only when
-//             `played` (default true) — not for the default choice of a player who never played.
+//   show(choice, { played, details })  fills the fields and the switch from `choice` and marks its
+//             size with data-last, the screen's default focus; its "Last played" detail line shows
+//             only when `played` (default true) — not for the default choice of a player who never
+//             played. `details` ({ [size]: { guess, noGuess } }, the shell's from
+//             js/shell/returning.js) fills each size's detail line [data-detail], under its size line,
+//             for the position of the no-guess switch, and again whenever the switch changes; a size
+//             without one shows no detail line.
 //   onStart(choice) when a size is picked or a valid custom board submitted; onBack() on Back.
 
 import {
@@ -77,14 +81,30 @@ export function bindBoardChoice({ root, onStart, onBack }) {
   const back = root.querySelector('[data-back]');
   hint.textContent = DENSITY_HINT_TEXT;
   let last = null;
+  let details = {};
 
   for (const b of items) {
+    if (!b.classList.contains('ui-menu__item')) continue;
+    const detail = b.ownerDocument.createElement('span');
+    detail.className = 'ui-menu__detail hidden';
+    detail.dataset.detail = '';
+    b.appendChild(detail);
     const line = b.ownerDocument.createElement('span');
     line.className = 'ui-menu__detail hidden';
     line.dataset.last = '';
     line.textContent = 'Last played';
-    if (b.classList.contains('ui-menu__item')) b.appendChild(line);
+    b.appendChild(line);
   }
+  const fillDetails = () => {
+    for (const b of items) {
+      const line = b.querySelector('[data-detail]');
+      if (!line) continue;
+      const text = details[b.dataset.size]?.[noGuess.checked ? 'noGuess' : 'guess'] ?? '';
+      line.textContent = text;
+      line.classList.toggle('hidden', !text);
+    }
+  };
+  const onNoGuess = () => { fillDetails(); update(); };
 
   const fields = () => ({ width: inputs[0].value, height: inputs[1].value, mines: inputs[2].value });
   const custom = () => ({ width: int(inputs[0].value), height: int(inputs[1].value), mines: int(inputs[2].value) });
@@ -123,13 +143,14 @@ export function bindBoardChoice({ root, onStart, onBack }) {
 
   for (const b of items) b.addEventListener('click', onItem);
   for (const inp of inputs) inp.addEventListener('input', update);
-  noGuess.addEventListener('change', update);
+  noGuess.addEventListener('change', onNoGuess);
   form.addEventListener('submit', onSubmit);
   back?.addEventListener('click', onBackClick);
 
   return {
-    show(choice, { played = true } = {}) {
+    show(choice, { played = true, details: lines = {} } = {}) {
       last = choice;
+      details = lines;
       inputs[0].value = String(choice.custom.width);
       inputs[1].value = String(choice.custom.height);
       inputs[2].value = String(choice.custom.mines);
@@ -139,12 +160,13 @@ export function bindBoardChoice({ root, onStart, onBack }) {
         b.toggleAttribute('data-last', isLast);
         b.querySelector('[data-last]')?.classList.toggle('hidden', !(isLast && played));
       }
+      fillDetails();
       update();
     },
     destroy() {
       for (const b of items) b.removeEventListener('click', onItem);
       for (const inp of inputs) inp.removeEventListener('input', update);
-      noGuess.removeEventListener('change', update);
+      noGuess.removeEventListener('change', onNoGuess);
       form.removeEventListener('submit', onSubmit);
       back?.removeEventListener('click', onBackClick);
     },

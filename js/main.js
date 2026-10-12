@@ -16,6 +16,7 @@ import { createSession, create3DGame } from './mode3d/session.js';
 import { createSampler3D } from './replay/sampler-3d.js';
 import { createGenerationClient } from './generation/client.js';
 import { createMenu, createLastMode, createLastBoardChoice, UNAVAILABLE_REASONS } from './shell/menu.js';
+import { CHOICE_ITEMS, presetDetails, lastBoard, returningMenu } from './shell/returning.js';
 import { createFirstUse, stripShown, hidCube, aimHintCell, createDwell, AIM_DWELL_MS } from './shell/first-use.js';
 import { createActiveDevice, hintText } from './settings/bindings.js';
 import { createPauseController, restartInput, RESTART_NOTICE } from './shell/pause.js';
@@ -268,6 +269,7 @@ function toggleSound() { SETTINGS.set('muted', !SETTINGS.get('muted')); }
 // Clicks made with the controller (A) are not user gestures for pointer lock: they enter lockless play.
 const ui = new UI({
   onMenuEntry: (id) => MENU.open(id),
+  onMenuPlayAgain: () => playAgainFromMenu(padGesture ? 'pad' : 'pointer'),
   onBack: () => shellBack('pointer'),
   onReadyClick: () => { sfx.unlock(); if (padGesture) padResume(); else input.requestLock(); },
   onReadyDrag: () => enterDragLook(),
@@ -327,8 +329,8 @@ bindSettingControls(document.querySelectorAll('[data-setting]'), SETTINGS, {
 // Every screen change goes through SHELL; each screen declares its default focus and its Back.
 const SHELL = createRouter({
   screens: {
-    menu: { defaultFocus: '[data-entry][data-last]', show: () => { MODES.leave(); showMenuBackdrop(); ui.showMenu(); } },
-    'board-choice': { defaultFocus: '[data-preset][data-last]', show: () => { MODES.leave(); showMenuBackdrop(); ui.showBoardChoice(); CHOICE_3D.show(LAST_CHOICE_3D.current, { played: LAST_CHOICE_3D.played }); } },
+    menu: { defaultFocus: '[data-entry][data-last]', show: () => { MODES.leave(); showMenuBackdrop(); ui.showMenu(); showReturning(); } },
+    'board-choice': { defaultFocus: '[data-preset][data-last]', show: () => { MODES.leave(); showMenuBackdrop(); ui.showBoardChoice(); CHOICE_3D.show(LAST_CHOICE_3D.current, { played: LAST_CHOICE_3D.played, details: presetDetails(CHOICE_ITEMS['3d'], RECORDS) }); } },
     'coming-soon': { defaultFocus: '#coming-soon-back', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showComingSoon(d.title ?? 'This screen'); } },
     records: { defaultFocus: '#records-picker [aria-checked="true"]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showRecords(); RECORDS_PAGE.show({ mode: d.mode, boardKey: d.boardKey }); }, hide: () => RECORDS_PAGE.hide() },
     settings: { defaultFocus: '#set-lookSensitivity', show: () => { MODES.leave(); showMenuBackdrop(); ui.showSettings(); } },
@@ -430,8 +432,11 @@ function answer2D(answer) {
   answer();
 }
 const mode2d = MODES.register('classic-2d', (report) => createClassic2DMode(report, { flow: FLOW_2D, lastChoice: LAST_CHOICE_2D }));
-/** The board choice on `choice`; the default choice of a player who never played is not "last played". */
-function showChoice2D(choice) { CHOICE_2D.show(choice, { played: choice !== DEFAULT_CHOICE }); }
+/**
+ * The board choice on `choice`; the default choice of a player who never played is not "last
+ * played". Each size's detail line is read from the records each time it shows.
+ */
+function showChoice2D(choice) { CHOICE_2D.show(choice, { played: choice !== DEFAULT_CHOICE, details: presetDetails(CHOICE_ITEMS['classic-2d'], RECORDS) }); }
 const CHOICE_2D = bindBoardChoice({
   root: document.getElementById('c2d-choice'),
   onStart: (choice) => { sfx.unlock(); MODES.start('classic-2d', choice); },
@@ -629,6 +634,33 @@ for (const { id } of MENU.entries) {
 }
 const LAST_MODE = createLastMode({ storage, modes: MODES });
 MODES.on('started', ({ mode }) => { ui.setLastMode(mode); FIRST_USE.gameStarted(mode); });
+
+// The returning player's surfaces: the session strip under the entries and Play again in the title
+// row, over the last board played (the last mode played and that mode's last board choice, once
+// played), rebuilt when the menu shows, on each newly recorded game and once the last mode loads.
+function lastPlayed() {
+  return lastBoard(LAST_MODE.current, {
+    'classic-2d': { choice: LAST_CHOICE_2D.current, played: LAST_CHOICE_2D.current !== DEFAULT_CHOICE },
+    '3d': { choice: LAST_CHOICE_3D.current, played: LAST_CHOICE_3D.played },
+  });
+}
+function showReturning() {
+  ui.setReturning(returningMenu({ last: lastPlayed(), records: RECORDS, missing: WEBGL2 ? [] : ['webgl2'] }));
+}
+RECORDS.onChange(() => { showReturning(); });
+/**
+ * The menu's Play again: the last board played, started in one step with nothing new saved (the 2D
+ * mode re-saves the same last choice). Classic 2D opens on the closed board; a 3D board enters play
+ * as the results screen's Play again enters it —
+ * the click is the pointer-lock gesture, the ready card the fallback, a controller plays lockless.
+ */
+function playAgainFromMenu(source) {
+  const last = lastPlayed();
+  if (!last || S.mode !== 'menu') return;
+  sfx.unlock(); // as a board choice start unlocks it
+  if (last.mode === 'classic-2d') MODES.start('classic-2d', last.choice);
+  else if (last.mode === '3d' && WEBGL2) { MODES.start('3d', boardOf(last.choice)); enterPlay3D(source); }
+}
 
 /** Back from the keyboard (Esc) or the controller: the topmost layer first, then the router. */
 function shellBack(source) {
@@ -1357,11 +1389,13 @@ function frame(now) {
 
 await Promise.all([settingsLoaded, recordsLoaded, firstUseLoaded, LAST_CHOICE_3D.load().catch(() => {})]);
 showMainMenu();
-mode2d.loadChoice();
+const choice2DLoaded = mode2d.loadChoice();
 const bootFocus = document.activeElement;
-LAST_MODE.load().then((mode) => {
+LAST_MODE.load().then(async (mode) => {
   ui.setLastMode(mode);
   if (SHELL.current === 'menu' && document.activeElement === bootFocus) SHELL.refocus(); // the player has not moved yet
+  await choice2DLoaded.catch(() => {});
+  showReturning(); // the last board played is known once both have loaded
 });
 requestAnimationFrame(frame);
 

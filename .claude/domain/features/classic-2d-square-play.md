@@ -24,7 +24,10 @@ In scope (m1-classic-2d):
 - Board choice: Beginner (9 × 9, 10 mines), Intermediate (16 × 16, 40),
   Expert (30 × 16, 99) and Custom (width and height each 1 to 100, at
   least one mine and at most the limit Board setup states), plus the
-  no-guess switch.
+  no-guess switch, which says it keeps separate records. Each standard size
+  keeps its size line and gains the 3D presets' detail line (density,
+  typical 3BV, the player's best and streak on the board the switch names,
+  or a dash; `3d-play-flow` § Architecture, "3D board choice").
 - The start-of-game flow: a closed board, the first click, board
   generation around it, the timer starting once the board is ready. The
   "generating" card's *Cancel* goes back to the closed board, recording

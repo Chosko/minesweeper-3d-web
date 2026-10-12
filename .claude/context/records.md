@@ -14,6 +14,11 @@ and the history chart, which draws on the canvas it is handed.
 - `js/records/board.js` — the board identity in its 2D and 3D forms, its
   key, the key's parser, the display label, the standard boards and the
   three cube 3D presets. Imports nothing.
+- `js/records/typical-bbbv.js` — the typical 3BV of each named board
+  (`TYPICAL_BBBV`, keyed `<w>x<h>:<mines>` / `<w>x<h>x<d>:<mines>`;
+  `typicalBbbvKey`, `typicalBbbv(board)` → the value or null), the medians
+  `dev/measure-typical-bbbv.mjs` printed; a board and its no-guess twin
+  share the entry, a changed preset has none. Imports nothing.
 - `js/records/summary.js` — the summary builder, the derived stats and best
   eligibility. Imports `CLICK_KINDS` from `js/engine/metrics.js` and the
   identity from `board.js`.

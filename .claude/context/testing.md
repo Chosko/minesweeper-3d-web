@@ -666,6 +666,10 @@ browser checks for everything that needs WebGL or the DOM.
   dev/measure-noguess-3d.mjs [seeds]` times no-guess requests on box boards
   of growing size at the presets' densities, the measurement behind
   `NOGUESS_CELL_LIMIT`; its head comment says how to read it.
+- `dev/measure-typical-bbbv.mjs` — not a test: `node
+  dev/measure-typical-bbbv.mjs [seeds]` generates no-guess boards for every
+  named board through `generate` and prints the median 3BV per board as
+  `TYPICAL_BBBV`'s lines (`js/records/typical-bbbv.js`).
 - `tests/replay-format.test.mjs` — the replay format
   (`js/replay/format.js`): exact round-trips of 2D and 3D replays (mines
   given in any order come back ascending), an empty, an abandoned and a
@@ -816,6 +820,22 @@ browser checks for everything that needs WebGL or the DOM.
   behind the sampler constants, `MOVEMENT_CAP_BYTES` and the uncompressed
   blob; its head comment says how the constants are chosen and how to read
   it.
+- `tests/shell-returning.test.mjs` — the returning player's surfaces
+  (`js/shell/returning.js`) over a records model built in the test: the
+  density rounding, the preset detail line with and without its 3BV part,
+  the dash, the best with and without a streak, a board and its no-guess
+  twin read apart; the session strip (singular and plural games, `best —`,
+  only today's games across a local day boundary, no strip without a last
+  board), the Play again label, which board Play again starts
+  (`lastBoard`), no Play again for a 3D board without WebGL 2; every named
+  board's `TYPICAL_BBBV` entry and the table's measuring script; the
+  markup, the switch wording, the shell wiring and the catalogue. Three
+  Playwright tests: the detail lines on both board choices before and after
+  a won game (recorded through `__ms.records`) and across the switch, the
+  strip after games and Play again starting a 2D board by keyboard; a 3D
+  last board entering play with a stand-in lock granted and showing the
+  ready card when it is refused; and, without WebGL 2, the strip with no
+  Play again.
 - `tests/shell-menu.test.mjs` — the main menu (`js/shell/menu.js`): the four
   entries in order, each route (mode board choice, screen, or the shared
   placeholder), the last mode played as a platform-storage document over the

@@ -86,7 +86,18 @@ it generalises.
   disabled with its reason, its "Last played" mark still showing and the
   menu's default focus falling to the first enabled entry, and no
   full-page "Cannot start" card shows — that card stays only for game files
-  that fail to load.
+  that fail to load. Once a board was played, the menu also speaks to the
+  returning player about the last board played: a one-line session strip
+  under the entries names it with its best time, the games on it that ended
+  today and its current streak ("Expert · best 13.343 s · today 7 games ·
+  streak 2"), and the title row carries *Play again: <board>*, which starts
+  that board in its mode in one step, without a route through its board
+  choice — Classic 2D opens on the closed board, a 3D board enters play as
+  the results screen's *Play again* enters it. Every figure comes from the
+  records; starting this way saves nothing new, and the menu's default focus
+  stays the last mode played. Without WebGL 2 a 3D last board keeps its
+  strip and shows no *Play again*, the 3D entry already giving the
+  reason.
 - **Mode host.** A registry of mode front-ends behind one contract (see
   Interfaces). The shell knows modes only through it. Classic 2D implements
   it directly; the 3D mode implements it through an adapter that wraps the
@@ -121,7 +132,9 @@ it generalises.
 - **Last mode played** — which mode and board choice the player last
   started, kept through `platform-storage` so later milestones' *Continue*
   can resume it. Each mode keeps its own last board choice; the shell keeps
-  only which mode it was.
+  only which mode it was. Together they name the last board played — the
+  last mode's last board choice, once it was played — which the menu's
+  session strip describes and its *Play again* starts.
 - **Source of truth** — the active mode owns its game and timer; the shell
   holds only whether a game is in progress and paused, as the mode reports
   it.

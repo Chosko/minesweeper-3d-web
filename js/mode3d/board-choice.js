@@ -43,9 +43,12 @@
 //             2 cells, its reason line [data-noguess-reason] above it, the density hint
 //             [data-density-hint] under it, which follows the fields and the switch live and never
 //             disables it — and Back [data-back].
-//   show(choice, { played })  fills the fields and the switch from `choice` and marks its item
-//             data-last, the screen's default focus; the "Last played" line shows only when
-//             `played` (default true).
+//   show(choice, { played, details })  fills the fields and the switch from `choice` and marks its
+//             item data-last, the screen's default focus; the "Last played" line shows only when
+//             `played` (default true). `details` ({ [preset id]: { guess, noGuess } }, the shell's
+//             from js/shell/returning.js) fills each preset's detail line [data-detail], under its
+//             size line, for the position of the presets' no-guess switch, and again whenever the
+//             switch changes; a preset without one shows no detail line.
 //   onStart(choice) when a preset is picked or a valid custom board submitted; onBack() on Back.
 
 import { aboveDensityHint, DENSITY_HINT_TEXT } from '../classic2d/board-setup.js';
@@ -188,8 +191,13 @@ export function bindBoardChoice({ root, onStart, onBack }) {
   let wanted = false; // the custom board's no-guess choice, kept while the board does not offer it
   hint.textContent = DENSITY_HINT_TEXT;
 
+  let details = {};
   for (const b of items) {
     if (!b.classList.contains('ui-menu__item')) continue;
+    const detail = b.ownerDocument.createElement('span');
+    detail.className = 'ui-menu__detail hidden';
+    detail.dataset.detail = '';
+    b.appendChild(detail);
     const line = b.ownerDocument.createElement('span');
     line.className = 'ui-menu__detail hidden';
     line.dataset.last = '';
@@ -223,6 +231,15 @@ export function bindBoardChoice({ root, onStart, onBack }) {
     return choice;
   };
   const sizeOf = (b) => (b.dataset.preset === 'custom' ? 'custom' : presetByKey(b.dataset.preset)?.id);
+  const fillDetails = () => {
+    for (const b of items) {
+      const line = b.querySelector('[data-detail]');
+      if (!line) continue;
+      const text = details[sizeOf(b)]?.[noGuessPresets.checked ? 'noGuess' : 'guess'] ?? '';
+      line.textContent = text;
+      line.classList.toggle('hidden', !text);
+    }
+  };
 
   const onItem = (event) => {
     const size = sizeOf(event.currentTarget);
@@ -250,11 +267,13 @@ export function bindBoardChoice({ root, onStart, onBack }) {
   form.addEventListener('submit', onSubmit);
   random.addEventListener('click', onRandom);
   noGuess.addEventListener('change', onNoGuess);
+  noGuessPresets.addEventListener('change', fillDetails);
   back?.addEventListener('click', onBackClick);
 
   return {
-    show(choice, { played = true } = {}) {
+    show(choice, { played = true, details: lines = {} } = {}) {
       last = choice;
+      details = lines;
       for (const [i, f] of FIELDS.entries()) inputs[i].value = String(choice.custom[f]);
       wanted = !!choice.noGuess;
       noGuessPresets.checked = !!choice.noGuess;
@@ -263,6 +282,7 @@ export function bindBoardChoice({ root, onStart, onBack }) {
         b.toggleAttribute('data-last', isLast);
         b.querySelector('[data-last]')?.classList.toggle('hidden', !(isLast && played));
       }
+      fillDetails();
       update();
     },
     destroy() {
@@ -271,6 +291,7 @@ export function bindBoardChoice({ root, onStart, onBack }) {
       form.removeEventListener('submit', onSubmit);
       random.removeEventListener('click', onRandom);
       noGuess.removeEventListener('change', onNoGuess);
+      noGuessPresets.removeEventListener('change', fillDetails);
       back?.removeEventListener('click', onBackClick);
     },
   };

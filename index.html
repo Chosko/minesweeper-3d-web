@@ -133,6 +133,7 @@
           <h1 class="ui-card__title" id="menu-title">Minesweeper 3D</h1>
           <p class="ui-text ui-text--muted">Fly through a cube of cubes. Every cell has up to 26 neighbours.</p>
         </div>
+        <button type="button" id="menu-again" class="ui-button ui-button--primary hidden">Play again</button>
       </div>
 
       <div class="ui-menu" role="group" aria-label="Play">
@@ -141,6 +142,7 @@
         <button type="button" class="ui-menu__item" id="menu-entry-records" data-entry="records"><span class="ui-menu__label">Records</span><span class="ui-menu__detail">Your best times and stats</span></button>
         <button type="button" class="ui-menu__item" id="menu-entry-settings" data-entry="settings"><span class="ui-menu__label">Settings</span><span class="ui-menu__detail">Controls, graphics, theme and audio</span></button>
       </div>
+      <p id="menu-strip" class="ui-text ui-text--muted hidden"></p>
 
       <div class="ui-row">
         <button type="button" id="menu-help" class="ui-button ui-button--secondary">Controls</button>
@@ -177,7 +179,7 @@
         </div>
         <p id="c-info" class="ui-text ui-text--muted" data-info>1,000 cells &middot; up to 999 mines</p>
         <p id="c-noguess-reason" class="ui-text ui-text--muted hidden" data-noguess-reason></p>
-        <label class="ui-toggle"><input type="checkbox" role="switch" id="c-noguess" class="ui-toggle__input" data-noguess="custom"><span class="ui-toggle__label">No-guess custom board</span></label>
+        <label class="ui-toggle"><input type="checkbox" role="switch" id="c-noguess" class="ui-toggle__input" data-noguess="custom"><span class="ui-toggle__label">No-guess board &middot; separate records</span></label>
         <p id="c-density-hint" class="ui-text ui-text--muted hidden" data-density-hint></p>
       </form>
 

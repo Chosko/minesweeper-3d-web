@@ -23,8 +23,10 @@ In scope (m2-3d-joins):
 
 - Board choice: three presets, labelled as results and Records name them —
   Cube Beginner (6 × 6 × 6, 10 mines), Cube Intermediate (8 × 8 × 8, 40)
-  and Cube Expert (12 × 12 × 8, 130) — plus Custom and the Random fill, and
-  the no-guess switch.
+  and Cube Expert (12 × 12 × 8, 130) — each with a detail line under its
+  size (density, typical 3BV, the player's best and streak), plus Custom
+  and the Random fill, and the no-guess switch, which says it keeps
+  separate records.
 - The start-of-game flow: a closed box, the first reveal, generation around
   it, the "generating" state, the timer starting when the board is ready.
 - The first-click guarantee in 3D: the same rule as Classic 2D's pinned
@@ -71,7 +73,16 @@ and input ([rendering.md](../../context/rendering.md),
 behaviour.
 
 - **3D board choice.** The 3D menu's presets, custom fields, Random fill
-  and no-guess switch. Validates custom sizes (each dimension 1 to 100,
+  and no-guess switch. Each preset keeps its size line and gains one detail
+  line, filled from the records each time the screen shows: the density
+  (mines ÷ cells as a whole percent, one decimal below 10 %), the typical
+  3BV from a measured table keyed by size and mines (left out for a board
+  the table has no entry for), then the player's best time and current
+  streak on the board the preset would start — following the presets'
+  no-guess switch, since a board and its no-guess twin are separate
+  records — or a dash before a won game ("7.8 % mines · ~124 3BV · Best
+  48.213 s · 3 in a row"). Each no-guess switch says once that no-guess
+  boards keep separate records. Validates custom sizes (each dimension 1 to 100,
   mines 1 to cells minus one) and decides whether no-guess is available for
   the chosen size, by the availability rule under Interfaces and contracts. Remembers the last 3D choice through the shell's
   last-board-choice mechanism.

@@ -170,9 +170,12 @@ looks.
   max, text}` (text: the refusal as a sentence, or "2 cells · up to 1 mine",
   both counts pluralised), `readChoice({size, fields, noGuess}, fallbackCustom?)` → a
   board choice or null, `densityHintShown(custom, noGuess)`,
-  `bindBoardChoice({root, onStart, onBack})` → `{show(choice, {played}),
-  destroy()}` — the density hint `[data-density-hint]` follows the fields
-  and the switch live.
+  `bindBoardChoice({root, onStart, onBack})` → `{show(choice, {played,
+  details}), destroy()}` — the density hint `[data-density-hint]` follows
+  the fields and the switch live; `details` (`{ [size]: { guess, noGuess }
+  }`, the shell's `presetDetails`, [app-shell.md](app-shell.md)) fills each
+  size's detail line `[data-detail]`, between its size line and its "Last
+  played" line, for the switch's position, refilled on its `change`.
 
 `js/classic2d/tile-skin.js` exports
 - `MIN_TILE_SIZE` (41) — the smallest tile size the board view allows,

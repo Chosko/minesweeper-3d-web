@@ -37,7 +37,7 @@ export const NO_MOUSE_MSG = 'Minesweeper 3D needs a mouse and keyboard — open 
 
 export class UI {
   constructor(cb) {
-    this.cb = cb; // { onMenuEntry, onBack, onReadyClick, onReadyDrag, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSound, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll }
+    this.cb = cb; // { onMenuEntry, onMenuPlayAgain, onBack, onReadyClick, onReadyDrag, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSound, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll }
     this.el = {
       hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), clicks: $('hud-clicks'), size: $('hud-size'), hudTools: $('hud-tools'),
       help: $('help'), helpList: $('help').querySelector('.controls'), helpFoot: $('help-foot'),
@@ -83,6 +83,8 @@ export class UI {
       b.appendChild(line);
       b.addEventListener('click', () => cb.onMenuEntry?.(b.dataset.entry));
     });
+    // the menu's Play again: the last board played, started in one step (the shell decides how)
+    $('menu-again').addEventListener('click', () => cb.onMenuPlayAgain?.());
     for (const id of ['coming-soon-back', 'settings-back']) $(id).addEventListener('click', () => cb.onBack?.());
     // The Settings page's controls are generated from the settings schema and bound by the shell.
     $('settings-body').innerHTML = settingsPageHtml();
@@ -143,6 +145,19 @@ export class UI {
       b.toggleAttribute('data-last', isLast);
       b.querySelector('[data-last]')?.classList.toggle('hidden', !isLast);
     });
+  }
+
+  /**
+   * The main menu's returning-player surfaces over the last board played: the session strip under
+   * the entries and Play again in the title row, each hidden when its text is null.
+   */
+  setReturning({ strip = null, again = null } = {}) {
+    const line = $('menu-strip');
+    const button = $('menu-again');
+    line.textContent = strip ?? '';
+    line.classList.toggle('hidden', !strip);
+    button.textContent = again ?? 'Play again';
+    button.classList.toggle('hidden', !again);
   }
 
   // ---------- controls modal ----------
