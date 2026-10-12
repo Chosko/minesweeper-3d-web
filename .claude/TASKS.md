@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 139
+Last task number: 140
 
 ---
 
@@ -869,6 +869,15 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: js/input.js, js/picking.js, js/render.js, js/main.js, js/ui.js, js/settings/schema.js, js/settings/store.js, js/settings/appliers.js, js/settings/page.js, js/settings/bindings.js, index.html, css/style.css, tests/camera-flight.test.mjs, tests/gamepad.test.mjs, tests/settings-store.test.mjs, tests/settings-appliers.test.mjs, tests/settings-page.test.mjs, tests/replay-3d.test.mjs, docs/ORIGINAL_SPEC.md, README.md, .claude/domain/product-design.md, .claude/domain/features/settings.md
+Preconditions: none
+
+---
+
+## 140. Look at the board and end delay
+
+Status: [MISSING]
+Target: claude
+Files: js/shell/mode-3d.js, js/render.js, js/main.js, js/results/view.js, js/results/flow.js, index.html, css/style.css, tests/mode3d-end.test.mjs, tests/shell-mode-3d.test.mjs, tests/results.test.mjs, README.md, .claude/domain/features/3d-results-records-screens.md, .claude/domain/features/results-screen.md, .claude/domain/features/3d-board-graph.md, .claude/domain/product-design.md
 Preconditions: none
 
 ---
