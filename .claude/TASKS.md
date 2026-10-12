@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 127
+Last task number: 128
 
 ---
 
@@ -761,6 +761,15 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: js/engine/profiles.js, js/engine/rules.js, js/main.js, js/render.js, js/audio.js, js/ui.js, js/settings/bindings.js, index.html, css/style.css, tests/engine-3d-profile.test.mjs, tests/engine-rules.test.mjs, tests/engine-3d-view.test.mjs, tests/replay-3d.test.mjs, tests/audio-flag.test.mjs, tests/render-3d-flag-flash.test.mjs, tests/settings-page.test.mjs, docs/ORIGINAL_SPEC.md, README.md, .claude/domain/features/3d-board-graph.md, .claude/domain/product-design.md
+Preconditions: none
+
+---
+
+## 128. Results precision, figures and hierarchy
+
+Status: [MISSING]
+Target: claude
+Files: js/results/view.js, js/results/flow.js, js/records/summary.js, js/ui.js, js/ui/components.js, js/classic2d/mode.js, js/classic2d/session.js, js/main.js, js/records/screen.js, js/records/replay-list.js, js/records/history-chart.js, index.html, css/components.css, css/style.css, dev/components.html, tests/results.test.mjs, tests/records-summary.test.mjs, tests/components.test.mjs, tests/classic2d-mode.test.mjs, tests/mode3d-end.test.mjs, tests/records-screen.test.mjs, tests/records-screen-3d.test.mjs, tests/records-replays.test.mjs, tests/records-history.test.mjs, tests/replay-viewer.test.mjs, tests/replay-viewer-3d.test.mjs, .claude/domain/features/results-screen.md, .claude/domain/features/3d-results-records-screens.md, .claude/domain/features/screen-components.md, .claude/domain/features/classic-2d-square-play.md, .claude/domain/features/records-screen.md, .claude/domain/features/replay-library.md, .claude/domain/features/leaderboard-screen.md, .claude/domain/features/results-steam-rank.md, .claude/domain/features/game-summary.md
 Preconditions: none
 
 ---
