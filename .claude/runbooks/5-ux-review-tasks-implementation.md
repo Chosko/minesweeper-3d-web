@@ -124,7 +124,7 @@ Context: none
 
 Done: 2026-10-12, commit `95ec66a` (37 files, +960/-258). Decisions: the light-theme `--color-success` was darkened to `#187a33` so delta text meets 4.5:1, which also recolours the Records history chart's green line; the replay viewer's visible position readout stays in whole seconds, only the slider's screen-reader text carries thousandths.
 
-## [ ] 11. Implement task 129 — Pause keeps the clock running, pauses recorded
+## [x] 11. Implement task 129 — Pause keeps the clock running, pauses recorded
 
 Depends on: none
 
@@ -133,6 +133,8 @@ Context: none
 ```prompt
 /task-implement 129 --review
 ```
+
+Done: 2026-10-12, commit `997d702` (47 files, +1040/-284). Wrong premise: js/records/store.js needed no change — malformed pause fields are rejected where the records model loads the history. Decisions: format-1 replays and pre-change history entries read as having no pauses, with no records format step; a replay passed to the encoder without a pause list counts as having none.
 
 ## [ ] 12. Implement task 130 — One-key restart and completed-games stats
 
