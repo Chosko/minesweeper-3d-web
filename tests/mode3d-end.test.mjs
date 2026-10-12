@@ -50,6 +50,7 @@ function fakeSession({ fixed = false } = {}) {
     outcome: null,
     calls: [],
     elapsedMs: () => s.ms,
+    pauses: () => [],
     counts: () => ({ bbbv: 10, bbbvSolved: 4, clicks: CLICKS }),
     engineSummary: () => (s.outcome
       ? { outcome: s.outcome, dimensions: { width: 4, height: 5, depth: 6 }, mineCount: 7, bbbv: 10, bbbvSolved: s.outcome === 'won' ? 10 : 4, clicks: CLICKS }

@@ -31,7 +31,7 @@ In scope (m1-classic-2d):
   front-end and by an adapter over the existing 3D game.
 - Pause and resume, restart, and Main menu, from the pause card and from
   the keyboard and controller. While paused the board is hidden in every
-  mode and the timer is stopped.
+  mode and the timer keeps running.
 - Automatic pause when the window loses focus or the tab is hidden during a
   started, unfinished game, and the leave-page guard for such a game on the
   web build.
@@ -121,8 +121,8 @@ it generalises.
   `summary()`, and reports `game started`, `game finished(summary, replay)`,
   `game abandoned(summary, replay)` and `can pause` back to the shell, the
   replay being the game's sealed recording from `replay-recording`, or none
-  from a mode that does not record. `pause()` stops the mode's timer and
-  stops it accepting board input; `leave()` discards the game and releases
+  from a mode that does not record. `pause()` stops the mode accepting board
+  input, and its timer keeps running; `leave()` discards the game and releases
   everything the mode holds (pointer lock, canvas, worker requests).
   `restart()` and `leave()` on a started, unfinished game first report
   `game abandoned` with the game's summary from `game-summary` and its
@@ -131,7 +131,7 @@ it generalises.
   outcome abandoned.
 - **Pause rules** — pause applies only to a started, unfinished game; before
   the first click or after the game ends, the pause key opens the pause card
-  without a timer to stop, offering Restart (Play again once the game
+  without a game to pause, offering Restart (Play again once the game
   ended) and Main menu, and Back on
   it goes to the main menu. While the first click's board is being
   generated, Esc and the controller's back button cancel the generation,

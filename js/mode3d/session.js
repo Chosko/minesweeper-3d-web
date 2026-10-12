@@ -36,14 +36,19 @@
 // counts() and engineSummary() are the engine's counts and summary of the game on the board
 // (js/engine/rules.js), null before it arrives; the 3D mode builds the game's summary from them.
 //
-// pause() stops the timer; during generation the request keeps running and the timer stays
-// unstarted. restart() opens a fresh closed box and leave() ends the session; both cancel a
-// pending generation, and a late answer is dropped.
+// pause() stops board input and leaves the clock running; during generation the request keeps
+// running and the timer stays unstarted until the board arrives. Each pause, from the pause to
+// resume() — the return to play — or to the end when the session is left, is one span on the game
+// clock, one begun while generating counting from the board's arrival (js/classic2d/session.js
+// createTimer); pauses(until?, count?) is the spans so far, the open one ending now (createTimer's
+// pauses). restart() opens a fresh closed box and leave() ends the session; both cancel a pending
+// generation, and a late answer is dropped.
 //
 // Recording (js/replay/recorder.js): each closed box opens a recorder, which restart() discards and
 // leave() stops, so a game left by the 3D mode (a lost graphics context) still seals what it
-// recorded until then; it goes with the session. Every action the session hands to the engine while the game accepts actions is
-// recorded at that point, at the timer's elapsed time: when the board arrives, the flags placed
+// recorded until then; it goes with the session. Every action the session hands to the engine
+// while the game accepts actions is recorded at that point, at the timer's elapsed time, paused
+// spans included: when the board arrives, the flags placed
 // before the first reveal, in the order they were placed, then the first reveal, all at 0 (a
 // reveal of a flagged cell or a chord before it changes nothing and is not recorded); the rest
 // while playing. The board's mines, seed and generator version are added when it arrives, and a
@@ -52,7 +57,8 @@
 // and recordView(mode) — the movement sampler's feed (js/replay/sampler-3d.js) — record, at the
 // timer's elapsed time. replay(summary) seals the recording with the game's summary (the 3D mode
 // builds it): { blob, listing }, or null without a summary, before the board arrived or once the
-// recorder failed; sealing again returns the same replay.
+// recorder failed; sealing again returns the same replay. The replay carries the pause spans the
+// summary counted.
 
 import { createBoxGrid } from '../engine/box-grid.js';
 import { PROFILE_3D, getRuleProfile } from '../engine/profiles.js';
@@ -251,8 +257,7 @@ export function createSession({
     recorder?.action('reveal', firstCell, 0);
     const r = play.reveal(firstCell);
     state = SESSION_STATE.PLAYING;
-    timer.start();
-    if (paused) timer.pause();
+    timer.start(); // a pause while generating counts from here
     emit('started', { changed: r.changed });
     return afterAction(r);
   }
@@ -369,6 +374,7 @@ export function createSession({
     get failure() { return failure; },
     elapsedMs: () => timer.elapsedMs(),
     seconds: () => timer.seconds(),
+    pauses: (until, count) => timer.pauses(until, count),
     counts: () => (play ? play.counts() : null),
     engineSummary: () => (play ? play.engineSummary() : null),
     get recording() { return recording(); },
@@ -376,7 +382,7 @@ export function createSession({
     recordView(mode) { if (recording()) recorder.view(mode, timer.elapsedMs()); },
     replay(summary) {
       if (!summary || !play || !recorder) return null;
-      return recorder.seal(summary, play.engineState);
+      return recorder.seal(summary, play.engineState, timer.pauses(summary.elapsedMs, summary.pauses));
     },
 
     on(type, fn) {

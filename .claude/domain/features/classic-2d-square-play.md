@@ -103,16 +103,18 @@ copied.
   a board-only cursor colour distinct from the tile edge it covers, so the
   ring shows on every tile state in both themes. Pointer and cursor input
   both end in the same engine actions.
-- **Timer.** Elapsed play time measured from the moment the board is ready,
-  paused while the game is paused, stopped at win or loss; displayed in
-  whole seconds in the overlay and kept at millisecond resolution for the
-  result.
+- **Timer.** Elapsed time measured from the moment the board is ready,
+  running through pauses, stopped at win or loss; displayed in whole
+  seconds in the overlay and kept at millisecond resolution for the
+  result. Each pause, from the pause to the resume — or to the game's end
+  when it is abandoned while paused — is one span on the game clock; a
+  pause begun while the board is generated counts from the board's arrival.
 
 ## Data and state
 
 - **Session state** — the current board choice, the engine instance, the
-  seed and generator version of the board, timer start and accumulated
-  pause, pending generation request, cursor position. In memory for one
+  seed and generator version of the board, timer start and the game's pause
+  spans, pending generation request, cursor position. In memory for one
   game.
 - **Last board choice** — size, custom dimensions and the no-guess switch,
   remembered between sessions through the game shell's settings storage so
@@ -121,7 +123,8 @@ copied.
 - **Source of truth** — the engine for cell and game state; this feature
   derives nothing from the canvas.
 - The game's summary — built by `game-summary` from the engine's summary
-  or counts, the elapsed time, board choice, seed and generator version — is
+  or counts, the elapsed time, the pause spans, board choice, seed and
+  generator version — is
   handed to the game shell; `personal-records` persists it.
 
 ## Interfaces and contracts
@@ -129,8 +132,8 @@ copied.
 - **Start** — from the game shell, with a board choice; opens a closed
   board ready for its first click.
 - **Pause, resume, restart, back to menu** — from the game shell. Pause
-  freezes the timer and hides the board; it does nothing before the first
-  click or after the game ends.
+  hides the board and stops board input while the timer keeps running; it
+  does nothing before the first click or after the game ends.
 - **Overlay feed** — timer, mines left and the game's counted clicks (the
   engine's click counts the summary carries, wasted ones included), pushed
   to the in-game overlay from `screen-components` whenever they change.

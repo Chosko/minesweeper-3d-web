@@ -19,10 +19,15 @@
 //   decimals; DASH at 0), read from a simulator frame.
 // endLine(check) → { outcome, time, text }: the outcome and the recorded time in the results screen's
 //   time format (js/results/view.js formatTime), shown once the replay reaches its end.
+// pauseMarks(pauses, duration) → [{ left, width }]: each of the header's paused spans as a mark on the
+//   seek bar track, its position and width in percent of the replay's duration.
+// pausesText(pauses) → the seek bar's text alternative naming them, "Paused 2 times, 4.1 s in all";
+//   '' for none. Playback runs through a paused span like any other stretch: the game clock ran
+//   through it, so it is a gap in the actions, played at the chosen speed with the board as it was.
 //
 // createReplayViewer({ library, router, view, viewers? }) → viewer
-//   view     the screen binder: open(), close(), loading(), failed(message), ready({ duration, kind })
-//            → the board area, render(state).
+//   view     the screen binder: open(), close(), loading(), failed(message), ready({ duration, kind,
+//            pauses }) → the board area, render(state); pauses are the header's pause spans.
 //   viewers  { [graph kind]: ({ container, sim }) → { draw(frame), place?(), destroy() } }; place()
 //            runs on the frames that draw nothing, to follow a board view that refitted. Classic 2D's
 //            square is js/replay/viewer-2d.js; the 3D box is js/replay/viewer-3d.js, which js/main.js
@@ -49,7 +54,8 @@
 // #replay by id: the overlay bar (#rp-clock, #rp-mines, #rp-bbbv, #rp-rate, Back #rp-back), the board
 // area #replay-board, the message card #replay-message (loading or failure, its Back
 // #replay-message-back), and the controls #replay-controls (#rp-prev, #rp-play, #rp-next, the speed
-// choice #rp-speed, the seek bar #rp-seek, the end line #replay-end). A 3D replay marks #replay
+// choice #rp-speed, the seek bar #rp-seek with its pause marks #rp-pauses and their text alternative
+// #rp-pauses-text, the end line #replay-end). A 3D replay marks #replay
 // replay--scene, which lets the 3D scene behind it show. While it shows, REPLAY_KEYS
 // typed anywhere but in a field reach onCommand; Space and Enter on a button keep their own click.
 
@@ -104,6 +110,17 @@ export function endLine(check) {
   const outcome = OUTCOMES[check.outcome] ?? check.outcome;
   const time = formatTime(check.elapsedMs);
   return { outcome, time, text: `${outcome} · ${time}` };
+}
+
+export function pauseMarks(pauses, duration) {
+  const pct = (ms) => (duration > 0 ? (100 * ms) / duration : 0);
+  return pauses.map((p) => ({ left: pct(p.start), width: pct(p.end - p.start) }));
+}
+
+export function pausesText(pauses) {
+  if (pauses.length === 0) return '';
+  const total = pauses.reduce((sum, p) => sum + (p.end - p.start), 0);
+  return `Paused ${pauses.length === 1 ? 'once' : `${pauses.length} times`}, ${(total / 1000).toFixed(1)} s in all`;
 }
 
 const failure = (reason) => ({ ok: false, reason, message: FAILURES[reason] });
@@ -206,7 +223,8 @@ export function createReplayViewer({ library, router, view, viewers = { square: 
       }
       sim = prepared.sim;
       clock = createPlaybackClock({ duration: sim.duration });
-      const container = view.ready({ duration: sim.duration, kind: sim.replay.header.graph.kind });
+      const { graph, pauses } = sim.replay.header;
+      const container = view.ready({ duration: sim.duration, kind: graph.kind, pauses });
       status = 'ready';
       const mounted = mount({ container, sim });
       if (mine !== opening) { mounted.destroy(); return; } // mounting left the screen (a lost graphics context)
@@ -280,7 +298,7 @@ export function createReplayView({ root, win = globalThis, onCommand, onSpeed, o
     clock: $('rp-clock'), mines: $('rp-mines'), bbbv: $('rp-bbbv'), rate: $('rp-rate'),
     board: $('replay-board'), message: $('replay-message'), messageTitle: $('replay-message-title'), messageText: $('replay-message-text'),
     controls: $('replay-controls'), play: $('rp-play'), prev: $('rp-prev'), next: $('rp-next'), speed: $('rp-speed'),
-    seek: $('rp-seek'), position: $('rp-position'), end: $('replay-end'),
+    seek: $('rp-seek'), position: $('rp-position'), end: $('replay-end'), pauses: $('rp-pauses'), pausesText: $('rp-pauses-text'),
   };
   const options = [...el.speed.querySelectorAll('.ui-segmented__option')];
   const shown = {};
@@ -333,13 +351,22 @@ export function createReplayView({ root, win = globalThis, onCommand, onSpeed, o
     },
     loading() { card('Opening the replay…', ''); },
     failed(message) { card('This replay cannot be played', message); },
-    ready({ duration, kind }) {
+    ready({ duration, kind, pauses = [] }) {
       root.classList.toggle('replay--scene', kind === 'box');
       el.message.classList.add('hidden');
       el.controls.classList.remove('hidden');
       const step = seekStep(duration);
       el.seek.step = String(step);
       el.seek.max = String(Math.ceil(duration / step) * step); // the clock clamps past the end
+      el.pauses.replaceChildren(...pauseMarks(pauses, duration).map(({ left, width }) => {
+        const mark = root.ownerDocument.createElement('span');
+        mark.className = 'replay-pause';
+        mark.style.left = `${left}%`;
+        mark.style.width = `${width}%`;
+        return mark;
+      }));
+      el.pausesText.textContent = pausesText(pauses);
+      el.pausesText.hidden = pauses.length === 0;
       return el.board;
     },
     render(state) {

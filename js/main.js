@@ -667,7 +667,10 @@ function startGame(settings) {
   return play; // the adapter reports from it, after the listeners above
 }
 
-/** The 3D game's timer runs only while its board is in play; every screen change keeps it in step. */
+/**
+ * The 3D game is paused whenever its board is not in play, and resumed on the return to play; every
+ * screen change keeps it in step. Its clock runs through every pause.
+ */
 function sync3D() {
   const play = S.play;
   if (!play) return;
@@ -1255,13 +1258,16 @@ function frame(now) {
   else if (g && !onBackdrop()) {
     updatePick();
     updateArrow(playing && !ending3D());
-    // the timer is the session's: it runs only while playing (sync3D), frozen at the end
-    if (playing && S.started && !S.endState) S.time = S.play.elapsedMs() / 1000;
+    // the timer is the session's: it runs through pauses, frozen at the end
+    if (S.play && S.started && !S.endState) S.time = S.play.elapsedMs() / 1000;
     const e = S.endState;
     ui.updateHud(e ? e.time : S.time, e ? e.minesLeft : g.minesLeft, e ? e.clicks : clicks3D());
     if (playing && !ending3D()) aimHint(g, now);
     else AIM_DWELL.reset();
   }
+
+  // the running time on the pause card while it shows
+  if (S.mode === 'paused' && (MODES.active === 'classic-2d' ? mode2d.status() : S.game)) ui.updatePause(pauseInfo());
 
   if (shouldRender(now, synced)) {
     needRender = false;

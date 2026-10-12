@@ -365,7 +365,11 @@
       <div class="ui-slider">
         <label class="ui-slider__label" for="rp-seek">Position</label>
         <output class="ui-slider__value" for="rp-seek" id="rp-position">000 / 000</output>
-        <input id="rp-seek" class="ui-slider__input" type="range" min="0" max="0" step="1" value="0">
+        <div class="replay-seek">
+          <input id="rp-seek" class="ui-slider__input" type="range" min="0" max="0" step="1" value="0" aria-describedby="rp-pauses-text">
+          <div id="rp-pauses" class="replay-pauses" aria-hidden="true"></div>
+        </div>
+        <p id="rp-pauses-text" class="ui-text ui-text--muted replay-pauses-text" hidden></p>
       </div>
     </div>
   </section>

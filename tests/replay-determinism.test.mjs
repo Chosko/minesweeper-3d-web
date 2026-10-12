@@ -60,7 +60,7 @@ test('the recording constants are the measured ones (dev/measure-replays.mjs), a
   assert.equal(POSITION_STEPS, 16);
   assert.equal(ANGLE_STEPS, 8192);
   assert.equal(MOVEMENT_CAP_BYTES, 2 * 1024 * 1024);
-  assert.equal(REPLAY_FORMAT_VERSION, 1, 'format version 1: the blob as encoded, not compressed');
+  assert.equal(REPLAY_FORMAT_VERSION, 2, 'format version 2: the blob as encoded, not compressed');
   const blob = readFileSync(new URL(index[0].file, FIXTURES));
   assert.equal(blob.subarray(0, 4).toString('latin1'), 'MSRP', 'the envelope is the first bytes of the stored blob');
 });

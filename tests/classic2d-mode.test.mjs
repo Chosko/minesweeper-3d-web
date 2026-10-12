@@ -256,7 +256,7 @@ test('the overlay\'s click count: none before the first click, every counted cli
   assert.equal(flow.huds.at(-1).seconds, frozen.seconds, 'frozen with the timer');
 });
 
-test('pause freezes the timer and hides the board; resume shows it again', async () => {
+test('pause hides the board while the timer keeps running, so the pause card\'s time advances; resume shows it again', async () => {
   const { host, mode, act, clock, board, pointer, cursor, flow } = setup({ choice: { size: 'beginner', noGuess: false } });
   await act('reveal', 10);
   clock.advance(1000);
@@ -265,7 +265,9 @@ test('pause freezes the timer and hides the board; resume shows it again', async
   assert.ok(pointer().resets > 0 && cursor().resets > 0, 'held inputs are dropped');
   assert.equal(pointer().session.paused, true, 'the board takes no input');
   clock.advance(5000);
-  assert.equal(mode.status().time, 1, 'the timer is frozen');
+  assert.equal(mode.status().time, 6, 'the time the pause card shows runs on');
+  clock.advance(1000);
+  assert.equal(mode.status().time, 7);
   assert.equal(act('reveal', 0), null, 'no action while paused');
   const shows = flow.calls.filter((c) => c[0] === 'show').length;
   host.resume({ source: 'pointer' });
@@ -273,10 +275,10 @@ test('pause freezes the timer and hides the board; resume shows it again', async
   assert.equal(pointer().session.paused, false);
   assert.equal(flow.calls.filter((c) => c[0] === 'show').length, shows + 1, 'resume shows the board screen');
   clock.advance(1000);
-  assert.equal(mode.status().time, 2);
+  assert.equal(mode.status().time, 8);
 });
 
-test('pause does nothing to the timer before the first click or after the game ends, but hides the board', async () => {
+test('pause starts no timer before the first click and changes none after the game ends, but hides the board', async () => {
   const { mode, act, clock, board, pointer } = setup({ choice: CUSTOM_3X3, mines: [0, 8] });
   mode.pause({});
   assert.equal(board().hidden, true, 'the board is hidden whenever the pause card shows');
@@ -649,12 +651,15 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'paused');
     assert.equal(await active(), 'p-resume');
-    // The HUD shows the paused time once a frame has run since the pause; before that it may
-    // still show the previous second, which the next frame would update.
+    // The clock runs through the pause: the HUD and the pause card's time go on.
     await ms(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
-    const frozen = await ms(() => document.getElementById('hud-time').textContent);
+    const before = Number(await ms(() => document.getElementById('hud-time').textContent));
+    const card = async () => Number((await ms(() => document.getElementById('pause-sub').textContent)).match(/^Time (\d+)\./)[1]);
+    const cardBefore = await card();
     await page.waitForTimeout(1200);
-    assert.equal(await ms(() => document.getElementById('hud-time').textContent), frozen, 'the timer is frozen while paused');
+    await ms(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    assert.ok(Number(await ms(() => document.getElementById('hud-time').textContent)) > before, 'the timer runs while paused');
+    assert.ok(await card() > cardBefore, 'the pause card\'s time advances while it shows');
     await page.click('#p-resume');
     assert.equal(await mode(), 'classic-2d');
 
@@ -671,6 +676,8 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
     assert.equal(abandoned[0].summary.outcome, 'abandoned');
     assert.equal(abandoned[0].summary.board.width, 30);
     assert.ok(abandoned[0].summary.elapsedMs >= 1000);
+    assert.equal(abandoned[0].summary.pauses, 2, 'two pauses: the one resumed, and the one left from');
+    assert.ok(abandoned[0].summary.pausedMs >= 1200);
 
     // The board choice reopens on the last choice.
     await page.click('#menu-entry-classic-2d');

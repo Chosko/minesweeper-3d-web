@@ -82,12 +82,14 @@ three to the screens, the renderer and the pointer-lock flow
   hook's fixed board) that board is played and nothing is requested.
   Session: `view` (one object for the whole session), `state`, `board`,
   `mines`, `seed`, `generatorVersion`, `generatingShown`, `paused`,
-  `failure`, `elapsedMs()`, `seconds()`, `counts()` and `engineSummary()`
+  `failure`, `elapsedMs()`, `seconds()`, `pauses(until?, count?)` (the
+  pause spans, `createTimer`'s), `counts()` and `engineSummary()`
   (the engine's, null before the board arrives), `on(event, fn)` → unsubscribe,
   `reveal(c)`, `toggleFlag(c)`, `chord(c)`, `retry()`, `playStandard()`,
   `cancel()`, `pause()`, `resume()`, `restart()`, `leave()`, `recording`,
   `recordSample(values)`, `recordView(mode)`, `replay(summary)` → the
-  recording sealed with that summary, `{blob, listing}`, or null
+  recording sealed with that summary and the pause spans it counted,
+  `{blob, listing}`, or null
   ([replay.md](replay.md)).
 - `SESSION_STATE` (`ready`, `generating`, `playing`, `failed`, `won`,
   `lost`, `left`); `SESSION_EVENTS` (`generating` `{shown}`, `started`
@@ -166,16 +168,20 @@ three to the screens, the renderer and the pointer-lock flow
   cell — as Classic 2D does. `js/main.js` releases pointer lock for the
   offer and keeps the standard board for a later restart.
 - **Timer.** The session's timer (Classic 2D's `createTimer`) starts when
-  the first reveal is applied to the generated board and stops at a win or
-  loss. `pause()` stops it; during generation the request keeps running and
-  the timer stays unstarted. `js/main.js` pauses the session on every screen
-  change away from `playing` and resumes it on return (`sync3D`).
+  the first reveal is applied to the generated board, runs through pauses
+  and stops at a win or loss. `pause()` stops board input and marks a pause
+  until `resume()`; during generation the request keeps running and the
+  timer stays unstarted, the pause counting from the board's arrival.
+  `js/main.js` pauses the session on every screen change away from
+  `playing` and resumes it on return (`sync3D`), so each pause lasts until
+  the return to play.
 - **Restart and leave** cancel a pending request (`client.cancel()`); a late
   answer is dropped by its request token.
 - **The adapter** listens only to the session it holds. At the session's
   `started` it reports `started` and `canPause(true)`. At `finished` —
   after the listeners `js/main.js` added before handing the session over
-  have started the end effect — it builds the summary, reports
+  have started the end effect — it builds the summary (`buildSummary` over
+  the session's elapsed time and its pause spans up to it), reports
   `canPause(false)` and runs the end delay (`ending` true): a `pause()` is
   ignored, and after `END_DELAY_MS` on `flow.clock` — whether or not the
   tab draws frames — it calls `flow.release()` and reports
@@ -197,7 +203,7 @@ three to the screens, the renderer and the pointer-lock flow
   recorded in the order they were placed, then the first reveal, all at
   time 0 (a reveal of a flagged cell or a chord before it changes nothing
   and is not recorded); every later action the session hands to the engine
-  at the timer's elapsed time. The mines, seed and generator version are
+  at the timer's elapsed time, paused spans included. The mines, seed and generator version are
   added when the board arrives; a board played standard after a failure
   starts a new recording of the standard board. `recording` is true while
   the game is started, unpaused and unfinished, and only then do the

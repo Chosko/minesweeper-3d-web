@@ -2,12 +2,15 @@
 //
 // buildSummary turns what the rules engine reports at the end of a game — its summary() at a
 // win or a loss, or its counts() for a game abandoned after the first click — plus the elapsed
-// time, the board identity (js/records/board.js), the seed and the generator version into one
-// plain, serialisable record. The board is a 2D board or a 3D board choice (mode 3d, X, Y, Z as
-// width, height, depth), the engine's counts then being over the box graph:
-//   { id, board, outcome, elapsedMs, bbbv, bbbvSolved, clicks, bbbvPerSecond, efficiency,
-//     seed, generatorVersion, endedAt }
+// time, the game's pause spans, the board identity (js/records/board.js), the seed and the
+// generator version into one plain, serialisable record. The board is a 2D board or a 3D board
+// choice (mode 3d, X, Y, Z as width, height, depth), the engine's counts then being over the box
+// graph:
+//   { id, board, outcome, elapsedMs, pauses, pausedMs, bbbv, bbbvSolved, clicks, bbbvPerSecond,
+//     efficiency, seed, generatorVersion, endedAt }
 // clicks is { reveal, flag, chord }, each { effective, wasted }; endedAt is an ISO 8601 string.
+// The game clock runs through pauses, so elapsedMs includes the paused time; pauses is the count
+// of the game's pause spans and pausedMs their total, whole ms, never above elapsedMs.
 // A game left before its first click (counts with no 3BV yet) produces no summary: null.
 //
 // The derived stats are pure functions of the record's own fields, so every consumer gets the
@@ -63,10 +66,25 @@ function checkEngineBoard(engine, board) {
   }
 }
 
-// { engine, outcome?, elapsedMs, board, seed, generatorVersion, endedAt?, id? } → record or null.
-// engine is game.summary() (outcome won or lost) or game.counts() (outcome abandoned); a stated
-// outcome must agree with it. endedAt defaults to now, id to a fresh random UUID.
-export function buildSummary({ engine, outcome, elapsedMs, board, seed, generatorVersion, endedAt, id } = {}) {
+// The count and total of a game's pause spans [{ start, end }] (whole ms on the game clock).
+function pauseTotals(pauses) {
+  if (!Array.isArray(pauses)) throw new RangeError('summary pauses must be a list of pause spans');
+  let pausedMs = 0;
+  for (const p of pauses) {
+    if (!p || typeof p !== 'object') throw new RangeError('a summary pause span must be { start, end }');
+    const start = count('pause start', p.start);
+    const end = count('pause end', p.end);
+    if (end < start) throw new RangeError(`a pause ends before it starts: ${start} .. ${end}`);
+    pausedMs += end - start;
+  }
+  return { pauses: pauses.length, pausedMs };
+}
+
+// { engine, outcome?, elapsedMs, pauses?, board, seed, generatorVersion, endedAt?, id? } → record
+// or null. engine is game.summary() (outcome won or lost) or game.counts() (outcome abandoned); a
+// stated outcome must agree with it. pauses is the game's pause spans, none by default. endedAt
+// defaults to now, id to a fresh random UUID.
+export function buildSummary({ engine, outcome, elapsedMs, pauses = [], board, seed, generatorVersion, endedAt, id } = {}) {
   if (!engine || typeof engine !== 'object') throw new RangeError('summary needs the engine summary or counts');
   const ended = engine.outcome !== undefined;
   if (ended && engine.outcome !== 'won' && engine.outcome !== 'lost') {
@@ -91,6 +109,10 @@ export function buildSummary({ engine, outcome, elapsedMs, board, seed, generato
   if (!Number.isInteger(elapsedMs) || elapsedMs < 0) {
     throw new RangeError(`summary elapsedMs must be a non-negative integer, got ${elapsedMs}`);
   }
+  const paused = pauseTotals(pauses);
+  if (paused.pausedMs > elapsedMs) {
+    throw new RangeError(`summary pausedMs ${paused.pausedMs} is above its elapsedMs ${elapsedMs}`);
+  }
   if (!Number.isInteger(seed) || seed < 0 || seed >= TWO_32) {
     throw new RangeError(`summary seed must be an integer 0 .. 2^32 - 1, got ${seed}`);
   }
@@ -107,6 +129,8 @@ export function buildSummary({ engine, outcome, elapsedMs, board, seed, generato
     board: { ...identity },
     outcome: result,
     elapsedMs,
+    pauses: paused.pauses,
+    pausedMs: paused.pausedMs,
     bbbv,
     bbbvSolved,
     clicks,

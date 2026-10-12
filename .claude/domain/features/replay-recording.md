@@ -63,8 +63,9 @@ depends on the generator.
   board opens and discarded with it. It is told about each action the
   session hands to the engine and about each movement sample, and keeps them
   in growable typed buffers so recording never allocates per event. It
-  follows the game clock: its time is the game timer's elapsed time, so
-  paused time is absent from a replay, as it is from the timer.
+  follows the game clock: its time is the game timer's elapsed time, which
+  runs through pauses, so a paused span is a gap in the action stream and
+  an action after it carries the paused time in its time.
 - **Movement samplers.** Each mode provides one, reading its own input state
   on the recorder's schedule:
   - **2D** — the pointer position in board coordinates (cell units,
@@ -96,7 +97,10 @@ summary in the game shell's `game finished` and `game abandoned` reports.
   description (square: width, height; box: X, Y, Z); the board identity from
   `game-summary`; the mine set as cell indices; the rule profile and its
   rules version; the seed and generator version, for reference only; the
-  date the game ended.
+  date the game ended; the game's pause spans — each pause's start and end
+  on the game clock, ascending and non-overlapping, within the elapsed
+  time, their count and total being the summary's — from format version 2,
+  a version 1 replay upgrading to none.
 - **Action stream** — per action: time (ms on the game clock), kind (reveal,
   toggle flag, chord) and cell index. Every action the session hands to the
   engine while the game accepts actions is recorded, including those that
@@ -121,7 +125,7 @@ summary in the game shell's `game finished` and `game abandoned` reports.
 - **Feed** — `action(kind, cell, time)` from the session at the point it
   calls the engine; `sample(values, time)` from the mode's sampler while the
   game is started, unpaused and unfinished.
-- **Seal** — `seal(summary, engine final state)` → the replay blob and its
+- **Seal** — `seal(summary, engine final state, pause spans)` → the replay blob and its
   listing fields (id, board key, mode, outcome, time, 3BV/s, efficiency, end
   date, size). Sealing twice returns the same replay.
 - **Mode contract extension** — `game finished(summary, replay)` and
@@ -162,6 +166,6 @@ Set by measuring simulated games played through the mode sessions
   1/16 of a cell, its yaw and pitch in 1/8192 of a turn.
 - **Movement cap** — 2 MB (2 × 1024 × 1024 bytes) of encoded movement,
   about 9 hours of the busiest measured 3D game.
-- **Compression** — none: format version 1 stores the blob as encoded. The
+- **Compression** — none: format versions 1 and 2 store the blob as encoded. The
   platform's compression stream saves 20 to 40 % on replays of a few to a
   few tens of kilobytes, and would make sealing and decoding asynchronous.

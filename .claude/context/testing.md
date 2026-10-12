@@ -139,7 +139,9 @@ browser checks for everything that needs WebGL or the DOM.
 - `tests/records-summary.test.mjs` — the summary builder
   (`js/records/summary.js`) over real engine games: won, lost and abandoned
   records with every field, no summary before the first click, a stated
-  outcome agreeing with the engine, default id and end date, counted clicks,
+  outcome agreeing with the engine, default id and end date, the pause
+  count and paused time (included in the elapsed time, a paused game still
+  eligible), counted clicks,
   3BV/s and efficiency, zero divisors as not available, the built record's
   stats matching the exported functions, best eligibility, the invalid
   inputs that throw, and the module DOM-free and importing no separate 3D
@@ -151,14 +153,17 @@ browser checks for everything that needs WebGL or the DOM.
   that throws, safe cells spanning the depth — and the 3D adapter
   (`create3DMode`) over a real session and the mode host: the started
   game's summary so far, game finished and game abandoned on restart with
-  the builder's summary and one id per game, and a fixed board's null.
+  the builder's summary and one id per game, the pause count and paused
+  time with the clock running through a pause (and one left open at a
+  restart), and a fixed board's null.
 - `tests/records-model.test.mjs` — the records model
   (`js/records/model.js`) over built summaries: three bests per board from
   won games only, replaced only when strictly better and independently, a
   tie keeping the earlier holder, an unavailable stat never a best, each
   exact board its own; per-board and Classic 2D overall counters and
   streaks, derived win rate; the history in play order and compact,
-  JSON-safe form; the comparison against the bests before the game; the same
+  JSON-safe form, carrying each game's pause count and paused time, an
+  entry or summary without them reading as none; the comparison against the bests before the game; the same
   id twice a no-op, unrecordable summaries throwing; the rebuild from history
   equal to the incremental records; the documents, boards-played order,
   queries by identity or key returning copies, and the module DOM-free and
@@ -187,7 +192,9 @@ browser checks for everything that needs WebGL or the DOM.
   `attach` hooks (abandoned, in-progress begin then checkpoint, a fixed 3D
   board's null summary ignored), the marker cleared by its own game and kept
   by another, a late checkpoint not reviving it, a leftover marker settled
-  at load as a streak-ending loss or a no-op when already recorded, three
+  at load as a streak-ending loss or a no-op when already recorded, a
+  history from before pauses loading unchanged and one with malformed
+  pause fields refused, three
   runs through the real mode host and pause controller with a fake mode —
   closed mid-game, restart, finished — and the queries.
 - `tests/records-screen.test.mjs` — the Records screen
@@ -454,10 +461,13 @@ browser checks for everything that needs WebGL or the DOM.
   cap (measured and interpolated, at most the cell count minus one, a dense
   board keeping no-guess), `normaliseChoice`, the last choice document over
   the memory backend (no-guess on with nothing stored, a stored no-guess
-  off kept), the timer; the session's closed board, first-click
+  off kept), the timer running through pauses and its pause spans; the
+  session's closed board, first-click
   request, the delayed "generating" state, the timer starting at the
   board, actions and `changed`, win and loss with `buildSummary`
-  summaries, one summary id per game, pause (also while generating), the no-guess and worker
+  summaries, one summary id per game, pause (also while generating, and
+  one left open at an abandon) with the clock running and the summaries'
+  pause count and paused time, the no-guess and worker
   failures with Retry and Play a standard board and their count of
   failures in a row, `cancel` while generating back to the closed board
   (the client cancelled, nothing reported, the next first click asking
@@ -511,7 +521,7 @@ browser checks for everything that needs WebGL or the DOM.
   started / can-pause / finished (recorded and routed by the results flow),
   redraw and the overlay feed with its click count (none before the first
   click, wasted clicks counted, frozen at the end), pause hiding
-  the board and freezing the timer, restart and leave releasing the canvas
+  the board while the time the pause card shows runs on, restart and leave releasing the canvas
   and the pending generation, Play again, the no-guess failure offer and
   its failure count, `cancelGeneration` back to the closed board, the
   controller poll; the board choice helpers (`js/classic2d/board-choice.js`)
@@ -521,8 +531,9 @@ browser checks for everything that needs WebGL or the DOM.
   markup (spinner, Cancel, Main menu), the router entries and controller
   layers, the shell's Cancel and offer wiring, the catalogue entry. One Playwright test
   goes menu → Classic 2D → Expert → first click → pause → resume → back to
-  menu and checks the abandoned summary (skipped when Playwright or chromium
-  is unavailable).
+  menu and checks the timer and the pause card's time running while paused
+  and the abandoned summary with its two pauses (skipped when Playwright or
+  chromium is unavailable).
 - `tests/classic2d-fidelity.test.mjs` — the Classic 2D inputs and custom
   limits against `tests/fidelity/minesweeper-online.md`: each test cites
   an entry by heading ("Chording: which inputs chord", "Flag timing",
@@ -582,14 +593,17 @@ browser checks for everything that needs WebGL or the DOM.
 - `tests/shell-mode-3d.test.mjs` — the 3D adapter (`js/shell/mode-3d.js`)
   over a fake session and a fake flow: the builder's summaries, the contract, pause
   reaching the session without cancelling a pending board request, started
-  and can-pause at the first applied reveal, `summary()` so far,
+  and can-pause at the first applied reveal, `summary()` so far, the
+  summaries' pause count and paused time from the session's spans,
   `cancelGeneration` through the session reporting nothing, finished
   after the end delay at a win or loss, abandoned on restart and leave of a started game and
   nothing before the first applied reveal, reports of a session no longer
   held ignored, a lost graphics context; DOM-free, importing at most the
   session; static checks that `js/main.js` hands the adapter each session
-  and leaves the reports to it. One Playwright test starts, pauses,
-  resumes, restarts and leaves the 3D game through the adapter, and ends a
+  and leaves the reports to it. One Playwright test starts, pauses (the
+  clock and the pause card's time running on, the click-to-play card
+  stopping nothing), resumes, restarts and leaves the 3D game through the
+  adapter, and ends a
   fixed board, which has no results screen, on the pause card.
 - `tests/mode3d-board-choice.test.mjs` — the 3D board choice
   (`js/mode3d/board-choice.js`): the three cube presets and no flat or
@@ -616,7 +630,9 @@ browser checks for everything that needs WebGL or the DOM.
   and its first-click rule up to every cell but one, the closed box, the
   board request with the no-guess setting, the delayed "generating" state
   and no board action meanwhile, the timer from the board's arrival to a
-  win or loss, flags before the first reveal, pause during generation,
+  win or loss, flags before the first reveal, pause during generation, the
+  clock running through every pause and each pause a span until the return
+  to play or the end,
   restart and leave cancelling the request and dropping a late answer,
   `cancel` back to the closed box with its flags, the no-guess failure's
   Retry and standard board and its count of failures in a row, a failing or rejecting
@@ -643,7 +659,9 @@ browser checks for everything that needs WebGL or the DOM.
   stored in the blob), the encoder's
   `RangeError` on a malformed replay, the cursor event on the square graph
   and the view-mode event on the box only, a newer version refused with its
-  own error, an older one decoded and upgraded step by step, a throwing
+  own error, an older one decoded and upgraded step by step, version 2's
+  pause spans round-tripping and their malformed forms refused, a version 1
+  replay and every version 1 fixture upgrading to no pauses, a throwing
   upgrade step, a missing decoder and a corrupt blob unreadable, an
   `ArrayBuffer` accepted, and `cellStateDigest`.
 - `tests/replay-recorder.test.mjs` — the recorder and sealer
@@ -654,13 +672,15 @@ browser checks for everything that needs WebGL or the DOM.
   while actions go on, sealing a win, a loss and an abandon — listing
   fields, size, the same replay on a second seal — that decode and
   reproduce, a game left before its first click sealing to nothing, a 3D
-  game's samples, view modes and hidden state in the digest, and failures
-  (a bad feed, an unencodable seal, a summary for another board, bad header
-  fields) dropping the replay, reported once, never thrown into play.
+  game's samples, view modes and hidden state in the digest, the pause spans
+  sealed into the header, and failures (a bad feed, an unencodable seal, a
+  summary for another board, pause spans that are not the summary's, bad
+  header fields) dropping the replay, reported once, never thrown into play.
 - `tests/replay-2d.test.mjs` — Classic 2D capture
   (`js/replay/sampler-2d.js`, `js/classic2d/session.js`,
   `js/classic2d/mode.js`) with a fake clock: `boardPoint` in cell units on
-  and off the board, a recorded 2D game sealed at the win, nothing recorded
+  and off the board, a recorded 2D game with a pause — its span in the
+  header, the actions after it later by the paused time — sealed at the win, nothing recorded
   before the first click and the recorder discarded on restart, a no-guess
   failure played standard, the sampler's schedule across frame jitter,
   `mountSampler2D` reading the last pointer position through the view, and
@@ -670,7 +690,8 @@ browser checks for everything that needs WebGL or the DOM.
 - `tests/replay-3d.test.mjs` — 3D capture (`js/replay/sampler-3d.js`,
   `js/mode3d/session.js`, `js/shell/mode-3d.js`) with a fake clock:
   `cameraSample` and `viewMode`, a recorded 3D game with flags before the
-  first reveal at time 0 sealed at the win, a loss and an abandon
+  first reveal at time 0 and a pause (its span in the header, the actions
+  after it later by the paused time) sealed at the win, a loss and an abandon
   reproducing their check values, restart discarding and leave stopping the
   recording, a no-guess failure played standard, a fixed board recording
   but unsealed, the sampler's schedule, and the adapter's finished and
@@ -738,12 +759,13 @@ browser checks for everything that needs WebGL or the DOM.
   replay object, the hand-off's `{blob}` or a library id, verification first
   and each failure line with Back still working, no viewer for the graph, a
   replay still loading when the screen closes; ticks driving the clock and
-  the simulator, the end of a replay, seek and step, the seek bar step,
+  the simulator, the end of a replay, seek and step, the seek bar step, the
+  seek bar's pause marks and their text, playback through a paused span,
   keyboard and controller commands, a lost game's loss view; the viewer
   reaching no records, sound or pause; static checks of the `#replay` kit
   markup and its wiring in `js/main.js`. One Playwright test plays a
-  recorded 2D fixture through to the end (skipped when Playwright or
-  chromium is unavailable).
+  recorded 2D fixture through to the end and shows a replay's pause marks
+  (skipped when Playwright or chromium is unavailable).
 - `tests/replay-viewer-3d.test.mjs` — the 3D viewer
   (`js/replay/viewer-3d.js`): the recorded camera in cells and radians, held
   through a still stretch and interpolated over the last sampling interval
@@ -839,7 +861,9 @@ browser checks for everything that needs WebGL or the DOM.
   shows the offer at once.
 - `tests/shell-pause.test.mjs` — the pause controller (`js/shell/pause.js`)
   over a real mode host, a fake mode and a recording shell: every pause
-  source, automatic pauses only in play, no pause before the first click or
+  source, automatic pauses (blur, tab hide, a controller disconnect) and
+  manual ones counted alike with the clock running through them, automatic
+  pauses only in play, no pause before the first click or
   after the end beyond the card, Back cancelling a board being generated
   while every pause source still pauses, resume through the mode, the restart and
   back-to-menu confirmations, the `finished` / `abandoned` / `inProgress`
@@ -850,7 +874,8 @@ browser checks for everything that needs WebGL or the DOM.
   back button included) through `backGame`, that the board status cards
   stack above the pause card, that the guard is
   a listener it arms, and that the confirmation is kit markup. Two
-  Playwright tests: one pauses, resumes, restarts and goes back to menu in
+  Playwright tests: one pauses (the clock running on, the key, blur and
+  tab-hide pauses counted alike), resumes, restarts and goes back to menu in
   the 3D game, and ends a fixed board, which has no results screen, on the
   pause card; one, over stand-in generation workers, cancels the Classic 2D
   generating card by Cancel and Esc (before and after it shows), meets the

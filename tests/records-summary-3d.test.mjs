@@ -48,6 +48,8 @@ test('won: a 3D engine summary becomes a record carrying the 3D board identity',
     board: { mode: '3d', width: 5, height: 1, depth: 1, mines: 1, noGuess: false },
     outcome: 'won',
     elapsedMs: 4000,
+    pauses: 0,
+    pausedMs: 0,
     bbbv: 2,
     bbbvSolved: 2,
     clicks: { reveal: { effective: 2, wasted: 0 }, flag: { effective: 0, wasted: 0 }, chord: { effective: 0, wasted: 0 } },
@@ -186,6 +188,8 @@ test('the 3D mode answers summary() with the started game\'s summary so far, fro
     board: { mode: '3d', width: 5, height: 1, depth: 1, mines: 1, noGuess: true },
     outcome: 'abandoned',
     elapsedMs: 1500,
+    pauses: 0,
+    pausedMs: 0,
     bbbv: 2,
     bbbvSolved: 1,
     clicks: { reveal: { effective: 1, wasted: 0 }, flag: { effective: 0, wasted: 0 }, chord: { effective: 0, wasted: 0 } },
@@ -219,15 +223,40 @@ test('the 3D mode reports game finished with the builder\'s summary, its outcome
   assert.deepEqual(p.of('abandoned'), [], 'a finished game is never abandoned');
 });
 
+test('the 3D mode\'s summaries carry the game\'s pauses: count and total, the clock running through them', async () => {
+  const p = play3D();
+  await p.session.reveal(0);
+  p.advance(1000);
+  p.host.pause();
+  p.advance(2000);
+  const paused = p.host.summary();
+  assert.equal(paused.elapsedMs, 3000, 'the paused time is in the elapsed time');
+  assert.equal(paused.pauses, 1);
+  assert.equal(paused.pausedMs, 2000);
+  p.session.resume(); // the return to play
+  p.advance(500);
+  p.session.reveal(4);
+  p.endDelay();
+  const [finished] = p.of('finished');
+  assert.equal(finished.elapsedMs, 3500);
+  assert.equal(finished.pauses, 1);
+  assert.equal(finished.pausedMs, 2000);
+  assert.equal(finished.bbbvPerSecond, 2 / 3.5);
+});
+
 test('the 3D mode reports game abandoned with the builder\'s summary when a started game is restarted', async () => {
   const p = play3D();
   await p.session.reveal(0);
   const id = p.of('started')[0].id;
-  p.advance(2000);
+  p.advance(500);
+  p.host.pause();
+  p.advance(1500);
   p.host.restart({ source: 'pointer' });
   const [abandoned] = p.of('abandoned');
   assert.equal(abandoned.outcome, 'abandoned');
   assert.equal(abandoned.elapsedMs, 2000);
+  assert.equal(abandoned.pauses, 1, 'abandoned while paused: the open pause ends at the end');
+  assert.equal(abandoned.pausedMs, 1500);
   assert.equal(abandoned.id, id);
   assert.equal(abandoned.board.mode, '3d');
   await p.session.reveal(0);

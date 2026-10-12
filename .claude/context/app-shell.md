@@ -272,7 +272,9 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   `showClassic2D` (positions `#c2d-board` 16 px below the overlay bar),
   `showPause({state,time,minesLeft,note,mode})` (the board line, the mode's
   bindings, the look settings only for `'3d'`, "Back to start" only for a 3D
-  game in play), `showReplay` (hides the
+  game in play), `updatePause({time, minesLeft})` (the card's status line,
+  which the frame loop refreshes from `pauseInfo()` while the card shows, so
+  its running time advances), `showReplay` (hides the
   game's HUD, help panel, hint strip and toast);
   Classic 2D `setBoard2D(board)`, `setBoardStatus({generating, failure})`;
   3D `setBoardStatus3D({generating, failure})` (`#m3d-status`); menu
@@ -617,8 +619,9 @@ Game flow (`js/main.js`):
   `LAYER_SCREEN` puts both status cards above the pause card; their
   default focus is `statusFocus` (`STATUS_LAYERS`).
 - `sync3D` runs on every router change: it resumes the session on
-  `playing` and pauses it everywhere else, so the session's timer runs only
-  in play, and refreshes the status card.
+  `playing` and pauses it everywhere else, so board input runs only in play
+  and each pause lasts until the return to play, while the session's clock
+  runs throughout; it refreshes the status card.
 - `S.lockless`: play without pointer lock (controller, drag-to-look,
   `forcePlay`). Mirrors `body.lockless`; when set, losing lock does not pause
   and Esc goes to `backGame` directly.
@@ -653,8 +656,8 @@ Game flow (`js/main.js`):
   the final action (original HUD froze on the previous frame) and `clicks`
   the engine's counted clicks (`clicks3D()`), and plays
   the win sound. HUD, pause card and timer read `S.endState` once set;
-  until then the frame loop reads `S.time` from `S.play.elapsedMs()` while
-  `playing && started`.
+  until then the frame loop reads `S.time` from `S.play.elapsedMs()` once
+  the game has started, paused or not.
 - 3D end sequence: while the adapter's end delay runs (`ending3D()`, the 3D
   mode active and `mode3d.ending`) the end effect plays and every input is
   ignored — `Input.isActive` is false, so no board action or mouse look;

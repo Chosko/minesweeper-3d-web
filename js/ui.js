@@ -341,6 +341,11 @@ export class UI {
     this.el.home.classList.toggle('hidden', ended || mode !== '3d'); // back to the 3D start view, while the box is in play
     this.el.restart.textContent = ended ? 'Play again' : 'Restart';
   }
+  /** The pause card's status line while it shows: the game's running time and mines left. */
+  updatePause({ time, minesLeft }) {
+    const line = pauseLine(time, minesLeft);
+    if (this.el.pauseSub.textContent !== line) this.el.pauseSub.textContent = line;
+  }
   isPauseVisible() { return !this.el.pause.classList.contains('hidden'); }
   /** Ask on the pause card, in place of its actions: onYes on confirm, onNo on Cancel or Back. */
   showConfirm({ message, confirmLabel }, onYes, onNo) {

@@ -21,9 +21,13 @@ function fakeSession(board = { X: 4, Y: 5, Z: 6, mines: 7, noGuess: false }) {
     seed: 99,
     generatorVersion: 1,
     ms: 0,
+    spans: [],
     outcome: null,
     calls: [],
     elapsedMs: () => s.ms,
+    // the session's pause spans up to `until`, at most `count` of them, the open one clipped
+    pauses: (until = s.ms, count = Infinity) => s.spans.filter((p) => p.start <= until).slice(0, count)
+      .map((p) => ({ start: p.start, end: Math.min(p.end, until) })),
     counts: () => ({ bbbv: 10, bbbvSolved: 4, clicks: CLICKS }),
     engineSummary: () => (s.outcome
       ? { outcome: s.outcome, dimensions: { width: 4, height: 5, depth: 6 }, mineCount: 7, bbbv: 10, bbbvSolved: s.outcome === 'won' ? 10 : 4, clicks: CLICKS }
@@ -51,10 +55,10 @@ function fakeSession(board = { X: 4, Y: 5, Z: 6, mines: 7, noGuess: false }) {
 // The summary the builder makes of the fake session's game, without its id and end time.
 const BOARD_3D = { mode: '3d', width: 4, height: 5, depth: 6, mines: 7, noGuess: false };
 const plain = (summary) => ({ ...summary, id: undefined, endedAt: undefined });
-const expected = (outcome, elapsedMs) => {
+const expected = (outcome, elapsedMs, pauses = 0, pausedMs = 0) => {
   const bbbvSolved = outcome === 'won' ? 10 : 4;
   return {
-    id: undefined, board: BOARD_3D, outcome, elapsedMs, bbbv: 10, bbbvSolved, clicks: CLICKS,
+    id: undefined, board: BOARD_3D, outcome, elapsedMs, pauses, pausedMs, bbbv: 10, bbbvSolved, clicks: CLICKS,
     bbbvPerSecond: elapsedMs === 0 ? null : bbbvSolved / (elapsedMs / 1000), efficiency: (100 * bbbvSolved) / 4,
     seed: 99, generatorVersion: 1, endedAt: undefined,
   };
@@ -124,13 +128,27 @@ test('the 3D adapter implements the contract over the shell flow, as today', () 
   assert.equal(flow.sessions.length, 2, 'start and restart each open a session');
 });
 
-test('pause pauses the session, so its timer stops; a pending board request is not cancelled', () => {
+test('pause pauses the session, whose clock keeps running; a pending board request is not cancelled', () => {
   const { host, flow } = setup();
   host.start('3d', CHOICE);
   host.pause();
   assert.deepEqual(flow.session.calls, ['pause'], 'the session pauses and is not left');
   host.resume({ source: 'key' });
-  assert.deepEqual(flow.session.calls, ['pause'], 'the timer resumes with play, not with the click-to-play card');
+  assert.deepEqual(flow.session.calls, ['pause'], 'the pause ends with play, not with the click-to-play card');
+});
+
+test('the summaries carry the session\'s pauses: their count and total, the open one up to the summary\'s time', () => {
+  const { host, events, flow, mode } = setup();
+  host.start('3d', CHOICE);
+  flow.session.emit('started', {});
+  flow.session.spans = [{ start: 500, end: 1500 }, { start: 3000, end: Infinity }];
+  flow.session.ms = 4200;
+  assert.deepEqual(plain(mode.summary()), expected('abandoned', 4200, 2, 2200));
+  flow.session.spans = [{ start: 500, end: 1500 }, { start: 3000, end: 4000 }];
+  flow.session.ms = 9000;
+  flow.session.emit('finished', { state: 'won' });
+  flow.clock.advance(END_DELAY_MS);
+  assert.deepEqual(plain(events.at(-1)[1].summary), expected('won', 9000, 2, 2000));
 });
 
 test('cancelGeneration cancels a board being generated through the session and reports nothing', () => {
@@ -344,12 +362,17 @@ test('in a browser, the 3D game starts, pauses, resumes, restarts and leaves thr
     assert.equal(await ms(() => globalThis.__ms.game.state), 'playing');
     await frames(10);
 
-    // pause through the host: the pause card shows and the timer stops
+    // pause through the host: the pause card shows and the clock keeps running, on the card too
     await ms(() => globalThis.__ms.modes.pause());
     assert.equal(await mode(), 'paused');
     const t0 = await ms(() => globalThis.__ms.state.time);
-    await frames(10);
-    assert.equal(await ms(() => globalThis.__ms.state.time), t0, 'the timer is stopped while paused');
+    await page.waitForTimeout(1100);
+    await frames(2);
+    const t1 = await ms(() => globalThis.__ms.state.time);
+    assert.ok(t1 >= t0 + 1, `the clock runs while paused (${t0} → ${t1})`);
+    const card = Number((await page.textContent('#pause-sub')).match(/^Time (\d+)\./)[1]);
+    assert.ok(card >= Math.floor(t0) + 1, `the pause card shows the running time (${t0} → card ${card})`);
+    assert.equal(await ms(() => globalThis.__ms.state.play.pauses().length), 1, 'one pause so far');
     assert.equal(await ms(() => globalThis.__ms.modes.summary()), null, 'a fixed board, which no generator made, has no summary');
 
     // resume from a controller enters lockless play, as today
@@ -365,6 +388,9 @@ test('in a browser, the 3D game starts, pauses, resumes, restarts and leaves thr
     assert.equal(resumed.lockless, false);
     assert.ok(resumed.mode === 'playing' ? resumed.locked : resumed.mode === 'ready',
       `play under pointer lock, or the click-to-play card when the browser refuses it (${JSON.stringify(resumed)})`);
+    const r0 = await ms(() => globalThis.__ms.state.play.elapsedMs());
+    await page.waitForTimeout(300);
+    assert.ok(await ms(() => globalThis.__ms.state.play.elapsedMs()) >= r0 + 300, 'no screen change stops the clock, the click-to-play card neither');
 
     // restart from the pause card, once confirmed, abandons the started game
     await ms(() => globalThis.__ms.pause());

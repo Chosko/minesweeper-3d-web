@@ -33,7 +33,8 @@ Pick a board, switch **No-guess board** on or off, and play:
   one cell free for the first click.
 - The board is scaled to fit the window. A board too large to fit scrolls: use the mouse wheel
   (`Shift` + wheel scrolls sideways) or drag with `Shift` held.
-- Pausing hides the board. The board choice you made last is preselected next time.
+- Pausing hides the board while the timer keeps running; each game records its pauses. The board
+  choice you made last is preselected next time.
 
 | Input | Action |
 |---|---|
@@ -91,7 +92,7 @@ same, is not played and the viewer says why.
 | `-` / `=` | `LT` / `RT` | Slower / faster (0.5×, 1×, 2×, 4×) |
 | `Esc` | `B` | Back to the screen you came from |
 
-The seek bar moves to any point in the replay.
+The seek bar moves to any point in the replay, and marks each stretch where the game was paused.
 
 ## 3D: how to play
 
@@ -245,10 +246,11 @@ on purpose:
   the flag sound grows with how many there were. Replays recorded before this change still play
   with the original rule.
 - **Pause menu instead of `F5` / `Esc`:** the original restarted with `F5` and quit with `Esc`. Here
-  `Esc` opens a menu with resume, back to start (3D), restart and main menu.
+  `Esc` opens a menu with resume, back to start (3D), restart and main menu. The timer keeps running
+  while the game is paused, and each game records its pauses.
 - **Draw distance:** the far plane grows with the board instead of being clipped at 300 units.
 - **Minor timing changes the player cannot see:** auto-hiding and the win check run right after each
-  action instead of once per frame, and the timer stops while the game is paused.
+  action instead of once per frame.
 - **Touch devices are not supported:** the game needs a mouse and keyboard (with Pointer Lock) or a
   game controller. On a touch-only device, the menu says so.
 

@@ -17,6 +17,11 @@ import { createBoardIdentity, MODE_3D } from '../js/records/board.js';
 import { REFERENCE_PROFILE, PROFILE_3D } from '../js/engine/profiles.js';
 import { createGameWithMines } from '../js/engine/rules.js';
 import { createSquareGrid } from '../js/engine/square-grid.js';
+import { readFileSync } from 'node:fs';
+
+const FIXTURES = new URL('./fixtures/replays/', import.meta.url);
+const fixture = (name) => new Uint8Array(readFileSync(new URL(name, FIXTURES)));
+const FIXTURE_NAMES = JSON.parse(readFileSync(new URL('index.json', FIXTURES), 'utf8')).map((f) => f.file);
 
 const clicks = (r, f, c) => ({
   reveal: { effective: r, wasted: 0 }, flag: { effective: f, wasted: 1 }, chord: { effective: c, wasted: 2 },
@@ -34,6 +39,7 @@ const replay2D = (extra = {}) => ({
     generatorVersion: 1,
     endedAt: '2026-10-10T12:34:56.789Z',
     movementEndedAt: null,
+    pauses: [],
   },
   actions: [
     { time: 0, kind: 'reveal', cell: 40 },
@@ -66,6 +72,7 @@ const replay3D = (extra = {}) => ({
     generatorVersion: 2,
     endedAt: '2026-01-01T00:00:00.000Z',
     movementEndedAt: null,
+    pauses: [],
   },
   actions: [
     { time: 0, kind: 'flag', cell: 0 },
@@ -141,16 +148,68 @@ test('the vocabularies: action kinds, movement types and the sample arity per gr
   assert.deepEqual(ACTION_KINDS, ['reveal', 'flag', 'chord']);
   assert.deepEqual(MOVEMENT_TYPES, ['sample', 'cursor', 'view']);
   assert.deepEqual(SAMPLE_ARITY, { square: 2, box: 5 });
-  assert.equal(REPLAY_FORMAT_VERSION, 1);
+  assert.equal(REPLAY_FORMAT_VERSION, 2);
+});
+
+// ---------- the pause spans ----------
+
+test('the header\'s pause spans round-trip, and an action after a pause carries the paused span in its time', () => {
+  const r = replay2D();
+  r.header.pauses = [{ start: 900, end: 1400 }, { start: 1500, end: 1500 }, { start: 2000, end: 2210 }];
+  const back = decodeReplay(encodeReplay(r));
+  assert.deepEqual(back, { ...r, sampleIntervalMs: 50 });
+  assert.deepEqual(back.header.pauses, r.header.pauses);
+  const r3 = replay3D({ header: { ...replay3D().header, mines: [0, 500, 1151], pauses: [{ start: 0, end: 3000 }] } });
+  assert.deepEqual(decodeReplay(encodeReplay(r3)), { ...r3, sampleIntervalMs: 100 });
+});
+
+test('the pause spans are ascending, non-overlapping game-clock times within the elapsed time; anything else is refused', () => {
+  const bad = [
+    [{ start: -1, end: 5 }], [{ start: 5, end: 4 }], [{ start: 0, end: 2211 }], [{ start: 1.5, end: 2 }],
+    [{ start: 100, end: 300 }, { start: 200, end: 400 }], [{ start: 500, end: 600 }, { start: 100, end: 200 }],
+    [null], 'none', 7,
+  ];
+  for (const pauses of bad) {
+    const r = structuredClone(replay2D());
+    r.header.pauses = pauses;
+    assert.throws(() => encodeReplay(r), RangeError, JSON.stringify(pauses));
+  }
+});
+
+test('a version 1 replay decodes by its own decoder and upgrades to no pauses, at version 1\'s sampling intervals', () => {
+  const { pauses, ...v1Header } = replay2D().header;
+  const v1 = { ...replay2D(), header: v1Header };
+  const bytes = encodeReplay(v1, { version: 1 });
+  assert.equal(bytes[4], 1, 'stamped version 1');
+  assert.deepEqual(decodeReplay(bytes), { ...v1, header: { ...v1Header, pauses: [] }, sampleIntervalMs: 50 });
+  const { pauses: p3, ...h3 } = replay3D().header;
+  const back3 = decodeReplay(encodeReplay({ ...replay3D(), header: h3 }, { version: 1 }));
+  assert.deepEqual(back3.header.pauses, []);
+  assert.equal(back3.sampleIntervalMs, 100);
+  assert.deepEqual(pauses, []);
+  assert.deepEqual(p3, []);
+});
+
+test('every version 1 fixture decodes with no pauses; the fixtures stay version 1 files', () => {
+  assert.ok(FIXTURE_NAMES.length >= 6, 'the fixtures are listed');
+  for (const name of FIXTURE_NAMES) {
+    const bytes = fixture(name);
+    assert.equal(bytes[4], 1, `${name} is a version 1 file`);
+    const r = decodeReplay(bytes);
+    assert.deepEqual(r.header.pauses, [], name);
+    assert.equal(r.sampleIntervalMs, sampleIntervalMs(1, r.header.mode), name);
+  }
 });
 
 // ---------- the movement sampling interval ----------
 
-test('the decoder gives each replay its movement sampling interval: 2D 50 ms, 3D 100 ms under version 1', () => {
+test('the decoder gives each replay its movement sampling interval: 2D 50 ms, 3D 100 ms under versions 1 and 2', () => {
   assert.equal(decodeReplay(encodeReplay(replay2D())).sampleIntervalMs, 50);
   assert.equal(decodeReplay(encodeReplay(replay3D())).sampleIntervalMs, 100);
-  assert.equal(sampleIntervalMs(1, 'classic-2d'), 50);
-  assert.equal(sampleIntervalMs(1, MODE_3D), 100);
+  for (const v of [1, 2]) {
+    assert.equal(sampleIntervalMs(v, 'classic-2d'), 50);
+    assert.equal(sampleIntervalMs(v, MODE_3D), 100);
+  }
   assert.equal(sampleIntervalMs(REPLAY_FORMAT_VERSION + 1, MODE_3D), undefined, 'no interval for an unknown version');
 });
 
@@ -204,7 +263,7 @@ test('a newer format version is refused with its own error, not as unreadable', 
   const bytes = encodeReplay(replay2D());
   const newer = createReplayDecoder({ current: 0, decoders: {}, upgrades: {} });
   assert.throws(() => newer(bytes), (e) => e instanceof ReplayNewerVersionError
-    && !(e instanceof ReplayUnreadableError) && e.storedVersion === 1 && e.currentVersion === 0);
+    && !(e instanceof ReplayUnreadableError) && e.storedVersion === REPLAY_FORMAT_VERSION && e.currentVersion === 0);
 });
 
 test('a blob stamped with a version above the current one is refused as newer by decodeReplay', () => {

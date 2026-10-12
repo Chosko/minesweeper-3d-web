@@ -291,9 +291,24 @@
      and a ui-panel of the
      playback controls: a ui-text end line, a ui-row of Previous, Play /
      Pause (primary) and Next with the speed as a ui-segmented choice (0.5×,
-     1×, 2×, 4×), and the seek bar as a ui-slider. Default focus: Play, or
-     the message's Back.
+     1×, 2×, 4×), and the seek bar as a ui-slider whose track carries a
+     .replay-pause mark per paused span (--color-replay-pause) and a
+     ui-text--muted line naming them, its text alternative. Default focus:
+     Play, or the message's Back.
 */
+
+/* ---------- replay seek bar: the paused spans on its track ----------
+   Three layers: the track's fill (::before), the marks, then the input with
+   a transparent track, so the thumb and the track's edge draw over the marks. */
+.replay-seek { position: relative; grid-column: 1 / -1; }
+.replay-seek::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 8px; transform: translateY(-50%); border-radius: var(--radius-pill); background: var(--color-surface-sunken); }
+.replay-seek .ui-slider__input { position: relative; z-index: 2; display: block; }
+.replay-seek .ui-slider__input::-webkit-slider-runnable-track { background: transparent; }
+.replay-seek .ui-slider__input::-moz-range-track { background: transparent; }
+.replay-pauses { position: absolute; z-index: 1; left: 10px; right: 10px; top: 50%; height: 8px; transform: translateY(-50%); pointer-events: none; }
+.replay-pause { position: absolute; top: 0; bottom: 0; min-width: 2px; border-radius: 2px; background: var(--color-replay-pause); }
+.replay-pauses-text { grid-column: 1 / -1; font-size: var(--font-size-sm); }
+.replay-pauses-text[hidden] { display: none; }
 
 /* ---------- buttons ---------- */
 .ui-button {

@@ -27,8 +27,8 @@
 // reports abandoned from summary() and replay(summary) when a started, unfinished game is
 // restarted or left; a game left before its first applied reveal reports nothing. The replay is
 // the session's recording sealed with the summary (js/mode3d/session.js), null when there is no
-// summary. pause() pauses the session, so its timer stops and a pending board request keeps
-// running; the timer resumes with play. cancelGeneration() cancels the session's first-click board
+// summary. pause() pauses the session, which stops its board input and leaves its clock running,
+// a pending board request running too; the pause ends with the return to play. cancelGeneration() cancels the session's first-click board
 // while it is being generated, its card shown or not, back to the closed box with nothing
 // reported, and returns whether it did. restart() and leave() leave the session, cancelling a
 // pending generation or end delay and discarding its recording, and drop its sampler. tick()
@@ -38,8 +38,8 @@
 // short — the page is going away — so the game is reported finished, never left unfinished.
 //
 // Summaries are built by js/records/summary.js's buildSummary from the session's engine counts
-// (outcome abandoned) or engine summary (won or lost), its elapsed time, its board as the 3D board
-// identity, its seed and its generator version: null before the first applied reveal, the summary
+// (outcome abandoned) or engine summary (won or lost), its elapsed time and its pause spans up to
+// it, its board as the 3D board identity, its seed and its generator version: null before the first applied reveal, the summary
 // so far while playing, the finished summary after the end. Every summary of one game carries the
 // same id. A fixed board (the debug hook's mine set) was made by no generator, has no seed and so
 // has no summary: null throughout.
@@ -78,9 +78,11 @@ export function create3DMode(flow, report) {
     const { session } = g;
     if (session.seed === null || session.generatorVersion === null) return null; // a fixed board
     const { X, Y, Z, mines, noGuess } = session.board;
+    const elapsedMs = session.elapsedMs();
     return buildSummary({
       engine,
-      elapsedMs: session.elapsedMs(),
+      elapsedMs,
+      pauses: session.pauses(elapsedMs),
       board: { mode: MODE_3D, width: X, height: Y, depth: Z, mines, noGuess },
       seed: session.seed,
       generatorVersion: session.generatorVersion,

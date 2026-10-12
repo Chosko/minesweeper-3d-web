@@ -75,7 +75,9 @@ view's Watch open it ([app-shell.md](app-shell.md)).
     `seed` and
     `generatorVersion` for reference only, `endedAt` ISO 8601,
     `movementEndedAt` the game-clock time a capped movement stream stopped,
-    or null.
+    or null, `pauses` the game's pause spans `[{start, end}]` on the game
+    clock, ascending, non-overlapping, within the check's elapsed time (the
+    encoder reads a header without them as none).
   - `actions` — `[{time, kind, cell}]`, kind one of `ACTION_KINDS`.
   - `movement` — `[{time, type: 'sample', values} | {time, type: 'cursor',
     cell} | {time, type: 'view', mode}]`; a sample holds
@@ -85,15 +87,17 @@ view's Watch open it ([app-shell.md](app-shell.md)).
     chord: {effective, wasted}}, digest}`.
   - `sampleIntervalMs` — on a decoded replay only: its movement sampling
     interval, which the blob does not store and the encoder ignores.
-- `REPLAY_FORMAT_VERSION` (1), `ACTION_KINDS` (the engine's `CLICK_KINDS`),
+- `REPLAY_FORMAT_VERSION` (2), `ACTION_KINDS` (the engine's `CLICK_KINDS`),
   `MOVEMENT_TYPES` (`sample`, `cursor`, `view`), `SAMPLE_ARITY` (`square`
   2, `box` 5).
 - `sampleIntervalMs(version, mode)` → the movement sampling interval in ms
-  a replay of that mode was recorded at under that format version (version
-  1: 2D 50, 3D 100), `undefined` for a version this build does not know.
+  a replay of that mode was recorded at under that format version (versions
+  1 and 2: 2D 50, 3D 100), `undefined` for a version this build does not
+  know.
 - `encodeReplay(replay, {version?})` → `Uint8Array`; a `RangeError` on a
-  replay it cannot write. `version` stamps another version on the current
-  body, for the decoder's version tests only.
+  replay it cannot write. `version` 1 writes a version 1 body (no pauses),
+  for tests of old replays; a version with no writer is stamped on the
+  current body, for the decoder's version tests only.
 - `decodeReplay(blob)` — `Uint8Array` or `ArrayBuffer` → the replay at the
   current version, carrying `sampleIntervalMs`; throws
   `ReplayNewerVersionError` (`storedVersion`, `currentVersion`) for a newer
@@ -109,10 +113,12 @@ view's Watch open it ([app-shell.md](app-shell.md)).
 - `startRecording({mode, graph, board, profile}, {onFailure?,
   movementCap?})` → recorder: `boardArrived({mines, seed,
   generatorVersion})`, `action(kind, cell, time)`, `sample(values, time)`,
-  `cursor(cell, time)`, `view(mode, time)`, `seal(summary, final)` →
+  `cursor(cell, time)`, `view(mode, time)`, `seal(summary, final, pauses?)` →
   `{blob, listing}` or null, `stats()` → `{actions, movement,
   movementBytes}`, `failed`. `final` is the engine game at its end or its
-  state arrays.
+  state arrays; `pauses` the pause spans the summary counted, whose count
+  and total must be its `pauses` and `pausedMs` (the replay is dropped
+  otherwise).
 - The listing is `{id, boardKey, mode, outcome, elapsedMs, bbbvPerSecond,
   efficiency, endedAt, size}`, `size` the blob's bytes.
 
@@ -206,7 +212,9 @@ view's Watch open it ([app-shell.md](app-shell.md)).
   `library.bytes`.
 - `clockText(ms)` (`formatOverlayTime`), `overlayFigures(frame, ms)` →
   `{clock, mines, bbbv, rate}`, `endLine(check)` → `{outcome, time, text}`
-  (`formatTime` of `js/results/view.js`), `seekStep(duration)`.
+  (`formatTime` of `js/results/view.js`), `seekStep(duration)`,
+  `pauseMarks(pauses, duration)` → `[{left, width}]` in percent of the
+  replay, `pausesText(pauses)` → "Paused 2 times, 4.1 s in all", or ''.
 - `createReplayViewer({library, router, view, viewers?})` → `state`,
   `show({replay?, replayId?, returnTo?})`, `hide()`, `tick(ms)`,
   `command(name)`, `seek(ms)`, `setSpeed(s)`, `key(code)`, `pad(pressed)`,
@@ -215,7 +223,9 @@ view's Watch open it ([app-shell.md](app-shell.md)).
   mountViewer2D}`.
 - `createReplayView({root, win?, onCommand, onSpeed, onSeek, onBack})` →
   the binder of `#replay`: `open`, `close`, `loading`, `failed(message)`,
-  `ready({duration, kind})` → the board area, `render(state)`, `destroy`.
+  `ready({duration, kind, pauses})` → the board area (and the seek bar's
+  pause marks `#rp-pauses` and their text `#rp-pauses-text`), `render(state)`,
+  `destroy`.
 
 `js/replay/viewer-2d.js`
 - `movementTrack(movement, interval?)` — `interval` the replay's
@@ -241,18 +251,22 @@ view's Watch open it ([app-shell.md](app-shell.md)).
 - **The blob.** `'MSRP'`, the format version, the body, then a CRC-32 of
   everything before it. Integers are LEB128 varints, signed ones
   zigzag-encoded; times are deltas, cells and sample values deltas from the
-  previous event of their kind. Format version 1 is not compressed — a
-  compressed body would be a new format version.
+  previous event of their kind. A version 2 body is the pause spans (count,
+  then each span's start after the previous end and its length) followed by
+  a version 1 body. Neither version is compressed — a compressed body would
+  be a new format version.
 - **Versioning.** The envelope is the same for every version, so the
   checksum is verified and a newer version recognised before its body is
   read; a damaged blob is never taken for a newer one. Each version keeps
   its decoder (`DECODERS`), and `UPGRADES[v]` turns a version-v replay into
-  v + 1; a new version adds a decoder, an upgrade step and its sampling
-  intervals (`SAMPLE_INTERVALS_MS`), never edits an old one. The decoder
+  v + 1 (`UPGRADES[1]` adds `pauses: []`); a new version adds a decoder, an
+  upgrade step and its sampling intervals (`SAMPLE_INTERVALS_MS`), never
+  edits an old one. The decoder
   gives each replay the interval of its mode under the version it was
   stored at, so a replay keeps the interval it was recorded at.
 - **The game clock.** Every time is the session timer's elapsed time,
-  floored, so paused time is absent from a replay; a time that runs
+  floored; the clock runs through pauses, so a paused span is a gap in the
+  action stream, recorded in the header's `pauses`. A time that runs
   backwards is held at its stream's previous time. Actions before the timer
   starts carry 0 and keep their order.
 - **What is recorded.** Every action the session hands to the engine while
@@ -335,7 +349,8 @@ view's Watch open it ([app-shell.md](app-shell.md)).
   only calls the viewer's `place()`. A replay opens paused at its start, at
   1×. Previous and next pause and move to the time of the action before or
   after the current time; the seek bar steps 1% of the replay, at least
-  `SEEK_STEP_MIN_MS`. At the end the final board stays with the end line;
+  `SEEK_STEP_MIN_MS`, and marks each paused span on its track. Playback runs
+  through a paused span like any stretch without actions. At the end the final board stays with the end line;
   play restarts from the beginning.
 - **A shell screen, not a mode.** The viewer plays no game of its own,
   records nothing, plays no sound and is never paused; a replay still
@@ -406,7 +421,9 @@ view's Watch open it ([app-shell.md](app-shell.md)).
 
 - Changing the blob layout or a field: add a format version — a decoder and
   an upgrade step in `format.js` — and read its head comment and
-  `readBodyV1` first; regenerate the fixtures only for a new format.
+  `readBodyV1` first. The fixtures stay at the format version they were
+  recorded at, proving older replays still play; add a fixture or a
+  round-trip test for the new format.
 - Changing a sampling interval, a quantisation step, the movement cap or
   compression: re-run `node dev/measure-replays.mjs` and read its head
   comment (how the constants are chosen). The current format version's

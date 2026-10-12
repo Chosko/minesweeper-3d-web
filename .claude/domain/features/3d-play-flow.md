@@ -148,12 +148,14 @@ behaviour.
   abandoned, so a game ended by closing the window counts as `game-shell`
   describes; before the first reveal there is none.
 - **Summary** — built by `game-summary` from the engine's summary or
-  counts, the elapsed time, the 3D board choice, the seed and the generator
-  version. The 3D fields of the board identity belong to the m2 Results and
+  counts, the elapsed time, the pause spans, the 3D board choice, the seed
+  and the generator version. The 3D fields of the board identity belong to the m2 Results and
   records slice.
-- **Pause** — as `game-shell` describes for every mode: the timer stops and
-  the board is hidden; a pause during generation keeps the request running
-  and the timer unstarted.
+- **Pause** — as `game-shell` describes for every mode: the board is hidden
+  and the timer keeps running; each pause lasts until the return to play,
+  or to the game's end when it is abandoned while paused. A pause during
+  generation keeps the request running and the timer unstarted until the
+  board arrives, the pause counting from there.
 - **Failure** — a lost graphics context is reported to the shell as a
   start or play failure, as `game-shell` describes; a pending generation is
   cancelled.

@@ -32,14 +32,14 @@ let clock = Date.parse('2026-10-01T00:00:00.000Z');
 
 // A summary through the real builder. `outcome` won / lost / abandoned; `ms` elapsed time;
 // `bbbv` and `solved` the 3BV pair; `clicks` the reveal count (efficiency = 100 × solved / clicks).
-function game({ board = BEGINNER, outcome = 'won', ms = 10000, bbbv = 20, solved, clicks = 20, id } = {}) {
+function game({ board = BEGINNER, outcome = 'won', ms = 10000, bbbv = 20, solved, clicks = 20, id, pauses } = {}) {
   const bbbvSolved = solved ?? (outcome === 'won' ? bbbv : Math.max(0, bbbv - 5));
   const engine = { bbbv, bbbvSolved, clicks: clicksOf(clicks) };
   if (outcome !== 'abandoned') engine.outcome = outcome;
   clock += 60000;
   return buildSummary({
     engine, elapsedMs: ms, board, seed: 7, generatorVersion: 1,
-    endedAt: new Date(clock), id: id ?? `g-${nextId++}`,
+    endedAt: new Date(clock), id: id ?? `g-${nextId++}`, pauses,
   });
 }
 
@@ -161,6 +161,8 @@ test('history: every summary in play order, in compact form', () => {
     boardKey: boardKey(EXPERT),
     outcome: 'lost',
     elapsedMs: b.elapsedMs,
+    pauses: 0,
+    pausedMs: 0,
     bbbv: b.bbbv,
     bbbvSolved: b.bbbvSolved,
     clicks: b.clicks,
@@ -176,7 +178,34 @@ test('history: the compact form is plain data that survives a JSON round trip', 
   const c = compactSummary(s);
   assert.deepEqual(JSON.parse(JSON.stringify(c)), c);
   assert.deepEqual(Object.keys(c).sort(),
-    ['bbbv', 'bbbvSolved', 'boardKey', 'clicks', 'elapsedMs', 'endedAt', 'id', 'outcome']);
+    ['bbbv', 'bbbvSolved', 'boardKey', 'clicks', 'elapsedMs', 'endedAt', 'id', 'outcome', 'pausedMs', 'pauses']);
+});
+
+test('history: an entry carries the game\'s pause count and paused time; one without them reads as no pauses', () => {
+  const m = createRecordsModel();
+  const s = game({ ms: 12000, pauses: [{ start: 1000, end: 4000 }, { start: 6000, end: 6500 }] });
+  m.record(s);
+  const [entry] = m.history(BEGINNER);
+  assert.equal(entry.pauses, 2);
+  assert.equal(entry.pausedMs, 3500);
+  assert.equal(m.bests(BEGINNER).time.value, 12000, 'the paused time is in the time, and the game is a best');
+
+  // An entry recorded before pauses were: valid, read as 0 and 0, its records unchanged.
+  const old = game({ ms: 9000 });
+  const { pauses, pausedMs, ...oldSummary } = old;
+  assert.deepEqual([pauses, pausedMs], [0, 0]);
+  const oldEntry = compactSummary(old);
+  delete oldEntry.pauses;
+  delete oldEntry.pausedMs;
+  const loaded = createRecordsModel({ history: [oldEntry] });
+  assert.equal(loaded.history(BEGINNER)[0].pauses, 0);
+  assert.equal(loaded.history(BEGINNER)[0].pausedMs, 0);
+  assert.equal(loaded.bests(BEGINNER).time.value, 9000);
+  assert.deepEqual(loaded.documents().records, rebuildRecords([oldEntry]));
+  const marked = createRecordsModel();
+  marked.record(oldSummary); // a summary from before pauses, such as a leftover in-progress marker
+  assert.equal(marked.history(BEGINNER)[0].pauses, 0);
+  assert.equal(marked.history(BEGINNER)[0].pausedMs, 0);
 });
 
 // ---------- comparison ----------
@@ -237,6 +266,7 @@ test('record: a summary that is not a recordable summary throws a range error', 
     { ...s, elapsedMs: undefined }, { ...s, elapsedMs: -1 }, { ...s, elapsedMs: 1.5 }, { ...s, bbbv: 'x' },
     { ...s, bbbvSolved: s.bbbv + 1 }, { ...s, clicks: undefined }, { ...s, clicks: { ...s.clicks, chord: null } },
     { ...s, clicks: { ...s.clicks, flag: { effective: -1, wasted: 0 } } }, { ...s, endedAt: 'yesterday' },
+    { ...s, pauses: -1 }, { ...s, pauses: '1' }, { ...s, pausedMs: 1.5 }, { ...s, pausedMs: s.elapsedMs + 1 },
   ];
   for (const bad of bads) assert.throws(() => m.record(bad), RangeError, JSON.stringify(bad));
   assert.deepEqual(m.documents(), { records: emptyRecords(), history: [] });

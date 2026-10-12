@@ -59,8 +59,9 @@ module tested with Node's built-in runner, beside the rules engine (see
 - **Summary builder.** Takes the engine's game summary (or, for an
   abandoned game or a started game's summary so far, the engine's counts at
   that moment), the
-  elapsed time in milliseconds, the board choice, the seed and generator
-  version, and returns one summary record with the derived stats filled in.
+  elapsed time in milliseconds, the game's pause spans, the board choice,
+  the seed and generator version, and returns one summary record with the
+  derived stats filled in.
 - **Stat derivations.** One function per derived stat, shared by every
   caller:
   - **3BV/s** — 3BV solved divided by elapsed seconds. On a win, 3BV solved
@@ -76,9 +77,11 @@ module tested with Node's built-in runner, beside the rules engine (see
 
 ## Data and state
 
-- **Summary record** — id, board identity, outcome, elapsed time (ms), 3BV,
-  3BV solved, click counts by kind, 3BV/s, efficiency, seed, generator
-  version, end date. Plain data, serialisable as it is.
+- **Summary record** — id, board identity, outcome, elapsed time (ms), the
+  pause count and total paused time (ms), 3BV, 3BV solved, click counts by
+  kind, 3BV/s, efficiency, seed, generator version, end date. The game clock
+  runs through pauses, so the elapsed time includes the paused time, which
+  is never more than it. Plain data, serialisable as it is.
 - **Board identity** — mode, grid, width, height, mines, no-guess. Its key
   is the field records are indexed by.
 - Nothing persisted here. A summary is handed on once and persisted by
@@ -86,8 +89,8 @@ module tested with Node's built-in runner, beside the rules engine (see
 
 ## Interfaces and contracts
 
-- **Build** — summary from engine summary or counts, elapsed time, board
-  choice, seed and generator version, and outcome. Invalid input (negative
+- **Build** — summary from engine summary or counts, elapsed time, pause
+  spans, board choice, seed and generator version, and outcome. Invalid input (negative
   time, counts that do not fit the board) throws a range error rather than
   producing a summary that would poison the records.
 - **Board key** — the same board fields always give the same key, in every

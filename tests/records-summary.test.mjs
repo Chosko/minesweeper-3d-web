@@ -50,6 +50,8 @@ test('won: the engine summary becomes a plain, serialisable record with every fi
     board: { mode: 'classic-2d', grid: 'square', width: 3, height: 3, mines: 1, noGuess: false },
     outcome: 'won',
     elapsedMs: 4000,
+    pauses: 0,
+    pausedMs: 0,
     bbbv: 1,
     bbbvSolved: 1,
     clicks: { reveal: { effective: 1, wasted: 0 }, flag: { effective: 1, wasted: 0 }, chord: { effective: 0, wasted: 0 } },
@@ -92,6 +94,23 @@ test('abandoned: a game with its first click summarised from its counts', () => 
   assert.deepEqual(s.clicks.reveal, { effective: 1, wasted: 0 });
   assert.equal(s.bbbvPerSecond, 0.25);
   assert.equal(s.efficiency, 100);
+});
+
+test('pauses: the record carries the pause count and total paused time, which the elapsed time includes', () => {
+  const { game, at, board } = playing(ROWS);
+  game.reveal(at(2, 2));
+  const s = buildSummary(base(board, game.summary(), { pauses: [{ start: 500, end: 1500 }, { start: 2000, end: 2250 }] }));
+  assert.equal(s.pauses, 2);
+  assert.equal(s.pausedMs, 1250);
+  assert.equal(s.elapsedMs, 4000);
+  assert.equal(s.bbbvPerSecond, 0.25, '3BV/s is over the whole elapsed time, paused time included');
+  assert.equal(isBestEligible(s, 'time'), true, 'a paused game stays eligible');
+  const none = buildSummary(base(board, game.summary(), { pauses: [] }));
+  assert.equal(none.pauses, 0);
+  assert.equal(none.pausedMs, 0);
+  // the abandoned game's open pause ends at its end
+  const all = buildSummary(base(board, game.summary(), { pauses: [{ start: 0, end: 4000 }] }));
+  assert.equal(all.pausedMs, all.elapsedMs);
 });
 
 test('abandoned: a game left before its first click produces no summary', () => {
@@ -204,6 +223,9 @@ test('invalid input throws a range error', () => {
     { engine: { ...won, clicks: { reveal: { effective: -1, wasted: 0 }, flag: won.clicks.flag, chord: won.clicks.chord } } },
     { engine: { ...won, clicks: { reveal: won.clicks.reveal, flag: won.clicks.flag } } },
     { engine: { ...won, outcome: 'drawn' } },
+    { pauses: 2 }, { pauses: [null] }, { pauses: [{ start: -1, end: 5 }] }, { pauses: [{ start: 1.5, end: 2 }] },
+    { pauses: [{ start: 5, end: 4 }] }, { pauses: [{ start: 0, end: 4001 }] }, // pausedMs above elapsedMs
+    { pauses: [{ start: 0, end: 2500 }, { start: 1000, end: 3000 }] }, // 4500 ms paused in 4000
   ];
   for (const extra of bad) {
     assert.throws(() => buildSummary(base(board, won, extra)), RangeError, JSON.stringify(extra));

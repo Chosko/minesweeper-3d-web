@@ -33,7 +33,7 @@
 // standard.
 //
 // Shell side: hideBoard(hidden) hides the board whenever the pause card shows — the session pauses
-// with it (a no-op before the first click and after the end), the inputs drop what they hold and
+// with it, its clock running on (a no-op before the first click and after the end), the inputs drop what they hold and
 // take nothing while it is hidden; pause() is hideBoard(true) and resume() hideBoard(false) plus
 // flow.show(). tick() pushes the timer, mine counter and click count to flow.hud when any changed and drives
 // the movement sampler (call it every frame); every action pushes them at once. The cursor input's
@@ -42,7 +42,8 @@
 // failure carries its `count` of failures in a row. cancelGeneration() cancels the first click's
 // board while it is being generated, its card shown or not, back to the same closed board with
 // nothing reported, and returns whether it did. status() is
-// { state: 'playing' | 'won' | 'lost', time (seconds), minesLeft } for the pause card.
+// { state: 'playing' | 'won' | 'lost', time (seconds, the running time), minesLeft } for the pause
+// card.
 
 import { createSession, SESSION_STATE } from './session.js';
 import { normaliseChoice } from './board-setup.js';

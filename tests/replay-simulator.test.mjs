@@ -13,7 +13,7 @@ import {
   SNAPSHOT_INTERVAL, SNAPSHOT_MIN_CELLS, SNAPSHOT_MEMORY,
 } from '../js/replay/simulator.js';
 import { verify } from '../js/replay/verify.js';
-import { decodeReplay, encodeReplay, cellStateDigest } from '../js/replay/format.js';
+import { decodeReplay, encodeReplay, cellStateDigest, REPLAY_FORMAT_VERSION } from '../js/replay/format.js';
 import { createGameWithMines, PHASE } from '../js/engine/rules.js';
 import { createSquareGrid } from '../js/engine/square-grid.js';
 import { createBoxGrid } from '../js/engine/box-grid.js';
@@ -380,7 +380,7 @@ test('verify: a game\'s time may run past its last action, never before it, fini
 
 // ---------- refusals ----------
 
-const newerFormat = () => encodeReplay(fixture(index[0].file), { version: 2 });
+const newerFormat = () => encodeReplay(fixture(index[0].file), { version: REPLAY_FORMAT_VERSION + 1 });
 const withProfile = (profile) => { const r = fixture(index[0].file); r.header.profile = profile; return encodeReplay(r); };
 
 const REFUSED = [

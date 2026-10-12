@@ -301,7 +301,7 @@ test('last choice: a stored 0-mine or 1 × 1 custom choice reads as the default 
 
 // ---------- timer ----------
 
-test('timer: measures from start, pauses, stops, whole seconds for display and milliseconds for the result', () => {
+test('timer: measures from start through pauses, stops, whole seconds for display and milliseconds for the result', () => {
   const clock = fakeClock(500);
   const t = createTimer({ now: clock.now });
   assert.equal(t.elapsedMs(), 0);
@@ -312,20 +312,55 @@ test('timer: measures from start, pauses, stops, whole seconds for display and m
   assert.equal(t.elapsedMs(), 1500);
   assert.equal(t.seconds(), 1);
   t.pause();
+  assert.equal(t.paused, true);
+  assert.equal(t.running, true, 'the clock runs through a pause');
   clock.advance(10000);
-  assert.equal(t.elapsedMs(), 1500);
+  assert.equal(t.elapsedMs(), 11500);
   t.pause(); // a second pause changes nothing
   t.resume();
+  assert.equal(t.paused, false);
   clock.advance(600);
-  assert.equal(t.elapsedMs(), 2100);
-  assert.equal(t.seconds(), 2);
+  assert.equal(t.elapsedMs(), 12100);
+  assert.equal(t.seconds(), 12);
+  assert.deepEqual(t.pauses(), [{ start: 1500, end: 11500 }]);
   t.stop();
   clock.advance(5000);
-  assert.equal(t.elapsedMs(), 2100);
+  assert.equal(t.elapsedMs(), 12100);
   t.resume(); // a stopped timer stays stopped
+  t.pause();
   clock.advance(5000);
-  assert.equal(t.elapsedMs(), 2100);
+  assert.equal(t.elapsedMs(), 12100);
+  assert.deepEqual(t.pauses(), [{ start: 1500, end: 11500 }], 'nothing pauses after the stop');
   assert.ok(Number.isInteger(t.elapsedMs()));
+});
+
+test('timer: the pause spans — an open one ends now, one at the stop ends there, one before the start counts from 0', () => {
+  const clock = fakeClock();
+  const t = createTimer({ now: clock.now });
+  t.pause(); // before the start: counts from the start if still paused then
+  clock.advance(3000);
+  assert.deepEqual(t.pauses(), []);
+  t.start();
+  clock.advance(400);
+  assert.deepEqual(t.pauses(), [{ start: 0, end: 400 }], 'the open span ends at the current time');
+  t.resume();
+  clock.advance(1000);
+  t.pause();
+  clock.advance(250);
+  assert.deepEqual(t.pauses(), [{ start: 0, end: 400 }, { start: 1400, end: 1650 }]);
+  assert.deepEqual(t.pauses(1500), [{ start: 0, end: 400 }, { start: 1400, end: 1500 }], 'spans up to a time, the open one clipped');
+  assert.deepEqual(t.pauses(1650, 1), [{ start: 0, end: 400 }], 'at most `count` spans');
+  t.stop();
+  clock.advance(900);
+  assert.deepEqual(t.pauses(), [{ start: 0, end: 400 }, { start: 1400, end: 1650 }], 'the stop closes the open span');
+  // A pause that ends before the start is no pause.
+  const u = createTimer({ now: clock.now });
+  u.pause();
+  clock.advance(100);
+  u.resume();
+  u.start();
+  clock.advance(100);
+  assert.deepEqual(u.pauses(), []);
 });
 
 // ---------- session ----------
@@ -444,36 +479,101 @@ test('session: a loss stops the timer and emits game finished; the elapsed time 
   assert.equal(h.of('finished').length, 1);
 });
 
-test('session: pause freezes the timer and board input; resume continues', async () => {
+test('session: pause stops board input while the timer keeps running; resume continues; each pause is a span', async () => {
   const h = session({ size: 'custom', custom: { width: 4, height: 1, mines: 1 }, noGuess: false });
   h.s.pause(); // before the first click: nothing
   assert.equal(h.s.paused, false);
+  assert.deepEqual(h.s.pauses(), []);
   await startWith(h, 0, [2]);
   h.clock.advance(1000);
   h.s.pause();
   assert.equal(h.s.paused, true);
+  assert.equal(h.s.recording, false);
   h.clock.advance(60000);
-  assert.equal(h.s.elapsedMs(), 1000);
+  assert.equal(h.s.elapsedMs(), 61000, 'the clock runs through the pause');
+  assert.equal(h.s.seconds(), 61);
   assert.equal(h.s.reveal(3), null); // input refused while paused
   assert.equal(h.s.game.state.revealed[3], 0);
+  assert.deepEqual(h.s.pauses(), [{ start: 1000, end: 61000 }]);
   h.s.resume();
   assert.equal(h.s.paused, false);
   h.clock.advance(500);
-  assert.equal(h.s.elapsedMs(), 1500);
+  assert.equal(h.s.elapsedMs(), 61500);
+  h.s.pause();
+  h.s.pause(); // a second pause is the same pause
+  h.clock.advance(200);
+  h.s.resume();
+  assert.deepEqual(h.s.pauses(), [{ start: 1000, end: 61000 }, { start: 61500, end: 61700 }]);
+  const sum = h.s.summary();
+  assert.equal(sum.elapsedMs, 61700);
+  assert.equal(sum.pauses, 2);
+  assert.equal(sum.pausedMs, 60200);
 });
 
-test('session: a pause while generating starts the timer paused once the board arrives', async () => {
+test('session: a pause while generating counts from the board arriving; one ended before it is no pause', async () => {
   const h = session();
   const p = h.s.reveal(0);
   h.s.pause();
+  h.clock.advance(300);
   h.client.answer();
   await p;
   assert.equal(h.s.state, SESSION_STATE.PLAYING);
   h.clock.advance(4000);
-  assert.equal(h.s.elapsedMs(), 0);
+  assert.equal(h.s.elapsedMs(), 4000, 'the clock starts with the board, paused or not');
   h.s.resume();
   h.clock.advance(700);
-  assert.equal(h.s.elapsedMs(), 700);
+  assert.equal(h.s.elapsedMs(), 4700);
+  assert.deepEqual(h.s.pauses(), [{ start: 0, end: 4000 }]);
+
+  const k = session();
+  const q = k.s.reveal(0);
+  k.s.pause();
+  k.clock.advance(100);
+  k.s.resume();
+  k.client.answer();
+  await q;
+  k.clock.advance(100);
+  assert.deepEqual(k.s.pauses(), []);
+  assert.equal(k.s.summary().pauses, 0);
+  assert.equal(k.s.summary().pausedMs, 0);
+});
+
+test('session: a game abandoned while paused ends its open pause at the end; the summaries carry the pauses', async () => {
+  const h = session({ size: 'custom', custom: { width: 4, height: 1, mines: 1 }, noGuess: false });
+  await startWith(h, 0, [2]);
+  h.clock.advance(800);
+  h.s.pause();
+  h.clock.advance(1200);
+  const inProgress = h.s.summary();
+  assert.equal(inProgress.elapsedMs, 2000);
+  assert.equal(inProgress.pauses, 1);
+  assert.equal(inProgress.pausedMs, 1200);
+  h.clock.advance(300);
+  h.s.restart();
+  const [abandoned] = h.of('abandoned');
+  assert.equal(abandoned.payload.summary.elapsedMs, 2300);
+  assert.equal(abandoned.payload.summary.pauses, 1);
+  assert.equal(abandoned.payload.summary.pausedMs, 1500);
+  assert.equal(h.s.summary(), null);
+  assert.deepEqual(h.s.pauses(), [], 'the new board has no pauses');
+
+  // A finished game: the pauses it had, and nothing after the end.
+  const w = session({ size: 'custom', custom: { width: 4, height: 1, mines: 1 }, noGuess: false });
+  await startWith(w, 0, [2]);
+  w.clock.advance(100);
+  w.s.pause();
+  w.clock.advance(400);
+  w.s.resume();
+  w.clock.advance(100);
+  w.s.reveal(3); // the last safe cell: a win
+  assert.equal(w.s.state, SESSION_STATE.WON);
+  const [finished] = w.of('finished');
+  assert.equal(finished.payload.summary.elapsedMs, 600);
+  assert.equal(finished.payload.summary.pauses, 1);
+  assert.equal(finished.payload.summary.pausedMs, 400);
+  w.s.pause();
+  w.clock.advance(1000);
+  assert.deepEqual(w.s.pauses(), [{ start: 100, end: 500 }]);
 });
 
 test('session: a no-guess failure shows the failure with Retry and Play a standard board; the timer never starts', async () => {

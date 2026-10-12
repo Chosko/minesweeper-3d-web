@@ -12,11 +12,12 @@
 //                              stored only when it differs from the previous sample
 //   cursor(cell, time)         the 2D keyboard and controller cursor's cell, when it moves
 //   view(mode, time)           the 3D view mode, when it changes
-//   seal(summary, final)       → { blob, listing } or null
+//   seal(summary, final, pauses)  → { blob, listing } or null
 //   stats()                    { actions, movement, movementBytes }
 //   failed                     true once the recorder has failed
-// Times are ms on the game clock — the game timer's elapsed time, so paused time is absent —
-// floored to integers and held at the previous time of their stream if they run backwards.
+// Times are ms on the game clock — the game timer's elapsed time, which runs through pauses, so an
+// action after a pause is later by the paused span — floored to integers and held at the previous
+// time of their stream if they run backwards.
 //
 // Events live in typed buffers that double when full, so recording allocates nothing per event;
 // a sample's values are copied, so a sampler may reuse one array. The movement stream counts the
@@ -24,12 +25,13 @@
 // default): the first event that does not fit sets the header's movementEndedAt to its time, and
 // the rest of the game is recorded as actions only. Actions are never dropped.
 //
-// seal(summary, final) closes the streams. summary is the game's summary record
+// seal(summary, final, pauses = []) closes the streams. summary is the game's summary record
 // (js/records/summary.js) — null for a game left before its first click, which seals to nothing —
-// and final is the engine game at its end (or its state arrays). The check values are the
-// summary's outcome, elapsed time, 3BV, 3BV solved and clicks, and cellStateDigest of the final
-// state; the header takes the summary's id and end date. It returns the encoded blob and its
-// listing fields
+// final is the engine game at its end (or its state arrays), and pauses the game's pause spans
+// [{ start, end }] the summary counted, which the session holds: their count and total must be the
+// summary's pauses and pausedMs. The check values are the summary's outcome, elapsed time, 3BV,
+// 3BV solved and clicks, and cellStateDigest of the final state; the header takes the summary's id,
+// end date and the pause spans. It returns the encoded blob and its listing fields
 //   { id, boardKey, mode, outcome, elapsedMs, bbbvPerSecond, efficiency, endedAt, size }
 // with size the blob's length in bytes. Sealing again returns the same object.
 //
@@ -194,11 +196,11 @@ export function startRecording(fields, { onFailure = defaultReport, movementCap 
       mLen++;
     }),
 
-    seal(summary, final) {
+    seal(summary, final, pauses = []) {
       if (sealed !== undefined) return sealed;
       if (failed) return null;
       try {
-        sealed = summary == null ? null : sealNow(summary, final);
+        sealed = summary == null ? null : sealNow(summary, final, pauses);
       } catch (err) {
         sealed = null;
         fail(err);
@@ -214,8 +216,13 @@ export function startRecording(fields, { onFailure = defaultReport, movementCap 
     get failed() { return failed; },
   };
 
-  function sealNow(summary, final) {
+  function sealNow(summary, final, pauses) {
     if (!arrived) throw new RangeError('the board never arrived: the replay has no mines');
+    const spans = Array.from(pauses ?? [], (p) => ({ start: p?.start, end: p?.end }));
+    const pausedMs = spans.reduce((sum, p) => sum + (p.end - p.start), 0);
+    if (spans.length !== (summary.pauses ?? 0) || pausedMs !== (summary.pausedMs ?? 0)) {
+      throw new RangeError(`the pause spans (${spans.length}, ${pausedMs} ms) are not the summary's (${summary.pauses}, ${summary.pausedMs} ms)`);
+    }
     if (boardKey(summary.board) !== boardKey(header.board)) {
       throw new RangeError(`the summary is for board ${boardKey(summary.board)}, the recording ${boardKey(header.board)}`);
     }
@@ -241,6 +248,7 @@ export function startRecording(fields, { onFailure = defaultReport, movementCap 
         generatorVersion: arrived.generatorVersion,
         endedAt: summary.endedAt,
         movementEndedAt,
+        pauses: spans,
       },
       actions,
       movement,

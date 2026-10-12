@@ -22,7 +22,7 @@ const BEGINNER = createBoardIdentity({ mode: 'classic-2d', grid: 'square', width
 let nextId = 1;
 let clock = Date.parse('2026-10-01T00:00:00.000Z');
 
-function game({ outcome = 'won', ms = 10000, bbbv = 20, clicks = 20, id } = {}) {
+function game({ outcome = 'won', ms = 10000, bbbv = 20, clicks = 20, id, pauses } = {}) {
   const bbbvSolved = outcome === 'won' ? bbbv : bbbv - 5;
   const engine = {
     bbbv, bbbvSolved,
@@ -30,7 +30,7 @@ function game({ outcome = 'won', ms = 10000, bbbv = 20, clicks = 20, id } = {}) 
   };
   if (outcome !== 'abandoned') engine.outcome = outcome;
   clock += 60000;
-  return buildSummary({ engine, elapsedMs: ms, board: BEGINNER, seed: 7, generatorVersion: 1, endedAt: new Date(clock), id: id ?? `g-${nextId++}` });
+  return buildSummary({ engine, elapsedMs: ms, board: BEGINNER, seed: 7, generatorVersion: 1, endedAt: new Date(clock), id: id ?? `g-${nextId++}`, pauses });
 }
 
 const doc = (version, data) => JSON.stringify({ version, data });
@@ -202,6 +202,42 @@ test('available() is true over working storage', async () => {
   const { store } = open();
   await store.load();
   assert.equal(store.available(), true);
+});
+
+// ---------- pauses in the history ----------
+
+test('a history recorded before pauses were loads unchanged, each entry read as no pauses', async () => {
+  const model = createRecordsModel();
+  model.record(game({ ms: 9000 }));
+  model.record(game({ outcome: 'lost' }));
+  const { records, history } = model.documents();
+  const old = history.map(({ pauses, pausedMs, ...rest }) => rest);
+  const backend = createMemoryBackend({ initial: { [RECORDS_DOC]: doc(RECORDS_VERSION, records), [HISTORY_DOC]: doc(HISTORY_VERSION, old) } });
+  const { store } = open(backend);
+  await store.load();
+  assert.equal(store.available(), true);
+  assert.equal(store.bests(BEGINNER).time.value, 9000);
+  assert.deepEqual(store.counters(BEGINNER), records.boards[Object.keys(records.boards)[0]].counters);
+  assert.deepEqual(store.history(BEGINNER).map((e) => [e.pauses, e.pausedMs]), [[0, 0], [0, 0]]);
+  await store.settled();
+  assert.equal(stored(backend, HISTORY_DOC).version, HISTORY_VERSION, 'no records format step');
+});
+
+test('a history entry with malformed pause fields is refused like any unreadable entry', async () => {
+  const model = createRecordsModel();
+  model.record(game({ pauses: [{ start: 0, end: 500 }] }));
+  const { records, history } = model.documents();
+  assert.deepEqual([history[0].pauses, history[0].pausedMs], [1, 500]);
+  for (const bad of [{ pauses: -1 }, { pauses: 1.5 }, { pausedMs: '500' }, { pausedMs: history[0].elapsedMs + 1 }]) {
+    const initial = { [RECORDS_DOC]: doc(RECORDS_VERSION, records), [HISTORY_DOC]: doc(HISTORY_VERSION, [{ ...history[0], ...bad }]) };
+    const backend = createMemoryBackend({ initial: { ...initial } });
+    const { store } = open(backend);
+    await store.load();
+    assert.equal(store.available(), false, JSON.stringify(bad));
+    assert.deepEqual(store.boardsPlayed(), []);
+    await store.settled();
+    assert.deepEqual(Object.fromEntries(backend.documents), initial);
+  }
 });
 
 // ---------- newer format ----------

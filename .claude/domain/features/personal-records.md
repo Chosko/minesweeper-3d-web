@@ -89,8 +89,10 @@ DOM-free ES module tested in Node; storage is reached only through
   counters; plus the Classic 2D overall counters. Small; saved after every
   game.
 - **History document** — the list of compact summaries (id, board key,
-  outcome, time, 3BV, 3BV solved, clicks, end date), appended after every
-  game. Grows with play.
+  outcome, time, pause count, paused time, 3BV, 3BV solved, clicks, end
+  date), appended after every game. Grows with play. An entry recorded
+  before pauses were recorded has no pause fields and reads as no pauses,
+  with no format step.
 - **Game-in-progress document** — at most one summary, the started game's
   summary so far; written at its first click and at each save after, and
   cleared when the game ends.

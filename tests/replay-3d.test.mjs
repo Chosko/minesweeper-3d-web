@@ -61,9 +61,11 @@ const keys = (shift = false, space = false, ctrl = false) => ({ shift, space, ct
 function summaryOf(session, outcome) {
   const engine = outcome === 'abandoned' ? session.counts() : session.engineSummary();
   const { X, Y, Z, mines, noGuess } = session.board;
+  const elapsedMs = session.elapsedMs();
   return buildSummary({
     engine,
-    elapsedMs: session.elapsedMs(),
+    elapsedMs,
+    pauses: session.pauses(elapsedMs),
     board: { mode: MODE_3D, width: X, height: Y, depth: Z, mines, noGuess },
     seed: session.seed,
     generatorVersion: session.generatorVersion,
@@ -111,7 +113,7 @@ test('viewMode: Shift, Space and Ctrl as bits', () => {
 
 // ---------- a recorded game on a real session ----------
 
-test('a recorded 3D game: flags before the first reveal at time 0, samples about 10 times a second and view modes on the game clock, sealed at the win', async () => {
+test('a recorded 3D game: flags before the first reveal at time 0, samples about 10 times a second and view modes on the game clock, a pause in it, sealed at the win', async () => {
   const clock = fakeClock();
   const session = createSession({ board: ROW, client: fakeClient(), clock, randomSeed: () => 7 });
   const cam = camera();
@@ -145,11 +147,11 @@ test('a recorded 3D game: flags before the first reveal at time 0, samples about
   assert.equal(session.recording, false, 'not while paused');
   clock.advance(5000); cam.yaw = 0; held.space = false; sampler.tick();
   session.resume();
-  clock.advance(100); sampler.tick(); // t 310: the camera turned and the view mode changed while paused
+  clock.advance(100); sampler.tick(); // t 5310: the camera turned and the view mode changed while paused
 
-  session.reveal(4); // t 310: changes nothing, still recorded
+  session.reveal(4); // t 5310: changes nothing, still recorded, later by the paused span
   clock.advance(100);
-  session.reveal(1); // t 410: the win
+  session.reveal(1); // t 5410: the win
   assert.equal(finished, 1);
   assert.equal(session.state, 'won');
   assert.equal(session.recording, false, 'not after the end');
@@ -160,7 +162,8 @@ test('a recorded 3D game: flags before the first reveal at time 0, samples about
   assert.ok(replay && replay.blob instanceof Uint8Array);
   assert.equal(replay.listing.id, summary.id);
   assert.equal(replay.listing.outcome, 'won');
-  assert.equal(replay.listing.elapsedMs, 410);
+  assert.equal(replay.listing.elapsedMs, 5410, 'the clock ran through the pause');
+  assert.deepEqual([summary.pauses, summary.pausedMs], [1, 5000]);
   assert.equal(session.replay(summary), replay, 'sealing again returns the same replay');
 
   const decoded = decodeReplay(replay.blob);
@@ -172,13 +175,14 @@ test('a recorded 3D game: flags before the first reveal at time 0, samples about
   assert.deepEqual(decoded.header.mines, MINES);
   assert.equal(decoded.header.seed, 7);
   assert.equal(decoded.header.movementEndedAt, null);
+  assert.deepEqual(decoded.header.pauses, [{ start: 210, end: 5210 }], 'the pause span on the game clock');
   assert.deepEqual(decoded.actions, [
     { time: 0, kind: 'flag', cell: 0 },
     { time: 0, kind: 'flag', cell: 1 },
     { time: 0, kind: 'flag', cell: 1 },
     { time: 0, kind: 'reveal', cell: 4 },
-    { time: 310, kind: 'reveal', cell: 4 },
-    { time: 410, kind: 'reveal', cell: 1 },
+    { time: 5310, kind: 'reveal', cell: 4 },
+    { time: 5410, kind: 'reveal', cell: 1 },
   ]);
   const S = POSITION_STEPS, half = ANGLE_STEPS / 2;
   assert.deepEqual(decoded.movement, [
@@ -187,14 +191,14 @@ test('a recorded 3D game: flags before the first reveal at time 0, samples about
     { time: 110, type: 'sample', values: [3 * S, 0, 0, half, 0] },
     { time: 110, type: 'view', mode: VIEW_MODE.shift },
     { time: 210, type: 'view', mode: VIEW_MODE.space },
-    { time: 310, type: 'sample', values: [3 * S, 0, 0, 0, 0] },
-    { time: 310, type: 'view', mode: 0 },
+    { time: 5310, type: 'sample', values: [3 * S, 0, 0, 0, 0] },
+    { time: 5310, type: 'view', mode: 0 },
   ]);
   const again = replayAgain(decoded);
   assert.equal(cellStateDigest(again.state), decoded.check.digest);
   assert.deepEqual(again.summary().clicks, decoded.check.clicks);
   assert.deepEqual(decoded.check.clicks, summary.clicks);
-  assert.equal(decoded.check.elapsedMs, 410);
+  assert.equal(decoded.check.elapsedMs, 5410);
 });
 
 test('a lost 3D game and an abandoned one reproduce their check values', async () => {

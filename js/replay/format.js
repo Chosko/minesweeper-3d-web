@@ -4,7 +4,7 @@
 // A replay is the plain object
 //   { header, actions, movement, check }
 //   header   { id, mode, graph, board, mines, profile, seed, generatorVersion, endedAt,
-//              movementEndedAt }
+//              movementEndedAt, pauses }
 //            id is the summary's id; mode is the board identity's mode; graph is
 //            { kind: 'square', width, height } or { kind: 'box', x, y, z } and matches the board
 //            (js/records/board.js), a square graph for a 2D square-grid board, a box for a 3D
@@ -12,9 +12,12 @@
 //            profile is { id, version }, the rule profile and its rules version
 //            (js/engine/profiles.js); seed (0 .. 2^32 - 1) and generatorVersion are for reference
 //            only; endedAt is an ISO 8601 string, not before 1970; movementEndedAt is the game-clock time where a
-//            capped movement stream stopped, or null when it was not capped.
+//            capped movement stream stopped, or null when it was not capped; pauses are the game's
+//            pause spans [{ start, end }], game-clock times, ascending and non-overlapping, within
+//            0 .. the check's elapsed time (the encoder reads a header without them as none).
 //   actions  [{ time, kind, cell }] — time in ms on the game clock, never decreasing; kind one of
-//            ACTION_KINDS (reveal, toggle flag, chord); cell an index into the graph.
+//            ACTION_KINDS (reveal, toggle flag, chord); cell an index into the graph. The game
+//            clock runs through pauses, so a paused span is a gap in the action stream.
 //   movement [{ time, type: 'sample', values } | { time, type: 'cursor', cell }
 //            | { time, type: 'view', mode }] — time never decreasing; a sample holds
 //            SAMPLE_ARITY[graph kind] integers, already quantised by the mode's sampler (2D: the
@@ -37,7 +40,9 @@
 //             value's delta from the previous sample (signed); for a cursor, the cell delta
 //             from the previous cursor cell (signed); for a view mode, the mode (byte)
 //             check: outcome (byte), elapsed, 3BV, 3BV solved, six click counts, digest (4 bytes)
-// Format version 1 is not compressed: the platform's compression stream saves about 20 to 40 % on
+//   body v2   pauses: count, then per span its start less the previous span's end (0 before the
+//             first) and its length · then the v1 body
+// Format versions 1 and 2 are not compressed: the platform's compression stream saves about 20 to 40 % on
 // measured replays (dev/measure-replays.mjs) of a few to a few tens of kilobytes, and would make
 // encoding and decoding asynchronous. A compressed body would be a new format version.
 // The envelope is the same for every format version, so a newer blob's checksum is verified and
@@ -45,7 +50,8 @@
 // newer one.
 //
 // Decoding goes through one decoder per format version, kept by every later release, and then
-// the upgrade steps from that version to the current one in order. A blob of a newer version
+// the upgrade steps from that version to the current one in order: a version 1 replay becomes a
+// version 2 one with no pauses, keeping version 1's sampling intervals. A blob of a newer version
 // than this build's throws ReplayNewerVersionError; anything that is not a well-formed blob of a
 // known version throws ReplayUnreadableError. The encoder throws a RangeError on a replay it
 // cannot write.
@@ -54,14 +60,17 @@ import { CLICK_KINDS } from '../engine/metrics.js';
 import { createBoardIdentity, MODE_3D } from '../records/board.js';
 import { OUTCOMES } from '../records/summary.js';
 
-export const REPLAY_FORMAT_VERSION = 1;
+export const REPLAY_FORMAT_VERSION = 2;
 export const ACTION_KINDS = CLICK_KINDS;
 export const MOVEMENT_TYPES = Object.freeze(['sample', 'cursor', 'view']);
 export const SAMPLE_ARITY = Object.freeze({ square: 2, box: 5 });
 
 // The movement sampling interval in ms each format version was recorded at, 2D and 3D: the
 // samplers' SAMPLE_INTERVAL_MS (js/replay/sampler-2d.js, js/replay/sampler-3d.js) at that version.
-const SAMPLE_INTERVALS_MS = Object.freeze({ 1: Object.freeze({ '2d': 50, '3d': 100 }) });
+const SAMPLE_INTERVALS_MS = Object.freeze({
+  1: Object.freeze({ '2d': 50, '3d': 100 }),
+  2: Object.freeze({ '2d': 50, '3d': 100 }),
+});
 
 // The movement sampling interval of a replay of this mode stored at this format version, or
 // undefined for a version this build does not know.
@@ -275,6 +284,19 @@ function checkCheck(c) {
   };
 }
 
+// The pause spans: ascending, non-overlapping game-clock times within 0 .. elapsedMs.
+function checkPauses(pauses, elapsedMs) {
+  if (!Array.isArray(pauses)) throw new RangeError('replay pauses must be a list of pause spans');
+  let prev = 0;
+  return pauses.map((p) => {
+    if (!p || typeof p !== 'object') throw new RangeError('a replay pause span must be { start, end }');
+    const start = int('pause start', p.start, prev, elapsedMs);
+    const end = int('pause end', p.end, start, elapsedMs);
+    prev = end;
+    return { start, end };
+  });
+}
+
 // ---------- the encoder ----------
 
 function writeBodyV1(w, replay) {
@@ -345,13 +367,25 @@ function writeBodyV1(w, replay) {
   w.u32(c.digest);
 }
 
-// The replay as one blob. `version` stamps another format version on the current body layout,
-// for tests of the decoder's version handling only.
+function writeBodyV2(w, replay) {
+  if (!replay || typeof replay !== 'object') throw new RangeError('replay must be an object');
+  const pauses = checkPauses(replay.header?.pauses ?? [], checkCheck(replay.check).elapsedMs);
+  w.uint(pauses.length);
+  let prev = 0;
+  for (const p of pauses) { w.uint(p.start - prev); w.uint(p.end - p.start); prev = p.end; }
+  writeBodyV1(w, replay);
+}
+
+const WRITERS = Object.freeze({ 1: writeBodyV1, 2: writeBodyV2 });
+
+// The replay as one blob, at the current format version. `version` writes another: version 1's
+// body (a replay without pauses, for tests of old replays), or the current body stamped with a
+// version this build has no writer for, for tests of the decoder's version handling only.
 export function encodeReplay(replay, { version = REPLAY_FORMAT_VERSION } = {}) {
   const w = createWriter();
   for (const b of MAGIC) w.byte(b);
   w.uint(version);
-  writeBodyV1(w, replay);
+  (WRITERS[version] ?? WRITERS[REPLAY_FORMAT_VERSION])(w, replay);
   const bytes = w.bytes();
   const crc = crc32(bytes, bytes.length);
   const out = new Uint8Array(bytes.length + 4);
@@ -441,8 +475,25 @@ function readBodyV1(r) {
   };
 }
 
-const DECODERS = Object.freeze({ 1: readBodyV1 });
-const UPGRADES = Object.freeze({}); // version v → v + 1, one entry per format version below the current one
+// Version 2: the pause spans, then a version 1 body.
+function readBodyV2(r) {
+  const spans = [];
+  let prev = 0;
+  for (let n = r.uint(); n > 0; n--) {
+    const start = prev + r.uint();
+    prev = start + r.uint();
+    spans.push({ start, end: prev });
+  }
+  const replay = readBodyV1(r);
+  const pauses = checkPauses(spans, replay.check.elapsedMs);
+  return { ...replay, header: { ...replay.header, pauses }, sampleIntervalMs: sampleIntervalMs(2, replay.header.mode) };
+}
+
+const DECODERS = Object.freeze({ 1: readBodyV1, 2: readBodyV2 });
+// version v → v + 1, one entry per format version below the current one
+const UPGRADES = Object.freeze({
+  1: (replay) => ({ ...replay, header: { ...replay.header, pauses: [] } }),
+});
 
 const toBytes = (blob) => {
   if (blob instanceof Uint8Array) return blob;

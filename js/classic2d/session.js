@@ -25,26 +25,33 @@
 // generating, failed, paused, ended or left) returns null. `changed` is the engine's shared buffer:
 // read or copy it before the next action.
 //
+// The timer starts when the board arrives and runs through pauses. pause() while generating or
+// playing stops board input (`paused`) and leaves the clock running; each pause, from the pause to
+// resume() — or to the game's end when it is restarted or left while paused — is one span on the
+// game clock, and one begun while generating counts from the board's arrival (createTimer).
+// pauses() is the spans so far, [{ start, end }], the open one ending now.
+//
 // Win or loss stops the timer and emits `finished` { summary, replay }. restart() and leave() after
 // the first click and before the end emit `abandoned` { summary, replay } first; before the first
 // click nothing is reported. Both cancel a pending generation. summary() is the game's summary so
 // far: null before the first click, outcome abandoned while playing, the finished summary after the
-// end. Summaries are built by js/records/summary.js's buildSummary; every summary of one game
-// carries the same id, so the in-progress summary and the final one name the same game. clicks()
-// is the game's counted clicks so far, wasted included — the engine's click counts the summary
-// carries, 0 before the first click and unchanged once the game ended.
+// end. Summaries are built by js/records/summary.js's buildSummary from the game's pause spans
+// too; every summary of one game carries the same id, so the in-progress summary and the final one
+// name the same game. clicks() is the game's counted clicks so far, wasted included — the engine's
+// click counts the summary carries, 0 before the first click and unchanged once the game ended.
 //
 // Recording (js/replay/recorder.js): each closed board opens a recorder, and restart() and leave()
 // discard it. Every action the session hands to the engine while the game accepts actions is
-// recorded at that point, at the timer's elapsed time: the first reveal at 0 (a flag or chord
-// before it changes nothing and is not recorded), the rest while playing. The board's mines, seed
+// recorded at that point, at the timer's elapsed time, paused spans included: the first reveal at
+// 0 (a flag or chord before it changes nothing and is not recorded), the rest while playing. The board's mines, seed
 // and generator version are added when it arrives, and a board played standard after a failure
 // starts a new recording of the standard board with its first reveal. `recording` is true while
 // the game is started, unpaused and unfinished, and only then do recordSample(values) and
 // recordCursor(cell) — the movement sampler's feed (js/replay/sampler-2d.js) — record, at the
 // timer's elapsed time.
-// replay(summary = summary()) seals the recording with that summary: { blob, listing }, or null
-// before the first click or once the recorder failed; sealing again returns the same replay.
+// replay(summary = summary()) seals the recording with that summary and the pause spans it counted:
+// { blob, listing }, or null before the first click or once the recorder failed; sealing again
+// returns the same replay.
 
 import { createGame, PHASE } from '../engine/rules.js';
 import { getRuleProfile, REFERENCE_PROFILE } from '../engine/profiles.js';
@@ -81,37 +88,53 @@ const RECORDED_KIND = Object.freeze({ reveal: 'reveal', toggleFlag: 'flag', chor
 
 const defaultSeed = () => globalThis.crypto.getRandomValues(new Uint32Array(1))[0];
 
-// Elapsed play time: start(), pause(), resume(), stop(); elapsedMs() whole milliseconds for the
-// result, seconds() whole seconds for display. A timer not yet started reads 0; a stopped one
-// keeps its time.
+// The game clock: start(), stop(); elapsedMs() whole milliseconds for the result, seconds() whole
+// seconds for display. A timer not yet started reads 0; a stopped one keeps its time. The clock
+// runs through pauses: pause() and resume() only mark a pause, from the pause to the resume on the
+// clock (elapsedMs() at each), and stop() ends an open one. A pause begun before start() counts
+// from 0 if still open then, and not at all if it ended before. pauses(until?, count?) → the spans
+// [{ start, end }] so far, in order: those begun by `until` (the current time by default), at most
+// `count` of them, the open one — and any later end — clipped to `until`.
 export function createTimer({ now }) {
-  let accumulated = 0;
-  let since = null; // clock time of the running stretch's start
-  let started = false;
+  let since = null; // clock time of the start
   let stopped = false;
-  const halt = () => {
-    if (since !== null) { accumulated += now() - since; since = null; }
+  let finalMs = 0; // the elapsed time once stopped
+  let pausedAt = null; // the open pause's start on the clock, or null
+  const spans = [];
+  const elapsed = () => (stopped ? finalMs : since === null ? 0 : now() - since);
+  const elapsedMs = () => Math.round(elapsed());
+  const close = () => {
+    if (pausedAt === null) return;
+    if (since !== null) spans.push({ start: pausedAt, end: elapsedMs() });
+    pausedAt = null;
   };
-  const elapsed = () => accumulated + (since === null ? 0 : now() - since);
   return {
-    get started() { return started; },
-    get running() { return since !== null; },
+    get started() { return since !== null; },
+    get running() { return since !== null && !stopped; },
     get stopped() { return stopped; },
+    get paused() { return pausedAt !== null; },
     start() {
-      if (started) return;
-      started = true;
+      if (since !== null || stopped) return;
       since = now();
+      if (pausedAt !== null) pausedAt = 0;
     },
-    pause() { halt(); },
-    resume() {
-      if (started && !stopped && since === null) since = now();
+    pause() {
+      if (stopped || pausedAt !== null) return;
+      pausedAt = elapsedMs();
     },
+    resume() { close(); },
     stop() {
-      halt();
+      if (stopped) return;
+      close();
+      finalMs = elapsed();
       stopped = true;
     },
-    elapsedMs: () => Math.round(elapsed()),
+    elapsedMs,
     seconds: () => Math.floor(elapsed() / 1000),
+    pauses(until = elapsedMs(), count = Infinity) {
+      const all = pausedAt !== null && since !== null ? [...spans, { start: pausedAt, end: until }] : spans;
+      return all.filter((p) => p.start <= until).slice(0, count).map((p) => ({ start: p.start, end: Math.min(p.end, until) }));
+    },
   };
 }
 
@@ -156,7 +179,7 @@ export function createSession({
 
   function replayOf(summary) {
     if (!summary || gameId === null || !recorder) return null;
-    return recorder.seal(summary, game);
+    return recorder.seal(summary, game, timer.pauses(summary.elapsedMs, summary.pauses));
   }
 
   const emit = (type, payload) => {
@@ -189,7 +212,8 @@ export function createSession({
   }
 
   function summaryOf(engine) {
-    return buildSummary({ engine, elapsedMs: timer.elapsedMs(), board: setup.identity, seed, generatorVersion, id: gameId });
+    const elapsedMs = timer.elapsedMs();
+    return buildSummary({ engine, elapsedMs, pauses: timer.pauses(elapsedMs), board: setup.identity, seed, generatorVersion, id: gameId });
   }
 
   function afterAction(result) {
@@ -233,8 +257,7 @@ export function createSession({
         recorder?.boardArrived({ mines: result.mines, seed, generatorVersion });
         const r = game.supplyBoard(firstCell, result.mines);
         state = SESSION_STATE.PLAYING;
-        timer.start();
-        if (paused) timer.pause();
+        timer.start(); // a pause while generating counts from here
         emit('started', { changed: r.changed });
         emit('changed', { changed: r.changed, ended: r.ended });
         afterAction(r);
@@ -302,6 +325,7 @@ export function createSession({
     get minesLeft() { return game.minesLeft; },
     elapsedMs: () => timer.elapsedMs(),
     seconds: () => timer.seconds(),
+    pauses: () => timer.pauses(),
     clicks: () => countedClicks(game.counts().clicks),
     get recording() { return recording(); },
     recordSample(values) { if (recording()) recorder.sample(values, timer.elapsedMs()); },

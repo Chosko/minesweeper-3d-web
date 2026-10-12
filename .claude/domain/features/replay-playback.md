@@ -25,9 +25,11 @@ In scope (m2-3d-joins):
 - The replay viewer screen for Classic 2D and 3D replays: the board drawn by
   the mode's own board view, the recorded 2D cursor drawn over it, the 3D
   camera driven by the recorded movement.
-- Playback controls: play and pause, speed (0.5×, 1×, 2×, 4×), a seek bar,
-  step to the previous or next action, and back; operable by mouse,
-  keyboard and controller.
+- Playback controls: play and pause, speed (0.5×, 1×, 2×, 4×), a seek bar
+  marking each of the game's paused spans on its track and naming them in
+  its text alternative, step to the previous or next action, and back;
+  operable by mouse, keyboard and controller. Playback runs through a
+  paused span at the chosen speed with the board as it was.
 - A playback overlay: the replay clock, mines left, 3BV solved of the
   board's 3BV, and 3BV/s so far.
 - Entry from the results screen (*Watch replay*, for the game just played)

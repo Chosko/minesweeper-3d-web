@@ -36,9 +36,9 @@ function session2D(options) {
   return { rec, game, act, failures };
 }
 
-const summaryOf = (game, elapsedMs, id = 'game-1') => buildSummary({
+const summaryOf = (game, elapsedMs, id = 'game-1', pauses = []) => buildSummary({
   engine: game.summary() ?? game.counts(), elapsedMs, board: board2D, seed: 1234, generatorVersion: 1,
-  endedAt: new Date('2026-10-10T10:00:00.000Z'), id,
+  endedAt: new Date('2026-10-10T10:00:00.000Z'), id, pauses,
 });
 
 function playToWin(s) {
@@ -176,6 +176,40 @@ test('sealing a won game: check values from the engine final state, listing fiel
     bbbvPerSecond: summary.bbbvPerSecond, efficiency: summary.efficiency,
     endedAt: '2026-10-10T10:00:00.000Z', size: sealed.blob.length,
   });
+});
+
+test('sealing with the game\'s pause spans: the header carries them, their count and total the summary\'s', () => {
+  const s = session2D();
+  s.act('reveal', 0, 0);
+  s.act('flag', 5, 200);
+  s.act('flag', 15, 3200); // after a 2.5 s pause: the gap is in the action stream
+  const spans = [{ start: 400, end: 2900 }, { start: 3300, end: 3500 }];
+  const summary = summaryOf(s.game, 3600, 'game-1', spans);
+  assert.deepEqual([summary.pauses, summary.pausedMs], [2, 2700]);
+  const replay = decodeReplay(s.rec.seal(summary, s.game, spans).blob);
+  assert.deepEqual(replay.header.pauses, spans);
+  assert.deepEqual(replay.actions.map((a) => a.time), [0, 200, 3200]);
+  assert.equal(s.failures.length, 0);
+  // no spans: a game with no pauses
+  const t = session2D();
+  playToWin(t);
+  assert.deepEqual(decodeReplay(t.rec.seal(summaryOf(t.game, 1500), t.game).blob).header.pauses, []);
+});
+
+test('failure: pause spans that are not the summary\'s pauses drop the replay, reported once', () => {
+  const cases = [
+    [[{ start: 400, end: 900 }], []], // the summary says one pause, the seal has none
+    [[{ start: 400, end: 900 }], [{ start: 400, end: 800 }]], // another total
+    [[], [{ start: 0, end: 100 }]], // a pause the summary has not
+  ];
+  for (const [summarySpans, sealSpans] of cases) {
+    const s = session2D();
+    s.act('reveal', 0, 0);
+    let sealed;
+    assert.doesNotThrow(() => { sealed = s.rec.seal(summaryOf(s.game, 1000, 'game-1', summarySpans), s.game, sealSpans); });
+    assert.equal(sealed, null, JSON.stringify([summarySpans, sealSpans]));
+    assert.equal(s.failures.length, 1);
+  }
 });
 
 test('sealing twice returns the same replay; nothing is recorded after the seal', () => {

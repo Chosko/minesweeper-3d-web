@@ -2,7 +2,9 @@
 //
 // Two plain, serialisable documents hold the records:
 //   history — every recorded summary in play order, in compact form
-//             { id, boardKey, outcome, elapsedMs, bbbv, bbbvSolved, clicks, endedAt };
+//             { id, boardKey, outcome, elapsedMs, pauses, pausedMs, bbbv, bbbvSolved, clicks,
+//             endedAt }; pauses and pausedMs are the summary's pause count and paused time, and an
+//             entry or summary without them (recorded before pauses were) reads as 0 and 0;
 //   records — { boards: { [boardKey]: { board, bests, counters } }, overall: { [mode]: counters } }
 //             where overall holds every mode in MODES, bests is
 //             { time, bbbvPerSecond, efficiency }, each null or the holding game's
@@ -69,6 +71,12 @@ export function upgradeRecords(records) {
   return out;
 }
 
+// A history entry or summary's pause count and paused time, 0 and 0 when it has none. Throws a
+// RangeError on values that are not whole, non-negative numbers, or more paused time than elapsed.
+export function pauseFields({ pauses = 0, pausedMs = 0, elapsedMs }) {
+  return { pauses: tally('pauses', pauses), pausedMs: tally('pausedMs', pausedMs, elapsedMs) };
+}
+
 // The history entry of a summary built by buildSummary. Throws a RangeError on anything that is
 // not a recordable summary.
 export function compactSummary(summary) {
@@ -80,11 +88,13 @@ export function compactSummary(summary) {
   if (typeof summary.endedAt !== 'string' || Number.isNaN(Date.parse(summary.endedAt))) {
     throw new RangeError(`summary endedAt must be an ISO date string, got ${summary.endedAt}`);
   }
+  const elapsedMs = tally('elapsedMs', summary.elapsedMs);
   return {
     id,
     boardKey: boardKey(summary.board),
     outcome,
-    elapsedMs: tally('elapsedMs', summary.elapsedMs),
+    elapsedMs,
+    ...pauseFields({ ...summary, elapsedMs }),
     bbbv,
     bbbvSolved: tally('bbbvSolved', summary.bbbvSolved, bbbv),
     clicks: checkClicks(summary.clicks),
@@ -145,7 +155,7 @@ const keyOf = (board) => (typeof board === 'string' ? boardKey(parseBoardKey(boa
 // createRecordsModel({ records?, history? }) — the in-memory records. Given a history without
 // records, the records are rebuilt from it. Every query returns a copy.
 export function createRecordsModel({ records, history } = {}) {
-  const hist = history ? clone(history) : [];
+  const hist = history ? history.map((e) => ({ ...clone(e), ...pauseFields(e) })) : [];
   const recs = records ? clone(records) : rebuildRecords(hist);
   const index = new Map(hist.map((e, i) => [e.id, i]));
 

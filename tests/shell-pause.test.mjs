@@ -6,6 +6,7 @@ import { join, dirname, normalize, extname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createModeHost } from '../js/shell/mode-host.js';
 import { createPauseController, PAUSE_SOURCES, AUTO_SOURCES, HAND_OFFS, CONFIRMATIONS } from '../js/shell/pause.js';
+import { createTimer } from '../js/classic2d/session.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -100,7 +101,29 @@ test('window blur and tab hide pause a started, unfinished game in play', () => 
   }
 });
 
-test('before the first click the pause key opens the card with no timer to stop; blur and hide do nothing', () => {
+test('automatic pauses (blur, tab hide, a controller disconnect) and manual ones are counted alike, the clock running through all', () => {
+  const { modes, fake, shell, pauser } = setup();
+  let now = 0;
+  const timer = createTimer({ now: () => now });
+  modes.start('a', 1);
+  fake.play.click();
+  timer.start();
+  const sources = [['key'], ['button'], ['pad', { note: 'Controller disconnected' }], ['pad'], ['blur'], ['hidden']];
+  for (const [source, opts] of sources) {
+    now += 100;
+    assert.equal(pauser.pause(source, opts), true, source);
+    assert.deepEqual(fake.calls.at(-1)[0], 'pause');
+    timer.pause(); // what the mode's pause does to its session
+    now += 50;
+    pauser.resume('pad');
+    shell.paused = false; // the card closes with play
+    timer.resume();
+  }
+  assert.equal(timer.elapsedMs(), 900, 'the clock ran through every pause');
+  assert.deepEqual(timer.pauses().map((p) => p.end - p.start), [50, 50, 50, 50, 50, 50], 'one pause per source, each counted alike');
+});
+
+test('before the first click the pause key opens the card with no game to pause; blur and hide do nothing', () => {
   const { modes, shell, pauser, calls } = setup();
   modes.start('a', 1);
   assert.equal(pauser.inProgress, false);
@@ -476,9 +499,11 @@ test('in a browser, the 3D game pauses, resumes, restarts and goes back to menu 
     assert.equal(await mode(), 'paused');
     assert.equal(await boardHidden(), true, 'the board is hidden while paused');
     assert.deepEqual(await hand(), ['inProgress', 'inProgress']);
-    const t0 = await ms(() => globalThis.__ms.state.time);
-    await frames(10);
-    assert.equal(await ms(() => globalThis.__ms.state.time), t0, 'the timer is stopped');
+    const t0 = await ms(() => globalThis.__ms.state.play.elapsedMs());
+    await page.waitForTimeout(200);
+    await frames(2);
+    assert.ok(await ms(() => globalThis.__ms.state.play.elapsedMs()) >= t0 + 200, 'the clock keeps running while paused');
+    assert.ok(await ms(() => globalThis.__ms.state.time) * 1000 >= t0 + 200, 'and so does the time the card and the HUD show');
     assert.equal(await ms(() => globalThis.__ms.pauser.pause('key')), false, 'already paused');
 
     // resume from the controller: lockless play, the board shows again
@@ -496,6 +521,7 @@ test('in a browser, the 3D game pauses, resumes, restarts and goes back to menu 
       delete document.visibilityState;
     });
     assert.equal(await mode(), 'paused', 'tab hide pauses');
+    assert.equal(await ms(() => globalThis.__ms.state.play.pauses().length), 3, 'the key, blur and tab hide pauses count alike');
     assert.equal((await hand()).filter((h) => h === 'inProgress').length, 4);
     await ms(() => window.dispatchEvent(new Event('pagehide')));
     assert.equal((await hand()).filter((h) => h === 'inProgress').length, 5, 'pagehide keeps the summary');

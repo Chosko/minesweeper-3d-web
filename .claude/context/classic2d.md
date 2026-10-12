@@ -79,12 +79,15 @@ looks.
   `GENERATING_DELAY_MS` (200), `SESSION_EVENTS` (`generating`, `started`,
   `changed`, `failed`, `finished`, `abandoned`).
 - `createTimer({now})` → `{start, pause, resume, stop, elapsedMs(),
-  seconds(), started, running, stopped}`.
+  seconds(), pauses(until?, count?), started, running, stopped, paused}` —
+  the game clock, running through pauses; `pauses` the pause spans
+  `[{start, end}]` begun by `until` (now by default), at most `count`, the
+  open one clipped to `until`.
 - `createSession({choice, client, clock?, randomSeed?,
   generatingDelayMs?})` → `{state, choice, setup, game, seed,
   generatorVersion, generatingShown, paused, failure, minesLeft,
-  elapsedMs(), seconds(), clicks() (the engine's counted clicks, wasted
-  included), on(type, fn) → off, reveal(c), toggleFlag(c),
+  elapsedMs(), seconds(), pauses() (the pause spans so far), clicks() (the
+  engine's counted clicks, wasted included), on(type, fn) → off, reveal(c), toggleFlag(c),
   chord(c), retry(), playStandard(), cancel(), pause(), resume(), restart(),
   leave(), summary(), recording, recordSample(values), recordCursor(cell),
   replay(summary?)}` — `client` is the generation client `{request,
@@ -223,7 +226,8 @@ looks.
   `restart` or `leave`, which all cancel the client. Win or loss stops the timer and emits `finished`; `restart` and
   `leave` after the first click and before the end emit `abandoned` first.
   Every summary is `buildSummary` over the engine's counts or summary, the
-  board identity, the seed, the generator version and the game's id — one
+  elapsed time and the pause spans up to it, the board identity, the seed,
+  the generator version and the game's id — one
   `crypto.randomUUID()` drawn when the board arrives, so the in-progress
   summary and the final one name the same game for the records store.
 - **Recording.** Each closed board opens a recorder
@@ -231,17 +235,19 @@ looks.
   it after sealing the abandoned game's replay. The first reveal is recorded
   at time 0 (a flag or chord before it changes nothing and is not recorded),
   every later action the session hands to the engine at the timer's elapsed
-  time, wasted ones included. The mines, seed and generator version are
+  time, paused spans included, wasted ones included. The mines, seed and generator version are
   added when the board arrives; a board played standard after a no-guess
   failure starts a new recording of the standard board with its first
   reveal. `recording` is true while the game is started, unpaused and
   unfinished, and only then do the sampler's `recordSample` and
   `recordCursor` record. `finished` and `abandoned` carry the replay sealed
-  with their summary.
-- **Timer.** Elapsed time accumulates over running stretches: it starts
-  when the board is ready (a pause while generating starts it paused),
-  freezes on pause, and keeps its time once stopped; `seconds()` is whole
-  seconds for the overlay, `elapsedMs()` whole milliseconds for the result.
+  with their summary and the pause spans it counted.
+- **Timer.** The game clock starts when the board is ready, runs through
+  pauses and keeps its time once stopped; `seconds()` is whole seconds for
+  the overlay, `elapsedMs()` whole milliseconds for the result. A pause is
+  marked from `pause()` to `resume()` on the clock, or to `stop()` when the
+  game ends paused; one begun while generating counts from the start, and
+  one ended before it does not count.
 - **Fit rule.** The view fits the board to whatever area it is given;
   `MIN_TILE_SIZE` was measured for the area below the overlay bar with
   16 px margins

@@ -269,22 +269,69 @@ test('flags placed before the first reveal are kept, and neither they nor a chor
   assert.ok(v.dirty.includes(0));
 });
 
-test('a pause during generation keeps the request running and the timer unstarted', async () => {
+test('a pause during generation keeps the request running; the timer starts with the board, paused or not', async () => {
   const { session, client, clock } = sessionOf(ROW);
   const pending = session.reveal(1);
   session.pause();
   assert.equal(session.paused, true);
   assert.equal(client.cancels, 0, 'the request keeps running');
   assert.equal(session.state, SESSION_STATE.GENERATING);
+  clock.advance(500);
+  assert.equal(session.elapsedMs(), 0, 'no time runs while the board is generated');
   client.answer(ROW_BOARD);
   await pending;
   assert.equal(session.state, SESSION_STATE.PLAYING);
   clock.advance(4000);
-  assert.equal(session.elapsedMs(), 0, 'the board arrived while paused: the timer waits for the resume');
+  assert.equal(session.elapsedMs(), 4000, 'the board arrived while paused: the clock runs');
   assert.equal(session.reveal(2), null, 'a paused game accepts no action');
+  assert.equal(session.recording, false);
   session.resume();
   clock.advance(1500);
-  assert.equal(session.seconds(), 1);
+  assert.equal(session.seconds(), 5);
+  assert.deepEqual(session.pauses(), [{ start: 0, end: 4000 }], 'the pause counts from the board\'s arrival');
+});
+
+test('the 3D clock runs through every pause; each pause until the return to play is one span', async () => {
+  const { session, client, clock } = sessionOf(ROW);
+  session.pause(); // before the first click: nothing
+  assert.equal(session.paused, false);
+  const pending = session.reveal(1);
+  client.answer(ROW_BOARD);
+  await pending;
+  clock.advance(1000);
+  session.pause();
+  clock.advance(3000);
+  assert.equal(session.elapsedMs(), 4000);
+  assert.deepEqual(session.pauses(), [{ start: 1000, end: 4000 }], 'the open span ends now');
+  session.pause(); // the same pause
+  clock.advance(1000);
+  session.resume();
+  clock.advance(500);
+  session.pause();
+  clock.advance(250);
+  session.resume();
+  assert.deepEqual(session.pauses(), [{ start: 1000, end: 5000 }, { start: 5500, end: 5750 }]);
+  clock.advance(250);
+  const r = session.reveal(2); // a win
+  assert.equal(r.ended, true);
+  assert.equal(session.elapsedMs(), 6000);
+  session.pause();
+  clock.advance(1000);
+  assert.equal(session.elapsedMs(), 6000, 'the win stops the clock');
+  assert.deepEqual(session.pauses(), [{ start: 1000, end: 5000 }, { start: 5500, end: 5750 }], 'nothing pauses after the end');
+
+  // Left while paused: the open span ends at the end.
+  const k = sessionOf(ROW);
+  const q = k.session.reveal(1);
+  k.client.answer(ROW_BOARD);
+  await q;
+  k.clock.advance(200);
+  k.session.pause();
+  k.clock.advance(800);
+  k.session.leave();
+  k.clock.advance(800);
+  assert.equal(k.session.elapsedMs(), 1000);
+  assert.deepEqual(k.session.pauses(), [{ start: 200, end: 1000 }]);
 });
 
 test('restart and leave cancel a pending generation, and a late answer is dropped', async () => {

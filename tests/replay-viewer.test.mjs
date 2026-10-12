@@ -12,10 +12,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { SPEEDS, DEFAULT_SPEED, createPlaybackClock } from '../js/replay/clock.js';
 import { movementTrack, pointerAt, cursorAt, pointerPixel, createViewer2D } from '../js/replay/viewer-2d.js';
 import {
-  FAILURES, REPLAY_KEYS, REPLAY_PAD, SEEK_STEP_MIN_MS, seekStep, clockText, overlayFigures, endLine, prepareReplay, createReplayViewer,
+  FAILURES, REPLAY_KEYS, REPLAY_PAD, SEEK_STEP_MIN_MS, seekStep, clockText, overlayFigures, endLine, pauseMarks, pausesText, prepareReplay, createReplayViewer,
 } from '../js/replay/viewer.js';
 import { createSimulator, REFUSAL } from '../js/replay/simulator.js';
-import { decodeReplay, encodeReplay } from '../js/replay/format.js';
+import { decodeReplay, encodeReplay, REPLAY_FORMAT_VERSION } from '../js/replay/format.js';
 import { formatOverlayTime, formatMineCount } from '../js/ui/components.js';
 import { formatTime, DASH } from '../js/results/view.js';
 import { REPLAY_SCREEN } from '../js/records/replay-list.js';
@@ -289,7 +289,7 @@ test('a replay opens from its blob, its replay object, the hand-off\'s { blob },
 
 test('every replay is verified first; a refused or failing one says why and is not played', async () => {
   const base = decodeReplay(blobOf(WON));
-  const newer = encodeReplay(base, { version: 2 });
+  const newer = encodeReplay(base, { version: REPLAY_FORMAT_VERSION + 1 });
   const oldRules = decodeReplay(blobOf(WON));
   oldRules.header.profile = { id: 'minesweeper-online', version: 99 };
   const tampered = decodeReplay(blobOf(WON));
@@ -314,7 +314,7 @@ test('every replay is verified first; a refused or failing one says why and is n
   assert.equal(FAILURES.newer, createSimulatorMessage(REFUSAL.NEWER));
 });
 function createSimulatorMessage(reason) {
-  try { createSimulator(reason === REFUSAL.NEWER ? encodeReplay(decodeReplay(blobOf(WON)), { version: 2 }) : new Uint8Array(1)); } catch (e) { return e.message; }
+  try { createSimulator(reason === REFUSAL.NEWER ? encodeReplay(decodeReplay(blobOf(WON)), { version: REPLAY_FORMAT_VERSION + 1 }) : new Uint8Array(1)); } catch (e) { return e.message; }
   return null;
 }
 
@@ -358,7 +358,7 @@ test('the viewer opens a replay, shows the start paused, and Back returns to the
   const { viewer, view, router, viewers } = viewerOver();
   await viewer.show({ replay: blobOf(WON), returnTo: RETURN });
   assert.deepEqual(view.log.slice(0, 2), ['open', 'loading']);
-  assert.deepEqual(view.log[2], ['ready', { duration: 9971, kind: 'square' }]);
+  assert.deepEqual(view.log[2], ['ready', { duration: 9971, kind: 'square', pauses: [] }]);
   assert.equal(viewers.made[0].container, view.container, 'the 2D viewer draws in the screen\'s board area');
   assert.equal(viewer.state.status, 'ready');
   assert.deepEqual([view.last.time, view.last.playing, view.last.speed, view.last.end], [0, false, 1, null]);
@@ -425,6 +425,51 @@ test('ticks drive the clock and the simulator once per frame while playing, at t
   viewer.command('slower');
   viewer.command('slower');
   assert.equal(view.last.speed, 1);
+});
+
+// ---------------------------------------------------------------- pauses on the seek bar
+
+/** The won fixture with pause spans in its header: the same game, verified as recorded. */
+const pausedBlob = (pauses) => {
+  const r = decodeReplay(blobOf(WON));
+  r.header.pauses = pauses;
+  return encodeReplay(r);
+};
+
+test('each paused span is a mark on the seek bar track at its position and width over the replay', () => {
+  assert.deepEqual(pauseMarks([], 9971), []);
+  assert.deepEqual(pauseMarks([{ start: 1000, end: 3000 }, { start: 5000, end: 5000 }], 10000), [
+    { left: 10, width: 20 }, { left: 50, width: 0 },
+  ]);
+  assert.deepEqual(pauseMarks([{ start: 0, end: 4000 }], 8000), [{ left: 0, width: 50 }]);
+  assert.deepEqual(pauseMarks([{ start: 0, end: 0 }], 0), [{ left: 0, width: 0 }], 'a zero-length replay divides by nothing');
+});
+
+test('the seek bar\'s text alternative names the pauses: how many and how long in all; none says nothing', () => {
+  assert.equal(pausesText([]), '');
+  assert.equal(pausesText([{ start: 100, end: 1300 }]), 'Paused once, 1.2 s in all');
+  assert.equal(pausesText([{ start: 0, end: 2000 }, { start: 3000, end: 5100 }]), 'Paused 2 times, 4.1 s in all');
+});
+
+test('a replay with pauses hands its spans to the view; playback runs through a paused span at the chosen speed', async () => {
+  const spans = [{ start: 1100, end: 1300 }, { start: 5000, end: 6300 }]; // the won fixture has no action in either
+  const { viewer, view, viewers } = viewerOver();
+  await viewer.show({ replay: pausedBlob(spans) });
+  assert.equal(viewer.state.status, 'ready', 'the replay verifies with its pauses');
+  assert.deepEqual(view.log[2], ['ready', { duration: 9971, kind: 'square', pauses: spans }]);
+  viewer.seek(4960);
+  const before = viewers.drawn.at(-1).index;
+  viewer.command('toggle');
+  viewer.tick(1000); // into the paused span
+  assert.equal(view.last.time, 5960, 'the clock does not skip the pause');
+  assert.equal(viewers.drawn.at(-1).changed.length, 0, 'the board stays as it was');
+  assert.equal(viewers.drawn.at(-1).index, before);
+  viewer.tick(500);
+  assert.equal(view.last.time, 6460);
+  assert.equal(viewers.drawn.at(-1).index, before + 1, 'the action after the pause plays at its time');
+  // Previous and Next still step by action.
+  viewer.command('next');
+  assert.equal(view.last.time, 6900);
 });
 
 test('at the end the final board stays with the outcome and recorded time; play restarts from the beginning', async () => {
@@ -539,13 +584,15 @@ test('the viewer screen is kit markup: the overlay, the board area, the message 
   assert.ok(at > 0, 'index.html has the replay viewer section');
   const html = INDEX.slice(at, INDEX.indexOf('<!-- /Replay viewer -->'));
   for (const id of ['replay', 'rp-clock', 'rp-mines', 'rp-bbbv', 'rp-rate', 'rp-back', 'replay-board', 'replay-message', 'replay-message-text',
-    'replay-message-back', 'replay-controls', 'rp-play', 'rp-prev', 'rp-next', 'rp-speed', 'rp-seek', 'replay-end']) {
+    'replay-message-back', 'replay-controls', 'rp-play', 'rp-prev', 'rp-next', 'rp-speed', 'rp-seek', 'rp-pauses', 'rp-pauses-text', 'replay-end']) {
     assert.match(html, new RegExp(`id="${id}"`), `#${id}`);
   }
   assert.match(html, /class="ui-overlay-bar[^"]*"/);
   assert.match(html, /id="rp-speed" class="ui-segmented" role="radiogroup"/);
   for (const s of SPEEDS) assert.match(html, new RegExp(`role="radio"[^>]*data-value="${s}"`), `${s}× option`);
-  assert.match(html, /id="rp-seek" class="ui-slider__input" type="range"/);
+  assert.match(html, /id="rp-seek" class="ui-slider__input" type="range"[^>]*aria-describedby="rp-pauses-text"/, 'the seek bar names its pauses');
+  assert.match(html, /id="rp-pauses" class="replay-pauses" aria-hidden="true"/, 'the marks are drawing only');
+  assert.match(read('css/components.css'), /\.replay-pause \{[^}]*var\(--color-replay-pause\)/, 'the marks take their colour from a token');
   for (const b of html.match(/<button[^>]*>/g)) assert.match(b, /type="button"/);
   assert.match(read('css/components.css'), /Replay viewer \(index\.html #replay/, 'the catalogue lists the screen');
 });
@@ -612,6 +659,8 @@ test('in a browser, a recorded 2D replay plays from its fixture through to the e
     assert.equal(await page.evaluate(() => document.activeElement?.id), 'rp-play', 'focus on Play');
     assert.equal(await text('rp-clock'), '000');
     assert.equal(await page.evaluate(() => document.querySelectorAll('#replay-board canvas').length), 1, 'the board view is mounted');
+    assert.equal(await page.evaluate(() => document.querySelectorAll('#rp-pauses .replay-pause').length), 0, 'no pauses, no marks');
+    assert.equal(await text('rp-pauses-text'), '');
 
     await page.click('#rp-speed [data-value="4"]');
     await page.click('#rp-play');
@@ -640,6 +689,22 @@ test('in a browser, a recorded 2D replay plays from its fixture through to the e
     await page.click('#rp-back');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
     assert.equal(await page.evaluate(() => document.getElementById('replay').classList.contains('hidden')), true);
+
+    // A replay with pauses marks each span on the seek bar and names them.
+    await page.evaluate(async () => {
+      const { decodeReplay, encodeReplay } = await import('/js/replay/format.js');
+      const r = decodeReplay(new Uint8Array(await (await fetch('/tests/fixtures/replays/2d-beginner-won.msrp')).arrayBuffer()));
+      r.header.pauses = [{ start: 1000, end: 3000 }, { start: 5000, end: 8000 }]; // marks over the bar; the actions are the fixture's
+      globalThis.__ms.watch({ replay: encodeReplay(r), returnTo: { screen: 'menu' } });
+    });
+    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready');
+    const marks = await page.evaluate(() => [...document.querySelectorAll('#rp-pauses .replay-pause')].map((m) => [m.style.left, m.style.width, getComputedStyle(m).backgroundColor]));
+    assert.equal(marks.length, 2);
+    assert.match(marks[0][0], /^10(\.\d+)?%$/);
+    assert.match(marks[1][1], /^30(\.\d+)?%$/);
+    assert.notEqual(marks[0][2], 'rgba(0, 0, 0, 0)', 'the mark is coloured');
+    assert.equal(await text('rp-pauses-text'), 'Paused 2 times, 5.0 s in all');
+    await page.click('#rp-back');
 
     // A replay that cannot be read says so, and Back still works.
     await page.evaluate(() => globalThis.__ms.watch({ replay: new Uint8Array([1, 2, 3]), returnTo: { screen: 'menu' } }));

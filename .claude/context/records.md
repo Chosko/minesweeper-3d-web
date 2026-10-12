@@ -96,8 +96,9 @@ Board identity (`js/records/board.js`)
   impossible one throws.
 
 Summary (`js/records/summary.js`)
-- `buildSummary({ engine, outcome?, elapsedMs, board, seed,
-  generatorVersion, endedAt?, id? })` → record or null. `engine` is the
+- `buildSummary({ engine, outcome?, elapsedMs, pauses?, board, seed,
+  generatorVersion, endedAt?, id? })` → record or null; `pauses` the game's
+  pause spans `[{ start, end }]`, none by default. `engine` is the
   engine's `summary()` (outcome won or lost) or `counts()` (outcome
   abandoned) — see [engine.md](engine.md); a stated `outcome` must agree
   with it. `board` is a 2D or a 3D identity's fields; for a 3D board the
@@ -106,8 +107,10 @@ Summary (`js/records/summary.js`)
   span the depth. `counts()` with `bbbv` null — left before the first click
   — returns null. `endedAt` a `Date`, default now; `id` a non-empty string,
   default `crypto.randomUUID()`.
-- The record: `{ id, board, outcome, elapsedMs, bbbv, bbbvSolved, clicks,
-  bbbvPerSecond, efficiency, seed, generatorVersion, endedAt }` — `board` a
+- The record: `{ id, board, outcome, elapsedMs, pauses, pausedMs, bbbv,
+  bbbvSolved, clicks, bbbvPerSecond, efficiency, seed, generatorVersion,
+  endedAt }` — `elapsedMs` includes the paused time, `pauses` and
+  `pausedMs` the spans' count and total (never above `elapsedMs`), `board` a
   plain copy of the identity (not the key), `clicks` `{ reveal, flag, chord }`
   each `{ effective, wasted }`, `endedAt` an ISO 8601 string. Plain,
   serialisable data.
@@ -145,7 +148,9 @@ Model (`js/records/model.js`)
   value when best-eligible (else null), `value − best.value` (null without
   both), and whether the game sets a new best.
 - The history entry — `compactSummary(summary)`: `{ id, boardKey, outcome,
-  elapsedMs, bbbv, bbbvSolved, clicks, endedAt }`.
+  elapsedMs, pauses, pausedMs, bbbv, bbbvSolved, clicks, endedAt }`; a
+  summary or a stored entry without the pause fields (recorded before them)
+  reads as 0 and 0 (`pauseFields`), with no records format step.
 - The records document: `{ boards: { [boardKey]: { board, bests, counters }
   }, overall: { [mode]: counters } }`, `overall` holding every mode in
   `MODES`.
@@ -281,7 +286,8 @@ History chart (`js/records/history-chart.js`)
   `0 .. 2^32 - 1`, a generator version below 1, a board whose mines or
   dimensions differ from the engine's `mineCount` / `dimensions`, 3BV above
   the safe cells or below 1, 3BV solved above 3BV, a win with 3BV left
-  unsolved, malformed click counts, an engine outcome other than won or lost.
+  unsolved, malformed click counts, an engine outcome other than won or lost,
+  a malformed pause span or more paused time than elapsed.
   `compactSummary` re-checks id, outcome, counts and date before an entry
   enters the history.
 - **Derived stats are pure.** The builder fills `bbbvPerSecond` and

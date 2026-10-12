@@ -85,7 +85,7 @@ test('boardPoint: the pointer in cell units, quantised to 1/SAMPLE_STEPS of a ce
 
 // ---------- the sampler on a real session ----------
 
-test('a recorded 2D game: actions, samples about 20 times a second and cursor moves on the game clock, sealed at the win', async () => {
+test('a recorded 2D game: actions, samples about 20 times a second and cursor moves on the game clock, a pause in it, sealed at the win', async () => {
   const clock = fakeClock();
   const session = createSession({ choice: BEGINNER, client: fakeClient(), clock, randomSeed: () => 7 });
   let pos = [0, 0];
@@ -113,11 +113,11 @@ test('a recorded 2D game: actions, samples about 20 times a second and cursor mo
   clock.advance(5000); pos = [99, 99]; sampler.tick();
   sampler.cursor(41);
   session.resume();
-  clock.advance(70); sampler.tick(); // t 150: the sample and the cursor moved while paused
+  clock.advance(70); sampler.tick(); // t 5150: the sample and the cursor moved while paused
 
-  session.reveal(80); // t 150: changes nothing, still recorded
+  session.reveal(80); // t 5150: changes nothing, still recorded, later by the paused span
   clock.advance(100);
-  session.reveal(0); // t 250: the win
+  session.reveal(0); // t 5250: the win
   assert.ok(finished, 'finished');
   assert.equal(session.recording, false, 'not after the end');
   clock.advance(100); pos = [1, 1]; sampler.tick(); sampler.cursor(42);
@@ -127,7 +127,8 @@ test('a recorded 2D game: actions, samples about 20 times a second and cursor mo
   assert.ok(replay && replay.blob instanceof Uint8Array);
   assert.equal(replay.listing.id, summary.id);
   assert.equal(replay.listing.outcome, 'won');
-  assert.equal(replay.listing.elapsedMs, 250);
+  assert.equal(replay.listing.elapsedMs, 5250, 'the clock ran through the pause');
+  assert.deepEqual([summary.pauses, summary.pausedMs], [1, 5000]);
   assert.equal(session.replay(), replay, 'sealing again returns the same replay');
 
   const decoded = decodeReplay(replay.blob);
@@ -137,23 +138,24 @@ test('a recorded 2D game: actions, samples about 20 times a second and cursor mo
   assert.equal(boardKey(decoded.header.board), boardKey(summary.board));
   assert.deepEqual(decoded.header.mines, MINES);
   assert.equal(decoded.header.seed, 7);
+  assert.deepEqual(decoded.header.pauses, [{ start: 80, end: 5080 }], 'the pause span on the game clock');
   assert.deepEqual(decoded.actions, [
     { time: 0, kind: 'reveal', cell: 80 },
-    { time: 150, kind: 'reveal', cell: 80 },
-    { time: 250, kind: 'reveal', cell: 0 },
+    { time: 5150, kind: 'reveal', cell: 80 },
+    { time: 5250, kind: 'reveal', cell: 0 },
   ]);
   assert.deepEqual(decoded.movement, [
     { time: 20, type: 'sample', values: [16, 32] },
     { time: 20, type: 'cursor', cell: 4 },
     { time: 80, type: 'sample', values: [17, 32] },
     { time: 80, type: 'cursor', cell: 40 },
-    { time: 150, type: 'sample', values: [99, 99] },
-    { time: 150, type: 'cursor', cell: 41 },
+    { time: 5150, type: 'sample', values: [99, 99] },
+    { time: 5150, type: 'cursor', cell: 41 },
   ]);
   const again = replayAgain(decoded);
   assert.equal(cellStateDigest(again.state), decoded.check.digest);
   assert.deepEqual(again.summary().clicks, decoded.check.clicks);
-  assert.equal(decoded.check.elapsedMs, 250);
+  assert.equal(decoded.check.elapsedMs, 5250);
 });
 
 test('a session left before its first click records and reports nothing; restart discards the recorder', async () => {
