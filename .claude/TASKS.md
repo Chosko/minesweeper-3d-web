@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 124
+Last task number: 125
 
 ---
 
@@ -734,6 +734,15 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: js/classic2d/board-setup.js, js/classic2d/board-choice.js, index.html, tests/classic2d-session.test.mjs, tests/classic2d-mode.test.mjs, tests/classic2d-fidelity.test.mjs, tests/records-board.test.mjs, .claude/domain/features/classic-2d-square-play.md
+Preconditions: none
+
+---
+
+## 125. 3D spawn framing and world reference
+
+Status: [MISSING]
+Target: claude
+Files: js/input.js, js/main.js, js/render.js, js/ui.js, js/settings/bindings.js, index.html, css/style.css, tests/camera-spawn.test.mjs, tests/components.test.mjs, tests/settings-page.test.mjs, tests/replay-viewer-3d.test.mjs, docs/ORIGINAL_SPEC.md, README.md, .claude/domain/product-design.md
 Preconditions: none
 
 ---
