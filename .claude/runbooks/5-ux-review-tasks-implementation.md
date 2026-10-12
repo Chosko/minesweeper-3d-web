@@ -196,7 +196,7 @@ Context: none
 
 Done: 2026-10-12, commit `896fbd0` (50 files, +1625/-381). Wrong premises: Expert plays at 32 px at 1024×768 inside the framed panel (the 26 px floor only bites below 520 px tall), and -1 was not an accepted replay cursor value — the encoder, decoder and recorder now accept it, every new cursor stream opens with -1, and an older build refuses such a recording. Decisions: no scroll-hint module — the hint's seen state is a `scrollHint` entry in `shell.firstUse` via task 119's strip; browser tests read the live layout through a new `__ms.board2D` getter.
 
-## [ ] 17. Implement task 135 — 2D sound
+## [x] 17. Implement task 135 — 2D sound
 
 Depends on: none
 
@@ -205,6 +205,8 @@ Context: none
 ```prompt
 /task-implement 135 --review
 ```
+
+Done: 2026-10-12, commit `a61e9af` (5 files, +322/-6). Wrong premise: a flag placed before the first reveal cannot sound in Classic 2D — under the reference rules it changes nothing — so it stays silent and the tests check the silence. The context files audio.md and classic2d.md do not yet describe the mode's sound option.
 
 ## [ ] 18. Implement task 136 — 2D tile art parity with 3D
 
