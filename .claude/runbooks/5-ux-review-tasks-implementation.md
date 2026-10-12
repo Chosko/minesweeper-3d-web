@@ -1,7 +1,7 @@
 # Runbook: ux-review-tasks-implementation
 
 Created: 2026-10-12 · Source: /runbook-create interview · Model: opus
-Last step number: 34
+Last step number: 36
 Sequencing: Run in list order, one step at a time: most tasks edit js/main.js, index.html and css/style.css, and each body says whichever of two overlapping tasks lands second merges around the first; task 119's help component is reused by many later tasks, so it goes first.
 
 ## [ ] 1. Implement task 119 — Mode-aware help and first-use hints
@@ -334,6 +334,26 @@ Context: none
 
 ```prompt
 /task-implement 151 --review --rounds 2
+```
+
+## [ ] 35. Implement task 152 — Cube preset re-tune and first-box presets
+
+Depends on: 15
+
+Context: none
+
+```prompt
+/task-implement 152 --review
+```
+
+## [ ] 36. Implement task 153 — Learn 3D guided board
+
+Depends on: 1, 35
+
+Context: none
+
+```prompt
+/task-implement 153 --review
 ```
 
 ## [ ] 34. Check the result against the UX review
