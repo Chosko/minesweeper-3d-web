@@ -16,7 +16,7 @@ Context: none
 
 Done: 2026-10-12, commit `828a0a4` (22 files, +1652/-170). Decisions: only the hint strip's × dismisses it, H (controller X in 3D) merely hides it while the help panel is open; F no longer toggles fullscreen anywhere in Classic 2D, since F flags there.
 
-## [ ] 2. Implement task 120 — Dark theme completion
+## [x] 2. Implement task 120 — Dark theme completion
 
 Depends on: none
 
@@ -25,6 +25,8 @@ Context: none
 ```prompt
 /task-implement 120 --review
 ```
+
+Done: 2026-10-12, commit `d1f4691` (16 files, +350/-48). Wrong premise: the four scrims were not every light tint over the scene — the gradient behind the menu screens in css/style.css is still hard-coded light blue, and the context-lost card stays near-white in the dark theme; both left for a task of their own.
 
 ## [ ] 3. Implement task 121 — No-guess default, switch copy, generating flow
 
