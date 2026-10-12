@@ -220,7 +220,7 @@ Context: none
 
 Done: 2026-10-12, commit `6e4395d` (19 files, +971/-432). Decisions: `--color-tile-edge` is gone, replaced by a set of `--color-tile-*` tokens (more than the body listed); light-theme numbers 2, 3, 6 and 8 were darkened to meet 4.5:1 on the shaded face; the dark-theme lit bevel is capped at `#3e5f9c` by the cursor-ring contrast test.
 
-## [ ] 19. Implement task 137 — 2D end-of-game moment and the faster loop
+## [x] 19. Implement task 137 — 2D end-of-game moment and the faster loop
 
 Depends on: none
 
@@ -229,6 +229,8 @@ Context: none
 ```prompt
 /task-implement 137 --review
 ```
+
+Done: 2026-10-12, commit `2d470df` (30 files, +1467/-154). Wrong premise: 2D end-state tiles did not show unflagged mines as flags — the board view now draws a won board's closed cells as flags, visually only. Decisions: the skip-the-delay press rules live in a new js/shell/end-skip.js and `ending3D()` became `endDelay()` for both modes; the 3D ready card is hidden while pointer lock is requested on Play again, and a lock release during the end delay ends it.
 
 ## [ ] 20. Implement task 138 — Generation pipeline
 
