@@ -88,7 +88,7 @@ Context: none
 
 Done: 2026-10-12, commit `83512b5` (21 files, +634/-49). Wrong premise: the body's framing criteria conflict — the closest framing distance can put the camera below the top face or in front of the side face — so the spawn distance is the larger of the framing distance and a face-clearance distance, and the box fills about 74% of the view instead of 80% on 12×12×8 at 16:9. Decision: the `__ms.startCameraPos` debug hook is now `__ms.spawnPose(X, Y, Z)`; task 146's Hints were updated.
 
-## [ ] 8. Implement task 126 — 3D small feedback
+## [x] 8. Implement task 126 — 3D small feedback
 
 Depends on: none
 
@@ -97,6 +97,8 @@ Context: none
 ```prompt
 /task-implement 126 --review
 ```
+
+Done: 2026-10-12, commit `914a74a` (15 files, +663/-65). Decisions: only the Esc that released the pointer lock is ignored and any later Esc on the pause card resumes, with the 500 ms window gone (the ready card keeps its own); a replay seek is detected in the main frame loop as a replay time change playback did not cause.
 
 ## [ ] 9. Implement task 127 — Right-click on a number
 
