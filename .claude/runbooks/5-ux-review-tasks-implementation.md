@@ -148,7 +148,7 @@ Context: none
 
 Done: 2026-10-12, commit `2dd44ae` (40 files, +1040/-251). Wrong premise: there is no overlay-bar restart — the bar has only Pause; the rule covers the pause card's Restart, F2, Start + Y and the results screen's Play again / R. Decisions: records format is now version 3, an older document is rebuilt from the game history on load, and with no history its completed-games figures start from the reference figures; F2 and Start + Y do nothing on the 3D "Click to play" card of a game in progress.
 
-## [ ] 13. Implement task 131 — Reset all data
+## [x] 13. Implement task 131 — Reset all data
 
 Depends on: none
 
@@ -157,6 +157,8 @@ Context: none
 ```prompt
 /task-implement 131 --review
 ```
+
+Done: 2026-10-12, commit `3993c79` (24 files, +979/-74). Wrong premise: the first-use key `ms3d.hintH.done` no longer lives in js/ui.js — task 119 replaced it with the `shell.firstUse` document, which the reset clears (the old key is still removed). Decision: with the Settings confirmation open, every Back input closes the confirmation first.
 
 ## [ ] 14. Implement task 132 — Shell without WebGL 2
 
