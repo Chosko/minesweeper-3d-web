@@ -184,7 +184,7 @@ Context: none
 
 Done: 2026-10-12, commit `fef1227` (23 files, +959/-55). Decision: typical 3BV per named board is measured by `node dev/measure-typical-bbbv.mjs` and pasted into js/records/typical-bbbv.js, and a test requires an entry for every named board.
 
-## [ ] 16. Implement task 134 — 2D board scale, framed panel, cursor ring
+## [x] 16. Implement task 134 — 2D board scale, framed panel, cursor ring
 
 Depends on: none
 
@@ -193,6 +193,8 @@ Context: none
 ```prompt
 /task-implement 134 --review
 ```
+
+Done: 2026-10-12, commit `896fbd0` (50 files, +1625/-381). Wrong premises: Expert plays at 32 px at 1024×768 inside the framed panel (the 26 px floor only bites below 520 px tall), and -1 was not an accepted replay cursor value — the encoder, decoder and recorder now accept it, every new cursor stream opens with -1, and an older build refuses such a recording. Decisions: no scroll-hint module — the hint's seen state is a `scrollHint` entry in `shell.firstUse` via task 119's strip; browser tests read the live layout through a new `__ms.board2D` getter.
 
 ## [ ] 17. Implement task 135 — 2D sound
 
