@@ -40,7 +40,7 @@ Context: none
 
 Done: 2026-10-12, commit `03e8e72` (31 files, +1046/-193). Decisions: the component-kit test now allows exactly one keyframed animation, the `ui-spinner` turn; `#c2d-status` moved out of `#c2d` so it can sit above the pause card; the density threshold and no-guess hint copy live in js/classic2d/board-setup.js and the 3D board choice imports them.
 
-## [ ] 4. Implement task 122 — Menu keyboard navigation and browser Back
+## [x] 4. Implement task 122 — Menu keyboard navigation and browser Back
 
 Depends on: none
 
@@ -49,6 +49,8 @@ Context: none
 ```prompt
 /task-implement 122 --review
 ```
+
+Done: 2026-10-12, commit `d74bdf5` (21 files, +1239/-70). Decisions: with the main menu's Controls panel open, browser Back leaves the site rather than closing the panel (history depth equals stack depth); the Settings Theme choice is unreachable by arrow keys in the multi-column layout, left for the single-column Settings layout (P-69, W-30).
 
 ## [ ] 5. Implement task 123 — Wording and small shell fixes
 
