@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 119
+Last task number: 120
 
 ---
 
@@ -689,6 +689,15 @@ Feature: replay-playback
 Status: [MISSING]
 Target: claude
 Files: js/settings/bindings.js, js/shell/first-use.js, js/ui.js, js/main.js, js/input.js, index.html, css/style.css, tests/shell-help.test.mjs, tests/shell-first-use.test.mjs, tests/settings-page.test.mjs, .claude/domain/features/settings.md
+Preconditions: none
+
+---
+
+## 120. Dark theme completion
+
+Status: [MISSING]
+Target: claude
+Files: css/tokens.css, css/style.css, js/render.js, js/main.js, tests/components.test.mjs, tests/tokens.test.mjs, tests/theme.test.mjs, .claude/domain/features/design-tokens-and-themes.md, .claude/domain/product-design.md, .claude/domain/features/screen-components.md
 Preconditions: none
 
 ---
