@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 129
+Last task number: 130
 
 ---
 
@@ -779,6 +779,15 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: js/classic2d/session.js, js/mode3d/session.js, js/shell/mode-3d.js, js/classic2d/mode.js, js/main.js, js/ui.js, js/records/summary.js, js/records/model.js, js/records/store.js, js/replay/format.js, js/replay/recorder.js, js/replay/viewer.js, index.html, css/tokens.css, css/components.css, tests/classic2d-session.test.mjs, tests/mode3d-session.test.mjs, tests/shell-mode-3d.test.mjs, tests/shell-pause.test.mjs, tests/records-summary.test.mjs, tests/records-summary-3d.test.mjs, tests/records-model.test.mjs, tests/records-store.test.mjs, tests/replay-format.test.mjs, tests/replay-recorder.test.mjs, tests/replay-2d.test.mjs, tests/replay-3d.test.mjs, tests/replay-viewer.test.mjs, README.md, .claude/domain/product-design.md, .claude/domain/features/game-shell.md, .claude/domain/features/classic-2d-square-play.md, .claude/domain/features/3d-play-flow.md, .claude/domain/features/game-summary.md, .claude/domain/features/personal-records.md, .claude/domain/features/replay-recording.md, .claude/domain/features/replay-playback.md
+Preconditions: none
+
+---
+
+## 130. One-key restart and completed-games stats
+
+Status: [MISSING]
+Target: claude
+Files: js/shell/pause.js, js/main.js, js/classic2d/mode.js, js/classic2d/cursor-input.js, js/ui.js, js/settings/schema.js, js/settings/page.js, js/settings/store.js, js/settings/bindings.js, js/records/model.js, js/records/store.js, js/records/screen.js, js/results/flow.js, js/results/view.js, index.html, tests/shell-pause.test.mjs, tests/settings-store.test.mjs, tests/settings-page.test.mjs, tests/records-model.test.mjs, tests/records-model-3d.test.mjs, tests/records-store.test.mjs, tests/records-screen.test.mjs, tests/records-screen-3d.test.mjs, tests/results.test.mjs, tests/classic2d-mode.test.mjs, README.md, docs/ORIGINAL_SPEC.md, .claude/domain/product-design.md, .claude/domain/features/game-shell.md, .claude/domain/features/personal-records.md, .claude/domain/features/3d-game-records.md, .claude/domain/features/records-screen.md, .claude/domain/features/3d-results-records-screens.md, .claude/domain/features/results-screen.md, .claude/domain/features/settings.md
 Preconditions: none
 
 ---
