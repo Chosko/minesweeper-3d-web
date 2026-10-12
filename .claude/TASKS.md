@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 152
+Last task number: 153
 
 ---
 
@@ -987,5 +987,14 @@ Status: [MISSING]
 Target: claude
 Files: js/mode3d/board-choice.js, js/records/board.js, js/records/model.js, js/records/screen.js, js/main.js, js/records/typical-bbbv.js, dev/measure-first-box-3d.mjs, dev/measure-typical-bbbv.mjs, dev/measure-replays.mjs, index.html, css/components.css, tests/mode3d-board-choice.test.mjs, tests/records-board-3d.test.mjs, tests/records-model-3d.test.mjs, tests/records-screen-3d.test.mjs, tests/mode3d-session.test.mjs, tests/camera-spawn.test.mjs, tests/shell-returning.test.mjs, README.md, .claude/domain/features/3d-play-flow.md, .claude/domain/features/3d-game-records.md, .claude/domain/product-design.md
 Preconditions: none
+
+---
+
+## 153. Learn 3D guided board
+
+Status: [MISSING]
+Target: claude
+Files: js/mode3d/learn.js, dev/find-learn-3d.mjs, js/mode3d/board-choice.js, js/mode3d/session.js, js/shell/mode-3d.js, js/shell/first-use.js, js/shell/pause.js, js/main.js, js/ui.js, js/render.js, index.html, css/style.css, tests/mode3d-learn.test.mjs, tests/mode3d-board-choice.test.mjs, tests/mode3d-session.test.mjs, tests/shell-mode-3d.test.mjs, tests/shell-first-use.test.mjs, tests/shell-pause.test.mjs, README.md, .claude/domain/product-design.md, .claude/domain/features/3d-play-flow.md, .claude/domain/features/game-shell.md
+Preconditions: 119, 152
 
 ---
