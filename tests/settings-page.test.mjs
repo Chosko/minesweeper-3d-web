@@ -15,7 +15,7 @@ import {
 } from '../js/settings/bindings.js';
 import {
   SETTINGS_SECTIONS, SETTING_LABELS, settingControl, settingControlHtml, settingsPageHtml, bindingsSectionHtml,
-  bindSettingControls,
+  bindSettingControls, bindResetPanel, RESET_MESSAGE,
 } from '../js/settings/page.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -195,7 +195,7 @@ test('the page markup is kit components only, one bound control per setting', ()
   assert.match(theme, /<button type="button" role="radio" aria-checked="true" class="ui-segmented__option" data-value="light">Light<\/button>/);
   assert.match(theme, /<button type="button" role="radio" aria-checked="false" class="ui-segmented__option" data-value="dark">Dark<\/button>/);
   const classes = [...html.matchAll(/class="([^"]+)"/g)].flatMap((m) => m[1].split(/\s+/));
-  for (const c of classes) assert.ok(c.startsWith('ui-'), `kit class only, got ${c}`);
+  for (const c of classes) assert.ok(c.startsWith('ui-') || c === 'hidden', `kit class only (and the shell's hidden), got ${c}`);
   for (const s of SETTINGS_SECTIONS) assert.match(html, new RegExp(`<h3 class="ui-heading" id="set-sec-${s.id}">${s.title}</h3>`));
 });
 
@@ -208,6 +208,149 @@ test('the bindings section shows each mode per input device with the pad\'s glyp
     }
   }
   assert.ok(bindingsSectionHtml(GLYPHS.playstation).includes('<kbd class="pad">R2</kbd>'), 'the glyphs follow the controller');
+});
+
+// ---------------------------------------------------------------- the Data panel and Reset all data
+
+test('the page ends, after Bindings, with a Data panel: one line and a "Reset all data…" kit button', () => {
+  const html = settingsPageHtml();
+  const bindings = html.indexOf('id="set-sec-bindings"');
+  const data = html.indexOf('id="set-sec-data"');
+  assert.ok(bindings > 0 && data > bindings, 'Data comes after Bindings');
+  const panel = html.slice(html.lastIndexOf('<section', data));
+  assert.match(panel, /^<section class="ui-panel ui-actions" id="settings-data" aria-labelledby="set-sec-data"><h3 class="ui-heading" id="set-sec-data">Data<\/h3>/);
+  assert.match(panel, /<p class="ui-text ui-text--muted">[^<]*this browser[^<]*<\/p>/, 'one line saying what the action does');
+  assert.match(panel, /<button type="button" class="ui-button ui-button--secondary" id="set-reset">Reset all data…<\/button>/);
+  assert.match(panel, /<p class="ui-text ui-text--warning hidden" id="set-reset-note" role="status"><\/p>/);
+  assert.ok(panel.trimEnd().endsWith('</section>'), 'the page ends with it');
+  assert.doesNotMatch(panel, /export/i, 'no export control or wording yet (W-31)');
+});
+
+test('the confirmation names every kind of data that goes, says it cannot be undone, and offers Reset all data and Cancel', () => {
+  for (const kind of ['records', 'game history', 'replays', 'settings', 'last board choices', 'first-use hints']) {
+    assert.ok(RESET_MESSAGE.includes(kind), `the message names ${kind}`);
+  }
+  assert.match(RESET_MESSAGE, /from this browser/);
+  assert.match(RESET_MESSAGE, /cannot be undone/);
+  assert.doesNotMatch(RESET_MESSAGE, /export|loss/i);
+  const html = settingsPageHtml();
+  const confirm = html.slice(html.indexOf('id="set-reset-confirm"') - 60);
+  assert.match(confirm, /<div class="ui-panel ui-actions hidden" id="set-reset-confirm" role="alertdialog" aria-labelledby="set-reset-text">/);
+  assert.ok(confirm.includes(`<p class="ui-text" id="set-reset-text">${RESET_MESSAGE}</p>`));
+  assert.match(confirm, /<button type="button" class="ui-button ui-button--primary" id="set-reset-yes">Reset all data<\/button>/);
+  assert.match(confirm, /<button type="button" class="ui-button ui-button--secondary" id="set-reset-no">Cancel<\/button>/);
+});
+
+// A fake element with a class list and focus, for the Data panel's binder.
+function panelFake() {
+  let focused = null;
+  const el = (id, cls = '') => {
+    const classes = new Set(cls.split(' ').filter(Boolean));
+    const listeners = {};
+    return {
+      id,
+      textContent: '',
+      disabled: false,
+      classList: {
+        contains: (c) => classes.has(c),
+        toggle: (c, on) => { if (on ?? !classes.has(c)) classes.add(c); else classes.delete(c); },
+        add: (c) => classes.add(c),
+        remove: (c) => classes.delete(c),
+      },
+      addEventListener: (t, f) => { (listeners[t] ??= []).push(f); },
+      focus() { focused = id; },
+      click() { for (const f of listeners.click ?? []) f({ type: 'click', target: this }); },
+      get hidden() { return classes.has('hidden'); },
+    };
+  };
+  const els = {
+    open: el('set-reset'), panel: el('set-reset-confirm', 'hidden'), yes: el('set-reset-yes'), no: el('set-reset-no'),
+    note: el('set-reset-note', 'hidden'),
+  };
+  return { els, focused: () => focused };
+}
+
+test('"Reset all data…" opens the confirmation with focus on Cancel; Cancel closes it, changes nothing, and focus returns', async () => {
+  const { els, focused } = panelFake();
+  let runs = 0;
+  const panel = bindResetPanel(els, { reset: async () => { runs++; return { ok: true }; } });
+  assert.equal(panel.isOpen(), false);
+  els.open.click();
+  assert.equal(panel.isOpen(), true);
+  assert.equal(els.panel.hidden, false);
+  assert.equal(els.open.hidden, true, 'the confirmation shows in place of the button');
+  assert.equal(focused(), 'set-reset-no', 'focus moves to Cancel');
+  els.no.click();
+  assert.equal(panel.isOpen(), false);
+  assert.equal(els.panel.hidden, true);
+  assert.equal(els.open.hidden, false);
+  assert.equal(focused(), 'set-reset', 'focus returns to Reset all data…');
+  assert.equal(runs, 0, 'Cancel changes nothing');
+});
+
+test('Back (close) closes the open confirmation first and returns focus; with none open it does nothing', () => {
+  const { els, focused } = panelFake();
+  const panel = bindResetPanel(els, { reset: async () => ({ ok: true }) });
+  assert.equal(panel.close(), false, 'nothing to close: Back goes on to leave the page');
+  els.open.click();
+  assert.equal(panel.close(), true);
+  assert.equal(panel.isOpen(), false);
+  assert.equal(focused(), 'set-reset');
+  els.open.click();
+  panel.clear(); // leaving the page
+  assert.equal(panel.isOpen(), false);
+  assert.equal(els.note.hidden, true);
+});
+
+test('confirming runs the reset once; a failure replaces the confirmation with the warning and the action stays', async () => {
+  const { els, focused } = panelFake();
+  const results = [{ ok: false, failed: ['replays'], message: 'Replays could not be deleted. The rest was deleted.' }, { ok: true }];
+  let runs = 0;
+  const panel = bindResetPanel(els, { reset: async () => results[runs++] });
+  els.open.click();
+  els.yes.click();
+  els.yes.click(); // a second press while it runs does nothing
+  await tick();
+  assert.equal(runs, 1);
+  assert.equal(panel.isOpen(), false);
+  assert.equal(els.note.hidden, false);
+  assert.equal(els.note.textContent, 'Replays could not be deleted. The rest was deleted.');
+  assert.equal(els.open.hidden, false, 'the action stays available');
+  assert.equal(els.open.disabled, false);
+  assert.equal(focused(), 'set-reset');
+  els.open.click(); // try again
+  assert.equal(els.note.hidden, true);
+  els.yes.click();
+  await tick();
+  assert.equal(runs, 2);
+});
+
+test('a reset that throws is said as a failure, never left hanging', async () => {
+  const { els } = panelFake();
+  const panel = bindResetPanel(els, { reset: async () => { throw new Error('boom'); } });
+  els.open.click();
+  els.yes.click();
+  await tick();
+  assert.equal(panel.isOpen(), false);
+  assert.equal(els.note.hidden, false);
+  assert.match(els.note.textContent, /could not be deleted/);
+});
+
+test('the shell wires the reset: the replay library\'s load awaited, the reload flagged, Back closes the confirmation first', () => {
+  const MAIN = read('js/main.js');
+  assert.match(MAIN, /import \{ createReset \} from '\.\/settings\/reset\.js';/);
+  const wiring = MAIN.slice(MAIN.indexOf('const RESET = createReset('));
+  assert.match(wiring, /^const RESET = createReset\(\{\s*storage,\s*blobStore,/);
+  assert.match(wiring.split('});')[0], /waitFor: async \(\) => \{ await REPLAYS\.load\(\); await REPLAYS\.settled\(\); \}/);
+  assert.match(wiring.split('});')[0], /reload: \(\) => \{ reloading = true; location\.reload\(\); \}/);
+  assert.match(MAIN, /onResetAll: \(\) => RESET\.run\(\)/);
+  for (const fn of ['shellBack', 'historyBack']) {
+    const body = MAIN.slice(MAIN.indexOf(`function ${fn}(`));
+    assert.match(body.slice(0, body.indexOf('\n}')), /ui\.closeControls\(\) \|\| ui\.closeConfirm\(\) \|\| ui\.closeResetConfirm\(\)/, fn);
+  }
+  const UI = read('js/ui.js');
+  assert.match(UI, /bindResetPanel\(/);
+  assert.match(UI, /closeResetConfirm\(\)/);
 });
 
 // ---------------------------------------------------------------- binding to the store, on fakes
@@ -569,6 +712,132 @@ test('in a browser, the Settings page is operable by controller', async (t) => {
     assert.equal(await ms(() => globalThis.__ms.settings.get('invertY')), true, 'A switches the toggle');
     await tap(BTN.B);
     assert.equal(await mode(), 'menu', 'B is Back');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+test('in a browser, Reset all data turns a played profile back into a new player\'s', async (t) => {
+  const playwright = await loadPlaywright();
+  if (!playwright) {
+    t.skip('Playwright is not installed');
+    return;
+  }
+  let browser;
+  try {
+    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  } catch (error) {
+    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
+    return;
+  }
+  const server = await serve();
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    // A fixed board: every board seed the session draws is 12345.
+    await page.addInitScript(() => {
+      const real = crypto.getRandomValues.bind(crypto);
+      crypto.getRandomValues = (a) => { if (a instanceof Uint32Array && a.length === 1) { a[0] = 12345; return a; } return real(a); };
+    });
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined);
+    const ms = (fn, arg) => page.evaluate(fn, arg);
+    const mode = () => ms(() => globalThis.__ms.state.mode);
+    const active = () => ms(() => document.activeElement?.id || '');
+    const visible = (id) => ms((i) => !document.getElementById(i).classList.contains('hidden'), id);
+    const doc = (name) => ms((n) => JSON.parse(localStorage.getItem(`ms3d:doc:${n}`) ?? 'null'), name);
+    const blobCount = () => ms(() => new Promise((resolve) => {
+      const req = indexedDB.open('ms3d-blobs');
+      req.onerror = () => resolve(-1);
+      req.onsuccess = () => {
+        const db = req.result;
+        const count = db.transaction('blobs').objectStore('blobs').count();
+        count.onsuccess = () => { db.close(); resolve(count.result); };
+        count.onerror = () => { db.close(); resolve(-1); };
+      };
+    }));
+
+    // A played profile: a lost Classic 2D game (records, history, a replay, the last mode and board
+    // choice), Dark, a changed setting and the old carried-over keys.
+    await page.click('#menu-entry-classic-2d');
+    if (await page.isChecked('#c2d-noguess')) await page.click('#c2d-noguess');
+    await page.click('#c2d-choice [data-size="beginner"]');
+    const centres = await ms(async () => {
+      const { boardLayout } = await import('/js/classic2d/board-view.js');
+      const r = document.querySelector('#c2d-board canvas').getBoundingClientRect();
+      const L = boardLayout({ cols: 9, rows: 9, width: r.width, height: r.height });
+      return Array.from({ length: 81 }, (_, c) => ({
+        x: r.left + L.offsetX + ((c % 9) + 0.5) * L.tile, y: r.top + L.offsetY + (Math.floor(c / 9) + 0.5) * L.tile,
+      }));
+    });
+    const first = 40;
+    const mines = await ms(async (fc) => {
+      const { generate } = await import('/js/generation/generate.js');
+      const r = generate({ graph: { kind: 'square', width: 9, height: 9 }, mineCount: 10, firstClick: fc, noGuess: false, seed: 12345 });
+      return [...r.mines];
+    }, first);
+    await page.mouse.click(centres[first].x, centres[first].y);
+    await page.waitForFunction(() => globalThis.__ms.modes.state.started);
+    await page.mouse.click(centres[mines[0]].x, centres[mines[0]].y);
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'results');
+    await page.keyboard.press('Escape');
+    assert.equal(await mode(), 'menu');
+    await ms(async () => {
+      await globalThis.__ms.settings.set('theme', 'dark');
+      await globalThis.__ms.settings.set('lookSensitivity', 2);
+      await globalThis.__ms.records.settled();
+      for (const k of ['ms3d.lookSens', 'ms3d.volume', 'ms3d.muted', 'ms3d.invertY', 'ms3d.hintH.done', 'ms3d.custom']) localStorage.setItem(k, '1');
+    });
+    await page.waitForFunction(() => document.querySelector('[data-entry][data-last]') !== null);
+    assert.ok((await doc('records.history')).data.length >= 1, 'the game is in the history');
+    assert.ok(await doc('classic2d.lastChoice'), 'the board choice is kept');
+    for (let i = 0; i < 50 && (await blobCount()) !== 1; i++) await page.waitForTimeout(20);
+    assert.equal(await blobCount(), 1, 'its replay is kept');
+
+    // The Data panel: open, Cancel, Esc — nothing changes and focus comes back.
+    await page.click('#menu-entry-settings');
+    assert.equal(await mode(), 'settings');
+    assert.equal(await visible('set-reset-confirm'), false);
+    await page.click('#set-reset');
+    assert.equal(await visible('set-reset-confirm'), true);
+    assert.equal(await active(), 'set-reset-no', 'focus moves to Cancel');
+    await page.keyboard.press('Enter');
+    assert.equal(await visible('set-reset-confirm'), false);
+    assert.equal(await active(), 'set-reset', 'focus returns');
+    await page.click('#set-reset');
+    await page.keyboard.press('Escape');
+    assert.equal(await mode(), 'settings', 'Esc closes the confirmation first and stays on the page');
+    assert.equal(await visible('set-reset-confirm'), false);
+    assert.equal(await active(), 'set-reset');
+    await page.click('#set-reset');
+    await page.goBack();
+    assert.equal(await mode(), 'settings', 'the browser\'s Back closes it first too');
+    assert.equal(await visible('set-reset-confirm'), false);
+    assert.equal(await ms(() => document.documentElement.getAttribute('data-theme')), 'dark', 'nothing changed');
+    assert.equal(await blobCount(), 1);
+
+    // Confirm: everything goes and the page reloads into a fresh profile.
+    await page.click('#set-reset');
+    await Promise.all([page.waitForEvent('load'), page.click('#set-reset-yes')]);
+    await page.waitForFunction(() => globalThis.__ms !== undefined);
+    assert.equal(await mode(), 'menu');
+    assert.equal(await ms(() => document.documentElement.getAttribute('data-theme')), 'light');
+    assert.equal(await ms(() => globalThis.__ms.settings.get('theme')), 'light');
+    assert.equal(await ms(() => globalThis.__ms.settings.get('lookSensitivity')), 1, 'every setting at its default: nothing carried over');
+    assert.equal(await ms(() => document.querySelector('[data-entry][data-last]')), null, 'no Last played mark');
+    const history = await doc('records.history');
+    assert.ok(history === null || history.data.length === 0, 'an empty history');
+    assert.equal(await doc('classic2d.lastChoice'), null);
+    assert.equal(await doc('shell.lastMode'), null);
+    for (const k of ['ms3d.lookSens', 'ms3d.volume', 'ms3d.muted', 'ms3d.invertY', 'ms3d.hintH.done']) {
+      assert.equal(await ms((key) => localStorage.getItem(key), k), null, `${k} removed`);
+    }
+    assert.equal(await ms(() => localStorage.getItem('ms3d.custom')), '1', 'an unread old key stays');
+    assert.equal(await blobCount(), 0, 'no replay left');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

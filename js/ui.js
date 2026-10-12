@@ -5,7 +5,7 @@
 import { formatOverlayTime, formatMineCount, mineCounterDigits, bindSegmented } from './ui/components.js';
 import { GLYPHS } from './gamepad.js';
 import { bindingsHtml, hudStripHtml, hintStripHtml, helpFootHtml } from './settings/bindings.js';
-import { settingsPageHtml, bindingsSectionHtml } from './settings/page.js';
+import { settingsPageHtml, bindingsSectionHtml, bindResetPanel } from './settings/page.js';
 import { DIM_MIN, DIM_MAX } from './mode3d/board-choice.js';
 import { formatTime } from './results/view.js';
 
@@ -37,7 +37,7 @@ export const NO_MOUSE_MSG = 'Minesweeper 3D needs a mouse and keyboard — open 
 
 export class UI {
   constructor(cb) {
-    this.cb = cb; // { onMenuEntry, onBack, onReadyClick, onReadyDrag, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSound, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D }
+    this.cb = cb; // { onMenuEntry, onBack, onReadyClick, onReadyDrag, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSound, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll }
     this.el = {
       hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), clicks: $('hud-clicks'), size: $('hud-size'), hudTools: $('hud-tools'),
       help: $('help'), helpList: $('help').querySelector('.controls'), helpFoot: $('help-foot'),
@@ -87,6 +87,10 @@ export class UI {
     // The Settings page's controls are generated from the settings schema and bound by the shell.
     $('settings-body').innerHTML = settingsPageHtml();
     this.el.settingsBindings = $('settings-bindings');
+    // The Data panel's Reset all data, behind its confirmation; the shell runs the reset.
+    this._reset = bindResetPanel({
+      open: $('set-reset'), panel: $('set-reset-confirm'), yes: $('set-reset-yes'), no: $('set-reset-no'), note: $('set-reset-note'),
+    }, { reset: () => cb.onResetAll?.() });
     // Controls panel (main menu): Classic 2D and 3D tabs over the bindings component.
     bindSegmented($('controls-tabs'), { horizontal: true, onChange: (mode) => { this._controlsTab = mode; this._renderBindings(); } });
     this._renderBindings();
@@ -197,8 +201,14 @@ export class UI {
   showSettings() {
     this.showMenu();
     this._hideMenus();
+    this._reset.clear(); // left with its confirmation open: it opens closed
     this.el.settingsBindings.innerHTML = bindingsSectionHtml(this._glyphs);
     this.el.settings.classList.remove('hidden');
+  }
+  /** Close the Settings page's Reset all data confirmation (Back); false when none is open. */
+  closeResetConfirm() {
+    if (this.el.settings.classList.contains('hidden')) return false;
+    return this._reset.close();
   }
   /** The Classic 2D board choice, over the menu backdrop. */
   showBoardChoice2D() {

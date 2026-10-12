@@ -3,8 +3,10 @@
 Where replays are kept: every sealed replay is saved to a replay store
 behind the platform layer, the newest 100 unpinned replays are kept and
 older ones removed, and pinned replays — every personal-best game
-automatically, and any replay the player pins — are never removed. The
-player browses, pins and watches them from the Records screen.
+automatically, and any replay the player pins — are never removed by
+retention or a storage failure; only the player's confirmed Reset all data
+(`settings`) deletes them, with every other replay. The player browses,
+pins and watches them from the Records screen.
 
 ## Purpose
 
@@ -39,8 +41,10 @@ Non-goals:
 - Syncing replays through Steam Cloud and the replay store's Steam
   implementation — deferred to `m3-on-steam`.
 - Leaderboard replays — deferred to `m3-on-steam`.
-- Deleting a replay by hand, and resetting the library — in no milestone's
-  slice. Unpinning returns a replay to the rolling 100.
+- Deleting a single replay by hand — in no milestone's slice. Unpinning
+  returns a replay to the rolling 100. The whole library, pinned replays
+  included, is deleted only by `settings`' Reset all data, which waits for
+  the library's start-up load and then deletes every blob and the index.
 - Importing, exporting or sharing replays — in no milestone's slice.
 - The Records screen's board picker, 2D and 3D switch and figures —
   `records-screen` and the Results and records slice of `m2-3d-joins`.
@@ -70,7 +74,8 @@ plain DOM from the `screen-components` kit inside the Records screen.
   index entry is deleted, an index entry with no blob is dropped.
 - **Retention.** After each add or unpin, unpinned replays beyond the
   newest 100, by end date, are deleted, oldest first. Pinned replays are
-  never deleted by retention or by a storage failure.
+  never deleted by retention or by a storage failure; a player-confirmed
+  Reset all data deletes them with the rest.
 - **Best pinning.** The end-of-game hand-off tells the library whether the
   game set any personal best, from the comparison `personal-records`
   returns; such a replay is pinned with the reason "best". The pin stays

@@ -204,7 +204,9 @@ browser supports it. Some browsers only start sound after a key press or a click
   after every game.
 - **Pause menu** (`Esc`): resume, go back to the start view (3D), restart or return to the main menu.
 - **Settings:** mouse sensitivity (0.25×–3×), invert mouse Y and volume. They are saved in
-  `localStorage`. The defaults match the original.
+  `localStorage`. The defaults match the original. "Reset all data" at the bottom of the Settings
+  page deletes the records, history, replays, settings, last board choices and first-use hints
+  from this browser, after a confirmation, and starts the game again as a new player's.
 - **Sound:** synthesized sound effects (Web Audio, no audio files) for revealing, flagging,
   chording, actions that change nothing, explosions and wins. They can be muted.
 - **Visual polish:** procedurally drawn tiles with a distinct colour for each number from 1 to 26, a

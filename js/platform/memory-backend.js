@@ -1,12 +1,13 @@
 // In-memory storage backend, for tests: the backend contract js/platform/storage.js runs over.
 //
-// createMemoryBackend({ initial, available }) → { read, write, keepAside, available, documents, aside }
+// createMemoryBackend({ initial, available }) → { read, write, keepAside, clear, available, documents, aside }
 //   read(name)        → Promise of the stored text, or undefined when there is none (or the
 //                       backend is unavailable).
 //   write(name, text) → Promise; replaces the stored text. Rejects when unavailable.
 //   keepAside(name)   → Promise; moves the stored text out of the way (into `aside`), so the
 //                       next read finds nothing and the text is kept until replaced by another
 //                       keep-aside of the same name. No-op when nothing is stored.
+//   clear()           → Promise; empties `documents` and `aside`, available or not.
 //   available()       → whether writes persist.
 // `documents` and `aside` are the Maps holding the text, exposed for tests to inspect and edit.
 // `initial` is a { name: text } object seeding `documents`.
@@ -31,6 +32,10 @@ export function createMemoryBackend({ initial = {}, available = true } = {}) {
       if (!available || !documents.has(name)) return;
       aside.set(name, documents.get(name));
       documents.delete(name);
+    },
+    async clear() {
+      documents.clear();
+      aside.clear();
     },
   };
 }

@@ -15,15 +15,24 @@
 //                                schema default), carrying data-setting="key"; ids are `set-<key>`.
 //                                With labelledBy, a choice shows no label of its own and takes its
 //                                name from that element.
-// settingsPageHtml()           → the four sections (SETTINGS_SECTIONS) and an empty bindings panel
-//                                (#settings-bindings) for bindingsSectionHtml. A control whose label
-//                                is its section's title is named by the section heading.
+// settingsPageHtml()           → the four sections (SETTINGS_SECTIONS), an empty bindings panel
+//                                (#settings-bindings) for bindingsSectionHtml, and the Data panel
+//                                (#settings-data): its line, the "Reset all data…" button, the
+//                                hidden confirmation (RESET_MESSAGE, Reset all data, Cancel) and the
+//                                hidden warning line. A control whose label is its section's title
+//                                is named by the section heading.
 // bindingsSectionHtml(glyphs?) → each mode's bindings per input device, controller buttons in
 //                                `glyphs`.
 // bindSettingControls(elements, store, { onUserChange? }) → unbind. Each element is a control
 //   root carrying data-setting: it shows the store's value (also the loaded one, and every change
 //   made elsewhere) and writes the player's change to the store at once; onUserChange(key) follows
 //   each such write. An unknown setting throws.
+// bindResetPanel({ open, panel, yes, no, note }, { reset }) → { isOpen, close, clear }. The Data
+//   panel's elements: `open` shows the confirmation `panel` in its place with focus on Cancel
+//   (`no`); Cancel or close() hides it and focuses `open` again. Confirming (`yes`) calls reset()
+//   once → Promise of { ok } (the page reloads) or { ok: false, message }, which replaces the
+//   confirmation by the warning line `note`; the action stays available. close() → false when
+//   nothing is open; clear() closes it and the warning, without moving focus.
 
 import { SCHEMA } from './schema.js';
 import { BINDING_MODES, BINDING_DEVICES, bindingRows, bindingsListHtml } from './bindings.js';
@@ -109,7 +118,77 @@ export function settingsPageHtml() {
     + `${s.settings.map((k) => settingControlHtml(k, undefined, { labelledBy: SETTING_LABELS[k] === s.title ? `set-sec-${s.id}` : null })).join('')}</section>`);
   return `<div class="ui-grid">${sections.join('')}</div>`
     + '<section class="ui-panel" aria-labelledby="set-sec-bindings"><h3 class="ui-heading" id="set-sec-bindings">Bindings</h3>'
-    + '<div id="settings-bindings" class="ui-grid"></div></section>';
+    + '<div id="settings-bindings" class="ui-grid"></div></section>'
+    + dataPanelHtml();
+}
+
+export const RESET_MESSAGE = 'Delete your records, game history, replays, settings, last board choices (Classic 2D and 3D) '
+  + 'and first-use hints from this browser? This cannot be undone.';
+
+// The Data panel: the place of everything about the player's stored data.
+function dataPanelHtml() {
+  return '<section class="ui-panel ui-actions" id="settings-data" aria-labelledby="set-sec-data">'
+    + '<h3 class="ui-heading" id="set-sec-data">Data</h3>'
+    + '<p class="ui-text ui-text--muted">Delete everything the game keeps in this browser and start over as a new player.</p>'
+    + '<p class="ui-text ui-text--warning hidden" id="set-reset-note" role="status"></p>'
+    + '<button type="button" class="ui-button ui-button--secondary" id="set-reset">Reset all data…</button>'
+    + '<div class="ui-panel ui-actions hidden" id="set-reset-confirm" role="alertdialog" aria-labelledby="set-reset-text">'
+    + `<p class="ui-text" id="set-reset-text">${RESET_MESSAGE}</p>`
+    + '<button type="button" class="ui-button ui-button--primary" id="set-reset-yes">Reset all data</button>'
+    + '<button type="button" class="ui-button ui-button--secondary" id="set-reset-no">Cancel</button>'
+    + '</div></section>';
+}
+
+export function bindResetPanel({ open, panel, yes, no, note }, { reset }) {
+  let busy = false;
+  const show = (el, on) => el.classList.toggle('hidden', !on);
+  const isOpen = () => !panel.classList.contains('hidden');
+
+  function close({ focus = true } = {}) {
+    if (!isOpen()) return false;
+    if (busy) return true; // the reset is running: Back waits for its answer
+    show(panel, false);
+    show(open, true);
+    if (focus) open.focus();
+    return true;
+  }
+
+  open.addEventListener('click', () => {
+    show(note, false);
+    show(open, false);
+    show(panel, true);
+    no.focus();
+  });
+  no.addEventListener('click', () => close());
+  yes.addEventListener('click', async () => {
+    if (busy) return;
+    busy = true;
+    yes.disabled = true;
+    no.disabled = true;
+    let result;
+    try {
+      result = await reset();
+    } catch {
+      result = null;
+    }
+    busy = false;
+    yes.disabled = false;
+    no.disabled = false;
+    if (result?.ok) return; // the page reloads
+    note.textContent = result?.message ?? 'Your data could not be deleted.';
+    show(note, true);
+    close();
+  });
+
+  return {
+    isOpen,
+    close,
+    clear() {
+      close({ focus: false });
+      show(note, false);
+      note.textContent = '';
+    },
+  };
 }
 
 export function bindingsSectionHtml(glyphs) {

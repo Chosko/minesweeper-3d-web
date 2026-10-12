@@ -44,12 +44,12 @@ document's browser key directly at start-up.
 ## PUBLIC API
 
 Platform module (`js/platform/index.js`) — what callers import:
-- `storage` and its methods `register`, `load`, `save`, `available`, each
-  re-exported by name.
+- `storage` and its methods `register`, `load`, `save`, `clear`,
+  `available`, each re-exported by name.
 - `blobStore` — the blob store interface over the selected implementation.
 
 Storage interface (`js/platform/storage.js`)
-- `createStorage({ backend })` → `{ register, load, save, available }`.
+- `createStorage({ backend })` → `{ register, load, save, clear, available }`.
 - `register(name, currentVersion, upgrades = {}, { onIssue }?)` — declares a
   document before it is loaded. `currentVersion` an integer `>= 1`;
   `upgrades[v]` for every `1 <= v < currentVersion`, a step `data → data`
@@ -61,6 +61,11 @@ Storage interface (`js/platform/storage.js`)
   error? }`, reason `'not-serializable'`, `'newer-version'` or
   `'write-failed'`. Writes the whole document at its current version. Never
   rejects.
+- `clear()` → Promise of `{ ok: true }` or `{ ok: false, reason:
+  'write-failed', error }`: the backend's `clear()` — every document,
+  registered or not and at any version, and every kept-aside copy, even when
+  the backend is not available. Never rejects. Reset all data
+  ([settings.md](settings.md)) is its caller.
 - `available()` → the backend's answer to whether anything persists this
   session; `false` if it throws.
 - `load` / `save` on an unregistered name throw synchronously — a
@@ -70,12 +75,15 @@ Storage interface (`js/platform/storage.js`)
   (`error`), `save-failed` (`reason`, `error?`).
 
 Backend contract — `read(name)` → text or `undefined`; `write(name, text)`;
-`keepAside(name)`; `available()` → boolean. `read`, `write` and `keepAside`
-may return Promises and may throw.
+`keepAside(name)`; `clear()` (every document and kept-aside copy);
+`available()` → boolean. `read`, `write`, `keepAside` and `clear` may return
+Promises and may throw.
 
 Browser backend (`js/platform/browser-backend.js`)
 - `createBrowserBackend({ getStorage }?)` → `{ read, write, keepAside,
-  available }`. `getStorage` defaults to the global `localStorage`, called
+  clear, available }`; `clear()` removes every `DOC_PREFIX` and
+  `ASIDE_PREFIX` key, is a no-op with no storage and throws when storage
+  does. `getStorage` defaults to the global `localStorage`, called
   once at creation; one that throws or returns nothing means no storage.
 - `DOC_PREFIX` — `'ms3d:doc:'`, the document key prefix; `ASIDE_PREFIX` —
   `'ms3d:aside:'`, the kept-aside copy's prefix. `available()` probes with
@@ -84,7 +92,8 @@ Browser backend (`js/platform/browser-backend.js`)
 Memory backend (`js/platform/memory-backend.js`)
 - `createMemoryBackend({ initial = {}, available = true }?)` → the contract
   plus the `documents` and `aside` Maps, exposed for tests to inspect and
-  edit; `initial` seeds `documents`.
+  edit; `initial` seeds `documents`; `clear()` empties both, available or
+  not.
 
 Blob store interface (`js/platform/blob-store.js`)
 - `createBlobStore({ open, fallback })` → `{ put, get, delete, list,
@@ -148,7 +157,8 @@ IndexedDB blob store (`js/platform/indexeddb-blob-store.js`)
   kept-aside copy under `ASIDE_PREFIX + name`. Unreadable storage reads as
   empty; blocked, missing or full storage refuses writes and is not
   available. It never reads, writes or deletes any other key — the legacy
-  `ms3d.*` keys stay for their owners to carry over once.
+  `ms3d.*` keys are their owners' to carry over once, and the settings
+  feature's to remove on Reset all data.
 - **Blob store.** The interface hands an implementation its own copy of the
   bytes and copies what `get` returns, so neither side can change the
   other's. A write that fails is reported, never thrown; a read that fails

@@ -70,8 +70,9 @@ sound module ([app-shell.md](../../context/app-shell.md),
   feature's in-memory copy while the game runs. The storage layer caches
   nothing.
 - **Legacy keys** — the current build's loose `ms3d.*` keys are left in
-  place; the owning feature reads them once to carry values over, and this
-  layer does not interpret them.
+  place by this layer, which never reads, writes or removes them; the owning
+  feature reads them once to carry values over, and `settings` removes the
+  four it carries over (and the old first-use key) on Reset all data.
 
 ## Interfaces and contracts
 
@@ -82,6 +83,12 @@ sound module ([app-shell.md](../../context/app-shell.md),
   implementation reads files.
 - **Save** — `save(name, data)` writes the whole document at its current
   version; it is asynchronous and reports success or failure.
+- **Clear** — `clear()` removes every document the implementation holds,
+  registered this session or not and at any version, with every kept-aside
+  copy, and reports success or failure without throwing; the browser
+  implementation removes its own namespaced keys and no other. It clears
+  what exists even when nothing persists this session. `settings`' Reset all
+  data is its caller.
 - **Availability** — `available()` says whether anything will persist this
   session, so a caller can tell the player once.
 - **Failure** — storage that cannot be read behaves as empty; a corrupt or

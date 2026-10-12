@@ -36,6 +36,7 @@ import { createResultsView, resultsContent } from './results/view.js';
 import { createRecordsScreen, createRecordsView } from './records/screen.js';
 import { applySettings, pixelRatioFor } from './settings/appliers.js';
 import { bindSettingControls } from './settings/page.js';
+import { createReset } from './settings/reset.js';
 import { createClassic2DMode } from './classic2d/mode.js';
 import { bindBoardChoice } from './classic2d/board-choice.js';
 import { createLastChoice, DEFAULT_CHOICE } from './classic2d/board-setup.js';
@@ -257,6 +258,7 @@ const ui = new UI({
   onPause: () => pauseGame(padGesture ? 'pad' : 'button'),
   onReadyBack: () => readyBack(),
   onToggleSound: () => toggleSound(),
+  onResetAll: () => RESET.run(),
   onDismissHint: (mode) => { FIRST_USE.dismiss(mode); refreshHints(); },
   onRetry2D: () => answer2D(() => mode2d.retry()),
   onStandard2D: () => answer2D(() => { standard2D = true; try { mode2d.playStandard(); } finally { standard2D = false; } }),
@@ -490,6 +492,16 @@ const REPLAYS = createReplayLibrary({
 });
 REPLAYS.load();
 
+// ---------- reset all data ----------
+// The Settings page's Reset all data: every document, replay and carried-over key goes once the
+// replay library has settled, then a reload starts the game as a new player's.
+const RESET = createReset({
+  storage,
+  blobStore,
+  waitFor: async () => { await REPLAYS.load(); await REPLAYS.settled(); },
+  reload: () => { reloading = true; location.reload(); },
+});
+
 // ---------- 3D replay ----------
 // A 3D replay draws on the renderer with its own camera, placed from the recording each frame; player
 // input never moves it. Leaving the replay gives the renderer back the board it drew before.
@@ -592,7 +604,7 @@ MODES.on('started', ({ mode }) => { ui.setLastMode(mode); FIRST_USE.gameStarted(
 /** Back from the keyboard (Esc) or the controller: the topmost layer first, then the router. */
 function shellBack(source) {
   if (ending3D()) return;
-  if (ui.closeControls() || ui.closeConfirm()) return;
+  if (ui.closeControls() || ui.closeConfirm() || ui.closeResetConfirm()) return;
   SHELL.back(source);
 }
 /**
@@ -603,7 +615,7 @@ function shellBack(source) {
  */
 function historyBack() {
   if (ending3D()) return;
-  if (ui.closeControls() || ui.closeConfirm()) return;
+  if (ui.closeControls() || ui.closeConfirm() || ui.closeResetConfirm()) return;
   if (S.mode === 'playing' || S.mode === 'classic-2d') { pauseGame('button'); return; }
   if (S.mode === 'paused' && !gameOver()) return;
   if (S.mode === 'ready' && S.game && S.started) return;

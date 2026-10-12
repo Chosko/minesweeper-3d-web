@@ -17,8 +17,11 @@ read-only bindings list. Every module is DOM-free; `js/main.js` wires them
 - `js/settings/appliers.js` — each setting's effect, applied by its owner
   subscribing to the store; the render-resolution pixel-ratio rule.
 - `js/settings/page.js` — the Settings page markup generated from the schema,
-  the bindings section, and the binder that ties any setting control (page,
-  pause card, main menu) to the store.
+  the bindings section, the Data panel and its confirmation's binder, and the
+  binder that ties any setting control (page, pause card, main menu) to the
+  store.
+- `js/settings/reset.js` — Reset all data: clears every document, replay blob
+  and reset key, then reloads; reports what could not be deleted.
 - `js/settings/bindings.js` — the bindings source: each mode's controls per
   input device, the HUD strip, the first-use hint strips, the help panel's
   foot line and the one-time hints' text, read by the Settings page and by
@@ -95,14 +98,41 @@ Page (`js/settings/page.js`)
   `labelledBy` a choice shows no label of its own and is named by that
   element.
 - `settingsPageHtml()` — the four sections in a `ui-grid` (a control whose
-  label is its section's title, Theme, is named by the section heading) and
-  an empty Bindings panel (`#settings-bindings`); `bindingsSectionHtml(glyphs?)` — one
+  label is its section's title, Theme, is named by the section heading), an
+  empty Bindings panel (`#settings-bindings`) and last the Data panel
+  (`#settings-data`): its line, the warning line `#set-reset-note`
+  (`ui-text--warning`, hidden), the "Reset all data…" button `#set-reset`
+  and the hidden confirmation `#set-reset-confirm` (`RESET_MESSAGE`,
+  `#set-reset-yes` "Reset all data", `#set-reset-no` Cancel), in the pause
+  card's confirmation style; `bindingsSectionHtml(glyphs?)` — one
   `dl.controls` per mode and input device.
+- `bindResetPanel({ open, panel, yes, no, note }, { reset })` → `{ isOpen,
+  close, clear }`: `open` shows the confirmation in its place with focus on
+  Cancel; Cancel or `close()` (→ false when closed; true and nothing done
+  while the reset runs) hides it and focuses `open`; confirming disables both
+  buttons and calls `reset()` once — on `{ ok: false, message }` (or a throw)
+  the warning line says the message in place of the confirmation; `clear()`
+  closes both without moving focus.
 - `bindSettingControls(elements, store, { onUserChange? })` → unbind. Each
   element is a control root carrying `data-setting`; it shows the store's
   value (the loaded one and every change made elsewhere) and writes the
   player's change at once, then calls `onUserChange(key)`. An unknown setting
   or a root that is no slider, toggle or segmented throws.
+
+Reset (`js/settings/reset.js`)
+- `RESET_KEYS` — `LEGACY_KEYS`' four keys and `FIRST_USE_LEGACY_KEY`
+  (`ms3d.hintH.done`); `ms3d.custom`, `ms3d.best.*` and `ms3d.lastPreset`
+  stay.
+- `createReset({ storage, blobStore, legacy?, waitFor?, reload })` →
+  `{ run }`. `legacy` is `{ remove(key) }` (default the global
+  `localStorage`; blocked or missing storage has nothing to remove).
+  `run()` awaits `waitFor()` (a rejection ignored), then `storage.clear()`,
+  deletes every blob `blobStore.list()` names, removes `RESET_KEYS`, each
+  part attempted whatever failed before it; all cleared → `reload()` once and
+  `{ ok: true }`; otherwise no reload and `{ ok: false, failed, message }`,
+  `failed` from `'documents'`, `'replays'`, `'keys'`, the message naming
+  each and "The rest was deleted." unless all three failed. Never rejects.
+- `failureMessage(failed)` — that message.
 
 Bindings (`js/settings/bindings.js`)
 - `BINDING_MODES` (`classic-2d`, `3d`), `BINDING_DEVICES` (`keyboard`,
@@ -157,7 +187,18 @@ Bindings (`js/settings/bindings.js`)
   no load trouble: each legacy key is read the old owner's way (sensitivity
   `parseFloat`, volume `Number`, both clamped; booleans true only on `'1'`;
   a throwing reader counts as no value), then the whole document is saved.
-  The legacy keys themselves are never written or deleted.
+  The store never writes or deletes the legacy keys; Reset all data removes
+  them, so the start after a reset carries nothing over.
+- **Reset all data.** `js/main.js` builds `RESET` with `storage`,
+  `blobStore`, `waitFor` the replay library's `load()` then `settled()`, and
+  a `reload` that sets the leave-page guard's `reloading` and calls
+  `location.reload()`; `UI`'s `onResetAll` runs it. The fresh profile comes
+  from the reload: every owner loads its document at start-up, so no store
+  has a reset of its own. `UI.closeResetConfirm()` (→ false when none is
+  open, or the page is hidden) comes after `closeControls` and
+  `closeConfirm` in `shellBack` and `historyBack`, so Esc, the controller's
+  Back and the browser's Back close the confirmation before leaving the
+  page; `showSettings` opens the page with it closed.
 - **Controls are bound by `data-setting`.** The page's generated controls,
   the pause card's sensitivity, invert-Y and volume shortcuts (the first two
   shown only on a 3D game's pause card) and the main menu's volume slider
@@ -197,7 +238,8 @@ Bindings (`js/settings/bindings.js`)
 - [input.md](input.md) — `FlyCamera.sensitivity` / `invertY`; the controller
   glyphs (`js/gamepad.js` `GLYPHS`) the bindings list draws.
 - [testing.md](testing.md) — `tests/settings-store.test.mjs`,
-  `tests/settings-appliers.test.mjs`, `tests/settings-page.test.mjs`.
+  `tests/settings-appliers.test.mjs`, `tests/settings-page.test.mjs`,
+  `tests/settings-reset.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 
@@ -211,6 +253,9 @@ Bindings (`js/settings/bindings.js`)
   `enterFullscreen` / `exitFullscreen` pair in `js/main.js`.
 - A control not updating or not saving: the per-kind binders in `page.js`
   (`bindSlider`, `bindToggle`, `bindChoice`).
+- Adding something the game keeps outside platform storage and the blob
+  store, which Reset all data must also delete: `RESET_KEYS` and `run` in
+  `reset.js`.
 - Changing a mode's listed bindings, a strip's or hint's words, or adding a
   mode or device: `BINDINGS`, the strip and hint tables and the row-text
   syntax in `bindings.js`.

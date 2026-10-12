@@ -2,7 +2,7 @@
 // plain data, each stored as the text of { version, data }, over a pluggable backend. It caches
 // nothing: every load reads the backend.
 //
-// createStorage({ backend }) → { register, load, save, available }
+// createStorage({ backend }) → { register, load, save, clear, available }
 //   register(name, currentVersion, upgrades, { onIssue }?)
 //       Declares a document before it is loaded. currentVersion is an integer >= 1; upgrades
 //       maps every earlier version v (1 <= v < currentVersion) to a step data → data (or a
@@ -18,6 +18,9 @@
 //       document at its current version. Reasons: 'not-serializable' (data is not JSON data),
 //       'newer-version' (the stored document is newer than currentVersion; it is left
 //       untouched), 'write-failed' (the backend refused). Never rejects.
+//   clear() → Promise of { ok: true } or { ok: false, reason: 'write-failed', error? }; removes
+//       every document the backend holds — registered or not, at any version — and every
+//       kept-aside copy. Clears what exists even when nothing persists this session. Never rejects.
 //   available() → whether anything will persist this session (the backend's answer).
 // load and save on an unregistered name throw synchronously: that is a programming error.
 //
@@ -29,8 +32,8 @@
 //   { kind: 'save-failed', reason, error? } — a save (or an upgrade's save-back) failed.
 //
 // Backend contract (js/platform/memory-backend.js is the reference): read(name) → text or
-// undefined, write(name, text), keepAside(name), available() → boolean. read, write and
-// keepAside may return Promises and may throw.
+// undefined, write(name, text), keepAside(name), clear() (every document and kept-aside copy),
+// available() → boolean. read, write, keepAside and clear may return Promises and may throw.
 
 const isVersion = (v) => Number.isInteger(v) && v >= 1;
 
@@ -172,6 +175,15 @@ export function createStorage({ backend }) {
     return saveDocument(name, declaration(name), data);
   }
 
+  async function clear() {
+    try {
+      await backend.clear();
+    } catch (error) {
+      return { ok: false, reason: 'write-failed', error };
+    }
+    return { ok: true };
+  }
+
   function available() {
     try {
       return Boolean(backend.available());
@@ -180,5 +192,5 @@ export function createStorage({ backend }) {
     }
   }
 
-  return { register, load, save, available };
+  return { register, load, save, clear, available };
 }

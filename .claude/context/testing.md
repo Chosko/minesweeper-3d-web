@@ -93,12 +93,15 @@ browser checks for everything that needs WebGL or the DOM.
   malformed declarations, `{ version, data }` round-trips, no cache, every
   upgrade path saved back, async steps, a failed save-back, newer documents
   refused on load and save, corrupt and unreadable documents kept aside,
-  failing `onIssue` handlers, failed and non-serialisable saves, the memory
-  backend itself, and that `js/platform/` is DOM-free.
+  failing `onIssue` handlers, failed and non-serialisable saves, `clear()`
+  (registered, unregistered, kept-aside and newer documents gone, an
+  unavailable backend still cleared, a throwing backend clear reported, never
+  rejected), the memory backend itself, and that `js/platform/` is DOM-free.
 - `tests/platform-browser.test.mjs` — the browser backend
   (`js/platform/browser-backend.js`) over a `FakeStorage` with an optional
   quota: namespaced keys, the legacy `ms3d.*` keys never touched, blocked,
-  throwing, missing and full storage, the kept-aside copy, the platform
+  throwing, missing and full storage, the kept-aside copy, `clear()`
+  removing every document and kept-aside key and no other, the platform
   module's start-up selection (`js/platform/index.js`), that no other module
   imports a backend, and one Playwright test that a saved document survives
   a page reload (skipped when Playwright or chromium is unavailable).
@@ -924,6 +927,15 @@ browser checks for everything that needs WebGL or the DOM.
   through the browser backend and falling back to Light; the sound module
   and `js/ui.js` keeping no settings keys of their own. One Playwright test
   applies a theme and a resolution change at once.
+- `tests/settings-reset.test.mjs` — the reset (`js/settings/reset.js`) over
+  the memory backend, the memory blob store and a fake legacy key store:
+  `RESET_KEYS` (the four carried-over keys and `ms3d.hintH.done`, no unread
+  key), every document, kept-aside copy, blob and reset key gone before the
+  one reload, the wait for the replay library's load (a deferred load and a
+  real `createReplayLibrary`), unavailable storage still cleared, each
+  failure (documents, a blob list or delete, a key removal) named with the
+  rest cleared and no reload, a retry, the default legacy remover over a
+  fake and a blocked `localStorage`, and the module DOM-free.
 - `tests/settings-page.test.mjs` — the bindings source
   (`js/settings/bindings.js`: every mode × device, the Classic 2D keyboard
   rows naming every `CURSOR_KEYS` key, the 3D right-click and `{lt}` on a
@@ -938,14 +950,20 @@ browser checks for everything that needs WebGL or the DOM.
   range from the schema, kit-only markup, the
   bindings section per device in the pad's glyphs, `bindSettingControls`
   over stub elements showing loaded and later values, writing at once and
-  reporting the change, refusing an unknown setting; static checks of the
+  reporting the change, refusing an unknown setting; the Data panel after
+  Bindings, `RESET_MESSAGE` naming every kind of data, and `bindResetPanel`
+  over fakes (focus to Cancel and back, Cancel and `close()` changing
+  nothing, one run per confirm, a failure's warning line, a throwing reset);
+  the shell's reset wiring and Back closing the confirmation; static checks of the
   `#settings` markup, the sticky Back row (`#settings-actions`), the
   choices' and the Controls panel tabs' horizontal binding, the pause-card and menu `data-setting`
   shortcuts, the menu entry's route, focus, Back and controller layer, and
   the catalogue entry, and Sound before Volume on the main menu and the
-  pause card. Two Playwright tests: Settings from the menu, Dark chosen and
-  applied before the menu shows after a reload; and the page operated by a
-  fake controller.
+  pause card. Three Playwright tests: Settings from the menu, Dark chosen and
+  applied before the menu shows after a reload; the page operated by a
+  fake controller; and a played profile (a lost Classic 2D game, Dark, the
+  old keys) back to a new player's after Reset all data, with Cancel, Esc
+  and the browser's Back closing the confirmation first.
 - `.claude/external/run-full-tests.sh` — `cd` to repo root, `exec node --test`.
 - `.claude/external/run-affected-tests.sh <test-file>...` — `node --test` on the
   given files; exits 2 with usage when called with no arguments.
@@ -971,7 +989,7 @@ browser checks for everything that needs WebGL or the DOM.
   `tests/shell-first-use.test.mjs`, three in `tests/shell-pause.test.mjs` and `tests/shell-help.test.mjs`), the spawn and
   return-to-start test in `tests/camera-spawn.test.mjs`, the 3D tests in
   `tests/mode3d-board-choice.test.mjs` and `tests/mode3d-session.test.mjs`, the
-  theme-and-resolution test in `tests/settings-appliers.test.mjs` and the two page tests in
+  theme-and-resolution test in `tests/settings-appliers.test.mjs` and the three page tests in
   `tests/settings-page.test.mjs`.
 
 No `package.json`, no dependencies: Node 22 built-in runner (`node:test`,

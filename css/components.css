@@ -238,7 +238,11 @@
      data-setting; a control whose label would repeat its section's
      heading shows none and is named by the heading, as Theme is; Audio
      holds Sound, on while sound plays, then Volume), a ui-panel of the read-only bindings of each mode per
-     input device (the help panel's controls list), and ui-actions--row
+     input device (the help panel's controls list), the Data ui-panel (a
+     ui-text--muted line, a ui-text--warning line hidden until a reset
+     fails, the "Reset all data…" secondary button and its confirmation, a
+     ui-panel ui-actions as the pause card's: the message, the "Reset all
+     data" primary button and Cancel), and ui-actions--row
      (Back primary), sticky at the bottom of the card's scroll area so Back
      is always in view (#settings-actions, css/style.css).
      Default focus: the look sensitivity slider.

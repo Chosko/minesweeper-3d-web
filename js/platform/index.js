@@ -5,7 +5,7 @@
 // (js/platform/indexeddb-blob-store.js) for blobs, falling back to memory
 // (js/platform/memory-blob-store.js) when IndexedDB is unavailable or refuses to open.
 //
-// Exports `storage` and its methods `register`, `load`, `save`, `available` — the interface
+// Exports `storage` and its methods `register`, `load`, `save`, `clear`, `available` — the interface
 // documented in js/platform/storage.js — and `blobStore`, the interface documented in
 // js/platform/blob-store.js.
 
@@ -16,7 +16,7 @@ import { openIndexedDBBlobStore } from './indexeddb-blob-store.js';
 import { createMemoryBlobStore } from './memory-blob-store.js';
 
 export const storage = createStorage({ backend: createBrowserBackend() });
-export const { register, load, save, available } = storage;
+export const { register, load, save, clear, available } = storage;
 
 export const blobStore = createBlobStore({
   open: () => openIndexedDBBlobStore(),

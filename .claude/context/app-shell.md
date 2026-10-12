@@ -270,12 +270,14 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   `onToggleSound`, `onDismissHint(mode)` (the hint strip's ×),
   `onRetry2D`, `onStandard2D`, `onOfferMenu2D` (the failed Classic 2D
   board's offer), `onCancel2D` (its generating card), `onRetry3D`,
-  `onStandard3D`, `onOfferMenu3D`, `onCancel3D` (the same over the 3D box).
+  `onStandard3D`, `onOfferMenu3D`, `onCancel3D` (the same over the 3D box),
+  `onResetAll` (the Settings page's confirmed Reset all data → its result).
   Methods: screens `showMenu`, `showBoardChoice`,
   `showBoardChoice2D`, `showComingSoon(title)`, `showRecords` (the menu
   backdrop with the other menu screens hidden; the records view fills and
   shows `#records`), `showSettings` (its bindings
-  in the active controller's glyphs),
+  in the active controller's glyphs, the Reset all data confirmation and
+  warning closed),
   `showReady(board, msg, {rules, blocked})` (the board line with its mines, the
   "How 3D works" block `#ready-rules` while `rules`, the drag-to-look and
   controller offer `#ready-blocked` while `blocked`), `showPlaying`,
@@ -290,7 +292,9 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   3D `setBoardStatus3D({generating, failure})` (`#m3d-status`); menu
   `setLastMode(mode|null)`; pause confirmation
   `showConfirm({message, confirmLabel}, onYes, onNo)`, `isConfirmOpen`,
-  `closeConfirm` (→ false when none is open); HUD `setBoard(board)` (3D),
+  `closeConfirm` (→ false when none is open); the Settings page's Reset all
+  data confirmation `closeResetConfirm` (→ false when none is open,
+  [settings.md](settings.md)); HUD `setBoard(board)` (3D),
   `updateHud(time, minesLeft, clicks?)` (overlay formats and the click
   count, DOM write only on change; without `clicks` the readout stays),
   `setModes`, `setCrosshair`, `setArrow(angle|null)` (the off-screen arrow `#crosshair-arrow` beside
@@ -397,8 +401,9 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   boot from the navigation entry's type. The URL never changes; a reload
   opens the main menu.
 - **Back inputs.** `shellBack(source)` does nothing during the 3D end delay;
-  otherwise it closes the controls modal or the pause confirmation first,
-  then calls `SHELL.back`. Esc (`isBackKey`) reaches it
+  otherwise it closes the controls modal, the pause confirmation or the
+  Settings page's Reset all data confirmation first, then calls
+  `SHELL.back`. Esc (`isBackKey`) reaches it
   through `Input`'s `onKey`; the board choice's, placeholder's and Settings
   page's Back buttons through `onBack`, the Records screen's Back
   (`#records-back`) through its view's `onBack`; the controller's back buttons through
@@ -418,7 +423,7 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   which `escResumes` refuses. The browser's
   Back (and a mouse's back button) is `historyBack`, run by `HISTORY` on a
   `popstate` back: nothing during the 3D end delay, the controls modal or
-  confirmation closes first, the board (`playing`, `classic-2d`) pauses
+  either confirmation closes first, the board (`playing`, `classic-2d`) pauses
   through `pauseGame('button')`, the pause card of an unfinished game and a
   started game's ready card hold the game, anything else is
   `SHELL.back('history')`; `HISTORY` then restores the consumed entry when
@@ -608,7 +613,7 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   controller at game started and removed when the game finishes, is
   abandoned or its mode fails, so it guards only a started, unfinished game
   (Ctrl is a game key and Ctrl+W cannot be intercepted). The context-lost
-  reload sets `reloading` to bypass it, and it does not guard a 3D game in
+  reload and Reset all data's reload set `reloading` to bypass it, and it does not guard a 3D game in
   its end delay, which `pagehide` finishes at once (`mode3d.finishNow()`)
   so it is recorded finished, not abandoned.
 - **Context loss.** `webglcontextlost` sets `contextLost`; in a 3D game the
@@ -873,8 +878,9 @@ Component kit (`css/components.css`, catalogue in its head comment):
 - Settings page (`#settings`): a `ui-card ui-screen--wide` whose
   `#settings-body` `UI` fills at construction with `settingsPageHtml()` — a
   `ui-grid` of Controls, Graphics, Theme and Audio `ui-panel` sections, one
-  `data-setting` control per setting (Audio: Sound, then Volume) — and a Bindings panel
-  (`#settings-bindings`) redrawn by `showSettings`; a primary Back in
+  `data-setting` control per setting (Audio: Sound, then Volume) — a Bindings panel
+  (`#settings-bindings`) redrawn by `showSettings`, and last the Data panel
+  (`#settings-data`, Reset all data, [settings.md](settings.md)); a primary Back in
   `#settings-actions`, a sticky row at the bottom of the card's scroll area
   (`css/style.css`), with `#settings`'s `scroll-padding-bottom` keeping a
   focused control above it.

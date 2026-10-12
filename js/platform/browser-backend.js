@@ -3,7 +3,7 @@
 // namespaced key, DOC_PREFIX + name; a corrupt document's text is kept aside under
 // ASIDE_PREFIX + name. It never touches any other key, the legacy `ms3d.*` keys included.
 //
-// createBrowserBackend({ getStorage }?) → { read, write, keepAside, available }
+// createBrowserBackend({ getStorage }?) → { read, write, keepAside, clear, available }
 //   getStorage() → the Storage object to use; defaults to the global localStorage. Called once,
 //                  at creation. A getter that throws (storage blocked) or returns nothing means
 //                  there is no storage: nothing is read and every write fails.
@@ -13,6 +13,8 @@
 //   keepAside(name)   → copies the stored text to the aside key, replacing an earlier kept copy,
 //                       then removes it from the document key. No-op when nothing is stored;
 //                       throws, leaving the document in place, when the copy cannot be stored.
+//   clear()           → removes every DOC_PREFIX and ASIDE_PREFIX key and no other key. No-op when
+//                       there is no storage; throws when storage refuses it.
 //   available()       → whether a write persists this session (a probe write and remove).
 
 export const DOC_PREFIX = 'ms3d:doc:';
@@ -51,6 +53,16 @@ export function createBrowserBackend({ getStorage = () => globalThis.localStorag
     storage.removeItem(DOC_PREFIX + name);
   }
 
+  function clear() {
+    if (!storage) return;
+    const keys = [];
+    for (let i = 0; i < storage.length; i++) {
+      const key = storage.key(i);
+      if (key?.startsWith(DOC_PREFIX) || key?.startsWith(ASIDE_PREFIX)) keys.push(key);
+    }
+    for (const key of keys) storage.removeItem(key);
+  }
+
   function available() {
     if (!storage) return false;
     try {
@@ -62,5 +74,5 @@ export function createBrowserBackend({ getStorage = () => globalThis.localStorag
     }
   }
 
-  return { read, write, keepAside, available };
+  return { read, write, keepAside, clear, available };
 }

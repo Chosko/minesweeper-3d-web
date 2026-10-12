@@ -43,12 +43,15 @@ In scope (m1-classic-2d):
 Non-goals:
 
 - 3D boards and 3D games in records — deferred to `m2-3d-joins`. Their old
-  per-size best times stay in browser storage untouched by this feature.
+  per-size best times stay in browser storage, untouched by this feature
+  and by `settings`' Reset all data.
 - Replays and the replay library — deferred to `m2-3d-joins`.
 - Steam Cloud sync of records — deferred to `m3-on-steam`, through the
   Steam implementation of `platform-storage`.
 - Leaderboards and Steam ranks — deferred to `m3-on-steam`.
-- Resetting or deleting records — no milestone's slice includes it.
+- Deleting single records or games — no milestone's slice includes it. All
+  records go only through `settings`' Reset all data, which deletes the
+  records, the history and the in-progress marker, at any version.
 - Campaign and daily boards in records — deferred to `m4-campaigns` and
   `m5-core-complete`.
 
@@ -133,7 +136,9 @@ DOM-free ES module tested in Node; storage is reached only through
   can say once that records are not being saved.
 - **Failure** — a refused newer records version leaves the stored
   documents untouched and runs the session with empty records that are not
-  saved, so a newer build's records are never overwritten by an older one.
+  saved, so a newer build's records are never overwritten by an older one;
+  a player-confirmed Reset all data deletes a newer-version document like
+  any other.
 
 ## Dependencies
 

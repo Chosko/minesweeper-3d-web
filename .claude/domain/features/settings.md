@@ -69,11 +69,24 @@ settings handling for the shell's UI module and the sound module ([app-shell.md]
   3D renderer's pixel ratio, and the browser's fullscreen state. The store
   knows none of them.
 - **Settings page.** The page itself: sections for controls, graphics,
-  theme and audio, each control bound to one schema entry, with Back to the
-  screen it was opened from in a sticky action row at the bottom of the
-  page, so Back stays in view at any scroll position and a focused control
-  is never under it. The bindings list reads the same source as the in-game
-  help, so the two never disagree.
+  theme and audio, each control bound to one schema entry, then the
+  bindings list, and last a Data panel, with Back to the screen it was
+  opened from in a sticky action row at the bottom of the page, so Back
+  stays in view at any scroll position and a focused control is never under
+  it. The bindings list reads the same source as the in-game help, so the
+  two never disagree.
+- **Reset all data.** The Data panel's one action. Its confirmation, in the
+  panel, names what goes — records, game history, replays, settings, the
+  last board choices (Classic 2D and 3D) and the first-use hints — and says
+  it is deleted from this browser for good; focus moves to Cancel, and
+  Cancel, Back or leaving the page change nothing. Confirming waits for the
+  replay library's start-up load, then clears every document and kept-aside
+  copy (`platform-storage`'s clear), every replay blob and the carried-over
+  legacy keys with the old first-use key, and reloads the page, so every
+  owner starts from nothing as a new player's game does. A part that cannot
+  be deleted is named in a warning line in place of the confirmation, the
+  rest is still cleared, nothing reloads and the action stays available.
+  The Data panel is where the later export (W-31) goes, before the reset.
 - **Pause-card shortcuts.** The pause card keeps quick access to volume in
   both modes, and to look sensitivity and invert Y on a 3D game's pause card
   only, bound to the same store.
@@ -91,7 +104,8 @@ settings handling for the shell's UI module and the sound module ([app-shell.md]
 - **Carried-over values** — on first start with no settings document, the
   store reads the current build's separate keys for sensitivity, invert Y,
   volume and mute once, writes them into the new document, and from then on
-  reads only the document.
+  reads only the document. Reset all data removes those keys, so the start
+  after a reset carries nothing over and every setting takes its default.
 - **Fullscreen** — the browser can leave fullscreen on its own (the player
   presses Esc); the store follows the browser's state rather than fighting
   it.

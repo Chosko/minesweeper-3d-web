@@ -315,9 +315,50 @@ test('saving to an unavailable backend fails and is reported', async () => {
   assert.equal(await storage.load('doc'), undefined);
 });
 
+// ---------------------------------------------------------------- clear
+
+test('clear() removes every document the backend holds: registered, unregistered, kept aside and newer', async () => {
+  const { storage, backend, onIssue } = setup({
+    initial: { registered: raw(1, 'a'), unregistered: raw(1, 'b'), newer: raw(9, 'c'), bad: '{not json' },
+  });
+  storage.register('registered', 1, {}, { onIssue });
+  storage.register('newer', 1, {}, { onIssue });
+  storage.register('bad', 1, {}, { onIssue });
+  await storage.load('bad'); // kept aside
+  assert.equal(backend.aside.has('bad'), true);
+  assert.deepEqual(await storage.clear(), { ok: true });
+  assert.equal(backend.documents.size, 0);
+  assert.equal(backend.aside.size, 0);
+  assert.equal(await storage.load('registered'), undefined);
+  assert.equal(await storage.load('newer'), undefined);
+  assert.deepEqual(await storage.save('newer', 'fresh'), { ok: true }, 'nothing newer is left to refuse a save');
+});
+
+test('clear() on an empty backend succeeds', async () => {
+  const { storage } = setup();
+  assert.deepEqual(await storage.clear(), { ok: true });
+});
+
+test('clear() still clears what exists when the backend is unavailable for the session', async () => {
+  const { storage, backend } = setup({ initial: { a: raw(1, 1) }, available: false });
+  assert.deepEqual(await storage.clear(), { ok: true });
+  assert.equal(backend.documents.size, 0);
+});
+
+test('a backend whose clear throws gives { ok: false } and clear() never rejects', async () => {
+  for (const clear of [() => { throw new Error('sync'); }, async () => { throw new Error('async'); }]) {
+    const backend = { ...createMemoryBackend(), clear };
+    const storage = createStorage({ backend });
+    const result = await storage.clear();
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, 'write-failed');
+    assert.ok(result.error instanceof Error);
+  }
+});
+
 // ---------------------------------------------------------------- memory backend
 
-test('the memory backend implements read, write, keep-aside and available', async () => {
+test('the memory backend implements read, write, keep-aside, clear and available', async () => {
   const b = createMemoryBackend({ initial: { a: 'x' } });
   assert.equal(await b.read('a'), 'x');
   assert.equal(await b.read('missing'), undefined);
@@ -329,6 +370,9 @@ test('the memory backend implements read, write, keep-aside and available', asyn
   assert.equal(b.available(), true);
   await b.keepAside('missing');
   assert.equal(b.aside.has('missing'), false);
+  await b.clear();
+  assert.equal(b.documents.size, 0);
+  assert.equal(b.aside.size, 0);
 });
 
 test('an unavailable memory backend reads nothing and refuses writes', async () => {

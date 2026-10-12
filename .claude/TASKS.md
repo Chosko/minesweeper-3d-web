@@ -794,7 +794,7 @@ Preconditions: none
 
 ## 131. Reset all data
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/platform/storage.js, js/platform/browser-backend.js, js/platform/memory-backend.js, js/platform/index.js, js/settings/reset.js, js/settings/page.js, js/ui.js, js/main.js, css/style.css, tests/platform-storage.test.mjs, tests/platform-browser.test.mjs, tests/settings-page.test.mjs, tests/settings-reset.test.mjs, README.md, .claude/domain/features/settings.md, .claude/domain/features/platform-storage.md, .claude/domain/features/replay-library.md, .claude/domain/features/personal-records.md
 Preconditions: none

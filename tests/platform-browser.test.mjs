@@ -130,6 +130,32 @@ test('the legacy ms3d.* keys are never read, written or deleted', async () => {
   }
 });
 
+test('clear removes every document and kept-aside key and leaves every other key in place', async () => {
+  const others = { ...LEGACY, 'ms3d.lookSens': '1.5', 'ms3d.hintH.done': '1', 'other-app': 'keep', 'ms3d:docx': 'keep' };
+  const fake = new FakeStorage({
+    ...others,
+    [DOC_PREFIX + 'settings']: raw(1, { theme: 'dark' }),
+    [DOC_PREFIX + 'records.history']: raw(1, []),
+    [DOC_PREFIX + 'future']: raw(99, 'newer'),
+    [ASIDE_PREFIX + 'records']: '{not json',
+  });
+  const { storage } = setup(fake);
+  assert.deepEqual(await storage.clear(), { ok: true });
+  assert.deepEqual(Object.fromEntries(fake.map), others);
+  for (const [method, key] of fake.calls) {
+    assert.ok(!key.startsWith('ms3d.'), `${method}(${key}) touched a legacy key`);
+  }
+});
+
+test('clear over storage that throws is a failure, never thrown; with no storage it has nothing to do', async () => {
+  const blocked = setup(throwingStorage);
+  const result = await blocked.storage.clear();
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'write-failed');
+  const none = setup(null);
+  assert.deepEqual(await none.storage.clear(), { ok: true });
+});
+
 // ---------------------------------------------------------------- unavailable storage
 
 test('storage whose every call throws reads as empty, refuses writes and is not available', async () => {
@@ -271,7 +297,7 @@ test('the platform module exposes the storage interface over the browser backend
     const first = new FakeStorage();
     Object.defineProperty(globalThis, 'localStorage', { value: first, configurable: true, writable: true });
     const platform = await import('../js/platform/index.js?selection');
-    for (const fn of ['register', 'load', 'save', 'available']) {
+    for (const fn of ['register', 'load', 'save', 'available', 'clear']) {
       assert.equal(typeof platform[fn], 'function', fn);
       assert.equal(platform.storage[fn], platform[fn], fn);
     }
