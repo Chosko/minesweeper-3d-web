@@ -67,6 +67,14 @@ test('the 3D keyboard bindings name Home and R, which return the camera to the s
   assert.equal(bindingRows('classic-2d', 'keyboard').some(([input]) => input.includes('[Home]')), false, 'not in Classic 2D');
 });
 
+test('the 3D bindings say what a right-click and {lt} on a number do, and that a second one takes back only those flags', () => {
+  const right = bindingRows('3d', 'keyboard').find(([input]) => input === 'Right click');
+  assert.deepEqual([...right], ['Right click', 'Flag / unflag. On a number: flag all its closed neighbours; right-click it again to take back only those flags']);
+  const lt = bindingRows('3d', 'controller').find(([input]) => input === '{lt} on a number');
+  assert.deepEqual([...lt], ['{lt} on a number', 'Flag all its closed neighbours; {lt} on it again takes back only those flags']);
+  assert.ok(bindingRows('3d', 'controller').findIndex((r) => r === lt) > bindingRows('3d', 'controller').findIndex(([input]) => input === '{rt} / {lt}'), 'after the flag button\'s own row');
+});
+
 test('bindingsListHtml renders keys as <kbd>, controller buttons as the pad\'s glyphs, and escapes text', () => {
   const html = bindingsListHtml([['[W][A] then Left & right', 'Fly <fast>'], ['{rt} / {lt}', 'Reveal with {a}']], GLYPHS.playstation);
   assert.equal(html,

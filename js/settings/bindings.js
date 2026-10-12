@@ -63,7 +63,7 @@ export const BINDINGS = Object.freeze({
       ['[Q] [E]', 'Move down / up'],
       ['[Home] / [R]', 'Back to the start view'],
       ['Left click', 'Reveal the aimed cube'],
-      ['Right click', 'Flag / unflag (on a number: flag or unflag all its closed neighbours)'],
+      ['Right click', 'Flag / unflag. On a number: flag all its closed neighbours; right-click it again to take back only those flags'],
       ['Left + Right', 'Chord: reveal neighbours of a satisfied number'],
       ['Wheel', 'Change spacing between cubes'],
       ['Hold [Shift]', 'Fade everything except the aimed cube\'s neighbours'],
@@ -75,6 +75,7 @@ export const BINDINGS = Object.freeze({
     controller: rows([
       ['Left / right stick', 'Fly / look around'],
       ['{rt} / {lt}', 'Reveal / flag (on release)'],
+      ['{lt} on a number', 'Flag all its closed neighbours; {lt} on it again takes back only those flags'],
       ['{lt} + {rt}', 'Chord'],
       ['{a} / {b}', 'Move up / down'],
       ['Hold {lb} {rb} {y}', 'Neighbours only / aim through numbers / show hidden'],

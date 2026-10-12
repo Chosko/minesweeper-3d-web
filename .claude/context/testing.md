@@ -18,14 +18,20 @@ browser checks for everything that needs WebGL or the DOM.
   100 × 100 × 100 build without per-cell allocation, the rules engine, placer
   and solver taking the box graph unchanged, DOM-free.
 - `tests/engine-3d-profile.test.mjs` — the 3D rule profile
-  (`minesweeper-3d`) on the box graph: the profile entry, numbers, no mines
+  (`minesweeper-3d`) on the box graph: the profile entry (version 2 current,
+  version 1 kept, differing only by `revealedUnflag`), numbers, no mines
   placed by the engine, the mine cap, the flood that stops at a zero with a
-  flagged neighbour, reveal on a revealed zero, chord, mass flag and unflag
-  from a revealed cell, auto-hide and un-hide, the win without flags, the
+  flagged neighbour, reveal on a revealed zero, chord, version 1's mass flag
+  and unflag from a revealed cell, version 2's own-batch undo (hand and
+  another number's flags kept, an empty batch one wasted click, a hand
+  unflag leaving the batch, a flag-all over a live batch, the batch kept
+  through an auto-hide, early flags hand-placed, snapshot and restore
+  carrying membership), auto-hide and un-hide, the win without flags, the
   loss, changed cells, counts (a flag click on a revealed cell is one click,
-  3BV over the box), a 100 × 100 × 100 performance test, and a randomized
-  comparison against a naive full-pass port of the original while the game
-  is playing.
+  3BV over the box), a 100 × 100 × 100 performance test, and randomized
+  comparisons against a naive full-pass port of the original (version 1)
+  and of it with each number's batch (version 2) while the game is
+  playing.
 - `tests/engine-3d-view.test.mjs` — the 3D state view
   (`js/engine/state-view-3d.js`): geometry, a fresh view, pressed, flagged
   and unlinked after reveal, flag, mass flag, chord, hide and un-hide, the
@@ -284,6 +290,26 @@ browser checks for everything that needs WebGL or the DOM.
 - `tests/gamepad.test.mjs` — controller helpers (`js/gamepad.js`), analog camera
   (`js/input.js::FlyCamera`), `js/controls.js::Controls`, and trigger sequences
   through `js/input.js::MouseActions`.
+- `tests/audio-flag.test.mjs` — the flag sound's voice (`js/audio.js`
+  `flagVoice`): count 1 the single flag sound with no step, steps and level
+  never falling and capped at 26, counts 1, 2, 4, 8 and 16 distinct, an
+  unflag the mirror of a flag; `Sfx.flag` over recorded primitives: count 1
+  the single flag sound, placed and removed, a mass flag's rising steps and an
+  undo's as many falling ones through the same ratios, louder with more
+  cells.
+- `tests/render-3d-flag-flash.test.mjs` — the flash of a flag click on a
+  number (`js/render.js` through the resolve hook, `js/main.js`):
+  `flashEnvelope` rising to its peak and gone within `FLASH_S`; static
+  checks of the depth-test-free `FLASH` material, `_tickFlashes` visiting
+  the flashing cells only, `isAnimating`, the drops in `setGame`, `sync`'s
+  end of game and `_endEffects`, `onAction` flashing only on a revealed
+  number, and no flash in the replay viewer. One Playwright test on a fixed
+  4 × 3 × 1 board: the ready card's and the help surfaces' right-click
+  copy, a flag-all making `isAnimating()` true, then false within the
+  flash, the mines figure in `--color-danger` below zero at 4.5:1 or better
+  in both themes and back to normal above it, the undo flashing, a hand
+  flag not, a loss and a new game dropping a running flash (skipped when
+  Playwright or chromium is unavailable).
 - `tests/render-3d-feedback.test.mjs` — the renderer's Ctrl ghosts and
   "solved" pulse (`js/render.js`, imported in Node through a resolve hook that
   maps `three` to `vendor/three/`): `GHOST_ALPHA` 0.25 and its use for hidden
@@ -631,7 +657,9 @@ browser checks for everything that needs WebGL or the DOM.
   but unsealed, the sampler's schedule, and the adapter's finished and
   abandoned reports with their replay, `tick()` driving the sampler and a
   lost graphics context after the first reveal abandoning the game with its
-  replay.
+  replay; a rules version 2 game with a flag-all, a hand unflag of one of
+  its flags and the undo verifying and seeking both ways, from the start
+  and from periodic snapshots, with the flags of live play.
 - `tests/replay-determinism.test.mjs` — the recording constants equal to
   the measured ones and the blob uncompressed; applying each replay's
   actions to a game built from its header reproduces its check values, on
@@ -832,7 +860,8 @@ browser checks for everything that needs WebGL or the DOM.
   applies a theme and a resolution change at once.
 - `tests/settings-page.test.mjs` — the bindings source
   (`js/settings/bindings.js`: every mode × device, the Classic 2D keyboard
-  rows naming every `CURSOR_KEYS` key, `bindingsListHtml` keys, glyphs and
+  rows naming every `CURSOR_KEYS` key, the 3D right-click and `{lt}` on a
+  number rows, `bindingsListHtml` keys, glyphs and
   escaping, the in-game help reading it through `bindingsHtml`) and the page
   (`js/settings/page.js`): the four sections holding every setting once,
   Audio's Sound (the `muted` toggle, on while not muted, both ways through

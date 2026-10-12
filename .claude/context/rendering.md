@@ -40,8 +40,11 @@ shake.
 - `BoardRenderer.setSelected(idx)` — aimed cell (`-1` = none); restarts the selection pulse on change.
 - `BoardRenderer.boardRadius()` — bounding-sphere radius of the board at the current spacing (10
   without a game); used for far plane, fog and confetti size.
-- `BoardRenderer.isAnimating()` — `true` while the selection pulse, a "solved" pulse, a wave,
-  confetti or shake needs frames; main's render-on-demand loop polls it.
+- `BoardRenderer.flash(cells)` — starts the flash of each cell (a flag click on a revealed number
+  changed its flag); ignored unless `game.state === 'playing'`. `setGame`, `_endEffects` and the
+  end of the game (in `sync`) drop running flashes.
+- `BoardRenderer.isAnimating()` — `true` while the selection pulse, a "solved" pulse, a flash, a
+  wave, confetti or shake needs frames; main's render-on-demand loop polls it.
 - `BoardRenderer.setScenePalette({horizon, zenith, nadir})` — each stop `[r, g, b]` 0–255: sets the
   sky gradient's uniforms (`uSkyHorizon`, `uSkyZenith`, `uSkyNadir`, shared by the cube shader's fog
   and the sky shader) and the clear colour (the horizon); keeps a copy on `scenePalette`. The sky is
@@ -54,7 +57,8 @@ shake.
 - Exported kind constants `K_CLOSED, K_FLAG, K_NUMBER, K_MINE, K_HIDDEN` (0..4); `GHOST_ALPHA`
   (0.25); the pulse constants `PULSE_GLOW_S`, `PULSE_FADE_S`, `PULSE_SCALE`, `PULSE_BRIGHT` and
   `pulseEnvelope(t)` → `{ scale, bright, alpha, done }`, a pure function of the seconds since the
-  pulse started. Node imports the module only with `three` resolved to `vendor/three/` (the
+  pulse started; the flash constants `FLASH_S`, `FLASH_BRIGHT`, `FLASH_ALPHA`, `FLASH_SCALE` and
+  `flashEnvelope(t)`, in the same shape. Node imports the module only with `three` resolved to `vendor/three/` (the
   test's resolve hook).
 
 `js/textures.js`:
@@ -100,6 +104,14 @@ shake.
   `_tickPulses` (each `render()`) visits only the pulsing cells: drops the finished ones, sorts the
   rest farthest first, writes the attributes; the mesh grows by powers of two. Under Ctrl the
   pulse fades out over the cell's ghost, which then remains.
+- **Flash.** A flag click on a revealed number (its flag-all or its undo) flashes every cube it
+  flagged or unflagged: `js/main.js` hands the cells to `flash`, which records each start in
+  `_flashes` (a Map). A fourth instanced mesh (`renderOrder` 3, the `FLASH` define, depth test
+  off) draws them as their tile now, under every view mode, brightened, grown and faded in and out
+  by `flashEnvelope` over `FLASH_S`, so a cube behind the front face shows through the cubes in front.
+  `_tickFlashes` visits only the flashing cells, as `_tickPulses` the pulsing ones; both effect
+  meshes are built, grown and drawn farthest first by `_buildFx` / `_drawFx`. A hand flag does not
+  flash, and a replay never calls `flash`.
 - **Ground grid.** Drawn in the sky's fullscreen pass (`SKY_FRAG`'s `groundGrid`), so it lies behind
   every cube, writes no depth and is never picked: the view ray meets a horizontal plane
   `GROUND_GAP` (12) below the box's bottom at the current spacing; lines every power-of-two count of

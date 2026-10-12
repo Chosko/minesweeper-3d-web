@@ -141,7 +141,7 @@ Pick a board and play:
 | `Q` / `E` | Move down / up |
 | `Home` / `R` | Back to the start view |
 | Left click | Reveal the aimed cube |
-| Right click | Flag / unflag. On a revealed number: flag all its closed neighbours, or unflag them all if they are all already flagged |
+| Right click | Flag / unflag. On a number: flag all its closed neighbours; right-click it again to take back only those flags |
 | Left + Right | Chord: when a number has the right count of flags around it, reveal its other neighbours |
 | Mouse wheel | Change the spacing between cubes |
 | Hold `Shift` | Fade everything except the aimed cube and its neighbours |
@@ -172,6 +172,7 @@ controller (✕ ○ □ △ / L1 R1 L2 R2 on PlayStation, for example).
 | Right stick | Look around (uses the mouse sensitivity and invert-Y settings) |
 | `RT` | Reveal (on release, like the left button) |
 | `LT` | Flag / unflag (on release, like the right button) |
+| `LT` on a number | Flag all its closed neighbours; `LT` on it again takes back only those flags |
 | `LT` + `RT` | Chord (same rules as Left + Right) |
 | `A` / `B` | Move up / down |
 | Hold `LB` / `RB` / `Y` | Shift / Space / Ctrl view modes |
@@ -235,6 +236,12 @@ on purpose:
 - **"Solved" pulse:** a number that hides itself first gives a short bright pulse and fades out,
   instead of vanishing at once, so a solved cube reads as a reward. The cell is hidden and cannot be
   aimed at from the moment of the action.
+- **A second right-click on a number takes back only its own flags:** a right-click on a revealed
+  number still flags all its closed neighbours, but when they are all flagged it unflags only the
+  flags that number's own right-clicks placed, never ones you placed by hand or another number
+  placed; the original unflagged them all. The cubes it changes flash, even behind other cubes, and
+  the flag sound grows with how many there were. Replays recorded before this change still play
+  with the original rule.
 - **Pause menu instead of `F5` / `Esc`:** the original restarted with `F5` and quit with `Esc`. Here
   `Esc` opens a menu with resume, back to start (3D), restart and main menu.
 - **Draw distance:** the far plane grows with the board instead of being clipped at 300 units.

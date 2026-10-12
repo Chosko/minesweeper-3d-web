@@ -30,6 +30,7 @@ pressed, flagged, unlinked, selected, nearSelected. No question marks.
 - **rightClick(c)**:
   - unrevealed: toggle flag. Unflag also sets unlinked=false on all 26 neighbours.
   - revealed (any number): if any unrevealed neighbour is unflagged → flag ALL unrevealed neighbours; else (all already flagged) → unflag all of them (with the relink effect above).
+    - Web port: a second right-click on a number (all its unrevealed neighbours flagged) unflags only the flags its own flag-all placed, never hand-placed flags or another number's; the cubes a right-click on a number changes flash, even behind other cubes. Replays of the original rule (3D rules version 1) still unflag all.
   - Flags unlimited; mine counter = mines - flagCount may go negative.
 - **Unlinking (auto-hide)**, evaluated continuously for cells that are pressed && !flagged && !unlinked:
   - number==0: unlinked = checkMines (i.e. no flagged neighbours).

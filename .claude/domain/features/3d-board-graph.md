@@ -68,8 +68,13 @@ through `create3DGame` ([mode3d.md](../../context/mode3d.md)).
 - **3D rule profile.** A rule profile is the engine's per-game choice of
   ruleset; Classic 2D plays the reference profile, the 3D mode plays this
   one. It differs from the reference profile in:
-  - **Right-click on a revealed cell** flags every unrevealed neighbour,
-    or unflags them all when every one is already flagged.
+  - **Right-click on a revealed cell** flags every unrevealed, unflagged
+    neighbour; when every one is already flagged it unflags only that
+    cell's own batch — the flags its flag-alls placed since its last undo
+    that still stand — never a hand-placed flag or another number's, and
+    an empty batch changes nothing. This is rules version 2 of the
+    profile; version 1, which unflags them all, stays for the replays
+    recorded under it.
   - **Chord** acts on a revealed cell whose flagged-neighbour count equals
     its number, revealing every unflagged, unrevealed neighbour; a zero
     cell's flood fill stops at a cell with a flagged neighbour.
@@ -89,8 +94,8 @@ through `create3DGame` ([mode3d.md](../../context/mode3d.md)).
   [app-shell.md](../../context/app-shell.md)) are written against, served by
   the shared engine.
 
-Deliberate differences from the original game, all following from the m2
-rules change:
+Deliberate differences from the original game, all but the last following
+from the m2 rules change:
 
 - **Mines are placed by `board-generation`** around the first click, from
   its seeded source. The original's per-mine draw with a linear probe is
@@ -109,6 +114,14 @@ rules change:
 - **On a loss** every mine is shown and the board is revealed, as in the
   original; wrong flags are reported by the engine's visual-state query
   like any profile's.
+- **A second right-click on a number takes back only its own flags**
+  (rules version 2, from the UX review's decision 3): the original
+  unflagged every unrevealed neighbour, hand-placed flags included. Every
+  unflag, by hand or by an undo, drops the cell from its batch, and a flag
+  placed by hand — before the first click included — belongs to none; a
+  flag-all on a number whose batch still holds flags adds the new ones to
+  it. A hidden number keeps its batch, which applies again once an unflag
+  shows the number. There is no gate on whether the flags are right.
 
 ## Data and state
 
@@ -116,11 +129,16 @@ rules change:
   interior cells and the edge clipping. Immutable per board; shared by the
   engine, the generator, the solver and the renderer.
 - **Game state** — the engine's per-cell typed arrays (number, revealed,
-  flagged) plus the hidden flag the 3D profile maintains, and the engine's
-  per-game fields. Nothing is persisted.
+  flagged) plus the hidden flag the 3D profile maintains, each flag's
+  batch membership under version 2 (one byte a cell: the number whose
+  flag-all placed it, or none), and the engine's per-game fields. A
+  snapshot carries the membership; a replay never records it, since the
+  board and the action stream under the recorded rules version decide it.
+  Nothing is persisted.
 - **Counts** — the engine's 3BV, 3BV solved and clicks by kind, over the
   26-neighbour graph. A right-click on a revealed cell is one flag click,
-  however many neighbours it flags.
+  however many neighbours it changes: effective when it places a flag,
+  wasted otherwise, an undo whose batch is empty included.
 
 ## Interfaces and contracts
 
@@ -160,12 +178,13 @@ progress, as bytes retained in typed arrays
 (`tests/engine-3d-view.test.mjs`):
 
 - the retired separate 3D engine: 24 MB, 24 bytes a cell;
-- the shared engine: 37 MB, 37 bytes a cell — the box graph 0 bytes a
+- the shared engine: 38 MB, 38 bytes a cell — the box graph 0 bytes a
   cell, since its neighbours are not stored; the game with the 3D
-  profile's hidden flag and the engine's counts 31 bytes a cell; the 3D
-  state view 6 bytes a cell, and 2 more once the game is lost.
+  profile's hidden flag, its flags' batch membership and the engine's
+  counts 32 bytes a cell; the 3D state view 6 bytes a cell, and 2 more
+  once the game is lost.
 
-The shared engine holds about 13 MB more than the separate 3D engine did on
-the largest custom board, 15 MB after a loss. The 100-per-side limit stands
+The shared engine holds about 14 MB more than the separate 3D engine did on
+the largest custom board, 16 MB after a loss. The 100-per-side limit stands
 and the extra memory is accepted: neither the custom-board limit nor the
 engine's per-cell state is cut to recover it.

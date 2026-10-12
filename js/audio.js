@@ -16,7 +16,8 @@
 //   .setVolume(v: number)         0..1 (default 0.7)
 //   .getVolume() -> number        0..1
 //   .reveal(count = 1)            cell(s) opened; scales with log(count), whoosh/cascade for floods
-//   .flag(on = true, count = 1)   flag placed (on) / removed (!on); count > 1 = mass flag (richer)
+//   .flag(on = true, count = 1)   flag placed (on) / removed (!on); its voice is flagVoice(on, count):
+//                                 count > 1 = a flag click on a number, growing with the count
 //   .chord(count = 0)             chord action (middle/both click on a number); count = cells revealed
 //   .noop()                       soft muted "thunk" for actions that do nothing
 //   .explode()                    loss: boom + debris tail
@@ -26,6 +27,9 @@
 //   unlock(), setMuted(m), isMuted(), toggleMute(), setVolume(v), getVolume(),
 //   playReveal(count = 1), playFlag(on = true, count = 1), playChord(count = 0),
 //   playNoop(), playExplode(), playWin()
+//
+// flagVoice(on, count)            pure: the flag sound's voice for `count` cells flagged (on) or
+//                                 unflagged — its stacked steps and their level (see below)
 //
 // Volume and mute are the settings store's (js/settings/store.js), applied through setVolume and
 // setMuted (js/settings/appliers.js); this module keeps no copy of them anywhere.
@@ -38,6 +42,20 @@ const MAX_VOICES = 48;
 
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 const jitter = (amt) => 1 + (Math.random() * 2 - 1) * amt; // ±amt multiplicative
+
+// The flag sound for a flag click that changes `count` cells (a number's flag-all or its undo): the
+// single flag sound plus `steps` stacked steps at `level` (0..1), both non-decreasing in the count and
+// capped at FLAG_COUNT_CAP, the most neighbours a cube has. Counts 1, 2, 4, 8 and 16 each sound
+// distinct; count 1 is the single flag sound alone. A mass flag's steps rise through FLAG_STEP_RATIOS
+// above the plant's pitch; an unflag's fall through the same ratios below its pluck: the mirror.
+export const FLAG_COUNT_CAP = 26;
+export const FLAG_STEP_RATIOS = Object.freeze([4 / 3, 3 / 2, 2, 8 / 3, 3]);
+export function flagVoice(on, count) {
+  const n = clamp(Math.floor(Number(count)) || 1, 1, FLAG_COUNT_CAP);
+  const steps = n === 1 ? 0 : Math.min(FLAG_STEP_RATIOS.length, 1 + Math.floor(Math.log2(n)));
+  const level = n === 1 ? 0 : Math.log2(n) / Math.log2(FLAG_COUNT_CAP);
+  return Object.freeze({ on: !!on, count: n, steps, level });
+}
 
 let instance = null;
 
@@ -231,25 +249,29 @@ export class Sfx {
     if (!this._ok()) return;
     if (!this._throttle('flag', 0.04)) return;
     const det = jitter(0.02);
-    if (on) {
+    const v = flagVoice(on, count);
+    const stepGain = 0.08 + 0.06 * v.level;
+    if (v.on) {
       // Crisp "plant": woody click + rising two-step.
       this._noise(0.025, { gain: 0.252, freq: 3200, q: 2, type: 'bandpass' });
       this._tone(740 * det, 0.06, { type: 'square', gain: 0.063 });
       this._tone(1110 * det, 0.09, { type: 'triangle', gain: 0.162, delay: 0.045 });
-      if (count > 1) {
-        // Mass flag: extra stacked steps + a little shimmer.
-        const extra = Math.min(3, count - 1);
-        const ratios = [4 / 3, 3 / 2, 2];
-        for (let i = 0; i < extra; i++) {
-          this._tone(1110 * det * ratios[i], 0.1, { type: 'triangle', gain: 0.108, delay: 0.085 + i * 0.035 });
+      if (v.steps) {
+        // Mass flag: stacked rising steps + a little shimmer, more and louder the more cells.
+        for (let i = 0; i < v.steps; i++) {
+          this._tone(1110 * det * FLAG_STEP_RATIOS[i], 0.1, { type: 'triangle', gain: stepGain, delay: 0.085 + i * 0.035 });
         }
-        this._tone(2220 * det, 0.22, { type: 'sine', gain: 0.045, delay: 0.09 + extra * 0.035 });
+        this._tone(2220 * det, 0.22, { type: 'sine', gain: 0.03 + 0.03 * v.level, delay: 0.09 + v.steps * 0.035 });
       }
     } else {
       // Softer "pluck out": falling, duller.
       this._noise(0.03, { gain: 0.144, freq: 1400, q: 1.2, type: 'bandpass' });
       this._tone(620 * det, 0.11, { type: 'triangle', gain: 0.22, slideTo: 360 * det });
-      if (count > 1) this._tone(420 * det, 0.12, { type: 'triangle', gain: 0.09, delay: 0.05, slideTo: 260 * det });
+      // Mass unflag (an undo): the mass flag's steps mirrored, falling below the pluck.
+      for (let i = 0; i < v.steps; i++) {
+        const f = (620 * det) / FLAG_STEP_RATIOS[i];
+        this._tone(f, 0.12, { type: 'triangle', gain: stepGain, delay: 0.05 + i * 0.035, slideTo: f * 0.7 });
+      }
     }
   }
 

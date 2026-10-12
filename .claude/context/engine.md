@@ -63,8 +63,9 @@ Box grid (`js/engine/box-grid.js`)
 Rule profiles (`js/engine/profiles.js`)
 - `REFERENCE_PROFILE` = `'minesweeper-online'`, `PROFILE_3D` =
   `'minesweeper-3d'`; `PROFILES` — deep-frozen
-  `{ [id]: { current, versions: { [n]: profile } } }`; each ships as
-  version 1.
+  `{ [id]: { current, versions: { [n]: profile } } }`; the reference
+  profile ships as version 1, the 3D profile as versions 1 and 2, 2
+  current.
 - `getRuleProfile(id, version?)` — the current version when omitted;
   `RangeError` on an unknown profile or a version this build lacks.
 - A profile records `id`, `version` and its behaviour markers:
@@ -81,11 +82,12 @@ Rule profiles (`js/engine/profiles.js`)
 - The 3D profile records `flagRevealedCell: 'neighbours'`,
   `zeroFloodStopsAtFlag`, `revealOnRevealedZero: 'chord'`, `autoHide`,
   `chordCountsFlagsOnly`, `chordOnFlagCountMismatch`, `win`, `lossView`,
-  `firstClick` and `clickCounting`; its `fidelity` maps each to the
+  `firstClick` and `clickCounting`; version 2 adds
+  `revealedUnflag: 'own-batch'`. Its `fidelity` maps each to the
   `docs/ORIGINAL_SPEC.md` rule it reproduces or to the deliberate difference
   in [../domain/features/3d-board-graph.md](../domain/features/3d-board-graph.md)
-  it follows. The engine branches on the first four and applies
-  `clickCounting`.
+  it follows. The engine branches on the first four and `revealedUnflag`,
+  and applies `clickCounting`.
 - `CUSTOM_LIMITS` — the reference profile's current `customLimits`: side
   `minSide .. maxSide`, a mine in every cell up to `everyCellUpTo` cells,
   then the measured `mineCaps` (`[cells, cap]`) that Classic 2D board setup
@@ -125,9 +127,13 @@ Game (`js/engine/rules.js`)
     unchanged; otherwise places the mines and applies the reveal of `c`.
   - `toggleFlag(c)` — flags/unflags a closed cell. On a revealed cell: under
     `flagRevealedCell: 'neighbours'` one flag click flags every closed,
-    unflagged neighbour, or unflags every closed neighbour when all are
-    already flagged (wasted when it flags none); otherwise does nothing and is
-    not recorded or counted.
+    unflagged neighbour into c's batch, or, when all are already flagged,
+    unflags every closed neighbour (3D version 1) or, under
+    `revealedUnflag: 'own-batch'`, only c's batch — the flags its flag-alls
+    placed since its last undo that still stand (wasted when it flags none,
+    an empty batch changing nothing); otherwise does nothing and is not
+    recorded or counted. Every unflag drops the cell from its batch; a hand
+    flag belongs to none.
   - `chord(c)` — on a revealed number whose neighbouring flag count equals
     its number, opens every unflagged closed neighbour; a wrong flag opens
     the mine and loses. Otherwise (closed cell, count mismatch) a wasted
@@ -146,7 +152,8 @@ Game (`js/engine/rules.js`)
   bbbv, bbbvSolved, clicks }` at a win or loss, null before.
 - `actions()` → the applied action stream `[{ kind: 'reveal' | 'flag' |
   'chord', cell }]` in order.
-- `snapshot()` → a frozen copy of the whole game state — cells, phase,
+- `snapshot()` → a frozen copy of the whole game state — cells (with each
+  flag's batch membership packed into the same byte), phase,
   counts, 3BV progress and the action stream; `restore(snapshot)` sets the
   same game back to it (a `RangeError` on a snapshot another game took).
   The action stream is shared with the snapshot and copied only when play
@@ -227,10 +234,11 @@ Metrics (`js/engine/metrics.js`)
   ships as a new rules version of the profile; earlier versions stay
   playable and their tests keep passing.
 - A new mutation path must go through `touch`, `record` and `clicks.add`, and
-  a flag change through `setFlag`, which keeps `flagNb` and the hidden
-  neighbours in step.
-- Large-board memory: a 100 × 100 × 100 game holds about 37 bytes a cell in
-  typed arrays (box graph 0, game 31, state view 6, 2 more after a loss),
+  a flag change through `setFlag`, which keeps `flagNb`, the hidden
+  neighbours and the batch membership (`owner`: 1 + the owning number's slot
+  among the flagged cell's neighbours, 0 for a hand flag) in step.
+- Large-board memory: a 100 × 100 × 100 game holds about 38 bytes a cell in
+  typed arrays (box graph 0, game 32, state view 6, 2 more after a loss),
   measured by `tests/engine-3d-view.test.mjs`.
 
 ## DOMAIN DEPENDENCIES

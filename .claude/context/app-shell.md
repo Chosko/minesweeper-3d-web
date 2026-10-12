@@ -630,7 +630,11 @@ Game flow (`js/main.js`):
   left/chord and plays SFX from the result (`actionSounds`) — for the first
   reveal once its board has arrived, as the session answers it with a
   Promise; a null result (generating, failed, paused) does nothing, and
-  `sfx.noop` plays when `version` is unchanged in play. The end of the game
+  `sfx.noop` plays when `version` is unchanged in play. A flag sound carries
+  the count of cells the click changed (`sfx.flag(on, count)`), and a flag
+  click on a revealed number — its flag-all or its undo — also hands the
+  flag-changed cells of `r.changed` to `renderer.flash`; the replay viewer
+  goes through neither. The end of the game
   comes through the session's `finished`, which runs `endGame`.
 - End state freeze: `endGame` stores `S.endState = {state, time, minesLeft}`,
   with `time` the session's elapsed time and `minesLeft` taken from before

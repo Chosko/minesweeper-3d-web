@@ -102,6 +102,7 @@ function onAction(type) {
   minesBefore = g.minesLeft;
   const sel = S.selected;
   const v0 = g.version;
+  const onNumber = type === 'right' && g.pressed[sel] === 1; // a flag click on a revealed number: its flag-all or its undo
   if (type !== 'right') renderer.snapshotBeforeAction(); // lets the renderer show wrong flags + reveal wave on a loss
   const r = type === 'left' ? play.reveal(sel) : type === 'right' ? play.toggleFlag(sel) : play.chord(sel);
   if (r && typeof r.then === 'function') {
@@ -109,13 +110,15 @@ function onAction(type) {
     return;
   }
   if (!r) return;
-  actionSounds(type, r);
+  actionSounds(type, r, onNumber);
   if (g.version === v0 && before === 'playing' && g.state === 'playing' && typeof sfx.noop === 'function') sfx.noop(); // action changed nothing
 }
-function actionSounds(type, r) {
+/** The live feedback of an action: its sound, rumble, and the flash of the cubes a flag click on a number changed. */
+function actionSounds(type, r, onNumber = false) {
   noteAutoHide(r);
   if (type === 'right') {
-    if (r.flagged || r.unflagged) sfx.flag(r.flagged >= r.unflagged, r.flagged + r.unflagged);
+    if (r.flagged || r.unflagged) sfx.flag(r.flagged >= r.unflagged, r.flagged + r.unflagged); // the sound grows with the count
+    if (onNumber && (r.flagged || r.unflagged)) renderer.flash(Array.from(r.changed).filter((c) => !S.game.pressed[c]));
     if (padActing && (r.flagged || r.unflagged)) padRumble(PAD_TICK);
   } else if (r.exploded) boom();
   else if (r.revealed > 0) {

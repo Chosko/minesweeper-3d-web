@@ -34,7 +34,12 @@ label and volume sliders are bound to the store, not to this module — see
 
 **Sounds** (each no-ops when muted or when WebAudio is unavailable; each self-throttles)
 - `Sfx.reveal(count = 1)` — cells opened; intensity scales with `log2(count)`; `count >= 6` adds a whoosh + pentatonic cascade.
-- `Sfx.flag(on = true, count = 1)` — flag placed (`on`) or removed; `count > 1` = mass flag/unflag variant.
+- `Sfx.flag(on = true, count = 1)` — flag placed (`on`) or removed; its voice is `flagVoice(on, count)`.
+- `flagVoice(on, count)` — pure: `{ on, count, steps, level }` for a flag click changing `count`
+  cells, capped at `FLAG_COUNT_CAP` (26); steps and level never fall as the count grows, counts 1, 2,
+  4, 8 and 16 differ, count 1 is the single flag sound with no step. A mass flag stacks rising steps
+  through `FLAG_STEP_RATIOS` above the plant; an unflag (a number's undo) the same steps falling
+  below the pluck.
 - `Sfx.chord(count = 0)` — chord knock + triad; when `count > 0` it also calls `reveal(count)`.
 - `Sfx.noop()` — soft thunk for an action that changed nothing.
 - `Sfx.explode()` — loss boom with debris and rumble tail (~1.7 s).

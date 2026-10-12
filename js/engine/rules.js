@@ -16,7 +16,10 @@
 // neither is a flag toggle on a revealed cell under a profile that does not flag from one.
 //
 // Profile markers the engine branches on: `flagRevealedCell` ('neighbours': a flag click on a
-// revealed cell flags its closed neighbours, or unflags them all), `zeroFloodStopsAtFlag` (a zero
+// revealed cell flags its closed neighbours, or unflags them all), `revealedUnflag` ('own-batch':
+// that unflag takes back only the cell's own batch — the flags its flag-alls placed since its last
+// undo that still stand — kept as one byte a flagged cell naming the owning cell's slot among its
+// neighbours, 0 for a hand-placed flag; every unflag clears it), `zeroFloodStopsAtFlag` (a zero
 // with a flagged neighbour does not spread), `revealOnRevealedZero` ('chord'), `autoHide` (the
 // per-cell `hidden` state, kept after every action while playing and reported among the changed
 // cells; shown again at a loss) and `clickCounting`. The reference profile never sets `hidden`.
@@ -29,8 +32,8 @@
 //
 // snapshot() copies the game's whole state — cells, phase, counts and the action stream — into a
 // frozen object, and restore(snapshot) sets the same game back to it, so a replay can seek
-// backwards without playing from the start. A snapshot is one byte a cell (two under a profile
-// that keeps flagged-neighbour counts) plus the board's openings; the action stream is shared with the game and copied only when play goes on after a
+// backwards without playing from the start. A snapshot is one byte a cell — revealed, flagged,
+// hidden and the batch slot packed together — (two under a profile that keeps flagged-neighbour counts) plus the board's openings; the action stream is shared with the game and copied only when play goes on after a
 // restore. Only the game that took a snapshot restores it.
 //
 // Counts (js/engine/metrics.js): the board's 3BV once the mines are placed, the 3BV solved so
@@ -132,6 +135,9 @@ function build(graph, profileId, version, mineCount, dimensions) {
   const stopAtFlag = profile.zeroFloodStopsAtFlag === true;
   const chordsRevealedZero = profile.revealOnRevealedZero === 'chord';
   const autoHide = profile.autoHide === true;
+  // Batch membership per flagged cell: 1 + the slot of the number whose flag-all placed it among the
+  // cell's neighbours, 0 for a hand-placed flag. Fits the snapshot byte's upper five bits (degree <= 26).
+  const owner = profile.revealedUnflag === 'own-batch' ? new Uint8Array(n) : null;
   // Flagged-neighbour count per cell, for the profiles that read it.
   const flagNb = stopAtFlag || chordsRevealedZero || autoHide ? new Uint8Array(n) : null;
   const hideMark = autoHide ? new Uint32Array(n) : null; // per-action dedupe stamp for hideQueue
@@ -216,10 +222,12 @@ function build(graph, profileId, version, mineCount, dimensions) {
     }
   }
 
-  // Flags (on = 1) or unflags (on = 0) a closed cell. Unflagging shows its hidden neighbours.
-  function setFlag(c, on) {
+  // Flags (on = 1) or unflags (on = 0) a closed cell, the flag in batch `slot` (0: by hand).
+  // Unflagging shows its hidden neighbours and drops the cell from its batch.
+  function setFlag(c, on, slot = 0) {
     flagged[c] = on;
     flagCount += on ? 1 : -1;
+    if (owner) owner[c] = on ? slot : 0;
     touch(c);
     if (!flagNb) return;
     for (let k = 0, d = fill(c, nbB); k < d; k++) {
@@ -299,6 +307,15 @@ function build(graph, profileId, version, mineCount, dimensions) {
     }
   }
 
+  // The batch slot that names `num` among `c`'s neighbours: 1 + its position in c's neighbour order.
+  function slotOf(c, num) {
+    for (let k = 0, d = graph.degree(c); k < d; k++) if (graph.neighbour(c, k) === num) return k + 1;
+    return 0;
+  }
+
+  // Whether the flag on `c` belongs to the batch of `num`.
+  const inBatchOf = (c, num) => owner[c] !== 0 && graph.neighbour(c, owner[c] - 1) === num;
+
   function applyReveal(c) {
     begin();
     record(K_REVEAL, c);
@@ -351,17 +368,18 @@ function build(graph, profileId, version, mineCount, dimensions) {
       begin();
       record(K_FLAG, c);
       if (revealed[c]) {
-        // One flag click: flag every closed, unflagged neighbour, or unflag them all.
+        // One flag click: flag every closed, unflagged neighbour into c's batch, or, when all are
+        // flagged, unflag them all (version 1) or only c's batch (`revealedUnflag: 'own-batch'`).
         let flaggedAny = false;
         const d = graph.degree(c);
         for (let k = 0; k < d; k++) {
           const nb = graph.neighbour(c, k);
-          if (!revealed[nb] && !flagged[nb]) { setFlag(nb, 1); flaggedAny = true; }
+          if (!revealed[nb] && !flagged[nb]) { setFlag(nb, 1, owner ? slotOf(nb, c) : 0); flaggedAny = true; }
         }
         if (!flaggedAny) {
           for (let k = 0; k < d; k++) {
             const nb = graph.neighbour(c, k);
-            if (!revealed[nb]) setFlag(nb, 0);
+            if (!revealed[nb] && (!owner || inBatchOf(nb, c))) setFlag(nb, 0);
           }
         }
         clicks.add('flag', !flaggedAny);
@@ -441,11 +459,11 @@ function build(graph, profileId, version, mineCount, dimensions) {
       return out;
     },
 
-    // The whole game state as a frozen copy: revealed, flagged and hidden packed one byte a cell,
-    // the flagged-neighbour counts, the scalars, the board metrics' and click counts' progress, and the action stream so far.
+    // The whole game state as a frozen copy: revealed, flagged, hidden and the batch slot packed
+    // one byte a cell, the flagged-neighbour counts, the scalars, the board metrics' and click counts' progress, and the action stream so far.
     snapshot() {
       const cells = new Uint8Array(n);
-      for (let i = 0; i < n; i++) cells[i] = revealed[i] | (flagged[i] << 1) | (hidden[i] << 2);
+      for (let i = 0; i < n; i++) cells[i] = revealed[i] | (flagged[i] << 1) | (hidden[i] << 2) | (owner ? owner[i] << 3 : 0);
       const snap = Object.freeze({
         cells, flagNb: flagNb ? flagNb.slice() : null, phase, flagCount, safeLeft, exploded,
         mines: placed,
@@ -468,6 +486,7 @@ function build(graph, profileId, version, mineCount, dimensions) {
       for (let i = 0; i < n; i++) {
         const b = cells[i];
         revealed[i] = b & 1; flagged[i] = (b >> 1) & 1; hidden[i] = (b >> 2) & 1;
+        if (owner) owner[i] = b >> 3;
       }
       if (flagNb) flagNb.set(snap.flagNb);
       ({ phase, flagCount, safeLeft, exploded } = snap);

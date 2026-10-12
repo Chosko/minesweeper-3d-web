@@ -758,7 +758,7 @@ Preconditions: none
 
 ## 127. Right-click on a number
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/engine/profiles.js, js/engine/rules.js, js/main.js, js/render.js, js/audio.js, js/ui.js, js/settings/bindings.js, index.html, css/style.css, tests/engine-3d-profile.test.mjs, tests/engine-rules.test.mjs, tests/engine-3d-view.test.mjs, tests/replay-3d.test.mjs, tests/audio-flag.test.mjs, tests/render-3d-flag-flash.test.mjs, tests/settings-page.test.mjs, docs/ORIGINAL_SPEC.md, README.md, .claude/domain/features/3d-board-graph.md, .claude/domain/product-design.md
 Preconditions: none

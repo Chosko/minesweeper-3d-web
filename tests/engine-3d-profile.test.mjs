@@ -1,5 +1,6 @@
-// The 3D rule profile (`minesweeper-3d`, version 1) on the shared rules engine over the box graph:
-// right-click on a revealed cell, chord, the zero flood that stops at a flagged neighbour,
+// The 3D rule profile (`minesweeper-3d`, versions 1 and 2) on the shared rules engine over the box
+// graph: right-click on a revealed cell (version 1 unflags every neighbour, version 2 only the
+// number's own batch), chord, the zero flood that stops at a flagged neighbour,
 // auto-hide (unlinking), the 3D win rule, the loss, counts, and the rule cases of
 // tests/logic.test.mjs ported onto fixed mine sets. docs/ORIGINAL_SPEC.md § Rules is the oracle;
 // the deliberate differences of .claude/domain/features/3d-board-graph.md (no action after the
@@ -24,9 +25,14 @@ function mulberry32(a) {
 const G = (X, Y, Z, mines) => createGameWithMines({
   graph: createBoxGrid(X, Y, Z).graph, profile: PROFILE_3D, mines, dimensions: { X, Y, Z },
 });
+// The same game under rules version 1, whose second right-click on a number unflags every neighbour.
+const G1 = (X, Y, Z, mines) => createGameWithMines({
+  graph: createBoxGrid(X, Y, Z).graph, profile: PROFILE_3D, version: 1, mines, dimensions: { X, Y, Z },
+});
 const arr = (a) => Array.from(a);
 const sum = (a) => a.reduce((x, y) => x + y, 0);
 const changedSet = (r) => new Set(arr(r.changed));
+const sorted = (a) => arr(a).sort((x, y) => x - y);
 // `count` distinct cells of 0..n-1 drawn from `rng`, ascending.
 function drawMines(n, count, rng) {
   const cells = Array.from({ length: n }, (_, i) => i);
@@ -112,6 +118,21 @@ class NaiveGame {
   get phase() { return this.win ? PHASE.WON : this.endGame ? PHASE.LOST : PHASE.PLAYING; }
 }
 
+// Version 2 on the naive port: a right-click on a pressed cell whose closed neighbours are all
+// flagged unflags only the flags that cell's own flag-alls placed; every unflag drops its owner.
+class NaiveGame2 extends NaiveGame {
+  flag(c, owner = null) { if (!c.pressed) { c.flagged = true; c.owner = owner; } }
+  unFlag(c) { super.unFlag(c); if (!c.pressed) c.owner = null; }
+  rightClick(c) {
+    if (!c.pressed) { if (!c.flagged) this.flag(c); else this.unFlag(c); }
+    else {
+      let all = true;
+      for (const o of c.adj) if (!o.pressed && !o.flagged) { all = false; this.flag(o, c); }
+      if (all) for (const o of c.adj) if (!o.pressed && o.owner === c) this.unFlag(o);
+    }
+  }
+}
+
 function assertSame(g, ng, msg) {
   const { revealed, flagged, hidden } = g.state;
   for (let c = 0; c < ng.n; c++) {
@@ -150,27 +171,42 @@ test('performance: 100x100x100 with 1000 mines, build + open a zero region < 2s,
 });
 
 // ---------- the profile table ----------
-test('profile: the 3D profile ships as its own entry, version 1, beside the unchanged reference', () => {
+test('profile: the 3D profile ships as its own entry, version 2 current, version 1 kept, beside the unchanged reference', () => {
   assert.equal(PROFILE_3D, 'minesweeper-3d');
   assert.deepEqual(Object.keys(PROFILES).sort(), [PROFILE_3D, REFERENCE_PROFILE].sort());
-  assert.equal(PROFILES[PROFILE_3D].current, 1);
+  assert.equal(PROFILES[PROFILE_3D].current, 2);
+  assert.deepEqual(Object.keys(PROFILES[PROFILE_3D].versions), ['1', '2']);
   const p = getRuleProfile(PROFILE_3D);
   assert.equal(p.id, PROFILE_3D);
-  assert.equal(p.version, 1);
+  assert.equal(p.version, 2);
+  assert.equal(p, getRuleProfile(PROFILE_3D, 2));
   assert.ok(Object.isFrozen(p) && Object.isFrozen(p.fidelity));
   assert.equal(p.flagRevealedCell, 'neighbours');
+  assert.equal(p.revealedUnflag, 'own-batch');
+  assert.equal(p.fidelity.revealedUnflag, '3d-board-graph: Deliberate differences');
   assert.equal(p.autoHide, true);
   assert.equal(p.zeroFloodStopsAtFlag, true);
   assert.equal(p.clickCounting.flagOnRevealedCell, 'one-flag-click');
-  for (const marker of Object.keys(p)) {
-    if (['id', 'version', 'fidelity'].includes(marker)) continue;
-    assert.ok(p.fidelity[marker], `marker ${marker} cites its rule`);
+  const v1 = getRuleProfile(PROFILE_3D, 1);
+  assert.equal(v1.version, 1);
+  assert.equal(v1.revealedUnflag, undefined, 'version 1 is unchanged: it unflags every neighbour');
+  for (const profile of [p, v1]) {
+    for (const marker of Object.keys(profile)) {
+      if (['id', 'version', 'fidelity'].includes(marker)) continue;
+      assert.ok(profile.fidelity[marker], `version ${profile.version}: marker ${marker} cites its rule`);
+    }
   }
-  assert.throws(() => getRuleProfile(PROFILE_3D, 2), RangeError);
+  const { revealedUnflag, version, fidelity, ...rest2 } = p;
+  const { version: _v, fidelity: f1, ...rest1 } = v1;
+  assert.deepEqual(rest2, rest1, 'version 2 differs from version 1 only by the undo marker');
+  const { revealedUnflag: _f, ...fid2 } = fidelity;
+  assert.deepEqual(fid2, { ...f1 });
+  assert.throws(() => getRuleProfile(PROFILE_3D, 3), RangeError);
   const ref = getRuleProfile(REFERENCE_PROFILE);
   assert.equal(ref.flagRevealedCell, false);
   assert.equal(ref.autoHide, undefined);
   assert.equal(ref.zeroFloodStopsAtFlag, undefined);
+  assert.equal(ref.revealedUnflag, undefined);
 });
 
 test('reference profile: a wrong flag does not stop its flood fill and it never hides a cell', () => {
@@ -306,8 +342,8 @@ test('chord through a zero neighbour floods, and the flood stops at a zero with 
 });
 
 // ---------- right-click ----------
-test('toggle flag and mass flag / mass unflag on revealed cells', () => {
-  const g = G(3, 3, 1, [0, 2]);
+test('version 1: toggle flag and mass flag / mass unflag on revealed cells', () => {
+  const g = G1(3, 3, 1, [0, 2]);
   g.toggleFlag(0);
   assert.equal(g.state.flagged[0], 1); assert.equal(g.minesLeft, 1);
   g.toggleFlag(0);
@@ -323,17 +359,140 @@ test('toggle flag and mass flag / mass unflag on revealed cells', () => {
   assert.equal(r2.changed.length, 8);
   assert.equal(g.flagCount, 0);
   // revealed cell whose every unrevealed neighbour is flagged: unflags them
-  const h = G(2, 1, 1, [1]);
+  const h = G1(2, 1, 1, [1]);
   h.reveal(0);
   h.toggleFlag(1);
   h.toggleFlag(0);
   assert.equal(h.state.flagged[1], 0);
   // a revealed cell with no unrevealed neighbour: nothing changes
-  const k = G(5, 1, 1, [2]); // 0 1 - 1 0
+  const k = G1(5, 1, 1, [2]); // 0 1 - 1 0
   k.reveal(0);
   assert.equal(k.phase, PHASE.PLAYING);
   assert.equal(k.state.revealed[1], 1);
   assert.equal(k.toggleFlag(0).changed.length, 0);
+});
+
+// ---------- version 2: a second right-click takes back only the number's own batch ----------
+// 4 × 3 × 1, mines at the corners 0, 3, 8 and 11:
+//   0* 1  2  3*
+//   4  5  6  7        5 and 6 are 2s; 5's closed neighbours 0 1 2 4 8 9 10,
+//   8* 9  10 11*      6's 1 2 3 7 9 10 11; they share 1 2 9 10.
+const twoNumbers = () => {
+  const g = G(4, 3, 1, [0, 3, 8, 11]);
+  g.reveal(5); g.reveal(6);
+  assert.equal(g.cellNumber(5), 2); assert.equal(g.cellNumber(6), 2);
+  return g;
+};
+const flaggedCells = (g) => arr(g.state.flagged).flatMap((f, c) => (f ? [c] : []));
+
+test('version 2: a flag-all flags every closed, unflagged neighbour; the undo takes back only that number\'s batch', () => {
+  const g = twoNumbers();
+  g.toggleFlag(4); // a hand-placed flag
+  let r = g.toggleFlag(6); // 6's flag-all
+  assert.deepEqual(sorted(r.changed), [1, 2, 3, 7, 9, 10, 11]);
+  r = g.toggleFlag(5); // 5's flag-all: only its closed, unflagged neighbours
+  assert.deepEqual(sorted(r.changed), [0, 8]);
+  assert.deepEqual(flaggedCells(g), [0, 1, 2, 3, 4, 7, 8, 9, 10, 11]);
+  r = g.toggleFlag(5); // every closed neighbour of 5 is flagged: take back 5's batch only
+  assert.deepEqual(sorted(r.changed), [0, 8]);
+  assert.deepEqual(flaggedCells(g), [1, 2, 3, 4, 7, 9, 10, 11], 'the hand flag and 6\'s flags stay');
+  r = g.toggleFlag(6); // 6's undo
+  assert.deepEqual(sorted(r.changed), [1, 2, 3, 7, 9, 10, 11]);
+  assert.deepEqual(flaggedCells(g), [4]);
+  assert.equal(g.minesLeft, 3);
+  assert.deepEqual({ ...g.counts().clicks.flag }, { effective: 3, wasted: 2 });
+});
+
+test('version 2: an undo whose batch is empty changes nothing and is one wasted flag click', () => {
+  const g = twoNumbers();
+  g.toggleFlag(6); // 6's batch: 1 2 3 7 9 10 11
+  for (const c of [0, 4, 8]) g.toggleFlag(c); // the rest of 5's closed neighbours, by hand
+  const before = arr(g.state.flagged);
+  const r = g.toggleFlag(5);
+  assert.equal(r.changed.length, 0);
+  assert.equal(r.ended, false);
+  assert.deepEqual(arr(g.state.flagged), before);
+  assert.deepEqual(g.actions().at(-1), { kind: 'flag', cell: 5 }, 'the click is recorded');
+  assert.deepEqual({ ...g.counts().clicks.flag }, { effective: 4, wasted: 1 });
+});
+
+test('version 2: an unflag of any kind drops the cell from its batch; flagged again by hand it is hand-placed', () => {
+  const g = twoNumbers();
+  g.toggleFlag(6);
+  g.toggleFlag(7); // hand unflag: 7 leaves 6's batch
+  assert.equal(g.state.flagged[7], 0);
+  g.toggleFlag(7); // flagged again by hand
+  const r = g.toggleFlag(6); // every closed neighbour flagged: the undo
+  assert.deepEqual(sorted(r.changed), [1, 2, 3, 9, 10, 11]);
+  assert.deepEqual(flaggedCells(g), [7], 'the hand flag stays');
+  // an undo is an unflag too: the cells it took back are no longer in any batch
+  g.toggleFlag(5); // 5's batch: 0 1 2 4 8 9 10
+  g.toggleFlag(5); // taken back
+  for (const c of [0, 1, 2, 4, 8, 9, 10]) g.toggleFlag(c); // all flagged again by hand
+  assert.equal(g.toggleFlag(5).changed.length, 0, 'nothing of 5\'s is left to take back');
+});
+
+test('version 2: a flag-all over a live batch adds to it, and the undo takes back every flag of it still standing', () => {
+  const g = twoNumbers();
+  g.toggleFlag(6); // batch 1 2 3 7 9 10 11
+  g.toggleFlag(1); g.toggleFlag(7); // hand unflags
+  let r = g.toggleFlag(6); // flag-all again: 1 and 7 join the batch
+  assert.deepEqual(sorted(r.changed), [1, 7]);
+  g.toggleFlag(3); // a hand unflag of one more
+  g.toggleFlag(3); // and a hand flag: 3 is hand-placed now
+  r = g.toggleFlag(6);
+  assert.deepEqual(sorted(r.changed), [1, 2, 7, 9, 10, 11]);
+  assert.deepEqual(flaggedCells(g), [3]);
+});
+
+test('version 2: a number keeps its batch while hidden, and its batch applies once an unflag shows it again', () => {
+  // 0* 1 2* 3 4: 1 is a 2, 3 a 1; 4 stays closed so the game goes on
+  const g = G(5, 1, 1, [0, 2]);
+  g.reveal(1); g.reveal(3);
+  g.toggleFlag(1); // batch of 1: 0 and 2
+  assert.equal(g.state.hidden[1], 1, 'satisfied with every neighbour flagged: hidden');
+  g.toggleFlag(0); // a hand unflag of one batch flag shows 1 again
+  assert.equal(g.state.hidden[1], 0);
+  assert.equal(g.state.flagged[2], 1, 'the rest of the batch stays');
+  let r = g.toggleFlag(1); // the flag-all adds 0 back to the batch it kept
+  assert.deepEqual(sorted(r.changed), [0, 1]);
+  assert.equal(g.state.hidden[1], 1);
+  // Hidden cells cannot be picked; the engine call shows what the batch holds: 2 from before the hide.
+  r = g.toggleFlag(1);
+  assert.deepEqual(flaggedCells(g), []);
+  assert.deepEqual(sorted(r.changed), [0, 1, 2]);
+});
+
+test('version 2: flags placed before the board arrives are hand-placed', () => {
+  const box = createBoxGrid(4, 3, 1);
+  const g = createGame({ graph: box.graph, profile: PROFILE_3D, mineCount: 4 });
+  assert.equal(g.rulesVersion, 2, 'a new 3D game plays the current version');
+  // the session replays the early flags onto the arrived board with ordinary flag clicks
+  g.supplyBoard(5, [0, 3, 8, 11]);
+  g.reveal(6);
+  for (const c of [0, 1, 2, 4, 8, 9, 10]) g.toggleFlag(c);
+  assert.equal(g.toggleFlag(5).changed.length, 0, 'no batch: the undo takes back nothing');
+  assert.equal(flaggedCells(g).length, 7);
+});
+
+test('version 2: snapshot and restore carry every flag\'s batch membership', () => {
+  const play = (g) => { g.toggleFlag(4); g.toggleFlag(6); g.toggleFlag(5); g.toggleFlag(7); g.toggleFlag(7); };
+  const g = twoNumbers();
+  play(g);
+  const snap = g.snapshot();
+  assert.equal(snap.cells.byteLength, 4 * 3, 'still one byte a cell');
+  const took = (h) => [sorted(h.toggleFlag(5).changed), sorted(h.toggleFlag(6).changed), flaggedCells(h)];
+  const expected = took(g);
+  assert.deepEqual(expected, [[0, 8], [1, 2, 3, 9, 10, 11], [4, 7]]);
+  g.restore(snap);
+  assert.deepEqual(took(g), expected, 'the restored game takes back the same batches');
+  g.restore(snap);
+  g.toggleFlag(0); g.toggleFlag(0); // change 0's membership after the snapshot
+  g.restore(snap);
+  assert.deepEqual(took(g), expected);
+  const fresh = twoNumbers();
+  play(fresh);
+  assert.deepEqual(took(fresh), expected, 'as the game that took the snapshot');
 });
 
 test('minesLeft goes negative', () => {
@@ -497,7 +656,7 @@ test('counts: 3BV and 3BV solved over the box graph', () => {
 });
 
 // ---------- property test vs naive reference ----------
-test('randomized: the 3D profile == the naive full-pass port of the original while the game is playing', () => {
+function randomized(makeGame, Naive) {
   let games = 0, actions = 0, ended = 0;
   for (let s = 1; s <= 400; s++) {
     const R = mulberry32(s);
@@ -506,8 +665,8 @@ test('randomized: the 3D profile == the naive full-pass port of the original whi
     if (n < 2) continue;
     const count = Math.min(n - 1, Math.floor(R() * Math.max(1, n / 4)) + (R() < 0.05 ? n : 0));
     const mineIdx = drawMines(n, count, mulberry32(s * 31));
-    const g = G(X, Y, Z, mineIdx);
-    const ng = new NaiveGame(X, Y, Z, mineIdx);
+    const g = makeGame(X, Y, Z, mineIdx);
+    const ng = new Naive(X, Y, Z, mineIdx);
     for (let c = 0; c < n; c++) assert.equal(g.state.mine[c] ? -1 : g.state.number[c], ng.cells[c].number);
     assertSame(g, ng, `seed ${s} init`);
     games++;
@@ -530,4 +689,12 @@ test('randomized: the 3D profile == the naive full-pass port of the original whi
     }
   }
   assert.ok(games > 350 && actions > 5000 && ended > 50, `games ${games} actions ${actions} ended ${ended}`);
+}
+
+test('randomized: the 3D profile, version 1 == the naive full-pass port of the original while the game is playing', () => {
+  randomized(G1, NaiveGame);
+});
+
+test('randomized: version 2 == the naive port with each number\'s own batch while the game is playing', () => {
+  randomized(G, NaiveGame2);
 });

@@ -69,7 +69,10 @@ view's Watch open it ([app-shell.md](app-shell.md)).
     generatorVersion, endedAt, movementEndedAt}`: `id` the summary's id,
     `graph` `{kind: 'square', width, height}` or `{kind: 'box', x, y, z}`
     matching the board identity, `mines` ascending cell indices, `profile`
-    `{id, version}` (the rule profile and its rules version), `seed` and
+    `{id, version}` (the rule profile and its rules version: a 3D replay
+    carries `minesweeper-3d` version 1 (unflag-all) or 2 (own-batch undo);
+    the batch membership is never recorded, the action stream decides it),
+    `seed` and
     `generatorVersion` for reference only, `endedAt` ISO 8601,
     `movementEndedAt` the game-clock time a capped movement stream stopped,
     or null.

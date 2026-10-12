@@ -145,9 +145,21 @@ const original3d1 = {
   },
 };
 
+// Version 2: the flag click on a revealed number keeps its flag-all, and a second one, with every
+// closed neighbour flagged, takes back only the flags that number's flag-alls placed (its batch:
+// every flag they placed since its last undo that still stands), never a hand-placed flag or another
+// number's. Every unflag drops the cell from its batch; flags placed by hand, before the first reveal
+// included, belong to none.
+const original3d2 = {
+  ...original3d1,
+  version: 2,
+  revealedUnflag: 'own-batch',
+  fidelity: { ...original3d1.fidelity, revealedUnflag: '3d-board-graph: Deliberate differences' },
+};
+
 export const PROFILES = deepFreeze({
   [REFERENCE_PROFILE]: { current: 1, versions: { 1: reference1 } },
-  [PROFILE_3D]: { current: 1, versions: { 1: original3d1 } },
+  [PROFILE_3D]: { current: 2, versions: { 1: original3d1, 2: original3d2 } },
 });
 
 // The reference profile's custom board limits (its current version), for board setup.

@@ -3,6 +3,8 @@
 //  - transparent pass: cells that may be faded (Shift / Space) or shown as ghosts (hidden cells under
 //    Ctrl, at GHOST_ALPHA), sorted back-to-front, shader keeps only the ones whose alpha is < 1
 //  - pulse pass: the few numbers just hidden, playing their "solved" pulse (pulseEnvelope) over the rest
+//  - flash pass: the cubes a flag click on a number just flagged or unflagged (flashEnvelope), drawn
+//    with no depth test so a cube behind others shows through them
 // Per-cell state lives in a small RGBA8 data texture (layer, kind) fetched by cell index, so
 // selection / Shift / Space changes only touch uniforms (no per-frame O(n) JS work).
 // Visual extras (all shader-side, driven by a few uniforms): per-face shading, distance fog toward
@@ -28,6 +30,22 @@ export const PULSE_GLOW_S = 0.25;
 export const PULSE_FADE_S = 0.2;
 export const PULSE_SCALE = 1.15;
 export const PULSE_BRIGHT = 0.45;
+
+// The flash of the cubes a flag click on a revealed number flagged or unflagged: for FLASH_S the cube
+// glows toward white up to FLASH_BRIGHT and FLASH_ALPHA halfway, over every cube in front of it, then
+// it is gone. Live play only.
+export const FLASH_S = 0.4;
+export const FLASH_BRIGHT = 0.8;
+export const FLASH_ALPHA = 0.85;
+export const FLASH_SCALE = 1.1;
+
+/** The flash at `t` seconds since it started: the cube's scale, brightness (0..1 toward white), alpha, and whether it is over. */
+export function flashEnvelope(t) {
+  const s = Math.max(0, t);
+  if (s >= FLASH_S) return { scale: 1, bright: 0, alpha: 0, done: true };
+  const k = Math.sin((Math.PI * s) / FLASH_S);
+  return { scale: 1 + (FLASH_SCALE - 1) * k, bright: FLASH_BRIGHT * k, alpha: FLASH_ALPHA * k, done: false };
+}
 
 /** The pulse at `t` seconds since it started: the cube's scale, brightness (0..1 toward white), alpha, and whether it is over. */
 export function pulseEnvelope(t) {
@@ -100,8 +118,8 @@ precision highp float;
 precision highp int;
 in float aIdx;
 in float aShade;
-#ifdef PULSE
-in vec3 aPulse; // the pulse's scale, brightness and alpha (pulseEnvelope)
+#if defined(PULSE) || defined(FLASH)
+in vec3 aPulse; // the effect's scale, brightness and alpha (pulseEnvelope, flashEnvelope)
 #endif
 uniform sampler2D uState;
 uniform vec3 uDims;
@@ -134,8 +152,10 @@ void main() {
   vec3 c = vec3(float(i), float(j), float(k));
   float scale = 1.0, flash = 0.0;
   bool shrinking = false;
-#ifdef PULSE
+#if defined(PULSE)
   kind = 2; // a hidden number playing its pulse: drawn as the number it was, under the same view modes
+#elif defined(FLASH)
+  // a flashing cube: drawn as its tile now, under every view mode (below)
 #else
   if (uEff > 0.5) {
     int oldL = int(st.a * 255.0 + 0.5) - 1;
@@ -168,8 +188,11 @@ void main() {
   if (kind <= 1) { if (uShift > 0.5 && !near) a = 0.2; }
   else if (kind == 2) { if (uSpace > 0.5) a = 0.2; else if (uShift > 0.5 && !sel) a = 0.2; }
   else if (kind == 4) { vis = uCtrl > 0.5 || shrinking; if (uCtrl > 0.5) a = ${GHOST_ALPHA}; }
-#ifdef PULSE
+#if defined(PULSE)
   scale = aPulse.x; flash = aPulse.y; a *= aPulse.z; sel = false;
+  bool want = a > 0.0;
+#elif defined(FLASH)
+  scale = aPulse.x; flash = aPulse.y; a = aPulse.z; vis = true; sel = false;
   bool want = a > 0.0;
 #else
   bool want = uPass < 0.5 ? a > 0.99 : a < 0.99;
@@ -378,12 +401,17 @@ export class BoardRenderer {
     this.matTrans = mk(1);
     this.matPulse = mk(1);
     this.matPulse.defines = { PULSE: '' };
+    this.matFlash = mk(1);
+    this.matFlash.defines = { FLASH: '' };
+    this.matFlash.depthTest = false; // seen through the cubes in front of it
     this.baseGeo = createCubeGeometry();
     this.meshOpaque = null;
     this.meshTrans = null;
-    this.meshPulse = null;
+    // The effect meshes drawn after the board, each with its instance list and per-cube envelope.
+    this._pulseFx = { mat: this.matPulse, order: 2, cap: 0, mesh: null };
+    this._flashFx = { mat: this.matFlash, order: 3, cap: 0, mesh: null };
     this._pulses = new Map(); // cell index -> start (s) of its "solved" pulse
-    this._pulseCap = 0;
+    this._flashes = new Map(); // cell index -> start (s) of its flash
     this.game = null;
     this.spacing = 1.1;
     this.toggles = { shift: false, space: false, ctrl: false };
@@ -496,6 +524,7 @@ export class BoardRenderer {
     this._lastState = game.state;
     this._eff = null; this._conf = null; this._shake = null; this._snap = null; this._wrong = null; this._effHidden = false;
     this._pulses.clear();
+    this._flashes.clear();
     this.uniforms.uEff.value = 0;
     this.confetti.visible = false;
     this.uniforms.uHasSel.value = 0;
@@ -511,7 +540,8 @@ export class BoardRenderer {
     for (const m of [this.meshOpaque, this.meshTrans]) { m.frustumCulled = false; this.scene.add(m); }
     this.meshOpaque.renderOrder = 0;
     this.meshTrans.renderOrder = 1;
-    this._buildPulseMesh(32);
+    this._buildFx(this._pulseFx, 32);
+    this._buildFx(this._flashFx, 32);
 
     // sort scratch
     this._candidates = new Uint32Array(n);
@@ -531,32 +561,39 @@ export class BoardRenderer {
 
   disposeGame() {
     if (this.meshOpaque) {
-      this.scene.remove(this.meshOpaque); this.scene.remove(this.meshTrans); this.scene.remove(this.meshPulse);
-      this.meshOpaque.geometry.dispose(); this.meshTrans.geometry.dispose(); this.meshPulse.geometry.dispose();
+      this.scene.remove(this.meshOpaque); this.scene.remove(this.meshTrans);
+      this.meshOpaque.geometry.dispose(); this.meshTrans.geometry.dispose();
       this.stateTex.dispose();
-      this.meshOpaque = this.meshTrans = this.meshPulse = null;
+      this.meshOpaque = this.meshTrans = null;
+    }
+    for (const fx of [this._pulseFx, this._flashFx]) {
+      if (fx.mesh) { this.scene.remove(fx.mesh); fx.mesh.geometry.dispose(); fx.mesh = null; fx.cap = 0; }
     }
     this._pulses.clear();
+    this._flashes.clear();
     this.game = null;
   }
 
-  /** The pulse mesh, drawn after the transparent pass, with room for `cap` pulsing cubes. */
-  _buildPulseMesh(cap) {
-    if (this.meshPulse) { this.scene.remove(this.meshPulse); this.meshPulse.geometry.dispose(); }
-    this._pulseCap = cap;
-    this.listPulse = new Float32Array(cap);
-    this.dataPulse = new Float32Array(cap * 3);
-    this.attrPulseIdx = new THREE.InstancedBufferAttribute(this.listPulse, 1).setUsage(THREE.DynamicDrawUsage);
-    this.attrPulse = new THREE.InstancedBufferAttribute(this.dataPulse, 3).setUsage(THREE.DynamicDrawUsage);
+  /** The "solved" pulse's mesh (null without a board). */
+  get meshPulse() { return this._pulseFx.mesh; }
+
+  /** An effect mesh, drawn after the transparent pass in its order, with room for `cap` cubes. */
+  _buildFx(fx, cap) {
+    if (fx.mesh) { this.scene.remove(fx.mesh); fx.mesh.geometry.dispose(); }
+    fx.cap = cap;
+    fx.list = new Float32Array(cap);
+    fx.data = new Float32Array(cap * 3);
+    fx.attrIdx = new THREE.InstancedBufferAttribute(fx.list, 1).setUsage(THREE.DynamicDrawUsage);
+    fx.attr = new THREE.InstancedBufferAttribute(fx.data, 3).setUsage(THREE.DynamicDrawUsage);
     const g = this.baseGeo.clone();
-    g.setAttribute('aIdx', this.attrPulseIdx);
-    g.setAttribute('aPulse', this.attrPulse);
+    g.setAttribute('aIdx', fx.attrIdx);
+    g.setAttribute('aPulse', fx.attr);
     g.instanceCount = 0;
-    this.meshPulse = new THREE.Mesh(g, this.matPulse);
-    this.meshPulse.frustumCulled = false;
-    this.meshPulse.renderOrder = 2;
-    this.meshPulse.visible = false;
-    this.scene.add(this.meshPulse);
+    fx.mesh = new THREE.Mesh(g, fx.mat);
+    fx.mesh.frustumCulled = false;
+    fx.mesh.renderOrder = fx.order;
+    fx.mesh.visible = false;
+    this.scene.add(fx.mesh);
   }
 
   _writeCell(i) {
@@ -594,6 +631,7 @@ export class BoardRenderer {
     const dirty = g.consumeDirty();
     const prev = this._lastState;
     this._lastState = g.state;
+    if (prev === 'playing' && g.state !== 'playing') this._dropFlashes(); // the end of the game
     if (prev === 'playing' && g.state === 'lost') { this._dropPulses(); this._beginLoss(dirty); }
     else if (prev === 'playing' && g.state === 'won') this._beginWin();
     else if (prev !== 'playing' && g.state === 'playing') this._endEffects(); // a replay seeking back before its end
@@ -709,17 +747,43 @@ export class BoardRenderer {
   /** Drops every running "solved" pulse at once. */
   _dropPulses() {
     this._pulses.clear();
-    if (this.meshPulse) this._commitPulse(0);
+    if (this._pulseFx.mesh) this._commitFx(this._pulseFx, 0);
   }
 
-  _commitPulse(count) {
-    for (const attr of [this.attrPulseIdx, this.attrPulse]) {
+  /** Drops every running flash at once. */
+  _dropFlashes() {
+    this._flashes.clear();
+    if (this._flashFx.mesh) this._commitFx(this._flashFx, 0);
+  }
+
+  _commitFx(fx, count) {
+    for (const attr of [fx.attrIdx, fx.attr]) {
       attr.clearUpdateRanges();
       if (count > 0) attr.addUpdateRange(0, count * attr.itemSize);
       attr.needsUpdate = true;
     }
-    this.meshPulse.geometry.instanceCount = count;
-    this.meshPulse.visible = count > 0;
+    fx.mesh.geometry.instanceCount = count;
+    fx.mesh.visible = count > 0;
+  }
+
+  /** The squared distance from the camera to cell i's centre. */
+  _camDist2(i) {
+    const g = this.game, cam = this.camera.position, p = 4 * this.spacing;
+    const [ci, cj, ck] = g.coords(i);
+    const dx = (ci - (g.X - 1) / 2) * p - cam.x, dy = (cj - (g.Y - 1) / 2) * p - cam.y, dz = (ck - (g.Z - 1) / 2) * p - cam.z;
+    return dx * dx + dy * dy + dz * dz;
+  }
+
+  /** Draws `live` ({ i, e: envelope, d: distance }) into the effect mesh back-to-front, growing it by powers of two. */
+  _drawFx(fx, live) {
+    if (live.length > fx.cap) this._buildFx(fx, 2 ** Math.ceil(Math.log2(live.length)));
+    live.sort((a, b) => b.d - a.d); // farthest first
+    const L = fx.list, D = fx.data;
+    for (let c = 0; c < live.length; c++) {
+      const { i, e } = live[c];
+      L[c] = i; D[c * 3] = e.scale; D[c * 3 + 1] = e.bright; D[c * 3 + 2] = e.alpha;
+    }
+    this._commitFx(fx, live.length);
   }
 
   /**
@@ -727,27 +791,43 @@ export class BoardRenderer {
    * back-to-front. Visits the pulsing cells only.
    */
   _tickPulses(now) {
-    if (this._pulses.size === 0) { if (this.meshPulse.visible) this._commitPulse(0); return; }
-    if (this._pulses.size > this._pulseCap) this._buildPulseMesh(2 ** Math.ceil(Math.log2(this._pulses.size)));
-    const g = this.game, cam = this.camera.position, p = 4 * this.spacing, live = [];
+    if (this._pulses.size === 0) { if (this._pulseFx.mesh.visible) this._commitFx(this._pulseFx, 0); return; }
+    const live = [];
     for (const [i, t0] of this._pulses) {
       const e = pulseEnvelope(now - t0);
       if (e.done) { this._pulses.delete(i); continue; }
-      const [ci, cj, ck] = g.coords(i);
-      const dx = (ci - (g.X - 1) / 2) * p - cam.x, dy = (cj - (g.Y - 1) / 2) * p - cam.y, dz = (ck - (g.Z - 1) / 2) * p - cam.z;
-      live.push({ i, e, d: dx * dx + dy * dy + dz * dz });
+      live.push({ i, e, d: this._camDist2(i) });
     }
-    live.sort((a, b) => b.d - a.d); // farthest first
-    const L = this.listPulse, D = this.dataPulse;
-    for (let c = 0; c < live.length; c++) {
-      const { i, e } = live[c];
-      L[c] = i; D[c * 3] = e.scale; D[c * 3 + 1] = e.bright; D[c * 3 + 2] = e.alpha;
-    }
-    this._commitPulse(live.length);
+    this._drawFx(this._pulseFx, live);
   }
 
-  /** Drops the end-of-game wave, confetti, shake and wrong flags at once. */
+  /**
+   * Flashes the cubes `cells` — the ones a flag click on a revealed number just flagged or unflagged —
+   * for FLASH_S, drawn over every cube in front of them. Only while the game is played; setGame and the
+   * end of the game drop running flashes.
+   */
+  flash(cells) {
+    const g = this.game;
+    if (!g || g.state !== 'playing') return;
+    const now = performance.now() / 1000;
+    for (const i of cells) this._flashes.set(i, now);
+  }
+
+  /** Advances the flashes as _tickPulses the pulses. Visits the flashing cells only. */
+  _tickFlashes(now) {
+    if (this._flashes.size === 0) { if (this._flashFx.mesh.visible) this._commitFx(this._flashFx, 0); return; }
+    const live = [];
+    for (const [i, t0] of this._flashes) {
+      const e = flashEnvelope(now - t0);
+      if (e.done) { this._flashes.delete(i); continue; }
+      live.push({ i, e, d: this._camDist2(i) });
+    }
+    this._drawFx(this._flashFx, live);
+  }
+
+  /** Drops the end-of-game wave, confetti, shake, wrong flags and any flash at once. */
   _endEffects() {
+    this._dropFlashes();
     this._clearOldLayers();
     this._eff = null; this._conf = null; this._shake = null; this._wrong = null; this._effHidden = false;
     this.uniforms.uEff.value = 0;
@@ -788,9 +868,9 @@ export class BoardRenderer {
     this.confetti.visible = true;
   }
 
-  /** True while a time-based effect (selection pulse, "solved" pulse, end-of-game wave, confetti, shake) needs frames. */
+  /** True while a time-based effect (selection pulse, "solved" pulse, flash, end-of-game wave, confetti, shake) needs frames. */
   isAnimating() {
-    return this._selAnim || this._eff !== null || this._conf !== null || this._shake !== null || this._pulses.size > 0;
+    return this._selAnim || this._eff !== null || this._conf !== null || this._shake !== null || this._pulses.size > 0 || this._flashes.size > 0;
   }
 
   setToggles(shift, space, ctrl) {
@@ -930,7 +1010,7 @@ export class BoardRenderer {
     const cam = this.camera;
     const now = performance.now() / 1000;
     this._tickEffects(now);
-    if (this.game) this._tickPulses(now);
+    if (this.game) { this._tickPulses(now); this._tickFlashes(now); }
     // far plane large enough for the whole board (original clipped at 300)
     const dist = cam.position.length();
     const R = this.boardRadius();

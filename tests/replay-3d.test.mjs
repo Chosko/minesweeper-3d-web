@@ -13,6 +13,8 @@ import { createSession } from '../js/mode3d/session.js';
 import { create3DMode, END_DELAY_MS } from '../js/shell/mode-3d.js';
 import { createModeHost } from '../js/shell/mode-host.js';
 import { decodeReplay, cellStateDigest } from '../js/replay/format.js';
+import { verify } from '../js/replay/verify.js';
+import { createSimulator } from '../js/replay/simulator.js';
 import { createGameWithMines } from '../js/engine/rules.js';
 import { createBoxGrid } from '../js/engine/box-grid.js';
 import { buildSummary } from '../js/records/summary.js';
@@ -166,7 +168,7 @@ test('a recorded 3D game: flags before the first reveal at time 0, samples about
   assert.equal(decoded.header.mode, '3d');
   assert.deepEqual(decoded.header.graph, { kind: 'box', x: 5, y: 1, z: 1 });
   assert.equal(boardKey(decoded.header.board), boardKey(summary.board));
-  assert.deepEqual(decoded.header.profile, { id: 'minesweeper-3d', version: 1 });
+  assert.deepEqual(decoded.header.profile, { id: 'minesweeper-3d', version: 2 });
   assert.deepEqual(decoded.header.mines, MINES);
   assert.equal(decoded.header.seed, 7);
   assert.equal(decoded.header.movementEndedAt, null);
@@ -219,6 +221,39 @@ test('a lost 3D game and an abandoned one reproduce their check values', async (
   assert.deepEqual(decoded.actions, [{ time: 0, kind: 'reveal', cell: 4 }, { time: 250, kind: 'flag', cell: 0 }]);
   again = replayAgain(decoded);
   assert.equal(cellStateDigest(again.state), decoded.check.digest);
+});
+
+test('a 3D game under rules version 2 with a flag-all, a hand unflag of one of its flags and the undo verifies, and seeks both ways as it was played', async () => {
+  // 4 × 3 × 1 with mines at the corners: 6 is a 2 whose closed neighbours are 1 2 3 7 9 10 11
+  const BOARD = Object.freeze({ X: 4, Y: 3, Z: 1, mines: 4, noGuess: false });
+  const mines = [0, 3, 8, 11];
+  const clock = fakeClock();
+  const session = createSession({
+    board: BOARD, client: fakeClient([{ ok: true, mines, seed: 5, generatorVersion: 1 }]), clock, randomSeed: () => 5,
+  });
+  await session.reveal(5);
+  const live = [];
+  const act = (fn) => { clock.advance(100); fn(); live.push(Array.from(session.view.flagged)); };
+  act(() => session.reveal(6));
+  act(() => session.toggleFlag(6)); // the flag-all: 1 2 3 7 9 10 11
+  act(() => session.toggleFlag(7)); // a hand unflag of one of its flags
+  act(() => session.toggleFlag(7)); // flagged again by hand
+  act(() => session.toggleFlag(6)); // the undo: 7 stays
+  const flagged = (row) => row.flatMap((f, c) => (f ? [c] : []));
+  assert.deepEqual(flagged(live.at(-1)), [7]);
+  const decoded = decodeReplay(session.replay(summaryOf(session, 'abandoned')).blob);
+  assert.deepEqual(decoded.header.profile, { id: 'minesweeper-3d', version: 2 });
+  assert.deepEqual(verify(decoded), { ok: true, result: 'reproduces' });
+  assert.equal(decoded.actions.length, 6);
+  // seek over the undo and back, from the start and from periodic snapshots alike
+  for (const options of [{}, { snapshotInterval: 2, snapshotMinCells: 1 }]) {
+    const sim = createSimulator(decoded, options);
+    for (const i of [6, 2, 6, 3, 5, 4, 1, 6]) {
+      const frame = sim.seekIndex(i);
+      const expected = i < 2 ? new Array(12).fill(0) : live[i - 2]; // no flag before the second action
+      assert.deepEqual(Array.from(frame.state.flagged), expected, `flags at action ${i}`);
+    }
+  }
 });
 
 test('a restarted session discards its recording, a left one stops it; before the first reveal there is nothing to seal', async () => {
