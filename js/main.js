@@ -6,7 +6,7 @@ import { pickCell, pickCellBrute } from './picking.js';
 import { UI, clampSettings, NO_MOUSE_MSG } from './ui.js';
 import * as audio from './audio.js';
 import { Controls } from './controls.js';
-import { GamepadReader, BTN, Repeat, stickCurve, padGlyphs, pickInDirection } from './gamepad.js';
+import { GamepadReader, BTN, Repeat, stickCurve, padGlyphs, pickInDirection, GLYPHS, STICK_DEADZONE } from './gamepad.js';
 import { createRouter } from './shell/router.js';
 import { FOCUSABLE, topLayer, resolveFocus, isBackKey, backButtons, createHeldSuppressor } from './shell/navigation.js';
 import { createModeHost } from './shell/mode-host.js';
@@ -15,6 +15,8 @@ import { createSession, create3DGame } from './mode3d/session.js';
 import { createSampler3D } from './replay/sampler-3d.js';
 import { createGenerationClient } from './generation/client.js';
 import { createMenu, createLastMode, createLastBoardChoice } from './shell/menu.js';
+import { createFirstUse, stripShown, hidCube, aimHintCell, createDwell, AIM_DWELL_MS } from './shell/first-use.js';
+import { createActiveDevice, hintText } from './settings/bindings.js';
 import { createPauseController } from './shell/pause.js';
 import { storage, blobStore } from './platform/index.js';
 import { createSettingsStore } from './settings/store.js';
@@ -105,6 +107,7 @@ function onAction(type) {
   if (g.version === v0 && before === 'playing' && g.state === 'playing' && typeof sfx.noop === 'function') sfx.noop(); // action changed nothing
 }
 function actionSounds(type, r) {
+  noteAutoHide(r);
   if (type === 'right') {
     if (r.flagged || r.unflagged) sfx.flag(r.flagged >= r.unflagged, r.flagged + r.unflagged);
     if (padActing && (r.flagged || r.unflagged)) padRumble(PAD_TICK);
@@ -115,6 +118,11 @@ function actionSounds(type, r) {
   }
 }
 function boom() { sfx.explode(); ui.flash(); padRumble(PAD_BOOM); }
+/** The first time auto-hide hides a cube in any 3D game, a toast says so; once per browser. */
+function noteAutoHide(r) {
+  if (FIRST_USE.shown('autoHideToast') || !S.game || !hidCube(S.game, r.changed)) return;
+  if (FIRST_USE.once('autoHideToast')) ui.toast(hintText('autoHide', DEVICE.current, activeGlyphs()), 4000);
+}
 /**
  * The end of the 3D game: the HUD freezes and the end effect plays; the 3D mode's end delay then
  * hands over to the results screen. Until then input is ignored (ending3D).
@@ -139,12 +147,13 @@ const input = new Input({
   onWheel: (notches) => { setSpacing(S.spacing + notches * 0.04); ui.showSpacing(S.spacing); },
   onKey: (code, e) => {
     if (isBackKey(code)) { shellBack('key'); return; }
-    if (S.mode !== 'playing' && S.mode !== 'paused' && S.mode !== 'ready') return;
+    if (S.mode === 'classic-2d') used2D(); // the first key of a Classic 2D game brings its hint strip
+    if (S.mode !== 'playing' && S.mode !== 'paused' && S.mode !== 'ready' && S.mode !== 'classic-2d') return;
     // don't steal keys typed into settings controls (e.g. arrow keys on a slider)
     if (e && e.target && e.target.closest && e.target.closest('input, select, textarea')) return;
-    if (code === 'KeyH') ui.userToggleHelp();
-    else if (code === 'KeyM') toggleSound();
-    else if (code === 'KeyF') toggleFullscreen();
+    if (code === 'KeyH') ui.userToggleHelp(); // both modes
+    else if (code === 'KeyM') toggleSound(); // both modes
+    else if (code === 'KeyF' && MODES.active === '3d') toggleFullscreen(); // F flags in Classic 2D
   },
   onLockChange: (locked) => {
     if (locked) {
@@ -196,12 +205,25 @@ const ui = new UI({
   onPause: () => pauseGame(padGesture ? 'pad' : 'button'),
   onReadyBack: () => readyBack(),
   onToggleSound: () => toggleSound(),
+  onDismissHint: (mode) => { FIRST_USE.dismiss(mode); refreshHints(); },
   onRetry2D: () => mode2d.retry(),
-  onStandard2D: () => mode2d.playStandard(),
+  onStandard2D: () => { standard2D = true; try { mode2d.playStandard(); } finally { standard2D = false; } },
   onRetry3D: () => retry3D('retry'),
   onStandard3D: () => retry3D('standard'),
 });
 ui.setNoMouse(NO_MOUSE);
+
+// ---------- active device ----------
+// The controller while the last input came from a connected controller, else the keyboard and
+// mouse; every help surface follows it.
+const DEVICE = createActiveDevice({ onChange: (d) => ui.setDevice(d) });
+window.addEventListener('keydown', () => DEVICE.input('keyboard'), true);
+/** The glyphs of the connected controller, for the hints' button names. */
+function activeGlyphs() { const p = pads.activePad(); return p ? padGlyphs(p.id) : GLYPHS.generic; }
+/** A poll with a press or a stick off its deadzone: the controller is in use. */
+function padUsed(p) {
+  return p.pressed.some(Boolean) || Math.hypot(p.ls[0], p.ls[1]) > STICK_DEADZONE || Math.hypot(p.rs[0], p.rs[1]) > STICK_DEADZONE;
+}
 
 // ---------- settings ----------
 // The store loads before the first screen shows; each setting's owner applies it by subscribing.
@@ -233,16 +255,16 @@ const SHELL = createRouter({
     records: { defaultFocus: '#records-picker [aria-checked="true"]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showRecords(); RECORDS_PAGE.show({ mode: d.mode, boardKey: d.boardKey }); }, hide: () => RECORDS_PAGE.hide() },
     settings: { defaultFocus: '#set-lookSensitivity', show: () => { MODES.leave(); showMenuBackdrop(); ui.showSettings(); } },
     'classic-2d-choice': { defaultFocus: '[data-size][data-last]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showBoardChoice2D(); showChoice2D(d.choice ?? LAST_CHOICE_2D.current); } },
-    ready: { defaultFocus: '#ready-btn', show: (d = {}) => ui.showReady(S.settings, d.msg ?? ''), back: () => readyBack() },
+    ready: { defaultFocus: '#ready-btn', show: (d = {}) => ui.showReady(board3dChoice ?? S.settings, d.msg ?? '', { rules: FIRST_USE.rules3D }), back: () => readyBack() },
     playing: { defaultFocus: null, show: (d = {}) => { setLockless(!!d.lockless); ui.showPlaying(); }, back: ({ source }) => pauseGame(source === 'pointer' ? 'button' : source) },
     'classic-2d': { defaultFocus: null, show: () => ui.showClassic2D(), back: ({ source }) => pauseGame(source === 'pointer' ? 'button' : source) },
     paused: { defaultFocus: () => (ui.isConfirmOpen() ? '#p-confirm-no' : gameOver() ? '#p-restart' : '#p-resume'), show: (d = {}) => { stopPlayInput(); setBoardHidden(true); ui.showPause(pauseInfo(d.note)); }, hide: () => setBoardHidden(false), back: ({ source }) => resumeFromPause(source) },
     results: { defaultFocus: '#r-again', show: (d) => RESULTS_VIEW.show(resultsContent(d ?? RESULTS.current)), hide: () => RESULTS_VIEW.hide(), back: () => RESULTS.toMenu() },
-    [REPLAY_SCREEN]: { defaultFocus: () => REPLAY_VIEWER.defaultFocus(), show: (d = {}) => { REPLAY_VIEWER.show(d); }, hide: () => REPLAY_VIEWER.hide(), back: () => REPLAY_VIEWER.back() },
+    [REPLAY_SCREEN]: { defaultFocus: () => REPLAY_VIEWER.defaultFocus(), show: (d = {}) => { ui.showReplay(); REPLAY_VIEWER.show(d); }, hide: () => REPLAY_VIEWER.hide(), back: () => REPLAY_VIEWER.back() },
     ctxlost: { defaultFocus: '#ctx-lost-btn', show: () => showContextLost(), hide: () => hideContextLost(), back: () => showMainMenu() },
   },
   focus: (target, name) => focusScreen(target, name),
-  onChange: () => { layerChanged(); needRender = true; sync3D(); },
+  onChange: () => { layerChanged(); needRender = true; sync3D(); refreshHints(); },
 });
 // end of screen table
 Object.defineProperty(S, 'mode', { get: () => SHELL.current, enumerable: true });
@@ -283,7 +305,7 @@ const FLOW_2D = {
   show: () => SHELL.go('classic-2d'),
   container: () => document.getElementById('c2d-board'),
   hud: ({ seconds, minesLeft }) => ui.updateHud(seconds, minesLeft),
-  board: ({ width, height }) => ui.setBoardText(`${width} × ${height}`),
+  board: (b) => { ui.setBoard2D(b); if (!standard2D) newGame2D(); }, // once per game, and again when played standard
   generating: (shown) => { board2d.generating = shown; ui.setBoardStatus(board2d); },
   failed: (failure) => {
     board2d.failure = failure;
@@ -328,6 +350,43 @@ const RECORDS = createRecordsStore({
 });
 const recordsLoaded = RECORDS.load();
 RECORDS.attach(PAUSE);
+
+// ---------- first-use hints ----------
+// What a new player has been taught, in the platform-storage document shell.firstUse, seeded from
+// the records once they load. A game counts when its mode reports game started; the hint strips
+// show during each mode's first three games (judged as each game begins) until dismissed.
+const FIRST_USE = createFirstUse({ storage, records: RECORDS });
+const firstUseLoaded = recordsLoaded.then(() => FIRST_USE.load(), () => FIRST_USE.load());
+MODES.on('finished', ({ mode }) => FIRST_USE.gameFinished(mode));
+const hint3D = { eligible: false };
+const hint2D = { eligible: false, used: false };
+let standard2D = false; // the failed 2D board's offer is playing it standard: the same game
+function newGame2D() {
+  hint2D.eligible = FIRST_USE.inFirstGames('classic-2d');
+  hint2D.used = false;
+  refreshHints(); // the router already drew the strip from the previous game's state
+}
+/** A key or the controller was used in this Classic 2D game. */
+function used2D() {
+  if (MODES.active !== 'classic-2d' || hint2D.used) return;
+  hint2D.used = true;
+  refreshHints();
+}
+/** The hint strip of the active mode, on its play screen. */
+function refreshHints() {
+  const mode = MODES.active;
+  if (mode !== '3d' && mode !== 'classic-2d') { ui.setHintStrip(false); return; }
+  const h = mode === '3d' ? hint3D : hint2D;
+  ui.setHintStrip(stripShown({ mode, screen: S.mode, eligible: h.eligible, used: h.used, dismissed: FIRST_USE.dismissed(mode) }));
+}
+// The aim hint: the crosshair rests about a second on a revealed number with a closed cube behind it.
+const AIM_DWELL = createDwell(AIM_DWELL_MS);
+function aimHint(g, now) {
+  if (FIRST_USE.shown('aimHint')) return;
+  const sel = S.selected;
+  const cell = !controls.space && sel >= 0 && g.pressed[sel] && g.number[sel] > 0 ? aimHintCell(g, sel, aimedCell(g, S.spacing, true)) : null;
+  if (AIM_DWELL.update(cell, now) && FIRST_USE.once('aimHint')) ui.toast(hintText('aimHint', DEVICE.current, activeGlyphs()), 4000);
+}
 
 // ---------- replay library ----------
 // Every kept replay; loads in the background, and the results flow waits for it before adding one.
@@ -436,7 +495,7 @@ const RECORDS_PAGE = createRecordsScreen({ records: RECORDS, replays: REPLAYS, r
 // Each entry is a route; the last mode played is kept through platform storage and marked on the menu.
 const MENU = createMenu({ router: SHELL, modes: MODES });
 const LAST_MODE = createLastMode({ storage, modes: MODES });
-MODES.on('started', ({ mode }) => ui.setLastMode(mode));
+MODES.on('started', ({ mode }) => { ui.setLastMode(mode); FIRST_USE.gameStarted(mode); });
 
 /** Back from the keyboard (Esc) or the controller: the topmost layer first, then the router. */
 function shellBack(source) {
@@ -491,6 +550,7 @@ function startGame(settings) {
   const g = play.view;
   S.settings = { X: s.X, Y: s.Y, Z: s.Z, mines: play.mines };
   board3dChoice = { ...S.settings, noGuess };
+  hint3D.eligible = FIRST_USE.inFirstGames('3d');
   S.play = play;
   S.game = g;
   S.started = false;
@@ -505,7 +565,7 @@ function startGame(settings) {
   renderer.setGame(g);
   applyPixelRatio(g.n);
   cam.reset(...startCameraPos(s.X, s.Y, s.Z));
-  ui.setBoard(S.settings);
+  ui.setBoard(board3dChoice);
   ui.updateHud(0, g.minesLeft);
   SHELL.go('ready', { data: { msg: NO_MOUSE ? NO_MOUSE_MSG : '' } });
   needRender = true;
@@ -536,7 +596,7 @@ function retry3D(kind) {
   if (!play || !board3d.failure) return;
   board3d.failure = null;
   const r = kind === 'retry' ? play.retry() : play.playStandard();
-  if (kind === 'standard') board3dChoice = { ...board3dChoice, noGuess: false }; // a restart keeps the standard board
+  if (kind === 'standard') { board3dChoice = { ...board3dChoice, noGuess: false }; ui.setBoard(board3dChoice); } // a restart keeps the standard board
   showStatus3D();
   if (padGesture) setLockless(true);
   else if (!S.lockless) input.requestLock();
@@ -579,14 +639,15 @@ function gameOver() {
 }
 function stopPlayInput() {
   mouse.reset();
+  input.spaceToggle.reset(); // a tapped-on aim-through is dropped like a held key
   controls.releasePad();
   document.body.classList.remove('lockless');
 }
 function pauseInfo(note = '') {
-  if (MODES.active === 'classic-2d') return { ...mode2d.status(), note };
+  if (MODES.active === 'classic-2d') return { ...mode2d.status(), note, mode: MODES.active };
   const g = S.game;
   const e = S.endState;
-  return { state: g.state, time: e ? e.time : S.time, minesLeft: e ? e.minesLeft : g.minesLeft, note };
+  return { state: g.state, time: e ? e.time : S.time, minesLeft: e ? e.minesLeft : g.minesLeft, note, mode: '3d' };
 }
 
 function makeDemo() {
@@ -696,6 +757,7 @@ const pads = new GamepadReader({
 });
 function updatePadUi() {
   const p = pads.activePad();
+  DEVICE.connected(!!p);
   ui.setPad(p ? { glyphs: padGlyphs(p.id), mapping: p.mapping } : null);
 }
 function padRumble(effect) {
@@ -798,7 +860,10 @@ function padActivate() {
   else padFocus(padDefault(layer, items));
 }
 for (const t of ['mousedown', 'mousemove']) {
-  window.addEventListener(t, () => { if (document.body.classList.contains('pad-nav')) document.body.classList.remove('pad-nav'); }, true);
+  window.addEventListener(t, () => {
+    DEVICE.input('pointer');
+    if (document.body.classList.contains('pad-nav')) document.body.classList.remove('pad-nav');
+  }, true);
 }
 
 /** One controller poll result -> game / menu actions. Runs once per frame. */
@@ -850,6 +915,7 @@ function padPlaying(p, held, pressed, dt, now) {
  */
 function padBoard2D(p, held, pressed, now) {
   controls.releasePad();
+  if (padUsed(p)) used2D();
   if (pressed(BTN.START) || backButtons(S.mode).some(pressed)) { padClick(document.getElementById('hud-pause')); return; }
   if (board2d.failure) { padMenus(p, held, pressed, now); return; }
   mode2d.pad({ ...p, held: p.held.map((_, b) => held(b)) }, now);
@@ -974,6 +1040,7 @@ function frame(now) {
   if (fps.acc >= 0.5) { fps.value = fps.frames / fps.acc; fps.frames = 0; fps.acc = 0; }
 
   const pad = pads.poll();
+  if (pad.pad && padUsed(pad)) DEVICE.input('pad');
   if (pad.pad || pad.active) handlePad(pad, dt, now);
   if (MODES.active === 'classic-2d') mode2d.tick();
   if (S.mode === REPLAY_SCREEN) REPLAY_VIEWER.tick(rawDt * 1000);
@@ -1017,6 +1084,8 @@ function frame(now) {
     if (playing && S.started && !S.endState) S.time = S.play.elapsedMs() / 1000;
     const e = S.endState;
     ui.updateHud(e ? e.time : S.time, e ? e.minesLeft : g.minesLeft);
+    if (playing && !ending3D()) aimHint(g, now);
+    else AIM_DWELL.reset();
   }
 
   if (shouldRender(now, synced)) {
@@ -1027,7 +1096,7 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-await Promise.all([settingsLoaded, recordsLoaded, LAST_CHOICE_3D.load().catch(() => {})]);
+await Promise.all([settingsLoaded, recordsLoaded, firstUseLoaded, LAST_CHOICE_3D.load().catch(() => {})]);
 showMainMenu();
 mode2d.loadChoice();
 const bootFocus = document.activeElement;

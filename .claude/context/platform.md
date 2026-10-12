@@ -29,14 +29,14 @@ IndexedDB implementation's default `indexedDB` factory.
   cannot open) when first evaluated, and re-exports the storage methods.
 
 The settings store (`settings`, [settings.md](settings.md)), the last mode
-played (`shell.lastMode`), the last Classic 2D and 3D board choices
+played (`shell.lastMode`), the first-use hints (`shell.firstUse`,
+[app-shell.md](app-shell.md)), the last Classic 2D and 3D board choices
 (`mode3d.lastChoice`, [mode3d.md](mode3d.md)) and the records
 store (`records`, `records.history`, `records.inProgress`,
 [records.md](records.md)) and the replay library's index
 (`replays.library`, [replay.md](replay.md)) register their documents here;
-the replay library is the blob store's one user. The loose
-`localStorage` helpers left in `js/ui.js` keep one key, the help hint's
-`ms3d.hintH.done`; the `ms3d.*` keys nothing reads are listed in
+the replay library is the blob store's one user. `js/ui.js` keeps no
+`localStorage` key; the `ms3d.*` keys nothing reads are listed in
 [app-shell.md](app-shell.md).
 `js/theme.js`, a classic script that cannot import, reads the settings
 document's browser key directly at start-up.

@@ -212,9 +212,11 @@
      primary, Play a standard board).
    Pause card (index.html #pause): ui-card ui-screen holding the title,
      ui-text status lines, ui-actions (Resume primary while playing, Play
-     again primary and first once the game ended, Main menu), the controls
-     list in a ui-panel, a Settings ui-panel (the look sensitivity,
-     invert Y and volume controls, data-setting like the Settings page's)
+     again primary and first once the game ended, Main menu), the board
+     line, the active mode's controls list for the active device in a
+     ui-panel, a Settings ui-panel (the look sensitivity and invert Y
+     controls on a 3D game's card only, and volume; data-setting like the
+     Settings page's)
      and the Sound button. While restart or Main menu asks for confirmation, a
      ui-panel ui-actions (a ui-text line, the action as primary, Cancel)
      shows in place of the actions. Default focus: Resume, or Play again once

@@ -148,7 +148,9 @@ looks.
   `status()` → `{state, time, minesLeft}`, `boardHidden`; the contract's
   optional `replay(summary)` is the session's. `flow` is
   `{openBoardChoice(choice), show(), container(), hud({seconds, minesLeft}),
-  board({width, height, mines}), generating(shown), failed(failure|null)}`;
+  board({width, height, mines, noGuess}), generating(shown),
+  failed(failure|null)}`, `board` once per game and again when
+  `playStandard()` turns no-guess off;
   `mount` defaults to `{board: mountBoardView, pointer: mountPointerInput,
   cursor: mountCursorInput, sampler: mountSampler2D}`; without `sampler`
   no movement is recorded. The module head comment is the contract.

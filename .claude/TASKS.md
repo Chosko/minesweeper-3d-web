@@ -686,7 +686,7 @@ Feature: replay-playback
 
 ## 119. Mode-aware help and first-use hints
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/settings/bindings.js, js/shell/first-use.js, js/ui.js, js/main.js, js/input.js, index.html, css/style.css, tests/shell-help.test.mjs, tests/shell-first-use.test.mjs, tests/settings-page.test.mjs, .claude/domain/features/settings.md
 Preconditions: none

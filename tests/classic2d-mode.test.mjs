@@ -175,7 +175,7 @@ test('start shows the board in the container, mounts the inputs, feeds the overl
   assert.equal(pointer().view, board());
   assert.equal(Object.getPrototypeOf(cursor().view), board(), 'the cursor input draws on the board view');
   assert.deepEqual(flow.calls.filter((c) => c[0] === 'show').length, 1);
-  assert.deepEqual(flow.calls.find((c) => c[0] === 'board'), ['board', { width: 30, height: 16, mines: 99 }]);
+  assert.deepEqual(flow.calls.find((c) => c[0] === 'board'), ['board', { width: 30, height: 16, mines: 99, noGuess: false }]);
   assert.deepEqual(flow.huds.at(-1), { seconds: 0, minesLeft: 99 });
   await settle();
   assert.equal(lastChoice.current.size, 'expert', 'the choice is the last board choice from now on');
@@ -335,8 +335,10 @@ test('a no-guess failure shows its offer; a standard board keeps no-guess off fo
   assert.equal(await p, null);
   const failed = flow.calls.filter((c) => c[0] === 'failed').at(-1);
   assert.deepEqual(failed[1].offers, ['retry', 'standard']);
+  assert.equal(flow.calls.filter((c) => c[0] === 'board').at(-1)[1].noGuess, true);
   const q = mode.playStandard();
   assert.deepEqual(flow.calls.filter((c) => c[0] === 'failed').at(-1), ['failed', null], 'the offer is cleared');
+  assert.equal(flow.calls.filter((c) => c[0] === 'board').at(-1)[1].noGuess, false, 'the board line no longer says no-guess');
   cl.made.at(-1).answer({ ok: true, mines: defaultMines({ mineCount: 10, firstClick: 40 }), seed: 1, generatorVersion: 1 });
   await q;
   assert.equal(host.state.started, true);

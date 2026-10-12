@@ -642,6 +642,39 @@ browser checks for everything that needs WebGL or the DOM.
   naming an unregistered screen — the router refuses unknown screens, so
   the placeholder is only reachable through the menu's `entryRoute`
   fallback.
+- `tests/shell-help.test.mjs` — mode-aware help: the bindings component
+  (`bindingsHtml`) per mode × device with glyphs, H and M listed in both
+  modes and F only in 3D, the HUD strip (`hudStripHtml`) per mode × device,
+  the H panel's foot line, the active device (`createActiveDevice`), Space's
+  `TapToggle` (tap, next tap, hold, outside play, reset) and the controller
+  keeping its hold, the board lines with " · no-guess" (`boardLine3D`,
+  `boardLine2D`); static checks that the pause card, Controls panel and H
+  panel hold no hard-coded list, the HUD and hint strips show in Classic 2D,
+  H and M on the Classic 2D board with F 3D-only, the pause card fed by the
+  active mode, and nothing of the help in the replay viewer. Three
+  Playwright tests: the Controls panel tabs, H, M and the HUD strip in
+  Classic 2D and each mode's pause card (rows, board line, look settings)
+  with no-guess boards in both modes; a fake controller as the active device
+  redrawing the HUD strip, hint strip, H panel, pause card and Controls
+  panel, and the mouse switching back; a Space tap (press and release in one
+  task) versus a hold in 3D play.
+- `tests/shell-first-use.test.mjs` — first-use hints
+  (`js/shell/first-use.js`) over the memory backend: the `shell.firstUse`
+  document registered, created on a first launch, seeded from the records'
+  per-mode game counters, read back, a malformed one seeded afresh; games
+  counted per mode at game started and the 3D rules block ended by a
+  finished 3D game only; the one-time toast and aim hint across launches;
+  per-mode dismissal; non-persisting and throwing storage and failing
+  records behaving as on first use; `stripShown` for both modes; the strips'
+  words in either device's names; `hidCube`, `aimHintCell` and
+  `createDwell`; static checks of the ready card's block and line, the
+  removed "H controls" pill and its flag, and the shell's wiring. Two
+  Playwright tests: a 3D first launch (rules block, strip, the toast at the
+  first auto-hide and never again, an abandoned game keeping the block and a
+  finished one ending it, the strip dismissed, all kept across a reload in
+  the document); and the Classic 2D strip at the first key, in a fake
+  PlayStation pad's glyphs while it is the active device, dismissed for good
+  in Classic 2D only.
 - `tests/shell-pause.test.mjs` — the pause controller (`js/shell/pause.js`)
   over a real mode host, a fake mode and a recording shell: every pause
   source, automatic pauses only in play, no pause before the first click or
@@ -676,7 +709,7 @@ browser checks for everything that needs WebGL or the DOM.
 - `tests/settings-page.test.mjs` — the bindings source
   (`js/settings/bindings.js`: every mode × device, the Classic 2D keyboard
   rows naming every `CURSOR_KEYS` key, `bindingsListHtml` keys, glyphs and
-  escaping, the in-game help reading it) and the page
+  escaping, the in-game help reading it through `bindingsHtml`) and the page
   (`js/settings/page.js`): the four sections holding every setting once,
   each control's kind and range from the schema, kit-only markup, the
   bindings section per device in the pad's glyphs, `bindSettingControls`
@@ -706,8 +739,9 @@ browser checks for everything that needs WebGL or the DOM.
   `tests/records-replays.test.mjs` and `tests/records-screen-3d.test.mjs`,
   the 3D end of game in `tests/mode3d-end.test.mjs`, the replay viewer tests in
   `tests/replay-viewer.test.mjs`, `tests/replay-viewer-3d.test.mjs` and
-  `tests/results-watch.test.mjs`, one
-  flow test in each `tests/shell-*.test.mjs`, the 3D tests in
+  `tests/results-watch.test.mjs`, the
+  flow tests in `tests/shell-*.test.mjs` (one per file, two in
+  `tests/shell-first-use.test.mjs` and three in `tests/shell-help.test.mjs`), the 3D tests in
   `tests/mode3d-board-choice.test.mjs` and `tests/mode3d-session.test.mjs`, the
   theme-and-resolution test in `tests/settings-appliers.test.mjs` and the two page tests in
   `tests/settings-page.test.mjs`.

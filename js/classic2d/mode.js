@@ -10,7 +10,8 @@
 //                                          container() fills)
 //                 container()              the element the board view fills
 //                 hud({ seconds, minesLeft })  the overlay bar's timer and mine counter
-//                 board({ width, height, mines })  the board the overlay bar names
+//                 board({ width, height, mines, noGuess })  the board the overlay bar names; again
+//                                          when a failed board's offer plays it standard
 //                 generating(shown)        the "generating" state of a slow first click
 //                 failed(failure | null)   a failed board and its offers, or none
 //   lastChoice  createLastChoice (js/classic2d/board-setup.js): start() saves the choice played,
@@ -98,8 +99,8 @@ export function createClassic2DMode(report, {
     hidden = false;
     shown = { seconds: null, minesLeft: null };
     flow.show();
-    const { width, height, mines } = session.setup;
-    flow.board({ width, height, mines });
+    const { width, height, mines, noGuess } = session.setup;
+    flow.board({ width, height, mines, noGuess });
     const view = mount.board({ container: flow.container(), grid: session.setup.grid });
     view.setGame(session.game);
     // The inputs see the board paused while it is hidden, whatever the session's own state. An
@@ -184,7 +185,11 @@ export function createClassic2DMode(report, {
     },
     pad(poll, now) { game?.cursor.pad(poll, now); },
     retry: () => answer('retry'),
-    playStandard: () => answer('playStandard'),
+    playStandard() {
+      const r = answer('playStandard');
+      if (r && game) { const { width, height, mines, noGuess } = game.session.setup; flow.board({ width, height, mines, noGuess }); }
+      return r;
+    },
     loadChoice: () => lastChoice.load(),
     status() {
       if (!game) return null;

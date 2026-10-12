@@ -46,6 +46,10 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
   - `pause.js` — the pause controller: pause, resume, restart, back to menu,
     the confirmations, the game hand-offs and the leave-page guard
     (`createPauseController`); its rules are documented in its head comment.
+  - `first-use.js` — the first-use hints: the `shell.firstUse` document and
+    the rules for when each hint shows (`createFirstUse`, `stripShown`,
+    `hidCube`, `aimHintCell`, `createDwell`); the document and the rules are
+    documented in its head comment.
 - `js/results/` — the results screen (`results-screen`), DOM-free apart from
   the view's binder:
   - `flow.js` — the results flow on the `finished` and `abandoned`
@@ -57,9 +61,9 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
     `#results` (`createResultsView`); the formats are documented in its head
     comment.
 - `js/ui.js` — DOM only, no game rules: class `UI`, board-settings clamping
-  and the help hint's `localStorage` flag. Formats the overlay bar with the
-  kit helpers from `js/ui/components.js`; fills the Settings page and the help
-  lists from `js/settings/page.js` and `js/settings/bindings.js`.
+  and the board lines. Formats the overlay bar with the kit helpers from
+  `js/ui/components.js`; fills the Settings page from `js/settings/page.js`
+  and every help surface from `js/settings/bindings.js`.
 - `index.html` — every overlay is static markup toggled by the `.hidden` class;
   importmap maps `three` to `vendor/three/three.module.min.js` (vendored
   three.js r186, no build step); a module `onerror` shows a `.fatal` card.
@@ -208,33 +212,48 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   `clampSettings(s)` → `{X,Y,Z,mines}` integers, dims 1..100, mines
   1..X*Y*Z − 1, since the first click is safe (a 1×1×1 board clamps to 0
   mines). `startGame` clamps with it; the board choice validates first.
-- `fmtDims(s)`, `fmtTime(t)` (2 decimals), `NO_MOUSE_MSG`.
+- `fmtDims(s)`, `fmtTime(t)` (2 decimals), `NO_MOUSE_MSG`;
+  `boardLine3D(s, {mines?})` (`"6 × 6 × 6 · 10 mines · no-guess"`, the mine
+  count only with `mines`) and `boardLine2D({width, height, noGuess})`
+  (`"30 × 16 · no-guess"`): " · no-guess" on a no-guess board.
 - `UI` constructor `(cb)` with callbacks `onMenuEntry(id)`, `onBack` (the
   placeholder's and Settings page's Back buttons), `onReadyClick`,
   `onReadyBack`, `onResume`,
   `onRestart`, `onMainMenu`, `onPause` (the overlay bar's pause button),
-  `onToggleSound`, `onRetry2D`, `onStandard2D` (the failed Classic 2D
+  `onToggleSound`, `onDismissHint(mode)` (the hint strip's ×),
+  `onRetry2D`, `onStandard2D` (the failed Classic 2D
   board's offer), `onRetry3D`, `onStandard3D` (the failed 3D board's
   offer). Methods: screens `showMenu`, `showBoardChoice`,
   `showBoardChoice2D`, `showComingSoon(title)`, `showRecords` (the menu
   backdrop with the other menu screens hidden; the records view fills and
   shows `#records`), `showSettings` (its bindings
   in the active controller's glyphs),
-  `showReady(settings, msg)`, `showPlaying`, `showClassic2D` (positions
-  `#c2d-board` 16 px below the overlay bar), `showPause({state,time,minesLeft,note})`;
-  Classic 2D `setBoardText(text)`, `setBoardStatus({generating, failure})`;
+  `showReady(board, msg, {rules})` (the board line with its mines, the
+  "How 3D works" block `#ready-rules` while `rules`), `showPlaying`,
+  `showClassic2D` (positions `#c2d-board` 16 px below the overlay bar),
+  `showPause({state,time,minesLeft,note,mode})` (the board line, the mode's
+  bindings, the look settings only for `'3d'`), `showReplay` (hides the
+  game's HUD, help panel, hint strip and toast);
+  Classic 2D `setBoard2D(board)`, `setBoardStatus({generating, failure})`;
   3D `setBoardStatus3D({generating, failure})` (`#m3d-status`); menu
   `setLastMode(mode|null)`; pause confirmation
   `showConfirm({message, confirmLabel}, onYes, onNo)`, `isConfirmOpen`,
-  `closeConfirm` (→ false when none is open); HUD `setBoard`,
+  `closeConfirm` (→ false when none is open); HUD `setBoard(board)` (3D),
   `updateHud(time, minesLeft)` (overlay formats, DOM write only on change),
-  `setModes`, `setCrosshair`, `showSpacing`, `setSound(muted)`; help
-  `toggleHelp`, `userToggleHelp`, `dismissHint`; `flash`, `toast(msg, ms)`,
-  `setPad(info|null)`,
+  `setModes`, `setCrosshair`, `showSpacing`, `setSound(muted)` (also the HUD
+  strip's sound label); help `toggleHelp`, `userToggleHelp`,
+  `setHintStrip(on)` (the strip steps aside while the help panel is open),
+  `dismissHint`,
+  `setDevice('keyboard' | 'controller')`; `flash`, `toast(msg, ms)`,
+  `setPad(info|null)` (the connected pad's glyphs and mapping, and the ready
+  card's controller line),
   `setNoMouse`, `openControls`/`closeControls`
   (→ false when already closed)/`isControlsOpen`, `isPauseVisible`,
-  `setReadyMessage`. `setPad` also redraws the Settings page's bindings
-  while it shows.
+  `setReadyMessage`. The help surfaces show the mode the last screen method
+  set (`showReady`/`showPlaying` 3D, `showClassic2D` Classic 2D,
+  `showPause`'s `mode`) for the device `setDevice` set, and every change of
+  either, or of the pad's glyphs, redraws them — the Settings page's
+  bindings too while it shows.
 
 `js/ui/components.js` exports
 - `formatOverlayTime(seconds)` → whole seconds, three digits, stopping at
@@ -355,7 +374,8 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   handed to `createClassic2DMode` ([classic2d.md](classic2d.md)): board
   choice routes to `classic-2d-choice` with the last board choice (loaded at
   boot by `mode2d.loadChoice()`); `show` routes to `classic-2d`, whose Back
-  pauses; the board area is `#c2d-board`; the overlay bar's timer and
+  pauses; the board area is `#c2d-board`; the overlay bar names the board
+  through `board` (`ui.setBoard2D`, with " · no-guess"); its timer and
   counter come from `hud`, fed by `mode2d.tick()` every frame, which also
   drives the mode's movement sampler ([replay.md](replay.md)). The paused
   screen's `setBoardHidden` also hides the 2D board, and `pauseInfo` /
@@ -441,7 +461,8 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   controller goes to `padReplay`, which hands `REPLAY_PAD` buttons to the
   viewer and navigates the screen as a menu otherwise. `LAYER_SCREEN` maps
   `#replay` to `replay`. It is a shell screen, not a mode: it reaches no
-  mode, records nothing and plays no sound.
+  mode, records nothing and plays no sound; its `show` hides the game's
+  HUD, help panel, hint strip and toast (`ui.showReplay`).
 - **3D replay scene.** `mountReplay3D` mounts `createViewer3D` on
   `REPLAY_SCENE`, which hands the renderer the replay's 3D state view, drawn
   at `REPLAY_SPACING` (`SPACING_START`) with its own `FlyCamera`
@@ -530,13 +551,15 @@ Game flow (`js/main.js`):
 - `applyPixelRatio(n)` sets the renderer's pixel ratio from the render
   resolution setting for the board shown (`pixelRatioFor`, [settings.md](settings.md));
   `startGame` and the menu demo call it with their cell count.
-- Fullscreen (`F`) sets the fullscreen setting, whose applier calls
-  `enterFullscreen` (which also requests Keyboard Lock on
-  WASD/QE/Space/Ctrl/Shift) or `exitFullscreen`. Sound (`M`, the Sound
-  buttons) sets `muted`; the store's `muted` subscription updates the
-  buttons' label (`ui.setSound`).
+- Fullscreen (`F`, in 3D only: F flags in Classic 2D) sets the fullscreen
+  setting, whose applier calls `enterFullscreen` (which also requests
+  Keyboard Lock on WASD/QE/Space/Ctrl/Shift) or `exitFullscreen`. Sound
+  (`M` in both modes, the Sound buttons) sets `muted`; the store's `muted`
+  subscription updates the buttons' and the HUD strip's label
+  (`ui.setSound`). `H` toggles the help panel in both modes.
 - Settings: `SETTINGS` loads before the first screen shows (`await
-  Promise.all([settingsLoaded, recordsLoaded])` before `showMainMenu`);
+  Promise.all([settingsLoaded, recordsLoaded, firstUseLoaded, …])` before
+  `showMainMenu`);
   `applySettings` wires the theme, sound, camera, resolution and fullscreen
   owners, and one `bindSettingControls` binds every `[data-setting]`
   control — unlocking audio after a volume or mute change. A failed save
@@ -551,6 +574,27 @@ Game flow (`js/main.js`):
   stays watchable this session.
 - `onKey` ignores keys whose target is inside `input, select, textarea`, so
   settings sliders do not trigger H/M/F.
+- Active device: `DEVICE` (`createActiveDevice`, [settings.md](settings.md))
+  is told of every keydown and mousedown/mousemove (capture listeners), of
+  every controller poll with a press or a stick off its deadzone
+  (`padUsed`), and of the pad's connection (`updatePadUi`); its change calls
+  `ui.setDevice`, so every shown help surface follows it.
+- First-use hints: `FIRST_USE` (`createFirstUse` over `storage` and
+  `RECORDS`, `js/shell/first-use.js`) loads once the records have, seeding
+  a new `shell.firstUse` document from them, before the first screen. It
+  counts a game at the mode host's `started` and a finished 3D game at its
+  `finished`. Each game's strip eligibility is judged as the game begins —
+  `startGame` for 3D (`hint3D`), the 2D mode's `board` report for Classic 2D
+  (`hint2D`, not again when the failed board's offer plays it standard) —
+  and `refreshHints` shows the active mode's strip on every router change,
+  at the first key or controller input of a Classic 2D game (`used2D`) and
+  at a dismissal. The ready card shows the "How 3D works" block while
+  `FIRST_USE.rules3D`. `actionSounds` passes every 3D action result to
+  `noteAutoHide`, the one-time toast at the first auto-hide; in play the
+  frame loop runs `aimHint`, which shows the one-time aim hint once the
+  crosshair has rested `AIM_DWELL_MS` on a revealed number with a closed
+  cube behind it (a second pick with Space's pass-through). Both hints'
+  words come from `hintText` in the active device's names.
 - Controller menus: `LAYER_SCREEN` maps each overlay to its screen, topmost
   first; the topmost visible, non-inert one takes input (`topLayer`), and its
   default focus is the screen's `SHELL.defaultFocus` (the controls modal's is
@@ -558,10 +602,11 @@ Game flow (`js/main.js`):
   `layerChanged`, which suppresses the buttons held at the last poll until
   released (`nav`, a held suppressor) and resets the menu repeats.
 - UI help panel: `_helpByUser` keeps an H-opened panel open across screens;
-  screen methods otherwise hide it. Its controls list and the controller
-  section are generated from the bindings source (`js/settings/bindings.js`),
-  and the controls modal body is cloned from `#help .controls` at
-  construction, so edit a binding's text in `BINDINGS` only.
+  screen methods otherwise hide it. Its list and foot line, the pause card's
+  list, the HUD strip, the hint strip and the main menu's Controls panel
+  (its `#controls-tabs` Classic 2D | 3D `ui-segmented`, Classic 2D first)
+  are all drawn from the bindings source (`js/settings/bindings.js`), so
+  edit a binding's text in `BINDINGS` only.
 
 Component kit (`css/components.css`, catalogue in its head comment):
 - The catalogue is the contract: a screen uses a component by its class and
@@ -598,6 +643,11 @@ Component kit (`css/components.css`, catalogue in its head comment):
   and BACK in play click `#hud-pause` through `padClick`, so every input
   pauses through the same control. The bar has its own opaque raised
   surface, so it reads the same over the 3D scene as over a plain board.
+  Beside it the HUD strip (`#hud-tools`) lists the keys, or the
+  controller's buttons, the shown mode binds — in both modes — and the
+  first-use hint strip (`#hint-strip`, its text `#hint-strip-text`, its ×
+  `#hint-strip-close`) sits at the bottom left of the play area; on the
+  Classic 2D board `#c2d.c2d--hint` gives it the room below the board.
 - Main menu (`#menu`): a `ui-card ui-screen--wide` with the title row, one
   `ui-menu` of the four entries (`data-entry`; `UI` appends a "Last played"
   `ui-menu__detail` line and sets `data-last` on the last mode played) and a
@@ -651,8 +701,11 @@ Component kit (`css/components.css`, catalogue in its head comment):
   before Main menu), the
   confirmation panel `#pause-confirm` (`ui-panel ui-actions`, hidden until
   `showConfirm`: the message, `#p-confirm-yes` labelled with the action,
-  `#p-confirm-no` Cancel), the controls list and a Settings `ui-panel` (look
-  sensitivity and volume sliders, invert-Y toggle), then the Sound button.
+  `#p-confirm-no` Cancel), the board line `#pause-board` (as the overlay bar
+  names the board), the controls list `#pause-controls` (the active mode's
+  bindings for the active device) and a Settings `ui-panel` (look
+  sensitivity and volume sliders, invert-Y toggle — the look settings
+  hidden unless the game is 3D), then the Sound button.
   Those shortcuts and the main menu's volume slider carry `data-setting` and
   are bound to the settings store like the Settings page's controls.
 - Results screen (`#results`, filled by `createResultsView`; the gallery's
@@ -690,12 +743,13 @@ Component kit (`css/components.css`, catalogue in its head comment):
   stylesheet or a read of an undeclared token.
 - The 3D scene (`js/render.js`, `js/textures.js`) keeps its own palette: it
   never reads tokens and never subscribes to theme changes.
-- `js/ui.js`'s one `localStorage` key is `ms3d.hintH.done`; access is
-  try/catch-wrapped (`lsGet`/`lsSet`). Nothing reads, writes, shows or imports the
-  `ms3d.custom`, `ms3d.best.*` (the per-size 3D best times) and
-  `ms3d.lastPreset` keys left in browsers; they stay where they are. The last mode played (`shell.lastMode`), the
-  last 3D board choice (`mode3d.lastChoice`) and the settings (`settings`)
-  are platform-storage documents, not `ms3d.*` keys.
+- `js/ui.js` keeps no `localStorage` key. Nothing reads, writes, shows or
+  imports the `ms3d.custom`, `ms3d.best.*` (the per-size 3D best times),
+  `ms3d.lastPreset` and `ms3d.hintH.done` keys left in browsers; they stay
+  where they are. The last mode played (`shell.lastMode`), the first-use
+  hints (`shell.firstUse`), the last 3D board choice (`mode3d.lastChoice`)
+  and the settings (`settings`) are platform-storage documents, not
+  `ms3d.*` keys.
 
 ## DOMAIN DEPENDENCIES
 
@@ -774,7 +828,10 @@ Gameplay fidelity to the original game is the overriding rule.
   and session and their wiring here; `tests/tokens.test.mjs` and
   `tests/theme.test.mjs` pin the token sheet, the applier and the reader;
   `tests/components.test.mjs` pins the kit, its helpers, the overlay bar, the
-  kit-built screens and their contrast; `tests/settings-*.test.mjs` pin the
+  kit-built screens and their contrast; `tests/shell-help.test.mjs` the
+  mode-aware help surfaces, the active device and Space's tap-toggle, and
+  `tests/shell-first-use.test.mjs` the first-use hints and their document;
+  `tests/settings-*.test.mjs` pin the
   Settings screen's wiring and the pause-card shortcuts;
   `tests/results.test.mjs` pins the results flow, view and screen;
   `tests/mode3d-end.test.mjs` the 3D end sequence and the results takeover;
@@ -823,6 +880,11 @@ Gameplay fidelity to the original game is the overriding rule.
   `css/components.css` and the matching gallery section in
   `dev/components.html`.
 - Changing controller button mapping in menus or play (`padPlaying`, `padMenus`).
+- Changing what a help surface shows or when it follows the device: the
+  `// ---------- bindings: the active mode and device ----------` block of
+  `js/ui.js` and `// ---------- active device ----------` in `js/main.js`;
+  when a first-use hint shows: `js/shell/first-use.js` and the
+  `// ---------- first-use hints ----------` block of `js/main.js`.
 - Changing deploy behaviour (custom domain, 404 redirect, vendored three.js path).
 - Adding or renaming a token, or changing how start-up reads the stored
   theme (`readStoredTheme` in `js/theme.js`, kept in step with the settings

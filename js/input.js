@@ -101,6 +101,37 @@ export class MouseActions {
   reset() { this.left = false; this.right = false; this.toggle = false; }
 }
 
+/** A Space press shorter than this is a tap: it toggles aim-through instead of holding it. */
+export const SPACE_TAP_MS = 250;
+
+/**
+ * Space as tap-toggle as well as hold. A short tap (released within `tapMs`) turns `on` until the
+ * next press, whose release turns it off; a longer hold leaves nothing on after its release. A
+ * press made outside play (`active` false, e.g. the ready card's Space) is ignored. reset() drops
+ * the toggle without firing anything, as held state is dropped.
+ */
+export class TapToggle {
+  constructor(tapMs = SPACE_TAP_MS) {
+    this.tapMs = tapMs;
+    this.on = false;
+    this._down = null; // { at, wasOn } of the press being held, made in play
+  }
+  down(now, active) {
+    this._down = active ? { at: now, wasOn: this.on } : null;
+  }
+  up(now) {
+    const d = this._down;
+    this._down = null;
+    if (!d) return;
+    if (d.wasOn) this.on = false;
+    else if (now - d.at < this.tapMs) this.on = true;
+  }
+  reset() {
+    this.on = false;
+    this._down = null;
+  }
+}
+
 const GAME_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'Space',
   'ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight']);
 
@@ -113,6 +144,7 @@ export class Input {
   constructor(opts) {
     this.o = opts;
     this.keys = new Set();
+    this.spaceToggle = new TapToggle(); // Space: tap-toggle as well as hold
     this.locked = false;
     this.unlockedAt = -Infinity; // performance.now() of the last pointer-lock release
     const doc = document;
@@ -124,10 +156,12 @@ export class Input {
         // Ctrl is the "show hidden cells" key: swallow Ctrl+<key> browser shortcuts where allowed
         e.preventDefault();
       }
+      if (e.code === 'Space' && !e.repeat) this.spaceToggle.down(performance.now(), this.o.isActive());
       if (!e.repeat) this.o.onKey?.(e.code, e);
     });
     window.addEventListener('keyup', (e) => {
       this.keys.delete(e.code);
+      if (e.code === 'Space') this.spaceToggle.up(performance.now());
       if (GAME_KEYS.has(e.code) && this.o.isActive()) e.preventDefault();
     });
     window.addEventListener('blur', () => this.releaseAll());
@@ -177,13 +211,14 @@ export class Input {
 
   releaseAll() {
     this.keys.clear();
+    this.spaceToggle.reset();
     this.o.mouse.reset();
   }
 
   has(code) { return this.keys.has(code); }
   get shift() { return this.keys.has('ShiftLeft') || this.keys.has('ShiftRight'); }
   get ctrl() { return this.keys.has('ControlLeft') || this.keys.has('ControlRight'); }
-  get space() { return this.keys.has('Space'); }
+  get space() { return this.keys.has('Space') || this.spaceToggle.on; }
   get move() {
     const k = this.keys;
     return { w: k.has('KeyW'), a: k.has('KeyA'), s: k.has('KeyS'), d: k.has('KeyD'), q: k.has('KeyQ'), e: k.has('KeyE') };

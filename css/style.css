@@ -82,6 +82,7 @@ kbd {
 .ready-board { font-size: 15px; color: var(--color-ink-muted); font-variant-numeric: tabular-nums; }
 .ready-keys { font-size: 13px; color: var(--color-ink-muted); line-height: 1.9; display: flex; flex-direction: column; align-items: center; }
 .ready-keys b { color: var(--color-ink); font-weight: 600; }
+.ready-rules { font-size: 13px; color: var(--color-ink); line-height: 1.7; display: flex; flex-direction: column; align-items: center; }
 .ready-tip { font-size: 12px; color: var(--color-ink-muted); opacity: 0.9; }
 .ready-msg { font-size: 14px; font-weight: 600; color: var(--color-warning); max-width: 440px; }
 .ready-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; max-width: 100%; margin: auto; }
@@ -97,6 +98,7 @@ kbd {
 }
 .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .modal-head h3 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-ink-muted); }
+#controls-tabs { margin-bottom: var(--space-3); }
 .hint-close {
   appearance: none; border: 0; background: transparent; color: var(--color-ink-muted);
   font: 700 18px/1 var(--font-family-sans); width: 28px; height: 28px; border-radius: 8px; cursor: pointer;
@@ -104,11 +106,14 @@ kbd {
 .hint-close:hover { background: var(--color-accent-soft); color: var(--color-ink); }
 .modal-close { font-size: 24px; width: 34px; height: 34px; }
 
-/* ---------- small H hint ---------- */
-#hint-h {
-  position: absolute; right: 16px; bottom: 16px; pointer-events: auto;
-  display: flex; align-items: center; gap: 6px; padding: 6px 6px 6px 12px; font-size: 13px; color: var(--color-ink-muted);
+/* ---------- first-use hint strip ---------- */
+/* At the bottom left of the play area; on the Classic 2D board it takes the room below the board. */
+#hint-strip {
+  position: absolute; left: var(--space-4); bottom: var(--space-4); pointer-events: auto;
+  display: flex; align-items: center; gap: 6px; padding: 6px 6px 6px 14px; font-size: 13px; color: var(--color-ink-muted);
+  max-width: calc(100vw - 32px);
 }
+#c2d.c2d--hint #c2d-board { bottom: 64px; }
 .ready-msg:empty { display: none; }
 
 
@@ -147,7 +152,7 @@ kbd {
 .hud-bar { position: absolute; top: 16px; left: 16px; pointer-events: auto; }
 .hud-board .ui-stat__value { font-size: var(--font-size-md); color: var(--color-ink-muted); }
 #hud-mines.negative { color: var(--color-danger); }
-#hud.hud--2d .hud-tools, #hud.hud--2d #crosshair, #hud.hud--2d #mode-chips, #hud.hud--2d #hint-h { display: none; }
+#hud.hud--2d #crosshair, #hud.hud--2d #mode-chips { display: none; }
 .hud-tools { position: absolute; top: 16px; right: 16px; padding: 8px 12px; display: flex; gap: 12px; font-size: 13px; color: var(--color-ink-muted); }
 .kbd-hint { white-space: nowrap; }
 
@@ -185,6 +190,7 @@ kbd {
 #help h3 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-ink-muted); }
 #help .controls { font-size: 13px; }
 .help-foot { margin: 10px 0 0; font-size: 12px; color: var(--color-ink-muted); }
+.help-foot .pad-note { display: block; margin: 8px 0 0; }
 
 #flash { position: fixed; inset: 0; pointer-events: none; z-index: var(--z-flash); opacity: 0; background: radial-gradient(circle at 50% 50%, rgba(255, 245, 200, 0.95), rgba(255, 90, 40, 0.75) 45%, rgba(160, 0, 0, 0.55)); }
 #flash.go { animation: flash 0.9s ease-out; }
@@ -211,9 +217,6 @@ kbd {
 #ctx-lost .ready-card { background: rgba(255, 255, 255, 0.96); }
 
 /* ---------- game controller ---------- */
-.pad-section { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(74, 91, 122, 0.18); }
-#help .pad-section h3, .modal-card .pad-section h3 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-ink-muted); }
-.pad-section .pad-name { text-transform: none; letter-spacing: 0; font-weight: 600; }
 .pad-note { margin: 0 0 10px; padding: 6px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; color: #6b3d00; background: #fff4d6; border: 1px solid #f0c66b; }
 kbd.pad { min-width: 1.9em; border-radius: 999px; }
 .ready-pad { font-size: 13px; color: var(--color-ink-muted); line-height: 1.7; text-align: center; max-width: 520px; }

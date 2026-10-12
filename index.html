@@ -86,14 +86,9 @@
       <div class="ui-stat hud-board" role="group" aria-labelledby="hud-size-label"><span class="ui-stat__label" id="hud-size-label">Board</span><span id="hud-size" class="ui-stat__value">-</span></div>
       <button type="button" id="hud-pause" class="ui-button ui-button--secondary ui-overlay-bar__pause" aria-label="Pause game">Pause</button>
     </div>
-    <div class="hud-panel hud-tools">
-      <span class="kbd-hint"><kbd>H</kbd> help</span>
-      <span class="kbd-hint"><kbd>M</kbd> <span id="hud-sound">sound on</span></span>
-      <span class="kbd-hint"><kbd>F</kbd> fullscreen</span>
-      <span class="kbd-hint"><kbd>Esc</kbd> menu</span>
-    </div>
+    <div id="hud-tools" class="hud-panel hud-tools"></div>
     <div id="crosshair" class="off" aria-hidden="true"></div>
-    <div id="hint-h" class="hud-panel hidden"><span><kbd>H</kbd> controls</span><button type="button" id="hint-h-close" class="hint-close" aria-label="Dismiss hint">&times;</button></div>
+    <div id="hint-strip" class="hud-panel hidden" role="note"><span id="hint-strip-text"></span><button type="button" id="hint-strip-close" class="hint-close" aria-label="Dismiss hint">&times;</button></div>
     <div id="mode-chips" aria-hidden="true">
       <span id="chip-shift" class="chip">Shift: neighbours only</span>
       <span id="chip-space" class="chip">Space: see through revealed</span>
@@ -106,8 +101,7 @@
   <aside id="help" class="hud-panel hidden" aria-label="Controls">
     <h3>Controls</h3>
     <dl class="controls"></dl>
-    <div id="help-pad" class="pad-section hidden"></div>
-    <p class="help-foot">Actions fire when the mouse button is released. <kbd>H</kbd> hides this panel.</p>
+    <p id="help-foot" class="help-foot"></p>
   </aside>
 
   <div id="flash" aria-hidden="true"></div>
@@ -194,9 +188,14 @@
         <span class="ready-title">Click to play</span>
         <span id="ready-board" class="ready-board">9 &times; 9 &times; 1 &middot; 10 mines</span>
         <span id="ready-msg" class="ready-msg"></span>
+        <span id="ready-rules" class="ready-rules hidden" role="group" aria-label="How 3D works">
+          <span>A number counts the mines among the 26 cubes around it.</span>
+          <span>Empty and solved cubes hide themselves; hold <kbd>Ctrl</kbd> to show them.</span>
+          <span>The first click is always safe.</span>
+        </span>
         <span class="ready-keys">
           <span><b>Left</b> reveal &middot; <b>Right</b> flag &middot; <b>Left+Right</b> chord</span>
-          <span><kbd>Shift</kbd>/<kbd>Space</kbd>/<kbd>Ctrl</kbd> view modes &middot; <b>Wheel</b> spacing</span>
+          <span>Hold <kbd>Space</kbd> to aim through numbers, <kbd>Shift</kbd> to see a number's neighbours</span>
           <span><b>Mouse</b> look &middot; <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> fly &middot; <kbd>Q</kbd>/<kbd>E</kbd> down/up &middot; <kbd>Esc</kbd> pause</span>
         </span>
         <span id="ready-pad" class="ready-pad hidden"></span>
@@ -213,8 +212,8 @@
         <h3 id="controls-title">Controls</h3>
         <button type="button" id="controls-close" class="hint-close modal-close" aria-label="Close">&times;</button>
       </div>
-      <div id="controls-body"></div>
-      <div id="modal-pad" class="pad-section hidden"></div>
+      <div id="controls-tabs" class="ui-segmented" role="radiogroup" aria-label="Mode"><button type="button" class="ui-segmented__option" role="radio" aria-checked="true" data-value="classic-2d">Classic 2D</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="3d" tabindex="-1">3D</button></div>
+      <dl id="controls-body" class="controls"></dl>
     </div>
   </section>
 
@@ -373,6 +372,7 @@
   <section id="pause" class="overlay hidden" aria-label="Pause menu">
     <section id="pause-card" class="ui-card ui-screen" aria-labelledby="pause-title">
       <h2 class="ui-card__title" id="pause-title">Paused</h2>
+      <p id="pause-board" class="ui-text ui-text--muted"></p>
       <p id="pause-sub" class="ui-text ui-text--muted">Time 0.00 &middot; 10 mines left</p>
       <p id="pause-note" class="ui-text ui-text--warning hidden" role="alert"></p>
       <div id="pause-actions" class="ui-actions">
@@ -386,16 +386,7 @@
         <button id="p-confirm-no" class="ui-button ui-button--secondary" type="button">Cancel</button>
       </div>
       <div class="ui-panel">
-        <dl class="controls compact">
-          <dt>Mouse</dt><dd>Look</dd>
-          <dt><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> <kbd>Q</kbd><kbd>E</kbd></dt><dd>Fly</dd>
-          <dt>Left / Right</dt><dd>Reveal / Flag</dd>
-          <dt>Left + Right</dt><dd>Chord</dd>
-          <dt>Wheel</dt><dd>Spacing</dd>
-          <dt><kbd>Shift</kbd></dt><dd>Neighbours only</dd>
-          <dt><kbd>Space</kbd></dt><dd>Aim through numbers</dd>
-          <dt><kbd>Ctrl</kbd></dt><dd>Show hidden</dd>
-        </dl>
+        <dl id="pause-controls" class="controls compact"></dl>
       </div>
       <div class="ui-panel ui-actions" role="group" aria-labelledby="p-settings-title">
         <h3 class="ui-heading" id="p-settings-title">Settings</h3>

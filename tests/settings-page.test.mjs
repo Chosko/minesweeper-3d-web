@@ -11,7 +11,7 @@ import { SCHEMA, SETTING_KEYS } from '../js/settings/schema.js';
 import { GLYPHS } from '../js/gamepad.js';
 import { CURSOR_KEYS } from '../js/classic2d/cursor-input.js';
 import {
-  BINDING_MODES, BINDING_DEVICES, BINDINGS, bindingRows, bindingsListHtml,
+  BINDING_MODES, BINDING_DEVICES, BINDINGS, bindingRows, bindingsListHtml, bindingsHtml,
 } from '../js/settings/bindings.js';
 import {
   SETTINGS_SECTIONS, SETTING_LABELS, settingControl, settingControlHtml, settingsPageHtml, bindingsSectionHtml,
@@ -73,8 +73,8 @@ test('the in-game help reads the same bindings source', () => {
   assert.match(help, /<dl class="controls"><\/dl>/, 'the help list is filled from the bindings source, not written in the markup');
   const ui = read('js/ui.js');
   assert.match(ui, /from '\.\/settings\/bindings\.js'/);
-  assert.match(ui, /bindingRows\('3d', 'keyboard'\)/, 'the help panel shows the 3D keyboard bindings');
-  assert.match(ui, /bindingRows\('3d', 'controller'\)/, 'the controller help shows the 3D controller bindings');
+  assert.match(ui, /bindingsHtml\(this\._mode, this\._device, this\._glyphs\)/, 'the help panel shows the active mode\'s rows for the active device');
+  assert.equal(bindingsHtml('3d', 'controller', GLYPHS.xbox), bindingsListHtml(bindingRows('3d', 'controller'), GLYPHS.xbox), 'the component is the source\'s rows');
 });
 
 // ---------------------------------------------------------------- the page, generated from the schema

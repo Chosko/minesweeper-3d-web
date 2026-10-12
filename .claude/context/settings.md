@@ -20,8 +20,9 @@ read-only bindings list. Every module is DOM-free; `js/main.js` wires them
   the bindings section, and the binder that ties any setting control (page,
   pause card, main menu) to the store.
 - `js/settings/bindings.js` — the bindings source: each mode's controls per
-  input device, read by the Settings page and by the in-game help, the
-  controls modal and the controller help in `js/ui.js`.
+  input device, the HUD strip, the first-use hint strips, the help panel's
+  foot line and the one-time hints' text, read by the Settings page and by
+  every help surface in `js/ui.js`; and the active device.
 
 | Setting | Type | Range / values | Default | Applied to |
 | --- | --- | --- | --- | --- |
@@ -104,6 +105,23 @@ Bindings (`js/settings/bindings.js`)
 - `bindingsListHtml(rows, glyphs = GLYPHS.generic)` — `<dt>`/`<dd>` pairs,
   keys as `<kbd>`, buttons as `<kbd class="pad">` in the given glyphs, text
   escaped.
+- `bindingsHtml(mode, device, glyphs?)` — the bindings component: that
+  mode's rows for that device.
+- `HUD_STRIP`, `HINT_STRIP` — `[mode][device]` rows in the same syntax;
+  `hudStripHtml(mode, device, glyphs?, { muted })` — one `.kbd-hint` per key
+  or button the mode binds on that device (`sound` reads "sound on" /
+  "sound off"; F is not listed in Classic 2D, where it flags);
+  `hintStripHtml(mode, device, glyphs?)` — the first-use strip, items joined
+  by " · ".
+- `HELP_FOOT[mode][device]`, `helpFootHtml(mode, device, glyphs?)` — the H
+  panel's foot line, naming the release rule in 3D only.
+- `HINT_TEXT` (`autoHide`, `aimHint`), `hintText(name, device, glyphs?)` —
+  a one-time hint as plain text, keys and buttons by name.
+- `createActiveDevice({ onChange })` → `current` (`'keyboard'` |
+  `'controller'`), `input('pad' | 'keyboard' | 'pointer')`,
+  `connected(on)`: the controller while the last input came from a
+  connected controller, otherwise the keyboard and mouse (also on
+  disconnect); `onChange(device)` once per change.
 
 ## INTERNAL PATTERNS
 
@@ -132,15 +150,20 @@ Bindings (`js/settings/bindings.js`)
   a throwing reader counts as no value), then the whole document is saved.
   The legacy keys themselves are never written or deleted.
 - **Controls are bound by `data-setting`.** The page's generated controls,
-  the pause card's sensitivity, invert-Y and volume shortcuts and the main
-  menu's volume slider all carry `data-setting`, and one
+  the pause card's sensitivity, invert-Y and volume shortcuts (the first two
+  shown only on a 3D game's pause card) and the main menu's volume slider
+  all carry `data-setting`, and one
   `bindSettingControls(document.querySelectorAll('[data-setting]'), …)` in
   `js/main.js` binds them, so every copy shows the same value. A slider's
   `data-scale` converts its units to the stored value.
 - **Bindings are one table.** The Settings page shows every mode × device;
-  the in-game help and the controls modal show the 3D keyboard rows, the
-  controller help the 3D controller rows in the active pad's glyphs. Editing
-  a control's description happens in `BINDINGS`, never in markup.
+  the pause card, the H panel and the HUD strip show the active mode's rows
+  for the active device, the main menu's Controls panel the rows of its
+  Classic 2D | 3D tab for the active device, and the hint strip its mode's
+  strip — controller buttons always in the connected pad's glyphs. A row's
+  text is edited in `BINDINGS` (`HUD_STRIP`, `HINT_STRIP`, `HELP_FOOT`,
+  `HINT_TEXT` for those surfaces), never in markup, so the later rebinding
+  feature reaches every surface through this source.
 
 ## DOMAIN DEPENDENCIES
 
@@ -179,5 +202,6 @@ Bindings (`js/settings/bindings.js`)
   `enterFullscreen` / `exitFullscreen` pair in `js/main.js`.
 - A control not updating or not saving: the per-kind binders in `page.js`
   (`bindSlider`, `bindToggle`, `bindChoice`).
-- Changing a mode's listed bindings or adding a mode or device: `BINDINGS`
-  and the row-text syntax in `bindings.js`.
+- Changing a mode's listed bindings, a strip's or hint's words, or adding a
+  mode or device: `BINDINGS`, the strip and hint tables and the row-text
+  syntax in `bindings.js`.

@@ -11,8 +11,9 @@ lists controls, graphics, the light or dark theme, audio and accessibility as
 the game's settings. This feature gives them one page reached from the main
 menu, one store with defaults and validation that keeps them in one settings
 document, and one way for the rest of the game to read a value and hear when
-it changes; the pause card keeps quick access to look sensitivity, invert Y
-and volume through the same store.
+it changes; the pause card keeps quick access to volume in both modes, and to
+look sensitivity and invert Y on a 3D game's pause card only, through the
+same store.
 
 ## Scope and non-goals
 
@@ -68,8 +69,9 @@ settings handling for the shell's UI module and the sound module ([app-shell.md]
   theme and audio, each control bound to one schema entry, with Back to the
   screen it was opened from. The bindings list reads the same source as the
   in-game help, so the two never disagree.
-- **Pause-card shortcuts.** The pause card keeps quick access to
-  sensitivity, invert Y and volume, bound to the same store.
+- **Pause-card shortcuts.** The pause card keeps quick access to volume in
+  both modes, and to look sensitivity and invert Y on a 3D game's pause card
+  only, bound to the same store.
 
 ## Data and state
 
