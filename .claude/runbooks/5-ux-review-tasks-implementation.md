@@ -136,7 +136,7 @@ Context: none
 
 Done: 2026-10-12, commit `997d702` (47 files, +1040/-284). Wrong premise: js/records/store.js needed no change — malformed pause fields are rejected where the records model loads the history. Decisions: format-1 replays and pre-change history entries read as having no pauses, with no records format step; a replay passed to the encoder without a pause list counts as having none.
 
-## [ ] 12. Implement task 130 — One-key restart and completed-games stats
+## [x] 12. Implement task 130 — One-key restart and completed-games stats
 
 Depends on: none
 
@@ -145,6 +145,8 @@ Context: none
 ```prompt
 /task-implement 130 --review
 ```
+
+Done: 2026-10-12, commit `2dd44ae` (40 files, +1040/-251). Wrong premise: there is no overlay-bar restart — the bar has only Pause; the rule covers the pause card's Restart, F2, Start + Y and the results screen's Play again / R. Decisions: records format is now version 3, an older document is rebuilt from the game history on load, and with no history its completed-games figures start from the reference figures; F2 and Start + Y do nothing on the 3D "Click to play" card of a game in progress.
 
 ## [ ] 13. Implement task 131 — Reset all data
 
@@ -345,7 +347,8 @@ Context: none
 
 Depends on: 10, 13, 30
 
-Context: none
+Context:
+- 2026-10-12 (from step 12): the records format is already version 3 (completed-games figures, rebuilt from the game history on load); a further format change starts from there.
 
 ```prompt
 /task-implement 149 --review
