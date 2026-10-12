@@ -208,7 +208,7 @@ Context: none
 
 Done: 2026-10-12, commit `a61e9af` (5 files, +322/-6). Wrong premise: a flag placed before the first reveal cannot sound in Classic 2D — under the reference rules it changes nothing — so it stays silent and the tests check the silence. The context files audio.md and classic2d.md do not yet describe the mode's sound option.
 
-## [ ] 18. Implement task 136 — 2D tile art parity with 3D
+## [x] 18. Implement task 136 — 2D tile art parity with 3D
 
 Depends on: none
 
@@ -217,6 +217,8 @@ Context: none
 ```prompt
 /task-implement 136 --review
 ```
+
+Done: 2026-10-12, commit `6e4395d` (19 files, +971/-432). Decisions: `--color-tile-edge` is gone, replaced by a set of `--color-tile-*` tokens (more than the body listed); light-theme numbers 2, 3, 6 and 8 were darkened to meet 4.5:1 on the shaded face; the dark-theme lit bevel is capped at `#3e5f9c` by the cursor-ring contrast test.
 
 ## [ ] 19. Implement task 137 — 2D end-of-game moment and the faster loop
 
