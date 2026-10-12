@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 133
+Last task number: 134
 
 ---
 
@@ -815,6 +815,15 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: js/shell/returning.js, js/records/typical-bbbv.js, dev/measure-typical-bbbv.mjs, js/main.js, js/ui.js, js/mode3d/board-choice.js, js/classic2d/board-choice.js, index.html, css/style.css, tests/shell-returning.test.mjs, tests/shell-menu.test.mjs, tests/mode3d-board-choice.test.mjs, tests/classic2d-mode.test.mjs, tests/components.test.mjs, .claude/domain/features/game-shell.md, .claude/domain/features/3d-play-flow.md, .claude/domain/features/classic-2d-square-play.md
+Preconditions: none
+
+---
+
+## 134. 2D board scale, framed panel, cursor ring
+
+Status: [MISSING]
+Target: claude
+Files: js/classic2d/tile-skin.js, js/classic2d/board-view.js, js/classic2d/cursor-input.js, js/classic2d/mode.js, js/classic2d/scroll-hint.js, js/replay/viewer-2d.js, js/replay/viewer.js, js/settings/schema.js, js/settings/page.js, js/main.js, js/ui.js, index.html, css/style.css, tests/classic2d-view.test.mjs, tests/classic2d-cursor.test.mjs, tests/classic2d-mode.test.mjs, tests/tile-skin.test.mjs, tests/replay-2d.test.mjs, tests/replay-viewer.test.mjs, tests/settings-store.test.mjs, tests/settings-page.test.mjs, tests/components.test.mjs, .claude/domain/features/square-tile-skin.md, .claude/domain/features/classic-2d-square-play.md, .claude/domain/features/settings.md, .claude/domain/features/replay-playback.md, .claude/domain/features/screen-components.md, .claude/domain/features/replay-recording.md
 Preconditions: none
 
 ---
