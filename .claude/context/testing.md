@@ -775,14 +775,17 @@ browser checks for everything that needs WebGL or the DOM.
   pointer, else the cursor, on a scrolling board; opening from a blob, a
   replay object, the hand-off's `{blob}` or a library id, verification first
   and each failure line with Back still working, no viewer for the graph, a
-  replay still loading when the screen closes; ticks driving the clock and
-  the simulator, the end of a replay, seek and step, the seek bar step, the
-  seek bar's pause marks and their text, playback through a paused span,
-  keyboard and controller commands, a lost game's loss view; the viewer
-  reaching no records, sound or pause; static checks of the `#replay` kit
-  markup and its wiring in `js/main.js`. One Playwright test plays a
-  recorded 2D fixture through to the end and shows a replay's pause marks
-  (skipped when Playwright or chromium is unavailable).
+  box replay with no 3D viewer showing the WebGL 2 line while a square one
+  still plays, a replay still loading when the screen closes; ticks driving
+  the clock and the simulator, the end of a replay, seek and step, the seek
+  bar step, the seek bar's pause marks and their text, playback through a
+  paused span, keyboard and controller commands, a lost game's loss view;
+  the viewer reaching no records, sound or pause; static checks of the
+  `#replay` kit markup and its wiring in `js/main.js`, the box viewer offered
+  only with WebGL 2. Two Playwright tests: one plays a recorded 2D fixture
+  through to the end and shows a replay's pause marks; one, without WebGL 2,
+  plays a 2D fixture and shows the WebGL 2 line for the 3D fixture (skipped
+  when Playwright or chromium is unavailable).
 - `tests/replay-viewer-3d.test.mjs` — the 3D viewer
   (`js/replay/viewer-3d.js`): the recorded camera in cells and radians, held
   through a still stretch and interpolated over the last sampling interval
@@ -818,10 +821,17 @@ browser checks for everything that needs WebGL or the DOM.
   placeholder), the last mode played as a platform-storage document over the
   memory backend (recorded on game started, read back at start-up, a
   malformed document read as none, storage that does not persist never
-  stopping a game); DOM-free; the menu, 3D board-choice and placeholder markup
-  in `index.html`, their router entries and default focus, and their
-  catalogue entries. Two Playwright tests: one opens each entry and returns
-  with Back; one drives the 3D board choice and the placeholder with a fake
+  stopping a game); the 3D entry unavailable without WebGL 2 (its reason, no
+  route, the other entries unaffected); DOM-free; the menu, 3D board-choice
+  and placeholder markup in `index.html`, their router entries and default
+  focus, and their catalogue entries; the no-WebGL 2 wiring (the `WEBGL2`
+  flag, the `no-webgl2` styles, the start hook, the `<noscript>` and README
+  copy). Three Playwright tests: one opens each entry and returns with Back,
+  the 3D entry enabled over the demo scene; one, without WebGL 2, checks the
+  static background in both themes, the disabled 3D entry and its reason, a
+  Classic 2D game to its results with its replay watched, the Records 3D
+  side, a Settings change and no console error; one drives the 3D board
+  choice and the placeholder with a fake
   controller alone (`page.addInitScript` stubs `navigator.getGamepads`;
   `press` holds a button for exactly one poll, so menu auto-repeat and
   held-button suppression never interfere) and reaches `coming-soon` by
@@ -1239,8 +1249,11 @@ Browser verification (Playwright):
   CLI `/opt/node22/bin/playwright`); resolve it via `NODE_PATH` or an absolute
   import, not a local install. Browsers live in `PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers`
   (chromium build 1194). Do not run `playwright install`.
-- WebGL 2 is required and there is no GPU: launch chromium with SwiftShader,
+- 3D needs WebGL 2 and there is no GPU: launch chromium with SwiftShader,
   e.g. `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader`.
+  The no-WebGL 2 checks (`tests/shell-menu.test.mjs`,
+  `tests/replay-viewer.test.mjs`) instead add an init script making
+  `getContext('webgl2')` return null.
 - Serve over HTTP (ES modules fail on `file://`), e.g. globally installed
   `http-server` or `serve` from the repo root.
 - Headless has no pointer lock: call `__ms.start(...)` then `__ms.forcePlay()`

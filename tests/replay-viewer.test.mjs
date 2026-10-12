@@ -390,9 +390,26 @@ test('a replay that cannot play says why, and Back still works', async () => {
 });
 
 test('a replay with no viewer for its board says it cannot be played here', async () => {
-  const { viewer, view } = viewerOver();
-  await viewer.show({ replay: blobOf(CUBE) });
+  const { viewer, view } = viewerOver({ viewers: {} });
+  await viewer.show({ replay: blobOf(WON) });
   assert.deepEqual(view.log.at(-1), ['failed', FAILURES.unsupported]);
+  assert.match(FAILURES.unsupported, /cannot be played here yet/);
+});
+
+test('a 3D replay with no 3D viewer to offer (no WebGL 2) says why, Back still works, and a 2D replay still plays', async () => {
+  assert.equal(FAILURES.webgl2, 'This 3D replay needs WebGL 2, which is not available in this browser.');
+  const { viewer, view, router, viewers } = viewerOver();
+  await viewer.show({ replay: blobOf(CUBE), returnTo: RETURN });
+  assert.deepEqual(view.log.at(-1), ['failed', FAILURES.webgl2]);
+  assert.equal(viewer.state.status, 'failed');
+  assert.equal(viewer.state.message, FAILURES.webgl2);
+  assert.equal(viewers.made.length, 0, 'no viewer mounts');
+  assert.ok(router.went.includes('refocus'), 'the focus moves to the message\'s Back');
+  viewer.back();
+  assert.deepEqual(router.went.at(-1), ['records', { data: RETURN.data }]);
+  await viewer.show({ replay: blobOf(WON) });
+  assert.equal(viewer.state.status, 'ready', 'a square replay plays');
+  assert.equal(viewers.made.length, 1);
 });
 
 test('a replay still loading when the screen closes is dropped', async () => {
@@ -606,6 +623,10 @@ test('the shell registers the viewer under the Records screen\'s replay route an
   assert.match(MAIN, /replay: 'replay'/, 'its layer is in the controller layer table');
 });
 
+test('the shell offers the 3D viewer only with WebGL 2', () => {
+  assert.match(MAIN, /viewers: WEBGL2 \? \{ square: mountViewer2D, box: mountReplay3D \} : \{ square: mountViewer2D \}/);
+});
+
 // ---------------------------------------------------------------- in a browser
 
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.msrp': 'application/octet-stream' };
@@ -638,6 +659,58 @@ async function openBrowser(t) {
     return null;
   }
 }
+
+test('in a browser without WebGL 2, a 2D replay plays and a 3D replay says it needs WebGL 2', async (t) => {
+  const playwright = await loadPlaywright();
+  if (!playwright) { t.skip('Playwright is not installed'); return; }
+  let browser;
+  try {
+    browser = await playwright.chromium.launch();
+  } catch (error) {
+    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
+    return;
+  }
+  const server = await serve();
+  try {
+    const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    page.on('console', (m) => { if (m.type() === 'error') errors.push(`console: ${m.text()}`); });
+    await page.addInitScript(() => {
+      const getContext = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
+    });
+    await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+    assert.equal(await page.evaluate(() => globalThis.__ms.renderer), null, 'no WebGL 2 here');
+    const watch = (file) => page.evaluate(async (f) => {
+      const bytes = new Uint8Array(await (await fetch(`/tests/fixtures/replays/${f}`)).arrayBuffer());
+      globalThis.__ms.watch({ replay: bytes, returnTo: { screen: 'menu' } });
+    }, file);
+
+    await watch(WON);
+    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready');
+    assert.equal(await page.evaluate(() => document.querySelectorAll('#replay-board canvas').length), 1, 'the 2D board view is mounted');
+    await page.click('#rp-speed [data-value="4"]');
+    await page.click('#rp-play');
+    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.ended, null, { timeout: 15000 });
+    assert.equal(await page.evaluate(() => document.getElementById('replay-end').textContent), 'Won · 9.971 s');
+    await page.click('#rp-back');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
+
+    await watch(CUBE);
+    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'failed');
+    assert.equal(await page.evaluate(() => document.getElementById('replay-message-text').textContent), FAILURES.webgl2);
+    assert.equal(await page.evaluate(() => document.getElementById('replay').classList.contains('replay--scene')), false, 'no 3D scene is let through');
+    assert.equal(await page.evaluate(() => document.activeElement?.id), 'replay-message-back');
+    await page.keyboard.press('Escape');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu', 'Back works');
+    assert.deepEqual(errors, []);
+  } finally {
+    server.close();
+    await browser.close();
+  }
+});
 
 test('in a browser, a recorded 2D replay plays from its fixture through to the end', async (t) => {
   const browser = await openBrowser(t);

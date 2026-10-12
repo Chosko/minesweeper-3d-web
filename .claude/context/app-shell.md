@@ -10,7 +10,7 @@ pointer lock (the 3D board choice, session and adapter themselves are
 menus/HUD/overlays, the DOM component kit the screens are built from, design
 tokens and the light/dark theme, the debug hook, and the static-site files.
 
-- `js/main.js` — entry module. Builds `BoardRenderer`, `FlyCamera`, `Input`,
+- `js/main.js` — entry module. Builds `BoardRenderer` (null without WebGL 2; `WEBGL2`), `FlyCamera`, `Input`,
   `MouseActions`, `Controls`, `GamepadReader`, `UI`, the settings store
   `SETTINGS` ([settings.md](settings.md)), and the shell objects
   `SHELL` (router), `MODES` (mode host, with the 3D adapter registered as
@@ -181,12 +181,18 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
 the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
 
 `js/shell/menu.js`
-- `MENU_ENTRIES` — `classic-2d` (mode), `3d` (mode), `records` (screen),
-  `settings` (screen), in that order; `PLACEHOLDER_SCREEN` = `'coming-soon'`.
-- `entryRoute(entry, {hasMode, hasScreen})` → `{mode}`, `{screen}` or
+- `MENU_ENTRIES` — `classic-2d` (mode), `3d` (mode, `needs: 'webgl2'`),
+  `records` (screen), `settings` (screen), in that order;
+  `PLACEHOLDER_SCREEN` = `'coming-soon'`; `UNAVAILABLE_REASONS` — the line
+  an unavailable entry shows, by the browser feature it lacks (`webgl2`).
+- `entryReason(entry, missing?)` → the reason, or null when the browser
+  lacks none of what the entry needs.
+- `entryRoute(entry, {hasMode, hasScreen, missing?})` → null for an
+  unavailable entry, else `{mode}`, `{screen}` or
   `{screen: 'coming-soon', data: {entry, title}}`.
-- `createMenu({router, modes, entries?})` → `entries`, `route(id)`,
-  `open(id)` (returns the route taken).
+- `createMenu({router, modes, entries?, missing?})` → `entries`,
+  `route(id)`, `unavailable(id)` (its reason or null), `open(id)` (returns
+  the route taken; null, opening nothing, for an unavailable entry).
 - `LAST_MODE_DOC` = `'shell.lastMode'`, `LAST_MODE_VERSION` = 1;
   `createLastMode({storage, modes})` → `current`, `record(mode)`, `load()`
   (null when nothing or a malformed document is stored), `dispose()`.
@@ -723,6 +729,18 @@ Game flow (`js/main.js`):
 - `applyPixelRatio(n)` sets the renderer's pixel ratio from the render
   resolution setting for the board shown (`pixelRatioFor`, [settings.md](settings.md));
   `startGame` and the menu demo call it with their cell count.
+- Without WebGL 2 (`createRenderer()` returns null — three.js's
+  `WebGLRenderer` throws, its expected console report held back through
+  `THREE.setConsoleFunction`) `WEBGL2` is false, the one flag every 3D-only
+  path reads: `body.no-webgl2` hides `#scene` and lets the menu screens sit
+  on the body's token gradient; no demo board is made; the menu's 3D entry
+  is disabled with its reason (`MENU.unavailable`, `ui.setEntryUnavailable`);
+  `MODES.start('3d', …)`, the 3D board choice and Play again on a 3D result
+  do nothing and the `__ms` hook's `start` throws the reason; the replay
+  viewer is handed no box viewer; the frame loop polls the controller and
+  ticks the 2D board and the replay viewer, then returns before every
+  renderer step; resize, `applyPixelRatio`, the backdrop and the scene
+  palette do nothing.
 - Fullscreen (`F`, in 3D only: F flags in Classic 2D) sets the fullscreen
   setting, whose applier calls `enterFullscreen` (which also requests
   Keyboard Lock on WASD/QE/Space/Ctrl/Shift) or `exitFullscreen`. Sound

@@ -274,8 +274,9 @@ There is no build step. Serve the folder with any static web server, for example
 npx http-server -c-1
 ```
 
-Then open the URL it prints (by default http://localhost:8080). The game needs WebGL 2 and does not
-work from `file://`, because ES modules need a server.
+Then open the URL it prints (by default http://localhost:8080). The game does not work from
+`file://`, because ES modules need a server.
+3D needs WebGL 2; Classic 2D, Records and Settings run without it.
 
 ## Tests
 

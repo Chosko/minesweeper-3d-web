@@ -355,7 +355,7 @@ test('the shell reaches the 3D game only through the mode host', () => {
   const flow = MAIN.slice(MAIN.indexOf('const FLOW_3D = {'), MAIN.indexOf('// end of 3D flow'));
   assert.ok(flow.length > 100, 'js/main.js declares the 3D flow');
   assert.equal([...MAIN.replace(flow, '').matchAll(/\bstartGame\(/g)].length, 1, 'only the 3D flow calls startGame');
-  assert.match(MAIN, /start\(X, Y, Z, mines, minePositions\) \{ MODES\.start\('3d'/, 'the debug hook starts through the host');
+  assert.match(MAIN, /start\(X, Y, Z, mines, minePositions\) \{[^\n]*MODES\.start\('3d'/, 'the debug hook starts through the host');
   assert.match(MAIN, /onStart: \(choice\) => \{[^\n]*MODES\.start\('3d', boardOf\(choice\)\)/, 'the board choice starts a game through the host');
   assert.match(MAIN, /onRestart: \(\) => PAUSE\.restart\(padGesture \? 'pad' : 'pointer'\)/, 'restart goes through the pause controller');
   assert.match(MAIN, /menu: \{[^\n]*MODES\.leave\(\)/, 'the menu leaves the active mode');

@@ -5,7 +5,7 @@ import { createServer } from 'node:http';
 import { join, dirname, normalize, extname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
-  MENU_ENTRIES, PLACEHOLDER_SCREEN, LAST_MODE_DOC, LAST_MODE_VERSION, entryRoute, createMenu, createLastMode,
+  MENU_ENTRIES, PLACEHOLDER_SCREEN, LAST_MODE_DOC, LAST_MODE_VERSION, UNAVAILABLE_REASONS, entryRoute, entryReason, createMenu, createLastMode,
 } from '../js/shell/menu.js';
 import { createModeHost } from '../js/shell/mode-host.js';
 import { createStorage } from '../js/platform/storage.js';
@@ -79,6 +79,49 @@ test('opening an entry asks the mode host for a board choice, or routes through 
     ['settings', undefined],
   ]);
   assert.throws(() => menu.open('campaign'), /unknown menu entry/);
+});
+
+// ---------------------------------------------------------------- an entry the browser cannot run
+
+test('the 3D entry needs WebGL 2; without it the entry is unavailable with its reason and routes nowhere', () => {
+  assert.deepEqual(MENU_ENTRIES.map((e) => e.needs ?? null), [null, 'webgl2', null, null], 'only 3D needs WebGL 2');
+  assert.equal(UNAVAILABLE_REASONS.webgl2, 'Needs WebGL 2 — not available in this browser');
+  assert.ok(Object.isFrozen(UNAVAILABLE_REASONS));
+  const all = { hasMode: () => true, hasScreen: () => true };
+  const three = MENU_ENTRIES.find((e) => e.id === '3d');
+  assert.equal(entryReason(three, ['webgl2']), UNAVAILABLE_REASONS.webgl2);
+  assert.equal(entryReason(three, []), null, 'with WebGL 2 the entry is available');
+  assert.equal(entryReason(three), null, 'nothing missing by default');
+  assert.equal(entryRoute(three, { ...all, missing: ['webgl2'] }), null, 'an unavailable entry routes nowhere');
+  assert.deepEqual(entryRoute(three, all), { mode: '3d' });
+  for (const entry of MENU_ENTRIES.filter((e) => e.id !== '3d')) {
+    assert.equal(entryReason(entry, ['webgl2']), null, `${entry.label} runs without WebGL 2`);
+    assert.notEqual(entryRoute(entry, { ...all, missing: ['webgl2'] }), null);
+  }
+});
+
+test('the menu over a browser without WebGL 2 carries the 3D entry\'s reason, opens nothing for it, and the other entries still route', () => {
+  const modes = createModeHost();
+  const fakes = { '3d': fakeMode(), 'classic-2d': fakeMode() };
+  for (const [id, f] of Object.entries(fakes)) modes.register(id, f.factory);
+  const router = fakeRouter(['menu', 'coming-soon', 'records', 'settings']);
+  const menu = createMenu({ router, modes, missing: ['webgl2'] });
+  assert.equal(menu.unavailable('3d'), UNAVAILABLE_REASONS.webgl2);
+  assert.deepEqual(MENU_ENTRIES.filter((e) => menu.unavailable(e.id)).map((e) => e.id), ['3d'], 'only 3D is unavailable');
+  assert.equal(menu.route('3d'), null);
+  assert.equal(menu.open('3d'), null, 'opening it routes nowhere');
+  assert.deepEqual(fakes['3d'].calls, [], 'the 3D board choice is not opened');
+  assert.deepEqual(router.went, []);
+  assert.deepEqual(menu.open('classic-2d'), { mode: 'classic-2d' });
+  assert.deepEqual(fakes['classic-2d'].calls, ['openBoardChoice']);
+  menu.open('records');
+  menu.open('settings');
+  assert.deepEqual(router.went, [['records', undefined], ['settings', undefined]]);
+  const full = createMenu({ router, modes });
+  assert.equal(full.unavailable('3d'), null, 'with WebGL 2 every entry is available');
+  full.open('3d');
+  assert.deepEqual(fakes['3d'].calls, ['openBoardChoice']);
+  assert.throws(() => menu.unavailable('campaign'), /unknown menu entry/);
 });
 
 // ---------------------------------------------------------------- the last mode played
@@ -188,8 +231,26 @@ test('the shell routes the new screens, declares their default focus and lets th
   assert.equal(focus('coming-soon'), '#coming-soon-back');
   assert.match(MAIN, /'board-choice': 'board-choice'/, 'the controller reaches the board choice');
   assert.match(MAIN, /'coming-soon': 'coming-soon'/, 'the controller reaches the placeholder');
-  assert.match(MAIN, /openBoardChoice: \(\) => SHELL\.go\('board-choice'/, 'the 3D mode opens its board choice');
+  assert.match(MAIN, /openBoardChoice: \(\) => \{ if \(WEBGL2\) SHELL\.go\('board-choice'/, 'the 3D mode opens its board choice, given WebGL 2');
   assert.match(MAIN, /import \{ storage(, [^}]*)? \} from '\.\/platform\/index\.js'/, 'the last mode goes through platform storage');
+});
+
+test('without WebGL 2 the shell starts on one availability flag: no "Cannot start" card, the 3D entry disabled with its reason', () => {
+  assert.doesNotMatch(MAIN, /This game needs WebGL 2|function fatal\(/, 'no full-page card for a missing WebGL 2');
+  assert.match(MAIN, /const WEBGL2 = renderer !== null;/, 'one flag: the renderer was created');
+  assert.match(MAIN, /createMenu\(\{ router: SHELL, modes: MODES, missing: WEBGL2 \? \[\] : \['webgl2'\] \}\)/, 'the menu knows what the browser lacks');
+  assert.match(MAIN, /ui\.setEntryUnavailable\(/, 'the menu item shows the reason');
+  assert.match(MAIN, /document\.body\.classList\.toggle\('no-webgl2', !WEBGL2\)/, 'the page knows it has no 3D scene');
+  const css = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.match(css, /body\.no-webgl2 #scene \{ display: none; \}/, 'the #scene canvas is hidden');
+  assert.match(css, /body\.no-webgl2 :is\(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #records\) \{ background: none; \}/,
+    'the menu screens sit on the body\'s static background, built from the theme tokens');
+  assert.match(css, /body \{[^}]*background-image: radial-gradient\([^)]*var\(--color-backdrop-highlight\)[^)]*var\(--color-backdrop\)[^)]*var\(--color-backdrop-shade\)/);
+  const hook = MAIN.slice(MAIN.indexOf('window.__ms = {'));
+  assert.match(hook.match(/start\(X, Y, Z, mines, minePositions\) \{[^\n]*/)[0], /if \(!WEBGL2\) throw new Error\(/, 'the start hook reports the reason');
+  assert.match(INDEX, /<noscript><div class="noscript">Minesweeper 3D needs JavaScript\.<\/div><\/noscript>/, 'the noscript line asks only for JavaScript');
+  assert.match(INDEX, /The game files failed to load\. Check your connection and reload the page\./, 'the onerror card stays');
+  assert.match(read('README.md'), /3D needs WebGL 2; Classic 2D, Records and Settings run without it\./);
 });
 
 test('the catalogue documents the main menu, the 3D board choice and the placeholder', () => {
@@ -265,6 +326,10 @@ test('in a browser, the menu shows the four entries, each routes, and Back retur
     assert.deepEqual(labels, ['Classic 2D', '3D', 'Records', 'Settings']);
     assert.equal(await active(), 'menu-entry-classic-2d');
     assert.ok(await backdrop(), 'the demo board is the menu backdrop');
+    assert.deepEqual(await ms(() => {
+      const b = document.getElementById('menu-entry-3d');
+      return [b.disabled, b.querySelector('.ui-menu__detail').textContent, document.body.classList.contains('no-webgl2'), getComputedStyle(document.getElementById('scene')).display];
+    }), [false, 'Fly through a cube of cubes', false, 'block'], 'with WebGL 2 the 3D entry is enabled and the scene shows');
 
     // Classic 2D: its board choice, Back by its button.
     await page.click('#menu-entry-classic-2d');
@@ -333,6 +398,172 @@ test('in a browser, the menu shows the four entries, each routes, and Back retur
     await page.reload();
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     await page.waitForFunction(() => document.activeElement?.id === 'menu-entry-3d');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+// A browser without WebGL 2: every canvas refuses a 'webgl2' context, as a locked-down browser or a
+// blocklisted GPU does; the other context types are untouched.
+function removeWebGL2() {
+  const getContext = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
+}
+
+test('in a browser without WebGL 2, the shell starts with a static background, 3D disabled with its reason, and Classic 2D, Records and Settings working', async (t) => {
+  const playwright = await loadPlaywright();
+  if (!playwright) {
+    t.skip('Playwright is not installed');
+    return;
+  }
+  let browser;
+  try {
+    browser = await playwright.chromium.launch();
+  } catch (error) {
+    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
+    return;
+  }
+  const server = await serve();
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    page.on('console', (m) => { if (m.type() === 'error') errors.push(`console: ${m.text()}`); });
+    await page.addInitScript(removeWebGL2);
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+    const ms = (fn, arg) => page.evaluate(fn, arg);
+    const mode = () => ms(() => globalThis.__ms.state.mode);
+    const active = () => ms(() => document.activeElement?.id || '');
+    const frames = (n) => ms((count) => new Promise((done) => {
+      const step = (left) => (left ? requestAnimationFrame(() => step(left - 1)) : done());
+      step(count);
+    }), n);
+
+    // The shell started: no card, no renderer, no demo board, the canvas hidden.
+    assert.equal(await ms(() => document.querySelector('.fatal')), null, 'no "Cannot start" card');
+    assert.equal(await ms(() => globalThis.__ms.renderer), null);
+    assert.equal(await ms(() => globalThis.__ms.state.demo), null, 'no demo board is generated');
+    assert.equal(await ms(() => getComputedStyle(document.getElementById('scene')).display), 'none');
+    const skipped = await ms(() => globalThis.__ms.frameStats.skipped);
+    await frames(3);
+    assert.equal(await ms(() => globalThis.__ms.frameStats.renders), 0, 'nothing is drawn');
+    assert.ok(await ms(() => globalThis.__ms.frameStats.skipped) >= skipped + 3, 'the frame loop keeps running');
+
+    // The static background, from the theme's tokens, in both themes.
+    const background = () => ms(() => {
+      const probe = document.createElement('div');
+      probe.style.background = 'var(--color-backdrop)';
+      document.body.append(probe);
+      const token = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      const body = getComputedStyle(document.body);
+      return { color: body.backgroundColor, token, image: body.backgroundImage, menu: getComputedStyle(document.getElementById('menu')).backgroundImage };
+    });
+    const seen = [];
+    for (const theme of ['light', 'dark']) {
+      await ms((th) => globalThis.msTheme.setTheme(th), theme);
+      const bg = await background();
+      assert.equal(bg.color, bg.token, `${theme}: the page is the theme's backdrop colour`);
+      assert.match(bg.image, /radial-gradient/, `${theme}: the themed gradient shows`);
+      assert.equal(bg.menu, 'none', `${theme}: the menu screen lays no tint of its own over it`);
+      seen.push(bg.color);
+    }
+    assert.notEqual(seen[0], seen[1], 'light and dark differ');
+    await ms(() => globalThis.msTheme.setTheme('light'));
+
+    // The 3D entry: disabled, its reason in place of its detail line; the focus starts on Classic 2D.
+    assert.deepEqual(await ms(() => {
+      const b = document.getElementById('menu-entry-3d');
+      const details = [...b.querySelectorAll('.ui-menu__detail')].filter((d) => !d.classList.contains('hidden')).map((d) => d.textContent);
+      return [b.disabled, b.matches('.ui-menu__item:disabled'), b.querySelector('.ui-menu__label').textContent, details];
+    }), [true, true, '3D', ['Needs WebGL 2 — not available in this browser']]);
+    assert.equal(await active(), 'menu-entry-classic-2d');
+    await page.click('#menu-entry-3d', { force: true });
+    assert.equal(await mode(), 'menu', 'a click opens nothing');
+    await page.focus('#menu-entry-classic-2d');
+    await page.keyboard.press('ArrowDown');
+    assert.equal(await active(), 'menu-entry-records', 'the arrow keys skip the disabled entry');
+    await ms(() => globalThis.__ms.modes.openBoardChoice('3d'));
+    await ms(() => globalThis.__ms.modes.start('3d', { X: 6, Y: 6, Z: 6, mines: 10 }));
+    assert.equal(await mode(), 'menu', 'no route opens the 3D board choice or starts a 3D game');
+    assert.equal(await ms(() => globalThis.__ms.modes.active), null);
+    await assert.rejects(ms(() => globalThis.__ms.start(6, 6, 6, 10)), /WebGL 2/, 'the start hook reports why');
+    assert.equal(await mode(), 'menu');
+
+    // Classic 2D end to end: board choice, generation, play, pause, restart, results.
+    await page.click('#menu-entry-classic-2d');
+    assert.equal(await mode(), 'classic-2d-choice');
+    await page.uncheck('#c2d-noguess');
+    await page.click('#c2d-choice [data-size="beginner"]');
+    assert.equal(await mode(), 'classic-2d');
+    const box = await page.locator('#c2d-board canvas').boundingBox();
+    const cell = (i) => [box.x + (box.width / 9) * ((i % 9) + 0.5), box.y + (box.height / 9) * (Math.floor(i / 9) + 0.5)];
+    await page.mouse.click(...cell(40));
+    await page.waitForFunction(() => globalThis.__ms.modes.state.started);
+    await page.keyboard.press('Escape');
+    assert.equal(await mode(), 'paused');
+    await page.click('#p-restart');
+    assert.equal(await mode(), 'classic-2d', 'restart: a new board');
+    assert.equal(await ms(() => globalThis.__ms.modes.state.started), false);
+    for (let i = 0; i < 81 && (await mode()) === 'classic-2d'; i++) await page.mouse.click(...cell(i));
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'results');
+
+    // Watch replay from the results screen plays the game's 2D replay.
+    await page.waitForFunction(() => !document.getElementById('r-watch').classList.contains('hidden'));
+    await page.click('#r-watch');
+    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready');
+    await page.keyboard.press('End');
+    assert.equal(await ms(() => globalThis.__ms.replayViewer.state.ended), true, 'the replay plays through to its end');
+    await page.click('#rp-back');
+    assert.equal(await mode(), 'results');
+
+    // Records from the results screen; its library view's Watch plays the kept replay; the 3D side opens.
+    await page.click('#r-records');
+    assert.equal(await mode(), 'records');
+    await page.waitForSelector('#records-replays-table [data-act="watch"]');
+    await page.click('#records-replays-table [data-act="watch"]');
+    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready');
+    assert.equal(await ms(() => document.querySelectorAll('#replay-board canvas').length), 1, 'the 2D board view is mounted');
+    await page.click('#rp-back');
+    assert.equal(await mode(), 'records');
+    await page.click('#records-mode [data-value="3d"]');
+    assert.equal(await ms(() => document.querySelector('#records-mode [aria-checked="true"]').dataset.value), '3d');
+    assert.ok(await ms(() => document.querySelectorAll('#records-picker [role="radio"]').length > 0), 'the 3D board picker shows');
+    await page.click('#records-mode [data-value="classic-2d"]');
+    await page.click('#records-back');
+    assert.equal(await mode(), 'results', 'Back returns to the results screen');
+
+    // Play again, then back to the menu.
+    await page.click('#r-again');
+    assert.equal(await mode(), 'classic-2d');
+    await page.keyboard.press('Escape');
+    await page.click('#p-menu');
+    assert.equal(await mode(), 'menu');
+
+    // Settings: every control is saved, the graphics settings too.
+    await page.click('#menu-entry-settings');
+    assert.equal(await mode(), 'settings');
+    await page.click('#set-renderResolution [data-value="sharp"]');
+    await page.click('#set-theme [data-value="dark"]');
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem('ms3d:doc:settings') ?? '{}').data?.renderResolution === 'sharp');
+    assert.equal(await ms(() => document.documentElement.dataset.theme), 'dark');
+    assert.equal(await ms(() => JSON.parse(localStorage.getItem('ms3d:doc:settings')).data.theme), 'dark');
+    await page.keyboard.press('Escape');
+    assert.equal(await mode(), 'menu');
+
+    // A last mode played of 3D still marks it; the focus falls to the first enabled entry.
+    await ms(() => localStorage.setItem('ms3d:doc:shell.lastMode', JSON.stringify({ version: 1, data: { mode: '3d' } })));
+    await page.reload();
+    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+    await page.waitForFunction(() => document.getElementById('menu-entry-3d').hasAttribute('data-last'));
+    assert.ok(await ms(() => !document.querySelector('#menu-entry-3d [data-last]').classList.contains('hidden')), '"Last played" shows');
+    await frames(2);
+    assert.equal(await active(), 'menu-entry-classic-2d');
+    assert.equal(await ms(() => getComputedStyle(document.getElementById('scene')).display), 'none');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

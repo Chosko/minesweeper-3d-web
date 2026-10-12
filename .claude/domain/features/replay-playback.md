@@ -122,7 +122,10 @@ and is never paused into hiding the board.
   version this build does not have, is not played and the viewer says it
   was made by a newer version; a replay that fails verification is not
   played and the viewer says it can no longer be reproduced; an unreadable
-  replay says so. A lost graphics context in the 3D viewer is reported as
+  replay says so. A 3D replay in a browser without WebGL 2 is not played —
+  *Watch* stays offered in the library view — and the viewer says it needs
+  WebGL 2, which this browser does not have; a 2D replay plays there as
+  anywhere. A lost graphics context in the 3D viewer is reported as
   `game-shell` reports a mode's failure. In every case Back still works.
 
 ## Dependencies

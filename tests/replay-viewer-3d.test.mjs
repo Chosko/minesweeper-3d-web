@@ -225,7 +225,7 @@ const MAIN = read('js/main.js');
 
 test('the shell registers the 3D viewer under the box graph, with its own camera that player input never moves', () => {
   const block = MAIN.slice(MAIN.indexOf('const REPLAY_VIEWER = createReplayViewer('), MAIN.indexOf('// ---------- results ----------'));
-  assert.match(block, /viewers: \{ square: mountViewer2D, box: mountReplay3D \}/);
+  assert.match(block, /viewers: WEBGL2 \? \{ square: mountViewer2D, box: mountReplay3D \}/);
   assert.match(MAIN, /createViewer3D\(\{ sim, scene: REPLAY_SCENE, spacing: REPLAY_SPACING \}\)/);
   assert.match(MAIN, /const replayCam = new FlyCamera\(\)/);
   const show = MAIN.slice(MAIN.indexOf('const REPLAY_SCENE = {'), MAIN.indexOf('hide()', MAIN.indexOf('const REPLAY_SCENE = {')));

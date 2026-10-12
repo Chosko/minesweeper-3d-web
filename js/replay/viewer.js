@@ -31,7 +31,9 @@
 //   viewers  { [graph kind]: ({ container, sim }) → { draw(frame), place?(), destroy() } }; place()
 //            runs on the frames that draw nothing, to follow a board view that refitted. Classic 2D's
 //            square is js/replay/viewer-2d.js; the 3D box is js/replay/viewer-3d.js, which js/main.js
-//            mounts on its renderer. A replay with no viewer for its graph says FAILURES.unsupported.
+//            mounts on its renderer, and offers only with WebGL 2. A 3D (box) replay with no viewer
+//            says FAILURES.webgl2; any other replay with no viewer for its graph says
+//            FAILURES.unsupported.
 //            A mount that leaves the screen (a lost graphics context) is destroyed and nothing plays.
 //   show({ replay?, replayId?, returnTo? }) → Promise once the replay plays or has failed; returnTo
 //            the { screen, data } Back goes to (the main menu when none). The replay starts paused at
@@ -74,6 +76,7 @@ export const FAILURES = Object.freeze({
   unreproducible: 'This replay can no longer be reproduced on this version of the game.',
   unreadable: 'This replay cannot be read.',
   unsupported: 'This replay cannot be played here yet.',
+  webgl2: 'This 3D replay needs WebGL 2, which is not available in this browser.',
 });
 
 export const COMMANDS = Object.freeze(['toggle', 'prev', 'next', 'start', 'end', 'slower', 'faster']);
@@ -213,10 +216,11 @@ export function createReplayViewer({ library, router, view, viewers = { square: 
       view.loading();
       const prepared = await prepareReplay({ replay, replayId }, { library });
       if (mine !== opening) return;
-      const mount = prepared.ok ? viewers[prepared.sim.replay.header.graph.kind] : null;
+      const kind = prepared.ok ? prepared.sim.replay.header.graph.kind : null;
+      const mount = prepared.ok ? viewers[kind] : null;
       if (!prepared.ok || !mount) {
         status = 'failed';
-        message = prepared.ok ? FAILURES.unsupported : prepared.message;
+        message = !prepared.ok ? prepared.message : kind === 'box' ? FAILURES.webgl2 : FAILURES.unsupported;
         view.failed(message);
         refocus();
         return;

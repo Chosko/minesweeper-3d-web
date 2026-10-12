@@ -23,7 +23,10 @@ In scope (m1-classic-2d):
 - The main menu with four entries: Classic 2D, 3D, Records and Settings.
   Classic 2D opens its board choice; 3D opens the existing 3D presets and
   custom board; Records opens the records screen; Settings opens the
-  Settings page.
+  Settings page. In a browser without WebGL 2 the 3D entry is disabled,
+  its line *Needs WebGL 2 — not available in this browser* under its label
+  in place of its description, and no route starts a 3D game; Classic 2D,
+  Records and Settings run as everywhere else.
 - A screen router: which screen is showing, the transitions between them,
   and Back from every screen to the one it came from.
 - A mode host: the one contract through which the shell starts, pauses,
@@ -76,7 +79,14 @@ it generalises.
   another directly.
 - **Main menu.** The entry list composed from `screen-components`, each entry
   a route. The decorative 3D demo board behind the current menu stays as the
-  menu's backdrop.
+  menu's backdrop. WebGL 2 is not a requirement of the shell: whether the
+  3D renderer could be created is the one availability flag every 3D-only
+  path reads. Without it the menu screens show a static background built
+  from the theme's tokens in place of the demo board, the 3D entry is
+  disabled with its reason, its "Last played" mark still showing and the
+  menu's default focus falling to the first enabled entry, and no
+  full-page "Cannot start" card shows — that card stays only for game files
+  that fail to load.
 - **Mode host.** A registry of mode front-ends behind one contract (see
   Interfaces). The shell knows modes only through it. Classic 2D implements
   it directly; the 3D mode implements it through an adapter that wraps the

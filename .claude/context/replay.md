@@ -201,7 +201,8 @@ view's Watch open it ([app-shell.md](app-shell.md)).
   `seek(t)`.
 
 `js/replay/viewer.js` (its head comment is the authority for the screen)
-- `FAILURES` (`newer`, `unreproducible`, `unreadable`, `unsupported`),
+- `FAILURES` (`newer`, `unreproducible`, `unreadable`, `unsupported`, and
+  `webgl2` for a box replay the shell offers no 3D viewer for),
   `COMMANDS` (`toggle`, `prev`, `next`, `start`, `end`, `slower`,
   `faster`), `REPLAY_KEYS` (Space and K toggle, ←/→ step, Home/End, Minus
   and Equal change speed), `REPLAY_PAD` (Start and Y toggle, LB/RB step,
@@ -330,7 +331,9 @@ view's Watch open it ([app-shell.md](app-shell.md)).
   plays: a newer format, profile or rules version says it was made by a
   newer version, a check value that differs says it can no longer be
   reproduced, anything else — a missing stored replay too — says it cannot
-  be read, and a graph kind with no viewer says it cannot be played here.
+  be read, a 3D (box) replay the shell offers no 3D viewer for (no WebGL 2)
+  says it needs WebGL 2, and any other graph kind with no viewer says it
+  cannot be played here.
   Back works in every case.
 - **Seeking.** Forwards, the simulator applies the actions in between.
   Backwards, it restores the nearest engine-state snapshot at or before the

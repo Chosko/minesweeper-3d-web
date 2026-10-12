@@ -124,6 +124,18 @@ export class UI {
   /** Show the "needs mouse and keyboard" banner on the menu. */
   setNoMouse(on) { $('touch-note').classList.toggle('hidden', !on); }
 
+  /**
+   * Disable main menu entry `id`, which this browser cannot run: its reason shows under its label
+   * in place of its detail line; mouse, keyboard, controller and shell navigation pass it by.
+   */
+  setEntryUnavailable(id, reason) {
+    const b = document.querySelector(`[data-entry="${id}"]`);
+    if (!b) return;
+    b.disabled = true;
+    const detail = b.querySelector('.ui-menu__detail:not([data-last])');
+    if (detail) detail.textContent = reason;
+  }
+
   /** Mark the main menu entry of the last mode played (null: none). */
   setLastMode(mode) {
     document.querySelectorAll('[data-entry]').forEach((b) => {

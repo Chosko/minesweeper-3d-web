@@ -15,7 +15,7 @@ import { create3DMode } from './shell/mode-3d.js';
 import { createSession, create3DGame } from './mode3d/session.js';
 import { createSampler3D } from './replay/sampler-3d.js';
 import { createGenerationClient } from './generation/client.js';
-import { createMenu, createLastMode, createLastBoardChoice } from './shell/menu.js';
+import { createMenu, createLastMode, createLastBoardChoice, UNAVAILABLE_REASONS } from './shell/menu.js';
 import { createFirstUse, stripShown, hidCube, aimHintCell, createDwell, AIM_DWELL_MS } from './shell/first-use.js';
 import { createActiveDevice, hintText } from './settings/bindings.js';
 import { createPauseController, restartInput, RESTART_NOTICE } from './shell/pause.js';
@@ -47,21 +47,41 @@ import {
 
 const canvas = document.getElementById('scene');
 
-function fatal(msg) {
-  const d = document.createElement('div');
-  d.className = 'fatal';
-  d.innerHTML = `<div><h2 style="margin-top:0">Cannot start Minesweeper 3D</h2><p>${msg}</p></div>`;
-  document.body.appendChild(d);
+/**
+ * The 3D renderer, or null in a browser without WebGL 2: three.js's WebGLRenderer needs it and
+ * throws without it. three.js's own report of that refusal is expected and kept off the console;
+ * anything else it reports while the renderer is made is passed on.
+ */
+function createRenderer() {
+  const held = [];
+  const before = THREE.getConsoleFunction();
+  THREE.setConsoleFunction((level, ...args) => held.push([level, args]));
+  let made = null;
+  let failure = null;
+  try {
+    made = new BoardRenderer(canvas);
+  } catch (err) {
+    failure = err;
+  } finally {
+    THREE.setConsoleFunction(before);
+  }
+  const refused = !!failure && /Error creating WebGL context/.test(failure.message);
+  for (const [level, args] of held) {
+    if (refused && level === 'error') continue;
+    if (before) before(level, ...args);
+    else console[level === 'error' || level === 'warn' ? level : 'log'](...args);
+  }
+  if (failure && !refused) console.error(failure);
+  return made;
 }
-
-let renderer;
-try {
-  renderer = new BoardRenderer(canvas);
-} catch (err) {
-  console.error(err);
-  fatal('This game needs WebGL 2. Please try an up-to-date browser, or enable hardware acceleration.');
-  throw err;
-}
+const renderer = createRenderer();
+/**
+ * Whether the 3D game can run: the one flag every 3D-only path reads. Without WebGL 2 the shell
+ * starts all the same — Classic 2D, Records and Settings run, the menu screens show a static
+ * background, the 3D entry is disabled with its reason and a 3D replay says why it cannot play.
+ */
+const WEBGL2 = renderer !== null;
+document.body.classList.toggle('no-webgl2', !WEBGL2);
 
 const sfx = audio.sfx ?? new audio.Sfx();
 const cam = new FlyCamera();
@@ -339,9 +359,13 @@ HISTORY.start(performance.getEntriesByType?.('navigation')[0]?.type);
 // ---------- mode host ----------
 // The shell reaches a game only through MODES; the 3D game is registered through its adapter.
 const MODES = createModeHost();
+if (!WEBGL2) { // no route starts a 3D game without a renderer: the board choice, Play again, the debug hook
+  const start = MODES.start;
+  MODES.start = (id, choice) => { if (id !== '3d') start(id, choice); };
+}
 let contextLost = false;
 const FLOW_3D = {
-  openBoardChoice: () => SHELL.go('board-choice'), // the 3D presets and custom board
+  openBoardChoice: () => { if (WEBGL2) SHELL.go('board-choice'); }, // the 3D presets and custom board
   start: (settings) => startGame(settings),
   pause: (note) => showPauseCard(note),
   resume: (source) => resumeGame(source),
@@ -549,7 +573,7 @@ const REPLAY_VIEWER = createReplayViewer({
     onSeek: (ms) => REPLAY_VIEWER.seek(ms),
     onBack: () => shellBack('pointer'),
   }),
-  viewers: { square: mountViewer2D, box: mountReplay3D },
+  viewers: WEBGL2 ? { square: mountViewer2D, box: mountReplay3D } : { square: mountViewer2D }, // a 3D replay then says why it cannot play
 });
 
 // ---------- results ----------
@@ -566,7 +590,7 @@ const RESULTS = createResultsFlow({
   restart: (source, { mode }) => {
     if (MODES.active) PAUSE.restart(source);
     else if (mode === 'classic-2d') MODES.start(mode, LAST_CHOICE_2D.current);
-    else if (mode === '3d' && board3dChoice) { MODES.start(mode, board3dChoice); enterPlay3D(source); }
+    else if (mode === '3d' && WEBGL2 && board3dChoice) { MODES.start(mode, board3dChoice); enterPlay3D(source); }
   },
   goMenu: () => showMainMenu(),
 });
@@ -597,7 +621,12 @@ const RECORDS_PAGE = createRecordsScreen({ records: RECORDS, replays: REPLAYS, r
 
 // ---------- main menu ----------
 // Each entry is a route; the last mode played is kept through platform storage and marked on the menu.
-const MENU = createMenu({ router: SHELL, modes: MODES });
+// An entry this browser cannot run (3D without WebGL 2) is disabled with its reason.
+const MENU = createMenu({ router: SHELL, modes: MODES, missing: WEBGL2 ? [] : ['webgl2'] });
+for (const { id } of MENU.entries) {
+  const reason = MENU.unavailable(id);
+  if (reason) ui.setEntryUnavailable(id, reason);
+}
 const LAST_MODE = createLastMode({ storage, modes: MODES });
 MODES.on('started', ({ mode }) => { ui.setLastMode(mode); FIRST_USE.gameStarted(mode); });
 
@@ -651,6 +680,7 @@ function readyBack() {
 /** The render resolution setting's pixel ratio for the board shown (n cells; Auto: big boards are fill/vertex heavy). */
 let boardCells = 0;
 function applyPixelRatio(n = boardCells) {
+  if (!WEBGL2) return; // the setting is kept for a visit with WebGL 2
   boardCells = n;
   const pr = pixelRatioFor(SETTINGS.get('renderResolution'), window.devicePixelRatio, n);
   if (renderer.setPixelRatio(pr)) needRender = true;
@@ -823,7 +853,7 @@ function makeDemo() {
 }
 
 function showMainMenu() { SHELL.go('menu'); }
-/** The menu screens show the decorative demo board behind them. */
+/** The menu screens show the decorative demo board behind them; without WebGL 2, the page's static background. */
 const BACKDROP_SCREENS = new Set(['menu', 'board-choice', 'coming-soon', 'records', 'classic-2d-choice', 'settings']);
 function onBackdrop() { return BACKDROP_SCREENS.has(S.mode); }
 /** The 3D leave: drop the game and release pointer lock, lockless play and drag-to-look play. */
@@ -838,8 +868,9 @@ function leaveGame() {
   board3d.failure = null;
   ui.setBoardStatus3D({});
 }
-/** Put the decorative demo board behind the menu. */
+/** Put the decorative demo board behind the menu; without WebGL 2 there is none to put. */
 function showMenuBackdrop() {
+  if (!WEBGL2) return;
   if (!S.demo) S.demo = makeDemo();
   renderer.setGame(S.demo);
   applyPixelRatio(S.demo.n);
@@ -847,7 +878,7 @@ function showMenuBackdrop() {
   S.spacing = 1.25;
 }
 
-window.addEventListener('resize', () => { renderer.resize(); needRender = true; });
+if (WEBGL2) window.addEventListener('resize', () => { renderer.resize(); needRender = true; });
 let reloading = false;
 /**
  * The leave-page guard, armed by the pause controller only during a started, unfinished game:
@@ -1214,7 +1245,7 @@ let needRender = true;
 // The 3D scene's sky, fog and background follow the theme: the active theme's palette is handed to the
 // renderer now and on every theme change, so the demo board, a game, the pause card and the 3D replay
 // all switch at once.
-bindScenePalette({ token, onThemeChange, renderer, onApplied: () => { needRender = true; } });
+if (WEBGL2) bindScenePalette({ token, onThemeChange, renderer, onApplied: () => { needRender = true; } });
 let lastSig = '';
 let lastEnd = null;
 let animUntil = 0; // keep drawing for a while after the game ends (end-of-game effects)
@@ -1241,6 +1272,11 @@ function shouldRender(now, synced) {
   return false;
 }
 
+/** The running time on the pause card while it shows. */
+function showPauseTime() {
+  if (S.mode === 'paused' && (MODES.active === 'classic-2d' ? mode2d.status() : S.game)) ui.updatePause(pauseInfo());
+}
+
 function frame(now) {
   const rawDt = Math.max(0, (now - last) / 1000);
   const dt = Math.min(0.1, rawDt); // movement step (avoid huge jumps after a stall)
@@ -1258,6 +1294,12 @@ function frame(now) {
   if (replayed && REPLAY_VIEWER.state.time !== replay3d.time) renderer.sync({ seek: true });
   if (S.mode === REPLAY_SCREEN) REPLAY_VIEWER.tick(rawDt * 1000);
   if (replayed) replay3d.time = REPLAY_VIEWER.state.time;
+  if (!WEBGL2) { // no renderer: the controller, the 2D board and the replay viewer only
+    showPauseTime();
+    stats.skipped++;
+    requestAnimationFrame(frame);
+    return;
+  }
 
   const three = renderer.camera;
   const playing = S.mode === 'playing';
@@ -1303,8 +1345,7 @@ function frame(now) {
     else AIM_DWELL.reset();
   }
 
-  // the running time on the pause card while it shows
-  if (S.mode === 'paused' && (MODES.active === 'classic-2d' ? mode2d.status() : S.game)) ui.updatePause(pauseInfo());
+  showPauseTime();
 
   if (shouldRender(now, synced)) {
     needRender = false;
@@ -1337,9 +1378,9 @@ window.__ms = {
   get fps() { return fps.value; },
   get frameStats() { return { ...stats }; },
   /** The spawn pose of an X × Y × Z box at the current spacing, field of view and aspect. */
-  spawnPose: (X, Y, Z) => spawnPose({ X, Y, Z }, S.spacing, renderer.camera.fov, renderer.camera.aspect),
+  spawnPose: (X, Y, Z) => spawnPose({ X, Y, Z }, S.spacing, renderer?.camera.fov, renderer?.camera.aspect),
   THREE,
-  start(X, Y, Z, mines, minePositions) { MODES.start('3d', { X, Y, Z, mines, minePositions }); },
+  start(X, Y, Z, mines, minePositions) { if (!WEBGL2) throw new Error(UNAVAILABLE_REASONS.webgl2); MODES.start('3d', { X, Y, Z, mines, minePositions }); },
   /** Enter playing mode without pointer lock (headless tests). */
   forcePlay() { enterPlaying(true); },
   get controls() { return controls; },
@@ -1381,7 +1422,7 @@ window.__ms = {
     return {
       mode: S.mode, selected: S.selected, time: S.time, started: S.started, spacing: S.spacing,
       gameState: g?.state, minesLeft: g?.minesLeft, hud: [document.getElementById('hud-time').textContent, document.getElementById('hud-mines').textContent],
-      cam: { x: cam.x, y: cam.y, z: cam.z, yaw: cam.yaw, pitch: cam.pitch }, stats: { ...renderer.stats }, fps: fps.value,
+      cam: { x: cam.x, y: cam.y, z: cam.z, yaw: cam.yaw, pitch: cam.pitch }, stats: { ...renderer?.stats }, fps: fps.value,
     };
   },
   /** The mode host: start/pause/resume/restart/leave/summary and the mode reports (on). */

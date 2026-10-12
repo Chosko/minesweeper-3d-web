@@ -803,7 +803,7 @@ Preconditions: none
 
 ## 132. Shell without WebGL 2
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/main.js, js/shell/menu.js, js/ui.js, js/replay/viewer.js, index.html, css/style.css, tests/shell-menu.test.mjs, tests/replay-viewer.test.mjs, README.md, .claude/domain/features/game-shell.md, .claude/domain/features/replay-playback.md
 Preconditions: none
