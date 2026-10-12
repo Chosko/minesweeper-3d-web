@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 131
+Last task number: 132
 
 ---
 
@@ -797,6 +797,15 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: js/platform/storage.js, js/platform/browser-backend.js, js/platform/memory-backend.js, js/platform/index.js, js/settings/reset.js, js/settings/page.js, js/ui.js, js/main.js, css/style.css, tests/platform-storage.test.mjs, tests/platform-browser.test.mjs, tests/settings-page.test.mjs, tests/settings-reset.test.mjs, README.md, .claude/domain/features/settings.md, .claude/domain/features/platform-storage.md, .claude/domain/features/replay-library.md, .claude/domain/features/personal-records.md
+Preconditions: none
+
+---
+
+## 132. Shell without WebGL 2
+
+Status: [MISSING]
+Target: claude
+Files: js/main.js, js/shell/menu.js, js/ui.js, js/replay/viewer.js, index.html, css/style.css, tests/shell-menu.test.mjs, tests/replay-viewer.test.mjs, README.md, .claude/domain/features/game-shell.md, .claude/domain/features/replay-playback.md
 Preconditions: none
 
 ---
