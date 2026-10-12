@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 123
+Last task number: 124
 
 ---
 
@@ -725,6 +725,15 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: js/main.js, js/shell/lock-fallback.js, js/input.js, js/ui.js, js/ui/components.js, js/settings/page.js, js/mode3d/board-choice.js, js/settings/bindings.js, index.html, css/style.css, tests/components.test.mjs, tests/settings-page.test.mjs, tests/mode3d-board-choice.test.mjs, tests/shell-lock-fallback.test.mjs, tests/input-drag-look.test.mjs, .claude/domain/features/screen-components.md, .claude/domain/features/game-shell.md, .claude/domain/features/results-screen.md, .claude/domain/features/3d-play-flow.md, .claude/domain/features/settings.md
+Preconditions: none
+
+---
+
+## 124. Custom form: at least one mine
+
+Status: [MISSING]
+Target: claude
+Files: js/classic2d/board-setup.js, js/classic2d/board-choice.js, index.html, tests/classic2d-session.test.mjs, tests/classic2d-mode.test.mjs, tests/classic2d-fidelity.test.mjs, tests/records-board.test.mjs, .claude/domain/features/classic-2d-square-play.md
 Preconditions: none
 
 ---
