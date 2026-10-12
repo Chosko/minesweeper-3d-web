@@ -749,7 +749,7 @@ Preconditions: none
 
 ## 126. 3D small feedback
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/render.js, js/main.js, js/input.js, js/ui.js, index.html, tests/render-3d-feedback.test.mjs, tests/shell-pause-esc.test.mjs, tests/replay-viewer-3d.test.mjs, docs/ORIGINAL_SPEC.md, README.md, .claude/domain/product-design.md
 Preconditions: none

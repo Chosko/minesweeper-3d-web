@@ -104,9 +104,9 @@ The rules are classic Minesweeper with one more dimension:
 - You win when every safe cube has been revealed, and no non-mine cube is flagged. You do not have
   to flag the mines.
 - **Solved cells hide themselves.** Revealed zeros are invisible. A revealed number disappears once
-  every neighbour is revealed or flagged and its flag count matches the number. This lets you see
-  into the board. Removing a flag next to a hidden cell brings it back, and holding `Ctrl` shows
-  every hidden cell.
+  every neighbour is revealed or flagged and its flag count matches the number: it gives a short
+  bright pulse, then fades out. This lets you see into the board. Removing a flag next to a hidden
+  cell brings it back, and holding `Ctrl` shows every hidden cell as a see-through ghost.
 - The box starts closed. The board is generated around your first click, so the first click is
   always safe, and the timer starts once the board is ready. Flags placed before that are kept.
 - When the game ends, the board freezes for about a second while the end effect plays (the loss
@@ -146,7 +146,7 @@ Pick a board and play:
 | Mouse wheel | Change the spacing between cubes |
 | Hold `Shift` | Fade everything except the aimed cube and its neighbours |
 | Hold `Space` | Aim through revealed numbers (they fade) |
-| Hold `Ctrl` | Show hidden cells (zeros and solved numbers) |
+| Hold `Ctrl` | Show hidden cells (zeros and solved numbers) as see-through ghosts |
 | `H` | Show / hide the controls panel |
 | `M` | Sound on / off |
 | `F` | Fullscreen |
@@ -230,6 +230,11 @@ on purpose:
   the original's straight view level with the top row. `Home` / `R` and the pause menu's "Back to
   start" return there, an arrow on the crosshair points toward the box while it is out of view, and
   a faint ground grid lies below the box.
+- **See-through hidden cells:** holding `Ctrl` draws hidden cells as faint ghosts instead of the
+  original's opaque cubes, so they no longer wall off the numbers behind them.
+- **"Solved" pulse:** a number that hides itself first gives a short bright pulse and fades out,
+  instead of vanishing at once, so a solved cube reads as a reward. The cell is hidden and cannot be
+  aimed at from the moment of the action.
 - **Pause menu instead of `F5` / `Esc`:** the original restarted with `F5` and quit with `Esc`. Here
   `Esc` opens a menu with resume, back to start (3D), restart and main menu.
 - **Draw distance:** the far plane grows with the board instead of being clipped at 300 units.

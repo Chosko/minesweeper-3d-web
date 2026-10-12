@@ -84,9 +84,10 @@ demanding, until free 3D play is within reach.
   three-quarter view with the whole box in sight instead of the original's
   start pose, and the scene gains a return to that view (a key and a pause
   card action), an arrow toward the box while it is out of view, and a faint
-  ground grid below it. Its rules change in two ways: the first click is
-  always safe, and a no-guess option is available. Its games end on the shared
-  results screen.
+  ground grid below it; holding Ctrl shows hidden cells as translucent ghosts
+  instead of opaque cubes, and a number plays a short pulse before it hides.
+  Its rules change in two ways: the first click is always safe, and a no-guess
+  option is available. Its games end on the shared results screen.
 - **No-guess boards and competitive stats are core, not extras.** Every mode
   offers no-guess generation; every game records the stats enthusiasts track
   (3BV, 3BV/s, efficiency) and a replay.

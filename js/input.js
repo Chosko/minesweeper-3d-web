@@ -292,6 +292,15 @@ const ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
 const RETURN_KEYS = new Set(['Home', 'KeyR']);
 
 /**
+ * Whether an Esc press resumes from the pause card of a game in play: every press does, however soon
+ * after the pointer lock was released, except the press that released it, which already meant Pause,
+ * and a held Esc's auto-repeat. Chromium and Firefox keep the releasing press's keydown from the page;
+ * a browser that delivers it does so while the lock still holds.
+ * press: { repeat, locked } — the keydown's repeat flag and whether the pointer was locked when it came.
+ */
+export function escResumes(press) { return !press.repeat && !press.locked; }
+
+/**
  * DOM input: keyboard state, pointer lock, mouse buttons/look/wheel.
  * opts: { canvas, isActive(): bool (playing & locked), onLook(dx,dy), onWheel(notches),
  *         mouse: MouseActions, onKey(code) (non-held keys e.g. H/M), onLockChange(locked),
@@ -305,6 +314,7 @@ export class Input {
     this.drag = new DragLook({ mouse: opts.mouse, onLook: (dx, dy) => this.o.onLook(dx, dy) });
     this.locked = false;
     this.unlockedAt = -Infinity; // performance.now() of the last pointer-lock release
+    this.lastKey = { code: '', repeat: false, locked: false }; // the last key press, as escResumes reads it
     this._lockPending = false; // a lock request whose failure has not been reported yet
     const doc = document;
     window.addEventListener('keydown', (e) => {
@@ -317,6 +327,7 @@ export class Input {
         e.preventDefault();
       }
       if (e.code === 'Space' && !e.repeat) this.spaceToggle.down(performance.now(), this.o.isActive());
+      this.lastKey = { code: e.code, repeat: e.repeat, locked: this.locked };
       if (!e.repeat || ARROW_KEYS.has(e.code)) this.o.onKey?.(e.code, e);
     });
     window.addEventListener('keyup', (e) => {

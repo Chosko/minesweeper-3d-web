@@ -35,6 +35,7 @@ pressed, flagged, unlinked, selected, nearSelected. No question marks.
   - number==0: unlinked = checkMines (i.e. no flagged neighbours).
   - number>0: if every neighbour is pressed or flagged or unlinked → unlinked = checkMines.
   - Unlinked cells are invisible (except with Ctrl) and unpickable. Only an unflag on a neighbour relinks them.
+  - Web port: a revealed number that becomes unlinked plays a short "solved" pulse (it brightens and grows, then fades out, in under half a second) before it is gone; the cell is unlinked and unpickable from the action on.
 - **Win**: when not ended and (number of unpressed cells == mines) and no flagged non-mine exists → won. Flags not required. Timer and counter freeze.
 - **Lose**: on explosion every cell becomes pressed, unflagged, linked → full board revealed (mines shown with mine graphic, numbers visible). Timer freezes.
 - **Timer** starts on the first left-click release over a selected cell (even if it's flagged and nothing happens). Chords do not start it. Shown with up to 2 decimals.
@@ -57,6 +58,7 @@ pressed, flagged, unlinked, selected, nearSelected. No question marks.
 - **Left Shift held**: unrevealed and flagged cells fade to alpha 0.2 unless nearSelected or selected; revealed numbers fade to 0.2 unless selected ("show only cells adjacent to the aimed cell").
 - **Space held**: crosshair passes through revealed cells; revealed numbers drawn at alpha 0.2.
 - **Left Ctrl held**: hidden cells (revealed zeros + unlinked) drawn opaque with their number texture.
+  - Web port: drawn as ghosts at alpha 0.25 instead, sorted back-to-front with the other transparent cubes, so the cubes behind them stay visible.
 - Selected cell tinted (1, 0.8, 0.8) (pinkish).
 - Esc / F5 in the original = exit / restart. Web port: pause menu instead (resume, back to start in 3D, restart, main menu).
 

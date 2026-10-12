@@ -284,6 +284,27 @@ browser checks for everything that needs WebGL or the DOM.
 - `tests/gamepad.test.mjs` — controller helpers (`js/gamepad.js`), analog camera
   (`js/input.js::FlyCamera`), `js/controls.js::Controls`, and trigger sequences
   through `js/input.js::MouseActions`.
+- `tests/render-3d-feedback.test.mjs` — the renderer's Ctrl ghosts and
+  "solved" pulse (`js/render.js`, imported in Node through a resolve hook that
+  maps `three` to `vendor/three/`): `GHOST_ALPHA` 0.25 and its use for hidden
+  cells under Ctrl in the transparent pass; `pulseEnvelope` rising, then
+  fading to alpha 0 and done within `PULSE_GLOW_S + PULSE_FADE_S` (< 0.5 s);
+  static checks of the opaque list, the transparent sort, the pulse's start
+  and ends and `_tickPulses` visiting the pulsing cells only. One Playwright
+  test on a fixed 6 × 1 × 1 row: a flag that hides a number makes
+  `isAnimating()` true, then false within the pulse, with picking passing
+  through at once; Ctrl (with Shift too) counts the hidden cell in
+  `stats.trans`, not `stats.opaque`; unflagging during a pulse and a loss
+  drop it (skipped when Playwright or chromium is unavailable).
+- `tests/shell-pause-esc.test.mjs` — the pause card's Esc rule
+  (`js/input.js::escResumes`): the press that came while the lock held and a
+  held Esc's auto-repeat do not resume, any other press does, with no time
+  input; static checks of `Input.lastKey` and `resumeFromPause`. One
+  Playwright test plays the lock and its release with a stand-in
+  `document.pointerLockElement` and `pointerlockchange`: an Esc right after
+  the release resumes, auto-repeat does not, a releasing press delivered
+  while locked pauses and only the next one resumes, an ended game's Esc goes
+  to the menu (skipped when Playwright or chromium is unavailable).
 - `tests/camera-spawn.test.mjs` — the 3D spawn pose (`js/input.js::spawnPose`)
   for the cube presets and 1 × 1 × 2, 30 × 16 × 1, 100 × 100 × 100 and
   2 × 9 × 40 at 16:9, 4:3, 21:9 and 9:16 and 45° and 90°, against
@@ -686,10 +707,12 @@ browser checks for everything that needs WebGL or the DOM.
   view with its changes, every cell when the game crosses its end either
   way, a viewer that leaves the screen while it mounts dropped,
   `replay--scene`; DOM-free and reaching no records, sound, pause or player
-  input; static checks of the box viewer, the replay camera and a lost
-  graphics context in `js/main.js`. One Playwright test plays a recorded 3D
-  fixture through to the end on the renderer, seeks back past the end and
-  loses the graphics context (skipped when Playwright or chromium is
+  input; static checks of the box viewer, the replay camera, a lost
+  graphics context and the seek sync before the playback's tick in
+  `js/main.js`. One Playwright test plays a recorded 3D fixture through to
+  the end on the renderer — its playback's "solved" pulses dropped by a seek,
+  a seek over the hides starting none — seeks back past the end and loses
+  the graphics context (skipped when Playwright or chromium is
   unavailable).
 - `tests/fixtures/replays/` — recorded games, one `.msrp` blob each, listed
   in `index.json` with a note (2D and 3D, each with a win, a loss, an
@@ -843,7 +866,8 @@ browser checks for everything that needs WebGL or the DOM.
   screen in `tests/results.test.mjs`, the Records screen tests in
   `tests/records-screen.test.mjs`, `tests/records-history.test.mjs` and
   `tests/records-replays.test.mjs` and `tests/records-screen-3d.test.mjs`,
-  the 3D end of game in `tests/mode3d-end.test.mjs`, the replay viewer tests in
+  the 3D end of game in `tests/mode3d-end.test.mjs`, the ghosts and pulse in
+  `tests/render-3d-feedback.test.mjs`, the replay viewer tests in
   `tests/replay-viewer.test.mjs`, `tests/replay-viewer-3d.test.mjs` and
   `tests/results-watch.test.mjs`, the
   flow tests in `tests/shell-*.test.mjs` (one per file, two in
@@ -1205,7 +1229,7 @@ is enforced.
 - [mode3d.md](mode3d.md) — `tests/mode3d-*.test.mjs` pin the 3D board choice, its no-guess limit, the session and the end sequence; `tests/shell-mode-3d.test.mjs` the adapter.
 - [classic2d.md](classic2d.md) — `tests/classic2d-*.test.mjs` pin the session and board setup, board view, pointer and cursor inputs and the mode, and check the inputs and custom limits against the observation file; `tests/tile-skin.test.mjs` the tile painter, cache and `MIN_TILE_SIZE`.
 - [replay.md](replay.md) — `tests/replay-*.test.mjs` pin the format, the recorder and sealer, 2D and 3D capture, determinism over `tests/fixtures/replays/`, the replay library and the end-of-game hand-off to it, the simulator and verifier, the viewer and its 2D and 3D viewers; `tests/results-watch.test.mjs` pins Watch replay; `dev/measure-replays.mjs` is the measurement behind the recording constants.
-- [rendering.md](rendering.md) — no unit tests of the drawing (only the static not-themed checks); verified visually via Playwright screenshots, a 3D replay played on the renderer in `tests/replay-viewer-3d.test.mjs`, and no frame drawn under a 3D game's results screen in `tests/mode3d-end.test.mjs`.
+- [rendering.md](rendering.md) — `tests/render-3d-feedback.test.mjs` pins the ghost alpha and the pulse envelope and checks the ghosts and pulses in a browser; the rest of the drawing has only the static not-themed checks and is verified visually via Playwright screenshots, a 3D replay played on the renderer in `tests/replay-viewer-3d.test.mjs`, and no frame drawn under a 3D game's results screen in `tests/mode3d-end.test.mjs`.
 - [audio.md](audio.md) — no unit tests of the sounds; WebAudio only checkable in a browser.
 - [settings.md](settings.md) — `tests/settings-*.test.mjs` pin the schema, store, appliers, page,
   binder and bindings source.

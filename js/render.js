@@ -1,7 +1,8 @@
-// Board renderer: all cubes are drawn by two instanced meshes sharing one cube geometry.
+// Board renderer: all cubes are drawn by instanced meshes sharing one cube geometry.
 //  - opaque pass: every drawable cell, shader keeps only the ones whose alpha is 1
-//  - transparent pass: cells that may be faded (Shift / Space), sorted back-to-front,
-//    shader keeps only the ones whose alpha is < 1
+//  - transparent pass: cells that may be faded (Shift / Space) or shown as ghosts (hidden cells under
+//    Ctrl, at GHOST_ALPHA), sorted back-to-front, shader keeps only the ones whose alpha is < 1
+//  - pulse pass: the few numbers just hidden, playing their "solved" pulse (pulseEnvelope) over the rest
 // Per-cell state lives in a small RGBA8 data texture (layer, kind) fetched by cell index, so
 // selection / Shift / Space changes only touch uniforms (no per-frame O(n) JS work).
 // Visual extras (all shader-side, driven by a few uniforms): per-face shading, distance fog toward
@@ -16,6 +17,29 @@ import { createTileTexture, L_CLOSED, L_FLAG, L_MINE, L_MINE_EXPLODED, L_NUM0, L
 export const K_CLOSED = 0, K_FLAG = 1, K_NUMBER = 2, K_MINE = 3, K_HIDDEN = 4;
 
 const STATE_W = 1024;
+
+// Ctrl shows hidden cells (revealed zeros, hidden numbers) as ghosts at this alpha, in the transparent pass.
+export const GHOST_ALPHA = 0.25;
+
+// The "solved" pulse a number plays once the engine has hidden it: the cube brightens and grows for
+// PULSE_GLOW_S (peaking at PULSE_BRIGHT toward white and PULSE_SCALE halfway), then fades out over
+// PULSE_FADE_S and is gone. Visual only: the cell is hidden and unpickable from the action on.
+export const PULSE_GLOW_S = 0.25;
+export const PULSE_FADE_S = 0.2;
+export const PULSE_SCALE = 1.15;
+export const PULSE_BRIGHT = 0.45;
+
+/** The pulse at `t` seconds since it started: the cube's scale, brightness (0..1 toward white), alpha, and whether it is over. */
+export function pulseEnvelope(t) {
+  const s = Math.max(0, t);
+  if (s < PULSE_GLOW_S) {
+    const k = Math.sin((Math.PI * s) / PULSE_GLOW_S);
+    return { scale: 1 + (PULSE_SCALE - 1) * k, bright: PULSE_BRIGHT * k, alpha: 1, done: false };
+  }
+  const f = (s - PULSE_GLOW_S) / PULSE_FADE_S;
+  if (f >= 1) return { scale: 1, bright: 0, alpha: 0, done: true };
+  return { scale: 1, bright: 0, alpha: (1 - f) * (1 - f), done: false };
+}
 
 // Cube geometry exactly as Cube.cs (corners of [-3,1]^3, shifted by +1 so the cube is centred).
 function createCubeGeometry() {
@@ -76,6 +100,9 @@ precision highp float;
 precision highp int;
 in float aIdx;
 in float aShade;
+#ifdef PULSE
+in vec3 aPulse; // the pulse's scale, brightness and alpha (pulseEnvelope)
+#endif
 uniform sampler2D uState;
 uniform vec3 uDims;
 uniform float uPitch;
@@ -107,6 +134,9 @@ void main() {
   vec3 c = vec3(float(i), float(j), float(k));
   float scale = 1.0, flash = 0.0;
   bool shrinking = false;
+#ifdef PULSE
+  kind = 2; // a hidden number playing its pulse: drawn as the number it was, under the same view modes
+#else
   if (uEff > 0.5) {
     int oldL = int(st.a * 255.0 + 0.5) - 1;
     float local = uEffT - length(c - uEffOrigin) * uEffDelay;
@@ -129,6 +159,7 @@ void main() {
       flash = 0.4 * b;
     }
   }
+#endif
   vec3 d = abs(c - uSel);
   bool sel = uHasSel > 0.5 && max(d.x, max(d.y, d.z)) < 0.5;
   bool near = uHasSel > 0.5 && max(d.x, max(d.y, d.z)) < 1.5; // includes selected
@@ -136,8 +167,13 @@ void main() {
   bool vis = true;
   if (kind <= 1) { if (uShift > 0.5 && !near) a = 0.2; }
   else if (kind == 2) { if (uSpace > 0.5) a = 0.2; else if (uShift > 0.5 && !sel) a = 0.2; }
-  else if (kind == 4) { vis = uCtrl > 0.5 || shrinking; }
+  else if (kind == 4) { vis = uCtrl > 0.5 || shrinking; if (uCtrl > 0.5) a = ${GHOST_ALPHA}; }
+#ifdef PULSE
+  scale = aPulse.x; flash = aPulse.y; a *= aPulse.z; sel = false;
+  bool want = a > 0.0;
+#else
   bool want = uPass < 0.5 ? a > 0.99 : a < 0.99;
+#endif
   if (!vis || !want || scale <= 0.001) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
   vec3 centre = (c - (uDims - 1.0) * 0.5) * uPitch;
   vec4 mv = modelViewMatrix * vec4(position * scale + centre, 1.0);
@@ -340,9 +376,14 @@ export class BoardRenderer {
     });
     this.matOpaque = mk(0);
     this.matTrans = mk(1);
+    this.matPulse = mk(1);
+    this.matPulse.defines = { PULSE: '' };
     this.baseGeo = createCubeGeometry();
     this.meshOpaque = null;
     this.meshTrans = null;
+    this.meshPulse = null;
+    this._pulses = new Map(); // cell index -> start (s) of its "solved" pulse
+    this._pulseCap = 0;
     this.game = null;
     this.spacing = 1.1;
     this.toggles = { shift: false, space: false, ctrl: false };
@@ -454,6 +495,7 @@ export class BoardRenderer {
     this.selected = -1;
     this._lastState = game.state;
     this._eff = null; this._conf = null; this._shake = null; this._snap = null; this._wrong = null; this._effHidden = false;
+    this._pulses.clear();
     this.uniforms.uEff.value = 0;
     this.confetti.visible = false;
     this.uniforms.uHasSel.value = 0;
@@ -469,6 +511,7 @@ export class BoardRenderer {
     for (const m of [this.meshOpaque, this.meshTrans]) { m.frustumCulled = false; this.scene.add(m); }
     this.meshOpaque.renderOrder = 0;
     this.meshTrans.renderOrder = 1;
+    this._buildPulseMesh(32);
 
     // sort scratch
     this._candidates = new Uint32Array(n);
@@ -488,12 +531,32 @@ export class BoardRenderer {
 
   disposeGame() {
     if (this.meshOpaque) {
-      this.scene.remove(this.meshOpaque); this.scene.remove(this.meshTrans);
-      this.meshOpaque.geometry.dispose(); this.meshTrans.geometry.dispose();
+      this.scene.remove(this.meshOpaque); this.scene.remove(this.meshTrans); this.scene.remove(this.meshPulse);
+      this.meshOpaque.geometry.dispose(); this.meshTrans.geometry.dispose(); this.meshPulse.geometry.dispose();
       this.stateTex.dispose();
-      this.meshOpaque = this.meshTrans = null;
+      this.meshOpaque = this.meshTrans = this.meshPulse = null;
     }
+    this._pulses.clear();
     this.game = null;
+  }
+
+  /** The pulse mesh, drawn after the transparent pass, with room for `cap` pulsing cubes. */
+  _buildPulseMesh(cap) {
+    if (this.meshPulse) { this.scene.remove(this.meshPulse); this.meshPulse.geometry.dispose(); }
+    this._pulseCap = cap;
+    this.listPulse = new Float32Array(cap);
+    this.dataPulse = new Float32Array(cap * 3);
+    this.attrPulseIdx = new THREE.InstancedBufferAttribute(this.listPulse, 1).setUsage(THREE.DynamicDrawUsage);
+    this.attrPulse = new THREE.InstancedBufferAttribute(this.dataPulse, 3).setUsage(THREE.DynamicDrawUsage);
+    const g = this.baseGeo.clone();
+    g.setAttribute('aIdx', this.attrPulseIdx);
+    g.setAttribute('aPulse', this.attrPulse);
+    g.instanceCount = 0;
+    this.meshPulse = new THREE.Mesh(g, this.matPulse);
+    this.meshPulse.frustumCulled = false;
+    this.meshPulse.renderOrder = 2;
+    this.meshPulse.visible = false;
+    this.scene.add(this.meshPulse);
   }
 
   _writeCell(i) {
@@ -518,19 +581,32 @@ export class BoardRenderer {
     this.stateData[o + 1] = kind;
   }
 
-  /** Pull changes from the game (call once per frame; cheap when nothing changed). */
-  sync() {
+  /**
+   * Pull changes from the game (call once per frame; cheap when nothing changed). With `seek`, the changes
+   * come from a replay's seek, not from play: every running pulse is dropped and none starts.
+   */
+  sync({ seek = false } = {}) {
     const g = this.game;
-    if (!g || g.version === this._seenVersion) return false;
+    if (!g) return false;
+    if (seek) this._dropPulses();
+    if (g.version === this._seenVersion) return false;
     this._seenVersion = g.version;
     const dirty = g.consumeDirty();
     const prev = this._lastState;
     this._lastState = g.state;
-    if (prev === 'playing' && g.state === 'lost') this._beginLoss(dirty);
+    if (prev === 'playing' && g.state === 'lost') { this._dropPulses(); this._beginLoss(dirty); }
     else if (prev === 'playing' && g.state === 'won') this._beginWin();
     else if (prev !== 'playing' && g.state === 'playing') this._endEffects(); // a replay seeking back before its end
     this._snap = null;
-    for (let t = 0; t < dirty.length; t++) this._writeCell(dirty[t]);
+    // A number the player could see that this action hid starts its pulse; a cell shown again drops its own.
+    const pulse = !seek && prev === 'playing' && g.state !== 'lost';
+    const K = this.kind, now = performance.now() / 1000;
+    for (let t = 0; t < dirty.length; t++) {
+      const i = dirty[t], was = K[i];
+      this._writeCell(i);
+      if (K[i] !== K_HIDDEN) this._pulses.delete(i);
+      else if (pulse && was === K_NUMBER) this._pulses.set(i, now);
+    }
     if (g.explodedIdx >= 0) this._writeCell(g.explodedIdx);
     this.stateTex.needsUpdate = true;
     this._rebuildOpaque();
@@ -546,7 +622,7 @@ export class BoardRenderer {
     const K = this.kind, L = this.listOpaque, n = this.n;
     const { shift, space, ctrl } = this.toggles;
     if (shift) {
-      // Opaque under Shift: mines, hidden cells (Ctrl) + the aimed cell's neighbourhood.
+      // Opaque under Shift: mines, hidden cells shrinking in a loss wave + the aimed cell's neighbourhood.
       const B = this._base;
       let c = 0;
       // During an end-of-game wave, cells with an old layer may still be drawn as their old tile:
@@ -554,7 +630,7 @@ export class BoardRenderer {
       const O = this._eff ? this.stateData : null;
       for (let i = 0; i < n; i++) {
         const kd = K[i];
-        if (kd === K_MINE || (kd === K_HIDDEN && (ctrl || this._effHidden)) || (O && O[i * 4 + 3] > 0 && kd > K_NUMBER)) B[c++] = i;
+        if (kd === K_MINE || (kd === K_HIDDEN && !ctrl && this._effHidden) || (O && O[i * 4 + 3] > 0 && kd > K_NUMBER)) B[c++] = i;
       }
       this._baseLen = c;
       this._applyShiftOpaque();
@@ -564,7 +640,8 @@ export class BoardRenderer {
     const O = this._eff ? this.stateData : null; // see above: old (closed / flag) tiles during a wave
     for (let i = 0; i < n; i++) {
       const kd = K[i];
-      if (((kd === K_HIDDEN && !ctrl && !this._effHidden) || (kd === K_NUMBER && space)) && !(O && O[i * 4 + 3] > 0)) continue;
+      // hidden cells are opaque only while they shrink in a loss wave; under Ctrl they are ghosts (transparent pass)
+      if (((kd === K_HIDDEN && !(this._effHidden && !ctrl)) || (kd === K_NUMBER && space)) && !(O && O[i * 4 + 3] > 0)) continue;
       L[c++] = i;
     }
     this._commit(this.attrOpaque, this.meshOpaque, c);
@@ -629,6 +706,46 @@ export class BoardRenderer {
 
   _clearOldLayers() { const D = this.stateData; for (let o = 3; o < D.length; o += 4) D[o] = 0; }
 
+  /** Drops every running "solved" pulse at once. */
+  _dropPulses() {
+    this._pulses.clear();
+    if (this.meshPulse) this._commitPulse(0);
+  }
+
+  _commitPulse(count) {
+    for (const attr of [this.attrPulseIdx, this.attrPulse]) {
+      attr.clearUpdateRanges();
+      if (count > 0) attr.addUpdateRange(0, count * attr.itemSize);
+      attr.needsUpdate = true;
+    }
+    this.meshPulse.geometry.instanceCount = count;
+    this.meshPulse.visible = count > 0;
+  }
+
+  /**
+   * Advances the pulses: each cube's envelope from its start, the finished ones dropped, the rest drawn
+   * back-to-front. Visits the pulsing cells only.
+   */
+  _tickPulses(now) {
+    if (this._pulses.size === 0) { if (this.meshPulse.visible) this._commitPulse(0); return; }
+    if (this._pulses.size > this._pulseCap) this._buildPulseMesh(2 ** Math.ceil(Math.log2(this._pulses.size)));
+    const g = this.game, cam = this.camera.position, p = 4 * this.spacing, live = [];
+    for (const [i, t0] of this._pulses) {
+      const e = pulseEnvelope(now - t0);
+      if (e.done) { this._pulses.delete(i); continue; }
+      const [ci, cj, ck] = g.coords(i);
+      const dx = (ci - (g.X - 1) / 2) * p - cam.x, dy = (cj - (g.Y - 1) / 2) * p - cam.y, dz = (ck - (g.Z - 1) / 2) * p - cam.z;
+      live.push({ i, e, d: dx * dx + dy * dy + dz * dz });
+    }
+    live.sort((a, b) => b.d - a.d); // farthest first
+    const L = this.listPulse, D = this.dataPulse;
+    for (let c = 0; c < live.length; c++) {
+      const { i, e } = live[c];
+      L[c] = i; D[c * 3] = e.scale; D[c * 3 + 1] = e.bright; D[c * 3 + 2] = e.alpha;
+    }
+    this._commitPulse(live.length);
+  }
+
   /** Drops the end-of-game wave, confetti, shake and wrong flags at once. */
   _endEffects() {
     this._clearOldLayers();
@@ -671,15 +788,15 @@ export class BoardRenderer {
     this.confetti.visible = true;
   }
 
-  /** True while a time-based effect (selection pulse, end-of-game wave, confetti, shake) needs frames. */
+  /** True while a time-based effect (selection pulse, "solved" pulse, end-of-game wave, confetti, shake) needs frames. */
   isAnimating() {
-    return this._selAnim || this._eff !== null || this._conf !== null || this._shake !== null;
+    return this._selAnim || this._eff !== null || this._conf !== null || this._shake !== null || this._pulses.size > 0;
   }
 
   setToggles(shift, space, ctrl) {
     const t = this.toggles;
     const changed = t.ctrl !== ctrl || t.shift !== shift || t.space !== space;
-    if (t.shift !== shift || t.space !== space) this._transDirty = true;
+    if (changed) this._transDirty = true;
     t.shift = shift; t.space = space; t.ctrl = ctrl;
     this.uniforms.uShift.value = shift ? 1 : 0;
     this.uniforms.uSpace.value = space ? 1 : 0;
@@ -729,9 +846,9 @@ export class BoardRenderer {
   }
 
   _updateTransparent() {
-    const { shift, space } = this.toggles;
+    const { shift, space, ctrl } = this.toggles;
     const meshT = this.meshTrans;
-    if (!shift && !space) {
+    if (!shift && !space && !ctrl) {
       if (meshT.geometry.instanceCount !== 0) this._commit(this.attrTrans, meshT, 0);
       this.stats.trans = 0;
       this._transDirty = false;
@@ -761,7 +878,6 @@ export class BoardRenderer {
     const counts = this._counts, keys = this._keys, cand = this._candidates;
     counts.fill(0);
     let c = 0, idx = 0;
-    const maxKind = shift ? K_NUMBER : -1;
     // during a wave, cells not yet reached are drawn with their old closed / flag tile (transparent under Shift)
     const O = shift && this._eff ? this.stateData : null;
     for (let k = 0; k < Z; k++) {
@@ -770,7 +886,8 @@ export class BoardRenderer {
         const kyz = kz + qy[j];
         for (let i = 0; i < X; i++, idx++) {
           const kd = K[idx];
-          if ((shift ? kd > maxKind : kd !== K_NUMBER) && !(O && O[idx * 4 + 3] > 0)) continue;
+          // Shift: closed, flag and number cubes; Space: numbers; Ctrl: hidden cells (ghosts)
+          if (!((shift ? kd <= K_NUMBER : space && kd === K_NUMBER) || (ctrl && kd === K_HIDDEN) || (O && O[idx * 4 + 3] > 0))) continue;
           const key = kyz + qx[i];
           keys[c] = key; cand[c++] = idx; counts[key]++;
         }
@@ -813,6 +930,7 @@ export class BoardRenderer {
     const cam = this.camera;
     const now = performance.now() / 1000;
     this._tickEffects(now);
+    if (this.game) this._tickPulses(now);
     // far plane large enough for the whole board (original clipped at 300)
     const dist = cam.position.length();
     const R = this.boardRadius();

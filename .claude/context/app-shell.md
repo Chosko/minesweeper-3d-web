@@ -385,8 +385,15 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   consumes Esc to release the lock, and `onLockChange` calls
   `backGame('key')` instead — a lock lost with the window's focus pauses,
   and a release right after a cancelled 3D generation goes to the
-  click-to-play card; `resumeFromPause` ignores a keyboard Back within
-  500 ms of the unlock, so that Esc does not also resume. The browser's
+  click-to-play card. On the pause card of a game in play every Esc resumes
+  (`PAUSE.resume('key')`), however soon after the release, except the press
+  that released the lock and a held Esc's auto-repeat: `resumeFromPause`
+  asks `escResumes(input.lastKey)` ([input.md](input.md)). Chromium hands the
+  page only the releasing press's `keyup` (its browser process takes the
+  `keydown` to exit the lock), Firefox neither (both are chrome-only while
+  the lock holds, and the lock goes on `keyup`), so no `keydown` of it reaches
+  `onKey`; a browser that delivered one would do so with the lock still held,
+  which `escResumes` refuses. The browser's
   Back (and a mouse's back button) is `historyBack`, run by `HISTORY` on a
   `popstate` back: nothing during the 3D end delay, the controls modal or
   confirmation closes first, the board (`playing`, `classic-2d`) pauses
@@ -485,7 +492,7 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   or after the end an asked-for pause only opens the card, and an automatic
   one (blur, hidden) does nothing — nor while the board is not in play.
   Nothing pauses twice. While `paused` shows, the canvas is hidden and play
-  input is dropped.
+  input is dropped. Esc on the card of a game in play: Back inputs above.
 - **Confirmation.** Restart and back to menu during a started, unfinished game
   call `confirm`, which shows `ui.showConfirm` on the pause card (the
   `#pause-confirm` panel in place of `#pause-actions`) and refocuses; Back or
@@ -536,7 +543,11 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   by the Records screen's Watch with a replay id (`RECORDS_PAGE.watch`,
   [records.md](records.md)), each returning to the screen it came from;
   its Back buttons go through `shellBack`. The frame loop calls
-  `REPLAY_VIEWER.tick` every frame while `replay` shows; on `replay` the
+  `REPLAY_VIEWER.tick` every frame while `replay` shows; before it, on a 3D
+  replay whose time moved since the last frame (`replay3d.time`) — a seek, a
+  step, Home / End — it calls `renderer.sync({ seek: true })`, so the
+  renderer drops its "solved" pulses and starts none for the jump
+  ([rendering.md](rendering.md)); on `replay` the
   controller goes to `padReplay`, which hands `REPLAY_PAD` buttons to the
   viewer and navigates the screen as a menu otherwise. `LAYER_SCREEN` maps
   `#replay` to `replay`. It is a shell screen, not a mode: it reaches no

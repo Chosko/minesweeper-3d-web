@@ -66,9 +66,14 @@ resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md).
   `drag`, its `DragLook`.
   - Reads: `has(code)`, getters `shift`, `ctrl`, `space` (Space held, or tapped on through
     `spaceToggle`, its `TapToggle`), `move` (the `{w,a,s,d,q,e}` object),
-    `locked`, `unlockedAt` (`performance.now()` of the last lock release), `lockSupported`.
+    `locked`, `unlockedAt` (`performance.now()` of the last lock release), `lastKey`
+    (`{ code, repeat, locked }` of the last keydown, recorded before `onKey`: whether the pointer
+    was locked when it came), `lockSupported`.
   - `requestLock()`, `exitLock()`, `releaseAll()` (clears keys, the Space toggle, `mouse.reset()`
     and `drag.reset()`); `dragLook` — drag-to-look is on and the pointer is not locked.
+- `js/input.js::escResumes({ repeat, locked })` — whether an Esc press resumes from the pause card
+  of a game in play: not the press that came while the lock held (it released it) nor an
+  auto-repeat; every other press, at any delay after the release ([app-shell.md](app-shell.md)).
 
 **js/controls.js**
 - `js/controls.js::Controls(keyboard)` — `keyboard` is any object with `shift / space / ctrl` getters.

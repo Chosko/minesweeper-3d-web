@@ -1,7 +1,7 @@
 // Entry point: wires game logic, renderer, input and UI together.
 import * as THREE from 'three';
 import { BoardRenderer } from './render.js';
-import { FlyCamera, MouseActions, Input, SPACING_MIN, SPACING_MAX, SPACING_START, spawnPose, offscreenArrow } from './input.js';
+import { FlyCamera, MouseActions, Input, SPACING_MIN, SPACING_MAX, SPACING_START, spawnPose, offscreenArrow, escResumes } from './input.js';
 import { pickCell, pickCellBrute } from './picking.js';
 import { UI, clampSettings, NO_MOUSE_MSG } from './ui.js';
 import * as audio from './audio.js';
@@ -469,7 +469,7 @@ REPLAYS.load();
 // input never moves it. Leaving the replay gives the renderer back the board it drew before.
 const REPLAY_SPACING = SPACING_START;
 const replayCam = new FlyCamera();
-const replay3d = { view: null, toggles: { shift: false, space: false, ctrl: false }, pickKey: '' };
+const replay3d = { view: null, toggles: { shift: false, space: false, ctrl: false }, pickKey: '', time: 0 };
 const REPLAY_SCENE = {
   show(view) {
     replay3d.view = view;
@@ -583,11 +583,14 @@ function historyBack() {
   if (S.mode === 'ready' && S.game && S.started) return;
   SHELL.back('history');
 }
-/** Back from the pause card: an ended game goes to the menu; the controller resumes; the keyboard goes to the click-to-play card. */
+/**
+ * Back from the pause card: an ended game goes to the menu; the controller resumes; the keyboard goes to
+ * the click-to-play card on every Esc but the one that released the pointer lock (escResumes).
+ */
 function resumeFromPause(source) {
   if (gameOver()) { PAUSE.toMenu(); return; }
   if (source === 'pad') { padResume(); return; }
-  if (performance.now() - input.unlockedAt < 500) return; // the Esc that released the pointer lock already meant Pause
+  if (source === 'key' && !escResumes(input.lastKey)) return; // the Esc that released the pointer lock already meant Pause
   PAUSE.resume('key');
 }
 /**
@@ -1200,7 +1203,12 @@ function frame(now) {
   if (pad.pad && padUsed(pad)) DEVICE.input('pad');
   if (pad.pad || pad.active) handlePad(pad, dt, now);
   if (MODES.active === 'classic-2d') mode2d.tick();
+  // A 3D replay moved since the last frame by something other than its playback (the seek bar, a step,
+  // Home / End) was seeked: the renderer takes that without pulses.
+  const replayed = S.mode === REPLAY_SCREEN && replay3d.view !== null;
+  if (replayed && REPLAY_VIEWER.state.time !== replay3d.time) renderer.sync({ seek: true });
   if (S.mode === REPLAY_SCREEN) REPLAY_VIEWER.tick(rawDt * 1000);
+  if (replayed) replay3d.time = REPLAY_VIEWER.state.time;
 
   const three = renderer.camera;
   const playing = S.mode === 'playing';

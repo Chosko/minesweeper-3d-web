@@ -238,6 +238,14 @@ test('the shell registers the 3D viewer under the box graph, with its own camera
   assert.doesNotMatch(branch, /cam\.move|moveAxes|controls\./, 'no player movement or held keys');
 });
 
+test('whatever moves a 3D replay outside its playback is a seek for the renderer, which drops its pulses', () => {
+  const loop = MAIN.slice(MAIN.indexOf('function frame(now)'), MAIN.indexOf('requestAnimationFrame(frame);\n}'));
+  const seek = loop.indexOf('renderer.sync({ seek: true })');
+  assert.ok(seek >= 0, 'a replay time moved since the last frame is synced as a seek');
+  assert.ok(seek < loop.indexOf('REPLAY_VIEWER.tick('), 'before the playback advances');
+  assert.ok(loop.indexOf('REPLAY_VIEWER.tick(') < loop.indexOf('const synced = renderer.sync();'), 'playback\'s own changes sync as play');
+});
+
 test('a lost graphics context is reported as a mode\'s failure, during a 3D replay and when one opens after it', () => {
   const handler = MAIN.slice(MAIN.indexOf("canvas.addEventListener('webglcontextlost'"), MAIN.indexOf('/** Dead canvas'));
   assert.match(handler, /SHELL\.go\('ctxlost'\)/);
@@ -328,6 +336,22 @@ test('in a browser, a recorded 3D replay plays from its fixture through to the e
     await page.keyboard.up('KeyW');
     got = await camera();
     for (const k of ['x', 'y', 'z']) assert.ok(Math.abs(got[k] - want[k]) < 1e-6, `camera ${k} unmoved by the player`);
+
+    // Playback shows the "solved" pulse of the numbers it hides (two at 6559 ms); a seek drops it at once.
+    const pulses = () => page.evaluate(() => globalThis.__ms.renderer._pulses.size);
+    await page.evaluate(() => { globalThis.__ms.replayViewer.seek(6300); globalThis.__ms.replayViewer.command('toggle'); });
+    await page.waitForFunction(() => {
+      if (globalThis.__ms.renderer._pulses.size === 0) return false;
+      globalThis.__ms.replayViewer.seek(4000);
+      return true;
+    }, null, { polling: 'raf', timeout: 5000 });
+    await frames();
+    assert.equal(await pulses(), 0, 'a seek leaves no pulsing cube');
+    await page.evaluate(() => globalThis.__ms.replayViewer.command('toggle'));
+    assert.equal(await page.evaluate(() => globalThis.__ms.replayViewer.state.playing), false);
+    await page.evaluate(() => globalThis.__ms.replayViewer.seek(7500));
+    await frames();
+    assert.equal(await pulses(), 0, 'a seek over the hides starts no pulse');
 
     await page.click('#rp-speed [data-value="4"]');
     await page.click('#rp-play');
