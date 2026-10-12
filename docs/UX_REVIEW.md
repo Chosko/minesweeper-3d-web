@@ -158,7 +158,7 @@ These are not repairs; they are the experiences the reviewers would add, each ti
 | # | Improvement | Player path | Why it matters | Sketch | Effort |
 | --- | --- | --- | --- | --- | --- |
 | I-01 | Learn 3D: a guided first board | First-time 3D player | The design routes 3D newcomers through a campaign that does not exist; the web build drops them on Cube Beginner. Two concepts must be taught: a number counts 26 cubes in three layers, and solved cubes disappear. | A "Learn 3D" entry on the 3D board choice: a fixed 4 × 4 × 4 · 3 mines no-guess board with a fixed seed and start cell, four HUD prompts in sequence (hold Shift to see what this 1 counts; hold Ctrl to see the cleared cubes; flag the one cube that must be a mine; left+right on the 1 to chord). No records, no timer, repeatable. | Medium |
-| I-02 | First-box presets that teach depth | First-time 3D player | Cube Beginner is one layer too many to read as a slab. | Two or three boards before Beginner: 4 × 4 × 2 · 3, 5 × 5 × 3 · 6, spawned in the three-quarter view at spacing 1.5 with the neighbourhood wireframe on; the campaign's first chapter in miniature, one preset-table entry each. | Small |
+| I-02 | First-box presets that teach depth | First-time 3D player | Cube Beginner is one layer too many to read as a slab. | Two boards before Beginner: 4 × 4 × 3 with about 4 mines (measured at implementation; a box with a side of 2 can never be no-guess, so the 4 × 4 × 2 idea was dropped), 5 × 5 × 3 · 6, spawned in the three-quarter view at spacing 1.5 with the neighbourhood wireframe on; the campaign's first chapter in miniature, one preset-table entry each. | Small |
 | I-03 | Board of the day with a shareable code | Returning player; friends comparing | Nothing calls the player back on a given day and bests move rarely. The generator is deterministic from board, start cell, seed and generator version, so a static site can offer one 2D and one 3D board per day; the one design gap is that the board must mark its start cell. | A "Daily" menu entry with today's Expert no-guess and today's cube, a highlighted start cell, one counted attempt per day, a Daily board in Records with a days-in-a-row streak, a board code (E-20261011-7F3A) and a link that opens the same board, pre-generated when the menu opens. | Medium |
 | I-04 | Board codes and challenge links for any game | Enthusiasts sharing a board or a best to beat | Every summary already stores the seed and generator version. | Show the code on results, Records and the replay viewer with Copy; accept it in the custom form ("Play this board"); a challenge fixes and marks the start cell like the daily. | Small, after I-03 |
 | I-05 | Local top-10 per board | Grinders | Every leaderboard feature in the design depends on Steam; the data for a personal top-N is already in the history. | A Top 10 tab per board in Records by time, 3BV/s and efficiency, each row with date, 3BV, clicks and Watch; the results screen says "#4 of 57". | Small |
@@ -205,7 +205,7 @@ The decisions below are all taken, P-21 included after its analysis.
 | 13 | WebGL 2 a hard requirement? | No: Classic 2D, Records and Settings run without it | P-04 proceeds |
 | 14 | Zero-mine boards | Require at least one mine | P-16 proceeds |
 | 15 | Daily board and codes on the web now? | Yes, with a marked start cell | I-03, I-04 proceed |
-| 16 | 3D tutorial before the campaign? | Yes | I-01, I-02 proceed |
+| 16 | 3D tutorial before the campaign? | Yes; the first box is 4 × 4 × 3 with about 4 mines, since a side of 2 is never no-guess | I-01, I-02 proceed |
 | 17 | Accessibility settings | Not now | P-56 to P-60 and I-16 dropped; P-44 waits for the planned rebinding feature |
 | 18 | Cube Expert no-guess budget | No measurement; no-guess is the default | P-34's background generation and reliable status card still proceed |
 
@@ -235,11 +235,11 @@ The approved items group into the tasks below. Each row is one backlog task; ord
 | W-14 3D spawn framing and world reference · task 125 | P-24, P-27 | 3D | Small | Phase 1 |
 | W-15 3D flight: fly-through fade, forward follows the view, spacing, FOV · task 139 | P-25, P-26, P-30, P-32 | 3D | Medium | Phase 3 |
 | W-16 Look at the board and end delay · task 140 | P-22 | 3D, results | Medium | Phase 3 |
-| W-17 Cube preset re-tune and first-box presets | P-20, I-02 | 3D | Small | Phase 1 |
+| W-17 Cube preset re-tune and first-box presets · task 152 | P-20, I-02 | 3D | Small | Phase 1 |
 | W-18 3D readability · task 141 | P-23 | 3D | Iterative | Phase 3, attended: readout, wireframe, layer tint, depth dimming, one iteration at a time with feedback |
 | W-19 3D small feedback · task 126 | P-29, P-35, P-36 | 3D | Small | Phase 1 |
 | W-20 Right-click on a number · task 127 | P-21 | 3D | Small | Phase 1: undo-last-batch on the second right-click, flash, count-scaled sound, counter tint, help copy |
-| W-21 Learn 3D guided board | I-01 | 3D | Medium | Phase 3, after W-01 and W-17 |
+| W-21 Learn 3D guided board · task 153 | I-01 | 3D | Medium | Phase 3, after W-01 and W-17 |
 | W-22 Touch Classic 2D and touch-safe 3D entry · task 142 | P-37, P-38, P-39, P-45 | Input | Medium | Phase 4 |
 | W-23 Touch controls for 3D · task 147 | I-14 | Input, 3D | Large | Phase 4, after W-22 and W-15 |
 | W-24 Keyboard-only 3D · task 143 | P-40 | Input, 3D | Medium | Phase 4; free keys only, mouse play untouched |
@@ -257,4 +257,4 @@ The approved items group into the tasks below. Each row is one backlog task; ord
 
 Phase 1 is thirteen small tasks and one medium (W-01) that every later help-related change builds on. Phase 2 brings Classic 2D to parity with 3D. Phase 3 is the 3D experience, with W-18 attended. Phase 4 opens the locked-out input classes. Phase 5 is the long tail for enthusiasts.
 
-The tasks live in the repository backlog (`.claude/TASKS.md`, bodies under `.claude/tasks/`), each citing this document by P, I and W ids, and run in order through runbook 5, `ux-review-tasks-implementation` (`.claude/runbooks/5-ux-review-tasks-implementation.md`): one `/task-implement N --review` step per task, task 141's step attended, and a final step that checks the built game against this document and writes `docs/UX_REVIEW_DRIFT.md`. A copy of this document is committed as `docs/UX_REVIEW.md`. W-17 and W-21 wait on the first-box preset decision (a 4 × 4 × 2 box can never be no-guess) and are appended to the runbook before its final step once written.
+The tasks live in the repository backlog (`.claude/TASKS.md`, bodies under `.claude/tasks/`), each citing this document by P, I and W ids, and run in order through runbook 5, `ux-review-tasks-implementation` (`.claude/runbooks/5-ux-review-tasks-implementation.md`): one `/task-implement N --review` step per task, task 141's step attended, and a final step that checks the built game against this document and writes `docs/UX_REVIEW_DRIFT.md`. A copy of this document is committed as `docs/UX_REVIEW.md`. W-17 (task 152) and W-21 (task 153) were written last, after the first-box preset decision, and are appended to the runbook before its final step.
