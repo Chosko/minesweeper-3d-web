@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 135
+Last task number: 136
 
 ---
 
@@ -833,6 +833,15 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: js/classic2d/mode.js, js/main.js, tests/classic2d-mode.test.mjs, .claude/domain/features/classic-2d-square-play.md
+Preconditions: none
+
+---
+
+## 136. 2D tile art parity with 3D
+
+Status: [MISSING]
+Target: claude
+Files: js/tile-art.js, js/textures.js, js/classic2d/tile-skin.js, css/tokens.css, tests/tile-skin.test.mjs, tests/tokens.test.mjs, tests/theme.test.mjs, .claude/domain/features/square-tile-skin.md
 Preconditions: none
 
 ---
