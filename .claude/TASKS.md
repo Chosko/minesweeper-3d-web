@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 147
+Last task number: 148
 
 ---
 
@@ -942,5 +942,14 @@ Status: [MISSING]
 Target: claude
 Files: js/touch-3d.js, js/input.js, js/controls.js, js/main.js, js/ui.js, js/settings/bindings.js, index.html, css/style.css, css/components.css, dev/components.html, tests/input-touch-3d.test.mjs, tests/shell-mode-3d.test.mjs, tests/shell-pause.test.mjs, tests/components.test.mjs, tests/settings-page.test.mjs, tests/replay-3d.test.mjs, README.md, docs/ORIGINAL_SPEC.md, .claude/domain/product-design.md, .claude/domain/features/3d-play-flow.md, .claude/domain/features/game-shell.md, .claude/domain/features/screen-components.md, .claude/domain/features/settings.md
 Preconditions: 139, 142
+
+---
+
+## 148. Records layout, pagination and lists
+
+Status: [MISSING]
+Target: claude
+Files: js/records/screen.js, js/records/replay-list.js, js/records/history-chart.js, js/records/view-prefs.js, js/replay/library.js, js/ui/components.js, js/settings/page.js, js/main.js, js/shell/navigation.js, index.html, css/components.css, css/style.css, dev/components.html, tests/records-screen.test.mjs, tests/records-screen-3d.test.mjs, tests/records-replays.test.mjs, tests/records-history.test.mjs, tests/replay-library.test.mjs, tests/components.test.mjs, tests/settings-page.test.mjs, tests/records-view-prefs.test.mjs, .claude/domain/features/records-screen.md, .claude/domain/features/replay-library.md, .claude/domain/features/screen-components.md, .claude/domain/features/settings.md, .claude/domain/features/3d-results-records-screens.md
+Preconditions: none
 
 ---
