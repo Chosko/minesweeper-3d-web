@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 130
+Last task number: 131
 
 ---
 
@@ -788,6 +788,15 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: js/shell/pause.js, js/main.js, js/classic2d/mode.js, js/classic2d/cursor-input.js, js/ui.js, js/settings/schema.js, js/settings/page.js, js/settings/store.js, js/settings/bindings.js, js/records/model.js, js/records/store.js, js/records/screen.js, js/results/flow.js, js/results/view.js, index.html, tests/shell-pause.test.mjs, tests/settings-store.test.mjs, tests/settings-page.test.mjs, tests/records-model.test.mjs, tests/records-model-3d.test.mjs, tests/records-store.test.mjs, tests/records-screen.test.mjs, tests/records-screen-3d.test.mjs, tests/results.test.mjs, tests/classic2d-mode.test.mjs, README.md, docs/ORIGINAL_SPEC.md, .claude/domain/product-design.md, .claude/domain/features/game-shell.md, .claude/domain/features/personal-records.md, .claude/domain/features/3d-game-records.md, .claude/domain/features/records-screen.md, .claude/domain/features/3d-results-records-screens.md, .claude/domain/features/results-screen.md, .claude/domain/features/settings.md
+Preconditions: none
+
+---
+
+## 131. Reset all data
+
+Status: [MISSING]
+Target: claude
+Files: js/platform/storage.js, js/platform/browser-backend.js, js/platform/memory-backend.js, js/platform/index.js, js/settings/reset.js, js/settings/page.js, js/ui.js, js/main.js, css/style.css, tests/platform-storage.test.mjs, tests/platform-browser.test.mjs, tests/settings-page.test.mjs, tests/settings-reset.test.mjs, README.md, .claude/domain/features/settings.md, .claude/domain/features/platform-storage.md, .claude/domain/features/replay-library.md, .claude/domain/features/personal-records.md
 Preconditions: none
 
 ---
