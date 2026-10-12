@@ -28,7 +28,9 @@
 // restarted or left; a game left before its first applied reveal reports nothing. The replay is
 // the session's recording sealed with the summary (js/mode3d/session.js), null when there is no
 // summary. pause() pauses the session, so its timer stops and a pending board request keeps
-// running; the timer resumes with play. restart() and leave() leave the session, cancelling a
+// running; the timer resumes with play. cancelGeneration() cancels the session's first-click board
+// while it is being generated, its card shown or not, back to the closed box with nothing
+// reported, and returns whether it did. restart() and leave() leave the session, cancelling a
 // pending generation or end delay and discarding its recording, and drop its sampler. tick()
 // drives the sampler (call it every frame). A lost graphics context — at start() or through
 // contextLost() — is reported as failed, and leaves the session; during the end delay the game is
@@ -138,6 +140,7 @@ export function create3DMode(flow, report) {
     },
     /** Whether the end sequence is running: the game is over and the results screen not yet shown. */
     get ending() { return !!game?.ending; },
+    cancelGeneration() { return game ? game.session.cancel() : false; },
     pause(opts = {}) {
       if (game?.ending) return;
       game?.session.pause();

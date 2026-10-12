@@ -112,6 +112,14 @@
      Name:    its text
      Disabled: drop href and set aria-disabled="true" (no longer focusable).
 
+   ui-spinner — a wait in progress (a board being generated)
+     Element: <span class="ui-spinner" aria-hidden="true"></span>
+     Role:    none (decorative; the card's title names the wait)
+     Name:    none
+     Motion:  the kit's one animation, a steady turn timed from the motion
+              tokens; it runs only while the spinner shows (a hidden card
+              draws nothing).
+
    ui-overlay-bar — in-game timer, mine counter and pause, over either board
      Element: <div class="ui-overlay-bar" role="group" aria-label="Game">
                 <div class="ui-stat" role="group" aria-labelledby="T">
@@ -156,14 +164,16 @@
      (data-last), else the first entry.
    3D board choice (index.html #board-choice): ui-card ui-screen--wide
      holding the title, the Cube presets as a ui-heading and a ui-menu with
-     the presets' no-guess ui-toggle under it, the custom board
-     as a ui-panel of ui-field entries with ui-actions--row (Random, Start),
-     an info line (ui-text--warning on an invalid board) and the custom
-     board's no-guess ui-toggle under a ui-text--muted line giving why while
-     it is disabled (a side of 2 cells, or the cell-count limit), and ui-actions--row
-     (Back); js/mode3d/board-choice.js marks the last board choice data-last
-     with a "Last played" line once the player has played. Default focus:
-     the last board choice, else the first item.
+     the presets' no-guess ui-toggle under it and its ui-text--muted helper
+     line, the custom board as a ui-panel of ui-field entries with
+     ui-actions--row (Random, Start), an info line (ui-text--warning on an
+     invalid board) and the custom board's no-guess ui-toggle under a
+     ui-text--muted line giving why while it is disabled (a side of 2 cells,
+     or the cell-count limit) and over a ui-text--muted density hint shown
+     above 25 % mines with no-guess on, and ui-actions--row (Back);
+     js/mode3d/board-choice.js marks the last board choice data-last with a
+     "Last played" line once the player has played. Default focus: the last
+     board choice, else the first item.
    Coming soon (index.html #coming-soon): the one placeholder every menu
      entry whose screen has not landed routes to; ui-card ui-screen holding
      the entry's name as title, a ui-text line and ui-actions (Back primary).
@@ -201,15 +211,20 @@
    Classic 2D board choice (index.html #c2d-choice): ui-card ui-screen--wide
      holding the title, one ui-menu of the standard sizes (data-size; the
      last board choice marked data-last with a "Last played"
-     ui-menu__detail), the custom board as a ui-panel of ui-field entries
-     (width, height, mines) with ui-actions--row (Start, data-size="custom")
-     and a ui-text info line that turns ui-text--warning on a board outside
-     the custom limits, the no-guess ui-toggle, and ui-actions--row (Back).
-     Default focus: the last board choice, else the first item.
-   Board status (index.html #c2d-status, and #m3d-status over the 3D box):
-     ui-card ui-screen over the board while a slow first click generates its
-     board, or after a failed no-guess board with ui-actions--row (Retry
-     primary, Play a standard board).
+     ui-menu__detail), the no-guess ui-toggle under it with its
+     ui-text--muted helper line, the custom board as a ui-panel of ui-field
+     entries (width, height, mines) with ui-actions--row (Start,
+     data-size="custom"), a ui-text info line that turns ui-text--warning on
+     a board outside the custom limits and a ui-text--muted density hint
+     under it, shown above 25 % mines with no-guess on, and ui-actions--row
+     (Back). Default focus: the last board choice, else the first item.
+   Board status (index.html #c2d-status over the Classic 2D board, and
+     #m3d-status over the 3D box): ui-card ui-screen while a slow first
+     click generates its board, with a ui-spinner and ui-actions--row
+     (Cancel), or after a failed no-guess board with ui-actions--row (Retry
+     primary, Play a standard board, Back to menu); it sits above the pause
+     card. Default focus: Cancel; on the offer Retry, or Play a standard
+     board after a second failure in a row.
    Pause card (index.html #pause): ui-card ui-screen holding the title,
      ui-text status lines, ui-actions (Resume primary while playing, Play
      again primary and first once the game ended, Main menu), the board
@@ -633,6 +648,21 @@
 .ui-overlay-bar__pause {
   min-height: 40px;
   padding: var(--space-2) var(--space-4);
+}
+
+/* ---------- spinner ---------- */
+.ui-spinner {
+  display: block;
+  align-self: center;
+  width: var(--space-8);
+  height: var(--space-8);
+  border: var(--space-1) solid var(--color-border);
+  border-top-color: var(--color-accent);
+  border-radius: var(--radius-pill);
+  animation: ui-spinner-turn calc(var(--duration-slow) * 4) linear infinite;
+}
+@keyframes ui-spinner-turn {
+  to { transform: rotate(1turn); }
 }
 
 /* ---------- screen compositions ---------- */

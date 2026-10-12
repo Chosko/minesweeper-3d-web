@@ -77,11 +77,12 @@ behaviour.
 - **3D game session.** Owns one 3D game: builds the box graph and the game
   awaiting its first click, shows the closed box, and on the first reveal
   asks the generation worker for a board around that cell; while it waits
-  it shows the "generating" state and accepts no board action; when the
-  board arrives it applies the reveal and starts the timer. It drives
-  actions from the existing mouse state machine and controller mapping,
-  stops the timer at a win or loss, and builds the summary. Restart and
-  leave cancel a pending generation.
+  it shows the "generating" state and accepts no board action; the
+  "generating" card's *Cancel* goes back to the closed box, its flags kept,
+  recording nothing. When the board arrives it applies the reveal and
+  starts the timer. It drives actions from the existing mouse state machine
+  and controller mapping, stops the timer at a win or loss, and builds the
+  summary. Restart and leave cancel a pending generation.
 - **Mode adapter.** Implements the game shell's mode contract for 3D over
   the session: start, pause, resume, restart and leave, keeping today's
   pointer-lock and lockless behaviour, and reporting started, finished and
@@ -90,8 +91,11 @@ behaviour.
 ## Data and state
 
 - **Board choice** — X, Y, Z, mine count and no-guess. The last 3D choice
-  is persisted per mode, as `game-shell` describes. A remembered choice
-  naming a preset that is no longer offered opens on cube Beginner.
+  is persisted per mode, as `game-shell` describes. A player with no stored
+  choice meets no-guess on, on the presets and the custom board alike;
+  after that the switch is remembered as played. A remembered choice naming
+  a preset that is no longer offered opens on cube Beginner with no-guess
+  on.
 - **Session** — the game, the pending generation request, the timer, and
   the seed and generator version of the board once it arrives. In memory
   only.
@@ -119,7 +123,9 @@ behaviour.
   (20 × 20 × 20), set by wait: `dev/measure-noguess-3d.mjs` times no-guess
   requests on box boards of growing size at the presets' densities, which
   meet the attempt budget at every size, and the slowest request at the
-  limit takes about half a second.
+  limit takes about half a second. Above 25 % mines with no-guess on, a
+  hint under the custom switch says a no-guess board may not be found; it
+  warns and never disables the switch or refuses the board.
 - **No-guess failure** — a no-guess request that exhausts its budget is
   handled exactly as Classic 2D handles it, by the rule `board-generation`
   records.

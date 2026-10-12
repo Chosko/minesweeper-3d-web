@@ -124,9 +124,13 @@ click lands.
 ## Failure offer
 
 Settled: when a no-guess request fails, the player is offered *Retry* (the
-same board request with a new seed) or *Play a standard board* (the same
-size with no-guess off). High-density custom boards do not refuse the
-no-guess switch up front; the failure offer covers them.
+same board request with a new seed), *Play a standard board* (the same
+size with no-guess off) or *Back to menu*. The offer shows above the pause
+card, also when the failure arrives while the game is paused, and takes the
+focus: *Retry* after a first failure, *Play a standard board* after a
+second failure in a row. High-density custom boards do not refuse the
+no-guess switch up front; above 25 % mines the board choice shows a hint
+that a no-guess board may not be found, and the failure offer covers them.
 
 ## Attempt budget and timing
 

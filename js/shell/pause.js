@@ -7,7 +7,9 @@
 // mode's summary() to the in-progress hand-off. Before the first click or after the game ends, an
 // asked-for pause (key, controller, the overlay's pause button) opens the pause card only, with
 // no timer to stop; an automatic pause (window blur, tab hidden) does nothing then, nor while the
-// board is not in play. The board is hidden whenever the pause card shows. Resume always goes through the mode.
+// board is not in play. While the first click's board is being generated, Back (Esc, the
+// controller's back button) cancels the generation instead of pausing; every pause source still
+// pauses. The board is hidden whenever the pause card shows. Resume always goes through the mode.
 // Restart and back to menu during a started, unfinished game ask for confirmation first, saying
 // the game will count as a loss.
 //
@@ -42,9 +44,11 @@ export const CONFIRMATIONS = Object.freeze({
  * card over the hidden board. isPaused(): whether the pause card already shows. onBoard(): whether the board is in play.
  * confirm(request, proceed): ask `request` (one of CONFIRMATIONS) and call proceed() on yes.
  * goMenu(): show the main menu. guard(on): arm or disarm the leave-page guard.
+ * cancelGeneration(): cancel the active mode's board being generated; whether there was one.
  */
 export function createPauseController({
   modes, showCard, isPaused = () => false, onBoard = () => true, confirm, goMenu, guard = () => {},
+  cancelGeneration = () => false,
 }) {
   const listeners = Object.fromEntries(HAND_OFFS.map((h) => [h, new Set()]));
   const handOff = (name, summary, mode, replay = null) => {
@@ -79,6 +83,14 @@ export function createPauseController({
       showCard({ note });
       keep();
       return true;
+    },
+    /**
+     * Back on the board from `source` ('key' or 'pad'): cancels a board being generated, else
+     * pauses. Returns whether the pause card was opened.
+     */
+    back(source = 'key') {
+      if (cancelGeneration()) return false;
+      return this.pause(source);
     },
     /** Resume through the mode; source is 'pointer' | 'key' | 'pad'. */
     resume(source = 'pointer') { if (modes.active !== null) modes.resume({ source }); },

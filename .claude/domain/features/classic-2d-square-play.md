@@ -24,7 +24,9 @@ In scope (m1-classic-2d):
   Expert (30 × 16, 99) and Custom (width and height each 1 to 100, mines
   within the limit Board setup states), plus the no-guess switch.
 - The start-of-game flow: a closed board, the first click, board
-  generation around it, the timer starting once the board is ready.
+  generation around it, the timer starting once the board is ready. The
+  "generating" card's *Cancel* goes back to the closed board, recording
+  nothing.
 - The Canvas 2D board: layout and scaling to the window, scrolling or
   panning for boards larger than the screen, hit-testing, and per-cell
   redraw from the engine's change lists through `square-tile-skin`.
@@ -107,7 +109,8 @@ copied.
   game.
 - **Last board choice** — size, custom dimensions and the no-guess switch,
   remembered between sessions through the game shell's settings storage so
-  the mode reopens on the player's last choice.
+  the mode reopens on the player's last choice. A player with no stored
+  choice meets no-guess on; after that the switch is remembered as played.
 - **Source of truth** — the engine for cell and game state; this feature
   derives nothing from the canvas.
 - The game's summary — built by `game-summary` from the engine's summary
@@ -135,9 +138,11 @@ copied.
   the same way as the abandoned report's; before the first click there is
   none.
 - **Generation failure** — when a no-guess request fails, the session shows
-  the failure and offers *Retry* (a new seed) or *Play a standard board*
-  (the same size, no-guess off), as `board-generation` § Failure offer
-  settles; the timer never starts on a failed board.
+  the failure and offers *Retry* (a new seed), *Play a standard board* (the
+  same size, no-guess off) or *Back to menu*, above the pause card and
+  defaulting to *Play a standard board* after a second failure in a row, as
+  `board-generation` § Failure offer settles; the timer never starts on a
+  failed board.
 - **Input fidelity** — every reference behaviour this feature owns (which
   inputs chord, when a flag toggles, press feedback, release-off-cell
   cancelling, the largest custom board) is pinned by a fidelity test in the

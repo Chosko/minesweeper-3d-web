@@ -10,7 +10,13 @@
 // width and height 1 to 100 each, and a mine count up to the smaller of the site's size-dependent
 // cap and the cell count minus one. The site takes a mine in every cell on boards of up to 36
 // cells; this game keeps one cell free so the first click is always safe. A dense custom board
-// keeps the no-guess switch: a no-guess request that fails gets the session's failure offer.
+// keeps the no-guess switch: a no-guess request that fails gets the session's failure offer. Above
+// NOGUESS_DENSITY_HINT mines per cell, the board choice of either mode shows DENSITY_HINT_TEXT for a
+// custom board with no-guess on: a warning that never refuses the board.
+//
+// No-guess is on in DEFAULT_CHOICE, the choice of a player with no last board choice stored; once a
+// game starts, the last choice remembers the switch as played. NOGUESS_HELP_TEXT is the helper line
+// under the switch on both board choice screens.
 
 import { CUSTOM_LIMITS } from '../engine/profiles.js';
 import { createSquareGrid } from '../engine/square-grid.js';
@@ -32,8 +38,16 @@ export const STANDARD_SIZES = Object.freeze({
 export const DEFAULT_CHOICE = Object.freeze({
   size: 'beginner',
   custom: Object.freeze({ width: 30, height: 16, mines: 99 }),
-  noGuess: false,
+  noGuess: true,
 });
+
+/** The helper line under the no-guess switch on both board choice screens. */
+export const NOGUESS_HELP_TEXT = 'Solvable by logic alone, no 50/50 guesses. Separate records.';
+/** Above this share of mines (mines ÷ cells) a no-guess board may not be found. */
+export const NOGUESS_DENSITY_HINT = 0.25;
+export const DENSITY_HINT_TEXT = `Above ${NOGUESS_DENSITY_HINT * 100} % mines, a no-guess board may not be found.`;
+/** Whether `mines` in `cells` is above NOGUESS_DENSITY_HINT. */
+export const aboveDensityHint = (mines, cells) => cells > 0 && mines / cells > NOGUESS_DENSITY_HINT;
 
 // The site's mine cap for a width × height board: every cell up to CUSTOM_LIMITS.everyCellUpTo
 // cells, then the measured caps, interpolated linearly by cell count (rounded down) between them.

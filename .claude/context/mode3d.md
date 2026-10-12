@@ -38,7 +38,7 @@ three to the screens, the renderer and the pointer-lock flow
   ids plus `'custom'`).
 - A board choice is `{size, custom: {X, Y, Z, mines}, noGuess}`; `custom` is
   kept beside a preset so the custom fields reopen as the player left them.
-  `DEFAULT_CHOICE` is cube Beginner, custom 10 × 10 × 10 / 25, no-guess off.
+  `DEFAULT_CHOICE` is cube Beginner, custom 10 × 10 × 10 / 25, no-guess on.
 - `DIM_MIN` / `DIM_MAX` (1 / 100); `validateCustom(board)` → `{ok: true}` or
   `{ok: false, field: 'X'|'Y'|'Z'|'mines', reason}` — mines 1 to cells − 1,
   so a one-cell board is refused. `customStatus(board)` → `{ok, field, max,
@@ -49,7 +49,10 @@ three to the screens, the renderer and the pointer-lock flow
   with no side of exactly 2 (a side of 1 keeps it); `noGuessReason(choice)`
   — "No-guess isn't available when a side is 2 cells" on a custom board
   with a side of 2, which takes precedence, else "No-guess is available up
-  to 8,000 cells".
+  to 8,000 cells". `densityHintShown(custom, noGuess)` — the density hint
+  under the custom switch, from Classic 2D's `NOGUESS_DENSITY_HINT`
+  ([classic2d.md](classic2d.md)): no-guess on and offered, a valid board
+  above 25 % mines.
 - `normaliseChoice(choice)` → a valid plain copy or null — null for a
   `size` outside `BOARD_SIZES`, such as a dropped double layer preset's id —
   with no-guess dropped on a custom board that does not offer it;
@@ -82,13 +85,13 @@ three to the screens, the renderer and the pointer-lock flow
   `failure`, `elapsedMs()`, `seconds()`, `counts()` and `engineSummary()`
   (the engine's, null before the board arrives), `on(event, fn)` → unsubscribe,
   `reveal(c)`, `toggleFlag(c)`, `chord(c)`, `retry()`, `playStandard()`,
-  `pause()`, `resume()`, `restart()`, `leave()`, `recording`,
+  `cancel()`, `pause()`, `resume()`, `restart()`, `leave()`, `recording`,
   `recordSample(values)`, `recordView(mode)`, `replay(summary)` → the
   recording sealed with that summary, `{blob, listing}`, or null
   ([replay.md](replay.md)).
 - `SESSION_STATE` (`ready`, `generating`, `playing`, `failed`, `won`,
   `lost`, `left`); `SESSION_EVENTS` (`generating` `{shown}`, `started`
-  `{changed}`, `failed` `{reason, offers}`, `finished` `{state}`);
+  `{changed}`, `failed` `{reason, offers, count}`, `finished` `{state}`);
   `FAILURE_OFFERS` and `GENERATING_DELAY_MS`, re-exported from
   `js/classic2d/session.js`.
 
@@ -105,7 +108,8 @@ three to the screens, the renderer and the pointer-lock flow
   calls when the WebGL context is lost during a 3D game, `replay(summary)`,
   the session's sealed replay or null, `tick()`, which drives the sampler
   and which `js/main.js` calls every frame, `ending` — true while the end
-  delay runs — and `finishNow()`, which cuts a running end delay short.
+  delay runs — `finishNow()`, which cuts a running end delay short, and
+  `cancelGeneration()`, the session's `cancel()`.
 - `END_DELAY_MS` = 1000 — how long the end effect plays before the game is
   reported finished, for a win and a loss alike.
   `summary()` and the finished and abandoned reports carry `buildSummary`'s
@@ -122,7 +126,9 @@ three to the screens, the renderer and the pointer-lock flow
   `NOGUESS_CELL_LIMIT` or on a side of 2 cells, with `noGuessReason`'s line
   shown above it; the player's wish is kept while it is disabled and comes
   back when the board offers no-guess again. Both are filled from the last
-  choice's `noGuess`. A side of 2 is refused because two cells stacked along
+  choice's `noGuess`, on for a player with none stored; one helper line
+  sits under the presets' switch, and the density hint under the custom
+  one follows the fields and the switch. A side of 2 is refused because two cells stacked along
   it share every neighbour, so a mine in one of them is always a guess. The
   limit is read from the one exported constant;
   `dev/measure-noguess-3d.mjs` is the measurement behind it.
@@ -151,12 +157,14 @@ three to the screens, the renderer and the pointer-lock flow
   (actions return null). `generating {shown: true}` is emitted only when the
   answer takes longer than `GENERATING_DELAY_MS`, and `{shown: false}` when
   it arrives; `js/main.js` shows the `#m3d-status` card over the box from
-  them.
+  them. `cancel()` cancels the client and goes back to `ready` on the same
+  closed box, its flags kept, with nothing reported.
 - **Failure.** A no-guess board not found, a rejected request or a failing
-  worker emits `failed` and leaves the timer unstarted; `retry()` asks again
-  with a new seed, `playStandard()` the same size with no-guess off, both for
-  the same first cell — as Classic 2D does. `js/main.js` releases pointer
-  lock for the offer and keeps the standard board for a later restart.
+  worker emits `failed` with its `count` of failures in a row and leaves
+  the timer unstarted; `retry()` asks again with a new seed,
+  `playStandard()` the same size with no-guess off, both for the same first
+  cell — as Classic 2D does. `js/main.js` releases pointer lock for the
+  offer and keeps the standard board for a later restart.
 - **Timer.** The session's timer (Classic 2D's `createTimer`) starts when
   the first reveal is applied to the generated board and stops at a win or
   loss. `pause()` stops it; during generation the request keeps running and

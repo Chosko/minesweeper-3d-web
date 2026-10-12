@@ -336,7 +336,7 @@ test('a no-guess board not found is handled as Classic 2D handles it: Retry, or 
   assert.equal(await pending, null);
   assert.equal(session.state, SESSION_STATE.FAILED);
   assert.deepEqual(FAILURE_OFFERS, ['retry', 'standard']);
-  assert.deepEqual(events.at(-1), ['failed', { reason: 'no candidate', offers: ['retry', 'standard'] }]);
+  assert.deepEqual(events.at(-1), ['failed', { reason: 'no candidate', offers: ['retry', 'standard'], count: 1 }]);
   assert.equal(session.seconds(), 0, 'the timer never started');
   assert.equal(session.reveal(6), null, 'a failed board takes no action');
 
@@ -345,6 +345,7 @@ test('a no-guess board not found is handled as Classic 2D handles it: Retry, or 
   assert.deepEqual(client.requests[1].req, { ...client.requests[0].req, seed: 42 }, 'Retry: the same cell, a new seed');
   client.answer({ ok: false, reason: 'no candidate', seed: 42, generatorVersion: GENERATOR_VERSION, candidates: 2000 });
   await again;
+  assert.equal(session.failure.count, 2, 'a Retry that fails again is the second failure in a row');
   const standard = session.playStandard();
   assert.deepEqual(client.requests[2].req, { ...client.requests[0].req, noGuess: false, seed: 43 }, 'the same size, no-guess off');
   assert.equal(session.board.noGuess, false);
@@ -367,6 +368,71 @@ test('a worker that fails, or rejects the request, fails the board the same way'
   await again;
   assert.equal(session.state, SESSION_STATE.FAILED);
   assert.equal(events.filter(([t]) => t === 'failed').length, 2);
+  assert.equal(session.failure.count, 2);
+});
+
+test('cancel while generating goes back to the closed box with its flags; nothing starts, and the next first click asks afresh', async () => {
+  const { session, client, clock, types, events } = sessionOf({ X: 5, Y: 1, Z: 1, mines: 1, noGuess: true });
+  session.toggleFlag(4);
+  const pending = session.reveal(0);
+  const stale = client.requests[0];
+  clock.advance(GENERATING_DELAY_MS);
+  assert.equal(session.generatingShown, true);
+  assert.equal(session.cancel(), true);
+  assert.equal(client.cancels, 1, 'the pending generation is cancelled through the client');
+  assert.equal(await pending, null);
+  assert.equal(session.state, SESSION_STATE.READY);
+  assert.equal(session.generatingShown, false);
+  assert.deepEqual(events.filter(([t]) => t === 'generating').map(([, e]) => e.shown), [true, false]);
+  assert.equal(session.view.phase, PHASE.AWAITING_FIRST_CLICK, 'the closed box');
+  assert.equal(session.view.flagged[4], 1, 'a flag placed before the reveal stays');
+  assert.equal(session.view.minesLeft, 0);
+  assert.equal(session.seed, null);
+  assert.equal(session.failure, null);
+  assert.equal(session.counts(), null);
+  assert.equal(session.seconds(), 0);
+  assert.deepEqual(types().filter((t) => t !== 'generating'), [], 'nothing started, failed or finished');
+  stale.resolve(handleMessage({ id: 1, request: stale.req }).result);
+  await tick();
+  assert.equal(session.state, SESSION_STATE.READY, 'a late answer is dropped');
+
+  const next = session.reveal(1);
+  assert.equal(client.requests.length, 2);
+  assert.equal(client.requests[1].req.firstClick, 1);
+  client.answer({ ok: true, mines: Int32Array.of(4), seed: 42, generatorVersion: GENERATOR_VERSION });
+  await next;
+  assert.notEqual(session.state, SESSION_STATE.READY, 'the board arrived');
+  assert.equal(session.view.flagged[4], 1, 'the flag goes on the board');
+  assert.equal(events.filter(([t]) => t === 'started').length, 1);
+});
+
+test('cancel before the "generating" card shows also goes back; outside generation it does nothing; a cancel starts the failure count again', async () => {
+  const { session, client, events } = sessionOf({ ...BOARD, noGuess: true });
+  const pending = session.reveal(5);
+  assert.equal(session.cancel(), true);
+  assert.equal(await pending, null);
+  assert.equal(session.state, SESSION_STATE.READY);
+  assert.equal(events.filter(([t]) => t === 'generating').length, 0);
+  assert.equal(session.cancel(), false, 'ready: nothing to cancel');
+
+  const nope = { ok: false, reason: 'no candidate', seed: 1, generatorVersion: GENERATOR_VERSION, candidates: 2000 };
+  const first = session.reveal(5);
+  client.answer(nope);
+  await first;
+  assert.equal(session.cancel(), false, 'failed: the offer answers it');
+  const retry = session.retry();
+  assert.equal(session.cancel(), true, 'a Retry in flight cancels too');
+  await retry;
+  const again = session.reveal(5);
+  client.answer(nope);
+  await again;
+  assert.equal(session.failure.count, 1, 'the count starts again after a cancel');
+  const ok = session.retry();
+  client.answer(handleMessage({ id: 1, request: { ...client.requests.at(-1).req, noGuess: false } }).result);
+  await ok;
+  assert.equal(session.state, SESSION_STATE.PLAYING);
+  assert.equal(session.cancel(), false, 'playing: nothing to cancel');
+  assert.equal(session.state, SESSION_STATE.PLAYING);
 });
 
 test('a fixed mine set (the debug hook\'s board) plays at once: the first reveal starts the timer', () => {

@@ -53,7 +53,11 @@ looks.
   (`beginner`, `intermediate`, `expert`, `custom`), `STANDARD_SIZES`
   (`{width, height, mines}` per standard size, from the records'
   `STANDARD_BOARDS`), `DEFAULT_CHOICE` (Beginner, custom 30 × 16 / 99,
-  no-guess off).
+  no-guess on).
+- `NOGUESS_HELP_TEXT` — the helper line under the no-guess switch on both
+  board choice screens; `NOGUESS_DENSITY_HINT` (0.25), `DENSITY_HINT_TEXT`
+  and `aboveDensityHint(mines, cells)` — the density hint both board
+  choices show, the 3D one importing them from here.
 - `customMineCap(width, height)` — the reference site's mine cap;
   `maxMines(width, height)` — the cap here, at most the cell count minus
   one; `validateCustom({width, height, mines})` → `{ok: true}` or `{ok:
@@ -80,8 +84,8 @@ looks.
   generatingDelayMs?})` → `{state, choice, setup, game, seed,
   generatorVersion, generatingShown, paused, failure, minesLeft,
   elapsedMs(), seconds(), on(type, fn) → off, reveal(c), toggleFlag(c),
-  chord(c), retry(), playStandard(), pause(), resume(), restart(), leave(),
-  summary(), recording, recordSample(values), recordCursor(cell),
+  chord(c), retry(), playStandard(), cancel(), pause(), resume(), restart(),
+  leave(), summary(), recording, recordSample(values), recordCursor(cell),
   replay(summary?)}` — `client` is the generation client `{request,
   cancel}`; `clock` `{now, setTimeout, clearTimeout}`. `finished` and
   `abandoned` carry `{summary, replay}`; `replay(summary = summary())` is
@@ -144,8 +148,9 @@ looks.
 - `MODE_ID` (`'classic-2d'`); `createClassic2DMode(report, {flow,
   lastChoice, createClient?, mount?, clock?, randomSeed?,
   generatingDelayMs?})` → the contract methods plus `hideBoard(hidden)`,
-  `tick()`, `pad(poll, now)`, `retry()`, `playStandard()`, `loadChoice()`,
-  `status()` → `{state, time, minesLeft}`, `boardHidden`; the contract's
+  `tick()`, `pad(poll, now)`, `retry()`, `playStandard()`,
+  `cancelGeneration()` → whether a board being generated was cancelled,
+  `loadChoice()`, `status()` → `{state, time, minesLeft}`, `boardHidden`; the contract's
   optional `replay(summary)` is the session's. `flow` is
   `{openBoardChoice(choice), show(), container(), hud({seconds, minesLeft}),
   board({width, height, mines, noGuess}), generating(shown),
@@ -158,8 +163,10 @@ looks.
 `js/classic2d/board-choice.js` exports
 - `CHOICE_SIZES`, `sizeLabel(size)`, `customStatus(custom)` → `{ok, field,
   max, text}`, `readChoice({size, fields, noGuess}, fallbackCustom?)` → a
-  board choice or null, `bindBoardChoice({root, onStart, onBack})` →
-  `{show(choice, {played}), destroy()}`.
+  board choice or null, `densityHintShown(custom, noGuess)`,
+  `bindBoardChoice({root, onStart, onBack})` → `{show(choice, {played}),
+  destroy()}` — the density hint `[data-density-hint]` follows the fields
+  and the switch live.
 
 `js/classic2d/tile-skin.js` exports
 - `MIN_TILE_SIZE` (41) — the smallest tile size the board view allows,
@@ -189,9 +196,10 @@ looks.
   smaller of the site's cap — every cell up to 36 cells, then the measured
   caps interpolated by cell count, rounded down — and the cell count minus
   one, so the first click is always safe. No-guess is never refused up
-  front, however dense the board: a failed no-guess request gets the
-  session's failure offer. A stored choice that does not normalise reads
-  as `DEFAULT_CHOICE`, and an invalid one is never saved.
+  front, however dense the board: above `NOGUESS_DENSITY_HINT` the board
+  choice shows its hint, and a failed no-guess request gets the session's
+  failure offer. A stored choice that does not normalise reads as
+  `DEFAULT_CHOICE`, and an invalid one is never saved.
 - **Session.** A session opens a closed board (`ready`). Before the first
   reveal a flag or chord goes straight to the engine, with no request
   and no event; the first reveal sends the board request for its cell
@@ -199,11 +207,13 @@ looks.
   answer. The "generating" event shows only after `GENERATING_DELAY_MS`
   and hides when the answer arrives. A board starts the timer and emits `started` then
   `changed` (`playing`); a failure — a no-guess board not found or the
-  worker failing — emits `failed` with both offers, and the timer never
-  starts: `retry` asks again with a new seed, `playStandard` turns no-guess
-  off for the same size, both for the same first cell. A request token
-  drops a late answer after `restart` or `leave`, which also cancel the
-  client. Win or loss stops the timer and emits `finished`; `restart` and
+  worker failing — emits `failed` with both offers and its `count` of
+  failures in a row, and the timer never starts: `retry` asks again with a
+  new seed, `playStandard` turns no-guess off for the same size, both for
+  the same first cell. `cancel` while generating cancels the client and
+  goes back to `ready` on the same closed board, with a fresh recorder and
+  nothing reported. A request token drops a late answer after `cancel`,
+  `restart` or `leave`, which all cancel the client. Win or loss stops the timer and emits `finished`; `restart` and
   `leave` after the first click and before the end emit `abandoned` first.
   Every summary is `buildSummary` over the engine's counts or summary, the
   board identity, the seed, the generator version and the game's id — one

@@ -20,9 +20,13 @@
 // no board action is accepted meanwhile. On a board, the flags placed before are put on it in the
 // order they were placed, the reveal is applied, the timer starts and `started` is emitted (state
 // 'playing'); the board's seed and generator version are kept. A failed request (a no-guess board
-// not found, a rejected request, the worker failing) emits `failed` { reason, offers } (state
-// 'failed') and the timer never starts; retry() asks again with a new seed, playStandard() asks
-// for the same size with no-guess off — both for the same first cell, as Classic 2D does.
+// not found, a rejected request, the worker failing) emits `failed` { reason, offers, count }
+// (state 'failed') and the timer never starts; `count` is the failures in a row since the closed
+// box. retry() asks again with a new seed, playStandard() asks for the same size with no-guess off
+// — both for the same first cell, as Classic 2D does. cancel() while generating — the card shown
+// or not — cancels the request through the client and returns to the closed box awaiting its
+// first click (state 'ready'), its flags kept, reporting nothing; it returns whether there was a
+// request to cancel.
 //
 // Actions — reveal(c), toggleFlag(c), chord(c) — return { changed, ended, exploded, revealed,
 // flagged, unflagged } (create3DGame's result); the first reveal returns a Promise of it instead
@@ -156,6 +160,7 @@ export function createSession({
   let seed;
   let generatorVersion;
   let failure;
+  let failures; // failures in a row since the closed box
   let firstCell;
   let token = 0; // identifies the board request in flight; a stale answer is dropped
   let delayHandle = null;
@@ -210,6 +215,7 @@ export function createSession({
     seed = null;
     generatorVersion = null;
     failure = null;
+    failures = 0;
     firstCell = -1;
     record();
   }
@@ -253,7 +259,8 @@ export function createSession({
 
   function fail(reason) {
     state = SESSION_STATE.FAILED;
-    failure = { reason, offers: [...FAILURE_OFFERS] };
+    failures += 1;
+    failure = { reason, offers: [...FAILURE_OFFERS], count: failures };
     emit('failed', failure);
     return null;
   }
@@ -393,6 +400,16 @@ export function createSession({
       board = Object.freeze({ ...board, noGuess: false });
       record();
       return requestBoard();
+    },
+    /** While generating: cancel the request and go back to the closed box, its flags kept. */
+    cancel() {
+      if (state !== SESSION_STATE.GENERATING) return false;
+      dropPending();
+      state = SESSION_STATE.READY;
+      seed = null;
+      failures = 0;
+      firstCell = -1;
+      return true;
     },
 
     pause() {

@@ -42,7 +42,7 @@ function setup() {
   const modes = createModeHost();
   const fake = fakeMode();
   modes.register('a', fake.factory);
-  const shell = { cards: [], asked: [], menus: 0, guard: [], paused: false, onBoard: true, answer: true };
+  const shell = { cards: [], asked: [], menus: 0, guard: [], paused: false, onBoard: true, answer: true, generating: false, cancels: 0 };
   const handOffs = [];
   const pauser = createPauseController({
     modes,
@@ -52,6 +52,12 @@ function setup() {
     confirm: (req, proceed) => { shell.asked.push(req); if (shell.answer) proceed(); },
     goMenu: () => { shell.menus++; },
     guard: (on) => shell.guard.push(on),
+    cancelGeneration: () => {
+      if (!shell.generating) return false;
+      shell.generating = false;
+      shell.cancels += 1;
+      return true;
+    },
   });
   for (const h of HAND_OFFS) pauser.attach(h, (summary, mode) => handOffs.push([h, summary, mode]));
   const calls = () => fake.calls.map(([c]) => c);
@@ -103,6 +109,45 @@ test('before the first click the pause key opens the card with no timer to stop;
   assert.equal(pauser.pause('key'), true);
   assert.deepEqual(shell.cards, [{ note: '' }]);
   assert.ok(!calls().includes('pause'), 'the mode is not asked to pause');
+});
+
+test('Back (Esc, the controller\'s back button) while a board is generated cancels it and opens no pause card', () => {
+  for (const source of ['key', 'pad']) {
+    const { modes, shell, pauser, calls } = setup();
+    modes.start('a', 1);
+    shell.generating = true; // the first click's board is being generated, card shown or not
+    assert.equal(pauser.back(source), false, `${source}: no pause card`);
+    assert.equal(shell.cancels, 1, `${source}: the generation is cancelled`);
+    assert.deepEqual(shell.cards, []);
+    assert.ok(!calls().includes('pause'));
+    // With nothing being generated, Back pauses as it always did.
+    assert.equal(pauser.back(source), true, `${source}: Back pauses otherwise`);
+    assert.deepEqual(shell.cards, [{ note: '' }]);
+    assert.equal(shell.cancels, 1);
+  }
+});
+
+test('the pause button, Start, focus loss and tab hide still pause while a board is generated', () => {
+  for (const source of ['button', 'pad', 'key']) {
+    const { modes, shell, pauser } = setup();
+    modes.start('a', 1);
+    shell.generating = true;
+    assert.equal(pauser.pause(source), true, `${source}: pause() itself never cancels`);
+    assert.equal(shell.cancels, 0);
+    assert.equal(shell.generating, true);
+  }
+  for (const source of AUTO_SOURCES) {
+    const { modes, shell, pauser } = setup();
+    modes.start('a', 1);
+    shell.generating = true;
+    assert.equal(pauser.pause(source), false, `${source}: as before the first click, nothing to pause`);
+    assert.equal(shell.cancels, 0, `${source} never cancels`);
+  }
+  const { modes, fake, shell, pauser } = setup();
+  modes.start('a', 1);
+  fake.play.click();
+  assert.equal(pauser.back('key'), true, 'Back in a started game pauses');
+  assert.equal(shell.cancels, 0);
 });
 
 test('after the game ends the pause key opens the card only; blur and hide do nothing', () => {
@@ -297,7 +342,25 @@ test('every pause source in the shell goes through the pause controller', () => 
   assert.match(MAIN, /createPauseController\(/);
   assert.match(MAIN, /function pauseGame\(source, opts\) \{[^\n]*PAUSE\.pause\(source, opts\)/, 'one way to the pause controller');
   assert.match(MAIN, /onPause: \(\) => pauseGame\(/, 'the overlay pause button (and controller START through it)');
-  assert.match(MAIN, /playing: \{[^\n]*back: \(\{ source \}\) => pauseGame\(source/, 'Esc and the controller back button in play');
+  assert.match(MAIN, /playing: \{[^\n]*back: \(\{ source \}\) => backGame\(source/, 'Esc and the controller back button in play');
+  assert.match(MAIN, /'classic-2d': \{[^\n]*back: \(\{ source \}\) => backGame\(source/, 'and on the Classic 2D board');
+  assert.match(MAIN, /function backGame\(source\) \{[^\n]*PAUSE\.back\(/, 'Back on the board goes through the pause controller, which cancels a board being generated');
+  assert.match(MAIN, /cancelGeneration: \(\) => cancelGeneration\(\)/, 'the controller cancels through the active mode');
+  assert.match(MAIN, /onLockChange: \(locked\) => \{[\s\S]*?backGame\('key'\)[\s\S]*?\n {2}\},\n {2}onLockError/,
+    'the Esc the browser consumes to release the pointer lock is that Back');
+  assert.match(MAIN, /function padPlaying\([\s\S]*?backButtons\(S\.mode\)\.some\(pressed\)\) \{ backGame\('pad'\)/, 'the controller\'s back button in 3D play');
+  assert.match(MAIN, /function padBoard2D\([\s\S]*?backButtons\(S\.mode\)\.some\(pressed\)\) \{ backGame\('pad'\)/, 'and on the Classic 2D board');
+});
+
+test('the failure offer of both modes renders above the pause card', () => {
+  const css = read('css/style.css');
+  const rule = css.match(/#c2d-status, #m3d-status \{([^}]*)\}/);
+  assert.ok(rule, 'one rule places both board status cards');
+  assert.match(rule[1], /position: fixed/, 'the 2D card is no longer stacked inside the board layer');
+  assert.match(rule[1], /z-index: calc\(var\(--z-overlay\) \+ 1\)/, 'above the pause card\'s overlay layer');
+  const html = read('index.html');
+  const layer = html.slice(html.indexOf('<section id="c2d"'), html.indexOf('<!-- 3D board status'));
+  assert.ok(layer.indexOf('id="c2d-status"') > layer.indexOf('</section>'), 'the 2D card sits outside the board layer');
   assert.match(MAIN, /addEventListener\('blur', \(\) => pauseGame\('blur'\)\)/, 'window blur');
   assert.match(MAIN, /visibilitychange[^\n]*pauseGame\('hidden'\)/, 'tab hidden');
   assert.match(MAIN, /addEventListener\('pagehide', \(\) => \{[^\n]*PAUSE\.pageHide\(\); \}\)/, 'pagehide');
@@ -488,6 +551,144 @@ test('in a browser, the 3D game pauses, resumes, restarts and goes back to menu 
     await ms(() => document.getElementById('p-restart').click());
     assert.equal(await visible('pause-confirm'), false, 'no confirmation once the game ended');
     assert.ok(['ready', 'playing'].includes(await mode()));
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+// Stand-in generation workers, served in place of js/generation/worker.js: one that never answers,
+// one that fails at once and one that fails after a while.
+const FAIL = "{ ok: false, reason: 'no board within the attempt budget', generatorVersion: 1 }";
+const WORKERS = {
+  hang: 'self.onmessage = () => {};',
+  fail: `self.onmessage = (e) => self.postMessage({ id: e.data.id, result: ${FAIL} });`,
+  failLater: `self.onmessage = (e) => setTimeout(() => self.postMessage({ id: e.data.id, result: ${FAIL} }), 800);`,
+};
+
+test('in a browser, the Classic 2D generating card cancels by Cancel and Esc, and the failure offer shows above the pause card with Back to menu', async (t) => {
+  const playwright = await loadPlaywright();
+  if (!playwright) {
+    t.skip('Playwright is not installed');
+    return;
+  }
+  let browser;
+  try {
+    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  } catch (error) {
+    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
+    return;
+  }
+  const server = await serve();
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    let worker = 'hang';
+    await page.route('**/js/generation/worker.js', (route) => route.fulfill({ contentType: 'text/javascript', body: WORKERS[worker] }));
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined);
+    const ms = (fn, arg) => page.evaluate(fn, arg);
+    await ms(() => {
+      globalThis.__hand = [];
+      for (const h of ['finished', 'abandoned']) globalThis.__ms.pauser.attach(h, () => globalThis.__hand.push(h));
+    });
+    const mode = () => ms(() => globalThis.__ms.state.mode);
+    const shown = (id) => ms((i) => { const el = document.getElementById(i); return !el.closest('.hidden') && el.getBoundingClientRect().width > 0; }, id);
+    const active = () => ms(() => document.activeElement?.id);
+    const clickBoard = async () => {
+      const box = await page.locator('#c2d-board canvas').boundingBox();
+      await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    };
+    const open = async () => {
+      await page.click('#menu-entry-classic-2d');
+      assert.equal(await ms(() => document.getElementById('c2d-noguess').checked), true, 'no-guess on by default');
+      await page.click('#c2d-choice [data-size="beginner"]');
+      assert.equal(await mode(), 'classic-2d');
+    };
+
+    // The generating card: a spinner and Cancel, which takes the focus.
+    await open();
+    await clickBoard();
+    await page.waitForFunction(() => !document.getElementById('c2d-status').classList.contains('hidden'));
+    assert.equal(await ms(() => document.getElementById('c2d-status-title').textContent), 'Generating the board…');
+    assert.equal(await shown('c2d-spinner'), true, 'a spinner');
+    assert.equal(await shown('c2d-cancel'), true, 'and Cancel');
+    assert.equal(await shown('c2d-offer'), false);
+    assert.equal(await active(), 'c2d-cancel', 'Cancel takes the focus');
+    // Esc cancels it instead of pausing: back to the closed board, nothing reported.
+    await page.keyboard.press('Escape');
+    assert.equal(await mode(), 'classic-2d', 'Esc does not pause while a board is generated');
+    assert.equal(await shown('c2d-status'), false);
+    assert.equal(await ms(() => globalThis.__ms.modes.state.started), false);
+    // Cancel does the same.
+    await clickBoard();
+    await page.waitForFunction(() => !document.getElementById('c2d-status').classList.contains('hidden'));
+    await page.click('#c2d-cancel');
+    assert.equal(await shown('c2d-status'), false);
+    assert.equal(await mode(), 'classic-2d');
+    // Paused while generating, the card hides under the pause card; on resume it shows with Cancel focused again.
+    await clickBoard();
+    await page.waitForFunction(() => !document.getElementById('c2d-status').classList.contains('hidden'));
+    await page.click('#hud-pause');
+    assert.equal(await mode(), 'paused');
+    assert.equal(await shown('c2d-status'), false, 'the generating card does not show over the pause card');
+    await page.click('#p-resume');
+    assert.equal(await mode(), 'classic-2d');
+    assert.equal(await shown('c2d-status'), true);
+    assert.equal(await active(), 'c2d-cancel', 'Cancel takes the focus again');
+    await page.keyboard.press('Enter');
+    assert.equal(await shown('c2d-status'), false, 'Enter on the focused Cancel cancels');
+    // Esc before the card shows cancels too.
+    await clickBoard();
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(400);
+    assert.equal(await shown('c2d-status'), false, 'the card never shows for a cancelled request');
+    assert.equal(await mode(), 'classic-2d');
+    // With nothing being generated, Esc pauses as before.
+    await page.keyboard.press('Escape');
+    assert.equal(await mode(), 'paused');
+    await page.click('#p-resume');
+    assert.equal(await mode(), 'classic-2d');
+
+    // A failure: the offer of three, Retry focused, then Play a standard board after a second failure.
+    worker = 'fail';
+    await clickBoard();
+    await page.waitForFunction(() => document.getElementById('c2d-status-title').textContent === 'No board found');
+    assert.equal(await shown('c2d-offer'), true);
+    assert.deepEqual(await ms(() => [...document.querySelectorAll('#c2d-offer button')].map((b) => b.textContent)),
+      ['Retry', 'Play a standard board', 'Back to menu']);
+    assert.equal(await shown('c2d-cancel'), false, 'no Cancel on the offer');
+    assert.equal(await active(), 'c2d-retry', 'a first failure focuses Retry');
+    await page.click('#c2d-retry');
+    await page.waitForFunction(() => document.activeElement?.id === 'c2d-standard');
+    assert.equal(await shown('c2d-offer'), true, 'a second failure in a row focuses Play a standard board');
+    // Back to menu leaves with no confirmation and records nothing.
+    await page.click('#c2d-offer-menu');
+    assert.equal(await mode(), 'menu');
+    assert.equal(await ms(() => globalThis.__ms.modes.active), null);
+    assert.deepEqual(await ms(() => globalThis.__hand), [], 'nothing recorded: no game had started');
+
+    // A failure arriving while paused shows above the pause card and takes the focus.
+    worker = 'failLater';
+    await open();
+    await clickBoard();
+    await page.click('#hud-pause');
+    assert.equal(await mode(), 'paused', 'the pause button still pauses while a board is generated');
+    await page.waitForFunction(() => document.getElementById('c2d-status-title').textContent === 'No board found' && !document.getElementById('c2d-status').classList.contains('hidden'));
+    assert.equal(await mode(), 'paused');
+    assert.equal(await active(), 'c2d-retry');
+    const top = await ms(() => {
+      const r = document.getElementById('c2d-offer-menu').getBoundingClientRect();
+      return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.id;
+    });
+    assert.equal(top, 'c2d-offer-menu', 'the offer is above the pause card');
+    await page.click('#c2d-offer-menu');
+    assert.equal(await mode(), 'menu');
+    assert.equal(await shown('c2d-status'), false);
+    assert.deepEqual(await ms(() => globalThis.__hand), []);
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

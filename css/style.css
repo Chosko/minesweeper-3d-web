@@ -128,8 +128,8 @@ kbd {
    --space-4 margins (its top is set from the bar when the board shows). */
 #c2d { position: fixed; inset: 0; background: var(--color-backdrop); }
 #c2d-board { position: absolute; top: 96px; left: var(--space-4); right: var(--space-4); bottom: var(--space-4); }
-#c2d-status { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-#m3d-status { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: var(--z-overlay); }
+/* A board status card (generating, or a failed board's offer) sits above the pause card. */
+#c2d-status, #m3d-status { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: calc(var(--z-overlay) + 1); }
 #replay { position: fixed; inset: 0; z-index: var(--z-overlay); background: var(--color-backdrop); }
 #replay.replay--scene { background: transparent; }
 .replay-bar { position: absolute; top: 16px; left: 16px; }

@@ -54,7 +54,9 @@ export class UI {
       chipShift: $('chip-shift'), chipSpace: $('chip-space'), chipCtrl: $('chip-ctrl'),
       c2dChoice: $('c2d-choice'), c2d: $('c2d'), c2dBoard: $('c2d-board'), c2dStatus: $('c2d-status'),
       c2dStatusTitle: $('c2d-status-title'), c2dStatusText: $('c2d-status-text'), c2dOffer: $('c2d-offer'),
+      c2dSpinner: $('c2d-spinner'), c2dWait: $('c2d-wait'),
       m3dStatus: $('m3d-status'), m3dStatusTitle: $('m3d-status-title'), m3dStatusText: $('m3d-status-text'), m3dOffer: $('m3d-offer'),
+      m3dSpinner: $('m3d-spinner'), m3dWait: $('m3d-wait'),
     };
     this._last = { time: '', mines: '' };
     this._helpTimer = 0;
@@ -99,8 +101,12 @@ export class UI {
     $('hud-pause').addEventListener('click', () => cb.onPause?.());
     $('c2d-retry').addEventListener('click', () => cb.onRetry2D?.());
     $('c2d-standard').addEventListener('click', () => cb.onStandard2D?.());
+    $('c2d-cancel').addEventListener('click', () => cb.onCancel2D?.());
+    $('c2d-offer-menu').addEventListener('click', () => cb.onOfferMenu2D?.());
     $('m3d-retry').addEventListener('click', () => cb.onRetry3D?.());
     $('m3d-standard').addEventListener('click', () => cb.onStandard3D?.());
+    $('m3d-cancel').addEventListener('click', () => cb.onCancel3D?.());
+    $('m3d-offer-menu').addEventListener('click', () => cb.onOfferMenu3D?.());
     this._confirm = null; // { onYes, onNo } while the pause card's confirmation is open
     this.el.confirmYes.addEventListener('click', () => this._closeConfirm('onYes'));
     $('p-confirm-no').addEventListener('click', () => this._closeConfirm('onNo'));
@@ -218,6 +224,10 @@ export class UI {
   setBoardStatus(status) { this._boardStatus('c2d', status); }
   /** 3D: the "generating" card of a slow first click, or a failed board and its offer, over the box. */
   setBoardStatus3D(status) { this._boardStatus('m3d', status); }
+  /**
+   * The generating card shows a spinner and Cancel; a failure shows the offer — Retry, Play a
+   * standard board, Back to menu. Either card sits above the pause card.
+   */
   _boardStatus(prefix, { generating = false, failure = null } = {}) {
     const on = generating || !!failure;
     const el = (name) => this.el[`${prefix}${name}`];
@@ -225,6 +235,8 @@ export class UI {
     el('StatusTitle').textContent = failure ? 'No board found' : 'Generating the board…';
     el('StatusText').textContent = failure ? 'No no-guess board was found for this first click. Try again, or play a standard board of the same size.' : '';
     el('StatusText').classList.toggle('hidden', !failure);
+    el('Spinner').classList.toggle('hidden', !!failure);
+    el('Wait').classList.toggle('hidden', !!failure);
     el('Offer').classList.toggle('hidden', !failure);
   }
   /** The 3D ready card: its board, a message, and the "How 3D works" block while `rules` is set. */

@@ -34,9 +34,16 @@ function fakeSession(board = { X: 4, Y: 5, Z: 6, mines: 7, noGuess: false }) {
       for (const fn of [...listeners[type]]) fn(payload);
     },
     listening: () => Object.values(listeners).reduce((n, set) => n + set.size, 0),
+    state: 'ready',
     pause() { s.calls.push('pause'); },
     resume() { s.calls.push('resume'); },
     leave() { s.calls.push('leave'); },
+    cancel() {
+      s.calls.push('cancel');
+      if (s.state !== 'generating') return false;
+      s.state = 'ready';
+      return true;
+    },
   };
   return s;
 }
@@ -124,6 +131,20 @@ test('pause pauses the session, so its timer stops; a pending board request is n
   assert.deepEqual(flow.session.calls, ['pause'], 'the session pauses and is not left');
   host.resume({ source: 'key' });
   assert.deepEqual(flow.session.calls, ['pause'], 'the timer resumes with play, not with the click-to-play card');
+});
+
+test('cancelGeneration cancels a board being generated through the session and reports nothing', () => {
+  const { host, flow, mode, types } = setup();
+  assert.equal(mode.cancelGeneration(), false, 'no game');
+  host.start('3d', CHOICE);
+  assert.equal(mode.cancelGeneration(), false, 'a closed box: nothing to cancel');
+  flow.session.state = 'generating';
+  assert.equal(mode.cancelGeneration(), true);
+  assert.equal(flow.session.state, 'ready', 'back to the closed box');
+  assert.ok(!flow.session.calls.includes('leave'), 'the session goes on');
+  assert.deepEqual(types(), [], 'nothing started or abandoned');
+  host.leave();
+  assert.deepEqual(types(), [], 'a game left before its first applied reveal reports nothing');
 });
 
 // ---------------------------------------------------------------- the reports

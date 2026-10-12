@@ -34,6 +34,7 @@ const COMPONENTS = {
   'ui-overlay-bar': { interactive: false },
   'ui-field': { interactive: true, control: '.ui-field__input' },
   'ui-link': { interactive: true, control: '.ui-link' },
+  'ui-spinner': { interactive: false },
 };
 // Screen compositions: layout-only classes the screens are assembled with.
 const COMPOSITIONS = ['ui-screen', 'ui-row', 'ui-grid', 'ui-heading', 'ui-text', 'ui-actions', 'ui-stat-row'];
@@ -65,8 +66,12 @@ test('components.css carries no literal colour and no theme-specific rule', () =
   assert.doesNotMatch(CSS, /data-theme|prefers-color-scheme/, 'theme-specific rule');
 });
 
-test('low fidelity: no animation, and shadows and transitions come only from tokens', () => {
-  assert.doesNotMatch(CSS, /@keyframes|animation\s*:/, 'no keyframed motion');
+test('low fidelity: no animation but the spinner\'s turn, and shadows and transitions come only from tokens', () => {
+  assert.deepEqual([...CSS.matchAll(/@keyframes\s+([\w-]+)/g)].map((m) => m[1]), ['ui-spinner-turn'], 'the spinner is the one keyframed motion');
+  assert.deepEqual(RULES.filter(([, body]) => /animation[\w-]*\s*:/.test(body)).map(([sel]) => sel), ['.ui-spinner'], 'only the spinner animates');
+  const [[, spinner]] = RULES.filter(([sel]) => sel === '.ui-spinner');
+  assert.match(spinner, /animation: ui-spinner-turn calc\(var\(--duration-\w+\) \* \d+\) linear infinite;/, 'its pace comes from a motion token');
+  assert.match(spinner, /border[\w-]*:[^;]*var\(--color-/, 'its colours come from tokens');
   for (const [sel, body] of RULES) {
     for (const m of body.matchAll(/(box-shadow|transition|text-shadow|filter)\s*:\s*([^;]+)/g)) {
       const [, prop, value] = m;
@@ -805,7 +810,7 @@ test('in a browser, the menu, the pause card and the results layout meet the con
   const base = `http://127.0.0.1:${server.address().port}`;
   const frames = (page) => page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
   // Contrast of the text inside one element, and the focus ring a keyboard focus draws there.
-  const check = async (page, selector, label, theme) => {
+  const check = async (page, selector, label, theme, minRuns = 5) => {
     await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
     await frames(page);
     const shot = await page.locator(selector).screenshot({ path: join(shots, `${label}-${theme}.png`) });
@@ -815,7 +820,7 @@ test('in a browser, the menu, the pause card and the results layout meet the con
       .filter((e) => [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()))
       .map((e) => e.textContent.trim().slice(0, 30)), selector);
     const mine = runs.filter((r) => own.includes(r.text));
-    assert.ok(mine.length >= 5, `${label} ${theme}: its text is measured (${mine.length})`);
+    assert.ok(mine.length >= minRuns, `${label} ${theme}: its text is measured (${mine.length})`);
     const failing = mine.filter((r) => r.ratio < r.min).map((r) => `${r.text}: ${r.ratio.toFixed(2)}:1 < ${r.min}`);
     assert.deepEqual(failing, [], `${label} ${theme}: text below the contrast contract`);
     return shot;
@@ -828,6 +833,13 @@ test('in a browser, the menu, the pause card and the results layout meet the con
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
+    // A stand-in generation worker: one that never answers, then one that fails at once.
+    let worker = 'hang';
+    const WORKERS = {
+      hang: 'self.onmessage = () => {};',
+      fail: "self.onmessage = (e) => self.postMessage({ id: e.data.id, result: { ok: false, reason: 'budget', generatorVersion: 1 } });",
+    };
+    await page.route('**/js/generation/worker.js', (route) => route.fulfill({ contentType: 'text/javascript', body: WORKERS[worker] }));
     await page.goto(`${base}/index.html`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     assert.deepEqual(await page.evaluate(() => Object.keys(globalThis.__ms)), MS_HOOK, 'the __ms hook is unchanged');
@@ -883,6 +895,26 @@ test('in a browser, the menu, the pause card and the results layout meet the con
     assert.ok(f.style !== 'none' && f.width >= 2, `pause control #${f.id} shows a focus ring`);
     await page.click('#p-menu');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu', 'Main menu returns to the menu');
+
+    // The board status card: the generating card with its spinner and Cancel, then the failure offer
+    // with its three buttons, readable in both themes.
+    const firstClick = () => page.evaluate(() => { globalThis.__ms.aimAt(0); globalThis.__ms.click('left'); });
+    await page.evaluate(() => { globalThis.__ms.start(6, 6, 6, 10); globalThis.__ms.forcePlay(); });
+    await firstClick();
+    await page.waitForFunction(() => !document.getElementById('m3d-status').classList.contains('hidden'));
+    assert.equal(await page.evaluate(() => document.getElementById('m3d-spinner').getBoundingClientRect().width > 0), true, 'the spinner shows');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'm3d-cancel', 'Cancel takes the focus');
+    for (const theme of ['light', 'dark']) await check(page, '#m3d-status', 'generating', theme, 2);
+    worker = 'fail';
+    await page.click('#m3d-cancel');
+    assert.equal(await page.evaluate(() => document.getElementById('m3d-status').classList.contains('hidden')), true, 'Cancel closes the card');
+    await firstClick();
+    await page.waitForFunction(() => !document.getElementById('m3d-offer').classList.contains('hidden'));
+    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#m3d-offer button')].map((b) => b.textContent)),
+      ['Retry', 'Play a standard board', 'Back to menu']);
+    for (const theme of ['light', 'dark']) await check(page, '#m3d-status', 'offer', theme);
+    await page.click('#m3d-offer-menu');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu', 'Back to menu from the offer');
 
     // An ended game: the pause card leads with Play again.
     await page.evaluate(() => {

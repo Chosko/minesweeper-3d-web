@@ -235,6 +235,19 @@ test('last choice: a classic2d.lastChoice document in platform storage, read whe
   assert.deepEqual(again.current, choice);
 });
 
+test('last choice: a profile with no stored choice opens with no-guess on; a stored choice is kept as stored, no-guess off included', async () => {
+  assert.equal(DEFAULT_CHOICE.noGuess, true);
+  assert.equal(boardSetup(DEFAULT_CHOICE).noGuess, true);
+  const backend = createMemoryBackend();
+  const last = createLastChoice({ storage: createStorage({ backend }) });
+  assert.equal(last.current.noGuess, true, 'before the load');
+  assert.equal((await last.load()).noGuess, true, 'nothing stored');
+  const off = { size: 'expert', custom: DEFAULT_CHOICE.custom, noGuess: false };
+  await last.save(off);
+  const again = createLastChoice({ storage: createStorage({ backend }) });
+  assert.deepEqual(await again.load(), off, 'a stored no-guess off survives');
+});
+
 test('last choice: a malformed document reads as the default; an invalid choice is not saved', async () => {
   const backend = createMemoryBackend({ initial: { [LAST_CHOICE_DOC]: JSON.stringify({ version: 1, data: { size: 'huge' } }) } });
   const last = createLastChoice({ storage: createStorage({ backend }) });
@@ -427,7 +440,7 @@ test('session: a no-guess failure shows the failure with Retry and Play a standa
   assert.equal(h.s.state, SESSION_STATE.FAILED);
   assert.deepEqual([...FAILURE_OFFERS], ['retry', 'standard']);
   const [failed] = h.of('failed');
-  assert.deepEqual(failed.payload, { reason: 'no board within the attempt budget', offers: ['retry', 'standard'] });
+  assert.deepEqual(failed.payload, { reason: 'no board within the attempt budget', offers: ['retry', 'standard'], count: 1 });
   assert.deepEqual(h.s.failure, failed.payload);
   h.clock.advance(5000);
   assert.equal(h.s.elapsedMs(), 0);
@@ -488,7 +501,98 @@ test('session: a worker failure is a generation failure with the same offer', as
   h.client.fail(new Error('worker crashed'));
   assert.equal(await p, null);
   assert.equal(h.s.state, SESSION_STATE.FAILED);
-  assert.deepEqual(h.of('failed')[0].payload, { reason: 'worker crashed', offers: ['retry', 'standard'] });
+  assert.deepEqual(h.of('failed')[0].payload, { reason: 'worker crashed', offers: ['retry', 'standard'], count: 1 });
+});
+
+test('session: failures in a row are counted on the failure; a board, a cancel or a restart starts the count again', async () => {
+  const h = session({ size: 'custom', custom: { width: 9, height: 9, mines: 31 }, noGuess: true });
+  const fail = async (p) => { h.client.answer({ ok: false, reason: 'budget', seed: 1, generatorVersion: GENERATOR_VERSION, candidates: 2000 }); await p; };
+  await fail(h.s.reveal(40));
+  assert.equal(h.s.failure.count, 1);
+  await fail(h.s.retry());
+  assert.equal(h.s.failure.count, 2, 'a Retry that fails again is the second failure in a row');
+  assert.equal(h.of('failed').at(-1).payload.count, 2);
+  const standard = h.s.playStandard();
+  h.client.fail(new Error('worker crashed'));
+  await standard;
+  assert.equal(h.s.failure.count, 3);
+  const retry = h.s.retry();
+  h.client.answer(generate({ ...h.client.last.req, noGuess: false }));
+  await retry;
+  assert.equal(h.s.state, SESSION_STATE.PLAYING);
+  assert.equal(h.s.failure, null);
+
+  // A cancel back to the closed board, and a restart, start the count again.
+  const k = session({ size: 'custom', custom: { width: 9, height: 9, mines: 31 }, noGuess: true });
+  const failK = async (p) => { k.client.answer({ ok: false, reason: 'budget', seed: 1, generatorVersion: GENERATOR_VERSION, candidates: 2000 }); await p; };
+  await failK(k.s.reveal(40));
+  const again = k.s.retry();
+  assert.equal(k.s.cancel(), true);
+  await again;
+  await failK(k.s.reveal(40));
+  assert.equal(k.s.failure.count, 1, 'after a cancel');
+  k.s.restart();
+  await failK(k.s.reveal(40));
+  assert.equal(k.s.failure.count, 1, 'after a restart');
+});
+
+test('session: cancel while generating goes back to the closed board; nothing is reported and the next first click asks afresh', async () => {
+  const h = session();
+  const p = h.s.reveal(10);
+  const pending = h.client.last;
+  h.clock.advance(GENERATING_DELAY_MS);
+  assert.equal(h.s.generatingShown, true);
+  assert.equal(h.s.cancel(), true);
+  assert.equal(h.client.cancels, 1, 'the pending generation is cancelled through the client');
+  assert.equal(await p, null);
+  assert.equal(h.s.state, SESSION_STATE.READY);
+  assert.equal(h.s.generatingShown, false);
+  assert.deepEqual(h.of('generating').map((e) => e.payload.shown), [true, false]);
+  assert.equal(h.s.game.phase, 'awaiting-first-click');
+  assert.equal(h.s.failure, null);
+  assert.equal(h.s.seed, null);
+  assert.equal(h.s.summary(), null);
+  assert.equal(h.s.replay(), null);
+  assert.equal(h.clock.pending, 0);
+  for (const type of ['started', 'changed', 'failed', 'finished', 'abandoned']) assert.equal(h.of(type).length, 0, type);
+  // A late answer for the cancelled request changes nothing.
+  pending.resolve(generate(pending.req));
+  await tick();
+  assert.equal(h.s.state, SESSION_STATE.READY);
+  // The next first click asks for a fresh board around its own cell.
+  const next = h.s.reveal(20);
+  assert.equal(h.client.requests.length, 2);
+  assert.equal(h.client.last.req.firstClick, 20);
+  h.client.answer();
+  await next;
+  assert.equal(h.s.state, SESSION_STATE.PLAYING);
+  assert.equal(h.of('started').length, 1);
+  h.s.leave();
+  assert.equal(h.of('abandoned').length, 1, 'the game played after the cancel is the one reported');
+});
+
+test('session: cancel before the "generating" card shows also goes back, and does nothing outside generation', async () => {
+  const h = session();
+  const p = h.s.reveal(10);
+  assert.equal(h.s.generatingShown, false);
+  assert.equal(h.s.cancel(), true);
+  assert.equal(await p, null);
+  assert.equal(h.s.state, SESSION_STATE.READY);
+  assert.equal(h.of('generating').length, 0);
+  assert.equal(h.clock.pending, 0);
+
+  assert.equal(h.s.cancel(), false, 'ready: nothing to cancel');
+  const q = h.s.reveal(10);
+  h.client.answer({ ok: false, reason: 'budget', seed: 1, generatorVersion: GENERATOR_VERSION, candidates: 2000 });
+  await q;
+  assert.equal(h.s.cancel(), false, 'failed: the offer answers it');
+  assert.equal(h.s.state, SESSION_STATE.FAILED);
+  const r = h.s.retry();
+  h.client.answer();
+  await r;
+  assert.equal(h.s.cancel(), false, 'playing: nothing to cancel');
+  assert.equal(h.s.state, SESSION_STATE.PLAYING);
+  assert.equal(h.client.cancels, 1);
 });
 
 test('session: restart after the first click emits game abandoned with its summary first, then opens a new closed board', async () => {

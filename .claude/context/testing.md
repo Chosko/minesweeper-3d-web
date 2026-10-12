@@ -313,7 +313,7 @@ browser checks for everything that needs WebGL or the DOM.
   renderer's sky carrying no constant colour, and only the sky being themed.
 - `tests/components.test.mjs` — the component kit (`css/components.css`,
   `js/ui/components.js`, `dev/components.html`): tokens only, no literal
-  colour, no theme-specific rule, no animation; the head-comment catalogue
+  colour, no theme-specific rule, no animation but the `ui-spinner` turn; the head-comment catalogue
   documents every component and composition; every interactive component's
   states and focus ring; the `<head>` order of `index.html` and the gallery;
   the gallery showing every component in every state, the overlay bar and
@@ -327,7 +327,9 @@ browser checks for everything that needs WebGL or the DOM.
   in both themes on rendered pages: the gallery (plus a visible focus ring
   on every forced-focus control), the overlay bar over the running 3D scene
   (opaque surface, timer pinned at `999`, pause through the button), and the
-  menu, the main menu's Controls panel, pause card and results layout (plus
+  menu, the main menu's Controls panel, pause card, the 3D generating card
+  (spinner, Cancel) and failure offer (three buttons) over stand-in
+  generation workers, and results layout (plus
   focus rings, the renderer's sky following the theme and an unchanged
   `__ms` key list); each skips when Playwright or chromium is unavailable.
 - `tests/tile-skin.test.mjs` — the Classic 2D tile skin
@@ -353,11 +355,15 @@ browser checks for everything that needs WebGL or the DOM.
   and the generation request, invalid choices, `CUSTOM_LIMITS` and the mine
   cap (measured and interpolated, at most the cell count minus one, a dense
   board keeping no-guess), `normaliseChoice`, the last choice document over
-  the memory backend, the timer; the session's closed board, first-click
+  the memory backend (no-guess on with nothing stored, a stored no-guess
+  off kept), the timer; the session's closed board, first-click
   request, the delayed "generating" state, the timer starting at the
   board, actions and `changed`, win and loss with `buildSummary`
   summaries, one summary id per game, pause (also while generating), the no-guess and worker
-  failures with Retry and Play a standard board, restart and leave
+  failures with Retry and Play a standard board and their count of
+  failures in a row, `cancel` while generating back to the closed board
+  (the client cancelled, nothing reported, the next first click asking
+  afresh), restart and leave
   (abandoned reports, cancelled generation, a late answer dropped), actions
   ignored while generating; both modules DOM-free and reaching generation
   only through the client.
@@ -407,10 +413,14 @@ browser checks for everything that needs WebGL or the DOM.
   started / can-pause / finished (recorded and routed by the results flow),
   redraw and the overlay feed, pause hiding
   the board and freezing the timer, restart and leave releasing the canvas
-  and the pending generation, Play again, the no-guess failure offer, the
+  and the pending generation, Play again, the no-guess failure offer and
+  its failure count, `cancelGeneration` back to the closed board, the
   controller poll; the board choice helpers (`js/classic2d/board-choice.js`)
-  against `CUSTOM_LIMITS`; the `#c2d-choice` / `#c2d` markup, the router
-  entries and controller layers, the catalogue entry. One Playwright test
+  against `CUSTOM_LIMITS`, the no-guess default and the density hint; the
+  `#c2d-choice` markup (the switch under the sizes with its helper line,
+  the density hint under the info line) and the `#c2d` / `#c2d-status`
+  markup (spinner, Cancel, Back to menu), the router entries and controller
+  layers, the shell's Cancel and offer wiring, the catalogue entry. One Playwright test
   goes menu → Classic 2D → Expert → first click → pause → resume → back to
   menu and checks the abandoned summary (skipped when Playwright or chromium
   is unavailable).
@@ -454,7 +464,8 @@ browser checks for everything that needs WebGL or the DOM.
 - `tests/shell-mode-3d.test.mjs` — the 3D adapter (`js/shell/mode-3d.js`)
   over a fake session and a fake flow: the builder's summaries, the contract, pause
   reaching the session without cancelling a pending board request, started
-  and can-pause at the first applied reveal, `summary()` so far, finished
+  and can-pause at the first applied reveal, `summary()` so far,
+  `cancelGeneration` through the session reporting nothing, finished
   after the end delay at a win or loss, abandoned on restart and leave of a started game and
   nothing before the first applied reveal, reports of a session no longer
   held ignored, a lost graphics context; DOM-free, importing at most the
@@ -471,11 +482,14 @@ browser checks for everything that needs WebGL or the DOM.
   choice normalising and `readChoice`, Random by the original formula, the
   last 3D choice through `createLastBoardChoice` over the memory backend (a
   malformed one, or one naming a double layer preset, falls back to cube
-  Beginner, a document apart from the 2D choice), the
-  `index.html` markup, the old best times not read, the binder touching
-  only its elements, and the shell's wiring. One Playwright test validates
-  the custom board, follows the switch across the limit and onto a side of
-  2 cells and restores the choice.
+  Beginner with no-guess on, a document apart from the 2D choice; nothing
+  stored opens with no-guess on, a stored no-guess off is kept), the
+  density hint above 25 %, the `index.html` markup (the helper line under
+  the presets' switch, the density hint under the custom one), the old
+  best times not read, the binder touching only its elements, and the
+  shell's wiring. One Playwright test validates the custom board, follows
+  the switch across the limit and onto a side of 2 cells, follows the
+  density hint live and restores the choice.
 - `tests/mode3d-session.test.mjs` — the 3D game session
   (`js/mode3d/session.js`) over a fake generation client and a fake clock:
   the 3D game awaiting its first click, the generator's `box` description
@@ -483,8 +497,9 @@ browser checks for everything that needs WebGL or the DOM.
   board request with the no-guess setting, the delayed "generating" state
   and no board action meanwhile, the timer from the board's arrival to a
   win or loss, flags before the first reveal, pause during generation,
-  restart and leave cancelling the request and dropping a late answer, the
-  no-guess failure's Retry and standard board, a failing or rejecting
+  restart and leave cancelling the request and dropping a late answer,
+  `cancel` back to the closed box with its flags, the no-guess failure's
+  Retry and standard board and its count of failures in a row, a failing or rejecting
   worker, the fixed mine set, every preset's box, DOM-free, no placement on
   the main thread, the old best times left alone, actions from the
   existing mouse state machine and controller mapping. Two Playwright
@@ -687,14 +702,23 @@ browser checks for everything that needs WebGL or the DOM.
 - `tests/shell-pause.test.mjs` — the pause controller (`js/shell/pause.js`)
   over a real mode host, a fake mode and a recording shell: every pause
   source, automatic pauses only in play, no pause before the first click or
-  after the end beyond the card, resume through the mode, the restart and
+  after the end beyond the card, Back cancelling a board being generated
+  while every pause source still pauses, resume through the mode, the restart and
   back-to-menu confirmations, the `finished` / `abandoned` / `inProgress`
   hand-offs with the controller itself routing nowhere, the leave-page guard armed
   only during a started, unfinished game; DOM-free; static checks that every
-  pause source in `js/main.js` goes through `pauseGame` to the controller, that the guard is
-  a listener it arms, and that the confirmation is kit markup. One Playwright
-  test pauses, resumes, restarts and goes back to menu in the 3D game, and
-  ends a fixed board, which has no results screen, on the pause card.
+  pause source in `js/main.js` goes through `pauseGame` to the controller
+  and every Back on the board (the lock-release Esc and the controller's
+  back button included) through `backGame`, that the board status cards
+  stack above the pause card, that the guard is
+  a listener it arms, and that the confirmation is kit markup. Two
+  Playwright tests: one pauses, resumes, restarts and goes back to menu in
+  the 3D game, and ends a fixed board, which has no results screen, on the
+  pause card; one, over stand-in generation workers, cancels the Classic 2D
+  generating card by Cancel and Esc (before and after it shows), meets the
+  failure offer with Retry then Play a standard board focused, leaves by
+  its Back to menu, and finds an offer arriving while paused above the
+  pause card.
 - `tests/settings-store.test.mjs` — the schema (`js/settings/schema.js`:
   every setting's type, range or values and default, `isValid`) and the
   store (`js/settings/store.js`) over the memory backend: missing, invalid
@@ -750,7 +774,7 @@ browser checks for everything that needs WebGL or the DOM.
   `tests/replay-viewer.test.mjs`, `tests/replay-viewer-3d.test.mjs` and
   `tests/results-watch.test.mjs`, the
   flow tests in `tests/shell-*.test.mjs` (one per file, two in
-  `tests/shell-first-use.test.mjs` and three in `tests/shell-help.test.mjs`), the 3D tests in
+  `tests/shell-first-use.test.mjs` and `tests/shell-pause.test.mjs`, three in `tests/shell-help.test.mjs`), the 3D tests in
   `tests/mode3d-board-choice.test.mjs` and `tests/mode3d-session.test.mjs`, the
   theme-and-resolution test in `tests/settings-appliers.test.mjs` and the two page tests in
   `tests/settings-page.test.mjs`.

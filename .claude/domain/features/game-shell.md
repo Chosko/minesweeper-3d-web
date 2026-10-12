@@ -120,8 +120,11 @@ it generalises.
 - **Pause rules** — pause applies only to a started, unfinished game; before
   the first click or after the game ends, the pause key opens the pause card
   without a timer to stop, offering restart and back to menu, and Back on
-  it goes to the main menu. While the pause card shows, the board is hidden
-  in every mode.
+  it goes to the main menu. While the first click's board is being
+  generated, Esc and the controller's back button cancel the generation,
+  back to the closed board, instead of opening the pause card; the
+  overlay's pause button, Start, focus loss and tab hide still pause. While
+  the pause card shows, the board is hidden in every mode.
 - **Restart** — discards the current game and starts a new one with the same
   board choice; during a started, unfinished game it asks for confirmation,
   saying the game will count as a loss.

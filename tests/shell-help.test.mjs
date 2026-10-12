@@ -272,6 +272,7 @@ test('in a browser: the Controls panel tabs, H, M and the HUD strip in Classic 2
 
     // Classic 2D: the HUD strip with only its keys, H opens the 2D help, M toggles sound.
     await page.click('#menu-entry-classic-2d');
+    await page.uncheck('#c2d-noguess'); // a standard board: no-guess is on by default
     await page.click('#c2d-choice [data-size="beginner"]');
     assert.equal(await mode(), 'classic-2d');
     assert.ok(await shown('hud-tools'), 'the HUD strip shows in Classic 2D');

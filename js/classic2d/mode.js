@@ -37,7 +37,10 @@
 // flow.show(). tick() pushes the timer and mine counter to flow.hud when either changed and drives
 // the movement sampler (call it every frame); every action pushes them at once. The cursor input's
 // moves reach the sampler as well as the view. pad(poll, now) hands the shell's controller poll
-// to the cursor input. retry() and playStandard() answer a failed board's offer. status() is
+// to the cursor input. retry() and playStandard() answer a failed board's offer; flow.failed's
+// failure carries its `count` of failures in a row. cancelGeneration() cancels the first click's
+// board while it is being generated, its card shown or not, back to the same closed board with
+// nothing reported, and returns whether it did. status() is
 // { state: 'playing' | 'won' | 'lost', time (seconds), minesLeft } for the pause card.
 
 import { createSession, SESSION_STATE } from './session.js';
@@ -185,6 +188,7 @@ export function createClassic2DMode(report, {
     },
     pad(poll, now) { game?.cursor.pad(poll, now); },
     retry: () => answer('retry'),
+    cancelGeneration() { return game ? game.session.cancel() : false; },
     playStandard() {
       const r = answer('playStandard');
       if (r && game) { const { width, height, mines, noGuess } = game.session.setup; flow.board({ width, height, mines, noGuess }); }

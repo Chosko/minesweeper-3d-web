@@ -12,8 +12,12 @@
 // the answer takes longer than generatingDelayMs, and { shown: false } when it arrives. On a board,
 // the reveal is applied, the timer starts and `started` { changed } is emitted (state 'playing').
 // A failed request (a no-guess board not found, or the worker failing) emits `failed`
-// { reason, offers } (state 'failed') and the timer never starts; retry() asks again with a new
+// { reason, offers, count } (state 'failed') and the timer never starts; `count` is the failures in
+// a row since the closed board, so a Retry that fails again is 2. retry() asks again with a new
 // seed, playStandard() asks for the same size with no-guess off — both for the same first cell.
+// cancel() while generating — the card shown or not — cancels the request through the client and
+// returns to the closed board awaiting its first click (state 'ready'), reporting nothing and
+// recording nothing; it returns whether there was a request to cancel.
 //
 // Actions — reveal(c), toggleFlag(c), chord(c) — return the engine's result and emit `changed`
 // { changed, ended }; the first reveal returns a Promise of its result instead (null when the
@@ -127,6 +131,7 @@ export function createSession({
   let seed;
   let generatorVersion;
   let failure;
+  let failures; // failures in a row since the closed board
   let finalSummary;
   let gameId; // the id every summary of this game carries, set when its board arrives
   let firstCell;
@@ -166,6 +171,7 @@ export function createSession({
     seed = null;
     generatorVersion = null;
     failure = null;
+    failures = 0;
     finalSummary = null;
     gameId = null;
     firstCell = -1;
@@ -195,7 +201,8 @@ export function createSession({
 
   function fail(reason) {
     state = SESSION_STATE.FAILED;
-    failure = { reason, offers: [...FAILURE_OFFERS] };
+    failures += 1;
+    failure = { reason, offers: [...FAILURE_OFFERS], count: failures };
     emit('failed', failure);
     return null;
   }
@@ -319,6 +326,17 @@ export function createSession({
       setup = boardSetup({ ...setup.choice, noGuess: false });
       record();
       return requestBoard();
+    },
+    /** While generating: cancel the request and go back to the closed board. */
+    cancel() {
+      if (state !== SESSION_STATE.GENERATING) return false;
+      dropPending();
+      state = SESSION_STATE.READY;
+      seed = null;
+      failures = 0;
+      firstCell = -1;
+      record();
+      return true;
     },
 
     pause() {

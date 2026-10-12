@@ -11,8 +11,10 @@ import { join, dirname, normalize, extname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { createClassic2DMode, MODE_ID } from '../js/classic2d/mode.js';
-import { CHOICE_SIZES, customStatus, readChoice, sizeLabel } from '../js/classic2d/board-choice.js';
-import { createLastChoice, DEFAULT_CHOICE, LAST_CHOICE_DOC, maxMines } from '../js/classic2d/board-setup.js';
+import { CHOICE_SIZES, customStatus, readChoice, sizeLabel, densityHintShown } from '../js/classic2d/board-choice.js';
+import {
+  createLastChoice, DEFAULT_CHOICE, LAST_CHOICE_DOC, maxMines, NOGUESS_DENSITY_HINT, DENSITY_HINT_TEXT, NOGUESS_HELP_TEXT,
+} from '../js/classic2d/board-setup.js';
 import { createModeHost, MODE_METHODS } from '../js/shell/mode-host.js';
 import { createPauseController } from '../js/shell/pause.js';
 import { createResultsFlow } from '../js/results/flow.js';
@@ -349,6 +351,43 @@ test('a no-guess failure shows its offer; a standard board keeps no-guess off fo
   assert.equal(cl.made.at(-1).requests.at(-1).noGuess, false, 'restart keeps no-guess off');
 });
 
+test('cancelGeneration goes back to the closed board: the request cancelled, nothing reported, a later first click asks afresh', async () => {
+  const { host, cl, act, flow, mode, clock, events, board } = setup({ hold: true, choice: { size: 'beginner', noGuess: true } });
+  assert.equal(mode.cancelGeneration(), false, 'nothing to cancel on a closed board');
+  const view = board();
+  const p = act('reveal', 40);
+  clock.advance(1000);
+  assert.deepEqual(flow.calls.filter((c) => c[0] === 'generating').at(-1), ['generating', true]);
+  assert.equal(mode.cancelGeneration(), true);
+  const client = cl.made.at(-1);
+  assert.equal(client.cancels, 1, 'cancelled through the generation client');
+  assert.equal(await p, null);
+  assert.equal(mode.cancelGeneration(), false, 'nothing left to cancel');
+  assert.deepEqual(flow.calls.filter((c) => c[0] === 'generating').at(-1), ['generating', false], 'the card goes');
+  assert.equal(board(), view, 'the same closed board, not a new game');
+  assert.equal(view.destroyed, false);
+  assert.equal(host.state.started, false);
+  assert.equal(mode.summary(), null);
+  assert.deepEqual(events, [], 'nothing started, abandoned, finished or failed');
+  act('reveal', 3);
+  assert.equal(client.requests.length, 2, 'the next first click asks again');
+  assert.equal(client.requests.at(-1).firstClick, 3);
+  host.leave();
+  assert.deepEqual(events.filter((e) => e[0] === 'abandoned'), [], 'a game left before its board reports nothing');
+});
+
+test('a failure hands the shell its count of failures in a row', async () => {
+  const { cl, act, flow, mode } = setup({ hold: true, choice: { size: 'beginner', noGuess: true } });
+  const p = act('reveal', 40);
+  cl.made.at(-1).answer({ ok: false, reason: 'no board' });
+  await p;
+  assert.equal(flow.calls.filter((c) => c[0] === 'failed').at(-1)[1].count, 1);
+  const q = mode.retry();
+  cl.made.at(-1).answer({ ok: false, reason: 'no board' });
+  await q;
+  assert.equal(flow.calls.filter((c) => c[0] === 'failed').at(-1)[1].count, 2, 'a Retry that fails again');
+});
+
 test('the controller reaches the board through the cursor input', () => {
   const { mode, cursor } = setup({ choice: { size: 'beginner', noGuess: false } });
   const poll = { held: [true], ls: [0, 0] };
@@ -386,6 +425,20 @@ test('the board choice offers the three standard sizes and a validated custom bo
     { size: 'beginner', custom: DEFAULT_CHOICE.custom, noGuess: false }, 'a standard size keeps the last valid custom board');
 });
 
+test('the board choice opens with no-guess on for a player who never played; its density hint warns above 25 % and refuses nothing', () => {
+  assert.equal(DEFAULT_CHOICE.noGuess, true);
+  assert.equal(NOGUESS_DENSITY_HINT, 0.25);
+  assert.equal(DENSITY_HINT_TEXT, 'Above 25 % mines, a no-guess board may not be found.');
+  assert.equal(densityHintShown({ width: 10, height: 10, mines: 25 }, true), false, 'exactly 25 %');
+  assert.equal(densityHintShown({ width: 10, height: 10, mines: 26 }, true), true);
+  assert.equal(densityHintShown({ width: 10, height: 10, mines: 26 }, false), false, 'no-guess off');
+  assert.equal(densityHintShown({ width: 0, height: 10, mines: 26 }, true), false, 'an invalid board shows its reason instead');
+  assert.equal(densityHintShown({ width: 30, height: 16, mines: 99 }, true), false, 'Expert is 21 %');
+  assert.equal(densityHintShown({ width: 10, height: 10, mines: 38 }, true), true);
+  assert.deepEqual(readChoice({ size: 'custom', fields: { width: '10', height: '10', mines: '38' }, noGuess: true }),
+    { size: 'custom', custom: { width: 10, height: 10, mines: 38 }, noGuess: true }, 'a dense no-guess board is still offered');
+});
+
 test('the board choice module touches only the elements it is handed', () => {
   const src = read('js/classic2d/board-choice.js').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
   assert.doesNotMatch(src, /\b(document|window|localStorage)\b/);
@@ -413,6 +466,14 @@ test('index.html builds the Classic 2D board choice from kit components', () => 
   assert.match(CHOICE, new RegExp(`id="c2d-width"[^>]*min="${CUSTOM_LIMITS.minSide}" max="${CUSTOM_LIMITS.maxSide}"`));
   assert.match(CHOICE, /<button type="submit" id="c2d-start" class="ui-button ui-button--primary" data-size="custom">/);
   assert.match(CHOICE, /<label class="ui-toggle"><input type="checkbox" role="switch" id="c2d-noguess" class="ui-toggle__input"/);
+  // The switch sits directly under the sizes, with its helper line, before the custom panel (as in 3D).
+  const sw = CHOICE.indexOf('id="c2d-noguess"');
+  const help = CHOICE.indexOf(`<p id="c2d-noguess-help" class="ui-text ui-text--muted">${NOGUESS_HELP_TEXT}</p>`);
+  assert.ok(sw > CHOICE.lastIndexOf('data-size="expert"') && sw < CHOICE.indexOf('<form id="c2d-custom"'), 'the switch sits under the sizes');
+  assert.ok(help > sw && help < CHOICE.indexOf('<form id="c2d-custom"'), 'its helper line under it');
+  const form = CHOICE.slice(CHOICE.indexOf('<form id="c2d-custom"'), CHOICE.indexOf('</form>'));
+  const hint = form.indexOf('<p id="c2d-density-hint" class="ui-text ui-text--muted hidden" data-density-hint></p>');
+  assert.ok(hint > form.indexOf('data-info'), 'the density hint sits under the custom panel\'s info line');
   assert.match(CHOICE, /id="c2d-choice-back" class="ui-button ui-button--secondary"[^>]*>Back/);
   for (const [, cls] of CHOICE.matchAll(/class="([^"]+)"/g)) {
     for (const c of cls.split(/\s+/)) assert.ok(c.startsWith('ui-') || ['overlay', 'hidden'].includes(c), `kit class: ${c}`);
@@ -424,12 +485,21 @@ test('index.html holds the Classic 2D board layer with its generating and failur
   assert.match(LAYER, /<div id="c2d-board"/);
   assert.match(LAYER, /id="c2d-retry" class="ui-button ui-button--primary"/);
   assert.match(LAYER, /id="c2d-standard" class="ui-button ui-button--secondary">Play a standard board/);
+  assert.match(LAYER, /id="c2d-offer-menu" class="ui-button ui-button--secondary">Back to menu/, 'the offer has a way out');
+  assert.match(LAYER, /<span id="c2d-spinner" class="ui-spinner" aria-hidden="true"><\/span>/, 'the generating card has a spinner');
+  assert.match(LAYER, /id="c2d-cancel" class="ui-button ui-button--secondary">Cancel/, 'and a Cancel');
+});
+
+test('the shell cancels a 2D generation from its Cancel and Back, and shows the offer above the pause card', () => {
+  assert.match(MAIN, /onCancel2D: \(\) => mode2d\.cancelGeneration\(\)/, 'Cancel cancels through the mode');
+  assert.match(MAIN, /onOfferMenu2D: \(\) => /, 'Back to menu on the offer');
+  assert.match(MAIN, /if \(MODES\.active === 'classic-2d'\) return mode2d\.cancelGeneration\(\);/, 'Back cancels through the active mode');
 });
 
 test('the shell registers the mode, routes its screens and reaches the board with the controller', () => {
   const table = MAIN.slice(MAIN.indexOf('const SHELL = createRouter('), MAIN.indexOf('// end of screen table'));
   assert.match(table, /'classic-2d-choice': \{[^\n]*defaultFocus: '\[data-size\]\[data-last\]'/, 'the board choice focuses the last choice');
-  assert.match(table, /'classic-2d': \{[^\n]*defaultFocus: null[^\n]*back: \(\{ source \}\) => pauseGame\(/, 'Back on the board is Pause');
+  assert.match(table, /'classic-2d': \{[^\n]*defaultFocus: null[^\n]*back: \(\{ source \}\) => backGame\(/, 'Back on the board is Pause, or cancels a board being generated');
   assert.match(MAIN, /MODES\.register\('classic-2d', \(report\) => createClassic2DMode\(report, /);
   assert.match(MAIN, /c2d: 'classic-2d'/, 'the board layer is a controller layer');
   assert.match(MAIN, /'c2d-choice': 'classic-2d-choice'/, 'the controller reaches the board choice');
@@ -520,6 +590,7 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
 
     // Expert, then the first click in the middle of the board.
     await page.click('#menu-entry-classic-2d');
+    await page.uncheck('#c2d-noguess'); // a standard Expert board: no-guess is on by default
     await page.click('#c2d-choice [data-size="expert"]');
     assert.equal(await mode(), 'classic-2d');
     assert.equal(await ms(() => globalThis.__ms.modes.active), 'classic-2d');

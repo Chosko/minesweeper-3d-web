@@ -3,7 +3,9 @@
 //
 // A board choice is { size, custom, noGuess }: `size` one of BOARD_SIZES (a preset id or
 // 'custom'); `custom` the custom board's { X, Y, Z, mines }, kept with a preset so the custom
-// fields reopen as the player left them; `noGuess` a boolean.
+// fields reopen as the player left them; `noGuess` a boolean. DEFAULT_CHOICE, the choice of a
+// player with no last 3D choice stored and the fallback for one that does not normalise, has
+// no-guess on.
 //
 // Custom boards take each dimension DIM_MIN to DIM_MAX and 1 to cells − 1 mines: one cell stays
 // free because the first click is always safe, so a one-cell board takes no mine count at all.
@@ -22,6 +24,9 @@
 //   noGuessAvailable(choice) whether the switch is offered for that choice.
 //   noGuessReason(choice?)   the line shown above the disabled switch: the side-of-2 line when a
 //                            side is 2, else the cell-limit line.
+//   densityHintShown(custom, noGuess)  whether the density hint shows under the custom board's
+//                            switch: no-guess on and offered, and a valid board above
+//                            NOGUESS_DENSITY_HINT (js/classic2d/board-setup.js).
 //   normaliseChoice(choice)  a valid choice as a plain copy, or null.
 //   readChoice({ size, fields, noGuess }, fallbackCustom?)  the choice the fields describe, or null.
 //   boardOf(choice)          { X, Y, Z, mines, noGuess } of the board to play.
@@ -33,11 +38,15 @@
 //             [data-field="X|Y|Z|mines"], Random [data-random], the info line [data-info], the
 //             presets' no-guess switch [data-noguess="presets"], the custom board's no-guess
 //             switch [data-noguess="custom"] — disabled above NOGUESS_CELL_LIMIT or on a side of
-//             2 cells, its reason line [data-noguess-reason] above it — and Back [data-back].
+//             2 cells, its reason line [data-noguess-reason] above it, the density hint
+//             [data-density-hint] under it, which follows the fields and the switch live and never
+//             disables it — and Back [data-back].
 //   show(choice, { played })  fills the fields and the switch from `choice` and marks its item
 //             data-last, the screen's default focus; the "Last played" line shows only when
 //             `played` (default true).
 //   onStart(choice) when a preset is picked or a valid custom board submitted; onBack() on Back.
+
+import { aboveDensityHint, DENSITY_HINT_TEXT } from '../classic2d/board-setup.js';
 
 export const DIM_MIN = 1;
 export const DIM_MAX = 100;
@@ -63,7 +72,7 @@ export const BOARD_SIZES = Object.freeze([...PRESETS.map((p) => p.id), 'custom']
 export const DEFAULT_CHOICE = Object.freeze({
   size: 'cube-beginner',
   custom: Object.freeze({ X: 10, Y: 10, Z: 10, mines: 25 }),
-  noGuess: false,
+  noGuess: true,
 });
 
 export const presetKey = (p) => `${p.X},${p.Y},${p.Z},${p.mines}`;
@@ -109,6 +118,11 @@ export function noGuessAvailable(choice) {
   if (choice?.size !== 'custom') return true;
   const { X, Y, Z } = choice.custom ?? {};
   return dim(X) && dim(Y) && dim(Z) && !sideOf2(choice) && X * Y * Z <= NOGUESS_CELL_LIMIT;
+}
+
+export function densityHintShown(custom, noGuess) {
+  if (!noGuess || !validateCustom(custom).ok || !noGuessAvailable({ size: 'custom', custom })) return false;
+  return aboveDensityHint(custom.mines, custom.X * custom.Y * custom.Z);
 }
 
 export const noGuessReason = (choice) => (sideOf2(choice)
@@ -164,10 +178,12 @@ export function bindBoardChoice({ root, onStart, onBack }) {
   const noGuessPresets = root.querySelector('[data-noguess="presets"]');
   const noGuess = root.querySelector('[data-noguess="custom"]');
   const reason = root.querySelector('[data-noguess-reason]');
+  const hint = root.querySelector('[data-density-hint]');
   const random = root.querySelector('[data-random]');
   const back = root.querySelector('[data-back]');
   let last = null;
   let wanted = false; // the custom board's no-guess choice, kept while the board does not offer it
+  hint.textContent = DENSITY_HINT_TEXT;
 
   for (const b of items) {
     if (!b.classList.contains('ui-menu__item')) continue;
@@ -194,6 +210,7 @@ export function bindBoardChoice({ root, onStart, onBack }) {
     noGuess.checked = available && wanted;
     reason.textContent = available ? '' : noGuessReason(choice);
     reason.classList.toggle('hidden', available);
+    hint.classList.toggle('hidden', !densityHintShown(custom, noGuess.checked));
     return s;
   };
   const start = (size) => {
@@ -222,7 +239,7 @@ export function bindBoardChoice({ root, onStart, onBack }) {
     for (const [i, f] of FIELDS.entries()) inputs[i].value = String(b[f]);
     update();
   };
-  const onNoGuess = () => { wanted = noGuess.checked; };
+  const onNoGuess = () => { wanted = noGuess.checked; update(); };
   const onBackClick = () => onBack?.();
 
   for (const b of items) b.addEventListener('click', onItem);

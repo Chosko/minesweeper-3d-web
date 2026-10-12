@@ -12,8 +12,9 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   PRESETS, FAMILIES, BOARD_SIZES, DEFAULT_CHOICE, DIM_MIN, DIM_MAX, NOGUESS_CELL_LIMIT, LAST_CHOICE_DOC, LAST_CHOICE_VERSION,
   presetKey, presetByKey, presetLabel, validateCustom, customStatus, noGuessAvailable, noGuessReason, normaliseChoice,
-  readChoice, boardOf, randomBoard,
+  readChoice, boardOf, randomBoard, densityHintShown,
 } from '../js/mode3d/board-choice.js';
+import { NOGUESS_DENSITY_HINT, DENSITY_HINT_TEXT, NOGUESS_HELP_TEXT } from '../js/classic2d/board-setup.js';
 import { createLastBoardChoice } from '../js/shell/menu.js';
 import { createStorage } from '../js/platform/storage.js';
 import { createMemoryBackend } from '../js/platform/memory-backend.js';
@@ -162,7 +163,7 @@ test('the no-guess limit is one exported constant, read everywhere from js/mode3
 // ---------------------------------------------------------------- the choice
 
 test('a choice is X, Y, Z, mines and no-guess; normalising drops no-guess on a custom board above the limit', () => {
-  assert.deepEqual(DEFAULT_CHOICE, { size: 'cube-beginner', custom: { X: 10, Y: 10, Z: 10, mines: 25 }, noGuess: false });
+  assert.deepEqual(DEFAULT_CHOICE, { size: 'cube-beginner', custom: { X: 10, Y: 10, Z: 10, mines: 25 }, noGuess: true }, 'no-guess on by default');
   assert.equal(normaliseChoice(DEFAULT_CHOICE).size, 'cube-beginner');
   assert.equal(normaliseChoice(null), null);
   assert.equal(normaliseChoice({ size: 'flat-beginner', custom: DEFAULT_CHOICE.custom, noGuess: false }), null);
@@ -250,8 +251,37 @@ test('a remembered double layer choice opens on cube Beginner', async () => {
     const last = lastChoice(memoryStorage({ [LAST_CHOICE_DOC]: JSON.stringify({ version: LAST_CHOICE_VERSION, data }) }));
     const choice = await last.load();
     assert.equal(choice.size, 'cube-beginner', size);
-    assert.deepEqual(boardOf(choice), { X: 6, Y: 6, Z: 6, mines: 10, noGuess: false });
+    assert.deepEqual(boardOf(choice), { X: 6, Y: 6, Z: 6, mines: 10, noGuess: true }, 'the fallback opens with no-guess on');
   }
+});
+
+test('a profile with no stored 3D choice opens with no-guess on; a stored no-guess off is kept as stored', async () => {
+  const backend = createMemoryBackend();
+  const last = lastChoice(memoryStorage(null, backend));
+  assert.equal(last.current.noGuess, true, 'before the load');
+  assert.equal((await last.load()).noGuess, true, 'nothing stored');
+  assert.equal(boardOf(last.current).noGuess, true, 'the presets\' board');
+  const custom = { ...last.current, size: 'custom' };
+  assert.equal(boardOf(custom).noGuess, true, 'the custom board\'s switch, on the default 10 × 10 × 10 board');
+  const off = { size: 'cube-expert', custom: DEFAULT_CHOICE.custom, noGuess: false };
+  await last.save(off);
+  const again = lastChoice(memoryStorage(null, backend));
+  assert.deepEqual(await again.load(), off, 'a stored no-guess off survives');
+});
+
+test('the density hint shows above 25 % mines with no-guess on, never refusing the board or the switch', () => {
+  assert.equal(NOGUESS_DENSITY_HINT, 0.25, 'one named constant');
+  assert.equal(DENSITY_HINT_TEXT, 'Above 25 % mines, a no-guess board may not be found.');
+  const board = (mines) => ({ X: 10, Y: 10, Z: 10, mines });
+  assert.equal(densityHintShown(board(250), true), false, 'exactly 25 % is not above it');
+  assert.equal(densityHintShown(board(251), true), true);
+  assert.equal(densityHintShown(board(251), false), false, 'no-guess off: no hint');
+  assert.equal(densityHintShown(board(25), true), false);
+  assert.equal(densityHintShown({ X: 0, Y: 10, Z: 10, mines: 999 }, true), false, 'an invalid board shows its own reason instead');
+  assert.equal(densityHintShown({ X: 2, Y: 10, Z: 10, mines: 150 }, true), false, 'no switch offered on a side of 2: no hint');
+  const dense = { size: 'custom', custom: board(900), noGuess: true };
+  assert.equal(noGuessAvailable(dense), true, 'the switch stays offered');
+  assert.equal(boardOf(dense).noGuess, true, 'and the board is not refused');
 });
 
 // ---------------------------------------------------------------- markup and wiring
@@ -279,11 +309,16 @@ test('index.html offers the three cube presets, the custom board, Random, the no
   assert.match(BOARD, /<p id="c-info" class="ui-text ui-text--muted" data-info>/);
   const presetsSwitch = BOARD.indexOf('<label class="ui-toggle"><input type="checkbox" role="switch" id="bc-noguess" class="ui-toggle__input" data-noguess="presets">');
   assert.ok(presetsSwitch > BOARD.lastIndexOf('data-preset="1') && presetsSwitch < BOARD.indexOf('<form id="custom"'), 'the presets\' switch sits under the presets');
+  const help = BOARD.indexOf(`<p id="bc-noguess-help" class="ui-text ui-text--muted">${NOGUESS_HELP_TEXT}</p>`);
+  assert.equal(NOGUESS_HELP_TEXT, 'Solvable by logic alone, no 50/50 guesses. Separate records.');
+  assert.ok(help > presetsSwitch && help < BOARD.indexOf('<form id="custom"'), 'one helper line under the presets\' switch, before the custom panel');
   const form = BOARD.slice(BOARD.indexOf('<form id="custom"'), BOARD.indexOf('</form>'));
   const reason = form.indexOf('data-noguess-reason');
   const toggle = form.indexOf('<label class="ui-toggle"><input type="checkbox" role="switch" id="c-noguess" class="ui-toggle__input" data-noguess="custom">');
   assert.ok(reason > 0 && toggle > reason, 'the custom board\'s switch sits in its panel, under its reason line');
   assert.match(form, /<p id="c-noguess-reason" class="ui-text ui-text--muted hidden" data-noguess-reason><\/p>/);
+  const hint = form.indexOf('<p id="c-density-hint" class="ui-text ui-text--muted hidden" data-density-hint></p>');
+  assert.ok(hint > toggle, 'the density hint sits under the custom board\'s switch');
   assert.match(BOARD, /id="board-choice-back" class="ui-button ui-button--secondary" data-back>Back/);
   assert.doesNotMatch(BOARD, /data-best/);
 });
@@ -402,8 +437,23 @@ test('in a browser, the custom board validates, the switch follows the limit and
     await page.fill('#c-y', '3');
     await page.fill('#c-z', '3');
     await page.fill('#c-m', '3');
-    assert.deepEqual(await sw(), { disabled: false, checked: false, reason: '' });
+    assert.deepEqual(await sw(), { disabled: false, checked: true, reason: '' }, 'no-guess on by default for a player who never played');
+    assert.equal(await ms(() => document.getElementById('bc-noguess').checked), true, 'the presets\' switch too');
+    assert.equal(await ms(() => document.getElementById('bc-noguess-help').textContent), 'Solvable by logic alone, no 50/50 guesses. Separate records.');
+    // The density hint follows the fields and the switch live, and never disables anything.
+    const hint = () => ms(() => { const h = document.getElementById('c-density-hint'); return h.classList.contains('hidden') ? '' : h.textContent; });
+    assert.equal(await hint(), '', '3 mines in 27 cells');
+    await page.fill('#c-m', '6');
+    assert.equal(await hint(), '', '6 in 27 is below 25 %');
+    await page.fill('#c-m', '10');
+    assert.equal(await hint(), 'Above 25 % mines, a no-guess board may not be found.');
+    assert.equal((await sw()).disabled, false, 'the switch stays offered');
+    await page.uncheck('#c-noguess');
+    assert.equal(await hint(), '', 'no-guess off: no hint');
     await page.check('#c-noguess');
+    assert.equal(await hint(), 'Above 25 % mines, a no-guess board may not be found.');
+    await page.fill('#c-m', '3');
+    assert.equal(await hint(), '');
     await page.fill('#c-x', '100');
     await page.fill('#c-y', '100');
     assert.deepEqual(await sw(), { disabled: true, checked: false, reason: `No-guess is available up to ${NOGUESS_CELL_LIMIT.toLocaleString('en-US')} cells` });

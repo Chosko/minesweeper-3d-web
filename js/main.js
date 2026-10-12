@@ -139,6 +139,20 @@ function endGame() {
 function ending3D() { return MODES.active === '3d' && mode3d.ending; }
 /** Every pause goes through here: none is offered while the 3D end delay runs. */
 function pauseGame(source, opts) { return ending3D() ? false : PAUSE.pause(source, opts); }
+/** Back on the board (Esc, the controller's back button): cancels a board being generated, else pauses. */
+function backGame(source) { return ending3D() ? false : PAUSE.back(source === 'pointer' ? 'button' : source); }
+let cancelledAt = -Infinity; // performance.now() of the last cancelled 3D generation
+/**
+ * Cancel the active mode's board being generated, back to its closed board; whether there was one.
+ * A 3D game without pointer lock or controller play goes back to the click-to-play card.
+ */
+function cancelGeneration() {
+  if (MODES.active === 'classic-2d') return mode2d.cancelGeneration();
+  if (MODES.active !== '3d' || !mode3d.cancelGeneration()) return false;
+  cancelledAt = performance.now();
+  if (S.mode === 'playing' && !S.lockless && !document.pointerLockElement) SHELL.go('ready', { replace: true });
+  return true;
+}
 
 const mouse = new MouseActions(onAction, hasSelection);
 const input = new Input({
@@ -161,7 +175,9 @@ const input = new Input({
     if (locked) {
       if (S.mode === 'ready' || S.mode === 'paused') enterPlaying();
     } else if (S.mode === 'playing' && !S.lockless && !board3d.failure) { // a failed board released the lock for its offer
-      pauseGame('key'); // the browser's own Esc released the lock
+      if (performance.now() - cancelledAt < 500) SHELL.go('ready', { replace: true }); // the Esc that cancelled the board
+      else if (!document.hasFocus()) pauseGame('key'); // the window lost focus
+      else backGame('key'); // the browser's own Esc released the lock: Back, which cancels a board being generated
     }
   },
   onLockError: () => {
@@ -208,10 +224,14 @@ const ui = new UI({
   onReadyBack: () => readyBack(),
   onToggleSound: () => toggleSound(),
   onDismissHint: (mode) => { FIRST_USE.dismiss(mode); refreshHints(); },
-  onRetry2D: () => mode2d.retry(),
-  onStandard2D: () => { standard2D = true; try { mode2d.playStandard(); } finally { standard2D = false; } },
+  onRetry2D: () => answer2D(() => mode2d.retry()),
+  onStandard2D: () => answer2D(() => { standard2D = true; try { mode2d.playStandard(); } finally { standard2D = false; } }),
+  onCancel2D: () => mode2d.cancelGeneration(),
+  onOfferMenu2D: () => PAUSE.toMenu(),
   onRetry3D: () => retry3D('retry'),
   onStandard3D: () => retry3D('standard'),
+  onCancel3D: () => cancelGeneration(),
+  onOfferMenu3D: () => PAUSE.toMenu(),
 });
 ui.setNoMouse(NO_MOUSE);
 
@@ -257,16 +277,16 @@ const SHELL = createRouter({
     records: { defaultFocus: '#records-picker [aria-checked="true"]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showRecords(); RECORDS_PAGE.show({ mode: d.mode, boardKey: d.boardKey }); }, hide: () => RECORDS_PAGE.hide() },
     settings: { defaultFocus: '#set-lookSensitivity', show: () => { MODES.leave(); showMenuBackdrop(); ui.showSettings(); } },
     'classic-2d-choice': { defaultFocus: '[data-size][data-last]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showBoardChoice2D(); showChoice2D(d.choice ?? LAST_CHOICE_2D.current); } },
-    ready: { defaultFocus: '#ready-btn', show: (d = {}) => ui.showReady(board3dChoice ?? S.settings, d.msg ?? '', { rules: FIRST_USE.rules3D }), back: () => readyBack() },
-    playing: { defaultFocus: null, show: (d = {}) => { setLockless(!!d.lockless); ui.showPlaying(); }, back: ({ source }) => pauseGame(source === 'pointer' ? 'button' : source) },
-    'classic-2d': { defaultFocus: null, show: () => ui.showClassic2D(), back: ({ source }) => pauseGame(source === 'pointer' ? 'button' : source) },
+    ready: { defaultFocus: '#ready-btn', show: (d = {}) => ui.showReady(board3dChoice ?? S.settings, d.msg ?? '', { rules: FIRST_USE.rules3D }), back: ({ source }) => { if (source !== 'key' || performance.now() - input.unlockedAt >= 500) readyBack(); } }, // the Esc that released the pointer lock already meant Back
+    playing: { defaultFocus: null, show: (d = {}) => { setLockless(!!d.lockless); ui.showPlaying(); }, back: ({ source }) => backGame(source) },
+    'classic-2d': { defaultFocus: null, show: () => ui.showClassic2D(), back: ({ source }) => backGame(source) },
     paused: { defaultFocus: () => (ui.isConfirmOpen() ? '#p-confirm-no' : gameOver() ? '#p-restart' : '#p-resume'), show: (d = {}) => { stopPlayInput(); setBoardHidden(true); ui.showPause(pauseInfo(d.note)); }, hide: () => setBoardHidden(false), back: ({ source }) => resumeFromPause(source) },
     results: { defaultFocus: '#r-again', show: (d) => RESULTS_VIEW.show(resultsContent(d ?? RESULTS.current)), hide: () => RESULTS_VIEW.hide(), back: () => RESULTS.toMenu() },
     [REPLAY_SCREEN]: { defaultFocus: () => REPLAY_VIEWER.defaultFocus(), show: (d = {}) => { ui.showReplay(); REPLAY_VIEWER.show(d); }, hide: () => REPLAY_VIEWER.hide(), back: () => REPLAY_VIEWER.back() },
     ctxlost: { defaultFocus: '#ctx-lost-btn', show: () => showContextLost(), hide: () => hideContextLost(), back: () => showMainMenu() },
   },
   focus: (target, name) => focusScreen(target, name),
-  onChange: () => { layerChanged(); needRender = true; sync3D(); refreshHints(); },
+  onChange: () => { layerChanged(); needRender = true; sync3D(); showStatus2D(); refreshHints(); },
 });
 // end of screen table
 Object.defineProperty(S, 'mode', { get: () => SHELL.current, enumerable: true });
@@ -308,14 +328,38 @@ const FLOW_2D = {
   container: () => document.getElementById('c2d-board'),
   hud: ({ seconds, minesLeft }) => ui.updateHud(seconds, minesLeft),
   board: (b) => { ui.setBoard2D(b); if (!standard2D) newGame2D(); }, // once per game, and again when played standard
-  generating: (shown) => { board2d.generating = shown; ui.setBoardStatus(board2d); },
-  failed: (failure) => {
-    board2d.failure = failure;
-    ui.setBoardStatus(board2d);
-    if (failure) document.getElementById('c2d-retry').focus({ preventScroll: true });
-  },
+  generating: (shown) => { board2d.generating = shown; showStatus2D(); },
+  failed: (failure) => { board2d.failure = failure; showStatus2D(); },
 };
 const board2d = { generating: false, failure: null };
+/**
+ * The Classic 2D board status card: the generating card on the board, and a failed board's offer
+ * there and over the pause card, taking the focus.
+ */
+function showStatus2D() {
+  const on = MODES.active === 'classic-2d';
+  const generating = board2d.generating && S.mode === 'classic-2d';
+  ui.setBoardStatus(on ? { generating, failure: board2d.failure } : {});
+  if (on && (board2d.failure || generating)) focusStatus('c2d', board2d);
+}
+/**
+ * A board status card's default focus: Cancel while generating; on the failure offer Retry, or
+ * Play a standard board after a second failure in a row.
+ */
+function statusFocus(prefix, { failure }) {
+  if (!failure) return `#${prefix}-cancel`;
+  return failure.count >= 2 ? `#${prefix}-standard` : `#${prefix}-retry`;
+}
+/** Focus the card's default target; the generating card's Cancel is left alone while it holds the focus. */
+function focusStatus(prefix, status) {
+  const target = document.querySelector(statusFocus(prefix, status));
+  if (target && target !== document.activeElement) target.focus({ preventScroll: true });
+}
+/** A failed 2D board's offer answered over the pause card: the game resumes with the answer. */
+function answer2D(answer) {
+  if (S.mode === 'paused') PAUSE.resume(padGesture ? 'pad' : 'pointer');
+  answer();
+}
 const mode2d = MODES.register('classic-2d', (report) => createClassic2DMode(report, { flow: FLOW_2D, lastChoice: LAST_CHOICE_2D }));
 /** The board choice on `choice`; the default choice of a player who never played is not "last played". */
 function showChoice2D(choice) { CHOICE_2D.show(choice, { played: choice !== DEFAULT_CHOICE }); }
@@ -338,6 +382,7 @@ const PAUSE = createPauseController({
   confirm: (request, proceed) => { ui.showConfirm(request, proceed, () => SHELL.refocus()); SHELL.refocus(); },
   goMenu: () => showMainMenu(),
   guard: (on) => (on ? window.addEventListener('beforeunload', guardLeave) : window.removeEventListener('beforeunload', guardLeave)),
+  cancelGeneration: () => cancelGeneration(),
 });
 window.addEventListener('blur', () => pauseGame('blur'));
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') pauseGame('hidden'); });
@@ -583,16 +628,17 @@ function sync3D() {
   if (S.started && !S.endState) S.time = play.elapsedMs() / 1000;
   showStatus3D();
 }
-/** The 3D board status card shows over the box in play; a failed board releases pointer lock for its offer. */
+/**
+ * The 3D board status card shows over the box in play, and a failed board's offer over the pause
+ * card too, taking the focus; a failed board releases pointer lock for its offer.
+ */
 function showStatus3D() {
-  const on = S.mode === 'playing' && !!S.play;
+  const on = !!S.play && (S.mode === 'playing' || (S.mode === 'paused' && !!board3d.failure));
   ui.setBoardStatus3D(on ? board3d : {});
-  if (on && board3d.failure) {
-    input.exitLock();
-    document.getElementById('m3d-retry').focus({ preventScroll: true });
-  }
+  if (on && board3d.failure) input.exitLock();
+  if (on && (board3d.failure || board3d.generating)) focusStatus('m3d', board3d);
 }
-/** The failed board's offer: Retry with a new seed, or the same size with no-guess off. */
+/** The failed board's offer: Retry with a new seed, or the same size with no-guess off; over the pause card it resumes play. */
 function retry3D(kind) {
   const play = S.play;
   if (!play || !board3d.failure) return;
@@ -600,8 +646,10 @@ function retry3D(kind) {
   const r = kind === 'retry' ? play.retry() : play.playStandard();
   if (kind === 'standard') { board3dChoice = { ...board3dChoice, noGuess: false }; ui.setBoard(board3dChoice); } // a restart keeps the standard board
   showStatus3D();
-  if (padGesture) setLockless(true);
-  else if (!S.lockless) input.requestLock();
+  if (padGesture || S.lockless) {
+    if (S.mode === 'paused') PAUSE.resume('pad');
+    else setLockless(true);
+  } else input.requestLock(); // from the pause card too: the lock enters play
   r?.then((res) => { if (res && S.play === play) actionSounds('left', res); });
 }
 
@@ -719,7 +767,7 @@ canvas.addEventListener('webglcontextlost', (e) => {
 function showContextLost() {
   mouse.reset();
   input.exitLock();
-  for (const id of ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'records', 'settings', 'c2d-choice', 'c2d', 'm3d-status', 'controls-modal']) {
+  for (const id of ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'records', 'settings', 'c2d-choice', 'c2d', 'c2d-status', 'm3d-status', 'controls-modal']) {
     const el = document.getElementById(id);
     if (!el) continue;
     if (id !== 'menu') el.classList.add('hidden');
@@ -730,7 +778,7 @@ function showContextLost() {
 /** Leaving the context-lost screen (back to the menu): the other overlays are live again. */
 function hideContextLost() {
   document.getElementById('ctx-lost').classList.add('hidden');
-  for (const id of ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'records', 'settings', 'c2d-choice', 'c2d', 'm3d-status', 'controls-modal']) {
+  for (const id of ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'records', 'settings', 'c2d-choice', 'c2d', 'c2d-status', 'm3d-status', 'controls-modal']) {
     const el = document.getElementById(id);
     if (el) el.inert = false;
   }
@@ -783,12 +831,14 @@ function padClick(el) {
 }
 
 // Spatial focus navigation inside the topmost visible overlay (its screen, or the controls modal).
+// The board status cards sit above the pause card, and take their default focus from the card.
 const LAYER_SCREEN = {
-  'ctx-lost': 'ctxlost', 'controls-modal': null, replay: 'replay', pause: 'paused', ready: 'ready', results: 'results',
-  'coming-soon': 'coming-soon', records: 'records', settings: 'settings', 'board-choice': 'board-choice', 'c2d-choice': 'classic-2d-choice', c2d: 'classic-2d', 'm3d-status': 'playing', menu: 'menu',
+  'ctx-lost': 'ctxlost', 'controls-modal': null, 'c2d-status': null, 'm3d-status': null, replay: 'replay', pause: 'paused', ready: 'ready', results: 'results',
+  'coming-soon': 'coming-soon', records: 'records', settings: 'settings', 'board-choice': 'board-choice', 'c2d-choice': 'classic-2d-choice', c2d: 'classic-2d', menu: 'menu',
 };
 const SCREEN_LAYER = Object.fromEntries(Object.entries(LAYER_SCREEN).filter(([, s]) => s).map(([l, s]) => [s, l]));
 const MODAL_FOCUS = '#controls-close';
+const STATUS_LAYERS = { 'c2d-status': ['c2d', board2d], 'm3d-status': ['m3d', board3d] };
 function layerOpen(id) {
   const el = document.getElementById(id);
   return !!el && !el.classList.contains('hidden') && !el.inert;
@@ -806,10 +856,11 @@ function padFocusables(layer) {
     return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden';
   });
 }
-/** The layer's declared default target: its screen's (SHELL), or the controls modal's close button. */
+/** The layer's declared default target: its screen's (SHELL), a board status card's, or the controls modal's close button. */
 function padDefault(layer, items) {
   const screen = LAYER_SCREEN[layer.id];
-  const target = screen ? SHELL.defaultFocus(screen) : MODAL_FOCUS;
+  const status = STATUS_LAYERS[layer.id];
+  const target = status ? statusFocus(...status) : screen ? SHELL.defaultFocus(screen) : MODAL_FOCUS;
   return resolveFocus(target && layer.querySelector(target), items);
 }
 /** The router's focus hand-off: the screen's default target, or its layer's first control. */
@@ -886,9 +937,9 @@ function handlePad(p, dt, now) {
 
 function padPlaying(p, held, pressed, dt, now) {
   if (ending3D()) { controls.releasePad(); return; } // the end delay: Start, Back, triggers and sticks are ignored
-  if (board3d.failure) { padFailed3D(p, held, pressed, now); return; }
+  if (board3d.failure || board3d.generating) { padStatus3D(p, held, pressed, now); return; }
   if (pressed(BTN.START)) { padClick(document.getElementById('hud-pause')); return; } // the overlay's pause button
-  if (backButtons(S.mode).some(pressed)) { padClick(document.getElementById('hud-pause')); return; } // Back while playing = Pause
+  if (backButtons(S.mode).some(pressed)) { backGame('pad'); return; } // Back while playing = Pause, or cancels a board being generated
   if (pressed(BTN.X)) ui.userToggleHelp();
   // Triggers drive the same release-based state machine as the mouse (both = chord via its toggle).
   padActing = true;
@@ -912,14 +963,16 @@ function padPlaying(p, held, pressed, dt, now) {
 }
 
 /**
- * The Classic 2D board: Start and the back buttons pause through the overlay's pause button, a
- * failed board's offer is a menu, and everything else goes to the board's cursor input.
+ * The Classic 2D board: Start pauses through the overlay's pause button and the back buttons are
+ * Back (Pause, or cancelling a board being generated); the board status card is a menu, and
+ * everything else goes to the board's cursor input.
  */
 function padBoard2D(p, held, pressed, now) {
   controls.releasePad();
   if (padUsed(p)) used2D();
-  if (pressed(BTN.START) || backButtons(S.mode).some(pressed)) { padClick(document.getElementById('hud-pause')); return; }
-  if (board2d.failure) { padMenus(p, held, pressed, now); return; }
+  if (pressed(BTN.START)) { padClick(document.getElementById('hud-pause')); return; }
+  if (backButtons(S.mode).some(pressed)) { backGame('pad'); return; }
+  if (board2d.failure || board2d.generating) { padMenus(p, held, pressed, now); return; }
   mode2d.pad({ ...p, held: p.held.map((_, b) => held(b)) }, now);
 }
 
@@ -929,10 +982,14 @@ function padReplay(p, held, pressed, now) {
   if (!REPLAY_VIEWER.pad(pressed)) padMenus(p, held, pressed, now);
 }
 
-/** A failed 3D board: Start and the back buttons pause; its offer is navigated as a menu. */
-function padFailed3D(p, held, pressed, now) {
+/**
+ * The 3D board status card over the box: Start pauses, the back buttons are Back (cancelling a
+ * board being generated, else Pause); the card is navigated as a menu.
+ */
+function padStatus3D(p, held, pressed, now) {
   controls.releasePad();
-  if (pressed(BTN.START) || backButtons(S.mode).some(pressed)) { padClick(document.getElementById('hud-pause')); return; }
+  if (pressed(BTN.START)) { padClick(document.getElementById('hud-pause')); return; }
+  if (backButtons(S.mode).some(pressed)) { backGame('pad'); return; }
   padMenus(p, held, pressed, now);
 }
 

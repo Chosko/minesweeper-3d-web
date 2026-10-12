@@ -75,9 +75,12 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
   Settings page (`#settings`, its controls generated into
   `#settings-body`), the results screen (`#results`), the replay viewer
   (`#replay`) and the pause card (`#pause-card`) are kit markup
-  (§ Component kit). `#c2d` is the Classic 2D board layer: the board area
-  `#c2d-board` and the generating / failed-board card `#c2d-status`;
-  `#m3d-status` is the same card over the 3D box.
+  (§ Component kit). `#c2d` is the Classic 2D board layer, the board area
+  `#c2d-board`; the generating / failed-board card `#c2d-status` sits beside
+  it, and `#m3d-status` is the same card over the 3D box. Both cards are
+  stacked above the pause card (`css/style.css`): the generating card holds
+  a `ui-spinner` and Cancel (`#…-wait`), the offer Retry, Play a standard
+  board and Back to menu (`#…-offer`).
 - `css/tokens.css` — the design tokens, the single source of every shared
   visual value: palette (`--color-*`), typography (`--font-*`), spacing
   (`--space-*`), radii (`--radius-*`), elevation (`--elevation-*`), motion
@@ -178,8 +181,10 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   (`blur`, `hidden`), `HAND_OFFS` (`finished`, `abandoned`, `inProgress`),
   `CONFIRMATIONS` (`restart`, `menu`: `{action, message, confirmLabel}`).
 - `createPauseController({modes, showCard, isPaused?, onBoard?, confirm,
-  goMenu, guard?})` → `inProgress`, `pause(source, {note})` →
-  whether the card opened, `resume(source)`, `restart(source)`, `toMenu()`,
+  goMenu, guard?, cancelGeneration?})` → `inProgress`, `pause(source,
+  {note})` → whether the card opened, `back(source)` — Back on the board:
+  `cancelGeneration()` when a board is being generated, else `pause` —
+  `resume(source)`, `restart(source)`, `toMenu()`,
   `pageHide()`, `attach(handOff, listener)` → detach, `dispose()`.
   `finished` and `abandoned` listeners receive `(summary, mode, replay)`,
   `replay` the sealed `{blob, listing}` or null; `inProgress` listeners
@@ -224,9 +229,10 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   `onReadyBack`, `onResume`,
   `onRestart`, `onMainMenu`, `onPause` (the overlay bar's pause button),
   `onToggleSound`, `onDismissHint(mode)` (the hint strip's ×),
-  `onRetry2D`, `onStandard2D` (the failed Classic 2D
-  board's offer), `onRetry3D`, `onStandard3D` (the failed 3D board's
-  offer). Methods: screens `showMenu`, `showBoardChoice`,
+  `onRetry2D`, `onStandard2D`, `onOfferMenu2D` (the failed Classic 2D
+  board's offer), `onCancel2D` (its generating card), `onRetry3D`,
+  `onStandard3D`, `onOfferMenu3D`, `onCancel3D` (the same over the 3D box).
+  Methods: screens `showMenu`, `showBoardChoice`,
   `showBoardChoice2D`, `showComingSoon(title)`, `showRecords` (the menu
   backdrop with the other menu screens hidden; the records view fills and
   shows `#records`), `showSettings` (its bindings
@@ -326,7 +332,9 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   on the stack unwinds to it; `replace` swaps without stacking (the ready card
   hands over to `playing` that way). Back is the screen's own `back` when it
   declares one — `ready` → `readyBack` (board choice for a fresh board, pause
-  for a started game), `playing` and `classic-2d` → pause, `paused` →
+  for a started game; a keyboard Back within 500 ms of a pointer-lock
+  release is ignored), `playing` and `classic-2d` → `backGame` (cancels a
+  board being generated, else pause), `paused` →
   `resumeFromPause` (the main menu once the game has ended, else resume),
   `results` → menu, `replay` → its `returnTo` (the menu when none),
   `ctxlost` → menu — else the stacked screen.
@@ -336,10 +344,13 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   through `Input`'s `onKey`; the board choice's, placeholder's and Settings
   page's Back buttons through `onBack`, the Records screen's Back
   (`#records-back`) through its view's `onBack`; the controller's back buttons through
-  `padMenus` (on the Classic 2D board `padBoard2D` turns them into Pause
-  through `#hud-pause`, as `padPlaying` does in 3D). In pointer-locked play the browser consumes Esc to release the
-  lock, and `onLockChange` pauses instead; `resumeFromPause` ignores a
-  keyboard Back within 500 ms of the unlock, so that Esc does not also resume.
+  `padMenus` (on the Classic 2D board `padBoard2D`, and `padPlaying` in 3D,
+  turn them into `backGame('pad')`). In pointer-locked play the browser
+  consumes Esc to release the lock, and `onLockChange` calls
+  `backGame('key')` instead — a lock lost with the window's focus pauses,
+  and a release right after a cancelled 3D generation goes to the
+  click-to-play card; `resumeFromPause` ignores a keyboard Back within
+  500 ms of the unlock, so that Esc does not also resume.
 - **Focus.** Each screen declares `defaultFocus`; the router's `focus`
   hand-off (`focusScreen`) resolves it inside the screen's layer, falling back
   to its first focusable control. Defaults: menu the last mode played
@@ -381,22 +392,28 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   ([mode3d.md](mode3d.md)). `FLOW_3D.sampler` builds the session's camera
   sampler (`createSampler3D`, [replay.md](replay.md)) over the camera, the
   controls and `S.spacing`; `js/main.js` reads `mode3d.ending` and calls
-  nothing on the adapter but `contextLost()`, `finishNow()` and
-  `mode3d.tick()`, which the frame loop calls every frame while the 3D mode
+  nothing on the adapter but `contextLost()`, `finishNow()`,
+  `cancelGeneration()` and `mode3d.tick()`, which the frame loop calls every frame while the 3D mode
   is active to drive that sampler.
 - **The Classic 2D mode.** `FLOW_2D` in `js/main.js` is the shell side
   handed to `createClassic2DMode` ([classic2d.md](classic2d.md)): board
   choice routes to `classic-2d-choice` with the last board choice (loaded at
   boot by `mode2d.loadChoice()`); `show` routes to `classic-2d`, whose Back
-  pauses; the board area is `#c2d-board`; the overlay bar names the board
+  is `backGame`; the board area is `#c2d-board`; the overlay bar names the board
   through `board` (`ui.setBoard2D`, with " · no-guess"); its timer and
   counter come from `hud`, fed by `mode2d.tick()` every frame, which also
   drives the mode's movement sampler ([replay.md](replay.md)). The paused
   screen's `setBoardHidden` also hides the 2D board, and `pauseInfo` /
-  `gameOver` read `mode2d.status()`. On `classic-2d` the controller goes to
-  `padBoard2D`: Start and B/Back pause through `#hud-pause`, a failed
-  board's offer is navigated as a menu, and every other poll goes to
-  `mode2d.pad` after held-button suppression.
+  `gameOver` read `mode2d.status()`. `board2d` holds `{generating, failure}`
+  from `FLOW_2D`; `showStatus2D` shows `#c2d-status` — the generating card on
+  the board only, the offer there and over the pause card — and focuses the
+  offer (`statusFocus`: Retry, or Play a standard board once `failure.count`
+  is 2 or more); the generating card focuses Cancel when it shows. An offer
+  answered over the pause card resumes first (`answer2D`); Back to menu is
+  `PAUSE.toMenu()`. On `classic-2d` the controller goes to `padBoard2D`:
+  Start pauses through `#hud-pause`, B/Back is `backGame('pad')`, the status
+  card is navigated as a menu, and every other poll goes to `mode2d.pad`
+  after held-button suppression.
 - **Main menu.** Four kit entries (`data-entry`) clicked through `onMenuEntry`
   → `MENU.open(id)`: a registered mode opens its board choice through the
   host, a registered screen is routed to, anything else goes to
@@ -413,9 +430,13 @@ Game shell (`js/shell/`, wired in `js/main.js`):
 - **Pause controller.** `PAUSE` is the one owner of pause, resume, restart and
   back to menu. Every pause source goes through `pauseGame(source)`, which
   opens nothing during the 3D end delay and otherwise calls
-  `PAUSE.pause(source)`: the overlay's pause button (`onPause`), Esc/Back in
-  play, pointer-lock loss, controller disconnect (with a note), `blur`,
-  `visibilitychange` hidden and `__ms.pause()`.
+  `PAUSE.pause(source)`: the overlay's pause button (`onPause`), controller
+  disconnect (with a note), `blur`, `visibilitychange` hidden and
+  `__ms.pause()`. Esc/Back on the board and pointer-lock loss go through
+  `backGame(source)` → `PAUSE.back(source)`, which first tries
+  `cancelGeneration()` — the active mode's board being generated goes back
+  to its closed board (a 3D game without lock or controller play to the
+  click-to-play card) — and pauses otherwise.
   A started, unfinished game pauses through the mode; before the first click
   or after the end an asked-for pause only opens the card, and an automatic
   one (blur, hidden) does nothing — nor while the board is not in play.
@@ -508,15 +529,21 @@ Game flow (`js/main.js`):
   release does not pause.
 - Board status: `board3d` holds `{generating, failure}` from the session's
   `generating` and `failed` events; `showStatus3D` shows `#m3d-status` from
-  it only while `playing`, and on a failure exits pointer lock and focuses
-  Retry. `retry3D` answers the offer (`onRetry3D` / `onStandard3D`) and
-  re-enters play. On a failed board the controller goes to `padFailed3D`:
-  Start and the back buttons pause, the offer is navigated as a menu.
+  it while `playing`, and a failure's offer while `paused` too; on a failure
+  it exits pointer lock and focuses the offer (`statusFocus`), and the
+  generating card focuses Cancel when it shows. `retry3D` answers the offer
+  (`onRetry3D` / `onStandard3D`) and re-enters play, from the pause card
+  too; Back to menu is `PAUSE.toMenu()`, Cancel `cancelGeneration()`. While
+  the card shows the controller goes to `padStatus3D`: Start pauses, the
+  back buttons are `backGame('pad')`, the card is navigated as a menu.
+  `LAYER_SCREEN` puts both status cards above the pause card; their
+  default focus is `statusFocus` (`STATUS_LAYERS`).
 - `sync3D` runs on every router change: it resumes the session on
   `playing` and pauses it everywhere else, so the session's timer runs only
   in play, and refreshes the status card.
 - `S.lockless`: play without pointer lock (controller, `forcePlay`). Mirrors
-  `body.lockless`; when set, losing lock does not pause and Esc pauses directly.
+  `body.lockless`; when set, losing lock does not pause and Esc goes to
+  `backGame` directly.
   A UI click made with controller A sets `padGesture`, which routes resume/
   restart to lockless play because it is not a user gesture for pointer lock.
 - `startGame(settings)` leaves the previous session and opens a new one
