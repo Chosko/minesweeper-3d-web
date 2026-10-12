@@ -51,7 +51,7 @@ test('before it loads, and on a first launch with no records, every hint behaves
   await first.load();
   assert.equal(first.rules3D, true);
   assert.deepEqual(docOf(backend), {
-    games: { 'classic-2d': 0, '3d': 0 }, finished3D: false, autoHideToast: false, aimHint: false,
+    games: { 'classic-2d': 0, '3d': 0 }, finished3D: false, autoHideToast: false, aimHint: false, scrollHint: false,
     dismissed: { 'classic-2d': false, '3d': false },
   }, 'the document is created at once');
 });
@@ -126,6 +126,26 @@ test('the toast and the aim hint show once, and never again on that browser', as
   await again.load();
   assert.equal(again.once('autoHideToast'), false, 'remembered across launches');
   assert.equal(again.once('aimHint'), false);
+});
+
+test('the Classic 2D scroll hint is a one-time hint of the same document; one stored before it reads as not yet seen', async () => {
+  const before = { games: { 'classic-2d': 2, '3d': 0 }, finished3D: false, autoHideToast: true, aimHint: false, dismissed: { 'classic-2d': false, '3d': false } };
+  const backend = stored(before);
+  const first = createFirstUse({ storage: createStorage({ backend }), records: records(0, 0) });
+  await first.load();
+  assert.equal(first.inFirstGames('classic-2d'), true, 'the stored document is read, not seeded again');
+  assert.equal(first.shown('scrollHint'), false);
+  assert.equal(first.once('scrollHint'), true, 'dismissed, or the board scrolled');
+  assert.equal(first.once('scrollHint'), false);
+  await settle();
+  assert.equal(docOf(backend).scrollHint, true);
+  const again = createFirstUse({ storage: createStorage({ backend }), records: records(0, 0) });
+  await again.load();
+  assert.equal(again.shown('scrollHint'), true, 'never again on that browser');
+  const bad = createFirstUse({ storage: createStorage({ backend: stored({ ...before, scrollHint: 'yes' }) }), records: records(5, 0) });
+  await bad.load();
+  assert.equal(bad.inFirstGames('classic-2d'), false, 'a malformed value is seeded afresh');
+  assert.equal(hintText('scrollHint', 'keyboard'), 'Wheel scrolls · Shift+wheel sideways');
 });
 
 test('dismissing a mode\'s strip hides it for good in that mode only', async () => {

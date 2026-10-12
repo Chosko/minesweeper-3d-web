@@ -2,7 +2,7 @@
 // `shell.firstUse` beside `shell.lastMode`, and the rules for when each hint shows. DOM-free: the
 // shell (js/main.js) hands in the storage interface and the records store, and draws the hints.
 //
-// The document: { games: { [mode]: count }, finished3D, autoHideToast, aimHint,
+// The document: { games: { [mode]: count }, finished3D, autoHideToast, aimHint, scrollHint,
 //                 dismissed: { [mode]: bool } } for the modes 'classic-2d' and '3d'.
 //   games         games counted per mode: a game counts when its mode reports game started
 //                 (an abandoned game counts too);
@@ -10,6 +10,9 @@
 //                 card's "How 3D works" block shows until then;
 //   autoHideToast the toast at the first auto-hide was shown;
 //   aimHint       the hint to hold Space at a number with a closed cube behind it was shown;
+//   scrollHint    the Classic 2D hint beside a clipped board, "Wheel scrolls · Shift+wheel
+//                 sideways", was dismissed or the player scrolled the board: it never shows again
+//                 (a document without it reads as not yet);
 //   dismissed     the mode's hint strip was dismissed, for good.
 // When the document is first created it is seeded from the records store's per-mode game
 // counters: a returning player's recorded games count toward the three, and any recorded 3D game
@@ -19,7 +22,8 @@
 //
 // createFirstUse({ storage, records }) → { load(), inFirstGames(mode), rules3D, gameStarted(mode),
 //   gameFinished(mode), dismissed(mode), dismiss(mode), shown(name), once(name) }.
-//   once(name) is true the first time only ('autoHideToast' | 'aimHint') and records it.
+//   once(name) is true the first time only ('autoHideToast' | 'aimHint' | 'scrollHint') and
+//   records it.
 // stripShown({ mode, screen, eligible, used, dismissed }) — whether a mode's hint strip shows: in
 //   a game that began inside the first FIRST_GAMES games of its mode (`eligible`, judged before its
 //   game started), not dismissed; the 3D strip from the start of play (`playing`), the Classic 2D
@@ -33,12 +37,12 @@ export const FIRST_USE_DOC = 'shell.firstUse';
 export const FIRST_USE_VERSION = 1;
 export const FIRST_GAMES = 3;
 export const FIRST_USE_MODES = Object.freeze(['classic-2d', '3d']);
-export const ONE_TIME_HINTS = Object.freeze(['autoHideToast', 'aimHint']);
+export const ONE_TIME_HINTS = Object.freeze(['autoHideToast', 'aimHint', 'scrollHint']);
 export const AIM_DWELL_MS = 1000;
 
 const perMode = (fn) => Object.fromEntries(FIRST_USE_MODES.map((m) => [m, fn(m)]));
 const fresh = () => ({
-  games: perMode(() => 0), finished3D: false, autoHideToast: false, aimHint: false, dismissed: perMode(() => false),
+  games: perMode(() => 0), finished3D: false, autoHideToast: false, aimHint: false, scrollHint: false, dismissed: perMode(() => false),
 });
 const copy = (s) => ({ ...s, games: { ...s.games }, dismissed: { ...s.dismissed } });
 const isObject = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -49,9 +53,10 @@ export function normaliseFirstUse(data) {
   if (!isObject(data) || !isObject(data.games) || !isObject(data.dismissed)) return null;
   if (!FIRST_USE_MODES.every((m) => isCount(data.games[m]) && typeof data.dismissed[m] === 'boolean')) return null;
   if (![data.finished3D, data.autoHideToast, data.aimHint].every((v) => typeof v === 'boolean')) return null;
+  if (data.scrollHint !== undefined && typeof data.scrollHint !== 'boolean') return null;
   return {
     games: perMode((m) => data.games[m]), finished3D: data.finished3D, autoHideToast: data.autoHideToast,
-    aimHint: data.aimHint, dismissed: perMode((m) => data.dismissed[m]),
+    aimHint: data.aimHint, scrollHint: data.scrollHint ?? false, dismissed: perMode((m) => data.dismissed[m]),
   };
 }
 

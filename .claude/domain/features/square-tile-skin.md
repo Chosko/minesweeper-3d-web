@@ -100,9 +100,10 @@ palette.
 
 ## Minimum tile size
 
-Settled by measurement: the minimum tile size is 41 px (`MIN_TILE_SIZE`),
-the tile an Expert board (30 × 16) gets fitted below the overlay bar, with
-16 px between the window edges, the bar and the board, in a 1366×768 window
-and in a 1280×800 window standing in for the Steam Deck screen — 41 px in
-both. Screenshots at that size show every state and number legible in both
-themes.
+The minimum tile size is 26 px (`MIN_TILE_SIZE`): the readable floor a
+Classic 2D board shrinks to before it scrolls, so that Expert (30 × 16) fits
+any window 1024 px wide (`docs/UX_REVIEW.md` decision 10). Measured in the
+Classic 2D screen's framed panel with 16 px window margins, Expert fits a
+1024 px wide window at the floor from 520 px tall, and plays at 32 px in a
+1024 × 768 window. Screenshots at 26 px show every state and number legible
+in both themes.

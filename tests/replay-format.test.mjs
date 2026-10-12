@@ -257,6 +257,21 @@ test('the 2D cursor event belongs to the square graph, the view-mode event to th
   assert.throws(() => encodeReplay(r), RangeError);
 });
 
+test('a cursor event carries -1 while the 2D ring is hidden, with no new movement type or format version', () => {
+  const movement = [
+    { time: 0, type: 'cursor', cell: -1 },
+    { time: 100, type: 'cursor', cell: 40 },
+    { time: 200, type: 'cursor', cell: -1 },
+    { time: 300, type: 'cursor', cell: 0 },
+  ];
+  const back = decodeReplay(encodeReplay(replay2D({ movement })));
+  assert.deepEqual(back.movement, movement);
+  assert.deepEqual(MOVEMENT_TYPES, ['sample', 'cursor', 'view']);
+  for (const cell of [-2, 81]) {
+    assert.throws(() => encodeReplay(replay2D({ movement: [{ time: 0, type: 'cursor', cell }] })), RangeError, `cell ${cell}`);
+  }
+});
+
 // ---------- versions ----------
 
 test('a newer format version is refused with its own error, not as unreadable', () => {

@@ -70,10 +70,13 @@ described in [app-shell.md](../../context/app-shell.md).
   focus ring when focused, and declares its default focus target per screen
   in the way the shell's controller layer already expects.
 - **Overlay bar.** The in-game overlay — timer, mine counter, click
-  counter, pause — as one component that sits over either board and stays
-  readable over the 3D scene's sky in both themes — light in the light
+  counter, pause — as one component for both boards. Over the 3D board it
+  stays readable over the scene's sky in both themes — light in the light
   theme, dark in the dark one — by carrying its own themed surface rather
-  than drawing directly on the scene. Over either board, the timer
+  than drawing directly on the scene. In Classic 2D it sits on the top
+  edge of the board's framed panel (`classic-2d-square-play`
+  § Architecture, "Board view"), with the board-size label, on the panel's
+  themed surface in place of its own. On either board, the timer
   shows the elapsed time in whole seconds, zero-padded to three digits
   (047), and stops at 999 while the game's elapsed time keeps counting; the
   mine counter shows the real mines left, kept at −99 at the low end; on a
@@ -105,7 +108,8 @@ described in [app-shell.md](../../context/app-shell.md).
   visible; text meets the contrast contract of `design-tokens-and-themes` in
   both themes.
 - **Overlay readability** — the overlay bar meets the contrast contract
-  against its own surface whichever board and theme sit behind it.
+  against the surface it sits on — its own over the 3D board, the panel's
+  in Classic 2D — in both themes.
 - **Controller parity** — anything clickable is reachable and operable with
   a controller, per the shell's controller navigation.
 

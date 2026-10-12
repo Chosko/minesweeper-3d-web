@@ -12,11 +12,14 @@
 //   the recorder stores no sample equal to the previous one, so a longer gap is a still stretch.
 //   Held at the last sample; null before the first. Off the board the values run below 0 or past
 //   the board's size.
-// cursorAt(track, t) → the cell of the last cursor event at or before t, or -1.
+// cursorAt(track, t) → the cell of the last cursor event at or before t, or -1: the ring shows only
+//   while the recorded player used the cursor. A recording opens its cursor stream with -1 (its
+//   ring hidden); one that opens on a cell was made while the ring showed from the start, before
+//   it hid, and that opening cell counts as -1, so its ring shows from its next cursor event.
 // pointerPixel(layout, scroll, [x, y]) → { x, y } that point in canvas CSS pixels, through the board
 //   view's layout and scroll (the inverse of js/replay/sampler-2d.js boardPoint).
 //
-// createViewer2D({ view, sim, pointer }) → { track, draw(frame), place(), destroy() }
+// createViewer2D({ view, sim, pointer }) → { track, draw(frame), place(), setScale(scale), destroy() }
 //   view     the board view (js/classic2d/board-view.js) over the simulator's square grid; the viewer
 //            hands it the simulator's game, which it draws and never changes.
 //   sim      the simulator (js/replay/simulator.js).
@@ -27,10 +30,12 @@
 //            follows the pointer's cell, else the cursor's.
 //   place()  re-places the pointer when the board view's layout or scroll moved since it was last
 //            placed (a refit or a scroll while paused); call it every frame nothing is drawn.
+//   setScale(scale)  the board scale (js/classic2d/board-view.js BOARD_SCALES) changed: the view
+//            refits and repaints, and the pointer follows.
 //
-// mountViewer2D({ container, sim, win? }) → the viewer plus destroy(): the board view mounted in
-// container (js/classic2d/board-view.js mountBoardView, no play input) and the pointer as an element
-// over it.
+// mountViewer2D({ container, sim, scale?, win? }) → the viewer plus destroy(): the board view
+// mounted in container at the board scale (js/classic2d/board-view.js mountBoardView, no play
+// input; the play floor, cap and scale, with no frame) and the pointer as an element over it.
 
 import { SAMPLE_STEPS, SAMPLE_INTERVAL_MS } from './sampler-2d.js';
 import { mountBoardView } from '../classic2d/board-view.js';
@@ -38,13 +43,15 @@ import { mountBoardView } from '../classic2d/board-view.js';
 export function movementTrack(movement, interval = SAMPLE_INTERVAL_MS) {
   const samples = movement.filter((e) => e.type === 'sample');
   const cursors = movement.filter((e) => e.type === 'cursor');
+  const cells = Int32Array.from(cursors, (e) => e.cell);
+  if (cells.length && cells[0] >= 0) cells[0] = -1; // the opening cell of a recording made before the ring hid
   return Object.freeze({
     interval,
     sampleTimes: Float64Array.from(samples, (e) => e.time),
     xs: Float64Array.from(samples, (e) => e.values[0] / SAMPLE_STEPS),
     ys: Float64Array.from(samples, (e) => e.values[1] / SAMPLE_STEPS),
     cursorTimes: Float64Array.from(cursors, (e) => e.time),
-    cursorCells: Int32Array.from(cursors, (e) => e.cell),
+    cursorCells: cells,
   });
 }
 
@@ -104,6 +111,10 @@ export function createViewer2D({ view, sim, pointer }) {
   return {
     track,
     place: () => place(),
+    setScale(scale) {
+      view.setScale(scale);
+      place();
+    },
     draw(frame) {
       const p = pointerAt(track, frame.time);
       const cursor = cursorAt(track, frame.time);
@@ -121,8 +132,8 @@ export function createViewer2D({ view, sim, pointer }) {
   };
 }
 
-export function mountViewer2D({ container, sim, win = globalThis }) {
-  const view = mountBoardView({ container, grid: sim.grid, win });
+export function mountViewer2D({ container, sim, scale, win = globalThis }) {
+  const view = mountBoardView({ container, grid: sim.grid, scale, win });
   const el = win.document.createElement('div');
   el.className = 'replay-pointer';
   el.setAttribute('aria-hidden', 'true');
@@ -137,6 +148,7 @@ export function mountViewer2D({ container, sim, win = globalThis }) {
     track: viewer.track,
     draw: viewer.draw,
     place: viewer.place,
+    setScale: viewer.setScale,
     destroy() {
       viewer.destroy();
       el.remove();

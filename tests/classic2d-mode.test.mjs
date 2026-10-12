@@ -81,13 +81,15 @@ function defaultMines(req) {
 // Recording mounts standing in for mountBoardView / mountPointerInput / mountCursorInput.
 function mounts() {
   const log = { boards: [], pointers: [], cursors: [] };
-  const board = ({ container, grid }) => {
+  const board = ({ container, grid, ...options }) => {
     const v = {
-      container, grid, game: null, hidden: false, updates: [], destroyed: false, canvas: { id: 'canvas' },
+      container, grid, options, game: null, hidden: false, updates: [], destroyed: false, canvas: { id: 'canvas' },
+      scales: [], cursors: [],
       setGame(g) { v.game = g; },
       update(changed) { v.updates.push([...changed]); },
       setHidden(h) { v.hidden = !!h; },
-      setPressed() {}, setCursor() {}, ensureVisible() {},
+      setScale(scale) { v.scales.push(scale); },
+      setPressed() {}, setCursor(c) { v.cursors.push(c); }, ensureVisible() {},
       destroy() { v.destroyed = true; },
     };
     log.boards.push(v);
@@ -116,6 +118,14 @@ function fakeFlow() {
     board(b) { calls.push(['board', b]); },
     generating(shown) { calls.push(['generating', shown]); },
     failed(f) { calls.push(['failed', f]); },
+    boardScale: '125',
+    panel: { top: 60, right: 9, bottom: 9, left: 9, minWidth: 400 },
+    scale() { return flow.boardScale; },
+    frame() { return flow.panel; },
+    layouts: [],
+    layout(l) { flow.layouts.push(l); },
+    scrolls: 0,
+    scrolled() { flow.scrolls += 1; },
   };
   return flow;
 }
@@ -421,6 +431,39 @@ test('the controller reaches the board through the cursor input', () => {
   assert.ok(cursor().resets > 0, 'the cursor is reset on pause');
 });
 
+test('the board opens at the board scale setting inside the panel\'s frame; its layouts and the player\'s scrolls reach the shell', () => {
+  const { flow, board, mode } = setup({ choice: { size: 'expert', noGuess: false } });
+  assert.equal(board().options.scale, '125', 'the scale the shell holds');
+  assert.equal(board().options.frame, flow.panel, 'the frame the shell measured');
+  const layout = { tile: 30, scrolls: false };
+  board().options.onLayout(layout);
+  assert.deepEqual(flow.layouts, [layout], 'each refit places the panel');
+  board().options.onUserScroll();
+  assert.equal(flow.scrolls, 1, 'a scroll by the player is reported, for the one-time scroll hint');
+  mode.setScale('fit');
+  assert.deepEqual(board().scales, ['fit'], 'a setting change refits the live board');
+  mode.leave();
+  mode.setScale('100');
+  assert.deepEqual(board().scales, ['fit'], 'no board, nothing to refit');
+});
+
+test('the cursor\'s ring reaches the movement sampler as well as the view: its cell while shown, -1 once hidden', () => {
+  const host = createModeHost();
+  const flow = fakeFlow();
+  const { log, mount } = mounts();
+  const samples = [];
+  mount.sampler = () => ({ cursor: (c) => samples.push(c), tick() {}, destroy() {} });
+  host.register(MODE_ID, (report) => createClassic2DMode(report, { flow, lastChoice: memoryLastChoice(), mount, clock: fakeClock(), createClient: clients().create }));
+  host.start(MODE_ID, { size: 'beginner', noGuess: false });
+  assert.deepEqual(samples, [], 'no ring, nothing recorded at the start');
+  const view = log.cursors.at(-1).view;
+  view.setCursor(4);
+  view.setCursor(-1);
+  view.setCursor(5);
+  assert.deepEqual(samples, [4, -1, 5]);
+  assert.deepEqual(log.boards.at(-1).cursors, [4, -1, 5], 'and the board draws it');
+});
+
 // ---------------------------------------------------------------- board choice
 
 test('the board choice offers the three standard sizes and a validated custom board', () => {
@@ -526,7 +569,7 @@ test('index.html builds the Classic 2D board choice from kit components', () => 
 
 test('index.html holds the Classic 2D board layer with its generating and failure card', () => {
   assert.match(LAYER, /^<section id="c2d" class="hidden"/);
-  assert.match(LAYER, /<div id="c2d-board"/);
+  assert.match(LAYER, /<div id="c2d-board"><div id="c2d-panel" class="c2d-panel hidden" aria-hidden="true"><\/div><\/div>/, 'the board area holds the framed panel, behind the canvas');
   assert.match(LAYER, /id="c2d-retry" class="ui-button ui-button--primary"/);
   assert.match(LAYER, /id="c2d-standard" class="ui-button ui-button--secondary">Play a standard board/);
   assert.match(LAYER, /id="c2d-offer-menu" class="ui-button ui-button--secondary">Main menu/, 'the offer has a way out');
@@ -550,6 +593,18 @@ test('the shell registers the mode, routes its screens and reaches the board wit
   assert.match(MAIN, /mode2d\.pad\(/, 'the shell\'s controller poll reaches the cursor input');
   assert.match(MAIN, /mode2d\.tick\(\)/, 'the overlay feed runs every frame');
   assert.match(MAIN, /mode2d\.loadChoice\(\)/, 'the last board choice is loaded at start-up');
+});
+
+test('the shell hands the board its scale, frame and panel, keeps the scale live and shows the scroll hint once', () => {
+  const flow = MAIN.slice(MAIN.indexOf('const FLOW_2D = {'), MAIN.indexOf('const board2d ='));
+  assert.match(flow, /scale: \(\) => SETTINGS\.get\('boardScale'\)/, 'a new board opens at the setting');
+  assert.match(flow, /frame: \(\) => \(frame2D = ui\.panelFrame2D\(\)\)/, 'the frame measured from the readouts');
+  assert.match(flow, /layout: \(layout\) => \{ ui\.placePanel2D\(panelRect\(layout, frame2D\)\); clipped2D\(layout\.scrolls\); \}/, 'each refit places the panel');
+  assert.match(flow, /scrolled: \(\) => scrolled2D\(\)/);
+  assert.match(MAIN, /SETTINGS\.onChange\('boardScale', \(scale\) => \{ mode2d\.setScale\(scale\); REPLAY_VIEWER\.setScale\(scale\); \}\)/, 'a change applies at once, in play and in the viewer');
+  assert.match(MAIN, /function scrolled2D\(\) \{\n  if \(FIRST_USE\.once\('scrollHint'\)\) refreshHints\(\);/, 'a scroll ends the hint for good');
+  assert.match(MAIN, /hint2D\.clipped && !FIRST_USE\.shown\('scrollHint'\)/, 'shown on a clipped board until seen');
+  assert.match(MAIN, /if \(kind === 'scroll'\) FIRST_USE\.once\('scrollHint'\)/, 'dismissed for good');
 });
 
 test('the catalogue documents the Classic 2D board choice', () => {
@@ -640,8 +695,13 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
     assert.equal(await ms(() => globalThis.__ms.modes.active), 'classic-2d');
     const box = await page.locator('#c2d-board canvas').boundingBox();
     assert.ok(box && box.width > 0, 'the board canvas shows');
-    const bar = await ms(() => document.querySelector('.ui-overlay-bar').getBoundingClientRect().bottom);
-    assert.equal(Math.round(box.y), Math.round(bar + 16), 'the board sits 16 px below the overlay bar');
+    const edge = await ms(() => {
+      const l = globalThis.__ms.board2D.layout;
+      const area = document.getElementById('c2d-board').getBoundingClientRect();
+      const bar = document.querySelector('#hud .ui-overlay-bar').getBoundingClientRect();
+      return { barBottom: bar.bottom, boardTop: area.top + l.viewY };
+    });
+    assert.ok(Math.abs(edge.boardTop - (edge.barBottom + 8)) <= 1, `the board sits 8 px below the readouts on the panel's edge (${edge.boardTop}, ${edge.barBottom})`);
     assert.equal(await ms(() => document.getElementById('hud-mines').textContent), '99');
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
     await page.waitForFunction(() => globalThis.__ms.modes.state.started);
@@ -688,6 +748,137 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
     assert.match(lines[2][2], /^21 % mines · ~\d+ 3BV · —$/);
     assert.equal(await ms(() => document.getElementById('c2d-noguess').checked), false, 'the switch as last played');
     assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800 in both themes: Expert unclipped in play and in the viewer, Beginner at 48 px, the panel\'s readouts and Pause, a clipped board\'s marks and hint, and no ring for a mouse player', async (t) => {
+  const playwright = await loadPlaywright();
+  if (!playwright) {
+    t.skip('Playwright is not installed');
+    return;
+  }
+  let browser;
+  try {
+    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  } catch (error) {
+    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
+    return;
+  }
+  const server = await serve();
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const STANDARD = { beginner: { size: 'beginner', noGuess: false }, expert: { size: 'expert', noGuess: false } };
+  try {
+    for (const viewport of [{ width: 1024, height: 768 }, { width: 1366, height: 650 }, { width: 1280, height: 800 }]) {
+      for (const theme of ['light', 'dark']) {
+        const at = `${viewport.width} × ${viewport.height} ${theme}`;
+        const page = await browser.newPage({ viewport, deviceScaleFactor: 1 });
+        const errors = [];
+        page.on('pageerror', (e) => errors.push(e.message));
+        await page.goto(`${base}/index.html`);
+        await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+        await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
+        const ms = (fn, arg) => page.evaluate(fn, arg);
+        const start = (choice) => ms((c) => globalThis.__ms.modes.start('classic-2d', c), choice);
+        const geometry = () => ms(() => {
+          const v = globalThis.__ms.board2D;
+          const area = document.getElementById('c2d-board').getBoundingClientRect();
+          const rect = (el) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; };
+          return {
+            layout: { ...v.layout }, scale: v.scale, cursor: v.cursor, area: rect(document.getElementById('c2d-board')),
+            panel: rect(document.getElementById('c2d-panel')), bar: rect(document.querySelector('#hud .ui-overlay-bar')),
+            pause: rect(document.getElementById('hud-pause')), areaTop: area.top, areaLeft: area.left,
+          };
+        });
+
+        // Expert at the default scale: every cell in view, the panel around it, the readouts on its top edge.
+        await start(STANDARD.expert);
+        await page.waitForFunction(() => globalThis.__ms.board2D);
+        const g = await geometry();
+        assert.equal(g.scale, '100', `${at}: the default scale`);
+        assert.equal(g.layout.scrolls, false, `${at}: Expert fits with no scrolling`);
+        assert.ok(g.layout.tile >= 26 && g.layout.tile <= 48, `${at}: Expert at ${g.layout.tile} px`);
+        assert.deepEqual([g.layout.viewWidth, g.layout.viewHeight], [30 * g.layout.tile, 16 * g.layout.tile], `${at}: no clipped cell`);
+        assert.ok(g.panel.x >= g.area.x && g.panel.x + g.panel.width <= g.area.x + g.area.width + 0.5, `${at}: the panel inside the area`);
+        assert.ok(g.panel.y >= g.area.y && g.panel.y + g.panel.height <= g.area.y + g.area.height + 0.5, `${at}: the panel inside the area`);
+        assert.ok(Math.abs(g.bar.x - (g.panel.x + 9)) <= 1 && Math.abs(g.bar.y - (g.panel.y + 9)) <= 1, `${at}: the readouts on the panel's top edge`);
+        assert.ok(g.bar.y + g.bar.height <= g.areaTop + g.layout.viewY, `${at}: above the board`);
+        assert.ok(g.pause.x + g.pause.width <= g.panel.x + g.panel.width, `${at}: Pause on the panel`);
+        assert.deepEqual(await ms(() => ['hud-time', 'hud-mines', 'hud-clicks'].map((id) => document.getElementById(id).textContent)), ['000', '99', '0']);
+        const surface = await ms(() => [getComputedStyle(document.getElementById('c2d-panel')).backgroundColor, getComputedStyle(document.querySelector('#hud .ui-overlay-bar')).backgroundColor]);
+        assert.match(surface[0], /^rgb\(/, `${at}: the panel is an opaque surface`);
+        assert.equal(surface[1], 'rgba(0, 0, 0, 0)', `${at}: the readouts sit on it with no surface of their own`);
+
+        // A mouse player: the first click plays, and no ring is ever drawn.
+        const cx = g.areaLeft + g.layout.viewX + g.layout.viewWidth / 2;
+        const cy = g.areaTop + g.layout.viewY + g.layout.viewHeight / 2;
+        await page.mouse.move(cx, cy);
+        await page.mouse.click(cx, cy);
+        await page.waitForFunction(() => globalThis.__ms.modes.state.started);
+        assert.equal(await ms(() => globalThis.__ms.board2D.cursor), -1, `${at}: no ring for a mouse player`);
+        // Pause is on the panel's edge and pauses.
+        await page.click('#hud-pause');
+        assert.equal(await ms(() => globalThis.__ms.state.mode), 'paused', `${at}: Pause pauses`);
+        await page.click('#p-resume');
+
+        // Beginner: 48 px tiles at 1280 × 800 (no larger anywhere at 100 %).
+        await start(STANDARD.beginner);
+        const b = await geometry();
+        assert.equal(b.layout.tile, 48, `${at}: Beginner at 48 px`);
+
+        // A clipped custom board: the shadow, the scroll bar and the one-time hint.
+        await start({ size: 'custom', custom: { width: 100, height: 60, mines: 600 }, noGuess: false });
+        const c = await geometry();
+        assert.equal(c.layout.scrolls, true, `${at}: a 100 × 60 board scrolls`);
+        assert.equal(c.layout.tile, 26, `${at}: at the floor`);
+        assert.ok(Math.abs(c.panel.width - c.area.width) <= 1, `${at}: the panel fills the area`);
+        await page.waitForFunction(() => !document.getElementById('hint-strip').classList.contains('hidden'));
+        assert.equal(await ms(() => document.getElementById('hint-strip-text').textContent), 'Wheel scrolls · Shift+wheel sideways');
+        const marks = await ms(() => {
+          const v = globalThis.__ms.board2D;
+          const l = v.layout;
+          const ctx = v.canvas.getContext('2d');
+          const px = (x, y) => [...ctx.getImageData(Math.round(x), Math.round(y), 1, 1).data.slice(0, 3)];
+          return {
+            plain: px(l.viewX + l.viewWidth / 2 + 3, l.viewY + l.viewHeight / 2 + 3),
+            bar: px(l.viewX + 20, l.viewY + l.viewHeight - 4),
+            shadow: px(l.viewX + l.viewWidth - 2, l.viewY + l.viewHeight / 2 + 3),
+          };
+        });
+        assert.notDeepEqual(marks.bar, marks.plain, `${at}: the scroll bar shows along the bottom`);
+        assert.notDeepEqual(marks.shadow, marks.plain, `${at}: the right edge is shaded`);
+        // Scrolling ends the hint for good: a clipped board after it shows none.
+        await page.mouse.move(c.areaLeft + c.layout.viewX + 100, c.areaTop + c.layout.viewY + 100);
+        await page.mouse.wheel(0, 120);
+        await page.waitForFunction(() => document.getElementById('hint-strip').classList.contains('hidden'));
+        assert.ok((await ms(() => globalThis.__ms.board2D.scroll.y)) > 0, `${at}: the wheel scrolled`);
+        await start({ size: 'custom', custom: { width: 100, height: 60, mines: 600 }, noGuess: false });
+        await page.waitForTimeout(50);
+        assert.equal(await ms(() => document.getElementById('hint-strip').classList.contains('hidden')), true, `${at}: never again`);
+
+        // The viewer: Expert fits above the controls.
+        if (viewport.width !== 1366) {
+          await ms(() => globalThis.__ms.modes.leave());
+          await ms(async () => {
+            const bytes = new Uint8Array(await (await fetch('/tests/fixtures/replays/2d-expert-abandoned.msrp')).arrayBuffer());
+            globalThis.__ms.watch({ replay: bytes, returnTo: { screen: 'menu' } });
+          });
+          await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready');
+          const v = await ms(() => {
+            const board = document.getElementById('replay-board').getBoundingClientRect();
+            const controls = document.getElementById('replay-controls').getBoundingClientRect();
+            return { width: board.width, height: board.height, bottom: board.bottom, controlsTop: controls.top };
+          });
+          assert.ok(v.bottom <= v.controlsTop - 15, `${at}: the board area ends above the controls`);
+          const tile = Math.floor(Math.min(v.width / 30, v.height / 16));
+          assert.ok(tile >= 26, `${at}: Expert fits the viewer at ${tile} px, with no scrolling`);
+        }
+        assert.deepEqual(errors, [], `${at}: no page errors`);
+        await page.close();
+      }
+    }
   } finally {
     await browser.close();
     server.close();

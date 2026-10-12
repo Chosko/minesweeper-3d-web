@@ -106,7 +106,7 @@ test('a recorded 2D game: actions, samples about 20 times a second and cursor mo
   clock.advance(30); sampler.tick(); // t 80
   sampler.tick(); // the same time: nothing
   sampler.cursor(40); // t 80
-  sampler.cursor(-1); // no cursor: nothing
+  sampler.cursor(-1); // t 80: the ring hid — recorded as -1
 
   session.pause();
   assert.equal(session.recording, false, 'not while paused');
@@ -146,9 +146,11 @@ test('a recorded 2D game: actions, samples about 20 times a second and cursor mo
   ]);
   assert.deepEqual(decoded.movement, [
     { time: 20, type: 'sample', values: [16, 32] },
+    { time: 20, type: 'cursor', cell: -1 }, // the cursor stream opens hidden
     { time: 20, type: 'cursor', cell: 4 },
     { time: 80, type: 'sample', values: [17, 32] },
     { time: 80, type: 'cursor', cell: 40 },
+    { time: 80, type: 'cursor', cell: -1 },
     { time: 5150, type: 'sample', values: [99, 99] },
     { time: 5150, type: 'cursor', cell: 41 },
   ]);
@@ -156,6 +158,25 @@ test('a recorded 2D game: actions, samples about 20 times a second and cursor mo
   assert.equal(cellStateDigest(again.state), decoded.check.digest);
   assert.deepEqual(again.summary().clicks, decoded.check.clicks);
   assert.equal(decoded.check.elapsedMs, 5250);
+});
+
+test('the ring\'s visibility is recorded with the cursor event it already has: -1 while hidden, its cell while shown', async () => {
+  const clock = fakeClock();
+  const session = createSession({ choice: BEGINNER, client: fakeClient(), clock, randomSeed: () => 7 });
+  const sampler = createSampler2D({ session, point: () => null });
+  await session.reveal(80);
+  clock.advance(10); sampler.tick(); // a mouse player: the stream opens hidden and stays so
+  clock.advance(10); sampler.tick();
+  clock.advance(10); sampler.cursor(3); // a key showed the ring on cell 3
+  clock.advance(10); sampler.cursor(4);
+  clock.advance(10); sampler.cursor(-1); // the mouse hid it
+  clock.advance(10); sampler.tick();
+  clock.advance(10); sampler.cursor(4); // shown again where it was
+  session.reveal(0);
+  const decoded = decodeReplay(session.replay().blob);
+  assert.deepEqual(decoded.movement.filter((e) => e.type === 'cursor').map((e) => [e.time, e.cell]), [
+    [10, -1], [30, 3], [40, 4], [50, -1], [70, 4],
+  ]);
 });
 
 test('a session left before its first click records and reports nothing; restart discards the recorder', async () => {
@@ -248,8 +269,9 @@ test('mountSampler2D: the last pointer position over the page, read through the 
   m.tick();
   assert.deepEqual(samples, [[0, [2 * SAMPLE_STEPS, -SAMPLE_STEPS]]]);
   t = 60;
+  assert.deepEqual(cursors, [[0, -1], [0, -1]], 'no ring yet: -1 each tick, which the recorder stores once');
   m.cursor(7);
-  assert.deepEqual(cursors, [[60, 7]]);
+  assert.deepEqual(cursors.at(-1), [60, 7]);
   m.destroy();
   assert.equal(listeners.has('mousemove'), false);
 });

@@ -459,10 +459,9 @@ async function loadPlaywright() {
 // Runs in the page: the drawn fill of a Beginner tile (col, row), sampled inside its edge, as the
 // tile token it matches ('closed', 'pressed', 'revealed') or the raw colour.
 async function tileFill([col, row]) {
-  const { boardLayout } = await import('/js/classic2d/board-view.js');
   const canvas = document.querySelector('#c2d-board canvas');
   const box = canvas.getBoundingClientRect();
-  const layout = boardLayout({ cols: 9, rows: 9, width: box.width, height: box.height });
+  const layout = globalThis.__ms.board2D.layout;
   const ratio = canvas.width / box.width;
   const x = Math.round((layout.offsetX + col * layout.tile + layout.tile * 0.2) * ratio);
   const y = Math.round((layout.offsetY + row * layout.tile + layout.tile * 0.2) * ratio);
@@ -502,9 +501,8 @@ test('fidelity in a browser: press feedback and releasing off the pressed cell o
 
     const fill = (col, row) => page.evaluate(tileFill, [col, row]);
     const centre = (col, row) => page.evaluate(async ([c, r]) => {
-      const { boardLayout } = await import('/js/classic2d/board-view.js');
       const box = document.querySelector('#c2d-board canvas').getBoundingClientRect();
-      const l = boardLayout({ cols: 9, rows: 9, width: box.width, height: box.height });
+      const l = globalThis.__ms.board2D.layout;
       return { x: box.left + l.offsetX + (c + 0.5) * l.tile, y: box.top + l.offsetY + (r + 0.5) * l.tile };
     }, [col, row]);
     const moveTo = async (col, row) => { const p = await centre(col, row); await page.mouse.move(p.x, p.y, { steps: 2 }); };
@@ -547,10 +545,9 @@ test('fidelity in a browser: press feedback and releasing off the pressed cell o
     await page.mouse.up();
     await page.waitForFunction(() => globalThis.__ms.modes.state.started);
     await page.waitForFunction(async () => {
-      const { boardLayout } = await import('/js/classic2d/board-view.js');
       const canvas = document.querySelector('#c2d-board canvas');
       const b = canvas.getBoundingClientRect();
-      const l = boardLayout({ cols: 9, rows: 9, width: b.width, height: b.height });
+      const l = globalThis.__ms.board2D.layout;
       const ratio = canvas.width / b.width;
       const [r] = canvas.getContext('2d').getImageData(
         Math.round((l.offsetX + 6.2 * l.tile) * ratio), Math.round((l.offsetY + 6.2 * l.tile) * ratio), 1, 1).data;

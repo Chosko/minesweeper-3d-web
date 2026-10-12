@@ -31,6 +31,7 @@ import { createResultsFlow } from './results/flow.js';
 import { createReplayLibrary } from './replay/library.js';
 import { createReplayViewer, createReplayView } from './replay/viewer.js';
 import { mountViewer2D } from './replay/viewer-2d.js';
+import { panelRect } from './classic2d/board-view.js';
 import { createViewer3D } from './replay/viewer-3d.js';
 import { REPLAY_SCREEN } from './records/replay-list.js';
 import { createResultsView, resultsContent } from './results/view.js';
@@ -281,7 +282,7 @@ const ui = new UI({
   onReadyBack: () => readyBack(),
   onToggleSound: () => toggleSound(),
   onResetAll: () => RESET.run(),
-  onDismissHint: (mode) => { FIRST_USE.dismiss(mode); refreshHints(); },
+  onDismissHint: (mode, kind) => { if (kind === 'scroll') FIRST_USE.once('scrollHint'); else FIRST_USE.dismiss(mode); refreshHints(); },
   onRetry2D: () => answer2D(() => mode2d.retry()),
   onStandard2D: () => answer2D(() => { standard2D = true; try { mode2d.playStandard(); } finally { standard2D = false; } }),
   onCancel2D: () => mode2d.cancelGeneration(),
@@ -393,10 +394,15 @@ const CHOICE_3D = bindBoardChoice3D({
 // Classic 2D: the mode drives its own board; the shell hands it the board area, the overlay bar and
 // its screens. The last board choice is a platform-storage document.
 const LAST_CHOICE_2D = createLastChoice({ storage });
+let frame2D = null; // the room the board's framed panel takes around the open board
 const FLOW_2D = {
   openBoardChoice: (choice) => SHELL.go('classic-2d-choice', { data: { choice } }),
   show: () => SHELL.go('classic-2d'),
   container: () => document.getElementById('c2d-board'),
+  scale: () => SETTINGS.get('boardScale'),
+  frame: () => (frame2D = ui.panelFrame2D()), // measured as each board opens, the readouts showing
+  layout: (layout) => { ui.placePanel2D(panelRect(layout, frame2D)); clipped2D(layout.scrolls); },
+  scrolled: () => scrolled2D(),
   hud: ({ seconds, minesLeft, clicks }) => ui.updateHud(seconds, minesLeft, clicks),
   board: (b) => { ui.setBoard2D(b); if (!standard2D) newGame2D(); }, // once per game, and again when played standard
   generating: (shown) => { board2d.generating = shown; showStatus2D(); },
@@ -482,11 +488,12 @@ const FIRST_USE = createFirstUse({ storage, records: RECORDS });
 const firstUseLoaded = recordsLoaded.then(() => FIRST_USE.load(), () => FIRST_USE.load());
 MODES.on('finished', ({ mode }) => FIRST_USE.gameFinished(mode));
 const hint3D = { eligible: false };
-const hint2D = { eligible: false, used: false };
+const hint2D = { eligible: false, used: false, clipped: false };
 let standard2D = false; // the failed 2D board's offer is playing it standard: the same game
 function newGame2D() {
   hint2D.eligible = FIRST_USE.inFirstGames('classic-2d');
   hint2D.used = false;
+  hint2D.clipped = false;
   refreshHints(); // the router already drew the strip from the previous game's state
 }
 /** A key or the controller was used in this Classic 2D game. */
@@ -495,10 +502,27 @@ function used2D() {
   hint2D.used = true;
   refreshHints();
 }
-/** The hint strip of the active mode, on its play screen. */
+/** Whether this Classic 2D game's board scrolls: the first time one does, the scroll hint shows. */
+function clipped2D(on) {
+  if (hint2D.clipped === on) return;
+  hint2D.clipped = on;
+  refreshHints();
+}
+/** The player scrolled the Classic 2D board: the scroll hint has done its job. */
+function scrolled2D() {
+  if (FIRST_USE.once('scrollHint')) refreshHints();
+}
+/**
+ * The hint strip of the active mode, on its play screen; on a clipped Classic 2D board, the scroll
+ * hint until it is dismissed or the board is scrolled.
+ */
 function refreshHints() {
   const mode = MODES.active;
   if (mode !== '3d' && mode !== 'classic-2d') { ui.setHintStrip(false); return; }
+  if (mode === 'classic-2d' && S.mode === 'classic-2d' && hint2D.clipped && !FIRST_USE.shown('scrollHint')) {
+    ui.setHintStrip(true, { scroll: true });
+    return;
+  }
   const h = mode === '3d' ? hint3D : hint2D;
   ui.setHintStrip(stripShown({ mode, screen: S.mode, eligible: h.eligible, used: h.used, dismissed: FIRST_USE.dismissed(mode) }));
 }
@@ -559,6 +583,8 @@ const REPLAY_SCENE = {
     needRender = true;
   },
 };
+/** The replay viewer's 2D viewer, at the board scale setting. */
+function mountReplay2D(options) { return mountViewer2D({ ...options, scale: SETTINGS.get('boardScale') }); }
 /** The replay viewer's box viewer; with the graphics context gone it is a mode's failure, and nothing mounts. */
 function mountReplay3D({ sim }) {
   if (contextLost) { SHELL.go('ctxlost'); return { draw() {}, destroy() {} }; }
@@ -578,8 +604,10 @@ const REPLAY_VIEWER = createReplayViewer({
     onSeek: (ms) => REPLAY_VIEWER.seek(ms),
     onBack: () => shellBack('pointer'),
   }),
-  viewers: WEBGL2 ? { square: mountViewer2D, box: mountReplay3D } : { square: mountViewer2D }, // a 3D replay then says why it cannot play
+  viewers: WEBGL2 ? { square: mountReplay2D, box: mountReplay3D } : { square: mountReplay2D }, // a 3D replay then says why it cannot play
 });
+// The board scale setting reaches an open Classic 2D board and the replay viewer's 2D board at once.
+SETTINGS.onChange('boardScale', (scale) => { mode2d.setScale(scale); REPLAY_VIEWER.setScale(scale); });
 
 // ---------- results ----------
 // A finished game is recorded, then the results screen shows over the finished Classic 2D board,
@@ -1468,6 +1496,8 @@ window.__ms = {
   /** The records store: record/begin/checkpoint, the queries and onChange. */
   get records() { return RECORDS; },
   get replayViewer() { return REPLAY_VIEWER; },
+  /** The open Classic 2D board view (js/classic2d/board-view.js): its layout, scroll, cursor and scale. */
+  get board2D() { return mode2d.boardView; },
   /** Opens the replay viewer: `data` is its route's { replay | replayId, returnTo }. */
   watch: (data) => SHELL.go(REPLAY_SCREEN, { data }),
 };

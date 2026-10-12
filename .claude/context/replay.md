@@ -81,8 +81,8 @@ view's Watch open it ([app-shell.md](app-shell.md)).
   - `actions` — `[{time, kind, cell}]`, kind one of `ACTION_KINDS`.
   - `movement` — `[{time, type: 'sample', values} | {time, type: 'cursor',
     cell} | {time, type: 'view', mode}]`; a sample holds
-    `SAMPLE_ARITY[graph kind]` quantised integers, `cursor` is 2D only and
-    `view` 3D only.
+    `SAMPLE_ARITY[graph kind]` quantised integers, `cursor` is 2D only (its
+    cell, or -1 while the ring is hidden) and `view` 3D only.
   - `check` — `{outcome, elapsedMs, bbbv, bbbvSolved, clicks: {reveal, flag,
     chord: {effective, wasted}}, digest}`.
   - `sampleIntervalMs` — on a decoded replay only: its movement sampling
@@ -113,7 +113,8 @@ view's Watch open it ([app-shell.md](app-shell.md)).
 - `startRecording({mode, graph, board, profile}, {onFailure?,
   movementCap?})` → recorder: `boardArrived({mines, seed,
   generatorVersion})`, `action(kind, cell, time)`, `sample(values, time)`,
-  `cursor(cell, time)`, `view(mode, time)`, `seal(summary, final, pauses?)` →
+  `cursor(cell, time)` (a cell or -1; the stream opens with -1),
+  `view(mode, time)`, `seal(summary, final, pauses?)` →
   `{blob, listing}` or null, `stats()` → `{actions, movement,
   movementBytes}`, `failed`. `final` is the engine game at its end or its
   state arrays; `pauses` the pause spans the summary counted, whose count
@@ -128,7 +129,8 @@ view's Watch open it ([app-shell.md](app-shell.md)).
   position in cell units from the board's top-left corner, quantised; off
   the board the values run below 0 or past the board's size.
 - `createSampler2D({session, point, interval?})` → `{tick(), cursor(c)}`;
-  `point()` → `[bx, by]` or null while no pointer position is known.
+  `point()` → `[bx, by]` or null while no pointer position is known;
+  `cursor(c)` the ring's cell, or -1 when it hides (and before it shows).
 - `mountSampler2D({view, session, win?, interval?})` → `{sampler, tick(),
   cursor(c), destroy()}`: the last `mousemove` position over the page, read
   through the board view's canvas rectangle, layout and scroll.
@@ -219,23 +221,29 @@ view's Watch open it ([app-shell.md](app-shell.md)).
 - `createReplayViewer({library, router, view, viewers?})` → `state`,
   `show({replay?, replayId?, returnTo?})`, `hide()`, `tick(ms)`,
   `command(name)`, `seek(ms)`, `setSpeed(s)`, `key(code)`, `pad(pressed)`,
-  `back()`, `defaultFocus()`. `viewers` maps a graph kind to `({container,
-  sim}) → {draw(frame), place?(), destroy()}`; the default is `{square:
+  `back()`, `defaultFocus()`, `setScale(scale)` (to the mounted viewer).
+  `viewers` maps a graph kind to `({container, sim}) → {draw(frame),
+  place?(), setScale?(scale), destroy()}`; the default is `{square:
   mountViewer2D}`.
 - `createReplayView({root, win?, onCommand, onSpeed, onSeek, onBack})` →
   the binder of `#replay`: `open`, `close`, `loading`, `failed(message)`,
   `ready({duration, kind, pauses})` → the board area (and the seek bar's
   pause marks `#rp-pauses` and their text `#rp-pauses-text`), `render(state)`,
-  `destroy`.
+  `destroy`. The board area `#replay-board` is set between the overlay bar
+  and the controls, 16 px from each, measured from their real sizes when a
+  replay is ready and again whenever either resizes (a `ResizeObserver`).
 
 `js/replay/viewer-2d.js`
 - `movementTrack(movement, interval?)` — `interval` the replay's
   `sampleIntervalMs`, the 2D sampler's `SAMPLE_INTERVAL_MS` when not given;
   `pointerAt(track, t)` → `[x, y]` in cells or null, `cursorAt(track, t)` →
-  cell or -1, `pointerPixel(layout, scroll, point)` → canvas CSS pixels.
+  cell or -1 (a track whose first cursor event is a cell — a recording made
+  before the ring could hide — reads that one as -1),
+  `pointerPixel(layout, scroll, point)` → canvas CSS pixels.
 - `createViewer2D({view, sim, pointer})` → `{track, draw(frame), place(),
-  destroy()}`; `mountViewer2D({container, sim, win?})` mounts the board
-  view (no play input) and the `.replay-pointer` element.
+  setScale(scale), destroy()}`; `mountViewer2D({container, sim, scale?,
+  win?})` mounts the board view at the board scale (no play input, no
+  frame) and the `.replay-pointer` element.
 
 `js/replay/viewer-3d.js`
 - `cameraTrack(movement, cappedAt?, interval?)` — `cappedAt` the header's
@@ -279,7 +287,8 @@ view's Watch open it ([app-shell.md](app-shell.md)).
 - **Typed buffers.** Events live in typed arrays that double when full, so
   recording allocates nothing per event; a sample's values are copied, so a
   sampler may reuse one array. A sample equal to the previous one, a cursor
-  cell or view mode equal to the last, is not stored.
+  cell or view mode equal to the last, is not stored; the cursor stream
+  opens with -1 (stored before a first event that is a cell).
 - **The movement cap.** The recorder counts the bytes each movement event
   will encode to; the first event past the cap sets `movementEndedAt` to its
   time and the rest of the game is recorded as actions only. Actions are
@@ -369,8 +378,12 @@ view's Watch open it ([app-shell.md](app-shell.md)).
 - **2D playback.** The Classic 2D board view draws the simulator's game
   from each frame's `changed`; the recorded pointer is placed by hold,
   then interpolate, at the replay's sampling interval, and the recorded
-  cursor is the focus ring; on a board that scrolls, the view follows the
-  pointer's cell, else the cursor's.
+  cursor is the focus ring, shown only while the recording's cursor event
+  is a cell (-1 hides it; an older recording's opening cell counts as -1),
+  the same at any seek as in playback; on a board that scrolls, the view
+  follows the pointer's cell, else the cursor's, and it never scrolls a
+  board that fits. The board scale setting reaches the view through
+  `setScale`, a refit and full repaint.
 - **3D playback.** The renderer draws the 3D state view over the simulator's
   game; the camera is the recorded position, yaw and pitch, placed by hold,
   then interpolate, at the replay's sampling interval — the first sample

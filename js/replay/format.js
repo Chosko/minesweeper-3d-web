@@ -22,7 +22,8 @@
 //            | { time, type: 'view', mode }] — time never decreasing; a sample holds
 //            SAMPLE_ARITY[graph kind] integers, already quantised by the mode's sampler (2D: the
 //            pointer in board coordinates; 3D: camera position, yaw and pitch); 'cursor' is the
-//            2D keyboard and controller cursor's cell, 'view' the 3D view mode (0 .. 255).
+//            2D keyboard and controller cursor's cell, or -1 while its ring is hidden; 'view' the
+//            3D view mode (0 .. 255).
 //   check    { outcome, elapsedMs, bbbv, bbbvSolved, clicks, digest } — outcome won, lost or
 //            abandoned; clicks { reveal, flag, chord } each { effective, wasted }; digest is
 //            cellStateDigest of the final state.
@@ -349,7 +350,7 @@ function writeBodyV1(w, replay) {
       }
     } else if (e.type === 'cursor') {
       if (h.graph.kind !== 'square') throw new RangeError('a cursor event belongs to a 2D replay');
-      const c = int('cursor cell', e.cell, 0, cells - 1);
+      const c = int('cursor cell', e.cell, -1, cells - 1);
       w.sint(c - cell); cell = c;
     } else if (e.type === 'view') {
       if (h.graph.kind !== 'box') throw new RangeError('a view-mode event belongs to a 3D replay');
@@ -453,7 +454,7 @@ function readBodyV1(r) {
       movement.push({ time: t, type, values: last.slice() });
     } else if (type === 'cursor' && graph.kind === 'square') {
       cell += r.sint();
-      if (cell < 0 || cell >= cells) fail('cursor cell out of range');
+      if (cell < -1 || cell >= cells) fail('cursor cell out of range');
       movement.push({ time: t, type, cell });
     } else if (type === 'view' && graph.kind === 'box') {
       movement.push({ time: t, type, mode: r.byte() });

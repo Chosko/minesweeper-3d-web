@@ -167,12 +167,29 @@ test('the pointer track takes the 2D recording interval unless given one; the 2D
   assert.equal(v.track.interval, sim.replay.sampleIntervalMs);
 });
 
-test('the recorded keyboard and controller cursor is the last cursor cell at or before the time', () => {
-  const track = movementTrack(movement);
-  assert.equal(cursorAt(track, 0), 4);
-  assert.equal(cursorAt(track, 399), 4);
-  assert.equal(cursorAt(track, 400), 7);
-  assert.equal(cursorAt(movementTrack(movement.filter((e) => e.type === 'sample')), 1000), -1, 'no cursor recorded');
+test('the recorded ring is the last cursor event at or before the time: its cell while shown, -1 while hidden', () => {
+  const recorded = [
+    { time: 0, type: 'cursor', cell: -1 }, // a recording opens with the ring hidden
+    { time: 100, type: 'sample', values: [64, 128] },
+    { time: 200, type: 'cursor', cell: 4 }, // a key showed it
+    { time: 400, type: 'cursor', cell: 7 },
+    { time: 450, type: 'cursor', cell: -1 }, // the mouse hid it
+    { time: 600, type: 'cursor', cell: 7 },
+  ];
+  const track = movementTrack(recorded);
+  assert.deepEqual([0, 199, 200, 399, 400, 449, 450, 599, 600, 1e6].map((t) => cursorAt(track, t)), [-1, -1, 4, 4, 7, 7, -1, -1, 7, 7]);
+  assert.equal(cursorAt(movementTrack(recorded.filter((e) => e.type === 'sample')), 1000), -1, 'no cursor recorded: no ring');
+});
+
+test('a recording made before the ring could hide shows no ring until its first cursor event after the opening one', () => {
+  const track = movementTrack(movement); // opens on cell 4, as the cursor was drawn from the start
+  assert.equal(cursorAt(track, 0), -1, 'the opening cell is no ring');
+  assert.equal(cursorAt(track, 399), -1);
+  assert.equal(cursorAt(track, 400), 7, 'the first move shows it');
+  assert.equal(cursorAt(track, 1e6), 7);
+  const mouseOnly = movementTrack([{ time: 0, type: 'cursor', cell: 0 }, { time: 50, type: 'sample', values: [0, 0] }]);
+  assert.equal(cursorAt(mouseOnly, 0), -1);
+  assert.equal(cursorAt(mouseOnly, 1e6), -1, 'a mouse-only game of the old build shows no ring at any point');
 });
 
 test('a pointer in cells lands on the canvas through the board layout and scroll', () => {
@@ -223,15 +240,56 @@ test('the 2D viewer draws the simulator game read-only from its changes, with th
   assert.equal(view.calls.disposed, undefined, 'the viewer leaves the board view to its owner');
 });
 
-test('the 2D viewer draws the recorded cursor as the focus ring', () => {
+test('the 2D viewer draws the recorded ring only while the player used the cursor, the same at any seek as in playback', () => {
   const replay = decodeReplay(blobOf(WON));
-  replay.movement = [{ time: 0, type: 'cursor', cell: 40 }, { time: 300, type: 'cursor', cell: 41 }];
+  replay.movement = [
+    { time: 0, type: 'cursor', cell: -1 }, { time: 100, type: 'cursor', cell: 40 },
+    { time: 300, type: 'cursor', cell: 41 }, { time: 500, type: 'cursor', cell: -1 },
+  ];
   const sim = createSimulator(replay);
+  const times = [0, 10, 150, 300, 450, 600, 900];
+  const played = fakeView();
+  const v = createViewer2D({ view: played, sim, pointer: fakePointer() });
+  for (const t of times) v.draw(sim.seek(t));
+  assert.deepEqual(played.calls.cursor, [-1, -1, 40, 41, 41, -1, -1]);
+  const sought = fakeView();
+  const s2 = createSimulator(replay);
+  const w = createViewer2D({ view: sought, sim: s2, pointer: fakePointer() });
+  for (const t of [...times].reverse()) w.draw(s2.seek(t));
+  assert.deepEqual(sought.calls.cursor, [-1, -1, 41, 41, 40, -1, -1], 'seeking back: each position as in playback');
+
+  const old = decodeReplay(blobOf(WON));
+  old.movement = [{ time: 0, type: 'cursor', cell: 40 }, { time: 300, type: 'cursor', cell: 41 }];
+  const oldView = fakeView();
+  const o = createSimulator(old);
+  const ov = createViewer2D({ view: oldView, sim: o, pointer: fakePointer() });
+  ov.draw(o.seek(10));
+  ov.draw(o.seek(300));
+  assert.deepEqual(oldView.calls.cursor, [-1, 41], 'an older recording: no ring until its first move');
+});
+
+test('every 2D fixture recorded before the ring hid plays with no ring at any point', () => {
+  for (const name of ['2d-beginner-won', '2d-expert-abandoned', '2d-intermediate-lost']) {
+    const sim = createSimulator(new Uint8Array(readFileSync(join(ROOT, `tests/fixtures/replays/${name}.msrp`))));
+    const view = fakeView();
+    const v = createViewer2D({ view, sim, pointer: fakePointer() });
+    for (let t = 0; t <= sim.duration; t += Math.max(1, Math.floor(sim.duration / 20))) v.draw(sim.seek(t));
+    assert.ok(view.calls.cursor.every((c) => c === -1), `${name}: no ring`);
+  }
+});
+
+test('a board that fits is never scrolled by the viewer; the board scale reaches its view', () => {
   const view = fakeView();
-  const v = createViewer2D({ view, sim, pointer: fakePointer() });
-  v.draw(sim.seek(10));
-  v.draw(sim.seek(300));
-  assert.deepEqual(view.calls.cursor, [40, 41]);
+  view.scales = [];
+  view.setScale = (s) => { view.scales.push(s); view.layout = { ...view.layout, tile: 30 }; };
+  const replay = decodeReplay(blobOf(WON));
+  replay.movement = [{ time: 0, type: 'cursor', cell: -1 }, { time: 10, type: 'cursor', cell: 80 }, ...replay.movement];
+  const s = createSimulator(replay);
+  const v = createViewer2D({ view, sim: s, pointer: fakePointer() });
+  for (const t of [0, 20, 500, s.duration]) v.draw(s.seek(t));
+  assert.deepEqual(view.calls.ensure, [], 'no ensureVisible on a board that fits');
+  v.setScale('fit');
+  assert.deepEqual(view.scales, ['fit']);
 });
 
 test('a pointer left in place while paused follows the board view when it refits or scrolls', () => {
@@ -343,7 +401,10 @@ function fakeViewers() {
   const made = [];
   return {
     drawn, made,
-    square: ({ container, sim }) => { made.push({ container, sim }); return { draw: (f) => drawn.push(f), destroy: () => made.push('destroyed') }; },
+    square: ({ container, sim }) => {
+      made.push({ container, sim });
+      return { draw: (f) => drawn.push(f), setScale: (scale) => made.push(['scale', scale]), destroy: () => made.push('destroyed') };
+    },
   };
 }
 function viewerOver({ library = fakeLibrary(), viewers = fakeViewers() } = {}) {
@@ -365,10 +426,14 @@ test('the viewer opens a replay, shows the start paused, and Back returns to the
   assert.equal(view.last.figures.clock, '000');
   assert.equal(viewers.drawn.length, 1, 'the start is drawn');
   assert.ok(router.went.includes('refocus'), 'focus moves to the controls once the replay is ready');
+  viewer.setScale('125');
+  assert.deepEqual(viewers.made.at(-1), ['scale', '125'], 'a board scale change reaches the open board');
   viewer.back();
   assert.deepEqual(router.went.at(-1), ['records', { data: RETURN.data }]);
   viewer.hide();
   assert.ok(viewers.made.includes('destroyed'));
+  viewer.setScale('fit');
+  assert.equal(viewers.made.at(-1), 'destroyed', 'with no replay open, nothing to refit');
   assert.equal(view.log.at(-1), 'close');
 });
 
@@ -623,8 +688,9 @@ test('the shell registers the viewer under the Records screen\'s replay route an
   assert.match(MAIN, /replay: 'replay'/, 'its layer is in the controller layer table');
 });
 
-test('the shell offers the 3D viewer only with WebGL 2', () => {
-  assert.match(MAIN, /viewers: WEBGL2 \? \{ square: mountViewer2D, box: mountReplay3D \} : \{ square: mountViewer2D \}/);
+test('the shell offers the 3D viewer only with WebGL 2, and mounts the 2D one at the board scale setting', () => {
+  assert.match(MAIN, /viewers: WEBGL2 \? \{ square: mountReplay2D, box: mountReplay3D \} : \{ square: mountReplay2D \}/);
+  assert.match(MAIN, /function mountReplay2D\(options\) \{ return mountViewer2D\(\{ \.\.\.options, scale: SETTINGS\.get\('boardScale'\) \}\); \}/);
 });
 
 // ---------------------------------------------------------------- in a browser

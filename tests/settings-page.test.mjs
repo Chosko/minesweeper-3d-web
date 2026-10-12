@@ -122,7 +122,7 @@ test('the in-game help reads the same bindings source', () => {
 test('the page has the controls, graphics, theme and audio sections, holding every setting once', () => {
   assert.deepEqual(SETTINGS_SECTIONS.map((s) => s.title), ['Controls', 'Graphics', 'Theme', 'Audio']);
   assert.deepEqual(SETTINGS_SECTIONS.map((s) => s.settings), [
-    ['lookSensitivity', 'invertY', 'confirmRestart'], ['fullscreen', 'renderResolution'], ['theme'], ['muted', 'volume'],
+    ['lookSensitivity', 'invertY', 'confirmRestart'], ['fullscreen', 'renderResolution', 'boardScale'], ['theme'], ['muted', 'volume'],
   ]);
   assert.deepEqual(SETTINGS_SECTIONS.flatMap((s) => s.settings).sort(), [...SETTING_KEYS].sort(), 'every schema entry has its control');
   for (const key of SETTING_KEYS) assert.ok(SETTING_LABELS[key], `${key} has a label`);
@@ -176,6 +176,9 @@ test('each control\'s kind and range come from its schema entry', () => {
   assert.deepEqual(settingControl('theme').options, [{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]);
   assert.deepEqual(settingControl('renderResolution').options.map((o) => o.value), SCHEMA.renderResolution.values);
   assert.deepEqual(settingControl('renderResolution').options.map((o) => o.label), ['Auto', 'Sharp', 'Fast']);
+  const scale = settingControl('boardScale');
+  assert.deepEqual([scale.kind, scale.label], ['segmented', '2D board scale']);
+  assert.deepEqual(scale.options, [{ value: 'fit', label: 'Fit' }, { value: '100', label: '100 %' }, { value: '125', label: '125 %' }]);
   assert.throws(() => settingControl('nope'), /unknown/);
 });
 
@@ -766,10 +769,9 @@ test('in a browser, Reset all data turns a played profile back into a new player
     await page.click('#menu-entry-classic-2d');
     if (await page.isChecked('#c2d-noguess')) await page.click('#c2d-noguess');
     await page.click('#c2d-choice [data-size="beginner"]');
-    const centres = await ms(async () => {
-      const { boardLayout } = await import('/js/classic2d/board-view.js');
+    const centres = await ms(() => {
       const r = document.querySelector('#c2d-board canvas').getBoundingClientRect();
-      const L = boardLayout({ cols: 9, rows: 9, width: r.width, height: r.height });
+      const L = globalThis.__ms.board2D.layout;
       return Array.from({ length: 81 }, (_, c) => ({
         x: r.left + L.offsetX + ((c % 9) + 0.5) * L.tile, y: r.top + L.offsetY + (Math.floor(c / 9) + 0.5) * L.tile,
       }));

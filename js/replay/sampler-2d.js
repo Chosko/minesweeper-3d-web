@@ -14,8 +14,10 @@
 //   tick()    call every frame: while the session is recording, takes a sample when
 //             SAMPLE_INTERVAL_MS of game time have passed since the last, and records the cursor's
 //             current cell (the recorder stores only a change).
-//   cursor(c) the cursor moved to cell c (-1 for none): recorded at once while recording, and at
-//             the next tick otherwise.
+//   cursor(c) the cursor's ring moved to cell c, or hid (-1): recorded at once while recording,
+//             and at the next tick otherwise.
+// Until a cursor is shown the cell is -1, which the recorder stores only as a change from its
+// opening -1 (js/replay/recorder.js).
 // The session decides when it records — started, unpaused and unfinished — and stamps each event
 // with its game timer, so paused time is absent.
 //
@@ -26,7 +28,7 @@
 // Both set from dev/measure-replays.mjs (simulated games played through the session, Node 22): at
 // 1/64 of a cell one step is under 2 px on the largest standard tile (Beginner on a 1920 × 1080
 // window, 109 px), and 50 ms is the longest interval whose playback error stays within 0.1 cell
-// (p95 over moving frames: 2.7 px at MIN_TILE_SIZE; 67 ms gives 4.4 px), at about 47 bytes of
+// (p95 over moving frames: 2.7 px on the 41 px tile it was measured at; 67 ms gives 4.4 px), at about 47 bytes of
 // movement a second.
 
 /** Game time between two pointer samples: about 20 a second. */
@@ -48,7 +50,7 @@ export function createSampler2D({ session, point, interval = SAMPLE_INTERVAL_MS 
   let last = null; // game time of the last sample
   let cell = -1;
 
-  const recordCursor = () => { if (cell >= 0) session.recordCursor(cell); };
+  const recordCursor = () => session.recordCursor(cell);
 
   return {
     tick() {

@@ -28,8 +28,9 @@
 // createReplayViewer({ library, router, view, viewers? }) → viewer
 //   view     the screen binder: open(), close(), loading(), failed(message), ready({ duration, kind,
 //            pauses }) → the board area, render(state); pauses are the header's pause spans.
-//   viewers  { [graph kind]: ({ container, sim }) → { draw(frame), place?(), destroy() } }; place()
-//            runs on the frames that draw nothing, to follow a board view that refitted. Classic 2D's
+//   viewers  { [graph kind]: ({ container, sim }) → { draw(frame), place?(), setScale?(scale),
+//            destroy() } }; place() runs on the frames that draw nothing, to follow a board view
+//            that refitted. Classic 2D's
 //            square is js/replay/viewer-2d.js; the 3D box is js/replay/viewer-3d.js, which js/main.js
 //            mounts on its renderer, and offers only with WebGL 2. A 3D (box) replay with no viewer
 //            says FAILURES.webgl2; any other replay with no viewer for its graph says
@@ -39,6 +40,7 @@
 //            the { screen, data } Back goes to (the main menu when none). The replay starts paused at
 //            its beginning, at 1×.
 //   hide()   drops the replay; one still loading is ignored when it arrives.
+//   setScale(scale)  the board scale setting changed: the mounted viewer refits (setScale).
 //   tick(ms) once per frame with the frame's wall-clock ms: advances the clock while playing and
 //            draws the simulator at the clock's time; while paused, only the viewer's place().
 // seekStep(duration) → the seek bar's step in ms: 1% of the replay, at least SEEK_STEP_MIN_MS, so a
@@ -54,7 +56,10 @@
 //
 // createReplayView({ root, win?, onCommand, onSpeed, onSeek, onBack }) → the view above, filling
 // #replay by id: the overlay bar (#rp-clock, #rp-mines, #rp-bbbv, #rp-rate, Back #rp-back), the board
-// area #replay-board, the message card #replay-message (loading or failure, its Back
+// area #replay-board — the room between the bar and the controls, each measured from its real size
+// when the replay shows and again whenever either changes size, with 16 px (--space-4) beside
+// each —
+// the message card #replay-message (loading or failure, its Back
 // #replay-message-back), and the controls #replay-controls (#rp-prev, #rp-play, #rp-next, the speed
 // choice #rp-speed, the seek bar #rp-seek with its pause marks #rp-pauses and their text alternative
 // #rp-pauses-text, the end line #replay-end). A 3D replay marks #replay
@@ -236,6 +241,9 @@ export function createReplayViewer({ library, router, view, viewers = { square: 
       render();
       refocus();
     },
+    setScale(scale) {
+      board?.setScale?.(scale);
+    },
     hide() {
       opening++;
       release();
@@ -295,6 +303,8 @@ export function createReplayViewer({ library, router, view, viewers = { square: 
 }
 
 const IN_FIELD = 'input, select, textarea';
+/** The room between the board area and the overlay bar or the controls (--space-4). */
+const BOARD_GAP = 16;
 
 export function createReplayView({ root, win = globalThis, onCommand, onSpeed, onSeek, onBack }) {
   const $ = (id) => root.querySelector(`#${id}`);
@@ -332,6 +342,18 @@ export function createReplayView({ root, win = globalThis, onCommand, onSpeed, o
     onCommand(REPLAY_KEYS[e.code]);
   };
 
+  // The board area: below the overlay bar and above the controls, as measured now.
+  const bar = root.querySelector('.replay-bar');
+  const fitBoard = () => {
+    if (el.controls.classList.contains('hidden')) return;
+    const box = root.getBoundingClientRect();
+    const top = bar ? bar.getBoundingClientRect().bottom - box.top : 0;
+    const bottom = box.bottom - el.controls.getBoundingClientRect().top;
+    el.board.style.top = `${Math.round(top) + BOARD_GAP}px`;
+    el.board.style.bottom = `${Math.round(bottom) + BOARD_GAP}px`;
+  };
+  const sizes = win.ResizeObserver ? new win.ResizeObserver(fitBoard) : null;
+
   const card = (title, text) => {
     root.classList.remove('replay--scene');
     el.messageTitle.textContent = title;
@@ -345,9 +367,12 @@ export function createReplayView({ root, win = globalThis, onCommand, onSpeed, o
     open() {
       root.classList.remove('hidden');
       win.addEventListener('keydown', onKey);
+      sizes?.observe(el.controls);
+      if (bar) sizes?.observe(bar);
     },
     close() {
       win.removeEventListener('keydown', onKey);
+      sizes?.disconnect();
       root.classList.add('hidden');
       root.classList.remove('replay--scene');
       el.message.classList.add('hidden');
@@ -371,6 +396,7 @@ export function createReplayView({ root, win = globalThis, onCommand, onSpeed, o
       }));
       el.pausesText.textContent = pausesText(pauses);
       el.pausesText.hidden = pauses.length === 0;
+      fitBoard();
       return el.board;
     },
     render(state) {
@@ -390,6 +416,7 @@ export function createReplayView({ root, win = globalThis, onCommand, onSpeed, o
     },
     destroy() {
       win.removeEventListener('keydown', onKey);
+      sizes?.disconnect();
       for (const u of unbind) u();
     },
   };

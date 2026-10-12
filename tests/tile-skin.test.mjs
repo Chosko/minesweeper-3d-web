@@ -286,9 +286,10 @@ test('a theme change drops the cache and asks the renderer for a redraw; dispose
 
 // ---------------------------------------------------------------- minimum tile size
 
-test('MIN_TILE_SIZE is the shared minimum, a positive integer', async () => {
+test('MIN_TILE_SIZE is the shared floor, 26 px (decision 10 of docs/UX_REVIEW.md)', async () => {
   const { MIN_TILE_SIZE } = await skinModule();
   assert.ok(Number.isInteger(MIN_TILE_SIZE) && MIN_TILE_SIZE > 0);
+  assert.equal(MIN_TILE_SIZE, 26);
 });
 
 test('the tile skin is DOM-free at import and holds no copy of a token value', () => {
@@ -330,12 +331,15 @@ async function loadPlaywright() {
   }
 }
 
-// The measurement behind MIN_TILE_SIZE: an Expert board (30 × 16) fitted to
-// the window below the in-game overlay bar, with --space-4 (16px) between the
-// window edges, the bar and the board.
+// The measurement behind MIN_TILE_SIZE: an Expert board (30 × 16) fitted, in
+// the Classic 2D screen's framed panel, to a window 1024px wide with --space-4
+// (16px) margins — the panel's 1px border and 8px inside it on every side, and
+// the overlay readouts on its top edge with 8px between them and the board.
 const EXPERT = { cols: 30, rows: 16 };
-const WINDOWS = [{ width: 1366, height: 768 }, { width: 1280, height: 800 }];
+const NARROWEST = 1024;
 const MARGIN = 16;
+const INSET = 9;
+const GAP = 8;
 
 // Runs in the page: draws every state and number at `size`, one row per
 // state, and reports per tile how many pixels carry the glyph colour.
@@ -380,7 +384,7 @@ async function drawAllStates(size) {
   return out;
 }
 
-test('in a browser, MIN_TILE_SIZE is the Expert tile size at 1366×768 and 1280×800, and every state is legible at it in both themes', async (t) => {
+test('in a browser, Expert fits a 1024px wide window at MIN_TILE_SIZE or more, and every state is legible at it in both themes', async (t) => {
   const playwright = await loadPlaywright();
   if (!playwright) {
     t.skip('Playwright is not installed');
@@ -397,20 +401,23 @@ test('in a browser, MIN_TILE_SIZE is the Expert tile size at 1366×768 and 1280�
   const server = await serve();
   const shots = mkdtempSync(join(tmpdir(), 'ms3d-tile-skin-'));
   try {
-    const page = await browser.newPage({ viewport: WINDOWS[0], deviceScaleFactor: 1 });
+    const page = await browser.newPage({ viewport: { width: NARROWEST, height: 768 }, deviceScaleFactor: 1 });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+    await page.evaluate(() => globalThis.__ms.modes.start('classic-2d', { size: 'expert', noGuess: false }));
+    const bar = await page.evaluate(() => document.querySelector('#hud .ui-overlay-bar').getBoundingClientRect().height);
+    assert.ok(bar > 0, 'the readouts on the panel\'s edge are measured');
+    const across = Math.floor((NARROWEST - 2 * MARGIN - 2 * INSET) / EXPERT.cols);
+    assert.ok(across >= MIN_TILE_SIZE, `Expert's width fits 1024px at ${across}px`);
+    const tallest = 2 * MARGIN + 2 * INSET + Math.ceil(bar) + GAP + EXPERT.rows * MIN_TILE_SIZE;
+    await page.setViewportSize({ width: NARROWEST, height: tallest });
+    await page.waitForFunction((min) => globalThis.__ms.board2D.layout.tile === min, MIN_TILE_SIZE);
+    assert.equal(await page.evaluate(() => globalThis.__ms.board2D.layout.scrolls), false, `Expert fits 1024 × ${tallest} at the floor`);
+    await page.setViewportSize({ width: NARROWEST, height: tallest - 1 });
+    await page.waitForFunction(() => globalThis.__ms.board2D.layout.scrolls);
     await page.goto(`http://127.0.0.1:${server.address().port}/dev/components.html`);
-    const fitted = [];
-    for (const win of WINDOWS) {
-      await page.setViewportSize(win);
-      const bar = await page.evaluate(() => document.querySelector('.ui-overlay-bar').getBoundingClientRect().height);
-      assert.ok(bar > 0, 'the overlay bar is measured');
-      const w = (win.width - 2 * MARGIN) / EXPERT.cols;
-      const h = (win.height - bar - 3 * MARGIN) / EXPERT.rows;
-      fitted.push(Math.floor(Math.min(w, h)));
-    }
-    assert.equal(MIN_TILE_SIZE, Math.min(...fitted), `Expert fits at ${fitted.join(' and ')}px`);
 
     for (const theme of ['light', 'dark']) {
       await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);

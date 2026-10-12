@@ -464,12 +464,13 @@ browser checks for everything that needs WebGL or the DOM.
   reading through the token reader, the cache (every state and number
   pre-rendered once, a redraw only image copies, keyed by size, pixel ratio
   and theme, dropped on a theme change before the renderer's redraw,
-  `dispose` unsubscribing), `MIN_TILE_SIZE` a positive integer, and the
+  `dispose` unsubscribing), `MIN_TILE_SIZE` 26, and the
   module DOM-free at import with no literal colour and no three.js. One
-  Playwright test measures the Expert tile below the overlay bar at
-  1366×768 and 1280×800, checks it equals `MIN_TILE_SIZE`, and checks every
-  state and number shows its glyph at that size in both themes (skipped
-  when Playwright or chromium is unavailable).
+  Playwright test checks that Expert fits a 1024 px wide window in the
+  framed panel at `MIN_TILE_SIZE` or more — at the floor from the height
+  the measured readouts leave room for, scrolling a pixel below it — and
+  checks every state and number shows its glyph at that size in both
+  themes (skipped when Playwright or chromium is unavailable).
 - `tests/classic2d-session.test.mjs` — Classic 2D board setup
   (`js/classic2d/board-setup.js`) and the game session
   (`js/classic2d/session.js`) over a fake generation client and a fake
@@ -494,18 +495,27 @@ browser checks for everything that needs WebGL or the DOM.
   only through the client.
 - `tests/classic2d-view.test.mjs` — the Classic 2D board view
   (`js/classic2d/board-view.js`) over a fake canvas and a recording fake
-  skin, with real engine games: the fit rule (Expert below the overlay bar
-  gets `MIN_TILE_SIZE`, never smaller), centred and scrolling layouts,
-  `cellAt` in a fitted and a scrolled board, `cellRect`, the canvas sized at
-  the pixel ratio, the background token, only changed cells redrawn after
-  an action, full repaints on resize, pixel ratio and the skin's theme
-  redraw, only visible tiles drawn, clamped scrolling, the wheel, panning,
-  `ensureVisible`, the hidden board, and the module DOM-free with no
-  literal colour. One Playwright test mounts the view below a 64 px bar
-  with 16 px margins and checks tile size and pixel colours of Beginner and
-  Expert in both themes, a theme-change repaint, a 100 × 100 board scrolled
-  by wheel, shift-drag and `ensureVisible`, and a refit on window resize,
-  with screenshots (skipped when Playwright or chromium is unavailable).
+  skin, with real engine games: the fit rule (the 26 px floor, the cap per
+  board scale and the scales matching the settings' `boardScale`), Expert
+  unclipped at 1024 × 768, 1280 × 800 and 1366 × 650 and in a 1024 px
+  window with room for 16 rows at the floor, Beginner at 48 px at
+  1280 × 800, the panel's rectangle around the view, a clipped board
+  filling the area inside its frame, centred and scrolling layouts,
+  `cellAt` in a fitted, a framed and a scrolled board, `cellRect`, the
+  canvas sized at the pixel ratio, the background token under the board
+  only, only changed cells redrawn after an action, full repaints on
+  resize, pixel ratio, scale change (`onLayout` each refit) and the skin's
+  theme redraw, only visible tiles drawn, clamped scrolling, the wheel,
+  panning, `ensureVisible`, a clipped board's edge shadows and scroll bars
+  (`clipMarks`, drawn only when it scrolls and kept over a redrawn tile),
+  the ring shown and hidden redrawing one cell, the hidden board, and the
+  module DOM-free with no literal colour. One Playwright test mounts the
+  view below a 64 px bar with 16 px margins and checks tile size and pixel
+  colours of Beginner and Expert in both themes, the clear canvas around a
+  board that fits, a theme-change repaint, a 100 × 100 board scrolled by
+  wheel, shift-drag and `ensureVisible` with its shaded edge and scroll bar,
+  and a refit on window resize, with screenshots (skipped when Playwright
+  or chromium is unavailable).
 - `tests/classic2d-pointer.test.mjs` — the Classic 2D pointer input
   (`js/classic2d/pointer-input.js`) over real engine games: the profile's
   input markers and their fidelity entries, pressed feedback, reveal,
@@ -522,14 +532,18 @@ browser checks for everything that needs WebGL or the DOM.
   controller buttons (A / RT, X / LT, Y, both triggers; B, Start and Back
   unmapped) through `pad(poll)` with poll-shaped `held` arrays, the d-pad
   and the left stick, pressed feedback, press-follows-cursor, inactive
-  boards and `reset`; the board view's focus ring (`setCursor`,
-  `CURSOR_RING`); the mounted wiring over `EventTarget` fakes with a fake
-  `requestAnimationFrame` (system key repeat ignored, modified keys and Esc
-  left alone, blur, `destroy`); DOM-free and reusing `Repeat` /
-  `stickCurve`. Two Playwright tests (skipped when Playwright or chromium
-  is unavailable): one plays a fixed Beginner board by keyboard to a win;
-  one moves the cursor by arrow key in both themes and checks the ring's
-  pixels differ from the tile edge and from a neighbouring closed tile.
+  boards and `reset`, `onUse` once per input the board takes; the board
+  view's focus ring (`setCursor`, `CURSOR_RING`); the mounted wiring over
+  `EventTarget` fakes with a fake `requestAnimationFrame` (no ring until a
+  cursor key or controller input, hidden by a press or a moving pointer on
+  the canvas but not a resting one, shown again on the cell it kept;
+  system key repeat ignored, modified keys and Esc left alone, blur,
+  `destroy`); DOM-free and reusing `Repeat` / `stickCurve`. Two Playwright
+  tests (skipped when Playwright or chromium is unavailable): one plays a
+  fixed Beginner board by keyboard to a win, the ring hidden until the
+  first key and by a mouse move; one moves the cursor by arrow key in both
+  themes and checks the ring's pixels differ from the tile edge and from a
+  neighbouring closed tile.
 - `tests/classic2d-mode.test.mjs` — the Classic 2D mode
   (`js/classic2d/mode.js`) over a real mode host and pause controller with
   recording mounts, flow and generation clients and a fake clock: the
@@ -541,7 +555,10 @@ browser checks for everything that needs WebGL or the DOM.
   the board while the time the pause card shows runs on, restart and leave releasing the canvas
   and the pending generation, Play again, the no-guess failure offer and
   its failure count, `cancelGeneration` back to the closed board, the
-  controller poll; the board choice helpers (`js/classic2d/board-choice.js`)
+  controller poll, the board opened at the scale setting inside the panel's
+  frame with its layouts and the player's scrolls reported and `setScale`
+  refitting it, the ring reaching the sampler (-1 when hidden), the
+  shell's scale, panel and scroll-hint wiring; the board choice helpers (`js/classic2d/board-choice.js`)
   against `CUSTOM_LIMITS`, the no-guess default and the density hint; the
   `#c2d-choice` markup (the switch under the sizes with its helper line,
   the density hint under the info line) and the `#c2d` / `#c2d-status`
@@ -549,8 +566,12 @@ browser checks for everything that needs WebGL or the DOM.
   layers, the shell's Cancel and offer wiring, the catalogue entry. One Playwright test
   goes menu → Classic 2D → Expert → first click → pause → resume → back to
   menu and checks the timer and the pause card's time running while paused
-  and the abandoned summary with its two pauses (skipped when Playwright or
-  chromium is unavailable).
+  and the abandoned summary with its two pauses; one more, at 1024 × 768,
+  1366 × 650 and 1280 × 800 in both themes, checks Expert unclipped in
+  play and in the viewer, Beginner at 48 px, the panel's edge readouts and
+  Pause, a clipped custom board's shadow, scroll bar and one-time hint
+  (gone for good once scrolled), and no ring for a mouse player (both
+  skipped when Playwright or chromium is unavailable).
 - `tests/classic2d-fidelity.test.mjs` — the Classic 2D inputs and custom
   limits against `tests/fidelity/minesweeper-online.md`: each test cites
   an entry by heading ("Chording: which inputs chord", "Flag timing",
@@ -678,7 +699,8 @@ browser checks for everything that needs WebGL or the DOM.
   sampling interval the decoder gives each replay by mode and format
   version (equal to the samplers' constants at the current version, never
   stored in the blob), the encoder's
-  `RangeError` on a malformed replay, the cursor event on the square graph
+  `RangeError` on a malformed replay, a cursor event's -1 for a hidden ring
+  round-tripping with no new type or version, the cursor event on the square graph
   and the view-mode event on the box only, a newer version refused with its
   own error, an older one decoded and upgraded step by step, version 2's
   pause spans round-tripping and their malformed forms refused, a version 1
@@ -688,7 +710,9 @@ browser checks for everything that needs WebGL or the DOM.
 - `tests/replay-recorder.test.mjs` — the recorder and sealer
   (`js/replay/recorder.js`): every action recorded in order with its time,
   the board's arrival completing the header, a backwards time held, an
-  equal sample not stored, typed buffers growing through thousands of
+  equal sample not stored, the cursor stream opening with -1 and carrying
+  -1 while the ring hides (another negative cell failing it), typed
+  buffers growing through thousands of
   events, the movement cap (2 MB by default) marking where movement ended
   while actions go on, sealing a win, a loss and an abandon — listing
   fields, size, the same replay on a second seal — that decode and
@@ -703,7 +727,8 @@ browser checks for everything that needs WebGL or the DOM.
   and off the board, a recorded 2D game with a pause — its span in the
   header, the actions after it later by the paused time — sealed at the win, nothing recorded
   before the first click and the recorder discarded on restart, a no-guess
-  failure played standard, the sampler's schedule across frame jitter,
+  failure played standard, the sampler's schedule across frame jitter, the
+  ring's visibility recorded as -1 while hidden and its cell while shown,
   `mountSampler2D` reading the last pointer position through the view, and
   the replay beside the summary in the mode's finished and abandoned
   reports through the mode host and the pause controller, null from a mode
@@ -774,9 +799,13 @@ browser checks for everything that needs WebGL or the DOM.
   time format; the 2D pointer held through a still stretch and interpolated
   over the last sampling interval before the next sample, across a shorter
   gap throughout, at the replay's interval or the 2D sampler's by default,
-  the cursor as the focus ring, the pointer placed through the board layout
-  and scroll and following a refit while paused, the view following the
-  pointer, else the cursor, on a scrolling board; opening from a blob, a
+  the ring only while the recorded cursor event is a cell (-1 hidden, an
+  older recording's opening cell no ring, every 2D fixture with no ring),
+  the same at any seek as in playback, the pointer placed through the
+  board layout and scroll and following a refit while paused, the view
+  following the pointer, else the cursor, on a scrolling board and never
+  on one that fits, the board scale reaching the mounted viewer; the
+  shell mounting the 2D viewer at the scale setting; opening from a blob, a
   replay object, the hand-off's `{blob}` or a library id, verification first
   and each failure line with Back still working, no viewer for the graph, a
   box replay with no 3D viewer showing the WebGL 2 line while a square one
@@ -880,7 +909,9 @@ browser checks for everything that needs WebGL or the DOM.
   document registered, created on a first launch, seeded from the records'
   per-mode game counters, read back, a malformed one seeded afresh; games
   counted per mode at game started and the 3D rules block ended by a
-  finished 3D game only; the one-time toast and aim hint across launches;
+  finished 3D game only; the one-time toast, aim hint and Classic 2D
+  scroll hint across launches (a document stored before the scroll hint
+  reading it as not yet seen);
   per-mode dismissal; non-persisting and throwing storage and failing
   records behaving as on first use; `stripShown` for both modes; the strips'
   words in either device's names; `hidCube`, `aimHintCell` and
@@ -938,7 +969,9 @@ browser checks for everything that needs WebGL or the DOM.
   doing nothing on the main menu.
 - `tests/settings-store.test.mjs` — the schema (`js/settings/schema.js`:
   every setting's type, range or values and default, `isValid`, the
-  `confirmRestart` boolean with no legacy key) and the
+  `confirmRestart` boolean with no legacy key, `boardScale` read as 100 %
+  from a document written before it and remembered across a reload) and
+  the
   store (`js/settings/store.js`) over the memory backend: missing, invalid
   and non-object documents filled with defaults, `get` before load and on an
   unknown key, validated whole-document saves, a rejected value kept out,

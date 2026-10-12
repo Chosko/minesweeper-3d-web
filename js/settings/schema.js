@@ -13,6 +13,7 @@ export const SCHEMA = Object.freeze({
   invertY: boolean('invertY', false),
   fullscreen: boolean('fullscreen', false),
   renderResolution: choice('renderResolution', ['auto', 'sharp', 'fast'], 'auto'),
+  boardScale: choice('boardScale', ['fit', '100', '125'], '100'),
   theme: choice('theme', ['light', 'dark'], 'light'),
   volume: number('volume', 0, 1, 0.7),
   muted: boolean('muted', false),

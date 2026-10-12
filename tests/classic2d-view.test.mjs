@@ -1,7 +1,10 @@
-// Classic 2D board view (js/classic2d/board-view.js): the fit rule and layout, hit-testing in a
-// fitted and a scrolled board, per-cell redraw from the engine's change lists through the tile
-// skin, full repaints on resize, pixel-ratio and theme change, scrolling and panning, the hidden
-// board while paused, and in a browser the board drawn in both themes.
+// Classic 2D board view (js/classic2d/board-view.js): the fit rule and layout — the floor, the cap
+// per board scale, the frame and the panel around the board, Expert and Beginner at the windows
+// the game must fit — hit-testing in a fitted and a scrolled board, per-cell redraw from the
+// engine's change lists through the tile skin, full repaints on resize, pixel-ratio, scale and
+// theme change, scrolling and panning, a clipped board's shadows and scroll bars, the focus ring's
+// redraws, the hidden board while paused, and in a browser the board drawn in both themes and the
+// Classic 2D screen at the windows it must fit.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -11,8 +14,10 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import {
-  fitTileSize, boardLayout, cellAtLayout, createBoardView, PAN_MODIFIER, BOARD_BACKGROUND,
+  fitTileSize, boardLayout, cellAtLayout, createBoardView, PAN_MODIFIER, BOARD_BACKGROUND, BOARD_SHADOW, BOARD_SCROLLBAR,
+  BOARD_SCALES, DEFAULT_BOARD_SCALE, TILE_CAP, tileCap, panelRect, clipMarks, SCROLLBAR, CURSOR_RING,
 } from '../js/classic2d/board-view.js';
+import { SCHEMA } from '../js/settings/schema.js';
 import { MIN_TILE_SIZE } from '../js/classic2d/tile-skin.js';
 import { createSquareGrid } from '../js/engine/square-grid.js';
 import { createGameWithMines } from '../js/engine/rules.js';
@@ -24,12 +29,19 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 function fakeContext() {
   const calls = [];
-  const state = { fillStyle: '#000000' };
+  const state = { fillStyle: '#000000', strokeStyle: '#000000' };
   return new Proxy(state, {
     get(target, prop) {
       if (prop === 'calls') return calls;
       if (prop in target) return target[prop];
-      return (...args) => { calls.push({ op: prop, args, fill: target.fillStyle }); };
+      if (prop === 'createLinearGradient') {
+        return (...args) => {
+          const gradient = { kind: 'gradient', args, stops: [], addColorStop(at, colour) { gradient.stops.push([at, colour]); } };
+          calls.push({ op: prop, args, gradient });
+          return gradient;
+        };
+      }
+      return (...args) => { calls.push({ op: prop, args, fill: target.fillStyle, stroke: target.strokeStyle }); };
     },
     set(target, prop, value) { target[prop] = value; return true; },
   });
@@ -68,39 +80,128 @@ function beginnerGame() {
   return { grid, game };
 }
 
-function makeView({ cols = 9, rows = 9, width = 600, height = 500, pixelRatio = 1, token } = {}) {
+// A view at the Fit scale unless one is given: the fit rule's own numbers, with no cap.
+function makeView({ cols = 9, rows = 9, width = 600, height = 500, pixelRatio = 1, token, scale = 'fit', frame, onLayout } = {}) {
   const grid = createSquareGrid(cols, rows);
   const canvas = fakeCanvas();
   const skin = fakeSkinFactory();
-  const tokens = { light: { '--color-board-frame': '#111111' }, dark: { '--color-board-frame': '#222222' } };
+  const tokens = {
+    light: { '--color-board-frame': '#111111', '--color-board-shadow': '#333333', '--color-board-scrollbar': '#444444', '--color-tile-cursor': '#0000ff' },
+    dark: { '--color-board-frame': '#222222', '--color-board-shadow': '#333333', '--color-board-scrollbar': '#444444', '--color-tile-cursor': '#0000ff' },
+  };
   let theme = 'light';
   const view = createBoardView({
-    canvas, grid, createSkin: skin.createSkin,
+    canvas, grid, createSkin: skin.createSkin, scale, frame, onLayout,
     token: token ?? ((name) => tokenMap(tokens[theme])(name)),
   });
   view.resize(width, height, pixelRatio);
   return { grid, canvas, skin, view, setTheme: (t) => { theme = t; } };
 }
 
-const backgroundFills = (canvas) => canvas.ctx.calls.filter((c) => c.op === 'fillRect');
+const M = MIN_TILE_SIZE;
+const backgroundFills = (canvas) => canvas.ctx.calls.filter((c) => c.op === 'fillRect' && (c.fill === '#111111' || c.fill === '#222222'));
+const gradients = (canvas) => canvas.ctx.calls.filter((c) => c.op === 'createLinearGradient');
+const barFills = (canvas) => canvas.ctx.calls.filter((c) => c.op === 'fillRect' && c.fill === '#444444');
 
 // ---------- fit rule and layout ----------
 
-test('the tile is the largest whole size that fits the board, never below MIN_TILE_SIZE', () => {
-  // The available area below the 64px overlay bar with 16px margins, in a 1366×768 window.
-  const area = { width: 1366 - 32, height: 768 - 64 - 48 };
-  assert.equal(fitTileSize(30, 16, area.width, area.height), MIN_TILE_SIZE, 'Expert gets the minimum');
-  assert.equal(fitTileSize(9, 9, area.width, area.height), Math.floor(656 / 9));
-  assert.equal(fitTileSize(16, 16, area.width, area.height), 41);
-  assert.equal(fitTileSize(100, 100, area.width, area.height), MIN_TILE_SIZE, 'clamped to the minimum');
-  assert.equal(fitTileSize(4, 2, 100, 100), MIN_TILE_SIZE);
+test('the tile is the largest whole size that fits the board, at most the cap and never below the floor of 26 px', () => {
+  assert.equal(M, 26, 'the floor: decision 10 of docs/UX_REVIEW.md');
+  assert.equal(fitTileSize(9, 9, 656, 656), Math.floor(656 / 9), 'no cap by default');
+  assert.equal(fitTileSize(9, 9, 656, 656, M, 48), 48, 'capped');
+  assert.equal(fitTileSize(30, 16, 600, 300, M, 48), M, 'a board too large keeps the floor');
+  assert.equal(fitTileSize(100, 100, 1334, 656), M, 'clamped to the floor');
+  assert.equal(fitTileSize(4, 2, 100, 100), M);
   assert.equal(fitTileSize(2, 1, 1000, 1000), 500);
-  assert.equal(fitTileSize(2, 1, 1000, 1000, 600), 600, 'an explicit minimum');
+  assert.equal(fitTileSize(2, 1, 1000, 1000, 600), 600, 'an explicit floor');
+  assert.equal(fitTileSize(2, 1, 1000, 1000, 10, 20), 20, 'an explicit cap');
   for (const [c, r] of [[9, 9], [16, 16], [30, 16], [7, 3]]) {
-    const t = fitTileSize(c, r, 1001, 777);
-    assert.ok(Number.isInteger(t) && t >= MIN_TILE_SIZE);
-    assert.ok(t === MIN_TILE_SIZE || (t * c <= 1001 && t * r <= 777), 'a fitted board fits');
+    const t = fitTileSize(c, r, 1001, 777, M, 48);
+    assert.ok(Number.isInteger(t) && t >= M && t <= 48);
+    assert.ok(t === M || (t * c <= 1001 && t * r <= 777), 'a fitted board fits');
   }
+});
+
+test('the board scale caps the tile: 48 px at 100 % (the default), 60 px at 125 %, none at Fit', () => {
+  assert.deepEqual([...BOARD_SCALES], [...SCHEMA.boardScale.values], 'the settings\' boardScale values');
+  assert.equal(DEFAULT_BOARD_SCALE, SCHEMA.boardScale.default);
+  assert.equal(DEFAULT_BOARD_SCALE, '100');
+  assert.equal(TILE_CAP, 48);
+  assert.equal(tileCap('100'), 48);
+  assert.equal(tileCap('125'), 60);
+  assert.equal(tileCap('fit'), Infinity);
+  assert.equal(tileCap(), 48, 'the default scale');
+  for (const scale of BOARD_SCALES) {
+    const big = boardLayout({ cols: 30, rows: 16, width: 600, height: 300, max: tileCap(scale) });
+    assert.equal(big.tile, M, `${scale}: a board too large shrinks to the floor before it scrolls`);
+  }
+  const { view } = makeView({ scale: null });
+  assert.equal(view.scale, '100', 'a view opens at the default scale');
+  assert.equal(view.layout.tile, 48);
+});
+
+// The panel's frame as the Classic 2D screen takes it (js/ui.js panelFrame2D): a 1 px border and
+// 8 px inside it on every side, the readouts on the top edge (a 48 px row stands in for the
+// measured one, a little taller than it) and 8 px between them and the board.
+const FRAME = Object.freeze({ top: 9 + 48 + 8, right: 9, bottom: 9, left: 9, minWidth: 520 });
+const area = (w, h) => ({ width: w - 32, height: h - 32 }); // the window less its 16 px margins
+
+test('at the default scale Expert fits with no scroll at 1024 × 768, 1280 × 800 and 1366 × 650, and any 1024 px window with room for 16 rows at the floor', () => {
+  for (const [w, h] of [[1024, 768], [1280, 800], [1366, 650]]) {
+    const l = boardLayout({ cols: 30, rows: 16, ...area(w, h), max: tileCap('100'), frame: FRAME });
+    assert.equal(l.scrolls, false, `${w} × ${h}: Expert fits`);
+    assert.ok(l.tile >= M && l.tile <= 48, `${w} × ${h}: ${l.tile} px`);
+    assert.ok(l.viewX >= FRAME.left && l.viewX + l.viewWidth <= l.width - FRAME.right, `${w} × ${h}: no clipped column`);
+    assert.ok(l.viewY >= FRAME.top && l.viewY + l.viewHeight <= l.height - FRAME.bottom, `${w} × ${h}: no clipped row`);
+    assert.deepEqual([l.viewWidth, l.viewHeight], [30 * l.tile, 16 * l.tile], `${w} × ${h}: every cell in view`);
+  }
+  const tallEnough = 32 + FRAME.top + FRAME.bottom + 16 * M;
+  for (const scale of BOARD_SCALES) {
+    const l = boardLayout({ cols: 30, rows: 16, ...area(1024, tallEnough), max: tileCap(scale), frame: FRAME });
+    assert.equal(l.scrolls, false, `${scale}: a 1024 × ${tallEnough} window fits Expert at the floor`);
+    assert.equal(l.tile, M);
+  }
+  assert.equal(boardLayout({ cols: 30, rows: 16, ...area(1024, tallEnough - 1), frame: FRAME }).scrolls, true, 'a pixel less, it scrolls');
+});
+
+test('at 1280 × 800 Beginner plays at 48 px tiles by default, 60 px at 125 % and fills the area at Fit', () => {
+  const at = (scale) => boardLayout({ cols: 9, rows: 9, ...area(1280, 800), max: tileCap(scale), frame: FRAME }).tile;
+  assert.equal(at('100'), 48);
+  assert.equal(at('125'), 60);
+  assert.equal(at('fit'), Math.floor((800 - 32 - FRAME.top - FRAME.bottom) / 9));
+});
+
+test('the panel frames the board: the view widened by the frame, centred in the area, at least the readouts wide', () => {
+  const l = boardLayout({ cols: 9, rows: 9, width: 1000, height: 700, max: 48, frame: FRAME });
+  assert.deepEqual([l.viewWidth, l.viewHeight], [432, 432]);
+  const natural = 432 + 18;
+  assert.equal(l.viewX, 9 + Math.floor((1000 - 18 - 432) / 2), 'centred with its frame');
+  assert.equal(l.viewY, Math.floor((700 - 432 - FRAME.top - FRAME.bottom) / 2) + FRAME.top);
+  assert.deepEqual([l.offsetX, l.offsetY], [l.viewX, l.viewY], 'the board starts at the view');
+  const p = panelRect(l, FRAME);
+  assert.equal(p.width, Math.max(natural, FRAME.minWidth), 'as wide as the readouts');
+  assert.equal(p.x + p.width / 2, l.viewX + l.viewWidth / 2, 'centred on the board');
+  assert.deepEqual([p.y, p.height], [l.viewY - FRAME.top, 432 + FRAME.top + FRAME.bottom], 'the readouts on its top edge');
+  assert.deepEqual(panelRect(l, { ...FRAME, minWidth: 0 }), { x: l.viewX - 9, y: l.viewY - FRAME.top, width: natural, height: p.height });
+  const wide = boardLayout({ cols: 30, rows: 16, width: 1000, height: 700, max: 48, frame: FRAME });
+  const pw = panelRect(wide, FRAME);
+  assert.deepEqual([pw.width, pw.x], [wide.viewWidth + 18, wide.viewX - 9], 'a board wider than the readouts sets the width');
+  const none = boardLayout({ cols: 9, rows: 9, width: 600, height: 500 });
+  assert.deepEqual(panelRect(none), { x: none.viewX, y: none.viewY, width: 495, height: 495 }, 'no frame: the view itself');
+});
+
+test('a clipped board fills the area inside the frame and the panel fills the area', () => {
+  const l = boardLayout({ cols: 100, rows: 100, width: 992, height: 736, max: 48, frame: FRAME });
+  assert.equal(l.tile, M);
+  assert.equal(l.scrolls, true);
+  assert.deepEqual([l.viewX, l.viewY, l.viewWidth, l.viewHeight], [9, FRAME.top, 992 - 18, 736 - FRAME.top - 9]);
+  assert.deepEqual([l.maxScrollX, l.maxScrollY], [100 * M - (992 - 18), 100 * M - (736 - FRAME.top - 9)]);
+  assert.deepEqual(panelRect(l, FRAME), { x: 0, y: 0, width: 992, height: 736 });
+  const at = (x, y, scroll = { x: 0, y: 0 }) => cellAtLayout(l, scroll, 100, 100, x, y);
+  assert.equal(at(9, FRAME.top), 0, 'the first cell at the view\'s corner');
+  assert.equal(at(8, FRAME.top + 5), -1, 'the frame is no cell');
+  assert.equal(at(20, FRAME.top - 1), -1, 'the readouts\' edge is no cell');
+  assert.equal(at(992 - 9, 100), -1, 'nor the right frame, where tiles run on under it');
 });
 
 test('a fitted board is centred with nothing to scroll; a larger one starts at the edge and scrolls', () => {
@@ -110,14 +211,17 @@ test('a fitted board is centred with nothing to scroll; a larger one starts at t
   assert.deepEqual([fits.offsetX, fits.offsetY], [52, 2]);
   assert.deepEqual([fits.maxScrollX, fits.maxScrollY, fits.scrolls], [0, 0, false]);
 
+  assert.deepEqual([fits.viewX, fits.viewY, fits.viewWidth, fits.viewHeight], [52, 2, 495, 495], 'the view is the board');
+
   const big = boardLayout({ cols: 100, rows: 100, width: 1334, height: 656 });
-  assert.equal(big.tile, MIN_TILE_SIZE);
+  assert.equal(big.tile, M);
   assert.deepEqual([big.offsetX, big.offsetY], [0, 0]);
-  assert.deepEqual([big.maxScrollX, big.maxScrollY, big.scrolls], [4100 - 1334, 4100 - 656, true]);
+  assert.deepEqual([big.maxScrollX, big.maxScrollY, big.scrolls], [100 * M - 1334, 100 * M - 656, true]);
+  assert.deepEqual([big.viewWidth, big.viewHeight], [1334, 656], 'the view is the area');
 
   const wide = boardLayout({ cols: 100, rows: 2, width: 1334, height: 656 });
   assert.equal(wide.maxScrollY, 0, 'only the axis that overflows scrolls');
-  assert.equal(wide.offsetY, Math.floor((656 - 82) / 2), 'and the other stays centred');
+  assert.equal(wide.offsetY, Math.floor((656 - 2 * M) / 2), 'and the other stays centred');
   assert.ok(wide.maxScrollX > 0);
 });
 
@@ -141,11 +245,11 @@ test('cellAt maps a position to its cell, and to -1 outside the board', () => {
 test('cellAt follows the scroll position in a scrolled board', () => {
   const { view, grid } = makeView({ cols: 100, rows: 100, width: 1334, height: 656 });
   assert.equal(view.cellAt(0, 0), 0);
-  view.scrollTo(41 * 10 + 5, 41 * 3);
-  assert.deepEqual(view.scroll, { x: 415, y: 123 });
+  view.scrollTo(M * 10 + 5, M * 3);
+  assert.deepEqual(view.scroll, { x: M * 10 + 5, y: M * 3 });
   assert.equal(view.cellAt(0, 0), grid.index(10, 3));
-  assert.equal(view.cellAt(36, 0), grid.index(11, 3), 'the partly hidden tile ends 36px in');
-  assert.equal(view.cellAt(1333, 655), grid.index(Math.floor((415 + 1333) / 41), Math.floor((123 + 655) / 41)));
+  assert.equal(view.cellAt(M - 5, 0), grid.index(11, 3), 'the partly hidden tile ends 5px short of a tile in');
+  assert.equal(view.cellAt(1333, 655), grid.index(Math.floor((M * 10 + 5 + 1333) / M), Math.floor((M * 3 + 655) / M)));
   view.scrollTo(1e9, 1e9);
   assert.equal(view.cellAt(1333, 655), grid.index(99, 99), 'the far corner at the end of the scroll');
   assert.equal(view.cellAt(1334, 10), -1, 'past the canvas');
@@ -154,8 +258,8 @@ test('cellAt follows the scroll position in a scrolled board', () => {
 test('cellRect gives a cell\'s tile in canvas coordinates, scroll included', () => {
   const { view } = makeView({ cols: 100, rows: 100, width: 1334, height: 656 });
   view.scrollTo(100, 50);
-  assert.deepEqual(view.cellRect(0), { x: -100, y: -50, size: 41 });
-  assert.deepEqual(view.cellRect(101), { x: 41 - 100, y: 41 - 50, size: 41 });
+  assert.deepEqual(view.cellRect(0), { x: -100, y: -50, size: M });
+  assert.deepEqual(view.cellRect(101), { x: M - 100, y: M - 50, size: M });
 });
 
 // ---------- painting ----------
@@ -177,19 +281,23 @@ test('the canvas takes the area at the device pixel ratio, and a game paints eve
   assert.deepEqual(transform.args, [1.5, 0, 0, 1.5, 0, 0]);
   const bg = backgroundFills(canvas)[0];
   assert.equal(bg.fill, '#111111', 'the background is the board token');
-  assert.deepEqual(bg.args, [0, 0, 600, 500]);
+  assert.deepEqual(bg.args, [52, 2, 495, 495], 'under the board only');
+  const clear = canvas.ctx.calls.find((c) => c.op === 'clearRect');
+  assert.deepEqual(clear.args, [0, 0, 600, 500], 'the rest of the canvas is left clear, for the frame behind it');
   setTheme('dark');
   skin.redraw();
   assert.equal(backgroundFills(canvas).at(-1).fill, '#222222', 'read again after a theme change');
 });
 
-test('the background is drawn from a design token, never a literal colour', () => {
+test('the background and the marks are drawn from design tokens, never a literal colour', () => {
   assert.equal(BOARD_BACKGROUND, '--color-board-frame');
+  assert.equal(BOARD_SHADOW, '--color-board-shadow');
+  assert.equal(BOARD_SCROLLBAR, '--color-board-scrollbar');
   const src = readFileSync(join(ROOT, 'js/classic2d/board-view.js'), 'utf8');
   assert.doesNotMatch(src, /#[0-9a-fA-F]{3,8}\b/, 'no literal colours');
   assert.doesNotMatch(src, /\brgba?\(/, 'no literal colours');
   const css = readFileSync(join(ROOT, 'css/tokens.css'), 'utf8');
-  assert.match(css, new RegExp(`${BOARD_BACKGROUND}:`), 'the token exists');
+  for (const name of [BOARD_BACKGROUND, BOARD_SHADOW, BOARD_SCROLLBAR]) assert.match(css, new RegExp(`${name}:`), `${name} exists`);
 });
 
 test('after an action only the changed cells are repainted, in the engine\'s state', () => {
@@ -242,8 +350,8 @@ test('a scrolled board paints only the tiles in view', () => {
   const { view, skin, grid } = makeView({ cols: 100, rows: 100, width: 1334, height: 656 });
   const game = createGameWithMines({ graph: grid.graph, ...REF, mines: [grid.index(99, 99)], dimensions: { width: 100, height: 100 } });
   view.setGame(game);
-  const cols = Math.ceil(1334 / 41) + 1;
-  assert.ok(skin.draws.length <= cols * (Math.ceil(656 / 41) + 1) && skin.draws.length > 500);
+  const cols = Math.ceil(1334 / M) + 1;
+  assert.ok(skin.draws.length <= cols * (Math.ceil(656 / M) + 1) && skin.draws.length > 500);
   skin.draws.length = 0;
   view.scrollTo(20, 0);
   assert.ok(skin.draws.length > 500, 'scrolling repaints');
@@ -251,8 +359,8 @@ test('a scrolled board paints only the tiles in view', () => {
   const r = game.reveal(grid.index(0, 0));
   assert.ok(r.changed.length > 9000, 'the flood opens nearly the whole board');
   view.update(r.changed);
-  assert.ok(skin.draws.length < 1000, 'only visible changed cells are drawn');
-  assert.ok(skin.draws.every((d) => d.x > -41 && d.x < 1334 && d.y > -41 && d.y < 656));
+  assert.ok(skin.draws.length < 2000, 'only visible changed cells are drawn');
+  assert.ok(skin.draws.every((d) => d.x > -M && d.x < 1334 && d.y > -M && d.y < 656));
 });
 
 // ---------- scrolling and panning ----------
@@ -269,9 +377,9 @@ test('scrolling is clamped, and a board that fits never scrolls', () => {
   view.scrollBy(30, 40);
   assert.deepEqual(view.scroll, { x: 30, y: 40 });
   view.scrollTo(1e6, 1e6);
-  assert.deepEqual(view.scroll, { x: 4100 - 1334, y: 4100 - 656 });
+  assert.deepEqual(view.scroll, { x: 100 * M - 1334, y: 100 * M - 656 });
   view.resize(2000, 2000, 1);
-  assert.deepEqual(view.scroll, { x: 4100 - 2000, y: 4100 - 2000 }, 're-clamped on resize');
+  assert.deepEqual(view.scroll, { x: 100 * M - 2000, y: 100 * M - 2000 }, 're-clamped on resize');
 });
 
 test('the wheel scrolls a large board: vertical, horizontal, shift for horizontal, lines and pages', () => {
@@ -283,7 +391,7 @@ test('the wheel scrolls a large board: vertical, horizontal, shift for horizonta
   view.wheel({ deltaX: 0, deltaY: 50, deltaMode: 0, shiftKey: true });
   assert.deepEqual(view.scroll, { x: 80, y: 100 }, 'shift turns a vertical wheel horizontal');
   view.wheel({ deltaX: 0, deltaY: 2, deltaMode: 1 });
-  assert.deepEqual(view.scroll, { x: 80, y: 100 + 2 * 41 }, 'a line is a tile');
+  assert.deepEqual(view.scroll, { x: 80, y: 100 + 2 * M }, 'a line is a tile');
   view.wheel({ deltaX: 0, deltaY: -1, deltaMode: 2 });
   assert.deepEqual(view.scroll, { x: 80, y: 0 }, 'a page is the view');
 });
@@ -299,18 +407,132 @@ test('dragging with the pan modifier moves the board with the pointer', () => {
 test('ensureVisible scrolls just enough to show a cell, for the keyboard and controller cursor', () => {
   const { view, grid } = makeView({ cols: 100, rows: 100, width: 1334, height: 656 });
   assert.equal(view.ensureVisible(grid.index(5, 5)), false, 'already in view');
-  assert.equal(view.ensureVisible(grid.index(40, 0)), true);
-  assert.deepEqual(view.scroll, { x: 41 * 41 - 1334, y: 0 }, 'the cell lands on the right edge');
-  view.ensureVisible(grid.index(0, 30));
-  assert.deepEqual(view.scroll, { x: 0, y: 31 * 41 - 656 }, 'left edge, bottom edge');
+  assert.equal(view.ensureVisible(grid.index(60, 0)), true);
+  assert.deepEqual(view.scroll, { x: 61 * M - 1334, y: 0 }, 'the cell lands on the right edge');
+  view.ensureVisible(grid.index(0, 40));
+  assert.deepEqual(view.scroll, { x: 0, y: 41 * M - 656 }, 'left edge, bottom edge');
   view.ensureVisible(grid.index(0, 2));
-  assert.deepEqual(view.scroll, { x: 0, y: 2 * 41 }, 'top edge');
+  assert.deepEqual(view.scroll, { x: 0, y: 2 * M }, 'top edge');
   for (const c of [grid.index(99, 99), grid.index(57, 3), 0]) {
     view.ensureVisible(c);
     const r = view.cellRect(c);
-    assert.ok(r.x >= 0 && r.y >= 0 && r.x + 41 <= 1334 && r.y + 41 <= 656);
+    assert.ok(r.x >= 0 && r.y >= 0 && r.x + M <= 1334 && r.y + M <= 656);
   }
   assert.equal(view.ensureVisible(-1), false);
+});
+
+// ---------- a clipped board's marks ----------
+
+test('a clipped board marks each edge beyond which cells are hidden, and a scroll bar per overflowing axis', () => {
+  const l = boardLayout({ cols: 100, rows: 100, width: 1334, height: 656 });
+  const start = clipMarks(l, { x: 0, y: 0 });
+  assert.deepEqual([start.left, start.top, start.right, start.bottom], [false, false, true, true], 'at the start: right and bottom');
+  const mid = clipMarks(l, { x: 300, y: 400 });
+  assert.deepEqual([mid.left, mid.top, mid.right, mid.bottom], [true, true, true, true]);
+  const end = clipMarks(l, { x: l.maxScrollX, y: l.maxScrollY });
+  assert.deepEqual([end.left, end.top, end.right, end.bottom], [true, true, false, false], 'scrolled to an edge, its shadow goes');
+  const { thickness, inset } = SCROLLBAR;
+  assert.deepEqual(mid.barX, {
+    x: 300 / (100 * M) * 1334, y: 656 - inset - thickness, width: 1334 / (100 * M) * 1334, height: thickness,
+  }, 'the horizontal bar: the visible part\'s size and place along the bottom');
+  assert.deepEqual(mid.barY, {
+    x: 1334 - inset - thickness, y: 400 / (100 * M) * 656, width: thickness, height: 656 / (100 * M) * 656,
+  }, 'the vertical bar along the right');
+  assert.ok(end.barX.x + end.barX.width <= 1334 + 1e-9 && Math.abs(end.barX.x + end.barX.width - 1334) < 1e-9, 'it ends with the board');
+  const wide = clipMarks(boardLayout({ cols: 100, rows: 2, width: 1334, height: 656 }), { x: 0, y: 0 });
+  assert.equal(wide.barY, null, 'no bar on an axis that fits');
+  assert.deepEqual([wide.top, wide.bottom], [false, false]);
+  assert.ok(wide.barX);
+});
+
+test('the view draws the shadows and bars only on a board that scrolls, and keeps them over a redrawn edge tile', () => {
+  const fits = makeView();
+  fits.view.setGame(beginnerGame().game);
+  assert.equal(gradients(fits.canvas).length, 0, 'a board that fits draws no shadow');
+  assert.equal(barFills(fits.canvas).length, 0, 'and no scroll bar');
+
+  const { view, canvas, grid } = makeView({ cols: 100, rows: 100, width: 1334, height: 656 });
+  const game = createGameWithMines({ graph: grid.graph, ...REF, mines: [grid.index(99, 99)], dimensions: { width: 100, height: 100 } });
+  canvas.ctx.calls.length = 0;
+  view.setGame(game);
+  assert.equal(gradients(canvas).length, 2, 'at the start: the right and bottom shadows');
+  const shade = gradients(canvas).map((g) => g.gradient.stops);
+  assert.ok(shade.every((stops) => stops[0][1] === '#333333' && stops[1][1] === 'transparent'), 'from the shadow token to clear');
+  assert.equal(barFills(canvas).length, 2, 'two scroll bars');
+  canvas.ctx.calls.length = 0;
+  view.scrollTo(view.layout.maxScrollX, 0);
+  assert.equal(gradients(canvas).length, 2, 'scrolled to the right edge: left and bottom');
+  const right = gradients(canvas).find((g) => g.args[0] === 0 || g.args[0] === 12);
+  assert.ok(right, 'the left band starts at the view\'s left edge');
+
+  canvas.ctx.calls.length = 0;
+  const edgeCell = grid.index(99, 3); // in the right column, under the vertical bar
+  view.setCursor(edgeCell);
+  assert.ok(barFills(canvas).length >= 1, 'a redrawn tile under a bar gets its part of the bar back');
+  canvas.ctx.calls.length = 0;
+  view.setCursor(grid.index(80, 10)); // the old one under the bar, the new one clear of every mark
+  const clips = canvas.ctx.calls.filter((c) => c.op === 'rect').length;
+  assert.ok(clips >= 2, 'the marks are clipped to the tiles redrawn');
+});
+
+test('the focus ring: setCursor redraws only the cells it leaves and enters, and -1 hides it, redrawing one cell', () => {
+  const { view, canvas, skin, grid } = makeView();
+  view.setGame(beginnerGame().game);
+  const rings = () => canvas.ctx.calls.filter((c) => c.op === 'strokeRect' && c.stroke === '#0000ff');
+  skin.draws.length = 0;
+  canvas.ctx.calls.length = 0;
+  view.setCursor(grid.index(2, 2));
+  assert.deepEqual([skin.draws.length, rings().length], [1, 1], 'showing it: one cell');
+  skin.draws.length = 0;
+  canvas.ctx.calls.length = 0;
+  view.setCursor(-1);
+  assert.equal(view.cursor, -1);
+  assert.deepEqual([skin.draws.length, rings().length], [1, 0], 'hiding it: its cell only, with no ring');
+  assert.deepEqual([skin.draws[0].x, skin.draws[0].y], [52 + 2 * 55, 2 + 2 * 55]);
+  skin.draws.length = 0;
+  view.setCursor(-1);
+  assert.equal(skin.draws.length, 0, 'hidden again: nothing');
+});
+
+test('setScale refits at another scale and repaints; every refit reports the layout', () => {
+  const layouts = [];
+  const { view, skin } = makeView({ scale: '100', onLayout: (l) => layouts.push(l) });
+  assert.equal(layouts.length, 1, 'the first fit');
+  assert.equal(view.layout.tile, 48);
+  view.setGame(beginnerGame().game);
+  skin.draws.length = 0;
+  view.setScale('125');
+  assert.deepEqual([view.scale, view.layout.tile, skin.draws.length], ['125', 55, 81], '125 %: the cap 60 px, here the area\'s 55');
+  assert.equal(layouts.at(-1), view.layout);
+  view.setScale('fit');
+  assert.equal(view.layout.tile, 55);
+  skin.draws.length = 0;
+  view.setScale('100');
+  assert.equal(view.layout.tile, 48);
+  assert.equal(skin.draws[0].size, 48, 'repainted at the new size');
+  const n = layouts.length;
+  skin.draws.length = 0;
+  view.setScale('100');
+  assert.deepEqual([layouts.length, skin.draws.length], [n, 0], 'the same scale changes nothing');
+  view.setScale('huge');
+  assert.equal(view.scale, '100', 'an unknown scale is the default');
+});
+
+test('a framed view keeps the board inside the frame: hit-testing, ensureVisible and the clip stop at the view', () => {
+  const frame = { top: 60, right: 9, bottom: 9, left: 9 };
+  const { view, canvas, grid } = makeView({ cols: 100, rows: 100, width: 1000, height: 700, frame });
+  const l = view.layout;
+  assert.deepEqual([l.viewX, l.viewY, l.viewWidth, l.viewHeight], [9, 60, 982, 631]);
+  assert.equal(view.cellAt(5, 100), -1, 'the frame is no cell');
+  assert.equal(view.cellAt(9, 60), 0);
+  view.ensureVisible(grid.index(0, 30));
+  const r = view.cellRect(grid.index(0, 30));
+  assert.equal(r.y + r.size, 60 + 631, 'brought in above the bottom frame');
+  view.ensureVisible(grid.index(0, 0));
+  assert.equal(view.cellRect(0).y, 60, 'and below the top one');
+  view.setGame(createGameWithMines({ graph: grid.graph, ...REF, mines: [1], dimensions: { width: 100, height: 100 } }));
+  const clip = canvas.ctx.calls.filter((c) => c.op === 'rect').at(0);
+  assert.deepEqual(clip.args, [9, 60, 982, 631], 'tiles are clipped to the view');
 });
 
 // ---------- hidden while paused ----------
@@ -423,7 +645,17 @@ async function mountBoard({ cols, rows, scroll }) {
     layout: view.layout,
     scroll: view.scroll,
     canvas: { width: view.canvas.width, height: view.canvas.height },
-    background: { want: hex('--color-board-frame'), got: rgb(1, 1) },
+    outside: [...ctx.getImageData(Math.round(dpr), Math.round(dpr), 1, 1).data][3],
+    marks: (() => {
+      const l = view.layout;
+      const inner = view.cellAt(l.viewX + l.viewWidth / 2, l.viewY + l.viewHeight / 2);
+      return {
+        bar: rgb(l.viewX + l.viewWidth - 4, l.viewY + l.viewHeight / 2),
+        shadow: rgb(l.viewX + 1, l.viewY + l.viewHeight / 2),
+        middle: rgb(l.viewX + l.viewWidth / 2, l.viewY + l.viewHeight / 2),
+        inner: [game.cellState(inner), game.cellNumber(inner)],
+      };
+    })(),
     revealed: { want: hex('--color-tile-revealed'), got: centre(revealedZero), cell: revealedZero, state: game.cellState(revealedZero) },
     closed: { want: hex('--color-tile-closed'), got: centre(grid.index(cols - 1, 1)) },
     topLeftCell: view.cellAt(1, 1),
@@ -458,21 +690,22 @@ test('in a browser, Beginner and Expert in both themes and a large scrolled cust
     await page.goto(`http://127.0.0.1:${server.address().port}/dev/components.html`);
     // The host stands where the board sits in play: below the 64px bar, 16px from every edge.
     const area = { width: 1366 - 32, height: 768 - 96 - 16 };
+    const M = 26;
 
     for (const theme of ['light', 'dark']) {
       await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
       for (const [name, cols, rows] of [['beginner', 9, 9], ['expert', 30, 16]]) {
         const r = await page.evaluate(mountBoard, { cols, rows });
-        const tile = Math.max(41, Math.floor(Math.min(area.width / cols, area.height / rows)));
+        const tile = Math.max(M, Math.min(48, Math.floor(Math.min(area.width / cols, area.height / rows))));
         assert.equal(r.layout.tile, tile, `${theme} ${name}: tile ${tile}`);
-        if (name === 'expert') assert.equal(r.layout.tile, 41, 'Expert gets the minimum tile');
+        if (name === 'beginner') assert.equal(r.layout.tile, 48, 'Beginner at the default cap');
         assert.equal(r.layout.scrolls, false, `${theme} ${name}: fits without scrolling`);
         assert.deepEqual(r.canvas, area, `${theme} ${name}: canvas fills the area`);
         assert.equal(r.revealed.state, 'revealed');
         assert.ok(near(r.revealed.got, r.revealed.want), `${theme} ${name}: revealed tile ${r.revealed.got} ~ ${r.revealed.want}`);
         assert.ok(near(r.closed.got, r.closed.want), `${theme} ${name}: closed tile ${r.closed.got} ~ ${r.closed.want}`);
         if (name === 'beginner') {
-          assert.ok(near(r.background.got, r.background.want), `${theme}: background ${r.background.got} ~ ${r.background.want}`);
+          assert.equal(r.outside, 0, `${theme}: the canvas is clear around a board that fits`);
           assert.equal(r.topLeftCell, -1, 'the corner of a centred board is no cell');
         }
         const shot = await page.locator('#board-host').screenshot({ path: join(shots, `classic2d-${name}-${theme}.png`) });
@@ -497,10 +730,14 @@ test('in a browser, Beginner and Expert in both themes and a large scrolled cust
     // A large custom board keeps the minimum tile and scrolls by wheel, shift-drag and cursor follow.
     await page.evaluate(() => globalThis.msTheme.setTheme('light'));
     const big = await page.evaluate(mountBoard, { cols: 100, rows: 100, scroll: { x: 600, y: 900 } });
-    assert.equal(big.layout.tile, 41);
+    assert.equal(big.layout.tile, M);
     assert.equal(big.layout.scrolls, true);
     assert.deepEqual(big.scroll, { x: 600, y: 900 });
-    assert.equal(big.topLeftCell, Math.floor(901 / 41) * 100 + Math.floor(601 / 41));
+    assert.equal(big.topLeftCell, Math.floor(901 / M) * 100 + Math.floor(601 / M));
+    assert.deepEqual(big.marks.inner, ['revealed', 0]);
+    assert.ok(near(big.marks.middle, big.revealed.want), 'the middle is the plain tile');
+    assert.ok(!near(big.marks.bar, big.revealed.want), `the vertical scroll bar shows on the right edge ${big.marks.bar}`);
+    assert.ok(!near(big.marks.shadow, big.revealed.want), `the left edge, scrolled past, is shaded ${big.marks.shadow}`);
     assert.deepEqual([big.middle.state, big.middle.number], ['revealed', 0]);
     assert.ok(near(big.middle.got, big.revealed.want), `scrolled board drawn: ${big.middle.got} ~ ${big.revealed.want}`);
     const box = await page.locator('#board-host').boundingBox();
@@ -520,15 +757,15 @@ test('in a browser, Beginner and Expert in both themes and a large scrolled cust
       const d = v.canvas.getContext('2d').getImageData(Math.round(r.x + r.size / 2), Math.round(r.y + r.size / 2), 1, 1).data;
       return { rect: r, got: [d[0], d[1], d[2]], height: v.canvas.height };
     });
-    assert.ok(sample.rect.y + 41 <= sample.height && sample.rect.y >= 0, 'the cursor cell is brought into view');
+    assert.ok(sample.rect.y + M <= sample.height && sample.rect.y >= 0, 'the cursor cell is brought into view');
     assert.ok(near(sample.got, big.revealed.want), `bottom-row revealed tile drawn after scrolling ${sample.got}`);
     const shot = await page.locator('#board-host').screenshot({ path: join(shots, 'classic2d-custom-100x100-scrolled.png') });
     assert.ok(shot.length > 1000);
 
     // Resizing the window refits the board.
     await page.evaluate(mountBoard, { cols: 9, rows: 9 });
-    await page.setViewportSize({ width: 800, height: 600 });
-    await page.waitForFunction(() => globalThis.__view.layout.tile === Math.max(41, Math.floor(Math.min(768 / 9, 488 / 9))));
+    await page.setViewportSize({ width: 500, height: 400 });
+    await page.waitForFunction(() => globalThis.__view.layout.tile === Math.max(26, Math.min(48, Math.floor(Math.min(468 / 9, 288 / 9)))));
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

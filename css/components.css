@@ -141,7 +141,7 @@
               tokens; it runs only while the spinner shows (a hidden card
               draws nothing).
 
-   ui-overlay-bar — in-game timer, mine counter, click counter and pause, over either board
+   ui-overlay-bar — in-game timer, mine counter, click counter and pause, for either board
      Element: <div class="ui-overlay-bar" role="group" aria-label="Game">
                 <div class="ui-stat" role="group" aria-labelledby="T">
                   <span class="ui-stat__label" id="T">Time</span>
@@ -166,9 +166,10 @@
               (mineCounterDigits); the clamps (timer at 999, counter at
               -99) are display-only. Clicks is the game's counted clicks
               (wasted included) as a plain number, 0 before the first
-              click and frozen with the timer at the end. The bar carries
-              its own opaque surface, so it reads the same over the 3D
-              scene and over a plain board.
+              click and frozen with the timer at the end. Over the 3D
+              scene the bar carries its own opaque surface; in Classic 2D
+              it is the top edge of the board's framed panel
+              (css/style.css .c2d-panel) and sits on the panel's surface.
 
    Screen compositions. Layout-only classes a screen is assembled with; they
    carry no colour of their own beyond the text roles of ui-heading and

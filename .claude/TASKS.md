@@ -821,7 +821,7 @@ Preconditions: none
 
 ## 134. 2D board scale, framed panel, cursor ring
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/classic2d/tile-skin.js, js/classic2d/board-view.js, js/classic2d/cursor-input.js, js/classic2d/mode.js, js/classic2d/scroll-hint.js, js/replay/viewer-2d.js, js/replay/viewer.js, js/settings/schema.js, js/settings/page.js, js/main.js, js/ui.js, index.html, css/style.css, tests/classic2d-view.test.mjs, tests/classic2d-cursor.test.mjs, tests/classic2d-mode.test.mjs, tests/tile-skin.test.mjs, tests/replay-2d.test.mjs, tests/replay-viewer.test.mjs, tests/settings-store.test.mjs, tests/settings-page.test.mjs, tests/components.test.mjs, .claude/domain/features/square-tile-skin.md, .claude/domain/features/classic-2d-square-play.md, .claude/domain/features/settings.md, .claude/domain/features/replay-playback.md, .claude/domain/features/screen-components.md, .claude/domain/features/replay-recording.md
 Preconditions: none

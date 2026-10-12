@@ -172,6 +172,21 @@ for (const theme of ['light', 'dark']) {
     }
   });
 
+  test(`${theme}: a scrolling board's shadow and scroll bar are translucent tokens; the bar meets 3:1 on every tile`, () => {
+    const t = THEMES[theme];
+    for (const name of ['--color-board-shadow', '--color-board-scrollbar']) {
+      assert.ok(t.has(name), `${theme} theme declares ${name}`);
+      const a = parseColor(t.get(name))[3];
+      assert.ok(a > 0 && a < 1, `${theme} ${name} is translucent`);
+    }
+    const bar = parseColor(t.get('--color-board-scrollbar'));
+    for (const bg of ['--color-tile-closed', '--color-tile-pressed', '--color-tile-revealed', '--color-tile-flagged']) {
+      const under = parseColor(t.get(bg));
+      const r = contrast(over(bar, under), under);
+      assert.ok(r >= 3, `--color-board-scrollbar on ${bg}: ${r.toFixed(2)}:1`);
+    }
+  });
+
   test(`${theme}: the cursor ring meets 3:1 on the tile edge and every tile it can sit on`, () => {
     const t = THEMES[theme];
     const ring = parseColor(t.get('--color-tile-cursor'));

@@ -4,7 +4,7 @@
 // mode and the active device (the controller in the connected controller's glyphs).
 import { formatOverlayTime, formatMineCount, mineCounterDigits, bindSegmented } from './ui/components.js';
 import { GLYPHS } from './gamepad.js';
-import { bindingsHtml, hudStripHtml, hintStripHtml, helpFootHtml } from './settings/bindings.js';
+import { bindingsHtml, hudStripHtml, hintStripHtml, helpFootHtml, hintText } from './settings/bindings.js';
 import { settingsPageHtml, bindingsSectionHtml, bindResetPanel } from './settings/page.js';
 import { DIM_MIN, DIM_MAX } from './mode3d/board-choice.js';
 import { formatTime } from './results/view.js';
@@ -25,6 +25,13 @@ export const fmtDims = (s) => `${s.X} × ${s.Y} × ${s.Z}`;
 /** The pause card's status line, its time (seconds) in the results time format: "Time 11.643 s · 12 mines left". */
 export const pauseLine = (time, minesLeft) => `Time ${formatTime(Math.round(time * 1000))} · ${minesLeft} mine${minesLeft === 1 ? '' : 's'} left`;
 const NO_GUESS = ' · no-guess';
+/**
+ * The Classic 2D panel's frame: its 1 px border and the --space-2 (8 px) inside it, around the
+ * board and around the overlay readouts on its top edge, with --space-2 between the readouts and
+ * the board.
+ */
+export const PANEL_INSET = 9;
+export const PANEL_GAP = 8;
 /** A 3D board as the overlay bar, the ready card (with `mines`) and the pause card name it. */
 export function boardLine3D(s, { mines = false } = {}) {
   const count = mines ? ` · ${s.mines} mine${s.mines === 1 ? '' : 's'}` : '';
@@ -54,7 +61,8 @@ export class UI {
       resume: $('p-resume'), home: $('p-home'), restart: $('p-restart'), pauseMenu: $('p-menu'), pauseActions: $('pause-actions'),
       confirm: $('pause-confirm'), confirmText: $('pause-confirm-text'), confirmYes: $('p-confirm-yes'),
       chipShift: $('chip-shift'), chipSpace: $('chip-space'), chipCtrl: $('chip-ctrl'),
-      c2dChoice: $('c2d-choice'), c2d: $('c2d'), c2dBoard: $('c2d-board'), c2dStatus: $('c2d-status'),
+      c2dChoice: $('c2d-choice'), c2d: $('c2d'), c2dBoard: $('c2d-board'), c2dPanel: $('c2d-panel'), c2dStatus: $('c2d-status'),
+      hudBar: $('hud').querySelector('.hud-bar'),
       c2dStatusTitle: $('c2d-status-title'), c2dStatusText: $('c2d-status-text'), c2dOffer: $('c2d-offer'),
       c2dSpinner: $('c2d-spinner'), c2dWait: $('c2d-wait'),
       m3dStatus: $('m3d-status'), m3dStatusTitle: $('m3d-status-title'), m3dStatusText: $('m3d-status-text'), m3dOffer: $('m3d-offer'),
@@ -183,6 +191,8 @@ export class UI {
   _hide2D() {
     this.el.c2d.classList.add('hidden');
     this.el.hud.classList.remove('hud--2d');
+    this.el.hudBar.style.left = '';
+    this.el.hudBar.style.top = '';
   }
   showMenu() {
     this._hideMenus();
@@ -244,8 +254,9 @@ export class UI {
     this.el.c2dChoice.classList.remove('hidden');
   }
   /**
-   * The Classic 2D board: the overlay bar without the 3D tools, and the board area filling the
-   * window below it with --space-4 (16 px) margins.
+   * The Classic 2D board: the board area fills the window with --space-4 (16 px) margins, and the
+   * board sits in a framed panel there whose top edge carries the overlay readouts (time, mines,
+   * clicks, board, Pause) — the overlay bar, without the 3D tools, placed by placePanel2D.
    */
   showClassic2D() {
     this._hideMenus();
@@ -256,8 +267,29 @@ export class UI {
     this.el.hud.classList.add('hud--2d');
     this.el.hud.classList.remove('hidden');
     this.el.c2d.classList.remove('hidden');
-    const bar = this.el.hud.querySelector('.ui-overlay-bar').getBoundingClientRect();
-    this.el.c2dBoard.style.top = `${Math.round(bar.bottom) + 16}px`;
+  }
+  /**
+   * The room the panel's frame takes around the board (js/classic2d/board-view.js frame): the
+   * readouts and the gap above it, the inset on every side, and at least the readouts' width.
+   */
+  panelFrame2D() {
+    const bar = this.el.hudBar.getBoundingClientRect();
+    return {
+      top: PANEL_INSET + Math.ceil(bar.height) + PANEL_GAP,
+      right: PANEL_INSET,
+      bottom: PANEL_INSET,
+      left: PANEL_INSET,
+      minWidth: Math.ceil(bar.width) + 2 * PANEL_INSET,
+    };
+  }
+  /** The panel at `rect` in the board area (board-view.js panelRect), its readouts on its top edge. */
+  placePanel2D(rect) {
+    const panel = this.el.c2dPanel;
+    Object.assign(panel.style, { left: `${rect.x}px`, top: `${rect.y}px`, width: `${rect.width}px`, height: `${rect.height}px` });
+    panel.classList.remove('hidden');
+    const area = this.el.c2dBoard.getBoundingClientRect();
+    this.el.hudBar.style.left = `${Math.round(area.left + rect.x + PANEL_INSET)}px`;
+    this.el.hudBar.style.top = `${Math.round(area.top + rect.y + PANEL_INSET)}px`;
   }
   /** The Classic 2D board the overlay bar and the pause card name ("30 × 16 · no-guess"). */
   setBoard2D(board) { this._setBoardText(boardLine2D(board)); this._sizeMines(board.mines); }
@@ -318,12 +350,17 @@ export class UI {
   }
   _syncHelp() { if (!this._helpByUser) this.toggleHelp(false); }
   /**
-   * The first-use hint strip of the shown mode, in the active device's names; on the 2D board it
-   * takes room at the bottom. It steps aside while the help panel is open.
+   * The first-use hint strip of the shown mode, in the active device's names — or, with `scroll`,
+   * the one-time hint beside a clipped Classic 2D board; on the 2D board it takes room at the
+   * bottom. It steps aside while the help panel is open.
    */
-  setHintStrip(on) {
+  setHintStrip(on, { scroll = false } = {}) {
     this._hint = !!on;
-    if (on) this.el.hintStripText.innerHTML = hintStripHtml(this._mode, this._device, this._glyphs);
+    this._hintKind = on && scroll ? 'scroll' : 'mode';
+    if (on) {
+      this.el.hintStripText.innerHTML = scroll ? hintText('scrollHint', this._device, this._glyphs)
+        : hintStripHtml(this._mode, this._device, this._glyphs);
+    }
     this._showHint();
     this.el.c2d.classList.toggle('c2d--hint', this._hint && this._mode === 'classic-2d');
   }
@@ -331,8 +368,9 @@ export class UI {
   /** The hint strip's dismiss button (the shell keeps the dismissal for good). */
   dismissHint() {
     if (!this._hint) return;
+    const kind = this._hintKind;
     this.setHintStrip(false);
-    this.cb.onDismissHint?.(this._mode);
+    this.cb.onDismissHint?.(this._mode, kind);
   }
   /** Crosshair feedback: on = a cell is targeted. Touches the DOM only on change. */
   setCrosshair(on) {
@@ -492,7 +530,7 @@ export class UI {
     this._renderHudStrip();
     this.el.controlsBody.innerHTML = bindingsHtml(this._controlsTab, this._device, this._glyphs);
     this.el.pauseControls.innerHTML = bindingsHtml(this._mode, this._device, this._glyphs);
-    if (this._hint) this.el.hintStripText.innerHTML = hintStripHtml(this._mode, this._device, this._glyphs);
+    if (this._hint) this.setHintStrip(true, { scroll: this._hintKind === 'scroll' });
     if (!this.el.settings.classList.contains('hidden')) this.el.settingsBindings.innerHTML = bindingsSectionHtml(this._glyphs);
   }
 

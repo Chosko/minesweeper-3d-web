@@ -20,9 +20,11 @@ looks.
   slow-answer "generating" state, the failure offer, actions, pause, win or
   loss, restart and leave with their summaries and replays, and the game's
   replay recorder. DOM-free; generation is reached only through the client.
-- `js/classic2d/board-view.js` — the board view: the fit rule, the layout,
-  `cellAt`, per-cell redraw from the engine's change lists, scrolling and
-  panning, the hidden board while paused, and `mountBoardView`, the browser
+- `js/classic2d/board-view.js` — the board view: the fit rule with its
+  floor, the board scale's cap and a page's frame, the layout and the
+  panel's rectangle, `cellAt`, per-cell redraw from the engine's change
+  lists, scrolling and panning with a clipped board's shadows and scroll
+  bars, the hidden board while paused, and `mountBoardView`, the browser
   wiring around it. DOM-free at import.
 - `js/classic2d/pointer-input.js` — the mouse input: a press-and-release
   state machine over the buttons, its rules read from the reference
@@ -97,32 +99,49 @@ looks.
   ([replay.md](replay.md)). The module head comment is the contract.
 
 `js/classic2d/board-view.js` exports
-- `fitTileSize(cols, rows, width, height, min = MIN_TILE_SIZE)` — the
-  largest whole tile at which the board fits the area, never below `min`.
-- `boardLayout({cols, rows, width, height, min})` → frozen `{width, height,
-  tile, boardWidth, boardHeight, offsetX, offsetY, maxScrollX, maxScrollY,
-  scrolls}`.
+- `fitTileSize(cols, rows, width, height, min = MIN_TILE_SIZE, max =
+  Infinity)` — the largest whole tile at which the board fits the area, at
+  most `max`, never below `min`.
+- `BOARD_SCALES` (`fit`, `100`, `125` — the settings' `boardScale` values),
+  `DEFAULT_BOARD_SCALE` (`100`), `TILE_CAP` (48), `tileCap(scale)` → 48 at
+  100 %, 60 at 125 %, `Infinity` at Fit.
+- `boardLayout({cols, rows, width, height, min, max, frame})` → frozen
+  `{width, height, tile, boardWidth, boardHeight, viewX, viewY, viewWidth,
+  viewHeight, offsetX, offsetY, maxScrollX, maxScrollY, scrolls}` — `frame`
+  `{top, right, bottom, left, minWidth}` the room a page's frame takes
+  around the board; the view rectangle is the board, centred with its
+  frame, or the area inside the frame when it scrolls; `offsetX/Y` the
+  board's corner at scroll 0 (the view's).
+- `panelRect(layout, frame)` → `{x, y, width, height}` — the frame around
+  the view, at least `frame.minWidth` wide, never wider than the area.
+- `clipMarks(layout, scroll)` → `{left, right, top, bottom, barX, barY}` —
+  the edges with hidden cells beyond (their inset shadows) and the scroll
+  bar per overflowing axis (`{x, y, width, height}` or null);
+  `SHADOW_DEPTH` (12), `SCROLLBAR` (`{thickness: 4, inset: 2}`).
 - `cellAtLayout(layout, scroll, cols, rows, x, y)` — the cell index under a
-  canvas position, or -1.
-- `BOARD_BACKGROUND` (`--color-board-frame`) — the token the area around
-  the board is filled with; `CURSOR_RING` (`--color-tile-cursor`) — the
+  canvas position inside the view, or -1.
+- `BOARD_BACKGROUND` (`--color-board-frame`) — the token the view is
+  filled with under the tiles; `BOARD_SHADOW` (`--color-board-shadow`) and
+  `BOARD_SCROLLBAR` (`--color-board-scrollbar`) — a clipped board's marks; `CURSOR_RING` (`--color-tile-cursor`) — the
   board-only token the cursor's focus ring is drawn in, distinct from the
   tile edge it covers (the shell's focus outlines keep
   `--color-focus-ring`); `PAN_MODIFIER` (`shiftKey`) — the key a drag
   holds to pan.
-- `createBoardView({canvas, grid, createSkin, token})` → `{resize(width,
-  height, pixelRatio), setGame(game), update(changed), repaint(), cellAt(x,
-  y), cellRect(c) → {x, y, size}, scroll, scrollTo, scrollBy, pan(dx, dy),
+- `createBoardView({canvas, grid, createSkin, token, scale, frame,
+  onLayout})` → `{resize(width, height, pixelRatio), setScale(scale),
+  scale, setGame(game), update(changed), repaint(), cellAt(x, y),
+  cellRect(c) → {x, y, size}, scroll, scrollTo, scrollBy, pan(dx, dy),
   wheel(event) → taken, ensureVisible(c) → scrolled, setHidden(hidden),
   setPressed(cells), pressed, setCursor(c), cursor, hidden, layout,
-  pixelRatio, canvas, dispose}` — `grid` is the square grid
+  pixelRatio, canvas, dispose}` — `onLayout(layout)` after every refit — `grid` is the square grid
   ([engine.md](engine.md)); `game` is the engine game whose `cellState` /
   `cellNumber` it draws; `createSkin` defaults to `createTileSkin`, `token`
   to the token reader. Positions are canvas CSS pixels.
-- `mountBoardView({container, grid, win, ...})` → the view plus
-  `destroy()`: a canvas filling `container`, refitted on container resize
-  and device-pixel-ratio change, scrolled by the wheel and panned by a
-  primary-button drag with `PAN_MODIFIER` held.
+- `mountBoardView({container, grid, win, onUserScroll, ...})` → the view
+  plus `destroy()`: a canvas filling `container` above what it already
+  holds, refitted on container resize and device-pixel-ratio change,
+  scrolled by the wheel and panned by a primary-button drag with
+  `PAN_MODIFIER` held, `onUserScroll()` after each such scroll.
 
 `js/classic2d/pointer-input.js` exports
 - `BUTTON` (`LEFT` 0, `MIDDLE` 1, `RIGHT` 2).
@@ -139,28 +158,34 @@ looks.
 `js/classic2d/cursor-input.js` exports
 - `CURSOR_KEYS` (key code → `up`/`down`/`left`/`right`/`reveal`/`flag`/
   `chord`), `PAD_MAP` (`BTN` index → the same), `STICK_THRESHOLD`.
-- `createCursorInput({grid, game, onPress, onAction, onCursor?, rules?,
-  active?, delay?, interval?})` → `{cell, setCell(c), move(dx, dy),
+- `createCursorInput({grid, game, onPress, onAction, onCursor?, onUse?,
+  rules?, active?, delay?, interval?})` — `onUse()` before each cursor input
+  the board takes (a direction held, a button pressed) → `{cell, setCell(c), move(dx, dy),
   hold(source, dir), let(source, dir), tick(now), down(source, button),
   up(source, button), pad(poll, now), reset(), holding, moving}` — `button`
   is `'reveal' | 'flag' | 'chord'`; `poll` is a `GamepadReader` poll
   (`held`, `ls`) after the shell's held-button suppression.
 - `mountCursorInput({view, session, grid?, win?, rules?, delay?,
-  interval?})` → `{input, pad(poll, now?), destroy()}`.
+  interval?})` → `{input, pad(poll, now?), shown, destroy()}` — `shown`
+  whether the ring shows.
 
 `js/classic2d/mode.js` exports
 - `MODE_ID` (`'classic-2d'`); `createClassic2DMode(report, {flow,
   lastChoice, createClient?, mount?, clock?, randomSeed?,
   generatingDelayMs?})` → the contract methods plus `hideBoard(hidden)`,
-  `tick()`, `pad(poll, now)`, `retry()`, `playStandard()`,
+  `tick()`, `pad(poll, now)`, `setScale(scale)`, `retry()`, `playStandard()`,
   `cancelGeneration()` → whether a board being generated was cancelled,
-  `loadChoice()`, `status()` → `{state, time, minesLeft}`, `boardHidden`; the contract's
+  `loadChoice()`, `status()` → `{state, time, minesLeft}`, `boardHidden`, `boardView` (the
+  open view, for the debug hook); the contract's
   optional `replay(summary)` is the session's. `flow` is
   `{openBoardChoice(choice), show(), container(), hud({seconds, minesLeft,
   clicks}),
   board({width, height, mines, noGuess}), generating(shown),
-  failed(failure|null)}`, `board` once per game and again when
-  `playStandard()` turns no-guess off;
+  failed(failure|null), scale?(), frame?(), layout?(layout),
+  scrolled?()}`, `board` once per game and again when
+  `playStandard()` turns no-guess off; `scale` and `frame` are read as
+  each board opens, `layout` follows every refit (the shell places the
+  panel), `scrolled` each scroll the player made;
   `mount` defaults to `{board: mountBoardView, pointer: mountPointerInput,
   cursor: mountCursorInput, sampler: mountSampler2D}`; without `sampler`
   no movement is recorded. The module head comment is the contract.
@@ -178,7 +203,7 @@ looks.
   played" line, for the switch's position, refilled on its `change`.
 
 `js/classic2d/tile-skin.js` exports
-- `MIN_TILE_SIZE` (41) — the smallest tile size the board view allows,
+- `MIN_TILE_SIZE` (26) — the floor a board shrinks to before it scrolls,
   shared by the skin and the view.
 - `TILE_STATES` — `closed`, `pressed`, `revealed`, `flagged`, `mine`,
   `exploded`, `wrong-flag`: the rules engine's cell states
@@ -251,32 +276,41 @@ looks.
   marked from `pause()` to `resume()` on the clock, or to `stop()` when the
   game ends paused; one begun while generating counts from the start, and
   one ended before it does not count.
-- **Fit rule.** The view fits the board to whatever area it is given;
-  `MIN_TILE_SIZE` was measured for the area below the overlay bar with
-  16 px margins
+- **Fit rule.** The view fits the board to the area it is given less the
+  frame, at the largest whole tile up to the scale's cap and never below
+  `MIN_TILE_SIZE`
   ([square-tile-skin.md § Minimum tile size](../domain/features/square-tile-skin.md)).
-  A board that fits is centred and
-  never scrolls; one that does not keeps `MIN_TILE_SIZE`, starts at its
-  top-left corner and scrolls on the overflowing axis only. Tiles sit edge
-  to edge.
+  A board that fits is centred with its frame and never scrolls; one that
+  does not keeps `MIN_TILE_SIZE`, fills the area inside the frame, starts
+  at its top-left corner and scrolls on the overflowing axis only. Tiles
+  sit edge to edge. `setScale` refits over the same area and repaints.
+  In play the frame is the panel's (the shell's `panelFrame2D`); the
+  replay viewer has none.
 - **Redraw.** `update(changed)` draws only the listed cells that are in
-  view, through the skin's `drawTile`; a full repaint (background plus every
-  visible tile) happens on `resize` with a new size or pixel ratio, on
+  view, through the skin's `drawTile`; a full repaint (the canvas cleared,
+  the view filled with the background, every visible tile, then the marks)
+  happens on `resize` with a new size or pixel ratio, on a scale change, on
   `setGame`, on a scroll, on showing a hidden board and on a theme change,
-  which reaches the view as the skin's `redraw` callback. The background
+  which reaches the view as the skin's `redraw` callback. On a board that
+  scrolls, drawing is clipped to the view, and a redrawn tile under a
+  shadow or a bar gets its part of them back. The background
   token is read on every full repaint. The canvas is sized in device pixels
   with a `setTransform(ratio…)`; all drawing is in CSS pixels.
 - **Scrolling.** The scroll position is whole CSS pixels clamped to
   `0..maxScroll`, re-clamped on resize. The wheel scrolls only a board that
   overflows (a line is a tile, a page is the view, shift turns a vertical
   wheel horizontal); `ensureVisible` scrolls the least that shows a cell's
-  whole tile, for the cursor.
+  whole tile inside the view, for the cursor. A scrolling board draws an
+  inset shadow (`BOARD_SHADOW` to clear, `SHADOW_DEPTH` deep) on each edge
+  with hidden cells beyond, and a thin bar (`BOARD_SCROLLBAR`) per
+  overflowing axis whose length and place are the visible part's.
 - **Pressed feedback.** `setPressed` redraws only the cells that gain or
   lose the press; a pressed cell draws as `pressed` only while the game
   has it closed, and `setGame` clears the set.
 - **Focus ring.** `setCursor` redraws the cell the ring leaves and the one
-  it enters; the ring is stroked inside its own tile after the tile, so a
-  cell redraw is enough to move it.
+  it enters, `setCursor(-1)` only the one it leaves; the ring is stroked
+  inside its own tile after the tile, so a cell redraw is enough to move or
+  hide it.
 - **Pointer input.** Reveal and chord act on the release of the last reveal
   button, a flag on the right press; a left + right gesture acts on the left
   release, as a chord only. Every branch reads a profile marker, so a rule
@@ -296,15 +330,22 @@ looks.
   stick through `stickCurve` past `STICK_THRESHOLD`; the mounted input
   ignores the system key repeat and ticks on animation frames while a
   direction key is held, and the controller reaches it only through
-  `pad(poll)`, which the shell's poll calls through the mode. Each move draws the ring on the
-  new cell and calls `ensureVisible`; input is taken only while the session
-  is `ready` or `playing` and not paused.
+  `pad(poll)`, which the shell's poll calls through the mode. The ring is on demand: none when
+  the board opens; the first cursor input (`onUse`) shows it on the
+  cursor's cell, and a `mousedown`, or a `mousemove` with movement, on the
+  canvas hides it (`setCursor(-1)`), the cursor keeping its cell. While it
+  shows, each move draws it on the new cell and calls `ensureVisible`;
+  input is taken only while the session is `ready` or `playing` and not
+  paused.
 - **The mode.** `start` normalises the choice, saves it as the last board
   choice and mounts a fresh view, inputs and movement sampler; the inputs
   see the session through a gate that reads paused while the board is
   hidden and redraws a flag placed before the first reveal (the session
-  emits no event then). `tick()` drives the sampler every frame, and the
-  cursor input's moves reach it beside the view. The session's `changed`
+  emits no event then). The view opens at `flow.scale()` inside
+  `flow.frame()`, reports each layout to `flow.layout` and each player
+  scroll to `flow.scrolled`; `setScale` refits it. `tick()` drives the
+  sampler every frame, and the cursor's ring reaches it beside the view:
+  its cell while shown, -1 when hidden. The session's `changed`
   redraws the listed cells and pushes the overlay; its board arriving
   reports started and can-pause, a win or loss can-pause false and finished
   with the session's replay. `restart` and `leave` leave the session
@@ -335,13 +376,11 @@ looks.
   reader's `onThemeChange`: the skin records the new theme, drops the cache
   and calls `redraw`. `invalidate()` drops it by hand; `dispose()`
   unsubscribes and drops it.
-- **`MIN_TILE_SIZE`** is the tile an Expert board (30 × 16) gets fitted
-  below the in-game overlay bar with 16 px (`--space-4`) between the window
-  edges, the bar and the board — 41 px in a 1366×768 window and in a
-  1280×800 window standing in for the Steam Deck. Every state and number is
-  legible at it in both themes (the browser test in
-  `tests/tile-skin.test.mjs`). A new board size or bar height that shrinks
-  the Expert tile changes it.
+- **`MIN_TILE_SIZE`** is 26 px, the readable floor of decision 10 in
+  `docs/UX_REVIEW.md`: Expert (30 × 16) fits, in the framed panel with
+  16 px (`--space-4`) window margins, any window 1024 px wide from 520 px
+  tall, and plays at 32 px at 1024 × 768. Every state and number is legible
+  at it in both themes (the browser test in `tests/tile-skin.test.mjs`).
 - **No second palette.** The module holds no literal colour; a new tile
   colour is a token in `css/tokens.css` with a dark value, held to the
   contrast contract by `tests/tokens.test.mjs`.
@@ -406,8 +445,9 @@ looks.
 - Changing the custom limits or the stored choice (`customMineCap`,
   `normaliseChoice` in `board-setup.js`, `CUSTOM_LIMITS` in
   `js/engine/profiles.js`).
-- Changing the fit rule, the layout or what triggers a full repaint
-  (`boardLayout`, `repaint`, `resize` in `board-view.js`).
+- Changing the fit rule, the cap, the frame, the layout, the marks or what
+  triggers a full repaint (`boardLayout`, `panelRect`, `clipMarks`,
+  `repaint`, `resize`, `setScale` in `board-view.js`).
 - Changing a pointer gesture or adding an input rule (`createPointerInput`,
   `pointerRules`, the profile markers in `js/engine/profiles.js`).
 - Changing a key or controller binding, or the cursor's repeat

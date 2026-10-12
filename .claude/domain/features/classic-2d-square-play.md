@@ -92,11 +92,24 @@ copied.
   board is ready, applies actions, and on win or loss stops the timer and
   hands the summary on. Restart discards the game and its pending
   generation; *Play again* starts a new one with the same choice.
-- **Board view.** Fits the board to the available area at the largest tile
-  size that fits, down to the skin's minimum tile size; below that it keeps
-  the minimum size and lets the player scroll or pan. Maps pointer
-  positions to cells, redraws only the cells each action changed, and asks
-  `square-tile-skin` to paint each one.
+- **Board view.** Fits the board to the window at the largest whole tile
+  size that fits, capped by the board-scale setting (`settings`): 48 px at
+  100 %, the default, 60 px at 125 %, no cap at Fit. Every scale shrinks the
+  tile to the skin's minimum tile size before the board scrolls, so Expert
+  fits any window 1024 px wide whose height leaves room for its 16 rows at
+  that minimum. The board sits centred in a fixed, framed panel sized to
+  the board at its tile, centred in the window below its top margin; the
+  panel's top edge carries the time, mines left, clicks, the board-size
+  label and Pause (`screen-components`). A board that does not fit at the
+  minimum fills the panel, the panel fills the window, and the player
+  scrolls or pans it; each edge beyond which cells are hidden carries an
+  inset shadow, each overflowing axis a thin scroll bar showing the visible
+  part's size and place, and the first clipped board shows a one-time hint
+  beside it, "Wheel scrolls · Shift+wheel sideways", which never shows
+  again once dismissed or once the player scrolls. A board that fits draws
+  none of the three. A setting change refits an open board at once. Maps
+  pointer positions to cells, redraws only the cells each action changed,
+  and asks `square-tile-skin` to paint each one.
 - **Pointer input.** A press-and-release state machine over the mouse
   buttons that reproduces the reference: which buttons and combinations
   reveal, flag and chord, what shows as pressed while a button is held, and
@@ -104,8 +117,12 @@ copied.
 - **Cursor input.** A cell cursor driven by keyboard and controller, with
   auto-repeat for held directions, drawn as a focus ring over the board in
   a board-only cursor colour distinct from the tile edge it covers, so the
-  ring shows on every tile state in both themes. Pointer and cursor input
-  both end in the same engine actions.
+  ring shows on every tile state in both themes. The ring shows only once
+  the player uses the cursor: no ring when a game starts; the first cursor
+  key or controller input shows it on the cursor's cell, and the next mouse
+  action on the board — a button pressed, or the pointer moving over it —
+  hides it, the cursor keeping its cell. Pointer and cursor input both end
+  in the same engine actions.
 - **Timer.** Elapsed time measured from the moment the board is ready,
   running through pauses, stopped at win or loss; displayed in whole
   seconds in the overlay and kept at millisecond resolution for the

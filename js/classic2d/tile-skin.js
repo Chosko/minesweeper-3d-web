@@ -7,10 +7,12 @@
 import { token as readerToken, onThemeChange as readerOnThemeChange, FALLBACK_COLOR } from '../tokens.js';
 
 // The smallest tile size the Classic 2D renderer allows, shared with it: the
-// tile an Expert board (30 × 16) gets in a 1366×768 and a 1280×800 window,
-// below the overlay bar with 16px margins. Every state and number stays
-// legible at it in both themes (tests/tile-skin.test.mjs).
-export const MIN_TILE_SIZE = 41;
+// readable floor a board shrinks to before it scrolls. With it an Expert board
+// (30 × 16) fits, inside the framed panel with 16px margins, every window
+// 1024px wide whose height leaves room for 16 rows at it (tests/tile-skin.test.mjs
+// measures the window). Every state and number stays legible at it in both
+// themes (the same test).
+export const MIN_TILE_SIZE = 26;
 
 // The rules engine's cell states (js/engine/rules.js CELL) plus `pressed`,
 // the renderer's feedback under a held click or chord.

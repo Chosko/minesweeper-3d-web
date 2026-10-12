@@ -19,12 +19,15 @@
 // same profile markers as the pointer input (pointerRules): the press follows the cursor and the
 // release acts where it is.
 //
-// createCursorInput({ grid, game, onPress, onAction, onCursor?, rules?, active?, delay?, interval? })
+// createCursorInput({ grid, game, onPress, onAction, onCursor?, onUse?, rules?, active?, delay?,
+//                    interval? })
 //   grid      the square grid (width, height, graph).
 //   game      () → the engine game, read for cellState / cellNumber.
 //   onPress   (cells) → the cells to show pressed, whenever that set changes.
 //   onAction  (kind, c) → kind 'reveal' | 'toggleFlag' | 'chord', the session's method names.
 //   onCursor  (c) → the cursor moved to cell c.
+//   onUse     () → a cursor input was used while the board takes input: a direction held (key,
+//             d-pad or the stick past STICK_THRESHOLD) or a button pressed, before it acts.
 //   active    () → false while the board takes no input: no press, no action, no move.
 //   delay, interval  the auto-repeat timing of a held direction (js/gamepad.js Repeat).
 //
@@ -39,10 +42,14 @@
 //   holding, moving                    whether a button / a direction is held.
 //
 // mountCursorInput({ view, session, grid?, win?, rules?, delay?, interval? }) → { input, pad,
-// destroy() }: the cursor shown on the view and kept in view, keys on the page (`win`) — the
-// system key repeat ignored, a held direction repeated on animation frames — and held inputs
-// dropped on blur. pad(poll, now?) is for the shell's controller poll. Keys with Ctrl, Alt or Meta
-// and every key not in CURSOR_KEYS are left alone.
+// shown, destroy() }: keys on the page (`win`) — the system key repeat ignored, a held direction
+// repeated on animation frames — and held inputs dropped on blur. pad(poll, now?) is for the
+// shell's controller poll. Keys with Ctrl, Alt or Meta and every key not in CURSOR_KEYS are left
+// alone. The ring is on demand: no ring when the board opens; the first cursor key or controller
+// input shows it on the cursor's cell (view.setCursor) and keeps that cell in view; the next mouse
+// action on the board — a button pressed on the canvas or the pointer moving over it — hides it
+// (view.setCursor(-1)), the cursor keeping its cell, until the next cursor or controller input.
+// `shown` is whether the ring shows.
 
 import { BTN, Repeat, stickCurve } from '../gamepad.js';
 import { CELL } from '../engine/rules.js';
@@ -82,7 +89,7 @@ const DIRECTIONS = Object.keys(STEP);
 const BUTTONS = ['reveal', 'flag', 'chord'];
 
 export function createCursorInput({
-  grid, game, onPress, onAction, onCursor = () => {}, rules = pointerRules(), active = () => true,
+  grid, game, onPress, onAction, onCursor = () => {}, onUse = () => {}, rules = pointerRules(), active = () => true,
   delay, interval,
 }) {
   const cols = grid.width;
@@ -161,7 +168,9 @@ export function createCursorInput({
   }
 
   function hold(source, dir) {
-    if (dirs[dir]) dirs[dir].add(source);
+    if (!dirs[dir]) return;
+    if (!dirs[dir].has(source) && active()) onUse();
+    dirs[dir].add(source);
   }
 
   function letGo(source, dir) {
@@ -187,6 +196,7 @@ export function createCursorInput({
   function down(source, button) {
     const set = held[button];
     if (!set || set.has(source) || !active()) return;
+    onUse();
     const was = pressing();
     const flagWas = held.flag.size > 0;
     set.add(source);
@@ -281,6 +291,7 @@ const PLAYABLE = new Set(['ready', 'playing']);
 export function mountCursorInput({ view, session, grid = session.setup.grid, win = globalThis, rules, delay, interval }) {
   const active = () => PLAYABLE.has(session.state) && !session.paused;
   const now = () => win.performance.now();
+  let ringShown = false;
   const input = createCursorInput({
     grid,
     game: () => session.game,
@@ -291,11 +302,26 @@ export function mountCursorInput({ view, session, grid = session.setup.grid, win
     onPress: (cells) => view.setPressed(cells),
     onAction: (kind, c) => session[kind](c),
     onCursor: (c) => {
+      if (!ringShown) return;
       view.setCursor(c);
       view.ensureVisible(c);
     },
+    onUse: () => {
+      if (ringShown) return;
+      ringShown = true;
+      view.setCursor(input.cell);
+      view.ensureVisible(input.cell);
+    },
   });
-  view.setCursor(input.cell);
+  // A mouse action on the board hides the ring; a pointer resting still sends no move (a synthetic
+  // move with no movement, as after a layout change under it, is not one).
+  const onMouse = (event) => {
+    if (!ringShown) return;
+    if (event.type === 'mousemove' && event.movementX === 0 && event.movementY === 0) return;
+    ringShown = false;
+    view.setCursor(-1);
+  };
+  const canvas = view.canvas;
 
   let frame = null;
   const loop = () => {
@@ -328,14 +354,19 @@ export function mountCursorInput({ view, session, grid = session.setup.grid, win
   win.addEventListener('keydown', onKeyDown);
   win.addEventListener('keyup', onKeyUp);
   win.addEventListener('blur', onBlur);
+  canvas?.addEventListener?.('mousedown', onMouse);
+  canvas?.addEventListener?.('mousemove', onMouse);
 
   return {
     input,
     pad: (poll, at = now()) => input.pad(poll, at),
+    get shown() { return ringShown; },
     destroy() {
       win.removeEventListener('keydown', onKeyDown);
       win.removeEventListener('keyup', onKeyUp);
       win.removeEventListener('blur', onBlur);
+      canvas?.removeEventListener?.('mousedown', onMouse);
+      canvas?.removeEventListener?.('mousemove', onMouse);
       if (frame !== null) win.cancelAnimationFrame(frame);
       frame = null;
       input.reset();

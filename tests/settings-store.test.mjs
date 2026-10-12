@@ -35,6 +35,7 @@ const EXPECTED_DEFAULTS = {
   invertY: false,
   fullscreen: false,
   renderResolution: 'auto',
+  boardScale: '100',
   theme: 'light',
   volume: 0.7,
   muted: false,
@@ -54,6 +55,8 @@ test('the schema declares every setting with its type, range or values, and defa
   for (const key of ['invertY', 'fullscreen', 'muted', 'confirmRestart']) assert.equal(SCHEMA[key].type, 'boolean');
   assert.equal(SCHEMA.renderResolution.type, 'choice');
   assert.deepEqual([...SCHEMA.renderResolution.values], ['auto', 'sharp', 'fast']);
+  assert.equal(SCHEMA.boardScale.type, 'choice');
+  assert.deepEqual([...SCHEMA.boardScale.values], ['fit', '100', '125'], 'the 2D board scale: Fit, 100 % and 125 %');
   assert.equal(SCHEMA.theme.type, 'choice');
   assert.deepEqual([...SCHEMA.theme.values], ['light', 'dark']);
   for (const key of SETTING_KEYS) {
@@ -78,6 +81,9 @@ test('isValid checks type and range or values', () => {
   assert.ok(!isValid('invertY', 1));
   assert.ok(isValid('renderResolution', 'sharp'));
   assert.ok(!isValid('renderResolution', 'Sharp'));
+  assert.ok(isValid('boardScale', 'fit') && isValid('boardScale', '125'));
+  assert.ok(!isValid('boardScale', 100), 'the scale is stored as its name');
+  assert.ok(!isValid('boardScale', '150'));
   assert.ok(!isValid('theme', 'system'));
   assert.ok(!isValid('nope', 1));
 });
@@ -110,6 +116,24 @@ test('load fills missing and invalid values with defaults', async () => {
   assert.equal(store.get('theme'), 'light');
   assert.equal(store.get('volume'), 0.7);
   assert.equal(store.get('renderResolution'), 'auto');
+});
+
+test('the board scale is saved with the other settings: a document from before it reads 100 %, with no version bump', async () => {
+  assert.equal(SETTINGS_VERSION, 1);
+  const before = { lookSensitivity: 2, invertY: true, fullscreen: false, renderResolution: 'fast', theme: 'dark', volume: 0.5, muted: false, confirmRestart: true };
+  const { store, backend, stored } = setup({ initial: { [SETTINGS_DOC]: raw(1, before) } });
+  await store.load();
+  assert.equal(store.get('boardScale'), '100');
+  assert.equal(store.get('renderResolution'), 'fast', 'the rest as stored');
+  const seen = [];
+  store.onChange('boardScale', (v) => seen.push(v));
+  assert.deepEqual(await store.set('boardScale', 'fit'), { ok: true });
+  assert.deepEqual(await store.set('boardScale', '150'), { ok: false, reason: 'invalid' });
+  assert.deepEqual(seen, ['100', 'fit'], 'the value at subscription, then the change');
+  assert.equal(stored().data.boardScale, 'fit');
+  const again = createSettingsStore({ storage: createStorage({ backend }), legacy: legacyOf(), onNotKept: () => {} });
+  await again.load();
+  assert.equal(again.get('boardScale'), 'fit', 'remembered for the profile');
 });
 
 test('a document that is not an object loads as every default', async () => {

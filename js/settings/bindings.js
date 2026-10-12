@@ -14,7 +14,7 @@
 //   mode binds on that device (F flags in Classic 2D, so it is not listed there).
 // hintStripHtml(mode, device, glyphs?) → the first-use hint strip of that mode, " · " between items.
 // helpFootHtml(mode, device, glyphs?) → the H panel's foot line; the release rule only in 3D.
-// hintText(name, device, glyphs?) → a one-time hint's plain text (`autoHide`, `aimHint`).
+// hintText(name, device, glyphs?) → a one-time hint's plain text (`autoHide`, `aimHint`, `scrollHint`).
 // createActiveDevice({ onChange }) → the active device: the controller while the last input came
 //   from a connected controller, otherwise the keyboard and mouse.
 
@@ -165,6 +165,7 @@ export const HELP_FOOT = Object.freeze({
 export const HINT_TEXT = Object.freeze({
   autoHide: Object.freeze({ keyboard: 'Solved cubes hide. Hold [Ctrl] to see them.', controller: 'Solved cubes hide. Hold {y} to see them.' }),
   aimHint: Object.freeze({ keyboard: 'Hold [Space] to aim through numbers.', controller: 'Hold {rb} to aim through numbers.' }),
+  scrollHint: Object.freeze({ keyboard: 'Wheel scrolls · Shift+wheel sideways', controller: 'Wheel scrolls · Shift+wheel sideways' }),
 });
 
 export function hudStripHtml(mode, device, glyphs = GLYPHS.generic, { muted = false } = {}) {

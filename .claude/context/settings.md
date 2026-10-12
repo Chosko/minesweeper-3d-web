@@ -33,6 +33,7 @@ read-only bindings list. Every module is DOM-free; `js/main.js` wires them
 | `invertY` | boolean | | false | 3D camera `invertY` |
 | `fullscreen` | boolean | | false | browser fullscreen |
 | `renderResolution` | choice | `auto`, `sharp`, `fast` | `auto` | 3D renderer pixel ratio |
+| `boardScale` | choice | `fit`, `100`, `125` | `100` | the Classic 2D tile's cap (`js/classic2d/board-view.js` `tileCap`): the open board (`mode2d.setScale`) and the replay viewer's 2D board (`REPLAY_VIEWER.setScale`), wired in `js/main.js` |
 | `theme` | choice | `light`, `dark` | `light` | `msTheme.setTheme` |
 | `volume` | number | 0–1 | 0.7 | `sfx.setVolume` |
 | `muted` | boolean | | false | `sfx.setMuted`, the Sound buttons' label, the Settings page's Sound toggle (on while false) |
@@ -85,7 +86,8 @@ Appliers (`js/settings/appliers.js`) — each returns its unsubscribe
 Page (`js/settings/page.js`)
 - `SETTINGS_SECTIONS` — Controls (`lookSensitivity`, `invertY`,
   `confirmRestart`), Graphics
-  (`fullscreen`, `renderResolution`), Theme (`theme`), Audio (`muted`,
+  (`fullscreen`, `renderResolution`, `boardScale` — "2D board scale", Fit,
+  100 %, 125 %), Theme (`theme`), Audio (`muted`,
   `volume`); `SETTING_LABELS` (`muted` reads Sound), `CHOICE_LABELS`.
 - `settingControl(key)` → `{ key, kind: 'slider' | 'toggle' | 'segmented',
   label, … }`: a number is a `ui-slider` (with `min`, `max`, `step`,
@@ -154,7 +156,7 @@ Bindings (`js/settings/bindings.js`)
   by " · ".
 - `HELP_FOOT[mode][device]`, `helpFootHtml(mode, device, glyphs?)` — the H
   panel's foot line, naming the release rule in 3D only.
-- `HINT_TEXT` (`autoHide`, `aimHint`), `hintText(name, device, glyphs?)` —
+- `HINT_TEXT` (`autoHide`, `aimHint`, `scrollHint`), `hintText(name, device, glyphs?)` —
   a one-time hint as plain text, keys and buttons by name.
 - `createActiveDevice({ onChange })` → `current` (`'keyboard'` |
   `'controller'`), `input('pad' | 'keyboard' | 'pointer')`,

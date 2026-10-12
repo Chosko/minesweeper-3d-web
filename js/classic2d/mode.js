@@ -6,9 +6,18 @@
 //                               generatingDelayMs? }) → mode
 //   flow        the shell's side:
 //                 openBoardChoice(choice)  show the board choice preselected with `choice`
-//                 show()                   show the board screen (the overlay bar above the area
-//                                          container() fills)
+//                 show()                   show the board screen (the board's framed panel, its
+//                                          edge carrying the overlay readouts, in the area
+//                                          container() is)
 //                 container()              the element the board view fills
+//                 scale()?                 the board scale setting (js/classic2d/board-view.js
+//                                          BOARD_SCALES) a new board opens at
+//                 frame()?                 the room the panel's frame takes around the board,
+//                                          { top, right, bottom, left, minWidth } (board-view.js)
+//                 layout(layout)?          the board view's layout after every refit, to place
+//                                          the panel (board-view.js panelRect) and to tell a
+//                                          board that scrolls
+//                 scrolled()?              the player scrolled the board (wheel or pan)
 //                 hud({ seconds, minesLeft, clicks })  the overlay bar's timer, mine counter and
 //                                          click counter (the session's clicks())
 //                 board({ width, height, mines, noGuess })  the board the overlay bar names; again
@@ -32,12 +41,13 @@
 // choice again — the session's, so a board played standard after a no-guess failure stays
 // standard.
 //
-// Shell side: hideBoard(hidden) hides the board whenever the pause card shows — the session pauses
+// Shell side: setScale(scale) refits the open board at another board scale. hideBoard(hidden) hides
+// the board whenever the pause card shows — the session pauses
 // with it, its clock running on (a no-op before the first click and after the end), the inputs drop what they hold and
 // take nothing while it is hidden; pause() is hideBoard(true) and resume() hideBoard(false) plus
 // flow.show(). tick() pushes the timer, mine counter and click count to flow.hud when any changed and drives
 // the movement sampler (call it every frame); every action pushes them at once. The cursor input's
-// moves reach the sampler as well as the view. pad(poll, now) hands the shell's controller poll
+// ring reaches the sampler as well as the view: its cell while it shows, -1 when it hides. pad(poll, now) hands the shell's controller poll
 // to the cursor input. retry() and playStandard() answer a failed board's offer; flow.failed's
 // failure carries its `count` of failures in a row. cancelGeneration() cancels the first click's
 // board while it is being generated, its card shown or not, back to the same closed board with
@@ -106,7 +116,14 @@ export function createClassic2DMode(report, {
     flow.show();
     const { width, height, mines, noGuess } = session.setup;
     flow.board({ width, height, mines, noGuess });
-    const view = mount.board({ container: flow.container(), grid: session.setup.grid });
+    const view = mount.board({
+      container: flow.container(),
+      grid: session.setup.grid,
+      scale: flow.scale?.(),
+      frame: flow.frame?.(),
+      onLayout: (layout) => flow.layout?.(layout),
+      onUserScroll: () => flow.scrolled?.(),
+    });
     view.setGame(session.game);
     // The inputs see the board paused while it is hidden, whatever the session's own state. An
     // action before the first reveal (a flag) changes the board without a session event: redraw it.
@@ -184,6 +201,7 @@ export function createClassic2DMode(report, {
     replay(summary) { return game ? game.session.replay(summary) : null; },
 
     hideBoard,
+    setScale(scale) { game?.view.setScale(scale); },
     tick() {
       push();
       game?.sampler?.tick();
@@ -204,5 +222,7 @@ export function createClassic2DMode(report, {
       return { state, time: game.session.elapsedMs() / 1000, minesLeft: game.session.minesLeft };
     },
     get boardHidden() { return hidden; },
+    /** The open board's view, or null: for the shell's debug hook. */
+    get boardView() { return game?.view ?? null; },
   };
 }

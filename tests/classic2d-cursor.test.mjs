@@ -328,6 +328,27 @@ test('controller: the d-pad and the left stick move the cursor with auto-repeat'
 
 // ---------- the focus ring ----------
 
+test('onUse reports each cursor input the board takes, before it acts: a direction held, a button pressed', () => {
+  let active = true;
+  const used = [];
+  const h = harness(CORNER, { onUse: () => used.push(h.input.cell), active: () => active });
+  h.input.hold('ArrowRight', 'right');
+  assert.deepEqual(used, [0], 'before the move');
+  h.input.hold('ArrowRight', 'right');
+  assert.equal(used.length, 1, 'a direction already held is no new input');
+  h.input.let('ArrowRight', 'right');
+  h.input.down('KeyF', 'flag');
+  h.input.up('KeyF', 'flag');
+  h.input.pad(poll([BTN.A]), 0);
+  h.input.pad(poll([BTN.A]), 16);
+  assert.equal(used.length, 3, 'a key and a controller button, once per press');
+  h.input.pad(poll([]), 32);
+  active = false;
+  h.input.hold('ArrowDown', 'down');
+  h.input.down('Space', 'reveal');
+  assert.equal(used.length, 3, 'a board that takes no input reports none');
+});
+
 function fakeCanvas() {
   const calls = [];
   const state = { fillStyle: '#000000', strokeStyle: '#000000', lineWidth: 1 };
@@ -410,6 +431,7 @@ function wiring({ state = 'playing', rows = CORNER } = {}) {
   const cursorCalls = [];
   const shown = [];
   const view = {
+    canvas: new EventTarget(),
     setPressed: (cells) => pressedCalls.push([...cells]),
     setCursor: (c) => cursorCalls.push(c),
     ensureVisible: (c) => { shown.push(c); return false; },
@@ -437,12 +459,15 @@ function wiring({ state = 'playing', rows = CORNER } = {}) {
   };
 }
 
-test('mounted: the cursor is shown at once, arrow keys move it and the board scrolls to it', () => {
+test('mounted: no ring when the board opens; the first arrow shows it, moves it and the board scrolls to it', () => {
   const w = wiring();
-  assert.deepEqual(w.cursorCalls, [0]);
+  assert.deepEqual(w.cursorCalls, [], 'no ring for a mouse player');
+  assert.equal(w.mounted.shown, false);
   const down = key('keydown', 'ArrowRight');
   w.win.dispatchEvent(down);
   assert.ok(down.defaultPrevented, 'the arrow is the board\'s, not a page scroll');
+  assert.equal(w.mounted.shown, true);
+  assert.deepEqual(w.cursorCalls, [0, 1], 'shown on the cursor\'s cell, then moved');
   assert.deepEqual(w.cursorCalls.at(-1), 1);
   assert.deepEqual(w.shown.at(-1), 1);
   w.win.dispatchEvent(key('keydown', 'ArrowRight', { repeat: true }));
@@ -494,16 +519,50 @@ test('mounted: other keys, modified keys and Esc are left to the page and the sh
     w.win.dispatchEvent(event);
     assert.equal(event.defaultPrevented, false, event.code);
   }
-  assert.deepEqual([w.asked, w.cursorCalls], [[], [0]]);
+  assert.deepEqual([w.asked, w.cursorCalls], [[], []]);
 });
 
-test('mounted: a board that is not in play takes no keys; losing focus drops what is held', () => {
+test('mounted: the ring shows on any cursor key, hides on a mouse press or move over the board, and keeps its cell', () => {
+  for (const code of ['Space', 'Enter', 'KeyF', 'KeyD', 'ArrowDown']) {
+    const w = wiring();
+    w.win.dispatchEvent(key('keydown', code));
+    assert.equal(w.mounted.shown, true, `${code} shows the ring`);
+    assert.equal(w.cursorCalls[0], 0, `${code}: on the cursor's cell`);
+    w.win.dispatchEvent(key('keyup', code));
+  }
+  const w = wiring();
+  w.win.dispatchEvent(key('keydown', 'ArrowRight'));
+  w.win.dispatchEvent(key('keyup', 'ArrowRight'));
+  w.cursorCalls.length = 0;
+  w.view.canvas.dispatchEvent(Object.assign(new Event('mousemove'), { movementX: 0, movementY: 0 }));
+  assert.deepEqual([w.mounted.shown, w.cursorCalls], [true, []], 'a pointer resting still sends nothing that hides it');
+  w.view.canvas.dispatchEvent(Object.assign(new Event('mousemove'), { movementX: 3, movementY: 0 }));
+  assert.deepEqual([w.mounted.shown, w.cursorCalls], [false, [-1]], 'the pointer moving over the board hides it');
+  w.view.canvas.dispatchEvent(new Event('mousedown'));
+  assert.deepEqual(w.cursorCalls, [-1], 'hidden already: nothing more');
+  w.win.dispatchEvent(key('keydown', 'ArrowDown'));
+  w.win.dispatchEvent(key('keyup', 'ArrowDown'));
+  assert.deepEqual(w.cursorCalls, [-1, 1, 1 + 5], 'the next key shows it on the cell it kept, then moves it');
+  w.view.canvas.dispatchEvent(new Event('mousedown'));
+  assert.deepEqual([w.mounted.shown, w.cursorCalls.at(-1)], [false, -1], 'a button pressed on the board hides it');
+  w.mounted.pad(poll([BTN.A]), 0);
+  assert.deepEqual([w.mounted.shown, w.cursorCalls.at(-1)], [true, 6], 'a controller button shows it');
+  w.mounted.pad(poll([]), 16);
+  w.view.canvas.dispatchEvent(new Event('mousedown'));
+  w.mounted.pad(poll([], [0, STICK_THRESHOLD / 2]), 32);
+  assert.equal(w.mounted.shown, false, 'the stick inside its threshold is no input');
+  w.mounted.pad(poll([], [0, 1]), 48);
+  assert.equal(w.mounted.shown, true, 'the stick past its threshold shows it');
+});
+
+test('mounted: a board that is not in play takes no keys and shows no ring; losing focus drops what is held', () => {
   const w = wiring({ state: 'won' });
   const ev = key('keydown', 'ArrowRight');
   w.win.dispatchEvent(ev);
   w.win.dispatchEvent(key('keydown', 'Space'));
   w.win.dispatchEvent(key('keyup', 'Space'));
-  assert.deepEqual([w.asked, w.cursorCalls, ev.defaultPrevented], [[], [0], false]);
+  w.mounted.pad(poll([BTN.DOWN]), 0);
+  assert.deepEqual([w.asked, w.cursorCalls, ev.defaultPrevented], [[], [], false]);
 
   const p = wiring();
   p.session.paused = true;
@@ -534,12 +593,16 @@ test('mounted: the controller reaches the cursor through pad(poll)', () => {
 
 test('mounted: destroy removes every listener', () => {
   const w = wiring();
+  w.win.dispatchEvent(key('keydown', 'ArrowRight'));
+  w.win.dispatchEvent(key('keyup', 'ArrowRight'));
   w.mounted.destroy();
+  w.cursorCalls.length = 0;
   const ev = key('keydown', 'ArrowRight');
   w.win.dispatchEvent(ev);
   w.win.dispatchEvent(key('keydown', 'Space'));
   w.win.dispatchEvent(key('keyup', 'Space'));
-  assert.deepEqual([w.asked, w.cursorCalls, ev.defaultPrevented], [[], [0], false]);
+  w.view.canvas.dispatchEvent(new Event('mousedown'));
+  assert.deepEqual([w.asked, w.cursorCalls, ev.defaultPrevented], [[], [], false]);
 });
 
 test('the module is DOM-free at import and independent of three.js and js/input.js', () => {
@@ -625,7 +688,8 @@ test('in a browser, a Beginner game on a fixed board is played by keyboard to a 
     await page.evaluate(mountGame);
 
     const state = (col, row) => page.evaluate((c) => globalThis.__play.session.game.cellState(c), row * 9 + col);
-    const cursor = () => page.evaluate(() => globalThis.__play.view.cursor);
+    const cursor = () => page.evaluate(() => globalThis.__play.cursor.input.cell);
+    const ring = () => page.evaluate(() => globalThis.__play.view.cursor);
     // Moves the cursor to col, row one key press per cell.
     const to = async (col, row) => {
       for (let step = 0; step < 32; step++) {
@@ -639,6 +703,7 @@ test('in a browser, a Beginner game on a fixed board is played by keyboard to a 
     };
 
     assert.equal(await cursor(), 0, 'the cursor is on the board from the start');
+    assert.equal(await ring(), -1, 'with no ring until a cursor key');
 
     // The first reveal: the pressed state shows while Space is held, the board arrives on release.
     await to(0, 8);
@@ -646,6 +711,7 @@ test('in a browser, a Beginner game on a fixed board is played by keyboard to a 
     assert.deepEqual(await page.evaluate(() => globalThis.__play.view.pressed), [8 * 9]);
     await page.keyboard.up('Space');
     await page.waitForFunction(() => globalThis.__play.session.state === 'playing');
+    assert.equal(await ring(), 8 * 9, 'the ring shows on the cursor once a key moved it');
     assert.equal(await state(0, 6), 'revealed', 'the bottom opened');
     assert.equal(await state(8, 4), 'closed', 'the wall holds the top closed');
 
@@ -683,6 +749,15 @@ test('in a browser, a Beginner game on a fixed board is played by keyboard to a 
       for (let c = 0; c < 81; c++) if (!mines.includes(c) && session.game.cellState(c) === 'closed') out.push(c);
       return out;
     });
+    // The pointer moving over the board hides the ring; the next key brings it back where it was.
+    const box = await page.evaluate(() => { const r = globalThis.__play.view.canvas.getBoundingClientRect(); return { x: r.x, y: r.y }; });
+    await page.mouse.move(box.x + 30, box.y + 30);
+    await page.mouse.move(box.x + 60, box.y + 40);
+    assert.equal(await ring(), -1, 'a mouse move hides the ring');
+    assert.equal(await cursor(), 8, 'the cursor keeps its cell');
+    await page.keyboard.press('ArrowLeft');
+    assert.equal(await ring(), 7, 'shown again on the next key');
+
     for (const c of closed) {
       if (await state(c % 9, Math.floor(c / 9)) !== 'closed') continue; // opened by an earlier flood
       await to(c % 9, Math.floor(c / 9));

@@ -119,9 +119,31 @@ test('de-duplication: a sample equal to the previous one is not stored', () => {
     { time: 0, type: 'sample', values: [10, 20] },
     { time: 100, type: 'sample', values: [11, 20] },
     { time: 150, type: 'sample', values: [10, 20] },
+    { time: 210, type: 'cursor', cell: -1 },
     { time: 210, type: 'cursor', cell: 3 },
     { time: 230, type: 'cursor', cell: 7 },
   ]);
+});
+
+test('the cursor stream opens with -1, the ring hidden, and carries -1 whenever the ring hides', () => {
+  const s = session2D();
+  s.act('reveal', 0, 0);
+  s.rec.cursor(-1, 10);
+  s.rec.cursor(-1, 20);
+  s.rec.cursor(5, 30);
+  s.rec.cursor(-1, 40);
+  s.rec.cursor(5, 50);
+  const replay = decodeReplay(s.rec.seal(summaryOf(s.game, 100), s.game).blob);
+  assert.deepEqual(replay.movement.map((e) => [e.time, e.cell]), [[10, -1], [30, 5], [40, -1], [50, 5]]);
+  const bad = session2D();
+  bad.act('reveal', 0, 0);
+  bad.rec.cursor(-2, 10);
+  assert.equal(bad.rec.failed, true, 'another negative cell fails the recording');
+  const opened = session2D();
+  opened.act('reveal', 0, 0);
+  opened.rec.cursor(2, 10);
+  const first = decodeReplay(opened.rec.seal(summaryOf(opened.game, 100), opened.game).blob);
+  assert.deepEqual(first.movement.map((e) => e.cell), [-1, 2], 'a first event on a cell is preceded by the opening -1');
 });
 
 test('recording keeps its events in typed buffers that grow, through thousands of events', () => {

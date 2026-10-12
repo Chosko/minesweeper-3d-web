@@ -401,6 +401,20 @@ test('the 3D HUD renders through the overlay bar: timer, mine counter, click cou
   assert.doesNotMatch(HUD, /class="stat\b|hud-stats/, 'the one-off HUD stat markup is gone');
 });
 
+test('in Classic 2D the overlay bar is the top edge of the board\'s framed panel, drawn in theme tokens', () => {
+  const style = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const panel = style.match(/\.c2d-panel\s*\{([^}]*)\}/);
+  assert.ok(panel, '.c2d-panel is styled');
+  assert.match(panel[1], /border\s*:\s*1px solid var\(--color-border\)/, 'its frame');
+  assert.match(panel[1], /background\s*:\s*var\(--color-surface-raised\)/, 'the overlay\'s surface, opaque in both themes');
+  assert.doesNotMatch(panel[1], /#[0-9a-f]{3,8}\b|rgba?\(/i, 'tokens only');
+  assert.match(style, /#hud\.hud--2d \.hud-bar \{ padding: 0; border-width: 0; background: none; box-shadow: none; \}/, 'the bar sits on the panel with no surface of its own');
+  assert.match(INDEX, /<div id="c2d-board"><div id="c2d-panel" class="c2d-panel hidden" aria-hidden="true"><\/div><\/div>/);
+  const ui = read('js/ui.js');
+  assert.match(ui, /export const PANEL_INSET = 9;/, 'the frame: 1 px border and --space-2 inside it');
+  assert.match(ui, /placePanel2D\(rect\)/, 'the shell places the panel and the bar on its edge');
+});
+
 test('the gallery shows the overlay bar with its pause button in every state', () => {
   const bars = TAGS.filter((t) => hasClasses(t, '.ui-overlay-bar'));
   assert.ok(bars.length > 0, 'gallery shows the overlay bar');
@@ -974,7 +988,7 @@ test('in a browser, the overlay bar over the 3D scene meets the contrast contrac
 // The debug hook's surface, pinned so the screen rebuild leaves it unchanged.
 const MS_HOOK = ['state', 'game', 'renderer', 'camera', 'fps', 'frameStats', 'spawnPose', 'THREE', 'start', 'forcePlay',
   'controls', 'pads', 'pause', 'cellCenter', 'moveTo', 'look', 'aimAt', 'mouseDown', 'mouseUp', 'click', 'key', 'wheel',
-  'selected', 'pickBrute', 'pickWith', 'info', 'modes', 'pauser', 'settings', 'records', 'replayViewer', 'watch'];
+  'selected', 'pickBrute', 'pickWith', 'info', 'modes', 'pauser', 'settings', 'records', 'replayViewer', 'board2D', 'watch'];
 
 test('in a browser, the menu, the pause card and the results layout meet the contrast contract in both themes', async (t) => {
   const playwright = await loadPlaywright();

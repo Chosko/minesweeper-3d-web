@@ -71,7 +71,10 @@ depends on the generator.
   - **2D** — the pointer position in board coordinates (cell units,
     quantised to a fraction of a cell), so a replay plays at any window size
     and zoom, or "off the board"; and the keyboard and controller cursor's
-    cell whenever it moves.
+    cell whenever it moves while its ring shows, and "none" (-1) whenever
+    the ring hides. The cursor stream opens with "none", so a replay
+    states when the ring showed from its first event, with no new event
+    type and no format version change.
   - **3D** — the camera position, in cell units, and its yaw and pitch,
     quantised; and the view mode (Shift, Space, Ctrl) whenever it changes,
     since it decides what the player could see.
@@ -108,7 +111,8 @@ summary in the game shell's `game finished` and `game abandoned` reports.
   the timer starts — the first reveal, and in 3D any flags placed before it
   — carry time 0 and keep their order.
 - **Movement stream** — per sample: time and the mode's sample values, plus
-  the 2D cursor-cell and 3D view-mode change events.
+  the 2D cursor-cell ("none" while the ring is hidden) and 3D view-mode
+  change events.
 - **Check values** — outcome, elapsed time, 3BV, 3BV solved, click counts by
   kind, and a digest of the final per-cell state (revealed, flagged, hidden).
 - **Size** — a 2D Expert game is a few kilobytes; a 3D game about 100 KB per

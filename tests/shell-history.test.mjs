@@ -459,9 +459,8 @@ test('in a browser, Back steps back inside the game and leaves only from the mai
       await page.click('#c2d-choice [data-size="beginner"]');
       assert.equal(await mode(), 'classic-2d');
       const centres = await page.evaluate(async () => {
-        const { boardLayout } = await import('/js/classic2d/board-view.js');
         const r = document.querySelector('#c2d-board canvas').getBoundingClientRect();
-        const L = boardLayout({ cols: 9, rows: 9, width: r.width, height: r.height });
+        const L = globalThis.__ms.board2D.layout;
         return Array.from({ length: 81 }, (_, c) => ({
           x: r.left + L.offsetX + ((c % 9) + 0.5) * L.tile, y: r.top + L.offsetY + (Math.floor(c / 9) + 0.5) * L.tile,
         }));

@@ -151,16 +151,27 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
 .controls.compact { grid-template-columns: max-content 1fr max-content 1fr; font-size: 13px; }
 
 /* ---------- Classic 2D board ---------- */
-/* The board layer covers the 3D scene; the board area is the window below the overlay bar with
-   --space-4 margins (its top is set from the bar when the board shows). */
+/* The board layer covers the 3D scene; the board area is the window with --space-4 margins. The
+   board sits centred there in a framed panel (UI.placePanel2D from the board view's layout), whose
+   top edge carries the overlay readouts; a board that does not fit fills the area and scrolls. */
 #c2d { position: fixed; inset: 0; background: var(--color-backdrop); }
-#c2d-board { position: absolute; top: 96px; left: var(--space-4); right: var(--space-4); bottom: var(--space-4); }
+#c2d-board { position: absolute; top: var(--space-4); left: var(--space-4); right: var(--space-4); bottom: var(--space-4); }
+.c2d-panel {
+  position: absolute;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-raised);
+  box-shadow: var(--elevation-2);
+}
+/* On the Classic 2D panel the overlay bar is the panel's top edge: no surface of its own. */
+#hud.hud--2d .hud-bar { padding: 0; border-width: 0; background: none; box-shadow: none; }
 /* A board status card (generating, or a failed board's offer) sits above the pause card. */
 #c2d-status, #m3d-status { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: calc(var(--z-overlay) + 1); }
 #replay { position: fixed; inset: 0; z-index: var(--z-overlay); background: var(--color-backdrop); }
 #replay.replay--scene { background: transparent; }
 .replay-bar { position: absolute; top: 16px; left: 16px; }
-#replay-board { position: absolute; top: 96px; left: var(--space-4); right: var(--space-4); bottom: 200px; overflow: hidden; }
+/* The board area between the overlay bar and the controls: top and bottom set from their real sizes. */
+#replay-board { position: absolute; top: 96px; left: var(--space-4); right: var(--space-4); bottom: var(--space-4); overflow: hidden; }
 #replay-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
 #replay-controls { position: absolute; left: var(--space-4); right: var(--space-4); bottom: var(--space-4); max-width: 720px; margin: 0 auto; }
 .replay-pointer { position: absolute; top: 0; left: 0; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--color-ink); border: 2px solid var(--color-surface-raised); pointer-events: none; }

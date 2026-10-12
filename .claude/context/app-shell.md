@@ -87,7 +87,8 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
   `#settings-body`), the results screen (`#results`), the replay viewer
   (`#replay`) and the pause card (`#pause-card`) are kit markup
   (§ Component kit). `#c2d` is the Classic 2D board layer, the board area
-  `#c2d-board`; the generating / failed-board card `#c2d-status` sits beside
+  `#c2d-board` holding the framed panel `#c2d-panel` behind the board's
+  canvas; the generating / failed-board card `#c2d-status` sits beside
   it, and `#m3d-status` is the same card over the 3D box. Both cards are
   stacked above the pause card (`css/style.css`): the generating card holds
   a `ui-spinner` and Cancel (`#…-wait`), the offer Retry, Play a standard
@@ -111,7 +112,9 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
   `js/theme.js`, `css/tokens.css` and `css/components.css`; `?theme=dark`
   opens it in Dark.
 - `css/style.css` — shell styling: positioning of the fixed layers (the
-  Classic 2D board layer and its board area below the overlay bar, and the
+  Classic 2D board layer, its board area with 16 px margins and the framed
+  panel `.c2d-panel` in theme tokens, the overlay bar with no surface of its
+  own on it (`#hud.hud--2d .hud-bar`), and the
   replay viewer's layer — opaque, or transparent over the 3D scene under
   `replay--scene` — its board area, controls and `.replay-pointer`), the
   Back rows (`.esc-row`, the `[data-esc-hint]` hint, Settings' sticky
@@ -298,7 +301,8 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   placeholder's and Settings page's Back buttons), `onReadyClick`,
   `onReadyDrag` (the ready card's "Play with drag-to-look"), `onReadyBack`, `onResume`,
   `onRestart`, `onMainMenu`, `onPause` (the overlay bar's pause button),
-  `onToggleSound`, `onDismissHint(mode)` (the hint strip's ×),
+  `onToggleSound`, `onDismissHint(mode, kind)` (the hint strip's ×; `kind`
+  `'scroll'` for the scroll hint, else `'mode'`),
   `onRetry2D`, `onStandard2D`, `onOfferMenu2D` (the failed Classic 2D
   board's offer), `onCancel2D` (its generating card), `onRetry3D`,
   `onStandard3D`, `onOfferMenu3D`, `onCancel3D` (the same over the 3D box),
@@ -312,7 +316,11 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   `showReady(board, msg, {rules, blocked})` (the board line with its mines, the
   "How 3D works" block `#ready-rules` while `rules`, the drag-to-look and
   controller offer `#ready-blocked` while `blocked`), `showPlaying`,
-  `showClassic2D` (positions `#c2d-board` 16 px below the overlay bar),
+  `showClassic2D` (the board layer, the overlay bar in its 2D style),
+  `panelFrame2D()` → the frame the panel takes around the board (`PANEL_INSET`
+  9 px each side, the bar's measured height and `PANEL_GAP` 8 px on top, at
+  least the bar's width), `placePanel2D(rect)` (the panel at `rect` in the
+  board area, the bar on its top edge),
   `showPause({state,time,minesLeft,note,mode})` (the board line, the mode's
   bindings, the look settings only for `'3d'`, "Back to start" only for a 3D
   game in play), `updatePause({time, minesLeft})` (the card's status line,
@@ -333,7 +341,9 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   `setModes`, `setCrosshair`, `setArrow(angle|null)` (the off-screen arrow `#crosshair-arrow` beside
   the crosshair, turned to `angle`; DOM write only on change), `showSpacing`, `setSound(muted)` (also the HUD
   strip's sound label); help `toggleHelp`, `userToggleHelp`,
-  `setHintStrip(on)` (the strip steps aside while the help panel is open),
+  `setHintStrip(on, {scroll})` (the mode's strip, or with `scroll` the
+  Classic 2D scroll hint; the strip steps aside while the help panel is
+  open),
   `dismissHint`,
   `setDevice('keyboard' | 'controller')`; `flash`, `toast(msg, ms)`,
   `setPad(info|null)` (the connected pad's glyphs and mapping, and the ready
@@ -393,7 +403,8 @@ the factory tests drive):
 - getters `state` (the live `S`), `game`, `renderer`, `camera`, `controls`,
   `pads`, `fps`, `frameStats` (`{renders, skipped}`), `modes` (the mode
   host), `pauser` (the pause controller), `settings` (the settings store),
-  `records` (the records store), `replayViewer` (`REPLAY_VIEWER`);
+  `records` (the records store), `replayViewer` (`REPLAY_VIEWER`), `board2D`
+  (the open Classic 2D board view: layout, scroll, cursor, scale);
   `THREE`, `spawnPose(X, Y, Z)` (the spawn pose of that box at the current spacing, field of view
   and aspect).
 - `watch(data)` → `SHELL.go('replay', {data})`, `data` the viewer route's
@@ -510,7 +521,14 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   handed to `createClassic2DMode` ([classic2d.md](classic2d.md)): board
   choice routes to `classic-2d-choice` with the last board choice (loaded at
   boot by `mode2d.loadChoice()`); `show` routes to `classic-2d`, whose Back
-  is `backGame`; the board area is `#c2d-board`; the overlay bar names the board
+  is `backGame`; the board area is `#c2d-board`, the board opening at the
+  `boardScale` setting (`scale`) inside the panel's frame (`frame`, measured
+  as each board opens), each refit placing the panel through `layout`
+  (`panelRect`, `ui.placePanel2D`) and telling whether the board scrolls —
+  the first clipped board shows the one-time scroll hint in the hint strip
+  until it is dismissed or the player scrolls (`scrolled`), kept as
+  `scrollHint` in `shell.firstUse`; a `boardScale` change reaches the open
+  board and the replay viewer at once; the overlay bar names the board
   through `board` (`ui.setBoard2D`, with " · no-guess"); its timer and
   counter come from `hud`, fed by `mode2d.tick()` every frame, which also
   drives the mode's movement sampler ([replay.md](replay.md)). The paused
@@ -817,7 +835,10 @@ Game flow (`js/main.js`):
   (`hint2D`, not again when the failed board's offer plays it standard) —
   and `refreshHints` shows the active mode's strip on every router change,
   at the first key or controller input of a Classic 2D game (`used2D`) and
-  at a dismissal. The ready card shows the "How 3D works" block while
+  at a dismissal; on a Classic 2D board that scrolls (`clipped2D`) it shows
+  the one-time scroll hint instead, until `FIRST_USE.once('scrollHint')`
+  marks it seen at its dismissal or the player's first scroll
+  (`scrolled2D`). The ready card shows the "How 3D works" block while
   `FIRST_USE.rules3D`. `actionSounds` passes every 3D action result to
   `noteAutoHide`, the one-time toast at the first auto-hide; in play the
   frame loop runs `aimHint`, which shows the one-time aim hint once the
@@ -881,8 +902,9 @@ Component kit (`css/components.css`, catalogue in its head comment):
   and the board size, then `#hud-pause` (secondary button, `aria-label`
   "Pause game"). Its click calls `onPause` → `PAUSE.pause`; controller START
   and BACK in play click `#hud-pause` through `padClick`, so every input
-  pauses through the same control. The bar has its own opaque raised
-  surface, so it reads the same over the 3D scene as over a plain board.
+  pauses through the same control. Over the 3D scene the bar has its own
+  opaque raised surface; in Classic 2D it is the top edge of the board's
+  framed panel, on the panel's surface.
   Beside it the HUD strip (`#hud-tools`) lists the keys, or the
   controller's buttons, the shown mode binds — in both modes — and the
   first-use hint strip (`#hint-strip`, its text `#hint-strip-text`, its ×

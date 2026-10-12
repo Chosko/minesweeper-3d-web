@@ -40,7 +40,7 @@ import { formatSliderValue, decimalsOf, segmentedState, bindSegmented } from '..
 
 export const SETTINGS_SECTIONS = Object.freeze([
   Object.freeze({ id: 'controls', title: 'Controls', settings: Object.freeze(['lookSensitivity', 'invertY', 'confirmRestart']) }),
-  Object.freeze({ id: 'graphics', title: 'Graphics', settings: Object.freeze(['fullscreen', 'renderResolution']) }),
+  Object.freeze({ id: 'graphics', title: 'Graphics', settings: Object.freeze(['fullscreen', 'renderResolution', 'boardScale']) }),
   Object.freeze({ id: 'theme', title: 'Theme', settings: Object.freeze(['theme']) }),
   Object.freeze({ id: 'audio', title: 'Audio', settings: Object.freeze(['muted', 'volume']) }),
 ]);
@@ -50,6 +50,7 @@ export const SETTING_LABELS = Object.freeze({
   invertY: 'Invert look Y',
   fullscreen: 'Fullscreen',
   renderResolution: '3D resolution',
+  boardScale: '2D board scale',
   theme: 'Theme',
   volume: 'Volume',
   muted: 'Sound',
@@ -60,7 +61,7 @@ export const SETTING_LABELS = Object.freeze({
 const INVERTED = new Set(['muted']);
 
 export const CHOICE_LABELS = Object.freeze({
-  auto: 'Auto', sharp: 'Sharp', fast: 'Fast', light: 'Light', dark: 'Dark',
+  auto: 'Auto', sharp: 'Sharp', fast: 'Fast', light: 'Light', dark: 'Dark', fit: 'Fit', 100: '100 %', 125: '125 %',
 });
 
 const SLIDERS = Object.freeze({

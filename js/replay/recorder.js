@@ -10,7 +10,11 @@
 //                              for actions before its timer starts, and they keep their order
 //   sample(values, time)       one movement sample of SAMPLE_ARITY[graph kind] quantised integers;
 //                              stored only when it differs from the previous sample
-//   cursor(cell, time)         the 2D keyboard and controller cursor's cell, when it moves
+//   cursor(cell, time)         the 2D keyboard and controller cursor's cell when it moves, -1 while
+//                              its ring is hidden; the stream opens with -1 at the first cursor
+//                              event, before it when that event is a cell, so a replay states
+//                              when the ring showed from its first event (a recording made before
+//                              the ring could hide opens on a cell, js/replay/viewer-2d.js)
 //   view(mode, time)           the 3D view mode, when it changes
 //   seal(summary, final, pauses)  → { blob, listing } or null
 //   stats()                    { actions, movement, movementBytes }
@@ -88,7 +92,7 @@ export function startRecording(fields, { onFailure = defaultReport, movementCap 
   let mLen = 0, mTime = new Float64Array(64), mType = new Uint8Array(64), mVal = null;
   let mBytes = 0, movementEndedAt = null;
   let lastActionTime = 0, lastMoveTime = 0;
-  let lastSample = null, haveSample = false, lastCursor = -1, lastView = -1;
+  let lastSample = null, haveSample = false, lastCursor = null, lastView = -1;
   let encCursor = 0; // the previous cursor cell, as the encoder deltas it
 
   function fail(err) {
@@ -117,6 +121,15 @@ export function startRecording(fields, { onFailure = defaultReport, movementCap 
     lastSample = new Int32Array(arity);
   } catch (err) {
     fail(err);
+  }
+
+  // Appends one cursor event (a cell, or -1 for a hidden ring) at `time`.
+  function cursorEvent(cell, time) {
+    const t = moveTime(time);
+    if (!pushMovement(T_CURSOR, t, uintLen(t - lastMoveTime) + 1 + sintLen(cell - encCursor))) return;
+    mVal[mLen * arity] = cell;
+    lastCursor = encCursor = cell;
+    mLen++;
   }
 
   // Appends one movement event if it fits under the cap; the first that does not closes the stream.
@@ -176,13 +189,10 @@ export function startRecording(fields, { onFailure = defaultReport, movementCap 
 
     cursor: guard((cell, time) => {
       if (header.graph.kind !== 'square') throw new RangeError('a cursor event belongs to a 2D recording');
-      checkCell('cursor cell', cell, cells);
+      if (cell !== -1) checkCell('cursor cell', cell, cells);
+      if (lastCursor === null && cell !== -1) cursorEvent(-1, time);
       if (cell === lastCursor) return;
-      const t = moveTime(time);
-      if (!pushMovement(T_CURSOR, t, uintLen(t - lastMoveTime) + 1 + sintLen(cell - encCursor))) return;
-      mVal[mLen * arity] = cell;
-      lastCursor = encCursor = cell;
-      mLen++;
+      cursorEvent(cell, time);
     }),
 
     view: guard((mode, time) => {
