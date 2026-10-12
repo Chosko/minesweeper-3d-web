@@ -415,6 +415,23 @@ test('in a browser, a 3D board won and lost ends on the results screen, which ta
     assert.ok(waited >= 1000, `the results screen waits for the end delay (${waited} ms)`);
     assert.deepEqual(await ms(() => globalThis.__hand), [['finished', 'won']], 'recorded once, as won');
     assert.equal(await ms(() => document.getElementById('results-title').textContent), 'You won!');
+    // The overlay's click count froze with the timer and agrees with the recorded game; the 3D card
+    // carries the same second row, banner and next target as Classic 2D's.
+    const card = await ms(() => {
+      const m = globalThis.__ms;
+      const key = m.records.boardsPlayed('3d')[0].key;
+      const c = m.records.history(key).at(-1).clicks;
+      const text = (id) => document.getElementById(id).textContent;
+      return {
+        hud: text('hud-clicks'), counted: c.reveal.effective + c.reveal.wasted + c.flag.effective + c.flag.wasted + c.chord.effective + c.chord.wasted,
+        figures: text('results-figures'), banner: text('results-banner'), next: text('results-next'), time: document.querySelector('#rs-time .ui-stat__value').textContent,
+      };
+    });
+    assert.equal(card.hud, String(card.counted), 'the overlay counts the clicks the summary counts');
+    assert.match(card.figures, new RegExp(`^Clicks ${card.counted} \\(L \\d+ · R \\d+ · D \\d+ · wasted \\d+\\) · #1 of 1 on this board$`));
+    assert.equal(card.banner, 'New best time, 3BV/s and efficiency!');
+    assert.equal(card.next, `Beat ${card.time} for a new best · streak 1`);
+    assert.match(card.time, /^\d+\.\d{3} s$/);
     assert.equal(await ms(() => document.pointerLockElement), null, 'pointer lock is released');
     assert.equal(await ms(() => document.getElementById('banner')), null, 'there is no end banner');
     const surface = await ms(() => {

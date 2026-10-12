@@ -111,8 +111,10 @@ The rules are classic Minesweeper with one more dimension:
   always safe, and the timer starts once the board is ready. Flags placed before that are kept.
 - When the game ends, the board freezes for about a second while the end effect plays (the loss
   wave showing where the mines were, or the win confetti). Then the screen shown after a game takes
-  over the whole window, as in Classic 2D: time, 3BV, 3BV/s, efficiency and, on a win, your bests
-  on that board, with **Play again**, **Watch replay**, **Records** and **Main menu**.
+  over the whole window, as in Classic 2D: time (to the thousandth of a second), 3BV, 3BV/s,
+  efficiency, your clicks, the game's rank on that board after a win, the time to beat next, and
+  your bests on that board (greyed after a loss, with the pace you were on), with **Play again**,
+  **Watch replay**, **Records** and **Main menu**.
 
 Pick a board and play:
 
@@ -189,7 +191,7 @@ browser supports it. Some browsers only start sound after a key press or a click
 ## What's new compared to the original
 
 - **Interface:** a main menu with presets and a custom-board form (cell count, mine limit and
-  validation hints). The HUD shows time, mines left and board size, with indicators for the
+  validation hints). The HUD shows time, mines left, clicks and board size, with indicators for the
   Shift/Space/Ctrl view modes. There is an in-game controls panel (`H`), and a results screen
   after every game.
 - **Pause menu** (`Esc`): resume, go back to the start view (3D), restart or return to the main menu.

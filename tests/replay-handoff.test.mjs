@@ -47,6 +47,8 @@ function fakeRecords(log, { comparison = comparisonOf(), fail = false } = {}) {
   return {
     record(s) { log.push(['record', s.id]); if (fail) throw new RangeError('broken'); return comparison; },
     available() { return true; },
+    counters() { return { games: 1, wins: 1, currentStreak: 1, longestStreak: 1 }; },
+    history() { return []; },
   };
 }
 function fakeLibrary(log, { failAdd = false, rejectAdd = false } = {}) {
@@ -152,7 +154,10 @@ test('a dropped replay adds nothing and leaves the summary and the records as th
   flow.abandoned(summary({ id: 'g2', outcome: 'abandoned' }), 'classic-2d', null);
   await tick();
   assert.deepEqual(log, [['record', 'g1'], ['record', 'g2']]);
-  assert.deepEqual(router.routes, [['results', { summary: s, mode: 'classic-2d', comparison: comparisonOf(), saved: true, notSaved: false, watch: false }]]);
+  assert.deepEqual(router.routes, [['results', {
+    summary: s, mode: 'classic-2d', comparison: comparisonOf(), saved: true, notSaved: false, watch: false,
+    rank: s.outcome === 'won' ? { position: 1, of: 1 } : null, streak: { before: 1, current: 1, longest: 1 },
+  }]]);
   assert.equal(data.summary, s);
 });
 

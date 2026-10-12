@@ -78,7 +78,8 @@ plain DOM from the `screen-components` kit inside the Records screen.
   watchable; the player can unpin it.
 - **Library view.** In the Records screen, for the board the screen shows:
   a list of that board's kept replays with date, outcome, time (in
-  `results-screen`'s time format, 47.3 s), 3BV/s, efficiency and pin
+  `results-screen`'s time format, 47.380 s), 3BV/s, efficiency (to one
+  decimal) and pin
   state, pinned ones first under a filter; *Watch* opens
   `replay-playback`, *Pin* / *Unpin* toggles the hand pin. The bests panel
   and the recent-games list show *Watch* on entries whose replay is kept.

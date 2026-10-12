@@ -83,7 +83,8 @@ looks.
 - `createSession({choice, client, clock?, randomSeed?,
   generatingDelayMs?})` → `{state, choice, setup, game, seed,
   generatorVersion, generatingShown, paused, failure, minesLeft,
-  elapsedMs(), seconds(), on(type, fn) → off, reveal(c), toggleFlag(c),
+  elapsedMs(), seconds(), clicks() (the engine's counted clicks, wasted
+  included), on(type, fn) → off, reveal(c), toggleFlag(c),
   chord(c), retry(), playStandard(), cancel(), pause(), resume(), restart(),
   leave(), summary(), recording, recordSample(values), recordCursor(cell),
   replay(summary?)}` — `client` is the generation client `{request,
@@ -152,7 +153,8 @@ looks.
   `cancelGeneration()` → whether a board being generated was cancelled,
   `loadChoice()`, `status()` → `{state, time, minesLeft}`, `boardHidden`; the contract's
   optional `replay(summary)` is the session's. `flow` is
-  `{openBoardChoice(choice), show(), container(), hud({seconds, minesLeft}),
+  `{openBoardChoice(choice), show(), container(), hud({seconds, minesLeft,
+  clicks}),
   board({width, height, mines, noGuess}), generating(shown),
   failed(failure|null)}`, `board` once per game and again when
   `playStandard()` turns no-guess off;

@@ -114,9 +114,16 @@ test('the overlay reads mines left, 3BV solved of 3BV and 3BV/s so far from the 
 test('the end of a replay shows its outcome and recorded time in the results time format', () => {
   const sim = createSimulator(blobOf(WON));
   const end = endLine(sim.replay.check);
-  assert.deepEqual(end, { outcome: 'Won', time: formatTime(9971), text: 'Won · 9.9 s' }, 'truncated to the tenth');
-  assert.equal(endLine({ outcome: 'lost', elapsedMs: 14522 }).text, 'Lost · 14.5 s');
-  assert.equal(endLine({ outcome: 'abandoned', elapsedMs: 120 }).text, 'Abandoned · 0.1 s');
+  assert.deepEqual(end, { outcome: 'Won', time: formatTime(9971), text: 'Won · 9.971 s' }, 'to the thousandth');
+  assert.equal(endLine({ outcome: 'lost', elapsedMs: 14522 }).text, 'Lost · 14.522 s');
+  assert.equal(endLine({ outcome: 'abandoned', elapsedMs: 120 }).text, 'Abandoned · 0.120 s');
+});
+
+test('the seek bar names its place in the results time format; the running clock keeps whole seconds', () => {
+  const src = read('js/replay/viewer.js');
+  assert.match(src, /aria-valuetext', `\$\{formatTime\(state\.time\)\} of \$\{formatTime\(state\.duration\)\}`/);
+  assert.equal(formatTime(4321), '4.321 s');
+  assert.equal(clockText(4321), '004', 'the overlay timer\'s whole seconds');
 });
 
 // ---------------------------------------------------------------- movement interpolation
@@ -508,7 +515,7 @@ test('a lost replay ends on the loss view with its recorded time', async () => {
   await viewer.show({ replay: blobOf(LOST) });
   viewer.command('end');
   assert.equal(viewers.drawn.at(-1).phase, 'lost');
-  assert.equal(view.last.end.text, 'Lost · 14.5 s');
+  assert.equal(view.last.end.text, 'Lost · 14.522 s');
   const sim = viewers.made[0].sim;
   assert.equal(sim.game.cellState(sim.game.explodedCell), CELL.EXPLODED);
 });
@@ -611,7 +618,7 @@ test('in a browser, a recorded 2D replay plays from its fixture through to the e
     await page.waitForFunction(() => globalThis.__ms.replayViewer.state.playing && globalThis.__ms.replayViewer.state.time > 1000);
     assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('#replay-board .replay-pointer')).display !== 'none'), true, 'the recorded pointer shows');
     await page.waitForFunction(() => globalThis.__ms.replayViewer.state.ended, null, { timeout: 15000 });
-    assert.equal(await text('replay-end'), 'Won · 9.9 s');
+    assert.equal(await text('replay-end'), 'Won · 9.971 s');
     assert.equal(await text('rp-clock'), '009');
     assert.equal(await text('rp-bbbv'), '15 / 15');
     assert.equal(await text('rp-mines'), '5');

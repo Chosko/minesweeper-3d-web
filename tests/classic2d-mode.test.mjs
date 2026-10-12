@@ -178,7 +178,7 @@ test('start shows the board in the container, mounts the inputs, feeds the overl
   assert.equal(Object.getPrototypeOf(cursor().view), board(), 'the cursor input draws on the board view');
   assert.deepEqual(flow.calls.filter((c) => c[0] === 'show').length, 1);
   assert.deepEqual(flow.calls.find((c) => c[0] === 'board'), ['board', { width: 30, height: 16, mines: 99, noGuess: false }]);
-  assert.deepEqual(flow.huds.at(-1), { seconds: 0, minesLeft: 99 });
+  assert.deepEqual(flow.huds.at(-1), { seconds: 0, minesLeft: 99, clicks: 0 });
   await settle();
   assert.equal(lastChoice.current.size, 'expert', 'the choice is the last board choice from now on');
 });
@@ -222,7 +222,7 @@ test('the first click reports game started and can pause; every change is redraw
   assert.equal(flow.huds.length, before, 'nothing changed: nothing is pushed');
   clock.advance(1000);
   mode.tick();
-  assert.deepEqual(flow.huds.at(-1), { seconds: 1, minesLeft: 10 }, 'the timer is pushed when its second changes');
+  assert.deepEqual(flow.huds.at(-1), { seconds: 1, minesLeft: 10, clicks: 1 }, 'the timer is pushed when its second changes');
   clock.advance(400);
   mode.tick();
   assert.equal(flow.huds.length, before + 1, 'the same second is not pushed again');
@@ -231,7 +231,29 @@ test('the first click reports game started and can pause; every change is redraw
   const updates = board().updates.length;
   act('toggleFlag', closed);
   assert.equal(board().updates.length, updates + 1, 'a flag is redrawn');
-  assert.deepEqual(flow.huds.at(-1), { seconds: 1, minesLeft: 9 }, 'mines left is pushed at once');
+  assert.deepEqual(flow.huds.at(-1), { seconds: 1, minesLeft: 9, clicks: 2 }, 'mines left and the click are pushed at once');
+});
+
+test('the overlay\'s click count: none before the first click, every counted click as it is made, frozen at the end', async () => {
+  // 3 × 3 with mines on 0 and 8: cell 4 reveals a 2, cell 2 a 1.
+  const { act, flow, clock, mode, events } = setup({ choice: CUSTOM_3X3, mines: [0, 8] });
+  act('toggleFlag', 1);
+  assert.equal(flow.huds.at(-1).clicks, 0, 'a flag before the first click counts nothing');
+  await act('reveal', 4);
+  assert.equal(flow.huds.at(-1).clicks, 1);
+  act('reveal', 4);
+  assert.equal(flow.huds.at(-1).clicks, 2, 'a wasted click is counted too');
+  act('toggleFlag', 0);
+  assert.equal(flow.huds.at(-1).clicks, 3);
+  act('reveal', 8); // a mine: lost
+  assert.ok(events.some((e) => e[0] === 'finished'));
+  const frozen = flow.huds.at(-1);
+  assert.equal(frozen.clicks, 4, 'the losing click is counted');
+  clock.advance(5000);
+  mode.tick();
+  act('reveal', 2);
+  assert.equal(flow.huds.at(-1).clicks, 4, 'nothing changes the count once the game ended');
+  assert.equal(flow.huds.at(-1).seconds, frozen.seconds, 'frozen with the timer');
 });
 
 test('pause freezes the timer and hides the board; resume shows it again', async () => {

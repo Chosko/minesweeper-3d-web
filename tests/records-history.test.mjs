@@ -105,7 +105,8 @@ test('the chart has a text alternative carrying the same numbers', () => {
   const text = chartText([{ rate: 0.84, efficiency: 60 }, { rate: 1.4, efficiency: 85 }, { rate: 1.21, efficiency: 80 }]);
   assert.match(text, /3 won games/);
   assert.match(text, /3BV\/s from 0\.84 to 1\.40, latest 1\.21/);
-  assert.match(text, /efficiency from 60% to 85%, latest 80%/);
+  assert.match(text, /efficiency from 60\.0% to 85\.0%, latest 80\.0%/, 'efficiency to one decimal, as the results screen shows it');
+  assert.match(chartText([{ rate: 1, efficiency: 94.66 }]), /efficiency from 94\.7% to 94\.7%/);
   assert.match(chartText([{ rate: 1, efficiency: 50 }]), /1 won game\b/);
 });
 
@@ -248,10 +249,10 @@ test('the recent games list shows newest first with outcome, time, 3BV/s and eff
   const { games } = recordsContent(store, { boardKey: boardKey(BEGINNER) });
   assert.deepEqual(games.rows.map((r) => r.outcome), ['Abandoned', 'Lost', 'Won'], 'newest first, this board only');
   const won = games.rows[2];
-  assert.equal(won.time, '47.3 s', 'to the tenth, truncated');
+  assert.equal(won.time, '47.380 s', 'to the thousandth, truncated');
   assert.equal(won.rate, (20 / 47.38).toFixed(2));
-  assert.equal(won.efficiency, '80%');
-  assert.equal(games.rows[1].time, '12.0 s');
+  assert.equal(won.efficiency, '80.0%');
+  assert.equal(games.rows[1].time, '12.000 s');
   assert.equal(games.rows[1].rate, (5 / 12).toFixed(2));
   assert.equal(games.rows[0].rate, DASH, 'no time, no 3BV/s');
   assert.deepEqual(games.headers, ['Outcome', 'Time', '3BV/s', 'Efficiency']);
@@ -259,7 +260,7 @@ test('the recent games list shows newest first with outcome, time, 3BV/s and eff
 
 test("a row's time goes through the results screen's time formatter", () => {
   const store = fakeStore([game(BEGINNER, { elapsedMs: 47999 })]);
-  assert.equal(recordsContent(store, { boardKey: boardKey(BEGINNER) }).games.rows[0].time, '47.9 s', 'truncated, never rounded');
+  assert.equal(recordsContent(store, { boardKey: boardKey(BEGINNER) }).games.rows[0].time, '47.999 s', 'truncated, never rounded');
   const src = read('js/records/screen.js');
   assert.match(src, /import \{[^}]*formatTime[^}]*\} from '\.\.\/results\/view\.js'/);
   assert.doesNotMatch(src + read('js/records/history-chart.js'), /\/\s*1000\b|\.toFixed\(1\)|tenths/, 'no second copy of the time format');
@@ -269,12 +270,12 @@ test('the games list is paged, newest page first, and a page past the end shows 
   const store = fakeStore(Array.from({ length: 23 }, (_, i) => game(BEGINNER, { elapsedMs: 10000 + i * 1000 })));
   const first = recordsContent(store, { boardKey: boardKey(BEGINNER) }).games;
   assert.equal(first.rows.length, 10);
-  assert.equal(first.rows[0].time, '32.0 s', 'the newest game first');
+  assert.equal(first.rows[0].time, '32.000 s', 'the newest game first');
   assert.deepEqual([first.page, first.pages, first.hasPrev, first.hasNext], [0, 3, false, true]);
   assert.equal(first.label, 'Games 1–10 of 23');
   const last = recordsContent(store, { boardKey: boardKey(BEGINNER), page: 7 }).games;
   assert.deepEqual([last.page, last.rows.length, last.hasNext, last.label], [2, 3, false, 'Games 21–23 of 23']);
-  assert.equal(last.rows.at(-1).time, '10.0 s', 'the oldest game last');
+  assert.equal(last.rows.at(-1).time, '10.000 s', 'the oldest game last');
   const empty = recordsContent(store, { boardKey: boardKey(EXPERT) }).games;
   assert.deepEqual([empty.rows, empty.hasPrev, empty.hasNext], [[], false, false]);
 });
@@ -448,7 +449,7 @@ test('in a browser, a seeded history is charted in both themes and its games lis
     const label = () => page.evaluate(() => document.getElementById('records-page').textContent);
     let r = await rows();
     assert.equal(r.length, 10);
-    assert.deepEqual(r[0], ['Lost', '13.9 s', (6 / 13.9).toFixed(2), `${Math.round(600 / 22)}%`, ''], 'the newest game first, its Replay cell empty: no replay is kept');
+    assert.deepEqual(r[0], ['Lost', '13.900 s', (6 / 13.9).toFixed(2), `${(600 / 22).toFixed(1)}%`, ''], 'the newest game first, its Replay cell empty: no replay is kept');
     assert.equal(await label(), 'Games 1–10 of 24');
     assert.equal(await page.evaluate(() => document.getElementById('records-prev').disabled), true);
 

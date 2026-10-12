@@ -35,6 +35,7 @@ const COMPONENTS = {
   'ui-field': { interactive: true, control: '.ui-field__input' },
   'ui-link': { interactive: true, control: '.ui-link' },
   'ui-spinner': { interactive: false },
+  'ui-banner': { interactive: false },
 };
 // Screen compositions: layout-only classes the screens are assembled with.
 const COMPOSITIONS = ['ui-screen', 'ui-row', 'ui-grid', 'ui-heading', 'ui-text', 'ui-actions', 'ui-stat-row'];
@@ -377,14 +378,18 @@ const INDEX = read('index.html');
 const HUD = INDEX.slice(INDEX.indexOf('<div id="hud"'), INDEX.indexOf('<div id="crosshair"'));
 const HUD_TAGS = tags(HUD);
 
-test('the 3D HUD renders through the overlay bar: timer, mine counter and a named pause button', () => {
+test('the 3D HUD renders through the overlay bar: timer, mine counter, click counter and a named pause button', () => {
   const bar = HUD_TAGS.find((t) => hasClasses(t, '.ui-overlay-bar'));
   assert.ok(bar, '#hud holds a .ui-overlay-bar');
-  for (const id of ['hud-time', 'hud-mines']) {
+  const at = [];
+  for (const id of ['hud-time', 'hud-mines', 'hud-clicks', 'hud-size']) {
     const value = HUD_TAGS.find((t) => t.attrs.id === id);
     assert.ok(value && hasClasses(value, '.ui-stat__value'), `#${id} is a stat value`);
     assert.ok(value.index > bar.index, `#${id} sits in the overlay bar`);
+    at.push(value.index);
   }
+  assert.deepEqual([...at].sort((a, b) => a - b), at, 'Time, Mines, Clicks, then the board');
+  assert.match(HUD, /<span class="ui-stat__label" id="hud-clicks-label">Clicks<\/span><span id="hud-clicks" class="ui-stat__value">0<\/span>/);
   assert.ok(HUD_TAGS.filter((t) => hasClasses(t, '.ui-stat')).every((t) => t.attrs.role === 'group' && t.attrs['aria-labelledby']));
   const pause = HUD_TAGS.find((t) => hasClasses(t, '.ui-overlay-bar__pause'));
   assert.ok(pause, 'the overlay bar has a pause button');
@@ -425,6 +430,38 @@ test('UI.updateHud writes the overlay formats and keeps the negative mine flag',
   UI.prototype.updateHud.call(fake, 0, 1200);
   assert.equal(fake.el.mines.textContent, '1200', 'the real count past 999');
   assert.ok(!cls.has('negative'));
+});
+
+test('UI.updateHud writes the click count, only when it changes', () => {
+  let writes = 0;
+  let shown = '';
+  const fake = {
+    _last: { time: '', mines: '', clicks: '' },
+    el: {
+      time: { textContent: '' },
+      mines: { textContent: '', classList: { toggle() {} } },
+      clicks: { get textContent() { return shown; }, set textContent(v) { writes++; shown = v; } },
+    },
+  };
+  UI.prototype.updateHud.call(fake, 0, 10, 0);
+  assert.equal(shown, '0', 'no click before the first');
+  UI.prototype.updateHud.call(fake, 1, 10, 0);
+  assert.equal(writes, 1, 'the same count is not written again');
+  UI.prototype.updateHud.call(fake, 1, 9, 183);
+  assert.deepEqual([shown, writes], ['183', 2]);
+  UI.prototype.updateHud.call(fake, 2, 9);
+  assert.deepEqual([shown, writes], ['183', 2], 'a feed without a count leaves the readout as it is');
+});
+
+test('both modes feed the overlay\'s click counter from the engine\'s counts', () => {
+  const main = read('js/main.js');
+  assert.match(main, /hud: \(\{ seconds, minesLeft, clicks \}\) => ui\.updateHud\(seconds, minesLeft, clicks\)/, 'Classic 2D through its hud feed');
+  assert.match(main, /ui\.updateHud\(e \? e\.time : S\.time, e \? e\.minesLeft : g\.minesLeft, e \? e\.clicks : clicks3D\(\)\)/,
+    'the 3D frame loop, frozen with the timer at the end');
+  assert.match(main, /S\.endState = \{[^}]*clicks: clicks3D\(\)/, 'the 3D end state freezes the count');
+  assert.match(read('dev/components.html'), /<div class="ui-overlay-bar"[\s\S]*?>Clicks<\/span>[\s\S]*?ui-overlay-bar__pause/, 'the gallery\'s overlay bar shows it');
+  const head = read('css/components.css').match(/^\/\*([\s\S]*?)\*\//)[1];
+  assert.match(head.slice(head.indexOf('ui-overlay-bar')), /Clicks/, 'the overlay bar pattern names the click counter');
 });
 
 test('the shell wires the overlay pause button to pause the game', () => {

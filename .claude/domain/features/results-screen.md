@@ -1,8 +1,9 @@
 # Results screen
 
 The end-of-game screen: whether the game was won or lost, its time, 3BV,
-3BV/s and efficiency, the comparison with the board's three personal bests,
-and *Play again* one step away.
+3BV/s, efficiency and clicks, its rank on the board, the comparison with the
+board's three personal bests, the next target, and *Play again* one step
+away.
 
 ## Purpose
 
@@ -17,11 +18,32 @@ comes from `screen-components` and its numbers from `game-summary` and
 
 In scope (m1-classic-2d):
 
-- The screen shown after every won or lost Classic 2D game: outcome, board
-  label, time, 3BV (and 3BV solved on a loss), 3BV/s and efficiency.
-- On a win, the comparison with each of the three bests — fastest time,
-  best 3BV/s, best efficiency — showing the standing best and the
-  difference, and marking each new best.
+- The screen shown after every won or lost Classic 2D game, reading top to
+  bottom: outcome and board label; a banner naming the bests the game set
+  ("New best time and 3BV/s!"); the game's own stats — time, 3BV (and 3BV
+  solved on a loss), 3BV/s and efficiency — as the card's largest figures,
+  each one that set a best highlighted; a second row with the clicks
+  ("Clicks 183 (L 183 · R 0 · D 0 · wasted 0)": the counted clicks, then the
+  reveal, flag and chord clicks and the wasted total) and, on a win, the
+  game's rank by time among the board's won games ("#3 of 12 on this
+  board"); the next-target line; then the bests panel. The card shows no
+  IOE.
+- The comparison with each of the three bests — fastest time, best 3BV/s,
+  best efficiency — showing the standing best and the difference. On a win
+  each difference is coloured (better in the success colour, worse in the
+  danger colour, "= best" in the muted ink; the sign and the "New best"
+  text stay, so colour is never the only signal) and each new best is
+  marked. On a loss the panel is greyed and labelled "Not eligible — only
+  won games set bests": each standing best with the game's difference from
+  it, never "New best", and for time the pace — the time at this game's
+  rate, elapsed × 3BV ÷ 3BV solved ("Pace 47.912 s") — with its difference
+  from the best time.
+- The next-target line: after a win "Beat 48.213 s for a new best · streak
+  3" (the board's best time as it stands after this game and the board's
+  current streak); after a loss that ended a streak "Streak ended at 3 ·
+  best 7" (the streak ended and the board's longest); after any other loss
+  "Beat 48.213 s for a new best", or "Win this board to set a best" when
+  the board has no best time.
 - Actions: *Play again* (default focus), *Watch replay* (when the game
   handed over its replay — `replay-playback`), *Records* (opens the records
   screen on this board), *Main menu*.
@@ -43,19 +65,30 @@ Built within the recorded technical direction — plain DOM in the game shell,
 no framework (see [technical-direction.md](../technical-direction.md)),
 composed from the `screen-components` kit.
 
-- **Results flow.** On the shell's game-finished hand-off, records the
-  summary with `personal-records`, then fills and shows the screen with the
-  summary and the comparison. Recording happens before the screen shows, so
-  the comparison is against the bests that stood before this game.
+- **Results flow.** On the shell's game-finished hand-off, reads the
+  board's current streak from `personal-records`, records the summary, then
+  reads the board's counters and history, and fills and shows the screen
+  with the summary, the comparison, the streak and the rank. Recording
+  happens before the screen shows, so the comparison is against the bests
+  that stood before this game. The rank is 1 + the board's earlier won
+  games whose time is at or below this game's (a tie ranks the earlier game
+  first), out of the board's won games including this one; a no-guess board
+  ranks only among its own games. The records model and its documents are
+  unchanged by it.
 - **Results view.** The composition from `screen-components`: an outcome
-  header, the stat readouts, the three best comparisons, the actions. Time
-  is shown to the tenth of a second, truncated rather than rounded (47.38 s
-  shows as 47.3 s), while the stored time keeps its millisecond precision;
-  this is the one format for every time the game shows except the in-game
-  overlay's timer and the replay viewer's playback clock, which keep the
-  overlay's whole seconds (`screen-components`, `replay-playback`). 3BV/s is
-  shown to two decimals; efficiency as a whole percentage. A stat that is
-  not available shows a dash.
+  header, the banner, the stat readouts, the second row, the next-target
+  line, the three best comparisons, the actions. Time is shown to the
+  thousandth of a second, truncated rather than rounded (47 380 ms shows as
+  47.380 s), while the stored time keeps its millisecond precision; this is
+  the one format for every time the game shows except the in-game overlay's
+  timer and the replay viewer's playback clock, which keep the overlay's
+  whole seconds (`screen-components`, `replay-playback`). 3BV/s is shown to
+  two decimals; efficiency to one decimal (94.7%). A difference from a best
+  shows the same precision with a sign, time truncated toward zero
+  ("−1.270 s"); one that is zero at that precision reads "= best", with no
+  sign and no number, and a new best whose difference is zero there reads
+  "New best" alone. No precision setting exists. A stat that is not
+  available shows a dash.
 - **Rank panel.** In the Steam build, after a won game on a board with a
   leaderboard, the view carries `results-steam-rank`'s panel below the
   comparison; the flow starts it when the screen shows and stops it when
@@ -69,8 +102,8 @@ composed from the `screen-components` kit.
 
 ## Data and state
 
-- No persisted state. The shown summary and comparison are held while the
-  screen is open.
+- No persisted state. The shown summary, comparison, streak and rank are
+  held while the screen is open.
 
 ## Interfaces and contracts
 
@@ -85,7 +118,8 @@ composed from the `screen-components` kit.
   game's board.
 - **Main menu** — asks the shell to return to the main menu.
 - **Failure** — when recording fails, the screen still shows the game's own
-  stats, without a comparison, and says the result could not be saved.
+  stats, without a comparison or a next-target line and with the rank as a
+  dash, and says the result could not be saved.
 
 ## Dependencies
 

@@ -223,24 +223,33 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   replay viewer's route (`REPLAY_SCREEN`, [records.md](records.md)).
 
 `js/results/view.js`
-- `formatTime(ms)` (tenths, truncated: `"47.3 s"`), `formatTimeDifference`,
+- `formatTime(ms)` (thousandths, truncated: `"47.380 s"`), `formatTimeDifference`,
   `formatRate` / `formatRateDifference` (two decimals),
-  `formatEfficiency` / `formatEfficiencyDifference` (whole percent); a
-  missing value is `DASH`. `NOTES` (`notRecorded`, `notSaved`).
-- `resultsContent({summary, comparison?, saved?, notSaved?, watch?})` →
-  `{outcome, title, board, stats: [{key, label, value, shown}], bests:
-  [{stat, label, best, difference, newBest}] | null, notes, watch,
-  takeover}`; `takeover` is true for a 3D game's summary.
+  `formatEfficiency` / `formatEfficiencyDifference` (one decimal,
+  `"94.7%"`); a difference zero at its precision is `EQUAL_BEST`
+  (`"= best"`), a missing value is `DASH`. `formatClicks(clicks)` →
+  `"Clicks 183 (L 183 · R 0 · D 0 · wasted 0)"`. `NOTES` (`notRecorded`,
+  `notSaved`), `NOT_ELIGIBLE`, `FIRST_BEST`.
+- `resultsContent({summary, comparison?, saved?, notSaved?, watch?, rank?,
+  streak?})` → `{outcome, title, board, banner, stats: [{key, label, value,
+  shown, newBest}], figures: {clicks, rank}, next, eligible, bestsNote,
+  bests: [{stat, label, best, difference, newBest, direction, detail}] |
+  null, notes, watch, takeover}`; the head comment documents each field
+  (the loss comparison and its pace, the delta direction, the next-target
+  forms); `takeover` is true for a 3D game's summary.
 - `createResultsView({root, onPlayAgain, onWatch?, onRecords, onMenu})` →
   `show(content)`, `hide()`; `#r-watch` shows only while `content.watch`,
-  and the root carries `results--takeover` while `content.takeover`.
+  the root carries `results--takeover` while `content.takeover`, the bests
+  panel `ui-panel--muted` while not eligible, an improved stat
+  `data-new-best` and a best's detail `data-delta`.
 
 `js/ui.js` exports (consumed by `js/main.js`)
 - `DIM_MIN`/`DIM_MAX` (1/100, re-exported from `js/mode3d/board-choice.js`);
   `clampSettings(s)` → `{X,Y,Z,mines}` integers, dims 1..100, mines
   1..X*Y*Z − 1, since the first click is safe (a 1×1×1 board clamps to 0
   mines). `startGame` clamps with it; the board choice validates first.
-- `fmtDims(s)`, `fmtTime(t)` (2 decimals), `NO_MOUSE_MSG`;
+- `fmtDims(s)`, `pauseLine(time, minesLeft)` (the pause card's
+  `"Time 11.643 s · 12 mines left"`, through `formatTime`), `NO_MOUSE_MSG`;
   `boardLine3D(s, {mines?})` (`"6 × 6 × 6 · 10 mines · no-guess"`, the mine
   count only with `mines`) and `boardLine2D({width, height, noGuess})`
   (`"30 × 16 · no-guess"`): " · no-guess" on a no-guess board.
@@ -270,7 +279,8 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   `setLastMode(mode|null)`; pause confirmation
   `showConfirm({message, confirmLabel}, onYes, onNo)`, `isConfirmOpen`,
   `closeConfirm` (→ false when none is open); HUD `setBoard(board)` (3D),
-  `updateHud(time, minesLeft)` (overlay formats, DOM write only on change),
+  `updateHud(time, minesLeft, clicks?)` (overlay formats and the click
+  count, DOM write only on change; without `clicks` the readout stays),
   `setModes`, `setCrosshair`, `setArrow(angle|null)` (the off-screen arrow `#crosshair-arrow` beside
   the crosshair, turned to `angle`; DOM write only on change), `showSpacing`, `setSound(muted)` (also the HUD
   strip's sound label); help `toggleHelp`, `userToggleHelp`,
@@ -505,11 +515,13 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   (`RECORDS.attach(PAUSE)`, [records.md](records.md)) and the results flow
   to `finished` and `abandoned` (`RESULTS.attach(PAUSE)`); the results flow
   is the one listener that reads the replay.
-- **Results flow.** `RESULTS.finished(summary, mode, replay)` records the
-  summary with `RECORDS.record` first, so the comparison is against the bests that
-  stood before this game, then routes to `results` with `{summary, mode,
-  comparison, saved, notSaved, watch}`, for a finished 3D game as for
-  Classic 2D.
+- **Results flow.** `RESULTS.finished(summary, mode, replay)` reads the
+  board's `counters` (the streak before), records the
+  summary with `RECORDS.record`, so the comparison is against the bests that
+  stood before this game, reads the board's `counters` and `history` (the
+  streak after and a win's rank by time), then routes to `results` with
+  `{summary, mode, comparison, saved, notSaved, watch, rank, streak}`, for a
+  finished 3D game as for Classic 2D.
   A summary that is not a record — a fixed 3D board's null — is ignored, and
   `js/main.js` ends that game on the pause card instead. A recording that
   throws still routes, with no comparison and `saved` false; `notSaved` is
@@ -636,9 +648,10 @@ Game flow (`js/main.js`):
   flag-changed cells of `r.changed` to `renderer.flash`; the replay viewer
   goes through neither. The end of the game
   comes through the session's `finished`, which runs `endGame`.
-- End state freeze: `endGame` stores `S.endState = {state, time, minesLeft}`,
-  with `time` the session's elapsed time and `minesLeft` taken from before
-  the final action (original HUD froze on the previous frame), and plays
+- End state freeze: `endGame` stores `S.endState = {state, time, minesLeft,
+  clicks}`, with `time` the session's elapsed time, `minesLeft` taken from before
+  the final action (original HUD froze on the previous frame) and `clicks`
+  the engine's counted clicks (`clicks3D()`), and plays
   the win sound. HUD, pause card and timer read `S.endState` once set;
   until then the frame loop reads `S.time` from `S.play.elapsedMs()` while
   `playing && started`.
@@ -770,7 +783,10 @@ Component kit (`css/components.css`, catalogue in its head comment):
 - Overlay bar (`#hud .ui-overlay-bar.hud-bar`): `ui-stat` readouts `#hud-time`
   (`formatOverlayTime`, e.g. `047`, display stops at `999` while `S.time`
   keeps counting), `#hud-mines` (`formatMineCount`, `.negative` below zero, as wide as the
-  board's mine count past three digits)
+  board's mine count past three digits), `#hud-clicks` (the counted clicks,
+  wasted included: Classic 2D's `hud` feed carries them, the 3D frame loop
+  reads `clicks3D()` and the frozen `S.endState.clicks`; `updateHud`
+  writes it only on change)
   and the board size, then `#hud-pause` (secondary button, `aria-label`
   "Pause game"). Its click calls `onPause` → `PAUSE.pause`; controller START
   and BACK in play click `#hud-pause` through `padClick`, so every input
@@ -847,10 +863,13 @@ Component kit (`css/components.css`, catalogue in its head comment):
   are bound to the settings store like the Settings page's controls.
 - Results screen (`#results`, filled by `createResultsView`; the gallery's
   `#g-results` shows it with placeholder content): a `ui-card ui-screen`
-  with the outcome title, the board line, a `ui-stat-row` of `rs-*` stats
-  (`rs-bbbvSolved` only on a loss), the `#results-bests` `ui-panel` of `rb-*`
-  bests on a win, each with a `ui-stat__detail` difference led by "New best"
-  when set, the `#results-note` `ui-text--warning` line, and Play again
+  with the outcome title, the board line, the `#results-banner` `ui-banner`
+  (hidden without a new best), the `#results-stats` `ui-stat-row` of `rs-*`
+  stats (`rs-bbbvSolved` only on a loss; the card's largest figures,
+  `css/style.css`), the `#results-figures` second row, the `#results-next`
+  line, the `#results-bests` `ui-panel` of `rb-*` bests whenever there is a
+  comparison (on a loss `ui-panel--muted` under `#results-bests-note`), each
+  with a `ui-stat__detail` line, the `#results-note` `ui-text--warning` line, and Play again
   (`#r-again`, primary), Watch replay (`#r-watch`, hidden until offered),
   Records (`#r-records`), Main menu (`#r-menu`).
 - Replay viewer (`#replay`, filled by `createReplayView`,

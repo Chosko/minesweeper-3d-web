@@ -26,7 +26,7 @@ const summary = (over = {}) => ({
   ...over,
 });
 const sealed = () => ({ blob: new Uint8Array([1, 2, 3]), listing: { id: 'g1' } });
-const fakeRecords = () => ({ record: () => null, available: () => true });
+const fakeRecords = () => ({ record: () => null, available: () => true, counters: () => null, history: () => [] });
 function fakeRouter(screens = ['results', 'records', REPLAY_SCREEN]) {
   const routes = [];
   return { routes, has: (n) => screens.includes(n), go: (n, o) => routes.push([n, o?.data]) };

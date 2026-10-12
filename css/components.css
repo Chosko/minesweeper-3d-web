@@ -58,6 +58,16 @@
      Element: <div class="ui-panel">…</div>
      Role:    none (presentational grouping)
      Name:    none
+     Muted:   ui-panel--muted greys its figures (values and detail lines
+              in muted ink, no delta colour) for content shown for
+              reference only (a lost game's comparison).
+
+   ui-banner — one line announcing an event (a new best)
+     Element: <p class="ui-banner" role="status">…</p>
+     Role:    status
+     Name:    its text
+     Look:    bold ink on the sunken surface, marked by a success-coloured
+              edge; no animation.
 
    ui-toggle — on/off switch
      Element: <label class="ui-toggle">
@@ -100,7 +110,12 @@
      Name:    aria-labelledby → the label
      Detail:  an optional <span class="ui-stat__detail">…</span> after the
               value adds a smaller muted line (a best's difference);
-              data-new-best on it sets it in bold ink.
+              data-new-best on it sets it in bold ink, and
+              data-delta="better|worse|equal" colours it --color-success,
+              --color-danger or the muted ink. The colour is never the only
+              signal: the text carries the sign or "= best".
+     Highlight: data-new-best on the ui-stat itself rings the readout in
+              --color-success (a figure that set a best).
 
    ui-field — labelled number entry
      Element: <label class="ui-field">
@@ -126,7 +141,7 @@
               tokens; it runs only while the spinner shows (a hidden card
               draws nothing).
 
-   ui-overlay-bar — in-game timer, mine counter and pause, over either board
+   ui-overlay-bar — in-game timer, mine counter, click counter and pause, over either board
      Element: <div class="ui-overlay-bar" role="group" aria-label="Game">
                 <div class="ui-stat" role="group" aria-labelledby="T">
                   <span class="ui-stat__label" id="T">Time</span>
@@ -135,6 +150,10 @@
                 <div class="ui-stat" role="group" aria-labelledby="M">
                   <span class="ui-stat__label" id="M">Mines</span>
                   <span class="ui-stat__value">-12</span>
+                </div>
+                <div class="ui-stat" role="group" aria-labelledby="C">
+                  <span class="ui-stat__label" id="C">Clicks</span>
+                  <span class="ui-stat__value">183</span>
                 </div>
                 <button type="button" aria-label="Pause game"
                         class="ui-button ui-button--secondary ui-overlay-bar__pause">Pause</button>
@@ -145,8 +164,11 @@
               formatMineCount(minesLeft) (js/ui/components.js), the
               counter as wide as the board's mine count past three digits
               (mineCounterDigits); the clamps (timer at 999, counter at
-              -99) are display-only. The bar carries its own opaque surface, so
-              it reads the same over the 3D scene and over a plain board.
+              -99) are display-only. Clicks is the game's counted clicks
+              (wasted included) as a plain number, 0 before the first
+              click and frozen with the timer at the end. The bar carries
+              its own opaque surface, so it reads the same over the 3D
+              scene and over a plain board.
 
    Screen compositions. Layout-only classes a screen is assembled with; they
    carry no colour of their own beyond the text roles of ui-heading and
@@ -249,13 +271,18 @@
      ended; Cancel while the confirmation shows.
    Results screen (index.html #results, filled by js/results/view.js; the
      gallery's #g-results shows it with placeholder content): ui-card
-     ui-screen holding the outcome title, a ui-text board line, a ui-stat-row
-     of the game's stats, a ui-panel with a ui-stat-row of the best
-     comparisons (each ui-stat with a ui-stat__detail difference line), a
-     ui-text--warning note, and ui-actions--row (Play again primary, Records,
-     Main menu). Default focus: Play again. Over Classic 2D the finished
-     board shows behind it; over a 3D game it takes over on an opaque surface
-     (results--takeover, css/style.css).
+     ui-screen holding, top to bottom, the outcome title, a ui-text board
+     line, a ui-banner when the game set a best, a ui-stat-row of the game's
+     stats (the card's largest figures, each one that set a best with
+     data-new-best), a ui-text--muted second row (clicks, and the board rank
+     on a win), a ui-text next-target line, a ui-panel with a ui-stat-row of
+     the best comparisons (each ui-stat with a ui-stat__detail difference
+     line coloured by data-delta on a win; on a loss ui-panel--muted under a
+     ui-text--muted "Not eligible" line), a ui-text--warning note, and
+     ui-actions--row (Play again primary, Records, Main menu). Default
+     focus: Play again. Over Classic 2D the finished board shows behind it;
+     over a 3D game it takes over on an opaque surface (results--takeover,
+     css/style.css).
    Replay viewer (index.html #replay, filled by js/replay/viewer.js): a
      ui-overlay-bar of the replay's figures (Time in the overlay's timer
      format, Mines, 3BV solved / 3BV, 3BV/s) with a secondary Back, the board
@@ -643,6 +670,29 @@
 .ui-stat__detail[data-new-best] {
   font-weight: var(--font-weight-bold);
   color: var(--color-ink);
+}
+.ui-stat__detail[data-delta="better"] { color: var(--color-success); }
+.ui-stat__detail[data-delta="worse"] { color: var(--color-danger); }
+.ui-stat__detail[data-delta="equal"] { color: var(--color-ink-muted); }
+.ui-stat[data-new-best] {
+  outline: 2px solid var(--color-success);
+  outline-offset: var(--space-1);
+  border-radius: var(--radius-sm);
+}
+.ui-panel--muted .ui-stat,
+.ui-panel--muted .ui-stat__value,
+.ui-panel--muted .ui-stat__detail { color: var(--color-ink-muted); }
+
+/* ---------- banner ---------- */
+.ui-banner {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-left: var(--space-1) solid var(--color-success);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-sunken);
+  color: var(--color-ink);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
 }
 
 /* ---------- overlay bar ---------- */

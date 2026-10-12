@@ -112,10 +112,10 @@ test('the figures panel shows the three bests with their dates, games, wins, win
   assert.equal(c.empty, false);
   assert.deepEqual(c.bests.map((b) => b.stat), ['time', 'bbbvPerSecond', 'efficiency']);
   assert.deepEqual(c.bests.map((b) => b.label), ['Best time', 'Best 3BV/s', 'Best efficiency']);
-  assert.equal(stat(c.bests, 'time').value, '47.3 s', 'the fastest time, to the tenth, truncated');
+  assert.equal(stat(c.bests, 'time').value, '47.380 s', 'the fastest time, to the thousandth, truncated');
   assert.equal(stat(c.bests, 'time').date, formatDate('2026-10-08T12:00:00.000Z'));
   assert.equal(stat(c.bests, 'bbbvPerSecond').value, (20 / 47.38).toFixed(2));
-  assert.equal(stat(c.bests, 'efficiency').value, '80%');
+  assert.equal(stat(c.bests, 'efficiency').value, '80.0%', 'efficiency to one decimal');
   assert.equal(stat(c.bests, 'efficiency').date, formatDate('2026-10-07T12:00:00.000Z'), 'a tie keeps the earlier holder');
   assert.deepEqual(c.counters.map((s) => [s.key, s.value]), [
     ['games', '4'], ['wins', '3'], ['winRate', '75%'], ['currentStreak', '1'], ['longestStreak', '2'],
@@ -125,7 +125,7 @@ test('the figures panel shows the three bests with their dates, games, wins, win
 
 test("the fastest-time best goes through the results screen's time formatter", () => {
   const store = fakeStore({ games: [game(BEGINNER, { elapsedMs: 47999 })] });
-  assert.equal(stat(recordsContent(store).bests, 'time').value, '47.9 s', 'truncated, never rounded');
+  assert.equal(stat(recordsContent(store).bests, 'time').value, '47.999 s', 'truncated, never rounded');
   const src = read('js/records/screen.js');
   assert.match(src, /import \{[^}]*formatTime[^}]*\} from '\.\.\/results\/view\.js'/, 'the one time formatter is imported');
   assert.doesNotMatch(src, /\/\s*1000|\.toFixed\(1\)|tenths/, 'no second copy of the time format');
@@ -369,12 +369,12 @@ test('in a browser, the menu opens the records screen on the last board played, 
     assert.equal(await mode(), 'records');
     assert.equal(await active(), '20 × 12 · 50 mines', 'opens on the last board played');
     assert.equal(await page.evaluate(() => document.getElementById('records-board').textContent), '20 × 12 · 50 mines');
-    assert.equal(await value('rec-time'), '90.0 s');
+    assert.equal(await value('rec-time'), '90.000 s');
 
     // Keyboard: the arrow keys move the choice; the figures follow.
     await page.keyboard.press('ArrowRight');
     assert.equal(await active(), 'Beginner', 'the arrows wrap through every board');
-    assert.equal(await value('rec-time'), '47.3 s');
+    assert.equal(await value('rec-time'), '47.380 s');
     assert.equal(await value('rec-games'), '1');
     assert.equal(await visible('records-empty'), false);
 

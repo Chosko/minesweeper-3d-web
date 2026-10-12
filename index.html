@@ -97,6 +97,7 @@
     <div class="ui-overlay-bar hud-bar" role="group" aria-label="Game">
       <div class="ui-stat" role="group" aria-labelledby="hud-time-label"><span class="ui-stat__label" id="hud-time-label">Time</span><span id="hud-time" class="ui-stat__value">000</span></div>
       <div class="ui-stat" role="group" aria-labelledby="hud-mines-label"><span class="ui-stat__label" id="hud-mines-label">Mines</span><span id="hud-mines" class="ui-stat__value">0</span></div>
+      <div class="ui-stat" role="group" aria-labelledby="hud-clicks-label"><span class="ui-stat__label" id="hud-clicks-label">Clicks</span><span id="hud-clicks" class="ui-stat__value">0</span></div>
       <div class="ui-stat hud-board" role="group" aria-labelledby="hud-size-label"><span class="ui-stat__label" id="hud-size-label">Board</span><span id="hud-size" class="ui-stat__value">-</span></div>
       <button type="button" id="hud-pause" class="ui-button ui-button--secondary ui-overlay-bar__pause" aria-label="Pause game">Pause</button>
     </div>
@@ -375,15 +376,19 @@
     <section class="ui-card ui-screen" aria-labelledby="results-title">
       <h2 class="ui-card__title" id="results-title">You won!</h2>
       <p id="results-board" class="ui-text ui-text--muted">Beginner</p>
-      <div class="ui-stat-row">
+      <p id="results-banner" class="ui-banner hidden" role="status"></p>
+      <div id="results-stats" class="ui-stat-row">
         <div id="rs-time" class="ui-stat" role="group" aria-labelledby="rs-time-label"><span class="ui-stat__label" id="rs-time-label">Time</span><span class="ui-stat__value">&mdash;</span></div>
         <div id="rs-bbbv" class="ui-stat" role="group" aria-labelledby="rs-bbbv-label"><span class="ui-stat__label" id="rs-bbbv-label">3BV</span><span class="ui-stat__value">&mdash;</span></div>
         <div id="rs-bbbvSolved" class="ui-stat hidden" role="group" aria-labelledby="rs-bbbvSolved-label"><span class="ui-stat__label" id="rs-bbbvSolved-label">3BV solved</span><span class="ui-stat__value">&mdash;</span></div>
         <div id="rs-bbbvPerSecond" class="ui-stat" role="group" aria-labelledby="rs-bbbvPerSecond-label"><span class="ui-stat__label" id="rs-bbbvPerSecond-label">3BV/s</span><span class="ui-stat__value">&mdash;</span></div>
         <div id="rs-efficiency" class="ui-stat" role="group" aria-labelledby="rs-efficiency-label"><span class="ui-stat__label" id="rs-efficiency-label">Efficiency</span><span class="ui-stat__value">&mdash;</span></div>
       </div>
+      <p id="results-figures" class="ui-text ui-text--muted"></p>
+      <p id="results-next" class="ui-text hidden"></p>
       <div id="results-bests" class="ui-panel" role="group" aria-labelledby="results-bests-title">
         <h3 class="ui-heading" id="results-bests-title">Your bests on this board</h3>
+        <p id="results-bests-note" class="ui-text ui-text--muted hidden">Not eligible — only won games set bests</p>
         <div class="ui-stat-row">
           <div id="rb-time" class="ui-stat" role="group" aria-labelledby="rb-time-label"><span class="ui-stat__label" id="rb-time-label">Best time</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail">&mdash;</span></div>
           <div id="rb-bbbvPerSecond" class="ui-stat" role="group" aria-labelledby="rb-bbbvPerSecond-label"><span class="ui-stat__label" id="rb-bbbvPerSecond-label">Best 3BV/s</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail">&mdash;</span></div>

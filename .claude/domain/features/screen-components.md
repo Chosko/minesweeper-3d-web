@@ -8,7 +8,8 @@ menu, the in-game overlay and the results screen, in both themes.
 ## Purpose
 
 [product-design.md § Visual design system](../product-design.md#visual-design-system)
-names the menus, the in-game overlay (timer, mine counter, pause) and the
+names the menus, the in-game overlay (timer, mine counter, click counter,
+pause) and the
 results screen as part of the one visual language, so moving between modes
 never feels like moving between games. A shared kit gives every screen the
 same controls, focus behaviour and controller navigation, instead of each
@@ -68,11 +69,11 @@ described in [app-shell.md](../../context/app-shell.md).
   reachable by keyboard and by the shell's controller navigation, shows the
   focus ring when focused, and declares its default focus target per screen
   in the way the shell's controller layer already expects.
-- **Overlay bar.** The in-game overlay — timer, mine counter, pause — as one
-  component that sits over either board and stays readable over the 3D
-  scene's sky in both themes — light in the light theme, dark in the dark
-  one — by carrying its own themed surface rather than drawing directly on
-  the scene. Over either board, the timer
+- **Overlay bar.** The in-game overlay — timer, mine counter, click
+  counter, pause — as one component that sits over either board and stays
+  readable over the 3D scene's sky in both themes — light in the light
+  theme, dark in the dark one — by carrying its own themed surface rather
+  than drawing directly on the scene. Over either board, the timer
   shows the elapsed time in whole seconds, zero-padded to three digits
   (047), and stops at 999 while the game's elapsed time keeps counting; the
   mine counter shows the real mines left, kept at −99 at the low end; on a
@@ -81,7 +82,11 @@ described in [app-shell.md](../../context/app-shell.md).
   keeps the standard counter. The timer's 999 and the counter's −99
   copy the reference game's displays
   ([tests/fidelity/minesweeper-online.md](../../../tests/fidelity/minesweeper-online.md));
-  the results, records and leaderboard screens show the real time.
+  the results, records and leaderboard screens show the real time. The
+  click counter ("Clicks") shows the game's counted clicks — every click,
+  wasted ones included, from the same engine click counts as the game's
+  summary: 0 before the first click, each click as it is made, frozen with
+  the timer when the game ends, and written only when it changes.
 - **Screen compositions.** The main menu, pause card and results screen
   rebuilt from the kit, replacing the shell's existing one-off styles.
 

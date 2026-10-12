@@ -3,7 +3,8 @@
 The Classic 2D mode on the square grid, as the player meets it: pick
 Beginner, Intermediate, Expert or a custom board, switch no-guess on or off,
 and play on a flat Canvas 2D board with mouse, keyboard or controller, with
-the timer and mine counter in the in-game overlay and the finished game
+the timer, mine counter and click counter in the in-game overlay and the
+finished game
 handed to the results screen.
 
 ## Purpose
@@ -38,7 +39,7 @@ In scope (m1-classic-2d):
 - Keyboard and controller play: a visible cell cursor moved by arrow keys,
   d-pad or stick, with reveal, flag and chord on buttons, so Classic 2D is
   fully playable with a controller.
-- The timer and mine counter, fed to the in-game overlay.
+- The timer, mine counter and click counter, fed to the in-game overlay.
 - Pause, restart and back to menu, as the game shell asks; the board is
   hidden while paused.
 - Handing every finished or abandoned game's summary on, through
@@ -130,8 +131,9 @@ copied.
 - **Pause, resume, restart, back to menu** — from the game shell. Pause
   freezes the timer and hides the board; it does nothing before the first
   click or after the game ends.
-- **Overlay feed** — timer and mines left, pushed to the in-game overlay
-  from `screen-components` whenever they change.
+- **Overlay feed** — timer, mines left and the game's counted clicks (the
+  engine's click counts the summary carries, wasted ones included), pushed
+  to the in-game overlay from `screen-components` whenever they change.
 - **Game finished** — one event per won or lost game with its summary, sent
   to the game shell, which opens `results-screen`; its *Play again* comes
   back here as a new start with the same choice.

@@ -7,6 +7,7 @@ import { GLYPHS } from './gamepad.js';
 import { bindingsHtml, hudStripHtml, hintStripHtml, helpFootHtml } from './settings/bindings.js';
 import { settingsPageHtml, bindingsSectionHtml } from './settings/page.js';
 import { DIM_MIN, DIM_MAX } from './mode3d/board-choice.js';
+import { formatTime } from './results/view.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -21,7 +22,8 @@ export function clampSettings(s) {
 }
 
 export const fmtDims = (s) => `${s.X} × ${s.Y} × ${s.Z}`;
-export const fmtTime = (t) => t.toFixed(2);
+/** The pause card's status line, its time (seconds) in the results time format: "Time 11.643 s · 12 mines left". */
+export const pauseLine = (time, minesLeft) => `Time ${formatTime(Math.round(time * 1000))} · ${minesLeft} mine${minesLeft === 1 ? '' : 's'} left`;
 const NO_GUESS = ' · no-guess';
 /** A 3D board as the overlay bar, the ready card (with `mines`) and the pause card name it. */
 export function boardLine3D(s, { mines = false } = {}) {
@@ -37,7 +39,7 @@ export class UI {
   constructor(cb) {
     this.cb = cb; // { onMenuEntry, onBack, onReadyClick, onReadyDrag, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSound, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D }
     this.el = {
-      hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), size: $('hud-size'), hudTools: $('hud-tools'),
+      hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), clicks: $('hud-clicks'), size: $('hud-size'), hudTools: $('hud-tools'),
       help: $('help'), helpList: $('help').querySelector('.controls'), helpFoot: $('help-foot'),
       hintStrip: $('hint-strip'), hintStripText: $('hint-strip-text'),
       readyRules: $('ready-rules'), pauseBoard: $('pause-board'), pauseControls: $('pause-controls'),
@@ -58,7 +60,7 @@ export class UI {
       m3dStatus: $('m3d-status'), m3dStatusTitle: $('m3d-status-title'), m3dStatusText: $('m3d-status-text'), m3dOffer: $('m3d-offer'),
       m3dSpinner: $('m3d-spinner'), m3dWait: $('m3d-wait'),
     };
-    this._last = { time: '', mines: '' };
+    this._last = { time: '', mines: '', clicks: '' };
     this._helpTimer = 0;
     this._helpByUser = false; // in-game help panel opened with H
     this._crossOn = null;
@@ -331,7 +333,7 @@ export class UI {
     this.el.pauseActions.insertBefore(this.el.home, this.el.pauseMenu);
     this.el.pauseActions.insertBefore(second, this.el.pauseMenu);
     this.el.pauseTitle.textContent = state === 'won' ? 'You won!' : state === 'lost' ? 'Game over' : 'Paused';
-    this.el.pauseSub.textContent = `Time ${fmtTime(time)} s · ${minesLeft} mine${minesLeft === 1 ? '' : 's'} left`;
+    this.el.pauseSub.textContent = pauseLine(time, minesLeft);
     this.el.pauseBoard.textContent = this._boardText;
     // The look settings only on a 3D game's pause card; volume and Sound in both modes.
     for (const key of ['lookSensitivity', 'invertY']) this.el.pause.querySelector(`[data-setting="${key}"]`).classList.toggle('hidden', mode !== '3d');
@@ -369,13 +371,21 @@ export class UI {
   // ---------- HUD ----------
   /** The 3D board the overlay bar and the pause card name ("6 × 6 × 6 · no-guess"). */
   setBoard(settings) { this._setBoardText(boardLine3D(settings)); this._sizeMines(settings.mines); }
-  /** Overlay bar readouts: the display formats clamp (timer at 999, counter at -99); `time` itself is never clamped. */
-  updateHud(time, minesLeft) {
+  /**
+   * Overlay bar readouts: the display formats clamp (timer at 999, counter at -99); `time` itself is
+   * never clamped. `clicks` is the game's counted clicks, wasted included; without it the readout
+   * stays as it is. Each readout is written only when its text changes.
+   */
+  updateHud(time, minesLeft, clicks) {
     const t = formatOverlayTime(time), m = formatMineCount(minesLeft);
     if (t !== this._last.time) { this.el.time.textContent = t; this._last.time = t; }
     if (m !== this._last.mines) {
       this.el.mines.textContent = m; this._last.mines = m;
       this.el.mines.classList.toggle('negative', minesLeft < 0);
+    }
+    if (Number.isFinite(clicks)) {
+      const c = String(clicks);
+      if (c !== this._last.clicks) { this.el.clicks.textContent = c; this._last.clicks = c; }
     }
   }
   setModes(shift, space, ctrl) {

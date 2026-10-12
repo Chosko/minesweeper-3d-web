@@ -356,7 +356,7 @@ test('in a browser, a recorded 3D replay plays from its fixture through to the e
     await page.click('#rp-speed [data-value="4"]');
     await page.click('#rp-play');
     await page.waitForFunction(() => globalThis.__ms.replayViewer.state.ended, null, { timeout: 15000 });
-    assert.equal(await text('replay-end'), 'Lost · 13.5 s');
+    assert.equal(await text('replay-end'), 'Lost · 13.578 s');
     assert.equal(await page.evaluate(() => globalThis.__ms.renderer.game.state), 'lost');
     // Back before the loss, the end-of-game effect stops and the board is in play again.
     await page.keyboard.press('Home');

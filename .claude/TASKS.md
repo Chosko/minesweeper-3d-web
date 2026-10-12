@@ -767,7 +767,7 @@ Preconditions: none
 
 ## 128. Results precision, figures and hierarchy
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/results/view.js, js/results/flow.js, js/ui.js, js/ui/components.js, js/classic2d/mode.js, js/classic2d/session.js, js/main.js, js/records/screen.js, js/records/replay-list.js, js/records/history-chart.js, index.html, css/components.css, css/style.css, dev/components.html, tests/results.test.mjs, tests/components.test.mjs, tests/classic2d-mode.test.mjs, tests/mode3d-end.test.mjs, tests/records-screen.test.mjs, tests/records-screen-3d.test.mjs, tests/records-replays.test.mjs, tests/records-history.test.mjs, tests/replay-viewer.test.mjs, tests/replay-viewer-3d.test.mjs, .claude/domain/features/results-screen.md, .claude/domain/features/3d-results-records-screens.md, .claude/domain/features/screen-components.md, .claude/domain/features/classic-2d-square-play.md, .claude/domain/features/records-screen.md, .claude/domain/features/replay-library.md, .claude/domain/features/leaderboard-screen.md, .claude/domain/features/results-steam-rank.md
 Preconditions: none

@@ -25,6 +25,7 @@ import { token, onThemeChange } from './tokens.js';
 import { storage, blobStore } from './platform/index.js';
 import { createSettingsStore } from './settings/store.js';
 import { createRecordsStore } from './records/store.js';
+import { countedClicks } from './records/summary.js';
 import { createResultsFlow } from './results/flow.js';
 import { createReplayLibrary } from './replay/library.js';
 import { createReplayViewer, createReplayView } from './replay/viewer.js';
@@ -139,8 +140,13 @@ function noteAutoHide(r) {
 function endGame() {
   const g = S.game;
   S.time = S.play.elapsedMs() / 1000;
-  S.endState = { state: g.state, time: S.time, minesLeft: minesBefore };
+  S.endState = { state: g.state, time: S.time, minesLeft: minesBefore, clicks: clicks3D() };
   if (g.state === 'won') sfx.win();
+}
+/** The 3D game's counted clicks so far, wasted included — the engine's counts; 0 before its board arrives. */
+function clicks3D() {
+  const counts = S.play?.counts();
+  return counts ? countedClicks(counts.clicks) : 0;
 }
 /** The 3D game's end delay is running: no board action, camera movement, view-mode key, Back or pause. */
 function ending3D() { return MODES.active === '3d' && mode3d.ending; }
@@ -348,7 +354,7 @@ const FLOW_2D = {
   openBoardChoice: (choice) => SHELL.go('classic-2d-choice', { data: { choice } }),
   show: () => SHELL.go('classic-2d'),
   container: () => document.getElementById('c2d-board'),
-  hud: ({ seconds, minesLeft }) => ui.updateHud(seconds, minesLeft),
+  hud: ({ seconds, minesLeft, clicks }) => ui.updateHud(seconds, minesLeft, clicks),
   board: (b) => { ui.setBoard2D(b); if (!standard2D) newGame2D(); }, // once per game, and again when played standard
   generating: (shown) => { board2d.generating = shown; showStatus2D(); },
   failed: (failure) => { board2d.failure = failure; showStatus2D(); },
@@ -655,7 +661,7 @@ function startGame(settings) {
   applyPixelRatio(g.n);
   placeAtSpawn();
   ui.setBoard(board3dChoice);
-  ui.updateHud(0, g.minesLeft);
+  ui.updateHud(0, g.minesLeft, 0);
   SHELL.go('ready', { data: { msg: NO_MOUSE ? NO_MOUSE_MSG : '' } });
   needRender = true;
   return play; // the adapter reports from it, after the listeners above
@@ -1252,7 +1258,7 @@ function frame(now) {
     // the timer is the session's: it runs only while playing (sync3D), frozen at the end
     if (playing && S.started && !S.endState) S.time = S.play.elapsedMs() / 1000;
     const e = S.endState;
-    ui.updateHud(e ? e.time : S.time, e ? e.minesLeft : g.minesLeft);
+    ui.updateHud(e ? e.time : S.time, e ? e.minesLeft : g.minesLeft, e ? e.clicks : clicks3D());
     if (playing && !ending3D()) aimHint(g, now);
     else AIM_DWELL.reset();
   }

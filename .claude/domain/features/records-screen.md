@@ -49,15 +49,16 @@ no framework and no external chart library (see
   area, from `screen-components`' segmented choice, cards and stat
   readouts. Opens on the board it was asked for, otherwise on the last
   board played. The fastest-time best is shown in `results-screen`'s time
-  format (47.3 s).
+  format (47.380 s), and the efficiency best to one decimal (94.7%).
 - **History chart.** A small line chart of 3BV/s and efficiency per won
   game, drawn on a canvas from design tokens in both themes, redrawn on
   theme change. It follows the kit's conventions and is owned here; it is
   read as a picture, with the figures panel and the games list carrying the
   same numbers in text for accessibility.
 - **Recent games list.** The newest games first, paged so a long history
-  stays responsive. Each game's time is shown to the tenth of a second in
-  `results-screen`'s time format (47.3 s).
+  stays responsive. Each game's time is shown to the thousandth of a second
+  in `results-screen`'s time format (47.380 s), and its efficiency to one
+  decimal.
 - **Live update.** Subscribes to `personal-records`' change notification
   while open.
 

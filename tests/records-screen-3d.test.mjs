@@ -172,7 +172,7 @@ test("the figures panel shows the chosen 3D board's figures and the 3D overall f
   ] });
   const library = fakeLibrary();
   const c = recordsContent(store, { boardKey: boardKey(CUBE_BEGINNER), replays: library });
-  assert.equal(value(c.bests, 'time'), '30.0 s');
+  assert.equal(value(c.bests, 'time'), '30.000 s');
   assert.deepEqual(c.counters.map((s) => [s.key, s.value]), [
     ['games', '2'], ['wins', '1'], ['winRate', '50%'], ['currentStreak', '0'], ['longestStreak', '1'],
   ]);

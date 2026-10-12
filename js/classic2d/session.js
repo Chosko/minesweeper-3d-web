@@ -30,7 +30,9 @@
 // click nothing is reported. Both cancel a pending generation. summary() is the game's summary so
 // far: null before the first click, outcome abandoned while playing, the finished summary after the
 // end. Summaries are built by js/records/summary.js's buildSummary; every summary of one game
-// carries the same id, so the in-progress summary and the final one name the same game.
+// carries the same id, so the in-progress summary and the final one name the same game. clicks()
+// is the game's counted clicks so far, wasted included — the engine's click counts the summary
+// carries, 0 before the first click and unchanged once the game ended.
 //
 // Recording (js/replay/recorder.js): each closed board opens a recorder, and restart() and leave()
 // discard it. Every action the session hands to the engine while the game accepts actions is
@@ -46,7 +48,7 @@
 
 import { createGame, PHASE } from '../engine/rules.js';
 import { getRuleProfile, REFERENCE_PROFILE } from '../engine/profiles.js';
-import { buildSummary } from '../records/summary.js';
+import { buildSummary, countedClicks } from '../records/summary.js';
 import { startRecording } from '../replay/recorder.js';
 import { boardSetup } from './board-setup.js';
 
@@ -300,6 +302,7 @@ export function createSession({
     get minesLeft() { return game.minesLeft; },
     elapsedMs: () => timer.elapsedMs(),
     seconds: () => timer.seconds(),
+    clicks: () => countedClicks(game.counts().clicks),
     get recording() { return recording(); },
     recordSample(values) { if (recording()) recorder.sample(values, timer.elapsedMs()); },
     recordCursor(c) { if (recording()) recorder.cursor(c, timer.elapsedMs()); },

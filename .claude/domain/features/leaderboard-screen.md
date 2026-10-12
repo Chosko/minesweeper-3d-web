@@ -57,7 +57,7 @@ screen router.
   Classic 2D Expert with no-guess off.
 - **Scope tabs.** Global, Friends and Around me; Global is the default.
 - **Entry list.** One row per entry: rank, player name, time to the
-  tenth of a second in `results-screen`'s time format (47.3 s), 3BV/s and
+  thousandth of a second in `results-screen`'s time format (47.380 s), 3BV/s and
   efficiency derived from the entry's
   details by `game-summary`'s rules, and *Watch replay*, disabled when the
   entry has no replay. The player's own row is highlighted in every scope.

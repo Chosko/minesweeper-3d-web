@@ -246,20 +246,34 @@ browser checks for everything that needs WebGL or the DOM.
   filters, watches and shows the empty state (skipped when Playwright or
   chromium is unavailable).
 - `tests/results.test.mjs` — the results screen (`js/results/`): the time
-  format (tenths, truncated, the one time formatter in the view), signed
-  differences, 3BV/s, efficiency and the dash; `resultsContent` for a win
-  (stats and the three bests with their differences and new bests), a loss
-  (3BV solved, no comparison), a missing stat and a failed recording; the
-  flow over a real records store — recorded before the screen shows and
-  routed with the comparison, a 3D record recorded and routed, a fixed 3D
-  board's null summary ignored, a throwing recording
-  still routed, "not being saved" told once, Play again / Records / Back to
-  menu — and DOM-free; static checks of the `#results` kit markup, its
-  router entry, default focus, controller layer and the flow on the
-  hand-off in `js/main.js`, and the `ui-stat__detail` catalogue entry. One
-  Playwright test wins a fixed Beginner board through the shell, checks the
-  results screen, opens Records on that board and returns with Back, then
-  Play again (skipped when Playwright or chromium is unavailable).
+  format (thousandths, truncated, the one time formatter in the view, the
+  pause card's `pauseLine` through it and no `fmtTime` left in `js/ui.js`),
+  signed differences and "= best" at display precision, 3BV/s, efficiency
+  to one decimal, the click row and the dash; `resultsContent` for a win
+  (stats, the three bests with their differences, delta directions and new
+  bests, the banner and highlighted stats, the second row with the rank),
+  a loss (3BV solved, the greyed not-eligible comparison with the pace and
+  its dash with no 3BV solved, no best yet), the next-target line in each
+  of its forms, a missing stat and a failed recording; `createResultsView`
+  over a fake root (a win's `data-delta` per best, a loss's
+  `ui-panel--muted` and not-eligible note, a win's colours cleared on the
+  next loss); the flow over fakes
+  — the streak read before recording and the counters and history after,
+  the rank with ties to the earlier game, recorded before the screen shows
+  and routed with the comparison, rank and streak, a 3D record recorded and
+  routed, a fixed 3D board's null summary ignored, a throwing recording or
+  query still routed, "not being saved" told once, Play again / Records /
+  Back to menu — and DOM-free; static checks of the `#results` kit markup
+  in reading order, its router entry, default focus, controller layer and
+  the flow on the hand-off in `js/main.js`, the `ui-stat__detail`,
+  `data-delta`, `ui-panel--muted` and `ui-banner` catalogue entries and
+  gallery, and the delta colours' 4.5:1 contrast on the bests panel in
+  both themes. One Playwright test wins a fixed Beginner board through the
+  shell with the overlay's click count checked before the first click,
+  after it and at the end, checks the results screen (formats, banner,
+  highlights, second row, next target, the game's figures larger than the
+  bests), opens Records on that board and returns with Back, then Play
+  again (skipped when Playwright or chromium is unavailable).
 - `tests/mode3d-end.test.mjs` — the 3D end sequence and the results
   takeover (`js/shell/mode-3d.js`, `js/main.js`, `js/results/view.js`) over
   a fake session and a fake clock: `END_DELAY_MS` one second for a win and
@@ -275,7 +289,9 @@ browser checks for everything that needs WebGL or the DOM.
   releases pointer lock, that no frame is drawn under a 3D game's results
   screen and that the results screen takes over on an opaque surface over
   3D only. One Playwright test wins and loses a 3D board through the shell
-  and lands on the results screen over the scene (skipped when Playwright
+  and lands on the results screen over the scene, the overlay's frozen
+  click count matching the recorded game's and the card carrying the click
+  row, the rank, the banner and the next target (skipped when Playwright
   or chromium is unavailable).
 - `tests/results-watch.test.mjs` — Watch replay on the results screen
   (`js/results/flow.js`, `js/results/view.js`): offered only for a game
@@ -391,7 +407,9 @@ browser checks for everything that needs WebGL or the DOM.
   helpers (`decimalsOf`, `formatSliderValue`, `segmentedTargetIndex`,
   `segmentedState`, `formatOverlayTime`, `formatMineCount` with no upper
   clamp and −99 kept, `mineCounterDigits`, the binders over stub elements);
-  the HUD overlay bar markup, `UI.updateHud`'s formats, `UI.setBoard` /
+  the HUD overlay bar markup (Time, Mines, Clicks, then the board),
+  `UI.updateHud`'s formats and its click count written only on change, both
+  modes' click feed in `js/main.js`, `UI.setBoard` /
   `setBoard2D` sizing `#hud-mines` to the board's digits past three, and a
   board of up to 999 mines left as today (no width of its own, left-aligned),
   with tabular figures, and the pause wiring (`onPause`, controller START); the shell's
@@ -491,7 +509,8 @@ browser checks for everything that needs WebGL or the DOM.
   contract, the board choice preselected from the last choice, `summary()`
   before the first click and mid-game (equal to the abandoned report),
   started / can-pause / finished (recorded and routed by the results flow),
-  redraw and the overlay feed, pause hiding
+  redraw and the overlay feed with its click count (none before the first
+  click, wasted clicks counted, frozen at the end), pause hiding
   the board and freezing the timer, restart and leave releasing the canvas
   and the pending generation, Play again, the no-guess failure offer and
   its failure count, `cancelGeneration` back to the closed board, the

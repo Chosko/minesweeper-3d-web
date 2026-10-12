@@ -39,8 +39,7 @@ In scope (m3-on-steam):
 Non-goals:
 
 - A rank panel or a *Leaderboard* action in the web build — the web
-  preview has only local leaderboards, and a local rank would repeat the
-  personal-best comparison already on the screen.
+  preview has only local leaderboards.
 - A rank panel after a lost game, on a custom board, or on any board
   without a leaderboard.
 - Where this game's time would have ranked when it did not beat the

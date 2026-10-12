@@ -9,7 +9,8 @@
 //                 show()                   show the board screen (the overlay bar above the area
 //                                          container() fills)
 //                 container()              the element the board view fills
-//                 hud({ seconds, minesLeft })  the overlay bar's timer and mine counter
+//                 hud({ seconds, minesLeft, clicks })  the overlay bar's timer, mine counter and
+//                                          click counter (the session's clicks())
 //                 board({ width, height, mines, noGuess })  the board the overlay bar names; again
 //                                          when a failed board's offer plays it standard
 //                 generating(shown)        the "generating" state of a slow first click
@@ -34,7 +35,7 @@
 // Shell side: hideBoard(hidden) hides the board whenever the pause card shows — the session pauses
 // with it (a no-op before the first click and after the end), the inputs drop what they hold and
 // take nothing while it is hidden; pause() is hideBoard(true) and resume() hideBoard(false) plus
-// flow.show(). tick() pushes the timer and mine counter to flow.hud when either changed and drives
+// flow.show(). tick() pushes the timer, mine counter and click count to flow.hud when any changed and drives
 // the movement sampler (call it every frame); every action pushes them at once. The cursor input's
 // moves reach the sampler as well as the view. pad(poll, now) hands the shell's controller poll
 // to the cursor input. retry() and playStandard() answer a failed board's offer; flow.failed's
@@ -66,12 +67,12 @@ export function createClassic2DMode(report, {
 }) {
   let game = null; // { session, view, pointer, cursor, sampler, offs }
   let hidden = false;
-  let shown = { seconds: null, minesLeft: null };
+  let shown = { seconds: null, minesLeft: null, clicks: null };
 
   const push = () => {
     if (!game) return;
-    const h = { seconds: game.session.seconds(), minesLeft: game.session.minesLeft };
-    if (h.seconds === shown.seconds && h.minesLeft === shown.minesLeft) return;
+    const h = { seconds: game.session.seconds(), minesLeft: game.session.minesLeft, clicks: game.session.clicks() };
+    if (h.seconds === shown.seconds && h.minesLeft === shown.minesLeft && h.clicks === shown.clicks) return;
     shown = h;
     flow.hud(h);
   };
@@ -100,7 +101,7 @@ export function createClassic2DMode(report, {
     if (generatingDelayMs !== undefined) options.generatingDelayMs = generatingDelayMs;
     const session = createSession(options);
     hidden = false;
-    shown = { seconds: null, minesLeft: null };
+    shown = { seconds: null, minesLeft: null, clicks: null };
     flow.show();
     const { width, height, mines, noGuess } = session.setup;
     flow.board({ width, height, mines, noGuess });

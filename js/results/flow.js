@@ -6,7 +6,8 @@
 // actions.
 //
 // createResultsFlow({ records, replays?, router, restart, goMenu }) → flow
-//   records   the records store (js/records/store.js): record(summary) → comparison, available().
+//   records   the records store (js/records/store.js): record(summary) → comparison, available(),
+//             and the queries counters(board) and history(board).
 //   replays   the replay library (js/replay/library.js): load(), add(blob, listing, setBest).
 //             Without it no replay is kept.
 //   router    { has, go } (js/shell/router.js).
@@ -17,12 +18,20 @@
 //   attach(pauser) → detach   hooks the pause controller's `finished` and `abandoned` hand-offs
 //                             (js/shell/pause.js).
 //   finished(summary, mode, replay?)  records, then routes to RESULTS_SCREEN with { summary, mode,
-//                             comparison, saved, notSaved, watch }; returns that data. Recording happens
-//                             before the screen shows, so the comparison is against the bests that
-//                             stood before this game. A summary that is not a record (a fixed
-//                             3D board's null) is ignored: no recording, no results screen, null.
-//                             A recording that throws routes anyway, with comparison null and saved
-//                             false. notSaved is true on the first results screen of a session whose
+//                             comparison, saved, notSaved, watch, rank, streak }; returns that data.
+//                             Recording happens before the screen shows, so the comparison is
+//                             against the bests that stood before this game. A summary that is not
+//                             a record (a fixed 3D board's null) is ignored: no recording, no
+//                             results screen, null. A recording that throws routes anyway, with
+//                             comparison, rank and streak null and saved false. streak is the
+//                             board's { before, current, longest }: its current streak read with
+//                             counters(board) before recording, then its current and longest streaks
+//                             after. rank is a won game's { position, of } among the board's won
+//                             games, from history(board) after recording: position is 1 + the
+//                             other won games whose time is at or below this one's (a tie ranks the
+//                             earlier game first), of counts them and this one; null on a loss. A
+//                             query that throws is logged and leaves its figure null. notSaved is
+//                             true on the first results screen of a session whose
 //                             records are not being saved (records.available() false), so the
 //                             player is told once. watch is whether Watch replay is offered: the
 //                             game handed over its sealed replay and the router has the replay
@@ -60,6 +69,23 @@ const isRecordSummary = (s) => s !== null && typeof s === 'object' && typeof s.i
 const setsBest = (comparison) => comparison !== null && typeof comparison === 'object'
   && Object.values(comparison).some((c) => c?.newBest === true);
 
+/** A records query, or null when it throws: a figure the screen can do without. */
+function query(fn) {
+  try {
+    return fn();
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+}
+
+/** A won game's place by time among the board's won games: ties rank the earlier game first. */
+function rankOf(summary, history) {
+  if (summary.outcome !== 'won' || !Array.isArray(history)) return null;
+  const others = history.filter((e) => e.outcome === 'won' && e.id !== summary.id);
+  return { position: 1 + others.filter((e) => e.elapsedMs <= summary.elapsedMs).length, of: others.length + 1 };
+}
+
 export function createResultsFlow({ records, replays = null, router, restart, goMenu }) {
   let current = null;
   let shownReplay = null;
@@ -80,17 +106,25 @@ export function createResultsFlow({ records, replays = null, router, restart, go
       if (!isRecordSummary(summary)) return null;
       let comparison = null;
       let saved = true;
+      const before = query(() => records.counters(summary.board));
       try {
         comparison = records.record(summary);
       } catch (err) {
         console.error(err);
         saved = false;
       }
+      let rank = null;
+      let streak = null;
+      if (saved) {
+        const after = query(() => records.counters(summary.board));
+        rank = rankOf(summary, query(() => records.history(summary.board)));
+        if (before && after) streak = { before: before.currentStreak, current: after.currentStreak, longest: after.longestStreak };
+      }
       const notSaved = !told && !records.available();
       if (notSaved) told = true;
       shownReplay = replay?.blob ? replay : null;
       const watch = shownReplay !== null && router.has(REPLAY_SCREEN);
-      current = { summary, mode, comparison, saved, notSaved, watch };
+      current = { summary, mode, comparison, saved, notSaved, watch, rank, streak };
       router.go(RESULTS_SCREEN, { data: current });
       keep(replay, comparison);
       return current;

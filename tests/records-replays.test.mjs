@@ -103,9 +103,9 @@ test('the board\'s kept replays, newest first, with date, outcome, time, 3BV/s, 
   const [b, c, a] = list.rows;
   assert.equal(b.date, formatDate('2026-10-09T12:00:00.000Z'));
   assert.deepEqual([b.outcome, c.outcome, a.outcome], ['Won', 'Abandoned', 'Lost']);
-  assert.equal(b.time, '47.3 s', 'the results screen\'s time, truncated to the tenth');
+  assert.equal(b.time, '47.380 s', 'the results screen\'s time, to the thousandth');
   assert.equal(b.rate, '1.23');
-  assert.equal(b.efficiency, '80%');
+  assert.equal(b.efficiency, '79.6%', 'efficiency to one decimal');
   assert.deepEqual([c.rate, c.efficiency], [DASH, DASH], 'a missing stat is a dash');
   assert.deepEqual([b.pinned, c.pinned, a.pinned], [true, true, false]);
   assert.deepEqual([b.pin, c.pin, a.pin], [pinState([PIN_BEST]), pinState([PIN_HAND]), pinState([])]);
@@ -116,7 +116,8 @@ test('the board\'s kept replays, newest first, with date, outcome, time, 3BV/s, 
 
 test('a row\'s time goes through the results screen\'s formatter', () => {
   const library = fakeLibrary([listing('t', { elapsedMs: 59999 })]);
-  assert.equal(replayList(library, KEY).rows[0].time, '59.9 s', 'truncated, never rounded');
+  assert.equal(replayList(library, KEY).rows[0].time, '59.999 s', 'truncated, never rounded');
+  assert.equal(replayList(fakeLibrary([listing('t', { elapsedMs: 59999.7 })]), KEY).rows[0].time, '59.999 s');
   assert.match(read('js/records/replay-list.js'), /import \{[^}]*formatTime[^}]*\} from '\.\.\/results\/view\.js'/);
 });
 
@@ -423,7 +424,7 @@ test('in a browser, the replays panel lists, pins by keyboard keeping focus, fil
     const active = () => page.evaluate(() => ({ ...document.activeElement?.dataset }));
 
     let r = await rows();
-    assert.deepEqual(r.map((c) => c.slice(1, 6)), [['Won', '47.3 s', '0.42', '80%', 'Not pinned'], ['Lost', '12.0 s', '0.50', '50%', 'Not pinned']], 'newest first');
+    assert.deepEqual(r.map((c) => c.slice(1, 6)), [['Won', '47.380 s', '0.42', '80.0%', 'Not pinned'], ['Lost', '12.000 s', '0.50', '50.0%', 'Not pinned']], 'newest first');
     assert.deepEqual(r.map((c) => c[6]), ['WatchPin', 'WatchPin']);
     assert.equal(await page.evaluate((s) => document.querySelector(`${s} #records-replays-empty`).classList.contains('hidden'), T), true);
 
