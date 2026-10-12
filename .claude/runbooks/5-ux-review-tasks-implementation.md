@@ -1,7 +1,7 @@
 # Runbook: ux-review-tasks-implementation
 
 Created: 2026-10-12 · Source: /runbook-create interview · Model: opus
-Last step number: 37
+Last step number: 38
 Sequencing: Run in list order, one step at a time: most tasks edit js/main.js, index.html and css/style.css, and each body says whichever of two overlapping tasks lands second merges around the first; task 119's help component is reused by many later tasks, so it goes first.
 
 ## [ ] 1. Implement task 119 — Mode-aware help and first-use hints
@@ -276,7 +276,7 @@ Context: none
 /task-implement 145 --review
 ```
 
-## [ ] 28. Implement task 146 — Orbit camera mode
+## [x] 28. Implement task 146 — Orbit camera mode
 
 Depends on: 25
 
@@ -284,6 +284,19 @@ Context: none
 
 ```prompt
 /task-implement 146 --review
+```
+
+Done: struck — its prompt runs one review round; the director requires two and the browser play test task 146's body now asks for; superseded by its corrected copy, step 38.
+
+## [ ] 38. Implement task 146 — Orbit camera mode
+
+Depends on: 25
+
+Context:
+- 2026-10-12 (amend): The review must include the automated browser play test task 146's body requires, because the orbit camera is a large UX change.
+
+```prompt
+/task-implement 146 --review --rounds 2
 ```
 
 ## [ ] 29. Implement task 147 — Touch controls for 3D
