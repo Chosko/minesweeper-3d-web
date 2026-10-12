@@ -6,7 +6,7 @@ import { join, dirname, normalize, extname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRouter, SHELL_SCREENS } from '../js/shell/router.js';
 import {
-  FOCUSABLE, topLayer, resolveFocus, createHeldSuppressor, backButtons, isBackKey,
+  FOCUSABLE, topLayer, resolveFocus, createHeldSuppressor, backButtons, isBackKey, arrowDirection, keepsArrow,
 } from '../js/shell/navigation.js';
 import { BTN, NUM_BUTTONS } from '../js/gamepad.js';
 
@@ -269,6 +269,28 @@ test('Esc and the controller back button mean Back; B is Back only off the board
   }
 });
 
+test('the arrow keys are the keyboard\'s focus moves, in the D-pad\'s four directions', () => {
+  assert.equal(arrowDirection('ArrowUp'), 'up');
+  assert.equal(arrowDirection('ArrowDown'), 'down');
+  assert.equal(arrowDirection('ArrowLeft'), 'left');
+  assert.equal(arrowDirection('ArrowRight'), 'right');
+  for (const code of ['KeyW', 'Escape', 'Tab', 'Numpad8', '', undefined]) assert.equal(arrowDirection(code), null, `${code} is no focus move`);
+});
+
+test('a control that owns an arrow keeps it, as the D-pad treats it', () => {
+  const el = (tagName, type) => ({ tagName, type });
+  const keeps = (control) => ['up', 'down', 'left', 'right'].filter((d) => keepsArrow(control, d));
+  assert.deepEqual(keeps(el('INPUT', 'range')), ['left', 'right'], 'a slider keeps Left/Right for its value');
+  assert.deepEqual(keeps(el('INPUT', 'number')), ['left', 'right'], 'a number field keeps Left/Right for its caret');
+  assert.deepEqual(keeps(el('INPUT', 'text')), ['left', 'right'], 'a text field too');
+  assert.deepEqual(keeps(el('TEXTAREA', 'textarea')), ['left', 'right']);
+  assert.deepEqual(keeps(el('INPUT', 'checkbox')), [], 'a toggle owns no arrow');
+  assert.deepEqual(keeps(el('BUTTON', 'button')), [], 'a button owns no arrow');
+  assert.deepEqual(keeps(el('A')), []);
+  assert.deepEqual(keeps(el('SELECT', 'select-one')), ['up', 'down', 'left', 'right']);
+  assert.deepEqual(keeps(null), []);
+});
+
 test('router and navigation are DOM-free', () => {
   for (const f of ['js/shell/router.js', 'js/shell/navigation.js']) {
     const src = read(f).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
@@ -309,6 +331,21 @@ test('Esc and the controller back button always resolve Back through the router'
   assert.match(MAIN, /function shellBack\(source\)[\s\S]*?SHELL\.back\(source\)/, 'Back is resolved by the router');
   assert.doesNotMatch(MAIN, /pressed\(BTN\.BACK\)\)\s*toggleSound/, 'the back button is not a sound toggle');
   assert.match(MAIN, /backButtons\(S\.mode\)/, 'the controller back buttons depend on the screen');
+});
+
+test('the arrow keys move focus through the D-pad\'s spatial search, off the boards, Records and the replay viewer', () => {
+  assert.match(read('js/input.js'), /if \(!e\.repeat \|\| ARROW_KEYS\.has\(e\.code\)\) this\.o\.onKey\?\.\(e\.code, e\)/,
+    'arrows reach the shell with the browser\'s key repeat');
+  assert.match(MAIN, /const dir = arrowDirection\(code\);\s*if \(dir\) \{ keyNav\(dir, e\); return; \}/);
+  const nav = MAIN.slice(MAIN.indexOf('function keyNav('), MAIN.indexOf('\n}\n', MAIN.indexOf('function keyNav(')));
+  assert.match(nav, /e\.defaultPrevented/, 'an arrow a control already handled is left alone');
+  assert.match(nav, /KEY_NAV_OFF\.has\(S\.mode\)/);
+  assert.match(nav, /keepsArrow\(cur, dir\)/, 'a control that owns the arrow keeps it');
+  assert.match(nav, /navStep\(layer, items, cur, dir\)/, 'the same spatial search as the D-pad');
+  assert.match(MAIN, /function padNav\(dir\)[\s\S]*?navStep\(layer, items, cur, dir\)/, 'which the D-pad uses');
+  assert.match(MAIN, /const KEY_NAV_OFF = new Set\(\['playing', 'classic-2d', 'records', REPLAY_SCREEN\]\)/);
+  assert.match(MAIN, /function keyFocus\(el\) \{[\s\S]*?classList\.remove\('pad-nav'\)[\s\S]*?focusVisible: true/,
+    'the keyboard shows the kit\'s keyboard ring, not the controller\'s');
 });
 
 // ---------------------------------------------------------------- browser: keyboard walk
@@ -408,6 +445,151 @@ test('in a browser, the keyboard walks menu → screen → Back with the default
     // The existing 3D flow keeps working through the hook.
     await page.evaluate(() => { globalThis.__ms.start(5, 5, 5, 5); globalThis.__ms.forcePlay(); });
     assert.equal(await mode(), 'playing');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+test('in a browser, the arrow keys alone walk the menu, the 2D board choice, the pause card and Settings', async (t) => {
+  const playwright = await loadPlaywright();
+  if (!playwright) {
+    t.skip('Playwright is not installed');
+    return;
+  }
+  let browser;
+  try {
+    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  } catch (error) {
+    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
+    return;
+  }
+  const server = await serve();
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
+    const mode = () => page.evaluate(() => globalThis.__ms.state.mode);
+    const focus = () => page.evaluate(() => {
+      const el = document.activeElement;
+      return {
+        id: el?.id || el?.dataset?.size || el?.dataset?.value || '', visible: !!el?.matches(':focus-visible'),
+        pad: document.body.classList.contains('pad-nav'), ring: el ? getComputedStyle(el).outlineStyle : 'none',
+      };
+    });
+    /** Press `key` until the focus is on `id`, at most `max` times; each press must move or keep a ring. */
+    const walkTo = async (key, id, max = 30) => {
+      for (let i = 0; i < max; i++) {
+        if ((await focus()).id === id) return;
+        await page.keyboard.press(key);
+        const f = await focus();
+        assert.equal(f.pad, false, 'the keyboard path never shows the controller ring');
+        assert.ok(f.visible && f.ring !== 'none', `#${f.id} shows the keyboard focus ring`);
+      }
+      assert.equal((await focus()).id, id, `${key} reaches #${id}`);
+    };
+
+    // The main menu: Down walks the entries; Up walks back.
+    assert.equal((await focus()).id, 'menu-entry-classic-2d', 'the menu opens on its default');
+    await page.keyboard.press('ArrowDown');
+    assert.equal((await focus()).id, 'menu-entry-3d');
+    await page.keyboard.press('ArrowUp');
+    assert.equal((await focus()).id, 'menu-entry-classic-2d');
+    // Held down, the key repeats as the browser delivers it.
+    await page.keyboard.down('ArrowDown');
+    await page.keyboard.down('ArrowDown');
+    await page.keyboard.up('ArrowDown');
+    assert.equal((await focus()).id, 'menu-entry-records', 'a repeated keydown moves again');
+    await walkTo('ArrowUp', 'menu-entry-classic-2d');
+
+    // The Controls panel: its tabs keep Left/Right, and Up leaves them for Close.
+    await page.click('#menu-help');
+    const inTabs = () => page.evaluate(() => !!document.activeElement.closest('#controls-tabs'));
+    for (let i = 0; i < 4 && !(await inTabs()); i++) await page.keyboard.press('ArrowDown');
+    assert.equal(await inTabs(), true, 'Down reaches the tabs');
+    await page.keyboard.press('ArrowUp');
+    assert.equal((await focus()).id, 'controls-close', 'Up leaves the tabs');
+    await page.keyboard.press('Escape');
+    await page.focus('#menu-entry-classic-2d');
+
+    // The Classic 2D board choice: arrows walk the sizes; a number field keeps Left/Right; Down reaches Back.
+    await page.keyboard.press('Enter');
+    assert.equal(await mode(), 'classic-2d-choice');
+    await walkTo('ArrowDown', 'c2d-width');
+    const before = await page.inputValue('#c2d-width');
+    await page.keyboard.press('ArrowLeft');
+    assert.equal((await focus()).id, 'c2d-width', 'Left stays in the field for its caret');
+    await page.keyboard.press('ArrowUp');
+    assert.notEqual((await focus()).id, 'c2d-width', 'Up moves focus out of the field');
+    assert.equal(await page.inputValue('#c2d-width'), before, 'and leaves its value alone');
+    await walkTo('ArrowDown', 'c2d-choice-back');
+    await page.keyboard.press('Enter');
+    assert.equal(await mode(), 'menu');
+
+    // The pause card: arrows walk its actions and its settings shortcuts; a slider keeps Left/Right.
+    await page.evaluate(() => { globalThis.__ms.start(5, 5, 5, 5); globalThis.__ms.forcePlay(); });
+    await page.keyboard.press('Escape');
+    assert.equal(await mode(), 'paused');
+    assert.equal((await focus()).id, 'p-resume');
+    await walkTo('ArrowDown', 'p-sens');
+    const sens = await page.inputValue('#p-sens');
+    await page.keyboard.press('ArrowRight');
+    assert.equal((await focus()).id, 'p-sens', 'Right stays on the slider');
+    assert.notEqual(await page.inputValue('#p-sens'), sens, 'and moves its value');
+    await page.keyboard.press('ArrowLeft');
+    await walkTo('ArrowUp', 'p-resume');
+    assert.equal(await mode(), 'paused', 'the arrows never resume');
+    await walkTo('ArrowDown', 'p-menu');
+    await page.keyboard.press('Enter');
+    assert.equal(await mode(), 'menu');
+
+    // Settings: the segmented choice keeps Left/Right, Up/Down leave it; Back is always in view.
+    await page.focus('#menu-entry-settings');
+    await page.keyboard.press('Enter');
+    assert.equal(await mode(), 'settings');
+    assert.equal((await focus()).id, 'set-lookSensitivity');
+    await page.keyboard.press('ArrowUp');
+    assert.equal((await focus()).id, 'set-fullscreen', 'Up leaves the slider for the Graphics section');
+    await page.keyboard.press('ArrowRight');
+    assert.equal(await page.evaluate(() => !!document.activeElement.closest('#set-renderResolution')), true, 'Right reaches its choice');
+    const choice = () => page.evaluate(() => document.querySelector('#set-renderResolution [aria-checked="true"]').dataset.value);
+    const was = await choice();
+    await page.keyboard.press('ArrowRight');
+    assert.notEqual(await choice(), was, 'Right changes the choice');
+    await page.keyboard.press('ArrowLeft');
+    assert.equal(await choice(), was);
+    const on = (await focus()).id;
+    await page.keyboard.press('ArrowDown');
+    assert.notEqual((await focus()).id, on, 'Down moves focus off the choice');
+    assert.equal(await choice(), was, 'without changing it');
+    await walkTo('ArrowDown', 'settings-back');
+    const backInView = () => page.evaluate(() => {
+      const r = document.getElementById('settings-back').getBoundingClientRect();
+      return r.top >= 0 && r.bottom <= innerHeight && r.height > 0;
+    });
+    for (const size of [{ width: 1280, height: 800 }, { width: 390, height: 700 }]) {
+      await page.setViewportSize(size);
+      for (const top of [0, 1e6]) {
+        await page.evaluate((y) => { document.getElementById('settings').scrollTop = y; }, top);
+        assert.equal(await backInView(), true, `Back is in view at ${size.width}×${size.height}, scrolled to ${top ? 'the bottom' : 'the top'}`);
+      }
+    }
+    // A focus move scrolls the focused control into view above the sticky row.
+    await page.evaluate(() => { document.getElementById('settings').scrollTop = 0; });
+    await walkTo('ArrowDown', 'settings-back');
+    await walkTo('ArrowUp', 'set-lookSensitivity');
+    const clear = await page.evaluate(() => {
+      const row = document.getElementById('settings-back').parentElement.getBoundingClientRect();
+      const tops = [...document.querySelectorAll('#settings-body button, #settings-body input')].map((e) => e.getBoundingClientRect());
+      return document.activeElement.getBoundingClientRect().bottom <= row.top && tops.length > 0;
+    });
+    assert.equal(clear, true, 'the focused control is not under the Back row');
+    await page.keyboard.press('Escape');
+    assert.equal(await mode(), 'menu', 'Back returns to the screen Settings was opened from');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

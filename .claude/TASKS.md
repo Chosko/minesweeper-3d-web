@@ -713,7 +713,7 @@ Preconditions: none
 
 ## 122. Menu keyboard navigation and browser Back
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/shell/history.js, js/shell/navigation.js, js/main.js, js/input.js, js/ui/components.js, js/settings/page.js, index.html, css/style.css, css/components.css, tests/shell-history.test.mjs, tests/shell-router.test.mjs, tests/components.test.mjs, tests/settings-page.test.mjs, .claude/domain/features/game-shell.md, .claude/domain/features/settings.md
 Preconditions: none

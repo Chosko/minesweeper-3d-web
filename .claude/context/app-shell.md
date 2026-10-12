@@ -32,8 +32,11 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
   - `router.js` — the screen router and back stack (`createRouter`,
     `SHELL_SCREENS`).
   - `navigation.js` — the shell navigation layer over the controller
-    reader: topmost layer, default-focus fallback, Back inputs, held-button
-    suppression (see [input.md](input.md)).
+    reader: topmost layer, default-focus fallback, Back inputs, the arrow
+    keys' focus moves, held-button suppression (see [input.md](input.md)).
+  - `history.js` — the session-history mirror of the router's back stack,
+    through which the browser's Back is a Back input (`createHistorySync`;
+    its rules are documented in its head comment).
   - `mode-host.js` — the mode contract and the registry the shell reaches
     every mode through (`createModeHost`, `MODE_METHODS`, `MODE_EVENTS`); the
     contract is documented in its head comment.
@@ -103,7 +106,8 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
   Classic 2D board layer and its board area below the overlay bar, and the
   replay viewer's layer — opaque, or transparent over the 3D scene under
   `replay--scene` — its board area, controls and `.replay-pointer`), the
-  menu-screen backdrop shared by `#menu`, `#board-choice`, `#coming-soon`,
+  Back rows (`.esc-row`, the `[data-esc-hint]` hint, Settings' sticky
+  `#settings-actions`), the menu-screen backdrop shared by `#menu`, `#board-choice`, `#coming-soon`,
   `#c2d-choice`, `#settings` and `#records`,
   the translucent backdrop shared by `#pause`, `#ready` and `#results`, the
   results screen's opaque takeover surface over a 3D game
@@ -139,6 +143,19 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
   (copy), `has(name)`, `defaultFocus(name?)`, `go(name, {data, replace})`,
   `back(source)` → false when there is nowhere to go, `refocus()`. An unknown
   screen throws.
+
+`js/shell/history.js`
+- `HISTORY_KEY` (`'ms3d'`) — the state key every entry of this page carries,
+  `{ms3d: <page load>, depth}`.
+- `createHistorySync({router, history, onBack, session?, superseded?})` →
+  `start(navigationType)` (stamps the current entry as the base, depth 0,
+  superseding the page load it belonged to; false when it is an entry of a
+  superseded load, and the page walks out instead), `sync()` (after every
+  router change: push, replace or `history.go(-n)` until the depth equals
+  `router.stack.length`), `popstate(state)`, `depth`, `pending`.
+- `storedSet(getStorage, key, limit?)` → `{has(id), add(id)}`, the superseded
+  page loads in the tab's session storage (`ms3d.history.superseded`, the
+  newest 50); unusable storage reads as empty.
 
 `js/shell/mode-host.js`
 - `MODE_METHODS` (`openBoardChoice`, `start`, `pause`, `resume`, `restart`,
@@ -269,11 +286,13 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   `'999'`; `formatMineCount(minesLeft)` → clamped to -99 … 999. Display only.
 - `formatSliderValue(value, {format: 'number'|'percent'|'multiplier', step, max, unit})`,
   `decimalsOf(step)`.
-- `segmentedTargetIndex(disabled, current, key)` (arrows wrap, Home/End,
-  disabled skipped), `segmentedState(count, selected)` (aria-checked, roving
-  tab order).
-- `bindSlider(root)`, `bindSegmented(group, {onChange})` (dispatches `change`
-  with `{value, index}`), `initComponents(root)` — each returns an unbind.
+- `segmentedTargetIndex(disabled, current, key, {horizontal?})` (arrows wrap,
+  Home/End, disabled skipped; `horizontal` takes Left/Right only),
+  `segmentedState(count, selected)` (aria-checked, roving tab order).
+- `bindSlider(root)`, `bindSegmented(group, {onChange, horizontal?})`
+  (dispatches `change` with `{value, index}`; `horizontal` leaves Up/Down
+  unhandled for the shell's focus moves), `initComponents(root)` — each
+  returns an unbind.
 
 `js/theme.js` — `globalThis.msTheme` (also `createThemeApplier({root, readStored?, onError?})`,
 the factory tests drive):
@@ -338,6 +357,12 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   `resumeFromPause` (the main menu once the game has ended, else resume),
   `results` → menu, `replay` → its `returnTo` (the menu when none),
   `ctxlost` → menu — else the stacked screen.
+- **Session history.** `HISTORY` (`createHistorySync` over `SHELL` and
+  `window.history`) mirrors the back stack: every router change calls
+  `HISTORY.sync()` from the router's `onChange`, the window's `popstate`
+  goes to `HISTORY.popstate`, and `HISTORY.start` stamps the base entry at
+  boot from the navigation entry's type. The URL never changes; a reload
+  opens the main menu.
 - **Back inputs.** `shellBack(source)` does nothing during the 3D end delay;
   otherwise it closes the controls modal or the pause confirmation first,
   then calls `SHELL.back`. Esc (`isBackKey`) reaches it
@@ -350,7 +375,15 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   `backGame('key')` instead — a lock lost with the window's focus pauses,
   and a release right after a cancelled 3D generation goes to the
   click-to-play card; `resumeFromPause` ignores a keyboard Back within
-  500 ms of the unlock, so that Esc does not also resume.
+  500 ms of the unlock, so that Esc does not also resume. The browser's
+  Back (and a mouse's back button) is `historyBack`, run by `HISTORY` on a
+  `popstate` back: nothing during the 3D end delay, the controls modal or
+  confirmation closes first, the board (`playing`, `classic-2d`) pauses
+  through `pauseGame('button')`, the pause card of an unfinished game and a
+  started game's ready card hold the game, anything else is
+  `SHELL.back('history')`; `HISTORY` then restores the consumed entry when
+  the stack did not shrink. Each Back that Esc triggers carries an "Esc:
+  Back" hint (`[data-esc-hint]`).
 - **Focus.** Each screen declares `defaultFocus`; the router's `focus`
   hand-off (`focusScreen`) resolves it inside the screen's layer, falling back
   to its first focusable control. Defaults: menu the last mode played
@@ -613,8 +646,9 @@ Game flow (`js/main.js`):
   [replay.md](replay.md)) loads in the background. A failed replay save
   toasts once that this session's replays will not be kept, and the replay
   stays watchable this session.
-- `onKey` ignores keys whose target is inside `input, select, textarea`, so
-  settings sliders do not trigger H/M/F.
+- `onKey` ignores H/M/F whose target is inside `input, select, textarea`, so
+  settings sliders do not trigger them. The arrow keys go to `keyNav` before
+  that check (see Controller menus).
 - Active device: `DEVICE` (`createActiveDevice`, [settings.md](settings.md))
   is told of every keydown and mousedown/mousemove (capture listeners), of
   every controller poll with a press or a stick off its deadzone
@@ -641,7 +675,14 @@ Game flow (`js/main.js`):
   default focus is the screen's `SHELL.defaultFocus` (the controls modal's is
   its close button). Every router change and controls-modal toggle calls
   `layerChanged`, which suppresses the buttons held at the last poll until
-  released (`nav`, a held suppressor) and resets the menu repeats.
+  released (`nav`, a held suppressor) and resets the menu repeats. The arrow
+  keys (`keyNav`, from `Input`'s `onKey` with the browser's key repeats) take
+  the same spatial step (`navStep`, shared with `padNav`) in the topmost
+  layer on every screen but `KEY_NAV_OFF` (`playing`, `classic-2d`,
+  `records`, `replay`), leave an arrow the focused control owns
+  (`keepsArrow`) or already handled (`defaultPrevented`), focus the layer's
+  default when nothing is focused, and focus through `keyFocus`, which drops
+  `pad-nav` so the kit's `:focus-visible` ring shows.
 - UI help panel: `_helpByUser` keeps an H-opened panel open across screens;
   screen methods otherwise hide it. Its list and foot line, the pause card's
   list, the HUD strip, the hint strip and the main menu's Controls panel
@@ -735,7 +776,10 @@ Component kit (`css/components.css`, catalogue in its head comment):
   `#settings-body` `UI` fills at construction with `settingsPageHtml()` — a
   `ui-grid` of Controls, Graphics, Theme and Audio `ui-panel` sections, one
   `data-setting` control per setting — and a Bindings panel
-  (`#settings-bindings`) redrawn by `showSettings`; a primary Back.
+  (`#settings-bindings`) redrawn by `showSettings`; a primary Back in
+  `#settings-actions`, a sticky row at the bottom of the card's scroll area
+  (`css/style.css`), with `#settings`'s `scroll-padding-bottom` keeping a
+  focused control above it.
 - Pause card (`#pause-card`): a `ui-card ui-screen` with `ui-text` status
   lines, `#pause-actions` (`showPause` moves the primary action first —
   Resume while playing, Play again once ended, when Resume is hidden —
@@ -904,6 +948,9 @@ Gameplay fidelity to the original game is the overriding rule.
   `results` wiring in `js/main.js`.
 - Changing pause rules, confirmations or the leave-page guard: `js/shell/pause.js`
   and the `PAUSE` wiring in `js/main.js`.
+- Changing what the browser's Back does or how the session history mirrors
+  the back stack: the head comment of `js/shell/history.js` and
+  `historyBack` in `js/main.js`.
 - Changing the 3D end-of-game flow or the frozen HUD (`endGame`,
   `S.endState`, `ending3D`, `pauseGame`, the `MODES.on('finished')` pause
   card for a fixed board), the board status card (`showStatus3D`, `retry3D`) or how

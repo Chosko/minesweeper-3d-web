@@ -67,8 +67,10 @@ settings handling for the shell's UI module and the sound module ([app-shell.md]
   knows none of them.
 - **Settings page.** The page itself: sections for controls, graphics,
   theme and audio, each control bound to one schema entry, with Back to the
-  screen it was opened from. The bindings list reads the same source as the
-  in-game help, so the two never disagree.
+  screen it was opened from in a sticky action row at the bottom of the
+  page, so Back stays in view at any scroll position and a focused control
+  is never under it. The bindings list reads the same source as the in-game
+  help, so the two never disagree.
 - **Pause-card shortcuts.** The pause card keeps quick access to volume in
   both modes, and to look sensitivity and invert Y on a 3D game's pause card
   only, bound to the same store.

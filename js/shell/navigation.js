@@ -1,6 +1,6 @@
-// Shell navigation: which layer takes input, default focus fallback, Back inputs and the
-// suppression of controller buttons held across a screen change. DOM-free: the shell hands in
-// elements, visibility tests and poll results.
+// Shell navigation: which layer takes input, default focus fallback, Back inputs, the arrow keys'
+// focus moves and the suppression of controller buttons held across a screen change. DOM-free: the
+// shell hands in elements, visibility tests and poll results.
 import { BTN } from '../gamepad.js';
 
 /** The native controls the shell's keyboard and controller navigation collect. */
@@ -19,6 +19,28 @@ export function resolveFocus(target, items) {
 
 /** Esc means Back (or Pause while playing) on every screen. */
 export function isBackKey(code) { return code === 'Escape'; }
+
+const ARROWS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+
+/** The arrow keys are the keyboard's focus moves, in the D-pad's directions; null for any other key. */
+export function arrowDirection(code) { return Object.hasOwn(ARROWS, code ?? '') ? ARROWS[code] : null; }
+
+const TEXT_TYPES = new Set(['text', 'number', 'search', 'email', 'tel', 'url', 'password']);
+
+/**
+ * Whether the focused control owns the arrow in `dir`, so it is not a focus move: a slider keeps
+ * Left/Right for its value, a number or text field Left/Right for its caret, a select every arrow.
+ * Up/Down leave a slider or a field, as the D-pad does.
+ */
+export function keepsArrow(control, dir) {
+  const tag = String(control?.tagName ?? '').toLowerCase();
+  const horizontal = dir === 'left' || dir === 'right';
+  if (tag === 'select') return true;
+  if (tag === 'textarea') return horizontal;
+  if (tag !== 'input') return false;
+  const type = String(control.type ?? 'text').toLowerCase();
+  return horizontal && (type === 'range' || TEXT_TYPES.has(type));
+}
 
 /** Controller buttons that mean Back on a screen: the back button always, B off the board. */
 export function backButtons(screen) {

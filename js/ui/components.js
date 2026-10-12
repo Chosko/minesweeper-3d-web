@@ -31,13 +31,15 @@ export function formatSliderValue(value, { format = 'number', step, max, unit = 
 }
 
 const STEP = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+const VERTICAL = new Set(['ArrowDown', 'ArrowUp']);
 
 /**
  * Index a key moves a segmented choice to, skipping disabled options and
  * wrapping at the ends; null when the key is not a navigation key or no
- * other option can take the selection.
+ * other option can take the selection. A horizontal choice takes Left and
+ * Right only, leaving Up and Down to the shell's focus moves.
  */
-export function segmentedTargetIndex(disabled, current, key) {
+export function segmentedTargetIndex(disabled, current, key, { horizontal = false } = {}) {
   const n = disabled.length;
   const enabled = (i) => !disabled[i];
   if (key === 'Home' || key === 'End') {
@@ -46,6 +48,7 @@ export function segmentedTargetIndex(disabled, current, key) {
     const i = order.find(enabled);
     return i === undefined ? null : i;
   }
+  if (horizontal && VERTICAL.has(key)) return null;
   const d = STEP[key];
   if (!d) return null;
   for (let k = 1; k < n; k++) {
@@ -105,9 +108,10 @@ export function bindSlider(root) {
  * Single selection over a `.ui-segmented` radiogroup of
  * `.ui-segmented__option` buttons: click or arrow keys select, disabled
  * options are skipped, and a change dispatches `change` on the group and
- * calls onChange(value, index). Returns unbind.
+ * calls onChange(value, index); `horizontal` leaves Up and Down unhandled.
+ * Returns unbind.
  */
-export function bindSegmented(group, { onChange } = {}) {
+export function bindSegmented(group, { onChange, horizontal = false } = {}) {
   const options = [...group.querySelectorAll('.ui-segmented__option')];
   // The selection is read from the markup (aria-checked); it changes through
   // click and arrow keys here, which also keep the roving tab order in step.
@@ -131,7 +135,7 @@ export function bindSegmented(group, { onChange } = {}) {
   const handlers = options.map((o, i) => {
     const click = () => select(i, false);
     const keydown = (e) => {
-      const target = segmentedTargetIndex(options.map((x) => x.disabled), i, e.key);
+      const target = segmentedTargetIndex(options.map((x) => x.disabled), i, e.key, { horizontal });
       if (target === null) return;
       e.preventDefault();
       select(target, true);

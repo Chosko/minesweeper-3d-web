@@ -8,7 +8,8 @@ import * as audio from './audio.js';
 import { Controls } from './controls.js';
 import { GamepadReader, BTN, Repeat, stickCurve, padGlyphs, pickInDirection, GLYPHS, STICK_DEADZONE } from './gamepad.js';
 import { createRouter } from './shell/router.js';
-import { FOCUSABLE, topLayer, resolveFocus, isBackKey, backButtons, createHeldSuppressor } from './shell/navigation.js';
+import { FOCUSABLE, topLayer, resolveFocus, isBackKey, arrowDirection, keepsArrow, backButtons, createHeldSuppressor } from './shell/navigation.js';
+import { createHistorySync, storedSet } from './shell/history.js';
 import { createModeHost } from './shell/mode-host.js';
 import { create3DMode } from './shell/mode-3d.js';
 import { createSession, create3DGame } from './mode3d/session.js';
@@ -164,6 +165,8 @@ const input = new Input({
   onKey: (code, e) => {
     if (isBackKey(code)) { shellBack('key'); return; }
     if (S.mode === 'classic-2d') used2D(); // the first key of a Classic 2D game brings its hint strip
+    const dir = arrowDirection(code);
+    if (dir) { keyNav(dir, e); return; }
     if (S.mode !== 'playing' && S.mode !== 'paused' && S.mode !== 'ready' && S.mode !== 'classic-2d') return;
     // don't steal keys typed into settings controls (e.g. arrow keys on a slider)
     if (e && e.target && e.target.closest && e.target.closest('input, select, textarea')) return;
@@ -286,10 +289,19 @@ const SHELL = createRouter({
     ctxlost: { defaultFocus: '#ctx-lost-btn', show: () => showContextLost(), hide: () => hideContextLost(), back: () => showMainMenu() },
   },
   focus: (target, name) => focusScreen(target, name),
-  onChange: () => { layerChanged(); needRender = true; sync3D(); showStatus2D(); refreshHints(); },
+  onChange: () => { layerChanged(); needRender = true; sync3D(); showStatus2D(); refreshHints(); HISTORY.sync(); },
 });
 // end of screen table
 Object.defineProperty(S, 'mode', { get: () => SHELL.current, enumerable: true });
+
+// ---------- browser history ----------
+// The back stack is mirrored as one same-URL session-history entry per stacked screen, so the
+// browser's Back (and a mouse's back button) is a Back input; only the main menu lets it leave.
+// The page loads a reload or a return through the history superseded are kept for the tab's life.
+const HISTORY = createHistorySync({ router: SHELL, history: window.history, onBack: () => historyBack(),
+  superseded: storedSet(() => window.sessionStorage, 'ms3d.history.superseded') });
+window.addEventListener('popstate', (e) => HISTORY.popstate(e.state));
+HISTORY.start(performance.getEntriesByType?.('navigation')[0]?.type);
 
 // ---------- mode host ----------
 // The shell reaches a game only through MODES; the 3D game is registered through its adapter.
@@ -549,6 +561,20 @@ function shellBack(source) {
   if (ending3D()) return;
   if (ui.closeControls() || ui.closeConfirm()) return;
   SHELL.back(source);
+}
+/**
+ * The browser's Back (a mouse's back button too): Back as Esc means it, except that during a game it
+ * never resumes and never leaves — the board pauses as an asked-for pause, the pause card and a
+ * started game's ready card keep the game where it is, the 3D end delay ignores it. The history
+ * sync restores the entry it consumed whenever the screen stays.
+ */
+function historyBack() {
+  if (ending3D()) return;
+  if (ui.closeControls() || ui.closeConfirm()) return;
+  if (S.mode === 'playing' || S.mode === 'classic-2d') { pauseGame('button'); return; }
+  if (S.mode === 'paused' && !gameOver()) return;
+  if (S.mode === 'ready' && S.game && S.started) return;
+  SHELL.back('history');
 }
 /** Back from the pause card: an ended game goes to the menu; the controller resumes; the keyboard goes to the click-to-play card. */
 function resumeFromPause(source) {
@@ -891,6 +917,10 @@ function padStep(el, delta) {
   el.dispatchEvent(new Event('input', { bubbles: true }));
   el.dispatchEvent(new Event('change', { bubbles: true }));
 }
+/** The control the spatial search picks from `cur` in `dir` inside the layer, or null. */
+function navStep(layer, items, cur, dir) {
+  return pickInDirection(cur.getBoundingClientRect(), items.filter((e) => e !== cur).map((e) => ({ rect: e.getBoundingClientRect(), item: e })), dir);
+}
 function padNav(dir) {
   const layer = padLayer();
   if (!layer) return;
@@ -899,9 +929,32 @@ function padNav(dir) {
   if (!cur) { padFocus(padDefault(layer, items)); return; }
   document.body.classList.add('pad-nav');
   if ((dir === 'left' || dir === 'right') && cur.type === 'range') { padStep(cur, dir === 'right' ? 1 : -1); return; }
-  const from = cur.getBoundingClientRect();
-  const next = pickInDirection(from, items.filter((e) => e !== cur).map((e) => ({ rect: e.getBoundingClientRect(), item: e })), dir);
+  const next = navStep(layer, items, cur, dir);
   if (next) padFocus(next);
+}
+// The arrow keys walk every layer the D-pad walks, except the boards, Records and the replay viewer,
+// which have arrow handling of their own.
+const KEY_NAV_OFF = new Set(['playing', 'classic-2d', 'records', REPLAY_SCREEN]);
+/** Keyboard focus: the kit's keyboard ring (:focus-visible), never the controller's. */
+function keyFocus(el) {
+  if (!el) return;
+  document.body.classList.remove('pad-nav');
+  el.focus({ preventScroll: true, focusVisible: true });
+  el.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+}
+/**
+ * An arrow key: the D-pad's focus move in the topmost layer, unless the focused control owns the
+ * arrow or already handled it; with nothing focused, the layer's default focus.
+ */
+function keyNav(dir, e) {
+  if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || KEY_NAV_OFF.has(S.mode)) return;
+  const layer = padLayer();
+  if (!layer) return;
+  const items = padFocusables(layer);
+  const cur = padCurrent(layer, items);
+  if (cur && keepsArrow(cur, dir)) return;
+  e.preventDefault();
+  keyFocus(cur ? navStep(layer, items, cur, dir) : padDefault(layer, items));
 }
 function padActivate() {
   const layer = padLayer();

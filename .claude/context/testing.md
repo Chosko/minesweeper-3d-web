@@ -323,7 +323,9 @@ browser checks for everything that needs WebGL or the DOM.
   stub elements); the HUD overlay bar markup, `UI.updateHud`'s formats and
   the pause wiring (`onPause`, controller START); the main menu and pause
   card built only from kit classes with no one-off rules left in
-  `css/style.css`. Three Playwright tests check the WCAG contrast contract
+  `css/style.css`; the segmented choice's horizontal (Left/Right-only) mode;
+  the "Esc: Back" hint beside each Back Esc triggers and none beside the
+  pause card's Main menu. Four Playwright tests check the WCAG contrast contract
   in both themes on rendered pages: the gallery (plus a visible focus ring
   on every forced-focus control), the overlay bar over the running 3D scene
   (opaque surface, timer pinned at `999`, pause through the button), and the
@@ -331,7 +333,9 @@ browser checks for everything that needs WebGL or the DOM.
   (spinner, Cancel) and failure offer (three buttons) over stand-in
   generation workers, and results layout (plus
   focus rings, the renderer's sky following the theme and an unchanged
-  `__ms` key list); each skips when Playwright or chromium is unavailable.
+  `__ms` key list), and the "Esc: Back" hints on both board choices, the
+  ready card, Settings and Records (none a focus stop); each skips when
+  Playwright or chromium is unavailable.
 - `tests/tile-skin.test.mjs` — the Classic 2D tile skin
   (`js/classic2d/tile-skin.js`) over a recording fake Canvas 2D context and
   the token maps parsed from `css/tokens.css` per theme: the states are the
@@ -441,11 +445,30 @@ browser checks for everything that needs WebGL or the DOM.
   screen's own Back and the input that asked) and shell navigation
   (`js/shell/navigation.js`: topmost layer, focus fallback, the focusable
   selector, held-button suppression across screen changes, Esc and the
-  controller Back buttons); both DOM-free; static checks that every screen
-  change in `js/main.js` goes through the router, each shown screen declares
-  a default focus and Back always resolves through the router. One
-  Playwright test walks menu → screen → Back by keyboard with the default
-  focus on each.
+  controller Back buttons, `arrowDirection` and `keepsArrow`); both
+  DOM-free; static checks that every screen change in `js/main.js` goes
+  through the router, each shown screen declares a default focus, Back
+  always resolves through the router and the arrow keys reach `keyNav` with
+  their repeats. Two Playwright tests: menu → screen → Back by keyboard with
+  the default focus on each; and the menu, the 2D board choice, the pause
+  card and Settings walked with arrows alone (keyboard ring, a field's and a
+  slider's Left/Right, a Settings choice's and the Controls panel tabs'
+  Left/Right, Settings' Back in
+  view at the top and the bottom at 1280 × 800 and phone width).
+- `tests/shell-history.test.mjs` — the session-history mirror
+  (`js/shell/history.js`) over a fake history and the real router: the base
+  entry and nothing pushed on the menu, a push per stacked screen, replace,
+  consumption on an in-app Back and an unwind, a push held while a
+  traversal is in flight, `popstate` routed to Back, the restored entry on
+  the board, the pause card and during the end delay, leaving only from the
+  menu, Forward undone, the walk past a reload's earlier entries whether
+  they come back as a popstate or as a fresh page load (`tab`, a fake tab
+  of loads over one history and session storage), the return after the page
+  was dropped, and `storedSet`; DOM-free; static checks of the wiring in
+  `js/main.js` (`historyBack`, the session-storage set) and the unchanged
+  leave-page guard. One Playwright test drives `page.goBack()`: board choice
+  → menu, a started Classic 2D game → pause card twice, Records → results →
+  menu, and, after a reload on Settings, the menu off the page.
 - `tests/shell-mode-host.test.mjs` — the mode host (`js/shell/mode-host.js`)
   over a recording fake mode: registration and its refusals, board choice,
   start/pause/resume/restart/leave, game state from the reports, `summary()`
@@ -748,9 +771,10 @@ browser checks for everything that needs WebGL or the DOM.
   bindings section per device in the pad's glyphs, `bindSettingControls`
   over stub elements showing loaded and later values, writing at once and
   reporting the change, refusing an unknown setting; static checks of the
-  `#settings` markup, the pause-card and menu `data-setting` shortcuts, the
-  menu entry's route, focus, Back and controller layer, and the catalogue
-  entry. Two Playwright tests: Settings from the menu, Dark chosen and
+  `#settings` markup, the sticky Back row (`#settings-actions`), the
+  choices' and the Controls panel tabs' horizontal binding, the pause-card and menu `data-setting`
+  shortcuts, the menu entry's route, focus, Back and controller layer, and
+  the catalogue entry. Two Playwright tests: Settings from the menu, Dark chosen and
   applied before the menu shows after a reload; and the page operated by a
   fake controller.
 - `.claude/external/run-full-tests.sh` — `cd` to repo root, `exec node --test`.

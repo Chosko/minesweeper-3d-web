@@ -254,6 +254,25 @@ test('index.html holds the Settings page as a kit card with a Back button, fille
   assert.match(read('js/ui.js'), /settingsPageHtml\(\)/);
 });
 
+test('Settings\' Back sits in a sticky action row at the bottom of the card\'s scroll area', () => {
+  const page = between(INDEX, '<!-- Settings -->', '<!-- Pause / end menu -->');
+  assert.match(page, /<div id="settings-actions" class="ui-actions ui-actions--row">\s*<button type="button" id="settings-back"/,
+    'one Back, in the action row');
+  assert.ok(page.indexOf('id="settings-actions"') > page.indexOf('id="settings-body"'), 'the row comes after the controls');
+  const css = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const rule = css.match(/#settings-actions\s*\{([^}]*)\}/);
+  assert.ok(rule, 'css/style.css styles the row');
+  assert.match(rule[1], /position:\s*sticky/);
+  assert.match(rule[1], /bottom:\s*0/);
+  assert.match(rule[1], /background:\s*var\(--color-surface-raised\)/, 'an opaque surface: the controls scroll under it');
+  assert.match(css, /#settings\s*\{[^}]*scroll-padding-bottom:/, 'a focus move scrolls a control into view above the row');
+});
+
+test('the Settings choices and the Controls panel\'s tabs take only Left and Right, so Up and Down move focus', () => {
+  assert.match(read('js/settings/page.js'), /bindSegmented\(root, \{\s*horizontal: true,/);
+  assert.match(read('js/ui.js'), /bindSegmented\(\$\('controls-tabs'\), \{ horizontal: true,/);
+});
+
 test('the pause card\'s sensitivity, invert Y and volume, and the menu\'s volume, are bound to the store', () => {
   const pause = between(INDEX, '<section id="pause"', '<noscript>');
   assert.match(pause, /<div class="ui-slider" data-setting="lookSensitivity">/);

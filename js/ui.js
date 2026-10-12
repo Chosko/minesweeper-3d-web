@@ -85,7 +85,7 @@ export class UI {
     $('settings-body').innerHTML = settingsPageHtml();
     this.el.settingsBindings = $('settings-bindings');
     // Controls panel (main menu): Classic 2D and 3D tabs over the bindings component.
-    bindSegmented($('controls-tabs'), { onChange: (mode) => { this._controlsTab = mode; this._renderBindings(); } });
+    bindSegmented($('controls-tabs'), { horizontal: true, onChange: (mode) => { this._controlsTab = mode; this._renderBindings(); } });
     this._renderBindings();
     $('menu-help').addEventListener('click', () => this.openControls());
     $('controls-close').addEventListener('click', () => this.closeControls());

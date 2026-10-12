@@ -19,9 +19,13 @@
    (FOCUSABLE in js/shell/navigation.js) and skips while disabled. A screen
    declares its default focus target by giving that control an id and naming
    it as the screen's defaultFocus in the router's screen table (js/main.js);
-   the router focuses it on every change to that screen. The selected segmented
-   option is the only option in the Tab order (arrow keys move the
-   selection); controller navigation reaches every option.
+   the router focuses it on every change to that screen. On the shell's
+   screens outside the boards, Records and the replay viewer, the arrow keys
+   move focus as the D-pad does, except an arrow the focused control owns. The
+   selected segmented option is the only option in the Tab order (arrow keys
+   move the selection); controller navigation reaches every option.
+   Each Back that Esc triggers has a ui-text--muted "Esc: Back" hint beside it
+   (<span class="ui-text ui-text--muted" data-esc-hint>), not a focus stop.
 
    ui-button--primary — the screen's main action
      Element: <button type="button" class="ui-button ui-button--primary">
@@ -83,7 +87,9 @@
      Role:    radiogroup of radio
      Name:    group: aria-label (or aria-labelledby); option: its text
      Helper:  bindSegmented — click or arrow keys select; dispatches
-              `change` on the group with detail { value, index }.
+              `change` on the group with detail { value, index }. With
+              { horizontal: true } (Settings' choices) only Left and Right
+              select, and Up and Down are left to the shell's focus moves.
 
    ui-stat — numeric stat readout
      Element: <div class="ui-stat" role="group" aria-labelledby="ID">
@@ -176,8 +182,8 @@
      board choice, else the first item.
    Coming soon (index.html #coming-soon): the one placeholder every menu
      entry whose screen has not landed routes to; ui-card ui-screen holding
-     the entry's name as title, a ui-text line and ui-actions (Back primary).
-     Default focus: Back.
+     the entry's name as title, a ui-text line and ui-actions--row (Back
+     primary). Default focus: Back.
    Records (index.html #records): ui-card ui-screen--wide holding the
      title, the 2D | 3D switch as a ui-segmented choice (#records-mode, its
      two options in the markup, data-value the mode), the board picker as a
@@ -207,7 +213,9 @@
      ui-toggle for a boolean, ui-segmented for a choice, each root carrying
      data-setting), a ui-panel of the read-only bindings of each mode per
      input device (the help panel's controls list), and ui-actions--row
-     (Back primary). Default focus: the look sensitivity slider.
+     (Back primary), sticky at the bottom of the card's scroll area so Back
+     is always in view (#settings-actions, css/style.css).
+     Default focus: the look sensitivity slider.
    Classic 2D board choice (index.html #c2d-choice): ui-card ui-screen--wide
      holding the title, one ui-menu of the standard sizes (data-size; the
      last board choice marked data-last with a "Last played"
@@ -249,7 +257,8 @@
      ui-overlay-bar of the replay's figures (Time in the overlay's timer
      format, Mines, 3BV solved / 3BV, 3BV/s) with a secondary Back, the board
      area, a ui-card ui-screen message while the replay opens or when it
-     cannot play (a ui-text reason and Back primary), and a ui-panel of the
+     cannot play (a ui-text reason and ui-actions--row with Back primary),
+     and a ui-panel of the
      playback controls: a ui-text end line, a ui-row of Previous, Play /
      Pause (primary) and Next with the speed as a ui-segmented choice (0.5×,
      1×, 2×, 4×), and the seek bar as a ui-slider. Default focus: Play, or

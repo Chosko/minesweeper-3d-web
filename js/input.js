@@ -134,6 +134,8 @@ export class TapToggle {
 
 const GAME_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'Space',
   'ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight']);
+// The arrow keys reach onKey on every keydown, the browser's key repeats included: they move menu focus.
+const ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
 
 /**
  * DOM input: keyboard state, pointer lock, mouse buttons/look/wheel.
@@ -157,7 +159,7 @@ export class Input {
         e.preventDefault();
       }
       if (e.code === 'Space' && !e.repeat) this.spaceToggle.down(performance.now(), this.o.isActive());
-      if (!e.repeat) this.o.onKey?.(e.code, e);
+      if (!e.repeat || ARROW_KEYS.has(e.code)) this.o.onKey?.(e.code, e);
     });
     window.addEventListener('keyup', (e) => {
       this.keys.delete(e.code);

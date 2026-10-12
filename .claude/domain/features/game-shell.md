@@ -39,8 +39,11 @@ In scope (m1-classic-2d):
   unfinished game's summary so far, so a game ended by closing the window,
   the tab or the app counts as a loss.
 - Keyboard and controller navigation on every shell screen: focus order,
-  default focus per screen, Back on Esc and the controller's back button,
-  and suppression of a button held across a screen change.
+  with the arrow keys moving focus as the controller's D-pad does, default
+  focus per screen, Back on Esc, the controller's back button and the
+  browser's Back (a mouse's back button through it), an "Esc: Back" hint
+  beside each Back that Esc triggers, and suppression of a button held
+  across a screen change.
 
 Non-goals:
 
@@ -78,7 +81,8 @@ it generalises.
   existing start, pause, pointer-lock and end-of-game flow without changing
   its rules, look or controls.
 - **Pause controller.** The one owner of pause: from Esc, the controller's
-  Start button, the pause button in the in-game overlay, focus loss and tab
+  Start button, the pause button in the in-game overlay, the browser's Back
+  on the board (as the overlay's pause button pauses), focus loss and tab
   hide. It asks the active mode to pause, shows the pause card over a hidden
   board, and on resume asks the mode to resume. In 3D, resume keeps the
   current behaviour of re-acquiring pointer lock, or entering lockless play
@@ -87,13 +91,21 @@ it generalises.
   screen, built on the existing controller reader and spatial focus search
   ([input.md](../../context/input.md)): the topmost visible layer takes
   input, each screen declares its default focus, and buttons held across a
-  screen change are ignored until released. On-board input belongs to the
-  mode.
+  screen change are ignored until released. The arrow keys are the
+  keyboard's spatial focus moves, through the same search as the D-pad, on
+  every layer it walks except the boards, Records and the replay viewer,
+  which handle their own arrows; a control that owns an arrow keeps it (a
+  slider's or a text field's Left/Right, a Settings choice's Left/Right). The
+  browser's session history mirrors the back stack, so the browser's Back
+  resolves through the same Back as Esc. On-board input belongs to the mode.
 
 ## Data and state
 
 - **Shell state** — current screen, back stack, active mode and whether its
-  game is started, paused or finished. In memory only.
+  game is started, paused or finished. In memory only; the back stack is
+  also mirrored as one same-URL session-history entry per stacked screen,
+  which carries the stack depth and no route, so nothing is persisted, no
+  inner screen has a link and a reload opens the main menu.
 - **Last mode played** — which mode and board choice the player last
   started, kept through `platform-storage` so later milestones' *Continue*
   can resume it. Each mode keeps its own last board choice; the shell keeps
@@ -143,9 +155,15 @@ it generalises.
   a loss — at the next launch, with the summary of the last of those
   moments.
 - **Navigation contract** — every shell screen is fully operable by mouse,
-  keyboard and controller; Esc and the controller's back button always mean
-  Back or Pause, never a game action. Controller operability is checked in
-  a real browser with a controller alone, on the board choice and on the
+  keyboard and controller; Esc, the controller's back button and the
+  browser's Back always mean Back or Pause, never a game action. The
+  browser's Back differs from Esc only during a game: on the board it
+  pauses, on the pause card and on a started game's ready card it keeps the
+  game where it is, during the 3D end delay it does nothing, so it never
+  resumes a game and never leaves one without the "It will count as a
+  loss" confirmation; it leaves the site only from the main menu, and a
+  browser Forward is undone. Controller operability is checked in a real
+  browser with a controller alone, on the board choice and on the
   placeholder screen.
 - **Failure** — a mode that fails to start (for example a lost graphics
   context in 3D) reports it; the shell shows the mode's failure screen and

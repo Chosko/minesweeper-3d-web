@@ -148,6 +148,7 @@ function bindToggle(root, key, store, changed) {
 function bindChoice(root, key, store, changed) {
   const options = [...root.querySelectorAll('.ui-segmented__option')];
   const unbind = bindSegmented(root, {
+    horizontal: true, // Up and Down move focus off the choice
     onChange: (value) => {
       store.set(key, value);
       changed(key);

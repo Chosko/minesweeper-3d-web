@@ -53,6 +53,7 @@
       </form>
       <div class="ui-actions ui-actions--row">
         <button type="button" id="c2d-choice-back" class="ui-button ui-button--secondary" data-back>Back</button>
+        <span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>
       </div>
     </section>
   </section>
@@ -181,6 +182,7 @@
 
       <div class="ui-actions ui-actions--row">
         <button type="button" id="board-choice-back" class="ui-button ui-button--secondary" data-back>Back</button>
+        <span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>
       </div>
     </section>
   </section>
@@ -190,8 +192,9 @@
     <section class="ui-card ui-screen" aria-labelledby="coming-soon-title">
       <h2 class="ui-card__title" id="coming-soon-title">Coming soon</h2>
       <p id="coming-soon-text" class="ui-text ui-text--muted">This part of the game is coming soon.</p>
-      <div class="ui-actions">
+      <div class="ui-actions ui-actions--row">
         <button type="button" id="coming-soon-back" class="ui-button ui-button--primary">Back</button>
+        <span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>
       </div>
     </section>
   </section>
@@ -216,7 +219,10 @@
         <span id="ready-pad" class="ready-pad hidden"></span>
         <span class="ready-tip">Tip: press <kbd>F</kbd> for fullscreen &mdash; keeps <kbd>Ctrl</kbd>+<kbd>W</kbd> from closing the tab</span>
       </button>
-      <button type="button" id="ready-back" class="link-btn ready-back">Back</button>
+      <div class="esc-row">
+        <button type="button" id="ready-back" class="link-btn ready-back">Back</button>
+        <span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>
+      </div>
     </div>
   </section>
 
@@ -236,7 +242,10 @@
   <section id="ctx-lost" class="overlay hidden" aria-label="Graphics context lost">
     <div class="ready-wrap">
       <button type="button" id="ctx-lost-btn" class="ready-card"><span class="ready-title">Graphics context lost</span><span class="ready-board">Click to reload</span></button>
-      <button type="button" id="ctx-lost-menu" class="link-btn ready-back">Back to menu</button>
+      <div class="esc-row">
+        <button type="button" id="ctx-lost-menu" class="link-btn ready-back">Back to menu</button>
+        <span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>
+      </div>
     </div>
   </section>
 
@@ -245,8 +254,9 @@
     <section class="ui-card ui-screen ui-screen--wide" aria-labelledby="settings-title">
       <h2 class="ui-card__title" id="settings-title">Settings</h2>
       <div id="settings-body"></div>
-      <div class="ui-actions ui-actions--row">
+      <div id="settings-actions" class="ui-actions ui-actions--row">
         <button type="button" id="settings-back" class="ui-button ui-button--primary">Back</button>
+        <span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>
       </div>
     </section>
   </section>
@@ -308,6 +318,7 @@
       <p id="records-note" class="ui-text ui-text--warning hidden" role="status"></p>
       <div class="ui-actions ui-actions--row">
         <button type="button" id="records-back" class="ui-button ui-button--primary">Back</button>
+        <span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>
       </div>
     </section>
   </section>
@@ -321,13 +332,15 @@
       <div class="ui-stat" role="group" aria-labelledby="rp-bbbv-label"><span class="ui-stat__label" id="rp-bbbv-label">3BV</span><span id="rp-bbbv" class="ui-stat__value">&mdash;</span></div>
       <div class="ui-stat" role="group" aria-labelledby="rp-rate-label"><span class="ui-stat__label" id="rp-rate-label">3BV/s</span><span id="rp-rate" class="ui-stat__value">&mdash;</span></div>
       <button type="button" id="rp-back" class="ui-button ui-button--secondary">Back</button>
+      <span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>
     </div>
     <div id="replay-board"></div>
     <section id="replay-message" class="ui-card ui-screen hidden" aria-labelledby="replay-message-title" role="status">
       <h2 class="ui-card__title" id="replay-message-title">Opening the replay&hellip;</h2>
       <p id="replay-message-text" class="ui-text hidden"></p>
-      <div class="ui-actions">
+      <div class="ui-actions ui-actions--row">
         <button type="button" id="replay-message-back" class="ui-button ui-button--primary">Back</button>
+        <span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>
       </div>
     </section>
     <div id="replay-controls" class="ui-panel hidden" role="group" aria-label="Playback">
@@ -378,6 +391,7 @@
         <button type="button" id="r-watch" class="ui-button ui-button--secondary hidden">Watch replay</button>
         <button type="button" id="r-records" class="ui-button ui-button--secondary">Records</button>
         <button type="button" id="r-menu" class="ui-button ui-button--secondary">Back to menu</button>
+        <span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>
       </div>
     </section>
   </section>

@@ -271,6 +271,17 @@ test('segmentedTargetIndex moves with arrows, wraps and skips disabled options',
   assert.equal(segmentedTargetIndex([true, true], 0, 'ArrowRight'), null);
 });
 
+test('a horizontal segmented choice takes only Left and Right, leaving Up and Down to focus moves', () => {
+  const on = [false, false, false];
+  const h = { horizontal: true };
+  assert.equal(segmentedTargetIndex(on, 0, 'ArrowRight', h), 1);
+  assert.equal(segmentedTargetIndex(on, 0, 'ArrowLeft', h), 2);
+  assert.equal(segmentedTargetIndex(on, 1, 'Home', h), 0);
+  assert.equal(segmentedTargetIndex(on, 1, 'End', h), 2);
+  assert.equal(segmentedTargetIndex(on, 0, 'ArrowDown', h), null);
+  assert.equal(segmentedTargetIndex(on, 1, 'ArrowUp', h), null);
+});
+
 test('segmentedState checks one option and keeps only it in the tab order', () => {
   assert.deepEqual(segmentedState(3, 1), [
     { checked: false, tabIndex: -1 }, { checked: true, tabIndex: 0 }, { checked: false, tabIndex: -1 },
@@ -572,6 +583,95 @@ test('bindSegmented selects on click and arrow keys, skips disabled options and 
   assert.deepEqual(opts.map((o) => o.attrs['aria-checked']), ['true', 'false', 'false']);
   assert.ok(opts[0].focused, 'arrow keys move focus with the selection');
   assert.deepEqual(seen.at(-1), ['s', 0]);
+});
+
+test('bindSegmented with horizontal leaves Up and Down unhandled', () => {
+  const group = new FakeEl({ class: 'ui-segmented', role: 'radiogroup' });
+  const opts = ['a', 'b'].map((v, i) => new FakeEl({ class: 'ui-segmented__option', 'data-value': v, 'aria-checked': String(i === 0) }));
+  group.children.push(...opts);
+  const seen = [];
+  bindSegmented(group, { onChange: (value) => seen.push(value), horizontal: true });
+  const down = opts[0].fire('keydown', { key: 'ArrowDown' });
+  assert.equal(down.prevented, undefined, 'Down is not taken: the shell moves focus with it');
+  assert.deepEqual(seen, []);
+  const right = opts[0].fire('keydown', { key: 'ArrowRight' });
+  assert.ok(right.prevented);
+  assert.deepEqual(seen, ['b']);
+});
+
+// ---------------------------------------------------------------- "Esc: Back" beside every Back
+
+// Each button Esc triggers, with the hint beside it; the pause card's Back to menu has none (Esc resumes there).
+const ESC_BACKS = ['c2d-choice-back', 'board-choice-back', 'coming-soon-back', 'ready-back', 'settings-back', 'records-back',
+  'rp-back', 'replay-message-back', 'r-menu', 'ctx-lost-menu'];
+const HINT = '<span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>';
+
+test('an "Esc: Back" hint sits beside each Back that Esc triggers, and is no focus stop', () => {
+  const html = read('index.html');
+  for (const id of ESC_BACKS) {
+    const at = html.indexOf(`id="${id}"`);
+    assert.ok(at > 0, `#${id} exists`);
+    const after = html.slice(html.indexOf('</button>', at) + '</button>'.length).trimStart();
+    assert.ok(after.startsWith(HINT), `#${id} is followed by the hint`);
+  }
+  assert.equal(html.split(HINT).length - 1, ESC_BACKS.length, 'one hint per Back, and no other');
+  const pmenu = html.slice(html.indexOf('</button>', html.indexOf('id="p-menu"')) + 9).trimStart();
+  assert.ok(!pmenu.startsWith(HINT), 'none beside the pause card\'s Main menu, where Esc resumes');
+  assert.doesNotMatch(HINT, /tabindex|<button|<a /, 'the hint is plain text');
+});
+
+test('in a browser, the "Esc: Back" hints meet the contrast contract in both themes', async (t) => {
+  const playwright = await loadPlaywright();
+  if (!playwright) {
+    t.skip('Playwright is not installed');
+    return;
+  }
+  let browser;
+  try {
+    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  } catch (error) {
+    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
+    return;
+  }
+  const server = await serve();
+  try {
+    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
+    const hints = async (label) => {
+      for (const theme of ['light', 'dark']) {
+        await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
+        await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+        const runs = (await page.evaluate(measureContrast)).runs.filter((r) => r.text === 'Esc: Back');
+        assert.equal(runs.length, 1, `${label} ${theme}: one hint shows`);
+        assert.ok(runs[0].ratio >= runs[0].min, `${label} ${theme}: ${runs[0].ratio.toFixed(2)}:1 meets ${runs[0].min}:1`);
+      }
+      const stop = await page.evaluate(() => [...document.querySelectorAll('[data-esc-hint]')].some((e) => e.tabIndex >= 0));
+      assert.equal(stop, false, 'no hint is a focus stop');
+    };
+    await page.click('#menu-entry-classic-2d');
+    await hints('2D board choice');
+    await page.keyboard.press('Escape');
+    await page.click('#menu-entry-3d');
+    await hints('3D board choice');
+    await page.keyboard.press('Enter');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'ready');
+    await hints('ready card');
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
+    await page.click('#menu-entry-settings');
+    await hints('Settings');
+    await page.keyboard.press('Escape');
+    await page.click('#menu-entry-records');
+    await hints('Records');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+    await new Promise((resolve) => server.close(resolve));
+  }
 });
 
 test('initComponents binds every slider and segmented group under a root', () => {
