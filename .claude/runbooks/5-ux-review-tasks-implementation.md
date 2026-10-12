@@ -64,7 +64,7 @@ Context: none
 
 Done: 2026-10-12, commit `70d9b42` (37 files, +882/-162). Wrong premise: the body's mine-counter width rule conflicts with "standard boards look as they do today" — only boards of more than 999 mines get a fixed width now. Decision: the "Esc: Back" hint stays beside the results and context-lost Main menu buttons.
 
-## [ ] 6. Implement task 124 — Custom form: at least one mine
+## [x] 6. Implement task 124 — Custom form: at least one mine
 
 Depends on: none
 
@@ -73,6 +73,8 @@ Context: none
 ```prompt
 /task-implement 124 --review
 ```
+
+Done: 2026-10-12, commit `52bb58a` (10 files, +118/-22).
 
 ## [ ] 7. Implement task 125 — 3D spawn framing and world reference
 
