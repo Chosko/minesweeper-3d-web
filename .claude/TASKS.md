@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 128
+Last task number: 129
 
 ---
 
@@ -770,6 +770,15 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: js/results/view.js, js/results/flow.js, js/records/summary.js, js/ui.js, js/ui/components.js, js/classic2d/mode.js, js/classic2d/session.js, js/main.js, js/records/screen.js, js/records/replay-list.js, js/records/history-chart.js, index.html, css/components.css, css/style.css, dev/components.html, tests/results.test.mjs, tests/records-summary.test.mjs, tests/components.test.mjs, tests/classic2d-mode.test.mjs, tests/mode3d-end.test.mjs, tests/records-screen.test.mjs, tests/records-screen-3d.test.mjs, tests/records-replays.test.mjs, tests/records-history.test.mjs, tests/replay-viewer.test.mjs, tests/replay-viewer-3d.test.mjs, .claude/domain/features/results-screen.md, .claude/domain/features/3d-results-records-screens.md, .claude/domain/features/screen-components.md, .claude/domain/features/classic-2d-square-play.md, .claude/domain/features/records-screen.md, .claude/domain/features/replay-library.md, .claude/domain/features/leaderboard-screen.md, .claude/domain/features/results-steam-rank.md, .claude/domain/features/game-summary.md
+Preconditions: none
+
+---
+
+## 129. Pause keeps the clock running, pauses recorded
+
+Status: [MISSING]
+Target: claude
+Files: js/classic2d/session.js, js/mode3d/session.js, js/shell/mode-3d.js, js/classic2d/mode.js, js/main.js, js/ui.js, js/records/summary.js, js/records/model.js, js/records/store.js, js/replay/format.js, js/replay/recorder.js, js/replay/viewer.js, index.html, css/tokens.css, css/components.css, tests/classic2d-session.test.mjs, tests/mode3d-session.test.mjs, tests/shell-mode-3d.test.mjs, tests/shell-pause.test.mjs, tests/records-summary.test.mjs, tests/records-summary-3d.test.mjs, tests/records-model.test.mjs, tests/records-store.test.mjs, tests/replay-format.test.mjs, tests/replay-recorder.test.mjs, tests/replay-2d.test.mjs, tests/replay-3d.test.mjs, tests/replay-viewer.test.mjs, README.md, .claude/domain/product-design.md, .claude/domain/features/game-shell.md, .claude/domain/features/classic-2d-square-play.md, .claude/domain/features/3d-play-flow.md, .claude/domain/features/game-summary.md, .claude/domain/features/personal-records.md, .claude/domain/features/replay-recording.md, .claude/domain/features/replay-playback.md
 Preconditions: none
 
 ---
