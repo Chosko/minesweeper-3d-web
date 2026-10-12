@@ -52,7 +52,7 @@ Context: none
 
 Done: 2026-10-12, commit `d74bdf5` (21 files, +1239/-70). Decisions: with the main menu's Controls panel open, browser Back leaves the site rather than closing the panel (history depth equals stack depth); the Settings Theme choice is unreachable by arrow keys in the multi-column layout, left for the single-column Settings layout (P-69, W-30).
 
-## [ ] 5. Implement task 123 — Wording and small shell fixes
+## [x] 5. Implement task 123 — Wording and small shell fixes
 
 Depends on: none
 
@@ -61,6 +61,8 @@ Context: none
 ```prompt
 /task-implement 123 --review
 ```
+
+Done: 2026-10-12, commit `70d9b42` (37 files, +882/-162). Wrong premise: the body's mine-counter width rule conflicts with "standard boards look as they do today" — only boards of more than 999 mines get a fixed width now. Decision: the "Esc: Back" hint stays beside the results and context-lost Main menu buttons.
 
 ## [ ] 6. Implement task 124 — Custom form: at least one mine
 
