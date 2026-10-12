@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 121
+Last task number: 122
 
 ---
 
@@ -707,6 +707,15 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: js/classic2d/board-setup.js, js/classic2d/board-choice.js, js/classic2d/session.js, js/classic2d/mode.js, js/mode3d/board-choice.js, js/mode3d/session.js, js/shell/mode-3d.js, js/shell/pause.js, js/main.js, js/ui.js, index.html, css/components.css, css/style.css, tests/classic2d-session.test.mjs, tests/classic2d-mode.test.mjs, tests/mode3d-board-choice.test.mjs, tests/mode3d-session.test.mjs, tests/shell-mode-3d.test.mjs, tests/shell-pause.test.mjs, tests/components.test.mjs, .claude/domain/features/game-shell.md, .claude/domain/features/board-generation.md, .claude/domain/features/classic-2d-square-play.md, .claude/domain/features/3d-play-flow.md
+Preconditions: none
+
+---
+
+## 122. Menu keyboard navigation and browser Back
+
+Status: [MISSING]
+Target: claude
+Files: js/shell/history.js, js/shell/navigation.js, js/main.js, js/input.js, js/ui/components.js, js/settings/page.js, index.html, css/style.css, css/components.css, tests/shell-history.test.mjs, tests/shell-router.test.mjs, tests/components.test.mjs, tests/settings-page.test.mjs, .claude/domain/features/game-shell.md, .claude/domain/features/settings.md
 Preconditions: none
 
 ---
