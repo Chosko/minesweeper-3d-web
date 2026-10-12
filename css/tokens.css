@@ -2,7 +2,8 @@
    Light values on :root; dark values under :root[data-theme="dark"].
    Low-fidelity pass: the dark palette, elevation and motion values are
    placeholders that meet the contrast contract (tests/tokens.test.mjs).
-   The 3D scene (js/render.js, js/textures.js) never reads these tokens. */
+   The 3D scene (js/render.js, js/textures.js) never reads these tokens: the
+   shell reads the --color-scene-* sky stops and hands them to the renderer. */
 
 :root {
   color-scheme: light;
@@ -11,6 +12,15 @@
   --color-backdrop: rgb(200, 225, 255);
   --color-backdrop-highlight: rgb(222, 238, 255);
   --color-backdrop-shade: rgb(178, 207, 246);
+  /* translucent tints laid over the scene: modal backdrop, pause / ready /
+     results overlays, the context-lost screen */
+  --color-backdrop-scrim: rgba(150, 185, 235, 0.4);
+  --color-backdrop-scrim-soft: rgba(170, 200, 240, 0.35);
+  --color-backdrop-scrim-strong: rgba(150, 185, 235, 0.55);
+  /* the 3D scene's sky gradient stops, also its fog and clear colour */
+  --color-scene-horizon: rgb(200, 225, 255);
+  --color-scene-zenith: rgb(158, 194, 243);
+  --color-scene-nadir: rgb(222, 236, 255);
   --color-surface: rgba(255, 255, 255, 0.78);
   --color-surface-border: rgba(255, 255, 255, 0.9);
   --color-surface-raised: #ffffff;
@@ -120,6 +130,12 @@
   --color-backdrop: #0f1a2e;
   --color-backdrop-highlight: #1a2a47;
   --color-backdrop-shade: #0a1222;
+  --color-backdrop-scrim: rgba(6, 11, 22, 0.55);
+  --color-backdrop-scrim-soft: rgba(8, 14, 28, 0.45);
+  --color-backdrop-scrim-strong: rgba(6, 11, 22, 0.7);
+  --color-scene-horizon: #13213a;
+  --color-scene-zenith: #0a1222;
+  --color-scene-nadir: #1a2a47;
   --color-surface: rgba(22, 34, 58, 0.82);
   --color-surface-border: rgba(255, 255, 255, 0.08);
   --color-surface-raised: #22324f;

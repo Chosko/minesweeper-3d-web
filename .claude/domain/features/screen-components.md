@@ -45,7 +45,8 @@ Non-goals:
 - Steam rank on the results screen — deferred to `m3-on-steam`.
 - Campaign, Daily, Surface, Leaderboards and demo menu styling — deferred to
   the milestones that bring those entries.
-- The 3D scene behind the overlay, which keeps its current look under both
+- The 3D scene behind the overlay: its sky follows the theme through
+  `design-tokens-and-themes`, and its cubes keep one look under both
   themes.
 
 ## Architecture
@@ -69,8 +70,9 @@ described in [app-shell.md](../../context/app-shell.md).
   in the way the shell's controller layer already expects.
 - **Overlay bar.** The in-game overlay — timer, mine counter, pause — as one
   component that sits over either board and stays readable over the 3D
-  scene's light sky in both themes, by carrying its own themed surface
-  rather than drawing directly on the scene. Over either board, the timer
+  scene's sky in both themes — light in the light theme, dark in the dark
+  one — by carrying its own themed surface rather than drawing directly on
+  the scene. Over either board, the timer
   shows the elapsed time in whole seconds, zero-padded to three digits
   (047), and stops at 999 while the game's elapsed time keeps counting; the
   mine counter shows mines left clamped to −99 … 999. Both limits copy the

@@ -294,7 +294,11 @@ browser checks for everything that needs WebGL or the DOM.
   closed, pressed and revealed tiles),
   `css/style.css` declaring
   no variables and reading only declared tokens, `index.html` loading
-  `css/tokens.css` before `css/style.css`, and the 3D scene not reading tokens.
+  `css/tokens.css` before `css/style.css`, the sky tokens (`--color-scene-*`,
+  opaque, light values the original sky, dark values no lighter than the dark
+  backdrop highlight), the backdrop-scrim tokens (translucent, light values the
+  original tints) and the Controls modal and overlay scrims reading them with
+  no literal colour, and the 3D renderer not reading tokens.
 - `tests/theme.test.mjs` — the theme applier (`js/theme.js`, run in a `node:vm`
   context against a stub root) and the token reader (`js/tokens.js`): Light
   before first paint, stored-getter fallback (missing, unknown, throwing),
@@ -302,7 +306,11 @@ browser checks for everything that needs WebGL or the DOM.
   the applier as a classic script before the stylesheets and module graph,
   `token()` values per theme, `onThemeChange` timing, the visible fallback
   colour and its development-only log, no copy of token values in
-  `js/tokens.js`, and the 3D renderer never subscribing to theme changes.
+  `js/tokens.js`, the 3D renderer never subscribing to theme changes; the
+  scene palette (`js/shell/scene-palette.js`: `parseRgb`, `scenePalette`,
+  `bindScenePalette` handing the renderer the active theme's sky at start-up
+  and on a theme change), `js/main.js` binding it with a redraw, the
+  renderer's sky carrying no constant colour, and only the sky being themed.
 - `tests/components.test.mjs` — the component kit (`css/components.css`,
   `js/ui/components.js`, `dev/components.html`): tokens only, no literal
   colour, no theme-specific rule, no animation; the head-comment catalogue
@@ -319,7 +327,8 @@ browser checks for everything that needs WebGL or the DOM.
   in both themes on rendered pages: the gallery (plus a visible focus ring
   on every forced-focus control), the overlay bar over the running 3D scene
   (opaque surface, timer pinned at `999`, pause through the button), and the
-  menu, pause card and results layout (plus focus rings and an unchanged
+  menu, the main menu's Controls panel, pause card and results layout (plus
+  focus rings, the renderer's sky following the theme and an unchanged
   `__ms` key list); each skips when Playwright or chromium is unavailable.
 - `tests/tile-skin.test.mjs` — the Classic 2D tile skin
   (`js/classic2d/tile-skin.js`) over a recording fake Canvas 2D context and

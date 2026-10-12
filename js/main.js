@@ -18,6 +18,8 @@ import { createMenu, createLastMode, createLastBoardChoice } from './shell/menu.
 import { createFirstUse, stripShown, hidCube, aimHintCell, createDwell, AIM_DWELL_MS } from './shell/first-use.js';
 import { createActiveDevice, hintText } from './settings/bindings.js';
 import { createPauseController } from './shell/pause.js';
+import { bindScenePalette } from './shell/scene-palette.js';
+import { token, onThemeChange } from './tokens.js';
 import { storage, blobStore } from './platform/index.js';
 import { createSettingsStore } from './settings/store.js';
 import { createRecordsStore } from './records/store.js';
@@ -1006,6 +1008,10 @@ const stats = { renders: 0, skipped: 0 };
 
 // Render on demand: skip the GL draw when nothing visible changed.
 let needRender = true;
+// The 3D scene's sky, fog and background follow the theme: the active theme's palette is handed to the
+// renderer now and on every theme change, so the demo board, a game, the pause card and the 3D replay
+// all switch at once.
+bindScenePalette({ token, onThemeChange, renderer, onApplied: () => { needRender = true; } });
 let lastSig = '';
 let lastEnd = null;
 let animUntil = 0; // keep drawing for a while after the game ends (end-of-game effects)

@@ -117,6 +117,9 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
   the saved settings document and exposes `globalThis.msTheme`.
 - `js/tokens.js` — token reader (ES module) for consumers that cannot read
   stylesheet values directly, chiefly Canvas renderers.
+- `js/shell/scene-palette.js` — the 3D scene's themed sky: reads the
+  `--color-scene-*` tokens through the token reader and hands them to the
+  renderer at start-up and on every theme change.
 - `404.html` — redirects to `/` (GitHub Pages). `CNAME` = `minesweeper3d.chosko.com`;
   `.nojekyll` disables Jekyll processing so files are served as-is.
 
@@ -280,6 +283,17 @@ the factory tests drive):
   localhost, 127.0.0.1, [::1] or empty).
 - `onThemeChange(listener)` → unsubscribe (delegates to `msTheme.onChange`).
 - `createTokenReader({root, getStyle, theme, dev?, log?})` — the factory behind both.
+
+`js/shell/scene-palette.js` exports
+- `SCENE_TOKENS` — `{horizon, zenith, nadir}` → the `--color-scene-*` token
+  names of the sky gradient's stops.
+- `parseRgb(value)` → `[r, g, b]` 0–255 from a hex or `rgb()`/`rgba()` token
+  value; anything else is the fallback magenta `[255, 0, 255]`.
+- `scenePalette(token)` → `{horizon, zenith, nadir}` for the active theme.
+- `bindScenePalette({token, onThemeChange, renderer, onApplied?})` — calls
+  `renderer.setScenePalette` now and on every theme change, then
+  `onApplied` (`js/main.js` sets `needRender` there); returns the
+  unsubscribe.
 
 `js/main.js` exports nothing; its surface is `window.__ms` (tests, Playwright):
 - getters `state` (the live `S`), `game`, `renderer`, `camera`, `controls`,
@@ -741,8 +755,10 @@ Component kit (`css/components.css`, catalogue in its head comment):
   or `css/components.css` reads it by `var(--…)`; `tests/tokens.test.mjs` and
   `tests/components.test.mjs` reject a custom property declared in either
   stylesheet or a read of an undeclared token.
-- The 3D scene (`js/render.js`, `js/textures.js`) keeps its own palette: it
-  never reads tokens and never subscribes to theme changes.
+- The 3D scene (`js/render.js`, `js/textures.js`) never reads tokens and
+  never subscribes to theme changes: its sky, fog and clear colour come from
+  `bindScenePalette`, and its tiles, numbers and effects keep one palette in
+  both themes.
 - `js/ui.js` keeps no `localStorage` key. Nothing reads, writes, shows or
   imports the `ms3d.custom`, `ms3d.best.*` (the per-size 3D best times),
   `ms3d.lastPreset` and `ms3d.hintH.done` keys left in browsers; they stay

@@ -847,6 +847,24 @@ test('in a browser, the menu, the pause card and the results layout meet the con
       assert.ok(f.style !== 'none' && f.width >= 2, `menu control #${f.id || i} shows a focus ring (${f.style} ${f.width})`);
     }
 
+    // The main menu's Controls panel: the kit's surface on a themed backdrop, readable in both themes.
+    await page.click('#menu-help');
+    assert.equal(await page.evaluate(() => document.getElementById('controls-modal').classList.contains('hidden')), false);
+    const controls = {};
+    for (const theme of ['light', 'dark']) controls[theme] = await check(page, '#controls-modal .modal-card', 'controls', theme);
+    assert.notDeepEqual(controls.light, controls.dark, 'the Controls panel follows the theme');
+    await page.click('#controls-close');
+    assert.equal(await page.evaluate(() => document.getElementById('controls-modal').classList.contains('hidden')), true);
+
+    // The menu's demo board: the shell hands the renderer each theme's sky, with no reload.
+    const sky = {};
+    for (const theme of ['light', 'dark']) {
+      await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
+      sky[theme] = await page.evaluate(() => globalThis.__ms.renderer.scenePalette);
+    }
+    assert.deepEqual(sky.light.horizon, [200, 225, 255], 'the light sky is the original sky');
+    assert.notDeepEqual(sky.light, sky.dark, 'the sky follows the theme');
+
     // menu → 3D board choice → ready → playing → pause, as before.
     await page.click('#menu-entry-3d');
     await page.click('#board-choice [data-preset="6,6,6,10"]');

@@ -151,9 +151,10 @@ they pick; the tiles and number colours, with a colour-blind-safe number set
 for the accessibility setting; the menus; the in-game overlay that sits over a
 board (timer, mine counter, pause); and the results screen. Classic 2D, 3D and
 Surface each apply it to their own board, so moving between modes never feels
-like moving between games. The 3D scene itself keeps its one current look
-under both themes; the menus, overlay and results screen around it follow the
-chosen theme. Serves every player and every flow.
+like moving between games. The 3D scene's cubes keep their one current look
+under both themes; its sky, fog and background, and the menus, overlay and
+results screen around it, follow the chosen theme. Serves every player and
+every flow.
 
 ### Classic 2D
 

@@ -60,14 +60,15 @@ function createCubeGeometry() {
   return g;
 }
 
-// Sky: vertical gradient around the specified background RGB(200,225,255) (dominant near the horizon,
-// a little deeper toward the zenith, a little paler below). Also used as the fog colour.
+// Sky: vertical gradient from the horizon stop (dominant near the horizon) toward the zenith stop above
+// and the nadir stop below. Also used as the fog colour. The stops are the scene palette the shell hands
+// in (setScenePalette); the renderer holds no colour of its own for them.
 const SKY_GLSL = /* glsl */ `
+uniform vec3 uSkyHorizon;
+uniform vec3 uSkyZenith;
+uniform vec3 uSkyNadir;
 vec3 skyColor(float y) {
-  vec3 hor = vec3(200.0, 225.0, 255.0) / 255.0;
-  vec3 zen = vec3(158.0, 194.0, 243.0) / 255.0;
-  vec3 low = vec3(222.0, 236.0, 255.0) / 255.0;
-  return y > 0.0 ? mix(hor, zen, smoothstep(0.0, 1.0, y)) : mix(hor, low, smoothstep(0.0, 0.8, -y));
+  return y > 0.0 ? mix(uSkyHorizon, uSkyZenith, smoothstep(0.0, 1.0, y)) : mix(uSkyHorizon, uSkyNadir, smoothstep(0.0, 0.8, -y));
 }`;
 
 const VERT = /* glsl */ `
@@ -271,14 +272,21 @@ export class BoardRenderer {
     this.canvas = canvas;
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    this.renderer.setClearColor(0xc8e1ff, 1); // RGB(200,225,255); the sky gradient is drawn on top
     this.renderer.sortObjects = true;
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(45, 1, 1, 1000);
     this.camera.rotation.order = 'YXZ';
 
     this.tiles = createTileTexture();
+    // The sky stops, shared by the cube shader (fog) and the sky shader; black until the shell hands in a palette.
+    this.skyPalette = {
+      uSkyHorizon: { value: new THREE.Vector3() },
+      uSkyZenith: { value: new THREE.Vector3() },
+      uSkyNadir: { value: new THREE.Vector3() },
+    };
+    this.scenePalette = null;
     this.uniforms = {
+      ...this.skyPalette,
       uState: { value: null },
       uTiles: { value: this.tiles },
       uDims: { value: new THREE.Vector3(1, 1, 1) },
@@ -336,7 +344,7 @@ export class BoardRenderer {
   _buildSky() {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute([-1, -1, 0, 3, -1, 0, -1, 3, 0], 3));
-    this.skyUniforms = { uInvProj: { value: new THREE.Matrix4() }, uCamWorld: { value: new THREE.Matrix4() } };
+    this.skyUniforms = { uInvProj: { value: new THREE.Matrix4() }, uCamWorld: { value: new THREE.Matrix4() }, ...this.skyPalette };
     const m = new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3, vertexShader: SKY_VERT, fragmentShader: SKY_FRAG,
       uniforms: this.skyUniforms, depthTest: false, depthWrite: false,
@@ -369,6 +377,20 @@ export class BoardRenderer {
     this.confetti.renderOrder = 5;
     this.confetti.visible = false;
     this.scene.add(this.confetti);
+  }
+
+  /**
+   * Set the scene palette, each stop [r, g, b] 0–255: the sky gradient, the fog colour it fades toward and
+   * the clear colour (the horizon). The caller requests the redraw.
+   */
+  setScenePalette({ horizon, zenith, nadir }) {
+    this.scenePalette = { horizon: [...horizon], zenith: [...zenith], nadir: [...nadir] };
+    const put = (u, [r, g, b]) => u.value.set(r / 255, g / 255, b / 255);
+    put(this.skyPalette.uSkyHorizon, horizon);
+    put(this.skyPalette.uSkyZenith, zenith);
+    put(this.skyPalette.uSkyNadir, nadir);
+    const [r, g, b] = horizon.map((v) => Math.max(0, Math.min(255, Math.round(v))));
+    this.renderer.setClearColor((r << 16) | (g << 8) | b, 1);
   }
 
   /** Set the drawing buffer's pixel ratio and resize to it; false when it already had that ratio. */

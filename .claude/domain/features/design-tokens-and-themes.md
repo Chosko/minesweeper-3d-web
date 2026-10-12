@@ -43,10 +43,10 @@ Non-goals:
 
 - High-fidelity visual dressing — a later pass from the approved designs.
   The designs under iteration are not an input to this feature's tasks.
-- The 3D scene. It keeps its one current look — sky gradient, fog, cube
-  tiles and number colours — under both themes. Only the menus, the in-game
-  overlay and the results screen around it follow the theme. This is a
-  decision, not a deferral.
+- The 3D scene's cubes. The cube tiles, number colours, selection outline
+  and end-of-game effects keep one look under both themes; only the sky,
+  fog and background behind them follow the theme. This is a decision, not
+  a deferral.
 - A "Match system" theme option or reading the operating system's colour
   preference. The first-launch theme is Light; the player's choice is Light
   or Dark.
@@ -76,13 +76,16 @@ bundler, Canvas 2D for Classic 2D and DOM screens in the game shell (see
   stored theme, falls back to Light when it is absent or not a known value,
   and sets the root attribute. After start-up it exposes a call to switch
   theme at run time, which sets the attribute and notifies listeners.
-- **Token reader.** A module for non-DOM consumers — chiefly the Classic 2D
-  Canvas renderer — that returns the resolved value of a named token for the
+- **Token reader.** A module for non-DOM consumers — the Classic 2D Canvas
+  renderer, and the shell reading the 3D scene's sky — that returns the resolved value of a named token for the
   active theme and lets a consumer subscribe to theme changes. It reads the
   token sheet's computed values rather than holding a second copy of them.
-- **Theme-independent scene.** The 3D renderer's palette (sky, fog, tiles,
-  numbers; [rendering.md](../../context/rendering.md)) is not tokenised and
-  never subscribes to theme changes.
+- **Scene palette handed in.** The 3D renderer
+  ([rendering.md](../../context/rendering.md)) reads no token and never
+  subscribes to theme changes. The shell reads the sky tokens through the
+  token reader at start-up and on every theme change and hands the renderer
+  the active theme's sky, which it draws as the sky gradient, the fog colour
+  and the clear colour; its tiles and numbers are not tokenised.
 
 ## Data and state
 

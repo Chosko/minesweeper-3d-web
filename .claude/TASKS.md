@@ -695,7 +695,7 @@ Preconditions: none
 
 ## 120. Dark theme completion
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: css/tokens.css, css/style.css, js/render.js, js/main.js, tests/components.test.mjs, tests/tokens.test.mjs, tests/theme.test.mjs, .claude/domain/features/design-tokens-and-themes.md, .claude/domain/product-design.md, .claude/domain/features/screen-components.md
 Preconditions: none

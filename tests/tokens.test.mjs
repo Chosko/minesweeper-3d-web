@@ -199,10 +199,86 @@ test('index.html loads the token sheet before the shell stylesheet', () => {
   assert.ok(style > tokens, 'css/tokens.css is linked before css/style.css');
 });
 
-// ---------- the 3D scene is not themed ----------
-test('the 3D scene palette does not read the tokens', () => {
+// ---------- the 3D scene: themed sky, theme-independent cubes ----------
+// The sky gradient's three stops (also the fog and clear colour). The light values are the scene's
+// original sky, so the light theme's scene is unchanged.
+const SCENE_TOKENS = {
+  '--color-scene-horizon': [200, 225, 255],
+  '--color-scene-zenith': [158, 194, 243],
+  '--color-scene-nadir': [222, 236, 255],
+};
+
+test('every sky token has an opaque light and dark value, the light ones being the original sky', () => {
+  for (const [name, original] of Object.entries(SCENE_TOKENS)) {
+    for (const theme of ['light', 'dark']) {
+      assert.ok(THEMES[theme].has(name), `${theme} theme declares ${name}`);
+      assert.equal(parseColor(THEMES[theme].get(name))[3], 1, `${theme} ${name} is opaque`);
+    }
+    assert.deepEqual(parseColor(THEMES.light.get(name)).slice(0, 3), original, `light ${name} is the original sky`);
+    assert.notDeepEqual(parseColor(THEMES.dark.get(name)), parseColor(THEMES.light.get(name)), `dark ${name} differs`);
+  }
+});
+
+test('the dark sky sits with the dark backdrop: darker than the light sky, no lighter than the backdrop highlight', () => {
+  const highlight = luminance(parseColor(THEMES.dark.get('--color-backdrop-highlight')));
+  for (const name of Object.keys(SCENE_TOKENS)) {
+    const dark = luminance(parseColor(THEMES.dark.get(name)));
+    assert.ok(dark < luminance(parseColor(THEMES.light.get(name))), `dark ${name} is darker than the light one`);
+    assert.ok(dark <= highlight, `dark ${name} is no lighter than --color-backdrop-highlight`);
+  }
+});
+
+test('the 3D renderer reads no token: the shell hands it the scene palette', () => {
   for (const f of ['../js/render.js', '../js/textures.js']) {
     const src = readFileSync(new URL(f, import.meta.url), 'utf8');
     assert.doesNotMatch(src, /--color-|data-theme|getPropertyValue/, f);
+  }
+});
+
+// ---------- scrims over the scene ----------
+// The translucent tints laid over the scene: the Controls modal's backdrop, the pause / ready /
+// results overlays and the context-lost screen. The light values are the original tints.
+const SCRIM_TOKENS = {
+  '--color-backdrop-scrim': [150, 185, 235, 0.4],
+  '--color-backdrop-scrim-soft': [170, 200, 240, 0.35],
+  '--color-backdrop-scrim-strong': [150, 185, 235, 0.55],
+};
+
+test('every backdrop-scrim token has a translucent light and dark value, the light ones being the original tints', () => {
+  for (const [name, original] of Object.entries(SCRIM_TOKENS)) {
+    for (const theme of ['light', 'dark']) {
+      assert.ok(THEMES[theme].has(name), `${theme} theme declares ${name}`);
+      const a = parseColor(THEMES[theme].get(name))[3];
+      assert.ok(a > 0 && a < 1, `${theme} ${name} is translucent`);
+    }
+    assert.deepEqual(parseColor(THEMES.light.get(name)), original, `light ${name} is the original tint`);
+    const dark = parseColor(THEMES.dark.get(name));
+    assert.ok(luminance(dark) < luminance(parseColor(THEMES.dark.get('--color-ink'))), `dark ${name} is a dark tint`);
+  }
+});
+
+// The declarations of the rule whose selector list is exactly `selector`.
+function styleRule(style, selector) {
+  const esc = selector.replace(/[.#()[\]]/g, '\\$&').replace(/,\s*/g, ',\\s*');
+  const m = style.match(new RegExp(`(^|\\})\\s*${esc}\\s*\\{([^}]*)\\}`));
+  assert.ok(m, `style.css has a ${selector} rule`);
+  return m[2];
+}
+
+test('the Controls modal and the overlay scrims take their colours from the tokens, with no literal colour', () => {
+  const style = readFileSync(new URL('../css/style.css', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const literal = /#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(|\b(white|black)\b/i;
+  const expect = {
+    '.modal': [['background', '--color-backdrop-scrim']],
+    '.modal-card': [['background', '--color-surface'], ['border', '--color-surface-border']],
+    '#pause, #ready, #results': [['background', '--color-backdrop-scrim-soft']],
+    '#ctx-lost': [['background', '--color-backdrop-scrim-strong']],
+  };
+  for (const [selector, props] of Object.entries(expect)) {
+    const body = styleRule(style, selector);
+    assert.doesNotMatch(body, literal, `${selector} carries no literal colour`);
+    for (const [prop, name] of props) {
+      assert.match(body, new RegExp(`(^|;)\\s*${prop}\\s*:[^;]*var\\(${name}\\)`), `${selector} ${prop} reads ${name}`);
+    }
   }
 });

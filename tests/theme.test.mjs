@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { createTokenReader, FALLBACK_COLOR } from '../js/tokens.js';
+import { SCENE_TOKENS, parseRgb, scenePalette, bindScenePalette } from '../js/shell/scene-palette.js';
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 const THEME_SRC = read('../js/theme.js');
@@ -182,8 +183,86 @@ test('js/tokens.js holds no second copy of the token values', () => {
   }
 });
 
-test('the 3D renderer never subscribes to theme changes', () => {
+test('the 3D renderer never subscribes to theme changes: the shell hands it the scene palette', () => {
   for (const f of ['../js/render.js', '../js/textures.js']) {
-    assert.doesNotMatch(read(f), /onThemeChange|msTheme|tokens\.js/, f);
+    assert.doesNotMatch(read(f), /onThemeChange|msTheme|tokens\.js|scene-palette/, f);
   }
+});
+
+// ---------- the 3D scene palette (js/shell/scene-palette.js) ----------
+const rgbOf = (map, name) => parseRgb(map.get(name));
+
+test('parseRgb reads the token sheet\'s hex and rgb() values as 0–255 channels', () => {
+  assert.deepEqual(parseRgb('#0f1a2e'), [15, 26, 46]);
+  assert.deepEqual(parseRgb(' #fff '), [255, 255, 255]);
+  assert.deepEqual(parseRgb('rgb(200, 225, 255)'), [200, 225, 255]);
+  assert.deepEqual(parseRgb('rgba(20,35,63,0.5)'), [20, 35, 63]);
+  assert.deepEqual(parseRgb(FALLBACK_COLOR), [255, 0, 255], 'the visible fallback colour stays visible');
+  assert.deepEqual(parseRgb('nonsense'), [255, 0, 255], 'an unreadable value shows as the fallback colour');
+});
+
+test('the scene palette names the sky\'s three stops, each a token with a light and a dark value', () => {
+  assert.deepEqual(Object.keys(SCENE_TOKENS), ['horizon', 'zenith', 'nadir']);
+  for (const name of Object.values(SCENE_TOKENS)) {
+    assert.ok(LIGHT.has(name), `light theme declares ${name}`);
+    assert.ok(block(':root[data-theme="dark"]').has(name), `dark theme declares ${name}`);
+  }
+});
+
+test('scenePalette reads the active theme\'s sky through the token reader', () => {
+  const { r, theme } = reader();
+  const light = scenePalette(r.token);
+  assert.deepEqual(light, {
+    horizon: rgbOf(LIGHT, SCENE_TOKENS.horizon), zenith: rgbOf(LIGHT, SCENE_TOKENS.zenith), nadir: rgbOf(LIGHT, SCENE_TOKENS.nadir),
+  });
+  assert.deepEqual(light.horizon, [200, 225, 255], 'the light horizon is the original sky');
+  theme.setTheme('dark');
+  assert.deepEqual(scenePalette(r.token).horizon, rgbOf(DARK, SCENE_TOKENS.horizon));
+});
+
+test('the shell hands the renderer the active theme\'s sky at start-up and on every theme change', () => {
+  const { r, theme } = reader();
+  const set = [];
+  let redraws = 0;
+  const renderer = { setScenePalette: (p) => set.push(p) };
+  const off = bindScenePalette({ token: r.token, onThemeChange: r.onThemeChange, renderer, onApplied: () => redraws++ });
+  assert.equal(set.length, 1, 'set once at start-up');
+  assert.deepEqual(set[0].zenith, rgbOf(LIGHT, SCENE_TOKENS.zenith));
+  assert.equal(redraws, 1, 'a redraw is requested at start-up');
+  theme.setTheme('dark');
+  assert.equal(set.length, 2, 'set again on the theme change');
+  assert.deepEqual(set[1], {
+    horizon: rgbOf(DARK, SCENE_TOKENS.horizon), zenith: rgbOf(DARK, SCENE_TOKENS.zenith), nadir: rgbOf(DARK, SCENE_TOKENS.nadir),
+  });
+  assert.equal(redraws, 2, 'a redraw is requested on the theme change');
+  off();
+  theme.setTheme('light');
+  assert.equal(set.length, 2, 'unsubscribed');
+});
+
+test('js/main.js binds the scene palette to the renderer through the token reader and requests a redraw', () => {
+  const main = read('../js/main.js');
+  assert.match(main, /import\s*\{[^}]*\btoken\b[^}]*\bonThemeChange\b[^}]*\}\s*from\s*'\.\/tokens\.js'/, 'main.js imports the token reader');
+  assert.match(main, /import\s*\{[^}]*\bbindScenePalette\b[^}]*\}\s*from\s*'\.\/shell\/scene-palette\.js'/);
+  assert.match(main, /bindScenePalette\(\{[^}]*token[^}]*onThemeChange[^}]*renderer[^}]*onApplied:\s*\(\)\s*=>\s*\{?\s*needRender\s*=\s*true/,
+    'the shell binds the renderer and requests a redraw on every palette change');
+});
+
+test('the renderer draws the sky, fog and clear colour from the palette it is handed, not from constants', () => {
+  const src = read('../js/render.js');
+  assert.match(src, /setScenePalette\(/, 'the renderer exposes a palette setter');
+  assert.doesNotMatch(src, /setClearColor\(0x/, 'no constant clear colour');
+  const sky = src.slice(src.indexOf('const SKY_GLSL'), src.indexOf('const VERT'));
+  assert.doesNotMatch(sky, /vec3\(\s*\d/, 'the sky gradient carries no constant colour');
+  assert.match(sky, /uniform vec3 uSkyHorizon[\s\S]*uniform vec3 uSkyZenith[\s\S]*uniform vec3 uSkyNadir/);
+  assert.match(src, /rgb = mix\(rgb, skyColor\(vDirY\), f\)/, 'the fog still fades toward the sky colour');
+});
+
+test('only the sky is themed: the tiles, numbers, selection outline and effects keep one look', () => {
+  assert.doesNotMatch(read('../js/textures.js'), /setScenePalette|uSky|scene-palette/, 'the tile atlas is not themed');
+  const src = read('../js/render.js');
+  const at = src.indexOf('\n  setScenePalette(');
+  assert.ok(at >= 0, 'the renderer defines setScenePalette');
+  const setter = src.slice(at, src.indexOf('\n  }\n', at));
+  assert.doesNotMatch(setter, /uTiles|uSelGlow|uEff|createTileTexture|confUniforms/, 'the palette setter touches only the sky');
 });

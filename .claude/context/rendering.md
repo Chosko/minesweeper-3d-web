@@ -39,6 +39,10 @@ draws the sky gradient, the win confetti and the loss camera shake.
   without a game); used for far plane, fog and confetti size.
 - `BoardRenderer.isAnimating()` — `true` while the selection pulse, a wave, confetti or shake needs
   frames; main's render-on-demand loop polls it.
+- `BoardRenderer.setScenePalette({horizon, zenith, nadir})` — each stop `[r, g, b]` 0–255: sets the
+  sky gradient's uniforms (`uSkyHorizon`, `uSkyZenith`, `uSkyNadir`, shared by the cube shader's fog
+  and the sky shader) and the clear colour (the horizon); keeps a copy on `scenePalette`. The sky is
+  black until the shell calls it; the caller requests the redraw.
 - `BoardRenderer.setPixelRatio(pr)` — sets the drawing buffer's pixel ratio and resizes; returns
   `false` when it already had that ratio (main then skips the redraw).
 - `BoardRenderer.resize()` — sizes to `window.innerWidth/innerHeight`, updates the aspect.
@@ -98,20 +102,24 @@ draws the sky gradient, the win confetti and the loss camera shake.
   `js/main.js::applyPixelRatio` computes it for the board shown (game or menu demo) — Auto lowers it
   on big boards, which are fill/vertex heavy — and calls `setPixelRatio`, at each new board and
   whenever the setting changes. The renderer itself never reads the setting.
-- **Not themed.** The 3D palette — the atlas tiles, number colours, sky and effects — is the same
-  under the light and the dark theme. It lives in `js/textures.js` and the shaders, never reads
-  `css/tokens.css` and never subscribes to theme changes; it is separate from the tile and number
-  tokens the Classic 2D tile skin draws with ([classic2d.md](classic2d.md)); neither feeds the
-  other. `tests/tokens.test.mjs` and `tests/theme.test.mjs` check
-  that the 3D scene reads no token and subscribes to no theme change.
+- **Themed sky, theme-independent cubes.** The sky gradient, the fog that fades toward it and the
+  clear colour follow the theme: the shell (`js/shell/scene-palette.js`, wired in `js/main.js`)
+  reads the `--color-scene-*` tokens and hands them to `setScenePalette` at start-up and on every
+  theme change ([app-shell.md](app-shell.md)). The atlas tiles, number colours, selection outline
+  and effects are the same under both themes; they live in `js/textures.js` and the shaders,
+  separate from the tile and number tokens the Classic 2D tile skin draws with
+  ([classic2d.md](classic2d.md)); neither feeds the other. The renderer never reads
+  `css/tokens.css` and never subscribes to theme changes: `tests/tokens.test.mjs` and
+  `tests/theme.test.mjs` check that it reads no token and subscribes to no theme change, and that
+  its sky carries no constant colour.
 
 ## Domain dependencies
 
 - [../../docs/ORIGINAL_SPEC.md](../../docs/ORIGINAL_SPEC.md) — gameplay fidelity to the original is
   the overriding rule. This area enforces: *Drawing rules (per cell)* (tile per state, alpha 0.2
   under Shift/Space, Ctrl shows hidden cells, back-to-front transparency); *Cube face orientation*
-  (corners and UVs); *Grid & geometry* (cube edge 4, pitch `4*s`, background RGB(200,225,255),
-  unlit textured cubes, centred grid).
+  (corners and UVs); *Grid & geometry* (cube edge 4, pitch `4*s`, background RGB(200,225,255) —
+  the light theme's sky horizon, handed in by the shell — unlit textured cubes, centred grid).
 - [../domain/INDEX.md](../domain/INDEX.md) — product and feature design for visual extras.
 
 ## Cross-references
