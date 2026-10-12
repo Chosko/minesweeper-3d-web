@@ -172,7 +172,7 @@ Context: none
 
 Done: 2026-10-12, commit `028a535` (17 files, +506/-74). Decisions: without WebGL 2, js/main.js replaces `MODES.start` with a version that ignores `'3d'` (mode-host untouched); the renderer is created under `THREE.setConsoleFunction` so only the expected WebGL 2 refusal is kept off the console.
 
-## [ ] 15. Implement task 133 — Returning-player surfaces
+## [x] 15. Implement task 133 — Returning-player surfaces
 
 Depends on: none
 
@@ -181,6 +181,8 @@ Context: none
 ```prompt
 /task-implement 133 --review
 ```
+
+Done: 2026-10-12, commit `fef1227` (23 files, +959/-55). Decision: typical 3BV per named board is measured by `node dev/measure-typical-bbbv.mjs` and pasted into js/records/typical-bbbv.js, and a test requires an entry for every named board.
 
 ## [ ] 16. Implement task 134 — 2D board scale, framed panel, cursor ring
 
@@ -382,7 +384,8 @@ Context: none
 
 Depends on: 15
 
-Context: none
+Context:
+- 2026-10-12 (from step 15): after re-tuning the cube presets, re-run `node dev/measure-typical-bbbv.mjs` and paste its lines into js/records/typical-bbbv.js — a test requires a typical-3BV entry for every named board and fails until then.
 
 ```prompt
 /task-implement 152 --review
