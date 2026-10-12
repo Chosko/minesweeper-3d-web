@@ -100,7 +100,7 @@ Context: none
 
 Done: 2026-10-12, commit `914a74a` (15 files, +663/-65). Decisions: only the Esc that released the pointer lock is ignored and any later Esc on the pause card resumes, with the 500 ms window gone (the ready card keeps its own); a replay seek is detected in the main frame loop as a replay time change playback did not cause.
 
-## [ ] 9. Implement task 127 — Right-click on a number
+## [x] 9. Implement task 127 — Right-click on a number
 
 Depends on: none
 
@@ -109,6 +109,8 @@ Context: none
 ```prompt
 /task-implement 127 --review
 ```
+
+Done: 2026-10-12, commit `528646d` (25 files, +895/-137). Decisions: the undo-last-batch rule ships as 3D rules version 2, with version 1 (unflag every neighbour) kept for earlier replays; per-cell memory rose by one byte (32 a cell for the game, 38 in all). Wrong premise: the mines counter's below-zero red tint already met contrast in both themes, so nothing was fixed there.
 
 ## [ ] 10. Implement task 128 — Results precision, figures and hierarchy
 
