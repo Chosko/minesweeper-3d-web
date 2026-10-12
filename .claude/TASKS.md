@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 118
+Last task number: 119
 
 ---
 
@@ -681,5 +681,14 @@ Target: claude
 Files: .claude/context/replay.md, .claude/context/testing.md, .claude/context/INDEX.md
 Preconditions: 117
 Feature: replay-playback
+
+---
+
+## 119. Mode-aware help and first-use hints
+
+Status: [MISSING]
+Target: claude
+Files: js/settings/bindings.js, js/shell/first-use.js, js/ui.js, js/main.js, js/input.js, index.html, css/style.css, tests/shell-help.test.mjs, tests/shell-first-use.test.mjs, tests/settings-page.test.mjs, .claude/domain/features/settings.md
+Preconditions: none
 
 ---
