@@ -8,11 +8,16 @@
 // ui-toggle, a choice a ui-segmented of its values. SLIDERS adds a number's step, display format
 // and scale (the slider's units per stored unit: volume 0–1 shows as 0–100%).
 //
-// settingControl(key)          → { key, kind: 'slider' | 'toggle' | 'segmented', label, … }.
-// settingControlHtml(key, v?)  → the control's kit markup showing v (default: the schema default),
-//                                carrying data-setting="key"; ids are `set-<key>`.
+// A toggle in INVERTED shows on while its boolean is false: Sound is on while `muted` is false.
+//
+// settingControl(key)          → { key, kind: 'slider' | 'toggle' | 'segmented', label, inverted?, … }.
+// settingControlHtml(key, v?, { labelledBy? }) → the control's kit markup showing v (default: the
+//                                schema default), carrying data-setting="key"; ids are `set-<key>`.
+//                                With labelledBy, a choice shows no label of its own and takes its
+//                                name from that element.
 // settingsPageHtml()           → the four sections (SETTINGS_SECTIONS) and an empty bindings panel
-//                                (#settings-bindings) for bindingsSectionHtml.
+//                                (#settings-bindings) for bindingsSectionHtml. A control whose label
+//                                is its section's title is named by the section heading.
 // bindingsSectionHtml(glyphs?) → each mode's bindings per input device, controller buttons in
 //                                `glyphs`.
 // bindSettingControls(elements, store, { onUserChange? }) → unbind. Each element is a control
@@ -28,7 +33,7 @@ export const SETTINGS_SECTIONS = Object.freeze([
   Object.freeze({ id: 'controls', title: 'Controls', settings: Object.freeze(['lookSensitivity', 'invertY']) }),
   Object.freeze({ id: 'graphics', title: 'Graphics', settings: Object.freeze(['fullscreen', 'renderResolution']) }),
   Object.freeze({ id: 'theme', title: 'Theme', settings: Object.freeze(['theme']) }),
-  Object.freeze({ id: 'audio', title: 'Audio', settings: Object.freeze(['volume', 'muted']) }),
+  Object.freeze({ id: 'audio', title: 'Audio', settings: Object.freeze(['muted', 'volume']) }),
 ]);
 
 export const SETTING_LABELS = Object.freeze({
@@ -38,8 +43,11 @@ export const SETTING_LABELS = Object.freeze({
   renderResolution: '3D resolution',
   theme: 'Theme',
   volume: 'Volume',
-  muted: 'Mute',
+  muted: 'Sound',
 });
+
+/** Toggles shown on while their stored boolean is false. */
+const INVERTED = new Set(['muted']);
 
 export const CHOICE_LABELS = Object.freeze({
   auto: 'Auto', sharp: 'Sharp', fast: 'Fast', light: 'Light', dark: 'Dark',
@@ -60,6 +68,7 @@ const entryOf = (key) => {
 export function settingControl(key) {
   const entry = entryOf(key);
   const control = { key, kind: KINDS[entry.type], label: SETTING_LABELS[key] ?? key };
+  if (entry.type === 'boolean' && INVERTED.has(key)) control.inverted = true;
   if (entry.type === 'number') {
     const { step = 0.01, format = 'number', scale = 1 } = SLIDERS[key] ?? {};
     return { ...control, min: entry.min * scale, max: entry.max * scale, step, format, scale };
@@ -72,7 +81,7 @@ export function settingControl(key) {
 
 const sliderValue = (c, v) => String(Number((v * c.scale).toFixed(decimalsOf(c.step))));
 
-export function settingControlHtml(key, value = SCHEMA[key]?.default) {
+export function settingControlHtml(key, value = SCHEMA[key]?.default, { labelledBy = null } = {}) {
   const c = settingControl(key);
   const id = `set-${key}`;
   if (c.kind === 'slider') {
@@ -84,17 +93,19 @@ export function settingControlHtml(key, value = SCHEMA[key]?.default) {
       + `<input type="range" id="${id}" class="ui-slider__input" min="${c.min}" max="${c.max}" step="${c.step}" value="${v}" data-format="${c.format}"${scale}></div>`;
   }
   if (c.kind === 'toggle') {
-    return `<label class="ui-toggle" data-setting="${key}"><input type="checkbox" role="switch" id="${id}" class="ui-toggle__input"${value ? ' checked' : ''}>`
+    const on = c.inverted ? !value : !!value;
+    return `<label class="ui-toggle" data-setting="${key}"><input type="checkbox" role="switch" id="${id}" class="ui-toggle__input"${on ? ' checked' : ''}>`
       + `<span class="ui-toggle__label">${c.label}</span></label>`;
   }
   const options = c.options.map((o) => `<button type="button" role="radio" aria-checked="${o.value === value}" class="ui-segmented__option" data-value="${o.value}">${o.label}</button>`);
-  return `<p class="ui-text" id="${id}-label">${c.label}</p>`
-    + `<div class="ui-segmented" role="radiogroup" aria-labelledby="${id}-label" data-setting="${key}" id="${id}">${options.join('')}</div>`;
+  const label = labelledBy ? '' : `<p class="ui-text" id="${id}-label">${c.label}</p>`;
+  return `${label}<div class="ui-segmented" role="radiogroup" aria-labelledby="${labelledBy ?? `${id}-label`}" data-setting="${key}" id="${id}">${options.join('')}</div>`;
 }
 
 export function settingsPageHtml() {
   const sections = SETTINGS_SECTIONS.map((s) => `<section class="ui-panel ui-actions" aria-labelledby="set-sec-${s.id}">`
-    + `<h3 class="ui-heading" id="set-sec-${s.id}">${s.title}</h3>${s.settings.map((k) => settingControlHtml(k)).join('')}</section>`);
+    + `<h3 class="ui-heading" id="set-sec-${s.id}">${s.title}</h3>`
+    + `${s.settings.map((k) => settingControlHtml(k, undefined, { labelledBy: SETTING_LABELS[k] === s.title ? `set-sec-${s.id}` : null })).join('')}</section>`);
   return `<div class="ui-grid">${sections.join('')}</div>`
     + '<section class="ui-panel" aria-labelledby="set-sec-bindings"><h3 class="ui-heading" id="set-sec-bindings">Bindings</h3>'
     + '<div id="settings-bindings" class="ui-grid"></div></section>';
@@ -136,12 +147,13 @@ function bindSlider(root, key, store, changed) {
 
 function bindToggle(root, key, store, changed) {
   const input = root.querySelector('.ui-toggle__input');
+  const shown = INVERTED.has(key) ? (v) => !v : (v) => !!v; // the same flip both ways
   const onChange = () => {
-    store.set(key, !!input.checked);
+    store.set(key, shown(input.checked));
     changed(key);
   };
   input.addEventListener('change', onChange);
-  const off = store.onChange(key, (v) => { input.checked = v; });
+  const off = store.onChange(key, (v) => { input.checked = shown(v); });
   return () => { off(); input.removeEventListener('change', onChange); };
 }
 

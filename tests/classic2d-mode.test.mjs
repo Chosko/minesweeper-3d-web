@@ -485,14 +485,14 @@ test('index.html holds the Classic 2D board layer with its generating and failur
   assert.match(LAYER, /<div id="c2d-board"/);
   assert.match(LAYER, /id="c2d-retry" class="ui-button ui-button--primary"/);
   assert.match(LAYER, /id="c2d-standard" class="ui-button ui-button--secondary">Play a standard board/);
-  assert.match(LAYER, /id="c2d-offer-menu" class="ui-button ui-button--secondary">Back to menu/, 'the offer has a way out');
+  assert.match(LAYER, /id="c2d-offer-menu" class="ui-button ui-button--secondary">Main menu/, 'the offer has a way out');
   assert.match(LAYER, /<span id="c2d-spinner" class="ui-spinner" aria-hidden="true"><\/span>/, 'the generating card has a spinner');
   assert.match(LAYER, /id="c2d-cancel" class="ui-button ui-button--secondary">Cancel/, 'and a Cancel');
 });
 
 test('the shell cancels a 2D generation from its Cancel and Back, and shows the offer above the pause card', () => {
   assert.match(MAIN, /onCancel2D: \(\) => mode2d\.cancelGeneration\(\)/, 'Cancel cancels through the mode');
-  assert.match(MAIN, /onOfferMenu2D: \(\) => /, 'Back to menu on the offer');
+  assert.match(MAIN, /onOfferMenu2D: \(\) => /, 'Main menu on the offer');
   assert.match(MAIN, /if \(MODES\.active === 'classic-2d'\) return mode2d\.cancelGeneration\(\);/, 'Back cancels through the active mode');
 });
 
@@ -616,7 +616,7 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
     await page.click('#p-resume');
     assert.equal(await mode(), 'classic-2d');
 
-    // Back to menu, confirming the loss.
+    // Main menu, confirming the loss.
     await page.keyboard.press('Escape');
     await page.click('#p-menu');
     assert.ok(await ms(() => !document.getElementById('pause-confirm').classList.contains('hidden')), 'leaving asks first');

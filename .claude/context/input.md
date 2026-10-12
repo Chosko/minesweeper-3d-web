@@ -10,7 +10,7 @@ shell navigation layer over the controller reader, and crosshair picking.
 
 | File | Implements |
 | --- | --- |
-| `js/input.js` | `FlyCamera`, `MouseActions`, `TapToggle`, `Input` (DOM listeners), camera / spacing constants |
+| `js/input.js` | `FlyCamera`, `MouseActions`, `DragLook`, `TapToggle`, `Input` (DOM listeners), camera / spacing constants |
 | `js/controls.js` | `Controls`: union of keyboard and controller view modes + controller move axes |
 | `js/gamepad.js` | Gamepad API reader, stick curve, trigger hysteresis, auto-repeat, pad glyphs, spatial menu focus search |
 | `js/shell/navigation.js` | Shell navigation: topmost layer, default-focus fallback, Back inputs, the arrow keys' focus moves, held-button suppression across screen changes |
@@ -36,16 +36,26 @@ resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md).
 - `js/input.js::MouseActions(onAction, hasSelection)` — `down(button)`, `up(button)`
   (0 = left, 2 = right; other buttons ignored), `reset()` (forget held state without firing).
   Calls `onAction('left' | 'right' | 'chord')`; the caller acts on its own current selection.
+- `js/input.js::DragLook({ mouse, onLook, threshold = DRAG_LOOK_THRESHOLD_PX })` (6 px) —
+  `down(button)`, `move(dx, dy)`, `up(button)`, `reset()`: drag-to-look over a `MouseActions`. A press
+  goes to the mouse actions; once the held buttons have moved `threshold` px the gesture is a drag —
+  the mouse actions are reset without firing, the movement so far and every later one go to
+  `onLook`, and no press or release acts until every button is up. Under the threshold the release
+  acts as a locked one does (left, right, chord).
 - `js/input.js::TapToggle(tapMs = SPACE_TAP_MS)` (250 ms) — `down(now, active)`, `up(now)`, `on`,
   `reset()`: a press released within `tapMs` turns `on` until the next press, whose release turns it
   off; a longer hold leaves nothing on; a press made while `active` is false is ignored.
 - `js/input.js::Input(opts)` — installs window/document listeners in the constructor (no teardown).
   opts: `canvas`, `mouse` (a `MouseActions`), `isActive()`, `onLook(dx, dy)`, `onWheel(notches)`,
-  optional `onKey(code, event)`, `onLockChange(locked)`, `onLockError()`.
+  optional `onKey(code, event)`, `onLockChange(locked)`, `onLockError()`, `isDragLook()`.
+  Mouse look and buttons work while the pointer is locked, or — unlocked — while `isDragLook()`
+  (drag-to-look play): then a press on the canvas, the movement and the release go through
+  `drag`, its `DragLook`.
   - Reads: `has(code)`, getters `shift`, `ctrl`, `space` (Space held, or tapped on through
     `spaceToggle`, its `TapToggle`), `move` (the `{w,a,s,d,q,e}` object),
     `locked`, `unlockedAt` (`performance.now()` of the last lock release), `lockSupported`.
-  - `requestLock()`, `exitLock()`, `releaseAll()` (clears keys, the Space toggle + `mouse.reset()`).
+  - `requestLock()`, `exitLock()`, `releaseAll()` (clears keys, the Space toggle, `mouse.reset()`
+    and `drag.reset()`); `dragLook` — drag-to-look is on and the pointer is not locked.
 
 **js/controls.js**
 - `js/controls.js::Controls(keyboard)` — `keyboard` is any object with `shift / space / ctrl` getters.
@@ -105,7 +115,7 @@ resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md).
   `lookAxes` converts deg/s to pixel-equivalents so `sensitivity` and `invertY` apply once, in `look()`.
 - **Held state must be dropped, never fired**, on blur, tab hide, pointer-lock loss
   (`Input.releaseAll`), and on pause / disconnect / leaving play (`Controls.releasePad`, and
-  `input.spaceToggle.reset()` in `js/main.js`'s `stopPlayInput`).
+  `input.spaceToggle.reset()` and `input.drag.reset()` in `js/main.js`'s `stopPlayInput`).
 - **Space is a tap-toggle as well as a hold.** The keyboard's Space only: a tap made in play
   (`isActive()` at the press) keeps aim-through on until the next tap; a hold works as the original
   and ends with its release. Every other view-mode key and the controller's RB stay hold-only. The
@@ -176,6 +186,7 @@ additions the spec permits; they must not alter any rule above.
 - Fixing wheel step size on a specific browser or trackpad (`Input` wheel handler).
 - Changing which keys are captured, swallowed or exempt from `preventDefault` (`GAME_KEYS`, keydown handler).
 - Changing the Space tap length or what a tap does (`TapToggle`, `SPACE_TAP_MS`).
+- Changing the drag-to-look threshold or what a drag cancels (`DragLook`, `DRAG_LOOK_THRESHOLD_PX`).
 - Fixing a pointer-lock failure or re-lock timing issue (`requestLock`, `pointerlockchange`, `unlockedAt`).
 - Supporting a new controller family or mislabelled glyph (`padFamily`, `GLYPHS`).
 - Changing which input means Back, which arrow a control keeps, or a controller button that fires on the screen after the one it was pressed on (`js/shell/navigation.js`).

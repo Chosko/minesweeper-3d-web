@@ -17,6 +17,8 @@
 //   PRESETS, FAMILIES        the presets in menu order, each { id, family, name, X, Y, Z, mines },
 //                            and their families { id, label }.
 //   presetKey(p) / presetByKey(key)   '6,6,6,10', the preset items' data-preset value.
+//   presetTitle(p)           'Cube Beginner': family and name, the preset item's label, as results
+//                            and Records name the board.
 //   presetLabel(p)           '6 × 6 × 6 · 10 mines'.
 //   validateCustom(board)    { ok: true } or { ok: false, field, reason }; field 'X' | 'Y' | 'Z' | 'mines'.
 //   customStatus(board)      { ok, field, max, text, warn? }: the info line under the custom fields;
@@ -77,6 +79,7 @@ export const DEFAULT_CHOICE = Object.freeze({
 
 export const presetKey = (p) => `${p.X},${p.Y},${p.Z},${p.mines}`;
 export const presetByKey = (key) => PRESETS.find((p) => presetKey(p) === key) ?? null;
+export const presetTitle = (p) => `${FAMILIES.find((f) => f.id === p.family).label} ${p.name}`;
 const presetById = (id) => PRESETS.find((p) => p.id === id) ?? null;
 export const presetLabel = (p) => `${p.X} × ${p.Y} × ${p.Z} · ${p.mines} mines`;
 

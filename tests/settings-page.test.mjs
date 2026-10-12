@@ -82,10 +82,46 @@ test('the in-game help reads the same bindings source', () => {
 test('the page has the controls, graphics, theme and audio sections, holding every setting once', () => {
   assert.deepEqual(SETTINGS_SECTIONS.map((s) => s.title), ['Controls', 'Graphics', 'Theme', 'Audio']);
   assert.deepEqual(SETTINGS_SECTIONS.map((s) => s.settings), [
-    ['lookSensitivity', 'invertY'], ['fullscreen', 'renderResolution'], ['theme'], ['volume', 'muted'],
+    ['lookSensitivity', 'invertY'], ['fullscreen', 'renderResolution'], ['theme'], ['muted', 'volume'],
   ]);
   assert.deepEqual(SETTINGS_SECTIONS.flatMap((s) => s.settings).sort(), [...SETTING_KEYS].sort(), 'every schema entry has its control');
   for (const key of SETTING_KEYS) assert.ok(SETTING_LABELS[key], `${key} has a label`);
+});
+
+test('the audio on/off control reads Sound and comes before Volume; no Mute label remains', () => {
+  assert.equal(SETTING_LABELS.muted, 'Sound');
+  assert.equal(SETTING_LABELS.volume, 'Volume');
+  assert.ok(!Object.values(SETTING_LABELS).includes('Mute'));
+  const html = settingsPageHtml();
+  assert.ok(html.indexOf('data-setting="muted"') < html.indexOf('data-setting="volume"'), 'Sound first, then Volume');
+  assert.doesNotMatch(html, />Mute</);
+  assert.doesNotMatch(read('index.html'), />Mute</, 'nor anywhere in the shell markup');
+});
+
+test('the Sound toggle shows on while sound plays: on is not muted', async () => {
+  assert.match(settingControlHtml('muted', false), /class="ui-toggle__input" checked>/, 'not muted: on');
+  assert.doesNotMatch(settingControlHtml('muted', true), /checked/, 'muted: off');
+  assert.doesNotMatch(settingControlHtml('invertY', false), /checked/, 'other toggles show their value');
+  assert.equal(SCHEMA.muted.default, false, 'the stored key and its default are unchanged');
+  const store = await loadedStore();
+  const sound = toggle('muted');
+  bindSettingControls([sound.root], store);
+  assert.equal(sound.input.checked, true, 'sound plays by default');
+  sound.input.checked = false;
+  sound.input.fire('change');
+  assert.equal(store.get('muted'), true, 'switching Sound off mutes');
+  await store.set('muted', false);
+  assert.equal(sound.input.checked, true, 'unmuted elsewhere (M): Sound shows on');
+});
+
+test('the Theme section says Theme once: its control has no label of its own and is named by the heading', () => {
+  const html = settingsPageHtml();
+  const theme = html.slice(html.indexOf('id="set-sec-theme"'), html.indexOf('</section>', html.indexOf('id="set-sec-theme"')));
+  assert.equal(theme.split('Theme').length - 1, 1, 'one visible Theme');
+  assert.match(theme, /<div class="ui-segmented" role="radiogroup" aria-labelledby="set-sec-theme" data-setting="theme" id="set-theme">/);
+  for (const s of SETTINGS_SECTIONS.filter((x) => x.id !== 'theme')) {
+    for (const key of s.settings) assert.ok(html.includes(settingControlHtml(key)), `${key} keeps its label`);
+  }
 });
 
 test('each control\'s kind and range come from its schema entry', () => {
@@ -107,7 +143,7 @@ test('the page markup is kit components only, one bound control per setting', ()
   const html = settingsPageHtml();
   for (const key of SETTING_KEYS) {
     assert.equal([...html.matchAll(new RegExp(`data-setting="${key}"`, 'g'))].length, 1, `${key} appears once`);
-    assert.ok(html.includes(settingControlHtml(key)), `${key} uses its generated control`);
+    if (key !== 'theme') assert.ok(html.includes(settingControlHtml(key)), `${key} uses its generated control`);
   }
   assert.match(settingControlHtml('lookSensitivity'),
     /^<div class="ui-slider" data-setting="lookSensitivity"><label class="ui-slider__label" for="set-lookSensitivity">[^<]+<\/label><output class="ui-slider__value" id="set-lookSensitivity-val" for="set-lookSensitivity">1\.00×<\/output><input type="range" id="set-lookSensitivity" class="ui-slider__input" min="0\.25" max="3" step="0\.05" value="1" data-format="multiplier"><\/div>$/);
@@ -284,6 +320,17 @@ test('the pause card\'s sensitivity, invert Y and volume, and the menu\'s volume
   assert.doesNotMatch(read('js/ui.js'), /onLookSettings|initVolume|setLook\(/);
 });
 
+test('on the main menu and the pause card, Sound comes first, then Volume, and M still toggles it', () => {
+  const menu = between(INDEX, '<section id="menu"', '<!-- 3D board choice -->');
+  assert.match(menu, /<button type="button" id="menu-sound" class="ui-button ui-button--secondary">Sound: on<\/button>/);
+  assert.ok(menu.indexOf('id="menu-sound"') < menu.indexOf('data-setting="volume"'), 'menu: Sound, then Volume');
+  const pause = between(INDEX, '<section id="pause"', '<noscript>');
+  assert.match(pause, /<button type="button" id="p-sound" class="ui-button ui-button--secondary">Sound: on<\/button>/);
+  assert.ok(pause.indexOf('id="p-sound"') < pause.indexOf('data-setting="volume"'), 'pause card: Sound, then Volume');
+  assert.match(read('js/ui.js'), /\$\('p-sound'\)\.textContent = `Sound: \$\{t\}`/);
+  assert.match(MAIN, /code === 'KeyM'\) toggleSound\(\)/);
+});
+
 test('the main menu\'s Settings entry routes to the page, which declares its focus, Back and controller layer', () => {
   const table = MAIN.slice(MAIN.indexOf('const SHELL = createRouter('), MAIN.indexOf('// end of screen table'));
   assert.match(table, /\n\s+settings: \{ defaultFocus: '#set-lookSensitivity', show: /, 'the router has the settings screen');
@@ -387,7 +434,9 @@ test('in a browser: Settings from the menu, Dark chosen, and Dark applied before
     assert.equal(await setting('renderResolution'), 'sharp');
     await page.focus('#set-muted');
     await page.keyboard.press('Space');
-    assert.equal(await setting('muted'), true);
+    assert.equal(await setting('muted'), true, 'Sound switched off mutes');
+    assert.equal(await ms(() => document.getElementById('set-muted').checked), false, 'and shows off');
+    assert.equal(await ms(() => document.getElementById('p-sound').textContent), 'Sound: off', 'as the pause card says');
     assert.equal(await ms(() => document.getElementById('p-invert').checked), false);
     await page.focus('#set-invertY');
     await page.keyboard.press('Space');

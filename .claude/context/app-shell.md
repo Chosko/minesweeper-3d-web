@@ -46,6 +46,9 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
     and each mode's last board choice (`MENU_ENTRIES`,
     `PLACEHOLDER_SCREEN`, `entryRoute`, `createMenu`, `createLastMode`,
     `createLastBoardChoice`).
+  - `lock-fallback.js` — the 3D ready card's pointer-lock refusal counter
+    (`createLockFallback`, `LOCK_MESSAGES`, `RELOCK_COOLDOWN_MS`): which
+    message a refusal shows and when the page counts as blocked; pure.
   - `pause.js` — the pause controller: pause, resume, restart, back to menu,
     the confirmations, the game hand-offs and the leave-page guard
     (`createPauseController`); its rules are documented in its head comment.
@@ -83,7 +86,7 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
   it, and `#m3d-status` is the same card over the 3D box. Both cards are
   stacked above the pause card (`css/style.css`): the generating card holds
   a `ui-spinner` and Cancel (`#…-wait`), the offer Retry, Play a standard
-  board and Back to menu (`#…-offer`).
+  board and Main menu (`#…-offer`).
 - `css/tokens.css` — the design tokens, the single source of every shared
   visual value: palette (`--color-*`), typography (`--font-*`), spacing
   (`--space-*`), radii (`--radius-*`), elevation (`--elevation-*`), motion
@@ -243,7 +246,7 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   (`"30 × 16 · no-guess"`): " · no-guess" on a no-guess board.
 - `UI` constructor `(cb)` with callbacks `onMenuEntry(id)`, `onBack` (the
   placeholder's and Settings page's Back buttons), `onReadyClick`,
-  `onReadyBack`, `onResume`,
+  `onReadyDrag` (the ready card's "Play with drag-to-look"), `onReadyBack`, `onResume`,
   `onRestart`, `onMainMenu`, `onPause` (the overlay bar's pause button),
   `onToggleSound`, `onDismissHint(mode)` (the hint strip's ×),
   `onRetry2D`, `onStandard2D`, `onOfferMenu2D` (the failed Classic 2D
@@ -254,8 +257,9 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   backdrop with the other menu screens hidden; the records view fills and
   shows `#records`), `showSettings` (its bindings
   in the active controller's glyphs),
-  `showReady(board, msg, {rules})` (the board line with its mines, the
-  "How 3D works" block `#ready-rules` while `rules`), `showPlaying`,
+  `showReady(board, msg, {rules, blocked})` (the board line with its mines, the
+  "How 3D works" block `#ready-rules` while `rules`, the drag-to-look and
+  controller offer `#ready-blocked` while `blocked`), `showPlaying`,
   `showClassic2D` (positions `#c2d-board` 16 px below the overlay bar),
   `showPause({state,time,minesLeft,note,mode})` (the board line, the mode's
   bindings, the look settings only for `'3d'`), `showReplay` (hides the
@@ -283,7 +287,11 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
 
 `js/ui/components.js` exports
 - `formatOverlayTime(seconds)` → whole seconds, three digits, stopping at
-  `'999'`; `formatMineCount(minesLeft)` → clamped to -99 … 999. Display only.
+  `'999'`; `formatMineCount(minesLeft)` → the real count, kept at -99 at the low end. Display
+  only. `mineCounterDigits(mines)` → the counter's width in digits for a board: its mine
+  count's digits, at least 3; past 3, `UI.setBoard` / `setBoard2D` set `#hud-mines`' `min-width`
+  to that many `ch` (tabular figures, `css/style.css`), so the bar does not shift as it falls,
+  and clear it otherwise, so a board of up to 999 mines keeps the standard counter.
 - `formatSliderValue(value, {format: 'number'|'percent'|'multiplier', step, max, unit})`,
   `decimalsOf(step)`.
 - `segmentedTargetIndex(disabled, current, key, {horizontal?})` (arrows wrap,
@@ -442,7 +450,7 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   the board only, the offer there and over the pause card — and focuses the
   offer (`statusFocus`: Retry, or Play a standard board once `failure.count`
   is 2 or more); the generating card focuses Cancel when it shows. An offer
-  answered over the pause card resumes first (`answer2D`); Back to menu is
+  answered over the pause card resumes first (`answer2D`); Main menu is
   `PAUSE.toMenu()`. On `classic-2d` the controller goes to `padBoard2D`:
   Start pauses through `#hud-pause`, B/Back is `backGame('pad')`, the status
   card is navigated as a menu, and every other poll goes to `mode2d.pad`
@@ -508,7 +516,7 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   replay (shown when the routed data's `watch` is set) → `RESULTS.watch()`
   routes to `replay` with `{replay, returnTo: {screen: 'results'}}`, the
   shown game's own sealed replay, so it plays whether or not the library
-  saved it, and Back from the viewer returns to `results`; Back to menu
+  saved it, and Back from the viewer returns to `results`; Main menu
   and Back → `showMainMenu`. Returning to `results` without data shows
   `RESULTS.current` again. `RESULTS.abandoned(summary, mode, replay)`
   records the summary (a no-op when the records store already recorded it) and
@@ -553,20 +561,31 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   shell routes there directly; a later 3D `start` fails at once. The
   `ctxlost` screen exits lock, hides and `inert`s the other overlays (menu
   only inert) and shows `#ctx-lost`: `#ctx-lost-btn` reloads,
-  `#ctx-lost-menu` ("Back to menu") routes to the menu and lifts the inert.
+  `#ctx-lost-menu` ("Main menu") routes to the menu and lifts the inert.
 
 Game flow (`js/main.js`):
 - 3D transitions: `startGame` → `ready`; pointer lock acquired
-  (`onLockChange`) or `padResume` → `enterPlaying` → `playing`; pause →
-  `paused`. A failed board releases pointer lock for its offer, and that
-  release does not pause.
+  (`onLockChange`), `padResume` or the ready card's drag-to-look
+  (`enterDragLook`) → `enterPlaying` → `playing`; pause → `paused`. A failed
+  board releases pointer lock for its offer, and that release does not
+  pause.
+- Pointer-lock refusals: `onLockError` on the ready or pause card asks
+  `LOCK_FALLBACK` (`js/shell/lock-fallback.js`: `createLockFallback`,
+  `LOCK_MESSAGES`, `RELOCK_COOLDOWN_MS`) for the ready card's message —
+  `NO_MOUSE_MSG` without a mouse instead. A refusal within 1500 ms of a
+  release says the browser needs a moment and is not counted; the first
+  counted one says the mouse could not be captured; from the second the
+  page is blocked for its session (an acquired lock, `LOCK_FALLBACK.locked()`,
+  resets only the count). While blocked the router's `ready` entry shows the
+  explanation (`readyMessage`) and `#ready-blocked` — `#ready-drag` and a
+  line naming the controller's A — on every ready card.
 - Board status: `board3d` holds `{generating, failure}` from the session's
   `generating` and `failed` events; `showStatus3D` shows `#m3d-status` from
   it while `playing`, and a failure's offer while `paused` too; on a failure
   it exits pointer lock and focuses the offer (`statusFocus`), and the
   generating card focuses Cancel when it shows. `retry3D` answers the offer
   (`onRetry3D` / `onStandard3D`) and re-enters play, from the pause card
-  too; Back to menu is `PAUSE.toMenu()`, Cancel `cancelGeneration()`. While
+  too; Main menu is `PAUSE.toMenu()`, Cancel `cancelGeneration()`. While
   the card shows the controller goes to `padStatus3D`: Start pauses, the
   back buttons are `backGame('pad')`, the card is navigated as a menu.
   `LAYER_SCREEN` puts both status cards above the pause card; their
@@ -574,9 +593,15 @@ Game flow (`js/main.js`):
 - `sync3D` runs on every router change: it resumes the session on
   `playing` and pauses it everywhere else, so the session's timer runs only
   in play, and refreshes the status card.
-- `S.lockless`: play without pointer lock (controller, `forcePlay`). Mirrors
-  `body.lockless`; when set, losing lock does not pause and Esc goes to
-  `backGame` directly.
+- `S.lockless`: play without pointer lock (controller, drag-to-look,
+  `forcePlay`). Mirrors `body.lockless`; when set, losing lock does not pause
+  and Esc goes to `backGame` directly.
+- `S.dragLook`: drag-to-look play, set by `enterDragLook` and cleared by
+  `leaveGame`. With `S.lockless` it is the input's `isDragLook` (the mouse
+  drags the view and acts through `DragLook`, [input.md](input.md)) and
+  `body.drag-look` (the system cursor shows over `#scene`); `resumeGame` and
+  `enterPlay3D` enter lockless play directly while it is set, so resume,
+  restart and Play again stay in drag-to-look play.
   A UI click made with controller A sets `padGesture`, which routes resume/
   restart to lockless play because it is not a user gesture for pointer lock.
 - `startGame(settings)` leaves the previous session and opens a new one
@@ -719,7 +744,8 @@ Component kit (`css/components.css`, catalogue in its head comment):
   composition into the catalogue and `COMPOSITIONS`.
 - Overlay bar (`#hud .ui-overlay-bar.hud-bar`): `ui-stat` readouts `#hud-time`
   (`formatOverlayTime`, e.g. `047`, display stops at `999` while `S.time`
-  keeps counting), `#hud-mines` (`formatMineCount`, `.negative` below zero)
+  keeps counting), `#hud-mines` (`formatMineCount`, `.negative` below zero, as wide as the
+  board's mine count past three digits)
   and the board size, then `#hud-pause` (secondary button, `aria-label`
   "Pause game"). Its click calls `onPause` → `PAUSE.pause`; controller START
   and BACK in play click `#hud-pause` through `padClick`, so every input
@@ -736,8 +762,9 @@ Component kit (`css/components.css`, catalogue in its head comment):
   `ui-row` footer (Controls, Sound, volume `ui-slider`, credit `ui-link`).
 - 3D board choice (`#board-choice`, bound by `bindBoardChoice` of
   `js/mode3d/board-choice.js`, [mode3d.md](mode3d.md)): a `ui-card
-  ui-screen--wide` with the Cube heading over one `ui-menu` of the three
-  cube presets (items carry `data-preset`; the binder appends a "Last
+  ui-screen--wide` with one `ui-menu` (`aria-label="Presets"`) of the three
+  cube presets, each labelled Cube Beginner, … (`presetTitle`; items carry
+  `data-preset`; the binder appends a "Last
   played" `ui-menu__detail` line and sets `data-last` on the last board
   choice) and the presets' no-guess `ui-toggle` under it, the custom board
   as a `ui-panel` of `ui-field` entries with Random/Start in
@@ -775,7 +802,7 @@ Component kit (`css/components.css`, catalogue in its head comment):
 - Settings page (`#settings`): a `ui-card ui-screen--wide` whose
   `#settings-body` `UI` fills at construction with `settingsPageHtml()` — a
   `ui-grid` of Controls, Graphics, Theme and Audio `ui-panel` sections, one
-  `data-setting` control per setting — and a Bindings panel
+  `data-setting` control per setting (Audio: Sound, then Volume) — and a Bindings panel
   (`#settings-bindings`) redrawn by `showSettings`; a primary Back in
   `#settings-actions`, a sticky row at the bottom of the card's scroll area
   (`css/style.css`), with `#settings`'s `scroll-padding-bottom` keeping a
@@ -789,8 +816,8 @@ Component kit (`css/components.css`, catalogue in its head comment):
   `#p-confirm-no` Cancel), the board line `#pause-board` (as the overlay bar
   names the board), the controls list `#pause-controls` (the active mode's
   bindings for the active device) and a Settings `ui-panel` (look
-  sensitivity and volume sliders, invert-Y toggle — the look settings
-  hidden unless the game is 3D), then the Sound button.
+  sensitivity slider and invert-Y toggle — hidden unless the game is 3D —
+  then the Sound button and the volume slider).
   Those shortcuts and the main menu's volume slider carry `data-setting` and
   are bound to the settings store like the Settings page's controls.
 - Results screen (`#results`, filled by `createResultsView`; the gallery's
@@ -800,7 +827,7 @@ Component kit (`css/components.css`, catalogue in its head comment):
   bests on a win, each with a `ui-stat__detail` difference led by "New best"
   when set, the `#results-note` `ui-text--warning` line, and Play again
   (`#r-again`, primary), Watch replay (`#r-watch`, hidden until offered),
-  Records (`#r-records`), Back to menu (`#r-menu`).
+  Records (`#r-records`), Main menu (`#r-menu`).
 - Replay viewer (`#replay`, filled by `createReplayView`,
   [replay.md](replay.md)): a `ui-overlay-bar` of the replay's figures —
   Time (`#rp-clock`, the overlay timer format), Mines (`#rp-mines`), 3BV

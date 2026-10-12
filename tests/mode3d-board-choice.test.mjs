@@ -11,7 +11,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import {
   PRESETS, FAMILIES, BOARD_SIZES, DEFAULT_CHOICE, DIM_MIN, DIM_MAX, NOGUESS_CELL_LIMIT, LAST_CHOICE_DOC, LAST_CHOICE_VERSION,
-  presetKey, presetByKey, presetLabel, validateCustom, customStatus, noGuessAvailable, noGuessReason, normaliseChoice,
+  presetKey, presetByKey, presetLabel, presetTitle, validateCustom, customStatus, noGuessAvailable, noGuessReason, normaliseChoice,
   readChoice, boardOf, randomBoard, densityHintShown,
 } from '../js/mode3d/board-choice.js';
 import { NOGUESS_DENSITY_HINT, DENSITY_HINT_TEXT, NOGUESS_HELP_TEXT } from '../js/classic2d/board-setup.js';
@@ -294,9 +294,11 @@ const BOARD = INDEX.slice(INDEX.indexOf('<section id="board-choice"'), INDEX.ind
 test('index.html offers the three cube presets, the custom board, Random, the no-guess switch and Back', () => {
   const presets = [...BOARD.matchAll(/<button type="button" class="ui-menu__item" data-preset="([\d,]+)"><span class="ui-menu__label">([^<]+)<\/span><span class="ui-menu__detail">([^<]+)<\/span><\/button>/g)];
   assert.deepEqual(presets.map((m) => m[1]), PRESETS.map(presetKey));
-  assert.deepEqual(presets.map((m) => m[2]), PRESETS.map((p) => p.name));
+  assert.deepEqual(presets.map((m) => m[2]), ['Cube Beginner', 'Cube Intermediate', 'Cube Expert'], 'the preset says its family, as results and Records do');
+  assert.deepEqual(presets.map((m) => m[2]), PRESETS.map(presetTitle));
   assert.deepEqual(presets.map((m) => m[3].replace(/&times;/g, '×').replace(/&middot;/g, '·')), PRESETS.map(presetLabel));
-  for (const f of FAMILIES) assert.match(BOARD, new RegExp(`<h2 class="ui-heading" id="bc-${f.id}">${f.label}</h2>`));
+  for (const f of FAMILIES) assert.doesNotMatch(BOARD, new RegExp(`id="bc-${f.id}"|>${f.label}</h2>`), 'no family heading above the presets');
+  assert.match(BOARD, /<div class="ui-menu" role="group" aria-label="Presets">\s*<button type="button" class="ui-menu__item" data-preset=/, 'the presets menu keeps an accessible name');
   assert.doesNotMatch(BOARD, /data-preset="\d+,\d+,1,\d+"/, 'no flat preset');
   assert.doesNotMatch(BOARD, /data-preset="\d+,\d+,2,\d+"|bc-double|Double layer/, 'no double layer group');
   assert.doesNotMatch(read('css/components.css'), /Double layer|bc-double/, 'no double layer group in the styles');

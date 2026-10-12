@@ -27,7 +27,7 @@ In scope (m2-3d-joins):
 - The results screen for won and lost 3D games: the same contents and
   actions as Classic 2D's — outcome, board label, time, 3BV (and 3BV solved
   on a loss), 3BV/s, efficiency, the three-best comparison on a win, *Play
-  again*, *Watch replay*, *Records* and *Back to menu*.
+  again*, *Watch replay*, *Records* and *Main menu*.
 - The results screen covering the 3D scene completely; the end banner and
   flying around the finished board are removed.
 - The Records screen's 2D | 3D switch, the 3D board picker, and the chosen

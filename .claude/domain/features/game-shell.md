@@ -29,7 +29,7 @@ In scope (m1-classic-2d):
 - A mode host: the one contract through which the shell starts, pauses,
   resumes, restarts and leaves a game, implemented by the Classic 2D
   front-end and by an adapter over the existing 3D game.
-- Pause and resume, restart, and back to menu, from the pause card and from
+- Pause and resume, restart, and Main menu, from the pause card and from
   the keyboard and controller. While paused the board is hidden in every
   mode and the timer is stopped.
 - Automatic pause when the window loses focus or the tab is hidden during a
@@ -131,7 +131,8 @@ it generalises.
   outcome abandoned.
 - **Pause rules** — pause applies only to a started, unfinished game; before
   the first click or after the game ends, the pause key opens the pause card
-  without a timer to stop, offering restart and back to menu, and Back on
+  without a timer to stop, offering Restart (Play again once the game
+  ended) and Main menu, and Back on
   it goes to the main menu. While the first click's board is being
   generated, Esc and the controller's back button cancel the generation,
   back to the closed board, instead of opening the pause card; the
@@ -140,7 +141,7 @@ it generalises.
 - **Restart** — discards the current game and starts a new one with the same
   board choice; during a started, unfinished game it asks for confirmation,
   saying the game will count as a loss.
-- **Back to menu** — leaves the mode and returns to the main menu; during a
+- **Main menu** — leaves the mode and returns to the main menu; during a
   started, unfinished game it asks for confirmation, saying the game will
   count as a loss.
 - **Game finished** — the shell hands the mode's summary to `results-screen`
@@ -167,7 +168,7 @@ it generalises.
   placeholder screen.
 - **Failure** — a mode that fails to start (for example a lost graphics
   context in 3D) reports it; the shell shows the mode's failure screen and
-  offers back to menu. A failure in one mode never leaves the shell
+  offers Main menu. A failure in one mode never leaves the shell
   unusable.
 
 ## Dependencies

@@ -2,7 +2,7 @@
 // Every help surface — the pause card, the main menu's Controls panel, the H panel, the HUD strip
 // and the hint strip — is drawn from the bindings source (js/settings/bindings.js) for the active
 // mode and the active device (the controller in the connected controller's glyphs).
-import { formatOverlayTime, formatMineCount, bindSegmented } from './ui/components.js';
+import { formatOverlayTime, formatMineCount, mineCounterDigits, bindSegmented } from './ui/components.js';
 import { GLYPHS } from './gamepad.js';
 import { bindingsHtml, hudStripHtml, hintStripHtml, helpFootHtml } from './settings/bindings.js';
 import { settingsPageHtml, bindingsSectionHtml } from './settings/page.js';
@@ -35,14 +35,14 @@ export const NO_MOUSE_MSG = 'Minesweeper 3D needs a mouse and keyboard — open 
 
 export class UI {
   constructor(cb) {
-    this.cb = cb; // { onMenuEntry, onBack, onReadyClick, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSound, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D }
+    this.cb = cb; // { onMenuEntry, onBack, onReadyClick, onReadyDrag, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSound, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D }
     this.el = {
       hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), size: $('hud-size'), hudTools: $('hud-tools'),
       help: $('help'), helpList: $('help').querySelector('.controls'), helpFoot: $('help-foot'),
       hintStrip: $('hint-strip'), hintStripText: $('hint-strip-text'),
       readyRules: $('ready-rules'), pauseBoard: $('pause-board'), pauseControls: $('pause-controls'),
       controlsBody: $('controls-body'),
-      flash: $('flash'), menu: $('menu'), ready: $('ready'), readyBoard: $('ready-board'), readyMsg: $('ready-msg'),
+      flash: $('flash'), menu: $('menu'), ready: $('ready'), readyBoard: $('ready-board'), readyMsg: $('ready-msg'), readyBlocked: $('ready-blocked'),
       boardChoice: $('board-choice'), comingSoon: $('coming-soon'), comingSoonTitle: $('coming-soon-title'),
       settings: $('settings'), settingsBindings: null, records: $('records'),
       comingSoonText: $('coming-soon-text'),
@@ -95,6 +95,7 @@ export class UI {
     $('menu-sound').addEventListener('click', () => cb.onToggleSound());
     $('p-sound').addEventListener('click', () => cb.onToggleSound());
     $('ready-btn').addEventListener('click', () => cb.onReadyClick());
+    $('ready-drag').addEventListener('click', () => cb.onReadyDrag?.());
     this.el.resume.addEventListener('click', () => cb.onResume());
     this.el.restart.addEventListener('click', () => cb.onRestart());
     $('p-menu').addEventListener('click', () => cb.onMainMenu());
@@ -218,15 +219,23 @@ export class UI {
     this.el.c2dBoard.style.top = `${Math.round(bar.bottom) + 16}px`;
   }
   /** The Classic 2D board the overlay bar and the pause card name ("30 × 16 · no-guess"). */
-  setBoard2D(board) { this._setBoardText(boardLine2D(board)); }
+  setBoard2D(board) { this._setBoardText(boardLine2D(board)); this._sizeMines(board.mines); }
   _setBoardText(text) { this._boardText = text; this.el.size.textContent = text; }
+  /**
+   * The mine counter as wide as a board's mine count past three digits, so the bar does not shift
+   * as it falls; a board of up to 999 mines keeps today's counter.
+   */
+  _sizeMines(mines) {
+    const digits = mineCounterDigits(mines);
+    this.el.mines.style.minWidth = digits > 3 ? `${digits}ch` : '';
+  }
   /** Classic 2D: the "generating" card of a slow first click, or a failed board and its offer. */
   setBoardStatus(status) { this._boardStatus('c2d', status); }
   /** 3D: the "generating" card of a slow first click, or a failed board and its offer, over the box. */
   setBoardStatus3D(status) { this._boardStatus('m3d', status); }
   /**
    * The generating card shows a spinner and Cancel; a failure shows the offer — Retry, Play a
-   * standard board, Back to menu. Either card sits above the pause card.
+   * standard board, Main menu. Either card sits above the pause card.
    */
   _boardStatus(prefix, { generating = false, failure = null } = {}) {
     const on = generating || !!failure;
@@ -239,8 +248,11 @@ export class UI {
     el('Wait').classList.toggle('hidden', !!failure);
     el('Offer').classList.toggle('hidden', !failure);
   }
-  /** The 3D ready card: its board, a message, and the "How 3D works" block while `rules` is set. */
-  showReady(settings, msg = '', { rules = false } = {}) {
+  /**
+   * The 3D ready card: its board, a message, the "How 3D works" block while `rules` is set, and
+   * the drag-to-look and controller offer while the browser blocks pointer lock (`blocked`).
+   */
+  showReady(settings, msg = '', { rules = false, blocked = false } = {}) {
     this._hideMenus();
     this._hide2D();
     this._setMode('3d');
@@ -250,6 +262,7 @@ export class UI {
     this.el.readyBoard.textContent = boardLine3D(settings, { mines: true });
     this.el.readyMsg.textContent = msg;
     this.el.readyRules.classList.toggle('hidden', !rules);
+    this.el.readyBlocked.classList.toggle('hidden', !blocked);
     this._syncHelp();
   }
   setReadyMessage(msg) { this.el.readyMsg.textContent = msg; }
@@ -340,8 +353,8 @@ export class UI {
 
   // ---------- HUD ----------
   /** The 3D board the overlay bar and the pause card name ("6 × 6 × 6 · no-guess"). */
-  setBoard(settings) { this._setBoardText(boardLine3D(settings)); }
-  /** Overlay bar readouts: the display formats clamp; `time` itself is never clamped. */
+  setBoard(settings) { this._setBoardText(boardLine3D(settings)); this._sizeMines(settings.mines); }
+  /** Overlay bar readouts: the display formats clamp (timer at 999, counter at -99); `time` itself is never clamped. */
   updateHud(time, minesLeft) {
     const t = formatOverlayTime(time), m = formatMineCount(minesLeft);
     if (t !== this._last.time) { this.el.time.textContent = t; this._last.time = t; }

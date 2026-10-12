@@ -168,6 +168,8 @@ kbd {
   -webkit-backdrop-filter: blur(8px);
 }
 .hud-bar { position: absolute; top: 16px; left: 16px; pointer-events: auto; }
+/* the mine counter: as wide as a large board's count (UI.setBoard), tabular, so the bar does not shift as it falls */
+#hud-mines { font-variant-numeric: var(--font-numeric-tabular); }
 .hud-board .ui-stat__value { font-size: var(--font-size-md); color: var(--color-ink-muted); }
 #hud-mines.negative { color: var(--color-danger); }
 #hud.hud--2d #crosshair, #hud.hud--2d #mode-chips { display: none; }
@@ -240,9 +242,14 @@ kbd.pad { min-width: 1.9em; border-radius: 999px; }
 .ready-pad { font-size: 13px; color: var(--color-ink-muted); line-height: 1.7; text-align: center; max-width: 520px; }
 .ready-pad b { color: var(--color-ink); font-weight: 600; }
 .ready-pad .pad-note { display: inline-block; margin: 4px 0 0; }
+/* the ready card's offer once the browser blocks pointer lock: drag-to-look, or the controller */
+.ready-blocked { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--color-surface-raised); text-align: center; }
 #help { max-height: calc(100vh - 80px); overflow: hidden; }
 /* lockless controller play: the system cursor would sit over the crosshair */
 body.lockless #scene { cursor: none; }
+/* drag-to-look play: the mouse drags the view, so its cursor shows */
+body.lockless.drag-look #scene { cursor: grab; }
+body.lockless.drag-look #scene:active { cursor: grabbing; }
 
 /* focus ring for controller navigation */
 body.pad-nav :is(button, input, summary, a, select):focus {

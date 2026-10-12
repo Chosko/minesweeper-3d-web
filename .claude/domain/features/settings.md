@@ -29,7 +29,8 @@ In scope (m1-classic-2d):
   (one device pixel per CSS pixel).
 - Theme: Light or Dark, Light until the player picks. Changing it applies
   at once through `design-tokens-and-themes`.
-- Audio: volume and mute, the values the existing sound module keeps.
+- Audio: Sound (the on/off control, on while sound plays, stored as mute)
+  and Volume, the values the existing sound module keeps.
 - The settings store: defaults, validation, persistence through
   `platform-storage`, and change notification.
 - Carrying over the values players already have from the current web build

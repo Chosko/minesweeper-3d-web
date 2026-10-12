@@ -139,7 +139,7 @@ copied.
   none.
 - **Generation failure** — when a no-guess request fails, the session shows
   the failure and offers *Retry* (a new seed), *Play a standard board* (the
-  same size, no-guess off) or *Back to menu*, above the pause card and
+  same size, no-guess off) or *Main menu*, above the pause card and
   defaulting to *Play a standard board* after a second failure in a row, as
   `board-generation` § Failure offer settles; the timer never starts on a
   failed board.

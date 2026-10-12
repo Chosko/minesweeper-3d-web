@@ -7,7 +7,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { tmpdir } from 'node:os';
 import {
   decimalsOf, formatSliderValue, segmentedTargetIndex, segmentedState,
-  bindSlider, bindSegmented, initComponents, formatOverlayTime, formatMineCount,
+  bindSlider, bindSegmented, initComponents, formatOverlayTime, formatMineCount, mineCounterDigits,
 } from '../js/ui/components.js';
 import { UI } from '../js/ui.js';
 import { FOCUSABLE } from '../js/shell/navigation.js';
@@ -307,7 +307,7 @@ test('formatOverlayTime shows whole elapsed seconds, three digits, stopping at 9
   assert.equal(formatOverlayTime(NaN), '000');
 });
 
-test('formatMineCount shows mines left clamped to -99 … 999', () => {
+test('formatMineCount shows the real mines left, kept at -99 at the low end', () => {
   assert.equal(formatMineCount(0), '0');
   assert.equal(formatMineCount(10), '10');
   assert.equal(formatMineCount(-12), '-12');
@@ -315,8 +315,32 @@ test('formatMineCount shows mines left clamped to -99 … 999', () => {
   assert.equal(formatMineCount(-100), '-99', 'below -99');
   assert.equal(formatMineCount(-5000), '-99');
   assert.equal(formatMineCount(999), '999');
-  assert.equal(formatMineCount(1000), '999', 'above 999');
-  assert.equal(formatMineCount(250000), '999');
+  assert.equal(formatMineCount(1000), '1000', 'no upper clamp');
+  assert.equal(formatMineCount(2480), '2480', 'a large board shows its real count');
+  assert.equal(formatMineCount(250000), '250000');
+});
+
+test('the mine counter is as wide as the board\'s mine count, at least three digits', () => {
+  assert.equal(mineCounterDigits(10), 3, 'standard boards keep three');
+  assert.equal(mineCounterDigits(99), 3);
+  assert.equal(mineCounterDigits(999), 3);
+  assert.equal(mineCounterDigits(1000), 4);
+  assert.equal(mineCounterDigits(2480), 4);
+  assert.equal(mineCounterDigits(999999), 6);
+  assert.equal(mineCounterDigits(0), 3);
+});
+
+test('UI.setBoard and setBoard2D size the mine counter to the board\'s digits', () => {
+  const fake = { _setBoardText() {}, _sizeMines: UI.prototype._sizeMines, el: { mines: { style: {} } } };
+  UI.prototype.setBoard.call(fake, { X: 20, Y: 20, Z: 20, mines: 2480 });
+  assert.equal(fake.el.mines.style.minWidth, '4ch');
+  UI.prototype.setBoard2D.call(fake, { width: 9, height: 9, mines: 10 });
+  assert.equal(fake.el.mines.style.minWidth, '', 'a standard board looks as it does today');
+  UI.prototype.setBoard.call(fake, { X: 12, Y: 12, Z: 8, mines: 130 });
+  assert.equal(fake.el.mines.style.minWidth, '', 'up to 999 mines: no width of its own');
+  assert.doesNotMatch(read('css/style.css'), /#hud-mines\s*\{[^}]*text-align/, 'the count stays left-aligned under its label');
+  const css = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.match(css, /#hud-mines\s*\{[^}]*font-variant-numeric:\s*var\(--font-numeric-tabular\)/, 'tabular figures, so the bar does not shift');
 });
 
 test('the overlay formats copy the reference game displays the fidelity file records', () => {
@@ -399,7 +423,7 @@ test('UI.updateHud writes the overlay formats and keeps the negative mine flag',
   assert.equal(fake.el.mines.textContent, '-99');
   assert.ok(cls.has('negative'));
   UI.prototype.updateHud.call(fake, 0, 1200);
-  assert.equal(fake.el.mines.textContent, '999');
+  assert.equal(fake.el.mines.textContent, '1200', 'the real count past 999');
   assert.ok(!cls.has('negative'));
 });
 
@@ -601,7 +625,7 @@ test('bindSegmented with horizontal leaves Up and Down unhandled', () => {
 
 // ---------------------------------------------------------------- "Esc: Back" beside every Back
 
-// Each button Esc triggers, with the hint beside it; the pause card's Back to menu has none (Esc resumes there).
+// Each button Esc triggers, with the hint beside it; the pause card's Main menu has none (Esc resumes there).
 const ESC_BACKS = ['c2d-choice-back', 'board-choice-back', 'coming-soon-back', 'ready-back', 'settings-back', 'records-back',
   'rp-back', 'replay-message-back', 'r-menu', 'ctx-lost-menu'];
 const HINT = '<span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>';
@@ -618,6 +642,26 @@ test('an "Esc: Back" hint sits beside each Back that Esc triggers, and is no foc
   const pmenu = html.slice(html.indexOf('</button>', html.indexOf('id="p-menu"')) + 9).trimStart();
   assert.ok(!pmenu.startsWith(HINT), 'none beside the pause card\'s Main menu, where Esc resumes');
   assert.doesNotMatch(HINT, /tabindex|<button|<a /, 'the hint is plain text');
+});
+
+test('one vocabulary: Back returns one step, Main menu goes to the menu, and no Back to menu label remains', () => {
+  const html = read('index.html');
+  assert.doesNotMatch(html, /Back to menu/);
+  for (const id of ['r-menu', 'ctx-lost-menu', 'c2d-offer-menu', 'm3d-offer-menu', 'p-menu']) {
+    assert.match(html, new RegExp(`id="${id}"[^>]*>Main menu</button>`), `#${id} reads Main menu`);
+  }
+  for (const f of ['js/ui.js', 'js/main.js', 'js/settings/bindings.js', 'js/settings/page.js', 'js/shell/pause.js', 'js/results/view.js', 'dev/components.html']) {
+    assert.doesNotMatch(read(f), /Back to menu/, `${f} says Main menu`);
+  }
+});
+
+test('Restart discards an unfinished game; Play again starts the same choice once it ended', () => {
+  const ui = read('js/ui.js');
+  assert.match(ui, /this\.el\.restart\.textContent = ended \? 'Play again' : 'Restart';/, 'the pause card swaps them on the moment');
+  assert.match(read('js/shell/pause.js'), /message: 'Restart this game\? It will count as a loss\.', confirmLabel: 'Restart'/);
+  assert.match(read('js/shell/pause.js'), /'Leave this game for the main menu\? It will count as a loss\.'/);
+  assert.match(read('index.html'), /id="r-again"[^>]*>Play again</);
+  assert.doesNotMatch(read('js/settings/bindings.js'), /Restart|Play again|New game/, 'no help line names either for another moment');
 });
 
 test('in a browser, the "Esc: Back" hints meet the contrast contract in both themes', async (t) => {
@@ -1011,10 +1055,10 @@ test('in a browser, the menu, the pause card and the results layout meet the con
     await firstClick();
     await page.waitForFunction(() => !document.getElementById('m3d-offer').classList.contains('hidden'));
     assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#m3d-offer button')].map((b) => b.textContent)),
-      ['Retry', 'Play a standard board', 'Back to menu']);
+      ['Retry', 'Play a standard board', 'Main menu']);
     for (const theme of ['light', 'dark']) await check(page, '#m3d-status', 'offer', theme);
     await page.click('#m3d-offer-menu');
-    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu', 'Back to menu from the offer');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu', 'Main menu from the offer');
 
     // An ended game: the pause card leads with Play again.
     await page.evaluate(() => {

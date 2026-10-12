@@ -73,9 +73,14 @@ export function formatOverlayTime(seconds) {
   return String(s).padStart(3, '0');
 }
 
-/** Overlay bar mine counter text: mines left clamped to -99 … 999. */
+/** Overlay bar mine counter text: the real mines left, kept at -99 at the low end. */
 export function formatMineCount(minesLeft) {
-  return String(Math.min(999, Math.max(-99, Math.trunc(minesLeft))));
+  return String(Math.max(-99, Math.trunc(minesLeft)));
+}
+
+/** Width of the mine counter, in digits, for a board of `mines` mines: its count's digits, at least three. */
+export function mineCounterDigits(mines) {
+  return Math.max(3, String(Math.max(0, Math.trunc(mines))).length);
 }
 
 // ---------------------------------------------------------------- DOM binding

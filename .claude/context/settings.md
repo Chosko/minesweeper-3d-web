@@ -32,7 +32,7 @@ read-only bindings list. Every module is DOM-free; `js/main.js` wires them
 | `renderResolution` | choice | `auto`, `sharp`, `fast` | `auto` | 3D renderer pixel ratio |
 | `theme` | choice | `light`, `dark` | `light` | `msTheme.setTheme` |
 | `volume` | number | 0–1 | 0.7 | `sfx.setVolume` |
-| `muted` | boolean | | false | `sfx.setMuted`, the Sound buttons' label |
+| `muted` | boolean | | false | `sfx.setMuted`, the Sound buttons' label, the Settings page's Sound toggle (on while false) |
 
 ## PUBLIC API
 
@@ -78,16 +78,21 @@ Appliers (`js/settings/appliers.js`) — each returns its unsubscribe
 
 Page (`js/settings/page.js`)
 - `SETTINGS_SECTIONS` — Controls (`lookSensitivity`, `invertY`), Graphics
-  (`fullscreen`, `renderResolution`), Theme (`theme`), Audio (`volume`,
-  `muted`); `SETTING_LABELS`, `CHOICE_LABELS`.
+  (`fullscreen`, `renderResolution`), Theme (`theme`), Audio (`muted`,
+  `volume`); `SETTING_LABELS` (`muted` reads Sound), `CHOICE_LABELS`.
 - `settingControl(key)` → `{ key, kind: 'slider' | 'toggle' | 'segmented',
   label, … }`: a number is a `ui-slider` (with `min`, `max`, `step`,
   `format`, `scale` — volume shows 0–100 %), a boolean a `ui-toggle`, a choice
-  a `ui-segmented` of its `options`.
-- `settingControlHtml(key, value?)` — the control's kit markup, root carrying
-  `data-setting="<key>"`, ids `set-<key>`.
-- `settingsPageHtml()` — the four sections in a `ui-grid` and an empty
-  Bindings panel (`#settings-bindings`); `bindingsSectionHtml(glyphs?)` — one
+  a `ui-segmented` of its `options`. A toggle in `INVERTED` (`muted`) carries
+  `inverted: true` and shows on while its value is false — Sound is on while
+  not muted; `bindToggle` flips both ways.
+- `settingControlHtml(key, value?, { labelledBy? })` — the control's kit
+  markup, root carrying `data-setting="<key>"`, ids `set-<key>`; with
+  `labelledBy` a choice shows no label of its own and is named by that
+  element.
+- `settingsPageHtml()` — the four sections in a `ui-grid` (a control whose
+  label is its section's title, Theme, is named by the section heading) and
+  an empty Bindings panel (`#settings-bindings`); `bindingsSectionHtml(glyphs?)` — one
   `dl.controls` per mode and input device.
 - `bindSettingControls(elements, store, { onUserChange? })` → unbind. Each
   element is a control root carrying `data-setting`; it shows the store's

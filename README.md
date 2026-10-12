@@ -112,7 +112,7 @@ The rules are classic Minesweeper with one more dimension:
 - When the game ends, the board freezes for about a second while the end effect plays (the loss
   wave showing where the mines were, or the win confetti). Then the screen shown after a game takes
   over the whole window, as in Classic 2D: time, 3BV, 3BV/s, efficiency and, on a win, your bests
-  on that board, with **Play again**, **Watch replay**, **Records** and **Back to menu**.
+  on that board, with **Play again**, **Watch replay**, **Records** and **Main menu**.
 
 Pick a board and play:
 
@@ -136,7 +136,7 @@ Pick a board and play:
 
 | Input | Action |
 |---|---|
-| Mouse | Look around (click "Click to play" to capture the mouse) |
+| Mouse | Look around (click "Click to play" to capture the mouse; where the browser blocks the capture, "Play with drag-to-look" turns the view while a button is held and dragged) |
 | `W` `A` `S` `D` | Fly forward / left / back / right (forward follows the view direction) |
 | `Q` / `E` | Move down / up |
 | Left click | Reveal the aimed cube |

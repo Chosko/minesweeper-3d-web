@@ -108,7 +108,7 @@ test('the overlay reads mines left, 3BV solved of 3BV and 3BV/s so far from the 
   const frame = { minesLeft: -3, bbbv: 20, bbbvSolved: 5 };
   assert.deepEqual(overlayFigures(frame, 2000), { clock: '002', mines: formatMineCount(-3), bbbv: '5 / 20', rate: '2.50' });
   assert.equal(overlayFigures(frame, 0).rate, DASH, 'no rate before any time has passed');
-  assert.equal(overlayFigures({ minesLeft: 1500, bbbv: 1, bbbvSolved: 0 }, 1000).mines, '999');
+  assert.equal(overlayFigures({ minesLeft: 1500, bbbv: 1, bbbvSolved: 0 }, 1000).mines, '1500', 'the real count past 999');
 });
 
 test('the end of a replay shows its outcome and recorded time in the results time format', () => {

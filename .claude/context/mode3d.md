@@ -61,7 +61,7 @@ three to the screens, the renderer and the pointer-lock flow
   `randomBoard(random?)` — the original Random formula, always a valid
   board.
 - `presetKey(p)` (`'6,6,6,10'`, the items' `data-preset`), `presetByKey`,
-  `presetLabel(p)`.
+  `presetLabel(p)`; `presetTitle(p)` → 'Cube Beginner' (family and name: the preset item's label, as results and Records name the board).
 - `LAST_CHOICE_DOC` = `'mode3d.lastChoice'`, `LAST_CHOICE_VERSION` = 1.
 - `bindBoardChoice({root, onStart, onBack})` → `show(choice, {played})`,
   `destroy()`. Its head comment lists the `data-*` hooks it reads in `root`.

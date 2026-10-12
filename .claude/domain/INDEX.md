@@ -28,7 +28,7 @@ layer.
 | [features/platform-storage.md](./features/platform-storage.md) | The platform layer's storage interface: versioned documents, the browser implementation, failure handling |
 | [features/game-summary.md](./features/game-summary.md) | Board identity, the summary of a won, lost or abandoned game, and how 3BV/s, efficiency and best eligibility are derived |
 | [features/personal-records.md](./features/personal-records.md) | Personal bests per board, stats history, win rate and streaks: rules, stored documents, the game-in-progress marker that records a closed game as a loss, the comparison against bests |
-| [features/results-screen.md](./features/results-screen.md) | The end-of-game results screen: stats shown, the three-best comparison, Play again, Records, Back to menu |
+| [features/results-screen.md](./features/results-screen.md) | The end-of-game results screen: stats shown, the three-best comparison, Play again, Records, Main menu |
 | [features/records-screen.md](./features/records-screen.md) | The Records screen: board picker, bests, win rate, streaks, history chart and recent games |
 | [features/3d-board-graph.md](./features/3d-board-graph.md) | The 3D box as a cell graph on the shared rules engine, the 3D rule profile (auto-hide, right-click on revealed cells) and the 3D state view |
 | [features/3d-play-flow.md](./features/3d-play-flow.md) | 3D board choice, the safe first click and generation flow, the no-guess switch and its size limit, and the 3D mode's hand-off to results |

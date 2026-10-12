@@ -101,6 +101,49 @@ export class MouseActions {
   reset() { this.left = false; this.right = false; this.toggle = false; }
 }
 
+/** Movement, in pixels, a held mouse button makes before drag-to-look turns it into a drag. */
+export const DRAG_LOOK_THRESHOLD_PX = 6;
+
+/**
+ * Drag-to-look: play without pointer lock, the system cursor shown. A press goes to the mouse
+ * actions as in locked play; once a held button has moved past `threshold` pixels the gesture is a
+ * drag: the held buttons are dropped without acting (drag-to-cancel), the movement so far and every
+ * later one turns the camera through onLook(dx, dy), and nothing pressed or released acts until
+ * every button is up. reset() drops the gesture without acting.
+ */
+export class DragLook {
+  constructor({ mouse, onLook, threshold = DRAG_LOOK_THRESHOLD_PX }) {
+    this.mouse = mouse;
+    this.onLook = onLook;
+    this.threshold = threshold;
+    this.reset();
+  }
+  down(button) {
+    if (!this.held.size) { this.dragging = false; this.dx = 0; this.dy = 0; }
+    this.held.add(button);
+    if (!this.dragging) this.mouse.down(button);
+  }
+  move(dx, dy) {
+    if (!this.held.size) return;
+    if (this.dragging) { this.onLook(dx, dy); return; }
+    this.dx += dx; this.dy += dy;
+    if (Math.hypot(this.dx, this.dy) < this.threshold) return;
+    this.dragging = true;
+    this.mouse.reset();
+    this.onLook(this.dx, this.dy);
+  }
+  up(button) {
+    if (!this.held.delete(button)) return;
+    if (!this.dragging) this.mouse.up(button);
+    if (!this.held.size) this.dragging = false;
+  }
+  reset() {
+    this.held = new Set();
+    this.dragging = false;
+    this.dx = 0; this.dy = 0;
+  }
+}
+
 /** A Space press shorter than this is a tap: it toggles aim-through instead of holding it. */
 export const SPACE_TAP_MS = 250;
 
@@ -140,15 +183,18 @@ const ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
 /**
  * DOM input: keyboard state, pointer lock, mouse buttons/look/wheel.
  * opts: { canvas, isActive(): bool (playing & locked), onLook(dx,dy), onWheel(notches),
- *         mouse: MouseActions, onKey(code) (non-held keys e.g. H/M), onLockChange(locked) }
+ *         mouse: MouseActions, onKey(code) (non-held keys e.g. H/M), onLockChange(locked),
+ *         isDragLook(): bool (drag-to-look play: the mouse acts and looks without pointer lock) }
  */
 export class Input {
   constructor(opts) {
     this.o = opts;
     this.keys = new Set();
     this.spaceToggle = new TapToggle(); // Space: tap-toggle as well as hold
+    this.drag = new DragLook({ mouse: opts.mouse, onLook: (dx, dy) => this.o.onLook(dx, dy) });
     this.locked = false;
     this.unlockedAt = -Infinity; // performance.now() of the last pointer-lock release
+    this._lockPending = false; // a lock request whose failure has not been reported yet
     const doc = document;
     window.addEventListener('keydown', (e) => {
       if (GAME_KEYS.has(e.code)) {
@@ -172,27 +218,37 @@ export class Input {
     doc.addEventListener('pointerlockchange', () => {
       const was = this.locked;
       this.locked = doc.pointerLockElement === this.o.canvas;
+      if (this.locked) this._lockPending = false;
       if (!this.locked) { this.releaseAll(); if (was) this.unlockedAt = performance.now(); }
       this.o.onLockChange?.(this.locked);
     });
-    doc.addEventListener('pointerlockerror', () => this.o.onLockError?.());
+    // A refusal can come both as this event and as the request's rejected promise: reported once.
+    doc.addEventListener('pointerlockerror', () => this._lockFailed());
 
     doc.addEventListener('mousemove', (e) => {
-      if (!this.locked || !this.o.isActive()) return;
+      if (!this.o.isActive() || !(this.locked || this.dragLook)) return;
       let dx = e.movementX || 0, dy = e.movementY || 0;
       // ignore occasional bogus spikes reported by some browsers right after locking
       if (Math.abs(dx) > 400 || Math.abs(dy) > 400) return;
-      this.o.onLook(dx, dy);
+      if (this.locked) this.o.onLook(dx, dy);
+      else this.drag.move(dx, dy);
     });
     doc.addEventListener('mousedown', (e) => {
-      if (!this.locked || !this.o.isActive()) return;
-      e.preventDefault();
-      this.o.mouse.down(e.button);
+      if (!this.o.isActive()) return;
+      if (this.locked) {
+        e.preventDefault();
+        this.o.mouse.down(e.button);
+      } else if (this.dragLook && e.target === this.o.canvas) { // a press on the overlay bar is the bar's
+        e.preventDefault();
+        this.drag.down(e.button);
+      }
     });
     doc.addEventListener('mouseup', (e) => {
-      if (!this.locked || !this.o.isActive()) return;
-      e.preventDefault();
-      this.o.mouse.up(e.button);
+      if (!this.o.isActive()) return;
+      if (this.locked) {
+        e.preventDefault();
+        this.o.mouse.up(e.button);
+      } else if (this.dragLook) this.drag.up(e.button);
     });
     doc.addEventListener('contextmenu', (e) => {
       if (e.target === this.o.canvas || this.locked) e.preventDefault();
@@ -215,7 +271,11 @@ export class Input {
     this.keys.clear();
     this.spaceToggle.reset();
     this.o.mouse.reset();
+    this.drag.reset();
   }
+
+  /** Drag-to-look play is on, and the pointer is not locked. */
+  get dragLook() { return !this.locked && !!this.o.isDragLook?.(); }
 
   has(code) { return this.keys.has(code); }
   get shift() { return this.keys.has('ShiftLeft') || this.keys.has('ShiftRight'); }
@@ -230,12 +290,19 @@ export class Input {
   requestLock() {
     const c = this.o.canvas;
     if (!this.lockSupported) { this.o.onLockError?.(); return; }
+    this._lockPending = true;
     try {
       const r = c.requestPointerLock();
-      if (r && typeof r.catch === 'function') r.catch(() => this.o.onLockError?.());
+      if (r && typeof r.catch === 'function') r.catch(() => this._lockFailed());
     } catch {
-      this.o.onLockError?.();
+      this._lockFailed();
     }
+  }
+  /** The pending lock request failed: onLockError once per request, whichever signal comes first. */
+  _lockFailed() {
+    if (!this._lockPending) return;
+    this._lockPending = false;
+    this.o.onLockError?.();
   }
   exitLock() { if (document.pointerLockElement) document.exitPointerLock(); }
 }

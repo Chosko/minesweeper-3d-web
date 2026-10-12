@@ -19,6 +19,7 @@ import { createMenu, createLastMode, createLastBoardChoice } from './shell/menu.
 import { createFirstUse, stripShown, hidCube, aimHintCell, createDwell, AIM_DWELL_MS } from './shell/first-use.js';
 import { createActiveDevice, hintText } from './settings/bindings.js';
 import { createPauseController } from './shell/pause.js';
+import { createLockFallback } from './shell/lock-fallback.js';
 import { bindScenePalette } from './shell/scene-palette.js';
 import { token, onThemeChange } from './tokens.js';
 import { storage, blobStore } from './platform/index.js';
@@ -81,7 +82,8 @@ const S = {
   endState: null, // frozen { state, time, minesLeft } once the game is over
   pickKey: '',
   orbit: 0,
-  lockless: false, // playing without pointer lock (controller session, or the debug hook)
+  lockless: false, // playing without pointer lock (controller session, drag-to-look, or the debug hook)
+  dragLook: false, // drag-to-look play: the browser blocks pointer lock; ends when the game is left
 };
 
 // ---------- actions ----------
@@ -156,10 +158,13 @@ function cancelGeneration() {
 }
 
 const mouse = new MouseActions(onAction, hasSelection);
+// The ready card's pointer-lock refusals: from the second, it offers drag-to-look and the controller.
+const LOCK_FALLBACK = createLockFallback();
 const input = new Input({
   canvas,
   mouse,
   isActive: () => S.mode === 'playing' && !ending3D(),
+  isDragLook: () => S.dragLook && S.lockless,
   onLook: (dx, dy) => cam.look(dx, dy),
   onWheel: (notches) => { setSpacing(S.spacing + notches * 0.04); ui.showSpacing(S.spacing); },
   onKey: (code, e) => {
@@ -176,6 +181,7 @@ const input = new Input({
   },
   onLockChange: (locked) => {
     if (locked) {
+      LOCK_FALLBACK.locked();
       if (S.mode === 'ready' || S.mode === 'paused') enterPlaying();
     } else if (S.mode === 'playing' && !S.lockless && !board3d.failure) { // a failed board released the lock for its offer
       if (performance.now() - cancelledAt < 500) SHELL.go('ready', { replace: true }); // the Esc that cancelled the board
@@ -185,10 +191,7 @@ const input = new Input({
   },
   onLockError: () => {
     if (S.mode === 'paused' || S.mode === 'ready') {
-      let msg;
-      if (NO_MOUSE) msg = NO_MOUSE_MSG;
-      else if (performance.now() - input.unlockedAt < 1500) msg = 'The browser needs a moment before locking the mouse again. Click once more.';
-      else msg = 'Could not capture the mouse. Click once more.';
+      const msg = NO_MOUSE ? NO_MOUSE_MSG : LOCK_FALLBACK.refused(performance.now(), input.unlockedAt);
       SHELL.go('ready', { data: { msg } });
     }
   },
@@ -220,6 +223,7 @@ const ui = new UI({
   onMenuEntry: (id) => MENU.open(id),
   onBack: () => shellBack('pointer'),
   onReadyClick: () => { sfx.unlock(); if (padGesture) padResume(); else input.requestLock(); },
+  onReadyDrag: () => enterDragLook(),
   onResume: () => PAUSE.resume(padGesture ? 'pad' : 'pointer'),
   onRestart: () => PAUSE.restart(padGesture ? 'pad' : 'pointer'),
   onMainMenu: () => PAUSE.toMenu(),
@@ -280,7 +284,7 @@ const SHELL = createRouter({
     records: { defaultFocus: '#records-picker [aria-checked="true"]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showRecords(); RECORDS_PAGE.show({ mode: d.mode, boardKey: d.boardKey }); }, hide: () => RECORDS_PAGE.hide() },
     settings: { defaultFocus: '#set-lookSensitivity', show: () => { MODES.leave(); showMenuBackdrop(); ui.showSettings(); } },
     'classic-2d-choice': { defaultFocus: '[data-size][data-last]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showBoardChoice2D(); showChoice2D(d.choice ?? LAST_CHOICE_2D.current); } },
-    ready: { defaultFocus: '#ready-btn', show: (d = {}) => ui.showReady(board3dChoice ?? S.settings, d.msg ?? '', { rules: FIRST_USE.rules3D }), back: ({ source }) => { if (source !== 'key' || performance.now() - input.unlockedAt >= 500) readyBack(); } }, // the Esc that released the pointer lock already meant Back
+    ready: { defaultFocus: '#ready-btn', show: (d = {}) => ui.showReady(board3dChoice ?? S.settings, LOCK_FALLBACK.readyMessage(d.msg), { rules: FIRST_USE.rules3D, blocked: LOCK_FALLBACK.blocked }), back: ({ source }) => { if (source !== 'key' || performance.now() - input.unlockedAt >= 500) readyBack(); } }, // the Esc that released the pointer lock already meant Back
     playing: { defaultFocus: null, show: (d = {}) => { setLockless(!!d.lockless); ui.showPlaying(); }, back: ({ source }) => backGame(source) },
     'classic-2d': { defaultFocus: null, show: () => ui.showClassic2D(), back: ({ source }) => backGame(source) },
     paused: { defaultFocus: () => (ui.isConfirmOpen() ? '#p-confirm-no' : gameOver() ? '#p-restart' : '#p-resume'), show: (d = {}) => { stopPlayInput(); setBoardHidden(true); ui.showPause(pauseInfo(d.note)); }, hide: () => setBoardHidden(false), back: ({ source }) => resumeFromPause(source) },
@@ -583,9 +587,12 @@ function resumeFromPause(source) {
   if (performance.now() - input.unlockedAt < 500) return; // the Esc that released the pointer lock already meant Pause
   PAUSE.resume('key');
 }
-/** The 3D resume: a controller enters lockless play; otherwise the click-to-play card, which takes pointer lock. */
+/**
+ * The 3D resume: a controller enters lockless play, and so does drag-to-look play; otherwise the
+ * click-to-play card, which takes pointer lock.
+ */
 function resumeGame(source) {
-  if (source === 'pad') { sfx.unlock(); enterPlaying(true); return; }
+  if (source === 'pad' || S.dragLook) { sfx.unlock(); enterPlaying(true); return; }
   SHELL.go('ready');
   if (source === 'pointer') input.requestLock();
 }
@@ -689,9 +696,27 @@ function startCameraPos(X, Y, Z) {
   return [3.2 - 0.2 * X, 13.2 - 0.2 * Y, -8 * M + 3.2 - 0.2 * Z];
 }
 
-function setLockless(on) { S.lockless = on; document.body.classList.toggle('lockless', on); }
-/** A new 3D board entered as resume enters play: a controller enters lockless play, otherwise pointer lock is asked for. */
-function enterPlay3D(source) { if (source === 'pad') padResume(); else input.requestLock(); }
+function setLockless(on) {
+  S.lockless = on;
+  document.body.classList.toggle('lockless', on);
+  document.body.classList.toggle('drag-look', on && S.dragLook); // the system cursor shows
+}
+/**
+ * A new 3D board entered as resume enters play: a controller, or drag-to-look play, enters lockless
+ * play; otherwise pointer lock is asked for.
+ */
+function enterPlay3D(source) {
+  if (S.dragLook) enterPlaying(true);
+  else if (source === 'pad') padResume();
+  else input.requestLock();
+}
+/** The ready card's "Play with drag-to-look": lockless play the mouse drives by dragging, until the game is left. */
+function enterDragLook() {
+  if (S.mode !== 'ready') return;
+  sfx.unlock();
+  S.dragLook = true;
+  enterPlaying(true);
+}
 
 /** The ready card hands over to play; resuming from the pause card unwinds back to play. */
 function enterPlaying(lockless = false) {
@@ -717,7 +742,8 @@ function stopPlayInput() {
   mouse.reset();
   input.spaceToggle.reset(); // a tapped-on aim-through is dropped like a held key
   controls.releasePad();
-  document.body.classList.remove('lockless');
+  input.drag.reset();
+  document.body.classList.remove('lockless', 'drag-look');
 }
 function pauseInfo(note = '') {
   if (MODES.active === 'classic-2d') return { ...mode2d.status(), note, mode: MODES.active };
@@ -750,9 +776,10 @@ function showMainMenu() { SHELL.go('menu'); }
 /** The menu screens show the decorative demo board behind them. */
 const BACKDROP_SCREENS = new Set(['menu', 'board-choice', 'coming-soon', 'records', 'classic-2d-choice', 'settings']);
 function onBackdrop() { return BACKDROP_SCREENS.has(S.mode); }
-/** The 3D leave: drop the game and release pointer lock and lockless play. */
+/** The 3D leave: drop the game and release pointer lock, lockless play and drag-to-look play. */
 function leaveGame() {
   input.exitLock();
+  S.dragLook = false;
   setLockless(false);
   S.play?.leave();
   S.game = null;

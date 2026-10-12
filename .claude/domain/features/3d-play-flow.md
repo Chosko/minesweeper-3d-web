@@ -21,9 +21,10 @@ game shell — while the scene, camera and controls stay as they are.
 
 In scope (m2-3d-joins):
 
-- Board choice: three presets — cube Beginner (6 × 6 × 6, 10 mines),
-  Intermediate (8 × 8 × 8, 40) and Expert (12 × 12 × 8, 130) — plus Custom
-  and the Random fill, and the no-guess switch.
+- Board choice: three presets, labelled as results and Records name them —
+  Cube Beginner (6 × 6 × 6, 10 mines), Cube Intermediate (8 × 8 × 8, 40)
+  and Cube Expert (12 × 12 × 8, 130) — plus Custom and the Random fill, and
+  the no-guess switch.
 - The start-of-game flow: a closed box, the first reveal, generation around
   it, the "generating" state, the timer starting when the board is ready.
 - The first-click guarantee in 3D: the same rule as Classic 2D's pinned
@@ -86,7 +87,10 @@ behaviour.
 - **Mode adapter.** Implements the game shell's mode contract for 3D over
   the session: start, pause, resume, restart and leave, keeping today's
   pointer-lock and lockless behaviour, and reporting started, finished and
-  abandoned.
+  abandoned. After a second pointer-lock refusal (one inside the browser's
+  re-lock delay does not count) the ready card explains that the browser
+  is blocking mouse capture on this page and offers drag-to-look play or
+  the controller, at once on every later ready card of the page session.
 
 ## Data and state
 

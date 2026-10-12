@@ -210,7 +210,7 @@ test('records not saved this session are told once', () => {
   assert.equal(flow.finished(summary({ id: 'g2' }), 'classic-2d').notSaved, false);
 });
 
-test('the actions: Play again restarts the same choice, Records opens this board, Back to menu goes home', () => {
+test('the actions: Play again restarts the same choice, Records opens this board, Main menu goes home', () => {
   const asked = [];
   const router = fakeRouter();
   const flow = createResultsFlow({
@@ -256,7 +256,7 @@ test('the results screen is the kit composition: outcome, board, stats, bests, n
     ['r-again', 'ui-button--primary', 'Play again'],
     ['r-watch', 'ui-button--secondary hidden', 'Watch replay'],
     ['r-records', 'ui-button--secondary', 'Records'],
-    ['r-menu', 'ui-button--secondary', 'Back to menu'],
+    ['r-menu', 'ui-button--secondary', 'Main menu'],
   ]);
 });
 

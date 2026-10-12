@@ -567,7 +567,7 @@ const WORKERS = {
   failLater: `self.onmessage = (e) => setTimeout(() => self.postMessage({ id: e.data.id, result: ${FAIL} }), 800);`,
 };
 
-test('in a browser, the Classic 2D generating card cancels by Cancel and Esc, and the failure offer shows above the pause card with Back to menu', async (t) => {
+test('in a browser, the Classic 2D generating card cancels by Cancel and Esc, and the failure offer shows above the pause card with Main menu', async (t) => {
   const playwright = await loadPlaywright();
   if (!playwright) {
     t.skip('Playwright is not installed');
@@ -659,13 +659,13 @@ test('in a browser, the Classic 2D generating card cancels by Cancel and Esc, an
     await page.waitForFunction(() => document.getElementById('c2d-status-title').textContent === 'No board found');
     assert.equal(await shown('c2d-offer'), true);
     assert.deepEqual(await ms(() => [...document.querySelectorAll('#c2d-offer button')].map((b) => b.textContent)),
-      ['Retry', 'Play a standard board', 'Back to menu']);
+      ['Retry', 'Play a standard board', 'Main menu']);
     assert.equal(await shown('c2d-cancel'), false, 'no Cancel on the offer');
     assert.equal(await active(), 'c2d-retry', 'a first failure focuses Retry');
     await page.click('#c2d-retry');
     await page.waitForFunction(() => document.activeElement?.id === 'c2d-standard');
     assert.equal(await shown('c2d-offer'), true, 'a second failure in a row focuses Play a standard board');
-    // Back to menu leaves with no confirmation and records nothing.
+    // Main menu leaves with no confirmation and records nothing.
     await page.click('#c2d-offer-menu');
     assert.equal(await mode(), 'menu');
     assert.equal(await ms(() => globalThis.__ms.modes.active), null);

@@ -24,7 +24,7 @@ In scope (m1-classic-2d):
   difference, and marking each new best.
 - Actions: *Play again* (default focus), *Watch replay* (when the game
   handed over its replay — `replay-playback`), *Records* (opens the records
-  screen on this board), *Back to menu*.
+  screen on this board), *Main menu*.
 - Telling the player once when records are not being saved this session.
 - Mouse, keyboard and controller operation, per the shell's navigation.
 
@@ -83,7 +83,7 @@ composed from the `screen-components` kit.
   plays the game's own replay even when the library could not save it.
 - **Records** — asks the shell to route to `records-screen`, opened on this
   game's board.
-- **Back to menu** — asks the shell to return to the main menu.
+- **Main menu** — asks the shell to return to the main menu.
 - **Failure** — when recording fails, the screen still shows the game's own
   stats, without a comparison, and says the result could not be saved.
 

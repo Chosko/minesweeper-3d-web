@@ -75,8 +75,11 @@ described in [app-shell.md](../../context/app-shell.md).
   the scene. Over either board, the timer
   shows the elapsed time in whole seconds, zero-padded to three digits
   (047), and stops at 999 while the game's elapsed time keeps counting; the
-  mine counter shows mines left clamped to −99 … 999. Both limits copy the
-  reference game's displays
+  mine counter shows the real mines left, kept at −99 at the low end; on a
+  board of more than 999 mines it is as wide as the board's mine count, so
+  the bar does not shift as the count falls, and a board of up to 999 mines
+  keeps the standard counter. The timer's 999 and the counter's −99
+  copy the reference game's displays
   ([tests/fidelity/minesweeper-online.md](../../../tests/fidelity/minesweeper-online.md));
   the results, records and leaderboard screens show the real time.
 - **Screen compositions.** The main menu, pause card and results screen

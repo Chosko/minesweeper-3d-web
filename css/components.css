@@ -142,8 +142,10 @@
      Role:    group; stats as ui-stat; pause a button (native)
      Name:    group: aria-label; pause: aria-label
      Values:  the timer shows formatOverlayTime(seconds) and the counter
-              formatMineCount(minesLeft) (js/ui/components.js); the clamps
-              are display-only. The bar carries its own opaque surface, so
+              formatMineCount(minesLeft) (js/ui/components.js), the
+              counter as wide as the board's mine count past three digits
+              (mineCounterDigits); the clamps (timer at 999, counter at
+              -99) are display-only. The bar carries its own opaque surface, so
               it reads the same over the 3D scene and over a plain board.
 
    Screen compositions. Layout-only classes a screen is assembled with; they
@@ -169,8 +171,8 @@
      volume ui-slider, credit ui-link). Default focus: the last mode played
      (data-last), else the first entry.
    3D board choice (index.html #board-choice): ui-card ui-screen--wide
-     holding the title, the Cube presets as a ui-heading and a ui-menu with
-     the presets' no-guess ui-toggle under it and its ui-text--muted helper
+     holding the title, the presets as a ui-menu named Presets, each item
+     labelled with its family (Cube Beginner, …), with the presets' no-guess ui-toggle under it and its ui-text--muted helper
      line, the custom board as a ui-panel of ui-field entries with
      ui-actions--row (Random, Start), an info line (ui-text--warning on an
      invalid board) and the custom board's no-guess ui-toggle under a
@@ -211,7 +213,9 @@
      Audio), each a ui-heading and one control per setting generated from
      the settings schema by js/settings/page.js (ui-slider for a number,
      ui-toggle for a boolean, ui-segmented for a choice, each root carrying
-     data-setting), a ui-panel of the read-only bindings of each mode per
+     data-setting; a control whose label would repeat its section's
+     heading shows none and is named by the heading, as Theme is; Audio
+     holds Sound, on while sound plays, then Volume), a ui-panel of the read-only bindings of each mode per
      input device (the help panel's controls list), and ui-actions--row
      (Back primary), sticky at the bottom of the card's scroll area so Back
      is always in view (#settings-actions, css/style.css).
@@ -230,7 +234,7 @@
      #m3d-status over the 3D box): ui-card ui-screen while a slow first
      click generates its board, with a ui-spinner and ui-actions--row
      (Cancel), or after a failed no-guess board with ui-actions--row (Retry
-     primary, Play a standard board, Back to menu); it sits above the pause
+     primary, Play a standard board, Main menu); it sits above the pause
      card. Default focus: Cancel; on the offer Retry, or Play a standard
      board after a second failure in a row.
    Pause card (index.html #pause): ui-card ui-screen holding the title,
@@ -238,9 +242,8 @@
      again primary and first once the game ended, Main menu), the board
      line, the active mode's controls list for the active device in a
      ui-panel, a Settings ui-panel (the look sensitivity and invert Y
-     controls on a 3D game's card only, and volume; data-setting like the
-     Settings page's)
-     and the Sound button. While restart or Main menu asks for confirmation, a
+     controls on a 3D game's card only, then the Sound button and volume;
+     data-setting like the Settings page's). While restart or Main menu asks for confirmation, a
      ui-panel ui-actions (a ui-text line, the action as primary, Cancel)
      shows in place of the actions. Default focus: Resume, or Play again once
      ended; Cancel while the confirmation shows.
@@ -250,7 +253,7 @@
      of the game's stats, a ui-panel with a ui-stat-row of the best
      comparisons (each ui-stat with a ui-stat__detail difference line), a
      ui-text--warning note, and ui-actions--row (Play again primary, Records,
-     Back to menu). Default focus: Play again. Over Classic 2D the finished
+     Main menu). Default focus: Play again. Over Classic 2D the finished
      board shows behind it; over a 3D game it takes over on an opaque surface
      (results--takeover, css/style.css).
    Replay viewer (index.html #replay, filled by js/replay/viewer.js): a

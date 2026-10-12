@@ -284,6 +284,14 @@ browser checks for everything that needs WebGL or the DOM.
 - `tests/gamepad.test.mjs` — controller helpers (`js/gamepad.js`), analog camera
   (`js/input.js::FlyCamera`), `js/controls.js::Controls`, and trigger sequences
   through `js/input.js::MouseActions`.
+- `tests/input-drag-look.test.mjs` — the drag-to-look gesture (`DragLook`
+  in `js/input.js`) over real `MouseActions`: a press released under the
+  threshold reveals, flags or chords as in locked play; past the threshold
+  the camera turns and the release, a chord and any press made during the
+  drag act on nothing; movement with no button turns nothing; `reset`; the
+  turn through `FlyCamera.look` honouring sensitivity and invert Y; and a
+  static check that `Input` routes unlocked mouse events through it, and
+  that a lock request reports its failure once across its two signals.
 - `tests/tokens.test.mjs` — the token sheet (`css/tokens.css`, parsed as text):
   full token set on `:root`, semantic (non-hue) names, a dark value for every
   colour token, z-layer order, WCAG contrast per theme (4.5:1 body text, 3:1
@@ -319,9 +327,15 @@ browser checks for everything that needs WebGL or the DOM.
   the gallery showing every component in every state, the overlay bar and
   the results layout; controller reachability and accessible names; the
   helpers (`decimalsOf`, `formatSliderValue`, `segmentedTargetIndex`,
-  `segmentedState`, `formatOverlayTime`, `formatMineCount`, the binders over
-  stub elements); the HUD overlay bar markup, `UI.updateHud`'s formats and
-  the pause wiring (`onPause`, controller START); the main menu and pause
+  `segmentedState`, `formatOverlayTime`, `formatMineCount` with no upper
+  clamp and −99 kept, `mineCounterDigits`, the binders over stub elements);
+  the HUD overlay bar markup, `UI.updateHud`'s formats, `UI.setBoard` /
+  `setBoard2D` sizing `#hud-mines` to the board's digits past three, and a
+  board of up to 999 mines left as today (no width of its own, left-aligned),
+  with tabular figures, and the pause wiring (`onPause`, controller START); the shell's
+  vocabulary (Main menu on every control that goes to the menu and no Back
+  to menu label anywhere; Restart only while a game is unfinished, Play
+  again once it ended, the confirmations' wording); the main menu and pause
   card built only from kit classes with no one-off rules left in
   `css/style.css`; the segmented choice's horizontal (Left/Right-only) mode;
   the "Esc: Back" hint beside each Back Esc triggers and none beside the
@@ -423,7 +437,7 @@ browser checks for everything that needs WebGL or the DOM.
   against `CUSTOM_LIMITS`, the no-guess default and the density hint; the
   `#c2d-choice` markup (the switch under the sizes with its helper line,
   the density hint under the info line) and the `#c2d` / `#c2d-status`
-  markup (spinner, Cancel, Back to menu), the router entries and controller
+  markup (spinner, Cancel, Main menu), the router entries and controller
   layers, the shell's Cancel and offer wiring, the catalogue entry. One Playwright test
   goes menu → Classic 2D → Expert → first click → pause → resume → back to
   menu and checks the abandoned summary (skipped when Playwright or chromium
@@ -507,8 +521,10 @@ browser checks for everything that needs WebGL or the DOM.
   malformed one, or one naming a double layer preset, falls back to cube
   Beginner with no-guess on, a document apart from the 2D choice; nothing
   stored opens with no-guess on, a stored no-guess off is kept), the
-  density hint above 25 %, the `index.html` markup (the helper line under
-  the presets' switch, the density hint under the custom one), the old
+  density hint above 25 %, the `index.html` markup (the presets labelled
+  Cube Beginner, … by `presetTitle` in a menu named Presets with no family
+  heading, the helper line under the presets' switch, the density hint
+  under the custom one), the old
   best times not read, the binder touching only its elements, and the
   shell's wiring. One Playwright test validates the custom board, follows
   the switch across the limit and onto a side of 2 cells, follows the
@@ -722,6 +738,20 @@ browser checks for everything that needs WebGL or the DOM.
   the document); and the Classic 2D strip at the first key, in a fake
   PlayStation pad's glyphs while it is the active device, dismissed for good
   in Classic 2D only.
+- `tests/shell-lock-fallback.test.mjs` — the pointer-lock refusal counter
+  (`js/shell/lock-fallback.js`): the 1500 ms re-lock cooldown not counted,
+  the first counted refusal's message, the block from the second, the count
+  reset by an acquired lock, the block kept for the page session and
+  `readyMessage`; static checks of the ready card's `#ready-blocked` offer
+  (`#ready-drag` and the controller line outside the click-to-play card,
+  Back below it) and of the shell's wiring (`LOCK_FALLBACK`, `onReadyDrag`,
+  `isDragLook`, `S.dragLook` cleared on leave and kept on resume, the
+  `body.lockless.drag-look` cursor). One Playwright test refuses every lock request
+  with both signals, the `pointerlockerror` event and the rejected promise:
+  the first refusal counts once, the second shows the offer, drag-to-look plays (a drag
+  turns the camera and reveals nothing, a click reveals), Esc pauses and
+  Resume returns to drag-to-look, and after Main menu the next ready card
+  shows the offer at once.
 - `tests/shell-pause.test.mjs` — the pause controller (`js/shell/pause.js`)
   over a real mode host, a fake mode and a recording shell: every pause
   source, automatic pauses only in play, no pause before the first click or
@@ -740,7 +770,7 @@ browser checks for everything that needs WebGL or the DOM.
   pause card; one, over stand-in generation workers, cancels the Classic 2D
   generating card by Cancel and Esc (before and after it shows), meets the
   failure offer with Retry then Play a standard board focused, leaves by
-  its Back to menu, and finds an offer arriving while paused above the
+  its Main menu, and finds an offer arriving while paused above the
   pause card.
 - `tests/settings-store.test.mjs` — the schema (`js/settings/schema.js`:
   every setting's type, range or values and default, `isValid`) and the
@@ -767,14 +797,18 @@ browser checks for everything that needs WebGL or the DOM.
   rows naming every `CURSOR_KEYS` key, `bindingsListHtml` keys, glyphs and
   escaping, the in-game help reading it through `bindingsHtml`) and the page
   (`js/settings/page.js`): the four sections holding every setting once,
-  each control's kind and range from the schema, kit-only markup, the
+  Audio's Sound (the `muted` toggle, on while not muted, both ways through
+  the binder) before Volume and no Mute label, the Theme control named by
+  its section heading with no label of its own, each control's kind and
+  range from the schema, kit-only markup, the
   bindings section per device in the pad's glyphs, `bindSettingControls`
   over stub elements showing loaded and later values, writing at once and
   reporting the change, refusing an unknown setting; static checks of the
   `#settings` markup, the sticky Back row (`#settings-actions`), the
   choices' and the Controls panel tabs' horizontal binding, the pause-card and menu `data-setting`
   shortcuts, the menu entry's route, focus, Back and controller layer, and
-  the catalogue entry. Two Playwright tests: Settings from the menu, Dark chosen and
+  the catalogue entry, and Sound before Volume on the main menu and the
+  pause card. Two Playwright tests: Settings from the menu, Dark chosen and
   applied before the menu shows after a reload; and the page operated by a
   fake controller.
 - `.claude/external/run-full-tests.sh` — `cd` to repo root, `exec node --test`.
