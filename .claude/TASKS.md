@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 162
+Last task number: 173
 
 ---
 
@@ -1083,5 +1083,115 @@ Target: claude
 Files: .claude/context/app-shell.md, .claude/context/settings.md, .claude/context/testing.md, .claude/context/rendering.md, .claude/context/INDEX.md, README.md, .claude/domain/features/theme-system.md, .claude/domain/features/design-tokens-and-themes.md, .claude/domain/features/screen-components.md, .claude/domain/features/settings.md
 Preconditions: 157, 158, 159, 160, 161
 Feature: theme-system
+
+---
+
+## 163. Layout kit components: backdrop, screen frame, mode entry, board option, stat tile and the rest
+
+Status: [MISSING]
+Target: claude
+Files: js/ui/kit-catalogue.js, css/components.css, themes/joyful-tiles/theme.css, js/ui/components.js, dev/components.html, tests/components.test.mjs, tests/theme-conformance.test.mjs
+Preconditions: 158, 161
+Feature: shared-screen-layout
+
+---
+
+## 164. 3D scene drawn into a screen's scene panel
+
+Status: [MISSING]
+Target: claude
+Files: js/render.js, js/main.js, js/shell/router.js, tests/shell-menu.test.mjs, tests/render-3d-feedback.test.mjs
+Preconditions: 163
+Feature: shared-screen-layout
+
+---
+
+## 165. Main menu in the shared layout
+
+Status: [MISSING]
+Target: claude
+Files: index.html, js/shell/menu.js, js/shell/returning.js, js/main.js, themes/joyful-tiles/theme.css, tests/shell-menu.test.mjs, tests/shell-returning.test.mjs, tests/components.test.mjs
+Preconditions: 163, 164
+Feature: shared-screen-layout
+
+---
+
+## 166. Classic 2D board choice screen with its records panel
+
+Status: [MISSING]
+Target: claude
+Files: index.html, js/classic2d/board-choice.js, js/classic2d/board-setup.js, js/main.js, js/records/history-chart.js, tests/classic2d-mode.test.mjs, tests/shell-returning.test.mjs, tests/components.test.mjs
+Preconditions: 163
+Feature: shared-screen-layout
+
+---
+
+## 167. 3D board choice screen in the shared layout
+
+Status: [MISSING]
+Target: claude+human
+Files: index.html, js/mode3d/board-choice.js, js/main.js, tests/mode3d-board-choice.test.mjs, tests/components.test.mjs
+Preconditions: 166
+Feature: shared-screen-layout
+
+---
+
+## 168. Pause card, generating and failed-board cards, placeholder and confirmations in the shared layout
+
+Status: [MISSING]
+Target: claude+human
+Files: index.html, js/shell/pause.js, js/main.js, js/ui.js, tests/shell-pause.test.mjs, tests/shell-pause-esc.test.mjs, tests/components.test.mjs
+Preconditions: 163
+Feature: shared-screen-layout
+
+---
+
+## 169. Results screen in the shared layout
+
+Status: [MISSING]
+Target: claude+human
+Files: index.html, js/results/view.js, js/results/flow.js, tests/results.test.mjs, tests/results-watch.test.mjs, tests/mode3d-end.test.mjs, tests/components.test.mjs
+Preconditions: 163
+Feature: shared-screen-layout
+
+---
+
+## 170. Records screen in the shared layout
+
+Status: [MISSING]
+Target: claude+human
+Files: index.html, js/records/screen.js, js/records/history-chart.js, js/records/replay-list.js, tests/records-screen.test.mjs, tests/records-screen-3d.test.mjs, tests/records-replays.test.mjs, tests/components.test.mjs
+Preconditions: 163
+Feature: shared-screen-layout
+
+---
+
+## 171. Settings page in the shared layout
+
+Status: [MISSING]
+Target: claude+human
+Files: index.html, js/settings/page.js, tests/settings-page.test.mjs, tests/settings-reset.test.mjs, tests/components.test.mjs
+Preconditions: 160, 163
+Feature: shared-screen-layout
+
+---
+
+## 172. Replay viewer in the shared layout
+
+Status: [MISSING]
+Target: claude+human
+Files: index.html, js/replay/viewer.js, js/replay/viewer-2d.js, js/replay/viewer-3d.js, tests/replay-viewer.test.mjs, tests/replay-viewer-3d.test.mjs, tests/components.test.mjs
+Preconditions: 163
+Feature: shared-screen-layout
+
+---
+
+## 173. Update documentation for feature `shared-screen-layout`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/app-shell.md, .claude/context/rendering.md, .claude/context/classic2d.md, .claude/context/mode3d.md, .claude/context/records.md, .claude/context/settings.md, .claude/context/replay.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md, .claude/domain/features/shared-screen-layout.md
+Preconditions: 163, 164, 165, 166, 167, 168, 169, 170, 171, 172
+Feature: shared-screen-layout
 
 ---

@@ -274,10 +274,10 @@ Tasks: none
 
 ## shared-screen-layout — The redesigned shared layout: screen frame, main menu, board choice and the other screens
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/shared-screen-layout.md
 Source: product-design.md § Visual design system (m2b-themes)
-Tasks: none
+Tasks: 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173
 
 ---
 
