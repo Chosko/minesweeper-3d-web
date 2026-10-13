@@ -11,9 +11,13 @@ they play at. The values belong to the settings store
 | --- | --- |
 | `js/audio.js` | `Sfx` singleton, exported `sfx` instance, free-function wrappers, master signal chain, mute/volume gain, auto-unlock |
 
-The only consumers are `js/main.js` (event-to-sound mapping, `unlock`) and the
-settings appliers (`js/settings/appliers.js`), which call `setVolume` and
-`setMuted` with the store's values at start-up and on every change. The mute
+The consumers are `js/main.js` (the 3D game's event-to-sound mapping,
+`unlock`), the Classic 2D mode (`js/classic2d/mode.js`), which plays the same
+cues through the `sfx` instance `main.js` hands it as its `sound` option and
+imports no sound module itself, and the settings appliers
+(`js/settings/appliers.js`), which call `setVolume` and `setMuted` with the
+store's values at start-up and on every change. Both modes therefore play at
+the one shared volume and mute. The mute
 label and volume sliders are bound to the store, not to this module — see
 [app-shell.md](app-shell.md).
 
@@ -87,7 +91,9 @@ not these.
   `node --test` without a DOM; it then reports unmuted, volume 0.7, and every
   sound no-ops.
 - Event semantics (what counts as reveal vs chord vs noop, flag direction for
-  mixed results) are decided in `main.js::onAction`, not here.
+  mixed results) are decided by the callers, not here: `main.js::onAction`
+  for the 3D game and `cue` in `js/classic2d/mode.js` for Classic 2D, which
+  mirrors it ([classic2d.md](classic2d.md)).
 
 ## DOMAIN DEPENDENCIES
 
@@ -105,14 +111,21 @@ not these.
   state view's `version` pick the sound — and calls
   `unlock()` on start, ready-click, controller resume and after a volume or
   mute change; the M key and Sound buttons set the `muted` setting.
+- [classic2d.md](classic2d.md) — the Classic 2D mode's `sound` option: every
+  2D action, by mouse, keyboard or controller, plays the 3D game's cue for
+  its outcome (reveal, flag, chord, noop, explode, win); a flag before the
+  first reveal changes nothing under the reference rules and is silent.
 - [settings.md](settings.md) — the store holding `volume` and `muted`, and
   `applyAudio`, which drives `setVolume` / `setMuted`.
 - [input.md](input.md) — the keyboard/pointer gestures that trigger auto-unlock
   and the actions that produce sounds originate there.
 - [rendering.md](rendering.md) — no direct link; the loss flash and reveal
   wave run alongside `explode()` but are driven from `main.js`.
-- [testing.md](testing.md) — no automated tests cover the sounds; verify by ear in a browser.
-  `tests/settings-appliers.test.mjs` checks that the module keeps no `localStorage` keys.
+- [testing.md](testing.md) — no automated test listens to the sounds; verify by ear in a browser.
+  `tests/settings-appliers.test.mjs` checks that the module keeps no `localStorage` keys;
+  `tests/classic2d-mode.test.mjs` pins which cue each Classic 2D action calls on a fake sink, that
+  `main.js` hands the mode the one `sfx` instance, and that the mode and the replay viewers import
+  no sound.
 
 ## WHEN TO READ THE SOURCE
 

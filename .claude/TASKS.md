@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 154
+Last task number: 156
 
 ---
 
@@ -1004,6 +1004,24 @@ Preconditions: 119, 152
 Status: [MISSING]
 Target: claude
 Files: .claude/external/run-full-tests.sh, .claude/external/run-fast-tests.sh, .claude/external/run-browser-tests.sh, .claude/external/run-affected-tests.sh, tests/components.test.mjs, tests/classic2d-mode.test.mjs, tests/shell-pause.test.mjs, tests/settings-page.test.mjs, tests/shell-menu.test.mjs, tests/shell-help.test.mjs, tests/shell-returning.test.mjs, tests/results-watch.test.mjs, tests/shell-history.test.mjs, tests/records-history.test.mjs, tests/shell-router.test.mjs, tests/settings-appliers.test.mjs, tests/replay-viewer.test.mjs, tests/results.test.mjs, tests/classic2d-fidelity.test.mjs, tests/records-screen.test.mjs, tests/records-replays.test.mjs, tests/tile-skin.test.mjs, js/main.js, README.md, .claude/context/testing.md
+Preconditions: none
+
+---
+
+## 155. Load-robust timing tests and one shared Chromium per test file
+
+Status: [MISSING]
+Target: claude
+Files: tests/helpers/browser.mjs, tests/engine-3d-profile.test.mjs, tests/engine-graph.test.mjs, tests/generation-solver.test.mjs, tests/records-history.test.mjs, tests/render-3d-flag-flash.test.mjs, tests/mode3d-end.test.mjs, tests/replay-viewer-3d.test.mjs, tests/classic2d-mode.test.mjs, tests/shell-mode-3d.test.mjs, tests/camera-spawn.test.mjs, tests/classic2d-cursor.test.mjs, tests/classic2d-fidelity.test.mjs, tests/classic2d-pointer.test.mjs, tests/classic2d-view.test.mjs, tests/components.test.mjs, tests/mode3d-board-choice.test.mjs, tests/mode3d-session.test.mjs, tests/platform-blob-store.test.mjs, tests/platform-browser.test.mjs, tests/records-replays.test.mjs, tests/records-screen-3d.test.mjs, tests/records-screen.test.mjs, tests/render-3d-feedback.test.mjs, tests/replay-viewer.test.mjs, tests/results-watch.test.mjs, tests/results.test.mjs, tests/settings-appliers.test.mjs, tests/settings-page.test.mjs, tests/shell-first-use.test.mjs, tests/shell-help.test.mjs, tests/shell-history.test.mjs, tests/shell-lock-fallback.test.mjs, tests/shell-menu.test.mjs, tests/shell-mode-host.test.mjs, tests/shell-pause-esc.test.mjs, tests/shell-pause.test.mjs, tests/shell-returning.test.mjs, tests/shell-router.test.mjs, tests/tile-skin.test.mjs, README.md, .claude/context/testing.md
+Preconditions: 154
+
+---
+
+## 156. Dark theme: menu-screen backdrop and context-lost card
+
+Status: [MISSING]
+Target: claude
+Files: css/tokens.css, css/style.css, tests/tokens.test.mjs, tests/components.test.mjs, tests/theme.test.mjs, .claude/context/app-shell.md, .claude/context/testing.md, .claude/domain/features/design-tokens-and-themes.md
 Preconditions: none
 
 ---

@@ -1,7 +1,7 @@
 # Runbook: ux-review-tasks-implementation
 
 Created: 2026-10-12 · Source: /runbook-create interview · Model: opus
-Last step number: 38
+Last step number: 41
 Sequencing: Run in list order, one step at a time: most tasks edit js/main.js, index.html and css/style.css, and each body says whichever of two overlapping tasks lands second merges around the first; task 119's help component is reused by many later tasks, so it goes first.
 
 ## [x] 1. Implement task 119 — Mode-aware help and first-use hints
@@ -243,6 +243,36 @@ Context: none
 ```
 
 Done: 2026-10-13, commit `ce2ad60` (39 files, +2040/-348). Wrong premise: there is no code cause for the missing 3D "Generating the board…" card the review saw — under pointer lock with software rendering each frame becomes a 100 ms to 1.7 s main-thread task that holds back the 200 ms timer; a browser test pins the card against that. Decisions: game sessions take a `place` option (defaulting to the worker's `generate()`) for test injection; a pre-generated board survives only Play again or Restart, and opening the board choice discards it.
+
+## [ ] 39. Implement task 154 — Fast and slow test tiers and a cheaper browser suite
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 154 --review
+```
+
+## [ ] 40. Implement task 155 — Load-robust timing tests and one shared Chromium per test file
+
+Depends on: 39
+
+Context: none
+
+```prompt
+/task-implement 155 --review
+```
+
+## [ ] 41. Implement task 156 — Dark theme: menu-screen backdrop and context-lost card
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 156 --review
+```
 
 ## [ ] 21. Implement task 139 — 3D flight: fly-through fade, forward follows the view, spacing, FOV
 
