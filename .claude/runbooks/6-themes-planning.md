@@ -29,7 +29,7 @@ Approval gates in this run: approve as drafted, taking the draft's recommendatio
 ```
 Done: 2026-10-13, commit `6c3d68f` (2 files, +50/-20). Also rewrote the 3D mode decision (its look now follows the theme) and dropped "the current 3D look is the bar"; technical-direction.md left unchanged.
 
-## [ ] 2. Amend the product design: Hexagon and Triangle become home-page modes
+## [x] 2. Amend the product design: Hexagon and Triangle become home-page modes
 
 Depends on: 1
 
@@ -49,12 +49,14 @@ This step goes after step 1 because both amend the Main menu and game shell sect
 
 Approval gates in this run: approve as drafted, taking the draft's recommendation on each open call. Park only on a real design question.
 ```
+Done: 2026-10-13, commit `b7dfac7` (2 files, +48/-27). Hexagon and Triangle got their own high-level feature sections; the demo now locks both modes whole, where it used to offer their Beginner boards; where they sit in the Records 2D | 3D switch is left open.
 
 ## [ ] 3. Revise the roadmap: a themes milestone before the rest of m3, and the m5/m6 consequences
 
 Depends on: 1, 2
 
 Context:
+- 2026-10-13 (from step 2): the product design now locks Hexagon and Triangle whole in the demo — the demo no longer offers their Beginner boards — so the roadmap's m6 exit criterion "The demo carries Beginner on the hexagonal and triangle grids" and its Demo edition Covers line are stale too. Hexagon and Triangle are now high-level features of their own in product-design.md.
 - 2026-10-13 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision ("Do all yourself"); on each open call in the draft take the draft's recommendation. Park only on a real design question.
 
 ```prompt
