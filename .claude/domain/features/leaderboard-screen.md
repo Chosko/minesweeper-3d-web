@@ -21,8 +21,9 @@ feature is the screen that shows them.
 
 In scope (m3-on-steam):
 
-- The leaderboard screen as a game-shell screen: board picker, scope tabs,
-  entry list, own entry, and *Watch replay* per entry.
+- The leaderboard screen as a game-shell screen inside the screen frame of
+  `shared-screen-layout`: board picker, scope tabs, entry list, own entry,
+  and *Watch replay* per entry.
 - Paging through the global ranking.
 - Loading, empty, offline and Steam-unavailable states, and the web build's
   local-only state.
@@ -45,35 +46,45 @@ Non-goals:
 
 Built within the recorded technical direction — plain DOM in the game
 shell, no framework (see [technical-direction.md](../technical-direction.md)),
-composed from the `screen-components` kit and routed by `game-shell`'s
-screen router.
+composed inside `shared-screen-layout`'s screen frame and routed by
+`game-shell`'s screen router.
 
+- **Composition.** The frame's head holds Back with its key hint and the
+  screen's title; its body holds the board picker, a section label over the
+  scope tabs, the own standing, the entry list and the states; its foot is
+  the status line. The screen is built from catalogued kit components only,
+  as [shared-screen-layout.md](./shared-screen-layout.md) § Architecture,
+  **Kit additions**, requires — board options, switches, section label,
+  tabs, stat tiles, list rows, buttons, key hints, empty and error states —
+  and adds no component and no theme style of its own; the active theme
+  styles it.
 - **Board picker.** A 2D | 3D switch, the standard boards of the chosen
   mode (Beginner, Intermediate, Expert in Classic 2D; the three cube
-  presets, Beginner, Intermediate and Expert, in 3D) and a no-guess on/off
-  switch. Only boards in
+  presets, Beginner, Intermediate and Expert, in 3D), each a board option,
+  and a no-guess on/off switch. Only boards in
   `steam-leaderboards`' catalogue are offered. It opens on the board passed
   by the route, or else on the board last viewed here this session, or else
   Classic 2D Expert with no-guess off.
 - **Scope tabs.** Global, Friends and Around me; Global is the default.
-- **Entry list.** One row per entry: rank, player name, time to the
+  Key hints beside the tabs show the inputs that switch scope.
+- **Entry list.** One list row per entry: rank, player name, time to the
   thousandth of a second in `results-screen`'s time format (47.380 s), 3BV/s and
   efficiency derived from the entry's
   details by `game-summary`'s rules, and *Watch replay*, disabled when the
   entry has no replay. The player's own row is highlighted in every scope.
   Global loads one page at a time with *More* at the end; Friends shows the
   whole friends list; Around me shows a range either side of the player.
-- **Own standing bar.** Above the list, the player's own time, in the same
-  format as the rows, and global and friends rank on the chosen board, or
-  "no time yet".
+- **Own standing.** Above the list, stat tiles for the player's own time,
+  in the same format as the rows, and global and friends rank on the chosen
+  board, or "no time yet".
 - **Watch replay.** Asks `steam-leaderboards` for the entry's replay and,
   on success, routes to `replay-playback`'s viewer with Back returning here
   on the same board, scope and position. A replay that fails is reported on
   the row with its reason; the list stays usable.
 - **States.** Loading; empty ("no entries yet"); offline (Steam is running
   but not connected — with a retry); Steam unavailable (Steam did not
-  start); and, in the web build, a "local only" label over the player's own
-  ranking, with the Friends and Around me tabs hidden.
+  start); and, in the web build, a "local only" label in the frame's foot
+  over the player's own ranking, with the Friends and Around me tabs hidden.
 
 ## Data and state
 
@@ -106,8 +117,11 @@ screen router.
 - `game-summary` and `3d-game-records` — board labels and the 3BV/s and
   efficiency derivations.
 - `results-screen` — the time format.
-- `screen-components` — tabs, switches, list rows, buttons, empty and error
-  states.
+- `shared-screen-layout` — the screen frame, board option, section label,
+  stat tile, list row and key hint the screen is composed from.
+- `theme-system` — the kit catalogue those components are named in, and
+  their styling by the active theme.
+- `screen-components` — tabs, switches, buttons, empty and error states.
 - `game-shell` — routing, Back and controller navigation.
 - No external libraries.
 
@@ -115,3 +129,6 @@ screen router.
 
 - The global page size and the Around me range. Set with the screen's
   layout at real list heights; blocks only the constants.
+- The screen's *Joyful tiles* artboard is not drawn yet; its task waits on
+  it as [shared-screen-layout.md](./shared-screen-layout.md)
+  § Architecture, **Design status per screen**, says.

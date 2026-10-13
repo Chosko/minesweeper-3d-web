@@ -17,9 +17,9 @@ layer.
 | [technical-direction.md](./technical-direction.md) | The product's technical foundations: stack, topology, data, hosting, cross-cutting concerns |
 | [business-model.md](./business-model.md) | The business model: revenue, costs, segments, pricing, go-to-market, unit economics, risks |
 | [product-roadmap.md](./product-roadmap.md) | The product roadmap: ordered milestones, their goals, exit criteria, rationale and the scope slice each takes of each high-level feature |
-| [features/design-tokens-and-themes.md](./features/design-tokens-and-themes.md) | Design tokens (palette, type, spacing, motion) with light and dark values, and how the chosen theme is applied |
-| [features/square-tile-skin.md](./features/square-tile-skin.md) | Classic 2D square tiles in every state and the number colours, in both themes |
-| [features/screen-components.md](./features/screen-components.md) | The DOM component kit and the m1 screens built from it: main menu, in-game overlay, results screen |
+| [features/design-tokens-and-themes.md](./features/design-tokens-and-themes.md) | Design tokens (palette, type, spacing, motion) with the m1 light and dark values; its theme parts are superseded by theme-system |
+| [features/square-tile-skin.md](./features/square-tile-skin.md) | Classic 2D square tiles in every state and the number colours of the m1 light and dark looks; its theme parts are superseded by themed-board-art-and-motion |
+| [features/screen-components.md](./features/screen-components.md) | The DOM component kit and the m1 screens built from it: main menu, in-game overlay, results screen; their styling and layout are superseded by theme-system, shared-screen-layout and in-game-layout |
 | [features/cell-graph-rules-engine.md](./features/cell-graph-rules-engine.md) | The one rules engine over a graph of cells, the square-grid graph, and the reference ruleset pinned by fidelity tests |
 | [features/board-generation.md](./features/board-generation.md) | Seeded deterministic mine placement around the first click, the no-guess solver, and the generation worker |
 | [features/classic-2d-square-play.md](./features/classic-2d-square-play.md) | Classic 2D on the square grid: board choice, start-of-game flow, Canvas 2D board, mouse, keyboard and controller input, timer |
@@ -45,6 +45,11 @@ layer.
 | [features/leaderboards-menu-entry.md](./features/leaderboards-menu-entry.md) | The m3 main menu additions: the Leaderboards entry opening the leaderboard screen, and Quit on the desktop build |
 | [features/results-steam-rank.md](./features/results-steam-rank.md) | The Steam build's rank panel on the results screen: global and friends rank after a won standard-board game, the move on an improved entry, the wait and offline wording, and the *Leaderboard* action that opens this game's board |
 | [features/input-rebinding.md](./features/input-rebinding.md) | Rebinding keys, mouse buttons and controller buttons for Classic 2D and 3D: the action catalogue, the bindings resolver, clashes and reserved inputs, and the rebinding controls in Settings |
+| [features/theme-system.md](./features/theme-system.md) | The theme catalogue and contract: registry, kit catalogue with parts and decoration slots, base and per-theme stylesheets, self-hosted per-theme fonts, applying and switching themes, the Settings theme list with the light/dark carry-over, reduced motion, conformance tests and the per-theme gallery |
+| [features/themed-board-art-and-motion.md](./features/themed-board-art-and-motion.md) | Every board in the chosen theme: the board module's shape, tile drawing styles, themed 2D tiles, 3D cubes, numbers 1–26 and sky, and per-theme cell motion played by both renderers |
+| [features/shared-screen-layout.md](./features/shared-screen-layout.md) | The redesigned shared layout: backdrop, screen frame and the new kit components; the main menu, board choice screens with their records panel, and the other screens in the frame; the 3D scene in a panel |
+| [features/in-game-layout.md](./features/in-game-layout.md) | The redesigned game window for Classic 2D and 3D: head, counter strip with Restart, the live figures panel (3BV progress, pace vs PB, 3BV/s, clicks, flags) and the foot line |
+| [features/theme-implement-skill.md](./features/theme-implement-skill.md) | The project skill that adds or updates a theme from its Claude Design canvas: reading artboards, mapping them to the contract, fonts, verification, stop conditions, commit |
 
 ## Features
 

@@ -12,9 +12,9 @@ lists Leaderboards and Quit among the main menu's entries. The m3-on-steam
 milestone brings the leaderboards and the first desktop build, so the menu
 needs a way into `leaderboard-screen` and, now that the game runs fullscreen
 in a window of its own, a way out that does not depend on the window's
-frame. This feature adds both entries to `game-shell`'s menu; the screen
-itself is `leaderboard-screen`'s and the closing sequence is
-`steam-desktop-host`'s.
+frame. This feature adds both entries to the main menu of the shared
+layout (`shared-screen-layout`); the screen itself is
+`leaderboard-screen`'s and the closing sequence is `steam-desktop-host`'s.
 
 ## Scope and non-goals
 
@@ -26,6 +26,9 @@ In scope (m3-on-steam):
 - The Quit entry, last in the list, shown only when the game runs inside the
   desktop host. It asks the host to quit and the host runs its closing
   sequence.
+- Both entries as mode entries of the redesigned main menu, each with its
+  icon, label, detail line and accent, as the main menu's artboard draws
+  them.
 - Both entries in the menu's focus order and controller navigation.
 
 Non-goals:
@@ -51,13 +54,18 @@ Non-goals:
 
 Built within the recorded technical direction — plain DOM in the game shell
 over ES modules, no framework (see
-[technical-direction.md](../technical-direction.md)). It extends
-`game-shell`'s main menu and screen router and adds no component of its own.
+[technical-direction.md](../technical-direction.md)). It extends the main
+menu `shared-screen-layout` composes and `game-shell`'s screen router, and
+adds no component and no theme style of its own.
 
-- **Menu entries.** The main menu's entry list becomes Classic 2D, 3D,
-  Records, Leaderboards, Settings and, in the desktop build, Quit. Both new
-  entries are ordinary entries of the `screen-components` menu list; the
-  menu's default focus stays on its first entry.
+- **Menu entries.** The main menu's column of mode entries becomes Classic
+  2D, 3D, Records, Leaderboards, Settings and, in the desktop build, Quit.
+  Each new entry is one mode entry — icon, label, detail line and one of
+  the accents the kit catalogue declares for the mode entry — joining the
+  open-ended column with no change to the menu's composition
+  ([shared-screen-layout.md](./shared-screen-layout.md) § Architecture,
+  **Mode entry list**); the active theme styles it, and the menu's default
+  focus stays on its first entry.
 - **Leaderboards route.** The entry routes through `game-shell`'s screen
   router to the leaderboard screen with no board identity, pushing the menu
   on the back stack. Back from the screen pops to the menu with focus on the
@@ -88,7 +96,7 @@ over ES modules, no framework (see
   saves, waits bounded by its timeout, shuts Steam down and exits. The page
   sends nothing else and does no flushing of its own on Quit.
 - **Navigation** — both entries are reachable by mouse, keyboard and
-  controller in list order. Esc and the controller's back button on the main
+  controller in column order. Esc and the controller's back button on the main
   menu have no screen to go back to and never quit.
 - **Failure** — a quit request that rejects re-enables the entry and leaves
   the menu usable; closing the window still quits. A leaderboard screen that
@@ -101,5 +109,8 @@ over ES modules, no framework (see
 - `leaderboard-screen` — the screen the Leaderboards entry opens.
 - `steam-desktop-host` — the desktop-host capability flag and the page
   bridge's quit request, run through its closing sequence.
-- `screen-components` — the menu list the entries are drawn with.
+- `shared-screen-layout` — the redesigned main menu and the mode entry both
+  entries are drawn as.
+- `theme-system` — the kit catalogue the mode entry and its accents are
+  named in, and their styling by the active theme.
 - No external libraries.

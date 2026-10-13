@@ -40,6 +40,22 @@ One client application, modular, with no server.
   (three.js), each a renderer and input layer over the shared engine.
 - **Game shell** — menus, settings, results, records, replays and the demo's
   locks, shared by every mode.
+- **Theme system** — a theme is a stylesheet plus a board module, listed in
+  one theme registry. The stylesheet has every rule scoped to the theme's id
+  on the document root and restyles the named components of the shared DOM
+  component kit, their parts and their animation. The board module is a
+  plain ES module carrying what the renderers cannot read from a
+  stylesheet: the 2D tile and 3D cube palette, number colours 1–26, sky and
+  fog, the tile drawing style and its parameters, and the cell motion
+  descriptions. The shell hands the active board module to the renderers;
+  no renderer reads a stylesheet or imports a theme.
+- **Board art and cell motion** — the Canvas 2D painter and the WebGL tile
+  atlas draw through one shared tile recipe, `js/tile-art.js`, whose named
+  drawing styles take the palette and parameters they are given. One
+  DOM-free cell motion player plays a theme's motion descriptions for both
+  modes: 2D draws animating cells on a layer above the board canvas, and the
+  WebGL renderer moves each animating cube on its own through a separate
+  instanced mesh with per-instance transform, brightness, opacity and face.
 - **Platform layer** — the one boundary to Steam and to storage, with a
   Steam implementation (Electron) and a local implementation (web build).
 
@@ -95,6 +111,9 @@ loop.
   (same seed and version, same board), and no-guess solver correctness.
 - **Offline:** the full game works offline; Steam achievements and
   leaderboard submissions sync when a connection returns.
+- **Fonts:** self-hosted. Each theme's font files ship in the game's own
+  files with the theme and load only when that theme is chosen; nothing is
+  fetched from a font service such as Google Fonts at run time.
 
 ## Explicitly open decisions
 

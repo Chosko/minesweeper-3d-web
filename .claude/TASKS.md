@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 156
+Last task number: 189
 
 ---
 
@@ -537,9 +537,9 @@ Feature: steam-achievements
 ## 104. Leaderboard screen: board picker, scope tabs, entries and states
 
 Status: [MISSING]
-Target: claude
+Target: claude+human
 Files: js/leaderboards/screen.js, js/shell/router.js, index.html, css/components.css, tests/leaderboards-screen.test.mjs, .claude/domain/features/leaderboard-screen.md, .claude/domain/features/steam-leaderboards.md
-Preconditions: 61, 97, 98
+Preconditions: 61, 97, 98, 163
 Feature: leaderboard-screen
 
 ---
@@ -569,7 +569,7 @@ Feature: leaderboard-screen
 Status: [MISSING]
 Target: claude
 Files: js/shell/menu.js, index.html, js/shell/router.js, tests/shell-menu.test.mjs
-Preconditions: 86, 104
+Preconditions: 86, 104, 165
 Feature: leaderboards-menu-entry
 
 ---
@@ -587,9 +587,9 @@ Feature: leaderboards-menu-entry
 ## 109. Steam rank panel on the results screen
 
 Status: [MISSING]
-Target: claude
-Files: js/results/rank-panel.js, js/results/view.js, js/results/flow.js, css/components.css, index.html, tests/results-rank.test.mjs
-Preconditions: 81, 86, 97, 104
+Target: claude+human
+Files: js/results/rank-panel.js, js/results/view.js, js/results/flow.js, css/components.css, index.html, tests/results-rank.test.mjs, .claude/domain/features/results-steam-rank.md
+Preconditions: 81, 86, 97, 104, 169
 Feature: results-steam-rank
 
 ---
@@ -608,8 +608,8 @@ Feature: results-steam-rank
 
 Status: [MISSING]
 Target: claude
-Files: js/settings/bindings.js, js/settings/resolver.js, js/settings/schema.js, js/settings/store.js, js/ui.js, tests/settings-bindings.test.mjs
-Preconditions: none
+Files: js/settings/bindings.js, js/settings/resolver.js, js/settings/schema.js, js/settings/store.js, js/ui.js, js/ui/components.js, tests/settings-bindings.test.mjs
+Preconditions: 163, 176, 177
 Feature: input-rebinding
 
 ---
@@ -627,9 +627,9 @@ Feature: input-rebinding
 ## 113. Rebinding controls on the Settings page
 
 Status: [MISSING]
-Target: claude
-Files: js/settings/page.js, js/settings/rebind-panel.js, index.html, css/components.css, tests/settings-rebind.test.mjs
-Preconditions: 111, 112
+Target: claude+human
+Files: js/settings/page.js, js/settings/rebind-panel.js, index.html, css/components.css, tests/settings-rebind.test.mjs, .claude/domain/features/input-rebinding.md
+Preconditions: 111, 112, 171
 Feature: input-rebinding
 
 ---
@@ -1019,9 +1019,339 @@ Preconditions: 154
 
 ## 156. Dark theme: menu-screen backdrop and context-lost card
 
-Status: [MISSING]
+Status: [SKIP]
 Target: claude
 Files: css/tokens.css, css/style.css, tests/tokens.test.mjs, tests/components.test.mjs, tests/theme.test.mjs, .claude/context/app-shell.md, .claude/context/testing.md, .claude/domain/features/design-tokens-and-themes.md
 Preconditions: none
+
+---
+
+## 157. Theme registry, kit catalogue and the Joyful tiles theme folder
+
+Status: [MISSING]
+Target: claude
+Files: js/themes/registry.js, js/ui/kit-catalogue.js, themes/joyful-tiles/board.js, themes/joyful-tiles/fonts/, tests/theme-registry.test.mjs, css/components.css, dev/components.html
+Preconditions: none
+Feature: theme-system
+
+---
+
+## 158. Base stylesheet and the Joyful tiles theme stylesheet; retire light and dark
+
+Status: [MISSING]
+Target: claude
+Files: css/tokens.css, css/components.css, css/style.css, themes/joyful-tiles/theme.css, index.html, js/theme.js, dev/components.html, js/shell/scene-palette.js, js/tokens.js, tests/tokens.test.mjs, tests/theme.test.mjs, tests/components.test.mjs, tests/settings-appliers.test.mjs
+Preconditions: 157
+Feature: theme-system
+
+---
+
+## 159. Registry-driven theme applier with run-time switch and board module hand-off
+
+Status: [MISSING]
+Target: claude
+Files: js/theme.js, js/tokens.js, js/shell/scene-palette.js, js/settings/appliers.js, js/main.js, index.html, dev/components.html, js/themes/registry.js, tests/theme.test.mjs, tests/settings-appliers.test.mjs
+Preconditions: 157, 158
+Feature: theme-system
+
+---
+
+## 160. Settings theme list and light/dark carry-over
+
+Status: [MISSING]
+Target: claude
+Files: js/settings/schema.js, js/settings/store.js, js/settings/page.js, js/settings/appliers.js, js/theme.js, index.html, tests/settings-store.test.mjs, tests/settings-page.test.mjs, tests/settings-appliers.test.mjs, tests/settings-reset.test.mjs
+Preconditions: 159
+Feature: theme-system
+
+---
+
+## 161. Theme conformance tests and the component gallery per theme
+
+Status: [MISSING]
+Target: claude
+Files: tests/theme-conformance.test.mjs, tests/fixtures/themes/, js/ui/kit-catalogue.js, themes/joyful-tiles/theme.css, dev/components.html
+Preconditions: 157, 158, 159
+Feature: theme-system
+
+---
+
+## 162. Update documentation for feature `theme-system`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/app-shell.md, .claude/context/settings.md, .claude/context/testing.md, .claude/context/rendering.md, .claude/context/INDEX.md, README.md, .claude/domain/features/theme-system.md, .claude/domain/features/design-tokens-and-themes.md, .claude/domain/features/screen-components.md, .claude/domain/features/settings.md
+Preconditions: 157, 158, 159, 160, 161
+Feature: theme-system
+
+---
+
+## 163. Layout kit components: backdrop, screen frame, mode entry, board option, stat tile and the rest
+
+Status: [MISSING]
+Target: claude
+Files: js/ui/kit-catalogue.js, css/components.css, themes/joyful-tiles/theme.css, js/ui/components.js, dev/components.html, tests/components.test.mjs, tests/theme-conformance.test.mjs
+Preconditions: 158, 161
+Feature: shared-screen-layout
+
+---
+
+## 164. 3D scene drawn into a screen's scene panel
+
+Status: [MISSING]
+Target: claude
+Files: js/render.js, js/main.js, js/shell/router.js, tests/shell-menu.test.mjs, tests/render-3d-feedback.test.mjs
+Preconditions: 163
+Feature: shared-screen-layout
+
+---
+
+## 165. Main menu in the shared layout
+
+Status: [MISSING]
+Target: claude
+Files: index.html, js/shell/menu.js, js/shell/returning.js, js/main.js, themes/joyful-tiles/theme.css, tests/shell-menu.test.mjs, tests/shell-returning.test.mjs, tests/components.test.mjs
+Preconditions: 163, 164
+Feature: shared-screen-layout
+
+---
+
+## 166. Classic 2D board choice screen with its records panel
+
+Status: [MISSING]
+Target: claude
+Files: index.html, js/classic2d/board-choice.js, js/classic2d/board-setup.js, js/main.js, js/records/history-chart.js, tests/classic2d-mode.test.mjs, tests/shell-returning.test.mjs, tests/components.test.mjs
+Preconditions: 163
+Feature: shared-screen-layout
+
+---
+
+## 167. 3D board choice screen in the shared layout
+
+Status: [MISSING]
+Target: claude+human
+Files: index.html, js/mode3d/board-choice.js, js/main.js, tests/mode3d-board-choice.test.mjs, tests/components.test.mjs
+Preconditions: 166
+Feature: shared-screen-layout
+
+---
+
+## 168. Pause card, generating and failed-board cards, placeholder and confirmations in the shared layout
+
+Status: [MISSING]
+Target: claude+human
+Files: index.html, js/shell/pause.js, js/main.js, js/ui.js, tests/shell-pause.test.mjs, tests/shell-pause-esc.test.mjs, tests/components.test.mjs
+Preconditions: 163
+Feature: shared-screen-layout
+
+---
+
+## 169. Results screen in the shared layout
+
+Status: [MISSING]
+Target: claude+human
+Files: index.html, js/results/view.js, js/results/flow.js, tests/results.test.mjs, tests/results-watch.test.mjs, tests/mode3d-end.test.mjs, tests/components.test.mjs
+Preconditions: 163
+Feature: shared-screen-layout
+
+---
+
+## 170. Records screen in the shared layout
+
+Status: [MISSING]
+Target: claude+human
+Files: index.html, js/records/screen.js, js/records/history-chart.js, js/records/replay-list.js, tests/records-screen.test.mjs, tests/records-screen-3d.test.mjs, tests/records-replays.test.mjs, tests/components.test.mjs
+Preconditions: 163
+Feature: shared-screen-layout
+
+---
+
+## 171. Settings page in the shared layout
+
+Status: [MISSING]
+Target: claude+human
+Files: index.html, js/settings/page.js, tests/settings-page.test.mjs, tests/settings-reset.test.mjs, tests/components.test.mjs
+Preconditions: 160, 163
+Feature: shared-screen-layout
+
+---
+
+## 172. Replay viewer in the shared layout
+
+Status: [MISSING]
+Target: claude+human
+Files: index.html, js/replay/viewer.js, js/replay/viewer-2d.js, js/replay/viewer-3d.js, tests/replay-viewer.test.mjs, tests/replay-viewer-3d.test.mjs, tests/components.test.mjs
+Preconditions: 163
+Feature: shared-screen-layout
+
+---
+
+## 173. Update documentation for feature `shared-screen-layout`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/app-shell.md, .claude/context/rendering.md, .claude/context/classic2d.md, .claude/context/mode3d.md, .claude/context/records.md, .claude/context/settings.md, .claude/context/replay.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md, .claude/domain/features/shared-screen-layout.md
+Preconditions: 163, 164, 165, 166, 167, 168, 169, 170, 171, 172
+Feature: shared-screen-layout
+
+---
+
+## 174. Live figures model: 3BV progress, pace vs PB, 3BV/s, clicks and flags
+
+Status: [MISSING]
+Target: claude
+Files: js/shell/live-figures.js, tests/live-figures.test.mjs
+Preconditions: none
+Feature: in-game-layout
+
+---
+
+## 175. Counter readout and figures panel kit components
+
+Status: [MISSING]
+Target: claude
+Files: js/ui/kit-catalogue.js, css/components.css, themes/joyful-tiles/theme.css, dev/components.html, tests/components.test.mjs
+Preconditions: 163
+Feature: in-game-layout
+
+---
+
+## 176. Classic 2D game window: counter strip, side panel and foot line
+
+Status: [MISSING]
+Target: claude
+Files: index.html, js/classic2d/mode.js, js/classic2d/session.js, js/classic2d/board-view.js, js/ui.js, js/main.js, tests/classic2d-mode.test.mjs, tests/classic2d-view.test.mjs, tests/components.test.mjs
+Preconditions: 163, 174, 175
+Feature: in-game-layout
+
+---
+
+## 177. 3D game overlay in the in-game layout
+
+Status: [MISSING]
+Target: claude+human
+Files: index.html, js/shell/mode-3d.js, js/mode3d/session.js, js/ui.js, js/main.js, tests/shell-mode-3d.test.mjs, tests/mode3d-session.test.mjs, tests/components.test.mjs
+Preconditions: 176
+Feature: in-game-layout
+
+---
+
+## 178. Live figures in the replay viewer
+
+Status: [MISSING]
+Target: claude+human
+Files: js/replay/viewer.js, js/replay/simulator.js, index.html, tests/replay-viewer.test.mjs, tests/replay-viewer-3d.test.mjs
+Preconditions: 172, 174, 175
+Feature: in-game-layout
+
+---
+
+## 179. Update documentation for feature `in-game-layout`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/app-shell.md, .claude/context/classic2d.md, .claude/context/mode3d.md, .claude/context/replay.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md, .claude/domain/features/in-game-layout.md
+Preconditions: 174, 175, 176, 177, 178
+Feature: in-game-layout
+
+---
+
+## 180. Tile recipe drawing styles: bevel and chunky raised, with depth
+
+Status: [MISSING]
+Target: claude
+Files: js/tile-art.js, js/classic2d/tile-skin.js, js/textures.js, tests/tile-skin.test.mjs, tests/tile-art.test.mjs
+Preconditions: none
+Feature: themed-board-art-and-motion
+
+---
+
+## 181. Board module shape, the Joyful tiles board module and the board conformance checks
+
+Status: [MISSING]
+Target: claude
+Files: js/themes/board-module.js, themes/joyful-tiles/board.js, tests/theme-conformance.test.mjs, tests/board-module.test.mjs
+Preconditions: 161, 180
+Feature: themed-board-art-and-motion
+
+---
+
+## 182. Classic 2D tiles drawn from the active theme's board module
+
+Status: [MISSING]
+Target: claude
+Files: js/classic2d/tile-skin.js, js/classic2d/board-view.js, js/classic2d/mode.js, js/main.js, themes/joyful-tiles/theme.css, tests/tile-skin.test.mjs, tests/classic2d-view.test.mjs
+Preconditions: 159, 181
+Feature: themed-board-art-and-motion
+
+---
+
+## 183. 3D cubes, numbers and sky drawn from the active theme's board module
+
+Status: [MISSING]
+Target: claude
+Files: js/textures.js, js/render.js, js/shell/scene-palette.js, js/main.js, themes/joyful-tiles/theme.css, tests/render-3d-feedback.test.mjs, tests/theme.test.mjs, tests/tokens.test.mjs
+Preconditions: 159, 181
+Feature: themed-board-art-and-motion
+
+---
+
+## 184. Cell motion player
+
+Status: [MISSING]
+Target: claude
+Files: js/cell-motion.js, tests/cell-motion.test.mjs
+Preconditions: 181
+Feature: themed-board-art-and-motion
+
+---
+
+## 185. Classic 2D cell motion: motion layer and event sources
+
+Status: [MISSING]
+Target: claude
+Files: js/classic2d/board-view.js, js/classic2d/motion-layer.js, js/classic2d/pointer-input.js, js/classic2d/cursor-input.js, js/classic2d/session.js, js/replay/viewer-2d.js, tests/classic2d-motion.test.mjs, tests/classic2d-fidelity.test.mjs
+Preconditions: 182, 184
+Feature: themed-board-art-and-motion
+
+---
+
+## 186. 3D cell motion: motion mesh, event sources and the solved pulse as a cell event
+
+Status: [MISSING]
+Target: claude
+Files: js/render.js, js/shell/mode-3d.js, js/replay/viewer-3d.js, tests/render-3d-feedback.test.mjs, tests/render-3d-motion.test.mjs
+Preconditions: 183, 184
+Feature: themed-board-art-and-motion
+
+---
+
+## 187. Update documentation for feature `themed-board-art-and-motion`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/classic2d.md, .claude/context/rendering.md, .claude/context/app-shell.md, .claude/context/replay.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md, .claude/domain/features/themed-board-art-and-motion.md, .claude/domain/features/square-tile-skin.md
+Preconditions: 180, 181, 182, 183, 184, 185, 186
+Feature: themed-board-art-and-motion
+
+---
+
+## 188. The theme-implement skill
+
+Status: [MISSING]
+Target: claude
+Files: .claude/skills/theme-implement/SKILL.md, .claude/skills/theme-implement/references/
+Preconditions: 161, 163, 175, 181
+Feature: theme-implement-skill
+
+---
+
+## 189. Update documentation for feature `theme-implement-skill`
+
+Status: [MISSING]
+Target: claude
+Files: README.md, .claude/context/INDEX.md, .claude/domain/features/theme-implement-skill.md
+Preconditions: 188
+Feature: theme-implement-skill
 
 ---

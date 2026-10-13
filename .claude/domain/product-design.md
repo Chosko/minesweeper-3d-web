@@ -1,9 +1,9 @@
 # Minesweeper 3D
 
 Minesweeper 3D is a premium Minesweeper game for Steam, aimed at players who
-take Minesweeper seriously. It offers a classic 2D mode that plays exactly
-like the reference implementation enthusiasts already trust — on square,
-hexagonal and triangle grids — a 3D mode where the board is a box of cubes
+take Minesweeper seriously. It offers flat modes that play exactly like the
+reference implementation enthusiasts already trust — Classic 2D on the square
+grid, Hexagon and Triangle on their own grids — a 3D mode where the board is a box of cubes
 flown through in first person, a Surface mode where tiles cover the surface
 of a 3D shape, and campaigns of designed levels. Every board can be played
 no-guess, every game is measured with the stats competitive players track,
@@ -41,10 +41,15 @@ campaign's level order (and, in the demo, the demo's locks).
   resumes the next unbeaten campaign level, or the last mode played.
 - **Campaign** — choose 2D or 3D, then a chapter and a level in it; locked
   levels are visible but not playable.
-- **Classic 2D** — square, hexagonal or triangle grid; Beginner,
-  Intermediate, Expert and Custom boards; a no-guess switch.
+- **Classic 2D** — the square grid: Beginner, Intermediate, Expert and
+  Custom boards; a no-guess switch.
+- **Hexagon** — the hexagonal grid, with the same board choice and no-guess
+  switch.
+- **Triangle** — the triangle grid, with the same board choice and no-guess
+  switch.
 - **3D** — the 3D presets and custom boards, with a no-guess switch.
-- **Surface** — a shape to play on, with a no-guess switch.
+- **Surface** — a shape to play on, chosen inside Surface, with a no-guess
+  switch.
 - **Daily** — today's 2D board and today's 3D board.
 - **Records** — personal bests, stats history and the replay library.
 - **Leaderboards** — Steam global and friends rankings, with the replay
@@ -76,11 +81,12 @@ demanding, until free 3D play is within reach.
   what Steam itself provides — achievements, cloud saves and leaderboards.
 - **Fully playable offline.** Achievements and leaderboard submissions sync
   when a connection returns.
-- **The 2D mode is real, classic Minesweeper.** Its logic reproduces
-  Minesweeper Online, played with its default options, exactly. It is drawn as a flat 2D board, never as a 3D
-  scene. It is built new and does not derive from the 3D mode.
+- **The flat modes are real, classic Minesweeper.** The logic of Classic 2D,
+  Hexagon and Triangle reproduces Minesweeper Online, played with its default
+  options, exactly. Each is drawn as a flat 2D board, never as a 3D scene, and
+  is built new rather than derived from the 3D mode.
 - **The 3D mode is the existing 3D game, made one mode among several.** Its
-  look, controls and feel are kept, except that a game starts framed from a
+  controls and feel are kept, and its look follows the chosen theme, except that a game starts framed from a
   three-quarter view with the whole box in sight instead of the original's
   start pose, and the scene gains a return to that view (a key and a pause
   card action), an arrow toward the box while it is out of view, and a faint
@@ -110,12 +116,15 @@ demanding, until free 3D play is within reach.
 - **Local records are the competitive backbone.** Personal bests, stats
   history and replays live on the player's machine (synced by Steam Cloud).
 - **Steam leaderboards cover every comparable board:** the standard
-  free-play boards of each mode and grid (with and without no-guess), every
+  free-play boards of each mode (with and without no-guess), every
   campaign level, and each day's daily boards. Free-play boards rank by
   time; campaign levels and daily boards rank by 3BV/s, since every attempt
   is a different board, and still record and show the time. Custom boards get no leaderboard.
 - **Visual direction: modern and catchy, with nothing decorative that does not
-  serve play.** The current 3D look is the bar for every mode.
+  serve play.** The game is drawn in a catalogue of themes the player picks
+  from; the screens share one layout and each theme restyles it. Each theme
+  is one fixed look, with no light or dark variant. *Joyful tiles* is the
+  first theme and the default on first launch.
 - **Pausing hides the board in every mode.** The board is covered and the
   clock keeps running, so pausing never buys free study time and records
   stay comparable across modes; each game records its pauses — their count
@@ -125,14 +134,16 @@ demanding, until free 3D play is within reach.
   touch and mobile are not.
 - **Platforms.** Windows at launch. Mac and Linux only if the port is close to
   free. Steam Deck Verified is a stretch goal.
-- **A free demo with fixed locks.** The demo offers unlimited 2D Beginner,
-  Intermediate and Expert boards on the square grid, unlimited Beginner boards
-  on the hexagonal and triangle grids, unlimited 3D Beginner boards, and the
-  first shape of the Surface mode, and the first 5 levels of each campaign
-  (unlocked by progression as usual).
-  Everything else is locked: custom boards, Intermediate and Expert on the
-  hexagonal and triangle grids, the harder 3D presets, and pro options such as
-  no-guess.
+- **A free demo with fixed locks.** The demo offers unlimited Classic 2D
+  Beginner, Intermediate and Expert boards, unlimited Hexagon and Triangle
+  Beginner boards from their own main-menu entries, unlimited 3D Beginner
+  boards, the first shape of the Surface mode, the first 5 levels of each
+  campaign (unlocked by progression as usual), and 3 of the themes, chosen
+  when the demo is designed.
+  Everything else is locked: the Intermediate and Expert boards of Hexagon
+  and Triangle, custom boards in every mode, the harder 3D presets, the other
+  themes, and pro options such as no-guess. In the full game every theme is
+  unlocked.
 - **The browser build stays public until the Steam release**, as the
   author's work-in-progress preview. What happens to it after release is not
   decided.
@@ -145,38 +156,88 @@ Listed in the order a player meets them. The last two are after launch.
 
 ### Main menu and game shell
 
-Everything around a game: the main menu (Start / Continue, every mode, Records,
+Everything around a game: the main menu (Start / Continue, Campaign, the
+Classic 2D, Hexagon, Triangle, 3D and Surface modes, Daily, Records,
 Leaderboards, Settings, Quit), pausing and resuming, restarting, returning to
-the menu, and the settings — controls, graphics, the light or dark theme,
-audio and accessibility (colour-blind-safe numbers). Input is mouse and keyboard first, with
-controller play available in every mode. *Start* opens the first 2D campaign
+the menu, and the settings — controls, graphics, the theme, picked from a
+list of the catalogue's themes, audio and accessibility (colour-blind-safe
+numbers, and after launch a reduced-motion setting, on or off, whose first
+value is taken from the operating system's reduce-motion preference and which
+governs all motion, as the Visual design system describes). Input
+is mouse and keyboard first, with controller play available in every mode. *Start* opens the first 2D campaign
 level until the player has progress; then *Continue* resumes the next
-unbeaten level or the last mode played. Serves every player and every flow;
+unbeaten level or the last mode played, with Hexagon and Triangle each
+counted as a mode of their own. Each mode keeps the player's last board
+choice. Serves every player and every flow;
 it is where the first-launch flow begins.
 
 ### Visual design system
 
 The one visual language every mode and screen is drawn in, held to the visual
-direction under Design decisions: the colour palette and typography; a light
-and a dark theme, which the player picks on the Settings page, Light until
-they pick; the tiles and number colours, with a colour-blind-safe number set
-for the accessibility setting; the menus; the in-game overlay that sits over a
-board (timer, mine counter, click counter, pause); and the results screen. Classic 2D, 3D and
-Surface each apply it to their own board, so moving between modes never feels
-like moving between games. The 3D scene's cubes keep their one current look
-under both themes; its sky, fog and background, and the menus, overlay and
-results screen around it, follow the chosen theme. Serves every player and
-every flow.
+direction under Design decisions: one shared layout for the menus, the
+in-game window around a board (timer, mine counter, restart, pause, and the
+live figures — 3BV progress, pace against the personal best, 3BV/s, clicks
+and flags) and the results screen, and a catalogue of themes that style it. The
+player picks a theme from a list on the Settings page; *Joyful tiles* is
+the default until they pick. The shared layout is designed together with
+*Joyful tiles*; later themes add styles, not layouts.
+
+A theme is one fixed look and changes more than colour: borders and bevels,
+shadows, corner radii, fonts, window chrome (such as a title bar with
+decorative buttons) and the counter readouts. It restyles a fixed set of
+named screen components and their parts, and may fill optional decoration
+slots. It also styles every board: the tiles and the number colours, with a
+colour-blind-safe number set for the accessibility setting, and in the 3D
+scene the sky, fog and background, the cubes in every state and the number
+colours 1–26. Every mode applies it to its own board,
+so moving between modes never feels like moving between games. Each theme's
+fonts ship with the game, so every theme works offline.
+
+Each theme has its own motion. Buttons, toggles, cards and the other screen
+components move in the theme's own style. Board cells move by the theme's
+description of each cell event — press, release, reveal, flag, unflag,
+chord press and the solved pulse — built from a fixed set of movements:
+scaling, sliding, flipping about an axis (showing the other face halfway),
+deepening a shadow or bevel, brightening and fading, each with its duration
+and easing; one theme presses a cell down, another flips it. Motion is only
+visual: it never delays input, the game, the timer or replays.
+
+Until launch the game's one reduced-motion behaviour is the shipped one: when
+the operating system asks for reduced motion, the menus and screens drop
+their animations and transitions. That behaviour stays as it is, and no
+theme overrides it. Nothing else reads the preference: cell motion always
+plays, as the 2D and 3D game effects and pulses do. After launch the
+reduced-motion setting in Settings governs all motion — screen animation,
+cell motion, and the 2D and 3D game effects and pulses.
+
+Themes are designed in Claude Design, each delivered as its screens plus one
+catalogue of its components. More themes are added over time: once the
+theme system exists, a new theme is added by a dedicated Claude skill
+whenever it is ready, outside the milestone schedule and without a backlog
+task. Serves every player and every flow.
 
 ### Classic 2D
 
-Real, flat Minesweeper whose logic reproduces Minesweeper Online, with its
-default options, exactly:
-reveal, flag, chord, the safe first click, the timer. The player picks a grid —
-square, hexagonal (6 neighbours) or triangle (12 neighbours) — and a size:
-Beginner, Intermediate, Expert, or a custom size and mine count. A no-guess
-switch generates boards solvable by logic alone. It is drawn in the visual
-design system. Serves the enthusiast loop.
+Real, flat Minesweeper on the square grid, whose logic reproduces
+Minesweeper Online, with its default options, exactly: reveal, flag, chord,
+the safe first click, the timer. The player picks a size: Beginner,
+Intermediate, Expert, or a custom size and mine count. A no-guess switch
+generates boards solvable by logic alone. It is drawn in the visual design
+system. Serves the enthusiast loop.
+
+### Hexagon
+
+Classic 2D's game on a hexagonal grid, where each tile has 6 neighbours: the
+same rules, timing, board choice — Beginner, Intermediate, Expert or Custom —
+and no-guess switch, as a mode of its own with its own main-menu entry. Serves
+enthusiasts looking for a fresh flat board.
+
+### Triangle
+
+Classic 2D's game on a triangle grid, where each tile has 12 neighbours: the
+same rules, timing, board choice — Beginner, Intermediate, Expert or Custom —
+and no-guess switch, as a mode of its own with its own main-menu entry. Serves
+enthusiasts looking for a fresh flat board.
 
 ### 3D mode
 
@@ -272,8 +333,9 @@ and syncs when a connection returns.
 
 ### Demo edition
 
-The free demo build: the content listed under Design decisions, with locked
-content visible in the menus rather than hidden, and a *Buy full game* entry
+The free demo build: the content listed under Design decisions — 3 themes
+among them — with locked content, the other themes included, visible in the
+menus and the Settings theme list rather than hidden, and a *Buy full game* entry
 that opens the store page. Serves players deciding whether to buy.
 
 ### Endless board *(after launch)*

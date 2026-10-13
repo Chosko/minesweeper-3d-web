@@ -1,6 +1,6 @@
 # Runbooks
 
-Last runbook number: 5
+Last runbook number: 7
 
 ---
 
@@ -50,6 +50,26 @@ Status: [PENDING]
 File: .claude/runbooks/5-ux-review-tasks-implementation.md
 Created: 2026-10-12
 Source: /runbook-create interview
-Steps: 23/41
+Steps: 24/41
+
+---
+
+## 6. themes-planning — Design, roadmap, architect, plan and task the theme catalogue, and record Hexagon and Triangle as home-page modes
+
+Status: [DONE]
+File: .claude/runbooks/6-themes-planning.md
+Created: 2026-10-13
+Source: theme catalogue and home-page modes conversation
+Steps: 8/8
+
+---
+
+## 7. themes-tasks-implementation — Implement every task of milestone m2b-themes
+
+Status: [PENDING]
+File: .claude/runbooks/7-themes-tasks-implementation.md
+Created: 2026-10-13
+Source: /runbook-create interview (runbook themes-planning step 8)
+Steps: 0/33
 
 ---

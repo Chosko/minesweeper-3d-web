@@ -5,6 +5,12 @@ menu lists, cards and panels, toggles, sliders, segmented choices, stat
 readouts and the overlay bar — and the m1 screens composed from it: the main
 menu, the in-game overlay and the results screen, in both themes.
 
+The kit's component catalogue below still holds; its styling is superseded
+by [theme-system](./theme-system.md), where every theme styles each
+component's parts, and the arrangement of the screens by
+[shared-screen-layout](./shared-screen-layout.md) and
+[in-game-layout](./in-game-layout.md).
+
 ## Purpose
 
 [product-design.md § Visual design system](../product-design.md#visual-design-system)

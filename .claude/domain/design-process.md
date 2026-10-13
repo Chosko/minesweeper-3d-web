@@ -35,7 +35,7 @@ Business modelling: in scope
 The product design is complete. Later changes go through
 `/product-design amend "<change>"`.
 
-- `product-design.md` — product, players, menu and flows, design decisions, 14 high-level features.
+- `product-design.md` — product, players, menu and flows, design decisions, 16 high-level features.
 - `business-model.md` — one-time Steam purchase at US$5.99 with a free demo; Early Access open.
 - `technical-direction.md` — JS + three.js + Canvas 2D in Electron, one graph-based rules engine; Steam binding open.
 
@@ -52,4 +52,7 @@ Next step: `/architect <feature>`, then `/task-add feature=<slug>`.
 - Closing the game mid-game counts as a loss, like restarting or leaving: otherwise closing would be a free escape from a losing game and streaks would mean nothing.
 - Leaderboards come from Steam because the game has no backend; custom boards are excluded because they cannot be compared.
 - Electron over Tauri and NW.js: bundled Chromium keeps WebGL identical everywhere, Tauri's system webviews vary on Mac/Linux, NW.js's Greenworks is best-effort.
+- Themes restyle named components, not only token values, because the designs vary borders, bevels, chrome and fonts; the light and dark look is retired rather than kept as a theme.
+- Board cells animate from per-theme motion descriptions, not as DOM elements: 100×100 boards are too heavy and the 3D scene cannot use CSS.
+- Reduced motion ships whole after launch — the setting, its preference-based first value, all motion governed — while the shipped screen rule stays untouched until then: an accessibility feature that can ship later is deferred whole, never half-implemented, and nothing shipped is removed for it.
 - Steam Deck is a stretch goal because Minesweeper with a controller is awkward, even though controllers are supported.

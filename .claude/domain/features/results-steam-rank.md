@@ -55,15 +55,22 @@ Non-goals:
 
 Built within the recorded technical direction — plain DOM in the game
 shell, no framework (see [technical-direction.md](../technical-direction.md)),
-composed from the `screen-components` kit. It extends `results-screen`'s
-view and flow and reads everything from `steam-leaderboards`.
+composed inside the framed results screen of `shared-screen-layout` from
+catalogued kit components only, as
+[shared-screen-layout.md](./shared-screen-layout.md) § Architecture,
+**Kit additions**, requires; it adds no component and no theme style of its
+own, and the active theme styles it. It extends `results-screen`'s view and
+flow and reads everything from `steam-leaderboards`.
 
-- **Rank panel.** A non-interactive block in the results view below the
-  three-best comparison. It never takes focus, never moves the default
-  focus off *Play again*, and its text changes are announced politely to
-  assistive technology. Shown only when the leaderboards capability is
-  present in the build, the game was won, and its board has a leaderboard;
-  otherwise the view has no panel and keeps its m1 layout.
+- **Rank panel.** A non-interactive group in the results screen's framed
+  body below the three-best comparison: a section label over two stat
+  tiles, global and friends, each with the rank as its figure and the move
+  or "your best" as its detail line. It never takes focus, never moves the
+  default focus off *Play again*, and its text changes are announced
+  politely to assistive technology. Shown only when the leaderboards
+  capability is present in the build, the game was won, and its board has a
+  leaderboard; otherwise the screen has no panel and keeps its
+  shared-layout composition.
 - **Rank resolver.** Started by the results flow when the screen shows, for
   the shown summary. It follows the summary's submission state in
   `steam-leaderboards`:
@@ -81,8 +88,8 @@ view and flow and reads everything from `steam-leaderboards`.
   outbox, "Rank unavailable offline" otherwise. An answer that arrives later
   still fills the panel in while the results screen is open. Leaving the
   screen stops the resolver and drops its subscription.
-- **Leaderboard action.** A kit button in the results view's actions, after
-  *Records*, shown when the leaderboards capability is present and the
+- **Leaderboard action.** A button among the results screen's actions,
+  after *Records*, with its key hint, shown when the leaderboards capability is present and the
   game's board has a leaderboard, won or lost. It never takes the default
   focus off *Play again*. It asks the shell to open the leaderboard screen
   with this game's board identity; Back from there returns to the results
@@ -116,9 +123,19 @@ view and flow and reads everything from `steam-leaderboards`.
   previous and new global rank, own standing, and availability.
 - `steam-desktop-host` — the leaderboards capability flag that tells the
   Steam build from the web build.
-- `screen-components` — the panel's composition and its states' look.
+- `shared-screen-layout` — the framed results screen, and the section
+  label, stat tile and key hint the panel and the action are composed from.
+- `theme-system` — the kit catalogue those components are named in, and
+  their styling by the active theme.
 - `leaderboard-screen` — the screen the *Leaderboard* action opens, through
   its *Open* route with a board identity.
 - `3d-results-records-screens` — the 3D end of game that hands over to the
   same results screen.
 - No external libraries.
+
+## Open questions
+
+- No *Joyful tiles* artboard draws the rank panel or the *Leaderboard*
+  action in the results screen yet; their task waits on one as
+  [shared-screen-layout.md](./shared-screen-layout.md) § Architecture,
+  **Design status per screen**, says.

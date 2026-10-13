@@ -12,7 +12,8 @@ describes everything around a game. In m1-classic-2d the game stops being a
 single 3D board behind a menu and becomes several modes behind one menu, so
 the shell needs one way to host a mode, one pause/restart/menu flow that
 behaves the same in each, and one navigation model for every screen. This
-feature is that shell; the screens' look comes from `screen-components`, the
+feature is that shell; the screens' layout comes from `shared-screen-layout`
+and `in-game-layout` and their look from the chosen theme (`theme-system`), the
 settings from `settings`, and what each mode does on its board from that
 mode's front-end.
 
@@ -60,7 +61,8 @@ Non-goals:
 - The Surface entry and grid choice in Classic 2D — deferred to `m6-launch`.
 - The records screen's contents and the results screen — Results and
   records (m1-classic-2d). The shell only routes to them.
-- The look of any screen — `screen-components`.
+- The layout and look of any screen — `shared-screen-layout`,
+  `in-game-layout` and `theme-system`.
 - The Settings page itself — `settings`.
 
 ## Architecture

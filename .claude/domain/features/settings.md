@@ -7,7 +7,7 @@ player changes it.
 ## Purpose
 
 [product-design.md § Main menu and game shell](../product-design.md#main-menu-and-game-shell)
-lists controls, graphics, the light or dark theme, audio and accessibility as
+lists controls, graphics, the theme, audio and accessibility as
 the game's settings. This feature gives them one page reached from the main
 menu, one store with defaults and validation that keeps them in one settings
 document, and one way for the rest of the game to read a value and hear when
@@ -33,8 +33,10 @@ In scope (m1-classic-2d):
   § Architecture, "Board view"), applied at once to an open board and to
   the replay viewer; and the 3D neighbour count — the readout beside the
   crosshair in 3D play — on by default.
-- Theme: Light or Dark, Light until the player picks. Changing it applies
-  at once through `design-tokens-and-themes`.
+- Theme: one of the catalogue's themes, picked from a list, *Joyful tiles*
+  until the player picks; the list and the carry-over of a stored light or
+  dark choice are `theme-system`'s. Changing it
+  applies at once.
 - Audio: Sound (the on/off control, on while sound plays, stored as mute)
   and Volume, the values the existing sound module keeps.
 - The settings store: defaults, validation, persistence through
@@ -46,7 +48,7 @@ Non-goals:
 
 - Rebinding keys, mouse buttons or controller buttons — `input-rebinding`,
   in `m3-on-steam`. Here the bindings are shown, not edited.
-- A "Match system" theme option — the theme is Light or Dark only.
+- A "Match system" theme option — each theme is one fixed look.
 - The colour-blind-safe number set and its accessibility setting — deferred
   to `m6-launch`, unless it falls out of the base palette in m1.
 - Steam Cloud sync of settings — `m3-on-steam`, through `platform-storage`.
@@ -68,7 +70,7 @@ settings handling for the shell's UI module and the sound module ([app-shell.md]
   and holds the values in memory. Writes go through the store, which validates, saves
   through `platform-storage` and notifies subscribers.
 - **Appliers.** Each setting's effect is applied by its owner subscribing to
-  the store: the theme applier of `design-tokens-and-themes`, the sound
+  the store: the theme applier of `theme-system`, the sound
   module's volume and mute, the 3D camera's sensitivity and invert Y, the
   3D renderer's pixel ratio, and the browser's fullscreen state. The store
   knows none of them.
@@ -100,8 +102,8 @@ settings handling for the shell's UI module and the sound module ([app-shell.md]
 - **Saved settings** — one versioned settings document: look sensitivity
   (0.25–3, default 1), invert Y (default off), fullscreen (default off),
   render resolution (Auto, Sharp or Fast; default Auto), 2D board scale
-  (Fit, 100 % or 125 %; default 100 %), theme (light or dark; default
-  light), volume (0–1, default 0.7), mute (default off) and
+  (Fit, 100 % or 125 %; default 100 %), theme (a theme id, default
+  *Joyful tiles*), volume (0–1, default 0.7), mute (default off) and
   always ask before restarting (default off). Persisted through
   `platform-storage`.
 - **In memory** — the validated current values, the single source of truth
@@ -132,7 +134,8 @@ settings handling for the shell's UI module and the sound module ([app-shell.md]
 ## Dependencies
 
 - `platform-storage` — loading and saving the settings document.
-- `design-tokens-and-themes` — the theme applier the theme setting drives.
+- `theme-system` — the theme applier the theme setting drives, and the
+  theme list.
 - `screen-components` — the page's components: toggles, sliders, segmented
   choices, menu lists.
 - `game-shell` — routes to the page from the main menu and back.

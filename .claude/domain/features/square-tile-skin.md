@@ -5,6 +5,13 @@ revealed, flagged, mine, exploded mine, wrong flag — and the colours of the
 numbers 1 to 8, in the light and the dark theme, drawn on the Canvas 2D
 board.
 
+The tile and number colours, the cube-face look as the one drawing and the
+unthemed 3D palette below are superseded by
+[themed-board-art-and-motion](./themed-board-art-and-motion.md): every
+theme supplies its palette, numbers 1–26 and a tile drawing style to both
+modes. The paint call, the tile cache and the minimum tile size below still
+hold.
+
 ## Purpose
 
 [product-design.md § Visual design system](../product-design.md#visual-design-system)

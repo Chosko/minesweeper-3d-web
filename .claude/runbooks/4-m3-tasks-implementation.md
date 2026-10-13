@@ -274,6 +274,7 @@ Depends on: 14, 15
 
 Context:
 - 2026-10-11 (amend): task 104 was re-planned so the 3D board picker lists the three cube presets only.
+- 2026-10-13 (amend): task 104 was re-planned into the shared layout's screen frame: it now waits on task 163 (themes-tasks-implementation step 7) and is claude+human — the owner supplies the leaderboard screen's *Joyful tiles* artboard before any markup is written.
 
 ```prompt
 /task-implement 104 --review
@@ -303,7 +304,8 @@ Context: none
 
 Depends on: 3, 21
 
-Context: none
+Context:
+- 2026-10-13 (amend): task 107 was re-planned so Leaderboards and Quit are mode entries of the redesigned main menu; it now waits on task 165 (themes-tasks-implementation step 9).
 
 ```prompt
 /task-implement 107 --review
@@ -325,6 +327,7 @@ Depends on: 3, 14
 
 Context:
 - 2026-10-09 (amend): task 109 also builds the results screen's *Leaderboard* action and now waits on task 104, the leaderboard screen (step 21).
+- 2026-10-13 (amend): task 109 was re-planned into the framed results screen: it now waits on task 169 (themes-tasks-implementation step 13) and is claude+human — the owner supplies an artboard drawing the rank panel and the *Leaderboard* action.
 
 ```prompt
 /task-implement 109 --review
@@ -344,7 +347,8 @@ Context: none
 
 Depends on: none
 
-Context: none
+Context:
+- 2026-10-13 (amend): task 111 now also switches the shared layout's key hints and the in-game controls reminder to the resolver, and waits on tasks 163, 176 and 177 (themes-tasks-implementation steps 7, 20 and 21).
 
 ```prompt
 /task-implement 111 --review --rounds 2
@@ -364,7 +368,8 @@ Context: none
 
 Depends on: 28, 29
 
-Context: none
+Context:
+- 2026-10-13 (amend): task 113 was re-planned into the framed Settings page: it now waits on task 171 (themes-tasks-implementation step 15) and is claude+human — the owner supplies an artboard drawing the rebinding panels.
 
 ```prompt
 /task-implement 113 --review
