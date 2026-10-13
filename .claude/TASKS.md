@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 153
+Last task number: 154
 
 ---
 
@@ -996,5 +996,14 @@ Status: [MISSING]
 Target: claude
 Files: js/mode3d/learn.js, dev/find-learn-3d.mjs, js/mode3d/board-choice.js, js/mode3d/session.js, js/shell/mode-3d.js, js/shell/first-use.js, js/shell/pause.js, js/main.js, js/ui.js, js/render.js, index.html, css/style.css, tests/mode3d-learn.test.mjs, tests/mode3d-board-choice.test.mjs, tests/mode3d-session.test.mjs, tests/shell-mode-3d.test.mjs, tests/shell-first-use.test.mjs, tests/shell-pause.test.mjs, README.md, .claude/domain/product-design.md, .claude/domain/features/3d-play-flow.md, .claude/domain/features/game-shell.md
 Preconditions: 119, 152
+
+---
+
+## 154. Fast and slow test tiers and a cheaper browser suite
+
+Status: [MISSING]
+Target: claude
+Files: .claude/external/run-full-tests.sh, .claude/external/run-fast-tests.sh, .claude/external/run-browser-tests.sh, .claude/external/run-affected-tests.sh, tests/components.test.mjs, tests/classic2d-mode.test.mjs, tests/shell-pause.test.mjs, tests/settings-page.test.mjs, tests/shell-menu.test.mjs, tests/shell-help.test.mjs, tests/shell-returning.test.mjs, tests/results-watch.test.mjs, tests/shell-history.test.mjs, tests/records-history.test.mjs, tests/shell-router.test.mjs, tests/settings-appliers.test.mjs, tests/replay-viewer.test.mjs, tests/results.test.mjs, tests/classic2d-fidelity.test.mjs, tests/records-screen.test.mjs, tests/records-replays.test.mjs, tests/tile-skin.test.mjs, js/main.js, README.md, .claude/context/testing.md
+Preconditions: none
 
 ---
