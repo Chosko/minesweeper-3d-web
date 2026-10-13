@@ -60,6 +60,6 @@ Status: [RUNNING]
 File: .claude/runbooks/6-themes-planning.md
 Created: 2026-10-13
 Source: theme catalogue and home-page modes conversation
-Steps: 4/8
+Steps: 5/8
 
 ---

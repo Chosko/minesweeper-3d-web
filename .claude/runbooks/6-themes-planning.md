@@ -100,7 +100,7 @@ Approval gates in this run: approve as drafted, taking the draft's recommendatio
 ```
 Done: 2026-10-13, commit `63cdb37` (15 files, +1007/-22). Five features, not three: theme-system, themed-board-art-and-motion, shared-screen-layout, in-game-layout and theme-implement-skill, so the layout work step 5 was meant for is already architected. Also adds a reduced-motion setting and defines pace vs PB. technical-direction.md left unchanged (the architect may not edit it).
 
-## [ ] 5. Architect the redesigned screen layout for the themes milestone
+## [x] 5. Architect the redesigned screen layout for the themes milestone
 
 Depends on: 4
 
@@ -123,12 +123,14 @@ Facts and decisions, written nowhere on disk:
 
 Approval gates in this run: approve as drafted, taking the draft's recommendation on each open call. Park only on a real design question.
 ```
+Done: 2026-10-13, commit `0c5e565` (2 files, +33/-12). Amended both layout documents. Screens with no Joyful artboard are now built from an artboard the owner supplies (claude+human tasks), not by imitating the drawn screens. All four planned m3 screen features are recorded as stale.
 
 ## [ ] 6. Write the production plan for the themes milestone
 
 Depends on: 4, 5
 
 Context:
+- 2026-10-13 (from steps 4–5): m2b-themes has five [NEW] features — theme-system, themed-board-art-and-motion, shared-screen-layout, in-game-layout, theme-implement-skill. The four [PLANNED] m3 features leaderboard-screen, leaderboards-menu-entry, results-steam-rank and input-rebinding are stale under the new layout (shared-screen-layout § Scope says why) and need amending before m3 resumes.
 - 2026-10-13 (from step 3): the themes milestone's id is `m2b-themes`.
 - 2026-10-13 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision ("Do all yourself"); on each open call in the draft take the draft's recommendation. Park only on a real design question.
 
