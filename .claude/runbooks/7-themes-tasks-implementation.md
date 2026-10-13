@@ -40,6 +40,7 @@ Depends on: 3
 
 Context:
 - 2026-10-13 (amend): Task 160 adds no reduced-motion setting; theme motion follows the operating system's `prefers-reduced-motion` preference, and the task is titled "Settings theme list and light/dark carry-over".
+- 2026-10-13 (amend): Supersedes the fact above: reduced motion is deferred whole to `m7-after-launch`. Until then the game has no reduced-motion behaviour — no setting and no reading of the operating system's `prefers-reduced-motion` preference; theme motion always plays. Task 160 adds no settings field, root marker, accessibility section or preference read.
 
 ```prompt
 /task-implement 160 --review

@@ -4,10 +4,8 @@ The catalogue of themes the player picks from on the Settings page, and the
 contract every theme fulfils: a registry entry, a stylesheet that restyles
 the kit's named components and their parts, a board module that styles every
 board, and the theme's own font files shipped with the game. It also carries
-the switch from the light and dark looks to *Joyful tiles*, the rule that
-theme motion does not play while the operating system's reduce-motion
-preference is on, and the conformance tests that hold every registered theme
-to the contract.
+the switch from the light and dark looks to *Joyful tiles* and the
+conformance tests that hold every registered theme to the contract.
 
 ## Purpose
 
@@ -50,9 +48,6 @@ In scope (m2b-themes):
 - **Settings** — the theme setting becomes a choice among the registry's
   themes, shown as a list; a stored `light` or `dark` value carries over to
   *Joyful tiles*.
-- **Reduced motion** — theme motion, the cell motion and every theme's
-  screen-component CSS animation, does not play while the operating
-  system's reduce-motion preference is on.
 - **The first theme's DOM look** — *Joyful tiles*' registry entry, fonts
   (Rubik and JetBrains Mono) and its stylesheet for the kit components that
   exist when this feature lands. `shared-screen-layout` styles the
@@ -73,8 +68,9 @@ Non-goals:
   field that lock will read.
 - A light and a dark variant per theme, and a "Match system" option — each
   theme is one fixed look.
-- An in-game reduced-motion setting — `m7-after-launch`; the operating
-  system's preference decides.
+- Reduced motion — `m7-after-launch`, the setting and its first value from
+  the operating system's preference together. Until then theme motion always
+  plays and the game does not read that preference.
 - Migrating the light or dark look into the catalogue as a theme — both are
   removed.
 - A second theme — added later by the theme skill, never by a task
@@ -128,10 +124,7 @@ reader, and the kit stylesheet: [app-shell.md](../../context/app-shell.md),
   theme's tokens (the contract's required set plus any of its own), styles
   every part and state of every catalogued component, fills the decoration
   slots it uses, declares its fonts by their self-hosted files, and carries
-  its DOM component animation as plain CSS. While the operating system's
-  reduce-motion preference is on, its animations and transitions do not run
-  (the base stylesheet's `prefers-reduced-motion` rule, which no theme
-  overrides).
+  its DOM component animation as plain CSS.
 - **Theme board module.** One ES module per theme carrying everything a
   canvas or WebGL renderer needs, which cannot be read from a stylesheet
   cheaply or at all: tile and cube palette, number colours 1–26, sky and
@@ -155,10 +148,6 @@ reader, and the kit stylesheet: [app-shell.md](../../context/app-shell.md),
 - **Token reader.** Kept for DOM-free consumers that draw from tokens (the
   Records history chart): it reads the active theme's computed tokens and
   notifies on theme change. Board renderers read the board module instead.
-- **Reduced motion.** While the operating system's preference
-  (`prefers-reduced-motion`) is on, one base stylesheet rule under that
-  media query stops every theme's CSS animation and transition, and the cell
-  motion player plays nothing (`themed-board-art-and-motion`).
 - **Settings theme list.** The Settings page's Theme section becomes a list
   of the registry's themes in catalogue order, each with its name and a
   small swatch drawn from its tokens, the active one selected. Picking one
@@ -194,8 +183,6 @@ reader, and the kit stylesheet: [app-shell.md](../../context/app-shell.md),
   update is already right. A stored id the registry does not know (a theme
   removed, or a document from a newer build) applies the default and is
   kept as stored until the player picks.
-- **Reduced motion** — the operating system's preference, read at run time;
-  nothing about it is stored.
 - **The active theme** — the root attribute, derived at start-up and
   changed only by the applier.
 - **Registry entry** — id (stable, kebab-case, never reused), display name,
@@ -220,8 +207,7 @@ reader, and the kit stylesheet: [app-shell.md](../../context/app-shell.md),
   change to every theme and every screen.
 - **Theme stylesheet contract** — rules scoped to the theme id only; tokens
   and parts per the catalogue; fonts only from the theme's own files;
-  component animation in CSS only, honouring the base stylesheet's
-  `prefers-reduced-motion` rule.
+  component animation in CSS only.
 - **Failure contract** — a theme whose files fail to load at start-up falls
   back to the default theme and tells the player once; a failed switch
   keeps the current theme and tells the player once; the default theme
