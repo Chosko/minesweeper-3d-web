@@ -1,6 +1,6 @@
 # Runbooks
 
-Last runbook number: 6
+Last runbook number: 7
 
 ---
 
@@ -61,5 +61,15 @@ File: .claude/runbooks/6-themes-planning.md
 Created: 2026-10-13
 Source: theme catalogue and home-page modes conversation
 Steps: 7/8
+
+---
+
+## 7. themes-tasks-implementation — Implement every task of milestone m2b-themes
+
+Status: [PENDING]
+File: .claude/runbooks/7-themes-tasks-implementation.md
+Created: 2026-10-13
+Source: /runbook-create interview (runbook themes-planning step 8)
+Steps: 0/33
 
 ---
