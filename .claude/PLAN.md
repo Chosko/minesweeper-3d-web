@@ -1,13 +1,13 @@
 # Plan
 
 Roadmap: .claude/domain/product-roadmap.md
-Last reconciled: 2026-10-09
+Last reconciled: 2026-10-13
 
 ---
 
 ## m1-classic-2d — Real Minesweeper on the web preview
 
-Status: [ACTIVE]
+Status: [SHIPPED]
 Covers: product-design.md § Visual design system, product-design.md § Classic 2D, product-design.md § Main menu and game shell, product-design.md § Results and records
 Features: design-tokens-and-themes, cell-graph-rules-engine, board-generation, platform-storage, screen-components, square-tile-skin, game-shell, game-summary, classic-2d-square-play, settings, personal-records, results-screen, records-screen
 
@@ -15,9 +15,17 @@ Features: design-tokens-and-themes, cell-graph-rules-engine, board-generation, p
 
 ## m2-3d-joins — 3D as a full member of the game
 
-Status: [PLANNED]
+Status: [SHIPPED]
 Covers: product-design.md § 3D mode, product-design.md § Replays, product-design.md § Results and records
 Features: 3d-board-graph, 3d-play-flow, 3d-game-records, replay-recording, replay-library, replay-playback, 3d-results-records-screens
+
+---
+
+## m2b-themes — The game wears its shipping look
+
+Status: [ACTIVE]
+Covers: product-design.md § Visual design system, product-design.md § Main menu and game shell, product-design.md § 3D mode
+Features: theme-system, shared-screen-layout, in-game-layout, themed-board-art-and-motion, theme-implement-skill
 
 ---
 
@@ -92,3 +100,8 @@ Features: none
 - leaderboards-menu-entry: depends on game-shell, leaderboard-screen, steam-desktop-host, screen-components
 - results-steam-rank: depends on results-screen, steam-leaderboards, steam-desktop-host, screen-components, 3d-results-records-screens, leaderboard-screen
 - input-rebinding: depends on settings, classic-2d-square-play, 3d-play-flow, game-shell, screen-components
+- theme-system: depends on screen-components, settings, platform-storage
+- themed-board-art-and-motion: depends on theme-system, classic-2d-square-play, 3d-board-graph, 3d-play-flow, replay-playback
+- shared-screen-layout: depends on theme-system, screen-components, game-shell, settings, results-screen, records-screen, replay-playback, 3d-results-records-screens, 3d-play-flow, classic-2d-square-play, personal-records, 3d-game-records
+- in-game-layout: depends on shared-screen-layout, theme-system, classic-2d-square-play, 3d-play-flow, cell-graph-rules-engine, game-summary, personal-records, 3d-game-records, replay-playback, game-shell
+- theme-implement-skill: depends on theme-system, themed-board-art-and-motion, shared-screen-layout, in-game-layout
