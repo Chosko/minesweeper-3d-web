@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 173
+Last task number: 179
 
 ---
 
@@ -1193,5 +1193,65 @@ Target: claude
 Files: .claude/context/app-shell.md, .claude/context/rendering.md, .claude/context/classic2d.md, .claude/context/mode3d.md, .claude/context/records.md, .claude/context/settings.md, .claude/context/replay.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md, .claude/domain/features/shared-screen-layout.md
 Preconditions: 163, 164, 165, 166, 167, 168, 169, 170, 171, 172
 Feature: shared-screen-layout
+
+---
+
+## 174. Live figures model: 3BV progress, pace vs PB, 3BV/s, clicks and flags
+
+Status: [MISSING]
+Target: claude
+Files: js/shell/live-figures.js, tests/live-figures.test.mjs
+Preconditions: none
+Feature: in-game-layout
+
+---
+
+## 175. Counter readout and figures panel kit components
+
+Status: [MISSING]
+Target: claude
+Files: js/ui/kit-catalogue.js, css/components.css, themes/joyful-tiles/theme.css, dev/components.html, tests/components.test.mjs
+Preconditions: 163
+Feature: in-game-layout
+
+---
+
+## 176. Classic 2D game window: counter strip, side panel and foot line
+
+Status: [MISSING]
+Target: claude
+Files: index.html, js/classic2d/mode.js, js/classic2d/session.js, js/classic2d/board-view.js, js/ui.js, js/main.js, tests/classic2d-mode.test.mjs, tests/classic2d-view.test.mjs, tests/components.test.mjs
+Preconditions: 163, 174, 175
+Feature: in-game-layout
+
+---
+
+## 177. 3D game overlay in the in-game layout
+
+Status: [MISSING]
+Target: claude+human
+Files: index.html, js/shell/mode-3d.js, js/mode3d/session.js, js/ui.js, js/main.js, tests/shell-mode-3d.test.mjs, tests/mode3d-session.test.mjs, tests/components.test.mjs
+Preconditions: 176
+Feature: in-game-layout
+
+---
+
+## 178. Live figures in the replay viewer
+
+Status: [MISSING]
+Target: claude+human
+Files: js/replay/viewer.js, js/replay/simulator.js, index.html, tests/replay-viewer.test.mjs, tests/replay-viewer-3d.test.mjs
+Preconditions: 172, 174, 175
+Feature: in-game-layout
+
+---
+
+## 179. Update documentation for feature `in-game-layout`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/app-shell.md, .claude/context/classic2d.md, .claude/context/mode3d.md, .claude/context/replay.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md, .claude/domain/features/in-game-layout.md
+Preconditions: 174, 175, 176, 177, 178
+Feature: in-game-layout
 
 ---

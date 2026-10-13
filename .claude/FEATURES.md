@@ -283,10 +283,10 @@ Tasks: 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173
 
 ## in-game-layout — The redesigned game window: counter strip, Restart, live figures panel and foot line
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/in-game-layout.md
 Source: product-design.md § Visual design system (m2b-themes)
-Tasks: none
+Tasks: 174, 175, 176, 177, 178, 179
 
 ---
 
