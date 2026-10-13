@@ -143,7 +143,7 @@ Approval gates in this run: approve as drafted, taking the draft's recommendatio
 ```
 Done: 2026-10-13, commit `8452d98` (1 file, +16/-3). m2b-themes is [ACTIVE]; m1 and m2 are [SHIPPED]. The edge from theme-system to themed-board-art-and-motion was dropped to break a cycle; theme-system.md's prose still states it.
 
-## [ ] 7. Write the themes milestone tasks
+## [x] 7. Write the themes milestone tasks
 
 Depends on: 6
 
@@ -163,6 +163,7 @@ The deliverable is that milestone's complete backlog in .claude/TASKS.md. Do not
 
 Approval gates in this run: approve as drafted, taking the draft's recommendation on each open call. Park only on a real design question.
 ```
+Done: 2026-10-13, commits `e07cc9d`, `32f64c8`, `acd8d6b`, `4eb4ed8`, `9a22d1d` (43 files, +2125/-15). Tasks 157–189 written. Tasks 167–172, 177 and 178 need the owner's artboard (claude+human). Task 156, a dark-theme task outside these features, is now obsolete but still open.
 
 ## [ ] 8. Create the themes implementation runbook
 
