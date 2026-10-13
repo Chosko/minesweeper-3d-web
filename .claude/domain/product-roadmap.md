@@ -245,8 +245,9 @@ Exit criteria:
 - Surface is playable on its launch shapes, looks and plays exactly like
   Classic 2D apart from navigating the object, and has leaderboards.
 - The 2D and 3D campaigns each hold at least 50 levels.
-- The demo carries the first Surface shape, with the rest of Surface and the
-  Hexagon and Triangle modes as whole entries locked.
+- The demo carries the first Surface shape and the Hexagon and Triangle
+  Beginner boards from their own entries; the rest of Surface and the
+  Intermediate, Expert and custom boards of Hexagon and Triangle are locked.
 - The full achievement set is in place.
 
 Rationale: breadth comes once the core is proven in public; these additions
@@ -265,8 +266,9 @@ Covers:
 - product-design.md § Visual design system — hexagonal and triangle tiles
   and the Surface mode in every theme of the catalogue, plus the
   colour-blind-safe number set in every theme.
-- product-design.md § Demo edition — Hexagon and Triangle locked as whole
-  modes, and the Surface locks.
+- product-design.md § Demo edition — Hexagon and Triangle Beginner boards
+  offered from their own entries, their Intermediate, Expert and custom
+  boards locked, and the Surface locks.
 - product-design.md § Steam features — leaderboards for Hexagon, Triangle
   and Surface, and the full achievement set.
 - product-design.md § Main menu and game shell — the Hexagon, Triangle and
