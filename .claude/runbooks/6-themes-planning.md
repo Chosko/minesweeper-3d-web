@@ -51,7 +51,7 @@ Approval gates in this run: approve as drafted, taking the draft's recommendatio
 ```
 Done: 2026-10-13, commit `b7dfac7` (2 files, +48/-27). Hexagon and Triangle got their own high-level feature sections; the demo now locks both modes whole, where it used to offer their Beginner boards; where they sit in the Records 2D | 3D switch is left open.
 
-## [ ] 3. Revise the roadmap: a themes milestone before the rest of m3, and the m5/m6 consequences
+## [x] 3. Revise the roadmap: a themes milestone before the rest of m3, and the m5/m6 consequences
 
 Depends on: 1, 2
 
@@ -72,12 +72,14 @@ Revise the existing roadmap (.claude/domain/product-roadmap.md) for the two prod
 
 Approval gates in this run: approve as drafted, taking the draft's recommendation on each open call. Park only on a real design question.
 ```
+Done: 2026-10-13, commit `d8845cb` (1 file, +82/-22). The new milestone is `m2b-themes`. The strategy line saying the shipping look lands before the Steam work, so Steam's screens are built once, is the agent's inference, not the owner's words. The UX-review-first order lives in the runbooks, not the roadmap.
 
 ## [ ] 4. Architect the theme system for the themes milestone
 
 Depends on: 3
 
 Context:
+- 2026-10-13 (from step 3): the themes milestone's id is `m2b-themes`.
 - 2026-10-13 (from step 1): the product-design amend did not touch technical-direction.md — self-hosted per-theme fonts and per-theme rendering in Canvas 2D and WebGL are recorded nowhere in the technical direction yet; the architecture must state them (and update technical-direction.md if the architect's rules allow).
 - 2026-10-13 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision ("Do all yourself"); on each open call in the draft take the draft's recommendation. Park only on a real design question.
 
@@ -102,6 +104,8 @@ Approval gates in this run: approve as drafted, taking the draft's recommendatio
 Depends on: 4
 
 Context:
+- 2026-10-13 (from step 3): the [PLANNED] m3 features leaderboard-screen, results-steam-rank, input-rebinding and leaderboards-menu-entry describe screens in the current layout; say in the architecture which of them the redesigned layout makes stale, so they can be amended before m3 resumes.
+- 2026-10-13 (from step 3): the themes milestone's id is `m2b-themes`.
 - 2026-10-13 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision ("Do all yourself"); on each open call in the draft take the draft's recommendation. Park only on a real design question.
 
 ```prompt
@@ -123,6 +127,7 @@ Approval gates in this run: approve as drafted, taking the draft's recommendatio
 Depends on: 4, 5
 
 Context:
+- 2026-10-13 (from step 3): the themes milestone's id is `m2b-themes`.
 - 2026-10-13 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision ("Do all yourself"); on each open call in the draft take the draft's recommendation. Park only on a real design question.
 
 ```prompt
@@ -138,6 +143,7 @@ Approval gates in this run: approve as drafted, taking the draft's recommendatio
 Depends on: 6
 
 Context:
+- 2026-10-13 (from step 3): the themes milestone's id is `m2b-themes`.
 - 2026-10-13 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision ("Do all yourself"); on each open call in the draft take the draft's recommendation. Park only on a real design question.
 
 ```prompt
@@ -157,6 +163,7 @@ Approval gates in this run: approve as drafted, taking the draft's recommendatio
 Depends on: 7
 
 Context:
+- 2026-10-13 (from step 3): the themes milestone's id is `m2b-themes`.
 - 2026-10-13 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision ("Do all yourself"); on each open call in the draft take the draft's recommendation. Park only on a real design question.
 
 ```prompt
