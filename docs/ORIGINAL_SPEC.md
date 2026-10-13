@@ -39,7 +39,7 @@ pressed, flagged, unlinked, selected, nearSelected. No question marks.
   - Web port: a revealed number that becomes unlinked plays a short "solved" pulse (it brightens and grows, then fades out, in under half a second) before it is gone; the cell is unlinked and unpickable from the action on.
 - **Win**: when not ended and (number of unpressed cells == mines) and no flagged non-mine exists → won. Flags not required. Timer and counter freeze.
 - **Lose**: on explosion every cell becomes pressed, unflagged, linked → full board revealed (mines shown with mine graphic, numbers visible). Timer freezes.
-- **Timer** starts on the first left-click release over a selected cell (even if it's flagged and nothing happens). Chords do not start it. Shown with up to 2 decimals.
+- **Timer** starts on the first reveal. Chords do not start it. Shown with up to 2 decimals.
 - HUD: time, mines remaining (mines - flags), centre crosshair, end message (won / game over + options).
 
 ## Controls (must be preserved)
