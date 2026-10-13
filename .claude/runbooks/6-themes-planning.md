@@ -165,7 +165,7 @@ Approval gates in this run: approve as drafted, taking the draft's recommendatio
 ```
 Done: 2026-10-13, commits `e07cc9d`, `32f64c8`, `acd8d6b`, `4eb4ed8`, `9a22d1d` (43 files, +2125/-15). Tasks 157–189 written. Tasks 167–172, 177 and 178 need the owner's artboard (claude+human). Task 156, a dark-theme task outside these features, is now obsolete but still open.
 
-## [ ] 8. Create the themes implementation runbook
+## [x] 8. Create the themes implementation runbook
 
 Depends on: 7
 
@@ -189,6 +189,7 @@ Answers to its interview, so it needs to ask nothing:
 
 This step creates the runbook only. Never run it.
 ```
+Done: 2026-10-13, commit `5cd378b` (2 files, +362/-1). Runbook 7, themes-tasks-implementation, has 33 steps (tasks 157–189). Steps 11–16, 21 and 22 need the owner. Not run.
 
 ## Do not re-propose
 

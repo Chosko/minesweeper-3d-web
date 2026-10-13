@@ -56,11 +56,11 @@ Steps: 23/41
 
 ## 6. themes-planning — Design, roadmap, architect, plan and task the theme catalogue, and record Hexagon and Triangle as home-page modes
 
-Status: [RUNNING]
+Status: [DONE]
 File: .claude/runbooks/6-themes-planning.md
 Created: 2026-10-13
 Source: theme catalogue and home-page modes conversation
-Steps: 7/8
+Steps: 8/8
 
 ---
 
