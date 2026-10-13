@@ -108,8 +108,8 @@ reads a stylesheet or imports a theme.
   that event; asked per frame for each animating cell's current values
   (scale, offset, rotation and which face shows, depth, brightness,
   opacity). It drops every animation on a new board, a seek, a pause hiding
-  the board, a theme change and reduced motion turning on, and it caps how
-  many cells animate at once — past the cap a cell simply shows its new
+  the board, a theme change and the operating system's reduce-motion
+  preference turning on, and it caps how many cells animate at once — past the cap a cell simply shows its new
   state — so a flood reveal on a 100 × 100 board costs nothing extra. The
   cap is measured and set during implementation.
 - **2D motion layer.** Animating cells are drawn on a layer above the board
@@ -183,7 +183,8 @@ reads a stylesheet or imports a theme.
   testing and picking use the cell's logical slot, never its animated
   position. No input waits for an animation, and a second event on an
   animating cell restarts it from the new state.
-- **Reduced motion** — with the setting on, the player starts nothing and
+- **Reduced motion** — while the operating system's reduce-motion
+  preference (`prefers-reduced-motion`) is on, the player starts nothing and
   every cell shows its new state at once.
 - **Board conformance checks** (run by `theme-system`'s tests for every
   theme) — every palette entry, 26 number colours, a shipped style with all
@@ -208,8 +209,8 @@ reads a stylesheet or imports a theme.
 ## Dependencies
 
 - `theme-system` — the registry, the board module's loading and hand-off,
-  the theme-change notification, the reduced-motion setting and the
-  conformance tests that run the board checks.
+  the theme-change notification and the conformance tests that run the
+  board checks.
 - `classic-2d-square-play` — the board view, inputs and per-cell redraw
   the 2D motion layer sits on.
 - `3d-board-graph`, `3d-play-flow` — the 3D state view and the renderer's

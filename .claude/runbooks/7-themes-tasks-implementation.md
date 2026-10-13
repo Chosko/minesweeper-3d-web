@@ -38,7 +38,8 @@ Context: none
 
 Depends on: 3
 
-Context: none
+Context:
+- 2026-10-13 (amend): Task 160 adds no reduced-motion setting; theme motion follows the operating system's `prefers-reduced-motion` preference, and the task is titled "Settings theme list and light/dark carry-over".
 
 ```prompt
 /task-implement 160 --review

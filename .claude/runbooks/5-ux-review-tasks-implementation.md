@@ -264,7 +264,7 @@ Context: none
 /task-implement 155 --review
 ```
 
-## [ ] 41. Implement task 156 — Dark theme: menu-screen backdrop and context-lost card
+## [x] 41. Implement task 156 — Dark theme: menu-screen backdrop and context-lost card
 
 Depends on: none
 
@@ -273,6 +273,8 @@ Context: none
 ```prompt
 /task-implement 156 --review
 ```
+
+Done: struck — task 156 is [SKIP]: it themes the dark look that m2b-themes removes (task 158 retires the light and dark looks).
 
 ## [ ] 21. Implement task 139 — 3D flight: fly-through fade, forward follows the view, spacing, FOV
 

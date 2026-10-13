@@ -34,8 +34,8 @@ In scope (m1-classic-2d):
   the replay viewer; and the 3D neighbour count — the readout beside the
   crosshair in 3D play — on by default.
 - Theme: one of the catalogue's themes, picked from a list, *Joyful tiles*
-  until the player picks; the list, the carry-over of a stored light or dark
-  choice and the reduced-motion entry are `theme-system`'s. Changing it
+  until the player picks; the list and the carry-over of a stored light or
+  dark choice are `theme-system`'s. Changing it
   applies at once.
 - Audio: Sound (the on/off control, on while sound plays, stored as mute)
   and Volume, the values the existing sound module keeps.
@@ -103,7 +103,7 @@ settings handling for the shell's UI module and the sound module ([app-shell.md]
   (0.25–3, default 1), invert Y (default off), fullscreen (default off),
   render resolution (Auto, Sharp or Fast; default Auto), 2D board scale
   (Fit, 100 % or 125 %; default 100 %), theme (a theme id, default
-  *Joyful tiles*), reduced motion (`theme-system`), volume (0–1, default 0.7), mute (default off) and
+  *Joyful tiles*), volume (0–1, default 0.7), mute (default off) and
   always ask before restarting (default off). Persisted through
   `platform-storage`.
 - **In memory** — the validated current values, the single source of truth

@@ -1019,7 +1019,7 @@ Preconditions: 154
 
 ## 156. Dark theme: menu-screen backdrop and context-lost card
 
-Status: [MISSING]
+Status: [SKIP]
 Target: claude
 Files: css/tokens.css, css/style.css, tests/tokens.test.mjs, tests/components.test.mjs, tests/theme.test.mjs, .claude/context/app-shell.md, .claude/context/testing.md, .claude/domain/features/design-tokens-and-themes.md
 Preconditions: none
@@ -1056,11 +1056,11 @@ Feature: theme-system
 
 ---
 
-## 160. Settings theme list, light/dark carry-over and the reduced-motion setting
+## 160. Settings theme list and light/dark carry-over
 
 Status: [MISSING]
 Target: claude
-Files: js/settings/schema.js, js/settings/store.js, js/settings/page.js, js/settings/appliers.js, js/theme.js, css/components.css, css/style.css, index.html, tests/settings-store.test.mjs, tests/settings-page.test.mjs, tests/settings-appliers.test.mjs, tests/settings-reset.test.mjs
+Files: js/settings/schema.js, js/settings/store.js, js/settings/page.js, js/settings/appliers.js, js/theme.js, index.html, tests/settings-store.test.mjs, tests/settings-page.test.mjs, tests/settings-appliers.test.mjs, tests/settings-reset.test.mjs
 Preconditions: 159
 Feature: theme-system
 
@@ -1301,7 +1301,7 @@ Feature: themed-board-art-and-motion
 Status: [MISSING]
 Target: claude
 Files: js/cell-motion.js, tests/cell-motion.test.mjs
-Preconditions: 160, 181
+Preconditions: 181
 Feature: themed-board-art-and-motion
 
 ---
