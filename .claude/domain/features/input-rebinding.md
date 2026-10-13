@@ -3,7 +3,8 @@
 Rebinding the keys, mouse buttons and controller buttons that play Classic
 2D and 3D, on the Settings page: each mode's actions listed per input
 device, a new input captured for any of them, clashes resolved on the spot,
-and every mode, the in-game help and the bindings list reading the one
+and every mode and every help surface — the key hints, the in-game
+controls reminder and the bindings list among them — reading the one
 current set of bindings.
 
 ## Purpose
@@ -14,7 +15,7 @@ rebinding to them: a desktop game on Steam is expected to let the player
 choose their own keys and buttons, and players with other layouts, a
 left-handed mouse or a different controller need it to play comfortably.
 `settings` already shows each mode's bindings, read-only, from one bindings
-source shared with the in-game help; this feature makes that source
+source shared with every help surface; this feature makes that source
 editable per player, and makes every mode's input read its actions through
 it instead of from fixed keys and buttons.
 
@@ -28,13 +29,17 @@ In scope (m3-on-steam):
   actions, with up to two inputs per action per device.
 - Clash handling inside one mode and one device, reserved inputs that can
   never be bound, and reset to defaults per mode and device.
-- The rebinding controls on the Settings page, in the place of the
-  read-only bindings list, operable by mouse, keyboard and controller.
+- The rebinding controls on the framed Settings page of
+  `shared-screen-layout`, in the place of its read-only bindings list,
+  operable by mouse, keyboard and controller.
 - Saving the player's bindings in the settings document, so they sync
   through Steam Cloud with the other settings in the desktop build.
 - Classic 2D's pointer and cursor input and the 3D mode's keyboard, mouse
-  and controller input reading their actions through the current bindings;
-  the in-game help showing the current bindings.
+  and controller input reading their actions through the current bindings.
+- Every help surface showing the current bindings: the key hints of every
+  screen in the shared layout, the in-game controls reminder
+  (`in-game-layout`), the 3D HUD key strip and first-use hints, and the
+  Settings page.
 
 Non-goals:
 
@@ -58,7 +63,9 @@ Non-goals:
   controller through the browser's gamepad interface as before.
 - Bindings for modes that do not exist yet — Surface, campaigns, daily
   boards — each adds its catalogue when it lands.
-- The look of the page's controls — `screen-components`.
+- The look of the page's controls — the active theme styles the catalogued
+  kit components the page is composed from (`theme-system`); the page adds
+  no component and no theme style of its own.
 
 ## Architecture
 
@@ -73,8 +80,8 @@ the game shell, settings stored behind the platform layer (see
   or while held, and its default inputs per device (keyboard, mouse,
   controller). The 3D catalogue holds the six move directions, the three
   held view modes, reveal and flag; Classic 2D's holds reveal, flag, chord
-  and the four cursor moves. It replaces the fixed bindings source the
-  read-only list and the in-game help read today.
+  and the four cursor moves. It replaces the fixed bindings source every
+  help surface reads.
 - **Bindings resolver.** Joins the catalogue's defaults with the player's
   overrides into the current bindings, and answers both directions: which
   action, if any, an input produces in a mode, and which inputs an action
@@ -88,14 +95,21 @@ the game shell, settings stored behind the platform layer (see
   are untouched; a direct chord binding feeds the same actions. The 3D
   view-mode holds and move keys are translated before the controls union
   reads them, so a controller and a keyboard still combine as they do now.
-- **Rebinding page.** On the Settings page, the Controls section's bindings
-  list becomes one panel per mode with a tab per device. Each action shows
-  its inputs as slots; choosing a slot starts capture, the next input of
+- **Rebinding page.** On the framed Settings page of
+  `shared-screen-layout`, the Controls section's bindings list becomes one
+  panel per mode under its section label, with a tab per device, composed
+  from catalogued kit components only, as
+  [shared-screen-layout.md](./shared-screen-layout.md) § Architecture,
+  **Kit additions**, requires. Each action is a list row showing its inputs
+  as slots, each labelled as a key hint; choosing a slot starts capture, the next input of
   that device fills it, and the shell's Back input cancels. A clash, a
   reserved input or a last binding removed is reported in place. Each
   panel has Reset to defaults for its mode and device.
-- **Help and glyphs.** The in-game help and the page draw labels from the
-  current bindings: keys by their position code, shown with the
+- **Help and glyphs.** Every help surface — the shared layout's key hints,
+  `in-game-layout`'s controls reminder, the 3D HUD key strip and first-use
+  hints, and the page — draws its labels from the current bindings and
+  shows a rebinding from its next update: keys by their position code,
+  shown with the
   keyboard layout's name for that key where the browser can tell it;
   controller buttons with the connected pad's glyphs.
 
@@ -167,7 +181,14 @@ the game shell, settings stored behind the platform layer (see
   and controller input reads its actions through the resolver.
 - `game-shell` — the reserved Back and Pause inputs and shell navigation on
   the page.
-- `screen-components` — the tabs, list and capture prompt of the page.
+- `shared-screen-layout` — the framed Settings page the panels sit in, and
+  the section label, list row and key hint they and every screen's key
+  hints are drawn with.
+- `in-game-layout` — the controls reminder that lists the current bindings
+  during play.
+- `theme-system` — the kit catalogue those components are named in, and
+  their styling by the active theme.
+- `screen-components` — the tabs and buttons of the page.
 - No external libraries.
 
 ## Open questions
@@ -176,3 +197,7 @@ the game shell, settings stored behind the platform layer (see
   Steam controller configuration never remaps buttons underneath the
   game's own bindings. Blocks nothing in this feature; settled with the
   Steamworks app configuration.
+- No *Joyful tiles* artboard draws the rebinding panels on the Settings
+  page yet; their task waits on one as
+  [shared-screen-layout.md](./shared-screen-layout.md) § Architecture,
+  **Design status per screen**, says.

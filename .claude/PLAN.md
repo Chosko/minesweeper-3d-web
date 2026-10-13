@@ -95,11 +95,11 @@ Features: none
 - steam-desktop-host: depends on platform-storage, replay-library, game-shell
 - steam-cloud-saves: depends on steam-desktop-host, platform-storage, replay-library
 - steam-leaderboards: depends on steam-desktop-host, steam-cloud-saves, replay-playback, replay-recording, replay-library, game-summary, 3d-game-records, personal-records, game-shell, platform-storage
-- leaderboard-screen: depends on steam-leaderboards, replay-playback, game-summary, 3d-game-records, screen-components, game-shell, results-screen
+- leaderboard-screen: depends on steam-leaderboards, replay-playback, game-summary, 3d-game-records, screen-components, game-shell, results-screen, shared-screen-layout, theme-system
 - steam-achievements: depends on steam-desktop-host, game-summary, 3d-game-records, personal-records, game-shell
-- leaderboards-menu-entry: depends on game-shell, leaderboard-screen, steam-desktop-host, screen-components
-- results-steam-rank: depends on results-screen, steam-leaderboards, steam-desktop-host, screen-components, 3d-results-records-screens, leaderboard-screen
-- input-rebinding: depends on settings, classic-2d-square-play, 3d-play-flow, game-shell, screen-components
+- leaderboards-menu-entry: depends on game-shell, leaderboard-screen, steam-desktop-host, shared-screen-layout, theme-system
+- results-steam-rank: depends on results-screen, steam-leaderboards, steam-desktop-host, 3d-results-records-screens, leaderboard-screen, shared-screen-layout, theme-system
+- input-rebinding: depends on settings, classic-2d-square-play, 3d-play-flow, game-shell, screen-components, shared-screen-layout, in-game-layout, theme-system
 - theme-system: depends on screen-components, settings, platform-storage
 - themed-board-art-and-motion: depends on theme-system, classic-2d-square-play, 3d-board-graph, 3d-play-flow, replay-playback
 - shared-screen-layout: depends on theme-system, screen-components, game-shell, settings, results-screen, records-screen, replay-playback, 3d-results-records-screens, 3d-play-flow, classic-2d-square-play, personal-records, 3d-game-records

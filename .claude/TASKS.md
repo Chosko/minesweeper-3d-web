@@ -537,9 +537,9 @@ Feature: steam-achievements
 ## 104. Leaderboard screen: board picker, scope tabs, entries and states
 
 Status: [MISSING]
-Target: claude
+Target: claude+human
 Files: js/leaderboards/screen.js, js/shell/router.js, index.html, css/components.css, tests/leaderboards-screen.test.mjs, .claude/domain/features/leaderboard-screen.md, .claude/domain/features/steam-leaderboards.md
-Preconditions: 61, 97, 98
+Preconditions: 61, 97, 98, 163
 Feature: leaderboard-screen
 
 ---
@@ -569,7 +569,7 @@ Feature: leaderboard-screen
 Status: [MISSING]
 Target: claude
 Files: js/shell/menu.js, index.html, js/shell/router.js, tests/shell-menu.test.mjs
-Preconditions: 86, 104
+Preconditions: 86, 104, 165
 Feature: leaderboards-menu-entry
 
 ---
@@ -587,9 +587,9 @@ Feature: leaderboards-menu-entry
 ## 109. Steam rank panel on the results screen
 
 Status: [MISSING]
-Target: claude
-Files: js/results/rank-panel.js, js/results/view.js, js/results/flow.js, css/components.css, index.html, tests/results-rank.test.mjs
-Preconditions: 81, 86, 97, 104
+Target: claude+human
+Files: js/results/rank-panel.js, js/results/view.js, js/results/flow.js, css/components.css, index.html, tests/results-rank.test.mjs, .claude/domain/features/results-steam-rank.md
+Preconditions: 81, 86, 97, 104, 169
 Feature: results-steam-rank
 
 ---
@@ -608,8 +608,8 @@ Feature: results-steam-rank
 
 Status: [MISSING]
 Target: claude
-Files: js/settings/bindings.js, js/settings/resolver.js, js/settings/schema.js, js/settings/store.js, js/ui.js, tests/settings-bindings.test.mjs
-Preconditions: none
+Files: js/settings/bindings.js, js/settings/resolver.js, js/settings/schema.js, js/settings/store.js, js/ui.js, js/ui/components.js, tests/settings-bindings.test.mjs
+Preconditions: 163, 176, 177
 Feature: input-rebinding
 
 ---
@@ -627,9 +627,9 @@ Feature: input-rebinding
 ## 113. Rebinding controls on the Settings page
 
 Status: [MISSING]
-Target: claude
-Files: js/settings/page.js, js/settings/rebind-panel.js, index.html, css/components.css, tests/settings-rebind.test.mjs
-Preconditions: 111, 112
+Target: claude+human
+Files: js/settings/page.js, js/settings/rebind-panel.js, index.html, css/components.css, tests/settings-rebind.test.mjs, .claude/domain/features/input-rebinding.md
+Preconditions: 111, 112, 171
 Feature: input-rebinding
 
 ---

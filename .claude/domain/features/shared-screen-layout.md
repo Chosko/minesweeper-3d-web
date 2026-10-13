@@ -76,20 +76,13 @@ Non-goals:
 - Theme styling beyond *Joyful tiles* — later themes style these components
   through the theme skill.
 - Hexagon, Triangle and Surface screens — deferred to `m6-launch`.
-- Amending the `[PLANNED]` m3-on-steam features this layout makes stale.
-  Each describes its screen in the m1 layout and is amended to this layout
-  and `in-game-layout` before m3-on-steam resumes:
-  - `leaderboard-screen` — composed from the m1 kit; it moves into the
-    screen frame with the board option, section label and list row;
-  - `leaderboards-menu-entry` — Leaderboards and Quit are ordinary m1 menu
-    list entries; they become mode entries with icon, detail line and
-    accent;
-  - `results-steam-rank` — its rank panel sits in the m1 results view; it
-    moves into the framed results screen;
-  - `input-rebinding` — its controls replace the m1 Settings page's
-    bindings list, and the help it keeps current is the m1 overlay's; it
-    moves into the framed Settings page and keeps every key hint and the
-    in-game controls reminder current.
+- The m3-on-steam screens and entries drawn in this layout — the
+  leaderboard screen in the screen frame (`leaderboard-screen`), the
+  Leaderboards and Quit mode entries (`leaderboards-menu-entry`), the rank
+  panel in the framed results screen (`results-steam-rank`), and the
+  rebinding controls on the framed Settings page with every key hint and
+  the in-game controls reminder reading the current bindings
+  (`input-rebinding`) — each defined by its own feature.
 
 ## Architecture
 
