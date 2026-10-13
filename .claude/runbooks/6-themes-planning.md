@@ -74,7 +74,7 @@ Approval gates in this run: approve as drafted, taking the draft's recommendatio
 ```
 Done: 2026-10-13, commit `d8845cb` (1 file, +82/-22). The new milestone is `m2b-themes`. The strategy line saying the shipping look lands before the Steam work, so Steam's screens are built once, is the agent's inference, not the owner's words. The UX-review-first order lives in the runbooks, not the roadmap.
 
-## [ ] 4. Architect the theme system for the themes milestone
+## [x] 4. Architect the theme system for the themes milestone
 
 Depends on: 3
 
@@ -98,12 +98,14 @@ Facts and decisions to design around, written nowhere on disk except as noted:
 
 Approval gates in this run: approve as drafted, taking the draft's recommendation on each open call. Park only on a real design question.
 ```
+Done: 2026-10-13, commit `63cdb37` (15 files, +1007/-22). Five features, not three: theme-system, themed-board-art-and-motion, shared-screen-layout, in-game-layout and theme-implement-skill, so the layout work step 5 was meant for is already architected. Also adds a reduced-motion setting and defines pace vs PB. technical-direction.md left unchanged (the architect may not edit it).
 
 ## [ ] 5. Architect the redesigned screen layout for the themes milestone
 
 Depends on: 4
 
 Context:
+- 2026-10-13 (from step 4): step 4 already architected the redesigned layout as two [NEW] features, shared-screen-layout and in-game-layout (screens without an artboard are composed by analogy, an open question in those documents). Do not write them again: run /architect in its amend form on them only if the artboards or this prompt carry something they miss, and make sure the m3-feature staleness note above is recorded. If nothing is missing, end DONE with no commit.
 - 2026-10-13 (from step 3): the [PLANNED] m3 features leaderboard-screen, results-steam-rank, input-rebinding and leaderboards-menu-entry describe screens in the current layout; say in the architecture which of them the redesigned layout makes stale, so they can be amended before m3 resumes.
 - 2026-10-13 (from step 3): the themes milestone's id is `m2b-themes`.
 - 2026-10-13 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision ("Do all yourself"); on each open call in the draft take the draft's recommendation. Park only on a real design question.
