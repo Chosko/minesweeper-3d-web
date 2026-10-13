@@ -4,7 +4,7 @@ Created: 2026-10-13 · Source: theme catalogue and home-page modes conversation 
 Last step number: 8
 Sequencing: /production-plan must see both architected features, and tasks are written only after the plan orders them.
 
-## [ ] 1. Amend the product design: a catalogue of themes replaces light and dark
+## [x] 1. Amend the product design: a catalogue of themes replaces light and dark
 
 Depends on: none
 
@@ -27,6 +27,7 @@ Decisions settled by the owner, written nowhere else yet — carry each into the
 
 Approval gates in this run: approve as drafted, taking the draft's recommendation on each open call. Park only on a real design question.
 ```
+Done: 2026-10-13, commit `6c3d68f` (2 files, +50/-20). Also rewrote the 3D mode decision (its look now follows the theme) and dropped "the current 3D look is the bar"; technical-direction.md left unchanged.
 
 ## [ ] 2. Amend the product design: Hexagon and Triangle become home-page modes
 
@@ -75,6 +76,7 @@ Approval gates in this run: approve as drafted, taking the draft's recommendatio
 Depends on: 3
 
 Context:
+- 2026-10-13 (from step 1): the product-design amend did not touch technical-direction.md — self-hosted per-theme fonts and per-theme rendering in Canvas 2D and WebGL are recorded nowhere in the technical direction yet; the architecture must state them (and update technical-direction.md if the architect's rules allow).
 - 2026-10-13 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision ("Do all yourself"); on each open call in the draft take the draft's recommendation. Park only on a real design question.
 
 ```prompt
