@@ -54,6 +54,10 @@ Non-goals:
   bindings, which reproduce the spec.
 - Per-device or per-controller profiles, macros, and binding one input to
   several actions.
+- Classic 2D's button swap (`classic-2d-square-play`). It is not a binding
+  and has no place in the catalogue or the overrides: it trades left and
+  right per press on the buttons the bindings produce, in front of the
+  pointer state machine, and stays there.
 - Steam Input's own controller configuration — the game reads the
   controller through the browser's gamepad interface as before.
 - Bindings for modes that do not exist yet — Surface, campaigns, daily

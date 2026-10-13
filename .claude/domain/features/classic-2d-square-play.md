@@ -39,6 +39,12 @@ In scope (m1-classic-2d):
   down, reveal and chord on release and a flag on the right press, the
   chord gestures the reference accepts (left or middle on a number,
   left + right), and cancelling by moving off a cell before release.
+- A *Swap clicks* toggle on the overlay bar, beside Pause, that trades the
+  left and right mouse buttons for presses starting on a closed or flagged
+  cell, so the left button alone flags, unflags and chords. The switch
+  lives for the page — kept across games, off on reload, never a setting —
+  and the toggle shows only while the game is unpaused and never takes
+  keyboard focus. Keyboard, controller and the 3D mode are unaffected.
 - Keyboard and controller play: a visible cell cursor moved by arrow keys,
   d-pad or stick, with reveal, flag and chord on buttons, so Classic 2D is
   fully playable with a controller.
@@ -129,6 +135,13 @@ copied.
   buttons that reproduces the reference: which buttons and combinations
   reveal, flag and chord, what shows as pressed while a button is held, and
   what releasing elsewhere does.
+- **Button swap.** A per-press translator in front of the pointer state
+  machine: while the switch is on, a press on a closed or flagged cell
+  trades left and right, and the translation chosen at the press holds
+  until that button's release. The state machine sees the logical buttons,
+  so a swapped click keeps the timing, press feedback and chord gestures of
+  the button it stands for; swapping finished actions instead would flag on
+  a release and reveal on a press.
 - **Cursor input.** A cell cursor driven by keyboard and controller, with
   auto-repeat for held directions, drawn as a focus ring over the board in
   a board-only cursor colour distinct from the tile edge it covers, so the

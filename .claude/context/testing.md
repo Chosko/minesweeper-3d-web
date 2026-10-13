@@ -613,6 +613,17 @@ browser checks for everything that needs WebGL or the DOM.
   `EventTarget` fakes (context menu, shift-pan presses ignored, blur,
   `destroy`); DOM-free. One Playwright test plays a fixed Beginner board by
   mouse to a win (skipped when Playwright or chromium is unavailable).
+- `tests/classic2d-button-swap.test.mjs` — the Classic 2D mouse button swap
+  (`js/classic2d/button-swap.js`): the switch and its per-press
+  translation, a release going to its press's button, `reset`; the mounted
+  pointer wiring with a swap over real engine games and `EventTarget`
+  fakes (a left press flagging and unflagging, a right press revealing on
+  release, a number still chording, a press keeping its swap through a
+  flip, blur and `destroy` forgetting presses, the shift-pan press still
+  the pan's); the 3D overlay never showing the toggle. One Playwright test
+  checks the toggle on the Classic 2D board — shown while unpaused, a
+  swapped click, kept across games, never taking focus (skipped when
+  Playwright or chromium is unavailable).
 - `tests/classic2d-cursor.test.mjs` — the Classic 2D cursor input
   (`js/classic2d/cursor-input.js`) over real engine games: moving and
   clamping, auto-repeat of held directions, Space / Enter / F / D and the
@@ -656,7 +667,9 @@ browser checks for everything that needs WebGL or the DOM.
   Play a standard board from the generating card, the
   controller poll, the board opened at the scale setting inside the panel's
   frame with its layouts and the player's scrolls reported and `setScale`
-  refitting it, the ring reaching the sampler (-1 when hidden), the
+  refitting it, the ring reaching the sampler (-1 when hidden), the page's
+  button swap handed to every game's pointer input and never the cursor
+  input, the
   shell's scale, panel and scroll-hint wiring; the board choice helpers (`js/classic2d/board-choice.js`)
   against `CUSTOM_LIMITS`, the no-guess default and the density hint; the
   `#c2d-choice` markup (the switch under the sizes with its helper line,
@@ -1152,7 +1165,8 @@ browser checks for everything that needs WebGL or the DOM.
   `tests/components.test.mjs`, the minimum-tile-size test in
   `tests/tile-skin.test.mjs`, the board test in
   `tests/classic2d-view.test.mjs`, the mouse game in
-  `tests/classic2d-pointer.test.mjs`, the keyboard game in
+  `tests/classic2d-pointer.test.mjs`, the swap toggle in
+  `tests/classic2d-button-swap.test.mjs`, the keyboard game in
   `tests/classic2d-cursor.test.mjs`, the Classic 2D flow in
   `tests/classic2d-mode.test.mjs`, the input fidelity check in
   `tests/classic2d-fidelity.test.mjs`, the won game through the results

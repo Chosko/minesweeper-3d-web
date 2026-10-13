@@ -32,6 +32,10 @@ looks.
   state machine over the buttons, its rules read from the reference
   profile, and `mountPointerInput`, its wiring to the view and the session.
   DOM-free at import.
+- `js/classic2d/button-swap.js` — the mouse button swap: the page's switch
+  (off at creation, never saved) and its per-press translation that trades
+  left and right on a closed or flagged cell, held from a press to its
+  release. DOM-free.
 - `js/classic2d/cursor-input.js` — the keyboard and controller input: a cell
   cursor with auto-repeat for held directions, reveal / flag / chord on keys
   and buttons with the mouse's press feedback and release rules, and
@@ -170,8 +174,17 @@ looks.
   `{down(button, c), up(button, c), move(c), reset(), holding}` — `c` the
   cell under the pointer or -1; `onPress(cells)` on every change of the
   pressed set; `onAction(kind, c)` with `'reveal' | 'toggleFlag' | 'chord'`.
-- `mountPointerInput({view, session, graph?, win?, rules?})` →
-  `{input, destroy()}`.
+- `mountPointerInput({view, session, graph?, win?, rules?, swap?})` →
+  `{input, destroy()}` — `swap` a button swap: each press and release goes
+  through it before the state machine, and it is reset on blur and
+  destroy; the shift + primary pan check reads the physical button.
+
+`js/classic2d/button-swap.js` exports
+- `createButtonSwap()` → `{on, toggle(), onChange(fn), press(button,
+  closed), release(button), reset()}` — `toggle()` returns the new state
+  and tells every `onChange` listener; `press` trades `LEFT` and `RIGHT`
+  only while on and `closed`, recording the result until `release(button)`
+  returns it; a release with no recorded press passes through.
 
 `js/classic2d/cursor-input.js` exports
 - `CURSOR_KEYS` (key code → `up`/`down`/`left`/`right`/`reveal`/`flag`/
@@ -191,7 +204,7 @@ looks.
 - `MODE_ID` (`'classic-2d'`), `END_DELAY_MS` (1000, the 2D end delay);
   `createClassic2DMode(report, {flow,
   lastChoice, createClient?, mount?, sound?, clock?, randomSeed?,
-  generatingDelayMs?, place?})` → the contract methods plus `warm()`, `ending`, `finishNow()`,
+  generatingDelayMs?, place?, buttonSwap?})` → the contract methods plus `warm()`, `ending`, `finishNow()`,
   `hideBoard(hidden)`,
   `tick()`, `pad(poll, now)`, `setScale(scale)`, `retry()`, `playStandard()`,
   `cancelGeneration()` → whether a board being generated was cancelled,
@@ -212,7 +225,9 @@ looks.
   flag(on, count), chord(count), noop(), explode(), win()}`, the `sfx`
   instance of `js/audio.js` that `main.js` hands in), null by default:
   without it nothing plays; `clock` (`{now, setTimeout, clearTimeout}`) is
-  the session's and the end delay's. The module head comment is the contract.
+  the session's and the end delay's; `buttonSwap` (none by default) is
+  handed to every game's pointer mount as `swap`, never to the cursor
+  input. The module head comment is the contract.
 
 `js/classic2d/end-effect.js` exports
 - `WIN`, `LOSS`, `WAVE_STEP_MS` (60), `WAVE_SHARE` (0.6), `PULSE`
@@ -364,6 +379,14 @@ looks.
   `pointerdown`), suppresses the context menu, takes input only while the
   session is `ready` or `playing` and not paused, and leaves a
   `PAN_MODIFIER` + primary press on a scrolling board to the pan.
+- **Button swap.** The swap translates the physical button in front of the
+  state machine, never the finished action, so a swapped left press on a
+  closed cell flags at once and a swapped right press reveals on release,
+  with the press feedback and chords of the button it stands for. The
+  translation is chosen at the press (the cell's state read from
+  `session.game`) and kept for that button until its release. `main.js`
+  creates one swap for the page and hands it to the mode
+  ([app-shell.md](app-shell.md)); the cursor input never sees it.
 - **Cursor input.** Space / Enter and A / RT only reveal (no "smart"
   button: nothing on a number), F and X / LT flag (as the right button, on
   the press), D and Y only chord; a reveal and a flag held together (both
@@ -533,6 +556,8 @@ looks.
   `tests/classic2d-view.test.mjs` the board view and its end-effect drawing;
   `tests/classic2d-end-effect.test.mjs` the end effect;
   `tests/classic2d-pointer.test.mjs` the pointer input;
+  `tests/classic2d-button-swap.test.mjs` the button swap, the mount's use
+  of it and the overlay bar's toggle;
   `tests/classic2d-cursor.test.mjs` the cursor input;
   `tests/classic2d-mode.test.mjs` the mode, its end delay, the cue each
   action plays and board choice;
@@ -560,6 +585,9 @@ looks.
   game's mapping it mirrors is `onAction` in `js/main.js`).
 - Changing a pointer gesture or adding an input rule (`createPointerInput`,
   `pointerRules`, the profile markers in `js/engine/profiles.js`).
+- Changing when the button swap trades buttons, or where it sits in the
+  mouse path (`press` / `release` in `button-swap.js`; `onDown`, `onUp`
+  and `closedAt` in `mountPointerInput`).
 - Changing a key or controller binding, or the cursor's repeat
   (`CURSOR_KEYS`, `PAD_MAP`, `createCursorInput`).
 - Adding board input that competes with panning (`mountBoardView`'s pointer

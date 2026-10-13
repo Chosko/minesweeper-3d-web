@@ -327,7 +327,7 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   placeholder's and Settings page's Back buttons), `onReadyClick`,
   `onReadyDrag` (the ready card's "Play with drag-to-look"), `onReadyBack`, `onResume`,
   `onRestart`, `onMainMenu`, `onPause` (the overlay bar's pause button),
-  `onToggleSound`, `onDismissHint(mode, kind)` (the hint strip's ×; `kind`
+  `onToggleSwap` (the overlay bar's swap toggle), `onToggleSound`, `onDismissHint(mode, kind)` (the hint strip's ×; `kind`
   `'scroll'` for the scroll hint, else `'mode'`),
   `onRetry2D`, `onStandard2D`, `onOfferMenu2D` (the failed Classic 2D
   board's offer, `onStandard2D` also its generating card's Play a standard
@@ -347,7 +347,8 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   state), `setReadyPending(on)` (the ready card waiting unseen,
   `ready--pending`, for a pointer lock the player's activation asked for),
   `showPlaying`,
-  `showClassic2D` (the board layer, the overlay bar in its 2D style),
+  `showClassic2D` (the board layer, the overlay bar in its 2D style, the
+  swap toggle shown), `setSwap(on)` (the swap toggle's `aria-pressed`),
   `panelFrame2D()` → the frame the panel takes around the board (`PANEL_INSET`
   9 px each side, the bar's measured height and `PANEL_GAP` 8 px on top, at
   least the bar's width), `placePanel2D(rect)` (the panel at `rect` in the
@@ -560,7 +561,10 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   `finishNow()`, `cancelGeneration()` and `mode3d.tick()`, which the frame
   loop calls every frame while the 3D mode is active to drive that sampler.
 - **The Classic 2D mode.** `FLOW_2D` in `js/main.js` is the shell side
-  handed to `createClassic2DMode` ([classic2d.md](classic2d.md)): board
+  handed to `createClassic2DMode` ([classic2d.md](classic2d.md)), with
+  `BUTTON_SWAP` — the page's one mouse button swap (`createButtonSwap`),
+  kept across games and off again on reload, toggled by `onToggleSwap` and
+  mirrored to the toggle by `ui.setSwap` — as `buttonSwap`: board
   choice routes to `classic-2d-choice` with the last board choice (loaded at
   boot by `mode2d.loadChoice()`); `show` routes to `classic-2d`, whose Back
   is `backGame`; the board area is `#c2d-board`, the board opening at the
@@ -984,7 +988,12 @@ Component kit (`css/components.css`, catalogue in its head comment):
   and the board size, then `#hud-pause` (secondary button, `aria-label`
   "Pause game"). Its click calls `onPause` → `PAUSE.pause`; controller START
   and BACK in play click `#hud-pause` through `padClick`, so every input
-  pauses through the same control. Over the 3D scene the bar has its own
+  pauses through the same control. Before it, `#hud-swap` ("Swap clicks",
+  secondary button, `aria-pressed`) toggles the Classic 2D mouse button
+  swap: shown by `showClassic2D`, hidden by `showPause`, hidden outside
+  Classic 2D by `#hud:not(.hud--2d) #hud-swap`, accented while pressed,
+  and it never takes focus (its `mousedown` is prevented), so the board's
+  Space and Enter keep playing. Over the 3D scene the bar has its own
   opaque raised surface; in Classic 2D it is the top edge of the board's
   framed panel, on the panel's surface.
   Beside it the HUD strip (`#hud-tools`) lists the keys, or the

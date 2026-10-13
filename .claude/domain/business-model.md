@@ -34,7 +34,9 @@ paying one, as described in
 Minesweeper games and compare implementations on Steam. No secondary segment
 is targeted.
 
-Deliberately not served: mobile and touch players.
+Deliberately not served: mobile and touch players. A tap on the Classic 2D
+board flags instead of revealing while its mouse button swap is on; that is
+a side effect of a mouse option, not touch support.
 
 ## Pricing
 
