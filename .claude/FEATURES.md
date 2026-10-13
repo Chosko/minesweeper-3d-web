@@ -292,9 +292,9 @@ Tasks: 174, 175, 176, 177, 178, 179
 
 ## theme-implement-skill — The Claude skill that adds or updates a theme from its Claude Design canvas
 
-Status: [NEW]
+Status: [PLANNED]
 Doc: .claude/domain/features/theme-implement-skill.md
 Source: product-design.md § Visual design system (m2b-themes)
-Tasks: none
+Tasks: 188, 189
 
 ---

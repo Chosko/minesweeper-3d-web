@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 187
+Last task number: 189
 
 ---
 
@@ -1333,5 +1333,25 @@ Target: claude
 Files: .claude/context/classic2d.md, .claude/context/rendering.md, .claude/context/app-shell.md, .claude/context/replay.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md, .claude/domain/features/themed-board-art-and-motion.md, .claude/domain/features/square-tile-skin.md
 Preconditions: 180, 181, 182, 183, 184, 185, 186
 Feature: themed-board-art-and-motion
+
+---
+
+## 188. The theme-implement skill
+
+Status: [MISSING]
+Target: claude
+Files: .claude/skills/theme-implement/SKILL.md, .claude/skills/theme-implement/references/
+Preconditions: 161, 163, 175, 181
+Feature: theme-implement-skill
+
+---
+
+## 189. Update documentation for feature `theme-implement-skill`
+
+Status: [MISSING]
+Target: claude
+Files: README.md, .claude/context/INDEX.md, .claude/domain/features/theme-implement-skill.md
+Preconditions: 188
+Feature: theme-implement-skill
 
 ---
