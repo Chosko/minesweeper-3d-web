@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 156
+Last task number: 162
 
 ---
 
@@ -1023,5 +1023,65 @@ Status: [MISSING]
 Target: claude
 Files: css/tokens.css, css/style.css, tests/tokens.test.mjs, tests/components.test.mjs, tests/theme.test.mjs, .claude/context/app-shell.md, .claude/context/testing.md, .claude/domain/features/design-tokens-and-themes.md
 Preconditions: none
+
+---
+
+## 157. Theme registry, kit catalogue and the Joyful tiles theme folder
+
+Status: [MISSING]
+Target: claude
+Files: js/themes/registry.js, js/ui/kit-catalogue.js, themes/joyful-tiles/board.js, themes/joyful-tiles/fonts/, tests/theme-registry.test.mjs, css/components.css, dev/components.html
+Preconditions: none
+Feature: theme-system
+
+---
+
+## 158. Base stylesheet and the Joyful tiles theme stylesheet; retire light and dark
+
+Status: [MISSING]
+Target: claude
+Files: css/tokens.css, css/components.css, css/style.css, themes/joyful-tiles/theme.css, index.html, js/theme.js, dev/components.html, js/shell/scene-palette.js, js/tokens.js, tests/tokens.test.mjs, tests/theme.test.mjs, tests/components.test.mjs, tests/settings-appliers.test.mjs
+Preconditions: 157
+Feature: theme-system
+
+---
+
+## 159. Registry-driven theme applier with run-time switch and board module hand-off
+
+Status: [MISSING]
+Target: claude
+Files: js/theme.js, js/tokens.js, js/shell/scene-palette.js, js/settings/appliers.js, js/main.js, index.html, dev/components.html, js/themes/registry.js, tests/theme.test.mjs, tests/settings-appliers.test.mjs
+Preconditions: 157, 158
+Feature: theme-system
+
+---
+
+## 160. Settings theme list, light/dark carry-over and the reduced-motion setting
+
+Status: [MISSING]
+Target: claude
+Files: js/settings/schema.js, js/settings/store.js, js/settings/page.js, js/settings/appliers.js, js/theme.js, css/components.css, css/style.css, index.html, tests/settings-store.test.mjs, tests/settings-page.test.mjs, tests/settings-appliers.test.mjs, tests/settings-reset.test.mjs
+Preconditions: 159
+Feature: theme-system
+
+---
+
+## 161. Theme conformance tests and the component gallery per theme
+
+Status: [MISSING]
+Target: claude
+Files: tests/theme-conformance.test.mjs, tests/fixtures/themes/, js/ui/kit-catalogue.js, themes/joyful-tiles/theme.css, dev/components.html
+Preconditions: 157, 158, 159
+Feature: theme-system
+
+---
+
+## 162. Update documentation for feature `theme-system`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/app-shell.md, .claude/context/settings.md, .claude/context/testing.md, .claude/context/rendering.md, .claude/context/INDEX.md, README.md, .claude/domain/features/theme-system.md, .claude/domain/features/design-tokens-and-themes.md, .claude/domain/features/screen-components.md, .claude/domain/features/settings.md
+Preconditions: 157, 158, 159, 160, 161
+Feature: theme-system
 
 ---
