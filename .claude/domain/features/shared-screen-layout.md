@@ -76,6 +76,20 @@ Non-goals:
 - Theme styling beyond *Joyful tiles* — later themes style these components
   through the theme skill.
 - Hexagon, Triangle and Surface screens — deferred to `m6-launch`.
+- Amending the `[PLANNED]` m3-on-steam features this layout makes stale.
+  Each describes its screen in the m1 layout and is amended to this layout
+  and `in-game-layout` before m3-on-steam resumes:
+  - `leaderboard-screen` — composed from the m1 kit; it moves into the
+    screen frame with the board option, section label and list row;
+  - `leaderboards-menu-entry` — Leaderboards and Quit are ordinary m1 menu
+    list entries; they become mode entries with icon, detail line and
+    accent;
+  - `results-steam-rank` — its rank panel sits in the m1 results view; it
+    moves into the framed results screen;
+  - `input-rebinding` — its controls replace the m1 Settings page's
+    bindings list, and the help it keeps current is the m1 overlay's; it
+    moves into the framed Settings page and keeps every key hint and the
+    in-game controls reminder current.
 
 ## Architecture
 
@@ -107,10 +121,18 @@ kit are described in [app-shell.md](../../context/app-shell.md).
   hands it the panel's rectangle while a screen with a scene panel shows,
   and the full window otherwise; it draws only there, with the panel's own
   frame and corners drawn by the theme stylesheet over it.
-- **Design status per screen.** The artboards cover the main menu and the
-  Classic 2D board choice; the 3D board choice follows the Classic 2D one.
-  The other screens are composed in the frame by analogy to the drawn ones
-  until their artboards exist, then aligned with them.
+- **Mode entry list.** The menu's entries are an open-ended column: a mode
+  joins it by adding one mode entry, with no change to the menu's
+  composition. When the entries are taller than their column, the column
+  scrolls on its own, keeping the scene panel, the bests column and the
+  key hints in place, so the m4–m6 entries (Hexagon, Triangle and Surface
+  among them) fit without a redesign.
+- **Design status per screen.** The finished *Joyful tiles* artboards cover
+  the main menu and the Classic 2D board choice (and the Classic 2D game,
+  `in-game-layout`). Every other screen — the 3D board choice included — is
+  built from its own artboard, which the owner supplies: a task for such a
+  screen says that its artboard is not drawn yet and is `claude+human`,
+  with supplying the artboard as its manual intervention.
 
 ## Data and state
 
@@ -150,10 +172,8 @@ kit are described in [app-shell.md](../../context/app-shell.md).
 
 - Artboards for the 3D board choice, pause card, results screen, Records
   screen, Settings page, replay viewer and the cards are not drawn yet; the
-  Claude Design canvas is to gain more pages and a components artboard.
-  Each of those screens is composed by analogy until its artboard arrives;
-  a screen whose artboard lands before its task starts is built from the
-  artboard instead.
+  owner is designing them on the Claude Design canvas, with a components
+  artboard. Their tasks wait on them as **Design status per screen** says.
 - The menu artboard's bests column shows two Classic 2D bests, one 3D best
   and the win streak. Which boards it shows for a player with bests on
   several boards is decided here as: the last board played in each mode,

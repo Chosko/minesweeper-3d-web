@@ -133,7 +133,8 @@ board view in [classic2d.md](../../context/classic2d.md).
 
 ## Open questions
 
-- The 3D game window is not drawn yet. Until its artboard exists the 3D
-  overlay takes the Classic 2D window's parts over the full-window scene as
-  described; a 3D artboard that arrives before its task starts replaces
-  this arrangement.
+- The 3D game window and the replay viewer are not drawn yet; the owner is
+  designing them. The 3D overlay's parts above are the parts its artboard
+  arranges, and its task and the replay viewer's wait on their artboards
+  as [shared-screen-layout.md](./shared-screen-layout.md) § Architecture,
+  **Design status per screen**, says.
