@@ -159,8 +159,8 @@ Pick a board and play:
 | Right click | Flag / unflag. On a number: flag all its closed neighbours; right-click it again to take back only those flags |
 | Left + Right | Chord: when a number has the right count of flags around it, reveal its other neighbours |
 | Mouse wheel | Change the spacing between cubes |
-| Hold `Shift` | Fade everything except the aimed cube and its neighbours |
-| Hold `Space` | Aim through revealed numbers (they fade) |
+| Hold `Shift` | Fade everything except the aimed cube and its neighbours, which draw on top |
+| Hold `Space` | Aim through revealed numbers (they fade, the nearest least) |
 | Hold `Ctrl` | Show hidden cells (zeros and solved numbers) as see-through ghosts |
 | `H` | Show / hide the controls panel |
 | `M` | Sound on / off |
@@ -210,8 +210,9 @@ browser supports it. Some browsers only start sound after a key press or a click
   Shift/Space/Ctrl view modes. There is an in-game controls panel (`H`), and a results screen
   after every game.
 - **Pause menu** (`Esc`): resume, go back to the start view (3D), restart or return to the main menu.
-- **Settings:** mouse sensitivity (0.25×–3×), invert mouse Y and volume. They are saved in
-  `localStorage`. The defaults match the original. "Reset all data" at the bottom of the Settings
+- **Settings:** mouse sensitivity (0.25×–3×), invert mouse Y, volume and the 3D neighbour count.
+  They are saved in `localStorage`. The defaults match the original, except the 3D neighbour count,
+  which is on. "Reset all data" at the bottom of the Settings
   page deletes the records, history, replays, settings, last board choices and first-use hints
   from this browser, after a confirmation, and starts the game again as a new player's.
 - **Sound:** synthesized sound effects (Web Audio, no audio files) for revealing, flagging,
@@ -267,6 +268,13 @@ on purpose:
   loss, which the first restart of each visit says once; the **Always ask before restarting**
   setting asks before each one instead. Main menu always asks. The timer keeps running while the
   game is paused, and each game records its pauses.
+- **Neighbour count at the crosshair:** while you aim at a revealed number in 3D, a small readout
+  beside the crosshair shows how many of its neighbours are still unopened (flags included) and,
+  when there are any, how many are flagged. The **3D neighbour count** setting turns it off.
+- **Clearer view modes:** with `Shift` held, the aimed cube's neighbours always draw over the faded
+  cubes, however many stand in front of them. With `Space` held, revealed numbers fade with their
+  depth instead of all to the same level, so of two numbers in one screen column the nearer one is
+  the brighter and the one to read.
 - **Draw distance:** the far plane grows with the board instead of being clipped at 300 units.
 - **Minor timing changes the player cannot see:** auto-hiding and the win check run right after each
   action instead of once per frame.

@@ -8,6 +8,7 @@ import { bindingsHtml, hudStripHtml, hintStripHtml, helpFootHtml, hintText } fro
 import { settingsPageHtml, bindingsSectionHtml, bindResetPanel } from './settings/page.js';
 import { DIM_MIN, DIM_MAX } from './mode3d/board-choice.js';
 import { formatTime } from './results/view.js';
+import { readoutText } from './readability.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -58,7 +59,7 @@ export class UI {
       boardChoice: $('board-choice'), comingSoon: $('coming-soon'), comingSoonTitle: $('coming-soon-title'),
       settings: $('settings'), settingsBindings: null, records: $('records'),
       comingSoonText: $('coming-soon-text'),
-      crosshair: $('crosshair'), crosshairArrow: $('crosshair-arrow'),
+      crosshair: $('crosshair'), crosshairArrow: $('crosshair-arrow'), aimReadout: $('aim-readout'), aimCubes: $('aim-cubes'), aimFlagPart: $('aim-flag-part'), aimFlags: $('aim-flags'),
       controlsModal: $('controls-modal'),
       pause: $('pause'), pauseTitle: $('pause-title'), pauseSub: $('pause-sub'),
       resume: $('p-resume'), home: $('p-home'), restart: $('p-restart'), pauseMenu: $('p-menu'), pauseActions: $('pause-actions'),
@@ -76,6 +77,7 @@ export class UI {
     this._helpByUser = false; // in-game help panel opened with H
     this._crossOn = null;
     this._arrow = null; // the off-screen arrow's angle shown, or null while hidden
+    this._readout = ''; // the aimed-cell readout's text shown, '' while hidden
     this._mode = '3d'; // the game mode the help surfaces show: 'classic-2d' | '3d'
     this._device = 'keyboard'; // the active device: 'keyboard' (and mouse) | 'controller'
     this._glyphs = GLYPHS.generic; // the active controller's, for the bindings shown
@@ -405,6 +407,22 @@ export class UI {
     el.classList.toggle('hidden', angle === null);
     if (angle !== null) el.style.transform = `rotate(${-angle}rad)`;
   }
+  /**
+   * The aimed-cell readout beside the crosshair: `r` from readability.js's aimReadout, or null to hide
+   * it. Touches the DOM only on change.
+   */
+  setReadout(r) {
+    const text = readoutText(r);
+    if (text === this._readout) return;
+    this._readout = text;
+    this.el.aimReadout.classList.toggle('hidden', !r);
+    if (!r) return;
+    this.el.aimCubes.textContent = String(r.closed + r.flags);
+    this.el.aimFlagPart.classList.toggle('hidden', !(r.flags > 0));
+    this.el.aimFlags.textContent = String(r.flags);
+  }
+  /** The readout's text while it shows, '' while hidden. */
+  get readout() { return this._readout; }
   showPause({ state, time, minesLeft, note = '', mode = this._mode }) {
     this._setMode(mode);
     this._resetConfirm();

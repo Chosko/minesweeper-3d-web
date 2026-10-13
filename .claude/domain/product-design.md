@@ -86,6 +86,10 @@ demanding, until free 3D play is within reach.
   card action), an arrow toward the box while it is out of view, and a faint
   ground grid below it; holding Ctrl shows hidden cells as translucent ghosts
   instead of opaque cubes, and a number plays a short pulse before it hides.
+  Its look also gains readability aids: a readout beside the crosshair
+  counting the aimed number's unopened and flagged neighbours, the Shift
+  neighbourhood drawn over the faded cubes, and numbers dimmed by depth under
+  Space; its controls and pick rules are unchanged.
   Its rules change in three ways: the first click is always safe, a no-guess
   option is available, and a second right-click on a number takes back only
   the flags the first placed. Its games end on the shared results screen.

@@ -31,7 +31,8 @@ In scope (m1-classic-2d):
   (one device pixel per CSS pixel); and the 2D board scale — Fit, 100 % and
   125 %, the cap on the Classic 2D tile (`classic-2d-square-play`
   § Architecture, "Board view"), applied at once to an open board and to
-  the replay viewer.
+  the replay viewer; and the 3D neighbour count — the readout beside the
+  crosshair in 3D play — on by default.
 - Theme: Light or Dark, Light until the player picks. Changing it applies
   at once through `design-tokens-and-themes`.
 - Audio: Sound (the on/off control, on while sound plays, stored as mute)

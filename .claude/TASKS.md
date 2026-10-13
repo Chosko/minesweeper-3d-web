@@ -884,7 +884,7 @@ Preconditions: none
 
 ## 141. 3D readability
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude+human
 Files: js/readability.js, js/render.js, js/main.js, js/ui.js, js/settings/bindings.js, index.html, css/style.css, tests/readability-3d.test.mjs, tests/components.test.mjs, tests/replay-viewer-3d.test.mjs, docs/ORIGINAL_SPEC.md, README.md, .claude/domain/product-design.md
 Preconditions: 125

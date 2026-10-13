@@ -57,7 +57,9 @@ pressed, flagged, unlinked, selected, nearSelected. No question marks.
   - Right release: if toggle set → clear it. Else if Left held → set toggle, chord(selected) (guard no selection). Else if selected → rightClick(selected).
 - Mouse wheel: spacing.
 - **Left Shift held**: unrevealed and flagged cells fade to alpha 0.2 unless nearSelected or selected; revealed numbers fade to 0.2 unless selected ("show only cells adjacent to the aimed cell").
+  - Web port: the aimed cell's neighbourhood always draws over the faded cubes, however many stand between it and the camera.
 - **Space held**: crosshair passes through revealed cells; revealed numbers drawn at alpha 0.2.
+  - Web port: a revealed number's alpha falls with its depth behind the box's nearest face instead — from 0.7 at that face (about 0.6 on the front layer), toward a 0.1 floor — so of two numbers in one screen column the nearer reads; the crosshair still passes through revealed cells.
 - **Left Ctrl held**: hidden cells (revealed zeros + unlinked) drawn opaque with their number texture.
   - Web port: drawn as ghosts at alpha 0.25 instead, sorted back-to-front with the other transparent cubes, so the cubes behind them stay visible.
 - Selected cell tinted (1, 0.8, 0.8) (pinkish).
@@ -68,11 +70,14 @@ pressed, flagged, unlinked, selected, nearSelected. No question marks.
 |---|---|---|
 | flagged | flag tile | 0.2 if Shift and not (nearSelected or selected) |
 | unrevealed | blank closed tile | same as flagged |
-| revealed number ≥1, linked | number tile | 0.2 if Space; else with Shift 0.2 unless selected |
+| revealed number ≥1, linked | number tile | 0.2 if Space; else with Shift 0.2 unless selected (Web port: under Space, 0.7 to 0.1 by depth) |
 | revealed mine (after loss) | mine tile | 1 |
 | revealed zero, or unlinked | hidden | (shown opaque with number tile when Ctrl held) |
 
 Original drew with no depth buffer, painter's order (far→near) + backface culling; transparency must look right (sort transparent cubes back-to-front).
+Web port: with Shift held and a cell aimed, the faded cubes outside its neighbourhood draw first, whatever their depth, and the neighbourhood over them, so it is never covered.
+
+Web port: while the crosshair rests on a revealed number in 3D play, a readout beside the crosshair counts the number's unopened neighbours (flags included) and, when there are any, its flags; the "3D neighbour count" setting turns it off.
 
 ## Cube face orientation (from Cube.cs)
 Local corners for a cube spanning [-3,1]³: TLF(-3,1,-3) BLF(-3,-3,-3) TRF(1,1,-3) BRF(1,-3,-3) TLB(-3,1,1) TRB(1,1,1) BLB(-3,-3,1) BRB(1,-3,1).

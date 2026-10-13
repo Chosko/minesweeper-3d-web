@@ -40,7 +40,7 @@ import { formatSliderValue, decimalsOf, segmentedState, bindSegmented } from '..
 
 export const SETTINGS_SECTIONS = Object.freeze([
   Object.freeze({ id: 'controls', title: 'Controls', settings: Object.freeze(['lookSensitivity', 'invertY', 'confirmRestart']) }),
-  Object.freeze({ id: 'graphics', title: 'Graphics', settings: Object.freeze(['fullscreen', 'renderResolution', 'boardScale']) }),
+  Object.freeze({ id: 'graphics', title: 'Graphics', settings: Object.freeze(['fullscreen', 'renderResolution', 'boardScale', 'aimReadout']) }),
   Object.freeze({ id: 'theme', title: 'Theme', settings: Object.freeze(['theme']) }),
   Object.freeze({ id: 'audio', title: 'Audio', settings: Object.freeze(['muted', 'volume']) }),
 ]);
@@ -55,6 +55,7 @@ export const SETTING_LABELS = Object.freeze({
   volume: 'Volume',
   muted: 'Sound',
   confirmRestart: 'Always ask before restarting',
+  aimReadout: '3D neighbour count',
 });
 
 /** Toggles shown on while their stored boolean is false. */

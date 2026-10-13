@@ -40,6 +40,7 @@ const EXPECTED_DEFAULTS = {
   volume: 0.7,
   muted: false,
   confirmRestart: false,
+  aimReadout: true,
 };
 
 // ---------------------------------------------------------------- schema
@@ -52,7 +53,7 @@ test('the schema declares every setting with its type, range or values, and defa
     { type: 'number', min: 0.25, max: 3 },
   );
   assert.deepEqual({ type: SCHEMA.volume.type, min: SCHEMA.volume.min, max: SCHEMA.volume.max }, { type: 'number', min: 0, max: 1 });
-  for (const key of ['invertY', 'fullscreen', 'muted', 'confirmRestart']) assert.equal(SCHEMA[key].type, 'boolean');
+  for (const key of ['invertY', 'fullscreen', 'muted', 'confirmRestart', 'aimReadout']) assert.equal(SCHEMA[key].type, 'boolean');
   assert.equal(SCHEMA.renderResolution.type, 'choice');
   assert.deepEqual([...SCHEMA.renderResolution.values], ['auto', 'sharp', 'fast']);
   assert.equal(SCHEMA.boardScale.type, 'choice');

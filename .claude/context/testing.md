@@ -405,6 +405,16 @@ browser checks for everything that needs WebGL or the DOM.
   the release resumes, auto-repeat does not, a releasing press delivered
   while locked pauses and only the next one resumes, an ended game's Esc goes
   to the menu (skipped when Playwright or chromium is unavailable).
+- `tests/readability-3d.test.mjs` — the 3D readability aids (`js/readability.js`, `js/render.js`,
+  `js/main.js`): `aimReadout` over hand-built 3D state views (inner, face, edge and corner counts,
+  hidden neighbours counted as neither, flags apart, nothing off a revealed number or once the game
+  is over) and `readoutText` (`cubes N`, `- flags M` only above zero); the module DOM-free; the
+  readout's token-only styles and markup; the Shift back pass (faded cubes before the opaque pass,
+  the neighbourhood's transparent cubes after it, the canvas kept opaque); `spaceAlpha` (0.7 nearest,
+  never increasing, a 0.1 floor) and `boxDepth`, and the shader sharing them. One Playwright test on
+  a fixed 4 × 3 × 1 board: the readout's text on an aimed number and its hiding off it, before the
+  first reveal, with the setting off, while paused, in the end delay and in Classic 2D, clear of
+  the off-screen arrow's ring (skipped when Playwright or chromium is unavailable).
 - `tests/camera-spawn.test.mjs` — the 3D spawn pose (`js/input.js::spawnPose`)
   for the cube presets and 1 × 1 × 2, 30 × 16 × 1, 100 × 100 × 100 and
   2 × 9 × 40 at 16:9, 4:3, 21:9 and 9:16 and 45° and 90°, against
@@ -1070,7 +1080,7 @@ browser checks for everything that needs WebGL or the DOM.
   doing nothing on the main menu.
 - `tests/settings-store.test.mjs` — the schema (`js/settings/schema.js`:
   every setting's type, range or values and default, `isValid`, the
-  `confirmRestart` boolean with no legacy key, `boardScale` read as 100 %
+  `confirmRestart` boolean with no legacy key, the `aimReadout` boolean on by default, `boardScale` read as 100 %
   from a document written before it and remembered across a reload) and
   the
   store (`js/settings/store.js`) over the memory backend: missing, invalid
@@ -1107,7 +1117,8 @@ browser checks for everything that needs WebGL or the DOM.
   `bindingsListHtml` keys, glyphs and
   escaping, the in-game help reading it through `bindingsHtml`) and the page
   (`js/settings/page.js`): the four sections holding every setting once,
-  the "Always ask before restarting" toggle in Controls,
+  the "Always ask before restarting" toggle in Controls, the "3D neighbour count" toggle in
+  Graphics, on by default,
   Audio's Sound (the `muted` toggle, on while not muted, both ways through
   the binder) before Volume and no Mute label, the Theme control named by
   its section heading with no label of its own, each control's kind and

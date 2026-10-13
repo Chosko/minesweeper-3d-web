@@ -2,7 +2,7 @@
 
 ## Overview
 
-Draws the board with three.js: every cube comes from two instanced meshes sharing one cube
+Draws the board with three.js: every cube comes from instanced meshes sharing one cube
 geometry, with per-cell state in a data texture and all visual effects in GLSL3 shaders. Also
 draws the sky gradient with the ground grid below the board, the win confetti and the loss camera
 shake.
@@ -12,6 +12,10 @@ shake.
 - `js/textures.js` — procedural tile atlas: every tile drawn on a 2D canvas through the shared
   tile recipe (`js/tile-art.js`, [classic2d.md](classic2d.md)) with the atlas's own literal
   palette (`ATLAS`), and packed into one `THREE.DataArrayTexture` (one layer per tile).
+- `js/readability.js` — the 3D readability aids' pure, DOM-free functions: the aimed-cell readout
+  ([app-shell.md](app-shell.md)) and, read here, Space's depth dimming — `spaceAlpha(d)` with
+  `SPACE_NEAR_ALPHA` 0.7, `SPACE_FLOOR_ALPHA` 0.1, `SPACE_FALLOFF` 3 (interpolated into `VERT`) — and
+  `boxDepth(cam, box)`, the camera's lattice distance from the box's nearest face.
 
 ## Public API
 
@@ -84,11 +88,22 @@ shake.
   Selection and toggles touch only uniforms; no per-frame O(n) JS work.
 - **Cell index order** is `i + X*(j + Y*k)`; the vertex shader decodes it the same way. Keep in
   step with the box graph provider (`js/engine/box-grid.js`).
-- **Two passes, shader decides.** `uPass` 0 (opaque, depth write) keeps instances with alpha 1;
+- **Passes, shader decides.** `uPass` 0 (opaque, depth write) keeps instances with alpha 1;
   pass 1 (transparent, no depth write) keeps alpha < 1. Lists may over-include; culled instances
   are moved off-screen. The alpha table in the vertex shader implements the spec's drawing rules,
-  with the port's one change: a hidden cell under Ctrl is a ghost at `GHOST_ALPHA`, so it is drawn in
-  the transparent pass (Shift's and Space's fades are unchanged).
+  with the port's changes: a hidden cell under Ctrl is a ghost at `GHOST_ALPHA`, so it is drawn in
+  the transparent pass, and a number under Space takes `spaceAlpha(depth)` (`js/readability.js`:
+  0.7 at the box's nearest face — about 0.61 on the front layer, whose cube centres sit half a cell in —
+  to a 0.1 floor, `depth` the lattice layers behind the box's nearest face, from
+  `uBoxDepth`, which `render()` sets from `boxDepth` each frame) instead of 0.2.
+- **Back pass under Shift.** With Shift held and a cell aimed (`emphOn`), the faded cubes outside
+  the aimed 3×3×3 neighbourhood draw in `uPass` 2 (`meshTransBack`, `renderOrder` -1) before the
+  opaque pass, and pass 1 keeps only the neighbourhood's transparent cubes, so the neighbourhood
+  always draws over the faded cubes. Both meshes share the transparent list. `matTransBack` is not
+  marked transparent — three.js draws every transparent material after every opaque one — and
+  blends by hand with `CustomBlending`, its alpha factors `One` / `OneMinusSrcAlpha` so the canvas
+  stays opaque (blending alpha like the colour leaves the canvas see-through and the page behind
+  washes the scene out white).
 - **Opaque list** skips hidden cells (unless they shrink in a loss wave without Ctrl), numbers
   under Space, and under Shift holds only mines, those shrinking hidden cells and the aimed cell's
   3×3×3 neighbourhood.
@@ -171,7 +186,8 @@ shake.
 
 - [../../docs/ORIGINAL_SPEC.md](../../docs/ORIGINAL_SPEC.md) — gameplay fidelity to the original is
   the overriding rule. This area enforces: *Drawing rules (per cell)* (tile per state, alpha 0.2
-  under Shift/Space, Ctrl shows hidden cells — as 25 % ghosts, a "Web port:" note there —, the
+  under Shift/Space — under Space, by depth, and the Shift neighbourhood drawn over the faded cubes,
+  "Web port:" notes there —, Ctrl shows hidden cells — as 25 % ghosts, a "Web port:" note there —, the
   "solved" pulse before a number hides, back-to-front transparency); *Cube face orientation*
   (corners and UVs); *Grid & geometry* (cube edge 4, pitch `4*s`, background RGB(200,225,255) —
   the light theme's sky horizon, handed in by the shell — unlit textured cubes, centred grid).

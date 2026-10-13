@@ -372,7 +372,11 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   `updateHud(time, minesLeft, clicks?)` (overlay formats and the click
   count, DOM write only on change; without `clicks` the readout stays),
   `setModes`, `setCrosshair`, `setArrow(angle|null)` (the off-screen arrow `#crosshair-arrow` beside
-  the crosshair, turned to `angle`; DOM write only on change), `showSpacing`, `setSound(muted)` (also the HUD
+  the crosshair, turned to `angle`; DOM write only on change), `setReadout(r|null)` (the aimed-cell
+  readout `#aim-readout` below and right of the crosshair, clear of the arrow's ring: a cube icon and
+  `#aim-cubes`, the unopened neighbours with flags, then `#aim-flag-part` — a flag icon and
+  `#aim-flags` — only while there are flags; styled from tokens; DOM write only on change; `readout`
+  is its text, `cubes N - flags M`, the icons as words), `showSpacing`, `setSound(muted)` (also the HUD
   strip's sound label); help `toggleHelp`, `userToggleHelp`,
   `setHintStrip(on, {scroll})` (the mode's strip, or with `scroll` the
   Classic 2D scroll hint; the strip steps aside while the help panel is
@@ -448,7 +452,7 @@ the factory tests drive):
   `cellCenter(idx)`; each calls the synchronous `refresh()` first.
 - actions: `mouseDown(b)`, `mouseUp(b)`, `click('left'|'right'|'chord')`,
   `key(code, down)`, `wheel(notches)`; picking `selected()`, `pickBrute()`,
-  `pickWith(o, d, space)` → `[dda, brute]`; `info()` → mode, time, HUD text, cam, stats.
+  `pickWith(o, d, space)` → `[dda, brute]`; `info()` → mode, time, HUD text, the readout's text, cam, stats.
 
 ## INTERNAL PATTERNS
 
@@ -842,6 +846,11 @@ Game flow (`js/main.js`):
   In play the frame loop's `updateArrow` hands `ui.setArrow` the off-screen arrow's angle
   (`offscreenArrow`), keyed on the camera, spacing, box, field of view and aspect like
   `updatePick`, and null off play, while paused and during the end delay.
+  `updatePick` also keeps `S.readout`, the aimed cell's `aimReadout` (`js/readability.js`: the number,
+  its closed neighbours and its flags, or null off a revealed number and once the game is over), and
+  `updateReadout` (each frame and in `refresh`) hands it to `ui.setReadout` only while the
+  `aimReadout` setting (the "3D neighbour count", on by default) is on in 3D play — never paused, in
+  the end delay, on the backdrop, in Classic 2D or in the replay viewer.
   Spacing resets to `SPACING_START` per game; the menu
   screens' demo board (`makeDemo`, 7³/30, a random mine set through
   `create3DGame`, decorative) uses 1.25 and an

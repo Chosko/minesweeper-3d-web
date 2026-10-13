@@ -91,6 +91,16 @@ test('the "Always ask before restarting" toggle sits in the Controls section, of
   assert.match(controls, /<label class="ui-toggle" data-setting="confirmRestart"><input type="checkbox" role="switch" id="set-confirmRestart" class="ui-toggle__input"><span class="ui-toggle__label">Always ask before restarting<\/span><\/label>/);
 });
 
+test('the 3D neighbour count is a toggle in the Graphics section, on by default', () => {
+  assert.equal(SETTING_LABELS.aimReadout, '3D neighbour count');
+  const c = settingControl('aimReadout');
+  assert.equal(c.kind, 'toggle');
+  assert.equal(c.inverted, undefined, 'on while the setting is on');
+  const html = settingsPageHtml();
+  const graphics = html.slice(html.indexOf('id="set-sec-graphics"'), html.indexOf('id="set-sec-theme"'));
+  assert.match(graphics, /<label class="ui-toggle" data-setting="aimReadout"><input type="checkbox" role="switch" id="set-aimReadout" class="ui-toggle__input" checked><span class="ui-toggle__label">3D neighbour count<\/span><\/label>/);
+});
+
 test('the 3D bindings say what a right-click and {lt} on a number do, and that a second one takes back only those flags', () => {
   const right = bindingRows('3d', 'keyboard').find(([input]) => input === 'Right click');
   assert.deepEqual([...right], ['Right click', 'Flag / unflag. On a number: flag all its closed neighbours; right-click it again to take back only those flags']);
@@ -122,7 +132,7 @@ test('the in-game help reads the same bindings source', () => {
 test('the page has the controls, graphics, theme and audio sections, holding every setting once', () => {
   assert.deepEqual(SETTINGS_SECTIONS.map((s) => s.title), ['Controls', 'Graphics', 'Theme', 'Audio']);
   assert.deepEqual(SETTINGS_SECTIONS.map((s) => s.settings), [
-    ['lookSensitivity', 'invertY', 'confirmRestart'], ['fullscreen', 'renderResolution', 'boardScale'], ['theme'], ['muted', 'volume'],
+    ['lookSensitivity', 'invertY', 'confirmRestart'], ['fullscreen', 'renderResolution', 'boardScale', 'aimReadout'], ['theme'], ['muted', 'volume'],
   ]);
   assert.deepEqual(SETTINGS_SECTIONS.flatMap((s) => s.settings).sort(), [...SETTING_KEYS].sort(), 'every schema entry has its control');
   for (const key of SETTING_KEYS) assert.ok(SETTING_LABELS[key], `${key} has a label`);

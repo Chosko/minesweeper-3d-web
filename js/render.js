@@ -1,4 +1,6 @@
 // Board renderer: all cubes are drawn by instanced meshes sharing one cube geometry.
+//  - back pass (Shift with a cell aimed): the faded cubes outside the aimed neighbourhood, drawn before
+//    the opaque pass so the neighbourhood always draws over them
 //  - opaque pass: every drawable cell, shader keeps only the ones whose alpha is 1
 //  - transparent pass: cells that may be faded (Shift / Space) or shown as ghosts (hidden cells under
 //    Ctrl, at GHOST_ALPHA), sorted back-to-front, shader keeps only the ones whose alpha is < 1
@@ -13,6 +15,7 @@
 // exploded cell + wrong-flag tiles + camera shake). The state texture's A channel stores the cell's
 // previous layer + 1 for cells whose tile changes in an end-of-game wave (0 = none).
 import * as THREE from 'three';
+import { boxDepth, SPACE_NEAR_ALPHA, SPACE_FLOOR_ALPHA, SPACE_FALLOFF } from './readability.js';
 import { createTileTexture, L_CLOSED, L_FLAG, L_MINE, L_MINE_EXPLODED, L_NUM0, L_WRONG_FLAG } from './textures.js';
 
 // kinds (stored in the state texture's G channel)
@@ -22,6 +25,8 @@ const STATE_W = 1024;
 
 // Ctrl shows hidden cells (revealed zeros, hidden numbers) as ghosts at this alpha, in the transparent pass.
 export const GHOST_ALPHA = 0.25;
+// A GLSL float literal of a JS constant, so the shader and its tests share one source.
+const glslFloat = (v) => (Number.isInteger(v) ? `${v}.0` : `${v}`);
 
 // The "solved" pulse a number plays once the engine has hidden it: the cube brightens and grows for
 // PULSE_GLOW_S (peaking at PULSE_BRIGHT toward white and PULSE_SCALE halfway), then fades out over
@@ -132,6 +137,12 @@ uniform float uShift;
 uniform float uSpace;
 uniform float uCtrl;
 uniform float uPass;
+uniform float uBoxDepth;  // the camera's distance from the box's nearest face, in lattice units (boxDepth)
+uniform float uPlaying;   // 1 while the game is in play: the Shift emphasis is off during the end effects
+// Space's depth dimming (js/readability.js spaceAlpha)
+float spaceAlpha(float d) {
+  return ${glslFloat(SPACE_FLOOR_ALPHA)} + (${glslFloat(SPACE_NEAR_ALPHA)} - ${glslFloat(SPACE_FLOOR_ALPHA)}) * exp(-max(0.0, d) / ${glslFloat(SPACE_FALLOFF)});
+}
 uniform float uEff;       // 0 none, 1 win wave, 2 loss wave
 uniform float uEffT;      // seconds since the wave started
 uniform vec3 uEffOrigin;  // lattice coords of the wave origin
@@ -183,13 +194,15 @@ void main() {
     }
   }
 #endif
+  vec3 centre = (c - (uDims - 1.0) * 0.5) * uPitch;
+  float depth = max(0.0, length(centre - cameraPosition) / uPitch - uBoxDepth); // lattice layers behind the box's nearest face
   vec3 d = abs(c - uSel);
   bool sel = uHasSel > 0.5 && max(d.x, max(d.y, d.z)) < 0.5;
   bool near = uHasSel > 0.5 && max(d.x, max(d.y, d.z)) < 1.5; // includes selected
   float a = 1.0;
   bool vis = true;
   if (kind <= 1) { if (uShift > 0.5 && !near) a = 0.2; }
-  else if (kind == 2) { if (uSpace > 0.5) a = 0.2; else if (uShift > 0.5 && !sel) a = 0.2; }
+  else if (kind == 2) { if (uSpace > 0.5) a = spaceAlpha(depth); else if (uShift > 0.5 && !sel) a = 0.2; }
   else if (kind == 4) { vis = uCtrl > 0.5 || shrinking; if (uCtrl > 0.5) a = ${GHOST_ALPHA}; }
 #if defined(PULSE)
   scale = aPulse.x; flash = aPulse.y; a *= aPulse.z; sel = false;
@@ -198,10 +211,13 @@ void main() {
   scale = aPulse.x; flash = aPulse.y; a = aPulse.z; vis = true; sel = false;
   bool want = a > 0.0;
 #else
-  bool want = uPass < 0.5 ? a > 0.99 : a < 0.99;
+  // Shift with a cell aimed: its neighbourhood is emphasized. The faded cubes outside it draw in a pass
+  // before the opaque one (uPass 2), the neighbourhood's own transparent cubes after it (uPass 1), so
+  // faded cubes in front of the neighbourhood never cover it.
+  bool emphOn = uShift > 0.5 && uHasSel > 0.5 && uPlaying > 0.5;
+  bool want = uPass < 0.5 ? a > 0.99 : (a < 0.99 && (uPass < 1.5 ? (!emphOn || near) : (emphOn && !near)));
 #endif
   if (!vis || !want || scale <= 0.001) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
-  vec3 centre = (c - (uDims - 1.0) * 0.5) * uPitch;
   vec4 mv = modelViewMatrix * vec4(position * scale + centre, 1.0);
   gl_Position = projectionMatrix * mv;
   vUv = uv;
@@ -396,19 +412,32 @@ export class BoardRenderer {
       uEffDelay: { value: 0.05 },
       uSelGlow: { value: 0.6 },
       uFog: { value: new THREE.Vector3(1e6, 2e6, 0) },
+      uBoxDepth: { value: 0 },
+      uPlaying: { value: 1 },
     };
     const mk = (pass) => new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
       vertexShader: VERT,
       fragmentShader: FRAG,
       uniforms: { ...this.uniforms, uPass: { value: pass } },
-      transparent: pass === 1,
+      transparent: pass !== 0,
       depthWrite: pass === 0,
       depthTest: true,
       side: THREE.FrontSide,
     });
     this.matOpaque = mk(0);
     this.matTrans = mk(1);
+    // The faded cubes outside an emphasized neighbourhood, drawn first. three.js draws every transparent
+    // material after every opaque one, so this one is not marked transparent and blends by hand; the
+    // canvas's own alpha stays opaque, as NormalBlending keeps it (blended like the colour, the canvas
+    // would turn see-through and the page behind it would wash the scene out white).
+    this.matTransBack = mk(2);
+    this.matTransBack.transparent = false;
+    this.matTransBack.blending = THREE.CustomBlending;
+    this.matTransBack.blendSrc = THREE.SrcAlphaFactor;
+    this.matTransBack.blendDst = THREE.OneMinusSrcAlphaFactor;
+    this.matTransBack.blendSrcAlpha = THREE.OneFactor;
+    this.matTransBack.blendDstAlpha = THREE.OneMinusSrcAlphaFactor;
     this.matPulse = mk(1);
     this.matPulse.defines = { PULSE: '' };
     this.matFlash = mk(1);
@@ -417,6 +446,7 @@ export class BoardRenderer {
     this.baseGeo = createCubeGeometry();
     this.meshOpaque = null;
     this.meshTrans = null;
+    this.meshTransBack = null;
     // The effect meshes drawn after the board, each with its instance list and per-cube envelope.
     this._pulseFx = { mat: this.matPulse, order: 2, cap: 0, mesh: null };
     this._flashFx = { mat: this.matFlash, order: 3, cap: 0, mesh: null };
@@ -533,6 +563,7 @@ export class BoardRenderer {
     this.kind = new Uint8Array(n);
     this.selected = -1;
     this._lastState = game.state;
+    this.uniforms.uPlaying.value = game.state === 'playing' ? 1 : 0;
     this._eff = null; this._conf = null; this._shake = null; this._snap = null; this._wrong = null; this._effHidden = false;
     this._pulses.clear();
     this._flashes.clear();
@@ -550,7 +581,9 @@ export class BoardRenderer {
     const gT = this.baseGeo.clone(); gT.setAttribute('aIdx', this.attrTrans); gT.instanceCount = 0;
     this.meshOpaque = new THREE.Mesh(gO, this.matOpaque);
     this.meshTrans = new THREE.Mesh(gT, this.matTrans);
-    for (const m of [this.meshOpaque, this.meshTrans]) { m.frustumCulled = false; this.scene.add(m); }
+    this.meshTransBack = new THREE.Mesh(gT, this.matTransBack); // the same sorted list; the shader picks each pass's cubes
+    for (const m of [this.meshOpaque, this.meshTrans, this.meshTransBack]) { m.frustumCulled = false; this.scene.add(m); }
+    this.meshTransBack.renderOrder = -1;
     this.meshOpaque.renderOrder = 0;
     this.meshTrans.renderOrder = 1;
     this._buildFx(this._pulseFx, 32);
@@ -574,10 +607,10 @@ export class BoardRenderer {
 
   disposeGame() {
     if (this.meshOpaque) {
-      this.scene.remove(this.meshOpaque); this.scene.remove(this.meshTrans);
+      this.scene.remove(this.meshOpaque); this.scene.remove(this.meshTrans); this.scene.remove(this.meshTransBack);
       this.meshOpaque.geometry.dispose(); this.meshTrans.geometry.dispose();
       this.stateTex.dispose();
-      this.meshOpaque = this.meshTrans = null;
+      this.meshOpaque = this.meshTrans = this.meshTransBack = null;
     }
     for (const fx of [this._pulseFx, this._flashFx]) {
       if (fx.mesh) { this.scene.remove(fx.mesh); fx.mesh.geometry.dispose(); fx.mesh = null; fx.cap = 0; }
@@ -644,6 +677,7 @@ export class BoardRenderer {
     const dirty = g.consumeDirty();
     const prev = this._lastState;
     this._lastState = g.state;
+    this.uniforms.uPlaying.value = g.state === 'playing' ? 1 : 0;
     if (prev === 'playing' && g.state !== 'playing') this._dropFlashes(); // the end of the game
     if (prev === 'playing' && g.state === 'lost') { this._dropPulses(); this._beginLoss(dirty); }
     else if (prev === 'playing' && g.state === 'won') this._beginWin();
@@ -1049,7 +1083,12 @@ export class BoardRenderer {
     // fog scaled to the board: nearest cells clear, the far side at most ~40% toward the sky colour
     this.uniforms.uFog.value.set(Math.max(0, dist - 0.25 * R) + 4, dist + R, 0.4);
     this.confUniforms.uPx.value = this.renderer.domElement.height / (2 * Math.tan((cam.fov * Math.PI) / 360));
-    if (this.game) this._updateTransparent();
+    if (this.game) {
+      // Space's depth dimming counts from the box's nearest face (js/readability.js boxDepth)
+      const g = this.game, p = 4 * this.spacing;
+      this.uniforms.uBoxDepth.value = boxDepth([cam.position.x / p, cam.position.y / p, cam.position.z / p], g);
+      this._updateTransparent();
+    }
     // camera shake on loss: a small decaying rotation applied for this render only
     let shaken = false;
     if (this._shake) {

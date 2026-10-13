@@ -17,6 +17,7 @@ import { createSampler3D } from './replay/sampler-3d.js';
 import { createGenerationClient } from './generation/client.js';
 import { createMenu, createLastMode, createLastBoardChoice, UNAVAILABLE_REASONS } from './shell/menu.js';
 import { CHOICE_ITEMS, presetDetails, lastBoard, returningMenu } from './shell/returning.js';
+import { aimReadout } from './readability.js';
 import { createFirstUse, stripShown, hidCube, aimHintCell, createDwell, AIM_DWELL_MS } from './shell/first-use.js';
 import { createActiveDevice, hintText } from './settings/bindings.js';
 import { createPauseController, restartInput, RESTART_NOTICE } from './shell/pause.js';
@@ -102,6 +103,7 @@ const S = {
   demo: null,
   spacing: SPACING_START,
   selected: -1,
+  readout: null, // the aimed cell's readout (updatePick), or null; shown by updateReadout
   started: false, // the first reveal has been applied to the generated board
   time: 0, // the session's timer in seconds, read once per frame while it runs
   endState: null, // frozen { state, time, minesLeft } once the game is over
@@ -1342,6 +1344,12 @@ function updatePick() {
   S.selected = aimedCell(g, S.spacing, space);
   renderer.setSelected(S.selected);
   ui.setCrosshair(S.selected >= 0);
+  S.readout = aimReadout(g, S.selected);
+}
+/** The aimed-cell readout beside the crosshair: the setting aimReadout (on by default) turns it off; shown only in 3D play, never paused or in the end delay. */
+function updateReadout() {
+  const on = SETTINGS.get('aimReadout') && S.mode === 'playing' && MODES.active === '3d' && !endDelay() && !onBackdrop() && !replay3d.view;
+  ui.setReadout(on ? S.readout : null);
 }
 /** The off-screen arrow on the crosshair ring, toward the box while none of it is in view; only in 3D play. */
 function updateArrow(on) {
@@ -1368,6 +1376,7 @@ function refresh() {
   if (!endDelay()) renderer.setToggles(playing && controls.shift, playing && controls.space, playing && controls.ctrl);
   renderer.setSpacing(S.spacing);
   updatePick();
+  updateReadout();
 }
 let last = performance.now();
 const fps = { frames: 0, acc: 0, value: 0 };
@@ -1478,6 +1487,7 @@ function frame(now) {
     if (playing && !endDelay()) aimHint(g, now);
     else AIM_DWELL.reset();
   }
+  updateReadout();
 
   showPauseTime();
 
@@ -1557,7 +1567,7 @@ window.__ms = {
     const g = S.game;
     return {
       mode: S.mode, selected: S.selected, time: S.time, started: S.started, spacing: S.spacing,
-      gameState: g?.state, minesLeft: g?.minesLeft, hud: [document.getElementById('hud-time').textContent, document.getElementById('hud-mines').textContent],
+      gameState: g?.state, minesLeft: g?.minesLeft, hud: [document.getElementById('hud-time').textContent, document.getElementById('hud-mines').textContent], readout: ui.readout,
       cam: { x: cam.x, y: cam.y, z: cam.z, yaw: cam.yaw, pitch: cam.pitch }, stats: { ...renderer?.stats }, fps: fps.value,
     };
   },

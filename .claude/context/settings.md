@@ -37,6 +37,7 @@ read-only bindings list. Every module is DOM-free; `js/main.js` wires them
 | `theme` | choice | `light`, `dark` | `light` | `msTheme.setTheme` |
 | `volume` | number | 0–1 | 0.7 | `sfx.setVolume` |
 | `muted` | boolean | | false | `sfx.setMuted`, the Sound buttons' label, the Settings page's Sound toggle (on while false) |
+| `aimReadout` | boolean | | true | "3D neighbour count": the aimed-cell readout beside the crosshair, read each frame by `updateReadout` in `js/main.js` ([app-shell.md](app-shell.md)) |
 
 ## PUBLIC API
 
@@ -87,7 +88,7 @@ Page (`js/settings/page.js`)
 - `SETTINGS_SECTIONS` — Controls (`lookSensitivity`, `invertY`,
   `confirmRestart`), Graphics
   (`fullscreen`, `renderResolution`, `boardScale` — "2D board scale", Fit,
-  100 %, 125 %), Theme (`theme`), Audio (`muted`,
+  100 %, 125 % —, `aimReadout` — "3D neighbour count"), Theme (`theme`), Audio (`muted`,
   `volume`); `SETTING_LABELS` (`muted` reads Sound), `CHOICE_LABELS`.
 - `settingControl(key)` → `{ key, kind: 'slider' | 'toggle' | 'segmented',
   label, … }`: a number is a `ui-slider` (with `min`, `max`, `step`,

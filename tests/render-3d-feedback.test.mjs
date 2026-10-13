@@ -29,7 +29,7 @@ test('Ctrl ghosts are one named alpha, 0.25, used by the shader for hidden cells
   assert.equal(GHOST_ALPHA, 0.25);
   const vert = RENDER.slice(RENDER.indexOf('const VERT ='), RENDER.indexOf('const FRAG ='));
   assert.match(vert, /else if \(kind == 4\) \{[^\n]*uCtrl > 0\.5[^\n]*a = \$\{GHOST_ALPHA\}/, 'a hidden cell under Ctrl takes the ghost alpha');
-  assert.match(vert, /bool want = uPass < 0\.5 \? a > 0\.99 : a < 0\.99;/, 'so it is drawn in the transparent pass');
+  assert.match(vert, /bool want = uPass < 0\.5 \? a > 0\.99 : \(a < 0\.99/, 'so it is drawn in a transparent pass');
 });
 
 test('the opaque list leaves hidden cells to the transparent pass under Ctrl, and the sort takes them', () => {

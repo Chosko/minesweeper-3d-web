@@ -194,7 +194,7 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
 #hud-mines { font-variant-numeric: var(--font-numeric-tabular); }
 .hud-board .ui-stat__value { font-size: var(--font-size-md); color: var(--color-ink-muted); }
 #hud-mines.negative { color: var(--color-danger); }
-#hud.hud--2d #crosshair, #hud.hud--2d #crosshair-arrow, #hud.hud--2d #mode-chips { display: none; }
+#hud.hud--2d #crosshair, #hud.hud--2d #crosshair-arrow, #hud.hud--2d #aim-readout, #hud.hud--2d #mode-chips { display: none; }
 .hud-tools { position: absolute; top: 16px; right: 16px; padding: 8px 12px; display: flex; gap: 12px; font-size: 13px; color: var(--color-ink-muted); }
 .kbd-hint { white-space: nowrap; }
 
@@ -223,6 +223,19 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
   border-style: solid; border-color: transparent; border-width: 9px 0 9px 14px; border-left-color: #10203d;
   filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 1px rgba(255, 255, 255, 0.95));
 }
+/* the aimed-cell readout (UI.setReadout): below and right of the crosshair, clear of the arrow's ring */
+#aim-readout {
+  position: absolute; left: calc(50% + 40px); top: calc(50% + 28px);
+  padding: 3px 10px; border-radius: var(--radius-md);
+  font-size: var(--font-size-sm); font-weight: 600; font-variant-numeric: var(--font-numeric-tabular); white-space: nowrap;
+  color: var(--color-ink); background: var(--color-surface-raised); border: 1px solid var(--color-border);
+  box-shadow: var(--elevation-1);
+}
+/* its icons: an unrevealed cube and a flag, drawn in the theme's colours */
+#aim-readout .aim-icon--cube rect { fill: var(--color-accent); stroke: var(--color-ink); stroke-width: 1; }
+#aim-readout .aim-icon { width: 1.15em; height: 1.15em; vertical-align: -0.22em; }
+#aim-readout .aim-icon__pole { fill: none; stroke: var(--color-ink); stroke-width: 1.6; stroke-linecap: round; }
+#aim-readout .aim-icon__cloth { fill: var(--color-danger); }
 
 #mode-chips { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; }
 .chip {
