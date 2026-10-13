@@ -54,6 +54,11 @@ Pick a board, switch **No-guess board** on or off, and play:
 | `Esc` | Pause |
 | `F2` | Restart: a new board of the same choice |
 
+**Swap clicks**, beside Pause on the board, trades the left and right buttons for presses that
+start on a closed or flagged cell — left flags on the press, right reveals on the release — so
+you can flag and chord with the left button alone. Revealed cells, the keyboard and the
+controller keep their roles; the toggle lasts until the page reloads.
+
 A press shows the cell (or, for a chord, its closed neighbours) pressed until you release. On a
 controller, the D-pad or left stick moves the cursor, `A` or `RT` reveals, `X` or `LT` flags, `Y`
 or `LT` + `RT` chords, `Start`, `B` or `Back` pauses, and `Y` pressed while `Start` is held
