@@ -39,8 +39,9 @@ looks.
   import.
 - `js/classic2d/mode.js` — the Classic 2D mode behind the game shell's mode
   contract: one session, board view, pointer / cursor inputs and movement
-  sampler per game, the overlay feed, pause by hiding the board, the end
-  delay with its end effect. DOM-free: the shell hands in its flow.
+  sampler per game, the overlay feed, the sound cue of every action, pause
+  by hiding the board, the end delay with its end effect. DOM-free: the
+  shell hands in its flow and its sound sink.
 - `js/classic2d/end-effect.js` — the end effect: the 3D win and loss waves
   and the win confetti at board scale, as tile states, pulse strengths and
   confetti pieces over time, and their drawing onto a Canvas 2D context.
@@ -207,7 +208,10 @@ looks.
   panel), `scrolled` each scroll the player made;
   `mount` defaults to `{board: mountBoardView, pointer: mountPointerInput,
   cursor: mountCursorInput, sampler: mountSampler2D}`; without `sampler`
-  no movement is recorded; `clock` (`{now, setTimeout, clearTimeout}`) is
+  no movement is recorded; `sound` is the sound sink (`{reveal(count),
+  flag(on, count), chord(count), noop(), explode(), win()}`, the `sfx`
+  instance of `js/audio.js` that `main.js` hands in), null by default:
+  without it nothing plays; `clock` (`{now, setTimeout, clearTimeout}`) is
   the session's and the end delay's. The module head comment is the contract.
 
 `js/classic2d/end-effect.js` exports
@@ -380,14 +384,28 @@ looks.
 - **The mode.** `start` normalises the choice, saves it as the last board
   choice and mounts a fresh view, inputs and movement sampler; the inputs
   see the session through a gate that reads paused while the board is
-  hidden and redraws a flag placed before the first reveal (the session
-  emits no event then). The view opens at `flow.scale()` inside
+  hidden and redraws what an action before the first reveal changed (the
+  session emits no event then; under the reference rules nothing changes). The view opens at `flow.scale()` inside
   `flow.frame()`, reports each layout to `flow.layout` and each player
   scroll to `flow.scrolled`; `setScale` refits it. `tick()` drives the
   sampler every frame, and the cursor's ring reaches it beside the view:
   its cell while shown, -1 when hidden. The session's `changed`
   redraws the listed cells and pushes the overlay; its board arriving
   reports started and can-pause.
+- **Sound.** Every action the gate passes on — mouse, keyboard or
+  controller alike — plays the 3D game's cue for its outcome (`cue` in
+  `mode.js`), read from the engine's changed cells and the game's phase:
+  `flag(on, count)` for a flag click (on when the cells flagged are at
+  least half of those changed), `explode()` alone for a loss,
+  `reveal(count)` or `chord(count)` for the cells opened, `noop()` for an
+  action while playing that changed nothing, then `win()` once at a win.
+  The cues play at the shared volume and mute, which the settings apply to
+  the one `sfx` instance; the mode has no sound setting of its own and
+  imports no sound module. A flag or chord before the first reveal changes
+  nothing under the reference rules, so it is silent; the first reveal's
+  cue plays when its board arrives (the action's Promise), not if the game
+  was restarted or left first; an action the session refuses (null) is
+  silent. A cue never changes or gates an action.
 - **Generation client and pre-generation.** The mode makes one client
   (`createClient`) on first use and keeps it for the page; `warm()` warms
   it (the shell calls it as the board choice opens). A finished game whose
@@ -474,7 +492,7 @@ looks.
   boards, a deliberate difference from the reference), the game session,
   timer and failure offer, the board view (fitting, scrolling or panning,
   hit-testing, per-cell redraw, the board hidden while paused), the
-  pointer and cursor inputs and the mode.
+  pointer and cursor inputs, the sound of each action and the mode.
 - [../domain/features/replay-recording.md](../domain/features/replay-recording.md)
   — what the 2D session records, the pointer and cursor sampling and the
   replay on the mode's reports.
@@ -505,6 +523,8 @@ looks.
   the 2D movement sampler the mode mounts.
 - [rendering.md](rendering.md) — the 3D tile atlas, a separate palette the
   skin neither reads nor feeds, drawn through the same `js/tile-art.js`.
+- [audio.md](audio.md) — the `sfx` cues the mode's `sound` option plays,
+  and the volume and mute they play at.
 - [input.md](input.md) — `Repeat`, `stickCurve`, `BTN` and the
   `GamepadReader` poll the cursor input reads, and the shell's Back buttons
   it leaves unmapped.
@@ -514,7 +534,8 @@ looks.
   `tests/classic2d-end-effect.test.mjs` the end effect;
   `tests/classic2d-pointer.test.mjs` the pointer input;
   `tests/classic2d-cursor.test.mjs` the cursor input;
-  `tests/classic2d-mode.test.mjs` the mode, its end delay and board choice;
+  `tests/classic2d-mode.test.mjs` the mode, its end delay, the cue each
+  action plays and board choice;
   `tests/classic2d-fidelity.test.mjs` the inputs and custom limits against
   the fidelity observations; `tests/replay-2d.test.mjs` the session's
   recording, the sampler and the replay on the mode's reports;
@@ -535,6 +556,8 @@ looks.
   the 2D end delay (`end-effect.js`; `END_DELAY_MS` and the `finished`
   handler in `mode.js`; `showEffect`, `drawCell` and `drawEffectLayer` in
   `board-view.js`).
+- Changing which cue an action plays (`cue` and `act` in `mode.js`; the 3D
+  game's mapping it mirrors is `onAction` in `js/main.js`).
 - Changing a pointer gesture or adding an input rule (`createPointerInput`,
   `pointerRules`, the profile markers in `js/engine/profiles.js`).
 - Changing a key or controller binding, or the cursor's repeat
