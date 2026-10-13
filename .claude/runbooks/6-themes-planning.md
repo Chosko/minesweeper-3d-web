@@ -125,7 +125,7 @@ Approval gates in this run: approve as drafted, taking the draft's recommendatio
 ```
 Done: 2026-10-13, commit `0c5e565` (2 files, +33/-12). Amended both layout documents. Screens with no Joyful artboard are now built from an artboard the owner supplies (claude+human tasks), not by imitating the drawn screens. All four planned m3 screen features are recorded as stale.
 
-## [ ] 6. Write the production plan for the themes milestone
+## [x] 6. Write the production plan for the themes milestone
 
 Depends on: 4, 5
 
@@ -141,12 +141,14 @@ The roadmap gained a themes milestone (ordered before m3-on-steam) and the featu
 
 Approval gates in this run: approve as drafted, taking the draft's recommendation on each open call. Park only on a real design question.
 ```
+Done: 2026-10-13, commit `8452d98` (1 file, +16/-3). m2b-themes is [ACTIVE]; m1 and m2 are [SHIPPED]. The edge from theme-system to themed-board-art-and-motion was dropped to break a cycle; theme-system.md's prose still states it.
 
 ## [ ] 7. Write the themes milestone tasks
 
 Depends on: 6
 
 Context:
+- 2026-10-13 (from step 6): the plan order is theme-system, shared-screen-layout, in-game-layout, themed-board-art-and-motion, theme-implement-skill. theme-system's conformance tests run the board checks themed-board-art-and-motion defines only once that feature lands, so the theme-system tasks must not depend on it — the plan dropped that edge to break a cycle.
 - 2026-10-13 (from step 3): the themes milestone's id is `m2b-themes`.
 - 2026-10-13 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision ("Do all yourself"); on each open call in the draft take the draft's recommendation. Park only on a real design question.
 
