@@ -46,7 +46,7 @@ Steps: 4/35
 
 ## 5. ux-review-tasks-implementation — Implement the UX review tasks 119–153, then check the result against the review for drift
 
-Status: [RUNNING]
+Status: [PENDING]
 File: .claude/runbooks/5-ux-review-tasks-implementation.md
 Created: 2026-10-12
 Source: /runbook-create interview

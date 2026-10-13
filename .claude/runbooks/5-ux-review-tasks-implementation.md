@@ -232,7 +232,7 @@ Context: none
 
 Done: 2026-10-12, commit `2d470df` (30 files, +1467/-154). Wrong premise: 2D end-state tiles did not show unflagged mines as flags — the board view now draws a won board's closed cells as flags, visually only. Decisions: the skip-the-delay press rules live in a new js/shell/end-skip.js and `ending3D()` became `endDelay()` for both modes; the 3D ready card is hidden while pointer lock is requested on Play again, and a lock release during the end delay ends it.
 
-## [ ] 20. Implement task 138 — Generation pipeline
+## [x] 20. Implement task 138 — Generation pipeline
 
 Depends on: none
 
@@ -241,6 +241,8 @@ Context: none
 ```prompt
 /task-implement 138 --review --rounds 2
 ```
+
+Done: 2026-10-13, commit `ce2ad60` (39 files, +2040/-348). Wrong premise: there is no code cause for the missing 3D "Generating the board…" card the review saw — under pointer lock with software rendering each frame becomes a 100 ms to 1.7 s main-thread task that holds back the 200 ms timer; a browser test pins the card against that. Decisions: game sessions take a `place` option (defaulting to the worker's `generate()`) for test injection; a pre-generated board survives only Play again or Restart, and opening the board choice discards it.
 
 ## [ ] 21. Implement task 139 — 3D flight: fly-through fade, forward follows the view, spacing, FOV
 
@@ -382,7 +384,8 @@ Context: none
 
 Depends on: 20
 
-Context: none
+Context:
+- 2026-10-13 (from step 20): the game sessions take a `place` option, defaulting to the worker's `generate()`, through which tests and dev/measure-replays.mjs supply fixed boards; a pre-generated board is discarded when the mode is left for the board choice.
 
 ```prompt
 /task-implement 151 --review --rounds 2
