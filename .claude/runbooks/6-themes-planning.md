@@ -8,7 +8,8 @@ Sequencing: /production-plan must see both architected features, and tasks are w
 
 Depends on: none
 
-Context: none
+Context:
+- 2026-10-13 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision ("Do all yourself"); on each open call in the draft take the draft's recommendation. Park only on a real design question.
 
 ```prompt
 /product-design amend "Visual design system, Main menu and game shell (settings), Demo edition: the light and dark themes are replaced by a catalogue of themes the player picks from a list on the Settings page."
@@ -31,7 +32,8 @@ Approval gates in this run: approve as drafted, taking the draft's recommendatio
 
 Depends on: 1
 
-Context: none
+Context:
+- 2026-10-13 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision ("Do all yourself"); on each open call in the draft take the draft's recommendation. Park only on a real design question.
 
 ```prompt
 /product-design amend "Main menu and game shell, Classic 2D, Demo edition: the hexagonal and triangle grids become their own modes with their own main-menu entries, Hexagon and Triangle, instead of a grid choice inside Classic 2D."
@@ -51,7 +53,8 @@ Approval gates in this run: approve as drafted, taking the draft's recommendatio
 
 Depends on: 1, 2
 
-Context: none
+Context:
+- 2026-10-13 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision ("Do all yourself"); on each open call in the draft take the draft's recommendation. Park only on a real design question.
 
 ```prompt
 /product-roadmap
@@ -71,7 +74,8 @@ Approval gates in this run: approve as drafted, taking the draft's recommendatio
 
 Depends on: 3
 
-Context: none
+Context:
+- 2026-10-13 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision ("Do all yourself"); on each open call in the draft take the draft's recommendation. Park only on a real design question.
 
 ```prompt
 /architect "Visual design system" <the themes milestone id step 3 added — read it from .claude/domain/product-roadmap.md>
@@ -93,7 +97,8 @@ Approval gates in this run: approve as drafted, taking the draft's recommendatio
 
 Depends on: 4
 
-Context: none
+Context:
+- 2026-10-13 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision ("Do all yourself"); on each open call in the draft take the draft's recommendation. Park only on a real design question.
 
 ```prompt
 /architect "Main menu and game shell" <the themes milestone id step 3 added — read it from .claude/domain/product-roadmap.md>
@@ -113,7 +118,8 @@ Approval gates in this run: approve as drafted, taking the draft's recommendatio
 
 Depends on: 4, 5
 
-Context: none
+Context:
+- 2026-10-13 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision ("Do all yourself"); on each open call in the draft take the draft's recommendation. Park only on a real design question.
 
 ```prompt
 /production-plan
@@ -127,7 +133,8 @@ Approval gates in this run: approve as drafted, taking the draft's recommendatio
 
 Depends on: 6
 
-Context: none
+Context:
+- 2026-10-13 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision ("Do all yourself"); on each open call in the draft take the draft's recommendation. Park only on a real design question.
 
 ```prompt
 Write the backlog tasks for the themes milestone (the one ordered before m3-on-steam in .claude/PLAN.md).
@@ -145,7 +152,8 @@ Approval gates in this run: approve as drafted, taking the draft's recommendatio
 
 Depends on: 7
 
-Context: none
+Context:
+- 2026-10-13 unparked with answer: approval gate — approved as drafted, unseen, by the user's standing decision ("Do all yourself"); on each open call in the draft take the draft's recommendation. Park only on a real design question.
 
 ```prompt
 Create the runbook that implements the themes milestone (the one ordered before m3-on-steam in .claude/PLAN.md). Read .claude/PLAN.md and .claude/TASKS.md first.
