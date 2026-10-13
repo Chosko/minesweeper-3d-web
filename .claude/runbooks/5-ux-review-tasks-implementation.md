@@ -264,7 +264,7 @@ Context: none
 /task-implement 140 --review
 ```
 
-## [ ] 23. Implement task 141 — 3D readability
+## [x] 23. Implement task 141 — 3D readability
 
 Depends on: 7
 
@@ -275,6 +275,8 @@ Context: none
 ```prompt
 /task-implement 141 --review
 ```
+
+Done: 2026-10-13, commit `43320ba` (24 files, +606/-156). Decisions: the owner dropped the neighbourhood wireframe and depth shading, and kept only draw-on-top from the Shift layers (solid neighbourhood over the faded cubes; no layers, tints, separation or ghost outlines); the readout reads `[cube] N - [flag] M` (N counts flagged neighbours too, the flag part only above zero) behind a new "3D neighbour count" setting, on by default. Wrong premise: three.js draws every transparent material after every opaque one, so a "draw first" pass must be a non-transparent material with custom blending. The step's push was blocked by the run's own uncommitted bookkeeping; the run pushed it, and the owner chose to record the step done.
 
 ## [ ] 24. Implement task 142 — Touch Classic 2D and touch-safe 3D entry
 
