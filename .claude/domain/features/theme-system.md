@@ -68,9 +68,10 @@ Non-goals:
   field that lock will read.
 - A light and a dark variant per theme, and a "Match system" option — each
   theme is one fixed look.
-- Reduced motion — `m7-after-launch`, the setting and its first value from
-  the operating system's preference together. Until then theme motion always
-  plays and the game does not read that preference.
+- Reduced motion — `m7-after-launch`: the in-game setting, its first value
+  from the operating system's preference, governing all motion. Until then
+  the base stylesheet's shipped `prefers-reduced-motion` rule is the game's
+  one reduced-motion behaviour, and nothing else reads the preference.
 - Migrating the light or dark look into the catalogue as a theme — both are
   removed.
 - A second theme — added later by the theme skill, never by a task
@@ -117,7 +118,9 @@ reader, and the kit stylesheet: [app-shell.md](../../context/app-shell.md),
 - **Base stylesheet.** The kit's structure: layout, display, the sizes the
   layout depends on, the hidden default of every decoration slot, and the
   focus-ring presence rule. It carries no colour, font, border, radius,
-  shadow or motion value of any theme.
+  shadow or motion value of any theme. Its shipped
+  `@media (prefers-reduced-motion: reduce)` rule, which stops every DOM
+  animation and transition, stays in it unchanged.
 - **Theme stylesheet.** One per theme. Every rule is scoped to the theme's
   id on the document root, so two theme stylesheets can be loaded at once
   during a switch without either affecting the other. It declares the
@@ -158,7 +161,8 @@ reader, and the kit stylesheet: [app-shell.md](../../context/app-shell.md),
   - every file the registry names exists, and every font file the
     stylesheet declares is one of the theme's own files (no remote URL in
     any theme file);
-  - every rule of the theme stylesheet is scoped to its id;
+  - every rule of the theme stylesheet is scoped to its id, and none
+    overrides the base stylesheet's `prefers-reduced-motion` rule;
   - every required token is declared;
   - every part and state of every catalogued component has a rule, and
     every interactive part has a visible focus style;
@@ -207,7 +211,9 @@ reader, and the kit stylesheet: [app-shell.md](../../context/app-shell.md),
   change to every theme and every screen.
 - **Theme stylesheet contract** — rules scoped to the theme id only; tokens
   and parts per the catalogue; fonts only from the theme's own files;
-  component animation in CSS only.
+  component animation in CSS only, never overriding the base stylesheet's
+  `prefers-reduced-motion` rule — no `prefers-reduced-motion` rule and no
+  `!important` animation or transition in a theme stylesheet.
 - **Failure contract** — a theme whose files fail to load at start-up falls
   back to the default theme and tells the player once; a failed switch
   keeps the current theme and tells the player once; the default theme

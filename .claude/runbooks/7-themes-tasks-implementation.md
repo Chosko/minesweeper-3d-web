@@ -18,7 +18,8 @@ Context: none
 
 Depends on: 1
 
-Context: none
+Context:
+- 2026-10-13 (amend): Task 158 keeps the shipped `@media (prefers-reduced-motion: reduce)` rule in `css/style.css` unchanged — it is exempt from the no-animation-values test, and no theme stylesheet may override it (no `prefers-reduced-motion` rule, no `!important` animation or transition). Cell motion and the 2D/3D game effects ignore the preference; the full reduced-motion feature is `m7-after-launch`'s.
 
 ```prompt
 /task-implement 158 --review
@@ -41,6 +42,7 @@ Depends on: 3
 Context:
 - 2026-10-13 (amend): Task 160 adds no reduced-motion setting; theme motion follows the operating system's `prefers-reduced-motion` preference, and the task is titled "Settings theme list and light/dark carry-over".
 - 2026-10-13 (amend): Supersedes the fact above: reduced motion is deferred whole to `m7-after-launch`. Until then the game has no reduced-motion behaviour — no setting and no reading of the operating system's `prefers-reduced-motion` preference; theme motion always plays. Task 160 adds no settings field, root marker, accessibility section or preference read.
+- 2026-10-13 (amend): Supersedes the fact above: the shipped `prefers-reduced-motion` rule in `css/style.css` stays (task 158 keeps it) and is the game's one reduced-motion behaviour until `m7-after-launch`; nothing new reads the preference. Task 160 still adds no settings field, root marker, accessibility section or preference read.
 
 ```prompt
 /task-implement 160 --review

@@ -65,7 +65,8 @@ Non-goals:
 - DOM component motion — plain CSS in the theme stylesheet
   (`theme-system`).
 - Reduced motion — `m7-after-launch` (`theme-system`); until then cell
-  motion always plays.
+  motion always plays, as the 2D and 3D game effects do, and the cell motion
+  player reads no reduce-motion preference.
 
 ## Architecture
 
