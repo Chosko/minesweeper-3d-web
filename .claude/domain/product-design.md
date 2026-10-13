@@ -80,7 +80,7 @@ demanding, until free 3D play is within reach.
   Minesweeper Online, played with its default options, exactly. It is drawn as a flat 2D board, never as a 3D
   scene. It is built new and does not derive from the 3D mode.
 - **The 3D mode is the existing 3D game, made one mode among several.** Its
-  look, controls and feel are kept, except that a game starts framed from a
+  controls and feel are kept, and its look follows the chosen theme, except that a game starts framed from a
   three-quarter view with the whole box in sight instead of the original's
   start pose, and the scene gains a return to that view (a key and a pause
   card action), an arrow toward the box while it is out of view, and a faint
@@ -115,7 +115,10 @@ demanding, until free 3D play is within reach.
   time; campaign levels and daily boards rank by 3BV/s, since every attempt
   is a different board, and still record and show the time. Custom boards get no leaderboard.
 - **Visual direction: modern and catchy, with nothing decorative that does not
-  serve play.** The current 3D look is the bar for every mode.
+  serve play.** The game is drawn in a catalogue of themes the player picks
+  from; the screens share one layout and each theme restyles it. Each theme
+  is one fixed look, with no light or dark variant. *Joyful tiles* is the
+  first theme and the default on first launch.
 - **Pausing hides the board in every mode.** The board is covered and the
   clock keeps running, so pausing never buys free study time and records
   stay comparable across modes; each game records its pauses — their count
@@ -128,11 +131,12 @@ demanding, until free 3D play is within reach.
 - **A free demo with fixed locks.** The demo offers unlimited 2D Beginner,
   Intermediate and Expert boards on the square grid, unlimited Beginner boards
   on the hexagonal and triangle grids, unlimited 3D Beginner boards, and the
-  first shape of the Surface mode, and the first 5 levels of each campaign
-  (unlocked by progression as usual).
+  first shape of the Surface mode, the first 5 levels of each campaign
+  (unlocked by progression as usual), and 3 of the themes, chosen when the
+  demo is designed.
   Everything else is locked: custom boards, Intermediate and Expert on the
-  hexagonal and triangle grids, the harder 3D presets, and pro options such as
-  no-guess.
+  hexagonal and triangle grids, the harder 3D presets, the other themes, and
+  pro options such as no-guess. In the full game every theme is unlocked.
 - **The browser build stays public until the Steam release**, as the
   author's work-in-progress preview. What happens to it after release is not
   decided.
@@ -147,8 +151,8 @@ Listed in the order a player meets them. The last two are after launch.
 
 Everything around a game: the main menu (Start / Continue, every mode, Records,
 Leaderboards, Settings, Quit), pausing and resuming, restarting, returning to
-the menu, and the settings — controls, graphics, the light or dark theme,
-audio and accessibility (colour-blind-safe numbers). Input is mouse and keyboard first, with
+the menu, and the settings — controls, graphics, the theme, picked from a
+list of the catalogue's themes, audio and accessibility (colour-blind-safe numbers). Input is mouse and keyboard first, with
 controller play available in every mode. *Start* opens the first 2D campaign
 level until the player has progress; then *Continue* resumes the next
 unbeaten level or the last mode played. Serves every player and every flow;
@@ -157,16 +161,39 @@ it is where the first-launch flow begins.
 ### Visual design system
 
 The one visual language every mode and screen is drawn in, held to the visual
-direction under Design decisions: the colour palette and typography; a light
-and a dark theme, which the player picks on the Settings page, Light until
-they pick; the tiles and number colours, with a colour-blind-safe number set
-for the accessibility setting; the menus; the in-game overlay that sits over a
-board (timer, mine counter, click counter, pause); and the results screen. Classic 2D, 3D and
-Surface each apply it to their own board, so moving between modes never feels
-like moving between games. The 3D scene's cubes keep their one current look
-under both themes; its sky, fog and background, and the menus, overlay and
-results screen around it, follow the chosen theme. Serves every player and
-every flow.
+direction under Design decisions: one shared layout for the menus, the
+in-game overlay that sits over a board (timer, mine counter, click counter,
+pause) and the results screen, and a catalogue of themes that style it. The
+player picks a theme from a list on the Settings page; *Joyful tiles* is
+the default until they pick. The shared layout is designed together with
+*Joyful tiles*; later themes add styles, not layouts.
+
+A theme is one fixed look and changes more than colour: borders and bevels,
+shadows, corner radii, fonts, window chrome (such as a title bar with
+decorative buttons) and the counter readouts. It restyles a fixed set of
+named screen components and their parts, and may fill optional decoration
+slots. It also styles every board: the tiles and the number colours, with a
+colour-blind-safe number set for the accessibility setting, and in the 3D
+scene the sky, fog and background, the cubes in every state and the number
+colours 1–26. Classic 2D, 3D and Surface each apply it to their own board,
+so moving between modes never feels like moving between games. Each theme's
+fonts ship with the game, so every theme works offline.
+
+Each theme has its own motion. Buttons, toggles, cards and the other screen
+components move in the theme's own style. Board cells move by the theme's
+description of each cell event — press, release, reveal, flag, unflag,
+chord press and the solved pulse — built from a fixed set of movements:
+scaling, sliding, flipping about an axis (showing the other face halfway),
+deepening a shadow or bevel, brightening and fading, each with its duration
+and easing; one theme presses a cell down, another flips it. Motion is only
+visual: it never delays input, the game, the timer or replays, and the
+reduced-motion setting turns it off.
+
+Themes are designed in Claude Design, each delivered as its screens plus one
+catalogue of its components. More themes are added over time: once the
+theme system exists, a new theme is added by a dedicated Claude skill
+whenever it is ready, outside the milestone schedule and without a backlog
+task. Serves every player and every flow.
 
 ### Classic 2D
 
@@ -272,8 +299,9 @@ and syncs when a connection returns.
 
 ### Demo edition
 
-The free demo build: the content listed under Design decisions, with locked
-content visible in the menus rather than hidden, and a *Buy full game* entry
+The free demo build: the content listed under Design decisions — 3 themes
+among them — with locked content, the other themes included, visible in the
+menus and the Settings theme list rather than hidden, and a *Buy full game* entry
 that opens the store page. Serves players deciding whether to buy.
 
 ### Endless board *(after launch)*
