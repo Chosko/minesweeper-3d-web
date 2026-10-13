@@ -1,0 +1,70 @@
+# App shell — the Classic 2D mode's wiring in `js/main.js`
+
+## OVERVIEW
+
+Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
+Covers `FLOW_2D`, the shell side `js/main.js` hands to
+`createClassic2DMode`; the mode, board view, input and board choice
+themselves are [classic2d.md](classic2d.md).
+
+## INTERNAL PATTERNS
+
+- **Button swap.** `BUTTON_SWAP` (`createButtonSwap`) is the page's one
+  mouse button swap, handed as `buttonSwap`: kept across games, off again on
+  reload, toggled by `onToggleSwap` (the overlay bar's `#hud-swap`) and
+  mirrored by `ui.setSwap`.
+- **Routes.** Board choice routes to `classic-2d-choice` with the last
+  board choice (loaded at boot by `mode2d.loadChoice()`); `show` routes to
+  `classic-2d`, whose Back is `backGame`.
+- **Board area and panel.** The board area is `#c2d-board`; the board opens
+  at the `boardScale` setting (`scale`) inside the panel's frame (`frame`,
+  measured as each board opens through `ui.panelFrame2D()`). Each refit
+  places the panel through `layout` (`panelRect`, `ui.placePanel2D`) and
+  tells whether the board scrolls: the first clipped board shows the
+  one-time scroll hint until dismissed or scrolled (`scrolled`), kept as
+  `scrollHint` in `shell.firstUse` ([app-shell-ui.md](app-shell-ui.md)
+  § First-use hints). A `boardScale` change reaches the open board and the
+  replay viewer at once.
+- **HUD.** The overlay bar names the board through `board`
+  (`ui.setBoard2D`); its timer, counter and clicks come from `hud`, fed by
+  `mode2d.tick()` every frame, which also drives the movement sampler
+  ([replay.md](replay.md)) and draws the end effect during the 2D end delay
+  (`mode2d.ending`, read through `endDelay()`).
+- **Pause.** The paused screen's `setBoardHidden` hides the 2D board;
+  `pauseInfo` / `gameOver` read `mode2d.status()`.
+- **Status card.** `board2d` holds `{generating, failure, progress}` from
+  `FLOW_2D`; `showStatus2D` shows `#c2d-status` — the generating card on
+  the board only, the offer there and over the pause card — and focuses the
+  offer (`statusFocus`: Retry, or Play a standard board once
+  `failure.count` is 2 or more). The generating card focuses Cancel unless
+  the focus is already on its Cancel or Play a standard board;
+  `FLOW_2D.progress` redraws it (`drawStatus2D`) without moving focus. An
+  offer answered over the pause card resumes first (`answer2D`); Main menu
+  is `PAUSE.toMenu()`.
+- **Controller.** On `classic-2d` polls go to `padBoard2D`: Start pauses
+  through `#hud-pause`, B/Back is `backGame('pad')`, the status card is
+  navigated as a menu, every other poll goes to `mode2d.pad` after
+  held-button suppression.
+- `F` flags in Classic 2D (fullscreen is 3D only); `M` and `H` act in both
+  modes ([app-shell-ui.md](app-shell-ui.md)).
+
+## DOMAIN DEPENDENCIES
+
+- [../domain/features/classic-2d-square-play.md](../domain/features/classic-2d-square-play.md)
+  — the mode the wiring serves.
+- [../domain/features/game-shell.md](../domain/features/game-shell.md) — the
+  mode contract.
+
+## CROSS-REFERENCES
+
+- [classic2d-mode.md](classic2d-mode.md) — `createClassic2DMode`, end
+  effect; [classic2d-board-view.md](classic2d-board-view.md) — board view;
+  [classic2d-input.md](classic2d-input.md) — button swap.
+- [app-shell-pause.md](app-shell-pause.md) — pause, end delay.
+- [testing.md](testing.md) — Classic 2D session, board view and button swap
+  tests.
+
+## WHEN TO READ THE SOURCE
+
+- Changing the 2D wiring (board area, panel, status card, controller): the
+  `FLOW_2D` block and `padBoard2D` in `js/main.js`.

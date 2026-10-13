@@ -97,7 +97,7 @@ fit the direction; they belong in it on the next `/product-design` pass.
 
 It replaces the theme parts of `design-tokens-and-themes`, `screen-components`
 and `settings` as built in m1 (the token sheet, the theme applier and token
-reader, and the kit stylesheet: [app-shell.md](../../context/app-shell.md),
+reader, and the kit stylesheet: [app-shell-kit.md](../../context/app-shell-kit.md),
 [settings.md](../../context/settings.md)).
 
 - **Theme registry.** One module listing every theme, in catalogue order.

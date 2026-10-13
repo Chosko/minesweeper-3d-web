@@ -1,38 +1,17 @@
-# 3D mode — board choice, game session and mode adapter
+# 3D mode — board choice
 
 ## OVERVIEW
 
 The 3D mode's game flow from board choice to result, around the 3D scene,
 camera and controls ([rendering.md](rendering.md), [input.md](input.md)),
-which it leaves as they are. The board choice turns the player's pick into a
-board; the session owns one game from a closed box to a win or loss,
-placing a standard board or asking the generation worker for a no-guess one
-at the first reveal; the adapter puts
-the session behind the game shell's mode contract. `js/main.js` wires the
-three to the screens, the renderer and the pointer-lock flow
-([app-shell.md](app-shell.md)).
+which it leaves as they are. `js/main.js` wires it to the screens, the
+renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
 
-- `js/mode3d/board-choice.js` — the three cube presets, the custom board's
-  validation, the Random fill, the no-guess switch with its cell-count limit
-  and side-of-2 rule, the last 3D board choice's document name,
-  and `bindBoardChoice`, the binder over the `#board-choice` screen. Its
-  helpers are DOM-free; the binder touches only the elements it is handed.
-- `js/mode3d/session.js` — the 3D game on the shared engine
-  (`create3DGame`) and the game session (`createSession`): the closed box,
-  flags before the first reveal, the first reveal's board — a standard one
-  placed at once with `generate()`, a no-guess one asked of the generation
-  client, a pre-generated one taken over on its marked start cell — the
-  slow-answer "generating" state and its progress, the failure offer, the
-  timer, pause, restart and leave, and the game's replay recorder.
-  DOM-free.
-- `js/shell/mode-3d.js` — the 3D adapter: the session behind the mode
-  contract (`create3DMode`), running the end delay between the session's
-  end and the finished report, reporting summaries built by
-  `js/records/summary.js` with the session's sealed replays, and driving the
-  session's movement sampler, and pre-generating the next no-guess box for
-  Play again. DOM-free; imports the records' summary builder and `MODE_3D`,
-  and `pregenerate` (`js/generation/client.js`) and `startCell`
-  (`js/generation/start-cell.js`).
+| File | Responsibility | Context file |
+| --- | --- | --- |
+| `js/mode3d/board-choice.js` | The three cube presets, custom validation, Random fill, the no-guess switch with its cell-count limit and side-of-2 rule, the last 3D choice's document name, and `bindBoardChoice` over `#board-choice`. Helpers DOM-free; the binder touches only the elements it is handed. | this file |
+| `js/mode3d/session.js` | The 3D game on the shared engine (`create3DGame`) and the game session (`createSession`): closed box, flags before the first reveal, the first reveal's board, generating, failure offer, timer, pause, restart, leave, replay recorder. DOM-free. | [mode3d-session.md](mode3d-session.md) |
+| `js/shell/mode-3d.js` | The adapter (`create3DMode`) behind the mode contract: end delay, summaries, sealed replays, the movement sampler, pre-generation for Play again. DOM-free. | [mode3d-session.md](mode3d-session.md) |
 
 ## PUBLIC API
 
@@ -47,96 +26,28 @@ three to the screens, the renderer and the pointer-lock flow
 - `DIM_MIN` / `DIM_MAX` (1 / 100); `validateCustom(board)` → `{ok: true}` or
   `{ok: false, field: 'X'|'Y'|'Z'|'mines', reason}` — mines 1 to cells − 1,
   so a one-cell board is refused. `customStatus(board)` → `{ok, field, max,
-  text, warn?}`, the info line under the fields (a warning above 250,000
-  cells).
+  text, warn?}` (a warning above 250,000 cells).
 - `NOGUESS_CELL_LIMIT` = 8000 (20 × 20 × 20); `noGuessAvailable(choice)` —
   true on every preset and on a custom board of at most that many cells
   with no side of exactly 2 (a side of 1 keeps it); `noGuessReason(choice)`
-  — "No-guess isn't available when a side is 2 cells" on a custom board
-  with a side of 2, which takes precedence, else "No-guess is available up
-  to 8,000 cells". `densityHintShown(custom, noGuess)` — the density hint
-  under the custom switch, from Classic 2D's `NOGUESS_DENSITY_HINT`
-  ([classic2d.md](classic2d.md)): no-guess on and offered, a valid board
-  above 25 % mines.
-- `normaliseChoice(choice)` → a valid plain copy or null — null for a
-  `size` outside `BOARD_SIZES`, such as a dropped double layer preset's id —
-  with no-guess dropped on a custom board that does not offer it;
+  — the side-of-2 line, which takes precedence, else the 8,000-cell line.
+  `densityHintShown(custom, noGuess)` — from Classic 2D's
+  `NOGUESS_DENSITY_HINT` ([classic2d.md](classic2d.md)).
+- `normaliseChoice(choice)` → a valid plain copy or null (null for a `size`
+  outside `BOARD_SIZES`, such as a double layer preset's id), with no-guess
+  dropped on a custom board that does not offer it;
   `readChoice({size, fields, noGuess}, fallbackCustom?)`; `boardOf(choice)`
   → `{X, Y, Z, mines, noGuess}` (a `RangeError` on an invalid choice);
-  `randomBoard(random?)` — the original Random formula, always a valid
-  board.
+  `randomBoard(random?)` — the original Random formula, always valid.
 - `presetKey(p)` (`'6,6,6,10'`, the items' `data-preset`), `presetByKey`,
-  `presetLabel(p)`; `presetTitle(p)` → 'Cube Beginner' (family and name: the preset item's label, as results and Records name the board).
+  `presetLabel(p)`, `presetTitle(p)` → 'Cube Beginner' (as results and
+  Records name the board).
 - `LAST_CHOICE_DOC` = `'mode3d.lastChoice'`, `LAST_CHOICE_VERSION` = 1.
 - `bindBoardChoice({root, onStart, onBack})` → `show(choice, {played,
   details})`, `destroy()`. Its head comment lists the `data-*` hooks it
-  reads in `root`. `details` (`{ [preset id]: { guess, noGuess } }`, the
-  shell's `presetDetails`, [app-shell.md](app-shell.md)) fills each
-  preset's detail line `[data-detail]` for the presets' switch, refilled on
-  its `change`; the binder never reads the records itself.
-
-`js/mode3d/session.js`
-- `create3DGame({X, Y, Z, mines, minePositions?})` → `{view, mines,
-  reveal(c), toggleFlag(c), chord(c)}`: the box graph
-  (`js/engine/box-grid.js`) and `PROFILE_3D` on the shared engine, `view` the
-  3D state view ([engine.md](engine.md)). From `mines` it awaits the first
-  click (its first reveal returns `boardNeeded` and changes nothing); from
-  `minePositions` it plays that board from the start. Each action returns
-  `{changed, ended, exploded, revealed, flagged, unflagged, boardNeeded}` —
-  the counts of cells newly opened, flagged and unflagged, which drive the
-  sound effects. `engineState` is the engine's per-cell state arrays, which
-  a replay is sealed from.
-- `createSession({board, client, clock?, randomSeed?, generatingDelayMs?,
-  place?, pregenerated?})` → session (`place` and `pregenerated` as Classic
-  2D's, [classic2d.md](classic2d.md)). `board` is `boardOf(choice)`; with `minePositions` (the debug
-  hook's fixed board) that board is played and nothing is requested.
-  Session: `view` (one object for the whole session), `state`, `board`,
-  `mines`, `seed`, `generatorVersion`, `generatingShown`, `paused`,
-  `failure`, `markedCell`, `progress`, `elapsedMs()`, `seconds()`, `pauses(until?, count?)` (the
-  pause spans, `createTimer`'s), `counts()` and `engineSummary()`
-  (the engine's, null before the board arrives), `on(event, fn)` → unsubscribe,
-  `reveal(c)`, `toggleFlag(c)`, `chord(c)`, `retry()`, `playStandard()`,
-  `cancel()`, `pause()`, `resume()`, `restart()`, `leave()`, `recording`,
-  `recordSample(values)`, `recordView(mode)`, `replay(summary)` → the
-  recording sealed with that summary and the pause spans it counted,
-  `{blob, listing}`, or null
-  ([replay.md](replay.md)).
-- `SESSION_STATE` (`ready`, `generating`, `playing`, `failed`, `won`,
-  `lost`, `left`); `SESSION_EVENTS` (`generating` `{shown}`, `started`
-  `{changed}`, `failed` `{reason, offers, count}`, `finished` `{state}`,
-  `mark` `{cell}`);
-  `FAILURE_OFFERS` and `GENERATING_DELAY_MS`, re-exported from
-  `js/classic2d/session.js`.
-
-`js/shell/mode-3d.js`
-- `create3DMode(flow, report)` — the contract over `flow`
-  (`openBoardChoice`, `start(choice, pregenerated)` → session, `pause(note)`,
-  `resume(source)`, `restart(source, pregenerated)` → session, `leave`,
-  `contextLost`, `client` (the generation client a pre-generated box is
-  asked of), the optional `randomSeed`,
-  the optional `sampler(session)` → the session's movement sampler, an
-  object with `tick()` and optionally `destroy()`; without it no movement is
-  recorded; the optional `release()`, which releases pointer lock before the
-  results screen takes over; and the optional `clock` `{setTimeout,
-  clearTimeout}` the end delay runs on, the global timers by default);
-  `failureScreen: 'ctxlost'`; plus `contextLost()`, which `js/main.js`
-  calls when the WebGL context is lost during a 3D game, `replay(summary)`,
-  the session's sealed replay or null, `tick()`, which drives the sampler
-  and which `js/main.js` calls every frame, `ending` — true while the end
-  delay runs — `finishNow()`, which cuts a running end delay short, and
-  `cancelGeneration()`, the session's `cancel()`.
-- `END_DELAY_MS` = 1000 — how long the end effect plays before the game is
-  reported finished, for a win and a loss alike.
-- Pre-generation: a finished game whose board was no-guess (and had a seed)
-  asks `flow.client` for the next box (`pregenerate`, its `startCell`, a
-  fresh seed); the next `start` with the same board, or `restart`, hands it
-  to `flow.start` / `flow.restart`; another board, `leave` and
-  `contextLost()` discard it.
-  `summary()` and the finished and abandoned reports carry `buildSummary`'s
-  record over the 3D board identity — mode `3d`, the session board's X, Y,
-  Z as width, height, depth ([records.md](records.md)) — one id per game:
-  null before the first applied reveal, and null throughout on a fixed
-  board, which has no seed.
+  reads. `details` (the shell's `presetDetails`,
+  [app-shell-menu.md](app-shell-menu.md)) fills each preset's `[data-detail]` line for
+  the presets' switch; the binder never reads the records itself.
 
 ## INTERNAL PATTERNS
 
@@ -144,143 +55,44 @@ three to the screens, the renderer and the pointer-lock flow
   is always enabled and applies to whichever preset is clicked. The custom
   board's switch (`data-noguess="custom"`) is disabled above
   `NOGUESS_CELL_LIMIT` or on a side of 2 cells, with `noGuessReason`'s line
-  shown above it; the player's wish is kept while it is disabled and comes
-  back when the board offers no-guess again. Both are filled from the last
-  choice's `noGuess`, on for a player with none stored; one helper line
-  sits under the presets' switch, and the density hint under the custom
-  one follows the fields and the switch. A side of 2 is refused because two cells stacked along
-  it share every neighbour, so a mine in one of them is always a guess. The
-  limit is read from the one exported constant;
-  `dev/measure-noguess-3d.mjs` is the measurement behind it.
+  above it; the player's wish is kept while it is disabled. Both are filled
+  from the last choice's `noGuess`, on when none is stored. A side of 2 is
+  refused because two cells stacked along it share every neighbour, so a
+  mine in one of them is always a guess. The limit is read from the one
+  exported constant; `dev/measure-noguess-3d.mjs` is the measurement
+  behind it.
 - **Last board choice.** `js/main.js` keeps it with the shell's
   `createLastBoardChoice` (`js/shell/menu.js`) in the `mode3d.lastChoice`
-  platform-storage document, loaded before the first screen; a stored
-  choice `normaliseChoice` refuses — one naming a dropped double layer
-  preset among them — falls back to `DEFAULT_CHOICE`, cube Beginner, as if
-  nothing were stored. Picking a board saves the choice (a failed save
-  never stops the game) and starts `MODES.start('3d', boardOf(choice))`;
-  the board choice's `show` marks it `data-last`, with "Last played" only
-  once a choice was played or loaded. Each preset item holds its label,
-  its size line, the detail line and the "Last played" line, in that
-  order; the custom board's switch is labelled "No-guess board · separate
-  records", the presets' says it in its helper line.
-- **Closed box, then a board.** The session opens on a game awaiting its
-  first click, whose view shows the closed box. Flags may be placed and
-  removed; a left release on a flagged cell, and any chord, does nothing.
-  The first reveal of a closed, unflagged cell needs
-  `{graph: {kind: 'box', X, Y, Z}, mineCount, firstClick, noGuess, seed}` —
-  the first-click rule is Classic 2D's: that cell alone is mine-free. A
-  standard board is placed at once with `place` and applied in the same
-  call; a no-guess one is sent to the client. A pre-generated box marks its
-  start cell until the first reveal (flags before it do not count) and is
-  taken over there, discarded anywhere else, as in Classic 2D. When the board arrives the session builds a second game from
-  the mine set, replays the early flags in the order they were placed,
-  applies the reveal, starts the timer and emits `started`. The session's
-  `view` delegates to the closed game, then to the played one, and carries
-  `version` and the dirty list across the hand-over, so the renderer,
-  picking and HUD never change object.
-- **Generating.** While the request is out no board action is accepted
-  (actions return null). `generating {shown: true}` is emitted only when the
-  answer takes longer than `GENERATING_DELAY_MS`, and `{shown: false}` when
-  it arrives; `js/main.js` shows the `#m3d-status` card over the box from
-  them. `cancel()` cancels the client and goes back to `ready` on the same
-  closed box, its flags kept, with nothing reported.
-- **Failure.** A no-guess board not found, a rejected request or a failing
-  worker emits `failed` with its `count` of failures in a row and leaves
-  the timer unstarted; `retry()` asks again with a new seed;
-  `playStandard()` — after a failure, or while generating, which cancels
-  the request — places the same size with no-guess off for the same first
-  cell at once, as Classic 2D does. `js/main.js` releases pointer lock for the
-  offer and keeps the standard board for a later restart.
-- **Timer.** The session's timer (Classic 2D's `createTimer`) starts when
-  the first reveal is applied to the generated board, runs through pauses
-  and stops at a win or loss. `pause()` stops board input and marks a pause
-  until `resume()`; during generation the request keeps running and the
-  timer stays unstarted, the pause counting from the board's arrival.
-  `js/main.js` pauses the session on every screen change away from
-  `playing` and resumes it on return (`sync3D`), so each pause lasts until
-  the return to play.
-- **Restart and leave** cancel a pending request (`client.cancel()`); a late
-  answer is dropped by its request token.
-- **The adapter** listens only to the session it holds. At the session's
-  `started` it reports `started` and `canPause(true)`. At `finished` —
-  after the listeners `js/main.js` added before handing the session over
-  have started the end effect — it builds the summary (`buildSummary` over
-  the session's elapsed time and its pause spans up to it), reports
-  `canPause(false)` and runs the end delay (`ending` true): a `pause()` is
-  ignored, and after `END_DELAY_MS` on `flow.clock` — whether or not the
-  tab draws frames — it calls `flow.release()` and reports
-  `finished(summary, replay)` once. `restart` and `leave` cancel a running
-  end delay; `js/main.js` offers neither while `ending`, and `finishNow()`
-  (a press of the player's during the delay, the page going away —
-  [app-shell.md](app-shell.md)) reports the game finished at once, so a game in its
-  end delay is never reported abandoned. `summary()` is the started, unfinished game's summary,
-  outcome `abandoned`, from which, with `replay(summary)`, the host reports
-  `abandoned` on restart or leave; before the first applied reveal there is
-  none and nothing is reported. The adapter builds a sampler with each
-  session through `flow.sampler` and drops it on restart and leave. A lost
-  graphics context — at `start` or through `contextLost()` — reports
-  `failed` and leaves the session, whose recording still seals what it
-  recorded until then; during the end delay the game is reported finished
-  first, so its summary is still recorded.
-- **Recording.** Each closed box opens a recorder (`startRecording`,
-  [replay.md](replay.md)), which `restart()` discards and `leave()` stops.
-  When the board arrives the flags placed before the first reveal are
-  recorded in the order they were placed, then the first reveal, all at
-  time 0 (a reveal of a flagged cell or a chord before it changes nothing
-  and is not recorded); every later action the session hands to the engine
-  at the timer's elapsed time, paused spans included. The mines, seed and generator version are
-  added when the board arrives; a board played standard after a failure
-  starts a new recording of the standard board. `recording` is true while
-  the game is started, unpaused and unfinished, and only then do the
-  sampler's `recordSample` and `recordView` record. A fixed board records
-  its actions but has no summary to seal with, so it has no replay.
-- **No old best times.** The mode keeps no best times of its own; the
-  rule for the `ms3d.best.*` keys is [app-shell.md](app-shell.md)'s.
+  document, loaded before the first screen; a stored choice
+  `normaliseChoice` refuses falls back to `DEFAULT_CHOICE`. Picking a board
+  saves the choice (a failed save never stops the game) and starts
+  `MODES.start('3d', boardOf(choice))`; `show` marks it `data-last`, with
+  "Last played" only once a choice was played or loaded. Each preset item
+  holds its label, size line, detail line and "Last played" line, in that
+  order.
 
 ## DOMAIN DEPENDENCIES
 
 - [../domain/features/3d-play-flow.md](../domain/features/3d-play-flow.md) —
-  the presets, the custom limits, no-guess availability and its limit, the
-  first-click guarantee, the timer, the mode contract's reports, pause and
-  failure.
-- [../domain/features/3d-results-records-screens.md](../domain/features/3d-results-records-screens.md)
-  — the end delay, input during it and the finished report after it.
-- [../domain/features/3d-game-records.md](../domain/features/3d-game-records.md)
-  — the 3D summaries the adapter hands off and the 3D board identity they
-  carry.
+  the presets, the custom limits, no-guess availability and its limit.
 - [../domain/features/game-shell.md](../domain/features/game-shell.md) — the
-  mode contract and the last board choice mechanism.
-- [../domain/features/replay-recording.md](../domain/features/replay-recording.md)
-  — what the 3D session records, the camera and view-mode sampling and the
-  replay on the adapter's reports.
-- [../domain/features/board-generation.md](../domain/features/board-generation.md)
-  — the request, the no-guess failure rule and the attempt budget.
+  last board choice mechanism.
 - [../../docs/ORIGINAL_SPEC.md](../../docs/ORIGINAL_SPEC.md) "Grid &
   geometry" — the custom limits and the Random formula.
 
 ## CROSS-REFERENCES
 
-- [engine.md](engine.md) — the box graph, `PROFILE_3D` and the 3D state view
-  `create3DGame` plays on.
-- [generation.md](generation.md) — the generation client and the `box`
-  graph description the session sends.
-- [classic2d.md](classic2d.md) — `createTimer`, `FAILURE_OFFERS` and
-  `GENERATING_DELAY_MS`, which the session reuses.
-- [app-shell.md](app-shell.md) — `FLOW_3D`, `startGame`, `onAction`,
-  `sync3D`, the `#m3d-status` card and the `#board-choice` screen in
-  `js/main.js`; the mode host and `createLastBoardChoice`.
+- [mode3d-session.md](mode3d-session.md) — the session and the adapter
+  the chosen board is handed to.
+- [classic2d.md](classic2d.md) — `NOGUESS_DENSITY_HINT` and the density
+  hint text.
+- [app-shell-menu.md](app-shell-menu.md) — the `#board-choice` screen in
+  `js/main.js`, `createLastBoardChoice` and `presetDetails`.
 - [platform.md](platform.md) — the storage the last 3D choice is a document
   in.
-- [replay.md](replay.md) — the recorder the session feeds and seals, and
-  the camera sampler `flow.sampler` builds.
-- [records.md](records.md) — the 3D board identity, `buildSummary` and
-  `MODE_3D` the adapter's summaries are built with, and `PRESETS_3D`, kept
-  equal to `PRESETS` by a test.
+- [records.md](records.md) — `PRESETS_3D`, kept equal to `PRESETS` by a test.
 - [testing.md](testing.md) — `tests/mode3d-board-choice.test.mjs`,
-  `tests/mode3d-session.test.mjs`, `tests/mode3d-noguess-limit.test.mjs`,
-  `tests/shell-mode-3d.test.mjs`, `tests/mode3d-end.test.mjs`,
-  `tests/records-summary-3d.test.mjs` and `tests/replay-3d.test.mjs`.
+  `tests/mode3d-noguess-limit.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 
@@ -289,8 +101,5 @@ three to the screens, the renderer and the pointer-lock flow
   `data-preset` markup in `index.html`).
 - Changing the no-guess limit: re-run `node dev/measure-noguess-3d.mjs` and
   read its head comment before touching `NOGUESS_CELL_LIMIT`.
-- Changing a session state, event or the first-click flow (`createSession`
-  and its head comment in `session.js`).
-- Changing what the 3D mode reports to the shell or the end delay
-  (`create3DMode`, `END_DELAY_MS` and the head comment in
-  `js/shell/mode-3d.js`).
+- Changing the board choice screen's hooks (`bindBoardChoice`'s head
+  comment).

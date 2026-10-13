@@ -76,7 +76,7 @@ three.js for 3D, plain ES modules (see
 both renderers is not yet recorded there; see `theme-system`.
 
 It extends the Classic 2D tile skin and the 3D renderer as built
-([classic2d.md](../../context/classic2d.md),
+([classic2d-tile-skin.md](../../context/classic2d-tile-skin.md),
 [rendering.md](../../context/rendering.md)), and keeps their division of
 labour: the shell hands each renderer what it draws with, and no renderer
 reads a stylesheet or imports a theme.

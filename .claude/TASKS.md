@@ -398,7 +398,7 @@ Feature: steam-desktop-host
 
 Status: [MISSING]
 Target: claude
-Files: .claude/context/desktop.md, .claude/context/platform.md, .claude/context/app-shell.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
+Files: .claude/context/desktop.md, .claude/context/platform.md, .claude/context/app-shell-pause.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
 Preconditions: 84, 85, 86, 87, 88, 89
 Feature: steam-desktop-host
 
@@ -438,7 +438,7 @@ Feature: steam-cloud-saves
 
 Status: [MISSING]
 Target: claude
-Files: .claude/context/desktop.md, .claude/context/platform.md, .claude/context/replay.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
+Files: .claude/context/desktop.md, .claude/context/platform.md, .claude/context/replay-library.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
 Preconditions: 91, 92, 93
 Feature: steam-cloud-saves
 
@@ -488,7 +488,7 @@ Feature: steam-leaderboards
 
 Status: [MISSING]
 Target: claude
-Files: .claude/context/leaderboards.md, .claude/context/app-shell.md, .claude/context/platform.md, .claude/context/testing.md, .claude/context/INDEX.md
+Files: .claude/context/leaderboards.md, .claude/context/app-shell-results.md, .claude/context/platform.md, .claude/context/testing.md, .claude/context/INDEX.md
 Preconditions: 95, 96, 97, 98
 Feature: steam-leaderboards
 
@@ -528,7 +528,7 @@ Feature: steam-achievements
 
 Status: [MISSING]
 Target: claude
-Files: .claude/context/achievements.md, .claude/context/app-shell.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
+Files: .claude/context/achievements.md, .claude/context/app-shell-results.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
 Preconditions: 100, 101, 102
 Feature: steam-achievements
 
@@ -558,7 +558,7 @@ Feature: leaderboard-screen
 
 Status: [MISSING]
 Target: claude
-Files: .claude/context/leaderboards.md, .claude/context/app-shell.md, .claude/context/replay.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
+Files: .claude/context/leaderboards.md, .claude/context/app-shell-navigation.md, .claude/context/replay-playback.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
 Preconditions: 104, 105
 Feature: leaderboard-screen
 
@@ -578,7 +578,7 @@ Feature: leaderboards-menu-entry
 
 Status: [MISSING]
 Target: claude
-Files: .claude/context/app-shell.md, .claude/context/testing.md, README.md
+Files: .claude/context/app-shell-menu.md, .claude/context/testing.md, README.md
 Preconditions: 107
 Feature: leaderboards-menu-entry
 
@@ -598,7 +598,7 @@ Feature: results-steam-rank
 
 Status: [MISSING]
 Target: claude
-Files: .claude/context/app-shell.md, .claude/context/leaderboards.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
+Files: .claude/context/app-shell-results.md, .claude/context/leaderboards.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
 Preconditions: 109
 Feature: results-steam-rank
 
@@ -638,7 +638,7 @@ Feature: input-rebinding
 
 Status: [MISSING]
 Target: claude
-Files: README.md, .claude/context/input.md, .claude/context/app-shell.md, .claude/context/testing.md, .claude/context/INDEX.md
+Files: README.md, .claude/context/input.md, .claude/context/app-shell-ui.md, .claude/context/testing.md, .claude/context/INDEX.md
 Preconditions: 111, 112, 113
 Feature: input-rebinding
 
@@ -1021,7 +1021,7 @@ Preconditions: 154
 
 Status: [SKIP]
 Target: claude
-Files: css/tokens.css, css/style.css, tests/tokens.test.mjs, tests/components.test.mjs, tests/theme.test.mjs, .claude/context/app-shell.md, .claude/context/testing.md, .claude/domain/features/design-tokens-and-themes.md
+Files: css/tokens.css, css/style.css, tests/tokens.test.mjs, tests/components.test.mjs, tests/theme.test.mjs, .claude/context/app-shell-kit.md, .claude/context/testing.md, .claude/domain/features/design-tokens-and-themes.md
 Preconditions: none
 
 ---
@@ -1080,7 +1080,7 @@ Feature: theme-system
 
 Status: [MISSING]
 Target: claude
-Files: .claude/context/app-shell.md, .claude/context/settings.md, .claude/context/testing.md, .claude/context/rendering.md, .claude/context/INDEX.md, README.md, .claude/domain/features/theme-system.md, .claude/domain/features/design-tokens-and-themes.md, .claude/domain/features/screen-components.md, .claude/domain/features/settings.md
+Files: .claude/context/app-shell-kit.md, .claude/context/settings.md, .claude/context/testing.md, .claude/context/rendering.md, .claude/context/INDEX.md, README.md, .claude/domain/features/theme-system.md, .claude/domain/features/design-tokens-and-themes.md, .claude/domain/features/screen-components.md, .claude/domain/features/settings.md
 Preconditions: 157, 158, 159, 160, 161
 Feature: theme-system
 
@@ -1190,7 +1190,7 @@ Feature: shared-screen-layout
 
 Status: [MISSING]
 Target: claude
-Files: .claude/context/app-shell.md, .claude/context/rendering.md, .claude/context/classic2d.md, .claude/context/mode3d.md, .claude/context/records.md, .claude/context/settings.md, .claude/context/replay.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md, .claude/domain/features/shared-screen-layout.md
+Files: .claude/context/app-shell-kit.md, .claude/context/rendering.md, .claude/context/classic2d.md, .claude/context/mode3d.md, .claude/context/records-screen.md, .claude/context/settings.md, .claude/context/replay-playback.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md, .claude/domain/features/shared-screen-layout.md
 Preconditions: 163, 164, 165, 166, 167, 168, 169, 170, 171, 172
 Feature: shared-screen-layout
 
@@ -1250,7 +1250,7 @@ Feature: in-game-layout
 
 Status: [MISSING]
 Target: claude
-Files: .claude/context/app-shell.md, .claude/context/classic2d.md, .claude/context/mode3d.md, .claude/context/replay.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md, .claude/domain/features/in-game-layout.md
+Files: .claude/context/app-shell-ui.md, .claude/context/app-shell-kit.md, .claude/context/classic2d-board-view.md, .claude/context/classic2d-mode.md, .claude/context/mode3d-session.md, .claude/context/replay-playback.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md, .claude/domain/features/in-game-layout.md
 Preconditions: 174, 175, 176, 177, 178
 Feature: in-game-layout
 
@@ -1330,7 +1330,7 @@ Feature: themed-board-art-and-motion
 
 Status: [MISSING]
 Target: claude
-Files: .claude/context/classic2d.md, .claude/context/rendering.md, .claude/context/app-shell.md, .claude/context/replay.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md, .claude/domain/features/themed-board-art-and-motion.md, .claude/domain/features/square-tile-skin.md
+Files: .claude/context/classic2d-tile-skin.md, .claude/context/classic2d-board-view.md, .claude/context/rendering.md, .claude/context/app-shell-kit.md, .claude/context/replay-playback.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md, .claude/domain/features/themed-board-art-and-motion.md, .claude/domain/features/square-tile-skin.md
 Preconditions: 180, 181, 182, 183, 184, 185, 186
 Feature: themed-board-art-and-motion
 

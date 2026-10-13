@@ -77,7 +77,10 @@ Built within the recorded technical direction — plain DOM and ES modules in
 the game shell, settings stored behind the platform layer (see
 [technical-direction.md](../technical-direction.md)). It extends the
 `settings` store and page and the input layers of both modes
-([input.md](../../context/input.md), [app-shell.md](../../context/app-shell.md)).
+([input.md](../../context/input.md),
+[input-controller.md](../../context/input-controller.md),
+[classic2d-input.md](../../context/classic2d-input.md),
+[app-shell.md](../../context/app-shell.md)).
 
 - **Action catalogue.** One declaration per mode of every rebindable
   action — its identifier, its label, whether it fires on press, on release

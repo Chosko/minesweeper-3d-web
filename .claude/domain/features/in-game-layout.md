@@ -69,8 +69,8 @@ Non-goals:
 Built within the recorded technical direction — plain DOM over the Canvas
 2D board and the WebGL scene (see
 [technical-direction.md](../technical-direction.md)); the current overlay is
-described in [app-shell.md](../../context/app-shell.md) and the Classic 2D
-board view in [classic2d.md](../../context/classic2d.md).
+described in [app-shell-ui.md](../../context/app-shell-ui.md) and the Classic 2D
+board view in [classic2d-board-view.md](../../context/classic2d-board-view.md).
 
 - **Game window composition.** The Classic 2D layer becomes the framed
   window: head, counter strip, board area, side panel, foot. The board area

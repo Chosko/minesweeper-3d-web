@@ -2,176 +2,106 @@
 
 ## OVERVIEW
 
-Everything between the player's devices and a game action or camera pose:
-the free-fly camera, keyboard / mouse / pointer-lock DOM handling, the
-release-based mouse action state machine (shared by the controller triggers),
-the view-mode action layer, controller polling and its pure helpers, the
-shell navigation layer over the controller reader, and crosshair picking.
+Everything between the player's devices and a 3D game action or camera
+pose: the free-fly camera, keyboard / mouse / pointer-lock DOM handling, the
+release-based mouse action state machine (shared by the controller
+triggers), and crosshair picking. The view-mode layer, controller polling
+and the shell navigation layer are in
+[input-controller.md](input-controller.md).
 
-| File | Implements |
-| --- | --- |
-| `js/input.js` | `FlyCamera`, `MouseActions`, `DragLook`, `TapToggle`, `Input` (DOM listeners), camera / spacing constants |
-| `js/controls.js` | `Controls`: union of keyboard and controller view modes + controller move axes |
-| `js/gamepad.js` | Gamepad API reader, stick curve, trigger hysteresis, auto-repeat, pad glyphs, spatial menu focus search |
-| `js/shell/navigation.js` | Shell navigation: topmost layer, default-focus fallback, Back inputs, the arrow keys' focus moves, held-button suppression across screen changes |
-| `js/picking.js` | `pickCell` (3D-DDA ray walk) and `pickCellBrute` (reference) |
+| File | Implements | Context file |
+| --- | --- | --- |
+| `js/input.js` | `FlyCamera`, `spawnPose`, `offscreenArrow`, `MouseActions`, `DragLook`, `TapToggle`, `Input` (DOM listeners), `escResumes`, camera / spacing constants | this file |
+| `js/picking.js` | `pickCell` (3D-DDA ray walk) and `pickCellBrute` (reference) | this file |
+| `js/controls.js` | `Controls`: union of keyboard and controller view modes + controller move axes | [input-controller.md](input-controller.md) |
+| `js/gamepad.js` | Gamepad API reader, stick curve, trigger hysteresis, auto-repeat, pad glyphs, spatial menu focus search | [input-controller.md](input-controller.md) |
+| `js/shell/navigation.js` | Topmost layer, default-focus fallback, Back inputs, arrow-key focus moves, held-button suppression | [input-controller.md](input-controller.md) |
 
 The wiring (which pad button maps to what, menu navigation, the frame loop
 that calls these) lives in `js/main.js`, and the screen router that Back
-resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md).
+resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md) and [app-shell-navigation.md](app-shell-navigation.md).
 
 ## PUBLIC API
 
 **js/input.js**
 - Constants: `MOVE_SPEED` (50 u/s), `LOOK_DEG_PER_PX` (0.2), `PAD_LOOK_DEG_PER_S` (180),
-  `SPACING_MIN` / `SPACING_MAX` / `SPACING_START` (1 / 10 / 1.1). The caller clamps spacing.
-  Spawn: `SPAWN_PITCH_DEG` (15), `SPAWN_YAW_DEG` (20), `SPAWN_MARGIN` (0.1 of the view per side),
-  `SPAWN_FACE_CLEARANCE` (0.1 of the box's half size).
-- `js/input.js::FlyCamera` — state `x, y, z, pitch` (+ = looking down), `yaw` (PI = facing +Z);
-  settings `sensitivity` (multiplier, 1 = original) and `invertY`.
-  - `reset(x, y, z)` — position, pitch 0, yaw PI.
-  - `place({x, y, z, yaw, pitch})` — takes a pose (`spawnPose`'s).
-  - `look(dxPx, dyPx)` — mouse look; clamps pitch to ±PI/2.
-  - `move(dt, keys)` — `keys` = `{w,a,s,d,q,e}` booleans.
-  - `moveAxes(dt, f, r, u)` — analog move, each -1..1, speed capped at `MOVE_SPEED`.
-  - `lookAxes(dt, x, y)` — analog look as a fraction of `PAD_LOOK_DEG_PER_S`, routed through `look()`.
-  - `apply(cam)` — writes position / rotation (order `'YXZ'`) to a `THREE.PerspectiveCamera`, updates its world matrix.
-- `js/input.js::spawnPose({X, Y, Z}, spacing, fovDeg, aspect)` → `{x, y, z, yaw, pitch}` — pure:
-  looks down `SPAWN_PITCH_DEG` and `SPAWN_YAW_DEG` off the original +Z view (yaw `PI - 20°`, so the
-  -X side face shows), the screen centre through the centre of the near face's centre cube (cell
-  `floor(X/2), floor(Y/2), 0`), from the closest distance that keeps all eight corners of the box
-  within `SPAWN_MARGIN` of the view's edges — or further out when the camera would not yet clear the
-  top and side face planes by `SPAWN_FACE_CLEARANCE`, which is what binds at wide fields of view.
-- `js/input.js::offscreenArrow(pose, {X, Y, Z}, spacing, fovDeg, aspect)` → null while any part of
-  the box's bounding box is in the (far-less) frustum — each face clipped against the frustum planes
-  in camera space — else the screen angle toward the box centre, `atan2(up, right)` in camera space
-  (0 = right, PI/2 = up), which for a centre behind the camera is the shortest turn's way.
-- `js/input.js::MouseActions(onAction, hasSelection)` — `down(button)`, `up(button)`
-  (0 = left, 2 = right; other buttons ignored), `reset()` (forget held state without firing).
-  Calls `onAction('left' | 'right' | 'chord')`; the caller acts on its own current selection.
-- `js/input.js::DragLook({ mouse, onLook, threshold = DRAG_LOOK_THRESHOLD_PX })` (6 px) —
-  `down(button)`, `move(dx, dy)`, `up(button)`, `reset()`: drag-to-look over a `MouseActions`. A press
-  goes to the mouse actions; once the held buttons have moved `threshold` px the gesture is a drag —
-  the mouse actions are reset without firing, the movement so far and every later one go to
-  `onLook`, and no press or release acts until every button is up. Under the threshold the release
-  acts as a locked one does (left, right, chord).
-- `js/input.js::TapToggle(tapMs = SPACE_TAP_MS)` (250 ms) — `down(now, active)`, `up(now)`, `on`,
-  `reset()`: a press released within `tapMs` turns `on` until the next press, whose release turns it
-  off; a longer hold leaves nothing on; a press made while `active` is false is ignored.
-- `js/input.js::Input(opts)` — installs window/document listeners in the constructor (no teardown).
-  opts: `canvas`, `mouse` (a `MouseActions`), `isActive()`, `onLook(dx, dy)`, `onWheel(notches)`,
-  optional `onKey(code, event)`, `onLockChange(locked)`, `onLockError()`, `isDragLook()`.
-  Mouse look and buttons work while the pointer is locked, or — unlocked — while `isDragLook()`
-  (drag-to-look play): then a press on the canvas, the movement and the release go through
-  `drag`, its `DragLook`.
-  - Reads: `has(code)`, getters `shift`, `ctrl`, `space` (Space held, or tapped on through
-    `spaceToggle`, its `TapToggle`), `move` (the `{w,a,s,d,q,e}` object),
-    `locked`, `unlockedAt` (`performance.now()` of the last lock release), `lastKey`
-    (`{ code, repeat, locked }` of the last keydown, recorded before `onKey`: whether the pointer
-    was locked when it came), `lockSupported`.
-  - `requestLock()`, `exitLock()`, `releaseAll()` (clears keys, the Space toggle, `mouse.reset()`
-    and `drag.reset()`); `dragLook` — drag-to-look is on and the pointer is not locked.
-- `js/input.js::escResumes({ repeat, locked })` — whether an Esc press resumes from the pause card
-  of a game in play: not the press that came while the lock held (it released it) nor an
-  auto-repeat; every other press, at any delay after the release ([app-shell.md](app-shell.md)).
-
-**js/controls.js**
-- `js/controls.js::Controls(keyboard)` — `keyboard` is any object with `shift / space / ctrl` getters.
-  Getters `shift`, `space`, `ctrl` = keyboard OR `pad.*`; `hasAxes`. Mutable fields `pad`
-  (`{shift, space, ctrl}`) and `axes` (`{f, r, u}`) are written by the caller each frame.
-  `releasePad()` zeroes both.
-
-**js/gamepad.js** (no DOM access at import; Node-testable)
-- `BTN` (standard-mapping indices A..HOME), `NUM_BUTTONS` (17), `STICK_DEADZONE`,
-  `STICK_EXPONENT`, `TRIGGER_ON`, `TRIGGER_OFF`.
-- `stickCurve(x, y, dz?, exp?)` → `[x, y]`, radial deadzone, direction kept, magnitude ≤ 1.
-- `triggerHeld(wasHeld, value, on?, off?)` → boolean with hysteresis.
-- `Repeat(delay = 380, interval = 60)` — `update(held, now)` → fire count this tick; `reset()`.
-- `padFamily(id)` → `'playstation' | 'xbox' | 'nintendo' | 'generic'`; `GLYPHS`;
-  `padGlyphs(id)` → label set (`name, a, b, x, y, lb, rb, lt, rt, start, back`).
-- `pickInDirection(from, cands, dir)` — `from` a rect, `cands` `[{rect, item}]`,
-  `dir` `'up'|'down'|'left'|'right'` → item or null.
-- `js/gamepad.js::GamepadReader(opts)` — opts: optional `getGamepads()`, `onConnect(pad)`,
-  `onDisconnect({index, id, wasActive})`, `onActiveChange(pad | null)`.
-  `poll()` → `{pad, held, pressed, released, ls, rs, active}` (button arrays indexed by `BTN`,
-  raw stick pairs). Also `activePad()`, `connected`.
-
-**js/shell/navigation.js** (DOM-free; the shell hands in elements, visibility tests and poll results)
-- `FOCUSABLE` — the selector of native controls menu navigation collects
-  (`button, input, summary, a[href], select`).
-- `topLayer(order, isOpen)` → the first id of `order` (topmost first) that `isOpen` reports, or null.
-- `resolveFocus(target, items)` → `target` when it is in `items`, else `items[0]`, else null.
-- `isBackKey(code)` — Esc is Back on every screen (Pause while playing).
-- `arrowDirection(code)` → `'up'|'down'|'left'|'right'` for the arrow keys, else null.
-- `keepsArrow(control, dir)` — whether the focused control owns that arrow: a range, number or
-  text input and a textarea keep Left/Right, a select every arrow; anything else none.
-- `backButtons(screen)` → `[BTN.BACK]` on `'playing'`, else `[BTN.B, BTN.BACK]`.
-- `createHeldSuppressor()` → `update(held)` (once per poll, before acting), `screenChanged()`,
-  `has(b)`, `held(p, b)`, `pressed(p, b)` — the poll's `held` / `pressed` minus suppressed buttons.
+  `SPACING_MIN` / `SPACING_MAX` / `SPACING_START` (1 / 10 / 1.1; the caller clamps spacing),
+  `SPAWN_PITCH_DEG` (15), `SPAWN_YAW_DEG` (20), `SPAWN_MARGIN` (0.1), `SPAWN_FACE_CLEARANCE` (0.1).
+- `FlyCamera` — state `x, y, z, pitch` (+ = looking down), `yaw` (PI = facing +Z); settings
+  `sensitivity` (1 = original) and `invertY`. `reset(x, y, z)`, `place(pose)`, `look(dxPx, dyPx)`
+  (pitch clamped ±PI/2), `move(dt, {w,a,s,d,q,e})`, `moveAxes(dt, f, r, u)`, `lookAxes(dt, x, y)`,
+  `apply(cam)` (writes a `THREE.PerspectiveCamera`, order `'YXZ'`).
+- `spawnPose({X, Y, Z}, spacing, fovDeg, aspect)` → `{x, y, z, yaw, pitch}` — pure: the framed
+  three-quarter view, `SPAWN_PITCH_DEG` down and `SPAWN_YAW_DEG` off +Z (the -X face shows),
+  centred on the near face's centre cube, from the closest distance that keeps the box's eight
+  corners within `SPAWN_MARGIN` of the view's edges and clears the top and side face planes by
+  `SPAWN_FACE_CLEARANCE` (what binds at wide fields of view).
+- `offscreenArrow(pose, {X, Y, Z}, spacing, fovDeg, aspect)` → null while any part of the box is in
+  the frustum, else the screen angle toward the box centre (0 = right, PI/2 = up; for a centre
+  behind the camera, the shortest turn's way).
+- `MouseActions(onAction, hasSelection)` — `down(button)`, `up(button)` (0 = left, 2 = right;
+  others ignored), `reset()` (forget held state without firing); calls
+  `onAction('left' | 'right' | 'chord')`, the caller acting on its own selection.
+- `DragLook({mouse, onLook, threshold = DRAG_LOOK_THRESHOLD_PX})` (6 px) — `down`, `move(dx, dy)`,
+  `up`, `reset()`: drag-to-look over a `MouseActions`. Once the held buttons move `threshold` px
+  the mouse actions are reset without firing and all movement goes to `onLook` until every button
+  is up; under the threshold the release acts as a locked one does.
+- `TapToggle(tapMs = SPACE_TAP_MS)` (250 ms) — `down(now, active)`, `up(now)`, `on`, `reset()`: a
+  tap turns `on` until the next press's release; a longer hold leaves nothing on; a press while
+  not `active` is ignored.
+- `Input(opts)` — installs window/document listeners in the constructor (no teardown). opts:
+  `canvas`, `mouse`, `isActive()`, `onLook(dx, dy)`, `onWheel(notches)`, optional
+  `onKey(code, event)`, `onLockChange(locked)`, `onLockError()`, `isDragLook()`. Reads: `has(code)`,
+  `shift`, `ctrl`, `space` (held, or tapped on through `spaceToggle`), `move`, `locked`,
+  `unlockedAt`, `lastKey` (`{code, repeat, locked}`, recorded before `onKey`), `lockSupported`,
+  `dragLook` (drag-to-look on and the pointer unlocked; then canvas presses go through `drag`, its
+  `DragLook`). `requestLock()`, `exitLock()`, `releaseAll()` (keys, Space toggle, mouse, drag).
+- `escResumes({repeat, locked})` — whether an Esc press resumes from the pause card: not the press
+  that released the lock, not an auto-repeat ([app-shell-pause.md](app-shell-pause.md)).
 
 **js/picking.js**
-- `js/picking.js::pickCell(game, spacing, o, d, spaceHeld)` → cell index or -1. `o` origin,
-  `d` normalized direction (`{x,y,z}`), reads `game.X/Y/Z`, `game.unlinked`, `game.pressed` — `game` is the 3D state view
-  (`js/engine/state-view-3d.js`, [engine.md](engine.md)).
-- `js/picking.js::pickCellBrute(...)` — same signature and result; O(n), used only by the debug hook.
+- `pickCell(game, spacing, o, d, spaceHeld)` → cell index or -1 — `o` origin, `d` normalized
+  direction; `game` is the 3D state view (`js/engine/state-view-3d.js`, [engine-3d.md](engine-3d.md)),
+  read for `X/Y/Z`, `unlinked`, `pressed`.
+- `pickCellBrute(...)` — same signature and result; O(n), used only by the debug hook.
 
 ## INTERNAL PATTERNS
 
-- **Actions fire on release.** `MouseActions` keeps `left`, `right`, `toggle`. Releasing one
-  button while the other is held sets `toggle` and fires `'chord'`; the next release of the other
-  button only clears `toggle`. A release without a matching `down` is ignored. Every fire is gated on
-  `hasSelection()`. The controller triggers drive this same instance (RT = button 0, LT = button 2),
-  so chord semantics stay identical across devices — do not build a second state machine.
-- **Game rules are not here.** `MouseActions` only emits `'left'`, `'right'` and `'chord'`;
-  `onAction` in `js/main.js` hands each to the 3D game session (`js/mode3d/session.js`,
-  [mode3d.md](mode3d.md)) as `reveal` / `toggleFlag` / `chord`. The session decides what a gesture
-  does before the board exists — a flag is kept, a chord or a release on a flag does nothing, the
-  first reveal asks for the board — and starts the timer when that board arrives.
+- **Actions fire on release.** Releasing one button while the other is held fires `'chord'`;
+  the next release of the other button only clears the toggle. A release without a matching
+  `down` is ignored; every fire is gated on `hasSelection()`. The controller triggers drive the
+  same `MouseActions` (RT = button 0, LT = button 2), so chord semantics stay identical across
+  devices — do not build a second state machine.
+- **Game rules are not here.** `onAction` in `js/main.js` hands `'left'` / `'right'` / `'chord'`
+  to the 3D game session as `reveal` / `toggleFlag` / `chord`; what a gesture does before the board
+  exists is the session's ([mode3d-session.md](mode3d-session.md)).
 - **Camera conventions.** `pitch` + = down, `yaw` PI = +Z; `apply()` negates both into a `'YXZ'`
   Euler. `move()` and `moveAxes()` deliberately share the original forward-vector quirk (no
-  cos(pitch) on XZ); W moves along `-forward`. Q/E and the `u` axis are world-vertical.
-  `lookAxes` converts deg/s to pixel-equivalents so `sensitivity` and `invertY` apply once, in `look()`.
+  cos(pitch) on XZ); W moves along `-forward`; Q/E and the `u` axis are world-vertical.
+  `lookAxes` converts deg/s to pixel-equivalents so `sensitivity` and `invertY` apply once, in
+  `look()`.
 - **Held state must be dropped, never fired**, on blur, tab hide, pointer-lock loss
-  (`Input.releaseAll`), and on pause / disconnect / leaving play (`Controls.releasePad`, and
+  (`Input.releaseAll`), and on pause / disconnect / leaving play (`Controls.releasePad`,
   `input.spaceToggle.reset()` and `input.drag.reset()` in `js/main.js`'s `stopPlayInput`).
-- **Space is a tap-toggle as well as a hold.** The keyboard's Space only: a tap made in play
-  (`isActive()` at the press) keeps aim-through on until the next tap; a hold works as the original
-  and ends with its release. Every other view-mode key and the controller's RB stay hold-only. The
-  3D camera sampler reads the resulting `Controls.space` like any view mode.
-- **DOM gating.** Mouse move / buttons are processed only when `locked && isActive()`; the wheel and
-  `preventDefault` on game keys only when `isActive()`. `GAME_KEYS` (WASDQE, Space, Shift, Ctrl) are
-  tracked in `keys` always; Ctrl+other keys are swallowed while active, and so are `RETURN_KEYS`
-  (`Home`, `KeyR`: back to the start view in main's `onKey`, ahead of its `F2` restart and the
-  results screen's `R`, [app-shell.md](app-shell.md)). `onKey` skips auto-repeat,
-  except for the arrow keys (`ARROW_KEYS`), whose repeats are the shell's held focus moves.
-  Mouse deltas > 400 px are discarded (post-lock spikes).
-- **Wheel notches.** Normalized by `deltaMode` (pixels / 100, lines / 3, pages / 1), sign flipped
-  so wheel up = positive; Shift+wheel reads `deltaX`. The caller multiplies by 0.04.
-- **Controls with no pad input equal the keyboard exactly** — keep `pad` / `axes` zeroed when the
-  controller is not driving play.
-- **GamepadReader.** Follows the most recently active pad (switch on a rising input edge on another
-  pad); one shared `held` array across switches, so a switch or disconnect yields `released` edges.
-  Disconnects are processed before connects. LT/RT use `triggerHeld`; other buttons
-  `pressed || value > 0.5`. All helpers tolerate NaN / missing fields.
-- **Shell navigation sits between the reader and every action.** `handlePad` calls
-  `nav.update(p.held)` on each poll and reads buttons only through `nav.held` / `nav.pressed`;
-  every screen change (the router's `onChange`) and controls-modal toggle calls `screenChanged()`,
-  so a button held through the change is ignored until released — on the board as in menus. Back
-  is `isBackKey` from the keyboard (`Input`'s `onKey`) and `backButtons(screen)` from the
-  controller: B means Back only off the board, where it is the move-down button. Both resolve
-  through the router in `js/main.js`, as does the browser's Back (`js/shell/history.js`,
-  [app-shell.md](app-shell.md)). The arrow keys (`arrowDirection`) take the D-pad's spatial step
-  off the boards, Records and the replay viewer, unless the focused control `keepsArrow`.
-- **Repeat** fires once on press, then after `delay` every `interval`, at most 4 per tick, and
-  resynchronizes after a stall instead of bursting.
-- **Picking geometry.** Grid is centred on the origin: cell (i,j,k) centre = `(i - (X-1)/2) * 4s`,
-  cube = centre ± 2 (edge 4), lattice pitch `4s`; this is the spec's `[P-3, P+1]` box up to a
-  translation. Cell index = `i + X * (j + Y * k)`. The DDA enters the grid AABB, then visits lattice
-  cells in ray order; first hit is nearest because each lattice cell holds one cube. Zero direction
-  components are replaced by 1e-12. Any change to picking must keep `pickCell` and `pickCellBrute`
-  in agreement (the debug hook's `pickWith` cross-checks them).
-- **Pickability.** Excluded: `unlinked` cells, and `pressed` cells when `spaceHeld`. Everything else
-  (including invisible revealed zeros that are not unlinked) is pickable.
+- **Space is a tap-toggle as well as a hold** — the keyboard's Space only; every other view-mode
+  key and the controller's RB stay hold-only. The 3D camera sampler reads `Controls.space` like
+  any view mode.
+- **DOM gating.** Mouse move / buttons are processed only when `locked && isActive()` (or through
+  `DragLook` when `dragLook`); the wheel and `preventDefault` on game keys only when `isActive()`.
+  `GAME_KEYS` (WASDQE, Space, Shift, Ctrl) are always tracked; Ctrl+other keys and `RETURN_KEYS`
+  (`Home`, `KeyR`: back to the start view, ahead of `F2` and the results screen's `R`,
+  [app-shell-3d.md](app-shell-3d.md)) are swallowed while active. `onKey` skips auto-repeat except for
+  `ARROW_KEYS`, whose repeats are the shell's held focus moves. Mouse deltas > 400 px are
+  discarded (post-lock spikes).
+- **Wheel notches.** Normalized by `deltaMode`, wheel up = positive, Shift+wheel reads `deltaX`;
+  the caller multiplies by 0.04.
+- **Picking geometry.** Grid centred on the origin: cell (i,j,k) centre = `(i - (X-1)/2) * 4s`,
+  cube = centre ± 2, lattice pitch `4s` (the spec's `[P-3, P+1]` box up to a translation). Cell
+  index = `i + X * (j + Y * k)`. The DDA visits lattice cells in ray order, so the first hit is
+  nearest. `pickCell` and `pickCellBrute` must stay in agreement (the debug hook's `pickWith`
+  cross-checks them).
+- **Pickability.** Excluded: `unlinked` cells, and `pressed` cells when `spaceHeld`. Everything
+  else (including invisible revealed zeros that are not unlinked) is pickable.
 
 ## DOMAIN DEPENDENCIES
 
@@ -193,24 +123,22 @@ additions the spec permits; they must not alter any rule above.
 
 ## CROSS-REFERENCES
 
-- [engine.md](engine.md) — `pickCell` reads the 3D state view's dimensions and its `unlinked` / `pressed` arrays; `MouseActions` actions become the 3D game session's `reveal` / `toggleFlag` / `chord` calls in main ([app-shell.md](app-shell.md), [mode3d.md](mode3d.md)).
+- [engine-3d.md](engine-3d.md) — the 3D state view `pickCell` reads.
+- [mode3d-session.md](mode3d-session.md) — the session `MouseActions`' actions reach through main.
 - [rendering.md](rendering.md) — `FlyCamera.apply` drives the renderer's camera; `Controls.shift/space/ctrl` feed the renderer toggles; the picked cell becomes the renderer's selection.
-- [app-shell.md](app-shell.md) — `js/main.js` constructs every object here, maps pad buttons (`handlePad`), runs menu focus navigation with `pickInDirection` / `Repeat` and the shell navigation helpers, and owns the pointer-lock flow; the screen router and the pause controller decide where Back and pause lead.
+- [app-shell.md](app-shell.md) — `js/main.js` constructs every object here, maps pad buttons (`handlePad`), runs menu focus navigation and owns the pointer-lock flow; the router and pause controller decide where Back and pause lead.
 - [audio.md](audio.md) — no direct calls; action results in main trigger sound effects.
-- [classic2d.md](classic2d.md) — the Classic 2D cursor input reuses `BTN`, `Repeat` and `stickCurve` and reads `GamepadReader` polls; B, Start and Back stay the shell's there too.
-- [testing.md](testing.md) — `tests/gamepad.test.mjs` covers the gamepad helpers, `GamepadReader`, `FlyCamera.moveAxes/lookAxes`, `Controls` and `MouseActions` trigger sequences; `tests/shell-router.test.mjs` covers the shell navigation helpers.
+- [input-controller.md](input-controller.md) — the controller reader whose triggers drive `MouseActions` and whose sticks feed `moveAxes` / `lookAxes`; the `Controls` view-mode layer over `Input`'s held keys.
+- [testing.md](testing.md) — `tests/gamepad.test.mjs` covers `FlyCamera.moveAxes/lookAxes` and `MouseActions` trigger sequences.
 
 ## WHEN TO READ THE SOURCE
 
-- Changing the chord / release behaviour or adding a new action type (`js/input.js::MouseActions.up`).
+- Changing the chord / release behaviour or adding a new action type (`MouseActions.up`).
 - Debugging camera direction, movement axes or a mirrored / tilted view (`FlyCamera.move`, `moveAxes`, `apply`).
+- Changing the spawn framing or the off-screen arrow's in-view test (`spawnPose`, `offscreenArrow`).
 - Fixing wheel step size on a specific browser or trackpad (`Input` wheel handler).
 - Changing which keys are captured, swallowed or exempt from `preventDefault` (`GAME_KEYS`, keydown handler).
-- Changing the Space tap length or what a tap does (`TapToggle`, `SPACE_TAP_MS`).
-- Changing the drag-to-look threshold or what a drag cancels (`DragLook`, `DRAG_LOOK_THRESHOLD_PX`).
+- Changing the Space tap length or the drag-to-look threshold (`TapToggle`, `SPACE_TAP_MS`, `DragLook`, `DRAG_LOOK_THRESHOLD_PX`).
 - Fixing a pointer-lock failure or re-lock timing issue (`requestLock`, `pointerlockchange`, `unlockedAt`).
-- Supporting a new controller family or mislabelled glyph (`padFamily`, `GLYPHS`).
-- Changing which input means Back, which arrow a control keeps, or a controller button that fires on the screen after the one it was pressed on (`js/shell/navigation.js`).
-- Tuning deadzone, trigger thresholds or repeat timing, or a pad that switches / sticks unexpectedly (`GamepadReader.poll`).
 - Fixing a wrong or missed pick, especially at grid edges or axis-aligned rays (`pickCell` DDA setup and step loop).
 - Changing cube size or grid centring — picking geometry must change together with the renderer's cube placement.
