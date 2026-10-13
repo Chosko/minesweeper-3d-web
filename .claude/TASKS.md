@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 179
+Last task number: 187
 
 ---
 
@@ -1253,5 +1253,85 @@ Target: claude
 Files: .claude/context/app-shell.md, .claude/context/classic2d.md, .claude/context/mode3d.md, .claude/context/replay.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md, .claude/domain/features/in-game-layout.md
 Preconditions: 174, 175, 176, 177, 178
 Feature: in-game-layout
+
+---
+
+## 180. Tile recipe drawing styles: bevel and chunky raised, with depth
+
+Status: [MISSING]
+Target: claude
+Files: js/tile-art.js, js/classic2d/tile-skin.js, js/textures.js, tests/tile-skin.test.mjs, tests/tile-art.test.mjs
+Preconditions: none
+Feature: themed-board-art-and-motion
+
+---
+
+## 181. Board module shape, the Joyful tiles board module and the board conformance checks
+
+Status: [MISSING]
+Target: claude
+Files: js/themes/board-module.js, themes/joyful-tiles/board.js, tests/theme-conformance.test.mjs, tests/board-module.test.mjs
+Preconditions: 161, 180
+Feature: themed-board-art-and-motion
+
+---
+
+## 182. Classic 2D tiles drawn from the active theme's board module
+
+Status: [MISSING]
+Target: claude
+Files: js/classic2d/tile-skin.js, js/classic2d/board-view.js, js/classic2d/mode.js, js/main.js, themes/joyful-tiles/theme.css, tests/tile-skin.test.mjs, tests/classic2d-view.test.mjs
+Preconditions: 159, 181
+Feature: themed-board-art-and-motion
+
+---
+
+## 183. 3D cubes, numbers and sky drawn from the active theme's board module
+
+Status: [MISSING]
+Target: claude
+Files: js/textures.js, js/render.js, js/shell/scene-palette.js, js/main.js, themes/joyful-tiles/theme.css, tests/render-3d-feedback.test.mjs, tests/theme.test.mjs, tests/tokens.test.mjs
+Preconditions: 159, 181
+Feature: themed-board-art-and-motion
+
+---
+
+## 184. Cell motion player
+
+Status: [MISSING]
+Target: claude
+Files: js/cell-motion.js, tests/cell-motion.test.mjs
+Preconditions: 160, 181
+Feature: themed-board-art-and-motion
+
+---
+
+## 185. Classic 2D cell motion: motion layer and event sources
+
+Status: [MISSING]
+Target: claude
+Files: js/classic2d/board-view.js, js/classic2d/motion-layer.js, js/classic2d/pointer-input.js, js/classic2d/cursor-input.js, js/classic2d/session.js, js/replay/viewer-2d.js, tests/classic2d-motion.test.mjs, tests/classic2d-fidelity.test.mjs
+Preconditions: 182, 184
+Feature: themed-board-art-and-motion
+
+---
+
+## 186. 3D cell motion: motion mesh, event sources and the solved pulse as a cell event
+
+Status: [MISSING]
+Target: claude
+Files: js/render.js, js/shell/mode-3d.js, js/replay/viewer-3d.js, tests/render-3d-feedback.test.mjs, tests/render-3d-motion.test.mjs
+Preconditions: 183, 184
+Feature: themed-board-art-and-motion
+
+---
+
+## 187. Update documentation for feature `themed-board-art-and-motion`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/classic2d.md, .claude/context/rendering.md, .claude/context/app-shell.md, .claude/context/replay.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md, .claude/domain/features/themed-board-art-and-motion.md, .claude/domain/features/square-tile-skin.md
+Preconditions: 180, 181, 182, 183, 184, 185, 186
+Feature: themed-board-art-and-motion
 
 ---
