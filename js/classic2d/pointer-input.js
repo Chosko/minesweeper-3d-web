@@ -31,10 +31,11 @@
 //   reset()   forgets the held buttons without firing (focus loss, pause).
 //   holding   whether any button is held.
 //
-// mountPointerInput({ view, session, graph?, win?, rules? }) → { input, destroy() }: mouse
+// mountPointerInput({ view, session, graph?, win?, rules?, swap? }) → { input, destroy() }: mouse
 // buttons on the view's canvas, moves and releases anywhere on the page (`win`), the context menu
 // suppressed over the board, held buttons dropped on blur. A shift + primary press on a board that
-// scrolls belongs to the view's pan (PAN_MODIFIER) and is ignored here.
+// scrolls belongs to the view's pan (PAN_MODIFIER) and is ignored here. `swap`
+// (js/classic2d/button-swap.js) translates each physical button before the state machine sees it.
 
 import { getRuleProfile, REFERENCE_PROFILE } from '../engine/profiles.js';
 import { CELL } from '../engine/rules.js';
@@ -161,7 +162,7 @@ export function createPointerInput({ graph, game, onPress, onAction, rules = poi
 
 const PLAYABLE = new Set(['ready', 'playing']);
 
-export function mountPointerInput({ view, session, graph = session.setup.grid.graph, win = globalThis, rules }) {
+export function mountPointerInput({ view, session, graph = session.setup.grid.graph, win = globalThis, rules, swap = null }) {
   const canvas = view.canvas;
   const input = createPointerInput({
     graph,
@@ -176,20 +177,26 @@ export function mountPointerInput({ view, session, graph = session.setup.grid.gr
     const box = canvas.getBoundingClientRect();
     return view.cellAt(event.clientX - box.left, event.clientY - box.top);
   };
+  const closedAt = (c) => {
+    const state = c >= 0 ? session.game?.cellState(c) : undefined;
+    return state === CELL.CLOSED || state === CELL.FLAGGED;
+  };
   const onDown = (event) => {
     if (event.button === BUTTON.LEFT && event[PAN_MODIFIER] && view.layout.scrolls) return;
     if (!(event.button in NAMES)) return;
     event.preventDefault();
-    input.down(event.button, cellOf(event));
+    const c = cellOf(event);
+    input.down(swap ? swap.press(event.button, closedAt(c)) : event.button, c);
   };
   const onMove = (event) => {
     if (input.holding) input.move(cellOf(event));
   };
   const onUp = (event) => {
-    if (input.holding) input.up(event.button, cellOf(event));
+    const button = swap ? swap.release(event.button) : event.button;
+    if (input.holding) input.up(button, cellOf(event));
   };
   const onMenu = (event) => event.preventDefault();
-  const onBlur = () => input.reset();
+  const onBlur = () => { input.reset(); swap?.reset(); };
 
   canvas.addEventListener('mousedown', onDown);
   canvas.addEventListener('contextmenu', onMenu);
@@ -206,6 +213,7 @@ export function mountPointerInput({ view, session, graph = session.setup.grid.gr
       win.removeEventListener('mouseup', onUp);
       win.removeEventListener('blur', onBlur);
       input.reset();
+      swap?.reset();
     },
   };
 }

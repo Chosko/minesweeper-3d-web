@@ -3,7 +3,7 @@
 // hands in its flow; the mounts default to the browser ones and are only called by start().
 //
 // createClassic2DMode(report, { flow, lastChoice, createClient?, mount?, sound?, clock?, randomSeed?,
-//                               generatingDelayMs?, place? }) → mode
+//                               generatingDelayMs?, place?, buttonSwap? }) → mode
 //   flow        the shell's side:
 //                 openBoardChoice(choice)  show the board choice preselected with `choice`
 //                 show()                   show the board screen (the board's framed panel, its
@@ -45,6 +45,8 @@
 //               ones by default.
 //   randomSeed, generatingDelayMs, place  passed to the session; randomSeed also seeds the
 //               pre-generated boards.
+//   buttonSwap  the page's mouse button swap (js/classic2d/button-swap.js), handed to every game's
+//               pointer input; none by default.
 //
 // warm() spawns and warms the client's worker (the board choice opening), so the first no-guess
 // request of the page pays no worker start-up. When a game whose board was no-guess finishes (won
@@ -132,6 +134,7 @@ export function createClassic2DMode(report, {
   randomSeed,
   generatingDelayMs,
   place,
+  buttonSwap = null,
 }) {
   const time = clock ?? globalClock;
   let game = null; // { session, view, pointer, cursor, sampler, offs, last, ending }
@@ -266,7 +269,7 @@ export function createClassic2DMode(report, {
     const cursorView = Object.create(view, {
       setCursor: { value: (c) => { view.setCursor(c); sampler?.cursor(c); } },
     });
-    const pointer = mount.pointer({ view, session: gate });
+    const pointer = mount.pointer({ view, session: gate, ...(buttonSwap ? { swap: buttonSwap } : {}) });
     const cursor = mount.cursor({ view: cursorView, session: gate });
     const offs = [
       session.on('started', () => { report.started(); report.canPause(true); }),

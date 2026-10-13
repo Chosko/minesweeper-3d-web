@@ -195,6 +195,10 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
 .hud-board .ui-stat__value { font-size: var(--font-size-md); color: var(--color-ink-muted); }
 #hud-mines.negative { color: var(--color-danger); }
 #hud.hud--2d #crosshair, #hud.hud--2d #crosshair-arrow, #hud.hud--2d #aim-readout, #hud.hud--2d #mode-chips { display: none; }
+/* The Classic 2D mouse button swap (js/classic2d/button-swap.js): on the 2D board only, accented while on. */
+#hud-swap { min-height: 40px; padding: var(--space-2) var(--space-4); }
+#hud:not(.hud--2d) #hud-swap { display: none; }
+#hud-swap[aria-pressed="true"] { border-color: var(--color-accent); color: var(--color-accent); }
 .hud-tools { position: absolute; top: 16px; right: 16px; padding: 8px 12px; display: flex; gap: 12px; font-size: 13px; color: var(--color-ink-muted); }
 .kbd-hint { white-space: nowrap; }
 

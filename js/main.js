@@ -42,6 +42,7 @@ import { applySettings, pixelRatioFor } from './settings/appliers.js';
 import { bindSettingControls } from './settings/page.js';
 import { createReset } from './settings/reset.js';
 import { createClassic2DMode } from './classic2d/mode.js';
+import { createButtonSwap } from './classic2d/button-swap.js';
 import { bindBoardChoice } from './classic2d/board-choice.js';
 import { createLastChoice, DEFAULT_CHOICE } from './classic2d/board-setup.js';
 import {
@@ -278,6 +279,8 @@ function toggleSound() { SETTINGS.set('muted', !SETTINGS.get('muted')); }
 
 // ---------- screens ----------
 // Clicks made with the controller (A) are not user gestures for pointer lock: they enter lockless play.
+// The Classic 2D mouse button swap: one switch for the page, kept across games, off again on reload.
+const BUTTON_SWAP = createButtonSwap();
 const ui = new UI({
   onMenuEntry: (id) => MENU.open(id),
   onMenuPlayAgain: () => playAgainFromMenu(padGesture ? 'pad' : 'pointer'),
@@ -290,6 +293,7 @@ const ui = new UI({
   onMainMenu: () => PAUSE.toMenu(),
   onPause: () => pauseGame(padGesture ? 'pad' : 'button'),
   onReadyBack: () => readyBack(),
+  onToggleSwap: () => BUTTON_SWAP.toggle(),
   onToggleSound: () => toggleSound(),
   onResetAll: () => RESET.run(),
   onDismissHint: (mode, kind) => { if (kind === 'scroll') FIRST_USE.once('scrollHint'); else FIRST_USE.dismiss(mode); refreshHints(); },
@@ -332,6 +336,7 @@ applySettings(SETTINGS, {
   fullscreen: { doc: document, enter: enterFullscreen, exit: exitFullscreen },
 });
 SETTINGS.onChange('muted', (m) => ui.setSound(m));
+BUTTON_SWAP.onChange((on) => ui.setSwap(on));
 // Every setting control — the Settings page, the pause card's shortcuts, the menu's volume — is bound to the store.
 bindSettingControls(document.querySelectorAll('[data-setting]'), SETTINGS, {
   onUserChange: (key) => { if (key === 'volume' || key === 'muted') sfx.unlock?.(); },
@@ -460,7 +465,7 @@ function answer2D(answer) {
   if (S.mode === 'paused') PAUSE.resume(padGesture ? 'pad' : 'pointer');
   answer();
 }
-const mode2d = MODES.register('classic-2d', (report) => createClassic2DMode(report, { flow: FLOW_2D, lastChoice: LAST_CHOICE_2D, sound: sfx }));
+const mode2d = MODES.register('classic-2d', (report) => createClassic2DMode(report, { flow: FLOW_2D, lastChoice: LAST_CHOICE_2D, sound: sfx, buttonSwap: BUTTON_SWAP }));
 /**
  * The board choice on `choice`; the default choice of a player who never played is not "last
  * played". Each size's detail line is read from the records each time it shows.

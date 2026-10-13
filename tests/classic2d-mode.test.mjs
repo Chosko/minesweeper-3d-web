@@ -120,8 +120,8 @@ function mounts() {
     log.boards.push(v);
     return v;
   };
-  const input = (list) => ({ view, session }) => {
-    const m = { view, session, resets: 0, destroyed: false, polls: [], input: { reset() { m.resets += 1; } } };
+  const input = (list) => ({ view, session, swap }) => {
+    const m = { view, session, swap, resets: 0, destroyed: false, polls: [], input: { reset() { m.resets += 1; } } };
     m.destroy = () => { m.destroyed = true; };
     m.pad = (poll, now) => { m.polls.push([poll, now]); };
     list.push(m);
@@ -160,7 +160,7 @@ const CUSTOM_3X3 = { size: 'custom', custom: { width: 3, height: 3, mines: 2 }, 
 const memoryLastChoice = (initial) => createLastChoice({ storage: createStorage({ backend: createMemoryBackend({ initial }) }) });
 
 // A mode registered on a real host, with a recording flow, mounts and clients.
-function setup({ mines = null, hold = false, choice = null, lastChoice = memoryLastChoice(), sound = null } = {}) {
+function setup({ mines = null, hold = false, choice = null, lastChoice = memoryLastChoice(), sound = null, buttonSwap = null } = {}) {
   const host = createModeHost();
   const flow = fakeFlow();
   const { log, mount } = mounts();
@@ -168,7 +168,7 @@ function setup({ mines = null, hold = false, choice = null, lastChoice = memoryL
   const clock = fakeClock();
   let seed = 7;
   const mode = host.register(MODE_ID, (report) => createClassic2DMode(report, {
-    flow, lastChoice, mount, clock, createClient: cl.create, place: cl.place, randomSeed: () => seed++, ...(sound ? { sound } : {}),
+    flow, lastChoice, mount, clock, createClient: cl.create, place: cl.place, randomSeed: () => seed++, ...(sound ? { sound } : {}), ...(buttonSwap ? { buttonSwap } : {}),
   }));
   const events = [];
   for (const e of ['started', 'finished', 'abandoned', 'canPause', 'failed']) host.on(e, (p) => events.push([e, p]));
@@ -217,6 +217,16 @@ test('start shows the board in the container, mounts the inputs, feeds the overl
   assert.deepEqual(flow.huds.at(-1), { seconds: 0, minesLeft: 99, clicks: 0 });
   await settle();
   assert.equal(lastChoice.current.size, 'expert', 'the choice is the last board choice from now on');
+});
+
+test('the page\'s button swap is handed to the pointer input of every game, and never to the cursor input', async () => {
+  const buttonSwap = { on: false };
+  const s = setup({ buttonSwap, choice: { size: 'beginner', noGuess: false } });
+  assert.equal(s.pointer().swap, buttonSwap);
+  assert.equal(s.cursor().swap, undefined);
+  s.host.start(MODE_ID, { size: 'beginner', noGuess: false });
+  assert.equal(s.pointer().swap, buttonSwap, 'the next game shares it');
+  assert.equal(setup({ choice: { size: 'beginner', noGuess: false } }).pointer().swap, undefined, 'none handed in: none');
 });
 
 test('summary() is nothing before the first click and the summary so far, outcome abandoned, mid-game', async () => {

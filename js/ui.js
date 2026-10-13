@@ -48,9 +48,9 @@ export const NO_MOUSE_MSG = 'Minesweeper 3D needs a mouse and keyboard — open 
 
 export class UI {
   constructor(cb) {
-    this.cb = cb; // { onMenuEntry, onMenuPlayAgain, onBack, onReadyClick, onReadyDrag, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSound, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll }
+    this.cb = cb; // { onMenuEntry, onMenuPlayAgain, onBack, onReadyClick, onReadyDrag, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSwap, onToggleSound, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll }
     this.el = {
-      hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), clicks: $('hud-clicks'), size: $('hud-size'), hudTools: $('hud-tools'),
+      hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), clicks: $('hud-clicks'), size: $('hud-size'), hudTools: $('hud-tools'), hudSwap: $('hud-swap'),
       help: $('help'), helpList: $('help').querySelector('.controls'), helpFoot: $('help-foot'),
       hintStrip: $('hint-strip'), hintStripText: $('hint-strip-text'),
       readyRules: $('ready-rules'), pauseBoard: $('pause-board'), pauseControls: $('pause-controls'),
@@ -123,6 +123,9 @@ export class UI {
     this.el.restart.addEventListener('click', () => cb.onRestart());
     $('p-menu').addEventListener('click', () => cb.onMainMenu());
     $('hud-pause').addEventListener('click', () => cb.onPause?.());
+    // The swap toggle never takes focus, so the board's cursor keys (Space, Enter) keep playing.
+    this.el.hudSwap.addEventListener('mousedown', (e) => e.preventDefault());
+    this.el.hudSwap.addEventListener('click', () => cb.onToggleSwap?.());
     $('c2d-retry').addEventListener('click', () => cb.onRetry2D?.());
     $('c2d-standard').addEventListener('click', () => cb.onStandard2D?.());
     $('c2d-cancel').addEventListener('click', () => cb.onCancel2D?.());
@@ -273,8 +276,11 @@ export class UI {
     this._syncHelp();
     this.el.hud.classList.add('hud--2d');
     this.el.hud.classList.remove('hidden');
+    this.el.hudSwap.classList.remove('hidden');
     this.el.c2d.classList.remove('hidden');
   }
+  /** The Classic 2D mouse button swap's toggle: pressed while the swap is on. */
+  setSwap(on) { this.el.hudSwap.setAttribute('aria-pressed', on ? 'true' : 'false'); }
   /**
    * The room the panel's frame takes around the board (js/classic2d/board-view.js frame): the
    * readouts and the gap above it, the inset on every side, and at least the readouts' width.
@@ -432,6 +438,7 @@ export class UI {
     this.el.ready.classList.add('hidden');
     this.el.pause.classList.remove('hidden');
     this.el.hud.classList.remove('hidden');
+    this.el.hudSwap.classList.add('hidden'); // on the board only while it plays
     const ended = state !== 'playing';
     // The primary action leads: Resume while playing, Play again once the game ended, which has nothing to resume.
     const [first, second] = ended ? [this.el.restart, this.el.resume] : [this.el.resume, this.el.restart];
