@@ -135,13 +135,15 @@ demanding, until free 3D play is within reach.
 - **Platforms.** Windows at launch. Mac and Linux only if the port is close to
   free. Steam Deck Verified is a stretch goal.
 - **A free demo with fixed locks.** The demo offers unlimited Classic 2D
-  Beginner, Intermediate and Expert boards, unlimited 3D Beginner boards, the
-  first shape of the Surface mode, the first 5 levels of each campaign
-  (unlocked by progression as usual), and 3 of the themes, chosen when the
-  demo is designed.
-  Everything else is locked: the Hexagon and Triangle modes as whole
-  main-menu entries, custom boards, the harder 3D presets, the other themes,
-  and pro options such as no-guess. In the full game every theme is unlocked.
+  Beginner, Intermediate and Expert boards, unlimited Hexagon and Triangle
+  Beginner boards from their own main-menu entries, unlimited 3D Beginner
+  boards, the first shape of the Surface mode, the first 5 levels of each
+  campaign (unlocked by progression as usual), and 3 of the themes, chosen
+  when the demo is designed.
+  Everything else is locked: the Intermediate and Expert boards of Hexagon
+  and Triangle, custom boards in every mode, the harder 3D presets, the other
+  themes, and pro options such as no-guess. In the full game every theme is
+  unlocked.
 - **The browser build stays public until the Steam release**, as the
   author's work-in-progress preview. What happens to it after release is not
   decided.
