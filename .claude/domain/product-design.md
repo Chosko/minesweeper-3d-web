@@ -161,8 +161,9 @@ Classic 2D, Hexagon, Triangle, 3D and Surface modes, Daily, Records,
 Leaderboards, Settings, Quit), pausing and resuming, restarting, returning to
 the menu, and the settings — controls, graphics, the theme, picked from a
 list of the catalogue's themes, audio and accessibility (colour-blind-safe
-numbers, and after launch a reduced-motion setting). Input is mouse and keyboard first, with
-controller play available in every mode. *Start* opens the first 2D campaign
+numbers, and after launch a reduced-motion setting, on or off, whose first
+value is taken from the operating system's reduce-motion preference). Input
+is mouse and keyboard first, with controller play available in every mode. *Start* opens the first 2D campaign
 level until the player has progress; then *Continue* resumes the next
 unbeaten level or the last mode played, with Hexagon and Triangle each
 counted as a mode of their own. Each mode keeps the player's last board
@@ -199,10 +200,10 @@ scaling, sliding, flipping about an axis (showing the other face halfway),
 deepening a shadow or bevel, brightening and fading, each with its duration
 and easing; one theme presses a cell down, another flips it. Motion is only
 visual: it never delays input, the game, the timer or replays. Theme motion —
-cell motion and screen-component animation — does not play while the
-operating system's reduce-motion preference is on. After launch an in-game
-reduced-motion setting, on or off and starting from that preference, decides
-it instead.
+cell motion and screen-component animation — always plays until launch: the
+game has no reduced-motion behaviour before then and does not read the
+operating system's reduce-motion preference. After launch the reduced-motion
+setting in Settings governs all theme motion.
 
 Themes are designed in Claude Design, each delivered as its screens plus one
 catalogue of its components. More themes are added over time: once the
