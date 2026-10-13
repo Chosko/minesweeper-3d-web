@@ -42,9 +42,11 @@ Non-goals:
   controller's sticks. They keep their fixed roles; the d-pad's cursor
   moves in Classic 2D are buttons and are rebindable.
 - Rebinding the shell's inputs and each mode's shortcuts outside its
-  catalogue: menu navigation, Back, Pause, help, sound, fullscreen and the
-  3D spacing buttons keep their inputs, which are reserved, so the player
-  can never lose the way out of a screen.
+  catalogue: menu navigation, Back, Pause, restart, play again, help,
+  sound, fullscreen and the 3D spacing buttons keep their inputs, which are
+  reserved. Restart and play again are not rebindable actions: they are the
+  same reserved chord family as Pause and Back, kept fixed so the way out
+  of any state never depends on the player's bindings.
 - Changing what an action does. The rules, the release-based mouse actions
   and their chord gestures, the 3D view modes' held behaviour and every
   control the original spec pins stay as they are; rebinding changes only
@@ -128,14 +130,18 @@ the game shell, settings stored behind the platform layer (see
   mode stays playable on each device; reset restores the catalogue's
   defaults for one mode and device.
 - **Reserved inputs** — in every mode, Esc and the controller's Start and
-  home buttons; per mode, every input that mode's play gives to something
+  home buttons, and the restart inputs: F2, and Y pressed while Start is
+  held (Start pauses first, so it restarts from play and from the pause
+  card); on the results screen, R, which plays again with the same board
+  choice; per mode, every input that mode's play gives to something
   outside its catalogue (the controller's B, the shell's Back, in Classic
   2D; the help, sound and fullscreen shortcuts and the 3D d-pad spacing
   buttons); and keys the browser or the system keeps for itself (Tab, the
   Meta keys, function keys used for fullscreen and developer tools). A
   button reserved in one mode may be a default binding in the other — B
-  moves down in 3D. Mouse movement, the wheel and the sticks are not inputs
-  here at all.
+  moves down in 3D — and Y alone stays rebindable in both modes, since only
+  its chord with Start is reserved. Mouse movement, the wheel and the
+  sticks are not inputs here at all.
 - **Change notification** — the resolver subscribes to the overrides
   setting through the settings store; modes read the resolver on each
   input, so a change applies from the next input with no restart.

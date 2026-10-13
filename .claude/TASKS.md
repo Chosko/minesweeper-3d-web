@@ -606,7 +606,7 @@ Feature: results-steam-rank
 
 ## 111. Action catalogue, bindings resolver and the bindings setting
 
-Status: [MISSING]
+Status: [STALE]
 Target: claude
 Files: js/settings/bindings.js, js/settings/resolver.js, js/settings/schema.js, js/settings/store.js, js/ui.js, tests/settings-bindings.test.mjs
 Preconditions: none
@@ -616,7 +616,7 @@ Feature: input-rebinding
 
 ## 112. Classic 2D and 3D input read their actions through the bindings
 
-Status: [MISSING]
+Status: [STALE]
 Target: claude
 Files: js/input.js, js/controls.js, js/main.js, js/shell/mode-3d.js, js/classic2d/pointer-input.js, js/classic2d/cursor-input.js, tests/input-bindings.test.mjs
 Preconditions: 59, 111
