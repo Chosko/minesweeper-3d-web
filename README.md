@@ -291,7 +291,7 @@ The rules engine and the controller helpers have unit tests that use Node's buil
 (no dependencies):
 
 ```sh
-node --test
+node --test --test-concurrency=2 "tests/**/*.test.mjs"
 ```
 
 ## Project structure

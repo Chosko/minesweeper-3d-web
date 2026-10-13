@@ -1128,7 +1128,10 @@ browser checks for everything that needs WebGL or the DOM.
   fake controller; and a played profile (a lost Classic 2D game, Dark, the
   old keys) back to a new player's after Reset all data, with Cancel, Esc
   and the browser's Back closing the confirmation first.
-- `.claude/external/run-full-tests.sh` — `cd` to repo root, `exec node --test`.
+- `.claude/external/run-full-tests.sh` — `cd` to repo root, then
+  `node --test --test-concurrency=2 "tests/**/*.test.mjs"`: the glob keeps
+  the review scripts under `docs/` out of the run, and the concurrency cap
+  keeps the software-rendered browser tests from timing out on a 4-core box.
 - `.claude/external/run-affected-tests.sh <test-file>...` — `node --test` on the
   given files; exits 2 with usage when called with no arguments.
 - Browser verification: ad-hoc Playwright scripts drive `window.__ms`,
@@ -1157,8 +1160,9 @@ browser checks for everything that needs WebGL or the DOM.
   `tests/settings-page.test.mjs`.
 
 No `package.json`, no dependencies: Node 22 built-in runner (`node:test`,
-`node:assert/strict`). `node --test` with no arguments discovers
-`tests/*.test.mjs`.
+`node:assert/strict`). The suite is `tests/*.test.mjs`, selected by the glob
+in `run-full-tests.sh`; bare `node --test` also picks up any `*-test.mjs`
+script under `docs/`.
 
 ## PUBLIC API
 
