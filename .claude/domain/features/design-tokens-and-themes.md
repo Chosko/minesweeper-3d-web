@@ -5,6 +5,14 @@ elevation and motion — named once as design tokens, with a light and a dark
 value for every colour, and the mechanism that applies the player's chosen
 theme to every screen and to the Classic 2D board.
 
+The light and dark themes this document defines are retired. How a theme is
+registered, applied and switched, which tokens it must declare, and its
+fonts are [theme-system](./theme-system.md)'s; the 3D cubes and numbers
+follow the theme through
+[themed-board-art-and-motion](./themed-board-art-and-motion.md). The
+token categories, the contrast contract and the token reader below hold only
+where those documents cite them.
+
 ## Purpose
 
 [product-design.md § Visual design system](../product-design.md#visual-design-system)

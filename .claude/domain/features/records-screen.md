@@ -54,7 +54,7 @@ no framework and no external chart library (see
   board played. The fastest-time best is shown in `results-screen`'s time
   format (47.380 s), and the efficiency best to one decimal (94.7%).
 - **History chart.** A small line chart of 3BV/s and efficiency per won
-  game, drawn on a canvas from design tokens in both themes, redrawn on
+  game, drawn on a canvas from the active theme's tokens, redrawn on
   theme change. It follows the kit's conventions and is owned here; it is
   read as a picture, with the figures panel and the games list carrying the
   same numbers in text for accessibility.
@@ -87,7 +87,7 @@ no framework and no external chart library (see
 - `game-summary` — board labels and derived stats.
 - `results-screen` — the time format.
 - `screen-components` — every control and surface.
-- `design-tokens-and-themes` — the chart's colours and theme-change
-  notification.
+- `theme-system` — the chart's colours through the token reader, and
+  theme-change notification.
 - `game-shell` — routing from the menu and the results screen, navigation.
 - No external libraries.

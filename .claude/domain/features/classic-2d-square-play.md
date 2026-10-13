@@ -132,7 +132,7 @@ copied.
 - **Cursor input.** A cell cursor driven by keyboard and controller, with
   auto-repeat for held directions, drawn as a focus ring over the board in
   a board-only cursor colour distinct from the tile edge it covers, so the
-  ring shows on every tile state in both themes. The ring shows only once
+  ring shows on every tile state in every theme. The ring shows only once
   the player uses the cursor: no ring when a game starts; the first cursor
   key or controller input shows it on the cursor's cell, and the next mouse
   action on the board — a button pressed, or the pointer moving over it —
@@ -212,8 +212,9 @@ copied.
   board placed on the main thread, a no-guess one in a worker, and the next
   no-guess board pre-generated for the marked start cell.
 - `square-tile-skin` — the paint call and minimum tile size.
-- `design-tokens-and-themes` — the board background and cursor ring
-  colours, and theme-change notification.
+- `themed-board-art-and-motion` — the board ground and cursor ring
+  colours of the active theme; `theme-system` — the theme-change
+  notification.
 - `screen-components` — the in-game overlay bar.
 - Main menu and game shell (m1-classic-2d) — entry from the menu, pause,
   restart, back to menu, settings storage, controller navigation outside

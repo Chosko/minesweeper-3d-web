@@ -158,7 +158,7 @@ Everything around a game: the main menu (Start / Continue, Campaign, the
 Classic 2D, Hexagon, Triangle, 3D and Surface modes, Daily, Records,
 Leaderboards, Settings, Quit), pausing and resuming, restarting, returning to
 the menu, and the settings — controls, graphics, the theme, picked from a
-list of the catalogue's themes, audio and accessibility (colour-blind-safe numbers). Input is mouse and keyboard first, with
+list of the catalogue's themes, audio and accessibility (colour-blind-safe numbers, reduced motion). Input is mouse and keyboard first, with
 controller play available in every mode. *Start* opens the first 2D campaign
 level until the player has progress; then *Continue* resumes the next
 unbeaten level or the last mode played, with Hexagon and Triangle each
@@ -170,8 +170,9 @@ it is where the first-launch flow begins.
 
 The one visual language every mode and screen is drawn in, held to the visual
 direction under Design decisions: one shared layout for the menus, the
-in-game overlay that sits over a board (timer, mine counter, click counter,
-pause) and the results screen, and a catalogue of themes that style it. The
+in-game window around a board (timer, mine counter, restart, pause, and the
+live figures — 3BV progress, pace against the personal best, 3BV/s, clicks
+and flags) and the results screen, and a catalogue of themes that style it. The
 player picks a theme from a list on the Settings page; *Joyful tiles* is
 the default until they pick. The shared layout is designed together with
 *Joyful tiles*; later themes add styles, not layouts.

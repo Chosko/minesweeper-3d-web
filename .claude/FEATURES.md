@@ -253,3 +253,48 @@ Source: product-design.md § Main menu and game shell (m3-on-steam)
 Tasks: 111, 112, 113, 114
 
 ---
+
+## theme-system — Theme registry and contract, per-theme stylesheets and fonts, the Settings theme list and conformance tests
+
+Status: [NEW]
+Doc: .claude/domain/features/theme-system.md
+Source: product-design.md § Visual design system (m2b-themes)
+Tasks: none
+
+---
+
+## themed-board-art-and-motion — Themed 2D tiles, 3D cubes, numbers and sky, and per-theme cell motion
+
+Status: [NEW]
+Doc: .claude/domain/features/themed-board-art-and-motion.md
+Source: product-design.md § Visual design system (m2b-themes)
+Tasks: none
+
+---
+
+## shared-screen-layout — The redesigned shared layout: screen frame, main menu, board choice and the other screens
+
+Status: [NEW]
+Doc: .claude/domain/features/shared-screen-layout.md
+Source: product-design.md § Visual design system (m2b-themes)
+Tasks: none
+
+---
+
+## in-game-layout — The redesigned game window: counter strip, Restart, live figures panel and foot line
+
+Status: [NEW]
+Doc: .claude/domain/features/in-game-layout.md
+Source: product-design.md § Visual design system (m2b-themes)
+Tasks: none
+
+---
+
+## theme-implement-skill — The Claude skill that adds or updates a theme from its Claude Design canvas
+
+Status: [NEW]
+Doc: .claude/domain/features/theme-implement-skill.md
+Source: product-design.md § Visual design system (m2b-themes)
+Tasks: none
+
+---
