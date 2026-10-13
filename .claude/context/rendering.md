@@ -39,6 +39,9 @@ shake.
   opaque list and re-sorts the transparent list when a toggle changed.
 - `BoardRenderer.setSpacing(s)` — pitch = `4 * s` world units; marks the sort dirty.
 - `BoardRenderer.setSelected(idx)` — aimed cell (`-1` = none); restarts the selection pulse on change.
+- `BoardRenderer.setMark(idx)` — the marked start cell a pre-generated board waits for (`-1` = none):
+  its closed or flagged cube is tinted green (`uMark`, `uHasMark`); returns whether it changed;
+  `setGame` clears it. `mark` is the cell tinted.
 - `BoardRenderer.boardRadius()` — bounding-sphere radius of the board at the current spacing (10
   without a game); used for far plane, fog and confetti size.
 - `BoardRenderer.flash(cells)` — starts the flash of each cell (a flag click on a revealed number

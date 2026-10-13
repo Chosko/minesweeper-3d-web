@@ -298,6 +298,7 @@ const ui = new UI({
   onRetry3D: () => retry3D('retry'),
   onStandard3D: () => retry3D('standard'),
   onCancel3D: () => cancelGeneration(),
+  onStandardWait3D: () => standardFromWait3D(),
   onOfferMenu3D: () => PAUSE.toMenu(),
 });
 ui.setNoMouse(NO_MOUSE);
@@ -334,16 +335,20 @@ bindSettingControls(document.querySelectorAll('[data-setting]'), SETTINGS, {
   onUserChange: (key) => { if (key === 'volume' || key === 'muted') sfx.unlock?.(); },
 });
 
+// The 3D game asks the generation worker for its no-guess boards: one client for the page, warmed
+// when the 3D board choice opens; a session's leave cancels its request.
+const GEN_3D = createGenerationClient();
+
 // ---------- screen router ----------
 // Every screen change goes through SHELL; each screen declares its default focus and its Back.
 const SHELL = createRouter({
   screens: {
     menu: { defaultFocus: '[data-entry][data-last]', show: () => { MODES.leave(); showMenuBackdrop(); ui.showMenu(); showReturning(); } },
-    'board-choice': { defaultFocus: '[data-preset][data-last]', show: () => { MODES.leave(); showMenuBackdrop(); ui.showBoardChoice(); CHOICE_3D.show(LAST_CHOICE_3D.current, { played: LAST_CHOICE_3D.played, details: presetDetails(CHOICE_ITEMS['3d'], RECORDS) }); } },
+    'board-choice': { defaultFocus: '[data-preset][data-last]', show: () => { MODES.leave(); GEN_3D.warm(); showMenuBackdrop(); ui.showBoardChoice(); CHOICE_3D.show(LAST_CHOICE_3D.current, { played: LAST_CHOICE_3D.played, details: presetDetails(CHOICE_ITEMS['3d'], RECORDS) }); } },
     'coming-soon': { defaultFocus: '#coming-soon-back', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showComingSoon(d.title ?? 'This screen'); } },
     records: { defaultFocus: '#records-picker [aria-checked="true"]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showRecords(); RECORDS_PAGE.show({ mode: d.mode, boardKey: d.boardKey }); }, hide: () => RECORDS_PAGE.hide() },
     settings: { defaultFocus: '#set-lookSensitivity', show: () => { MODES.leave(); showMenuBackdrop(); ui.showSettings(); } },
-    'classic-2d-choice': { defaultFocus: '[data-size][data-last]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showBoardChoice2D(); showChoice2D(d.choice ?? LAST_CHOICE_2D.current); } },
+    'classic-2d-choice': { defaultFocus: '[data-size][data-last]', show: (d = {}) => { MODES.leave(); mode2d.warm(); showMenuBackdrop(); ui.showBoardChoice2D(); showChoice2D(d.choice ?? LAST_CHOICE_2D.current); } },
     ready: { defaultFocus: '#ready-btn', show: (d = {}) => ui.showReady(board3dChoice ?? S.settings, LOCK_FALLBACK.readyMessage(d.msg), { rules: FIRST_USE.rules3D, blocked: LOCK_FALLBACK.blocked }), back: ({ source }) => { if (source !== 'key' || performance.now() - input.unlockedAt >= 500) readyBack(); } }, // the Esc that released the pointer lock already meant Back
     playing: { defaultFocus: null, show: (d = {}) => { setLockless(!!d.lockless); ui.showPlaying(); }, back: ({ source }) => backGame(source) },
     'classic-2d': { defaultFocus: null, show: () => ui.showClassic2D(), back: ({ source }) => backGame(source) },
@@ -377,17 +382,18 @@ if (!WEBGL2) { // no route starts a 3D game without a renderer: the board choice
 let contextLost = false;
 const FLOW_3D = {
   openBoardChoice: () => { if (WEBGL2) SHELL.go('board-choice'); }, // the 3D presets and custom board
-  start: (settings) => startGame(settings),
+  start: (settings, pregenerated) => startGame(settings, pregenerated),
   pause: (note) => showPauseCard(note),
   resume: (source) => resumeGame(source),
-  restart: (source) => { // entered as resume enters play
-    const play = startGame(board3dChoice);
+  restart: (source, pregenerated) => { // entered as resume enters play
+    const play = startGame(board3dChoice, pregenerated);
     enterPlay3D(source);
     return play;
   },
   leave: () => leaveGame(),
   release: () => input.exitLock(), // the results screen takes over
   contextLost: () => contextLost,
+  client: GEN_3D, // the pre-generated board of Play again is asked of it
   sampler: (session) => createSampler3D({ session, camera: cam, controls, spacing: () => S.spacing }),
 };
 // end of 3D flow
@@ -414,18 +420,23 @@ const FLOW_2D = {
   hud: ({ seconds, minesLeft, clicks }) => ui.updateHud(seconds, minesLeft, clicks),
   board: (b) => { ui.setBoard2D(b); if (!standard2D) newGame2D(); }, // once per game, and again when played standard
   generating: (shown) => { board2d.generating = shown; showStatus2D(); },
+  progress: (p) => { board2d.progress = p; drawStatus2D(); }, // the progress line, without moving the focus
   failed: (failure) => { board2d.failure = failure; showStatus2D(); },
 };
-const board2d = { generating: false, failure: null };
+const board2d = { generating: false, failure: null, progress: null };
+/** The Classic 2D board status card as it stands; whether it shows. */
+function drawStatus2D() {
+  const on = MODES.active === 'classic-2d';
+  const generating = board2d.generating && S.mode === 'classic-2d';
+  ui.setBoardStatus(on ? { generating, failure: board2d.failure, progress: board2d.progress } : {});
+  return on && (!!board2d.failure || generating);
+}
 /**
  * The Classic 2D board status card: the generating card on the board, and a failed board's offer
  * there and over the pause card, taking the focus.
  */
 function showStatus2D() {
-  const on = MODES.active === 'classic-2d';
-  const generating = board2d.generating && S.mode === 'classic-2d';
-  ui.setBoardStatus(on ? { generating, failure: board2d.failure } : {});
-  if (on && (board2d.failure || generating)) focusStatus('c2d', board2d);
+  if (drawStatus2D()) focusStatus('c2d', board2d);
 }
 /**
  * A board status card's default focus: Cancel while generating; on the failure offer Retry, or
@@ -435,10 +446,12 @@ function statusFocus(prefix, { failure }) {
   if (!failure) return `#${prefix}-cancel`;
   return failure.count >= 2 ? `#${prefix}-standard` : `#${prefix}-retry`;
 }
-/** Focus the card's default target; the generating card's Cancel is left alone while it holds the focus. */
+/** Focus the card's default target; on the generating card, a focus already on its Cancel or Play a standard board is left alone. */
 function focusStatus(prefix, status) {
+  const active = document.activeElement;
+  if (!status.failure && active?.closest?.(`#${prefix}-wait`) && !active.closest('.hidden')) return;
   const target = document.querySelector(statusFocus(prefix, status));
-  if (target && target !== document.activeElement) target.focus({ preventScroll: true });
+  if (target && target !== active) target.focus({ preventScroll: true });
 }
 /** A failed 2D board's offer answered over the pause card: the game resumes with the answer. */
 function answer2D(answer) {
@@ -778,19 +791,18 @@ function applyPixelRatio(n = boardCells) {
   if (renderer.setPixelRatio(pr)) needRender = true;
 }
 
-// The 3D game asks the generation worker for its boards; one client, released by each session's leave.
-const GEN_3D = createGenerationClient();
-const board3d = { generating: false, failure: null }; // the 3D board status card: a slow first click, a failed board
+const board3d = { generating: false, failure: null, progress: null }; // the 3D board status card: a slow first click, a failed board
 let board3dChoice = null; // the board a restart plays again: S.settings and the no-guess switch
 
-function startGame(settings) {
+function startGame(settings, pregenerated = null) {
   const s = clampSettings(settings);
   S.play?.leave();
   const noGuess = !!settings.noGuess;
-  // a mine set is the debug hook's fixed board
-  const play = createSession({ board: { ...s, noGuess, minePositions: settings.minePositions }, client: GEN_3D });
-  play.on('generating', ({ shown }) => { if (S.play === play) { board3d.generating = shown; showStatus3D(); } });
+  // a mine set is the debug hook's fixed board; a pre-generated board waits for its marked start cell
+  const play = createSession({ board: { ...s, noGuess, minePositions: settings.minePositions }, client: GEN_3D, pregenerated });
+  play.on('generating', ({ shown }) => { if (S.play === play) { board3d.generating = shown; board3d.progress = shown ? play.progress : null; showStatus3D(); } });
   play.on('failed', (failure) => { if (S.play === play) { board3d.failure = failure; showStatus3D(); } });
+  play.on('mark', ({ cell }) => { if (S.play === play && renderer.setMark(cell)) needRender = true; });
   play.on('started', () => { if (S.play === play) S.started = true; });
   play.on('finished', () => { if (S.play === play) endGame(); });
   const g = play.view;
@@ -807,8 +819,10 @@ function startGame(settings) {
   S.spacing = SPACING_START;
   board3d.generating = false;
   board3d.failure = null;
+  board3d.progress = null;
   mouse.reset();
   renderer.setGame(g);
+  renderer.setMark(play.markedCell);
   applyPixelRatio(g.n);
   placeAtSpawn();
   ui.setBoard(board3dChoice);
@@ -835,10 +849,33 @@ function sync3D() {
  * card too, taking the focus; a failed board releases pointer lock for its offer.
  */
 function showStatus3D() {
-  const on = !!S.play && (S.mode === 'playing' || (S.mode === 'paused' && !!board3d.failure));
-  ui.setBoardStatus3D(on ? board3d : {});
+  const on = drawStatus3D();
   if (on && board3d.failure) input.exitLock();
   if (on && (board3d.failure || board3d.generating)) focusStatus('m3d', board3d);
+}
+/** The 3D board status card as it stands, without moving the focus; whether it shows. */
+function drawStatus3D() {
+  const on = !!S.play && (S.mode === 'playing' || (S.mode === 'paused' && !!board3d.failure));
+  ui.setBoardStatus3D(on ? board3d : {});
+  return on;
+}
+/** The generating card's progress line, each frame it shows: drawn again when the count or the seconds change. */
+function progress3D() {
+  const p = board3d.generating ? S.play?.progress ?? null : null;
+  const was = board3d.progress;
+  if (p === was || (p && was && p.candidates === was.candidates && p.seconds === was.seconds)) return;
+  board3d.progress = p;
+  drawStatus3D();
+}
+/** The generating card's Play a standard board: the no-guess request cancelled, a standard board of the same size at once. */
+function standardFromWait3D() {
+  const play = S.play;
+  if (!play || play.state !== 'generating') return;
+  const r = play.playStandard();
+  board3dChoice = { ...board3dChoice, noGuess: false }; // a restart keeps the standard board
+  ui.setBoard(board3dChoice);
+  showStatus3D();
+  if (r && S.play === play) actionSounds('left', r);
 }
 /** The failed board's offer: Retry with a new seed, or the same size with no-guess off; over the pause card it resumes play. */
 function retry3D(kind) {
@@ -853,7 +890,7 @@ function retry3D(kind) {
     if (S.mode === 'paused') PAUSE.resume('pad');
     else setLockless(true);
   } else input.requestLock(); // from the pause card too: the lock enters play
-  r?.then((res) => { if (res && S.play === play) actionSounds('left', res); });
+  Promise.resolve(r).then((res) => { if (res && S.play === play) actionSounds('left', res); }); // a standard board is placed at once
 }
 
 /**
@@ -960,6 +997,7 @@ function leaveGame() {
   S.play = null;
   board3d.generating = false;
   board3d.failure = null;
+  board3d.progress = null;
   ui.setBoardStatus3D({});
 }
 /** Put the decorative demo board behind the menu; without WebGL 2 there is none to put. */
@@ -1423,6 +1461,7 @@ function frame(now) {
     }
   }
   if (MODES.active === '3d') mode3d.tick(); // the replay's camera sampler
+  progress3D();
   renderer.setSpacing(replay3d.view ? REPLAY_SPACING : S.spacing);
   const synced = renderer.sync();
 

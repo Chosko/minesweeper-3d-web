@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { generate, boardGraph, ATTEMPT_BUDGET } from '../js/generation/generate.js';
+import { generate, boardGraph, ATTEMPT_BUDGET, PROGRESS_INTERVAL_MS } from '../js/generation/generate.js';
+import { startCell } from '../js/generation/start-cell.js';
 import { GENERATOR_VERSION, placeMines } from '../js/generation/placer.js';
 import { createSeededSource } from '../js/generation/random.js';
 import { solve } from '../js/generation/solver.js';
@@ -126,4 +127,52 @@ test('generate: the module is DOM-free and independent of the 3D engine', () => 
   for (const name of ['document', 'window', 'Math.random', 'Date.now', 'logic.js']) {
     assert.equal(src.includes(name), false, name);
   }
+});
+
+// ---------- progress ----------
+
+test('generate: the progress callback reports candidates tried at most every PROGRESS_INTERVAL_MS, and never changes the result', () => {
+  assert.equal(PROGRESS_INTERVAL_MS, 250);
+  // a board that never clears runs the whole budget; the clock moves 100 ms per reading
+  const request = { graph: square(3, 3), mineCount: 7, firstClick: 4, noGuess: true, seed: 9 };
+  let t = 0;
+  const reports = [];
+  let lastAt = 0;
+  const r = generate(request, {
+    now: () => (t += 100),
+    onProgress: (p) => {
+      assert.ok(t - lastAt >= PROGRESS_INTERVAL_MS, 'no faster than the interval');
+      lastAt = t;
+      reports.push(p.candidates);
+    },
+  });
+  assert.ok(reports.length > 10);
+  for (let i = 1; i < reports.length; i++) assert.ok(reports[i] > reports[i - 1], 'the count only grows');
+  assert.ok(reports.at(-1) <= ATTEMPT_BUDGET);
+  const plainR = (x) => ({ ...x, mines: x.mines ? [...x.mines] : x.mines });
+  assert.deepEqual(plainR(r), plainR(generate(request)), 'the result is the same with or without progress');
+});
+
+test('generate: progress leaves every no-guess board unchanged, and a standard request reports none', () => {
+  for (let seed = 1; seed <= 30; seed++) {
+    const request = { graph: square(16, 16), mineCount: 40, firstClick: seed % 256, noGuess: true, seed };
+    let t = 0;
+    const withP = generate(request, { now: () => (t += 1000), onProgress: () => {} });
+    assert.deepEqual([...withP.mines], [...generate(request).mines]);
+    assert.equal(withP.candidates, generate(request).candidates);
+  }
+  let calls = 0;
+  let t = 0;
+  generate({ graph: square(9, 9), mineCount: 10, firstClick: 40, noGuess: false, seed: 3 }, { now: () => (t += 1000), onProgress: () => { calls += 1; } });
+  assert.equal(calls, 0);
+});
+
+test('generate: a box no-guess board for its marked start cell is reproduced by its seed', () => {
+  const graph = { kind: 'box', X: 6, Y: 6, Z: 6 };
+  const firstClick = startCell(graph);
+  const a = generate({ graph, mineCount: 10, firstClick, noGuess: true, seed: 4242 });
+  const b = generate({ graph, mineCount: 10, firstClick, noGuess: true, seed: 4242 });
+  assert.equal(a.ok, true);
+  assert.deepEqual([...a.mines], [...b.mines]);
+  assert.equal(a.mines.includes(firstClick), false);
 });

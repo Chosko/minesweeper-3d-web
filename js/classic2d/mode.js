@@ -3,7 +3,7 @@
 // hands in its flow; the mounts default to the browser ones and are only called by start().
 //
 // createClassic2DMode(report, { flow, lastChoice, createClient?, mount?, sound?, clock?, randomSeed?,
-//                               generatingDelayMs? }) → mode
+//                               generatingDelayMs?, place? }) → mode
 //   flow        the shell's side:
 //                 openBoardChoice(choice)  show the board choice preselected with `choice`
 //                 show()                   show the board screen (the board's framed panel, its
@@ -23,10 +23,13 @@
 //                 board({ width, height, mines, noGuess })  the board the overlay bar names; again
 //                                          when a failed board's offer plays it standard
 //                 generating(shown)        the "generating" state of a slow first click
+//                 progress(p | null)?      while it shows: { candidates, seconds }, again whenever
+//                                          either changes; null when it hides
 //                 failed(failure | null)   a failed board and its offers, or none
 //   lastChoice  createLastChoice (js/classic2d/board-setup.js): start() saves the choice played,
 //               openBoardChoice() offers lastChoice.current; loadChoice() reads it from storage.
-//   createClient  () → a generation client (js/generation/client.js), one per game.
+//   createClient  () → a generation client (js/generation/client.js): called once, and the client
+//               kept for the page and shared by every game of the mode.
 //   mount       { board: mountBoardView, pointer: mountPointerInput, cursor: mountCursorInput,
 //               sampler: mountSampler2D }; without `sampler`, no movement is recorded.
 //   sound       the sound sink (js/audio.js's sfx: reveal, flag, chord, noop, explode, win); every
@@ -40,7 +43,18 @@
 //               without a sink nothing plays.
 //   clock       { now, setTimeout, clearTimeout }: the session's and the end delay's; the global
 //               ones by default.
-//   randomSeed, generatingDelayMs  passed to the session.
+//   randomSeed, generatingDelayMs, place  passed to the session; randomSeed also seeds the
+//               pre-generated boards.
+//
+// warm() spawns and warms the client's worker (the board choice opening), so the first no-guess
+// request of the page pays no worker start-up. When a game whose board was no-guess finishes (won
+// or lost), the mode asks its worker for the next board of the same choice for its marked start
+// cell (js/generation/start-cell.js) with a fresh seed, while the results screen shows; it holds
+// that board until its next start or its leave. A start with the same choice — Play again, or
+// Restart of the finished game — hands it to the new session, which marks the cell on the closed
+// board (the view's setMark) until the first click; a start with any other choice, or the leave,
+// discards it. Standard boards are never pre-generated, and an abandoned game pre-generates
+// nothing.
 //
 // The contract: openBoardChoice(), start(choice), pause(), resume(), restart(), leave(), summary(),
 // replay(summary). The mode reports started and canPause(true) when the first click's board
@@ -80,7 +94,8 @@ import { mountBoardView } from './board-view.js';
 import { mountPointerInput } from './pointer-input.js';
 import { mountCursorInput } from './cursor-input.js';
 import { mountSampler2D } from '../replay/sampler-2d.js';
-import { createGenerationClient } from '../generation/client.js';
+import { createGenerationClient, pregenerate } from '../generation/client.js';
+import { startCell } from '../generation/start-cell.js';
 import { createEndEffect, WIN, LOSS } from './end-effect.js';
 
 export const MODE_ID = 'classic-2d';
@@ -116,11 +131,39 @@ export function createClassic2DMode(report, {
   clock,
   randomSeed,
   generatingDelayMs,
+  place,
 }) {
   const time = clock ?? globalClock;
   let game = null; // { session, view, pointer, cursor, sampler, offs, last, ending }
   let hidden = false;
   let shown = { seconds: null, minesLeft: null, clicks: null };
+  let progressShown = null; // the progress last pushed to flow.progress
+  let client = null; // the mode's one generation client, made on first use
+  let ahead = null; // { choice, board }: the next no-guess board, pre-generated while the results show
+  const clientOf = () => client ?? (client = createClient());
+  const seedOf = randomSeed ?? (() => globalThis.crypto.getRandomValues(new Uint32Array(1))[0]);
+  const sameChoice = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+  function discardAhead() {
+    ahead?.board.discard();
+    ahead = null;
+  }
+
+  // A finished no-guess game: the next board of the same choice, for its marked start cell.
+  function pregenerateNext(session) {
+    discardAhead();
+    const { setup } = session;
+    if (!setup.noGuess) return;
+    const cell = startCell({ kind: 'square', width: setup.width, height: setup.height });
+    ahead = { choice: session.choice, board: pregenerate(clientOf(), setup.request(cell, seedOf())) };
+  }
+
+  function pushProgress() {
+    const p = game?.session.generatingShown ? game.session.progress : null;
+    if (p === progressShown || (p && progressShown && p.candidates === progressShown.candidates && p.seconds === progressShown.seconds)) return;
+    progressShown = p;
+    flow.progress?.(p);
+  }
 
   // The cue of an action's result, as the 3D game plays it; `before` is the session's state before it.
   function cue(session, kind, { changed, ended }, before) {
@@ -163,6 +206,7 @@ export function createClassic2DMode(report, {
     g.sampler?.destroy();
     g.view.destroy();
     flow.generating(false);
+    if (progressShown) { progressShown = null; flow.progress?.(null); }
     flow.failed(null);
   }
 
@@ -170,10 +214,14 @@ export function createClassic2DMode(report, {
     const c = normaliseChoice(choice);
     if (!c) throw new RangeError(`invalid board choice: ${JSON.stringify(choice)}`);
     drop();
-    const options = { choice: c, client: createClient() };
+    const taken = ahead && sameChoice(ahead.choice, c) ? ahead.board : null;
+    if (!taken) discardAhead();
+    ahead = null;
+    const options = { choice: c, client: clientOf(), pregenerated: taken };
     if (clock) options.clock = clock;
     if (randomSeed) options.randomSeed = randomSeed;
     if (generatingDelayMs !== undefined) options.generatingDelayMs = generatingDelayMs;
+    if (place) options.place = place;
     const session = createSession(options);
     hidden = false;
     shown = { seconds: null, minesLeft: null, clicks: null };
@@ -189,6 +237,7 @@ export function createClassic2DMode(report, {
       onUserScroll: () => flow.scrolled?.(),
     });
     view.setGame(session.game);
+    view.setMark(session.markedCell);
     // The inputs see the board paused while it is hidden, whatever the session's own state. An
     // action before the first reveal (a flag) changes the board without a session event: redraw it.
     let last = -1; // the cell of the last action the inputs took: the win pulse's origin
@@ -227,6 +276,7 @@ export function createClassic2DMode(report, {
         report.canPause(false);
         const g = game;
         if (g?.session !== session) return;
+        pregenerateNext(session);
         const { width: cols, height: rows } = session.setup;
         const won = session.state === SESSION_STATE.WON;
         const origin = won ? last : explodedNear(session.game, cols, cols * rows, last);
@@ -234,7 +284,8 @@ export function createClassic2DMode(report, {
         g.ending = { summary, replay, effect, t0: time.now(), handle: time.setTimeout(() => finish(g), END_DELAY_MS) };
         view.showEffect(effect, 0);
       }),
-      session.on('generating', ({ shown: on }) => flow.generating(on)),
+      session.on('generating', ({ shown: on }) => { flow.generating(on); pushProgress(); }),
+      session.on('mark', ({ cell }) => view.setMark(cell)),
       session.on('failed', (failure) => flow.failed(failure)),
     ];
     game = { session, view, pointer, cursor, sampler, offs, ending: null };
@@ -273,6 +324,8 @@ export function createClassic2DMode(report, {
 
   return {
     openBoardChoice() { flow.openBoardChoice(lastChoice.current); },
+    /** The board choice opens: spawn and warm the worker, so the first no-guess board pays no start-up. */
+    warm() { return clientOf().warm(); },
     start(choice) {
       open(choice);
       Promise.resolve(lastChoice.save(game.session.choice)).catch(() => {}); // storage never stops a game
@@ -288,6 +341,7 @@ export function createClassic2DMode(report, {
     },
     leave() {
       hidden = false;
+      discardAhead();
       drop();
     },
     summary() { return game ? game.session.summary() : null; },
@@ -301,6 +355,7 @@ export function createClassic2DMode(report, {
     setScale(scale) { game?.view.setScale(scale); },
     tick() {
       push();
+      pushProgress();
       if (game?.ending) game.view.showEffect(game.ending.effect, time.now() - game.ending.t0);
       game?.sampler?.tick();
     },
@@ -308,7 +363,9 @@ export function createClassic2DMode(report, {
     retry: () => answer('retry'),
     cancelGeneration() { return game ? game.session.cancel() : false; },
     playStandard() {
-      const r = answer('playStandard');
+      if (game?.session.state !== SESSION_STATE.GENERATING && game?.session.state !== SESSION_STATE.FAILED) return null;
+      flow.failed(null);
+      const r = game.session.playStandard();
       if (r && game) { const { width, height, mines, noGuess } = game.session.setup; flow.board({ width, height, mines, noGuess }); }
       return r;
     },

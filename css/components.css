@@ -268,8 +268,10 @@
      (Back). Default focus: the last board choice, else the first item.
    Board status (index.html #c2d-status over the Classic 2D board, and
      #m3d-status over the 3D box): ui-card ui-screen while a slow first
-     click generates its board, with a ui-spinner and ui-actions--row
-     (Cancel), or after a failed no-guess board with ui-actions--row (Retry
+     click generates its no-guess board, with a ui-text--muted progress
+     line under the title ("candidate 14 · 6 s"), a ui-spinner and
+     ui-actions--row (Cancel, Play a standard board), or after a failed
+     no-guess board with ui-actions--row (Retry
      primary, Play a standard board, Main menu); it sits above the pause
      card. Default focus: Cancel; on the offer Retry, or Play a standard
      board after a second failure in a row.

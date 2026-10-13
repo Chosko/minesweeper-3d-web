@@ -114,15 +114,17 @@ function fakeClock(start = 1000) {
   };
 }
 
-// The generation client over generate() itself, keeping the last board's mines.
+// The generation client over generate() itself, keeping the last board's mines; place(req) is the
+// session's main-thread placement of a standard board, the same generate().
 function generatingClient() {
   return {
     mines: null,
-    request(req) {
+    place(req) {
       const r = generate(req);
       if (r.ok) this.mines = Array.from(r.mines);
-      return Promise.resolve(r);
+      return r;
     },
+    request(req) { return Promise.resolve(this.place(req)); },
     cancel() {},
   };
 }
@@ -216,7 +218,7 @@ export async function playGame2D(spec, { interval = INTERVAL_2D, steps = SAMPLE_
   const rng = createRandom(spec.seed);
   const clock = fakeClock();
   const client = generatingClient();
-  const session = createSession2D({ choice: { size: spec.board, noGuess: false }, client, clock, randomSeed: () => spec.seed });
+  const session = createSession2D({ choice: { size: spec.board, noGuess: false }, client, place: (req) => client.place(req), clock, randomSeed: () => spec.seed });
   const { width, height, grid } = session.setup;
   const n = width * height;
   const pose = [between(rng, 0, width), between(rng, 0, height)];
@@ -265,7 +267,7 @@ export async function playGame3D(spec, { interval = INTERVAL_3D, steps = { posit
   const clock = fakeClock();
   const client = generatingClient();
   const [X, Y, Z, mines] = spec.size ?? (({ X, Y, Z, mines }) => [X, Y, Z, mines])(PRESETS.find((p) => p.id === spec.board));
-  const session = createSession3D({ board: { X, Y, Z, mines, noGuess: false }, client, clock, randomSeed: () => spec.seed });
+  const session = createSession3D({ board: { X, Y, Z, mines, noGuess: false }, client, place: (req) => client.place(req), clock, randomSeed: () => spec.seed });
   const box = createBoxGrid(X, Y, Z);
   const n = X * Y * Z;
   const p = 4 * SPACING;

@@ -9,7 +9,10 @@ import assert from 'node:assert/strict';
 import {
   cameraSample, viewMode, createSampler3D, SAMPLE_INTERVAL_MS, POSITION_STEPS, ANGLE_STEPS, VIEW_MODE,
 } from '../js/replay/sampler-3d.js';
-import { createSession } from '../js/mode3d/session.js';
+import { createSession as openSession } from '../js/mode3d/session.js';
+
+// A session whose standard board is placed by the fake client's place(), as the worker would answer.
+const createSession = (options) => openSession({ place: options.client?.place, ...options });
 import { create3DMode, END_DELAY_MS } from '../js/shell/mode-3d.js';
 import { createModeHost } from '../js/shell/mode-host.js';
 import { decodeReplay, cellStateDigest } from '../js/replay/format.js';
@@ -41,17 +44,19 @@ function fakeClock(start = 1000) {
   };
 }
 
-// Answers every board request with MINES, or with the queued results first.
+// Answers every board request — and places every standard board — with MINES, or with the queued
+// results first.
 function fakeClient(queue = []) {
-  return {
+  const client = {
     requests: [],
-    request(req) {
-      this.requests.push(req);
-      const next = queue.shift();
-      return Promise.resolve(next ?? { ok: true, mines: MINES, seed: req.seed, generatorVersion: 1 });
+    place(req) {
+      client.requests.push(req);
+      return queue.shift() ?? { ok: true, mines: MINES, seed: req.seed, generatorVersion: 1 };
     },
+    request(req) { return Promise.resolve(client.place(req)); },
     cancel() {},
   };
+  return client;
 }
 
 const camera = (x = 0, y = 0, z = 0, yaw = Math.PI, pitch = 0) => ({ x, y, z, yaw, pitch });

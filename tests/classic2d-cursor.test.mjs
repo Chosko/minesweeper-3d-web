@@ -658,7 +658,8 @@ async function mountGame() {
   const mines = [0, 8];
   for (let col = 0; col < 8; col++) mines.push(4 * 9 + col);
   const client = { request: async () => ({ ok: true, mines, seed: 1, generatorVersion: 1 }), cancel() {} };
-  const session = createSession({ choice: { size: 'beginner', custom: { width: 30, height: 16, mines: 99 }, noGuess: false }, client });
+  const place = () => ({ ok: true, mines, seed: 1, generatorVersion: 1 }); // the standard board, placed at the first click
+  const session = createSession({ choice: { size: 'beginner', custom: { width: 30, height: 16, mines: 99 }, noGuess: false }, client, place });
   const view = mountBoardView({ container: host, grid: session.setup.grid });
   view.setGame(session.game);
   session.on('changed', ({ changed }) => view.update(changed));

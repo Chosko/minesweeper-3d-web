@@ -16,7 +16,9 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
   `SHELL` (router), `MODES` (mode host, with the 3D adapter registered as
   `'3d'` and the Classic 2D mode as `'classic-2d'`), `PAUSE` (pause
   controller), `MENU`, `LAST_MODE`, `LAST_CHOICE_3D` and `CHOICE_3D` (the 3D
-  board choice binder), `GEN_3D` (the 3D game's generation client),
+  board choice binder), `GEN_3D` (the 3D game's generation client for the
+  page, warmed as the `board-choice` screen shows, as `mode2d.warm()` is as
+  `classic-2d-choice` shows),
   `LAST_CHOICE_2D` and `CHOICE_2D` (the
   Classic 2D board choice binder), `RECORDS` (the records store), `REPLAYS`
   (the replay library, [replay.md](replay.md)), `REPLAY_VIEWER` (the
@@ -96,7 +98,9 @@ tokens and the light/dark theme, the debug hook, and the static-site files.
   canvas; the generating / failed-board card `#c2d-status` sits beside
   it, and `#m3d-status` is the same card over the 3D box. Both cards are
   stacked above the pause card (`css/style.css`): the generating card holds
-  a `ui-spinner` and Cancel (`#…-wait`), the offer Retry, Play a standard
+  a `ui-text--muted` progress line under its title (`#…-progress`,
+  "candidate 14 · 6 s"), a `ui-spinner`, and Cancel and Play a standard
+  board (`#…-wait`, `#…-wait-standard`), the offer Retry, Play a standard
   board and Main menu (`#…-offer`).
 - `css/tokens.css` — the design tokens, the single source of every shared
   visual value: palette (`--color-*`), typography (`--font-*`), spacing
@@ -326,8 +330,10 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   `onToggleSound`, `onDismissHint(mode, kind)` (the hint strip's ×; `kind`
   `'scroll'` for the scroll hint, else `'mode'`),
   `onRetry2D`, `onStandard2D`, `onOfferMenu2D` (the failed Classic 2D
-  board's offer), `onCancel2D` (its generating card), `onRetry3D`,
+  board's offer, `onStandard2D` also its generating card's Play a standard
+  board), `onCancel2D` (its generating card), `onRetry3D`,
   `onStandard3D`, `onOfferMenu3D`, `onCancel3D` (the same over the 3D box),
+  `onStandardWait3D` (the 3D generating card's Play a standard board),
   `onResetAll` (the Settings page's confirmed Reset all data → its result).
   Methods: screens `showMenu`, `showBoardChoice`,
   `showBoardChoice2D`, `showComingSoon(title)`, `showRecords` (the menu
@@ -352,8 +358,10 @@ the 3D board choice and session they sit on, are [mode3d.md](mode3d.md).
   which the frame loop refreshes from `pauseInfo()` while the card shows, so
   its running time advances), `showReplay` (hides the
   game's HUD, help panel, hint strip and toast);
-  Classic 2D `setBoard2D(board)`, `setBoardStatus({generating, failure})`;
-  3D `setBoardStatus3D({generating, failure})` (`#m3d-status`); menu
+  Classic 2D `setBoard2D(board)`, `setBoardStatus({generating, failure,
+  progress})`; 3D `setBoardStatus3D({generating, failure, progress})`
+  (`#m3d-status`), `progress` `{candidates, seconds}` drawn by
+  `progressLine`; menu
   `setLastMode(mode|null)`, `setReturning({strip, again})` (the session
   strip `#menu-strip` and Play again `#menu-again`, each hidden while
   null; Play again's click is `onMenuPlayAgain`); pause confirmation
@@ -565,11 +573,14 @@ Game shell (`js/shell/`, wired in `js/main.js`):
   board's end effect during the 2D end delay (`mode2d.ending`, read through
   `endDelay()` as the 3D adapter's is). The paused
   screen's `setBoardHidden` also hides the 2D board, and `pauseInfo` /
-  `gameOver` read `mode2d.status()`. `board2d` holds `{generating, failure}`
-  from `FLOW_2D`; `showStatus2D` shows `#c2d-status` — the generating card on
-  the board only, the offer there and over the pause card — and focuses the
-  offer (`statusFocus`: Retry, or Play a standard board once `failure.count`
-  is 2 or more); the generating card focuses Cancel when it shows. An offer
+  `gameOver` read `mode2d.status()`. `board2d` holds `{generating, failure,
+  progress}` from `FLOW_2D`; `showStatus2D` shows `#c2d-status` — the
+  generating card on the board only, the offer there and over the pause
+  card — and focuses the offer (`statusFocus`: Retry, or Play a standard
+  board once `failure.count` is 2 or more); the generating card focuses
+  Cancel when it shows, unless the focus is already on its Cancel or Play
+  a standard board; `FLOW_2D.progress` redraws the card (`drawStatus2D`) without
+  moving the focus. An offer
   answered over the pause card resumes first (`answer2D`); Main menu is
   `PAUSE.toMenu()`. On `classic-2d` the controller goes to `padBoard2D`:
   Start pauses through `#hud-pause`, B/Back is `backGame('pad')`, the status
@@ -754,13 +765,19 @@ Game flow (`js/main.js`):
   resets only the count). While blocked the router's `ready` entry shows the
   explanation (`readyMessage`) and `#ready-blocked` — `#ready-drag` and a
   line naming the controller's A — on every ready card.
-- Board status: `board3d` holds `{generating, failure}` from the session's
-  `generating` and `failed` events; `showStatus3D` shows `#m3d-status` from
-  it while `playing`, and a failure's offer while `paused` too; on a failure
-  it exits pointer lock and focuses the offer (`statusFocus`), and the
-  generating card focuses Cancel when it shows. `retry3D` answers the offer
-  (`onRetry3D` / `onStandard3D`) and re-enters play, from the pause card
-  too; Main menu is `PAUSE.toMenu()`, Cancel `cancelGeneration()`. While
+- Board status: `board3d` holds `{generating, failure, progress}` from the
+  session's `generating` and `failed` events and, each frame the card shows,
+  its `progress` (`progress3D`, which redraws the card without moving the
+  focus when the count or the seconds change); `showStatus3D` shows
+  `#m3d-status` from it while `playing`, and a failure's offer while
+  `paused` too; on a failure it exits pointer lock and focuses the offer
+  (`statusFocus`), and the generating card focuses Cancel when it shows
+  unless the focus is already on its Cancel or Play a standard board. `retry3D`
+  answers the offer (`onRetry3D` / `onStandard3D`) and re-enters play, from
+  the pause card too; the generating card's Play a standard board is
+  `standardFromWait3D` (`onStandardWait3D`: the session's `playStandard()`,
+  the standard board kept for a restart); Main menu is `PAUSE.toMenu()`,
+  Cancel `cancelGeneration()`. While
   the card shows the controller goes to `padStatus3D`: Start pauses, the
   back buttons are `backGame('pad')`, the card is navigated as a menu.
   `LAYER_SCREEN` puts both status cards above the pause card; their
@@ -780,9 +797,11 @@ Game flow (`js/main.js`):
   restart and Play again stay in drag-to-look play.
   A UI click made with controller A sets `padGesture`, which routes resume/
   restart to lockless play because it is not a user gesture for pointer lock.
-- `startGame(settings)` leaves the previous session and opens a new one
-  (`createSession` over `GEN_3D`; the debug hook's `minePositions` give a
-  fixed board), subscribes to its events, and returns it: `S.play` holds the
+- `startGame(settings, pregenerated?)` leaves the previous session and
+  opens a new one (`createSession` over `GEN_3D`, with the adapter's
+  pre-generated box; the debug hook's `minePositions` give a fixed board),
+  subscribes to its events — its `mark` tints the renderer's marked start
+  cell (`renderer.setMark`) — and returns it: `S.play` holds the
   session and `S.game` its 3D state view, which every reader of the board
   uses. `S.started` is set at the session's `started` — the first reveal
   applied to the generated board.
@@ -790,8 +809,8 @@ Game flow (`js/main.js`):
   callback): `'left'` → `S.play.reveal`, `'right'` → `toggleFlag`,
   `'chord'` → `chord`. Calls `renderer.snapshotBeforeAction()` before
   left/chord and plays SFX from the result (`actionSounds`) — for the first
-  reveal once its board has arrived, as the session answers it with a
-  Promise; a null result (generating, failed, paused) does nothing, and
+  reveal of a no-guess board once it has arrived, as the session answers
+  it with a Promise; a null result (generating, failed, paused) does nothing, and
   `sfx.noop` plays when `version` is unchanged in play. A flag sound carries
   the count of cells the click changed (`sfx.flag(on, count)`), and a flag
   click on a revealed number — its flag-all or its undo — also hands the

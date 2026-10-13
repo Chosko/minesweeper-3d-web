@@ -64,7 +64,9 @@ browser checks for everything that needs WebGL or the DOM.
   every other cell reachable (neighbours included), the densest legal board,
   impossible and malformed requests, a non-square graph, the rules engine
   accepting the mine set, and the version-bump rule stated in the module
-  headers.
+  headers; the marked start cell (`js/generation/start-cell.js`) for square
+  and box descriptions, odd and even sides and sides of 1, pure and
+  DOM-free, a request input that changes no generator.
 - `tests/generation-solver.test.mjs` — the solver (`js/generation/solver.js`)
   on hand-built boards with a known answer (single-cell only, the 1-2-1 wall
   through the subset stage, the remaining-mine count through the global
@@ -79,7 +81,10 @@ browser checks for everything that needs WebGL or the DOM.
   one source, every accepted Beginner/Intermediate/Expert no-guess board
   (300/150/60 seeds) clearing with the solver, the exhausted-budget failure,
   rejected requests, the recorded attempt budget, DOM-free and importing no separate
-  3D engine module.
+  3D engine module; the progress callback at most every
+  `PROGRESS_INTERVAL_MS` on a fake clock, never changing a board, silent on
+  a standard request; a box board for its marked start cell rebuilt from
+  its seed.
 - `tests/generation-client.test.mjs` — the worker handler
   (`js/generation/worker.js::handleMessage`: reply per id, agreement with
   Node `generate()`, structured-clone data, rejected requests as failure
@@ -87,7 +92,11 @@ browser checks for everything that needs WebGL or the DOM.
   (`js/generation/client.js`) over a fake worker: lazy worker reuse,
   cancellation, one request in flight, stale replies ignored, worker errors,
   undecodable replies (`messageerror`, the fake worker's `onmessageerror`),
-  the module-worker default, and no generation import on the main thread.
+  the module-worker default, and no generation import in the client; the
+  warm-up message and its reply, `warm()` (once per worker, never a board,
+  never settling a request, a fresh worker after a cancel, false on a
+  failing worker), the worker's progress messages before its result, and
+  per-request progress with a superseded or cancelled id's dropped.
 - `tests/platform-storage.test.mjs` — the storage interface
   (`js/platform/storage.js`) over the memory backend: registration and its
   malformed declarations, `{ version, data }` round-trips, no cache, every
@@ -527,7 +536,12 @@ browser checks for everything that needs WebGL or the DOM.
   off kept), the timer running through pauses and its pause spans; the
   session's closed board, first-click
   request, the delayed "generating" state, the timer starting at the
-  board, actions and `changed`, win and loss with `buildSummary`
+  board, a standard first click placed at once (no request, no
+  generating, the worker's own answer, the timer from the click), a
+  pre-generated board on its mark (arrived or in flight, its seed
+  recorded and rebuilding the board), discarded by a click elsewhere,
+  failed and asked afresh, discarded by restart, leave and cancel, the
+  progress while generating, Play a standard board from generating, actions and `changed`, win and loss with `buildSummary`
   summaries, one summary id per game, pause (also while generating, and
   one left open at an abandon) with the clock running and the summaries'
   pause count and paused time, the no-guess and worker
@@ -563,7 +577,9 @@ browser checks for everything that needs WebGL or the DOM.
   theme redraw, only visible tiles drawn, clamped scrolling, the wheel,
   panning, `ensureVisible`, a clipped board's edge shadows and scroll bars
   (`clipMarks`, drawn only when it scrolls and kept over a redrawn tile),
-  the ring shown and hidden redrawing one cell, the hidden board, the end
+  the ring shown and hidden redrawing one cell, the start-cell mark (a
+  ring in the cursor ring's style from `--color-success`, redrawn on its
+  cells only, under the cursor), the hidden board, the end
   effect (a loss's changed tiles drawn pre-loss until the wave reaches
   them, a redraw and a resize keeping the moment, the full end state at its
   end; a win's pulse at its origin first, its confetti clipped to the board
@@ -621,7 +637,13 @@ browser checks for everything that needs WebGL or the DOM.
   click, wasted clicks counted, frozen at the end), pause hiding
   the board while the time the pause card shows runs on, restart and leave releasing the canvas
   and the pending generation, Play again, the no-guess failure offer and
-  its failure count, `cancelGeneration` back to the closed board, the
+  its failure count, `cancelGeneration` back to the closed board, one
+  generation client for the mode warmed by `warm()`, the next no-guess
+  board pre-generated at a finished game for its marked start cell and
+  taken over by Play again or Restart with the mark on the view, a click
+  elsewhere generating afresh, none after a standard or abandoned game,
+  discarded by another choice or the leave, the progress pushed to the flow,
+  Play a standard board from the generating card, the
   controller poll, the board opened at the scale setting inside the panel's
   frame with its layouts and the player's scrolls reported and `setScale`
   refitting it, the ring reaching the sampler (-1 when hidden), the
@@ -700,7 +722,10 @@ browser checks for everything that needs WebGL or the DOM.
   reaching the session without cancelling a pending board request, started
   and can-pause at the first applied reveal, `summary()` so far, the
   summaries' pause count and paused time from the session's spans,
-  `cancelGeneration` through the session reporting nothing, finished
+  `cancelGeneration` through the session reporting nothing, the next
+  no-guess box pre-generated at a finished game for its marked start cell
+  and handed to Play again or the same board, discarded by another board or
+  the leave, none for a standard or abandoned game, finished
   after the end delay at a win or loss, abandoned on restart and leave of a started game and
   nothing before the first applied reveal, reports of a session no longer
   held ignored, a lost graphics context; DOM-free, importing at most the
@@ -709,7 +734,12 @@ browser checks for everything that needs WebGL or the DOM.
   clock and the pause card's time running on, the click-to-play card
   stopping nothing), resumes, restarts and leaves the 3D game through the
   adapter, and ends a
-  fixed board, which has no results screen, on the pause card.
+  fixed board, which has no results screen, on the pause card. Another, on
+  a slow stand-in worker, shows the generating card with its progress line
+  by the delay in pointer-locked play — measured in the page against the
+  main-thread long tasks a timer cannot fire inside — then, after a lost
+  game and Play again, the marked start cell tinted and the card by the
+  delay again for the pre-generated box still in flight.
 - `tests/mode3d-board-choice.test.mjs` — the 3D board choice
   (`js/mode3d/board-choice.js`): the three cube presets and no flat or
   double layer one, custom validation per field, the one-cell board
@@ -733,7 +763,11 @@ browser checks for everything that needs WebGL or the DOM.
   (`js/mode3d/session.js`) over a fake generation client and a fake clock:
   the 3D game awaiting its first click, the generator's `box` description
   and its first-click rule up to every cell but one, the closed box, the
-  board request with the no-guess setting, the delayed "generating" state
+  board request with the no-guess setting, a standard box placed at once
+  (the worker's own answer, the timer from the click), a pre-generated box
+  on its mark (flags before not counting, arrived or in flight), discarded
+  elsewhere or failed and asked afresh, Play a standard board from
+  generating, the delayed "generating" state
   and no board action meanwhile, the timer from the board's arrival to a
   win or loss, flags before the first reveal, pause during generation, the
   clock running through every pause and each pause a span until the return

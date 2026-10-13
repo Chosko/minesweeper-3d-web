@@ -4,6 +4,8 @@ import { readFileSync } from 'node:fs';
 import { createSeededSource } from '../js/generation/random.js';
 import { placeMines, GENERATOR_VERSION } from '../js/generation/placer.js';
 import { createSquareGrid } from '../js/engine/square-grid.js';
+import { createBoxGrid } from '../js/engine/box-grid.js';
+import { startCell } from '../js/generation/start-cell.js';
 import { cellGraphFromLists } from '../js/engine/graph.js';
 import { createGame, PHASE } from '../js/engine/rules.js';
 
@@ -174,3 +176,45 @@ const PINNED_EXPERT = [
   411, 412, 415, 416, 418, 419, 428, 430, 432, 434, 437, 442, 457, 462, 468, 469,
   471, 473, 477,
 ];
+
+// ---------- the marked start cell ----------
+
+test('start cell: a square board\'s is the cell at column floor(width / 2), row floor(height / 2)', () => {
+  const cases = [[9, 9], [16, 16], [30, 16], [1, 1], [1, 5], [5, 1], [2, 2], [4, 7], [100, 100]];
+  for (const [w, h] of cases) {
+    const grid = createSquareGrid(w, h);
+    const c = startCell({ kind: 'square', width: w, height: h });
+    assert.equal(c, grid.index(Math.floor(w / 2), Math.floor(h / 2)), `${w} x ${h}`);
+  }
+  assert.equal(startCell({ kind: 'square', width: 9, height: 9 }), 40, 'Beginner: the centre');
+  assert.equal(startCell({ kind: 'square', width: 30, height: 16 }), 8 * 30 + 15, 'Expert: even sides round down to the lower-right centre');
+  assert.equal(startCell({ kind: 'square', width: 1, height: 1 }), 0);
+});
+
+test('start cell: a box\'s is the cell floor(X / 2), floor(Y / 2), floor(Z / 2)', () => {
+  const cases = [[6, 6, 6], [8, 8, 8], [12, 12, 8], [1, 1, 1], [1, 1, 7], [3, 4, 5], [2, 2, 2]];
+  for (const [X, Y, Z] of cases) {
+    const box = createBoxGrid(X, Y, Z);
+    const c = startCell({ kind: 'box', X, Y, Z });
+    assert.equal(c, box.index(Math.floor(X / 2), Math.floor(Y / 2), Math.floor(Z / 2)), `${X} x ${Y} x ${Z}`);
+    assert.deepEqual(box.coords(c), [Math.floor(X / 2), Math.floor(Y / 2), Math.floor(Z / 2)]);
+  }
+  assert.equal(startCell({ kind: 'box', X: 1, Y: 1, Z: 1 }), 0);
+});
+
+test('start cell: a pure function of the description, DOM-free, refusing an unknown description', () => {
+  assert.equal(startCell({ kind: 'square', width: 16, height: 16 }), startCell({ kind: 'square', width: 16, height: 16 }));
+  assert.throws(() => startCell({ kind: 'hex', width: 3 }), RangeError);
+  assert.throws(() => startCell(undefined), RangeError);
+  const src = readFileSync(new URL('../js/generation/start-cell.js', import.meta.url), 'utf8');
+  for (const name of ['document', 'window', 'Math.random']) assert.equal(src.includes(name), false, name);
+});
+
+test('start cell: it is a request input like any first click — the board for it is the placer\'s for that cell', () => {
+  const description = { kind: 'square', width: 30, height: 16 };
+  const firstClick = startCell(description);
+  const graph = createSquareGrid(30, 16).graph;
+  const mines = placeMines({ graph, mineCount: 99, firstClick, source: createSeededSource(5) });
+  assert.equal(mines.includes(firstClick), false, 'the start cell stays safe-cell-only');
+  assert.equal(GENERATOR_VERSION, 1, 'no generator version bump');
+});

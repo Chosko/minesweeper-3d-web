@@ -5,8 +5,9 @@
 The 3D mode's game flow from board choice to result, around the 3D scene,
 camera and controls ([rendering.md](rendering.md), [input.md](input.md)),
 which it leaves as they are. The board choice turns the player's pick into a
-board; the session owns one game from a closed box to a win or loss, asking
-the generation worker for the board at the first reveal; the adapter puts
+board; the session owns one game from a closed box to a win or loss,
+placing a standard board or asking the generation worker for a no-guess one
+at the first reveal; the adapter puts
 the session behind the game shell's mode contract. `js/main.js` wires the
 three to the screens, the renderer and the pointer-lock flow
 ([app-shell.md](app-shell.md)).
@@ -18,16 +19,20 @@ three to the screens, the renderer and the pointer-lock flow
   helpers are DOM-free; the binder touches only the elements it is handed.
 - `js/mode3d/session.js` — the 3D game on the shared engine
   (`create3DGame`) and the game session (`createSession`): the closed box,
-  flags before the first reveal, the board request through the generation
-  client, the slow-answer "generating" state, the failure offer, the timer,
-  pause, restart and leave, and the game's replay recorder. DOM-free;
-  generation is reached only through the client.
+  flags before the first reveal, the first reveal's board — a standard one
+  placed at once with `generate()`, a no-guess one asked of the generation
+  client, a pre-generated one taken over on its marked start cell — the
+  slow-answer "generating" state and its progress, the failure offer, the
+  timer, pause, restart and leave, and the game's replay recorder.
+  DOM-free.
 - `js/shell/mode-3d.js` — the 3D adapter: the session behind the mode
   contract (`create3DMode`), running the end delay between the session's
   end and the finished report, reporting summaries built by
   `js/records/summary.js` with the session's sealed replays, and driving the
-  session's movement sampler. DOM-free; imports the records' summary builder
-  and `MODE_3D`.
+  session's movement sampler, and pre-generating the next no-guess box for
+  Play again. DOM-free; imports the records' summary builder and `MODE_3D`,
+  and `pregenerate` (`js/generation/client.js`) and `startCell`
+  (`js/generation/start-cell.js`).
 
 ## PUBLIC API
 
@@ -81,12 +86,13 @@ three to the screens, the renderer and the pointer-lock flow
   the counts of cells newly opened, flagged and unflagged, which drive the
   sound effects. `engineState` is the engine's per-cell state arrays, which
   a replay is sealed from.
-- `createSession({board, client, clock?, randomSeed?, generatingDelayMs?})`
-  → session. `board` is `boardOf(choice)`; with `minePositions` (the debug
+- `createSession({board, client, clock?, randomSeed?, generatingDelayMs?,
+  place?, pregenerated?})` → session (`place` and `pregenerated` as Classic
+  2D's, [classic2d.md](classic2d.md)). `board` is `boardOf(choice)`; with `minePositions` (the debug
   hook's fixed board) that board is played and nothing is requested.
   Session: `view` (one object for the whole session), `state`, `board`,
   `mines`, `seed`, `generatorVersion`, `generatingShown`, `paused`,
-  `failure`, `elapsedMs()`, `seconds()`, `pauses(until?, count?)` (the
+  `failure`, `markedCell`, `progress`, `elapsedMs()`, `seconds()`, `pauses(until?, count?)` (the
   pause spans, `createTimer`'s), `counts()` and `engineSummary()`
   (the engine's, null before the board arrives), `on(event, fn)` → unsubscribe,
   `reveal(c)`, `toggleFlag(c)`, `chord(c)`, `retry()`, `playStandard()`,
@@ -97,14 +103,17 @@ three to the screens, the renderer and the pointer-lock flow
   ([replay.md](replay.md)).
 - `SESSION_STATE` (`ready`, `generating`, `playing`, `failed`, `won`,
   `lost`, `left`); `SESSION_EVENTS` (`generating` `{shown}`, `started`
-  `{changed}`, `failed` `{reason, offers, count}`, `finished` `{state}`);
+  `{changed}`, `failed` `{reason, offers, count}`, `finished` `{state}`,
+  `mark` `{cell}`);
   `FAILURE_OFFERS` and `GENERATING_DELAY_MS`, re-exported from
   `js/classic2d/session.js`.
 
 `js/shell/mode-3d.js`
 - `create3DMode(flow, report)` — the contract over `flow`
-  (`openBoardChoice`, `start(choice)` → session, `pause(note)`,
-  `resume(source)`, `restart(source)` → session, `leave`, `contextLost`,
+  (`openBoardChoice`, `start(choice, pregenerated)` → session, `pause(note)`,
+  `resume(source)`, `restart(source, pregenerated)` → session, `leave`,
+  `contextLost`, `client` (the generation client a pre-generated box is
+  asked of), the optional `randomSeed`,
   the optional `sampler(session)` → the session's movement sampler, an
   object with `tick()` and optionally `destroy()`; without it no movement is
   recorded; the optional `release()`, which releases pointer lock before the
@@ -118,6 +127,11 @@ three to the screens, the renderer and the pointer-lock flow
   `cancelGeneration()`, the session's `cancel()`.
 - `END_DELAY_MS` = 1000 — how long the end effect plays before the game is
   reported finished, for a win and a loss alike.
+- Pre-generation: a finished game whose board was no-guess (and had a seed)
+  asks `flow.client` for the next box (`pregenerate`, its `startCell`, a
+  fresh seed); the next `start` with the same board, or `restart`, hands it
+  to `flow.start` / `flow.restart`; another board, `leave` and
+  `contextLost()` discard it.
   `summary()` and the finished and abandoned reports carry `buildSummary`'s
   record over the 3D board identity — mode `3d`, the session board's X, Y,
   Z as width, height, depth ([records.md](records.md)) — one id per game:
@@ -153,10 +167,13 @@ three to the screens, the renderer and the pointer-lock flow
 - **Closed box, then a board.** The session opens on a game awaiting its
   first click, whose view shows the closed box. Flags may be placed and
   removed; a left release on a flagged cell, and any chord, does nothing.
-  The first reveal of a closed, unflagged cell sends
-  `{graph: {kind: 'box', X, Y, Z}, mineCount, firstClick, noGuess, seed}`
-  to the client — the first-click rule is Classic 2D's: that cell alone is
-  mine-free. When the board arrives the session builds a second game from
+  The first reveal of a closed, unflagged cell needs
+  `{graph: {kind: 'box', X, Y, Z}, mineCount, firstClick, noGuess, seed}` —
+  the first-click rule is Classic 2D's: that cell alone is mine-free. A
+  standard board is placed at once with `place` and applied in the same
+  call; a no-guess one is sent to the client. A pre-generated box marks its
+  start cell until the first reveal (flags before it do not count) and is
+  taken over there, discarded anywhere else, as in Classic 2D. When the board arrives the session builds a second game from
   the mine set, replays the early flags in the order they were placed,
   applies the reveal, starts the timer and emits `started`. The session's
   `view` delegates to the closed game, then to the played one, and carries
@@ -170,9 +187,10 @@ three to the screens, the renderer and the pointer-lock flow
   closed box, its flags kept, with nothing reported.
 - **Failure.** A no-guess board not found, a rejected request or a failing
   worker emits `failed` with its `count` of failures in a row and leaves
-  the timer unstarted; `retry()` asks again with a new seed,
-  `playStandard()` the same size with no-guess off, both for the same first
-  cell — as Classic 2D does. `js/main.js` releases pointer lock for the
+  the timer unstarted; `retry()` asks again with a new seed;
+  `playStandard()` — after a failure, or while generating, which cancels
+  the request — places the same size with no-guess off for the same first
+  cell at once, as Classic 2D does. `js/main.js` releases pointer lock for the
   offer and keeps the standard board for a later restart.
 - **Timer.** The session's timer (Classic 2D's `createTimer`) starts when
   the first reveal is applied to the generated board, runs through pauses

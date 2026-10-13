@@ -97,11 +97,16 @@ copied.
   board", and "A 1 × 1 board has no room for a mine beside the safe first
   click — make it at least 2 cells".
 - **Game session.** Owns one game from closed board to result: holds the
-  engine, makes the first-click request to the generation worker, shows the
-  "generating" state when the answer is slow, starts the timer once the
-  board is ready, applies actions, and on win or loss stops the timer and
-  hands the summary on. Restart discards the game and its pending
-  generation; *Play again* starts a new one with the same choice.
+  engine, places a standard board itself at the first click, asks the
+  generation worker only for a no-guess board, shows the "generating" state
+  when that answer is slow, starts the timer once the board is ready,
+  applies actions, and on win or loss stops the timer and hands the summary
+  on. A board pre-generated while the results screen showed
+  (`board-generation` § Architecture) is taken over when the first click
+  lands on its marked start cell, and discarded when it lands anywhere
+  else. Restart discards the game and its pending generation; *Play again*
+  starts a new one with the same choice, which opens with the marked start
+  cell shown on the closed board while a pre-generated board waits for it.
 - **Board view.** Fits the board to the window at the largest whole tile
   size that fits, capped by the board-scale setting (`settings`): 48 px at
   100 %, the default, 60 px at 125 %, no cap at Fit. Every scale shrinks the
@@ -203,8 +208,9 @@ copied.
 ## Dependencies
 
 - `cell-graph-rules-engine` — square graph, game state, actions, summary.
-- `board-generation` — the board built around the first click, in a
-  worker.
+- `board-generation` — the board built around the first click: a standard
+  board placed on the main thread, a no-guess one in a worker, and the next
+  no-guess board pre-generated for the marked start cell.
 - `square-tile-skin` — the paint call and minimum tile size.
 - `design-tokens-and-themes` — the board background and cursor ring
   colours, and theme-change notification.

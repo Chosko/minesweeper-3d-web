@@ -23,6 +23,11 @@ import { solve } from './solver.js';
 // 0.2 to 0.3 s, which bounds a failure's wait.
 export const ATTEMPT_BUDGET = 2000;
 
+// The no-guess loop reports its progress no more often than this, in ms of its own clock.
+export const PROGRESS_INTERVAL_MS = 250;
+
+const defaultNow = () => globalThis.performance.now();
+
 // boardGraph(description) → the cell graph of a graph description.
 //   { kind: 'square', width, height } — the 8-neighbour square grid (js/engine/square-grid.js).
 //   { kind: 'box', X, Y, Z }          — the 26-neighbour box (js/engine/box-grid.js).
@@ -34,7 +39,7 @@ export function boardGraph(description) {
   throw new RangeError(`unknown graph kind ${JSON.stringify(description.kind)}`);
 }
 
-// generate({ graph, mineCount, firstClick, noGuess, seed }) → result.
+// generate({ graph, mineCount, firstClick, noGuess, seed }, { onProgress?, now? }) → result.
 //   graph       — a graph description (see boardGraph).
 //   mineCount   — mines to place; at most every cell but the first-click cell.
 //   firstClick  — the first-click cell; never a mine.
@@ -44,7 +49,10 @@ export function boardGraph(description) {
 // no-guess result adds candidates, the number of candidates tried (the accepted one included).
 // Exhausted budget (no-guess only): { ok: false, reason, seed, generatorVersion, candidates }.
 // Throws RangeError on a malformed or impossible request.
-export function generate({ graph, mineCount, firstClick, noGuess, seed } = {}) {
+// onProgress({ candidates }) — optional: called during a no-guess request, at most every
+// PROGRESS_INTERVAL_MS of `now()` (performance.now by default), with the candidates tried so far.
+// It never changes the result: the board is the same with or without it.
+export function generate({ graph, mineCount, firstClick, noGuess, seed } = {}, { onProgress, now = defaultNow } = {}) {
   const cells = boardGraph(graph);
   if (typeof noGuess !== 'boolean') throw new RangeError('noGuess must be true or false');
   const source = createSeededSource(seed);
@@ -55,10 +63,18 @@ export function generate({ graph, mineCount, firstClick, noGuess, seed } = {}) {
     return { ok: true, mines, seed, generatorVersion };
   }
 
+  let reportedAt = onProgress ? now() : 0;
   for (let candidates = 1; candidates <= ATTEMPT_BUDGET; candidates++) {
     const mines = placeMines({ graph: cells, mineCount, firstClick, source });
     if (solve({ graph: cells, mines, firstClick }).cleared) {
       return { ok: true, mines, seed, generatorVersion, candidates };
+    }
+    if (onProgress) {
+      const t = now();
+      if (t - reportedAt >= PROGRESS_INTERVAL_MS) {
+        reportedAt = t;
+        onProgress({ candidates });
+      }
     }
   }
   return {

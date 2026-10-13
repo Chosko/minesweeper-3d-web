@@ -38,6 +38,9 @@
 //                        one is drawn in the skin's pressed state. setGame clears them.
 //   setCursor(c)         the keyboard and controller cursor (js/classic2d/cursor-input.js), drawn
 //                        as a focus ring inside cell c's tile; -1 for none.
+//   setMark(c)           the marked start cell a pre-generated board waits for, drawn as a ring
+//                        inside cell c's tile in the cursor ring's style, in START_MARK, under the
+//                        cursor ring; -1 for none.
 //   showEffect(effect, t)  the end effect (js/classic2d/end-effect.js) at t ms: repaints the board
 //                        with each tile as the effect shows it (a loss's pre-loss tiles before its
 //                        wave arrives), the win pulse over the tiles and the confetti over the
@@ -45,7 +48,7 @@
 //                        draws that moment. showEffect(null) repaints the board in its end state.
 //                        The effect never touches the game: every tile is still read from it.
 //   A won game's unflagged mines (its closed cells) are drawn as flags, the skin's static tile.
-//   layout, pixelRatio, hidden, pressed, cursor, effect, scale, canvas, dispose()
+//   layout, pixelRatio, hidden, pressed, cursor, mark, effect, scale, canvas, dispose()
 
 import { MIN_TILE_SIZE, createTileSkin } from './tile-skin.js';
 import { token as readerToken } from '../tokens.js';
@@ -59,6 +62,9 @@ export const BOARD_BACKGROUND = '--color-board-frame';
 
 /** The design token the cursor's focus ring is drawn in, distinct from the tile's rim and lit bevel it covers. */
 export const CURSOR_RING = '--color-tile-cursor';
+
+/** The design token the marked start cell's ring is drawn in: an existing token, apart from the cursor's. */
+export const START_MARK = '--color-success';
 
 /** The key a pointer drag must hold to pan the board instead of playing it. */
 export const PAN_MODIFIER = 'shiftKey';
@@ -210,6 +216,7 @@ export function createBoardView({
   let hidden = false;
   let pressed = new Set();
   let cursor = -1;
+  let mark = -1; // the marked start cell, or -1
   let marks = null; // the scrolled board's marks for the current layout and scroll, or null
   let effect = null; // the end effect playing, or null
   let effectT = 0; // the moment of it drawn, in ms
@@ -283,12 +290,14 @@ export function createBoardView({
     else if (game.phase === PHASE.WON) state = wonState(state);
     skin.drawTile(ctx, x, y, t, state === CELL.CLOSED && pressed.has(c) ? PRESSED : state, game.cellNumber(c), ratio);
     if (effect) drawPulse(ctx, x, y, t, pulseAlpha(effect, c, effectT), pulse ?? (pulse = token(PULSE_COLOR)));
-    if (c === cursor) {
-      const w = Math.max(2, Math.round(t / 12));
-      ctx.strokeStyle = token(CURSOR_RING);
+    const w = Math.max(2, Math.round(t / 12));
+    const ring = (colour) => {
+      ctx.strokeStyle = token(colour);
       ctx.lineWidth = w;
       ctx.strokeRect(x + w / 2, y + w / 2, t - w, t - w);
-    }
+    };
+    if (c === mark && c !== cursor) ring(START_MARK);
+    if (c === cursor) ring(CURSOR_RING);
     return true;
   }
 
@@ -423,6 +432,7 @@ export function createBoardView({
     get hidden() { return hidden; },
     get pressed() { return [...pressed]; },
     get cursor() { return cursor; },
+    get mark() { return mark; },
     get effect() { return effect; },
     get scale() { return scale; },
     get scroll() { return { x: scroll.x, y: scroll.y }; },
@@ -448,6 +458,14 @@ export function createBoardView({
       if (next === cursor) return;
       const touched = [cursor, next];
       cursor = next;
+      update(touched);
+    },
+    /** Marks cell c as the start cell a pre-generated board waits for (-1 for none), redrawing the cells it leaves and enters. */
+    setMark(c) {
+      const next = Number.isInteger(c) && c >= 0 && c < count ? c : -1;
+      if (next === mark) return;
+      const touched = [mark, next];
+      mark = next;
       update(touched);
     },
     update,

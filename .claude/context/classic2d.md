@@ -16,10 +16,12 @@ looks.
   grid and records board identity of a choice, and the last board choice as
   a platform-storage document. DOM-free.
 - `js/classic2d/session.js` — the game session and its timer: the closed
-  board, the first-click board request through the generation client, the
-  slow-answer "generating" state, the failure offer, actions, pause, win or
-  loss, restart and leave with their summaries and replays, and the game's
-  replay recorder. DOM-free; generation is reached only through the client.
+  board, the first click's board — a standard one placed at once with
+  `generate()`, a no-guess one asked of the generation client, a
+  pre-generated one taken over on its marked start cell — the slow-answer
+  "generating" state and its progress, the failure offer, actions, pause,
+  win or loss, restart and leave with their summaries and replays, and the
+  game's replay recorder. DOM-free.
 - `js/classic2d/board-view.js` — the board view: the fit rule with its
   floor, the board scale's cap and a page's frame, the layout and the
   panel's rectangle, `cellAt`, per-cell redraw from the engine's change
@@ -89,21 +91,24 @@ looks.
 - `SESSION_STATE` (`ready`, `generating`, `playing`, `failed`, `won`,
   `lost`, `left`), `FAILURE_OFFERS` (`retry`, `standard`),
   `GENERATING_DELAY_MS` (200), `SESSION_EVENTS` (`generating`, `started`,
-  `changed`, `failed`, `finished`, `abandoned`).
+  `changed`, `failed`, `finished`, `abandoned`, `mark`).
 - `createTimer({now})` → `{start, pause, resume, stop, elapsedMs(),
   seconds(), pauses(until?, count?), started, running, stopped, paused}` —
   the game clock, running through pauses; `pauses` the pause spans
   `[{start, end}]` begun by `until` (now by default), at most `count`, the
   open one clipped to `until`.
 - `createSession({choice, client, clock?, randomSeed?,
-  generatingDelayMs?})` → `{state, choice, setup, game, seed,
+  generatingDelayMs?, place?, pregenerated?})` → `{state, choice, setup, game, seed,
   generatorVersion, generatingShown, paused, failure, minesLeft,
+  markedCell, progress ({candidates, seconds} while generating, else null),
   elapsedMs(), seconds(), pauses() (the pause spans so far), clicks() (the
   engine's counted clicks, wasted included), on(type, fn) → off, reveal(c), toggleFlag(c),
   chord(c), retry(), playStandard(), cancel(), pause(), resume(), restart(),
   leave(), summary(), recording, recordSample(values), recordCursor(cell),
   replay(summary?)}` — `client` is the generation client `{request,
-  cancel}`; `clock` `{now, setTimeout, clearTimeout}`. `finished` and
+  cancel}`, asked for no-guess boards only; `place` the standard placement
+  (`generate` by default); `pregenerated` a `pregenerate()` board
+  ([generation.md](generation.md)); `clock` `{now, setTimeout, clearTimeout}`. `finished` and
   `abandoned` carry `{summary, replay}`; `replay(summary = summary())` is
   the recording sealed with that summary, `{blob, listing}`, or null
   ([replay.md](replay.md)). The module head comment is the contract.
@@ -135,14 +140,15 @@ looks.
   `BOARD_SCROLLBAR` (`--color-board-scrollbar`) — a clipped board's marks; `CURSOR_RING` (`--color-tile-cursor`) — the
   board-only token the cursor's focus ring is drawn in, distinct from the
   rim and lit bevel it covers (the shell's focus outlines keep
-  `--color-focus-ring`); `PAN_MODIFIER` (`shiftKey`) — the key a drag
-  holds to pan.
+  `--color-focus-ring`); `START_MARK` (`--color-success`) — the token the
+  marked start cell's ring is drawn in, in the cursor ring's style, under
+  it; `PAN_MODIFIER` (`shiftKey`) — the key a drag holds to pan.
 - `createBoardView({canvas, grid, createSkin, token, scale, frame,
   onLayout})` → `{resize(width, height, pixelRatio), setScale(scale),
   scale, setGame(game), update(changed), repaint(), cellAt(x, y),
   cellRect(c) → {x, y, size}, scroll, scrollTo, scrollBy, pan(dx, dy),
   wheel(event) → taken, ensureVisible(c) → scrolled, setHidden(hidden),
-  setPressed(cells), pressed, setCursor(c), cursor, showEffect(effect, t),
+  setPressed(cells), pressed, setCursor(c), cursor, setMark(c), mark, showEffect(effect, t),
   effect, hidden, layout,
   pixelRatio, canvas, dispose}` — `onLayout(layout)` after every refit — `grid` is the square grid
   ([engine.md](engine.md)); `game` is the engine game whose `cellState` /
@@ -184,7 +190,7 @@ looks.
 - `MODE_ID` (`'classic-2d'`), `END_DELAY_MS` (1000, the 2D end delay);
   `createClassic2DMode(report, {flow,
   lastChoice, createClient?, mount?, sound?, clock?, randomSeed?,
-  generatingDelayMs?})` → the contract methods plus `ending`, `finishNow()`,
+  generatingDelayMs?, place?})` → the contract methods plus `warm()`, `ending`, `finishNow()`,
   `hideBoard(hidden)`,
   `tick()`, `pad(poll, now)`, `setScale(scale)`, `retry()`, `playStandard()`,
   `cancelGeneration()` → whether a board being generated was cancelled,
@@ -194,7 +200,7 @@ looks.
   `{openBoardChoice(choice), show(), container(), hud({seconds, minesLeft,
   clicks}),
   board({width, height, mines, noGuess}), generating(shown),
-  failed(failure|null), scale?(), frame?(), layout?(layout),
+  progress?(p|null), failed(failure|null), scale?(), frame?(), layout?(layout),
   scrolled?()}`, `board` once per game and again when
   `playStandard()` turns no-guess off; `scale` and `frame` are read as
   each board opens, `layout` follows every refit (the shell places the
@@ -267,15 +273,22 @@ looks.
   `DEFAULT_CHOICE`, and an invalid one is never saved.
 - **Session.** A session opens a closed board (`ready`). Before the first
   reveal a flag or chord goes straight to the engine, with no request
-  and no event; the first reveal sends the board request for its cell
-  with a fresh seed (`generating`), and actions are ignored until the
-  answer. The "generating" event shows only after `GENERATING_DELAY_MS`
-  and hides when the answer arrives. A board starts the timer and emits `started` then
+  and no event. The first reveal of a standard board places it at once with
+  `place` and a fresh seed, applied in the same call; on a no-guess board
+  it sends the board request for its cell with a fresh seed
+  (`generating`), and actions are ignored until the answer. A
+  pre-generated board marks its start cell (`markedCell`, `mark` events)
+  until the first reveal: on that cell it is taken over (at once when
+  arrived, else waited for in `generating`, asked afresh when it failed);
+  anywhere else it is discarded. The "generating" event shows only after
+  `GENERATING_DELAY_MS` and hides when the answer arrives; `progress` is
+  the worker's candidates and the whole seconds since the request began. A board starts the timer and emits `started` then
   `changed` (`playing`); a failure — a no-guess board not found or the
   worker failing — emits `failed` with both offers and its `count` of
   failures in a row, and the timer never starts: `retry` asks again with a
-  new seed, `playStandard` turns no-guess off for the same size, both for
-  the same first cell. `cancel` while generating cancels the client and
+  new seed; `playStandard` — after a failure or while generating, which
+  cancels the request — places the same size with no-guess off for the
+  same first cell at once. `cancel` while generating cancels the client and
   goes back to `ready` on the same closed board, with a fresh recorder and
   nothing reported. A request token drops a late answer after `cancel`,
   `restart` or `leave`, which all cancel the client. Win or loss stops the timer and emits `finished`; `restart` and
@@ -375,6 +388,16 @@ looks.
   its cell while shown, -1 when hidden. The session's `changed`
   redraws the listed cells and pushes the overlay; its board arriving
   reports started and can-pause.
+- **Generation client and pre-generation.** The mode makes one client
+  (`createClient`) on first use and keeps it for the page; `warm()` warms
+  it (the shell calls it as the board choice opens). A finished game whose
+  board was no-guess asks it for the next board of the same choice
+  (`pregenerate`, its `startCell`, a fresh `randomSeed`); the next `open`
+  with the same choice (restart: Play again, Restart of the finished game)
+  hands it to the session, whose `mark` drives `view.setMark`; another
+  choice or `leave` discards it. `tick()` also pushes the generating card's
+  progress to `flow.progress` when it changes, null when the card hides.
+  `playStandard()` answers the failure offer and the generating card alike.
 - **End delay.** A win or loss reports can-pause false at once and runs
   the end delay (`ending`): the view plays the end effect
   (`createEndEffect`, `WIN` from the last action's cell the inputs took,

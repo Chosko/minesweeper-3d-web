@@ -126,6 +126,8 @@ uniform vec3 uDims;
 uniform float uPitch;
 uniform vec3 uSel;
 uniform float uHasSel;
+uniform vec3 uMark;      // lattice coords of the marked start cell
+uniform float uHasMark;
 uniform float uShift;
 uniform float uSpace;
 uniform float uCtrl;
@@ -138,6 +140,7 @@ out vec2 vUv;
 flat out float vLayer;
 out float vAlpha;
 out float vTint;
+out float vMark;
 out float vShade;
 out float vFlash;
 out float vDist;
@@ -205,6 +208,8 @@ void main() {
   vLayer = float(layer);
   vAlpha = a;
   vTint = (sel && kind != 4) ? 1.0 : 0.0; // hidden cells shown with Ctrl are never tinted
+  vec3 dm = abs(c - uMark);
+  vMark = (uHasMark > 0.5 && max(dm.x, max(dm.y, dm.z)) < 0.5 && kind <= 1) ? 1.0 : 0.0; // a closed or flagged cube
   vShade = aShade;
   vFlash = flash;
   vDist = length(mv.xyz);
@@ -223,6 +228,7 @@ in vec2 vUv;
 flat in float vLayer;
 in float vAlpha;
 in float vTint;
+in float vMark;
 in float vShade;
 in float vFlash;
 in float vDist;
@@ -248,6 +254,8 @@ void main() {
     rgb = mix(rgb, vec3(1.0, 0.27, 0.42), o * (0.55 + 0.45 * uSelGlow));
     rgb += vec3(0.16, 0.06, 0.07) * uSelGlow * (1.0 - o);
   }
+  // the marked start cell a pre-generated board waits for: tinted green, its border too
+  rgb = mix(rgb, vec3(0.18, 0.72, 0.36), 0.5 * vMark);
   rgb = mix(rgb, vec3(1.0), vFlash);
   float f = uFog.z * smoothstep(uFog.x, uFog.y, vDist) * (1.0 - 0.85 * vTint);
   rgb = mix(rgb, skyColor(vDirY), f);
@@ -377,6 +385,8 @@ export class BoardRenderer {
       uPitch: { value: 4.4 },
       uSel: { value: new THREE.Vector3(-10, -10, -10) },
       uHasSel: { value: 0 },
+      uMark: { value: new THREE.Vector3(-10, -10, -10) },
+      uHasMark: { value: 0 },
       uShift: { value: 0 },
       uSpace: { value: 0 },
       uCtrl: { value: 0 },
@@ -416,6 +426,7 @@ export class BoardRenderer {
     this.spacing = 1.1;
     this.toggles = { shift: false, space: false, ctrl: false };
     this.selected = -1;
+    this.mark = -1;
     this._seenVersion = -1;
     this._sortPos = new THREE.Vector3(Infinity, 0, 0);
     this._transDirty = true;
@@ -528,6 +539,8 @@ export class BoardRenderer {
     this.uniforms.uEff.value = 0;
     this.confetti.visible = false;
     this.uniforms.uHasSel.value = 0;
+    this.mark = -1;
+    this.uniforms.uHasMark.value = 0;
 
     this.listOpaque = new Float32Array(n);
     this.listTrans = new Float32Array(n);
@@ -887,6 +900,23 @@ export class BoardRenderer {
   setSpacing(s) {
     if (s !== this.spacing) { this.spacing = s; this._transDirty = true; }
     this.uniforms.uPitch.value = 4 * s;
+  }
+
+  /**
+   * Tints the cube of the marked start cell a pre-generated board waits for (js/mode3d/session.js
+   * markedCell); -1 for none. Returns whether it changed, so the caller draws a frame.
+   */
+  setMark(idx) {
+    const next = this.game && Number.isInteger(idx) && idx >= 0 && idx < this.n ? idx : -1;
+    if (next === this.mark) return false;
+    this.mark = next;
+    if (next < 0) this.uniforms.uHasMark.value = 0;
+    else {
+      const [i, j, k] = this.game.coords(next);
+      this.uniforms.uMark.value.set(i, j, k);
+      this.uniforms.uHasMark.value = 1;
+    }
+    return true;
   }
 
   setSelected(idx) {

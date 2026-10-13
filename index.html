@@ -65,10 +65,12 @@
   <!-- Classic 2D board status: a slow first click's generation, or a failed board and its offer -->
   <section id="c2d-status" class="ui-card ui-screen hidden" aria-labelledby="c2d-status-title" role="status">
     <h2 class="ui-card__title" id="c2d-status-title">Generating the board&hellip;</h2>
+    <p id="c2d-progress" class="ui-text ui-text--muted hidden"></p>
     <span id="c2d-spinner" class="ui-spinner" aria-hidden="true"></span>
     <p id="c2d-status-text" class="ui-text ui-text--muted hidden"></p>
     <div id="c2d-wait" class="ui-actions ui-actions--row">
       <button type="button" id="c2d-cancel" class="ui-button ui-button--secondary">Cancel</button>
+      <button type="button" id="c2d-wait-standard" class="ui-button ui-button--secondary">Play a standard board</button>
     </div>
     <div id="c2d-offer" class="ui-actions ui-actions--row hidden">
       <button type="button" id="c2d-retry" class="ui-button ui-button--primary">Retry</button>
@@ -80,10 +82,12 @@
   <!-- 3D board status: a slow first click's generation, or a failed board and its offer -->
   <section id="m3d-status" class="ui-card ui-screen hidden" aria-labelledby="m3d-status-title" role="status">
     <h2 class="ui-card__title" id="m3d-status-title">Generating the board&hellip;</h2>
+    <p id="m3d-progress" class="ui-text ui-text--muted hidden"></p>
     <span id="m3d-spinner" class="ui-spinner" aria-hidden="true"></span>
     <p id="m3d-status-text" class="ui-text ui-text--muted hidden"></p>
     <div id="m3d-wait" class="ui-actions ui-actions--row">
       <button type="button" id="m3d-cancel" class="ui-button ui-button--secondary">Cancel</button>
+      <button type="button" id="m3d-wait-standard" class="ui-button ui-button--secondary">Play a standard board</button>
     </div>
     <div id="m3d-offer" class="ui-actions ui-actions--row hidden">
       <button type="button" id="m3d-retry" class="ui-button ui-button--primary">Retry</button>

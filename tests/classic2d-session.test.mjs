@@ -15,9 +15,15 @@ import {
 import { CUSTOM_LIMITS, getRuleProfile, REFERENCE_PROFILE } from '../js/engine/profiles.js';
 import { generate } from '../js/generation/generate.js';
 import { GENERATOR_VERSION } from '../js/generation/placer.js';
+import { pregenerate } from '../js/generation/client.js';
+import { startCell } from '../js/generation/start-cell.js';
 import { createStorage } from '../js/platform/storage.js';
 import { createMemoryBackend } from '../js/platform/memory-backend.js';
 import { boardKey } from '../js/records/board.js';
+import { decodeReplay } from '../js/replay/format.js';
+import { handleMessage } from '../js/generation/worker.js';
+
+const handleWorker = (request) => handleMessage({ id: 1, request }).result;
 
 // ---------- fakes ----------
 
@@ -46,13 +52,15 @@ function fakeClient() {
   const client = {
     requests,
     cancels: 0,
-    request(req) {
+    request(req, opts = {}) {
       if (inFlight) client.cancel();
       return new Promise((resolve, reject) => {
-        inFlight = { req, resolve, reject };
+        inFlight = { req, resolve, reject, opts };
         requests.push(inFlight);
       });
     },
+    /** The worker's progress for the request in flight. */
+    progress(candidates) { inFlight?.opts.onProgress?.({ candidates }); },
     cancel() {
       client.cancels += 1;
       const p = inFlight;
@@ -77,20 +85,40 @@ function fakeClient() {
 
 const tick = () => new Promise((r) => setImmediate(r));
 
-function session(choice = { size: 'beginner', noGuess: false }, opts = {}) {
-  const clock = opts.clock ?? fakeClock();
-  const client = opts.client ?? fakeClient();
-  let seed = 41;
-  const s = createSession({ choice, client, clock, randomSeed: () => ++seed, ...opts.extra });
-  const events = [];
-  for (const type of ['generating', 'started', 'changed', 'failed', 'finished', 'abandoned']) {
-    s.on(type, (payload) => events.push({ type, payload }));
-  }
-  return { s, clock, client, events, of: (type) => events.filter((e) => e.type === type) };
+// The session's standard placement on the main thread: generate() itself, or the mine set a test
+// queued (`board.mines`) for the next placement. Every placement request is kept in `placed`.
+function placer() {
+  const placed = [];
+  const board = { mines: null };
+  const place = (req) => {
+    placed.push(req);
+    const mines = board.mines;
+    board.mines = null;
+    return mines ? { ok: true, mines: Int32Array.from(mines), seed: req.seed, generatorVersion: GENERATOR_VERSION } : generate(req);
+  };
+  return { place, placed, board };
 }
 
-// Supplies a board through the fake client: the first reveal at `cell`, answered with `mines`.
+function session(choice = { size: 'beginner', noGuess: true }, opts = {}) {
+  const clock = opts.clock ?? fakeClock();
+  const client = opts.client ?? fakeClient();
+  const pl = placer();
+  let seed = 41;
+  const s = createSession({ choice, client, clock, randomSeed: () => ++seed, place: pl.place, ...opts.extra });
+  const events = [];
+  for (const type of ['generating', 'started', 'changed', 'failed', 'finished', 'abandoned', 'mark']) {
+    s.on(type, (payload) => events.push({ type, payload }));
+  }
+  return { s, clock, client, placed: pl.placed, board: pl.board, events, of: (type) => events.filter((e) => e.type === type) };
+}
+
+// Supplies a board for the first reveal at `cell`: a standard board is placed with `mines` at once,
+// a no-guess one is answered with `mines` through the fake client.
 async function startWith(h, cell, mines) {
+  if (!h.s.setup.noGuess) {
+    h.board.mines = mines;
+    return h.s.reveal(cell);
+  }
   const done = h.s.reveal(cell);
   h.client.answer({ ok: true, mines: Int32Array.from(mines), seed: h.client.last.req.seed, generatorVersion: GENERATOR_VERSION });
   return done;
@@ -613,30 +641,33 @@ test('session: Retry asks again for the same cell with a new seed', async () => 
   assert.equal(h.s.choice.noGuess, true);
 });
 
-test('session: Play a standard board keeps the size and turns no-guess off', async () => {
+test('session: Play a standard board keeps the size and turns no-guess off, placed at once', async () => {
   const h = session({ size: 'custom', custom: { width: 9, height: 9, mines: 31 }, noGuess: true });
   const p = h.s.reveal(40);
   h.client.answer({ ok: false, reason: 'budget', seed: 42, generatorVersion: GENERATOR_VERSION, candidates: 2000 });
   await p;
-  const standard = h.s.playStandard();
-  assert.deepEqual(h.client.last.req, {
+  const r = h.s.playStandard();
+  assert.equal(r instanceof Promise, false, 'the standard board is placed in the same call');
+  assert.equal(h.client.requests.length, 1, 'no request goes to the worker');
+  assert.deepEqual(h.placed.at(-1), {
     graph: { kind: 'square', width: 9, height: 9 }, mineCount: 31, firstClick: 40, noGuess: false, seed: 43,
   });
-  h.client.answer();
-  await standard;
   assert.equal(h.s.state, SESSION_STATE.PLAYING);
+  assert.ok(h.s.game.state.revealed[40]);
   assert.deepEqual(h.s.choice, { size: 'custom', custom: { width: 9, height: 9, mines: 31 }, noGuess: false });
   assert.equal(h.s.setup.identity.noGuess, false);
   h.s.restart();
   h.s.reveal(0);
-  assert.equal(h.client.last.req.noGuess, false); // the switched choice stays for this session
+  assert.equal(h.placed.at(-1).noGuess, false); // the switched choice stays for this session
+  assert.equal(h.client.requests.length, 1);
 });
 
-test('session: Retry and Play a standard board do nothing unless the board failed', () => {
+test('session: Retry does nothing unless the board failed; Play a standard board unless it failed or is generating', () => {
   const h = session();
   assert.equal(h.s.retry(), null);
   assert.equal(h.s.playStandard(), null);
   assert.equal(h.client.requests.length, 0);
+  assert.equal(h.placed.length, 0);
 });
 
 test('session: a worker failure is a generation failure with the same offer', async () => {
@@ -656,9 +687,9 @@ test('session: failures in a row are counted on the failure; a board, a cancel o
   await fail(h.s.retry());
   assert.equal(h.s.failure.count, 2, 'a Retry that fails again is the second failure in a row');
   assert.equal(h.of('failed').at(-1).payload.count, 2);
-  const standard = h.s.playStandard();
+  const crashed = h.s.retry();
   h.client.fail(new Error('worker crashed'));
-  await standard;
+  await crashed;
   assert.equal(h.s.failure.count, 3);
   const retry = h.s.retry();
   h.client.answer(generate({ ...h.client.last.req, noGuess: false }));
@@ -856,12 +887,212 @@ test('session: an invalid choice throws at creation', () => {
   assert.throws(() => createSession({ choice: { size: 'custom', custom: { width: 0, height: 1, mines: 1 }, noGuess: false }, client: fakeClient(), clock: fakeClock() }), RangeError);
 });
 
-test('session: the session and board setup are DOM-free and talk to generation only through the client', () => {
+test('session: the session and board setup are DOM-free; standard boards go through generate(), no-guess ones through the client', () => {
   for (const file of ['session.js', 'board-setup.js']) {
     const src = readFileSync(new URL(`../js/classic2d/${file}`, import.meta.url), 'utf8')
       .replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
     assert.doesNotMatch(src, /\b(document|window|localStorage|HTMLElement|requestAnimationFrame)\b/, file);
-    assert.doesNotMatch(src, /from '\.\.\/generation\/(generate|placer|solver|worker)\.js'/, file);
+    assert.doesNotMatch(src, /from '\.\.\/generation\/(placer|solver|worker)\.js'/, file);
     assert.doesNotMatch(src, /logic\.js/, file);
   }
+  const session = readFileSync(new URL('../js/classic2d/session.js', import.meta.url), 'utf8');
+  assert.match(session, /from '\.\.\/generation\/generate\.js'/, 'the standard placement is the worker\'s own code path');
+});
+
+// ---------- synchronous standard boards ----------
+
+test('session: a standard first click places the board at once — no request, no generating, the reveal in the same call', () => {
+  const clock = fakeClock();
+  const client = fakeClient();
+  const h = session({ size: 'expert', noGuess: false }, { clock, client });
+  const r = h.s.reveal(37);
+  assert.equal(r instanceof Promise, false, 'the first reveal is applied in the same call');
+  assert.ok(r.changed.length >= 1);
+  assert.equal(h.s.state, SESSION_STATE.PLAYING);
+  assert.equal(client.requests.length, 0, 'no request goes to the worker');
+  assert.equal(h.of('generating').length, 0);
+  assert.equal(clock.pending, 0, 'no status card timer');
+  assert.equal(h.of('started').length, 1);
+  // the same request, seed and code path the worker runs
+  const req = { graph: { kind: 'square', width: 30, height: 16 }, mineCount: 99, firstClick: 37, noGuess: false, seed: 42 };
+  assert.deepEqual(h.placed, [req]);
+  assert.equal(h.s.seed, 42);
+  assert.equal(h.s.generatorVersion, GENERATOR_VERSION);
+  const worker = generate(req);
+  const summary = h.s.summary();
+  assert.equal(summary.seed, worker.seed);
+  assert.equal(summary.generatorVersion, worker.generatorVersion);
+});
+
+test('session: the default placement is generate() itself: the mines equal the worker\'s answer to the same request', () => {
+  const client = fakeClient();
+  let seed = 900;
+  const s = createSession({ choice: { size: 'intermediate', noGuess: false }, client, clock: fakeClock(), randomSeed: () => seed });
+  s.reveal(100);
+  const req = { graph: { kind: 'square', width: 16, height: 16 }, mineCount: 40, firstClick: 100, noGuess: false, seed };
+  const worker = handleWorker(req);
+  const replay = decodeReplay(s.replay(s.summary()).blob);
+  assert.deepEqual(replay.header.mines, [...worker.mines]);
+  assert.equal(replay.header.seed, worker.seed);
+  assert.equal(replay.header.generatorVersion, worker.generatorVersion);
+  assert.equal(client.requests.length, 0);
+});
+
+test('session: a standard board starts the timer at the first click itself', () => {
+  const h = session({ size: 'beginner', noGuess: false });
+  h.clock.advance(5000);
+  h.s.reveal(40);
+  assert.equal(h.s.elapsedMs(), 0);
+  h.clock.advance(1500);
+  assert.equal(h.s.elapsedMs(), 1500);
+});
+
+// ---------- pre-generated boards ----------
+
+const BEGINNER_NG = { size: 'beginner', noGuess: true };
+const MARK = startCell({ kind: 'square', width: 9, height: 9 });
+function withPregen({ answered = true, result } = {}) {
+  const client = fakeClient();
+  const req = boardSetup(BEGINNER_NG).request(MARK, 777);
+  const pg = pregenerate(client, req);
+  if (answered) client.answer(result);
+  const h = session(BEGINNER_NG, { client, extra: { pregenerated: pg } });
+  return { h, client, req, pg };
+}
+
+test('session: a pre-generated board, arrived, is the game\'s board on a click on the mark — at once, with its seed', async () => {
+  const { h, client, req } = withPregen();
+  await tick();
+  assert.equal(h.s.markedCell, MARK, 'the marked start cell shows while the board waits');
+  const r = h.s.reveal(MARK);
+  assert.equal(r instanceof Promise, false, 'applied in the same call');
+  assert.equal(h.s.state, SESSION_STATE.PLAYING);
+  assert.equal(h.of('generating').length, 0);
+  assert.equal(client.requests.length, 1, 'only the pre-generation was asked');
+  assert.equal(h.s.seed, 777);
+  assert.equal(h.s.markedCell, -1);
+  assert.deepEqual(h.of('mark').map((e) => e.payload), [{ cell: -1 }], 'the mark goes at the first click');
+  const expected = generate(req);
+  const replay = decodeReplay(h.s.replay(h.s.summary()).blob);
+  assert.deepEqual(replay.header.mines, [...expected.mines], 'the recorded seed rebuilds the board exactly');
+  assert.equal(replay.header.seed, 777);
+  assert.equal(h.s.summary().seed, 777);
+  assert.deepEqual([...generate({ ...req, seed: replay.header.seed }).mines], replay.header.mines);
+  assert.equal(h.s.elapsedMs(), 0, 'the timer starts at the click');
+});
+
+test('session: a pre-generated board still in flight is waited for on a click on the mark, with the card\'s normal rules', async () => {
+  const { h, client } = withPregen({ answered: false });
+  const p = h.s.reveal(MARK);
+  assert.ok(p instanceof Promise);
+  assert.equal(h.s.state, SESSION_STATE.GENERATING);
+  assert.equal(client.requests.length, 1, 'the same request, not a new one');
+  client.progress(14);
+  h.clock.advance(GENERATING_DELAY_MS);
+  assert.equal(h.s.generatingShown, true, 'the card shows by the delay');
+  h.clock.advance(6000);
+  assert.deepEqual(h.s.progress, { candidates: 14, seconds: 6 });
+  client.answer();
+  await p;
+  assert.equal(h.s.state, SESSION_STATE.PLAYING);
+  assert.equal(h.s.seed, 777);
+  assert.equal(h.s.generatingShown, false);
+  assert.equal(h.s.progress, null);
+  assert.equal(h.s.elapsedMs(), 0, 'the timer starts when the board arrives');
+});
+
+test('session: a click elsewhere discards the pre-generated board and generates around the clicked cell with a fresh seed', async () => {
+  const pending = withPregen({ answered: false });
+  const p = pending.h.s.reveal(0);
+  assert.equal(pending.client.cancels, 1, 'the in-flight pre-generation is cancelled');
+  assert.equal(pending.client.requests.length, 2);
+  assert.deepEqual(pending.client.last.req, { graph: { kind: 'square', width: 9, height: 9 }, mineCount: 10, firstClick: 0, noGuess: true, seed: 42 });
+  pending.client.answer();
+  await p;
+  assert.equal(pending.h.s.seed, 42);
+  assert.equal(pending.h.s.state, SESSION_STATE.PLAYING);
+
+  const ready = withPregen();
+  await tick();
+  const q = ready.h.s.reveal(1);
+  assert.equal(ready.client.cancels, 0, 'an arrived board needs no cancel');
+  assert.equal(ready.client.last.req.firstClick, 1);
+  ready.client.answer();
+  await q;
+  assert.equal(ready.h.s.seed, 42);
+});
+
+test('session: a failed pre-generation leads to a fresh request at the click, and unmarks its cell', async () => {
+  const { h, client } = withPregen({ result: { ok: false, reason: 'budget', seed: 777, generatorVersion: GENERATOR_VERSION, candidates: 2000 } });
+  await tick();
+  await tick();
+  assert.equal(h.s.markedCell, -1);
+  assert.deepEqual(h.of('mark').map((e) => e.payload), [{ cell: -1 }]);
+  const p = h.s.reveal(MARK);
+  assert.equal(client.requests.length, 2, 'asked afresh');
+  assert.equal(client.last.req.firstClick, MARK);
+  assert.equal(client.last.req.seed, 42);
+  client.answer();
+  await p;
+  assert.equal(h.s.state, SESSION_STATE.PLAYING);
+});
+
+test('session: restart and leave discard a pre-generated board not taken over', () => {
+  const a = withPregen({ answered: false });
+  a.h.s.leave();
+  assert.equal(a.client.cancels, 1);
+  const b = withPregen({ answered: false });
+  b.h.s.restart();
+  assert.equal(b.client.cancels, 1);
+  assert.equal(b.h.s.markedCell, -1);
+});
+
+test('session: cancel while waiting on a pre-generated board discards it; the next first click asks afresh', async () => {
+  const { h, client } = withPregen({ answered: false });
+  const p = h.s.reveal(MARK);
+  assert.equal(h.s.cancel(), true);
+  assert.equal(await p, null);
+  assert.equal(h.s.markedCell, -1);
+  const q = h.s.reveal(MARK);
+  assert.equal(client.requests.length, 2);
+  client.answer();
+  await q;
+  assert.equal(h.s.seed, 42);
+});
+
+// ---------- progress and Play a standard board from the card ----------
+
+test('session: progress while generating is the worker\'s candidates and the whole seconds since the click', async () => {
+  const h = session();
+  assert.equal(h.s.progress, null);
+  const p = h.s.reveal(10);
+  assert.deepEqual(h.s.progress, { candidates: 0, seconds: 0 });
+  h.clock.advance(1200);
+  h.client.progress(9);
+  assert.deepEqual(h.s.progress, { candidates: 9, seconds: 1 });
+  h.client.answer();
+  await p;
+  assert.equal(h.s.progress, null);
+});
+
+test('session: Play a standard board while generating cancels the request and plays a standard board at once', async () => {
+  const h = session({ size: 'custom', custom: { width: 9, height: 9, mines: 31 }, noGuess: true });
+  const p = h.s.reveal(40);
+  h.clock.advance(GENERATING_DELAY_MS);
+  assert.equal(h.s.generatingShown, true);
+  h.clock.advance(3000);
+  const r = h.s.playStandard();
+  assert.equal(h.client.cancels, 1, 'the no-guess request is cancelled through the client');
+  assert.equal(r instanceof Promise, false);
+  assert.equal(h.s.state, SESSION_STATE.PLAYING);
+  assert.equal(h.s.generatingShown, false);
+  assert.equal(await p, null, 'the cancelled request delivers nothing');
+  assert.equal(h.s.choice.noGuess, false);
+  assert.equal(h.s.elapsedMs(), 0, 'the wait stays off the clock');
+  assert.deepEqual(h.placed.at(-1), { graph: { kind: 'square', width: 9, height: 9 }, mineCount: 31, firstClick: 40, noGuess: false, seed: 43 });
+  const summary = h.s.summary();
+  assert.equal(summary.board.noGuess, false, 'played and recorded as a standard board');
+  const replay = decodeReplay(h.s.replay(summary).blob);
+  assert.equal(replay.header.board.noGuess, false);
+  assert.deepEqual(replay.actions, [{ time: 0, kind: 'reveal', cell: 40 }]);
 });

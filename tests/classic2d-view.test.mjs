@@ -15,7 +15,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import {
   fitTileSize, boardLayout, cellAtLayout, createBoardView, PAN_MODIFIER, BOARD_BACKGROUND, BOARD_SHADOW, BOARD_SCROLLBAR,
-  BOARD_SCALES, DEFAULT_BOARD_SCALE, TILE_CAP, tileCap, panelRect, clipMarks, SCROLLBAR, CURSOR_RING,
+  BOARD_SCALES, DEFAULT_BOARD_SCALE, TILE_CAP, tileCap, panelRect, clipMarks, SCROLLBAR, CURSOR_RING, START_MARK,
 } from '../js/classic2d/board-view.js';
 import { SCHEMA } from '../js/settings/schema.js';
 import { MIN_TILE_SIZE } from '../js/classic2d/tile-skin.js';
@@ -88,8 +88,8 @@ function makeView({ cols = 9, rows = 9, width = 600, height = 500, pixelRatio = 
   const canvas = fakeCanvas();
   const skin = fakeSkinFactory();
   const tokens = {
-    light: { '--color-board-frame': '#111111', '--color-board-shadow': '#333333', '--color-board-scrollbar': '#444444', '--color-tile-cursor': '#0000ff' },
-    dark: { '--color-board-frame': '#222222', '--color-board-shadow': '#333333', '--color-board-scrollbar': '#444444', '--color-tile-cursor': '#0000ff' },
+    light: { '--color-board-frame': '#111111', '--color-board-shadow': '#333333', '--color-board-scrollbar': '#444444', '--color-tile-cursor': '#0000ff', '--color-success': '#00aa00' },
+    dark: { '--color-board-frame': '#222222', '--color-board-shadow': '#333333', '--color-board-scrollbar': '#444444', '--color-tile-cursor': '#0000ff', '--color-success': '#00aa00' },
   };
   let theme = 'light';
   const view = createBoardView({
@@ -605,6 +605,39 @@ test('the focus ring: setCursor redraws only the cells it leaves and enters, and
   skin.draws.length = 0;
   view.setCursor(-1);
   assert.equal(skin.draws.length, 0, 'hidden again: nothing');
+});
+
+test('the start-cell mark: a ring in the cursor ring\'s style from an existing token, redrawn on its cells only, under the cursor', () => {
+  assert.equal(START_MARK, '--color-success', 'an existing design token, apart from the cursor ring\'s');
+  const tokensCss = readFileSync(new URL('../css/tokens.css', import.meta.url), 'utf8');
+  assert.equal((tokensCss.match(/--color-success:/g) ?? []).length >= 2, true, 'defined in both themes');
+  const { view, canvas, skin, grid } = makeView();
+  view.setGame(beginnerGame().game);
+  const marks = () => canvas.ctx.calls.filter((c) => c.op === 'strokeRect' && c.stroke === '#00aa00');
+  const rings = () => canvas.ctx.calls.filter((c) => c.op === 'strokeRect' && c.stroke === '#0000ff');
+  assert.equal(view.mark, -1, 'no mark without a pre-generated board');
+  skin.draws.length = 0;
+  canvas.ctx.calls.length = 0;
+  const centre = grid.index(4, 4);
+  view.setMark(centre);
+  assert.equal(view.mark, centre);
+  assert.deepEqual([skin.draws.length, marks().length], [1, 1], 'one cell redrawn, with its ring');
+  const cursorRing = (() => { canvas.ctx.calls.length = 0; view.setCursor(grid.index(2, 2)); return rings()[0]; })();
+  const markRing = (() => { canvas.ctx.calls.length = 0; view.repaint(); return marks()[0]; })();
+  assert.equal(markRing.args[2], cursorRing.args[2], 'the cursor ring\'s size and inset');
+  assert.equal(markRing.args[0] - (52 + 4 * 55), cursorRing.args[0] - (52 + 2 * 55), 'the same inset in its tile');
+  // the cursor on the mark draws the cursor's ring alone
+  canvas.ctx.calls.length = 0;
+  view.setCursor(centre);
+  assert.deepEqual([marks().length, rings().length], [0, 1]);
+  view.setCursor(-1);
+  canvas.ctx.calls.length = 0;
+  skin.draws.length = 0;
+  view.setMark(-1);
+  assert.deepEqual([view.mark, skin.draws.length, marks().length], [-1, 1, 0], 'the first click takes it away, redrawing its cell');
+  skin.draws.length = 0;
+  view.setMark(-1);
+  assert.equal(skin.draws.length, 0);
 });
 
 test('setScale refits at another scale and repaints; every refit reports the layout', () => {

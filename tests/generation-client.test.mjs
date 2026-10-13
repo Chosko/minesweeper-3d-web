@@ -11,6 +11,8 @@ const plain = (r) => ({ ...r, mines: r.mines ? [...r.mines] : r.mines });
 
 // A fake Web Worker: records posted messages, answers through handleMessage after a macrotask
 // (structuredClone stands in for the message channel), and can be held back to test ordering.
+const tick = () => new Promise((r) => setImmediate(r));
+
 function fakeWorkerFactory({ hold = false } = {}) {
   const workers = [];
   const create = () => {
@@ -118,7 +120,127 @@ test('worker: the module keeps no mutable top-level state and only listens insid
   assert.match(src, /from '\.\/generate\.js'/);
 });
 
+test('worker: a warm-up message answers at once with a warm-up reply, never a board', () => {
+  const reply = handleMessage({ id: 5, warm: true });
+  assert.deepEqual(reply, { id: 5, warm: true });
+  assert.equal('result' in reply, false);
+});
+
+test('worker: a no-guess request posts progress { id, progress: { candidates } } before its single result', () => {
+  // the 3 x 3 board with 7 mines never clears: the whole budget runs, long enough on a clock that
+  // moves 100 ms per reading to post progress
+  const request = { graph: square(3, 3), mineCount: 7, firstClick: 4, noGuess: true, seed: 9 };
+  let t = 0;
+  const posted = [];
+  const reply = handleMessage({ id: 8, request }, (m) => posted.push(structuredClone(m)), { now: () => (t += 100) });
+  assert.ok(posted.length > 0, 'progress was posted');
+  for (const m of posted) {
+    assert.deepEqual(Object.keys(m).sort(), ['id', 'progress']);
+    assert.equal(m.id, 8);
+    assert.ok(Number.isInteger(m.progress.candidates) && m.progress.candidates > 0);
+  }
+  assert.deepEqual(plain(reply.result), plain(generate(request)), 'the result is the one generate gives without progress');
+});
+
 // ---------- the page-side client ----------
+
+test('client: warm() spawns the worker and resolves once it answered the warm-up; warming twice is harmless', async () => {
+  const fake = fakeWorkerFactory();
+  const client = createGenerationClient({ createWorker: fake.create });
+  const a = client.warm();
+  const b = client.warm();
+  assert.equal(fake.workers.length, 1, 'the worker is spawned at once');
+  assert.deepEqual(fake.workers[0].posted.map((m) => Object.keys(m).sort()), [['id', 'warm']], 'one warm-up message');
+  assert.equal(await a, true);
+  assert.equal(await b, true);
+  assert.equal(await client.warm(), true, 'a warm worker is not asked again');
+  assert.equal(fake.workers[0].posted.length, 1);
+  const req = { graph: square(9, 9), mineCount: 10, firstClick: 0, noGuess: true, seed: 1 };
+  assert.deepEqual(plain(await client.request(req)), plain(generate(req)), 'the warm worker answers the first request');
+  assert.equal(fake.workers.length, 1, 'no start-up for the first request');
+});
+
+test('client: the warm-up never delivers a board, and never settles the request in flight', async () => {
+  const fake = fakeWorkerFactory({ hold: true });
+  const client = createGenerationClient({ createWorker: fake.create });
+  const req = { graph: square(9, 9), mineCount: 10, firstClick: 0, noGuess: true, seed: 1 };
+  let settled = false;
+  const p = client.request(req).then((r) => { settled = true; return r; });
+  const warmed = client.warm();
+  const w = fake.workers[0];
+  const warmMsg = w.posted.find((m) => m.warm);
+  w.onmessage({ data: { id: warmMsg.id, warm: true } });
+  await warmed;
+  await tick();
+  assert.equal(settled, false, 'the warm-up reply is not the board');
+  w.flush();
+  assert.deepEqual(plain(await p), plain(generate(req)));
+});
+
+test('client: a cancel still terminates the worker; the next warm-up starts a fresh one', async () => {
+  const fake = fakeWorkerFactory({ hold: true });
+  const client = createGenerationClient({ createWorker: fake.create });
+  const warmed = client.warm();
+  fake.workers[0].flush();
+  await warmed;
+  const p = client.request({ graph: square(9, 9), mineCount: 10, firstClick: 0, noGuess: true, seed: 1 });
+  client.cancel();
+  assert.equal((await p).cancelled, true);
+  assert.equal(fake.workers[0].terminated, true);
+  const again = client.warm();
+  assert.equal(fake.workers.length, 2, 'a fresh worker');
+  fake.workers[1].flush();
+  assert.equal(await again, true);
+});
+
+test('client: warm-up on a worker that fails resolves false and drops the worker', async () => {
+  const fake = fakeWorkerFactory({ hold: true });
+  const client = createGenerationClient({ createWorker: fake.create });
+  const warmed = client.warm();
+  fake.workers[0].fail('module failed to load');
+  assert.equal(await warmed, false);
+  assert.equal(fake.workers[0].terminated, true);
+});
+
+test('client: progress reaches the request it belongs to, and a superseded or cancelled id\'s progress is dropped', async () => {
+  const fake = fakeWorkerFactory({ hold: true });
+  const client = createGenerationClient({ createWorker: fake.create });
+  const req = { graph: square(9, 9), mineCount: 10, firstClick: 0, noGuess: true, seed: 1 };
+  const seen = [];
+  const p = client.request(req, { onProgress: (pr) => seen.push(['a', pr.candidates]) });
+  const w = fake.workers[0];
+  const idA = w.posted[0].id;
+  w.onmessage({ data: { id: idA, progress: { candidates: 14 } } });
+  w.onmessage({ data: { id: idA + 99, progress: { candidates: 3 } } });
+  assert.deepEqual(seen, [['a', 14]]);
+  // superseded: the old id's progress no longer reaches anyone
+  const q = client.request({ ...req, seed: 2 }, { onProgress: (pr) => seen.push(['b', pr.candidates]) });
+  assert.equal((await p).cancelled, true);
+  w.onmessage?.({ data: { id: idA, progress: { candidates: 20 } } });
+  const w2 = fake.workers[1];
+  const idB = w2.posted[0].id;
+  w2.onmessage({ data: { id: idA, progress: { candidates: 21 } } });
+  w2.onmessage({ data: { id: idB, progress: { candidates: 2 } } });
+  assert.deepEqual(seen, [['a', 14], ['b', 2]]);
+  client.cancel();
+  assert.equal((await q).cancelled, true);
+  w2.onmessage?.({ data: { id: idB, progress: { candidates: 9 } } });
+  assert.deepEqual(seen, [['a', 14], ['b', 2]], 'a cancelled request hears no more');
+});
+
+test('client: progress posted by the worker reaches onProgress before the result', async () => {
+  const fake = fakeWorkerFactory({ hold: true });
+  const client = createGenerationClient({ createWorker: fake.create });
+  const req = { graph: square(9, 9), mineCount: 10, firstClick: 0, noGuess: true, seed: 1 };
+  const order = [];
+  const p = client.request(req, { onProgress: () => order.push('progress') }).then((r) => { order.push('result'); return r; });
+  const w = fake.workers[0];
+  const { id } = w.posted[0];
+  w.onmessage({ data: { id, progress: { candidates: 1 } } });
+  w.flush();
+  await p;
+  assert.deepEqual(order, ['progress', 'result']);
+});
 
 test('client: request resolves with the worker\'s result, same as generate in Node', async () => {
   const fake = fakeWorkerFactory();
@@ -265,7 +387,7 @@ test('client: the default worker is a module worker on worker.js', () => {
   assert.deepEqual(calls[0][1], { type: 'module' });
 });
 
-test('client: no generation code runs on the main thread — the client imports none of it', () => {
+test('client: the client imports no generation code — the worker runs it, and only for what the page asks of it', () => {
   const src = readFileSync(new URL('../js/generation/client.js', import.meta.url), 'utf8');
   assert.doesNotMatch(src, /^\s*import\s/m, 'client.js imports nothing');
   assert.doesNotMatch(src, /import\(/, 'client.js loads nothing dynamically');

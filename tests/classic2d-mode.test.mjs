@@ -4,6 +4,7 @@
 // the finished game's hand-off, the last board choice, the shell's markup and wiring, and one
 // Playwright flow menu → Classic 2D → Expert → first click → pause → resume → back to menu.
 import { test } from 'node:test';
+import { startCell } from '../js/generation/start-cell.js';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
@@ -48,17 +49,23 @@ function fakeClock(start = 1000) {
   };
 }
 
-// A generation client per game. `mines` answers every request with that mine set; `hold` keeps the
-// request pending until the test answers it.
+// The mode's generation clients, as made: `mines` answers every no-guess request with that mine
+// set; `hold` keeps the request pending until the test answers it. `place` is the session's
+// standard placement, with the same mine set; every standard placement is kept in `placed`.
 function clients({ mines = null, hold = false } = {}) {
   const made = [];
+  const placed = [];
   const create = () => {
     let pending = null;
     const c = {
       requests: [],
       cancels: 0,
-      request(req) {
+      warms: 0,
+      warm() { c.warms += 1; return Promise.resolve(true); },
+      request(req, opts = {}) {
         c.requests.push(req);
+        c.opts = opts;
+        if (pending) c.cancel();
         if (!hold) return Promise.resolve({ ok: true, mines: mines ?? defaultMines(req), seed: req.seed, generatorVersion: 1 });
         return new Promise((resolve) => { pending = resolve; });
       },
@@ -68,11 +75,16 @@ function clients({ mines = null, hold = false } = {}) {
         pending = null;
       },
       answer(result) { pending?.(result); pending = null; },
+      get waiting() { return pending !== null; },
     };
     made.push(c);
     return c;
   };
-  return { made, create };
+  const place = (req) => {
+    placed.push(req);
+    return { ok: true, mines: Int32Array.from(mines ?? defaultMines(req)), seed: req.seed, generatorVersion: 1 };
+  };
+  return { made, create, place, placed };
 }
 // Mines in the first cells, never on the first click.
 function defaultMines(req) {
@@ -101,7 +113,8 @@ function mounts() {
       update(changed) { v.updates.push([...changed]); },
       setHidden(h) { v.hidden = !!h; },
       setScale(scale) { v.scales.push(scale); },
-      setPressed() {}, setCursor(c) { v.cursors.push(c); }, ensureVisible() {},
+      marks: [],
+      setPressed() {}, setCursor(c) { v.cursors.push(c); }, setMark(c) { v.marks.push(c); }, ensureVisible() {},
       destroy() { v.destroyed = true; },
     };
     log.boards.push(v);
@@ -129,6 +142,7 @@ function fakeFlow() {
     hud(h) { flow.huds.push(h); },
     board(b) { calls.push(['board', b]); },
     generating(shown) { calls.push(['generating', shown]); },
+    progress(p) { calls.push(['progress', p]); },
     failed(f) { calls.push(['failed', f]); },
     boardScale: '125',
     panel: { top: 60, right: 9, bottom: 9, left: 9, minWidth: 400 },
@@ -154,7 +168,7 @@ function setup({ mines = null, hold = false, choice = null, lastChoice = memoryL
   const clock = fakeClock();
   let seed = 7;
   const mode = host.register(MODE_ID, (report) => createClassic2DMode(report, {
-    flow, lastChoice, mount, clock, createClient: cl.create, randomSeed: () => seed++, ...(sound ? { sound } : {}),
+    flow, lastChoice, mount, clock, createClient: cl.create, place: cl.place, randomSeed: () => seed++, ...(sound ? { sound } : {}),
   }));
   const events = [];
   for (const e of ['started', 'finished', 'abandoned', 'canPause', 'failed']) host.on(e, (p) => events.push([e, p]));
@@ -333,10 +347,10 @@ test('restart and leave release the canvas and any pending generation', async ()
   assert.equal(board().grid.width, 30, 'with the same choice');
 
   const second = board();
-  const secondClient = cl.made.at(-1);
+  assert.equal(cl.made.length, 1, 'one client for the mode, across games');
   act('reveal', 5);
   host.leave();
-  assert.equal(secondClient.cancels, 1);
+  assert.equal(firstClient.cancels, 2);
   assert.equal(second.destroyed, true);
   assert.equal(pointer().destroyed && cursor().destroyed, true);
   assert.equal(host.active, null);
@@ -502,16 +516,16 @@ test('a no-guess failure shows its offer; a standard board keeps no-guess off fo
   assert.deepEqual(failed[1].offers, ['retry', 'standard']);
   assert.equal(flow.calls.filter((c) => c[0] === 'board').at(-1)[1].noGuess, true);
   const q = mode.playStandard();
+  assert.ok(q && !(q instanceof Promise), 'a standard board is placed at once');
   assert.deepEqual(flow.calls.filter((c) => c[0] === 'failed').at(-1), ['failed', null], 'the offer is cleared');
   assert.equal(flow.calls.filter((c) => c[0] === 'board').at(-1)[1].noGuess, false, 'the board line no longer says no-guess');
-  cl.made.at(-1).answer({ ok: true, mines: defaultMines({ mineCount: 10, firstClick: 40 }), seed: 1, generatorVersion: 1 });
-  await q;
   assert.equal(host.state.started, true);
   host.restart({});
-  assert.equal(cl.made.length, 2);
+  assert.equal(cl.made.length, 1);
   assert.equal(board().grid.width, 9);
   act('reveal', 40);
-  assert.equal(cl.made.at(-1).requests.at(-1).noGuess, false, 'restart keeps no-guess off');
+  assert.equal(cl.placed.at(-1).noGuess, false, 'restart keeps no-guess off');
+  assert.equal(cl.made[0].requests.length, 1, 'no request for the standard boards');
 });
 
 test('cancelGeneration goes back to the closed board: the request cancelled, nothing reported, a later first click asks afresh', async () => {
@@ -593,6 +607,143 @@ test('the cursor\'s ring reaches the movement sampler as well as the view: its c
   assert.deepEqual(log.boards.at(-1).cursors, [4, -1, 5], 'and the board draws it');
 });
 
+// ---------------------------------------------------------------- warm worker and pre-generation
+
+// Beginner no-guess, lost at once: mines on cells 0 .. 9 (defaultMines), the first reveal on 40,
+// then a reveal on a mine.
+const BEGINNER_NG = { size: 'beginner', noGuess: true };
+async function loseBeginner(t) {
+  const p = t.act('reveal', 40);
+  await p;
+  t.act('reveal', 0);
+}
+
+test('one generation client per mode across games, warmed when the board choice opens', async () => {
+  const t = setup();
+  assert.equal(t.cl.made.length, 0, 'made on first use');
+  await t.mode.warm();
+  assert.equal(t.cl.made.length, 1);
+  assert.equal(t.cl.made[0].warms, 1, 'the worker is spawned and warmed');
+  t.host.start(MODE_ID, BEGINNER_NG);
+  await t.act('reveal', 40);
+  t.host.restart({});
+  await t.act('reveal', 40);
+  t.host.start(MODE_ID, { size: 'expert', noGuess: true });
+  await t.act('reveal', 40);
+  assert.equal(t.cl.made.length, 1, 'the same client for every game');
+  assert.ok(t.cl.made[0].requests.length >= 3);
+});
+
+test('a finished no-guess game pre-generates the next board for the marked start cell; Play again takes it over', async () => {
+  const t = setup({ choice: BEGINNER_NG });
+  await loseBeginner(t);
+  const client = t.cl.made[0];
+  assert.equal(client.requests.length, 2, 'the next board is asked for at the end of the game');
+  const ahead = client.requests[1];
+  assert.deepEqual(ahead, { graph: { kind: 'square', width: 9, height: 9 }, mineCount: 10, firstClick: 40, noGuess: true, seed: ahead.seed });
+  assert.equal(ahead.firstClick, startCell({ kind: 'square', width: 9, height: 9 }));
+  assert.notEqual(ahead.seed, client.requests[0].seed, 'a fresh seed');
+  t.clock.advance(END_DELAY_MS);
+  assert.ok(t.events.find(([e]) => e === 'finished'));
+  await settle();
+  t.host.restart({ source: 'pointer' }); // Play again
+  assert.deepEqual(t.board().marks, [40], 'the closed board opens with its marked start cell');
+  assert.equal(client.requests.length, 2, 'nothing new asked');
+  const r = t.act('reveal', 40);
+  assert.equal(r instanceof Promise, false, 'the board is already there: applied at once');
+  assert.equal(t.host.state.started, true);
+  assert.deepEqual(t.board().marks, [40, -1], 'the mark goes at the first click');
+  assert.equal(t.mode.summary().seed, ahead.seed, 'the game carries the pre-generation\'s seed');
+});
+
+test('Restart of the finished game takes it over too; a click elsewhere generates around that cell', async () => {
+  const t = setup({ choice: BEGINNER_NG, hold: true });
+  const client = () => t.cl.made[0];
+  const p = t.act('reveal', 40);
+  client().answer({ ok: true, mines: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], seed: 1, generatorVersion: 1 });
+  await p;
+  t.act('reveal', 0);
+  assert.equal(client().waiting, true, 'pre-generating');
+  t.clock.advance(END_DELAY_MS);
+  t.host.restart({ source: 'key' }); // Restart from the pause card of the finished game
+  assert.deepEqual(t.board().marks, [40]);
+  const q = t.act('reveal', 3);
+  assert.equal(client().cancels, 1, 'the pre-generation in flight is cancelled');
+  assert.equal(client().requests.at(-1).firstClick, 3, 'and a fresh request made around the clicked cell');
+  assert.deepEqual(t.board().marks, [40, -1]);
+  client().answer({ ok: true, mines: [0, 1, 2, 4, 5, 6, 7, 8, 9, 10], seed: 2, generatorVersion: 1 });
+  await q;
+  assert.equal(t.host.state.started, true);
+});
+
+test('no pre-generation after a standard or an abandoned game; a different choice or the leave discards one', async () => {
+  const std = setup({ choice: CUSTOM_3X3 });
+  std.act('reveal', 8);
+  std.act('reveal', 0);
+  assert.equal(std.mode.status().state, 'lost');
+  assert.equal(std.cl.made[0].requests.length, 0, 'a standard board is never pre-generated, nor asked for');
+
+  const quit = setup({ choice: BEGINNER_NG, mines: [0, 30, 31, 32, 39, 41, 48, 49, 50, 80] }); // 40 is an 8: no win
+  await quit.act('reveal', 40);
+  quit.host.restart({});
+  assert.equal(quit.cl.made[0].requests.length, 1, 'an abandoned game pre-generates nothing');
+  assert.deepEqual(quit.board().marks, [-1]);
+
+  const other = setup({ choice: BEGINNER_NG, hold: true });
+  const p = other.act('reveal', 40);
+  other.cl.made[0].answer({ ok: true, mines: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], seed: 1, generatorVersion: 1 });
+  await p;
+  other.act('reveal', 0);
+  other.clock.advance(END_DELAY_MS);
+  other.mode.start({ size: 'intermediate', noGuess: true }); // the mode's own start, as the host's would after its leave
+  assert.equal(other.cl.made[0].cancels, 1, 'another choice discards it');
+  assert.deepEqual(other.board().marks, [-1], 'and shows no mark');
+
+  const left = setup({ choice: BEGINNER_NG, hold: true });
+  const q = left.act('reveal', 40);
+  left.cl.made[0].answer({ ok: true, mines: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], seed: 1, generatorVersion: 1 });
+  await q;
+  left.act('reveal', 0);
+  left.clock.advance(END_DELAY_MS);
+  left.host.leave();
+  assert.equal(left.cl.made[0].cancels, 1, 'the leave discards it');
+});
+
+test('the generating card\'s progress reaches the flow each time it changes, and is cleared when the card hides', async () => {
+  const t = setup({ choice: BEGINNER_NG, hold: true });
+  const p = t.act('reveal', 40);
+  t.mode.tick();
+  assert.equal(t.flow.calls.filter((c) => c[0] === 'progress').length, 0, 'nothing before the card shows');
+  t.clock.advance(250);
+  t.mode.tick();
+  t.cl.made[0].opts.onProgress({ candidates: 14 });
+  t.clock.advance(6000);
+  t.mode.tick();
+  t.mode.tick();
+  const progress = t.flow.calls.filter((c) => c[0] === 'progress').map((c) => c[1]);
+  assert.deepEqual(progress, [{ candidates: 0, seconds: 0 }, { candidates: 14, seconds: 6 }]);
+  t.cl.made[0].answer({ ok: true, mines: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], seed: 1, generatorVersion: 1 });
+  await p;
+  assert.deepEqual(t.flow.calls.filter((c) => c[0] === 'progress').at(-1), ['progress', null]);
+});
+
+test('Play a standard board from the generating card cancels the request and starts a standard game at once', async () => {
+  const t = setup({ choice: BEGINNER_NG, hold: true });
+  const p = t.act('reveal', 40);
+  t.clock.advance(1000);
+  const r = t.mode.playStandard();
+  assert.ok(r && !(r instanceof Promise));
+  assert.equal(t.cl.made[0].cancels, 1);
+  assert.equal(await p, null);
+  assert.equal(t.host.state.started, true);
+  assert.equal(t.flow.calls.filter((c) => c[0] === 'board').at(-1)[1].noGuess, false);
+  assert.deepEqual(t.flow.calls.filter((c) => c[0] === 'generating').at(-1), ['generating', false]);
+  assert.equal(t.mode.summary().board.noGuess, false, 'played and recorded as a standard board');
+  t.host.restart({});
+  t.act('reveal', 40);
+  assert.equal(t.cl.placed.at(-1).noGuess, false, 'later restarts stay standard');
+});
+
 // ---------------------------------------------------------------- sound
 
 // CUSTOM_3X3 with the first reveal on cell 8: mines on 0 and 1 (defaultMines), so
@@ -601,11 +752,13 @@ test('the cursor\'s ring reaches the movement sampler as well as the view: its c
 //   0 0 0
 // the first reveal floods six cells and leaves cell 2 the last safe one.
 const BOARD = [0, 1];
+// The same board with no-guess on: its first reveal waits for the worker.
+const CUSTOM_3X3_NG = { ...CUSTOM_3X3, noGuess: true };
 
 for (const via of ['pointer', 'cursor']) {
   test(`every ${via} action plays the 3D game's cue for its outcome: a flag on and off, a reveal and a chord with their counts, the no-op, then the win`, async () => {
     const sound = fakeSound();
-    const t = setup({ choice: CUSTOM_3X3, sound });
+    const t = setup({ choice: CUSTOM_3X3_NG, sound });
     const act = (kind, c) => t[via]().session[kind](c);
     act('chord', 4);
     act('toggleFlag', 0);
@@ -655,7 +808,7 @@ test('a reveal or a chord that loses plays the explosion alone; a reveal that wi
 
 test('the first reveal is heard when its board arrives, and not when the game was restarted or left before it did', async () => {
   const sound = fakeSound();
-  const t = setup({ choice: CUSTOM_3X3, sound, hold: true });
+  const t = setup({ choice: CUSTOM_3X3_NG, sound, hold: true });
   const answer = (client) => client.answer({ ok: true, mines: BOARD, seed: 7, generatorVersion: 1 });
   t.act('reveal', 8);
   answer(t.cl.made.at(-1));
@@ -678,7 +831,7 @@ test('the first reveal is heard when its board arrives, and not when the game wa
 
 test('no cue for a press cancelled off the board, nor for an action the session refuses', async () => {
   const sound = fakeSound();
-  const t = setup({ choice: CUSTOM_3X3, sound, hold: true });
+  const t = setup({ choice: CUSTOM_3X3_NG, sound, hold: true });
   const gate = t.pointer().session;
   const input = createPointerInput({
     graph: gate.setup.grid.graph, game: () => gate.game, onPress() {}, onAction: (kind, c) => gate[kind](c),
@@ -704,7 +857,7 @@ test('no cue for a press cancelled off the board, nor for an action the session 
   assert.deepEqual(sound.calls, []);
 
   const failed = fakeSound();
-  const f = setup({ choice: CUSTOM_3X3, sound: failed, hold: true });
+  const f = setup({ choice: CUSTOM_3X3_NG, sound: failed, hold: true });
   f.act('reveal', 8);
   f.cl.made.at(-1).answer({ ok: false, reason: 'no board' });
   await settle();

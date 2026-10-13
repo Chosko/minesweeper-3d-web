@@ -857,7 +857,7 @@ Preconditions: none
 
 ## 138. Generation pipeline
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/generation/generate.js, js/generation/start-cell.js, js/generation/worker.js, js/generation/client.js, js/classic2d/session.js, js/classic2d/mode.js, js/classic2d/board-view.js, js/mode3d/session.js, js/shell/mode-3d.js, js/render.js, js/main.js, js/ui.js, index.html, css/style.css, tests/generation-placer.test.mjs, tests/generation-noguess.test.mjs, tests/generation-client.test.mjs, tests/classic2d-session.test.mjs, tests/classic2d-mode.test.mjs, tests/classic2d-view.test.mjs, tests/mode3d-session.test.mjs, tests/shell-mode-3d.test.mjs, tests/components.test.mjs, .claude/domain/features/board-generation.md, .claude/domain/features/classic-2d-square-play.md, .claude/domain/features/3d-play-flow.md
 Preconditions: none

@@ -6,6 +6,7 @@ import { join, dirname, normalize, extname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createModeHost, MODE_METHODS, MODE_EVENTS } from '../js/shell/mode-host.js';
 import { create3DMode, END_DELAY_MS } from '../js/shell/mode-3d.js';
+import { startCell } from '../js/generation/start-cell.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -76,31 +77,34 @@ function fakeClock() {
 }
 
 // A fake shell flow: records every call; start and restart hand back a new fake session.
-function fakeFlow() {
+function fakeFlow(board) {
   const calls = [];
   const sessions = [];
-  const next = () => { const s = fakeSession(); sessions.push(s); return s; };
+  const handed = [];
+  const next = (pregen = null) => { const s = fakeSession(board); sessions.push(s); handed.push(pregen); return s; };
   const flow = {
     clock: fakeClock(),
     lost: false,
     sessions,
+    handed,
     get session() { return sessions.at(-1); },
     contextLost: () => flow.lost,
     openBoardChoice: () => calls.push(['openBoardChoice']),
-    start: (c) => { calls.push(['start', c]); return next(); },
+    start: (c, pregen) => { calls.push(['start', c]); return next(pregen); },
     pause: (note) => calls.push(['pause', note]),
     resume: (source) => calls.push(['resume', source]),
-    restart: (source) => { calls.push(['restart', source]); return next(); },
+    restart: (source, pregen) => { calls.push(['restart', source]); return next(pregen); },
     leave: () => calls.push(['leave']),
   };
   return { flow, calls };
 }
 
-function setup() {
+function setup({ board, client } = {}) {
   const host = createModeHost();
   const events = [];
   for (const t of MODE_EVENTS) host.on(t, (e) => events.push([t, e]));
-  const { flow, calls } = fakeFlow();
+  const { flow, calls } = fakeFlow(board);
+  if (client) { flow.client = client; flow.randomSeed = () => 4242; }
   const mode = host.register('3d', (report) => create3DMode(flow, report));
   const types = () => events.map(([t]) => t);
   return { host, events, types, flow, calls, mode };
@@ -265,13 +269,99 @@ test('a lost graphics context is a start or play failure, and cancels a pending 
   assert.deepEqual(flow.session.calls, ['leave'], 'the session is left: its pending board request is cancelled');
 });
 
-test('the 3D adapter is DOM-free and imports at most the 3D session and the records\' summary and board', () => {
+// ---------------------------------------------------------------- pre-generation for Play again
+
+// A generation client whose requests wait; cancel resolves the one in flight cancelled.
+function holdingClient() {
+  let pending = null;
+  const c = {
+    requests: [],
+    cancels: 0,
+    request(req) { c.requests.push(req); return new Promise((resolve) => { pending = resolve; }); },
+    cancel() { c.cancels += 1; pending?.({ ok: false, cancelled: true, reason: 'cancelled' }); pending = null; },
+  };
+  return c;
+}
+const NG = { X: 4, Y: 5, Z: 6, mines: 7, noGuess: true }; // the fake session's game
+
+test('a finished no-guess 3D game pre-generates the next box for its marked start cell; Play again hands it to the new session', () => {
+  const client = holdingClient();
+  const { host, flow } = setup({ board: NG, client });
+  host.start('3d', NG);
+  assert.equal(flow.handed[0], null, 'the first game has none');
+  flow.session.emit('started');
+  flow.session.emit('finished', { state: 'won' });
+  assert.deepEqual(client.requests, [{ graph: { kind: 'box', X: 4, Y: 5, Z: 6 }, mineCount: 7, firstClick: startCell({ kind: 'box', X: 4, Y: 5, Z: 6 }), noGuess: true, seed: 4242 }]);
+  flow.clock.advance(END_DELAY_MS);
+  host.restart({ source: 'pointer' }); // Play again
+  const handed = flow.handed.at(-1);
+  assert.ok(handed, 'the new session gets the pre-generated board');
+  assert.equal(handed.cell, startCell({ kind: 'box', X: 4, Y: 5, Z: 6 }));
+  assert.equal(handed.seed, 4242);
+  assert.equal(client.cancels, 0);
+});
+
+test('the 3D pre-generation: the same board from the choice takes it, another board or the leave discards it; none for a standard or abandoned game', () => {
+  let client = holdingClient();
+  let t = setup({ board: NG, client });
+  t.host.start('3d', NG);
+  t.flow.session.emit('started');
+  t.flow.session.emit('finished', { state: 'lost' });
+  t.flow.clock.advance(END_DELAY_MS);
+  t.mode.start(NG); // the mode's own start, as the host's would after its leave
+  assert.ok(t.flow.handed.at(-1), 'the same board takes it over');
+
+  client = holdingClient();
+  t = setup({ board: NG, client });
+  t.host.start('3d', NG);
+  t.flow.session.emit('started');
+  t.flow.session.emit('finished', { state: 'lost' });
+  t.flow.clock.advance(END_DELAY_MS);
+  t.mode.start({ ...NG, mines: 8 });
+  assert.equal(t.flow.handed.at(-1), null);
+  assert.equal(client.cancels, 1, 'another board discards it');
+
+  client = holdingClient();
+  t = setup({ board: NG, client });
+  t.host.start('3d', NG);
+  t.flow.session.emit('started');
+  t.flow.session.emit('finished', { state: 'lost' });
+  t.flow.clock.advance(END_DELAY_MS);
+  t.host.leave();
+  assert.equal(client.cancels, 1, 'the leave discards it');
+
+  client = holdingClient();
+  t = setup({ board: { ...NG, noGuess: false }, client });
+  t.host.start('3d', { ...NG, noGuess: false });
+  t.flow.session.emit('started');
+  t.flow.session.emit('finished', { state: 'won' });
+  assert.equal(client.requests.length, 0, 'a standard board is never pre-generated');
+
+  client = holdingClient();
+  t = setup({ board: NG, client });
+  t.host.start('3d', NG);
+  t.flow.session.emit('started');
+  t.host.restart({});
+  assert.equal(client.requests.length, 0, 'an abandoned game pre-generates nothing');
+  assert.equal(t.flow.handed.at(-1), null);
+});
+
+test('the 3D adapter is DOM-free and imports at most the 3D session, the records\' summary and board, and the pre-generation', () => {
   const src = read('js/shell/mode-3d.js').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
   assert.doesNotMatch(src, /\b(document|window|navigator)\b/, 'the 3D adapter touches no browser global');
   assert.doesNotMatch(src, /from ['"]three['"]/, 'the 3D adapter does not import three.js');
   for (const [, from] of read('js/shell/mode-3d.js').matchAll(/^import .* from '([^']+)';$/gm)) {
-    assert.match(from, /^\.\.\/(mode3d\/session|records\/summary|records\/board)\.js$/, `the 3D adapter imports only the 3D session and the records' summary and board (${from})`);
+    assert.match(from, /^\.\.\/(mode3d\/session|records\/summary|records\/board|generation\/client|generation\/start-cell)\.js$/, `the 3D adapter imports only the 3D session, the records' summary and board, and the pre-generation (${from})`);
   }
+});
+
+test('js/main.js warms each mode\'s generation worker as its board choice opens, and hands the 3D adapter the page\'s client', () => {
+  const main = read('js/main.js');
+  const screen = (name) => main.match(new RegExp(`'${name}': \\{[^\\n]*show: \\([^)]*\\) => \\{([^\\n]*)\\} \\}`))?.[1] ?? '';
+  assert.match(screen('board-choice'), /GEN_3D\.warm\(\)/, 'the 3D board choice warms the 3D client');
+  assert.match(screen('classic-2d-choice'), /mode2d\.warm\(\)/, 'the Classic 2D board choice warms the mode\'s client');
+  assert.match(main, /const GEN_3D = createGenerationClient\(\);/, 'one 3D client for the page');
+  assert.match(main, /client: GEN_3D, \/\/ the pre-generated board/, 'the adapter pre-generates through it');
 });
 
 test('js/main.js hands the adapter each session and leaves the reports to it', () => {
@@ -451,3 +541,108 @@ test('in a browser, the 3D game starts, pauses, resumes, restarts and leaves thr
   }
 });
 
+
+test('in a browser, the 3D generating card shows by its delay in pointer-locked play, with its progress line; Play again marks the start cell and the in-flight board shows it too', async (t) => {
+  const playwright = await loadPlaywright();
+  if (!playwright) { t.skip('Playwright is not installed'); return; }
+  let browser;
+  try {
+    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  } catch (error) {
+    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
+    return;
+  }
+  const server = await serve();
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const page = await browser.newPage({ viewport: { width: 640, height: 480 } }); // a small canvas: software GL draws its frames fast enough
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    // a slow worker: progress at once, the first board 4 s later and every later one (the
+    // pre-generation) 12 s later, so it is still in flight after the loss and Play again; the real
+    // generator behind it
+    await page.route('**/js/generation/worker.js', (route) => route.fulfill({
+      contentType: 'text/javascript',
+      body: `import { handleMessage } from './worker-real.js';
+        let boards = 0;
+        globalThis.onmessage = ({ data }) => {
+          if (data.warm) { globalThis.postMessage({ id: data.id, warm: true }); return; }
+          globalThis.postMessage({ id: data.id, progress: { candidates: 7 } });
+          setTimeout(() => globalThis.postMessage(handleMessage(data)), boards++ === 0 ? 4000 : 12000);
+        };`,
+    }));
+    await page.route('**/js/generation/worker-real.js', (route) => route.fulfill({ contentType: 'text/javascript', body: read('js/generation/worker.js') }));
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined);
+    const ms = (fn, arg) => page.evaluate(fn, arg);
+    // A real click at an element's centre: a user gesture, with no wait for the page to settle
+    // (frames under pointer lock are long tasks in software GL).
+    const press = async (selector) => {
+      const r = await ms((sel) => { const b = document.querySelector(sel).getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; }, selector);
+      await page.mouse.click(r.x, r.y);
+    };
+    const lockAndPlay = async () => {
+      if (await ms(() => globalThis.__ms.state.mode) === 'ready') await press('#ready-btn');
+      await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing' && !!document.pointerLockElement, null, { timeout: 5000, polling: 100 });
+    };
+    // Click `cell` and measure, in the page, when the card loses its hidden class, and the main-thread
+    // long tasks meanwhile: a timer cannot fire inside one (software GL makes frames long).
+    const clickAndTime = (cell) => ms((c) => new Promise((resolve) => {
+      const card = document.getElementById('m3d-status');
+      const t0 = performance.now();
+      let stall = 0;
+      const tasks = new PerformanceObserver((list) => { for (const e of list.getEntries()) stall += e.duration; });
+      tasks.observe({ type: 'longtask' });
+      const seen = new MutationObserver(() => {
+        if (card.classList.contains('hidden')) return;
+        seen.disconnect();
+        const after = performance.now() - t0;
+        setTimeout(() => { tasks.disconnect(); resolve({ after, stall, state: globalThis.__ms.state.play.state, line: document.getElementById('m3d-progress').textContent }); }, 0);
+      });
+      seen.observe(card, { attributes: true, attributeFilter: ['class'] });
+      if (globalThis.__ms.aimAt(c) !== c) { seen.disconnect(); resolve({ aimed: false }); return; }
+      globalThis.__ms.click('left');
+      if (globalThis.__ms.state.play.state !== 'generating') { seen.disconnect(); resolve({ state: globalThis.__ms.state.play.state }); }
+    }), cell);
+
+    // 5 x 5 x 1, no-guess: its marked start cell (2, 2, 0) is on the face the camera sees
+    const BOX = { X: 5, Y: 5, Z: 1, mines: 4, noGuess: true };
+    const MARK = 2 + 5 * 2;
+    await ms((b) => globalThis.__ms.modes.start('3d', b), BOX);
+    await lockAndPlay();
+    const first = await clickAndTime(0);
+    assert.equal(first.state, 'generating');
+    assert.ok(first.after >= 200 - 5, `not before the delay (${first.after.toFixed(0)} ms)`);
+    assert.ok(first.after <= 200 + first.stall + 250, `the card shows by the delay under pointer lock (${first.after.toFixed(0)} ms, long tasks ${first.stall.toFixed(0)} ms)`);
+    assert.equal(await ms(() => !!document.pointerLockElement), true, 'still pointer-locked');
+    assert.match(first.line, /^candidate \d+ · \d+ s$/, `the progress line shows with the card (${JSON.stringify(first)})`);
+    await page.waitForFunction(() => globalThis.__ms.state.started, null, { timeout: 30000, polling: 100 });
+    assert.equal(await ms(() => document.getElementById('m3d-status').classList.contains('hidden')), true, 'the card goes with the board');
+    assert.equal(await ms(() => globalThis.__ms.renderer.mark), -1, 'no mark on a game with no pre-generated board');
+
+    // lose at once: reveal a mine
+    await ms(() => {
+      const m = globalThis.__ms, g = m.game;
+      for (let c = 0; c < g.n; c++) if (g.number[c] === -1 && m.aimAt(c) === c) { m.click('left'); return; }
+    });
+    assert.equal(await ms(() => globalThis.__ms.game.state), 'lost');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'results', null, { timeout: 5000, polling: 100 });
+
+    // Play again: the closed box opens with its marked start cell tinted, the next board on its way
+    await page.keyboard.press('Enter'); // Play again: a user gesture, which asks for pointer lock
+    await page.waitForFunction(() => globalThis.__ms.state.mode !== 'results', null, { timeout: 5000, polling: 100 });
+    await lockAndPlay();
+    const marked = await ms(() => ({ tinted: globalThis.__ms.renderer.mark, cell: globalThis.__ms.state.play.markedCell, state: globalThis.__ms.state.play.state }));
+    assert.deepEqual(marked, { tinted: MARK, cell: MARK, state: 'ready' }, 'the marked start cell is tinted');
+    const again = await clickAndTime(MARK);
+    assert.equal(again.state, 'generating', 'the pre-generated board is still in flight: the session waits for it');
+    assert.ok(again.after <= 200 + again.stall + 250, `the card shows by the delay for the in-flight board (${again.after.toFixed(0)} ms, long tasks ${again.stall.toFixed(0)} ms)`);
+    assert.equal(await ms(() => globalThis.__ms.renderer.mark), -1, 'the mark goes at the first click');
+    await page.waitForFunction(() => globalThis.__ms.state.started, null, { timeout: 30000, polling: 100 });
+    assert.equal(await ms((c) => globalThis.__ms.game.pressed[c], MARK), 1, 'the first click is applied on the board that arrived');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});

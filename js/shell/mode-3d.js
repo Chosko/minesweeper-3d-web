@@ -2,12 +2,15 @@
 // (js/mode3d/session.js) that js/main.js builds and shows. `flow` is the game's own screens and
 // pointer-lock flow, handed in by js/main.js:
 //   openBoardChoice()  show the 3D presets and custom board
-//   start(choice)      open the board's session and show its click-to-play card; returns the session
+//   start(choice, pregenerated)  open the board's session — with the pre-generated board handed to
+//                      it, or null — and show its click-to-play card; returns the session
 //   pause(note)        show the pause card over the hidden board
 //   resume(source)     'pad': lockless play; 'pointer': the click-to-play card re-acquires pointer
 //                      lock; 'key': the click-to-play card
-//   restart(source)    a new session of the same board, entered as resume(source) enters play;
-//                      returns the session
+//   restart(source, pregenerated)  a new session of the same board, with the pre-generated board
+//                      or null, entered as resume(source) enters play; returns the session
+//   client             the 3D game's generation client (js/generation/client.js), kept for the page
+//   randomSeed         optional: () → a seed for a pre-generated board; crypto by default
 //   leave()            drop the game, release pointer lock and lockless play
 //   contextLost()      whether the WebGL context is gone
 //   sampler(session)   optional: the session's movement sampler (js/replay/sampler-3d.js), or an
@@ -38,6 +41,13 @@
 // short — a press of the player's (js/shell/end-skip.js), the page going away — so the game is
 // reported finished, never left unfinished.
 //
+// When a game whose board was no-guess finishes (won or lost), the adapter asks flow.client for the
+// next board of the same box for its marked start cell (js/generation/start-cell.js) with a fresh
+// seed, while the results screen shows, and holds it until the next start or the leave: a start
+// with the same board (Play again, or Restart of the finished game) hands it to the new session,
+// which marks the cell until the first reveal; a start with any other board, the leave or a lost
+// graphics context discards it. A standard, fixed or abandoned game pre-generates nothing.
+//
 // Summaries are built by js/records/summary.js's buildSummary from the session's engine counts
 // (outcome abandoned) or engine summary (won or lost), its elapsed time and its pause spans up to
 // it, its board as the 3D board identity, its seed and its generator version: null before the first applied reveal, the summary
@@ -47,6 +57,8 @@
 
 import { MODE_3D } from '../records/board.js';
 import { buildSummary } from '../records/summary.js';
+import { pregenerate } from '../generation/client.js';
+import { startCell } from '../generation/start-cell.js';
 
 /** How long the end effect plays before the results screen takes over, for a win and a loss alike. */
 export const END_DELAY_MS = 1000;
@@ -62,7 +74,33 @@ const globalClock = {
  */
 export function create3DMode(flow, report) {
   const clock = flow.clock ?? globalClock;
+  const seedOf = flow.randomSeed ?? (() => globalThis.crypto.getRandomValues(new Uint32Array(1))[0]);
   let game = null; // { session, sampler, started, id, final, ending, offs }
+  let ahead = null; // { board, pregen }: the next no-guess board, pre-generated while the results show
+
+  const sameBoard = (a, b) => !!a && !!b && !b.minePositions && a.X === b.X && a.Y === b.Y && a.Z === b.Z
+    && a.mines === b.mines && !!a.noGuess === !!b.noGuess;
+
+  function discardAhead() {
+    ahead?.pregen.discard();
+    ahead = null;
+  }
+  // The pre-generated board for a start with `board`, or null; any other is discarded.
+  function takeAhead(board) {
+    const taken = ahead && sameBoard(ahead.board, board) ? ahead.pregen : null;
+    if (!taken) discardAhead();
+    ahead = null;
+    return taken;
+  }
+  // A finished no-guess game: the next board of the same box, for its marked start cell.
+  function pregenerateNext(session) {
+    discardAhead();
+    const board = session.board;
+    if (!board?.noGuess || session.seed === null || !flow.client) return;
+    const graph = { kind: 'box', X: board.X, Y: board.Y, Z: board.Z };
+    const request = { graph, mineCount: board.mines, firstClick: startCell(graph), noGuess: true, seed: seedOf() };
+    ahead = { board: { ...board }, pregen: pregenerate(flow.client, request) };
+  }
 
   function drop() {
     if (!game) return;
@@ -104,6 +142,7 @@ export function create3DMode(flow, report) {
       }),
       session.on('finished', () => {
         g.final = build(g, session.engineSummary());
+        pregenerateNext(session);
         report.canPause(false);
         g.ending = { handle: clock.setTimeout(() => finish(g), END_DELAY_MS) };
       }),
@@ -138,8 +177,9 @@ export function create3DMode(flow, report) {
     openBoardChoice() { flow.openBoardChoice(); },
     start(choice) {
       drop();
-      if (flow.contextLost()) { failed(); return; }
-      attach(flow.start(choice));
+      const taken = takeAhead(choice);
+      if (flow.contextLost()) { taken?.discard(); failed(); return; }
+      attach(flow.start(choice, taken));
     },
     /** Whether the end sequence is running: the game is over and the results screen not yet shown. */
     get ending() { return !!game?.ending; },
@@ -151,10 +191,12 @@ export function create3DMode(flow, report) {
     },
     resume(opts = {}) { flow.resume(opts.source ?? 'pointer'); },
     restart(opts = {}) {
+      const taken = takeAhead(game?.session.board);
       drop();
-      attach(flow.restart(opts.source ?? 'pointer'));
+      attach(flow.restart(opts.source ?? 'pointer', taken));
     },
     leave() {
+      discardAhead();
       drop();
       flow.leave();
     },
@@ -165,6 +207,7 @@ export function create3DMode(flow, report) {
     tick() { game?.sampler?.tick(); },
     contextLost() {
       if (game?.ending) finish(game);
+      discardAhead();
       game?.session.leave();
       failed();
     },

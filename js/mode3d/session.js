@@ -1,37 +1,50 @@
 // 3D game session: owns one 3D game from a closed box to a result, and the 3D game itself on the
 // shared rules engine (create3DGame). DOM-free.
 //
-// createSession({ board, client, clock?, randomSeed?, generatingDelayMs? }) → session.
+// createSession({ board, client, clock?, randomSeed?, generatingDelayMs?, place?, pregenerated? }) → session.
 //   board       { X, Y, Z, mines, noGuess } — boardOf(choice) of js/mode3d/board-choice.js; with
 //               `minePositions` (the debug hook's fixed board) that mine set is played and no board
 //               is requested. A box or mine count the engine refuses throws a RangeError.
-//   client      the generation client (js/generation/client.js): { request, cancel }.
+//   client      the generation client (js/generation/client.js): { request, cancel }; asked for
+//               no-guess boards only.
 //   clock       { now(), setTimeout(fn, ms), clearTimeout(h) }; defaults to performance.now and the
 //               global timers.
 //   randomSeed  () → a seed 0 .. 2^32 - 1 for each board request; defaults to crypto.
+//   place       (request) → result: the standard board's placement on the main thread; generate()
+//               (js/generation/generate.js) by default, the same code path the worker runs.
+//   pregenerated  a board the 3D mode pre-generated for this box's marked start cell
+//               (js/generation/client.js pregenerate()), or null.
 //
 // The session opens a closed box (state 'ready'): `view` is the 3D state view the renderer, picking
 // and HUD read, the same object for the whole session. Flags may be placed before the first
 // reveal and are kept; a left release on a flagged cell, and any chord, does nothing then. The
-// first reveal of a closed, unflagged cell sends the board request for that cell — the box graph,
+// first reveal of a closed, unflagged cell needs the board request for that cell — the box graph,
 // the mine count, the first-click rule of Classic 2D (that cell alone is mine-free) and the
-// no-guess setting — to the client (state 'generating'). `generating` { shown: true } is emitted
-// only when the answer takes longer than generatingDelayMs, and { shown: false } when it arrives;
-// no board action is accepted meanwhile. On a board, the flags placed before are put on it in the
+// no-guess setting. A standard board (no-guess off) is placed at once with place() and a fresh
+// seed: no request goes to the client, the state never becomes 'generating', and the reveal is
+// applied in the same call. A no-guess board is asked of the client (state 'generating');
+// `generating` { shown: true } is emitted only when the answer takes longer than
+// generatingDelayMs, and { shown: false } when it arrives; no board action is accepted meanwhile.
+// While generating, progress is { candidates, seconds }: the worker's candidates tried so far and
+// the whole seconds since the request began; null otherwise. A pre-generated board waits for its
+// cell as Classic 2D's does (js/classic2d/session.js): markedCell is that cell until the first
+// reveal (flags placed before it do not count) and while the board is usable, with `mark`
+// { cell } on each change; a first reveal on it takes the board over, at once or waiting for that
+// same request, a failed one is asked afresh, and a first reveal anywhere else discards it. On a board, the flags placed before are put on it in the
 // order they were placed, the reveal is applied, the timer starts and `started` is emitted (state
 // 'playing'); the board's seed and generator version are kept. A failed request (a no-guess board
 // not found, a rejected request, the worker failing) emits `failed` { reason, offers, count }
 // (state 'failed') and the timer never starts; `count` is the failures in a row since the closed
-// box. retry() asks again with a new seed, playStandard() asks for the same size with no-guess off
-// — both for the same first cell, as Classic 2D does. cancel() while generating — the card shown
+// box. retry() asks again with a new seed; playStandard() — after a failure, or while generating,
+// which cancels the request — places the same size with no-guess off for the same first cell at
+// once and plays it, as Classic 2D does. cancel() while generating — the card shown
 // or not — cancels the request through the client and returns to the closed box awaiting its
 // first click (state 'ready'), its flags kept, reporting nothing; it returns whether there was a
 // request to cancel.
 //
 // Actions — reveal(c), toggleFlag(c), chord(c) — return { changed, ended, exploded, revealed,
-// flagged, unflagged } (create3DGame's result); the first reveal returns a Promise of it instead
-// (null when the board failed or the request was cancelled), except on a fixed board, which
-// answers at once. An action the session does not accept (while generating, failed, paused,
+// flagged, unflagged } (create3DGame's result); a first reveal that waits for the worker returns a
+// Promise of it instead (null when the board failed or the request was cancelled). An action the session does not accept (while generating, failed, paused,
 // ended or left) returns null. A win or loss stops the timer and emits `finished` { state }.
 // counts() and engineSummary() are the engine's counts and summary of the game on the board
 // (js/engine/rules.js), null before it arrives; the 3D mode builds the game's summary from them.
@@ -42,7 +55,7 @@
 // clock, one begun while generating counting from the board's arrival (js/classic2d/session.js
 // createTimer); pauses(until?, count?) is the spans so far, the open one ending now (createTimer's
 // pauses). restart() opens a fresh closed box and leave() ends the session; both cancel a pending
-// generation, and a late answer is dropped.
+// generation, and a late answer is dropped, and discard a pre-generated board not taken over.
 //
 // Recording (js/replay/recorder.js): each closed box opens a recorder, which restart() discards and
 // leave() stops, so a game left by the 3D mode (a lost graphics context) still seals what it
@@ -67,6 +80,7 @@ import { createStateView3D } from '../engine/state-view-3d.js';
 import { createTimer, FAILURE_OFFERS, GENERATING_DELAY_MS } from '../classic2d/session.js';
 import { MODE_3D } from '../records/board.js';
 import { startRecording } from '../replay/recorder.js';
+import { generate } from '../generation/generate.js';
 
 export { FAILURE_OFFERS, GENERATING_DELAY_MS };
 
@@ -80,7 +94,7 @@ export const SESSION_STATE = Object.freeze({
   LEFT: 'left',
 });
 
-export const SESSION_EVENTS = Object.freeze(['generating', 'started', 'failed', 'finished']);
+export const SESSION_EVENTS = Object.freeze(['generating', 'started', 'failed', 'finished', 'mark']);
 
 const defaultClock = {
   now: () => performance.now(),
@@ -148,7 +162,10 @@ export function createSession({
   clock = defaultClock,
   randomSeed = defaultSeed,
   generatingDelayMs = GENERATING_DELAY_MS,
+  place = generate,
+  pregenerated = null,
 }) {
+  let pregen = pregenerated; // the pre-generated board waiting for its cell, until the first reveal
   const fixed = choice.minePositions ? Array.from(choice.minePositions) : null;
   const { X, Y, Z } = choice;
   let board = Object.freeze({ X, Y, Z, mines: fixed ? fixed.length : choice.mines, noGuess: !!choice.noGuess });
@@ -171,6 +188,8 @@ export function createSession({
   let token = 0; // identifies the board request in flight; a stale answer is dropped
   let delayHandle = null;
   let generatingShown = false;
+  let since = 0; // clock time the request in flight began
+  let candidates = 0; // the worker's candidates tried so far for it
   let recorder = null; // this box's recording
 
   function record() {
@@ -270,28 +289,51 @@ export function createSession({
     return null;
   }
 
-  // Ask for a board around `firstCell`; resolves with the first reveal's result, or null.
-  function requestBoard() {
+  const request = (cell, withSeed, noGuess = board.noGuess) => ({ graph: { kind: 'box', X, Y, Z }, mineCount: board.mines, firstClick: cell, noGuess, seed: withSeed });
+
+  // A board has arrived (placed, or from the worker): the first reveal goes on it.
+  function arrive(result) {
+    seed = result.seed;
+    generatorVersion = result.generatorVersion;
+    return begin(result.mines);
+  }
+
+  // A standard board around `firstCell`, placed now on the main thread.
+  function placeNow() {
+    seed = randomSeed();
+    failure = null;
+    let result;
+    try {
+      result = place(request(firstCell, seed, false));
+    } catch (error) {
+      return fail(error?.message || String(error));
+    }
+    if (!result || !result.ok) return fail(result?.reason ?? 'no board');
+    return arrive(result);
+  }
+
+  // Wait for a worker's board: `ask(onProgress)` → Promise of the result. Resolves with the first
+  // reveal's result, or null.
+  function wait(ask) {
     const mine = ++token;
     state = SESSION_STATE.GENERATING;
     failure = null;
-    seed = randomSeed();
+    since = clock.now();
+    candidates = 0;
     delayHandle = clock.setTimeout(() => {
       delayHandle = null;
       if (mine !== token || state !== SESSION_STATE.GENERATING) return;
       generatingShown = true;
       emit('generating', { shown: true });
     }, generatingDelayMs);
-    const request = { graph: { kind: 'box', X, Y, Z }, mineCount: board.mines, firstClick: firstCell, noGuess: board.noGuess, seed };
-    return client.request(request).then(
+    const onProgress = (p) => { if (mine === token && Number.isInteger(p?.candidates)) candidates = p.candidates; };
+    return ask(onProgress).then(
       (result) => {
         if (mine !== token) return null;
         hideGenerating();
         if (result?.cancelled) return null;
         if (!result || !result.ok) return fail(result?.reason ?? 'no board');
-        seed = result.seed;
-        generatorVersion = result.generatorVersion;
-        return begin(result.mines);
+        return arrive(result);
       },
       (error) => {
         if (mine !== token) return null;
@@ -299,6 +341,44 @@ export function createSession({
         return fail(error?.message || String(error));
       },
     );
+  }
+
+  // Ask the worker for a no-guess board around `firstCell` with a new seed.
+  function requestBoard() {
+    seed = randomSeed();
+    const req = request(firstCell, seed);
+    return wait((onProgress) => client.request(req, { onProgress }));
+  }
+
+  function markedCell() {
+    if (!pregen || state !== SESSION_STATE.READY) return -1;
+    if (pregen.settled && !pregen.result?.ok) return -1;
+    return pregen.cell;
+  }
+
+  // Let go of the pre-generated board, cancelling its request when it is still in flight.
+  function releasePregen({ discard }) {
+    const pg = pregen;
+    if (!pg) return null;
+    const marked = markedCell();
+    pregen = null;
+    if (discard) pg.discard();
+    if (marked >= 0) emit('mark', { cell: -1 });
+    return pg;
+  }
+
+  // The first reveal's board: the pre-generated one on its cell, else placed or asked for.
+  function firstBoard() {
+    const pg = pregen && pregen.cell === firstCell ? releasePregen({ discard: false }) : null;
+    if (!pg) releasePregen({ discard: true });
+    if (pg) {
+      if (pg.settled && pg.result?.ok) return arrive(pg.result);
+      if (!pg.settled) {
+        seed = pg.seed;
+        return wait((onProgress) => { pg.listen(onProgress); return pg.promise; });
+      }
+    }
+    return board.noGuess ? requestBoard() : placeNow();
   }
 
   // Drop whatever is pending: the request in flight and the "generating" state.
@@ -327,7 +407,7 @@ export function createSession({
       if (kind === 'toggleFlag') return flagBefore(c);
       if (kind === 'chord' || preFlags[c]) return nothing(); // nothing happens before the first reveal
       firstCell = c;
-      return fixed ? begin(fixed) : requestBoard();
+      return fixed ? begin(fixed) : firstBoard();
     }
     if (state !== SESSION_STATE.PLAYING) return null;
     recorder?.action(RECORDED_KIND[kind], c, timer.elapsedMs());
@@ -335,6 +415,10 @@ export function createSession({
   }
 
   fresh();
+  // A failed pre-generation leaves its cell unmarked: the first reveal there asks afresh.
+  pregen?.promise.then(() => {
+    if (pregen && pregen.settled && !pregen.result?.ok && state === SESSION_STATE.READY) emit('mark', { cell: -1 });
+  });
 
   const view = Object.freeze({
     X: closed.view.X,
@@ -372,6 +456,13 @@ export function createSession({
     get generatingShown() { return generatingShown; },
     get paused() { return paused; },
     get failure() { return failure; },
+    /** The marked start cell a pre-generated board waits for, or -1. */
+    get markedCell() { return markedCell(); },
+    /** While generating: { candidates, seconds } — the worker's candidates so far, whole seconds since the request began. */
+    get progress() {
+      if (state !== SESSION_STATE.GENERATING) return null;
+      return { candidates, seconds: Math.max(0, Math.floor((clock.now() - since) / 1000)) };
+    },
     elapsedMs: () => timer.elapsedMs(),
     seconds: () => timer.seconds(),
     pauses: (until, count) => timer.pauses(until, count),
@@ -400,12 +491,13 @@ export function createSession({
       if (state !== SESSION_STATE.FAILED) return null;
       return requestBoard();
     },
-    /** After a failure: the same size with no-guess off, for the same cell. */
+    /** After a failure, or while generating: the same size with no-guess off for the same cell, placed now. */
     playStandard() {
-      if (state !== SESSION_STATE.FAILED) return null;
+      if (state === SESSION_STATE.GENERATING) dropPending();
+      else if (state !== SESSION_STATE.FAILED) return null;
       board = Object.freeze({ ...board, noGuess: false });
       record();
-      return requestBoard();
+      return placeNow();
     },
     /** While generating: cancel the request and go back to the closed box, its flags kept. */
     cancel() {
@@ -434,6 +526,7 @@ export function createSession({
     restart() {
       if (state === SESSION_STATE.LEFT) return;
       dropPending();
+      releasePregen({ discard: true });
       base += 1 + inner().version;
       for (let c = 0; c < n; c++) markOwn(c);
       fresh();
@@ -442,6 +535,7 @@ export function createSession({
     leave() {
       if (state === SESSION_STATE.LEFT) return;
       dropPending();
+      releasePregen({ discard: true });
       timer.stop();
       state = SESSION_STATE.LEFT;
     },

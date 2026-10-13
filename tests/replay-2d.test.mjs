@@ -10,7 +10,10 @@ import {
   boardPoint, createSampler2D, mountSampler2D, SAMPLE_INTERVAL_MS, SAMPLE_STEPS,
 } from '../js/replay/sampler-2d.js';
 import { boardLayout } from '../js/classic2d/board-view.js';
-import { createSession } from '../js/classic2d/session.js';
+import { createSession as openSession } from '../js/classic2d/session.js';
+
+// A session whose standard board is placed by the fake client's place(), as the worker would answer.
+const createSession = (options) => openSession({ place: options.client?.place, ...options });
 import { createClassic2DMode, END_DELAY_MS } from '../js/classic2d/mode.js';
 import { createModeHost } from '../js/shell/mode-host.js';
 import { createPauseController } from '../js/shell/pause.js';
@@ -41,17 +44,19 @@ function fakeClock(start = 1000) {
   };
 }
 
-// Answers every board request with MINES, or with the queued results first.
+// Answers every board request — and places every standard board — with MINES, or with the queued
+// results first.
 function fakeClient(queue = []) {
-  return {
+  const client = {
     requests: [],
-    request(req) {
-      this.requests.push(req);
-      const next = queue.shift();
-      return Promise.resolve(next ?? { ok: true, mines: MINES, seed: req.seed, generatorVersion: 1 });
+    place(req) {
+      client.requests.push(req);
+      return queue.shift() ?? { ok: true, mines: MINES, seed: req.seed, generatorVersion: 1 };
     },
+    request(req) { return Promise.resolve(client.place(req)); },
     cancel() {},
   };
+  return client;
 }
 
 function replayAgain(replay) {
@@ -281,7 +286,7 @@ test('mountSampler2D: the last pointer position over the page, read through the 
 function mounts() {
   const log = { samplers: [] };
   const board = () => ({
-    setGame() {}, update() {}, setHidden() {}, setPressed() {}, setCursor(c) { log.cursorSet = c; }, ensureVisible() {}, showEffect() {}, destroy() {},
+    setGame() {}, update() {}, setHidden() {}, setPressed() {}, setCursor(c) { log.cursorSet = c; }, setMark() {}, ensureVisible() {}, showEffect() {}, destroy() {},
   });
   const input = ({ view }) => ({ view, input: { reset() {} }, destroy() {}, pad() {} });
   const sampler = ({ view, session }) => {
@@ -308,7 +313,7 @@ function shell2D({ clock = fakeClock() } = {}) {
   };
   const lastChoice = { current: BEGINNER, save: () => Promise.resolve(), load: () => Promise.resolve() };
   const mode = host.register('classic-2d', (report) => createClassic2DMode(report, {
-    flow, lastChoice, createClient: () => fakeClient(), mount, clock, randomSeed: () => 7,
+    flow, lastChoice, createClient: () => fakeClient(), place: fakeClient().place, mount, clock, randomSeed: () => 7,
   }));
   return { host, pauser, mode, handed, log, clock };
 }

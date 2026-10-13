@@ -22,6 +22,9 @@ export function clampSettings(s) {
 }
 
 export const fmtDims = (s) => `${s.X} × ${s.Y} × ${s.Z}`;
+/** The generating card's progress line: the worker's candidates tried so far and the whole seconds since the click. */
+export const progressLine = ({ candidates, seconds }) => `candidate ${candidates} · ${seconds} s`;
+
 /** The pause card's status line, its time (seconds) in the results time format: "Time 11.643 s · 12 mines left". */
 export const pauseLine = (time, minesLeft) => `Time ${formatTime(Math.round(time * 1000))} · ${minesLeft} mine${minesLeft === 1 ? '' : 's'} left`;
 const NO_GUESS = ' · no-guess';
@@ -64,9 +67,9 @@ export class UI {
       c2dChoice: $('c2d-choice'), c2d: $('c2d'), c2dBoard: $('c2d-board'), c2dPanel: $('c2d-panel'), c2dStatus: $('c2d-status'),
       hudBar: $('hud').querySelector('.hud-bar'),
       c2dStatusTitle: $('c2d-status-title'), c2dStatusText: $('c2d-status-text'), c2dOffer: $('c2d-offer'),
-      c2dSpinner: $('c2d-spinner'), c2dWait: $('c2d-wait'),
+      c2dSpinner: $('c2d-spinner'), c2dWait: $('c2d-wait'), c2dProgress: $('c2d-progress'),
       m3dStatus: $('m3d-status'), m3dStatusTitle: $('m3d-status-title'), m3dStatusText: $('m3d-status-text'), m3dOffer: $('m3d-offer'),
-      m3dSpinner: $('m3d-spinner'), m3dWait: $('m3d-wait'),
+      m3dSpinner: $('m3d-spinner'), m3dWait: $('m3d-wait'), m3dProgress: $('m3d-progress'),
     };
     this._last = { time: '', mines: '', clicks: '' };
     this._helpTimer = 0;
@@ -121,10 +124,12 @@ export class UI {
     $('c2d-retry').addEventListener('click', () => cb.onRetry2D?.());
     $('c2d-standard').addEventListener('click', () => cb.onStandard2D?.());
     $('c2d-cancel').addEventListener('click', () => cb.onCancel2D?.());
+    $('c2d-wait-standard').addEventListener('click', () => cb.onStandard2D?.());
     $('c2d-offer-menu').addEventListener('click', () => cb.onOfferMenu2D?.());
     $('m3d-retry').addEventListener('click', () => cb.onRetry3D?.());
     $('m3d-standard').addEventListener('click', () => cb.onStandard3D?.());
     $('m3d-cancel').addEventListener('click', () => cb.onCancel3D?.());
+    $('m3d-wait-standard').addEventListener('click', () => cb.onStandardWait3D?.());
     $('m3d-offer-menu').addEventListener('click', () => cb.onOfferMenu3D?.());
     this._confirm = null; // { onYes, onNo } while the pause card's confirmation is open
     this.el.confirmYes.addEventListener('click', () => this._closeConfirm('onYes'));
@@ -307,13 +312,17 @@ export class UI {
   /** 3D: the "generating" card of a slow first click, or a failed board and its offer, over the box. */
   setBoardStatus3D(status) { this._boardStatus('m3d', status); }
   /**
-   * The generating card shows a spinner and Cancel; a failure shows the offer — Retry, Play a
-   * standard board, Main menu. Either card sits above the pause card.
+   * The generating card shows a progress line under its title ("candidate 14 · 6 s", from
+   * `progress` { candidates, seconds }), a spinner, Cancel and Play a standard board; a failure
+   * shows the offer — Retry, Play a standard board, Main menu. Either card sits above the pause card.
    */
-  _boardStatus(prefix, { generating = false, failure = null } = {}) {
+  _boardStatus(prefix, { generating = false, failure = null, progress = null } = {}) {
     const on = generating || !!failure;
     const el = (name) => this.el[`${prefix}${name}`];
     el('Status').classList.toggle('hidden', !on);
+    const line = generating && !failure && progress ? progressLine(progress) : '';
+    el('Progress').textContent = line;
+    el('Progress').classList.toggle('hidden', !line);
     el('StatusTitle').textContent = failure ? 'No board found' : 'Generating the board…';
     el('StatusText').textContent = failure ? 'No no-guess board was found for this first click. Try again, or play a standard board of the same size.' : '';
     el('StatusText').classList.toggle('hidden', !failure);

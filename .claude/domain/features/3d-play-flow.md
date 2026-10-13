@@ -64,7 +64,8 @@ Non-goals:
 ## Architecture
 
 Built within the recorded technical direction — the 3D front-end in
-three.js over the shared engine, with generation in the Web Worker (see
+three.js over the shared engine, with no-guess generation in the Web
+Worker (see
 [technical-direction.md](../technical-direction.md)). It reshapes the 3D
 mode's existing game flow ([app-shell.md](../../context/app-shell.md)) and
 its adapter to the game shell's mode contract (`game-shell`); the renderer
@@ -88,11 +89,15 @@ behaviour.
   last-board-choice mechanism.
 - **3D game session.** Owns one 3D game: builds the box graph and the game
   awaiting its first click, shows the closed box, and on the first reveal
-  asks the generation worker for a board around that cell; while it waits
-  it shows the "generating" state and accepts no board action; the
-  "generating" card's *Cancel* goes back to the closed box, its flags kept,
-  recording nothing. When the board arrives it applies the reveal and
-  starts the timer. It drives actions from the existing mouse state machine
+  places a standard board around that cell itself, or asks the generation
+  worker for a no-guess one; while it waits it shows the "generating" state
+  and accepts no board action; the "generating" card's *Cancel* goes back
+  to the closed box, its flags kept, recording nothing. A box pre-generated
+  while the results screen showed (`board-generation` § Architecture) is
+  taken over when the first reveal lands on its marked start cell, and
+  discarded when it lands anywhere else; *Play again* opens the closed box
+  with the marked start cell shown while a pre-generated board waits for
+  it. When the board arrives it applies the reveal and starts the timer. It drives actions from the existing mouse state machine
   and controller mapping, stops the timer at a win or loss, and builds the
   summary. Restart and leave cancel a pending generation.
 - **Mode adapter.** Implements the game shell's mode contract for 3D over

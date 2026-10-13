@@ -2,8 +2,9 @@
 
 Where every board's mines come from: a seeded, deterministic generator that
 places mines around the player's first click, and, with the no-guess switch
-on, a solver that only accepts boards solvable by logic alone. It runs in a
-Web Worker so the game never freezes while a large no-guess board is built.
+on, a solver that only accepts boards solvable by logic alone. No-guess
+boards are built in a Web Worker so the game never freezes while a large
+one is built; standard boards are placed at once on the main thread.
 
 ## Purpose
 
@@ -29,8 +30,12 @@ In scope (m1-classic-2d):
   clears entirely is the board.
 - The logic-only solver over any cell graph, with no guessing and with the
   remaining-mine count as one of its constraints.
-- The generation worker and its message protocol, used for every board, not
-  only no-guess ones, so the start-of-game flow is one flow.
+- The generation worker and its message protocol, used for no-guess boards
+  only. A standard board is placed synchronously on the main thread at the
+  first click, by the same code the worker runs, so it opens with the
+  click.
+- The marked start cell of every board, and the next no-guess board
+  pre-generated for it while the results screen shows.
 - A generator version, recorded with each board.
 
 Non-goals:
@@ -43,16 +48,19 @@ Non-goals:
   (m2-3d-joins). The generator works over any cell graph; the 3D mode adds
   only the box graph description.
 - Hexagonal and triangle grids — deferred to `m6-launch`.
-- Pre-generating a no-guess board with a forced starting cell. The board is
-  generated when the first click lands, so the player keeps a free first
-  click. Minesweeper Online's no-guess mode marks a starting cell its server
-  chooses (`tests/fidelity/minesweeper-online.md`), so generating at the
-  first click is a deliberate difference from the reference.
+- A forced starting cell. A board pre-generated for the marked start cell
+  is used only when the first click lands there; a first click anywhere
+  else discards it and the board is generated around that click, so the
+  player keeps a free first click. Minesweeper Online's no-guess mode
+  forces a starting cell its server chooses
+  (`tests/fidelity/minesweeper-online.md`), so the free first click is a
+  deliberate difference from the reference.
 
 ## Architecture
 
 Built within the recorded technical direction — a DOM-free JavaScript ES
-module run in a Web Worker in the game and directly under Node's test runner
+module run in a Web Worker in the game for no-guess boards, on the main
+thread for standard ones, and directly under Node's test runner
 (see [technical-direction.md](../technical-direction.md)). It is a feature
 of its own rather than part of the rules engine, because the solver is the
 largest and riskiest piece of m1 and is shared later by campaigns and the
@@ -76,8 +84,18 @@ daily board, which never play through the engine's actions.
   sequence of candidates is part of the deterministic output: the same seed
   always yields the same accepted board.
 - **Generation worker.** Hosts the placer, solver and loop off the main
-  thread; one request at a time per game, cancellable when the player
-  leaves or restarts before it answers.
+  thread for no-guess boards; one request at a time, cancellable when the
+  player leaves or restarts before it answers. Each mode keeps one worker
+  for the page, spawned and warmed when its board choice opens, so the
+  first no-guess board pays no worker start-up. The placer also runs on the
+  main thread, for standard boards.
+- **Background generation.** When a no-guess game finishes, its mode asks
+  the worker for the next board of the same board choice for the marked
+  start cell, with a fresh seed, while the results screen shows. The next
+  start with the same choice (Play again, or Restart of the finished game)
+  takes it over and shows the marked start cell on the closed board until
+  the first click; a start with another choice, or leaving the mode,
+  discards it.
 
 ## Data and state
 
@@ -86,19 +104,34 @@ daily board, which never play through the engine's actions.
 - **Result** — the mine set as cell indices, the seed, the generator
   version, and for no-guess boards the number of candidates tried.
 - The seed of every game is chosen by the caller (random for free play) and
-  returned with the board, so the board can be rebuilt exactly later.
+  returned with the board, so the board can be rebuilt exactly later. A
+  pre-generated board records the seed its request used and is rebuilt
+  exactly from it with its marked start cell as the first click.
+- **Marked start cell** — exactly one per board, a pure function of the
+  graph description: the centre cell of each side (square: column
+  ⌊width / 2⌋, row ⌊height / 2⌋; box: ⌊X / 2⌋, ⌊Y / 2⌋, ⌊Z / 2⌋). It is a
+  request input like any first click and changes nothing in the placer,
+  the solver or the no-guess loop, so it changes no board and no generator
+  version.
 - The worker holds no state between requests; nothing is persisted here.
 
 ## Interfaces and contracts
 
 - **Generate** — request in, result out, as plain messages between the page
-  and the worker. Determinism contract: same request, same generator version
-  → same result, in the worker and in Node.
-- **Timing** — Beginner, Intermediate and Expert boards, no-guess or not,
-  answer fast enough that no pause shows (measured in § Attempt budget and
-  timing). A large custom no-guess board may take long enough that the
-  caller shows a short "generating" state; the generator promises an answer
-  or a failure within its attempt budget, never an open-ended wait.
+  and the worker; during a no-guess request the worker posts progress
+  messages (the candidates tried so far, at most every 250 ms) before its
+  one result, and progress never changes the result. Determinism contract:
+  same request, same generator version → same result, in the worker, on the
+  main thread and in Node.
+- **Timing** — a standard board is placed in the first click's own call.
+  Beginner, Intermediate and Expert no-guess boards answer fast enough that
+  no pause shows (measured in § Attempt budget and timing). A large custom
+  no-guess board may take long enough that the caller shows its
+  "generating" state, with a progress line ("candidate 14 · 6 s": the
+  candidates tried and the whole seconds since the click) and *Play a
+  standard board*, which cancels the request and plays the same size with
+  no-guess off at once; the generator promises an answer or a failure
+  within its attempt budget, never an open-ended wait.
 - **Failure** — an impossible request (more mines than the first-click
   guarantee leaves room for: every cell but the first-click cell) is
   rejected at once with a reason. A no-guess
@@ -118,8 +151,9 @@ daily board, which never play through the engine's actions.
 - The platform's Web Worker, in the web build and in Electron's Chromium.
   No external libraries.
 
-Consumed by `classic-2d-square-play`, which asks for a board when the first
-click lands.
+Consumed by `classic-2d-square-play` and `3d-play-flow`, whose game sessions
+place a standard board or ask for a no-guess one when the first click
+lands.
 
 ## Failure offer
 
