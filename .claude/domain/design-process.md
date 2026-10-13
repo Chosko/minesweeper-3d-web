@@ -54,5 +54,5 @@ Next step: `/architect <feature>`, then `/task-add feature=<slug>`.
 - Electron over Tauri and NW.js: bundled Chromium keeps WebGL identical everywhere, Tauri's system webviews vary on Mac/Linux, NW.js's Greenworks is best-effort.
 - Themes restyle named components, not only token values, because the designs vary borders, bevels, chrome and fonts; the light and dark look is retired rather than kept as a theme.
 - Board cells animate from per-theme motion descriptions, not as DOM elements: 100×100 boards are too heavy and the 3D scene cannot use CSS.
-- Reduced motion ships whole after launch, setting and preference-based first value together: an accessibility feature that can ship later is deferred whole, never half-implemented.
+- Reduced motion ships whole after launch — the setting, its preference-based first value, all motion governed — while the shipped screen rule stays untouched until then: an accessibility feature that can ship later is deferred whole, never half-implemented, and nothing shipped is removed for it.
 - Steam Deck is a stretch goal because Minesweeper with a controller is awkward, even though controllers are supported.

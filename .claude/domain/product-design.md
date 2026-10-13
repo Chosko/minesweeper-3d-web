@@ -162,7 +162,8 @@ Leaderboards, Settings, Quit), pausing and resuming, restarting, returning to
 the menu, and the settings — controls, graphics, the theme, picked from a
 list of the catalogue's themes, audio and accessibility (colour-blind-safe
 numbers, and after launch a reduced-motion setting, on or off, whose first
-value is taken from the operating system's reduce-motion preference). Input
+value is taken from the operating system's reduce-motion preference and which
+governs all motion, as the Visual design system describes). Input
 is mouse and keyboard first, with controller play available in every mode. *Start* opens the first 2D campaign
 level until the player has progress; then *Continue* resumes the next
 unbeaten level or the last mode played, with Hexagon and Triangle each
@@ -199,11 +200,15 @@ chord press and the solved pulse — built from a fixed set of movements:
 scaling, sliding, flipping about an axis (showing the other face halfway),
 deepening a shadow or bevel, brightening and fading, each with its duration
 and easing; one theme presses a cell down, another flips it. Motion is only
-visual: it never delays input, the game, the timer or replays. Theme motion —
-cell motion and screen-component animation — always plays until launch: the
-game has no reduced-motion behaviour before then and does not read the
-operating system's reduce-motion preference. After launch the reduced-motion
-setting in Settings governs all theme motion.
+visual: it never delays input, the game, the timer or replays.
+
+Until launch the game's one reduced-motion behaviour is the shipped one: when
+the operating system asks for reduced motion, the menus and screens drop
+their animations and transitions. That behaviour stays as it is, and no
+theme overrides it. Nothing else reads the preference: cell motion always
+plays, as the 2D and 3D game effects and pulses do. After launch the
+reduced-motion setting in Settings governs all motion — screen animation,
+cell motion, and the 2D and 3D game effects and pulses.
 
 Themes are designed in Claude Design, each delivered as its screens plus one
 catalogue of its components. More themes are added over time: once the
