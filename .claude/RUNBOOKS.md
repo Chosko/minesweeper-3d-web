@@ -1,6 +1,6 @@
 # Runbooks
 
-Last runbook number: 5
+Last runbook number: 6
 
 ---
 
@@ -51,5 +51,15 @@ File: .claude/runbooks/5-ux-review-tasks-implementation.md
 Created: 2026-10-12
 Source: /runbook-create interview
 Steps: 23/41
+
+---
+
+## 6. themes-planning — Design, roadmap, architect, plan and task the theme catalogue, and record Hexagon and Triangle as home-page modes
+
+Status: [PENDING]
+File: .claude/runbooks/6-themes-planning.md
+Created: 2026-10-13
+Source: theme catalogue and home-page modes conversation
+Steps: 0/8
 
 ---
