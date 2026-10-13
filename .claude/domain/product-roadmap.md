@@ -104,8 +104,8 @@ Exit criteria:
 - The Classic 2D tiles, the 3D cubes in every state, the numbers in both
   modes and the 3D sky, fog and background follow the theme.
 - Board cells move as the theme describes each cell event; motion never
-  delays input, the game, the timer or replays, and theme motion does not
-  play while the operating system's reduce-motion preference is on.
+  delays input, the game, the timer or replays, and theme motion always
+  plays.
 - Every theme's fonts ship with the game; the game looks the same offline.
 - A later theme is added from its Claude Design artboards by the theme skill,
   without a backlog task and without changing the shared layout.
@@ -283,8 +283,9 @@ Goal: give returning players new ways to play the boards they already know.
 
 Exit criteria:
 - The Endless board, Marathon and Zen are playable from the menu.
-- Settings offers a reduced-motion setting, on or off and starting from the
-  operating system's preference, that decides whether theme motion plays.
+- Settings offers a reduced-motion setting, on or off, whose first value is
+  taken from the operating system's reduce-motion preference and which
+  governs all theme motion: cell motion and screen-component animation.
 
 Rationale: these modes extend a finished game; none of them is needed to
 judge, buy or complete it.
@@ -293,9 +294,10 @@ Covers:
 - product-design.md § Endless board — the growing board, unrecoverable on a
   mine, restarting on a newly generated board, scored by area cleared.
 - product-design.md § Marathon and Zen — both modes as designed.
-- product-design.md § Main menu and game shell — the in-game reduced-motion
-  setting in Settings, replacing the operating system's preference as what
-  decides theme motion. No other new accessibility options.
+- product-design.md § Main menu and game shell — the whole reduced-motion
+  feature: the on/off setting in Settings, its first value taken from the
+  operating system's reduce-motion preference, governing all theme motion.
+  No other new accessibility options.
 
 ---
 
