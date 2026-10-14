@@ -78,7 +78,7 @@ Context: none
 
 Done: 2026-10-14, commit `a20fd62` (12 files, +662/-16). Arrow-key look goes through `FlyCamera.look` (new `KeyLook`), Enter / `'` feed the mouse's `MouseActions` (new `KeyActions`), gated by new `Input` options `canAct` / `canLook`; the context files do not describe these yet.
 
-## [ ] 26. Implement task 144 — Controller walk, pad-aware Records and viewer, haptics
+## [x] 26. Implement task 144 — Controller walk, pad-aware Records and viewer, haptics
 
 Depends on: none
 
@@ -88,11 +88,14 @@ Context: none
 /task-implement 144 --review
 ```
 
+Done: 2026-10-14, commit `1ebf0ea` (20 files, +771/-65). `navStep` in js/main.js also steps menus in page order, moves the custom-size row as one control and aims at table rows; the P-41 skip did not reproduce at HEAD, and a replays row is Watch then Pin / Unpin, not the body's order.
+
 ## [ ] 27. Implement task 145 — Focus containment in overlays
 
 Depends on: none
 
-Context: none
+Context:
+- 2026-10-14 (from step 26): controller and arrow navigation is `navStep` in js/main.js, with a 45° direction rule; menus and tables step in page order.
 
 ```prompt
 /task-implement 145 --review
@@ -126,7 +129,8 @@ Context:
 
 Depends on: none
 
-Context: none
+Context:
+- 2026-10-14 (from step 26): the Records board picker carries LB / RB glyph slots that keep their space when hidden, so it wraps onto two lines at 1366 px; moving up or down into a table aims at the whole row.
 
 ```prompt
 /task-implement 148 --review
