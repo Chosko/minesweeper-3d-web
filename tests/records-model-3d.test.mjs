@@ -160,14 +160,14 @@ test('every mode has its own overall counters from the start, at zero', () => {
 
 // ---------- boards played ----------
 
-test('boards played for 3D: the three cube presets in menu order, without no-guess first, then custom by last played', () => {
+test('boards played for 3D: the six presets in menu order, without no-guess first, then custom by last played', () => {
   const m = createRecordsModel();
   const presets = PRESETS_3D.flatMap((p) => [false, true].map((ng) => box(p.width, p.height, p.depth, p.mines, ng)));
   const order = [CUSTOM_3D_A, ...[...presets].reverse(), BEGINNER_2D, CUSTOM_3D_B, CUSTOM_3D_A];
   for (const board of order) m.record(game({ board }));
   const keys = m.boardsPlayed(MODE_3D).map((b) => b.key);
   assert.deepEqual(keys, [...presets.map(boardKey), boardKey(CUSTOM_3D_A), boardKey(CUSTOM_3D_B)]);
-  assert.deepEqual(PRESETS_3D.map((p) => `${p.family} ${p.name}`), ['Cube Beginner', 'Cube Intermediate', 'Cube Expert']);
+  assert.deepEqual(PRESETS_3D.map((p) => `${p.family} ${p.name}`), ['First box 1', 'First box 2', 'Cube Intro', 'Cube Beginner', 'Cube Intermediate', 'Cube Expert']);
   assert.deepEqual(m.boardsPlayed(MODE_3D).at(-1).board, { ...CUSTOM_3D_B });
 });
 
@@ -179,6 +179,17 @@ test('boards played for 3D: a former double layer board is listed with the custo
   assert.deepEqual(m.boardsPlayed(MODE_3D).map((b) => b.key),
     [CUBE_BEGINNER, CUBE_EXPERT, formerDoubleNoGuess, CUSTOM_3D_A, formerDouble].map(boardKey));
   assert.equal(m.history(formerDouble).length, 1, 'its game stays in the history');
+});
+
+test('boards played for 3D: the former Cube Expert, 12 × 12 × 8 · 130, is listed with the custom boards and keeps its records', () => {
+  const m = createRecordsModel();
+  const formerExpert = box(12, 12, 8, 130);
+  const won = game({ board: formerExpert, ms: 90000 });
+  for (const g of [game({ board: CUSTOM_3D_A }), won, game({ board: CUBE_EXPERT }), game({ board: CUBE_BEGINNER })]) m.record(g);
+  assert.deepEqual(m.boardsPlayed(MODE_3D).map((b) => b.key), [CUBE_BEGINNER, CUBE_EXPERT, formerExpert, CUSTOM_3D_A].map(boardKey));
+  assert.equal(boardKey(formerExpert), '3d:12x12x8:130:guess', 'its key is unchanged');
+  assert.equal(m.bests(formerExpert).time.id, won.id, 'its best stays');
+  assert.equal(m.history(formerExpert).length, 1, 'its game stays in the history');
 });
 
 test('boards played takes a mode and never lists another mode\'s boards; Classic 2D is the default', () => {

@@ -424,7 +424,7 @@ Preconditions: none
 
 ## 152. Cube preset re-tune and first-box presets
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/mode3d/board-choice.js, js/records/board.js, js/records/model.js, js/records/screen.js, js/main.js, js/records/typical-bbbv.js, dev/measure-first-box-3d.mjs, dev/measure-typical-bbbv.mjs, dev/measure-replays.mjs, index.html, css/components.css, tests/mode3d-board-choice.test.mjs, tests/records-board-3d.test.mjs, tests/records-model-3d.test.mjs, tests/records-screen-3d.test.mjs, tests/mode3d-session.test.mjs, tests/camera-spawn.test.mjs, tests/shell-returning.test.mjs, README.md, .claude/domain/features/3d-play-flow.md, .claude/domain/features/3d-game-records.md, .claude/domain/product-design.md
 Preconditions: none

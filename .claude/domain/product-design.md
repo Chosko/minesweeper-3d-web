@@ -255,8 +255,8 @@ orbited around its centre, with solved cells hiding
 themselves and the Shift / Space / Ctrl view modes for seeing inside. The
 first click is always safe, and a no-guess switch is available, except on a
 box with a side of exactly 2 cells, which can never be solved without
-guessing. Three presets — Beginner, Intermediate and Expert cubes — plus
-custom boards; flat boards are Classic 2D's. When a game ends, its win or
+guessing. Two first-box presets, then the Intro, Beginner, Intermediate
+and Expert cubes, plus custom boards; flat boards are Classic 2D's. When a game ends, its win or
 loss effect plays — on a loss, the wave that shows where the mines were —
 and then the results screen shows over the dimmed board; from it the
 player can choose to fly over the frozen finished board, read-only. Serves

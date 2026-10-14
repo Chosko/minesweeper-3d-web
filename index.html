@@ -183,10 +183,17 @@
   <section id="board-choice" class="overlay hidden" aria-label="3D board choice">
     <section class="ui-card ui-screen ui-screen--wide" aria-labelledby="board-choice-title">
       <h2 class="ui-card__title" id="board-choice-title">3D</h2>
-      <div class="ui-menu" role="group" aria-label="Presets">
-        <button type="button" class="ui-menu__item" data-preset="6,6,6,10"><span class="ui-menu__label">Cube Beginner</span><span class="ui-menu__detail">6 &times; 6 &times; 6 &middot; 10 mines</span></button>
+      <h3 class="ui-heading" id="bc-box">First box</h3>
+      <div class="ui-menu" role="group" aria-labelledby="bc-box">
+        <button type="button" class="ui-menu__item" data-preset="4,4,3,4"><span class="ui-menu__label">First box 1</span><span class="ui-menu__detail">4 &times; 4 &times; 3 &middot; 4 mines</span></button>
+        <button type="button" class="ui-menu__item" data-preset="5,5,3,6"><span class="ui-menu__label">First box 2</span><span class="ui-menu__detail">5 &times; 5 &times; 3 &middot; 6 mines</span></button>
+      </div>
+      <h3 class="ui-heading" id="bc-cube">Cube</h3>
+      <div class="ui-menu" role="group" aria-labelledby="bc-cube">
+        <button type="button" class="ui-menu__item" data-preset="6,6,6,10"><span class="ui-menu__label">Cube Intro</span><span class="ui-menu__detail">6 &times; 6 &times; 6 &middot; 10 mines</span></button>
+        <button type="button" class="ui-menu__item" data-preset="6,6,6,20"><span class="ui-menu__label">Cube Beginner</span><span class="ui-menu__detail">6 &times; 6 &times; 6 &middot; 20 mines</span></button>
         <button type="button" class="ui-menu__item" data-preset="8,8,8,40"><span class="ui-menu__label">Cube Intermediate</span><span class="ui-menu__detail">8 &times; 8 &times; 8 &middot; 40 mines</span></button>
-        <button type="button" class="ui-menu__item" data-preset="12,12,8,130"><span class="ui-menu__label">Cube Expert</span><span class="ui-menu__detail">12 &times; 12 &times; 8 &middot; 130 mines</span></button>
+        <button type="button" class="ui-menu__item" data-preset="10,10,10,100"><span class="ui-menu__label">Cube Expert</span><span class="ui-menu__detail">10 &times; 10 &times; 10 &middot; 100 mines</span></button>
       </div>
       <label class="ui-toggle"><input type="checkbox" role="switch" id="bc-noguess" class="ui-toggle__input" data-noguess="presets"><span class="ui-toggle__label">No-guess board</span></label>
       <p id="bc-noguess-help" class="ui-text ui-text--muted">Solvable by logic alone, no 50/50 guesses. Separate records.</p>

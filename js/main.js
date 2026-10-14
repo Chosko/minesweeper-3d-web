@@ -55,7 +55,7 @@ import { bindBoardChoice } from './classic2d/board-choice.js';
 import { createLastChoice, DEFAULT_CHOICE } from './classic2d/board-setup.js';
 import {
   bindBoardChoice as bindBoardChoice3D, boardOf, normaliseChoice as normaliseChoice3D, DEFAULT_CHOICE as DEFAULT_CHOICE_3D,
-  LAST_CHOICE_DOC as LAST_CHOICE_DOC_3D, LAST_CHOICE_VERSION as LAST_CHOICE_VERSION_3D,
+  LAST_CHOICE_DOC as LAST_CHOICE_DOC_3D, LAST_CHOICE_VERSION as LAST_CHOICE_VERSION_3D, startSpacing,
 } from './mode3d/board-choice.js';
 
 const canvas = document.getElementById('scene');
@@ -1191,7 +1191,7 @@ function startGame(settings, pregenerated = null) {
   S.endState = null;
   S.selected = -1;
   S.pickKey = '';
-  S.spacing = SPACING_START;
+  S.spacing = startSpacing(s);
   ui.setSpacing(S.spacing);
   board3d.generating = false;
   board3d.failure = null;

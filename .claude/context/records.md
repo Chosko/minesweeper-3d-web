@@ -39,7 +39,7 @@ Board identity (`js/records/board.js`; its header documents the key format)
   width, height, depth, mines, noGuess }` (no `grid`; sides `1 .. 100`).
   `MODE_3D` — `'3d'`.
 - `boardKey(identity)` → `classic-2d:square:30x16:99:no-guess` /
-  `3d:12x12x8:130:no-guess` (a 3D key never equals a 2D key), a Daily board
+  `3d:10x10x10:100:no-guess` (a 3D key never equals a 2D key), a Daily board
   `daily:<board key>`; `parseBoardKey(key)` its inverse; `BOARD_KEY_FORMAT`
   — `2`.
 - `boardLabel(identity)` → `"Expert · no-guess"`, `"20 × 12 · 50 mines"`,
@@ -47,9 +47,10 @@ Board identity (`js/records/board.js`; its header documents the key format)
   no-guess"`, `"Daily · 8 × 8 × 8 · 40 mines · no-guess"` (a Daily 3D board
   by its dimensions).
 - `standardBoard(identity)` / `STANDARD_BOARDS` (Beginner, Intermediate,
-  Expert); `preset3D(identity)` / `PRESETS_3D` (Cube Beginner 6×6×6/10,
-  Intermediate 8×8×8/40, Expert 12×12×8/130 — equal to the 3D board
-  choice's `PRESETS`, [mode3d.md](mode3d.md)). Null for a custom board.
+  Expert); `preset3D(identity)` / `PRESETS_3D` (First box 1 4×4×3/4, First
+  box 2 5×5×3/6, Cube Intro 6×6×6/10, Beginner 6×6×6/20, Intermediate
+  8×8×8/40, Expert 10×10×10/100 — equal to the 3D board choice's `PRESETS`,
+  [mode3d.md](mode3d.md)). Null for a custom board.
 - Every function validates through `createBoardIdentity`, so any object with
   a form's fields works and an impossible one throws.
 
@@ -97,7 +98,7 @@ Summary (`js/records/summary.js`)
   mine count (standard names on the `square` grid only) and never stored, so
   a custom board matching one is that board. A board whose preset was
   dropped keeps its key and records and reads as custom: the former double
-  layer boards (8×8×2, 14×14×2, 25×16×2).
+  layer boards (8×8×2, 14×14×2, 25×16×2) and 12×12×8/130.
 - **Key format is stored data.** Records and history are indexed by
   `boardKey` and rebuilt with `parseBoardKey`, so the format changes only
   with a records format version (bump `BOARD_KEY_FORMAT`); a test pins the

@@ -72,7 +72,7 @@ test('the CSV: its header, one row per game newest first, rounding and the repla
     counted_clicks: '27', reveal_effective: '20', reveal_wasted: '1', flag_effective: '3', flag_wasted: '0', chord_effective: '2', chord_wasted: '1',
     replay_kept: 'yes', replay_pins: '',
   });
-  assert.equal(row('b').board_label, 'Cube Beginner · no-guess');
+  assert.equal(row('b').board_label, 'Cube Intro · no-guess');
   assert.deepEqual([row('b').mode, row('b').no_guess, row('b').time_s, row('b').replay_kept, row('b').replay_pins], ['3d', 'yes', '12.345', 'yes', 'best;hand']);
   assert.deepEqual([row('c').bbbv_per_s, row('c').efficiency_pct, row('c').replay_kept, row('c').time_s], ['', '', 'no', '0.000'], 'no stat: an empty field');
 });

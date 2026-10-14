@@ -265,8 +265,9 @@
      ui-slider, credit ui-link). Default focus: the last mode played
      (data-last), else the first entry.
    3D board choice (index.html #board-choice): ui-card ui-screen--wide
-     holding the title, the presets as a ui-menu named Presets, each item
-     labelled with its family (Cube Beginner, …) over its size line and a
+     holding the title, the presets in two ui-menu groups, each under its
+     ui-heading and named by it (First box, Cube), each item
+     labelled with its family (First box 1, Cube Beginner, …) over its size line and a
      detail line (density, typical 3BV, the player's best and streak on the
      board the presets' switch names, or a dash), with the presets' no-guess ui-toggle under it and its ui-text--muted helper
      line, the custom board as a ui-panel of ui-field entries with

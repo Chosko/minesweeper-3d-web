@@ -24,7 +24,7 @@ In scope (m2-3d-joins):
 
 - The 3D board identity: mode 3D, X, Y and Z, mine count and the no-guess
   setting. Every exact combination is its own board, preset or custom; the
-  three cube presets are recognised from their exact size and mine count.
+  six presets are recognised from their exact size and mine count.
 - 3D display labels: "Cube Expert", "Cube Beginner · no-guess",
   "10 × 10 × 10 · 80 mines".
 - Building a summary from a 3D game: the engine's summary or counts, the
@@ -67,10 +67,12 @@ owns records.
   mode 3D, width X, height Y, depth Z, mines and no-guess, with no grid
   field. Its key is derived the same way and carries the mode, so a 3D key
   never equals a 2D key; Classic 2D keys are unchanged. The label names a
-  preset as "Cube" followed by Beginner, Intermediate or Expert, recognised
+  preset by its family and name — "First box 1", "First box 2", "Cube
+  Intro", "Cube Beginner", "Cube Intermediate", "Cube Expert" — recognised
   from the exact size and mine count `3d-play-flow` lists, and any other
-  board by its size and mine count — a double-layer board, whose sizes
-  `3d-play-flow` does not offer as presets, included. A custom board that
+  board by its size and mine count — a double-layer board and
+  12 × 12 × 8 with 130 mines, whose sizes `3d-play-flow` does not offer as
+  presets, included, with their bests, history and replays as they were. A custom board that
   matches a preset exactly is that preset's board.
 - **3D summary.** `game-summary`'s builder accepts the 3D board choice. The
   engine's counts over the box graph (`3d-board-graph`) give 3BV, 3BV
@@ -91,8 +93,9 @@ owns records.
   and every recorded 3D summary returns the comparison against the bests
   that stood before it.
 - **Board listing.** The boards-played query takes a mode: for 3D, the
-  three presets in the order cube Beginner, Intermediate, Expert — each with
-  and without no-guess — then custom 3D boards by last played.
+  six presets in table order — First box 1 and 2, then cube Intro,
+  Beginner, Intermediate and Expert — each without then with no-guess, then
+  custom 3D boards by last played.
 
 ## Data and state
 

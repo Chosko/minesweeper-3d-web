@@ -1,7 +1,7 @@
 # 3D play flow
 
 The 3D mode's game from board choice to result under the game's rules: the
-three 3D cube presets and custom boards with a no-guess switch, a first click that
+two first-box and four cube 3D presets and custom boards with a no-guess switch, a first click that
 is always safe because the board is generated around it, the timer starting
 once that board is ready, and every finished or abandoned game handed to the
 shared results and records like a Classic 2D game.
@@ -21,12 +21,17 @@ game shell — while the scene, camera and controls stay as they are.
 
 In scope (m2-3d-joins):
 
-- Board choice: three presets, labelled as results and Records name them —
-  Cube Beginner (6 × 6 × 6, 10 mines), Cube Intermediate (8 × 8 × 8, 40)
-  and Cube Expert (12 × 12 × 8, 130) — each with a detail line under its
-  size (density, typical 3BV, the player's best and streak), plus Custom
-  and the Random fill, and the no-guess switch, which says it keeps
-  separate records.
+- Board choice: six presets in two groups, labelled as results and Records
+  name them — the First box group, First box 1 (4 × 4 × 3, 4 mines) and
+  First box 2 (5 × 5 × 3, 6), then the Cube group, Cube Intro (6 × 6 × 6,
+  10), Cube Beginner (6 × 6 × 6, 20), Cube Intermediate (8 × 8 × 8, 40) and
+  Cube Expert (10 × 10 × 10, 100) — each with a detail line under its size
+  (density, typical 3BV, the player's best and streak), plus Custom and the
+  Random fill, and the no-guess switch, which says it keeps separate
+  records. The mine counts of First box 1 and Cube Beginner are measured by
+  `dev/measure-first-box-3d.mjs`: no-guess boards with the first click on
+  the marked start cell, so that First box 1's first click leaves work to
+  do and Cube Beginner's opens about 60 % of the safe cells.
 - The start-of-game flow: a closed box, the first reveal, generation around
   it, the "generating" state, the timer starting when the board is ready.
 - The first-click guarantee in 3D: the same rule as Classic 2D's pinned
@@ -47,11 +52,15 @@ Non-goals:
 - Double-layer presets (8 × 8 × 2, 14 × 14 × 2, 25 × 16 × 2) — dropped: a
   box with a side of exactly 2 cells is never a no-guess board, because two
   stacked cells share every neighbour and a mine in one of them is always a
-  coin flip. Records and replays already made on those sizes stay in the
-  history as custom boards, since the preset labels and listing in
-  `3d-game-records` recognise only the presets listed here.
+  coin flip. Records and replays already made on those sizes, and on
+  12 × 12 × 8 with 130 mines, stay in the history as custom boards, since
+  the preset labels and listing in `3d-game-records` recognise only the
+  presets listed here.
 - The 3D scene's look, the camera, view modes and controls — kept as they
-  are, per the m2 slice.
+  are, per the m2 slice, except that the two first-box presets start at
+  spacing 1.5 in the three-quarter spawn view. The start spacing follows
+  the board, matched by size and mines as the records match a preset, with
+  no new control or setting.
 - 3D board identities, 3D personal bests and history, and the 3D results
   and Records screens — the Results and records slice of `m2-3d-joins`.
 - Recording and watching 3D replays — the Replays slice of `m2-3d-joins`.
@@ -131,8 +140,9 @@ behaviour.
   is persisted per mode, as `game-shell` describes. A player with no stored
   choice meets no-guess on, on the presets and the custom board alike;
   after that the switch is remembered as played. A remembered choice naming
-  a preset that is no longer offered opens on cube Beginner with no-guess
-  on.
+  a preset opens on that preset's current board, since preset ids name the
+  tier, not the board; one naming a preset that
+  is no longer offered opens on cube Beginner with no-guess on.
 - **Session** — the game, the pending generation request, the timer, and
   the seed and generator version of the board once it arrives. In memory
   only.

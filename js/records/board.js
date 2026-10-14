@@ -4,9 +4,9 @@
 // It takes one of two forms, chosen by its mode:
 //   2D — mode, grid, width, height, mines and noGuess. Beginner, Intermediate and Expert are
 //        recognised from their exact size and mine count on the square grid.
-//   3D — mode `3d`, width (X), height (Y), depth (Z), mines and noGuess, with no grid. The three
-//        presets, "Cube" Beginner, Intermediate and Expert, are recognised from their exact size
-//        and mine count.
+//   3D — mode `3d`, width (X), height (Y), depth (Z), mines and noGuess, with no grid. The six
+//        presets, "First box" 1 and 2 and "Cube" Intro, Beginner, Intermediate and Expert, are
+//        recognised from their exact size and mine count.
 // A name is never stored, so a custom board that matches a standard board or a preset is that
 // board. Either form may carry `daily: true`: the mode's Daily board, the board the day's daily
 // games are recorded on (js/records/board-code.js), a board of its own beside the plain one.
@@ -18,7 +18,7 @@
 //   Daily  daily:<the plain board's key>, e.g. `daily:classic-2d:square:30x16:99:no-guess`
 // e.g. Expert with no-guess is `classic-2d:square:30x16:99:no-guess`, a 20 × 12 custom board
 // with 50 mines `classic-2d:square:20x12:50:guess`, Cube Expert with no-guess
-// `3d:12x12x8:130:no-guess`. mode and grid are lowercase tokens (letters, digits, single
+// `3d:10x10x10:100:no-guess`. mode and grid are lowercase tokens (letters, digits, single
 // hyphens), so no field can contain the `:` separator; a 3D key has one field fewer than a 2D
 // key, so the two never coincide.
 
@@ -36,9 +36,12 @@ export const STANDARD_BOARDS = Object.freeze([
 // (js/mode3d/board-choice.js, kept equal by a test).
 const preset = (family, name, width, height, depth, mines) => Object.freeze({ family, name, width, height, depth, mines });
 export const PRESETS_3D = Object.freeze([
-  preset('Cube', 'Beginner', 6, 6, 6, 10),
+  preset('First box', '1', 4, 4, 3, 4),
+  preset('First box', '2', 5, 5, 3, 6),
+  preset('Cube', 'Intro', 6, 6, 6, 10),
+  preset('Cube', 'Beginner', 6, 6, 6, 20),
   preset('Cube', 'Intermediate', 8, 8, 8, 40),
-  preset('Cube', 'Expert', 12, 12, 8, 130),
+  preset('Cube', 'Expert', 10, 10, 10, 100),
 ]);
 
 const STANDARD_GRID = 'square';
