@@ -30,7 +30,7 @@ Context:
 
 Done: 2026-10-14, commit `24cac6d` (47 files, +901/-2140). The shell-menu no-WebGL timeout was stale click coordinates measured before Restart, not the end-delay race step 39 recorded; timing tolerance is `MS_TIME_SLACK` (default 2).
 
-## [ ] 21. Implement task 139 — 3D flight: fly-through fade, forward follows the view, spacing, FOV
+## [x] 21. Implement task 139 — 3D flight: fly-through fade, forward follows the view, spacing, FOV
 
 Depends on: none
 
@@ -39,6 +39,8 @@ Context: none
 ```prompt
 /task-implement 139 --review --rounds 2
 ```
+
+Done: 2026-10-14, commit `f92d922` (32 files, +830/-138). 3D picking now starts at the camera (it started one unit ahead), in play and in the replay viewer, so cubes in the fade band are pickable.
 
 ## [ ] 22. Implement task 140 — Look at the board and end delay
 
@@ -105,7 +107,8 @@ Context:
 
 Depends on: 21, 24
 
-Context: none
+Context:
+- 2026-10-14 (from step 21): a spacing step called without a timestamp moves exactly 0.1; only the wheel (notches under 200 ms apart) accelerates. 3D picking starts at the camera, not one unit ahead.
 
 ```prompt
 /task-implement 147 --review --rounds 2
