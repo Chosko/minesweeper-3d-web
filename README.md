@@ -300,12 +300,21 @@ Then open the URL it prints (by default http://localhost:8080). The game does no
 
 ## Tests
 
-The rules engine and the controller helpers have unit tests that use Node's built-in test runner
-(no dependencies):
+The tests use Node's built-in test runner (no dependencies): unit tests for the rules engine and the
+other DOM-free modules, and browser tests (each named "…in a browser…") that drive the game in
+Chromium through Playwright and skip themselves when it is not installed. Three runs, from the repo
+root:
 
 ```sh
-node --test --test-concurrency=2 "tests/**/*.test.mjs"
+.claude/external/run-fast-tests.sh      # every test except the browser ones — seconds
+.claude/external/run-browser-tests.sh   # only the browser tests
+.claude/external/run-full-tests.sh      # the whole suite, with a 3-minute limit per test
 ```
+
+`.claude/external/run-affected-tests.sh [path...]` runs the tests covering the given changed files
+(or, with none, the files `git` reports changed), found through each test file's imports. Set
+`MS_SHOTS=1` to have the component kit's browser tests save their screenshots to a temporary
+directory.
 
 ## Project structure
 

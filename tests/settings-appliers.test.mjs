@@ -324,7 +324,7 @@ test('in a browser, a theme change and a resolution change apply at once', async
     const page = await context.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/index.html`);
+    await page.goto(`${base}/index.html?still-backdrop`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     const ms = (fn, arg) => page.evaluate(fn, arg);
     const theme = () => ms(() => document.documentElement.getAttribute('data-theme'));

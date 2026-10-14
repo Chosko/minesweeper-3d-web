@@ -513,6 +513,13 @@ async function loadPlaywright() {
   }
 }
 
+// A browser without WebGL 2, for a test where 3D is irrelevant: the menu screens keep no 3D backdrop
+// redrawing under software rendering. Every canvas refuses a 'webgl2' context; the others are untouched.
+function removeWebGL2() {
+  const getContext = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
+}
+
 // The measurement behind MIN_TILE_SIZE: an Expert board (30 × 16) fitted, in
 // the Classic 2D screen's framed panel, to a window 1024px wide with --space-4
 // (16px) margins — the panel's 1px border and 8px inside it on every side, and
@@ -593,6 +600,7 @@ test('in a browser, Expert fits a 1024px wide window at MIN_TILE_SIZE or more, a
     const page = await browser.newPage({ viewport: { width: NARROWEST, height: 768 }, deviceScaleFactor: 1 });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(removeWebGL2);
     await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
     await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
     await page.evaluate(() => globalThis.__ms.modes.start('classic-2d', { size: 'expert', noGuess: false }));
@@ -707,7 +715,7 @@ test('in a browser, every 3D atlas layer is pixel-identical to the drawing befor
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
     // index.html maps the bare `three` import js/textures.js makes.
-    await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
+    await page.goto(`http://127.0.0.1:${server.address().port}/index.html?still-backdrop`);
     const { probe, layers } = await page.evaluate(atlasDigests);
     assert.equal(layers.length, ATLAS_DIGESTS.length, 'one digest per atlas layer');
     if (probe !== ATLAS_PROBE) {

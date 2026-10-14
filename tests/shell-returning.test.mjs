@@ -298,7 +298,7 @@ test('in a browser, the detail lines follow the records and the switch, and the 
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/index.html`);
+    await page.goto(`${base}/index.html?still-backdrop`);
     await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
     const ms = (fn, arg) => page.evaluate(fn, arg);
     const mode = () => ms(() => globalThis.__ms.state.mode);
@@ -390,7 +390,7 @@ test('in a browser, Play again starts the last 3D board: into play when the lock
   const base = `http://127.0.0.1:${server.address().port}`;
   try {
     const seed = async (page) => {
-      await page.goto(`${base}/index.html`);
+      await page.goto(`${base}/index.html?still-backdrop`);
       await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
       await page.evaluate(() => {
         localStorage.setItem('ms3d:doc:shell.lastMode', JSON.stringify({ version: 1, data: { mode: '3d' } }));

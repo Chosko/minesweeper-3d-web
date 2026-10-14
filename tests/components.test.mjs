@@ -736,7 +736,7 @@ test('in a browser, the "Esc: Back" hints meet the contrast contract in both the
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
+    await page.goto(`http://127.0.0.1:${server.address().port}/index.html?still-backdrop`);
     await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
     const hints = async (label) => {
       for (const theme of ['light', 'dark']) {
@@ -795,6 +795,14 @@ test('the helper module keeps DOM access out of its logic and imports nothing', 
 });
 
 // ---------------------------------------------------------------- browser: screenshots and contrast
+
+// The element screenshots are artefacts for a person to look at: taken only with MS_SHOTS=1 set. Without
+// them, a theme's look is compared through the element's computed colours.
+const SHOTS = process.env.MS_SHOTS === '1';
+const looks = (page, selector) => page.evaluate((sel) => {
+  const s = getComputedStyle(document.querySelector(sel));
+  return `${s.color} ${s.backgroundColor} ${s.borderTopColor}`;
+}, selector);
 
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css' };
 
@@ -903,7 +911,7 @@ test('in a browser, the gallery renders in both themes and its text meets the co
     return;
   }
   const server = await serve();
-  const shots = mkdtempSync(join(tmpdir(), 'ms3d-components-'));
+  const shots = SHOTS ? mkdtempSync(join(tmpdir(), 'ms3d-components-')) : null;
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
@@ -913,8 +921,10 @@ test('in a browser, the gallery renders in both themes and its text meets the co
     for (const theme of ['light', 'dark']) {
       await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
       assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), theme);
-      images[theme] = await page.screenshot({ path: join(shots, `components-${theme}.png`), fullPage: true });
-      assert.ok(images[theme].length > 1000, `${theme} screenshot taken`);
+      if (SHOTS) {
+        images[theme] = await page.screenshot({ path: join(shots, `components-${theme}.png`), fullPage: true });
+        assert.ok(images[theme].length > 1000, `${theme} screenshot taken`);
+      } else images[theme] = await looks(page, 'body');
       const { runs, focus } = await page.evaluate(measureContrast);
       assert.ok(runs.length > 40, `${theme}: the gallery shows its text (${runs.length} runs)`);
       const failing = runs.filter((r) => r.ratio < r.min).map((r) => `${r.text}: ${r.ratio.toFixed(2)}:1 < ${r.min}`);
@@ -944,12 +954,12 @@ test('in a browser, the overlay bar over the 3D scene meets the contrast contrac
     return;
   }
   const server = await serve();
-  const shots = mkdtempSync(join(tmpdir(), 'ms3d-overlay-'));
+  const shots = SHOTS ? mkdtempSync(join(tmpdir(), 'ms3d-overlay-')) : null;
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 700 } });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
+    await page.goto(`http://127.0.0.1:${server.address().port}/index.html?still-backdrop`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     await page.evaluate(() => { globalThis.__ms.start(9, 9, 9, 10); globalThis.__ms.forcePlay(); });
     // A running time past the display limit: the overlay stops at 999, the game keeps the real time.
@@ -961,8 +971,11 @@ test('in a browser, the overlay bar over the 3D scene meets the contrast contrac
       await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
       await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
       const bar = page.locator('#hud .ui-overlay-bar');
-      images[theme] = await bar.screenshot({ path: join(shots, `overlay-${theme}.png`) });
-      await page.screenshot({ path: join(shots, `overlay-scene-${theme}.png`) });
+      if (SHOTS) {
+        images[theme] = await bar.screenshot({ path: join(shots, `overlay-${theme}.png`) });
+        assert.ok(images[theme].length > 1000, `${theme} overlay screenshot taken`);
+        await page.screenshot({ path: join(shots, `overlay-scene-${theme}.png`) });
+      } else images[theme] = await looks(page, '#hud .ui-overlay-bar');
       const background = await page.evaluate(() => getComputedStyle(document.querySelector('#hud .ui-overlay-bar')).backgroundColor);
       assert.match(background, /^rgb\(/, `${theme}: the overlay surface is opaque (${background})`);
       const { runs: text } = await page.evaluate(measureContrast);
@@ -1004,15 +1017,18 @@ test('in a browser, the menu, the pause card and the results layout meet the con
     return;
   }
   const server = await serve();
-  const shots = mkdtempSync(join(tmpdir(), 'ms3d-screens-'));
+  const shots = SHOTS ? mkdtempSync(join(tmpdir(), 'ms3d-screens-')) : null;
   const base = `http://127.0.0.1:${server.address().port}`;
   const frames = (page) => page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
   // Contrast of the text inside one element, and the focus ring a keyboard focus draws there.
   const check = async (page, selector, label, theme, minRuns = 5) => {
     await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
     await frames(page);
-    const shot = await page.locator(selector).screenshot({ path: join(shots, `${label}-${theme}.png`) });
-    assert.ok(shot.length > 1000, `${label} ${theme}: screenshot taken`);
+    let shot;
+    if (SHOTS) {
+      shot = await page.locator(selector).screenshot({ path: join(shots, `${label}-${theme}.png`) });
+      assert.ok(shot.length > 1000, `${label} ${theme}: screenshot taken`);
+    } else shot = await looks(page, selector);
     const { runs } = await page.evaluate(measureContrast);
     const own = await page.evaluate((sel) => [...document.querySelectorAll(`${sel} *`)]
       .filter((e) => [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()))
@@ -1038,7 +1054,7 @@ test('in a browser, the menu, the pause card and the results layout meet the con
       fail: "self.onmessage = (e) => self.postMessage({ id: e.data.id, result: { ok: false, reason: 'budget', generatorVersion: 1 } });",
     };
     await page.route('**/js/generation/worker.js', (route) => route.fulfill({ contentType: 'text/javascript', body: WORKERS[worker] }));
-    await page.goto(`${base}/index.html`);
+    await page.goto(`${base}/index.html?still-backdrop`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     assert.deepEqual(await page.evaluate(() => Object.keys(globalThis.__ms)), MS_HOOK, 'the __ms hook is unchanged');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');

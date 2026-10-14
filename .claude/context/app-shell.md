@@ -65,6 +65,10 @@ part that owns their topic; `navigation.js` is
   `mouseUp`, `click('left'|'right'|'chord')`, `key(code, down)`,
   `wheel(notches)`; picking `selected`, `pickBrute`, `pickWith(o, d, space)`
   → `[dda, brute]`; `info()` → mode, time, HUD text, readout, cam, stats.
+- `?still-backdrop` in the page's address (`STILL_BACKDROP`, read once at
+  load): the menu screens' demo board stops orbiting and is drawn only when
+  `needRender` or `renderer.sync()` asks, so a software-rendered browser test
+  is not slowed by a backdrop redrawn every frame. Without it nothing changes.
 
 ## INTERNAL PATTERNS
 

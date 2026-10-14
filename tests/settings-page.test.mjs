@@ -571,6 +571,13 @@ async function loadPlaywright() {
   }
 }
 
+// A browser without WebGL 2, for a test where 3D is irrelevant: the menu screens keep no 3D backdrop
+// redrawing under software rendering. Every canvas refuses a 'webgl2' context; the others are untouched.
+function removeWebGL2() {
+  const getContext = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
+}
+
 test('in a browser: Settings from the menu, Dark chosen, and Dark applied before the menu shows after a reload', async (t) => {
   const playwright = await loadPlaywright();
   if (!playwright) {
@@ -598,7 +605,7 @@ test('in a browser: Settings from the menu, Dark chosen, and Dark applied before
         obs.disconnect();
       }).observe(document, { childList: true, subtree: true });
     });
-    await page.goto(`${base}/index.html`);
+    await page.goto(`${base}/index.html?still-backdrop`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     const ms = (fn, arg) => page.evaluate(fn, arg);
     const mode = () => ms(() => globalThis.__ms.state.mode);
@@ -697,6 +704,7 @@ test('in a browser, the Settings page is operable by controller', async (t) => {
       navigator.getGamepads = () => [pad];
       globalThis.__pad = { press(i, on) { buttons[i].pressed = on; buttons[i].value = on ? 1 : 0; pad.timestamp++; } };
     });
+    await page.addInitScript(removeWebGL2);
     await page.goto(`${base}/index.html`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     const ms = (fn, arg) => page.evaluate(fn, arg);
@@ -756,6 +764,7 @@ test('in a browser, Reset all data turns a played profile back into a new player
       const real = crypto.getRandomValues.bind(crypto);
       crypto.getRandomValues = (a) => { if (a instanceof Uint32Array && a.length === 1) { a[0] = 12345; return a; } return real(a); };
     });
+    await page.addInitScript(removeWebGL2);
     await page.goto(`${base}/index.html`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     const ms = (fn, arg) => page.evaluate(fn, arg);

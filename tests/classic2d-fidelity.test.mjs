@@ -456,6 +456,13 @@ async function loadPlaywright() {
   }
 }
 
+// A browser without WebGL 2, for a test where 3D is irrelevant: the menu screens keep no 3D backdrop
+// redrawing under software rendering. Every canvas refuses a 'webgl2' context; the others are untouched.
+function removeWebGL2() {
+  const getContext = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
+}
+
 // Runs in the page: the drawn face of a Beginner tile (col, row), sampled at its centre, as the
 // tile face it matches ('closed', 'pressed', 'revealed') or the raw colour. A shaded face is
 // sampled halfway along its shading, from its colour to its shade.
@@ -498,6 +505,7 @@ test('fidelity in a browser: press feedback and releasing off the pressed cell o
     const page = await browser.newPage({ viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(removeWebGL2);
     await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     await page.click('#menu-entry-classic-2d');

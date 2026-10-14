@@ -6,18 +6,36 @@ Two layers in one suite: Node unit tests for the DOM-free modules, and
 Playwright browser checks for what needs WebGL, the DOM or computed styles.
 Each test file is self-explanatory; this file maps the suite, not the tests.
 
-Running:
-- `.claude/external/run-full-tests.sh` — `cd` to the repo root, then
-  `node --test --test-concurrency=2 "tests/**/*.test.mjs"`. The glob keeps the
-  `*-test.mjs` review scripts under `docs/` out of the run (bare `node --test`
-  picks them up); the concurrency cap keeps the software-rendered browser
-  tests from timing out on a 4-core box.
-- `.claude/external/run-affected-tests.sh <test-file>...` — `node --test` on
-  the given files; exits 2 with usage when called with no arguments.
-- No `package.json`, no dependencies: Node 22's built-in runner (`node:test`,
-  `node:assert/strict`).
+Running — four scripts under `.claude/external/`, each `cd`s to the repo root
+and passes extra arguments through to `node --test`; no `package.json`, no
+dependencies (Node 22's `node:test`, `node:assert/strict`):
+- `run-full-tests.sh` — the whole suite:
+  `node --test --test-concurrency=2 --test-timeout=180000 "tests/**/*.test.mjs"`.
+  The glob keeps the `*-test.mjs` review scripts under `docs/` out of the run
+  (bare `node --test` picks them up); the concurrency cap keeps the
+  software-rendered browser tests from timing out on a 4-core box; the
+  per-test timeout stops a hung test holding the run.
+- `run-fast-tests.sh` — the fast tier, every test not named "in a browser"
+  (`--test-skip-pattern`); the regression tool to run after each change.
+- `run-browser-tests.sh` — the browser tier, only the tests named "in a
+  browser" (`--test-name-pattern`), at concurrency 2.
+- `run-affected-tests.sh [path...]` — a `tests/*.test.mjs` argument runs as
+  given; any other path is a changed file, mapped by `affected-tests.mjs` to
+  every test file whose import closure reaches it (relative static imports
+  and `import()` calls with a literal path, transitive); `js/main.js`, `index.html`, `css/**` and `js/render.js` also
+  select every browser test file, since the page loads them rather than a
+  test importing them. With no arguments the changed files are git's against
+  `HEAD` (staged, unstaged, untracked). `tests/affected-tests.test.mjs` pins
+  the scripts and the mapping.
 
-Browser tests sit in their area's test file, mostly named `in a browser, …`.
+Measured on the 4-core cloud box with no GPU: the fast tier about 7 s wall
+(about 1500 tests); the full run about 4.5 minutes wall, nearly all of it the
+browser tier, which alone takes about as long.
+
+Browser tests sit in their area's test file. The tier convention: a test
+that launches a browser is named "…in a browser…", and no other test is —
+the two tiers split on that name alone, so a misnamed browser test lands in
+the fast tier.
 Each loads Playwright by `import('playwright')`, falling back to the global
 install beside `process.execPath`, and calls `t.skip` when Playwright is
 missing or Chromium fails to launch, so the Node layer runs green without them.
@@ -40,6 +58,7 @@ Test files by name prefix:
 | `render-`, `readability-` | 3D renderer, readability aids; feedback effects (pulse, flash) | [rendering.md](rendering.md), [rendering-effects.md](rendering-effects.md) |
 | `gamepad`, `input-`, `camera-` | `FlyCamera`, `MouseActions`, drag-to-look, spawn pose; gamepad helpers, `Controls` | [input.md](input.md), [input-controller.md](input-controller.md) |
 | `audio-` | sound voices over recorded primitives | [audio.md](audio.md) |
+| `affected-tests` | the runner scripts and the affected-tests mapping (`.claude/external/`) | this file |
 
 Data beside the tests:
 - `tests/fidelity/minesweeper-online.md` — the observation file: one entry
@@ -91,8 +110,10 @@ Data beside the tests:
   `js/render.js` register a resolve hook mapping `three` to `vendor/three/`.
 - **Local static server**: each browser test file defines its own `serve()`
   — an in-process `node:http` server on a free port over the repo root (ES
-  modules fail on `file://`) — and its own `loadPlaywright()`. Screenshots go
-  to a `mkdtemp` directory.
+  modules fail on `file://`) — and its own `loadPlaywright()`. Artefact
+  screenshots (`components.test.mjs`) are taken only with `MS_SHOTS=1` set,
+  into a `mkdtemp` directory; without it a theme's look is compared through
+  computed colours, and the contrast checks run either way.
 - **Contrast** is checked from parsed tokens per theme (`tokens.test.mjs`)
   and in the page (`measureContrast` in `components.test.mjs`: 4.5:1, or 3:1
   for large text and accent labels, over each run's effective background).
@@ -108,6 +129,17 @@ Browser environment:
 - 3D needs WebGL 2 without a GPU: launch Chromium with `--use-gl=angle
   --use-angle=swiftshader --enable-unsafe-swiftshader`. No-WebGL checks add an
   init script making `getContext('webgl2')` return null.
+- The menu screens' orbiting 3D backdrop redraws every frame and drops
+  SwiftShader to about 10 fps, slowing every `requestAnimationFrame` wait,
+  screenshot and `browser.close()`. A browser test that loads `index.html`
+  for a 2D, screen or menu subject keeps it out of the way: where 3D is
+  irrelevant it adds the WebGL-2-refusing init script (`removeWebGL2`,
+  defined in each such file); where it needs WebGL 2 present (it opens the
+  3D board choice, starts a 3D game or asserts on the 3D entry) it loads
+  `index.html?still-backdrop` (the hook in [app-shell.md](app-shell.md)),
+  which draws the backdrop once per change. The 3D gameplay test files, the
+  no-WebGL path's own tests and the backdrop's own test (`shell-menu`) load
+  the page as a player does.
 - 3D tests and ad-hoc scripts drive `window.__ms`. Headless has no pointer
   lock: `__ms.start(...)`, `__ms.forcePlay()`, then `aimAt` and `click`.
   Mutators refresh synchronously, so `selected()` / `info()` are valid at

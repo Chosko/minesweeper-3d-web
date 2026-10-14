@@ -442,7 +442,7 @@ Preconditions: 152
 
 ## 154. Fast and slow test tiers and a cheaper browser suite
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/external/run-full-tests.sh, .claude/external/run-fast-tests.sh, .claude/external/run-browser-tests.sh, .claude/external/run-affected-tests.sh, tests/components.test.mjs, tests/classic2d-mode.test.mjs, tests/shell-pause.test.mjs, tests/settings-page.test.mjs, tests/shell-menu.test.mjs, tests/shell-help.test.mjs, tests/shell-returning.test.mjs, tests/results-watch.test.mjs, tests/shell-history.test.mjs, tests/records-history.test.mjs, tests/shell-router.test.mjs, tests/settings-appliers.test.mjs, tests/replay-viewer.test.mjs, tests/results.test.mjs, tests/classic2d-fidelity.test.mjs, tests/records-screen.test.mjs, tests/records-replays.test.mjs, tests/tile-skin.test.mjs, js/main.js, README.md, .claude/context/testing.md
 Preconditions: none

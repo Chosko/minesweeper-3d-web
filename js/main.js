@@ -994,6 +994,8 @@ function showMainMenu() { SHELL.go('menu'); }
 /** The menu screens show the decorative demo board behind them; without WebGL 2, the page's static background. */
 const BACKDROP_SCREENS = new Set(['menu', 'board-choice', 'coming-soon', 'records', 'classic-2d-choice', 'settings']);
 function onBackdrop() { return BACKDROP_SCREENS.has(S.mode); }
+/** Test hook: `?still-backdrop` in the page's address draws the backdrop when it changes instead of orbiting it every frame. */
+const STILL_BACKDROP = new URLSearchParams(location.search).has('still-backdrop');
 /** The 3D leave: drop the game and release pointer lock, lockless play and drag-to-look play. */
 function leaveGame() {
   input.exitLock();
@@ -1404,7 +1406,8 @@ function rendererAnimating() {
 }
 function shouldRender(now, synced) {
   if (S.mode === 'results' && RESULTS.current?.mode === '3d') return false; // the results screen takes over the 3D scene
-  if (onBackdrop() || needRender || synced) return true;
+  if (needRender || synced) return true;
+  if (onBackdrop()) return !STILL_BACKDROP;
   if (S.endState !== lastEnd) { lastEnd = S.endState; if (S.endState) animUntil = now + 6000; return true; }
   const anim = rendererAnimating();
   if (anim === true) return true;
@@ -1451,7 +1454,7 @@ function frame(now) {
   const three = renderer.camera;
   const playing = S.mode === 'playing';
   if (onBackdrop()) {
-    S.orbit += dt * 0.12;
+    if (!STILL_BACKDROP) S.orbit += dt * 0.12;
     const r = 62;
     three.position.set(Math.sin(S.orbit) * r, 24 + Math.sin(S.orbit * 0.7) * 10, Math.cos(S.orbit) * r);
     three.lookAt(0, 0, 0);

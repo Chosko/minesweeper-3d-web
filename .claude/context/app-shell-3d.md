@@ -108,8 +108,10 @@ loop's render-on-demand. The 3D board choice, session and adapter
   `S.pickKey`. Spacing resets to `SPACING_START` per game; the menu demo
   (`makeDemo`, 7³/30, decorative) uses 1.25 and an orbiting camera.
 - **Render on demand.** `shouldRender` never draws while `results` shows a
-  3D game; otherwise it draws on a menu screen, when `needRender` is set,
-  `renderer.sync()` reported changes, `endState` changed,
+  3D game; otherwise it draws when `needRender` is set or
+  `renderer.sync()` reported changes, on every frame of a menu screen (the
+  orbiting demo, except under the `?still-backdrop` hook,
+  [app-shell.md](app-shell.md) § PUBLIC API), `endState` changed,
   `renderer.isAnimating()`, or the signature (camera, spacing, toggles,
   selection, `game.version`, aspect, mode) changed. Set `needRender = true`
   after any change the signature does not capture.

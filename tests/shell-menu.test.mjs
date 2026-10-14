@@ -310,7 +310,7 @@ test('in a browser, the menu shows the four entries, each routes, and Back retur
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/index.html`);
+    await page.goto(`${base}/index.html?still-backdrop`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     const ms = (fn, arg) => page.evaluate(fn, arg);
     const mode = () => ms(() => globalThis.__ms.state.mode);
@@ -398,6 +398,63 @@ test('in a browser, the menu shows the four entries, each routes, and Back retur
     await page.reload();
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     await page.waitForFunction(() => document.activeElement?.id === 'menu-entry-3d');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
+
+test('in a browser, the backdrop orbits and draws every frame, and the ?still-backdrop test hook draws it only when it changes', async (t) => {
+  const playwright = await loadPlaywright();
+  if (!playwright) {
+    t.skip('Playwright is not installed');
+    return;
+  }
+  let browser;
+  try {
+    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  } catch (error) {
+    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
+    return;
+  }
+  const server = await serve();
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const page = await browser.newPage({ viewport: { width: 400, height: 300 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    const ms = (fn, arg) => page.evaluate(fn, arg);
+    const frames = (n) => ms((count) => new Promise((done) => {
+      const step = (left) => (left ? requestAnimationFrame(() => step(left - 1)) : done());
+      step(count);
+    }), n);
+    const drawn = () => ms(() => globalThis.__ms.frameStats.renders);
+    const orbit = () => ms(() => globalThis.__ms.state.orbit);
+
+    // Without the hook: the demo board orbits, and every frame draws it.
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+    await frames(2);
+    let renders = await drawn(), angle = await orbit();
+    await frames(3);
+    assert.ok(await drawn() >= renders + 3, 'the backdrop draws every frame');
+    assert.ok(await orbit() > angle, 'the camera orbits the demo board');
+
+    // With the hook: drawn once, then still until the screen changes.
+    await page.goto(`${base}/index.html?still-backdrop`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+    await frames(2);
+    assert.ok(await drawn() >= 1, 'the backdrop is drawn');
+    assert.ok(await ms(() => globalThis.__ms.renderer.game === globalThis.__ms.state.demo), 'the demo board is the backdrop');
+    renders = await drawn();
+    angle = await orbit();
+    await frames(3);
+    assert.equal(await drawn(), renders, 'no frame redraws a backdrop that did not change');
+    assert.equal(await orbit(), angle, 'the camera holds still');
+    await page.click('#menu-entry-records');
+    await frames(2);
+    assert.ok(await drawn() > renders, 'a screen change draws it again');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
@@ -592,7 +649,7 @@ async function controllerPage(browser, base, { route } = {}) {
   page.on('pageerror', (e) => errors.push(e.message));
   await page.addInitScript(installFakePad);
   if (route) await page.route(route.url, route.handler);
-  await page.goto(`${base}/index.html`);
+  await page.goto(`${base}/index.html?still-backdrop`);
   await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.pads.connected);
   const frames = (n) => page.evaluate((count) => new Promise((done) => {
     const step = (left) => (left ? requestAnimationFrame(() => step(left - 1)) : done());

@@ -378,6 +378,13 @@ async function loadPlaywright() {
     }
   }
 }
+
+// A browser without WebGL 2, for a test where 3D is irrelevant: the menu screens keep no 3D backdrop
+// redrawing under software rendering. Every canvas refuses a 'webgl2' context; the others are untouched.
+function removeWebGL2() {
+  const getContext = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
+}
 async function openBrowser(t) {
   const playwright = await loadPlaywright();
   if (!playwright) { t.skip('Playwright is not installed'); return null; }
@@ -398,6 +405,7 @@ test('in a browser, a seeded history is charted in both themes and its games lis
     const page = await browser.newPage({ viewport: { width: 1366, height: 900 }, deviceScaleFactor: 1 });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(removeWebGL2);
     await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     await page.evaluate(() => {

@@ -410,6 +410,13 @@ async function loadPlaywright() {
   }
 }
 
+// A browser without WebGL 2, for a test where 3D is irrelevant: the menu screens keep no 3D backdrop
+// redrawing under software rendering. Every canvas refuses a 'webgl2' context; the others are untouched.
+function removeWebGL2() {
+  const getContext = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
+}
+
 test('in a browser, Back steps back inside the game and leaves only from the main menu', async (t) => {
   const playwright = await loadPlaywright();
   if (!playwright) {
@@ -435,6 +442,7 @@ test('in a browser, Back steps back inside the game and leaves only from the mai
       crypto.getRandomValues = (a) => { if (a instanceof Uint32Array && a.length === 1) { a[0] = 12345; return a; } return real(a); };
     });
     await page.goto(`${base}/previous`);
+    await page.addInitScript(removeWebGL2);
     await page.goto(`${base}/index.html`);
     await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
     const mode = () => page.evaluate(() => globalThis.__ms.state.mode);

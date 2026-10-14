@@ -252,7 +252,7 @@ test('in a browser: the Controls panel tabs, H, M and the HUD strip in Classic 2
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/index.html`);
+    await page.goto(`${base}/index.html?still-backdrop`);
     await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
     const ms = (fn, arg) => page.evaluate(fn, arg);
     const mode = () => ms(() => globalThis.__ms.state.mode);
@@ -351,7 +351,7 @@ test('in a browser: the controller as the active device redraws every shown surf
       navigator.getGamepads = () => [pad];
       globalThis.__pad = { press(i, on) { buttons[i].pressed = on; buttons[i].value = on ? 1 : 0; pad.timestamp++; } };
     });
-    await page.goto(`${base}/index.html`);
+    await page.goto(`${base}/index.html?still-backdrop`);
     await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
     const ms = (fn, arg) => page.evaluate(fn, arg);
     const textOf = (sel) => ms((s) => document.querySelector(s).textContent, sel);
@@ -407,7 +407,7 @@ test('in a browser: a Space tap keeps aim-through on until the next tap; a hold 
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/index.html`);
+    await page.goto(`${base}/index.html?still-backdrop`);
     await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
     const ms = (fn, arg) => page.evaluate(fn, arg);
     const space = () => ms(() => globalThis.__ms.controls.space);

@@ -1084,6 +1084,13 @@ async function loadPlaywright() {
   }
 }
 
+// A browser without WebGL 2, for a test where 3D is irrelevant: the menu screens keep no 3D backdrop
+// redrawing under software rendering. Every canvas refuses a 'webgl2' context; the others are untouched.
+function removeWebGL2() {
+  const getContext = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
+}
+
 test('in a browser, menu → Classic 2D → Expert → first click → pause → resume → back to menu reports the abandoned game', async (t) => {
   const playwright = await loadPlaywright();
   if (!playwright) {
@@ -1103,6 +1110,7 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
     const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(removeWebGL2);
     await page.goto(`${base}/index.html`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     const ms = (fn, arg) => page.evaluate(fn, arg);
@@ -1218,6 +1226,7 @@ test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800 in both themes: 
         const page = await browser.newPage({ viewport, deviceScaleFactor: 1 });
         const errors = [];
         page.on('pageerror', (e) => errors.push(e.message));
+        await page.addInitScript(removeWebGL2);
         await page.goto(`${base}/index.html`);
         await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
         await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
@@ -1344,6 +1353,7 @@ test('in a browser, a Classic 2D Beginner game played by mouse and by keyboard c
     const page = await browser.newPage({ viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(removeWebGL2);
     await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     const ms = (fn, arg) => page.evaluate(fn, arg);

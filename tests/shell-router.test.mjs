@@ -398,7 +398,7 @@ test('in a browser, the keyboard walks menu → screen → Back with the default
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/index.html`);
+    await page.goto(`${base}/index.html?still-backdrop`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     const mode = () => page.evaluate(() => globalThis.__ms.state.mode);
     const active = () => page.evaluate(() => document.activeElement?.id || document.activeElement?.dataset?.preset || '');
@@ -471,7 +471,7 @@ test('in a browser, the arrow keys alone walk the menu, the 2D board choice, the
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/index.html`);
+    await page.goto(`${base}/index.html?still-backdrop`);
     await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
     const mode = () => page.evaluate(() => globalThis.__ms.state.mode);
     const focus = () => page.evaluate(() => {

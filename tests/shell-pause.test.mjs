@@ -538,6 +538,13 @@ async function loadPlaywright() {
   }
 }
 
+// A browser without WebGL 2, for a test where 3D is irrelevant: the menu screens keep no 3D backdrop
+// redrawing under software rendering. Every canvas refuses a 'webgl2' context; the others are untouched.
+function removeWebGL2() {
+  const getContext = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
+}
+
 test('in a browser, the 3D game pauses, resumes, restarts and goes back to menu through the pause controller', async (t) => {
   const playwright = await loadPlaywright();
   if (!playwright) {
@@ -557,7 +564,7 @@ test('in a browser, the 3D game pauses, resumes, restarts and goes back to menu 
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`${base}/index.html`);
+    await page.goto(`${base}/index.html?still-backdrop`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     const ms = (fn, arg) => page.evaluate(fn, arg);
     await ms(() => {
@@ -752,6 +759,7 @@ test('in a browser, the Classic 2D generating card cancels by Cancel and Esc, an
     page.on('pageerror', (e) => errors.push(e.message));
     let worker = 'hang';
     await page.route('**/js/generation/worker.js', (route) => route.fulfill({ contentType: 'text/javascript', body: WORKERS[worker] }));
+    await page.addInitScript(removeWebGL2);
     await page.goto(`${base}/index.html`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     const ms = (fn, arg) => page.evaluate(fn, arg);
@@ -885,6 +893,7 @@ test('in a browser, F2 and the controller\'s Start + Y restart a Classic 2D game
       navigator.getGamepads = () => [pad];
       globalThis.__pad = { press(i, on) { buttons[i].pressed = on; buttons[i].value = on ? 1 : 0; pad.timestamp++; } };
     });
+    await page.addInitScript(removeWebGL2);
     await page.goto(`${base}/index.html`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     const ms = (fn, arg) => page.evaluate(fn, arg);
