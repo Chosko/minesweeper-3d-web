@@ -48,7 +48,9 @@ Non-goals:
   whole library, pinned replays included, by `settings`' Reset all data,
   which waits for the library's start-up load and then deletes every blob
   and the index.
-- Importing, exporting or sharing replays — in no milestone's slice.
+- Importing, exporting or sharing the replay files — in no milestone's
+  slice. `records-screen`'s export carries only the library's listing of
+  kept replays.
 - The Records screen's board picker, 2D and 3D switch and figures —
   `records-screen` and the Results and records slice of `m2-3d-joins`.
 
@@ -121,8 +123,10 @@ plain DOM from the `screen-components` kit inside the Records screen.
   shell's end-of-game hand-off for finished and abandoned games, after the
   summary is recorded with `personal-records`. Adding the same id twice is
   a no-op.
-- **Queries** — the replays kept for a board key; whether a summary id has
-  a kept replay; a replay's bytes by id.
+- **Queries** — the replays kept for a board key; every kept replay across
+  boards and modes, newest first (the listing `records-screen`'s export
+  carries; a library that failed to load lists none); whether a summary id
+  has a kept replay; a replay's bytes by id.
 - **Pin / unpin** — by id; pinning sets the hand-pin reason, unpinning
   clears every reason and applies retention.
 - **Remove** — by id; removes the replay whatever its pins (the player's

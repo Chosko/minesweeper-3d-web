@@ -397,7 +397,7 @@ Preconditions: none
 
 ## 149. Richer Records and local top-10
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/records/stats.js, js/records/export.js, js/records/screen.js, js/records/history-chart.js, js/results/flow.js, js/replay/library.js, js/settings/page.js, js/ui/components.js, js/main.js, index.html, css/components.css, css/style.css, dev/components.html, tests/records-stats.test.mjs, tests/records-export.test.mjs, tests/records-screen.test.mjs, tests/records-screen-3d.test.mjs, tests/records-history.test.mjs, tests/results.test.mjs, tests/replay-library.test.mjs, tests/settings-page.test.mjs, tests/components.test.mjs, README.md, .claude/domain/features/records-screen.md, .claude/domain/features/replay-library.md, .claude/domain/features/settings.md
 Preconditions: 148

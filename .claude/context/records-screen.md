@@ -1,4 +1,4 @@
-# Records screen — 2D | 3D switch, board picker, history chart, library view
+# Records screen — 2D | 3D switch, board picker, history charts, Top 10, filters, export, library view
 
 ## OVERVIEW
 
@@ -19,6 +19,12 @@ the shell's `records` route from the main menu or the results screen
   library) and `pageOf`, the paging of both lists.
 - `js/records/view-prefs.js` — the remembered Pinned first switch, the
   `records.view` document.
+- `js/records/stats.js` — pure figures over a board's history: the one
+  ranking (also the results screen's rank), the Top 10, averages, the
+  last-50 win rate, the period and outcome filters, the best time's steps.
+- `js/records/export.js` — the CSV and JSON export of every game and the
+  kept replays' listing, the injected download, and the export actions'
+  binder shared with the Settings page's Data panel.
 
 ## PUBLIC API
 
@@ -30,17 +36,22 @@ Records screen (`js/records/screen.js`)
   in `boardsPlayed(mode)` order.
 - `lastBoardPlayed(records, mode?)` → key or null.
 - `recordsContent(records, { mode?, boardKey?, notSaved?, page?, replays?,
-  replayPage?, pinnedFirst?, canWatch?, replaysNotSaved? })` → the content.
-  Never throws.
+  replayPage?, pinnedFirst?, canWatch?, replaysNotSaved?, period?, outcome?,
+  tab?, topStat?, now?, exportable? })` → the content. Never throws.
+- `GAME_TABS`, `TOP_STATS`, `TOP_EMPTY_TEXT`, `TOP_EMPTY_PERIOD`,
+  `GAMES_EMPTY_TEXT`, `WON_ONLY_TEXT`.
 - `formatDate(iso)` → `"9 Oct 2026"` (the bests); `formatDateTime(iso)` →
   `"9 Oct 2026 14:32"` (local, 24-hour: the games and replays);
   `formatWinRate` (re-exported from `js/results/view.js`).
-- `createRecordsScreen({ records, view, replays?, router?, viewPrefs? })` →
-  `show({ mode, boardKey }?)`, `hide()`, `select(key)`, `setMode(mode)`,
-  `showPage(n)`, `showReplayPage(n)`, `togglePin(id)`, `deleteReplay(id)`,
-  `setPinnedFirst(on)`, `watch(id)`, `closeConfirm()`, `confirmOpen`.
+- `createRecordsScreen({ records, view, replays?, router?, viewPrefs?,
+  exporter?, now? })` → `show({ mode, boardKey }?)`, `hide()`, `select(key)`,
+  `setMode(mode)`, `showPage(n)`, `showReplayPage(n)`, `setPeriod(v)`,
+  `setOutcome(v)`, `setTab(v)`, `setTopStat(v)`, `exportFile(format)`,
+  `filters`, `togglePin(id)`, `deleteReplay(id)`, `setPinnedFirst(on)`,
+  `watch(id)`, `closeConfirm()`, `confirmOpen`.
 - `createRecordsView({ root, onSelect, onMode?, onBack, onPage, onWatch?,
-  onTogglePin?, onPinnedFirst?, onReplayPage?, onDelete?, chart? })` →
+  onTogglePin?, onPinnedFirst?, onReplayPage?, onDelete?, onPeriod?,
+  onOutcome?, onTab?, onTopStat?, onExport?, chart?, bestChart? })` →
   `show(content)`, `hide()`, `closeConfirm()`, `isConfirmOpen()`; the
   switch is `#records-mode`, the chart defaults to `#records-chart`.
 
@@ -62,10 +73,27 @@ Remembered view (`js/records/view-prefs.js`)
 
 History chart (`js/records/history-chart.js`)
 - `chartPoints(history)`, `niceCeiling(v)`, `chartScale(points, size)`,
-  `chartText(points)` / `NO_WON_GAMES`, `drawHistoryChart(ctx, opts)`,
-  `CHART_TOKENS`, `createHistoryChart({ canvas, ... })` → `draw(points)`,
-  `destroy()`.
+  `chartText(points, empty?)` / `NO_WON_GAMES`, `drawHistoryChart(ctx, opts)`,
+  `CHART_TOKENS`; the best-time chart: `dateTicks`, `bestTimeScale`,
+  `bestTimeText`, `drawBestTimeChart`; hover: `nearestIndex`,
+  `rateReadout`, `bestReadout`; `formatDate`, `formatShortDate`;
+  `createHistoryChart({ canvas, kind?: 'rate' | 'best', ... })` →
+  `draw(data)`, `hoverAt(x)`, `leave()`, `readout`, `destroy()`.
 - `pageOf(items, page, size = PAGE_SIZE)`; `PAGE_SIZE` — 10.
+
+Stats (`js/records/stats.js`)
+- `rankedGames(history, stat)`, `gameRank(history, summary, stat?)`,
+  `topGames`, `averages`, `recentWinRate`, `filterHistory(history,
+  { period, outcome }, now)`, `periodStart`, `bestTimeSteps`, `statValue`;
+  `PERIODS`, `OUTCOME_FILTERS`, `AVERAGE_WINDOWS`, `TOP_SIZE`,
+  `RECENT_GAMES`.
+
+Export (`js/records/export.js`)
+- `createRecordsExport({ records, replays?, now?, trigger?, objectUrl? })` →
+  `hasGames()`, `csv()`, `json()`, `save(format)`; `exportCsv`,
+  `exportJson`, `exportGames`, `csvField`, `dateStamp`, `CSV_HEADERS`,
+  `EXPORT_FORMAT`, `EXPORT_LINE`, `NOTHING_TO_EXPORT`;
+  `bindExportActions({ csv, json, note }, { onExport })` → `show(exportable)`.
 
 ## INTERNAL PATTERNS
 
@@ -93,9 +121,12 @@ History chart (`js/records/history-chart.js`)
   `formatEfficiency` from `js/results/view.js`); the screen defines only
   the date, the date and time, and the win rate.
 - **Layout.** `#records` is a `ui-columns--two`: switch, picker, the bests as
-  `ui-stat--tile`s, the board's counters and the mode's overall row on one
-  side, the history and replays panels on the other, one column below the
-  kit's 1024 px breakpoint. A table narrower than its columns (a phone, a
+  `ui-stat--tile`s, the board's counters, the averages panel and the mode's
+  overall row on one side; on the other the history panel — the period and
+  outcome choices, both charts in a `ui-columns--pair` (side by side at the
+  kit breakpoint), the Recent games | Top 10 tabs and the Top 10's stat
+  choice — and the replays panel; one column below the kit's 1024 px
+  breakpoint. Below the columns, Back and the two export actions. A table narrower than its columns (a phone, a
   half-width column) stacks each row's cells under their `data-label`
   (`css/style.css`, a container query on the two panels).
 - **The chart is a picture; text carries the numbers.** The canvas is
@@ -105,6 +136,19 @@ History chart (`js/records/history-chart.js`)
   token reader; it redraws on every theme change and canvas resize
   (`ResizeObserver`) at the device pixel ratio; a zero-size canvas is
   skipped.
+- **History views and filters.** The choices are kit segmented choices
+  whose options are in the markup. The period filters
+  every history view, the outcome only the recent games; the bests,
+  counters and overall row stay all-time. Filters, tab and stat are screen
+  state, reset on each `show`; a filter change starts the recent games on
+  page one.
+- **Hover readouts.** Each chart marks the nearest point under a pointer
+  (or a tap) and draws its values beside it, also on
+  `canvas.dataset.readout`; no focus stop.
+- **Export.** `js/main.js` builds one `RECORDS_EXPORT` over the store and
+  the library; the screen's actions below the lists and the Settings Data
+  panel's both save through it, disabled with `NOTHING_TO_EXPORT` until a
+  game is recorded.
 - **Paged lists.** Both lists newest first, `PAGE_SIZE` per page, past the
   end clamped, each under a kit pager (`bindPager`: First, five numbered
   pages, Last; hidden on one page) and a range caption.
@@ -153,3 +197,6 @@ History chart (`js/records/history-chart.js`)
   `createRecordsView`.
 - Changing the chart's drawing, scale or colours: `drawHistoryChart` and
   `chartScale` in `history-chart.js`.
+- Changing a ranking, an average, a filter or the best time's steps: the
+  head comment of `stats.js`; the export's columns or files: the head
+  comment of `export.js`.

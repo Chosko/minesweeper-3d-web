@@ -838,6 +838,15 @@ test('the gallery shows the stat tile, the pager in each state and the column co
   assert.match(pagers, /aria-current="page"/);
   assert.match(pagers, /<button type="button" class="ui-button ui-button--secondary ui-pager__button"[^>]* disabled>First<\/button>/);
   assert.ok(TAGS.some((t) => hasClasses(t, '.ui-columns')), 'the column composition');
+  assert.ok(TAGS.some((t) => hasClasses(t, '.ui-columns.ui-columns--pair')), 'the column composition in an equal pair');
+});
+
+test('the equal pair of columns sits inside the one breakpoint and is catalogued; Records lays its two charts in it', () => {
+  const block = CSS.slice(CSS.indexOf('@media (min-width: 1024px)'));
+  assert.match(block.slice(0, block.indexOf('\n}')), /\.ui-columns--pair \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\); \}/);
+  const head = RAW.match(/^\/\*([\s\S]*?)\*\//)[1];
+  assert.match(head, /ui-columns--pair in\s+two equal ones/);
+  assert.match(INDEX, /<div id="records-charts" class="ui-columns ui-columns--pair">\s*<canvas id="records-chart"[^>]*>[^<]*<\/canvas>\s*<canvas id="records-best-chart"/);
 });
 
 test('the helper module keeps DOM access out of its logic and imports nothing', () => {

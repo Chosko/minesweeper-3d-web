@@ -27,7 +27,9 @@ pins ([records-screen.md](records-screen.md)), and the viewer reads bytes
     index whatever its pins, saves the index, deletes the blob and notifies
     `{kind: 'remove', ids: [id]}`; unknown ids change nothing.
   - `forBoard(boardKey)` → frozen entries (listing fields plus `pins`),
-    newest first; `has(id)`; `bytes(id)` → Promise of bytes or `undefined`,
+    newest first; `entries()` → every kept entry across boards and modes,
+    newest first, frozen alike (the Records export's replay listing);
+    `has(id)`; `bytes(id)` → Promise of bytes or `undefined`,
     rejecting when the store cannot read.
   - `onChange(fn)` → unsubscribe; `{kind: 'add' | 'pin' | 'unpin', id}` or
     `{kind: 'remove', ids}`.

@@ -388,6 +388,21 @@ test('forBoard lists the replays kept for one board key, newest first', async ()
   assert.deepEqual(library.forBoard('nothing'), []);
 });
 
+test('entries lists every kept replay across boards and modes, newest first, frozen like forBoard', async () => {
+  const { library } = await setup();
+  const a = replay();
+  const other = replay({ boardKey: OTHER });
+  const b = replay({ boardKey: '3d:6x6x6:10:standard' });
+  await addAll(library, [a, other, b]);
+  await library.pin(a.listing.id);
+  const all = library.entries();
+  assert.deepEqual(all.map((e) => e.id), [b.listing.id, other.listing.id, a.listing.id]);
+  assert.deepEqual(all[2].pins, [PIN_HAND], 'with its pins');
+  assert.ok(Object.isFrozen(all[0]) && Object.isFrozen(all[2].pins), 'frozen copies');
+  const empty = await setup();
+  assert.deepEqual(empty.library.entries(), []);
+});
+
 test('the listed entries are copies the caller cannot change the library through', async () => {
   const { library } = await setup();
   const r = replay();

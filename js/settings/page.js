@@ -20,10 +20,13 @@
 //                                SETTINGS_SECTIONS entry, each a column, then, across the width
 //                                (ui-columns__span), the bindings panel whose lists (#settings-bindings,
 //                                filled by bindingsSectionHtml) are columns of their own, and the Data panel
-//                                (#settings-data): its line, the "Reset all data…" button, the
-//                                hidden confirmation (RESET_MESSAGE, Reset all data, Cancel) and the
-//                                hidden warning line. A control whose label is its section's title
-//                                is named by the section heading.
+//                                (#settings-data): first the export — its line (EXPORT_LINE), the
+//                                hidden nothing-to-export line and "Export history (CSV)" and
+//                                "Export all (JSON)" (bound by bindExportActions,
+//                                js/records/export.js) — then the reset's line, the
+//                                "Reset all data…" button, the hidden confirmation (RESET_MESSAGE,
+//                                Reset all data, Cancel) and the hidden warning line. A control
+//                                whose label is its section's title is named by the section heading.
 // bindingsSectionHtml(glyphs?, camera?) → each mode's bindings per input device, controller
 //                                buttons in `glyphs`, 3D's for the Camera setting's `camera`.
 // bindSettingControls(elements, store, { onUserChange? }) → unbind. Each element is a control
@@ -40,6 +43,7 @@
 import { SCHEMA } from './schema.js';
 import { BINDING_MODES, bindingDevices, bindingRows, bindingsListHtml } from './bindings.js';
 import { formatSliderValue, decimalsOf, segmentedState, bindSegmented } from '../ui/components.js';
+import { EXPORT_LINE } from '../records/export.js';
 
 export const SETTINGS_SECTIONS = Object.freeze([
   Object.freeze({ id: 'controls', title: 'Controls', settings: Object.freeze(['lookSensitivity', 'invertY', 'camera', 'confirmRestart']) }),
@@ -138,6 +142,12 @@ export const RESET_MESSAGE = 'Delete your records, game history, replays, settin
 function dataPanelHtml() {
   return '<section class="ui-panel ui-actions ui-columns__span" id="settings-data" aria-labelledby="set-sec-data">'
     + '<h3 class="ui-heading" id="set-sec-data">Data</h3>'
+    + `<p class="ui-text ui-text--muted" id="set-export-text">${EXPORT_LINE}</p>`
+    + '<p class="ui-text ui-text--muted hidden" id="set-export-note" role="status"></p>'
+    + '<div class="ui-actions ui-actions--row">'
+    + '<button type="button" class="ui-button ui-button--secondary" id="set-export-csv">Export history (CSV)</button>'
+    + '<button type="button" class="ui-button ui-button--secondary" id="set-export-json">Export all (JSON)</button>'
+    + '</div>'
     + '<p class="ui-text ui-text--muted">Delete everything the game keeps in this browser and start over as a new player.</p>'
     + '<p class="ui-text ui-text--warning hidden" id="set-reset-note" role="status"></p>'
     + '<button type="button" class="ui-button ui-button--secondary" id="set-reset">Reset all data…</button>'

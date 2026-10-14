@@ -16,6 +16,7 @@ import {
   SETTINGS_SECTIONS, SETTING_LABELS, settingControl, settingControlHtml, settingsPageHtml, bindingsSectionHtml,
   bindSettingControls, bindResetPanel, RESET_MESSAGE,
 } from '../js/settings/page.js';
+import { EXPORT_LINE } from '../js/records/export.js';
 import { browserSuite } from './helpers/browser.mjs';
 import { patience } from './helpers/timing.mjs';
 
@@ -362,7 +363,7 @@ test('the page is one column composition generated from the sections: each secti
 
 // ---------------------------------------------------------------- the Data panel and Reset all data
 
-test('the page ends, after Bindings, with a Data panel: one line and a "Reset all data…" kit button', () => {
+test('the page ends, after Bindings, with a Data panel: the export offered first, then one line and a "Reset all data…" kit button', () => {
   const html = settingsPageHtml();
   const bindings = html.indexOf('id="set-sec-bindings"');
   const data = html.indexOf('id="set-sec-data"');
@@ -373,7 +374,21 @@ test('the page ends, after Bindings, with a Data panel: one line and a "Reset al
   assert.match(panel, /<button type="button" class="ui-button ui-button--secondary" id="set-reset">Reset all data…<\/button>/);
   assert.match(panel, /<p class="ui-text ui-text--warning hidden" id="set-reset-note" role="status"><\/p>/);
   assert.ok(panel.trimEnd().endsWith('</section></div>'), 'the page ends with it, closing the column composition');
-  assert.doesNotMatch(panel, /export/i, 'no export control or wording yet (W-31)');
+  assert.ok(panel.includes(`<p class="ui-text ui-text--muted" id="set-export-text">${EXPORT_LINE}</p>`), 'a line saying what the exports save');
+  assert.match(EXPORT_LINE, /CSV/);
+  assert.match(EXPORT_LINE, /JSON/);
+  assert.match(panel, /<p class="ui-text ui-text--muted hidden" id="set-export-note" role="status"><\/p>/, 'the nothing-to-export line, hidden');
+  const csv = panel.indexOf('<button type="button" class="ui-button ui-button--secondary" id="set-export-csv">Export history (CSV)</button>');
+  const json = panel.indexOf('<button type="button" class="ui-button ui-button--secondary" id="set-export-json">Export all (JSON)</button>');
+  const reset = panel.indexOf('id="set-reset"');
+  assert.ok(csv > 0 && json > csv && reset > json, 'Export history (CSV), then Export all (JSON), then Reset all data…: an export is offered first');
+});
+
+test('the Settings export actions are bound to the one records export, refreshed each time the page shows', () => {
+  const main = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
+  assert.match(main, /const RECORDS_EXPORT = createRecordsExport\(\{ records: RECORDS, replays: REPLAYS \}\)/);
+  assert.match(main, /const SETTINGS_EXPORT = bindExportActions\(\{[\s\S]*?set-export-csv[\s\S]*?set-export-json[\s\S]*?set-export-note[\s\S]*?\}, \{ onExport: \(format\) => RECORDS_EXPORT\.save\(format\) \}\)/);
+  assert.match(main, /settings: \{[^\n]*SETTINGS_EXPORT\.show\(RECORDS_EXPORT\.hasGames\(\)\)/);
 });
 
 test('the confirmation names every kind of data that goes, says it cannot be undone, and offers Reset all data and Cancel', () => {

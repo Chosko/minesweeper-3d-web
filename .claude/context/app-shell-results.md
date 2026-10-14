@@ -46,7 +46,9 @@ itself is [replay-playback.md](replay-playback.md); the screen's markup is
 - **Record before show.** `RESULTS.finished` reads the board's counters
   (streak before), records with `RECORDS.record` — so the comparison is
   against the bests that stood before this game — then reads counters,
-  history, `winRate` and `completedWinRate` (streak after, rank, `standing`;
+  history, `winRate` and `completedWinRate` (streak after, rank — the
+  game's place by time from `gameRank`, `js/records/stats.js`, the ranking
+  the Records Top 10 reads — `standing`;
   null when recording failed or a query threw) and routes to `results`, for
   either mode. A summary that is not a record (a fixed 3D board's null) is
   ignored. A throwing recording still routes, with no comparison and

@@ -30,6 +30,8 @@
 //   forBoard(boardKey) → the entries kept for the board, newest end date first. Each entry is a
 //                 frozen { id, boardKey, mode, outcome, elapsedMs, bbbvPerSecond, efficiency,
 //                 endedAt, size, pins }, pins the frozen list of its reasons.
+//   entries()   → every kept entry across boards and modes, newest end date first, frozen as
+//                 forBoard's.
 //   has(id)     → whether the summary id has a kept replay (an index entry).
 //   bytes(id)   → Promise of a kept replay's bytes, or of a replay kept only for the session after
 //                 a failed write; undefined when there is none. Rejects when the store cannot read.
@@ -234,6 +236,9 @@ export function createReplayLibrary({ storage, blobStore, onNotSaved = () => {} 
       return [...entries.values()].filter((e) => e.boardKey === boardKey).sort(newestFirst).map(frozen);
     },
 
+    entries() {
+      return [...entries.values()].sort(newestFirst).map(frozen);
+    },
     has(id) { return entries.has(id); },
 
     async bytes(id) {

@@ -40,6 +40,7 @@ import { REPLAY_SCREEN } from './records/replay-list.js';
 import { createResultsView, resultsContent, resultsEnter, LOOK_REFUSED } from './results/view.js';
 import { createRecordsScreen, createRecordsView, TRIGGER_MODES } from './records/screen.js';
 import { createRecordsViewPrefs } from './records/view-prefs.js';
+import { createRecordsExport, bindExportActions } from './records/export.js';
 import { applySettings, pixelRatioFor } from './settings/appliers.js';
 import { bindSettingControls } from './settings/page.js';
 import { createReset } from './settings/reset.js';
@@ -456,7 +457,7 @@ const SHELL = createRouter({
     'board-choice': { defaultFocus: '[data-preset][data-last]', show: () => { MODES.leave(); GEN_3D.warm(); showMenuBackdrop(); ui.showBoardChoice(); CHOICE_3D.show(LAST_CHOICE_3D.current, { played: LAST_CHOICE_3D.played, details: presetDetails(CHOICE_ITEMS['3d'], RECORDS) }); } },
     'coming-soon': { defaultFocus: '#coming-soon-back', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showComingSoon(d.title ?? 'This screen'); } },
     records: { defaultFocus: '#records-picker [aria-checked="true"]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showRecords(); RECORDS_PAGE.show({ mode: d.mode, boardKey: d.boardKey }); }, hide: () => RECORDS_PAGE.hide() },
-    settings: { defaultFocus: '#set-lookSensitivity', show: () => { MODES.leave(); showMenuBackdrop(); ui.showSettings(); } },
+    settings: { defaultFocus: '#set-lookSensitivity', show: () => { MODES.leave(); showMenuBackdrop(); ui.showSettings(); SETTINGS_EXPORT.show(RECORDS_EXPORT.hasGames()); } },
     'classic-2d-choice': { defaultFocus: '[data-size][data-last]', show: (d = {}) => { MODES.leave(); mode2d.warm(); showMenuBackdrop(); ui.showBoardChoice2D(); showChoice2D(d.choice ?? LAST_CHOICE_2D.current); } },
     ready: { defaultFocus: '#ready-btn', show: (d = {}) => ui.showReady(board3dChoice ?? S.settings, LOCK_FALLBACK.readyMessage(d.msg), { rules: FIRST_USE.rules3D, blocked: LOCK_FALLBACK.blocked }), back: ({ source }) => { if (source !== 'key' || performance.now() - input.unlockedAt >= 500) readyBack(); } }, // the Esc that released the pointer lock already meant Back
     playing: { defaultFocus: null, show: (d = {}) => { setLockless(!!d.lockless); ui.showPlaying(); }, back: ({ source }) => backGame(source) },
@@ -859,12 +860,21 @@ window.addEventListener('keydown', (e) => {
   if (action === 'playAgain') RESULTS.playAgain('key');
 });
 
+// ---------- records export ----------
+// One export of every game and the kept replays' listing, offered first in the Settings page's Data
+// panel and below the Records screen's lists; both give the same files.
+const RECORDS_EXPORT = createRecordsExport({ records: RECORDS, replays: REPLAYS });
+const SETTINGS_EXPORT = bindExportActions({
+  csv: document.getElementById('set-export-csv'), json: document.getElementById('set-export-json'), note: document.getElementById('set-export-note'),
+}, { onExport: (format) => RECORDS_EXPORT.save(format) });
+
 // ---------- records screen ----------
 // The board picker, the chosen board's figures, history and kept replays, redrawn live while open;
 // Watch shows once the replay viewer's route is registered; Back closes a Delete confirmation, else
 // is the back stack. The Pinned first switch is remembered in its own document, loaded at start-up.
 const RECORDS_VIEW_PREFS = createRecordsViewPrefs({ storage });
 const RECORDS_PAGE = createRecordsScreen({ records: RECORDS, replays: REPLAYS, router: SHELL, viewPrefs: RECORDS_VIEW_PREFS,
+  exporter: RECORDS_EXPORT,
   view: createRecordsView({
     root: document.getElementById('records'),
     onSelect: (key) => RECORDS_PAGE.select(key),
@@ -875,6 +885,11 @@ const RECORDS_PAGE = createRecordsScreen({ records: RECORDS, replays: REPLAYS, r
     onPinnedFirst: (on) => RECORDS_PAGE.setPinnedFirst(on),
     onReplayPage: (page) => RECORDS_PAGE.showReplayPage(page),
     onDelete: (id) => RECORDS_PAGE.deleteReplay(id),
+    onPeriod: (period) => RECORDS_PAGE.setPeriod(period),
+    onOutcome: (outcome) => RECORDS_PAGE.setOutcome(outcome),
+    onTab: (tab) => RECORDS_PAGE.setTab(tab),
+    onTopStat: (stat) => RECORDS_PAGE.setTopStat(stat),
+    onExport: (format) => RECORDS_PAGE.exportFile(format),
     onBack: () => shellBack('pointer'),
   }),
 });
@@ -1897,7 +1912,7 @@ window.__ms = {
   /** The records store: record/begin/checkpoint, the queries and onChange. */
   get records() { return RECORDS; },
   get replayViewer() { return REPLAY_VIEWER; },
-  /** The replay library: load/add/pin/unpin/forBoard/settled. */
+  /** The replay library: load/add/pin/unpin/forBoard/entries/settled. */
   get replays() { return REPLAYS; },
   /** The open Classic 2D board view (js/classic2d/board-view.js): its layout, scroll, cursor and scale. */
   get board2D() { return mode2d.boardView; },

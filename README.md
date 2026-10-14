@@ -79,8 +79,18 @@ screen shown after a game, opens the Records screen:
   as a loss there; beside them, the win rate and the best streak over completed games (won or lost)
   leave those games out. The chosen mode's totals across every board are shown too; 2D and 3D are
   never added together.
-- A chart of 3BV/s and efficiency over your won games, and a list of your recent games, newest
-  first, ten to a page, with each game's outcome, time, 3BV/s and efficiency.
+- The board's averages of time, 3BV/s and efficiency over its last 10, last 50 and all won games,
+  and its win rate over the last 50 games.
+- A chart of 3BV/s and efficiency over your won games and a chart of your best time by date, each
+  showing a point's values when you hover it (or tap it), and a list of your recent games, newest
+  first, ten to a page, with each game's outcome, time, 3BV/s and efficiency. The **Top 10** tab
+  ranks your ten best won games on the board by time, 3BV/s or efficiency, the rank the screen
+  after a game shows ("#4 of 57").
+- Filters by period (all time, 12 months, 30 days, 7 days) and by outcome (all, won, lost,
+  abandoned) narrow the history; the bests and counters stay all-time.
+- **Export history (CSV)** saves every game of both modes as a spreadsheet table; **Export all
+  (JSON)** saves the history and the list of kept replays as one file. The replay files themselves
+  are not exported.
 
 The screen updates as games are recorded and follows the Light / Dark theme. It works with the
 mouse, the keyboard or a controller; `Esc` or `B` goes back.
@@ -266,8 +276,8 @@ and rumbles on an explosion. Some browsers only start sound after a key press or
 - **Settings:** mouse sensitivity (0.25×–3×), invert mouse Y, volume, the 3D neighbour count and
   the 3D field of view (45°–90°). They are saved in `localStorage`. The defaults match the original,
   except the 3D neighbour count, which is on, and the field of view, 60° (45° in the original, which
-  a browser that already had settings keeps). "Reset all data" at the bottom of the Settings
-  page deletes the records, history, replays, settings, last board choices and first-use hints
+  a browser that already had settings keeps). The Data panel at the bottom of the Settings page
+  offers the same two exports as the Records screen first; then "Reset all data" deletes the records, history, replays, settings, last board choices and first-use hints
   from this browser, after a confirmation, and starts the game again as a new player's.
 - **Sound:** synthesized sound effects (Web Audio, no audio files) for revealing, flagging,
   chording, actions that change nothing, explosions and wins. They can be muted.

@@ -30,10 +30,10 @@
 //                             counters(board) before recording, then its current and longest streaks
 //                             after. standing is the board's { winRate, completedWinRate,
 //                             longestStreak, longestCompletedStreak } counting this game, from
-//                             winRate(board), completedWinRate(board) and the counters after. rank is a won game's { position, of } among the board's won
-//                             games, from history(board) after recording: position is 1 + the
-//                             other won games whose time is at or below this one's (a tie ranks the
-//                             earlier game first), of counts them and this one; null on a loss. A
+//                             winRate(board), completedWinRate(board) and the counters after. rank is a won game's { position, of } in the
+//                             board's ranking by time (gameRank, js/records/stats.js — the one
+//                             ranking the Records screen's Top 10 reads too), from history(board)
+//                             after recording; null on a loss. A
 //                             query that throws is logged and leaves its figure null. notSaved is
 //                             true on the first results screen of a session whose
 //                             records are not being saved (records.available() false), so the
@@ -67,6 +67,7 @@
 import { boardKey } from '../records/board.js';
 import { entryRoute, MENU_ENTRIES } from '../shell/menu.js';
 import { REPLAY_SCREEN } from '../records/replay-list.js';
+import { gameRank } from '../records/stats.js';
 
 export const RESULTS_SCREEN = 'results';
 
@@ -83,13 +84,6 @@ function query(fn) {
     console.error(err);
     return null;
   }
-}
-
-/** A won game's place by time among the board's won games: ties rank the earlier game first. */
-function rankOf(summary, history) {
-  if (summary.outcome !== 'won' || !Array.isArray(history)) return null;
-  const others = history.filter((e) => e.outcome === 'won' && e.id !== summary.id);
-  return { position: 1 + others.filter((e) => e.elapsedMs <= summary.elapsedMs).length, of: others.length + 1 };
 }
 
 export function createResultsFlow({ records, replays = null, router, restart, goMenu }) {
@@ -124,7 +118,7 @@ export function createResultsFlow({ records, replays = null, router, restart, go
       let standing = null;
       if (saved) {
         const after = query(() => records.counters(summary.board));
-        rank = rankOf(summary, query(() => records.history(summary.board)));
+        rank = gameRank(query(() => records.history(summary.board)), summary);
         if (before && after) streak = { before: before.currentStreak, current: after.currentStreak, longest: after.longestStreak };
         const rates = query(() => ({ winRate: records.winRate(summary.board), completedWinRate: records.completedWinRate(summary.board) }));
         if (after && rates) standing = { ...rates, longestStreak: after.longestStreak, longestCompletedStreak: after.longestCompletedStreak };

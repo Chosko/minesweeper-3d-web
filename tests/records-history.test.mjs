@@ -10,8 +10,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  CHART_TOKENS, PAGE_SIZE, NO_WON_GAMES, chartPoints, niceCeiling, chartScale, chartText, pageOf, drawHistoryChart, createHistoryChart,
+  CHART_TOKENS, PAGE_SIZE, NO_WON_GAMES, NO_WON_GAMES_PERIOD, NO_BEST_TIME, chartPoints, niceCeiling, chartScale, chartText, pageOf, drawHistoryChart,
+  createHistoryChart, formatShortDate, dateTicks, bestTimeScale, bestTimeText, drawBestTimeChart, nearestIndex, rateReadout, bestReadout,
 } from '../js/records/history-chart.js';
+import { bestTimeSteps } from '../js/records/stats.js';
 import { recordsContent, createRecordsScreen, formatDateTime } from '../js/records/screen.js';
 import { createRecordsModel } from '../js/records/model.js';
 import { boardKey, createBoardIdentity } from '../js/records/board.js';
@@ -212,6 +214,122 @@ test('the chart redraws at the new size when its canvas box resizes, until destr
   assert.ok(strokes(canvas.ctx).has(THEMES.light['--color-accent']), 'the last points redrawn');
   chart.destroy();
   assert.equal(stopped, true, 'destroy stops observing');
+});
+
+// ---------------------------------------------------------------- the best time by date
+
+const localIso = (y, m, d, h = 12) => new Date(y, m, d, h).toISOString();
+const STEPS = [
+  { id: 'a', endedAt: localIso(2026, 9, 1), elapsedMs: 50000 },
+  { id: 'd', endedAt: localIso(2026, 9, 4), elapsedMs: 42000 },
+  { id: 'f', endedAt: localIso(2026, 9, 9), elapsedMs: 39000 },
+];
+const BEST = { steps: STEPS, start: localIso(2026, 9, 1), end: localIso(2026, 9, 13) };
+
+test('the dated axis: the first and last date and evenly spaced dates between, in a short form', () => {
+  assert.equal(formatShortDate(localIso(2026, 9, 9)), '9 Oct');
+  const ticks = dateTicks(BEST.start, BEST.end);
+  assert.deepEqual(ticks.map((t) => t.label), ['1 Oct', '5 Oct', '9 Oct', '13 Oct']);
+  const span = Date.parse(BEST.end) - Date.parse(BEST.start);
+  assert.deepEqual(ticks.map((t) => t.t - Date.parse(BEST.start)), [0, span / 3, (2 * span) / 3, span], 'evenly spaced');
+  assert.deepEqual(dateTicks(BEST.start, BEST.start).map((t) => t.label), ['1 Oct'], 'one date: one tick');
+  assert.deepEqual(dateTicks(localIso(2026, 9, 1, 9), localIso(2026, 9, 1, 18)).map((t) => t.label), ['1 Oct'], 'a label never repeats');
+  assert.deepEqual(dateTicks(null, BEST.end), []);
+});
+
+test('the best-time scale: dates left to right over the shown span, the time axis from 0', () => {
+  const s = bestTimeScale(BEST, { width: 400, height: 160 });
+  assert.equal(s.timeMax, 50000, 'a round ceiling over the slowest best');
+  const { left, top, width, height } = s.plot;
+  assert.equal(s.points[0].x, left, 'the first shown game on the left edge');
+  assert.ok(Math.abs(s.end - (left + width)) < 1e-9, 'the last shown game on the right edge');
+  assert.ok(s.points[1].x > s.points[0].x && s.points[2].x > s.points[1].x);
+  assert.equal(s.points[0].y, top, '50 s at the top of a 0..50 s axis');
+  assert.ok(Math.abs(s.points[2].y - (top + height * (1 - 39000 / 50000))) < 1e-9);
+  assert.deepEqual(s.ticks.map((t) => t.label), ['1 Oct', '5 Oct', '9 Oct', '13 Oct']);
+  const one = bestTimeScale({ steps: [STEPS[0]], start: STEPS[0].endedAt, end: STEPS[0].endedAt }, { width: 400, height: 160 });
+  assert.equal(one.points[0].x, one.plot.left + one.plot.width / 2, 'one date in the middle');
+});
+
+test('the best-time steps of a history feed the chart, and its text names each new best and its date', () => {
+  const history = [game(BEGINNER, { elapsedMs: 50000 }), game(BEGINNER, { elapsedMs: 52000 }), game(BEGINNER, { elapsedMs: 41000 })];
+  assert.deepEqual(bestTimeSteps(history).map((s) => s.elapsedMs), [50000, 41000]);
+  const text = bestTimeText(STEPS);
+  assert.equal(text, 'Best time by date, 3 new bests: 50.000 s on 1 Oct 2026, 42.000 s on 4 Oct 2026 and 39.000 s on 9 Oct 2026.');
+  assert.equal(bestTimeText([STEPS[0]]), 'Best time by date, 1 new best: 50.000 s on 1 Oct 2026.');
+  assert.equal(bestTimeText([]), NO_BEST_TIME);
+  assert.equal(chartText([], NO_WON_GAMES_PERIOD), NO_WON_GAMES_PERIOD, 'a filtered empty chart says so');
+});
+
+test('the best-time chart draws its step line and markers in the token colour, the dated axis, and an empty line without a won game', () => {
+  const ctx = fakeContext();
+  drawBestTimeChart(ctx, { width: 400, height: 160, pixelRatio: 2, data: BEST, token: (name) => THEMES.light[name] });
+  assert.deepEqual(ctx.calls.find((c) => c.op === 'setTransform').args, [2, 0, 0, 2, 0, 0]);
+  assert.ok(strokes(ctx).has(THEMES.light[CHART_TOKENS.best]), 'the step line in its token');
+  const s = bestTimeScale(BEST, { width: 400, height: 160 });
+  const lines = ctx.calls.filter((c) => c.op === 'lineTo').map((c) => c.args).slice(5); // after the grid's five lines
+  assert.deepEqual(lines.slice(0, 2), [[s.points[1].x, s.points[0].y], [s.points[1].x, s.points[1].y]], 'level, then down at the next new best');
+  assert.deepEqual(lines.at(-1), [s.end, s.points[2].y], 'held to the last date');
+  assert.equal(ctx.calls.filter((c) => c.op === 'arc').length, 3, 'a marker at each new best');
+  const texts = ctx.calls.filter((c) => c.op === 'fillText').map((c) => c.args[0]);
+  for (const label of ['1 Oct', '5 Oct', '9 Oct', '13 Oct', 'Best time', '50 s', '0 s']) assert.ok(texts.includes(label), label);
+  const empty = fakeContext();
+  drawBestTimeChart(empty, { width: 400, height: 160, data: { steps: [], emptyText: NO_BEST_TIME }, token: (name) => THEMES.light[name] });
+  assert.ok(!strokes(empty).has(THEMES.light[CHART_TOKENS.best]), 'no line');
+  assert.ok(empty.calls.some((c) => c.op === 'fillText' && c.args[0] === NO_BEST_TIME), 'the honest empty line');
+  const src = read('js/records/history-chart.js');
+  assert.match(src, /best: '--color-[a-z-]+'/, 'the best line is a token');
+});
+
+// ---------------------------------------------------------------- hover values
+
+test('the hover lookup finds the nearest point on both charts', () => {
+  assert.equal(nearestIndex([10, 50, 90], 62), 1);
+  assert.equal(nearestIndex([10, 50, 90], 200), 2);
+  assert.equal(nearestIndex([10, null, 90], 45), 0, 'a missing position is skipped');
+  assert.equal(nearestIndex([], 5), -1);
+  const points = [{ endedAt: localIso(2026, 9, 1, 14), rate: 1.234, efficiency: 80 }, { endedAt: localIso(2026, 9, 2, 9), rate: 2, efficiency: 95.25 }];
+  const s = chartScale(points, { width: 300, height: 140 });
+  assert.equal(nearestIndex(s.xs, s.xs[1] - 3), 1);
+  assert.deepEqual(rateReadout(points, 0), ['1 Oct 2026 14:00', '3BV/s 1.23', 'Efficiency 80.0%'], "the game's date, 3BV/s and efficiency");
+  assert.deepEqual(bestReadout(STEPS, 1), [formatDateTime(STEPS[1].endedAt), 'Best time 42.000 s'], 'its date and best time');
+  const b = bestTimeScale(BEST, { width: 400, height: 160 });
+  assert.equal(nearestIndex(b.xs, b.xs[2] + 4), 2);
+});
+
+test('hovering a chart marks the nearest point and draws its readout; leaving clears it; new data clears it', () => {
+  const canvas = fakeCanvas(300, 140);
+  const listeners = {};
+  canvas.dataset = {};
+  canvas.addEventListener = (type, fn) => { listeners[type] = fn; };
+  const theme = fakeTheme();
+  const chart = createHistoryChart({ canvas, token: theme.token, onThemeChange: (fn) => theme.onThemeChange(fn), pixelRatio: () => 1 });
+  const points = [{ endedAt: localIso(2026, 9, 1, 14), rate: 1, efficiency: 50 }, { endedAt: localIso(2026, 9, 2, 9), rate: 1.5, efficiency: 70 }];
+  chart.draw(points);
+  assert.equal(chart.readout, null);
+  const s = chartScale(points, { width: 300, height: 140 });
+  canvas.ctx.calls.length = 0;
+  listeners.pointermove({ pointerType: 'mouse', offsetX: s.xs[1] - 2 });
+  assert.equal(chart.readout, `2 Oct 2026 09:00 · 3BV/s 1.50 · Efficiency 70.0%`);
+  assert.equal(canvas.dataset.readout, chart.readout);
+  assert.ok(canvas.ctx.calls.some((c) => c.op === 'fillText' && c.args[0] === '3BV/s 1.50'), 'the readout drawn');
+  assert.ok(canvas.ctx.calls.some((c) => c.op === 'arc' && c.args[0] === s.rate[1].x && c.args[2] === 5), 'a marker on the point');
+  listeners.pointerleave({ pointerType: 'mouse' });
+  assert.equal(chart.readout, null);
+  assert.equal(canvas.dataset.readout, undefined);
+  listeners.pointerdown({ pointerType: 'touch', offsetX: s.xs[0] });
+  assert.match(chart.readout, /^1 Oct 2026 14:00/, 'a tap shows the same readout');
+  listeners.pointerleave({ pointerType: 'touch' });
+  assert.notEqual(chart.readout, null, 'and it stays after the finger lifts');
+  chart.draw([...points]);
+  assert.equal(chart.readout, null, 'new data clears it');
+  const bestCanvas = fakeCanvas(400, 160);
+  const best = createHistoryChart({ canvas: bestCanvas, kind: 'best', token: theme.token, onThemeChange: (fn) => theme.onThemeChange(fn), pixelRatio: () => 1 });
+  best.draw(BEST);
+  best.hoverAt(bestTimeScale(BEST, { width: 400, height: 160 }).xs[1]);
+  assert.equal(best.readout, `${formatDateTime(STEPS[1].endedAt)} · Best time 42.000 s`);
+  best.leave();
+  assert.equal(best.readout, null);
 });
 
 // ---------------------------------------------------------------- paging

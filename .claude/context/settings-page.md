@@ -33,8 +33,12 @@ Page (`js/settings/page.js`)
 - `settingsPageHtml()` — one `ui-columns` composition: the four sections,
   each a column, then across the width (`ui-columns__span`) the Bindings
   panel, whose empty `#settings-bindings` is itself a `ui-columns`, and the
-  Data panel (`#settings-data`: warning line
-  `#set-reset-note`, button `#set-reset`, hidden confirmation
+  Data panel (`#settings-data`: first the export — its line
+  `#set-export-text` (`EXPORT_LINE`), the nothing-to-export line
+  `#set-export-note`, buttons `#set-export-csv` and `#set-export-json`,
+  bound in `js/main.js` by `bindExportActions` over `RECORDS_EXPORT` and
+  refreshed on each show of the page ([records-screen.md](records-screen.md))
+  — then warning line `#set-reset-note`, button `#set-reset`, hidden confirmation
   `#set-reset-confirm` with `#set-reset-yes` / `#set-reset-no`);
   `bindingsSectionHtml(glyphs?)` — one `dl.controls` per mode and device.
 - `bindResetPanel({ open, panel, yes, no, note }, { reset })` → `{ isOpen,

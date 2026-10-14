@@ -95,7 +95,13 @@ settings handling for the shell's UI module and the sound module ([app-shell.md]
   or setting added later joins a column with no layout of its own. The
   bindings list reads the same source as the in-game help, so the two
   never disagree.
-- **Reset all data.** The Data panel's one action. Its confirmation, in the
+- **Export.** The Data panel offers `records-screen`'s two exports first —
+  "Export history (CSV)" and "Export all (JSON)", with a line saying what
+  they save — before "Reset all data…", so the player can keep a copy
+  before deleting; both call the one export module the Records screen
+  uses, and with no game recorded they are disabled with a line saying
+  there is nothing to export yet.
+- **Reset all data.** The Data panel's last action. Its confirmation, in the
   panel, names what goes — records, game history, replays, settings, the
   last board choices (Classic 2D and 3D) and the first-use hints — and says
   it is deleted from this browser for good; focus moves to Cancel, and
@@ -106,7 +112,6 @@ settings handling for the shell's UI module and the sound module ([app-shell.md]
   owner starts from nothing as a new player's game does. A part that cannot
   be deleted is named in a warning line in place of the confirmation, the
   rest is still cleared, nothing reloads and the action stays available.
-  The Data panel is where the later export (W-31) goes, before the reset.
 - **Pause-card shortcuts.** The pause card keeps quick access to volume in
   both modes, and to look sensitivity and invert Y on a 3D game's pause card
   only, bound to the same store.
@@ -156,4 +161,5 @@ settings handling for the shell's UI module and the sound module ([app-shell.md]
 - `screen-components` — the page's components: toggles, sliders, segmented
   choices, menu lists.
 - `game-shell` — routes to the page from the main menu and back.
+- `records-screen` — the export module the Data panel's export actions call.
 - No external libraries.

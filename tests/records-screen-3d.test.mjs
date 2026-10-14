@@ -228,6 +228,25 @@ test('the mode switch shows the chosen mode on its last board played, on the fir
   assert.equal(screen.mode, 'classic-2d', 'an unknown mode is ignored');
 });
 
+test("a 3D board gets every history view: the Top 10, the averages, the best-time chart and the filters, ranking its no-guess board alone", () => {
+  const store = fakeStore({ games: [
+    game(CUBE_BEGINNER, { id: 'c1', elapsedMs: 90000, endedAt: '2026-10-01T12:00:00.000Z' }),
+    game(CUBE_BEGINNER, { id: 'c2', elapsedMs: 70000, endedAt: '2026-10-05T12:00:00.000Z' }),
+    game(CUBE_BEGINNER, { id: 'c3', outcome: 'lost', endedAt: '2026-10-06T12:00:00.000Z' }),
+    game(board3D(6, 6, 6, 10, true), { id: 'n1', elapsedMs: 10000, endedAt: '2026-10-07T12:00:00.000Z' }),
+  ] });
+  const now = new Date('2026-10-14T12:00:00.000Z');
+  const c = recordsContent(store, { boardKey: boardKey(CUBE_BEGINNER), now, tab: 'top' });
+  assert.equal(c.mode, '3d');
+  assert.deepEqual(c.top.rows.map((r) => [r.rank, r.id, r.time]), [['1', 'c2', '70.000 s'], ['2', 'c1', '90.000 s']]);
+  assert.deepEqual(c.averages.rows[0].values, ['80.000 s', '80.000 s', '80.000 s']);
+  assert.equal(c.averages.winRates[0].value, '67%');
+  assert.deepEqual(c.bestChart.steps.map((x) => x.id), ['c1', 'c2']);
+  const week = recordsContent(store, { boardKey: boardKey(CUBE_BEGINNER), now, period: '7d' });
+  assert.deepEqual([week.top.rows.length, week.games.rows.length], [0, 0], 'nothing in the last 7 days on this board');
+  assert.equal(week.empty, false, 'the board is not empty');
+});
+
 test('Open takes an optional mode beside the optional board key', () => {
   const store = fakeStore({ games: [game(CUSTOM_3D, { endedAt: '2026-10-07T12:00:00.000Z' }), game(BEGINNER)] });
   const view = fakeView();
