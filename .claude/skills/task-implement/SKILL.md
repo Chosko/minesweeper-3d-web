@@ -1,6 +1,6 @@
 ---
 name: task-implement
-version: 1.13.1
+version: 1.14.0
 type: skill
 description: Implement one or more tasks from the project's backlog end-to-end — tests first, status flipped in TASKS.md, one commit and one push per task, with optional review rounds and per-task subagents; `--unattended` parks a task at a question instead of halting the run. Use it once a task is written; stage 6 of the pipeline: turns a task body into code, the last stage.
 requires: skill:task-engine, skill:interaction-engine, command:follow-ups
@@ -28,6 +28,7 @@ requires: skill:task-engine, skill:interaction-engine, command:follow-ups
 #        /task-implement <args> --unattended  (park a task at a question instead of halting; pre-ask the list's parked tasks first)
 #        /task-implement <args> --unattended --skip-parked  (no pre-ask; a parked task with no answer is skipped)
 #        /task-implement <args> --attended    (every gate waits, whatever CLAUDE.md says)
+#        /task-implement <args> --dashboard | --no-dashboard  (live progress page on/off for this run)
 # Examples: /task-implement 12
 #           /task-implement 12 13 14
 #           /task-implement all
@@ -231,6 +232,21 @@ When UNATTENDED is true:
   (`testing-policy.md` step 2). Only a question about the work parks a
   task, and only inside the per-task workflow (PER-TASK WORKFLOW
   § *Parking at a question*).
+
+**Dashboard flags.** Scan for the optional `--dashboard` and
+`--no-dashboard` flags and strip whichever appears; both together stop the
+run with: `--dashboard and --no-dashboard cannot be combined. Pick one.`
+
+- A delegated agent, any subagent and a run launched under a runbook step's
+  OPERATING RULES or INLINE RULES resolve no dashboard.
+- Otherwise it is on with `--dashboard`, off with `--no-dashboard`, and with
+  neither on only when the project's `CLAUDE.md` carries
+  `Pipeline dashboard policy: on`.
+- On → the launching session follows the `pipeline-dashboard` skill: its
+  scripts sit outside SUPPORTING FILES' Bash rule and its chat lines outside
+  BETWEEN TASKS' progress line, and its run-end refresh comes after FEATURE
+  COMPLETION and before the closing report (CLOSING THE RUN). Skill not
+  available → one line, then as off. Off → nothing in this skill changes.
 
 **Selectors.**
 - After stripping the flags, `$ARGUMENTS` is a whitespace-separated list of

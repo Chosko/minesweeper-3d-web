@@ -1,6 +1,6 @@
 ---
 name: runbook-run
-version: 0.20.1
+version: 0.21.0
 type: skill
 description: Execute a runbook under .claude/runbooks/ one step at a time, each in a fresh subagent by default, relaying its questions to the user — or, under the `unattended` policy, parking the step that asked and going on — recording what each did and committing after every step. Use it to carry out a runbook, whole or a range of its steps.
 requires: command:follow-ups, skill:follow-ups-resolve, skill:interaction-engine
@@ -29,6 +29,7 @@ requires: command:follow-ups, skill:follow-ups-resolve, skill:interaction-engine
 #        /runbook-run <id|name|id-name> --unattended --skip-parked  (no pre-ask; a parked step stays parked)
 #        /runbook-run <id|name|id-name> --no-commit     (write the bookkeeping, commit nothing)
 #        /runbook-run <id|name|id-name> --no-push       (commit as usual, skip the push)
+#        /runbook-run <id|name|id-name> --dashboard | --no-dashboard  (live progress page on/off for this run)
 # Examples: /runbook-run implement-ecc-import
 #           /runbook-run 3-implement-ecc-import
 #           /runbook-run 3 --from 12
@@ -83,8 +84,9 @@ everything else is unchanged — see THE INLINE MODE.
 - **Write two files.** The runbook and the index, nothing else. Every other
   change in the tree is made by a subagent. This is a hard contract.
 - **Never do a step's work.** One fresh subagent per step does it.
-- These three are **default-mode contracts**. Under `--inline` — their one
-  opt-in exception — they hold for the session's **bookkeeping phase** and
+- These three are **default-mode contracts** (the dashboard, when on, sits
+  outside them — ARGUMENTS). Under `--inline` — their one opt-in exception —
+  they hold for the session's **bookkeeping phase** and
   give way only in its **execution phase**, where the session reads what the
   step needs and makes the step's changes itself, but still never writes the
   runbook or the index. See THE INLINE MODE.
@@ -170,6 +172,7 @@ failure line the halt already calls for.
 | `--commit` | Accepted and stripped, a silent no-op: committing is the default. Refused beside `--no-commit` with `--commit and --no-commit cannot be combined. Pick one.` |
 | `--no-commit` | Do the work and write the bookkeeping, but commit nothing. Implies `--no-push`. |
 | `--no-push` | Commit each step as usual, skip the push. |
+| `--dashboard` \| `--no-dashboard` | On with `--dashboard`, off with `--no-dashboard`, and with neither on only when the project's `CLAUDE.md` carries `Pipeline dashboard policy: on`; refused beside each other with `--dashboard and --no-dashboard cannot be combined. Pick one.` On, the main session — never an orchestrator that is itself a subagent — follows the `pipeline-dashboard` skill: its reads and state sit outside WHAT THIS SKILL READS AND WRITES, its chat lines outside CHAT OUTPUT, it refreshes at any point of the run, and its run-end refresh comes before the closing report (CLOSING THE RUN); a `/task-implement` a step invokes resolves no dashboard of its own. Skill not available → one line, then as off. Off → nothing in this body changes. |
 
 **The execution policy** is the run's interaction policy, resolved per
 `../interaction-engine/references/policy.md` — the runbook header's
