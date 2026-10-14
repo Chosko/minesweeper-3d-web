@@ -42,7 +42,7 @@ Context: none
 
 Done: 2026-10-14, commit `f92d922` (32 files, +830/-138). 3D picking now starts at the camera (it started one unit ahead), in play and in the replay viewer, so cubes in the fade band are pickable.
 
-## [ ] 22. Implement task 140 — Look at the board and end delay
+## [x] 22. Implement task 140 — Look at the board and end delay
 
 Depends on: none
 
@@ -51,6 +51,8 @@ Context: none
 ```prompt
 /task-implement 140 --review
 ```
+
+Done: 2026-10-14, commit `b4cde3a` (25 files, +725/-163). *Look at the board* shows only while the 3D mode still holds the finished board, so not after Records → Back; Esc's pointer-lock request is untested in a real browser.
 
 ## [ ] 24. Implement task 142 — Touch Classic 2D and touch-safe 3D entry
 
