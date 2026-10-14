@@ -90,7 +90,7 @@ Context: none
 
 Done: 2026-10-14, commit `1ebf0ea` (20 files, +771/-65). `navStep` in js/main.js also steps menus in page order, moves the custom-size row as one control and aims at table rows; the P-41 skip did not reproduce at HEAD, and a replays row is Watch then Pin / Unpin, not the body's order.
 
-## [ ] 27. Implement task 145 — Focus containment in overlays
+## [x] 27. Implement task 145 — Focus containment in overlays
 
 Depends on: none
 
@@ -100,6 +100,8 @@ Context:
 ```prompt
 /task-implement 145 --review
 ```
+
+Done: 2026-10-14, commit `390bfcd` (8 files, +364/-20). An open overlay makes every top-level `<body>` element with an id inert, the 3D canvas `#scene` included; containment follows which layers are visible, not `inert`.
 
 ## [ ] 38. Implement task 146 — Orbit camera mode
 
@@ -118,6 +120,7 @@ Context:
 Depends on: 21, 24
 
 Context:
+- 2026-10-14 (from step 27): while an overlay is open the 3D canvas `#scene` is inert, so it takes no pointer or touch input.
 - 2026-10-14 (from step 24): every 3D pointer-lock request goes through `requestLock3D()` in js/main.js, which asks for none on a coarse-only device; the 2D Reveal / Flag switch is `#hud-tap` in the overlay bar beside Pause, shown on a coarse pointer only.
 - 2026-10-14 (from step 21): a spacing step called without a timestamp moves exactly 0.1; only the wheel (notches under 200 ms apart) accelerates. 3D picking starts at the camera, not one unit ahead.
 
