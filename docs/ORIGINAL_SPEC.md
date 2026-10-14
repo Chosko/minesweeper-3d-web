@@ -46,6 +46,7 @@ pressed, flagged, unlinked, selected, nearSelected. No question marks.
 ## Controls (must be preserved)
 - Free-fly FPS camera (pointer lock). Start: position (0, 10, -8*max(X,Y,Z)) (adjust if grid is re-centred), pitch 0, looking toward +Z at the grid.
   - Web port: a game starts framed from a three-quarter view instead — the whole box in view, looking down onto it and turned off the straight +Z view so three faces show, the crosshair on the near face's centre cube; `Home` / `R` and the pause card's "Back to start" return there.
+  - Web port: an optional Orbit camera (Settings, Controls, "Camera: Fly | Orbit", default Fly) keeps the board centred: mouse, arrows, `A` / `D` and the right stick rotate around the board's centre, the wheel, `W` / `S` and the left stick's vertical axis move in and out, and the crosshair stays at the screen centre. Fly is unchanged.
 - Mouse look 0.2° per pixel, mouse right → turn right, mouse down → look down, pitch clamp ±90°.
   - Web port: the arrow keys look too, through the same look sensitivity, invert Y and pitch clamp — 30°/s at the press, ramping to 120°/s over 0.5 s of holding.
 - W forward along view direction, S back, A strafe left, D strafe right, Q world down, E world up; 50 units/s.

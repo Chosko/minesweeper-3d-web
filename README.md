@@ -184,6 +184,19 @@ Pick a board and play:
 | `Esc` | Pause menu (releases the mouse) |
 | `F2` | Restart: a new board of the same choice |
 
+**Camera.** Settings → Controls → Camera chooses Fly (first-person flight, the default, as above) or
+Orbit, which keeps the board centred: the camera always looks at the board's centre and turns around
+it. In Orbit the inputs that move the camera change; everything else stays as above:
+
+| Input (Orbit) | Action |
+|---|---|
+| Mouse / Arrow keys / `A` `D` | Rotate around the board |
+| Mouse wheel / `W` `S` | Move in / out |
+| `Q` / `E` | Unused: the board stays centred |
+| `X` | Toggle the spacing between 1.1 and 2.0 (the wheel moves the camera in Orbit); the camera moves with the cubes |
+| Controller right stick | Rotate around the board |
+| Controller left stick ↑ ↓ | Move in / out (`A` / `B` unused) |
+
 Actions fire when you **release** the mouse button or the key, as in the original. The timer starts
 on the first reveal's release.
 

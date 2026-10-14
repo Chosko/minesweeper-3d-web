@@ -257,6 +257,66 @@ export function offscreenArrow(pose, { X, Y, Z }, spacing, fovDeg, aspect) {
   return Math.atan2(cy, cx);
 }
 
+// ---------- the orbit camera (the Camera setting's Orbit) ----------
+
+/** The orbit's nearest distance to the board centre, in lattice pitches (4 × spacing). */
+export const ORBIT_MIN_PITCHES = 1;
+/** The orbit's farthest distance to the board centre, in spawn distances (spawnPose's distance to the centre). */
+export const ORBIT_MAX_SPAWNS = 3;
+/** One wheel notch up multiplies the orbit distance by this; one notch down divides by it. */
+export const ORBIT_WHEEL_FACTOR = 0.9;
+/** W / S and the left stick at full deflection dolly at this rate, units / s. */
+export const ORBIT_DOLLY_SPEED = MOVE_SPEED;
+
+/** The orbit's dolly range { min, max } for a box at this spacing, vertical field of view (degrees) and aspect. */
+export function orbitRange(box, spacing, fovDeg, aspect) {
+  const s = spawnPose(box, spacing, fovDeg, aspect);
+  return { min: ORBIT_MIN_PITCHES * 4 * spacing, max: ORBIT_MAX_SPAWNS * Math.hypot(s.x, s.y, s.z) };
+}
+
+/**
+ * The orbit camera: drives a FlyCamera so it always looks at the board centre (the origin) from `dist`
+ * along its view line. The pose is the camera's own yaw and pitch plus `dist`, written into its x, y, z,
+ * so everything that reads the camera reads it unchanged. Rotation goes through FlyCamera.look (0.2°/px,
+ * sensitivity, invert Y, the pitch clamp); the dolly keeps `dist` within setRange's { min, max }.
+ * enter() takes the camera's yaw, pitch and distance to the centre (clamped) and re-aims it at the centre.
+ */
+export class OrbitCamera {
+  constructor(cam) {
+    this.cam = cam;
+    this.min = 0; this.max = Infinity;
+    this.dist = 0;
+  }
+  setRange({ min, max }) { this.min = min; this.max = max; }
+  enter() {
+    const c = this.cam;
+    this._to(Math.hypot(c.x, c.y, c.z));
+  }
+  look(dxPx, dyPx) { this.cam.look(dxPx, dyPx); this._sync(); }
+  lookAxes(dt, x, y) { this.cam.lookAxes(dt, x, y); this._sync(); }
+  /** Move `units` toward the centre (negative: away), within the range. */
+  dolly(units) { if (units) this._to(this.dist - units); }
+  /** Analog dolly: v in -1..1 of ORBIT_DOLLY_SPEED, + = in (W, stick up). */
+  dollyAxis(dt, v) { this.dolly(ORBIT_DOLLY_SPEED * dt * v); }
+  /** Wheel notches (up = positive, fractional on a trackpad): each moves in by ORBIT_WHEEL_FACTOR. */
+  wheel(notches) { if (notches) this._to(this.dist * ORBIT_WHEEL_FACTOR ** notches); }
+  /** A spacing change: the distance scales by `ratio`, within the range at the new spacing. */
+  rescale(ratio, range) {
+    this.setRange(range);
+    this._to(this.dist * ratio);
+  }
+  _to(d) {
+    this.dist = Math.min(this.max, Math.max(this.min, d));
+    this._sync();
+  }
+  _sync() {
+    const c = this.cam, cp = Math.cos(c.pitch), d = this.dist;
+    c.x = -d * cp * Math.sin(c.yaw);
+    c.y = d * Math.sin(c.pitch);
+    c.z = d * cp * Math.cos(c.yaw);
+  }
+}
+
 /**
  * Mouse action state machine: actions fire on button release.
  * onAction(type) with type 'left' | 'right' | 'chord'. hasSelection() -> bool.

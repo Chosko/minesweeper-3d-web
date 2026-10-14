@@ -42,6 +42,7 @@ const EXPECTED_DEFAULTS = {
   confirmRestart: false,
   aimReadout: true,
   fieldOfView: 60,
+  camera: 'fly',
 };
 
 // ---------------------------------------------------------------- schema
@@ -109,6 +110,26 @@ test('"Always ask before restarting" is a boolean, off by default, validated and
   assert.deepEqual(await store.set('confirmRestart', true), { ok: true });
   assert.equal(store.get('confirmRestart'), true);
   assert.equal(stored().data.confirmRestart, true);
+});
+
+test('the Camera setting is a choice of Fly and Orbit, Fly by default; an invalid value is refused; a document without it loads as Fly with no version bump', async () => {
+  assert.equal(SCHEMA.camera.type, 'choice');
+  assert.deepEqual([...SCHEMA.camera.values], ['fly', 'orbit']);
+  assert.equal(DEFAULTS.camera, 'fly');
+  assert.ok(isValid('camera', 'orbit') && isValid('camera', 'fly'));
+  assert.ok(!isValid('camera', 'Orbit') && !isValid('camera', 'free') && !isValid('camera', 1));
+  assert.ok(!Object.hasOwn(LEGACY_KEYS, 'camera'), 'no legacy carry-over');
+  const before = { lookSensitivity: 2, invertY: true, theme: 'dark', fieldOfView: 70 };
+  const { store, stored } = setup({ initial: { [SETTINGS_DOC]: raw(SETTINGS_VERSION, before) } });
+  await store.load();
+  assert.equal(SETTINGS_VERSION, 1, 'the settings version is kept');
+  assert.equal(store.get('camera'), 'fly', 'a document from before the setting reads Fly');
+  assert.equal(store.get('fieldOfView'), 70, 'the rest as stored');
+  assert.deepEqual(await store.set('camera', 'free'), { ok: false, reason: 'invalid' });
+  assert.equal(store.get('camera'), 'fly');
+  assert.deepEqual(await store.set('camera', 'orbit'), { ok: true });
+  assert.equal(stored().data.camera, 'orbit', 'saved with the other settings');
+  assert.equal(stored().version, 1);
 });
 
 // ---------------------------------------------------------------- load

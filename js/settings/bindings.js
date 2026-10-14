@@ -7,9 +7,11 @@
 // button, named by its position in the standard mapping (a, b, x, y, lb, rb, lt, rt, start,
 // back) and drawn with the active controller's glyphs (js/gamepad.js GLYPHS).
 //
-// bindingRows(mode, device) → the rows; an unknown mode or device throws.
+// bindingRows(mode, device, camera = 'fly') → the rows; 3D's for the Camera setting's camera (Fly or
+//   Orbit), kept in one table whose camera slots fill from CAMERA_ROWS. An unknown mode, device or
+//   camera throws.
 // bindingsListHtml(rows, glyphs?) → the <dt>/<dd> pairs of a `dl.controls` list, text escaped.
-// bindingsHtml(mode, device, glyphs?) → the bindings component: that mode's rows for that device.
+// bindingsHtml(mode, device, glyphs?, camera?) → the bindings component: that mode's rows for that device.
 // hudStripHtml(mode, device, glyphs?, { muted, spacing }) → the HUD strip: only the keys or buttons
 //   the mode binds on that device (F flags in Classic 2D, so it is not listed there); 3D's carries
 //   the spacing to one decimal.
@@ -33,6 +35,65 @@ export const BINDING_DEVICES = Object.freeze([
 ]);
 
 const rows = (list) => Object.freeze(list.map((r) => Object.freeze(r)));
+
+// The 3D rows: a string entry is a slot, filled from CAMERA_ROWS for the Camera setting (js/settings/schema.js).
+const ROWS_3D = Object.freeze({
+  keyboard: [
+    'look',
+    'move',
+    ['[Home] / [R]', 'Back to the start view'],
+    ['Left click', 'Reveal the aimed cube'],
+    ['Right click', 'Flag / unflag. On a number: flag all its closed neighbours; right-click it again to take back only those flags'],
+    ['Left + Right', 'Chord: reveal neighbours of a satisfied number'],
+    ['[Enter]', 'Reveal the aimed cube (on release)'],
+    ["[']", 'Flag / unflag (on release)'],
+    ["[Enter] + [']", 'Chord'],
+    'wheel',
+    ['[X]', 'Toggle spacing 1.1 / 2.0'],
+    ['Hold [Shift]', 'Fade everything except the aimed cube\'s neighbours, which draw on top'],
+    ['Hold or tap [Space]', 'Aim through revealed numbers (they fade, the nearest least); a tap keeps it on until the next tap'],
+    ['Hold [Ctrl]', 'Show hidden cells (empty and completed ones)'],
+    ['[H] / [M] / [F]', 'Help / sound on-off / fullscreen'],
+    ['[Esc]', 'Pause menu'],
+    ['[F2]', 'Restart: a new board of the same choice'],
+  ],
+  controller: [
+    'sticks',
+    ['{rt} / {lt}', 'Reveal / flag (on release)'],
+    ['{lt} on a number', 'Flag all its closed neighbours; {lt} on it again takes back only those flags'],
+    ['{lt} + {rt}', 'Chord'],
+    'buttons',
+    ['Hold {lb} {rb} {y}', 'Neighbours only / aim through numbers / show hidden'],
+    ['D-pad ↑ ↓', 'Change spacing; the camera moves with the cubes'],
+    ['{x}', 'Show / hide the controls help'],
+    ['{start} / {back}', 'Pause'],
+    ['{start} + {y}', 'Restart: a new board of the same choice'],
+    ['Menus', 'D-pad or left stick to move, {a} select, {b} / {back} back'],
+  ],
+});
+
+/** The 3D rows that change with the Camera setting, per camera and slot. */
+const CAMERA_ROWS = Object.freeze({
+  fly: {
+    look: [['Mouse', 'Look around'], ['Arrow keys', 'Look around']],
+    move: [['[W][A][S][D]', 'Fly forward / left / back / right; forward follows the view'], ['[Q] [E]', 'Move down / up']],
+    wheel: [['Wheel', 'Change spacing between cubes; the camera moves with them']],
+    sticks: [['Left / right stick', 'Fly / look around']],
+    buttons: [['{a} / {b}', 'Move up / down']],
+  },
+  orbit: {
+    look: [['Mouse', 'Rotate around the board'], ['Arrow keys', 'Rotate around the board'], ['[A] [D]', 'Rotate left / right']],
+    move: [['[W] [S]', 'Move in / out'], ['[Q] [E]', 'Unused: the board stays centred']],
+    wheel: [['Wheel', 'Move in / out']],
+    sticks: [['Right stick', 'Rotate around the board'], ['Left stick ↑ ↓', 'Move in / out']],
+    buttons: [],
+  },
+});
+
+/** The Camera setting's values the 3D rows are kept for. */
+export const CAMERAS = Object.freeze(Object.keys(CAMERA_ROWS));
+
+const threeD = (camera, device) => rows(ROWS_3D[device].flatMap((r) => (typeof r === 'string' ? CAMERA_ROWS[camera][r] : [r])));
 
 export const BINDINGS = Object.freeze({
   'classic-2d': Object.freeze({
@@ -60,49 +121,20 @@ export const BINDINGS = Object.freeze({
       ['{start} + {y}', 'Restart: a new board of the same choice'],
     ]),
   }),
-  '3d': Object.freeze({
-    keyboard: rows([
-      ['Mouse', 'Look around'],
-      ['Arrow keys', 'Look around'],
-      ['[W][A][S][D]', 'Fly forward / left / back / right; forward follows the view'],
-      ['[Q] [E]', 'Move down / up'],
-      ['[Home] / [R]', 'Back to the start view'],
-      ['Left click', 'Reveal the aimed cube'],
-      ['Right click', 'Flag / unflag. On a number: flag all its closed neighbours; right-click it again to take back only those flags'],
-      ['Left + Right', 'Chord: reveal neighbours of a satisfied number'],
-      ['[Enter]', 'Reveal the aimed cube (on release)'],
-      ["[']", 'Flag / unflag (on release)'],
-      ["[Enter] + [']", 'Chord'],
-      ['Wheel', 'Change spacing between cubes; the camera moves with them'],
-      ['[X]', 'Toggle spacing 1.1 / 2.0'],
-      ['Hold [Shift]', 'Fade everything except the aimed cube\'s neighbours, which draw on top'],
-      ['Hold or tap [Space]', 'Aim through revealed numbers (they fade, the nearest least); a tap keeps it on until the next tap'],
-      ['Hold [Ctrl]', 'Show hidden cells (empty and completed ones)'],
-      ['[H] / [M] / [F]', 'Help / sound on-off / fullscreen'],
-      ['[Esc]', 'Pause menu'],
-      ['[F2]', 'Restart: a new board of the same choice'],
-    ]),
-    controller: rows([
-      ['Left / right stick', 'Fly / look around'],
-      ['{rt} / {lt}', 'Reveal / flag (on release)'],
-      ['{lt} on a number', 'Flag all its closed neighbours; {lt} on it again takes back only those flags'],
-      ['{lt} + {rt}', 'Chord'],
-      ['{a} / {b}', 'Move up / down'],
-      ['Hold {lb} {rb} {y}', 'Neighbours only / aim through numbers / show hidden'],
-      ['D-pad ↑ ↓', 'Change spacing; the camera moves with the cubes'],
-      ['{x}', 'Show / hide the controls help'],
-      ['{start} / {back}', 'Pause'],
-      ['{start} + {y}', 'Restart: a new board of the same choice'],
-      ['Menus', 'D-pad or left stick to move, {a} select, {b} / {back} back'],
-    ]),
-  }),
+  '3d': Object.freeze({ keyboard: threeD('fly', 'keyboard'), controller: threeD('fly', 'controller') }),
 });
 
-export function bindingRows(mode, device) {
+/** The 3D rows per Camera setting and device, Fly's being BINDINGS['3d']'s. */
+export const BINDINGS_3D = Object.freeze(Object.fromEntries(CAMERAS.map((camera) => [camera,
+  camera === 'fly' ? BINDINGS['3d'] : Object.freeze({ keyboard: threeD(camera, 'keyboard'), controller: threeD(camera, 'controller') })])));
+
+export function bindingRows(mode, device, camera = 'fly') {
   const byDevice = Object.hasOwn(BINDINGS, mode) ? BINDINGS[mode] : null;
   if (!byDevice) throw new Error(`bindings: unknown mode "${mode}"`);
   if (!Object.hasOwn(byDevice, device)) throw new Error(`bindings: unknown device "${device}"`);
-  return byDevice[device];
+  if (mode !== '3d') return byDevice[device];
+  if (!Object.hasOwn(BINDINGS_3D, camera)) throw new Error(`bindings: unknown camera "${camera}"`);
+  return BINDINGS_3D[camera][device];
 }
 
 const escape = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -122,9 +154,9 @@ export function bindingsListHtml(list, glyphs = GLYPHS.generic) {
   return list.map(([input, action]) => `<dt>${render(input, glyphs)}</dt><dd>${render(action, glyphs)}</dd>`).join('');
 }
 
-/** The bindings component: the rows of `mode` for `device`, the controller drawn in `glyphs`. */
-export function bindingsHtml(mode, device, glyphs = GLYPHS.generic) {
-  return bindingsListHtml(bindingRows(mode, device), glyphs);
+/** The bindings component: the rows of `mode` for `device` (3D's for `camera`), the controller drawn in `glyphs`. */
+export function bindingsHtml(mode, device, glyphs = GLYPHS.generic, camera = 'fly') {
+  return bindingsListHtml(bindingRows(mode, device, camera), glyphs);
 }
 
 const table = (byMode) => Object.freeze(Object.fromEntries(Object.entries(byMode).map(([mode, byDevice]) => [mode,

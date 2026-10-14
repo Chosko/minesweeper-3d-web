@@ -9,7 +9,7 @@ import { createMemoryBackend } from '../js/platform/memory-backend.js';
 import { createBrowserBackend } from '../js/platform/browser-backend.js';
 import { createSettingsStore, SETTINGS_DOC, SETTINGS_VERSION } from '../js/settings/store.js';
 import {
-  pixelRatioFor, applyTheme, applyAudio, applyLook, applyResolution, applyFullscreen, applyFieldOfView, applySettings,
+  pixelRatioFor, applyTheme, applyAudio, applyLook, applyResolution, applyFullscreen, applyFieldOfView, applyCamera, applySettings,
 } from '../js/settings/appliers.js';
 import { browserSuite } from './helpers/browser.mjs';
 
@@ -95,6 +95,28 @@ test('the field of view sets the 3D camera\'s fov and projection, then asks for 
   off();
   await store.set('fieldOfView', 50);
   assert.equal(camera.fov, 88, 'unsubscribed');
+});
+
+test('the Camera setting drives the 3D camera\'s mode, at load and on every change, and is its only writer', async () => {
+  const store = storeOf({ camera: 'orbit' });
+  const modes = [];
+  const off = applyCamera(store, (mode) => modes.push(mode));
+  await store.load();
+  assert.deepEqual(modes, ['orbit'], 'the loaded value');
+  await store.set('camera', 'fly');
+  await store.set('camera', 'orbit');
+  assert.deepEqual(modes, ['orbit', 'fly', 'orbit'], 'every change, at once');
+  off();
+  await store.set('camera', 'fly');
+  assert.deepEqual(modes, ['orbit', 'fly', 'orbit'], 'unsubscribed');
+  const missing = storeOf({ theme: 'dark' });
+  const seen = [];
+  applySettings(missing, { cameraMode: (m) => seen.push(m) });
+  await missing.load();
+  assert.deepEqual(seen, ['fly'], 'applySettings wires it; a document without the key is Fly');
+  const main = read('js/main.js');
+  assert.match(main, /cameraMode: \(mode\) => setCameraMode\(mode\)/, 'the shell hands the applier its mode setter');
+  assert.equal(main.match(/setCameraMode\(/g).length, 2, 'declared once and called only by the applier');
 });
 
 test('an unsubscribe stops an applier', async () => {

@@ -138,6 +138,57 @@ test('the 3D keyboard bindings list keyboard look on the arrows and Enter, \' an
   assert.match(bindingsSectionHtml(GLYPHS.xbox), /<dt>Arrow keys<\/dt><dd>Look around<\/dd>/, 'the Settings page lists them');
 });
 
+test('the Camera setting is a Fly | Orbit choice in the Controls section, after look sensitivity and invert Y', () => {
+  assert.equal(SETTING_LABELS.camera, 'Camera');
+  const c = settingControl('camera');
+  assert.equal(c.kind, 'segmented');
+  assert.deepEqual(c.options, [{ value: 'fly', label: 'Fly' }, { value: 'orbit', label: 'Orbit' }]);
+  const html = settingsPageHtml();
+  const controls = html.slice(html.indexOf('id="set-sec-controls"'), html.indexOf('id="set-sec-graphics"'));
+  assert.ok(controls.includes(settingControlHtml('camera')), 'generated from the schema');
+  assert.match(controls, /<button type="button" role="radio" aria-checked="true" class="ui-segmented__option" data-value="fly">Fly<\/button><button type="button" role="radio" aria-checked="false" class="ui-segmented__option" data-value="orbit">Orbit<\/button>/);
+  const at = (k) => controls.indexOf(`data-setting="${k}"`);
+  assert.ok(at('lookSensitivity') < at('camera') && at('invertY') < at('camera') && at('camera') < at('confirmRestart'));
+});
+
+test('the 3D bindings follow the Camera setting: Orbit rotates, dollies and leaves Q / E unused, from the one table', () => {
+  assert.equal(bindingRows('3d', 'keyboard', 'fly'), BINDINGS['3d'].keyboard, 'Fly is the default rows');
+  assert.equal(bindingRows('3d', 'keyboard'), bindingRows('3d', 'keyboard', 'fly'));
+  const kb = bindingRows('3d', 'keyboard', 'orbit');
+  const row = (rows, input) => rows.find(([i]) => i === input);
+  assert.match(row(kb, 'Mouse')[1], /[Rr]otate around the board/);
+  assert.match(row(kb, 'Arrow keys')[1], /[Rr]otate around the board/);
+  assert.match(row(kb, '[A] [D]')[1], /[Rr]otate/);
+  assert.match(row(kb, '[W] [S]')[1], /[Mm]ove in \/ out/);
+  assert.match(row(kb, 'Wheel')[1], /[Mm]ove in \/ out/);
+  assert.match(row(kb, '[Q] [E]')[1], /[Uu]nused/);
+  assert.equal(row(kb, '[W][A][S][D]'), undefined, 'no flight row');
+  assert.match(row(kb, '[X]')[1], /spacing/, 'spacing stays on X');
+  for (const input of ['Left click', 'Right click', '[Enter]', "[']", '[Home] / [R]', 'Hold [Shift]', '[F2]']) {
+    assert.deepEqual(row(kb, input), row(bindingRows('3d', 'keyboard'), input), `${input} as in Fly`);
+  }
+  const pad = bindingRows('3d', 'controller', 'orbit');
+  assert.match(row(pad, 'Right stick')[1], /[Rr]otate around the board/);
+  assert.match(row(pad, 'Left stick ↑ ↓')[1], /[Mm]ove in \/ out/);
+  assert.equal(row(pad, 'Left / right stick'), undefined);
+  assert.equal(row(pad, '{a} / {b}'), undefined, 'A / B unused');
+  assert.deepEqual(row(pad, '{rt} / {lt}'), row(bindingRows('3d', 'controller'), '{rt} / {lt}'), 'the triggers act as in Fly');
+  assert.match(row(pad, 'D-pad ↑ ↓')[1], /spacing/);
+  assert.equal(bindingRows('classic-2d', 'keyboard', 'orbit'), bindingRows('classic-2d', 'keyboard'), 'Classic 2D has no camera');
+  assert.throws(() => bindingRows('3d', 'keyboard', 'free'), /unknown/);
+  assert.equal(bindingsHtml('3d', 'keyboard', GLYPHS.generic, 'orbit'), bindingsListHtml(kb, GLYPHS.generic));
+  const section = bindingsSectionHtml(GLYPHS.xbox, 'orbit');
+  assert.ok(section.includes(bindingsListHtml(kb, GLYPHS.xbox)), 'the Settings page lists the chosen camera\'s rows');
+  assert.ok(!section.includes('Fly forward'));
+  const ui = read('js/ui.js');
+  assert.match(ui, /setCamera\(camera\)/, 'the help surfaces follow the setting');
+  assert.match(ui, /bindingsSectionHtml\(this\._glyphs, this\._camera\)/);
+  const index = read('index.html');
+  const ready = index.slice(index.indexOf('<span class="ready-keys">'), index.indexOf('<span id="ready-pad"'));
+  assert.match(ready, /data-camera="fly"/);
+  assert.match(ready, /<span data-camera="orbit" class="hidden">/, 'the ready card\'s Orbit movement line, hidden in Fly');
+});
+
 test('the 3D bindings say what a right-click and {lt} on a number do, and that a second one takes back only those flags', () => {
   const right = bindingRows('3d', 'keyboard').find(([input]) => input === 'Right click');
   assert.deepEqual([...right], ['Right click', 'Flag / unflag. On a number: flag all its closed neighbours; right-click it again to take back only those flags']);
@@ -160,7 +211,7 @@ test('the in-game help reads the same bindings source', () => {
   assert.match(help, /<dl class="controls"><\/dl>/, 'the help list is filled from the bindings source, not written in the markup');
   const ui = read('js/ui.js');
   assert.match(ui, /from '\.\/settings\/bindings\.js'/);
-  assert.match(ui, /bindingsHtml\(this\._mode, this\._device, this\._glyphs\)/, 'the help panel shows the active mode\'s rows for the active device');
+  assert.match(ui, /bindingsHtml\(this\._mode, this\._device, this\._glyphs, this\._camera\)/, 'the help panel shows the active mode\'s rows for the active device and camera');
   assert.equal(bindingsHtml('3d', 'controller', GLYPHS.xbox), bindingsListHtml(bindingRows('3d', 'controller'), GLYPHS.xbox), 'the component is the source\'s rows');
 });
 
@@ -169,7 +220,7 @@ test('the in-game help reads the same bindings source', () => {
 test('the page has the controls, graphics, theme and audio sections, holding every setting once', () => {
   assert.deepEqual(SETTINGS_SECTIONS.map((s) => s.title), ['Controls', 'Graphics', 'Theme', 'Audio']);
   assert.deepEqual(SETTINGS_SECTIONS.map((s) => s.settings), [
-    ['lookSensitivity', 'invertY', 'confirmRestart'], ['fullscreen', 'renderResolution', 'boardScale', 'aimReadout', 'fieldOfView'], ['theme'], ['muted', 'volume'],
+    ['lookSensitivity', 'invertY', 'camera', 'confirmRestart'], ['fullscreen', 'renderResolution', 'boardScale', 'aimReadout', 'fieldOfView'], ['theme'], ['muted', 'volume'],
   ]);
   assert.deepEqual(SETTINGS_SECTIONS.flatMap((s) => s.settings).sort(), [...SETTING_KEYS].sort(), 'every schema entry has its control');
   for (const key of SETTING_KEYS) assert.ok(SETTING_LABELS[key], `${key} has a label`);

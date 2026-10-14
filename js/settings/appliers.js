@@ -11,6 +11,8 @@
 // applyTheme(store, theme)          theme.setTheme(value) — the theme applier (globalThis.msTheme).
 // applyAudio(store, sfx)            sfx.setVolume(v), sfx.setMuted(m) — the sound module.
 // applyLook(store, camera)          camera.sensitivity, camera.invertY — the 3D camera.
+// applyCamera(store, setMode)       setMode('fly' | 'orbit') — the 3D camera's mode; this applier is its
+//                                   only writer, at load and on every change, mid-game too.
 // applyResolution(store, apply)     apply(resolution) — the 3D renderer's owner re-derives its ratio.
 // applyFieldOfView(store, { camera, redraw })
 //   camera.fov (the 3D renderer's THREE.PerspectiveCamera), its projection updated, then redraw() so
@@ -20,7 +22,7 @@
 //   browser is not already in that state. The store follows the browser: on doc's
 //   `fullscreenchange`, and when enter() or exit() throws or rejects, it is set to whether
 //   doc.fullscreenElement is set.
-// applySettings(store, { theme?, sfx?, camera?, resolution?, fullscreen?, fieldOfView? }) — every owner given;
+// applySettings(store, { theme?, sfx?, camera?, cameraMode?, resolution?, fullscreen?, fieldOfView? }) — every owner given;
 //   returns one unsubscribe for all of them.
 
 export function pixelRatioFor(resolution, devicePixelRatio, cells) {
@@ -51,6 +53,10 @@ export function applyLook(store, camera) {
   ]);
 }
 
+export function applyCamera(store, setMode) {
+  return store.onChange('camera', (mode) => setMode(mode));
+}
+
 export function applyResolution(store, apply) {
   return store.onChange('renderResolution', (r) => apply(r));
 }
@@ -75,11 +81,12 @@ export function applyFullscreen(store, { doc, enter, exit }) {
   return all([off, () => doc.removeEventListener('fullscreenchange', follow)]);
 }
 
-export function applySettings(store, { theme, sfx, camera, resolution, fullscreen, fieldOfView } = {}) {
+export function applySettings(store, { theme, sfx, camera, cameraMode, resolution, fullscreen, fieldOfView } = {}) {
   const offs = [];
   if (theme) offs.push(applyTheme(store, theme));
   if (sfx) offs.push(applyAudio(store, sfx));
   if (camera) offs.push(applyLook(store, camera));
+  if (cameraMode) offs.push(applyCamera(store, cameraMode));
   if (resolution) offs.push(applyResolution(store, resolution));
   if (fullscreen) offs.push(applyFullscreen(store, fullscreen));
   if (fieldOfView) offs.push(applyFieldOfView(store, fieldOfView));

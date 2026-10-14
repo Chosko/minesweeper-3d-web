@@ -370,7 +370,7 @@ Preconditions: none
 
 ## 146. Orbit camera mode
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/input.js, js/main.js, js/settings/schema.js, js/settings/page.js, js/settings/appliers.js, js/settings/bindings.js, js/ui.js, index.html, tests/camera-orbit.test.mjs, tests/settings-store.test.mjs, tests/settings-appliers.test.mjs, tests/settings-page.test.mjs, tests/replay-3d.test.mjs, tests/gamepad.test.mjs, README.md, docs/ORIGINAL_SPEC.md, .claude/domain/product-design.md, .claude/domain/features/settings.md, .claude/domain/features/3d-results-records-screens.md
 Preconditions: 143

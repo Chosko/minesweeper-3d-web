@@ -22,7 +22,7 @@ import { createGameWithMines } from '../js/engine/rules.js';
 import { createBoxGrid } from '../js/engine/box-grid.js';
 import { buildSummary } from '../js/records/summary.js';
 import { boardKey, MODE_3D } from '../js/records/board.js';
-import { FlyCamera, KeyLook, KeyActions, MouseActions } from '../js/input.js';
+import { FlyCamera, OrbitCamera, KeyLook, KeyActions, MouseActions } from '../js/input.js';
 
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
@@ -282,6 +282,53 @@ test('a 3D game played with keyboard look and the keyboard keys records and repl
   const again = replayAgain(decoded);
   assert.equal(cellStateDigest(again.state), decoded.check.digest);
   assert.deepEqual(decoded.check.clicks, summary.clicks, 'a key action counts as the mouse action it replaces');
+});
+
+test('an Orbit game records its camera as ordinary position, yaw and pitch samples and replays to the same final state', async () => {
+  const clock = fakeClock();
+  const session = createSession({ board: ROW, client: fakeClient(), clock, randomSeed: () => 9 });
+  const cam = new FlyCamera();
+  const orbit = new OrbitCamera(cam);
+  orbit.setRange({ min: 4, max: 200 });
+  cam.place({ x: 0, y: 10, z: -60, yaw: Math.PI, pitch: 0.2 });
+  orbit.enter();
+  const held = keys();
+  const sampler = createSampler3D({ session, camera: cam, controls: held, spacing: () => 1 });
+  let aimed = -1;
+  let pending = null;
+  const act = { left: (c) => session.reveal(c), right: (c) => session.toggleFlag(c), chord: (c) => session.chord(c) };
+  const mouse = new MouseActions((type) => { pending = act[type](aimed); }, () => aimed >= 0);
+  const click = async (...buttons) => {
+    for (const b of buttons) mouse.down(b);
+    for (const b of buttons) mouse.up(b);
+    await pending;
+  };
+  const frames = (ms, step) => { for (let t = 0; t < ms; t += 100) { clock.advance(100); step(); sampler.tick(); } };
+
+  aimed = 4;
+  await click(0); // the first reveal: 4 opens 4 and 3
+  sampler.tick();
+  frames(300, () => orbit.look(40, 5)); // rotate with the mouse
+  aimed = 2;
+  await click(2); // flag the mine at 2
+  frames(300, () => orbit.dollyAxis(0.1, 1)); // dolly in (W)
+  frames(200, () => orbit.wheel(-1)); // and out with the wheel
+  aimed = 1;
+  await click(0); // the win
+  assert.equal(session.state, 'won');
+
+  const summary = summaryOf(session, 'won');
+  const decoded = decodeReplay(session.replay(summary).blob);
+  assert.deepEqual(decoded.actions.map((a) => [a.kind, a.cell]), [['reveal', 4], ['flag', 2], ['reveal', 1]]);
+  const samples = decoded.movement.filter((m) => m.type === 'sample');
+  assert.ok(samples.length >= 8, 'the orbit sampled every frame it moved');
+  assert.ok(new Set(samples.map((m) => m.values[3])).size > 2, 'the yaw moved');
+  const last = samples.at(-1).values;
+  assert.deepEqual(last, cameraSample(cam, ROW, 1), 'the last sample is the camera as it ended');
+  const distances = new Set(samples.map((m) => Math.round(Math.hypot(...m.values.slice(0, 3)))));
+  assert.ok(distances.size > 2, 'the dolly moved the camera along its view line');
+  assert.deepEqual(verify(decoded), { ok: true, result: 'reproduces' });
+  assert.equal(cellStateDigest(replayAgain(decoded).state), decoded.check.digest);
 });
 
 test('a 3D game under rules version 2 with a flag-all, a hand unflag of one of its flags and the undo verifies, and seeks both ways as it was played', async () => {

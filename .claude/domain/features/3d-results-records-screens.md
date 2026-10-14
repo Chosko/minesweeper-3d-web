@@ -86,7 +86,8 @@ described in [app-shell.md](../../context/app-shell.md) and
 - **Look at the board.** The 3D results screen's *Look at the board* hides
   the screen and opens a free flight over the frozen finished board,
   starting from the camera pose the game ended with, with the 3D flight
-  controls, the view-mode keys and spacing. It is read-only: no board
+  controls, the view-mode keys and spacing — or, when the Camera setting is
+  Orbit, orbiting the board with Orbit play's controls. It is read-only: no board
   action, no pause, no timer, nothing recorded. The board is drawn in its
   end state — on a loss every mine shown, the exploded cube marked and
   wrong flags crossed; on a win the solved board with unflagged mines shown

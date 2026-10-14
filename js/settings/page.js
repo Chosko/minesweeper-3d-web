@@ -22,8 +22,8 @@
 //                                hidden confirmation (RESET_MESSAGE, Reset all data, Cancel) and the
 //                                hidden warning line. A control whose label is its section's title
 //                                is named by the section heading.
-// bindingsSectionHtml(glyphs?) → each mode's bindings per input device, controller buttons in
-//                                `glyphs`.
+// bindingsSectionHtml(glyphs?, camera?) → each mode's bindings per input device, controller
+//                                buttons in `glyphs`, 3D's for the Camera setting's `camera`.
 // bindSettingControls(elements, store, { onUserChange? }) → unbind. Each element is a control
 //   root carrying data-setting: it shows the store's value (also the loaded one, and every change
 //   made elsewhere) and writes the player's change to the store at once; onUserChange(key) follows
@@ -40,7 +40,7 @@ import { BINDING_MODES, BINDING_DEVICES, bindingRows, bindingsListHtml } from '.
 import { formatSliderValue, decimalsOf, segmentedState, bindSegmented } from '../ui/components.js';
 
 export const SETTINGS_SECTIONS = Object.freeze([
-  Object.freeze({ id: 'controls', title: 'Controls', settings: Object.freeze(['lookSensitivity', 'invertY', 'confirmRestart']) }),
+  Object.freeze({ id: 'controls', title: 'Controls', settings: Object.freeze(['lookSensitivity', 'invertY', 'camera', 'confirmRestart']) }),
   Object.freeze({ id: 'graphics', title: 'Graphics', settings: Object.freeze(['fullscreen', 'renderResolution', 'boardScale', 'aimReadout', 'fieldOfView']) }),
   Object.freeze({ id: 'theme', title: 'Theme', settings: Object.freeze(['theme']) }),
   Object.freeze({ id: 'audio', title: 'Audio', settings: Object.freeze(['muted', 'volume']) }),
@@ -58,13 +58,14 @@ export const SETTING_LABELS = Object.freeze({
   confirmRestart: 'Always ask before restarting',
   aimReadout: '3D neighbour count',
   fieldOfView: 'Field of view',
+  camera: 'Camera',
 });
 
 /** Toggles shown on while their stored boolean is false. */
 const INVERTED = new Set(['muted']);
 
 export const CHOICE_LABELS = Object.freeze({
-  auto: 'Auto', sharp: 'Sharp', fast: 'Fast', light: 'Light', dark: 'Dark', fit: 'Fit', 100: '100 %', 125: '125 %',
+  auto: 'Auto', sharp: 'Sharp', fast: 'Fast', light: 'Light', dark: 'Dark', fit: 'Fit', 100: '100 %', 125: '125 %', fly: 'Fly', orbit: 'Orbit',
 });
 
 const SLIDERS = Object.freeze({
@@ -197,10 +198,10 @@ export function bindResetPanel({ open, panel, yes, no, note }, { reset }) {
   };
 }
 
-export function bindingsSectionHtml(glyphs) {
+export function bindingsSectionHtml(glyphs, camera) {
   return BINDING_MODES.flatMap((mode) => BINDING_DEVICES.map((device) => '<div>'
     + `<h4 class="ui-heading">${mode.label} · ${device.label}</h4>`
-    + `<dl class="controls">${bindingsListHtml(bindingRows(mode.id, device.id), glyphs)}</dl></div>`)).join('');
+    + `<dl class="controls">${bindingsListHtml(bindingRows(mode.id, device.id, camera), glyphs)}</dl></div>`)).join('');
 }
 
 const hasClass = (el, cls) => (el.getAttribute('class') ?? '').split(/\s+/).includes(cls);

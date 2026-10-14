@@ -83,6 +83,7 @@ export class UI {
     this._mode = '3d'; // the game mode the help surfaces show: 'classic-2d' | '3d'
     this._device = 'keyboard'; // the active device: 'keyboard' (and mouse) | 'controller'
     this._glyphs = GLYPHS.generic; // the active controller's, for the bindings shown
+    this._camera = 'fly'; // the Camera setting, whose 3D rows the bindings show: 'fly' | 'orbit'
     this._mapping = 'standard';
     this._muted = false;
     this._hint = false; // the hint strip shows
@@ -265,7 +266,7 @@ export class UI {
     this.showMenu();
     this._hideMenus();
     this._reset.clear(); // left with its confirmation open: it opens closed
-    this.el.settingsBindings.innerHTML = bindingsSectionHtml(this._glyphs);
+    this.el.settingsBindings.innerHTML = bindingsSectionHtml(this._glyphs, this._camera);
     this.el.settings.classList.remove('hidden');
   }
   /** Close the Settings page's Reset all data confirmation (Back); false when none is open. */
@@ -570,6 +571,13 @@ export class UI {
     this._device = device;
     this._renderBindings();
   }
+  /** The Camera setting ('fly' | 'orbit'): the 3D rows and the ready card's movement line follow it. */
+  setCamera(camera) {
+    if (camera === this._camera) return;
+    this._camera = camera;
+    for (const el of this.el.ready.querySelectorAll('[data-camera]')) el.classList.toggle('hidden', el.dataset.camera !== camera);
+    this._renderBindings();
+  }
   _setMode(mode) {
     if (mode === this._mode) return;
     this._mode = mode;
@@ -580,7 +588,7 @@ export class UI {
       ? ' <span class="pad-note">This controller does not report the standard layout, so some buttons may be unmapped.</span>' : '';
   }
   _renderHelp() {
-    this.el.helpList.innerHTML = bindingsHtml(this._mode, this._device, this._glyphs);
+    this.el.helpList.innerHTML = bindingsHtml(this._mode, this._device, this._glyphs, this._camera);
     this.el.helpFoot.innerHTML = `${helpFootHtml(this._mode, this._device, this._glyphs)}${this._note()}`;
   }
   _renderHudStrip() {
@@ -590,10 +598,10 @@ export class UI {
   _renderBindings() {
     this._renderHelp();
     this._renderHudStrip();
-    this.el.controlsBody.innerHTML = bindingsHtml(this._controlsTab, this._device, this._glyphs);
-    this.el.pauseControls.innerHTML = bindingsHtml(this._mode, this._device, this._glyphs);
+    this.el.controlsBody.innerHTML = bindingsHtml(this._controlsTab, this._device, this._glyphs, this._camera);
+    this.el.pauseControls.innerHTML = bindingsHtml(this._mode, this._device, this._glyphs, this._camera);
     if (this._hint) this.setHintStrip(true, { scroll: this._hintKind === 'scroll' });
-    if (!this.el.settings.classList.contains('hidden')) this.el.settingsBindings.innerHTML = bindingsSectionHtml(this._glyphs);
+    if (!this.el.settings.classList.contains('hidden')) this.el.settingsBindings.innerHTML = bindingsSectionHtml(this._glyphs, this._camera);
   }
 
   /** Short global notice (e.g. "Controller connected"). */

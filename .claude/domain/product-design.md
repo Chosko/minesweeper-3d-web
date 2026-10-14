@@ -4,7 +4,8 @@ Minesweeper 3D is a premium Minesweeper game for Steam, aimed at players who
 take Minesweeper seriously. It offers flat modes that play exactly like the
 reference implementation enthusiasts already trust — Classic 2D on the square
 grid, Hexagon and Triangle on their own grids — a 3D mode where the board is a box of cubes
-flown through in first person, a Surface mode where tiles cover the surface
+flown through in first person or, by a Controls setting, orbited around its
+centre, a Surface mode where tiles cover the surface
 of a 3D shape, and campaigns of designed levels. Every board can be played
 no-guess, every game is measured with the stats competitive players track,
 and personal records, replays, a daily board and Steam leaderboards give the
@@ -249,7 +250,8 @@ enthusiasts looking for a fresh flat board.
 ### 3D mode
 
 The existing 3D game as one mode among several: a box of cubes, each with up
-to 26 neighbours, flown through in first person, with solved cells hiding
+to 26 neighbours, flown through in first person or, by a Controls setting,
+orbited around its centre, with solved cells hiding
 themselves and the Shift / Space / Ctrl view modes for seeing inside. The
 first click is always safe, and a no-guess switch is available, except on a
 box with a side of exactly 2 cells, which can never be solved without

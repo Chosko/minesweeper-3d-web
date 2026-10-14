@@ -20,6 +20,7 @@ export const SCHEMA = Object.freeze({
   confirmRestart: boolean('confirmRestart', false),
   aimReadout: boolean('aimReadout', true),
   fieldOfView: number('fieldOfView', 45, 90, 60), // the 3D camera's vertical field of view, degrees
+  camera: choice('camera', ['fly', 'orbit'], 'fly'), // the 3D camera: first-person flight or the orbit around the board centre
 });
 
 export const SETTING_KEYS = Object.freeze(Object.keys(SCHEMA));

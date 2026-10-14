@@ -22,7 +22,9 @@ In scope (m1-classic-2d):
 - The Settings page, reached from the main menu, built from
   `screen-components` and fully operable by mouse, keyboard and controller.
 - Controls: look sensitivity and invert Y, which apply to mouse, keyboard
-  and controller look in 3D; "Always ask before restarting", which brings back
+  and controller look in 3D; "Camera: Fly | Orbit", default Fly, which
+  chooses between the 3D game's first-person flight and an orbit around the
+  board's centre; "Always ask before restarting", which brings back
   the confirmation before a restart abandons a started game (`game-shell`
   § Restart); and a read-only list of the bindings for each mode and input
   device, drawn from the same source as the in-game help.
@@ -75,7 +77,7 @@ settings handling for the shell's UI module and the sound module ([app-shell.md]
   through `platform-storage` and notifies subscribers.
 - **Appliers.** Each setting's effect is applied by its owner subscribing to
   the store: the theme applier of `theme-system`, the sound
-  module's volume and mute, the 3D camera's sensitivity and invert Y, the
+  module's volume and mute, the 3D camera's sensitivity, invert Y and mode, the
   3D renderer's pixel ratio and field of view, and the browser's fullscreen
   state. The store
   knows none of them.
@@ -109,8 +111,9 @@ settings handling for the shell's UI module and the sound module ([app-shell.md]
   render resolution (Auto, Sharp or Fast; default Auto), 2D board scale
   (Fit, 100 % or 125 %; default 100 %), theme (a theme id, default
   *Joyful tiles*), volume (0–1, default 0.7), mute (default off), always
-  ask before restarting (default off) and field of view (45–90°, default
-  60; 45 for a document saved without it). Persisted through
+  ask before restarting (default off), field of view (45–90°, default
+  60; 45 for a document saved without it) and camera (Fly or Orbit; default
+  Fly, also for a document saved without it). Persisted through
   `platform-storage`.
 - **In memory** — the validated current values, the single source of truth
   while the game runs.

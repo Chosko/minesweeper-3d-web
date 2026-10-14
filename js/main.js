@@ -1,7 +1,7 @@
 // Entry point: wires game logic, renderer, input and UI together.
 import * as THREE from 'three';
 import { BoardRenderer } from './render.js';
-import { FlyCamera, MouseActions, Input, KeyLook, SPACING_MIN, SPACING_MAX, SPACING_START, spacingStep, spacingToggle, spawnPose, offscreenArrow, escResumes } from './input.js';
+import { FlyCamera, OrbitCamera, orbitRange, MouseActions, Input, KeyLook, SPACING_MIN, SPACING_MAX, SPACING_START, spacingStep, spacingToggle, spawnPose, offscreenArrow, escResumes } from './input.js';
 import { pickCell, pickCellBrute } from './picking.js';
 import { UI, clampSettings, NO_MOUSE_MSG } from './ui.js';
 import * as audio from './audio.js';
@@ -90,6 +90,11 @@ document.body.classList.toggle('no-webgl2', !WEBGL2);
 
 const sfx = audio.sfx ?? new audio.Sfx();
 const cam = new FlyCamera();
+// The Camera setting's Orbit drives the same camera around the board centre; setCameraMode is its one writer.
+const orbitCam = new OrbitCamera(cam);
+let cameraMode = 'fly';
+/** What the 3D camera inputs turn: the orbit while the Camera setting is Orbit, else the flight camera. */
+const view3D = () => (cameraMode === 'orbit' ? orbitCam : cam);
 
 // Pointer lock / input device support
 const LOCK_SUPPORTED = 'requestPointerLock' in Element.prototype;
@@ -237,8 +242,8 @@ const input = new Input({
   // Enter / ' act where the mouse buttons and the triggers act on the board; the arrows look where the mouse looks
   canAct: () => S.mode === 'playing' && !endDelay() && !board3d.failure && (input.locked || S.lockless),
   canLook: () => (S.mode === 'playing' && !endDelay() && !board3d.failure) || looking(),
-  onLook: (dx, dy) => cam.look(dx, dy),
-  onWheel: (notches) => wheelSpacing(notches),
+  onLook: (dx, dy) => view3D().look(dx, dy),
+  onWheel: (notches) => wheel3D(notches),
   onKey: (code, e) => {
     if (isBackKey(code)) { shellBack('key'); return; }
     if ((code === 'Home' || code === 'KeyR') && input.o.isActive()) { placeAtSpawn(); return; } // back to the start view, in 3D play only
@@ -301,7 +306,11 @@ document.addEventListener('fullscreenchange', () => { if (!document.fullscreenEl
  */
 function setSpacing(s) {
   const next = Math.min(SPACING_MAX, Math.max(SPACING_MIN, s));
-  if (next !== S.spacing) cam.rescale(next / S.spacing);
+  if (next !== S.spacing) {
+    const ratio = next / S.spacing;
+    cam.rescale(ratio);
+    if (cameraMode === 'orbit' && S.game) orbitCam.rescale(ratio, orbitRangeAt(next)); // the orbit distance follows, within its range
+  }
   S.spacing = next;
   ui.setSpacing(next);
 }
@@ -310,6 +319,27 @@ let wheelRun = { spacing: SPACING_START }; // the wheel's run of notches (spacin
 function wheelSpacing(notches) {
   wheelRun = spacingStep({ ...wheelRun, spacing: S.spacing }, notches, performance.now());
   setSpacing(wheelRun.spacing);
+}
+/** The wheel in 3D play and the look: the spacing in Fly, the orbit's dolly in Orbit (spacing stays on X and the D-pad). */
+function wheel3D(notches) {
+  if (cameraMode === 'orbit') orbitCam.wheel(notches);
+  else wheelSpacing(notches);
+}
+/** The orbit's dolly range for the 3D game at `spacing`, at the window's field of view and aspect. */
+function orbitRangeAt(spacing) {
+  return orbitRange(S.game, spacing, renderer.camera.fov, renderer.camera.aspect);
+}
+/**
+ * The Camera setting's applier (js/settings/appliers.js applyCamera) — the only writer of the 3D camera's
+ * mode, also mid-game: Fly to Orbit keeps yaw and pitch, takes the distance to the board centre within
+ * the dolly range and re-aims at the centre; Orbit to Fly keeps the pose. The help surfaces follow it.
+ */
+function setCameraMode(mode) {
+  if (mode === cameraMode) return;
+  cameraMode = mode;
+  if (mode === 'orbit' && S.game) { orbitCam.setRange(orbitRangeAt(S.spacing)); orbitCam.enter(); }
+  ui.setCamera(mode);
+  needRender = true;
 }
 function toggleSound() { SETTINGS.set('muted', !SETTINGS.get('muted')); }
 
@@ -371,6 +401,7 @@ applySettings(SETTINGS, {
   theme: globalThis.msTheme,
   sfx: typeof sfx.setVolume === 'function' ? sfx : null,
   camera: cam,
+  cameraMode: (mode) => setCameraMode(mode),
   resolution: () => applyPixelRatio(),
   fullscreen: { doc: document, enter: enterFullscreen, exit: exitFullscreen },
   fieldOfView: WEBGL2 ? { camera: renderer.camera, redraw: () => { needRender = true; } } : null,
@@ -1016,6 +1047,7 @@ function placeAtSpawn() {
   if (!S.game) return;
   const three = renderer.camera;
   cam.place(spawnPose(S.game, S.spacing, three.fov, three.aspect));
+  if (cameraMode === 'orbit') { orbitCam.setRange(orbitRangeAt(S.spacing)); orbitCam.enter(); } // the spawn's yaw, pitch and distance, aimed at the centre
   needRender = true;
 }
 
@@ -1128,6 +1160,8 @@ function showMenuBackdrop() {
 }
 
 if (WEBGL2) window.addEventListener('resize', () => { renderer.resize(); needRender = true; });
+// The orbit's dolly range follows the new aspect; the camera stays where it is.
+if (WEBGL2) window.addEventListener('resize', () => { if (cameraMode === 'orbit' && S.game) orbitCam.setRange(orbitRangeAt(S.spacing)); });
 let reloading = false;
 /**
  * The leave-page guard, armed by the pause controller only during a started, unfinished game:
@@ -1446,19 +1480,19 @@ function padPlaying(p, held, pressed, dt, now) {
   controls.pad.space = held(BTN.RB);
   controls.pad.ctrl = held(BTN.Y);
   padSticks(p, dt);
-  controls.axes.u = (held(BTN.A) ? 1 : 0) - (held(BTN.B) ? 1 : 0);
+  controls.axes.u = cameraMode === 'orbit' ? 0 : (held(BTN.A) ? 1 : 0) - (held(BTN.B) ? 1 : 0); // unused in Orbit: the board stays centred
   const notches = padRep.spUp.update(held(BTN.UP), now) - padRep.spDown.update(held(BTN.DOWN), now);
   if (notches) setSpacing(spacingStep({ spacing: S.spacing }, notches).spacing); // one step a press and a repeat
 }
 
-/** The sticks: the left one moves (up = forward), the right one looks. */
+/** The sticks: the left one moves (up = forward; in Orbit its vertical axis alone dollies, up = in), the right one looks. */
 function padSticks(p, dt) {
   const [lx, ly] = stickCurve(p.ls[0], p.ls[1]);
   controls.axes.f = ly ? -ly : 0; // stick up = forward
-  controls.axes.r = lx;
+  controls.axes.r = cameraMode === 'orbit' ? 0 : lx;
   controls.axes.u = 0;
   const [rx, ry] = stickCurve(p.rs[0], p.rs[1]);
-  cam.lookAxes(dt, rx, ry);
+  view3D().lookAxes(dt, rx, ry);
 }
 
 /** The look at a finished 3D board: the sticks alone fly; every button brings the results card back (LOOK_END). */
@@ -1664,8 +1698,12 @@ function frame(now) {
   const three = renderer.camera;
   const playing = S.mode === 'playing';
   const looking3D = looking();
+  const orbiting = cameraMode === 'orbit';
+  const moving = (playing && !endDelay()) || looking3D; // the flight keys and sticks act (Orbit: rotate and dolly)
   const arrows = input.canLook() ? input.lookKeys : { x: 0, y: 0 }; // keyboard look, beside mouse look
-  keyLook.update(cam, dt, arrows.x, arrows.y);
+  const keys = input.move;
+  const turn = orbiting && moving ? Math.sign(arrows.x + keys.d - keys.a) : arrows.x; // Orbit: A / D rotate as the arrows do
+  keyLook.update(view3D(), dt, turn, arrows.y);
   if (onBackdrop()) {
     if (!STILL_BACKDROP) S.orbit += dt * 0.12;
     const r = 62;
@@ -1680,7 +1718,10 @@ function frame(now) {
   } else {
     const frozen = endDelay(); // the end delay: the camera and the view mode stay as the game ended
     const flying = playing || looking3D; // the look flies over the finished board as play does
-    if ((playing && !frozen) || looking3D) {
+    if (orbiting) { // W / S and the left stick's vertical axis dolly; Q / E and A / B do nothing
+      const v = (keys.w ? 1 : 0) - (keys.s ? 1 : 0) + (controls.hasAxes ? controls.axes.f : 0);
+      if (moving) orbitCam.dollyAxis(dt, Math.max(-1, Math.min(1, v)));
+    } else if ((playing && !frozen) || looking3D) {
       cam.move(dt, input.move);
       if (controls.hasAxes) cam.moveAxes(dt, controls.axes.f, controls.axes.r, controls.axes.u);
     }
@@ -1780,7 +1821,7 @@ window.__ms = {
     if (down) { input.keys.add(code); input.actions.down(code); } else { input.keys.delete(code); input.actions.up(code); }
     refresh();
   },
-  wheel(notches) { wheelSpacing(notches); refresh(); },
+  wheel(notches) { wheel3D(notches); refresh(); },
   selected() { refresh(); return S.selected; },
   pickBrute() {
     const three = renderer.camera; three.getWorldDirection(tmpDir);
