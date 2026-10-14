@@ -172,7 +172,7 @@ Context: none
 
 Done: 2026-10-14, commit `cfcb186` (37 files, +1912/-330). The viewer's `state.time` / `seek(ms)` are game time from -500 (the lead-in), so a replay opens at -500, not 0; its key line shows over 3D replays only.
 
-## [ ] 33. Implement task 151 — Daily board, board codes and challenge links
+## [x] 33. Implement task 151 — Daily board, board codes and challenge links
 
 Depends on: 20
 
@@ -183,11 +183,14 @@ Context:
 /task-implement 151 --review --rounds 2
 ```
 
+Done: 2026-10-14, commit `7663531` (93 files, +3316/-358). Records format goes to version 4, history to 2 and `BOARD_KEY_FORMAT` to 2 (new `daily:` keys); a daily code from another day plays as a challenge.
+
 ## [ ] 35. Implement task 152 — Cube preset re-tune and first-box presets
 
 Depends on: 15
 
 Context:
+- 2026-10-14 (from step 33): the records document is version 4, the history version 2 and `BOARD_KEY_FORMAT` 2 (with `daily:` keys); a further format change starts from there.
 - 2026-10-12 (from step 15): after re-tuning the cube presets, re-run `node dev/measure-typical-bbbv.mjs` and paste its lines into js/records/typical-bbbv.js — a test requires a typical-3BV entry for every named board and fails until then.
 
 ```prompt
