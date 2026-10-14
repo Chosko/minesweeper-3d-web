@@ -199,7 +199,7 @@ Context:
 
 Done: 2026-10-14, commit `f4c0b03` (32 files, +479/-146). Cube Beginner is 6 × 6 × 6 · 20 and First box 1 is 4 × 4 × 3 · 4; the cube curve misses the ×2.5–×3 target at Beginner → Intermediate (×1.9), shipped as decided.
 
-## [ ] 36. Implement task 153 — Learn 3D guided board
+## [x] 36. Implement task 153 — Learn 3D guided board
 
 Depends on: 1, 35
 
@@ -209,6 +209,8 @@ Context:
 ```prompt
 /task-implement 153 --review
 ```
+
+Done: 2026-10-14, commit `2c25d21` (36 files, +1063/-109). The guided board is First box 1 (seed 75, generator version 1, mines 1, 2, 3, 40, start cell 26), whose marked start cell is an interior cube the player flies in to click.
 
 ## [ ] 37. Check the result against the UX review
 
