@@ -10,7 +10,7 @@ import { createMemoryBackend } from '../js/platform/memory-backend.js';
 import { createBoardIdentity, boardKey, MODE_3D, PRESETS_3D } from '../js/records/board.js';
 import { buildSummary } from '../js/records/summary.js';
 import { createRecordsModel, rebuildRecords, emptyRecords, upgradeRecords } from '../js/records/model.js';
-import { createRecordsStore, RECORDS_DOC, HISTORY_DOC, RECORDS_VERSION } from '../js/records/store.js';
+import { createRecordsStore, RECORDS_DOC, HISTORY_DOC, RECORDS_VERSION, HISTORY_VERSION } from '../js/records/store.js';
 
 const square = (width, height, mines, noGuess = false) =>
   createBoardIdentity({ mode: 'classic-2d', grid: 'square', width, height, mines, noGuess });
@@ -217,8 +217,8 @@ function m1Documents() {
   return { records: { boards: old.boards, overall: { 'classic-2d': old.overall['classic-2d'] } }, history, current: records };
 }
 
-test('the records format steps up from m1, then again for the completed games\' counters', () => {
-  assert.equal(RECORDS_VERSION, 3);
+test('the records format steps up from m1, again for the completed games\' counters, then for Daily boards and challenges', () => {
+  assert.equal(RECORDS_VERSION, 4);
 });
 
 test('the upgrade carries every m1 board and the Classic 2D counters over and starts 3D at zero', () => {
@@ -256,7 +256,7 @@ test('loading an m1 records document carries it over, derives the completed coun
   assert.deepEqual(store.boardsPlayed('classic-2d').map((b) => b.key).sort(), Object.keys(records.boards).sort());
   await store.settled();
   assert.deepEqual(stored(backend, RECORDS_DOC), { version: RECORDS_VERSION, data: current });
-  assert.deepEqual(stored(backend, HISTORY_DOC), { version: 1, data: history });
+  assert.deepEqual(stored(backend, HISTORY_DOC), { version: HISTORY_VERSION, data: history });
   store.record(game({ board: CUBE_BEGINNER }));
   assert.deepEqual(store.overall(MODE_3D), C(1, 1, 1, 1, 1, 1, 1));
   assert.deepEqual(store.overall('classic-2d'), current.overall['classic-2d']);
@@ -264,7 +264,7 @@ test('loading an m1 records document carries it over, derives the completed coun
 
 test('a records document newer than this build is refused and left untouched', async () => {
   const { records, history } = m1Documents();
-  const initial = { [RECORDS_DOC]: doc(RECORDS_VERSION + 1, upgradeRecords(records)), [HISTORY_DOC]: doc(1, history) };
+  const initial = { [RECORDS_DOC]: doc(RECORDS_VERSION + 1, upgradeRecords(records)), [HISTORY_DOC]: doc(HISTORY_VERSION, history) };
   const backend = createMemoryBackend({ initial: { ...initial } });
   const { store } = open(backend);
   await store.load();

@@ -22,20 +22,28 @@ itself is [replay-playback.md](replay-playback.md); the screen's markup is
   rank, streak, standing}` or null, `abandoned(summary, mode, replay?)`,
   `current`, `playAgain(source)`, `openRecords()`, `watch()`, `toMenu()`.
   Without `replays` no replay is kept. `watch` is set when the game handed
-  over a sealed replay and the router has the `replay` route.
+  over a sealed replay and the router has the `replay` route. `rank` is
+  null for a challenge (`gameRank` leaves challenges out). The shell's
+  `restart(source, {mode, summary})` plays a daily's or a challenge's
+  `freeStart(summary.board)` once its mode was left.
 
 `js/results/view.js`
 - `formatTime(ms)` (thousandths, truncated: `"47.380 s"`),
   `formatTimeDifference`, `formatRate` / `formatRateDifference`,
   `formatEfficiency` / `formatEfficiencyDifference`, `formatClicks`,
   `formatWinRate` (re-exported by the Records screen); `EQUAL_BEST`, `DASH`,
-  `NOTES`, `NOT_ELIGIBLE`, `FIRST_BEST`.
+  `NOTES`, `NOT_ELIGIBLE`, `FIRST_BEST`, `CHALLENGE_LABEL` ("Challenge · not
+  eligible for bests"), `CHALLENGE_NOTE`.
 - `resultsContent({summary, comparison?, saved?, notSaved?, watch?, rank?,
-  streak?, standing?})` → `{outcome, title, board, banner, stats, figures,
+  streak?, standing?})` → `{outcome, title, board, label, code, banner, stats, figures,
   next, standing, eligible, bestsNote, bests, notes, watch, look, over3d}`
-  (fields in the head comment; `look` and `over3d` true for a 3D summary).
-- `createResultsView({root, onPlayAgain, onWatch?, onRecords, onMenu, onLook?})` →
-  `show(content)`, `hide()`, `noteLook(text)`; `LOOK_REFUSED`.
+  (fields in the head comment; `look` and `over3d` true for a 3D summary;
+  `code` the game's board code, `label` a challenge's label; a challenge is
+  not eligible, has no next target and its rank figure is a dash).
+- `createResultsView({root, onPlayAgain, onWatch?, onRecords, onMenu, onLook?, onCopy?})` →
+  `show(content)`, `hide()`, `noteLook(text)`; `LOOK_REFUSED`. The label
+  fills `#results-label`, the code the `#results-code` chip, whose Copy
+  and Copy link call `onCopy` (the shell's `copyCode`).
 - `RESULTS_ACTIONS` (`r-again`, `r-watch`, `r-look`, `r-records`, `r-menu`);
   `resultsEnter({focused, repeat})` → `'playAgain'` (focus on Play again or
   on no action), null (another action's own activation), `'ignore'`

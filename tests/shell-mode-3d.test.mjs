@@ -83,7 +83,13 @@ function fakeFlow(board) {
   const calls = [];
   const sessions = [];
   const handed = [];
-  const next = (pregen = null) => { const s = fakeSession(board); sessions.push(s); handed.push(pregen); return s; };
+  const next = (pregen = null, forced = null) => {
+    const s = fakeSession(board);
+    if (forced) { s.forced = forced; s.startCell = forced.startCell; }
+    sessions.push(s);
+    handed.push(pregen);
+    return s;
+  };
   const flow = {
     clock: fakeClock(),
     lost: false,
@@ -92,10 +98,10 @@ function fakeFlow(board) {
     get session() { return sessions.at(-1); },
     contextLost: () => flow.lost,
     openBoardChoice: () => calls.push(['openBoardChoice']),
-    start: (c, pregen) => { calls.push(['start', c]); return next(pregen); },
+    start: (c, pregen) => { calls.push(['start', c]); return next(pregen, c?.forced ?? null); },
     pause: (note) => calls.push(['pause', note]),
     resume: (source) => calls.push(['resume', source]),
-    restart: (source, pregen) => { calls.push(['restart', source]); return next(pregen); },
+    restart: (source, pregen, forced) => { calls.push(['restart', source]); return next(pregen, forced ?? null); },
     leave: () => calls.push(['leave']),
   };
   return { flow, calls };
@@ -360,6 +366,36 @@ test('a finished no-guess 3D game pre-generates the next box for its marked star
   assert.equal(handed.cell, startCell({ kind: 'box', X: 4, Y: 5, Z: 6 }));
   assert.equal(handed.seed, 4242);
   assert.equal(client.cancels, 0);
+});
+
+test('a 3D daily or challenge: the forced start reaches the session, the summary names the daily board and date, Play again is free', () => {
+  const client = holdingClient();
+  const { host, flow, mode, calls } = setup({ board: NG, client });
+  host.start('3d', NG);
+  flow.session.emit('started');
+  flow.session.emit('finished', { state: 'won' });
+  flow.clock.advance(END_DELAY_MS);
+  const pg = { cell: 3, seed: 1, discard() {} };
+  host.start('3d', { ...NG, forced: { startCell: 3, seed: 77, daily: '20261011' }, pregenerated: pg });
+  assert.equal(client.cancels, 1, 'the board pre-generated after the last game is let go');
+  assert.equal(flow.handed.at(-1), pg);
+  assert.deepEqual(calls.at(-1), ['start', { ...NG, forced: { startCell: 3, seed: 77, daily: '20261011' } }]);
+  assert.deepEqual(mode.forced, { startCell: 3, seed: 77, daily: '20261011' });
+  host.restart({ source: 'key' });
+  assert.deepEqual(flow.session.forced, { startCell: 3, seed: 77, daily: '20261011' }, 'not started: the restart stays forced');
+  flow.session.emit('started');
+  const summary = mode.summary();
+  assert.equal(summary.board.daily, true);
+  assert.equal(summary.daily, '20261011');
+  assert.equal(summary.startCell, 3);
+  flow.session.emit('finished', { state: 'lost' });
+  flow.clock.advance(END_DELAY_MS);
+  host.restart({ source: 'pointer' }); // Play again
+  assert.equal(flow.session.forced, undefined, 'a free box');
+  host.start('3d', { ...NG, forced: { startCell: 3, seed: 78, challenge: true } });
+  flow.session.emit('started');
+  assert.equal(mode.summary().challenge, true);
+  assert.equal('daily' in mode.summary(), false);
 });
 
 test('the 3D pre-generation: the same board from the choice takes it, another board or the leave discards it; none for a standard or abandoned game', () => {

@@ -30,7 +30,19 @@ In scope (m1-classic-2d):
   its win rate and longest streak, each with its completed games' figure
   beside it ("Win rate 67% (completed games 80%) · Longest streak 4
   (completed games 5)", `personal-records`); then the bests panel. The
-  card shows no IOE.
+  card shows no IOE. Under the second row, the game's board code with Copy
+  and Copy link, for won and lost games alike (a daily game's in its daily
+  form, none for a game with no seed); Copy link writes
+  `<origin><path>#board=<code>`, and a refused clipboard selects the code
+  with a toast saying to press Ctrl+C.
+- A challenge — a game started from a board code — is labelled
+  "Challenge · not eligible for bests" under its board label, in the style
+  of "Paused · not eligible"; it sets no best, its bests panel is greyed as
+  a loss's, it has no next-target line, and its rank figure shows a dash
+  ("#— of — on this board"): the board's ranking, here and in the Top 10,
+  leaves challenges out, in N as well. *Play again* after a challenge or a
+  daily starts a fresh free-play board of the same size, mines and
+  no-guess setting, never the same seed.
 - The comparison with each of the three bests — fastest time, best 3BV/s,
   best efficiency — showing the standing best and the difference. On a win
   each difference is coloured (better in the success colour, worse in the

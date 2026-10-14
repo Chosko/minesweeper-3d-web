@@ -83,6 +83,7 @@ function fakeView() {
 }
 const PRESET_LABELS = ['Cube Beginner', 'Cube Intermediate', 'Cube Expert']
   .flatMap((l) => [l, `${l} · no-guess`]);
+const DAILY_3D = 'Daily · 8 × 8 × 8 · 40 mines · no-guess';
 const value = (list, key) => list.find((s) => s.key === key || s.stat === key).value;
 
 // ---------------------------------------------------------------- the switch and the picker
@@ -98,14 +99,14 @@ test('the switch offers 2D and 3D; the content carries the chosen mode', () => {
 test('the 3D picker lists the three cube presets with and without no-guess, then the custom 3D boards played, under their 3D labels', () => {
   const store = fakeStore({ games: [game(CUSTOM_3D), game(BEGINNER), game(CUSTOM_2D), game(CUBE_EXPERT_NG)] });
   const three = pickerBoards(store, '3d');
-  assert.deepEqual(three.map((b) => b.label), [...PRESET_LABELS, '10 × 10 × 10 · 80 mines']);
+  assert.deepEqual(three.map((b) => b.label), [...PRESET_LABELS, DAILY_3D, '10 × 10 × 10 · 80 mines']);
   assert.equal(three[0].key, boardKey(CUBE_BEGINNER));
   assert.equal(new Set(three.map((b) => b.key)).size, three.length, 'a preset played is not listed twice');
   const two = pickerBoards(store, 'classic-2d');
   assert.ok(two.every((b) => b.board.mode === 'classic-2d'), 'no 3D board in the 2D picker');
   assert.equal(two.at(-1).label, '20 × 12 · 50 mines');
   assert.deepEqual(pickerBoards(store).map((b) => b.key), two.map((b) => b.key), 'Classic 2D by default');
-  assert.deepEqual(pickerBoards(brokenStore(), '3d').map((b) => b.label), PRESET_LABELS, 'unreadable records: the presets');
+  assert.deepEqual(pickerBoards(brokenStore(), '3d').map((b) => b.label), [...PRESET_LABELS, DAILY_3D], 'unreadable records: the presets and the Daily board');
 });
 
 test('the 3D picker lists a former double layer board with the custom boards, under its size', () => {
@@ -114,7 +115,7 @@ test('the 3D picker lists a former double layer board with the custom boards, un
     game(CUSTOM_3D, { endedAt: '2026-10-08T12:00:00.000Z' }),
   ] });
   const three = pickerBoards(store, '3d');
-  assert.deepEqual(three.map((b) => b.label), [...PRESET_LABELS, '10 × 10 × 10 · 80 mines', '8 × 8 × 2 · 10 mines']);
+  assert.deepEqual(three.map((b) => b.label), [...PRESET_LABELS, DAILY_3D, '10 × 10 × 10 · 80 mines', '8 × 8 × 2 · 10 mines']);
   const c = recordsContent(store, { boardKey: boardKey(FORMER_DOUBLE) });
   assert.equal(c.board.label, '8 × 8 × 2 · 10 mines');
   assert.equal(c.board.key, '3d:8x8x2:10:guess', 'its records keep their board key');
@@ -128,7 +129,7 @@ test('a board key alone sets the switch from its mode', () => {
   assert.equal(c.mode, '3d');
   assert.equal(c.board.key, boardKey(CUBE_EXPERT_NG));
   assert.equal(c.board.label, 'Cube Expert · no-guess');
-  assert.deepEqual(c.boards.map((b) => b.label), PRESET_LABELS);
+  assert.deepEqual(c.boards.map((b) => b.label), [...PRESET_LABELS, DAILY_3D]);
   const custom = recordsContent(store, { boardKey: boardKey(CUSTOM_3D) });
   assert.equal(custom.mode, '3d');
   assert.equal(custom.boards.at(-1).key, boardKey(CUSTOM_3D), 'a 3D board asked for joins the 3D picker');
@@ -213,7 +214,7 @@ test('the mode switch shows the chosen mode on its last board played, on the fir
   assert.equal(screen.board, boardKey(CUSTOM_3D));
   assert.equal(screen.page, 0);
   assert.equal(view.shown.at(-1).mode, '3d');
-  assert.ok(view.shown.at(-1).boards.every((b) => b.key.startsWith('3d:')));
+  assert.ok(view.shown.at(-1).boards.every((b) => b.key.startsWith('3d:') || b.key.startsWith('daily:3d:')));
   screen.select(boardKey(CUBE_BEGINNER));
   assert.equal(view.shown.at(-1).board.label, 'Cube Beginner');
   assert.equal(screen.mode, '3d', 'a board chosen in the picker keeps the mode');

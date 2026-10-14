@@ -9,8 +9,9 @@ import { fileURLToPath } from 'node:url';
 import {
   formatTime, formatTimeDifference, formatRate, formatRateDifference, formatEfficiency,
   formatEfficiencyDifference, formatClicks, resultsContent, createResultsView, DASH, NOTES, EQUAL_BEST, NOT_ELIGIBLE,
-  RESULTS_ACTIONS, resultsEnter, LOOK_REFUSED,
+  RESULTS_ACTIONS, resultsEnter, LOOK_REFUSED, CHALLENGE_LABEL, CHALLENGE_NOTE,
 } from '../js/results/view.js';
+import { encodeBoardCode } from '../js/records/board-code.js';
 import { restartInput } from '../js/shell/pause.js';
 import { createEndSkip } from '../js/shell/end-skip.js';
 import { pauseLine } from '../js/ui.js';
@@ -328,6 +329,48 @@ test('the view colours a win\'s deltas, greys a loss\'s panel under its note, an
   view.show(resultsContent({ summary: summary(), comparison: null, saved: false }));
   assert.equal(root.el('results-bests').classList.contains('hidden'), true, 'a failed recording shows no comparison');
   assert.equal(root.el('results-bests').classList.contains('ui-panel--muted'), false);
+});
+
+test('the board code on results: the game form from the seed and start cell, a daily\'s daily form, none without a seed', () => {
+  const won = summary({ startCell: 40 });
+  assert.equal(resultsContent({ summary: won, comparison }).code, encodeBoardCode({ board: BEGINNER, seed: 1, startCell: 40, generatorVersion: 1 }));
+  assert.equal(resultsContent({ summary: summary({ outcome: 'lost', bbbvSolved: 3, startCell: 40 }) }).code, encodeBoardCode({ board: BEGINNER, seed: 1, startCell: 40, generatorVersion: 1 }));
+  const expert = createBoardIdentity({ mode: 'classic-2d', grid: 'square', width: 30, height: 16, mines: 99, noGuess: true });
+  const daily = summary({ board: { ...expert, daily: true }, daily: '20261011', startCell: 255 });
+  assert.equal(resultsContent({ summary: daily }).code, 'EN-20261011-184A');
+  assert.equal(resultsContent({ summary: daily }).board, 'Daily · Expert · no-guess');
+  assert.equal(resultsContent({ summary: summary() }).code, null, 'an older summary with no start cell shows no code');
+  assert.equal(resultsContent({ summary: won }).label, null);
+});
+
+test('a challenge is labelled not eligible for bests, has no rank figure and no next target', () => {
+  const ch = summary({ startCell: 40, challenge: true });
+  const noBest = Object.fromEntries(Object.entries(comparison).map(([k, v]) => [k, { ...v, value: null, difference: null, newBest: false }]));
+  const c = resultsContent({ summary: ch, comparison: noBest, rank: null });
+  assert.equal(c.label, CHALLENGE_LABEL);
+  assert.equal(CHALLENGE_LABEL, 'Challenge · not eligible for bests');
+  assert.equal(c.figures.rank, `#${DASH} of ${DASH} on this board`, 'the rank figure shows a dash');
+  assert.equal(c.eligible, false);
+  assert.equal(c.bestsNote, CHALLENGE_NOTE);
+  assert.equal(c.banner, null);
+  assert.equal(c.next, null);
+  assert.equal(c.stats.some((st) => st.newBest), false);
+});
+
+test('the view shows the challenge label and the code chip, with Copy and Copy link calling back', () => {
+  const root = fakeRoot();
+  const copies = [];
+  const view = createResultsView({ root, onPlayAgain() {}, onRecords() {}, onMenu() {}, onCopy: (c) => copies.push(c.kind) });
+  view.show(resultsContent({ summary: summary({ startCell: 40, challenge: true }), comparison: null }));
+  assert.equal(root.el('results-label').textContent, CHALLENGE_LABEL);
+  assert.equal(root.el('results-label').classList.contains('hidden'), false);
+  assert.equal(root.el('results-code').classList.contains('hidden'), false);
+  assert.equal(root.el('results-code .ui-code__value').textContent, encodeBoardCode({ board: BEGINNER, seed: 1, startCell: 40, generatorVersion: 1 }));
+  view.show(resultsContent({ summary: summary(), comparison: null }));
+  assert.equal(root.el('results-label').classList.contains('hidden'), true);
+  assert.equal(root.el('results-code').classList.contains('hidden'), true, 'no code, no chip');
+  assert.match(RESULTS_HTML, /<div id="results-code" class="ui-code hidden">[\s\S]*data-copy="code">Copy<\/button>[\s\S]*data-copy="link">Copy link<\/button><\/div>/);
+  assert.match(MAIN, /onCopy: \(c\) => copyCode\(c\)/, 'the shell copies through the clipboard');
 });
 
 test('the view shows the standing line under the next target, and hides it when there is none', () => {

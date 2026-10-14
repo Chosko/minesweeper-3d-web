@@ -16,7 +16,7 @@
 //   densityHintShown(custom, noGuess)  whether the density hint shows for a custom board: no-guess
 //                            on and a valid board above NOGUESS_DENSITY_HINT (board-setup.js).
 //
-// bindBoardChoice({ root, onStart, onBack }) → { show(choice), destroy() }
+// bindBoardChoice({ root, onStart, onBack, code? }) → { show(choice), destroy() }
 //   root      the screen's element: items [data-size] (the standard sizes, and the custom form's
 //             submit button as data-size="custom"), the custom form (form), inputs
 //             [data-field="width|height|mines"], the info line [data-info] and the density hint
@@ -31,11 +31,19 @@
 //             for the position of the no-guess switch, and again whenever the switch changes; a size
 //             without one shows no detail line.
 //   onStart(choice) when a size is picked or a valid custom board submitted; onBack() on Back.
+//   code      { resolve, onPlay }: the board code field [data-code-field], its "Play this board"
+//             button [data-code-play] and its info line [data-code-info] (js/ui/components.js
+//             bindCodeField): resolve(text) → { ok, reason?, text? } validates the code live, and
+//             onPlay(text) plays an accepted one; every show clears the field.
 
 import {
   STANDARD_SIZES, validateCustom, maxMines, normaliseChoice, aboveDensityHint, DENSITY_HINT_TEXT,
 } from './board-setup.js';
 import { CUSTOM_LIMITS } from '../engine/profiles.js';
+import { bindCodeField } from '../ui/components.js';
+
+/** The code field's info line while nothing is typed, on both board choice screens. */
+export const CODE_PROMPT = 'Paste a board code to play that exact board.';
 
 export const CHOICE_SIZES = Object.freeze(['beginner', 'intermediate', 'expert']);
 
@@ -70,7 +78,7 @@ export function densityHintShown(custom, noGuess) {
   return aboveDensityHint(custom.mines, custom.width * custom.height);
 }
 
-export function bindBoardChoice({ root, onStart, onBack }) {
+export function bindBoardChoice({ root, onStart, onBack, code = null }) {
   const items = [...root.querySelectorAll('[data-size]')];
   const form = root.querySelector('form');
   const field = (name) => root.querySelector(`[data-field="${name}"]`);
@@ -146,9 +154,15 @@ export function bindBoardChoice({ root, onStart, onBack }) {
   noGuess.addEventListener('change', onNoGuess);
   form.addEventListener('submit', onSubmit);
   back?.addEventListener('click', onBackClick);
+  const codeInput = root.querySelector('[data-code-field]');
+  const codeField = code && codeInput ? bindCodeField({
+    input: codeInput, button: root.querySelector('[data-code-play]'), info: root.querySelector('[data-code-info]'),
+    resolve: code.resolve, onPlay: code.onPlay, prompt: CODE_PROMPT,
+  }) : null;
 
   return {
     show(choice, { played = true, details: lines = {} } = {}) {
+      codeField?.clear();
       last = choice;
       details = lines;
       inputs[0].value = String(choice.custom.width);

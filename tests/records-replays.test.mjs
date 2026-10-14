@@ -121,6 +121,14 @@ test('the board\'s kept replays, newest first, with date, outcome, time, 3BV/s, 
   assert.equal(REPLAY_HEADERS.length, 6);
 });
 
+test('a library row carries its listing\'s board code, or none for a replay from before codes', () => {
+  const library = fakeLibrary([listing('coded', { code: 'B-00000001-40-1ABC' }), listing('old', { endedAt: '2026-10-01T12:00:00.000Z' })]);
+  const rows = replayList(library, KEY).rows;
+  assert.deepEqual(rows.map((r) => [r.id, r.code]), [['coded', 'B-00000001-40-1ABC'], ['old', null]]);
+  const table = read('index.html').match(/<table id="records-replays-table">[\s\S]*?<\/thead>/)[0];
+  assert.match(table, /<th scope="col">Pin<\/th><th scope="col">Board code<\/th><th scope="col">Actions<\/th>/);
+});
+
 test('a row\'s time goes through the results screen\'s formatter', () => {
   const library = fakeLibrary([listing('t', { elapsedMs: 59999 })]);
   assert.equal(replayList(library, KEY).rows[0].time, '59.999 s', 'truncated, never rounded');
@@ -600,7 +608,8 @@ test('in a browser, the replays panel lists, pins by keyboard keeping focus, fil
 
     let r = await rows();
     assert.deepEqual(r.map((c) => c.slice(1, 6)), [['Won', '47.380 s', '0.42', '80.0%', 'Not pinned'], ['Lost', '12.000 s', '0.50', '50.0%', 'Not pinned']], 'newest first');
-    assert.deepEqual(r.map((c) => c[6]), ['WatchDownloadPinDelete', 'WatchDownloadPinDelete']);
+    assert.deepEqual(r.map((c) => c[6]), ['', ''], 'no board code: listings from before codes');
+    assert.deepEqual(r.map((c) => c[7]), ['WatchDownloadPinDelete', 'WatchDownloadPinDelete']);
     assert.equal(await page.evaluate((s) => document.querySelector(`${s} #records-replays-empty`).classList.contains('hidden'), T), true);
 
     // Keyboard: Pin flips to Unpin and focus stays on that replay's button.

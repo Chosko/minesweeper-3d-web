@@ -26,7 +26,16 @@ In scope (m1-classic-2d):
   best 3BV/s and best efficiency. Each exact board — standard or custom,
   with or without no-guess — has its own.
 - Win rate and win streaks (current and longest) per board and across
-  Classic 2D as a whole. A game abandoned after its first click — restarted,
+  Classic 2D as a whole. Each mode's Daily board (`game-summary`) counts
+  days in a row in place of the win streak: consecutive local dates with a
+  counted daily game, won or lost, the current run alive until a date ends
+  without one. A daily game counts on the Daily board only, never on its
+  plain board, and in its mode's overall figures like any game of the mode.
+- A challenge — a game started from a board code or a `#board=` link — is
+  kept in the history and counted in games played, but is not eligible for
+  bests, and is counted neither in the win rate nor in any streak,
+  standard or completed-games, nor ranked; this holds for the board's
+  figures and the mode's overall figures. A game abandoned after its first click — restarted,
   left for the menu, or ended by closing the window, the tab or the app —
   counts as a loss and breaks the streak.
 - Beside them, the completed games' figures per board and across Classic 2D
@@ -52,8 +61,7 @@ Non-goals:
 - Deleting single records or games — no milestone's slice includes it. All
   records go only through `settings`' Reset all data, which deletes the
   records, the history and the in-progress marker, at any version.
-- Campaign and daily boards in records — deferred to `m4-campaigns` and
-  `m5-core-complete`.
+- Campaign boards in records — deferred to `m4-campaigns`.
 
 ## Architecture
 
@@ -69,13 +77,17 @@ DOM-free ES module tested in Node; storage is reached only through
   for the session and is reported once.
 - **Bests.** Per board, the record-holding summary for each of the three
   bests. A won game replaces a best only when strictly better; a tie keeps
-  the earlier holder.
+  the earlier holder. A challenge never holds a best.
 - **Counters.** Per board and for Classic 2D as a whole: games, wins,
   current streak, longest streak, completed games, current completed streak
   and longest completed streak. A win extends both current streaks; a loss
   ends both; an abandoned game ends the current streak and leaves the
-  completed streak as it was. Win rate (wins over games) and completed win
-  rate (wins over completed games) are derived, never stored.
+  completed streak as it was. A challenge counts in games and in a count
+  of challenges, and in nothing else. Win rate (wins over the games that
+  are not challenges) and completed win rate (wins over completed games)
+  are derived, never stored. A Daily board's counters also hold its days
+  in a row (current, longest and the last date counted), derived from the
+  history like every other figure.
 - **History.** Every recorded summary, in the order played, kept in
   compact form: enough to redraw 3BV/s and efficiency over time and to
   list recent games.
@@ -100,14 +112,20 @@ DOM-free ES module tested in Node; storage is reached only through
   game.
 - **History document** — the list of compact summaries (id, board key,
   outcome, time, pause count, paused time, 3BV, 3BV solved, clicks, end
-  date), appended after every game. Grows with play. An entry recorded
-  before pauses were recorded has no pause fields and reads as no pauses,
-  with no format step.
+  date, and the seed, generator version, start cell, daily date and
+  challenge flag a board code needs), appended after every game. Grows with
+  play. An entry recorded before pauses were recorded has no pause fields
+  and reads as no pauses, with no format step; one recorded before board
+  codes has none of their fields and shows no code. The `challenge` flag
+  lets a rebuild from the history alone give the same figures.
 - **Game-in-progress document** — at most one summary, the started game's
   summary so far; written at its first click and at each save after, and
   cleared when the game ends.
 - All three documents are registered with `platform-storage` under their
-  own names and format versions.
+  own names and format versions. The records and history formats step up
+  for Daily boards and challenges, so an older build refuses the new
+  documents instead of misreading them; existing keys and figures are
+  unchanged.
 - **Source of truth** — the history document. Bests and counters are a
   cache derived from it: when the records document is missing or corrupt,
   or its counters lack the completed games' figures (a records document
@@ -120,8 +138,8 @@ DOM-free ES module tested in Node; storage is reached only through
 - **Record** — `record(summary)` → comparison. Called once per summary, for
   won, lost and abandoned games alike. Recording the same summary id twice
   is a no-op that returns the original comparison.
-- **Queries** — boards played (standard boards first, then custom boards by
-  last played), a board's bests, counters, win rate, completed win rate and
+- **Queries** — boards played (standard boards first, then the mode's
+  Daily board, then custom boards by last played), a board's bests, counters, win rate, completed win rate and
   history; the Classic 2D overall counters, win rate and completed win
   rate.
 - **In progress** — `begin(summary)` and `checkpoint(summary)`, called

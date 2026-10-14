@@ -59,7 +59,7 @@ export class UI {
       controlsBody: $('controls-body'),
       flash: $('flash'), menu: $('menu'), ready: $('ready'), readyBoard: $('ready-board'), readyMsg: $('ready-msg'), readyBlocked: $('ready-blocked'),
       boardChoice: $('board-choice'), comingSoon: $('coming-soon'), comingSoonTitle: $('coming-soon-title'),
-      settings: $('settings'), settingsBindings: null, records: $('records'),
+      settings: $('settings'), settingsBindings: null, records: $('records'), daily: $('daily'),
       comingSoonText: $('coming-soon-text'),
       crosshair: $('crosshair'), crosshairArrow: $('crosshair-arrow'), aimReadout: $('aim-readout'), aimCubes: $('aim-cubes'), aimFlagPart: $('aim-flag-part'), aimFlags: $('aim-flags'),
       controlsModal: $('controls-modal'),
@@ -241,7 +241,7 @@ export class UI {
   // ---------- screens ----------
   /** Hide the menu screens (main menu, board choices, placeholder, records, settings) before another screen shows. */
   _hideMenus() {
-    for (const el of [this.el.menu, this.el.boardChoice, this.el.comingSoon, this.el.records, this.el.c2dChoice, this.el.settings]) el.classList.add('hidden');
+    for (const el of [this.el.menu, this.el.boardChoice, this.el.comingSoon, this.el.records, this.el.c2dChoice, this.el.settings, this.el.daily]) el?.classList.add('hidden');
   }
   /** Hide the Classic 2D board layer and give the overlay bar back to the 3D game. */
   _hide2D() {
@@ -303,6 +303,12 @@ export class UI {
     this.el.comingSoonTitle.textContent = title;
     this.el.comingSoonText.textContent = `${title} is coming soon.`;
     this.el.comingSoon.classList.remove('hidden');
+  }
+  /** The Daily screen over the menu backdrop; js/shell/daily.js fills its rows. */
+  showDaily() {
+    this.showMenu();
+    this._hideMenus();
+    this.el.daily.classList.remove('hidden');
   }
   /** The records screen's place over the menu backdrop; the records view fills and shows #records. */
   showRecords() {
@@ -394,17 +400,27 @@ export class UI {
   /**
    * The generating card shows a progress line under its title ("candidate 14 · 6 s", from
    * `progress` { candidates, seconds }), a spinner, Cancel and Play a standard board; a failure
-   * shows the offer — Retry, Play a standard board, Main menu. Either card sits above the pause card.
+   * shows the offer — Retry, Play a standard board, Main menu; a failure offering nothing (a daily's or
+   * a challenge's board, never replaced by another) says so and shows Back alone, and while `forced`
+   * the generating card offers no standard board. Either card sits
+   * above the pause card.
    */
-  _boardStatus(prefix, { generating = false, failure = null, progress = null } = {}) {
+  _boardStatus(prefix, { generating = false, failure = null, progress = null, forced = false } = {}) {
     const on = generating || !!failure;
     const el = (name) => this.el[`${prefix}${name}`];
     el('Status').classList.toggle('hidden', !on);
     const line = generating && !failure && progress ? progressLine(progress) : '';
     el('Progress').textContent = line;
     el('Progress').classList.toggle('hidden', !line);
+    const fixed = !!failure && Array.isArray(failure.offers) && failure.offers.length === 0;
     el('StatusTitle').textContent = failure ? 'No board found' : 'Generating the board…';
-    el('StatusText').textContent = failure ? 'No no-guess board was found for this first click. Try again, or play a standard board of the same size.' : '';
+    el('StatusText').textContent = !failure ? ''
+      : fixed ? 'No no-guess board was found for this board code. It is never replaced by another board.'
+        : 'No no-guess board was found for this first click. Try again, or play a standard board of the same size.';
+    $(`${prefix}-retry`).classList.toggle('hidden', fixed);
+    $(`${prefix}-standard`).classList.toggle('hidden', fixed);
+    $(`${prefix}-offer-menu`).textContent = fixed ? 'Back' : 'Main menu';
+    $(`${prefix}-wait-standard`).classList.toggle('hidden', !!forced); // a forced board is never swapped for a standard one
     el('StatusText').classList.toggle('hidden', !failure);
     el('Spinner').classList.toggle('hidden', !!failure);
     el('Wait').classList.toggle('hidden', !!failure);

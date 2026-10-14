@@ -26,6 +26,8 @@
 //                 progress(p | null)?      while it shows: { candidates, seconds }, again whenever
 //                                          either changes; null when it hides
 //                 failed(failure | null)   a failed board and its offers, or none
+//                 hint(text)?              a hint to show the player: a first reveal off a forced
+//                                          start cell's START_HINT (js/classic2d/session.js)
 //                 padCue(kind)?            a controller press to answer with a rumble: 'press' (a
 //                                          trigger) or 'flag' (a flag placed or removed), from the
 //                                          cursor input's onPadCue
@@ -52,7 +54,8 @@
 //   buttonSwap  the page's mouse button swap (js/classic2d/button-swap.js), handed to every game's
 //               pointer input; none by default.
 //
-// warm() spawns and warms the client's worker (the board choice opening), so the first no-guess
+// client is that one client, through which the shell pre-generates the daily board
+// (js/shell/daily.js). warm() spawns and warms the client's worker (the board choice opening), so the first no-guess
 // request of the page pays no worker start-up. When a game whose board was no-guess finishes (won
 // or lost), the mode asks its worker for the next board of the same choice for its marked start
 // cell (js/generation/start-cell.js) with a fresh seed, while the results screen shows; it holds
@@ -61,6 +64,16 @@
 // board (the view's setMark) until the first click; a start with any other choice, or the leave,
 // discards it. Standard boards are never pre-generated, and an abandoned game pre-generates
 // nothing.
+//
+// A daily or a challenge starts with start({ ...choice, fixed, pregenerated? }): `fixed` the
+// session's forced start cell and seed ({ startCell, seed, daily?, challenge? }), `pregenerated`
+// its board when the shell pre-generated it. It saves no last choice — nor does a start with
+// `remember: false`, Play again after one once the mode was left — and takes no board
+// pre-generated after a game; the closed board marks the start cell (the view's setMark), the keyboard and
+// controller cursor starts on it, and a first reveal elsewhere pulses the mark (pulseMark) and
+// shows the session's hint through flow.hint. restart() keeps the forced board while it has not
+// started; once it has, restart() — the results screen's Play again — plays a free board of the
+// same choice with a fresh seed. fixed is the open game's forced start, or null.
 //
 // The contract: openBoardChoice(), start(choice), pause(), resume(), restart(), leave(), summary(),
 // replay(summary). The mode reports started and canPause(true) when the first click's board
@@ -223,14 +236,15 @@ export function createClassic2DMode(report, {
     flow.failed(null);
   }
 
-  function open(choice) {
+  function open(choice, { fixed = null, pregenerated = null } = {}) {
     const c = normaliseChoice(choice);
     if (!c) throw new RangeError(`invalid board choice: ${JSON.stringify(choice)}`);
     drop();
-    const taken = ahead && sameChoice(ahead.choice, c) ? ahead.board : null;
-    if (!taken) discardAhead();
+    const taken = fixed ? pregenerated : ahead && sameChoice(ahead.choice, c) ? ahead.board : null;
+    if (fixed || !taken) discardAhead();
     ahead = null;
     const options = { choice: c, client: clientOf(), pregenerated: taken };
+    if (fixed) options.fixed = fixed;
     if (clock) options.clock = clock;
     if (randomSeed) options.randomSeed = randomSeed;
     if (generatingDelayMs !== undefined) options.generatingDelayMs = generatingDelayMs;
@@ -280,7 +294,9 @@ export function createClassic2DMode(report, {
       setCursor: { value: (c) => { view.setCursor(c); sampler?.cursor(c); } },
     });
     const pointer = mount.pointer({ view, session: gate, ...(buttonSwap ? { swap: buttonSwap } : {}) });
-    const cursor = mount.cursor({ view: cursorView, session: gate, onPadCue: (kind) => flow.padCue?.(kind) });
+    const cursor = mount.cursor({
+      view: cursorView, session: gate, onPadCue: (kind) => flow.padCue?.(kind), ...(session.fixed ? { start: session.fixed.startCell } : {}),
+    });
     const touch = mount.touch
       ? mount.touch({ view, session: gate, flagMode: () => tapMode === 'flag', onUserScroll: () => flow.scrolled?.() })
       : null;
@@ -302,6 +318,7 @@ export function createClassic2DMode(report, {
       }),
       session.on('generating', ({ shown: on }) => { flow.generating(on); pushProgress(); }),
       session.on('mark', ({ cell }) => view.setMark(cell)),
+      session.on('refused', ({ hint }) => { view.pulseMark?.(); flow.hint?.(hint); }),
       session.on('failed', (failure) => flow.failed(failure)),
     ];
     game = { session, view, pointer, cursor, touch, sampler, offs, ending: null };
@@ -341,10 +358,14 @@ export function createClassic2DMode(report, {
 
   return {
     openBoardChoice() { flow.openBoardChoice(lastChoice.current); },
+    /** The mode's one generation client (made on first use): the shell pre-generates the daily board through it. */
+    get client() { return clientOf(); },
     /** The board choice opens: spawn and warm the worker, so the first no-guess board pays no start-up. */
     warm() { return clientOf().warm(); },
     start(choice) {
-      open(choice);
+      const { fixed = null, pregenerated = null, remember = true, ...plain } = choice ?? {};
+      open(plain, { fixed, pregenerated });
+      if (fixed || !remember) return; // a daily or a challenge, or Play again after one, never changes the last board choice
       Promise.resolve(lastChoice.save(game.session.choice)).catch(() => {}); // storage never stops a game
     },
     pause() { hideBoard(true); },
@@ -354,8 +375,11 @@ export function createClassic2DMode(report, {
     },
     restart() {
       if (!game) return;
-      open(game.session.choice);
+      const { session } = game;
+      open(session.choice, session.fixed && !session.summary() ? { fixed: session.fixed } : {});
     },
+    /** The open game's forced start cell and seed (a daily or a challenge), or null. */
+    get fixed() { return game?.session.fixed ?? null; },
     leave() {
       hidden = false;
       discardAhead();

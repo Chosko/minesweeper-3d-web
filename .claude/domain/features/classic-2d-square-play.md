@@ -27,7 +27,11 @@ In scope (m1-classic-2d):
   no-guess switch, which says it keeps separate records. Each standard size
   keeps its size line and gains the 3D presets' detail line (density,
   typical 3BV, the player's best and streak on the board the switch names,
-  or a dash; `3d-play-flow` § Architecture, "3D board choice").
+  or a dash; `3d-play-flow` § Architecture, "3D board choice"). A board
+  code field with *Play this board* starts a Classic 2D code as a
+  challenge; a 3D code is refused with a hint naming the 3D board choice,
+  and a refused code shows its reason live, as the custom fields'
+  validation does, with the button disabled (`game-shell`).
 - The start-of-game flow: a closed board, the first click, board
   generation around it, the timer starting once the board is ready. The
   "generating" card's *Cancel* goes back to the closed board, recording
@@ -82,8 +86,7 @@ Non-goals:
   `m6-launch`.
 - Leaderboards and Steam ranks — deferred to `m3-on-steam`.
 - Replays — deferred to `m2-3d-joins`.
-- Daily boards and campaign levels — deferred to `m5-core-complete` and
-  `m4-campaigns`.
+- Campaign levels — deferred to `m4-campaigns`.
 - Demo locks on custom boards and no-guess — deferred to
   `m5-core-complete`.
 - The main menu entry, settings pages and the pause card's design — Main
@@ -125,6 +128,13 @@ copied.
   else. Restart discards the game and its pending generation; *Play again*
   starts a new one with the same choice, which opens with the marked start
   cell shown on the closed board while a pre-generated board waits for it.
+  A daily or a challenge forces its start cell: the closed board marks it
+  and the keyboard and controller cursor starts on it, a first reveal
+  anywhere else changes nothing and is not recorded — the hint *Start on
+  the marked cell* shows and the mark pulses —, and the board is the one
+  generated for that cell with the code's seed, so the timer starts at the
+  first click. A failed no-guess board of a challenge offers Back only,
+  never another board.
 - **Board view.** Fits the board to the window at the largest whole tile
   size that fits, capped by the board-scale setting (`settings`): 48 px at
   100 %, the default, 60 px at 125 %, no cap at Fit. Every scale shrinks the

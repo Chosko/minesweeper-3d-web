@@ -21,12 +21,14 @@ Both files are DOM-free; `js/shell/mode-3d.js` imports `buildSummary`,
   returns `{changed, ended, exploded, revealed, flagged, unflagged,
   boardNeeded}` — the counts drive the sound effects.
 - `createSession({board, client, clock?, randomSeed?, generatingDelayMs?,
-  place?, pregenerated?})` → session (`place` and `pregenerated` as Classic
-  2D's, [classic2d-session.md](classic2d-session.md)). `board` is
+  place?, pregenerated?, forced?})` → session (`place`, `pregenerated` and
+  `forced` as Classic 2D's `fixed`, [classic2d-session.md](classic2d-session.md);
+  a refused reveal returns the no-change result, flags before it kept). `board` is
   `boardOf(choice)`; with `minePositions` (the debug hook's fixed board)
   that board is played and nothing is requested. Session: `view` (one
   object for the whole session), `state`, `board`, `mines`, `seed`,
-  `generatorVersion`, `generatingShown`, `paused`, `failure`, `markedCell`,
+  `generatorVersion`, `generatingShown`, `paused`, `failure`, `forced`,
+  `startCell` (the first reveal's, -1 before it), `markedCell`,
   `progress`, `elapsedMs()`, `seconds()`, `pauses(until?, count?)`,
   `counts()` and `engineSummary()` (null before the board arrives),
   `on(event, fn)` → unsubscribe, `reveal(c)`, `toggleFlag(c)`, `chord(c)`,
@@ -37,19 +39,24 @@ Both files are DOM-free; `js/shell/mode-3d.js` imports `buildSummary`,
 - `SESSION_STATE` (`ready`, `generating`, `playing`, `failed`, `won`,
   `lost`, `left`); `SESSION_EVENTS` (`generating` `{shown}`, `started`
   `{changed}`, `failed` `{reason, offers, count}`, `finished` `{state}`,
-  `mark` `{cell}`); `FAILURE_OFFERS` and `GENERATING_DELAY_MS`, re-exported
+  `mark` `{cell}`, `refused` `{cell, hint}`); `FAILURE_OFFERS`,
+  `GENERATING_DELAY_MS` and `START_HINT`, re-exported
   from `js/classic2d/session.js`.
 
 `js/shell/mode-3d.js`
 - `create3DMode(flow, report)` — the contract over `flow` (`openBoardChoice`,
   `start(choice, pregenerated)` → session, `pause(note)`, `resume(source)`,
-  `restart(source, pregenerated)` → session, `leave`, `contextLost`,
+  `restart(source, pregenerated, forced?)` → session, `leave`, `contextLost`,
   `client`, optional `randomSeed`, optional `sampler(session)` → `{tick(),
   destroy?()}` (without it no movement is recorded), optional `release()`
   (releases pointer lock before the results screen), optional `clock`
   `{setTimeout, clearTimeout}`); `failureScreen: 'ctxlost'`; plus
   `contextLost()`, `replay(summary)`, `tick()` (drives the sampler, every
-  frame), `ending`, `finishNow()` and `cancelGeneration()`.
+  frame), `ending`, `finishNow()`, `cancelGeneration()` and `forced`. A
+  daily or a challenge starts with `start({ ...board, forced, pregenerated?
+  })`: the board pre-generated after a game is discarded, a restart keeps
+  `forced` until the game started, and the summaries carry the Daily board
+  and `daily`, or `challenge`, and `startCell`.
 - `endDelayMs({X, Y, Z})` — how long the end effect plays before the game
   is reported finished, win and loss alike: grows with the board's diagonal
   so the loss wave from any cube reaches the farthest cell and its reveal

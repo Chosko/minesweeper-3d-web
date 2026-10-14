@@ -51,10 +51,11 @@ not a new state machine. The area overview is [classic2d.md](classic2d.md).
 - `CURSOR_KEYS` (key code → `up`/`down`/`left`/`right`/`reveal`/`flag`/
   `chord`), `PAD_MAP` (`BTN` index → the same), `STICK_THRESHOLD`.
 - `createCursorInput({grid, game, onPress, onAction, onCursor?, onUse?,
-  rules?, active?, delay?, interval?})` → `{cell, setCell(c), move(dx, dy),
+  rules?, active?, delay?, interval?, start?})` → `{cell, setCell(c), move(dx, dy),
   hold(source, dir), let(source, dir), tick(now), down(source, button),
   up(source, button), pad(poll, now), reset(), holding, moving}` —
-  `onUse()` before each cursor input the board takes; `poll` a
+  `start` the cell the cursor starts on (0; a daily's or a challenge's
+  forced start cell, through `mountCursorInput`'s `start`); `onUse()` before each cursor input the board takes; `poll` a
   `GamepadReader` poll after the shell's held-button suppression
   ([input-controller.md](input-controller.md)).
 - `mountCursorInput({view, session, grid?, win?, rules?, delay?,

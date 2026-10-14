@@ -26,8 +26,10 @@ waves, confetti, shake, ground grid — and the replay and end-of-game behaviour
   anything changed; effects on state transitions: [rendering-effects.md](rendering-effects.md)),
   `render()`.
 - View: `setToggles(shift, space, ctrl)`, `setSpacing(s)` (pitch `4 * s`), `setSelected(idx)`,
-  `setMark(idx)` (the marked start cell a pre-generated board waits for, tinted green; → whether
-  it changed), `boardRadius()` (far plane, fog, confetti size), `setScenePalette({horizon, zenith,
+  `setMark(idx)` (the marked start cell a pre-generated board waits for, or a daily's or a
+  challenge's forced start cell, tinted green; → whether it changed), `pulseMark()` (the tint swells
+  `MARK_PULSE_COUNT` times over `MARK_PULSE_S` through `uMarkPulse`, kept animating by
+  `isAnimating()`; → whether there is a mark), `boardRadius()` (far plane, fog, confetti size), `setScenePalette({horizon, zenith,
   nadir})`, `setPixelRatio(pr)` (→ `false` when unchanged; main then skips the redraw), `resize()`.
 - Effects: `snapshotBeforeAction()` (before a reveal or chord, so a loss can show wrong flags),
   `flash(cells)`, `isAnimating()` (main's render-on-demand loop polls it), `setWrongFlags(indices)`

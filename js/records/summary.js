@@ -7,7 +7,10 @@
 // choice (mode 3d, X, Y, Z as width, height, depth), the engine's counts then being over the box
 // graph:
 //   { id, board, outcome, elapsedMs, pauses, pausedMs, bbbv, bbbvSolved, clicks, bbbvPerSecond,
-//     efficiency, seed, generatorVersion, endedAt }
+//     efficiency, seed, generatorVersion, endedAt, startCell?, daily?, challenge? }
+// startCell is the first click's cell, what a board code needs beside the seed; a daily game
+// (its board carrying the daily flag) adds its `daily` date, YYYYMMDD, and a challenge — a game
+// started from a board code — `challenge: true` (js/records/board-code.js).
 // clicks is { reveal, flag, chord }, each { effective, wasted }; endedAt is an ISO 8601 string.
 // The game clock runs through pauses, so elapsedMs includes the paused time; pauses is the count
 // of the game's pause spans and pausedMs their total, whole ms, never above elapsedMs.
@@ -19,7 +22,7 @@
 // rule (js/engine/profiles.js), so every click it reports counts, wasted ones included; the 3D
 // profile applies that rule to its own actions, a right-click on a revealed cell being one flag
 // click. A zero divisor makes a stat null — not available — never 0 or infinity. Only won games
-// are eligible for a personal best, and only on a stat that is available.
+// are eligible for a personal best, only on a stat that is available, and never a challenge.
 
 import { CLICK_KINDS } from '../engine/metrics.js';
 import { createBoardIdentity } from './board.js';
@@ -28,6 +31,7 @@ export const OUTCOMES = Object.freeze(['won', 'lost', 'abandoned']);
 export const BEST_STATS = Object.freeze(['time', 'bbbvPerSecond', 'efficiency']);
 
 const TWO_32 = 2 ** 32;
+const DATE = /^[0-9]{8}$/;
 
 const count = (name, v, max = Infinity) => {
   if (!Number.isInteger(v) || v < 0 || v > max) {
@@ -80,11 +84,13 @@ function pauseTotals(pauses) {
   return { pauses: pauses.length, pausedMs };
 }
 
-// { engine, outcome?, elapsedMs, pauses?, board, seed, generatorVersion, endedAt?, id? } → record
-// or null. engine is game.summary() (outcome won or lost) or game.counts() (outcome abandoned); a
+// { engine, outcome?, elapsedMs, pauses?, board, seed, generatorVersion, endedAt?, id?, startCell?,
+// daily?, challenge? } → record or null. engine is game.summary() (outcome won or lost) or game.counts() (outcome abandoned); a
 // stated outcome must agree with it. pauses is the game's pause spans, none by default. endedAt
 // defaults to now, id to a fresh random UUID.
-export function buildSummary({ engine, outcome, elapsedMs, pauses = [], board, seed, generatorVersion, endedAt, id } = {}) {
+export function buildSummary({
+  engine, outcome, elapsedMs, pauses = [], board, seed, generatorVersion, endedAt, id, startCell, daily, challenge,
+} = {}) {
   if (!engine || typeof engine !== 'object') throw new RangeError('summary needs the engine summary or counts');
   const ended = engine.outcome !== undefined;
   if (ended && engine.outcome !== 'won' && engine.outcome !== 'lost') {
@@ -121,6 +127,12 @@ export function buildSummary({ engine, outcome, elapsedMs, pauses = [], board, s
   }
   const end = endedAt === undefined ? new Date() : endedAt;
   if (!(end instanceof Date) || Number.isNaN(end.getTime())) throw new RangeError('summary endedAt must be a valid Date');
+  if (startCell !== undefined) count('startCell', startCell, cellsOf(identity) - 1);
+  if (identity.daily ? !DATE.test(daily ?? '') : daily !== undefined) {
+    throw new RangeError(identity.daily ? `a daily game needs its YYYYMMDD date, got ${daily}` : 'only a daily board has a daily date');
+  }
+  if (challenge !== undefined && challenge !== true) throw new RangeError(`summary challenge must be true when given, got ${challenge}`);
+  if (challenge && identity.daily) throw new RangeError('a daily game is not a challenge');
   const recordId = id === undefined ? globalThis.crypto.randomUUID() : id;
   if (typeof recordId !== 'string' || recordId.length === 0) throw new RangeError('summary id must be a non-empty string');
 
@@ -139,6 +151,9 @@ export function buildSummary({ engine, outcome, elapsedMs, pauses = [], board, s
     seed,
     generatorVersion,
     endedAt: end.toISOString(),
+    ...(startCell !== undefined ? { startCell } : {}),
+    ...(identity.daily ? { daily } : {}),
+    ...(challenge ? { challenge: true } : {}),
   };
   summary.bbbvPerSecond = bbbvPerSecond(summary);
   summary.efficiency = efficiency(summary);
@@ -169,8 +184,8 @@ const STAT_VALUE = {
   efficiency,
 };
 
-// True only for a won game whose `stat` (one of BEST_STATS) is available.
+// True only for a won game, not a challenge, whose `stat` (one of BEST_STATS) is available.
 export function isBestEligible(summary, stat) {
   if (!BEST_STATS.includes(stat)) throw new RangeError(`unknown best stat "${stat}"`);
-  return summary.outcome === 'won' && STAT_VALUE[stat](summary) !== null;
+  return summary.outcome === 'won' && !summary.challenge && STAT_VALUE[stat](summary) !== null;
 }

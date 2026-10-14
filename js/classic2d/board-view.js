@@ -49,6 +49,10 @@
 //   setMark(c)           the marked start cell a pre-generated board waits for, drawn as a ring
 //                        inside cell c's tile in the cursor ring's style, in START_MARK, under the
 //                        cursor ring; -1 for none.
+//   pulseMark()          the mark pulses: its ring thickens and thins MARK_PULSE_STEPS times,
+//                        MARK_PULSE_MS apart, on the view's timers — a first reveal off a forced
+//                        start cell (js/classic2d/session.js START_HINT). markPulse is whether the
+//                        ring is thick now.
 //   showEffect(effect, t)  the end effect (js/classic2d/end-effect.js) at t ms: repaints the board
 //                        with each tile as the effect shows it (a loss's pre-loss tiles before its
 //                        wave arrives), the win pulse over the tiles and the confetti over the
@@ -56,7 +60,7 @@
 //                        draws that moment. showEffect(null) repaints the board in its end state.
 //                        The effect never touches the game: every tile is still read from it.
 //   A won game's unflagged mines (its closed cells) are drawn as flags, the skin's static tile.
-//   layout, pixelRatio, hidden, pressed, cursor, mark, effect, scale, canvas, dispose()
+//   layout, pixelRatio, hidden, pressed, cursor, mark, markPulse, effect, scale, canvas, dispose()
 
 import { MIN_TILE_SIZE, createTileSkin } from './tile-skin.js';
 import { token as readerToken } from '../tokens.js';
@@ -73,6 +77,10 @@ export const CURSOR_RING = '--color-tile-cursor';
 
 /** The design token the marked start cell's ring is drawn in: an existing token, apart from the cursor's. */
 export const START_MARK = '--color-success';
+
+/** The mark's pulse: how many times its ring changes, and how far apart. */
+export const MARK_PULSE_STEPS = 6;
+export const MARK_PULSE_MS = 120;
 
 /** The key a pointer drag must hold to pan the board instead of playing it. */
 export const PAN_MODIFIER = 'shiftKey';
@@ -206,7 +214,7 @@ export function cellAtLayout(layout, scroll, cols, rows, x, y) {
 
 export function createBoardView({
   canvas, grid, createSkin = createTileSkin, token = readerToken, scale: initialScale = DEFAULT_BOARD_SCALE, frame = null,
-  onLayout = () => {},
+  onLayout = () => {}, timers = globalThis,
 } = {}) {
   if (!canvas || typeof canvas.getContext !== 'function') throw new TypeError('createBoardView needs a canvas');
   if (!grid || !Number.isInteger(grid.width) || !Number.isInteger(grid.height)) throw new TypeError('createBoardView needs a square grid');
@@ -237,6 +245,8 @@ export function createBoardView({
   let pressed = new Set();
   let cursor = -1;
   let mark = -1; // the marked start cell, or -1
+  let markPulse = false; // the mark's ring drawn thick, during its pulse
+  let pulseTimer = null;
   let marks = null; // the scrolled board's marks for the current layout and scroll, or null
   let effect = null; // the end effect playing, or null
   let effectT = 0; // the moment of it drawn, in ms
@@ -316,7 +326,13 @@ export function createBoardView({
       ctx.lineWidth = w;
       ctx.strokeRect(x + w / 2, y + w / 2, t - w, t - w);
     };
-    if (c === mark && c !== cursor) ring(START_MARK);
+    if (c === mark && c !== cursor) {
+      ring(START_MARK);
+      if (markPulse) {
+        ctx.lineWidth = w * 2;
+        ctx.strokeRect(x + w, y + w, t - 2 * w, t - 2 * w);
+      }
+    }
     if (c === cursor) ring(CURSOR_RING);
     return true;
   }
@@ -474,6 +490,7 @@ export function createBoardView({
     get pressed() { return [...pressed]; },
     get cursor() { return cursor; },
     get mark() { return mark; },
+    get markPulse() { return markPulse; },
     get effect() { return effect; },
     get scale() { return scale; },
     get scroll() { return { x: scroll.x, y: scroll.y }; },
@@ -511,6 +528,22 @@ export function createBoardView({
       mark = next;
       update(touched);
     },
+    /** The mark pulses: its ring thickens and thins MARK_PULSE_STEPS times. */
+    pulseMark() {
+      if (pulseTimer !== null) timers.clearTimeout(pulseTimer);
+      let steps = MARK_PULSE_STEPS;
+      const step = () => {
+        markPulse = steps % 2 === 0;
+        steps -= 1;
+        if (mark >= 0) update([mark]);
+        pulseTimer = steps > 0 ? timers.setTimeout(step, MARK_PULSE_MS) : null;
+        if (steps <= 0) {
+          markPulse = false;
+          if (mark >= 0) update([mark]);
+        }
+      };
+      step();
+    },
     update,
     repaint,
     /** Draws the end effect at t ms over the whole board; null ends it in the board's end state. */
@@ -536,6 +569,7 @@ export function createBoardView({
       if (hidden !== was) repaint();
     },
     dispose() {
+      if (pulseTimer !== null) timers.clearTimeout(pulseTimer);
       skin.dispose();
       game = null;
     },

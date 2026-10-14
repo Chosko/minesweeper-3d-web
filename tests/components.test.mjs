@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import {
   decimalsOf, formatSliderValue, segmentedTargetIndex, segmentedState,
   bindSlider, bindSegmented, initComponents, formatOverlayTime, formatMineCount, mineCounterDigits, pagerState, PAGER_WINDOW,
+  boardLink, copyBoardCode, bindCodeChip, COPY_FALLBACK, COPIED, bindCodeField,
 } from '../js/ui/components.js';
 import { UI } from '../js/ui.js';
 import { FOCUSABLE } from '../js/shell/navigation.js';
@@ -39,6 +40,7 @@ const COMPONENTS = {
   'ui-banner': { interactive: false },
   'ui-stat--tile': { interactive: false },
   'ui-pager': { interactive: false },
+  'ui-code': { interactive: false },
 };
 // Screen compositions: layout-only classes the screens are assembled with.
 const COMPOSITIONS = ['ui-screen', 'ui-row', 'ui-grid', 'ui-heading', 'ui-text', 'ui-actions', 'ui-stat-row', 'ui-columns'];
@@ -619,6 +621,89 @@ class FakeEl {
   }
 }
 
+test('code chip: the challenge link, Copy and Copy link through the clipboard, a refusal selecting the code', async () => {
+  const location = { origin: 'https://minesweeper3d.chosko.com', pathname: '/' };
+  assert.equal(boardLink('EN-20261011-184A', location), 'https://minesweeper3d.chosko.com/#board=EN-20261011-184A');
+  const written = [];
+  const toasts = [];
+  let selected = 0;
+  const clipboard = { writeText: async (t) => { written.push(t); } };
+  const base = { code: 'EN-20261011-184A', clipboard, location, select: () => { selected += 1; }, toast: (t) => toasts.push(t) };
+  assert.equal(await copyBoardCode({ ...base, kind: 'code' }), true);
+  assert.equal(await copyBoardCode({ ...base, kind: 'link' }), true);
+  assert.deepEqual(written, ['EN-20261011-184A', 'https://minesweeper3d.chosko.com/#board=EN-20261011-184A']);
+  assert.deepEqual(toasts, [COPIED.code, COPIED.link]);
+  const refused = { writeText: async () => { throw new Error('NotAllowedError'); } };
+  assert.equal(await copyBoardCode({ ...base, kind: 'code', clipboard: refused }), false);
+  assert.equal(await copyBoardCode({ ...base, kind: 'link', clipboard: undefined }), false);
+  assert.equal(selected, 2);
+  assert.deepEqual(toasts.slice(2), [COPY_FALLBACK, COPY_FALLBACK]);
+  assert.equal(COPY_FALLBACK, 'Press Ctrl+C to copy');
+
+  const el = (data = {}) => {
+    const e = {
+      dataset: data, attrs: {}, listeners: {}, textContent: '', hidden: false,
+      setAttribute(n, v) { e.attrs[n] = v; },
+      addEventListener(t, f) { (e.listeners[t] ??= []).push(f); },
+      classList: { toggle(c, on) { if (c === 'hidden') e.hidden = on; } },
+      click() { for (const f of e.listeners.click ?? []) f(); },
+    };
+    return e;
+  };
+  const value = el();
+  const copy = el({ copy: 'code' });
+  const link = el({ copy: 'link' });
+  const root = el();
+  root.querySelector = (sel) => (sel === '.ui-code__value' ? value : null);
+  root.querySelectorAll = (sel) => (sel === '[data-copy]' ? [copy, link] : []);
+  const calls = [];
+  const chip = bindCodeChip(root, { onCopy: (c) => calls.push([c.kind, c.code, typeof c.select]) });
+  chip.show(null);
+  assert.equal(root.hidden, true, 'no code: the chip is hidden');
+  copy.click();
+  assert.deepEqual(calls, []);
+  chip.show('B-00000000-40-1ABC');
+  assert.equal(root.hidden, false);
+  assert.equal(value.textContent, 'B-00000000-40-1ABC');
+  assert.equal(copy.attrs['aria-label'], 'Copy the board code B-00000000-40-1ABC');
+  assert.equal(link.attrs['aria-label'], 'Copy the challenge link of board B-00000000-40-1ABC');
+  copy.click();
+  link.click();
+  assert.deepEqual(calls, [['code', 'B-00000000-40-1ABC', 'function'], ['link', 'B-00000000-40-1ABC', 'function']]);
+});
+
+test('code field: validated live as the custom forms are; Play and Enter play an accepted code only', () => {
+  const node = () => {
+    const n = { value: '', textContent: '', disabled: false, classes: new Set(), listeners: {} };
+    n.classList = { toggle: (c, on) => { if (on) n.classes.add(c); else n.classes.delete(c); } };
+    n.addEventListener = (t, f) => { (n.listeners[t] ??= []).push(f); };
+    n.fire = (t, ev = {}) => { for (const f of n.listeners[t] ?? []) f({ preventDefault() { ev.prevented = true; }, ...ev }); return ev; };
+    return n;
+  };
+  const [input, button, info] = [node(), node(), node()];
+  const played = [];
+  const field = bindCodeField({
+    input, button, info, prompt: 'Paste a code',
+    resolve: (t) => (t === 'GOOD' ? { ok: true, text: 'Beginner' } : { ok: false, reason: 'Not a code.' }),
+    onPlay: (t) => played.push(t),
+  });
+  assert.deepEqual([info.textContent, button.disabled, info.classes.has('ui-text--warning')], ['Paste a code', true, false]);
+  input.value = ' bad ';
+  input.fire('input');
+  assert.deepEqual([info.textContent, button.disabled, info.classes.has('ui-text--warning')], ['Not a code.', true, true]);
+  button.fire('click');
+  assert.deepEqual(played, [], 'a refused code does not play');
+  input.value = 'GOOD ';
+  input.fire('input');
+  assert.deepEqual([info.textContent, button.disabled, info.classes.has('ui-text--muted')], ['Beginner', false, true]);
+  button.fire('click');
+  assert.equal(input.fire('keydown', { key: 'Enter' }).prevented, true);
+  input.fire('keydown', { key: 'a' });
+  assert.deepEqual(played, ['GOOD', 'GOOD']);
+  field.clear();
+  assert.deepEqual([input.value, info.textContent, button.disabled], ['', 'Paste a code', true]);
+});
+
 test('bindSlider shows the formatted value and follows input', () => {
   const root = new FakeEl({ class: 'ui-slider' });
   const input = new FakeEl({ class: 'ui-slider__input', value: '0.5', step: '0.05', 'data-format': 'multiplier' });
@@ -681,7 +766,7 @@ test('bindSegmented with horizontal leaves Up and Down unhandled', () => {
 // ---------------------------------------------------------------- "Esc: Back" beside every Back
 
 // Each button Esc triggers, with the hint beside it; the pause card's Main menu has none (Esc resumes there).
-const ESC_BACKS = ['c2d-choice-back', 'board-choice-back', 'coming-soon-back', 'ready-back', 'settings-back', 'records-back',
+const ESC_BACKS = ['c2d-choice-back', 'board-choice-back', 'coming-soon-back', 'ready-back', 'settings-back', 'records-back', 'daily-back',
   'rp-back', 'replay-message-back', 'r-menu', 'ctx-lost-menu'];
 const HINT = '<span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>';
 
@@ -1157,7 +1242,7 @@ test('in a browser, the overlay bar over the 3D scene meets the contrast contrac
 // The debug hook's surface, pinned so the screen rebuild leaves it unchanged.
 const MS_HOOK = ['state', 'game', 'renderer', 'camera', 'fps', 'frameStats', 'spawnPose', 'THREE', 'start', 'forcePlay',
   'controls', 'pads', 'pause', 'cellCenter', 'moveTo', 'look', 'aimAt', 'mouseDown', 'mouseUp', 'click', 'key', 'wheel',
-  'selected', 'pickBrute', 'pickWith', 'info', 'modes', 'pauser', 'settings', 'records', 'replayViewer', 'replays', 'board2D', 'game2D', 'watch'];
+  'selected', 'pickBrute', 'pickWith', 'info', 'modes', 'pauser', 'settings', 'records', 'replayViewer', 'replays', 'board2D', 'game2D', 'watch', 'daily'];
 
 test('in a browser, the menu, the pause card and the results layout meet the contrast contract in both themes', async (t) => {
   const env = await suite.open(t);

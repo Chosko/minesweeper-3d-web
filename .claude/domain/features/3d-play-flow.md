@@ -55,8 +55,7 @@ Non-goals:
 - 3D board identities, 3D personal bests and history, and the 3D results
   and Records screens — the Results and records slice of `m2-3d-joins`.
 - Recording and watching 3D replays — the Replays slice of `m2-3d-joins`.
-- 3D campaign levels and the 3D daily board — deferred to `m4-campaigns`
-  and `m5-core-complete`.
+- 3D campaign levels — deferred to `m4-campaigns`.
 - Demo locks on the harder presets, custom boards and no-guess — deferred
   to `m5-core-complete`.
 - Leaderboards — deferred to `m3-on-steam`.
@@ -86,7 +85,10 @@ behaviour.
   boards keep separate records. Validates custom sizes (each dimension 1 to 100,
   mines 1 to cells minus one) and decides whether no-guess is available for
   the chosen size, by the availability rule under Interfaces and contracts. Remembers the last 3D choice through the shell's
-  last-board-choice mechanism.
+  last-board-choice mechanism. A board code field with *Play this board*
+  starts a 3D code as a challenge; a Classic 2D code is refused with a hint
+  naming the Classic 2D board choice, and a refused code shows its reason
+  live, the button disabled (`game-shell`).
 - **3D game session.** Owns one 3D game: builds the box graph and the game
   awaiting its first click, shows the closed box, and on the first reveal
   places a standard board around that cell itself, or asks the generation
@@ -97,7 +99,12 @@ behaviour.
   taken over when the first reveal lands on its marked start cell, and
   discarded when it lands anywhere else; *Play again* opens the closed box
   with the marked start cell shown while a pre-generated board waits for
-  it. When the board arrives it applies the reveal and starts the timer. It drives actions from the existing mouse state machine,
+  it. A daily (the cube 8 × 8 × 8 · 40 no-guess) or a challenge forces its
+  start cell: the closed box tints it, a first reveal elsewhere changes
+  nothing and is not recorded — the hint *Start on the marked cell* shows
+  and the tint pulses —, flags before it are kept as always, and the board
+  is the one generated for that cell with the code's seed; a failed one
+  offers Back only. When the board arrives it applies the reveal and starts the timer. It drives actions from the existing mouse state machine,
   fed by the mouse buttons, the controller triggers, the keyboard's reveal and flag keys and touch, stops the timer at a win or loss, and builds the
   summary. Restart and leave cancel a pending generation.
 - **Mode adapter.** Implements the game shell's mode contract for 3D over

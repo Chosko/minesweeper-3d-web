@@ -70,8 +70,8 @@ Every Classic 2D and 3D game is recorded in the browser. **Records**, on the mai
 screen shown after a game, opens the Records screen:
 
 - Pick a mode with the **2D | 3D** switch, then a board: in 2D, Beginner, Intermediate and Expert,
-  in 3D, the three cube boards, each with and without no-guess, then every custom board of that
-  mode you have played, the former double layer boards (8 × 8 × 2, 14 × 14 × 2, 25 × 16 × 2) among
+  in 3D, the three cube boards, each with and without no-guess, then the mode's **Daily** board,
+  then every custom board of that mode you have played, the former double layer boards (8 × 8 × 2, 14 × 14 × 2, 25 × 16 × 2) among
   them. The screen opens on the board you played last, in its mode, or on the board of the game
   you just finished.
 - For that board: the best time, best 3BV/s and best efficiency with their dates, games played,
@@ -83,7 +83,7 @@ screen shown after a game, opens the Records screen:
   and its win rate over the last 50 games.
 - A chart of 3BV/s and efficiency over your won games and a chart of your best time by date, each
   showing a point's values when you hover it (or tap it), and a list of your recent games, newest
-  first, ten to a page, with each game's outcome, time, 3BV/s and efficiency. The **Top 10** tab
+  first, ten to a page, with each game's outcome, time, 3BV/s, efficiency and board code. The **Top 10** tab
   ranks your ten best won games on the board by time, 3BV/s or efficiency, the rank the screen
   after a game shows ("#4 of 57").
 - Filters by period (all time, 12 months, 30 days, 7 days) and by outcome (all, won, lost,
@@ -94,6 +94,25 @@ screen shown after a game, opens the Records screen:
 
 The screen updates as games are recorded and follows the Light / Dark theme. It works with the
 mouse, the keyboard or a controller; `Esc` or `B` goes back.
+
+## Daily boards and board codes
+
+**Daily**, on the main menu, has two boards a day — Expert no-guess and the cube 8 × 8 × 8 · 40
+no-guess — the same for everyone on that date (your local calendar date). Each starts on a marked
+cell: the first click must go there (a click anywhere else does nothing and the mark pulses), and the
+timer starts with it. You get one counted try per board per day: once a daily's first click is made,
+leaving, restarting or closing the page counts as a loss. Dailies are recorded on their own **Daily**
+board in Records, whose streak counts the days in a row you played, won or lost. The boards are
+prepared in the background while the menu shows, so they open at once.
+
+Every game has a **board code** that rebuilds its board exactly, such as `EN-20261011-184A` (a
+daily) or `EN-9C41D07A-247-1486` (any game). The screen after a game, the Records rows and the replay
+viewer show it with **Copy** and **Copy link**. Paste a code in a board choice's code field and press
+**Play this board**, or open a link ending in `#board=<code>`, to play that board as a
+**challenge**: it starts on the same marked cell, is kept in your history and games played, and is
+not eligible for bests, win rate, streaks or the Top 10. Today's daily code opens the Daily screen
+instead. A code from another version of the game's board generator is refused rather than opening a
+different board.
 
 ## Replays
 
@@ -419,8 +438,10 @@ js/mode3d/              3D mode: board choice and no-guess switch, game session 
                         timer)
 js/classic2d/           Classic 2D mode: board setup, game session and timer, Canvas board view and its
                         end-of-game effect, mouse, keyboard and controller input, tile skin
-js/records/             Personal records: board identity, game summary, bests and history, Records screen
-                        and its history chart
+js/records/             Personal records: board identity, board codes and the daily boards, game summary,
+                        bests and history, Records screen and its history chart
+js/shell/               Game shell: screen router, mode host, menu, pause, the Daily screen and board-code
+                        links
 js/replay/              Replays: format, recording, the replay library, simulator and verifier, the replay
                         viewer with its 2D and 3D viewers
 js/render.js            three.js instanced renderer, shaders, transparency sort, end-of-game effects

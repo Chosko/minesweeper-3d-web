@@ -51,6 +51,16 @@
       </form>
       <label class="ui-toggle"><input type="checkbox" role="switch" id="c2d-noguess" class="ui-toggle__input" data-noguess><span class="ui-toggle__label">No-guess board</span></label>
       <p id="c2d-noguess-help" class="ui-text ui-text--muted">Solvable by logic alone, no 50/50 guesses. Separate records.</p>
+      <div class="ui-panel" role="group" aria-labelledby="c2d-code-title">
+        <h2 class="ui-heading" id="c2d-code-title">Board code</h2>
+        <div class="ui-row">
+          <label class="ui-field"><span class="ui-field__label">Code</span><input id="c2d-code" data-code-field class="ui-field__input" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+          <div class="ui-actions ui-actions--row">
+            <button type="button" id="c2d-code-play" class="ui-button ui-button--secondary" data-code-play disabled>Play this board</button>
+          </div>
+        </div>
+        <p id="c2d-code-info" class="ui-text ui-text--muted" data-code-info>Paste a board code to play that exact board.</p>
+      </div>
       <div class="ui-actions ui-actions--row">
         <button type="button" id="c2d-choice-back" class="ui-button ui-button--secondary" data-back>Back</button>
         <span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>
@@ -154,6 +164,7 @@
       <div class="ui-menu" role="group" aria-label="Play">
         <button type="button" class="ui-menu__item" id="menu-entry-classic-2d" data-entry="classic-2d"><span class="ui-menu__label">Classic 2D</span><span class="ui-menu__detail">The classic game on a flat board</span></button>
         <button type="button" class="ui-menu__item" id="menu-entry-3d" data-entry="3d"><span class="ui-menu__label">3D</span><span class="ui-menu__detail">Fly through a cube of cubes</span></button>
+        <button type="button" class="ui-menu__item" id="menu-entry-daily" data-entry="daily"><span class="ui-menu__label">Daily</span><span class="ui-menu__detail">Today's Expert and cube, one try each</span></button>
         <button type="button" class="ui-menu__item" id="menu-entry-records" data-entry="records"><span class="ui-menu__label">Records</span><span class="ui-menu__detail">Your best times and stats</span></button>
         <button type="button" class="ui-menu__item" id="menu-entry-settings" data-entry="settings"><span class="ui-menu__label">Settings</span><span class="ui-menu__detail">Controls, graphics, theme and audio</span></button>
       </div>
@@ -197,6 +208,16 @@
         <label class="ui-toggle"><input type="checkbox" role="switch" id="c-noguess" class="ui-toggle__input" data-noguess="custom"><span class="ui-toggle__label">No-guess board &middot; separate records</span></label>
         <p id="c-density-hint" class="ui-text ui-text--muted hidden" data-density-hint></p>
       </form>
+      <div class="ui-panel" role="group" aria-labelledby="bc-code-title">
+        <h2 class="ui-heading" id="bc-code-title">Board code</h2>
+        <div class="ui-row">
+          <label class="ui-field"><span class="ui-field__label">Code</span><input id="bc-code" data-code-field class="ui-field__input" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+          <div class="ui-actions ui-actions--row">
+            <button type="button" id="bc-code-play" class="ui-button ui-button--secondary" data-code-play disabled>Play this board</button>
+          </div>
+        </div>
+        <p id="bc-code-info" class="ui-text ui-text--muted" data-code-info>Paste a board code to play that exact board.</p>
+      </div>
 
       <div class="ui-actions ui-actions--row">
         <button type="button" id="board-choice-back" class="ui-button ui-button--secondary" data-back>Back</button>
@@ -358,7 +379,7 @@
             <p id="records-games-empty" class="ui-text ui-text--muted hidden">No games match these filters.</p>
             <table id="records-games">
               <caption class="ui-text ui-text--muted" id="records-page"></caption>
-              <thead><tr><th scope="col">Date</th><th scope="col">Outcome</th><th scope="col">Time</th><th scope="col">3BV</th><th scope="col">3BV/s</th><th scope="col">Efficiency</th><th scope="col" id="records-games-replay" class="hidden">Replay</th></tr></thead>
+              <thead><tr><th scope="col">Date</th><th scope="col">Outcome</th><th scope="col">Time</th><th scope="col">3BV</th><th scope="col">3BV/s</th><th scope="col">Efficiency</th><th scope="col">Board code</th><th scope="col" id="records-games-replay" class="hidden">Replay</th></tr></thead>
               <tbody id="records-games-body"></tbody>
             </table>
             <nav id="records-games-pager" class="ui-pager hidden" aria-label="Recent games pages"></nav>
@@ -367,7 +388,7 @@
               <div id="records-top-stat" class="ui-segmented" role="radiogroup" aria-label="Rank by"><button type="button" class="ui-segmented__option" role="radio" aria-checked="true" data-value="time">Time</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="bbbvPerSecond">3BV/s</button><button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="efficiency">Efficiency</button></div>
               <p id="records-top-empty" class="ui-text ui-text--muted hidden">No won games on this board yet.</p>
               <table id="records-top-table">
-                <thead><tr><th scope="col">Rank</th><th scope="col">Time</th><th scope="col">3BV/s</th><th scope="col">Efficiency</th><th scope="col">Date</th><th scope="col">3BV</th><th scope="col">Clicks</th><th scope="col" id="records-top-replay" class="hidden">Replay</th></tr></thead>
+                <thead><tr><th scope="col">Rank</th><th scope="col">Time</th><th scope="col">3BV/s</th><th scope="col">Efficiency</th><th scope="col">Date</th><th scope="col">3BV</th><th scope="col">Clicks</th><th scope="col">Board code</th><th scope="col" id="records-top-replay" class="hidden">Replay</th></tr></thead>
                 <tbody id="records-top-body"></tbody>
               </table>
             </div>
@@ -379,7 +400,7 @@
             <p id="records-replays-empty" class="ui-text ui-text--muted hidden">No replays kept for this board yet.</p>
             <table id="records-replays-table">
               <caption class="ui-text ui-text--muted" id="records-replays-page"></caption>
-              <thead><tr><th scope="col">Date</th><th scope="col">Outcome</th><th scope="col">Time</th><th scope="col">3BV/s</th><th scope="col">Efficiency</th><th scope="col">Pin</th><th scope="col">Actions</th></tr></thead>
+              <thead><tr><th scope="col">Date</th><th scope="col">Outcome</th><th scope="col">Time</th><th scope="col">3BV/s</th><th scope="col">Efficiency</th><th scope="col">Pin</th><th scope="col">Board code</th><th scope="col">Actions</th></tr></thead>
               <tbody id="records-replays-body"></tbody>
             </table>
             <nav id="records-replays-pager" class="ui-pager hidden" aria-label="Replays pages"></nav>
@@ -406,6 +427,7 @@
       <div class="ui-stat" role="group" aria-labelledby="rp-mines-label"><span class="ui-stat__label" id="rp-mines-label">Mines</span><span id="rp-mines" class="ui-stat__value">0</span></div>
       <div class="ui-stat" role="group" aria-labelledby="rp-bbbv-label"><span class="ui-stat__label" id="rp-bbbv-label">3BV</span><span id="rp-bbbv" class="ui-stat__value">&mdash;</span></div>
       <div class="ui-stat" role="group" aria-labelledby="rp-rate-label"><span class="ui-stat__label" id="rp-rate-label">3BV/s</span><span id="rp-rate" class="ui-stat__value">&mdash;</span></div>
+      <div id="rp-code" class="ui-code ui-code--compact hidden"><code class="ui-code__value"></code><button type="button" id="rp-copy" class="ui-button ui-button--secondary" data-copy="code">Copy</button><button type="button" id="rp-copy-link" class="ui-button ui-button--secondary" data-copy="link">Copy link</button></div>
       <button type="button" id="rp-back" class="ui-button ui-button--secondary">Back</button>
       <span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>
     </div>
@@ -461,6 +483,7 @@
     <section class="ui-card ui-screen" aria-labelledby="results-title">
       <h2 class="ui-card__title" id="results-title">You won!</h2>
       <p id="results-board" class="ui-text ui-text--muted">Beginner</p>
+      <p id="results-label" class="ui-text ui-text--muted hidden"></p>
       <p id="results-banner" class="ui-banner hidden" role="status"></p>
       <div id="results-stats" class="ui-stat-row">
         <div id="rs-time" class="ui-stat" role="group" aria-labelledby="rs-time-label"><span class="ui-stat__label" id="rs-time-label">Time</span><span class="ui-stat__value">&mdash;</span></div>
@@ -470,6 +493,7 @@
         <div id="rs-efficiency" class="ui-stat" role="group" aria-labelledby="rs-efficiency-label"><span class="ui-stat__label" id="rs-efficiency-label">Efficiency</span><span class="ui-stat__value">&mdash;</span></div>
       </div>
       <p id="results-figures" class="ui-text ui-text--muted"></p>
+      <div id="results-code" class="ui-code hidden"><span class="ui-code__label">Board code</span><code class="ui-code__value"></code><button type="button" id="results-copy" class="ui-button ui-button--secondary" data-copy="code">Copy</button><button type="button" id="results-copy-link" class="ui-button ui-button--secondary" data-copy="link">Copy link</button></div>
       <p id="results-next" class="ui-text hidden"></p>
       <p id="results-standing" class="ui-text ui-text--muted hidden"></p>
       <div id="results-bests" class="ui-panel" role="group" aria-labelledby="results-bests-title">
@@ -496,6 +520,47 @@
     </section>
   </section>
   <!-- /Results -->
+
+  <!-- Daily -->
+  <section id="daily" class="overlay hidden" aria-label="Daily">
+    <section class="ui-card ui-screen ui-screen--wide" aria-labelledby="daily-title">
+      <h2 class="ui-card__title" id="daily-title">Daily</h2>
+      <p class="ui-text ui-text--muted">The same two boards for everyone each day, started on the marked cell. One counted try each.</p>
+      <div class="ui-columns">
+        <div id="daily-expert" class="ui-panel" role="group" aria-labelledby="daily-expert-title" data-daily="expert">
+          <h3 class="ui-heading" id="daily-expert-title">Expert</h3>
+          <p class="ui-text ui-text--muted" data-date></p>
+          <p class="ui-text ui-text--muted" data-board></p>
+          <p class="ui-text" data-state>Not played</p>
+          <p class="ui-text ui-text--muted" data-streak></p>
+          <p class="ui-text ui-text--warning hidden" data-reason></p>
+          <div class="ui-code" data-code><span class="ui-code__label">Board code</span><code class="ui-code__value"></code><button type="button" id="daily-expert-copy" class="ui-button ui-button--secondary" data-copy="code">Copy</button><button type="button" id="daily-expert-copy-link" class="ui-button ui-button--secondary" data-copy="link">Copy link</button></div>
+          <div class="ui-actions ui-actions--row">
+            <button type="button" id="daily-expert-play" class="ui-button ui-button--primary" data-play>Play</button>
+            <button type="button" id="daily-expert-watch" class="ui-button ui-button--secondary hidden" data-watch>Watch replay</button>
+          </div>
+        </div>
+        <div id="daily-cube" class="ui-panel" role="group" aria-labelledby="daily-cube-title" data-daily="cube">
+          <h3 class="ui-heading" id="daily-cube-title">Cube</h3>
+          <p class="ui-text ui-text--muted" data-date></p>
+          <p class="ui-text ui-text--muted" data-board></p>
+          <p class="ui-text" data-state>Not played</p>
+          <p class="ui-text ui-text--muted" data-streak></p>
+          <p class="ui-text ui-text--warning hidden" data-reason></p>
+          <div class="ui-code" data-code><span class="ui-code__label">Board code</span><code class="ui-code__value"></code><button type="button" id="daily-cube-copy" class="ui-button ui-button--secondary" data-copy="code">Copy</button><button type="button" id="daily-cube-copy-link" class="ui-button ui-button--secondary" data-copy="link">Copy link</button></div>
+          <div class="ui-actions ui-actions--row">
+            <button type="button" id="daily-cube-play" class="ui-button ui-button--primary" data-play>Play</button>
+            <button type="button" id="daily-cube-watch" class="ui-button ui-button--secondary hidden" data-watch>Watch replay</button>
+          </div>
+        </div>
+      </div>
+      <div class="ui-actions ui-actions--row">
+        <button type="button" id="daily-back" class="ui-button ui-button--secondary" data-back>Back</button>
+        <span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>
+      </div>
+    </section>
+  </section>
+  <!-- /Daily -->
 
   <!-- Look at the board: the hint over the finished 3D board -->
   <p id="look" class="look-hint hidden" role="status">Looking at the finished board &middot; Esc or any button: back to the results</p>

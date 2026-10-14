@@ -57,7 +57,8 @@ part that owns their topic; `navigation.js` is
 - getters `state` (`S`), `game`, `renderer`, `camera`, `controls`, `pads`,
   `fps`, `frameStats` (`{renders, skipped}`), `modes`, `pauser`, `settings`,
   `records`, `replayViewer`, `board2D`, `game2D` (the open Classic 2D
-  board's engine game); `THREE`, `spawnPose(X, Y, Z)`.
+  board's engine game), `daily` (the daily boards held since the menu
+  showed: `has(code)`, `take(code)`); `THREE`, `spawnPose(X, Y, Z)`.
 - `watch(data)` → `SHELL.go('replay', {data})`, `data` `{replay | replayId,
   returnTo}`; `start(X, Y, Z, mines, minePositions?)` →
   `MODES.start('3d', …)`; `forcePlay()` (lockless play); `pause()`.

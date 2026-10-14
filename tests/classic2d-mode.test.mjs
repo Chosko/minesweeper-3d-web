@@ -116,6 +116,7 @@ function mounts() {
       setHidden(h) { v.hidden = !!h; },
       setScale(scale) { v.scales.push(scale); },
       marks: [],
+      pulses: 0, pulseMark() { v.pulses += 1; },
       setPressed() {}, setCursor(c) { v.cursors.push(c); }, setMark(c) { v.marks.push(c); }, ensureVisible() {},
       destroy() { v.destroyed = true; },
     };
@@ -146,6 +147,7 @@ function fakeFlow() {
     generating(shown) { calls.push(['generating', shown]); },
     progress(p) { calls.push(['progress', p]); },
     failed(f) { calls.push(['failed', f]); },
+    hint(text) { calls.push(['hint', text]); },
     boardScale: '125',
     panel: { top: 60, right: 9, bottom: 9, left: 9, minWidth: 400 },
     scale() { return flow.boardScale; },
@@ -732,6 +734,59 @@ test('Restart of the finished game takes it over too; a click elsewhere generate
   client().answer({ ok: true, mines: [0, 1, 2, 4, 5, 6, 7, 8, 9, 10], seed: 2, generatorVersion: 1 });
   await q;
   assert.equal(t.host.state.started, true);
+});
+
+test('a daily or a challenge: the start cell marked, the cursor on it, a reveal elsewhere pulses the mark with the hint, no last choice saved', async () => {
+  const lastChoice = memoryLastChoice();
+  const saved = [];
+  const save = lastChoice.save.bind(lastChoice);
+  lastChoice.save = (c) => { saved.push(c); return save(c); };
+  const t = setup({ lastChoice });
+  t.host.start(MODE_ID, { ...BEGINNER_NG, fixed: { startCell: 40, seed: 1234, challenge: true } });
+  assert.deepEqual(saved, [], 'a challenge never changes the last board choice');
+  assert.deepEqual(t.board().marks, [40]);
+  assert.equal(t.cursor().start, 40, 'the keyboard and controller cursor starts on the mark');
+  assert.deepEqual(t.mode.fixed, { startCell: 40, seed: 1234, challenge: true });
+  assert.equal(t.act('reveal', 0), null);
+  assert.equal(t.board().pulses, 1);
+  assert.deepEqual(t.flow.calls.filter(([k]) => k === 'hint'), [['hint', 'Start on the marked cell']]);
+  assert.equal(t.cl.made[0]?.requests.length ?? 0, 0);
+  t.host.restart({ source: 'key' });
+  assert.deepEqual(t.board().marks, [40], 'not started: a restart keeps the forced board');
+  await t.act('reveal', 40);
+  assert.equal(t.cl.made[0].requests[0].seed, 1234);
+  assert.equal(t.mode.summary().challenge, true);
+  t.act('reveal', 0);
+  t.clock.advance(END_DELAY_MS);
+  await settle();
+  t.host.restart({ source: 'pointer' }); // Play again
+  assert.equal(t.mode.fixed, null, 'Play again plays a free board');
+  assert.deepEqual(t.board().marks, [40], 'the pre-generated next board, with a fresh seed');
+  assert.notEqual(t.cl.made[0].requests.at(-1).seed, 1234);
+  assert.deepEqual(saved, []);
+  t.host.leave();
+  t.host.start(MODE_ID, { ...BEGINNER_NG, remember: false }); // Play again after it, once the mode was left
+  assert.deepEqual(saved, [], 'remember: false saves no last board choice');
+  t.host.start(MODE_ID, BEGINNER_NG);
+  assert.equal(saved.length, 1, 'a free start saves as before');
+});
+
+test('a daily takes the board the shell pre-generated, never one left over from the last game', async () => {
+  const t = setup({ choice: BEGINNER_NG });
+  await loseBeginner(t);
+  t.clock.advance(END_DELAY_MS);
+  const ahead = t.cl.made[0];
+  const before = ahead.cancels;
+  let discarded = 0;
+  const pg = { cell: 40, seed: 99, settled: true, result: { ok: true, mines: Int32Array.from(defaultMines({ mineCount: 10, firstClick: 40 })), seed: 99, generatorVersion: 1 },
+    promise: Promise.resolve(), listen() {}, discard() { discarded += 1; } };
+  t.host.start(MODE_ID, { ...BEGINNER_NG, fixed: { startCell: 40, seed: 99, daily: '20261011' }, pregenerated: pg });
+  assert.ok(ahead.cancels > before || ahead.requests.length === 2, 'the board pre-generated after the last game is let go');
+  const r = t.act('reveal', 40);
+  assert.equal(r instanceof Promise, false);
+  assert.equal(t.mode.summary().seed, 99);
+  assert.equal(t.mode.summary().daily, '20261011');
+  assert.equal(discarded, 0);
 });
 
 test('no pre-generation after a standard or an abandoned game; a different choice or the leave discards one', async () => {

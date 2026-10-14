@@ -3,21 +3,27 @@
 // Two plain, serialisable documents hold the records:
 //   history — every recorded summary in play order, in compact form
 //             { id, boardKey, outcome, elapsedMs, pauses, pausedMs, bbbv, bbbvSolved, clicks,
-//             endedAt }; pauses and pausedMs are the summary's pause count and paused time, and an
-//             entry or summary without them (recorded before pauses were) reads as 0 and 0;
+//             endedAt, seed?, generatorVersion?, startCell?, daily?, challenge? }; pauses and
+//             pausedMs are the summary's pause count and paused time, and an entry or summary
+//             without them (recorded before pauses were) reads as 0 and 0; seed, generatorVersion,
+//             startCell, daily and challenge are kept when the summary has them, what a board code
+//             needs (js/records/board-code.js), so an entry from before them shows no code;
 //   records — { boards: { [boardKey]: { board, bests, counters } }, overall: { [mode]: counters } }
 //             where overall holds every mode in MODES, bests is
 //             { time, bbbvPerSecond, efficiency }, each null or the holding game's
 //             { id, value, endedAt }, and counters is { games, wins, currentStreak, longestStreak,
-//             completed, currentCompletedStreak, longestCompletedStreak }.
+//             completed, currentCompletedStreak, longestCompletedStreak, challenges?, currentDays?,
+//             longestDays?, lastDay? } — challenges once a challenge was counted, the days fields
+//             on a Daily board only.
 // The history is the source of truth: the records are a cache derived from it entry by entry,
 // so rebuildRecords(history) always equals the records maintained game by game.
 //
 // Rules. A best comes from best-eligible won games only (isBestEligible, js/records/summary.js)
 // and is replaced only by a strictly better value — lower time, higher 3BV/s or efficiency — so
 // a tie keeps the earlier holder. Every game counts in its board's counters and its mode's
-// overall counters only — no figure combines Classic 2D and 3D; a win extends the current streak,
-// a loss or an abandoned game ends it. A completed game is one played to a win or a loss: it counts
+// overall counters only — no figure combines Classic 2D and 3D, and a daily game counts on its
+// Daily board (a board key `daily:…`) and in its mode's overall figures; a win extends the current
+// streak, a loss or an abandoned game ends it. A completed game is one played to a win or a loss: it counts
 // in `completed`, and a win extends the completed streak, a loss ends it, while an abandoned game
 // (restart, back to menu, a replacing start, a closed page) leaves it as it was. Win rate (wins ÷
 // games) and completed win rate (wins ÷ completed games) are derived, never stored, each null with
@@ -67,7 +73,8 @@ function checkClicks(clicks) {
   return out;
 }
 
-const rate = (c) => (c.games === 0 ? null : c.wins / c.games);
+const rated = (c) => c.games - (c.challenges ?? 0);
+const rate = (c) => (rated(c) === 0 ? null : c.wins / rated(c));
 const completedRate = (c) => (c.completed === 0 ? null : c.wins / c.completed);
 
 export function emptyRecords() {
@@ -138,7 +145,25 @@ export function compactSummary(summary) {
     bbbvSolved: tally('bbbvSolved', summary.bbbvSolved, bbbv),
     clicks: checkClicks(summary.clicks),
     endedAt: summary.endedAt,
+    ...codeFields(summary),
   };
+}
+
+// The fields of a summary a board code needs, those it has.
+function codeFields(summary) {
+  const out = {};
+  if (summary.seed !== undefined) out.seed = tally('seed', summary.seed, 2 ** 32 - 1);
+  if (summary.generatorVersion !== undefined) out.generatorVersion = tally('generatorVersion', summary.generatorVersion);
+  if (summary.startCell !== undefined) out.startCell = tally('startCell', summary.startCell);
+  if (summary.daily !== undefined) {
+    if (typeof summary.daily !== 'string' || !/^[0-9]{8}$/.test(summary.daily)) throw new RangeError(`summary daily must be a YYYYMMDD date, got ${summary.daily}`);
+    out.daily = summary.daily;
+  }
+  if (summary.challenge !== undefined) {
+    if (summary.challenge !== true) throw new RangeError(`summary challenge must be true when given, got ${summary.challenge}`);
+    out.challenge = true;
+  }
+  return out;
 }
 
 // Per stat: the standing best before this entry, the entry's value when it is eligible, the
@@ -158,8 +183,12 @@ function compare(bests, entry) {
   return out;
 }
 
-function count(counters, outcome) {
+function count(counters, outcome, challenge = false) {
   counters.games += 1;
+  if (challenge) {
+    counters.challenges = (counters.challenges ?? 0) + 1;
+    return;
+  }
   if (outcome !== 'abandoned') counters.completed += 1;
   if (outcome === 'won') {
     counters.wins += 1;
@@ -181,9 +210,36 @@ function apply(records, entry) {
   for (const stat of BEST_STATS) {
     if (comparison[stat].newBest) rec.bests[stat] = { id: entry.id, value: comparison[stat].value, endedAt: entry.endedAt };
   }
-  count(rec.counters, entry.outcome);
-  count((records.overall[rec.board.mode] ??= emptyCounters()), entry.outcome);
+  count(rec.counters, entry.outcome, entry.challenge === true);
+  if (rec.board.daily) countDay(rec.counters, entry.daily);
+  count((records.overall[rec.board.mode] ??= emptyCounters()), entry.outcome, entry.challenge === true);
   return comparison;
+}
+
+// The date after a YYYYMMDD date.
+export function nextDay(date) {
+  const t = new Date(Date.UTC(Number(date.slice(0, 4)), Number(date.slice(4, 6)) - 1, Number(date.slice(6, 8)) + 1));
+  const p = (v, n) => String(v).padStart(n, '0');
+  return `${p(t.getUTCFullYear(), 4)}${p(t.getUTCMonth() + 1, 2)}${p(t.getUTCDate(), 2)}`;
+}
+
+// A Daily board's days in a row, after one more counted daily game played on `date`.
+function countDay(counters, date) {
+  counters.currentDays ??= 0;
+  counters.longestDays ??= 0;
+  counters.lastDay ??= null;
+  if (typeof date !== 'string' || (counters.lastDay !== null && date <= counters.lastDay)) return;
+  counters.currentDays = counters.lastDay !== null && nextDay(counters.lastDay) === date ? counters.currentDays + 1 : 1;
+  counters.longestDays = Math.max(counters.longestDays, counters.currentDays);
+  counters.lastDay = date;
+}
+
+// A Daily board's days in a row as of `today` (YYYYMMDD): { current, longest, lastDay }. The
+// current run stays alive through today while its last day is today or yesterday.
+export function daysInARow(counters, today) {
+  const last = counters?.lastDay ?? null;
+  const alive = last !== null && (last === today || nextDay(last) === today);
+  return { current: alive ? counters.currentDays ?? 0 : 0, longest: counters?.longestDays ?? 0, lastDay: last };
 }
 
 // The records derived from a history alone.
@@ -224,12 +280,13 @@ export function createRecordsModel({ records, history } = {}) {
 
     // The boards played in `mode`: its named boards first — Classic 2D's standard boards in
     // STANDARD_BOARDS order, 3D's presets in PRESETS_3D order — each without no-guess before with
-    // it; then custom boards, the most recently played first.
+    // it; then the mode's Daily board; then custom boards, the most recently played first.
     boardsPlayed(mode = MODE_CLASSIC_2D) {
       const last = new Map();
       hist.forEach((e, i) => last.set(e.boardKey, i));
       const [named, list] = mode === MODE_3D ? [preset3D, PRESETS_3D] : [standardBoard, STANDARD_BOARDS];
       const rank = (b) => {
+        if (b.daily) return list.length * 2;
         const s = named(b);
         return s ? list.indexOf(s) * 2 + (b.noGuess ? 1 : 0) : Infinity;
       };

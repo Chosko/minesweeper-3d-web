@@ -30,6 +30,12 @@ Each places a standard board with `generate()` in the click's own call and
 asks its mode's client for a no-guess one; each mode keeps one client for
 the page, warmed when its board choice opens, and pre-generates the next
 no-guess board for the marked start cell when a no-guess game finishes.
+A daily or a challenge asks for its board with the code's seed and forced
+start cell instead of a fresh seed, and the shell pre-generates today's
+daily boards through each mode's client when the main menu shows
+(`js/shell/daily.js`); the daily seed and the board code grammar are the
+records layer's ([records.md](records.md)), the generator serves them
+unchanged.
 
 ## PUBLIC API
 

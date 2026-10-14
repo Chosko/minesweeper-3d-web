@@ -43,7 +43,8 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
   `presetLabel(p)`, `presetTitle(p)` → 'Cube Beginner' (as results and
   Records name the board).
 - `LAST_CHOICE_DOC` = `'mode3d.lastChoice'`, `LAST_CHOICE_VERSION` = 1.
-- `bindBoardChoice({root, onStart, onBack})` → `show(choice, {played,
+- `bindBoardChoice({root, onStart, onBack, code?})` (`code` the board code
+  field, as Classic 2D's, [classic2d.md](classic2d.md)) → `show(choice, {played,
   details})`, `destroy()`. Its head comment lists the `data-*` hooks it
   reads. `details` (the shell's `presetDetails`,
   [app-shell-menu.md](app-shell-menu.md)) fills each preset's `[data-detail]` line for

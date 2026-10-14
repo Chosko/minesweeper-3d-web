@@ -33,6 +33,23 @@ const entry = (over = {}) => {
 
 // ---------------------------------------------------------------- ranking
 
+test('a challenge is left out of the ranking, the rank (in N as well), the Top 10, the averages and the win rate', () => {
+  const a = entry({ elapsedMs: 50000 });
+  const ch = entry({ elapsedMs: 1000, challenge: true });
+  const chLost = entry({ outcome: 'lost', challenge: true });
+  const b = entry({ elapsedMs: 40000 });
+  const history = [a, ch, chLost, b];
+  assert.deepEqual(rankedGames(history, 'time').map((e) => e.id), [b.id, a.id]);
+  assert.deepEqual(topGames(history, 'time').map((e) => e.id), [b.id, a.id]);
+  assert.deepEqual(gameRank(history, b), { position: 1, of: 2 });
+  assert.equal(gameRank(history, ch), null, 'a challenge has no rank');
+  assert.equal(gameRank(history, { ...entry({ elapsedMs: 1 }), challenge: true }), null);
+  assert.equal(averages(history).won, 2);
+  assert.equal(averages(history).rows.time[2], 45000);
+  assert.deepEqual(recentWinRate(history), { games: 2, wins: 2, completed: 2, winRate: 1, completedWinRate: 1 });
+  assert.deepEqual(bestTimeSteps(history).map((s) => s.id), [a.id, b.id]);
+});
+
 test('the ranking orders won games by time ascending, 3BV/s and efficiency descending', () => {
   const a = entry({ elapsedMs: 50000, clicks: clicks(40) });
   const b = entry({ elapsedMs: 30000, clicks: clicks(25) });

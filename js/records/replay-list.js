@@ -6,7 +6,7 @@
 //
 // replayList(library, boardKey, { pinnedFirst, canWatch, formatDate, outcomeLabel, page }) →
 //   { rows: [{ id, date, outcome, time, rate, efficiency, pinned, pin, action, actionLabel,
-//   watch, deleteMessage, file }], empty, emptyText, pinnedFirst, canWatch, page, pages, label, pager }:
+//   watch, deleteMessage, file, code }], empty, emptyText, pinnedFirst, canWatch, page, pages, label, pager }:
 //   the board's entries (library.forBoard), newest end date first, or pinned ones first under the
 //   filter, each group newest first; one page of them (pageOf, the page clamped to the last), label
 //   its range ("Replays 11–20 of 23", empty for no replay) and pager the kit pager's state
@@ -15,7 +15,8 @@
 //   through the formatters the screen hands in. pinned is whether the replay carries any pin reason,
 //   pin its state as text (pinState), action 'unpin' for a pinned replay and 'pin' otherwise, watch
 //   whether Watch is offered (canWatch), deleteMessage its confirmation (deleteMessage), file the
-//   name its Download saves under (replayFileName). No library, or one whose query throws, is the
+//   name its Download saves under (replayFileName), code the listing's board code or null (a replay
+//   from before codes). No library, or one whose query throws, is the
 //   empty state.
 // pinState(pins) → 'Not pinned' | 'Pinned' | 'Pinned · best'.
 // deleteMessage({ date, outcome, pins }) → "Delete the replay of 11 Oct 2026 14:32, won? This cannot
@@ -29,9 +30,10 @@
 //   REPLAY_FILE_TYPE its extension, which Open replay file picks.
 //
 // createReplayListView({ root, onWatch, onTogglePin, onPinnedFirst, onPage, onDelete, onDownload,
-//   onOpenFile }) → { show(list), closeConfirm(), isConfirmOpen(), hide() }: fills
+//   onOpenFile, onCopy }) → { show(list), closeConfirm(), isConfirmOpen(), hide() }: fills
 //   #records-replays by id — the pinned-first toggle, Open replay file (#records-replays-open,
 //   onOpenFile(), shown while list.canOpen), the empty state, one table row per replay with its
+//   board code as a compact code chip (createCodeChip; Copy and Copy link call onCopy), its
 //   Download (onDownload(id)), Pin / Unpin and Delete buttons and, when list.canWatch, its Watch
 //   button, the range caption and the kit pager
 //   (bindPager; onPage(page)). A rebuilt list keeps focus on the button of the replay that had it.
@@ -43,7 +45,7 @@
 
 import { DASH, formatTime, formatRate, formatEfficiency } from '../results/view.js';
 import { PIN_BEST, PIN_HAND } from '../replay/library.js';
-import { pagerState, bindPager } from '../ui/components.js';
+import { pagerState, bindPager, createCodeChip, bindCodeChip } from '../ui/components.js';
 import { pageOf } from './history-chart.js';
 
 /** The replay viewer's router screen (replay-playback); Watch shows once the shell registers it. */
@@ -51,6 +53,7 @@ export const REPLAY_SCREEN = 'replay';
 export const REPLAYS_EMPTY_TEXT = 'No replays kept for this board yet.';
 export const REPLAYS_NOT_SAVED = 'Replays are not being saved this session.';
 export const REPLAY_HEADERS = Object.freeze(['Date', 'Outcome', 'Time', '3BV/s', 'Efficiency', 'Pin']);
+export const CODE_HEADER = 'Board code';
 export const REPLAY_FILE_TYPE = '.msrp';
 
 const time = (iso) => { const t = Date.parse(iso); return Number.isNaN(t) ? -Infinity : t; };
@@ -85,6 +88,7 @@ function replayRow(e, { canWatch, formatDate, outcomeLabel }) {
     rate: formatRate(e.bbbvPerSecond), efficiency: formatEfficiency(e.efficiency),
     pinned, pin: pinState(e.pins), action: pinned ? 'unpin' : 'pin', actionLabel: pinned ? 'Unpin' : 'Pin',
     watch: canWatch, deleteMessage: deleteMessage({ date, outcome, pins: e.pins }), file: replayFileName(e.boardKey, e.endedAt),
+    code: typeof e.code === 'string' && e.code ? e.code : null,
   };
 }
 
@@ -108,6 +112,18 @@ export function replayList(library, boardKey, {
   };
 }
 
+/** A table cell holding a compact code chip for `code` (empty for none), for every Records row that names one game. */
+export function codeCell(doc, code, onCopy) {
+  const td = doc.createElement('td');
+  td.dataset.label = CODE_HEADER;
+  if (code) {
+    const chip = createCodeChip(doc, { compact: true });
+    bindCodeChip(chip, { onCopy }).show(code);
+    td.append(chip);
+  }
+  return td;
+}
+
 export function togglePin(library, row) {
   return row.pinned ? library.unpin(row.id) : library.pin(row.id);
 }
@@ -118,6 +134,7 @@ export function watchRoute(replayId, returnTo) {
 
 export function createReplayListView({
   root, onWatch, onTogglePin, onPinnedFirst, onPage = () => {}, onDelete = () => {}, onDownload = () => {}, onOpenFile = () => {},
+  onCopy = () => {},
 }) {
   const $ = (id) => root.querySelector(`#${id}`);
   const doc = root.ownerDocument;
@@ -201,6 +218,7 @@ export function createReplayListView({
           td.dataset.label = REPLAY_HEADERS[i];
           tr.append(td);
         });
+        tr.append(codeCell(doc, r.code, onCopy));
         const actions = doc.createElement('td');
         const what = `replay of ${r.date}, ${r.time}`;
         if (r.watch) actions.append(button('Watch', `Watch ${what}`, () => onWatch(r.id), { id: r.id, act: 'watch' }));

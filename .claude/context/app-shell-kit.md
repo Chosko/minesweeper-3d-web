@@ -39,6 +39,14 @@ Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
   pages and Last (`data-page`), the current page `aria-current="page"` and
   `aria-disabled` (still focusable, so a pager button that becomes disabled
   hands focus to it).
+- The code chip (`.ui-code`, `ui-code--compact` in a table row):
+  `boardLink(code, location)` → `<origin><path>#board=<code>`;
+  `copyBoardCode({kind, code, clipboard, location, select, toast})` →
+  Promise of whether it copied (a refusal selects the code and toasts
+  `COPY_FALLBACK`, else `COPIED[kind]`); `createCodeChip(doc, {label,
+  compact})`; `bindCodeChip(root, {onCopy})` → `{show(code | null), code}`.
+- `bindCodeField({input, button, info, resolve, onPlay, prompt?})` →
+  `{refresh(), clear()}`: the board choices' code field, validated live.
 
 `js/theme.js` — `globalThis.msTheme` (`createThemeApplier({root,
 readStored?, onError?})` for tests): `current()`, `setTheme(theme)` (unknown

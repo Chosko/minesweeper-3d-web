@@ -57,8 +57,11 @@ Non-goals:
   behaviour, results contents and records — belongs to Main menu and game
   shell and to Results and records. This feature styles them.
 - Steam rank on the results screen — deferred to `m3-on-steam`.
-- Campaign, Daily, Surface, Leaderboards and demo menu styling — deferred to
-  the milestones that bring those entries.
+- Campaign, Surface, Leaderboards and demo menu styling — deferred to the
+  milestones that bring those entries. The Daily entry and the Daily
+  screen are built from the kit, with its code chip (a board code with Copy
+  and Copy link) on the results screen, the Daily screen, the Records rows
+  and the replay viewer.
 - The 3D scene behind the overlay: its sky follows the theme through
   `design-tokens-and-themes`, and its cubes keep one look under both
   themes.

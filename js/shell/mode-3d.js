@@ -7,8 +7,9 @@
 //   pause(note)        show the pause card over the hidden board
 //   resume(source)     'pad': lockless play; 'pointer': the click-to-play card re-acquires pointer
 //                      lock; 'key': the click-to-play card
-//   restart(source, pregenerated)  a new session of the same board, with the pre-generated board
-//                      or null, entered as resume(source) enters play; returns the session
+//   restart(source, pregenerated, forced?)  a new session of the same board, with the pre-generated
+//                      board or null — and, for a daily or a challenge not yet started, its forced
+//                      start — entered as resume(source) enters play; returns the session
 //   client             the 3D game's generation client (js/generation/client.js), kept for the page
 //   randomSeed         optional: () → a seed for a pre-generated board; crypto by default
 //   leave()            drop the game, release pointer lock and lockless play
@@ -47,6 +48,16 @@
 // with the same board (Play again, or Restart of the finished game) hands it to the new session,
 // which marks the cell until the first reveal; a start with any other board, the leave or a lost
 // graphics context discards it. A standard, fixed or abandoned game pre-generates nothing.
+//
+// A daily or a challenge starts with start({ ...board, forced, pregenerated? }): `forced` the
+// session's forced start cell and seed ({ startCell, seed, daily?, challenge? },
+// js/mode3d/session.js), `pregenerated` its board when the shell pre-generated it; the board
+// pre-generated after a game is discarded, and the session reaches flow.start with the board's
+// `forced`. restart() keeps the forced start while the game has not started; once it has, restart()
+// — the results screen's Play again — opens a free box of the same board with a fresh seed. forced
+// is the open game's forced start, or null. A daily's summaries name its Daily board (the
+// identity's daily flag) with its `daily` date, a challenge's carry `challenge: true`, and every
+// summary carries the first reveal's startCell.
 //
 // Summaries are built by js/records/summary.js's buildSummary from the session's engine counts
 // (outcome abandoned) or engine summary (won or lost), its elapsed time and its pause spans up to
@@ -149,14 +160,18 @@ export function create3DMode(flow, report) {
     if (session.seed === null || session.generatorVersion === null) return null; // a fixed board
     const { X, Y, Z, mines, noGuess } = session.board;
     const elapsedMs = session.elapsedMs();
+    const forced = session.forced ?? null;
     return buildSummary({
       engine,
       elapsedMs,
       pauses: session.pauses(elapsedMs),
-      board: { mode: MODE_3D, width: X, height: Y, depth: Z, mines, noGuess },
+      board: { mode: MODE_3D, width: X, height: Y, depth: Z, mines, noGuess, ...(forced?.daily ? { daily: true } : {}) },
       seed: session.seed,
       generatorVersion: session.generatorVersion,
       id: g.id,
+      ...(Number.isInteger(session.startCell) && session.startCell >= 0 ? { startCell: session.startCell } : {}),
+      ...(forced?.daily ? { daily: forced.daily } : {}),
+      ...(forced?.challenge ? { challenge: true } : {}),
     });
   }
 
@@ -208,10 +223,14 @@ export function create3DMode(flow, report) {
     openBoardChoice() { flow.openBoardChoice(); },
     start(choice) {
       drop();
-      const taken = takeAhead(choice);
+      const { forced = null, pregenerated = null, ...board } = choice ?? {};
+      let taken;
+      if (forced) { discardAhead(); taken = pregenerated; } else taken = takeAhead(board);
       if (flow.contextLost()) { taken?.discard(); failed(); return; }
-      attach(flow.start(choice, taken));
+      attach(flow.start(forced ? { ...board, forced } : board, taken));
     },
+    /** The open game's forced start cell and seed (a daily or a challenge), or null. */
+    get forced() { return game?.session.forced ?? null; },
     /** Whether the end sequence is running: the game is over and the results screen not yet shown. */
     get ending() { return !!game?.ending; },
     cancelGeneration() { return game ? game.session.cancel() : false; },
@@ -222,9 +241,10 @@ export function create3DMode(flow, report) {
     },
     resume(opts = {}) { flow.resume(opts.source ?? 'pointer'); },
     restart(opts = {}) {
-      const taken = takeAhead(game?.session.board);
+      const keep = game && !game.started ? game.session.forced ?? null : null;
+      const taken = keep ? (discardAhead(), null) : takeAhead(game?.session.board);
       drop();
-      attach(flow.restart(opts.source ?? 'pointer', taken));
+      attach(keep ? flow.restart(opts.source ?? 'pointer', taken, keep) : flow.restart(opts.source ?? 'pointer', taken));
     },
     leave() {
       discardAhead();

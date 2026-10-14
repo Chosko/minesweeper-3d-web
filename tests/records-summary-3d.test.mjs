@@ -198,6 +198,7 @@ test('the 3D mode answers summary() with the started game\'s summary so far, fro
     seed: 4242,
     generatorVersion: 1,
     endedAt: undefined,
+    startCell: 0,
   });
   assert.equal(typeof s.id, 'string');
   assert.equal(s.id, started.id, 'every summary of one game carries the same id');

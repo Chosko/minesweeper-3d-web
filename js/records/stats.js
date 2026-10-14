@@ -5,6 +5,9 @@
 // derivations on every call, and stored nowhere.
 //
 // statValue(entry, stat) → the entry's value of one of BEST_STATS (time is elapsedMs), or null.
+// A challenge (an entry with `challenge: true`, a game started from a board code) is never eligible
+// for a best, so it is in none of these figures: not ranked, not in N, not in the Top 10, the
+// averages or the recent win rate.
 // rankedGames(history, stat) → the won games whose stat is available (isBestEligible), best first:
 //   lower time, higher 3BV/s, higher efficiency; a tie goes to the earlier game, the records' tie
 //   rule, so rank 1 by each stat is the game holding that best.
@@ -53,7 +56,8 @@ export const OUTCOME_FILTERS = Object.freeze([
 const DAY_MS = 24 * 60 * 60 * 1000;
 const VALUE = { time: (e) => e.elapsedMs, bbbvPerSecond, efficiency };
 const LOWER_IS_BETTER = { time: true, bbbvPerSecond: false, efficiency: false };
-const isWon = (e) => e?.outcome === 'won';
+const isWon = (e) => e?.outcome === 'won' && !e.challenge;
+const counted = (e) => !e?.challenge;
 
 export function statValue(entry, stat) {
   if (!BEST_STATS.includes(stat)) throw new RangeError(`unknown best stat "${stat}"`);
@@ -107,7 +111,7 @@ export function averages(history) {
 }
 
 export function recentWinRate(history, size = RECENT_GAMES) {
-  const recent = history.slice(-size);
+  const recent = history.filter(counted).slice(-size);
   const wins = recent.filter(isWon).length;
   const completed = recent.filter((e) => e?.outcome === 'won' || e?.outcome === 'lost').length;
   return {

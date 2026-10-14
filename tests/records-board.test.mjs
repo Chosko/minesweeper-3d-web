@@ -53,7 +53,7 @@ test('identity: the standard boards are Beginner, Intermediate and Expert on the
 // ---------- key ----------
 
 test('key: pinned for the three standard boards with and without no-guess', () => {
-  assert.equal(BOARD_KEY_FORMAT, 1);
+  assert.equal(BOARD_KEY_FORMAT, 2);
   assert.equal(boardKey(square(9, 9, 10)), 'classic-2d:square:9x9:10:guess');
   assert.equal(boardKey(square(9, 9, 10, true)), 'classic-2d:square:9x9:10:no-guess');
   assert.equal(boardKey(square(16, 16, 40)), 'classic-2d:square:16x16:40:guess');
@@ -155,6 +155,35 @@ test('label: standard sizes are recognised only on the square grid', () => {
   const hex = createBoardIdentity({ mode: 'classic-2d', grid: 'hex', width: 30, height: 16, mines: 99, noGuess: false });
   assert.equal(standardBoard(hex), null);
   assert.equal(boardLabel(hex), '30 × 16 · 99 mines');
+});
+
+// ---------- the daily board ----------
+
+const daily = (identity) => createBoardIdentity({ ...identity, daily: true });
+
+test('daily board: the daily flag rides on the identity and only as true', () => {
+  const id = daily(square(30, 16, 99, true));
+  assert.deepEqual({ ...id }, { mode: 'classic-2d', grid: 'square', width: 30, height: 16, mines: 99, noGuess: true, daily: true });
+  assert.ok(Object.isFrozen(id));
+  assert.deepEqual({ ...createBoardIdentity({ ...square(9, 9, 10), daily: false }) }, { ...square(9, 9, 10) });
+  assert.throws(() => createBoardIdentity({ ...square(9, 9, 10), daily: 'yes' }), RangeError);
+});
+
+test('daily board: keyed daily:<board key> and read back', () => {
+  const expert = daily(square(30, 16, 99, true));
+  assert.equal(boardKey(expert), 'daily:classic-2d:square:30x16:99:no-guess');
+  assert.deepEqual(parseBoardKey('daily:classic-2d:square:30x16:99:no-guess'), expert);
+  const cube = daily(createBoardIdentity({ mode: '3d', width: 8, height: 8, depth: 8, mines: 40, noGuess: true }));
+  assert.equal(boardKey(cube), 'daily:3d:8x8x8:40:no-guess');
+  assert.deepEqual(parseBoardKey('daily:3d:8x8x8:40:no-guess'), cube);
+  assert.throws(() => parseBoardKey('daily:daily:3d:8x8x8:40:no-guess'), RangeError);
+  assert.throws(() => parseBoardKey('daily:'), RangeError);
+});
+
+test('daily board: labelled Daily, the 3D board by its dimensions', () => {
+  assert.equal(boardLabel(daily(square(30, 16, 99, true))), 'Daily · Expert · no-guess');
+  const cube = daily(createBoardIdentity({ mode: '3d', width: 8, height: 8, depth: 8, mines: 40, noGuess: true }));
+  assert.equal(boardLabel(cube), 'Daily · 8 × 8 × 8 · 40 mines · no-guess');
 });
 
 // ---------- module ----------

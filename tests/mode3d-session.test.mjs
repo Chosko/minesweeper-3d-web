@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  createSession, create3DGame, SESSION_STATE, FAILURE_OFFERS, GENERATING_DELAY_MS,
+  createSession, create3DGame, SESSION_STATE, FAILURE_OFFERS, GENERATING_DELAY_MS, START_HINT,
 } from '../js/mode3d/session.js';
 import { createBoxGrid } from '../js/engine/box-grid.js';
 import { PHASE } from '../js/engine/rules.js';
@@ -545,6 +545,52 @@ function cubeWithPregen({ answered = true, result } = {}) {
   const h = sessionOf(CUBE, { client, pregenerated: pg });
   return { ...h, client, req, pg };
 }
+
+test('a forced start cell in 3D: marked, a first reveal elsewhere changes nothing and hints, the board generate() for the code', async () => {
+  const CUBE8 = { X: 8, Y: 8, Z: 8, mines: 40, noGuess: true };
+  const mark = startCell({ kind: 'box', X: 8, Y: 8, Z: 8 });
+  const h = sessionOf(CUBE8, { forced: { startCell: mark, seed: 449335490, daily: '20261011' } });
+  const refused = [];
+  h.session.on('refused', (e) => refused.push(e));
+  assert.equal(h.session.markedCell, mark, 'the cube is tinted with no pre-generated board');
+  const r = h.session.reveal(0);
+  assert.equal(r.changed.length, 0);
+  assert.equal(h.session.state, SESSION_STATE.READY);
+  assert.deepEqual(refused, [{ cell: 0, hint: START_HINT }]);
+  assert.equal(h.client.requests.length, 0);
+  assert.equal(h.session.toggleFlag(1).flagged, 1, 'flags before the first reveal behave as always');
+  const p = h.session.reveal(mark);
+  const req = { graph: { kind: 'box', X: 8, Y: 8, Z: 8 }, mineCount: 40, firstClick: mark, noGuess: true, seed: 449335490 };
+  assert.deepEqual(h.client.requests[0].req, req);
+  h.clock.advance(5000);
+  h.client.answer();
+  await p;
+  assert.equal(h.session.state, SESSION_STATE.PLAYING);
+  assert.equal(h.session.elapsedMs(), 0, 'the timer starts at the first click on the mark');
+  assert.equal(h.session.startCell, mark);
+  assert.equal(h.session.seed, 449335490);
+  assert.equal(h.session.markedCell, -1);
+  const expected = new Set(generate(req).mines);
+  for (let c = 0; c < h.session.view.n; c++) if (h.session.view.pressed[c]) assert.equal(expected.has(c), false);
+});
+
+test('a forced 3D board that fails offers nothing; a restart once started plays a free box', async () => {
+  const h = sessionOf(CUBE, { forced: { startCell: CUBE_MARK, seed: 5, challenge: true } });
+  const p = h.session.reveal(CUBE_MARK);
+  h.client.answer({ ok: false, reason: 'budget', seed: 5, generatorVersion: GENERATOR_VERSION, candidates: 2000 });
+  await p;
+  assert.deepEqual(h.session.failure.offers, []);
+  assert.equal(h.session.retry(), null);
+  assert.equal(h.session.playStandard(), null);
+  const s = sessionOf({ ...CUBE, noGuess: false }, { forced: { startCell: CUBE_MARK, seed: 9, challenge: true } });
+  s.session.restart();
+  assert.equal(s.session.markedCell, CUBE_MARK, 'not started: still forced');
+  s.session.reveal(CUBE_MARK);
+  assert.equal(s.placed[0].seed, 9);
+  s.session.restart();
+  assert.equal(s.session.forced, null);
+  assert.equal(s.session.markedCell, -1);
+});
 
 test('a pre-generated box board, arrived, is the game\'s board on the marked cell; flags before do not count', async () => {
   const { session, client, req, events } = cubeWithPregen();

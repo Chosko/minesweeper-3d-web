@@ -10,7 +10,7 @@ import {
   normaliseChoice, LAST_CHOICE_DOC, LAST_CHOICE_VERSION, createLastChoice,
 } from '../js/classic2d/board-setup.js';
 import {
-  createSession, createTimer, SESSION_STATE, FAILURE_OFFERS, GENERATING_DELAY_MS,
+  createSession, createTimer, SESSION_STATE, FAILURE_OFFERS, GENERATING_DELAY_MS, START_HINT,
 } from '../js/classic2d/session.js';
 import { CUSTOM_LIMITS, getRuleProfile, REFERENCE_PROFILE } from '../js/engine/profiles.js';
 import { generate } from '../js/generation/generate.js';
@@ -1058,6 +1058,94 @@ test('session: cancel while waiting on a pre-generated board discards it; the ne
   client.answer();
   await q;
   assert.equal(h.s.seed, 42);
+});
+
+// ---------- a forced, marked start cell (the daily and a challenge) ----------
+
+const EXPERT_NG = { size: 'expert', noGuess: true };
+const EXPERT_MARK = startCell({ kind: 'square', width: 30, height: 16 });
+function forced(fixed, opts = {}) {
+  const h = session(opts.choice ?? EXPERT_NG, { client: opts.client, extra: { fixed, pregenerated: opts.pregenerated ?? null } });
+  const refused = [];
+  h.s.on('refused', (p) => refused.push(p));
+  return { ...h, refused };
+}
+
+test('session: a forced start cell is marked, and a first reveal elsewhere changes nothing, records nothing and hints', async () => {
+  const h = forced({ startCell: EXPERT_MARK, seed: 0x9c41d07a, challenge: true });
+  assert.equal(h.s.markedCell, EXPERT_MARK, 'marked even with no pre-generated board');
+  assert.equal(h.s.fixed.startCell, EXPERT_MARK);
+  assert.equal(h.s.reveal(0), null);
+  assert.equal(h.s.state, SESSION_STATE.READY);
+  assert.equal(h.client.requests.length, 0, 'nothing is generated');
+  assert.deepEqual(h.refused, [{ cell: 0, hint: START_HINT }]);
+  assert.equal(START_HINT, 'Start on the marked cell');
+  assert.equal(h.s.game.state.revealed.every((v) => !v), true);
+  assert.equal(h.s.toggleFlag(3).changed !== undefined, true, 'a flag before the first reveal behaves as the mode treats it');
+  const p = h.s.reveal(EXPERT_MARK);
+  assert.deepEqual(h.client.last.req, boardSetup(EXPERT_NG).request(EXPERT_MARK, 0x9c41d07a), 'the code\'s seed and start cell');
+  h.clock.advance(3000);
+  h.client.answer();
+  await p;
+  assert.equal(h.s.state, SESSION_STATE.PLAYING);
+  assert.equal(h.s.elapsedMs(), 0, 'the timer starts at the first click on the mark');
+  const expected = generate(boardSetup(EXPERT_NG).request(EXPERT_MARK, 0x9c41d07a));
+  const replay = decodeReplay(h.s.replay(h.s.summary()).blob);
+  assert.deepEqual(replay.header.mines, [...expected.mines], 'the board is generate() for the code');
+  assert.deepEqual(replay.actions.filter((a) => a.kind === 'reveal').map((a) => a.cell), [EXPERT_MARK], 'the refused reveal is not recorded');
+  const summary = h.s.summary();
+  assert.equal(summary.startCell, EXPERT_MARK);
+  assert.equal(summary.challenge, true);
+  assert.equal(summary.seed, 0x9c41d07a);
+  assert.equal(h.s.markedCell, -1);
+});
+
+test('session: a daily takes its pre-generated board on the mark, and its summaries carry the daily board and date', async () => {
+  const client = fakeClient();
+  const req = boardSetup(EXPERT_NG).request(EXPERT_MARK, 4242);
+  const pg = pregenerate(client, req);
+  client.answer();
+  const h = forced({ startCell: EXPERT_MARK, seed: 4242, daily: '20261011' }, { client, pregenerated: pg });
+  await tick();
+  const r = h.s.reveal(EXPERT_MARK);
+  assert.equal(r instanceof Promise, false);
+  const summary = h.s.summary();
+  assert.equal(summary.daily, '20261011');
+  assert.equal(summary.board.daily, true);
+  assert.equal(boardKey(summary.board), 'daily:classic-2d:square:30x16:99:no-guess');
+  assert.equal('challenge' in summary, false);
+  assert.equal(h.s.replay(summary).listing.boardKey, 'daily:classic-2d:square:30x16:99:no-guess');
+});
+
+test('session: a forced standard board is placed with the code\'s seed; a failed one offers Back only', async () => {
+  const std = forced({ startCell: 40, seed: 99, challenge: true }, { choice: { size: 'beginner', noGuess: false } });
+  std.s.reveal(40);
+  assert.equal(std.placed[0].seed, 99);
+  assert.equal(std.placed[0].firstClick, 40);
+  assert.equal(std.s.state, SESSION_STATE.PLAYING);
+
+  const h = forced({ startCell: EXPERT_MARK, seed: 5, challenge: true });
+  const p = h.s.reveal(EXPERT_MARK);
+  h.client.answer({ ok: false, reason: 'no board in budget', seed: 5, generatorVersion: GENERATOR_VERSION, candidates: 2000 });
+  await p;
+  assert.equal(h.s.state, SESSION_STATE.FAILED);
+  assert.deepEqual(h.s.failure.offers, [], 'never another board');
+  assert.equal(h.s.retry(), null);
+  assert.equal(h.s.playStandard(), null);
+});
+
+test('session: restart after a forced game started plays free; before its first reveal it stays forced', async () => {
+  const h = forced({ startCell: 40, seed: 99, challenge: true }, { choice: { size: 'beginner', noGuess: false } });
+  h.s.restart();
+  assert.equal(h.s.markedCell, 40, 'not started: still the same board');
+  h.s.reveal(40);
+  h.s.restart();
+  assert.equal(h.s.fixed, null);
+  assert.equal(h.s.markedCell, -1);
+  h.s.reveal(3);
+  assert.equal(h.s.state, SESSION_STATE.PLAYING, 'a free first click');
+  assert.equal('challenge' in h.s.summary(), false);
+  assert.equal(h.s.summary().startCell, 3);
 });
 
 // ---------- progress and Play a standard board from the card ----------

@@ -107,6 +107,19 @@ test('an index entry carries every listing field and its pin reasons', async () 
   assert.deepEqual(entry.pins, [PIN_BEST]);
 });
 
+test('an index entry keeps the listing\'s board code; a listing from before codes has none', async () => {
+  const { library, backend } = await setup();
+  const r = replay();
+  await library.add(r.blob, { ...r.listing, code: 'B-00000007-40-1ABC' }, false);
+  const old = replay();
+  await library.add(old.blob, old.listing, false);
+  const [newer, coded] = library.forBoard(BOARD);
+  assert.equal(coded.code, 'B-00000007-40-1ABC');
+  assert.equal('code' in newer, false);
+  await library.settled();
+  assert.equal(stored(backend).data.entries.find((e) => e.id === r.listing.id).code, 'B-00000007-40-1ABC', 'saved with the index');
+});
+
 test('the library loads a stored index once', async () => {
   const r = replay();
   const { library } = await setup({

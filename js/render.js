@@ -57,6 +57,9 @@ export const PULSE_BRIGHT = 0.45;
 // The flash of the cubes a flag click on a revealed number flagged or unflagged: for FLASH_S the cube
 // glows toward white up to FLASH_BRIGHT and FLASH_ALPHA halfway, over every cube in front of it, then
 // it is gone. Live play only.
+/** The marked start cell's pulse: how long it lasts and how many times its tint swells. */
+export const MARK_PULSE_S = 0.9;
+export const MARK_PULSE_COUNT = 3;
 export const FLASH_S = 0.4;
 export const FLASH_BRIGHT = 0.8;
 export const FLASH_ALPHA = 0.85;
@@ -267,6 +270,7 @@ precision highp int;
 precision highp sampler2DArray;
 uniform sampler2DArray uTiles;
 uniform float uSelGlow;
+uniform float uMarkPulse; // 0..1: the mark's pulse, a first reveal off a forced start cell
 uniform vec3 uFog; // near, far, max amount
 in vec2 vUv;
 flat in float vLayer;
@@ -300,7 +304,7 @@ void main() {
     rgb += vec3(0.16, 0.06, 0.07) * uSelGlow * (1.0 - o);
   }
   // the marked start cell a pre-generated board waits for: tinted green, its border too
-  rgb = mix(rgb, vec3(0.18, 0.72, 0.36), 0.5 * vMark);
+  rgb = mix(rgb, vec3(0.18, 0.72, 0.36), (0.5 + 0.4 * uMarkPulse) * vMark);
   rgb = mix(rgb, vRegion.rgb, vRegion.a); // a replay's Show 3BV
   rgb = mix(rgb, vec3(1.0), vFlash);
   float f = uFog.z * smoothstep(uFog.x, uFog.y, vDist) * (1.0 - 0.85 * vTint);
@@ -438,6 +442,7 @@ export class BoardRenderer {
       uHasSel: { value: 0 },
       uMark: { value: new THREE.Vector3(-10, -10, -10) },
       uHasMark: { value: 0 },
+      uMarkPulse: { value: 0 },
       uShift: { value: 0 },
       uSpace: { value: 0 },
       uCtrl: { value: 0 },
@@ -502,6 +507,7 @@ export class BoardRenderer {
     this._shake = null;      // { t0, dur, amp }
     this._selT0 = 0;
     this._selAnim = false;
+    this._markPulse = null; // { t0 } while the mark pulses
     this._snap = null;       // { flagged, pressed } copied right before a reveal action
     this._wrong = null;      // Uint8Array mask of wrong flags (loss only)
     this._tmpQ = new THREE.Quaternion();
@@ -963,9 +969,16 @@ export class BoardRenderer {
     this.confetti.visible = true;
   }
 
-  /** True while a time-based effect (selection pulse, "solved" pulse, flash, end-of-game wave, confetti, shake) needs frames. */
+  /** The marked start cell pulses: its tint swells MARK_PULSE_COUNT times over MARK_PULSE_S (a first reveal off a forced start cell). */
+  pulseMark() {
+    if (this.mark < 0) return false;
+    this._markPulse = { t0: performance.now() / 1000 };
+    return true;
+  }
+
+  /** True while a time-based effect (mark pulse, selection pulse, "solved" pulse, flash, end-of-game wave, confetti, shake) needs frames. */
   isAnimating() {
-    return this._selAnim || this._eff !== null || this._conf !== null || this._shake !== null || this._pulses.size > 0 || this._flashes.size > 0;
+    return this._selAnim || this._markPulse !== null || this._eff !== null || this._conf !== null || this._shake !== null || this._pulses.size > 0 || this._flashes.size > 0;
   }
 
   setToggles(shift, space, ctrl) {
@@ -1174,6 +1187,11 @@ export class BoardRenderer {
     const st = now - this._selT0;
     if (this._selAnim && st > 4) this._selAnim = false;
     this.uniforms.uSelGlow.value = this._selAnim ? 0.5 + 0.5 * Math.exp(-st * 0.8) * (0.5 + 0.5 * Math.cos(st * 6.5)) + 0.0 : 0.5;
+    if (this._markPulse) {
+      const mt = now - this._markPulse.t0;
+      if (mt >= MARK_PULSE_S || this.mark < 0) this._markPulse = null;
+      this.uniforms.uMarkPulse.value = this._markPulse ? Math.abs(Math.sin((mt / MARK_PULSE_S) * Math.PI * MARK_PULSE_COUNT)) : 0;
+    }
     const e = this._eff;
     if (e) {
       const t = now - e.t0;

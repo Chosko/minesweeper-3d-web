@@ -14,12 +14,16 @@
 // resultsContent({ summary, comparison, saved, notSaved, watch, watchBest, rank, streak, standing }) → the
 // screen's content, top to bottom:
 //   { outcome, title, board,
+//     label       a challenge's CHALLENGE_LABEL ("Challenge · not eligible for bests"), or null;
+//     code        the game's board code (js/records/board-code.js codeOf — a daily's in its daily
+//                 form), shown with Copy and Copy link; null for a game with no seed;
 //     banner      "New best time and 3BV/s!" naming the bests this game set, or null;
 //     stats       [{ key, label, value, shown, newBest }] — the game's own figures, newBest marking
 //                 each one that set a best;
 //     figures     { clicks, rank } — the second row: "Clicks 183 (L 183 · R 0 · D 0 · wasted 0)",
 //                 the counted clicks, then the reveal, flag and chord clicks (effective plus wasted)
-//                 and the wasted total; on a win the rank "#3 of 12 on this board", else null;
+//                 and the wasted total; on a win the rank "#3 of 12 on this board", else null — a
+//                 challenge, never ranked, shows its rank figure as a dash ("#— of — on this board");
 //     next        the next-target line, or null without a comparison;
 //     standing    the board's figures counting this game, the reference figure first and its
 //                 completed-games figure beside it: "Win rate 67% (completed games 80%) · Longest
@@ -40,7 +44,8 @@
 // the board's streak before this game and its counters after. The next-target line: after a win
 // "Beat <the board's best time as it stands> for a new best · streak <current>"; after a loss that
 // ended a streak "Streak ended at <before> · best <longest>", else "Beat <best time> for a new best",
-// or FIRST_BEST when the board has no best time. notes say that the result could not be saved
+// or FIRST_BEST when the board has no best time. A challenge sets no best and counts in no streak:
+// its bests panel is not eligible under CHALLENGE_NOTE and it has no next-target line. notes say that the result could not be saved
 // (saved false) or that records are not being saved this session (notSaved, told once by the
 // flow); watch is whether Watch replay shows (the flow's watch), watchBest whether Watch best shows
 // (the flow's watchBest, the best's replay id or null); look is whether Look at the board
@@ -48,9 +53,10 @@
 // both a 3D game's, whose finished board is drawn dimmed behind the screen, as the Classic 2D board
 // stays visible behind it.
 //
-// createResultsView({ root, onPlayAgain, onWatch?, onWatchBest?, onRecords, onMenu, onLook? }) →
+// createResultsView({ root, onPlayAgain, onWatch?, onWatchBest?, onRecords, onMenu, onLook?, onCopy? }) →
 // { show(content), hide(), noteLook(text) }: fills the #results markup by id and calls back on its
-// actions; Look at the board (#r-look) shows only while content.look, Watch replay (#r-watch)
+// actions; the challenge label shows in #results-label and the code in the #results-code chip
+// (bindCodeChip, js/ui/components.js), whose Copy and Copy link call onCopy({ kind, code, select }); Look at the board (#r-look) shows only while content.look, Watch replay (#r-watch)
 // only while content.watch and Watch best (#r-watch-best) only while content.watchBest, the root carries `results--over3d` while content.over3d, the bests
 // panel `ui-panel--muted` while not eligible, each improved stat `data-new-best` and each best's
 // detail `data-delta` (its direction). noteLook(text) shows the one-line note under the actions
@@ -61,11 +67,17 @@
 
 import { boardLabel, MODE_3D } from '../records/board.js';
 import { countedClicks } from '../records/summary.js';
+import { codeOf } from '../records/board-code.js';
+import { bindCodeChip } from '../ui/components.js';
 
 export const DASH = '—';
 export const EQUAL_BEST = '= best';
 export const NOT_ELIGIBLE = 'Not eligible — only won games set bests';
 export const FIRST_BEST = 'Win this board to set a best';
+/** A challenge's label on the results screen, in the style of "Paused · not eligible". */
+export const CHALLENGE_LABEL = 'Challenge · not eligible for bests';
+/** The bests panel's note for a challenge. */
+export const CHALLENGE_NOTE = 'Not eligible — a challenge sets no bests';
 const MINUS = '−';
 
 /** The note under the actions when the look's pointer lock was refused; a fresh press tries again. */
@@ -146,8 +158,10 @@ export function resultsContent({
   summary, comparison = null, saved = true, notSaved = false, watch = false, watchBest = null, rank = null, streak = null, standing = null,
 }) {
   const won = summary.outcome === 'won';
+  const challenge = summary.challenge === true;
+  const eligible = won && !challenge;
   const count = (v) => (missing(v) ? DASH : String(v));
-  const setBest = (stat) => won && comparison?.[stat]?.newBest === true;
+  const setBest = (stat) => eligible && comparison?.[stat]?.newBest === true;
   const stats = [
     { key: 'time', label: 'Time', value: formatTime(summary.elapsedMs), shown: true, newBest: setBest('time') },
     { key: 'bbbv', label: '3BV', value: count(summary.bbbv), shown: true, newBest: false },
@@ -161,7 +175,7 @@ export function resultsContent({
     ? BESTS.map(({ stat, label, lowerIsBetter, format, difference: diff }) => {
       const c = comparison[stat];
       const standing = c?.best ? c.best.value : null;
-      if (won) {
+      if (eligible) {
         const d = diff(c?.difference ?? null);
         const newBest = c?.newBest === true;
         const direction = d === DASH ? null : d === EQUAL_BEST ? 'equal' : (c.difference < 0) === lowerIsBetter ? 'better' : 'worse';
@@ -176,7 +190,7 @@ export function resultsContent({
     : null;
 
   let next = null;
-  if (comparison) {
+  if (comparison && !challenge) {
     const time = comparison.time;
     const bestTime = won && time?.newBest ? summary.elapsedMs : time?.best ? time.best.value : null;
     const beat = `Beat ${formatTime(bestTime)} for a new best`;
@@ -192,13 +206,15 @@ export function resultsContent({
     outcome: summary.outcome,
     title: won ? 'You won!' : 'Game over',
     board: boardLabel(summary.board),
+    label: challenge ? CHALLENGE_LABEL : null,
+    code: codeOf(summary),
     banner: set.length ? `New best ${listed(set)}!` : null,
     stats,
     figures: { clicks: formatClicks(summary.clicks), rank: won ? rankText(rank) : null },
     next,
     standing: saved && standing ? standingText(standing) : null,
-    eligible: won,
-    bestsNote: won ? null : NOT_ELIGIBLE,
+    eligible,
+    bestsNote: eligible ? null : challenge ? CHALLENGE_NOTE : NOT_ELIGIBLE,
     bests,
     notes,
     watch: watch === true,
@@ -222,7 +238,9 @@ export function resultsEnter({ focused = null, repeat = false } = {}) {
   return focused !== RESULTS_ACTIONS[0] && RESULTS_ACTIONS.includes(focused) ? null : 'playAgain';
 }
 
-export function createResultsView({ root, onPlayAgain, onWatch = () => {}, onWatchBest = () => {}, onRecords, onMenu, onLook = () => {} }) {
+export function createResultsView({
+  root, onPlayAgain, onWatch = () => {}, onWatchBest = () => {}, onRecords, onMenu, onLook = () => {}, onCopy = () => {},
+}) {
   const $ = (id) => root.querySelector(`#${id}`);
   const value = (id) => $(id).querySelector('.ui-stat__value');
   const line = (id, text) => {
@@ -235,10 +253,13 @@ export function createResultsView({ root, onPlayAgain, onWatch = () => {}, onWat
   $('r-watch-best').addEventListener('click', () => onWatchBest());
   $('r-records').addEventListener('click', () => onRecords());
   $('r-menu').addEventListener('click', () => onMenu());
+  const code = bindCodeChip($('results-code'), { onCopy: (c) => onCopy(c) });
   return {
     show(content) {
       $('results-title').textContent = content.title;
       $('results-board').textContent = content.board;
+      line('results-label', content.label);
+      code.show(content.code ?? null);
       line('results-banner', content.banner);
       for (const s of content.stats) {
         value(`rs-${s.key}`).textContent = s.value;

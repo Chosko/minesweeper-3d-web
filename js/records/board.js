@@ -8,19 +8,21 @@
 //        presets, "Cube" Beginner, Intermediate and Expert, are recognised from their exact size
 //        and mine count.
 // A name is never stored, so a custom board that matches a standard board or a preset is that
-// board.
+// board. Either form may carry `daily: true`: the mode's Daily board, the board the day's daily
+// games are recorded on (js/records/board-code.js), a board of its own beside the plain one.
 //
-// Board key format (BOARD_KEY_FORMAT 1). Records are indexed by this key, so the format is
+// Board key format (BOARD_KEY_FORMAT 2). Records are indexed by this key, so the format is
 // part of the stored records and changes only together with a records format version:
-//   2D  <mode>:<grid>:<width>x<height>:<mines>:<guess|no-guess>
-//   3D  3d:<width>x<height>x<depth>:<mines>:<guess|no-guess>
+//   2D     <mode>:<grid>:<width>x<height>:<mines>:<guess|no-guess>
+//   3D     3d:<width>x<height>x<depth>:<mines>:<guess|no-guess>
+//   Daily  daily:<the plain board's key>, e.g. `daily:classic-2d:square:30x16:99:no-guess`
 // e.g. Expert with no-guess is `classic-2d:square:30x16:99:no-guess`, a 20 × 12 custom board
 // with 50 mines `classic-2d:square:20x12:50:guess`, Cube Expert with no-guess
 // `3d:12x12x8:130:no-guess`. mode and grid are lowercase tokens (letters, digits, single
 // hyphens), so no field can contain the `:` separator; a 3D key has one field fewer than a 2D
 // key, so the two never coincide.
 
-export const BOARD_KEY_FORMAT = 1;
+export const BOARD_KEY_FORMAT = 2;
 
 export const MODE_3D = '3d';
 
@@ -69,9 +71,16 @@ const flag = (v) => {
   return v;
 };
 
-// Validates the fields and returns a frozen identity carrying exactly them. The first click is
-// always safe, so a board holds at most every cell but one as a mine; a 3D board holds at least
-// one.
+// The daily flag: present only as true.
+const dailyFlag = (v) => {
+  if (v === undefined || v === false) return {};
+  if (v !== true) throw new RangeError(`board daily must be true when given, got ${v}`);
+  return { daily: true };
+};
+
+// Validates the fields and returns a frozen identity carrying exactly them, `daily` only when true.
+// The first click is always safe, so a board holds at most every cell but one as a mine; a 3D board
+// holds at least one.
 export function createBoardIdentity(fields) {
   if (!fields || typeof fields !== 'object') throw new RangeError('board identity must be an object');
   const mode = token('mode', fields.mode);
@@ -81,13 +90,13 @@ export function createBoardIdentity(fields) {
     const height = dimension('height', fields.height, DIM_MAX_3D);
     const depth = dimension('depth', fields.depth, DIM_MAX_3D);
     const mines = mineCount(fields.mines, 1, width * height * depth);
-    return Object.freeze({ mode, width, height, depth, mines, noGuess: flag(fields.noGuess) });
+    return Object.freeze({ mode, width, height, depth, mines, noGuess: flag(fields.noGuess), ...dailyFlag(fields.daily) });
   }
   const grid = token('grid', fields.grid);
   const width = dimension('width', fields.width);
   const height = dimension('height', fields.height);
   const mines = mineCount(fields.mines, 0, width * height);
-  return Object.freeze({ mode, grid, width, height, mines, noGuess: flag(fields.noGuess) });
+  return Object.freeze({ mode, grid, width, height, mines, noGuess: flag(fields.noGuess), ...dailyFlag(fields.daily) });
 }
 
 const is3D = (id) => id.mode === MODE_3D;
@@ -109,8 +118,11 @@ export function preset3D(identity) {
 
 const guess = (id) => (id.noGuess ? 'no-guess' : 'guess');
 
+const DAILY = 'daily:';
+
 export function boardKey(identity) {
   const id = createBoardIdentity(identity);
+  if (id.daily) return `${DAILY}${boardKey({ ...id, daily: false })}`;
   if (is3D(id)) return `${id.mode}:${id.width}x${id.height}x${id.depth}:${id.mines}:${guess(id)}`;
   return `${id.mode}:${id.grid}:${id.width}x${id.height}:${id.mines}:${guess(id)}`;
 }
@@ -123,6 +135,11 @@ const KEY_3D = new RegExp(`^${MODE_3D}:${SIZE}x${SIZE}x${SIZE}:${NUMBER}:(guess|
 // The identity a board key names — the inverse of boardKey. A malformed key, or one naming an
 // impossible board, throws a RangeError.
 export function parseBoardKey(key) {
+  if (typeof key === 'string' && key.startsWith(DAILY)) {
+    const plain = key.slice(DAILY.length);
+    if (plain.startsWith(DAILY)) throw new RangeError(`not a board key: ${JSON.stringify(key)}`);
+    return createBoardIdentity({ ...parseBoardKey(plain), daily: true });
+  }
   const m3 = typeof key === 'string' ? KEY_3D.exec(key) : null;
   if (m3) {
     return createBoardIdentity({
@@ -140,16 +157,19 @@ export function parseBoardKey(key) {
 const minesText = (mines) => `${mines} ${mines === 1 ? 'mine' : 'mines'}`;
 
 // "Expert", "Expert · no-guess", "20 × 12 · 50 mines", "2 × 1 · 1 mine · no-guess";
-// "Cube Expert", "Cube Beginner · no-guess", "10 × 10 × 10 · 80 mines".
+// "Cube Expert", "Cube Beginner · no-guess", "10 × 10 × 10 · 80 mines"; a Daily board
+// "Daily · Expert · no-guess", "Daily · 8 × 8 × 8 · 40 mines · no-guess" (a 3D board by its
+// dimensions, as its code names it).
 export function boardLabel(identity) {
   const id = createBoardIdentity(identity);
   let base;
   if (is3D(id)) {
-    const p = preset3D(id);
+    const p = id.daily ? null : preset3D(id);
     base = p ? `${p.family} ${p.name}` : `${id.width} × ${id.height} × ${id.depth} · ${minesText(id.mines)}`;
   } else {
     const standard = standardBoard(id);
     base = standard ? standard.name : `${id.width} × ${id.height} · ${minesText(id.mines)}`;
   }
-  return id.noGuess ? `${base} · no-guess` : base;
+  const label = id.noGuess ? `${base} · no-guess` : base;
+  return id.daily ? `Daily · ${label}` : label;
 }

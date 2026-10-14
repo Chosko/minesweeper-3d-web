@@ -38,6 +38,11 @@ import { panelRect } from './classic2d/board-view.js';
 import { createViewer3D } from './replay/viewer-3d.js';
 import { REPLAY_SCREEN } from './records/replay-list.js';
 import { createResultsView, resultsContent, resultsEnter, LOOK_REFUSED } from './results/view.js';
+import { copyBoardCode } from './ui/components.js';
+import { DAILY_SCREEN, dailyRows, createDailyBoards, bindDailyScreen, countedAttempt } from './shell/daily.js';
+import { resolveCode, gameStart, freeStart, createChallengeLinks } from './shell/challenge.js';
+import { dailyGame, dateText } from './records/board-code.js';
+import { boardLabel } from './records/board.js';
 import { createRecordsScreen, createRecordsView, TRIGGER_MODES } from './records/screen.js';
 import { createRecordsViewPrefs } from './records/view-prefs.js';
 import { createRecordsExport, bindExportActions } from './records/export.js';
@@ -453,7 +458,8 @@ const GEN_3D = createGenerationClient();
 // Every screen change goes through SHELL; each screen declares its default focus and its Back.
 const SHELL = createRouter({
   screens: {
-    menu: { defaultFocus: '[data-entry][data-last]', show: () => { MODES.leave(); showMenuBackdrop(); ui.showMenu(); showReturning(); } },
+    menu: { defaultFocus: '[data-entry][data-last]', show: () => { MODES.leave(); showMenuBackdrop(); ui.showMenu(); showReturning(); DAILY_BOARDS_HELD.prepare(RECORDS); } },
+    [DAILY_SCREEN]: { defaultFocus: () => DAILY_VIEW.defaultFocus(), show: () => { MODES.leave(); showMenuBackdrop(); ui.showDaily(); showDaily(); } },
     'board-choice': { defaultFocus: '[data-preset][data-last]', show: () => { MODES.leave(); GEN_3D.warm(); showMenuBackdrop(); ui.showBoardChoice(); CHOICE_3D.show(LAST_CHOICE_3D.current, { played: LAST_CHOICE_3D.played, details: presetDetails(CHOICE_ITEMS['3d'], RECORDS) }); } },
     'coming-soon': { defaultFocus: '#coming-soon-back', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showComingSoon(d.title ?? 'This screen'); } },
     records: { defaultFocus: '#records-picker [aria-checked="true"]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showRecords(); RECORDS_PAGE.show({ mode: d.mode, boardKey: d.boardKey }); }, hide: () => RECORDS_PAGE.hide() },
@@ -496,8 +502,8 @@ const FLOW_3D = {
   start: (settings, pregenerated) => startGame(settings, pregenerated),
   pause: (note) => showPauseCard(note),
   resume: (source) => resumeGame(source),
-  restart: (source, pregenerated) => { // entered as resume enters play
-    const play = startGame(board3dChoice, pregenerated);
+  restart: (source, pregenerated, forced = null) => { // entered as resume enters play; a daily or a challenge not yet started stays forced
+    const play = startGame(forced ? { ...board3dChoice, forced } : board3dChoice, pregenerated);
     enterPlay3D(source);
     return play;
   },
@@ -515,6 +521,7 @@ const CHOICE_3D = bindBoardChoice3D({
   root: document.getElementById('board-choice'),
   onStart: (choice) => { sfx.unlock(); LAST_CHOICE_3D.save(choice).catch(() => {}); MODES.start('3d', boardOf(choice)); }, // storage never stops a game
   onBack: () => shellBack('pointer'),
+  code: { resolve: (text) => checkCode(text, '3d'), onPlay: (text) => playCode(text, '3d') },
 });
 // Classic 2D: the mode drives its own board; the shell hands it the board area, the overlay bar and
 // its screens. The last board choice is a platform-storage document.
@@ -533,6 +540,7 @@ const FLOW_2D = {
   generating: (shown) => { board2d.generating = shown; showStatus2D(); },
   progress: (p) => { board2d.progress = p; drawStatus2D(); }, // the progress line, without moving the focus
   failed: (failure) => { board2d.failure = failure; showStatus2D(); },
+  hint: (text) => ui.toast(text, 2500), // a first reveal off a daily's or a challenge's marked start cell
   padCue: (kind) => padRumble(kind === 'flag' ? PAD_FLAG : PAD_PRESS), // a trigger's press cue, a flag's double pulse
 };
 const board2d = { generating: false, failure: null, progress: null };
@@ -540,7 +548,7 @@ const board2d = { generating: false, failure: null, progress: null };
 function drawStatus2D() {
   const on = MODES.active === 'classic-2d';
   const generating = board2d.generating && S.mode === 'classic-2d';
-  ui.setBoardStatus(on ? { generating, failure: board2d.failure, progress: board2d.progress } : {});
+  ui.setBoardStatus(on ? { generating, failure: board2d.failure, progress: board2d.progress, forced: !!mode2d.fixed } : {});
   return on && (!!board2d.failure || generating);
 }
 /**
@@ -552,10 +560,11 @@ function showStatus2D() {
 }
 /**
  * A board status card's default focus: Cancel while generating; on the failure offer Retry, or
- * Play a standard board after a second failure in a row.
+ * Play a standard board after a second failure in a row, or Back when it offers nothing else.
  */
 function statusFocus(prefix, { failure }) {
   if (!failure) return `#${prefix}-cancel`;
+  if (Array.isArray(failure.offers) && failure.offers.length === 0) return `#${prefix}-offer-menu`; // a daily's or a challenge's board: Back alone
   return failure.count >= 2 ? `#${prefix}-standard` : `#${prefix}-retry`;
 }
 /** Focus the card's default target; on the generating card, a focus already on its Cancel or Play a standard board is left alone. */
@@ -580,6 +589,60 @@ const CHOICE_2D = bindBoardChoice({
   root: document.getElementById('c2d-choice'),
   onStart: (choice) => { sfx.unlock(); MODES.start('classic-2d', choice); },
   onBack: () => shellBack('pointer'),
+  code: { resolve: (text) => checkCode(text, 'classic-2d'), onPlay: (text) => playCode(text, 'classic-2d') },
+});
+
+// ---------------------------------------------------------------- daily boards and board codes
+// The daily boards: each mode's warm client pre-generates today's unused ones when the main menu
+// shows, a daily starts on its forced, marked start cell with that board, and the Daily screen shows
+// each row's state. A board code — typed in a board choice or carried by a #board= link — starts a
+// challenge in its mode; today's daily code opens the Daily screen instead (js/shell/challenge.js).
+const DAILY_BOARDS_HELD = createDailyBoards({ clients: { 'classic-2d': () => mode2d.client, '3d': () => (WEBGL2 ? GEN_3D : null) } });
+const DAILY_VIEW = bindDailyScreen({
+  root: document.getElementById('daily'),
+  onPlay: (id) => playDaily(id, padGesture ? 'pad' : 'pointer'),
+  onWatch: (replayId) => SHELL.go(REPLAY_SCREEN, { data: { replayId, returnTo: { screen: DAILY_SCREEN } } }),
+  onBack: () => shellBack('pointer'),
+  onCopy: (c) => copyCode(c),
+});
+const UNAVAILABLE_MODES = WEBGL2 ? {} : { '3d': UNAVAILABLE_REASONS.webgl2 };
+function showDaily() { DAILY_VIEW.show(dailyRows({ records: RECORDS, replays: REPLAYS, unavailable: UNAVAILABLE_MODES })); }
+/** Start a forced game — a daily or a challenge — in its mode; a 3D one enters play as Play again does. */
+function startForced(start, source) {
+  if (start.mode === '3d' && !WEBGL2) return;
+  sfx.unlock();
+  MODES.start(start.mode, start.choice);
+  if (start.mode === '3d') enterPlay3D(source);
+}
+/** Play today's daily `id` while its counted attempt is unused, with its pre-generated board when it is held. */
+function playDaily(id, source) {
+  const date = dateText();
+  const game = dailyGame(id, date);
+  if (countedAttempt(RECORDS, id, date)) { showDaily(); return; }
+  startForced(gameStart({ board: game.board, seed: game.seed, startCell: game.startCell, daily: date, pregenerated: DAILY_BOARDS_HELD.take(game.code) }), source);
+}
+function playChallenge({ board, seed, startCell }, source) { startForced(gameStart({ board, seed, startCell }), source); }
+/** A board choice's code field, validated live: the reason a code is refused, or what it opens. */
+function checkCode(text, mode) {
+  const r = resolveCode(text, { mode });
+  if (r.kind === 'refused') return { ok: false, reason: r.reason };
+  if (r.kind === 'daily') return { ok: true, text: 'Today\'s daily board — it opens the Daily screen.' };
+  return { ok: true, text: `${boardLabel(r.parsed.board)} · a challenge, not eligible for bests` };
+}
+function playCode(text, mode) {
+  const r = resolveCode(text, { mode });
+  if (r.kind === 'daily') SHELL.go(DAILY_SCREEN);
+  else if (r.kind === 'challenge') playChallenge(r.parsed, padGesture ? 'pad' : 'pointer');
+}
+const LINKS = createChallengeLinks({
+  location: window.location,
+  history: window.history,
+  onDaily: () => SHELL.go(DAILY_SCREEN),
+  onChallenge: (parsed) => playChallenge(parsed, 'pointer'),
+  onRefused: (reason) => { showMainMenu(); ui.toast(reason, 5000); },
+  started: () => MODES.state.started && !MODES.state.finished,
+  unavailable: (mode) => UNAVAILABLE_MODES[mode] ?? null,
+  toast: (text) => ui.toast(text, 4000),
 });
 MODES.on('failed', ({ screen }) => SHELL.go(screen ?? 'menu'));
 // A 3D game with no summary (the debug hook's fixed board) has no results screen: it ends on the pause card.
@@ -865,6 +928,7 @@ const REPLAY_VIEWER = createReplayViewer({
     onBack: () => shellBack('pointer'),
     onDownload: () => REPLAY_VIEWER.download(),
     onOpen: () => pickReplayFile().then((file) => { if (file && S.mode === REPLAY_SCREEN) REPLAY_VIEWER.openFile(file); }),
+    onCopy: (c) => copyCode(c),
   }),
   viewers: WEBGL2 ? { square: mountReplay2D, box: mountReplay3D } : { square: mountReplay2D }, // a 3D replay then says why it cannot play
 });
@@ -878,12 +942,17 @@ SETTINGS.onChange('boardScale', (scale) => { mode2d.setScale(scale); REPLAY_VIEW
 // Play again restarts the finished game's board choice, or starts it again once the mode was left
 // (back from Records); a 3D game is entered as resume enters play. Watch replay plays the game just
 // finished from its own replay; Back returns to the results screen.
+/** Copy and Copy link of every code chip: the board code or its challenge link; a refused clipboard selects the code. */
+function copyCode({ kind, code, select }) {
+  return copyBoardCode({ kind, code, select, clipboard: navigator.clipboard, location: window.location, toast: (text) => ui.toast(text, 2500) });
+}
 const RESULTS = createResultsFlow({
   records: RECORDS,
   replays: REPLAYS,
   router: SHELL,
-  restart: (source, { mode }) => {
+  restart: (source, { mode, summary }) => {
     if (MODES.active) PAUSE.restart(source);
+    else if (summary?.daily || summary?.challenge) { const free = freeStart(summary.board); startForced(free, source); } // never the same seed
     else if (mode === 'classic-2d') MODES.start(mode, LAST_CHOICE_2D.current);
     else if (mode === '3d' && WEBGL2 && board3dChoice) { MODES.start(mode, board3dChoice); enterPlay3D(source); }
   },
@@ -898,6 +967,7 @@ const RESULTS_VIEW = createResultsView({
   onRecords: () => RESULTS.openRecords(),
   onMenu: () => RESULTS.toMenu(),
   onLook: () => openLook(padGesture ? 'pad' : 'pointer'),
+  onCopy: (c) => copyCode(c),
 });
 
 // ---------- look at the board ----------
@@ -1101,8 +1171,10 @@ function startGame(settings, pregenerated = null) {
   const s = clampSettings(settings);
   S.play?.leave();
   const noGuess = !!settings.noGuess;
-  // a mine set is the debug hook's fixed board; a pre-generated board waits for its marked start cell
-  const play = createSession({ board: { ...s, noGuess, minePositions: settings.minePositions }, client: GEN_3D, pregenerated });
+  // a mine set is the debug hook's fixed board; a pre-generated board waits for its marked start cell;
+  // a daily or a challenge forces its start cell, and a first reveal elsewhere pulses the tint with a hint
+  const play = createSession({ board: { ...s, noGuess, minePositions: settings.minePositions }, client: GEN_3D, pregenerated, forced: settings.forced ?? null });
+  play.on('refused', ({ hint }) => { if (S.play === play) { if (renderer.pulseMark()) needRender = true; ui.toast(hint, 2500); } });
   play.on('generating', ({ shown }) => { if (S.play === play) { board3d.generating = shown; board3d.progress = shown ? play.progress : null; showStatus3D(); } });
   play.on('failed', (failure) => { if (S.play === play) { board3d.failure = failure; showStatus3D(); } });
   play.on('mark', ({ cell }) => { if (S.play === play && renderer.setMark(cell)) needRender = true; });
@@ -1161,7 +1233,7 @@ function showStatus3D() {
 /** The 3D board status card as it stands, without moving the focus; whether it shows. */
 function drawStatus3D() {
   const on = !!S.play && (S.mode === 'playing' || (S.mode === 'paused' && !!board3d.failure));
-  ui.setBoardStatus3D(on ? board3d : {});
+  ui.setBoardStatus3D(on ? { ...board3d, forced: !!S.play?.forced } : {});
   return on;
 }
 /** The generating card's progress line, each frame it shows: drawn again when the count or the seconds change. */
@@ -1400,7 +1472,7 @@ function padClick(el) {
 // The board status cards sit above the pause card, and take their default focus from the card.
 const LAYER_SCREEN = {
   'ctx-lost': 'ctxlost', 'controls-modal': null, 'c2d-status': null, 'm3d-status': null, replay: 'replay', pause: 'paused', ready: 'ready', results: 'results', look: 'look',
-  'coming-soon': 'coming-soon', records: 'records', settings: 'settings', 'board-choice': 'board-choice', 'c2d-choice': 'classic-2d-choice', c2d: 'classic-2d', menu: 'menu',
+  'coming-soon': 'coming-soon', daily: 'daily', records: 'records', settings: 'settings', 'board-choice': 'board-choice', 'c2d-choice': 'classic-2d-choice', c2d: 'classic-2d', menu: 'menu',
 };
 const SCREEN_LAYER = Object.fromEntries(Object.entries(LAYER_SCREEN).filter(([, s]) => s).map(([l, s]) => [s, l]));
 const MODAL_FOCUS = '#controls-close';
@@ -1946,6 +2018,8 @@ function frame(now) {
 
 await Promise.all([settingsLoaded, recordsLoaded, firstUseLoaded, LAST_CHOICE_3D.load().catch(() => {}), RECORDS_VIEW_PREFS.load().catch(() => {})]);
 showMainMenu();
+LINKS.start(); // a #board= link: its challenge or daily over the menu, so Back leads to the menu
+window.addEventListener('hashchange', () => LINKS.hashchange());
 const choice2DLoaded = mode2d.loadChoice();
 const bootFocus = document.activeElement;
 LAST_MODE.load().then(async (mode) => {
@@ -2035,4 +2109,6 @@ window.__ms = {
   get game2D() { return mode2d.boardGame; },
   /** Opens the replay viewer: `data` is its route's { replay | replayId, returnTo }. */
   watch: (data) => SHELL.go(REPLAY_SCREEN, { data }),
+  /** The daily boards pre-generated when the menu shows (js/shell/daily.js): has(code), take(code). */
+  get daily() { return DAILY_BOARDS_HELD; },
 };

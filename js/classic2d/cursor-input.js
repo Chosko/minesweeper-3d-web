@@ -20,7 +20,7 @@
 // release acts where it is.
 //
 // createCursorInput({ grid, game, onPress, onAction, onCursor?, onUse?, onPadCue?, rules?, active?,
-//                    delay?, interval? })
+//                    delay?, interval?, start? })
 //   grid      the square grid (width, height, graph).
 //   game      () → the engine game, read for cellState / cellNumber.
 //   onPress   (cells) → the cells to show pressed, whenever that set changes.
@@ -33,6 +33,8 @@
 //             the board takes input. Keys, A and Y never report.
 //   active    () → false while the board takes no input: no press, no action, no move.
 //   delay, interval  the auto-repeat timing of a held direction (js/gamepad.js Repeat).
+//   start     the cell the cursor starts on: 0 by default, a forced start cell's on a daily or a
+//             challenge (js/classic2d/session.js).
 //
 //   cell, setCell(c), move(dx, dy)     the cursor, clamped to the board.
 //   hold(source, dir), let(source, dir) a direction ('up' | 'down' | 'left' | 'right') held or let
@@ -44,7 +46,7 @@
 //   reset()                            forgets every held input without firing (focus loss, pause).
 //   holding, moving                    whether a button / a direction is held.
 //
-// mountCursorInput({ view, session, grid?, win?, rules?, delay?, interval?, onPadCue? }) → { input, pad,
+// mountCursorInput({ view, session, grid?, win?, rules?, delay?, interval?, onPadCue?, start? }) → { input, pad,
 // shown, destroy() }: keys on the page (`win`) — the system key repeat ignored, a held direction
 // repeated on animation frames — and held inputs dropped on blur. pad(poll, now?) is for the
 // shell's controller poll. Keys with Ctrl, Alt or Meta and every key not in CURSOR_KEYS are left
@@ -96,7 +98,7 @@ const TRIGGER_SOURCES = new Set([BTN.LT, BTN.RT].map(padSource));
 
 export function createCursorInput({
   grid, game, onPress, onAction, onCursor = () => {}, onUse = () => {}, onPadCue = () => {}, rules = pointerRules(),
-  active = () => true, delay, interval,
+  active = () => true, delay, interval, start = 0,
 }) {
   const cols = grid.width;
   const rows = grid.height;
@@ -104,7 +106,7 @@ export function createCursorInput({
   const dirs = Object.fromEntries(DIRECTIONS.map((d) => [d, new Set()]));
   const repeats = Object.fromEntries(DIRECTIONS.map((d) => [d, new Repeat(delay, interval)]));
   const held = Object.fromEntries(BUTTONS.map((b) => [b, new Set()]));
-  let cell = 0;
+  let cell = Number.isInteger(start) && start >= 0 && start < grid.width * grid.height ? start : 0;
   let chordOnly = false; // a chord input or reveal + flag during this press
   let chordButton = false; // a chord input during this press
   let downCell = -1; // the cell the press started on, for releaseOffCell 'cancel'
@@ -300,7 +302,7 @@ export function createCursorInput({
 
 const PLAYABLE = new Set(['ready', 'playing']);
 
-export function mountCursorInput({ view, session, grid = session.setup.grid, win = globalThis, rules, delay, interval, onPadCue }) {
+export function mountCursorInput({ view, session, grid = session.setup.grid, win = globalThis, rules, delay, interval, onPadCue, start }) {
   const active = () => PLAYABLE.has(session.state) && !session.paused;
   const now = () => win.performance.now();
   let ringShown = false;
@@ -312,6 +314,7 @@ export function mountCursorInput({ view, session, grid = session.setup.grid, win
     delay,
     interval,
     onPadCue,
+    start,
     onPress: (cells) => view.setPressed(cells),
     onAction: (kind, c) => session[kind](c),
     onCursor: (c) => {

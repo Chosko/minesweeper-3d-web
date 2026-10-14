@@ -21,13 +21,40 @@ mode's front-end.
 
 In scope (m1-classic-2d):
 
-- The main menu with four entries: Classic 2D, 3D, Records and Settings.
-  Classic 2D opens its board choice; 3D opens the existing 3D presets and
-  custom board; Records opens the records screen; Settings opens the
-  Settings page. In a browser without WebGL 2 the 3D entry is disabled,
-  its line *Needs WebGL 2 — not available in this browser* under its label
-  in place of its description, and no route starts a 3D game; Classic 2D,
-  Records and Settings run as everywhere else.
+- The main menu with five entries: Classic 2D, 3D, Daily, Records and
+  Settings. Classic 2D opens its board choice; 3D opens the existing 3D
+  presets and custom board; Daily opens the Daily screen; Records opens the
+  records screen; Settings opens the Settings page. In a browser without
+  WebGL 2 the 3D entry is disabled, its line *Needs WebGL 2 — not available
+  in this browser* under its label in place of its description, no route
+  starts a 3D game and the Daily screen's cube row is disabled with that
+  line; Classic 2D, Daily, Records and Settings run as everywhere else.
+- The daily boards and challenges. Each day has two boards, Expert
+  no-guess and the cube 8 × 8 × 8 · 40 no-guess, the same for everyone on
+  that local calendar date; when the main menu shows, today's boards whose
+  counted attempt is unused are pre-generated in the background through
+  each mode's warm client, and the menu never waits for them. The Daily
+  screen — built from the component kit, with the router's focus and Back,
+  by mouse, keyboard and controller — has one row per board: today's date,
+  the row's state (*Not played*, *Won 48.2 s*, *Lost*), the days in a row,
+  today's code with Copy and Copy link, Play while today's counted attempt
+  is unused, and Watch replay once played when the library kept the replay.
+  A board code typed in a board choice, or a `#board=<code>` link, starts a
+  challenge in its mode; today's daily code opens the Daily screen instead,
+  so the counted-attempt rules hold. A daily and a challenge open closed
+  with their start cell marked and forced: a first reveal elsewhere changes
+  nothing and is not recorded, the hint *Start on the marked cell* shows
+  and the mark pulses; free play keeps its free first click. Play again
+  after either starts a fresh free-play board of the same size, mines and
+  no-guess setting, and neither changes the last board choice memory.
+- The `#board=` link: at start-up, once settings and records have loaded,
+  it opens the main menu and then its challenge, so Back leads to the menu;
+  a `hashchange` to one is honoured the same way while no game is started
+  and ignored with a toast during one; a refused code shows the main menu
+  with a toast giving its reason. The hash is then removed with
+  `history.replaceState`, adding no history entry, so the shell's own
+  navigation never changes the URL. `/#board=…` is served by `/`, so
+  `404.html` is unchanged.
 - A screen router: which screen is showing, the transitions between them,
   and Back from every screen to the one it came from.
 - A mode host: the one contract through which the shell starts, pauses,
@@ -56,8 +83,8 @@ Non-goals:
 - Start / Continue and the Campaign entry — deferred to `m4-campaigns`.
 - The Leaderboards entry and Quit — deferred to `m3-on-steam`
   (`leaderboards-menu-entry`).
-- The Daily entry and the demo's menu entries (*Buy full game*, visible
-  locks) — deferred to `m5-core-complete`.
+- The demo's menu entries (*Buy full game*, visible locks) — deferred to
+  `m5-core-complete`.
 - The Surface entry and grid choice in Classic 2D — deferred to `m6-launch`.
 - The records screen's contents and the results screen — Results and
   records (m1-classic-2d). The shell only routes to them.
@@ -138,7 +165,8 @@ it generalises.
   game is started, paused or finished. In memory only; the back stack is
   also mirrored as one same-URL session-history entry per stacked screen,
   which carries the stack depth and no route, so nothing is persisted, no
-  inner screen has a link and a reload opens the main menu.
+  inner screen has a link and a reload opens the main menu. The one link
+  the shell reads is a `#board=` challenge link, removed once followed.
 - **Last mode played** — which mode and board choice the player last
   started, kept through `platform-storage` so later milestones' *Continue*
   can resume it. Each mode keeps its own last board choice; the shell keeps

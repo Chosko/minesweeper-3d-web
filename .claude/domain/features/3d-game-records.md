@@ -47,8 +47,10 @@ Non-goals:
   streak would make the 2D figures meaningless to the player tracking them.
 - Importing the old per-size 3D best times — `3d-play-flow` leaves them
   behind, unread and unshown.
-- 3D campaign levels and the 3D daily board in records — deferred to
-  `m4-campaigns` and `m5-core-complete`.
+- 3D campaign levels in records — deferred to `m4-campaigns`. The 3D
+  Daily board (the cube 8 × 8 × 8 · 40 no-guess with the daily flag,
+  `game-summary`) ships with its days in a row as `personal-records`
+  states, listed after the presets and before the custom boards.
 - Steam leaderboards and Steam Cloud sync of 3D records — deferred to
   `m3-on-steam`.
 - Resetting or deleting records — no milestone's slice includes it.

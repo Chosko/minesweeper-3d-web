@@ -40,6 +40,9 @@ area overview is [classic2d.md](classic2d.md).
   cellRect(c), scroll, scrollTo, scrollBy, pan(dx, dy), wheel(event) →
   taken, ensureVisible(c) → scrolled, setHidden(hidden), hidden,
   setPressed(cells), pressed, setCursor(c), cursor, setMark(c), mark,
+  pulseMark() (the ring thickens and thins `MARK_PULSE_STEPS` times,
+  `MARK_PULSE_MS` apart, on the `timers` option — a first reveal off a
+  forced start cell), markPulse,
   showEffect(effect, t), effect, layout, pixelRatio, canvas, dispose}` —
   `grid` the square grid ([engine.md](engine.md)); `createSkin` defaults to
   `createTileSkin`, `token` to the token reader. Positions are canvas CSS

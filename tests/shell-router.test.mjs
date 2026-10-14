@@ -534,7 +534,7 @@ test('in a browser, the arrow keys alone walk the menu, the 2D board choice, the
     await page.keyboard.down('ArrowDown');
     await page.keyboard.down('ArrowDown');
     await page.keyboard.up('ArrowDown');
-    assert.equal((await focus()).id, 'menu-entry-records', 'a repeated keydown moves again');
+    assert.equal((await focus()).id, 'menu-entry-daily', 'a repeated keydown moves again');
     await walkTo('ArrowUp', 'menu-entry-classic-2d');
 
     // The Controls panel: its tabs keep Left/Right, and Up leaves them for Close.

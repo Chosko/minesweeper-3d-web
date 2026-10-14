@@ -32,12 +32,18 @@ Records screen (`js/records/screen.js`)
 - `RECORDS_SCREEN` — `'records'`; `EMPTY_TEXT`; `RECORDS_MODES` — frozen
   `{ value, label, overallTitle }` for `classic-2d` and `3d`.
 - `pickerBoards(records, mode?)` → `[{ key, label, board }]`: the mode's
-  named boards (each without, then with no-guess), then its custom boards
-  in `boardsPlayed(mode)` order.
+  named boards (each without, then with no-guess), its Daily board (always
+  listed), then its custom boards in `boardsPlayed(mode)` order.
 - `lastBoardPlayed(records, mode?)` → key or null.
 - `recordsContent(records, { mode?, boardKey?, notSaved?, page?, replays?,
   replayPage?, pinnedFirst?, canWatch?, replaysNotSaved?, period?, outcome?,
-  tab?, topStat?, now?, exportable? })` → the content. Never throws.
+  tab?, topStat?, now?, exportable? })` → the content. Never throws. Every
+  recent game and Top 10 row carries its `code` (`codeOf` over the history
+  entry and the board, null for an entry from before codes); a Daily board's
+  counters replace the streak pair with "Days in a row" and "Longest days
+  in a row" (`daysInARow` as of `now`'s local date), each figure carrying
+  its label. The stats (`stats.js`) leave challenges out of the ranking,
+  the Top 10, the rank, the averages and the recent win rate.
 - `GAME_TABS`, `TOP_STATS`, `TOP_EMPTY_TEXT`, `TOP_EMPTY_PERIOD`,
   `GAMES_EMPTY_TEXT`, `WON_ONLY_TEXT`.
 - `formatDate(iso)` → `"9 Oct 2026"` (the bests); `formatDateTime(iso)` →
@@ -51,13 +57,17 @@ Records screen (`js/records/screen.js`)
   `watch(id)`, `closeConfirm()`, `confirmOpen`.
 - `createRecordsView({ root, onSelect, onMode?, onBack, onPage, onWatch?,
   onTogglePin?, onPinnedFirst?, onReplayPage?, onDelete?, onPeriod?,
-  onOutcome?, onTab?, onTopStat?, onExport?, chart?, bestChart? })` →
+  onOutcome?, onTab?, onTopStat?, onExport?, onCopy?, chart?, bestChart? })` →
   `show(content)`, `hide()`, `closeConfirm()`, `isConfirmOpen()`; the
-  switch is `#records-mode`, the chart defaults to `#records-chart`.
+  switch is `#records-mode`, the chart defaults to `#records-chart`; the
+  games, Top 10 and library tables gain a Board code column of compact
+  code chips (`codeCell`) whose Copy and Copy link call `onCopy`.
 
 Library view (`js/records/replay-list.js`)
 - `REPLAY_SCREEN` — `'replay'`; `REPLAYS_EMPTY_TEXT`; `REPLAYS_NOT_SAVED`;
-  `REPLAY_HEADERS`.
+  `REPLAY_HEADERS`; `CODE_HEADER`; `codeCell(doc, code, onCopy)` — a table
+  cell with a compact code chip (empty for none), shared by every Records
+  row that names one game. A row's `code` is its listing's, or null.
 - `replayList(library, boardKey, opts)` → `{ rows, empty, emptyText,
   pinnedFirst, canWatch, page, pages, label, pager }`. Never throws.
 - `pinState(pins)`, `deleteMessage({ date, outcome, pins })`,

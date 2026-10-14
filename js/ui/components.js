@@ -1,5 +1,6 @@
 // Behaviour helpers for the component kit (css/components.css): the slider's
-// value display, the segmented choice's selection and the pager. The logic is plain
+// value display, the segmented choice's selection, the pager, the code chip and
+// the board code field. The logic is plain
 // functions; the binders touch only the elements they are handed, so the
 // module needs no document and runs under Node with stub elements.
 
@@ -231,4 +232,131 @@ export function initComponents(root) {
     ...[...root.querySelectorAll('.ui-segmented')].map((el) => bindSegmented(el)),
   ];
   return () => { for (const u of unbinds) u(); };
+}
+
+// ---------------------------------------------------------------- the code chip
+
+/** The challenge link of a board code (js/records/board-code.js): <origin><path>#board=<code>. */
+export function boardLink(code, { origin = '', pathname = '/' } = {}) {
+  return `${origin}${pathname}#board=${code}`;
+}
+
+/** The toast when the clipboard refuses: the code text is selected instead. */
+export const COPY_FALLBACK = 'Press Ctrl+C to copy';
+/** The toasts of a copy that worked, by kind. */
+export const COPIED = Object.freeze({ code: 'Board code copied', link: 'Challenge link copied' });
+
+/**
+ * Copy (kind 'code') writes the code, Copy link (kind 'link') its challenge link (boardLink at
+ * `location`), through `clipboard` (navigator.clipboard). A refused or missing clipboard calls
+ * select() — the chip selects its code text — and toasts COPY_FALLBACK. Promise of whether it copied.
+ */
+export async function copyBoardCode({ kind, code, clipboard, location, select = () => {}, toast = () => {} }) {
+  const text = kind === 'link' ? boardLink(code, location) : code;
+  try {
+    if (typeof clipboard?.writeText !== 'function') throw new Error('no clipboard');
+    await clipboard.writeText(text);
+    toast(COPIED[kind] ?? COPIED.code);
+    return true;
+  } catch {
+    select();
+    toast(COPY_FALLBACK);
+    return false;
+  }
+}
+
+/**
+ * A code chip (`.ui-code`): the board code with Copy and Copy link. createCodeChip(doc, { label?,
+ * compact? }) builds one — label the visible label ('Board code'; none on a compact chip, the table
+ * row's) — and bindCodeChip(root, { onCopy }) binds one in the markup or built: show(code) fills
+ * it, null hides it; each button calls onCopy({ kind, code, select }), select() selecting the code
+ * text for a refused clipboard (copyBoardCode). Both buttons are native buttons, named for what
+ * they copy.
+ */
+export function createCodeChip(doc, { label = 'Board code', compact = false } = {}) {
+  const root = doc.createElement('div');
+  root.className = compact ? 'ui-code ui-code--compact' : 'ui-code';
+  if (label && !compact) {
+    const l = doc.createElement('span');
+    l.className = 'ui-code__label';
+    l.textContent = label;
+    root.append(l);
+  }
+  const value = doc.createElement('code');
+  value.className = 'ui-code__value';
+  root.append(value);
+  for (const [kind, text] of [['code', 'Copy'], ['link', 'Copy link']]) {
+    const b = doc.createElement('button');
+    b.type = 'button';
+    b.className = 'ui-button ui-button--secondary';
+    b.dataset.copy = kind;
+    b.textContent = text;
+    root.append(b);
+  }
+  return root;
+}
+
+export function bindCodeChip(root, { onCopy = () => {} } = {}) {
+  const value = root.querySelector('.ui-code__value');
+  const buttons = [...(root.querySelectorAll?.('[data-copy]') ?? [])];
+  let code = null;
+  const select = () => {
+    const doc = root.ownerDocument;
+    const selection = doc?.getSelection?.();
+    if (!selection) return;
+    selection.removeAllRanges?.();
+    selection.selectAllChildren?.(value);
+  };
+  for (const b of buttons) {
+    b.addEventListener('click', () => { if (code) onCopy({ kind: b.dataset.copy, code, select }); });
+  }
+  return {
+    get code() { return code; },
+    show(next) {
+      code = typeof next === 'string' && next ? next : null;
+      value.textContent = code ?? '';
+      for (const b of buttons) {
+        b.setAttribute('aria-label', b.dataset.copy === 'link' ? `Copy the challenge link of board ${code ?? ''}` : `Copy the board code ${code ?? ''}`);
+      }
+      root.classList.toggle('hidden', code === null);
+    },
+  };
+}
+
+/**
+ * A board code field (a ui-field text input, a "Play this board" button and an info line), validated
+ * live as the custom forms are: bindCodeField({ input, button, info, resolve, onPlay, prompt? }) →
+ * { refresh(), clear() }. resolve(text) → { ok, reason?, text? } for the trimmed text: nothing typed
+ * shows `prompt` and disables the button; a refused code shows its reason as a warning and disables
+ * it; an accepted one shows its `text` and enables it. The button, or Enter in the field, calls
+ * onPlay(text) for an accepted code.
+ */
+export function bindCodeField({ input, button, info, resolve, onPlay, prompt = '' }) {
+  let accepted = false;
+  const refresh = () => {
+    const text = String(input.value ?? '').trim();
+    const r = text ? resolve(text) : null;
+    accepted = !!r?.ok;
+    button.disabled = !accepted;
+    const line = !r ? prompt : r.ok ? r.text ?? '' : r.reason;
+    info.textContent = line;
+    info.classList.toggle('ui-text--warning', !!r && !r.ok);
+    info.classList.toggle('ui-text--muted', !r || r.ok);
+  };
+  const play = () => {
+    refresh();
+    if (accepted) onPlay(String(input.value).trim());
+  };
+  input.addEventListener('input', refresh);
+  input.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    play();
+  });
+  button.addEventListener('click', play);
+  refresh();
+  return {
+    refresh,
+    clear() { input.value = ''; refresh(); },
+  };
 }

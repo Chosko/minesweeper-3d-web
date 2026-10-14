@@ -154,6 +154,35 @@ const record = (fields) => ({
   ...fields,
 });
 
+test('board code fields: the start cell, a daily game\'s date, a challenge\'s flag', () => {
+  const { game, at, board } = playing(ROWS);
+  game.reveal(at(2, 2));
+  const free = buildSummary(base(board, game.summary(), { startCell: at(2, 2) }));
+  assert.equal(free.startCell, 8);
+  assert.equal('daily' in free, false);
+  assert.equal('challenge' in free, false);
+  const challenge = buildSummary(base(board, game.summary(), { startCell: 8, challenge: true }));
+  assert.equal(challenge.challenge, true);
+  const dailyBoard = { ...board, daily: true };
+  const daily = buildSummary(base(dailyBoard, game.summary(), { startCell: 8, daily: '20261011' }));
+  assert.equal(daily.daily, '20261011');
+  assert.equal(daily.board.daily, true);
+  assert.equal('startCell' in buildSummary(base(board, game.summary())), false);
+  assert.throws(() => buildSummary(base(board, game.summary(), { startCell: 9 })), RangeError);
+  assert.throws(() => buildSummary(base(board, game.summary(), { daily: '20261011' })), RangeError);
+  assert.throws(() => buildSummary(base(dailyBoard, game.summary(), {})), RangeError);
+  assert.throws(() => buildSummary(base(dailyBoard, game.summary(), { daily: '2026-10-11' })), RangeError);
+  assert.throws(() => buildSummary(base(board, game.summary(), { challenge: 'yes' })), RangeError);
+  assert.throws(() => buildSummary(base(dailyBoard, game.summary(), { daily: '20261011', challenge: true })), RangeError);
+});
+
+test('best eligibility: a challenge is never eligible', () => {
+  const { game, at, board } = playing(ROWS);
+  game.reveal(at(2, 2));
+  const s = buildSummary(base(board, game.summary(), { startCell: 8, challenge: true }));
+  for (const stat of BEST_STATS) assert.equal(isBestEligible(s, stat), false);
+});
+
 test('countedClicks: every recorded click, wasted ones included', () => {
   assert.equal(countedClicks(record({}).clicks), 16);
 });

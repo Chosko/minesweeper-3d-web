@@ -47,6 +47,9 @@ Viewer (`js/replay/viewer.js`)
   `webgl2`), `COMMANDS`, `REPLAY_KEYS`, `REPLAY_PAD`, `SEEK_STEP_MIN_MS`.
 - `prepareReplay({replay?, replayId?}, {library})` → Promise of `{ok, sim}`
   or a failure; `replayId` is fetched with `library.bytes`.
+- `replayCode(replay)` → the game's board code in its game form, from the
+  header's board, seed and generator version and the first reveal action
+  (no format change), or null; handed to `view.ready({ …, code })`.
 - `clockText`, `overlayFigures(frame, ms)`, `endLine(check)`,
   `seekStep(duration)`, `pauseMarks(pauses, duration)`, `pausesText`.
 - `createReplayViewer({library, router, view, viewers?})` → `show({replay?,
@@ -54,8 +57,9 @@ Viewer (`js/replay/viewer.js`)
   `setSpeed`, `key`, `pad`, `back()`, `defaultFocus()`, `setScale`.
   `viewers` maps a graph kind to `({container, sim}) → {draw(frame),
   place?(), setScale?(scale), destroy()}`; default `{square: mountViewer2D}`.
-- `createReplayView({root, win?, onCommand, onSpeed, onSeek, onBack})` → the
-  `#replay` binder; `#replay-board` sits 16 px from the overlay bar and the
+- `createReplayView({root, win?, onCommand, onSpeed, onSeek, onBack, onCopy?})` → the
+  `#replay` binder, its code chip `#rp-code` (Copy and Copy link call
+  `onCopy`, hidden while loading or failed); `#replay-board` sits 16 px from the overlay bar and the
   controls, re-measured on their resize (`ResizeObserver`).
 
 2D and 3D viewers

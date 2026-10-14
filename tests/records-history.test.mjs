@@ -473,7 +473,7 @@ test('the history panel holds the chart canvas with its text alternative, the ga
   assert.match(panel, /<canvas id="records-chart" role="img" aria-label="[^"]+">[^<]*<\/canvas>/, 'the chart is an image with a text alternative');
   assert.match(panel, /<table id="records-games"[^>]*>[\s\S]*<caption[^>]*>[\s\S]*<thead>[\s\S]*<tbody id="records-games-body"><\/tbody>/);
   const heads = [...panel.slice(0, panel.indexOf('</thead>')).matchAll(/<th scope="col"[^>]*>([^<]+)<\/th>/g)].map((m) => m[1]);
-  assert.deepEqual(heads, ['Date', 'Outcome', 'Time', '3BV', '3BV/s', 'Efficiency', 'Replay']);
+  assert.deepEqual(heads, ['Date', 'Outcome', 'Time', '3BV', '3BV/s', 'Efficiency', 'Board code', 'Replay']);
   assert.match(panel, /<nav id="records-games-pager" class="ui-pager hidden" aria-label="[^"]+"><\/nav>/, 'the kit pager, filled by the view');
   assert.doesNotMatch(RECORDS_HTML, /records-prev|records-next|>Newer<|>Older</, 'Newer and Older are gone');
   assert.match(panel, /id="records-page"/);
@@ -556,7 +556,7 @@ test('in a browser, a seeded history is charted in both themes and its games lis
     const label = () => page.evaluate(() => document.getElementById('records-page').textContent);
     let r = await rows();
     assert.equal(r.length, 10);
-    assert.deepEqual(r[0].slice(1), ['Lost', '13.900 s', '20', (6 / 13.9).toFixed(2), `${(600 / 22).toFixed(1)}%`, ''], 'the newest game first, its Replay cell empty: no replay is kept');
+    assert.deepEqual(r[0].slice(1), ['Lost', '13.900 s', '20', (6 / 13.9).toFixed(2), `${(600 / 22).toFixed(1)}%`, '', ''], 'the newest game first, its Board code cell empty (no code before codes), its Replay cell empty: no replay is kept');
     assert.match(r[0][0], /^1 Oct 2026 \d\d:\d\d$/, 'the date and local time it ended');
     assert.equal(await label(), 'Games 1–10 of 24');
     const pager = () => page.evaluate(() => [...document.querySelectorAll('#records-games-pager button')].map((b) => ({

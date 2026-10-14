@@ -131,6 +131,27 @@
               Laid out in a ui-stat-row--tiles, which gives the tiles equal
               shares of the row and wraps them on a narrow screen.
 
+   ui-code — a board code with Copy and Copy link (js/records/board-code.js)
+     Element: <div class="ui-code">
+                <span class="ui-code__label">Board code</span>
+                <code class="ui-code__value">EN-20261011-1F3A</code>
+                <button type="button" class="ui-button ui-button--secondary"
+                        data-copy="code">Copy</button>
+                <button type="button" class="ui-button ui-button--secondary"
+                        data-copy="link">Copy link</button>
+              </div>
+              ui-code--compact (a table cell's) has no label.
+     Role:    a group of text and two native buttons; not a focus stop
+              itself
+     Name:    each button: aria-label naming what it copies ("Copy the board
+              code EN-…", "Copy the challenge link of board EN-…")
+     Helper:  createCodeChip(doc, { label, compact }) builds one;
+              bindCodeChip(root, { onCopy }) fills it (show(code), hidden for
+              none) and calls onCopy({ kind, code, select }); copyBoardCode
+              writes the code or its link (boardLink) to the clipboard, and a
+              refusal selects the code text with a "Press Ctrl+C to copy"
+              toast. The code is set in the monospace font and wraps anywhere.
+
    ui-pager — page buttons under a paged list
      Element: <nav class="ui-pager" aria-label="…">
                 <button type="button" class="ui-button ui-button--secondary
@@ -236,7 +257,7 @@
      row (ending in the Play again primary button, "Play again: <board>",
      which starts the last board played in one step and is hidden while
      there is none, or for a 3D board without WebGL 2), one ui-menu of the
-     entries (Classic 2D, 3D, Records, Settings; each a route, data-entry
+     entries (Classic 2D, 3D, Daily, Records, Settings; each a route, data-entry
      naming it, the last mode played marked with a "Last played"
      ui-menu__detail), the ui-text--muted session strip under it (the last
      board played, its best, today's games on it and its streak; hidden
@@ -253,10 +274,21 @@
      invalid board) and the custom board's no-guess ui-toggle under a
      ui-text--muted line giving why while it is disabled (a side of 2 cells,
      or the cell-count limit), labelled as keeping separate records, and over a ui-text--muted density hint shown
-     above 25 % mines with no-guess on, and ui-actions--row (Back);
+     above 25 % mines with no-guess on, the board code ui-panel (as Classic
+     2D's below), and ui-actions--row (Back);
      js/mode3d/board-choice.js marks the last board choice data-last with a
      "Last played" line once the player has played. Default focus: the last
      board choice, else the first item.
+   Daily (index.html #daily, filled by js/shell/daily.js): ui-card
+     ui-screen--wide holding the title, a ui-text--muted line, a ui-columns
+     of one ui-panel per daily board (data-daily: Expert, Cube) — a
+     ui-heading, ui-text--muted date and board lines, a ui-text state line
+     ("Not played", "Won 48.2 s", "Lost"), a ui-text--muted days-in-a-row
+     line, a ui-text--warning reason line while the board cannot run here, a
+     ui-code chip of today's code and ui-actions--row (Play primary, disabled
+     once the day's attempt is used; Watch replay secondary, shown for a kept
+     replay) — and ui-actions--row (Back). Default focus: the first enabled
+     Play, else Back.
    Coming soon (index.html #coming-soon): the one placeholder every menu
      entry whose screen has not landed routes to; ui-card ui-screen holding
      the entry's name as title, a ui-text line and ui-actions--row (Back
@@ -289,16 +321,16 @@
      js/records/history-chart.js, with a hover readout and no focus stop —
      the Recent games | Top 10 tabs as a ui-segmented choice
      (#records-tabs), under Recent games a ui-text--muted empty line and a
-     table of recent games (Date, Outcome, Time, 3BV, 3BV/s, Efficiency)
-     captioned by its ui-text--muted range, with a Replay column of
+     table of recent games (Date, Outcome, Time, 3BV, 3BV/s, Efficiency,
+     and a Board code column of ui-code--compact chips) captioned by its ui-text--muted range, with a Replay column of
      secondary Watch buttons once the replay route is registered, and its
      ui-pager, under Top 10 the Time · 3BV/s · Efficiency ui-segmented
      choice (#records-top-stat), a ui-text--muted empty line and a table
-     (Rank, Time, 3BV/s, Efficiency, Date, 3BV, Clicks, and the Replay
-     column)), and a ui-panel of the board's kept
+     (Rank, Time, 3BV/s, Efficiency, Date, 3BV, Clicks, Board code, and the
+     Replay column)), and a ui-panel of the board's kept
      replays (ui-heading, the Pinned first ui-toggle, a ui-text--muted
      empty state, a table of replays captioned by its range, each row's
-     Watch, Pin / Unpin and Delete as secondary buttons, its ui-pager, and
+     board code chip, Watch, Pin / Unpin and Delete as secondary buttons, its ui-pager, and
      the Delete confirmation, a ui-panel ui-actions as the pause card's:
      the message, the "Delete replay" primary button and Cancel, shown in
      place of the list; generated by js/records/replay-list.js). Below
@@ -339,7 +371,11 @@
      a board outside the custom limits and a ui-text--muted density hint
      under it, shown above 25 % mines with no-guess on, the no-guess
      ui-toggle under the custom board with its ui-text--muted helper line,
-     and ui-actions--row (Back). Default focus: the last board choice, else the first item.
+     the board code ui-panel (ui-heading, a text ui-field and "Play this
+     board" secondary button in a ui-row, disabled until the code is
+     accepted, and a ui-text info line that turns ui-text--warning on a
+     refused code; bindCodeField, js/ui/components.js), and ui-actions--row
+     (Back). Default focus: the last board choice, else the first item.
    Board status (index.html #c2d-status over the Classic 2D board, and
      #m3d-status over the 3D box): ui-card ui-screen while a slow first
      click generates its no-guess board, with a ui-text--muted progress
@@ -362,10 +398,12 @@
    Results screen (index.html #results, filled by js/results/view.js; the
      gallery's #g-results shows it with placeholder content): ui-card
      ui-screen holding, top to bottom, the outcome title, a ui-text board
-     line, a ui-banner when the game set a best, a ui-stat-row of the game's
+     line, a ui-text--muted challenge label for a challenge ("Challenge · not
+     eligible for bests"), a ui-banner when the game set a best, a ui-stat-row of the game's
      stats (the card's largest figures, each one that set a best with
      data-new-best), a ui-text--muted second row (clicks, and the board rank
-     on a win), a ui-text next-target line, a ui-panel with a ui-stat-row of
+     on a win), a ui-code chip of the game's board code, a ui-text
+     next-target line, a ui-panel with a ui-stat-row of
      the best comparisons (each ui-stat with a ui-stat__detail difference
      line coloured by data-delta on a win; on a loss ui-panel--muted under a
      ui-text--muted "Not eligible" line), a ui-text--warning note, and
@@ -376,7 +414,8 @@
      behind it, on a translucent scrim (results--over3d, css/style.css).
    Replay viewer (index.html #replay, filled by js/replay/viewer.js): a
      ui-overlay-bar of the replay's figures (Time in seconds to the
-     thousandth, Mines, 3BV solved / 3BV, 3BV/s) with a secondary Back, the board
+     thousandth, Mines, 3BV solved / 3BV, 3BV/s), a ui-code--compact chip of
+     the replay's board code, and a secondary Back, the board
      area, a ui-card ui-screen message while the replay opens or when it
      cannot play (a ui-text reason and ui-actions--row with Back primary),
      and a ui-panel of the
@@ -829,6 +868,25 @@
   color: var(--color-accent-ink);
   cursor: default;
 }
+
+/* ---------- code chip ---------- */
+.ui-code {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.ui-code__label { color: var(--color-ink-muted); font-size: var(--font-size-sm); }
+.ui-code__value {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-md);
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.ui-code--compact { gap: var(--space-1); }
+.ui-code--compact .ui-code__value { font-size: var(--font-size-sm); }
+.ui-code--compact .ui-button { padding: var(--space-1) var(--space-2); font-size: var(--font-size-sm); }
 
 /* ---------- banner ---------- */
 .ui-banner {

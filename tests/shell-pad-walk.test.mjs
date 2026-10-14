@@ -66,8 +66,8 @@ test('in a browser, the D-pad walks every control of the 2D board choice and the
     assert.deepEqual(await walk(['down', 'down', 'down']), ['intermediate', 'expert', 'c2d-width']);
     assert.deepEqual(await walk(['right', 'right', 'right']), ['c2d-height', 'c2d-mines', 'c2d-start']);
     assert.deepEqual(await walk(['left', 'left', 'left']), ['c2d-mines', 'c2d-height', 'c2d-width']);
-    assert.deepEqual(await walk(['down', 'down', 'down']), ['c2d-noguess', 'c2d-choice-back', 'c2d-choice-back'], 'no wrap past Back');
-    assert.deepEqual(await walk(['up', 'up', 'up', 'up', 'up', 'up']), ['c2d-noguess', 'c2d-width', 'expert', 'intermediate', 'beginner', 'beginner'],
+    assert.deepEqual(await walk(['down', 'down', 'down', 'down']), ['c2d-noguess', 'c2d-code', 'c2d-choice-back', 'c2d-choice-back'], 'no wrap past Back; the code field\'s Play this board waits disabled');
+    assert.deepEqual(await walk(['up', 'up', 'up', 'up', 'up', 'up', 'up']), ['c2d-code', 'c2d-noguess', 'c2d-width', 'expert', 'intermediate', 'beginner', 'beginner'],
       'Up retraces the walk');
     // From any control of the custom row, Down goes on to the switch.
     for (const id of ['c2d-height', 'c2d-mines', 'c2d-start']) {
@@ -75,7 +75,7 @@ test('in a browser, the D-pad walks every control of the 2D board choice and the
       assert.deepEqual(await walk(['down']), ['c2d-noguess'], `Down from #${id}`);
     }
     // Every focusable control on the screen is reached by the D-pad alone.
-    const all = await ms(() => [...document.querySelectorAll('#c2d-choice button, #c2d-choice input')].map((e) => e.id || e.dataset.size));
+    const all = await ms(() => [...document.querySelectorAll('#c2d-choice button:not(:disabled), #c2d-choice input')].map((e) => e.id || e.dataset.size));
     const reached = new Set();
     const queue = ['beginner'];
     while (queue.length) {
@@ -103,10 +103,10 @@ test('in a browser, the D-pad walks every control of the 2D board choice and the
     // 3D: the walk pinned as it stood before the DOM-order fallback.
     await page.click('#menu-entry-3d');
     await ms(() => document.querySelector('#board-choice [data-preset="6,6,6,10"]').focus());
-    assert.deepEqual(await walk(['down', 'down', 'down', 'down', 'down', 'down']),
-      ['8,8,8,40', '12,12,8,130', 'bc-noguess', 'c-x', 'c-noguess', 'board-choice-back']);
-    assert.deepEqual(await walk(['up', 'up', 'up', 'up', 'up', 'up']),
-      ['c-noguess', 'c-x', 'bc-noguess', '12,12,8,130', '8,8,8,40', '6,6,6,10']);
+    assert.deepEqual(await walk(['down', 'down', 'down', 'down', 'down', 'down', 'down']),
+      ['8,8,8,40', '12,12,8,130', 'bc-noguess', 'c-x', 'c-noguess', 'bc-code', 'board-choice-back']);
+    assert.deepEqual(await walk(['up', 'up', 'up', 'up', 'up', 'up', 'up']),
+      ['bc-code', 'c-noguess', 'c-x', 'bc-noguess', '12,12,8,130', '8,8,8,40', '6,6,6,10']);
     await ms(() => document.getElementById('c-x').focus());
     assert.deepEqual(await walk(['right', 'right', 'right', 'right', 'right']), ['c-y', 'c-z', 'c-m', 'c-random', 'c-start']);
     assert.deepEqual(await walk(['left', 'left', 'left', 'left', 'left']), ['c-random', 'c-m', 'c-z', 'c-y', 'c-x']);

@@ -43,8 +43,13 @@ In scope (m2-3d-joins):
   board's 3BV, and 3BV/s so far; the clock and the position beside the seek
   bar read seconds to the thousandth.
 - Entry from the results screen (*Watch replay*, for the game just played,
-  and *Watch best* beside it), from the replay library, and from a replay
-  file opened in the viewer or the library view.
+  and *Watch best* beside it), from the replay library, from the Daily
+  screen's *Watch replay*, and from a replay file opened in the viewer or
+  the library view.
+- The game's board code with Copy and Copy link, in its game form, built
+  from the header's board, seed and generator version and the first reveal
+  in the action stream — no replay format change; an imported replay shows
+  its code too.
 
 Non-goals:
 
@@ -56,8 +61,8 @@ Non-goals:
   importing one are in scope; sharing is not.
 - A ghost compare of two replays of the same board, playing one over the
   other — a later follow-on, not part of this slice.
-- Campaign, daily, hexagonal, triangle and Surface replays — deferred with
-  their modes.
+- Campaign, hexagonal, triangle and Surface replays — deferred with their
+  modes. Daily replays play like any replay.
 
 ## Architecture
 

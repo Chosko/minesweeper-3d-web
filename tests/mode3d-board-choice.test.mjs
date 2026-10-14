@@ -19,6 +19,9 @@ import { typicalBbbv } from '../js/records/typical-bbbv.js';
 import { createStorage } from '../js/platform/storage.js';
 import { createMemoryBackend } from '../js/platform/memory-backend.js';
 import { browserSuite } from './helpers/browser.mjs';
+import { encodeBoardCode, dailyGame, dateText, CODE_REASONS } from '../js/records/board-code.js';
+import { otherModeHint } from '../js/shell/challenge.js';
+import { CODE_PROMPT } from '../js/classic2d/board-choice.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const suite = browserSuite();
@@ -477,6 +480,72 @@ test('in a browser, the custom board validates, the switch follows the limit and
     await page.click('#ready-back');
     assert.equal(await ms(() => document.activeElement?.dataset.preset), '8,8,8,40');
     assert.equal(await ms(() => document.querySelector('[data-preset="8,8,8,40"] [data-last]').classList.contains('hidden')), false);
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+// ---------------------------------------------------------------- Play this board
+
+test('both board choices hold a board code field with Play this board, wired to the shell', () => {
+  const html = read('index.html');
+  for (const [section, prefix] of [['<section id="board-choice"', 'bc'], ['<section id="c2d-choice"', 'c2d']]) {
+    const part = html.slice(html.indexOf(section), html.indexOf('</section>\n  </section>', html.indexOf(section)));
+    assert.match(part, new RegExp(`<input id="${prefix}-code" data-code-field class="ui-field__input" type="text"`));
+    assert.match(part, new RegExp(`<button type="button" id="${prefix}-code-play" class="ui-button ui-button--secondary" data-code-play disabled>Play this board</button>`));
+    assert.match(part, new RegExp(`<p id="${prefix}-code-info" class="ui-text ui-text--muted" data-code-info>${CODE_PROMPT}</p>`));
+  }
+  assert.match(MAIN_SRC, /code: \{ resolve: \(text\) => checkCode\(text, '3d'\), onPlay: \(text\) => playCode\(text, '3d'\) \}/);
+  assert.match(MAIN_SRC, /code: \{ resolve: \(text\) => checkCode\(text, 'classic-2d'\), onPlay: \(text\) => playCode\(text, 'classic-2d'\) \}/);
+});
+const MAIN_SRC = read('js/main.js');
+
+test('in a browser, a board code in a board choice: validated live, the other mode refused with a hint, a challenge started, today\'s daily opens the Daily screen', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`${base}/index.html?still-backdrop`);
+    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
+    const ms = (fn, arg) => page.evaluate(fn, arg);
+    const field = (prefix) => ms((p) => ({
+      info: document.getElementById(`${p}-code-info`).textContent,
+      warn: document.getElementById(`${p}-code-info`).classList.contains('ui-text--warning'),
+      disabled: document.getElementById(`${p}-code-play`).disabled,
+    }), prefix);
+    const two = encodeBoardCode({ board: { mode: 'classic-2d', grid: 'square', width: 9, height: 9, mines: 10, noGuess: false }, seed: 3, startCell: 40, generatorVersion: 1 });
+    const three = encodeBoardCode({ board: { mode: '3d', width: 6, height: 6, depth: 6, mines: 10, noGuess: false }, seed: 9, startCell: 129, generatorVersion: 1 });
+
+    await page.click('#menu-entry-3d');
+    assert.deepEqual(await field('bc'), { info: CODE_PROMPT, warn: false, disabled: true });
+    await page.fill('#bc-code', 'nonsense');
+    assert.deepEqual(await field('bc'), { info: CODE_REASONS.malformed, warn: true, disabled: true });
+    await page.fill('#bc-code', two);
+    assert.deepEqual(await field('bc'), { info: otherModeHint('classic-2d'), warn: true, disabled: true });
+    await page.fill('#bc-code', three.toLowerCase());
+    assert.equal((await field('bc')).disabled, false);
+    assert.match((await field('bc')).info, /^Cube Beginner · a challenge, not eligible for bests$/);
+    await page.click('#bc-code-play');
+    await page.waitForFunction(() => globalThis.__ms.modes.active === '3d');
+    assert.equal(await ms(() => globalThis.__ms.renderer.mark), 129, 'the start cell is tinted');
+    await page.evaluate(() => globalThis.__ms.forcePlay());
+    await page.evaluate(() => { globalThis.__ms.aimAt(0); globalThis.__ms.click('left'); });
+    assert.equal(await ms(() => globalThis.__ms.modes.state.started), false, 'a reveal off the mark changes nothing');
+    await page.waitForFunction(() => document.getElementById('toast').textContent === 'Start on the marked cell');
+    assert.equal(await ms(() => localStorage.getItem('ms3d:doc:mode3d.lastChoice')), null, 'a challenge never changes the last board choice');
+    await page.evaluate(() => globalThis.__ms.pause());
+    await page.click('#p-menu');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'menu');
+
+    await page.click('#menu-entry-classic-2d');
+    await page.fill('#c2d-code', dailyGame('expert', dateText()).code);
+    assert.equal((await field('c2d')).disabled, false);
+    await page.press('#c2d-code', 'Enter');
+    assert.equal(await ms(() => globalThis.__ms.state.mode), 'daily', 'today\'s daily opens the Daily screen');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

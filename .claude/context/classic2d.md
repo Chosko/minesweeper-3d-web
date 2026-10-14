@@ -51,10 +51,14 @@ board; the skin owns how a tile looks.
 - `CHOICE_SIZES`, `sizeLabel(size)`, `customStatus(custom)` → `{ok, field,
   max, text}`, `readChoice({size, fields, noGuess}, fallbackCustom?)`,
   `densityHintShown(custom, noGuess)`, `bindBoardChoice({root, onStart,
-  onBack})` → `{show(choice, {played, details}), destroy()}` — the density
+  onBack, code?})` → `{show(choice, {played, details}), destroy()}` — the density
   hint `[data-density-hint]` follows the fields and switch live; `details`
   (the shell's `presetDetails`, [app-shell-menu.md](app-shell-menu.md)) fills each
-  size's `[data-detail]` line for the switch's position.
+  size's `[data-detail]` line for the switch's position; `code` `{resolve,
+  onPlay}` binds the board code field (`[data-code-field]`,
+  `[data-code-play]`, `[data-code-info]`, `bindCodeField` in
+  `js/ui/components.js`), cleared by every show. `CODE_PROMPT` is its empty
+  line on both board choices.
 
 ## INTERNAL PATTERNS
 

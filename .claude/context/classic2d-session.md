@@ -15,13 +15,14 @@ flow ([mode3d-session.md](mode3d-session.md)). The area overview is
 - `SESSION_STATE` (`ready`, `generating`, `playing`, `failed`, `won`,
   `lost`, `left`), `FAILURE_OFFERS` (`retry`, `standard`),
   `GENERATING_DELAY_MS` (200), `SESSION_EVENTS` (`generating`, `started`,
-  `changed`, `failed`, `finished`, `abandoned`, `mark`).
+  `changed`, `failed`, `finished`, `abandoned`, `mark`, `refused`),
+  `START_HINT` ('Start on the marked cell').
 - `createTimer({now})` → `{start, pause, resume, stop, elapsedMs(),
   seconds(), pauses(until?, count?), started, running, stopped, paused}` —
   `pauses` the pause spans `[{start, end}]` begun by `until`, at most
   `count`, the open one clipped to `until`.
 - `createSession({choice, client, clock?, randomSeed?, generatingDelayMs?,
-  place?, pregenerated?})` → `{state, choice, setup, game, seed,
+  place?, pregenerated?, fixed?})` → `{state, choice, fixed, identity, setup, game, seed,
   generatorVersion, generatingShown, paused, failure, minesLeft,
   markedCell, progress, elapsedMs(), seconds(), pauses(), clicks(),
   on(type, fn) → off, reveal(c), toggleFlag(c), chord(c), retry(),
@@ -34,8 +35,14 @@ flow ([mode3d-session.md](mode3d-session.md)). The area overview is
   clearTimeout}`; `progress` `{candidates, seconds}` while generating, else
   null; `clicks()` the engine's counted clicks, wasted included. `finished`
   and `abandoned` carry `{summary, replay}`; `replay(summary = summary())`
-  is `{blob, listing}` or null ([replay.md](replay.md)). The module head
-  comment is the contract.
+  is `{blob, listing}` or null ([replay.md](replay.md)). `fixed` `{startCell,
+  seed, daily?, challenge?}` — a daily or a challenge — forces the start
+  cell: marked until the first reveal, a reveal elsewhere refused
+  (`refused` `{cell, hint}`, nothing recorded), the board the pre-generated
+  one or the one generated for that cell with that seed, a failure offering
+  `[]`; summaries carry `startCell` always and `daily` (with the Daily board
+  identity) or `challenge`; `restart()` once the board arrived drops it.
+  The module head comment is the contract.
 
 ## INTERNAL PATTERNS
 

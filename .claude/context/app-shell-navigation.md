@@ -39,7 +39,7 @@ layers are [app-shell-ui.md](app-shell-ui.md) § Controller menus.
 
 - **The router owns the screen.** Every screen change is `SHELL.go`;
   nothing else toggles a screen. `S.mode` is a getter over `SHELL.current`:
-  `menu | board-choice | coming-soon | records | classic-2d-choice |
+  `menu | board-choice | coming-soon | daily | records | classic-2d-choice |
   settings | ready | playing | classic-2d | paused | results | replay |
   ctxlost`. In the 3D game only `playing` moves the camera, runs the timer and
   accepts actions (`hasSelection`, `Input.isActive`); the Classic 2D board
@@ -55,6 +55,12 @@ layers are [app-shell-ui.md](app-shell-ui.md) § Controller menus.
   generated, else pause), `paused` → `resumeFromPause` (the menu once the
   game has ended, else resume), `results` → menu, `replay` → its `returnTo`
   (the menu when none), `ctxlost` → menu — else the stacked screen.
+- **Board links.** The one URL the shell reads is a `#board=<code>` hash
+  (`js/shell/challenge.js`, wired in `js/main.js` as `LINKS`): followed once
+  at boot after the main menu shows and on `hashchange`, then removed with
+  `history.replaceState(history.state, …)`, so the entry keeps its stamp and
+  no entry is added. A hash entry the browser pushed carries no stamp, and
+  `HISTORY.popstate` ignores it.
 - **Session history.** `HISTORY` mirrors the back stack: the router's
   `onChange` calls `sync()`, the window's `popstate` goes to `popstate`, and
   `start` stamps the base entry at boot from the navigation entry's type.

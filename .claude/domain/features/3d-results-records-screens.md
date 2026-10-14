@@ -104,7 +104,9 @@ described in [app-shell.md](../../context/app-shell.md) and
   them the chosen mode's overall figures as a row of their own, titled for
   the mode ("Classic 2D overall", "3D overall") and never mixed with the
   board's, the completed games' win rate and best streak among both as in
-  2D. The history chart and recent games list are
+  2D. Each mode's picker lists its Daily board after its named boards and
+  before its custom boards, and game rows show the board code
+  (`records-screen`). The history chart and recent games list are
   unchanged, read for the chosen board.
 
 ## Data and state

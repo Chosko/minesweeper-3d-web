@@ -25,9 +25,13 @@
 //   overall: [{ key, label, value }], notes, filters: { period, outcome, wonOnly }, chart: { points, text },
 //   bestChart: { steps, start, end, emptyText, text }, averages: { columns: [{ key, label }],
 //   rows: [{ stat, label, values }], winRates: [{ key, label, value, detail }] }, tab, tabs,
-//   games: { headers, rows: [{ id, date, outcome, time, bbbv, rate, efficiency, watch }], empty, emptyText,
+//   games: { headers, rows: [{ id, date, outcome, time, bbbv, rate, efficiency, watch, code }], empty, emptyText,
 //   page, pages, label, pager }, top: { stat, stats, headers, rows: [{ id, rank, time, rate, efficiency,
-//   date, bbbv, clicks, watch }], empty, emptyText }, exportable, replays, canWatch }
+//   date, bbbv, clicks, watch, code }], empty, emptyText }, exportable, replays, canWatch }
+// A row's code is its game's board code (js/records/board-code.js codeOf over its history entry), null
+// for an entry from before codes. A mode's Daily board (key daily:…) is in its picker after the named
+// boards, before the custom ones; its counters show its days in a row (daysInARow, js/records/model.js,
+// as of now's local date) in place of the win streak, "Days in a row" and "Longest days in a row".
 // filters.period and filters.outcome, tabs and top.stats are choice lists [{ value, label, selected }]
 // (PERIODS, OUTCOME_FILTERS, GAME_TABS, TOP_STATS; an unknown choice is the first). The period, measured
 // back from now on each game's end date (filterHistory, js/records/stats.js), filters every history view;
@@ -82,11 +86,13 @@
 // on its board. An imported replay is watched there, never added to the library.
 //
 // createRecordsView({ root, onSelect, onBack, onPage, onMode?, onWatch?, onTogglePin?, onPinnedFirst?,
-// onReplayPage?, onDelete?, onPeriod?, onOutcome?, onTab?, onTopStat?, onExport?, onDownload?, onOpenFile?, chart?, bestChart? }) → { show(content), hide(),
+// onReplayPage?, onDelete?, onPeriod?, onOutcome?, onTab?, onTopStat?, onExport?, onDownload?, onOpenFile?, onCopy?, chart?, bestChart? }) → { show(content), hide(),
 // closeConfirm(), isConfirmOpen() }: fills #records by id, the replays panel through
 // createReplayListView; the 2D | 3D switch (#records-mode, a kit segmented choice whose two options
 // are in the markup) shows content.mode and calls onMode(mode); a best and a recent game whose
-// watch is set get a Watch button calling onWatch(id), and the games list gains its Replay column
+// watch is set get a Watch button calling onWatch(id), every recent game, Top 10 and library row its
+// board code as a compact code chip whose Copy and Copy link call onCopy, a counter its label from
+// the content (a Daily board's days in a row), and the games list gains its Replay column
 // while content.canWatch; the picker is a kit segmented choice whose options are rebuilt only when
 // the board list changes; the chart (createHistoryChart over #records-chart by default) is drawn after the
 // screen shows; the recent games' kit pager (#records-games-pager, bindPager) calls onPage with the
@@ -97,6 +103,8 @@
 // export actions (#records-export-csv, #records-export-json, bindExportActions) call onExport(format).
 
 import { MODE_3D, PRESETS_3D, STANDARD_BOARDS, boardKey, boardLabel, createBoardIdentity, parseBoardKey } from './board.js';
+import { DAILY_BOARDS, codeOf, dateText } from './board-code.js';
+import { daysInARow } from './model.js';
 import { DASH, NOTES, formatTime, formatRate, formatEfficiency, formatWinRate } from '../results/view.js';
 import { bindSegmented, bindPager, pagerState } from '../ui/components.js';
 import { BEST_STATS, bbbvPerSecond, countedClicks, efficiency } from './summary.js';
@@ -105,7 +113,7 @@ import {
 } from './history-chart.js';
 import { PERIODS, OUTCOME_FILTERS, AVERAGE_WINDOWS, RECENT_GAMES, filterHistory, topGames, averages, recentWinRate, bestTimeSteps } from './stats.js';
 import { bindExportActions } from './export.js';
-import { REPLAY_SCREEN, REPLAYS_NOT_SAVED, replayList, togglePin, watchRoute, createReplayListView } from './replay-list.js';
+import { REPLAY_SCREEN, REPLAYS_NOT_SAVED, replayList, togglePin, watchRoute, createReplayListView, codeCell } from './replay-list.js';
 
 export const RECORDS_SCREEN = 'records';
 export const EMPTY_TEXT = 'No games on this board yet.';
@@ -139,6 +147,11 @@ const NAMED = Object.freeze({
   [MODE_3D]: PRESETS_3D.flatMap(({ width, height, depth, mines }) => [false, true].map((noGuess) =>
     createBoardIdentity({ mode: MODE_3D, width, height, depth, mines, noGuess }))),
 });
+
+// Each mode's Daily board (the daily boards' identities with the daily flag), listed after its
+// named boards and before its custom boards.
+const DAILY = Object.freeze(Object.fromEntries([MODE_2D, MODE_3D].map((m) => [m,
+  DAILY_BOARDS.filter((d) => d.board.mode === m).map((d) => createBoardIdentity({ ...d.board, daily: true }))])));
 
 const BESTS = Object.freeze([
   { stat: 'time', label: 'Best time', format: formatTime },
@@ -190,9 +203,9 @@ const attempt = (fn, fallback) => { try { return fn(); } catch { return fallback
 const entry = (board) => ({ key: boardKey(board), label: boardLabel(board), board });
 const keyOf = (key) => attempt(() => boardKey(parseBoardKey(key)), null);
 
-/** The picker's boards for a mode: its named boards, then every custom board of the mode played. */
+/** The picker's boards for a mode: its named boards, its Daily board, then every custom board of the mode played. */
 export function pickerBoards(records, mode = MODE_2D) {
-  const list = NAMED[mode].map(entry);
+  const list = [...NAMED[mode], ...DAILY[mode]].map(entry);
   const keys = new Set(list.map((b) => b.key));
   for (const { key, board } of attempt(() => records.boardsPlayed(mode), [])) {
     if (!keys.has(key)) { keys.add(key); list.push(entry(board)); }
@@ -212,23 +225,30 @@ export function lastBoardPlayed(records, mode = null) {
   return last;
 }
 
-// rates: { winRate, completedWinRate }, each 0..1 or null.
-const counterFigures = (counters, rates) => COUNTERS.map(({ key, label, rate }) => ({
-  key, label, value: rate ? formatWinRate(rates[key]) : String(counters[key] ?? 0),
-}));
+// rates: { winRate, completedWinRate }, each 0..1 or null. days, a Daily board's days in a row
+// (daysInARow), stand in for the win streak: current and longest.
+const DAYS_LABELS = Object.freeze({ currentStreak: 'Days in a row', longestStreak: 'Longest days in a row' });
+const counterFigures = (counters, rates, days = null) => COUNTERS.map(({ key, label, rate }) => {
+  if (days && DAYS_LABELS[key]) return { key, label: DAYS_LABELS[key], value: String(key === 'currentStreak' ? days.current : days.longest) };
+  return { key, label, value: rate ? formatWinRate(rates[key]) : String(counters[key] ?? 0) };
+});
 
-const gameRow = (e, kept) => ({
+// The board code of a history entry on the board `board`, or null (an entry from before codes).
+const entryCode = (e, board) => codeOf({ ...e, board });
+
+const gameRow = (e, kept, board) => ({
+  code: entryCode(e, board),
   id: e.id, date: formatDateTime(e.endedAt), outcome: outcomeLabel(e.outcome), time: formatTime(e.elapsedMs),
   bbbv: Number.isInteger(e.bbbv) ? String(e.bbbv) : DASH,
   rate: formatRate(attempt(() => bbbvPerSecond(e), null)), efficiency: formatEfficiency(attempt(() => efficiency(e), null)),
   watch: kept(e.id),
 });
 
-function gamesList(history, page, kept) {
+function gamesList(history, page, kept, board) {
   const p = pageOf(history.toReversed(), page);
   return {
     headers: [...GAME_HEADERS],
-    rows: p.items.map((e) => gameRow(e, kept)),
+    rows: p.items.map((e) => gameRow(e, kept, board)),
     empty: p.total === 0,
     emptyText: GAMES_EMPTY_TEXT,
     page: p.page, pages: p.pages,
@@ -237,15 +257,16 @@ function gamesList(history, page, kept) {
   };
 }
 
-const topRow = (e, i, kept) => ({
+const topRow = (e, i, kept, board) => ({
+  code: entryCode(e, board),
   id: e.id, rank: String(i + 1), time: formatTime(e.elapsedMs),
   rate: formatRate(attempt(() => bbbvPerSecond(e), null)), efficiency: formatEfficiency(attempt(() => efficiency(e), null)),
   date: formatDateTime(e.endedAt), bbbv: Number.isInteger(e.bbbv) ? String(e.bbbv) : DASH,
   clicks: String(attempt(() => countedClicks(e.clicks), DASH)), watch: kept(e.id),
 });
 
-function topList(history, stat, kept, filtered) {
-  const rows = attempt(() => topGames(history, stat), []).map((e, i) => topRow(e, i, kept));
+function topList(history, stat, kept, filtered, board) {
+  const rows = attempt(() => topGames(history, stat), []).map((e, i) => topRow(e, i, kept, board));
   return {
     stat, stats: choices(TOP_STATS, stat), headers: [...TOP_HEADERS], rows,
     empty: rows.length === 0, emptyText: filtered ? TOP_EMPTY_PERIOD : TOP_EMPTY_TEXT,
@@ -304,6 +325,8 @@ export function recordsContent(records, {
   const won = shown.filter((e) => e.outcome === 'won');
   const steps = attempt(() => bestTimeSteps(shown), []);
   const kept = (id) => (canWatch && typeof id === 'string' && attempt(() => replays.has(id), false) ? id : null);
+  const identity = attempt(() => parseBoardKey(key), null);
+  const days = identity?.daily ? daysInARow(counters, dateText(now)) : null;
   return {
     mode,
     modes: RECORDS_MODES.map((m) => ({ value: m.value, label: m.label, selected: m.value === mode })),
@@ -315,7 +338,7 @@ export function recordsContent(records, {
       const best = bests?.[stat] ?? null;
       return { stat, label, value: format(best ? best.value : null), date: best ? formatDate(best.endedAt) : DASH, watch: kept(best?.id) };
     }),
-    counters: counterFigures(counters, attempt(() => ({ winRate: records.winRate(key), completedWinRate: records.completedWinRate(key) }), NO_RATES)),
+    counters: counterFigures(counters, attempt(() => ({ winRate: records.winRate(key), completedWinRate: records.completedWinRate(key) }), NO_RATES), days),
     overallTitle: RECORDS_MODES.find((m) => m.value === mode).overallTitle,
     overall: counterFigures(overall, attempt(() => ({
       winRate: records.overallWinRate(mode), completedWinRate: records.overallCompletedWinRate(mode),
@@ -330,8 +353,8 @@ export function recordsContent(records, {
     averages: averagesPanel(shown),
     tab,
     tabs: choices(GAME_TABS, tab),
-    games: gamesList(listed, page, kept),
-    top: topList(shown, topStat, kept, filtered),
+    games: gamesList(listed, page, kept, identity),
+    top: topList(shown, topStat, kept, filtered, identity),
     exportable: !!exportable,
     replays: { ...replayList(replays, key, { pinnedFirst, canWatch, formatDate: formatDateTime, outcomeLabel, page: replayPage }), canOpen: !!canOpen },
     canWatch,
@@ -477,10 +500,10 @@ export function createRecordsScreen({ records, view, replays = null, router = nu
 export function createRecordsView({
   root, onSelect, onMode = () => {}, onBack, onPage, onWatch = () => {}, onTogglePin = () => {}, onPinnedFirst = () => {},
   onReplayPage = () => {}, onDelete = () => {}, onPeriod = () => {}, onOutcome = () => {}, onTab = () => {}, onTopStat = () => {},
-  onExport = () => {}, onDownload = () => {}, onOpenFile = () => {}, chart = null, bestChart = null,
+  onExport = () => {}, onDownload = () => {}, onOpenFile = () => {}, onCopy = () => {}, chart = null, bestChart = null,
 }) {
   const $ = (id) => root.querySelector(`#${id}`);
-  const list = createReplayListView({ root, onWatch, onTogglePin, onPinnedFirst, onPage: onReplayPage, onDelete, onDownload, onOpenFile });
+  const list = createReplayListView({ root, onWatch, onTogglePin, onPinnedFirst, onPage: onReplayPage, onDelete, onDownload, onOpenFile, onCopy });
   const watchButton = (id, label) => {
     const b = root.ownerDocument.createElement('button');
     b.type = 'button';
@@ -514,7 +537,12 @@ export function createRecordsView({
   let pickerKeys = '';
   let unbind = () => {};
   const fill = (prefix, figures) => {
-    for (const f of figures) $(`${prefix}-${f.key}`).querySelector('.ui-stat__value').textContent = f.value;
+    for (const f of figures) {
+      const el = $(`${prefix}-${f.key}`);
+      el.querySelector('.ui-stat__value').textContent = f.value;
+      const label = el.querySelector('.ui-stat__label');
+      if (label && f.label) label.textContent = f.label;
+    }
   };
   $('records-back').addEventListener('click', () => onBack());
 
@@ -535,6 +563,7 @@ export function createRecordsView({
         td.dataset.label = games.headers[i];
         tr.append(td);
       });
+      tr.append(codeCell(doc, g.code, onCopy));
       if (canWatch) {
         const td = doc.createElement('td');
         td.dataset.label = 'Replay';
@@ -576,6 +605,7 @@ export function createRecordsView({
     body.replaceChildren(...top.rows.map((g) => {
       const tr = doc.createElement('tr');
       cells(doc, tr, [g.rank, g.time, g.rate, g.efficiency, g.date, g.bbbv, g.clicks], top.headers);
+      tr.append(codeCell(doc, g.code, onCopy));
       if (canWatch) {
         const td = doc.createElement('td');
         td.dataset.label = 'Replay';

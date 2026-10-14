@@ -26,18 +26,25 @@ Model (`js/records/model.js`; its head comment documents the documents)
     comparison.
   - `boardsPlayed(mode = 'classic-2d')` → `[{ key, board }]`: named boards
     first (standard / preset order, each without no-guess before with it),
-    then custom boards, most recently played first.
+    then the mode's Daily board, then custom boards, most recently played
+    first.
   - `bests(board)` → `{ time, bbbvPerSecond, efficiency }`, each null or
     `{ id, value, endedAt }`.
   - `counters(board)` → `{ games, wins, currentStreak, longestStreak,
-    completed, currentCompletedStreak, longestCompletedStreak }`;
-    `winRate`, `completedWinRate` (null for none).
+    completed, currentCompletedStreak, longestCompletedStreak }`, plus
+    `challenges` once a challenge was counted and, on a Daily board,
+    `currentDays`, `longestDays`, `lastDay`; `winRate` (over the games that
+    are not challenges), `completedWinRate` (null for none).
+  - `daysInARow(counters, today)` → `{ current, longest, lastDay }`, the
+    current run alive while its last day is today or yesterday;
+    `nextDay(date)`.
   - `history(board)`; `overall(mode)`, `overallWinRate(mode)`,
     `overallCompletedWinRate(mode)`; `documents()` → `{ records, history }`.
 - The comparison: per stat in `BEST_STATS`, `{ best, value, difference,
   newBest }` — the best that stood before this game.
-- `compactSummary(summary)` — the history entry; entries without the pause
-  fields read as 0 and 0 (`pauseFields`).
+- `compactSummary(summary)` — the history entry, keeping `seed`,
+  `generatorVersion`, `startCell`, `daily` and `challenge` when present;
+  entries without the pause fields read as 0 and 0 (`pauseFields`).
 - The records document: `{ boards: { [boardKey]: { board, bests, counters }
   }, overall: { [mode]: counters } }`. `MODES` — `['classic-2d', '3d']`;
   `MODE_CLASSIC_2D`.
@@ -47,8 +54,10 @@ Model (`js/records/model.js`; its head comment documents the documents)
 
 Store (`js/records/store.js`)
 - `createRecordsStore({ storage, onNotSaved? })` → store. Registers
-  `RECORDS_DOC` `records` (`RECORDS_VERSION` 3: `upgradeRecords` from 1, an
-  unchanging step from 2), `HISTORY_DOC` `records.history` (1),
+  `RECORDS_DOC` `records` (`RECORDS_VERSION` 4: `upgradeRecords` from 1,
+  unchanging steps from 2 and 3), `HISTORY_DOC` `records.history`
+  (`HISTORY_VERSION` 2, an unchanging step from 1 — the Daily boards and
+  challenges step, so an older build refuses the documents),
   `IN_PROGRESS_DOC` `records.inProgress` (1). `onNotSaved({ reason })` at
   most once, at the first failed save.
 - `load()` → Promise, shared by repeated calls; `record`, `begin` and
@@ -70,8 +79,12 @@ Store (`js/records/store.js`)
   maintained game by game. A best is replaced only by a strictly better
   value, so a tie keeps the earlier holder.
 - **Counters per mode.** A game counts in its board's counters and its own
-  mode's overall only — no figure combines Classic 2D and 3D. A win extends
-  the streak; a loss or an abandoned game ends it. Won and lost games are
+  mode's overall only — no figure combines Classic 2D and 3D; a daily game
+  counts on its Daily board (`daily:` key) and its mode's overall. A win
+  extends the streak; a loss or an abandoned game ends it. A challenge
+  counts in `games` and `challenges` only: no best, win, completed game or
+  streak. A Daily board's days in a row advance on each later date with a
+  counted daily, consecutive or not (a gap restarts them at 1). Won and lost games are
   completed: a win extends the completed streak, a loss ends it, an
   abandoned game leaves it. Win rates are derived, never stored. Missing
   completed counters are seeded from the reference ones, so wins never

@@ -67,15 +67,45 @@ function brokenStore() {
   };
 }
 const STANDARD_LABELS = ['Beginner', 'Beginner · no-guess', 'Intermediate', 'Intermediate · no-guess', 'Expert', 'Expert · no-guess'];
+const DAILY_LABEL = 'Daily · Expert · no-guess';
 const stat = (list, key) => list.find((s) => s.key === key || s.stat === key);
+
+// ---------------------------------------------------------------- the Daily board and board codes
+
+const DAILY_EXPERT = createBoardIdentity({ ...EXPERT_NG, daily: true });
+
+test('the Daily board: its days in a row stand in for the win streak, as of today\'s local date', () => {
+  const daily = (date, outcome = 'won') => game(DAILY_EXPERT, { outcome, daily: date, startCell: 255, endedAt: `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6)}T12:00:00.000Z` });
+  const store = fakeStore({ games: [daily('20261008'), daily('20261009', 'lost'), daily('20261010')] });
+  const today = recordsContent(store, { boardKey: boardKey(DAILY_EXPERT), now: new Date(2026, 9, 11, 9) });
+  assert.equal(today.board.label, DAILY_LABEL);
+  assert.deepEqual(['currentStreak', 'longestStreak'].map((k) => [stat(today.counters, k).label, stat(today.counters, k).value]),
+    [['Days in a row', '3'], ['Longest days in a row', '3']]);
+  assert.equal(stat(today.counters, 'games').value, '3');
+  assert.equal(stat(today.counters, 'wins').value, '2');
+  const later = recordsContent(store, { boardKey: boardKey(DAILY_EXPERT), now: new Date(2026, 9, 12, 9) });
+  assert.equal(stat(later.counters, 'currentStreak').value, '0', 'a date ended without a daily');
+  assert.equal(stat(later.counters, 'longestStreak').value, '3');
+  const plain = recordsContent(store, { boardKey: boardKey(EXPERT_NG) });
+  assert.equal(stat(plain.counters, 'currentStreak').label, 'Current streak', 'the plain board keeps its win streak');
+  assert.equal(today.games.rows[0].code, 'EN-20261010-' + today.games.rows[0].code.slice(-4), 'a daily row shows its daily form');
+});
+
+test('every recent game and Top 10 row names its board code; an entry from before codes shows none', () => {
+  const store = fakeStore({ games: [game(BEGINNER, { startCell: 40, seed: 0x1234 }), game(BEGINNER, { elapsedMs: 30000 })] });
+  const c = recordsContent(store, { boardKey: boardKey(BEGINNER) });
+  assert.match(c.games.rows[1].code, /^B-00001234-40-1[0-9A-F]{3}$/);
+  assert.equal(c.games.rows[0].code, null);
+  assert.match(c.top.rows[1].code, /^B-00001234-40-/);
+});
 
 // ---------------------------------------------------------------- picker
 
-test('the picker lists the six standard boards, then every custom board played, by boardLabel', () => {
-  assert.deepEqual(pickerBoards(fakeStore()).map((b) => b.label), STANDARD_LABELS, 'the standard boards with no games played');
+test('the picker lists the six standard boards, the Daily board, then every custom board played, by boardLabel', () => {
+  assert.deepEqual(pickerBoards(fakeStore()).map((b) => b.label), [...STANDARD_LABELS, DAILY_LABEL], 'the standard boards and the Daily board with no games played');
   const store = fakeStore({ games: [game(CUSTOM2, { endedAt: '2026-10-01T12:00:00.000Z' }), game(BEGINNER), game(CUSTOM, { endedAt: '2026-10-08T12:00:00.000Z' }), game(EXPERT_NG)] });
   const boards = pickerBoards(store);
-  assert.deepEqual(boards.map((b) => b.label), [...STANDARD_LABELS, '20 × 12 · 50 mines', '5 × 5 · 3 mines']);
+  assert.deepEqual(boards.map((b) => b.label), [...STANDARD_LABELS, DAILY_LABEL, '20 × 12 · 50 mines', '5 × 5 · 3 mines']);
   assert.equal(boards[0].key, boardKey(BEGINNER));
   assert.equal(boards[5].key, boardKey(EXPERT_NG));
   assert.equal(new Set(boards.map((b) => b.key)).size, boards.length, 'a standard board played is not listed twice');
@@ -336,7 +366,7 @@ test('the Top 10 by time: ten rows best first, each with rank, time, 3BV/s, effi
   assert.equal(top.rows.length, 10, 'ten of thirteen won games; the loss never ranks');
   assert.deepEqual(top.rows.map((r) => r.rank), ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']);
   assert.deepEqual(top.rows[0], {
-    id: 't12', rank: '1', time: '48.000 s', rate: (20 / 48).toFixed(2), efficiency: '80.0%', date: formatDateTime(daysAgo(1)), bbbv: '20', clicks: '25', watch: 't12',
+    id: 't12', rank: '1', time: '48.000 s', rate: (20 / 48).toFixed(2), efficiency: '80.0%', date: formatDateTime(daysAgo(1)), bbbv: '20', clicks: '25', watch: 't12', code: null,
   });
   assert.equal(top.rows[1].watch, null, 'Watch only for a kept replay');
   assert.equal(top.rows.find((r) => r.id === 't5').watch, 't5');
@@ -566,7 +596,7 @@ test('the history area: period and outcome choices above it, both charts, the Re
   assert.match(panel, /<div id="records-top" class="hidden">\s*<div id="records-top-stat" class="ui-segmented" role="radiogroup" aria-label="Rank by">/);
   const top = panel.slice(panel.indexOf('<table id="records-top-table">'));
   const heads = [...top.slice(0, top.indexOf('</thead>')).matchAll(/<th scope="col"[^>]*>([^<]+)<\/th>/g)].map((m) => m[1]);
-  assert.deepEqual(heads, ['Rank', 'Time', '3BV/s', 'Efficiency', 'Date', '3BV', 'Clicks', 'Replay']);
+  assert.deepEqual(heads, ['Rank', 'Time', '3BV/s', 'Efficiency', 'Date', '3BV', 'Clicks', 'Board code', 'Replay']);
   assert.match(top, /<th scope="col" id="records-top-replay" class="hidden">Replay<\/th>/);
   assert.match(panel, /<p id="records-top-empty" class="ui-text ui-text--muted hidden">No won games on this board yet\.<\/p>/);
 });
@@ -648,7 +678,7 @@ test('in a browser, the menu opens the records screen on the last board played, 
     assert.equal(await mode(), 'records');
     assert.equal(await visible('records'), true);
     const options = await page.evaluate(() => [...document.querySelectorAll('#records-picker .ui-segmented__option')].map((o) => o.textContent));
-    assert.deepEqual(options, STANDARD_LABELS);
+    assert.deepEqual(options, [...STANDARD_LABELS, DAILY_LABEL]);
     assert.equal(await active(), 'Beginner', 'the picker takes default focus');
     assert.equal(await visible('records-empty'), true);
     await page.keyboard.press('Escape');

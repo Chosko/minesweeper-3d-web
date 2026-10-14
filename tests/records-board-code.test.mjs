@@ -1,0 +1,186 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  CODE_REASONS, DAILY_BOARDS, fnv1a, dailySeed, boardToken, encodeBoardCode, parseBoardCode, dailyGame,
+  dailyBoardOf, codeOf, isDateText, dateText, graphOf,
+} from '../js/records/board-code.js';
+import { createBoardIdentity } from '../js/records/board.js';
+import { GENERATOR_VERSION } from '../js/generation/placer.js';
+import { generate } from '../js/generation/generate.js';
+import { startCell } from '../js/generation/start-cell.js';
+
+const sq = (width, height, mines, noGuess = false) =>
+  createBoardIdentity({ mode: 'classic-2d', grid: 'square', width, height, mines, noGuess });
+const box = (width, height, depth, mines, noGuess = false) =>
+  createBoardIdentity({ mode: '3d', width, height, depth, mines, noGuess });
+const V = GENERATOR_VERSION;
+
+// ---------- the hash and the daily seed ----------
+
+test('board code: FNV-1a is the 32-bit FNV-1a hash', () => {
+  assert.equal(fnv1a(''), 0x811c9dc5);
+  assert.equal(fnv1a('a'), 0xe40c292c);
+  assert.equal(fnv1a('foobar'), 0xbf9cf968);
+});
+
+test('board code: the daily seed hashes daily-<date>-<token>', () => {
+  assert.equal(dailySeed('20261011', 'EN'), fnv1a('daily-20261011-EN'));
+  assert.equal(dailySeed('20261011', 'EN'), 444544172);
+  assert.equal(dailySeed('20261011', '8X8X8M40N'), 449335490);
+});
+
+// ---------- the board token ----------
+
+test('board code: tokens for the standard boards, other 2D boards and every 3D board', () => {
+  assert.equal(boardToken(sq(9, 9, 10)), 'B');
+  assert.equal(boardToken(sq(16, 16, 40, true)), 'IN');
+  assert.equal(boardToken(sq(30, 16, 99, true)), 'EN');
+  assert.equal(boardToken(sq(20, 12, 50)), '20X12M50');
+  assert.equal(boardToken(sq(9, 9, 11, true)), '9X9M11N');
+  assert.equal(boardToken(box(8, 8, 8, 40)), '8X8X8M40');
+  assert.equal(boardToken(box(6, 6, 6, 10, true)), '6X6X6M10N');
+  assert.equal(boardToken({ ...sq(30, 16, 99, true), daily: true }), 'EN');
+});
+
+// ---------- the grammar ----------
+
+test('board code: the daily form and the game form, uppercase, the check carrying the version', () => {
+  const daily = encodeBoardCode({ board: sq(30, 16, 99, true), generatorVersion: V, daily: '20261011' });
+  assert.match(daily, /^EN-20261011-1[0-9A-F]{3}$/);
+  assert.equal(daily.slice(-3), (fnv1a(`EN-20261011-${V}`) & 0xfff).toString(16).toUpperCase().padStart(3, '0'));
+  const game = encodeBoardCode({ board: sq(30, 16, 99, true), seed: 0x9c41d07a, startCell: 247, generatorVersion: V });
+  assert.match(game, /^EN-9C41D07A-247-1[0-9A-F]{3}$/);
+  assert.equal(game.slice(-3), (fnv1a(`EN-9C41D07A-247-${V}`) & 0xfff).toString(16).toUpperCase().padStart(3, '0'));
+  assert.equal(encodeBoardCode({ board: sq(9, 9, 10), seed: 0, startCell: 0, generatorVersion: V }).split('-')[1], '00000000');
+});
+
+test('board code: round trips for every board kind, both forms and the extreme seeds', () => {
+  const boards = [sq(9, 9, 10), sq(9, 9, 10, true), sq(16, 16, 40), sq(30, 16, 99, true), sq(20, 12, 50), sq(1, 2, 1),
+    sq(100, 100, 2000, false), box(8, 8, 8, 40, true), box(6, 6, 6, 10), box(12, 12, 8, 130, true), box(1, 1, 2, 1),
+    box(100, 100, 100, 1000)];
+  for (const board of boards) {
+    const cells = board.width * board.height * (board.depth ?? 1);
+    for (const seed of [0, 2 ** 32 - 1, 123456]) {
+      for (const start of [0, cells - 1]) {
+        const code = encodeBoardCode({ board, seed, startCell: start, generatorVersion: V });
+        const parsed = parseBoardCode(code);
+        assert.deepEqual(parsed, { ok: true, board, seed, startCell: start, generatorVersion: V }, code);
+        assert.deepEqual(parseBoardCode(`  ${code.toLowerCase()}\n`), parsed);
+      }
+    }
+    if (board.mode === '3d' && board.noGuess && board.width * board.height * board.depth > 8000) continue;
+    const code = encodeBoardCode({ board, generatorVersion: V, daily: '20261231' });
+    const token = boardToken(board);
+    assert.deepEqual(parseBoardCode(code), {
+      ok: true, board, seed: dailySeed('20261231', token), startCell: startCell(graphOf(board)), generatorVersion: V, daily: '20261231',
+    }, code);
+  }
+});
+
+test('board code: the check catches a typo before anything is generated', () => {
+  const code = encodeBoardCode({ board: sq(30, 16, 99, true), seed: 0x9c41d07a, startCell: 247, generatorVersion: V });
+  for (const typo of [code.replace('9C41', '9C42'), code.replace('-247-', '-248-'), code.replace(/.$/, (c) => (c === '0' ? '1' : '0')), code.replace('EN', 'IN')]) {
+    assert.deepEqual(parseBoardCode(typo), { ok: false, reason: CODE_REASONS.typo }, typo);
+  }
+});
+
+test('board code: malformed text is refused, never thrown', () => {
+  for (const text of [undefined, null, 42, '', 'hello', 'EN', 'EN-1', 'X-20261011-1000', 'EN-2026101-1000', 'EN-20261301-1000',
+    'EN-20260230-1000', 'EN-9C41D07-247-1000', 'EN-9C41D07A-0247-1000', 'EN-9C41D07A-247-1-1000', 'EN-9C41D07A-247-10',
+    '30X16M99N-20261011-1000', '09X9M11-20261011-1000', 'EN--20261011-1000', 'EG-20261011-1000']) {
+    const r = parseBoardCode(text);
+    assert.equal(r.ok, false, String(text));
+    assert.equal(r.reason, CODE_REASONS.malformed, String(text));
+  }
+});
+
+// A code with a valid check over any text, the version chosen.
+const withCheck = (canonical, version = V) => `${canonical}-${version}${(fnv1a(`${canonical}-${version}`) & 0xfff).toString(16).toUpperCase().padStart(3, '0')}`;
+
+test('board code: a board outside the mode\'s custom limits is refused with its reason', () => {
+  const cases = [
+    ['101X5M3-00000000-0', /width must be a whole number from 1 to 100/i],
+    ['1X1M0-00000000-0', /no room for a mine/],
+    ['9X9M0-00000000-0', /Mines must be a whole number from 1/],
+    ['9X9M81-00000000-0', /Mines must be a whole number from 1/],
+    ['101X5X5M3-00000000-0', /Width must be a whole number from 1 to 100/],
+    ['5X5X5M0-00000000-0', /Mines must be a whole number from 1/],
+  ];
+  for (const [canonical, reason] of cases) {
+    const r = parseBoardCode(withCheck(canonical));
+    assert.equal(r.ok, false, canonical);
+    assert.match(r.reason, reason, canonical);
+  }
+});
+
+test('board code: a 3D no-guess board the board choice refuses is refused', () => {
+  assert.match(parseBoardCode(withCheck('21X20X20M100N-00000000-0')).reason, /available up to 8,000 cells/);
+  assert.match(parseBoardCode(withCheck('2X8X8M10N-00000000-0')).reason, /a side is 2 cells/);
+  assert.equal(parseBoardCode(withCheck('21X20X20M100-00000000-0')).ok, true);
+});
+
+test('board code: a start cell outside the board is refused', () => {
+  assert.deepEqual(parseBoardCode(withCheck('B-00000000-81')), { ok: false, reason: CODE_REASONS.start });
+  assert.equal(parseBoardCode(withCheck('B-00000000-80')).ok, true);
+});
+
+test('board code: an unknown generator version is refused in both directions', () => {
+  assert.deepEqual(parseBoardCode(withCheck('EN-20261011', V + 1)), { ok: false, reason: CODE_REASONS.newer });
+  assert.equal(CODE_REASONS.newer, 'This board code comes from a newer version of the game. Reload the page to update.');
+  const old = withCheck('EN-20261011', 1);
+  assert.deepEqual(parseBoardCode(old, { generatorVersion: 2 }), { ok: false, reason: CODE_REASONS.older });
+  assert.equal(CODE_REASONS.older, 'This board code was made by an older board generator and can no longer be rebuilt.');
+  assert.equal(parseBoardCode(old, { generatorVersion: 1 }).ok, true);
+});
+
+test('board code: the code of a recorded game carries its own generator version; none without a seed', () => {
+  const game = { board: sq(9, 9, 10), seed: 5, startCell: 40, generatorVersion: V };
+  assert.equal(codeOf(game), encodeBoardCode(game));
+  assert.equal(codeOf({ ...game, board: { ...game.board, daily: true }, daily: '20261011' }), encodeBoardCode({ board: game.board, generatorVersion: V, daily: '20261011' }));
+  assert.equal(codeOf({ board: game.board, seed: 5, generatorVersion: V }), null);
+  assert.equal(codeOf({ board: game.board, generatorVersion: V }), null);
+  assert.equal(codeOf(null), null);
+});
+
+// ---------- the daily boards ----------
+
+test('daily: two boards a day, Expert no-guess and the cube 8 × 8 × 8 · 40 no-guess', () => {
+  assert.deepEqual(DAILY_BOARDS.map((d) => [d.id, d.label, d.token]), [['expert', 'Expert', 'EN'], ['cube', 'Cube', '8X8X8M40N']]);
+  assert.equal(dailyBoardOf(sq(30, 16, 99, true)).id, 'expert');
+  assert.equal(dailyBoardOf(box(8, 8, 8, 40, true)).id, 'cube');
+  assert.equal(dailyBoardOf(sq(30, 16, 99, false)), null);
+});
+
+test('daily: each board is generated for its marked start cell with the daily seed', () => {
+  for (const d of DAILY_BOARDS) {
+    const g = dailyGame(d.id, '20261011');
+    assert.equal(g.startCell, startCell(graphOf(d.board)));
+    assert.deepEqual({ ...g.request }, {
+      graph: graphOf(d.board), mineCount: d.board.mines, firstClick: g.startCell, noGuess: true, seed: dailySeed('20261011', d.token),
+    });
+    assert.equal(g.code, encodeBoardCode({ board: d.board, generatorVersion: V, daily: '20261011' }));
+    const parsed = parseBoardCode(g.code);
+    assert.equal(parsed.seed, g.seed);
+    assert.equal(parsed.startCell, g.startCell);
+  }
+});
+
+test('daily: the mines of 2026-10-11\'s two boards are pinned', () => {
+  const expert = generate(dailyGame('expert', '20261011').request);
+  assert.deepEqual(Array.from(expert.mines), [3, 5, 17, 36, 39, 45, 65, 67, 71, 74, 76, 81, 82, 87, 95, 105, 110, 112, 115, 117,
+    120, 122, 123, 126, 134, 135, 136, 137, 141, 144, 149, 155, 159, 162, 171, 173, 190, 191, 196, 197, 215, 218, 235, 236, 239,
+    241, 246, 248, 261, 262, 263, 265, 275, 277, 287, 288, 293, 294, 296, 300, 303, 307, 312, 315, 316, 317, 318, 321, 334, 336,
+    340, 341, 342, 343, 344, 346, 359, 367, 372, 378, 380, 386, 395, 396, 404, 418, 420, 428, 430, 432, 437, 438, 442, 448, 449,
+    452, 471, 474, 478]);
+  const cube = generate(dailyGame('cube', '20261011').request);
+  assert.deepEqual(Array.from(cube.mines), [3, 5, 7, 14, 17, 29, 41, 47, 54, 64, 67, 70, 71, 75, 83, 87, 111, 132, 135, 182, 210,
+    226, 247, 276, 304, 337, 340, 368, 389, 393, 412, 420, 422, 440, 455, 456, 463, 466, 486, 489]);
+});
+
+test('daily: dates are YYYYMMDD calendar dates, today the local one', () => {
+  assert.equal(isDateText('20240229'), true);
+  assert.equal(isDateText('20230229'), false);
+  assert.equal(dateText(new Date(2026, 0, 5, 23, 59)), '20260105');
+  assert.throws(() => dailyGame('expert', '2026-10-11'), RangeError);
+  assert.throws(() => dailyGame('nope', '20261011'), RangeError);
+});

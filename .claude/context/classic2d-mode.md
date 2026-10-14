@@ -16,7 +16,8 @@ the shell hands in its flow and its sound sink. The area overview is
 - `MODE_ID` (`'classic-2d'`), `END_DELAY_MS` (1000).
 - `createClassic2DMode(report, {flow, lastChoice, createClient?, mount?,
   sound?, clock?, randomSeed?, generatingDelayMs?, place?, buttonSwap?})` →
-  the contract methods plus `warm()`, `ending`, `finishNow()`,
+  the contract methods plus `warm()`, `client` (the mode's one generation
+  client), `fixed` (the open game's forced start, or null), `ending`, `finishNow()`,
   `hideBoard(hidden)`, `tick()`, `pad(poll, now)`, `setScale(scale)`,
   `tapMode` / `setTapMode('reveal' | 'flag')` (the Reveal / Flag switch,
   `reveal` at first, kept for the page), `boardGame` (for the debug hook),
@@ -26,7 +27,7 @@ the shell hands in its flow and its sound sink. The area overview is
   contract's optional `replay(summary)` is the session's.
 - `flow` is `{openBoardChoice(choice), show(), container(), hud({seconds,
   minesLeft, clicks}), board({width, height, mines, noGuess}),
-  generating(shown), progress?(p|null), failed(failure|null), scale?(),
+  generating(shown), progress?(p|null), failed(failure|null), hint?(text), scale?(),
   frame?(), layout?(layout), scrolled?()}` — `board` once per game and
   again when `playStandard()` turns no-guess off.
 - `mount` defaults to `{board: mountBoardView, pointer: mountPointerInput,
@@ -77,7 +78,11 @@ the shell hands in its flow and its sound sink. The area overview is
   same choice (`pregenerate`, its `startCell`, a fresh `randomSeed`); the
   next `open` with the same choice (Play again, Restart) hands it to the
   session, whose `mark` drives `view.setMark`; another choice or `leave`
-  discards it. `tick()` pushes the generating card's progress to
+  discards it. `start({ ...choice, fixed, pregenerated? })` — a daily or a
+  challenge — saves no last choice, discards that board for its own, starts
+  the cursor input on the forced cell (`start`), and turns the session's
+  `refused` into `view.pulseMark()` and `flow.hint(START_HINT)`; `restart()`
+  keeps `fixed` while the game has not started, else plays free. `tick()` pushes the generating card's progress to
   `flow.progress`, null when the card hides.
 - **End delay.** A win or loss reports can-pause false at once and runs
   the end delay (`ending`): the view plays the end effect (`WIN` from the

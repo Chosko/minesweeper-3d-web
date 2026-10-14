@@ -36,8 +36,11 @@
 // summary's pauses and pausedMs. The check values are the summary's outcome, elapsed time, 3BV,
 // 3BV solved and clicks, and cellStateDigest of the final state; the header takes the summary's id,
 // end date and the pause spans. It returns the encoded blob and its listing fields
-//   { id, boardKey, mode, outcome, elapsedMs, bbbvPerSecond, efficiency, endedAt, size }
-// with size the blob's length in bytes. Sealing again returns the same object.
+//   { id, boardKey, mode, outcome, elapsedMs, bbbvPerSecond, efficiency, endedAt, size, code? }
+// with size the blob's length in bytes, boardKey the summary's board (a daily game's is its Daily
+// board, `daily:…`, while the header holds the plain board it was played on) and code the game's
+// board code (js/records/board-code.js) when the summary carries what one needs. Sealing again
+// returns the same object.
 //
 // A recorder never interrupts play: any error — bad header fields, a bad feed, a replay that
 // cannot be encoded — drops the replay, is reported once through options.onFailure (a console
@@ -45,6 +48,7 @@
 
 import { ACTION_KINDS, SAMPLE_ARITY, encodeReplay, cellStateDigest } from './format.js';
 import { createBoardIdentity, boardKey } from '../records/board.js';
+import { codeOf } from '../records/board-code.js';
 
 // Checked by dev/measure-replays.mjs: the busiest measured 3D game records about 3.8 KB of
 // movement a minute, so the cap holds about 9 hours of it.
@@ -233,7 +237,7 @@ export function startRecording(fields, { onFailure = defaultReport, movementCap 
     if (spans.length !== (summary.pauses ?? 0) || pausedMs !== (summary.pausedMs ?? 0)) {
       throw new RangeError(`the pause spans (${spans.length}, ${pausedMs} ms) are not the summary's (${summary.pauses}, ${summary.pausedMs} ms)`);
     }
-    if (boardKey(summary.board) !== boardKey(header.board)) {
+    if (boardKey({ ...summary.board, daily: false }) !== boardKey(header.board)) {
       throw new RangeError(`the summary is for board ${boardKey(summary.board)}, the recording ${boardKey(header.board)}`);
     }
     const state = final?.state ?? final;
@@ -272,11 +276,12 @@ export function startRecording(fields, { onFailure = defaultReport, movementCap 
       },
     };
     const blob = encodeReplay(replay);
+    const code = codeOf(summary);
     return Object.freeze({
       blob,
       listing: Object.freeze({
         id: summary.id,
-        boardKey: boardKey(header.board),
+        boardKey: boardKey(summary.board),
         mode: header.board.mode,
         outcome: summary.outcome,
         elapsedMs: summary.elapsedMs,
@@ -284,6 +289,7 @@ export function startRecording(fields, { onFailure = defaultReport, movementCap 
         efficiency: summary.efficiency,
         endedAt: summary.endedAt,
         size: blob.length,
+        ...(code ? { code } : {}),
       }),
     });
   }

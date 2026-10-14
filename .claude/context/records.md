@@ -14,6 +14,7 @@ chart, which draws on the canvas it is handed.
 | ---- | -------------- | --------- |
 | `js/records/board.js` | Board identity (2D and 3D forms), key, parser, label, standard boards, cube 3D presets. Imports nothing. | here |
 | `js/records/typical-bbbv.js` | Measured typical 3BV per named board. Imports nothing. | here |
+| `js/records/board-code.js` | Board codes (encode, parse, check), the daily seed and the two daily boards. | here |
 | `js/records/summary.js` | Summary builder, derived stats, best eligibility. | here |
 | `js/records/model.js` | Records model: bests, per-mode counters, history, comparison, the records format step. No storage. | [records-store.md](records-store.md) |
 | `js/records/store.js` | Records store: the only writer of the personal records and the game-in-progress marker; storage handed in. | [records-store.md](records-store.md) |
@@ -33,14 +34,18 @@ flow records finished games.
 
 Board identity (`js/records/board.js`; its header documents the key format)
 - `createBoardIdentity(fields)` → frozen identity of exactly its form's six
-  fields, else a `RangeError`. 2D `{ mode, grid, width, height, mines,
-  noGuess }`; 3D `{ mode: MODE_3D, width, height, depth, mines, noGuess }`
-  (no `grid`; sides `1 .. 100`). `MODE_3D` — `'3d'`.
+  fields, plus `daily: true` on a Daily board only, else a `RangeError`. 2D
+  `{ mode, grid, width, height, mines, noGuess }`; 3D `{ mode: MODE_3D,
+  width, height, depth, mines, noGuess }` (no `grid`; sides `1 .. 100`).
+  `MODE_3D` — `'3d'`.
 - `boardKey(identity)` → `classic-2d:square:30x16:99:no-guess` /
-  `3d:12x12x8:130:no-guess` (a 3D key never equals a 2D key);
-  `parseBoardKey(key)` its inverse; `BOARD_KEY_FORMAT` — `1`.
+  `3d:12x12x8:130:no-guess` (a 3D key never equals a 2D key), a Daily board
+  `daily:<board key>`; `parseBoardKey(key)` its inverse; `BOARD_KEY_FORMAT`
+  — `2`.
 - `boardLabel(identity)` → `"Expert · no-guess"`, `"20 × 12 · 50 mines"`,
-  `"Cube Expert"`, `"10 × 10 × 10 · 80 mines"`.
+  `"Cube Expert"`, `"10 × 10 × 10 · 80 mines"`, `"Daily · Expert ·
+  no-guess"`, `"Daily · 8 × 8 × 8 · 40 mines · no-guess"` (a Daily 3D board
+  by its dimensions).
 - `standardBoard(identity)` / `STANDARD_BOARDS` (Beginner, Intermediate,
   Expert); `preset3D(identity)` / `PRESETS_3D` (Cube Beginner 6×6×6/10,
   Intermediate 8×8×8/40, Expert 12×12×8/130 — equal to the 3D board
@@ -54,15 +59,30 @@ Typical 3BV (`js/records/typical-bbbv.js`)
   `dev/measure-typical-bbbv.mjs`. A board and its no-guess twin share the
   entry; a changed preset has none.
 
+Board codes (`js/records/board-code.js`; its header states the frozen
+grammar)
+- `encodeBoardCode({ board, seed, startCell, generatorVersion, daily? })` →
+  the game form `EN-9C41D07A-247-1486` or, with `daily` (YYYYMMDD), the daily
+  form `EN-20261011-184A`; `parseBoardCode(text, { generatorVersion? })` →
+  `{ ok: true, board, seed, startCell, generatorVersion, daily? }` or `{ ok:
+  false, reason }` (`CODE_REASONS`), never throwing; `codeOf(game)` — a
+  summary's or history entry's code, null without what one needs.
+- `boardToken`, `graphOf(identity)`, `fnv1a`, `dailySeed(date, token)`,
+  `dateText(now)` (the local date), `isDateText`.
+- `DAILY_BOARDS` (`expert` EN, `cube` 8X8X8M40N), `dailyBoardOf(identity)`,
+  `dailyGame(id, date)` → `{ board, seed, startCell, code, request, … }`.
+
 Summary (`js/records/summary.js`)
 - `buildSummary({ engine, outcome?, elapsedMs, pauses?, board, seed,
   generatorVersion, endedAt?, id? })` → record or null. `engine` is the
   engine's `summary()` (won/lost) or `counts()` (abandoned)
   ([engine.md](engine.md)); `counts()` with `bbbv` null — left before the
   first click — returns null. `id` defaults to `crypto.randomUUID()`.
+- `buildSummary` also takes `startCell`, `daily` (a Daily board's date,
+  required with the daily flag) and `challenge` (`true`).
 - The record: `{ id, board, outcome, elapsedMs, pauses, pausedMs, bbbv,
   bbbvSolved, clicks, bbbvPerSecond, efficiency, seed, generatorVersion,
-  endedAt }` — plain serialisable data; `elapsedMs` includes paused time,
+  endedAt, startCell?, daily?, challenge? }` — plain serialisable data; `elapsedMs` includes paused time,
   `board` a plain copy of the identity (not the key).
 - `countedClicks`, `bbbvPerSecond(summary)`, `efficiency(summary)` —
   unrounded, null on a zero divisor.
@@ -90,8 +110,12 @@ Summary (`js/records/summary.js`)
   `efficiency` with the same exported functions any consumer calls, so a
   recomputation always agrees. Click counting is the engine's; this module
   only sums.
-- **Best eligibility.** Only a won game counts for a best, and only on a
-  stat that is available (`time` always is).
+- **Best eligibility.** Only a won game counts for a best, only on a stat
+  that is available (`time` always is), and never a challenge.
+- **Codes are frozen.** The grammar, FNV-1a and the daily seed never
+  change meaning; a code of another `GENERATOR_VERSION` is refused, never
+  approximated. The parser validates against both modes' custom limits
+  (`js/classic2d/board-setup.js`, `js/mode3d/board-choice.js`).
 
 ## DOMAIN DEPENDENCIES
 

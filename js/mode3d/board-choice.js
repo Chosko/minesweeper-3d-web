@@ -34,7 +34,7 @@
 //   boardOf(choice)          { X, Y, Z, mines, noGuess } of the board to play.
 //   randomBoard(random?)     the Random fill, the original formula, always a valid board.
 //
-// bindBoardChoice({ root, onStart, onBack }) → { show(choice, { played }), destroy() }
+// bindBoardChoice({ root, onStart, onBack, code? }) → { show(choice, { played }), destroy() }
 //   root      the screen's element: preset items [data-preset="X,Y,Z,mines"], the custom form
 //             (form) with its submit button [data-preset="custom"], inputs
 //             [data-field="X|Y|Z|mines"], Random [data-random], the info line [data-info], the
@@ -50,8 +50,12 @@
 //             size line, for the position of the presets' no-guess switch, and again whenever the
 //             switch changes; a preset without one shows no detail line.
 //   onStart(choice) when a preset is picked or a valid custom board submitted; onBack() on Back.
+//   code      { resolve, onPlay }: the board code field, as Classic 2D's (js/classic2d/board-choice.js):
+//             [data-code-field], [data-code-play] and [data-code-info], cleared by every show.
 
 import { aboveDensityHint, DENSITY_HINT_TEXT } from '../classic2d/board-setup.js';
+import { bindCodeField } from '../ui/components.js';
+import { CODE_PROMPT } from '../classic2d/board-choice.js';
 
 export const DIM_MIN = 1;
 export const DIM_MAX = 100;
@@ -176,7 +180,7 @@ export function randomBoard(random = Math.random) {
 
 const FIELDS = Object.freeze(['X', 'Y', 'Z', 'mines']);
 
-export function bindBoardChoice({ root, onStart, onBack }) {
+export function bindBoardChoice({ root, onStart, onBack, code = null }) {
   const items = [...root.querySelectorAll('[data-preset]')];
   const form = root.querySelector('form');
   const inputs = FIELDS.map((f) => root.querySelector(`[data-field="${f}"]`));
@@ -270,8 +274,15 @@ export function bindBoardChoice({ root, onStart, onBack }) {
   noGuessPresets.addEventListener('change', fillDetails);
   back?.addEventListener('click', onBackClick);
 
+  const codeInput = root.querySelector('[data-code-field]');
+  const codeField = code && codeInput ? bindCodeField({
+    input: codeInput, button: root.querySelector('[data-code-play]'), info: root.querySelector('[data-code-info]'),
+    resolve: code.resolve, onPlay: code.onPlay, prompt: CODE_PROMPT,
+  }) : null;
+
   return {
     show(choice, { played = true, details: lines = {} } = {}) {
+      codeField?.clear();
       last = choice;
       details = lines;
       for (const [i, f] of FIELDS.entries()) inputs[i].value = String(choice.custom[f]);

@@ -9,6 +9,8 @@ import {
   compactSummary,
   rebuildRecords,
   emptyRecords,
+  daysInARow,
+  nextDay,
 } from '../js/records/model.js';
 
 const square = (width, height, mines, noGuess = false) =>
@@ -32,14 +34,14 @@ let clock = Date.parse('2026-10-01T00:00:00.000Z');
 
 // A summary through the real builder. `outcome` won / lost / abandoned; `ms` elapsed time;
 // `bbbv` and `solved` the 3BV pair; `clicks` the reveal count (efficiency = 100 × solved / clicks).
-function game({ board = BEGINNER, outcome = 'won', ms = 10000, bbbv = 20, solved, clicks = 20, id, pauses } = {}) {
+function game({ board = BEGINNER, outcome = 'won', ms = 10000, bbbv = 20, solved, clicks = 20, id, pauses, daily } = {}) {
   const bbbvSolved = solved ?? (outcome === 'won' ? bbbv : Math.max(0, bbbv - 5));
   const engine = { bbbv, bbbvSolved, clicks: clicksOf(clicks) };
   if (outcome !== 'abandoned') engine.outcome = outcome;
   clock += 60000;
   return buildSummary({
     engine, elapsedMs: ms, board, seed: 7, generatorVersion: 1,
-    endedAt: new Date(clock), id: id ?? `g-${nextId++}`, pauses,
+    endedAt: new Date(clock), id: id ?? `g-${nextId++}`, pauses, daily,
   });
 }
 
@@ -204,6 +206,8 @@ test('history: every summary in play order, in compact form', () => {
     bbbvSolved: b.bbbvSolved,
     clicks: b.clicks,
     endedAt: b.endedAt,
+    seed: 7,
+    generatorVersion: 1,
   });
   assert.deepEqual(all[1], compactSummary(b));
   assert.deepEqual(m.history(BEGINNER).map((h) => h.id), [a.id, c.id]);
@@ -215,7 +219,87 @@ test('history: the compact form is plain data that survives a JSON round trip', 
   const c = compactSummary(s);
   assert.deepEqual(JSON.parse(JSON.stringify(c)), c);
   assert.deepEqual(Object.keys(c).sort(),
-    ['bbbv', 'bbbvSolved', 'boardKey', 'clicks', 'elapsedMs', 'endedAt', 'id', 'outcome', 'pausedMs', 'pauses']);
+    ['bbbv', 'bbbvSolved', 'boardKey', 'clicks', 'elapsedMs', 'endedAt', 'generatorVersion', 'id', 'outcome', 'pausedMs', 'pauses', 'seed']);
+});
+
+test('history: an entry keeps what a board code needs — seed, generator version, start cell, daily date, challenge flag', () => {
+  const s = { ...game(), startCell: 3, challenge: true };
+  const c = compactSummary(s);
+  assert.equal(c.seed, 7);
+  assert.equal(c.generatorVersion, 1);
+  assert.equal(c.startCell, 3);
+  assert.equal(c.challenge, true);
+  const d = compactSummary({ ...game({ board: DAILY_EXPERT, daily: '20261011' }), startCell: 255 });
+  assert.equal(d.boardKey, 'daily:classic-2d:square:30x16:99:no-guess');
+  assert.equal(d.daily, '20261011');
+  const { seed, generatorVersion, ...old } = game();
+  const oldEntry = compactSummary(old);
+  assert.equal('seed' in oldEntry || 'startCell' in oldEntry, false, 'a summary without them keeps none');
+  assert.throws(() => compactSummary({ ...game(), challenge: false }), RangeError);
+  assert.throws(() => compactSummary({ ...game(), daily: 'today' }), RangeError);
+});
+
+// ---------- the Daily board ----------
+
+const DAILY_EXPERT = createBoardIdentity({ ...square(30, 16, 99, true), daily: true });
+const dailyGame = (date, outcome = 'won', extra = {}) => ({ ...game({ board: DAILY_EXPERT, outcome, daily: date, ...extra }), startCell: 255 });
+
+test('daily board: listed after the named boards and before custom boards, read back from its key', () => {
+  const m = createRecordsModel();
+  m.record(game({ board: CUSTOM_A }));
+  m.record(dailyGame('20261011'));
+  m.record(game({ board: EXPERT }));
+  assert.deepEqual(m.boardsPlayed().map((b) => b.key), [boardKey(EXPERT), boardKey(DAILY_EXPERT), boardKey(CUSTOM_A)]);
+  assert.deepEqual(m.boardsPlayed()[1].board, { ...DAILY_EXPERT });
+  assert.equal(m.counters(square(30, 16, 99, true)).games, 0, 'a daily game is not on the plain board');
+  assert.equal(m.counters(DAILY_EXPERT).games, 1);
+  assert.equal(m.overall('classic-2d').games, 3, 'daily games count in the mode\'s overall figures');
+});
+
+test('daily board: days in a row count consecutive dates played, won or lost, and break on a gap', () => {
+  const m = createRecordsModel();
+  m.record(dailyGame('20261229', 'won'));
+  m.record(dailyGame('20261230', 'lost'));
+  m.record(dailyGame('20261231', 'abandoned'));
+  m.record(dailyGame('20270101', 'won'));
+  let c = m.counters(DAILY_EXPERT);
+  assert.deepEqual([c.currentDays, c.longestDays, c.lastDay], [4, 4, '20270101']);
+  assert.deepEqual(daysInARow(c, '20270101'), { current: 4, longest: 4, lastDay: '20270101' });
+  assert.deepEqual(daysInARow(c, '20270102'), { current: 4, longest: 4, lastDay: '20270101' }, 'alive until a date ends without one');
+  assert.deepEqual(daysInARow(c, '20270103'), { current: 0, longest: 4, lastDay: '20270101' });
+  m.record(dailyGame('20270103', 'lost'));
+  c = m.counters(DAILY_EXPERT);
+  assert.deepEqual([c.currentDays, c.longestDays], [1, 4]);
+  assert.equal(c.games, 5);
+  assert.equal(c.wins, 2);
+  assert.equal(m.winRate(DAILY_EXPERT), 2 / 5);
+  assert.deepEqual(rebuildRecords(m.documents().history), m.documents().records, 'a rebuild from the history alone gives the same figures');
+  assert.equal(nextDay('20240228'), '20240229');
+  assert.equal(daysInARow(undefined, '20270101').current, 0);
+});
+
+// ---------- challenges ----------
+
+test('challenge: kept in the history and games played, left out of bests, wins, win rate and streaks', () => {
+  const m = createRecordsModel();
+  m.record(game({ outcome: 'won', ms: 9000 }));
+  const fast = { ...game({ outcome: 'won', ms: 1000 }), challenge: true, startCell: 4 };
+  const comparison = m.record(fast);
+  assert.equal(comparison.time.newBest, false);
+  assert.equal(comparison.time.value, null);
+  m.record({ ...game({ outcome: 'lost' }), challenge: true, startCell: 4 });
+  const c = m.counters(BEGINNER);
+  assert.deepEqual(c, {
+    games: 3, wins: 1, currentStreak: 1, longestStreak: 1, completed: 1, currentCompletedStreak: 1, longestCompletedStreak: 1, challenges: 2,
+  });
+  assert.equal(m.bests(BEGINNER).time.value, 9000);
+  assert.equal(m.winRate(BEGINNER), 1);
+  assert.equal(m.completedWinRate(BEGINNER), 1);
+  assert.equal(m.overall('classic-2d').games, 3);
+  assert.equal(m.overallWinRate('classic-2d'), 1);
+  assert.equal(m.history(BEGINNER).length, 3);
+  assert.equal(m.history(BEGINNER)[1].challenge, true);
+  assert.deepEqual(rebuildRecords(m.documents().history), m.documents().records);
 });
 
 test('history: an entry carries the game\'s pause count and paused time; one without them reads as no pauses', () => {

@@ -45,9 +45,9 @@
 import { createRecordsModel, upgradeRecords, hasCompletedCounters } from './model.js';
 
 export const RECORDS_DOC = 'records';
-export const RECORDS_VERSION = 3;
+export const RECORDS_VERSION = 4;
 export const HISTORY_DOC = 'records.history';
-export const HISTORY_VERSION = 1;
+export const HISTORY_VERSION = 2;
 export const IN_PROGRESS_DOC = 'records.inProgress';
 export const IN_PROGRESS_VERSION = 1;
 
@@ -55,8 +55,12 @@ const QUERIES = [
   'boardsPlayed', 'bests', 'counters', 'winRate', 'completedWinRate', 'history', 'overall', 'overallWinRate', 'overallCompletedWinRate',
 ];
 // The records format steps: 1 → 2 adds the 3D overall counters; 2 → 3 changes nothing itself, as
-// the completed games' counters come from the history, which load() rebuilds the records from.
-const UPGRADES = { 1: upgradeRecords, 2: (records) => records };
+// the completed games' counters come from the history, which load() rebuilds the records from;
+// 3 → 4, with the history's 1 → 2, changes nothing either: it marks the documents that may hold
+// Daily boards and challenges, so an older build refuses them instead of misreading them.
+const same = (doc) => doc;
+const UPGRADES = { 1: upgradeRecords, 2: same, 3: same };
+const HISTORY_UPGRADES = { 1: same };
 
 const isPlainObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const isRecordsDoc = (v) => isPlainObject(v) && isPlainObject(v.boards) && isPlainObject(v.overall);
@@ -67,7 +71,7 @@ export function createRecordsStore({ storage, onNotSaved = () => {} }) {
   const newer = new Set();
   const watch = { onIssue: (issue) => { if (issue.kind === 'newer-version') newer.add(issue.name); } };
   storage.register(RECORDS_DOC, RECORDS_VERSION, UPGRADES, watch);
-  storage.register(HISTORY_DOC, HISTORY_VERSION, {}, watch);
+  storage.register(HISTORY_DOC, HISTORY_VERSION, HISTORY_UPGRADES, watch);
   storage.register(IN_PROGRESS_DOC, IN_PROGRESS_VERSION, {}, watch);
 
   let model = createRecordsModel();

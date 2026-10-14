@@ -45,6 +45,9 @@
 //   Classic 2D's cue map it: a flag click flag(on, count); a click that loses explode(); a reveal or
 //   a chord that opens cells reveal(n) / chord(n); one that changes nothing in play noop(); then a
 //   win's win().
+// replayCode(replay) → the game's board code in its game form (js/records/board-code.js), built from
+//   the header's board, seed and generator version and the first reveal in the action stream — no
+//   format change; an imported replay shows its code too. Null without a reveal.
 // regionTints(partition, graph, cycle) → Int16Array: Show 3BV's paint of the engine's 3BV partition
 //   (js/engine/metrics.js bbbvPartition) — each opening one tint 0 .. cycle - 1, coloured greedily
 //   so openings sharing a border number differ while the cycle allows, each isolated number the
@@ -52,8 +55,8 @@
 //
 // createReplayViewer({ library, router, view, viewers?, sound?, files? }) → viewer
 //   view     the screen binder: open(), close(), loading(), failed(message), ready({ duration,
-//            leadIn, kind, pauses, actions }) → the board area, render(state); pauses are the
-//            header's pause spans, actions the replay's [{ time, kind }].
+//            leadIn, kind, pauses, actions, code }) → the board area, render(state); pauses are the
+//            header's pause spans, actions the replay's [{ time, kind }], code replayCode's.
 //   viewers  { [graph kind]: ({ container, sim }) → { draw(frame, { playing }), place?(),
 //            setScale?(scale), press?(actions), still?(), showBbbv?(tints), setFree?(on),
 //            destroy() } }: draw is told whether playback drew the frame (a seek did not); place()
@@ -101,7 +104,7 @@
 //            bbbv, sound, camera ('follow' | 'free' in 3D, else null) } — what render(state) is
 //            handed.
 //
-// createReplayView({ root, win?, onCommand, onSpeed, onSeek, onBack, onDownload?, onOpen? }) → the
+// createReplayView({ root, win?, onCommand, onSpeed, onSeek, onBack, onDownload?, onOpen?, onCopy? }) → the
 // view above, filling #replay by id: the overlay bar (#rp-clock, #rp-mines, #rp-bbbv, #rp-rate,
 // Back #rp-back), the board area #replay-board — the room between the bar and the controls, each
 // measured from its real size when the replay shows and again whenever either changes size, with
@@ -109,7 +112,8 @@
 // #replay-message-back), and the controls #replay-controls (#rp-prev, #rp-play, #rp-next, the speed
 // choice #rp-speed, the seek bar #rp-seek over the timeline with its pause marks #rp-pauses, their
 // text alternative #rp-pauses-text and its action ticks #rp-ticks, the position #rp-position, the
-// toggles #rp-show-bbbv, #rp-sound and #rp-camera (3D only), #rp-download, #rp-open, the key line
+// toggles #rp-show-bbbv, #rp-sound and #rp-camera (3D only), #rp-download, #rp-open, the code chip
+// #rp-code (its Copy and Copy link call onCopy; hidden while loading, failed or with no code), the key line
 // #rp-keys (REPLAY_KEY_LINE, 3D only: a 2D board keeps its room) and the end line #replay-end). While a replay loads or has failed,
 // nothing of one shown earlier stays: the figures read DASH and the position, the seek bar, its
 // marks and ticks and the end line are cleared. A 3D replay marks #replay replay--scene, which lets
@@ -121,7 +125,8 @@ import { verify } from './verify.js';
 import { encodeReplay } from './format.js';
 import { createPlaybackClock, SPEEDS, LEAD_IN_MS } from './clock.js';
 import { mountViewer2D } from './viewer-2d.js';
-import { formatMineCount, bindSegmented } from '../ui/components.js';
+import { formatMineCount, bindSegmented, bindCodeChip } from '../ui/components.js';
+import { codeOf } from '../records/board-code.js';
 import { formatTime, formatRate, DASH } from '../results/view.js';
 import { BTN } from '../gamepad.js';
 import { REPLAY_SCREEN, replayFileName } from '../records/replay-list.js';
@@ -454,7 +459,7 @@ export function createReplayViewer({ library, router, view, viewers = { square: 
       clock = createPlaybackClock({ duration: sim.duration + LEAD_IN_MS });
       const { graph, pauses } = sim.replay.header;
       const actions = sim.replay.actions.map(({ time, kind: k }) => ({ time, kind: k }));
-      const container = view.ready({ duration: sim.duration, leadIn: LEAD_IN_MS, kind: graph.kind, pauses, actions });
+      const container = view.ready({ duration: sim.duration, leadIn: LEAD_IN_MS, kind: graph.kind, pauses, actions, code: replayCode(sim.replay) });
       status = 'ready';
       const mounted = mount({ container, sim });
       if (mine !== opening) { mounted.destroy(); return; } // mounting left the screen (a lost graphics context)
@@ -538,11 +543,20 @@ export function createReplayViewer({ library, router, view, viewers = { square: 
   return viewer;
 }
 
+export function replayCode(replay) {
+  const header = replay?.header;
+  const first = replay?.actions?.find((a) => a.kind === 'reveal');
+  if (!header || !first) return null;
+  return codeOf({ board: header.board, seed: header.seed, generatorVersion: header.generatorVersion, startCell: first.cell });
+}
+
 const IN_FIELD = 'input, select, textarea';
 /** The room between the board area and the overlay bar or the controls (--space-4). */
 const BOARD_GAP = 16;
 
-export function createReplayView({ root, win = globalThis, onCommand, onSpeed, onSeek, onBack, onDownload = () => {}, onOpen = () => {} }) {
+export function createReplayView({
+  root, win = globalThis, onCommand, onSpeed, onSeek, onBack, onDownload = () => {}, onOpen = () => {}, onCopy = () => {},
+}) {
   const $ = (id) => root.querySelector(`#${id}`);
   const el = {
     clock: $('rp-clock'), mines: $('rp-mines'), bbbv: $('rp-bbbv'), rate: $('rp-rate'),
@@ -552,6 +566,7 @@ export function createReplayView({ root, win = globalThis, onCommand, onSpeed, o
     ticks: $('rp-ticks'), keys: $('rp-keys'), showBbbv: $('rp-show-bbbv'), sound: $('rp-sound'), camera: $('rp-camera'),
     download: $('rp-download'), open: $('rp-open'),
   };
+  const code = $('rp-code') ? bindCodeChip($('rp-code'), { onCopy: (c) => onCopy(c) }) : null;
   const options = [...el.speed.querySelectorAll('.ui-segmented__option')];
   const doc = root.ownerDocument;
   const shown = {};
@@ -680,9 +695,10 @@ export function createReplayView({ root, win = globalThis, onCommand, onSpeed, o
       for (const k of Object.keys(shown)) delete shown[k];
       timeline = null;
     },
-    loading() { card('Opening the replay…', ''); },
-    failed(message) { card('This replay cannot be played', message); },
-    ready({ duration, leadIn = 0, kind, pauses = [], actions = [] }) {
+    loading() { code?.show(null); card('Opening the replay…', ''); },
+    failed(message) { code?.show(null); card('This replay cannot be played', message); },
+    ready({ duration, leadIn = 0, kind, pauses = [], actions = [], code: boardCode = null }) {
+      code?.show(boardCode);
       root.classList.toggle('replay--scene', kind === 'box');
       el.message.classList.add('hidden');
       el.controls.classList.remove('hidden');

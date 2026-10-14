@@ -37,24 +37,29 @@ In scope (m1-classic-2d):
 - The marked start cell of every board, and the next no-guess board
   pre-generated for it while the results screen shows.
 - A generator version, recorded with each board.
+- Daily boards from the date and board codes that rebuild any board: the
+  generator serves both unchanged — a daily board is a no-guess request
+  with the daily seed and its marked start cell as the first click, and a
+  code carries the board, seed, start cell and generator version
+  (`game-summary` § Architecture, "Board code").
 
 Non-goals:
 
 - Campaign shapes, holes and difficulty profiles — deferred to
   `m4-campaigns`.
-- Daily boards from the date — deferred to `m5-core-complete`; they reuse
-  the seeded generator unchanged.
 - The 3D mode's safe first click and no-guess switch — `3d-play-flow`
   (m2-3d-joins). The generator works over any cell graph; the 3D mode adds
   only the box graph description.
 - Hexagonal and triangle grids — deferred to `m6-launch`.
-- A forced starting cell. A board pre-generated for the marked start cell
-  is used only when the first click lands there; a first click anywhere
-  else discards it and the board is generated around that click, so the
-  player keeps a free first click. Minesweeper Online's no-guess mode
-  forces a starting cell its server chooses
+- A forced starting cell in free play. A board pre-generated for the
+  marked start cell is used only when the first click lands there; a first
+  click anywhere else discards it and the board is generated around that
+  click, so the player keeps a free first click. Minesweeper Online's
+  no-guess mode forces a starting cell its server chooses
   (`tests/fidelity/minesweeper-online.md`), so the free first click is a
-  deliberate difference from the reference.
+  deliberate difference from the reference. The daily board and a
+  challenge — a game started from a board code — are the one place the
+  start cell is forced and marked (`game-shell`).
 
 ## Architecture
 
@@ -103,7 +108,8 @@ daily board, which never play through the engine's actions.
   mine count, first-click cell, no-guess on or off, seed.
 - **Result** — the mine set as cell indices, the seed, the generator
   version, and for no-guess boards the number of candidates tried.
-- The seed of every game is chosen by the caller (random for free play) and
+- The seed of every game is chosen by the caller (random for free play,
+  the daily seed for a daily board, the code's seed for a challenge) and
   returned with the board, so the board can be rebuilt exactly later. A
   pre-generated board records the seed its request used and is rebuilt
   exactly from it with its marked start cell as the first click.

@@ -71,9 +71,10 @@ plain DOM from the `screen-components` kit inside the Records screen.
   never held in `localStorage`, whose size limit it would exhaust.
 - **Library index.** A document registered with `platform-storage`, with
   its own format version, listing each kept replay's id, board key, mode,
-  outcome, time, 3BV/s, efficiency, end date, size, and pin state with its
-  reason (best or by hand). The library view and retention read only the
-  index, never the blobs.
+  outcome, time, 3BV/s, efficiency, end date, size, the game's board code
+  (none for a replay from before codes), and pin state with its reason
+  (best or by hand). A daily game's replay is listed under its Daily board.
+  The library view and retention read only the index, never the blobs.
 - **Library.** The only writer of the store and the index. Adding a replay
   writes the blob, then the index entry, then applies retention. Loads the
   index once at start-up, and reconciles it with the store: a blob with no

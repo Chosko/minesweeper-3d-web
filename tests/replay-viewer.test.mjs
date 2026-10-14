@@ -12,8 +12,9 @@ import { SPEEDS, DEFAULT_SPEED, LEAD_IN_MS, createPlaybackClock } from '../js/re
 import { movementTrack, pointerAt, cursorAt, pointerPixel, createViewer2D, trailPoints, TRAIL_MS } from '../js/replay/viewer-2d.js';
 import {
   FAILURES, COMMANDS, REPLAY_KEYS, REPLAY_PAD, REPLAY_KEY_LINE, SEEK_STEP_MIN_MS, MAX_REPLAY_FILE_BYTES, seekStep, clockText, overlayFigures, endLine,
-  pauseMarks, pausesText, seekTicks, actionCue, regionTints, prepareReplay, createReplayViewer,
+  pauseMarks, pausesText, seekTicks, actionCue, regionTints, prepareReplay, createReplayViewer, replayCode,
 } from '../js/replay/viewer.js';
+import { encodeBoardCode, parseBoardCode } from '../js/records/board-code.js';
 import { replayFileName } from '../js/records/replay-list.js';
 import { boardKey } from '../js/records/board.js';
 import { bbbvPartition } from '../js/engine/metrics.js';
@@ -458,6 +459,26 @@ test('the viewer opens a replay, shows the start paused, and Back returns to the
   viewer.setScale('fit');
   assert.equal(viewers.made.at(-1), 'destroyed', 'with no replay open, nothing to refit');
   assert.equal(view.log.at(-1), 'close');
+});
+
+test('the viewer shows the game\'s board code, built from the header and the first reveal, with no format change', async () => {
+  for (const file of [WON, LOST, CUBE]) {
+    const replay = decodeReplay(blobOf(file));
+    const first = replay.actions.find((a) => a.kind === 'reveal');
+    const code = replayCode(replay);
+    assert.equal(code, encodeBoardCode({ board: replay.header.board, seed: replay.header.seed, generatorVersion: replay.header.generatorVersion, startCell: first.cell }), file);
+    const parsed = parseBoardCode(code);
+    assert.equal(parsed.ok, true, file);
+    assert.equal(parsed.startCell, first.cell);
+  }
+  assert.equal(replayCode({ header: decodeReplay(blobOf(WON)).header, actions: [] }), null, 'no reveal, no code');
+  const { viewer, view } = viewerOver();
+  await viewer.show({ replay: blobOf(WON) });
+  assert.equal(view.log[2][1].code, replayCode(decodeReplay(blobOf(WON))));
+  const html = read('index.html');
+  const replayHtml = html.slice(html.indexOf('<section id="replay"'), html.indexOf('<!-- /Replay viewer -->'));
+  assert.match(replayHtml, /<div class="ui-overlay-bar replay-bar"[\s\S]*<div id="rp-code" class="ui-code ui-code--compact hidden">[\s\S]*<button type="button" id="rp-back"/, 'in the overlay bar, taking no room from the board');
+  assert.match(read('js/main.js'), /onOpen: [^\n]+\n\s*onCopy: \(c\) => copyCode\(c\),/);
 });
 
 test('a replay that cannot play says why, and Back still works', async () => {

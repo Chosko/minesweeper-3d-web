@@ -11,6 +11,7 @@
 export const MENU_ENTRIES = Object.freeze([
   Object.freeze({ id: 'classic-2d', label: 'Classic 2D', mode: 'classic-2d' }),
   Object.freeze({ id: '3d', label: '3D', mode: '3d', needs: 'webgl2' }),
+  Object.freeze({ id: 'daily', label: 'Daily', screen: 'daily' }),
   Object.freeze({ id: 'records', label: 'Records', screen: 'records' }),
   Object.freeze({ id: 'settings', label: 'Settings', screen: 'settings' }),
 ]);

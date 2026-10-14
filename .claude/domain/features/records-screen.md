@@ -18,8 +18,10 @@ behaviour and content, read from `personal-records`.
 In scope (m1-classic-2d):
 
 - A board picker: Beginner, Intermediate and Expert, each with and without
-  no-guess, then every custom board played, labelled by its size and mine
-  count.
+  no-guess, then the mode's Daily board ("Daily · Expert · no-guess"), then
+  every custom board played, labelled by its size and mine count. The Daily
+  board's figures show its days in a row (current and longest) in place of
+  the win streak.
 - For the chosen board: the three bests with their dates, games played,
   wins, win rate, current and longest streak, with the completed games'
   win rate beside the win rate and their best streak beside the longest
@@ -32,7 +34,11 @@ In scope (m1-classic-2d):
   time, 3BV/s and efficiency over the last 10, last 50 and all won games,
   the win rate over the last 50 games, and two tabs — a list of recent
   games with the date and time each ended, its outcome, time, 3BV, 3BV/s
-  and efficiency, and a Top 10 of the board's best won games.
+  and efficiency, and a Top 10 of the board's best won games. Every row
+  that names one game — the recent games, the Top 10 and the library
+  view's rows — shows its board code with Copy and Copy link, none for a
+  game from before codes; the Top 10 leaves challenges out, as the
+  results screen's rank does.
 - Filters by period and by outcome over the stats history.
 - An export of the history of every board in both modes and the replay
   library's listing of kept replays, as a CSV and a JSON file.

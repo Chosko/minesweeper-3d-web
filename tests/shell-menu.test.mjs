@@ -36,12 +36,12 @@ const settle = () => new Promise((r) => setTimeout(r, 0));
 
 // ---------------------------------------------------------------- entries and routes
 
-test('the main menu has four entries: Classic 2D, 3D, Records and Settings, in that order', () => {
-  assert.deepEqual(MENU_ENTRIES.map((e) => e.label), ['Classic 2D', '3D', 'Records', 'Settings']);
-  assert.deepEqual(MENU_ENTRIES.map((e) => e.id), ['classic-2d', '3d', 'records', 'settings']);
+test('the main menu has five entries: Classic 2D, 3D, Daily, Records and Settings, in that order', () => {
+  assert.deepEqual(MENU_ENTRIES.map((e) => e.label), ['Classic 2D', '3D', 'Daily', 'Records', 'Settings']);
+  assert.deepEqual(MENU_ENTRIES.map((e) => e.id), ['classic-2d', '3d', 'daily', 'records', 'settings']);
   assert.ok(Object.isFrozen(MENU_ENTRIES) && MENU_ENTRIES.every(Object.isFrozen));
-  assert.deepEqual(MENU_ENTRIES.map((e) => e.mode ?? null), ['classic-2d', '3d', null, null], 'the two mode entries name their mode');
-  assert.deepEqual(MENU_ENTRIES.map((e) => e.screen ?? null), [null, null, 'records', 'settings']);
+  assert.deepEqual(MENU_ENTRIES.map((e) => e.mode ?? null), ['classic-2d', '3d', null, null, null], 'the two mode entries name their mode');
+  assert.deepEqual(MENU_ENTRIES.map((e) => e.screen ?? null), [null, null, 'daily', 'records', 'settings']);
 });
 
 test('a mode entry opens its mode\'s board choice once the mode is registered', () => {
@@ -73,10 +73,12 @@ test('opening an entry asks the mode host for a board choice, or routes through 
   assert.deepEqual(three.calls, ['openBoardChoice'], '3D opens the 3D board choice');
   assert.equal(modes.active, null, 'opening a board choice starts no game');
   menu.open('classic-2d');
+  menu.open('daily');
   menu.open('records');
   menu.open('settings');
   assert.deepEqual(router.went, [
     ['coming-soon', { entry: 'classic-2d', title: 'Classic 2D' }],
+    ['coming-soon', { entry: 'daily', title: 'Daily' }],
     ['coming-soon', { entry: 'records', title: 'Records' }],
     ['settings', undefined],
   ]);
@@ -86,7 +88,7 @@ test('opening an entry asks the mode host for a board choice, or routes through 
 // ---------------------------------------------------------------- an entry the browser cannot run
 
 test('the 3D entry needs WebGL 2; without it the entry is unavailable with its reason and routes nowhere', () => {
-  assert.deepEqual(MENU_ENTRIES.map((e) => e.needs ?? null), [null, 'webgl2', null, null], 'only 3D needs WebGL 2');
+  assert.deepEqual(MENU_ENTRIES.map((e) => e.needs ?? null), [null, 'webgl2', null, null, null], 'only 3D needs WebGL 2');
   assert.equal(UNAVAILABLE_REASONS.webgl2, 'Needs WebGL 2 — not available in this browser');
   assert.ok(Object.isFrozen(UNAVAILABLE_REASONS));
   const all = { hasMode: () => true, hasScreen: () => true };
@@ -202,7 +204,7 @@ const MENU = section('<section id="menu"', '<!-- 3D board choice -->');
 const BOARD = section('<section id="board-choice"', '<!-- Coming soon -->');
 const SOON = section('<section id="coming-soon"', '<!-- Click to play -->');
 
-test('index.html shows the four entries as one kit menu, matching the entry table', () => {
+test('index.html shows the five entries as one kit menu, matching the entry table', () => {
   const entries = [...MENU.matchAll(/<button type="button" class="ui-menu__item" id="menu-entry-([\w-]+)" data-entry="([\w-]+)"><span class="ui-menu__label">([^<]+)<\/span>/g)];
   assert.deepEqual(entries.map((m) => m[2]), MENU_ENTRIES.map((e) => e.id));
   assert.deepEqual(entries.map((m) => m[1]), MENU_ENTRIES.map((e) => e.id), 'each entry has its id');
@@ -264,7 +266,7 @@ test('the catalogue documents the main menu, the 3D board choice and the placeho
 
 // ---------------------------------------------------------------- browser
 
-test('in a browser, the menu shows the four entries, each routes, and Back returns', async (t) => {
+test('in a browser, the menu shows the five entries, each routes, and Back returns', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -281,11 +283,11 @@ test('in a browser, the menu shows the four entries, each routes, and Back retur
       .filter((id) => !document.getElementById(id).classList.contains('hidden')));
     const backdrop = () => ms(() => globalThis.__ms.renderer.game === globalThis.__ms.state.demo);
 
-    // The four entries, in order, visible; the first takes the focus when no mode was played yet.
+    // The five entries, in order, visible; the first takes the focus when no mode was played yet.
     assert.equal(await mode(), 'menu');
     const labels = await ms(() => [...document.querySelectorAll('#menu [data-entry]')]
       .filter((b) => b.getBoundingClientRect().width > 0).map((b) => b.querySelector('.ui-menu__label').textContent));
-    assert.deepEqual(labels, ['Classic 2D', '3D', 'Records', 'Settings']);
+    assert.deepEqual(labels, ['Classic 2D', '3D', 'Daily', 'Records', 'Settings']);
     assert.equal(await active(), 'menu-entry-classic-2d');
     assert.ok(await backdrop(), 'the demo board is the menu backdrop');
     assert.deepEqual(await ms(() => {
@@ -481,7 +483,7 @@ test('in a browser without WebGL 2, the shell starts with a static background, 3
     assert.equal(await mode(), 'menu', 'a click opens nothing');
     await page.focus('#menu-entry-classic-2d');
     await page.keyboard.press('ArrowDown');
-    assert.equal(await active(), 'menu-entry-records', 'the arrow keys skip the disabled entry');
+    assert.equal(await active(), 'menu-entry-daily', 'the arrow keys skip the disabled entry');
     await ms(() => globalThis.__ms.modes.openBoardChoice('3d'));
     await ms(() => globalThis.__ms.modes.start('3d', { X: 6, Y: 6, Z: 6, mines: 10 }));
     assert.equal(await mode(), 'menu', 'no route opens the 3D board choice or starts a 3D game');
@@ -680,6 +682,7 @@ test('in a browser, a controller alone walks the 3D board choice and the placeho
       };
       const { errors, press, mode, focused, page } = await controllerPage(browser, base, { route });
       assert.equal(await mode(), 'menu');
+      await press(PAD_BTN.DOWN);
       await press(PAD_BTN.DOWN);
       await press(PAD_BTN.DOWN);
       assert.equal(await focused(), 'menu-entry-records');

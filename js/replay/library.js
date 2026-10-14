@@ -29,7 +29,8 @@
 //                 pin, unpin and remove of an id with no entry change nothing.
 //   forBoard(boardKey) → the entries kept for the board, newest end date first. Each entry is a
 //                 frozen { id, boardKey, mode, outcome, elapsedMs, bbbvPerSecond, efficiency,
-//                 endedAt, size, pins }, pins the frozen list of its reasons.
+//                 endedAt, size, pins, code? }, pins the frozen list of its reasons and code the
+//                 game's board code when its listing carried one (js/records/board-code.js).
 //   entries()   → every kept entry across boards and modes, newest end date first, frozen as
 //                 forBoard's.
 //   has(id)     → whether the summary id has a kept replay (an index entry).
@@ -69,6 +70,7 @@ const newestFirst = (a, b) => endTime(b) - endTime(a);
 function entryOf(listing, pins) {
   const entry = {};
   for (const key of FIELDS) entry[key] = listing[key];
+  if (typeof listing.code === 'string' && listing.code) entry.code = listing.code; // a replay from before board codes has none
   entry.pins = [...pins];
   return entry;
 }

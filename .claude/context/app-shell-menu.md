@@ -14,7 +14,7 @@ The menu's markup is [app-shell-kit.md](app-shell-kit.md) § Screens.
 
 `js/shell/menu.js`
 - `MENU_ENTRIES` — `classic-2d` (mode), `3d` (mode, `needs: 'webgl2'`),
-  `records` (screen), `settings` (screen), in that order;
+  `daily` (screen), `records` (screen), `settings` (screen), in that order;
   `PLACEHOLDER_SCREEN` = `'coming-soon'`; `UNAVAILABLE_REASONS` by missing
   browser feature (`webgl2`).
 - `entryReason(entry, missing?)` → reason or null.
@@ -45,15 +45,49 @@ The menu's markup is [app-shell-kit.md](app-shell-kit.md) § Screens.
   no-guess'`; `returningMenu({last, records, missing?, now?})` → `{strip,
   again}`, `again` null for a 3D board when `missing` holds `'webgl2'`.
 
+`js/shell/daily.js` (its head comment is the contract)
+- `DAILY_SCREEN` = `'daily'`; `dailyIdentity(id)`, `countedAttempt(records,
+  id, date)` — the first daily game of that date on the row's Daily board.
+- `dailyRows({ records, replays?, now?, unavailable? })` → per daily board
+  `{ id, label, board, date, dateLabel, code, state, result, current,
+  longest, streak, canPlay, attempt, watch, reason }`.
+- `createDailyBoards({ clients })` → `{ prepare(records, now?), take(code),
+  has(code) }`: today's unused boards pre-generated through each mode's
+  client, held by code; `take` hands one over once.
+- `bindDailyScreen({ root, onPlay, onWatch, onBack, onCopy? })` → `{ show(rows),
+  defaultFocus() }` over `#daily`.
+
+`js/shell/challenge.js`
+- `resolveCode(text, { today, mode? })` → `{ kind: 'refused' | 'daily' |
+  'challenge', … }`; `otherModeHint(mode)`; `gameStart({ board, seed,
+  startCell, daily?, pregenerated? })` → `{ mode, choice }` (2D `fixed`, 3D
+  `forced`); `freeStart(board)`; `boardHash(hash)`;
+  `createChallengeLinks({ location, history, onDaily, onChallenge,
+  onRefused, started, unavailable?, toast? })` → `{ start(), hashchange() }`;
+  `STARTED_TOAST`.
+
 ## INTERNAL PATTERNS
 
-- **Entries.** Four kit entries (`data-entry`) clicked through
+- **Entries.** Five kit entries (`data-entry`) clicked through
   `onMenuEntry` → `MENU.open(id)`: a registered mode opens its board choice
   through the host, a registered screen is routed to (Records opens on the
   last board played and its mode), anything else goes to `coming-soon`.
   No current entry reaches the placeholder; `tests/shell-menu.test.mjs`
   exercises it with a menu whose Records entry names an unregistered
   screen (the router itself throws on an unknown screen).
+- **Daily and challenges in `js/main.js`.** `DAILY_BOARDS_HELD` (clients:
+  `mode2d.client`, `GEN_3D` given WebGL 2) is prepared on every menu show;
+  `DAILY_VIEW` fills `#daily` on its router screen (`DAILY_SCREEN`, default
+  focus the first enabled Play). `playDaily` refuses a used attempt, takes
+  the held board and starts through `startForced` (`MODES.start`, then
+  `enterPlay3D` for 3D); `playChallenge` the same from a parsed code. Both
+  board choices' code fields go through `checkCode` / `playCode` (today's
+  daily code routes to `daily`), and `LINKS` follows `#board=` links. A
+  daily or challenge saves no last choice; the results flow's Play again
+  after one, once its mode was left, starts `freeStart(summary.board)`,
+  whose 2D choice carries `remember: false`, so it saves none either. A
+  challenge route's parse has no `daily`: another day's daily code is a
+  challenge.
 - **Last mode.** `LAST_MODE` stores the mode of every started game; at boot
   `load()` marks the entry and refocuses it if the player has not moved yet.
 - **Returning player.** `lastPlayed()` is `lastBoard` over `LAST_MODE`,

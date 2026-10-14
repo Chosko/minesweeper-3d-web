@@ -66,9 +66,38 @@ test('the three documents are registered under their own names at their versions
   const names = [];
   const storage = { register: (name, version) => names.push([name, version]), load: async () => undefined, save: async () => ({ ok: true }), available: () => true };
   createRecordsStore({ storage });
-  assert.deepEqual(names.sort(), [[HISTORY_DOC, 1], [IN_PROGRESS_DOC, 1], [RECORDS_DOC, 3]].sort());
+  assert.deepEqual(names.sort(), [[HISTORY_DOC, 2], [IN_PROGRESS_DOC, 1], [RECORDS_DOC, 4]].sort());
   assert.equal(new Set([RECORDS_DOC, HISTORY_DOC, IN_PROGRESS_DOC]).size, 3);
-  assert.deepEqual([RECORDS_VERSION, HISTORY_VERSION, IN_PROGRESS_VERSION], [3, 1, 1]);
+  assert.deepEqual([RECORDS_VERSION, HISTORY_VERSION, IN_PROGRESS_VERSION], [4, 2, 1]);
+});
+
+test('the daily and challenge format step: documents of the previous versions load unchanged, figures and keys kept', async () => {
+  const model = createRecordsModel();
+  model.record(game({ ms: 9000 }));
+  model.record(game({ outcome: 'lost' }));
+  const { records, history } = model.documents();
+  const backend = createMemoryBackend({ initial: { [RECORDS_DOC]: doc(3, records), [HISTORY_DOC]: doc(1, history) } });
+  const { store } = open(backend);
+  await store.load();
+  assert.equal(store.available(), true);
+  assert.deepEqual(store.counters(BEGINNER), model.counters(BEGINNER));
+  assert.deepEqual(store.bests(BEGINNER), model.bests(BEGINNER));
+  assert.deepEqual(store.boardsPlayed(), model.boardsPlayed());
+});
+
+test('the daily and challenge format step: an older build refuses the new documents instead of misreading them', async () => {
+  const model = createRecordsModel();
+  model.record({ ...game({ ms: 9000 }), challenge: true, startCell: 0 });
+  const { records, history } = model.documents();
+  const backend = createMemoryBackend({ initial: { [RECORDS_DOC]: doc(RECORDS_VERSION, records), [HISTORY_DOC]: doc(HISTORY_VERSION, history) } });
+  const { createStorage } = await import('../js/platform/storage.js');
+  const older = createStorage({ backend });
+  const issues = [];
+  older.register(RECORDS_DOC, 3, { 1: (r) => r, 2: (r) => r }, { onIssue: (i) => issues.push([i.name, i.kind]) });
+  older.register(HISTORY_DOC, 1, {}, { onIssue: (i) => issues.push([i.name, i.kind]) });
+  await older.load(RECORDS_DOC);
+  await older.load(HISTORY_DOC);
+  assert.deepEqual(issues.map(String).sort(), [`${HISTORY_DOC},newer-version`, `${RECORDS_DOC},newer-version`].sort());
 });
 
 test('load reads each document once, however often it is called', async () => {
@@ -114,7 +143,7 @@ test('record updates memory first, then saves both documents', async () => {
   const model = createRecordsModel();
   model.record(g);
   assert.deepEqual(stored(backend, RECORDS_DOC), { version: RECORDS_VERSION, data: model.documents().records });
-  assert.deepEqual(stored(backend, HISTORY_DOC), { version: 1, data: model.documents().history });
+  assert.deepEqual(stored(backend, HISTORY_DOC), { version: HISTORY_VERSION, data: model.documents().history });
 });
 
 test('recorded games survive a reload; the same id recorded twice is a no-op', async () => {
@@ -310,7 +339,7 @@ for (const name of [RECORDS_DOC, HISTORY_DOC]) {
     const marker = game({ outcome: 'abandoned' });
     const initial = {
       [RECORDS_DOC]: doc(RECORDS_VERSION + (name === RECORDS_DOC ? 1 : 0), records),
-      [HISTORY_DOC]: doc(name === HISTORY_DOC ? 2 : 1, history),
+      [HISTORY_DOC]: doc(HISTORY_VERSION + (name === HISTORY_DOC ? 1 : 0), history),
       [IN_PROGRESS_DOC]: doc(1, marker),
     };
     const backend = createMemoryBackend({ initial: { ...initial } });
@@ -559,7 +588,7 @@ for (const [label, entries] of [['an empty object', [{}]], ['null', [null]]]) {
     const model = createRecordsModel();
     model.record(game());
     for (const records of [undefined, model.documents().records]) {
-      const initial = { [HISTORY_DOC]: doc(1, entries), [IN_PROGRESS_DOC]: doc(1, game({ outcome: 'abandoned' })) };
+      const initial = { [HISTORY_DOC]: doc(HISTORY_VERSION, entries), [IN_PROGRESS_DOC]: doc(1, game({ outcome: 'abandoned' })) };
       if (records) initial[RECORDS_DOC] = doc(RECORDS_VERSION, records);
       const backend = createMemoryBackend({ initial: { ...initial } });
       const { store } = open(backend);

@@ -61,7 +61,11 @@ which adds it to the library once its summary is recorded ([app-shell-results.md
   `sample`, `cursor`, `view`, `seal(summary, final, pauses?)` → `{blob,
   listing}` or null, `stats()`, `failed`.
 - The listing: `{id, boardKey, mode, outcome, elapsedMs, bbbvPerSecond,
-  efficiency, endedAt, size}`.
+  efficiency, endedAt, size, code?}` — `boardKey` the summary's board (a
+  daily game's Daily board, `daily:…`, while the header keeps the plain
+  board it was played on, which the seal compares), `code` the game's board
+  code ([records.md](records.md) `codeOf`) when the summary carries what it
+  needs.
 
 Samplers
 - `sampler-2d.js`: `SAMPLE_INTERVAL_MS` (50), `SAMPLE_STEPS` (64),

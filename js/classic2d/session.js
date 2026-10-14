@@ -1,6 +1,6 @@
 // Classic 2D game session: owns one game from closed board to result. DOM-free.
 //
-// createSession({ choice, client, clock?, randomSeed?, generatingDelayMs?, place?, pregenerated? }) → session.
+// createSession({ choice, client, clock?, randomSeed?, generatingDelayMs?, place?, pregenerated?, fixed? }) → session.
 //   choice      a board choice (js/classic2d/board-setup.js); an invalid one throws a RangeError.
 //   client      the generation client (js/generation/client.js): { request, cancel }; asked for
 //               no-guess boards only.
@@ -11,6 +11,18 @@
 //               (js/generation/generate.js) by default, the same code path the worker runs.
 //   pregenerated  a board the mode pre-generated for this choice's marked start cell
 //               (js/generation/client.js pregenerate()), or null.
+//   fixed       a daily or a challenge: { startCell, seed, daily?, challenge? } — the board a board
+//               code names (js/records/board-code.js), or null for free play.
+//
+// A fixed session forces its start cell. markedCell is that cell until the first reveal, with or
+// without a pre-generated board, and a first reveal anywhere else changes nothing, is not
+// recorded and emits `refused` { cell, hint: START_HINT }. On the mark the board is the
+// pre-generated one for that cell, else the one generated for it with the fixed seed — placed at
+// once or asked of the client as below — so the timer starts at the first click. A failed board
+// offers nothing ([]): retry() and playStandard() refuse, and no other board is ever substituted.
+// Its summaries carry `challenge: true`, or for a daily the daily board (the identity's daily flag)
+// and its `daily` date. restart() once its board has arrived plays a free board of the same
+// choice; before that the board stays forced.
 //
 // The session opens a closed board (state 'ready'). On the first reveal a standard board (no-guess
 // off) is placed at once with place() for that cell and a fresh seed: no request goes to the
@@ -78,6 +90,7 @@ import { buildSummary, countedClicks } from '../records/summary.js';
 import { startRecording } from '../replay/recorder.js';
 import { generate } from '../generation/generate.js';
 import { boardSetup } from './board-setup.js';
+import { createBoardIdentity } from '../records/board.js';
 
 export const SESSION_STATE = Object.freeze({
   READY: 'ready',
@@ -95,7 +108,10 @@ export const FAILURE_OFFERS = Object.freeze(['retry', 'standard']);
 /** How long a board request may take before the "generating" state shows. */
 export const GENERATING_DELAY_MS = 200;
 
-export const SESSION_EVENTS = Object.freeze(['generating', 'started', 'changed', 'failed', 'finished', 'abandoned', 'mark']);
+export const SESSION_EVENTS = Object.freeze(['generating', 'started', 'changed', 'failed', 'finished', 'abandoned', 'mark', 'refused']);
+
+/** The hint a first reveal off a forced start cell shows. */
+export const START_HINT = 'Start on the marked cell';
 
 const defaultClock = {
   now: () => performance.now(),
@@ -166,8 +182,12 @@ export function createSession({
   generatingDelayMs = GENERATING_DELAY_MS,
   place = generate,
   pregenerated = null,
+  fixed = null,
 }) {
   let setup = boardSetup(choice);
+  let forced = fixed ? Object.freeze({ ...fixed }) : null; // the forced start cell and seed, or null
+  // The board the summaries name: a daily's Daily board, else the board played.
+  const identity = () => (forced?.daily ? createBoardIdentity({ ...setup.identity, daily: true }) : setup.identity);
   let pregen = pregenerated; // the pre-generated board waiting for its cell, until the first reveal
   const profile = getRuleProfile(REFERENCE_PROFILE);
   const listeners = Object.fromEntries(SESSION_EVENTS.map((t) => [t, new Set()]));
@@ -238,7 +258,10 @@ export function createSession({
 
   function summaryOf(engine) {
     const elapsedMs = timer.elapsedMs();
-    return buildSummary({ engine, elapsedMs, pauses: timer.pauses(elapsedMs), board: setup.identity, seed, generatorVersion, id: gameId });
+    return buildSummary({
+      engine, elapsedMs, pauses: timer.pauses(elapsedMs), board: identity(), seed, generatorVersion, id: gameId,
+      startCell: firstCell, daily: forced?.daily, challenge: forced?.challenge ? true : undefined,
+    });
   }
 
   function afterAction(result) {
@@ -253,7 +276,7 @@ export function createSession({
   function fail(reason) {
     state = SESSION_STATE.FAILED;
     failures += 1;
-    failure = { reason, offers: [...FAILURE_OFFERS], count: failures };
+    failure = { reason, offers: forced ? [] : [...FAILURE_OFFERS], count: failures };
     emit('failed', failure);
     return null;
   }
@@ -274,8 +297,8 @@ export function createSession({
   }
 
   // A standard board around `firstCell`, placed now on the main thread.
-  function placeNow() {
-    seed = randomSeed();
+  function placeNow(fixedSeed = null) {
+    seed = fixedSeed ?? randomSeed();
     failure = null;
     let result;
     try {
@@ -318,9 +341,9 @@ export function createSession({
     );
   }
 
-  // Ask the worker for a no-guess board around `firstCell` with a new seed.
-  function requestBoard() {
-    seed = randomSeed();
+  // Ask the worker for a no-guess board around `firstCell` with a new seed (or the fixed one).
+  function requestBoard(fixedSeed = null) {
+    seed = fixedSeed ?? randomSeed();
     const request = setup.request(firstCell, seed);
     return wait((onProgress) => client.request(request, { onProgress }));
   }
@@ -337,6 +360,7 @@ export function createSession({
   }
 
   function markedCell() {
+    if (forced && state === SESSION_STATE.READY && firstCell < 0) return forced.startCell;
     if (!pregen || state !== SESSION_STATE.READY) return -1;
     if (pregen.settled && !pregen.result?.ok) return -1;
     return pregen.cell;
@@ -353,7 +377,8 @@ export function createSession({
         return wait((onProgress) => { pg.listen(onProgress); return pg.promise; });
       }
     }
-    return setup.noGuess ? requestBoard() : placeNow();
+    const fixedSeed = forced ? forced.seed : null;
+    return setup.noGuess ? requestBoard(fixedSeed) : placeNow(fixedSeed);
   }
 
   // Drop whatever is pending: the request in flight and the "generating" state.
@@ -381,10 +406,15 @@ export function createSession({
     if (paused) return null;
     if (state === SESSION_STATE.READY) {
       if (kind !== 'reveal') return game[kind](c); // nothing happens before the first reveal
+      if (forced && c !== forced.startCell) {
+        emit('refused', { cell: c, hint: START_HINT });
+        return null;
+      }
       const r = game.reveal(c);
       if (r.boardNeeded < 0) return r;
       firstCell = r.boardNeeded;
       recorder?.action('reveal', firstCell, 0);
+      if (forced && !pregen) emit('mark', { cell: -1 }); // the forced mark goes at the first reveal
       return firstBoard();
     }
     if (state !== SESSION_STATE.PLAYING) return null;
@@ -398,12 +428,16 @@ export function createSession({
   fresh();
   // A failed pre-generation leaves its cell unmarked: the first reveal there asks afresh.
   pregen?.promise.then(() => {
-    if (pregen && pregen.settled && !pregen.result?.ok && state === SESSION_STATE.READY) emit('mark', { cell: -1 });
+    if (!forced && pregen && pregen.settled && !pregen.result?.ok && state === SESSION_STATE.READY) emit('mark', { cell: -1 });
   });
 
   return {
     get state() { return state; },
     get choice() { return setup.choice; },
+    /** The forced start cell and seed of a daily or a challenge, or null. */
+    get fixed() { return forced; },
+    /** The board the summaries name (a daily's Daily board). */
+    get identity() { return identity(); },
     /** The marked start cell a pre-generated board waits for, or -1. */
     get markedCell() { return markedCell(); },
     /** While generating: { candidates, seconds } — the worker's candidates so far, whole seconds since the request began. */
@@ -440,11 +474,12 @@ export function createSession({
 
     /** After a failure: ask again for the same cell with a new seed. */
     retry() {
-      if (state !== SESSION_STATE.FAILED) return null;
+      if (state !== SESSION_STATE.FAILED || forced) return null;
       return requestBoard();
     },
     /** After a failure, or while generating: the same size with no-guess off for the same cell, placed now. */
     playStandard() {
+      if (forced) return null;
       if (state === SESSION_STATE.GENERATING) dropPending();
       else if (state !== SESSION_STATE.FAILED) return null;
       setup = boardSetup({ ...setup.choice, noGuess: false });
@@ -478,6 +513,7 @@ export function createSession({
     /** Discard the game (reporting it abandoned if started) and open a new closed board. */
     restart() {
       if (state === SESSION_STATE.LEFT) return;
+      if (gameId !== null) forced = null; // a forced board, once started, is played once; the next one is free
       abandonIfStarted();
       dropPending();
       releasePregen({ discard: true });

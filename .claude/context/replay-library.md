@@ -26,7 +26,8 @@ pins ([records-screen.md](records-screen.md)), and the viewer reads bytes
     retention; `remove(id)` (the player's Delete) takes the entry out of the
     index whatever its pins, saves the index, deletes the blob and notifies
     `{kind: 'remove', ids: [id]}`; unknown ids change nothing.
-  - `forBoard(boardKey)` → frozen entries (listing fields plus `pins`),
+  - `forBoard(boardKey)` → frozen entries (listing fields plus `pins`;
+    `code` kept only when the listing carried one),
     newest first; `entries()` → every kept entry across boards and modes,
     newest first, frozen alike (the Records export's replay listing);
     `has(id)`; `bytes(id)` → Promise of bytes or `undefined`,
