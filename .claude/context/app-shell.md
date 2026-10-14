@@ -61,7 +61,9 @@ part that owns their topic; `navigation.js` is
   showed: `has(code)`, `take(code)`); `THREE`, `spawnPose(X, Y, Z)`.
 - `watch(data)` → `SHELL.go('replay', {data})`, `data` `{replay | replayId,
   returnTo}`; `start(X, Y, Z, mines, minePositions?)` →
-  `MODES.start('3d', …)`; `forcePlay()` (lockless play); `pause()`.
+  `MODES.start('3d', …)`; `learn()` (the Learn 3D guided board),
+  `learnBoard` (`LEARN_BOARD`), `learnPrompts` (the open guided game's
+  prompt sequence, or null); `forcePlay()` (lockless play); `pause()`.
 - camera/aim `moveTo`, `look(yaw, pitch)`, `aimAt(idx | [x,y,z])` → idx,
   `cellCenter(idx)` (each runs `refresh()` first); actions `mouseDown`,
   `mouseUp`, `click('left'|'right'|'chord')`, `key(code, down)`,

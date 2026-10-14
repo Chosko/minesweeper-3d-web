@@ -84,6 +84,8 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
 #pause, #ready, #results { background: var(--color-backdrop-scrim-soft); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
 /* The ready card waiting unseen for a pointer lock the player's own Play again asked for. */
 #ready.ready--pending { visibility: hidden; }
+/* The Learn 3D end card over the guided board's stopped scene. */
+#learn-end { background: var(--color-backdrop-scrim-soft); }
 /* Over a 3D game the results screen shows on a dimmed translucent scrim of the chosen theme, the finished board drawn unblurred behind it. */
 #results.results--over3d { background: var(--color-backdrop-scrim-strong); backdrop-filter: none; -webkit-backdrop-filter: none; }
 /* Look at the board: the one-line way back, over the finished 3D board. */
@@ -354,6 +356,9 @@ kbd[data-pad-glyph] { min-width: 1.9em; border-radius: 999px; }
 .ready-pad b { color: var(--color-ink); font-weight: 600; }
 .ready-pad .pad-note { display: inline-block; margin: 4px 0 0; }
 /* the ready card's offer once the browser blocks pointer lock: drag-to-look, or the controller */
+/* The ready card's Learn 3D line, under the card while the player has not learned 3D. */
+.ready-learn { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); background: var(--color-surface-raised); text-align: left; }
+.ready-learn .ui-text { margin: 0; }
 .ready-blocked { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--color-surface-raised); text-align: center; }
 #help { max-height: calc(100vh - 80px); overflow: hidden; }
 /* lockless controller play: the system cursor would sit over the crosshair */

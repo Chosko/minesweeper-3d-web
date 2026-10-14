@@ -6,8 +6,8 @@
 //                 dismissed: { [mode]: bool } } for the modes 'classic-2d' and '3d'.
 //   games         games counted per mode: a game counts when its mode reports game started
 //                 (an abandoned game counts too);
-//   finished3D    a 3D game was finished, won or lost (an abandoned one does not count): the ready
-//                 card's "How 3D works" block shows until then;
+//   finished3D    a 3D game was finished, won or lost (an abandoned one does not count), or Learn 3D
+//                 was won: the ready card's "How 3D works" block and its Learn 3D line show until then;
 //   autoHideToast the toast at the first auto-hide was shown;
 //   aimHint       the hint to hold Space at a number with a closed cube behind it was shown;
 //   scrollHint    the Classic 2D hint beside a clipped board, "Wheel scrolls · Shift+wheel
@@ -20,10 +20,11 @@
 // seeded afresh. Storage failure never blocks play: until the document loads, and when nothing
 // can be read or saved, the hints behave as on first use for the session.
 //
-// createFirstUse({ storage, records }) → { load(), inFirstGames(mode), rules3D, gameStarted(mode),
-//   gameFinished(mode), dismissed(mode), dismiss(mode), shown(name), once(name) }.
-//   once(name) is true the first time only ('autoHideToast' | 'aimHint' | 'scrollHint') and
-//   records it.
+// createFirstUse({ storage, records }) → { load(), inFirstGames(mode), rules3D, gameStarted(mode,
+//   { learn }?), gameFinished(mode, { learn, won }?), dismissed(mode), dismiss(mode), shown(name),
+//   once(name) }. A Learn 3D game (`learn`, js/mode3d/learn.js) counts toward no window, and only its
+//   win marks the rules block seen. once(name) is true the first time only ('autoHideToast' |
+//   'aimHint' | 'scrollHint') and records it.
 // stripShown({ mode, screen, eligible, used, dismissed }) — whether a mode's hint strip shows: in
 //   a game that began inside the first FIRST_GAMES games of its mode (`eligible`, judged before its
 //   game started), not dismissed; the 3D strip from the start of play (`playing`), the Classic 2D
@@ -105,13 +106,13 @@ export function createFirstUse({ storage, records }) {
     inFirstGames(m) { return state.games[mode(m)] < FIRST_GAMES; },
     /** Whether the ready card shows the "How 3D works" block: no 3D game finished yet. */
     get rules3D() { return !state.finished3D; },
-    gameStarted(m) {
-      if (!FIRST_USE_MODES.includes(m)) return;
+    gameStarted(m, { learn = false } = {}) {
+      if (!FIRST_USE_MODES.includes(m) || learn) return;
       state.games[m] += 1;
       save();
     },
-    gameFinished(m) {
-      if (m !== '3d' || state.finished3D) return;
+    gameFinished(m, { learn = false, won = false } = {}) {
+      if (m !== '3d' || state.finished3D || (learn && !won)) return;
       state.finished3D = true;
       save();
     },

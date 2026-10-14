@@ -59,6 +59,11 @@
 // identity's daily flag) with its `daily` date, a challenge's carry `challenge: true`, and every
 // summary carries the first reveal's startCell.
 //
+// Learn 3D (js/mode3d/learn.js learnChoice) starts the same way with a fixed board — its mine
+// positions — and `forced` { startCell, seed, learn: true }: the guided board, made by no generator
+// in the game, has no summary and so no replay, and every restart, Try again included, keeps its
+// forced start, so the guided board opens closed again. `learn` is whether the open game is it.
+//
 // Summaries are built by js/records/summary.js's buildSummary from the session's engine counts
 // (outcome abandoned) or engine summary (won or lost), its elapsed time and its pause spans up to
 // it, its board as the 3D board identity, its seed and its generator version: null before the first applied reveal, the summary
@@ -229,8 +234,10 @@ export function create3DMode(flow, report) {
       if (flow.contextLost()) { taken?.discard(); failed(); return; }
       attach(flow.start(forced ? { ...board, forced } : board, taken));
     },
-    /** The open game's forced start cell and seed (a daily or a challenge), or null. */
+    /** The open game's forced start cell and seed (a daily, a challenge or Learn 3D), or null. */
     get forced() { return game?.session.forced ?? null; },
+    /** Whether the open game is the Learn 3D guided board (js/mode3d/learn.js). */
+    get learn() { return !!game?.session.forced?.learn; },
     /** Whether the end sequence is running: the game is over and the results screen not yet shown. */
     get ending() { return !!game?.ending; },
     cancelGeneration() { return game ? game.session.cancel() : false; },
@@ -241,7 +248,8 @@ export function create3DMode(flow, report) {
     },
     resume(opts = {}) { flow.resume(opts.source ?? 'pointer'); },
     restart(opts = {}) {
-      const keep = game && !game.started ? game.session.forced ?? null : null;
+      const forced = game?.session.forced ?? null;
+      const keep = game && (!game.started || forced?.learn) ? forced : null;
       const taken = keep ? (discardAhead(), null) : takeAhead(game?.session.board);
       drop();
       attach(keep ? flow.restart(opts.source ?? 'pointer', taken, keep) : flow.restart(opts.source ?? 'pointer', taken));

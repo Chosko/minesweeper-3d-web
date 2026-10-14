@@ -25,7 +25,8 @@ Both files are DOM-free; `js/shell/mode-3d.js` imports `buildSummary`,
   `forced` as Classic 2D's `fixed`, [classic2d-session.md](classic2d-session.md);
   a refused reveal returns the no-change result, flags before it kept). `board` is
   `boardOf(choice)`; with `minePositions` (the debug hook's fixed board)
-  that board is played and nothing is requested. Session: `view` (one
+  that board is played and nothing is requested — with `forced`, Learn 3D's
+  guided board: its start cell marked and forced, no seed. Session: `view` (one
   object for the whole session), `state`, `board`, `mines`, `seed`,
   `generatorVersion`, `generatingShown`, `paused`, `failure`, `forced`,
   `startCell` (the first reveal's, -1 before it), `markedCell`,
@@ -54,7 +55,8 @@ Both files are DOM-free; `js/shell/mode-3d.js` imports `buildSummary`,
   `contextLost()`, `replay(summary)`, `tick()` (drives the sampler, every
   frame), `ending`, `finishNow()`, `cancelGeneration()` and `forced`. A
   daily or a challenge starts with `start({ ...board, forced, pregenerated?
-  })`: the board pre-generated after a game is discarded, a restart keeps
+  })`, Learn 3D with `learnChoice()` (`forced.learn`, whose forced start
+  every restart keeps; `learn` is true while it is the game): the board pre-generated after a game is discarded, a restart keeps
   `forced` until the game started, and the summaries carry the Daily board
   and `daily`, or `challenge`, and `startCell`.
 - `endDelayMs({X, Y, Z})` — how long the end effect plays before the game
@@ -102,7 +104,7 @@ Both files are DOM-free; `js/shell/mode-3d.js` imports `buildSummary`,
   the host reports `abandoned`; before the first applied reveal there is
   none. Summaries carry the 3D board identity — mode `3d`, X, Y, Z as
   width, height, depth ([records.md](records.md)) — null throughout on a
-  fixed board, which has no seed. A lost graphics context — at `start` or
+  fixed board (the debug hook's, Learn 3D's), which has no seed. A lost graphics context — at `start` or
   through `contextLost()` — reports `failed` and leaves the session; during
   the end delay the game is reported finished first.
 - **Pre-generation.** A finished no-guess game with a seed asks

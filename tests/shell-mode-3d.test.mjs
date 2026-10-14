@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { createModeHost, MODE_METHODS, MODE_EVENTS } from '../js/shell/mode-host.js';
 import { create3DMode, END_DELAY_MS, END_DELAY_MAX_MS, endDelayMs, waveStepS, WAVE_CELL_S } from '../js/shell/mode-3d.js';
 import { startCell } from '../js/generation/start-cell.js';
+import { createSession } from '../js/mode3d/session.js';
+import { LEARN_BOARD, learnChoice } from '../js/mode3d/learn.js';
 import { browserSuite } from './helpers/browser.mjs';
 import { patience } from './helpers/timing.mjs';
 
@@ -441,6 +443,65 @@ test('the 3D pre-generation: the same board from the choice takes it, another bo
   t.host.restart({});
   assert.equal(client.requests.length, 0, 'an abandoned game pre-generates nothing');
   assert.equal(t.flow.handed.at(-1), null);
+});
+
+// The guided board through the real session: what the shell's flow does with a start.
+function learnSetup() {
+  const host = createModeHost();
+  const events = [];
+  for (const t of MODE_EVENTS) host.on(t, (e) => events.push([t, e]));
+  const sessions = [];
+  const clock = fakeClock();
+  const open = (board, forced) => {
+    const { forced: _f, ...rest } = board;
+    const s = createSession({ board: rest, client: { request() { throw new Error('no request'); }, cancel() {} }, forced });
+    sessions.push(s);
+    return s;
+  };
+  let last = null;
+  const flow = {
+    clock,
+    contextLost: () => false,
+    openBoardChoice() {},
+    start: (c) => { last = c; return open(c, c.forced ?? null); },
+    pause() {}, resume() {}, leave() {},
+    restart: (source, pregen, forced) => open(last, forced ?? null),
+    client: { request() { throw new Error('no request'); }, cancel() {} },
+  };
+  const mode = host.register('3d', (report) => create3DMode(flow, report));
+  return { host, events, sessions, clock, mode, session: () => sessions.at(-1) };
+}
+const winLesson = (s) => {
+  s.reveal(LEARN_BOARD.startCell);
+  for (let c = 0; c < s.view.n; c++) if (!LEARN_BOARD.minePositions.includes(c) && !s.view.pressed[c]) s.reveal(c);
+};
+
+test('the Learn 3D guided game reports no summary and no replay at a win, a loss, a restart and a leave', () => {
+  const t = learnSetup();
+  const records = [];
+  t.host.on('finished', ({ summary, replay }) => records.push(['finished', summary, replay]));
+  t.host.on('abandoned', ({ summary, replay }) => records.push(['abandoned', summary, replay]));
+  t.host.start('3d', learnChoice());
+  assert.equal(t.mode.learn, true, 'the adapter knows the guided game');
+  winLesson(t.session());
+  assert.equal(t.session().state, 'won');
+  assert.equal(t.host.summary(), null);
+  t.clock.advance(END_DELAY_MS * 3);
+  t.host.restart({ source: 'pointer' }); // Try again
+  assert.equal(t.session().markedCell, LEARN_BOARD.startCell, 'the guided board again, from the closed box');
+  assert.equal(t.mode.learn, true);
+  t.session().reveal(LEARN_BOARD.startCell);
+  t.session().reveal(LEARN_BOARD.lessonMine); // a loss
+  assert.equal(t.session().state, 'lost');
+  t.clock.advance(END_DELAY_MS * 3);
+  t.host.restart({ source: 'pointer' });
+  t.session().reveal(LEARN_BOARD.startCell);
+  t.host.restart({ source: 'pointer' }); // a restart of a started game
+  t.session().reveal(LEARN_BOARD.startCell);
+  t.host.leave();
+  assert.deepEqual(records.map(([k]) => k), ['finished', 'finished', 'abandoned', 'abandoned']);
+  for (const [, summary, replay] of records) { assert.equal(summary, null); assert.equal(replay, null); }
+  assert.equal(t.mode.learn, false, 'left');
 });
 
 test('the 3D adapter is DOM-free and imports at most the 3D session, the records\' summary and board, and the pre-generation', () => {

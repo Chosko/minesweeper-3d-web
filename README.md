@@ -158,6 +158,12 @@ with the controller, focus it and the D-pad left / right steps it. Below it:
 
 ## 3D: how to play
 
+New to 3D? **Learn 3D**, first on the 3D board choice, walks you through a small 4 × 4 × 3 box:
+start on the marked cube, then four prompts show what `Shift` and `Ctrl` reveal, which cube must be
+a mine and how a chord opens cubes. It has no timer and keeps no records, and you can repeat it any
+time; a win offers First box 1. Until you have finished a 3D game or won Learn 3D, the "Click to
+play" card of every other 3D board offers it too.
+
 The rules are classic Minesweeper with one more dimension:
 
 - A revealed cube shows how many of its **26 neighbours** (the 3 × 3 × 3 block around it) hold a

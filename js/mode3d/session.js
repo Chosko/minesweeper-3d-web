@@ -23,7 +23,9 @@
 //               seed, and a failed board offers nothing. Flags before the first reveal are kept as
 //               always. restart() once the board has arrived opens a free closed box of the same
 //               board; before that it stays forced. startCell is the first reveal's cell, -1
-//               before it.
+//               before it. With `minePositions` (Learn 3D, js/mode3d/learn.js, forced.learn) the
+//               forced cell is marked and enforced on that fixed board and the seed is only
+//               recorded: nothing is generated and the session's seed stays null.
 //
 // The session opens a closed box (state 'ready'): `view` is the 3D state view the renderer, picking
 // and HUD read, the same object for the whole session. Flags may be placed before the first

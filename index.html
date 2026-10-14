@@ -183,6 +183,9 @@
   <section id="board-choice" class="overlay hidden" aria-label="3D board choice">
     <section class="ui-card ui-screen ui-screen--wide" aria-labelledby="board-choice-title">
       <h2 class="ui-card__title" id="board-choice-title">3D</h2>
+      <div class="ui-menu" role="group" aria-label="Learn 3D">
+        <button type="button" class="ui-menu__item" id="bc-learn" data-learn><span class="ui-menu__label">Learn 3D</span><span class="ui-menu__detail">A guided 4 &times; 4 &times; 3 box &middot; no timer, no records</span></button>
+      </div>
       <h3 class="ui-heading" id="bc-box">First box</h3>
       <div class="ui-menu" role="group" aria-labelledby="bc-box">
         <button type="button" class="ui-menu__item" data-preset="4,4,3,4"><span class="ui-menu__label">First box 1</span><span class="ui-menu__detail">4 &times; 4 &times; 3 &middot; 4 mines</span></button>
@@ -275,6 +278,10 @@
         <span id="ready-pad" class="ready-pad hidden"></span>
         <span class="ready-tip">Tip: press <kbd>F</kbd> for fullscreen &mdash; keeps <kbd>Ctrl</kbd>+<kbd>W</kbd> from closing the tab</span>
       </button>
+      <div id="ready-learn" class="ready-learn hidden" role="group" aria-label="Learn 3D">
+        <p class="ui-text">New to 3D? Learn 3D walks you through a small box.</p>
+        <button type="button" id="ready-learn-btn" class="ui-button ui-button--secondary">Learn 3D</button>
+      </div>
       <div id="ready-blocked" class="ready-blocked hidden" role="group" aria-label="Play without mouse capture">
         <button type="button" id="ready-drag" class="ui-button ui-button--primary">Play with drag-to-look</button>
         <p class="ui-text">Or connect a controller and press <kbd class="pad">A</kbd>.</p>
@@ -573,6 +580,18 @@
   <p id="look" class="look-hint hidden" role="status">Looking at the finished board &middot; Esc or any button: back to the results</p>
 
   <!-- Pause / end menu -->
+  <!-- Learn 3D end card: over the stopped scene of the guided board (js/mode3d/learn.js) -->
+  <section id="learn-end" class="overlay hidden" aria-label="Learn 3D">
+    <section class="ui-card ui-screen" aria-labelledby="learn-end-title">
+      <h2 class="ui-card__title" id="learn-end-title">You've got the basics of 3D.</h2>
+      <p class="ui-text ui-text--muted">Learn 3D</p>
+      <div class="ui-actions ui-actions--row">
+        <button type="button" id="learn-end-primary" class="ui-button ui-button--primary">Play First box 1</button>
+        <button type="button" id="learn-end-back" class="ui-button ui-button--secondary">Back to board choice</button>
+      </div>
+    </section>
+  </section>
+
   <section id="pause" class="overlay hidden" aria-label="Pause menu">
     <section id="pause-card" class="ui-card ui-screen" aria-labelledby="pause-title">
       <h2 class="ui-card__title" id="pause-title">Paused</h2>

@@ -40,11 +40,16 @@ and the controller's menu navigation.
   - confirmations: `showConfirm({message, confirmLabel}, onYes, onNo)`,
     `isConfirmOpen`, `closeConfirm`, `closeResetConfirm` (→ false when none
     is open);
-  - HUD: `setBoard`, `updateHud(time, minesLeft, clicks?)`, `setModes`,
+  - HUD: `setBoard` ("Learn 3D" for the guided board), `setTimed(on)` (the
+    overlay timer and the pause card's time, off on Learn 3D),
+    `updateHud(time, minesLeft, clicks?)`, `setModes`,
     `setCrosshair`, `setArrow(angle|null)`, `setReadout(r|null)`,
     `setSpacing(v)` (the 3D tools strip's spacing readout), `setSound(muted)`;
+  - Learn 3D: `showLearnEnd(won)` / `hideLearnEnd()` (the `#learn-end`
+    card), `showReady`'s `learn` line;
   - help and hints: `toggleHelp`, `userToggleHelp`, `setHintStrip(on,
-    {scroll})`, `dismissHint`, `setDevice`, `setPad`, `flash`,
+    {scroll, learn})` (`learn` a Learn 3D prompt's hint name, shown with no
+    close button), `dismissHint`, `setDevice`, `setPad`, `flash`,
     `toast(msg, ms)`, `setNoMouse(on, touch)`, `setTouch3D(on)` (the touch ready card and the help's touch rows, `_bindDevice`), `setTouchModes(modes)`, `setStick(view|null)`, `openControls` / `closeControls` /
     `isControlsOpen`, `isPauseVisible`, `setReadyMessage`.
   HUD writes (`updateHud`, `setArrow`, `setReadout`) touch the DOM only on
@@ -94,13 +99,16 @@ and the controller's menu navigation.
 - **First-use hints.** `FIRST_USE` (`createFirstUse` over storage and
   `RECORDS`) loads once the records have, seeding a new `shell.firstUse`
   from them. It counts a game at the host's `started` and a finished 3D game
-  at `finished`. Strip eligibility is judged as the game begins (`hint3D`
+  at `finished`, a Learn 3D game toward no window and only its win as
+  finished (`learnGame()`). Strip eligibility is judged as the game begins (`hint3D`
   in `startGame`; `hint2D` at the 2D `board` report, not again for the
   standard-board offer); `refreshHints` shows the active mode's strip on
   every router change, at the first key or pad input of a 2D game
   (`used2D`) and at a dismissal; a scrolling 2D board (`clipped2D`) shows
   the one-time scroll hint instead until `FIRST_USE.once('scrollHint')`.
-  The ready card shows "How 3D works" while `FIRST_USE.rules3D`.
+  The ready card shows "How 3D works" and the Learn 3D line while
+  `FIRST_USE.rules3D`, except on the guided board, during which no
+  first-use strip, auto-hide toast or aim hint shows.
   `noteAutoHide` gives the one-time toast at the first auto-hide; the
   frame loop's `aimHint` shows the aim hint once the crosshair rests
   `AIM_DWELL_MS` on a revealed number with a closed cube behind it. Hint

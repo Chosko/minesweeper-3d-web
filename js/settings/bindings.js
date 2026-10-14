@@ -18,7 +18,8 @@
 //   the spacing to one decimal.
 // hintStripHtml(mode, device, glyphs?) → the first-use hint strip of that mode, " · " between items.
 // helpFootHtml(mode, device, glyphs?) → the H panel's foot line; the release rule only in 3D.
-// hintText(name, device, glyphs?) → a one-time hint's plain text (`autoHide`, `aimHint`, `scrollHint`).
+// hintText(name, device, glyphs?) → a one-time hint's plain text (`autoHide`, `aimHint`, `scrollHint`),
+//   or a Learn 3D prompt's (`learnStart`, `learnShift`, `learnCtrl`, `learnFlag`, `learnChord`, `learnRest`).
 // createActiveDevice({ onChange }) → the active device: the controller while the last input came
 //   from a connected controller, otherwise the keyboard and mouse.
 
@@ -229,6 +230,12 @@ export const HINT_TEXT = Object.freeze({
   autoHide: Object.freeze({ keyboard: 'Solved cubes hide. Hold [Ctrl] to see them.', controller: 'Solved cubes hide. Hold {y} to see them.' }),
   aimHint: Object.freeze({ keyboard: 'Hold [Space] to aim through numbers.', controller: 'Hold {rb} to aim through numbers.' }),
   scrollHint: Object.freeze({ keyboard: 'Wheel scrolls · Shift+wheel sideways', controller: 'Wheel scrolls · Shift+wheel sideways' }),
+  learnStart: Object.freeze({ keyboard: 'Click the marked cube to start', controller: 'Press {rt} on the marked cube to start' }),
+  learnShift: Object.freeze({ keyboard: 'Hold [Shift] to see what this number counts', controller: 'Hold {lb} to see what this number counts' }),
+  learnCtrl: Object.freeze({ keyboard: 'Hold [Ctrl] to see the cubes you cleared', controller: 'Hold {y} to see the cubes you cleared' }),
+  learnFlag: Object.freeze({ keyboard: 'Flag the one cube that must be a mine', controller: 'Press {lt} on the one cube that must be a mine' }),
+  learnChord: Object.freeze({ keyboard: 'Press left and right together on the number to chord', controller: 'Press {lt} and {rt} together on the number to chord' }),
+  learnRest: Object.freeze({ keyboard: 'Clear the rest of the box', controller: 'Clear the rest of the box' }),
 });
 
 export function hudStripHtml(mode, device, glyphs = GLYPHS.generic, { muted = false, spacing = SPACING_START } = {}) {

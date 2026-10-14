@@ -265,7 +265,9 @@
      ui-slider, credit ui-link). Default focus: the last mode played
      (data-last), else the first entry.
    3D board choice (index.html #board-choice): ui-card ui-screen--wide
-     holding the title, the presets in two ui-menu groups, each under its
+     holding the title, the Learn 3D item first in its own ui-menu (its
+     detail line "A guided 4 × 4 × 3 box · no timer, no records"), the
+     presets in two ui-menu groups, each under its
      ui-heading and named by it (First box, Cube), each item
      labelled with its family (First box 1, Cube Beginner, …) over its size line and a
      detail line (density, typical 3BV, the player's best and streak on the
@@ -396,6 +398,11 @@
      ui-panel ui-actions (a ui-text line, the action as primary, Cancel)
      shows in place of the actions. Default focus: Resume, or Play again once
      ended; Cancel while the confirmation shows.
+   Learn 3D end card (index.html #learn-end): ui-card ui-screen over the
+     guided board's stopped scene, holding the outcome title, a
+     ui-text--muted "Learn 3D" line and ui-actions--row (Play First box 1
+     on a win or Try again on a loss, primary; Back to board choice). No
+     time and no records. Default focus: the primary action.
    Results screen (index.html #results, filled by js/results/view.js; the
      gallery's #g-results shows it with placeholder content): ui-card
      ui-screen holding, top to bottom, the outcome title, a ui-text board

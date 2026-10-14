@@ -43,13 +43,13 @@ function fakeMode() {
 }
 
 // The controller over a host with one fake mode, and a recording shell around it.
-function setup() {
+function setup({ unrecorded = false } = {}) {
   const modes = createModeHost();
   const fake = fakeMode();
   modes.register('a', fake.factory);
   const shell = {
     cards: [], asked: [], menus: 0, guard: [], paused: false, onBoard: true, answer: true, generating: false, cancels: 0,
-    alwaysAsk: false, notices: 0,
+    alwaysAsk: false, notices: 0, unrecorded,
   };
   const handOffs = [];
   const pauser = createPauseController({
@@ -62,6 +62,7 @@ function setup() {
     guard: (on) => shell.guard.push(on),
     askRestart: () => shell.alwaysAsk,
     restarted: () => { shell.notices++; },
+    unrecorded: () => shell.unrecorded,
     cancelGeneration: () => {
       if (!shell.generating) return false;
       shell.generating = false;
@@ -362,6 +363,30 @@ test('back to menu of a started, unfinished game asks first, then leaves the mod
   assert.equal(modes.active, null);
   assert.equal(calls().at(-1), 'leave');
   assert.equal(handOffs.filter(([h]) => h === 'abandoned').length, 1);
+});
+
+test('on a game outside the records (Learn 3D), restart and back to menu proceed at once, asking nothing and saying nothing', () => {
+  const { modes, fake, shell, pauser, calls } = setup({ unrecorded: true });
+  shell.alwaysAsk = true;
+  modes.start('a', 1);
+  fake.play.click();
+  pauser.restart('key');
+  assert.deepEqual(shell.asked, [], 'no confirmation, even under "Always ask"');
+  assert.deepEqual(shell.cards, [], 'no pause card');
+  assert.equal(shell.notices, 0, 'nothing counted as a loss');
+  assert.equal(calls().at(-1), 'restart');
+  fake.play.click();
+  pauser.toMenu();
+  assert.deepEqual(shell.asked, []);
+  assert.equal(shell.menus, 1);
+  assert.equal(modes.active, null);
+  // a recorded game still asks
+  const other = setup();
+  other.modes.start('a', 1);
+  other.fake.play.click();
+  other.shell.answer = false;
+  other.pauser.toMenu();
+  assert.deepEqual(other.shell.asked, [CONFIRMATIONS.menu]);
 });
 
 test('back to menu before the first click or after the end asks nothing', () => {

@@ -61,7 +61,7 @@ Test files by name prefix:
 | `generation-` | seeded placer, solver, no-guess loop, worker and client | [generation.md](generation.md) |
 | `platform-` | storage interface and backends, blob store, start-up selection | [platform.md](platform.md) |
 | `classic2d-`, `tile-` | board setup; session; mode and end effect; board view and touch zoom; pointer, touch and cursor input, button swap (`classic2d-touch` also holds the Playwright touch runs: Expert on a phone and the mouse pages unchanged); the tile skin | [classic2d.md](classic2d.md), [classic2d-session.md](classic2d-session.md), [classic2d-mode.md](classic2d-mode.md), [classic2d-board-view.md](classic2d-board-view.md), [classic2d-input.md](classic2d-input.md), [classic2d-tile-skin.md](classic2d-tile-skin.md) |
-| `mode3d-` | 3D board choice, no-guess limit; session, end sequence, results over the scene and the look | [mode3d.md](mode3d.md), [mode3d-session.md](mode3d-session.md) |
+| `mode3d-` | 3D board choice, no-guess limit; session, end sequence, results over the scene and the look; Learn 3D (`mode3d-learn`: the guided board, the prompts, the Playwright lesson) | [mode3d.md](mode3d.md), [mode3d-session.md](mode3d-session.md) |
 | `records-` | board identity and key, board codes and the daily boards (`records-board-code`), summary; records model and store; Records screen and its layout, Top 10, averages and filters, history and best-time charts, library view, remembered view (`records-view-prefs`), stats (`records-stats`), export (`records-export`) | [records.md](records.md), [records-store.md](records-store.md), [records-screen.md](records-screen.md) |
 | `replay-` | format, recorder and samplers, determinism; library; simulator and verifier, viewers | [replay.md](replay.md), [replay-library.md](replay-library.md), [replay-playback.md](replay-playback.md) |
 | `results` | results flow and screen, Watch replay | [app-shell-results.md](app-shell-results.md), [replay-playback.md](replay-playback.md) |
@@ -85,7 +85,8 @@ Data beside the tests:
 - `dev/measure-*.mjs` — measurements, not tests, behind `NOGUESS_CELL_LIMIT`,
   `TYPICAL_BBBV`, the mine counts of the First box 1 and Cube Beginner presets
   (`measure-first-box-3d.mjs`) and the replay sampler constants; each head
-  comment says how to read it.
+  comment says how to read it. `dev/find-learn-3d.mjs` is the search behind
+  `LEARN_BOARD` (its `findLearnBoard` also used by `tests/mode3d-learn.test.mjs`).
 
 ## INTERNAL PATTERNS
 

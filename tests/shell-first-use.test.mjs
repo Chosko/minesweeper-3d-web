@@ -114,6 +114,38 @@ test('a game counts toward the three when the mode reports game started; a finis
   assert.equal(docOf(backend).finished3D, true);
 });
 
+test('a Learn 3D game counts toward no window; its win marks the rules block seen, its loss does not', async () => {
+  const backend = createMemoryBackend();
+  const first = createFirstUse({ storage: createStorage({ backend }), records: records(0, 0) });
+  await first.load();
+  first.gameStarted('3d', { learn: true });
+  first.gameStarted('3d', { learn: true });
+  first.gameStarted('3d', { learn: true });
+  assert.equal(first.inFirstGames('3d'), true, 'still the first game');
+  first.gameFinished('3d', { learn: true, won: false });
+  assert.equal(first.rules3D, true, 'a loss marks nothing');
+  await settle();
+  assert.equal(docOf(backend).games['3d'], 0);
+  assert.equal(docOf(backend).finished3D, false);
+  first.gameFinished('3d', { learn: true, won: true });
+  assert.equal(first.rules3D, false, 'the win: the "How 3D works" block and the ready card\'s Learn 3D line stop showing');
+  await settle();
+  assert.equal(docOf(backend).finished3D, true);
+});
+
+test('Learn 3D\'s second prompt marks the auto-hide toast shown; storage failure never blocks it', async () => {
+  const first = createFirstUse({ storage: createStorage({ backend: createMemoryBackend() }), records: records(0, 0) });
+  await first.load();
+  assert.equal(first.once('autoHideToast'), true, 'the shell marks it at prompt 2 through once()');
+  assert.equal(first.shown('autoHideToast'), true);
+  const broken = { register() {}, load: () => Promise.reject(new Error('no storage')), save: () => { throw new Error('no storage'); } };
+  const off = createFirstUse({ storage: broken, records: records(0, 0) });
+  await off.load();
+  off.gameStarted('3d', { learn: true });
+  off.gameFinished('3d', { learn: true, won: true });
+  assert.equal(off.rules3D, false, 'kept for the session');
+});
+
 test('the toast and the aim hint show once, and never again on that browser', async () => {
   const backend = createMemoryBackend();
   const first = createFirstUse({ storage: createStorage({ backend }), records: records(0, 0) });
@@ -275,8 +307,8 @@ test('the 3D hint strip replaces the "H controls" pill and its localStorage flag
 
 test('the shell counts games and finishes from the mode host, and keeps the first-use document in platform storage', () => {
   assert.match(MAIN, /createFirstUse\(\{ storage, records: RECORDS \}\)/);
-  assert.match(MAIN, /MODES\.on\('started', \(\{ mode \}\) => \{[^\n]*FIRST_USE\.gameStarted\(mode\)/);
-  assert.match(MAIN, /MODES\.on\('finished', \(\{ mode \}\) => FIRST_USE\.gameFinished\(mode\)\)/);
+  assert.match(MAIN, /MODES\.on\('started', \(\{ mode \}\) => \{[^\n]*FIRST_USE\.gameStarted\(mode, learnGame\(\)\)/);
+  assert.match(MAIN, /MODES\.on\('finished', \(\{ mode \}\) => FIRST_USE\.gameFinished\(mode, learnGame\(\)\)\)/);
   assert.match(MAIN, /FIRST_USE\.once\('autoHideToast'\)/);
   assert.match(MAIN, /FIRST_USE\.once\('aimHint'\)/);
   assert.match(read('js/shell/first-use.js'), /^\/\/ /, 'the module documents itself');

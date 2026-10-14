@@ -369,6 +369,19 @@ test('index.html offers the First box and Cube groups of presets, the custom boa
   assert.doesNotMatch(BOARD, /data-best/);
 });
 
+test('the board choice leads with Learn 3D, reported through onLearn, never a preset, the last choice or its "Last played" mark', () => {
+  const learn = BOARD.indexOf('data-learn');
+  assert.ok(learn > 0 && learn < BOARD.indexOf('data-preset='), 'the first item, above the First box group');
+  assert.doesNotMatch(BOARD.slice(learn - 200, learn + 300), /data-preset/, 'not a preset item');
+  const src = read('js/mode3d/board-choice.js');
+  assert.match(src, /bindBoardChoice\(\{ root, onStart, onLearn, onBack, code = null \}\)/);
+  assert.match(src, /root\.querySelector\('\[data-learn\]'\)/);
+  assert.match(src, /onLearn\?\.\(\)/);
+  assert.match(MAIN, /onLearn: \(\) => startLearn\(/);
+  const onLearn = MAIN.slice(MAIN.indexOf('onLearn:'), MAIN.indexOf('\n', MAIN.indexOf('onLearn:')));
+  assert.doesNotMatch(onLearn, /LAST_CHOICE_3D\.save/, 'starting it does not save the last 3D choice');
+});
+
 test('the old per-size 3D best times are not read or shown by the board choice', () => {
   const src = strip(read('js/mode3d/board-choice.js'));
   assert.doesNotMatch(src, /\bgetBest\b|ms3d\.best|localStorage/);

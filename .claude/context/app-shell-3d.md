@@ -97,10 +97,29 @@ loop's render-on-demand. The 3D board choice, session and adapter
   status card.
 - **Session.** `startGame(settings, pregenerated?)` leaves the previous
   session, opens one (`createSession` over `GEN_3D`; `__ms` mine positions
-  give a fixed board), subscribes to its events (`mark` →
-  `renderer.setMark`) and returns it. `S.play` is the session, `S.game` its
-  3D state view, which every board reader uses; `S.started` is set at the
-  session's `started`.
+  give a fixed board; Learn 3D's `learnChoice()` a fixed board with its
+  forced start), subscribes to its events (`mark` → `renderer.setMark`) and
+  returns it. `S.play` is the session, `S.game` its 3D state view, which
+  every board reader uses; `S.started` is set at the session's `started`.
+  `board3dChoice`, the board a restart plays again, keeps the guided board's
+  mine positions and `learn`.
+- **Ready card.** `showReady` gets `rules` (the "How 3D works" block) and
+  `learn` (the `#ready-learn` line "New to 3D? Learn 3D walks you through a
+  small box." with `#ready-learn-btn` → `startLearn`, outside the card's own
+  button) while `FIRST_USE.rules3D`; neither on the guided board's own card,
+  and the line only before the game started.
+- **Learn 3D.** `startLearn()` (the board choice's `onLearn`, the ready
+  card's line, `__ms.learn()`) starts `learnChoice()` (`js/mode3d/learn.js`)
+  and saves nothing. `S.learn` holds the guided game's prompt sequence
+  (`createLearnPrompts`), null otherwise; `ui.setTimed(false)` hides the
+  timer. `refreshHints` shows its prompt in the hint strip in play
+  (`LEARN_HINTS`, no close button); `learnAction` feeds flags and chords
+  from `onAction`, `learnViews` the Shift and Ctrl the frame loop reads (Ctrl
+  also `FIRST_USE.once('autoHideToast')`), and `learnChanged` redraws the
+  strip and puts the start-cell tint (`renderer.setMark`) on the prompt's
+  cell. `noteAutoHide`, `aimHint` and the 3D first-use strip stay quiet.
+  `learnGame()` gives the first-use state its `{learn, won}` and keeps the
+  game out of `LAST_MODE` and the menu's last-mode mark.
 - **Actions.** `onAction(type)` is the only dispatcher (`MouseActions`'
   callback): `left` → `S.play.reveal`, `right` → `toggleFlag`, `chord` →
   `chord`. `renderer.snapshotBeforeAction()` precedes left/chord;
@@ -116,8 +135,11 @@ loop's render-on-demand. The 3D board choice, session and adapter
   acts: `Input.isActive` is false, the frame loop moves no camera and
   changes no view mode, `handlePad` only releases held controls. After it
   the adapter releases lock and reports finished
-  ([app-shell-pause.md](app-shell-pause.md) § End delay). A fixed board's
-  null summary ends the game on the pause card instead.
+  ([app-shell-pause.md](app-shell-pause.md) § End delay). A null summary
+  ends the guided board on the `learn-end` screen (`#learn-end`, Play First
+  box 1 → `playFirstBox`, an ordinary pick saved as the last choice, or Try
+  again → `PAUSE.restart`; Back to board choice) and the debug hook's fixed
+  board on the pause card.
 - **Camera aids.** `placeAtSpawn()` puts the camera at `spawnPose`
   ([input.md](input.md)): every `startGame`, `retry3D`, and the return to
   start (`Home` / `R` while `Input.isActive`, the pause card's "Back to
@@ -172,7 +194,8 @@ loop's render-on-demand. The 3D board choice, session and adapter
 ## WHEN TO READ THE SOURCE
 
 - Changing the 3D end-of-game flow or the frozen HUD (`endGame`,
-  `S.endState`, the `MODES.on('finished')` pause card for a fixed board),
+  `S.endState`, the `MODES.on('finished')` Learn 3D end card and fixed
+  board's pause card),
   the board status card (`showStatus3D`, `retry3D`) or how the session's
   timer follows the screens (`sync3D`).
 - Debugging frames that do not redraw, or never stop: `shouldRender`.

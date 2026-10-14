@@ -20,6 +20,7 @@ import { GENERATOR_VERSION } from '../js/generation/placer.js';
 import { pregenerate } from '../js/generation/client.js';
 import { startCell } from '../js/generation/start-cell.js';
 import { PRESETS, boardOf, DEFAULT_CHOICE } from '../js/mode3d/board-choice.js';
+import { LEARN_BOARD, learnChoice } from '../js/mode3d/learn.js';
 import { browserSuite } from './helpers/browser.mjs';
 import { patience } from './helpers/timing.mjs';
 
@@ -572,6 +573,31 @@ test('a forced start cell in 3D: marked, a first reveal elsewhere changes nothin
   assert.equal(h.session.markedCell, -1);
   const expected = new Set(generate(req).mines);
   for (let c = 0; c < h.session.view.n; c++) if (h.session.view.pressed[c]) assert.equal(expected.has(c), false);
+});
+
+test('the Learn 3D guided board: a fixed board with a forced, marked start cell — a reveal elsewhere changes nothing and hints, nothing is requested', () => {
+  const choice = learnChoice();
+  const { forced, ...board } = choice;
+  const h = sessionOf(board, { forced });
+  const refused = [];
+  h.session.on('refused', (e) => refused.push(e));
+  assert.equal(h.session.markedCell, LEARN_BOARD.startCell, 'the start cell is marked');
+  assert.equal(h.session.mines, LEARN_BOARD.mines);
+  const off = LEARN_BOARD.startCell === 0 ? 1 : 0;
+  const r = h.session.reveal(off);
+  assert.equal(r.changed.length, 0, 'a reveal off the start cell changes nothing');
+  assert.equal(h.session.state, SESSION_STATE.READY);
+  assert.deepEqual(refused, [{ cell: off, hint: START_HINT }]);
+  assert.equal(h.session.toggleFlag(off).flagged, 1, 'flags before the first reveal behave as in any 3D game');
+  h.session.toggleFlag(off);
+  const first = h.session.reveal(LEARN_BOARD.startCell);
+  assert.ok(first && typeof first.then !== 'function', 'applied at once: a fixed board');
+  assert.equal(h.session.state, SESSION_STATE.PLAYING);
+  assert.equal(h.client.requests.length, 0, 'no generation request');
+  assert.equal(h.placed.length, 0, 'nothing placed');
+  assert.equal(h.session.seed, null, 'made by no generator: no seed, so no summary');
+  assert.equal(h.session.markedCell, -1);
+  for (const m of LEARN_BOARD.minePositions) assert.equal(h.session.view.pressed[m], 0);
 });
 
 test('a forced 3D board that fails offers nothing; a restart once started plays a free box', async () => {

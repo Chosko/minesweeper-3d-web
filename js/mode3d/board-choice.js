@@ -1,6 +1,6 @@
-// 3D board choice: the two first-box presets and the four cube presets, a custom board, the Random fill
-// and the no-guess switch, preselected from the last 3D board choice. Touches only the elements it is
-// handed.
+// 3D board choice: Learn 3D, the two first-box presets and the four cube presets, a custom board, the
+// Random fill and the no-guess switch, preselected from the last 3D board choice. Touches only the
+// elements it is handed.
 //
 // A board choice is { size, custom, noGuess }: `size` one of BOARD_SIZES (a preset id or
 // 'custom'); `custom` the custom board's { X, Y, Z, mines }, kept with a preset so the custom
@@ -39,8 +39,9 @@
 //   boardOf(choice)          { X, Y, Z, mines, noGuess } of the board to play.
 //   randomBoard(random?)     the Random fill, the original formula, always a valid board.
 //
-// bindBoardChoice({ root, onStart, onBack, code? }) → { show(choice, { played }), destroy() }
-//   root      the screen's element: preset items [data-preset="X,Y,Z,mines"], the custom form
+// bindBoardChoice({ root, onStart, onLearn, onBack, code? }) → { show(choice, { played }), destroy() }
+//   root      the screen's element: the Learn 3D item [data-learn] first (js/mode3d/learn.js; no
+//             preset, so show() never marks it), preset items [data-preset="X,Y,Z,mines"], the custom form
 //             (form) with its submit button [data-preset="custom"], inputs
 //             [data-field="X|Y|Z|mines"], Random [data-random], the info line [data-info], the
 //             presets' no-guess switch [data-noguess="presets"], the custom board's no-guess
@@ -54,7 +55,8 @@
 //             from js/shell/returning.js) fills each preset's detail line [data-detail], under its
 //             size line, for the position of the presets' no-guess switch, and again whenever the
 //             switch changes; a preset without one shows no detail line.
-//   onStart(choice) when a preset is picked or a valid custom board submitted; onBack() on Back.
+//   onStart(choice) when a preset is picked or a valid custom board submitted; onLearn() when Learn
+//             3D is picked; onBack() on Back.
 //   code      { resolve, onPlay }: the board code field, as Classic 2D's (js/classic2d/board-choice.js):
 //             [data-code-field], [data-code-play] and [data-code-info], cleared by every show.
 
@@ -202,8 +204,9 @@ export function randomBoard(random = Math.random) {
 
 const FIELDS = Object.freeze(['X', 'Y', 'Z', 'mines']);
 
-export function bindBoardChoice({ root, onStart, onBack, code = null }) {
+export function bindBoardChoice({ root, onStart, onLearn, onBack, code = null }) {
   const items = [...root.querySelectorAll('[data-preset]')];
+  const learn = root.querySelector('[data-learn]');
   const form = root.querySelector('form');
   const inputs = FIELDS.map((f) => root.querySelector(`[data-field="${f}"]`));
   const info = root.querySelector('[data-info]');
@@ -287,6 +290,7 @@ export function bindBoardChoice({ root, onStart, onBack, code = null }) {
   };
   const onNoGuess = () => { wanted = noGuess.checked; update(); };
   const onBackClick = () => onBack?.();
+  const onLearnClick = () => onLearn?.();
 
   for (const b of items) b.addEventListener('click', onItem);
   for (const inp of inputs) inp.addEventListener('input', update);
@@ -295,6 +299,7 @@ export function bindBoardChoice({ root, onStart, onBack, code = null }) {
   noGuess.addEventListener('change', onNoGuess);
   noGuessPresets.addEventListener('change', fillDetails);
   back?.addEventListener('click', onBackClick);
+  learn?.addEventListener('click', onLearnClick);
 
   const codeInput = root.querySelector('[data-code-field]');
   const codeField = code && codeInput ? bindCodeField({
@@ -326,6 +331,7 @@ export function bindBoardChoice({ root, onStart, onBack, code = null }) {
       noGuess.removeEventListener('change', onNoGuess);
       noGuessPresets.removeEventListener('change', fillDetails);
       back?.removeEventListener('click', onBackClick);
+      learn?.removeEventListener('click', onLearnClick);
     },
   };
 }

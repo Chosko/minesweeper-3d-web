@@ -27,7 +27,8 @@ waves, confetti, shake, ground grid — and the replay and end-of-game behaviour
   `render()`.
 - View: `setToggles(shift, space, ctrl)`, `setSpacing(s)` (pitch `4 * s`), `setSelected(idx)`,
   `setMark(idx)` (the marked start cell a pre-generated board waits for, or a daily's or a
-  challenge's forced start cell, tinted green; → whether it changed), `pulseMark()` (the tint swells
+  challenge's forced start cell, or the cell a Learn 3D prompt points at, revealed number
+  included, tinted green; → whether it changed), `pulseMark()` (the tint swells
   `MARK_PULSE_COUNT` times over `MARK_PULSE_S` through `uMarkPulse`, kept animating by
   `isAnimating()`; → whether there is a mark), `boardRadius()` (far plane, fog, confetti size), `setScenePalette({horizon, zenith,
   nadir})`, `setPixelRatio(pr)` (→ `false` when unchanged; main then skips the redraw), `resize()`.

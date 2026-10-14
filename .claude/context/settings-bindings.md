@@ -28,8 +28,10 @@ The module's head comment lists every function.
   `hintStripHtml(mode, device, glyphs?)`.
 - `HELP_FOOT`, `helpFootHtml(mode, device, glyphs?)` — the H panel's foot
   line, naming the release rule in 3D only.
-- `HINT_TEXT` (`autoHide`, `aimHint`, `scrollHint`), `hintText(name, device,
-  glyphs?)` — a one-time hint as plain text.
+- `HINT_TEXT` (`autoHide`, `aimHint`, `scrollHint`, and the Learn 3D
+  prompts `learnStart`, `learnShift`, `learnCtrl`, `learnFlag`,
+  `learnChord`, `learnRest`), `hintText(name, device, glyphs?)` — a
+  one-time hint or prompt as plain text.
 - `createActiveDevice({ onChange })` → `current` (`'keyboard'` |
   `'controller'`), `input('pad' | 'keyboard' | 'pointer')`,
   `connected(on)`: the controller while the last input came from a
