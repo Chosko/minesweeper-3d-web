@@ -160,7 +160,7 @@ Context:
 
 Done: 2026-10-14, commit `0bf3728` (31 files, +2050/-151). The results screen's "#n of N" rank comes from the Top 10 ranking in the new js/records/stats.js; Records filters and tabs reset on every open.
 
-## [ ] 32. Implement task 150 — Replay viewer as a study tool
+## [x] 32. Implement task 150 — Replay viewer as a study tool
 
 Depends on: none
 
@@ -169,6 +169,8 @@ Context: none
 ```prompt
 /task-implement 150 --review --rounds 2
 ```
+
+Done: 2026-10-14, commit `cfcb186` (37 files, +1912/-330). The viewer's `state.time` / `seek(ms)` are game time from -500 (the lead-in), so a replay opens at -500, not 0; its key line shows over 3D replays only.
 
 ## [ ] 33. Implement task 151 — Daily board, board codes and challenge links
 
