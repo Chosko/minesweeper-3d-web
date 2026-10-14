@@ -18,6 +18,8 @@ the shell hands in its flow and its sound sink. The area overview is
   sound?, clock?, randomSeed?, generatingDelayMs?, place?, buttonSwap?})` →
   the contract methods plus `warm()`, `ending`, `finishNow()`,
   `hideBoard(hidden)`, `tick()`, `pad(poll, now)`, `setScale(scale)`,
+  `tapMode` / `setTapMode('reveal' | 'flag')` (the Reveal / Flag switch,
+  `reveal` at first, kept for the page), `boardGame` (for the debug hook),
   `retry()`, `playStandard()`, `cancelGeneration()` → whether a board being
   generated was cancelled, `loadChoice()`, `status()` → `{state, time,
   minesLeft}`, `boardHidden`, `boardView` (for the debug hook); the
@@ -28,8 +30,10 @@ the shell hands in its flow and its sound sink. The area overview is
   frame?(), layout?(layout), scrolled?()}` — `board` once per game and
   again when `playStandard()` turns no-guess off.
 - `mount` defaults to `{board: mountBoardView, pointer: mountPointerInput,
-  cursor: mountCursorInput, sampler: mountSampler2D}`; without `sampler` no
-  movement is recorded. `sound` is the sound sink (`{reveal(count),
+  cursor: mountCursorInput, touch: mountTouchInput, sampler:
+  mountSampler2D}`; without `touch` no touch input, without `sampler` no
+  movement is recorded. The touch mount gets the gate, `flagMode` from
+  `tapMode` and `flow.scrolled` as its `onUserScroll`. `sound` is the sound sink (`{reveal(count),
   flag(on, count), chord(count), noop(), explode(), win()}`, the `sfx` of
   `js/audio.js` that `main.js` hands in), null by default. `clock` is the
   session's and the end delay's. `buttonSwap` goes to every pointer mount

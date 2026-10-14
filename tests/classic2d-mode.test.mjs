@@ -105,7 +105,7 @@ function fakeSound() {
 
 // Recording mounts standing in for mountBoardView / mountPointerInput / mountCursorInput.
 function mounts() {
-  const log = { boards: [], pointers: [], cursors: [] };
+  const log = { boards: [], pointers: [], cursors: [], touches: [] };
   const board = ({ container, grid, ...options }) => {
     const v = {
       container, grid, options, game: null, hidden: false, updates: [], destroyed: false, canvas: { id: 'canvas' },
@@ -122,14 +122,14 @@ function mounts() {
     log.boards.push(v);
     return v;
   };
-  const input = (list) => ({ view, session, swap }) => {
-    const m = { view, session, swap, resets: 0, destroyed: false, polls: [], input: { reset() { m.resets += 1; } } };
+  const input = (list) => ({ view, session, swap, ...rest }) => {
+    const m = { view, session, swap, ...rest, resets: 0, destroyed: false, polls: [], input: { reset() { m.resets += 1; } } };
     m.destroy = () => { m.destroyed = true; };
     m.pad = (poll, now) => { m.polls.push([poll, now]); };
     list.push(m);
     return m;
   };
-  return { log, mount: { board, pointer: input(log.pointers), cursor: input(log.cursors) } };
+  return { log, mount: { board, pointer: input(log.pointers), cursor: input(log.cursors), touch: input(log.touches) } };
 }
 
 function fakeFlow() {
@@ -178,9 +178,10 @@ function setup({ mines = null, hold = false, choice = null, lastChoice = memoryL
   const board = () => log.boards.at(-1);
   const pointer = () => log.pointers.at(-1);
   const cursor = () => log.cursors.at(-1);
+  const touch = () => log.touches.at(-1);
   // Act through what the pointer input was handed, as the mounted input would.
   const act = (kind, c) => pointer().session[kind](c);
-  return { host, mode, flow, log, cl, clock, events, board, pointer, cursor, act, lastChoice };
+  return { host, mode, flow, log, cl, clock, events, board, pointer, cursor, touch, act, lastChoice };
 }
 
 // ---------------------------------------------------------------- the contract
@@ -575,6 +576,51 @@ test('a failure hands the shell its count of failures in a row', async () => {
   cl.made.at(-1).answer({ ok: false, reason: 'no board' });
   await q;
   assert.equal(flow.calls.filter((c) => c[0] === 'failed').at(-1)[1].count, 2, 'a Retry that fails again');
+});
+
+test('the touch input is mounted beside the pointer and cursor inputs on the board view, through the input gate', () => {
+  const { mode, touch, pointer, board, flow } = setup({ choice: { size: 'beginner', noGuess: false } });
+  assert.equal(touch().view, board(), 'it plays the board view');
+  assert.equal(touch().session, pointer().session, 'through the same gate as the mouse');
+  assert.equal(touch().swap, undefined, 'the mouse button swap is the mouse\'s alone');
+  touch().onUserScroll();
+  assert.equal(flow.scrolls, 1, 'a touch pan is the player\'s scroll');
+  assert.equal(touch().session.paused, false);
+  mode.pause({});
+  assert.equal(touch().session.paused, true, 'it takes nothing while the board is hidden');
+  assert.ok(touch().resets > 0, 'and drops the fingers it held');
+  mode.resume({});
+  mode.leave();
+  assert.ok(touch().destroyed, 'the leave releases it');
+});
+
+test('the Reveal / Flag switch starts on Reveal, reaches every game\'s touch input and keeps its setting for the page\'s life', () => {
+  const { host, mode, touch } = setup({ choice: { size: 'beginner', noGuess: false } });
+  assert.equal(mode.tapMode, 'reveal');
+  assert.equal(touch().flagMode(), false);
+  mode.setTapMode('flag');
+  assert.equal(mode.tapMode, 'flag');
+  assert.equal(touch().flagMode(), true, 'the live board follows it');
+  mode.restart();
+  assert.equal(touch().flagMode(), true, 'a restart keeps it');
+  mode.leave();
+  host.start(MODE_ID, { size: 'expert', noGuess: false });
+  assert.equal(touch().flagMode(), true, 'so does the next game');
+  mode.setTapMode('sideways');
+  assert.equal(mode.tapMode, 'flag', 'an unknown mode changes nothing');
+  mode.setTapMode('reveal');
+  assert.equal(touch().flagMode(), false);
+});
+
+test('every new game, restart and Play again opens a fresh board view, so a pinch zoom lasts one game', () => {
+  const { host, mode, log, touch } = setup({ choice: { size: 'expert', noGuess: false } });
+  const first = log.boards.at(-1);
+  mode.restart();
+  assert.notEqual(log.boards.at(-1), first, 'a restart opens a new view at the fit rule');
+  assert.ok(first.destroyed);
+  assert.equal(touch().view, log.boards.at(-1));
+  host.start(MODE_ID, { size: 'expert', noGuess: false });
+  assert.equal(log.boards.length, 3, 'a new game: a new view');
 });
 
 test('the controller reaches the board through the cursor input', () => {

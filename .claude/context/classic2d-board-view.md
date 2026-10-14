@@ -44,6 +44,10 @@ area overview is [classic2d.md](classic2d.md).
   `grid` the square grid ([engine.md](engine.md)); `createSkin` defaults to
   `createTileSkin`, `token` to the token reader. Positions are canvas CSS
   pixels.
+- Touch zoom: `zoomRange` → `{min, max}` (`MIN_TILE_SIZE` and the
+  fit-to-view tile, the whole board inside the frame, whichever is larger),
+  `boardPoint(x, y)` → `{u, v}` in tiles, `zoom(tile, x, y, point?)` →
+  changed.
 - `mountBoardView({container, grid, win, onUserScroll, ...})` → the view
   plus `destroy()`: a canvas filling `container`, refitted on container
   resize and device-pixel-ratio change, scrolled by the wheel and panned by
@@ -74,6 +78,11 @@ area overview is [classic2d.md](classic2d.md).
   scrolls the least that shows a cell's whole tile. Each edge with hidden
   cells beyond gets an inset shadow, each overflowing axis a thin bar
   whose length and place are the visible part's.
+- **Touch zoom.** `zoom` replaces the fit rule's tile with a whole tile
+  clamped to `zoomRange` for the view's life (kept through a resize,
+  clamped to the new range), puts the board point under the anchor and
+  clamps the scroll, then repaints and reports the layout. The mode mounts
+  a fresh view per game, so every game opens at the fit rule.
 - **Pressed feedback.** `setPressed` redraws only cells that gain or lose
   the press; a pressed cell draws as `pressed` only while closed, and
   `setGame` clears the set.

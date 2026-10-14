@@ -2,7 +2,7 @@
 
 The Classic 2D mode on the square grid, as the player meets it: pick
 Beginner, Intermediate, Expert or a custom board, switch no-guess on or off,
-and play on a flat Canvas 2D board with mouse, keyboard or controller, with
+and play on a flat Canvas 2D board with mouse, touch, keyboard or controller, with
 the timer, mine counter and click counter in the in-game overlay and the
 finished game
 handed to the results screen.
@@ -33,8 +33,10 @@ In scope (m1-classic-2d):
   "generating" card's *Cancel* goes back to the closed board, recording
   nothing.
 - The Canvas 2D board: layout and scaling to the window, scrolling or
-  panning for boards larger than the screen, hit-testing, and per-cell
-  redraw from the engine's change lists through `square-tile-skin`.
+  panning for boards larger than the screen — by touch too, with a pinch
+  zoom between the minimum tile and the tile at which the whole board fits
+  — hit-testing, and per-cell redraw from the engine's change lists through
+  `square-tile-skin`.
 - Mouse input reproducing the reference's feel: press feedback on button
   down, reveal and chord on release and a flag on the right press, the
   chord gestures the reference accepts (left or middle on a number,
@@ -44,12 +46,22 @@ In scope (m1-classic-2d):
   cell, so the left button alone flags, unflags and chords. The switch
   lives for the page — kept across games, off on reload, never a setting —
   and the toggle shows only while the game is unpaused and never takes
-  keyboard focus. Keyboard, controller and the 3D mode are unaffected.
+  keyboard focus. Keyboard, controller, touch and the 3D mode are unaffected.
+- Touch input: a tap acts on its lift — it reveals a closed cell, or
+  toggles its flag while the *Reveal / Flag* switch is on Flag, and chords
+  on a revealed number whichever way the switch is set — with the mouse's
+  press feedback while the finger is down. A touch held 400 ms flags or
+  unflags the cell under it while still held, with a short vibration where
+  the device has one, and does nothing on a revealed cell. A touch that
+  moves 8 px or more never acts: it pans a board that scrolls. The switch,
+  a 44 px control beside Pause on a coarse pointer only, starts on Reveal
+  and lives for the page, never a setting. Touch never reaches the mouse
+  input, and the 3D mode takes no touch play.
 - Keyboard and controller play: a visible cell cursor moved by arrow keys,
   d-pad or stick, with reveal, flag and chord on buttons, so Classic 2D is
   fully playable with a controller.
 - The timer, mine counter and click counter, fed to the in-game overlay.
-- Sound: each action, by mouse, keyboard or controller, plays the
+- Sound: each action, by mouse, touch, keyboard or controller, plays the
   synthesized cue the 3D game plays for the same outcome — reveal and chord
   scaled by the cells opened, a flag placed or removed, a no-op, the
   explosion of a loss and the win — at the shared volume and mute
@@ -128,7 +140,13 @@ copied.
   part's size and place, and the first clipped board shows a one-time hint
   beside it, "Wheel scrolls · Shift+wheel sideways", which never shows
   again once dismissed or once the player scrolls. A board that fits draws
-  none of the three. A setting change refits an open board at once. Maps
+  none of the three. By touch, one finger pans a board that scrolls and two
+  fingers pan and pinch: the pinch sets the tile anywhere between the
+  minimum tile and the fit-to-view tile, its midpoint kept over the same
+  board point and the scroll re-clamped, for the rest of that game — a new
+  game, restart or *Play again* opens at the fit rule's tile; a pan or zoom
+  changes no game state and records nothing. A setting change refits an
+  open board at once. Maps
   pointer positions to cells, redraws only the cells each action changed,
   and asks `square-tile-skin` to paint each one.
 - **Pointer input.** A press-and-release state machine over the mouse
@@ -142,6 +160,15 @@ copied.
   so a swapped click keeps the timing, press feedback and chord gestures of
   the button it stands for; swapping finished actions instead would flag on
   a release and reveal on a press.
+- **Touch input.** Its own state machine over touch pointers, beside the
+  mouse's: the 400 ms long-press, the tap on its lift, the 8 px threshold,
+  the one-finger pan, and two fingers that cancel the first finger's
+  pending tap or long-press and drive the pan and pinch. It reads the
+  Reveal / Flag switch and the profile's press feedback, and suppresses the
+  emulated mouse events a tap produces, so the mouse state machine and its
+  profile markers never see a touch and a tap acts exactly once. Its
+  actions are recorded in the replay like mouse ones; a touch has no hover
+  position, so no pointer is sampled for it.
 - **Cursor input.** A cell cursor driven by keyboard and controller, with
   auto-repeat for held directions, drawn as a focus ring over the board in
   a board-only cursor colour distinct from the tile edge it covers, so the

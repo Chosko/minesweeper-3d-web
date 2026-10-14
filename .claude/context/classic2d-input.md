@@ -1,4 +1,4 @@
-# Classic 2D — pointer, button swap and cursor input
+# Classic 2D — pointer, button swap, touch and cursor input
 
 ## OVERVIEW
 
@@ -13,6 +13,9 @@ not a new state machine. The area overview is [classic2d.md](classic2d.md).
   creation, never saved) and its per-press translation. DOM-free.
 - `js/classic2d/cursor-input.js` — the keyboard and controller cell cursor
   and `mountCursorInput`. DOM-free at import.
+- `js/classic2d/touch-input.js` — the touch state machine (tap, long-press
+  flag, Reveal / Flag switch, pan and pinch) and `mountTouchInput`.
+  DOM-free at import.
 
 ## PUBLIC API
 
@@ -33,6 +36,16 @@ not a new state machine. The area overview is [classic2d.md](classic2d.md).
   closed), release(button), reset()}` — `press` trades `LEFT` and `RIGHT`
   only while on and `closed`, recording the result until `release(button)`
   returns it; a release with no recorded press passes through.
+
+`js/classic2d/touch-input.js`
+- `LONG_PRESS_MS` (400), `TAP_SLOP` (8 px), `VIBRATE_MS`, `TAP_MODES`
+  (`reveal`, `flag`).
+- `createTouchInput({graph, game, onPress, onAction, onPan?, onPinchStart?,
+  onPinch?, scrolls?, flagMode?, vibrate?, clock?, rules?, active?})` →
+  `{down(id, x, y, c), move(id, x, y, c), up(id, x, y, c), cancel(id),
+  reset(), holding}` — `x, y` canvas CSS pixels; `onPinch(mid, ratio)`.
+- `mountTouchInput({view, session, graph?, win?, rules?, flagMode?, clock?,
+  onUserScroll?})` → `{input, destroy()}`.
 
 `js/classic2d/cursor-input.js`
 - `CURSOR_KEYS` (key code → `up`/`down`/`left`/`right`/`reveal`/`flag`/
@@ -65,6 +78,20 @@ not a new state machine. The area overview is [classic2d.md](classic2d.md).
   until that button's release; it is reset on blur and destroy. `main.js`
   creates one swap for the page and hands it to the mode
   ([app-shell-2d.md](app-shell-2d.md)); the cursor input never sees it.
+- **Touch input.** Touch pointers only (`pointerType` `'touch'`); the
+  mount cancels `pointerdown` and the canvas's `touchstart` / `touchmove` /
+  `touchend`, so a tap fires no emulated mouse events and never reaches the
+  pointer input or the 2D sampler. One finger: held `LONG_PRESS_MS` within
+  `TAP_SLOP` it toggles a closed or flagged cell's flag while held (one
+  `navigator.vibrate`), nothing on a revealed cell, and the lift does
+  nothing; lifted sooner it acts on the touched cell — a number chords, a
+  closed cell reveals or, while `flagMode()`, toggles its flag; moved
+  `TAP_SLOP` or more it pans (`view.pan`) a board that scrolls, else acts on
+  nothing. Press feedback reads `pressFeedback`, only for a tap that would
+  reveal or chord. A second finger cancels the first's tap and starts the
+  pinch: `view.zoom(tile at start × spread ratio, midpoint, board point
+  under the start midpoint)`; lifting a finger ends the gesture. Input is
+  taken while the session is `ready` or `playing` and not paused.
 - **Cursor input.** Space / Enter and A / RT only reveal (nothing on a
   number), F and X / LT flag (on the press), D and Y only chord; reveal and
   flag held together are left + right, chording when `chordInputs` has

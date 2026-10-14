@@ -788,6 +788,106 @@ test('the helper module keeps DOM access out of its logic and imports nothing', 
 
 // The element screenshots are artefacts for a person to look at: taken only with MS_SHOTS=1 set. Without
 // them, a theme's look is compared through the element's computed colours.
+// ---------------------------------------------------------------- coarse pointers
+
+// The bodies of the stylesheet's (pointer: coarse) media blocks, comments stripped.
+function coarseBlocks(css) {
+  const out = [];
+  const re = /@media\s*\(pointer:\s*coarse\)\s*\{/g;
+  let m;
+  while ((m = re.exec(css))) {
+    let depth = 1;
+    let i = re.lastIndex;
+    for (; i < css.length && depth; i++) depth += css[i] === '{' ? 1 : css[i] === '}' ? -1 : 0;
+    out.push(css.slice(re.lastIndex, i - 1));
+  }
+  return out.join('\n');
+}
+// The rules outside every @media block.
+function topLevel(css) {
+  let out = '';
+  let depth = 0;
+  let inMedia = 0;
+  for (let i = 0; i < css.length; i++) {
+    if (css.startsWith('@media', i) && depth === 0) inMedia = 1;
+    const ch = css[i];
+    if (ch === '{') depth += 1;
+    if (!inMedia) out += ch;
+    if (ch === '}') { depth -= 1; if (depth === 0) inMedia = 0; }
+  }
+  return out;
+}
+
+test('coarse pointers get 44 px switch and slider targets, 12 px labels and 11 px key caps, inside (pointer: coarse) only', () => {
+  const coarse = rules(coarseBlocks(CSS));
+  const has = (needle, prop) => coarse.some(([sel, body]) => sel.includes(needle) && body.includes(prop));
+  assert.ok(has('.ui-toggle__input', '44px'), 'a 44 px switch hit area');
+  assert.ok(has('.ui-slider__input', '44px'), 'a 44 px slider');
+  assert.ok(has('::-webkit-slider-thumb', '44px') || has('.ui-slider__input', 'height: 44px'), 'a 44 px slider thumb hit area');
+  assert.ok(has('.ui-stat__label', '12px'), 'labels at 12 px');
+  const styleCoarse = rules(coarseBlocks(STYLE));
+  assert.ok(styleCoarse.some(([sel, body]) => /\bkbd\b/.test(sel) && body.includes('11px')), 'key caps at 11 px');
+  assert.ok(styleCoarse.some(([sel, body]) => sel.includes('#hud-tap') && body.includes('44px')), 'the Reveal / Flag switch\'s 44 px hit area');
+});
+
+test('on a fine pointer every size the coarse rules touch is as it was', () => {
+  const top = rules(topLevel(CSS));
+  const body = (sel) => top.filter(([s]) => s === sel).map(([, b]) => b).join(';');
+  assert.match(body('.ui-toggle__input'), /width: 44px;[\s\S]*height: 24px;/);
+  assert.match(body('.ui-slider__input'), /height: 28px;/);
+  assert.match(body('.ui-slider__input::-webkit-slider-thumb'), /width: 20px;[\s\S]*height: 20px;/);
+  assert.match(body('.ui-stat__label'), /font-size: var\(--font-size-xs\);/);
+  assert.match(read('css/tokens.css'), /--font-size-xs: 11px;/, 'the token itself is unchanged');
+  assert.match(rules(topLevel(STYLE)).filter(([s]) => s === 'kbd').map(([, b]) => b).join(';'), /font: 600 0\.78em\/1\.5/);
+  assert.doesNotMatch(topLevel(STYLE), /#hud-tap[^{]*\{[^}]*display:\s*(inline-)?(flex|block)/, 'the switch shows only under the coarse rule');
+});
+
+test('in a browser with touch, switches, sliders, labels and key caps reach their coarse sizes', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const context = await browser.newContext({ viewport: { width: 820, height: 1180 }, hasTouch: true, isMobile: true });
+    const page = await context.newPage();
+    await page.goto(`${base}/dev/components.html`);
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    const sizes = await page.evaluate(() => {
+      // The hit area: whether the control is the element under each point 21 px from its centre,
+      // on a switch standing alone (the gallery stacks its states closer than a finger).
+      const alone = document.createElement('label');
+      alone.className = 'ui-toggle';
+      alone.style.cssText = 'position: fixed; left: 100px; top: 100px; z-index: 99';
+      alone.innerHTML = '<input type="checkbox" role="switch" class="ui-toggle__input" id="alone-switch"><span class="ui-toggle__label">Alone</span>';
+      document.body.append(alone);
+      const reach = (sel) => {
+        const e = document.querySelector(sel);
+        const r = e.getBoundingClientRect();
+        const cx = r.left + r.width / 2;
+        const cy = r.top + r.height / 2;
+        return [[cx, cy - 21], [cx, cy + 21], [cx - 21, cy], [cx + 21, cy]].every(([x, y]) => document.elementFromPoint(x, y) === e);
+      };
+      return {
+        toggle: reach('#alone-switch'),
+        slider: document.querySelector('.ui-slider__input').getBoundingClientRect().height,
+        label: parseFloat(getComputedStyle(document.querySelector('.ui-stat__label')).fontSize),
+      };
+    });
+    assert.ok(sizes.toggle, 'the switch takes a touch anywhere in a 44 px square around its centre');
+    assert.ok(sizes.slider >= 44, `slider ${sizes.slider}`);
+    assert.ok(sizes.label >= 12, `label ${sizes.label}`);
+    await page.goto(`${base}/index.html?still-backdrop`);
+    const kbd = await page.evaluate(() => {
+      const k = document.createElement('kbd');
+      k.textContent = 'H';
+      document.getElementById('pause').append(k);
+      return parseFloat(getComputedStyle(k).fontSize);
+    });
+    assert.ok(kbd >= 11, `key cap ${kbd}`);
+  } finally {
+    await browser.close();
+  }
+});
+
 const SHOTS = process.env.MS_SHOTS === '1';
 const looks = (page, selector) => page.evaluate((sel) => {
   const s = getComputedStyle(document.querySelector(sel));
@@ -938,7 +1038,7 @@ test('in a browser, the overlay bar over the 3D scene meets the contrast contrac
 // The debug hook's surface, pinned so the screen rebuild leaves it unchanged.
 const MS_HOOK = ['state', 'game', 'renderer', 'camera', 'fps', 'frameStats', 'spawnPose', 'THREE', 'start', 'forcePlay',
   'controls', 'pads', 'pause', 'cellCenter', 'moveTo', 'look', 'aimAt', 'mouseDown', 'mouseUp', 'click', 'key', 'wheel',
-  'selected', 'pickBrute', 'pickWith', 'info', 'modes', 'pauser', 'settings', 'records', 'replayViewer', 'board2D', 'watch'];
+  'selected', 'pickBrute', 'pickWith', 'info', 'modes', 'pauser', 'settings', 'records', 'replayViewer', 'board2D', 'game2D', 'watch'];
 
 test('in a browser, the menu, the pause card and the results layout meet the contrast contract in both themes', async (t) => {
   const env = await suite.open(t);

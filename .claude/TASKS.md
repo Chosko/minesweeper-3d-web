@@ -334,7 +334,7 @@ Preconditions: none
 
 ## 142. Touch Classic 2D and touch-safe 3D entry
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/classic2d/touch-input.js, js/classic2d/board-view.js, js/classic2d/mode.js, js/main.js, js/ui.js, index.html, css/style.css, css/components.css, tests/classic2d-touch.test.mjs, tests/classic2d-view.test.mjs, tests/classic2d-mode.test.mjs, tests/components.test.mjs, README.md, .claude/domain/product-design.md, .claude/domain/business-model.md, .claude/domain/features/classic-2d-square-play.md, .claude/domain/features/game-shell.md, .claude/domain/features/3d-play-flow.md, .claude/domain/features/screen-components.md
 Preconditions: none

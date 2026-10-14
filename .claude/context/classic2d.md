@@ -5,7 +5,7 @@
 The Classic 2D mode, independent of three.js: board setup turns a board
 choice into a board request, the session owns one game from closed board to
 result, the board view lays the board out, hit-tests and scrolls it, the
-pointer and cursor inputs drive it, the tile skin paints each tile, and the
+pointer, touch and cursor inputs drive it, the tile skin paints each tile, and the
 mode joins them behind the game shell's contract. The session owns the game
 and its timer; the view owns where tiles go and the input that moves the
 board; the skin owns how a tile looks.
@@ -17,9 +17,10 @@ board; the skin owns how a tile looks.
 | `js/classic2d/session.js` | The game session and timer: closed board, first click's board (standard, no-guess, pre-generated), generating state, failure offer, pause, end, restart and leave with summaries and replays, the replay recorder. DOM-free. | [classic2d-session.md](classic2d-session.md) |
 | `js/classic2d/mode.js` | The mode behind the shell's contract: one session, view, inputs and sampler per game, overlay feed, sound cues, pause by hiding the board, generation client and pre-generation, end delay. DOM-free. | [classic2d-mode.md](classic2d-mode.md) |
 | `js/classic2d/end-effect.js` | The 3D win and loss waves and the win confetti at board scale, and their Canvas 2D drawing. DOM-free and token-free. | [classic2d-mode.md](classic2d-mode.md) |
-| `js/classic2d/board-view.js` | Fit rule, scale cap and frame, layout, `cellAt`, per-cell redraw, scrolling and panning with shadows and bars, hidden while paused, pressed feedback, focus ring, `mountBoardView`. DOM-free at import. | [classic2d-board-view.md](classic2d-board-view.md) |
+| `js/classic2d/board-view.js` | Fit rule, scale cap and frame, layout, `cellAt`, per-cell redraw, scrolling and panning with shadows and bars, the touch zoom, hidden while paused, pressed feedback, focus ring, `mountBoardView`. DOM-free at import. | [classic2d-board-view.md](classic2d-board-view.md) |
 | `js/classic2d/pointer-input.js` | Mouse press-and-release state machine from profile markers, `mountPointerInput`. DOM-free at import. | [classic2d-input.md](classic2d-input.md) |
 | `js/classic2d/button-swap.js` | The page's mouse button swap (off at creation, never saved), per-press translation. DOM-free. | [classic2d-input.md](classic2d-input.md) |
+| `js/classic2d/touch-input.js` | Touch state machine: tap on the lift, 400 ms long-press flag, Reveal / Flag switch, chord on a number, one-finger pan, two-finger pan and pinch; `mountTouchInput`. DOM-free at import. | [classic2d-input.md](classic2d-input.md) |
 | `js/classic2d/cursor-input.js` | Keyboard and controller cell cursor, auto-repeat, reveal / flag / chord, `mountCursorInput`. DOM-free at import. | [classic2d-input.md](classic2d-input.md) |
 | `js/classic2d/tile-skin.js` | Stateless tile painter, tile cache, `MIN_TILE_SIZE`. DOM-free at import. | [classic2d-tile-skin.md](classic2d-tile-skin.md) |
 | `js/tile-art.js` | The shared tile recipe — the 3D atlas's cube face at any size, every colour an argument; imports nothing. | [classic2d-tile-skin.md](classic2d-tile-skin.md) |

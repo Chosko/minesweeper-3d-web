@@ -1,4 +1,4 @@
-// Classic 2D mode: the game session (js/classic2d/session.js), the board view and its pointer and
+// Classic 2D mode: the game session (js/classic2d/session.js), the board view and its pointer, touch and
 // cursor inputs behind the game shell's mode contract (js/shell/mode-host.js). DOM-free: the shell
 // hands in its flow; the mounts default to the browser ones and are only called by start().
 //
@@ -31,7 +31,8 @@
 //   createClient  () → a generation client (js/generation/client.js): called once, and the client
 //               kept for the page and shared by every game of the mode.
 //   mount       { board: mountBoardView, pointer: mountPointerInput, cursor: mountCursorInput,
-//               sampler: mountSampler2D }; without `sampler`, no movement is recorded.
+//               touch: mountTouchInput, sampler: mountSampler2D }; without `touch`, no touch input;
+//               without `sampler`, no movement is recorded.
 //   sound       the sound sink (js/audio.js's sfx: reveal, flag, chord, noop, explode, win); every
 //               action the inputs take plays the 3D game's cue for its outcome (js/main.js), read
 //               from the engine's changed cells: reveal(count) or chord(count) for the cells
@@ -74,7 +75,10 @@
 // discarding its recording; restart() then starts the same choice again — the session's, so a
 // board played standard after a no-guess failure stays standard.
 //
-// Shell side: setScale(scale) refits the open board at another board scale. hideBoard(hidden) hides
+// Shell side: setScale(scale) refits the open board at another board scale. tapMode and
+// setTapMode('reveal' | 'flag') are the Reveal / Flag switch every game's touch input reads: what a
+// tap on a closed cell does, 'reveal' at first and kept for the page's life. A pinch zoom is the
+// board view's, so it lasts one game: every start, restart and Play again opens at the fit rule. hideBoard(hidden) hides
 // the board whenever the pause card shows — the session pauses
 // with it, its clock running on (a no-op before the first click and after the end), the inputs drop what they hold and
 // take nothing while it is hidden; pause() is hideBoard(true) and resume() hideBoard(false) plus
@@ -95,6 +99,7 @@ import { normaliseChoice } from './board-setup.js';
 import { mountBoardView } from './board-view.js';
 import { mountPointerInput } from './pointer-input.js';
 import { mountCursorInput } from './cursor-input.js';
+import { mountTouchInput, TAP_MODES } from './touch-input.js';
 import { mountSampler2D } from '../replay/sampler-2d.js';
 import { createGenerationClient, pregenerate } from '../generation/client.js';
 import { startCell } from '../generation/start-cell.js';
@@ -105,7 +110,7 @@ export const MODE_ID = 'classic-2d';
 /** How long the end effect plays before the game is reported finished, for a win and a loss alike. */
 export const END_DELAY_MS = 1000;
 
-const BROWSER_MOUNTS = Object.freeze({ board: mountBoardView, pointer: mountPointerInput, cursor: mountCursorInput, sampler: mountSampler2D });
+const BROWSER_MOUNTS = Object.freeze({ board: mountBoardView, pointer: mountPointerInput, cursor: mountCursorInput, touch: mountTouchInput, sampler: mountSampler2D });
 const globalClock = {
   now: () => globalThis.performance.now(),
   setTimeout: (fn, ms) => globalThis.setTimeout(fn, ms),
@@ -137,8 +142,9 @@ export function createClassic2DMode(report, {
   buttonSwap = null,
 }) {
   const time = clock ?? globalClock;
-  let game = null; // { session, view, pointer, cursor, sampler, offs, last, ending }
+  let game = null; // { session, view, pointer, cursor, touch, sampler, offs, last, ending }
   let hidden = false;
+  let tapMode = TAP_MODES[0]; // the Reveal / Flag switch: what a tap on a closed cell does, kept for the page's life
   let shown = { seconds: null, minesLeft: null, clicks: null };
   let progressShown = null; // the progress last pushed to flow.progress
   let client = null; // the mode's one generation client, made on first use
@@ -206,6 +212,7 @@ export function createClassic2DMode(report, {
     for (const off of g.offs) off();
     g.pointer.destroy();
     g.cursor.destroy();
+    g.touch?.destroy();
     g.sampler?.destroy();
     g.view.destroy();
     flow.generating(false);
@@ -271,6 +278,9 @@ export function createClassic2DMode(report, {
     });
     const pointer = mount.pointer({ view, session: gate, ...(buttonSwap ? { swap: buttonSwap } : {}) });
     const cursor = mount.cursor({ view: cursorView, session: gate });
+    const touch = mount.touch
+      ? mount.touch({ view, session: gate, flagMode: () => tapMode === 'flag', onUserScroll: () => flow.scrolled?.() })
+      : null;
     const offs = [
       session.on('started', () => { report.started(); report.canPause(true); }),
       session.on('changed', ({ changed }) => { view.update(changed); push(); }),
@@ -291,7 +301,7 @@ export function createClassic2DMode(report, {
       session.on('mark', ({ cell }) => view.setMark(cell)),
       session.on('failed', (failure) => flow.failed(failure)),
     ];
-    game = { session, view, pointer, cursor, sampler, offs, ending: null };
+    game = { session, view, pointer, cursor, touch, sampler, offs, ending: null };
     push();
   }
 
@@ -313,6 +323,7 @@ export function createClassic2DMode(report, {
       game.session.pause();
       game.pointer.input.reset();
       game.cursor.input.reset();
+      game.touch?.input.reset();
     } else {
       game.session.resume();
     }
@@ -363,6 +374,9 @@ export function createClassic2DMode(report, {
       game?.sampler?.tick();
     },
     pad(poll, now) { game?.cursor.pad(poll, now); },
+    /** The Reveal / Flag switch: 'reveal' or 'flag', what a tap on a closed cell does. */
+    get tapMode() { return tapMode; },
+    setTapMode(next) { if (TAP_MODES.includes(next)) tapMode = next; },
     retry: () => answer('retry'),
     cancelGeneration() { return game ? game.session.cancel() : false; },
     playStandard() {
@@ -382,5 +396,7 @@ export function createClassic2DMode(report, {
     get boardHidden() { return hidden; },
     /** The open board's view, or null: for the shell's debug hook. */
     get boardView() { return game?.view ?? null; },
+    /** The open board's engine game, or null: for the shell's debug hook. */
+    get boardGame() { return game?.session.game ?? null; },
   };
 }

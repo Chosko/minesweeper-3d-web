@@ -100,6 +100,9 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
   max-width: 100%;
 }
 .ready-card:hover .ready-title { color: var(--color-accent); }
+/* On a coarse-only device the ready card is a notice (UI.setNotice3D): nothing to click. */
+.ready-notice { cursor: default; text-align: center; }
+.ready-notice:hover .ready-title { color: inherit; }
 .ready-title { font-size: 34px; font-weight: 800; letter-spacing: -0.01em; transition: color 0.15s; }
 .ready-board { font-size: 15px; color: var(--color-ink-muted); font-variant-numeric: tabular-nums; }
 .ready-keys { font-size: 13px; color: var(--color-ink-muted); line-height: 1.9; display: flex; flex-direction: column; align-items: center; }
@@ -210,6 +213,9 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
 #hud-swap { min-height: 40px; padding: var(--space-2) var(--space-4); }
 #hud:not(.hud--2d) #hud-swap { display: none; }
 #hud-swap[aria-pressed="true"] { border-color: var(--color-accent); color: var(--color-accent); }
+/* The Classic 2D Reveal / Flag switch (js/classic2d/touch-input.js): on a coarse pointer only, accented on Flag. */
+#hud-tap { display: none; }
+#hud-tap[aria-pressed="true"] { border-color: var(--color-accent); color: var(--color-accent); }
 .hud-tools { position: absolute; top: 16px; right: 16px; padding: 8px 12px; display: flex; gap: 12px; font-size: 13px; color: var(--color-ink-muted); font-variant-numeric: tabular-nums; }
 .kbd-hint { white-space: nowrap; }
 
@@ -327,3 +333,10 @@ body.pad-nav .ready-card:focus .ready-title { color: var(--color-accent); }
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 .toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- coarse pointers ---------- */
+/* Touch targets and text a finger and a phone need; a fine pointer keeps every size above. */
+@media (pointer: coarse) {
+  #hud.hud--2d #hud-tap { display: flex; min-width: 44px; min-height: 44px; padding: var(--space-2) var(--space-4); }
+  kbd { font-size: max(11px, 0.78em); }
+}

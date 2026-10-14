@@ -42,6 +42,14 @@ loop's render-on-demand. The 3D board choice, session and adapter
   a granted lock enters play with no card shown, and a refusal's
   `onLockError` shows it with its message. A UI click made with controller
   A sets `padGesture`, routing resume/restart to lockless play.
+- **Coarse-only devices.** Every lock request goes through
+  `requestLock3D()`, which makes none while `COARSE_ONLY` (coarse and no
+  fine pointer): the ready card, resume, restart and Play again
+  (`enterPlay3D`, which then leaves the card shown), the failed board's
+  Retry and standard offer, fullscreen and Look at the board (lockless
+  there, as a controller's). `ui.setNotice3D(COARSE_ONLY)` swaps
+  `#ready-btn` for `#ready-notice` (3D needs a mouse and keyboard, or a
+  controller); Back and the controller's A and Start still work.
 - **Pointer lock.** In locked play the browser consumes Esc to release the
   lock; `onLockChange` calls `backGame('key')` instead — during the end
   delay the release ends it (`END_SKIP.lockLost()`), a lock lost with the

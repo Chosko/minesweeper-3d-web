@@ -45,12 +45,14 @@ export function boardLine3D(s, { mines = false } = {}) {
 export const boardLine2D = (b) => `${b.width} × ${b.height}${b.noGuess ? NO_GUESS : ''}`;
 
 export const NO_MOUSE_MSG = 'Minesweeper 3D needs a mouse and keyboard — open it on a desktop browser.';
+/** The menu's note on a coarse-only device, where Classic 2D plays by touch. */
+export const TOUCH_MSG = 'Minesweeper 3D needs a mouse and keyboard — Classic 2D plays by touch.';
 
 export class UI {
   constructor(cb) {
-    this.cb = cb; // { onMenuEntry, onMenuPlayAgain, onBack, onReadyClick, onReadyDrag, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSwap, onToggleSound, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll }
+    this.cb = cb; // { onMenuEntry, onMenuPlayAgain, onBack, onReadyClick, onReadyDrag, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSwap, onToggleTap, onToggleSound, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll }
     this.el = {
-      hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), clicks: $('hud-clicks'), size: $('hud-size'), hudTools: $('hud-tools'), hudSwap: $('hud-swap'),
+      hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), clicks: $('hud-clicks'), size: $('hud-size'), hudTools: $('hud-tools'), hudSwap: $('hud-swap'), hudTap: $('hud-tap'),
       help: $('help'), helpList: $('help').querySelector('.controls'), helpFoot: $('help-foot'),
       hintStrip: $('hint-strip'), hintStripText: $('hint-strip-text'),
       readyRules: $('ready-rules'), pauseBoard: $('pause-board'), pauseControls: $('pause-controls'),
@@ -126,6 +128,8 @@ export class UI {
     // The swap toggle never takes focus, so the board's cursor keys (Space, Enter) keep playing.
     this.el.hudSwap.addEventListener('mousedown', (e) => e.preventDefault());
     this.el.hudSwap.addEventListener('click', () => cb.onToggleSwap?.());
+    this.el.hudTap.addEventListener('mousedown', (e) => e.preventDefault());
+    this.el.hudTap.addEventListener('click', () => cb.onToggleTap?.());
     $('c2d-retry').addEventListener('click', () => cb.onRetry2D?.());
     $('c2d-standard').addEventListener('click', () => cb.onStandard2D?.());
     $('c2d-cancel').addEventListener('click', () => cb.onCancel2D?.());
@@ -141,8 +145,17 @@ export class UI {
     $('p-confirm-no').addEventListener('click', () => this._closeConfirm('onNo'));
   }
 
-  /** Show the "needs mouse and keyboard" banner on the menu. */
-  setNoMouse(on) { $('touch-note').classList.toggle('hidden', !on); }
+  /** Show the "needs mouse and keyboard" banner on the menu; on a coarse-only device (`touch`) it says Classic 2D plays by touch. */
+  setNoMouse(on, touch = false) {
+    const note = $('touch-note');
+    note.textContent = touch ? TOUCH_MSG : NO_MOUSE_MSG;
+    note.classList.toggle('hidden', !on);
+  }
+  /** On a coarse-only device the 3D ready card is a notice with one Back action, not a button. */
+  setNotice3D(on) {
+    $('ready-btn').classList.toggle('hidden', !!on);
+    $('ready-notice').classList.toggle('hidden', !on);
+  }
 
   /**
    * Disable main menu entry `id`, which this browser cannot run: its reason shows under its label
@@ -277,10 +290,17 @@ export class UI {
     this.el.hud.classList.add('hud--2d');
     this.el.hud.classList.remove('hidden');
     this.el.hudSwap.classList.remove('hidden');
+    this.el.hudTap.classList.remove('hidden');
     this.el.c2d.classList.remove('hidden');
   }
   /** The Classic 2D mouse button swap's toggle: pressed while the swap is on. */
   setSwap(on) { this.el.hudSwap.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+  /** The Reveal / Flag switch (coarse pointers only, by the stylesheet): pressed while a tap flags. */
+  setTapMode(mode) {
+    const flag = mode === 'flag';
+    this.el.hudTap.setAttribute('aria-pressed', flag ? 'true' : 'false');
+    this.el.hudTap.textContent = flag ? 'Tap: Flag' : 'Tap: Reveal';
+  }
   /**
    * The room the panel's frame takes around the board (js/classic2d/board-view.js frame): the
    * readouts and the gap above it, the inset on every side, and at least the readouts' width.
@@ -439,6 +459,7 @@ export class UI {
     this.el.pause.classList.remove('hidden');
     this.el.hud.classList.remove('hidden');
     this.el.hudSwap.classList.add('hidden'); // on the board only while it plays
+    this.el.hudTap.classList.add('hidden');
     const ended = state !== 'playing';
     // The primary action leads: Resume while playing, Play again once the game ended, which has nothing to resume.
     const [first, second] = ended ? [this.el.restart, this.el.resume] : [this.el.resume, this.el.restart];

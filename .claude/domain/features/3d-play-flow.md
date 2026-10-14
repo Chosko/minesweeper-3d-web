@@ -103,7 +103,12 @@ behaviour.
 - **Mode adapter.** Implements the game shell's mode contract for 3D over
   the session: start, pause, resume, restart and leave, keeping today's
   pointer-lock and lockless behaviour, and reporting started, finished and
-  abandoned. After a second pointer-lock refusal (one inside the browser's
+  abandoned. On a coarse-only device (coarse and no fine pointer) the ready
+  card is a notice — 3D needs a mouse and keyboard, or a controller — with
+  one Back action, and no path requests pointer lock: not the card, resume,
+  restart, a failed board's Retry or standard offer, fullscreen, nor Look
+  at the board, which opens lockless as a controller's does; a
+  controller's Start still enters lockless play. After a second pointer-lock refusal (one inside the browser's
   re-lock delay does not count) the ready card explains that the browser
   is blocking mouse capture on this page and offers drag-to-look play or
   the controller, at once on every later ready card of the page session.

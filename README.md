@@ -298,8 +298,13 @@ on purpose:
 - **Draw distance:** the far plane grows with the board instead of being clipped at 300 units.
 - **Minor timing changes the player cannot see:** auto-hiding and the win check run right after each
   action instead of once per frame.
-- **Touch devices are not supported:** the game needs a mouse and keyboard (with Pointer Lock) or a
-  game controller. On a touch-only device, the menu says so.
+- **Touch:** Classic 2D plays by touch. A tap reveals, or flags while the overlay bar's Reveal / Flag
+  switch (shown on a touch screen) is on Flag; a 400 ms long-press flags, with a short vibration; a
+  tap on a number chords. One finger pans a board larger than the screen, two fingers pan and pinch
+  to zoom between the smallest tile and the whole board. 3D needs a mouse and keyboard (with Pointer
+  Lock) or a game controller: on a touch-only device the menu says so, the 3D ready card is a
+  notice with Back, and the game never asks for pointer lock. On a touch screen switches and
+  sliders take a 44 px touch and the smallest labels grow to 12 px.
 
 ## Running locally
 

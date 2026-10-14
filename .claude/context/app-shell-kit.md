@@ -111,6 +111,12 @@ log?})`.
     (`#…-offer`).
   `#c2d` is the 2D board layer: `#c2d-board` holds the panel `#c2d-panel`
   behind the canvas; `#c2d.c2d--hint` gives the hint strip room below.
+- **Coarse pointers.** Each stylesheet ends with one `@media (pointer:
+  coarse)` block and nothing else depends on the pointer: the kit's gives
+  `ui-toggle__input` a 44 px hit square (`::after`), `ui-slider__input` a
+  44 px height and `ui-stat__label` 12 px; the shell's shows `#hud-tap` in
+  Classic 2D at 44 px and keeps `kbd` at least 11 px. Every fine-pointer
+  size stays as above (`tests/components.test.mjs` pins both).
 
 ## DOMAIN DEPENDENCIES
 

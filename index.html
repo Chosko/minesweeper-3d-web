@@ -104,6 +104,7 @@
       <div class="ui-stat" role="group" aria-labelledby="hud-clicks-label"><span class="ui-stat__label" id="hud-clicks-label">Clicks</span><span id="hud-clicks" class="ui-stat__value">0</span></div>
       <div class="ui-stat hud-board" role="group" aria-labelledby="hud-size-label"><span class="ui-stat__label" id="hud-size-label">Board</span><span id="hud-size" class="ui-stat__value">-</span></div>
       <button type="button" id="hud-swap" class="ui-button ui-button--secondary" aria-pressed="false" title="Swap left and right click on closed cells">Swap clicks</button>
+      <button type="button" id="hud-tap" class="ui-button ui-button--secondary" aria-pressed="false" title="What a tap on a closed cell does: reveal it, or flag it">Tap: Reveal</button>
       <button type="button" id="hud-pause" class="ui-button ui-button--secondary ui-overlay-bar__pause" aria-label="Pause game">Pause</button>
     </div>
     <div id="hud-tools" class="hud-panel hud-tools"></div>
@@ -131,7 +132,7 @@
   <!-- Main menu -->
   <section id="menu" class="overlay" aria-label="Main menu">
     <section class="ui-card ui-screen ui-screen--wide" aria-labelledby="menu-title">
-      <p id="touch-note" class="ui-panel ui-text ui-text--warning hidden" role="alert">Minesweeper 3D needs a mouse and keyboard &mdash; open it on a desktop browser.</p>
+      <p id="touch-note" class="ui-panel ui-text ui-text--warning hidden" role="alert">Minesweeper 3D needs a mouse and keyboard &mdash; Classic 2D plays by touch.</p>
       <div class="ui-row">
         <svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true"><path d="M32 4 58 18v28L32 60 6 46V18z" fill="#3f78e0"/><path d="M32 4 58 18 32 32 6 18z" fill="#9cc4ff"/><path d="M32 32v28L6 46V18z" fill="#2b5cb8"/><text x="45" y="47" font-size="20" font-weight="800" text-anchor="middle" fill="#fff" font-family="system-ui,sans-serif">3</text></svg>
         <div>
@@ -228,6 +229,10 @@
         <span id="ready-pad" class="ready-pad hidden"></span>
         <span class="ready-tip">Tip: press <kbd>F</kbd> for fullscreen &mdash; keeps <kbd>Ctrl</kbd>+<kbd>W</kbd> from closing the tab</span>
       </button>
+      <div id="ready-notice" class="ready-card ready-notice hidden" role="note" aria-labelledby="ready-notice-title">
+        <span class="ready-title" id="ready-notice-title">3D needs a mouse and keyboard</span>
+        <span class="ready-msg">Connect a controller and press <kbd class="pad">A</kbd> to play, or go Back. Classic 2D plays by touch.</span>
+      </div>
       <div id="ready-blocked" class="ready-blocked hidden" role="group" aria-label="Play without mouse capture">
         <button type="button" id="ready-drag" class="ui-button ui-button--primary">Play with drag-to-look</button>
         <p class="ui-text">Or connect a controller and press <kbd class="pad">A</kbd>.</p>

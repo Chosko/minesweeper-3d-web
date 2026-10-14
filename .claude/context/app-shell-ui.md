@@ -17,12 +17,12 @@ and the controller's menu navigation.
 - `DIM_MIN` / `DIM_MAX` (1/100, from `js/mode3d/board-choice.js`);
   `clampSettings(s)` → `{X,Y,Z,mines}` integers, mines 1..X*Y*Z − 1 (a
   1×1×1 board clamps to 0); `startGame` clamps with it.
-- `fmtDims`, `pauseLine(time, minesLeft)`, `NO_MOUSE_MSG`,
+- `fmtDims`, `pauseLine(time, minesLeft)`, `NO_MOUSE_MSG`, `TOUCH_MSG`,
   `boardLine3D(s, {mines?})` (`"6 × 6 × 6 · 10 mines · no-guess"`),
   `boardLine2D({width, height, noGuess})` (`"30 × 16 · no-guess"`).
 - `UI(cb)` — callbacks are named after the control they serve
   (`onMenuEntry`, `onBack`, `onReady*`, `onResume`, `onRestart`,
-  `onMainMenu`, `onPause`, `onToggleSwap`, `onToggleSound`,
+  `onMainMenu`, `onPause`, `onToggleSwap`, `onToggleTap`, `onToggleSound`,
   `onDismissHint(mode, kind)`, `on{Retry,Standard,OfferMenu,Cancel}{2D,3D}`,
   `onStandardWait3D`, `onMenuPlayAgain`, `onBackToStart`, `onResetAll`).
   Method groups:
@@ -31,7 +31,7 @@ and the controller's menu navigation.
     {rules, blocked})`, `setReadyPending`, `showPlaying`, `showClassic2D`,
     `showPause({state, time, minesLeft, note, mode})`, `updatePause`,
     `showReplay`;
-  - Classic 2D: `setSwap`, `panelFrame2D()` (`PANEL_INSET` 9 px,
+  - Classic 2D: `setSwap`, `setTapMode('reveal' | 'flag')`, `panelFrame2D()` (`PANEL_INSET` 9 px,
     bar height + `PANEL_GAP` 8 px on top), `placePanel2D(rect)`,
     `setBoard2D`, `setBoardStatus`; 3D `setBoardStatus3D` (progress drawn by
     `progressLine`);
@@ -45,7 +45,7 @@ and the controller's menu navigation.
     `setSpacing(v)` (the 3D tools strip's spacing readout), `setSound(muted)`;
   - help and hints: `toggleHelp`, `userToggleHelp`, `setHintStrip(on,
     {scroll})`, `dismissHint`, `setDevice`, `setPad`, `flash`,
-    `toast(msg, ms)`, `setNoMouse`, `openControls` / `closeControls` /
+    `toast(msg, ms)`, `setNoMouse(on, touch)`, `setNotice3D`, `openControls` / `closeControls` /
     `isControlsOpen`, `isPauseVisible`, `setReadyMessage`.
   HUD writes (`updateHud`, `setArrow`, `setReadout`) touch the DOM only on
   change.
@@ -62,7 +62,11 @@ and the controller's menu navigation.
   pause through that one control. `#hud-swap` ("Swap clicks",
   `aria-pressed`) shows only in Classic 2D (hidden by `showPause` and by
   `#hud:not(.hud--2d) #hud-swap`) and never takes focus (its `mousedown` is
-  prevented), so Space and Enter keep playing. Over the 3D scene the bar
+  prevented), so Space and Enter keep playing. `#hud-tap` (the Reveal /
+  Flag switch, "Tap: Reveal" / "Tap: Flag", `aria-pressed` on Flag) works
+  the same way but shows only under `(pointer: coarse)` in Classic 2D, with
+  a 44 px hit area; `main.js` flips `mode2d.setTapMode` and writes it back
+  with `setTapMode`. Over the 3D scene the bar
   has its own raised surface; in Classic 2D it is the top edge of the
   board's framed panel.
 - **Aimed-cell readout** `#aim-readout` sits below and right of the

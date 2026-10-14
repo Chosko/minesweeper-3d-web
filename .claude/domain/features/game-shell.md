@@ -111,7 +111,9 @@ it generalises.
   hide. It asks the active mode to pause, shows the pause card over a hidden
   board, and on resume asks the mode to resume. In 3D, resume keeps the
   current behaviour of re-acquiring pointer lock, or entering lockless play
-  when resumed from a controller.
+  when resumed from a controller; on a coarse-only device it never requests
+  pointer lock, and a resume that is not a controller's shows the ready
+  card's notice.
 - **Shell navigation.** Keyboard and controller navigation for every shell
   screen, built on the existing controller reader and spatial focus search
   ([input.md](../../context/input.md)): the topmost visible layer takes

@@ -137,7 +137,8 @@ demanding, until free 3D play is within reach.
   and total time, and in its replay their spans, shown on the replay seek
   bar.
 - **Mouse and keyboard first.** Controllers are supported in every mode;
-  touch and mobile are not.
+  touch is supported in Classic 2D, and 3D on a touch-only device shows a
+  notice until 3D has touch controls.
 - **Platforms.** Windows at launch. Mac and Linux only if the port is close to
   free. Steam Deck Verified is a stretch goal.
 - **A free demo with fixed locks.** The demo offers unlimited Classic 2D

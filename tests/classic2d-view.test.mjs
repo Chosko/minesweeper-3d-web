@@ -665,6 +665,59 @@ test('setScale refits at another scale and repaints; every refit reports the lay
   assert.equal(view.scale, '100', 'an unknown scale is the default');
 });
 
+// ---------- touch zoom ----------
+
+test('the zoom range runs from the minimum tile to the fit-to-view tile, whichever is larger', () => {
+  const phone = makeView({ cols: 30, rows: 16, width: 358, height: 700, scale: '100' });
+  assert.equal(phone.view.layout.tile, M, 'the fit rule keeps its floor');
+  assert.deepEqual(phone.view.zoomRange, { min: 11, max: M }, 'Expert on a phone: down to the whole-board overview');
+  const small = makeView({ scale: '100' });
+  assert.equal(small.view.layout.tile, 48, 'the fit rule keeps its cap');
+  assert.deepEqual(small.view.zoomRange, { min: M, max: 55 }, 'a small board: up to the tile at which it fills the area');
+  const framed = makeView({ cols: 30, rows: 16, width: 358, height: 700, scale: '100', frame: { top: 60, right: 9, bottom: 9, left: 9 } });
+  assert.deepEqual(framed.view.zoomRange, { min: 11, max: M }, 'measured inside the frame: (358 − 18) / 30');
+});
+
+test('zoom sets the tile within the range, the anchor staying over the same board point, the scroll re-clamped', () => {
+  const layouts = [];
+  const { view, grid } = makeView({ cols: 100, rows: 100, width: 1000, height: 700, scale: '100', onLayout: (l) => layouts.push(l) });
+  assert.deepEqual(view.zoomRange, { min: 7, max: M });
+  view.scrollTo(500, 500);
+  const cell = view.cellAt(300, 200);
+  const point = view.boardPoint(300, 200);
+  assert.deepEqual(point, { u: 800 / M, v: 700 / M }, 'a board point in tiles');
+  assert.equal(view.zoom(20, 300, 200), true);
+  assert.equal(view.layout.tile, 20);
+  assert.equal(layouts.at(-1), view.layout, 'a zoom reports its layout');
+  assert.deepEqual(view.scroll, { x: Math.round((800 / M) * 20 - 300), y: Math.round((700 / M) * 20 - 200) });
+  assert.equal(view.cellAt(300, 200), cell, 'the same cell under the anchor');
+
+  view.zoom(1000, 300, 200);
+  assert.equal(view.layout.tile, M, 'never above the range');
+  view.zoom(1, 300, 200);
+  assert.equal(view.layout.tile, 7, 'never below it');
+  assert.equal(view.layout.scrolls, false, 'the whole board shows');
+  assert.deepEqual(view.scroll, { x: 0, y: 0 }, 're-clamped to a board that fits');
+
+  view.zoom(M, 0, 0, point);
+  assert.equal(view.layout.tile, M);
+  assert.deepEqual(view.scroll, { x: 800, y: 700 }, 'a given board point is put under the anchor');
+  view.zoom(M, 999, 699, { u: 100, v: 100 });
+  assert.deepEqual(view.scroll, { x: 100 * M - 1000, y: 100 * M - 700 }, 'the scroll stays in range');
+  assert.equal(grid.width, 100);
+});
+
+test('the zoom lasts through a resize, within the new range; a view starts at the fit rule\'s tile', () => {
+  const { view } = makeView({ cols: 30, rows: 16, width: 358, height: 700, scale: '100' });
+  view.zoom(11, 100, 100);
+  view.resize(358, 640, 1);
+  assert.equal(view.layout.tile, 11, 'kept');
+  view.resize(600, 700, 1);
+  assert.deepEqual(view.zoomRange, { min: 20, max: M });
+  assert.equal(view.layout.tile, 20, 'clamped into the new range');
+  assert.equal(makeView({ cols: 30, rows: 16, width: 358, height: 700, scale: '100' }).view.layout.tile, M, 'a new view opens at the fit rule');
+});
+
 test('a framed view keeps the board inside the frame: hit-testing, ensureVisible and the clip stop at the view', () => {
   const frame = { top: 60, right: 9, bottom: 9, left: 9 };
   const { view, canvas, grid } = makeView({ cols: 100, rows: 100, width: 1000, height: 700, frame });

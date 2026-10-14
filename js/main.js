@@ -95,6 +95,15 @@ const cam = new FlyCamera();
 const LOCK_SUPPORTED = 'requestPointerLock' in Element.prototype;
 const COARSE_ONLY = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(pointer: fine)').matches);
 const NO_MOUSE = !LOCK_SUPPORTED || COARSE_ONLY;
+/**
+ * Every pointer-lock request of the 3D game: none on a coarse-only device, whose ready card is a
+ * notice (the controller still plays lockless); whether one was made.
+ */
+function requestLock3D() {
+  if (COARSE_ONLY) return false;
+  input.requestLock();
+  return true;
+}
 // S.mode is the router's current screen: 'menu' | 'board-choice' | 'coming-soon' | 'records' | 'classic-2d-choice' | 'settings' | 'ready' |
 // 'playing' | 'classic-2d' | 'paused' | 'results' | 'ctxlost' (defined below).
 const S = {
@@ -274,7 +283,7 @@ function enterFullscreen() {
   if (!el.requestFullscreen) return Promise.reject(new Error('fullscreen is not supported'));
   return el.requestFullscreen({ navigationUI: 'hide' }).then(() => {
     navigator.keyboard?.lock?.(LOCK_KEYS).catch(() => {});
-    if (S.mode === 'playing' && !S.lockless && !d.pointerLockElement) input.requestLock();
+    if (S.mode === 'playing' && !S.lockless && !d.pointerLockElement) requestLock3D();
   });
 }
 function exitFullscreen() { return document.exitFullscreen?.(); }
@@ -308,7 +317,7 @@ const ui = new UI({
   onMenuEntry: (id) => MENU.open(id),
   onMenuPlayAgain: () => playAgainFromMenu(padGesture ? 'pad' : 'pointer'),
   onBack: () => shellBack('pointer'),
-  onReadyClick: () => { sfx.unlock(); if (padGesture) padResume(); else input.requestLock(); },
+  onReadyClick: () => { sfx.unlock(); if (padGesture) padResume(); else requestLock3D(); },
   onReadyDrag: () => enterDragLook(),
   onResume: () => PAUSE.resume(padGesture ? 'pad' : 'pointer'),
   onBackToStart: () => { placeAtSpawn(); PAUSE.resume(padGesture ? 'pad' : 'pointer'); }, // a 3D game in play: resumes as Resume does
@@ -317,6 +326,7 @@ const ui = new UI({
   onPause: () => pauseGame(padGesture ? 'pad' : 'button'),
   onReadyBack: () => readyBack(),
   onToggleSwap: () => BUTTON_SWAP.toggle(),
+  onToggleTap: () => { mode2d.setTapMode(mode2d.tapMode === 'flag' ? 'reveal' : 'flag'); ui.setTapMode(mode2d.tapMode); },
   onToggleSound: () => toggleSound(),
   onResetAll: () => RESET.run(),
   onDismissHint: (mode, kind) => { if (kind === 'scroll') FIRST_USE.once('scrollHint'); else FIRST_USE.dismiss(mode); refreshHints(); },
@@ -330,7 +340,8 @@ const ui = new UI({
   onStandardWait3D: () => standardFromWait3D(),
   onOfferMenu3D: () => PAUSE.toMenu(),
 });
-ui.setNoMouse(NO_MOUSE);
+ui.setNoMouse(NO_MOUSE, COARSE_ONLY);
+ui.setNotice3D(COARSE_ONLY);
 
 // ---------- active device ----------
 // The controller while the last input came from a connected controller, else the keyboard and
@@ -751,9 +762,9 @@ function resultsBack(source) {
 /** Look at the board: a controller's look is lockless; a click or key is the pointer-lock gesture. */
 function openLook(source) {
   if (S.mode !== 'results' || !lookable()) return;
-  if (source === 'pad') { SHELL.go(LOOK_SCREEN); return; }
+  if (source === 'pad' || COARSE_ONLY) { SHELL.go(LOOK_SCREEN); return; } // lockless, as a controller looks
   lookPending = true;
-  input.requestLock();
+  requestLock3D();
 }
 /** Esc, a mouse button, a controller button or the lock's release in the look: the results card again. */
 function endLook() {
@@ -868,7 +879,7 @@ function resumeFromPause(source) {
 function resumeGame(source) {
   if (source === 'pad' || S.dragLook) { sfx.unlock(); enterPlaying(true); return; }
   SHELL.go('ready');
-  if (source === 'pointer') input.requestLock();
+  if (source === 'pointer') requestLock3D();
 }
 
 /** Leave the ready screen: a fresh board goes back to the 3D board choice; a game in progress opens the pause menu. */
@@ -924,7 +935,7 @@ function startGame(settings, pregenerated = null) {
   placeAtSpawn();
   ui.setBoard(board3dChoice);
   ui.updateHud(0, g.minesLeft, 0);
-  SHELL.go('ready', { data: { msg: NO_MOUSE ? NO_MOUSE_MSG : '' } });
+  SHELL.go('ready', { data: { msg: NO_MOUSE && !COARSE_ONLY ? NO_MOUSE_MSG : '' } });
   needRender = true;
   return play; // the adapter reports from it, after the listeners above
 }
@@ -986,7 +997,7 @@ function retry3D(kind) {
   if (padGesture || S.lockless) {
     if (S.mode === 'paused') PAUSE.resume('pad');
     else setLockless(true);
-  } else input.requestLock(); // from the pause card too: the lock enters play
+  } else requestLock3D(); // from the pause card too: the lock enters play
   Promise.resolve(r).then((res) => { if (res && S.play === play) actionSounds('left', res); }); // a standard board is placed at once
 }
 
@@ -1016,7 +1027,7 @@ function setLockless(on) {
 function enterPlay3D(source) {
   if (S.dragLook) enterPlaying(true);
   else if (source === 'pad') padResume();
-  else { ui.setReadyPending(true); input.requestLock(); }
+  else if (!COARSE_ONLY) { ui.setReadyPending(true); requestLock3D(); } // a coarse-only device stays on the notice
 }
 /** The ready card's "Play with drag-to-look": lockless play the mouse drives by dragging, until the game is left. */
 function enterDragLook() {
@@ -1696,6 +1707,8 @@ window.__ms = {
   get replayViewer() { return REPLAY_VIEWER; },
   /** The open Classic 2D board view (js/classic2d/board-view.js): its layout, scroll, cursor and scale. */
   get board2D() { return mode2d.boardView; },
+  /** The open Classic 2D board's engine game: cellState, cellNumber, snapshot. */
+  get game2D() { return mode2d.boardGame; },
   /** Opens the replay viewer: `data` is its route's { replay | replayId, returnTo }. */
   watch: (data) => SHELL.go(REPLAY_SCREEN, { data }),
 };

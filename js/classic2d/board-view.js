@@ -33,6 +33,14 @@
 //   cellAt(x, y)         the cell under a canvas position in CSS pixels, or -1.
 //   cellRect(c)          { x, y, size } of a cell's tile in canvas CSS pixels.
 //   scroll, scrollTo(x, y), scrollBy(dx, dy), pan(dx, dy), wheel(event), ensureVisible(c)
+//   zoomRange            { min, max }: the touch zoom's tiles, MIN_TILE_SIZE to the fit-to-view tile
+//                        (the whole board in the area inside the frame), whichever is larger.
+//   boardPoint(x, y)     { u, v }: the board point under a canvas position, in tiles.
+//   zoom(tile, x, y, point?)  a touch pinch: the tile (whole, clamped to zoomRange) replaces the fit
+//                        rule's for the view's life — kept through a resize, clamped to the new
+//                        range — with `point` (the one under x, y by default) under x, y and the
+//                        scroll clamped; true when the tile or the scroll changed. A new view opens
+//                        at the fit rule's tile.
 //   setHidden(hidden)    a hidden board shows the background only (the game is paused).
 //   setPressed(cells)    the cells a held button presses (js/classic2d/pointer-input.js); a closed
 //                        one is drawn in the skin's pressed state. setGame clears them.
@@ -208,7 +216,19 @@ export function createBoardView({
   const ctx = canvas.getContext('2d');
 
   let scale = BOARD_SCALES.includes(initialScale) ? initialScale : DEFAULT_BOARD_SCALE;
-  const fit = (width, height) => boardLayout({ cols, rows, width, height, max: tileCap(scale), frame });
+  let zoomTile = null; // a touch zoom's tile, or null for the fit rule's
+  const f = frameOf(frame);
+  // The zoom range for an area: MIN_TILE_SIZE to the tile at which the whole board fits, either way round.
+  const rangeOf = (width, height) => {
+    const whole = Math.max(1, Math.floor(Math.min((width - f.left - f.right) / cols, (height - f.top - f.bottom) / rows)) || 1);
+    return { min: Math.min(MIN_TILE_SIZE, whole), max: Math.max(MIN_TILE_SIZE, whole) };
+  };
+  const clampTile = (tile, range) => Math.max(range.min, Math.min(range.max, Math.round(tile)));
+  const fit = (width, height) => {
+    if (zoomTile === null) return boardLayout({ cols, rows, width, height, max: tileCap(scale), frame });
+    zoomTile = clampTile(zoomTile, rangeOf(width, height));
+    return boardLayout({ cols, rows, width, height, min: zoomTile, max: zoomTile, frame });
+  };
   let layout = fit(0, 0);
   let ratio = 1;
   let sized = false;
@@ -406,6 +426,27 @@ export function createBoardView({
     return true;
   }
 
+  // The board point under canvas position x, y, in tiles from the board's top-left corner.
+  function boardPoint(x, y) {
+    return { u: (x - layout.offsetX + scroll.x) / layout.tile, v: (y - layout.offsetY + scroll.y) / layout.tile };
+  }
+
+  // A touch zoom: the tile clamped to the zoom range, board point `point` (the one under x, y by
+  // default) put under canvas position x, y, the scroll clamped; repaints, reports the layout and
+  // returns true when the tile or the scroll changed.
+  function zoom(tile, x, y, point = boardPoint(x, y)) {
+    if (!Number.isFinite(tile)) return false;
+    const before = { tile: layout.tile, x: scroll.x, y: scroll.y };
+    zoomTile = clampTile(tile, rangeOf(layout.width, layout.height));
+    layout = fit(layout.width, layout.height);
+    scroll.x = Math.round(Math.min(layout.maxScrollX, Math.max(0, point.u * layout.tile - (x - layout.offsetX))));
+    scroll.y = Math.round(Math.min(layout.maxScrollY, Math.max(0, point.v * layout.tile - (y - layout.offsetY))));
+    if (layout.tile === before.tile && scroll.x === before.x && scroll.y === before.y) return false;
+    repaint();
+    onLayout(layout);
+    return true;
+  }
+
   function cellRect(c) {
     const col = c % cols;
     return { x: tileX(col), y: tileY((c - col) / cols), size: layout.tile };
@@ -436,6 +477,8 @@ export function createBoardView({
     get effect() { return effect; },
     get scale() { return scale; },
     get scroll() { return { x: scroll.x, y: scroll.y }; },
+    /** The touch zoom's tile range for the current area: { min, max }. */
+    get zoomRange() { return rangeOf(layout.width, layout.height); },
     resize,
     setScale,
     setGame(next) {
@@ -479,6 +522,8 @@ export function createBoardView({
     },
     cellAt: (x, y) => cellAtLayout(layout, scroll, cols, rows, x, y),
     cellRect,
+    boardPoint,
+    zoom,
     scrollTo,
     scrollBy: (dx, dy) => scrollTo(scroll.x + dx, scroll.y + dy),
     /** The board follows a pointer that moved by dx, dy. */

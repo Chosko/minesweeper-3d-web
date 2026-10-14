@@ -56,7 +56,8 @@ part that owns their topic; `navigation.js` is
 `window.__ms` (tests, Playwright)
 - getters `state` (`S`), `game`, `renderer`, `camera`, `controls`, `pads`,
   `fps`, `frameStats` (`{renders, skipped}`), `modes`, `pauser`, `settings`,
-  `records`, `replayViewer`, `board2D`; `THREE`, `spawnPose(X, Y, Z)`.
+  `records`, `replayViewer`, `board2D`, `game2D` (the open Classic 2D
+  board's engine game); `THREE`, `spawnPose(X, Y, Z)`.
 - `watch(data)` → `SHELL.go('replay', {data})`, `data` `{replay | replayId,
   returnTo}`; `start(X, Y, Z, mines, minePositions?)` →
   `MODES.start('3d', …)`; `forcePlay()` (lockless play); `pause()`.

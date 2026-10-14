@@ -821,3 +821,20 @@
   outline-offset: 2px;
   box-shadow: none;
 }
+
+/* ---------- coarse pointers ---------- */
+/* A finger's targets and the smallest labels, on a coarse pointer only: every size above stays the
+   fine pointer's. A switch takes a touch anywhere in a 44 px square around its centre; a slider is
+   44 px tall, so its thumb is pressed anywhere in that height. */
+@media (pointer: coarse) {
+  .ui-toggle__input::after {
+    content: "";
+    position: absolute;
+    top: calc(50% - 22px);
+    left: calc(50% - 22px);
+    width: 44px;
+    height: 44px;
+  }
+  .ui-slider__input { height: 44px; }
+  .ui-stat__label { font-size: 12px; }
+}
