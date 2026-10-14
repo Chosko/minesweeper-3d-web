@@ -103,7 +103,7 @@ Context:
 
 Done: 2026-10-14, commit `390bfcd` (8 files, +364/-20). An open overlay makes every top-level `<body>` element with an id inert, the 3D canvas `#scene` included; containment follows which layers are visible, not `inert`.
 
-## [ ] 38. Implement task 146 — Orbit camera mode
+## [x] 38. Implement task 146 — Orbit camera mode
 
 Depends on: 25
 
@@ -115,11 +115,14 @@ Context:
 /task-implement 146 --review --rounds 2
 ```
 
+Done: 2026-10-14, commit `78193e9` (19 files, +701/-80). The body's dolly minimum (one lattice pitch) puts the camera inside small boards, where the nearest cubes fade to glass and can't be picked; kept as written, left as a design question.
+
 ## [ ] 29. Implement task 147 — Touch controls for 3D
 
 Depends on: 21, 24
 
 Context:
+- 2026-10-14 (from step 38): 3D has an Orbit camera mode (Camera setting), in which `__ms.wheel` dollies; a game started with `__ms.start(..., minePositions)` ends on the pause card, so a test that needs the results screen uses `__ms.modes.start('3d', …)`.
 - 2026-10-14 (from step 27): while an overlay is open the 3D canvas `#scene` is inert, so it takes no pointer or touch input.
 - 2026-10-14 (from step 24): every 3D pointer-lock request goes through `requestLock3D()` in js/main.js, which asks for none on a coarse-only device; the 2D Reveal / Flag switch is `#hud-tap` in the overlay bar beside Pause, shown on a coarse pointer only.
 - 2026-10-14 (from step 21): a spacing step called without a timestamp moves exactly 0.1; only the wheel (notches under 200 ms apart) accelerates. 3D picking starts at the camera, not one unit ahead.
