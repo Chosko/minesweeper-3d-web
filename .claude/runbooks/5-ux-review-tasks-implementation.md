@@ -66,7 +66,7 @@ Context: none
 
 Done: 2026-10-14, commit `e7ba648` (30 files, +1517/-58). Every 3D pointer-lock request goes through `requestLock3D()` in js/main.js, which asks for none on a coarse-only device; Look at the board opens lockless there too.
 
-## [ ] 25. Implement task 143 — Keyboard-only 3D
+## [x] 25. Implement task 143 — Keyboard-only 3D
 
 Depends on: none
 
@@ -75,6 +75,8 @@ Context: none
 ```prompt
 /task-implement 143 --review
 ```
+
+Done: 2026-10-14, commit `a20fd62` (12 files, +662/-16). Arrow-key look goes through `FlyCamera.look` (new `KeyLook`), Enter / `'` feed the mouse's `MouseActions` (new `KeyActions`), gated by new `Input` options `canAct` / `canLook`; the context files do not describe these yet.
 
 ## [ ] 26. Implement task 144 — Controller walk, pad-aware Records and viewer, haptics
 
@@ -101,6 +103,7 @@ Context: none
 Depends on: 25
 
 Context:
+- 2026-10-14 (from step 25): keyboard look is `KeyLook` in js/input.js, through `FlyCamera.look`; Enter / `'` are `KeyActions` feeding `MouseActions`; `Input` takes `canAct` / `canLook`. .claude/context/input.md, app-shell-3d.md and settings-bindings.md do not describe these yet.
 - 2026-10-12 (amend): The review must include the automated browser play test task 146's body requires, because the orbit camera is a large UX change.
 
 ```prompt
