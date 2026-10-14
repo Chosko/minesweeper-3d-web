@@ -1,8 +1,8 @@
 ---
 name: project-setup
-version: 0.10.2
+version: 0.11.0
 type: command
-description: Interactive first-time project initialization wizard — gathers every choice up front (VCS, CLAUDE.md content, AGENTS.md, task backlog, domain layer, context layer), confirms once, then runs /task-setup, /domain-setup and /context-build in a fixed order. Use it once, on a project the chosko-llm tooling has not been set up on yet.
+description: Interactive first-time project initialization wizard — gathers every choice up front (VCS, CLAUDE.md content and policy lines, AGENTS.md, task backlog, domain layer, context layer), confirms once, then runs /task-setup, /domain-setup and /context-build in a fixed order. Use it once, on a project the chosko-llm tooling has not been set up on yet.
 disable-model-invocation: true
 requires: skill:interaction-engine
 ---
@@ -19,7 +19,8 @@ requires: skill:interaction-engine
 # Plastic SCM), and a "Tasks implementation" section carrying the
 # testing-policy line for /task-implement when one is chosen (plus editor
 # dirty-tree noise handling on Unity projects). Offers the interaction-policy
-# line, the shipped claude-md sections and the remote-session-protocol hook.
+# line, the pipeline-dashboard policy line (default off), the shipped
+# claude-md sections and the remote-session-protocol hook.
 # Authoring command — leaves all output uncommitted for one review pass
 # unless `--commit` is passed.
 # Usage: /project-setup
@@ -35,15 +36,16 @@ GOAL
 Walk a first-time user through configuring this project: detect the VCS;
 optionally seed CLAUDE.md with project information (and an AGENTS.md
 pointer); inject a VCS-mapping section so the other chosko-llm commands work
-under a non-git VCS; optionally initialize the task backlog, the domain
-knowledge layer and the navigation context layer.
+under a non-git VCS; record the project policies and install the sections
+and hook the user picks (Steps 3b-4b); optionally initialize the task
+backlog, the domain knowledge layer and the navigation context layer.
 
 Orchestrate existing features; never reimplement them. The `/context-build`
 SKILL, `/task-setup` and `/domain-setup` stay independently usable — run
 their logic on the user's behalf. The wizard's own artifacts are the
-CLAUDE.md project-info, VCS, Tasks-implementation and interaction-policy
-lines and sections, and AGENTS.md; it installs the claude-md sections and the
-hook the user picks through `chosko-llm add --local`.
+CLAUDE.md project-info, VCS, Tasks-implementation, interaction-policy and
+pipeline-dashboard policy lines and sections, and AGENTS.md; it installs the
+claude-md sections and the hook the user picks through `chosko-llm add --local`.
 
 Flow, strictly: GATHER (ask everything) → CONFIRM (one approval) → EXECUTE
 (apply in order) → commit-or-review-reminder. Write no file before the user
@@ -62,7 +64,7 @@ remaining text is a structure/VCS hint.
   forwarded to every nested command invoked with `--commit`.
 - Pull at start: when COMMIT is true, NO_PUSH is not set, and the chosen VCS
   is git (not a non-git `## VCS` exemption), run `git pull` on the current
-  branch before PHASE 2 (EXECUTE) begins. On a conflict, stop the run there:
+  branch before PHASE 3 (EXECUTE) begins. On a conflict, stop the run there:
   report the conflict output and tell the user to resolve manually and
   re-run.
 - `--attended` / `--unattended` → resolve the run's interaction policy from
@@ -91,8 +93,8 @@ COMMIT POLICY — project-setup is an AUTHORING command.
   `git commit`, or the `## VCS`-mapped equivalents). Without `--commit`,
   never stage, commit, or otherwise mutate VCS state, and run no other VCS
   command at all.
-- With `--commit`: commit (and push) the wizard's OWN artifacts (the
-  CLAUDE.md seeding + VCS section, AGENTS.md) first, then run the nested
+- With `--commit`: commit (and push) the wizard's OWN artifacts (everything
+  Steps 1-4b wrote, committed by Step 4c) first, then run the nested
   commands WITH `--commit` so each commits (and pushes) its own output — a
   small series of focused commits (PHASE 3).
 - With `--commit --no-push`: every commit in the run is local-only. Step 4c
@@ -107,9 +109,9 @@ COMMIT POLICY — project-setup is an AUTHORING command.
 ORDERING PRINCIPLE — do the wizard's OWN fast, deterministic work first,
 THEN run the heavy sub-commands last:
 - The wizard's own artifacts (CLAUDE.md seeding, VCS section,
-  Tasks-implementation section, interaction-policy line, AGENTS.md, and the
-  `chosko-llm add --local` installs) rely only on what the user provides;
-  write them before any sub-command runs.
+  Tasks-implementation section, interaction-policy line, pipeline-dashboard
+  policy line, AGENTS.md, and the `chosko-llm add --local` installs) rely
+  only on what the user provides; write them before any sub-command runs.
 - `/task-setup` runs next (Step 5) — mechanical and low-context.
 - `/domain-setup` runs after it and BEFORE `/context-build` (Step 5b) — also
   mechanical and low-context. `/context-build` emits DOMAIN DEPENDENCIES
@@ -143,12 +145,12 @@ PHASE 1 — GATHER (conversational; no files written)
    - WITH `--commit`:
 
      > Heads up: you passed --commit, so I'll commit as I go — first my own
-     > artifacts (CLAUDE.md seeding, AGENTS.md), then each sub-command commits
-     > its own output (task-setup, domain-setup, context-build). You'll get a
-     > small series of
-     > focused commits rather than one working tree to review.
+     > artifacts (CLAUDE.md, AGENTS.md and any sections or hook you pick), then
+     > each sub-command commits its own output (task-setup, domain-setup,
+     > context-build). You'll get a small series of focused commits rather
+     > than one working tree to review.
 
-2. Ask the questions 1a–1j below ONE AT A TIME — ask one, wait for the
+2. Ask the questions 1a–1k below ONE AT A TIME — ask one, wait for the
    reply, then ask the next. Never batch them into one message or ask the
    user to answer them all in one go.
 3. Suggest the answer you'd pick, so the user can confirm with a single word.
@@ -287,7 +289,19 @@ implementation` section (Step 3b).
 `unattended` is written as the line `Interaction policy: unattended`
 (Step 3c); keeping `attended` writes nothing.
 
-### 1j. CLAUDE.md sections and hook
+### 1j. Pipeline dashboard policy
+
+> Should `/runbook-run` and `/task-implement` keep a live progress page (a
+> private claude.ai Artifact) while they run, with any question waiting for
+> you? It costs tokens on every update during a run. [on / off — `off`, the
+> default, writes no line]
+
+`off` is the default and writes nothing. `on` is written as the line
+`Pipeline dashboard policy: on` (Step 3d); a run can still override it with
+`--dashboard` / `--no-dashboard`. On `on`, tell the user in one line that the
+line does nothing unless the `pipeline-dashboard` skill is available.
+
+### 1k. CLAUDE.md sections and hook
 
 Offer each shipped claude-md section and the hook, one yes/no each, every
 one installed with `chosko-llm add --local` (Step 4b):
@@ -324,6 +338,7 @@ VCS section:    <inject Plastic mapping into CLAUDE.md | none needed (git) | ski
 Testing policy: <none (runner detected) | full-tdd | skip-tests | skip-tests-unattended>
 Tasks section:  <inject Tasks-implementation section (testing policy and/or Unity noise) | n/a>
 Interaction:    <attended (no line) | unattended (write the line)>
+Dashboard:      <off (no line) | on (write the line)>
 CLAUDE.md sections: <list of claude-md sections to install --local | none>
 Hook:           <remote-session-protocol --local | skip>
 AGENTS.md:      <create | skip>
@@ -333,11 +348,12 @@ Context layer:  <build via /context-build, flat layout (runs last) | skip>
 
 Execution order:
   -- wizard's own artifacts --
-  1. CLAUDE.md skeleton    (only if CLAUDE.md missing AND step 2, 3, 3b, 3c or 4b needs it)
+  1. CLAUDE.md skeleton    (only if CLAUDE.md missing AND step 2, 3, 3b, 3c, 3d or 4b needs it)
   2. Seed CLAUDE.md prose  (if requested; from pasted material only)
   3. Inject VCS section    (if non-git VCS)
   3b. Tasks-implementation section (if a testing policy was chosen, or a Unity project)
   3c. Interaction-policy line (if unattended)
+  3d. Pipeline-dashboard policy line (if on)
   4. AGENTS.md             (if requested)
   4b. chosko-llm add --local  (claude-md sections and hook, if any picked)
   4c. Commit and push own artifacts (only with --commit; commits steps 1-4b)
@@ -374,10 +390,10 @@ PHASE 3 — EXECUTE (only after the PHASE 2 gate is approved or passes on its ow
 ### Step 1 — CLAUDE.md skeleton
 
 - Act only when CLAUDE.md does not exist yet AND a later wizard step needs
-  it: seeding requested, a VCS section, a Tasks-implementation section or
-  the interaction-policy line will be injected, or a claude-md section or
-  the hook will be installed (`chosko-llm add --local` refuses without a
-  `CLAUDE.md`).
+  it: seeding requested, a VCS section, a Tasks-implementation section, the
+  interaction-policy line or the pipeline-dashboard policy line will be
+  injected, or a claude-md section or the hook will be installed
+  (`chosko-llm add --local` refuses without a `CLAUDE.md`).
 - Then use the Write tool to create a minimal CLAUDE.md containing just a
   title and a one-line "see AGENTS.md / the context layer" pointer.
 - CLAUDE.md already exists → do nothing. Missing but nothing in Steps 2-4b
@@ -512,6 +528,16 @@ Testing policy for /task-implement: <full-tdd | skip-tests | skip-tests-unattend
   update an existing `Interaction policy:` line in place.
 - `attended` → write nothing.
 
+### Step 3d — Pipeline-dashboard policy line
+
+- Only when GATHER 1j chose `on`: add the line
+  `Pipeline dashboard policy: on` to CLAUDE.md on its own line, beside the
+  interaction-policy line when the file has one, else before the first `##`
+  section, else at the end; update an existing `Pipeline dashboard policy:`
+  line in place.
+- `off` → write nothing; an existing `Pipeline dashboard policy:` line is
+  reported in the final report, never removed.
+
 ### Step 4 — AGENTS.md
 
 If requested, use the Write tool to create AGENTS.md with a minimal pointer:
@@ -530,7 +556,7 @@ as-is.
 ### Step 4b — Install the claude-md sections and the hook
 
 - Run from the project root, after Step 1 has made sure CLAUDE.md exists.
-- For each claude-md section picked at GATHER 1j, run
+- For each claude-md section picked at GATHER 1k, run
   `chosko-llm add claude-md:<name> --local`.
 - For the hook, run `chosko-llm add hook:remote-session-protocol --local`,
   and relay the `.claude/settings.json` wiring prompt the CLI prints for it
@@ -544,9 +570,9 @@ the ARGUMENT NOTE has already run):
 
 1. Stage EXACTLY the files Steps 1-4b wrote — CLAUDE.md (the skeleton,
    seeded prose, injected `## VCS` section, `## Tasks implementation`
-   section, interaction-policy line and installed claude-md sections),
-   AGENTS.md, and the installed hook script, as applicable — and make one
-   commit:
+   section, interaction-policy line, pipeline-dashboard policy line and
+   installed claude-md sections), AGENTS.md, and the installed hook script,
+   as applicable — and make one commit:
 
 ```
 git add -- <only the files Steps 1-4b actually wrote>
@@ -598,7 +624,7 @@ git commit -m "Initialize project with chosko-llm scaffolding"
   which follow the policy this run hands it; honor them, do not flatten
   them.
 - It creates CLAUDE.md if missing and adds its navigation instruction at the
-  top (additive to anything Steps 1-2 wrote) — that instruction points at
+  top (additive to anything Steps 1-4b wrote) — that instruction points at
   `.claude/context/INDEX.md`, which is the entry point in either layout, so
   a later `/context-convert` run will not need to revisit it.
 
@@ -619,12 +645,8 @@ git commit -m "Initialize project with chosko-llm scaffolding"
   post-hoc review even though it was committed.
 - Either way, when the hook was installed, relay the `.claude/settings.json`
   wiring prompt the CLI printed for it (Step 4b).
+- Either way, when Step 3d left an existing `Pipeline dashboard policy:`
+  line in place, name it and its value.
 - Either way, when the domain layer was set up, suggest the pipeline's entry
   points: `/product-design` to design the product, `/architect` to turn
   features into feature documents.
-
----
-
-DO NOT:
-- Clobber an existing AGENTS.md or an existing CLAUDE.md project-info /
-  VCS / Tasks-implementation section — update in place, never duplicate.

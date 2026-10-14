@@ -190,7 +190,7 @@ test('in a browser: the swap toggle shows on the Classic 2D board while unpaused
     });
     const pressed = () => ms(() => document.getElementById('hud-swap').getAttribute('aria-pressed'));
 
-    // A board at the 9 × 9 mine cap, so the first reveal at the centre leaves the corner closed.
+    // The densest 9 × 9 board, so the first reveal at the centre leaves the corner closed.
     await ms(() => globalThis.__ms.modes.start('classic-2d', { size: 'custom', custom: { width: 9, height: 9, mines: 31 }, noGuess: false }));
     await page.waitForFunction(() => globalThis.__ms.board2D);
     assert.equal(await shown(), true, 'on the board in play');
