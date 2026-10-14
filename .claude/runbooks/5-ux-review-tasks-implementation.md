@@ -54,7 +54,7 @@ Context: none
 
 Done: 2026-10-14, commit `b4cde3a` (25 files, +725/-163). *Look at the board* shows only while the 3D mode still holds the finished board, so not after Records → Back; Esc's pointer-lock request is untested in a real browser.
 
-## [ ] 24. Implement task 142 — Touch Classic 2D and touch-safe 3D entry
+## [x] 24. Implement task 142 — Touch Classic 2D and touch-safe 3D entry
 
 Depends on: none
 
@@ -63,6 +63,8 @@ Context: none
 ```prompt
 /task-implement 142 --review
 ```
+
+Done: 2026-10-14, commit `e7ba648` (30 files, +1517/-58). Every 3D pointer-lock request goes through `requestLock3D()` in js/main.js, which asks for none on a coarse-only device; Look at the board opens lockless there too.
 
 ## [ ] 25. Implement task 143 — Keyboard-only 3D
 
@@ -110,6 +112,7 @@ Context:
 Depends on: 21, 24
 
 Context:
+- 2026-10-14 (from step 24): every 3D pointer-lock request goes through `requestLock3D()` in js/main.js, which asks for none on a coarse-only device; the 2D Reveal / Flag switch is `#hud-tap` in the overlay bar beside Pause, shown on a coarse pointer only.
 - 2026-10-14 (from step 21): a spacing step called without a timestamp moves exactly 0.1; only the wheel (notches under 200 ms apart) accelerates. 3D picking starts at the camera, not one unit ahead.
 
 ```prompt
