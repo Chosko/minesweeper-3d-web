@@ -146,7 +146,7 @@ Context:
 
 Done: 2026-10-14, commit `f7aa2fd` (33 files, +1357/-288). Records is two columns split 2 : 3 whose tables stack under their column names below a 539 px container query; controller Up / Down stays within the focused column.
 
-## [ ] 31. Implement task 149 — Richer Records and local top-10
+## [x] 31. Implement task 149 — Richer Records and local top-10
 
 Depends on: 10, 13, 30
 
@@ -157,6 +157,8 @@ Context:
 ```prompt
 /task-implement 149 --review
 ```
+
+Done: 2026-10-14, commit `0bf3728` (31 files, +2050/-151). The results screen's "#n of N" rank comes from the Top 10 ranking in the new js/records/stats.js; Records filters and tabs reset on every open.
 
 ## [ ] 32. Implement task 150 — Replay viewer as a study tool
 
