@@ -6,7 +6,7 @@
 //
 // replayList(library, boardKey, { pinnedFirst, canWatch, formatDate, outcomeLabel, page }) →
 //   { rows: [{ id, date, outcome, time, rate, efficiency, pinned, pin, action, actionLabel,
-//   watch, deleteMessage }], empty, emptyText, pinnedFirst, canWatch, page, pages, label, pager }:
+//   watch, deleteMessage, file }], empty, emptyText, pinnedFirst, canWatch, page, pages, label, pager }:
 //   the board's entries (library.forBoard), newest end date first, or pinned ones first under the
 //   filter, each group newest first; one page of them (pageOf, the page clamped to the last), label
 //   its range ("Replays 11–20 of 23", empty for no replay) and pager the kit pager's state
@@ -14,8 +14,9 @@
 //   formats (js/results/view.js); the date (the screen hands in its date and time) and outcome
 //   through the formatters the screen hands in. pinned is whether the replay carries any pin reason,
 //   pin its state as text (pinState), action 'unpin' for a pinned replay and 'pin' otherwise, watch
-//   whether Watch is offered (canWatch), deleteMessage its confirmation (deleteMessage). No library,
-//   or one whose query throws, is the empty state.
+//   whether Watch is offered (canWatch), deleteMessage its confirmation (deleteMessage), file the
+//   name its Download saves under (replayFileName). No library, or one whose query throws, is the
+//   empty state.
 // pinState(pins) → 'Not pinned' | 'Pinned' | 'Pinned · best'.
 // deleteMessage({ date, outcome, pins }) → "Delete the replay of 11 Oct 2026 14:32, won? This cannot
 //   be undone.", naming its pin reasons when pinned ("It is pinned as a best and by hand.").
@@ -23,11 +24,16 @@
 //   adds the hand pin; unpinning clears every reason (js/replay/library.js).
 // watchRoute(replayId, returnTo) → { screen: REPLAY_SCREEN, data: { replayId, returnTo } }: the
 //   replay viewer's route, returnTo the { screen, data } to come back to.
+// replayFileName(boardKey, endedAt) → "minesweeper-<board key>-<end date>.msrp", the name a replay
+//   file is saved under (to the second, characters a file name cannot hold replaced by "-");
+//   REPLAY_FILE_TYPE its extension, which Open replay file picks.
 //
-// createReplayListView({ root, onWatch, onTogglePin, onPinnedFirst, onPage, onDelete }) →
-//   { show(list), closeConfirm(), isConfirmOpen(), hide() }: fills #records-replays by id — the
-//   pinned-first toggle, the empty state, one table row per replay with its Pin / Unpin and Delete
-//   buttons and, when list.canWatch, its Watch button, the range caption and the kit pager
+// createReplayListView({ root, onWatch, onTogglePin, onPinnedFirst, onPage, onDelete, onDownload,
+//   onOpenFile }) → { show(list), closeConfirm(), isConfirmOpen(), hide() }: fills
+//   #records-replays by id — the pinned-first toggle, Open replay file (#records-replays-open,
+//   onOpenFile(), shown while list.canOpen), the empty state, one table row per replay with its
+//   Download (onDownload(id)), Pin / Unpin and Delete buttons and, when list.canWatch, its Watch
+//   button, the range caption and the kit pager
 //   (bindPager; onPage(page)). A rebuilt list keeps focus on the button of the replay that had it.
 //   Delete shows the confirmation (#records-replays-confirm: the row's deleteMessage, Delete replay,
 //   Cancel) in place of the list, focus on Cancel; Cancel or closeConfirm() (Back) hides it and
@@ -45,6 +51,7 @@ export const REPLAY_SCREEN = 'replay';
 export const REPLAYS_EMPTY_TEXT = 'No replays kept for this board yet.';
 export const REPLAYS_NOT_SAVED = 'Replays are not being saved this session.';
 export const REPLAY_HEADERS = Object.freeze(['Date', 'Outcome', 'Time', '3BV/s', 'Efficiency', 'Pin']);
+export const REPLAY_FILE_TYPE = '.msrp';
 
 const time = (iso) => { const t = Date.parse(iso); return Number.isNaN(t) ? -Infinity : t; };
 const newestFirst = (a, b) => time(b.endedAt) - time(a.endedAt);
@@ -63,6 +70,12 @@ export function deleteMessage({ date, outcome, pins }) {
   return `Delete the replay of ${date}, ${String(outcome).toLowerCase()}?${pinned} This cannot be undone.`;
 }
 
+const UNSAFE = /[\\/:*?"<>|\s]/g;
+export function replayFileName(boardKey, endedAt) {
+  const end = String(endedAt).replace(/(\.\d+)?Z$/, '');
+  return `minesweeper-${String(boardKey).replace(UNSAFE, '-')}-${end.replace(UNSAFE, '-')}${REPLAY_FILE_TYPE}`;
+}
+
 function replayRow(e, { canWatch, formatDate, outcomeLabel }) {
   const pinned = e.pins.length > 0;
   const date = formatDate(e.endedAt);
@@ -71,7 +84,7 @@ function replayRow(e, { canWatch, formatDate, outcomeLabel }) {
     id: e.id, date, outcome, time: formatTime(e.elapsedMs),
     rate: formatRate(e.bbbvPerSecond), efficiency: formatEfficiency(e.efficiency),
     pinned, pin: pinState(e.pins), action: pinned ? 'unpin' : 'pin', actionLabel: pinned ? 'Unpin' : 'Pin',
-    watch: canWatch, deleteMessage: deleteMessage({ date, outcome, pins: e.pins }),
+    watch: canWatch, deleteMessage: deleteMessage({ date, outcome, pins: e.pins }), file: replayFileName(e.boardKey, e.endedAt),
   };
 }
 
@@ -103,7 +116,9 @@ export function watchRoute(replayId, returnTo) {
   return { screen: REPLAY_SCREEN, data: { replayId, returnTo } };
 }
 
-export function createReplayListView({ root, onWatch, onTogglePin, onPinnedFirst, onPage = () => {}, onDelete = () => {} }) {
+export function createReplayListView({
+  root, onWatch, onTogglePin, onPinnedFirst, onPage = () => {}, onDelete = () => {}, onDownload = () => {}, onOpenFile = () => {},
+}) {
   const $ = (id) => root.querySelector(`#${id}`);
   const doc = root.ownerDocument;
   const toggle = $('records-pinned-first');
@@ -121,6 +136,8 @@ export function createReplayListView({ root, onWatch, onTogglePin, onPinnedFirst
   let asking = null; // the id the confirmation asks about
   let afterDelete = null; // { id, index }: the deleted replay, and the row whose Delete takes focus once it is gone
   toggle.addEventListener('change', () => onPinnedFirst(toggle.checked));
+  const openFile = $('records-replays-open');
+  openFile?.addEventListener('click', () => onOpenFile());
 
   const button = (text, label, onClick, data) => {
     const b = doc.createElement('button');
@@ -140,6 +157,7 @@ export function createReplayListView({ root, onWatch, onTogglePin, onPinnedFirst
     toggleRow.classList.toggle('hidden', open);
     empty.classList.toggle('hidden', open || !last?.empty);
     table.classList.toggle('hidden', open || !!last?.empty);
+    openFile?.classList.toggle('hidden', open || !last?.canOpen);
     if (last) pager.show(open ? { ...last.pager, hidden: true } : last.pager);
   };
   function close({ focus = true } = {}) {
@@ -186,6 +204,7 @@ export function createReplayListView({ root, onWatch, onTogglePin, onPinnedFirst
         const actions = doc.createElement('td');
         const what = `replay of ${r.date}, ${r.time}`;
         if (r.watch) actions.append(button('Watch', `Watch ${what}`, () => onWatch(r.id), { id: r.id, act: 'watch' }));
+        actions.append(button('Download', `Download ${what}`, () => onDownload(r.id), { id: r.id, act: 'download' }));
         actions.append(button(r.actionLabel, `${r.actionLabel} ${what}`, () => onTogglePin(r.id), { id: r.id, act: 'pin' }));
         actions.append(button('Delete', `Delete ${what}`, () => ask(r), { id: r.id, act: 'delete' }));
         tr.append(actions);

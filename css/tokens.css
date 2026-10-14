@@ -37,6 +37,21 @@
   --color-warning: #9a5b00;
   --color-focus-ring: #3f78e0;
   --color-replay-pause: #9a5b00; /* a paused span on the replay seek bar's track */
+  /* the replay viewer's action marks: the seek bar's ticks and the press rings, by button */
+  --color-replay-reveal: #0f7b6c;
+  --color-replay-flag: #c2185b;
+  --color-replay-chord: #6a3fc0;
+  /* the recorded pointer: its core and the outline that keeps it visible on any tile */
+  --color-replay-pointer: #14233f;
+  --color-replay-pointer-outline: #ffffff;
+  /* Show 3BV: the openings' tint cycle and the isolated numbers' mark */
+  --color-replay-bbbv-1: rgba(46, 125, 230, 0.38);
+  --color-replay-bbbv-2: rgba(230, 126, 34, 0.38);
+  --color-replay-bbbv-3: rgba(39, 174, 96, 0.38);
+  --color-replay-bbbv-4: rgba(155, 89, 182, 0.38);
+  --color-replay-bbbv-5: rgba(214, 48, 120, 0.38);
+  --color-replay-bbbv-6: rgba(22, 160, 170, 0.38);
+  --color-replay-bbbv-isolated: #7a4f00;
 
   /* ---------- tiles (Classic 2D square skin) ----------
      The colours of the cube-face recipe (js/tile-art.js) every 2D tile is
@@ -177,6 +192,18 @@
   --color-warning: #f2b75a;
   --color-focus-ring: #93b6f6;
   --color-replay-pause: #f2b75a;
+  --color-replay-reveal: #4fd1b8;
+  --color-replay-flag: #ff7eb6;
+  --color-replay-chord: #c58bff;
+  --color-replay-pointer: #ffffff;
+  --color-replay-pointer-outline: #0b1426;
+  --color-replay-bbbv-1: rgba(108, 156, 240, 0.42);
+  --color-replay-bbbv-2: rgba(255, 170, 90, 0.42);
+  --color-replay-bbbv-3: rgba(95, 210, 127, 0.42);
+  --color-replay-bbbv-4: rgba(190, 140, 240, 0.42);
+  --color-replay-bbbv-5: rgba(255, 110, 170, 0.42);
+  --color-replay-bbbv-6: rgba(80, 210, 220, 0.42);
+  --color-replay-bbbv-isolated: #ffd166;
 
   --color-tile-rim: #0b1424;
   --color-tile-bevel-light: #3e5f9c;

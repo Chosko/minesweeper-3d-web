@@ -10,6 +10,8 @@
 //    with no depth test so a cube behind others shows through them
 // Per-cell state lives in a small RGBA8 data texture (layer, kind) fetched by cell index, so
 // selection / Shift / Space changes only touch uniforms (no per-frame O(n) JS work).
+// A replay's Show 3BV tints each cube from a second RGBA8 data texture (setRegionTint), mixed over its
+// tile by the texel's alpha; off by default.
 // Visual extras (all shader-side, driven by a few uniforms): per-face shading, distance fog toward
 // the sky colour, crisp tile borders, a pulsing outline on the selected cube, and end-of-game
 // ripples (win: pulse wave + unflagged mines shown as flags + confetti; loss: reveal wave from the
@@ -143,6 +145,8 @@ in float aShade;
 in vec3 aPulse; // the effect's scale, brightness and alpha (pulseEnvelope, flashEnvelope)
 #endif
 uniform sampler2D uState;
+uniform sampler2D uRegion; // Show 3BV's per-cell tint (rgb, mix in a), while uRegionOn
+uniform float uRegionOn;
 uniform vec3 uDims;
 uniform float uPitch;
 uniform vec3 uSel;
@@ -177,6 +181,7 @@ out float vShade;
 out float vFlash;
 out float vDist;
 out float vDirY;
+flat out vec4 vRegion;
 void main() {
   int idx = int(aIdx + 0.5);
   int X = int(uDims.x + 0.5), Y = int(uDims.y + 0.5);
@@ -249,6 +254,7 @@ void main() {
   vec3 dm = abs(c - uMark);
   vMark = (uHasMark > 0.5 && max(dm.x, max(dm.y, dm.z)) < 0.5 && kind <= 1) ? 1.0 : 0.0; // a closed or flagged cube
   vShade = aShade;
+  vRegion = uRegionOn > 0.5 ? texelFetch(uRegion, ivec2(idx % ${STATE_W}, idx / ${STATE_W}), 0) : vec4(0.0);
   vFlash = flash;
   vDist = length(mv.xyz);
   vec3 world = (modelMatrix * vec4(position * scale + centre, 1.0)).xyz;
@@ -271,6 +277,7 @@ in float vShade;
 in float vFlash;
 in float vDist;
 in float vDirY;
+flat in vec4 vRegion;
 out vec4 outColor;
 ${SKY_GLSL}
 void main() {
@@ -294,6 +301,7 @@ void main() {
   }
   // the marked start cell a pre-generated board waits for: tinted green, its border too
   rgb = mix(rgb, vec3(0.18, 0.72, 0.36), 0.5 * vMark);
+  rgb = mix(rgb, vRegion.rgb, vRegion.a); // a replay's Show 3BV
   rgb = mix(rgb, vec3(1.0), vFlash);
   float f = uFog.z * smoothstep(uFog.x, uFog.y, vDist) * (1.0 - 0.85 * vTint);
   rgb = mix(rgb, skyColor(vDirY), f);
@@ -408,6 +416,9 @@ export class BoardRenderer {
     this.camera.rotation.order = 'YXZ';
 
     this.tiles = createTileTexture();
+    this._noRegion = new THREE.DataTexture(new Uint8Array(4), 1, 1, THREE.RGBAFormat, THREE.UnsignedByteType);
+    this._noRegion.needsUpdate = true;
+    this.regionTex = null;
     // The sky stops, shared by the cube shader (fog) and the sky shader; black until the shell hands in a palette.
     this.skyPalette = {
       uSkyHorizon: { value: new THREE.Vector3() },
@@ -418,6 +429,8 @@ export class BoardRenderer {
     this.uniforms = {
       ...this.skyPalette,
       uState: { value: null },
+      uRegion: { value: this._noRegion },
+      uRegionOn: { value: 0 },
       uTiles: { value: this.tiles },
       uDims: { value: new THREE.Vector3(1, 1, 1) },
       uPitch: { value: 4.4 },
@@ -581,6 +594,7 @@ export class BoardRenderer {
     this.stateTex.generateMipmaps = false;
     this.stateTex.colorSpace = THREE.NoColorSpace;
     this.uniforms.uState.value = this.stateTex;
+    this.setRegionTint(null);
     this.uniforms.uDims.value.set(game.X, game.Y, game.Z);
     this.kind = new Uint8Array(n);
     this.selected = -1;
@@ -629,6 +643,7 @@ export class BoardRenderer {
   }
 
   disposeGame() {
+    this.setRegionTint(null);
     if (this.meshOpaque) {
       this.scene.remove(this.meshOpaque); this.scene.remove(this.meshTrans); this.scene.remove(this.meshTransBack);
       this.meshOpaque.geometry.dispose(); this.meshTrans.geometry.dispose();
@@ -967,6 +982,42 @@ export class BoardRenderer {
   setSpacing(s) {
     if (s !== this.spacing) { this.spacing = s; this._transDirty = true; }
     this.uniforms.uPitch.value = 4 * s;
+  }
+
+  /**
+   * A replay's Show 3BV: `rgba` holds 4 bytes a cell (the tint, then how much of it covers the tile),
+   * null to clear. The caller requests the redraw.
+   */
+  setRegionTint(rgba) {
+    if (this.regionTex) { this.regionTex.dispose(); this.regionTex = null; }
+    if (!rgba || !this.game) {
+      this.uniforms.uRegion.value = this._noRegion;
+      this.uniforms.uRegionOn.value = 0;
+      return;
+    }
+    const H = Math.ceil(this.n / STATE_W);
+    const data = new Uint8Array(STATE_W * H * 4);
+    data.set(rgba.subarray(0, Math.min(rgba.length, data.length)));
+    this.regionTex = new THREE.DataTexture(data, STATE_W, H, THREE.RGBAFormat, THREE.UnsignedByteType);
+    this.regionTex.minFilter = THREE.NearestFilter;
+    this.regionTex.magFilter = THREE.NearestFilter;
+    this.regionTex.generateMipmaps = false;
+    this.regionTex.colorSpace = THREE.NoColorSpace;
+    this.regionTex.needsUpdate = true;
+    this.uniforms.uRegion.value = this.regionTex;
+    this.uniforms.uRegionOn.value = 1;
+  }
+
+  /** Where cell `idx`'s centre falls on the canvas, in CSS pixels, through the camera as it is; null behind it. */
+  cellScreen(idx) {
+    if (!this.game || !(idx >= 0 && idx < this.n)) return null;
+    const [i, j, k] = this.game.coords(idx);
+    const p = this.uniforms.uPitch.value, g = this.game;
+    this.camera.updateMatrixWorld(true);
+    const v = new THREE.Vector3((i - (g.X - 1) / 2) * p, (j - (g.Y - 1) / 2) * p, (k - (g.Z - 1) / 2) * p).project(this.camera);
+    if (v.z < -1 || v.z > 1) return null;
+    const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
+    return { x: ((v.x + 1) / 2) * w, y: ((1 - v.y) / 2) * h };
   }
 
   /**

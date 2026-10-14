@@ -34,9 +34,9 @@ In scope (m2-3d-joins):
   bests; by hand for any replay; unpinning by hand.
 - Deleting one kept replay, pinned or not, by hand behind a confirmation.
 - The library view in the Records screen: the chosen board's replays,
-  newest first, pinned ones marked, with *Watch*, *Pin* / *Unpin* and
-  *Delete*; the bests and the recent-games list linking to their replays
-  where one is kept.
+  newest first, pinned ones marked, with *Watch*, *Download*, *Pin* /
+  *Unpin* and *Delete*, and *Open replay file* for the view; the bests and
+  the recent-games list linking to their replays where one is kept.
 
 Non-goals:
 
@@ -48,9 +48,10 @@ Non-goals:
   whole library, pinned replays included, by `settings`' Reset all data,
   which waits for the library's start-up load and then deletes every blob
   and the index.
-- Importing, exporting or sharing the replay files — in no milestone's
-  slice. `records-screen`'s export carries only the library's listing of
-  kept replays.
+- Sharing replay files — in no milestone's slice. A replay opened from a
+  file is watched in `replay-playback`, never added to the library.
+  `records-screen`'s export carries only the library's listing of kept
+  replays.
 - The Records screen's board picker, 2D and 3D switch and figures —
   `records-screen` and the Results and records slice of `m2-3d-joins`.
 
@@ -98,11 +99,14 @@ plain DOM from the `screen-components` kit inside the Records screen.
   state, pinned ones first under a filter the screen remembers, ten to a
   page with the same pager as the recent games (First, at most five
   numbered pages, Last; hidden on one page) and its range caption;
-  *Watch* opens `replay-playback`, *Pin* / *Unpin* toggles the hand pin,
-  and *Delete* asks first, in the panel — naming the replay's date, time
+  *Watch* opens `replay-playback`, *Download* saves the replay's stored
+  bytes as a `.msrp` file (`replay-playback` § Architecture, "Replay
+  files"), *Pin* / *Unpin* toggles the hand pin, and *Delete* asks first, in the panel — naming the replay's date, time
   and outcome, whether it is pinned (as a best, by hand, or both), and
-  that it cannot be undone — then removes it. The bests panel and the
-  recent-games list show *Watch* on entries whose replay is kept.
+  that it cannot be undone — then removes it. *Open replay file* picks a
+  replay file and opens it in `replay-playback`, Back returning to the
+  view. The bests panel and the recent-games list show *Watch* on entries
+  whose replay is kept.
 
 ## Data and state
 

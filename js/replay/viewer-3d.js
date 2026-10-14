@@ -1,8 +1,9 @@
 // The replay viewer's 3D viewer: a 3D replay drawn by the 3D renderer over the simulator's 3D state
 // view, with the camera placed from the recorded position, yaw and pitch, held through still
-// stretches and interpolated between samples, and the recorded view mode applied. Player camera
-// input never reaches it. DOM-free: createViewer3D is driven by calls; js/main.js hands it the
-// scene.
+// stretches and interpolated between samples, and the recorded view mode applied — on Follow; on
+// Free the scene's camera is the viewer's own to fly and the recording no longer places it. A press
+// ring sits on each acted cell and Show 3BV tints the cells. DOM-free: createViewer3D is driven by
+// calls; js/main.js hands it the scene.
 //
 // cameraTrack(movement, cappedAt?, interval?) → track: the replay's movement stream
 //   (js/replay/format.js) split into its camera samples and view modes, for lookups by time;
@@ -22,16 +23,24 @@
 // worldPose([x, y, z, yaw, pitch], { X, Y, Z }, spacing) → { x, y, z, yaw, pitch } the camera in the
 //   renderer's world at that spacing (the inverse of js/replay/sampler-3d.js cameraSample).
 //
-// createViewer3D({ sim, scene, spacing }) → { track, view, draw(frame), destroy() }
+// createViewer3D({ sim, scene, spacing }) → { track, view, draw(frame), setFree(on), press(actions),
+//   showBbbv(tints), destroy() }
 //   sim      the simulator (js/replay/simulator.js) of a box replay.
-//   scene    { show(view), camera(pose, toggles), hide() } — the renderer's side: show() draws the
-//            3D state view, camera() places the replay camera (a worldPose, or null when the replay
-//            holds no sample) and applies the view mode's toggles, hide() gives the scene back.
+//   scene    { show(view), camera(pose, toggles), detach?(on), ring?(cell, kind), tint?(tints),
+//            hide() } — the renderer's side: show() draws the 3D state view, camera() places the
+//            replay camera (a worldPose, or null when the replay holds no sample or the camera is
+//            Free) and applies the view mode's toggles, detach() hands the camera to the viewer's
+//            flight (true) or back to the recording (false), ring() shows a press ring on a cell's
+//            projected position, tint() Show 3BV's per-cell tints (null clears them), hide() gives
+//            the scene back.
 //   spacing  the spacing the box is drawn at.
 //   view     the 3D state view (js/engine/state-view-3d.js) over the simulator's game.
 //   draw(frame) a simulator frame: marks the cells it changed for the renderer — every cell when the
 //            game crosses its end either way, so the loss view comes and goes whole — and places the
-//            camera at the frame's time.
+//            camera at the frame's time (Follow), the recorded view mode either way.
+//   setFree(on) Free detaches the camera where it is; Follow places it on the recording at the
+//            frame drawn last.
+//   press(actions) a ring on each acted cell; showBbbv(tints) hands the scene its tints.
 //   destroy() hides the scene.
 
 import { createStateView3D } from '../engine/state-view-3d.js';
@@ -100,7 +109,15 @@ export function createViewer3D({ sim, scene, spacing }) {
   let every = null; // every cell, built the first time the game crosses its end
   let ended = view.state !== 'playing';
 
+  let free = false;
+  let last = null; // the time of the frame drawn last
+
   scene.show(view);
+
+  function place(t) {
+    const pose = free ? null : cameraAt(track, t);
+    scene.camera(pose && worldPose(pose, grid, spacing), viewToggles(viewModeAt(track, t)));
+  }
 
   return {
     track,
@@ -112,9 +129,18 @@ export function createViewer3D({ sim, scene, spacing }) {
         view.apply({ changed: every });
       } else view.apply({ changed: frame.changed });
       ended = nowEnded;
-      const pose = cameraAt(track, frame.time);
-      scene.camera(pose && worldPose(pose, grid, spacing), viewToggles(viewModeAt(track, frame.time)));
+      last = frame.time;
+      place(frame.time);
     },
+    setFree(on) {
+      free = !!on;
+      scene.detach?.(free);
+      if (!free && last !== null) place(last);
+    },
+    press(actions) {
+      for (const a of actions) scene.ring?.(a.cell, a.kind);
+    },
+    showBbbv(tints) { scene.tint?.(tints); },
     destroy() { scene.hide(); },
   };
 }

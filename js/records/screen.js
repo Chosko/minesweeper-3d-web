@@ -51,9 +51,9 @@
 // A board with no games is empty. Records that cannot be read (a query throws) are empty too, over
 // the chosen mode's named boards, and never throw: the screen always shows and Back always works.
 //
-// createRecordsScreen({ records, view, replays?, router?, viewPrefs?, exporter?, now? }) → { show({ mode, boardKey }?), hide(), select(key),
+// createRecordsScreen({ records, view, replays?, router?, viewPrefs?, exporter?, files?, now? }) → { show({ mode, boardKey }?), hide(), select(key),
 // stepBoard(delta), setMode(mode), showPage(n), showReplayPage(n), setPeriod(v), setOutcome(v), setTab(v), setTopStat(v),
-// exportFile(format), mode, board, page, filters }: show draws the content through view.show(content)
+// exportFile(format), downloadReplay(id), openReplayFile(), mode, board, page, filters }: show draws the content through view.show(content)
 // and subscribes to records.onChange, redrawing the chosen board on every newly recorded game (on
 // the same pages, each clamped to its last); show, select and setMode start both lists on their first page; stepBoard(±1) selects the
 // previous / next board of the picker, in its order, and returns false, changing nothing, at either end
@@ -75,9 +75,14 @@
 // notes, the first visit of the session only. With a router ({ has, go }, js/shell/router.js) that
 // registers REPLAY_SCREEN, Watch is offered and watch(id) routes to the replay viewer with the
 // replay id and this screen on its board to return to (watchRoute); without, watch does nothing.
+// With files ({ save(bytes, name), pick() → Promise of a File or null }, the shell's), each listed
+// replay's Download saves its stored bytes (replays.bytes) under its row's file name through
+// downloadReplay(id), and, with the replay viewer's route, content.canOpen offers Open replay file:
+// openReplayFile() picks a file and routes to the replay viewer with { file, returnTo } this screen
+// on its board. An imported replay is watched there, never added to the library.
 //
 // createRecordsView({ root, onSelect, onBack, onPage, onMode?, onWatch?, onTogglePin?, onPinnedFirst?,
-// onReplayPage?, onDelete?, onPeriod?, onOutcome?, onTab?, onTopStat?, onExport?, chart?, bestChart? }) → { show(content), hide(),
+// onReplayPage?, onDelete?, onPeriod?, onOutcome?, onTab?, onTopStat?, onExport?, onDownload?, onOpenFile?, chart?, bestChart? }) → { show(content), hide(),
 // closeConfirm(), isConfirmOpen() }: fills #records by id, the replays panel through
 // createReplayListView; the 2D | 3D switch (#records-mode, a kit segmented choice whose two options
 // are in the markup) shows content.mode and calls onMode(mode); a best and a recent game whose
@@ -277,7 +282,7 @@ function choose(records, asked, mode) {
 
 export function recordsContent(records, {
   mode: askedMode = null, boardKey: asked = null, notSaved = false, page = 0, replays = null, replayPage = 0, pinnedFirst = false,
-  canWatch = false, replaysNotSaved = false, period: askedPeriod = 'all', outcome: askedOutcome = 'all', tab: askedTab = 'recent',
+  canWatch = false, canOpen = false, replaysNotSaved = false, period: askedPeriod = 'all', outcome: askedOutcome = 'all', tab: askedTab = 'recent',
   topStat: askedStat = 'time', now = new Date(), exportable = false,
 } = {}) {
   const period = choiceOf(PERIODS, askedPeriod);
@@ -328,12 +333,13 @@ export function recordsContent(records, {
     games: gamesList(listed, page, kept),
     top: topList(shown, topStat, kept, filtered),
     exportable: !!exportable,
-    replays: replayList(replays, key, { pinnedFirst, canWatch, formatDate: formatDateTime, outcomeLabel, page: replayPage }),
+    replays: { ...replayList(replays, key, { pinnedFirst, canWatch, formatDate: formatDateTime, outcomeLabel, page: replayPage }), canOpen: !!canOpen },
     canWatch,
+    canOpen: !!canOpen,
   };
 }
 
-export function createRecordsScreen({ records, view, replays = null, router = null, viewPrefs = null, exporter = null, now = () => new Date() }) {
+export function createRecordsScreen({ records, view, replays = null, router = null, viewPrefs = null, exporter = null, files = null, now = () => new Date() }) {
   let mode = null;
   let board = null;
   let page = 0;
@@ -353,7 +359,7 @@ export function createRecordsScreen({ records, view, replays = null, router = nu
   const canWatch = () => attempt(() => router.has(REPLAY_SCREEN), false);
   const draw = () => {
     content = recordsContent(records, {
-      mode, boardKey: board, notSaved, page, replays, replayPage, pinnedFirst, canWatch: canWatch(), replaysNotSaved,
+      mode, boardKey: board, notSaved, page, replays, replayPage, pinnedFirst, canWatch: canWatch(), canOpen: canWatch() && typeof files?.pick === 'function', replaysNotSaved,
       period, outcome, tab, topStat, now: now(), exportable: !!attempt(() => exporter?.hasGames(), false),
     });
     mode = content.mode;
@@ -444,6 +450,20 @@ export function createRecordsScreen({ records, view, replays = null, router = nu
       const { screen, data } = watchRoute(id, { screen: RECORDS_SCREEN, data: { boardKey: board } });
       router.go(screen, { data });
     },
+    /** Saves a listed replay's stored bytes under its file name; resolves once handed to files.save. */
+    async downloadReplay(id) {
+      const row = content?.replays.rows.find((r) => r.id === id);
+      if (!row || !files?.save) return;
+      const bytes = await replays.bytes(id);
+      if (bytes) files.save(bytes, row.file);
+    },
+    /** Open replay file: the picked file opens in the replay viewer, Back returning to this board. */
+    async openReplayFile() {
+      if (!content?.canOpen) return;
+      const file = await files.pick();
+      if (!file) return;
+      router.go(REPLAY_SCREEN, { data: { file, returnTo: { screen: RECORDS_SCREEN, data: { boardKey: board } } } });
+    },
     hide() {
       unsubscribe();
       visit++;
@@ -457,10 +477,10 @@ export function createRecordsScreen({ records, view, replays = null, router = nu
 export function createRecordsView({
   root, onSelect, onMode = () => {}, onBack, onPage, onWatch = () => {}, onTogglePin = () => {}, onPinnedFirst = () => {},
   onReplayPage = () => {}, onDelete = () => {}, onPeriod = () => {}, onOutcome = () => {}, onTab = () => {}, onTopStat = () => {},
-  onExport = () => {}, chart = null, bestChart = null,
+  onExport = () => {}, onDownload = () => {}, onOpenFile = () => {}, chart = null, bestChart = null,
 }) {
   const $ = (id) => root.querySelector(`#${id}`);
-  const list = createReplayListView({ root, onWatch, onTogglePin, onPinnedFirst, onPage: onReplayPage, onDelete });
+  const list = createReplayListView({ root, onWatch, onTogglePin, onPinnedFirst, onPage: onReplayPage, onDelete, onDownload, onOpenFile });
   const watchButton = (id, label) => {
     const b = root.ownerDocument.createElement('button');
     b.type = 'button';

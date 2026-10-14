@@ -33,8 +33,8 @@ In scope (m2-3d-joins):
   the second row of clicks and, on a win, the board rank, the next-target
   line, the board's win rate and longest streak each with its completed
   games' figure beside it, the three-best comparison (on a loss greyed and not eligible, with
-  the pace), *Play again*, *Watch replay*, *Records* and *Main menu*, plus
-  *Look at the board*.
+  the pace), *Play again*, *Watch replay*, *Watch best*, *Records* and
+  *Main menu*, plus *Look at the board*.
 - The results screen shown over the dimmed 3D scene; the end banner is
   removed.
 - *Look at the board*: a read-only free flight over the frozen finished
@@ -136,6 +136,8 @@ described in [app-shell.md](../../context/app-shell.md) and
 - **Records** — opens `records-screen` on 3D and on this game's board.
 - **Watch replay** — `replay-playback`'s action, unchanged; Back returns to
   the results screen.
+- **Watch best** — `results-screen`'s action, beside *Watch replay*, on the
+  3D board's fastest-time best; Back returns to the results screen.
 - **Look at the board** — the 3D results screen's action, and Back on that
   screen (`Esc`, the controller's back buttons): with a pointer or the
   keyboard its activation is the pointer-lock gesture, and when the lock is

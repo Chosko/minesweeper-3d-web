@@ -510,6 +510,7 @@ test('the records screen is the kit composition: picker, figures, overall, empty
     option('all', true), option('won', false), option('lost', false), option('abandoned', false),
     option('recent', true), option('top', false),
     option('time', true), option('bbbvPerSecond', false), option('efficiency', false),
+    '<button type="button" id="records-replays-open" class="ui-button ui-button--secondary hidden">',
     '<button type="button" id="records-replays-yes" class="ui-button ui-button--primary">',
     '<button type="button" id="records-replays-no" class="ui-button ui-button--secondary">',
     '<button type="button" id="records-back" class="ui-button ui-button--primary">',

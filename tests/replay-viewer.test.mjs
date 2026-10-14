@@ -8,11 +8,15 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { SPEEDS, DEFAULT_SPEED, createPlaybackClock } from '../js/replay/clock.js';
-import { movementTrack, pointerAt, cursorAt, pointerPixel, createViewer2D } from '../js/replay/viewer-2d.js';
+import { SPEEDS, DEFAULT_SPEED, LEAD_IN_MS, createPlaybackClock } from '../js/replay/clock.js';
+import { movementTrack, pointerAt, cursorAt, pointerPixel, createViewer2D, trailPoints, TRAIL_MS } from '../js/replay/viewer-2d.js';
 import {
-  FAILURES, REPLAY_KEYS, REPLAY_PAD, SEEK_STEP_MIN_MS, seekStep, clockText, overlayFigures, endLine, pauseMarks, pausesText, prepareReplay, createReplayViewer,
+  FAILURES, COMMANDS, REPLAY_KEYS, REPLAY_PAD, REPLAY_KEY_LINE, SEEK_STEP_MIN_MS, MAX_REPLAY_FILE_BYTES, seekStep, clockText, overlayFigures, endLine,
+  pauseMarks, pausesText, seekTicks, actionCue, regionTints, prepareReplay, createReplayViewer,
 } from '../js/replay/viewer.js';
+import { replayFileName } from '../js/records/replay-list.js';
+import { boardKey } from '../js/records/board.js';
+import { bbbvPartition } from '../js/engine/metrics.js';
 import { createSimulator, REFUSAL } from '../js/replay/simulator.js';
 import { decodeReplay, encodeReplay, REPLAY_FORMAT_VERSION } from '../js/replay/format.js';
 import { formatOverlayTime, formatMineCount } from '../js/ui/components.js';
@@ -33,8 +37,8 @@ const CUBE = '3d-cube-beginner-lost.msrp';
 
 // ---------------------------------------------------------------- the playback clock
 
-test('the clock offers 0.5×, 1×, 2× and 4× and starts paused at 0 at 1×', () => {
-  assert.deepEqual(SPEEDS, [0.5, 1, 2, 4]);
+test('the clock offers 0.25×, 0.5×, 1×, 2× and 4× and starts paused at 0 at 1×', () => {
+  assert.deepEqual(SPEEDS, [0.25, 0.5, 1, 2, 4]);
   assert.equal(DEFAULT_SPEED, 1);
   const c = createPlaybackClock({ duration: 10000 });
   assert.deepEqual([c.time, c.playing, c.speed, c.ended, c.duration], [0, false, 1, false, 10000]);
@@ -54,10 +58,10 @@ test('while playing the clock advances replay time at the chosen speed', () => {
     expected.push(t);
     assert.equal(c.time, t, `${s}×`);
   }
-  assert.deepEqual(expected, [500, 1500, 3500, 7500]);
+  assert.deepEqual(expected, [250, 750, 1750, 3750, 7750]);
   c.pause();
   c.advance(1000);
-  assert.equal(c.time, 7500, 'pause stops the clock');
+  assert.equal(c.time, 7750, 'pause stops the clock');
   c.toggle();
   assert.equal(c.playing, true);
   c.toggle();
@@ -92,6 +96,8 @@ test('seek clamps to the replay, speeds outside the list are refused, faster and
   for (let i = 0; i < 5; i++) c.faster();
   assert.equal(c.speed, 4);
   for (let i = 0; i < 5; i++) c.slower();
+  assert.equal(c.speed, 0.25);
+  c.faster();
   assert.equal(c.speed, 0.5);
   c.faster();
   assert.equal(c.speed, 1);
@@ -99,15 +105,18 @@ test('seek clamps to the replay, speeds outside the list are refused, faster and
 
 // ---------------------------------------------------------------- what the viewer shows
 
-test('the replay clock shows the in-game overlay timer format', () => {
-  for (const ms of [0, 999, 1000, 47380, 998999, 999999, 1_200_000]) assert.equal(clockText(ms), formatOverlayTime(ms / 1000), `${ms} ms`);
-  assert.equal(clockText(47380), '047');
-  assert.equal(clockText(1_200_000), '999', 'stops at 999');
+test('the replay clock reads seconds to the thousandth, not split into minutes', () => {
+  assert.equal(clockText(0), '00.000');
+  assert.equal(clockText(13342), '13.342');
+  assert.equal(clockText(47120), '47.120');
+  assert.equal(clockText(999.9), '00.999', 'truncated, never rounded');
+  assert.equal(clockText(1_200_000), '1200.000', 'no minutes, no cap');
+  assert.equal(formatOverlayTime(13.342), '013', 'the in-game overlay keeps its whole seconds for play');
 });
 
 test('the overlay reads mines left, 3BV solved of 3BV and 3BV/s so far from the frame', () => {
   const frame = { minesLeft: -3, bbbv: 20, bbbvSolved: 5 };
-  assert.deepEqual(overlayFigures(frame, 2000), { clock: '002', mines: formatMineCount(-3), bbbv: '5 / 20', rate: '2.50' });
+  assert.deepEqual(overlayFigures(frame, 2000), { clock: '02.000', mines: formatMineCount(-3), bbbv: '5 / 20', rate: '2.50' });
   assert.equal(overlayFigures(frame, 0).rate, DASH, 'no rate before any time has passed');
   assert.equal(overlayFigures({ minesLeft: 1500, bbbv: 1, bbbvSolved: 0 }, 1000).mines, '1500', 'the real count past 999');
 });
@@ -120,11 +129,12 @@ test('the end of a replay shows its outcome and recorded time in the results tim
   assert.equal(endLine({ outcome: 'abandoned', elapsedMs: 120 }).text, 'Abandoned · 0.120 s');
 });
 
-test('the seek bar names its place in the results time format; the running clock keeps whole seconds', () => {
+test('the seek bar names its place in the results time format; the clock and position read ss.mmm', () => {
   const src = read('js/replay/viewer.js');
-  assert.match(src, /aria-valuetext', `\$\{formatTime\(state\.time\)\} of \$\{formatTime\(state\.duration\)\}`/);
+  assert.match(src, /aria-valuetext', `\$\{formatTime\(at\)\} of \$\{formatTime\(state\.duration\)\}`/);
+  assert.match(src, /set\('position', el\.position, `\$\{f\.clock\} \/ \$\{clockText\(state\.duration\)\}`\)/);
   assert.equal(formatTime(4321), '4.321 s');
-  assert.equal(clockText(4321), '004', 'the overlay timer\'s whole seconds');
+  assert.equal(clockText(4321), '04.321');
 });
 
 // ---------------------------------------------------------------- movement interpolation
@@ -400,18 +410,27 @@ function fakeRouter() {
 function fakeViewers() {
   const drawn = [];
   const made = [];
-  return {
-    drawn, made,
-    square: ({ container, sim }) => {
-      made.push({ container, sim });
-      return { draw: (f) => drawn.push(f), setScale: (scale) => made.push(['scale', scale]), destroy: () => made.push('destroyed') };
-    },
+  const pressed = [];
+  const how = [];
+  const calls = [];
+  const board = (kind) => ({ container, sim }) => {
+    made.push({ container, sim, kind });
+    return {
+      draw: (f, opts = {}) => { drawn.push(f); how.push(opts.playing === true); },
+      press: (list) => pressed.push(list.map((a) => a.index)),
+      still: () => calls.push('still'),
+      showBbbv: (tints) => calls.push(['bbbv', tints]),
+      setFree: (on) => calls.push(['free', on]),
+      setScale: (scale) => made.push(['scale', scale]),
+      destroy: () => made.push('destroyed'),
+    };
   };
+  return { drawn, made, pressed, how, calls, square: board('square'), box: board('box') };
 }
-function viewerOver({ library = fakeLibrary(), viewers = fakeViewers() } = {}) {
+function viewerOver({ library = fakeLibrary(), viewers = fakeViewers(), sound = null, files = null } = {}) {
   const view = fakeScreen();
   const router = fakeRouter();
-  const viewer = createReplayViewer({ library, router, view, viewers });
+  const viewer = createReplayViewer({ library, router, view, viewers, sound, files });
   return { viewer, view, router, viewers };
 }
 const RETURN = { screen: 'records', data: { boardKey: 'classic-2d:square:9x9:10:guess' } };
@@ -420,12 +439,15 @@ test('the viewer opens a replay, shows the start paused, and Back returns to the
   const { viewer, view, router, viewers } = viewerOver();
   await viewer.show({ replay: blobOf(WON), returnTo: RETURN });
   assert.deepEqual(view.log.slice(0, 2), ['open', 'loading']);
-  assert.deepEqual(view.log[2], ['ready', { duration: 9971, kind: 'square', pauses: [] }]);
+  const [, info] = view.log[2];
+  assert.deepEqual([info.duration, info.leadIn, info.kind, info.pauses], [9971, LEAD_IN_MS, 'square', []]);
+  assert.equal(info.actions.length, 28, 'every action is handed over for the seek bar\'s ticks');
   assert.equal(viewers.made[0].container, view.container, 'the 2D viewer draws in the screen\'s board area');
   assert.equal(viewer.state.status, 'ready');
-  assert.deepEqual([view.last.time, view.last.playing, view.last.speed, view.last.end], [0, false, 1, null]);
-  assert.equal(view.last.figures.clock, '000');
+  assert.deepEqual([view.last.time, view.last.playing, view.last.speed, view.last.end], [-LEAD_IN_MS, false, 1, null]);
+  assert.equal(view.last.figures.clock, '00.000');
   assert.equal(viewers.drawn.length, 1, 'the start is drawn');
+  assert.equal(viewers.drawn[0].index, 0, 'on the closed board: no action applied');
   assert.ok(router.went.includes('refocus'), 'focus moves to the controls once the replay is ready');
   viewer.setScale('125');
   assert.deepEqual(viewers.made.at(-1), ['scale', '125'], 'a board scale change reaches the open board');
@@ -464,7 +486,9 @@ test('a replay with no viewer for its board says it cannot be played here', asyn
 
 test('a 3D replay with no 3D viewer to offer (no WebGL 2) says why, Back still works, and a 2D replay still plays', async () => {
   assert.equal(FAILURES.webgl2, 'This 3D replay needs WebGL 2, which is not available in this browser.');
-  const { viewer, view, router, viewers } = viewerOver();
+  const all = fakeViewers();
+  const viewers = { drawn: all.drawn, made: all.made, square: all.square }; // no box viewer
+  const { viewer, view, router } = viewerOver({ viewers });
   await viewer.show({ replay: blobOf(CUBE), returnTo: RETURN });
   assert.deepEqual(view.log.at(-1), ['failed', FAILURES.webgl2]);
   assert.equal(viewer.state.status, 'failed');
@@ -494,15 +518,16 @@ test('ticks drive the clock and the simulator once per frame while playing, at t
   assert.equal(viewers.drawn.length, 1, 'paused: nothing to draw');
   viewer.command('toggle');
   viewer.tick(500);
-  assert.equal(view.last.time, 500);
+  assert.equal(view.last.time, 0, 'the lead-in played through');
   viewer.setSpeed(2);
   viewer.tick(500);
-  assert.equal(view.last.time, 1500);
-  assert.equal(viewers.drawn.at(-1).time, 1500, 'the simulator is at the clock');
+  assert.equal(view.last.time, 1000);
+  assert.equal(viewers.drawn.at(-1).time, 1000, 'the simulator is at the clock');
   assert.equal(viewers.drawn.length, 3);
+  assert.deepEqual(viewers.how, [false, true, true], 'frames drawn by playback say so');
   const sim = createSimulator(blobOf(WON));
-  const expected = sim.seek(1500);
-  assert.deepEqual(view.last.figures, overlayFigures(expected, 1500));
+  const expected = sim.seek(1000);
+  assert.deepEqual(view.last.figures, overlayFigures(expected, 1000));
   viewer.command('faster');
   assert.equal(view.last.speed, 4);
   viewer.command('slower');
@@ -539,7 +564,7 @@ test('a replay with pauses hands its spans to the view; playback runs through a 
   const { viewer, view, viewers } = viewerOver();
   await viewer.show({ replay: pausedBlob(spans) });
   assert.equal(viewer.state.status, 'ready', 'the replay verifies with its pauses');
-  assert.deepEqual(view.log[2], ['ready', { duration: 9971, kind: 'square', pauses: spans }]);
+  assert.deepEqual(view.log[2][1].pauses, spans);
   viewer.seek(4960);
   const before = viewers.drawn.at(-1).index;
   viewer.command('toggle');
@@ -569,13 +594,17 @@ test('at the end the final board stays with the outcome and recorded time; play 
   viewer.tick(1000);
   assert.equal(viewers.drawn.length, drawn, 'the final board stays');
   viewer.command('toggle');
-  assert.deepEqual([view.last.time, view.last.playing, view.last.end], [0, true, null], 'play starts again from the beginning');
+  assert.deepEqual([view.last.time, view.last.playing, view.last.end], [-LEAD_IN_MS, true, null], 'play starts again from the start position');
+  assert.equal(viewers.drawn.at(-1).index, 0);
 });
 
 test('seek and step move the board to any point, stepping action by action', async () => {
   const { viewer, view, viewers } = viewerOver();
   await viewer.show({ replay: blobOf(WON) });
   const times = createSimulator(blobOf(WON)).replay.actions.map((a) => a.time);
+  viewer.command('next');
+  assert.equal(view.last.time, times[0], 'next from the start: the first action, applied');
+  assert.equal(viewers.drawn.at(-1).index, 1);
   viewer.command('next');
   assert.equal(view.last.time, times[1], 'next: the next action');
   viewer.command('next');
@@ -591,9 +620,13 @@ test('seek and step move the board to any point, stepping action by action', asy
   viewer.command('next');
   assert.equal(view.last.time, 9971, 'nothing after the end');
   viewer.command('start');
-  assert.equal(view.last.time, 0);
+  assert.equal(view.last.time, -LEAD_IN_MS, 'Home: the start position');
+  assert.equal(viewers.drawn.at(-1).index, 0);
   viewer.command('prev');
-  assert.equal(view.last.time, 0, 'nothing before the start');
+  assert.equal(view.last.time, -LEAD_IN_MS, 'nothing before the start');
+  viewer.command('next');
+  viewer.command('prev');
+  assert.equal(view.last.time, -LEAD_IN_MS, 'previous from the first action: the start position');
   viewer.command('toggle');
   viewer.command('next');
   assert.equal(view.last.playing, false, 'stepping pauses');
@@ -621,8 +654,10 @@ test('while paused each frame only re-places the pointer; nothing is drawn again
 
 test('the controls are operable by keyboard and controller', async () => {
   assert.deepEqual(REPLAY_KEYS, {
-    Space: 'toggle', KeyK: 'toggle', ArrowLeft: 'prev', ArrowRight: 'next', Home: 'start', End: 'end', Minus: 'slower', Equal: 'faster',
+    Space: 'toggle', KeyK: 'toggle', ArrowLeft: 'prev', ArrowRight: 'next', Comma: 'framePrev', Period: 'frameNext',
+    Home: 'start', End: 'end', Minus: 'slower', Equal: 'faster', KeyB: 'bbbv', KeyC: 'camera',
   });
+  for (const name of Object.values(REPLAY_KEYS)) assert.ok(COMMANDS.includes(name), name);
   assert.deepEqual(REPLAY_PAD, [[BTN.START, 'toggle'], [BTN.Y, 'toggle'], [BTN.LB, 'prev'], [BTN.RB, 'next'], [BTN.LT, 'slower'], [BTN.RT, 'faster']]);
   const { viewer, view } = viewerOver();
   await viewer.show({ replay: blobOf(WON) });
@@ -634,7 +669,7 @@ test('the controls are operable by keyboard and controller', async () => {
   const pressed = new Set([BTN.RB]);
   assert.equal(viewer.pad((b) => pressed.has(b)), true);
   assert.equal(view.last.playing, false);
-  assert.ok(view.last.time > 0);
+  assert.equal(view.last.time, 0, 'RB from the start position: the first click, applied');
   assert.equal(viewer.pad(() => false), false, 'nothing pressed is left to menu navigation');
 });
 
@@ -648,10 +683,10 @@ test('a lost replay ends on the loss view with its recorded time', async () => {
   assert.equal(sim.game.cellState(sim.game.explodedCell), CELL.EXPLODED);
 });
 
-test('the viewer is a shell screen, not a mode: no records, no sound, no pause', () => {
+test('the viewer is a shell screen, not a mode: no records, no pause; its sound goes through the sink the shell hands in', () => {
   for (const f of ['js/replay/viewer.js', 'js/replay/viewer-2d.js', 'js/replay/clock.js']) {
     const src = read(f).replace(/\/\/.*$/gm, '');
-    assert.doesNotMatch(src, /audio\.js|records\/store|records\/model|mode-host|pause\.js/, `${f} reaches no records, sound or pause`);
+    assert.doesNotMatch(src, /audio\.js|records\/store|records\/model|mode-host|pause\.js/, `${f} reaches no records, sound module or pause`);
   }
   const clock = read('js/replay/clock.js').replace(/\/\/.*$/gm, '');
   assert.doesNotMatch(clock, /\bimport\b|document|window/, 'the clock is DOM-free and imports nothing');
@@ -667,7 +702,8 @@ test('the viewer screen is kit markup: the overlay, the board area, the message 
   assert.ok(at > 0, 'index.html has the replay viewer section');
   const html = INDEX.slice(at, INDEX.indexOf('<!-- /Replay viewer -->'));
   for (const id of ['replay', 'rp-clock', 'rp-mines', 'rp-bbbv', 'rp-rate', 'rp-back', 'replay-board', 'replay-message', 'replay-message-text',
-    'replay-message-back', 'replay-controls', 'rp-play', 'rp-prev', 'rp-next', 'rp-speed', 'rp-seek', 'rp-pauses', 'rp-pauses-text', 'replay-end']) {
+    'replay-message-back', 'replay-controls', 'rp-play', 'rp-prev', 'rp-next', 'rp-speed', 'rp-seek', 'rp-pauses', 'rp-pauses-text', 'replay-end',
+    'rp-ticks', 'rp-keys', 'rp-show-bbbv', 'rp-sound', 'rp-camera', 'rp-download', 'rp-open', 'replay-file']) {
     assert.match(html, new RegExp(`id="${id}"`), `#${id}`);
   }
   assert.match(html, /class="ui-overlay-bar[^"]*"/);
@@ -675,6 +711,9 @@ test('the viewer screen is kit markup: the overlay, the board area, the message 
   for (const s of SPEEDS) assert.match(html, new RegExp(`role="radio"[^>]*data-value="${s}"`), `${s}× option`);
   assert.match(html, /id="rp-seek" class="ui-slider__input" type="range"[^>]*aria-describedby="rp-pauses-text"/, 'the seek bar names its pauses');
   assert.match(html, /id="rp-pauses" class="replay-pauses" aria-hidden="true"/, 'the marks are drawing only');
+  assert.match(html, /id="rp-ticks" class="replay-ticks" aria-hidden="true"/, 'the ticks are decoration');
+  for (const id of ['rp-show-bbbv', 'rp-sound', 'rp-camera']) assert.match(html, new RegExp(`id="${id}"[^>]*aria-pressed="false"`), `${id} is a toggle`);
+  assert.match(html, /id="replay-file" type="file" accept="\.msrp"[^>]*hidden/, 'one hidden file input picks a replay file');
   assert.match(read('css/components.css'), /\.replay-pause \{[^}]*var\(--color-replay-pause\)/, 'the marks take their colour from a token');
   for (const b of html.match(/<button[^>]*>/g)) assert.match(b, /type="button"/);
   assert.match(read('css/components.css'), /Replay viewer \(index\.html #replay/, 'the catalogue lists the screen');
@@ -765,8 +804,10 @@ test('in a browser, a recorded 2D replay plays from its fixture through to the e
     const text = (id) => page.evaluate((i) => document.getElementById(i).textContent, id);
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'replay');
     assert.equal(await page.evaluate(() => document.activeElement?.id), 'rp-play', 'focus on Play');
-    assert.equal(await text('rp-clock'), '000');
-    assert.equal(await page.evaluate(() => document.querySelectorAll('#replay-board canvas').length), 1, 'the board view is mounted');
+    assert.equal(await text('rp-clock'), '00.000');
+    assert.equal(await text('rp-position'), '00.000 / 09.971');
+    assert.equal(await page.evaluate(() => document.querySelectorAll('#replay-board canvas').length) >= 1, true, 'the board view is mounted');
+    assert.equal(await page.evaluate(() => document.querySelectorAll('#rp-ticks .replay-tick').length) > 0, true, 'the actions tick the seek bar');
     assert.equal(await page.evaluate(() => document.querySelectorAll('#rp-pauses .replay-pause').length), 0, 'no pauses, no marks');
     assert.equal(await text('rp-pauses-text'), '');
 
@@ -776,17 +817,43 @@ test('in a browser, a recorded 2D replay plays from its fixture through to the e
     assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('#replay-board .replay-pointer')).display !== 'none'), true, 'the recorded pointer shows');
     await page.waitForFunction(() => globalThis.__ms.replayViewer.state.ended, null, { timeout: 15000 });
     assert.equal(await text('replay-end'), 'Won · 9.971 s');
-    assert.equal(await text('rp-clock'), '009');
+    assert.equal(await text('rp-clock'), '09.971');
     assert.equal(await text('rp-bbbv'), '15 / 15');
     assert.equal(await text('rp-mines'), '5');
     assert.equal(await page.evaluate(() => document.getElementById('replay-end').classList.contains('hidden')), false);
 
     // The keyboard: Home goes to the start, ArrowRight steps one action, Space plays.
     await page.keyboard.press('Home');
-    assert.equal(await page.evaluate(() => globalThis.__ms.replayViewer.state.time), 0);
+    assert.equal(await page.evaluate(() => globalThis.__ms.replayViewer.state.time), -500);
     await page.evaluate(() => document.activeElement.blur());
     await page.keyboard.press('ArrowRight');
+    assert.equal(await page.evaluate(() => globalThis.__ms.replayViewer.state.time), 0, 'the first click, applied');
+    const ring = await page.evaluate(() => {
+      const r = document.querySelector('#replay-board .replay-ring--reveal');
+      const b = document.getElementById('replay-board').getBoundingClientRect();
+      if (!r) return null;
+      const box = r.getBoundingClientRect();
+      const x = box.left + box.width / 2, y = box.top + box.height / 2;
+      return { inside: x >= b.left && x <= b.right && y >= b.top && y <= b.bottom, colour: getComputedStyle(r).borderTopColor };
+    });
+    assert.ok(ring?.inside, 'the first click shows its press ring on the board');
+    assert.notEqual(ring.colour, 'rgba(0, 0, 0, 0)');
+    await page.keyboard.press('KeyB');
+    const painted = await page.evaluate(() => {
+      const c = document.querySelector('#replay-board .replay-bbbv');
+      if (!c || c.hidden) return 0;
+      const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      let n = 0;
+      for (let i = 3; i < d.length; i += 4) if (d[i] > 0) n++;
+      return n;
+    });
+    assert.ok(painted > 0, 'Show 3BV paints the board');
+    await page.keyboard.press('KeyB');
+    assert.equal(await page.evaluate(() => document.querySelector('#replay-board .replay-bbbv').hidden), true, 'and clears it');
+    await page.keyboard.press('ArrowRight');
     assert.equal(await page.evaluate(() => globalThis.__ms.replayViewer.state.time), 298);
+    await page.keyboard.press('Period');
+    assert.equal(await page.evaluate(() => globalThis.__ms.replayViewer.state.time), 348, 'one frame on');
     // The seek bar moves by its step from the keyboard (the controller steps it the same way), and its end ends the replay.
     await page.focus('#rp-seek');
     await page.keyboard.press('ArrowRight');
@@ -808,8 +875,8 @@ test('in a browser, a recorded 2D replay plays from its fixture through to the e
     await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready');
     const marks = await page.evaluate(() => [...document.querySelectorAll('#rp-pauses .replay-pause')].map((m) => [m.style.left, m.style.width, getComputedStyle(m).backgroundColor]));
     assert.equal(marks.length, 2);
-    assert.match(marks[0][0], /^10(\.\d+)?%$/);
-    assert.match(marks[1][1], /^30(\.\d+)?%$/);
+    assert.match(marks[0][0], /^14\.3\d*%$/, 'placed after the lead-in');
+    assert.match(marks[1][1], /^28\.6\d*%$/);
     assert.notEqual(marks[0][2], 'rgba(0, 0, 0, 0)', 'the mark is coloured');
     assert.equal(await text('rp-pauses-text'), 'Paused 2 times, 5.0 s in all');
     await page.click('#rp-back');
@@ -819,10 +886,333 @@ test('in a browser, a recorded 2D replay plays from its fixture through to the e
     await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'failed');
     assert.match(await text('replay-message-text'), /cannot be read/);
     assert.equal(await page.evaluate(() => document.getElementById('replay-controls').classList.contains('hidden')), true);
+    assert.deepEqual(await page.evaluate(() => ['rp-clock', 'rp-mines', 'rp-bbbv', 'rp-rate'].map((id) => document.getElementById(id).textContent)),
+      [DASH, DASH, DASH, DASH], 'nothing of the replay played before');
+    assert.deepEqual(await page.evaluate(() => [document.getElementById('rp-position').textContent, document.querySelectorAll('#rp-ticks .replay-tick, #rp-pauses .replay-pause').length,
+      document.getElementById('replay-end').classList.contains('hidden')]), ['', 0, true], 'the bar is cleared');
     await page.keyboard.press('Escape');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
   }
+});
+
+// ---------------------------------------------------------------- the viewer as a study tool
+
+const FIXTURE_FILES = ['2d-beginner-won.msrp', '2d-expert-abandoned.msrp', '2d-intermediate-lost.msrp',
+  '3d-cube-beginner-lost.msrp', '3d-cube-intermediate-abandoned.msrp', '3d-double-beginner-won.msrp'];
+const DOUBLE = '3d-double-beginner-won.msrp';
+
+test('playback opens on the closed board with a lead-in before the first click, on replays an earlier build recorded, 2D and 3D', async () => {
+  assert.equal(LEAD_IN_MS, 500);
+  for (const file of FIXTURE_FILES) {
+    const { viewer, view, viewers } = viewerOver();
+    await viewer.show({ replay: blobOf(file) });
+    const sim = viewers.made[0].sim;
+    const zero = sim.replay.actions.filter((a) => a.time === 0).length;
+    assert.ok(zero >= 1, `${file}: the first click is recorded at game time 0`);
+    assert.deepEqual([view.last.time, viewers.drawn[0].index, view.last.figures.clock], [-LEAD_IN_MS, 0, '00.000'], `${file}: the start position`);
+    viewer.command('toggle');
+    viewer.tick(LEAD_IN_MS - 1);
+    assert.deepEqual([viewers.drawn.at(-1).index, view.last.figures.clock], [0, '00.000'], `${file}: still closed through the lead-in`);
+    viewer.tick(1);
+    assert.equal(viewers.drawn.at(-1).index, zero, `${file}: the time-0 actions play as the first action`);
+    assert.deepEqual(viewers.pressed.at(-1), Array.from({ length: zero }, (_, i) => i), `${file}: each with its press ring`);
+    for (const t of [0, 1, sim.duration / 3, sim.duration / 2, sim.duration]) {
+      viewer.seek(t);
+      assert.equal(viewers.drawn.at(-1).index, sim.replay.actions.filter((a) => a.time <= t).length, `${file}: every action with time ≤ ${t}`);
+    }
+  }
+  const { viewer, viewers } = viewerOver();
+  await viewer.show({ replay: blobOf(DOUBLE) });
+  viewer.command('next');
+  assert.equal(viewers.drawn.at(-1).index, 4, 'a 3D flag before the first reveal also carries 0, and plays with it');
+});
+
+test('Comma and Period step one sampling interval back and on, pausing first, clamped to the start and the end', async () => {
+  for (const [file, frame] of [[WON, 50], [CUBE, 100]]) {
+    const { viewer, view } = viewerOver();
+    await viewer.show({ replay: blobOf(file) });
+    viewer.command('toggle');
+    assert.equal(viewer.key('Period'), true);
+    assert.deepEqual([view.last.time, view.last.playing], [-LEAD_IN_MS + frame, false], `${file}: a frame on, paused`);
+    viewer.key('Comma');
+    viewer.key('Comma');
+    assert.equal(view.last.time, -LEAD_IN_MS, `${file}: held at the start`);
+    viewer.seek(1000);
+    viewer.command('frameNext');
+    assert.equal(view.last.time, 1000 + frame);
+    viewer.command('framePrev');
+    viewer.command('framePrev');
+    assert.equal(view.last.time, 1000 - frame);
+    viewer.command('end');
+    viewer.command('frameNext');
+    assert.equal(view.last.time, view.last.duration, `${file}: held at the end`);
+  }
+});
+
+test('Minus reaches 0.25× from 0.5×; the default stays 1×', async () => {
+  const { viewer, view } = viewerOver();
+  await viewer.show({ replay: blobOf(WON) });
+  assert.equal(view.last.speed, 1);
+  viewer.key('Minus');
+  viewer.key('Minus');
+  assert.equal(view.last.speed, 0.25);
+  viewer.command('toggle');
+  viewer.tick(1000);
+  assert.equal(view.last.time, -LEAD_IN_MS + 250);
+});
+
+test('the seek bar ticks every action at its time, past the lead-in; ticks closer than a pixel merge within their kind only', () => {
+  const actions = [
+    { time: 0, kind: 'reveal' }, { time: 0, kind: 'flag' }, { time: 1, kind: 'reveal' }, { time: 500, kind: 'chord' }, { time: 1500, kind: 'reveal' },
+  ];
+  const ticks = seekTicks(actions, 1500, 500, 200); // 2000 ms over 200 px: 10 ms a pixel
+  assert.deepEqual(ticks, [
+    { left: 25, kind: 'reveal' }, { left: 25, kind: 'flag' }, { left: 50, kind: 'chord' }, { left: 100, kind: 'reveal' },
+  ], 'the reveal 1 ms on merges with its neighbour; the flag beside it stays');
+  assert.equal(seekTicks(actions, 1500, 500, 20000).length, 5, 'a wide bar keeps them all');
+  assert.deepEqual(seekTicks([], 0, 500, 100), []);
+});
+
+test('a press ring for each action playback reaches going forward; a seek that crosses many shows none, a step to an action shows its own', async () => {
+  const { viewer, viewers } = viewerOver();
+  await viewer.show({ replay: blobOf(WON) });
+  const times = viewers.made[0].sim.replay.actions.map((a) => a.time);
+  viewer.command('next'); // the first action
+  assert.deepEqual(viewers.pressed, [[0]]);
+  viewer.seek(5000);
+  assert.equal(viewers.pressed.length, 1, 'skipped actions show no ring');
+  viewer.seek(times[5]);
+  assert.deepEqual(viewers.pressed.at(-1), [5], 'seeking to an action shows its ring once');
+  viewer.command('prev');
+  assert.deepEqual(viewers.pressed.at(-1), [4], 'stepping back to an action shows its ring');
+  const before = viewers.pressed.length;
+  viewer.command('toggle');
+  viewer.tick(times[7] - times[4]);
+  assert.deepEqual(viewers.pressed.slice(before).flat(), [5, 6, 7], 'playback rings every action it reaches');
+  viewer.command('toggle');
+  assert.ok(viewers.calls.includes('still'), 'a pause tells the board, which drops the trail');
+});
+
+test('each action\'s cue is the one the game plays for its outcome', () => {
+  const o = (kind, changed, count, before, after) => actionCue(kind, { changed, count, before, after });
+  assert.deepEqual(o('reveal', 10, 10, 'playing', 'playing'), [['reveal', 10]]);
+  assert.deepEqual(o('chord', 3, 3, 'playing', 'playing'), [['chord', 3]]);
+  assert.deepEqual(o('flag', 1, 1, 'playing', 'playing'), [['flag', true, 1]]);
+  assert.deepEqual(o('flag', 3, 1, 'playing', 'playing'), [['flag', false, 3]], 'more flags off than on');
+  assert.deepEqual(o('reveal', 0, 0, 'playing', 'playing'), [['noop']], 'an action that changed nothing');
+  assert.deepEqual(o('reveal', 5, 0, 'playing', 'lost'), [['explode']]);
+  assert.deepEqual(o('reveal', 4, 4, 'playing', 'won'), [['reveal', 4], ['win']], 'the end of the game plays win once');
+  assert.deepEqual(o('reveal', 0, 0, 'won', 'won'), []);
+});
+
+function fakeSound() {
+  const played = [];
+  return new Proxy({ played }, { get: (t, k) => (k === 'played' ? played : (...args) => played.push([k, ...args])) });
+}
+
+test('sound on replays: off by default and kept for the session; playback plays each action\'s cue, seeks and fast speeds play none', async () => {
+  const sound = fakeSound();
+  const { viewer, view } = viewerOver({ sound });
+  await viewer.show({ replay: blobOf(WON) });
+  assert.equal(view.last.sound, false, 'off by default');
+  viewer.command('toggle');
+  viewer.tick(LEAD_IN_MS + 600);
+  assert.deepEqual(sound.played, [], 'silent while off');
+  viewer.command('sound');
+  assert.equal(view.last.sound, true);
+  viewer.command('start');
+  assert.equal(view.last.playing, true, 'Home keeps playing');
+  viewer.tick(LEAD_IN_MS);
+  assert.deepEqual(sound.played.map(([k]) => k), ['reveal'], 'the first click plays its cue');
+  viewer.seek(6000);
+  assert.equal(sound.played.length, 1, 'a seek plays nothing for what it skips');
+  viewer.setSpeed(4);
+  assert.equal(view.last.playing, true);
+  viewer.tick(500);
+  assert.equal(sound.played.length, 1, 'nothing above 2×');
+  viewer.setSpeed(2);
+  viewer.tick(100000);
+  assert.deepEqual(sound.played.at(-1), ['win'], 'the end of the game plays win once');
+  assert.equal(sound.played.filter(([k]) => k === 'win').length, 1);
+  await viewer.show({ replay: blobOf(LOST) });
+  assert.equal(view.last.sound, true, 'kept for the session');
+  const before = sound.played.length;
+  viewer.command('end');
+  assert.deepEqual(sound.played.slice(before), [['explode']], 'End lands on the losing click: its cue alone, none for what it skips');
+  viewer.command('prev');
+  assert.equal(sound.played.length, before + 1, 'stepping back plays nothing');
+  viewer.command('next');
+  assert.deepEqual(sound.played.slice(before + 1), [['explode']], 'stepping on to the losing click plays it');
+});
+
+test('the 3BV partition comes from the engine: every opening with its border numbers, each isolated number on its own', () => {
+  const sim = createSimulator(blobOf(LOST));
+  const { graph } = sim.grid;
+  const { mine, number } = sim.game.state;
+  const p = bbbvPartition(graph, mine, number);
+  assert.equal(p.openings + p.isolated, sim.replay.check.bbbv, 'as many regions as the board\'s 3BV');
+  const tints = regionTints(p, graph, 6);
+  for (let c = 0; c < graph.count; c++) {
+    if (mine[c]) assert.equal(tints[c], -1);
+    else if (p.label[c] >= p.openings) assert.equal(tints[c], 6, 'an isolated number takes the mark');
+    else assert.ok(tints[c] >= 0 && tints[c] < 6);
+  }
+  for (let c = 0; c < graph.count; c++) {
+    if (mine[c] || number[c] !== 0) continue;
+    graph.forEachNeighbour(c, (nb) => {
+      if (number[nb] === 0 && !mine[nb]) assert.equal(tints[nb], tints[c], 'one opening, one tint');
+    });
+  }
+  // Two openings that share a border number differ.
+  for (let c = 0; c < graph.count; c++) {
+    if (mine[c] || number[c] === 0) continue;
+    const around = new Set();
+    graph.forEachNeighbour(c, (nb) => { if (!mine[nb] && number[nb] === 0) around.add(p.label[nb]); });
+    const list = [...around];
+    for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
+      const zi = p.label.indexOf(list[i]), zj = p.label.indexOf(list[j]);
+      assert.notEqual(tints[zi], tints[zj], 'neighbouring openings differ');
+    }
+  }
+});
+
+test('Show 3BV paints the partition over the board, off by default, and holds across seeks', async () => {
+  const { viewer, view, viewers } = viewerOver();
+  await viewer.show({ replay: blobOf(LOST) });
+  assert.equal(view.last.bbbv, false);
+  viewer.key('KeyB');
+  assert.equal(view.last.bbbv, true);
+  const [name, tints] = viewers.calls.find((c) => c[0] === 'bbbv');
+  assert.equal(name, 'bbbv');
+  assert.equal(tints.length, viewers.made[0].sim.grid.graph.count);
+  const shown = viewers.calls.length;
+  viewer.seek(5000);
+  viewer.command('end');
+  assert.equal(viewers.calls.slice(shown).filter((c) => c[0] === 'bbbv').length, 0, 'seeking keeps it');
+  viewer.command('bbbv');
+  assert.deepEqual(viewers.calls.at(-1), ['bbbv', null]);
+  await viewer.show({ replay: blobOf(WON) });
+  assert.equal(view.last.bbbv, false, 'off for the next replay');
+});
+
+test('Free camera with Follow, in 3D only: C detaches the camera, C again follows the recording', async () => {
+  const { viewer, view, viewers } = viewerOver();
+  await viewer.show({ replay: blobOf(WON) });
+  assert.equal(view.last.camera, null, 'a 2D replay has no camera');
+  viewer.key('KeyC');
+  assert.equal(viewers.calls.some((c) => c[0] === 'free'), false);
+  await viewer.show({ replay: blobOf(CUBE) });
+  assert.equal(view.last.camera, 'follow', 'Follow by default');
+  viewer.command('toggle');
+  viewer.key('KeyC');
+  assert.equal(view.last.camera, 'free');
+  assert.deepEqual(viewers.calls.at(-1), ['free', true]);
+  assert.equal(view.last.playing, true, 'playback runs on');
+  viewer.command('camera');
+  assert.deepEqual([view.last.camera, viewers.calls.at(-1)], ['follow', ['free', false]]);
+  assert.equal(REPLAY_KEYS.Space, 'toggle', 'Space stays play / pause');
+  for (const code of ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE']) assert.equal(Object.hasOwn(REPLAY_KEYS, code), false, `${code} flies, it is no replay key`);
+});
+
+test('the key line names the replay keys with their controller buttons where they have one', () => {
+  const line = REPLAY_KEY_LINE.map((k) => [k.keys, k.pad, k.label]);
+  assert.deepEqual(line, [
+    ['Space / K', 'Start / Y', 'Play'], ['← / →', 'LB / RB', 'Action'], [', / .', null, 'Frame'], ['Home / End', null, 'Start / End'],
+    ['− / =', 'LT / RT', 'Speed'], ['B', null, 'Show 3BV'], ['C', null, 'Free camera'],
+  ]);
+  assert.equal(REPLAY_KEY_LINE.find((k) => k.keys === 'C').only, 'box', 'Free camera only in 3D');
+});
+
+test('a replay file is named for its board and end date, its bytes the stored blob', async () => {
+  assert.equal(replayFileName('classic-2d:square:9x9:10:guess', '2026-10-09T10:00:00.000Z'), 'minesweeper-classic-2d-square-9x9-10-guess-2026-10-09T10-00-00.msrp');
+  assert.doesNotMatch(replayFileName('a/b\\c*?"<>|', 'x'), /[\\/:*?"<>|]/);
+  const saved = [];
+  const files = { save: (bytes, name) => saved.push([bytes, name]) };
+  const blob = blobOf(WON);
+  const { viewer } = viewerOver({ files, library: fakeLibrary({ a: blob }) });
+  assert.equal(viewer.download(), null, 'nothing to save before a replay plays');
+  await viewer.show({ replayId: 'a' });
+  const header = decodeReplay(blob).header;
+  assert.equal(viewer.download(), replayFileName(boardKey(header.board), header.endedAt));
+  assert.equal(saved[0][1], replayFileName(boardKey(header.board), header.endedAt));
+  assert.deepEqual([...saved[0][0]], [...blob], 'byte for byte the stored blob');
+  await viewer.show({ replay: { blob, listing: {} } });
+  viewer.download();
+  assert.deepEqual([...saved[1][0]], [...blob], 'or the hand-off\'s blob');
+});
+
+const fakeFile = (bytes, size = bytes.length) => {
+  const file = { size, name: 'x.msrp', read: 0 };
+  file.arrayBuffer = () => { file.read++; return Promise.resolve(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.length)); };
+  return file;
+};
+
+test('an imported replay file is verified like any other, refused over 16 MB before it is read, and watched, not kept', async () => {
+  assert.equal(MAX_REPLAY_FILE_BYTES, 16 * 1024 * 1024);
+  const library = { ...fakeLibrary(), add: () => assert.fail('an imported replay is not kept'), pin: () => assert.fail('nor pinned') };
+  const { viewer, view, router } = viewerOver({ library });
+  await viewer.show({ file: fakeFile(blobOf(WON)), returnTo: RETURN });
+  assert.equal(viewer.state.status, 'ready');
+  viewer.back();
+  assert.deepEqual(router.went.at(-1), ['records', { data: RETURN.data }], 'Back returns to where it was opened from');
+  const big = fakeFile(blobOf(WON), MAX_REPLAY_FILE_BYTES + 1);
+  await viewer.show({ file: big });
+  assert.deepEqual([view.log.at(-1), big.read], [['failed', FAILURES.unreadable], 0], 'refused before it is read');
+  await viewer.show({ file: fakeFile(new Uint8Array([7, 7, 7])) });
+  assert.deepEqual(view.log.at(-1), ['failed', FAILURES.unreadable]);
+  const tampered = decodeReplay(blobOf(WON));
+  tampered.check.digest ^= 1;
+  await viewer.show({ file: fakeFile(encodeReplay(tampered)) });
+  assert.deepEqual(view.log.at(-1), ['failed', FAILURES.unreproducible]);
+  await viewer.show({ file: fakeFile(encodeReplay(decodeReplay(blobOf(WON)), { version: REPLAY_FORMAT_VERSION + 1 })) });
+  assert.deepEqual(view.log.at(-1), ['failed', FAILURES.newer]);
+  // Open replay file from the viewer: opened from where the viewer was opened from.
+  await viewer.show({ replay: blobOf(WON), returnTo: RETURN });
+  await viewer.openFile(fakeFile(blobOf(LOST)));
+  assert.equal(viewer.state.end, null);
+  viewer.back();
+  assert.deepEqual(router.went.at(-1), ['records', { data: RETURN.data }]);
+});
+
+test('the 2D pointer leaves a trail of its last 150 ms while playing, none on a seek or while paused', () => {
+  assert.equal(TRAIL_MS, 150);
+  const track = movementTrack([
+    { time: 0, type: 'sample', values: [0, 0] }, { time: 50, type: 'sample', values: [64, 0] }, { time: 100, type: 'sample', values: [128, 0] },
+    { time: 150, type: 'sample', values: [192, 0] }, { time: 200, type: 'sample', values: [256, 0] },
+  ], 50);
+  const trail = trailPoints(track, 200);
+  assert.ok(trail.length >= 3, 'a few points behind the pointer');
+  for (const [x] of trail) assert.ok(x < 4 && x >= 4 * (200 - TRAIL_MS) / 200 - 1e-9, 'within the last 150 ms');
+  assert.deepEqual(trailPoints(track, 0), [], 'nothing before the first sample');
+  const sim = createSimulator(blobOf(WON));
+  const pointer = { ...fakePointer(), trails: [], rings: [] };
+  pointer.trail = (points) => pointer.trails.push(points.length);
+  pointer.ring = (x, y, kind) => pointer.rings.push([x, y, kind]);
+  const v = createViewer2D({ view: fakeView(), sim, pointer });
+  v.draw(sim.seek(2000), { playing: true });
+  assert.ok(pointer.trails.at(-1) > 0, 'playing: a trail');
+  v.draw(sim.seek(5000));
+  assert.equal(pointer.trails.at(-1), 0, 'a seek clears it');
+  v.draw(sim.seek(5050), { playing: true });
+  v.still();
+  assert.equal(pointer.trails.at(-1), 0, 'paused: only the pointer');
+});
+
+test('a 2D press ring sits on the recorded pointer, or on the acted cell\'s centre when the pointer was not on it', () => {
+  const replay = decodeReplay(blobOf(WON));
+  const cell = replay.actions[3].cell;
+  const col = cell % 9, row = Math.floor(cell / 9);
+  replay.movement = [{ time: 0, type: 'cursor', cell: -1 }, { time: replay.actions[3].time, type: 'sample', values: [col * 64 + 16, row * 64 + 48] }];
+  const sim = createSimulator(replay);
+  const pointer = { ...fakePointer(), rings: [], trail() {} };
+  pointer.ring = (x, y, kind) => pointer.rings.push([x, y, kind]);
+  const v = createViewer2D({ view: fakeView(), sim, pointer });
+  v.press([{ index: 3, ...replay.actions[3] }]);
+  assert.deepEqual(pointer.rings.at(-1), [(col + 0.25) * 40, (row + 0.75) * 40, replay.actions[3].kind], 'on the pointer');
+  const first = replay.actions[0];
+  v.press([{ index: 0, ...first }]);
+  assert.deepEqual(pointer.rings.at(-1), [(first.cell % 9 + 0.5) * 40, (Math.floor(first.cell / 9) + 0.5) * 40, 'reveal'], 'no pointer yet: the cell\'s centre');
 });

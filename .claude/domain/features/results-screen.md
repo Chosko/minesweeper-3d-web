@@ -49,8 +49,9 @@ In scope (m1-classic-2d):
   the board has no best time.
 - Actions: *Play again* (default focus, and `Enter` or `R` on the keyboard;
   the screen's hint names `R`), *Watch replay* (when the game handed over its
-  replay — `replay-playback`), *Records* (opens the records screen on this
-  board), *Main menu*.
+  replay — `replay-playback`), *Watch best* beside it (when the board's
+  fastest-time best has a kept replay and is not this game), *Records*
+  (opens the records screen on this board), *Main menu*.
 - Telling the player once when records are not being saved this session.
 - Mouse, keyboard and controller operation, per the shell's navigation.
 
@@ -124,6 +125,11 @@ composed from the `screen-components` kit.
   replay and the shell has the replay viewer's route; asks the shell to open
   `replay-playback`'s viewer with that replay, returning to this screen. It
   plays the game's own replay even when the library could not save it.
+- **Watch best** — shown only when the board's fastest-time best, as the
+  records stand after this game, has a replay kept in `replay-library`, that
+  best is not the game shown and the shell has the replay viewer's route;
+  asks the shell to open the viewer on that replay by id, returning to this
+  screen.
 - **Records** — asks the shell to route to `records-screen`, opened on this
   game's board.
 - **Main menu** — asks the shell to return to the main menu.

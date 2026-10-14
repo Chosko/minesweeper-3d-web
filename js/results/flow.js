@@ -1,7 +1,8 @@
 // Results flow: on the game shell's game-finished hand-off, records the summary with the records
 // store, then routes to the results screen with the summary and the comparison; on the finished
 // and abandoned hand-offs, adds the game's sealed replay to the replay library once its summary is
-// recorded; Watch replay opens the replay viewer on the finished game's own replay. DOM-free: the
+// recorded; Watch replay opens the replay viewer on the finished game's own replay, and Watch best on
+// the board's fastest-time best's kept replay. DOM-free: the
 // shell hands in the records store, the replay library, the router and its restart and main-menu
 // actions.
 //
@@ -9,8 +10,8 @@
 //   records   the records store (js/records/store.js): record(summary) → comparison, available(),
 //             and the queries counters(board), history(board), winRate(board) and
 //             completedWinRate(board).
-//   replays   the replay library (js/replay/library.js): load(), add(blob, listing, setBest).
-//             Without it no replay is kept.
+//   replays   the replay library (js/replay/library.js): load(), add(blob, listing, setBest),
+//             has(id). Without it no replay is kept and no best is watched.
 //   router    { has, go } (js/shell/router.js).
 //   restart(source, current)  start the same board choice again; current is the shown data, whose
 //             mode may already have been left (the records screen leaves it).
@@ -19,7 +20,7 @@
 //   attach(pauser) → detach   hooks the pause controller's `finished` and `abandoned` hand-offs
 //                             (js/shell/pause.js).
 //   finished(summary, mode, replay?)  records, then routes to RESULTS_SCREEN with { summary, mode,
-//                             comparison, saved, notSaved, watch, rank, streak, standing }; returns
+//                             comparison, saved, notSaved, watch, watchBest, rank, streak, standing }; returns
 //                             that data.
 //                             Recording happens before the screen shows, so the comparison is
 //                             against the bests that stood before this game. A summary that is not
@@ -40,7 +41,10 @@
 //                             player is told once. watch is whether Watch replay is offered: the
 //                             game handed over its sealed replay and the router has the replay
 //                             viewer's route (REPLAY_SCREEN, js/records/replay-list.js). The replay
-//                             is then kept (below).
+//                             is then kept (below). watchBest is the id of the board's
+//                             fastest-time best (records.bests(board).time, after recording) when
+//                             the library keeps its replay (replays.has), the router has the
+//                             viewer's route and that best is not the game shown; else null.
 //   abandoned(summary, mode, replay?)  records (a no-op when the records store already recorded
 //                             it), then keeps the replay; no results screen.
 //   Keeping a replay: replay is the sealed { blob, listing } (js/replay/recorder.js), or null when
@@ -62,6 +66,8 @@
 //                             RESULTS_SCREEN } }: the replay the shown game handed over, so it plays
 //                             whether or not the library could save it, and Back returns here.
 //                             Nothing unless the shown data offers watch.
+//   watchBest()               routes to REPLAY_SCREEN with { replayId: watchBest, returnTo: {
+//                             screen: RESULTS_SCREEN } }. Nothing unless the shown data offers it.
 //   toMenu()                  goMenu().
 
 import { boardKey } from '../records/board.js';
@@ -75,6 +81,15 @@ const RECORDS_ENTRY = MENU_ENTRIES.find((e) => e.id === 'records');
 const isRecordSummary = (s) => s !== null && typeof s === 'object' && typeof s.id === 'string' && s.board !== null && typeof s.board === 'object';
 const setsBest = (comparison) => comparison !== null && typeof comparison === 'object'
   && Object.values(comparison).some((c) => c?.newBest === true);
+
+/** An optional lookup, or null when it throws or is missing: nothing to log. */
+function lookup(fn) {
+  try {
+    return fn() ?? null;
+  } catch {
+    return null;
+  }
+}
 
 /** A records query, or null when it throws: a figure the screen can do without. */
 function query(fn) {
@@ -127,7 +142,10 @@ export function createResultsFlow({ records, replays = null, router, restart, go
       if (notSaved) told = true;
       shownReplay = replay?.blob ? replay : null;
       const watch = shownReplay !== null && router.has(REPLAY_SCREEN);
-      current = { summary, mode, comparison, saved, notSaved, watch, rank, streak, standing };
+      const best = saved && replays ? lookup(() => records.bests(summary.board)?.time?.id) : null;
+      const watchBest = typeof best === 'string' && best !== summary.id && router.has(REPLAY_SCREEN)
+        && lookup(() => replays.has(best)) === true ? best : null;
+      current = { summary, mode, comparison, saved, notSaved, watch, watchBest, rank, streak, standing };
       router.go(RESULTS_SCREEN, { data: current });
       keep(replay, comparison);
       return current;
@@ -158,6 +176,10 @@ export function createResultsFlow({ records, replays = null, router, restart, go
     watch() {
       if (!current?.watch) return;
       router.go(REPLAY_SCREEN, { data: { replay: shownReplay, returnTo: { screen: RESULTS_SCREEN } } });
+    },
+    watchBest() {
+      if (!current?.watchBest) return;
+      router.go(REPLAY_SCREEN, { data: { replayId: current.watchBest, returnTo: { screen: RESULTS_SCREEN } } });
     },
     toMenu() { goMenu(); },
   };

@@ -99,25 +99,43 @@ mouse, the keyboard or a controller; `Esc` or `B` goes back.
 
 Every Classic 2D and 3D game you finish, or leave after its first click, is kept as a replay in the
 browser: your personal bests and the replays you pin are always kept, along with your newest 100
-others. **Watch replay** on the screen shown after a game plays that game again; on the Records
-screen, the chosen board's replays are listed with **Watch** and **Pin** / **Unpin**, and a best or a
-recent game with a kept replay can be watched too.
+others. **Watch replay** on the screen shown after a game plays that game again, and **Watch best**
+beside it plays the board's fastest-time best when its replay is kept. On the Records screen, the
+chosen board's replays are listed with **Watch**, **Download** and **Pin** / **Unpin**, and a best or
+a recent game with a kept replay can be watched too.
 
-A replay plays on the same board view as the game: in Classic 2D with your pointer and cursor, in 3D
-with the camera flying as you flew it. The bar at the top shows the time, mines left, 3BV solved
-and 3BV/s so far. A replay made by a newer version of the game, or one that no longer plays out the
-same, is not played and the viewer says why.
+A replay plays on the same board view as the game: in Classic 2D with your pointer (outlined, with a
+short trail) and cursor, in 3D with the camera flying as you flew it. It opens on the closed board,
+so the first click plays as the first action; every click shows a ring, coloured by button, and
+each one is ticked on the seek bar in the same colour. The bar at the top shows the time (seconds
+to the thousandth), mines left, 3BV solved and 3BV/s so far. A replay made by a newer version of the
+game, or one that no longer plays out the same, is not played and the viewer says why.
 
 | Keyboard | Controller | Action |
 |---|---|---|
 | `Space` / `K` | `Start` / `Y` | Play / pause; at the end, play again from the start |
 | `←` / `→` | `LB` / `RB` | Previous / next action |
+| `,` / `.` | | One frame back / on |
 | `Home` / `End` | | Start / end of the replay |
-| `-` / `=` | `LT` / `RT` | Slower / faster (0.5×, 1×, 2×, 4×) |
+| `-` / `=` | `LT` / `RT` | Slower / faster (0.25×, 0.5×, 1×, 2×, 4×) |
+| `B` | | Show 3BV |
+| `C` | | Free camera / Follow (3D) |
 | `Esc` | `B` | Back to the screen you came from |
 
 The seek bar moves to any point in the replay, and marks each stretch where the game was paused;
-with the controller, focus it and the D-pad left / right steps it.
+with the controller, focus it and the D-pad left / right steps it. Below it:
+
+- **Show 3BV** paints the board's 3BV regions: each opening with the numbers around it in its own
+  tint, each number outside every opening outlined on its own. A click on a region already solved
+  is a wasted one.
+- **Sound** plays the game's sounds for each click as it plays (off by default, kept until you close
+  the game); seeking and speeds above 2× stay silent.
+- **Free camera** (3D) lets you fly the camera with the game's controls — the movement keys, mouse
+  look after clicking the scene (`Esc` lets go), the controller's sticks — while the replay plays on;
+  **Follow** returns to the recorded camera.
+- **Download** saves the replay as a `.msrp` file; **Open replay file** (here and in the Records
+  screen's replays) plays one. An opened replay is checked like any other, is not kept, and files
+  over 16 MB are refused.
 
 ## 3D: how to play
 

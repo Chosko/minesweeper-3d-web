@@ -421,3 +421,20 @@ test('the simulator and the verifier are DOM-free', () => {
     assert.doesNotMatch(src, /\b(document|window|navigator|requestAnimationFrame|HTMLElement)\b/, f);
   }
 });
+
+test('each applied action\'s outcome — cells it changed, how many it opened or flagged, the phase before and after — for the viewer\'s cues', () => {
+  const blob = new Uint8Array(readFileSync(new URL('./fixtures/replays/2d-intermediate-lost.msrp', import.meta.url)));
+  const sim = createSimulator(blob);
+  sim.seek(sim.duration);
+  const first = sim.outcome(0);
+  assert.equal(first.before, 'playing', 'a replay\'s game starts with its mines placed');
+  assert.equal(first.after, 'playing');
+  assert.ok(first.changed > 0 && first.count === first.changed, 'the first click opened every cell it changed');
+  const last = sim.outcome(sim.length - 1);
+  assert.deepEqual([last.before, last.after], ['playing', 'lost']);
+  sim.seek(0);
+  sim.seek(sim.duration);
+  assert.deepEqual(sim.outcome(sim.length - 1), last, 'the same after a backward seek replays it');
+  const fresh = createSimulator(blob);
+  assert.equal(fresh.outcome(5), null, 'unknown until the action has been applied');
+});

@@ -375,6 +375,7 @@
           <div id="records-replays" class="ui-panel" role="group" aria-labelledby="records-replays-title">
             <h3 class="ui-heading" id="records-replays-title">Replays</h3>
             <label class="ui-toggle"><input type="checkbox" role="switch" id="records-pinned-first" class="ui-toggle__input"><span class="ui-toggle__label">Pinned first</span></label>
+            <button type="button" id="records-replays-open" class="ui-button ui-button--secondary hidden">Open replay file</button>
             <p id="records-replays-empty" class="ui-text ui-text--muted hidden">No replays kept for this board yet.</p>
             <table id="records-replays-table">
               <caption class="ui-text ui-text--muted" id="records-replays-page"></caption>
@@ -401,7 +402,7 @@
   <!-- Replay viewer -->
   <section id="replay" class="hidden" aria-label="Replay">
     <div class="ui-overlay-bar replay-bar" role="group" aria-label="Replay">
-      <div class="ui-stat" role="group" aria-labelledby="rp-clock-label"><span class="ui-stat__label" id="rp-clock-label">Time</span><span id="rp-clock" class="ui-stat__value">000</span></div>
+      <div class="ui-stat" role="group" aria-labelledby="rp-clock-label"><span class="ui-stat__label" id="rp-clock-label">Time</span><span id="rp-clock" class="ui-stat__value">00.000</span></div>
       <div class="ui-stat" role="group" aria-labelledby="rp-mines-label"><span class="ui-stat__label" id="rp-mines-label">Mines</span><span id="rp-mines" class="ui-stat__value">0</span></div>
       <div class="ui-stat" role="group" aria-labelledby="rp-bbbv-label"><span class="ui-stat__label" id="rp-bbbv-label">3BV</span><span id="rp-bbbv" class="ui-stat__value">&mdash;</span></div>
       <div class="ui-stat" role="group" aria-labelledby="rp-rate-label"><span class="ui-stat__label" id="rp-rate-label">3BV/s</span><span id="rp-rate" class="ui-stat__value">&mdash;</span></div>
@@ -424,6 +425,7 @@
         <button type="button" id="rp-play" class="ui-button ui-button--primary">Play</button>
         <button type="button" id="rp-next" class="ui-button ui-button--secondary" aria-label="Next action">Next</button>
         <div id="rp-speed" class="ui-segmented" role="radiogroup" aria-label="Speed">
+          <button type="button" role="radio" aria-checked="false" class="ui-segmented__option" data-value="0.25" tabindex="-1">0.25&times;</button>
           <button type="button" role="radio" aria-checked="false" class="ui-segmented__option" data-value="0.5" tabindex="-1">0.5&times;</button>
           <button type="button" role="radio" aria-checked="true" class="ui-segmented__option" data-value="1">1&times;</button>
           <button type="button" role="radio" aria-checked="false" class="ui-segmented__option" data-value="2" tabindex="-1">2&times;</button>
@@ -433,14 +435,24 @@
       <div class="ui-slider">
         <label class="ui-slider__label" for="rp-seek">Position</label>
         <span id="rp-seek-pad" class="ui-text ui-text--muted" data-pad-hint aria-hidden="true">D-pad <kbd>◀</kbd> <kbd>▶</kbd> seek</span>
-        <output class="ui-slider__value" for="rp-seek" id="rp-position">000 / 000</output>
+        <output class="ui-slider__value" for="rp-seek" id="rp-position"></output>
         <div class="replay-seek">
           <input id="rp-seek" class="ui-slider__input" type="range" min="0" max="0" step="1" value="0" aria-describedby="rp-pauses-text">
           <div id="rp-pauses" class="replay-pauses" aria-hidden="true"></div>
+          <div id="rp-ticks" class="replay-ticks" aria-hidden="true"></div>
         </div>
         <p id="rp-pauses-text" class="ui-text ui-text--muted replay-pauses-text" hidden></p>
       </div>
+      <div class="ui-row replay-tools">
+        <button type="button" id="rp-show-bbbv" class="ui-button ui-button--secondary" aria-pressed="false">Show 3BV</button>
+        <button type="button" id="rp-sound" class="ui-button ui-button--secondary" aria-pressed="false">Sound</button>
+        <button type="button" id="rp-camera" class="ui-button ui-button--secondary hidden" aria-pressed="false">Free camera</button>
+        <button type="button" id="rp-download" class="ui-button ui-button--secondary">Download</button>
+        <button type="button" id="rp-open" class="ui-button ui-button--secondary">Open replay file</button>
+      </div>
+      <p id="rp-keys" class="ui-text ui-text--muted replay-keys"></p>
     </div>
+    <input id="replay-file" type="file" accept=".msrp" tabindex="-1" aria-hidden="true" hidden>
   </section>
   <!-- /Replay viewer -->
 
@@ -473,6 +485,7 @@
       <div class="ui-actions ui-actions--row">
         <button type="button" id="r-again" class="ui-button ui-button--primary">Play again</button>
         <button type="button" id="r-watch" class="ui-button ui-button--secondary hidden">Watch replay</button>
+        <button type="button" id="r-watch-best" class="ui-button ui-button--secondary hidden">Watch best</button>
         <button type="button" id="r-look" class="ui-button ui-button--secondary hidden">Look at the board</button>
         <button type="button" id="r-records" class="ui-button ui-button--secondary">Records</button>
         <button type="button" id="r-menu" class="ui-button ui-button--secondary">Main menu</button>

@@ -211,8 +211,24 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
 #replay-board { position: absolute; top: 96px; left: var(--space-4); right: var(--space-4); bottom: var(--space-4); overflow: hidden; }
 #replay-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
 #replay-controls { position: absolute; left: var(--space-4); right: var(--space-4); bottom: var(--space-4); max-width: 720px; margin: 0 auto; }
-.replay-pointer { position: absolute; top: 0; left: 0; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--color-ink); border: 2px solid var(--color-surface-raised); pointer-events: none; }
-.replay-pointer[hidden] { display: none; }
+/* The recorded pointer: a core in a contrasting outline, readable on any tile in either theme; its trail fades behind it. */
+.replay-pointer { position: absolute; top: 0; left: 0; z-index: 3; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: var(--color-replay-pointer); border: 2px solid var(--color-replay-pointer-outline); box-shadow: 0 0 0 1px var(--color-replay-pointer); pointer-events: none; }
+.replay-trail { position: absolute; top: 0; left: 0; z-index: 2; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: var(--color-replay-pointer); border: 1px solid var(--color-replay-pointer-outline); pointer-events: none; }
+:is(.replay-pointer, .replay-trail)[hidden] { display: none; }
+/* Show 3BV over a 2D board: drawn on its own canvas above the tiles, below the pointer. */
+.replay-bbbv { position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none; }
+.replay-bbbv[hidden] { display: none; }
+/* A press ring: expands and fades over 400 ms, coloured by its action's button. */
+.replay-ring { position: absolute; z-index: 4; width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%; border: 3px solid currentColor; pointer-events: none; animation: replay-ring 0.4s var(--easing-out) forwards; }
+.replay-ring--reveal { color: var(--color-replay-reveal); }
+.replay-ring--flag { color: var(--color-replay-flag); }
+.replay-ring--chord { color: var(--color-replay-chord); }
+@keyframes replay-ring { from { transform: scale(0.35); opacity: 1; } to { transform: scale(1.4); opacity: 0; } }
+.replay-tools { flex-wrap: wrap; margin-top: var(--space-2); }
+.replay-keys { margin: var(--space-2) 0 0; font-size: var(--font-size-sm); display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); }
+.replay-key__pad { opacity: 0.8; }
+/* While the replay viewer shows, the game's view chips, tools strip, hint strip and toast neither show nor appear. */
+body.replaying :is(#mode-chips, #hud-tools, #hint-strip, #toast) { display: none; }
 
 /* ---------- HUD ---------- */
 #hud { position: fixed; inset: 0; pointer-events: none; z-index: var(--z-hud); }

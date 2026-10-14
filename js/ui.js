@@ -262,14 +262,33 @@ export class UI {
     this._helpByUser = false;
     this.setHintStrip(false);
   }
-  /** The replay viewer: none of the game's HUD, help panel, hint strip or toast shows over it. */
+  /**
+   * The replay viewer: none of the game's HUD, view chips, tools strip, help panel, hint strip or toast
+   * shows over it, nor appears while it shows (body.replaying); hideReplay gives them back.
+   */
   showReplay() {
+    this._replaying = true;
+    document.body.classList.add('replaying');
     this.el.hud.classList.add('hidden');
     this.el.help.classList.add('hidden');
     this._helpByUser = false;
     this.setHintStrip(false);
     clearTimeout(this._toastTimer);
     $('toast').classList.remove('on');
+  }
+  hideReplay() {
+    this._replaying = false;
+    document.body.classList.remove('replaying');
+  }
+  /** A 3D replay's press ring at x, y on the scene (CSS pixels), coloured by its action's kind; it expands and fades on its own. */
+  replayRing(x, y, kind) {
+    const ring = document.createElement('div');
+    ring.className = `replay-ring replay-ring--${kind}`;
+    ring.setAttribute('aria-hidden', 'true');
+    ring.style.left = `${x}px`;
+    ring.style.top = `${y}px`;
+    $('replay').append(ring);
+    setTimeout(() => ring.remove(), 400);
   }
   /** The 3D board choice: the presets and the custom board, over the menu backdrop. */
   showBoardChoice() {
@@ -637,8 +656,9 @@ export class UI {
     if (!this.el.settings.classList.contains('hidden')) this.el.settingsBindings.innerHTML = bindingsSectionHtml(this._glyphs, this._camera);
   }
 
-  /** Short global notice (e.g. "Controller connected"). */
+  /** Short global notice (e.g. "Controller connected"); none while the replay viewer shows. */
   toast(msg, ms = 2200) {
+    if (this._replaying) return;
     const t = $('toast');
     t.textContent = msg;
     t.classList.add('on');

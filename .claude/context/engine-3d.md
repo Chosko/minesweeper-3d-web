@@ -54,8 +54,8 @@ as Classic 2D.
 - **Loss presentation.** The state view reads a loss as every cell pressed,
   none flagged or unlinked, every cell dirty; the engine's own arrays (served
   directly while not lost) are left as the loss left them.
-- **Large-board memory.** A 100 × 100 × 100 game holds about 38 bytes a
-  cell (box graph 0, game 32, state view 6, 2 more after a loss), measured
+- **Large-board memory.** A 100 × 100 × 100 game holds about 37 bytes a
+  cell (box graph 0, game 31, state view 6, 2 more after a loss), measured
   by `tests/engine-3d-view.test.mjs`.
 
 ## DOMAIN DEPENDENCIES

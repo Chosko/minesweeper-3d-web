@@ -205,10 +205,10 @@ test('memory: a 100 x 100 x 100 game on the shared engine', () => {
     return v;
   });
   assert.ok(view.kept);
-  // Box graph 0, game with the 3D profile, its counts and its flags' batch membership 32 bytes a
-  // cell, state view 6 bytes a cell — 38 in all.
+  // Box graph 0, game with the 3D profile, its counts and its flags' batch membership 31 bytes a
+  // cell, state view 6 bytes a cell — 37 in all.
   const near = (m, perCell, what) => assert.ok(Math.abs(m.bytes - perCell * n) < 0.5 * MB, `${what} retained ${m.bytes} bytes`);
   near(box, 0, 'box graph');
-  near(game, 32, 'shared engine game');
+  near(game, 31, 'shared engine game');
   near(view, 6, '3D state view');
 });

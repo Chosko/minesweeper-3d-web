@@ -136,13 +136,46 @@ test('the recorded camera lands where it was in the world, at any spacing', () =
 
 function fakeScene() {
   const scene = {
-    shown: [], poses: [], toggles: [], hidden: 0,
+    shown: [], poses: [], toggles: [], hidden: 0, free: [], rings: [], tints: [],
     show(view) { scene.shown.push(view); },
     camera(pose, toggles) { scene.poses.push(pose); scene.toggles.push(toggles); },
+    detach(on) { scene.free.push(on); },
+    ring(cell, kind) { scene.rings.push([cell, kind]); },
+    tint(tints) { scene.tints.push(tints); },
     hide() { scene.hidden++; },
   };
   return scene;
 }
+
+test('Free detaches the camera at its pose while the recorded view mode still applies; Follow returns to the recorded camera now', () => {
+  const sim = createSimulator(blobOf(CUBE));
+  const scene = fakeScene();
+  const viewer = createViewer3D({ sim, scene, spacing: 1.1 });
+  viewer.draw(sim.seek(1000));
+  viewer.setFree(true);
+  assert.deepEqual(scene.free, [true]);
+  const placed = scene.poses.length;
+  viewer.draw(sim.seek(4000));
+  assert.equal(scene.poses.at(-1), null, 'the recording no longer places the camera');
+  assert.equal(scene.poses.length, placed + 1);
+  assert.equal(scene.toggles.at(-1).shift, true, 'the recorded view mode still applies');
+  viewer.setFree(false);
+  assert.deepEqual(scene.free, [true, false]);
+  assert.deepEqual(scene.poses.at(-1), worldPose(cameraAt(viewer.track, 4000), sim.grid, 1.1), 'back to the recorded camera at the current time');
+});
+
+test('a 3D press ring sits on the acted cell; Show 3BV hands the scene a tint per cell', () => {
+  const sim = createSimulator(blobOf(CUBE));
+  const scene = fakeScene();
+  const viewer = createViewer3D({ sim, scene, spacing: 1.1 });
+  const a = sim.replay.actions[1];
+  viewer.press([{ index: 1, ...a }]);
+  assert.deepEqual(scene.rings, [[a.cell, a.kind]]);
+  const tints = new Int16Array(216).fill(2);
+  viewer.showBbbv(tints);
+  viewer.showBbbv(null);
+  assert.deepEqual(scene.tints, [tints, null]);
+});
 
 test('a 3D replay draws the simulator\'s 3D state view, its changes marked for the renderer', () => {
   const sim = createSimulator(blobOf(CUBE));
@@ -225,7 +258,7 @@ test('the 3D viewer is DOM-free and reaches no records, sound, pause or player i
 
 const MAIN = read('js/main.js');
 
-test('the shell registers the 3D viewer under the box graph, with its own camera that player input never moves', () => {
+test('the shell registers the 3D viewer under the box graph, with its own camera that player input moves only in Free', () => {
   const block = MAIN.slice(MAIN.indexOf('const REPLAY_VIEWER = createReplayViewer('), MAIN.indexOf('// ---------- results ----------'));
   assert.match(block, /viewers: WEBGL2 \? \{ square: mountReplay2D, box: mountReplay3D \}/);
   assert.match(MAIN, /createViewer3D\(\{ sim, scene: REPLAY_SCENE, spacing: REPLAY_SPACING \}\)/);
@@ -237,7 +270,23 @@ test('the shell registers the 3D viewer under the box graph, with its own camera
   const loop = MAIN.slice(MAIN.indexOf('function frame(now)'), MAIN.indexOf('requestAnimationFrame(frame);\n}'));
   const branch = loop.slice(loop.indexOf('} else if (replay3d.view) {'), loop.indexOf('} else {', loop.indexOf('} else if (replay3d.view) {')));
   assert.match(branch, /replayCam\.apply\(three\)/);
-  assert.doesNotMatch(branch, /cam\.move|moveAxes|controls\./, 'no player movement or held keys');
+  assert.doesNotMatch(branch, /cam\.move|moveAxes|controls\./, 'no player movement or held keys in the branch itself');
+  assert.match(branch, /if \(replay3d\.free\) flyReplay\(dt\)/, 'Free flies the replay camera');
+  const fly = MAIN.slice(MAIN.indexOf('function flyReplay('), MAIN.indexOf('\n}\n', MAIN.indexOf('function flyReplay(')));
+  assert.match(fly, /replayCam\.move\(dt, input\.move\)/, 'the game\'s movement keys');
+  assert.match(fly, /moveAxes\(/, 'the controller sticks');
+  const scene = MAIN.slice(MAIN.indexOf('const REPLAY_SCENE = {'), MAIN.indexOf('\n};\n', MAIN.indexOf('const REPLAY_SCENE = {')));
+  assert.match(scene, /const at = renderer\.cellScreen\(cell\);\s*if \(at\) ui\.replayRing\(at\.x, at\.y, kind\);/, 'a 3D press ring on the cell\'s projection');
+  assert.match(fly, /needRender = true/, 'flying a paused replay draws');
+});
+
+test('while a 3D replay shows, the game\'s chips and toast stay hidden and the viewer shows its own key line', () => {
+  const ui = read('js/ui.js');
+  const show = ui.slice(ui.indexOf('showReplay() {'), ui.indexOf('\n  }\n', ui.indexOf('showReplay() {')));
+  assert.match(show, /classList\.add\('replaying'\)/);
+  assert.match(ui, /toast\(msg, ms = 2200\) \{\s*if \(this\._replaying\) return;/, 'no toast while the viewer shows');
+  assert.match(read('css/style.css'), /body\.replaying :is\(#mode-chips, #hud-tools, #hint-strip, #toast\) \{ display: none; \}/);
+  assert.match(MAIN, /hide: \(\) => \{ REPLAY_VIEWER\.hide\(\); ui\.hideReplay\(\); \}/, 'leaving restores the game\'s chrome');
 });
 
 test('whatever moves a 3D replay outside its playback is a seek for the renderer, which drops its pulses', () => {
@@ -340,9 +389,56 @@ test('in a browser, a recorded 3D replay plays from its fixture through to the e
     await frames();
     assert.equal(await page.evaluate(() => globalThis.__ms.renderer.game.state), 'playing');
     assert.equal(await page.evaluate(() => globalThis.__ms.renderer._eff === null && globalThis.__ms.renderer._shake === null), true);
+    // Replay chrome, not the game's: no chips, no toast, the viewer's key line.
+    const hidden = (sel) => page.evaluate((s) => { const e = document.querySelector(s); return !e || getComputedStyle(e).display === 'none' || e.offsetParent === null; }, sel);
+    for (const sel of ['#chip-shift', '#chip-space', '#chip-ctrl', '#hud-tools', '#toast']) assert.equal(await hidden(sel), true, `${sel} hidden`);
+    assert.match(await text('rp-keys'), /C.*Free camera/);
+    assert.equal(await hidden('#rp-camera'), false, 'the Follow / Free toggle shows in 3D');
+
+    // Free camera: C detaches it, the movement keys fly it while playback runs on; C again follows the recording.
+    await page.evaluate(() => globalThis.__ms.replayViewer.seek(4000));
+    await frames();
+    await page.evaluate(() => { document.activeElement?.blur(); });
+    await page.keyboard.press('KeyC');
+    assert.equal(await page.evaluate(() => globalThis.__ms.replayViewer.state.camera), 'free');
+    const detached = await camera();
+    await page.keyboard.down('KeyW');
+    await frames();
+    await frames();
+    await page.keyboard.up('KeyW');
+    const flown = await camera();
+    assert.ok(Math.hypot(flown.x - detached.x, flown.y - detached.y, flown.z - detached.z) > 1e-3, 'W flies the free camera');
+    await page.keyboard.press('KeyC');
+    await frames();
+    got = await camera();
+    for (const k of ['x', 'y', 'z']) assert.ok(Math.abs(got[k] - want[k]) < 1e-6, `back on the recorded camera: ${k}`);
+
+    // Show 3BV tints the cubes; a step to an action shows its press ring on the scene.
+    await page.keyboard.press('KeyB');
+    assert.equal(await page.evaluate(() => globalThis.__ms.renderer.uniforms.uRegionOn.value), 1, 'the renderer takes the tints');
+    assert.ok(await page.evaluate(() => { const t = globalThis.__ms.renderer.regionTex.image.data; return t.some((v, i) => i % 4 === 3 && v > 0); }));
+    await page.keyboard.press('KeyB');
+    assert.equal(await page.evaluate(() => globalThis.__ms.renderer.uniforms.uRegionOn.value), 0);
+    // The 3D ring sits on the acted cell's projection: a camera aimed at a cell projects it to the canvas centre, one facing away to nothing.
+    const projected = await page.evaluate(() => {
+      const r = globalThis.__ms.renderer, c = r.camera;
+      const saved = { p: c.position.clone(), q: c.quaternion.clone() };
+      c.position.set(30, 20, 40);
+      c.lookAt(2.2, 2.2, 2.2); // cell (3, 3, 3) of the 6 × 6 × 6 box at pitch 4.4
+      const front = r.cellScreen(129);
+      c.lookAt(60, 40, 80);
+      const behind = r.cellScreen(129);
+      c.position.copy(saved.p); c.quaternion.copy(saved.q); c.updateMatrixWorld(true);
+      return { front, behind, w: r.canvas.clientWidth, h: r.canvas.clientHeight };
+    });
+    assert.ok(Math.abs(projected.front.x - projected.w / 2) < 1 && Math.abs(projected.front.y - projected.h / 2) < 1, 'on the aimed cell');
+    assert.equal(projected.behind, null, 'none behind the camera');
+
+
     await page.click('#rp-back');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
     assert.equal(await page.evaluate(() => globalThis.__ms.renderer.game.n), demo, 'the menu\'s board is back');
+    assert.equal(await page.evaluate(() => document.body.classList.contains('replaying')), false, 'the game\'s chrome is restored');
 
     // A lost graphics context during a 3D replay is reported as a mode's failure; Back still works.
     await page.evaluate(async () => {

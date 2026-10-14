@@ -11,9 +11,15 @@
 //               held at the ends of SPEEDS
 //   seek(t)    moves to t, clamped to 0 .. duration; playing stops at the end
 // The viewer drives the simulator and the movement interpolation from `time` once per frame.
+//
+// The timeline a viewer plays opens with LEAD_IN_MS of replay time before the game's time 0: the
+// viewer's clock runs over the replay's duration plus the lead-in, game time being the clock's time
+// less LEAD_IN_MS, so the closed board shows before the time-0 actions play as the first action.
 
 /** The playback speeds, slowest first. */
-export const SPEEDS = Object.freeze([0.5, 1, 2, 4]);
+export const SPEEDS = Object.freeze([0.25, 0.5, 1, 2, 4]);
+/** The replay time before the game's time 0 at the start of a viewer's timeline. */
+export const LEAD_IN_MS = 500;
 export const DEFAULT_SPEED = 1;
 
 const number = (x, what) => {

@@ -363,3 +363,41 @@ test('the Controls modal and the overlay scrims take their colours from the toke
     }
   }
 });
+
+// ---------- replay viewer marks ----------
+const REPLAY_MARKS = ['--color-replay-reveal', '--color-replay-flag', '--color-replay-chord'];
+const distance = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+
+test('the replay ticks and press rings: three colours per theme, distinct from each other and from the seek bar\'s fill and thumb', () => {
+  for (const theme of ['light', 'dark']) {
+    const p = palette(theme);
+    const marks = REPLAY_MARKS.map((n) => p.c(n));
+    const track = p.surfaces['surface-sunken'];
+    const others = ['--color-accent', '--color-accent-strong', '--color-replay-pause'].map((n) => p.c(n));
+    for (let i = 0; i < marks.length; i++) {
+      assert.ok(contrast(marks[i], track) >= 3, `${theme} ${REPLAY_MARKS[i]} reads on the bar's track`);
+      for (let j = i + 1; j < marks.length; j++) assert.ok(distance(marks[i], marks[j]) > 60, `${theme} ${REPLAY_MARKS[i]} vs ${REPLAY_MARKS[j]}`);
+      for (const o of [...others, track]) assert.ok(distance(marks[i], o) > 60, `${theme} ${REPLAY_MARKS[i]} differs from the fill and thumb`);
+    }
+  }
+});
+
+test('the replay pointer: a core and a contrasting outline, reversed in the dark theme', () => {
+  for (const theme of ['light', 'dark']) {
+    const p = palette(theme);
+    const core = p.c('--color-replay-pointer'), ring = p.c('--color-replay-pointer-outline');
+    assert.ok(contrast(core, ring) >= 7, `${theme} core against outline`);
+  }
+  assert.ok(luminance(palette('light').c('--color-replay-pointer')) < luminance(palette('light').c('--color-replay-pointer-outline')), 'light: a dark core in a light ring');
+  assert.ok(luminance(palette('dark').c('--color-replay-pointer')) > luminance(palette('dark').c('--color-replay-pointer-outline')), 'dark: the reverse');
+});
+
+test('Show 3BV: a small cycle of translucent opening tints, neighbours distinct, and the isolated number\'s mark', () => {
+  for (const theme of ['light', 'dark']) {
+    const t = THEMES[theme];
+    const tints = [1, 2, 3, 4, 5, 6].map((i) => parseColor(t.get(`--color-replay-bbbv-${i}`)));
+    for (const c of tints) assert.ok(c[3] > 0 && c[3] < 1, `${theme}: a tint lets the tile show through`);
+    for (let i = 0; i < tints.length; i++) for (let j = i + 1; j < tints.length; j++) assert.ok(distance(tints[i], tints[j]) > 60, `${theme} tints ${i + 1} and ${j + 1} differ`);
+    assert.ok(parseColor(t.get('--color-replay-bbbv-isolated'))[3] === 1, `${theme}: the isolated mark is opaque`);
+  }
+});

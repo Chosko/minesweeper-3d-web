@@ -109,6 +109,49 @@ test('Back from the viewer returns to the results screen, shown again from the f
   assert.deepEqual(router.stack, ['menu'], 'Back unwound to the results screen, not stacked it again');
 });
 
+// ---------------------------------------------------------------- Watch best
+
+const bestRecords = (bestId) => ({ ...fakeRecords(), bests: () => ({ time: bestId ? { id: bestId, value: 40000, endedAt: '2026-10-01T10:00:00.000Z' } : null }) });
+const keptReplays = (ids) => ({ load: () => Promise.resolve(), add: () => Promise.resolve(), has: (id) => ids.includes(id) });
+
+test('Watch best shows when the board\'s fastest-time best has a kept replay and is not the game just shown', () => {
+  const flow = (records, replays, router = fakeRouter()) => createResultsFlow({ records, replays, router, restart() {}, goMenu() {} });
+  const shown = flow(bestRecords('best1'), keptReplays(['best1'])).finished(summary(), 'classic-2d', sealed());
+  assert.equal(shown.watchBest, 'best1');
+  assert.equal(resultsContent(shown).watchBest, true);
+  assert.equal(flow(bestRecords('g1'), keptReplays(['g1'])).finished(summary(), 'classic-2d', sealed()).watchBest, null, 'the game shown is the best');
+  assert.equal(flow(bestRecords('best1'), keptReplays([])).finished(summary(), 'classic-2d', sealed()).watchBest, null, 'its replay is not kept');
+  assert.equal(flow(bestRecords(null), keptReplays(['best1'])).finished(summary(), 'classic-2d', sealed()).watchBest, null, 'no best yet');
+  assert.equal(flow(bestRecords('best1'), keptReplays(['best1']), fakeRouter(['results'])).finished(summary(), 'classic-2d', sealed()).watchBest, null, 'no viewer');
+  assert.equal(flow(bestRecords('best1'), null).finished(summary(), 'classic-2d', sealed()).watchBest, null, 'no library');
+  assert.equal(resultsContent({ summary: summary() }).watchBest, false);
+});
+
+test('Watch best opens the viewer on the best\'s replay by id, returning to the results screen', () => {
+  const router = fakeRouter();
+  const flow = createResultsFlow({ records: bestRecords('best1'), replays: keptReplays(['best1']), router, restart() {}, goMenu() {} });
+  flow.watchBest();
+  assert.deepEqual(router.routes, [], 'nothing before a results screen');
+  flow.finished(summary(), '3d', sealed());
+  flow.watchBest();
+  assert.deepEqual(router.routes.at(-1), [REPLAY_SCREEN, { replayId: 'best1', returnTo: { screen: RESULTS_SCREEN } }]);
+});
+
+test('the view shows Watch best beside Watch replay only when offered, and calls back on it', () => {
+  const root = fakeRoot();
+  const asked = [];
+  const view = createResultsView({ root, onPlayAgain() {}, onRecords() {}, onMenu() {}, onWatchBest: () => asked.push('best') });
+  view.show(resultsContent({ summary: summary(), watch: true, watchBest: 'b' }));
+  assert.equal(root.el('r-watch-best').classList.contains('hidden'), false);
+  root.el('r-watch-best').listeners.click();
+  assert.deepEqual(asked, ['best']);
+  view.show(resultsContent({ summary: summary(), watch: true, watchBest: null }));
+  assert.equal(root.el('r-watch-best').classList.contains('hidden'), true);
+  assert.match(RESULTS_HTML_ALL(), /id="r-watch"[^>]*>Watch replay<\/button>\s*<button type="button" id="r-watch-best" class="ui-button ui-button--secondary hidden">Watch best<\/button>/);
+  assert.match(read('js/main.js'), /onWatchBest: \(\) => RESULTS\.watchBest\(\)/);
+});
+const RESULTS_HTML_ALL = () => { const html = read('index.html'); return html.slice(html.indexOf('<section id="results"'), html.indexOf('<!-- /Results -->')); };
+
 // ---------------------------------------------------------------- the view
 
 function fakeRoot() {
@@ -253,7 +296,7 @@ test('in a browser, a just-won 2D game is watched from the results screen and ag
     assert.equal(await mode(), 'replay');
     await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready');
     const played = await page.evaluate(() => globalThis.__ms.replayViewer.state);
-    assert.equal(played.time, 0, 'it starts at the beginning');
+    assert.equal(played.time, -500, 'it starts at the beginning, on the closed board');
     assert.ok(played.duration > 0);
     await page.keyboard.press('End');
     await page.waitForFunction(() => globalThis.__ms.replayViewer.state.ended);

@@ -4,7 +4,7 @@ import { createSquareGrid } from '../js/engine/square-grid.js';
 import { cellGraphFromLists } from '../js/engine/graph.js';
 import { createGame, createGameWithMines, PHASE } from '../js/engine/rules.js';
 import { REFERENCE_PROFILE, getRuleProfile } from '../js/engine/profiles.js';
-import { createBoardMetrics, createClickCounts, CLICK_KINDS } from '../js/engine/metrics.js';
+import { createBoardMetrics, createClickCounts, CLICK_KINDS, bbbvPartition } from '../js/engine/metrics.js';
 
 const REF = REFERENCE_PROFILE;
 
@@ -98,6 +98,39 @@ test('3BV: matches the textbook count on random boards', () => {
     for (let i = 0; i < k; i++) mines.push(pool.splice(Math.floor(rnd() * pool.length), 1)[0]);
     const game = createGameWithMines({ graph: grid.graph, profile: REF, mines });
     assert.equal(game.counts().bbbv, naiveBbbv(grid.graph, mines), `board ${w}x${h} mines ${mines}`);
+  }
+});
+
+test('3BV partition: each cell\'s region — an opening with the numbers bordering it, or an isolated number alone; its count is the 3BV', () => {
+  const { game, graph, at } = playing([
+    '....*',
+    '....*',
+    '***..',
+    '.*...',
+  ]);
+  const { mine, number } = game.state;
+  const p = bbbvPartition(graph, mine, number);
+  assert.equal(p.openings + p.isolated, game.counts().bbbv);
+  assert.equal(p.bbbv, game.counts().bbbv);
+  assert.equal(p.label[at(4, 0)], -1, 'a mine is in no region');
+  assert.equal(p.label[at(0, 0)], p.label[at(1, 1)], 'one opening');
+  assert.equal(p.label[at(3, 1)], p.label[at(0, 0)], 'a number bordering the opening belongs to it');
+  assert.ok(p.label[at(0, 0)] < p.openings);
+  assert.ok(p.label[at(0, 3)] >= p.openings, 'a number bordering no opening is isolated');
+  assert.notEqual(p.label[at(0, 3)], p.label[at(2, 3)], 'each isolated number on its own');
+});
+
+test('3BV partition: its region count matches the textbook 3BV on random boards', () => {
+  let seed = 7;
+  const rand = () => { seed = (seed * 1103515245 + 12345) >>> 0; return seed / 2 ** 32; };
+  for (let k = 0; k < 40; k++) {
+    const grid = createSquareGrid(12, 9);
+    const mines = [];
+    for (let c = 0; c < grid.graph.count; c++) if (rand() < 0.18) mines.push(c);
+    const game = createGameWithMines({ graph: grid.graph, profile: REF, mines, dimensions: { width: 12, height: 9 } });
+    const p = bbbvPartition(grid.graph, game.state.mine, game.state.number);
+    assert.equal(p.openings + p.isolated, naiveBbbv(grid.graph, mines));
+    assert.equal(new Set([...p.label].filter((l) => l >= 0)).size, p.openings + p.isolated);
   }
 });
 

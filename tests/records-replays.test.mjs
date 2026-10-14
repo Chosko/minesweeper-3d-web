@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  REPLAY_SCREEN, REPLAYS_EMPTY_TEXT, REPLAYS_NOT_SAVED, REPLAY_HEADERS, replayList, pinState, togglePin, watchRoute, deleteMessage,
+  REPLAY_SCREEN, REPLAYS_EMPTY_TEXT, REPLAYS_NOT_SAVED, REPLAY_HEADERS, replayList, pinState, togglePin, watchRoute, deleteMessage, replayFileName,
 } from '../js/records/replay-list.js';
 import { pagerState } from '../js/ui/components.js';
 import { RECORDS_SCREEN, recordsContent, createRecordsScreen, formatDateTime } from '../js/records/screen.js';
@@ -386,6 +386,52 @@ test('Watch routes to the replay viewer with the replay id and the Records scree
     { screen: REPLAY_SCREEN, data: { replayId: 'a', returnTo: { screen: RECORDS_SCREEN, data: { boardKey: KEY } } } });
 });
 
+// ---------------------------------------------------------------- download and import
+
+test('each row offers Download, saving the stored blob under the replay\'s file name', async () => {
+  const library = fakeLibrary([listing('a', { endedAt: '2026-10-09T12:00:00.000Z' })]);
+  const blob = new Uint8Array([77, 83, 82, 80, 1, 2, 3]);
+  library.bytes = (id) => Promise.resolve(id === 'a' ? blob : undefined);
+  const saved = [];
+  const view = fakeView();
+  const screen = createRecordsScreen({ records: fakeStore(), view, replays: library, router: fakeRouter(), files: { save: (bytes, name) => saved.push([bytes, name]) } });
+  screen.show({ boardKey: KEY });
+  const row = view.shown.at(-1).replays.rows[0];
+  assert.equal(row.file, replayFileName(KEY, '2026-10-09T12:00:00.000Z'));
+  assert.equal(row.file, 'minesweeper-classic-2d-square-9x9-10-guess-2026-10-09T12-00-00.msrp');
+  await screen.downloadReplay('a');
+  assert.deepEqual(saved, [[blob, row.file]], 'byte for byte the stored blob');
+  await screen.downloadReplay('gone');
+  assert.equal(saved.length, 1, 'nothing for a replay not listed');
+});
+
+test('Open replay file picks a file and opens it in the viewer, Back returning to this board', async () => {
+  const file = { size: 10, name: 'x.msrp' };
+  const router = fakeRouter([RECORDS_SCREEN, REPLAY_SCREEN]);
+  const view = fakeView();
+  const screen = createRecordsScreen({ records: fakeStore(), view, replays: fakeLibrary([]), router, files: { pick: () => Promise.resolve(file) } });
+  screen.show({ boardKey: KEY });
+  assert.equal(view.shown.at(-1).canOpen, true);
+  await screen.openReplayFile();
+  assert.deepEqual(router.went.at(-1), [REPLAY_SCREEN, { data: { file, returnTo: { screen: RECORDS_SCREEN, data: { boardKey: KEY } } } }]);
+  const cancelled = createRecordsScreen({ records: fakeStore(), view, replays: fakeLibrary([]), router, files: { pick: () => Promise.resolve(null) } });
+  cancelled.show({ boardKey: KEY });
+  const went = router.went.length;
+  await cancelled.openReplayFile();
+  assert.equal(router.went.length, went, 'no file picked: nothing opens');
+  const none = createRecordsScreen({ records: fakeStore(), view, replays: fakeLibrary([]), router: fakeRouter() });
+  none.show({ boardKey: KEY });
+  assert.equal(view.shown.at(-1).canOpen, false, 'no viewer, no file to open');
+});
+
+test('the panel carries Open replay file, and the shell wires Download and Open to the screen', () => {
+  assert.match(RECORDS_HTML_DL(), /<button type="button" id="records-replays-open" class="ui-button ui-button--secondary hidden">Open replay file<\/button>/);
+  assert.match(read('js/records/replay-list.js'), /button\('Download', `Download \$\{what\}`/);
+  assert.match(read('js/main.js'), /onDownload: \(id\) => RECORDS_PAGE\.downloadReplay\(id\)/);
+  assert.match(read('js/main.js'), /onOpenFile: \(\) => RECORDS_PAGE\.openReplayFile\(\)/);
+});
+const RECORDS_HTML_DL = () => { const html = read('index.html'); return html.slice(html.indexOf('<section id="records"'), html.indexOf('<!-- /Records -->')); };
+
 // ---------------------------------------------------------------- not saved
 
 test('when replays are not being saved this session the screen says so once', async () => {
@@ -554,7 +600,7 @@ test('in a browser, the replays panel lists, pins by keyboard keeping focus, fil
 
     let r = await rows();
     assert.deepEqual(r.map((c) => c.slice(1, 6)), [['Won', '47.380 s', '0.42', '80.0%', 'Not pinned'], ['Lost', '12.000 s', '0.50', '50.0%', 'Not pinned']], 'newest first');
-    assert.deepEqual(r.map((c) => c[6]), ['WatchPinDelete', 'WatchPinDelete']);
+    assert.deepEqual(r.map((c) => c[6]), ['WatchDownloadPinDelete', 'WatchDownloadPinDelete']);
     assert.equal(await page.evaluate((s) => document.querySelector(`${s} #records-replays-empty`).classList.contains('hidden'), T), true);
 
     // Keyboard: Pin flips to Unpin and focus stays on that replay's button.

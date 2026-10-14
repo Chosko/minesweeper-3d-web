@@ -178,13 +178,13 @@ progress, as bytes retained in typed arrays
 (`tests/engine-3d-view.test.mjs`):
 
 - the retired separate 3D engine: 24 MB, 24 bytes a cell;
-- the shared engine: 38 MB, 38 bytes a cell — the box graph 0 bytes a
+- the shared engine: 37 MB, 37 bytes a cell — the box graph 0 bytes a
   cell, since its neighbours are not stored; the game with the 3D
   profile's hidden flag, its flags' batch membership and the engine's
-  counts 32 bytes a cell; the 3D state view 6 bytes a cell, and 2 more
+  counts 31 bytes a cell; the 3D state view 6 bytes a cell, and 2 more
   once the game is lost.
 
-The shared engine holds about 14 MB more than the separate 3D engine did on
-the largest custom board, 16 MB after a loss. The 100-per-side limit stands
+The shared engine holds about 13 MB more than the separate 3D engine did on
+the largest custom board, 15 MB after a loss. The 100-per-side limit stands
 and the extra memory is accepted: neither the custom-board limit nor the
 engine's per-cell state is cut to recover it.

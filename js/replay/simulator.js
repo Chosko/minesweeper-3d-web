@@ -24,6 +24,10 @@
 //     seekIndex(i)  → frame with the first i actions applied (clamped to 0 .. length), at the time
 //                     of action i - 1 (0 for none)
 //     indexAt(t)    the number of actions with time <= t
+//     outcome(i)    → { changed, count, before, after } of action i once playback has applied it
+//                     (null before): the cells it changed, how many of them it left flagged (a
+//                     flag) or revealed (a reveal or a chord), and the game's phase before and
+//                     after it — what the replay viewer plays a sound cue from
 //     stats()       → { snapshots, snapshotBytes, interval, lastSeek: { from: 'current' |
 //                     'snapshot', applied } }: snapshots kept, their bytes, the actions between
 //                     periodic snapshots (null when none are kept), and where the last seek
@@ -130,17 +134,23 @@ export function createSimulator(input, {
   let pendingLen = 0;
   let everyCell = false;
 
+  const outcomes = new Array(length).fill(null);
   let index = 0;
   let lastSeek = Object.freeze({ from: 'current', applied: 0 });
 
   function step() {
     const a = actions[index];
+    const before = game.phase;
     const r = a.kind === 'reveal' ? game.reveal(a.cell) : a.kind === 'flag' ? game.toggleFlag(a.cell) : game.chord(a.cell);
     const ch = r.changed;
+    const on = a.kind === 'flag' ? game.state.flagged : game.state.revealed;
+    let count = 0;
     for (let i = 0; i < ch.length; i++) {
       const c = ch[i];
+      if (on[c]) count++;
       if (!mark[c]) { mark[c] = 1; pending[pendingLen++] = c; }
     }
+    outcomes[index] ??= Object.freeze({ changed: ch.length, count, before, after: game.phase });
     index++;
     if (periodic && index % interval === 0 && !snaps[index / interval]) take(index / interval);
   }
@@ -211,6 +221,7 @@ export function createSimulator(input, {
   return Object.freeze({
     replay, grid, game, duration, length,
     indexAt,
+    outcome(i) { return outcomes[i] ?? null; },
     seek(t) {
       const time = Math.min(Math.max(finite(t, 'replay time'), 0), duration);
       goTo(indexAt(time));

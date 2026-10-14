@@ -439,7 +439,7 @@ test('the flow records a finished game before the results screen shows, and rout
   assert.deepEqual(order, ['record', 'route']);
   assert.equal(RESULTS_SCREEN, 'results');
   assert.deepEqual(router.routes, [['results', {
-    summary: s, mode: 'classic-2d', comparison, saved: true, notSaved: false, watch: false,
+    summary: s, mode: 'classic-2d', comparison, saved: true, notSaved: false, watch: false, watchBest: null,
     rank: { position: 3, of: 4 }, streak: { before: 2, current: 3, longest: 4 }, standing: STANDING,
   }]]);
   assert.equal(flow.current.summary, s);
@@ -496,7 +496,7 @@ test('a finished 3D game is recorded and routed to the results screen like a 2D 
   assert.deepEqual(records.calls, [['counters', '3d'], ['record', 'g3'], ['counters', '3d'], ['history', '3d'], ['winRate', '3d'],
     ['completedWinRate', '3d'], ['available']]);
   assert.deepEqual(router.routes, [['results', {
-    summary: s, mode: '3d', comparison, saved: true, notSaved: false, watch: false,
+    summary: s, mode: '3d', comparison, saved: true, notSaved: false, watch: false, watchBest: null,
     rank: { position: 4, of: 5 }, streak: { before: 2, current: 3, longest: 4 }, standing: STANDING,
   }]]);
   assert.equal(data.summary, s);
@@ -553,7 +553,7 @@ test('the flow is DOM-free', () => {
 // ---------------------------------------------------------------- the keys
 
 test('Enter is Play again while the focus is on Play again or on no action; on another action it keeps that action\'s meaning; its repeat does nothing', () => {
-  assert.deepEqual(RESULTS_ACTIONS, ['r-again', 'r-watch', 'r-look', 'r-records', 'r-menu']);
+  assert.deepEqual(RESULTS_ACTIONS, ['r-again', 'r-watch', 'r-watch-best', 'r-look', 'r-records', 'r-menu']);
   assert.equal(resultsEnter({ focused: 'r-again' }), 'playAgain', 'its default focus');
   assert.equal(resultsEnter({ focused: null }), 'playAgain', 'no focus');
   assert.equal(resultsEnter({ focused: 'results' }), 'playAgain', 'the card itself, no action');

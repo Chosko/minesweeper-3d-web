@@ -24,7 +24,7 @@ import { createActiveDevice, hintText } from './settings/bindings.js';
 import { createPauseController, restartInput, RESTART_NOTICE } from './shell/pause.js';
 import { createLockFallback } from './shell/lock-fallback.js';
 import { createEndSkip } from './shell/end-skip.js';
-import { bindScenePalette } from './shell/scene-palette.js';
+import { bindScenePalette, parseRgb } from './shell/scene-palette.js';
 import { token, onThemeChange } from './tokens.js';
 import { storage, blobStore } from './platform/index.js';
 import { createSettingsStore } from './settings/store.js';
@@ -465,7 +465,7 @@ const SHELL = createRouter({
     paused: { defaultFocus: () => (ui.isConfirmOpen() ? '#p-confirm-no' : gameOver() ? '#p-restart' : '#p-resume'), show: (d = {}) => { stopPlayInput(); setBoardHidden(true); ui.showPause(pauseInfo(d.note)); }, hide: () => setBoardHidden(false), back: ({ source }) => resumeFromPause(source) },
     results: { defaultFocus: '#r-again', show: (d) => showResults(d ?? RESULTS.current), hide: () => { lookPending = false; RESULTS_VIEW.hide(); }, back: ({ source }) => resultsBack(source) },
     look: { defaultFocus: null, show: () => showLook(true), hide: () => showLook(false), back: () => endLook() },
-    [REPLAY_SCREEN]: { defaultFocus: () => REPLAY_VIEWER.defaultFocus(), show: (d = {}) => { ui.showReplay(); REPLAY_VIEWER.show(d); }, hide: () => REPLAY_VIEWER.hide(), back: () => REPLAY_VIEWER.back() },
+    [REPLAY_SCREEN]: { defaultFocus: () => REPLAY_VIEWER.defaultFocus(), show: (d = {}) => { ui.showReplay(); REPLAY_VIEWER.show(d); }, hide: () => { REPLAY_VIEWER.hide(); ui.hideReplay(); }, back: () => REPLAY_VIEWER.back() },
     ctxlost: { defaultFocus: '#ctx-lost-btn', show: () => showContextLost(), hide: () => hideContextLost(), back: () => showMainMenu() },
   },
   focus: (target, name) => focusScreen(target, name),
@@ -712,16 +712,37 @@ const RESET = createReset({
 });
 
 // ---------- 3D replay ----------
-// A 3D replay draws on the renderer with its own camera, placed from the recording each frame; player
-// input never moves it. Leaving the replay gives the renderer back the board it drew before.
+// A 3D replay draws on the renderer with its own camera, placed from the recording each frame on
+// Follow; on Free the viewer flies it with the game's flight controls (flyReplay: the movement keys,
+// mouse look under the pointer lock a click on the scene takes, the controller sticks; the Camera
+// setting's Orbit turns it about the board centre), while playback runs on. Leaving the replay gives
+// the renderer back the board it drew before.
 const REPLAY_SPACING = SPACING_START;
 const replayCam = new FlyCamera();
-const replay3d = { view: null, toggles: { shift: false, space: false, ctrl: false }, pickKey: '', time: 0, wrong: [] };
+const replayOrbit = new OrbitCamera(replayCam);
+const replay3d = { view: null, toggles: { shift: false, space: false, ctrl: false }, pickKey: '', time: 0, wrong: [], free: false, tints: null };
+/** What the free replay camera's look and dolly turn: the orbit under the Camera setting's Orbit, else the flight. */
+const replayView = () => (cameraMode === 'orbit' ? replayOrbit : replayCam);
+/** Show 3BV's cube tints from the tokens (js/replay/viewer.js regionTints indices), 4 bytes a cell. */
+const BBBV_TOKENS = ['--color-replay-bbbv-1', '--color-replay-bbbv-2', '--color-replay-bbbv-3', '--color-replay-bbbv-4', '--color-replay-bbbv-5',
+  '--color-replay-bbbv-6', '--color-replay-bbbv-isolated'];
+function bbbvTint(tints) {
+  const colours = BBBV_TOKENS.map((name) => parseRgb(token(name)));
+  const rgba = new Uint8Array(tints.length * 4);
+  for (let c = 0; c < tints.length; c++) {
+    const k = tints[c];
+    if (k < 0) continue;
+    rgba.set(colours[k], c * 4);
+    rgba[c * 4 + 3] = k === BBBV_TOKENS.length - 1 ? 180 : 130;
+  }
+  return rgba;
+}
 const REPLAY_SCENE = {
   show(view) {
     if (!replay3d.view) replay3d.wrong = renderer.wrongFlags(); // the finished game's crossed flags, drawn again on the way back
     replay3d.view = view;
     replay3d.pickKey = '';
+    replay3d.free = false;
     replayCam.place(spawnPose(view, REPLAY_SPACING, renderer.camera.fov, renderer.camera.aspect)); // until its first sample
     renderer.setGame(view);
     applyPixelRatio(view.n);
@@ -732,7 +753,29 @@ const REPLAY_SCENE = {
     replay3d.toggles = toggles;
     needRender = true;
   },
+  detach(on) {
+    replay3d.free = on;
+    if (on && cameraMode === 'orbit') { replayOrbit.setRange(orbitRange(replay3d.view, REPLAY_SPACING, renderer.camera.fov, renderer.camera.aspect)); replayOrbit.enter(); }
+    if (!on && document.pointerLockElement === canvas) input.exitLock();
+    needRender = true;
+  },
+  /** A press ring on the acted cell's projection: through the replay camera, the crosshair on Follow. */
+  ring(cell, kind) {
+    replayCam.apply(renderer.camera);
+    renderer.setSpacing(REPLAY_SPACING);
+    const at = renderer.cellScreen(cell);
+    if (at) ui.replayRing(at.x, at.y, kind);
+  },
+  tint(tints) {
+    replay3d.tints = tints;
+    renderer.setRegionTint(tints ? bbbvTint(tints) : null);
+    needRender = true;
+  },
   hide() {
+    if (replay3d.free && document.pointerLockElement === canvas) input.exitLock();
+    replay3d.free = false;
+    replay3d.tints = null;
+    renderer.setRegionTint(null);
     replay3d.view = null;
     const g = S.game ?? S.demo;
     if (g) { renderer.setGame(g); applyPixelRatio(g.n); }
@@ -742,6 +785,61 @@ const REPLAY_SCENE = {
     needRender = true;
   },
 };
+/** The free replay camera, once a frame: the movement keys and the controller's left stick fly it (Orbit: W / S and the stick dolly). */
+function flyReplay(dt) {
+  const keys = input.move;
+  if (keys.w || keys.a || keys.s || keys.d || keys.q || keys.e || controls.hasAxes) needRender = true; // a paused replay draws on demand
+  if (cameraMode === 'orbit') {
+    const v = (keys.w ? 1 : 0) - (keys.s ? 1 : 0) + (controls.hasAxes ? controls.axes.f : 0);
+    replayOrbit.dollyAxis(dt, Math.max(-1, Math.min(1, v)));
+    return;
+  }
+  replayCam.move(dt, input.move);
+  if (controls.hasAxes) replayCam.moveAxes(dt, controls.axes.f, controls.axes.r, controls.axes.u);
+}
+// Mouse look on the free replay camera, under the pointer lock a click on the replay's scene takes.
+document.addEventListener('mousemove', (e) => {
+  if (!replay3d.free || document.pointerLockElement !== canvas) return;
+  const dx = e.movementX || 0, dy = e.movementY || 0;
+  if (Math.abs(dx) > 400 || Math.abs(dy) > 400) return; // a bogus spike right after locking
+  replayView().look(dx, dy);
+  needRender = true;
+});
+document.getElementById('replay-board').addEventListener('click', () => {
+  if (replay3d.free && !COARSE_ONLY && document.pointerLockElement !== canvas) input.requestLock();
+});
+
+// ---------- replay files ----------
+// Download saves a replay's bytes as a .msrp file; Open replay file picks one from the hidden input.
+function saveReplayFile(bytes, name) {
+  const url = URL.createObjectURL(new Blob([bytes], { type: 'application/octet-stream' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.hidden = true;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+const REPLAY_FILE_INPUT = document.getElementById('replay-file');
+/** The replay file the player picks, or null when they pick none. */
+function pickReplayFile() {
+  return new Promise((resolve) => {
+    const done = (file) => { REPLAY_FILE_INPUT.removeEventListener('change', onChange); REPLAY_FILE_INPUT.removeEventListener('cancel', onCancel); resolve(file); };
+    const onChange = () => done(REPLAY_FILE_INPUT.files?.[0] ?? null);
+    const onCancel = () => done(null);
+    REPLAY_FILE_INPUT.value = '';
+    REPLAY_FILE_INPUT.addEventListener('change', onChange);
+    REPLAY_FILE_INPUT.addEventListener('cancel', onCancel);
+    REPLAY_FILE_INPUT.click();
+  });
+}
+const REPLAY_FILES = { save: saveReplayFile, pick: pickReplayFile };
+
+// Show 3BV takes the new theme's tints at once.
+onThemeChange(() => { if (replay3d.view && replay3d.tints) REPLAY_SCENE.tint(replay3d.tints); });
+
 /** The replay viewer's 2D viewer, at the board scale setting. */
 function mountReplay2D(options) { return mountViewer2D({ ...options, scale: SETTINGS.get('boardScale') }); }
 /** The replay viewer's box viewer; with the graphics context gone it is a mode's failure, and nothing mounts. */
@@ -752,16 +850,21 @@ function mountReplay3D({ sim }) {
 
 // ---------- replay viewer ----------
 // A shell screen over the replay library: it verifies the replay, then plays it on its own board
-// view; it reports nothing to records, plays no sound and never pauses. Back is the screen it came from.
+// view; it reports nothing to records, keeps nothing in the library and never pauses; its sound
+// toggle plays the game's cues through the master volume. Back is the screen it came from.
 const REPLAY_VIEWER = createReplayViewer({
   library: REPLAYS,
   router: SHELL,
+  sound: sfx,
+  files: REPLAY_FILES,
   view: createReplayView({
     root: document.getElementById('replay'),
     onCommand: (name) => REPLAY_VIEWER.command(name),
     onSpeed: (speed) => REPLAY_VIEWER.setSpeed(speed),
     onSeek: (ms) => REPLAY_VIEWER.seek(ms),
     onBack: () => shellBack('pointer'),
+    onDownload: () => REPLAY_VIEWER.download(),
+    onOpen: () => pickReplayFile().then((file) => { if (file && S.mode === REPLAY_SCREEN) REPLAY_VIEWER.openFile(file); }),
   }),
   viewers: WEBGL2 ? { square: mountReplay2D, box: mountReplay3D } : { square: mountReplay2D }, // a 3D replay then says why it cannot play
 });
@@ -791,6 +894,7 @@ const RESULTS_VIEW = createResultsView({
   root: document.getElementById('results'),
   onPlayAgain: () => RESULTS.playAgain(padGesture ? 'pad' : 'pointer'),
   onWatch: () => RESULTS.watch(),
+  onWatchBest: () => RESULTS.watchBest(),
   onRecords: () => RESULTS.openRecords(),
   onMenu: () => RESULTS.toMenu(),
   onLook: () => openLook(padGesture ? 'pad' : 'pointer'),
@@ -874,7 +978,7 @@ const SETTINGS_EXPORT = bindExportActions({
 // is the back stack. The Pinned first switch is remembered in its own document, loaded at start-up.
 const RECORDS_VIEW_PREFS = createRecordsViewPrefs({ storage });
 const RECORDS_PAGE = createRecordsScreen({ records: RECORDS, replays: REPLAYS, router: SHELL, viewPrefs: RECORDS_VIEW_PREFS,
-  exporter: RECORDS_EXPORT,
+  exporter: RECORDS_EXPORT, files: REPLAY_FILES,
   view: createRecordsView({
     root: document.getElementById('records'),
     onSelect: (key) => RECORDS_PAGE.select(key),
@@ -890,6 +994,8 @@ const RECORDS_PAGE = createRecordsScreen({ records: RECORDS, replays: REPLAYS, r
     onTab: (tab) => RECORDS_PAGE.setTab(tab),
     onTopStat: (stat) => RECORDS_PAGE.setTopStat(stat),
     onExport: (format) => RECORDS_PAGE.exportFile(format),
+    onDownload: (id) => RECORDS_PAGE.downloadReplay(id),
+    onOpenFile: () => RECORDS_PAGE.openReplayFile(),
     onBack: () => shellBack('pointer'),
   }),
 });
@@ -1519,7 +1625,7 @@ function handlePad(p, dt, now) {
 
   if (S.mode === 'playing') padPlaying(p, held, pressed, dt, now);
   else if (S.mode === 'classic-2d') padBoard2D(p, held, pressed, now);
-  else if (S.mode === REPLAY_SCREEN) padReplay(p, held, pressed, now);
+  else if (S.mode === REPLAY_SCREEN) padReplay(p, held, pressed, dt, now);
   else padMenus(p, held, pressed, now);
 
   if (ui.isControlsOpen() !== modal) layerChanged(); // screen changes report through the router
@@ -1581,10 +1687,18 @@ function padBoard2D(p, held, pressed, now) {
   mode2d.pad({ ...p, held: p.held.map((_, b) => held(b)) }, now);
 }
 
-/** The replay viewer: Start / Y play and pause, LB / RB step, LT / RT change speed; the rest is menu navigation. */
-function padReplay(p, held, pressed, now) {
+/** The replay viewer: Start / Y play and pause, LB / RB step, LT / RT change speed; the rest is menu navigation. On a free 3D camera the sticks fly it. */
+function padReplay(p, held, pressed, dt, now) {
   controls.releasePad();
-  if (!REPLAY_VIEWER.pad(pressed)) padMenus(p, held, pressed, now);
+  if (!REPLAY_VIEWER.pad(pressed)) padMenus(replay3d.free ? { ...p, ls: [0, 0] } : p, held, pressed, now); // a free camera's stick flies, it does not navigate
+  if (!replay3d.free) return;
+  const [lx, ly] = stickCurve(p.ls[0], p.ls[1]);
+  controls.axes.f = ly ? -ly : 0;
+  controls.axes.r = cameraMode === 'orbit' ? 0 : lx;
+  controls.axes.u = 0;
+  const [rx, ry] = stickCurve(p.rs[0], p.rs[1]);
+  replayView().lookAxes(dt, rx, ry);
+  if (rx || ry) needRender = true;
 }
 
 /**
@@ -1776,7 +1890,8 @@ function frame(now) {
     three.updateMatrixWorld(true);
     renderer.setToggles(false, false, false);
   } else if (replay3d.view) {
-    replayCam.apply(three); // the recorded camera and view mode
+    if (replay3d.free) flyReplay(dt);
+    replayCam.apply(three); // the recorded camera, or the free one, and the recorded view mode
     const t = replay3d.toggles;
     renderer.setToggles(t.shift, t.space, t.ctrl);
   } else {

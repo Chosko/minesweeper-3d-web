@@ -157,7 +157,7 @@ test('a dropped replay adds nothing and leaves the summary and the records as th
   await tick();
   assert.deepEqual(log, [['record', 'g1'], ['record', 'g2']]);
   assert.deepEqual(router.routes, [['results', {
-    summary: s, mode: 'classic-2d', comparison: comparisonOf(), saved: true, notSaved: false, watch: false,
+    summary: s, mode: 'classic-2d', comparison: comparisonOf(), saved: true, notSaved: false, watch: false, watchBest: null,
     rank: s.outcome === 'won' ? { position: 1, of: 1 } : null, streak: { before: 1, current: 1, longest: 1 },
     standing: { winRate: 1, completedWinRate: 1, longestStreak: 1, longestCompletedStreak: 1 },
   }]]);

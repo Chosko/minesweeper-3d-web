@@ -11,7 +11,7 @@
 // precision and a sign, truncated toward zero for time; one that is zero at that precision reads
 // EQUAL_BEST ("= best"), with no sign and no number.
 //
-// resultsContent({ summary, comparison, saved, notSaved, watch, rank, streak, standing }) → the
+// resultsContent({ summary, comparison, saved, notSaved, watch, watchBest, rank, streak, standing }) → the
 // screen's content, top to bottom:
 //   { outcome, title, board,
 //     banner      "New best time and 3BV/s!" naming the bests this game set, or null;
@@ -28,7 +28,7 @@
 //                 recording that failed);
 //     eligible, bestsNote, bests  [{ stat, label, best, difference, newBest, direction, detail }]
 //                 | null — the bests panel;
-//     notes: [text], watch, look, over3d }
+//     notes: [text], watch, watchBest, look, over3d }
 // The bests panel shows whenever there is a comparison (the bests that stood before this game). On
 // a win each detail is the difference, led by "New best" when the game set one (alone when the
 // difference is a dash or "= best"), and direction is 'better', 'worse' or 'equal' (lower is better
@@ -42,15 +42,16 @@
 // ended a streak "Streak ended at <before> · best <longest>", else "Beat <best time> for a new best",
 // or FIRST_BEST when the board has no best time. notes say that the result could not be saved
 // (saved false) or that records are not being saved this session (notSaved, told once by the
-// flow); watch is whether Watch replay shows (the flow's watch); look is whether Look at the board
+// flow); watch is whether Watch replay shows (the flow's watch), watchBest whether Watch best shows
+// (the flow's watchBest, the best's replay id or null); look is whether Look at the board
 // shows and over3d whether the screen shows on the dimmed translucent surface over the 3D scene —
 // both a 3D game's, whose finished board is drawn dimmed behind the screen, as the Classic 2D board
 // stays visible behind it.
 //
-// createResultsView({ root, onPlayAgain, onWatch?, onRecords, onMenu, onLook? }) →
+// createResultsView({ root, onPlayAgain, onWatch?, onWatchBest?, onRecords, onMenu, onLook? }) →
 // { show(content), hide(), noteLook(text) }: fills the #results markup by id and calls back on its
-// actions; Look at the board (#r-look) shows only while content.look and Watch replay (#r-watch)
-// only while content.watch, the root carries `results--over3d` while content.over3d, the bests
+// actions; Look at the board (#r-look) shows only while content.look, Watch replay (#r-watch)
+// only while content.watch and Watch best (#r-watch-best) only while content.watchBest, the root carries `results--over3d` while content.over3d, the bests
 // panel `ui-panel--muted` while not eligible, each improved stat `data-new-best` and each best's
 // detail `data-delta` (its direction). noteLook(text) shows the one-line note under the actions
 // (LOOK_REFUSED: the pointer lock the look asked for was refused) until the card next shows.
@@ -142,7 +143,7 @@ function standingText(s) {
 }
 
 export function resultsContent({
-  summary, comparison = null, saved = true, notSaved = false, watch = false, rank = null, streak = null, standing = null,
+  summary, comparison = null, saved = true, notSaved = false, watch = false, watchBest = null, rank = null, streak = null, standing = null,
 }) {
   const won = summary.outcome === 'won';
   const count = (v) => (missing(v) ? DASH : String(v));
@@ -201,13 +202,14 @@ export function resultsContent({
     bests,
     notes,
     watch: watch === true,
+    watchBest: typeof watchBest === 'string' && watchBest !== '',
     look: summary.board?.mode === MODE_3D,
     over3d: summary.board?.mode === MODE_3D,
   };
 }
 
-/** The results screen's actions by id: Play again (its default focus), Watch replay, Look at the board, Records, Main menu. */
-export const RESULTS_ACTIONS = Object.freeze(['r-again', 'r-watch', 'r-look', 'r-records', 'r-menu']);
+/** The results screen's actions by id: Play again (its default focus), Watch replay, Watch best, Look at the board, Records, Main menu. */
+export const RESULTS_ACTIONS = Object.freeze(['r-again', 'r-watch', 'r-watch-best', 'r-look', 'r-records', 'r-menu']);
 
 /**
  * What Enter does on the results screen, given the id of the focused element (null for none):
@@ -220,7 +222,7 @@ export function resultsEnter({ focused = null, repeat = false } = {}) {
   return focused !== RESULTS_ACTIONS[0] && RESULTS_ACTIONS.includes(focused) ? null : 'playAgain';
 }
 
-export function createResultsView({ root, onPlayAgain, onWatch = () => {}, onRecords, onMenu, onLook = () => {} }) {
+export function createResultsView({ root, onPlayAgain, onWatch = () => {}, onWatchBest = () => {}, onRecords, onMenu, onLook = () => {} }) {
   const $ = (id) => root.querySelector(`#${id}`);
   const value = (id) => $(id).querySelector('.ui-stat__value');
   const line = (id, text) => {
@@ -230,6 +232,7 @@ export function createResultsView({ root, onPlayAgain, onWatch = () => {}, onRec
   $('r-again').addEventListener('click', () => onPlayAgain());
   $('r-look').addEventListener('click', () => onLook());
   $('r-watch').addEventListener('click', () => onWatch());
+  $('r-watch-best').addEventListener('click', () => onWatchBest());
   $('r-records').addEventListener('click', () => onRecords());
   $('r-menu').addEventListener('click', () => onMenu());
   return {
@@ -260,6 +263,7 @@ export function createResultsView({ root, onPlayAgain, onWatch = () => {}, onRec
       line('results-note', content.notes.join(' '));
       $('r-look').classList.toggle('hidden', !content.look);
       $('r-watch').classList.toggle('hidden', !content.watch);
+      $('r-watch-best').classList.toggle('hidden', !content.watchBest);
       line('results-look-note', null);
       root.classList.toggle('results--over3d', !!content.over3d);
       root.classList.remove('hidden');

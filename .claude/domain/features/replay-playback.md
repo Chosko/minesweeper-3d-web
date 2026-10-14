@@ -25,24 +25,37 @@ In scope (m2-3d-joins):
 - The replay viewer screen for Classic 2D and 3D replays: the board drawn by
   the mode's own board view, the recorded 2D cursor drawn over it, the 3D
   camera driven by the recorded movement.
-- Playback controls: play and pause, speed (0.5×, 1×, 2×, 4×), a seek bar
-  marking each of the game's paused spans on its track and naming them in
-  its text alternative, step to the previous or next action, and back;
+- Playback controls: play and pause, speed (0.25×, 0.5×, 1×, 2×, 4×), a
+  seek bar marking each of the game's paused spans on its track and naming
+  them in its text alternative and ticking every action at its time — left
+  (reveal), right (flag) and chord each in its own colour —, step to the
+  previous or next action, step one frame back or on (a frame is the
+  replay's movement sampling interval), *Show 3BV*, a sound toggle, *Follow*
+  / *Free* camera in 3D, *Download* and *Open replay file*, and back;
   operable by mouse, keyboard and controller. Playback runs through a
   paused span at the chosen speed with the board as it was.
+- Playback opens on the closed board: a lead-in of 500 ms of replay time
+  before game time 0, through which the board stays closed, then the
+  time-0 actions — the first click — play as the first action. Every click
+  playback reaches shows a press ring coloured by button, in the seek bar's
+  tick colours.
 - A playback overlay: the replay clock, mines left, 3BV solved of the
-  board's 3BV, and 3BV/s so far.
-- Entry from the results screen (*Watch replay*, for the game just played)
-  and from the replay library.
+  board's 3BV, and 3BV/s so far; the clock and the position beside the seek
+  bar read seconds to the thousandth.
+- Entry from the results screen (*Watch replay*, for the game just played,
+  and *Watch best* beside it), from the replay library, and from a replay
+  file opened in the viewer or the library view.
 
 Non-goals:
 
 - Watching leaderboard replays, and verifying them on submission — deferred
   to `m3-on-steam`; they reuse the simulator and the viewer unchanged.
 - Keeping, listing and pinning replays — `replay-library`.
-- Editing, trimming or exporting replays, and taking over play from a point
-  in a replay — in no milestone's slice.
-- Playing back sound effects — the viewer is silent; see Open questions.
+- Editing or trimming replays, and taking over play from a point in a
+  replay — in no milestone's slice. Exporting a replay as a file and
+  importing one are in scope; sharing is not.
+- A ghost compare of two replays of the same board, playing one over the
+  other — a later follow-on, not part of this slice.
 - Campaign, daily, hexagonal, triangle and Surface replays — deferred with
   their modes.
 
@@ -81,8 +94,12 @@ and is never paused into hiding the board.
   2D cursor cell and the 3D view mode are events and switch at their
   recorded times.
 - **2D viewer.** The Classic 2D board view in a read-only configuration,
-  fed by the simulator's changes, with the recorded pointer drawn as a
-  cursor placed by the movement interpolation, and the recorded
+  fed by the simulator's changes, with the recorded pointer placed by the
+  movement interpolation — a core in a contrasting outline from tokens,
+  visible on any tile in both themes, trailing its last 150 ms of replay
+  time while playing (no trail after a seek or while paused) —, a press
+  ring on each click, on the recorded pointer when it was on the acted
+  cell and else on the cell's centre, and the recorded
   keyboard and controller cursor drawn as the focus ring only while the
   recorded player was using the cursor: a recording states the ring
   hidden with its cursor event's -1 (`replay-recording`), and a recording
@@ -97,19 +114,51 @@ and is never paused into hiding the board.
   and never scrolls a board that fits.
 - **3D viewer.** The 3D renderer over the simulator's 3D state view, with
   the camera placed from the recorded position and direction by the
-  movement interpolation, and the recorded view mode applied. Player camera input
-  is ignored. After the point where a replay's movement was capped, the
-  camera holds its last recorded position.
+  movement interpolation, and the recorded view mode applied, on *Follow*
+  (the default). *Free* detaches the camera at its pose and lets the viewer
+  fly it with the game's flight controls — the movement keys, mouse look
+  under pointer lock taken by clicking the scene, the controller sticks, and
+  the Camera setting's orbit — while playback runs on and the recorded view
+  mode still applies; back to *Follow* returns to the recorded camera at the
+  current time. No flight key is a replay key. After the point where a
+  replay's movement was capped, the recorded camera holds its last recorded
+  position. Through the lead-in the camera is the first recorded sample. A
+  press ring sits on the acted cell's projected screen position, the
+  crosshair on *Follow*. While a 3D replay shows, the game's view chips and
+  toasts are hidden and do not appear; the viewer shows its own key line of
+  the replay keys and their controller buttons.
+- **Show 3BV.** Paints the board's 3BV partition from the engine's 3BV
+  definition (`cell-graph-rules-engine`), never recomputed in the view: each
+  opening — its zeros and the numbers bordering it — in one tint from a
+  small cycle of token colours, neighbouring openings differing, and each
+  isolated number in its own mark; over the board view in 2D, as a cell tint
+  in the renderer in 3D. Off by default, held across seeks; a press ring on
+  a region already solved reads as a wasted click.
+- **Sound.** Off by default and kept for the session, not a saved setting.
+  When on, each action playback reaches going forward plays the cue the mode
+  plays for that outcome, and the end of the game plays its explosion or win
+  once; seeking, stepping past actions and speeds above 2× play nothing for
+  the actions they skip. The master volume and mute apply as in play.
+- **Replay files.** *Download* saves the replay's bytes, byte for byte the
+  stored blob or the results hand-off's, as
+  `minesweeper-<board key>-<end date>.msrp`. *Open replay file* picks a
+  `.msrp` file, refused over 16 MB before it is read, and verifies it like
+  any other replay; an imported replay is watched, not kept.
 - **Playback controls and overlay.** Composed from `screen-components`;
-  the overlay reads its figures from the simulator. The replay clock is
-  shown in the in-game overlay's timer format, as `screen-components`
-  § Architecture (Overlay bar) defines it.
+  the overlay reads its figures from the simulator. The replay clock and the
+  position read seconds to the thousandth (`13.342`, `13.342 / 47.120`),
+  not split into minutes; the seek bar's text alternative keeps the results
+  time format. The seek bar ticks each action in its button's colour, ticks
+  closer than a pixel merging without hiding a different kind beside them,
+  and the pause spans and ticks both show. While a replay loads or fails,
+  nothing of a replay shown earlier stays in the bar.
 
 ## Data and state
 
 - **Viewer state** — the decoded replay, the simulator and its snapshots,
-  replay time, speed, playing or paused, and where the viewer was opened
-  from. In memory only, for as long as the screen is open.
+  replay time, speed, playing or paused, *Show 3BV*, the camera's *Follow*
+  or *Free*, and where the viewer was opened from. In memory only, for as
+  long as the screen is open; the sound toggle lasts the session.
 - Nothing is persisted. The viewer never writes records or replays.
 
 ## Interfaces and contracts
@@ -119,16 +168,20 @@ and is never paused into hiding the board.
   browser and in Node.
 - **Verify** — `verify(replay)` → reproduces, or the first check value that
   differs. DOM-free and headless.
-- **Open** — the shell routes to the viewer with a replay, or with a replay
-  id the viewer fetches from `replay-library`, and the screen to return to.
+- **Open** — the shell routes to the viewer with a replay, with a replay
+  id the viewer fetches from `replay-library`, or with an imported replay
+  file, and the screen to return to.
 - **Watch replay** — the results screen gains this action, beside *Play
   again*, for the game it shows; the replay comes from the finished game's
   hand-off, so it plays even when it could not be saved. Back returns to the
   results screen.
+- **Watch best** — beside *Watch replay*, when the board's fastest-time best
+  has a replay kept in the library and that best is not the game shown; it
+  opens the viewer on that replay by id. Back returns to the results screen.
 - **End of replay** — the final board stays, with the outcome and the
   recorded time, shown in `results-screen`'s time format
-  (§ Architecture, Results view); play restarts from the beginning, Back
-  leaves.
+  (§ Architecture, Results view); play restarts from the start position,
+  Back leaves.
 - **Failure** — a replay from a newer build, or one that names a rules
   version this build does not have, is not played and the viewer says it
   was made by a newer version; a replay that fails verification is not
@@ -149,8 +202,7 @@ and is never paused into hiding the board.
 - `3d-play-flow` — the 3D scene and renderer, reused with the camera driven
   by the replay.
 - `square-tile-skin` — tile painting, through the board view.
-- `screen-components` — playback controls, overlay and messages, and the
-  overlay's timer format for the replay clock.
+- `screen-components` — playback controls, overlay and messages.
 - `results-screen` — hosts the *Watch replay* action, and its time format
   for the recorded time at the end of a replay.
 - `game-shell` — routing, Back and controller navigation.
@@ -158,11 +210,7 @@ and is never paused into hiding the board.
 
 ## Open questions
 
-- Whether the 3D viewer lets the player detach the camera and look around
-  freely while the replay plays. Blocks only that control; the viewer
-  follows the recorded camera until it is settled.
-- Whether playback plays the game's sound effects, derived from the actions.
-  Blocks only audio in the viewer.
+None.
 
 ## Snapshot interval
 

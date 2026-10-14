@@ -6,7 +6,8 @@
 // computes it once the mines are placed and tracks 3BV solved as cells open: an opening is
 // solved when every zero in it is open (a flag can hold one closed), a cell outside every
 // opening when it opens. save() and restore() copy that progress out and back, for the rules
-// engine's game snapshots.
+// engine's game snapshots. bbbvPartition is that definition as a per-cell region label, which
+// createBoardMetrics counts and the replay viewer's Show 3BV paints.
 //
 // Click counts tally effective and wasted clicks per action kind. Which clicks count and which
 // are wasted is the rule profile's `clickCounting` marker (js/engine/profiles.js); the rules
@@ -24,43 +25,55 @@ function fillNeighbours(graph, c, buf) {
   return fillLen;
 }
 
-// `mine` and `number` are the engine's flat per-cell arrays, with the mines already placed.
-export function createBoardMetrics(graph, mine, number) {
+// The board's 3BV partition, its regions as a per-cell label: each opening is one region (its safe
+// zero cells and the safe numbers bordering it — a number bordering several openings takes the
+// lowest), each safe number outside every opening's reach (an isolated number) is a region of its
+// own. `label` holds an opening's id (0 .. openings - 1), an isolated number's id (openings ..
+// bbbv - 1), or -1 for a mine. `zeros` is the number of zero cells in each opening. `mine` and
+// `number` are the engine's flat per-cell arrays, with the mines already placed.
+export function bbbvPartition(graph, mine, number) {
   const n = graph.count;
-  const opening = new Int32Array(n).fill(-1); // opening id of each safe zero cell
+  const label = new Int32Array(n).fill(-1);
   const queue = new Int32Array(n);
   // One neighbour walk per cell into a buffer, not one graph call per neighbour slot.
   const nbBuf = new Int32Array(Math.max(1, graph.maxDegree));
   const fill = (c) => fillNeighbours(graph, c, nbBuf);
-  const closedZeros = [];
+  const zeros = [];
   for (let s = 0; s < n; s++) {
-    if (mine[s] || number[s] !== 0 || opening[s] >= 0) continue;
-    const id = closedZeros.length;
+    if (mine[s] || number[s] !== 0 || label[s] >= 0) continue;
+    const id = zeros.length;
     let head = 0, tail = 0, size = 0;
-    opening[s] = id; queue[tail++] = s;
+    label[s] = id; queue[tail++] = s;
     while (head < tail) {
       const cur = queue[head++];
       size++;
       for (let k = 0, d = fill(cur); k < d; k++) {
         const nb = nbBuf[k];
-        if (number[nb] === 0 && !mine[nb] && opening[nb] < 0) { opening[nb] = id; queue[tail++] = nb; }
+        if (number[nb] === 0 && !mine[nb] && label[nb] < 0) { label[nb] = id; queue[tail++] = nb; }
       }
     }
-    closedZeros.push(size);
+    zeros.push(size);
   }
-  const left = Int32Array.from(closedZeros);
-
-  // Safe numbers with no zero neighbour: one click each.
-  const isolated = new Uint8Array(n);
-  let isolatedCount = 0;
+  const openings = zeros.length;
+  let isolated = 0;
   for (let c = 0; c < n; c++) {
     if (mine[c] || number[c] === 0) continue;
-    let reached = false;
-    for (let k = 0, d = fill(c); k < d && !reached; k++) reached = opening[nbBuf[k]] >= 0;
-    if (!reached) { isolated[c] = 1; isolatedCount++; }
+    let near = -1;
+    for (let k = 0, d = fill(c); k < d; k++) {
+      const nb = nbBuf[k];
+      if (!mine[nb] && number[nb] === 0 && (near < 0 || label[nb] < near)) near = label[nb];
+    }
+    label[c] = near >= 0 ? near : openings + isolated++;
   }
+  return Object.freeze({ label, openings, isolated, bbbv: openings + isolated, zeros: Int32Array.from(zeros) });
+}
 
-  const bbbv = left.length + isolatedCount;
+// `mine` and `number` are the engine's flat per-cell arrays, with the mines already placed.
+export function createBoardMetrics(graph, mine, number) {
+  const { label, openings, isolated: isolatedCount, zeros } = bbbvPartition(graph, mine, number);
+  const left = zeros.slice();
+
+  const bbbv = openings + isolatedCount;
   let solved = 0;
 
   return {
@@ -68,8 +81,10 @@ export function createBoardMetrics(graph, mine, number) {
     get solved() { return solved; },
     // A safe cell `c` has just opened.
     opened(c) {
-      const id = opening[c];
-      if (id >= 0) { if (--left[id] === 0) solved++; } else if (isolated[c]) solved++;
+      const id = label[c];
+      if (id < 0) return;
+      if (id >= openings) solved++;
+      else if (number[c] === 0 && --left[id] === 0) solved++;
     },
     // The progress so far as a frozen copy, and setting it back to one of this board's copies.
     save() { return Object.freeze({ left: left.slice(), solved }); },
