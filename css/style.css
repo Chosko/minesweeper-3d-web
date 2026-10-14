@@ -199,7 +199,7 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
 #hud-swap { min-height: 40px; padding: var(--space-2) var(--space-4); }
 #hud:not(.hud--2d) #hud-swap { display: none; }
 #hud-swap[aria-pressed="true"] { border-color: var(--color-accent); color: var(--color-accent); }
-.hud-tools { position: absolute; top: 16px; right: 16px; padding: 8px 12px; display: flex; gap: 12px; font-size: 13px; color: var(--color-ink-muted); }
+.hud-tools { position: absolute; top: 16px; right: 16px; padding: 8px 12px; display: flex; gap: 12px; font-size: 13px; color: var(--color-ink-muted); font-variant-numeric: tabular-nums; }
 .kbd-hint { white-space: nowrap; }
 
 #crosshair {
@@ -249,7 +249,6 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
   background: rgba(20, 35, 63, 0.75); color: #fff;
 }
 .chip.on { display: inline-block; }
-.chip.chip-soft { background: rgba(255, 255, 255, 0.85); color: var(--color-ink); font-variant-numeric: tabular-nums; box-shadow: 0 2px 8px rgba(20, 35, 63, 0.15); }
 
 #help {
   position: fixed; right: 16px; top: 64px; z-index: var(--z-help);

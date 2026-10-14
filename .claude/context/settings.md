@@ -31,6 +31,7 @@ Each module's head comment states its full contract.
 | `volume` | number | 0–1 | 0.7 | `sfx.setVolume` |
 | `muted` | boolean | | false | `sfx.setMuted`, the Sound buttons' label, the page's Sound toggle (on while false) |
 | `aimReadout` | boolean | | true | "3D neighbour count": the aimed-cell readout beside the crosshair, read each frame by `updateReadout` in `js/main.js` ([app-shell-3d.md](app-shell-3d.md)) |
+| `fieldOfView` | number | 45–90 | 60 (45 for an existing install) | the 3D renderer camera's vertical `fov` and projection, then a redraw — play, the menu backdrop and the 3D replay viewer |
 
 ## PUBLIC API
 
@@ -39,10 +40,13 @@ Each module's head comment states its full contract.
   `isValid(key, value)`.
 - Store: `SETTINGS_DOC` = `'settings'`, `SETTINGS_VERSION` = 1;
   `LEGACY_KEYS` (`lookSensitivity`, `invertY`, `volume`, `muted` → their
-  `ms3d.*` keys). `createSettingsStore({ storage, legacy?, onNotKept? })` →
+  `ms3d.*` keys), `EXISTING_FIELD_OF_VIEW` = 45.
+  `createSettingsStore({ storage, legacy?, onNotKept? })` →
   `{ load, get, set, onChange }`:
   - `load()` → one shared Promise; fills missing or invalid values with
-    defaults; unreadable, corrupt or newer storage gives every default.
+    defaults, except that a stored document without `fieldOfView` loads it
+    as `EXISTING_FIELD_OF_VIEW`; unreadable, corrupt or newer storage gives
+    every default.
   - `get(key)` is always valid (the default before load).
   - `set(key, value)` → `{ ok: true }` or `{ ok: false, reason }` —
     `'invalid'` keeps the old value; a save failure keeps the change for the
@@ -54,8 +58,10 @@ Each module's head comment states its full contract.
   devicePixelRatio, cells)` — `auto` the device ratio capped at 2, at 1.5
   above 20³ cells and 1 above 50³; `sharp` the full device ratio; `fast` 1.
   `applyTheme`, `applyAudio`, `applyLook`, `applyResolution`,
-  `applyFullscreen(store, { doc, enter, exit })`, and `applySettings(store,
-  { theme?, sfx?, camera?, resolution?, fullscreen? })` for all at once.
+  `applyFullscreen(store, { doc, enter, exit })`, `applyFieldOfView(store,
+  { camera, redraw })` (the renderer's `THREE.PerspectiveCamera`; `js/main.js`'s
+  `redraw` sets `needRender`), and `applySettings(store, { theme?, sfx?,
+  camera?, resolution?, fullscreen?, fieldOfView? })` for all at once.
 
 ## INTERNAL PATTERNS
 
@@ -81,7 +87,9 @@ Each module's head comment states its full contract.
 - **Carry-over.** Only when `storage.load` returns no document and reported
   no load trouble: each legacy key is read the old owner's way (sensitivity
   `parseFloat`, volume `Number`, both clamped; booleans true only on `'1'`;
-  a throwing reader counts as no value), then the whole document is saved.
+  a throwing reader counts as no value), `fieldOfView` is set to
+  `EXISTING_FIELD_OF_VIEW` when any value was carried over, then the whole
+  document is saved.
   The store never writes or deletes the legacy keys; Reset all data removes
   them, so the start after a reset carries nothing over.
 
@@ -105,7 +113,7 @@ Each module's head comment states its full contract.
 - [platform.md](platform.md) — `register`/`load`/`save` and the browser key
   format `js/theme.js` reads.
 - [audio.md](audio.md) — `setVolume`, `setMuted`, the module's defaults.
-- [rendering.md](rendering.md) — `BoardRenderer.setPixelRatio`.
+- [rendering.md](rendering.md) — `BoardRenderer.setPixelRatio`, its `camera`'s `fov`.
 - [input.md](input.md) — `FlyCamera.sensitivity` / `invertY`.
 - [testing.md](testing.md) — `tests/settings-store.test.mjs`,
   `tests/settings-appliers.test.mjs`.

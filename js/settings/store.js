@@ -11,9 +11,10 @@
 //              player can be told once that settings will not be kept.
 //
 //   load()               → Promise, awaited by the shell before its first screen. Fills a missing
-//                          or invalid value with its default. With no settings document it carries
-//                          the legacy values over once and saves the new document; storage that
-//                          cannot be read, a corrupt document or a newer one gives every default.
+//                          or invalid value with its default, except the field of view of an
+//                          existing install (EXISTING_FIELD_OF_VIEW). With no settings document it
+//                          carries the legacy values over once and saves the new document; storage
+//                          that cannot be read, a corrupt document or a newer one gives every default.
 //                          Fires every listener once with the loaded value. Repeated calls return
 //                          the first call's Promise.
 //   get(key)             → the current value, always valid (the default before load).
@@ -39,6 +40,10 @@ export const LEGACY_KEYS = Object.freeze({
   volume: 'ms3d.volume',
   muted: 'ms3d.muted',
 });
+
+// The field of view an existing install keeps — a stored document without it, or a first start that
+// carries over a legacy value — instead of the default a new install gets.
+export const EXISTING_FIELD_OF_VIEW = 45;
 
 const LOAD_TROUBLE = new Set(['unreadable', 'corrupt', 'newer-version']);
 
@@ -90,12 +95,14 @@ export function createSettingsStore({ storage, legacy = browserLegacy, onNotKept
   }
 
   function readLegacy() {
+    let carried = false;
     for (const [key, name] of Object.entries(LEGACY_KEYS)) {
       let text;
       try { text = legacy.get(name); } catch { text = null; }
       const v = legacyValue(key, text);
-      if (v !== undefined) values[key] = v;
+      if (v !== undefined) { values[key] = v; carried = true; }
     }
+    if (carried) values.fieldOfView = EXISTING_FIELD_OF_VIEW;
   }
 
   async function doLoad() {
@@ -106,6 +113,7 @@ export function createSettingsStore({ storage, legacy = browserLegacy, onNotKept
       await persist();
     } else if (data && typeof data === 'object' && !Array.isArray(data)) {
       for (const key of SETTING_KEYS) if (isValid(key, data[key])) values[key] = data[key];
+      if (!Object.hasOwn(data, 'fieldOfView')) values.fieldOfView = EXISTING_FIELD_OF_VIEW;
     }
     loaded = true;
     for (const key of SETTING_KEYS) notify(key);

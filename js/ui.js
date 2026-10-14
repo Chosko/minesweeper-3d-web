@@ -513,13 +513,11 @@ export class UI {
     this.el.chipSpace.classList.toggle('on', space);
     this.el.chipCtrl.classList.toggle('on', ctrl);
   }
-  /** Brief toast with the current cube spacing (mouse wheel). */
-  showSpacing(v) {
-    const c = $('chip-spacing');
-    c.textContent = `Spacing ${v.toFixed(2)}`;
-    c.classList.add('on');
-    clearTimeout(this._spacingTimer);
-    this._spacingTimer = setTimeout(() => c.classList.remove('on'), 1200);
+  /** The cube spacing the 3D tools strip shows, to one decimal. */
+  setSpacing(v) {
+    if (v.toFixed(1) === this._spacing?.toFixed(1)) return;
+    this._spacing = v;
+    this._renderHudStrip();
   }
   setSound(muted) {
     const t = muted ? 'off' : 'on';
@@ -562,7 +560,7 @@ export class UI {
     this.el.helpFoot.innerHTML = `${helpFootHtml(this._mode, this._device, this._glyphs)}${this._note()}`;
   }
   _renderHudStrip() {
-    this.el.hudTools.innerHTML = hudStripHtml(this._mode, this._device, this._glyphs, { muted: this._muted });
+    this.el.hudTools.innerHTML = hudStripHtml(this._mode, this._device, this._glyphs, { muted: this._muted, spacing: this._spacing });
   }
   /** Redraw every bindings surface for the active mode and device. */
   _renderBindings() {

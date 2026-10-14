@@ -163,7 +163,8 @@ Pick a board and play:
 | Left click | Reveal the aimed cube |
 | Right click | Flag / unflag. On a number: flag all its closed neighbours; right-click it again to take back only those flags |
 | Left + Right | Chord: when a number has the right count of flags around it, reveal its other neighbours |
-| Mouse wheel | Change the spacing between cubes |
+| Mouse wheel | Change the spacing between cubes, 0.1 a notch, faster when you spin quickly; the camera moves with the cubes |
+| `X` | Toggle the spacing between 1.1 and 2.0 |
 | Hold `Shift` | Fade everything except the aimed cube and its neighbours, which draw on top |
 | Hold `Space` | Aim through revealed numbers (they fade, the nearest least) |
 | Hold `Ctrl` | Show hidden cells (zeros and solved numbers) as see-through ghosts |
@@ -197,7 +198,7 @@ controller (✕ ○ □ △ / L1 R1 L2 R2 on PlayStation, for example).
 | `LT` + `RT` | Chord (same rules as Left + Right) |
 | `A` / `B` | Move up / down |
 | Hold `LB` / `RB` / `Y` | Shift / Space / Ctrl view modes |
-| D-pad up / down | Change the spacing between cubes (hold to repeat) |
+| D-pad up / down | Change the spacing between cubes by 0.1 (hold to repeat); the camera moves with the cubes |
 | `X` | Show / hide the controls panel |
 | `Start` (Menu) | Pause / resume |
 | `Start` + `Y` | Restart: `Y` pressed while `Start` is held |
@@ -215,9 +216,10 @@ browser supports it. Some browsers only start sound after a key press or a click
   Shift/Space/Ctrl view modes. There is an in-game controls panel (`H`), and a results screen
   after every game.
 - **Pause menu** (`Esc`): resume, go back to the start view (3D), restart or return to the main menu.
-- **Settings:** mouse sensitivity (0.25×–3×), invert mouse Y, volume and the 3D neighbour count.
-  They are saved in `localStorage`. The defaults match the original, except the 3D neighbour count,
-  which is on. "Reset all data" at the bottom of the Settings
+- **Settings:** mouse sensitivity (0.25×–3×), invert mouse Y, volume, the 3D neighbour count and
+  the 3D field of view (45°–90°). They are saved in `localStorage`. The defaults match the original,
+  except the 3D neighbour count, which is on, and the field of view, 60° (45° in the original, which
+  a browser that already had settings keeps). "Reset all data" at the bottom of the Settings
   page deletes the records, history, replays, settings, last board choices and first-use hints
   from this browser, after a confirmation, and starts the game again as a new player's.
 - **Sound:** synthesized sound effects (Web Audio, no audio files) for revealing, flagging,
@@ -241,8 +243,7 @@ browser supports it. Some browsers only start sound after a key press or a click
 ## Gameplay fidelity
 
 The gameplay is the same as the original: rules, numbers, auto-hiding, the win
-condition, camera movement (including its quirks), picking, mouse-release actions and the view
-modes. [`docs/ORIGINAL_SPEC.md`](docs/ORIGINAL_SPEC.md) describes the original's behaviour, and the
+condition, picking, mouse-release actions and the view modes. [`docs/ORIGINAL_SPEC.md`](docs/ORIGINAL_SPEC.md) describes the original's behaviour, and the
 rules engine is tested against a direct port of the original logic. The port changes these things
 on purpose:
 
@@ -251,6 +252,15 @@ on purpose:
 - **Crash fixes:** the Random button is guarded for tiny boards, a chord with nothing aimed does
   nothing, and flood fill is iterative, so huge boards cannot overflow the stack.
 - **Re-centred grid:** the board stays centred when the spacing grows.
+- **Fly through glass:** cubes within 1.5 cube spacings of the camera fade to glass and cannot be
+  aimed at, so flying into the box never fills the screen with one cube, and the crosshair selects
+  the first cube beyond them.
+- **Forward follows the view:** `W` flies where you look, so looking straight down it moves straight
+  down; the original kept full horizontal speed at any pitch. `Q` / `E` stay world down and up.
+- **Spacing:** a wheel notch changes the spacing by 0.1 instead of 0.04, quick notches step further,
+  `X` toggles between 1.1 and 2.0, and the camera moves with the cubes, so the view keeps its framing
+  and the aimed cube stays aimed. The tools strip shows the spacing.
+- **Field of view:** a setting from 45° to 90°, 60° by default, instead of the original's fixed 45°.
 - **Framed start view:** a 3D game starts from a three-quarter view that fits the whole box, looking
   down onto it so three faces show, with the crosshair on the near face's centre cube, instead of
   the original's straight view level with the top row. `Home` / `R` and the pause menu's "Back to

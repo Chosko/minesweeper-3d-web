@@ -41,6 +41,7 @@ const EXPECTED_DEFAULTS = {
   muted: false,
   confirmRestart: false,
   aimReadout: true,
+  fieldOfView: 60,
 };
 
 // ---------------------------------------------------------------- schema
@@ -60,6 +61,11 @@ test('the schema declares every setting with its type, range or values, and defa
   assert.deepEqual([...SCHEMA.boardScale.values], ['fit', '100', '125'], 'the 2D board scale: Fit, 100 % and 125 %');
   assert.equal(SCHEMA.theme.type, 'choice');
   assert.deepEqual([...SCHEMA.theme.values], ['light', 'dark']);
+  assert.deepEqual(
+    { type: SCHEMA.fieldOfView.type, min: SCHEMA.fieldOfView.min, max: SCHEMA.fieldOfView.max },
+    { type: 'number', min: 45, max: 90 },
+    'the field of view: 45 to 90 degrees',
+  );
   for (const key of SETTING_KEYS) {
     assert.equal(SCHEMA[key].key, key);
     assert.equal(SCHEMA[key].default, EXPECTED_DEFAULTS[key]);
@@ -135,6 +141,44 @@ test('the board scale is saved with the other settings: a document from before i
   const again = createSettingsStore({ storage: createStorage({ backend }), legacy: legacyOf(), onNotKept: () => {} });
   await again.load();
   assert.equal(again.get('boardScale'), 'fit', 'remembered for the profile');
+});
+
+test('the field of view: 60 for a new install, 45 for a stored document without it, with no version bump', async () => {
+  assert.equal(SETTINGS_VERSION, 1);
+  const fresh = setup();
+  await fresh.store.load();
+  assert.equal(fresh.store.get('fieldOfView'), 60, 'a new install');
+  assert.equal(fresh.stored().data.fieldOfView, 60);
+  const before = { lookSensitivity: 2, invertY: true, theme: 'dark', volume: 0.5 };
+  const old = setup({ initial: { [SETTINGS_DOC]: raw(1, before) } });
+  await old.store.load();
+  assert.equal(old.store.get('fieldOfView'), 45, 'an existing install keeps 45');
+  assert.equal(old.store.get('lookSensitivity'), 2, 'the rest as stored');
+  assert.deepEqual(await old.store.set('volume', 0.4), { ok: true });
+  assert.equal(old.stored().data.fieldOfView, 45, 'written by the next save');
+  const kept = setup({ initial: { [SETTINGS_DOC]: raw(1, { ...before, fieldOfView: 72 }) } });
+  await kept.store.load();
+  assert.equal(kept.store.get('fieldOfView'), 72, 'a stored value is kept');
+  assert.ok(isValid('fieldOfView', 45) && isValid('fieldOfView', 90) && isValid('fieldOfView', 61));
+  assert.ok(!isValid('fieldOfView', 44) && !isValid('fieldOfView', 91) && !isValid('fieldOfView', '60'));
+});
+
+test('the field of view: 45 for a first start that carries over a legacy value, 60 when storage is unusable', async () => {
+  const carried = setup({ legacy: legacyOf({ 'ms3d.invertY': '0' }) });
+  await carried.store.load();
+  assert.equal(carried.store.get('fieldOfView'), 45, 'a legacy carry-over is an existing player');
+  const none = setup({ legacy: legacyOf({ 'ms3d.lookSens': 'abc' }) });
+  await none.store.load();
+  assert.equal(none.store.get('fieldOfView'), 60, 'nothing carried over: a new install');
+  for (const initial of [{ [SETTINGS_DOC]: '{not json' }, { [SETTINGS_DOC]: raw(SETTINGS_VERSION + 1, {}) }]) {
+    const bad = setup({ initial, legacy: legacyOf({ 'ms3d.lookSens': '2' }) });
+    await bad.store.load();
+    assert.equal(bad.store.get('fieldOfView'), 60, 'a corrupt or newer document');
+  }
+  const unreadable = setup({ legacy: legacyOf({ 'ms3d.lookSens': '2' }) });
+  unreadable.backend.read = async () => { throw new Error('denied'); };
+  await unreadable.store.load();
+  assert.equal(unreadable.store.get('fieldOfView'), 60, 'unreadable storage');
 });
 
 test('a document that is not an object loads as every default', async () => {
@@ -259,7 +303,7 @@ test('with no settings document the legacy keys are read once and written into t
     [...Object.values(LEGACY_KEYS)].sort(),
     ['ms3d.invertY', 'ms3d.lookSens', 'ms3d.muted', 'ms3d.volume'],
   );
-  const expected = { ...EXPECTED_DEFAULTS, lookSensitivity: 2.5, invertY: true, volume: 0.3, muted: true };
+  const expected = { ...EXPECTED_DEFAULTS, lookSensitivity: 2.5, invertY: true, volume: 0.3, muted: true, fieldOfView: 45 };
   for (const key of SETTING_KEYS) assert.equal(store.get(key), expected[key]);
   assert.deepEqual(stored(), { version: SETTINGS_VERSION, data: expected });
 

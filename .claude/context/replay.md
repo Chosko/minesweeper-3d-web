@@ -70,7 +70,9 @@ Samplers
 - `sampler-3d.js`: `SAMPLE_INTERVAL_MS` (100), `POSITION_STEPS` (16),
   `ANGLE_STEPS` (8192), `VIEW_MODE` (`shift` 1, `space` 2, `ctrl` 4),
   `cameraSample`, `viewMode`, `createSampler3D({session, camera, controls,
-  spacing, interval?, steps?})` (`spacing` a getter).
+  spacing, interval?, steps?})` (`spacing` a getter). A spacing change
+  scales the camera with it (`FlyCamera.rescale`), so its cell-unit sample
+  stays the same and adds no movement sample.
 
 ## INTERNAL PATTERNS
 

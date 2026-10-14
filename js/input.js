@@ -6,6 +6,47 @@ export const MOVE_SPEED = 50; // units / s
 export const LOOK_DEG_PER_PX = 0.2;
 export const PAD_LOOK_DEG_PER_S = 180; // controller right stick at full deflection (x sensitivity)
 export const SPACING_MIN = 1, SPACING_MAX = 10, SPACING_START = 1.1;
+/** One isolated wheel notch (or one D-pad press) changes the spacing by this much. */
+export const SPACING_STEP = 0.1;
+/** The most one notch changes the spacing, however fast the wheel turns. */
+export const SPACING_STEP_MAX = 0.5;
+/** Each notch already turned in a run adds this fraction of SPACING_STEP to the next notch's step. */
+export const SPACING_ACCEL = 0.5;
+/** Notches arriving within this many ms of the previous one, the same way, continue a run. */
+export const SPACING_RUN_GAP_MS = 200;
+/** The spacing X toggles to (and back to SPACING_START from). */
+export const SPACING_TOGGLE = 2;
+
+const clampSpacing = (s) => Math.round(Math.min(SPACING_MAX, Math.max(SPACING_MIN, s)) * 1e6) / 1e6;
+const notchStep = (run) => Math.min(SPACING_STEP_MAX, SPACING_STEP * (1 + SPACING_ACCEL * run));
+
+/**
+ * The spacing after `notches` (wheel up = positive, fractional for a trackpad) arriving at `now` ms.
+ * state { spacing, run?, dir?, at? } is the previous result (or just { spacing }); returns the next
+ * { spacing, run, dir, at }. Each notch's step grows with the notches already turned in the run,
+ * up to SPACING_STEP_MAX; a run continues while notches arrive the same way within
+ * SPACING_RUN_GAP_MS of each other. Without `now` nothing accelerates: one SPACING_STEP per
+ * notch (the D-pad's presses and auto-repeats). The spacing stays within [SPACING_MIN, SPACING_MAX].
+ */
+export function spacingStep({ spacing, run = 0, dir = 0, at = -Infinity }, notches, now) {
+  const d = Math.sign(notches);
+  if (!d) return { spacing, run, dir, at };
+  if (now === undefined) return { spacing: clampSpacing(spacing + notches * SPACING_STEP), run: 0, dir: 0, at: -Infinity };
+  const going = d === dir && now - at <= SPACING_RUN_GAP_MS;
+  // a notch's step is set by the whole notches turned before it, so fractions add up as whole notches do
+  let r = going ? run : 0, left = Math.abs(notches), delta = 0;
+  while (left > 1e-12) {
+    const whole = Math.floor(r + 1e-9), part = Math.min(left, whole + 1 - r);
+    delta += part * notchStep(whole);
+    r += part; left -= part;
+  }
+  return { spacing: clampSpacing(spacing + d * delta), run: r, dir: d, at: now };
+}
+
+/** X's spacing: SPACING_TOGGLE, or SPACING_START when already SPACING_TOGGLE to one decimal. */
+export function spacingToggle(spacing) {
+  return spacing.toFixed(1) === SPACING_TOGGLE.toFixed(1) ? SPACING_START : SPACING_TOGGLE;
+}
 
 export class FlyCamera {
   constructor() {
@@ -30,34 +71,41 @@ export class FlyCamera {
     if (this.pitch < -Math.PI / 2) this.pitch = -Math.PI / 2;
     this.yaw += dxPx * k;
   }
-  /** keys: {w,a,s,d,q,e} booleans */
+  /** The unit vector W flies along (the view direction) and the horizontal unit vector D strafes along. */
+  _axes() {
+    const cp = Math.cos(this.pitch);
+    return {
+      fx: Math.sin(this.yaw) * cp, fy: -Math.sin(this.pitch), fz: -Math.cos(this.yaw) * cp,
+      rx: Math.cos(this.yaw), rz: Math.sin(this.yaw),
+    };
+  }
+  /** keys: {w,a,s,d,q,e} booleans. W / S along the view direction, A / D horizontal, Q / E world down / up. */
   move(dt, keys) {
-    // Original quirk: forward = normalize(sin(-yaw), sin(pitch), cos(-yaw)) (no cos(pitch) on XZ)
-    let fx = Math.sin(-this.yaw), fy = Math.sin(this.pitch), fz = Math.cos(-this.yaw);
-    const fl = Math.hypot(fx, fy, fz); fx /= fl; fy /= fl; fz /= fl;
-    const lx = Math.cos(this.yaw), lz = Math.sin(this.yaw);
+    const { fx, fy, fz, rx, rz } = this._axes();
     const v = MOVE_SPEED * dt;
-    if (keys.w) { this.x -= fx * v; this.y -= fy * v; this.z -= fz * v; }
-    if (keys.s) { this.x += fx * v; this.y += fy * v; this.z += fz * v; }
-    if (keys.a) { this.x -= lx * v; this.z -= lz * v; }
-    if (keys.d) { this.x += lx * v; this.z += lz * v; }
+    if (keys.w) { this.x += fx * v; this.y += fy * v; this.z += fz * v; }
+    if (keys.s) { this.x -= fx * v; this.y -= fy * v; this.z -= fz * v; }
+    if (keys.a) { this.x -= rx * v; this.z -= rz * v; }
+    if (keys.d) { this.x += rx * v; this.z += rz * v; }
     if (keys.q) this.y -= v;
     if (keys.e) this.y += v;
   }
   /**
    * Analog move (controller): f forward, r right, u up, each -1..1. Same forward / right vectors as
-   * move() (including the original's forward-vector quirk); the speed is capped at MOVE_SPEED.
+   * move(); the speed is capped at MOVE_SPEED.
    */
   moveAxes(dt, f, r, u) {
     if (!f && !r && !u) return;
-    let fx = Math.sin(-this.yaw), fy = Math.sin(this.pitch), fz = Math.cos(-this.yaw);
-    const fl = Math.hypot(fx, fy, fz); fx /= fl; fy /= fl; fz /= fl;
-    const lx = Math.cos(this.yaw), lz = Math.sin(this.yaw);
-    let vx = -fx * f + lx * r, vy = -fy * f + u, vz = -fz * f + lz * r;
+    const { fx, fy, fz, rx, rz } = this._axes();
+    let vx = fx * f + rx * r, vy = fy * f + u, vz = fz * f + rz * r;
     const len = Math.hypot(vx, vy, vz);
     if (len > 1) { vx /= len; vy /= len; vz /= len; }
     const v = MOVE_SPEED * dt;
     this.x += vx * v; this.y += vy * v; this.z += vz * v;
+  }
+  /** Scale the position about the board centre (the origin) by `ratio`, keeping yaw and pitch: a spacing change. */
+  rescale(ratio) {
+    this.x *= ratio; this.y *= ratio; this.z *= ratio;
   }
   /** Analog look (controller): x/y in -1..1 = fraction of PAD_LOOK_DEG_PER_S; uses sensitivity + invertY. */
   lookAxes(dt, x, y) {
@@ -379,7 +427,7 @@ export class Input {
     window.addEventListener('wheel', (e) => {
       if (!this.o.isActive()) return;
       e.preventDefault();
-      // Original: +120 per notch / 3000 = 0.04 per notch; wheel up = larger spacing.
+      // Notches for spacingStep (fractional on a trackpad); wheel up = larger spacing.
       // Browsers turn Shift+wheel into horizontal scrolling (deltaX); Shift is a game key here.
       const wd = (e.deltaY === 0 && e.shiftKey) ? e.deltaX : e.deltaY;
       let notches;

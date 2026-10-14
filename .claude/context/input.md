@@ -25,12 +25,22 @@ resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md) an
 
 **js/input.js**
 - Constants: `MOVE_SPEED` (50 u/s), `LOOK_DEG_PER_PX` (0.2), `PAD_LOOK_DEG_PER_S` (180),
-  `SPACING_MIN` / `SPACING_MAX` / `SPACING_START` (1 / 10 / 1.1; the caller clamps spacing),
+  `SPACING_MIN` / `SPACING_MAX` / `SPACING_START` (1 / 10 / 1.1), `SPACING_STEP` (0.1),
+  `SPACING_STEP_MAX` (0.5), `SPACING_ACCEL` (0.5), `SPACING_RUN_GAP_MS` (200), `SPACING_TOGGLE` (2),
   `SPAWN_PITCH_DEG` (15), `SPAWN_YAW_DEG` (20), `SPAWN_MARGIN` (0.1), `SPAWN_FACE_CLEARANCE` (0.1).
 - `FlyCamera` — state `x, y, z, pitch` (+ = looking down), `yaw` (PI = facing +Z); settings
   `sensitivity` (1 = original) and `invertY`. `reset(x, y, z)`, `place(pose)`, `look(dxPx, dyPx)`
   (pitch clamped ±PI/2), `move(dt, {w,a,s,d,q,e})`, `moveAxes(dt, f, r, u)`, `lookAxes(dt, x, y)`,
+  `rescale(ratio)` (position scaled about the board centre: a spacing change),
   `apply(cam)` (writes a `THREE.PerspectiveCamera`, order `'YXZ'`).
+- `spacingStep(state, notches, now?)` → `{spacing, run, dir, at}` — pure: the spacing after `notches`
+  (fractional on a trackpad) arriving at `now` ms, `state` the previous result or `{spacing}`. Each
+  notch steps `SPACING_STEP` plus `SPACING_ACCEL` of it per whole notch already turned in the run, up
+  to `SPACING_STEP_MAX`; a run continues while notches come the same way within `SPACING_RUN_GAP_MS`.
+  Without `now` (the D-pad's presses and repeats) nothing accelerates: one `SPACING_STEP` per notch.
+  Clamped to [1, 10]. Shared by the
+  wheel, the D-pad and the debug hook's `wheel`.
+- `spacingToggle(spacing)` → `SPACING_TOGGLE`, or `SPACING_START` when already 2.0 to one decimal (`X`).
 - `spawnPose({X, Y, Z}, spacing, fovDeg, aspect)` → `{x, y, z, yaw, pitch}` — pure: the framed
   three-quarter view, `SPAWN_PITCH_DEG` down and `SPAWN_YAW_DEG` off +Z (the -X face shows),
   centred on the near face's centre cube, from the closest distance that keeps the box's eight
@@ -60,6 +70,8 @@ resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md) an
   that released the lock, not an auto-repeat ([app-shell-pause.md](app-shell-pause.md)).
 
 **js/picking.js**
+- `FLY_THROUGH_DIST` — 1.5 pitches at the start spacing (`1.5 * 4 * SPACING_START`, 6.6 units), fixed in
+  world units whatever the spacing.
 - `pickCell(game, spacing, o, d, spaceHeld)` → cell index or -1 — `o` origin, `d` normalized
   direction; `game` is the 3D state view (`js/engine/state-view-3d.js`, [engine-3d.md](engine-3d.md)),
   read for `X/Y/Z`, `unlinked`, `pressed`.
@@ -76,8 +88,8 @@ resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md) an
   to the 3D game session as `reveal` / `toggleFlag` / `chord`; what a gesture does before the board
   exists is the session's ([mode3d-session.md](mode3d-session.md)).
 - **Camera conventions.** `pitch` + = down, `yaw` PI = +Z; `apply()` negates both into a `'YXZ'`
-  Euler. `move()` and `moveAxes()` deliberately share the original forward-vector quirk (no
-  cos(pitch) on XZ); W moves along `-forward`; Q/E and the `u` axis are world-vertical.
+  Euler. `move()` and `moveAxes()` share one pair of vectors (`_axes`): W along the true view
+  direction (cos(pitch) on XZ), A/D horizontal strafes; Q/E and the `u` axis are world-vertical.
   `lookAxes` converts deg/s to pixel-equivalents so `sensitivity` and `invertY` apply once, in
   `look()`.
 - **Held state must be dropped, never fired**, on blur, tab hide, pointer-lock loss
@@ -94,27 +106,30 @@ resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md) an
   `ARROW_KEYS`, whose repeats are the shell's held focus moves. Mouse deltas > 400 px are
   discarded (post-lock spikes).
 - **Wheel notches.** Normalized by `deltaMode`, wheel up = positive, Shift+wheel reads `deltaX`;
-  the caller multiplies by 0.04.
+  the caller turns them into a spacing with `spacingStep`, timed on the event's arrival.
 - **Picking geometry.** Grid centred on the origin: cell (i,j,k) centre = `(i - (X-1)/2) * 4s`,
   cube = centre ± 2, lattice pitch `4s` (the spec's `[P-3, P+1]` box up to a translation). Cell
   index = `i + X * (j + Y * k)`. The DDA visits lattice cells in ray order, so the first hit is
   nearest. `pickCell` and `pickCellBrute` must stay in agreement (the debug hook's `pickWith`
   cross-checks them).
-- **Pickability.** Excluded: `unlinked` cells, and `pressed` cells when `spaceHeld`. Everything
-  else (including invisible revealed zeros that are not unlinked) is pickable.
+- **Pickability.** Excluded: `unlinked` cells, `pressed` cells when `spaceHeld`, and every cell whose
+  centre lies within `FLY_THROUGH_DIST` of the ray origin (the glass the renderer fades; the ray goes
+  on past it). Everything else (including invisible revealed zeros that are not unlinked) is pickable.
 
 ## DOMAIN DEPENDENCIES
 
 Gameplay fidelity to the original game is the overriding rule:
 [../../docs/ORIGINAL_SPEC.md](../../docs/ORIGINAL_SPEC.md). This area enforces:
-- **Controls (must be preserved)** — 0.2°/px look, pitch clamp ±90°, WASD/QE at 50 u/s, the
-  forward-vector quirk (`FlyCamera`). The start pose is the spec's web-port change: the framed
-  three-quarter `spawnPose`, not the original's straight view toward +Z.
+- **Controls (must be preserved)** — 0.2°/px look, pitch clamp ±90°, WASD/QE at 50 u/s
+  (`FlyCamera`). The spec's web-port changes: the framed three-quarter `spawnPose`, not the
+  original's straight view toward +Z, and W along the true view direction, not the original's
+  forward-vector quirk.
 - **Mouse actions fire on button release** — left / right / chord-toggle sequence (`MouseActions`).
 - **Picking** — ray from screen centre, nearest cube, exclusion of unlinked cells and of pressed
-  cells while Space is held (`pickCell`).
-- **Grid & geometry** — cube edge 4, spacing range [1, 10], start 1.1, 0.04 per wheel notch,
-  wheel up = larger (`SPACING_*`, `Input` wheel handler).
+  cells while Space is held (`pickCell`); the web port's fly-through exclusion (`FLY_THROUGH_DIST`).
+- **Grid & geometry** — cube edge 4, spacing range [1, 10], start 1.1, wheel up = larger
+  (`SPACING_*`, `Input` wheel handler); the web port's 0.1 step with acceleration, `X` toggle and
+  camera scaling (`spacingStep`, `spacingToggle`, `rescale`).
 - **Left Shift / Space / Left Ctrl held** view modes — `Controls` exposes them; their visual effect
   is in [rendering.md](rendering.md). Space's tap-toggle is a web-port addition beside the hold.
 
@@ -129,14 +144,14 @@ additions the spec permits; they must not alter any rule above.
 - [app-shell.md](app-shell.md) — `js/main.js` constructs every object here, maps pad buttons (`handlePad`), runs menu focus navigation and owns the pointer-lock flow; the router and pause controller decide where Back and pause lead.
 - [audio.md](audio.md) — no direct calls; action results in main trigger sound effects.
 - [input-controller.md](input-controller.md) — the controller reader whose triggers drive `MouseActions` and whose sticks feed `moveAxes` / `lookAxes`; the `Controls` view-mode layer over `Input`'s held keys.
-- [testing.md](testing.md) — `tests/gamepad.test.mjs` covers `FlyCamera.moveAxes/lookAxes` and `MouseActions` trigger sequences.
+- [testing.md](testing.md) — `tests/gamepad.test.mjs` covers `FlyCamera.moveAxes/lookAxes` and `MouseActions` trigger sequences; `tests/camera-flight.test.mjs` the forward vector, the spacing step, toggle and camera scaling, and the fly-through pick rule.
 
 ## WHEN TO READ THE SOURCE
 
 - Changing the chord / release behaviour or adding a new action type (`MouseActions.up`).
 - Debugging camera direction, movement axes or a mirrored / tilted view (`FlyCamera.move`, `moveAxes`, `apply`).
 - Changing the spawn framing or the off-screen arrow's in-view test (`spawnPose`, `offscreenArrow`).
-- Fixing wheel step size on a specific browser or trackpad (`Input` wheel handler).
+- Fixing wheel step size on a specific browser or trackpad (`Input` wheel handler, `spacingStep`).
 - Changing which keys are captured, swallowed or exempt from `preventDefault` (`GAME_KEYS`, keydown handler).
 - Changing the Space tap length or the drag-to-look threshold (`TapToggle`, `SPACE_TAP_MS`, `DragLook`, `DRAG_LOOK_THRESHOLD_PX`).
 - Fixing a pointer-lock failure or re-lock timing issue (`requestLock`, `pointerlockchange`, `unlockedAt`).

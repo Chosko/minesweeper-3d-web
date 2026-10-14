@@ -42,7 +42,7 @@ and the controller's menu navigation.
     is open);
   - HUD: `setBoard`, `updateHud(time, minesLeft, clicks?)`, `setModes`,
     `setCrosshair`, `setArrow(angle|null)`, `setReadout(r|null)`,
-    `showSpacing`, `setSound(muted)`;
+    `setSpacing(v)` (the 3D tools strip's spacing readout), `setSound(muted)`;
   - help and hints: `toggleHelp`, `userToggleHelp`, `setHintStrip(on,
     {scroll})`, `dismissHint`, `setDevice`, `setPad`, `flash`,
     `toast(msg, ms)`, `setNoMouse`, `openControls` / `closeControls` /

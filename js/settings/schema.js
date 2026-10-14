@@ -19,6 +19,7 @@ export const SCHEMA = Object.freeze({
   muted: boolean('muted', false),
   confirmRestart: boolean('confirmRestart', false),
   aimReadout: boolean('aimReadout', true),
+  fieldOfView: number('fieldOfView', 45, 90, 60), // the 3D camera's vertical field of view, degrees
 });
 
 export const SETTING_KEYS = Object.freeze(Object.keys(SCHEMA));

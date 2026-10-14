@@ -316,7 +316,7 @@ Feature: input-rebinding
 
 ## 139. 3D flight: fly-through fade, forward follows the view, spacing, FOV
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/input.js, js/picking.js, js/render.js, js/main.js, js/ui.js, js/settings/schema.js, js/settings/store.js, js/settings/appliers.js, js/settings/page.js, js/settings/bindings.js, index.html, css/style.css, tests/camera-flight.test.mjs, tests/gamepad.test.mjs, tests/settings-store.test.mjs, tests/settings-appliers.test.mjs, tests/settings-page.test.mjs, tests/replay-3d.test.mjs, docs/ORIGINAL_SPEC.md, README.md, .claude/domain/product-design.md, .claude/domain/features/settings.md
 Preconditions: none

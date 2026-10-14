@@ -1,7 +1,7 @@
 // Entry point: wires game logic, renderer, input and UI together.
 import * as THREE from 'three';
 import { BoardRenderer } from './render.js';
-import { FlyCamera, MouseActions, Input, SPACING_MIN, SPACING_MAX, SPACING_START, spawnPose, offscreenArrow, escResumes } from './input.js';
+import { FlyCamera, MouseActions, Input, SPACING_MIN, SPACING_MAX, SPACING_START, spacingStep, spacingToggle, spawnPose, offscreenArrow, escResumes } from './input.js';
 import { pickCell, pickCellBrute } from './picking.js';
 import { UI, clampSettings, NO_MOUSE_MSG } from './ui.js';
 import * as audio from './audio.js';
@@ -223,10 +223,11 @@ const input = new Input({
   isActive: () => S.mode === 'playing' && !endDelay(),
   isDragLook: () => S.dragLook && S.lockless,
   onLook: (dx, dy) => cam.look(dx, dy),
-  onWheel: (notches) => { setSpacing(S.spacing + notches * 0.04); ui.showSpacing(S.spacing); },
+  onWheel: (notches) => wheelSpacing(notches),
   onKey: (code, e) => {
     if (isBackKey(code)) { shellBack('key'); return; }
     if ((code === 'Home' || code === 'KeyR') && input.o.isActive()) { placeAtSpawn(); return; } // back to the start view, in 3D play only
+    if (code === 'KeyX' && input.o.isActive()) { setSpacing(spacingToggle(S.spacing)); return; } // spacing 1.1 / 2.0, in 3D play only
     if (restartKey(code, e)) return; // F2 restarts in play and on the pause card; R plays again on the results screen
     if (S.mode === 'classic-2d') used2D(); // the first key of a Classic 2D game brings its hint strip
     const dir = arrowDirection(code);
@@ -274,7 +275,23 @@ function exitFullscreen() { return document.exitFullscreen?.(); }
 function toggleFullscreen() { SETTINGS.set('fullscreen', !document.fullscreenElement); }
 document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) navigator.keyboard?.unlock?.(); });
 
-function setSpacing(s) { S.spacing = Math.min(SPACING_MAX, Math.max(SPACING_MIN, s)); }
+/**
+ * Every spacing change in play (the wheel, the D-pad, X, the debug hook): the camera's position scales
+ * about the board centre with it, so it keeps its place among the cells (the aimed cube, the framing,
+ * the replay sampler's cell-unit sample), and the tools strip shows it.
+ */
+function setSpacing(s) {
+  const next = Math.min(SPACING_MAX, Math.max(SPACING_MIN, s));
+  if (next !== S.spacing) cam.rescale(next / S.spacing);
+  S.spacing = next;
+  ui.setSpacing(next);
+}
+let wheelRun = { spacing: SPACING_START }; // the wheel's run of notches (spacingStep), for its acceleration
+/** Wheel notches (fractional on a trackpad), timed on arrival: quick notches step further. */
+function wheelSpacing(notches) {
+  wheelRun = spacingStep({ ...wheelRun, spacing: S.spacing }, notches, performance.now());
+  setSpacing(wheelRun.spacing);
+}
 function toggleSound() { SETTINGS.set('muted', !SETTINGS.get('muted')); }
 
 // ---------- screens ----------
@@ -334,6 +351,7 @@ applySettings(SETTINGS, {
   camera: cam,
   resolution: () => applyPixelRatio(),
   fullscreen: { doc: document, enter: enterFullscreen, exit: exitFullscreen },
+  fieldOfView: WEBGL2 ? { camera: renderer.camera, redraw: () => { needRender = true; } } : null,
 });
 SETTINGS.onChange('muted', (m) => ui.setSound(m));
 BUTTON_SWAP.onChange((on) => ui.setSwap(on));
@@ -824,6 +842,7 @@ function startGame(settings, pregenerated = null) {
   S.selected = -1;
   S.pickKey = '';
   S.spacing = SPACING_START;
+  ui.setSpacing(S.spacing);
   board3d.generating = false;
   board3d.failure = null;
   board3d.progress = null;
@@ -1270,7 +1289,7 @@ function padPlaying(p, held, pressed, dt, now) {
   const [rx, ry] = stickCurve(p.rs[0], p.rs[1]);
   cam.lookAxes(dt, rx, ry);
   const notches = padRep.spUp.update(held(BTN.UP), now) - padRep.spDown.update(held(BTN.DOWN), now);
-  if (notches) { setSpacing(S.spacing + notches * 0.04); ui.showSpacing(S.spacing); }
+  if (notches) setSpacing(spacingStep({ spacing: S.spacing }, notches).spacing); // one step a press and a repeat
 }
 
 /**
@@ -1338,9 +1357,7 @@ const tmpDir = new THREE.Vector3();
 function aimedCell(g, spacing, space) {
   const three = renderer.camera;
   three.getWorldDirection(tmpDir);
-  const n = three.near;
-  const o = { x: three.position.x + tmpDir.x * n, y: three.position.y + tmpDir.y * n, z: three.position.z + tmpDir.z * n };
-  return pickCell(g, spacing, o, tmpDir, space);
+  return pickCell(g, spacing, three.position, tmpDir, space); // from the camera, as the fly-through fade measures
 }
 function updatePick() {
   const g = S.game, three = renderer.camera;
@@ -1417,7 +1434,7 @@ function shouldRender(now, synced) {
     if (S.mode === 'playing' && S.selected >= 0) return true;
   }
   const t = renderer.toggles, c = renderer.camera;
-  const sig = `${cam.x},${cam.y},${cam.z},${cam.yaw},${cam.pitch},${S.spacing},${t.shift},${t.space},${t.ctrl},${S.selected},${S.game ? S.game.version : -1},${c.aspect},${S.mode}`;
+  const sig = `${cam.x},${cam.y},${cam.z},${cam.yaw},${cam.pitch},${S.spacing},${t.shift},${t.space},${t.ctrl},${S.selected},${S.game ? S.game.version : -1},${c.aspect},${c.fov},${S.mode}`;
   if (sig !== lastSig) { lastSig = sig; return true; }
   return false;
 }
@@ -1563,12 +1580,11 @@ window.__ms = {
     else if (type === 'chord') { mouse.down(0); mouse.down(2); mouse.up(0); mouse.up(2); }
   },
   key(code, down = true) { if (down) input.keys.add(code); else input.keys.delete(code); refresh(); },
-  wheel(notches) { setSpacing(S.spacing + notches * 0.04); refresh(); },
+  wheel(notches) { wheelSpacing(notches); refresh(); },
   selected() { refresh(); return S.selected; },
   pickBrute() {
     const three = renderer.camera; three.getWorldDirection(tmpDir);
-    const o = { x: three.position.x + tmpDir.x, y: three.position.y + tmpDir.y, z: three.position.z + tmpDir.z };
-    return pickCellBrute(S.game, S.spacing, o, tmpDir, renderer.toggles.space);
+    return pickCellBrute(S.game, S.spacing, three.position, tmpDir, renderer.toggles.space);
   },
   pickWith(o, d, space = false) { return [pickCell(S.game, S.spacing, o, d, space), pickCellBrute(S.game, S.spacing, o, d, space)]; },
   info() {

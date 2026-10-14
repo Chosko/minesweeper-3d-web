@@ -69,7 +69,7 @@ Test files by name prefix:
 | `settings-` | schema, store, appliers; page, Reset all data; bindings | [settings.md](settings.md), [settings-page.md](settings-page.md), [settings-bindings.md](settings-bindings.md) |
 | `tokens`, `theme`, `components` | token sheet, theme applier and token reader, component kit and gallery | [app-shell-kit.md](app-shell-kit.md) |
 | `render-`, `readability-` | 3D renderer, readability aids; feedback effects (pulse, flash) | [rendering.md](rendering.md), [rendering-effects.md](rendering-effects.md) |
-| `gamepad`, `input-`, `camera-` | `FlyCamera`, `MouseActions`, drag-to-look, spawn pose; gamepad helpers, `Controls` | [input.md](input.md), [input-controller.md](input-controller.md) |
+| `gamepad`, `input-`, `camera-` | `FlyCamera`, `MouseActions`, drag-to-look, spawn pose; flight (`camera-flight`: forward vector, spacing step, toggle and camera scaling, fly-through fade and pick rule); gamepad helpers, `Controls` | [input.md](input.md), [input-controller.md](input-controller.md), [rendering.md](rendering.md) |
 | `audio-` | sound voices over recorded primitives | [audio.md](audio.md) |
 | `affected-tests` | the runner scripts and the affected-tests mapping (`.claude/external/`) | this file |
 | `helpers` | the browser and timing helpers under `tests/helpers/` and the rule that browser files use them | this file |

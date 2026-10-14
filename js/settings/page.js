@@ -6,7 +6,8 @@
 //
 // A setting's control follows its schema type: a number is a ui-slider over its range, a boolean a
 // ui-toggle, a choice a ui-segmented of its values. SLIDERS adds a number's step, display format
-// and scale (the slider's units per stored unit: volume 0–1 shows as 0–100%).
+// scale (the slider's units per stored unit: volume 0–1 shows as 0–100%) and unit (a suffix: the field of
+// view shows as 60°).
 //
 // A toggle in INVERTED shows on while its boolean is false: Sound is on while `muted` is false.
 //
@@ -40,7 +41,7 @@ import { formatSliderValue, decimalsOf, segmentedState, bindSegmented } from '..
 
 export const SETTINGS_SECTIONS = Object.freeze([
   Object.freeze({ id: 'controls', title: 'Controls', settings: Object.freeze(['lookSensitivity', 'invertY', 'confirmRestart']) }),
-  Object.freeze({ id: 'graphics', title: 'Graphics', settings: Object.freeze(['fullscreen', 'renderResolution', 'boardScale', 'aimReadout']) }),
+  Object.freeze({ id: 'graphics', title: 'Graphics', settings: Object.freeze(['fullscreen', 'renderResolution', 'boardScale', 'aimReadout', 'fieldOfView']) }),
   Object.freeze({ id: 'theme', title: 'Theme', settings: Object.freeze(['theme']) }),
   Object.freeze({ id: 'audio', title: 'Audio', settings: Object.freeze(['muted', 'volume']) }),
 ]);
@@ -56,6 +57,7 @@ export const SETTING_LABELS = Object.freeze({
   muted: 'Sound',
   confirmRestart: 'Always ask before restarting',
   aimReadout: '3D neighbour count',
+  fieldOfView: 'Field of view',
 });
 
 /** Toggles shown on while their stored boolean is false. */
@@ -68,6 +70,7 @@ export const CHOICE_LABELS = Object.freeze({
 const SLIDERS = Object.freeze({
   lookSensitivity: Object.freeze({ step: 0.05, format: 'multiplier', scale: 1 }),
   volume: Object.freeze({ step: 1, format: 'percent', scale: 100 }),
+  fieldOfView: Object.freeze({ step: 1, format: 'number', scale: 1, unit: '°' }),
 });
 
 const KINDS = { number: 'slider', boolean: 'toggle', choice: 'segmented' };
@@ -82,8 +85,8 @@ export function settingControl(key) {
   const control = { key, kind: KINDS[entry.type], label: SETTING_LABELS[key] ?? key };
   if (entry.type === 'boolean' && INVERTED.has(key)) control.inverted = true;
   if (entry.type === 'number') {
-    const { step = 0.01, format = 'number', scale = 1 } = SLIDERS[key] ?? {};
-    return { ...control, min: entry.min * scale, max: entry.max * scale, step, format, scale };
+    const { step = 0.01, format = 'number', scale = 1, unit = '' } = SLIDERS[key] ?? {};
+    return { ...control, min: entry.min * scale, max: entry.max * scale, step, format, scale, unit };
   }
   if (entry.type === 'choice') {
     return { ...control, options: entry.values.map((value) => ({ value, label: CHOICE_LABELS[value] ?? value })) };
@@ -98,11 +101,12 @@ export function settingControlHtml(key, value = SCHEMA[key]?.default, { labelled
   const id = `set-${key}`;
   if (c.kind === 'slider') {
     const v = sliderValue(c, value);
-    const shown = formatSliderValue(v, { format: c.format, step: c.step, max: c.max });
+    const shown = formatSliderValue(v, { format: c.format, step: c.step, max: c.max, unit: c.unit });
     const scale = c.scale === 1 ? '' : ` data-scale="${c.scale}"`;
+    const unit = c.unit ? ` data-unit="${c.unit}"` : '';
     return `<div class="ui-slider" data-setting="${key}"><label class="ui-slider__label" for="${id}">${c.label}</label>`
       + `<output class="ui-slider__value" id="${id}-val" for="${id}">${shown}</output>`
-      + `<input type="range" id="${id}" class="ui-slider__input" min="${c.min}" max="${c.max}" step="${c.step}" value="${v}" data-format="${c.format}"${scale}></div>`;
+      + `<input type="range" id="${id}" class="ui-slider__input" min="${c.min}" max="${c.max}" step="${c.step}" value="${v}" data-format="${c.format}"${scale}${unit}></div>`;
   }
   if (c.kind === 'toggle') {
     const on = c.inverted ? !value : !!value;

@@ -209,7 +209,7 @@ test('in a browser, a 3D game starts framed, and Home, R and "Back to start" ret
     assert.equal(await ms(() => document.getElementById('crosshair-arrow').classList.contains('hidden')), true, 'the arrow is hidden with the box in view');
 
     // Home and R return during play, at the current spacing; the arrow shows while the box is away
-    await ms(() => globalThis.__ms.wheel(10));
+    await ms(() => globalThis.__ms.wheel(1));
     await wander();
     await ms(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
     assert.equal(await ms(() => document.getElementById('crosshair-arrow').classList.contains('hidden')), false, 'the arrow shows with the box out of view');
@@ -217,7 +217,7 @@ test('in a browser, a 3D game starts framed, and Home, R and "Back to start" ret
     await ms(() => window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Home', key: 'Home' })));
     assert.equal(prevented, true, 'the browser\'s own Home is stopped during play');
     assert.ok(close(await cam(), await spawn()), 'Home returns to start');
-    assert.ok(Math.abs(await ms(() => globalThis.__ms.state.spacing) - (1.1 + 0.4)) < 1e-9, 'the spacing is kept');
+    assert.ok(Math.abs(await ms(() => globalThis.__ms.state.spacing) - (1.1 + 0.1)) < 1e-9, 'the spacing is kept');
     await wander();
     await press('KeyR');
     assert.ok(close(await cam(), await spawn()), 'R returns to start');

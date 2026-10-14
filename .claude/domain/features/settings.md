@@ -31,8 +31,10 @@ In scope (m1-classic-2d):
   (one device pixel per CSS pixel); and the 2D board scale — Fit, 100 % and
   125 %, the cap on the Classic 2D tile (`classic-2d-square-play`
   § Architecture, "Board view"), applied at once to an open board and to
-  the replay viewer; and the 3D neighbour count — the readout beside the
-  crosshair in 3D play — on by default.
+  the replay viewer; the 3D neighbour count — the readout beside the
+  crosshair in 3D play — on by default; and the field of view — the 3D
+  camera's vertical field of view, 45 to 90°, 60 by default — applied at
+  once in play, behind the menu and in the replay viewer.
 - Theme: one of the catalogue's themes, picked from a list, *Joyful tiles*
   until the player picks; the list and the carry-over of a stored light or
   dark choice are `theme-system`'s. Changing it
@@ -66,13 +68,16 @@ settings handling for the shell's UI module and the sound module ([app-shell.md]
   allowed values or range, and default. Validation and the page's controls
   are both driven from it, so a setting is added in one place.
 - **Settings store.** Loads the saved settings at start-up, before the
-  first screen shows, fills anything missing or invalid with its default,
-  and holds the values in memory. Writes go through the store, which validates, saves
+  first screen shows, fills anything missing or invalid with its default —
+  except the field of view of an existing install (a saved document
+  without it, or a first start that carries over a legacy value), which
+  loads as 45° — and holds the values in memory. Writes go through the store, which validates, saves
   through `platform-storage` and notifies subscribers.
 - **Appliers.** Each setting's effect is applied by its owner subscribing to
   the store: the theme applier of `theme-system`, the sound
   module's volume and mute, the 3D camera's sensitivity and invert Y, the
-  3D renderer's pixel ratio, and the browser's fullscreen state. The store
+  3D renderer's pixel ratio and field of view, and the browser's fullscreen
+  state. The store
   knows none of them.
 - **Settings page.** The page itself: sections for controls, graphics,
   theme and audio, each control bound to one schema entry, then the
@@ -103,15 +108,17 @@ settings handling for the shell's UI module and the sound module ([app-shell.md]
   (0.25–3, default 1), invert Y (default off), fullscreen (default off),
   render resolution (Auto, Sharp or Fast; default Auto), 2D board scale
   (Fit, 100 % or 125 %; default 100 %), theme (a theme id, default
-  *Joyful tiles*), volume (0–1, default 0.7), mute (default off) and
-  always ask before restarting (default off). Persisted through
+  *Joyful tiles*), volume (0–1, default 0.7), mute (default off), always
+  ask before restarting (default off) and field of view (45–90°, default
+  60; 45 for a document saved without it). Persisted through
   `platform-storage`.
 - **In memory** — the validated current values, the single source of truth
   while the game runs.
 - **Carried-over values** — on first start with no settings document, the
   store reads the current build's separate keys for sensitivity, invert Y,
-  volume and mute once, writes them into the new document, and from then on
-  reads only the document. Reset all data removes those keys, so the start
+  volume and mute once, writes them into the new document — with the field
+  of view at 45° when it carried any of them over — and from then on reads
+  only the document. Reset all data removes those keys, so the start
   after a reset carries nothing over and every setting takes its default.
 - **Fullscreen** — the browser can leave fullscreen on its own (the player
   presses Esc); the store follows the browser's state rather than fighting

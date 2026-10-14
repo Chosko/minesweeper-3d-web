@@ -107,13 +107,22 @@ loop's render-on-demand. The 3D board choice, session and adapter
   it only under the `aimReadout` setting in 3D play. Picking is cached by
   `S.pickKey`. Spacing resets to `SPACING_START` per game; the menu demo
   (`makeDemo`, 7³/30, decorative) uses 1.25 and an orbiting camera.
+- **Spacing.** Every change in play goes through `setSpacing(s)`: clamped
+  to [1, 10], the camera rescaled about the board centre by new / old
+  (`FlyCamera.rescale`, yaw and pitch kept), `ui.setSpacing` for the tools
+  strip's readout. The wheel (`wheelSpacing`, its run held in `wheelRun`)
+  and the debug hook's `wheel` step through `spacingStep` timed by
+  `performance.now()`; the D-pad's presses and repeats take one untimed
+  step each; `X` while `Input.isActive` sets `spacingToggle`
+  ([input.md](input.md)).
 - **Render on demand.** `shouldRender` never draws while `results` shows a
   3D game; otherwise it draws when `needRender` is set or
   `renderer.sync()` reported changes, on every frame of a menu screen (the
   orbiting demo, except under the `?still-backdrop` hook,
   [app-shell.md](app-shell.md) § PUBLIC API), `endState` changed,
   `renderer.isAnimating()`, or the signature (camera, spacing, toggles,
-  selection, `game.version`, aspect, mode) changed. Set `needRender = true`
+  selection, `game.version`, aspect, field of view, mode) changed; the field
+  of view applier also sets `needRender`. Set `needRender = true`
   after any change the signature does not capture.
 - `applyPixelRatio(n)` follows the render resolution setting
   (`pixelRatioFor`, [settings.md](settings.md)) for the board's cell count.

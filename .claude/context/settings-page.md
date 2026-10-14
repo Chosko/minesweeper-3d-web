@@ -19,12 +19,14 @@ binders touch only the elements they are handed. `page.js`'s and
 Page (`js/settings/page.js`)
 - `SETTINGS_SECTIONS` — Controls (`lookSensitivity`, `invertY`,
   `confirmRestart`), Graphics (`fullscreen`, `renderResolution`,
-  `boardScale` "2D board scale", `aimReadout` "3D neighbour count"), Theme
+  `boardScale` "2D board scale", `aimReadout` "3D neighbour count",
+  `fieldOfView` "Field of view"), Theme
   (`theme`), Audio (`muted`, `volume`); `SETTING_LABELS` (`muted` reads
   Sound), `CHOICE_LABELS`.
 - `settingControl(key)` → `{ key, kind: 'slider' | 'toggle' | 'segmented',
-  label, … }` by schema type; `SLIDERS` adds a number's step, format and
-  scale (volume shows 0–100 %); a toggle in `INVERTED` (`muted`) shows on
+  label, … }` by schema type; `SLIDERS` adds a number's step, format,
+  scale (volume shows 0–100 %) and unit (the field of view's `°`, carried
+  as `data-unit`); a toggle in `INVERTED` (`muted`) shows on
   while its value is false.
 - `settingControlHtml(key, value?, { labelledBy? })` — the control's kit
   markup, root carrying `data-setting="<key>"`, ids `set-<key>`.

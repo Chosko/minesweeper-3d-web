@@ -17,7 +17,8 @@ waves, confetti, shake, ground grid — and the replay and end-of-game behaviour
 ## Public API
 
 `js/render.js` (only `js/main.js` calls it):
-- `BoardRenderer(canvas)` — renderer, scene, `PerspectiveCamera` (fov 45, order `YXZ`), atlas, sky,
+- `BoardRenderer(canvas)` — renderer, scene, `PerspectiveCamera` (order `YXZ`; its `fov` owned by the field
+  of view setting's applier, [settings.md](settings.md)), atlas, sky,
   confetti. Fields read elsewhere: `renderer`, `camera` (main writes its pose), `toggles`
   `{shift, space, ctrl}`, `stats` `{opaque, trans, sortMs}` (exposed via `__ms`).
 - Board: `setGame(game)` (allocates for `game.n` cells, drains the dirty list, resets effects,
@@ -32,6 +33,8 @@ waves, confetti, shake, ground grid — and the replay and end-of-game behaviour
   `flash(cells)`, `isAnimating()` (main's render-on-demand loop polls it), `setWrongFlags(indices)`
   (no caller: `_beginLoss` computes them itself).
 - Constants: kinds `K_CLOSED, K_FLAG, K_NUMBER, K_MINE, K_HIDDEN` (0..4), `GHOST_ALPHA` (0.25),
+  `FLY_THROUGH_ALPHA` (0.25), `FLY_THROUGH_BAND` (half a pitch at the start spacing, 2.2) and
+  `flyThroughAlpha(dist)` (the shader's `flyAlpha`; the distance is `FLY_THROUGH_DIST`, [input.md](input.md)),
   the pulse and flash constants and envelopes ([rendering-effects.md](rendering-effects.md)).
   Node imports the module only with `three` resolved to `vendor/three/` (the test's resolve hook).
 
@@ -58,7 +61,10 @@ waves, confetti, shake, ground grid — and the replay and end-of-game behaviour
   changes: a hidden cell under Ctrl is a ghost at `GHOST_ALPHA` (transparent pass), and a number
   under Space takes `spaceAlpha(depth)` instead of 0.2 — 0.7 at the box's nearest face (about 0.61
   on the front layer, whose cube centres sit half a cell in) to a 0.1 floor, `depth` from
-  `uBoxDepth`, which `render()` sets from `boxDepth` each frame.
+  `uBoxDepth`, which `render()` sets from `boxDepth` each frame. Last, every cube takes the lower of
+  its alpha and `flyAlpha` (fly through glass): `FLY_THROUGH_ALPHA` within `FLY_THROUGH_DIST` of
+  `cameraPosition`, ramping back to 1 over `FLY_THROUGH_BAND` — whatever its kind and view mode; the
+  flash pass keeps its own alpha.
 - **Back pass under Shift.** With Shift held and a cell aimed (`emphOn`), the faded cubes outside
   the aimed 3×3×3 neighbourhood draw in `uPass` 2 (`meshTransBack`, `renderOrder` -1) before the
   opaque pass, and pass 1 keeps only the neighbourhood's transparent cubes, so the neighbourhood
@@ -72,7 +78,10 @@ waves, confetti, shake, ground grid — and the replay and end-of-game behaviour
 - **Transparent sort** is an O(n) counting sort on quantised L1 lattice distance to the camera
   (`SORT_BUCKETS` = 65536), farthest first — an exact painter's order for equal cubes on a lattice.
   It runs while Shift, Space or Ctrl is held (closed, flag and number cubes under Shift, numbers
-  under Space, hidden cells under Ctrl) and re-sorts only when `_transDirty` or the camera moved.
+  under Space, hidden cells under Ctrl, and every drawn cube within the fade band). With none held,
+  `_nearCells` builds the list from the lattice cells around the camera only — the cubes within
+  `FLY_THROUGH_DIST + FLY_THROUGH_BAND`, sorted by the same L1 distance — so no pass over the board
+  is added. Either list re-sorts only when `_transDirty` or the camera moved.
 - **Geometry and UVs** are copied from `Cube.cs`; triangles are emitted as (v0, v2, v1) to flip XNA
   winding. Atlas rows are top-first and `flipY = false`, so v = 0 is the image top.
 - **Colour.** Tiles and state use `NoColorSpace`; shaders output raw sRGB. Number colours are
@@ -99,7 +108,8 @@ waves, confetti, shake, ground grid — and the replay and end-of-game behaviour
   "Web port:" notes there —, Ctrl shows hidden cells — as 25 % ghosts, a "Web port:" note there —, the
   "solved" pulse before a number hides, back-to-front transparency); *Cube face orientation*
   (corners and UVs); *Grid & geometry* (cube edge 4, pitch `4*s`, background RGB(200,225,255) —
-  the light theme's sky horizon, handed in by the shell — unlit textured cubes, centred grid).
+  the light theme's sky horizon, handed in by the shell — unlit textured cubes, centred grid); the
+  web port's fly-through glass (a "Web port:" note under *Controls*).
 - [../domain/INDEX.md](../domain/INDEX.md) — product and feature design for visual extras.
 
 ## Cross-references
@@ -114,7 +124,7 @@ waves, confetti, shake, ground grid — and the replay and end-of-game behaviour
   `setSelected`; picking must use the same pitch and Space/hidden visibility rules.
 - [classic2d-tile-skin.md](classic2d-tile-skin.md) — the Classic 2D tile skin and the shared tile recipe.
 - [testing.md](testing.md) — `tests/render-3d-feedback.test.mjs` (`GHOST_ALPHA`, ghosts in
-  `stats.trans`), `tests/tile-skin.test.mjs` (every atlas layer pixel for pixel),
+  `stats.trans`), `tests/camera-flight.test.mjs` (the fly-through constants and the near-camera list), `tests/tile-skin.test.mjs` (every atlas layer pixel for pixel),
   `tests/settings-appliers.test.mjs` (`pixelRatioFor`); verification is visual via Playwright.
 
 ## When to read the source

@@ -10,8 +10,9 @@
 // bindingRows(mode, device) → the rows; an unknown mode or device throws.
 // bindingsListHtml(rows, glyphs?) → the <dt>/<dd> pairs of a `dl.controls` list, text escaped.
 // bindingsHtml(mode, device, glyphs?) → the bindings component: that mode's rows for that device.
-// hudStripHtml(mode, device, glyphs?, { muted }) → the HUD strip: only the keys or buttons the
-//   mode binds on that device (F flags in Classic 2D, so it is not listed there).
+// hudStripHtml(mode, device, glyphs?, { muted, spacing }) → the HUD strip: only the keys or buttons
+//   the mode binds on that device (F flags in Classic 2D, so it is not listed there); 3D's carries
+//   the spacing to one decimal.
 // hintStripHtml(mode, device, glyphs?) → the first-use hint strip of that mode, " · " between items.
 // helpFootHtml(mode, device, glyphs?) → the H panel's foot line; the release rule only in 3D.
 // hintText(name, device, glyphs?) → a one-time hint's plain text (`autoHide`, `aimHint`, `scrollHint`).
@@ -19,6 +20,7 @@
 //   from a connected controller, otherwise the keyboard and mouse.
 
 import { GLYPHS } from '../gamepad.js';
+import { SPACING_START } from '../input.js';
 
 export const BINDING_MODES = Object.freeze([
   Object.freeze({ id: 'classic-2d', label: 'Classic 2D' }),
@@ -61,13 +63,14 @@ export const BINDINGS = Object.freeze({
   '3d': Object.freeze({
     keyboard: rows([
       ['Mouse', 'Look around'],
-      ['[W][A][S][D]', 'Fly forward / left / back / right'],
+      ['[W][A][S][D]', 'Fly forward / left / back / right; forward follows the view'],
       ['[Q] [E]', 'Move down / up'],
       ['[Home] / [R]', 'Back to the start view'],
       ['Left click', 'Reveal the aimed cube'],
       ['Right click', 'Flag / unflag. On a number: flag all its closed neighbours; right-click it again to take back only those flags'],
       ['Left + Right', 'Chord: reveal neighbours of a satisfied number'],
-      ['Wheel', 'Change spacing between cubes'],
+      ['Wheel', 'Change spacing between cubes; the camera moves with them'],
+      ['[X]', 'Toggle spacing 1.1 / 2.0'],
       ['Hold [Shift]', 'Fade everything except the aimed cube\'s neighbours, which draw on top'],
       ['Hold or tap [Space]', 'Aim through revealed numbers (they fade, the nearest least); a tap keeps it on until the next tap'],
       ['Hold [Ctrl]', 'Show hidden cells (empty and completed ones)'],
@@ -82,7 +85,7 @@ export const BINDINGS = Object.freeze({
       ['{lt} + {rt}', 'Chord'],
       ['{a} / {b}', 'Move up / down'],
       ['Hold {lb} {rb} {y}', 'Neighbours only / aim through numbers / show hidden'],
-      ['D-pad ↑ ↓', 'Change spacing'],
+      ['D-pad ↑ ↓', 'Change spacing; the camera moves with the cubes'],
       ['{x}', 'Show / hide the controls help'],
       ['{start} / {back}', 'Pause'],
       ['{start} + {y}', 'Restart: a new board of the same choice'],
@@ -128,15 +131,15 @@ const pick = (t, mode, device, what) => {
   return t[mode][device];
 };
 
-/** The HUD strip per mode and device: only what the mode binds there. `sound` reads "sound on/off". */
+/** The HUD strip per mode and device: only what the mode binds there. `sound` reads "sound on/off", `spacing` "spacing 1.1". */
 export const HUD_STRIP = table({
   'classic-2d': {
     keyboard: [['[H]', 'help'], ['[M]', 'sound'], ['[Esc]', 'menu']],
     controller: [['{start}', 'menu']],
   },
   '3d': {
-    keyboard: [['[H]', 'help'], ['[M]', 'sound'], ['[F]', 'fullscreen'], ['[Esc]', 'menu']],
-    controller: [['{x}', 'help'], ['{start}', 'menu']],
+    keyboard: [['[X]', 'spacing'], ['[H]', 'help'], ['[M]', 'sound'], ['[F]', 'fullscreen'], ['[Esc]', 'menu']],
+    controller: [['D-pad ↑ ↓', 'spacing'], ['{x}', 'help'], ['{start}', 'menu']],
   },
 });
 
@@ -168,9 +171,9 @@ export const HINT_TEXT = Object.freeze({
   scrollHint: Object.freeze({ keyboard: 'Wheel scrolls · Shift+wheel sideways', controller: 'Wheel scrolls · Shift+wheel sideways' }),
 });
 
-export function hudStripHtml(mode, device, glyphs = GLYPHS.generic, { muted = false } = {}) {
+export function hudStripHtml(mode, device, glyphs = GLYPHS.generic, { muted = false, spacing = SPACING_START } = {}) {
   return pick(HUD_STRIP, mode, device, 'HUD strip').map(([input, action]) => {
-    const label = action === 'sound' ? `sound ${muted ? 'off' : 'on'}` : action;
+    const label = action === 'sound' ? `sound ${muted ? 'off' : 'on'}` : action === 'spacing' ? `spacing ${spacing.toFixed(1)}` : action;
     return `<span class="kbd-hint">${render(input, glyphs)} ${escape(label)}</span>`;
   }).join('');
 }

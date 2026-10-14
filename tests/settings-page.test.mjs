@@ -103,6 +103,28 @@ test('the 3D neighbour count is a toggle in the Graphics section, on by default'
   assert.match(graphics, /<label class="ui-toggle" data-setting="aimReadout"><input type="checkbox" role="switch" id="set-aimReadout" class="ui-toggle__input" checked><span class="ui-toggle__label">3D neighbour count<\/span><\/label>/);
 });
 
+test('the field of view is a degree slider in the Graphics section, 45 to 90 in steps of 1, at 60 by default', () => {
+  assert.equal(SETTING_LABELS.fieldOfView, 'Field of view');
+  const c = settingControl('fieldOfView');
+  assert.equal(c.kind, 'slider');
+  assert.deepEqual([c.min, c.max, c.step], [45, 90, 1]);
+  const html = settingsPageHtml();
+  const graphics = html.slice(html.indexOf('id="set-sec-graphics"'), html.indexOf('id="set-sec-theme"'));
+  assert.match(graphics, /<div class="ui-slider" data-setting="fieldOfView"><label class="ui-slider__label" for="set-fieldOfView">Field of view<\/label><output class="ui-slider__value" id="set-fieldOfView-val" for="set-fieldOfView">60°<\/output><input type="range" id="set-fieldOfView" class="ui-slider__input" min="45" max="90" step="1" value="60" data-format="number" data-unit="°"><\/div>/);
+});
+
+test('the 3D keyboard bindings name X, the spacing toggle, and say that forward follows the view and the wheel carries the camera', () => {
+  const rows = bindingRows('3d', 'keyboard');
+  const x = rows.find(([input]) => input === '[X]');
+  assert.deepEqual([...x], ['[X]', 'Toggle spacing 1.1 / 2.0']);
+  const wasd = rows.find(([input]) => input === '[W][A][S][D]');
+  assert.match(wasd[1], /forward follows the view/);
+  const wheel = rows.find(([input]) => input === 'Wheel');
+  assert.match(wheel[1], /spacing/);
+  assert.match(wheel[1], /camera/);
+  assert.equal(bindingRows('classic-2d', 'keyboard').some(([input]) => input === '[X]'), false, 'not in Classic 2D');
+});
+
 test('the 3D bindings say what a right-click and {lt} on a number do, and that a second one takes back only those flags', () => {
   const right = bindingRows('3d', 'keyboard').find(([input]) => input === 'Right click');
   assert.deepEqual([...right], ['Right click', 'Flag / unflag. On a number: flag all its closed neighbours; right-click it again to take back only those flags']);
@@ -134,7 +156,7 @@ test('the in-game help reads the same bindings source', () => {
 test('the page has the controls, graphics, theme and audio sections, holding every setting once', () => {
   assert.deepEqual(SETTINGS_SECTIONS.map((s) => s.title), ['Controls', 'Graphics', 'Theme', 'Audio']);
   assert.deepEqual(SETTINGS_SECTIONS.map((s) => s.settings), [
-    ['lookSensitivity', 'invertY', 'confirmRestart'], ['fullscreen', 'renderResolution', 'boardScale', 'aimReadout'], ['theme'], ['muted', 'volume'],
+    ['lookSensitivity', 'invertY', 'confirmRestart'], ['fullscreen', 'renderResolution', 'boardScale', 'aimReadout', 'fieldOfView'], ['theme'], ['muted', 'volume'],
   ]);
   assert.deepEqual(SETTINGS_SECTIONS.flatMap((s) => s.settings).sort(), [...SETTING_KEYS].sort(), 'every schema entry has its control');
   for (const key of SETTING_KEYS) assert.ok(SETTING_LABELS[key], `${key} has a label`);

@@ -19,10 +19,11 @@ The module's head comment lists every function.
   `bindingsListHtml(rows, glyphs = GLYPHS.generic)` (`<dt>`/`<dd>` pairs,
   keys as `<kbd>`, buttons as `<kbd class="pad">`, text escaped),
   `bindingsHtml(mode, device, glyphs?)` — the bindings component.
-- `HUD_STRIP`, `HINT_STRIP`, `hudStripHtml(mode, device, glyphs?, { muted
-  })` (only the keys or buttons the mode binds on that device; F is not
-  listed in Classic 2D, where it flags), `hintStripHtml(mode, device,
-  glyphs?)`.
+- `HUD_STRIP`, `HINT_STRIP`, `hudStripHtml(mode, device, glyphs?, { muted,
+  spacing })` (only the keys or buttons the mode binds on that device; F is
+  not listed in Classic 2D, where it flags; 3D's first entry is the spacing
+  readout, `X` spacing 1.1 to one decimal, D-pad on the controller),
+  `hintStripHtml(mode, device, glyphs?)`.
 - `HELP_FOOT`, `helpFootHtml(mode, device, glyphs?)` — the H panel's foot
   line, naming the release rule in 3D only.
 - `HINT_TEXT` (`autoHide`, `aimHint`, `scrollHint`), `hintText(name, device,

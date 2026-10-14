@@ -2,8 +2,9 @@
 //  - back pass (Shift with a cell aimed): the faded cubes outside the aimed neighbourhood, drawn before
 //    the opaque pass so the neighbourhood always draws over them
 //  - opaque pass: every drawable cell, shader keeps only the ones whose alpha is 1
-//  - transparent pass: cells that may be faded (Shift / Space) or shown as ghosts (hidden cells under
-//    Ctrl, at GHOST_ALPHA), sorted back-to-front, shader keeps only the ones whose alpha is < 1
+//  - transparent pass: cells that may be faded (Shift / Space), shown as ghosts (hidden cells under
+//    Ctrl, at GHOST_ALPHA) or turned to glass near the camera (FLY_THROUGH_ALPHA), sorted back-to-front,
+//    shader keeps only the ones whose alpha is < 1
 //  - pulse pass: the few numbers just hidden, playing their "solved" pulse (pulseEnvelope) over the rest
 //  - flash pass: the cubes a flag click on a number just flagged or unflagged (flashEnvelope), drawn
 //    with no depth test so a cube behind others shows through them
@@ -17,6 +18,9 @@
 import * as THREE from 'three';
 import { boxDepth, SPACE_NEAR_ALPHA, SPACE_FLOOR_ALPHA, SPACE_FALLOFF } from './readability.js';
 import { createTileTexture, L_CLOSED, L_FLAG, L_MINE, L_MINE_EXPLODED, L_NUM0, L_WRONG_FLAG } from './textures.js';
+import { FLY_THROUGH_DIST } from './picking.js';
+import { SPACING_START } from './input.js';
+import { SCHEMA } from './settings/schema.js';
 
 // kinds (stored in the state texture's G channel)
 export const K_CLOSED = 0, K_FLAG = 1, K_NUMBER = 2, K_MINE = 3, K_HIDDEN = 4;
@@ -27,6 +31,17 @@ const STATE_W = 1024;
 export const GHOST_ALPHA = 0.25;
 // A GLSL float literal of a JS constant, so the shader and its tests share one source.
 const glslFloat = (v) => (Number.isInteger(v) ? `${v}.0` : `${v}`);
+
+// Fly through glass: every cube whose centre lies within FLY_THROUGH_DIST of the camera (js/picking.js,
+// where it is also unpickable) is drawn at FLY_THROUGH_ALPHA, whatever its kind and view mode (the
+// lower alpha wins); past it the alpha ramps back to 1 over FLY_THROUGH_BAND, so a cube fades in.
+export const FLY_THROUGH_ALPHA = 0.25;
+export const FLY_THROUGH_BAND = 0.5 * 4 * SPACING_START;
+/** The fly-through alpha of a cube whose centre is `dist` from the camera (the shader's flyAlpha). */
+export function flyThroughAlpha(dist) {
+  const f = Math.min(1, Math.max(0, (dist - FLY_THROUGH_DIST) / FLY_THROUGH_BAND));
+  return FLY_THROUGH_ALPHA + (1 - FLY_THROUGH_ALPHA) * f;
+}
 
 // The "solved" pulse a number plays once the engine has hidden it: the cube brightens and grows for
 // PULSE_GLOW_S (peaking at PULSE_BRIGHT toward white and PULSE_SCALE halfway), then fades out over
@@ -139,6 +154,11 @@ uniform float uCtrl;
 uniform float uPass;
 uniform float uBoxDepth;  // the camera's distance from the box's nearest face, in lattice units (boxDepth)
 uniform float uPlaying;   // 1 while the game is in play: the Shift emphasis is off during the end effects
+// Fly through glass (flyThroughAlpha): a cube near the camera fades
+float flyAlpha(vec3 centre) {
+  float f = clamp((length(centre - cameraPosition) - ${glslFloat(FLY_THROUGH_DIST)}) / ${glslFloat(FLY_THROUGH_BAND)}, 0.0, 1.0);
+  return mix(${glslFloat(FLY_THROUGH_ALPHA)}, 1.0, f);
+}
 // Space's depth dimming (js/readability.js spaceAlpha)
 float spaceAlpha(float d) {
   return ${glslFloat(SPACE_FLOOR_ALPHA)} + (${glslFloat(SPACE_NEAR_ALPHA)} - ${glslFloat(SPACE_FLOOR_ALPHA)}) * exp(-max(0.0, d) / ${glslFloat(SPACE_FALLOFF)});
@@ -204,6 +224,7 @@ void main() {
   if (kind <= 1) { if (uShift > 0.5 && !near) a = 0.2; }
   else if (kind == 2) { if (uSpace > 0.5) a = spaceAlpha(depth); else if (uShift > 0.5 && !sel) a = 0.2; }
   else if (kind == 4) { vis = uCtrl > 0.5 || shrinking; if (uCtrl > 0.5) a = ${GHOST_ALPHA}; }
+  a = min(a, flyAlpha(centre));
 #if defined(PULSE)
   scale = aPulse.x; flash = aPulse.y; a *= aPulse.z; sel = false;
   bool want = a > 0.0;
@@ -382,7 +403,7 @@ export class BoardRenderer {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.sortObjects = true;
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(45, 1, 1, 1000);
+    this.camera = new THREE.PerspectiveCamera(SCHEMA.fieldOfView.default, 1, 1, 1000); // the field of view setting's applier owns fov
     this.camera.rotation.order = 'YXZ';
 
     this.tiles = createTileTexture();
@@ -594,6 +615,7 @@ export class BoardRenderer {
     this._keys = new Uint32Array(n);
     this._counts = new Uint32Array(SORT_BUCKETS + 8);
     this._qx = new Uint32Array(game.X); this._qy = new Uint32Array(game.Y); this._qz = new Uint32Array(game.Z);
+    this._ex = new Float64Array(game.X); this._ey = new Float64Array(game.Y); this._ez = new Float64Array(game.Z);
     this._base = new Uint32Array(n); this._baseLen = 0;
 
     for (let i = 0; i < n; i++) this._writeCell(i);
@@ -989,24 +1011,60 @@ export class BoardRenderer {
     return Math.hypot(hx, hy, hz);
   }
 
+  /**
+   * The fly-through glass on its own: the cells whose centre lies within FLY_THROUGH_DIST +
+   * FLY_THROUGH_BAND of the camera, found from the lattice cells around it (never a pass over the
+   * board), written to `L` back-to-front by their L1 lattice distance (the sort's painter's order).
+   * Returns their count.
+   */
+  _nearCells(L) {
+    const g = this.game, K = this.kind, X = g.X, Y = g.Y, Z = g.Z, p = 4 * this.spacing;
+    const cam = this.camera.position, R = FLY_THROUGH_DIST + FLY_THROUGH_BAND, R2 = R * R, r = R / p;
+    const cx = cam.x / p + (X - 1) / 2, cy = cam.y / p + (Y - 1) / 2, cz = cam.z / p + (Z - 1) / 2;
+    const hidden = this.toggles.ctrl || this._effHidden; // hidden cells are drawn only then
+    const near = [];
+    for (let k = Math.max(0, Math.ceil(cz - r)); k <= Math.min(Z - 1, Math.floor(cz + r)); k++) {
+      for (let j = Math.max(0, Math.ceil(cy - r)); j <= Math.min(Y - 1, Math.floor(cy + r)); j++) {
+        for (let i = Math.max(0, Math.ceil(cx - r)); i <= Math.min(X - 1, Math.floor(cx + r)); i++) {
+          if (((i - cx) ** 2 + (j - cy) ** 2 + (k - cz) ** 2) * p * p >= R2) continue;
+          const idx = i + X * (j + Y * k);
+          if (K[idx] === K_HIDDEN && !hidden) continue;
+          near.push({ idx, d: Math.abs(i - cx) + Math.abs(j - cy) + Math.abs(k - cz) });
+        }
+      }
+    }
+    near.sort((a, b) => b.d - a.d); // farthest first
+    for (let t = 0; t < near.length; t++) L[t] = near[t].idx;
+    return near.length;
+  }
+
   _updateTransparent() {
     const { shift, space, ctrl } = this.toggles;
     const meshT = this.meshTrans;
-    if (!shift && !space && !ctrl) {
-      if (meshT.geometry.instanceCount !== 0) this._commit(this.attrTrans, meshT, 0);
-      this.stats.trans = 0;
-      this._transDirty = false;
-      return;
-    }
     const camPos = this.camera.position;
     if (!this._transDirty && camPos.distanceToSquared(this._sortPos) < 1e-6) return;
     const t0 = performance.now();
     this._sortPos.copy(camPos);
     this._transDirty = false;
+    if (!shift && !space && !ctrl) {
+      // no view mode held: only the fly-through glass around the camera is transparent
+      const c = this._nearCells(this.listTrans);
+      this._commit(this.attrTrans, meshT, c);
+      this.stats.trans = c;
+      this.stats.sortMs = performance.now() - t0;
+      return;
+    }
     const g = this.game, K = this.kind;
     const X = g.X, Y = g.Y, Z = g.Z, p = 4 * this.spacing;
     // camera position in lattice units (cell centre = integer index)
     const cx = camPos.x / p + (X - 1) / 2, cy = camPos.y / p + (Y - 1) / 2, cz = camPos.z / p + (Z - 1) / 2;
+    // the fly-through glass: squared world distance from the camera per axis, in the sort's own pass
+    const R = FLY_THROUGH_DIST + FLY_THROUGH_BAND, R2 = R * R;
+    const ex = this._ex, ey = this._ey, ez = this._ez;
+    for (let i = 0; i < X; i++) ex[i] = ((i - cx) * p) ** 2;
+    for (let j = 0; j < Y; j++) ey[j] = ((j - cy) * p) ** 2;
+    for (let k = 0; k < Z; k++) ez[k] = ((k - cz) * p) ** 2;
+    const hidden = ctrl || this._effHidden;
     const axis = (N, cc) => {
       let mn = Infinity, mx = -Infinity;
       for (let i = 0; i < N; i++) { const d = Math.abs(i - cc); if (d < mn) mn = d; if (d > mx) mx = d; }
@@ -1025,13 +1083,14 @@ export class BoardRenderer {
     // during a wave, cells not yet reached are drawn with their old closed / flag tile (transparent under Shift)
     const O = shift && this._eff ? this.stateData : null;
     for (let k = 0; k < Z; k++) {
-      const kz = qz[k];
+      const kz = qz[k], e2 = ez[k];
       for (let j = 0; j < Y; j++) {
-        const kyz = kz + qy[j];
+        const kyz = kz + qy[j], e12 = e2 + ey[j];
         for (let i = 0; i < X; i++, idx++) {
           const kd = K[idx];
-          // Shift: closed, flag and number cubes; Space: numbers; Ctrl: hidden cells (ghosts)
-          if (!((shift ? kd <= K_NUMBER : space && kd === K_NUMBER) || (ctrl && kd === K_HIDDEN) || (O && O[idx * 4 + 3] > 0))) continue;
+          // Shift: closed, flag and number cubes; Space: numbers; Ctrl: hidden cells (ghosts); any drawn cube near the camera
+          if (!((shift ? kd <= K_NUMBER : space && kd === K_NUMBER) || (ctrl && kd === K_HIDDEN) || (O && O[idx * 4 + 3] > 0)
+            || (e12 + ex[i] < R2 && (kd !== K_HIDDEN || hidden)))) continue;
           const key = kyz + qx[i];
           keys[c] = key; cand[c++] = idx; counts[key]++;
         }

@@ -92,10 +92,16 @@ demanding, until free 3D play is within reach.
   card action), an arrow toward the box while it is out of view, and a faint
   ground grid below it; holding Ctrl shows hidden cells as translucent ghosts
   instead of opaque cubes, and a number plays a short pulse before it hides.
+  Flying changes in four ways: forward follows the view, so the camera goes
+  where the player looks; cubes near the camera fade to glass and cannot be
+  picked, so the crosshair selects the first cube beyond them; the spacing
+  steps 0.1 a notch with acceleration, has a toggle key between 1.1 and 2.0
+  and carries the camera with it, keeping the framing; and the field of view
+  is a setting.
   Its look also gains readability aids: a readout beside the crosshair
   counting the aimed number's unopened and flagged neighbours, the Shift
   neighbourhood drawn over the faded cubes, and numbers dimmed by depth under
-  Space; its controls and pick rules are unchanged.
+  Space.
   Its rules change in three ways: the first click is always safe, a no-guess
   option is available, and a second right-click on a number takes back only
   the flags the first placed. Its games end on the shared results screen.

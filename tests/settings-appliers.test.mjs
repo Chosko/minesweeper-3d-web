@@ -9,7 +9,7 @@ import { createMemoryBackend } from '../js/platform/memory-backend.js';
 import { createBrowserBackend } from '../js/platform/browser-backend.js';
 import { createSettingsStore, SETTINGS_DOC, SETTINGS_VERSION } from '../js/settings/store.js';
 import {
-  pixelRatioFor, applyTheme, applyAudio, applyLook, applyResolution, applyFullscreen, applySettings,
+  pixelRatioFor, applyTheme, applyAudio, applyLook, applyResolution, applyFullscreen, applyFieldOfView, applySettings,
 } from '../js/settings/appliers.js';
 import { browserSuite } from './helpers/browser.mjs';
 
@@ -79,6 +79,22 @@ test('look sensitivity and invert Y drive the 3D camera', async () => {
   await store.set('invertY', false);
   await store.set('lookSensitivity', 0.5);
   assert.deepEqual(cam, { sensitivity: 0.5, invertY: false });
+});
+
+test('the field of view sets the 3D camera\'s fov and projection, then asks for a frame, at load and on every change', async () => {
+  const store = storeOf({ fieldOfView: 70 });
+  const camera = { fov: 45, updates: 0, updateProjectionMatrix() { this.updates++; } };
+  let redraws = 0;
+  const off = applyFieldOfView(store, { camera, redraw: () => { redraws++; } });
+  await store.load();
+  assert.equal(camera.fov, 70);
+  assert.equal(camera.updates, 1, 'the projection is updated');
+  assert.equal(redraws, 1, 'the next frame redraws');
+  await store.set('fieldOfView', 88);
+  assert.deepEqual([camera.fov, camera.updates, redraws], [88, 2, 2]);
+  off();
+  await store.set('fieldOfView', 50);
+  assert.equal(camera.fov, 88, 'unsubscribed');
 });
 
 test('an unsubscribe stops an applier', async () => {
@@ -176,14 +192,17 @@ test('applySettings wires every owner given and unsubscribes them all', async ()
   const camera = { sensitivity: 1, invertY: false };
   const resolutions = [];
   const doc = fakeDocument();
+  const view = { fov: 0, updateProjectionMatrix() {} };
   const off = applySettings(store, {
     theme: { setTheme: (t) => themes.push(t) },
     sfx,
     camera,
     resolution: (r) => resolutions.push(r),
     fullscreen: { doc, enter: () => {}, exit: () => {} },
+    fieldOfView: { camera: view, redraw: () => {} },
   });
   await store.load();
+  assert.equal(view.fov, 45, 'a stored document without the field of view keeps 45');
   assert.deepEqual(themes, ['dark']);
   assert.equal(sfx.volume, 0.2);
   assert.equal(sfx.muted, false);

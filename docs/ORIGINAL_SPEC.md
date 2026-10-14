@@ -14,6 +14,7 @@ Everything else (UI, menus, graphics style, sound, performance, bugs) may be imp
 - Cube edge = 4 world units. Cell (i,j,k) cube occupies [P-3, P+1] per axis where P = (4*s*i - 2X, 4*s*j - 2Y, 4*s*k - 2Z), s = spacing.
   (Original didn't centre the grid when spacing grows — fixing that is allowed.)
 - Spacing s: initial 1.1, clamp [1,10]; mouse wheel: +0.04 per notch (120 delta units/3000), wheel up = larger spacing.
+  - Web port: a wheel notch changes the spacing by 0.1, and notches in quick succession step further, up to a cap; `X` toggles the spacing between 1.1 and 2.0; on every spacing change the camera's position scales with it about the board centre, so it keeps its place among the cells.
 - Background RGB(200,225,255). Unlit textured cubes; every face shows the full cell texture.
 
 ## Mines & numbers
@@ -47,9 +48,11 @@ pressed, flagged, unlinked, selected, nearSelected. No question marks.
   - Web port: a game starts framed from a three-quarter view instead — the whole box in view, looking down onto it and turned off the straight +Z view so three faces show, the crosshair on the near face's centre cube; `Home` / `R` and the pause card's "Back to start" return there.
 - Mouse look 0.2° per pixel, mouse right → turn right, mouse down → look down, pitch clamp ±90°.
 - W forward along view direction, S back, A strafe left, D strafe right, Q world down, E world up; 50 units/s.
-  - Original quirk: forward vector = normalize(sin(yaw'), sin(pitch), cos(yaw')) (no cos(pitch) on XZ). Keep it.
+  - Original quirk: forward vector = normalize(sin(yaw'), sin(pitch), cos(yaw')) (no cos(pitch) on XZ).
+  - Web port: W flies along the true view direction (cos(pitch) on XZ), so looking straight down it moves straight down; Q and E stay world down and up.
 - Crosshair at screen centre; picking = ray from screen centre, nearest cube hit (AABB [P-3,P+1]).
   - Excluded from picking: unlinked cells; pressed cells while **Space** is held.
+  - Web port: cubes whose centre lies within 1.5 pitches of the camera at the start spacing (6.6 units) fade to glass and cannot be picked; the ray goes on to the first cube beyond.
   - NOT excluded: revealed (linked) numbers, also when faded; revealed zeros that are not unlinked (invisible but pickable).
   - Selected cell → `selected`; its 26 neighbours → `nearSelected`.
 - Mouse actions fire on **button release**:

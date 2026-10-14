@@ -3,6 +3,12 @@
 // origin; identical to the original [P-3, P+1] boxes up to a constant translation).
 // Uses a 3D-DDA through the lattice (pitch 4s); each lattice cell contains exactly one cube, and
 // lattice cells are visited in increasing ray distance, so the first cube hit is the nearest one.
+// A cube whose centre lies within FLY_THROUGH_DIST of the ray origin is glass: skipped, the ray goes on.
+import { SPACING_START } from './input.js';
+
+/** Cubes within this distance of the camera fade to glass and cannot be picked: 1.5 pitches at the start spacing. */
+export const FLY_THROUGH_DIST = 1.5 * 4 * SPACING_START;
+const FLY2 = FLY_THROUGH_DIST * FLY_THROUGH_DIST;
 
 function rayBox(ox, oy, oz, idx_, idy, idz, minx, miny, minz, maxx, maxy, maxz) {
   // slab test with precomputed inverse direction; returns entry t (>= 0) or -1
@@ -22,7 +28,7 @@ function rayBox(ox, oy, oz, idx_, idy, idz, minx, miny, minz, maxx, maxy, maxz) 
  * @param o ray origin {x,y,z}
  * @param d normalized ray direction {x,y,z}
  * @param spaceHeld exclude pressed cells
- * @returns cell index or -1
+ * @returns cell index or -1 (never a cube within FLY_THROUGH_DIST of o)
  */
 export function pickCell(game, spacing, o, d, spaceHeld) {
   const X = game.X, Y = game.Y, Z = game.Z;
@@ -48,8 +54,8 @@ export function pickCell(game, spacing, o, d, spaceHeld) {
   const maxSteps = X + Y + Z + 3;
   for (let s = 0; s < maxSteps; s++) {
     const idx = i + X * (j + Y * k);
-    if (!U[idx] && !(spaceHeld && P[idx])) {
-      const cx = cx0 + i * p, cy = cy0 + j * p, cz = cz0 + k * p;
+    const cx = cx0 + i * p, cy = cy0 + j * p, cz = cz0 + k * p;
+    if (!U[idx] && !(spaceHeld && P[idx]) && (cx - ox) ** 2 + (cy - oy) ** 2 + (cz - oz) ** 2 >= FLY2) {
       if (rayBox(ox, oy, oz, ix, iy, iz, cx - 2, cy - 2, cz - 2, cx + 2, cy + 2, cz + 2) >= 0) return idx;
     }
     if (tMaxX < tMaxY && tMaxX < tMaxZ) { i += sx; if (i < 0 || i >= X) break; tMaxX += tdX; }
@@ -68,6 +74,7 @@ export function pickCellBrute(game, spacing, o, d, spaceHeld) {
     if (game.unlinked[idx] || (spaceHeld && game.pressed[idx])) continue;
     const i = idx % X, r = (idx - i) / X, j = r % Y, k = (r - j) / Y;
     const cx = (i - (X - 1) / 2) * p, cy = (j - (Y - 1) / 2) * p, cz = (k - (Z - 1) / 2) * p;
+    if ((cx - o.x) ** 2 + (cy - o.y) ** 2 + (cz - o.z) ** 2 < FLY2) continue;
     const t = rayBox(o.x, o.y, o.z, ix, iy, iz, cx - 2, cy - 2, cz - 2, cx + 2, cy + 2, cz + 2);
     if (t >= 0 && t < bestT) { bestT = t; best = idx; }
   }
