@@ -17,7 +17,7 @@ Context: none
 
 Done: 2026-10-14, commit `e5c1865` (30 files, +457/-55). Browser tests drop 3D with a per-file `removeWebGL2` init script, or load `index.html?still-backdrop` (a new hook in js/main.js) where they need WebGL 2; the body's 549 s full-run baseline measured 377 s here, 267–289 s after.
 
-## [ ] 40. Implement task 155 — Load-robust timing tests and one shared Chromium per test file
+## [x] 40. Implement task 155 — Load-robust timing tests and one shared Chromium per test file
 
 Depends on: 39
 
@@ -27,6 +27,8 @@ Context:
 ```prompt
 /task-implement 155 --review
 ```
+
+Done: 2026-10-14, commit `24cac6d` (47 files, +901/-2140). The shell-menu no-WebGL timeout was stale click coordinates measured before Restart, not the end-delay race step 39 recorded; timing tolerance is `MS_TIME_SLACK` (default 2).
 
 ## [ ] 21. Implement task 139 — 3D flight: fly-through fade, forward follows the view, spacing, FOV
 
