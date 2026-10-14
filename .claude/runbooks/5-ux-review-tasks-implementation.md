@@ -117,7 +117,7 @@ Context:
 
 Done: 2026-10-14, commit `78193e9` (19 files, +701/-80). The body's dolly minimum (one lattice pitch) puts the camera inside small boards, where the nearest cubes fade to glass and can't be picked; kept as written, left as a design question.
 
-## [ ] 29. Implement task 147 — Touch controls for 3D
+## [x] 29. Implement task 147 — Touch controls for 3D
 
 Depends on: 21, 24
 
@@ -130,6 +130,8 @@ Context:
 ```prompt
 /task-implement 147 --review --rounds 2
 ```
+
+Done: 2026-10-14, commit `f32eb68` (34 files, +1547/-179). On a coarse-only device, Look at the board takes the stick and look drag, and a tap brings the card back (the body left this open); the bindings gain a 3D-only touch device (`TOUCH_DEVICE`).
 
 ## [ ] 30. Implement task 148 — Records layout, pagination and lists
 
