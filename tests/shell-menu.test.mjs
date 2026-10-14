@@ -1,17 +1,19 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync, statSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { join, dirname, normalize, extname } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   MENU_ENTRIES, PLACEHOLDER_SCREEN, LAST_MODE_DOC, LAST_MODE_VERSION, UNAVAILABLE_REASONS, entryRoute, entryReason, createMenu, createLastMode,
 } from '../js/shell/menu.js';
 import { createModeHost } from '../js/shell/mode-host.js';
 import { createStorage } from '../js/platform/storage.js';
 import { createMemoryBackend } from '../js/platform/memory-backend.js';
+import { browserSuite } from './helpers/browser.mjs';
+import { patience } from './helpers/timing.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const suite = browserSuite();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 
 // A fake mode for the host: `click()` reports the first click the way a board would.
@@ -262,50 +264,10 @@ test('the catalogue documents the main menu, the 3D board choice and the placeho
 
 // ---------------------------------------------------------------- browser
 
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css' };
-function serve() {
-  const server = createServer((req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    const path = normalize(join(ROOT, decodeURIComponent(url.pathname)));
-    if (!path.startsWith(ROOT) || !existsSync(path) || statSync(path).isDirectory()) {
-      res.writeHead(404);
-      res.end();
-      return;
-    }
-    res.writeHead(200, { 'content-type': MIME[extname(path)] ?? 'application/octet-stream' });
-    res.end(readFileSync(path));
-  });
-  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
-}
-async function loadPlaywright() {
-  try {
-    return await import('playwright');
-  } catch {
-    const global = join(dirname(process.execPath), '..', 'lib', 'node_modules', 'playwright', 'index.mjs');
-    if (!existsSync(global)) return null;
-    try {
-      return await import(pathToFileURL(global).href);
-    } catch {
-      return null;
-    }
-  }
-}
-
 test('in a browser, the menu shows the four entries, each routes, and Back returns', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
@@ -401,25 +363,13 @@ test('in a browser, the menu shows the four entries, each routes, and Back retur
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    server.close();
   }
 });
 
 test('in a browser, the backdrop orbits and draws every frame, and the ?still-backdrop test hook draws it only when it changes', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 400, height: 300 } });
     const errors = [];
@@ -458,7 +408,6 @@ test('in a browser, the backdrop orbits and draws every frame, and the ?still-ba
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    server.close();
   }
 });
 
@@ -470,20 +419,9 @@ function removeWebGL2() {
 }
 
 test('in a browser without WebGL 2, the shell starts with a static background, 3D disabled with its reason, and Classic 2D, Records and Settings working', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch();
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
@@ -566,8 +504,22 @@ test('in a browser without WebGL 2, the shell starts with a static background, 3
     await page.click('#p-restart');
     assert.equal(await mode(), 'classic-2d', 'restart: a new board');
     assert.equal(await ms(() => globalThis.__ms.modes.state.started), false);
-    for (let i = 0; i < 81 && (await mode()) === 'classic-2d'; i++) await page.mouse.click(...cell(i));
-    await page.waitForFunction(() => globalThis.__ms.state.mode === 'results');
+    // The first click starts the game once its board arrives; the clicks after it stop at the end
+    // delay, where one would end it and a later one land on the results screen.
+    const over = () => ms(() => !!globalThis.__ms.board2D?.effect);
+    const where = () => ms(() => ({ mode: globalThis.__ms.state.mode, ...globalThis.__ms.modes.state, ending: !!globalThis.__ms.board2D?.effect,
+      status: !document.getElementById('c2d-status').classList.contains('hidden'), active: document.activeElement?.id }));
+    // the restarted board's own layout, the hint strip or a scale change may have moved it
+    const at = (i) => ms((c) => {
+      const v = globalThis.__ms.board2D, area = document.getElementById('c2d-board').getBoundingClientRect(), t = v.layout.tile;
+      return [area.left + v.layout.viewX + ((c % 9) + 0.5) * t, area.top + v.layout.viewY + (Math.floor(c / 9) + 0.5) * t];
+    }, i);
+    await page.mouse.click(...await at(0));
+    await page.waitForFunction(() => globalThis.__ms.modes.state.started, null, { timeout: patience(5000) })
+      .catch(async (error) => { throw new Error(`not started: ${JSON.stringify(await where())} (${error.message})`); });
+    for (let i = 1; i < 81 && (await mode()) === 'classic-2d' && !(await over()); i++) await page.mouse.click(...await at(i));
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'results', null, { timeout: patience(5000) })
+      .catch(async (error) => { throw new Error(`no results screen: ${JSON.stringify(await where())} (${error.message})`); });
 
     // Watch replay from the results screen plays the game's 2D replay.
     await page.waitForFunction(() => !document.getElementById('r-watch').classList.contains('hidden'));
@@ -624,7 +576,6 @@ test('in a browser without WebGL 2, the shell starts with a static background, 3
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    server.close();
   }
 });
 
@@ -677,20 +628,9 @@ async function controllerPage(browser, base, { route } = {}) {
 }
 
 test('in a browser, a controller alone walks the 3D board choice and the placeholder', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     // ---- 3D board choice: move between presets, confirm one, Back to the menu.
     {
@@ -756,6 +696,5 @@ test('in a browser, a controller alone walks the 3D board choice and the placeho
     }
   } finally {
     await browser.close();
-    server.close();
   }
 });

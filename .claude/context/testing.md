@@ -29,16 +29,29 @@ dependencies (Node 22's `node:test`, `node:assert/strict`):
   the scripts and the mapping.
 
 Measured on the 4-core cloud box with no GPU: the fast tier about 7 s wall
-(about 1500 tests); the full run about 4.5 minutes wall, nearly all of it the
+(about 1500 tests); the full run about 4 minutes wall, nearly all of it the
 browser tier, which alone takes about as long.
 
 Browser tests sit in their area's test file. The tier convention: a test
 that launches a browser is named "…in a browser…", and no other test is —
 the two tiers split on that name alone, so a misnamed browser test lands in
 the fast tier.
-Each loads Playwright by `import('playwright')`, falling back to the global
-install beside `process.execPath`, and calls `t.skip` when Playwright is
-missing or Chromium fails to launch, so the Node layer runs green without them.
+Every browser test file goes through the shared helper
+`tests/helpers/browser.mjs` and launches no browser and runs no server of its
+own (`tests/helpers.test.mjs` pins this). `const suite = browserSuite()` at
+the top of the file gives it one Chromium and one static server, started by
+the first test that calls `suite.open(t)` and closed once after the file's
+last test; `open` returns `{ browser, base }`, where `browser.newPage(options)`
+and `browser.newContext(options)` open fresh contexts that the test's
+`browser.close()` closes, and `base` is the server's URL. `open` calls
+`t.skip` and returns null when Playwright is missing or Chromium fails to
+launch, so the Node layer runs green without them. Playwright loads by
+`import('playwright')`, falling back to a global install beside
+`process.execPath` in the Windows layout (`node_modules` in the binary's
+directory) or the POSIX one (`../lib/node_modules`). The launch flags default
+to `SWIFTSHADER_ARGS`; a file whose tests need no WebGL passes
+`browserSuite({ args: [] })`, and `pages` maps a path to an HTML string the
+server returns in place of a file.
 
 Test files by name prefix:
 
@@ -59,6 +72,7 @@ Test files by name prefix:
 | `gamepad`, `input-`, `camera-` | `FlyCamera`, `MouseActions`, drag-to-look, spawn pose; gamepad helpers, `Controls` | [input.md](input.md), [input-controller.md](input-controller.md) |
 | `audio-` | sound voices over recorded primitives | [audio.md](audio.md) |
 | `affected-tests` | the runner scripts and the affected-tests mapping (`.claude/external/`) | this file |
+| `helpers` | the browser and timing helpers under `tests/helpers/` and the rule that browser files use them | this file |
 
 Data beside the tests:
 - `tests/fidelity/minesweeper-online.md` — the observation file: one entry
@@ -108,16 +122,26 @@ Data beside the tests:
   `index.html` between marker comments, so keep those markers when editing.
   `js/theme.js` runs in a `node:vm` context with a stub root; tests importing
   `js/render.js` register a resolve hook mapping `three` to `vendor/three/`.
-- **Local static server**: each browser test file defines its own `serve()`
-  — an in-process `node:http` server on a free port over the repo root (ES
-  modules fail on `file://`) — and its own `loadPlaywright()`. Artefact
+- **Local static server**: the helper's `serveRoot()` — an in-process
+  `node:http` server on a free port over the repo root (ES modules fail on
+  `file://`). Artefact
   screenshots (`components.test.mjs`) are taken only with `MS_SHOTS=1` set,
   into a `mkdtemp` directory; without it a theme's look is compared through
   computed colours, and the contrast checks run either way.
 - **Contrast** is checked from parsed tokens per theme (`tokens.test.mjs`)
   and in the page (`measureContrast` in `components.test.mjs`: 4.5:1, or 3:1
   for large text and accent labels, over each run's effective background).
-- **Performance budgets** are asserted (e.g. 100×100×100, 1000 mines: < 1 s).
+- **Timing slack** (`tests/helpers/timing.mjs`): a performance budget
+  (e.g. 100×100×100, 1000 mines: build and open < 2 s) is asserted through
+  `timed(budget, fn)` — up to three attempts, the fastest counting, against
+  the budget × `TIME_SLACK`, so work several times over its budget still
+  fails. A frame-bound upper bound multiplies only its frame slop by
+  `TIME_SLACK`; a lower bound stays exact. A wait for a state polls
+  (`waitForFunction`) with a timeout of `patience(ms)`; a fixed window is for
+  proving something does not happen. Two short settle sleeps remain, in
+  `shell-history` (Back's entries settling) and `shell-lock-fallback` (the
+  refusal's second signal).
+  `MS_TIME_SLACK` sets the factor (default 2, at least 1).
 - Untested by Node beyond static and stub checks: most of `js/render.js`,
   `js/textures.js`, `js/picking.js`, `js/ui.js`, `js/main.js`, the WebAudio
   output — verify these in the browser.
@@ -126,9 +150,11 @@ Browser environment:
 - Playwright is installed globally (`/opt/node22/lib/node_modules/playwright`,
   browsers in `PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers`); resolve it via
   `NODE_PATH` or an absolute import. Do not run `playwright install`.
-- 3D needs WebGL 2 without a GPU: launch Chromium with `--use-gl=angle
-  --use-angle=swiftshader --enable-unsafe-swiftshader`. No-WebGL checks add an
-  init script making `getContext('webgl2')` return null.
+- 3D needs WebGL 2 without a GPU: Chromium launches with `--use-gl=angle
+  --use-angle=swiftshader --enable-unsafe-swiftshader` (the helper's
+  `SWIFTSHADER_ARGS`). No-WebGL checks add an init script making
+  `getContext('webgl2')` return null to their own page, so they share the
+  file's flagged browser.
 - The menu screens' orbiting 3D backdrop redraws every frame and drops
   SwiftShader to about 10 fps, slowing every `requestAnimationFrame` wait,
   screenshot and `browser.close()`. A browser test that loads `index.html`

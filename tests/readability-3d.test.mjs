@@ -4,15 +4,16 @@
 // The pure functions are checked directly, the drawing in a browser through `__ms`.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { join, dirname, normalize, extname } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   aimReadout, readoutText, spaceAlpha, boxDepth, SPACE_NEAR_ALPHA, SPACE_FLOOR_ALPHA, SPACE_FALLOFF,
 } from '../js/readability.js';
+import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const suite = browserSuite();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8').replace(/\r\n/g, '\n');
 
 /**
@@ -158,43 +159,15 @@ test('the shader dims Space\'s numbers with the same curve and constants', () =>
 
 // ---------------------------------------------------------------- in a browser
 
-const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
-function serve() {
-  const server = createServer((req, res) => {
-    const path = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)).replace(/^([/\\])+/, '');
-    const file = join(ROOT, path || 'index.html');
-    if (!file.startsWith(ROOT) || !existsSync(file)) { res.writeHead(404); res.end(); return; }
-    res.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream' });
-    res.end(readFileSync(file));
-  });
-  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
-}
-async function loadPlaywright() {
-  try {
-    return await import('playwright');
-  } catch {
-    const global = join(dirname(process.execPath), '..', 'lib', 'node_modules', 'playwright', 'index.mjs');
-    if (!existsSync(global)) return null;
-    try { return await import(pathToFileURL(global).href); } catch { return null; }
-  }
-}
-
 test('in a browser, the readout shows on an aimed number and hides off it, while paused, in the end delay and in Classic 2D', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) { t.skip('Playwright is not installed'); return; }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 700 } });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
+    await page.goto(`${base}/index.html`);
     await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
     const ms = (fn, arg) => page.evaluate(fn, arg);
     const frames = () => ms(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
@@ -266,7 +239,6 @@ test('in a browser, the readout shows on an aimed number and hides off it, while
     assert.deepEqual(await shown(), { seen: '', info: '' }, 'Classic 2D: hidden');
     assert.deepEqual(errors, []);
   } finally {
-    server.close();
     await browser.close();
   }
 });

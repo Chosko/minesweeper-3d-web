@@ -1,9 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync, statSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { join, dirname, normalize, extname } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createStorage } from '../js/platform/storage.js';
 import { createMemoryBackend } from '../js/platform/memory-backend.js';
 import { createSettingsStore } from '../js/settings/store.js';
@@ -17,8 +16,11 @@ import {
   SETTINGS_SECTIONS, SETTING_LABELS, settingControl, settingControlHtml, settingsPageHtml, bindingsSectionHtml,
   bindSettingControls, bindResetPanel, RESET_MESSAGE,
 } from '../js/settings/page.js';
+import { browserSuite } from './helpers/browser.mjs';
+import { patience } from './helpers/timing.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const suite = browserSuite();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
@@ -542,35 +544,6 @@ test('the catalogue documents the Settings page', () => {
 
 // ---------------------------------------------------------------- browser
 
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css' };
-function serve() {
-  const server = createServer((req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    const path = normalize(join(ROOT, decodeURIComponent(url.pathname)));
-    if (!path.startsWith(ROOT) || !existsSync(path) || statSync(path).isDirectory()) {
-      res.writeHead(404);
-      res.end();
-      return;
-    }
-    res.writeHead(200, { 'content-type': MIME[extname(path)] ?? 'application/octet-stream' });
-    res.end(readFileSync(path));
-  });
-  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
-}
-async function loadPlaywright() {
-  try {
-    return await import('playwright');
-  } catch {
-    const global = join(dirname(process.execPath), '..', 'lib', 'node_modules', 'playwright', 'index.mjs');
-    if (!existsSync(global)) return null;
-    try {
-      return await import(pathToFileURL(global).href);
-    } catch {
-      return null;
-    }
-  }
-}
-
 // A browser without WebGL 2, for a test where 3D is irrelevant: the menu screens keep no 3D backdrop
 // redrawing under software rendering. Every canvas refuses a 'webgl2' context; the others are untouched.
 function removeWebGL2() {
@@ -579,20 +552,9 @@ function removeWebGL2() {
 }
 
 test('in a browser: Settings from the menu, Dark chosen, and Dark applied before the menu shows after a reload', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
@@ -664,7 +626,10 @@ test('in a browser: Settings from the menu, Dark chosen, and Dark applied before
     await ms(() => globalThis.__ms.pauser.toMenu());
 
     // Reload: Dark is on the root before the menu is in the document.
-    await page.waitForTimeout(50); // the saves settle
+    await page.waitForFunction(() => { // the saves settle
+      const d = JSON.parse(localStorage.getItem('ms3d:doc:settings') ?? 'null')?.data;
+      return d?.theme === 'dark' && d?.volume === 0.4;
+    }, null, { timeout: patience(5000) });
     await page.reload();
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     assert.equal(await ms(() => globalThis.__themeAtMenu), 'dark', 'Dark before the menu shows');
@@ -674,25 +639,13 @@ test('in a browser: Settings from the menu, Dark chosen, and Dark applied before
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    server.close();
   }
 });
 
 test('in a browser, the Settings page is operable by controller', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
@@ -736,25 +689,13 @@ test('in a browser, the Settings page is operable by controller', async (t) => {
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    server.close();
   }
 });
 
 test('in a browser, Reset all data turns a played profile back into a new player\'s', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
@@ -862,6 +803,5 @@ test('in a browser, Reset all data turns a played profile back into a new player
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    server.close();
   }
 });

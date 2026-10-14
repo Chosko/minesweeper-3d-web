@@ -1,9 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync, statSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { join, dirname, normalize, extname } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { createStorage } from '../js/platform/storage.js';
 import { createMemoryBackend } from '../js/platform/memory-backend.js';
@@ -12,8 +11,10 @@ import { createSettingsStore, SETTINGS_DOC, SETTINGS_VERSION } from '../js/setti
 import {
   pixelRatioFor, applyTheme, applyAudio, applyLook, applyResolution, applyFullscreen, applySettings,
 } from '../js/settings/appliers.js';
+import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const suite = browserSuite();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
@@ -275,50 +276,10 @@ test('the look settings loader and its keys are retired from the UI module', () 
 
 // ---------------------------------------------------------------- browser
 
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css' };
-function serve() {
-  const server = createServer((req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    const path = normalize(join(ROOT, decodeURIComponent(url.pathname)));
-    if (!path.startsWith(ROOT) || !existsSync(path) || statSync(path).isDirectory()) {
-      res.writeHead(404);
-      res.end();
-      return;
-    }
-    res.writeHead(200, { 'content-type': MIME[extname(path)] ?? 'application/octet-stream' });
-    res.end(readFileSync(path));
-  });
-  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
-}
-async function loadPlaywright() {
-  try {
-    return await import('playwright');
-  } catch {
-    const global = join(dirname(process.execPath), '..', 'lib', 'node_modules', 'playwright', 'index.mjs');
-    if (!existsSync(global)) return null;
-    try {
-      return await import(pathToFileURL(global).href);
-    } catch {
-      return null;
-    }
-  }
-}
-
 test('in a browser, a theme change and a resolution change apply at once', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const context = await browser.newContext({ viewport: { width: 900, height: 700 }, deviceScaleFactor: 3 });
     const page = await context.newPage();
@@ -357,6 +318,5 @@ test('in a browser, a theme change and a resolution change apply at once', async
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    server.close();
   }
 });

@@ -314,7 +314,9 @@ root:
 `.claude/external/run-affected-tests.sh [path...]` runs the tests covering the given changed files
 (or, with none, the files `git` reports changed), found through each test file's imports. Set
 `MS_SHOTS=1` to have the component kit's browser tests save their screenshots to a temporary
-directory.
+directory. Timing assertions get slack on a loaded machine: `MS_TIME_SLACK` multiplies their
+budgets and wait timeouts (default 2, at least 1). Playwright is found as a local package or as a
+global install beside the Node binary, on Windows and POSIX layouts alike.
 
 ## Project structure
 

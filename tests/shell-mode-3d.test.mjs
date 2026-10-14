@@ -1,14 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync, statSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { join, dirname, normalize, extname } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createModeHost, MODE_METHODS, MODE_EVENTS } from '../js/shell/mode-host.js';
 import { create3DMode, END_DELAY_MS } from '../js/shell/mode-3d.js';
 import { startCell } from '../js/generation/start-cell.js';
+import { browserSuite } from './helpers/browser.mjs';
+import { patience } from './helpers/timing.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const suite = browserSuite();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 
 // A fake 3D game session (js/mode3d/session.js): its board, seed and generator version, a settable
@@ -373,50 +375,10 @@ test('js/main.js hands the adapter each session and leaves the reports to it', (
 
 // ---------------------------------------------------------------- browser: the 3D game through the adapter
 
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css' };
-function serve() {
-  const server = createServer((req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    const path = normalize(join(ROOT, decodeURIComponent(url.pathname)));
-    if (!path.startsWith(ROOT) || !existsSync(path) || statSync(path).isDirectory()) {
-      res.writeHead(404);
-      res.end();
-      return;
-    }
-    res.writeHead(200, { 'content-type': MIME[extname(path)] ?? 'application/octet-stream' });
-    res.end(readFileSync(path));
-  });
-  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
-}
-async function loadPlaywright() {
-  try {
-    return await import('playwright');
-  } catch {
-    const global = join(dirname(process.execPath), '..', 'lib', 'node_modules', 'playwright', 'index.mjs');
-    if (!existsSync(global)) return null;
-    try {
-      return await import(pathToFileURL(global).href);
-    } catch {
-      return null;
-    }
-  }
-}
-
 test('in a browser, the 3D game starts, pauses, resumes, restarts and leaves through the adapter', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
@@ -456,8 +418,9 @@ test('in a browser, the 3D game starts, pauses, resumes, restarts and leaves thr
     await ms(() => globalThis.__ms.modes.pause());
     assert.equal(await mode(), 'paused');
     const t0 = await ms(() => globalThis.__ms.state.time);
-    await page.waitForTimeout(1100);
-    await frames(2);
+    await page.waitForFunction((start) => globalThis.__ms.state.time >= start + 1
+      && Number(document.getElementById('pause-sub').textContent.match(/^Time (\d+)\./)[1]) >= Math.floor(start) + 1, t0, { timeout: patience(5000) });
+    assert.equal(await mode(), 'paused', 'still paused');
     const t1 = await ms(() => globalThis.__ms.state.time);
     assert.ok(t1 >= t0 + 1, `the clock runs while paused (${t0} → ${t1})`);
     const card = Number((await page.textContent('#pause-sub')).match(/^Time (\d+)\./)[1]);
@@ -479,7 +442,7 @@ test('in a browser, the 3D game starts, pauses, resumes, restarts and leaves thr
     assert.ok(resumed.mode === 'playing' ? resumed.locked : resumed.mode === 'ready',
       `play under pointer lock, or the click-to-play card when the browser refuses it (${JSON.stringify(resumed)})`);
     const r0 = await ms(() => globalThis.__ms.state.play.elapsedMs());
-    await page.waitForTimeout(300);
+    await page.waitForFunction((start) => globalThis.__ms.state.play.elapsedMs() >= start + 300, r0, { timeout: patience(5000) });
     assert.ok(await ms(() => globalThis.__ms.state.play.elapsedMs()) >= r0 + 300, 'no screen change stops the clock, the click-to-play card neither');
 
     // restart from the pause card abandons the started game at once
@@ -537,23 +500,13 @@ test('in a browser, the 3D game starts, pauses, resumes, restarts and leaves thr
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    server.close();
   }
 });
 
-
 test('in a browser, the 3D generating card shows by its delay in pointer-locked play, with its progress line; Play again marks the start cell and the in-flight board shows it too', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) { t.skip('Playwright is not installed'); return; }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 640, height: 480 } }); // a small canvas: software GL draws its frames fast enough
     const errors = [];
@@ -643,6 +596,5 @@ test('in a browser, the 3D generating card shows by its delay in pointer-locked 
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    server.close();
   }
 });

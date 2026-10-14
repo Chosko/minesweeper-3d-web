@@ -1,16 +1,18 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync, statSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { join, dirname, normalize, extname } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createModeHost } from '../js/shell/mode-host.js';
 import {
   createPauseController, PAUSE_SOURCES, AUTO_SOURCES, HAND_OFFS, CONFIRMATIONS, RESTART_NOTICE, RESTART_SCREENS, restartInput,
 } from '../js/shell/pause.js';
 import { createTimer } from '../js/classic2d/session.js';
+import { browserSuite } from './helpers/browser.mjs';
+import { patience } from './helpers/timing.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const suite = browserSuite();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const SRC = read('js/shell/pause.js');
 
@@ -509,35 +511,6 @@ test('the pause card holds the confirmation built from kit classes', () => {
 
 // ---------------------------------------------------------------- browser: pause / resume / restart / menu in 3D
 
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css' };
-function serve() {
-  const server = createServer((req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    const path = normalize(join(ROOT, decodeURIComponent(url.pathname)));
-    if (!path.startsWith(ROOT) || !existsSync(path) || statSync(path).isDirectory()) {
-      res.writeHead(404);
-      res.end();
-      return;
-    }
-    res.writeHead(200, { 'content-type': MIME[extname(path)] ?? 'application/octet-stream' });
-    res.end(readFileSync(path));
-  });
-  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
-}
-async function loadPlaywright() {
-  try {
-    return await import('playwright');
-  } catch {
-    const global = join(dirname(process.execPath), '..', 'lib', 'node_modules', 'playwright', 'index.mjs');
-    if (!existsSync(global)) return null;
-    try {
-      return await import(pathToFileURL(global).href);
-    } catch {
-      return null;
-    }
-  }
-}
-
 // A browser without WebGL 2, for a test where 3D is irrelevant: the menu screens keep no 3D backdrop
 // redrawing under software rendering. Every canvas refuses a 'webgl2' context; the others are untouched.
 function removeWebGL2() {
@@ -546,20 +519,9 @@ function removeWebGL2() {
 }
 
 test('in a browser, the 3D game pauses, resumes, restarts and goes back to menu through the pause controller', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
@@ -604,8 +566,8 @@ test('in a browser, the 3D game pauses, resumes, restarts and goes back to menu 
     assert.equal(await boardHidden(), true, 'the board is hidden while paused');
     assert.deepEqual(await hand(), ['inProgress', 'inProgress']);
     const t0 = await ms(() => globalThis.__ms.state.play.elapsedMs());
-    await page.waitForTimeout(200);
-    await frames(2);
+    await page.waitForFunction((start) => globalThis.__ms.state.play.elapsedMs() >= start + 200
+      && globalThis.__ms.state.time * 1000 >= start + 200, t0, { timeout: patience(5000) });
     assert.ok(await ms(() => globalThis.__ms.state.play.elapsedMs()) >= t0 + 200, 'the clock keeps running while paused');
     assert.ok(await ms(() => globalThis.__ms.state.time) * 1000 >= t0 + 200, 'and so does the time the card and the HUD show');
     assert.equal(await ms(() => globalThis.__ms.pauser.pause('key')), false, 'already paused');
@@ -725,7 +687,6 @@ test('in a browser, the 3D game pauses, resumes, restarts and goes back to menu 
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    server.close();
   }
 });
 
@@ -739,20 +700,9 @@ const WORKERS = {
 };
 
 test('in a browser, the Classic 2D generating card cancels by Cancel and Esc, and the failure offer shows above the pause card with Main menu', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
@@ -864,25 +814,13 @@ test('in a browser, the Classic 2D generating card cancels by Cancel and Esc, an
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    server.close();
   }
 });
 
 test('in a browser, F2 and the controller\'s Start + Y restart a Classic 2D game at once; Y alone and Start alone keep their meanings', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
@@ -955,6 +893,5 @@ test('in a browser, F2 and the controller\'s Start + Y restart a Classic 2D game
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    server.close();
   }
 });

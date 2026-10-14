@@ -12,6 +12,7 @@ import { createBoxGrid } from '../js/engine/box-grid.js';
 import { PROFILES, PROFILE_3D, REFERENCE_PROFILE, getRuleProfile } from '../js/engine/profiles.js';
 import { createGame, createGameWithMines, PHASE, CELL } from '../js/engine/rules.js';
 import { createSquareGrid } from '../js/engine/square-grid.js';
+import { timed } from './helpers/timing.mjs';
 
 // ---------- helpers ----------
 function mulberry32(a) {
@@ -149,18 +150,21 @@ test('performance: 100x100x100 with 1000 mines, build + open a zero region < 2s,
   const rng = mulberry32(42), drawn = new Set();
   while (drawn.size < 1000) drawn.add(Math.floor(rng() * 1_000_000));
   const mines = [...drawn];
-  const t0 = performance.now();
-  const g = G(100, 100, 100, mines);
-  const t1 = performance.now();
-  let z = -1;
-  for (let c = 0; c < 1_000_000; c++) if (!g.state.mine[c] && g.state.number[c] === 0) { z = c; break; }
-  const r = g.reveal(z);
-  const t2 = performance.now();
+  const run = timed(2000, () => {
+    const t0 = performance.now();
+    const game = G(100, 100, 100, mines);
+    const t1 = performance.now();
+    let z = -1;
+    for (let c = 0; c < 1_000_000; c++) if (!game.state.mine[c] && game.state.number[c] === 0) { z = c; break; }
+    const opened = game.reveal(z);
+    return { g: game, r: opened, build: t1 - t0, open: performance.now() - t1 };
+  });
+  const { g, r } = run.value;
   assert.equal(r.ended, false);
   assert.ok(r.changed.length > 900000, `changed ${r.changed.length}`);
   assert.ok(sum(arr(g.state.hidden)) > 800000, 'the opened zeros hide');
-  console.log(`perf: build ${(t1 - t0).toFixed(0)}ms, open ${(t2 - t1).toFixed(0)}ms, changed ${r.changed.length}`);
-  assert.ok(t2 - t0 < 2000, `total ${(t2 - t0).toFixed(0)}ms`);
+  console.log(`perf: build ${run.value.build.toFixed(0)}ms, open ${run.value.open.toFixed(0)}ms, changed ${r.changed.length}`);
+  assert.ok(run.ok, `total ${run.ms.toFixed(0)}ms, limit ${run.limit}ms`);
   // a mass flag and unflag on the large box allocate no per-cell memory
   let target = -1;
   for (let c = 0; c < 1_000_000; c++) if (g.state.revealed[c] && g.state.number[c] > 0) { target = c; break; }

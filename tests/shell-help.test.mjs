@@ -4,10 +4,9 @@
 // card, the overlay bar's readout and the pause card.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync, statSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { join, dirname, normalize, extname } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { GLYPHS } from '../js/gamepad.js';
 import {
   BINDING_MODES, BINDING_DEVICES, bindingRows, bindingsListHtml, bindingsHtml, hudStripHtml, helpFootHtml,
@@ -15,8 +14,10 @@ import {
 } from '../js/settings/bindings.js';
 import { TapToggle, SPACE_TAP_MS } from '../js/input.js';
 import { boardLine3D, boardLine2D } from '../js/ui.js';
+import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const suite = browserSuite();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const text = (html) => html.replace(/<[^>]+>/g, '');
 
@@ -204,50 +205,10 @@ test('none of the help panel, the HUD strip and the hint strip shows in the repl
 
 // ---------------------------------------------------------------- browser
 
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css' };
-function serve() {
-  const server = createServer((req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    const path = normalize(join(ROOT, decodeURIComponent(url.pathname)));
-    if (!path.startsWith(ROOT) || !existsSync(path) || statSync(path).isDirectory()) {
-      res.writeHead(404);
-      res.end();
-      return;
-    }
-    res.writeHead(200, { 'content-type': MIME[extname(path)] ?? 'application/octet-stream' });
-    res.end(readFileSync(path));
-  });
-  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
-}
-async function loadPlaywright() {
-  try {
-    return await import('playwright');
-  } catch {
-    const global = join(dirname(process.execPath), '..', 'lib', 'node_modules', 'playwright', 'index.mjs');
-    if (!existsSync(global)) return null;
-    try {
-      return await import(pathToFileURL(global).href);
-    } catch {
-      return null;
-    }
-  }
-}
-async function launch(t) {
-  const playwright = await loadPlaywright();
-  if (!playwright) { t.skip('Playwright is not installed'); return null; }
-  try {
-    return await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return null;
-  }
-}
-
 test('in a browser: the Controls panel tabs, H, M and the HUD strip in Classic 2D, and each mode\'s pause card', async (t) => {
-  const browser = await launch(t);
-  if (!browser) return;
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
@@ -332,15 +293,13 @@ test('in a browser: the Controls panel tabs, H, M and the HUD strip in Classic 2
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    server.close();
   }
 });
 
 test('in a browser: the controller as the active device redraws every shown surface in its glyphs', async (t) => {
-  const browser = await launch(t);
-  if (!browser) return;
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
@@ -394,15 +353,13 @@ test('in a browser: the controller as the active device redraws every shown surf
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    server.close();
   }
 });
 
 test('in a browser: a Space tap keeps aim-through on until the next tap; a hold ends with its release', async (t) => {
-  const browser = await launch(t);
-  if (!browser) return;
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
@@ -436,6 +393,5 @@ test('in a browser: a Space tap keeps aim-through on until the next tap; a hold 
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    server.close();
   }
 });

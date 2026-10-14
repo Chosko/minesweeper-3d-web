@@ -1,14 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { dirname, extname, join, normalize } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createBlobStore } from '../js/platform/blob-store.js';
 import { createMemoryBlobStore } from '../js/platform/memory-blob-store.js';
 import { openIndexedDBBlobStore, DB_NAME, STORE_NAME } from '../js/platform/indexeddb-blob-store.js';
+import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const suite = browserSuite({ args: [], pages: { '/': '<!doctype html><title>blob store</title>' } });
 const bytes = (...values) => new Uint8Array(values);
 
 // A blob store over a fresh in-memory implementation, opened at once.
@@ -287,59 +288,13 @@ test('no blob store file touches localStorage; the interface and memory store ar
 
 // ---------------------------------------------------------------- browser: IndexedDB round trip
 
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript' };
-
-function serve() {
-  const server = createServer((req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    if (url.pathname === '/') {
-      res.writeHead(200, { 'content-type': 'text/html' });
-      res.end('<!doctype html><title>blob store</title>');
-      return;
-    }
-    const path = normalize(join(ROOT, url.pathname));
-    if (!path.startsWith(ROOT) || !existsSync(path) || statSync(path).isDirectory()) {
-      res.writeHead(404);
-      res.end();
-      return;
-    }
-    res.writeHead(200, { 'content-type': MIME[extname(path)] ?? 'application/octet-stream' });
-    res.end(readFileSync(path));
-  });
-  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
-}
-
-async function loadPlaywright() {
-  try {
-    return await import('playwright');
-  } catch {
-    const global = join(dirname(process.execPath), '..', 'lib', 'node_modules', 'playwright', 'index.mjs');
-    if (!existsSync(global)) return null;
-    try {
-      return await import(pathToFileURL(global).href);
-    } catch {
-      return null;
-    }
-  }
-}
-
 test('in a browser, a blob round-trips through IndexedDB across a page reload', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch();
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage();
-    await page.goto(`http://127.0.0.1:${server.address().port}/`);
+    await page.goto(`${base}/`);
     const saved = await page.evaluate(async () => {
       const { blobStore } = await import('/js/platform/index.js');
       const blob = new Uint8Array(100_000).map((_, i) => (i * 7) & 0xff);
@@ -390,6 +345,5 @@ test('in a browser, a blob round-trips through IndexedDB across a page reload', 
     });
   } finally {
     await browser.close();
-    await new Promise((resolve) => server.close(resolve));
   }
 });

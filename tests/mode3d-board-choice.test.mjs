@@ -4,10 +4,9 @@
 // the screen's markup and wiring in index.html and js/main.js.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync, statSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { join, dirname, normalize, extname } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import {
   PRESETS, FAMILIES, BOARD_SIZES, DEFAULT_CHOICE, DIM_MIN, DIM_MAX, NOGUESS_CELL_LIMIT, LAST_CHOICE_DOC, LAST_CHOICE_VERSION,
@@ -19,8 +18,10 @@ import { createLastBoardChoice } from '../js/shell/menu.js';
 import { typicalBbbv } from '../js/records/typical-bbbv.js';
 import { createStorage } from '../js/platform/storage.js';
 import { createMemoryBackend } from '../js/platform/memory-backend.js';
+import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const suite = browserSuite();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const strip = (src) => src.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
 
@@ -350,50 +351,10 @@ test('the shell wires the 3D board choice, its last choice and every control', (
 
 // ---------------------------------------------------------------- browser
 
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css' };
-function serve() {
-  const server = createServer((req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    const path = normalize(join(ROOT, decodeURIComponent(url.pathname)));
-    if (!path.startsWith(ROOT) || !existsSync(path) || statSync(path).isDirectory()) {
-      res.writeHead(404);
-      res.end();
-      return;
-    }
-    res.writeHead(200, { 'content-type': MIME[extname(path)] ?? 'application/octet-stream' });
-    res.end(readFileSync(path));
-  });
-  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
-}
-async function loadPlaywright() {
-  try {
-    return await import('playwright');
-  } catch {
-    const global = join(dirname(process.execPath), '..', 'lib', 'node_modules', 'playwright', 'index.mjs');
-    if (!existsSync(global)) return null;
-    try {
-      return await import(pathToFileURL(global).href);
-    } catch {
-      return null;
-    }
-  }
-}
-
 test('in a browser, the custom board validates, the switch follows the limit and the choice is restored', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
@@ -519,6 +480,5 @@ test('in a browser, the custom board validates, the switch follows the limit and
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    server.close();
   }
 });

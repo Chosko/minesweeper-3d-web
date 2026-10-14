@@ -4,10 +4,9 @@
 // from the main menu and the results screen, the picker and Back.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { join, dirname, normalize, extname } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   RECORDS_SCREEN, pickerBoards, lastBoardPlayed, recordsContent, createRecordsScreen, formatDate, formatWinRate,
   EMPTY_TEXT,
@@ -15,8 +14,10 @@ import {
 import { createRecordsModel } from '../js/records/model.js';
 import { boardKey, createBoardIdentity } from '../js/records/board.js';
 import { DASH, NOTES } from '../js/results/view.js';
+import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const suite = browserSuite();
 const read = (f) => readFileSync(join(ROOT, f), 'utf8');
 
 const board = (width, height, mines, noGuess = false) => createBoardIdentity({ mode: 'classic-2d', grid: 'square', width, height, mines, noGuess });
@@ -320,58 +321,22 @@ test('the catalogue documents the records screen', () => {
 
 // ---------------------------------------------------------------- browser
 
-const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml' };
-function serve() {
-  const server = createServer((req, res) => {
-    const path = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)).replace(/^([/\\])+/, '');
-    const file = join(ROOT, path || 'index.html');
-    if (!file.startsWith(ROOT) || !existsSync(file)) { res.writeHead(404); res.end(); return; }
-    res.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream' });
-    res.end(readFileSync(file));
-  });
-  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
-}
-async function loadPlaywright() {
-  try {
-    return await import('playwright');
-  } catch {
-    const global = join(dirname(process.execPath), '..', 'lib', 'node_modules', 'playwright', 'index.mjs');
-    if (!existsSync(global)) return null;
-    try {
-      return await import(pathToFileURL(global).href);
-    } catch {
-      return null;
-    }
-  }
-}
-
 // A browser without WebGL 2, for a test where 3D is irrelevant: the menu screens keep no 3D backdrop
 // redrawing under software rendering. Every canvas refuses a 'webgl2' context; the others are untouched.
 function removeWebGL2() {
   const getContext = HTMLCanvasElement.prototype.getContext;
   HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
 }
-async function openBrowser(t) {
-  const playwright = await loadPlaywright();
-  if (!playwright) { t.skip('Playwright is not installed'); return null; }
-  try {
-    return await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return null;
-  }
-}
-
 test('in a browser, the menu opens the records screen on the last board played, the picker chooses a board, Back returns', async (t) => {
-  const browser = await openBrowser(t);
-  if (!browser) return;
-  const server = await serve();
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.addInitScript(removeWebGL2);
-    await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
+    await page.goto(`${base}/index.html`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     const mode = () => page.evaluate(() => globalThis.__ms.state.mode);
     const active = () => page.evaluate(() => document.activeElement?.textContent ?? '');
@@ -437,6 +402,5 @@ test('in a browser, the menu opens the records screen on the last board played, 
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    await new Promise((resolve) => server.close(resolve));
   }
 });

@@ -7,11 +7,10 @@
 // Classic 2D screen at the windows it must fit.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createServer } from 'node:http';
-import { readFileSync, existsSync, statSync, mkdtempSync, rmSync } from 'node:fs';
-import { join, dirname, extname, normalize } from 'node:path';
+import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 import {
   fitTileSize, boardLayout, cellAtLayout, createBoardView, PAN_MODIFIER, BOARD_BACKGROUND, BOARD_SHADOW, BOARD_SCROLLBAR,
@@ -24,8 +23,10 @@ import { createGameWithMines, CELL } from '../js/engine/rules.js';
 import { REFERENCE_PROFILE } from '../js/engine/profiles.js';
 import { createEndEffect, reachMs, WIN, LOSS, PULSE_COLOR, CONFETTI_COLORS } from '../js/classic2d/end-effect.js';
 import { END_DELAY_MS } from '../js/classic2d/mode.js';
+import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const suite = browserSuite({ args: [] });
 
 // ---------- fakes ----------
 
@@ -724,37 +725,6 @@ test('the module is DOM-free at import and independent of three.js', () => {
 
 // ---------------------------------------------------------------- browser
 
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css' };
-
-function serve() {
-  const server = createServer((req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    const path = normalize(join(ROOT, decodeURIComponent(url.pathname)));
-    if (!path.startsWith(ROOT) || !existsSync(path) || statSync(path).isDirectory()) {
-      res.writeHead(404);
-      res.end();
-      return;
-    }
-    res.writeHead(200, { 'content-type': MIME[extname(path)] ?? 'application/octet-stream' });
-    res.end(readFileSync(path));
-  });
-  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
-}
-
-async function loadPlaywright() {
-  try {
-    return await import('playwright');
-  } catch {
-    const global = join(dirname(process.execPath), '..', 'lib', 'node_modules', 'playwright', 'index.mjs');
-    if (!existsSync(global)) return null;
-    try {
-      return await import(pathToFileURL(global).href);
-    } catch {
-      return null;
-    }
-  }
-}
-
 // Runs in the page: mounts a board view in the area below the overlay bar (64px) with 16px
 // margins, plays a deterministic game on it and reports the layout and the colours under a few
 // tiles. Mines run down the last column; revealing the top-left cell floods the rest.
@@ -817,25 +787,15 @@ async function mountBoard({ cols, rows, scroll }) {
 const near = (a, b) => a.every((v, i) => Math.abs(v - b[i]) <= 6);
 
 test('in a browser, Beginner and Expert in both themes and a large scrolled custom board are drawn correctly', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch();
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   const shots = mkdtempSync(join(tmpdir(), 'ms3d-classic2d-view-'));
   try {
     const page = await browser.newPage({ viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`http://127.0.0.1:${server.address().port}/dev/components.html`);
+    await page.goto(`${base}/dev/components.html`);
     // The host stands where the board sits in play: below the 64px bar, 16px from every edge.
     const area = { width: 1366 - 32, height: 768 - 96 - 16 };
     const M = 26;
@@ -918,7 +878,6 @@ test('in a browser, Beginner and Expert in both themes and a large scrolled cust
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    await new Promise((resolve) => server.close(resolve));
     rmSync(shots, { recursive: true, force: true });
   }
 });

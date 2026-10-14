@@ -1,13 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { dirname, extname, join, normalize } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createStorage } from '../js/platform/storage.js';
 import { createBrowserBackend, DOC_PREFIX, ASIDE_PREFIX } from '../js/platform/browser-backend.js';
+import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const suite = browserSuite({ args: [], pages: { '/': '<!doctype html><title>storage</title>' } });
 const raw = (version, data) => JSON.stringify({ version, data });
 
 // A fake Web Storage object: getItem/setItem/removeItem/key/length over a Map, with an optional
@@ -351,59 +352,13 @@ test('no caller imports a backend directly: only js/platform/index.js selects on
 
 // ---------------------------------------------------------------- browser: survives a reload
 
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript' };
-
-function serve() {
-  const server = createServer((req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    if (url.pathname === '/') {
-      res.writeHead(200, { 'content-type': 'text/html' });
-      res.end('<!doctype html><title>storage</title>');
-      return;
-    }
-    const path = normalize(join(ROOT, url.pathname));
-    if (!path.startsWith(ROOT) || !existsSync(path) || statSync(path).isDirectory()) {
-      res.writeHead(404);
-      res.end();
-      return;
-    }
-    res.writeHead(200, { 'content-type': MIME[extname(path)] ?? 'application/octet-stream' });
-    res.end(readFileSync(path));
-  });
-  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
-}
-
-async function loadPlaywright() {
-  try {
-    return await import('playwright');
-  } catch {
-    const global = join(dirname(process.execPath), '..', 'lib', 'node_modules', 'playwright', 'index.mjs');
-    if (!existsSync(global)) return null;
-    try {
-      return await import(pathToFileURL(global).href);
-    } catch {
-      return null;
-    }
-  }
-}
-
 test('in a browser, a saved document survives a page reload', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch();
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage();
-    const origin = `http://127.0.0.1:${server.address().port}/`;
+    const origin = `${base}/`;
     await page.goto(origin);
     await page.evaluate(() => localStorage.setItem('ms3d.muted', '1'));
     const saved = await page.evaluate(async () => {
@@ -422,6 +377,5 @@ test('in a browser, a saved document survives a page reload', async (t) => {
     assert.deepEqual(after, { data: { n: 42 }, legacy: '1' });
   } finally {
     await browser.close();
-    await new Promise((resolve) => server.close(resolve));
   }
 });

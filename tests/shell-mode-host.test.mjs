@@ -1,17 +1,18 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { join, dirname, normalize, extname } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createModeHost, MODE_METHODS, MODE_EVENTS } from '../js/shell/mode-host.js';
 import { create3DGame } from '../js/mode3d/session.js';
 import { PHASE } from '../js/engine/rules.js';
 import { clampSettings } from '../js/ui.js';
 import { customStatus } from '../js/mode3d/board-choice.js';
 import { pickCell, pickCellBrute } from '../js/picking.js';
+import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const suite = browserSuite();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const MAIN_SRC = () => read('js/main.js');
 
@@ -339,7 +340,6 @@ test('the 3D engine is retired: js/logic.js and its tests are gone and nothing i
   assert.match(MAIN_SRC(), /import \{[^}]*create3DGame[^}]*\} from '\.\/mode3d\/session\.js'/, 'js/main.js builds the 3D game on the shared engine');
 });
 
-
 test('the contract is documented in the mode-host module', () => {
   const head = read('js/shell/mode-host.js').split('export ')[0];
   for (const word of [...MODE_METHODS, ...MODE_EVENTS]) assert.match(head, new RegExp(`\\b${word}\\b`), `documents ${word}`);
@@ -364,50 +364,10 @@ test('the shell reaches the 3D game only through the mode host', () => {
 
 // ---------------------------------------------------------------- browser: the 3D game on the shared engine
 
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css' };
-function serve() {
-  const server = createServer((req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    const path = normalize(join(ROOT, decodeURIComponent(url.pathname)));
-    if (!path.startsWith(ROOT) || !existsSync(path) || statSync(path).isDirectory()) {
-      res.writeHead(404);
-      res.end();
-      return;
-    }
-    res.writeHead(200, { 'content-type': MIME[extname(path)] ?? 'application/octet-stream' });
-    res.end(readFileSync(path));
-  });
-  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
-}
-async function loadPlaywright() {
-  try {
-    return await import('playwright');
-  } catch {
-    const global = join(dirname(process.execPath), '..', 'lib', 'node_modules', 'playwright', 'index.mjs');
-    if (!existsSync(global)) return null;
-    try {
-      return await import(pathToFileURL(global).href);
-    } catch {
-      return null;
-    }
-  }
-}
-
 test('in a browser, a 3D game on the shared engine plays a fixed mine set to a win and to a loss', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
@@ -453,6 +413,5 @@ test('in a browser, a 3D game on the shared engine plays a fixed mine set to a w
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    server.close();
   }
 });

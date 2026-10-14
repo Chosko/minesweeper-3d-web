@@ -5,18 +5,19 @@
 // its wiring; and in a browser the switch by mouse, keyboard and controller.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { join, dirname, normalize, extname } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   RECORDS_MODES, pickerBoards, lastBoardPlayed, recordsContent, createRecordsScreen,
 } from '../js/records/screen.js';
 import { createRecordsModel } from '../js/records/model.js';
 import { boardKey, createBoardIdentity, MODE_3D } from '../js/records/board.js';
 import { createResultsFlow } from '../js/results/flow.js';
+import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const suite = browserSuite();
 const read = (f) => readFileSync(join(ROOT, f), 'utf8');
 
 const board2D = (width, height, mines, noGuess = false) => createBoardIdentity({ mode: 'classic-2d', grid: 'square', width, height, mines, noGuess });
@@ -302,42 +303,10 @@ test('the catalogue documents the mode switch', () => {
 
 // ---------------------------------------------------------------- browser
 
-const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml' };
-function serve() {
-  const server = createServer((req, res) => {
-    const path = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)).replace(/^([/\\])+/, '');
-    const file = join(ROOT, path || 'index.html');
-    if (!file.startsWith(ROOT) || !existsSync(file)) { res.writeHead(404); res.end(); return; }
-    res.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream' });
-    res.end(readFileSync(file));
-  });
-  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
-}
-async function loadPlaywright() {
-  try {
-    return await import('playwright');
-  } catch {
-    const global = join(dirname(process.execPath), '..', 'lib', 'node_modules', 'playwright', 'index.mjs');
-    if (!existsSync(global)) return null;
-    try {
-      return await import(pathToFileURL(global).href);
-    } catch {
-      return null;
-    }
-  }
-}
-
 test('in a browser, mouse, keyboard and controller operate the 2D | 3D switch', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) { t.skip('Playwright is not installed'); return; }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 });
     const errors = [];
@@ -348,7 +317,7 @@ test('in a browser, mouse, keyboard and controller operate the 2D | 3D switch', 
       navigator.getGamepads = () => [pad];
       globalThis.__pad = { press(i, on) { buttons[i].pressed = on; buttons[i].value = on ? 1 : 0; pad.timestamp++; } };
     });
-    await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
+    await page.goto(`${base}/index.html`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     const ms = (fn, arg) => page.evaluate(fn, arg);
     const mode = () => ms(() => globalThis.__ms.state.mode);
@@ -410,6 +379,5 @@ test('in a browser, mouse, keyboard and controller operate the 2D | 3D switch', 
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    await new Promise((resolve) => server.close(resolve));
   }
 });

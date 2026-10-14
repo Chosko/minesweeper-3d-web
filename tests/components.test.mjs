@@ -1,9 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync, statSync, mkdtempSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { join, dirname, normalize, extname } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readFileSync, mkdtempSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import {
   decimalsOf, formatSliderValue, segmentedTargetIndex, segmentedState,
@@ -11,8 +10,10 @@ import {
 } from '../js/ui/components.js';
 import { UI } from '../js/ui.js';
 import { FOCUSABLE } from '../js/shell/navigation.js';
+import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const suite = browserSuite();
 const read = (f) => readFileSync(join(ROOT, f), 'utf8');
 const RAW = read('css/components.css');
 const CSS = RAW.replace(/\/\*[\s\S]*?\*\//g, '');
@@ -719,24 +720,14 @@ test('Restart discards an unfinished game; Play again starts the same choice onc
 });
 
 test('in a browser, the "Esc: Back" hints meet the contrast contract in both themes', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`http://127.0.0.1:${server.address().port}/index.html?still-backdrop`);
+    await page.goto(`${base}/index.html?still-backdrop`);
     await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
     const hints = async (label) => {
       for (const theme of ['light', 'dark']) {
@@ -768,7 +759,6 @@ test('in a browser, the "Esc: Back" hints meet the contrast contract in both the
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    await new Promise((resolve) => server.close(resolve));
   }
 });
 
@@ -803,37 +793,6 @@ const looks = (page, selector) => page.evaluate((sel) => {
   const s = getComputedStyle(document.querySelector(sel));
   return `${s.color} ${s.backgroundColor} ${s.borderTopColor}`;
 }, selector);
-
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css' };
-
-function serve() {
-  const server = createServer((req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    const path = normalize(join(ROOT, decodeURIComponent(url.pathname)));
-    if (!path.startsWith(ROOT) || !existsSync(path) || statSync(path).isDirectory()) {
-      res.writeHead(404);
-      res.end();
-      return;
-    }
-    res.writeHead(200, { 'content-type': MIME[extname(path)] ?? 'application/octet-stream' });
-    res.end(readFileSync(path));
-  });
-  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
-}
-
-async function loadPlaywright() {
-  try {
-    return await import('playwright');
-  } catch {
-    const global = join(dirname(process.execPath), '..', 'lib', 'node_modules', 'playwright', 'index.mjs');
-    if (!existsSync(global)) return null;
-    try {
-      return await import(pathToFileURL(global).href);
-    } catch {
-      return null;
-    }
-  }
-}
 
 // Runs in the page: every visible text run with its colour composited over
 // its effective background, and the contract threshold it must meet.
@@ -898,25 +857,15 @@ function measureContrast() {
 }
 
 test('in a browser, the gallery renders in both themes and its text meets the contrast contract', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch();
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   const shots = SHOTS ? mkdtempSync(join(tmpdir(), 'ms3d-components-')) : null;
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`http://127.0.0.1:${server.address().port}/dev/components.html`);
+    await page.goto(`${base}/dev/components.html`);
     const images = {};
     for (const theme of ['light', 'dark']) {
       await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
@@ -936,30 +885,19 @@ test('in a browser, the gallery renders in both themes and its text meets the co
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    await new Promise((resolve) => server.close(resolve));
   }
 });
 
 test('in a browser, the overlay bar over the 3D scene meets the contrast contract in both themes', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   const shots = SHOTS ? mkdtempSync(join(tmpdir(), 'ms3d-overlay-')) : null;
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 700 } });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`http://127.0.0.1:${server.address().port}/index.html?still-backdrop`);
+    await page.goto(`${base}/index.html?still-backdrop`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     await page.evaluate(() => { globalThis.__ms.start(9, 9, 9, 10); globalThis.__ms.forcePlay(); });
     // A running time past the display limit: the overlay stops at 999, the game keeps the real time.
@@ -994,7 +932,6 @@ test('in a browser, the overlay bar over the 3D scene meets the contrast contrac
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    await new Promise((resolve) => server.close(resolve));
   }
 });
 
@@ -1004,21 +941,10 @@ const MS_HOOK = ['state', 'game', 'renderer', 'camera', 'fps', 'frameStats', 'sp
   'selected', 'pickBrute', 'pickWith', 'info', 'modes', 'pauser', 'settings', 'records', 'replayViewer', 'board2D', 'watch'];
 
 test('in a browser, the menu, the pause card and the results layout meet the contrast contract in both themes', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   const shots = SHOTS ? mkdtempSync(join(tmpdir(), 'ms3d-screens-')) : null;
-  const base = `http://127.0.0.1:${server.address().port}`;
   const frames = (page) => page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
   // Contrast of the text inside one element, and the focus ring a keyboard focus draws there.
   const check = async (page, selector, label, theme, minRuns = 5) => {
@@ -1168,6 +1094,5 @@ test('in a browser, the menu, the pause card and the results layout meet the con
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    await new Promise((resolve) => server.close(resolve));
   }
 });

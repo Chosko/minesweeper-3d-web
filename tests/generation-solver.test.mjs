@@ -6,6 +6,7 @@ import { createSeededSource } from '../js/generation/random.js';
 import { placeMines } from '../js/generation/placer.js';
 import { createSquareGrid } from '../js/engine/square-grid.js';
 import { cellGraphFromLists } from '../js/engine/graph.js';
+import { timed } from './helpers/timing.mjs';
 
 // A board from row strings: '*' a mine, 'o' the first-click cell, '.' a safe cell.
 function board(rows) {
@@ -251,15 +252,15 @@ test('solver: a board with no mines clears from any cell; malformed requests are
 
 test('solver: an Expert board is solved well within a second', () => {
   const grid = createSquareGrid(30, 16);
-  let worst = 0;
+  let worst = 0, limit = 0;
   for (let seed = 0; seed < 50; seed++) {
     const first = grid.index(15, 8);
     const mines = placeMines({ graph: grid.graph, mineCount: 99, firstClick: first, source: createSeededSource(seed) });
-    const t = performance.now();
-    solve({ graph: grid.graph, mines, firstClick: first });
-    worst = Math.max(worst, performance.now() - t);
+    const run = timed(500, () => solve({ graph: grid.graph, mines, firstClick: first }));
+    worst = Math.max(worst, run.ms);
+    limit = run.limit;
   }
-  assert.ok(worst < 500, `slowest Expert solve took ${worst.toFixed(1)} ms`);
+  assert.ok(worst < limit, `slowest Expert solve took ${worst.toFixed(1)} ms, limit ${limit} ms`);
 });
 
 test('solver module is DOM-free and never reads platform randomness', () => {

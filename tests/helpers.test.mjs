@@ -1,0 +1,173 @@
+// The shared test helpers under tests/helpers/: the browser helper (the Playwright loader with its
+// two global-install layouts, the SwiftShader launch flags, one Chromium and one static server per
+// test file with a fresh context per test) and the timing helper (the slack that timing assertions
+// and waits get under load), plus the rule that every browser test file goes through the helper.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync, readdirSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import {
+  SWIFTSHADER_ARGS, globalPlaywrightPaths, serveRoot, browserSuite,
+} from './helpers/browser.mjs';
+import { timeSlack, TIME_SLACK, timed, patience } from './helpers/timing.mjs';
+
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const testFiles = () => readdirSync(join(ROOT, 'tests')).filter((f) => f.endsWith('.test.mjs'));
+function join(...parts) { return path.join(...parts); }
+
+// ---------------------------------------------------------------- the browser helper
+
+test('the SwiftShader launch flags are one constant', () => {
+  assert.deepEqual([...SWIFTSHADER_ARGS], ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']);
+});
+
+test('the Playwright fallback looks in both global-module layouts beside the Node binary', () => {
+  const win = globalPlaywrightPaths('C:\\Program Files\\nodejs\\node.exe', path.win32);
+  assert.ok(win.includes('C:\\Program Files\\nodejs\\node_modules\\playwright\\index.mjs'), `Windows layout in ${win}`);
+  const posix = globalPlaywrightPaths('/opt/node22/bin/node', path.posix);
+  assert.ok(posix.includes('/opt/node22/lib/node_modules/playwright/index.mjs'), `POSIX layout in ${posix}`);
+  assert.equal(win.length, 2);
+  assert.equal(posix.length, 2);
+});
+
+test('the static server serves the repository root with content types, extra pages and 404s', async () => {
+  const server = await serveRoot({ pages: { '/previous': '<!doctype html><title>previous</title>' } });
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const html = await fetch(`${base}/index.html`);
+    assert.equal(html.status, 200);
+    assert.match(html.headers.get('content-type'), /text\/html/);
+    assert.match(await html.text(), /<html/i);
+    const js = await fetch(`${base}/js/main.js`);
+    assert.match(js.headers.get('content-type'), /text\/javascript/);
+    await js.arrayBuffer();
+    const page = await fetch(`${base}/previous`);
+    assert.equal(await page.text(), '<!doctype html><title>previous</title>');
+    assert.equal((await fetch(`${base}/no-such-file.js`)).status, 404);
+    assert.equal((await fetch(`${base}/js`)).status, 404, 'a directory is not served');
+    assert.equal((await fetch(`${base}/%2e%2e/%2e%2e/etc/passwd`)).status, 404, 'nothing outside the root');
+  } finally {
+    server.closeAllConnections();
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+/** A fake Playwright whose chromium counts launches and hands out recording contexts. */
+function fakePlaywright({ fail = false } = {}) {
+  const log = { launches: [], contexts: [], browserClosed: 0 };
+  const browser = {
+    async newContext(options) {
+      const ctx = { options, closed: false, pages: [],
+        async newPage() { const p = { context: () => ctx }; ctx.pages.push(p); return p; },
+        async close() { ctx.closed = true; } };
+      log.contexts.push(ctx);
+      return ctx;
+    },
+    async close() { log.browserClosed++; },
+  };
+  return {
+    log,
+    playwright: { chromium: { async launch(options) { log.launches.push(options); if (fail) throw new Error('no chromium\nmore'); return browser; } } },
+  };
+}
+const fakeT = () => { const t = { skipped: [], skip(m) { t.skipped.push(m); } }; return t; };
+
+test('a browser suite launches one Chromium for its file, on first use, and a fresh context per page', async () => {
+  const { log, playwright } = fakePlaywright();
+  const suite = browserSuite({ load: async () => playwright, hooks: false });
+  assert.equal(log.launches.length, 0, 'nothing launches before a test asks');
+  const t1 = fakeT();
+  const a = await suite.open(t1);
+  const p1 = await a.browser.newPage({ viewport: { width: 800, height: 600 } });
+  const p2 = await a.browser.newPage();
+  const c3 = await a.browser.newContext({ deviceScaleFactor: 2 });
+  assert.match(a.base, /^http:\/\/127\.0\.0\.1:\d+$/);
+  assert.deepEqual(log.launches, [{ args: [...SWIFTSHADER_ARGS] }], 'one launch, with the SwiftShader flags by default');
+  assert.notEqual(p1.context(), p2.context(), 'each page in its own context');
+  assert.deepEqual(log.contexts[0].options, { viewport: { width: 800, height: 600 } }, 'the page options go to its context');
+  assert.deepEqual(c3.options, { deviceScaleFactor: 2 });
+  await a.browser.close();
+  assert.equal(log.contexts.every((c) => c.closed), true, 'a test closes its contexts');
+  assert.equal(log.browserClosed, 0, 'not the shared browser');
+
+  const b = await suite.open(fakeT());
+  await b.browser.newPage();
+  assert.equal(log.launches.length, 1, 'the next test reuses the browser');
+  assert.equal(b.base, a.base, 'and the server');
+  await b.browser.close();
+  await suite.close();
+  await suite.close();
+  assert.equal(log.browserClosed, 1, 'closed once, at the end of the file');
+  assert.deepEqual(t1.skipped, []);
+});
+
+test('a bare browser suite launches without flags', async () => {
+  const { log, playwright } = fakePlaywright();
+  const suite = browserSuite({ args: [], load: async () => playwright, hooks: false });
+  await suite.open(fakeT());
+  assert.deepEqual(log.launches, [{ args: [] }]);
+  await suite.close();
+});
+
+test('a browser suite skips each test when Playwright is missing or Chromium cannot start, trying the launch once', async () => {
+  const missing = browserSuite({ load: async () => null, hooks: false });
+  const t = fakeT();
+  assert.equal(await missing.open(t), null);
+  assert.deepEqual(t.skipped, ['Playwright is not installed']);
+  await missing.close();
+
+  const { log, playwright } = fakePlaywright({ fail: true });
+  const broken = browserSuite({ load: async () => playwright, hooks: false });
+  const t1 = fakeT(), t2 = fakeT();
+  assert.equal(await broken.open(t1), null);
+  assert.equal(await broken.open(t2), null);
+  assert.deepEqual(t1.skipped, ['chromium could not start: no chromium']);
+  assert.deepEqual(t2.skipped, ['chromium could not start: no chromium']);
+  assert.equal(log.launches.length, 1);
+  await broken.close();
+});
+
+test('every browser test file goes through the helper: no launch or server of its own', () => {
+  for (const f of testFiles()) {
+    const src = readFileSync(join(ROOT, 'tests', f), 'utf8');
+    assert.doesNotMatch(src, /chromium\.launch\(/, `${f} launches Chromium itself`);
+    assert.doesNotMatch(src, /\bcreateServer\(/, `${f} runs its own server`);
+    if (/test\(\s*['"`][^'"`]*in a browser/.test(src)) {
+      assert.match(src, /from '\.\/helpers\/browser\.mjs'/, `${f} has browser tests but does not use the helper`);
+    }
+  }
+});
+
+// ---------------------------------------------------------------- the timing helper
+
+test('the timing slack comes from MS_TIME_SLACK, at least 1, default 2', () => {
+  assert.equal(timeSlack(undefined), 2);
+  assert.equal(timeSlack(''), 2);
+  assert.equal(timeSlack('3'), 3);
+  assert.equal(timeSlack('1.5'), 1.5);
+  assert.equal(timeSlack('0.5'), 1, 'never tighter than the budget');
+  assert.equal(timeSlack('fast'), 2);
+  assert.equal(TIME_SLACK, timeSlack(process.env.MS_TIME_SLACK));
+});
+
+test('timed keeps the fastest of a few attempts, stops at the first within the slackened budget, and returns the work\'s value', () => {
+  let calls = 0;
+  const quick = timed(1000, () => { calls++; return 'v'; });
+  assert.equal(quick.ok, true);
+  assert.equal(quick.value, 'v');
+  assert.equal(calls, 1, 'one attempt when it is within budget');
+  assert.equal(quick.limit, 1000 * TIME_SLACK);
+
+  calls = 0;
+  const spin = (ms) => { const end = performance.now() + ms; while (performance.now() < end); };
+  const slow = timed(1, () => { calls++; spin(2 * TIME_SLACK + 2); return calls; });
+  assert.equal(slow.ok, false, 'work several times over its budget fails');
+  assert.equal(calls, 3, 'after three attempts');
+  assert.equal(slow.value, 3);
+  assert.ok(slow.ms >= 2 * TIME_SLACK + 2);
+});
+
+test('patience scales a wait\'s timeout by the slack and a generous factor', () => {
+  assert.equal(patience(5000), 5000 * 4 * TIME_SLACK);
+});

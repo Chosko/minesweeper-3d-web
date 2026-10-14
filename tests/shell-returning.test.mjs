@@ -3,10 +3,9 @@
 // browser run of all of them.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync, statSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { join, dirname, normalize, extname } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createBoardIdentity, STANDARD_BOARDS, PRESETS_3D } from '../js/records/board.js';
 import { buildSummary } from '../js/records/summary.js';
 import { createRecordsModel } from '../js/records/model.js';
@@ -16,8 +15,10 @@ import { DEFAULT_CHOICE as DEFAULT_3D } from '../js/mode3d/board-choice.js';
 import {
   densityText, presetDetail, presetDetails, sessionStrip, playAgainLabel, lastBoard, returningMenu,
 } from '../js/shell/returning.js';
+import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const suite = browserSuite();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const strip = (src) => src.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
 
@@ -240,44 +241,6 @@ test('the catalogue documents the strip, Play again and the preset detail lines'
 
 // ---------------------------------------------------------------- browser
 
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css' };
-function serve() {
-  const server = createServer((req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    const path = normalize(join(ROOT, decodeURIComponent(url.pathname)));
-    if (!path.startsWith(ROOT) || !existsSync(path) || statSync(path).isDirectory()) {
-      res.writeHead(404);
-      res.end();
-      return;
-    }
-    res.writeHead(200, { 'content-type': MIME[extname(path)] ?? 'application/octet-stream' });
-    res.end(readFileSync(path));
-  });
-  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
-}
-async function loadPlaywright() {
-  try {
-    return await import('playwright');
-  } catch {
-    const global = join(dirname(process.execPath), '..', 'lib', 'node_modules', 'playwright', 'index.mjs');
-    if (!existsSync(global)) return null;
-    try {
-      return await import(pathToFileURL(global).href);
-    } catch {
-      return null;
-    }
-  }
-}
-async function launch(t, playwright, args) {
-  try {
-    return await playwright.chromium.launch(args ? { args } : undefined);
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return null;
-  }
-}
-const SWIFTSHADER = ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'];
-
 /** Records a won game on `board` through the page's records store. */
 function recordWin(page, { board, ms }) {
   return page.evaluate(async ({ board: b, ms: elapsed }) => {
@@ -288,12 +251,9 @@ function recordWin(page, { board, ms }) {
 }
 
 test('in a browser, the detail lines follow the records and the switch, and the strip and Play again start the last 2D board', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) { t.skip('Playwright is not installed'); return; }
-  const browser = await launch(t, playwright, SWIFTSHADER);
-  if (!browser) return;
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
@@ -377,17 +337,13 @@ test('in a browser, the detail lines follow the records and the switch, and the 
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    server.close();
   }
 });
 
 test('in a browser, Play again starts the last 3D board: into play when the lock is granted, the ready card when it is refused', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) { t.skip('Playwright is not installed'); return; }
-  const browser = await launch(t, playwright, SWIFTSHADER);
-  if (!browser) return;
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const seed = async (page) => {
       await page.goto(`${base}/index.html?still-backdrop`);
@@ -441,7 +397,6 @@ test('in a browser, Play again starts the last 3D board: into play when the lock
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    server.close();
   }
 });
 
@@ -452,12 +407,9 @@ function removeWebGL2() {
 }
 
 test('in a browser without WebGL 2, a 3D last board shows the strip and no Play again', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) { t.skip('Playwright is not installed'); return; }
-  const browser = await launch(t, playwright);
-  if (!browser) return;
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
@@ -475,6 +427,5 @@ test('in a browser without WebGL 2, a 3D last board shows the strip and no Play 
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    server.close();
   }
 });

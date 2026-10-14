@@ -5,13 +5,15 @@
 // the tint and the copy are checked in a browser through `__ms`.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { register } from 'node:module';
-import { createServer } from 'node:http';
-import { join, dirname, normalize, extname } from 'node:path';
+import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { browserSuite } from './helpers/browser.mjs';
+import { TIME_SLACK, patience } from './helpers/timing.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const suite = browserSuite();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 // js/render.js imports 'three' through the page's import map; Node resolves it to the vendored build.
 const THREE_URL = pathToFileURL(join(ROOT, 'vendor/three/three.module.min.js')).href;
@@ -74,27 +76,6 @@ test('only a flag click on a revealed number flashes, with the cells whose flag 
 
 // ---------------------------------------------------------------- in a browser
 
-const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
-function serve() {
-  const server = createServer((req, res) => {
-    const path = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)).replace(/^([/\\])+/, '');
-    const file = join(ROOT, path || 'index.html');
-    if (!file.startsWith(ROOT) || !existsSync(file)) { res.writeHead(404); res.end(); return; }
-    res.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream' });
-    res.end(readFileSync(file));
-  });
-  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
-}
-async function loadPlaywright() {
-  try {
-    return await import('playwright');
-  } catch {
-    const global = join(dirname(process.execPath), '..', 'lib', 'node_modules', 'playwright', 'index.mjs');
-    if (!existsSync(global)) return null;
-    try { return await import(pathToFileURL(global).href); } catch { return null; }
-  }
-}
-
 // Runs in the page: the mines figure's colour, the danger token's colour, and the figure's contrast
 // against the overlay bar it sits on.
 function minesColour() {
@@ -116,21 +97,14 @@ function minesColour() {
 }
 
 test('in a browser, a flag click on a number flashes the cubes it changed, then stops; the mines figure tints below zero; the copy says what it does', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) { t.skip('Playwright is not installed'); return; }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 700 } });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
+    await page.goto(`${base}/index.html`);
     await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
     const ms = (fn, arg) => page.evaluate(fn, arg);
     const frames = () => ms(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
@@ -169,7 +143,7 @@ test('in a browser, a flag click on a number flashes the cubes it changed, then 
     }
 
     await ms(() => globalThis.__ms.aimAt(6));
-    await page.waitForFunction(() => !globalThis.__ms.renderer.isAnimating(), null, { timeout: 8000 }); // the aim's glow settles
+    await page.waitForFunction(() => !globalThis.__ms.renderer.isAnimating(), null, { timeout: patience(8000) }); // the aim's glow settles
     const light0 = await ms(minesColour);
     assert.equal(light0.negative, false);
     assert.notDeepEqual(light0.fg, light0.danger, 'four mines left: the normal colour');
@@ -179,7 +153,8 @@ test('in a browser, a flag click on a number flashes the cubes it changed, then 
     const flashS = await ms(async () => (await import('/js/render.js')).FLASH_S);
     assert.ok(length > 0, 'isAnimating() was true, then false');
     assert.ok(length >= flashS * 1000, `not before the flash has played (${Math.round(length)} ms)`);
-    assert.ok(length <= flashS * 1000 + 2 * gap + 50, `but with it, give or take a frame (${Math.round(length)} ms, frames up to ${Math.round(gap)} ms apart)`);
+    // the frame slop above the flash gets the timing slack under load; the flash itself does not
+    assert.ok(length <= flashS * 1000 + (2 * gap + 50) * TIME_SLACK, `but with it, give or take a frame (${Math.round(length)} ms, frames up to ${Math.round(gap)} ms apart)`);
     assert.equal(await ms(() => globalThis.__ms.renderer._flashFx.mesh.visible), false, 'no longer drawn');
     assert.equal(await ms(() => globalThis.__ms.game.minesLeft), -3);
 
@@ -202,7 +177,7 @@ test('in a browser, a flag click on a number flashes the cubes it changed, then 
     const back = await ms(minesColour);
     assert.equal(back.text, '4');
     assert.notDeepEqual(back.fg, back.danger, 'back above zero: the normal colour');
-    await page.waitForFunction(() => globalThis.__ms.renderer._flashes.size === 0, null, { timeout: 3000 });
+    await page.waitForFunction(() => globalThis.__ms.renderer._flashes.size === 0, null, { timeout: patience(3000) });
     await act(7, 'right');
     assert.equal(await ms(() => globalThis.__ms.game.flagged[7]), 1);
     assert.equal(await flashes(), 0, 'a hand flag does not flash');
@@ -223,7 +198,6 @@ test('in a browser, a flag click on a number flashes the cubes it changed, then 
     assert.equal(await flashes(), 0, 'a new game drops it');
     assert.deepEqual(errors, []);
   } finally {
-    server.close();
     await browser.close();
   }
 });

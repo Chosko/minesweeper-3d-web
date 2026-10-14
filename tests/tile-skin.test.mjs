@@ -1,13 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createServer } from 'node:http';
-import { readFileSync, existsSync, statSync, mkdtempSync, rmSync } from 'node:fs';
-import { join, dirname, extname, normalize } from 'node:path';
+import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { FALLBACK_COLOR } from '../js/tokens.js';
+import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const suite = browserSuite({ args: [] });
 const CSS = readFileSync(join(ROOT, 'css/tokens.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 
 // ---------- token maps parsed from the sheet, per theme ----------
@@ -482,37 +483,6 @@ test('the shared tile recipe is three-free and token-free: every colour is an ar
 
 // ---------------------------------------------------------------- browser: measurement and legibility
 
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css' };
-
-function serve() {
-  const server = createServer((req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    const path = normalize(join(ROOT, decodeURIComponent(url.pathname)));
-    if (!path.startsWith(ROOT) || !existsSync(path) || statSync(path).isDirectory()) {
-      res.writeHead(404);
-      res.end();
-      return;
-    }
-    res.writeHead(200, { 'content-type': MIME[extname(path)] ?? 'application/octet-stream' });
-    res.end(readFileSync(path));
-  });
-  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
-}
-
-async function loadPlaywright() {
-  try {
-    return await import('playwright');
-  } catch {
-    const global = join(dirname(process.execPath), '..', 'lib', 'node_modules', 'playwright', 'index.mjs');
-    if (!existsSync(global)) return null;
-    try {
-      return await import(pathToFileURL(global).href);
-    } catch {
-      return null;
-    }
-  }
-}
-
 // A browser without WebGL 2, for a test where 3D is irrelevant: the menu screens keep no 3D backdrop
 // redrawing under software rendering. Every canvas refuses a 'webgl2' context; the others are untouched.
 function removeWebGL2() {
@@ -581,27 +551,17 @@ async function drawAllStates([size, ratio]) {
 }
 
 test('in a browser, Expert fits a 1024px wide window at MIN_TILE_SIZE or more, and every state is legible at 26 px and at it, at pixel ratios 1 and 2, in both themes', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch();
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   const { MIN_TILE_SIZE } = await skinModule();
-  const server = await serve();
   const shots = mkdtempSync(join(tmpdir(), 'ms3d-tile-skin-'));
   try {
     const page = await browser.newPage({ viewport: { width: NARROWEST, height: 768 }, deviceScaleFactor: 1 });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.addInitScript(removeWebGL2);
-    await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
+    await page.goto(`${base}/index.html`);
     await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
     await page.evaluate(() => globalThis.__ms.modes.start('classic-2d', { size: 'expert', noGuess: false }));
     const bar = await page.evaluate(() => document.querySelector('#hud .ui-overlay-bar').getBoundingClientRect().height);
@@ -614,7 +574,7 @@ test('in a browser, Expert fits a 1024px wide window at MIN_TILE_SIZE or more, a
     assert.equal(await page.evaluate(() => globalThis.__ms.board2D.layout.scrolls), false, `Expert fits 1024 × ${tallest} at the floor`);
     await page.setViewportSize({ width: NARROWEST, height: tallest - 1 });
     await page.waitForFunction(() => globalThis.__ms.board2D.layout.scrolls);
-    await page.goto(`http://127.0.0.1:${server.address().port}/dev/components.html`);
+    await page.goto(`${base}/dev/components.html`);
 
     for (const theme of ['light', 'dark']) {
       await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
@@ -634,7 +594,6 @@ test('in a browser, Expert fits a 1024px wide window at MIN_TILE_SIZE or more, a
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    await new Promise((resolve) => server.close(resolve));
     rmSync(shots, { recursive: true, force: true });
   }
 });
@@ -697,25 +656,15 @@ async function atlasDigests() {
 }
 
 test('in a browser, every 3D atlas layer is pixel-identical to the drawing before the shared recipe', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch();
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
     // index.html maps the bare `three` import js/textures.js makes.
-    await page.goto(`http://127.0.0.1:${server.address().port}/index.html?still-backdrop`);
+    await page.goto(`${base}/index.html?still-backdrop`);
     const { probe, layers } = await page.evaluate(atlasDigests);
     assert.equal(layers.length, ATLAS_DIGESTS.length, 'one digest per atlas layer');
     if (probe !== ATLAS_PROBE) {
@@ -726,6 +675,5 @@ test('in a browser, every 3D atlas layer is pixel-identical to the drawing befor
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    await new Promise((resolve) => server.close(resolve));
   }
 });

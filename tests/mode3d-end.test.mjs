@@ -5,17 +5,19 @@
 // input guards as static checks; in a browser, a 3D board won and lost through the real shell.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync, statSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { join, dirname, normalize, extname } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createModeHost, MODE_EVENTS } from '../js/shell/mode-host.js';
 import { create3DMode, END_DELAY_MS } from '../js/shell/mode-3d.js';
 import { createEndSkip } from '../js/shell/end-skip.js';
 import { resultsContent, createResultsView } from '../js/results/view.js';
 import { createBoardIdentity } from '../js/records/board.js';
+import { browserSuite } from './helpers/browser.mjs';
+import { patience } from './helpers/timing.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const suite = browserSuite();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const strip = (src) => src.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
 
@@ -396,50 +398,10 @@ test('the results screen takes over a 3D game on an opaque surface; over Classic
 
 // ---------------------------------------------------------------- browser
 
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css' };
-function serve() {
-  const server = createServer((req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    const path = normalize(join(ROOT, decodeURIComponent(url.pathname)));
-    if (!path.startsWith(ROOT) || !existsSync(path) || statSync(path).isDirectory()) {
-      res.writeHead(404);
-      res.end();
-      return;
-    }
-    res.writeHead(200, { 'content-type': MIME[extname(path)] ?? 'application/octet-stream' });
-    res.end(readFileSync(path));
-  });
-  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
-}
-async function loadPlaywright() {
-  try {
-    return await import('playwright');
-  } catch {
-    const global = join(dirname(process.execPath), '..', 'lib', 'node_modules', 'playwright', 'index.mjs');
-    if (!existsSync(global)) return null;
-    try {
-      return await import(pathToFileURL(global).href);
-    } catch {
-      return null;
-    }
-  }
-}
-
 test('in a browser, a 3D board won and lost ends on the results screen, which takes over the scene', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
@@ -465,7 +427,7 @@ test('in a browser, a 3D board won and lost ends on the results screen, which ta
         globalThis.__ms.aimAt(0);
         globalThis.__ms.click('left');
       }, BOARD);
-      await page.waitForFunction(() => globalThis.__ms.state.started, null, { timeout: 15000 });
+      await page.waitForFunction(() => globalThis.__ms.state.started, null, { timeout: patience(15000) });
     };
     const mines = () => ms(() => { const g = globalThis.__ms.game; return [...Array(g.n).keys()].filter((c) => g.number[c] === -1); });
     const play = (cells) => ms((cs) => {
@@ -488,8 +450,10 @@ test('in a browser, a 3D board won and lost ends on the results screen, which ta
     // script (a click with no press, which would end the delay) offer no pause
     const during = await ms((cs) => {
       const m = globalThis.__ms;
-      for (const c of cs) { if (!m.game.pressed[c]) { m.aimAt(c); m.click('left'); } }
-      const out = { state: m.game.state, endedAt: performance.now(), finished: m.modes.state.finished, endState: m.state.endState?.state };
+      // clickAt: just before the winning click, so no later than the end delay's start
+      let clickAt = 0;
+      for (const c of cs) { if (!m.game.pressed[c]) { m.aimAt(c); clickAt = performance.now(); m.click('left'); } }
+      const out = { state: m.game.state, clickAt, endedAt: performance.now(), finished: m.modes.state.finished, endState: m.state.endState?.state };
       out.cam = { ...m.info().cam };
       const modes = [];
       m.pause(); modes.push(m.state.mode);
@@ -513,10 +477,11 @@ test('in a browser, a 3D board won and lost ends on the results screen, which ta
     assert.equal(during.finished, false, 'game finished waits for the end delay');
     assert.equal(during.endState, 'won', 'the HUD\'s end state is frozen');
     assert.deepEqual(during.modes, ['playing', 'playing', 'playing', 'playing'], 'no pause is offered');
-    if (during.frameAt - during.endedAt < 1000) assert.equal(during.modeAfter, 'playing');
+    // a frame inside the delay, counted from before the winning click however long that click took
+    if (during.frameAt - during.clickAt < END_DELAY_MS) assert.equal(during.modeAfter, 'playing');
     assert.deepEqual(during.camAfter, during.cam, 'the camera does not move');
 
-    await page.waitForFunction(() => globalThis.__ms.state.mode === 'results', null, { timeout: 5000 });
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'results', null, { timeout: patience(5000) });
     const waited = await ms(() => performance.now()) - during.endedAt;
     assert.ok(waited >= 1000, `the results screen waits for the end delay (${waited} ms)`);
     assert.deepEqual(await ms(() => globalThis.__hand), [['finished', 'won']], 'recorded once, as won');
@@ -570,7 +535,7 @@ test('in a browser, a 3D board won and lost ends on the results screen, which ta
     for (let i = 0; i < 10 && !lost; i++) {
       await firstClick();
       if (await ms(() => globalThis.__ms.game.state) !== 'playing') {
-        await page.waitForFunction(() => globalThis.__ms.state.mode === 'results', null, { timeout: 5000 });
+        await page.waitForFunction(() => globalThis.__ms.state.mode === 'results', null, { timeout: patience(5000) });
         continue;
       }
       assert.equal(await play([(await mines())[0]]), 'lost');
@@ -578,7 +543,7 @@ test('in a browser, a 3D board won and lost ends on the results screen, which ta
     }
     assert.ok(lost, 'a board was lost');
     assert.equal(await mode(), 'playing', 'the loss wave plays on the board first');
-    await page.waitForFunction(() => globalThis.__ms.state.mode === 'results', null, { timeout: 5000 });
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'results', null, { timeout: patience(5000) });
     assert.equal(await ms(() => document.getElementById('results-title').textContent), 'Game over');
     assert.equal(await ms(() => document.getElementById('rs-bbbvSolved').classList.contains('hidden')), false, '3BV solved shows on a loss');
     assert.equal((await ms(() => globalThis.__hand)).at(-1)[1], 'lost');
@@ -591,25 +556,13 @@ test('in a browser, a 3D board won and lost ends on the results screen, which ta
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    server.close();
   }
 });
 
 test('in a browser, a press during the 3D end delay shows the results at once; R plays again, entering play with no ready card when the lock is granted and the ready card when it is refused', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
@@ -657,7 +610,7 @@ test('in a browser, a press during the 3D end delay shows the results at once; R
     const BOARD = { X: 8, Y: 1, Z: 1, mines: 3 };
     const winBoard = async (press = false) => {
       await ms(() => { globalThis.__ms.aimAt(0); globalThis.__ms.click('left'); });
-      await page.waitForFunction(() => globalThis.__ms.state.started, null, { timeout: 15000 });
+      await page.waitForFunction(() => globalThis.__ms.state.started, null, { timeout: patience(15000) });
       return ms((withPress) => {
         const m = globalThis.__ms;
         for (let c = 0; c < m.game.n; c++) {
@@ -700,7 +653,7 @@ test('in a browser, a press during the 3D end delay shows the results at once; R
 
     // ---- the next win, its delay played out; Enter on Play again with the lock refused: the ready card, with its message
     assert.equal((await winBoard()).state, 'won');
-    await page.waitForFunction(() => globalThis.__ms.state.mode === 'results', null, { timeout: 5000 });
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'results', null, { timeout: patience(5000) });
     await ms(() => { globalThis.__lock.grant = false; });
     await page.keyboard.press('Enter');
     await page.waitForFunction(() => document.getElementById('ready-msg').textContent !== '');
@@ -710,6 +663,5 @@ test('in a browser, a press during the 3D end delay shows the results at once; R
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    server.close();
   }
 });

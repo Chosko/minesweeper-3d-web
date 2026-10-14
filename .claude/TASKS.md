@@ -451,7 +451,7 @@ Preconditions: none
 
 ## 155. Load-robust timing tests and one shared Chromium per test file
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: tests/helpers/browser.mjs, tests/engine-3d-profile.test.mjs, tests/engine-graph.test.mjs, tests/generation-solver.test.mjs, tests/records-history.test.mjs, tests/render-3d-flag-flash.test.mjs, tests/mode3d-end.test.mjs, tests/replay-viewer-3d.test.mjs, tests/classic2d-mode.test.mjs, tests/shell-mode-3d.test.mjs, tests/camera-spawn.test.mjs, tests/classic2d-cursor.test.mjs, tests/classic2d-fidelity.test.mjs, tests/classic2d-pointer.test.mjs, tests/classic2d-view.test.mjs, tests/components.test.mjs, tests/mode3d-board-choice.test.mjs, tests/mode3d-session.test.mjs, tests/platform-blob-store.test.mjs, tests/platform-browser.test.mjs, tests/records-replays.test.mjs, tests/records-screen-3d.test.mjs, tests/records-screen.test.mjs, tests/render-3d-feedback.test.mjs, tests/replay-viewer.test.mjs, tests/results-watch.test.mjs, tests/results.test.mjs, tests/settings-appliers.test.mjs, tests/settings-page.test.mjs, tests/shell-first-use.test.mjs, tests/shell-help.test.mjs, tests/shell-history.test.mjs, tests/shell-lock-fallback.test.mjs, tests/shell-menu.test.mjs, tests/shell-mode-host.test.mjs, tests/shell-pause-esc.test.mjs, tests/shell-pause.test.mjs, tests/shell-returning.test.mjs, tests/shell-router.test.mjs, tests/tile-skin.test.mjs, README.md, .claude/context/testing.md
 Preconditions: 154

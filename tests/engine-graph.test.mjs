@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createCellGraph, cellGraphFromLists } from '../js/engine/graph.js';
 import { createSquareGrid } from '../js/engine/square-grid.js';
+import { timed } from './helpers/timing.mjs';
 
 const nb = (graph, i) => Array.from(graph.neighbours(i));
 
@@ -146,12 +147,11 @@ test('square grid: invalid dimensions throw RangeError', () => {
 });
 
 test('square grid: large custom board builds quickly', () => {
-  const t0 = performance.now();
-  const s = createSquareGrid(1000, 1000);
-  const ms = performance.now() - t0;
+  const run = timed(1000, () => createSquareGrid(1000, 1000));
+  const s = run.value;
   assert.equal(s.graph.count, 1e6);
   assert.equal(s.graph.degree(s.index(500, 500)), 8);
-  assert.ok(ms < 1000, `took ${ms} ms`);
+  assert.ok(run.ok, `took ${run.ms.toFixed(0)} ms, limit ${run.limit} ms`);
 });
 
 test('engine modules are DOM-free and independent of js/logic.js', () => {

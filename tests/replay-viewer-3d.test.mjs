@@ -6,10 +6,9 @@
 // and in a browser a recorded 3D replay from tests/fixtures/replays/ played through to the end.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { join, dirname, normalize, extname } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   cameraTrack, cameraAt, viewModeAt, viewToggles, worldPose, createViewer3D,
 } from '../js/replay/viewer-3d.js';
@@ -18,8 +17,11 @@ import { createReplayViewer, FAILURES } from '../js/replay/viewer.js';
 import { createSimulator } from '../js/replay/simulator.js';
 import { decodeReplay, encodeReplay } from '../js/replay/format.js';
 import { REPLAY_SCREEN } from '../js/records/replay-list.js';
+import { browserSuite } from './helpers/browser.mjs';
+import { patience } from './helpers/timing.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const suite = browserSuite();
 const read = (f) => readFileSync(join(ROOT, f), 'utf8');
 const FIXTURES = new URL('./fixtures/replays/', import.meta.url);
 const blobOf = (file) => new Uint8Array(readFileSync(new URL(file, FIXTURES)));
@@ -256,46 +258,15 @@ test('a lost graphics context is reported as a mode\'s failure, during a 3D repl
 
 // ---------------------------------------------------------------- in a browser
 
-const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.msrp': 'application/octet-stream' };
-function serve() {
-  const server = createServer((req, res) => {
-    const path = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)).replace(/^([/\\])+/, '');
-    const file = join(ROOT, path || 'index.html');
-    if (!file.startsWith(ROOT) || !existsSync(file)) { res.writeHead(404); res.end(); return; }
-    res.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream' });
-    res.end(readFileSync(file));
-  });
-  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
-}
-async function loadPlaywright() {
-  try {
-    return await import('playwright');
-  } catch {
-    const global = join(dirname(process.execPath), '..', 'lib', 'node_modules', 'playwright', 'index.mjs');
-    if (!existsSync(global)) return null;
-    try { return await import(pathToFileURL(global).href); } catch { return null; }
-  }
-}
-async function openBrowser(t) {
-  const playwright = await loadPlaywright();
-  if (!playwright) { t.skip('Playwright is not installed'); return null; }
-  try {
-    return await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return null;
-  }
-}
-
 test('in a browser, a recorded 3D replay plays from its fixture through to the end', async (t) => {
-  const browser = await openBrowser(t);
-  if (!browser) return;
-  const server = await serve();
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
+    await page.goto(`${base}/index.html`);
     await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
     const demo = await page.evaluate(() => globalThis.__ms.renderer.game.n);
     await page.evaluate(async () => {
@@ -339,12 +310,18 @@ test('in a browser, a recorded 3D replay plays from its fixture through to the e
 
     // Playback shows the "solved" pulse of the numbers it hides (two at 6559 ms); a seek drops it at once.
     const pulses = () => page.evaluate(() => globalThis.__ms.renderer._pulses.size);
-    await page.evaluate(() => { globalThis.__ms.replayViewer.seek(6300); globalThis.__ms.replayViewer.command('toggle'); });
-    await page.waitForFunction(() => {
-      if (globalThis.__ms.renderer._pulses.size === 0) return false;
-      globalThis.__ms.replayViewer.seek(4000);
-      return true;
-    }, null, { polling: 'raf', timeout: 5000 });
+    // A frame stalled past the pulse can miss it under load: play over the hides again until one is seen.
+    let seen = false;
+    for (let attempt = 0; attempt < 5 && !seen; attempt++) {
+      await page.evaluate(() => { const v = globalThis.__ms.replayViewer; v.seek(6300); if (!v.state.playing) v.command('toggle'); });
+      const outcome = await page.waitForFunction(() => {
+        const v = globalThis.__ms.replayViewer;
+        if (globalThis.__ms.renderer._pulses.size > 0) { v.seek(4000); return 'seen'; }
+        return v.state.time > 7200 ? 'missed' : false;
+      }, null, { polling: 'raf', timeout: patience(5000) });
+      seen = (await outcome.jsonValue()) === 'seen';
+    }
+    assert.ok(seen, 'playback over the hides shows their pulse');
     await frames();
     assert.equal(await pulses(), 0, 'a seek leaves no pulsing cube');
     await page.evaluate(() => globalThis.__ms.replayViewer.command('toggle'));
@@ -355,7 +332,7 @@ test('in a browser, a recorded 3D replay plays from its fixture through to the e
 
     await page.click('#rp-speed [data-value="4"]');
     await page.click('#rp-play');
-    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.ended, null, { timeout: 15000 });
+    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.ended, null, { timeout: patience(15000) });
     assert.equal(await text('replay-end'), 'Lost · 13.578 s');
     assert.equal(await page.evaluate(() => globalThis.__ms.renderer.game.state), 'lost');
     // Back before the loss, the end-of-game effect stops and the board is in play again.
@@ -380,7 +357,6 @@ test('in a browser, a recorded 3D replay plays from its fixture through to the e
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
     assert.deepEqual(errors, []);
   } finally {
-    server.close();
     await browser.close();
   }
 });

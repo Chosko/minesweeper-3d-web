@@ -4,10 +4,9 @@
 // overlay bar.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createServer } from 'node:http';
-import { readFileSync, existsSync, statSync } from 'node:fs';
-import { join, dirname, extname, normalize } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { createButtonSwap } from '../js/classic2d/button-swap.js';
 import { BUTTON, mountPointerInput } from '../js/classic2d/pointer-input.js';
@@ -15,8 +14,10 @@ import { PAN_MODIFIER } from '../js/classic2d/board-view.js';
 import { createSquareGrid } from '../js/engine/square-grid.js';
 import { createGameWithMines, CELL } from '../js/engine/rules.js';
 import { REFERENCE_PROFILE } from '../js/engine/profiles.js';
+import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const suite = browserSuite();
 const { LEFT, MIDDLE, RIGHT } = BUTTON;
 
 // ---------- the switch and the translation ----------
@@ -172,50 +173,10 @@ test('mounted, swap on: a shift + primary press on a board that scrolls is still
 
 // ---------- the toggle on the board, in a browser ----------
 
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css' };
-function serve() {
-  const server = createServer((req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    const path = normalize(join(ROOT, decodeURIComponent(url.pathname)));
-    if (!path.startsWith(ROOT) || !existsSync(path) || statSync(path).isDirectory()) {
-      res.writeHead(404);
-      res.end();
-      return;
-    }
-    res.writeHead(200, { 'content-type': MIME[extname(path)] ?? 'application/octet-stream' });
-    res.end(readFileSync(path));
-  });
-  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
-}
-async function loadPlaywright() {
-  try {
-    return await import('playwright');
-  } catch {
-    const global = join(dirname(process.execPath), '..', 'lib', 'node_modules', 'playwright', 'index.mjs');
-    if (!existsSync(global)) return null;
-    try {
-      return await import(pathToFileURL(global).href);
-    } catch {
-      return null;
-    }
-  }
-}
-
 test('in a browser: the swap toggle shows on the Classic 2D board while unpaused, swaps a click, keeps across games and never takes focus', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     const errors = [];
@@ -229,8 +190,8 @@ test('in a browser: the swap toggle shows on the Classic 2D board while unpaused
     });
     const pressed = () => ms(() => document.getElementById('hud-swap').getAttribute('aria-pressed'));
 
-    // A dense board, so the first reveal at the centre leaves the corner closed.
-    await ms(() => globalThis.__ms.modes.start('classic-2d', { size: 'custom', custom: { width: 9, height: 9, mines: 60 }, noGuess: false }));
+    // A board at the 9 × 9 mine cap, so the first reveal at the centre leaves the corner closed.
+    await ms(() => globalThis.__ms.modes.start('classic-2d', { size: 'custom', custom: { width: 9, height: 9, mines: 31 }, noGuess: false }));
     await page.waitForFunction(() => globalThis.__ms.board2D);
     assert.equal(await shown(), true, 'on the board in play');
     assert.equal(await pressed(), 'false', 'off at page load');
@@ -250,7 +211,7 @@ test('in a browser: the swap toggle shows on the Classic 2D board while unpaused
     await page.waitForFunction(() => globalThis.__ms.modes.state.started);
     const corner = await at(0, 0);
     await page.mouse.click(corner.x, corner.y);
-    assert.equal(await ms(() => document.getElementById('hud-mines').textContent), '59', 'a left click flags');
+    assert.equal(await ms(() => document.getElementById('hud-mines').textContent), '30', 'a left click flags');
 
     await page.click('#hud-pause');
     assert.equal(await shown(), false, 'hidden while paused');
@@ -268,7 +229,6 @@ test('in a browser: the swap toggle shows on the Classic 2D board while unpaused
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    server.close();
   }
 });
 

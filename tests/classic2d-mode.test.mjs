@@ -6,10 +6,9 @@
 import { test } from 'node:test';
 import { startCell } from '../js/generation/start-cell.js';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync, statSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { join, dirname, normalize, extname } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { createClassic2DMode, MODE_ID, END_DELAY_MS } from '../js/classic2d/mode.js';
 import { WIN, LOSS } from '../js/classic2d/end-effect.js';
@@ -26,8 +25,11 @@ import { CUSTOM_LIMITS } from '../js/engine/profiles.js';
 import { CELL } from '../js/engine/rules.js';
 import { createStorage } from '../js/platform/storage.js';
 import { createMemoryBackend } from '../js/platform/memory-backend.js';
+import { browserSuite } from './helpers/browser.mjs';
+import { patience } from './helpers/timing.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const suite = browserSuite();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
@@ -1055,35 +1057,6 @@ test('the catalogue documents the Classic 2D board choice', () => {
 
 // ---------------------------------------------------------------- browser
 
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css' };
-function serve() {
-  const server = createServer((req, res) => {
-    const url = new URL(req.url, 'http://localhost');
-    const path = normalize(join(ROOT, decodeURIComponent(url.pathname)));
-    if (!path.startsWith(ROOT) || !existsSync(path) || statSync(path).isDirectory()) {
-      res.writeHead(404);
-      res.end();
-      return;
-    }
-    res.writeHead(200, { 'content-type': MIME[extname(path)] ?? 'application/octet-stream' });
-    res.end(readFileSync(path));
-  });
-  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
-}
-async function loadPlaywright() {
-  try {
-    return await import('playwright');
-  } catch {
-    const global = join(dirname(process.execPath), '..', 'lib', 'node_modules', 'playwright', 'index.mjs');
-    if (!existsSync(global)) return null;
-    try {
-      return await import(pathToFileURL(global).href);
-    } catch {
-      return null;
-    }
-  }
-}
-
 // A browser without WebGL 2, for a test where 3D is irrelevant: the menu screens keep no 3D backdrop
 // redrawing under software rendering. Every canvas refuses a 'webgl2' context; the others are untouched.
 function removeWebGL2() {
@@ -1092,20 +1065,9 @@ function removeWebGL2() {
 }
 
 test('in a browser, menu → Classic 2D → Expert → first click → pause → resume → back to menu reports the abandoned game', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
     const errors = [];
@@ -1165,8 +1127,9 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
     const before = Number(await ms(() => document.getElementById('hud-time').textContent));
     const card = async () => Number((await ms(() => document.getElementById('pause-sub').textContent)).match(/^Time (\d+)\./)[1]);
     const cardBefore = await card();
-    await page.waitForTimeout(1200);
-    await ms(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    await page.waitForFunction(([hud, sub]) => Number(document.getElementById('hud-time').textContent) > hud
+      && Number(document.getElementById('pause-sub').textContent.match(/^Time (\d+)\./)[1]) > sub, [before, cardBefore], { timeout: patience(5000) });
+    assert.equal(await mode(), 'paused', 'still paused');
     assert.ok(Number(await ms(() => document.getElementById('hud-time').textContent)) > before, 'the timer runs while paused');
     assert.ok(await card() > cardBefore, 'the pause card\'s time advances while it shows');
     await page.click('#p-resume');
@@ -1199,25 +1162,13 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    server.close();
   }
 });
 
 test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800 in both themes: Expert unclipped in play and in the viewer, Beginner at 48 px, the panel\'s readouts and Pause, a clipped board\'s marks and hint, and no ring for a mouse player', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   const STANDARD = { beginner: { size: 'beginner', noGuess: false }, expert: { size: 'expert', noGuess: false } };
   try {
     for (const viewport of [{ width: 1024, height: 768 }, { width: 1366, height: 650 }, { width: 1280, height: 800 }]) {
@@ -1331,30 +1282,19 @@ test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800 in both themes: 
     }
   } finally {
     await browser.close();
-    server.close();
   }
 });
 
 test('in a browser, a Classic 2D Beginner game played by mouse and by keyboard calls the cues on the one sound instance, muted while the setting is on', async (t) => {
-  const playwright = await loadPlaywright();
-  if (!playwright) {
-    t.skip('Playwright is not installed');
-    return;
-  }
-  let browser;
-  try {
-    browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  } catch (error) {
-    t.skip(`chromium could not start: ${error.message.split('\n')[0]}`);
-    return;
-  }
-  const server = await serve();
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
   try {
     const page = await browser.newPage({ viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.addInitScript(removeWebGL2);
-    await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
+    await page.goto(`${base}/index.html`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     const ms = (fn, arg) => page.evaluate(fn, arg);
     // Spy on the cues of the sound module's one instance, which js/main.js plays and applyAudio drives.
@@ -1451,6 +1391,5 @@ test('in a browser, a Classic 2D Beginner game played by mouse and by keyboard c
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
-    server.close();
   }
 });
