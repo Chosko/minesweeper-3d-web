@@ -415,14 +415,19 @@
       <div class="ui-actions ui-actions--row">
         <button type="button" id="r-again" class="ui-button ui-button--primary">Play again</button>
         <button type="button" id="r-watch" class="ui-button ui-button--secondary hidden">Watch replay</button>
+        <button type="button" id="r-look" class="ui-button ui-button--secondary hidden">Look at the board</button>
         <button type="button" id="r-records" class="ui-button ui-button--secondary">Records</button>
         <button type="button" id="r-menu" class="ui-button ui-button--secondary">Main menu</button>
         <span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>
         <span class="ui-text ui-text--muted" id="results-keys">R: Play again</span>
       </div>
+      <p id="results-look-note" class="ui-text ui-text--warning hidden" role="status"></p>
     </section>
   </section>
   <!-- /Results -->
+
+  <!-- Look at the board: the hint over the finished 3D board -->
+  <p id="look" class="look-hint hidden" role="status">Looking at the finished board &middot; Esc or any button: back to the results</p>
 
   <!-- Pause / end menu -->
   <section id="pause" class="overlay hidden" aria-label="Pause menu">

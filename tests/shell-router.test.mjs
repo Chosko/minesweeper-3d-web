@@ -334,7 +334,7 @@ test('Esc and the controller back button always resolve Back through the router'
   assert.match(MAIN, /backButtons\(S\.mode\)/, 'the controller back buttons depend on the screen');
 });
 
-test('the arrow keys move focus through the D-pad\'s spatial search, off the boards, Records and the replay viewer', () => {
+test('the arrow keys move focus through the D-pad\'s spatial search, off the boards, Records, the replay viewer and the look', () => {
   assert.match(read('js/input.js'), /if \(!e\.repeat \|\| ARROW_KEYS\.has\(e\.code\)\) this\.o\.onKey\?\.\(e\.code, e\)/,
     'arrows reach the shell with the browser\'s key repeat');
   assert.match(MAIN, /const dir = arrowDirection\(code\);\s*if \(dir\) \{ keyNav\(dir, e\); return; \}/);
@@ -344,7 +344,7 @@ test('the arrow keys move focus through the D-pad\'s spatial search, off the boa
   assert.match(nav, /keepsArrow\(cur, dir\)/, 'a control that owns the arrow keeps it');
   assert.match(nav, /navStep\(layer, items, cur, dir\)/, 'the same spatial search as the D-pad');
   assert.match(MAIN, /function padNav\(dir\)[\s\S]*?navStep\(layer, items, cur, dir\)/, 'which the D-pad uses');
-  assert.match(MAIN, /const KEY_NAV_OFF = new Set\(\['playing', 'classic-2d', 'records', REPLAY_SCREEN\]\)/);
+  assert.match(MAIN, /const KEY_NAV_OFF = new Set\(\['playing', 'classic-2d', 'records', REPLAY_SCREEN, LOOK_SCREEN\]\)/, 'nor the look at a finished 3D board, whose card is hidden');
   assert.match(MAIN, /function keyFocus\(el\) \{[\s\S]*?classList\.remove\('pad-nav'\)[\s\S]*?focusVisible: true/,
     'the keyboard shows the kit\'s keyboard ring, not the controller\'s');
 });

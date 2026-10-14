@@ -28,7 +28,7 @@ loop's render-on-demand. The 3D board choice, session and adapter
   player took the failed board's standard offer) and enters play through
   `enterPlay3D`; `leave` is `leaveGame` (leaves the session, releases lock
   and lockless play, hides `#m3d-status`); `release` exits pointer lock
-  before the results screen takes over; `sampler` builds `createSampler3D`
+  before the results screen shows; `sampler` builds `createSampler3D`
   ([replay.md](replay.md)) over camera, controls and `S.spacing`.
   `js/main.js` reads `mode3d.ending` (via `endDelay()`) and calls only
   `contextLost()`, `finishNow()`, `cancelGeneration()` and `mode3d.tick()`
@@ -115,8 +115,8 @@ loop's render-on-demand. The 3D board choice, session and adapter
   `performance.now()`; the D-pad's presses and repeats take one untimed
   step each; `X` while `Input.isActive` sets `spacingToggle`
   ([input.md](input.md)).
-- **Render on demand.** `shouldRender` never draws while `results` shows a
-  3D game; otherwise it draws when `needRender` is set or
+- **Render on demand.** While `results` shows a 3D game `shouldRender`
+  draws only on `needRender`, a sync or a running effect; otherwise it draws when `needRender` is set or
   `renderer.sync()` reported changes, on every frame of a menu screen (the
   orbiting demo, except under the `?still-backdrop` hook,
   [app-shell.md](app-shell.md) § PUBLIC API), `endState` changed,
@@ -134,7 +134,7 @@ loop's render-on-demand. The 3D board choice, session and adapter
 - [../domain/features/3d-play-flow.md](../domain/features/3d-play-flow.md) —
   presets, generating state, timer start, the 3D mode's reports.
 - [../domain/features/3d-results-records-screens.md](../domain/features/3d-results-records-screens.md)
-  — the 3D end sequence and the results takeover.
+  — the 3D end sequence, the results over the scene and the look.
 - ORIGINAL_SPEC "Controls" — the start pose and the return to it.
 
 ## CROSS-REFERENCES
@@ -146,7 +146,7 @@ loop's render-on-demand. The 3D board choice, session and adapter
 - [input.md](input.md) — `Input` callbacks, picking, spawn pose.
 - [audio.md](audio.md) — the `sfx` calls.
 - [testing.md](testing.md) — `tests/mode3d-*.test.mjs` (wiring, end
-  sequence and takeover), the pointer-lock fallback tests.
+  sequence, the results over the scene and the look), the pointer-lock fallback tests.
 
 ## WHEN TO READ THE SOURCE
 

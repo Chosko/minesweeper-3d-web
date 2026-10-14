@@ -1,15 +1,16 @@
 // The 3D end of game (feature 3d-results-records-screens): at a win or a loss input freezes while
-// the end effect plays, and after one end delay the 3D mode releases pointer lock and reports game
-// finished, so the shared results screen takes over the 3D scene. The adapter's delay, the ignored
-// pause and the hidden-tab and lost-context rules over fakes; the banner's removal and the shell's
-// input guards as static checks; in a browser, a 3D board won and lost through the real shell.
+// the end effect plays, and after the board's end delay the 3D mode releases pointer lock and
+// reports game finished, so the shared results screen shows over the dimmed 3D scene, where Look at
+// the board flies over the frozen finished board. The adapter's delay, the ignored pause and the
+// hidden-tab and lost-context rules over fakes; the banner's removal and the shell's input guards
+// as static checks; in a browser, 3D boards won and lost through the real shell, and looked at.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createModeHost, MODE_EVENTS } from '../js/shell/mode-host.js';
-import { create3DMode, END_DELAY_MS } from '../js/shell/mode-3d.js';
+import { create3DMode, END_DELAY_MS, endDelayMs } from '../js/shell/mode-3d.js';
 import { createEndSkip } from '../js/shell/end-skip.js';
 import { resultsContent, createResultsView } from '../js/results/view.js';
 import { createBoardIdentity } from '../js/records/board.js';
@@ -110,10 +111,11 @@ function ended(state, opts) {
 
 // ---------------------------------------------------------------- the end delay
 
-test('the end delay is one constant of one second, shared by win and loss', () => {
+test('the end delay is one function of the finished board, shared by win and loss; one second on this small board', () => {
+  assert.equal(endDelayMs({ X: 4, Y: 5, Z: 6 }), END_DELAY_MS);
   assert.equal(END_DELAY_MS, 1000);
   const src = strip(read('js/shell/mode-3d.js'));
-  assert.equal(src.match(/END_DELAY_MS/g).length >= 2, true, 'the adapter waits for the exported constant');
+  assert.match(src, /clock\.setTimeout\(\(\) => finish\(g\), endDelayMs\(session\.board\)\)/, 'the adapter waits for the finished board\'s delay');
   assert.doesNotMatch(src, /setTimeout\([^)]*\b\d{3,}\b/, 'no other delay is written in the adapter');
 });
 
@@ -273,9 +275,9 @@ test('during the delay every click is consumed, a script\'s too; losing focus fo
   skip.reset(); // its release lands in another tab
   assert.equal(skip.keyDown({ code: 'ControlLeft', repeat: false }), false, 'the next Ctrl press reaches the game');
   assert.equal(skip.keyUp({ code: 'ControlLeft' }), false);
-  assert.match(MAIN, /window\.addEventListener\('blur', \(\) => END_SKIP\.reset\(\)\)/);
-  assert.match(MAIN, /addEventListener\('visibilitychange', \(\) => \{ if \(document\.hidden\) END_SKIP\.reset\(\); \}\)/);
-  assert.match(MAIN, /if \(END_SKIP\.click\(e\)\) swallow\(e\)/, 'the click\'s isTrusted reaches the skip');
+  assert.match(MAIN, /window\.addEventListener\('blur', \(\) => \{ END_SKIP\.reset\(\); LOOK_END\.reset\(\); \}\)/);
+  assert.match(MAIN, /addEventListener\('visibilitychange', \(\) => \{ if \(document\.hidden\) \{ END_SKIP\.reset\(\); LOOK_END\.reset\(\); \} \}\)/);
+  assert.match(MAIN, /if \(END_SKIP\.click\(e\) \|\| LOOK_END\.click\(e\)\) swallow\(e\)/, 'the click\'s isTrusted reaches the skip');
 });
 
 test('the pointer lock released during the delay — the browser\'s Esc, whose key the page never sees — ends it', () => {
@@ -333,8 +335,9 @@ test('every pause in js/main.js goes through the guard that ignores it during th
 
 test('during the end delay a press ends it and nothing else acts: the shell consumes it before any other listener', () => {
   assert.match(MAIN, /const END_SKIP = createEndSkip\(\{ ending: \(\) => endDelay\(\), skip: \(\) => activeMode\(\)\?\.finishNow\(\) \}\)/);
-  for (const type of ['keydown', 'keyup']) assert.match(MAIN, new RegExp(`window\\.addEventListener\\('${type}', \\(e\\) => \\{ if \\(END_SKIP\\.key(Down|Up)\\(e\\)\\) swallow\\(e\\); \\}, true\\)`), `${type} in the capture phase`);
-  assert.match(MAIN, /for \(const type of \['pointerdown', 'mousedown'\]\) window\.addEventListener\(type, \(e\) => \{ if \(END_SKIP\.press\(\)\) swallow\(e\); \}, true\)/);
+  assert.match(MAIN, /window\.addEventListener\('keydown', \(e\) => \{ if \(END_SKIP\.keyDown\(e\)/, 'keydown in the capture phase');
+  assert.match(MAIN, /window\.addEventListener\('keyup', \(e\) => \{ if \(\[END_SKIP\.keyUp\(e\), LOOK_END\.keyUp\(e\)\]\.some\(Boolean\)\) swallow\(e\); \}, true\)/, 'keyup in the capture phase');
+  assert.match(MAIN, /for \(const type of \['pointerdown', 'mousedown'\]\) window\.addEventListener\(type, \(e\) => \{ if \(END_SKIP\.press\(\)/);
   assert.match(MAIN, /for \(const type of \['pointerup', 'mouseup'\]\)/);
   assert.match(MAIN, /for \(const type of \['click', 'auxclick', 'contextmenu'\]\)/);
   assert.match(MAIN, /const swallow = \(e\) => \{ e\.preventDefault\(\); e\.stopImmediatePropagation\(\); \}/);
@@ -346,7 +349,7 @@ test('during the end delay a press ends it and nothing else acts: the shell cons
 test('Back, camera movement and the view-mode keys are ignored during the end delay', () => {
   assert.match(fnBody(MAIN, 'shellBack'), /endDelay\(\)/, 'Back (Esc, the controller\'s back buttons) is ignored');
   assert.match(fnBody(MAIN, 'historyBack'), /endDelay\(\)/, 'the browser\'s Back too');
-  assert.match(MAIN, /isActive: \(\) => S\.mode === 'playing' && !endDelay\(\)/, 'mouse look, wheel and buttons are ignored');
+  assert.match(MAIN, /isActive: \(\) => \(S\.mode === 'playing' && !endDelay\(\)\) \|\| looking\(\)/, 'mouse look, wheel and buttons are ignored');
   assert.match(fnBody(MAIN, 'frame'), /endDelay\(\)/, 'camera movement and view-mode keys are ignored');
   assert.doesNotMatch(MAIN, /ending3D/, 'one end-delay test for both modes');
 });
@@ -356,8 +359,34 @@ test('the 3D flow releases pointer lock for the results screen', () => {
   assert.match(flow, /release: \(\) => input\.exitLock\(\)/);
 });
 
-test('the 3D scene stops rendering while the results screen shows over it', () => {
-  assert.match(fnBody(MAIN, 'shouldRender'), /S\.mode === 'results'/);
+test('the 3D scene is drawn behind a 3D results screen on demand only: a resize, an end effect still running, the card\'s first frame', () => {
+  const body = fnBody(MAIN, 'shouldRender');
+  assert.match(body, /if \(S\.mode === 'results' && RESULTS\.current\?\.mode === '3d'\) return needRender \|\| synced \|\| rendererAnimating\(\) === true;/);
+  assert.match(MAIN, /onChange: \(\) => \{ layerChanged\(\); needRender = true;/, 'every screen change draws one frame');
+  assert.match(MAIN, /window\.addEventListener\('resize', \(\) => \{ renderer\.resize\(\); needRender = true; \}\)/);
+});
+
+// ---------------------------------------------------------------- the look (static)
+
+test('the look gates every board action and the pause', () => {
+  assert.match(fnBody(MAIN, 'onAction'), /if \(!g \|\| S\.selected < 0 \|\| looking\(\)\) return;/, 'no reveal, flag or chord');
+  assert.match(fnBody(MAIN, 'pauseGame'), /endDelay\(\) \|\| looking\(\)/, 'no pause');
+  assert.match(fnBody(MAIN, 'looking'), /S\.mode === LOOK_SCREEN/);
+  // a press in the look ends it and is consumed before Input or MouseActions sees it
+  assert.match(MAIN, /const LOOK_END = createEndSkip\(\{ ending: \(\) => looking\(\), skip: \(\) => endLook\(\) \}\)/);
+  assert.match(MAIN, /for \(const type of \['pointerdown', 'mousedown'\]\) window\.addEventListener\(type, \(e\) => \{ if \(END_SKIP\.press\(\) \|\| LOOK_END\.press\(\)\) swallow\(e\); \}, true\)/);
+  assert.match(MAIN, /if \(END_SKIP\.release\(e\) \|\| LOOK_END\.release\(e\)\) swallow\(e\)/);
+  assert.match(MAIN, /if \(END_SKIP\.click\(e\) \|\| LOOK_END\.click\(e\)\) swallow\(e\)/);
+  assert.match(MAIN, /if \(END_SKIP\.keyDown\(e\) \|\| \(\(isBackKey\(e\.code\) \|\| !looking\(\)\) && LOOK_END\.keyDown\(e\)\)\) swallow\(e\)/, 'Esc ends the look; the flight and view-mode keys fly; outside it every key reaches LOOK_END');
+  assert.match(fnBody(MAIN, 'showResults'), /over3d: content\.over3d && board/, 'the scene behind the card only while the finished board is there');
+  assert.match(fnBody(MAIN, 'refusedLook'), /RESULTS_VIEW\.noteLook\(LOOK_REFUSED\);\s*keyFocus\(document\.getElementById\('r-look'\)\)/, 'a refused lock: the note, and focus on Look at the board so Enter retries');
+  const pad = fnBody(MAIN, 'handlePad');
+  assert.ok(pad.indexOf('LOOK_END.pad(') > pad.indexOf('END_SKIP.pad(') && pad.indexOf('LOOK_END.pad(') < pad.indexOf('restartInput('), 'any controller button ends the look before anything else reads it');
+  assert.match(fnBody(MAIN, 'padLook'), /padSticks\(p, dt\)/, 'the sticks fly');
+  assert.doesNotMatch(fnBody(MAIN, 'padLook'), /mouse\.|padClick|backGame|pauseGame/, 'and nothing else');
+  assert.match(MAIN, /\} else if \(LOOK_END\.lockLost\(\)\) \{/, 'the browser\'s Esc releasing the lock returns to the card');
+  assert.match(fnBody(MAIN, 'frame'), /const looking3D = looking\(\)/);
+  assert.match(fnBody(MAIN, 'frame'), /if \(\(playing && !frozen\) \|\| looking3D\) \{\s*cam\.move\(dt, input\.move\)/, 'the camera flies in the look');
 });
 
 // ---------------------------------------------------------------- the results surface
@@ -369,9 +398,9 @@ const summary = (board) => ({
   bbbvPerSecond: 10 / 9, efficiency: 500, seed: 1, generatorVersion: 1, endedAt: '2026-10-11T10:00:00.000Z',
 });
 
-test('the results screen takes over a 3D game on an opaque surface; over Classic 2D the board stays visible', () => {
-  assert.equal(resultsContent({ summary: summary(BOARD_3D) }).takeover, true);
-  assert.equal(resultsContent({ summary: summary(BOARD_2D) }).takeover, false);
+test('the results screen shows over a 3D game on a dimmed translucent surface, the scene behind it; over Classic 2D the board stays visible', () => {
+  assert.equal(resultsContent({ summary: summary(BOARD_3D) }).over3d, true);
+  assert.equal(resultsContent({ summary: summary(BOARD_2D) }).over3d, false);
   const classes = new Set();
   const node = () => ({
     textContent: '', classList: { toggle: () => {}, add: () => {}, remove: () => {}, contains: () => false },
@@ -386,19 +415,20 @@ test('the results screen takes over a 3D game on an opaque surface; over Classic
   };
   const view = createResultsView({ root, onPlayAgain() {}, onRecords() {}, onMenu() {} });
   view.show(resultsContent({ summary: summary(BOARD_3D) }));
-  assert.equal(classes.has('results--takeover'), true);
+  assert.equal(classes.has('results--over3d'), true);
   view.show(resultsContent({ summary: summary(BOARD_2D) }));
-  assert.equal(classes.has('results--takeover'), false);
+  assert.equal(classes.has('results--over3d'), false);
   const css = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
-  const rule = css.match(/#results\.results--takeover\s*\{([^}]*)\}/);
-  assert.ok(rule, 'the takeover surface has its rule');
-  assert.match(rule[1], /background:\s*var\(--color-backdrop\)/, 'an opaque surface in the chosen theme');
-  assert.match(rule[1], /backdrop-filter:\s*none/);
+  assert.doesNotMatch(css, /results--takeover/, 'the opaque takeover surface is gone');
+  const rule = css.match(/#results\.results--over3d\s*\{([^}]*)\}/);
+  assert.ok(rule, 'the surface over the 3D scene has its rule');
+  assert.match(rule[1], /background:\s*var\(--color-backdrop-scrim-strong\)/, 'a dimmed translucent scrim of the chosen theme');
+  assert.match(rule[1], /backdrop-filter:\s*none/, 'the scene reads behind it');
 });
 
 // ---------------------------------------------------------------- browser
 
-test('in a browser, a 3D board won and lost ends on the results screen, which takes over the scene', async (t) => {
+test('in a browser, a 3D board won and lost ends on the results screen, shown over the dimmed scene', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -508,22 +538,28 @@ test('in a browser, a 3D board won and lost ends on the results screen, which ta
     const surface = await ms(() => {
       const el = document.getElementById('results');
       const cs = getComputedStyle(el);
-      return { takeover: el.classList.contains('results--takeover'), bg: cs.backgroundColor, filter: cs.backdropFilter };
+      return { over3d: el.classList.contains('results--over3d'), bg: cs.backgroundColor, filter: cs.backdropFilter };
     });
-    assert.equal(surface.takeover, true);
-    assert.doesNotMatch(surface.bg, /rgba\(.*,\s*0(\.\d+)?\)$/, `the surface is opaque (${surface.bg})`);
+    assert.equal(surface.over3d, true);
+    assert.match(surface.bg, /rgba\(.*,\s*0\.\d+\)$/, `the surface is translucent (${surface.bg})`);
     assert.equal(surface.filter, 'none');
+    // the scene is drawn behind the card while its effects run, then no frame while nothing changes
+    await page.waitForFunction(() => !globalThis.__ms.renderer.isAnimating(), null, { timeout: patience(8000) });
     await frames(3);
     const r0 = await ms(() => globalThis.__ms.frameStats.renders);
-    await ms(() => globalThis.__ms.wheel(3)); // a change the scene would redraw for
     await frames(10);
-    assert.equal(await ms(() => globalThis.__ms.frameStats.renders), r0, 'the 3D scene stops rendering under the results screen');
+    assert.equal(await ms(() => globalThis.__ms.frameStats.renders), r0, 'no frame is drawn under the results screen while nothing changes');
+    await ms(() => window.dispatchEvent(new Event('resize')));
+    await frames(3);
+    assert.ok(await ms(() => globalThis.__ms.frameStats.renders) > r0, 'a resize draws the scene behind the card');
 
     // Records, Back, then Play again starts the same 3D board choice
     await ms(() => document.getElementById('r-records').click());
     assert.equal(await mode(), 'records');
     await ms(() => document.getElementById('records-back').click());
     assert.equal(await mode(), 'results');
+    assert.deepEqual(await ms(() => ({ over3d: document.getElementById('results').classList.contains('results--over3d'), look: !document.getElementById('r-look').classList.contains('hidden') })),
+      { over3d: false, look: false }, 'after Records the finished board is gone: no scene behind the card and no look');
     await ms(() => document.getElementById('r-again').click());
     assert.ok(['ready', 'playing'].includes(await mode()), 'a new board, entered as resume enters play');
     assert.equal(await ms(() => globalThis.__ms.modes.active), '3d');
@@ -660,6 +696,192 @@ test('in a browser, a press during the 3D end delay shows the results at once; R
     assert.equal(await mode(), 'ready', 'the ready card is the fallback');
     assert.equal(await ms(() => getComputedStyle(document.getElementById('ready')).visibility), 'visible');
     assert.equal(await ms(() => globalThis.__ms.state.started), false, 'on a new board');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, Look at the board: the loss wave reaches the far side before the card, which shows over the scene; the frozen board is flown over read-only until Esc or a button brings the card back', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    // A stand-in pointer lock that is always granted, and released as the browser's Esc releases it.
+    await page.addInitScript(() => {
+      let locked = null;
+      Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked });
+      Element.prototype.requestPointerLock = function requestPointerLock() {
+        locked = this;
+        setTimeout(() => document.dispatchEvent(new Event('pointerlockchange')), 0);
+        return Promise.resolve();
+      };
+      document.exitPointerLock = () => { if (!locked) return; locked = null; setTimeout(() => document.dispatchEvent(new Event('pointerlockchange')), 0); };
+    });
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+    const ms = (fn, arg) => page.evaluate(fn, arg);
+    const mode = () => ms(() => globalThis.__ms.state.mode);
+    const frames = (n) => ms((k) => new Promise((r) => { const f = () => (--k <= 0 ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); }), n);
+    const layer = (c) => ms((i) => globalThis.__ms.renderer.stateData[i * 4], c);
+    const press = (button = 0) => ms((b) => {
+      const canvas = document.querySelector('canvas');
+      const at = { bubbles: true, cancelable: true, clientX: 550, clientY: 450, button: b };
+      canvas.dispatchEvent(new PointerEvent('pointerdown', { ...at, buttons: 1 }));
+      canvas.dispatchEvent(new MouseEvent('mousedown', { ...at, buttons: 1 }));
+      const during = globalThis.__ms.state.mode;
+      canvas.dispatchEvent(new PointerEvent('pointerup', { ...at, buttons: 0 }));
+      canvas.dispatchEvent(new MouseEvent('mouseup', { ...at, buttons: 0 }));
+      canvas.dispatchEvent(new MouseEvent(b === 2 ? 'contextmenu' : 'click', at));
+      return during;
+    }, button);
+    await ms(() => {
+      globalThis.__hand = [];
+      globalThis.__ms.pauser.attach('finished', (s, m, replay) => {
+        globalThis.__hand.push(['finished', s?.outcome ?? null]);
+        globalThis.__finAt = performance.now();
+        globalThis.__blob = replay?.blob ?? null;
+        globalThis.__bytes = replay ? Array.from(replay.blob) : null;
+      });
+      globalThis.__ms.pauser.attach('abandoned', (s) => globalThis.__hand.push(['abandoned', s?.outcome ?? null]));
+    });
+    const stored = () => ms(() => JSON.stringify(globalThis.__ms.records.boardsPlayed('3d').map((b) => [b.key, globalThis.__ms.records.history(b.key)])));
+    const mines = () => ms(() => { const g = globalThis.__ms.game; return [...Array(g.n).keys()].filter((c) => g.number[c] === -1); });
+    const firstClick = async (board) => {
+      await ms((b) => { globalThis.__ms.modes.start('3d', b); globalThis.__ms.forcePlay(); globalThis.__ms.aimAt(0); globalThis.__ms.click('left'); }, board);
+      await page.waitForFunction(() => globalThis.__ms.state.started, null, { timeout: patience(15000) });
+      if (await ms(() => globalThis.__ms.game.state) === 'playing') return true;
+      await page.waitForFunction(() => globalThis.__ms.state.mode === 'results', null, { timeout: patience(8000) });
+      return false;
+    };
+
+    // ---- a loss on a long board, whose end delay is the longest, with a wrong flag
+    const LONG = { X: 100, Y: 1, Z: 1, mines: 15 };
+    let playing = false;
+    for (let i = 0; i < 10 && !playing; i++) playing = await firstClick(LONG);
+    assert.ok(playing, 'a board the first click did not win');
+    const flagged = await ms(() => {
+      const m = globalThis.__ms, g = m.game;
+      for (let c = g.n - 1; c >= 0; c--) {
+        if (g.pressed[c] || g.flagged[c] || g.number[c] < 0) continue;
+        if (m.aimAt(c) !== c) continue;
+        m.click('right');
+        return g.flagged[c] ? c : -1;
+      }
+      return -1;
+    });
+    assert.ok(flagged >= 0, 'a safe cell is flagged');
+    const bombs = await mines();
+    const lost = await ms((list) => {
+      const m = globalThis.__ms;
+      for (const c of list) {
+        if (m.aimAt(c) !== c) continue;
+        m.click('left');
+        return m.game.state;
+      }
+      return 'no mine could be aimed at';
+    }, bombs);
+    assert.equal(lost, 'lost');
+    await frames(2);
+    const wave = await ms(() => {
+      const r = globalThis.__ms.renderer, g = globalThis.__ms.game, o = r.uniforms.uEffOrigin.value;
+      const far = Math.hypot(Math.max(o.x, g.X - 1 - o.x), Math.max(o.y, g.Y - 1 - o.y), Math.max(o.z, g.Z - 1 - o.z));
+      return { t0: r._eff?.t0 ?? null, type: r._eff?.type ?? null, reach: far * r.uniforms.uEffDelay.value };
+    });
+    assert.equal(wave.type, 'loss');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'results', null, { timeout: patience(8000) });
+    const finAt = await ms(() => globalThis.__finAt);
+    assert.ok(finAt / 1000 - wave.t0 >= wave.reach + 0.3,
+      `the wave reached the far side and its reveal finished (${((wave.reach + 0.3) * 1000).toFixed(0)} ms) before the card showed (${(finAt - wave.t0 * 1000).toFixed(0)} ms)`);
+    assert.equal(await ms(() => document.getElementById('results').classList.contains('results--over3d')), true);
+    const r0 = await ms(() => globalThis.__ms.frameStats.renders);
+    await frames(3);
+    assert.ok(await ms(() => globalThis.__ms.frameStats.renders) > r0, 'the scene is drawn behind the card');
+    assert.equal(await ms(() => document.getElementById('r-look').classList.contains('hidden')), false, 'Look at the board is offered');
+    assert.equal(await ms(() => document.activeElement.id), 'r-again', 'Play again keeps the default focus');
+    const records = await stored();
+    const exploded = await ms(() => globalThis.__ms.game.explodedIdx);
+
+    // ---- Look at the board: the click is the lock gesture; the board is the loss's end state
+    await ms(() => document.getElementById('r-look').click());
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'look');
+    assert.equal(await ms(() => document.getElementById('results').classList.contains('hidden')), true, 'the card is hidden');
+    assert.equal(await ms(() => document.pointerLockElement === document.querySelector('canvas')), true, 'in pointer-locked look');
+    assert.match(await ms(() => { const h = document.getElementById('look'); return h.classList.contains('hidden') ? '' : h.textContent; }), /Esc/, 'a hint names the way back');
+    assert.equal(await layer(flagged), 31, 'the wrong flag is crossed');
+    assert.equal(await layer(exploded), 3, 'the exploded cube is marked');
+    for (const c of bombs) if (c !== exploded) assert.equal(await layer(c), 2, `the mine ${c} is shown`);
+    // fly
+    const cam0 = await ms(() => ({ ...globalThis.__ms.info().cam }));
+    await ms(() => globalThis.__ms.key('KeyW'));
+    await frames(6);
+    await ms(() => globalThis.__ms.key('KeyW', false));
+    assert.notDeepEqual(await ms(() => ({ ...globalThis.__ms.info().cam })), cam0, 'the camera flies');
+    assert.equal(await mode(), 'look', 'a flight key does not end the look');
+    // read-only: a board action does nothing, and a mouse press ends the look and does nothing else
+    const v0 = await ms(() => globalThis.__ms.game.version);
+    await ms(() => { const m = globalThis.__ms; m.aimAt(m.game.n - 1); m.click('left'); m.click('right'); m.click('chord'); });
+    assert.equal(await ms(() => globalThis.__ms.game.version), v0, 'no reveal, flag or chord in the look');
+    assert.equal(await press(0), 'results', 'a mouse button brings the card back');
+    await frames(2);
+    assert.equal(await mode(), 'results');
+    assert.equal(await ms(() => document.activeElement.id), 'r-again', 'focus on Play again; the press activated nothing');
+    assert.equal(await ms(() => document.pointerLockElement), null, 'the lock is released');
+    assert.equal(await ms(() => document.getElementById('look').classList.contains('hidden')), true);
+
+    // ---- Esc on the card opens the look; Esc in it brings the card back, and does not reopen it
+    await page.waitForTimeout(600);
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'look');
+    await page.keyboard.press('Escape');
+    await frames(3);
+    assert.equal(await mode(), 'results', 'Esc in the look shows the card again');
+    // the browser's Esc releasing the lock in the look returns to the card, and that Esc does not reopen it
+    await page.waitForTimeout(600);
+    await ms(() => document.getElementById('r-look').click());
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'look');
+    await ms(() => document.exitPointerLock());
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'results');
+    await page.keyboard.press('Escape');
+    await frames(3);
+    assert.equal(await mode(), 'results', 'the Esc that released the lock does not reopen the look');
+
+    // ---- Watch replay and back: the end state is drawn the same
+    await ms(() => document.getElementById('r-watch').click());
+    assert.equal(await mode(), 'replay');
+    await page.waitForTimeout(600);
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'results');
+    assert.equal(await layer(flagged), 31, 'the wrong flag survives the replay viewer');
+    assert.equal(await layer(exploded), 3);
+
+    // ---- nothing was recorded by the look
+    assert.equal(await stored(), records, 'the records and history are what they were');
+    assert.equal(await ms(() => JSON.stringify(Array.from(globalThis.__blob)) === JSON.stringify(globalThis.__bytes)), true, 'the sealed replay is unchanged');
+    assert.deepEqual(await ms(() => globalThis.__hand), [['finished', 'lost']], 'one game, recorded once');
+
+    // ---- a win's solved board, looked at the same way
+    const ROW = { X: 8, Y: 1, Z: 1, mines: 3 };
+    playing = false;
+    for (let i = 0; i < 10 && !playing; i++) playing = await firstClick(ROW);
+    assert.ok(playing);
+    const won = await ms(() => {
+      const m = globalThis.__ms;
+      for (let c = 0; c < m.game.n; c++) { if (!m.game.pressed[c] && m.game.number[c] !== -1) { m.aimAt(c); m.click('left'); } }
+      return m.game.state;
+    });
+    assert.equal(won, 'won');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'results', null, { timeout: patience(8000) });
+    const winBombs = await mines();
+    await page.waitForTimeout(600);
+    await ms(() => document.getElementById('r-look').click());
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'look');
+    for (const c of winBombs) assert.equal(await layer(c), 1, `the unflagged mine ${c} shows as a flag`);
+    assert.equal(await press(2), 'results', 'any mouse button — the right one too');
+    assert.equal(await ms(() => document.getElementById('results-title').textContent), 'You won!', 'the same card');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

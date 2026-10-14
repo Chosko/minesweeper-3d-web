@@ -92,6 +92,8 @@ Both modules are pure; their rules are documented in their head comments.
   (`preventDefault`, `stopImmediatePropagation`) every event it reports
   consumed; `handlePad` hands it each poll first; `onLockChange` hands it a
   lock released during the delay; `blur` and the tab hiding call `reset()`.
+  The same listeners feed `LOOK_END`, which ends the look at a finished 3D
+  board ([app-shell-results.md](app-shell-results.md) § Look at the board).
   The finished report then routes to `results` at once. The 3D-specific
   freeze during the delay: [app-shell-3d.md](app-shell-3d.md) § End sequence.
 

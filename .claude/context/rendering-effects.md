@@ -66,11 +66,14 @@ needs frames, so `isAnimating()` stays true while any runs.
   renderer as `sync({ seek: true })` ([app-shell-results.md](app-shell-results.md) § Frame loop), so a seek never
   leaves a pulsing cube. Otherwise the renderer cannot tell a replay from play; leaving the replay
   hands it back the game or demo board it drew before.
-- **End of a 3D game.** The win or loss effect plays for the 3D mode's end delay (`END_DELAY_MS`,
+- **End of a 3D game.** The win or loss effect plays for the 3D mode's end delay (`endDelayMs`,
   [mode3d-session.md](mode3d-session.md)), or until a press of the player's cuts it short, with the camera and the
-  view-mode toggles frozen as the game ended; the results screen then takes over, and `js/main.js`'s
-  `shouldRender` draws no frame while it shows a 3D game, so the scene and any running effect stay
-  paused behind it ([app-shell-results.md](app-shell-results.md)). The renderer is not told: it simply is not called.
+  view-mode toggles frozen as the game ended. `_waveSetup` paces both waves at `waveStepS(game)` seconds per
+  cell from the same module, and the shader's per-cell loss reveal lasts `WAVE_CELL_S`, so the loss wave
+  fits the delay. The results screen then shows over the scene, which `js/main.js`'s `shouldRender` draws
+  behind a 3D game's results only on demand (`needRender`, a sync, a running effect); the look at the
+  finished board draws as play does ([app-shell-results.md](app-shell-results.md)). `wrongFlags()` hands back a
+  loss's crossed flags, which the 3D replay scene gives back through `setWrongFlags` after `setGame`.
 
 ## Domain dependencies
 

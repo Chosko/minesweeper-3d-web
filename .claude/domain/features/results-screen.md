@@ -102,7 +102,8 @@ composed from the `screen-components` kit.
   action, which opens the leaderboard screen on this game's board.
 - **Board shown behind.** In Classic 2D the finished board stays visible
   behind the screen, as the mode left it, so a loss still shows where the
-  mines were. Over 3D the screen is opaque and takes over, per
+  mines were. Over 3D the finished board is drawn dimmed behind the screen,
+  and the 3D screen carries a *Look at the board* action, per
   `3d-results-records-screens`.
 
 ## Data and state

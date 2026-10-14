@@ -36,7 +36,7 @@ import { mountViewer2D } from './replay/viewer-2d.js';
 import { panelRect } from './classic2d/board-view.js';
 import { createViewer3D } from './replay/viewer-3d.js';
 import { REPLAY_SCREEN } from './records/replay-list.js';
-import { createResultsView, resultsContent, resultsEnter } from './results/view.js';
+import { createResultsView, resultsContent, resultsEnter, LOOK_REFUSED } from './results/view.js';
 import { createRecordsScreen, createRecordsView } from './records/screen.js';
 import { applySettings, pixelRatioFor } from './settings/appliers.js';
 import { bindSettingControls } from './settings/page.js';
@@ -125,7 +125,7 @@ let minesBefore = 0; // the HUD's mines left before the last action (the origina
  */
 function onAction(type) {
   const g = S.game, play = S.play;
-  if (!g || S.selected < 0) return;
+  if (!g || S.selected < 0 || looking()) return;
   const before = g.state;
   minesBefore = g.minesLeft;
   const sel = S.selected;
@@ -183,8 +183,11 @@ function activeMode() { return MODES.active === '3d' ? mode3d : MODES.active ===
  * (END_SKIP).
  */
 function endDelay() { return !!activeMode()?.ending; }
-/** Every pause goes through here: none is offered while an end delay runs. */
-function pauseGame(source, opts) { return endDelay() ? false : PAUSE.pause(source, opts); }
+/** Every pause goes through here: none is offered while an end delay runs, nor in the look at a finished 3D board. */
+function pauseGame(source, opts) { return endDelay() || looking() ? false : PAUSE.pause(source, opts); }
+/** The look at the finished 3D board (Look at the board on its results card): read-only free flight. */
+const LOOK_SCREEN = 'look';
+function looking() { return S.mode === LOOK_SCREEN; }
 /** Back on the board (Esc, the controller's back button): cancels a board being generated, else pauses. */
 function backGame(source) { return endDelay() ? false : PAUSE.back(source === 'pointer' ? 'button' : source); }
 /** F2, Start + Y and R do nothing during an end delay or while a confirmation or the controls modal shows. */
@@ -220,7 +223,7 @@ const LOCK_FALLBACK = createLockFallback();
 const input = new Input({
   canvas,
   mouse,
-  isActive: () => S.mode === 'playing' && !endDelay(),
+  isActive: () => (S.mode === 'playing' && !endDelay()) || looking(), // the look flies with mouse look, keys and wheel; its presses are LOOK_END's
   isDragLook: () => S.dragLook && S.lockless,
   onLook: (dx, dy) => cam.look(dx, dy),
   onWheel: (notches) => wheelSpacing(notches),
@@ -243,7 +246,9 @@ const input = new Input({
     if (locked) {
       LOCK_FALLBACK.locked();
       if (S.mode === 'ready' || S.mode === 'paused') enterPlaying();
+      else if (lookPending && S.mode === 'results') { lookPending = false; SHELL.go(LOOK_SCREEN); } // Look at the board's own lock
     } else if (END_SKIP.lockLost()) { // the browser's Esc, whose key press the page never sees, ends the end delay
+    } else if (LOOK_END.lockLost()) { // the browser's Esc releasing the look's lock: back to the results card
     } else if (S.mode === 'playing' && !S.lockless && !board3d.failure) { // a failed board released the lock for its offer
       if (performance.now() - cancelledAt < 500) SHELL.go('ready', { replace: true }); // the Esc that cancelled the board
       else if (!document.hasFocus()) pauseGame('key'); // the window lost focus
@@ -251,7 +256,8 @@ const input = new Input({
     }
   },
   onLockError: () => {
-    if (S.mode === 'paused' || S.mode === 'ready') {
+    if (lookPending) { lookPending = false; if (S.mode === 'results') refusedLook(); } // the card stays, with its note
+    else if (S.mode === 'paused' || S.mode === 'ready') {
       const msg = NO_MOUSE ? NO_MOUSE_MSG : LOCK_FALLBACK.refused(performance.now(), input.unlockedAt);
       SHELL.go('ready', { data: { msg } });
     }
@@ -378,7 +384,8 @@ const SHELL = createRouter({
     playing: { defaultFocus: null, show: (d = {}) => { setLockless(!!d.lockless); ui.showPlaying(); }, back: ({ source }) => backGame(source) },
     'classic-2d': { defaultFocus: null, show: () => ui.showClassic2D(), back: ({ source }) => backGame(source) },
     paused: { defaultFocus: () => (ui.isConfirmOpen() ? '#p-confirm-no' : gameOver() ? '#p-restart' : '#p-resume'), show: (d = {}) => { stopPlayInput(); setBoardHidden(true); ui.showPause(pauseInfo(d.note)); }, hide: () => setBoardHidden(false), back: ({ source }) => resumeFromPause(source) },
-    results: { defaultFocus: '#r-again', show: (d) => RESULTS_VIEW.show(resultsContent(d ?? RESULTS.current)), hide: () => RESULTS_VIEW.hide(), back: () => RESULTS.toMenu() },
+    results: { defaultFocus: '#r-again', show: (d) => showResults(d ?? RESULTS.current), hide: () => { lookPending = false; RESULTS_VIEW.hide(); }, back: ({ source }) => resultsBack(source) },
+    look: { defaultFocus: null, show: () => showLook(true), hide: () => showLook(false), back: () => endLook() },
     [REPLAY_SCREEN]: { defaultFocus: () => REPLAY_VIEWER.defaultFocus(), show: (d = {}) => { ui.showReplay(); REPLAY_VIEWER.show(d); }, hide: () => REPLAY_VIEWER.hide(), back: () => REPLAY_VIEWER.back() },
     ctxlost: { defaultFocus: '#ctx-lost-btn', show: () => showContextLost(), hide: () => hideContextLost(), back: () => showMainMenu() },
   },
@@ -416,7 +423,7 @@ const FLOW_3D = {
     return play;
   },
   leave: () => leaveGame(),
-  release: () => input.exitLock(), // the results screen takes over
+  release: () => input.exitLock(), // the results screen shows
   contextLost: () => contextLost,
   client: GEN_3D, // the pre-generated board of Play again is asked of it
   sampler: (session) => createSampler3D({ session, camera: cam, controls, spacing: () => S.spacing }),
@@ -523,13 +530,18 @@ window.addEventListener('pagehide', () => { if (endDelay()) activeMode().finishN
 // swallowed here before any other listener sees them. The controller's is read in handlePad.
 const END_SKIP = createEndSkip({ ending: () => endDelay(), skip: () => activeMode()?.finishNow() });
 const swallow = (e) => { e.preventDefault(); e.stopImmediatePropagation(); };
-window.addEventListener('keydown', (e) => { if (END_SKIP.keyDown(e)) swallow(e); }, true);
-window.addEventListener('keyup', (e) => { if (END_SKIP.keyUp(e)) swallow(e); }, true);
-for (const type of ['pointerdown', 'mousedown']) window.addEventListener(type, (e) => { if (END_SKIP.press()) swallow(e); }, true);
-for (const type of ['pointerup', 'mouseup']) window.addEventListener(type, (e) => { if (END_SKIP.release(e)) swallow(e); }, true);
-for (const type of ['click', 'auxclick', 'contextmenu']) window.addEventListener(type, (e) => { if (END_SKIP.click(e)) swallow(e); }, true);
-window.addEventListener('blur', () => END_SKIP.reset()); // releases that land elsewhere are never seen
-document.addEventListener('visibilitychange', () => { if (document.hidden) END_SKIP.reset(); });
+// The look at a finished 3D board ends the same way on Esc, any mouse button or any controller
+// button (LOOK_END, the same skip over the look): the press brings the results card back and does
+// nothing else. The flight and view-mode keys are not presses here: only Esc ends the look. Outside
+// the look every key reaches LOOK_END, so a fresh key press ends a mouse press's click window.
+const LOOK_END = createEndSkip({ ending: () => looking(), skip: () => endLook() });
+window.addEventListener('keydown', (e) => { if (END_SKIP.keyDown(e) || ((isBackKey(e.code) || !looking()) && LOOK_END.keyDown(e))) swallow(e); }, true);
+window.addEventListener('keyup', (e) => { if ([END_SKIP.keyUp(e), LOOK_END.keyUp(e)].some(Boolean)) swallow(e); }, true);
+for (const type of ['pointerdown', 'mousedown']) window.addEventListener(type, (e) => { if (END_SKIP.press() || LOOK_END.press()) swallow(e); }, true);
+for (const type of ['pointerup', 'mouseup']) window.addEventListener(type, (e) => { if (END_SKIP.release(e) || LOOK_END.release(e)) swallow(e); }, true);
+for (const type of ['click', 'auxclick', 'contextmenu']) window.addEventListener(type, (e) => { if (END_SKIP.click(e) || LOOK_END.click(e)) swallow(e); }, true);
+window.addEventListener('blur', () => { END_SKIP.reset(); LOOK_END.reset(); }); // releases that land elsewhere are never seen
+document.addEventListener('visibilitychange', () => { if (document.hidden) { END_SKIP.reset(); LOOK_END.reset(); } });
 
 // ---------- personal records ----------
 // The records store loads before the first screen, settling a game the last launch closed on, and
@@ -621,9 +633,10 @@ const RESET = createReset({
 // input never moves it. Leaving the replay gives the renderer back the board it drew before.
 const REPLAY_SPACING = SPACING_START;
 const replayCam = new FlyCamera();
-const replay3d = { view: null, toggles: { shift: false, space: false, ctrl: false }, pickKey: '', time: 0 };
+const replay3d = { view: null, toggles: { shift: false, space: false, ctrl: false }, pickKey: '', time: 0, wrong: [] };
 const REPLAY_SCENE = {
   show(view) {
+    if (!replay3d.view) replay3d.wrong = renderer.wrongFlags(); // the finished game's crossed flags, drawn again on the way back
     replay3d.view = view;
     replay3d.pickKey = '';
     replayCam.place(spawnPose(view, REPLAY_SPACING, renderer.camera.fov, renderer.camera.aspect)); // until its first sample
@@ -640,6 +653,8 @@ const REPLAY_SCENE = {
     replay3d.view = null;
     const g = S.game ?? S.demo;
     if (g) { renderer.setGame(g); applyPixelRatio(g.n); }
+    if (g && g === S.game && replay3d.wrong.length) renderer.setWrongFlags(replay3d.wrong);
+    replay3d.wrong = [];
     S.pickKey = '';
     needRender = true;
   },
@@ -672,8 +687,8 @@ SETTINGS.onChange('boardScale', (scale) => { mode2d.setScale(scale); REPLAY_VIEW
 
 // ---------- results ----------
 // A finished game is recorded, then the results screen shows over the finished Classic 2D board,
-// or takes over the 3D scene, which stops rendering under it. Every finished and abandoned game's
-// replay is then added to the replay library.
+// or over the finished 3D board, drawn dimmed behind it on demand (shouldRender). Every finished
+// and abandoned game's replay is then added to the replay library.
 // Play again restarts the finished game's board choice, or starts it again once the mode was left
 // (back from Records); a 3D game is entered as resume enters play. Watch replay plays the game just
 // finished from its own replay; Back returns to the results screen.
@@ -695,7 +710,63 @@ const RESULTS_VIEW = createResultsView({
   onWatch: () => RESULTS.watch(),
   onRecords: () => RESULTS.openRecords(),
   onMenu: () => RESULTS.toMenu(),
+  onLook: () => openLook(padGesture ? 'pad' : 'pointer'),
 });
+
+// ---------- look at the board ----------
+// A 3D game's results card offers Look at the board, and Back on it (Esc, the controller's back
+// buttons) means the same: the card hides and the player flies over the frozen finished board from
+// the pose the game ended with — mouse look, the flight and view-mode keys and the wheel, or the
+// controller's sticks — read-only: no board action (onAction), no pause (pauseGame), nothing
+// recorded. Esc, any mouse button or any controller button brings the card back (LOOK_END), the
+// press doing nothing else. A click or key asks for pointer lock and the look opens once it is
+// granted; a refusal leaves the card up with a note, and a fresh press tries again. A controller's
+// look is lockless. The finished board stays the renderer's while the mode is active, so the look
+// is offered only then: after Records the mode was left and the board is gone.
+let lookPending = false; // Look at the board asked for pointer lock and waits for the answer
+/** Whether the finished 3D board behind the results card can be looked at. */
+function lookable() {
+  return WEBGL2 && !contextLost && MODES.active === '3d' && RESULTS.current?.mode === '3d' && !!S.game && S.game.state !== 'playing';
+}
+/**
+ * The results screen: its content, Look at the board offered and the board drawn dimmed behind it
+ * only while the finished 3D board can be looked at; once it is gone, the ordinary results surface.
+ */
+function showResults(data) {
+  const content = resultsContent(data);
+  const board = lookable();
+  RESULTS_VIEW.show({ ...content, look: content.look && board, over3d: content.over3d && board });
+}
+/** The look's pointer lock was refused: the card notes it, and focus goes to Look at the board so Enter retries (Esc grants no activation). */
+function refusedLook() {
+  RESULTS_VIEW.noteLook(LOOK_REFUSED);
+  keyFocus(document.getElementById('r-look'));
+}
+/** Back on the results card: the look over a 3D game's board, else the main menu; the browser's Back keeps the menu. */
+function resultsBack(source) {
+  if (source === 'history' || !lookable()) { RESULTS.toMenu(); return; }
+  if (source === 'key' && performance.now() - input.unlockedAt < 500) return; // the Esc that released the look's lock already meant Back
+  openLook(source);
+}
+/** Look at the board: a controller's look is lockless; a click or key is the pointer-lock gesture. */
+function openLook(source) {
+  if (S.mode !== 'results' || !lookable()) return;
+  if (source === 'pad') { SHELL.go(LOOK_SCREEN); return; }
+  lookPending = true;
+  input.requestLock();
+}
+/** Esc, a mouse button, a controller button or the lock's release in the look: the results card again. */
+function endLook() {
+  if (!looking()) return;
+  input.exitLock();
+  SHELL.go('results');
+}
+/** The look shows its one-line hint over the board; leaving it drops the held controls. */
+function showLook(on) {
+  document.getElementById('look').classList.toggle('hidden', !on);
+  if (on) document.activeElement?.blur?.(); // the hidden card's focus: Space and Enter belong to the look
+  else { controls.releasePad(); input.spaceToggle.reset(); }
+}
 // Enter on the results screen is Play again while the focus is on Play again or on no action; on
 // another action it activates that one, as a button does; its auto-repeat does nothing.
 window.addEventListener('keydown', (e) => {
@@ -1127,7 +1198,7 @@ function padClick(el) {
 // Spatial focus navigation inside the topmost visible overlay (its screen, or the controls modal).
 // The board status cards sit above the pause card, and take their default focus from the card.
 const LAYER_SCREEN = {
-  'ctx-lost': 'ctxlost', 'controls-modal': null, 'c2d-status': null, 'm3d-status': null, replay: 'replay', pause: 'paused', ready: 'ready', results: 'results',
+  'ctx-lost': 'ctxlost', 'controls-modal': null, 'c2d-status': null, 'm3d-status': null, replay: 'replay', pause: 'paused', ready: 'ready', results: 'results', look: 'look',
   'coming-soon': 'coming-soon', records: 'records', settings: 'settings', 'board-choice': 'board-choice', 'c2d-choice': 'classic-2d-choice', c2d: 'classic-2d', menu: 'menu',
 };
 const SCREEN_LAYER = Object.fromEntries(Object.entries(LAYER_SCREEN).filter(([, s]) => s).map(([l, s]) => [s, l]));
@@ -1202,7 +1273,7 @@ function padNav(dir) {
 }
 // The arrow keys walk every layer the D-pad walks, except the boards, Records and the replay viewer,
 // which have arrow handling of their own.
-const KEY_NAV_OFF = new Set(['playing', 'classic-2d', 'records', REPLAY_SCREEN]);
+const KEY_NAV_OFF = new Set(['playing', 'classic-2d', 'records', REPLAY_SCREEN, LOOK_SCREEN]);
 /** Keyboard focus: the kit's keyboard ring (:focus-visible), never the controller's. */
 function keyFocus(el) {
   if (!el) return;
@@ -1247,7 +1318,10 @@ function handlePad(p, dt, now) {
   const pressed = (b) => nav.pressed(p, b);
   if (p.active) needRender = true;
   // An end delay: a button pressed ends it and does nothing else; the held ones stay off the results card.
-  if (END_SKIP.pad(p.pressed.some((_, b) => pressed(b)))) { controls.releasePad(); return; }
+  const anyPressed = p.pressed.some((_, b) => pressed(b));
+  if (END_SKIP.pad(anyPressed)) { controls.releasePad(); return; }
+  // The look: a button pressed brings the results card back and does nothing else; the sticks fly.
+  if (LOOK_END.pad(anyPressed)) { if (looking()) padLook(p, dt); else controls.releasePad(); return; }
   const modal = ui.isControlsOpen();
   // Start + Y: Y pressed while Start is held restarts, in play and on the pause card. Start's own
   // press already paused (or resumed), so Start is read unsuppressed; the buttons still held are
@@ -1282,14 +1356,28 @@ function padPlaying(p, held, pressed, dt, now) {
   controls.pad.shift = held(BTN.LB);
   controls.pad.space = held(BTN.RB);
   controls.pad.ctrl = held(BTN.Y);
+  padSticks(p, dt);
+  controls.axes.u = (held(BTN.A) ? 1 : 0) - (held(BTN.B) ? 1 : 0);
+  const notches = padRep.spUp.update(held(BTN.UP), now) - padRep.spDown.update(held(BTN.DOWN), now);
+  if (notches) setSpacing(spacingStep({ spacing: S.spacing }, notches).spacing); // one step a press and a repeat
+}
+
+/** The sticks: the left one moves (up = forward), the right one looks. */
+function padSticks(p, dt) {
   const [lx, ly] = stickCurve(p.ls[0], p.ls[1]);
   controls.axes.f = ly ? -ly : 0; // stick up = forward
   controls.axes.r = lx;
-  controls.axes.u = (held(BTN.A) ? 1 : 0) - (held(BTN.B) ? 1 : 0);
+  controls.axes.u = 0;
   const [rx, ry] = stickCurve(p.rs[0], p.rs[1]);
   cam.lookAxes(dt, rx, ry);
-  const notches = padRep.spUp.update(held(BTN.UP), now) - padRep.spDown.update(held(BTN.DOWN), now);
-  if (notches) setSpacing(spacingStep({ spacing: S.spacing }, notches).spacing); // one step a press and a repeat
+}
+
+/** The look at a finished 3D board: the sticks alone fly; every button brings the results card back (LOOK_END). */
+function padLook(p, dt) {
+  controls.pad.shift = false;
+  controls.pad.space = false;
+  controls.pad.ctrl = false;
+  padSticks(p, dt);
 }
 
 /**
@@ -1422,7 +1510,7 @@ function rendererAnimating() {
   return null; // unknown
 }
 function shouldRender(now, synced) {
-  if (S.mode === 'results' && RESULTS.current?.mode === '3d') return false; // the results screen takes over the 3D scene
+  if (S.mode === 'results' && RESULTS.current?.mode === '3d') return needRender || synced || rendererAnimating() === true; // behind the card: on demand only
   if (needRender || synced) return true;
   if (onBackdrop()) return !STILL_BACKDROP;
   if (S.endState !== lastEnd) { lastEnd = S.endState; if (S.endState) animUntil = now + 6000; return true; }
@@ -1470,6 +1558,7 @@ function frame(now) {
 
   const three = renderer.camera;
   const playing = S.mode === 'playing';
+  const looking3D = looking();
   if (onBackdrop()) {
     if (!STILL_BACKDROP) S.orbit += dt * 0.12;
     const r = 62;
@@ -1483,13 +1572,14 @@ function frame(now) {
     renderer.setToggles(t.shift, t.space, t.ctrl);
   } else {
     const frozen = endDelay(); // the end delay: the camera and the view mode stay as the game ended
-    if (playing && !frozen) {
+    const flying = playing || looking3D; // the look flies over the finished board as play does
+    if ((playing && !frozen) || looking3D) {
       cam.move(dt, input.move);
       if (controls.hasAxes) cam.moveAxes(dt, controls.axes.f, controls.axes.r, controls.axes.u);
     }
     cam.apply(three);
     if (!frozen) {
-      const shift = playing && controls.shift, space = playing && controls.space, ctrl = playing && controls.ctrl;
+      const shift = flying && controls.shift, space = flying && controls.space, ctrl = flying && controls.ctrl;
       renderer.setToggles(shift, space, ctrl);
       ui.setModes(shift, space, ctrl);
     }
@@ -1504,7 +1594,7 @@ function frame(now) {
   if (replay3d.view) updateReplayPick();
   else if (g && !onBackdrop()) {
     updatePick();
-    updateArrow(playing && !endDelay());
+    updateArrow((playing && !endDelay()) || looking3D);
     // the timer is the session's: it runs through pauses, frozen at the end
     if (S.play && S.started && !S.endState) S.time = S.play.elapsedMs() / 1000;
     const e = S.endState;

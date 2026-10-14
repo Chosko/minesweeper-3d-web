@@ -21,6 +21,7 @@ import { createTileTexture, L_CLOSED, L_FLAG, L_MINE, L_MINE_EXPLODED, L_NUM0, L
 import { FLY_THROUGH_DIST } from './picking.js';
 import { SPACING_START } from './input.js';
 import { SCHEMA } from './settings/schema.js';
+import { waveStepS, WAVE_CELL_S } from './shell/mode-3d.js';
 
 // kinds (stored in the state texture's G channel)
 export const K_CLOSED = 0, K_FLAG = 1, K_NUMBER = 2, K_MINE = 3, K_HIDDEN = 4;
@@ -199,7 +200,7 @@ void main() {
       layer = oldL; kind = oldL == ${L_FLAG} ? 1 : 0;
     } else if (uEff > 1.5) {
       if (oldL >= 0) {
-        float p = clamp(local / 0.3, 0.0, 1.0);
+        float p = clamp(local / ${glslFloat(WAVE_CELL_S)}, 0.0, 1.0);
         if (kind == 4 && uCtrl < 0.5) { scale = 1.0 - p * p; shrinking = p < 1.0; }
         else { float q = p - 1.0; scale = 1.0 + 2.2 * q * q * q + 1.2 * q * q; scale = mix(0.55, 1.0, scale); }
         flash = 0.55 * (1.0 - p);
@@ -791,6 +792,15 @@ export class BoardRenderer {
     this._snap = this._snapBuf;
   }
 
+  /** The wrong flags a loss marked (cell indices), for setWrongFlags after the game is set again; empty without a loss. */
+  wrongFlags() {
+    const w = this._wrong;
+    if (!w) return [];
+    const out = [];
+    for (let i = 0; i < w.length; i++) if (w[i]) out.push(i);
+    return out;
+  }
+
   /** Explicitly mark wrong flags (cell indices) to draw after a loss. */
   setWrongFlags(indices) {
     const g = this.game; if (!g) return;
@@ -799,11 +809,12 @@ export class BoardRenderer {
     this.stateTex.needsUpdate = true;
   }
 
+  /** Starts the win or loss wave from `origin`, paced by the board's end delay (js/shell/mode-3d.js waveStepS). */
   _waveSetup(type, origin, extra = 0.6) {
     const g = this.game;
     const [oi, oj, ok] = origin;
     const maxD = Math.hypot(Math.max(oi, g.X - 1 - oi), Math.max(oj, g.Y - 1 - oj), Math.max(ok, g.Z - 1 - ok));
-    const delay = Math.min(0.06, 1.1 / Math.max(1, maxD));
+    const delay = waveStepS(g);
     this.uniforms.uEffOrigin.value.set(oi, oj, ok);
     this.uniforms.uEffDelay.value = delay;
     this.uniforms.uEffT.value = 0;

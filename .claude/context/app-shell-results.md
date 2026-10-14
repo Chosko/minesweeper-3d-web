@@ -32,11 +32,11 @@ itself is [replay-playback.md](replay-playback.md); the screen's markup is
   `NOTES`, `NOT_ELIGIBLE`, `FIRST_BEST`.
 - `resultsContent({summary, comparison?, saved?, notSaved?, watch?, rank?,
   streak?, standing?})` → `{outcome, title, board, banner, stats, figures,
-  next, standing, eligible, bestsNote, bests, notes, watch, takeover}`
-  (fields in the head comment; `takeover` true for a 3D summary).
-- `createResultsView({root, onPlayAgain, onWatch?, onRecords, onMenu})` →
-  `show(content)`, `hide()`.
-- `RESULTS_ACTIONS` (`r-again`, `r-watch`, `r-records`, `r-menu`);
+  next, standing, eligible, bestsNote, bests, notes, watch, look, over3d}`
+  (fields in the head comment; `look` and `over3d` true for a 3D summary).
+- `createResultsView({root, onPlayAgain, onWatch?, onRecords, onMenu, onLook?})` →
+  `show(content)`, `hide()`, `noteLook(text)`; `LOOK_REFUSED`.
+- `RESULTS_ACTIONS` (`r-again`, `r-watch`, `r-look`, `r-records`, `r-menu`);
   `resultsEnter({focused, repeat})` → `'playAgain'` (focus on Play again or
   on no action), null (another action's own activation), `'ignore'`
   (auto-repeat).
@@ -53,9 +53,25 @@ itself is [replay-playback.md](replay-playback.md); the screen's markup is
   `saved` false; `notSaved` marks the first results screen of a session
   whose records store is unavailable.
 - **Over the board.** The screen shows over the finished Classic 2D board;
-  over a 3D game it takes over on an opaque surface
-  (`#results.results--takeover`) and the 3D scene stops rendering under it
-  (`shouldRender`); a finished 3D game is never returned to.
+  over a 3D game on a dimmed translucent scrim (`#results.results--over3d`)
+  with the 3D scene drawn behind it on demand only (`shouldRender`) while
+  `lookable()`, else the ordinary blurred surface; a
+  finished 3D game is never returned to.
+- **Look at the board** (the `look` screen, `#look` its hint line). A 3D
+  card's *Look at the board* (`openLook`) and Back on it (`resultsBack`;
+  the browser's Back still goes to the menu) are offered while `lookable()`
+  — the 3D mode still holds the finished board, so not after Records. A
+  controller opens it lockless; a click or key asks for pointer lock
+  (`lookPending`) and `onLockChange` opens it once granted, `onLockError`
+  leaves the card with `LOOK_REFUSED` and focus on Look at the board (`refusedLook`), so Enter retries. In the look `Input.isActive` is
+  true (mouse look, flight and view-mode keys, wheel), the frame loop
+  flies the camera, `padLook` flies with the sticks, `onAction` and
+  `pauseGame` refuse. `LOOK_END` (a second `createEndSkip`, fed by the same
+  capturing listeners as `END_SKIP`, keys only Esc in the look and every key outside it) ends it on Esc,
+  any mouse button, any controller button or the lock's release
+  (`endLook` → back to `results`, focus on Play again), consuming the
+  press whole; an Esc within 500 ms of the lock's release does not reopen
+  it.
 - **Actions.** Play again (also `Enter`, `R`) → `RESULTS.playAgain` →
   `PAUSE.restart`, or, once the mode was left, `MODES.start('classic-2d',
   LAST_CHOICE_2D.current)` or `MODES.start('3d', board3dChoice)` through
@@ -93,14 +109,16 @@ itself is [replay-playback.md](replay-playback.md); the screen's markup is
   recorded camera and view mode and glows the recorded aimed cell
   (`updateReplayPick`). Player input never moves it; `hide()` gives the
   renderer back what it drew before. With the context already lost it
-  routes to `ctxlost` and mounts nothing.
+  routes to `ctxlost` and mounts nothing. `show` keeps the finished game's
+  `renderer.wrongFlags()`, which `hide` gives back after `setGame`, so the
+  loss's crossed flags survive the viewer.
 
 ## DOMAIN DEPENDENCIES
 
 - [../domain/features/results-screen.md](../domain/features/results-screen.md)
   — record before show, content, time format, actions, failure note.
 - [../domain/features/3d-results-records-screens.md](../domain/features/3d-results-records-screens.md)
-  — the takeover of the 3D scene, Records opened on a mode.
+  — the results over the 3D scene, Look at the board, Records opened on a mode.
 - [../domain/features/records-screen.md](../domain/features/records-screen.md)
   — where the Records screen is opened from, Back and focus.
 - [../domain/features/replay-library.md](../domain/features/replay-library.md)

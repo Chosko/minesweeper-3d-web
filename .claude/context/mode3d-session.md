@@ -50,8 +50,13 @@ Both files are DOM-free; `js/shell/mode-3d.js` imports `buildSummary`,
   `{setTimeout, clearTimeout}`); `failureScreen: 'ctxlost'`; plus
   `contextLost()`, `replay(summary)`, `tick()` (drives the sampler, every
   frame), `ending`, `finishNow()` and `cancelGeneration()`.
-- `END_DELAY_MS` = 1000 — how long the end effect plays before the game is
-  reported finished, win and loss alike.
+- `endDelayMs({X, Y, Z})` — how long the end effect plays before the game
+  is reported finished, win and loss alike: grows with the board's diagonal
+  so the loss wave from any cube reaches the farthest cell and its reveal
+  (`WAVE_CELL_S`) completes, between `END_DELAY_MS` (1000) and
+  `END_DELAY_MAX_MS` (2500); `waveStepS({X, Y, Z})` — the wave's seconds
+  per cell of distance the renderer paces it with, derived from it.
+  `WAVE_STEP_MAX_S`, `END_MARGIN_S`.
 
 ## INTERNAL PATTERNS
 
@@ -81,7 +86,7 @@ Both files are DOM-free; `js/shell/mode-3d.js` imports `buildSummary`,
   listeners `js/main.js` added have started the end effect — it builds the
   summary (`buildSummary` over the elapsed time and pause spans), reports
   `canPause(false)` and runs the end delay (`ending`): a `pause()` is
-  ignored, and after `END_DELAY_MS` on `flow.clock` — frames drawn or not —
+  ignored, and after `endDelayMs(session.board)` on `flow.clock` — frames drawn or not —
   it calls `flow.release()` and reports `finished(summary, replay)` once.
   `restart` and `leave` cancel the delay; `js/main.js` offers neither while
   `ending`, and `finishNow()` reports at once, so a game in its end delay
@@ -146,5 +151,5 @@ Both files are DOM-free; `js/shell/mode-3d.js` imports `buildSummary`,
 - Changing a session state, event or the first-click flow (`createSession`
   and its head comment in `session.js`).
 - Changing what the 3D mode reports to the shell or the end delay
-  (`create3DMode`, `END_DELAY_MS` and the head comment in
+  (`create3DMode`, `endDelayMs` and the head comment in
   `js/shell/mode-3d.js`).

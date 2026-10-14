@@ -28,7 +28,7 @@
 //                 recording that failed);
 //     eligible, bestsNote, bests  [{ stat, label, best, difference, newBest, direction, detail }]
 //                 | null — the bests panel;
-//     notes: [text], watch, takeover }
+//     notes: [text], watch, look, over3d }
 // The bests panel shows whenever there is a comparison (the bests that stood before this game). On
 // a win each detail is the difference, led by "New best" when the game set one (alone when the
 // difference is a dash or "= best"), and direction is 'better', 'worse' or 'equal' (lower is better
@@ -42,15 +42,18 @@
 // ended a streak "Streak ended at <before> · best <longest>", else "Beat <best time> for a new best",
 // or FIRST_BEST when the board has no best time. notes say that the result could not be saved
 // (saved false) or that records are not being saved this session (notSaved, told once by the
-// flow); watch is whether Watch replay shows (the flow's watch); takeover is whether the screen
-// takes over on an opaque surface — a 3D game's, whose scene is not seen behind it, where the
-// Classic 2D board stays visible behind the screen.
+// flow); watch is whether Watch replay shows (the flow's watch); look is whether Look at the board
+// shows and over3d whether the screen shows on the dimmed translucent surface over the 3D scene —
+// both a 3D game's, whose finished board is drawn dimmed behind the screen, as the Classic 2D board
+// stays visible behind it.
 //
-// createResultsView({ root, onPlayAgain, onWatch?, onRecords, onMenu }) → { show(content), hide() }:
-// fills the #results markup by id and calls back on its actions; Watch replay (#r-watch) shows only
-// while content.watch, the root carries `results--takeover` while content.takeover, the bests
+// createResultsView({ root, onPlayAgain, onWatch?, onRecords, onMenu, onLook? }) →
+// { show(content), hide(), noteLook(text) }: fills the #results markup by id and calls back on its
+// actions; Look at the board (#r-look) shows only while content.look and Watch replay (#r-watch)
+// only while content.watch, the root carries `results--over3d` while content.over3d, the bests
 // panel `ui-panel--muted` while not eligible, each improved stat `data-new-best` and each best's
-// detail `data-delta` (its direction).
+// detail `data-delta` (its direction). noteLook(text) shows the one-line note under the actions
+// (LOOK_REFUSED: the pointer lock the look asked for was refused) until the card next shows.
 //
 // Keys: Play again is also Enter (resultsEnter, wired by js/main.js) and R (js/shell/pause.js
 // restartInput); Enter on another focused action activates that action.
@@ -63,6 +66,9 @@ export const EQUAL_BEST = '= best';
 export const NOT_ELIGIBLE = 'Not eligible — only won games set bests';
 export const FIRST_BEST = 'Win this board to set a best';
 const MINUS = '−';
+
+/** The note under the actions when the look's pointer lock was refused; a fresh press tries again. */
+export const LOOK_REFUSED = 'The mouse could not be captured — press Look at the board again to retry.';
 
 /** Notes the screen can carry. */
 export const NOTES = Object.freeze({
@@ -195,12 +201,13 @@ export function resultsContent({
     bests,
     notes,
     watch: watch === true,
-    takeover: summary.board?.mode === MODE_3D,
+    look: summary.board?.mode === MODE_3D,
+    over3d: summary.board?.mode === MODE_3D,
   };
 }
 
-/** The results screen's actions by id: Play again (its default focus), Watch replay, Records, Main menu. */
-export const RESULTS_ACTIONS = Object.freeze(['r-again', 'r-watch', 'r-records', 'r-menu']);
+/** The results screen's actions by id: Play again (its default focus), Watch replay, Look at the board, Records, Main menu. */
+export const RESULTS_ACTIONS = Object.freeze(['r-again', 'r-watch', 'r-look', 'r-records', 'r-menu']);
 
 /**
  * What Enter does on the results screen, given the id of the focused element (null for none):
@@ -213,7 +220,7 @@ export function resultsEnter({ focused = null, repeat = false } = {}) {
   return focused !== RESULTS_ACTIONS[0] && RESULTS_ACTIONS.includes(focused) ? null : 'playAgain';
 }
 
-export function createResultsView({ root, onPlayAgain, onWatch = () => {}, onRecords, onMenu }) {
+export function createResultsView({ root, onPlayAgain, onWatch = () => {}, onRecords, onMenu, onLook = () => {} }) {
   const $ = (id) => root.querySelector(`#${id}`);
   const value = (id) => $(id).querySelector('.ui-stat__value');
   const line = (id, text) => {
@@ -221,6 +228,7 @@ export function createResultsView({ root, onPlayAgain, onWatch = () => {}, onRec
     $(id).classList.toggle('hidden', !text);
   };
   $('r-again').addEventListener('click', () => onPlayAgain());
+  $('r-look').addEventListener('click', () => onLook());
   $('r-watch').addEventListener('click', () => onWatch());
   $('r-records').addEventListener('click', () => onRecords());
   $('r-menu').addEventListener('click', () => onMenu());
@@ -250,10 +258,13 @@ export function createResultsView({ root, onPlayAgain, onWatch = () => {}, onRec
         else detail.removeAttribute('data-delta');
       }
       line('results-note', content.notes.join(' '));
+      $('r-look').classList.toggle('hidden', !content.look);
       $('r-watch').classList.toggle('hidden', !content.watch);
-      root.classList.toggle('results--takeover', !!content.takeover);
+      line('results-look-note', null);
+      root.classList.toggle('results--over3d', !!content.over3d);
       root.classList.remove('hidden');
     },
     hide() { root.classList.add('hidden'); },
+    noteLook(text) { line('results-look-note', text); },
   };
 }

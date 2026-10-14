@@ -10,7 +10,7 @@ Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
 | `js/ui/components.js` | the kit's behaviour helpers; imports nothing, binders touch only the elements handed in, so it runs under Node with stub elements |
 | `dev/components.html` | the kit gallery (development only): every component in every state, the overlay bar, the results layout `#g-results`, a Light/Dark switch, `?theme=dark` |
 | `css/tokens.css` | every shared visual value: `--color-*`, `--font-*`, `--space-*`, `--radius-*`, `--elevation-*`, `--duration-*`, `--easing-*`, `--z-*`; light on `:root`, dark under `:root[data-theme="dark"]` |
-| `css/style.css` | shell styling: fixed layers, the Classic 2D board area and panel, the replay layer (`replay--scene` transparent over the 3D scene), Back rows (`.esc-row`, `[data-esc-hint]`), the menu-screen and translucent backdrops, the results takeover, the ready/help/controls/ctx-lost overlays, HUD placement; declares no custom property |
+| `css/style.css` | shell styling: fixed layers, the Classic 2D board area and panel, the replay layer (`replay--scene` transparent over the 3D scene), Back rows (`.esc-row`, `[data-esc-hint]`), the menu-screen and translucent backdrops, the results scrim over the 3D scene, the look's hint (`.look-hint`), the ready/help/controls/ctx-lost overlays, HUD placement; declares no custom property |
 | `js/theme.js` | classic script run before first paint: sets root `data-theme`, exposes `globalThis.msTheme` |
 | `js/tokens.js` | token reader for consumers that cannot read stylesheets, chiefly Canvas |
 | `js/shell/scene-palette.js` | the 3D scene's themed sky from the `--color-scene-*` tokens |

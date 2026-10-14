@@ -124,15 +124,20 @@ The rules are classic Minesweeper with one more dimension:
   cell brings it back, and holding `Ctrl` shows every hidden cell as a see-through ghost.
 - The box starts closed. The board is generated around your first click, so the first click is
   always safe, and the timer starts once the board is ready. Flags placed before that are kept.
-- When the game ends, the board freezes for about a second while the end effect plays (the loss
-  wave showing where the mines were, or the win confetti); any click, key or controller button
-  skips it. Then the screen shown after a game takes over the whole window, as in Classic 2D: time
-  (to the thousandth of a second), 3BV, 3BV/s, efficiency, your clicks, the game's rank on that
-  board after a win, the time to beat next, your win rate and longest streak on that board each
-  beside its figure over completed games, and your bests on that board (greyed after a loss, with
-  the pace you were on), with **Play again** (or `Enter` or `R`), **Watch replay**, **Records** and
-  **Main menu**. Play again with the mouse or the keyboard captures the mouse at once, with no
-  "Click to play" card unless the browser refuses the capture.
+- When the game ends, the board freezes while the end effect plays (the loss wave showing where
+  the mines were, or the win confetti): a second on a small board, longer on a large one so the
+  loss wave reaches the far side, never more than 2.5 seconds; any click, key or controller button
+  skips it. Then the screen shown after a game appears over the dimmed board, as in Classic 2D:
+  time (to the thousandth of a second), 3BV, 3BV/s, efficiency, your clicks, the game's rank on
+  that board after a win, the time to beat next, your win rate and longest streak on that board
+  each beside its figure over completed games, and your bests on that board (greyed after a loss,
+  with the pace you were on), with **Play again** (or `Enter` or `R`), **Watch replay**, **Look at
+  the board**, **Records** and **Main menu**. Play again with the mouse or the keyboard captures
+  the mouse at once, with no "Click to play" card unless the browser refuses the capture.
+- **Look at the board** (or `Esc` on that screen) hides it and lets you fly over the finished
+  board — every mine shown, the exploded cube and wrong flags marked, or the solved board — with
+  the usual flight controls, view-mode keys and spacing, but no clicks on the board. `Esc`, any
+  mouse button or any controller button brings the screen back.
 
 Pick a board and play:
 

@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createModeHost, MODE_METHODS, MODE_EVENTS } from '../js/shell/mode-host.js';
-import { create3DMode, END_DELAY_MS } from '../js/shell/mode-3d.js';
+import { create3DMode, END_DELAY_MS, END_DELAY_MAX_MS, endDelayMs, waveStepS, WAVE_CELL_S } from '../js/shell/mode-3d.js';
 import { startCell } from '../js/generation/start-cell.js';
 import { browserSuite } from './helpers/browser.mjs';
 import { patience } from './helpers/timing.mjs';
@@ -169,6 +169,65 @@ test('cancelGeneration cancels a board being generated through the session and r
   assert.deepEqual(types(), [], 'nothing started or abandoned');
   host.leave();
   assert.deepEqual(types(), [], 'a game left before its first applied reveal reports nothing');
+});
+
+// ---------------------------------------------------------------- the end delay
+
+const box = (X, Y, Z) => ({ X, Y, Z });
+
+test('the end delay is one function of the board\'s size: 1000 ms on small boards, growing with the diagonal, 2500 ms at 100³ and never above', () => {
+  assert.equal(END_DELAY_MS, 1000, 'the floor');
+  assert.equal(END_DELAY_MAX_MS, 2500, 'the cap');
+  for (const b of [box(6, 6, 6), box(4, 5, 6), box(2, 2, 2), box(8, 1, 1), box(1, 1, 1)]) assert.equal(endDelayMs(b), 1000, `${b.X}×${b.Y}×${b.Z}`);
+  assert.equal(endDelayMs(box(100, 100, 100)), 2500);
+  let prev = 0;
+  for (let n = 2; n <= 200; n += 3) {
+    const d = endDelayMs(box(n, n, n));
+    assert.ok(Number.isInteger(d), `${n}³: whole milliseconds`);
+    assert.ok(d >= prev, `${n}³: never shorter for a larger board`);
+    assert.ok(d >= 1000 && d <= 2500, `${n}³: ${d} ms`);
+    prev = d;
+  }
+  assert.ok(endDelayMs(box(12, 12, 8)) > 1000, 'Cube Expert waits longer than Beginner');
+  assert.ok(endDelayMs(box(30, 30, 30)) > endDelayMs(box(12, 12, 8)), 'and a larger box longer still');
+  assert.equal(endDelayMs(box(400, 400, 400)), 2500);
+});
+
+test('the loss wave from any cube reaches the farthest cell, and that cell\'s reveal completes, before the end delay ends', () => {
+  for (const b of [box(6, 6, 6), box(8, 8, 8), box(12, 12, 8), box(30, 16, 9), box(50, 50, 50), box(100, 100, 100), box(160, 3, 2)]) {
+    const step = waveStepS(b);
+    assert.ok(step > 0 && step <= 0.06, `${b.X}×${b.Y}×${b.Z}: ${step} s per cell`);
+    // the farthest cell from a corner is the diagonal: the worst origin
+    const far = Math.hypot(b.X - 1, b.Y - 1, b.Z - 1);
+    const done = far * step + WAVE_CELL_S;
+    assert.ok(done * 1000 <= endDelayMs(b), `${b.X}×${b.Y}×${b.Z}: the far cell is done at ${(done * 1000).toFixed(0)} ms, the delay is ${endDelayMs(b)} ms`);
+  }
+});
+
+test('the renderer paces its waves from the same function, so the wave and the delay cannot drift apart', () => {
+  const src = read('js/render.js').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+  assert.match(src, /import \{[^}]*\bwaveStepS\b[^}]*\bWAVE_CELL_S\b[^}]*\} from '\.\/shell\/mode-3d\.js'/);
+  const setup = src.slice(src.indexOf('_waveSetup('), src.indexOf('_clearOldLayers()'));
+  assert.match(setup, /const delay = waveStepS\(g\)/, 'the per-cell delay is the board\'s');
+  assert.match(src, /local \/ \$\{glslFloat\(WAVE_CELL_S\)\}/, 'the shader\'s per-cell reveal lasts WAVE_CELL_S');
+});
+
+test('the adapter reports finished after the finished board\'s end delay on the clock, not after END_DELAY_MS', () => {
+  const big = { X: 60, Y: 60, Z: 60, mines: 7, noGuess: false }; // the fake game's 7 mines
+  const { host, flow, types } = setup({ board: big });
+  host.start('3d', big);
+  const engine = flow.session.engineSummary;
+  flow.session.engineSummary = () => { const e = engine(); return e && { ...e, dimensions: { width: 60, height: 60, depth: 60 } }; };
+  flow.session.emit('started', {});
+  flow.session.emit('finished', { state: 'lost' });
+  const wait = endDelayMs(big);
+  assert.ok(wait > END_DELAY_MS);
+  flow.clock.advance(END_DELAY_MS);
+  assert.equal(types().includes('finished'), false, 'still in the end delay after one second');
+  flow.clock.advance(wait - END_DELAY_MS - 1);
+  assert.equal(types().includes('finished'), false);
+  flow.clock.advance(1);
+  assert.equal(types().at(-1), 'finished');
 });
 
 // ---------------------------------------------------------------- the reports

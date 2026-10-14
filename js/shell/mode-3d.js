@@ -16,7 +16,7 @@
 //   sampler(session)   optional: the session's movement sampler (js/replay/sampler-3d.js), or an
 //                      object with tick() and optionally destroy(); without it, no movement is
 //                      recorded
-//   release()          optional: release pointer lock before the results screen takes over
+//   release()          optional: release pointer lock before the results screen shows
 //   clock              optional: { setTimeout(fn, ms), clearTimeout(h) } for the end delay; the
 //                      global timers by default
 //
@@ -24,9 +24,9 @@
 // first reveal applied to the generated board — it reports started and canPause(true). At its
 // `finished` — after the listeners js/main.js added before handing the session over have started
 // the end effect — it reports canPause(false) and the end sequence runs (`ending` true): the
-// summary is the game's at its end, a pause is ignored, and after END_DELAY_MS, on the clock and so
-// whether or not the tab is drawing frames, it calls flow.release() and reports
-// finished(summary, replay) once. The shell offers no restart or leave while `ending`. The host
+// summary is the game's at its end, a pause is ignored, and after the board's end delay
+// (endDelayMs(session.board)), on the clock and so whether or not the tab is drawing frames, it
+// calls flow.release() and reports finished(summary, replay) once. The shell offers no restart or leave while `ending`. The host
 // reports abandoned from summary() and replay(summary) when a started, unfinished game is
 // restarted or left; a game left before its first applied reveal reports nothing. The replay is
 // the session's recording sealed with the summary (js/mode3d/session.js), null when there is no
@@ -60,8 +60,39 @@ import { buildSummary } from '../records/summary.js';
 import { pregenerate } from '../generation/client.js';
 import { startCell } from '../generation/start-cell.js';
 
-/** How long the end effect plays before the results screen takes over, for a win and a loss alike. */
+// The end delay: how long the end effect plays before the results screen shows, for a win and a
+// loss alike — one function of the board's size (endDelayMs), which the renderer's wave pacing
+// (waveStepS, js/render.js) is derived from, so the wave and the delay cannot drift apart. It grows
+// with the board's diagonal so that a loss wave from any cube reaches the farthest cell, and that
+// cell's reveal (WAVE_CELL_S) completes, END_MARGIN_S before the delay ends; it never falls below
+// END_DELAY_MS nor exceeds END_DELAY_MAX_MS, and on a board whose diagonal the cap cuts short the
+// wave travels faster than WAVE_STEP_MAX_S per cell to fit inside it.
+
+/** The shortest end delay: a small board's. */
 export const END_DELAY_MS = 1000;
+/** The longest end delay, whatever the board. */
+export const END_DELAY_MAX_MS = 2500;
+/** The slowest the end-of-game wave travels: seconds per cell of distance. */
+export const WAVE_STEP_MAX_S = 0.06;
+/** How long one cell's reveal plays once the loss wave reaches it (the shader's per-cell animation). */
+export const WAVE_CELL_S = 0.3;
+/** What is left of the delay after the farthest cell's reveal. */
+export const END_MARGIN_S = 0.15;
+
+const diagonal = ({ X, Y, Z }) => Math.hypot(X - 1, Y - 1, Z - 1);
+
+/** The end delay of an X × Y × Z board in milliseconds: END_DELAY_MS..END_DELAY_MAX_MS, growing with its diagonal. */
+export function endDelayMs(board) {
+  const needed = Math.ceil((diagonal(board) * WAVE_STEP_MAX_S + WAVE_CELL_S + END_MARGIN_S) * 1000);
+  return Math.min(END_DELAY_MAX_MS, Math.max(END_DELAY_MS, needed));
+}
+
+/** The end-of-game wave's seconds per cell of distance on an X × Y × Z board, so the loss wave fits its end delay. */
+export function waveStepS(board) {
+  const d = diagonal(board);
+  if (d <= 0) return WAVE_STEP_MAX_S;
+  return Math.min(WAVE_STEP_MAX_S, (endDelayMs(board) / 1000 - WAVE_CELL_S - END_MARGIN_S) / d);
+}
 
 const globalClock = {
   setTimeout: (fn, ms) => globalThis.setTimeout(fn, ms),
@@ -144,7 +175,7 @@ export function create3DMode(flow, report) {
         g.final = build(g, session.engineSummary());
         pregenerateNext(session);
         report.canPause(false);
-        g.ending = { handle: clock.setTimeout(() => finish(g), END_DELAY_MS) };
+        g.ending = { handle: clock.setTimeout(() => finish(g), endDelayMs(session.board)) };
       }),
     );
     game = g;

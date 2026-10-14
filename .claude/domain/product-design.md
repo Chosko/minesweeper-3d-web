@@ -255,8 +255,9 @@ box with a side of exactly 2 cells, which can never be solved without
 guessing. Three presets — Beginner, Intermediate and Expert cubes — plus
 custom boards; flat boards are Classic 2D's. When a game ends, its win or
 loss effect plays — on a loss, the wave that shows where the mines were —
-and then the results screen takes over; the finished board is not flown
-around afterwards. Serves the 3D on-ramp, once the
+and then the results screen shows over the dimmed board; from it the
+player can choose to fly over the frozen finished board, read-only. Serves
+the 3D on-ramp, once the
 campaign has taught the player to read numbers in depth.
 
 ### Surface

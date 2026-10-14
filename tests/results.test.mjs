@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import {
   formatTime, formatTimeDifference, formatRate, formatRateDifference, formatEfficiency,
   formatEfficiencyDifference, formatClicks, resultsContent, createResultsView, DASH, NOTES, EQUAL_BEST, NOT_ELIGIBLE,
-  RESULTS_ACTIONS, resultsEnter,
+  RESULTS_ACTIONS, resultsEnter, LOOK_REFUSED,
 } from '../js/results/view.js';
 import { restartInput } from '../js/shell/pause.js';
 import { createEndSkip } from '../js/shell/end-skip.js';
@@ -283,7 +283,9 @@ function fakeRoot() {
         toggle: (c, on) => { if (on ?? !classes.has(c)) classes.add(c); else classes.delete(c); },
         add: (c) => classes.add(c), remove: (c) => classes.delete(c), contains: (c) => classes.has(c),
       },
-      addEventListener() {},
+      listeners: {},
+      addEventListener(type, fn) { (node.listeners[type] ??= []).push(fn); },
+      click() { for (const fn of node.listeners.click ?? []) fn(); },
       setAttribute: (n, v) => attrs.set(n, String(v)),
       removeAttribute: (n) => attrs.delete(n),
       toggleAttribute: (n, on) => { if (on ?? !attrs.has(n)) attrs.set(n, ''); else attrs.delete(n); },
@@ -337,6 +339,53 @@ test('the view shows the standing line under the next target, and hides it when 
   assert.equal(root.el('results-standing').classList.contains('hidden'), false);
   view.show(resultsContent({ summary: summary(), comparison: null, saved: false }));
   assert.equal(root.el('results-standing').classList.contains('hidden'), true);
+});
+
+// ---------------------------------------------------------------- Look at the board (3D)
+
+const BOARD_3D = createBoardIdentity({ mode: '3d', width: 8, height: 8, depth: 8, mines: 40, noGuess: false });
+
+test('a 3D game\'s results carry Look at the board, over the dimmed scene; a Classic 2D game\'s carry neither', () => {
+  const three = resultsContent({ summary: summary({ board: { ...BOARD_3D } }), comparison });
+  assert.equal(three.look, true);
+  assert.equal(three.over3d, true);
+  assert.equal(resultsContent({ summary: lostSummary({ board: { ...BOARD_3D } }) }).look, true, 'after a loss too');
+  const flat = resultsContent({ summary: summary(), comparison });
+  assert.equal(flat.look, false);
+  assert.equal(flat.over3d, false);
+});
+
+test('the view shows Look at the board for a 3D summary only, calls back on it, and notes a refused pointer lock until the card shows again', () => {
+  const root = fakeRoot();
+  const calls = [];
+  const view = createResultsView({ root, onPlayAgain: () => calls.push('again'), onRecords() {}, onMenu: () => calls.push('menu'), onLook: () => calls.push('look') });
+  view.show(resultsContent({ summary: summary({ board: { ...BOARD_3D } }), comparison }));
+  assert.equal(root.el('r-look').classList.contains('hidden'), false, 'shown for a 3D game');
+  assert.equal(root.el('results-look-note').classList.contains('hidden'), true, 'no note');
+  root.el('r-look').click();
+  root.el('r-menu').click();
+  assert.deepEqual(calls, ['look', 'menu'], 'Look calls back; Main menu keeps its meaning');
+  view.noteLook(LOOK_REFUSED);
+  assert.equal(root.el('results-look-note').textContent, LOOK_REFUSED);
+  assert.equal(root.el('results-look-note').classList.contains('hidden'), false);
+  view.show(resultsContent({ summary: summary({ board: { ...BOARD_3D } }), comparison }));
+  assert.equal(root.el('results-look-note').classList.contains('hidden'), true, 'the note goes with the next showing');
+  view.show(resultsContent({ summary: summary(), comparison }));
+  assert.equal(root.el('r-look').classList.contains('hidden'), true, 'hidden for Classic 2D');
+  assert.match(LOOK_REFUSED, /^[^\n]{10,120}$/, 'one line');
+});
+
+test('Back on a 3D results card opens the look, Main menu still goes to the menu; Back on a Classic 2D card goes to the menu', () => {
+  const main = read('js/main.js').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+  const row = main.match(/results: \{ defaultFocus: '#r-again'[^\n]*/)[0];
+  assert.match(row, /back: \(\{ source \}\) => resultsBack\(source\)/);
+  const at = main.indexOf('function resultsBack(');
+  const body = main.slice(at, main.indexOf('\n}', at));
+  assert.match(body, /lookable\(\)/, 'only where the finished 3D board can be looked at');
+  assert.match(body, /openLook\(source\)/);
+  assert.match(body, /RESULTS\.toMenu\(\)/, 'otherwise the menu, as before');
+  assert.match(main, /onMenu: \(\) => RESULTS\.toMenu\(\)/, 'Main menu keeps its meaning');
+  assert.match(main, /onLook: \(\) => openLook\(padGesture \? 'pad' : 'pointer'\)/, 'the action: a controller\'s A looks lockless, a click or key is the lock gesture');
 });
 
 // ---------------------------------------------------------------- flow
@@ -504,11 +553,11 @@ test('the flow is DOM-free', () => {
 // ---------------------------------------------------------------- the keys
 
 test('Enter is Play again while the focus is on Play again or on no action; on another action it keeps that action\'s meaning; its repeat does nothing', () => {
-  assert.deepEqual(RESULTS_ACTIONS, ['r-again', 'r-watch', 'r-records', 'r-menu']);
+  assert.deepEqual(RESULTS_ACTIONS, ['r-again', 'r-watch', 'r-look', 'r-records', 'r-menu']);
   assert.equal(resultsEnter({ focused: 'r-again' }), 'playAgain', 'its default focus');
   assert.equal(resultsEnter({ focused: null }), 'playAgain', 'no focus');
   assert.equal(resultsEnter({ focused: 'results' }), 'playAgain', 'the card itself, no action');
-  for (const id of ['r-watch', 'r-records', 'r-menu']) assert.equal(resultsEnter({ focused: id }), null, `${id} is activated by its own Enter`);
+  for (const id of ['r-look', 'r-watch', 'r-records', 'r-menu']) assert.equal(resultsEnter({ focused: id }), null, `${id} is activated by its own Enter`);
   for (const focused of [null, 'r-again', 'r-menu']) assert.equal(resultsEnter({ focused, repeat: true }), 'ignore', 'a key repeat activates nothing');
 });
 
@@ -539,8 +588,21 @@ test('a key that ended the end delay does not also play again: its press, repeat
     assert.equal(skip.keyUp({ code }), false);
     assert.deepEqual(skips, ['skip'], 'one skip');
   }
-  assert.match(MAIN, /window\.addEventListener\('keydown', \(e\) => \{ if \(END_SKIP\.keyDown\(e\)\) swallow\(e\); \}, true\)/,
+  assert.match(MAIN, /window\.addEventListener\('keydown', \(e\) => \{ if \(END_SKIP\.keyDown\(e\) \|\| \(\(isBackKey\(e\.code\) \|\| !looking\(\)\) && LOOK_END\.keyDown\(e\)\)\) swallow\(e\); \}, true\)/,
     'the shell consumes it in the capture phase, before the results screen\'s keys see it');
+});
+
+test('after a mouse button ended the look, a key press on the card ends that press\'s click window: Enter\'s own click on a button goes through', () => {
+  let open = true;
+  const look = createEndSkip({ ending: () => open, skip: () => { open = false; } });
+  // the shell feeds LOOK_END Esc in the look, and every key outside it
+  const keyDown = (e) => (e.code === 'Escape' || !open) && look.keyDown(e);
+  assert.equal(look.press(), true, 'the press ends the look');
+  assert.equal(open, false);
+  assert.equal(look.release({ buttons: 0 }), true);
+  assert.equal(look.click({ isTrusted: true }), true, 'its own click is consumed');
+  assert.equal(keyDown({ code: 'Tab', repeat: false }), false, 'Tab moves the focus');
+  assert.equal(look.click({ isTrusted: true }), false, 'Enter\'s trusted click on the focused button reaches it');
 });
 
 // ---------------------------------------------------------------- markup and wiring
@@ -555,7 +617,7 @@ test('the results screen is the kit composition: outcome, board, stats, bests, n
   const classes = [...RESULTS_HTML.matchAll(/class="([^"]*)"/g)].flatMap((m) => m[1].split(/\s+/));
   for (const c of classes) assert.ok(c.startsWith('ui-') || c === 'hidden' || c === 'overlay', `kit class only: ${c}`);
   for (const id of ['results-title', 'results-board', 'rs-time', 'rs-bbbv', 'rs-bbbvSolved', 'rs-bbbvPerSecond', 'rs-efficiency',
-    'results-bests', 'rb-time', 'rb-bbbvPerSecond', 'rb-efficiency', 'results-note', 'r-again', 'r-watch', 'r-records', 'r-menu']) {
+    'results-bests', 'rb-time', 'rb-bbbvPerSecond', 'rb-efficiency', 'results-note', 'r-again', 'r-look', 'r-watch', 'r-records', 'r-menu', 'results-look-note']) {
     assert.ok(RESULTS_HTML.includes(`id="${id}"`), `#${id}`);
   }
   // The card reads top to bottom: outcome and board, the new-best banner, the game's own stats, the
@@ -576,9 +638,11 @@ test('the results screen is the kit composition: outcome, board, stats, bests, n
   assert.deepEqual(buttons, [
     ['r-again', 'ui-button--primary', 'Play again'],
     ['r-watch', 'ui-button--secondary hidden', 'Watch replay'],
+    ['r-look', 'ui-button--secondary hidden', 'Look at the board'],
     ['r-records', 'ui-button--secondary', 'Records'],
     ['r-menu', 'ui-button--secondary', 'Main menu'],
   ]);
+  assert.match(RESULTS_HTML, /<p id="results-look-note" class="ui-text ui-text--warning hidden" role="status"><\/p>/);
 });
 
 test('the shell registers the results screen, its focus, its controller layer and the flow on the hand-off', () => {

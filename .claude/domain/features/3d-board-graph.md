@@ -109,8 +109,8 @@ from the m2 rules change:
   arrives, before the first reveal.
 - **No action after the game ends.** A click after a win or a loss changes
   nothing, as on every engine profile; the original let the board be
-  clicked and unflagged after it ended. The results screen takes over once
-  a 3D game ends, so the player cannot reach the board then anyway.
+  clicked and unflagged after it ended. The player can look at the
+  finished board from the results screen but take no action on it.
 - **On a loss** every mine is shown and the board is revealed, as in the
   original; wrong flags are reported by the engine's visual-state query
   like any profile's.

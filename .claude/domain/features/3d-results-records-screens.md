@@ -1,9 +1,11 @@
 # 3D results and records screens
 
 The results screen and the Records screen for 3D games: when a 3D game ends,
-the end effect plays for about a second and then the same results screen as
-Classic 2D takes over completely; the Records screen gains a 2D | 3D switch
-that shows the 3D boards' bests, win rate, streaks and history.
+the end effect plays for an end delay that grows with the board and then
+the same results screen as Classic 2D shows over the dimmed 3D scene, from
+which the player can choose to look at the finished board; the Records
+screen gains a 2D | 3D switch that shows the 3D boards' bests, win rate,
+streaks and history.
 
 ## Purpose
 
@@ -31,17 +33,18 @@ In scope (m2-3d-joins):
   the second row of clicks and, on a win, the board rank, the next-target
   line, the board's win rate and longest streak each with its completed
   games' figure beside it, the three-best comparison (on a loss greyed and not eligible, with
-  the pace), *Play again*, *Watch replay*, *Records* and *Main menu*.
-- The results screen covering the 3D scene completely; the end banner and
-  flying around the finished board are removed.
+  the pace), *Play again*, *Watch replay*, *Records* and *Main menu*, plus
+  *Look at the board*.
+- The results screen shown over the dimmed 3D scene; the end banner is
+  removed.
+- *Look at the board*: a read-only free flight over the frozen finished
+  board, chosen from the results screen, until the player brings the
+  screen back.
 - The Records screen's 2D | 3D switch, the 3D board picker, and the chosen
   mode's overall figures.
 
 Non-goals:
 
-- A results panel the player can close to fly around the finished board —
-  rejected: the results screen takes over, and the end effect is the
-  player's look at the finished board.
 - Changing the end effects themselves, or any other part of the 3D scene's
   look — kept, per the m2 slice.
 - Showing bests on the 3D board choice — no mode's board choice shows
@@ -66,18 +69,33 @@ described in [app-shell.md](../../context/app-shell.md) and
 - **3D end sequence.** At a win or loss the 3D session stops the timer,
   freezes the HUD's end state as today, and stops accepting board actions
   and camera movement. The renderer plays the end effect it plays today.
-  After a fixed end delay of about one second — or at once, when the
-  player presses any mouse button, key or controller button during it —
-  the mode releases pointer lock and reports `game finished(summary)` to
-  the shell. The delay is one constant shared by win and loss.
-- **Results takeover.** `results-screen` shows over 3D on an opaque surface
-  in the chosen theme; the 3D scene is not visible behind it and stops
-  rendering while it shows. Its flow — record first, then show the summary
-  and the comparison — is `results-screen`'s, unchanged.
+  After the end delay — or at once, when the player presses any mouse
+  button, key or controller button during it — the mode releases pointer
+  lock and reports `game finished(summary)` to the shell. The delay is one
+  function of the board's dimensions, shared by win and loss: it grows with
+  the board's diagonal so that the loss wave from the exploded cube reaches
+  the farthest cell and that cell's reveal completes before it ends, never
+  below one second nor above 2.5 seconds; the renderer's wave pacing is
+  derived from the same function.
+- **Results over the scene.** `results-screen` shows over 3D on a dimmed
+  translucent surface in the chosen theme, with the finished 3D scene drawn
+  behind it on demand — a resize, an end effect still running, the first
+  frame after the screen shows — and no frame drawn while nothing changes.
+  Its flow — record first, then show the summary and the comparison — is
+  `results-screen`'s, unchanged.
+- **Look at the board.** The 3D results screen's *Look at the board* hides
+  the screen and opens a free flight over the frozen finished board,
+  starting from the camera pose the game ended with, with the 3D flight
+  controls, the view-mode keys and spacing. It is read-only: no board
+  action, no pause, no timer, nothing recorded. The board is drawn in its
+  end state — on a loss every mine shown, the exploded cube marked and
+  wrong flags crossed; on a win the solved board with unflagged mines shown
+  as flags — the same after *Watch replay* and Back.
 - **Banner retirement.** The 3D mode's end banner, its compact form and its
   best-time line go, with the old best-time recording `3d-play-flow`
   already retires. After the results screen a 3D game is never returned
-  to: *Play again* starts a new one, the other actions leave it.
+  to: *Play again* starts a new one, the other actions leave it, and the
+  look is a view of the finished board, not a return to the game.
 - **Records mode switch.** `records-screen` gains a 2D | 3D segmented
   choice above its board picker. The picker lists the chosen mode's boards
   from `3d-game-records`' mode-filtered listing; 3D boards use the 3D
@@ -115,6 +133,17 @@ described in [app-shell.md](../../context/app-shell.md) and
 - **Records** — opens `records-screen` on 3D and on this game's board.
 - **Watch replay** — `replay-playback`'s action, unchanged; Back returns to
   the results screen.
+- **Look at the board** — the 3D results screen's action, and Back on that
+  screen (`Esc`, the controller's back buttons): with a pointer or the
+  keyboard its activation is the pointer-lock gesture, and when the lock is
+  refused the screen stays with a one-line note and a fresh press tries
+  again; a controller's look is lockless and flies with the sticks alone.
+  `Esc`, any mouse button or any controller button — and the browser's
+  release of the lock — ends the look and shows the results screen again
+  with focus on *Play again*; that press does nothing else, and neither
+  its release, its auto-repeat nor a held button reaches the screen. A
+  one-line hint on the look names the way back. *Main menu* keeps its
+  meaning.
 - **Open Records** — `records-screen`'s Open takes an optional mode beside
   the optional board key; a board key carries its mode, so a key alone
   also sets the switch.
@@ -132,14 +161,7 @@ described in [app-shell.md](../../context/app-shell.md) and
 - `records-screen` — the screen the mode switch and 3D picker extend.
 - `3d-play-flow` — the 3D session's end of game and its mode adapter.
 - `game-shell` — routing, the game-finished hand-off and navigation.
-- `screen-components` — the segmented choice and the opaque surface.
+- `screen-components` — the segmented choice and the overlay surfaces.
 - `replay-playback` and `replay-library` — *Watch replay* and the library
   view, which follow the board shown.
 - No external libraries.
-
-## Open questions
-
-- The end delay's exact length. About one second is the target; on large
-  boards the loss wave spreads for longer than that, so whether the delay
-  grows with the board or the wave is cut where it stands is settled by
-  watching real games. Blocks the constant, not the flow.

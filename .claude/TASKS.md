@@ -325,7 +325,7 @@ Preconditions: none
 
 ## 140. Look at the board and end delay
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/shell/mode-3d.js, js/render.js, js/main.js, js/results/view.js, js/results/flow.js, index.html, css/style.css, tests/mode3d-end.test.mjs, tests/shell-mode-3d.test.mjs, tests/results.test.mjs, README.md, .claude/domain/features/3d-results-records-screens.md, .claude/domain/features/results-screen.md, .claude/domain/features/3d-board-graph.md, .claude/domain/product-design.md
 Preconditions: none
