@@ -5,6 +5,10 @@ const DEG = Math.PI / 180;
 export const MOVE_SPEED = 50; // units / s
 export const LOOK_DEG_PER_PX = 0.2;
 export const PAD_LOOK_DEG_PER_S = 180; // controller right stick at full deflection (x sensitivity)
+/** Keyboard look (the arrows): the rate at the press, the rate it ramps to and the ramp's length (x sensitivity). */
+export const KEY_LOOK_START_DEG_PER_S = 30;
+export const KEY_LOOK_MAX_DEG_PER_S = 120;
+export const KEY_LOOK_RAMP_S = 0.5;
 export const SPACING_MIN = 1, SPACING_MAX = 10, SPACING_START = 1.1;
 /** One isolated wheel notch (or one D-pad press) changes the spacing by this much. */
 export const SPACING_STEP = 0.1;
@@ -118,6 +122,34 @@ export class FlyCamera {
     cam.position.set(this.x, this.y, this.z);
     cam.rotation.set(-this.pitch, -this.yaw, 0, 'YXZ');
     cam.updateMatrixWorld(true);
+  }
+}
+
+/** Degrees an arrow held for `t` seconds has turned at sensitivity 1: the rate ramps linearly, then holds. */
+export function keyLookDeg(t) {
+  const a = KEY_LOOK_START_DEG_PER_S, b = KEY_LOOK_MAX_DEG_PER_S, r = KEY_LOOK_RAMP_S;
+  const ramp = Math.min(t, r);
+  return a * ramp + ((b - a) * ramp * ramp) / (2 * r) + b * Math.max(0, t - r);
+}
+
+/**
+ * Keyboard look: update(cam, dt, x, y) turns `cam` through FlyCamera.look (so sensitivity, invert Y
+ * and the pitch clamp apply as for the mouse) by the arrows held, x -1 left / +1 right, y -1 up / +1
+ * down. Each axis ramps from its own press (keyLookDeg); a released or reversed axis starts again.
+ */
+export class KeyLook {
+  constructor() { this.reset(); }
+  reset() { this._axes = [{ dir: 0, t: 0 }, { dir: 0, t: 0 }]; }
+  update(cam, dt, x, y) {
+    const px = [x, y].map((dir, i) => {
+      const a = this._axes[i];
+      if (dir !== a.dir) { a.dir = dir; a.t = 0; }
+      if (!dir) return 0;
+      const deg = keyLookDeg(a.t + dt) - keyLookDeg(a.t);
+      a.t += dt;
+      return (dir * deg) / LOOK_DEG_PER_PX;
+    });
+    if (px[0] || px[1]) cam.look(px[0], px[1]);
   }
 }
 
@@ -258,6 +290,33 @@ export class MouseActions {
   reset() { this.left = false; this.right = false; this.toggle = false; }
 }
 
+/** The keyboard's reveal and flag keys (event.code) and the mouse button each stands for. */
+const ACTION_KEYS = new Map([['Enter', 0], ['Quote', 2]]);
+
+/**
+ * The keyboard's reveal and flag keys over the mouse's own MouseActions: Enter is button 0, ' is
+ * button 2, so every release rule (chord, toggle, selection guard) is the mouse's. down(code, repeat)
+ * and up(code) return whether the key is an action key; an auto-repeat presses nothing more, and a
+ * release whose press this object never took (made outside play) does nothing. reset() forgets held keys.
+ */
+export class KeyActions {
+  constructor(mouse) {
+    this.mouse = mouse;
+    this.held = new Set();
+  }
+  down(code, repeat = false) {
+    if (!ACTION_KEYS.has(code)) return false;
+    if (!repeat && !this.held.has(code)) { this.held.add(code); this.mouse.down(ACTION_KEYS.get(code)); }
+    return true;
+  }
+  up(code) {
+    if (!ACTION_KEYS.has(code)) return false;
+    if (this.held.delete(code)) this.mouse.up(ACTION_KEYS.get(code));
+    return true;
+  }
+  reset() { this.held.clear(); }
+}
+
 /** Movement, in pixels, a held mouse button makes before drag-to-look turns it into a drag. */
 export const DRAG_LOOK_THRESHOLD_PX = 6;
 
@@ -334,7 +393,8 @@ export class TapToggle {
 
 const GAME_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'Space',
   'ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight']);
-// The arrow keys reach onKey on every keydown, the browser's key repeats included: they move menu focus.
+// The arrow keys: keyboard look in play (Input.lookKeys); they reach onKey on every keydown, the browser's
+// key repeats included, for the shell's menu focus moves.
 const ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
 // Back to the start view (onKey): the browser's own Home scrolling is stopped while play is active.
 const RETURN_KEYS = new Set(['Home', 'KeyR']);
@@ -349,9 +409,11 @@ const RETURN_KEYS = new Set(['Home', 'KeyR']);
 export function escResumes(press) { return !press.repeat && !press.locked; }
 
 /**
- * DOM input: keyboard state, pointer lock, mouse buttons/look/wheel.
+ * DOM input: keyboard state, pointer lock, mouse buttons/look/wheel, the keyboard's look and action keys.
  * opts: { canvas, isActive(): bool (playing & locked), onLook(dx,dy), onWheel(notches),
  *         mouse: MouseActions, onKey(code) (non-held keys e.g. H/M), onLockChange(locked),
+ *         canAct(): bool (Enter / ' act on the board; default isActive),
+ *         canLook(): bool (the arrows look, their default prevented; default isActive),
  *         isDragLook(): bool (drag-to-look play: the mouse acts and looks without pointer lock) }
  */
 export class Input {
@@ -359,6 +421,9 @@ export class Input {
     this.o = opts;
     this.keys = new Set();
     this.spaceToggle = new TapToggle(); // Space: tap-toggle as well as hold
+    this.actions = new KeyActions(opts.mouse); // Enter / ' on the mouse's own state machine
+    this.canAct = () => (opts.canAct ?? opts.isActive)();
+    this.canLook = () => (opts.canLook ?? opts.isActive)();
     this.drag = new DragLook({ mouse: opts.mouse, onLook: (dx, dy) => this.o.onLook(dx, dy) });
     this.locked = false;
     this.unlockedAt = -Infinity; // performance.now() of the last pointer-lock release
@@ -366,7 +431,12 @@ export class Input {
     this._lockPending = false; // a lock request whose failure has not been reported yet
     const doc = document;
     window.addEventListener('keydown', (e) => {
-      if (GAME_KEYS.has(e.code)) {
+      if (ARROW_KEYS.has(e.code)) { // keyboard look; their focus moves outside play
+        this.keys.add(e.code);
+        if (this.canLook()) e.preventDefault();
+      } else if (ACTION_KEYS.has(e.code)) { // reveal / flag: no button activation, no quick find
+        if (this.canAct()) { e.preventDefault(); this.actions.down(e.code, e.repeat); }
+      } else if (GAME_KEYS.has(e.code)) {
         if (this.o.isActive()) e.preventDefault();
         this.keys.add(e.code);
       } else if (RETURN_KEYS.has(e.code) && this.o.isActive()) e.preventDefault();
@@ -380,6 +450,9 @@ export class Input {
     });
     window.addEventListener('keyup', (e) => {
       this.keys.delete(e.code);
+      if (ACTION_KEYS.has(e.code)) {
+        if (this.canAct()) { e.preventDefault(); this.actions.up(e.code); } else this.actions.held.delete(e.code); // dropped, never fired
+      }
       if (e.code === 'Space') this.spaceToggle.up(performance.now());
       if (GAME_KEYS.has(e.code) && this.o.isActive()) e.preventDefault();
     });
@@ -441,6 +514,7 @@ export class Input {
   releaseAll() {
     this.keys.clear();
     this.spaceToggle.reset();
+    this.actions.reset();
     this.o.mouse.reset();
     this.drag.reset();
   }
@@ -452,6 +526,11 @@ export class Input {
   get shift() { return this.keys.has('ShiftLeft') || this.keys.has('ShiftRight'); }
   get ctrl() { return this.keys.has('ControlLeft') || this.keys.has('ControlRight'); }
   get space() { return this.keys.has('Space') || this.spaceToggle.on; }
+  /** The arrows held, for KeyLook: x -1 left / +1 right, y -1 up / +1 down; opposite arrows cancel. */
+  get lookKeys() {
+    const k = this.keys;
+    return { x: k.has('ArrowRight') - k.has('ArrowLeft'), y: k.has('ArrowDown') - k.has('ArrowUp') };
+  }
   get move() {
     const k = this.keys;
     return { w: k.has('KeyW'), a: k.has('KeyA'), s: k.has('KeyS'), d: k.has('KeyD'), q: k.has('KeyQ'), e: k.has('KeyE') };

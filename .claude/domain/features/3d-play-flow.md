@@ -97,8 +97,8 @@ behaviour.
   taken over when the first reveal lands on its marked start cell, and
   discarded when it lands anywhere else; *Play again* opens the closed box
   with the marked start cell shown while a pre-generated board waits for
-  it. When the board arrives it applies the reveal and starts the timer. It drives actions from the existing mouse state machine
-  and controller mapping, stops the timer at a win or loss, and builds the
+  it. When the board arrives it applies the reveal and starts the timer. It drives actions from the existing mouse state machine,
+  fed by the mouse buttons, the controller triggers and the keyboard's reveal and flag keys, stops the timer at a win or loss, and builds the
   summary. Restart and leave cancel a pending generation.
 - **Mode adapter.** Implements the game shell's mode contract for 3D over
   the session: start, pause, resume, restart and leave, keeping today's

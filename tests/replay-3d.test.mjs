@@ -22,6 +22,7 @@ import { createGameWithMines } from '../js/engine/rules.js';
 import { createBoxGrid } from '../js/engine/box-grid.js';
 import { buildSummary } from '../js/records/summary.js';
 import { boardKey, MODE_3D } from '../js/records/board.js';
+import { FlyCamera, KeyLook, KeyActions, MouseActions } from '../js/input.js';
 
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
@@ -230,6 +231,57 @@ test('a lost 3D game and an abandoned one reproduce their check values', async (
   assert.deepEqual(decoded.actions, [{ time: 0, kind: 'reveal', cell: 4 }, { time: 250, kind: 'flag', cell: 0 }]);
   again = replayAgain(decoded);
   assert.equal(cellStateDigest(again.state), decoded.check.digest);
+});
+
+test('a 3D game played with keyboard look and the keyboard keys records and replays like a mouse game', async () => {
+  const clock = fakeClock();
+  const session = createSession({ board: ROW, client: fakeClient(), clock, randomSeed: () => 9 });
+  const cam = new FlyCamera();
+  const look = new KeyLook();
+  const held = keys();
+  const sampler = createSampler3D({ session, camera: cam, controls: held, spacing: () => 1 });
+  let aimed = -1;
+  let pending = null;
+  const act = { left: (c) => session.reveal(c), right: (c) => session.toggleFlag(c), chord: (c) => session.chord(c) };
+  const mouse = new MouseActions((type) => { pending = act[type](aimed); }, () => aimed >= 0);
+  const keyboard = new KeyActions(mouse);
+  const press = async (...codes) => {
+    for (const c of codes) keyboard.down(c);
+    for (const c of codes) keyboard.up(c);
+    await pending;
+  };
+  /** Hold the arrows for `ms` of game time in 100 ms frames, sampling the camera each frame. */
+  const turn = (ms, x, y) => {
+    for (let t = 0; t < ms; t += 100) { clock.advance(100); look.update(cam, 0.1, x, y); sampler.tick(); }
+  };
+
+  aimed = 4;
+  await press('Enter'); // the first reveal: 4 opens 4 and 3
+  assert.equal(session.state, 'playing');
+  sampler.tick();
+  turn(300, 1, 0); // ArrowRight
+  aimed = 2;
+  await press('Quote'); // flag the mine at 2
+  turn(200, 0, -1); // ArrowUp
+  aimed = 3;
+  await press('Enter', 'Quote'); // chord the 1 at 3: its flag is placed, nothing left to open
+  turn(200, -1, 1);
+  aimed = 1;
+  await press('Enter'); // the win
+  assert.equal(session.state, 'won');
+
+  const summary = summaryOf(session, 'won');
+  const decoded = decodeReplay(session.replay(summary).blob);
+  assert.deepEqual(decoded.actions.map((a) => [a.kind, a.cell]), [['reveal', 4], ['flag', 2], ['chord', 3], ['reveal', 1]],
+    'actions by cell, as the mouse records them');
+  const samples = decoded.movement.filter((m) => m.type === 'sample');
+  assert.ok(samples.length >= 6, 'the camera sampled while the arrows turned it');
+  assert.ok(new Set(samples.map((m) => m.values[3])).size > 2, 'the yaw moved');
+  assert.ok(new Set(samples.map((m) => m.values[4])).size > 1, 'the pitch moved');
+  assert.deepEqual(verify(decoded), { ok: true, result: 'reproduces' });
+  const again = replayAgain(decoded);
+  assert.equal(cellStateDigest(again.state), decoded.check.digest);
+  assert.deepEqual(decoded.check.clicks, summary.clicks, 'a key action counts as the mouse action it replaces');
 });
 
 test('a 3D game under rules version 2 with a flag-all, a hand unflag of one of its flags and the undo verifies, and seeks both ways as it was played', async () => {

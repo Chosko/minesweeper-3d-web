@@ -162,12 +162,16 @@ Pick a board and play:
 | Input | Action |
 |---|---|
 | Mouse | Look around (click "Click to play" to capture the mouse; where the browser blocks the capture, "Play with drag-to-look" turns the view while a button is held and dragged) |
+| Arrow keys | Look around: a tap aims finely, a hold turns faster (Look sensitivity and Invert Y apply) |
 | `W` `A` `S` `D` | Fly forward / left / back / right (forward follows the view direction) |
 | `Q` / `E` | Move down / up |
 | `Home` / `R` | Back to the start view |
 | Left click | Reveal the aimed cube |
 | Right click | Flag / unflag. On a number: flag all its closed neighbours; right-click it again to take back only those flags |
 | Left + Right | Chord: when a number has the right count of flags around it, reveal its other neighbours |
+| `Enter` | Reveal the aimed cube, as Left click |
+| `'` | Flag / unflag, as Right click |
+| `Enter` + `'` | Chord, as Left + Right |
 | Mouse wheel | Change the spacing between cubes, 0.1 a notch, faster when you spin quickly; the camera moves with the cubes |
 | `X` | Toggle the spacing between 1.1 and 2.0 |
 | Hold `Shift` | Fade everything except the aimed cube and its neighbours, which draw on top |
@@ -179,8 +183,8 @@ Pick a board and play:
 | `Esc` | Pause menu (releases the mouse) |
 | `F2` | Restart: a new board of the same choice |
 
-Mouse actions fire when you **release** the button, as in the original. The timer starts on the
-first left-click release.
+Actions fire when you **release** the mouse button or the key, as in the original. The timer starts
+on the first reveal's release.
 
 Some browsers do not let a page block `Ctrl+W`, so pressing W while holding Ctrl can close the tab.
 In fullscreen (`F`), the game asks the browser to pass those keys to the page (Keyboard Lock), where
@@ -301,10 +305,10 @@ on purpose:
 - **Touch:** Classic 2D plays by touch. A tap reveals, or flags while the overlay bar's Reveal / Flag
   switch (shown on a touch screen) is on Flag; a 400 ms long-press flags, with a short vibration; a
   tap on a number chords. One finger pans a board larger than the screen, two fingers pan and pinch
-  to zoom between the smallest tile and the whole board. 3D needs a mouse and keyboard (with Pointer
-  Lock) or a game controller: on a touch-only device the menu says so, the 3D ready card is a
-  notice with Back, and the game never asks for pointer lock. On a touch screen switches and
-  sliders take a 44 px touch and the smallest labels grow to 12 px.
+  to zoom between the smallest tile and the whole board. 3D needs a keyboard (with Pointer
+  Lock; a mouse is optional) or a game controller: on a touch-only device the menu notes that 3D does
+  not play by touch, the 3D ready card is a notice with Back, and the game never asks for pointer
+  lock. On a touch screen switches and sliders take a 44 px touch and the smallest labels grow to 12 px.
 
 ## Running locally
 

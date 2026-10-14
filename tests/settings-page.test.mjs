@@ -125,6 +125,19 @@ test('the 3D keyboard bindings name X, the spacing toggle, and say that forward 
   assert.equal(bindingRows('classic-2d', 'keyboard').some(([input]) => input === '[X]'), false, 'not in Classic 2D');
 });
 
+test('the 3D keyboard bindings list keyboard look on the arrows and Enter, \' and Enter + \' as reveal, flag and chord on release', () => {
+  const rows = bindingRows('3d', 'keyboard');
+  const row = (input) => rows.find(([i]) => i === input);
+  assert.deepEqual([...row('Arrow keys')], ['Arrow keys', 'Look around']);
+  assert.deepEqual([...row('[Enter]')], ['[Enter]', 'Reveal the aimed cube (on release)']);
+  assert.deepEqual([...row('[\']')], ['[\']', 'Flag / unflag (on release)']);
+  assert.deepEqual([...row('[Enter] + [\']')], ['[Enter] + [\']', 'Chord']);
+  assert.ok(rows.indexOf(row('Arrow keys')) === rows.indexOf(row('Mouse')) + 1, 'beside mouse look');
+  const html = bindingsHtml('3d', 'keyboard');
+  assert.match(html, /<dt><kbd>Enter<\/kbd> \+ <kbd>'<\/kbd><\/dt><dd>Chord<\/dd>/);
+  assert.match(bindingsSectionHtml(GLYPHS.xbox), /<dt>Arrow keys<\/dt><dd>Look around<\/dd>/, 'the Settings page lists them');
+});
+
 test('the 3D bindings say what a right-click and {lt} on a number do, and that a second one takes back only those flags', () => {
   const right = bindingRows('3d', 'keyboard').find(([input]) => input === 'Right click');
   assert.deepEqual([...right], ['Right click', 'Flag / unflag. On a number: flag all its closed neighbours; right-click it again to take back only those flags']);

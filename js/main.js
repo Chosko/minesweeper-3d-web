@@ -1,7 +1,7 @@
 // Entry point: wires game logic, renderer, input and UI together.
 import * as THREE from 'three';
 import { BoardRenderer } from './render.js';
-import { FlyCamera, MouseActions, Input, SPACING_MIN, SPACING_MAX, SPACING_START, spacingStep, spacingToggle, spawnPose, offscreenArrow, escResumes } from './input.js';
+import { FlyCamera, MouseActions, Input, KeyLook, SPACING_MIN, SPACING_MAX, SPACING_START, spacingStep, spacingToggle, spawnPose, offscreenArrow, escResumes } from './input.js';
 import { pickCell, pickCellBrute } from './picking.js';
 import { UI, clampSettings, NO_MOUSE_MSG } from './ui.js';
 import * as audio from './audio.js';
@@ -234,6 +234,9 @@ const input = new Input({
   mouse,
   isActive: () => (S.mode === 'playing' && !endDelay()) || looking(), // the look flies with mouse look, keys and wheel; its presses are LOOK_END's
   isDragLook: () => S.dragLook && S.lockless,
+  // Enter / ' act where the mouse buttons and the triggers act on the board; the arrows look where the mouse looks
+  canAct: () => S.mode === 'playing' && !endDelay() && !board3d.failure && (input.locked || S.lockless),
+  canLook: () => (S.mode === 'playing' && !endDelay() && !board3d.failure) || looking(),
   onLook: (dx, dy) => cam.look(dx, dy),
   onWheel: (notches) => wheelSpacing(notches),
   onKey: (code, e) => {
@@ -273,6 +276,7 @@ const input = new Input({
   },
 });
 const controls = new Controls(input); // keyboard + controller view modes, controller move axes
+const keyLook = new KeyLook(); // the arrows' look, ramped from each press
 
 // Fullscreen + Keyboard Lock (where supported) so Ctrl+W/Ctrl+S etc. reach the game instead of the browser.
 const LOCK_KEYS = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'Space', 'ControlLeft', 'ControlRight', 'ShiftLeft', 'ShiftRight'];
@@ -1059,6 +1063,7 @@ function gameOver() {
 }
 function stopPlayInput() {
   mouse.reset();
+  input.actions.reset(); // a held Enter / ' is dropped like a held button
   input.spaceToggle.reset(); // a tapped-on aim-through is dropped like a held key
   controls.releasePad();
   input.drag.reset();
@@ -1570,6 +1575,8 @@ function frame(now) {
   const three = renderer.camera;
   const playing = S.mode === 'playing';
   const looking3D = looking();
+  const arrows = input.canLook() ? input.lookKeys : { x: 0, y: 0 }; // keyboard look, beside mouse look
+  keyLook.update(cam, dt, arrows.x, arrows.y);
   if (onBackdrop()) {
     if (!STILL_BACKDROP) S.orbit += dt * 0.12;
     const r = 62;
@@ -1680,7 +1687,10 @@ window.__ms = {
     else if (type === 'right') { mouse.down(2); mouse.up(2); }
     else if (type === 'chord') { mouse.down(0); mouse.down(2); mouse.up(0); mouse.up(2); }
   },
-  key(code, down = true) { if (down) input.keys.add(code); else input.keys.delete(code); refresh(); },
+  key(code, down = true) { // a held key; Enter and ' press and release as their key would
+    if (down) { input.keys.add(code); input.actions.down(code); } else { input.keys.delete(code); input.actions.up(code); }
+    refresh();
+  },
   wheel(notches) { wheelSpacing(notches); refresh(); },
   selected() { refresh(); return S.selected; },
   pickBrute() {

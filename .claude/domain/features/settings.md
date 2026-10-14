@@ -21,8 +21,8 @@ In scope (m1-classic-2d):
 
 - The Settings page, reached from the main menu, built from
   `screen-components` and fully operable by mouse, keyboard and controller.
-- Controls: look sensitivity and invert Y, which apply to mouse and
-  controller look in 3D; "Always ask before restarting", which brings back
+- Controls: look sensitivity and invert Y, which apply to mouse, keyboard
+  and controller look in 3D; "Always ask before restarting", which brings back
   the confirmation before a restart abandons a started game (`game-shell`
   § Restart); and a read-only list of the bindings for each mode and input
   device, drawn from the same source as the in-game help.

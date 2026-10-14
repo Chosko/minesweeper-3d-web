@@ -63,12 +63,16 @@ export const BINDINGS = Object.freeze({
   '3d': Object.freeze({
     keyboard: rows([
       ['Mouse', 'Look around'],
+      ['Arrow keys', 'Look around'],
       ['[W][A][S][D]', 'Fly forward / left / back / right; forward follows the view'],
       ['[Q] [E]', 'Move down / up'],
       ['[Home] / [R]', 'Back to the start view'],
       ['Left click', 'Reveal the aimed cube'],
       ['Right click', 'Flag / unflag. On a number: flag all its closed neighbours; right-click it again to take back only those flags'],
       ['Left + Right', 'Chord: reveal neighbours of a satisfied number'],
+      ['[Enter]', 'Reveal the aimed cube (on release)'],
+      ["[']", 'Flag / unflag (on release)'],
+      ["[Enter] + [']", 'Chord'],
       ['Wheel', 'Change spacing between cubes; the camera moves with them'],
       ['[X]', 'Toggle spacing 1.1 / 2.0'],
       ['Hold [Shift]', 'Fade everything except the aimed cube\'s neighbours, which draw on top'],

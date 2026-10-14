@@ -47,6 +47,7 @@ pressed, flagged, unlinked, selected, nearSelected. No question marks.
 - Free-fly FPS camera (pointer lock). Start: position (0, 10, -8*max(X,Y,Z)) (adjust if grid is re-centred), pitch 0, looking toward +Z at the grid.
   - Web port: a game starts framed from a three-quarter view instead — the whole box in view, looking down onto it and turned off the straight +Z view so three faces show, the crosshair on the near face's centre cube; `Home` / `R` and the pause card's "Back to start" return there.
 - Mouse look 0.2° per pixel, mouse right → turn right, mouse down → look down, pitch clamp ±90°.
+  - Web port: the arrow keys look too, through the same look sensitivity, invert Y and pitch clamp — 30°/s at the press, ramping to 120°/s over 0.5 s of holding.
 - W forward along view direction, S back, A strafe left, D strafe right, Q world down, E world up; 50 units/s.
   - Original quirk: forward vector = normalize(sin(yaw'), sin(pitch), cos(yaw')) (no cos(pitch) on XZ).
   - Web port: W flies along the true view direction (cos(pitch) on XZ), so looking straight down it moves straight down; Q and E stay world down and up.
@@ -58,6 +59,7 @@ pressed, flagged, unlinked, selected, nearSelected. No question marks.
 - Mouse actions fire on **button release**:
   - Left release: if chord-toggle set → clear it, nothing else. Else if Right is held → set toggle, chord(selected). Else if a cell is selected → start timer if not started, leftClick(selected).
   - Right release: if toggle set → clear it. Else if Left held → set toggle, chord(selected) (guard no selection). Else if selected → rightClick(selected).
+  - Web port: `Enter` and `'` drive the same release logic as Left and Right (both together chord), as the controller's triggers do.
 - Mouse wheel: spacing.
 - **Left Shift held**: unrevealed and flagged cells fade to alpha 0.2 unless nearSelected or selected; revealed numbers fade to 0.2 unless selected ("show only cells adjacent to the aimed cell").
   - Web port: the aimed cell's neighbourhood always draws over the faded cubes, however many stand between it and the camera.

@@ -343,7 +343,7 @@ Preconditions: none
 
 ## 143. Keyboard-only 3D
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/input.js, js/main.js, js/settings/bindings.js, js/ui.js, index.html, tests/input-keyboard-3d.test.mjs, tests/gamepad.test.mjs, tests/settings-page.test.mjs, tests/replay-3d.test.mjs, README.md, docs/ORIGINAL_SPEC.md, .claude/domain/features/settings.md, .claude/domain/features/3d-play-flow.md
 Preconditions: none
