@@ -5,7 +5,7 @@ Last step number: 41
 Sequencing: Run in list order, one step at a time: most tasks edit js/main.js, index.html and css/style.css, and each body says whichever of two overlapping tasks lands second merges around the first; task 119's help component is reused by many later tasks, so it goes first.
 Archive: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 28, 34, 41
 
-## [ ] 39. Implement task 154 — Fast and slow test tiers and a cheaper browser suite
+## [x] 39. Implement task 154 — Fast and slow test tiers and a cheaper browser suite
 
 Depends on: none
 
@@ -15,11 +15,14 @@ Context: none
 /task-implement 154 --review
 ```
 
+Done: 2026-10-14, commit `e5c1865` (30 files, +457/-55). Browser tests drop 3D with a per-file `removeWebGL2` init script, or load `index.html?still-backdrop` (a new hook in js/main.js) where they need WebGL 2; the body's 549 s full-run baseline measured 377 s here, 267–289 s after.
+
 ## [ ] 40. Implement task 155 — Load-robust timing tests and one shared Chromium per test file
 
 Depends on: 39
 
-Context: none
+Context:
+- 2026-10-14 (from step 39): `shell-menu` "in a browser without WebGL 2, the shell starts with a static background…" timed out in every loaded full run (passes alone); its 81-click loop races the end delay, so a late click can hit a results button. `classic2d-button-swap` "the swap toggle shows…" fails on HEAD too: it asks for 60 mines on 9×9 against the cap of 31.
 
 ```prompt
 /task-implement 155 --review
