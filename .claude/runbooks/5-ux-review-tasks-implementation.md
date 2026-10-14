@@ -185,7 +185,7 @@ Context:
 
 Done: 2026-10-14, commit `7663531` (93 files, +3316/-358). Records format goes to version 4, history to 2 and `BOARD_KEY_FORMAT` to 2 (new `daily:` keys); a daily code from another day plays as a challenge.
 
-## [ ] 35. Implement task 152 — Cube preset re-tune and first-box presets
+## [x] 35. Implement task 152 — Cube preset re-tune and first-box presets
 
 Depends on: 15
 
@@ -197,11 +197,14 @@ Context:
 /task-implement 152 --review
 ```
 
+Done: 2026-10-14, commit `f4c0b03` (32 files, +479/-146). Cube Beginner is 6 × 6 × 6 · 20 and First box 1 is 4 × 4 × 3 · 4; the cube curve misses the ×2.5–×3 target at Beginner → Intermediate (×1.9), shipped as decided.
+
 ## [ ] 36. Implement task 153 — Learn 3D guided board
 
 Depends on: 1, 35
 
-Context: none
+Context:
+- 2026-10-14 (from step 35): `PRESETS_3D` holds six presets, two first boxes then four cubes; First box 1 is 4 × 4 × 3 · 4 and Cube Beginner 6 × 6 × 6 · 20 (old 6 × 6 × 6 · 10 records read as Cube Intro). With nothing played, focus goes to Cube Beginner, not the first item.
 
 ```prompt
 /task-implement 153 --review
