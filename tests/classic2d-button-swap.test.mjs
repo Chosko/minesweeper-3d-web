@@ -229,8 +229,8 @@ test('in a browser: the swap toggle shows on the Classic 2D board while unpaused
     });
     const pressed = () => ms(() => document.getElementById('hud-swap').getAttribute('aria-pressed'));
 
-    // A dense board, so the first reveal at the centre leaves the corner closed.
-    await ms(() => globalThis.__ms.modes.start('classic-2d', { size: 'custom', custom: { width: 9, height: 9, mines: 60 }, noGuess: false }));
+    // The densest 9 × 9 board, so the first reveal at the centre leaves the corner closed.
+    await ms(() => globalThis.__ms.modes.start('classic-2d', { size: 'custom', custom: { width: 9, height: 9, mines: 31 }, noGuess: false }));
     await page.waitForFunction(() => globalThis.__ms.board2D);
     assert.equal(await shown(), true, 'on the board in play');
     assert.equal(await pressed(), 'false', 'off at page load');
@@ -250,7 +250,7 @@ test('in a browser: the swap toggle shows on the Classic 2D board while unpaused
     await page.waitForFunction(() => globalThis.__ms.modes.state.started);
     const corner = await at(0, 0);
     await page.mouse.click(corner.x, corner.y);
-    assert.equal(await ms(() => document.getElementById('hud-mines').textContent), '59', 'a left click flags');
+    assert.equal(await ms(() => document.getElementById('hud-mines').textContent), '30', 'a left click flags');
 
     await page.click('#hud-pause');
     assert.equal(await shown(), false, 'hidden while paused');
