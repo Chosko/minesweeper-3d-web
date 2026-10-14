@@ -22,7 +22,9 @@ import { createGameWithMines } from '../js/engine/rules.js';
 import { createBoxGrid } from '../js/engine/box-grid.js';
 import { buildSummary } from '../js/records/summary.js';
 import { boardKey, MODE_3D } from '../js/records/board.js';
-import { FlyCamera, OrbitCamera, KeyLook, KeyActions, MouseActions } from '../js/input.js';
+import { FlyCamera, OrbitCamera, KeyLook, KeyActions, MouseActions, spacingStep } from '../js/input.js';
+import { createTouch3D, applyTouchStick, LONG_PRESS_MS, PINCH_STEP_PX } from '../js/touch-3d.js';
+import { Controls } from '../js/controls.js';
 
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
@@ -329,6 +331,90 @@ test('an Orbit game records its camera as ordinary position, yaw and pitch sampl
   assert.ok(distances.size > 2, 'the dolly moved the camera along its view line');
   assert.deepEqual(verify(decoded), { ok: true, result: 'reproduces' });
   assert.equal(cellStateDigest(replayAgain(decoded).state), decoded.check.digest);
+});
+
+test('a touch game (stick, look, tap, long-press, two-finger chord, a toolbar mode, a pinch) records and replays to the same final state', async () => {
+  const clock = fakeClock();
+  const session = createSession({ board: ROW, client: fakeClient(), clock, randomSeed: () => 9 });
+  const cam = new FlyCamera();
+  cam.place({ x: 0, y: 10, z: -60, yaw: Math.PI, pitch: 0.1 });
+  const controls = new Controls(keys());
+  let spacing = 1;
+  const sampler = createSampler3D({ session, camera: cam, controls, spacing: () => spacing });
+  let aimed = -1;
+  let pending = null;
+  const act = { left: (c) => session.reveal(c), right: (c) => session.toggleFlag(c), chord: (c) => session.chord(c) };
+  const mouse = new MouseActions((type) => { pending = act[type](aimed); }, () => aimed >= 0);
+  const touch = createTouch3D({
+    mouse,
+    clock,
+    onLook: (dx, dy) => cam.look(dx, dy),
+    onSpacing: (n) => {
+      const next = spacingStep({ spacing }, n).spacing;
+      cam.rescale(next / spacing);
+      spacing = next;
+    },
+  });
+  const frames = (ms, step = () => {}) => {
+    for (let t = 0; t < ms; t += 100) {
+      clock.advance(100);
+      step();
+      applyTouchStick({ cam, dt: 0.1, stick: touch.stick, orbit: null });
+      sampler.tick();
+    }
+  };
+
+  aimed = 4;
+  touch.down(1, 600, 400, 'look');
+  touch.up(1); // the tap: the first reveal opens 4 and 3
+  await pending;
+  assert.equal(session.state, 'playing');
+  sampler.tick();
+  touch.down(2, 100, 500, 'stick');
+  touch.move(2, 100, 440); // the stick forward
+  frames(300);
+  touch.up(2);
+  touch.down(3, 600, 400, 'look');
+  let x = 600;
+  frames(300, () => { x += 30; touch.move(3, x, 400); }); // a look drag
+  touch.up(3);
+  aimed = 2;
+  touch.down(4, 600, 400, 'look');
+  clock.advance(LONG_PRESS_MS); // the long-press flags the mine at 2
+  await pending;
+  touch.up(4);
+  controls.toggle('shift'); // a toolbar mode
+  frames(200);
+  aimed = 3;
+  touch.down(5, 600, 400, 'look');
+  touch.down(6, 700, 400, 'look');
+  touch.up(6); // the two-finger chord on the 1 at 3: its flag is placed, nothing left to open
+  await pending;
+  touch.up(5);
+  controls.toggle('shift');
+  touch.down(7, 600, 400, 'look');
+  touch.down(8, 700, 400, 'look');
+  frames(200, () => touch.move(8, 700 + PINCH_STEP_PX * 3, 400)); // a pinch: three spacing steps
+  touch.up(7);
+  touch.up(8);
+  assert.ok(Math.abs(spacing - 1.3) < 1e-9, `the pinch stepped the spacing (${spacing})`);
+  aimed = 1;
+  touch.down(9, 600, 400, 'look');
+  touch.up(9); // the win
+  await pending;
+  assert.equal(session.state, 'won');
+
+  const summary = summaryOf(session, 'won');
+  const decoded = decodeReplay(session.replay(summary).blob);
+  assert.deepEqual(decoded.actions.map((a) => [a.kind, a.cell]), [['reveal', 4], ['flag', 2], ['chord', 3], ['reveal', 1]],
+    'actions by cell, as the mouse records them');
+  const samples = decoded.movement.filter((m) => m.type === 'sample');
+  assert.ok(new Set(samples.map((m) => m.values[2])).size > 2, 'the stick moved the camera');
+  assert.ok(new Set(samples.map((m) => m.values[3])).size > 1, 'the look turned it');
+  assert.ok(decoded.movement.some((m) => m.type === 'view' && m.mode === VIEW_MODE.shift), 'the toolbar\'s Shift is in the view-mode stream');
+  assert.deepEqual(verify(decoded), { ok: true, result: 'reproduces' });
+  assert.equal(cellStateDigest(replayAgain(decoded).state), decoded.check.digest);
+  assert.deepEqual(decoded.check.clicks, summary.clicks, 'a touch action counts as the mouse action it replaces');
 });
 
 test('a 3D game under rules version 2 with a flag-all, a hand unflag of one of its flags and the undo verifies, and seeks both ways as it was played', async () => {

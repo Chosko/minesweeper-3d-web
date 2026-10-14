@@ -842,6 +842,54 @@ test('on a fine pointer every size the coarse rules touch is as it was', () => {
   assert.doesNotMatch(topLevel(STYLE), /#hud-tap[^{]*\{[^}]*display:\s*(inline-)?(flex|block)/, 'the switch shows only under the coarse rule');
 });
 
+// The 3D touch-controls layer in index.html: the view-modes toolbar and the stick.
+const TOUCH = INDEX.slice(INDEX.indexOf('<div id="touch-3d"'), INDEX.indexOf('<!-- end of touch controls -->'));
+
+test('the 3D touch toolbar: three toggle buttons of the kit, Shift, Space and Ctrl, each with aria-pressed, inside the HUD', () => {
+  assert.ok(TOUCH.length > 0, 'index.html holds the touch-controls layer');
+  assert.ok(INDEX.indexOf('<div id="touch-3d"') > INDEX.indexOf('<div id="hud"') && INDEX.indexOf('<div id="touch-3d"') < INDEX.indexOf('<!-- Controls help'), 'inside the HUD, under the overlay bar\'s pause');
+  const t = tags(TOUCH);
+  const bar = t.find((x) => x.attrs.id === 'touch-modes');
+  assert.ok(bar && bar.attrs.role === 'toolbar' && bar.attrs['aria-label'], 'a named toolbar');
+  const buttons = t.filter((x) => x.tag === 'button');
+  assert.deepEqual(buttons.map((b) => b.attrs['data-mode']), ['shift', 'space', 'ctrl']);
+  for (const b of buttons) {
+    assert.ok(hasClasses(b, '.ui-button.ui-button--secondary'), 'a kit button');
+    assert.equal(b.attrs.type, 'button');
+    assert.equal(b.attrs['aria-pressed'], 'false', 'a toggle, off at first');
+  }
+  assert.match(TOUCH, />Shift</); assert.match(TOUCH, />Space</); assert.match(TOUCH, />Ctrl</);
+  const stick = t.find((x) => x.attrs.id === 'touch-stick');
+  assert.ok(stick && stick.attrs['aria-hidden'] === 'true', 'the stick is decoration');
+  assert.ok(t.some((x) => x.attrs.id === 'touch-stick-knob'));
+});
+
+test('touch play: the toolbar and the stick show only in touch play, the toolbar\'s buttons 44 px on a coarse pointer, its pressed state visible', () => {
+  const style = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const top = rules(topLevel(style));
+  const body = (needle) => top.filter(([sel]) => sel.includes(needle)).map(([, b]) => b).join(';');
+  assert.match(body('#touch-3d'), /display:\s*none/, 'hidden unless in touch play');
+  assert.match(style, /body\.touch-play #touch-3d\s*\{[^}]*display:\s*block/, 'shown in touch play');
+  assert.match(body('#touch-modes .ui-button[aria-pressed="true"]'), /var\(--color-accent\)/, 'the pressed state is visible');
+  assert.match(style, /body\.touch-play #scene\s*\{[^}]*touch-action:\s*none/, 'no browser scroll or zoom on the scene in touch play');
+  assert.match(style, /body\.touch-play #scene\s*\{[^}]*user-select:\s*none/, 'no text selection');
+  assert.match(style, /body\.touch-play #scene\s*\{[^}]*-webkit-touch-callout:\s*none/, 'no long-press menu');
+  assert.match(body('#touch-stick'), /pointer-events:\s*none/, 'the stick takes no touch');
+  const coarse = rules(coarseBlocks(style));
+  assert.ok(coarse.some(([sel, b]) => sel.includes('#touch-modes .ui-button') && /min-width:\s*44px/.test(b) && /min-height:\s*44px/.test(b)), 'the toolbar\'s 44 px hit areas');
+  assert.ok(coarse.some(([sel, b]) => sel.includes('#hud-pause::after') && /height:\s*44px/.test(b)), 'the pause button takes a touch in a 44 px band, the bar\'s layout unchanged');
+  assert.doesNotMatch(topLevel(style), /#hud-pause[^{]*\{[^}]*44px/, 'a fine pointer keeps the pause button\'s size');
+});
+
+test('the gallery shows the touch toolbar, a toggle pressed, and the stick', () => {
+  const bar = TAGS.find((t) => t.attrs.class?.split(/\s+/).includes('touch-modes'));
+  assert.ok(bar, 'the gallery shows the toolbar');
+  const buttons = TAGS.filter((t) => t.tag === 'button' && t.index > bar.index && t.attrs['data-mode']);
+  assert.ok(buttons.length >= 3);
+  assert.ok(buttons.some((b) => b.attrs['aria-pressed'] === 'true'), 'a latched mode');
+  assert.ok(TAGS.some((t) => t.attrs.class?.split(/\s+/).includes('touch-stick')), 'the gallery shows the stick');
+});
+
 test('in a browser with touch, switches, sliders, labels and key caps reach their coarse sizes', async (t) => {
   const env = await suite.open(t);
   if (!env) return;

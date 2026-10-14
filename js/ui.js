@@ -45,12 +45,12 @@ export function boardLine3D(s, { mines = false } = {}) {
 export const boardLine2D = (b) => `${b.width} × ${b.height}${b.noGuess ? NO_GUESS : ''}`;
 
 export const NO_MOUSE_MSG = 'Minesweeper 3D needs a mouse and keyboard — open it on a desktop browser.';
-/** The menu's note on a coarse-only device, where Classic 2D plays by touch. */
-export const TOUCH_MSG = 'Minesweeper 3D needs a mouse and keyboard — Classic 2D plays by touch.';
+/** The menu's note on a coarse-only device, where both modes play by touch. */
+export const TOUCH_MSG = 'Both modes play by touch: 3D and Classic 2D.';
 
 export class UI {
   constructor(cb) {
-    this.cb = cb; // { onMenuEntry, onMenuPlayAgain, onBack, onReadyClick, onReadyDrag, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSwap, onToggleTap, onToggleSound, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll, onLayer }
+    this.cb = cb; // { onMenuEntry, onMenuPlayAgain, onBack, onReadyClick, onReadyDrag, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSwap, onToggleTap, onToggleSound, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll, onLayer, onTouchMode }
     this.el = {
       hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), clicks: $('hud-clicks'), size: $('hud-size'), hudTools: $('hud-tools'), hudSwap: $('hud-swap'), hudTap: $('hud-tap'),
       help: $('help'), helpList: $('help').querySelector('.controls'), helpFoot: $('help-foot'),
@@ -88,6 +88,8 @@ export class UI {
     this._muted = false;
     this._hint = false; // the hint strip shows
     this._controlsTab = 'classic-2d'; // the Controls panel's tab
+    this._touch = false; // a coarse-only device: 3D plays by touch, and its help lists the touch rows
+    this._stick = ''; // the touch stick's place shown, '' while hidden
     this._boardText = '';
 
     // main menu entries: each a route (the shell decides where); the last mode played is marked
@@ -126,6 +128,11 @@ export class UI {
     this.el.restart.addEventListener('click', () => cb.onRestart());
     $('p-menu').addEventListener('click', () => cb.onMainMenu());
     $('hud-pause').addEventListener('click', () => cb.onPause?.());
+    // The 3D touch toolbar: each button latches or clears its view mode; it never takes focus.
+    for (const b of document.querySelectorAll('#touch-modes [data-mode]')) {
+      b.addEventListener('mousedown', (e) => e.preventDefault());
+      b.addEventListener('click', () => cb.onTouchMode?.(b.dataset.mode));
+    }
     // The swap toggle never takes focus, so the board's cursor keys (Space, Enter) keep playing.
     this.el.hudSwap.addEventListener('mousedown', (e) => e.preventDefault());
     this.el.hudSwap.addEventListener('click', () => cb.onToggleSwap?.());
@@ -146,16 +153,38 @@ export class UI {
     $('p-confirm-no').addEventListener('click', () => this._closeConfirm('onNo'));
   }
 
-  /** Show the "needs mouse and keyboard" banner on the menu; on a coarse-only device (`touch`) it says Classic 2D plays by touch. */
+  /** Show the "needs mouse and keyboard" banner on the menu; on a coarse-only device (`touch`) it says both modes play by touch. */
   setNoMouse(on, touch = false) {
     const note = $('touch-note');
     note.textContent = touch ? TOUCH_MSG : NO_MOUSE_MSG;
     note.classList.toggle('hidden', !on);
   }
-  /** On a coarse-only device the 3D ready card is a notice with one Back action, not a button. */
-  setNotice3D(on) {
-    $('ready-btn').classList.toggle('hidden', !!on);
-    $('ready-notice').classList.toggle('hidden', !on);
+  /**
+   * On a coarse-only device 3D plays by touch: the ready card reads "Tap to play" and lists the touch
+   * gestures in place of the key list, and the 3D help surfaces list the touch rows.
+   */
+  setTouch3D(on) {
+    this._touch = !!on;
+    const btn = $('ready-btn');
+    btn.classList.toggle('ready--touch', this._touch);
+    btn.querySelector('.ready-title').textContent = this._touch ? 'Tap to play' : 'Click to play';
+    this.el.ready.setAttribute('aria-label', this._touch ? 'Tap to play' : 'Click to play');
+    this._renderBindings();
+  }
+  /** The touch toolbar's buttons show the latched view modes { shift, space, ctrl }. */
+  setTouchModes(modes) {
+    for (const b of document.querySelectorAll('#touch-modes [data-mode]')) b.setAttribute('aria-pressed', String(!!modes[b.dataset.mode]));
+  }
+  /** The touch stick under the thumb: { x0, y0, x, y } in scene pixels (base and knob), or null to hide it. */
+  setStick(view) {
+    const key = view ? `${view.x0},${view.y0},${view.x},${view.y}` : '';
+    if (key === this._stick) return;
+    this._stick = key;
+    const el = $('touch-stick');
+    el.classList.toggle('on', !!view);
+    if (!view) return;
+    el.style.transform = `translate(${view.x0}px, ${view.y0}px)`;
+    $('touch-stick-knob').style.transform = `translate(${view.x - view.x0}px, ${view.y - view.y0}px)`;
   }
 
   /**
@@ -587,8 +616,12 @@ export class UI {
     return this._device === 'controller' && this._mapping !== 'standard'
       ? ' <span class="pad-note">This controller does not report the standard layout, so some buttons may be unmapped.</span>' : '';
   }
+  /** The device whose rows a surface of `mode` lists: on a touch device, 3D's touch rows unless a controller is in use. */
+  _bindDevice(mode) {
+    return this._touch && mode === '3d' && this._device === 'keyboard' ? 'touch' : this._device;
+  }
   _renderHelp() {
-    this.el.helpList.innerHTML = bindingsHtml(this._mode, this._device, this._glyphs, this._camera);
+    this.el.helpList.innerHTML = bindingsHtml(this._mode, this._bindDevice(this._mode), this._glyphs, this._camera);
     this.el.helpFoot.innerHTML = `${helpFootHtml(this._mode, this._device, this._glyphs)}${this._note()}`;
   }
   _renderHudStrip() {
@@ -598,8 +631,8 @@ export class UI {
   _renderBindings() {
     this._renderHelp();
     this._renderHudStrip();
-    this.el.controlsBody.innerHTML = bindingsHtml(this._controlsTab, this._device, this._glyphs, this._camera);
-    this.el.pauseControls.innerHTML = bindingsHtml(this._mode, this._device, this._glyphs, this._camera);
+    this.el.controlsBody.innerHTML = bindingsHtml(this._controlsTab, this._bindDevice(this._controlsTab), this._glyphs, this._camera);
+    this.el.pauseControls.innerHTML = bindingsHtml(this._mode, this._bindDevice(this._mode), this._glyphs, this._camera);
     if (this._hint) this.setHintStrip(true, { scroll: this._hintKind === 'scroll' });
     if (!this.el.settings.classList.contains('hidden')) this.el.settingsBindings.innerHTML = bindingsSectionHtml(this._glyphs, this._camera);
   }

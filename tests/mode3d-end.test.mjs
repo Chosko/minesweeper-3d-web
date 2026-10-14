@@ -277,7 +277,7 @@ test('during the delay every click is consumed, a script\'s too; losing focus fo
   assert.equal(skip.keyUp({ code: 'ControlLeft' }), false);
   assert.match(MAIN, /window\.addEventListener\('blur', \(\) => \{ END_SKIP\.reset\(\); LOOK_END\.reset\(\); \}\)/);
   assert.match(MAIN, /addEventListener\('visibilitychange', \(\) => \{ if \(document\.hidden\) \{ END_SKIP\.reset\(\); LOOK_END\.reset\(\); \} \}\)/);
-  assert.match(MAIN, /if \(END_SKIP\.click\(e\) \|\| LOOK_END\.click\(e\)\) swallow\(e\)/, 'the click\'s isTrusted reaches the skip');
+  assert.match(MAIN, /if \(END_SKIP\.click\(e\) \|\| \(!lookTouch\(e\) && LOOK_END\.click\(e\)\)\) swallow\(e\)/, 'the click\'s isTrusted reaches the skip');
 });
 
 test('the pointer lock released during the delay — the browser\'s Esc, whose key the page never sees — ends it', () => {
@@ -374,9 +374,12 @@ test('the look gates every board action and the pause', () => {
   assert.match(fnBody(MAIN, 'looking'), /S\.mode === LOOK_SCREEN/);
   // a press in the look ends it and is consumed before Input or MouseActions sees it
   assert.match(MAIN, /const LOOK_END = createEndSkip\(\{ ending: \(\) => looking\(\), skip: \(\) => endLook\(\) \}\)/);
-  assert.match(MAIN, /for \(const type of \['pointerdown', 'mousedown'\]\) window\.addEventListener\(type, \(e\) => \{ if \(END_SKIP\.press\(\) \|\| LOOK_END\.press\(\)\) swallow\(e\); \}, true\)/);
-  assert.match(MAIN, /if \(END_SKIP\.release\(e\) \|\| LOOK_END\.release\(e\)\) swallow\(e\)/);
-  assert.match(MAIN, /if \(END_SKIP\.click\(e\) \|\| LOOK_END\.click\(e\)\) swallow\(e\)/);
+  assert.match(MAIN, /for \(const type of \['pointerdown', 'mousedown'\]\) window\.addEventListener\(type, \(e\) => \{ if \(END_SKIP\.press\(\) \|\| \(!lookTouch\(e\) && LOOK_END\.press\(\)\)\) swallow\(e\); \}, true\)/);
+  assert.match(MAIN, /if \(END_SKIP\.release\(e\) \|\| \(!lookTouch\(e\) && LOOK_END\.release\(e\)\)\) swallow\(e\)/);
+  // on a coarse-only device a touch on the scene flies the look (the stick, the drag) and its tap ends it
+  assert.match(MAIN, /const lookTouch = \(e\) => COARSE_ONLY && looking\(\) && \(\(e\.pointerType === 'touch' && e\.target === canvas\) \|\| !!e\.target\?\.closest\?\.\('#touch-modes'\)\);/, 'and the touch toolbar toggles in the look');
+  assert.match(MAIN, /onTap: \(\) => \{ if \(looking\(\)\) endLook\(\); \}/);
+  assert.match(MAIN, /if \(END_SKIP\.click\(e\) \|\| \(!lookTouch\(e\) && LOOK_END\.click\(e\)\)\) swallow\(e\)/);
   assert.match(MAIN, /if \(END_SKIP\.keyDown\(e\) \|\| \(\(isBackKey\(e\.code\) \|\| !looking\(\)\) && LOOK_END\.keyDown\(e\)\)\) swallow\(e\)/, 'Esc ends the look; the flight and view-mode keys fly; outside it every key reaches LOOK_END');
   assert.match(fnBody(MAIN, 'showResults'), /over3d: content\.over3d && board/, 'the scene behind the card only while the finished board is there');
   assert.match(fnBody(MAIN, 'refusedLook'), /RESULTS_VIEW\.noteLook\(LOOK_REFUSED\);\s*keyFocus\(document\.getElementById\('r-look'\)\)/, 'a refused lock: the note, and focus on Look at the board so Enter retries');

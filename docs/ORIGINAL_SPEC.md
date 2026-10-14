@@ -61,6 +61,7 @@ pressed, flagged, unlinked, selected, nearSelected. No question marks.
   - Left release: if chord-toggle set → clear it, nothing else. Else if Right is held → set toggle, chord(selected). Else if a cell is selected → start timer if not started, leftClick(selected).
   - Right release: if toggle set → clear it. Else if Left held → set toggle, chord(selected) (guard no selection). Else if selected → rightClick(selected).
   - Web port: `Enter` and `'` drive the same release logic as Left and Right (both together chord), as the controller's triggers do.
+  - Web port: on a touch-only device the game plays by touch through the same release logic, with no pointer lock: a tap in the right half of the screen is Left on the crosshair cube, a long-press is Right, a second finger is Right held (so a two-finger tap chords); a left-thumb stick flies, a right-half drag looks, a pinch changes the spacing, and on-screen buttons latch the Shift / Space / Ctrl view modes.
 - Mouse wheel: spacing.
 - **Left Shift held**: unrevealed and flagged cells fade to alpha 0.2 unless nearSelected or selected; revealed numbers fade to 0.2 unless selected ("show only cells adjacent to the aimed cell").
   - Web port: the aimed cell's neighbourhood always draws over the faded cubes, however many stand between it and the camera.

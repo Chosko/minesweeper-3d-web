@@ -6,6 +6,7 @@ import { pickCell, pickCellBrute } from './picking.js';
 import { UI, clampSettings, NO_MOUSE_MSG } from './ui.js';
 import * as audio from './audio.js';
 import { Controls } from './controls.js';
+import { createTouch3D, mountTouch3D, applyTouchStick, touchZone, VIBRATE_MS } from './touch-3d.js';
 import { GamepadReader, BTN, Repeat, stickCurve, padGlyphs, pickInDirection, GLYPHS, STICK_DEADZONE, PAD_PRESS, PAD_FLAG, PAD_BOOM, padPulse } from './gamepad.js';
 import { createRouter } from './shell/router.js';
 import { FOCUSABLE, topLayer, resolveFocus, focusMove, inertSections, tabWrap, isBackKey, arrowDirection, keepsArrow, backButtons, createHeldSuppressor } from './shell/navigation.js';
@@ -101,8 +102,8 @@ const LOCK_SUPPORTED = 'requestPointerLock' in Element.prototype;
 const COARSE_ONLY = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(pointer: fine)').matches);
 const NO_MOUSE = !LOCK_SUPPORTED || COARSE_ONLY;
 /**
- * Every pointer-lock request of the 3D game: none on a coarse-only device, whose ready card is a
- * notice (the controller still plays lockless); whether one was made.
+ * Every pointer-lock request of the 3D game: none on a coarse-only device, which plays 3D lockless by
+ * touch (js/touch-3d.js) or with a controller; whether one was made.
  */
 function requestLock3D() {
   if (COARSE_ONLY) return false;
@@ -280,7 +281,35 @@ const input = new Input({
     }
   },
 });
-const controls = new Controls(input); // keyboard + controller view modes, controller move axes
+const controls = new Controls(input); // keyboard + controller view modes, controller move axes, touch toolbar toggles
+// Touch play in 3D, on a coarse-only device: the gestures drive the mouse's own MouseActions, the camera
+// look, the spacing and (through the frame loop) the stick's move; a tap in the look at a finished board
+// brings the results card back, as a mouse press does there.
+const touch3D = createTouch3D({
+  mouse,
+  canAct: () => input.canAct(),
+  canMove: () => input.o.isActive(),
+  onLook: (dx, dy) => view3D().look(dx, dy),
+  onSpacing: (n) => setSpacing(spacingStep({ spacing: S.spacing }, n).spacing),
+  onTap: () => { if (looking()) endLook(); },
+  vibrate: () => { try { navigator.vibrate?.(VIBRATE_MS); } catch { /* no vibration */ } },
+});
+/** The scene's touch zones: the left half the stick, the right half the look, below the overlay bar. */
+function touchZone3D(x, y) {
+  return touchZone(x, y, { width: canvas.clientWidth, top: document.querySelector('#hud .hud-bar').getBoundingClientRect().bottom });
+}
+if (COARSE_ONLY) mountTouch3D({ canvas, touch: touch3D, zone: touchZone3D });
+/** Touch play shows the toolbar and the stick: a coarse-only device in 3D play or the look at its finished board. */
+function syncTouch3D() {
+  const on = COARSE_ONLY && MODES.active === '3d' && (S.mode === 'playing' || looking());
+  document.body.classList.toggle('touch-play', on);
+  if (!on) { touch3D.reset(); ui.setStick(null); }
+}
+/** The touch toolbar's view modes latch until the game ends: a new game, a restart and the leave clear them. */
+function clearTouchModes() {
+  controls.clearTouch();
+  ui.setTouchModes(controls.touch);
+}
 const keyLook = new KeyLook(); // the arrows' look, ramped from each press
 
 // Fullscreen + Keyboard Lock (where supported) so Ctrl+W/Ctrl+S etc. reach the game instead of the browser.
@@ -351,7 +380,7 @@ const ui = new UI({
   onMenuEntry: (id) => MENU.open(id),
   onMenuPlayAgain: () => playAgainFromMenu(padGesture ? 'pad' : 'pointer'),
   onBack: () => shellBack('pointer'),
-  onReadyClick: () => { sfx.unlock(); if (padGesture) padResume(); else requestLock3D(); },
+  onReadyClick: () => { sfx.unlock(); if (COARSE_ONLY) enterPlaying(true); else if (padGesture) padResume(); else requestLock3D(); }, // a coarse-only device: lockless touch play
   onReadyDrag: () => enterDragLook(),
   onResume: () => PAUSE.resume(padGesture ? 'pad' : 'pointer'),
   onBackToStart: () => { placeAtSpawn(); PAUSE.resume(padGesture ? 'pad' : 'pointer'); }, // a 3D game in play: resumes as Resume does
@@ -374,9 +403,10 @@ const ui = new UI({
   onStandardWait3D: () => standardFromWait3D(),
   onOfferMenu3D: () => PAUSE.toMenu(),
   onLayer: () => applyContainment(), // the Controls modal opened or closed: the menu is inert behind it, live before it takes focus back
+  onTouchMode: (mode) => { controls.toggle(mode); ui.setTouchModes(controls.touch); needRender = true; },
 });
 ui.setNoMouse(NO_MOUSE, COARSE_ONLY);
-ui.setNotice3D(COARSE_ONLY);
+ui.setTouch3D(COARSE_ONLY);
 
 // ---------- active device ----------
 // The controller while the last input came from a connected controller, else the keyboard and
@@ -437,7 +467,7 @@ const SHELL = createRouter({
     ctxlost: { defaultFocus: '#ctx-lost-btn', show: () => showContextLost(), hide: () => hideContextLost(), back: () => showMainMenu() },
   },
   focus: (target, name) => focusScreen(target, name),
-  onChange: () => { layerChanged(); needRender = true; sync3D(); showStatus2D(); refreshHints(); HISTORY.sync(); },
+  onChange: () => { layerChanged(); needRender = true; sync3D(); syncTouch3D(); showStatus2D(); refreshHints(); HISTORY.sync(); },
 });
 // end of screen table
 Object.defineProperty(S, 'mode', { get: () => SHELL.current, enumerable: true });
@@ -585,9 +615,12 @@ const swallow = (e) => { e.preventDefault(); e.stopImmediatePropagation(); };
 const LOOK_END = createEndSkip({ ending: () => looking(), skip: () => endLook() });
 window.addEventListener('keydown', (e) => { if (END_SKIP.keyDown(e) || ((isBackKey(e.code) || !looking()) && LOOK_END.keyDown(e))) swallow(e); }, true);
 window.addEventListener('keyup', (e) => { if ([END_SKIP.keyUp(e), LOOK_END.keyUp(e)].some(Boolean)) swallow(e); }, true);
-for (const type of ['pointerdown', 'mousedown']) window.addEventListener(type, (e) => { if (END_SKIP.press() || LOOK_END.press()) swallow(e); }, true);
-for (const type of ['pointerup', 'mouseup']) window.addEventListener(type, (e) => { if (END_SKIP.release(e) || LOOK_END.release(e)) swallow(e); }, true);
-for (const type of ['click', 'auxclick', 'contextmenu']) window.addEventListener(type, (e) => { if (END_SKIP.click(e) || LOOK_END.click(e)) swallow(e); }, true);
+// In the look on a coarse-only device a touch on the scene is the stick or the look drag, its tap bringing the card back
+// (touch3D's onTap), and a tap on the touch toolbar toggles its view mode: neither is LOOK_END's.
+const lookTouch = (e) => COARSE_ONLY && looking() && ((e.pointerType === 'touch' && e.target === canvas) || !!e.target?.closest?.('#touch-modes'));
+for (const type of ['pointerdown', 'mousedown']) window.addEventListener(type, (e) => { if (END_SKIP.press() || (!lookTouch(e) && LOOK_END.press())) swallow(e); }, true);
+for (const type of ['pointerup', 'mouseup']) window.addEventListener(type, (e) => { if (END_SKIP.release(e) || (!lookTouch(e) && LOOK_END.release(e))) swallow(e); }, true);
+for (const type of ['click', 'auxclick', 'contextmenu']) window.addEventListener(type, (e) => { if (END_SKIP.click(e) || (!lookTouch(e) && LOOK_END.click(e))) swallow(e); }, true);
 window.addEventListener('blur', () => { END_SKIP.reset(); LOOK_END.reset(); }); // releases that land elsewhere are never seen
 document.addEventListener('visibilitychange', () => { if (document.hidden) { END_SKIP.reset(); LOOK_END.reset(); } });
 
@@ -910,11 +943,11 @@ function resumeFromPause(source) {
   PAUSE.resume('key');
 }
 /**
- * The 3D resume: a controller enters lockless play, and so does drag-to-look play; otherwise the
- * click-to-play card, which takes pointer lock.
+ * The 3D resume: a controller enters lockless play, and so do drag-to-look play and a coarse-only
+ * device's touch play; otherwise the click-to-play card, which takes pointer lock.
  */
 function resumeGame(source) {
-  if (source === 'pad' || S.dragLook) { sfx.unlock(); enterPlaying(true); return; }
+  if (source === 'pad' || S.dragLook || COARSE_ONLY) { sfx.unlock(); enterPlaying(true); return; }
   SHELL.go('ready');
   if (source === 'pointer') requestLock3D();
 }
@@ -966,6 +999,7 @@ function startGame(settings, pregenerated = null) {
   board3d.failure = null;
   board3d.progress = null;
   mouse.reset();
+  clearTouchModes();
   renderer.setGame(g);
   renderer.setMark(play.markedCell);
   applyPixelRatio(g.n);
@@ -995,7 +1029,7 @@ function sync3D() {
  */
 function showStatus3D() {
   const on = drawStatus3D();
-  if (on && board3d.failure) input.exitLock();
+  if (on && board3d.failure) { input.exitLock(); touch3D.reset(); } // held touches are dropped as held buttons are
   if (on && (board3d.failure || board3d.generating)) focusStatus('m3d', board3d);
 }
 /** The 3D board status card as it stands, without moving the focus; whether it shows. */
@@ -1031,7 +1065,7 @@ function retry3D(kind) {
   if (kind === 'standard') { board3dChoice = { ...board3dChoice, noGuess: false }; ui.setBoard(board3dChoice); } // a restart keeps the standard board
   placeAtSpawn();
   showStatus3D();
-  if (padGesture || S.lockless) {
+  if (padGesture || S.lockless || COARSE_ONLY) { // a coarse-only device answers in lockless touch play
     if (S.mode === 'paused') PAUSE.resume('pad');
     else setLockless(true);
   } else requestLock3D(); // from the pause card too: the lock enters play
@@ -1057,15 +1091,15 @@ function setLockless(on) {
   document.body.classList.toggle('drag-look', on && S.dragLook); // the system cursor shows
 }
 /**
- * A new 3D board entered as resume enters play: a controller, or drag-to-look play, enters lockless
- * play; otherwise the click or key that asked is the pointer-lock gesture: the ready card waits
- * unseen, so a granted lock enters play with no card shown, and a refused one shows it with its
- * message (onLockError).
+ * A new 3D board entered as resume enters play: a controller, drag-to-look play or a coarse-only
+ * device's touch play enters lockless play; otherwise the click or key that asked is the pointer-lock
+ * gesture: the ready card waits unseen, so a granted lock enters play with no card shown, and a
+ * refused one shows it with its message (onLockError).
  */
 function enterPlay3D(source) {
-  if (S.dragLook) enterPlaying(true);
+  if (S.dragLook || COARSE_ONLY) enterPlaying(true);
   else if (source === 'pad') padResume();
-  else if (!COARSE_ONLY) { ui.setReadyPending(true); requestLock3D(); } // a coarse-only device stays on the notice
+  else { ui.setReadyPending(true); requestLock3D(); }
 }
 /** The ready card's "Play with drag-to-look": lockless play the mouse drives by dragging, until the game is left. */
 function enterDragLook() {
@@ -1101,6 +1135,7 @@ function stopPlayInput() {
   input.spaceToggle.reset(); // a tapped-on aim-through is dropped like a held key
   controls.releasePad();
   input.drag.reset();
+  touch3D.reset(); // held touches are dropped; the toolbar's latched modes stay
   document.body.classList.remove('lockless', 'drag-look');
 }
 function pauseInfo(note = '') {
@@ -1141,6 +1176,7 @@ function leaveGame() {
   input.exitLock();
   S.dragLook = false;
   setLockless(false);
+  clearTouchModes();
   S.play?.leave();
   S.game = null;
   S.play = null;
@@ -1721,10 +1757,13 @@ function frame(now) {
     if (orbiting) { // W / S and the left stick's vertical axis dolly; Q / E and A / B do nothing
       const v = (keys.w ? 1 : 0) - (keys.s ? 1 : 0) + (controls.hasAxes ? controls.axes.f : 0);
       if (moving) orbitCam.dollyAxis(dt, Math.max(-1, Math.min(1, v)));
+      if (moving) applyTouchStick({ cam, dt, stick: touch3D.stick, orbit: orbitCam }); // the touch stick's vertical axis dollies
     } else if ((playing && !frozen) || looking3D) {
       cam.move(dt, input.move);
       if (controls.hasAxes) cam.moveAxes(dt, controls.axes.f, controls.axes.r, controls.axes.u);
+      applyTouchStick({ cam, dt, stick: touch3D.stick, orbit: null }); // the touch stick flies as the controller's left stick
     }
+    if (COARSE_ONLY) ui.setStick(touch3D.stickView);
     cam.apply(three);
     if (!frozen) {
       const shift = flying && controls.shift, space = flying && controls.space, ctrl = flying && controls.ctrl;

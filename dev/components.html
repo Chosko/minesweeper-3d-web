@@ -24,6 +24,13 @@
     .stats { display: flex; gap: var(--space-6); }
     .wide { grid-column: 1 / -1; }
     .states > .ui-segmented { justify-self: start; }
+    /* the 3D touch controls, composed from the kit as the game page composes them */
+    .touch-row { display: flex; align-items: center; gap: var(--space-6); }
+    .touch-modes { display: inline-flex; flex-direction: column; gap: var(--space-2); }
+    .touch-modes .ui-button { min-width: 44px; min-height: 44px; }
+    .touch-modes .ui-button[aria-pressed="true"] { border-color: var(--color-accent); background: var(--color-accent); color: var(--color-accent-ink); }
+    .touch-stick { position: relative; width: 120px; height: 120px; border-radius: 50%; border: 2px solid var(--color-border); background: var(--color-surface-raised); }
+    .touch-stick__knob { position: absolute; left: 36px; top: 12px; width: 48px; height: 48px; border-radius: 50%; background: var(--color-accent); box-shadow: var(--elevation-2); }
   </style>
 </head>
 <body>
@@ -148,6 +155,19 @@
         <span class="state">Pressed</span><div><button type="button" class="ui-button ui-button--secondary ui-overlay-bar__pause" aria-label="Pause game" data-force="active">Pause</button></div>
         <span class="state">Focused</span><div><button type="button" class="ui-button ui-button--secondary ui-overlay-bar__pause" aria-label="Pause game" data-force="focus">Pause</button></div>
         <span class="state">Disabled</span><div><button type="button" class="ui-button ui-button--secondary ui-overlay-bar__pause" aria-label="Pause game" disabled>Pause</button></div>
+      </div>
+    </section>
+
+    <section class="ui-card" aria-labelledby="g-touch">
+      <h2 class="ui-card__title" id="g-touch">3D touch controls</h2>
+      <p class="ui-text ui-text--muted">The view-modes toolbar (Space latched) and the stick, pushed forward.</p>
+      <div class="touch-row">
+        <div class="touch-modes" role="toolbar" aria-label="View modes" aria-orientation="vertical">
+          <button type="button" class="ui-button ui-button--secondary" data-mode="shift" aria-pressed="false">Shift</button>
+          <button type="button" class="ui-button ui-button--secondary" data-mode="space" aria-pressed="true">Space</button>
+          <button type="button" class="ui-button ui-button--secondary" data-mode="ctrl" aria-pressed="false">Ctrl</button>
+        </div>
+        <div class="touch-stick" aria-hidden="true"><span class="touch-stick__knob"></span></div>
       </div>
     </section>
 

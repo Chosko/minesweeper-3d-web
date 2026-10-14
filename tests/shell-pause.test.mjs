@@ -897,3 +897,60 @@ test('in a browser, F2 and the controller\'s Start + Y restart a Classic 2D game
     await browser.close();
   }
 });
+
+// ---------------------------------------------------------------- touch: pause and resume on a coarse-only device
+
+test('on a coarse-only device every path back to play enters lockless touch play and asks no pointer lock', () => {
+  const main = read('js/main.js');
+  const fn = (name) => main.slice(main.indexOf(`function ${name}(`), main.indexOf('\n}\n', main.indexOf(`function ${name}(`)));
+  assert.match(fn('requestLock3D'), /if \(COARSE_ONLY\) return false;/, 'no lock request at all on a coarse-only device');
+  assert.match(fn('resumeGame'), /COARSE_ONLY[^\n]*enterPlaying\(true\)/, 'resume from the pause card');
+  assert.match(fn('enterPlay3D'), /COARSE_ONLY[^\n]*enterPlaying\(true\)/, 'restart and Play again');
+  assert.match(fn('retry3D'), /COARSE_ONLY/, 'the failed board\'s Retry and Standard offers');
+  assert.match(main, /onReadyClick: \(\) => \{[^\n]*COARSE_ONLY[^\n]*enterPlaying\(true\)/, 'the ready card');
+});
+
+test('in a browser with touch on a phone, Pause takes a tap, resume returns to lockless touch play with the toolbar latched, restart clears it', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
+    const page = await context.newPage();
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(() => {
+      globalThis.__locks = 0;
+      const request = Element.prototype.requestPointerLock;
+      Element.prototype.requestPointerLock = function (...a) { globalThis.__locks += 1; return request?.apply(this, a); };
+    });
+    await page.goto(`${base}/index.html?still-backdrop`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined);
+    const ms = (fn, arg) => page.evaluate(fn, arg);
+    const mode = () => ms(() => globalThis.__ms.state.mode);
+    await ms(() => globalThis.__ms.modes.start('3d', { X: 5, Y: 1, Z: 1, mines: 1, minePositions: [4] }));
+    await page.tap('#ready-btn');
+    assert.equal(await mode(), 'playing');
+    await ms(() => { globalThis.__ms.aimAt(3); globalThis.__ms.click('left'); });
+    await page.tap('#touch-modes [data-mode="ctrl"]');
+    const pauseBox = await page.locator('#hud-pause').boundingBox();
+    const top = await ms(([x, y]) => document.elementFromPoint(x, y)?.id, [pauseBox.x + pauseBox.width / 2, pauseBox.y + pauseBox.height / 2]);
+    assert.equal(top, 'hud-pause', 'Pause is the topmost element under the finger');
+    await page.touchscreen.tap(pauseBox.x + pauseBox.width / 2, pauseBox.y + pauseBox.height / 2);
+    assert.equal(await mode(), 'paused', 'the tap paused');
+    assert.equal(await ms(() => globalThis.__ms.controls.ctrl), true, 'the latch holds while paused');
+    await page.tap('#p-resume');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing');
+    assert.deepEqual(await ms(() => ({ lockless: globalThis.__ms.state.lockless, ctrl: globalThis.__ms.controls.ctrl, touch: document.body.classList.contains('touch-play') })),
+      { lockless: true, ctrl: true, touch: true }, 'back to lockless touch play, the mode still latched');
+    await ms(() => globalThis.__ms.pause());
+    await page.tap('#p-restart');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing');
+    assert.equal(await ms(() => globalThis.__ms.controls.ctrl), false, 'a restart clears the toolbar');
+    assert.equal(await ms(() => document.querySelector('#touch-modes [data-mode="ctrl"]').getAttribute('aria-pressed')), 'false');
+    assert.equal(await ms(() => globalThis.__locks), 0, 'no pointer lock asked on any path');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});

@@ -117,6 +117,15 @@
       <span id="chip-space" class="chip">Space: see through revealed</span>
       <span id="chip-ctrl" class="chip">Ctrl: show hidden</span>
     </div>
+    <div id="touch-3d">
+      <div id="touch-stick" class="touch-stick" aria-hidden="true"><span id="touch-stick-knob" class="touch-stick__knob"></span></div>
+      <div id="touch-modes" class="touch-modes" role="toolbar" aria-label="View modes" aria-orientation="vertical">
+        <button type="button" class="ui-button ui-button--secondary" data-mode="shift" aria-pressed="false" title="Neighbours only">Shift</button>
+        <button type="button" class="ui-button ui-button--secondary" data-mode="space" aria-pressed="false" title="Aim through numbers">Space</button>
+        <button type="button" class="ui-button ui-button--secondary" data-mode="ctrl" aria-pressed="false" title="Show hidden cells">Ctrl</button>
+      </div>
+    </div>
+    <!-- end of touch controls -->
   </div>
 
   <!-- Controls help (toggle with H) -->
@@ -132,7 +141,7 @@
   <!-- Main menu -->
   <section id="menu" class="overlay" aria-label="Main menu">
     <section class="ui-card ui-screen ui-screen--wide" aria-labelledby="menu-title">
-      <p id="touch-note" class="ui-panel ui-text ui-text--warning hidden" role="alert">Minesweeper 3D needs a mouse and keyboard &mdash; Classic 2D plays by touch.</p>
+      <p id="touch-note" class="ui-panel ui-text ui-text--warning hidden" role="alert">Both modes play by touch: 3D and Classic 2D.</p>
       <div class="ui-row">
         <svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true"><path d="M32 4 58 18v28L32 60 6 46V18z" fill="#3f78e0"/><path d="M32 4 58 18 32 32 6 18z" fill="#9cc4ff"/><path d="M32 32v28L6 46V18z" fill="#2b5cb8"/><text x="45" y="47" font-size="20" font-weight="800" text-anchor="middle" fill="#fff" font-family="system-ui,sans-serif">3</text></svg>
         <div>
@@ -228,13 +237,16 @@
           <span data-camera="fly"><b>Mouse</b> look &middot; <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> fly &middot; <kbd>Q</kbd>/<kbd>E</kbd> down/up &middot; <kbd>Home</kbd>/<kbd>R</kbd> back to start &middot; <kbd>Esc</kbd> pause</span>
           <span data-camera="orbit" class="hidden"><b>Mouse</b> / <b>Arrows</b> / <kbd>A</kbd><kbd>D</kbd> rotate &middot; <b>Wheel</b> / <kbd>W</kbd><kbd>S</kbd> in/out &middot; <kbd>Home</kbd>/<kbd>R</kbd> back to start &middot; <kbd>Esc</kbd> pause</span>
         </span>
+        <span class="ready-touch">
+          <span><b>Tap</b> reveal &middot; <b>Long-press</b> flag &middot; <b>Two-finger tap</b> chord</span>
+          <span><b>Long-press</b> a number flags all its closed cubes &middot; again takes back only those</span>
+          <span data-camera="fly"><b>Left thumb</b> stick to fly &middot; <b>Drag</b> the right half to look</span>
+          <span data-camera="orbit" class="hidden"><b>Left thumb</b> stick up/down to move in/out &middot; <b>Drag</b> the right half to rotate</span>
+          <span><b>Pinch</b> spacing &middot; <b>Shift</b>, <b>Space</b> and <b>Ctrl</b> on the right: a tap turns each on or off &middot; <b>Pause</b> at the top</span>
+        </span>
         <span id="ready-pad" class="ready-pad hidden"></span>
         <span class="ready-tip">Tip: press <kbd>F</kbd> for fullscreen &mdash; keeps <kbd>Ctrl</kbd>+<kbd>W</kbd> from closing the tab</span>
       </button>
-      <div id="ready-notice" class="ready-card ready-notice hidden" role="note" aria-labelledby="ready-notice-title">
-        <span class="ready-title" id="ready-notice-title">3D needs a mouse and keyboard</span>
-        <span class="ready-msg">Connect a controller and press <kbd class="pad">A</kbd> to play, or go Back. Classic 2D plays by touch.</span>
-      </div>
       <div id="ready-blocked" class="ready-blocked hidden" role="group" aria-label="Play without mouse capture">
         <button type="button" id="ready-drag" class="ui-button ui-button--primary">Play with drag-to-look</button>
         <p class="ui-text">Or connect a controller and press <kbd class="pad">A</kbd>.</p>

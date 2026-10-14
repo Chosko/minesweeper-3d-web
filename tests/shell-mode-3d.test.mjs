@@ -657,3 +657,267 @@ test('in a browser, the 3D generating card shows by its delay in pointer-locked 
     await browser.close();
   }
 });
+
+// ---------------------------------------------------------------- touch: the coarse-only 3D start and touch play
+
+const TABLET = { viewport: { width: 820, height: 1180 }, hasTouch: true, isMobile: true };
+const PHONE = { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 };
+
+// Counts every pointer-lock request and fullscreen request, and records vibrations and mouse events.
+function watchPage() {
+  globalThis.__locks = 0;
+  const request = Element.prototype.requestPointerLock;
+  Element.prototype.requestPointerLock = function (...a) { globalThis.__locks += 1; return request?.apply(this, a); };
+  globalThis.__vibrations = 0;
+  navigator.vibrate = () => { globalThis.__vibrations += 1; return true; };
+  globalThis.__mouse = 0;
+  for (const type of ['mousedown', 'mouseup']) window.addEventListener(type, () => { globalThis.__mouse += 1; }, true);
+}
+
+// Touches through the DevTools protocol, so fingers can be held and moved together.
+function fingers(cdp) {
+  const send = (type, points) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points.map(([x, y, id]) => ({ x, y, id })) });
+  return {
+    start: (points) => send('touchStart', points),
+    move: (points) => send('touchMove', points),
+    end: () => send('touchEnd', []),
+  };
+}
+
+async function openTouchPage(browser, base, device) {
+  const context = await browser.newContext(device);
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.addInitScript(watchPage);
+  await page.goto(`${base}/index.html`);
+  await page.waitForFunction(() => globalThis.__ms !== undefined);
+  const ms = (fn, arg) => page.evaluate(fn, arg);
+  const frames = (n) => ms((k) => new Promise((r) => { const f = () => (--k <= 0 ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); }), n);
+  return { context, page, errors, ms, frames, f: fingers(await context.newCDPSession(page)) };
+}
+
+test('in a browser with touch on a tablet, the 3D ready card is a start: Tap to play lists the gestures, and no path asks for pointer lock', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const { page, errors, ms } = await openTouchPage(browser, base, TABLET);
+    const note = await ms(() => document.getElementById('touch-note').textContent);
+    assert.match(note, /[Bb]oth modes play by touch/, 'the menu\'s note says 3D plays by touch too');
+    await page.tap('#menu-entry-3d');
+    await page.tap('#board-choice [data-preset="6,6,6,10"]');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'ready');
+    const card = await ms(() => {
+      const shown = (el) => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
+      const btn = document.getElementById('ready-btn');
+      return {
+        btn: shown(btn), title: btn.querySelector('.ready-title').textContent,
+        touch: shown(btn.querySelector('.ready-touch')), keys: shown(btn.querySelector('.ready-keys')),
+        list: btn.querySelector('.ready-touch')?.textContent ?? '', back: shown(document.getElementById('ready-back')),
+        notice: !!document.getElementById('ready-notice'),
+      };
+    });
+    assert.ok(card.btn, 'the ready card is a button again');
+    assert.equal(card.title, 'Tap to play');
+    assert.ok(card.touch && !card.keys, 'the touch gestures in place of the key list');
+    for (const gesture of [/stick/i, /[Dd]rag/, /[Tt]ap/, /[Ll]ong-press/, /[Tt]wo-finger/, /[Pp]inch/]) assert.match(card.list, gesture);
+    assert.ok(card.back, 'Back stays');
+    assert.equal(card.notice, false, 'no notice');
+    await ms(() => globalThis.__ms.settings.set('fullscreen', true)).catch(() => {});
+    await ms(() => new Promise((r) => setTimeout(r, 100)));
+    await page.tap('#ready-btn');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing');
+    const play = await ms(() => ({ lockless: globalThis.__ms.state.lockless, touch: document.body.classList.contains('touch-play'), locks: globalThis.__locks }));
+    assert.deepEqual(play, { lockless: true, touch: true, locks: 0 }, 'lockless touch play, no lock asked (fullscreen neither)');
+    const bar = await ms(() => {
+      const el = document.getElementById('touch-modes');
+      const r = el.getBoundingClientRect();
+      const b = [...el.querySelectorAll('button')].map((x) => x.getBoundingClientRect());
+      return { shown: getComputedStyle(el).display !== 'none', right: innerWidth - r.right, min: Math.min(...b.flatMap((x) => [x.width, x.height])) };
+    });
+    assert.ok(bar.shown && bar.right < 40 && bar.min >= 44, `the toolbar on the right edge with 44 px buttons (${JSON.stringify(bar)})`);
+    // Restart from the pause card and Look-free paths stay lockless.
+    await ms(() => globalThis.__ms.pause());
+    await page.tap('#p-restart');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing' || globalThis.__ms.state.mode === 'ready');
+    assert.equal(await ms(() => globalThis.__ms.state.mode), 'playing', 'restart enters touch play at once');
+    assert.equal(await ms(() => globalThis.__locks), 0, 'restart asks no lock');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser with touch on a tablet, 3D plays by touch: stick, look, tap, long-press, two-finger chord, the toolbar, pinch, Pause and resume, and Orbit', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const { page, errors, ms, frames, f } = await openTouchPage(browser, base, TABLET);
+    const W = TABLET.viewport.width;
+    const H = TABLET.viewport.height;
+    const LOOK = [Math.round(W * 0.62), Math.round(H * 0.6)];
+    const STICK = [Math.round(W * 0.25), Math.round(H * 0.7)];
+    const camOf = () => ms(() => ({ ...globalThis.__ms.info().cam }));
+    const counts = () => ms(() => globalThis.__ms.state.play.counts().clicks);
+    // 5 × 1 × 1 with mines at 0 and 2: the tap at 4 opens 4 and 3 (a 1); revealing 1 wins.
+    await ms(() => { globalThis.__ms.modes.start('3d', { X: 5, Y: 1, Z: 1, mines: 2, minePositions: [0, 2] }); });
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'ready');
+    await page.tap('#ready-btn');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing');
+
+    // The stick flies; lifting it stops; it acts on nothing.
+    const c0 = await camOf();
+    await f.start([[...STICK, 1]]);
+    await f.move([[STICK[0], STICK[1] - 70, 1]]);
+    await frames(6);
+    const shown = await ms(() => getComputedStyle(document.getElementById('touch-stick')).display !== 'none');
+    assert.ok(shown, 'the stick shows under the thumb');
+    await f.end();
+    const c1 = await camOf();
+    assert.ok(Math.hypot(c1.x - c0.x, c1.y - c0.y, c1.z - c0.z) > 1, 'the stick moved the camera');
+    await frames(4);
+    assert.deepEqual(await camOf(), c1, 'lifted: it stops');
+    assert.equal(await ms(() => getComputedStyle(document.getElementById('touch-stick')).display), 'none', 'and hides');
+
+    // The look drag turns the camera and acts on nothing. Its moves are sent together, so a slow
+    // software-rendered frame cannot hold them past the long-press.
+    await frames(4);
+    await Promise.all([f.start([[...LOOK, 2]]), f.move([[LOOK[0] + 20, LOOK[1], 2]]), f.move([[LOOK[0] + 60, LOOK[1] + 10, 2]])]);
+    await f.end();
+    assert.equal(await ms(() => globalThis.__vibrations), 0, 'a drag, not a long-press');
+    const c2 = await camOf();
+    assert.ok(Math.abs(c2.yaw - c1.yaw) > 0.1, 'the drag turned the view');
+    assert.equal(await ms(() => globalThis.__ms.state.started), false, 'a drag reveals nothing');
+
+    // Tap reveals the crosshair cube, once, with no emulated mouse event (from the start pose again).
+    await ms((c) => globalThis.__ms.moveTo(c.x, c.y, c.z), c0);
+    assert.equal(await ms(() => { globalThis.__mouse = 0; return globalThis.__ms.aimAt(4); }), 4);
+    await page.touchscreen.tap(...LOOK);
+    await page.waitForFunction(() => globalThis.__ms.game.pressed[4] === 1);
+    assert.equal((await counts()).reveal.effective, 1, 'one reveal counted');
+    assert.equal(await ms(() => globalThis.__mouse), 0, 'no mouse listener saw the tap');
+
+    // Two-finger tap chords on the 1 at 3 (nothing flagged yet: a wasted chord, counted).
+    const chords = (await counts()).chord;
+    assert.equal(await ms(() => globalThis.__ms.aimAt(3)), 3);
+    await f.start([[LOOK[0], LOOK[1], 6], [LOOK[0] + 100, LOOK[1], 7]]);
+    await f.move([[LOOK[0], LOOK[1], 6]]); // the second finger lifts first
+    await f.end();
+    const after = (await counts()).chord;
+    assert.equal(after.effective + after.wasted, chords.effective + chords.wasted + 1, 'one chord');
+
+    // Long-press flags while held, with one vibration.
+    assert.equal(await ms(() => globalThis.__ms.aimAt(2)), 2, 'the mine at 2 is aimed at');
+    await f.start([[...LOOK, 3]]);
+    await page.waitForFunction(() => globalThis.__ms.game.flagged[2] === 1, null, { timeout: patience(2000) });
+    await f.end();
+    assert.equal(await ms(() => globalThis.__vibrations), 1);
+
+    // The toolbar latches each mode into the renderer through Controls.
+    for (const mode of ['shift', 'space', 'ctrl']) {
+      await page.tap(`#touch-modes [data-mode="${mode}"]`);
+      await frames(2);
+      const on = await ms((m) => ({ pressed: document.querySelector(`#touch-modes [data-mode="${m}"]`).getAttribute('aria-pressed'), controls: globalThis.__ms.controls[m], renderer: globalThis.__ms.renderer.toggles[m] }), mode);
+      assert.deepEqual(on, { pressed: 'true', controls: true, renderer: true }, `${mode} latched`);
+      if (mode !== 'shift') await page.tap(`#touch-modes [data-mode="${mode}"]`);
+    }
+    assert.equal(await ms(() => globalThis.__ms.controls.space), false, 'cleared again');
+
+    // Pinch spreads the spacing; it acts on nothing.
+    const s0 = await ms(() => globalThis.__ms.state.spacing);
+    await Promise.all([f.start([[LOOK[0] - 40, LOOK[1], 4], [LOOK[0] + 40, LOOK[1], 5]]), f.move([[LOOK[0] - 80, LOOK[1], 4], [LOOK[0] + 80, LOOK[1], 5]])]);
+    await f.end();
+    const s1 = await ms(() => globalThis.__ms.state.spacing);
+    assert.ok(s1 > s0 + 0.25, `spread: larger spacing (${s0} → ${s1})`);
+    assert.match(await ms(() => document.getElementById('hud-tools').textContent), new RegExp(`spacing ${s1.toFixed(1)}`), 'the readout follows');
+
+    // Pause takes a tap above the scene; the toolbar's latch survives pause and resume to lockless touch play.
+    const pauseBox = await page.locator('#hud-pause').boundingBox();
+    const hit = await ms(([x, y]) => [-21, 0, 21].map((dy) => document.elementFromPoint(x, y + dy)?.id), [pauseBox.x + pauseBox.width / 2, pauseBox.y + pauseBox.height / 2]);
+    assert.ok(pauseBox.width >= 44 && hit.every((id) => id === 'hud-pause'), `the pause button's 44 px hit area (${pauseBox.width} wide, ${hit})`);
+    await page.touchscreen.tap(pauseBox.x + pauseBox.width / 2, pauseBox.y + pauseBox.height / 2);
+    assert.equal(await ms(() => globalThis.__ms.state.mode), 'paused');
+    await page.tap('#p-resume');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing');
+    assert.deepEqual(await ms(() => ({ lockless: globalThis.__ms.state.lockless, shift: globalThis.__ms.controls.shift, locks: globalThis.__locks })),
+      { lockless: true, shift: true, locks: 0 });
+
+    // Orbit: the drag rotates around the centre, the stick dollies in.
+    await ms(() => globalThis.__ms.settings.set('camera', 'orbit'));
+    const dist = (c) => Math.hypot(c.x, c.y, c.z);
+    const o0 = await camOf();
+    await frames(4);
+    await Promise.all([f.start([[...LOOK, 8]]), f.move([[LOOK[0] + 80, LOOK[1], 8]])]);
+    await f.end();
+    const o1 = await camOf();
+    assert.ok(Math.abs(o1.yaw - o0.yaw) > 0.1 && Math.abs(dist(o1) - dist(o0)) < 1e-6, 'rotated about the centre');
+    await f.start([[...STICK, 9]]);
+    await f.move([[STICK[0], STICK[1] - 70, 9]]);
+    await frames(6);
+    await f.end();
+    assert.ok(dist(await camOf()) < dist(o1) - 1, 'stick up dollies in');
+    await ms(() => globalThis.__ms.settings.set('camera', 'fly'));
+
+    // Revealing 1 wins.
+    await ms((c) => globalThis.__ms.moveTo(c.x, c.y, c.z), c0);
+    assert.equal(await ms(() => globalThis.__ms.aimAt(1)), 1);
+    await page.touchscreen.tap(...LOOK);
+    await page.waitForFunction(() => globalThis.__ms.game.state === 'won');
+    assert.equal(await ms(() => globalThis.__locks), 0, 'no pointer lock asked, start to finish');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser with touch on a phone, the ready card starts touch play with the toolbar clear of the overlay bar', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const { page, errors, ms } = await openTouchPage(browser, base, PHONE);
+    await ms(() => { globalThis.__ms.modes.start('3d', { X: 6, Y: 6, Z: 6, mines: 10 }); });
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'ready');
+    await page.tap('#ready-btn');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing');
+    const layout = await ms(() => {
+      const bar = document.querySelector('#hud .hud-bar').getBoundingClientRect();
+      const tb = document.getElementById('touch-modes').getBoundingClientRect();
+      return { overlap: !(tb.top >= bar.bottom || tb.bottom <= bar.top || tb.left >= bar.right || tb.right <= bar.left), locks: globalThis.__locks };
+    });
+    assert.deepEqual(layout, { overlap: false, locks: 0 });
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser with a mouse at 1280 × 800, 3D starts with pointer lock and shows no touch controls', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(watchPage);
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined);
+    const ms = (fn, arg) => page.evaluate(fn, arg);
+    assert.equal(await ms(() => document.getElementById('touch-note').classList.contains('hidden')), true);
+    await ms(() => { globalThis.__ms.modes.start('3d', { X: 6, Y: 6, Z: 6, mines: 10 }); });
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'ready');
+    const card = await ms(() => ({ title: document.querySelector('#ready-btn .ready-title').textContent, keys: getComputedStyle(document.querySelector('#ready-btn .ready-keys')).display, touch: getComputedStyle(document.querySelector('#ready-btn .ready-touch')).display }));
+    assert.deepEqual(card, { title: 'Click to play', keys: 'flex', touch: 'none' });
+    await page.click('#ready-btn');
+    assert.equal(await ms(() => globalThis.__locks), 1, 'the click asks for pointer lock');
+    await ms(() => globalThis.__ms.forcePlay());
+    assert.equal(await ms(() => getComputedStyle(document.getElementById('touch-3d')).display), 'none', 'no touch layer');
+    assert.equal(await ms(() => document.body.classList.contains('touch-play')), false);
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});

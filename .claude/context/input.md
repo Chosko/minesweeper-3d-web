@@ -13,6 +13,7 @@ and the shell navigation layer are in
 | --- | --- | --- |
 | `js/input.js` | `FlyCamera`, `spawnPose`, `offscreenArrow`, `MouseActions`, `DragLook`, `TapToggle`, `Input` (DOM listeners), `escResumes`, camera / spacing constants | this file |
 | `js/picking.js` | `pickCell` (3D-DDA ray walk) and `pickCellBrute` (reference) | this file |
+| `js/touch-3d.js` | 3D touch controls: `createTouch3D` (the gesture machine), `touchZone`, `stickAxes`, `applyTouchStick`, `mountTouch3D` | this file |
 | `js/controls.js` | `Controls`: union of keyboard and controller view modes + controller move axes | [input-controller.md](input-controller.md) |
 | `js/gamepad.js` | Gamepad API reader, stick curve, trigger hysteresis, auto-repeat, pad glyphs, spatial menu focus search | [input-controller.md](input-controller.md) |
 | `js/shell/navigation.js` | Topmost layer, default-focus fallback, Back inputs, arrow-key focus moves, held-button suppression | [input-controller.md](input-controller.md) |
@@ -50,7 +51,8 @@ resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md) an
   the frustum, else the screen angle toward the box centre (0 = right, PI/2 = up; for a centre
   behind the camera, the shortest turn's way).
 - `MouseActions(onAction, hasSelection)` — `down(button)`, `up(button)` (0 = left, 2 = right;
-  others ignored), `reset()` (forget held state without firing); calls
+  others ignored), `reset()` (forget held state without firing), `cancel(button)` (forget one
+  held button without firing; the toggle clears with the last held one); calls
   `onAction('left' | 'right' | 'chord')`, the caller acting on its own selection.
 - `DragLook({mouse, onLook, threshold = DRAG_LOOK_THRESHOLD_PX})` (6 px) — `down`, `move(dx, dy)`,
   `up`, `reset()`: drag-to-look over a `MouseActions`. Once the held buttons move `threshold` px
@@ -69,6 +71,23 @@ resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md) an
 - `escResumes({repeat, locked})` — whether an Esc press resumes from the pause card: not the press
   that released the lock, not an auto-repeat ([app-shell-pause.md](app-shell-pause.md)).
 
+**js/touch-3d.js** (DOM-free but `mountTouch3D`; mounted only on a coarse-only device)
+- `STICK_RADIUS_PX` (60), `PINCH_STEP_PX` (24); `LONG_PRESS_MS`, `TAP_SLOP`, `VIBRATE_MS` re-exported
+  from touch Classic 2D (400 ms, 8 px, 20 ms).
+- `touchZone(x, y, {width, top})` → `'stick'` (left half) | `'look'` (right half) | null above `top`.
+- `stickAxes(dx, dy)` → `{f, r}`: the offset over the radius through `stickCurve`, up forward.
+- `applyTouchStick({cam, dt, stick, orbit})` — Fly: `cam.moveAxes(dt, f, r, 0)`; Orbit: `orbit.dollyAxis(dt, f)`.
+- `createTouch3D({mouse, onLook, onSpacing, onTap, vibrate, clock, canAct, canMove})` — `down(id, x, y,
+  zone)`, `move`, `up`, `cancel(id)`, `reset()`, `stick`, `stickView`, `holding`. A look finger presses
+  button 0 as it lands: lifted under 8 px before 400 ms it releases (tap, then `onTap`); moved 8 px it is
+  dropped (`cancel`) and turns `onLook(dx, dy)`; held 400 ms it is dropped and button 2 pressed and
+  released, with `vibrate`. A second look finger on a pending tap presses button 2 (either lift chords);
+  either moving 8 px or the spread changing 8 px makes a pinch, both presses dropped, one
+  `onSpacing(±1)` per `PINCH_STEP_PX`. A press made or lifted while `canAct()` is false is dropped; a
+  touch begun while `canMove()` is false is ignored.
+- `mountTouch3D({canvas, touch, zone})` — touch pointers on the canvas; cancels the browser's touch
+  gestures and a touch's emulated mouse events there; blur and tab hide reset.
+
 **js/picking.js**
 - `FLY_THROUGH_DIST` — 1.5 pitches at the start spacing (`1.5 * 4 * SPACING_START`, 6.6 units), fixed in
   world units whatever the spacing.
@@ -81,9 +100,10 @@ resolves through in `js/shell/router.js` — see [app-shell.md](app-shell.md) an
 
 - **Actions fire on release.** Releasing one button while the other is held fires `'chord'`;
   the next release of the other button only clears the toggle. A release without a matching
-  `down` is ignored; every fire is gated on `hasSelection()`. The controller triggers drive the
-  same `MouseActions` (RT = button 0, LT = button 2), so chord semantics stay identical across
-  devices — do not build a second state machine.
+  `down` is ignored; every fire is gated on `hasSelection()`. The controller triggers (RT = button
+  0, LT = button 2), the keyboard's Enter and ' and the touch gestures (a look finger = button 0, a
+  long-press or second finger = button 2) drive the same `MouseActions`, so chord semantics stay
+  identical across devices — do not build a second state machine.
 - **Game rules are not here.** `onAction` in `js/main.js` hands `'left'` / `'right'` / `'chord'`
   to the 3D game session as `reveal` / `toggleFlag` / `chord`; what a gesture does before the board
   exists is the session's ([mode3d-session.md](mode3d-session.md)).

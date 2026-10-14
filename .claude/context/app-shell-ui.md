@@ -45,7 +45,7 @@ and the controller's menu navigation.
     `setSpacing(v)` (the 3D tools strip's spacing readout), `setSound(muted)`;
   - help and hints: `toggleHelp`, `userToggleHelp`, `setHintStrip(on,
     {scroll})`, `dismissHint`, `setDevice`, `setPad`, `flash`,
-    `toast(msg, ms)`, `setNoMouse(on, touch)`, `setNotice3D`, `openControls` / `closeControls` /
+    `toast(msg, ms)`, `setNoMouse(on, touch)`, `setTouch3D(on)` (the touch ready card and the help's touch rows, `_bindDevice`), `setTouchModes(modes)`, `setStick(view|null)`, `openControls` / `closeControls` /
     `isControlsOpen`, `isPauseVisible`, `setReadyMessage`.
   HUD writes (`updateHud`, `setArrow`, `setReadout`) touch the DOM only on
   change.

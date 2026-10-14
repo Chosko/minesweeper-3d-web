@@ -8,8 +8,9 @@
 // back) and drawn with the active controller's glyphs (js/gamepad.js GLYPHS).
 //
 // bindingRows(mode, device, camera = 'fly') → the rows; 3D's for the Camera setting's camera (Fly or
-//   Orbit), kept in one table whose camera slots fill from CAMERA_ROWS. An unknown mode, device or
-//   camera throws.
+//   Orbit), kept in one table whose camera slots fill from CAMERA_ROWS. 3D also lists a touch
+//   device (TOUCH_DEVICE), the gestures of a coarse-only device; bindingDevices(mode) names the
+//   devices a mode lists. An unknown mode, device or camera throws.
 // bindingsListHtml(rows, glyphs?) → the <dt>/<dd> pairs of a `dl.controls` list, text escaped.
 // bindingsHtml(mode, device, glyphs?, camera?) → the bindings component: that mode's rows for that device.
 // hudStripHtml(mode, device, glyphs?, { muted, spacing }) → the HUD strip: only the keys or buttons
@@ -33,6 +34,8 @@ export const BINDING_DEVICES = Object.freeze([
   Object.freeze({ id: 'keyboard', label: 'Keyboard and mouse' }),
   Object.freeze({ id: 'controller', label: 'Controller' }),
 ]);
+/** The touch device: 3D's gestures on a coarse-only device (js/touch-3d.js). */
+export const TOUCH_DEVICE = Object.freeze({ id: 'touch', label: 'Touch' });
 
 const rows = (list) => Object.freeze(list.map((r) => Object.freeze(r)));
 
@@ -70,6 +73,18 @@ const ROWS_3D = Object.freeze({
     ['{start} + {y}', 'Restart: a new board of the same choice'],
     ['Menus', 'D-pad or left stick to move, {a} select, {b} / {back} back'],
   ],
+  touch: [
+    'stick',
+    'drag',
+    ['Tap', 'Reveal the aimed cube (on release)'],
+    ['Long-press', 'Flag / unflag. On a number: flag all its closed neighbours; long-press it again to take back only those flags'],
+    ['Two-finger tap', 'Chord: reveal neighbours of a satisfied number'],
+    ['Pinch', 'Change spacing between cubes; the camera moves with them'],
+    ['Shift button', 'Fade everything except the aimed cube\'s neighbours; a tap turns it on or off'],
+    ['Space button', 'Aim through revealed numbers; a tap turns it on or off'],
+    ['Ctrl button', 'Show hidden cells (empty and completed ones); a tap turns it on or off'],
+    ['Pause button', 'Pause menu'],
+  ],
 });
 
 /** The 3D rows that change with the Camera setting, per camera and slot. */
@@ -80,6 +95,8 @@ const CAMERA_ROWS = Object.freeze({
     wheel: [['Wheel', 'Change spacing between cubes; the camera moves with them']],
     sticks: [['Left / right stick', 'Fly / look around']],
     buttons: [['{a} / {b}', 'Move up / down']],
+    stick: [['Left thumb: stick', 'Fly; forward follows the view']],
+    drag: [['Right half: drag', 'Look around']],
   },
   orbit: {
     look: [['Mouse', 'Rotate around the board'], ['Arrow keys', 'Rotate around the board'], ['[A] [D]', 'Rotate left / right']],
@@ -87,6 +104,8 @@ const CAMERA_ROWS = Object.freeze({
     wheel: [['Wheel', 'Move in / out']],
     sticks: [['Right stick', 'Rotate around the board'], ['Left stick ↑ ↓', 'Move in / out']],
     buttons: [],
+    stick: [['Left thumb: stick ↑ ↓', 'Move in / out']],
+    drag: [['Right half: drag', 'Rotate around the board']],
   },
 });
 
@@ -121,12 +140,17 @@ export const BINDINGS = Object.freeze({
       ['{start} + {y}', 'Restart: a new board of the same choice'],
     ]),
   }),
-  '3d': Object.freeze({ keyboard: threeD('fly', 'keyboard'), controller: threeD('fly', 'controller') }),
+  '3d': Object.freeze({ keyboard: threeD('fly', 'keyboard'), controller: threeD('fly', 'controller'), touch: threeD('fly', 'touch') }),
 });
 
 /** The 3D rows per Camera setting and device, Fly's being BINDINGS['3d']'s. */
 export const BINDINGS_3D = Object.freeze(Object.fromEntries(CAMERAS.map((camera) => [camera,
-  camera === 'fly' ? BINDINGS['3d'] : Object.freeze({ keyboard: threeD(camera, 'keyboard'), controller: threeD(camera, 'controller') })])));
+  camera === 'fly' ? BINDINGS['3d'] : Object.freeze({ keyboard: threeD(camera, 'keyboard'), controller: threeD(camera, 'controller'), touch: threeD(camera, 'touch') })])));
+
+/** The input devices a mode lists bindings for: the keyboard and the controller, and touch in 3D. */
+export function bindingDevices(mode) {
+  return Object.hasOwn(BINDINGS, mode) && Object.hasOwn(BINDINGS[mode], 'touch') ? [...BINDING_DEVICES, TOUCH_DEVICE] : [...BINDING_DEVICES];
+}
 
 export function bindingRows(mode, device, camera = 'fly') {
   const byDevice = Object.hasOwn(BINDINGS, mode) ? BINDINGS[mode] : null;

@@ -379,7 +379,7 @@ Preconditions: 143
 
 ## 147. Touch controls for 3D
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/touch-3d.js, js/input.js, js/controls.js, js/main.js, js/ui.js, js/settings/bindings.js, index.html, css/style.css, css/components.css, dev/components.html, tests/input-touch-3d.test.mjs, tests/shell-mode-3d.test.mjs, tests/shell-pause.test.mjs, tests/components.test.mjs, tests/settings-page.test.mjs, tests/replay-3d.test.mjs, README.md, docs/ORIGINAL_SPEC.md, .claude/domain/product-design.md, .claude/domain/features/3d-play-flow.md, .claude/domain/features/game-shell.md, .claude/domain/features/screen-components.md, .claude/domain/features/settings.md
 Preconditions: 139, 142

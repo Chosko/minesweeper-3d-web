@@ -36,7 +36,7 @@
 //   nothing is open; clear() closes it and the warning, without moving focus.
 
 import { SCHEMA } from './schema.js';
-import { BINDING_MODES, BINDING_DEVICES, bindingRows, bindingsListHtml } from './bindings.js';
+import { BINDING_MODES, bindingDevices, bindingRows, bindingsListHtml } from './bindings.js';
 import { formatSliderValue, decimalsOf, segmentedState, bindSegmented } from '../ui/components.js';
 
 export const SETTINGS_SECTIONS = Object.freeze([
@@ -199,7 +199,7 @@ export function bindResetPanel({ open, panel, yes, no, note }, { reset }) {
 }
 
 export function bindingsSectionHtml(glyphs, camera) {
-  return BINDING_MODES.flatMap((mode) => BINDING_DEVICES.map((device) => '<div>'
+  return BINDING_MODES.flatMap((mode) => bindingDevices(mode.id).map((device) => '<div>'
     + `<h4 class="ui-heading">${mode.label} · ${device.label}</h4>`
     + `<dl class="controls">${bindingsListHtml(bindingRows(mode.id, device.id, camera), glyphs)}</dl></div>`)).join('');
 }

@@ -10,7 +10,7 @@ import { SCHEMA, SETTING_KEYS } from '../js/settings/schema.js';
 import { GLYPHS } from '../js/gamepad.js';
 import { CURSOR_KEYS } from '../js/classic2d/cursor-input.js';
 import {
-  BINDING_MODES, BINDING_DEVICES, BINDINGS, bindingRows, bindingsListHtml, bindingsHtml,
+  BINDING_MODES, BINDING_DEVICES, TOUCH_DEVICE, bindingDevices, BINDINGS, bindingRows, bindingsListHtml, bindingsHtml,
 } from '../js/settings/bindings.js';
 import {
   SETTINGS_SECTIONS, SETTING_LABELS, settingControl, settingControlHtml, settingsPageHtml, bindingsSectionHtml,
@@ -49,7 +49,39 @@ test('the bindings source lists each mode\'s bindings for each input device', ()
   }
   assert.equal(bindingRows('3d', 'keyboard'), BINDINGS['3d'].keyboard);
   assert.throws(() => bindingRows('records', 'keyboard'), /unknown/);
-  assert.throws(() => bindingRows('3d', 'touch'), /unknown/);
+  assert.throws(() => bindingRows('classic-2d', 'touch'), /unknown/, 'Classic 2D lists no touch rows');
+});
+
+test('3D lists a touch device\'s rows: the stick, the look drag, tap, long-press, two-finger tap, pinch and the toolbar\'s three modes', () => {
+  assert.deepEqual(TOUCH_DEVICE, { id: 'touch', label: 'Touch' });
+  assert.deepEqual(bindingDevices('3d').map((d) => d.id), ['keyboard', 'controller', 'touch']);
+  assert.deepEqual(bindingDevices('classic-2d').map((d) => d.id), ['keyboard', 'controller']);
+  const rows = bindingRows('3d', 'touch');
+  assert.equal(rows, BINDINGS['3d'].touch);
+  const row = (input) => rows.find(([i]) => i === input);
+  assert.match(row('Left thumb: stick')[1], /^Fly/);
+  assert.match(row('Right half: drag')[1], /Look around/);
+  assert.match(row('Tap')[1], /Reveal the aimed cube/);
+  assert.match(row('Long-press')[1], /Flag \/ unflag/);
+  assert.match(row('Two-finger tap')[1], /Chord/);
+  assert.match(row('Pinch')[1], /spacing/);
+  assert.match(row('Shift button')[1], /neighbours/);
+  assert.match(row('Space button')[1], /[Aa]im through/);
+  assert.match(row('Ctrl button')[1], /hidden cells/);
+  assert.match(row('Pause button')[1], /Pause/);
+  const orbit = bindingRows('3d', 'touch', 'orbit');
+  const orow = (input) => orbit.find(([i]) => i === input);
+  assert.match(orow('Right half: drag')[1], /[Rr]otate around the board/);
+  assert.match(orow('Left thumb: stick ↑ ↓')[1], /[Mm]ove in \/ out/);
+  assert.equal(orow('Left thumb: stick'), undefined);
+  assert.deepEqual(orow('Pinch'), row('Pinch'), 'pinch changes the spacing in both cameras');
+  assert.deepEqual(orow('Tap'), row('Tap'));
+  const section = bindingsSectionHtml(GLYPHS.xbox);
+  assert.ok(section.includes('3D · Touch'), 'the Settings page lists them');
+  assert.ok(section.includes(bindingsListHtml(rows, GLYPHS.xbox)));
+  assert.ok(!section.includes('Classic 2D · Touch'));
+  const ui = read('js/ui.js');
+  assert.match(ui, /_bindDevice\(mode\)/, 'the help surfaces show the touch rows on a touch device');
 });
 
 test('the Classic 2D keyboard bindings name every key the cursor input acts on', () => {
@@ -211,7 +243,7 @@ test('the in-game help reads the same bindings source', () => {
   assert.match(help, /<dl class="controls"><\/dl>/, 'the help list is filled from the bindings source, not written in the markup');
   const ui = read('js/ui.js');
   assert.match(ui, /from '\.\/settings\/bindings\.js'/);
-  assert.match(ui, /bindingsHtml\(this\._mode, this\._device, this\._glyphs, this\._camera\)/, 'the help panel shows the active mode\'s rows for the active device and camera');
+  assert.match(ui, /bindingsHtml\(this\._mode, this\._bindDevice\(this\._mode\), this\._glyphs, this\._camera\)/, 'the help panel shows the active mode\'s rows for the active device (touch on a touch device) and camera');
   assert.equal(bindingsHtml('3d', 'controller', GLYPHS.xbox), bindingsListHtml(bindingRows('3d', 'controller'), GLYPHS.xbox), 'the component is the source\'s rows');
 });
 

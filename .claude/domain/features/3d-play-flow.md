@@ -98,17 +98,22 @@ behaviour.
   discarded when it lands anywhere else; *Play again* opens the closed box
   with the marked start cell shown while a pre-generated board waits for
   it. When the board arrives it applies the reveal and starts the timer. It drives actions from the existing mouse state machine,
-  fed by the mouse buttons, the controller triggers and the keyboard's reveal and flag keys, stops the timer at a win or loss, and builds the
+  fed by the mouse buttons, the controller triggers, the keyboard's reveal and flag keys and touch, stops the timer at a win or loss, and builds the
   summary. Restart and leave cancel a pending generation.
 - **Mode adapter.** Implements the game shell's mode contract for 3D over
   the session: start, pause, resume, restart and leave, keeping today's
   pointer-lock and lockless behaviour, and reporting started, finished and
-  abandoned. On a coarse-only device (coarse and no fine pointer) the ready
-  card is a notice — 3D needs a mouse and keyboard, or a controller — with
-  one Back action, and no path requests pointer lock: not the card, resume,
+  abandoned. On a coarse-only device (coarse and no fine pointer) 3D plays
+  by touch: the ready card reads "Tap to play", lists the touch gestures in
+  place of the keys and keeps its Back action, and a tap enters lockless
+  touch play — a left-thumb stick to fly, a right-half drag to look, tap,
+  long-press and two-finger tap on the shared mouse state machine, pinch
+  for the spacing and a view-modes toolbar of latched Shift, Space and Ctrl
+  toggles. No path requests pointer lock there: not the card, resume,
   restart, a failed board's Retry or standard offer, fullscreen, nor Look
-  at the board, which opens lockless as a controller's does; a
-  controller's Start still enters lockless play. After a second pointer-lock refusal (one inside the browser's
+  at the board, which opens lockless as a controller's does, the stick and
+  the drag flying it and a tap bringing the card back; a controller's Start
+  still enters lockless play. After a second pointer-lock refusal (one inside the browser's
   re-lock delay does not count) the ready card explains that the browser
   is blocking mouse capture on this page and offers drag-to-look play or
   the controller, at once on every later ready card of the page session.

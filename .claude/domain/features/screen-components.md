@@ -84,7 +84,8 @@ described in [app-shell.md](../../context/app-shell.md).
   § Architecture, "Board view"), with the board-size label, on the panel's
   themed surface in place of its own, and on a coarse pointer carries the
   Reveal / Flag switch beside Pause. Over the 3D board it stays above the
-  scene during lockless play, so Pause always takes a tap. On either board, the timer
+  scene and the touch-controls layer during lockless and touch play, so
+  Pause always takes a tap. On either board, the timer
   shows the elapsed time in whole seconds, zero-padded to three digits
   (047), and stops at 999 while the game's elapsed time keeps counting; the
   mine counter shows the real mines left, kept at −99 at the low end; on a
@@ -99,7 +100,9 @@ described in [app-shell.md](../../context/app-shell.md).
   summary: 0 before the first click, each click as it is made, frozen with
   the timer when the game ends, and written only when it changes.
 - **Screen compositions.** The main menu, pause card and results screen
-  rebuilt from the kit, replacing the shell's existing one-off styles.
+  rebuilt from the kit, replacing the shell's existing one-off styles; and
+  3D touch play's view-modes toolbar (three toggle buttons, pressed state
+  shown) and stick, composed from it.
 
 ## Data and state
 
@@ -115,7 +118,8 @@ described in [app-shell.md](../../context/app-shell.md).
 - **Accessibility** — every control has an accessible name; focus is always
   visible; text meets the contrast contract of `design-tokens-and-themes` in
   both themes. On a coarse pointer, and only there, switches (the Reveal /
-  Flag switch included) and slider thumbs take a 44 px touch, labels are at
+  Flag switch included), slider thumbs, the overlay bar's Pause and the 3D
+  touch toolbar's buttons take a 44 px touch, labels are at
   least 12 px and key caps at least 11 px; a fine pointer keeps every size.
 - **Overlay readability** — the overlay bar meets the contrast contract
   against the surface it sits on — its own over the 3D board, the panel's

@@ -204,6 +204,28 @@ Some browsers do not let a page block `Ctrl+W`, so pressing W while holding Ctrl
 In fullscreen (`F`), the game asks the browser to pass those keys to the page (Keyboard Lock), where
 the browser supports it. During a game, the page also asks you to confirm before it closes.
 
+### Touch
+
+On a touch-only device (a tablet or a phone) 3D plays by touch. The ready card reads "Tap to play"
+and lists the gestures; a tap starts, and the game never asks for pointer lock. Every action goes
+through the same release rules as the mouse, and counts as the click it replaces.
+
+| Gesture | Action |
+|---|---|
+| Left thumb, anywhere in the left half | A stick under the thumb: fly (up is forward, which follows the view; sideways strafes) |
+| One-finger drag in the right half | Look around (Look sensitivity and Invert Y apply) |
+| Tap in the right half | Reveal the aimed cube (on the lift; a drag of 8 px or more cancels it) |
+| Long-press (400 ms) | Flag / unflag the aimed cube, with a short vibration. On a number: what a right click does |
+| Two-finger tap | Chord, as Left + Right |
+| Pinch | Change the spacing between cubes, one 0.1 step at a time; spreading the fingers makes it larger |
+| `Shift` / `Space` / `Ctrl` buttons on the right | Latch a view mode on or off; it stays on through Pause and clears with the game |
+| `Pause` (top bar) | Pause menu |
+
+The crosshair aims, as with the mouse: look to aim, then tap. There is no up / down control: look
+down and push the stick forward to descend. In Orbit the drag rotates around the board and the
+stick's vertical axis moves in / out; tap, long-press, two-finger tap, pinch and the buttons stay as
+above.
+
 ### Game controller
 
 Controllers that the browser exposes with the standard layout work too (Xbox, PlayStation, Switch
@@ -321,10 +343,11 @@ on purpose:
 - **Touch:** Classic 2D plays by touch. A tap reveals, or flags while the overlay bar's Reveal / Flag
   switch (shown on a touch screen) is on Flag; a 400 ms long-press flags, with a short vibration; a
   tap on a number chords. One finger pans a board larger than the screen, two fingers pan and pinch
-  to zoom between the smallest tile and the whole board. 3D needs a keyboard (with Pointer
-  Lock; a mouse is optional) or a game controller: on a touch-only device the menu notes that 3D does
-  not play by touch, the 3D ready card is a notice with Back, and the game never asks for pointer
-  lock. On a touch screen switches and sliders take a 44 px touch and the smallest labels grow to 12 px.
+  to zoom between the smallest tile and the whole board. 3D plays by touch on a touch-only device
+  too ([Touch](#touch)): a left-thumb stick, a look drag, tap, long-press and two-finger tap on the
+  mouse's release rules, pinch for the spacing and a view-modes toolbar; the game never asks for
+  pointer lock there. On a touch screen switches, sliders and the toolbar take a 44 px touch and the
+  smallest labels grow to 12 px.
 
 ## Running locally
 

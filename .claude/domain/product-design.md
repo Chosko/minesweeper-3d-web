@@ -138,8 +138,8 @@ demanding, until free 3D play is within reach.
   and total time, and in its replay their spans, shown on the replay seek
   bar.
 - **Mouse and keyboard first.** Controllers are supported in every mode;
-  touch is supported in Classic 2D, and 3D on a touch-only device shows a
-  notice until 3D has touch controls.
+  touch is supported in Classic 2D and in 3D, where a touch-only device
+  plays lockless by touch.
 - **Platforms.** Windows at launch. Mac and Linux only if the port is close to
   free. Steam Deck Verified is a stretch goal.
 - **A free demo with fixed locks.** The demo offers unlimited Classic 2D
@@ -172,7 +172,7 @@ list of the catalogue's themes, audio and accessibility (colour-blind-safe
 numbers, and after launch a reduced-motion setting, on or off, whose first
 value is taken from the operating system's reduce-motion preference and which
 governs all motion, as the Visual design system describes). Input
-is mouse and keyboard first, with controller play available in every mode. *Start* opens the first 2D campaign
+is mouse and keyboard first, with controller play available in every mode and touch play in Classic 2D and 3D. *Start* opens the first 2D campaign
 level until the player has progress; then *Continue* resumes the next
 unbeaten level or the last mode played, with Hexagon and Triangle each
 counted as a mode of their own. Each mode keeps the player's last board

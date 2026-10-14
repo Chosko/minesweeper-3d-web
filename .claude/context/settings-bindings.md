@@ -13,7 +13,9 @@ The module's head comment lists every function.
 ## PUBLIC API
 
 - `BINDING_MODES` (`classic-2d`, `3d`), `BINDING_DEVICES` (`keyboard`,
-  `controller`), `BINDINGS[mode][device]` — frozen `[input, action]` rows.
+  `controller`), `TOUCH_DEVICE` (`touch`, 3D only), `bindingDevices(mode)`
+  (the devices a mode lists), `BINDINGS[mode][device]` — frozen
+  `[input, action]` rows.
   Both modes list `[F2]` and `{start} + {y}` as Restart.
 - `bindingRows(mode, device)` (throws on an unknown mode or device),
   `bindingsListHtml(rows, glyphs = GLYPHS.generic)` (`<dt>`/`<dd>` pairs,

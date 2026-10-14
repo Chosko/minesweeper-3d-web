@@ -21,13 +21,14 @@ In scope (m1-classic-2d):
 
 - The Settings page, reached from the main menu, built from
   `screen-components` and fully operable by mouse, keyboard and controller.
-- Controls: look sensitivity and invert Y, which apply to mouse, keyboard
-  and controller look in 3D; "Camera: Fly | Orbit", default Fly, which
+- Controls: look sensitivity and invert Y, which apply to mouse, keyboard,
+  controller and touch look in 3D; "Camera: Fly | Orbit", default Fly, which
   chooses between the 3D game's first-person flight and an orbit around the
   board's centre; "Always ask before restarting", which brings back
   the confirmation before a restart abandons a started game (`game-shell`
   § Restart); and a read-only list of the bindings for each mode and input
-  device, drawn from the same source as the in-game help.
+  device, touch included for 3D, drawn from the same source as the in-game
+  help.
 - Graphics: fullscreen; the 3D render resolution — Auto (the current
   adaptive pixel-ratio cap), Sharp (the highest the screen allows) and Fast
   (one device pixel per CSS pixel); and the 2D board scale — Fit, 100 % and

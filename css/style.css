@@ -100,13 +100,15 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
   max-width: 100%;
 }
 .ready-card:hover .ready-title { color: var(--color-accent); }
-/* On a coarse-only device the ready card is a notice (UI.setNotice3D): nothing to click. */
-.ready-notice { cursor: default; text-align: center; }
-.ready-notice:hover .ready-title { color: inherit; }
 .ready-title { font-size: 34px; font-weight: 800; letter-spacing: -0.01em; transition: color 0.15s; }
 .ready-board { font-size: 15px; color: var(--color-ink-muted); font-variant-numeric: tabular-nums; }
 .ready-keys { font-size: 13px; color: var(--color-ink-muted); line-height: 1.9; display: flex; flex-direction: column; align-items: center; }
 .ready-keys b { color: var(--color-ink); font-weight: 600; }
+/* On a coarse-only device the ready card lists the touch gestures in place of the keys (UI.setTouch3D). */
+.ready-touch { display: none; }
+.ready--touch .ready-touch { font-size: 13px; color: var(--color-ink-muted); line-height: 1.9; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.ready-touch b { color: var(--color-ink); font-weight: 600; }
+.ready--touch .ready-keys, .ready--touch .ready-tip { display: none; }
 .ready-rules { font-size: 13px; color: var(--color-ink); line-height: 1.7; display: flex; flex-direction: column; align-items: center; }
 .ready-tip { font-size: 12px; color: var(--color-ink-muted); opacity: 0.9; }
 .ready-msg { font-size: 14px; font-weight: 600; color: var(--color-warning); max-width: 440px; }
@@ -321,6 +323,28 @@ kbd[data-pad-glyph] { min-width: 1.9em; border-radius: 999px; }
 #help { max-height: calc(100vh - 80px); overflow: hidden; }
 /* lockless controller play: the system cursor would sit over the crosshair */
 body.lockless #scene { cursor: none; }
+/* 3D touch play (js/touch-3d.js, a coarse-only device): the scene takes every touch as a gesture —
+   no page scroll or zoom, no text selection, no long-press menu — and the stick and the view-modes
+   toolbar show; the overlay bar stays above them. */
+#touch-3d { display: none; }
+body.touch-play #touch-3d { display: block; }
+body.touch-play #scene { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+#touch-stick { position: absolute; left: 0; top: 0; pointer-events: none; display: none; }
+#touch-stick.on { display: block; }
+.touch-stick { width: 0; height: 0; }
+.touch-stick::before {
+  content: ""; position: absolute; left: -60px; top: -60px; width: 120px; height: 120px; border-radius: 50%;
+  border: 2px solid var(--color-border); background: var(--color-surface-raised); opacity: 0.55;
+}
+.touch-stick__knob {
+  position: absolute; left: -24px; top: -24px; width: 48px; height: 48px; border-radius: 50%;
+  background: var(--color-accent); opacity: 0.8; box-shadow: var(--elevation-2);
+}
+.touch-modes {
+  position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: var(--space-2); pointer-events: auto;
+}
+#touch-modes .ui-button[aria-pressed="true"] { border-color: var(--color-accent); background: var(--color-accent); color: var(--color-accent-ink); }
 /* drag-to-look play: the mouse drags the view, so its cursor shows */
 body.lockless.drag-look #scene { cursor: grab; }
 body.lockless.drag-look #scene:active { cursor: grabbing; }
@@ -346,5 +370,9 @@ body.pad-nav .ready-card:focus .ready-title { color: var(--color-accent); }
 /* Touch targets and text a finger and a phone need; a fine pointer keeps every size above. */
 @media (pointer: coarse) {
   #hud.hud--2d #hud-tap { display: flex; min-width: 44px; min-height: 44px; padding: var(--space-2) var(--space-4); }
+  /* the pause button takes a touch anywhere in a 44 px band around its centre, the bar's layout unchanged */
+  #hud-pause { position: relative; }
+  #hud-pause::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 22px); height: 44px; }
+  #touch-modes .ui-button { min-width: 44px; min-height: 44px; padding: var(--space-2) var(--space-3); }
   kbd { font-size: max(11px, 0.78em); }
 }

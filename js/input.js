@@ -348,6 +348,12 @@ export class MouseActions {
   }
   /** Forget held buttons without firing (focus loss / pause). */
   reset() { this.left = false; this.right = false; this.toggle = false; }
+  /** Forget one held button without firing (a touch's dropped press); the toggle clears with the last held button. */
+  cancel(button) {
+    if (button === 0) this.left = false;
+    else if (button === 2) this.right = false;
+    if (!this.left && !this.right) this.toggle = false;
+  }
 }
 
 /** The keyboard's reveal and flag keys (event.code) and the mouse button each stands for. */

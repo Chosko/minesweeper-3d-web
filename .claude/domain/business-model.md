@@ -35,8 +35,8 @@ Minesweeper games and compare implementations on Steam. No secondary segment
 is targeted.
 
 Deliberately not served: mobile and touch players. The build supports touch
-input — Classic 2D plays by touch, and 3D on a touch-only device shows a
-notice — but no paying segment is added for it.
+input — Classic 2D and 3D both play by touch — but no paying segment is
+added for it.
 
 ## Pricing
 

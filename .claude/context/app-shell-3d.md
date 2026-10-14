@@ -42,14 +42,26 @@ loop's render-on-demand. The 3D board choice, session and adapter
   a granted lock enters play with no card shown, and a refusal's
   `onLockError` shows it with its message. A UI click made with controller
   A sets `padGesture`, routing resume/restart to lockless play.
-- **Coarse-only devices.** Every lock request goes through
+- **Coarse-only devices: touch play.** Every lock request goes through
   `requestLock3D()`, which makes none while `COARSE_ONLY` (coarse and no
-  fine pointer): the ready card, resume, restart and Play again
-  (`enterPlay3D`, which then leaves the card shown), the failed board's
-  Retry and standard offer, fullscreen and Look at the board (lockless
-  there, as a controller's). `ui.setNotice3D(COARSE_ONLY)` swaps
-  `#ready-btn` for `#ready-notice` (3D needs a mouse and keyboard, or a
-  controller); Back and the controller's A and Start still work.
+  fine pointer); the ready card (`onReadyClick`), resume (`resumeGame`),
+  restart and Play again (`enterPlay3D`), the failed board's Retry and
+  standard offer (`retry3D`) enter lockless play instead, fullscreen keeps
+  it, and Look at the board opens lockless. `ui.setTouch3D(COARSE_ONLY)`
+  makes the card "Tap to play" with the touch gestures in place of the
+  keys. `touch3D` (`createTouch3D`, [input.md](input.md)) is mounted on the
+  canvas only while `COARSE_ONLY`, zones from `touchZone3D` (below the
+  overlay bar): it drives the page's `mouse`, `view3D().look`,
+  `setSpacing` through `spacingStep` (pinch), and the frame loop's
+  `applyTouchStick` (Fly: `moveAxes`; Orbit: the dolly); `ui.setStick`
+  draws the stick each frame. `syncTouch3D` (every router change) sets
+  `body.touch-play` in 3D play and the look, which shows `#touch-3d` (the
+  stick and the `#touch-modes` toolbar), and resets the machine off it;
+  `stopPlayInput` and a failed board's offer drop held touches. The
+  toolbar's taps (`onTouchMode`) toggle `controls.touch`, kept through
+  pause and cleared by `clearTouchModes` in `startGame` and `leaveGame`.
+  In the look a touch on the scene skips `LOOK_END` (`lookTouch`) and its
+  tap (`onTap`) ends the look.
 - **Pointer lock.** In locked play the browser consumes Esc to release the
   lock; `onLockChange` calls `backGame('key')` instead — during the end
   delay the release ends it (`END_SKIP.lockLost()`), a lock lost with the

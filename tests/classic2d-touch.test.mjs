@@ -3,8 +3,8 @@
 // switch, the chord on a number whichever way the switch is set, the 8 px threshold, the one-finger
 // pan on a board that scrolls, the two-finger pan and pinch, the second finger cancelling the first
 // finger's tap, the pressed feedback — its browser wiring to the board view and the session, and in
-// a browser with touch emulation an Expert game played by touch, the 3D notice, Pause tapped over
-// lockless 3D play, and the same pages with a mouse unchanged.
+// a browser with touch emulation an Expert game played by touch and the same pages with a mouse
+// unchanged. Touch play in 3D is tests/shell-mode-3d.test.mjs's and tests/shell-pause.test.mjs's.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -476,12 +476,11 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
     const cdp = await context.newCDPSession(page);
     const f = fingers(cdp);
 
-    // The menu's note speaks of 3D only; Classic 2D plays by touch.
+    // The menu's note: both modes play by touch.
     const note = await ms(() => ({ shown: !document.getElementById('touch-note').classList.contains('hidden'), text: document.getElementById('touch-note').textContent }));
     assert.ok(note.shown, 'the note shows on a coarse-only device');
-    assert.match(note.text, /3D needs a mouse and keyboard/);
-    assert.match(note.text, /Classic 2D plays by touch/);
-    assert.doesNotMatch(note.text, /desktop browser/);
+    assert.match(note.text, /Both modes play by touch/);
+    assert.doesNotMatch(note.text, /needs a mouse|desktop browser/);
 
     await page.tap('#menu-entry-classic-2d');
     await page.locator('#c2d-noguess').setChecked(false);
@@ -615,74 +614,6 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
     await ms((tile) => globalThis.__ms.board2D.zoom(tile, 10, 10), range.min);
     await ms(() => globalThis.__ms.pauser.restart('key'));
     await page.waitForFunction((tile) => globalThis.__ms.board2D && globalThis.__ms.board2D.layout.tile === tile, v0.tile);
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
-});
-
-test('in a browser with touch on a phone, 3D shows a notice with Back, never asks for pointer lock, and Pause takes a tap over lockless play', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const context = await browser.newContext(PHONE);
-    const page = await context.newPage();
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.addInitScript(() => {
-      globalThis.__locks = 0;
-      const request = Element.prototype.requestPointerLock;
-      Element.prototype.requestPointerLock = function (...a) { globalThis.__locks += 1; return request.apply(this, a); };
-      globalThis.__fullscreen = 0;
-      const fs = Element.prototype.requestFullscreen;
-      Element.prototype.requestFullscreen = function (...a) { globalThis.__fullscreen += 1; return fs ? fs.apply(this, a) : Promise.reject(new Error('none')); };
-    });
-    await page.goto(`${base}/index.html?still-backdrop`);
-    await page.waitForFunction(() => globalThis.__ms !== undefined);
-    const ms = (fn, arg) => page.evaluate(fn, arg);
-    const mode = () => ms(() => globalThis.__ms.state.mode);
-
-    await page.tap('#menu-entry-3d');
-    await page.tap('#board-choice [data-preset][data-last]');
-    await page.waitForFunction(() => globalThis.__ms.state.mode === 'ready');
-    const card = await ms(() => ({
-      btn: getComputedStyle(document.getElementById('ready-btn')).display,
-      notice: !document.getElementById('ready-notice').classList.contains('hidden'),
-      text: document.getElementById('ready-notice').textContent,
-    }));
-    assert.equal(card.btn, 'none', 'the click-to-play button is gone');
-    assert.ok(card.notice, 'the notice shows');
-    assert.match(card.text, /3D needs a mouse and keyboard/);
-    assert.match(card.text, /controller/);
-    // A tap anywhere on the notice or the scene enters no play.
-    const box = await page.locator('#ready-notice').boundingBox();
-    await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
-    await page.touchscreen.tap(10, 400);
-    assert.equal(await mode(), 'ready');
-    assert.equal(await ms(() => globalThis.__locks), 0, 'no pointer lock asked');
-    // Fullscreen, whatever asks for it, asks no pointer lock either.
-    await ms(() => globalThis.__ms.settings.set('fullscreen', true)).catch(() => {});
-    await ms(() => new Promise((r) => setTimeout(r, 100)));
-    assert.equal(await ms(() => globalThis.__locks), 0, 'entering fullscreen asks no pointer lock');
-    // Back behaves as the card's Back: a fresh board goes back to the board choice.
-    await page.tap('#ready-back');
-    assert.equal(await mode(), 'board-choice');
-
-    // Lockless play (as a controller enters it): the overlay bar sits above the scene and Pause takes a tap.
-    await page.tap('#board-choice [data-preset][data-last]');
-    await page.waitForFunction(() => globalThis.__ms.state.mode === 'ready');
-    await ms(() => globalThis.__ms.forcePlay());
-    assert.equal(await mode(), 'playing');
-    const pauseBox = await page.locator('#hud-pause').boundingBox();
-    const top = await ms(([x, y]) => document.elementFromPoint(x, y)?.id, [pauseBox.x + pauseBox.width / 2, pauseBox.y + pauseBox.height / 2]);
-    assert.equal(top, 'hud-pause', 'Pause is the topmost element under the finger');
-    await page.touchscreen.tap(pauseBox.x + pauseBox.width / 2, pauseBox.y + pauseBox.height / 2);
-    assert.equal(await mode(), 'paused', 'the tap paused');
-    // Resume from the pause card asks no pointer lock; it goes back to the notice.
-    await page.tap('#p-resume');
-    assert.equal(await ms(() => globalThis.__locks), 0, 'resume asks no pointer lock');
-    assert.notEqual(await mode(), 'paused');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

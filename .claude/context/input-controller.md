@@ -19,9 +19,10 @@ in `js/main.js` ([app-shell.md](app-shell.md)).
 ## PUBLIC API
 
 **js/controls.js**
-- `Controls(keyboard)` — getters `shift`, `space`, `ctrl` = keyboard OR `pad.*`; `hasAxes`. Fields
-  `pad` (`{shift, space, ctrl}`) and `axes` (`{f, r, u}`) are written by the caller each frame;
-  `releasePad()` zeroes both.
+- `Controls(keyboard)` — getters `shift`, `space`, `ctrl` = keyboard OR `pad.*` OR `touch.*`; `hasAxes`.
+  Fields `pad` (`{shift, space, ctrl}`) and `axes` (`{f, r, u}`) are written by the caller each frame;
+  `releasePad()` zeroes both. `touch` holds the 3D touch toolbar's latched modes: `toggle(mode)`
+  flips one, `clearTouch()` clears them (a new game, the leave); `releasePad` leaves them.
 
 **js/gamepad.js** (no DOM access at import; Node-testable)
 - `BTN` (standard-mapping indices A..HOME), `NUM_BUTTONS` (17), `STICK_DEADZONE`,
@@ -46,8 +47,8 @@ in `js/main.js` ([app-shell.md](app-shell.md)).
 
 ## INTERNAL PATTERNS
 
-- **Controls with no pad input equal the keyboard exactly** — keep `pad` / `axes` zeroed when the
-  controller is not driving play.
+- **Controls with no pad input and no toolbar toggle equal the keyboard exactly** — keep `pad` /
+  `axes` zeroed when the controller is not driving play.
 - **GamepadReader** follows the most recently active pad (a rising edge on another pad switches);
   one shared `held` array, so a switch or disconnect yields `released` edges. Disconnects are
   processed before connects. LT/RT use `triggerHeld`. All helpers tolerate NaN / missing fields.
