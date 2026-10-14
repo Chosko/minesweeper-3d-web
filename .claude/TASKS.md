@@ -361,7 +361,7 @@ Preconditions: none
 
 ## 145. Focus containment in overlays
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/shell/navigation.js, js/main.js, js/ui.js, tests/shell-router.test.mjs, tests/shell-focus-containment.test.mjs, tests/shell-pause.test.mjs, .claude/domain/features/game-shell.md
 Preconditions: none

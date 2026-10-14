@@ -117,8 +117,12 @@ it generalises.
 - **Shell navigation.** Keyboard and controller navigation for every shell
   screen, built on the existing controller reader and spatial focus search
   ([input.md](../../context/input.md)): the topmost visible layer takes
-  input, each screen declares its default focus, and buttons held across a
-  screen change are ignored until released. A move that finds nothing in
+  input; while an overlay is open (the Controls modal, the pause card, the
+  results card, the replay viewer) the rest of the page is inert, the status
+  toast excepted, and Tab wraps at its edges where `inert` is unavailable;
+  the pause confirmation contains the pause card the same way; each screen
+  declares its default focus, and buttons held across a screen change are
+  ignored until released. A move that finds nothing in
   the pressed direction goes to the next control in DOM order (the previous
   one for Up and Left), never wrapping, and Down / Up step a table's buttons
   and a menu's items in DOM order. The arrow keys are the

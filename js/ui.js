@@ -50,7 +50,7 @@ export const TOUCH_MSG = 'Minesweeper 3D needs a mouse and keyboard — Classic 
 
 export class UI {
   constructor(cb) {
-    this.cb = cb; // { onMenuEntry, onMenuPlayAgain, onBack, onReadyClick, onReadyDrag, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSwap, onToggleTap, onToggleSound, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll }
+    this.cb = cb; // { onMenuEntry, onMenuPlayAgain, onBack, onReadyClick, onReadyDrag, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSwap, onToggleTap, onToggleSound, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll, onLayer }
     this.el = {
       hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), clicks: $('hud-clicks'), size: $('hud-size'), hudTools: $('hud-tools'), hudSwap: $('hud-swap'), hudTap: $('hud-tap'),
       help: $('help'), helpList: $('help').querySelector('.controls'), helpFoot: $('help-foot'),
@@ -195,11 +195,14 @@ export class UI {
   openControls() {
     this._renderBindings();
     this.el.controlsModal.classList.remove('hidden');
+    this.cb.onLayer?.();
     $('controls-close').focus({ preventScroll: true });
   }
+  /** Close the modal; the containment lifts before the menu's Controls button takes focus back. */
   closeControls() {
     if (this.el.controlsModal.classList.contains('hidden')) return false;
     this.el.controlsModal.classList.add('hidden');
+    this.cb.onLayer?.();
     $('menu-help').focus({ preventScroll: true });
     return true;
   }

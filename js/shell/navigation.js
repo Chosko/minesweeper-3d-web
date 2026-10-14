@@ -1,5 +1,5 @@
 // Shell navigation: which layer takes input, default focus fallback, the focus move with its DOM-order
-// fallback, Back inputs, the arrow keys' focus moves and the suppression of controller buttons held
+// fallback, the containment of an open overlay (its inert set and the Tab wrap), Back inputs, the arrow keys' focus moves and the suppression of controller buttons held
 // across a screen change. DOM-free: the shell hands in elements, visibility tests and poll results.
 import { BTN } from '../gamepad.js';
 
@@ -15,6 +15,28 @@ export function topLayer(order, isOpen) {
 /** The declared default target when it is focusable, else the first focusable item, else null. */
 export function resolveFocus(target, items) {
   return target && items.includes(target) ? target : items[0] ?? null;
+}
+
+/**
+ * The sections made inert while `open` is the open overlay: every one of `sections` but `open` and
+ * those in `live` (the status toast, whose notices must still be heard). None while nothing is open.
+ */
+export function inertSections(sections, open, live = ['toast']) {
+  if (open == null) return [];
+  return sections.filter((s) => s !== open && !live.includes(s));
+}
+
+/**
+ * Where Tab (Shift+Tab when `back`) from `cur` goes inside an open overlay whose Tab stops are
+ * `items`, or null to leave it to the browser: the last stop wraps to the first, the first to the
+ * last; focus outside the overlay enters it at the first (the last). Only for a browser with no `inert`.
+ */
+export function tabWrap(items, cur, back) {
+  if (!items.length) return null;
+  const i = items.indexOf(cur);
+  const [edge, to] = back ? [0, items.length - 1] : [items.length - 1, 0];
+  if (i < 0 || i === edge) return items[to];
+  return null;
 }
 
 /**

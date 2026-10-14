@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { createRouter, SHELL_SCREENS } from '../js/shell/router.js';
 import {
   FOCUSABLE, topLayer, resolveFocus, focusMove, createHeldSuppressor, backButtons, isBackKey, arrowDirection, keepsArrow,
+  inertSections, tabWrap,
 } from '../js/shell/navigation.js';
 import { BTN, NUM_BUTTONS } from '../js/gamepad.js';
 import { browserSuite } from './helpers/browser.mjs';
@@ -259,6 +260,30 @@ test('inside a group (a table, a menu) Down / Up step through it in DOM order; L
   };
   assert.deepEqual(walk('toggle', 'down', 5), ['toggle', 'p1', 'q1', 'p2', 'q2', 'back']);
   assert.deepEqual(walk('back', 'up', 5), ['back', 'q2', 'p2', 'q1', 'p1', 'toggle']);
+});
+
+test('an open overlay makes every other top-level section inert, except the status toast', () => {
+  const sections = ['scene-ui', 'c2d', 'hud', 'toast', 'menu', 'controls-modal', 'replay', 'results', 'pause'];
+  assert.deepEqual(inertSections(sections, 'controls-modal'), ['scene-ui', 'c2d', 'hud', 'menu', 'replay', 'results', 'pause']);
+  assert.deepEqual(inertSections(sections, 'pause'), ['scene-ui', 'c2d', 'hud', 'menu', 'controls-modal', 'replay', 'results']);
+  assert.ok(!inertSections(sections, 'results').includes('toast'), 'the toast stays live');
+  assert.deepEqual(inertSections(sections, null), [], 'no overlay open: nothing inert');
+  // The confirmation inside the pause card: the card's other parts, with nothing kept live.
+  assert.deepEqual(inertSections(['title', 'actions', 'confirm', 'settings'], 'confirm', []), ['title', 'actions', 'settings']);
+});
+
+test('Tab wraps at the overlay\'s edges and leaves the middle to the browser', () => {
+  const items = ['first', 'middle', 'last'];
+  assert.equal(tabWrap(items, 'last', false), 'first', 'Tab from the last control goes to the first');
+  assert.equal(tabWrap(items, 'first', true), 'last', 'Shift+Tab from the first goes to the last');
+  assert.equal(tabWrap(items, 'middle', false), null);
+  assert.equal(tabWrap(items, 'middle', true), null);
+  assert.equal(tabWrap(items, 'first', false), null);
+  assert.equal(tabWrap(items, 'last', true), null);
+  assert.equal(tabWrap(['only'], 'only', false), 'only', 'a single control keeps focus');
+  assert.equal(tabWrap(items, 'outside', false), 'first', 'focus outside the overlay enters it at the first control');
+  assert.equal(tabWrap(items, 'outside', true), 'last', 'or, with Shift, at the last');
+  assert.equal(tabWrap([], 'outside', false), null);
 });
 
 test('the focusable selector collects every native control the kit uses', () => {

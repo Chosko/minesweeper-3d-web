@@ -8,7 +8,7 @@ import * as audio from './audio.js';
 import { Controls } from './controls.js';
 import { GamepadReader, BTN, Repeat, stickCurve, padGlyphs, pickInDirection, GLYPHS, STICK_DEADZONE, PAD_PRESS, PAD_FLAG, PAD_BOOM, padPulse } from './gamepad.js';
 import { createRouter } from './shell/router.js';
-import { FOCUSABLE, topLayer, resolveFocus, focusMove, isBackKey, arrowDirection, keepsArrow, backButtons, createHeldSuppressor } from './shell/navigation.js';
+import { FOCUSABLE, topLayer, resolveFocus, focusMove, inertSections, tabWrap, isBackKey, arrowDirection, keepsArrow, backButtons, createHeldSuppressor } from './shell/navigation.js';
 import { createHistorySync, storedSet } from './shell/history.js';
 import { createModeHost } from './shell/mode-host.js';
 import { create3DMode } from './shell/mode-3d.js';
@@ -343,6 +343,7 @@ const ui = new UI({
   onCancel3D: () => cancelGeneration(),
   onStandardWait3D: () => standardFromWait3D(),
   onOfferMenu3D: () => PAUSE.toMenu(),
+  onLayer: () => applyContainment(), // the Controls modal opened or closed: the menu is inert behind it, live before it takes focus back
 });
 ui.setNoMouse(NO_MOUSE, COARSE_ONLY);
 ui.setNotice3D(COARSE_ONLY);
@@ -1145,25 +1146,20 @@ canvas.addEventListener('webglcontextlost', (e) => {
   if (MODES.active === '3d') mode3d.contextLost();
   else SHELL.go('ctxlost');
 });
+const CTX_LOST_INERT = ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'records', 'settings', 'c2d-choice', 'c2d', 'c2d-status', 'm3d-status', 'controls-modal'];
 /** Dead canvas: leave every game mode (so lock changes/keys can't resume) and disable other overlays. */
 function showContextLost() {
   mouse.reset();
   input.exitLock();
-  for (const id of ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'records', 'settings', 'c2d-choice', 'c2d', 'c2d-status', 'm3d-status', 'controls-modal']) {
-    const el = document.getElementById(id);
-    if (!el) continue;
-    if (id !== 'menu') el.classList.add('hidden');
-    el.inert = true;
-  }
+  const els = CTX_LOST_INERT.map((id) => document.getElementById(id)).filter(Boolean);
+  for (const el of els) if (el.id !== 'menu') el.classList.add('hidden');
+  holdInert('ctxlost', els);
   document.getElementById('ctx-lost').classList.remove('hidden');
 }
 /** Leaving the context-lost screen (back to the menu): the other overlays are live again. */
 function hideContextLost() {
   document.getElementById('ctx-lost').classList.add('hidden');
-  for (const id of ['pause', 'ready', 'menu', 'board-choice', 'coming-soon', 'records', 'settings', 'c2d-choice', 'c2d', 'c2d-status', 'm3d-status', 'controls-modal']) {
-    const el = document.getElementById(id);
-    if (el) el.inert = false;
-  }
+  holdInert('ctxlost', []);
 }
 document.getElementById('ctx-lost-btn').addEventListener('click', () => { reloading = true; location.reload(); });
 document.getElementById('ctx-lost-menu').addEventListener('click', () => showMainMenu());
@@ -1215,15 +1211,80 @@ const MODAL_FOCUS = '#controls-close';
 const STATUS_LAYERS = { 'c2d-status': ['c2d', board2d], 'm3d-status': ['m3d', board3d] };
 function layerOpen(id) {
   const el = document.getElementById(id);
-  return !!el && !el.classList.contains('hidden') && !el.inert;
+  return !!el && !el.classList.contains('hidden') && !isInert(el);
 }
+
+// The one owner of `inert`: each holder (the context-lost screen, the open overlay, the pause
+// confirmation) names the elements it needs inert, and an element is inert while any holder names it,
+// so one holder letting go never lifts what another still holds. Where the browser has no `inert`,
+// the same set still bounds the controller's walk and the Tab wrap keeps keyboard focus inside.
+const INERT_HOLDS = { ctxlost: [], overlay: [], confirm: [] };
+let inertNow = new Set();
+function holdInert(holder, els) {
+  INERT_HOLDS[holder] = els;
+  const want = new Set(Object.values(INERT_HOLDS).flat());
+  for (const el of inertNow) if (!want.has(el)) el.inert = false;
+  for (const el of want) if (!inertNow.has(el)) el.inert = true;
+  inertNow = want;
+}
+/** Whether `el` sits inside an element the containment or the context-lost screen holds inert. */
+function isInert(el) {
+  for (const held of inertNow) if (held.contains(el)) return true;
+  return false;
+}
+/** The overlays that contain focus while they are the topmost visible layer. */
+const CONTAINED = new Set(['controls-modal', 'pause', 'results', 'replay']);
+/** Top-level elements that are not page content, never made inert by an overlay. */
+const NOT_SECTIONS = new Set(['SCRIPT', 'NOSCRIPT', 'TEMPLATE']);
+/** The open overlay that contains focus (the topmost visible layer, when it is one of CONTAINED), or null. */
+function containedLayer() {
+  const id = topLayer(Object.keys(LAYER_SCREEN), (l) => {
+    const el = document.getElementById(l);
+    return !!el && !el.classList.contains('hidden');
+  });
+  return CONTAINED.has(id) ? document.getElementById(id) : null;
+}
+/** Where Tab stays: the pause confirmation while it shows on the pause card, else the open overlay. */
+function containedArea(layer) {
+  const confirm = document.getElementById('pause-confirm');
+  return layer?.id === 'pause' && !confirm.classList.contains('hidden') ? confirm : layer;
+}
+/**
+ * Re-apply the containment: every other top-level section inert behind the open overlay (the toast
+ * kept live), and the rest of the pause card inert behind its confirmation. Runs on every router
+ * change and focus hand-off, on the Controls modal's toggle, and on any overlay's show or hide.
+ */
+function applyContainment() {
+  const layer = containedLayer();
+  const sections = [...document.body.children].filter((el) => el.id && !NOT_SECTIONS.has(el.tagName));
+  holdInert('overlay', inertSections(sections, layer, [document.getElementById('toast')]));
+  const area = containedArea(layer);
+  holdInert('confirm', area && area !== layer ? inertSections([...area.parentElement.children], area, []) : []);
+}
+new MutationObserver(() => applyContainment()).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
+/** Tab at the open overlay's edges wraps inside it, only where the browser has no `inert`. */
+window.addEventListener('keydown', (e) => {
+  if (e.key !== 'Tab' || e.altKey || e.ctrlKey || e.metaKey || 'inert' in HTMLElement.prototype) return;
+  const area = containedArea(containedLayer());
+  if (!area) return;
+  const items = padFocusables(area, TABBABLE).filter((el) => el.tabIndex >= 0);
+  const cur = document.activeElement;
+  if (area.contains(cur) && !items.includes(cur)) return;
+  const to = tabWrap(items, cur, e.shiftKey);
+  if (!to) return;
+  e.preventDefault();
+  to.focus();
+});
 function padLayer() {
   const id = topLayer(Object.keys(LAYER_SCREEN), layerOpen);
   return id && document.getElementById(id);
 }
-function padFocusables(layer) {
-  return [...layer.querySelectorAll(FOCUSABLE)].filter((el) => {
-    if (el.disabled || el.type === 'hidden') return false;
+/** What the browser's Tab order can stop on: the native controls and anything with a tabindex. */
+const TABBABLE = `${FOCUSABLE}, textarea, [tabindex]`;
+/** The layer's visible, enabled controls outside any inert subtree, in DOM order. */
+function padFocusables(layer, selector = FOCUSABLE) {
+  return [...layer.querySelectorAll(selector)].filter((el) => {
+    if (el.disabled || el.type === 'hidden' || isInert(el)) return false;
     const closed = el.closest('details:not([open])');
     if (closed && el !== closed.querySelector('summary')) return false;
     const r = el.getBoundingClientRect();
@@ -1239,6 +1300,7 @@ function padDefault(layer, items) {
 }
 /** The router's focus hand-off: the screen's default target, or its layer's first control. */
 function focusScreen(target, name) {
+  applyContainment(); // the screen just shown is live before it takes focus
   const layer = document.getElementById(SCREEN_LAYER[name]);
   if (!target || !layer) return;
   const el = resolveFocus(layer.querySelector(target), padFocusables(layer));
@@ -1246,6 +1308,7 @@ function focusScreen(target, name) {
 }
 /** The screen or the topmost layer changed: drop held controller buttons and menu repeats. */
 function layerChanged() {
+  applyContainment();
   nav.screenChanged();
   for (const r of Object.values(padRep)) r.reset();
 }

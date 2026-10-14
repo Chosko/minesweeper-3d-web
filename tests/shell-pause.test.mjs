@@ -507,6 +507,8 @@ test('the pause card holds the confirmation built from kit classes', () => {
   assert.match(confirm, /id="p-confirm-yes"[^>]*class="ui-button ui-button--primary"|class="ui-button ui-button--primary"[^>]*id="p-confirm-yes"/);
   assert.match(confirm, /id="p-confirm-no"/);
   assert.match(MAIN, /paused: \{[^\n]*'#p-confirm-no'/, 'an open confirmation focuses Cancel');
+  // Cancel or Back refocuses through the router's hand-off, which lifts the confirmation's containment first.
+  assert.match(MAIN, /ui\.showConfirm\(request, proceed, \(\) => SHELL\.refocus\(\)\)/, 'Cancel refocuses the card\'s default');
 });
 
 // ---------------------------------------------------------------- browser: pause / resume / restart / menu in 3D
