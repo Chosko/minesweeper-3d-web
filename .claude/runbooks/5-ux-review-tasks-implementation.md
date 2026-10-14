@@ -133,7 +133,7 @@ Context:
 
 Done: 2026-10-14, commit `f32eb68` (34 files, +1547/-179). On a coarse-only device, Look at the board takes the stick and look drag, and a tap brings the card back (the body left this open); the bindings gain a 3D-only touch device (`TOUCH_DEVICE`).
 
-## [ ] 30. Implement task 148 — Records layout, pagination and lists
+## [x] 30. Implement task 148 — Records layout, pagination and lists
 
 Depends on: none
 
@@ -144,11 +144,14 @@ Context:
 /task-implement 148 --review
 ```
 
+Done: 2026-10-14, commit `f7aa2fd` (33 files, +1357/-288). Records is two columns split 2 : 3 whose tables stack under their column names below a 539 px container query; controller Up / Down stays within the focused column.
+
 ## [ ] 31. Implement task 149 — Richer Records and local top-10
 
 Depends on: 10, 13, 30
 
 Context:
+- 2026-10-14 (from step 30): Records is two columns (2 : 3); its tables stack each row's cells under the column names below a 539 px container query, controller Up / Down moves within one column, and the page and view state live in a new `records.view` storage document.
 - 2026-10-12 (from step 12): the records format is already version 3 (completed-games figures, rebuilt from the game history on load); a further format change starts from there.
 
 ```prompt
