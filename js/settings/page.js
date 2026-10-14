@@ -16,8 +16,10 @@
 //                                schema default), carrying data-setting="key"; ids are `set-<key>`.
 //                                With labelledBy, a choice shows no label of its own and takes its
 //                                name from that element.
-// settingsPageHtml()           → the four sections (SETTINGS_SECTIONS), an empty bindings panel
-//                                (#settings-bindings) for bindingsSectionHtml, and the Data panel
+// settingsPageHtml()           → one kit column composition (ui-columns) holding a section per
+//                                SETTINGS_SECTIONS entry, each a column, then, across the width
+//                                (ui-columns__span), the bindings panel whose lists (#settings-bindings,
+//                                filled by bindingsSectionHtml) are columns of their own, and the Data panel
 //                                (#settings-data): its line, the "Reset all data…" button, the
 //                                hidden confirmation (RESET_MESSAGE, Reset all data, Cancel) and the
 //                                hidden warning line. A control whose label is its section's title
@@ -123,10 +125,10 @@ export function settingsPageHtml() {
   const sections = SETTINGS_SECTIONS.map((s) => `<section class="ui-panel ui-actions" aria-labelledby="set-sec-${s.id}">`
     + `<h3 class="ui-heading" id="set-sec-${s.id}">${s.title}</h3>`
     + `${s.settings.map((k) => settingControlHtml(k, undefined, { labelledBy: SETTING_LABELS[k] === s.title ? `set-sec-${s.id}` : null })).join('')}</section>`);
-  return `<div class="ui-grid">${sections.join('')}</div>`
-    + '<section class="ui-panel" aria-labelledby="set-sec-bindings"><h3 class="ui-heading" id="set-sec-bindings">Bindings</h3>'
-    + '<div id="settings-bindings" class="ui-grid"></div></section>'
-    + dataPanelHtml();
+  return `<div class="ui-columns">${sections.join('')}`
+    + '<section class="ui-panel ui-columns__span" aria-labelledby="set-sec-bindings"><h3 class="ui-heading" id="set-sec-bindings">Bindings</h3>'
+    + '<div id="settings-bindings" class="ui-columns"></div></section>'
+    + `${dataPanelHtml()}</div>`;
 }
 
 export const RESET_MESSAGE = 'Delete your records, game history, replays, settings, last board choices (Classic 2D and 3D) '
@@ -134,7 +136,7 @@ export const RESET_MESSAGE = 'Delete your records, game history, replays, settin
 
 // The Data panel: the place of everything about the player's stored data.
 function dataPanelHtml() {
-  return '<section class="ui-panel ui-actions" id="settings-data" aria-labelledby="set-sec-data">'
+  return '<section class="ui-panel ui-actions ui-columns__span" id="settings-data" aria-labelledby="set-sec-data">'
     + '<h3 class="ui-heading" id="set-sec-data">Data</h3>'
     + '<p class="ui-text ui-text--muted">Delete everything the game keeps in this browser and start over as a new player.</p>'
     + '<p class="ui-text ui-text--warning hidden" id="set-reset-note" role="status"></p>'

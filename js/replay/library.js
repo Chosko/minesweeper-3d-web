@@ -1,7 +1,7 @@
 // The replay library: the one owner and only writer of the replay store (the platform blob store)
 // and of the library index, a versioned document in platform storage listing every kept replay.
-// It keeps every pinned replay and the newest RETAINED_UNPINNED unpinned ones across both modes.
-// DOM-free.
+// It keeps every pinned replay and the newest RETAINED_UNPINNED unpinned ones across both modes, until
+// the player deletes one. DOM-free.
 //
 // createReplayLibrary({ storage, blobStore, onNotSaved? }) → library
 //   storage     the platform storage interface (js/platform/index.js's `storage`).
@@ -24,7 +24,9 @@
 //                 through onNotSaved and keeps the bytes for bytes() this session.
 //   pin(id)     → Promise; adds the reason PIN_HAND.
 //   unpin(id)   → Promise; clears every reason, then applies retention.
-//                 pin and unpin of an id with no entry change nothing.
+//   remove(id)  → Promise; the player's Delete: takes the entry out of the index whatever its pins,
+//                 saves the index, then deletes its blob.
+//                 pin, unpin and remove of an id with no entry change nothing.
 //   forBoard(boardKey) → the entries kept for the board, newest end date first. Each entry is a
 //                 frozen { id, boardKey, mode, outcome, elapsedMs, bbbvPerSecond, efficiency,
 //                 endedAt, size, pins }, pins the frozen list of its reasons.
@@ -33,15 +35,16 @@
 //                 a failed write; undefined when there is none. Rejects when the store cannot read.
 //   onChange(fn) → unsubscribe. fn(change) after each add { kind: 'add', id }, pin
 //                 { kind: 'pin', id }, unpin { kind: 'unpin', id } and removal
-//                 { kind: 'remove', ids } (oldest first).
+//                 { kind: 'remove', ids } (retention's oldest first; a Delete's one id).
 //   available() → whether replays are saved this session.
 //   settled()   → Promise that resolves once every operation queued so far has finished.
-// add, pin and unpin before load() throw: that is a programming error.
+// add, pin, unpin and remove before load() throw: that is a programming error.
 //
 // Retention: after each add and unpin, the unpinned entries beyond the newest RETAINED_UNPINNED by
 // end date are removed from the index, the index is saved, then their blobs are deleted, oldest
-// first. A blob whose delete fails is an orphan the next start-up's reconciliation deletes.
-// Pinned replays are never removed by retention or by a storage failure.
+// first. A blob whose delete fails, after retention or a Delete, is an orphan the next start-up's
+// reconciliation deletes. Pinned replays are never removed by retention or by a storage failure,
+// only by the player's Delete (remove).
 
 export const LIBRARY_DOC = 'replays.library';
 export const LIBRARY_VERSION = 1;
@@ -214,6 +217,16 @@ export function createReplayLibrary({ storage, blobStore, onNotSaved = () => {} 
         await saveIndex();
         notify({ kind: 'unpin', id });
         await retain();
+      });
+    },
+
+    remove(id) {
+      ready();
+      return run(async () => {
+        if (!entries.delete(id)) return;
+        await saveIndex();
+        await deleteBlob(id);
+        notify({ kind: 'remove', ids: [id] });
       });
     },
 

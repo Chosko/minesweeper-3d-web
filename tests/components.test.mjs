@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import {
   decimalsOf, formatSliderValue, segmentedTargetIndex, segmentedState,
-  bindSlider, bindSegmented, initComponents, formatOverlayTime, formatMineCount, mineCounterDigits,
+  bindSlider, bindSegmented, initComponents, formatOverlayTime, formatMineCount, mineCounterDigits, pagerState, PAGER_WINDOW,
 } from '../js/ui/components.js';
 import { UI } from '../js/ui.js';
 import { FOCUSABLE } from '../js/shell/navigation.js';
@@ -37,9 +37,11 @@ const COMPONENTS = {
   'ui-link': { interactive: true, control: '.ui-link' },
   'ui-spinner': { interactive: false },
   'ui-banner': { interactive: false },
+  'ui-stat--tile': { interactive: false },
+  'ui-pager': { interactive: false },
 };
 // Screen compositions: layout-only classes the screens are assembled with.
-const COMPOSITIONS = ['ui-screen', 'ui-row', 'ui-grid', 'ui-heading', 'ui-text', 'ui-actions', 'ui-stat-row'];
+const COMPOSITIONS = ['ui-screen', 'ui-row', 'ui-grid', 'ui-heading', 'ui-text', 'ui-actions', 'ui-stat-row', 'ui-columns'];
 const STATES = ['hover', 'active', 'focus', 'disabled'];
 
 // css rules as [selector, body] pairs (top level and inside @media).
@@ -776,6 +778,66 @@ test('initComponents binds every slider and segmented group under a root', () =>
   assert.equal(output.textContent, '3');
   assert.equal(opt.tabIndex, 0);
   assert.equal(typeof unbind, 'function');
+});
+
+// ---------------------------------------------------------------- pager, stat tile and columns
+
+const numbersOf = (state) => state.numbers.map((n) => n.page);
+
+test('pagerState: First, at most five numbered pages around the current one, Last; hidden on one page', () => {
+  assert.equal(PAGER_WINDOW, 5);
+  for (const pages of [0, 1]) assert.equal(pagerState(0, pages).hidden, true, `${pages} page(s): no pager`);
+  const three = pagerState(0, 3);
+  assert.equal(three.hidden, false);
+  assert.deepEqual(numbersOf(three), [0, 1, 2]);
+  assert.deepEqual(three.numbers.map((n) => [n.label, n.current]), [['1', true], ['2', false], ['3', false]]);
+  assert.deepEqual([three.first, three.last], [{ page: 0, disabled: true }, { page: 2, disabled: false }]);
+  assert.deepEqual(numbersOf(pagerState(5, 20)), [3, 4, 5, 6, 7], 'centred on the current page');
+  assert.deepEqual(numbersOf(pagerState(0, 20)), [0, 1, 2, 3, 4]);
+  assert.deepEqual(numbersOf(pagerState(1, 20)), [0, 1, 2, 3, 4], 'held at the start');
+  assert.deepEqual(numbersOf(pagerState(19, 20)), [15, 16, 17, 18, 19], 'held at the end');
+  const end = pagerState(19, 20);
+  assert.deepEqual([end.first.disabled, end.last.disabled], [false, true]);
+  assert.equal(end.numbers.find((n) => n.current).page, 19);
+  assert.equal(pagerState(25, 20).page, 19, 'a page past the end is the last');
+  assert.equal(pagerState(-3, 20).page, 0);
+  assert.ok(pagerState(50, 100).numbers.length <= PAGER_WINDOW, 'a long history keeps one pager row');
+});
+
+test('the stat tile, the pager and the column composition are styled from tokens only', () => {
+  const tile = rulesFor('.ui-stat--tile').map(([, b]) => b).join('');
+  assert.match(tile, /padding:\s*var\(--space-/);
+  assert.match(tile, /border[^;]*var\(--color-/);
+  const figure = rulesFor('.ui-stat--tile .ui-stat__value').map(([, b]) => b).join('');
+  assert.match(figure, /font-size:\s*var\(--font-size-/);
+  for (const m of (tile + figure + rulesFor('.ui-stat-row--tiles').map(([, b]) => b).join('')).matchAll(/(padding|gap|font-size|min-width)\s*:\s*([^;]+)/g)) {
+    assert.doesNotMatch(m[2], /\d+(px|rem|em)\b/, `${m[1]}: ${m[2]} — tile sizes come from the tokens`);
+  }
+  const current = rulesFor('.ui-pager').filter(([sel]) => sel.includes('aria-current="page"'));
+  assert.ok(current.length > 0, 'the current page has its own styling');
+  assert.ok(rulesFor('.ui-columns').some(([, b]) => /gap:\s*var\(--space-/.test(b)), 'column spacing from the tokens');
+});
+
+test('the column composition has one breakpoint, 1024 px, stated once, used by Records and Settings', () => {
+  const breakpoints = [...CSS.matchAll(/@media[^{]*min-width:\s*(\d+)px/g)].map((m) => m[1]);
+  assert.deepEqual(breakpoints, ['1024'], 'one breakpoint block in the kit');
+  assert.doesNotMatch(read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, ''), /min-width:\s*1024px/, 'no second copy in the shell stylesheet');
+  const head = RAW.match(/^\/\*([\s\S]*?)\*\//)[1];
+  assert.match(head, /ui-columns[\s\S]*1024 px/, 'the catalogue states the breakpoint');
+  assert.match(INDEX, /<section class="ui-card ui-screen ui-screen--wide ui-screen--columns" aria-labelledby="records-title">/);
+  assert.match(INDEX, /<section class="ui-card ui-screen ui-screen--wide ui-screen--columns" aria-labelledby="settings-title">/);
+});
+
+test('the gallery shows the stat tile, the pager in each state and the column composition', () => {
+  assert.ok(TAGS.some((t) => hasClasses(t, '.ui-stat.ui-stat--tile')), 'a stat tile');
+  const tiles = section(GALLERY, '<!-- component: stat tile -->', '<!-- /component: stat tile -->');
+  assert.match(tiles, /ui-stat__detail[\s\S]*Watch/, 'a tile with its date and Watch');
+  assert.match(tiles, /&mdash;/, 'a best not yet set');
+  const pagers = section(GALLERY, '<!-- component: pager -->', '<!-- /component: pager -->');
+  for (const state of ['First page', 'Middle page', 'Last page', 'Long history']) assert.ok(pagers.includes(state), `pager: ${state}`);
+  assert.match(pagers, /aria-current="page"/);
+  assert.match(pagers, /<button type="button" class="ui-button ui-button--secondary ui-pager__button"[^>]* disabled>First<\/button>/);
+  assert.ok(TAGS.some((t) => hasClasses(t, '.ui-columns')), 'the column composition');
 });
 
 test('the helper module keeps DOM access out of its logic and imports nothing', () => {

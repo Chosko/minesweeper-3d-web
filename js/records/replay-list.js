@@ -1,30 +1,44 @@
 // Records screen's library view (replay-library feature): the chosen board's kept replays from the
-// replay library (js/replay/library.js), newest first, with their stats and pin state, Watch and
-// Pin / Unpin. replayList() and the helpers are DOM-free; createReplayListView() binds the
-// #records-replays markup handed in. The Records screen (js/records/screen.js) composes it.
+// replay library (js/replay/library.js), newest first, paged at PAGE_SIZE rows, with their stats and
+// pin state, Watch, Pin / Unpin and Delete behind a confirmation. replayList() and the helpers are
+// DOM-free; createReplayListView() binds the #records-replays markup handed in. The Records screen
+// (js/records/screen.js) composes it.
 //
-// replayList(library, boardKey, { pinnedFirst, canWatch, formatDate, outcomeLabel }) →
+// replayList(library, boardKey, { pinnedFirst, canWatch, formatDate, outcomeLabel, page }) →
 //   { rows: [{ id, date, outcome, time, rate, efficiency, pinned, pin, action, actionLabel,
-//   watch }], empty, emptyText, pinnedFirst, canWatch }: the board's entries (library.forBoard),
-//   newest end date first, or pinned ones first under the filter, each group newest first. Times,
-//   3BV/s and efficiency show in the results screen's formats (js/results/view.js); the date and
-//   outcome through the formatters the screen hands in. pinned is whether the replay carries any
-//   pin reason, pin its state as text (pinState), action 'unpin' for a pinned replay and 'pin'
-//   otherwise, watch whether Watch is offered (canWatch). No library, or one whose query throws,
-//   is the empty state.
+//   watch, deleteMessage }], empty, emptyText, pinnedFirst, canWatch, page, pages, label, pager }:
+//   the board's entries (library.forBoard), newest end date first, or pinned ones first under the
+//   filter, each group newest first; one page of them (pageOf, the page clamped to the last), label
+//   its range ("Replays 11–20 of 23", empty for no replay) and pager the kit pager's state
+//   (pagerState, js/ui/components.js). Times, 3BV/s and efficiency show in the results screen's
+//   formats (js/results/view.js); the date (the screen hands in its date and time) and outcome
+//   through the formatters the screen hands in. pinned is whether the replay carries any pin reason,
+//   pin its state as text (pinState), action 'unpin' for a pinned replay and 'pin' otherwise, watch
+//   whether Watch is offered (canWatch), deleteMessage its confirmation (deleteMessage). No library,
+//   or one whose query throws, is the empty state.
 // pinState(pins) → 'Not pinned' | 'Pinned' | 'Pinned · best'.
+// deleteMessage({ date, outcome, pins }) → "Delete the replay of 11 Oct 2026 14:32, won? This cannot
+//   be undone.", naming its pin reasons when pinned ("It is pinned as a best and by hand.").
 // togglePin(library, row) → the library's unpin(id) for a pinned row, pin(id) otherwise. Pinning
 //   adds the hand pin; unpinning clears every reason (js/replay/library.js).
 // watchRoute(replayId, returnTo) → { screen: REPLAY_SCREEN, data: { replayId, returnTo } }: the
 //   replay viewer's route, returnTo the { screen, data } to come back to.
 //
-// createReplayListView({ root, onWatch, onTogglePin, onPinnedFirst }) → { show(list) }: fills
-// #records-replays by id — the pinned-first toggle, the empty state and one table row per replay
-// with its Pin / Unpin button and, when list.canWatch, its Watch button. A rebuilt list keeps focus
-// on the button of the replay that had it.
+// createReplayListView({ root, onWatch, onTogglePin, onPinnedFirst, onPage, onDelete }) →
+//   { show(list), closeConfirm(), isConfirmOpen(), hide() }: fills #records-replays by id — the
+//   pinned-first toggle, the empty state, one table row per replay with its Pin / Unpin and Delete
+//   buttons and, when list.canWatch, its Watch button, the range caption and the kit pager
+//   (bindPager; onPage(page)). A rebuilt list keeps focus on the button of the replay that had it.
+//   Delete shows the confirmation (#records-replays-confirm: the row's deleteMessage, Delete replay,
+//   Cancel) in place of the list, focus on Cancel; Cancel or closeConfirm() (Back) hides it and
+//   focuses that row's Delete again; Delete replay hides it and calls onDelete(id), and the next list
+//   shown puts focus on the Delete of the row in its place, else the previous row's, else the Pinned
+//   first switch. closeConfirm() → false when none is open; hide() closes it without moving focus.
 
 import { DASH, formatTime, formatRate, formatEfficiency } from '../results/view.js';
-import { PIN_BEST } from '../replay/library.js';
+import { PIN_BEST, PIN_HAND } from '../replay/library.js';
+import { pagerState, bindPager } from '../ui/components.js';
+import { pageOf } from './history-chart.js';
 
 /** The replay viewer's router screen (replay-playback); Watch shows once the shell registers it. */
 export const REPLAY_SCREEN = 'replay';
@@ -41,29 +55,43 @@ export function pinState(pins) {
   return pins.includes(PIN_BEST) ? 'Pinned · best' : 'Pinned';
 }
 
+export function deleteMessage({ date, outcome, pins }) {
+  const best = pins.includes(PIN_BEST);
+  const hand = pins.includes(PIN_HAND) || (pins.length > 0 && !best);
+  const reasons = [best && 'as a best', hand && 'by hand'].filter(Boolean).join(' and ');
+  const pinned = reasons ? ` It is pinned ${reasons}.` : '';
+  return `Delete the replay of ${date}, ${String(outcome).toLowerCase()}?${pinned} This cannot be undone.`;
+}
+
 function replayRow(e, { canWatch, formatDate, outcomeLabel }) {
   const pinned = e.pins.length > 0;
+  const date = formatDate(e.endedAt);
+  const outcome = outcomeLabel(e.outcome);
   return {
-    id: e.id, date: formatDate(e.endedAt), outcome: outcomeLabel(e.outcome), time: formatTime(e.elapsedMs),
+    id: e.id, date, outcome, time: formatTime(e.elapsedMs),
     rate: formatRate(e.bbbvPerSecond), efficiency: formatEfficiency(e.efficiency),
     pinned, pin: pinState(e.pins), action: pinned ? 'unpin' : 'pin', actionLabel: pinned ? 'Unpin' : 'Pin',
-    watch: canWatch,
+    watch: canWatch, deleteMessage: deleteMessage({ date, outcome, pins: e.pins }),
   };
 }
 
 export function replayList(library, boardKey, {
-  pinnedFirst = false, canWatch = false, formatDate = plain, outcomeLabel = plain,
+  pinnedFirst = false, canWatch = false, formatDate = plain, outcomeLabel = plain, page = 0,
 } = {}) {
   let entries = [];
   try { entries = library ? [...library.forBoard(boardKey)] : []; } catch { entries = []; }
   entries.sort(newestFirst);
   if (pinnedFirst) entries.sort((a, b) => Number(b.pins.length > 0) - Number(a.pins.length > 0));
+  const p = pageOf(entries, page);
   return {
-    rows: entries.map((e) => replayRow(e, { canWatch, formatDate, outcomeLabel })),
+    rows: p.items.map((e) => replayRow(e, { canWatch, formatDate, outcomeLabel })),
     empty: entries.length === 0,
     emptyText: REPLAYS_EMPTY_TEXT,
     pinnedFirst,
     canWatch,
+    page: p.page, pages: p.pages,
+    label: p.total ? `Replays ${p.from}–${p.to} of ${p.total}` : '',
+    pager: pagerState(p.page, p.pages),
   };
 }
 
@@ -75,13 +103,23 @@ export function watchRoute(replayId, returnTo) {
   return { screen: REPLAY_SCREEN, data: { replayId, returnTo } };
 }
 
-export function createReplayListView({ root, onWatch, onTogglePin, onPinnedFirst }) {
+export function createReplayListView({ root, onWatch, onTogglePin, onPinnedFirst, onPage = () => {}, onDelete = () => {} }) {
   const $ = (id) => root.querySelector(`#${id}`);
   const doc = root.ownerDocument;
   const toggle = $('records-pinned-first');
+  const toggleRow = toggle.closest('.ui-toggle') ?? toggle;
   const body = $('records-replays-body');
   const table = $('records-replays-table');
   const empty = $('records-replays-empty');
+  const caption = $('records-replays-page');
+  const confirm = $('records-replays-confirm');
+  const confirmText = $('records-replays-confirm-text');
+  const yes = $('records-replays-yes');
+  const no = $('records-replays-no');
+  const pager = bindPager($('records-replays-pager'), { onPage: (page) => onPage(page), name: 'replays' });
+  let last = null; // the list shown last
+  let asking = null; // the id the confirmation asks about
+  let afterDelete = null; // { id, index }: the deleted replay, and the row whose Delete takes focus once it is gone
   toggle.addEventListener('change', () => onPinnedFirst(toggle.checked));
 
   const button = (text, label, onClick, data) => {
@@ -94,33 +132,82 @@ export function createReplayListView({ root, onWatch, onTogglePin, onPinnedFirst
     b.addEventListener('click', onClick);
     return b;
   };
+  const deleteButtons = () => [...body.querySelectorAll('button[data-act="delete"]')];
+  // The list, its toggle and its pager show unless the confirmation stands in their place.
+  const layout = () => {
+    const open = asking !== null;
+    confirm.classList.toggle('hidden', !open);
+    toggleRow.classList.toggle('hidden', open);
+    empty.classList.toggle('hidden', open || !last?.empty);
+    table.classList.toggle('hidden', open || !!last?.empty);
+    if (last) pager.show(open ? { ...last.pager, hidden: true } : last.pager);
+  };
+  function close({ focus = true } = {}) {
+    if (asking === null) return false;
+    const id = asking;
+    asking = null;
+    layout();
+    if (focus) (deleteButtons().find((b) => b.dataset.id === id) ?? toggle).focus({ preventScroll: true });
+    return true;
+  }
+  function ask(row) {
+    asking = row.id;
+    confirmText.textContent = row.deleteMessage;
+    layout();
+    no.focus({ preventScroll: true });
+  }
+  no.addEventListener('click', () => close());
+  yes.addEventListener('click', () => {
+    if (asking === null) return;
+    const id = asking;
+    afterDelete = { id, index: Math.max(0, deleteButtons().findIndex((b) => b.dataset.id === id)), page: last?.page ?? 0 };
+    asking = null;
+    layout();
+    toggle.focus({ preventScroll: true }); // until the list without it shows
+    onDelete(id);
+  });
 
   return {
     show(list) {
       const focused = body.contains(doc.activeElement) ? doc.activeElement.dataset : null;
+      last = list;
+      if (asking !== null && !list.rows.some((r) => r.id === asking)) close({ focus: false });
       toggle.checked = list.pinnedFirst;
       empty.textContent = list.emptyText;
-      empty.classList.toggle('hidden', !list.empty);
-      table.classList.toggle('hidden', list.empty);
+      caption.textContent = list.label;
       body.replaceChildren(...list.rows.map((r) => {
         const tr = doc.createElement('tr');
-        for (const text of [r.date, r.outcome, r.time, r.rate, r.efficiency, r.pin]) {
+        [r.date, r.outcome, r.time, r.rate, r.efficiency, r.pin].forEach((text, i) => {
           const td = doc.createElement('td');
           td.textContent = text;
+          td.dataset.label = REPLAY_HEADERS[i];
           tr.append(td);
-        }
+        });
         const actions = doc.createElement('td');
         const what = `replay of ${r.date}, ${r.time}`;
         if (r.watch) actions.append(button('Watch', `Watch ${what}`, () => onWatch(r.id), { id: r.id, act: 'watch' }));
         actions.append(button(r.actionLabel, `${r.actionLabel} ${what}`, () => onTogglePin(r.id), { id: r.id, act: 'pin' }));
+        actions.append(button('Delete', `Delete ${what}`, () => ask(r), { id: r.id, act: 'delete' }));
         tr.append(actions);
         return tr;
       }));
-      if (focused) {
+      layout();
+      if (afterDelete !== null && asking === null && !list.rows.some((r) => r.id === afterDelete.id)) {
+        const dels = deleteButtons();
+        const at = list.page < afterDelete.page ? dels.length - 1 : Math.min(afterDelete.index, dels.length - 1);
+        (dels[at] ?? toggle).focus({ preventScroll: true });
+        afterDelete = null;
+      } else if (focused) {
         const again = [...body.querySelectorAll('button')].find((b) => b.dataset.id === focused.id && b.dataset.act === focused.act)
           ?? [...body.querySelectorAll('button')].find((b) => b.dataset.id === focused.id);
         (again ?? toggle).focus({ preventScroll: true });
       }
+    },
+    closeConfirm: () => close(),
+    isConfirmOpen: () => asking !== null,
+    hide() {
+      close({ focus: false });
+      afterDelete = null;
     },
   };
 }

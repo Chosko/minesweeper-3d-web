@@ -39,6 +39,7 @@ import { createViewer3D } from './replay/viewer-3d.js';
 import { REPLAY_SCREEN } from './records/replay-list.js';
 import { createResultsView, resultsContent, resultsEnter, LOOK_REFUSED } from './results/view.js';
 import { createRecordsScreen, createRecordsView, TRIGGER_MODES } from './records/screen.js';
+import { createRecordsViewPrefs } from './records/view-prefs.js';
 import { applySettings, pixelRatioFor } from './settings/appliers.js';
 import { bindSettingControls } from './settings/page.js';
 import { createReset } from './settings/reset.js';
@@ -860,8 +861,10 @@ window.addEventListener('keydown', (e) => {
 
 // ---------- records screen ----------
 // The board picker, the chosen board's figures, history and kept replays, redrawn live while open;
-// Watch shows once the replay viewer's route is registered; Back is the back stack.
-const RECORDS_PAGE = createRecordsScreen({ records: RECORDS, replays: REPLAYS, router: SHELL,
+// Watch shows once the replay viewer's route is registered; Back closes a Delete confirmation, else
+// is the back stack. The Pinned first switch is remembered in its own document, loaded at start-up.
+const RECORDS_VIEW_PREFS = createRecordsViewPrefs({ storage });
+const RECORDS_PAGE = createRecordsScreen({ records: RECORDS, replays: REPLAYS, router: SHELL, viewPrefs: RECORDS_VIEW_PREFS,
   view: createRecordsView({
     root: document.getElementById('records'),
     onSelect: (key) => RECORDS_PAGE.select(key),
@@ -870,6 +873,8 @@ const RECORDS_PAGE = createRecordsScreen({ records: RECORDS, replays: REPLAYS, r
     onWatch: (id) => RECORDS_PAGE.watch(id),
     onTogglePin: (id) => RECORDS_PAGE.togglePin(id),
     onPinnedFirst: (on) => RECORDS_PAGE.setPinnedFirst(on),
+    onReplayPage: (page) => RECORDS_PAGE.showReplayPage(page),
+    onDelete: (id) => RECORDS_PAGE.deleteReplay(id),
     onBack: () => shellBack('pointer'),
   }),
 });
@@ -915,7 +920,7 @@ function playAgainFromMenu(source) {
 /** Back from the keyboard (Esc) or the controller: the topmost layer first, then the router. */
 function shellBack(source) {
   if (endDelay()) return;
-  if (ui.closeControls() || ui.closeConfirm() || ui.closeResetConfirm()) return;
+  if (ui.closeControls() || ui.closeConfirm() || ui.closeResetConfirm() || RECORDS_PAGE.closeConfirm()) return;
   SHELL.back(source);
 }
 /**
@@ -926,7 +931,7 @@ function shellBack(source) {
  */
 function historyBack() {
   if (endDelay()) return;
-  if (ui.closeControls() || ui.closeConfirm() || ui.closeResetConfirm()) return;
+  if (ui.closeControls() || ui.closeConfirm() || ui.closeResetConfirm() || RECORDS_PAGE.closeConfirm()) return;
   if (S.mode === 'playing' || S.mode === 'classic-2d') { pauseGame('button'); return; }
   if (S.mode === 'paused' && !gameOver()) return;
   if (S.mode === 'ready' && S.game && S.started) return;
@@ -1403,16 +1408,24 @@ function padStep(el, delta) {
  * table's or a menu's controls in DOM order, else the spatial search, else the next or previous
  * control in DOM order. Up and down, the search treats a board choice's row of custom fields as one
  * control, starting from the whole row past its own controls, and aims at a table's buttons by their
- * row, so a table is entered from above or below wherever its buttons sit in the row.
+ * row, so a table is entered from above or below wherever its buttons sit in the row. In a column
+ * layout (a ui-columns of ui-column, as Records), Up and Down search only the column `cur` is in, so
+ * the walk leaves a column at its ends in DOM order, and a move from outside into the columns enters
+ * them at their first control (Down) or last (Up).
  */
 function navStep(layer, items, cur, dir) {
   return focusMove(items, cur, dir, {
     spatial: (d) => {
       const vertical = d === 'up' || d === 'down';
       const row = vertical && cur.closest('form .ui-row');
+      const column = vertical && cur.closest('.ui-column');
       const from = (row || cur).getBoundingClientRect();
-      const cands = items.filter((e) => e !== cur && !(row && row.contains(e)));
-      return pickInDirection(from, cands.map((e) => ({ rect: ((vertical && e.closest('tr')) || e).getBoundingClientRect(), item: e })), d);
+      const cands = items.filter((e) => e !== cur && !(row && row.contains(e)) && (!column || column.contains(e)));
+      const found = pickInDirection(from, cands.map((e) => ({ rect: ((vertical && e.closest('tr')) || e).getBoundingClientRect(), item: e })), d);
+      const columns = vertical && !column && found?.closest('.ui-column')?.parentElement;
+      if (!columns) return found;
+      const inside = items.filter((e) => columns.contains(e));
+      return d === 'down' ? inside[0] : inside[inside.length - 1];
     },
     groupOf: (el) => el.closest('table, .ui-menu'),
   });
@@ -1581,7 +1594,7 @@ function padMenus(p, held, pressed, now) {
     return;
   }
   if (pressed(BTN.A)) { padActivate(); return; }
-  if (S.mode === 'records' && !modal && !ui.isConfirmOpen() && padRecords(pressed)) return;
+  if (S.mode === 'records' && !modal && !ui.isConfirmOpen() && !RECORDS_PAGE.confirmOpen && padRecords(pressed)) return;
   const [ax, ay] = p.ls, ver = Math.abs(ay) >= Math.abs(ax);
   const dirs = {
     up: held(BTN.UP) || (ver && ay < -0.5), down: held(BTN.DOWN) || (ver && ay > 0.5),
@@ -1801,7 +1814,7 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-await Promise.all([settingsLoaded, recordsLoaded, firstUseLoaded, LAST_CHOICE_3D.load().catch(() => {})]);
+await Promise.all([settingsLoaded, recordsLoaded, firstUseLoaded, LAST_CHOICE_3D.load().catch(() => {}), RECORDS_VIEW_PREFS.load().catch(() => {})]);
 showMainMenu();
 const choice2DLoaded = mode2d.loadChoice();
 const bootFocus = document.activeElement;

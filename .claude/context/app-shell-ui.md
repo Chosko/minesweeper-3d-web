@@ -115,6 +115,10 @@ and the controller's menu navigation.
   `replay`), leave an arrow the focused control owns (`keepsArrow`) or
   handled (`defaultPrevented`), and focus through `keyFocus`, which drops
   `pad-nav` so `:focus-visible` shows.
+  In a column layout (`ui-column`s, as Records) `navStep`'s Up and Down
+  search only the focused control's column, leaving it at its ends in DOM
+  order, and a vertical move into the columns from outside enters at their
+  first (Down) or last (Up) control.
 
 ## DOMAIN DEPENDENCIES
 

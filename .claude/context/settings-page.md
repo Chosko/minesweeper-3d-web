@@ -30,8 +30,10 @@ Page (`js/settings/page.js`)
   while its value is false.
 - `settingControlHtml(key, value?, { labelledBy? })` — the control's kit
   markup, root carrying `data-setting="<key>"`, ids `set-<key>`.
-- `settingsPageHtml()` — the four sections, the empty Bindings panel
-  (`#settings-bindings`) and the Data panel (`#settings-data`: warning line
+- `settingsPageHtml()` — one `ui-columns` composition: the four sections,
+  each a column, then across the width (`ui-columns__span`) the Bindings
+  panel, whose empty `#settings-bindings` is itself a `ui-columns`, and the
+  Data panel (`#settings-data`: warning line
   `#set-reset-note`, button `#set-reset`, hidden confirmation
   `#set-reset-confirm` with `#set-reset-yes` / `#set-reset-no`);
   `bindingsSectionHtml(glyphs?)` — one `dl.controls` per mode and device.

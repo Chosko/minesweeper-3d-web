@@ -4,9 +4,10 @@ Where replays are kept: every sealed replay is saved to a replay store
 behind the platform layer, the newest 100 unpinned replays are kept and
 older ones removed, and pinned replays — every personal-best game
 automatically, and any replay the player pins — are never removed by
-retention or a storage failure; only the player's confirmed Reset all data
-(`settings`) deletes them, with every other replay. The player browses,
-pins and watches them from the Records screen.
+retention or a storage failure; only the player's confirmed Delete of that
+replay, or the confirmed Reset all data (`settings`) with every other
+replay, deletes them. The player browses, pins, watches and deletes them
+from the Records screen.
 
 ## Purpose
 
@@ -31,20 +32,22 @@ In scope (m2-3d-joins):
   pinned replay.
 - Pinning: automatic for a game that set any of its board's three personal
   bests; by hand for any replay; unpinning by hand.
+- Deleting one kept replay, pinned or not, by hand behind a confirmation.
 - The library view in the Records screen: the chosen board's replays,
-  newest first, pinned ones marked, with *Watch* and *Pin* / *Unpin*; the
-  bests and the recent-games list linking to their replays where one is
-  kept.
+  newest first, pinned ones marked, with *Watch*, *Pin* / *Unpin* and
+  *Delete*; the bests and the recent-games list linking to their replays
+  where one is kept.
 
 Non-goals:
 
 - Syncing replays through Steam Cloud and the replay store's Steam
   implementation — deferred to `m3-on-steam`.
 - Leaderboard replays — deferred to `m3-on-steam`.
-- Deleting a single replay by hand — in no milestone's slice. Unpinning
-  returns a replay to the rolling 100. The whole library, pinned replays
-  included, is deleted only by `settings`' Reset all data, which waits for
-  the library's start-up load and then deletes every blob and the index.
+- Deleting replays in bulk. Besides retention, a replay leaves the library
+  only by the player's confirmed Delete of that one replay, or with the
+  whole library, pinned replays included, by `settings`' Reset all data,
+  which waits for the library's start-up load and then deletes every blob
+  and the index.
 - Importing, exporting or sharing replays — in no milestone's slice.
 - The Records screen's board picker, 2D and 3D switch and figures —
   `records-screen` and the Results and records slice of `m2-3d-joins`.
@@ -74,20 +77,30 @@ plain DOM from the `screen-components` kit inside the Records screen.
   index entry is deleted, an index entry with no blob is dropped.
 - **Retention.** After each add or unpin, unpinned replays beyond the
   newest 100, by end date, are deleted, oldest first. Pinned replays are
-  never deleted by retention or by a storage failure; a player-confirmed
-  Reset all data deletes them with the rest.
+  never deleted by retention or by a storage failure; the player's
+  confirmed Delete removes one, and a player-confirmed Reset all data
+  deletes them with the rest.
+- **Removal.** The player's Delete takes the replay's entry out of the
+  index whatever its pins, saves the index, then deletes its blob; a blob
+  whose delete fails is an orphan the next start-up's reconciliation
+  deletes, as with retention.
 - **Best pinning.** The end-of-game hand-off tells the library whether the
   game set any personal best, from the comparison `personal-records`
   returns; such a replay is pinned with the reason "best". The pin stays
   when the best is later beaten, so the player's progression stays
   watchable; the player can unpin it.
 - **Library view.** In the Records screen, for the board the screen shows:
-  a list of that board's kept replays with date, outcome, time (in
-  `results-screen`'s time format, 47.380 s), 3BV/s, efficiency (to one
-  decimal) and pin
-  state, pinned ones first under a filter; *Watch* opens
-  `replay-playback`, *Pin* / *Unpin* toggles the hand pin. The bests panel
-  and the recent-games list show *Watch* on entries whose replay is kept.
+  a list of that board's kept replays with the date and local time each
+  game ended ("11 Oct 2026 14:32"), outcome, time (in `results-screen`'s
+  time format, 47.380 s), 3BV/s, efficiency (to one decimal) and pin
+  state, pinned ones first under a filter the screen remembers, ten to a
+  page with the same pager as the recent games (First, at most five
+  numbered pages, Last; hidden on one page) and its range caption;
+  *Watch* opens `replay-playback`, *Pin* / *Unpin* toggles the hand pin,
+  and *Delete* asks first, in the panel — naming the replay's date, time
+  and outcome, whether it is pinned (as a best, by hand, or both), and
+  that it cannot be undone — then removes it. The bests panel and the
+  recent-games list show *Watch* on entries whose replay is kept.
 
 ## Data and state
 
@@ -112,6 +125,8 @@ plain DOM from the `screen-components` kit inside the Records screen.
   a kept replay; a replay's bytes by id.
 - **Pin / unpin** — by id; pinning sets the hand-pin reason, unpinning
   clears every reason and applies retention.
+- **Remove** — by id; removes the replay whatever its pins (the player's
+  confirmed Delete). An id with no entry changes nothing.
 - **Change notification** — subscribers are told after each add, pin,
   unpin and removal, so an open Records screen stays current.
 - **Availability** — when the replay store or the index cannot persist this

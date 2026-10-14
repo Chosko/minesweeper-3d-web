@@ -33,6 +33,12 @@ Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
 - `bindSlider(root)`, `bindSegmented(group, {onChange, horizontal?})`
   (`horizontal` leaves Up/Down to the shell's focus moves),
   `initComponents(root)` — each returns an unbind.
+- `PAGER_WINDOW` (5), `pagerState(page, pages)` → `{hidden, page, pages,
+  first, last, numbers: [{page, label, current}]}`; `bindPager(nav, {onPage,
+  name?})` → `{show(state)}`: fills a `.ui-pager` with First, the numbered
+  pages and Last (`data-page`), the current page `aria-current="page"` and
+  `aria-disabled` (still focusable, so a pager button that becomes disabled
+  hands focus to it).
 
 `js/theme.js` — `globalThis.msTheme` (`createThemeApplier({root,
 readStored?, onError?})` for tests): `current()`, `setTheme(theme)` (unknown
@@ -80,7 +86,9 @@ log?})`.
   never reads tokens or subscribes to theme changes: sky, fog and clear
   colour come from `bindScenePalette`; tiles and effects keep one palette.
 - **Screens** — each a `ui-card` (`ui-screen--wide` for the menu, both
-  board choices, Records and Settings). Ids the shell wires:
+  board choices, Records and Settings; Records and Settings add
+  `ui-screen--columns` and lay out in `ui-columns`, the kit's one
+  breakpoint, 1024 px, in `css/components.css`). Ids the shell wires:
   - main menu `#menu`: title row ending in Play again `#menu-again`, one
     `ui-menu` of `data-entry` items (`data-last`, "Last played" detail),
     session strip `#menu-strip`, footer (Controls, Sound, volume, credit);

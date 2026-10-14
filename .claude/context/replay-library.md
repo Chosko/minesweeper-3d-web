@@ -23,14 +23,16 @@ pins ([records-screen.md](records-screen.md)), and the viewer reads bytes
   - `add(blob, listing, setBest)` → Promise; `setBest` pins with
     `PIN_BEST`; an id already added is a no-op.
   - `pin(id)` adds `PIN_HAND`; `unpin(id)` clears every reason, then applies
-    retention; unknown ids change nothing.
+    retention; `remove(id)` (the player's Delete) takes the entry out of the
+    index whatever its pins, saves the index, deletes the blob and notifies
+    `{kind: 'remove', ids: [id]}`; unknown ids change nothing.
   - `forBoard(boardKey)` → frozen entries (listing fields plus `pins`),
     newest first; `has(id)`; `bytes(id)` → Promise of bytes or `undefined`,
     rejecting when the store cannot read.
   - `onChange(fn)` → unsubscribe; `{kind: 'add' | 'pin' | 'unpin', id}` or
     `{kind: 'remove', ids}`.
   - `available()`, `settled()`.
-  - `add`, `pin` and `unpin` before `load()` throw.
+  - `add`, `pin`, `unpin` and `remove` before `load()` throw.
 
 ## INTERNAL PATTERNS
 
@@ -45,8 +47,9 @@ pins ([records-screen.md](records-screen.md)), and the viewer reads bytes
 - **Retention.** After each add and unpin, unpinned entries beyond the
   newest `RETAINED_UNPINNED` by end date, across both modes, leave the index,
   then their blobs are deleted, oldest first; a failed delete leaves an
-  orphan the next start-up deletes. Pinned replays are never removed by
-  retention or a storage failure; a best pin stays when the best is beaten.
+  orphan the next start-up deletes, as after a `remove`. Pinned replays are
+  never removed by retention or a storage failure, only by `remove`; a best
+  pin stays when the best is beaten.
 - **Start-up.** `load()` reconciles the index with the store: a blob with no
   entry is deleted, an entry with no blob dropped; a store that cannot list
   skips reconciliation, so a read failure drops nothing.

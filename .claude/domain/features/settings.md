@@ -87,8 +87,14 @@ settings handling for the shell's UI module and the sound module ([app-shell.md]
   bindings list, and last a Data panel, with Back to the screen it was
   opened from in a sticky action row at the bottom of the page, so Back
   stays in view at any scroll position and a focused control is never under
-  it. The bindings list reads the same source as the in-game help, so the
-  two never disagree.
+  it. At about 1024 px wide and more the page widens and shows its
+  sections side by side in as many columns as fit, the bindings list with
+  its mode × device lists side by side, and the Data panel and Back across
+  the full width at the bottom; narrower, one column. The layout is
+  generated from the section list and the bindings source, so a section
+  or setting added later joins a column with no layout of its own. The
+  bindings list reads the same source as the in-game help, so the two
+  never disagree.
 - **Reset all data.** The Data panel's one action. Its confirmation, in the
   panel, names what goes — records, game history, replays, settings, the
   last board choices (Classic 2D and 3D) and the first-use hints — and says

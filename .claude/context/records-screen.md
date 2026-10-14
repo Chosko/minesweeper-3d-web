@@ -16,7 +16,9 @@ the shell's `records` route from the main menu or the results screen
   binder; its head comment documents the row shape. Imports `PIN_BEST`
   ([replay-library.md](replay-library.md)).
 - `js/records/history-chart.js` — the history chart (canvas, no chart
-  library) and the games list paging.
+  library) and `pageOf`, the paging of both lists.
+- `js/records/view-prefs.js` — the remembered Pinned first switch, the
+  `records.view` document.
 
 ## PUBLIC API
 
@@ -28,24 +30,35 @@ Records screen (`js/records/screen.js`)
   in `boardsPlayed(mode)` order.
 - `lastBoardPlayed(records, mode?)` → key or null.
 - `recordsContent(records, { mode?, boardKey?, notSaved?, page?, replays?,
-  pinnedFirst?, canWatch?, replaysNotSaved? })` → the content. Never throws.
-- `formatDate(iso)` → `"9 Oct 2026"`; `formatWinRate` (re-exported from
-  `js/results/view.js`).
-- `createRecordsScreen({ records, view, replays?, router? })` →
+  replayPage?, pinnedFirst?, canWatch?, replaysNotSaved? })` → the content.
+  Never throws.
+- `formatDate(iso)` → `"9 Oct 2026"` (the bests); `formatDateTime(iso)` →
+  `"9 Oct 2026 14:32"` (local, 24-hour: the games and replays);
+  `formatWinRate` (re-exported from `js/results/view.js`).
+- `createRecordsScreen({ records, view, replays?, router?, viewPrefs? })` →
   `show({ mode, boardKey }?)`, `hide()`, `select(key)`, `setMode(mode)`,
-  `showPage(n)`, `togglePin(id)`, `setPinnedFirst(on)`, `watch(id)`.
+  `showPage(n)`, `showReplayPage(n)`, `togglePin(id)`, `deleteReplay(id)`,
+  `setPinnedFirst(on)`, `watch(id)`, `closeConfirm()`, `confirmOpen`.
 - `createRecordsView({ root, onSelect, onMode?, onBack, onPage, onWatch?,
-  onTogglePin?, onPinnedFirst?, chart? })` → `show(content)`, `hide()`;
-  the switch is `#records-mode`, the chart defaults to `#records-chart`.
+  onTogglePin?, onPinnedFirst?, onReplayPage?, onDelete?, chart? })` →
+  `show(content)`, `hide()`, `closeConfirm()`, `isConfirmOpen()`; the
+  switch is `#records-mode`, the chart defaults to `#records-chart`.
 
 Library view (`js/records/replay-list.js`)
 - `REPLAY_SCREEN` — `'replay'`; `REPLAYS_EMPTY_TEXT`; `REPLAYS_NOT_SAVED`;
   `REPLAY_HEADERS`.
 - `replayList(library, boardKey, opts)` → `{ rows, empty, emptyText,
-  pinnedFirst, canWatch }`. Never throws.
-- `pinState(pins)`, `togglePin(library, row)`, `watchRoute(replayId,
-  returnTo)`, `createReplayListView({ root, onWatch, onTogglePin,
-  onPinnedFirst })`.
+  pinnedFirst, canWatch, page, pages, label, pager }`. Never throws.
+- `pinState(pins)`, `deleteMessage({ date, outcome, pins })`,
+  `togglePin(library, row)`, `watchRoute(replayId, returnTo)`,
+  `createReplayListView({ root, onWatch, onTogglePin, onPinnedFirst,
+  onPage?, onDelete? })` → `show(list)`, `closeConfirm()`,
+  `isConfirmOpen()`, `hide()`.
+
+Remembered view (`js/records/view-prefs.js`)
+- `VIEW_PREFS_DOC` — `'records.view'`, `VIEW_PREFS_VERSION` — 1.
+- `createRecordsViewPrefs({ storage })` → `pinnedFirst`, `load()`,
+  `setPinnedFirst(on)`.
 
 History chart (`js/records/history-chart.js`)
 - `chartPoints(history)`, `niceCeiling(v)`, `chartScale(points, size)`,
@@ -67,8 +80,9 @@ History chart (`js/records/history-chart.js`)
   or its first named board, with its picker and overall figures; no figure
   combines the two modes.
 - **Live update.** While shown, the controller subscribes to the store's and
-  the library's `onChange` and redraws on the same games page; `hide`
-  unsubscribes. `show`, `select` and `setMode` start on page one. A rebuilt
+  the library's `onChange` and redraws both lists on the same page, each
+  clamped to its last; `hide` unsubscribes. `show`, `select` and `setMode`
+  start both lists on page one, toggling Pinned first the replays. A rebuilt
   replay list keeps focus on the button of the replay that had it.
 - **Never blocks.** Every store query is wrapped: unreadable records show
   the empty state, and Back always works. A board with no games hides the
@@ -77,7 +91,13 @@ History chart (`js/records/history-chart.js`)
   adds `REPLAYS_NOT_SAVED` once per session after its load settles.
 - **Formats are the results screen's** (`formatTime`, `formatRate`,
   `formatEfficiency` from `js/results/view.js`); the screen defines only
-  date and win rate.
+  the date, the date and time, and the win rate.
+- **Layout.** `#records` is a `ui-columns--two`: switch, picker, the bests as
+  `ui-stat--tile`s, the board's counters and the mode's overall row on one
+  side, the history and replays panels on the other, one column below the
+  kit's 1024 px breakpoint. A table narrower than its columns (a phone, a
+  half-width column) stacks each row's cells under their `data-label`
+  (`css/style.css`, a container query on the two panels).
 - **The chart is a picture; text carries the numbers.** The canvas is
   `role="img"` with `chartText` as its label; 3BV/s reads on the left axis,
   efficiency on the right (at least 100%); a missing value is a gap.
@@ -85,11 +105,17 @@ History chart (`js/records/history-chart.js`)
   token reader; it redraws on every theme change and canvas resize
   (`ResizeObserver`) at the device pixel ratio; a zero-size canvas is
   skipped.
-- **Paged games list.** Newest first, `PAGE_SIZE` per page, past the end
-  clamped; a pager button that ends while focused hands focus to the other.
+- **Paged lists.** Both lists newest first, `PAGE_SIZE` per page, past the
+  end clamped, each under a kit pager (`bindPager`: First, five numbered
+  pages, Last; hidden on one page) and a range caption.
 - **The library view.** The board's kept replays (`forBoard`), newest first,
-  or pinned first under the filter; Pin adds the hand pin, Unpin clears
-  every reason.
+  or pinned first under the filter, remembered in `records.view` (loaded at
+  start-up, saved on each change); Pin adds the hand pin, Unpin clears
+  every reason. Delete opens `#records-replays-confirm` in place of the list
+  (focus on Cancel); Cancel and Back (`RECORDS_PAGE.closeConfirm()` in
+  `shellBack` / `historyBack`) return focus to that row's Delete; confirming
+  calls `library.remove`, then focus goes to the Delete of the row in its
+  place, else the previous row's, else the Pinned first switch.
 - **Watch opens the viewer.** Watch shows only when the router registers
   `REPLAY_SCREEN`, and on a best or a game only when its replay is kept;
   `watch(id)` routes to the viewer ([replay-playback.md](replay-playback.md))

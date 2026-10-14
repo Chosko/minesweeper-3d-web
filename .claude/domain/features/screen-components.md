@@ -27,7 +27,14 @@ In scope (m1-classic-2d):
 
 - Components: primary and secondary buttons, the vertical menu list, card
   and panel surfaces, toggle, slider, segmented choice (for sizes and
-  options), numeric stat readout, and the in-game overlay bar.
+  options), numeric stat readout and its stat tile (a bordered readout:
+  label, large figure, then a small detail line and an optional button),
+  the pager (First, at most five numbered pages around the current one,
+  Last; the current page marked, hidden on one page), and the in-game
+  overlay bar.
+- The column composition: one column below about 1024 px, side by side
+  at that width and above, its one breakpoint stated once; the Records
+  and Settings screens lay out with it.
 - States for every interactive component: default, hover, pressed, focused
   (a visible focus ring for keyboard and controller) and disabled.
 - The m1 screens composed from the kit: the main menu, the in-game overlay
@@ -69,8 +76,8 @@ described in [app-shell.md](../../context/app-shell.md).
 - **Markup conventions.** Each component is a documented markup pattern —
   element, class and ARIA role — rather than a JavaScript widget, matching
   the shell's static-markup-toggled-by-class approach. Components that need
-  behaviour (slider value display, segmented choice selection) get a small
-  helper each.
+  behaviour (slider value display, segmented choice selection, the pager's
+  buttons) get a small helper each.
 - **Focus and navigation contract.** Every interactive component is
   reachable by keyboard and by the shell's controller navigation, shows the
   focus ring when focused, and declares its default focus target per screen

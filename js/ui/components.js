@@ -1,5 +1,5 @@
 // Behaviour helpers for the component kit (css/components.css): the slider's
-// value display and the segmented choice's selection. The logic is plain
+// value display, the segmented choice's selection and the pager. The logic is plain
 // functions; the binders touch only the elements they are handed, so the
 // module needs no document and runs under Node with stub elements.
 
@@ -83,6 +83,30 @@ export function mineCounterDigits(mines) {
   return Math.max(3, String(Math.max(0, Math.trunc(mines))).length);
 }
 
+/** The most numbered page buttons a pager shows at once, around the current page. */
+export const PAGER_WINDOW = 5;
+
+/**
+ * A pager's buttons for page `page` (0-based, clamped) of `pages`: First, a run of at most
+ * PAGER_WINDOW numbered pages around the current one, and Last. Hidden when one page holds
+ * everything (or there is nothing). → { hidden, page, pages, first: { page, disabled },
+ * last: { page, disabled }, numbers: [{ page, label, current }] }
+ */
+export function pagerState(page, pages) {
+  const count = Math.max(1, Number.isInteger(pages) ? pages : 1);
+  const p = Number.isInteger(page) ? Math.min(Math.max(page, 0), count - 1) : 0;
+  const start = Math.min(Math.max(p - Math.floor(PAGER_WINDOW / 2), 0), Math.max(0, count - PAGER_WINDOW));
+  const end = Math.min(count, start + PAGER_WINDOW);
+  const numbers = [];
+  for (let n = start; n < end; n++) numbers.push({ page: n, label: String(n + 1), current: n === p });
+  return {
+    hidden: count <= 1, page: p, pages: count,
+    first: { page: 0, disabled: p === 0 },
+    last: { page: count - 1, disabled: p === count - 1 },
+    numbers,
+  };
+}
+
 // ---------------------------------------------------------------- DOM binding
 
 // CustomEvent exists in browsers and in Node 19+; the fallback keeps the
@@ -155,6 +179,48 @@ export function bindSegmented(group, { onChange, horizontal = false } = {}) {
       o.removeEventListener('click', click);
       o.removeEventListener('keydown', keydown);
     }
+  };
+}
+
+/**
+ * Fills a `.ui-pager` nav with the buttons of pagerState(page, pages) — First, the numbered pages,
+ * Last, each a secondary kit button carrying data-page (a number, or `first` / `last`) — and calls
+ * onPage(page) on a click. The current page is aria-current="page" and aria-disabled, so it stays
+ * focusable; First and Last are disabled on the first and last page; the nav is hidden on one page.
+ * A focused button that becomes disabled, or goes, hands focus to the current page's button.
+ * `name` ("games") goes into each button's accessible name. → { show(state) }
+ */
+export function bindPager(nav, { onPage, name = '' } = {}) {
+  const doc = nav.ownerDocument;
+  const of = name ? ` of ${name}` : '';
+  const button = (key, text, label, page, { disabled = false, current = false } = {}) => {
+    const b = doc.createElement('button');
+    b.type = 'button';
+    b.className = 'ui-button ui-button--secondary ui-pager__button';
+    b.textContent = text;
+    b.setAttribute('aria-label', label);
+    b.dataset.page = key;
+    if (disabled) b.disabled = true;
+    if (current) {
+      b.setAttribute('aria-current', 'page');
+      b.setAttribute('aria-disabled', 'true');
+    }
+    b.addEventListener('click', () => { if (!b.disabled && !current) onPage(page); });
+    return b;
+  };
+  return {
+    show(state) {
+      const focused = nav.contains(doc.activeElement) ? doc.activeElement.dataset.page : null;
+      nav.classList.toggle('hidden', state.hidden);
+      nav.replaceChildren(
+        button('first', 'First', `First page${of}`, state.first.page, { disabled: state.first.disabled }),
+        ...state.numbers.map((n) => button(String(n.page), n.label, `Page ${n.label}${of}`, n.page, { current: n.current })),
+        button('last', 'Last', `Last page${of}`, state.last.page, { disabled: state.last.disabled }),
+      );
+      if (focused === null || state.hidden) return;
+      const again = [...nav.children].find((b) => b.dataset.page === focused && !b.disabled);
+      (again ?? nav.querySelector('[aria-current="page"]'))?.focus({ preventScroll: true });
+    },
   };
 }
 

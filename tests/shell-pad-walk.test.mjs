@@ -135,7 +135,7 @@ async function seed(ms) {
   });
 }
 
-test('in a browser, the Records walk stops on every Watch and Pin, and Right from "Pinned first" enters the replays', async (t) => {
+test('in a browser, the Records walk stops on every Watch, Pin and Delete, and Right from "Pinned first" enters the replays', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -151,14 +151,14 @@ test('in a browser, the Records walk stops on every Watch and Pin, and Right fro
     });
     const tableButtons = await ms(() => ['records-games', 'records-replays-table'].flatMap((id) =>
       [...document.querySelectorAll(`#${id} button`)].map((_, i) => `${id}:${i}`)));
-    assert.equal(tableButtons.length, 6, 'two Watch in the games list, a Watch and a Pin on each replay');
+    assert.equal(tableButtons.length, 8, 'two Watch in the games list, a Watch, a Pin and a Delete on each replay');
 
     // Down from the picker visits every table button, table by table in DOM order, before Back.
     await ms(() => document.querySelector('#records-picker [aria-checked="true"]').focus());
     const down = [];
     for (let i = 0; i < 30 && (await focused()) !== 'records-back'; i++) { await tap(BTN.DOWN); down.push(await key()); }
     assert.equal(down.at(-1), 'records-back', 'Down reaches Back');
-    assert.deepEqual(down.filter((k) => tableButtons.includes(k)), tableButtons, 'each Watch and Pin a stop, in DOM order');
+    assert.deepEqual(down.filter((k) => tableButtons.includes(k)), tableButtons, 'each Watch, Pin and Delete a stop, in DOM order');
     // Up retraces them.
     const up = [];
     for (let i = 0; i < 30 && !(await ms(() => !!document.activeElement.closest('#records-picker'))); i++) { await tap(BTN.UP); up.push(await key()); }

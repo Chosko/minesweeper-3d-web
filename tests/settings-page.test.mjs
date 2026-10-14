@@ -343,6 +343,23 @@ test('the bindings section shows each mode per input device with the pad\'s glyp
   assert.ok(bindingsSectionHtml(GLYPHS.playstation).includes('<kbd class="pad">R2</kbd>'), 'the glyphs follow the controller');
 });
 
+// ---------------------------------------------------------------- the column layout
+
+test('the page is one column composition generated from the sections: each section a column, Bindings and Data across the width', () => {
+  const html = settingsPageHtml();
+  assert.ok(html.startsWith('<div class="ui-columns">'), 'the kit column composition');
+  assert.ok(html.endsWith('</section></div>'), 'everything inside it');
+  const sections = [...html.matchAll(/<section class="([^"]*)"[^>]*aria-labelledby="set-sec-(\w+)"/g)].map((m) => [m[2], m[1]]);
+  assert.deepEqual(sections.map(([id]) => id), [...SETTINGS_SECTIONS.map((s) => s.id), 'bindings', 'data'], 'in the schema\'s order');
+  for (const [id, cls] of sections) {
+    const spans = cls.split(' ').includes('ui-columns__span');
+    assert.equal(spans, id === 'bindings' || id === 'data', `${id}: ${cls}`);
+  }
+  assert.match(html, /<div id="settings-bindings" class="ui-columns"><\/div>/, 'the mode × device lists side by side in columns');
+  assert.doesNotMatch(html, /ui-grid/, 'one composition, not two');
+  assert.doesNotMatch(read('js/settings/page.js'), /@media|1024/, 'no layout code of its own');
+});
+
 // ---------------------------------------------------------------- the Data panel and Reset all data
 
 test('the page ends, after Bindings, with a Data panel: one line and a "Reset all data…" kit button', () => {
@@ -351,11 +368,11 @@ test('the page ends, after Bindings, with a Data panel: one line and a "Reset al
   const data = html.indexOf('id="set-sec-data"');
   assert.ok(bindings > 0 && data > bindings, 'Data comes after Bindings');
   const panel = html.slice(html.lastIndexOf('<section', data));
-  assert.match(panel, /^<section class="ui-panel ui-actions" id="settings-data" aria-labelledby="set-sec-data"><h3 class="ui-heading" id="set-sec-data">Data<\/h3>/);
+  assert.match(panel, /^<section class="ui-panel ui-actions ui-columns__span" id="settings-data" aria-labelledby="set-sec-data"><h3 class="ui-heading" id="set-sec-data">Data<\/h3>/);
   assert.match(panel, /<p class="ui-text ui-text--muted">[^<]*this browser[^<]*<\/p>/, 'one line saying what the action does');
   assert.match(panel, /<button type="button" class="ui-button ui-button--secondary" id="set-reset">Reset all data…<\/button>/);
   assert.match(panel, /<p class="ui-text ui-text--warning hidden" id="set-reset-note" role="status"><\/p>/);
-  assert.ok(panel.trimEnd().endsWith('</section>'), 'the page ends with it');
+  assert.ok(panel.trimEnd().endsWith('</section></div>'), 'the page ends with it, closing the column composition');
   assert.doesNotMatch(panel, /export/i, 'no export control or wording yet (W-31)');
 });
 
@@ -600,7 +617,7 @@ const between = (text, start, end) => text.slice(text.indexOf(start), text.index
 test('index.html holds the Settings page as a kit card with a Back button, filled from the schema', () => {
   const page = between(INDEX, '<!-- Settings -->', '<!-- Pause / end menu -->');
   assert.match(page, /<section id="settings" class="overlay hidden" aria-label="Settings">/);
-  assert.match(page, /class="ui-card ui-screen ui-screen--wide" aria-labelledby="settings-title"/);
+  assert.match(page, /class="ui-card ui-screen ui-screen--wide ui-screen--columns" aria-labelledby="settings-title"/);
   assert.match(page, /<div id="settings-body"><\/div>/, 'the controls are generated, not written in the markup');
   assert.match(page, /<button type="button" id="settings-back" class="ui-button ui-button--primary">Back<\/button>/);
   assert.match(read('js/ui.js'), /settingsPageHtml\(\)/);

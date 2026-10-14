@@ -118,12 +118,13 @@ test('the library loads a stored index once', async () => {
   assert.deepEqual(library.forBoard(BOARD)[0].pins, [PIN_HAND]);
 });
 
-test('add, pin and unpin before load() throw', async () => {
+test('add, pin, unpin and remove before load() throw', async () => {
   const { library } = await setup({ load: false });
   const r = replay();
   assert.throws(() => library.add(r.blob, r.listing, false), /before load/);
   assert.throws(() => library.pin(r.listing.id), /before load/);
   assert.throws(() => library.unpin(r.listing.id), /before load/);
+  assert.throws(() => library.remove(r.listing.id), /before load/);
 });
 
 // ---------------------------------------------------------------- add
@@ -289,6 +290,89 @@ test('pin and unpin of an unknown id change nothing', async () => {
   await library.settled();
   assert.deepEqual(changes, []);
   assert.deepEqual(log, []);
+});
+
+// ---------------------------------------------------------------- remove (the player's Delete)
+
+test('remove takes the entry out of the index, saves it, then deletes the blob, and tells subscribers', async () => {
+  const { library, impl, backend, log } = await setup();
+  const a = replay();
+  const b = replay();
+  await addAll(library, [a, b]);
+  const changes = [];
+  library.onChange((c) => changes.push(c));
+  log.length = 0;
+  await library.remove(a.listing.id);
+  assert.deepEqual(log, ['index', `blob:delete:${a.listing.id}`], 'the index is saved before the blob goes');
+  assert.equal(library.has(a.listing.id), false);
+  assert.equal(impl.blobs.has(a.listing.id), false);
+  assert.equal(await library.bytes(a.listing.id), undefined);
+  assert.deepEqual(stored(backend).data.entries.map((e) => e.id), [b.listing.id]);
+  assert.deepEqual(library.forBoard(BOARD).map((e) => e.id), [b.listing.id]);
+  assert.deepEqual(changes, [{ kind: 'remove', ids: [a.listing.id] }]);
+});
+
+test('remove deletes a pinned replay too, whatever its reasons', async () => {
+  const { library, impl } = await setup();
+  const best = replay();
+  const hand = replay();
+  await library.add(best.blob, best.listing, true);
+  await library.add(hand.blob, hand.listing, false);
+  await library.pin(hand.listing.id);
+  await library.pin(best.listing.id);
+  await library.remove(best.listing.id);
+  await library.remove(hand.listing.id);
+  assert.equal(library.has(best.listing.id), false);
+  assert.equal(library.has(hand.listing.id), false);
+  assert.equal(impl.blobs.size, 0);
+});
+
+test('remove of an unknown id changes nothing', async () => {
+  const { library, log } = await setup();
+  const r = replay();
+  await addAll(library, [r]);
+  const changes = [];
+  library.onChange((c) => changes.push(c));
+  log.length = 0;
+  await library.remove('missing');
+  await library.settled();
+  assert.deepEqual(changes, []);
+  assert.deepEqual(log, []);
+  assert.equal(library.has(r.listing.id), true);
+});
+
+test('a blob whose delete fails on remove is an orphan the next start-up deletes', async () => {
+  const { library, impl, backend } = await setup();
+  const r = replay();
+  await addAll(library, [r]);
+  const del = impl.delete;
+  impl.delete = async () => { throw new Error('delete refused'); };
+  await library.remove(r.listing.id);
+  assert.equal(library.has(r.listing.id), false, 'gone from the index');
+  assert.equal(impl.blobs.has(r.listing.id), true, 'the blob is left behind');
+  impl.delete = del;
+  const again = await setup({ initialDocs: Object.fromEntries(backend.documents), initialBlobs: Object.fromEntries(impl.blobs) });
+  assert.equal(again.impl.blobs.has(r.listing.id), false, 'reconciliation deletes the orphan');
+});
+
+test('a failed index save on remove follows the not-saving rule: reported once, the library goes on', async () => {
+  const { library, notices } = await setup({ failIndexWrites: true });
+  const a = replay();
+  const b = replay();
+  await addAll(library, [a, b]);
+  await library.remove(a.listing.id);
+  assert.deepEqual(notices, [{ reason: 'write-failed' }]);
+  assert.equal(library.has(a.listing.id), false);
+  assert.equal(library.has(b.listing.id), true);
+});
+
+test('remove works in an in-memory library', async () => {
+  const { library } = await setup({ storageAvailable: false });
+  const r = replay();
+  await addAll(library, [r]);
+  await library.remove(r.listing.id);
+  assert.equal(library.has(r.listing.id), false);
+  assert.equal(await library.bytes(r.listing.id), undefined);
 });
 
 // ---------------------------------------------------------------- queries and notification

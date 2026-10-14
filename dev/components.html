@@ -204,6 +204,44 @@
     </section>
 
     <div class="wide">
+    <!-- component: stat tile -->
+    <section class="ui-card wide" aria-labelledby="g-tile">
+      <h2 class="ui-card__title" id="g-tile">Stat tile</h2>
+      <div class="states">
+        <span class="state">Set, kept</span><div class="ui-stat-row ui-stat-row--tiles"><div class="ui-stat ui-stat--tile" role="group" aria-labelledby="tl-1"><span class="ui-stat__label" id="tl-1">Best time</span><span class="ui-stat__value">47.380 s</span><span class="ui-stat__detail">9 Oct 2026</span><button type="button" class="ui-button ui-button--secondary" aria-label="Watch the replay of the best time">Watch</button></div><div class="ui-stat ui-stat--tile" role="group" aria-labelledby="tl-2"><span class="ui-stat__label" id="tl-2">Best 3BV/s</span><span class="ui-stat__value">1.23</span><span class="ui-stat__detail">2 Oct 2026</span></div><div class="ui-stat ui-stat--tile" role="group" aria-labelledby="tl-3"><span class="ui-stat__label" id="tl-3">Best efficiency</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail">&mdash;</span></div></div>
+      </div>
+    </section>
+    <!-- /component: stat tile -->
+
+    <!-- component: pager -->
+    <section class="ui-card wide" aria-labelledby="g-pager">
+      <h2 class="ui-card__title" id="g-pager">Pager</h2>
+      <div class="states">
+        <span class="state">First page</span><nav class="ui-pager" aria-label="Pager on its first page"><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="First page" data-page="first" disabled>First</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 1" data-page="0" aria-current="page" aria-disabled="true">1</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 2" data-page="1">2</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 3" data-page="2">3</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Last page" data-page="last">Last</button></nav>
+        <span class="state">Middle page</span><nav class="ui-pager" aria-label="Pager on a middle page"><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="First page" data-page="first">First</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 1" data-page="0">1</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 2" data-page="1" aria-current="page" aria-disabled="true">2</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 3" data-page="2">3</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Last page" data-page="last">Last</button></nav>
+        <span class="state">Last page</span><nav class="ui-pager" aria-label="Pager on its last page"><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="First page" data-page="first">First</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 1" data-page="0">1</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 2" data-page="1">2</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 3" data-page="2" aria-current="page" aria-disabled="true">3</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Last page" data-page="last" disabled>Last</button></nav>
+        <span class="state">Long history</span><nav class="ui-pager" aria-label="Pager over a long history"><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="First page" data-page="first">First</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 10" data-page="9">10</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 11" data-page="10">11</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 12" data-page="11" aria-current="page" aria-disabled="true">12</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 13" data-page="12">13</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 14" data-page="13">14</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Last page" data-page="last">Last</button></nav>
+        <span class="state">Focused</span><nav class="ui-pager" aria-label="Pager with a focused button"><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="First page" data-page="first" data-force="focus">First</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 1" data-page="0" aria-current="page" aria-disabled="true">1</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Last page" data-page="last">Last</button></nav>
+        <span class="state">One page</span><span class="ui-text ui-text--muted">hidden: one page holds everything</span>
+      </div>
+    </section>
+    <!-- /component: pager -->
+
+    <!-- composition: columns -->
+    <section class="ui-card wide" aria-labelledby="g-columns">
+      <h2 class="ui-card__title" id="g-columns">Columns</h2>
+      <p>One column below 1024 px; side by side at 1024 px and wider.</p>
+      <div class="ui-columns ui-columns--two">
+        <div class="ui-column"><div class="ui-panel">First column, first panel</div><div class="ui-panel">First column, second panel</div></div>
+        <div class="ui-column"><div class="ui-panel">Second column</div></div>
+      </div>
+      <div class="ui-columns">
+        <div class="ui-panel">A section</div><div class="ui-panel">A section</div><div class="ui-panel">A section</div>
+        <div class="ui-panel ui-columns__span">Across the full width</div>
+      </div>
+    </section>
+    <!-- /composition: columns -->
+
     <!-- composition: results -->
     <section class="ui-card ui-screen" id="g-results" aria-labelledby="g-results-title">
       <h2 class="ui-card__title" id="g-results-title">You won!</h2>

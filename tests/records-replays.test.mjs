@@ -10,9 +10,10 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  REPLAY_SCREEN, REPLAYS_EMPTY_TEXT, REPLAYS_NOT_SAVED, REPLAY_HEADERS, replayList, pinState, togglePin, watchRoute,
+  REPLAY_SCREEN, REPLAYS_EMPTY_TEXT, REPLAYS_NOT_SAVED, REPLAY_HEADERS, replayList, pinState, togglePin, watchRoute, deleteMessage,
 } from '../js/records/replay-list.js';
-import { RECORDS_SCREEN, recordsContent, createRecordsScreen, formatDate } from '../js/records/screen.js';
+import { pagerState } from '../js/ui/components.js';
+import { RECORDS_SCREEN, recordsContent, createRecordsScreen, formatDateTime } from '../js/records/screen.js';
 import { createRecordsModel } from '../js/records/model.js';
 import { boardKey, createBoardIdentity } from '../js/records/board.js';
 import { DASH, NOTES } from '../js/results/view.js';
@@ -74,6 +75,11 @@ function fakeLibrary(entries = [], { available = true } = {}) {
       e.pins = [];
       notify({ kind: 'unpin', id });
     },
+    async remove(id) {
+      calls.push(['remove', id]);
+      if (!map.delete(id)) return;
+      notify({ kind: 'remove', ids: [id] });
+    },
     add(entry) { map.set(entry.id, { ...entry }); notify({ kind: 'add', id: entry.id }); },
     onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },
   };
@@ -102,7 +108,7 @@ test('the board\'s kept replays, newest first, with date, outcome, time, 3BV/s, 
   assert.equal(list.empty, false);
   assert.deepEqual(list.rows.map((r) => r.id), ['b', 'c', 'a'], 'newest first, this board only');
   const [b, c, a] = list.rows;
-  assert.equal(b.date, formatDate('2026-10-09T12:00:00.000Z'));
+  assert.equal(b.date, formatDateTime('2026-10-09T12:00:00.000Z'), 'the date and local time it ended');
   assert.deepEqual([b.outcome, c.outcome, a.outcome], ['Won', 'Abandoned', 'Lost']);
   assert.equal(b.time, '47.380 s', 'the results screen\'s time, to the thousandth');
   assert.equal(b.rate, '1.23');
@@ -154,6 +160,134 @@ test('Watch is offered only when watching is possible', () => {
   const library = fakeLibrary([listing('a')]);
   assert.equal(replayList(library, KEY).rows[0].watch, false);
   assert.equal(replayList(library, KEY, { canWatch: true }).rows[0].watch, true);
+});
+
+// ---------------------------------------------------------------- paging
+
+const many = (n, over = () => ({})) => Array.from({ length: n }, (_, i) => listing(`r${i}`, {
+  endedAt: new Date(Date.UTC(2026, 9, 1, 12, i)).toISOString(), ...over(i),
+}));
+
+test('the replays list pages at ten rows, newest first, with its range caption and the kit pager', () => {
+  const library = fakeLibrary(many(23));
+  const first = replayList(library, KEY);
+  assert.deepEqual(first.rows.map((r) => r.id), Array.from({ length: 10 }, (_, i) => `r${22 - i}`));
+  assert.deepEqual([first.page, first.pages, first.label], [0, 3, 'Replays 1–10 of 23']);
+  assert.deepEqual(first.pager, pagerState(0, 3));
+  const last = replayList(library, KEY, { page: 9 });
+  assert.deepEqual([last.page, last.rows.length, last.label], [2, 3, 'Replays 21–23 of 23'], 'past the end: the last page');
+  assert.equal(last.rows.at(-1).id, 'r0');
+  assert.equal(replayList(fakeLibrary(many(10)), KEY).pager.hidden, true, 'one page: no pager');
+  const none = replayList(fakeLibrary([]), KEY);
+  assert.deepEqual([none.pager.hidden, none.label], [true, ''], 'an empty list: no pager, no caption');
+});
+
+test('under Pinned first the pinned replays lead the pages, each group newest first', () => {
+  const library = fakeLibrary(many(15, (i) => ({ pins: i % 5 === 0 ? [PIN_HAND] : [] })));
+  const list = replayList(library, KEY, { pinnedFirst: true });
+  assert.deepEqual(list.rows.slice(0, 4).map((r) => r.id), ['r10', 'r5', 'r0', 'r14']);
+  assert.deepEqual(replayList(library, KEY, { pinnedFirst: true, page: 1 }).rows.map((r) => r.id), ['r6', 'r4', 'r3', 'r2', 'r1']);
+});
+
+test('the screen pages the replays: show, select and setMode start on page one, a live redraw keeps the page, clamped on shrink', async () => {
+  const library = fakeLibrary(many(21));
+  const view = fakeView();
+  const screen = createRecordsScreen({ records: fakeStore(), view, replays: library });
+  screen.show({ boardKey: KEY });
+  assert.equal(view.shown.at(-1).replays.page, 0);
+  screen.showReplayPage(2);
+  assert.deepEqual([view.shown.at(-1).replays.page, view.shown.at(-1).replays.rows.map((r) => r.id)], [2, ['r0']]);
+  library.add(listing('n1', { endedAt: '2026-10-09T12:00:00.000Z' }));
+  assert.equal(view.shown.at(-1).replays.page, 2, 'a replay added keeps the page');
+  await screen.deleteReplay('r0');
+  await screen.deleteReplay('r1');
+  assert.deepEqual([view.shown.at(-1).replays.page, view.shown.at(-1).replays.pages], [1, 2], 'clamped to the last page when the list shrinks');
+  screen.showPage(1);
+  assert.equal(view.shown.at(-1).replays.page, 1, 'the games pager leaves the replays page alone');
+  screen.select(KEY);
+  assert.equal(view.shown.at(-1).replays.page, 0, 'select starts on page one');
+  screen.showReplayPage(1);
+  screen.setMode('3d');
+  screen.setMode('classic-2d');
+  screen.select(KEY);
+  screen.showReplayPage(1);
+  screen.hide();
+  screen.show({ boardKey: KEY });
+  assert.equal(view.shown.at(-1).replays.page, 0, 'opened again: page one');
+  screen.showReplayPage(1);
+  screen.setPinnedFirst(true);
+  assert.equal(view.shown.at(-1).replays.page, 0, 'toggling Pinned first starts on page one');
+});
+
+// ---------------------------------------------------------------- delete
+
+test('each replay row offers Delete, and its confirmation names the replay and says it cannot be undone', () => {
+  const library = fakeLibrary([
+    listing('plain', { endedAt: '2026-10-04T12:00:00.000Z', outcome: 'lost' }),
+    listing('best', { endedAt: '2026-10-03T12:00:00.000Z', pins: [PIN_BEST] }),
+    listing('hand', { endedAt: '2026-10-02T12:00:00.000Z', pins: [PIN_HAND] }),
+    listing('both', { endedAt: '2026-10-01T12:00:00.000Z', pins: [PIN_BEST, PIN_HAND] }),
+  ]);
+  const rows = Object.fromEntries(replayList(library, KEY, { formatDate: formatDateTime, outcomeLabel: (o) => o[0].toUpperCase() + o.slice(1) }).rows.map((r) => [r.id, r]));
+  const when = formatDateTime('2026-10-04T12:00:00.000Z');
+  assert.equal(rows.plain.deleteMessage, `Delete the replay of ${when}, lost? This cannot be undone.`);
+  assert.match(rows.best.deleteMessage, /It is pinned as a best\. This cannot be undone\.$/);
+  assert.match(rows.hand.deleteMessage, /It is pinned by hand\. This cannot be undone\.$/);
+  assert.match(rows.both.deleteMessage, /It is pinned as a best and by hand\. This cannot be undone\.$/);
+  assert.equal(deleteMessage({ date: when, outcome: 'Won', pins: [] }), `Delete the replay of ${when}, won? This cannot be undone.`);
+  assert.ok(rows.best.deleteMessage.includes(formatDateTime('2026-10-03T12:00:00.000Z')), 'its date and time');
+});
+
+test('the screen deletes a replay through the library; its best and its game lose their Watch', async () => {
+  const store = fakeStore([game('g1', { endedAt: '2026-10-01T12:00:00.000Z', elapsedMs: 30000 })]);
+  const library = fakeLibrary([listing('g1', { endedAt: '2026-10-01T12:00:00.000Z', pins: [PIN_BEST] }), listing('k')]);
+  const view = fakeView();
+  const screen = createRecordsScreen({ records: store, view, replays: library, router: fakeRouter([RECORDS_SCREEN, REPLAY_SCREEN]) });
+  screen.show({ boardKey: KEY });
+  assert.equal(view.shown.at(-1).bests.find((b) => b.stat === 'time').watch, 'g1');
+  await screen.deleteReplay('g1');
+  assert.deepEqual(library.calls, [['remove', 'g1']]);
+  const c = view.shown.at(-1);
+  assert.deepEqual(c.replays.rows.map((r) => r.id), ['k'], 'the change notification redraws');
+  assert.equal(c.bests.find((b) => b.stat === 'time').watch, null, 'the best tile shows no Watch');
+  assert.equal(c.games.rows[0].watch, null, 'nor does its recent-games row');
+  await screen.deleteReplay('nope');
+  assert.equal(library.calls.length, 1, 'an id not listed changes nothing');
+});
+
+test('Back closes an open Delete confirmation first, through the view', () => {
+  let open = true;
+  const view = { ...fakeView(), closeConfirm() { const was = open; open = false; return was; } };
+  const screen = createRecordsScreen({ records: fakeStore(), view, replays: fakeLibrary() });
+  screen.show({ boardKey: KEY });
+  assert.equal(screen.closeConfirm(), true);
+  assert.equal(screen.closeConfirm(), false, 'nothing left to close');
+  assert.equal(createRecordsScreen({ records: fakeStore(), view: fakeView() }).closeConfirm(), false, 'a view without one');
+});
+
+// ---------------------------------------------------------------- the remembered Pinned first
+
+function fakePrefs(pinnedFirst = false) {
+  const saved = [];
+  return { saved, get pinnedFirst() { return pinnedFirst; }, setPinnedFirst(on) { pinnedFirst = on; saved.push(on); return Promise.resolve({ ok: true }); } };
+}
+
+test('Pinned first comes from the remembered preference on every visit, and each change is saved', () => {
+  const prefs = fakePrefs(true);
+  const library = fakeLibrary([listing('a'), listing('p', { endedAt: '2026-10-01T12:00:00.000Z', pins: [PIN_HAND] })]);
+  const view = fakeView();
+  const screen = createRecordsScreen({ records: fakeStore(), view, replays: library, viewPrefs: prefs });
+  screen.show({ boardKey: KEY });
+  assert.equal(view.shown.at(-1).replays.pinnedFirst, true, 'applied on the first visit');
+  assert.deepEqual(view.shown.at(-1).replays.rows.map((r) => r.id), ['p', 'a']);
+  screen.setPinnedFirst(false);
+  assert.deepEqual(prefs.saved, [false], 'saved on the change');
+  screen.hide();
+  screen.show({ boardKey: KEY });
+  assert.equal(view.shown.at(-1).replays.pinnedFirst, false, 'and applied on the next visit');
+  const plain = fakeView();
+  createRecordsScreen({ records: fakeStore(), view: plain, replays: library }).show({ boardKey: KEY });
+  assert.equal(plain.shown.at(-1).replays.pinnedFirst, false, 'off without a preference');
 });
 
 // ---------------------------------------------------------------- pin toggle
@@ -311,14 +445,20 @@ const MAIN = read('js/main.js');
 const RECORDS_HTML = INDEX.slice(INDEX.indexOf('<section id="records"'), INDEX.indexOf('<!-- /Records -->'));
 
 test('the records screen holds the replays panel: heading, pinned-first toggle, empty state and list', () => {
-  const panel = RECORDS_HTML.slice(RECORDS_HTML.indexOf('<div id="records-replays"'), RECORDS_HTML.indexOf('<div id="records-overall"'));
-  assert.ok(panel.length > 100, 'the replays panel sits before the overall figures');
+  const panel = RECORDS_HTML.slice(RECORDS_HTML.indexOf('<div id="records-replays"'), RECORDS_HTML.indexOf('<p id="records-note"'));
+  assert.ok(panel.length > 100, 'the replays panel sits before the note');
   assert.match(panel, /^<div id="records-replays" class="ui-panel" role="group" aria-labelledby="records-replays-title">/);
   assert.match(panel, /<h3 class="ui-heading" id="records-replays-title">Replays<\/h3>/);
   assert.match(panel, /<label class="ui-toggle"><input type="checkbox" role="switch" id="records-pinned-first" class="ui-toggle__input"><span class="ui-toggle__label">Pinned first<\/span><\/label>/);
   assert.match(panel, new RegExp(`<p id="records-replays-empty" class="ui-text ui-text--muted hidden">${REPLAYS_EMPTY_TEXT}</p>`));
   assert.match(panel, /<tbody id="records-replays-body"><\/tbody>/);
   for (const h of REPLAY_HEADERS) assert.ok(panel.includes(`<th scope="col">${h}</th>`), `header ${h}`);
+  assert.match(panel, /<caption class="ui-text ui-text--muted" id="records-replays-page"><\/caption>/, 'the range caption');
+  assert.match(panel, /<nav id="records-replays-pager" class="ui-pager hidden" aria-label="[^"]+"><\/nav>/, 'the kit pager');
+  assert.ok(panel.includes('<div id="records-replays-confirm" class="ui-panel ui-actions hidden" role="alertdialog" aria-labelledby="records-replays-confirm-text">'
+    + '<p id="records-replays-confirm-text" class="ui-text"></p>'
+    + '<button type="button" id="records-replays-yes" class="ui-button ui-button--primary">Delete replay</button>'
+    + '<button type="button" id="records-replays-no" class="ui-button ui-button--secondary">Cancel</button></div>'), 'the confirmation, in the pause card\'s style');
 });
 
 test('the shell hands the records screen the replay library and the router, and reports replays not saved', () => {
@@ -327,6 +467,19 @@ test('the shell hands the records screen the replay library and the router, and 
   assert.match(MAIN, /onWatch: \(id\) => RECORDS_PAGE\.watch\(id\)/);
   assert.match(MAIN, /onTogglePin: \(id\) => RECORDS_PAGE\.togglePin\(id\)/);
   assert.match(MAIN, /onPinnedFirst: \(on\) => RECORDS_PAGE\.setPinnedFirst\(on\)/);
+  assert.match(MAIN, /onReplayPage: \(page\) => RECORDS_PAGE\.showReplayPage\(page\)/);
+  assert.match(MAIN, /onDelete: \(id\) => RECORDS_PAGE\.deleteReplay\(id\)/);
+});
+
+test('the shell loads the remembered Pinned first before the first screen, and Back closes the Delete confirmation first', () => {
+  assert.match(MAIN, /const RECORDS_VIEW_PREFS = createRecordsViewPrefs\(\{ storage \}\)/);
+  assert.match(MAIN, /viewPrefs: RECORDS_VIEW_PREFS/);
+  const boot = MAIN.slice(MAIN.indexOf('await Promise.all(['), MAIN.indexOf('showMainMenu();', MAIN.indexOf('await Promise.all([')));
+  assert.match(boot, /RECORDS_VIEW_PREFS\.load\(\)/, 'loaded before the first screen shows');
+  for (const fn of ['shellBack', 'historyBack']) {
+    const body = MAIN.slice(MAIN.indexOf(`function ${fn}(`), MAIN.indexOf('}', MAIN.indexOf(`function ${fn}(`) + 200));
+    assert.match(body, /RECORDS_PAGE\.closeConfirm\(\)/, `${fn} closes the confirmation before leaving Records`);
+  }
 });
 
 test('the catalogue documents the replays panel', () => {
@@ -379,6 +532,8 @@ test('in a browser, the replays panel lists, pins by keyboard keeping focus, fil
         forBoard: (k) => [...entries.values()].filter((e) => e.boardKey === k).sort((x, y) => Date.parse(y.endedAt) - Date.parse(x.endedAt)),
         async pin(id) { entries.get(id).pins = ['hand']; notify({ kind: 'pin', id }); },
         async unpin(id) { entries.get(id).pins = []; notify({ kind: 'unpin', id }); },
+        async remove(id) { if (entries.delete(id)) notify({ kind: 'remove', ids: [id] }); },
+        put(over) { entries.set(over.id, { boardKey: key, mode: 'classic-2d', outcome: 'won', elapsedMs: 30000, bbbvPerSecond: 0.5, efficiency: 80, size: 9, pins: [], ...over }); notify({ kind: 'add', id: over.id }); },
         onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },
       };
       const went = [];
@@ -387,9 +542,10 @@ test('in a browser, the replays panel lists, pins by keyboard keeping focus, fil
         view: createRecordsView({
           root, onSelect: (k) => screen.select(k), onPage: (p) => screen.showPage(p), onBack: () => {},
           onWatch: (id) => screen.watch(id), onTogglePin: (id) => screen.togglePin(id), onPinnedFirst: (on) => screen.setPinnedFirst(on),
+          onReplayPage: (p) => screen.showReplayPage(p), onDelete: (id) => screen.deleteReplay(id),
         }),
       });
-      globalThis.__t = { screen, went };
+      globalThis.__t = { screen, went, library };
       screen.show({ boardKey: key });
     }, KEY);
     const T = '#records-test';
@@ -398,7 +554,7 @@ test('in a browser, the replays panel lists, pins by keyboard keeping focus, fil
 
     let r = await rows();
     assert.deepEqual(r.map((c) => c.slice(1, 6)), [['Won', '47.380 s', '0.42', '80.0%', 'Not pinned'], ['Lost', '12.000 s', '0.50', '50.0%', 'Not pinned']], 'newest first');
-    assert.deepEqual(r.map((c) => c[6]), ['WatchPin', 'WatchPin']);
+    assert.deepEqual(r.map((c) => c[6]), ['WatchPinDelete', 'WatchPinDelete']);
     assert.equal(await page.evaluate((s) => document.querySelector(`${s} #records-replays-empty`).classList.contains('hidden'), T), true);
 
     // Keyboard: Pin flips to Unpin and focus stays on that replay's button.
@@ -411,7 +567,7 @@ test('in a browser, the replays panel lists, pins by keyboard keeping focus, fil
     // The Pinned first switch reorders the list.
     await page.focus(`${T} #records-pinned-first`);
     await page.keyboard.press('Space');
-    await page.waitForFunction((s) => document.querySelector(`${s} #records-replays-body tr td`)?.textContent !== '9 Oct 2026', T);
+    await page.waitForFunction((s) => document.querySelector(`${s} #records-replays-body tr td:nth-child(2)`)?.textContent === 'Lost', T);
     assert.deepEqual((await rows()).map((c) => c[1]), ['Lost', 'Won'], 'pinned first');
 
     // Watch on a replay, on a best and on a recent game routes with the id and the Records screen to return to.
@@ -422,6 +578,54 @@ test('in a browser, the replays panel lists, pins by keyboard keeping focus, fil
     const route = ['replay', { data: { replayId: 'a', returnTo: { screen: 'records', data: { boardKey: KEY } } } }];
     assert.deepEqual(went, [route, route, route]);
     assert.equal(await page.evaluate((s) => document.querySelector(`${s} #records-games-replay`).classList.contains('hidden'), T), false, 'the Replay column shows');
+
+    // Delete asks first, in the replays panel; Cancel and Back change nothing and return to that row's Delete.
+    const confirm = () => page.evaluate((s) => ({
+      open: !document.querySelector(`${s} #records-replays-confirm`).classList.contains('hidden'),
+      text: document.querySelector(`${s} #records-replays-confirm-text`).textContent,
+      focus: document.activeElement?.id || { ...document.activeElement?.dataset },
+    }), T);
+    await page.focus(`${T} #records-replays-body button[data-act="delete"][data-id="b"]`);
+    await page.keyboard.press('Enter');
+    let c = await confirm();
+    assert.equal(c.open, true);
+    assert.match(c.text, /^Delete the replay of 1 Oct 2026 \d\d:\d\d, lost\? It is pinned by hand\. This cannot be undone\.$/);
+    assert.equal(c.focus, 'records-replays-no', 'focus moves to Cancel');
+    await page.keyboard.press('Enter');
+    c = await confirm();
+    assert.equal(c.open, false);
+    assert.deepEqual(c.focus, { id: 'b', act: 'delete' }, 'Cancel returns focus to the row\'s Delete');
+    await page.keyboard.press('Enter');
+    assert.equal(await page.evaluate(() => globalThis.__t.screen.closeConfirm()), true, 'Back closes it first');
+    c = await confirm();
+    assert.deepEqual([c.open, c.focus], [false, { id: 'b', act: 'delete' }]);
+    assert.equal((await rows()).length, 2, 'nothing changed');
+    // Confirming removes the replay; focus goes to the Delete of the row that took its place, then to the switch.
+    await page.keyboard.press('Enter');
+    await page.click(`${T} #records-replays-yes`);
+    await page.waitForFunction((s) => document.querySelectorAll(`${s} #records-replays-body tr`).length === 1, T);
+    assert.deepEqual((await confirm()).focus, { id: 'a', act: 'delete' });
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Shift+Tab');
+    assert.equal((await confirm()).focus, 'records-replays-yes', 'Shift+Tab from Cancel reaches Delete replay');
+    await page.keyboard.press('Enter');
+    await page.waitForFunction((s) => document.querySelectorAll(`${s} #records-replays-body tr`).length === 0, T);
+    assert.equal((await confirm()).focus, 'records-pinned-first', 'with no row left, the Pinned first switch');
+    assert.equal(await page.evaluate((s) => document.querySelector(`${s} #rec-time [data-watch]`), T), null, 'the best\'s Watch is gone with its replay');
+
+    // The only row of a last page: the list clamps to the page before, and focus goes to the previous row, its last.
+    await page.evaluate(async () => {
+      const lib = globalThis.__t.library;
+      for (let i = 0; i < 11; i++) lib.put({ id: `m${i}`, endedAt: new Date(Date.UTC(2026, 8, 1, 12, i)).toISOString() });
+      globalThis.__t.screen.setPinnedFirst(false);
+      globalThis.__t.screen.showReplayPage(1);
+    });
+    assert.deepEqual((await rows()).map((c) => c[1]), ['Won'], 'page two holds one replay');
+    await page.focus(`${T} #records-replays-body button[data-act="delete"]`);
+    await page.keyboard.press('Enter');
+    await page.click(`${T} #records-replays-yes`);
+    await page.waitForFunction((s) => document.querySelectorAll(`${s} #records-replays-body tr`).length === 10, T);
+    assert.deepEqual((await confirm()).focus, { id: 'm1', act: 'delete' }, 'the last row of the clamped page');
 
     // A board with no kept replay shows the empty state and hides the table.
     await page.evaluate(() => globalThis.__t.screen.select('classic-2d:square:30x16:99:guess'));

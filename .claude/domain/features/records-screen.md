@@ -27,8 +27,8 @@ In scope (m1-classic-2d):
 - The Classic 2D overall figures: games, wins, win rate, current and
   longest streak, with the same two completed games' figures.
 - Stats history for the chosen board: 3BV/s and efficiency of won games
-  over time as a chart, and a list of recent games with their outcome,
-  time, 3BV/s and efficiency.
+  over time as a chart, and a list of recent games with the date and time
+  each ended, its outcome, time, 3BV, 3BV/s and efficiency.
 - An empty state for a board with no games, and a notice when records are
   not being saved this session.
 - Mouse, keyboard and controller operation, per the shell's navigation.
@@ -49,26 +49,38 @@ no framework and no external chart library (see
 `screen-components` kit.
 
 - **Records view.** The board picker, the figures panel and the history
-  area, from `screen-components`' segmented choice, cards and stat
-  readouts. Opens on the board it was asked for, otherwise on the last
-  board played. The fastest-time best is shown in `results-screen`'s time
-  format (47.380 s), and the efficiency best to one decimal (94.7%).
+  area, from `screen-components`' segmented choice, cards, stat readouts
+  and column composition. The three bests are stat tiles — the label, the
+  figure large, and beneath it the date the best was set; under them the
+  board's counters are one row and the mode's overall figures a row of
+  their own. At about 1024 px wide and more the screen lays out in two
+  columns: the picker, the bests and both rows of figures on one side, the
+  chart, the recent games and the replays on the other; narrower, one
+  column in that order. Opens on the board it was asked for, otherwise on
+  the last board played. The fastest-time best is shown in
+  `results-screen`'s time format (47.380 s), and the efficiency best to one
+  decimal (94.7%).
 - **History chart.** A small line chart of 3BV/s and efficiency per won
   game, drawn on a canvas from the active theme's tokens, redrawn on
   theme change. It follows the kit's conventions and is owned here; it is
   read as a picture, with the figures panel and the games list carrying the
   same numbers in text for accessibility.
-- **Recent games list.** The newest games first, paged so a long history
-  stays responsive. Each game's time is shown to the thousandth of a second
-  in `results-screen`'s time format (47.380 s), and its efficiency to one
-  decimal.
+- **Recent games list.** The newest games first, ten to a page, with a
+  pager of First, at most five numbered pages around the current one and
+  Last, hidden when one page holds everything, so a long history stays
+  responsive. Each row reads the date and local time the game ended
+  ("11 Oct 2026 14:32", 24-hour), its outcome, its time to the thousandth
+  of a second in `results-screen`'s time format (47.380 s), the board's
+  3BV, 3BV/s, and its efficiency to one decimal.
 - **Live update.** Subscribes to `personal-records`' change notification
   while open.
 
 ## Data and state
 
-- No persisted state. The chosen board is screen state; all figures are
-  read from `personal-records` on show and on change.
+- One persisted state: the replays list's Pinned first filter, in its own
+  small document, remembered across visits and reloads. The chosen board
+  and the list pages are screen state; all figures are read from
+  `personal-records` on show and on change.
 
 ## Interfaces and contracts
 

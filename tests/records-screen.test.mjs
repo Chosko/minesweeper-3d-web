@@ -325,7 +325,7 @@ test('the records screen is the kit composition: picker, figures, overall, empty
   assert.match(RECORDS_HTML, /^<section id="records" class="overlay hidden"/);
   const classes = [...RECORDS_HTML.matchAll(/class="([^"]*)"/g)].flatMap((m) => m[1].split(/\s+/));
   for (const c of classes) assert.ok(c.startsWith('ui-') || c === 'hidden' || c === 'overlay', `kit class only: ${c}`);
-  assert.match(RECORDS_HTML, /class="ui-card ui-screen ui-screen--wide" aria-labelledby="records-title"/);
+  assert.match(RECORDS_HTML, /class="ui-card ui-screen ui-screen--wide ui-screen--columns" aria-labelledby="records-title"/);
   assert.match(RECORDS_HTML, /<div id="records-picker" class="ui-segmented" role="radiogroup" aria-label="Board"><\/div>/);
   for (const id of ['records-title', 'records-picker', 'records-figures', 'records-board', 'records-empty', 'records-bests', 'records-counters',
     'rec-time', 'rec-bbbvPerSecond', 'rec-efficiency', 'rec-games', 'rec-wins', 'rec-winRate', 'rec-completedWinRate', 'rec-currentStreak',
@@ -341,11 +341,46 @@ test('the records screen is the kit composition: picker, figures, overall, empty
   assert.deepEqual(buttons, [
     '<button type="button" class="ui-segmented__option" role="radio" aria-checked="true" data-value="classic-2d">',
     '<button type="button" class="ui-segmented__option" role="radio" aria-checked="false" data-value="3d">',
-    '<button type="button" id="records-prev" class="ui-button ui-button--secondary" disabled>',
-    '<button type="button" id="records-next" class="ui-button ui-button--secondary" disabled>',
+    '<button type="button" id="records-replays-yes" class="ui-button ui-button--primary">',
+    '<button type="button" id="records-replays-no" class="ui-button ui-button--secondary">',
     '<button type="button" id="records-back" class="ui-button ui-button--primary">',
   ]);
 });
+
+test('the bests are three kit stat tiles: label, large figure, then the date and its Watch beneath', () => {
+  const bests = RECORDS_HTML.slice(RECORDS_HTML.indexOf('<div id="records-bests"'), RECORDS_HTML.indexOf('<div id="records-counters"'));
+  assert.match(bests, /^<div id="records-bests" class="ui-stat-row ui-stat-row--tiles">/);
+  for (const [stat, label] of [['time', 'Best time'], ['bbbvPerSecond', 'Best 3BV/s'], ['efficiency', 'Best efficiency']]) {
+    assert.ok(bests.includes(`<div id="rec-${stat}" class="ui-stat ui-stat--tile" role="group" aria-labelledby="rec-${stat}-label">`
+      + `<span class="ui-stat__label" id="rec-${stat}-label">${label}</span><span class="ui-stat__value">&mdash;</span>`
+      + '<span class="ui-stat__detail">&mdash;</span></div>'), `${stat} tile`);
+  }
+});
+
+test('the screen lays out in two columns: switch, picker, figures and the mode overall; then history and replays; note and Back below', () => {
+  const at = (needle) => { const i = RECORDS_HTML.indexOf(needle); assert.ok(i >= 0, needle); return i; };
+  const cols = RECORDS_HTML.slice(at('<div class="ui-columns ui-columns--two">'));
+  const [, first, second] = cols.split('<div class="ui-column">');
+  assert.ok(first && second, 'two ui-column children');
+  const order = (text, ids) => {
+    const where = ids.map((id) => text.indexOf(id));
+    for (const w of where) assert.ok(w >= 0);
+    assert.deepEqual(where, [...where].sort((a, b) => a - b), ids.join(' < '));
+  };
+  order(first, ['id="records-mode"', 'id="records-picker"', 'id="records-bests"', 'id="records-counters"', 'id="records-overall"']);
+  assert.doesNotMatch(first, /records-history|records-replays/);
+  order(second, ['id="records-history"', 'id="records-chart"', 'id="records-games"', 'id="records-replays"']);
+  assert.ok(at('id="records-note"') > at('id="records-replays-table"') && at('id="records-back"') > at('id="records-note"'), 'note and Back below both columns');
+});
+
+test('the mode overall figures are a row of their own, titled for the mode, never mixed with the board figures', () => {
+  const figures = RECORDS_HTML.slice(at0('<div id="records-figures"'), at0('<div id="records-overall"'));
+  assert.doesNotMatch(figures, /id="ro-/);
+  const overall = RECORDS_HTML.slice(at0('<div id="records-overall"'), at0('<div id="records-history"'));
+  assert.match(overall, /<h3 class="ui-heading" id="records-overall-title">Classic 2D overall<\/h3>\s*<div class="ui-stat-row">/);
+  assert.doesNotMatch(overall, /id="rec-/);
+});
+function at0(needle) { return RECORDS_HTML.indexOf(needle); }
 
 test('the shell registers the records screen, its default focus on the picker, its controller layer and Back', () => {
   const table = MAIN.slice(MAIN.indexOf('const SHELL = createRouter('), MAIN.indexOf('// end of screen table'));
@@ -442,6 +477,87 @@ test('in a browser, the menu opens the records screen on the last board played, 
 
     await page.click('#records-back');
     assert.equal(await mode(), 'menu', 'the Back button returns to the menu');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, Records and Settings lay out in columns at 1280 px, one column at 900 and 390 px, in both themes, never scrolling sideways', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(removeWebGL2);
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined);
+    await page.evaluate(() => {
+      const clicks = { reveal: { effective: 25, wasted: 0 }, flag: { effective: 0, wasted: 0 }, chord: { effective: 0, wasted: 0 } };
+      for (let i = 0; i < 14; i++) {
+        globalThis.__ms.records.record({ id: `L${i}`, board: { mode: 'classic-2d', grid: 'square', width: 9, height: 9, mines: 10, noGuess: false },
+          outcome: i % 3 ? 'won' : 'lost', elapsedMs: 40000 + i * 1000, bbbv: 20, bbbvSolved: i % 3 ? 20 : 4, clicks, bbbvPerSecond: 0.5, efficiency: 80,
+          seed: 1, generatorVersion: 1, endedAt: new Date(Date.UTC(2026, 9, 1, 12, i)).toISOString() });
+      }
+    });
+    await page.evaluate(async () => {
+      const library = globalThis.__ms.replays;
+      await library.load();
+      for (let i = 0; i < 12; i++) {
+        await library.add(new Uint8Array([1, 2, 3]), { id: `L${i}`, boardKey: 'classic-2d:square:9x9:10:guess', mode: 'classic-2d', outcome: i % 3 ? 'won' : 'lost',
+          elapsedMs: 40000 + i * 1000, bbbvPerSecond: 0.5, efficiency: 80, endedAt: new Date(Date.UTC(2026, 9, 1, 12, i)).toISOString(), size: 3 }, i === 4);
+      }
+      await library.settled();
+    });
+    // Columns: the distinct left edges of a layout's direct children; sideways scroll: any box wider than its scroll port.
+    const measure = (id, items) => page.evaluate(([screen, sel]) => {
+      const root = document.getElementById(screen);
+      const lefts = new Set([...root.querySelectorAll(sel)].filter((e) => e.offsetParent).map((e) => Math.round(e.getBoundingClientRect().left)));
+      const card = root.querySelector('.ui-card');
+      const wide = [document.documentElement, root, card].filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.id || e.tagName);
+      return { columns: lefts.size, wide };
+    }, [id, items]);
+    const cases = [[1280, 800, 2], [900, 800, 1], [390, 844, 1]];
+    for (const theme of ['light', 'dark']) {
+      await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
+      for (const [width, height, columns] of cases) {
+        await page.setViewportSize({ width, height });
+        await page.click('#menu-entry-records');
+        const records = await measure('records', '.ui-columns > .ui-column');
+        assert.equal(records.columns, columns, `${theme} ${width} px: Records in ${columns} column(s)`);
+        assert.deepEqual(records.wide, [], `${theme} ${width} px: Records never scrolls sideways`);
+        await page.keyboard.press('Escape');
+        await page.click('#menu-entry-settings');
+        const settings = await measure('settings', '#settings-body > .ui-columns > section:not(.ui-columns__span)');
+        if (width >= 1024) assert.ok(settings.columns >= 2, `${theme} ${width} px: Settings sections side by side (${settings.columns})`);
+        else assert.equal(settings.columns, 1, `${theme} ${width} px: Settings in one column`);
+        assert.deepEqual(settings.wide, [], `${theme} ${width} px: Settings never scrolls sideways`);
+        const bindings = await measure('settings', '#settings-bindings > div');
+        assert.equal(bindings.columns > 1, width >= 1024, `${theme} ${width} px: the bindings lists side by side only in columns`);
+        await page.keyboard.press('Escape');
+      }
+    }
+
+    // Esc, the browser's Back and the controller's Back close an open Delete confirmation first, staying on Records.
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.click('#menu-entry-records');
+    assert.equal(await page.evaluate(() => document.querySelectorAll('#records-replays-body tr').length), 10, 'ten replays a page');
+    assert.equal(await page.evaluate(() => document.getElementById('records-replays-page').textContent), 'Replays 1–10 of 12');
+    for (const back of ['key', 'history']) {
+      await page.focus('#records-replays-body button[data-act="delete"][data-id="L11"]');
+      await page.keyboard.press('Enter');
+      assert.equal(await page.evaluate(() => document.activeElement?.id), 'records-replays-no');
+      if (back === 'key') await page.keyboard.press('Escape');
+      else await page.goBack();
+      await page.waitForFunction(() => document.getElementById('records-replays-confirm').classList.contains('hidden'));
+      assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'records', `${back} Back stays on Records`);
+      assert.deepEqual(await page.evaluate(() => ({ ...document.activeElement?.dataset })), { id: 'L11', act: 'delete' });
+      assert.equal(await page.evaluate(() => globalThis.__ms.replays.has('L11')), true, 'nothing deleted');
+    }
+    await page.keyboard.press('Escape');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu', 'with nothing open, Back leaves');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

@@ -12,11 +12,12 @@ import { fileURLToPath } from 'node:url';
 import {
   CHART_TOKENS, PAGE_SIZE, NO_WON_GAMES, chartPoints, niceCeiling, chartScale, chartText, pageOf, drawHistoryChart, createHistoryChart,
 } from '../js/records/history-chart.js';
-import { recordsContent, createRecordsScreen } from '../js/records/screen.js';
+import { recordsContent, createRecordsScreen, formatDateTime } from '../js/records/screen.js';
 import { createRecordsModel } from '../js/records/model.js';
 import { boardKey, createBoardIdentity } from '../js/records/board.js';
 import { bbbvPerSecond, efficiency } from '../js/records/summary.js';
 import { DASH } from '../js/results/view.js';
+import { pagerState } from '../js/ui/components.js';
 import { browserSuite } from './helpers/browser.mjs';
 import { timed } from './helpers/timing.mjs';
 
@@ -240,7 +241,7 @@ test('paging a long history stays fast', () => {
 
 // ---------------------------------------------------------------- the screen's history content
 
-test('the recent games list shows newest first with outcome, time, 3BV/s and efficiency', () => {
+test('the recent games list shows newest first with date and time, outcome, time, 3BV, 3BV/s and efficiency', () => {
   const store = fakeStore([
     game(BEGINNER, { elapsedMs: 47380 }),
     game(BEGINNER, { outcome: 'lost', elapsedMs: 12000 }),
@@ -256,7 +257,17 @@ test('the recent games list shows newest first with outcome, time, 3BV/s and eff
   assert.equal(games.rows[1].time, '12.000 s');
   assert.equal(games.rows[1].rate, (5 / 12).toFixed(2));
   assert.equal(games.rows[0].rate, DASH, 'no time, no 3BV/s');
-  assert.deepEqual(games.headers, ['Outcome', 'Time', '3BV/s', 'Efficiency']);
+  assert.deepEqual(games.headers, ['Date', 'Outcome', 'Time', '3BV', '3BV/s', 'Efficiency']);
+  const ended = store.history(boardKey(BEGINNER)).toReversed();
+  assert.deepEqual(games.rows.map((r) => r.date), ended.map((e) => formatDateTime(e.endedAt)), 'each game\'s end, as a date and a local time');
+  assert.deepEqual(games.rows.map((r) => r.bbbv), ['20', '20', '20'], 'the board\'s 3BV for won, lost and abandoned games alike');
+});
+
+test('the date and time is one fixed 24-hour format: day, month, year, hours and minutes', () => {
+  assert.equal(formatDateTime(new Date(2026, 9, 11, 14, 32, 59).toISOString()), '11 Oct 2026 14:32');
+  assert.equal(formatDateTime(new Date(2026, 0, 2, 9, 5).toISOString()), '2 Jan 2026 09:05');
+  assert.equal(formatDateTime(new Date(2026, 11, 31, 0, 0).toISOString()), '31 Dec 2026 00:00');
+  for (const bad of [undefined, null, 'never', 42]) assert.equal(formatDateTime(bad), DASH);
 });
 
 test("a row's time goes through the results screen's time formatter", () => {
@@ -272,13 +283,17 @@ test('the games list is paged, newest page first, and a page past the end shows 
   const first = recordsContent(store, { boardKey: boardKey(BEGINNER) }).games;
   assert.equal(first.rows.length, 10);
   assert.equal(first.rows[0].time, '32.000 s', 'the newest game first');
-  assert.deepEqual([first.page, first.pages, first.hasPrev, first.hasNext], [0, 3, false, true]);
+  assert.deepEqual([first.page, first.pages], [0, 3]);
+  assert.deepEqual(first.pager, pagerState(0, 3), 'the kit pager over the list\'s pages');
   assert.equal(first.label, 'Games 1–10 of 23');
   const last = recordsContent(store, { boardKey: boardKey(BEGINNER), page: 7 }).games;
-  assert.deepEqual([last.page, last.rows.length, last.hasNext, last.label], [2, 3, false, 'Games 21–23 of 23']);
+  assert.deepEqual([last.page, last.rows.length, last.label], [2, 3, 'Games 21–23 of 23']);
+  assert.equal(last.pager.last.disabled, true);
   assert.equal(last.rows.at(-1).time, '10.000 s', 'the oldest game last');
   const empty = recordsContent(store, { boardKey: boardKey(EXPERT) }).games;
-  assert.deepEqual([empty.rows, empty.hasPrev, empty.hasNext], [[], false, false]);
+  assert.deepEqual([empty.rows, empty.pager.hidden], [[], true], 'an empty list has no pager');
+  const one = recordsContent(fakeStore(Array.from({ length: 10 }, () => game(BEGINNER))), { boardKey: boardKey(BEGINNER) }).games;
+  assert.equal(one.pager.hidden, true, 'one page holds everything: no pager');
 });
 
 test("the chart content is the chosen board's won games, with its text alternative", () => {
@@ -333,15 +348,16 @@ test('the screen pages the games list, starts each board on its first page and r
 const INDEX = read('index.html');
 const RECORDS_HTML = INDEX.slice(INDEX.indexOf('<section id="records"'), INDEX.indexOf('<!-- /Records -->'));
 
-test('the history panel holds the chart canvas with its text alternative, the games table and the pager', () => {
+test('the history panel holds the chart canvas with its text alternative, the games table and the kit pager', () => {
   const panel = RECORDS_HTML.slice(RECORDS_HTML.indexOf('<div id="records-history"'));
   assert.ok(panel.length > 0, '#records-history');
   assert.match(panel, /^<div id="records-history" class="ui-panel" role="group" aria-labelledby="records-history-title">/);
   assert.match(panel, /<canvas id="records-chart" role="img" aria-label="[^"]+">[^<]*<\/canvas>/, 'the chart is an image with a text alternative');
   assert.match(panel, /<table id="records-games"[^>]*>[\s\S]*<caption[^>]*>[\s\S]*<thead>[\s\S]*<tbody id="records-games-body"><\/tbody>/);
-  for (const h of ['Outcome', 'Time', '3BV/s', 'Efficiency']) assert.match(panel, new RegExp(`<th scope="col">${h.replace('/', '\\/')}</th>`));
-  assert.match(panel, /<button type="button" id="records-prev" class="ui-button ui-button--secondary"[^>]*>Newer<\/button>/);
-  assert.match(panel, /<button type="button" id="records-next" class="ui-button ui-button--secondary"[^>]*>Older<\/button>/);
+  const heads = [...panel.slice(0, panel.indexOf('</thead>')).matchAll(/<th scope="col"[^>]*>([^<]+)<\/th>/g)].map((m) => m[1]);
+  assert.deepEqual(heads, ['Date', 'Outcome', 'Time', '3BV', '3BV/s', 'Efficiency', 'Replay']);
+  assert.match(panel, /<nav id="records-games-pager" class="ui-pager hidden" aria-label="[^"]+"><\/nav>/, 'the kit pager, filled by the view');
+  assert.doesNotMatch(RECORDS_HTML, /records-prev|records-next|>Newer<|>Older</, 'Newer and Older are gone');
   assert.match(panel, /id="records-page"/);
   assert.match(read('css/style.css'), /#records-chart \{/);
 });
@@ -422,19 +438,27 @@ test('in a browser, a seeded history is charted in both themes and its games lis
     const label = () => page.evaluate(() => document.getElementById('records-page').textContent);
     let r = await rows();
     assert.equal(r.length, 10);
-    assert.deepEqual(r[0], ['Lost', '13.900 s', (6 / 13.9).toFixed(2), `${(600 / 22).toFixed(1)}%`, ''], 'the newest game first, its Replay cell empty: no replay is kept');
+    assert.deepEqual(r[0].slice(1), ['Lost', '13.900 s', '20', (6 / 13.9).toFixed(2), `${(600 / 22).toFixed(1)}%`, ''], 'the newest game first, its Replay cell empty: no replay is kept');
+    assert.match(r[0][0], /^1 Oct 2026 \d\d:\d\d$/, 'the date and local time it ended');
     assert.equal(await label(), 'Games 1–10 of 24');
-    assert.equal(await page.evaluate(() => document.getElementById('records-prev').disabled), true);
+    const pager = () => page.evaluate(() => [...document.querySelectorAll('#records-games-pager button')].map((b) => ({
+      text: b.textContent, current: b.getAttribute('aria-current'), disabled: b.disabled || b.getAttribute('aria-disabled') === 'true' })));
+    assert.deepEqual((await pager()).map((b) => b.text), ['First', '1', '2', '3', 'Last']);
+    assert.deepEqual((await pager()).filter((b) => b.disabled).map((b) => b.text), ['First', '1'], 'First and the current page are disabled');
+    assert.equal((await pager()).find((b) => b.current === 'page').text, '1');
 
-    // Keyboard: the pager is reached and used like any button.
-    await page.focus('#records-next');
+    // Keyboard: the pager's buttons are reached and used like any button.
+    await page.focus('#records-games-pager button[data-page="1"]');
     await page.keyboard.press('Enter');
     assert.equal(await label(), 'Games 11–20 of 24');
+    assert.equal((await pager()).find((b) => b.current === 'page').text, '2');
+    await page.focus('#records-games-pager button[data-page="last"]');
     await page.keyboard.press('Enter');
     assert.equal(await label(), 'Games 21–24 of 24');
     assert.equal((await rows()).length, 4);
-    assert.equal(await page.evaluate(() => document.getElementById('records-next').disabled), true);
-    assert.equal(await page.evaluate(() => document.activeElement?.id), 'records-prev', 'focus moves off a pager button that ends');
+    assert.deepEqual((await pager()).filter((b) => b.disabled).map((b) => b.text), ['3', 'Last']);
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-current')), 'page', 'a pager button that becomes disabled hands focus to the current page');
+    await page.focus('#records-games-pager button[data-page="1"]');
     await page.keyboard.press('Enter');
     assert.equal(await label(), 'Games 11–20 of 24');
 
