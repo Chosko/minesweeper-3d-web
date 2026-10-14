@@ -4,336 +4,6 @@ Last task number: 189
 
 ---
 
-## 51. Box graph provider
-
-Status: [DONE]
-Target: claude
-Files: js/engine/box-grid.js, tests/engine-box-grid.test.mjs
-Preconditions: none
-Feature: 3d-board-graph
-
----
-
-## 52. 3D rule profile: revealed-cell flagging, chord, auto-hide and win
-
-Status: [DONE]
-Target: claude
-Files: js/engine/profiles.js, js/engine/rules.js, js/engine/metrics.js, tests/engine-3d-profile.test.mjs
-Preconditions: 51
-Feature: 3d-board-graph
-
----
-
-## 53. 3D state view and the large-board memory check
-
-Status: [DONE]
-Target: claude
-Files: js/engine/state-view-3d.js, tests/engine-3d-view.test.mjs, .claude/domain/features/3d-board-graph.md
-Preconditions: 52
-Feature: 3d-board-graph
-
----
-
-## 54. 3D front-end on the shared engine and retirement of the 3D engine
-
-Status: [DONE]
-Target: claude
-Files: js/main.js, js/render.js, js/picking.js, js/ui.js, js/shell/mode-3d.js, js/logic.js, tests/logic.test.mjs
-Preconditions: 53
-Feature: 3d-board-graph
-
----
-
-## 55. Update documentation for feature `3d-board-graph`
-
-Status: [DONE]
-Target: claude
-Files: .claude/context/engine.md, .claude/context/logic.md, .claude/context/rendering.md, .claude/context/input.md, .claude/context/app-shell.md, .claude/context/testing.md, .claude/context/INDEX.md
-Preconditions: 51, 52, 53, 54
-Feature: 3d-board-graph
-
----
-
-## 56. 3D board choice: presets, custom boards and the no-guess switch
-
-Status: [DONE]
-Target: claude
-Files: js/mode3d/board-choice.js, index.html, js/ui.js, js/shell/menu.js, css/components.css, tests/mode3d-board-choice.test.mjs
-Preconditions: 54
-Feature: 3d-play-flow
-
----
-
-## 57. 3D game session: safe first click, generation and timer
-
-Status: [DONE]
-Target: claude
-Files: js/mode3d/session.js, js/main.js, js/ui.js, js/shell/mode-3d.js, tests/mode3d-session.test.mjs
-Preconditions: 54, 56
-Feature: 3d-play-flow
-
----
-
-## 58. No-guess cell-count limit for 3D boards
-
-Status: [DONE]
-Target: claude
-Files: js/mode3d/board-choice.js, dev/measure-noguess-3d.mjs, tests/mode3d-noguess-limit.test.mjs, .claude/domain/features/3d-play-flow.md
-Preconditions: 57
-Feature: 3d-play-flow
-
----
-
-## 59. 3D mode adapter on the session
-
-Status: [DONE]
-Target: claude
-Files: js/shell/mode-3d.js, js/shell/mode-host.js, js/main.js, tests/shell-mode-3d.test.mjs
-Preconditions: 57
-Feature: 3d-play-flow
-
----
-
-## 60. Update documentation for feature `3d-play-flow`
-
-Status: [DONE]
-Target: claude
-Files: .claude/context/mode3d.md, .claude/context/app-shell.md, .claude/context/input.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
-Preconditions: 56, 57, 58, 59
-Feature: 3d-play-flow
-
----
-
-## 61. 3D board identity, board key and labels
-
-Status: [DONE]
-Target: claude
-Files: js/records/board.js, tests/records-board-3d.test.mjs
-Preconditions: 56
-Feature: 3d-game-records
-
----
-
-## 62. 3D summaries and the 3D mode's summary hand-off
-
-Status: [DONE]
-Target: claude
-Files: js/records/summary.js, js/shell/mode-3d.js, tests/records-summary-3d.test.mjs, .claude/domain/features/3d-game-records.md
-Preconditions: 52, 59, 61
-Feature: 3d-game-records
-
----
-
-## 63. Per-mode counters, mode-filtered board listing and the records format step
-
-Status: [DONE]
-Target: claude
-Files: js/records/model.js, js/records/store.js, tests/records-model-3d.test.mjs
-Preconditions: 61
-Feature: 3d-game-records
-
----
-
-## 64. Update documentation for feature `3d-game-records`
-
-Status: [DONE]
-Target: claude
-Files: .claude/context/records.md, .claude/context/mode3d.md, .claude/context/testing.md, .claude/context/INDEX.md
-Preconditions: 61, 62, 63
-Feature: 3d-game-records
-
----
-
-## 65. Replay format: header, streams, encoder and decoder
-
-Status: [DONE]
-Target: claude
-Files: js/replay/format.js, tests/replay-format.test.mjs
-Preconditions: 61
-Feature: replay-recording
-
----
-
-## 66. Recorder and sealer
-
-Status: [DONE]
-Target: claude
-Files: js/replay/recorder.js, tests/replay-recorder.test.mjs
-Preconditions: 53, 65
-Feature: replay-recording
-
----
-
-## 67. Classic 2D capture and the replay on the mode contract
-
-Status: [DONE]
-Target: claude
-Files: js/replay/sampler-2d.js, js/classic2d/session.js, js/classic2d/mode.js, js/shell/mode-host.js, js/shell/pause.js, tests/replay-2d.test.mjs
-Preconditions: 66
-Feature: replay-recording
-
----
-
-## 68. 3D capture: recorder and camera sampler
-
-Status: [DONE]
-Target: claude
-Files: js/replay/sampler-3d.js, js/mode3d/session.js, js/shell/mode-3d.js, tests/replay-3d.test.mjs
-Preconditions: 62, 66, 67
-Feature: replay-recording
-
----
-
-## 69. Replay determinism tests and the measured recording constants
-
-Status: [DONE]
-Target: claude
-Files: tests/replay-determinism.test.mjs, tests/fixtures/replays/, dev/measure-replays.mjs, js/replay/recorder.js, js/replay/format.js, js/replay/sampler-2d.js, js/replay/sampler-3d.js, .claude/domain/features/replay-recording.md
-Preconditions: 67, 68
-Feature: replay-recording
-
----
-
-## 70. Update documentation for feature `replay-recording`
-
-Status: [DONE]
-Target: claude
-Files: .claude/context/replay.md, .claude/context/app-shell.md, .claude/context/classic2d.md, .claude/context/mode3d.md, .claude/context/testing.md, .claude/context/INDEX.md
-Preconditions: 65, 66, 67, 68, 69
-Feature: replay-recording
-
----
-
-## 71. Replay store: blob interface, in-memory and IndexedDB implementations
-
-Status: [DONE]
-Target: claude
-Files: js/platform/blob-store.js, js/platform/memory-blob-store.js, js/platform/indexeddb-blob-store.js, js/platform/index.js, tests/platform-blob-store.test.mjs
-Preconditions: none
-Feature: replay-library
-
----
-
-## 72. Replay library: index, retention, pinning and recovery
-
-Status: [DONE]
-Target: claude
-Files: js/replay/library.js, tests/replay-library.test.mjs
-Preconditions: 65, 71
-Feature: replay-library
-
----
-
-## 73. End-of-game hand-off to the replay library
-
-Status: [DONE]
-Target: claude
-Files: js/results/flow.js, js/shell/pause.js, tests/replay-handoff.test.mjs
-Preconditions: 63, 67, 68, 72
-Feature: replay-library
-
----
-
-## 74. Library view in the Records screen
-
-Status: [DONE]
-Target: claude
-Files: js/records/replay-list.js, js/records/screen.js, css/components.css, index.html, tests/records-replays.test.mjs
-Preconditions: 72
-Feature: replay-library
-
----
-
-## 75. Update documentation for feature `replay-library`
-
-Status: [DONE]
-Target: claude
-Files: .claude/context/platform.md, .claude/context/replay.md, .claude/context/app-shell.md, .claude/context/records.md, .claude/context/testing.md, .claude/context/INDEX.md
-Preconditions: 71, 72, 73, 74
-Feature: replay-library
-
----
-
-## 76. Replay simulator and verifier
-
-Status: [DONE]
-Target: claude
-Files: js/replay/simulator.js, js/replay/verify.js, tests/replay-simulator.test.mjs, .claude/domain/features/replay-playback.md
-Preconditions: 53, 65, 69
-Feature: replay-playback
-
----
-
-## 77. Replay viewer screen with the 2D viewer, controls and overlay
-
-Status: [DONE]
-Target: claude
-Files: js/replay/viewer.js, js/replay/clock.js, js/replay/viewer-2d.js, js/shell/router.js, index.html, css/components.css, tests/replay-viewer.test.mjs
-Preconditions: 72, 76
-Feature: replay-playback
-
----
-
-## 78. 3D replay viewer
-
-Status: [DONE]
-Target: claude
-Files: js/replay/viewer-3d.js, js/replay/viewer.js, js/render.js, js/main.js, tests/replay-viewer-3d.test.mjs
-Preconditions: 59, 77
-Feature: replay-playback
-
----
-
-## 79. Watch replay on the results screen and from the library
-
-Status: [DONE]
-Target: claude
-Files: js/results/view.js, js/results/flow.js, js/records/replay-list.js, tests/results-watch.test.mjs
-Preconditions: 73, 74, 77
-Feature: replay-playback
-
----
-
-## 80. Update documentation for feature `replay-playback`
-
-Status: [DONE]
-Target: claude
-Files: .claude/context/replay.md, .claude/context/app-shell.md, .claude/context/rendering.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
-Preconditions: 76, 77, 78, 79
-Feature: replay-playback
-
----
-
-## 81. 3D end sequence and the results takeover
-
-Status: [DONE]
-Target: claude
-Files: js/mode3d/session.js, js/shell/mode-3d.js, js/main.js, js/ui.js, js/render.js, index.html, js/results/view.js, css/components.css, tests/mode3d-end.test.mjs
-Preconditions: 62, 68
-Feature: 3d-results-records-screens
-
----
-
-## 82. Records 2D | 3D switch and the 3D board picker
-
-Status: [DONE]
-Target: claude
-Files: js/records/screen.js, js/records/replay-list.js, js/results/view.js, index.html, css/components.css, tests/records-screen-3d.test.mjs
-Preconditions: 61, 63, 74
-Feature: 3d-results-records-screens
-
----
-
-## 83. Update documentation for feature `3d-results-records-screens`
-
-Status: [DONE]
-Target: claude
-Files: .claude/context/app-shell.md, .claude/context/mode3d.md, .claude/context/rendering.md, .claude/context/records.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
-Preconditions: 81, 82
-Feature: 3d-results-records-screens
-
----
-
 ## 84. Electron main process: window, game protocol, window state and crash log
 
 Status: [MISSING]
@@ -359,7 +29,7 @@ Feature: steam-desktop-host
 Status: [MISSING]
 Target: claude
 Files: js/platform/index.js, js/platform/capabilities.js, js/platform/bridge-client.js, js/shell/pause.js, js/main.js, desktop/closing.js, tests/platform-selection.test.mjs
-Preconditions: 71, 85
+Preconditions: 85
 Feature: steam-desktop-host
 
 ---
@@ -419,7 +89,7 @@ Feature: steam-cloud-saves
 Status: [MISSING]
 Target: claude
 Files: js/platform/steam-storage.js, js/platform/steam-blob-store.js, js/platform/index.js, tests/platform-steam-storage.test.mjs
-Preconditions: 71, 86, 91
+Preconditions: 86, 91
 Feature: steam-cloud-saves
 
 ---
@@ -429,7 +99,7 @@ Feature: steam-cloud-saves
 Status: [MISSING]
 Target: claude+human
 Files: dev/measure-cloud-quota.mjs, .claude/domain/features/steam-cloud-saves.md, .claude/domain/features/replay-library.md
-Preconditions: 72, 87, 92
+Preconditions: 87, 92
 Feature: steam-cloud-saves
 
 ---
@@ -449,7 +119,7 @@ Feature: steam-cloud-saves
 Status: [MISSING]
 Target: claude
 Files: js/leaderboards/catalogue.js, js/leaderboards/details.js, js/leaderboards/eligibility.js, tests/leaderboards-catalogue.test.mjs
-Preconditions: 61, 62, 115
+Preconditions: none
 Feature: steam-leaderboards
 
 ---
@@ -459,7 +129,7 @@ Feature: steam-leaderboards
 Status: [MISSING]
 Target: claude
 Files: js/leaderboards/outbox.js, js/leaderboards/submit.js, js/leaderboards/state.js, js/results/flow.js, tests/leaderboards-submit.test.mjs
-Preconditions: 71, 73, 76, 95
+Preconditions: 95
 Feature: steam-leaderboards
 
 ---
@@ -479,7 +149,7 @@ Feature: steam-leaderboards
 Status: [MISSING]
 Target: claude
 Files: js/leaderboards/local.js, js/leaderboards/index.js, js/platform/index.js, tests/leaderboards-local.test.mjs
-Preconditions: 72, 86, 95
+Preconditions: 86, 95
 Feature: steam-leaderboards
 
 ---
@@ -499,7 +169,7 @@ Feature: steam-leaderboards
 Status: [MISSING]
 Target: claude
 Files: js/achievements/catalogue.js, js/achievements/evaluate.js, tests/achievements-evaluate.test.mjs, .claude/domain/features/steam-achievements.md
-Preconditions: 62, 115
+Preconditions: none
 Feature: steam-achievements
 
 ---
@@ -509,7 +179,7 @@ Feature: steam-achievements
 Status: [MISSING]
 Target: claude
 Files: js/achievements/unlock.js, js/achievements/index.js, js/results/flow.js, js/platform/index.js, tests/achievements-unlock.test.mjs
-Preconditions: 73, 86, 100
+Preconditions: 86, 100
 Feature: steam-achievements
 
 ---
@@ -539,7 +209,7 @@ Feature: steam-achievements
 Status: [MISSING]
 Target: claude+human
 Files: js/leaderboards/screen.js, js/shell/router.js, index.html, css/components.css, tests/leaderboards-screen.test.mjs, .claude/domain/features/leaderboard-screen.md, .claude/domain/features/steam-leaderboards.md
-Preconditions: 61, 97, 98, 163
+Preconditions: 97, 98, 163
 Feature: leaderboard-screen
 
 ---
@@ -549,7 +219,7 @@ Feature: leaderboard-screen
 Status: [MISSING]
 Target: claude
 Files: js/leaderboards/screen.js, js/replay/viewer.js, js/shell/router.js, tests/leaderboards-screen.test.mjs
-Preconditions: 77, 78, 104
+Preconditions: 104
 Feature: leaderboard-screen
 
 ---
@@ -589,7 +259,7 @@ Feature: leaderboards-menu-entry
 Status: [MISSING]
 Target: claude+human
 Files: js/results/rank-panel.js, js/results/view.js, js/results/flow.js, css/components.css, index.html, tests/results-rank.test.mjs, .claude/domain/features/results-steam-rank.md
-Preconditions: 81, 86, 97, 104, 169
+Preconditions: 86, 97, 104, 169
 Feature: results-steam-rank
 
 ---
@@ -619,7 +289,7 @@ Feature: input-rebinding
 Status: [MISSING]
 Target: claude
 Files: js/input.js, js/controls.js, js/main.js, js/shell/mode-3d.js, js/classic2d/pointer-input.js, js/classic2d/cursor-input.js, tests/input-bindings.test.mjs
-Preconditions: 59, 111
+Preconditions: 111
 Feature: input-rebinding
 
 ---
@@ -644,226 +314,6 @@ Feature: input-rebinding
 
 ---
 
-## 115. Three cube 3D presets and no no-guess on a side of 2
-
-Status: [DONE]
-Target: claude
-Files: js/mode3d/board-choice.js, js/records/board.js, js/records/model.js, js/records/screen.js, index.html, css/components.css, tests/mode3d-board-choice.test.mjs, tests/records-board-3d.test.mjs, tests/records-model-3d.test.mjs, tests/records-screen-3d.test.mjs
-Preconditions: none
-Feature: 3d-play-flow
-
----
-
-## 116. Update documentation for feature `3d-play-flow`
-
-Status: [DONE]
-Target: claude
-Files: README.md, .claude/context/mode3d.md, .claude/context/records.md, .claude/context/testing.md, .claude/context/app-shell.md, .claude/context/INDEX.md
-Preconditions: 115
-Feature: 3d-play-flow
-
----
-
-## 117. Movement playback holds each sample, then interpolates
-
-Status: [DONE]
-Target: claude
-Files: js/replay/format.js, js/replay/viewer-2d.js, js/replay/viewer-3d.js, tests/replay-format.test.mjs, tests/replay-viewer.test.mjs, tests/replay-viewer-3d.test.mjs
-Preconditions: none
-Feature: replay-playback
-
----
-
-## 118. Update documentation for feature `replay-playback`
-
-Status: [DONE]
-Target: claude
-Files: .claude/context/replay.md, .claude/context/testing.md, .claude/context/INDEX.md
-Preconditions: 117
-Feature: replay-playback
-
----
-
-## 119. Mode-aware help and first-use hints
-
-Status: [DONE]
-Target: claude
-Files: js/settings/bindings.js, js/shell/first-use.js, js/ui.js, js/main.js, js/input.js, index.html, css/style.css, tests/shell-help.test.mjs, tests/shell-first-use.test.mjs, tests/settings-page.test.mjs, .claude/domain/features/settings.md
-Preconditions: none
-
----
-
-## 120. Dark theme completion
-
-Status: [DONE]
-Target: claude
-Files: css/tokens.css, css/style.css, js/render.js, js/main.js, tests/components.test.mjs, tests/tokens.test.mjs, tests/theme.test.mjs, .claude/domain/features/design-tokens-and-themes.md, .claude/domain/product-design.md, .claude/domain/features/screen-components.md
-Preconditions: none
-
----
-
-## 121. No-guess default, switch copy, generating flow
-
-Status: [DONE]
-Target: claude
-Files: js/classic2d/board-setup.js, js/classic2d/board-choice.js, js/classic2d/session.js, js/classic2d/mode.js, js/mode3d/board-choice.js, js/mode3d/session.js, js/shell/mode-3d.js, js/shell/pause.js, js/main.js, js/ui.js, index.html, css/components.css, css/style.css, tests/classic2d-session.test.mjs, tests/classic2d-mode.test.mjs, tests/mode3d-board-choice.test.mjs, tests/mode3d-session.test.mjs, tests/shell-mode-3d.test.mjs, tests/shell-pause.test.mjs, tests/components.test.mjs, .claude/domain/features/game-shell.md, .claude/domain/features/board-generation.md, .claude/domain/features/classic-2d-square-play.md, .claude/domain/features/3d-play-flow.md
-Preconditions: none
-
----
-
-## 122. Menu keyboard navigation and browser Back
-
-Status: [DONE]
-Target: claude
-Files: js/shell/history.js, js/shell/navigation.js, js/main.js, js/input.js, js/ui/components.js, js/settings/page.js, index.html, css/style.css, css/components.css, tests/shell-history.test.mjs, tests/shell-router.test.mjs, tests/components.test.mjs, tests/settings-page.test.mjs, .claude/domain/features/game-shell.md, .claude/domain/features/settings.md
-Preconditions: none
-
----
-
-## 123. Wording and small shell fixes
-
-Status: [DONE]
-Target: claude
-Files: js/main.js, js/shell/lock-fallback.js, js/input.js, js/ui.js, js/ui/components.js, js/settings/page.js, js/mode3d/board-choice.js, js/settings/bindings.js, index.html, css/style.css, tests/components.test.mjs, tests/settings-page.test.mjs, tests/mode3d-board-choice.test.mjs, tests/shell-lock-fallback.test.mjs, tests/input-drag-look.test.mjs, .claude/domain/features/screen-components.md, .claude/domain/features/game-shell.md, .claude/domain/features/results-screen.md, .claude/domain/features/3d-play-flow.md, .claude/domain/features/settings.md
-Preconditions: none
-
----
-
-## 124. Custom form: at least one mine
-
-Status: [DONE]
-Target: claude
-Files: js/classic2d/board-setup.js, js/classic2d/board-choice.js, index.html, tests/classic2d-session.test.mjs, tests/classic2d-mode.test.mjs, tests/classic2d-fidelity.test.mjs, tests/records-board.test.mjs, .claude/domain/features/classic-2d-square-play.md
-Preconditions: none
-
----
-
-## 125. 3D spawn framing and world reference
-
-Status: [DONE]
-Target: claude
-Files: js/input.js, js/main.js, js/render.js, js/ui.js, js/settings/bindings.js, index.html, css/style.css, tests/camera-spawn.test.mjs, tests/components.test.mjs, tests/settings-page.test.mjs, tests/replay-viewer-3d.test.mjs, docs/ORIGINAL_SPEC.md, README.md, .claude/domain/product-design.md
-Preconditions: none
-
----
-
-## 126. 3D small feedback
-
-Status: [DONE]
-Target: claude
-Files: js/render.js, js/main.js, js/input.js, js/ui.js, index.html, tests/render-3d-feedback.test.mjs, tests/shell-pause-esc.test.mjs, tests/replay-viewer-3d.test.mjs, docs/ORIGINAL_SPEC.md, README.md, .claude/domain/product-design.md
-Preconditions: none
-
----
-
-## 127. Right-click on a number
-
-Status: [DONE]
-Target: claude
-Files: js/engine/profiles.js, js/engine/rules.js, js/main.js, js/render.js, js/audio.js, js/ui.js, js/settings/bindings.js, index.html, css/style.css, tests/engine-3d-profile.test.mjs, tests/engine-rules.test.mjs, tests/engine-3d-view.test.mjs, tests/replay-3d.test.mjs, tests/audio-flag.test.mjs, tests/render-3d-flag-flash.test.mjs, tests/settings-page.test.mjs, docs/ORIGINAL_SPEC.md, README.md, .claude/domain/features/3d-board-graph.md, .claude/domain/product-design.md
-Preconditions: none
-
----
-
-## 128. Results precision, figures and hierarchy
-
-Status: [DONE]
-Target: claude
-Files: js/results/view.js, js/results/flow.js, js/ui.js, js/ui/components.js, js/classic2d/mode.js, js/classic2d/session.js, js/main.js, js/records/screen.js, js/records/replay-list.js, js/records/history-chart.js, index.html, css/components.css, css/style.css, dev/components.html, tests/results.test.mjs, tests/components.test.mjs, tests/classic2d-mode.test.mjs, tests/mode3d-end.test.mjs, tests/records-screen.test.mjs, tests/records-screen-3d.test.mjs, tests/records-replays.test.mjs, tests/records-history.test.mjs, tests/replay-viewer.test.mjs, tests/replay-viewer-3d.test.mjs, .claude/domain/features/results-screen.md, .claude/domain/features/3d-results-records-screens.md, .claude/domain/features/screen-components.md, .claude/domain/features/classic-2d-square-play.md, .claude/domain/features/records-screen.md, .claude/domain/features/replay-library.md, .claude/domain/features/leaderboard-screen.md, .claude/domain/features/results-steam-rank.md
-Preconditions: none
-
----
-
-## 129. Pause keeps the clock running, pauses recorded
-
-Status: [DONE]
-Target: claude
-Files: js/classic2d/session.js, js/mode3d/session.js, js/shell/mode-3d.js, js/classic2d/mode.js, js/main.js, js/ui.js, js/records/summary.js, js/records/model.js, js/records/store.js, js/replay/format.js, js/replay/recorder.js, js/replay/viewer.js, index.html, css/tokens.css, css/components.css, tests/classic2d-session.test.mjs, tests/mode3d-session.test.mjs, tests/shell-mode-3d.test.mjs, tests/shell-pause.test.mjs, tests/records-summary.test.mjs, tests/records-summary-3d.test.mjs, tests/records-model.test.mjs, tests/records-store.test.mjs, tests/replay-format.test.mjs, tests/replay-recorder.test.mjs, tests/replay-2d.test.mjs, tests/replay-3d.test.mjs, tests/replay-viewer.test.mjs, README.md, .claude/domain/product-design.md, .claude/domain/features/game-shell.md, .claude/domain/features/classic-2d-square-play.md, .claude/domain/features/3d-play-flow.md, .claude/domain/features/game-summary.md, .claude/domain/features/personal-records.md, .claude/domain/features/replay-recording.md, .claude/domain/features/replay-playback.md
-Preconditions: none
-
----
-
-## 130. One-key restart and completed-games stats
-
-Status: [DONE]
-Target: claude
-Files: js/shell/pause.js, js/main.js, js/classic2d/mode.js, js/classic2d/cursor-input.js, js/ui.js, js/settings/schema.js, js/settings/page.js, js/settings/store.js, js/settings/bindings.js, js/records/model.js, js/records/store.js, js/records/screen.js, js/results/flow.js, js/results/view.js, index.html, tests/shell-pause.test.mjs, tests/settings-store.test.mjs, tests/settings-page.test.mjs, tests/records-model.test.mjs, tests/records-model-3d.test.mjs, tests/records-store.test.mjs, tests/records-screen.test.mjs, tests/records-screen-3d.test.mjs, tests/results.test.mjs, tests/classic2d-mode.test.mjs, README.md, docs/ORIGINAL_SPEC.md, .claude/domain/product-design.md, .claude/domain/features/game-shell.md, .claude/domain/features/personal-records.md, .claude/domain/features/3d-game-records.md, .claude/domain/features/records-screen.md, .claude/domain/features/3d-results-records-screens.md, .claude/domain/features/results-screen.md, .claude/domain/features/settings.md
-Preconditions: none
-
----
-
-## 131. Reset all data
-
-Status: [DONE]
-Target: claude
-Files: js/platform/storage.js, js/platform/browser-backend.js, js/platform/memory-backend.js, js/platform/index.js, js/settings/reset.js, js/settings/page.js, js/ui.js, js/main.js, css/style.css, tests/platform-storage.test.mjs, tests/platform-browser.test.mjs, tests/settings-page.test.mjs, tests/settings-reset.test.mjs, README.md, .claude/domain/features/settings.md, .claude/domain/features/platform-storage.md, .claude/domain/features/replay-library.md, .claude/domain/features/personal-records.md
-Preconditions: none
-
----
-
-## 132. Shell without WebGL 2
-
-Status: [DONE]
-Target: claude
-Files: js/main.js, js/shell/menu.js, js/ui.js, js/replay/viewer.js, index.html, css/style.css, tests/shell-menu.test.mjs, tests/replay-viewer.test.mjs, README.md, .claude/domain/features/game-shell.md, .claude/domain/features/replay-playback.md
-Preconditions: none
-
----
-
-## 133. Returning-player surfaces
-
-Status: [DONE]
-Target: claude
-Files: js/shell/returning.js, js/records/typical-bbbv.js, dev/measure-typical-bbbv.mjs, js/main.js, js/ui.js, js/mode3d/board-choice.js, js/classic2d/board-choice.js, index.html, css/style.css, tests/shell-returning.test.mjs, tests/shell-menu.test.mjs, tests/mode3d-board-choice.test.mjs, tests/classic2d-mode.test.mjs, tests/components.test.mjs, .claude/domain/features/game-shell.md, .claude/domain/features/3d-play-flow.md, .claude/domain/features/classic-2d-square-play.md
-Preconditions: none
-
----
-
-## 134. 2D board scale, framed panel, cursor ring
-
-Status: [DONE]
-Target: claude
-Files: js/classic2d/tile-skin.js, js/classic2d/board-view.js, js/classic2d/cursor-input.js, js/classic2d/mode.js, js/classic2d/scroll-hint.js, js/replay/viewer-2d.js, js/replay/viewer.js, js/settings/schema.js, js/settings/page.js, js/main.js, js/ui.js, index.html, css/style.css, tests/classic2d-view.test.mjs, tests/classic2d-cursor.test.mjs, tests/classic2d-mode.test.mjs, tests/tile-skin.test.mjs, tests/replay-2d.test.mjs, tests/replay-viewer.test.mjs, tests/settings-store.test.mjs, tests/settings-page.test.mjs, tests/components.test.mjs, .claude/domain/features/square-tile-skin.md, .claude/domain/features/classic-2d-square-play.md, .claude/domain/features/settings.md, .claude/domain/features/replay-playback.md, .claude/domain/features/screen-components.md, .claude/domain/features/replay-recording.md
-Preconditions: none
-
----
-
-## 135. 2D sound
-
-Status: [DONE]
-Target: claude
-Files: js/classic2d/mode.js, js/main.js, tests/classic2d-mode.test.mjs, .claude/domain/features/classic-2d-square-play.md
-Preconditions: none
-
----
-
-## 136. 2D tile art parity with 3D
-
-Status: [DONE]
-Target: claude
-Files: js/tile-art.js, js/textures.js, js/classic2d/tile-skin.js, css/tokens.css, tests/tile-skin.test.mjs, tests/tokens.test.mjs, tests/theme.test.mjs, .claude/domain/features/square-tile-skin.md
-Preconditions: none
-
----
-
-## 137. 2D end-of-game moment and the faster loop
-
-Status: [DONE]
-Target: claude
-Files: js/classic2d/end-effect.js, js/classic2d/board-view.js, js/classic2d/mode.js, js/shell/mode-3d.js, js/shell/mode-host.js, js/main.js, js/results/view.js, js/results/flow.js, tests/classic2d-end-effect.test.mjs, tests/classic2d-mode.test.mjs, tests/classic2d-view.test.mjs, tests/mode3d-end.test.mjs, tests/shell-mode-3d.test.mjs, tests/results.test.mjs, README.md, .claude/domain/features/classic-2d-square-play.md, .claude/domain/features/3d-results-records-screens.md, .claude/domain/features/3d-play-flow.md, .claude/domain/features/results-screen.md
-Preconditions: none
-
----
-
-## 138. Generation pipeline
-
-Status: [DONE]
-Target: claude
-Files: js/generation/generate.js, js/generation/start-cell.js, js/generation/worker.js, js/generation/client.js, js/classic2d/session.js, js/classic2d/mode.js, js/classic2d/board-view.js, js/mode3d/session.js, js/shell/mode-3d.js, js/render.js, js/main.js, js/ui.js, index.html, css/style.css, tests/generation-placer.test.mjs, tests/generation-noguess.test.mjs, tests/generation-client.test.mjs, tests/classic2d-session.test.mjs, tests/classic2d-mode.test.mjs, tests/classic2d-view.test.mjs, tests/mode3d-session.test.mjs, tests/shell-mode-3d.test.mjs, tests/components.test.mjs, .claude/domain/features/board-generation.md, .claude/domain/features/classic-2d-square-play.md, .claude/domain/features/3d-play-flow.md
-Preconditions: none
-
----
-
 ## 139. 3D flight: fly-through fade, forward follows the view, spacing, FOV
 
 Status: [MISSING]
@@ -879,15 +329,6 @@ Status: [MISSING]
 Target: claude
 Files: js/shell/mode-3d.js, js/render.js, js/main.js, js/results/view.js, js/results/flow.js, index.html, css/style.css, tests/mode3d-end.test.mjs, tests/shell-mode-3d.test.mjs, tests/results.test.mjs, README.md, .claude/domain/features/3d-results-records-screens.md, .claude/domain/features/results-screen.md, .claude/domain/features/3d-board-graph.md, .claude/domain/product-design.md
 Preconditions: none
-
----
-
-## 141. 3D readability
-
-Status: [DONE]
-Target: claude+human
-Files: js/readability.js, js/render.js, js/main.js, js/ui.js, js/settings/bindings.js, index.html, css/style.css, tests/readability-3d.test.mjs, tests/components.test.mjs, tests/replay-viewer-3d.test.mjs, docs/ORIGINAL_SPEC.md, README.md, .claude/domain/product-design.md
-Preconditions: 125
 
 ---
 
@@ -959,7 +400,7 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: js/records/stats.js, js/records/export.js, js/records/screen.js, js/records/history-chart.js, js/results/flow.js, js/replay/library.js, js/settings/page.js, js/ui/components.js, js/main.js, index.html, css/components.css, css/style.css, dev/components.html, tests/records-stats.test.mjs, tests/records-export.test.mjs, tests/records-screen.test.mjs, tests/records-screen-3d.test.mjs, tests/records-history.test.mjs, tests/results.test.mjs, tests/replay-library.test.mjs, tests/settings-page.test.mjs, tests/components.test.mjs, README.md, .claude/domain/features/records-screen.md, .claude/domain/features/replay-library.md, .claude/domain/features/settings.md
-Preconditions: 128, 131, 148
+Preconditions: 148
 
 ---
 
@@ -977,7 +418,7 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: js/records/board-code.js, js/shell/daily.js, js/shell/challenge.js, js/classic2d/session.js, js/classic2d/mode.js, js/classic2d/board-choice.js, js/classic2d/board-view.js, js/mode3d/session.js, js/mode3d/board-choice.js, js/shell/mode-3d.js, js/render.js, js/shell/menu.js, js/shell/router.js, js/records/board.js, js/records/summary.js, js/records/model.js, js/records/store.js, js/records/screen.js, js/records/replay-list.js, js/records/history-chart.js, js/records/stats.js, js/results/view.js, js/results/flow.js, js/replay/viewer.js, js/replay/recorder.js, js/replay/library.js, js/ui/components.js, js/main.js, js/ui.js, index.html, css/components.css, css/style.css, dev/components.html, tests/records-board-code.test.mjs, tests/shell-daily.test.mjs, tests/shell-challenge.test.mjs, tests/records-board.test.mjs, tests/records-summary.test.mjs, tests/records-model.test.mjs, tests/records-store.test.mjs, tests/records-screen.test.mjs, tests/records-screen-3d.test.mjs, tests/records-replays.test.mjs, tests/records-history.test.mjs, tests/classic2d-session.test.mjs, tests/classic2d-mode.test.mjs, tests/mode3d-session.test.mjs, tests/mode3d-board-choice.test.mjs, tests/shell-mode-3d.test.mjs, tests/shell-menu.test.mjs, tests/results.test.mjs, tests/replay-viewer.test.mjs, tests/replay-library.test.mjs, tests/components.test.mjs, README.md, .claude/domain/features/board-generation.md, .claude/domain/features/game-shell.md, .claude/domain/features/classic-2d-square-play.md, .claude/domain/features/3d-play-flow.md, .claude/domain/features/game-summary.md, .claude/domain/features/personal-records.md, .claude/domain/features/3d-game-records.md, .claude/domain/features/records-screen.md, .claude/domain/features/3d-results-records-screens.md, .claude/domain/features/results-screen.md, .claude/domain/features/replay-playback.md, .claude/domain/features/replay-library.md, .claude/domain/features/screen-components.md
-Preconditions: 138
+Preconditions: none
 
 ---
 
@@ -995,7 +436,7 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: js/mode3d/learn.js, dev/find-learn-3d.mjs, js/mode3d/board-choice.js, js/mode3d/session.js, js/shell/mode-3d.js, js/shell/first-use.js, js/shell/pause.js, js/main.js, js/ui.js, js/render.js, index.html, css/style.css, tests/mode3d-learn.test.mjs, tests/mode3d-board-choice.test.mjs, tests/mode3d-session.test.mjs, tests/shell-mode-3d.test.mjs, tests/shell-first-use.test.mjs, tests/shell-pause.test.mjs, README.md, .claude/domain/product-design.md, .claude/domain/features/3d-play-flow.md, .claude/domain/features/game-shell.md
-Preconditions: 119, 152
+Preconditions: 152
 
 ---
 
@@ -1014,15 +455,6 @@ Status: [MISSING]
 Target: claude
 Files: tests/helpers/browser.mjs, tests/engine-3d-profile.test.mjs, tests/engine-graph.test.mjs, tests/generation-solver.test.mjs, tests/records-history.test.mjs, tests/render-3d-flag-flash.test.mjs, tests/mode3d-end.test.mjs, tests/replay-viewer-3d.test.mjs, tests/classic2d-mode.test.mjs, tests/shell-mode-3d.test.mjs, tests/camera-spawn.test.mjs, tests/classic2d-cursor.test.mjs, tests/classic2d-fidelity.test.mjs, tests/classic2d-pointer.test.mjs, tests/classic2d-view.test.mjs, tests/components.test.mjs, tests/mode3d-board-choice.test.mjs, tests/mode3d-session.test.mjs, tests/platform-blob-store.test.mjs, tests/platform-browser.test.mjs, tests/records-replays.test.mjs, tests/records-screen-3d.test.mjs, tests/records-screen.test.mjs, tests/render-3d-feedback.test.mjs, tests/replay-viewer.test.mjs, tests/results-watch.test.mjs, tests/results.test.mjs, tests/settings-appliers.test.mjs, tests/settings-page.test.mjs, tests/shell-first-use.test.mjs, tests/shell-help.test.mjs, tests/shell-history.test.mjs, tests/shell-lock-fallback.test.mjs, tests/shell-menu.test.mjs, tests/shell-mode-host.test.mjs, tests/shell-pause-esc.test.mjs, tests/shell-pause.test.mjs, tests/shell-returning.test.mjs, tests/shell-router.test.mjs, tests/tile-skin.test.mjs, README.md, .claude/context/testing.md
 Preconditions: 154
-
----
-
-## 156. Dark theme: menu-screen backdrop and context-lost card
-
-Status: [SKIP]
-Target: claude
-Files: css/tokens.css, css/style.css, tests/tokens.test.mjs, tests/components.test.mjs, tests/theme.test.mjs, .claude/context/app-shell-kit.md, .claude/context/testing.md, .claude/domain/features/design-tokens-and-themes.md
-Preconditions: none
 
 ---
 
