@@ -34,9 +34,11 @@
 // the chosen mode's named boards, and never throw: the screen always shows and Back always works.
 //
 // createRecordsScreen({ records, view }) → { show({ mode, boardKey }?), hide(), select(key),
-// setMode(mode), showPage(n), mode, board, page }: show draws the content through view.show(content)
+// stepBoard(delta), setMode(mode), showPage(n), mode, board, page }: show draws the content through view.show(content)
 // and subscribes to records.onChange, redrawing the chosen board on every newly recorded game (on
-// the same games page); show, select and setMode start on the first games page; setMode shows the
+// the same games page); show, select and setMode start on the first games page; stepBoard(±1) selects the
+// previous / next board of the picker, in its order, and returns false, changing nothing, at either end
+// (the controller's LB / RB; TRIGGER_MODES are LT's and RT's modes for setMode); setMode shows the
 // mode's last board played, or its first board, and does nothing for the mode already shown or an
 // unknown one; hide unsubscribes and calls view.hide(). When records are not being saved (records.available() false) the first show of the session carries
 // the results screen's notSaved note, kept for that visit only.
@@ -68,6 +70,8 @@ import { REPLAY_SCREEN, REPLAYS_NOT_SAVED, replayList, togglePin, watchRoute, cr
 export const RECORDS_SCREEN = 'records';
 export const EMPTY_TEXT = 'No games on this board yet.';
 const MODE_2D = 'classic-2d';
+/** The mode each controller trigger chooses on the Records screen. */
+export const TRIGGER_MODES = Object.freeze({ lt: MODE_2D, rt: MODE_3D });
 /** The switch's modes, in order. */
 export const RECORDS_MODES = Object.freeze([
   Object.freeze({ value: MODE_2D, label: '2D', overallTitle: 'Classic 2D overall' }),
@@ -257,6 +261,14 @@ export function createRecordsScreen({ records, view, replays = null, router = nu
       checkReplays(visit);
     },
     select(key) { board = key; page = 0; draw(); },
+    stepBoard(delta) {
+      const boards = content?.boards ?? [];
+      const at = boards.findIndex((b) => b.key === board);
+      const next = boards[at + Math.sign(delta)];
+      if (at < 0 || !delta || !next) return false;
+      this.select(next.key);
+      return true;
+    },
     setMode(m) {
       if (!isMode(m) || m === mode) return;
       mode = m;

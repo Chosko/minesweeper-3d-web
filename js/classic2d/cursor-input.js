@@ -19,8 +19,8 @@
 // same profile markers as the pointer input (pointerRules): the press follows the cursor and the
 // release acts where it is.
 //
-// createCursorInput({ grid, game, onPress, onAction, onCursor?, onUse?, rules?, active?, delay?,
-//                    interval? })
+// createCursorInput({ grid, game, onPress, onAction, onCursor?, onUse?, onPadCue?, rules?, active?,
+//                    delay?, interval? })
 //   grid      the square grid (width, height, graph).
 //   game      () → the engine game, read for cellState / cellNumber.
 //   onPress   (cells) → the cells to show pressed, whenever that set changes.
@@ -28,6 +28,9 @@
 //   onCursor  (c) → the cursor moved to cell c.
 //   onUse     () → a cursor input was used while the board takes input: a direction held (key,
 //             d-pad or the stick past STICK_THRESHOLD) or a button pressed, before it acts.
+//   onPadCue  (kind) → a controller press the shell answers with a rumble: 'flag' when a controller
+//             button (X, LT) placed or removed a flag, else 'press' when RT or LT was pressed while
+//             the board takes input. Keys, A and Y never report.
 //   active    () → false while the board takes no input: no press, no action, no move.
 //   delay, interval  the auto-repeat timing of a held direction (js/gamepad.js Repeat).
 //
@@ -41,7 +44,7 @@
 //   reset()                            forgets every held input without firing (focus loss, pause).
 //   holding, moving                    whether a button / a direction is held.
 //
-// mountCursorInput({ view, session, grid?, win?, rules?, delay?, interval? }) → { input, pad,
+// mountCursorInput({ view, session, grid?, win?, rules?, delay?, interval?, onPadCue? }) → { input, pad,
 // shown, destroy() }: keys on the page (`win`) — the system key repeat ignored, a held direction
 // repeated on animation frames — and held inputs dropped on blur. pad(poll, now?) is for the
 // shell's controller poll. Keys with Ctrl, Alt or Meta and every key not in CURSOR_KEYS are left
@@ -87,10 +90,13 @@ export const STICK_THRESHOLD = 0.25;
 const STEP = Object.freeze({ up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] });
 const DIRECTIONS = Object.keys(STEP);
 const BUTTONS = ['reveal', 'flag', 'chord'];
+const padSource = (b) => `pad:${b}`;
+const PAD_SOURCES = new Set(Object.keys(PAD_MAP).map(padSource));
+const TRIGGER_SOURCES = new Set([BTN.LT, BTN.RT].map(padSource));
 
 export function createCursorInput({
-  grid, game, onPress, onAction, onCursor = () => {}, onUse = () => {}, rules = pointerRules(), active = () => true,
-  delay, interval,
+  grid, game, onPress, onAction, onCursor = () => {}, onUse = () => {}, onPadCue = () => {}, rules = pointerRules(),
+  active = () => true, delay, interval,
 }) {
   const cols = grid.width;
   const rows = grid.height;
@@ -148,9 +154,12 @@ export function createCursorInput({
     }
   }
 
+  /** Toggles the flag on the cursor's cell when it can hold one; whether it did. */
   function toggleFlag() {
     const state = game().cellState(cell);
-    if (state === CELL.CLOSED || state === CELL.FLAGGED) send('toggleFlag', cell);
+    if (state !== CELL.CLOSED && state !== CELL.FLAGGED) return false;
+    send('toggleFlag', cell);
+    return true;
   }
 
   function setCell(c) {
@@ -199,10 +208,11 @@ export function createCursorInput({
     onUse();
     const was = pressing();
     const flagWas = held.flag.size > 0;
+    let flagged = false;
     set.add(source);
     if (button === 'flag') {
       if (pressing()) chordOnly = true;
-      if (!flagWas && rules.flagToggle === 'right-press') toggleFlag();
+      if (!flagWas && rules.flagToggle === 'right-press') flagged = toggleFlag();
     } else {
       if (!was) {
         downCell = cell;
@@ -214,13 +224,15 @@ export function createCursorInput({
       if (button === 'chord' || held.flag.size > 0) chordOnly = true;
     }
     refresh();
+    if (flagged && PAD_SOURCES.has(source)) onPadCue('flag');
+    else if (TRIGGER_SOURCES.has(source)) onPadCue('press');
   }
 
   function up(source, button) {
     const set = held[button];
     if (!set || !set.delete(source)) return;
     if (button === 'flag') {
-      if (!held.flag.size && !chordOnly && rules.flagToggle === 'right-release') toggleFlag();
+      if (!held.flag.size && !chordOnly && rules.flagToggle === 'right-release' && toggleFlag() && PAD_SOURCES.has(source)) onPadCue('flag');
     } else if (!pressing()) {
       release();
       chordOnly = false;
@@ -234,7 +246,7 @@ export function createCursorInput({
     const h = poll?.held ?? [];
     for (const [index, what] of Object.entries(PAD_MAP)) {
       const b = Number(index);
-      const source = `pad:${b}`;
+      const source = padSource(b);
       const on = Boolean(h[b]);
       if (on === padHeld.has(b)) continue;
       if (on) padHeld.add(b);
@@ -288,7 +300,7 @@ export function createCursorInput({
 
 const PLAYABLE = new Set(['ready', 'playing']);
 
-export function mountCursorInput({ view, session, grid = session.setup.grid, win = globalThis, rules, delay, interval }) {
+export function mountCursorInput({ view, session, grid = session.setup.grid, win = globalThis, rules, delay, interval, onPadCue }) {
   const active = () => PLAYABLE.has(session.state) && !session.paused;
   const now = () => win.performance.now();
   let ringShown = false;
@@ -299,6 +311,7 @@ export function mountCursorInput({ view, session, grid = session.setup.grid, win
     active,
     delay,
     interval,
+    onPadCue,
     onPress: (cells) => view.setPressed(cells),
     onAction: (kind, c) => session[kind](c),
     onCursor: (c) => {

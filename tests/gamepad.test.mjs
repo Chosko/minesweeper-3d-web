@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   stickCurve, triggerHeld, Repeat, padFamily, padGlyphs, pickInDirection, GamepadReader, BTN,
-  STICK_DEADZONE,
+  STICK_DEADZONE, PAD_PRESS, PAD_FLAG, PAD_BOOM, padPulse,
 } from '../js/gamepad.js';
 import { FlyCamera, MouseActions, MOVE_SPEED, LOOK_DEG_PER_PX, PAD_LOOK_DEG_PER_S } from '../js/input.js';
 import { Controls } from '../js/controls.js';
@@ -96,6 +96,94 @@ test('pickInDirection: nearest in the direction, prefers aligned candidates', ()
   assert.equal(pickInDirection(grid.go, cands('go'), 'up'), 'c2');
   assert.equal(pickInDirection(grid.a1, cands('a1'), 'left'), null);
   assert.equal(pickInDirection(grid.a1, cands('a1'), 'up'), null);
+});
+
+test('pickInDirection: only a candidate overlapping on the other axis or within 45° of the direction counts', () => {
+  const R = (l, t, w = 100, h = 40) => ({ left: l, top: t, right: l + w, bottom: t + h });
+  const from = R(0, 0); // centre (50, 20)
+  const one = (rect, dir) => pickInDirection(from, [{ rect, item: 'x' }], dir);
+  // a toggle far below-right: past the control on the right, but well outside the right cone
+  assert.equal(one(R(150, 300, 40, 20), 'right'), null);
+  assert.equal(one(R(150, 300, 40, 20), 'down'), 'x', 'inside the down cone');
+  // overlapping on the perpendicular axis counts however far it lies
+  assert.equal(one(R(200, 30, 100, 40), 'right'), 'x');
+  assert.equal(one(R(90, 400, 40, 20), 'down'), 'x');
+  // centre exactly on the 45° line counts, just past it does not
+  assert.equal(one(R(230, 200, 40, 0), 'right'), 'x'); // centre (250, 200): dx 200, dy 180
+  assert.equal(one(R(130, 200, 40, 0), 'right'), null); // centre (150, 200): dx 100, dy 180
+  // inside the cone, scoring is unchanged: gap + 2 x perpendicular gap, so a near diagonal one beats a far aligned one
+  const pick = pickInDirection(from, [{ rect: R(150, 60, 40, 40), item: 'diag' }, { rect: R(300, 0), item: 'aligned' }], 'right');
+  assert.equal(pick, 'diag');
+});
+
+// ---------- rumble ----------
+function fakeActuator({ reject = false, throws = false } = {}) {
+  const calls = [];
+  return {
+    calls,
+    playEffect(type, params) {
+      calls.push([type, params]);
+      if (throws) throw new Error('unsupported');
+      return reject ? Promise.reject(new Error('preempted')) : Promise.resolve('complete');
+    },
+  };
+}
+function fakeTimers() {
+  const queue = [];
+  return {
+    queue,
+    setTimeout: (fn, ms) => { queue.push({ fn, ms }); return queue.length; },
+    run() { for (const t of queue.splice(0).sort((a, b) => a.ms - b.ms)) t.fn(); },
+  };
+}
+
+test('pulse constants: a 10 ms press pulse, a flag\'s two pulses the second after the first ends, the explosion unchanged', () => {
+  assert.equal(PAD_PRESS.length, 1);
+  assert.equal(PAD_PRESS[0].at, 0);
+  assert.equal(PAD_PRESS[0].effect.duration, 10);
+  assert.equal(PAD_FLAG.length, 2);
+  assert.equal(PAD_FLAG[0].at, 0);
+  assert.ok(PAD_FLAG[1].at > PAD_FLAG[0].at + PAD_FLAG[0].effect.duration, 'the second starts after the first ends');
+  assert.deepEqual(PAD_BOOM, [{ at: 0, effect: { duration: 400, strongMagnitude: 1, weakMagnitude: 0.6 } }]);
+  for (const p of [PAD_PRESS, PAD_FLAG, PAD_BOOM]) assert.ok(Object.isFrozen(p));
+});
+
+test('padPulse plays each pulse on the pad\'s actuator in order, the later ones on a timer', async () => {
+  const a = fakeActuator();
+  const timers = fakeTimers();
+  padPulse({ vibrationActuator: a }, PAD_PRESS, timers);
+  assert.deepEqual(a.calls, [['dual-rumble', PAD_PRESS[0].effect]]);
+  assert.equal(timers.queue.length, 0, 'one pulse, nothing scheduled');
+  a.calls.length = 0;
+  padPulse({ vibrationActuator: a }, PAD_FLAG, timers);
+  assert.deepEqual(a.calls, [['dual-rumble', PAD_FLAG[0].effect]], 'the first pulse at once');
+  assert.deepEqual(timers.queue.map((t) => t.ms), [PAD_FLAG[1].at]);
+  timers.run();
+  assert.deepEqual(a.calls, [['dual-rumble', PAD_FLAG[0].effect], ['dual-rumble', PAD_FLAG[1].effect]]);
+});
+
+test('padPulse is silent with no pad, no actuator, no playEffect, and swallows a rejected or thrown effect', async () => {
+  const timers = fakeTimers();
+  assert.doesNotThrow(() => padPulse(null, PAD_FLAG, timers));
+  assert.doesNotThrow(() => padPulse({}, PAD_FLAG, timers));
+  assert.doesNotThrow(() => padPulse({ vibrationActuator: {} }, PAD_FLAG, timers));
+  assert.equal(timers.queue.length, 0, 'nothing scheduled without an actuator');
+  const rejected = [];
+  const onRejection = (e) => rejected.push(e);
+  process.on('unhandledRejection', onRejection);
+  try {
+    const r = fakeActuator({ reject: true });
+    padPulse({ vibrationActuator: r }, PAD_FLAG, timers);
+    timers.run();
+    assert.equal(r.calls.length, 2);
+    const t = fakeActuator({ throws: true });
+    assert.doesNotThrow(() => { padPulse({ vibrationActuator: t }, PAD_FLAG, timers); timers.run(); });
+    assert.equal(t.calls.length, 2);
+    await new Promise((res) => setTimeout(res, 10));
+  } finally {
+    process.off('unhandledRejection', onRejection);
+  }
+  assert.deepEqual(rejected, []);
 });
 
 // ---------- reader ----------

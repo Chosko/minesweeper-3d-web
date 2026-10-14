@@ -1038,7 +1038,7 @@ test('in a browser, the overlay bar over the 3D scene meets the contrast contrac
 // The debug hook's surface, pinned so the screen rebuild leaves it unchanged.
 const MS_HOOK = ['state', 'game', 'renderer', 'camera', 'fps', 'frameStats', 'spawnPose', 'THREE', 'start', 'forcePlay',
   'controls', 'pads', 'pause', 'cellCenter', 'moveTo', 'look', 'aimAt', 'mouseDown', 'mouseUp', 'click', 'key', 'wheel',
-  'selected', 'pickBrute', 'pickWith', 'info', 'modes', 'pauser', 'settings', 'records', 'replayViewer', 'board2D', 'game2D', 'watch'];
+  'selected', 'pickBrute', 'pickWith', 'info', 'modes', 'pauser', 'settings', 'records', 'replayViewer', 'replays', 'board2D', 'game2D', 'watch'];
 
 test('in a browser, the menu, the pause card and the results layout meet the contrast contract in both themes', async (t) => {
   const env = await suite.open(t);

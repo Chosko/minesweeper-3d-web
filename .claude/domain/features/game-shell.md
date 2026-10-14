@@ -118,7 +118,10 @@ it generalises.
   screen, built on the existing controller reader and spatial focus search
   ([input.md](../../context/input.md)): the topmost visible layer takes
   input, each screen declares its default focus, and buttons held across a
-  screen change are ignored until released. The arrow keys are the
+  screen change are ignored until released. A move that finds nothing in
+  the pressed direction goes to the next control in DOM order (the previous
+  one for Up and Left), never wrapping, and Down / Up step a table's buttons
+  and a menu's items in DOM order. The arrow keys are the
   keyboard's spatial focus moves, through the same search as the D-pad, on
   every layer it walks except the boards, Records and the replay viewer,
   which handle their own arrows; a control that owns an arrow keeps it (a

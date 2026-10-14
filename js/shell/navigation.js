@@ -1,6 +1,6 @@
-// Shell navigation: which layer takes input, default focus fallback, Back inputs, the arrow keys'
-// focus moves and the suppression of controller buttons held across a screen change. DOM-free: the
-// shell hands in elements, visibility tests and poll results.
+// Shell navigation: which layer takes input, default focus fallback, the focus move with its DOM-order
+// fallback, Back inputs, the arrow keys' focus moves and the suppression of controller buttons held
+// across a screen change. DOM-free: the shell hands in elements, visibility tests and poll results.
 import { BTN } from '../gamepad.js';
 
 /** The native controls the shell's keyboard and controller navigation collect. */
@@ -15,6 +15,31 @@ export function topLayer(order, isOpen) {
 /** The declared default target when it is focusable, else the first focusable item, else null. */
 export function resolveFocus(target, items) {
   return target && items.includes(target) ? target : items[0] ?? null;
+}
+
+/**
+ * The control a focus move from `cur` in `dir` lands on, or null to stay. `items` are the topmost
+ * layer's focusables in DOM order; `spatial(dir)` is the spatial search's pick or null; `groupOf(item)`
+ * is the group an item sits in (a table, a menu), or null.
+ * - Down / Up from inside a group take the next / previous item in DOM order, so each of its items is
+ *   a stop and the move leaves the group at its ends in DOM order.
+ * - Otherwise the spatial pick wins; Down / Up landing in a group land on its first / last item.
+ * - With no spatial pick: the next item in DOM order for Down and Right, the previous for Up and
+ *   Left. Past either end of `items` the move goes nowhere (no wrap).
+ */
+export function focusMove(items, cur, dir, { spatial, groupOf = () => null }) {
+  const i = items.indexOf(cur);
+  if (i < 0) return null;
+  const forward = dir === 'down' || dir === 'right';
+  const vertical = dir === 'down' || dir === 'up';
+  const adjacent = items[forward ? i + 1 : i - 1] ?? null;
+  if (vertical && groupOf(cur) != null) return adjacent;
+  const found = spatial(dir);
+  if (!found) return adjacent;
+  const into = vertical ? groupOf(found) : null;
+  if (into == null) return found;
+  const members = items.filter((e) => groupOf(e) === into);
+  return forward ? members[0] : members[members.length - 1];
 }
 
 /** Esc means Back (or Pause while playing) on every screen. */

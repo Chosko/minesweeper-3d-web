@@ -106,7 +106,8 @@ same, is not played and the viewer says why.
 | `-` / `=` | `LT` / `RT` | Slower / faster (0.5×, 1×, 2×, 4×) |
 | `Esc` | `B` | Back to the screen you came from |
 
-The seek bar moves to any point in the replay, and marks each stretch where the game was paused.
+The seek bar moves to any point in the replay, and marks each stretch where the game was paused;
+with the controller, focus it and the D-pad left / right steps it.
 
 ## 3D: how to play
 
@@ -214,9 +215,11 @@ controller (✕ ○ □ △ / L1 R1 L2 R2 on PlayStation, for example).
 | `Back` (View) | Pause; in menus, back |
 
 In menus, the D-pad or left stick moves the focus, `A` selects and `B` or `Back` goes back. On a slider, D-pad
-left / right changes the value; on a custom-board field, `LB` / `RB` step the number. The game pauses
-if the controller disconnects during play, and the controller rumbles on an explosion where the
-browser supports it. Some browsers only start sound after a key press or a click.
+left / right changes the value; on a custom-board field, `LB` / `RB` step the number. In Records,
+`LB` / `RB` change the board and `LT` / `RT` switch 2D and 3D. The game pauses if the controller
+disconnects during play. Where the browser supports it, the controller pulses when you press a
+trigger on the board (its action comes on release), double-pulses when it places or removes a flag,
+and rumbles on an explosion. Some browsers only start sound after a key press or a click.
 
 ## What's new compared to the original
 

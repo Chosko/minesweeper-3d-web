@@ -6,9 +6,9 @@ import { pickCell, pickCellBrute } from './picking.js';
 import { UI, clampSettings, NO_MOUSE_MSG } from './ui.js';
 import * as audio from './audio.js';
 import { Controls } from './controls.js';
-import { GamepadReader, BTN, Repeat, stickCurve, padGlyphs, pickInDirection, GLYPHS, STICK_DEADZONE } from './gamepad.js';
+import { GamepadReader, BTN, Repeat, stickCurve, padGlyphs, pickInDirection, GLYPHS, STICK_DEADZONE, PAD_PRESS, PAD_FLAG, PAD_BOOM, padPulse } from './gamepad.js';
 import { createRouter } from './shell/router.js';
-import { FOCUSABLE, topLayer, resolveFocus, isBackKey, arrowDirection, keepsArrow, backButtons, createHeldSuppressor } from './shell/navigation.js';
+import { FOCUSABLE, topLayer, resolveFocus, focusMove, isBackKey, arrowDirection, keepsArrow, backButtons, createHeldSuppressor } from './shell/navigation.js';
 import { createHistorySync, storedSet } from './shell/history.js';
 import { createModeHost } from './shell/mode-host.js';
 import { create3DMode } from './shell/mode-3d.js';
@@ -37,7 +37,7 @@ import { panelRect } from './classic2d/board-view.js';
 import { createViewer3D } from './replay/viewer-3d.js';
 import { REPLAY_SCREEN } from './records/replay-list.js';
 import { createResultsView, resultsContent, resultsEnter, LOOK_REFUSED } from './results/view.js';
-import { createRecordsScreen, createRecordsView } from './records/screen.js';
+import { createRecordsScreen, createRecordsView, TRIGGER_MODES } from './records/screen.js';
 import { applySettings, pixelRatioFor } from './settings/appliers.js';
 import { bindSettingControls } from './settings/page.js';
 import { createReset } from './settings/reset.js';
@@ -156,7 +156,7 @@ function actionSounds(type, r, onNumber = false) {
   if (type === 'right') {
     if (r.flagged || r.unflagged) sfx.flag(r.flagged >= r.unflagged, r.flagged + r.unflagged); // the sound grows with the count
     if (onNumber && (r.flagged || r.unflagged)) renderer.flash(Array.from(r.changed).filter((c) => !S.game.pressed[c]));
-    if (padActing && (r.flagged || r.unflagged)) padRumble(PAD_TICK);
+    if (padActing && (r.flagged || r.unflagged)) padRumble(PAD_FLAG);
   } else if (r.exploded) boom();
   else if (r.revealed > 0) {
     if (type === 'left') sfx.reveal(r.revealed);
@@ -469,6 +469,7 @@ const FLOW_2D = {
   generating: (shown) => { board2d.generating = shown; showStatus2D(); },
   progress: (p) => { board2d.progress = p; drawStatus2D(); }, // the progress line, without moving the focus
   failed: (failure) => { board2d.failure = failure; showStatus2D(); },
+  padCue: (kind) => padRumble(kind === 'flag' ? PAD_FLAG : PAD_PRESS), // a trigger's press cue, a flag's double pulse
 };
 const board2d = { generating: false, failure: null, progress: null };
 /** The Classic 2D board status card as it stands; whether it shows. */
@@ -1168,8 +1169,6 @@ document.getElementById('ctx-lost-btn').addEventListener('click', () => { reload
 document.getElementById('ctx-lost-menu').addEventListener('click', () => showMainMenu());
 
 // ---------- game controller ----------
-const PAD_BOOM = { duration: 400, strongMagnitude: 1, weakMagnitude: 0.6 };
-const PAD_TICK = { duration: 40, strongMagnitude: 0, weakMagnitude: 0.25 };
 let padGesture = false; // a UI click is being made with the controller
 let padActing = false; // a MouseActions call is being made with the controller
 const nav = createHeldSuppressor(); // buttons held through a screen change: ignored until released
@@ -1191,14 +1190,8 @@ function updatePadUi() {
   DEVICE.connected(!!p);
   ui.setPad(p ? { glyphs: padGlyphs(p.id), mapping: p.mapping } : null);
 }
-function padRumble(effect) {
-  const a = pads.activePad()?.vibrationActuator;
-  if (!a || typeof a.playEffect !== 'function') return;
-  try {
-    const r = a.playEffect('dual-rumble', effect);
-    if (r && typeof r.catch === 'function') r.catch(() => {});
-  } catch { /* rumble unsupported */ }
-}
+/** Every rumble: a pulse pattern of js/gamepad.js on the active pad. */
+function padRumble(steps) { padPulse(pads.activePad(), steps); }
 /** Enter play without pointer lock (controller): from the ready card, or resume from the pause menu. */
 function padResume() {
   if (S.mode === 'paused') { PAUSE.resume('pad'); return; }
@@ -1272,9 +1265,24 @@ function padStep(el, delta) {
   el.dispatchEvent(new Event('input', { bubbles: true }));
   el.dispatchEvent(new Event('change', { bubbles: true }));
 }
-/** The control the spatial search picks from `cur` in `dir` inside the layer, or null. */
+/**
+ * The control a focus move from `cur` in `dir` lands on inside the layer, or null: on Down / Up a
+ * table's or a menu's controls in DOM order, else the spatial search, else the next or previous
+ * control in DOM order. Up and down, the search treats a board choice's row of custom fields as one
+ * control, starting from the whole row past its own controls, and aims at a table's buttons by their
+ * row, so a table is entered from above or below wherever its buttons sit in the row.
+ */
 function navStep(layer, items, cur, dir) {
-  return pickInDirection(cur.getBoundingClientRect(), items.filter((e) => e !== cur).map((e) => ({ rect: e.getBoundingClientRect(), item: e })), dir);
+  return focusMove(items, cur, dir, {
+    spatial: (d) => {
+      const vertical = d === 'up' || d === 'down';
+      const row = vertical && cur.closest('form .ui-row');
+      const from = (row || cur).getBoundingClientRect();
+      const cands = items.filter((e) => e !== cur && !(row && row.contains(e)));
+      return pickInDirection(from, cands.map((e) => ({ rect: ((vertical && e.closest('tr')) || e).getBoundingClientRect(), item: e })), d);
+    },
+    groupOf: (el) => el.closest('table, .ui-menu'),
+  });
 }
 function padNav(dir) {
   const layer = padLayer();
@@ -1361,7 +1369,9 @@ function padPlaying(p, held, pressed, dt, now) {
   if (pressed(BTN.START)) { padClick(document.getElementById('hud-pause')); return; } // the overlay's pause button
   if (backButtons(S.mode).some(pressed)) { backGame('pad'); return; } // Back while playing = Pause, or cancels a board being generated
   if (pressed(BTN.X)) ui.userToggleHelp();
-  // Triggers drive the same release-based state machine as the mouse (both = chord via its toggle).
+  // Triggers drive the same release-based state machine as the mouse (both = chord via its toggle);
+  // a trigger's press pulses, the cue that its action comes on release.
+  if (pressed(BTN.RT) || pressed(BTN.LT)) padRumble(PAD_PRESS);
   padActing = true;
   try {
     if (pressed(BTN.RT)) mouse.down(0);
@@ -1438,6 +1448,7 @@ function padMenus(p, held, pressed, now) {
     return;
   }
   if (pressed(BTN.A)) { padActivate(); return; }
+  if (S.mode === 'records' && !modal && !ui.isConfirmOpen() && padRecords(pressed)) return;
   const [ax, ay] = p.ls, ver = Math.abs(ay) >= Math.abs(ax);
   const dirs = {
     up: held(BTN.UP) || (ver && ay < -0.5), down: held(BTN.DOWN) || (ver && ay > 0.5),
@@ -1452,6 +1463,21 @@ function padMenus(p, held, pressed, now) {
     const el = document.activeElement;
     if (el && el.tagName === 'INPUT' && (el.type === 'number' || el.type === 'range') && padLayer()?.contains(el)) padStep(el, step);
   }
+}
+
+/**
+ * Records: LB / RB the previous / next board of the picker, LT / RT the 2D / 3D mode, each as its
+ * click does. Focus stays on its control while that still shows, else goes to the chosen board.
+ */
+function padRecords(pressed) {
+  const step = (pressed(BTN.RB) ? 1 : 0) - (pressed(BTN.LB) ? 1 : 0);
+  const mode = pressed(BTN.LT) ? TRIGGER_MODES.lt : pressed(BTN.RT) ? TRIGGER_MODES.rt : null;
+  if (!step && !mode) return false;
+  if (step) RECORDS_PAGE.stepBoard(step);
+  if (mode) RECORDS_PAGE.setMode(mode);
+  const layer = document.getElementById('records');
+  if (!padCurrent(layer, padFocusables(layer))) padFocus(layer.querySelector('#records-picker [aria-checked="true"]'));
+  return true;
 }
 
 // ---------- frame loop ----------
@@ -1715,6 +1741,8 @@ window.__ms = {
   /** The records store: record/begin/checkpoint, the queries and onChange. */
   get records() { return RECORDS; },
   get replayViewer() { return REPLAY_VIEWER; },
+  /** The replay library: load/add/pin/unpin/forBoard/settled. */
+  get replays() { return REPLAYS; },
   /** The open Classic 2D board view (js/classic2d/board-view.js): its layout, scroll, cursor and scale. */
   get board2D() { return mode2d.boardView; },
   /** The open Classic 2D board's engine game: cellState, cellNumber, snapshot. */

@@ -305,6 +305,14 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
 /* ---------- game controller ---------- */
 .pad-note { margin: 0 0 10px; padding: 6px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; color: #6b3d00; background: #fff4d6; border: 1px solid #f0c66b; }
 kbd.pad { min-width: 1.9em; border-radius: 999px; }
+/* the controller's routes (Records' LB / RB and LT / RT, the seek bar's D-pad): shown under pad navigation
+   only, their room kept so the layout never shifts */
+[data-pad-hint] { visibility: hidden; }
+body.pad-nav [data-pad-hint] { visibility: visible; }
+kbd[data-pad-glyph] { min-width: 1.9em; border-radius: 999px; }
+[data-pad-hinted] { display: flex; align-items: center; gap: var(--space-2); max-width: 100%; }
+[data-pad-hinted] > .ui-segmented { min-width: 0; }
+#replay-controls .ui-slider { grid-template-columns: 1fr auto auto; }
 .ready-pad { font-size: 13px; color: var(--color-ink-muted); line-height: 1.7; text-align: center; max-width: 520px; }
 .ready-pad b { color: var(--color-ink); font-weight: 600; }
 .ready-pad .pad-note { display: inline-block; margin: 4px 0 0; }

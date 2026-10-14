@@ -604,13 +604,15 @@ export class UI {
 
   /**
    * The connected controller. info = { glyphs, mapping } of the active pad, or null when none is
-   * connected. Its glyphs draw every controller binding shown; the ready card gains its hint.
+   * connected. Its glyphs draw every controller binding shown and every [data-pad-glyph] slot (the
+   * Records screen's LB / RB and LT / RT hints); the ready card gains its hint.
    */
   setPad(info) {
     const ready = $('ready-pad');
     this._glyphs = info ? info.glyphs : GLYPHS.generic;
     this._mapping = info ? info.mapping : 'standard';
     this._renderBindings();
+    for (const el of document.querySelectorAll('[data-pad-glyph]')) el.textContent = this._glyphs[el.dataset.padGlyph];
     if (!info) {
       ready.classList.add('hidden');
       return;

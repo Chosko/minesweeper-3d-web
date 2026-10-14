@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  RECORDS_SCREEN, pickerBoards, lastBoardPlayed, recordsContent, createRecordsScreen, formatDate, formatWinRate,
+  RECORDS_SCREEN, TRIGGER_MODES, pickerBoards, lastBoardPlayed, recordsContent, createRecordsScreen, formatDate, formatWinRate,
   EMPTY_TEXT,
 } from '../js/records/screen.js';
 import { createRecordsModel } from '../js/records/model.js';
@@ -238,6 +238,49 @@ test('choosing a board in the picker shows its figures; a new custom board joins
   screen.hide();
   screen.show();
   assert.equal(screen.board, boardKey(CUSTOM), 'opened again without a board: the last board played');
+});
+
+test('stepBoard walks the picker forward and back in its order, held at either end (the controller\'s LB / RB)', () => {
+  const store = fakeStore({ games: [game(BEGINNER), game(CUSTOM, { endedAt: '2026-10-08T12:00:00.000Z' })] });
+  const view = fakeView();
+  const screen = createRecordsScreen({ records: store, view });
+  screen.show({ boardKey: boardKey(BEGINNER) });
+  const order = view.shown.at(-1).boards.map((b) => b.key);
+  assert.equal(order[0], boardKey(BEGINNER));
+  assert.equal(order.at(-1), boardKey(CUSTOM), 'the custom board played ends the picker');
+  assert.equal(screen.stepBoard(-1), false, 'held at the first board');
+  assert.equal(screen.board, boardKey(BEGINNER));
+  const drawn = view.shown.length;
+  for (let i = 1; i < order.length; i++) {
+    assert.equal(screen.stepBoard(1), true);
+    assert.equal(screen.board, order[i]);
+    assert.equal(view.shown.at(-1).board.key, order[i], 'drawn as a click on the picker draws it');
+  }
+  assert.equal(view.shown.length, drawn + order.length - 1);
+  assert.equal(screen.stepBoard(1), false, 'held at the last board');
+  assert.equal(view.shown.length, drawn + order.length - 1, 'nothing redrawn at the end');
+  assert.equal(screen.stepBoard(-1), true);
+  assert.equal(screen.board, order.at(-2));
+  screen.showPage(1);
+  screen.stepBoard(-1);
+  assert.equal(screen.page, 0, 'a new board starts on its first games page');
+});
+
+test('the triggers choose the mode through setMode: LT 2D, RT 3D', () => {
+  assert.deepEqual(TRIGGER_MODES, { lt: 'classic-2d', rt: '3d' });
+  const store = fakeStore({ games: [game(BEGINNER)] });
+  const view = fakeView();
+  const screen = createRecordsScreen({ records: store, view });
+  screen.show({ boardKey: boardKey(BEGINNER) });
+  screen.setMode(TRIGGER_MODES.rt);
+  assert.equal(screen.mode, '3d');
+  assert.equal(view.shown.at(-1).mode, '3d');
+  const drawn = view.shown.length;
+  screen.setMode(TRIGGER_MODES.rt);
+  assert.equal(view.shown.length, drawn, 'the mode already shown: nothing');
+  screen.setMode(TRIGGER_MODES.lt);
+  assert.equal(screen.mode, 'classic-2d');
+  assert.equal(screen.board, boardKey(BEGINNER), 'back on the mode\'s last board played');
 });
 
 test('when records are not being saved the screen says so once', () => {

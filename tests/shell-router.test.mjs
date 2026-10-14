@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRouter, SHELL_SCREENS } from '../js/shell/router.js';
 import {
-  FOCUSABLE, topLayer, resolveFocus, createHeldSuppressor, backButtons, isBackKey, arrowDirection, keepsArrow,
+  FOCUSABLE, topLayer, resolveFocus, focusMove, createHeldSuppressor, backButtons, isBackKey, arrowDirection, keepsArrow,
 } from '../js/shell/navigation.js';
 import { BTN, NUM_BUTTONS } from '../js/gamepad.js';
 import { browserSuite } from './helpers/browser.mjs';
@@ -205,6 +205,62 @@ test('the default focus falls back to the first focusable control', () => {
   assert.equal(resolveFocus(null, []), null);
 });
 
+test('a focus move with nothing in the pressed direction falls back to the DOM order, with no wrap', () => {
+  const items = ['a', 'b', 'c', 'd'];
+  const none = () => null;
+  for (const dir of ['down', 'right']) {
+    assert.equal(focusMove(items, 'b', dir, { spatial: none }), 'c', `${dir}: the next focusable`);
+    assert.equal(focusMove(items, 'd', dir, { spatial: none }), null, `${dir}: nothing after the last`);
+  }
+  for (const dir of ['up', 'left']) {
+    assert.equal(focusMove(items, 'c', dir, { spatial: none }), 'b', `${dir}: the previous focusable`);
+    assert.equal(focusMove(items, 'a', dir, { spatial: none }), null, `${dir}: nothing before the first`);
+  }
+  assert.equal(focusMove(items, 'x', 'down', { spatial: none }), null, 'a control outside the layer moves nowhere');
+});
+
+test('a focus move takes the spatial search\'s candidate when it finds one', () => {
+  const items = ['a', 'b', 'c', 'd'];
+  const asked = [];
+  const spatial = (dir) => { asked.push(dir); return 'd'; };
+  assert.equal(focusMove(items, 'a', 'down', { spatial }), 'd');
+  assert.equal(focusMove(items, 'c', 'left', { spatial }), 'd');
+  assert.deepEqual(asked, ['down', 'left'], 'the spatial search is asked in the pressed direction');
+});
+
+test('inside a group (a table, a menu) Down / Up step through it in DOM order; Left / Right stay spatial', () => {
+  // picker above two tables: t1 holds w1, w2; t2 holds p1 (Watch), q1 (Pin), p2, q2; Back below
+  const items = ['picker', 'w1', 'w2', 'older', 'toggle', 'p1', 'q1', 'p2', 'q2', 'back'];
+  const table = { w1: 't1', w2: 't1', p1: 't2', q1: 't2', p2: 't2', q2: 't2' };
+  const groupOf = (el) => table[el] ?? null;
+  const at = (map) => (dir) => map[dir] ?? null; // a stand-in spatial search
+  // stepping inside: the next / previous button of the table, whatever the spatial search says
+  assert.equal(focusMove(items, 'p1', 'down', { spatial: at({ down: 'p2' }), groupOf }), 'q1', 'a row\'s second button is a Down stop');
+  assert.equal(focusMove(items, 'q1', 'down', { spatial: at({ down: 'q2' }), groupOf }), 'p2');
+  assert.equal(focusMove(items, 'p2', 'up', { spatial: at({ up: 'p1' }), groupOf }), 'q1', 'Up retraces it');
+  // left / right inside a table stay spatial
+  assert.equal(focusMove(items, 'p1', 'right', { spatial: at({ right: 'q1' }), groupOf }), 'q1');
+  assert.equal(focusMove(items, 'q2', 'left', { spatial: at({ left: 'p2' }), groupOf }), 'p2');
+  // leaving at either end: the next / previous control in DOM order, whatever the spatial search says
+  assert.equal(focusMove(items, 'q2', 'down', { spatial: at({ down: 'picker' }), groupOf }), 'back');
+  assert.equal(focusMove(items, 'w2', 'down', { spatial: at({ down: 'q1' }), groupOf }), 'older');
+  assert.equal(focusMove(items, 'w1', 'up', { spatial: at({ up: 'toggle' }), groupOf }), 'picker');
+  assert.equal(focusMove(['p1', 'q1'], 'q1', 'down', { spatial: at({ down: 'p1' }), groupOf }), null, 'no wrap past the layer\'s last control');
+  // entering a table from above lands on its first button, from below on its last
+  assert.equal(focusMove(items, 'toggle', 'down', { spatial: at({ down: 'q1' }), groupOf }), 'p1');
+  assert.equal(focusMove(items, 'back', 'up', { spatial: at({ up: 'p2' }), groupOf }), 'q2');
+  assert.equal(focusMove(items, 'older', 'up', { spatial: at({ up: 'w1' }), groupOf }), 'w2');
+  // repeated Down from above a table visits each of its buttons before leaving it, and Up retraces
+  const spatial = (from) => at({ toggle: { down: 'q1' }, q2: { down: 'back' }, back: { up: 'q2' }, p1: { up: 'toggle' } }[from] ?? {});
+  const walk = (start, dir, n) => {
+    const seen = [start];
+    for (let i = 0; i < n; i++) seen.push(focusMove(items, seen.at(-1), dir, { spatial: spatial(seen.at(-1)), groupOf }));
+    return seen;
+  };
+  assert.deepEqual(walk('toggle', 'down', 5), ['toggle', 'p1', 'q1', 'p2', 'q2', 'back']);
+  assert.deepEqual(walk('back', 'up', 5), ['back', 'q2', 'p2', 'q1', 'p1', 'toggle']);
+});
+
 test('the focusable selector collects every native control the kit uses', () => {
   for (const tag of ['button', 'input', 'summary', 'a[href]', 'select']) assert.ok(FOCUSABLE.split(',').map((s) => s.trim()).includes(tag), tag);
 });
@@ -344,6 +400,7 @@ test('the arrow keys move focus through the D-pad\'s spatial search, off the boa
   assert.match(nav, /keepsArrow\(cur, dir\)/, 'a control that owns the arrow keeps it');
   assert.match(nav, /navStep\(layer, items, cur, dir\)/, 'the same spatial search as the D-pad');
   assert.match(MAIN, /function padNav\(dir\)[\s\S]*?navStep\(layer, items, cur, dir\)/, 'which the D-pad uses');
+  assert.match(MAIN, /function navStep\([^)]*\) \{[^}]*focusMove\(items, cur, dir,/, 'both through the one DOM-order fallback');
   assert.match(MAIN, /const KEY_NAV_OFF = new Set\(\['playing', 'classic-2d', 'records', REPLAY_SCREEN, LOOK_SCREEN\]\)/, 'nor the look at a finished 3D board, whose card is hidden');
   assert.match(MAIN, /function keyFocus\(el\) \{[\s\S]*?classList\.remove\('pad-nav'\)[\s\S]*?focusVisible: true/,
     'the keyboard shows the kit\'s keyboard ring, not the controller\'s');
@@ -502,9 +559,10 @@ test('in a browser, the arrow keys alone walk the menu, the 2D board choice, the
     assert.equal(await mode(), 'settings');
     assert.equal((await focus()).id, 'set-lookSensitivity');
     await page.keyboard.press('ArrowUp');
-    assert.equal((await focus()).id, 'set-fullscreen', 'Up leaves the slider for the Graphics section');
-    await page.keyboard.press('ArrowRight');
-    assert.equal(await page.evaluate(() => !!document.activeElement.closest('#set-renderResolution')), true, 'Right reaches its choice');
+    assert.equal((await focus()).id, 'set-lookSensitivity', 'nothing above the first control: Up stays (no wrap)');
+    await page.focus('#set-fullscreen');
+    await page.keyboard.press('ArrowDown');
+    assert.equal(await page.evaluate(() => !!document.activeElement.closest('#set-renderResolution')), true, 'Down reaches its choice');
     const choice = () => page.evaluate(() => document.querySelector('#set-renderResolution [aria-checked="true"]').dataset.value);
     const was = await choice();
     await page.keyboard.press('ArrowRight');

@@ -1,6 +1,6 @@
 // Game controller support (Gamepad API, "standard" mapping).
-// Pure helpers (stick curve, trigger hysteresis, auto-repeat, glyphs, spatial focus search) plus a
-// per-frame reader that tracks the most recently used pad and reports button edges.
+// Pure helpers (stick curve, trigger hysteresis, auto-repeat, glyphs, rumble pulses, spatial focus
+// search) plus a per-frame reader that tracks the most recently used pad and reports button edges.
 // No DOM access at import time, so the helpers are unit-testable in Node.
 
 /** Standard-mapping button indices. */
@@ -71,12 +71,48 @@ export const GLYPHS = {
 };
 export function padGlyphs(id) { return GLYPHS[padFamily(id)]; }
 
+// ---------- rumble ----------
+// A pulse pattern is a frozen list of { at, effect }: each 'dual-rumble' effect starts `at` ms after
+// the first. A later pulse is played on a timer once the one before has ended, since a new effect
+// preempts the one playing.
+const pattern = (...steps) => Object.freeze(steps.map(({ at, effect }) => Object.freeze({ at, effect: Object.freeze(effect) })));
+/** A trigger pressed on a board: the cue that its action comes on release. */
+export const PAD_PRESS = pattern({ at: 0, effect: { duration: 10, strongMagnitude: 0, weakMagnitude: 0.5 } });
+/** A flag placed or removed by the controller: two short pulses, the second after the first ends. */
+export const PAD_FLAG = pattern(
+  { at: 0, effect: { duration: 30, strongMagnitude: 0, weakMagnitude: 0.4 } },
+  { at: 70, effect: { duration: 30, strongMagnitude: 0, weakMagnitude: 0.4 } },
+);
+/** A mine exploded. */
+export const PAD_BOOM = pattern({ at: 0, effect: { duration: 400, strongMagnitude: 1, weakMagnitude: 0.6 } });
+
+/**
+ * Plays a pulse pattern on `pad`'s vibration actuator. Does nothing for a pad with no actuator or no
+ * playEffect, and swallows an effect that rejects or throws: rumble never interrupts play.
+ */
+export function padPulse(pad, steps, { setTimeout: later = globalThis.setTimeout } = {}) {
+  const a = pad?.vibrationActuator;
+  if (!a || typeof a.playEffect !== 'function') return;
+  const play = (effect) => {
+    try {
+      const r = a.playEffect('dual-rumble', effect);
+      if (r && typeof r.catch === 'function') r.catch(() => {});
+    } catch { /* rumble unsupported */ }
+  };
+  for (const { at, effect } of steps) {
+    if (at > 0) later(() => play(effect), at);
+    else play(effect);
+  }
+}
+
 // ---------- spatial focus navigation ----------
 /**
  * Pick the candidate nearest to `from` in direction dir ('up'|'down'|'left'|'right').
  * Rects are {left, top, right, bottom}. cands: [{ rect, item }]. Returns the item or null.
- * Score = gap along the direction + 2 x perpendicular gap (0 when the rects overlap on that axis),
- * with the centre distance as a tie-break.
+ * A candidate counts when its centre lies past `from`'s in that direction and it overlaps `from` on
+ * the perpendicular axis or its centre lies within 45° of the direction (the cone), so a control
+ * off to one side is not "in" the direction. Score = gap along the direction + 2 x perpendicular
+ * gap (0 when the rects overlap on that axis), with the centre distance as a tie-break.
  */
 export function pickInDirection(from, cands, dir) {
   const fcx = (from.left + from.right) / 2, fcy = (from.top + from.bottom) / 2;
@@ -88,6 +124,8 @@ export function pickInDirection(from, cands, dir) {
     const cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2;
     const d = horiz ? (cx - fcx) * sgn : (cy - fcy) * sgn;
     if (d <= 1) continue; // not in that direction
+    const overlaps = horiz ? r.top < from.bottom && r.bottom > from.top : r.left < from.right && r.right > from.left;
+    if (!overlaps && Math.abs(horiz ? cy - fcy : cx - fcx) > d) continue; // outside the 45° cone
     let gap = horiz ? (sgn > 0 ? r.left - from.right : from.left - r.right) : (sgn > 0 ? r.top - from.bottom : from.top - r.bottom);
     gap = Math.max(0, gap);
     const perp = horiz

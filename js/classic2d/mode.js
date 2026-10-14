@@ -26,6 +26,9 @@
 //                 progress(p | null)?      while it shows: { candidates, seconds }, again whenever
 //                                          either changes; null when it hides
 //                 failed(failure | null)   a failed board and its offers, or none
+//                 padCue(kind)?            a controller press to answer with a rumble: 'press' (a
+//                                          trigger) or 'flag' (a flag placed or removed), from the
+//                                          cursor input's onPadCue
 //   lastChoice  createLastChoice (js/classic2d/board-setup.js): start() saves the choice played,
 //               openBoardChoice() offers lastChoice.current; loadChoice() reads it from storage.
 //   createClient  () → a generation client (js/generation/client.js): called once, and the client
@@ -277,7 +280,7 @@ export function createClassic2DMode(report, {
       setCursor: { value: (c) => { view.setCursor(c); sampler?.cursor(c); } },
     });
     const pointer = mount.pointer({ view, session: gate, ...(buttonSwap ? { swap: buttonSwap } : {}) });
-    const cursor = mount.cursor({ view: cursorView, session: gate });
+    const cursor = mount.cursor({ view: cursorView, session: gate, onPadCue: (kind) => flow.padCue?.(kind) });
     const touch = mount.touch
       ? mount.touch({ view, session: gate, flagMode: () => tapMode === 'flag', onUserScroll: () => flow.scrolled?.() })
       : null;

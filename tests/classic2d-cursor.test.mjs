@@ -277,6 +277,39 @@ test('controller: A or RT reveals, X or LT flags, Y chords; B and Start never ac
   assert.deepEqual([other.actions, other.presses, other.input.cell], [[], [], other.at(2, 2)]);
 });
 
+test('controller: a trigger press and a flag are reported for the rumble; A, the keyboard and a refused press are not', () => {
+  const run = (fn, options = {}) => {
+    const cues = [];
+    const h = harness(CORNER, { onPadCue: (kind) => cues.push(kind), ...options });
+    fn(h);
+    return { cues, h };
+  };
+  // RT on a closed cell: the press cue at the press, nothing at the release that reveals
+  let { cues, h } = run((x) => { x.go(2, 2); x.input.pad(poll([BTN.RT]), 0); });
+  assert.deepEqual(cues, ['press']);
+  h.input.pad(poll([]), 16);
+  assert.deepEqual(cues, ['press'], 'the release acts without a cue');
+  // LT on a closed cell flags: the flag cue in place of the press cue; again to unflag
+  ({ cues, h } = run((x) => { x.input.pad(poll([BTN.LT]), 0); x.input.pad(poll([]), 16); x.input.pad(poll([BTN.LT]), 32); }));
+  assert.deepEqual(cues, ['flag', 'flag'], 'placing and removing a flag');
+  // LT on a revealed cell: no flag, so the press cue
+  ({ cues } = run((x) => { x.game.reveal(x.at(1, 1)); x.go(1, 1); x.input.pad(poll([BTN.LT]), 0); }));
+  assert.deepEqual(cues, ['press']);
+  // X flags: the flag cue; on a revealed cell X does nothing and has no cue
+  ({ cues } = run((x) => { x.input.pad(poll([BTN.X]), 0); x.input.pad(poll([]), 16); x.game.reveal(x.at(1, 1)); x.go(1, 1); x.input.pad(poll([BTN.X]), 32); }));
+  assert.deepEqual(cues, ['flag']);
+  // A reveals with no cue; Y chords with no cue
+  ({ cues } = run((x) => { x.go(2, 2); x.input.pad(poll([BTN.A]), 0); x.input.pad(poll([]), 16); x.input.pad(poll([BTN.Y]), 32); }));
+  assert.deepEqual(cues, []);
+  // the keyboard never reports: F flags, Space reveals
+  ({ cues, h } = run((x) => { x.input.down('KeyF', 'flag'); x.input.up('KeyF', 'flag'); x.go(2, 2); x.input.down('Space', 'reveal'); x.input.up('Space', 'reveal'); }));
+  assert.deepEqual(cues, []);
+  assert.deepEqual(h.actions, [['toggleFlag', 0], ['reveal', h.at(2, 2)]]);
+  // a board that takes no input: no action, no cue
+  ({ cues } = run((x) => { x.input.pad(poll([BTN.RT, BTN.LT]), 0); }, { active: () => false }));
+  assert.deepEqual(cues, []);
+});
+
 test('controller: both triggers chord a number on the release, as left + right does', () => {
   const h = harness();
   h.game.reveal(h.at(1, 1));

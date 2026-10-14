@@ -352,7 +352,7 @@ Preconditions: none
 
 ## 144. Controller walk, pad-aware Records and viewer, haptics
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/gamepad.js, js/shell/navigation.js, js/main.js, js/records/screen.js, js/classic2d/cursor-input.js, js/classic2d/mode.js, js/ui.js, index.html, css/style.css, tests/shell-router.test.mjs, tests/gamepad.test.mjs, tests/records-screen.test.mjs, tests/classic2d-cursor.test.mjs, tests/shell-pad-walk.test.mjs, README.md
 Preconditions: none
