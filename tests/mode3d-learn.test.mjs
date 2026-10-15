@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  LEARN_BOARD, LEARN_TITLE, LEARN_PROMPTS, LEARN_HINTS, lessonCells, learnChoice, createLearnPrompts,
+  LEARN_BOARD, LEARN_TITLE, LEARN_PROMPTS, LEARN_HINTS, lessonCells, learnChoice, createLearnPrompts, closedAround,
 } from '../js/mode3d/learn.js';
 import { create3DGame } from '../js/mode3d/session.js';
 import { generate, boardGraph } from '../js/generation/generate.js';
@@ -143,6 +143,89 @@ test('a prompt done early is skipped when its turn comes', () => {
   assert.equal(p.shift(L), false, 'done once');
 });
 
+test('the chord step is skipped once L has no closed, unflagged neighbour: the line moves on to the rest', () => {
+  const p = createLearnPrompts(B);
+  p.started();
+  p.shift(L);
+  p.ctrl();
+  assert.equal(p.chorded(L, 0), false, 'a chord before the flag, with L\'s neighbours still closed, does not advance');
+  assert.equal(p.lessonClosed(2), false);
+  p.flagged([M]);
+  assert.equal(p.current, 'chord');
+  assert.equal(p.lessonClosed(1), false, 'a closed neighbour left: the chord can still teach');
+  assert.equal(p.current, 'chord');
+  assert.equal(p.lessonClosed(0), true, 'every neighbour open or flagged');
+  assert.equal(p.current, 'rest');
+  assert.equal(p.tinted, -1, 'L loses the tint');
+  assert.equal(p.lessonClosed(0), false, 'done once');
+});
+
+test('the chord step done that way before its turn is skipped when its turn comes; nothing before the first reveal', () => {
+  const p = createLearnPrompts(B);
+  assert.equal(p.lessonClosed(0), false, 'nothing before the first reveal');
+  assert.equal(p.done('chord'), false);
+  p.started();
+  assert.equal(p.lessonClosed(0), false, 'done, but the line stays on prompt 1');
+  assert.equal(p.done('chord'), true);
+  assert.equal(p.current, 'shift');
+  p.shift(L);
+  p.ctrl();
+  assert.equal(p.flagged([M]), true);
+  assert.equal(p.current, 'rest', 'the chord step was done: skipped');
+});
+
+test('a chord on L that opens cubes still completes the step', () => {
+  const p = createLearnPrompts(B);
+  p.started();
+  p.shift(L);
+  p.ctrl();
+  p.flagged([M]);
+  assert.equal(p.lessonClosed(3), false);
+  assert.equal(p.chorded(L, 3), true);
+  assert.equal(p.current, 'rest');
+});
+
+test('closedAround counts a cell\'s neighbours neither open nor flagged', () => {
+  const game = create3DGame({ X: B.X, Y: B.Y, Z: B.Z, minePositions: [...B.minePositions] });
+  game.reveal(B.startCell);
+  const v = game.view;
+  const { graph } = createBoxGrid(B.X, B.Y, B.Z);
+  const closed = Array.from(graph.neighbours(L)).filter((nb) => !v.pressed[nb] && !v.flagged[nb]);
+  assert.ok(closed.length >= 2);
+  assert.equal(closedAround(v, L), closed.length);
+  game.toggleFlag(M);
+  assert.equal(closedAround(v, L), closed.length - 1, 'a flag is not closed');
+});
+
+test('the stuck sequence on the guided board ends on the rest: flag M, then open L\'s other closed neighbours one by one', () => {
+  const game = create3DGame({ X: B.X, Y: B.Y, Z: B.Z, minePositions: [...B.minePositions] });
+  const p = createLearnPrompts(B);
+  const v = game.view;
+  const feed = () => p.lessonClosed(closedAround(v, L));
+  game.reveal(B.startCell);
+  p.started();
+  feed();
+  p.shift(L);
+  p.ctrl();
+  assert.equal(p.current, 'flag');
+  game.toggleFlag(M);
+  p.flagged([M]);
+  feed();
+  assert.equal(p.current, 'chord');
+  const { graph } = createBoxGrid(B.X, B.Y, B.Z);
+  const others = Array.from(graph.neighbours(L)).filter((nb) => !v.pressed[nb] && !v.flagged[nb]);
+  assert.ok(others.length >= 1);
+  for (const c of others) {
+    if (v.pressed[c]) continue; // a cascade opened it already
+    assert.equal(p.current, 'chord');
+    game.reveal(c);
+    feed();
+  }
+  assert.equal(v.state, 'playing', 'the box is not cleared yet');
+  assert.equal(game.chord(L).revealed, 0, 'a chord on L can open nothing now');
+  assert.equal(p.current, 'rest');
+});
+
 test('the prompt texts come from the bindings source, in the controller\'s names for a controller player', () => {
   assert.deepEqual(Object.keys(LEARN_HINTS), LEARN_PROMPTS);
   const say = (name, device, glyphs) => hintText(LEARN_HINTS[name], device, glyphs);
@@ -195,6 +278,15 @@ test('js/main.js starts the guided board from the entry, the ready card and Try 
   assert.match(MAIN, /'learn-end': \{/);
   assert.match(MAIN, /unrecorded: \(\) => /, 'the pause controller asks nothing on the guided game');
   assert.match(MAIN, /window\.__ms = \{[\s\S]*learn\(\)/, 'the debug hook starts it');
+});
+
+test('js/main.js feeds L\'s closed, unflagged neighbour count after every board action of the guided game, left-click reveals included', () => {
+  const src = code('js/main.js');
+  const body = src.slice(src.indexOf('function learnAction'), src.indexOf('function learnViews'));
+  assert.match(body, /lessonClosed\(closedAround\(S\.game, LEARN_BOARD\.lessonNumber\)\)/);
+  assert.doesNotMatch(body, /if \(type === 'left'\) return/, 'no action is left out');
+  assert.match(body, /if \(changed\) learnChanged\(\)/, 'the strip and the tint follow a changed line');
+  assert.match(src, /if \(S\.learn\) learnAction\(type, sel, r\)/, 'every synchronous action of onAction');
 });
 
 // ---------------------------------------------------------------- browser

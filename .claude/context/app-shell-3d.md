@@ -99,8 +99,10 @@ and adapter (`js/shell/mode-3d.js`) themselves are [mode3d.md](mode3d.md).
   (`createLearnPrompts`), null otherwise; `ui.setTimed(false)` hides the
   timer. `refreshHints` shows its prompt in the hint strip in play
   (`LEARN_HINTS`, no close button); `learnAction` feeds flags and chords
-  from `onAction`, `learnViews` the Shift and Ctrl the frame loop reads (Ctrl
-  also `FIRST_USE.once('autoHideToast')`), and `learnChanged` redraws the
+  from `onAction`, and after every action while the game is on L's closed,
+  unflagged neighbour count (`closedAround`), which skips the chord prompt
+  at 0; `learnViews` the Shift and Ctrl the frame loop reads (Ctrl also
+  `FIRST_USE.once('autoHideToast')`), and `learnChanged` redraws the
   strip and puts the start-cell tint (`renderer.setMark`) on the prompt's
   cell. `noteAutoHide`, `aimHint` and the 3D first-use strip stay quiet.
   `learnGame()` gives the first-use state its `{learn, won}` and keeps the

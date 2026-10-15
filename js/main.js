@@ -57,7 +57,7 @@ import {
   bindBoardChoice as bindBoardChoice3D, boardOf, normaliseChoice as normaliseChoice3D, DEFAULT_CHOICE as DEFAULT_CHOICE_3D,
   LAST_CHOICE_DOC as LAST_CHOICE_DOC_3D, LAST_CHOICE_VERSION as LAST_CHOICE_VERSION_3D, startSpacing,
 } from './mode3d/board-choice.js';
-import { LEARN_BOARD, LEARN_HINTS, learnChoice, createLearnPrompts } from './mode3d/learn.js';
+import { LEARN_BOARD, LEARN_HINTS, learnChoice, createLearnPrompts, closedAround } from './mode3d/learn.js';
 
 const canvas = document.getElementById('scene');
 
@@ -564,12 +564,17 @@ function learnChanged() {
   refreshHints();
   if (S.learn && S.started && renderer.setMark(S.learn.tinted)) needRender = true;
 }
-/** A board action in the guided game: a flag on the lesson mine, a chord on the lesson number. */
+/**
+ * A board action in the guided game: a flag on the lesson mine, a chord on the lesson number, and,
+ * after any action while the game is on, the lesson number's closed, unflagged neighbours — none
+ * left skips the chord prompt.
+ */
 function learnAction(type, cell, r) {
   const L = S.learn;
   let changed = false;
   if (type === 'right') changed = L.flagged(Array.from(r.changed).filter((c) => S.game.flagged[c]));
   else if (type !== 'left') changed = L.chorded(cell, r.revealed);
+  if (S.game.state === 'playing') changed = L.lessonClosed(closedAround(S.game, LEARN_BOARD.lessonNumber)) || changed;
   if (changed) learnChanged();
 }
 /** The view modes held in the guided game: Shift on the lesson number, Ctrl anywhere (which marks the auto-hide toast shown). */

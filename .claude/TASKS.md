@@ -835,7 +835,7 @@ Preconditions: none
 
 ## 195. Learn 3D guided board: the chord prompt moves on when a chord can no longer teach
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/mode3d/learn.js, js/main.js, tests/mode3d-learn.test.mjs, .claude/context/mode3d.md, .claude/context/app-shell-3d.md
 Preconditions: none

@@ -78,7 +78,9 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
   [settings-bindings.md](settings-bindings.md));
   `createLearnPrompts({lessonNumber, lessonMine})` → `current`,
   `done(name)`, `tinted`, `started()`, `shift(selected)`, `ctrl()`,
-  `flagged(cells)`, `chorded(cell, revealed)`.
+  `flagged(cells)`, `chorded(cell, revealed)`, `lessonClosed(count)` (L's
+  closed, unflagged neighbour count; 0 completes the chord prompt);
+  `closedAround(view, cell)` → that count on a 3D state view.
 
 ## INTERNAL PATTERNS
 
@@ -96,8 +98,9 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
   `dev/find-learn-3d.mjs` (the first seed from 1 whose no-guess board meets
   `lessonCells`), so a later `GENERATOR_VERSION` changes no lesson. Each
   prompt is done by its action at any time after the first reveal and
-  skipped when its turn comes; L carries the start-cell tint during
-  prompts 1 and 4, M during prompt 3. Starting it saves no choice and moves
+  skipped when its turn comes; the chord prompt is also done once L has no
+  closed, unflagged neighbour, since a chord on L can then open nothing; L
+  carries the start-cell tint during prompts 1 and 4, M during prompt 3. Starting it saves no choice and moves
   no "Last played" mark; the shell's wiring is
   [app-shell-3d.md](app-shell-3d.md).
 - **Last board choice.** `js/main.js` keeps it with the shell's

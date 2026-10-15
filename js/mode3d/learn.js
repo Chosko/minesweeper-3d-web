@@ -34,12 +34,16 @@
 //   ctrl()                  Ctrl (or its button) is held: prompt 2;
 //   flagged(cells)          the cells an action newly flagged: prompt 3 when they include M;
 //   chorded(cell, revealed) a chord on `cell` opened `revealed` cubes: prompt 4 when it is L and
-//                           opened at least one.
+//                           opened at least one;
+//   lessonClosed(count)     L's closed, unflagged neighbour count after a board action: prompt 4
+//                           when it is 0, since a chord on L can then open nothing.
 //   Each returns whether the prompt line changed. An action before the first reveal does nothing;
 //   after it, each prompt is done by its action at any time, and one already done when its turn
 //   comes is skipped. `current` is the prompt line's name, `done(name)` whether a prompt is done, and
 //   `tinted` the cell carrying the start-cell tint: L while prompt 1 or 4 shows, M while prompt 3
 //   shows, else -1.
+// closedAround(view, cell) → how many of `cell`'s neighbours on a 3D state view are neither revealed
+//   nor flagged: the count the shell hands lessonClosed for L.
 
 import { createBoxGrid } from '../engine/box-grid.js';
 
@@ -114,6 +118,14 @@ export function learnChoice(board = LEARN_BOARD) {
   };
 }
 
+export function closedAround(view, cell) {
+  const { graph } = createBoxGrid(view.X, view.Y, view.Z);
+  const { pressed, flagged } = view;
+  let count = 0;
+  graph.forEachNeighbour(cell, (nb) => { if (!pressed[nb] && !flagged[nb]) count++; });
+  return count;
+}
+
 export function createLearnPrompts({ lessonNumber, lessonMine } = LEARN_BOARD) {
   let begun = false;
   const done = new Set();
@@ -142,5 +154,6 @@ export function createLearnPrompts({ lessonNumber, lessonMine } = LEARN_BOARD) {
     ctrl() { return mark('ctrl'); },
     flagged(cells) { return Array.from(cells ?? []).includes(lessonMine) ? mark('flag') : false; },
     chorded(cell, revealed) { return cell === lessonNumber && revealed > 0 ? mark('chord') : false; },
+    lessonClosed(count) { return count === 0 ? mark('chord') : false; },
   };
 }
