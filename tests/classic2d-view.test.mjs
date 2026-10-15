@@ -665,6 +665,21 @@ test('setScale refits at another scale and repaints; every refit reports the lay
   assert.equal(view.scale, '100', 'an unknown scale is the default');
 });
 
+test('a frame given as a function is measured again at every refit, so a resize lays the board out in the frame of that moment', () => {
+  let top = 60;
+  let calls = 0;
+  const frame = () => { calls += 1; return { top, right: 9, bottom: 9, left: 9 }; };
+  const layouts = [];
+  const { view } = makeView({ cols: 9, rows: 9, width: 600, height: 500, scale: '100', frame, onLayout: (l) => layouts.push(l) });
+  assert.ok(view.layout.viewY >= 60, 'laid out inside the first frame');
+  const before = calls;
+  top = 160;
+  view.resize(600, 520);
+  assert.ok(calls > before, 'measured again on the resize');
+  assert.ok(view.layout.viewY >= 160, `laid out inside the new frame (${view.layout.viewY})`);
+  assert.equal(layouts.at(-1), view.layout);
+});
+
 // ---------- touch zoom ----------
 
 test('the zoom range runs from the minimum tile to the fit-to-view tile, whichever is larger', () => {

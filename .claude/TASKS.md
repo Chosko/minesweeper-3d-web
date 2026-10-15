@@ -790,7 +790,7 @@ Feature: theme-implement-skill
 
 ## 190. Classic 2D overlay bar fits a phone: Pause and Reveal / Flag on screen
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: css/style.css, css/components.css, index.html, js/ui.js, js/main.js, tests/classic2d-touch.test.mjs, tests/components.test.mjs, .claude/domain/features/classic-2d-square-play.md, .claude/domain/features/screen-components.md
 Preconditions: none

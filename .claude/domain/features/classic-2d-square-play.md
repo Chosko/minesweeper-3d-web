@@ -49,8 +49,10 @@ In scope (m1-classic-2d):
   left and right mouse buttons for presses starting on a closed or flagged
   cell, so the left button alone flags, unflags and chords. The switch
   lives for the page — kept across games, off on reload, never a setting —
-  and the toggle shows only while the game is unpaused and never takes
-  keyboard focus. Keyboard, controller, touch and the 3D mode are unaffected.
+  and the toggle shows only while the game is unpaused and only where a
+  fine pointer exists (a coarse-only device has no mouse buttons to trade),
+  and never takes keyboard focus. Keyboard, controller, touch and the 3D
+  mode are unaffected.
 - Touch input: a tap acts on its lift — it reveals a closed cell, or
   toggles its flag while the *Reveal / Flag* switch is on Flag, and chords
   on a revealed number whichever way the switch is set — with the mouse's

@@ -374,10 +374,14 @@ export class UI {
   }
   /**
    * The room the panel's frame takes around the board (js/classic2d/board-view.js frame): the
-   * readouts and the gap above it, the inset on every side, and at least the readouts' width.
+   * readouts, as many rows as they wrap to, and the gap above it, the inset on every side, and at
+   * least the readouts' width — measured as the bar plays, with the buttons the pause card hides.
    */
   panelFrame2D() {
+    const paused = [this.el.hudSwap, this.el.hudTap].filter((b) => b.classList.contains('hidden'));
+    for (const b of paused) b.classList.remove('hidden');
     const bar = this.el.hudBar.getBoundingClientRect();
+    for (const b of paused) b.classList.add('hidden');
     return {
       top: PANEL_INSET + Math.ceil(bar.height) + PANEL_GAP,
       right: PANEL_INSET,

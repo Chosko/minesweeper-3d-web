@@ -590,7 +590,7 @@ const FLOW_2D = {
   show: () => SHELL.go('classic-2d'),
   container: () => document.getElementById('c2d-board'),
   scale: () => SETTINGS.get('boardScale'),
-  frame: () => (frame2D = ui.panelFrame2D()), // measured as each board opens, the readouts showing
+  frame: () => (frame2D = ui.panelFrame2D()), // measured at each refit, the readouts showing: a wrapped bar's rows follow the width
   layout: (layout) => { ui.placePanel2D(panelRect(layout, frame2D)); clipped2D(layout.scrolls); },
   scrolled: () => scrolled2D(),
   hud: ({ seconds, minesLeft, clicks }) => ui.updateHud(seconds, minesLeft, clicks),

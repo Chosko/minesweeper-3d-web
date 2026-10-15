@@ -93,7 +93,9 @@ described in [app-shell.md](../../context/app-shell.md).
   edge of the board's framed panel (`classic-2d-square-play`
   § Architecture, "Board view"), with the board-size label, on the panel's
   themed surface in place of its own, and on a coarse pointer carries the
-  Reveal / Flag switch beside Pause. Over the 3D board it stays above the
+  Reveal / Flag switch beside Pause; where the panel's width cannot hold it
+  on one row, as on a phone, it wraps onto more rows, so every readout and
+  control stays on screen. Over the 3D board it stays above the
   scene and the touch-controls layer during lockless and touch play, so
   Pause always takes a tap. On either board, the timer
   shows the elapsed time in whole seconds, zero-padded to three digits

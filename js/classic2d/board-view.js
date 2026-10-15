@@ -23,6 +23,7 @@
 //   scale       a BOARD_SCALES value, DEFAULT_BOARD_SCALE when not given.
 //   frame       { top, right, bottom, left, minWidth } in CSS pixels: the room a page's frame
 //               takes around the view (minWidth the frame's smallest width); none by default.
+//               A function returning one is called again at every refit (resize, setScale).
 //   onLayout    (layout) → after every refit, the new layout.
 //
 //   resize(width, height, pixelRatio)  the area in CSS pixels; repaints when anything changed.
@@ -225,7 +226,8 @@ export function createBoardView({
 
   let scale = BOARD_SCALES.includes(initialScale) ? initialScale : DEFAULT_BOARD_SCALE;
   let zoomTile = null; // a touch zoom's tile, or null for the fit rule's
-  const f = frameOf(frame);
+  const measure = typeof frame === 'function' ? frame : () => frame;
+  let f = frameOf(measure());
   // The zoom range for an area: MIN_TILE_SIZE to the tile at which the whole board fits, either way round.
   const rangeOf = (width, height) => {
     const whole = Math.max(1, Math.floor(Math.min((width - f.left - f.right) / cols, (height - f.top - f.bottom) / rows)) || 1);
@@ -233,9 +235,9 @@ export function createBoardView({
   };
   const clampTile = (tile, range) => Math.max(range.min, Math.min(range.max, Math.round(tile)));
   const fit = (width, height) => {
-    if (zoomTile === null) return boardLayout({ cols, rows, width, height, max: tileCap(scale), frame });
+    if (zoomTile === null) return boardLayout({ cols, rows, width, height, max: tileCap(scale), frame: f });
     zoomTile = clampTile(zoomTile, rangeOf(width, height));
-    return boardLayout({ cols, rows, width, height, min: zoomTile, max: zoomTile, frame });
+    return boardLayout({ cols, rows, width, height, min: zoomTile, max: zoomTile, frame: f });
   };
   let layout = fit(0, 0);
   let ratio = 1;
@@ -399,6 +401,7 @@ export function createBoardView({
 
   // Lays the board out again over the same area; repaints and reports it.
   function refit(w, h) {
+    f = frameOf(measure());
     layout = fit(w, h);
     scroll.x = Math.min(layout.maxScrollX, scroll.x);
     scroll.y = Math.min(layout.maxScrollY, scroll.y);

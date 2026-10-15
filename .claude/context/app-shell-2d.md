@@ -18,7 +18,8 @@ themselves are [classic2d.md](classic2d.md).
   `classic-2d`, whose Back is `backGame`.
 - **Board area and panel.** The board area is `#c2d-board`; the board opens
   at the `boardScale` setting (`scale`) inside the panel's frame (`frame`,
-  measured as each board opens through `ui.panelFrame2D()`). Each refit
+  measured at every refit through `ui.panelFrame2D()`, with the buttons
+  the pause card hides, so a wrapped bar's rows follow a rotation). Each refit
   places the panel through `layout` (`panelRect`, `ui.placePanel2D`) and
   tells whether the board scrolls: the first clipped board shows the
   one-time scroll hint until dismissed or scrolled (`scrolled`), kept as

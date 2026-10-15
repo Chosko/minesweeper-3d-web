@@ -13,7 +13,8 @@
 //                 scale()?                 the board scale setting (js/classic2d/board-view.js
 //                                          BOARD_SCALES) a new board opens at
 //                 frame()?                 the room the panel's frame takes around the board,
-//                                          { top, right, bottom, left, minWidth } (board-view.js)
+//                                          { top, right, bottom, left, minWidth } (board-view.js),
+//                                          measured again at every refit
 //                 layout(layout)?          the board view's layout after every refit, to place
 //                                          the panel (board-view.js panelRect) and to tell a
 //                                          board that scrolls
@@ -259,7 +260,7 @@ export function createClassic2DMode(report, {
       container: flow.container(),
       grid: session.setup.grid,
       scale: flow.scale?.(),
-      frame: flow.frame?.(),
+      frame: flow.frame && (() => flow.frame()),
       onLayout: (layout) => flow.layout?.(layout),
       onUserScroll: () => flow.scrolled?.(),
     });

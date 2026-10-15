@@ -204,6 +204,11 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
 }
 /* On the Classic 2D panel the overlay bar is the panel's top edge: no surface of its own. */
 #hud.hud--2d .hud-bar { padding: 0; border-width: 0; background: none; box-shadow: none; }
+/* It wraps inside the widest panel — the board area less the panel's 9 px inset (js/ui.js PANEL_INSET)
+   on each side — so on a phone its readouts and buttons take more rows instead of leaving the screen.
+   Its width never depends on where it sits, so the height panelFrame2D measures is the height placed. */
+#hud.hud--2d .hud-bar { flex-wrap: wrap; row-gap: var(--space-2); width: max-content; max-width: calc(100vw - 2 * var(--space-4) - 18px); }
+@media (max-width: 560px) { #hud.hud--2d .hud-bar { column-gap: var(--space-3); } }
 /* A board status card (generating, or a failed board's offer) sits above the pause card. */
 #c2d-status, #m3d-status { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: calc(var(--z-overlay) + 1); }
 #replay { position: fixed; inset: 0; z-index: var(--z-overlay); background: var(--color-backdrop); }
@@ -410,6 +415,8 @@ body.pad-nav .ready-card:focus .ready-title { color: var(--color-accent); }
 /* Touch targets and text a finger and a phone need; a fine pointer keeps every size above. */
 @media (pointer: coarse) {
   #hud.hud--2d #hud-tap { display: flex; min-width: 44px; min-height: 44px; padding: var(--space-2) var(--space-4); }
+  /* Swap clicks trades mouse buttons: a coarse primary pointer is never fine, so this is js/main.js COARSE_ONLY */
+  #hud-swap { display: none; }
   /* the pause button takes a touch anywhere in a 44 px band around its centre, the bar's layout unchanged */
   #hud-pause { position: relative; }
   #hud-pause::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 22px); height: 44px; }

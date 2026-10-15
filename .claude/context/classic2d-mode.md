@@ -59,7 +59,7 @@ the shell hands in its flow and its sound sink. The area overview is
   session through a gate that reads paused while the board is hidden and
   redraws what an action before the first reveal changed (the session
   emits no event then). The view opens at `flow.scale()` inside
-  `flow.frame()`, reports each layout to `flow.layout` (the shell places
+  `flow.frame()`, measured again at every refit, reports each layout to `flow.layout` (the shell places
   the panel) and each player scroll to `flow.scrolled`. `tick()` drives the
   sampler every frame, with the cursor's ring cell beside the view (-1
   when hidden). The session's `changed` redraws the listed cells and

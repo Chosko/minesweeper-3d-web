@@ -71,14 +71,17 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
   click and the controller's START/BACK in play (through `padClick`) all
   pause through that one control. `#hud-swap` ("Swap clicks",
   `aria-pressed`) shows only in Classic 2D (hidden by `showPause` and by
-  `#hud:not(.hud--2d) #hud-swap`) and never takes focus (its `mousedown` is
-  prevented), so Space and Enter keep playing. `#hud-tap` (the Reveal /
-  Flag switch, "Tap: Reveal" / "Tap: Flag", `aria-pressed` on Flag) works
-  the same way but shows only under `(pointer: coarse)` in Classic 2D, with
-  a 44 px hit area; `main.js` flips `mode2d.setTapMode` and writes it back
-  with `setTapMode`. Over the 3D scene the bar
-  has its own raised surface; in Classic 2D it is the top edge of the
-  board's framed panel.
+  `#hud:not(.hud--2d) #hud-swap`), never under `(pointer: coarse)`, and
+  never takes focus (its `mousedown` is prevented), so Space and Enter keep
+  playing. `#hud-tap` (the Reveal / Flag switch, "Tap: Reveal" /
+  "Tap: Flag", `aria-pressed` on Flag) works the same way but shows only
+  under `(pointer: coarse)` in Classic 2D, with a 44 px hit area; `main.js`
+  flips `mode2d.setTapMode` and writes it back with `setTapMode`. Over the
+  3D scene the bar has its own raised surface; in Classic 2D it is the top
+  edge of the board's framed panel and wraps onto more rows inside the
+  widest panel (`width: max-content`, `max-width` the board area less the
+  panel inset), so a phone keeps every control on screen;
+  `panelFrame2D` measures the height it is placed at, again at each refit.
 - **Aimed-cell readout** `#aim-readout` sits below and right of the
   crosshair, clear of the off-screen arrow `#crosshair-arrow`: a cube icon
   and `#aim-cubes`, then `#aim-flag-part` only while there are flags.

@@ -637,7 +637,8 @@ test('the controller reaches the board through the cursor input', () => {
 test('the board opens at the board scale setting inside the panel\'s frame; its layouts and the player\'s scrolls reach the shell', () => {
   const { flow, board, mode } = setup({ choice: { size: 'expert', noGuess: false } });
   assert.equal(board().options.scale, '125', 'the scale the shell holds');
-  assert.equal(board().options.frame, flow.panel, 'the frame the shell measured');
+  assert.equal(typeof board().options.frame, 'function', 'the shell\'s measure, for the view to call at every refit');
+  assert.equal(board().options.frame(), flow.panel, 'the frame the shell measured');
   const layout = { tile: 30, scrolls: false };
   board().options.onLayout(layout);
   assert.deepEqual(flow.layouts, [layout], 'each refit places the panel');

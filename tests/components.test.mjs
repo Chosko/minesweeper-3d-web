@@ -984,6 +984,17 @@ test('coarse pointers get 44 px switch and slider targets, 12 px labels and 11 p
   const styleCoarse = rules(coarseBlocks(STYLE));
   assert.ok(styleCoarse.some(([sel, body]) => /\bkbd\b/.test(sel) && body.includes('11px')), 'key caps at 11 px');
   assert.ok(styleCoarse.some(([sel, body]) => sel.includes('#hud-tap') && body.includes('44px')), 'the Reveal / Flag switch\'s 44 px hit area');
+  assert.ok(styleCoarse.some(([sel, body]) => sel.trim() === '#hud-swap' && /display:\s*none/.test(body)), 'no Swap clicks on a coarse-only device');
+});
+
+test('the Classic 2D overlay bar wraps inside the widest panel, whatever its place; Swap clicks hides only under the coarse rule', () => {
+  const top = rules(topLevel(STYLE));
+  const bar = top.filter(([s]) => s.trim() === '#hud.hud--2d .hud-bar').map(([, b]) => b).join(';');
+  assert.match(bar, /flex-wrap:\s*wrap/);
+  assert.match(bar, /width:\s*max-content/, 'its width never depends on its left offset');
+  assert.match(bar, /max-width:\s*calc\(100vw - 2 \* var\(--space-4\) - 18px\)/, 'the board area less the panel inset on each side');
+  const hides = top.filter(([s, b]) => s.includes('#hud-swap') && /display:\s*none/.test(b)).map(([s]) => s.trim());
+  assert.deepEqual(hides, ['#hud:not(.hud--2d) #hud-swap'], 'a fine pointer still shows it in Classic 2D');
 });
 
 test('on a fine pointer every size the coarse rules touch is as it was', () => {
