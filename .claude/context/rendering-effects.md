@@ -67,7 +67,7 @@ needs frames, so `isAnimating()` stays true while any runs.
   leaves a pulsing cube. Otherwise the renderer cannot tell a replay from play; leaving the replay
   hands it back the game or demo board it drew before.
 - **End of a 3D game.** The win or loss effect plays for the 3D mode's end delay (`endDelayMs`,
-  [mode3d-session.md](mode3d-session.md)), or until a press of the player's cuts it short, with the camera and the
+  [mode3d-adapter.md](mode3d-adapter.md)), or until a press of the player's cuts it short, with the camera and the
   view-mode toggles frozen as the game ended. `_waveSetup` paces both waves at `waveStepS(game)` seconds per
   cell from the same module, and the shader's per-cell loss reveal lasts `WAVE_CELL_S`, so the loss wave
   fits the delay. The results screen then shows over the scene, which `js/main.js`'s `shouldRender` draws

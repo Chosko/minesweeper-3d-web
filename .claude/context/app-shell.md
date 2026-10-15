@@ -39,7 +39,7 @@ maps controller polls (`handlePad`, `padPlaying`, `padMenus`, `padBoard2D`,
 screens, elements and callbacks. `mode-host.js` is here, the others in the
 part that owns their topic; `navigation.js` is
 [input-controller.md](input-controller.md) and `mode-3d.js` is
-[mode3d-session.md](mode3d-session.md).
+[mode3d-adapter.md](mode3d-adapter.md).
 
 ## PUBLIC API
 

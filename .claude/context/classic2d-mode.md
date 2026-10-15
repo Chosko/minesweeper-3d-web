@@ -123,7 +123,7 @@ the shell hands in its flow and its sound sink. The area overview is
   and the button swap; [app-shell-pause.md](app-shell-pause.md) — the end
   delay's skip.
 - [generation.md](generation.md) — the client and `pregenerate`.
-- [replay.md](replay.md) — the 2D movement sampler the mode mounts.
+- [replay-samplers.md](replay-samplers.md) — the 2D movement sampler the mode mounts.
 - [audio.md](audio.md) — the `sfx` cues and their volume and mute.
 - [testing.md](testing.md) — `tests/classic2d-mode.test.mjs` the mode, its
   end delay and the cue each action plays;

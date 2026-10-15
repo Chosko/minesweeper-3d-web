@@ -34,7 +34,7 @@ A daily or a challenge asks for its board with the code's seed and forced
 start cell instead of a fresh seed, and the shell pre-generates today's
 daily boards through each mode's client when the main menu shows
 (`js/shell/daily.js`); the daily seed and the board code grammar are the
-records layer's ([records.md](records.md)), the generator serves them
+records layer's ([records-board-code.md](records-board-code.md)), the generator serves them
 unchanged.
 
 ## PUBLIC API

@@ -14,7 +14,7 @@ chart, which draws on the canvas it is handed.
 | ---- | -------------- | --------- |
 | `js/records/board.js` | Board identity (2D and 3D forms), key, parser, label, standard boards, cube 3D presets. Imports nothing. | here |
 | `js/records/typical-bbbv.js` | Measured typical 3BV per named board. Imports nothing. | here |
-| `js/records/board-code.js` | Board codes (encode, parse, check), the daily seed and the two daily boards. | here |
+| `js/records/board-code.js` | Board codes (encode, parse, check), the daily seed and the two daily boards. | [records-board-code.md](records-board-code.md) |
 | `js/records/summary.js` | Summary builder, derived stats, best eligibility. | here |
 | `js/records/model.js` | Records model: bests, per-mode counters, history, comparison, the records format step. No storage. | [records-store.md](records-store.md) |
 | `js/records/store.js` | Records store: the only writer of the personal records and the game-in-progress marker; storage handed in. | [records-store.md](records-store.md) |
@@ -60,19 +60,6 @@ Typical 3BV (`js/records/typical-bbbv.js`)
   `dev/measure-typical-bbbv.mjs`. A board and its no-guess twin share the
   entry; a changed preset has none.
 
-Board codes (`js/records/board-code.js`; its header states the frozen
-grammar)
-- `encodeBoardCode({ board, seed, startCell, generatorVersion, daily? })` →
-  the game form `EN-9C41D07A-247-1486` or, with `daily` (YYYYMMDD), the daily
-  form `EN-20261011-184A`; `parseBoardCode(text, { generatorVersion? })` →
-  `{ ok: true, board, seed, startCell, generatorVersion, daily? }` or `{ ok:
-  false, reason }` (`CODE_REASONS`), never throwing; `codeOf(game)` — a
-  summary's or history entry's code, null without what one needs.
-- `boardToken`, `graphOf(identity)`, `fnv1a`, `dailySeed(date, token)`,
-  `dateText(now)` (the local date), `isDateText`.
-- `DAILY_BOARDS` (`expert` EN, `cube` 8X8X8M40N), `dailyBoardOf(identity)`,
-  `dailyGame(id, date)` → `{ board, seed, startCell, code, request, … }`.
-
 Summary (`js/records/summary.js`)
 - `buildSummary({ engine, outcome?, elapsedMs, pauses?, board, seed,
   generatorVersion, endedAt?, id? })` → record or null. `engine` is the
@@ -113,10 +100,6 @@ Summary (`js/records/summary.js`)
   only sums.
 - **Best eligibility.** Only a won game counts for a best, only on a stat
   that is available (`time` always is), and never a challenge.
-- **Codes are frozen.** The grammar, FNV-1a and the daily seed never
-  change meaning; a code of another `GENERATOR_VERSION` is refused, never
-  approximated. The parser validates against both modes' custom limits
-  (`js/classic2d/board-setup.js`, `js/mode3d/board-choice.js`).
 
 ## DOMAIN DEPENDENCIES
 
@@ -130,6 +113,8 @@ Summary (`js/records/summary.js`)
 
 ## CROSS-REFERENCES
 
+- [records-board-code.md](records-board-code.md) — board codes, the daily
+  seed and the daily boards.
 - [records-store.md](records-store.md) — model, store, documents, marker.
 - [records-screen.md](records-screen.md), [records-history.md](records-history.md),
   [records-library-view.md](records-library-view.md) — the Records screen.

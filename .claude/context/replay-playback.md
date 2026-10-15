@@ -129,7 +129,7 @@ Viewer (`js/replay/viewer.js`)
 - [replay-library.md](replay-library.md) — `bytes(id)` the viewer reads.
 - [engine.md](engine.md) — `createGameWithMines`, `snapshot()` /
   `restore()`, `bbbvPartition`.
-- [records.md](records.md) — `codeOf`; [records-library-view.md](records-library-view.md)
+- [records-board-code.md](records-board-code.md) — `codeOf`; [records-library-view.md](records-library-view.md)
   — `replayFileName`, `REPLAY_SCREEN`.
 - [app-shell-replay.md](app-shell-replay.md) — `REPLAY_VIEWER`, the 3D
   replay scene and camera, the frame loop that ticks the viewer.

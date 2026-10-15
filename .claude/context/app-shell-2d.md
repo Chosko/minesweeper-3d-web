@@ -28,7 +28,7 @@ themselves are [classic2d.md](classic2d.md).
 - **HUD.** The overlay bar names the board through `board`
   (`ui.setBoard2D`); its timer, counter and clicks come from `hud`, fed by
   `mode2d.tick()` every frame, which also drives the movement sampler
-  ([replay.md](replay.md)) and draws the end effect during the 2D end delay
+  ([replay-samplers.md](replay-samplers.md)) and draws the end effect during the 2D end delay
   (`mode2d.ending`, read through `endDelay()`).
 - **Pause.** The paused screen's `setBoardHidden` hides the 2D board;
   `pauseInfo` / `gameOver` read `mode2d.status()`.

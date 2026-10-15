@@ -12,7 +12,7 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
 | `js/mode3d/learn.js` | Learn 3D: the guided board `LEARN_BOARD`, `lessonCells`, `learnChoice` and the prompt sequence `createLearnPrompts`. DOM-free. | this file |
 | `js/mode3d/board-choice.js` | The six presets and their start spacing (`startSpacing`), custom validation, Random fill, the no-guess switch with its cell-count limit and side-of-2 rule, the last 3D choice's document name, and `bindBoardChoice` over `#board-choice`. Helpers DOM-free; the binder touches only the elements it is handed. | this file |
 | `js/mode3d/session.js` | The 3D game on the shared engine (`create3DGame`) and the game session (`createSession`): closed box, flags before the first reveal, the first reveal's board, generating, failure offer, timer, pause, restart, leave, replay recorder. DOM-free. | [mode3d-session.md](mode3d-session.md) |
-| `js/shell/mode-3d.js` | The adapter (`create3DMode`) behind the mode contract: end delay, summaries, sealed replays, the movement sampler, pre-generation for Play again. DOM-free. | [mode3d-session.md](mode3d-session.md) |
+| `js/shell/mode-3d.js` | The adapter (`create3DMode`) behind the mode contract: end delay, summaries, sealed replays, the movement sampler, pre-generation for Play again. DOM-free. | [mode3d-adapter.md](mode3d-adapter.md) |
 
 ## PUBLIC API
 
@@ -121,7 +121,7 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
 
 ## CROSS-REFERENCES
 
-- [mode3d-session.md](mode3d-session.md) — the session and the adapter
+- [mode3d-session.md](mode3d-session.md), [mode3d-adapter.md](mode3d-adapter.md) — the session and the adapter
   the chosen board is handed to.
 - [classic2d.md](classic2d.md) — `NOGUESS_DENSITY_HINT` and the density
   hint text.

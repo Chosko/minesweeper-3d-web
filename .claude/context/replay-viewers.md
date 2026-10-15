@@ -71,7 +71,7 @@ DOM-free at import.
 
 - [replay-playback.md](replay-playback.md) — the screen that mounts them,
   `regionTints`, the commands that call `setFree` and `showBbbv`.
-- [replay.md](replay.md) — the movement streams and samplers these invert.
+- [replay.md](replay.md) — the movement streams these invert; [replay-samplers.md](replay-samplers.md) — the samplers.
 - [engine-3d.md](engine-3d.md) — the 3D state view.
 - [classic2d-board-view.md](classic2d-board-view.md) — the board view the 2D viewer mounts.
 - [rendering.md](rendering.md) — the renderer the 3D viewer draws on.

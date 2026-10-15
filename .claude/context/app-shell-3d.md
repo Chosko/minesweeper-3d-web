@@ -32,7 +32,7 @@ and adapter (`js/shell/mode-3d.js`) themselves are [mode3d.md](mode3d.md).
   `enterPlay3D`; `leave` is `leaveGame` (leaves the session, releases lock
   and lockless play, hides `#m3d-status`); `release` exits pointer lock
   before the results screen shows; `sampler` builds `createSampler3D`
-  ([replay.md](replay.md)) over camera, controls and `S.spacing`.
+  ([replay-samplers.md](replay-samplers.md)) over camera, controls and `S.spacing`.
   `js/main.js` reads `mode3d.ending` (via `endDelay()`) and calls only
   `contextLost()`, `finishNow()`, `cancelGeneration()` and `mode3d.tick()`
   (every frame while the 3D mode is active, driving the sampler).
