@@ -8,7 +8,7 @@ placeholder, the last mode played and each mode's last board choice),
 `js/shell/returning.js` (the board choices' preset detail lines, the menu's
 session strip and Play again, as text; pure, over the records' queries it is
 handed — formats in its head comment) and their wiring in `js/main.js`.
-The menu's markup is [app-shell-kit.md](app-shell-kit.md) § Screens.
+The menu's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
 
 ## PUBLIC API
 

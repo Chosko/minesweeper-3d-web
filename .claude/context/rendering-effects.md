@@ -61,9 +61,9 @@ needs frames, so `isAnimating()` stays true while any runs.
 - **Replay-driven camera.** A 3D replay draws through the same renderer: `js/main.js`'s
   `REPLAY_SCENE` hands it the replay's 3D state view with `setGame`, and each frame writes the
   recorded camera (a separate `FlyCamera` at `SPACING_START`) to `camera`, the recorded view mode
-  through `setToggles` and the recorded aimed cell through `setSelected` ([app-shell-results.md](app-shell-results.md),
-  [replay-playback.md](replay-playback.md)). Playback plays the "solved" pulses as play does; a seek reaches the
-  renderer as `sync({ seek: true })` ([app-shell-results.md](app-shell-results.md) § Frame loop), so a seek never
+  through `setToggles` and the recorded aimed cell through `setSelected` ([app-shell-replay.md](app-shell-replay.md),
+  [replay-viewers.md](replay-viewers.md)). Playback plays the "solved" pulses as play does; a seek reaches the
+  renderer as `sync({ seek: true })` ([app-shell-replay.md](app-shell-replay.md) § Frame loop), so a seek never
   leaves a pulsing cube. Otherwise the renderer cannot tell a replay from play; leaving the replay
   hands it back the game or demo board it drew before.
 - **End of a 3D game.** The win or loss effect plays for the 3D mode's end delay (`endDelayMs`,
@@ -84,9 +84,9 @@ needs frames, so `isAnimating()` stays true while any runs.
 ## Cross-references
 
 - [rendering.md](rendering.md) — the renderer's API, passes, state texture and sky palette.
-- [app-shell-results.md](app-shell-results.md) — the replay viewer route and its frame-loop tick;
-  [app-shell-3d.md](app-shell-3d.md) — the end sequence and render on demand.
-- [replay-playback.md](replay-playback.md) — the 3D viewer whose state view and recorded camera the renderer draws.
+- [app-shell-replay.md](app-shell-replay.md) — the replay viewer route and its frame-loop tick;
+  [app-shell-3d.md](app-shell-3d.md) — the end sequence; [app-shell-3d-play.md](app-shell-3d-play.md) — render on demand.
+- [replay-viewers.md](replay-viewers.md) — the 3D viewer whose state view and recorded camera the renderer draws.
 - [audio.md](audio.md) — no direct link; win/loss sounds fire alongside the waves from main.
 - [testing.md](testing.md) — `tests/render-3d-feedback.test.mjs` (pulse envelope, the pulse's
   `isAnimating()` and its ends), `tests/replay-viewer-3d.test.mjs` (a 3D replay on the renderer, its

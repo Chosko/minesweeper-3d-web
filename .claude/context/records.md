@@ -5,8 +5,8 @@
 The records every records consumer shares: which board a game was played
 on, the one summary record of a played game and the stats derived from it.
 This file is the map of `js/records/`; the personal records (model and
-store) are in [records-store.md](records-store.md), the Records screen, its
-history chart and library view in [records-screen.md](records-screen.md).
+store) are in [records-store.md](records-store.md), the Records screen in
+[records-screen.md](records-screen.md) and the two files it names.
 DOM-free throughout, apart from the screen's view binders and the history
 chart, which draws on the canvas it is handed.
 
@@ -19,8 +19,8 @@ chart, which draws on the canvas it is handed.
 | `js/records/model.js` | Records model: bests, per-mode counters, history, comparison, the records format step. No storage. | [records-store.md](records-store.md) |
 | `js/records/store.js` | Records store: the only writer of the personal records and the game-in-progress marker; storage handed in. | [records-store.md](records-store.md) |
 | `js/records/screen.js` | Records screen content, controller and `#records` binder. | [records-screen.md](records-screen.md) |
-| `js/records/replay-list.js` | Library view: the board's kept replays, pin, Watch. | [records-screen.md](records-screen.md) |
-| `js/records/history-chart.js` | History chart on a canvas and the games list paging. | [records-screen.md](records-screen.md) |
+| `js/records/replay-list.js` | Library view: the board's kept replays, pin, Watch, Download, Open replay file. | [records-library-view.md](records-library-view.md) |
+| `js/records/history-chart.js` | History charts on a canvas and the lists' paging. | [records-history.md](records-history.md) |
 
 Wiring: `js/main.js` builds the one store (`RECORDS`) over the platform
 `storage`, awaits its `load()` before the first screen, attaches it to the
@@ -131,8 +131,8 @@ Summary (`js/records/summary.js`)
 ## CROSS-REFERENCES
 
 - [records-store.md](records-store.md) — model, store, documents, marker.
-- [records-screen.md](records-screen.md) — Records screen, history chart,
-  library view.
+- [records-screen.md](records-screen.md), [records-history.md](records-history.md),
+  [records-library-view.md](records-library-view.md) — the Records screen.
 - [engine.md](engine.md) — `summary()` and `counts()`, `CLICK_KINDS`.
 - [generation.md](generation.md) — the seed and `GENERATOR_VERSION`.
 - [replay.md](replay.md) — replays sealed with the summary and keyed by

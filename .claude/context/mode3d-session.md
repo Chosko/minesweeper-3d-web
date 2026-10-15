@@ -144,8 +144,8 @@ Both files are DOM-free; `js/shell/mode-3d.js` imports `buildSummary`,
   `PROFILE_3D`, the 3D state view; the client and `box` graph description.
 - [classic2d-session.md](classic2d-session.md) — `createTimer`,
   `FAILURE_OFFERS`, `GENERATING_DELAY_MS` and the first-click flow reused.
-- [app-shell-3d.md](app-shell-3d.md) — `FLOW_3D`, `startGame`, `onAction`, `sync3D`
-  and the `#m3d-status` card in `js/main.js`; [app-shell.md](app-shell.md) — the mode host.
+- [app-shell-3d.md](app-shell-3d.md) — `FLOW_3D`, `startGame`, `sync3D`
+  and the `#m3d-status` card in `js/main.js`, [app-shell-3d-play.md](app-shell-3d-play.md) — `onAction`; [app-shell.md](app-shell.md) — the mode host.
 - [input.md](input.md) — the mouse and trigger actions that become the
   session's `reveal` / `toggleFlag` / `chord`.
 - [replay.md](replay.md) — the recorder and the camera sampler

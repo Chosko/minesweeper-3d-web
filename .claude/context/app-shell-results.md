@@ -1,4 +1,4 @@
-# App shell — results flow and screen, replay viewer route, 3D replay scene
+# App shell — results flow and screen, Look at the board
 
 ## OVERVIEW
 
@@ -7,10 +7,10 @@ Covers `js/results/` — the results screen (`results`), DOM-free apart from
 the view's binder: `flow.js` (records the game on the `finished` and
 `abandoned` hand-offs, routes a finished one to `results`, hands the replay
 to the library) and `view.js` (the screen's content, its formats — documented
-in its head comment — and the binder that fills `#results`) — plus the
-replay viewer's route and the 3D replay scene in `js/main.js`. The viewer
-itself is [replay-playback.md](replay-playback.md); the screen's markup is
-[app-shell-kit.md](app-shell-kit.md) § Screens.
+in its head comment — and the binder that fills `#results`) — and its
+wiring in `js/main.js`, Look at the board included. The replay viewer's
+route and the 3D replay scene are [app-shell-replay.md](app-shell-replay.md);
+the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
 
 ## PUBLIC API
 
@@ -19,10 +19,13 @@ itself is [replay-playback.md](replay-playback.md); the screen's markup is
 - `createResultsFlow({records, replays?, router, restart(source, current),
   goMenu})` → `attach(pauser)` → detach, `finished(summary, mode, replay?)`
   → the routed data `{summary, mode, comparison, saved, notSaved, watch,
-  rank, streak, standing}` or null, `abandoned(summary, mode, replay?)`,
-  `current`, `playAgain(source)`, `openRecords()`, `watch()`, `toMenu()`.
-  Without `replays` no replay is kept. `watch` is set when the game handed
-  over a sealed replay and the router has the `replay` route. `rank` is
+  watchBest, rank, streak, standing}` or null, `abandoned(summary, mode,
+  replay?)`, `current`, `playAgain(source)`, `openRecords()`, `watch()`,
+  `watchBest()`, `toMenu()`. Without `replays` no replay is kept and no best
+  is watched. `watch` is set when the game handed over a sealed replay and
+  the router has the `replay` route; `watchBest` is the board's
+  fastest-time best's id (after recording) when the library `has` its
+  replay and it is not the game shown, else null. `rank` is
   null for a challenge (`gameRank` leaves challenges out). The shell's
   `restart(source, {mode, summary})` plays a daily's or a challenge's
   `freeStart(summary.board)` once its mode was left.
@@ -35,16 +38,17 @@ itself is [replay-playback.md](replay-playback.md); the screen's markup is
   `NOTES`, `NOT_ELIGIBLE`, `FIRST_BEST`, `CHALLENGE_LABEL` ("Challenge · not
   eligible for bests"), `CHALLENGE_NOTE`.
 - `resultsContent({summary, comparison?, saved?, notSaved?, watch?, rank?,
-  streak?, standing?})` → `{outcome, title, board, label, code, banner, stats, figures,
-  next, standing, eligible, bestsNote, bests, notes, watch, look, over3d}`
+  streak?, standing?, watchBest?})` → `{outcome, title, board, label, code, banner, stats, figures,
+  next, standing, eligible, bestsNote, bests, notes, watch, watchBest, look, over3d}`
   (fields in the head comment; `look` and `over3d` true for a 3D summary;
   `code` the game's board code, `label` a challenge's label; a challenge is
   not eligible, has no next target and its rank figure is a dash).
-- `createResultsView({root, onPlayAgain, onWatch?, onRecords, onMenu, onLook?, onCopy?})` →
+- `createResultsView({root, onPlayAgain, onWatch?, onWatchBest?, onRecords, onMenu, onLook?, onCopy?})` →
   `show(content)`, `hide()`, `noteLook(text)`; `LOOK_REFUSED`. The label
   fills `#results-label`, the code the `#results-code` chip, whose Copy
   and Copy link call `onCopy` (the shell's `copyCode`).
-- `RESULTS_ACTIONS` (`r-again`, `r-watch`, `r-look`, `r-records`, `r-menu`);
+- `RESULTS_ACTIONS` (`r-again`, `r-watch`, `r-watch-best`, `r-look`,
+  `r-records`, `r-menu`);
   `resultsEnter({focused, repeat})` → `'playAgain'` (focus on Play again or
   on no action), null (another action's own activation), `'ignore'`
   (auto-repeat).
@@ -89,7 +93,8 @@ itself is [replay-playback.md](replay-playback.md); the screen's markup is
   board's `boardKey`; Back returns to `results`. Watch replay →
   `RESULTS.watch()` routes to `replay` with `{replay, returnTo: {screen:
   'results'}}` — the game's own sealed replay, so it plays whether or not
-  the library saved it. Main menu and Back → `showMainMenu`. Returning to
+  the library saved it. Watch best → `RESULTS.watchBest()` routes to
+  `replay` with the best's `replayId`. Main menu and Back → `showMainMenu`. Returning to
   `results` without data shows `RESULTS.current` again.
 - **Abandoned** games are recorded (a no-op when the store already did) and
   show nothing.
@@ -97,32 +102,6 @@ itself is [replay-playback.md](replay-playback.md); the screen's markup is
   `REPLAYS` once it has loaded, pinned as a best when the comparison shows a
   new best on any of the three stats ([replay-library.md](replay-library.md)); a throwing or
   rejecting library is logged and changes nothing else.
-- **Replay viewer route.** `REPLAY_VIEWER` (`createReplayViewer` over
-  `REPLAYS` and `SHELL`, view bound to `#replay`, viewers `{square:
-  mountViewer2D, box: mountReplay3D}`) is the router's `replay` screen. It
-  is opened by Watch replay (with the replay) and by the Records screen's
-  Watch (with a replay id, `RECORDS_PAGE.watch`, [records-screen.md](records-screen.md)),
-  each returning to the screen it came from; its Back buttons go through
-  `shellBack`. It is a shell screen, not a mode: it reaches no mode, records
-  nothing, plays no sound; `ui.showReplay` hides the game's HUD, help,
-  hint strip and toast. `LAYER_SCREEN` maps `#replay` to `replay`.
-- **Frame loop.** While `replay` shows the loop calls `REPLAY_VIEWER.tick`;
-  before it, on a 3D replay whose time moved (`replay3d.time`: a seek, step,
-  Home/End) it calls `renderer.sync({seek: true})` so no "solved" pulse
-  starts for the jump ([rendering-effects.md](rendering-effects.md)). On `replay` the
-  controller goes to `padReplay`: `REPLAY_PAD` buttons to the viewer, the
-  rest navigates the screen as a menu.
-- **3D replay scene.** `mountReplay3D` mounts `createViewer3D` on
-  `REPLAY_SCENE`, which hands the renderer the replay's 3D state view at
-  `REPLAY_SPACING` (`SPACING_START`) with its own `FlyCamera` (`replayCam`),
-  at the box's spawn pose until the first sample; each frame applies the
-  recorded camera and view mode and glows the recorded aimed cell
-  (`updateReplayPick`). Player input never moves it; `hide()` gives the
-  renderer back what it drew before. With the context already lost it
-  routes to `ctxlost` and mounts nothing. `show` keeps the finished game's
-  `renderer.wrongFlags()`, which `hide` gives back after `setGame`, so the
-  loss's crossed flags survive the viewer.
-
 ## DOMAIN DEPENDENCIES
 
 - [../domain/features/results-screen.md](../domain/features/results-screen.md)
@@ -133,29 +112,25 @@ itself is [replay-playback.md](replay-playback.md); the screen's markup is
   — where the Records screen is opened from, Back and focus.
 - [../domain/features/replay-library.md](../domain/features/replay-library.md)
   — the end-of-game hand-off, best pinning, the session-only replay.
-- [../domain/features/replay-playback.md](../domain/features/replay-playback.md)
-  — the viewer screen, its entry points, Back, a lost context.
 
 ## CROSS-REFERENCES
 
 - [records.md](records.md) — board label and key;
   [records-store.md](records-store.md) — `record`, comparison;
-  [records-screen.md](records-screen.md) — the Records screen and `REPLAY_SCREEN`.
+  [records-screen.md](records-screen.md) — the Records screen;
+  [records-library-view.md](records-library-view.md) — `REPLAY_SCREEN`;
+  [records-history.md](records-history.md) — `gameRank`.
 - [replay-library.md](replay-library.md) — library;
-  [replay-playback.md](replay-playback.md) — viewer, 2D and 3D viewers.
+  [app-shell-replay.md](app-shell-replay.md) — the `replay` route Watch
+  replay and Watch best open.
 - [app-shell-pause.md](app-shell-pause.md) — the hand-offs the flow attaches
   to.
 - [testing.md](testing.md) — `tests/results.test.mjs`,
   `tests/results-watch.test.mjs`, `tests/replay-handoff.test.mjs`,
-  `tests/replay-viewer.test.mjs`, `tests/replay-viewer-3d.test.mjs`,
-  `tests/records-screen*.test.mjs`, `tests/records-replays.test.mjs`.
+  `tests/mode3d-end.test.mjs` (the look).
 
 ## WHEN TO READ THE SOURCE
 
 - Changing what the results screen shows, its formats or actions: the head
   comments of `js/results/view.js` and `js/results/flow.js`, and the
   `results` wiring in `js/main.js`.
-- Changing the replay viewer's wiring — route, viewers, 3D replay scene,
-  controller mapping: the `// ---------- 3D replay ----------` and
-  `// ---------- replay viewer ----------` blocks of `js/main.js`,
-  `padReplay` and the frame loop.

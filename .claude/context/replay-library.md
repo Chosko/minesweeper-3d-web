@@ -10,7 +10,7 @@ personal bests and the replays the player pins, and keeps the newest 100
 others. `js/main.js` builds the one library (`REPLAYS`) over the platform
 `storage` and `blobStore`; the results flow adds to it
 ([app-shell-results.md](app-shell-results.md)), the Records screen's library view lists and
-pins ([records-screen.md](records-screen.md)), and the viewer reads bytes
+pins ([records-library-view.md](records-library-view.md)), and the viewer reads bytes
 ([replay-playback.md](replay-playback.md)).
 
 ## PUBLIC API
@@ -73,7 +73,7 @@ pins ([records-screen.md](records-screen.md)), and the viewer reads bytes
 - [platform.md](platform.md) — the document interface and the blob store.
 - [records-store.md](records-store.md) — the comparison whose new bests set
   `setBest`.
-- [records-screen.md](records-screen.md) — the library view.
+- [records-library-view.md](records-library-view.md) — the library view.
 - [testing.md](testing.md) — `tests/replay-library.test.mjs`.
 
 ## WHEN TO READ THE SOURCE

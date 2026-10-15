@@ -17,12 +17,12 @@ binders touch only the elements they are handed. `page.js`'s and
 ## PUBLIC API
 
 Page (`js/settings/page.js`)
-- `SETTINGS_SECTIONS` — Controls (`lookSensitivity`, `invertY`,
-  `confirmRestart`), Graphics (`fullscreen`, `renderResolution`,
-  `boardScale` "2D board scale", `aimReadout` "3D neighbour count",
-  `fieldOfView` "Field of view"), Theme
-  (`theme`), Audio (`muted`, `volume`); `SETTING_LABELS` (`muted` reads
-  Sound), `CHOICE_LABELS`.
+- `SETTINGS_SECTIONS` — Controls (`lookSensitivity`, `invertY`, `camera`
+  "Camera" Fly | Orbit, `confirmRestart`), Graphics (`fullscreen`,
+  `renderResolution`, `boardScale` "2D board scale", `aimReadout` "3D
+  neighbour count", `fieldOfView` "Field of view"), Theme (`theme`), Audio
+  (`muted`, `volume`); `SETTING_LABELS` (`muted` reads Sound),
+  `CHOICE_LABELS`.
 - `settingControl(key)` → `{ key, kind: 'slider' | 'toggle' | 'segmented',
   label, … }` by schema type; `SLIDERS` adds a number's step, format,
   scale (volume shows 0–100 %) and unit (the field of view's `°`, carried
@@ -40,7 +40,9 @@ Page (`js/settings/page.js`)
   refreshed on each show of the page ([records-screen.md](records-screen.md))
   — then warning line `#set-reset-note`, button `#set-reset`, hidden confirmation
   `#set-reset-confirm` with `#set-reset-yes` / `#set-reset-no`);
-  `bindingsSectionHtml(glyphs?)` — one `dl.controls` per mode and device.
+  `bindingsSectionHtml(glyphs?, camera?)` — one `dl.controls` per mode and
+  each device `bindingDevices` lists (3D adds Touch), 3D's rows for the
+  Camera setting's `camera`.
 - `bindResetPanel({ open, panel, yes, no, note }, { reset })` → `{ isOpen,
   close, clear }`: the confirmation opens with focus on Cancel; confirming
   disables both buttons and calls `reset()` once, a failure's message

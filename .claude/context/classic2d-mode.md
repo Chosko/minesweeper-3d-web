@@ -28,8 +28,10 @@ the shell hands in its flow and its sound sink. The area overview is
 - `flow` is `{openBoardChoice(choice), show(), container(), hud({seconds,
   minesLeft, clicks}), board({width, height, mines, noGuess}),
   generating(shown), progress?(p|null), failed(failure|null), hint?(text), scale?(),
-  frame?(), layout?(layout), scrolled?()}` — `board` once per game and
-  again when `playStandard()` turns no-guess off.
+  frame?(), layout?(layout), scrolled?(), padCue?(kind)}` — `board` once
+  per game and again when `playStandard()` turns no-guess off; `padCue`
+  the cursor input's `onPadCue` (`'press'` | `'flag'`), which the shell
+  answers with a rumble ([app-shell-3d-play.md](app-shell-3d-play.md)).
 - `mount` defaults to `{board: mountBoardView, pointer: mountPointerInput,
   cursor: mountCursorInput, touch: mountTouchInput, sampler:
   mountSampler2D}`; without `touch` no touch input, without `sampler` no

@@ -3,7 +3,7 @@
 ## OVERVIEW
 
 The 3D mode's game flow from board choice to result, around the 3D scene,
-camera and controls ([rendering.md](rendering.md), [input.md](input.md)),
+camera and controls ([rendering.md](rendering.md), [input.md](input.md), [input-camera.md](input-camera.md)),
 which it leaves as they are. `js/main.js` wires it to the screens, the
 renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
 
@@ -22,7 +22,7 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
   5 × 5 × 3 / 6, `cube-intro` Cube Intro 6 × 6 × 6 / 10, `cube-beginner`
   6 × 6 × 6 / 20, `cube-intermediate` 8 × 8 × 8 / 40, `cube-expert`
   10 × 10 × 10 / 100. `spacing` is the start spacing: 1.5 for the first
-  boxes, `SPACING_START` ([input.md](input.md)) for the cubes. `FAMILIES`
+  boxes, `SPACING_START` ([input-camera.md](input-camera.md)) for the cubes. `FAMILIES`
   (`box` "First box", `cube` "Cube"); `BOARD_SIZES` (the preset ids plus
   `'custom'`). The two measured mine counts (First box 1, Cube Beginner)
   come from `dev/measure-first-box-3d.mjs`, named in the presets' comment.

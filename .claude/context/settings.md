@@ -30,8 +30,9 @@ Each module's head comment states its full contract.
 | `theme` | choice | `light`, `dark` | `light` | `msTheme.setTheme` |
 | `volume` | number | 0–1 | 0.7 | `sfx.setVolume` |
 | `muted` | boolean | | false | `sfx.setMuted`, the Sound buttons' label, the page's Sound toggle (on while false) |
-| `aimReadout` | boolean | | true | "3D neighbour count": the aimed-cell readout beside the crosshair, read each frame by `updateReadout` in `js/main.js` ([app-shell-3d.md](app-shell-3d.md)) |
+| `aimReadout` | boolean | | true | "3D neighbour count": the aimed-cell readout beside the crosshair, read each frame by `updateReadout` in `js/main.js` ([app-shell-3d-play.md](app-shell-3d-play.md)) |
 | `fieldOfView` | number | 45–90 | 60 (45 for an existing install) | the 3D renderer camera's vertical `fov` and projection, then a redraw — play, the menu backdrop and the 3D replay viewer |
+| `camera` | choice | `fly`, `orbit` | `fly` | the 3D camera's mode: `js/main.js`'s `setCameraMode`, also mid-game ([app-shell-3d-play.md](app-shell-3d-play.md)), and the 3D rows every help surface shows ([settings-bindings.md](settings-bindings.md)) |
 
 ## PUBLIC API
 
@@ -57,11 +58,13 @@ Each module's head comment states its full contract.
 - Appliers (each returns its unsubscribe): `pixelRatioFor(resolution,
   devicePixelRatio, cells)` — `auto` the device ratio capped at 2, at 1.5
   above 20³ cells and 1 above 50³; `sharp` the full device ratio; `fast` 1.
-  `applyTheme`, `applyAudio`, `applyLook`, `applyResolution`,
+  `applyTheme`, `applyAudio`, `applyLook`, `applyCamera(store, setMode)`
+  (`setMode('fly' | 'orbit')`), `applyResolution`,
   `applyFullscreen(store, { doc, enter, exit })`, `applyFieldOfView(store,
   { camera, redraw })` (the renderer's `THREE.PerspectiveCamera`; `js/main.js`'s
   `redraw` sets `needRender`), and `applySettings(store, { theme?, sfx?,
-  camera?, resolution?, fullscreen?, fieldOfView? })` for all at once.
+  camera?, cameraMode?, resolution?, fullscreen?, fieldOfView? })` for all
+  at once.
 
 ## INTERNAL PATTERNS
 
@@ -73,8 +76,8 @@ Each module's head comment states its full contract.
   `showMainMenu()`; the load's notification applies every value once.
 - **One owner per value.** The store is the only holder: the sound module
   starts at its own defaults and keeps no copy, the camera's fields are
-  written only by `applyLook`, and the theme script reads the document but
-  never writes it.
+  written only by `applyLook` and its mode only by `applyCamera`, and the
+  theme script reads the document but never writes it.
 - **Fullscreen follows the browser.** Setting it calls `enter()` / `exit()`
   synchronously, inside the gesture that set it, only when the browser is in
   the other state. On `fullscreenchange`, and when `enter()` or `exit()`
@@ -114,7 +117,7 @@ Each module's head comment states its full contract.
   format `js/theme.js` reads.
 - [audio.md](audio.md) — `setVolume`, `setMuted`, the module's defaults.
 - [rendering.md](rendering.md) — `BoardRenderer.setPixelRatio`, its `camera`'s `fov`.
-- [input.md](input.md) — `FlyCamera.sensitivity` / `invertY`.
+- [input-camera.md](input-camera.md) — `FlyCamera.sensitivity` / `invertY`; `OrbitCamera`, the Camera setting's Orbit.
 - [testing.md](testing.md) — `tests/settings-store.test.mjs`,
   `tests/settings-appliers.test.mjs`.
 

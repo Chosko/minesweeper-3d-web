@@ -6,10 +6,9 @@ Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
 Covers `js/ui.js` — DOM only, no game rules: class `UI`, board-settings
 clamping and the board lines; it formats the overlay bar with the kit
 helpers, fills the Settings page from `js/settings/page.js` and every help
-surface from `js/settings/bindings.js` — and, in `js/main.js`, the HUD,
-the mode-aware help, the active device, the first-use hints
-(`js/shell/first-use.js`, pure; its document and rules in its head comment)
-and the controller's menu navigation.
+surface from `js/settings/bindings.js` — and, in `js/main.js`, the HUD and
+the controller's menu navigation. The help surfaces, the active device and
+the first-use hints are [app-shell-help.md](app-shell-help.md).
 
 ## PUBLIC API
 
@@ -24,13 +23,16 @@ and the controller's menu navigation.
   (`onMenuEntry`, `onBack`, `onReady*`, `onResume`, `onRestart`,
   `onMainMenu`, `onPause`, `onToggleSwap`, `onToggleTap`, `onToggleSound`,
   `onDismissHint(mode, kind)`, `on{Retry,Standard,OfferMenu,Cancel}{2D,3D}`,
-  `onStandardWait3D`, `onMenuPlayAgain`, `onBackToStart`, `onResetAll`).
+  `onStandardWait3D`, `onMenuPlayAgain`, `onBackToStart`, `onResetAll`,
+  `onLayer` — the Controls modal opened or closed, for the containment).
   Method groups:
   - screens: `showMenu`, `showBoardChoice`, `showBoardChoice2D`,
     `showComingSoon`, `showRecords`, `showSettings`, `showReady(board, msg,
     {rules, blocked})`, `setReadyPending`, `showPlaying`, `showClassic2D`,
     `showPause({state, time, minesLeft, note, mode})`, `updatePause`,
-    `showReplay`;
+    `showReplay` / `hideReplay` (`body.replaying`: no HUD, view chips, tools
+    strip, help, hint strip or toast shows or appears over the viewer),
+    `replayRing(x, y, kind)` (a 3D replay's press ring on `#replay`);
   - Classic 2D: `setSwap`, `setTapMode('reveal' | 'flag')`, `panelFrame2D()` (`PANEL_INSET` 9 px,
     bar height + `PANEL_GAP` 8 px on top), `placePanel2D(rect)`,
     `setBoard2D`, `setBoardStatus`; 3D `setBoardStatus3D` (progress drawn by
@@ -49,7 +51,10 @@ and the controller's menu navigation.
     card), `showReady`'s `learn` line;
   - help and hints: `toggleHelp`, `userToggleHelp`, `setHintStrip(on,
     {scroll, learn})` (`learn` a Learn 3D prompt's hint name, shown with no
-    close button), `dismissHint`, `setDevice`, `setPad`, `flash`,
+    close button), `dismissHint`, `setDevice`, `setPad` (also fills every
+    `[data-pad-glyph]` slot, the Records screen's LB / RB and LT / RT hints),
+    `setCamera('fly' | 'orbit')` (the 3D rows and the ready card's
+    `[data-camera]` movement line follow the Camera setting), `flash`,
     `toast(msg, ms)`, `setNoMouse(on, touch)`, `setTouch3D(on)` (the touch ready card and the help's touch rows, `_bindDevice`), `setTouchModes(modes)`, `setStick(view|null)`, `openControls` / `closeControls` /
     `isControlsOpen`, `isPauseVisible`, `setReadyMessage`.
   HUD writes (`updateHud`, `setArrow`, `setReadout`) touch the DOM only on
@@ -77,56 +82,18 @@ and the controller's menu navigation.
 - **Aimed-cell readout** `#aim-readout` sits below and right of the
   crosshair, clear of the off-screen arrow `#crosshair-arrow`: a cube icon
   and `#aim-cubes`, then `#aim-flag-part` only while there are flags.
-- **One bindings source.** The help panel's list and foot line, the pause
-  card's list, the HUD strip `#hud-tools`, the hint strip, the main menu's
-  Controls panel (`#controls-tabs`, Classic 2D | 3D) and the Settings
-  page's bindings are all drawn from `js/settings/bindings.js`
-  ([settings-bindings.md](settings-bindings.md)); edit a binding's text in `BINDINGS` only.
-  They show the mode the last screen method set (`showReady` /
-  `showPlaying` 3D, `showClassic2D` 2D, `showPause`'s `mode`) for the
-  device `setDevice` set, and every change of either, or of the pad's
-  glyphs, redraws them.
-- **Help panel.** `_helpByUser` keeps an H-opened panel open across
-  screens; screen methods otherwise hide it. `H` toggles it and `M` sets
-  `muted` in both modes; the store's `muted` subscription updates every
-  Sound label (`ui.setSound`). `onKey` ignores H/M/F whose target is inside
-  `input, select, textarea`; the arrow keys go to `keyNav` before that.
-- **Active device.** `DEVICE` (`createActiveDevice`,
-  [settings-bindings.md](settings-bindings.md)) is told of every keydown and
-  mousedown/mousemove (capture listeners), every pad poll with a press or a
-  stick off its deadzone (`padUsed`) and the pad's connection
-  (`updatePadUi`); its change calls `ui.setDevice`.
-- **First-use hints.** `FIRST_USE` (`createFirstUse` over storage and
-  `RECORDS`) loads once the records have, seeding a new `shell.firstUse`
-  from them. It counts a game at the host's `started` and a finished 3D game
-  at `finished`, a Learn 3D game toward no window and only its win as
-  finished (`learnGame()`). Strip eligibility is judged as the game begins (`hint3D`
-  in `startGame`; `hint2D` at the 2D `board` report, not again for the
-  standard-board offer); `refreshHints` shows the active mode's strip on
-  every router change, at the first key or pad input of a 2D game
-  (`used2D`) and at a dismissal; a scrolling 2D board (`clipped2D`) shows
-  the one-time scroll hint instead until `FIRST_USE.once('scrollHint')`.
-  The ready card shows "How 3D works" and the Learn 3D line while
-  `FIRST_USE.rules3D`, except on the guided board, during which no
-  first-use strip, auto-hide toast or aim hint shows.
-  `noteAutoHide` gives the one-time toast at the first auto-hide; the
-  frame loop's `aimHint` shows the aim hint once the crosshair rests
-  `AIM_DWELL_MS` on a revealed number with a closed cube behind it. Hint
-  words come from `hintText` in the active device's names.
+- **Help surfaces, the active device and first-use hints** are
+  [app-shell-help.md](app-shell-help.md).
 - **Controller menus.** `LAYER_SCREEN` maps each overlay to its screen,
   topmost first; the topmost visible, non-inert one takes input
   (`topLayer`), focusing `SHELL.defaultFocus`. Every router change and
   controls-modal toggle calls `layerChanged`, which suppresses buttons held
-  at the last poll until released and resets the menu repeats. The arrow
-  keys (`keyNav`) take the same spatial step as the pad (`navStep`) on
-  every screen but `KEY_NAV_OFF` (`playing`, `classic-2d`, `records`,
-  `replay`), leave an arrow the focused control owns (`keepsArrow`) or
-  handled (`defaultPrevented`), and focus through `keyFocus`, which drops
+  at the last poll until released and resets the menu repeats. The D-pad
+  (`padNav`) and the arrow keys (`keyNav`) move focus through `navStep`
+  ([app-shell-navigation.md](app-shell-navigation.md) § Focus walk); the
+  arrows leave an arrow the focused control owns (`keepsArrow`) or handled
+  (`defaultPrevented`), and focus through `keyFocus`, which drops
   `pad-nav` so `:focus-visible` shows.
-  In a column layout (`ui-column`s, as Records) `navStep`'s Up and Down
-  search only the focused control's column, leaving it at its ends in DOM
-  order, and a vertical move into the columns from outside enters at their
-  first (Down) or last (Up) control.
 
 ## DOMAIN DEPENDENCIES
 
@@ -135,26 +102,20 @@ and the controller's menu navigation.
 - [../domain/features/settings.md](../domain/features/settings.md) — the
   Settings page and the pause-card shortcuts.
 - [../domain/features/game-shell.md](../domain/features/game-shell.md) —
-  mode-aware help and first-use hints.
+  the controller's menus.
 
 ## CROSS-REFERENCES
 
-- [settings-bindings.md](settings-bindings.md) — bindings source, active
-  device; [settings-page.md](settings-page.md) — Settings page markup and
-  binder.
+- [app-shell-help.md](app-shell-help.md) — the help surfaces, active
+  device and first-use hints these methods serve;
+  [settings-page.md](settings-page.md) — Settings page markup and binder.
 - [input-controller.md](input-controller.md) — the navigation layer;
-  [input.md](input.md) — Space's tap-toggle.
-- [testing.md](testing.md) — `tests/shell-help.test.mjs`,
-  `tests/shell-first-use.test.mjs`, `tests/components.test.mjs` (overlay
-  bar), `tests/settings-*.test.mjs`.
+  [app-shell-navigation.md](app-shell-navigation.md) — the focus walk.
+- [testing.md](testing.md) — `tests/components.test.mjs` (overlay bar),
+  `tests/settings-*.test.mjs`, `tests/shell-pad-walk.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 
-- Changing what a help surface shows or when it follows the device: the
-  `// ---------- bindings: the active mode and device ----------` block of
-  `js/ui.js` and `// ---------- active device ----------` in `js/main.js`.
-- Changing when a first-use hint shows: `js/shell/first-use.js` and the
-  `// ---------- first-use hints ----------` block of `js/main.js`.
 - Adding a HUD element or overlay: markup, `UI.el`, a `--z-*` layer, a
   router screen and a `LAYER_SCREEN` entry.
 - Changing controller mapping in menus: `padMenus`.
