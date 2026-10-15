@@ -36,6 +36,8 @@
         <button type="button" class="ui-menu__item" data-size="intermediate"><span class="ui-menu__label">Intermediate</span><span class="ui-menu__detail">16 &times; 16 &middot; 40 mines</span></button>
         <button type="button" class="ui-menu__item" data-size="expert"><span class="ui-menu__label">Expert</span><span class="ui-menu__detail">30 &times; 16 &middot; 99 mines</span></button>
       </div>
+      <label class="ui-toggle"><input type="checkbox" role="switch" id="c2d-noguess" class="ui-toggle__input" data-noguess><span class="ui-toggle__label">No-guess board</span></label>
+      <p id="c2d-noguess-help" class="ui-text ui-text--muted">Solvable by logic alone, no 50/50 guesses. Separate records.</p>
       <form id="c2d-custom" class="ui-panel" aria-labelledby="c2d-custom-title" novalidate>
         <h2 class="ui-heading" id="c2d-custom-title">Custom</h2>
         <div class="ui-row">
@@ -49,8 +51,6 @@
         <p id="c2d-info" class="ui-text ui-text--muted" data-info>480 cells &middot; up to 99 mines</p>
         <p id="c2d-density-hint" class="ui-text ui-text--muted hidden" data-density-hint></p>
       </form>
-      <label class="ui-toggle"><input type="checkbox" role="switch" id="c2d-noguess" class="ui-toggle__input" data-noguess><span class="ui-toggle__label">No-guess board</span></label>
-      <p id="c2d-noguess-help" class="ui-text ui-text--muted">Solvable by logic alone, no 50/50 guesses. Separate records.</p>
       <div class="ui-panel" role="group" aria-labelledby="c2d-code-title">
         <h2 class="ui-heading" id="c2d-code-title">Board code</h2>
         <div class="ui-row">
@@ -183,10 +183,20 @@
   <section id="board-choice" class="overlay hidden" aria-label="3D board choice">
     <section class="ui-card ui-screen ui-screen--wide" aria-labelledby="board-choice-title">
       <h2 class="ui-card__title" id="board-choice-title">3D</h2>
-      <div class="ui-menu" role="group" aria-label="Presets">
-        <button type="button" class="ui-menu__item" data-preset="6,6,6,10"><span class="ui-menu__label">Cube Beginner</span><span class="ui-menu__detail">6 &times; 6 &times; 6 &middot; 10 mines</span></button>
+      <div class="ui-menu" role="group" aria-label="Learn 3D">
+        <button type="button" class="ui-menu__item" id="bc-learn" data-learn><span class="ui-menu__label">Learn 3D</span><span class="ui-menu__detail">A guided 4 &times; 4 &times; 3 box &middot; no timer, no records</span></button>
+      </div>
+      <h3 class="ui-heading" id="bc-box">First box</h3>
+      <div class="ui-menu" role="group" aria-labelledby="bc-box">
+        <button type="button" class="ui-menu__item" data-preset="4,4,3,4"><span class="ui-menu__label">First box 1</span><span class="ui-menu__detail">4 &times; 4 &times; 3 &middot; 4 mines</span></button>
+        <button type="button" class="ui-menu__item" data-preset="5,5,3,6"><span class="ui-menu__label">First box 2</span><span class="ui-menu__detail">5 &times; 5 &times; 3 &middot; 6 mines</span></button>
+      </div>
+      <h3 class="ui-heading" id="bc-cube">Cube</h3>
+      <div class="ui-menu" role="group" aria-labelledby="bc-cube">
+        <button type="button" class="ui-menu__item" data-preset="6,6,6,10"><span class="ui-menu__label">Cube Intro</span><span class="ui-menu__detail">6 &times; 6 &times; 6 &middot; 10 mines</span></button>
+        <button type="button" class="ui-menu__item" data-preset="6,6,6,20"><span class="ui-menu__label">Cube Beginner</span><span class="ui-menu__detail">6 &times; 6 &times; 6 &middot; 20 mines</span></button>
         <button type="button" class="ui-menu__item" data-preset="8,8,8,40"><span class="ui-menu__label">Cube Intermediate</span><span class="ui-menu__detail">8 &times; 8 &times; 8 &middot; 40 mines</span></button>
-        <button type="button" class="ui-menu__item" data-preset="12,12,8,130"><span class="ui-menu__label">Cube Expert</span><span class="ui-menu__detail">12 &times; 12 &times; 8 &middot; 130 mines</span></button>
+        <button type="button" class="ui-menu__item" data-preset="10,10,10,100"><span class="ui-menu__label">Cube Expert</span><span class="ui-menu__detail">10 &times; 10 &times; 10 &middot; 100 mines</span></button>
       </div>
       <label class="ui-toggle"><input type="checkbox" role="switch" id="bc-noguess" class="ui-toggle__input" data-noguess="presets"><span class="ui-toggle__label">No-guess board</span></label>
       <p id="bc-noguess-help" class="ui-text ui-text--muted">Solvable by logic alone, no 50/50 guesses. Separate records.</p>
@@ -247,7 +257,8 @@
         <span id="ready-msg" class="ready-msg"></span>
         <span id="ready-rules" class="ready-rules hidden" role="group" aria-label="How 3D works">
           <span>A number counts the mines among the 26 cubes around it.</span>
-          <span>Empty and solved cubes hide themselves; hold <kbd>Ctrl</kbd> to show them.</span>
+          <span class="ready-rules-keys">Empty and solved cubes hide themselves; hold <kbd>Ctrl</kbd> to show them.</span>
+          <span class="ready-rules-touch">Empty and solved cubes hide themselves; tap <b>Ctrl</b> on the right to show them.</span>
           <span>The first click is always safe.</span>
         </span>
         <span class="ready-keys">
@@ -268,6 +279,10 @@
         <span id="ready-pad" class="ready-pad hidden"></span>
         <span class="ready-tip">Tip: press <kbd>F</kbd> for fullscreen &mdash; keeps <kbd>Ctrl</kbd>+<kbd>W</kbd> from closing the tab</span>
       </button>
+      <div id="ready-learn" class="ready-learn hidden" role="group" aria-label="Learn 3D">
+        <p class="ui-text">New to 3D? Learn 3D walks you through a small box.</p>
+        <button type="button" id="ready-learn-btn" class="ui-button ui-button--secondary">Learn 3D</button>
+      </div>
       <div id="ready-blocked" class="ready-blocked hidden" role="group" aria-label="Play without mouse capture">
         <button type="button" id="ready-drag" class="ui-button ui-button--primary">Play with drag-to-look</button>
         <p class="ui-text">Or connect a controller and press <kbd class="pad">A</kbd>.</p>
@@ -566,32 +581,50 @@
   <p id="look" class="look-hint hidden" role="status">Looking at the finished board &middot; Esc or any button: back to the results</p>
 
   <!-- Pause / end menu -->
+  <!-- Learn 3D end card: over the stopped scene of the guided board (js/mode3d/learn.js) -->
+  <section id="learn-end" class="overlay hidden" aria-label="Learn 3D">
+    <section class="ui-card ui-screen" aria-labelledby="learn-end-title">
+      <h2 class="ui-card__title" id="learn-end-title">You've got the basics of 3D.</h2>
+      <p class="ui-text ui-text--muted">Learn 3D</p>
+      <div class="ui-actions ui-actions--row">
+        <button type="button" id="learn-end-primary" class="ui-button ui-button--primary">Play First box 1</button>
+        <button type="button" id="learn-end-back" class="ui-button ui-button--secondary">Back to board choice</button>
+      </div>
+    </section>
+  </section>
+
   <section id="pause" class="overlay hidden" aria-label="Pause menu">
-    <section id="pause-card" class="ui-card ui-screen" aria-labelledby="pause-title">
-      <h2 class="ui-card__title" id="pause-title">Paused</h2>
-      <p id="pause-board" class="ui-text ui-text--muted"></p>
-      <p id="pause-sub" class="ui-text ui-text--muted">Time 0.00 &middot; 10 mines left</p>
-      <p id="pause-note" class="ui-text ui-text--warning hidden" role="alert"></p>
-      <div id="pause-actions" class="ui-actions">
-        <button id="p-resume" class="ui-button ui-button--primary" type="button">Resume</button>
-        <button id="p-home" class="ui-button ui-button--secondary" type="button">Back to start</button>
-        <button id="p-restart" class="ui-button ui-button--secondary" type="button">Restart</button>
-        <button id="p-menu" class="ui-button ui-button--secondary" type="button">Main menu</button>
-      </div>
-      <div id="pause-confirm" class="ui-panel ui-actions hidden" role="alertdialog" aria-labelledby="pause-confirm-text">
-        <p id="pause-confirm-text" class="ui-text">This game will count as a loss.</p>
-        <button id="p-confirm-yes" class="ui-button ui-button--primary" type="button">Confirm</button>
-        <button id="p-confirm-no" class="ui-button ui-button--secondary" type="button">Cancel</button>
-      </div>
-      <div class="ui-panel">
-        <dl id="pause-controls" class="controls compact"></dl>
-      </div>
-      <div class="ui-panel ui-actions" role="group" aria-labelledby="p-settings-title">
-        <h3 class="ui-heading" id="p-settings-title">Settings</h3>
-        <div class="ui-slider" data-setting="lookSensitivity"><label class="ui-slider__label" for="p-sens">Look sensitivity</label><output class="ui-slider__value" id="p-sens-val" for="p-sens">1.00&times;</output><input type="range" id="p-sens" class="ui-slider__input" min="0.25" max="3" step="0.05" value="1" data-format="multiplier"></div>
-        <label class="ui-toggle" data-setting="invertY"><input type="checkbox" role="switch" id="p-invert" class="ui-toggle__input"><span class="ui-toggle__label">Invert look Y</span></label>
-        <button type="button" id="p-sound" class="ui-button ui-button--secondary">Sound: on</button>
-        <div class="ui-slider" data-setting="volume"><label class="ui-slider__label" for="p-vol">Volume</label><output class="ui-slider__value" id="p-vol-val" for="p-vol">70%</output><input type="range" id="p-vol" class="ui-slider__input" min="0" max="100" step="1" value="70" data-format="percent" data-scale="100"></div>
+    <section id="pause-card" class="ui-card ui-screen ui-screen--columns" aria-labelledby="pause-title">
+      <div class="ui-columns ui-columns--two">
+        <div class="ui-column">
+          <h2 class="ui-card__title" id="pause-title">Paused</h2>
+          <p id="pause-board" class="ui-text ui-text--muted"></p>
+          <p id="pause-sub" class="ui-text ui-text--muted">Time 0.00 &middot; 10 mines left</p>
+          <p id="pause-note" class="ui-text ui-text--warning hidden" role="alert"></p>
+          <div id="pause-actions" class="ui-actions">
+            <button id="p-resume" class="ui-button ui-button--primary" type="button">Resume</button>
+            <button id="p-home" class="ui-button ui-button--secondary" type="button">Back to start</button>
+            <button id="p-restart" class="ui-button ui-button--secondary" type="button">Restart</button>
+            <button id="p-menu" class="ui-button ui-button--secondary" type="button">Main menu</button>
+          </div>
+          <div id="pause-confirm" class="ui-panel ui-actions hidden" role="alertdialog" aria-labelledby="pause-confirm-text">
+            <p id="pause-confirm-text" class="ui-text">This game will count as a loss.</p>
+            <button id="p-confirm-yes" class="ui-button ui-button--primary" type="button">Confirm</button>
+            <button id="p-confirm-no" class="ui-button ui-button--secondary" type="button">Cancel</button>
+          </div>
+        </div>
+        <div id="pause-list" class="ui-panel">
+          <dl id="pause-controls" class="controls compact"></dl>
+        </div>
+        <div class="ui-column">
+          <div class="ui-panel ui-actions" role="group" aria-labelledby="p-settings-title">
+            <h3 class="ui-heading" id="p-settings-title">Settings</h3>
+            <div class="ui-slider" data-setting="lookSensitivity"><label class="ui-slider__label" for="p-sens">Look sensitivity</label><output class="ui-slider__value" id="p-sens-val" for="p-sens">1.00&times;</output><input type="range" id="p-sens" class="ui-slider__input" min="0.25" max="3" step="0.05" value="1" data-format="multiplier"></div>
+            <label class="ui-toggle" data-setting="invertY"><input type="checkbox" role="switch" id="p-invert" class="ui-toggle__input"><span class="ui-toggle__label">Invert look Y</span></label>
+            <button type="button" id="p-sound" class="ui-button ui-button--secondary">Sound: on</button>
+            <div class="ui-slider" data-setting="volume"><label class="ui-slider__label" for="p-vol">Volume</label><output class="ui-slider__value" id="p-vol-val" for="p-vol">70%</output><input type="range" id="p-vol" class="ui-slider__input" min="0" max="100" step="1" value="70" data-format="percent" data-scale="100"></div>
+          </div>
+        </div>
       </div>
     </section>
   </section>

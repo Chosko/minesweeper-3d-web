@@ -35,7 +35,8 @@ area overview is [classic2d.md](classic2d.md).
   keep `--color-focus-ring`), `START_MARK` (`--color-success`, the marked
   start cell's ring, under the cursor's). `PAN_MODIFIER` (`shiftKey`).
 - `createBoardView({canvas, grid, createSkin, token, scale, frame,
-  onLayout})` → `{resize(width, height, pixelRatio), setScale(scale),
+  onLayout})` (`frame` an object, or a function measured again at every
+  refit) → `{resize(width, height, pixelRatio), setScale(scale),
   scale, setGame(game), update(changed), repaint(), cellAt(x, y),
   cellRect(c), scroll, scrollTo, scrollBy, pan(dx, dy), wheel(event) →
   taken, ensureVisible(c) → scrolled, setHidden(hidden), hidden,

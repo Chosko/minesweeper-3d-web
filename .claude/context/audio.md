@@ -106,7 +106,7 @@ not these.
 
 ## CROSS-REFERENCES
 
-- [app-shell-3d.md](app-shell-3d.md) — `main.js` maps actions to sounds — the 3D game's
+- [app-shell-3d-play.md](app-shell-3d-play.md) — `main.js` maps actions to sounds — the 3D game's
   `reveal`/`toggleFlag`/`chord` results (`revealed`, `flagged`, `unflagged`, `exploded`) and the
   state view's `version` pick the sound — and calls
   `unlock()` on start, ready-click, controller resume and after a volume or

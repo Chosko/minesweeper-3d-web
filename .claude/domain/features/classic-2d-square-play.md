@@ -49,8 +49,10 @@ In scope (m1-classic-2d):
   left and right mouse buttons for presses starting on a closed or flagged
   cell, so the left button alone flags, unflags and chords. The switch
   lives for the page — kept across games, off on reload, never a setting —
-  and the toggle shows only while the game is unpaused and never takes
-  keyboard focus. Keyboard, controller, touch and the 3D mode are unaffected.
+  and the toggle shows only while the game is unpaused and only where a
+  fine pointer exists (a coarse-only device has no mouse buttons to trade),
+  and never takes keyboard focus. Keyboard, controller, touch and the 3D
+  mode are unaffected.
 - Touch input: a tap acts on its lift — it reveals a closed cell, or
   toggles its flag while the *Reveal / Flag* switch is on Flag, and chords
   on a revealed number whichever way the switch is set — with the mouse's
@@ -60,7 +62,8 @@ In scope (m1-classic-2d):
   moves 8 px or more never acts: it pans a board that scrolls. The switch,
   a 44 px control beside Pause on a coarse pointer only, starts on Reveal
   and lives for the page, never a setting. Touch never reaches the mouse
-  input, and the 3D mode takes no touch play.
+  input; the 3D mode's touch play is its own and shares only the long-press
+  time, the 8 px threshold and the vibration length.
 - Keyboard and controller play: a visible cell cursor moved by arrow keys,
   d-pad or stick, with reveal, flag and chord on buttons, so Classic 2D is
   fully playable with a controller.
@@ -99,8 +102,9 @@ Built within the recorded technical direction — Canvas 2D for Classic 2D,
 independent of three.js, as one mode front-end over the shared engine (see
 [technical-direction.md](../technical-direction.md)). The 3D mode's
 front-end ([rendering.md](../../context/rendering.md),
-[input.md](../../context/input.md)) is left as it is; the controller reader
-and its pure helpers in [input.md](../../context/input.md) are reused, not
+[input.md](../../context/input.md),
+[input-camera.md](../../context/input-camera.md)) is left as it is; the controller reader
+and its pure helpers in [input-controller.md](../../context/input-controller.md) are reused, not
 copied.
 
 - **Board setup.** Turns the chosen size and no-guess switch into a board
@@ -148,8 +152,9 @@ copied.
   scrolls or pans it; each edge beyond which cells are hidden carries an
   inset shadow, each overflowing axis a thin scroll bar showing the visible
   part's size and place, and the first clipped board shows a one-time hint
-  beside it, "Wheel scrolls · Shift+wheel sideways", which never shows
-  again once dismissed or once the player scrolls. A board that fits draws
+  beside it, "Wheel scrolls · Shift+wheel sideways" — on a coarse-only
+  device "Drag to pan · pinch to zoom" — which never shows again once
+  dismissed or once the player scrolls or pans. A board that fits draws
   none of the three. By touch, one finger pans a board that scrolls and two
   fingers pan and pinch: the pinch sets the tile anywhere between the
   minimum tile and the fit-to-view tile, its midpoint kept over the same

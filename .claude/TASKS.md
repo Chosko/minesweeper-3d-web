@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 192
+Last task number: 206
 
 ---
 
@@ -424,7 +424,7 @@ Preconditions: none
 
 ## 152. Cube preset re-tune and first-box presets
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/mode3d/board-choice.js, js/records/board.js, js/records/model.js, js/records/screen.js, js/main.js, js/records/typical-bbbv.js, dev/measure-first-box-3d.mjs, dev/measure-typical-bbbv.mjs, dev/measure-replays.mjs, index.html, css/components.css, tests/mode3d-board-choice.test.mjs, tests/records-board-3d.test.mjs, tests/records-model-3d.test.mjs, tests/records-screen-3d.test.mjs, tests/mode3d-session.test.mjs, tests/camera-spawn.test.mjs, tests/shell-returning.test.mjs, README.md, .claude/domain/features/3d-play-flow.md, .claude/domain/features/3d-game-records.md, .claude/domain/product-design.md
 Preconditions: none
@@ -433,7 +433,7 @@ Preconditions: none
 
 ## 153. Learn 3D guided board
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/mode3d/learn.js, dev/find-learn-3d.mjs, js/mode3d/board-choice.js, js/mode3d/session.js, js/shell/mode-3d.js, js/shell/first-use.js, js/shell/pause.js, js/main.js, js/ui.js, js/render.js, index.html, css/style.css, tests/mode3d-learn.test.mjs, tests/mode3d-board-choice.test.mjs, tests/mode3d-session.test.mjs, tests/shell-mode-3d.test.mjs, tests/shell-first-use.test.mjs, tests/shell-pause.test.mjs, README.md, .claude/domain/product-design.md, .claude/domain/features/3d-play-flow.md, .claude/domain/features/game-shell.md
 Preconditions: 152
@@ -623,7 +623,7 @@ Feature: shared-screen-layout
 Status: [MISSING]
 Target: claude
 Files: .claude/context/app-shell-kit.md, .claude/context/app-shell-menu.md, .claude/context/rendering.md, .claude/context/classic2d.md, .claude/context/mode3d.md, .claude/context/records-screen.md, .claude/context/settings.md, .claude/context/replay-playback.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md, .claude/domain/features/shared-screen-layout.md
-Preconditions: 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 192
+Preconditions: 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 206
 Feature: shared-screen-layout
 
 ---
@@ -788,7 +788,133 @@ Feature: theme-implement-skill
 
 ---
 
-## 190. Daily screen won time in the standard time format
+## 190. Classic 2D overlay bar fits a phone: Pause and Reveal / Flag on screen
+
+Status: [DONE]
+Target: claude
+Files: css/style.css, css/components.css, index.html, js/ui.js, js/main.js, tests/classic2d-touch.test.mjs, tests/components.test.mjs, .claude/domain/features/classic-2d-square-play.md, .claude/domain/features/screen-components.md
+Preconditions: none
+
+---
+
+## 191. Classic 2D touch help: touch binding rows and a touch clipped-board hint
+
+Status: [DONE]
+Target: claude
+Files: js/settings/bindings.js, js/ui.js, js/main.js, js/classic2d/touch-input.js, tests/settings-page.test.mjs, tests/shell-help.test.mjs, tests/shell-first-use.test.mjs, tests/classic2d-mode.test.mjs, tests/classic2d-touch.test.mjs, .claude/domain/features/settings.md, .claude/domain/features/classic-2d-square-play.md
+Preconditions: none
+
+---
+
+## 192. 3D ready and results cards: key hints that match the device and the screen
+
+Status: [DONE]
+Target: claude
+Files: index.html, js/ui.js, js/results/, css/style.css, tests/shell-first-use.test.mjs, tests/results.test.mjs, tests/shell-mode-3d.test.mjs
+Preconditions: none
+
+---
+
+## 193. Records: best tiles and tables keep their figures on one line
+
+Status: [DONE]
+Target: claude
+Files: css/components.css, css/style.css, js/records/screen.js, js/records/replay-list.js, dev/components.html, tests/records-screen.test.mjs, tests/records-replays.test.mjs, tests/components.test.mjs
+Preconditions: none
+
+---
+
+## 194. Best-time chart: axis ticks with the fewest decimals that tell them apart
+
+Status: [DONE]
+Target: claude
+Files: js/records/history-chart.js, tests/records-history.test.mjs
+Preconditions: none
+
+---
+
+## 195. Learn 3D guided board: the chord prompt moves on when a chord can no longer teach
+
+Status: [DONE]
+Target: claude
+Files: js/mode3d/learn.js, js/main.js, tests/mode3d-learn.test.mjs, .claude/context/mode3d.md, .claude/context/app-shell-3d.md
+Preconditions: none
+
+---
+
+## 196. Browser tests: root-cause and fix the flakes seen under full-suite load
+
+Status: [DONE]
+Target: claude
+Files: tests/shell-pad-walk.test.mjs, tests/shell-mode-3d.test.mjs, tests/classic2d-touch.test.mjs, tests/replay-viewer.test.mjs, tests/shell-menu.test.mjs, tests/helpers/timing.mjs, tests/helpers/browser.mjs, .claude/context/testing-conventions.md
+Preconditions: none
+
+---
+
+## 197. Bare `node --test` runs only the project's tests
+
+Status: [DONE]
+Target: claude
+Files: docs/ux-review/ux-first-run/s7-hit-test.mjs, tests/affected-tests.test.mjs, .claude/context/testing.md
+Preconditions: none
+
+---
+
+## 198. Classic 2D no-guess switch back under the presets, with the D-pad walk to match
+
+Status: [DONE]
+Target: claude
+Files: index.html, css/style.css, tests/shell-pad-walk.test.mjs
+Preconditions: none
+
+---
+
+## 199. Larger stat labels and key caps on every pointer, 44 px hit areas still touch-only
+
+Status: [DONE]
+Target: claude
+Files: css/components.css, css/style.css, tests/components.test.mjs, .claude/domain/features/screen-components.md, .claude/context/app-shell-markup.md
+Preconditions: none
+
+---
+
+## 200. Touch wording on a coarse-only device for the help foot, HUD strip and hint strip
+
+Status: [DONE]
+Target: claude
+Files: js/settings/bindings.js, js/ui.js, tests/shell-help.test.mjs, tests/shell-first-use.test.mjs, tests/settings-page.test.mjs, tests/classic2d-touch.test.mjs, tests/shell-mode-3d.test.mjs, .claude/context/settings-bindings.md, .claude/context/app-shell-help.md
+Preconditions: none
+
+---
+
+## 201. Pause card in two columns at 1024 px and wider, fitting a 1024 × 768 window
+
+Status: [DONE]
+Target: claude
+Files: index.html, css/components.css, css/style.css, js/ui.js, tests/classic2d-mode.test.mjs, tests/shell-mode-3d.test.mjs, .claude/domain/features/screen-components.md, .claude/context/app-shell-markup.md
+Preconditions: none
+
+---
+
+## 202. Records Averages table stays inside its panel on a phone
+
+Status: [DONE]
+Target: claude
+Files: css/style.css, tests/records-screen.test.mjs, .claude/context/records-screen.md
+Preconditions: none
+
+---
+
+## 203. Classic 2D hint strip from the game's start on a touch-only device
+
+Status: [DONE]
+Target: claude
+Files: js/main.js, js/shell/first-use.js, tests/shell-first-use.test.mjs, tests/classic2d-touch.test.mjs, .claude/context/app-shell-help.md
+Preconditions: none
+
+---
+
+## 204. Daily screen won time in the standard time format
 
 Status: [SKIP]
 Target: claude
@@ -798,7 +924,7 @@ Feature: game-shell
 
 ---
 
-## 191. Update documentation for feature `game-shell`
+## 205. Update documentation for feature `game-shell`
 
 Status: [SKIP]
 Target: claude
@@ -808,7 +934,7 @@ Feature: game-shell
 
 ---
 
-## 192. Daily screen won time in the standard time format
+## 206. Daily screen won time in the standard time format
 
 Status: [MISSING]
 Target: claude

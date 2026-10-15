@@ -5,8 +5,8 @@
 The records every records consumer shares: which board a game was played
 on, the one summary record of a played game and the stats derived from it.
 This file is the map of `js/records/`; the personal records (model and
-store) are in [records-store.md](records-store.md), the Records screen, its
-history chart and library view in [records-screen.md](records-screen.md).
+store) are in [records-store.md](records-store.md), the Records screen in
+[records-screen.md](records-screen.md) and the two files it names.
 DOM-free throughout, apart from the screen's view binders and the history
 chart, which draws on the canvas it is handed.
 
@@ -14,13 +14,13 @@ chart, which draws on the canvas it is handed.
 | ---- | -------------- | --------- |
 | `js/records/board.js` | Board identity (2D and 3D forms), key, parser, label, standard boards, cube 3D presets. Imports nothing. | here |
 | `js/records/typical-bbbv.js` | Measured typical 3BV per named board. Imports nothing. | here |
-| `js/records/board-code.js` | Board codes (encode, parse, check), the daily seed and the two daily boards. | here |
+| `js/records/board-code.js` | Board codes (encode, parse, check), the daily seed and the two daily boards. | [records-board-code.md](records-board-code.md) |
 | `js/records/summary.js` | Summary builder, derived stats, best eligibility. | here |
 | `js/records/model.js` | Records model: bests, per-mode counters, history, comparison, the records format step. No storage. | [records-store.md](records-store.md) |
 | `js/records/store.js` | Records store: the only writer of the personal records and the game-in-progress marker; storage handed in. | [records-store.md](records-store.md) |
 | `js/records/screen.js` | Records screen content, controller and `#records` binder. | [records-screen.md](records-screen.md) |
-| `js/records/replay-list.js` | Library view: the board's kept replays, pin, Watch. | [records-screen.md](records-screen.md) |
-| `js/records/history-chart.js` | History chart on a canvas and the games list paging. | [records-screen.md](records-screen.md) |
+| `js/records/replay-list.js` | Library view: the board's kept replays, pin, Watch, Download, Open replay file. | [records-library-view.md](records-library-view.md) |
+| `js/records/history-chart.js` | History charts on a canvas and the lists' paging. | [records-history.md](records-history.md) |
 
 Wiring: `js/main.js` builds the one store (`RECORDS`) over the platform
 `storage`, awaits its `load()` before the first screen, attaches it to the
@@ -39,7 +39,7 @@ Board identity (`js/records/board.js`; its header documents the key format)
   width, height, depth, mines, noGuess }` (no `grid`; sides `1 .. 100`).
   `MODE_3D` — `'3d'`.
 - `boardKey(identity)` → `classic-2d:square:30x16:99:no-guess` /
-  `3d:12x12x8:130:no-guess` (a 3D key never equals a 2D key), a Daily board
+  `3d:10x10x10:100:no-guess` (a 3D key never equals a 2D key), a Daily board
   `daily:<board key>`; `parseBoardKey(key)` its inverse; `BOARD_KEY_FORMAT`
   — `2`.
 - `boardLabel(identity)` → `"Expert · no-guess"`, `"20 × 12 · 50 mines"`,
@@ -47,9 +47,10 @@ Board identity (`js/records/board.js`; its header documents the key format)
   no-guess"`, `"Daily · 8 × 8 × 8 · 40 mines · no-guess"` (a Daily 3D board
   by its dimensions).
 - `standardBoard(identity)` / `STANDARD_BOARDS` (Beginner, Intermediate,
-  Expert); `preset3D(identity)` / `PRESETS_3D` (Cube Beginner 6×6×6/10,
-  Intermediate 8×8×8/40, Expert 12×12×8/130 — equal to the 3D board
-  choice's `PRESETS`, [mode3d.md](mode3d.md)). Null for a custom board.
+  Expert); `preset3D(identity)` / `PRESETS_3D` (First box 1 4×4×3/4, First
+  box 2 5×5×3/6, Cube Intro 6×6×6/10, Beginner 6×6×6/20, Intermediate
+  8×8×8/40, Expert 10×10×10/100 — equal to the 3D board choice's `PRESETS`,
+  [mode3d.md](mode3d.md)). Null for a custom board.
 - Every function validates through `createBoardIdentity`, so any object with
   a form's fields works and an impossible one throws.
 
@@ -58,19 +59,6 @@ Typical 3BV (`js/records/typical-bbbv.js`)
   `typicalBbbvKey`, `typicalBbbv(board)` → value or null; medians printed by
   `dev/measure-typical-bbbv.mjs`. A board and its no-guess twin share the
   entry; a changed preset has none.
-
-Board codes (`js/records/board-code.js`; its header states the frozen
-grammar)
-- `encodeBoardCode({ board, seed, startCell, generatorVersion, daily? })` →
-  the game form `EN-9C41D07A-247-1486` or, with `daily` (YYYYMMDD), the daily
-  form `EN-20261011-184A`; `parseBoardCode(text, { generatorVersion? })` →
-  `{ ok: true, board, seed, startCell, generatorVersion, daily? }` or `{ ok:
-  false, reason }` (`CODE_REASONS`), never throwing; `codeOf(game)` — a
-  summary's or history entry's code, null without what one needs.
-- `boardToken`, `graphOf(identity)`, `fnv1a`, `dailySeed(date, token)`,
-  `dateText(now)` (the local date), `isDateText`.
-- `DAILY_BOARDS` (`expert` EN, `cube` 8X8X8M40N), `dailyBoardOf(identity)`,
-  `dailyGame(id, date)` → `{ board, seed, startCell, code, request, … }`.
 
 Summary (`js/records/summary.js`)
 - `buildSummary({ engine, outcome?, elapsedMs, pauses?, board, seed,
@@ -97,7 +85,7 @@ Summary (`js/records/summary.js`)
   mine count (standard names on the `square` grid only) and never stored, so
   a custom board matching one is that board. A board whose preset was
   dropped keeps its key and records and reads as custom: the former double
-  layer boards (8×8×2, 14×14×2, 25×16×2).
+  layer boards (8×8×2, 14×14×2, 25×16×2) and 12×12×8/130.
 - **Key format is stored data.** Records and history are indexed by
   `boardKey` and rebuilt with `parseBoardKey`, so the format changes only
   with a records format version (bump `BOARD_KEY_FORMAT`); a test pins the
@@ -112,10 +100,6 @@ Summary (`js/records/summary.js`)
   only sums.
 - **Best eligibility.** Only a won game counts for a best, only on a stat
   that is available (`time` always is), and never a challenge.
-- **Codes are frozen.** The grammar, FNV-1a and the daily seed never
-  change meaning; a code of another `GENERATOR_VERSION` is refused, never
-  approximated. The parser validates against both modes' custom limits
-  (`js/classic2d/board-setup.js`, `js/mode3d/board-choice.js`).
 
 ## DOMAIN DEPENDENCIES
 
@@ -129,9 +113,11 @@ Summary (`js/records/summary.js`)
 
 ## CROSS-REFERENCES
 
+- [records-board-code.md](records-board-code.md) — board codes, the daily
+  seed and the daily boards.
 - [records-store.md](records-store.md) — model, store, documents, marker.
-- [records-screen.md](records-screen.md) — Records screen, history chart,
-  library view.
+- [records-screen.md](records-screen.md), [records-history.md](records-history.md),
+  [records-library-view.md](records-library-view.md) — the Records screen.
 - [engine.md](engine.md) — `summary()` and `counts()`, `CLICK_KINDS`.
 - [generation.md](generation.md) — the seed and `GENERATOR_VERSION`.
 - [replay.md](replay.md) — replays sealed with the summary and keyed by

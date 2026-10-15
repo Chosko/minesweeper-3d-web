@@ -28,9 +28,11 @@
 //   left to right over start..end (one date in the middle), the time axis from 0 to timeMax.
 // bestTimeText(steps, empty = NO_BEST_TIME) → the text alternative naming each new best and its date.
 // drawBestTimeChart(ctx, { width, height, pixelRatio, data, token, hover? }) draws the grid, the
-//   time and date axes, the step line of the standing best (stepping down at each new best, held to
-//   the last date) with a marker at each new best, the empty text without one, and the hovered
-//   best's marker and readout (bestReadout).
+//   time axis (each tick formatTime'd with its trailing zeros dropped, the fewest decimals that show
+//   it exactly: "2.5 s", "1.25 s", "0 s", never "2.500 s", which reads as thousands), the date axis,
+//   the step line of the standing best (stepping down at each new best, held to the last date) with
+//   a marker at each new best, the empty text without one, and the hovered best's marker and
+//   readout (bestReadout).
 // nearestIndex(xs, x) → the index of the x position nearest x (null entries skipped), or -1.
 // rateReadout(points, i) → [date and time, "3BV/s 1.23", "Efficiency 80.0%"]; bestReadout(steps, i)
 //   → [date and time, best time].
@@ -264,7 +266,7 @@ function drawReadout(ctx, at, lines, plot, token) {
 
 // ---------------------------------------------------------------- the best time by date
 
-const timeLabel = (ms) => formatTime(ms).replace(/\.000 s$/, ' s');
+const timeLabel = (ms) => formatTime(ms).replace(/\.?0+ s$/, ' s');
 const instant = (v) => toDate(v)?.getTime() ?? null;
 
 export function dateTicks(start, end, count = DATE_TICKS) {

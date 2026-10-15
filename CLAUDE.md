@@ -53,6 +53,9 @@ next, who needs the rule, not the road to it. Every edit follows these rules.
    makes stale is updated in the same edit, whoever owns the file. A new
    decision is never smuggled in as a consequence.
 <!-- chosko-llm:editing-discipline:end -->
+10. **No drifting numbers.** Documentation states no precise number the code
+    can change — a count, a size, a timing. It names the thing instead, and
+    the code or the one authority file that enumerates it holds the number.
 
 <!-- chosko-llm:git-commit-style:begin v0.2.0 -->
 

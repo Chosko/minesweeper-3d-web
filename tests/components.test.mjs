@@ -894,7 +894,9 @@ test('the stat tile, the pager and the column composition are styled from tokens
   assert.match(tile, /padding:\s*var\(--space-/);
   assert.match(tile, /border[^;]*var\(--color-/);
   const figure = rulesFor('.ui-stat--tile .ui-stat__value').map(([, b]) => b).join('');
-  assert.match(figure, /font-size:\s*var\(--font-size-/);
+  assert.match(figure, /font-size:[^;]*var\(--font-size-[^;]*var\(--font-size-/, 'the figure scales between two token sizes');
+  assert.match(figure, /white-space:\s*nowrap/, 'the figure keeps one line');
+  assert.match(tile, /min-width:\s*max-content/, 'a tile never narrows past its figure');
   for (const m of (tile + figure + rulesFor('.ui-stat-row--tiles').map(([, b]) => b).join('')).matchAll(/(padding|gap|font-size|min-width)\s*:\s*([^;]+)/g)) {
     assert.doesNotMatch(m[2], /\d+(px|rem|em)\b/, `${m[1]}: ${m[2]} — tile sizes come from the tokens`);
   }
@@ -918,6 +920,7 @@ test('the gallery shows the stat tile, the pager in each state and the column co
   const tiles = section(GALLERY, '<!-- component: stat tile -->', '<!-- /component: stat tile -->');
   assert.match(tiles, /ui-stat__detail[\s\S]*Watch/, 'a tile with its date and Watch');
   assert.match(tiles, /&mdash;/, 'a best not yet set');
+  assert.match(tiles, /999\.999 s[\s\S]*99\.99[\s\S]*100\.0%/, 'the longest figures');
   const pagers = section(GALLERY, '<!-- component: pager -->', '<!-- /component: pager -->');
   for (const state of ['First page', 'Middle page', 'Last page', 'Long history']) assert.ok(pagers.includes(state), `pager: ${state}`);
   assert.match(pagers, /aria-current="page"/);
@@ -974,28 +977,43 @@ function topLevel(css) {
   return out;
 }
 
-test('coarse pointers get 44 px switch and slider targets, 12 px labels and 11 px key caps, inside (pointer: coarse) only', () => {
+test('coarse pointers get 44 px switch and slider targets inside (pointer: coarse) only; 12 px labels and 11 px key caps sit in the top-level rules', () => {
   const coarse = rules(coarseBlocks(CSS));
   const has = (needle, prop) => coarse.some(([sel, body]) => sel.includes(needle) && body.includes(prop));
   assert.ok(has('.ui-toggle__input', '44px'), 'a 44 px switch hit area');
   assert.ok(has('.ui-slider__input', '44px'), 'a 44 px slider');
   assert.ok(has('::-webkit-slider-thumb', '44px') || has('.ui-slider__input', 'height: 44px'), 'a 44 px slider thumb hit area');
-  assert.ok(has('.ui-stat__label', '12px'), 'labels at 12 px');
+  assert.ok(!coarse.some(([sel]) => sel.includes('.ui-stat__label')), 'the label size is no coarse-only rule');
+  const label = rules(topLevel(CSS)).filter(([s]) => s.trim() === '.ui-stat__label').map(([, b]) => b).join(';');
+  assert.match(label, /font-size:\s*12px/, 'labels at 12 px on every pointer');
   const styleCoarse = rules(coarseBlocks(STYLE));
-  assert.ok(styleCoarse.some(([sel, body]) => /\bkbd\b/.test(sel) && body.includes('11px')), 'key caps at 11 px');
+  assert.ok(!styleCoarse.some(([sel]) => /\bkbd\b/.test(sel)), 'the key cap size is no coarse-only rule');
+  const kbd = rules(topLevel(STYLE)).filter(([s]) => s.trim() === 'kbd').map(([, b]) => b).join(';');
+  assert.match(kbd, /font(-size)?:[^;]*max\(11px,\s*0\.78em\)/, 'key caps at 11 px or more on every pointer');
   assert.ok(styleCoarse.some(([sel, body]) => sel.includes('#hud-tap') && body.includes('44px')), 'the Reveal / Flag switch\'s 44 px hit area');
+  assert.ok(styleCoarse.some(([sel, body]) => sel.trim() === '#hud-swap' && /display:\s*none/.test(body)), 'no Swap clicks on a coarse-only device');
 });
 
-test('on a fine pointer every size the coarse rules touch is as it was', () => {
+test('the Classic 2D overlay bar wraps inside the widest panel, whatever its place; Swap clicks hides only under the coarse rule', () => {
+  const top = rules(topLevel(STYLE));
+  const bar = top.filter(([s]) => s.trim() === '#hud.hud--2d .hud-bar').map(([, b]) => b).join(';');
+  assert.match(bar, /flex-wrap:\s*wrap/);
+  assert.match(bar, /width:\s*max-content/, 'its width never depends on its left offset');
+  assert.match(bar, /max-width:\s*calc\(100vw - 2 \* var\(--space-4\) - 18px\)/, 'the board area less the panel inset on each side');
+  const hides = top.filter(([s, b]) => s.includes('#hud-swap') && /display:\s*none/.test(b)).map(([s]) => s.trim());
+  assert.deepEqual(hides, ['#hud:not(.hud--2d) #hud-swap'], 'a fine pointer still shows it in Classic 2D');
+});
+
+test('on a fine pointer every hit area the coarse rules touch is as it was', () => {
   const top = rules(topLevel(CSS));
   const body = (sel) => top.filter(([s]) => s === sel).map(([, b]) => b).join(';');
   assert.match(body('.ui-toggle__input'), /width: 44px;[\s\S]*height: 24px;/);
   assert.match(body('.ui-slider__input'), /height: 28px;/);
   assert.match(body('.ui-slider__input::-webkit-slider-thumb'), /width: 20px;[\s\S]*height: 20px;/);
-  assert.match(body('.ui-stat__label'), /font-size: var\(--font-size-xs\);/);
+  assert.doesNotMatch(topLevel(CSS), /\.ui-toggle__input::after\s*\{/, 'the 44 px switch square only under the coarse rule');
   assert.match(read('css/tokens.css'), /--font-size-xs: 11px;/, 'the token itself is unchanged');
-  assert.match(rules(topLevel(STYLE)).filter(([s]) => s === 'kbd').map(([, b]) => b).join(';'), /font: 600 0\.78em\/1\.5/);
   assert.doesNotMatch(topLevel(STYLE), /#hud-tap[^{]*\{[^}]*display:\s*(inline-)?(flex|block)/, 'the switch shows only under the coarse rule');
+  assert.doesNotMatch(topLevel(STYLE), /#touch-modes \.ui-button[^{]*\{[^}]*44px/, 'the touch toolbar keeps its fine-pointer size');
 });
 
 // The 3D touch-controls layer in index.html: the view-modes toolbar and the stick.
@@ -1087,6 +1105,38 @@ test('in a browser with touch, switches, sliders, labels and key caps reach thei
       return parseFloat(getComputedStyle(k).fontSize);
     });
     assert.ok(kbd >= 11, `key cap ${kbd}`);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser with a mouse, labels and key caps reach their minimum sizes and the hit areas keep their fine sizes', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1024, height: 768 } });
+    await page.goto(`${base}/dev/components.html`);
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    const sizes = await page.evaluate(() => ({
+      fine: matchMedia('(pointer: fine)').matches,
+      label: parseFloat(getComputedStyle(document.querySelector('.ui-stat__label')).fontSize),
+      slider: document.querySelector('.ui-slider__input').getBoundingClientRect().height,
+      toggleHit: getComputedStyle(document.querySelector('.ui-toggle__input'), '::after').content,
+    }));
+    assert.ok(sizes.fine, 'a fine pointer');
+    assert.equal(sizes.label, 12, `label ${sizes.label}`);
+    assert.equal(sizes.slider, 28, `slider ${sizes.slider}`);
+    assert.equal(sizes.toggleHit, 'none', 'no 44 px switch square');
+    await page.goto(`${base}/index.html?still-backdrop`);
+    const kbd = await page.evaluate(() => {
+      const k = document.createElement('kbd');
+      k.textContent = 'H';
+      document.getElementById('pause').append(k);
+      return { size: parseFloat(getComputedStyle(k).fontSize), tap: getComputedStyle(document.getElementById('hud-tap')).display };
+    });
+    assert.ok(kbd.size >= 11, `key cap ${kbd.size}`);
+    assert.equal(kbd.tap, 'none', 'no Reveal / Flag switch for a mouse');
   } finally {
     await browser.close();
   }
@@ -1240,7 +1290,7 @@ test('in a browser, the overlay bar over the 3D scene meets the contrast contrac
 });
 
 // The debug hook's surface, pinned so the screen rebuild leaves it unchanged.
-const MS_HOOK = ['state', 'game', 'renderer', 'camera', 'fps', 'frameStats', 'spawnPose', 'THREE', 'start', 'forcePlay',
+const MS_HOOK = ['state', 'game', 'renderer', 'camera', 'fps', 'frameStats', 'spawnPose', 'THREE', 'start', 'learn', 'learnBoard', 'learnPrompts', 'forcePlay',
   'controls', 'pads', 'pause', 'cellCenter', 'moveTo', 'look', 'aimAt', 'mouseDown', 'mouseUp', 'click', 'key', 'wheel',
   'selected', 'pickBrute', 'pickWith', 'info', 'modes', 'pauser', 'settings', 'records', 'replayViewer', 'replays', 'board2D', 'game2D', 'watch', 'daily'];
 

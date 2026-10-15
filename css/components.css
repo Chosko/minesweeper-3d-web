@@ -128,8 +128,11 @@
      Look:    a bordered raised tile: the label, the figure large, and
               beneath it, small, the detail line (a date) and an optional
               secondary button (Watch); a figure not yet set is a dash.
-              Laid out in a ui-stat-row--tiles, which gives the tiles equal
-              shares of the row and wraps them on a narrow screen.
+              The figure keeps one line, its size scaling with the row
+              between --font-size-xl and --font-size-2xl. Laid out in a
+              ui-stat-row--tiles, which gives the tiles equal shares of the
+              row and wraps them where a tile would narrow past its
+              content.
 
    ui-code — a board code with Copy and Copy link (js/records/board-code.js)
      Element: <div class="ui-code">
@@ -230,7 +233,8 @@
      ui-screen         a screen's card column: <section class="ui-card
                        ui-screen" aria-labelledby="…">; ui-screen--wide for
                        the main menu; ui-screen--columns for a screen laid
-                       out with ui-columns (Records, Settings).
+                       out with ui-columns (Records, Settings, the pause
+                       card).
      ui-row            a horizontal group that wraps (title with logo,
                        fields, footer actions).
      ui-grid           equal columns that collapse to one on a narrow screen.
@@ -265,8 +269,11 @@
      ui-slider, credit ui-link). Default focus: the last mode played
      (data-last), else the first entry.
    3D board choice (index.html #board-choice): ui-card ui-screen--wide
-     holding the title, the presets as a ui-menu named Presets, each item
-     labelled with its family (Cube Beginner, …) over its size line and a
+     holding the title, the Learn 3D item first in its own ui-menu (its
+     detail line "A guided 4 × 4 × 3 box · no timer, no records"), the
+     presets in two ui-menu groups, each under its
+     ui-heading and named by it (First box, Cube), each item
+     labelled with its family (First box 1, Cube Beginner, …) over its size line and a
      detail line (density, typical 3BV, the player's best and streak on the
      board the presets' switch names, or a dash), with the presets' no-guess ui-toggle under it and its ui-text--muted helper
      line, the custom board as a ui-panel of ui-field entries with
@@ -365,17 +372,17 @@
      item's size line over a detail line — density, typical 3BV, the
      player's best and streak on the board the switch names, or a dash —
      and the last board choice marked data-last with a "Last played"
-     ui-menu__detail), the custom board as a ui-panel of ui-field entries
-     (width, height, mines) with ui-actions--row (Start,
+     ui-menu__detail), the no-guess ui-toggle under the sizes with its
+     ui-text--muted helper line, the custom board as a ui-panel of ui-field
+     entries (width, height, mines) with ui-actions--row (Start,
      data-size="custom"), a ui-text info line that turns ui-text--warning on
      a board outside the custom limits and a ui-text--muted density hint
-     under it, shown above 25 % mines with no-guess on, the no-guess
-     ui-toggle under the custom board with its ui-text--muted helper line,
-     the board code ui-panel (ui-heading, a text ui-field and "Play this
-     board" secondary button in a ui-row, disabled until the code is
-     accepted, and a ui-text info line that turns ui-text--warning on a
-     refused code; bindCodeField, js/ui/components.js), and ui-actions--row
-     (Back). Default focus: the last board choice, else the first item.
+     under it, shown above 25 % mines with no-guess on, the board code
+     ui-panel (ui-heading, a text ui-field and "Play this board" secondary
+     button in a ui-row, disabled until the code is accepted, and a ui-text
+     info line that turns ui-text--warning on a refused code;
+     bindCodeField, js/ui/components.js), and ui-actions--row (Back).
+     Default focus: the last board choice, else the first item.
    Board status (index.html #c2d-status over the Classic 2D board, and
      #m3d-status over the 3D box): ui-card ui-screen while a slow first
      click generates its no-guess board, with a ui-text--muted progress
@@ -385,16 +392,27 @@
      primary, Play a standard board, Main menu); it sits above the pause
      card. Default focus: Cancel; on the offer Retry, or Play a standard
      board after a second failure in a row.
-   Pause card (index.html #pause): ui-card ui-screen holding the title,
-     ui-text status lines, ui-actions (Resume primary while playing, Play
-     again primary and first once the game ended, Main menu), the board
-     line, the active mode's controls list for the active device in a
-     ui-panel, a Settings ui-panel (the look sensitivity and invert Y
-     controls on a 3D game's card only, then the Sound button and volume;
-     data-setting like the Settings page's). While restart or Main menu asks for confirmation, a
-     ui-panel ui-actions (a ui-text line, the action as primary, Cancel)
-     shows in place of the actions. Default focus: Resume, or Play again once
-     ended; Cancel while the confirmation shows.
+   Pause card (index.html #pause): ui-card ui-screen ui-screen--columns
+     holding a ui-columns--two of, in order, a ui-column (the title, the
+     board line, ui-text status lines, the warning note and ui-actions:
+     Resume primary while playing, Play again primary and first once the
+     game ended, Main menu), the active mode's controls list for the active
+     device in a ui-panel (#pause-list), and a ui-column of the Settings
+     ui-panel (the look sensitivity and invert Y controls on a 3D game's card
+     only, then the Sound button and volume; data-setting like the Settings
+     page's). At 1024 px and wider the controls list sits alone in the
+     second, wider column and the Settings panel in the first, under the
+     actions, so the card fits a 1024 × 768 window unscrolled; below 1024 px
+     everything is one column in that order. While
+     restart or Main menu asks for confirmation, a ui-panel ui-actions (a
+     ui-text line, the action as primary, Cancel) shows in place of the
+     actions. Default focus: Resume, or Play again once ended; Cancel while
+     the confirmation shows.
+   Learn 3D end card (index.html #learn-end): ui-card ui-screen over the
+     guided board's stopped scene, holding the outcome title, a
+     ui-text--muted "Learn 3D" line and ui-actions--row (Play First box 1
+     on a win or Try again on a loss, primary; Back to board choice). No
+     time and no records. Default focus: the primary action.
    Results screen (index.html #results, filled by js/results/view.js; the
      gallery's #g-results shows it with placeholder content): ui-card
      ui-screen holding, top to bottom, the outcome title, a ui-text board
@@ -806,7 +824,7 @@
   color: var(--color-ink);
 }
 .ui-stat__label {
-  font-size: var(--font-size-xs);
+  font-size: 12px; /* the low-vision label minimum, on every pointer: one step above --font-size-xs */
   font-weight: var(--font-weight-bold);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -841,16 +859,18 @@
 .ui-panel--muted .ui-stat__detail { color: var(--color-ink-muted); }
 .ui-stat--tile {
   flex: 1 1 0;
-  min-width: calc(var(--space-8) * 4);
+  min-width: max-content;
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface-raised);
 }
-.ui-stat--tile .ui-stat__value { font-size: var(--font-size-2xl); }
+.ui-stat--tile .ui-stat__value { font-size: clamp(var(--font-size-xl), 5.5cqi, var(--font-size-2xl)); white-space: nowrap; }
 .ui-stat--tile > .ui-button { align-self: flex-start; }
-.ui-stat-row--tiles { gap: var(--space-3); }
+/* The figure keeps one line: it scales with the row, and a tile never narrows past its content, so
+   tiles wrap onto a second line before a figure would wrap or cross its border. */
+.ui-stat-row.ui-stat-row--tiles { gap: var(--space-3); container-type: inline-size; }
 
 /* ---------- pager ---------- */
 .ui-pager {
@@ -941,7 +961,7 @@
   margin: auto;
 }
 .ui-screen--wide { width: min(880px, 100%); }
-.ui-screen > .ui-card__title { margin: 0; }
+.ui-screen > .ui-card__title, .ui-column > .ui-card__title { margin: 0; }
 .ui-row {
   display: flex;
   flex-wrap: wrap;
@@ -993,12 +1013,16 @@
   min-width: 0;
 }
 .ui-columns__span { grid-column: 1 / -1; }
-/* The kit's one breakpoint: the column layout of Records and Settings. */
+/* The kit's one breakpoint: the column layout of Records, Settings and the pause card. */
 @media (min-width: 1024px) {
   .ui-screen--columns { width: min(1280px, 100%); }
   .ui-columns { grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--space-8) * 9)), 1fr)); }
   .ui-columns--two { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
   .ui-columns--pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* The pause card's controls list alone in the second column, beside both rows of the first: the
+     title, status lines and actions, then the Settings panel under them. */
+  #pause-card > .ui-columns--two { grid-template-rows: auto 1fr; }
+  #pause-list { grid-column: 2; grid-row: 1 / span 2; }
 }
 
 /* ---------- focus ring (keyboard and controller) ---------- */
@@ -1016,9 +1040,9 @@
 }
 
 /* ---------- coarse pointers ---------- */
-/* A finger's targets and the smallest labels, on a coarse pointer only: every size above stays the
-   fine pointer's. A switch takes a touch anywhere in a 44 px square around its centre; a slider is
-   44 px tall, so its thumb is pressed anywhere in that height. */
+/* A finger's targets, on a coarse pointer only: every size above stays the fine pointer's.
+   A switch takes a touch anywhere in a 44 px square around its centre; a slider is 44 px
+   tall, so its thumb is pressed anywhere in that height. */
 @media (pointer: coarse) {
   .ui-toggle__input::after {
     content: "";
@@ -1029,5 +1053,4 @@
     height: 44px;
   }
   .ui-slider__input { height: 44px; }
-  .ui-stat__label { font-size: 12px; }
 }

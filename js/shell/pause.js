@@ -17,7 +17,9 @@
 // (RESTART_NOTICE). Under the "Always ask before restarting" setting (askRestart()) restart asks
 // the same confirmation first, from the pause card — a restart from play pauses to show it — and
 // nothing is said after. A restart before the first click, while the first board is generated or
-// after the end abandons nothing: it never asks and says nothing.
+// after the end abandons nothing: it never asks and says nothing. A game outside the records
+// (unrecorded(): Learn 3D, js/mode3d/learn.js) counts as no loss: its restart and back to menu
+// proceed at once, asking nothing and saying nothing.
 //
 // The restart inputs (restartInput): F2 and the controller's Start + Y restart in play and on the
 // pause card (RESTART_SCREENS); R on the results screen is Play again; nothing elsewhere, nor while
@@ -73,10 +75,11 @@ export function restartInput(input, { screen, blocked = false }) {
  * cancelGeneration(): cancel the active mode's board being generated; whether there was one.
  * askRestart(): whether the "Always ask before restarting" setting is on.
  * restarted(): the first restart of the session that abandoned a game without asking.
+ * unrecorded(): whether the active game is outside the records (Learn 3D): nothing it abandons counts.
  */
 export function createPauseController({
   modes, showCard, isPaused = () => false, onBoard = () => true, confirm, goMenu, guard = () => {},
-  cancelGeneration = () => false, askRestart = () => false, restarted = () => {},
+  cancelGeneration = () => false, askRestart = () => false, restarted = () => {}, unrecorded = () => false,
 }) {
   const listeners = Object.fromEntries(HAND_OFFS.map((h) => [h, new Set()]));
   const handOff = (name, summary, mode, replay = null) => {
@@ -86,7 +89,8 @@ export function createPauseController({
   };
   const inProgress = () => { const s = modes.state; return s.mode !== null && s.started && !s.finished; };
   const keep = () => { if (inProgress()) handOff('inProgress', modes.summary(), modes.active); };
-  const guarded = (request, proceed) => { if (inProgress()) confirm(request, proceed); else proceed(); };
+  const counts = () => inProgress() && !unrecorded(); // a started, unfinished game whose abandon is a loss
+  const guarded = (request, proceed) => { if (counts()) confirm(request, proceed); else proceed(); };
   let told = false; // restarted() is called once per session
 
   const offs = [
@@ -129,7 +133,7 @@ export function createPauseController({
      */
     restart(source = 'pointer') {
       if (modes.active === null) return;
-      if (!inProgress()) { modes.restart({ source }); return; }
+      if (!counts()) { modes.restart({ source }); return; }
       if (askRestart()) {
         if (!isPaused()) this.pause(source === 'pointer' ? 'button' : source);
         confirm(CONFIRMATIONS.restart, () => modes.restart({ source }));

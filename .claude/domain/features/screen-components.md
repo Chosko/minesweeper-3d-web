@@ -34,7 +34,7 @@ In scope (m1-classic-2d):
   overlay bar.
 - The column composition: one column below about 1024 px, side by side
   at that width and above, its one breakpoint stated once; the Records
-  and Settings screens lay out with it.
+  and Settings screens and the pause card lay out with it.
 - States for every interactive component: default, hover, pressed, focused
   (a visible focus ring for keyboard and controller) and disabled.
 - The m1 screens composed from the kit: the main menu, the in-game overlay
@@ -93,7 +93,9 @@ described in [app-shell.md](../../context/app-shell.md).
   edge of the board's framed panel (`classic-2d-square-play`
   § Architecture, "Board view"), with the board-size label, on the panel's
   themed surface in place of its own, and on a coarse pointer carries the
-  Reveal / Flag switch beside Pause. Over the 3D board it stays above the
+  Reveal / Flag switch beside Pause; where the panel's width cannot hold it
+  on one row, as on a phone, it wraps onto more rows, so every readout and
+  control stays on screen. Over the 3D board it stays above the
   scene and the touch-controls layer during lockless and touch play, so
   Pause always takes a tap. On either board, the timer
   shows the elapsed time in whole seconds, zero-padded to three digits
@@ -129,10 +131,11 @@ described in [app-shell.md](../../context/app-shell.md).
   every screen that uses it.
 - **Accessibility** — every control has an accessible name; focus is always
   visible; text meets the contrast contract of `design-tokens-and-themes` in
-  both themes. On a coarse pointer, and only there, switches (the Reveal /
+  both themes. On every pointer, labels are at least 12 px and key caps at
+  least 11 px. On a coarse pointer, and only there, switches (the Reveal /
   Flag switch included), slider thumbs, the overlay bar's Pause and the 3D
-  touch toolbar's buttons take a 44 px touch, labels are at
-  least 12 px and key caps at least 11 px; a fine pointer keeps every size.
+  touch toolbar's buttons take a 44 px touch; a fine pointer keeps every
+  hit area's size.
 - **Overlay readability** — the overlay bar meets the contrast contract
   against the surface it sits on — its own over the 3D board, the panel's
   in Classic 2D — in both themes.

@@ -935,3 +935,176 @@ test('in a browser, at 1280 × 800 and 390 × 844 in both themes, the Top 10 ope
     await browser.close();
   }
 });
+
+test('in a browser, the best tiles and the Records tables keep every figure on one line, and a replay row\'s actions in one row, in both modes and themes', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(removeWebGL2);
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined);
+    // A long custom board in each mode, a won game at the longest time and a lost one, each kept with its board code.
+    const keys = await page.evaluate(async () => {
+      const { createBoardIdentity, boardKey } = await import('/js/records/board.js');
+      const { codeOf } = await import('/js/records/board-code.js');
+      const boards = [createBoardIdentity({ mode: 'classic-2d', grid: 'square', width: 99, height: 99, mines: 1500, noGuess: true }),
+        createBoardIdentity({ mode: '3d', width: 20, height: 20, depth: 20, mines: 1200, noGuess: false })];
+      const library = globalThis.__ms.replays;
+      await library.load();
+      let n = 0;
+      for (const board of boards) {
+        const cells = board.width * board.height * (board.depth ?? 1);
+        for (const [outcome, elapsedMs] of [['won', 999999], ['lost', 754321]]) {
+          const id = `long${n++}`;
+          const solved = outcome === 'won' ? 999 : 400;
+          const clicks = { reveal: { effective: solved, wasted: 0 }, flag: { effective: 0, wasted: 0 }, chord: { effective: 0, wasted: 0 } };
+          const game = { id, board, outcome, elapsedMs, bbbv: 999, bbbvSolved: solved, clicks, bbbvPerSecond: solved / (elapsedMs / 1000), efficiency: 100,
+            seed: 0xfedcba98, startCell: cells - 1, generatorVersion: 1, endedAt: `2026-10-0${n}T12:34:00.000Z` };
+          globalThis.__ms.records.record(game);
+          await library.add(new Uint8Array([1, 2, 3]), { id, boardKey: boardKey(board), mode: board.mode, outcome, elapsedMs,
+            bbbvPerSecond: game.bbbvPerSecond, efficiency: 100, endedAt: game.endedAt, size: 3, code: codeOf(game) }, false);
+        }
+      }
+      await library.settled();
+      return boards.map(boardKey);
+    });
+    // Lines of text an element's content takes; the boxes that must lie inside another.
+    const measure = () => page.evaluate(() => {
+      const lines = (el) => {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        return new Set([...range.getClientRects()].filter((r) => r.width > 0).map((r) => Math.round(r.top))).size;
+      };
+      const inside = (outer, inner) => {
+        const o = outer.getBoundingClientRect();
+        const range = document.createRange();
+        range.selectNodeContents(inner);
+        return [inner.getBoundingClientRect(), ...range.getClientRects()].every((r) => r.left >= o.left - 0.5 && r.right <= o.right + 0.5 && r.top >= o.top - 0.5 && r.bottom <= o.bottom + 0.5);
+      };
+      const tiles = ['rec-time', 'rec-bbbvPerSecond', 'rec-efficiency'].map((id) => {
+        const tile = document.getElementById(id);
+        const value = tile.querySelector('.ui-stat__value');
+        return { id, text: value.textContent, lines: lines(value), inside: [...tile.children].every((c) => inside(tile, c)) };
+      });
+      const shown = (el) => el.getClientRects().length > 0;
+      const cells = [...document.querySelectorAll('#records-games-body td[data-label="Time"], #records-top-body td[data-label="Time"], #records-replays-body td[data-label="Time"], #records .ui-code__value')]
+        .filter(shown).map((el) => ({ text: el.textContent, lines: lines(el) }));
+      const rows = [...document.querySelectorAll('#records-replays-body tr')].map((tr) => new Set([...tr.querySelectorAll('button[data-act]')].map((b) => Math.round(b.getBoundingClientRect().top))).size);
+      return { tiles, cells, rows };
+    });
+    const setTiles = (texts) => page.evaluate((list) => ['rec-time', 'rec-bbbvPerSecond', 'rec-efficiency'].forEach((id, i) => {
+      document.querySelector(`#${id} .ui-stat__value`).textContent = list[i];
+    }), texts);
+    const FIGURES = [['999.999 s', '99.99', '100.0%'], ['—', '—', '—']];
+    for (const theme of ['light', 'dark']) {
+      await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
+      for (const [width, height] of [[1024, 768], [1280, 800], [1440, 900], [1920, 1080], [390, 844]]) {
+        await page.setViewportSize({ width, height });
+        for (const key of keys) {
+          const at = `${theme} ${width} px ${key}`;
+          await page.click('#menu-entry-records');
+          await page.evaluate((k) => globalThis.__ms.state.mode === 'records' && document.querySelector(`#records-mode [data-value="${k.startsWith('3d') ? '3d' : 'classic-2d'}"]`).click(), key);
+          await page.click(`#records-picker [data-value="${key}"]`);
+          for (const figures of [null, ...FIGURES]) {
+            if (figures) await setTiles(figures);
+            for (const tile of (await measure()).tiles) {
+              assert.equal(tile.lines, 1, `${at}: ${tile.id} "${tile.text}" on one line`);
+              assert.ok(tile.inside, `${at}: ${tile.id} "${tile.text}" — its label, figure, date and Watch inside the tile`);
+            }
+          }
+          if (width >= 1024) {
+            for (const tab of ['recent', 'top']) {
+              await page.click(`#records-tabs [data-value="${tab}"]`);
+              const { cells, rows } = await measure();
+              assert.ok(cells.some((c) => c.text === '999.999 s') && cells.some((c) => /-/.test(c.text)), `${at} ${tab}: a long time and a board code shown`);
+              for (const c of cells) assert.equal(c.lines, 1, `${at} ${tab}: "${c.text}" on one line`);
+              assert.ok(rows.length > 0 && rows.every((n) => n === 1), `${at}: each replay row's actions in one row (${rows})`);
+            }
+          }
+          await page.keyboard.press('Escape');
+        }
+      }
+    }
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, at 390 × 844 and 360 × 800 in both themes and modes, the Averages table stays inside its panel with times over 500 s, its figures on one line; a table still at 1024 px', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(removeWebGL2);
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined);
+    // Twelve won games on a board of each mode, each 502.426 s long: every average a three-digit time, the Last 50 column "Last 50 (12)".
+    const keys = await page.evaluate(async () => {
+      const { createBoardIdentity, boardKey } = await import('/js/records/board.js');
+      const boards = [createBoardIdentity({ mode: 'classic-2d', grid: 'square', width: 99, height: 99, mines: 1500, noGuess: true }),
+        createBoardIdentity({ mode: '3d', width: 20, height: 20, depth: 20, mines: 1200, noGuess: false })];
+      let n = 0;
+      for (const board of boards) {
+        for (let i = 0; i < 12; i++) {
+          const elapsedMs = 502426;
+          const clicks = { reveal: { effective: 999, wasted: 0 }, flag: { effective: 0, wasted: 0 }, chord: { effective: 0, wasted: 0 } };
+          globalThis.__ms.records.record({ id: `avg${n++}`, board, outcome: 'won', elapsedMs, bbbv: 999, bbbvSolved: 999, clicks,
+            bbbvPerSecond: 999 / (elapsedMs / 1000), efficiency: 100, seed: 0x1234 + n, startCell: 0, generatorVersion: 1,
+            endedAt: `2026-10-${String(1 + i).padStart(2, '0')}T12:34:00.000Z` });
+        }
+      }
+      return boards.map(boardKey);
+    });
+    const measure = () => page.evaluate(() => {
+      const lines = (el) => {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        return new Set([...range.getClientRects()].filter((r) => r.width > 0).map((r) => Math.round(r.top))).size;
+      };
+      const panel = document.getElementById('records-averages');
+      const table = document.getElementById('records-averages-table');
+      const p = panel.getBoundingClientRect();
+      const s = getComputedStyle(panel);
+      const box = { left: p.left + parseFloat(s.borderLeftWidth) + parseFloat(s.paddingLeft), right: p.right - parseFloat(s.borderRightWidth) - parseFloat(s.paddingRight) };
+      const tb = table.getBoundingClientRect();
+      return {
+        inside: tb.left >= box.left - 0.5 && tb.right <= box.right + 0.5,
+        table: [Math.round(tb.left), Math.round(tb.right)], box: [Math.round(box.left), Math.round(box.right)],
+        scrollWidth: document.documentElement.scrollWidth, viewport: window.innerWidth, display: getComputedStyle(table).display,
+        heads: [...table.querySelectorAll('thead th')].map((th) => th.textContent),
+        cells: [...document.querySelectorAll('#records-averages-body td')].map((td) => ({ text: td.textContent, lines: lines(td) })),
+      };
+    });
+    for (const theme of ['light', 'dark']) {
+      await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
+      for (const [width, height] of [[390, 844], [360, 800], [1024, 768]]) {
+        await page.setViewportSize({ width, height });
+        for (const key of keys) {
+          const at = `${theme} ${width} px ${key}`;
+          await page.click('#menu-entry-records');
+          await page.evaluate((k) => globalThis.__ms.state.mode === 'records' && document.querySelector(`#records-mode [data-value="${k.startsWith('3d') ? '3d' : 'classic-2d'}"]`).click(), key);
+          await page.click(`#records-picker [data-value="${key}"]`);
+          const m = await measure();
+          assert.deepEqual(m.heads, ['Last 10', 'Last 50 (12)', 'All'], `${at}: the columns`);
+          assert.ok(m.cells.filter((c) => c.text === '502.426 s').length === 3, `${at}: a three-digit average time in every column`);
+          assert.ok(m.inside, `${at}: the Averages table ${m.table} inside its panel's content box ${m.box}`);
+          assert.equal(m.scrollWidth, m.viewport, `${at}: the page does not scroll sideways`);
+          for (const c of m.cells) assert.equal(c.lines, 1, `${at}: "${c.text}" on one line`);
+          assert.equal(m.display, width >= 1024 ? 'table' : 'block', `${at}: a table at 1024 px, the stacked cards on a phone`);
+          await page.keyboard.press('Escape');
+        }
+      }
+    }
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});

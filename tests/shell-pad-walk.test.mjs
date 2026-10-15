@@ -8,6 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { browserSuite } from './helpers/browser.mjs';
+import { patience } from './helpers/timing.mjs';
 
 const suite = browserSuite();
 const BTN = { A: 0, B: 1, X: 2, LB: 4, RB: 5, LT: 6, RT: 7, UP: 12, DOWN: 13, LEFT: 14, RIGHT: 15 };
@@ -31,11 +32,16 @@ async function open(browser, base) {
   const ms = (fn, arg) => page.evaluate(fn, arg);
   const frames = (count) => ms((k) => new Promise((r) => { const f = () => (--k ? requestAnimationFrame(f) : r()); requestAnimationFrame(f); }), count);
   const hold = async (button, on) => { await ms(([b, o]) => globalThis.__pad.press(b, o), [button, on]); await frames(2); };
-  // One frame held, so a slow frame never reaches the menus' auto-repeat.
+  // Held for exactly one poll: the shell's frame loop registers its next animation frame before this
+  // callback, so within one frame its poll reads the press and this callback releases it, in the page,
+  // with no round trip to the test in between — the menus' auto-repeat never fires however slow the
+  // machine. Two more frames, so the release is polled before the next press.
   const tap = async (button) => {
-    await ms((b) => globalThis.__pad.press(b, true), button);
-    await frames(1);
-    await hold(button, false);
+    await ms((b) => new Promise((done) => {
+      globalThis.__pad.press(b, true);
+      requestAnimationFrame(() => { globalThis.__pad.press(b, false); done(); });
+    }), button);
+    await frames(2);
   };
   /** The focused control's name: its id, else its data-value / data-size / data-preset. */
   const focused = () => ms(() => {
@@ -59,20 +65,21 @@ test('in a browser, the D-pad walks every control of the 2D board choice and the
   try {
     const { page, errors, ms, tap, focused, walk } = await open(browser, base);
 
-    // Classic 2D: Down walks the sizes into the custom row; Left / Right walk the row; Down reaches the switch, then Back.
+    // Classic 2D: Down walks the sizes, the switch under them and into the custom row; Left / Right walk the row;
+    // Down goes on to the code field, then Back.
     await page.click('#menu-entry-classic-2d');
     await ms(() => document.querySelector('#c2d-choice [data-size="beginner"]').focus());
     assert.equal(await focused(), 'beginner');
-    assert.deepEqual(await walk(['down', 'down', 'down']), ['intermediate', 'expert', 'c2d-width']);
+    assert.deepEqual(await walk(['down', 'down', 'down', 'down']), ['intermediate', 'expert', 'c2d-noguess', 'c2d-width']);
     assert.deepEqual(await walk(['right', 'right', 'right']), ['c2d-height', 'c2d-mines', 'c2d-start']);
     assert.deepEqual(await walk(['left', 'left', 'left']), ['c2d-mines', 'c2d-height', 'c2d-width']);
-    assert.deepEqual(await walk(['down', 'down', 'down', 'down']), ['c2d-noguess', 'c2d-code', 'c2d-choice-back', 'c2d-choice-back'], 'no wrap past Back; the code field\'s Play this board waits disabled');
-    assert.deepEqual(await walk(['up', 'up', 'up', 'up', 'up', 'up', 'up']), ['c2d-code', 'c2d-noguess', 'c2d-width', 'expert', 'intermediate', 'beginner', 'beginner'],
+    assert.deepEqual(await walk(['down', 'down', 'down']), ['c2d-code', 'c2d-choice-back', 'c2d-choice-back'], 'no wrap past Back; the code field\'s Play this board waits disabled');
+    assert.deepEqual(await walk(['up', 'up', 'up', 'up', 'up', 'up', 'up']), ['c2d-code', 'c2d-width', 'c2d-noguess', 'expert', 'intermediate', 'beginner', 'beginner'],
       'Up retraces the walk');
-    // From any control of the custom row, Down goes on to the switch.
+    // From any control of the custom row, Down goes on to the code field.
     for (const id of ['c2d-height', 'c2d-mines', 'c2d-start']) {
       await ms((i) => document.getElementById(i).focus(), id);
-      assert.deepEqual(await walk(['down']), ['c2d-noguess'], `Down from #${id}`);
+      assert.deepEqual(await walk(['down']), ['c2d-code'], `Down from #${id}`);
     }
     // Every focusable control on the screen is reached by the D-pad alone.
     const all = await ms(() => [...document.querySelectorAll('#c2d-choice button:not(:disabled), #c2d-choice input')].map((e) => e.id || e.dataset.size));
@@ -102,11 +109,12 @@ test('in a browser, the D-pad walks every control of the 2D board choice and the
 
     // 3D: the walk pinned as it stood before the DOM-order fallback.
     await page.click('#menu-entry-3d');
-    await ms(() => document.querySelector('#board-choice [data-preset="6,6,6,10"]').focus());
-    assert.deepEqual(await walk(['down', 'down', 'down', 'down', 'down', 'down', 'down']),
-      ['8,8,8,40', '12,12,8,130', 'bc-noguess', 'c-x', 'c-noguess', 'bc-code', 'board-choice-back']);
-    assert.deepEqual(await walk(['up', 'up', 'up', 'up', 'up', 'up', 'up']),
-      ['bc-code', 'c-noguess', 'c-x', 'bc-noguess', '12,12,8,130', '8,8,8,40', '6,6,6,10']);
+    await ms(() => document.querySelector('#board-choice [data-preset="4,4,3,4"]').focus());
+    const presetsDown = ['5,5,3,6', '6,6,6,10', '6,6,6,20', '8,8,8,40', '10,10,10,100'];
+    assert.deepEqual(await walk(Array(10).fill('down')),
+      [...presetsDown, 'bc-noguess', 'c-x', 'c-noguess', 'bc-code', 'board-choice-back']);
+    assert.deepEqual(await walk(Array(10).fill('up')),
+      ['bc-code', 'c-noguess', 'c-x', 'bc-noguess', '10,10,10,100', '8,8,8,40', '6,6,6,20', '6,6,6,10', '5,5,3,6', '4,4,3,4']);
     await ms(() => document.getElementById('c-x').focus());
     assert.deepEqual(await walk(['right', 'right', 'right', 'right', 'right']), ['c-y', 'c-z', 'c-m', 'c-random', 'c-start']);
     assert.deepEqual(await walk(['left', 'left', 'left', 'left', 'left']), ['c-random', 'c-m', 'c-z', 'c-y', 'c-x']);
@@ -292,7 +300,12 @@ test('in a browser, a trigger press on a board pulses, a controller flag double-
   const { browser, base } = env;
   try {
     const { page, errors, ms, frames, hold, tap } = await open(browser, base);
-    const rumbles = async () => { await page.waitForTimeout(150); return ms(() => globalThis.__pad.rumbles.splice(0)); };
+    // The pulses so far: polled until `count` have come, or a fixed window that proves none comes.
+    const rumbles = async (count = 0) => {
+      if (count) await page.waitForFunction((n) => globalThis.__pad.rumbles.length >= n, count, { timeout: patience(1000) });
+      else await page.waitForTimeout(150);
+      return ms(() => globalThis.__pad.rumbles.splice(0));
+    };
 
     // 3D: RT pressed pulses 10 ms, its release reveals with no pulse; LT on a closed cube pulses at the
     // press and double-pulses as its release flags it.
@@ -302,9 +315,9 @@ test('in a browser, a trigger press on a board pulses, a controller flag double-
     const cell = await ms(() => globalThis.__ms.selected());
     assert.ok(cell >= 0, 'a cube is aimed');
     await hold(BTN.LT, true);
-    assert.deepEqual(await rumbles(), [10], 'the press pulse');
+    assert.deepEqual(await rumbles(1), [10], 'the press pulse');
     await hold(BTN.LT, false);
-    assert.deepEqual(await rumbles(), [30, 30], 'a flag: two pulses');
+    assert.deepEqual(await rumbles(2), [30, 30], 'a flag: two pulses');
     assert.equal(await ms(() => globalThis.__ms.info().minesLeft), 9);
     await ms(() => globalThis.__ms.click('right'));
     assert.equal(await ms(() => globalThis.__ms.info().minesLeft), 10, 'the mouse unflags');
@@ -326,12 +339,12 @@ test('in a browser, a trigger press on a board pulses, a controller flag double-
     await page.waitForFunction(() => globalThis.__ms.state.mode === 'classic-2d');
     await frames(2);
     await hold(BTN.LT, true);
-    assert.deepEqual(await rumbles(), [30, 30]);
+    assert.deepEqual(await rumbles(2), [30, 30]);
     await hold(BTN.LT, false);
     await tap(BTN.X);
-    assert.deepEqual(await rumbles(), [30, 30], 'X unflags: the double pulse');
+    assert.deepEqual(await rumbles(2), [30, 30], 'X unflags: the double pulse');
     await hold(BTN.RT, true);
-    assert.deepEqual(await rumbles(), [10]);
+    assert.deepEqual(await rumbles(1), [10]);
     await hold(BTN.RT, false);
     await page.waitForFunction(() => globalThis.__ms.modes.state.started);
     assert.deepEqual(await rumbles(), [], 'the release reveals without a pulse');

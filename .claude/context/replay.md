@@ -1,4 +1,4 @@
-# Replay — format, recorder and sealer, movement samplers, the replay layer's map
+# Replay — format, recorder and sealer, the replay layer's map
 
 ## OVERVIEW
 
@@ -16,8 +16,8 @@ browser wiring, the viewer's binder and the 2D viewer's mount.
 | ---- | -------------- | --------- |
 | `js/replay/format.js` | Replay object, blob layout, encoder, per-version decoders and upgrade steps, sampling intervals, final-state digest. Head comment is the authority for every field. | here |
 | `js/replay/recorder.js` | Recorder and sealer: one per game session, game-clock feed, listing fields, movement cap. | here |
-| `js/replay/sampler-2d.js` | Classic 2D pointer and cursor sampler; `mountSampler2D` browser wiring. | here |
-| `js/replay/sampler-3d.js` | 3D camera and view-mode sampler. | here |
+| `js/replay/sampler-2d.js` | Classic 2D pointer and cursor sampler; `mountSampler2D` browser wiring. | [replay-samplers.md](replay-samplers.md) |
+| `js/replay/sampler-3d.js` | 3D camera and view-mode sampler. | [replay-samplers.md](replay-samplers.md) |
 | `js/replay/library.js` | Replay library: only writer of the blob store and `replays.library`. | [replay-library.md](replay-library.md) |
 | `js/replay/simulator.js` | Replay played on the engine, seeking with snapshots; `openReplay`. | [replay-playback.md](replay-playback.md) |
 | `js/replay/verify.js` | Verifier against the check values. | [replay-playback.md](replay-playback.md) |
@@ -28,7 +28,7 @@ browser wiring, the viewer's binder and the 2D viewer's mount.
 
 Wiring: the sessions own their recorder and the modes their sampler
 ([classic2d-session.md](classic2d-session.md), [classic2d-mode.md](classic2d-mode.md),
-[mode3d-session.md](mode3d-session.md)); the sealed replay travels on the mode contract's
+[mode3d-session.md](mode3d-session.md), [mode3d-adapter.md](mode3d-adapter.md)); the sealed replay travels on the mode contract's
 `finished` and `abandoned` reports and the pause controller's hand-offs to the results flow,
 which adds it to the library once its summary is recorded ([app-shell-results.md](app-shell-results.md)).
 `js/main.js` builds the one library (`REPLAYS`) and the one viewer
@@ -64,19 +64,8 @@ which adds it to the library once its summary is recorded ([app-shell-results.md
   efficiency, endedAt, size, code?}` — `boardKey` the summary's board (a
   daily game's Daily board, `daily:…`, while the header keeps the plain
   board it was played on, which the seal compares), `code` the game's board
-  code ([records.md](records.md) `codeOf`) when the summary carries what it
+  code ([records-board-code.md](records-board-code.md) `codeOf`) when the summary carries what it
   needs.
-
-Samplers
-- `sampler-2d.js`: `SAMPLE_INTERVAL_MS` (50), `SAMPLE_STEPS` (64),
-  `boardPoint`, `createSampler2D({session, point, interval?})`,
-  `mountSampler2D({view, session, win?, interval?})`.
-- `sampler-3d.js`: `SAMPLE_INTERVAL_MS` (100), `POSITION_STEPS` (16),
-  `ANGLE_STEPS` (8192), `VIEW_MODE` (`shift` 1, `space` 2, `ctrl` 4),
-  `cameraSample`, `viewMode`, `createSampler3D({session, camera, controls,
-  spacing, interval?, steps?})` (`spacing` a getter). A spacing change
-  scales the camera with it (`FlyCamera.rescale`), so its cell-unit sample
-  stays the same and adds no movement sample.
 
 ## INTERNAL PATTERNS
 
@@ -106,9 +95,6 @@ Samplers
 - **Failure never interrupts play.** Any error drops the replay, is
   reported once through `onFailure` and turns later calls into no-ops; the
   summary goes on without a replay.
-- **The schedule.** Samplers keep to the interval of game time across frame
-  jitter; the 2D cursor and 3D view mode are offered every tick and stored
-  on change.
 - **Determinism.** The action stream applied to the header's graph, mines,
   profile and rules version reproduces the check values exactly;
   `tests/fixtures/replays/` keeps older builds' replays reproducing.
@@ -123,12 +109,13 @@ Samplers
 
 ## CROSS-REFERENCES
 
+- [replay-samplers.md](replay-samplers.md) — the 2D and 3D movement samplers.
 - [replay-library.md](replay-library.md), [replay-playback.md](replay-playback.md).
 - [engine.md](engine.md) — `CLICK_KINDS`, rule profiles and versions, the
   state arrays the digest reads.
 - [records.md](records.md) — board identity, `boardKey`, the summary record.
 - [classic2d-session.md](classic2d-session.md), [classic2d-mode.md](classic2d-mode.md),
-  [mode3d-session.md](mode3d-session.md) — the sessions' recorders and the modes' samplers.
+  [mode3d-session.md](mode3d-session.md), [mode3d-adapter.md](mode3d-adapter.md) — the sessions' recorders and the modes' samplers.
 - [app-shell.md](app-shell.md), [app-shell-pause.md](app-shell-pause.md) — the replay on the mode
   contract and hand-offs; [app-shell-3d.md](app-shell-3d.md) — the frame loop that ticks the 3D sampler.
 - [testing.md](testing.md) — `tests/replay-format`, `-recorder`, `-2d`,

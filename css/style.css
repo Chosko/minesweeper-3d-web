@@ -20,7 +20,7 @@ kbd {
   min-width: 1.6em;
   padding: 0.05em 0.4em;
   margin: 0 0.08em;
-  font: 600 0.78em/1.5 var(--font-family-sans);
+  font: 600 max(11px, 0.78em)/1.5 var(--font-family-sans);
   text-align: center;
   color: var(--color-ink);
   background: var(--color-surface-raised);
@@ -64,11 +64,14 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
 #records-replays-table td .ui-button { margin: var(--space-1) 0 var(--space-1) var(--space-2); }
 #records-export-note { flex-basis: 100%; }
 #records-averages-table :is(th, td) { white-space: nowrap; padding-inline: var(--space-1); }
-/* A Records table narrower than its columns (a phone, or a half-width column) stacks each row's
-   cells, each under its column's name (data-label, set by the views), the actions across, so the
-   screen never scrolls sideways. */
+:is(#records-games, #records-replays-table, #records-top-table) td[data-label="Time"] { white-space: nowrap; }
+/* A Records table narrower than a row of its figures, board code and actions on one line (about
+   1,100 px, wider than either Records panel gets) stacks each row's cells, each under its column's
+   name (data-label, set by the views), the board code and the actions each on a line of their own,
+   so a time, a code or a replay's actions never wrap but on a phone, and the screen never scrolls
+   sideways. */
 #records-history, #records-replays { container-type: inline-size; }
-@container (max-width: 539px) {
+@container (max-width: 1099px) {
   :is(#records-games, #records-replays-table, #records-top-table), :is(#records-games, #records-replays-table, #records-top-table) :is(tbody, caption) { display: block; }
   :is(#records-games, #records-replays-table, #records-top-table) thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   :is(#records-games, #records-replays-table, #records-top-table) tr {
@@ -78,12 +81,28 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
   :is(#records-games, #records-replays-table, #records-top-table) td { display: block; padding: 0; border: 0; text-align: left; }
   :is(#records-games, #records-replays-table, #records-top-table) td[data-label]::before { content: attr(data-label); display: block; font-size: var(--font-size-xs); color: var(--color-ink-muted); }
   :is(#records-games, #records-top-table) td:empty { display: none; }
-  #records-replays-table td:last-child { grid-column: 1 / -1; }
+  :is(#records-games, #records-replays-table, #records-top-table) td:is([data-label="Board code"], :last-child) { grid-column: 1 / -1; }
   #records-replays-table td .ui-button { margin: 0 var(--space-2) 0 0; }
+}
+/* The Averages table stacks the same way in a panel narrower than its row of three-digit times on one
+   line (about 333 px; the panel is 336 px at 1024 px and wider), each row a card headed by its label. */
+#records-averages { container-type: inline-size; }
+@container (max-width: 335px) {
+  #records-averages-table, #records-averages-table tbody { display: block; }
+  #records-averages-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  #records-averages-table tr {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--space-8) * 2.5), 1fr));
+    gap: var(--space-1) var(--space-3); padding: var(--space-2) 0; border-bottom: 1px solid var(--color-border);
+  }
+  #records-averages-table :is(th, td) { display: block; padding: 0; border: 0; text-align: left; }
+  #records-averages-table th { grid-column: 1 / -1; color: var(--color-ink); }
+  #records-averages-table td[data-label]::before { content: attr(data-label); display: block; font-size: var(--font-size-xs); color: var(--color-ink-muted); }
 }
 #pause, #ready, #results { background: var(--color-backdrop-scrim-soft); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
 /* The ready card waiting unseen for a pointer lock the player's own Play again asked for. */
 #ready.ready--pending { visibility: hidden; }
+/* The Learn 3D end card over the guided board's stopped scene. */
+#learn-end { background: var(--color-backdrop-scrim-soft); }
 /* Over a 3D game the results screen shows on a dimmed translucent scrim of the chosen theme, the finished board drawn unblurred behind it. */
 #results.results--over3d { background: var(--color-backdrop-scrim-strong); backdrop-filter: none; -webkit-backdrop-filter: none; }
 /* Look at the board: the one-line way back, over the finished 3D board. */
@@ -123,12 +142,16 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
 .ready-board { font-size: 15px; color: var(--color-ink-muted); font-variant-numeric: tabular-nums; }
 .ready-keys { font-size: 13px; color: var(--color-ink-muted); line-height: 1.9; display: flex; flex-direction: column; align-items: center; }
 .ready-keys b { color: var(--color-ink); font-weight: 600; }
-/* On a coarse-only device the ready card lists the touch gestures in place of the keys (UI.setTouch3D). */
+/* On a coarse-only device (#ready.ready--touch, UI.setTouch3D) the ready card lists the touch gestures in place of
+   the keys, its rules name the toolbar's Ctrl button, and its Back has no "Esc: Back" hint. */
 .ready-touch { display: none; }
 .ready--touch .ready-touch { font-size: 13px; color: var(--color-ink-muted); line-height: 1.9; display: flex; flex-direction: column; align-items: center; text-align: center; }
 .ready-touch b { color: var(--color-ink); font-weight: 600; }
 .ready--touch .ready-keys, .ready--touch .ready-tip { display: none; }
 .ready-rules { font-size: 13px; color: var(--color-ink); line-height: 1.7; display: flex; flex-direction: column; align-items: center; }
+.ready-rules-touch, .ready--touch .ready-rules-keys { display: none; }
+.ready--touch .ready-rules-touch { display: inline; }
+#ready.ready--touch .esc-row [data-esc-hint] { display: none; }
 .ready-tip { font-size: 12px; color: var(--color-ink-muted); opacity: 0.9; }
 .ready-msg { font-size: 14px; font-weight: 600; color: var(--color-warning); max-width: 440px; }
 .ready-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; max-width: 100%; margin: auto; }
@@ -202,6 +225,11 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
 }
 /* On the Classic 2D panel the overlay bar is the panel's top edge: no surface of its own. */
 #hud.hud--2d .hud-bar { padding: 0; border-width: 0; background: none; box-shadow: none; }
+/* It wraps inside the widest panel — the board area less the panel's 9 px inset (js/ui.js PANEL_INSET)
+   on each side — so on a phone its readouts and buttons take more rows instead of leaving the screen.
+   Its width never depends on where it sits, so the height panelFrame2D measures is the height placed. */
+#hud.hud--2d .hud-bar { flex-wrap: wrap; row-gap: var(--space-2); width: max-content; max-width: calc(100vw - 2 * var(--space-4) - 18px); }
+@media (max-width: 560px) { #hud.hud--2d .hud-bar { column-gap: var(--space-3); } }
 /* A board status card (generating, or a failed board's offer) sits above the pause card. */
 #c2d-status, #m3d-status { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: calc(var(--z-overlay) + 1); }
 #replay { position: fixed; inset: 0; z-index: var(--z-overlay); background: var(--color-backdrop); }
@@ -354,6 +382,9 @@ kbd[data-pad-glyph] { min-width: 1.9em; border-radius: 999px; }
 .ready-pad b { color: var(--color-ink); font-weight: 600; }
 .ready-pad .pad-note { display: inline-block; margin: 4px 0 0; }
 /* the ready card's offer once the browser blocks pointer lock: drag-to-look, or the controller */
+/* The ready card's Learn 3D line, under the card while the player has not learned 3D. */
+.ready-learn { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); background: var(--color-surface-raised); text-align: left; }
+.ready-learn .ui-text { margin: 0; }
 .ready-blocked { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--color-surface-raised); text-align: center; }
 #help { max-height: calc(100vh - 80px); overflow: hidden; }
 /* lockless controller play: the system cursor would sit over the crosshair */
@@ -402,12 +433,13 @@ body.pad-nav .ready-card:focus .ready-title { color: var(--color-accent); }
 .toast.on { opacity: 1; transform: translate(-50%, 0); }
 
 /* ---------- coarse pointers ---------- */
-/* Touch targets and text a finger and a phone need; a fine pointer keeps every size above. */
+/* Touch targets a finger needs; a fine pointer keeps every size above. */
 @media (pointer: coarse) {
   #hud.hud--2d #hud-tap { display: flex; min-width: 44px; min-height: 44px; padding: var(--space-2) var(--space-4); }
+  /* Swap clicks trades mouse buttons: a coarse primary pointer is never fine, so this is js/main.js COARSE_ONLY */
+  #hud-swap { display: none; }
   /* the pause button takes a touch anywhere in a 44 px band around its centre, the bar's layout unchanged */
   #hud-pause { position: relative; }
   #hud-pause::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 22px); height: 44px; }
   #touch-modes .ui-button { min-width: 44px; min-height: 44px; padding: var(--space-2) var(--space-3); }
-  kbd { font-size: max(11px, 0.78em); }
 }

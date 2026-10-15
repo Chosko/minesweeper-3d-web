@@ -70,9 +70,9 @@ Every Classic 2D and 3D game is recorded in the browser. **Records**, on the mai
 screen shown after a game, opens the Records screen:
 
 - Pick a mode with the **2D | 3D** switch, then a board: in 2D, Beginner, Intermediate and Expert,
-  in 3D, the three cube boards, each with and without no-guess, then the mode's **Daily** board,
-  then every custom board of that mode you have played, the former double layer boards (8 × 8 × 2, 14 × 14 × 2, 25 × 16 × 2) among
-  them. The screen opens on the board you played last, in its mode, or on the board of the game
+  in 3D, the two first boxes and the four cube boards, each with and without no-guess, then the
+  mode's **Daily** board, then every custom board of that mode you have played, the former double
+  layer boards (8 × 8 × 2, 14 × 14 × 2, 25 × 16 × 2) and 12 × 12 × 8 · 130 among them. The screen opens on the board you played last, in its mode, or on the board of the game
   you just finished.
 - For that board: the best time, best 3BV/s and best efficiency with their dates, games played,
   wins, win rate, and the current and longest winning streak. A restarted or abandoned game counts
@@ -158,6 +158,12 @@ with the controller, focus it and the D-pad left / right steps it. Below it:
 
 ## 3D: how to play
 
+New to 3D? **Learn 3D**, first on the 3D board choice, walks you through a small 4 × 4 × 3 box:
+start on the marked cube, then four prompts show what `Shift` and `Ctrl` reveal, which cube must be
+a mine and how a chord opens cubes. It has no timer and keeps no records, and you can repeat it any
+time; a win offers First box 1. Until you have finished a 3D game or won Learn 3D, the "Click to
+play" card of every other 3D board offers it too.
+
 The rules are classic Minesweeper with one more dimension:
 
 - A revealed cube shows how many of its **26 neighbours** (the 3 × 3 × 3 block around it) hold a
@@ -191,11 +197,16 @@ Pick a board and play:
 
 | Board | Size | Mines |
 |---|---|---|
-| Cube Beginner | 6 × 6 × 6 | 10 |
+| First box 1 | 4 × 4 × 3 | 4 |
+| First box 2 | 5 × 5 × 3 | 6 |
+| Cube Intro | 6 × 6 × 6 | 10 |
+| Cube Beginner | 6 × 6 × 6 | 20 |
 | Cube Intermediate | 8 × 8 × 8 | 40 |
-| Cube Expert | 12 × 12 × 8 | 130 |
+| Cube Expert | 10 × 10 × 10 | 100 |
 | Custom | each side 1–100 | up to one fewer than the cells |
 
+- The two first boxes start with the cubes spread wider (spacing 1.5), so a small box reads layer
+  by layer before the cubes.
 - **Random** fills the custom fields with a random board.
 - **No-guess board:** one switch under the presets applies to the preset you pick; the custom board
   has its own, available up to 8,000 cells (20 × 20 × 20) and shown disabled, with the reason, on a

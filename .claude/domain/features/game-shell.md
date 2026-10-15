@@ -144,7 +144,7 @@ it generalises.
   pointer lock, and resume returns to lockless touch play.
 - **Shell navigation.** Keyboard and controller navigation for every shell
   screen, built on the existing controller reader and spatial focus search
-  ([input.md](../../context/input.md)): the topmost visible layer takes
+  ([input-controller.md](../../context/input-controller.md)): the topmost visible layer takes
   input; while an overlay is open (the Controls modal, the pause card, the
   results card, the replay viewer) the rest of the page is inert, the status
   toast excepted, and Tab wraps at its edges where `inert` is unavailable;
@@ -174,7 +174,9 @@ it generalises.
   can resume it. Each mode keeps its own last board choice; the shell keeps
   only which mode it was. Together they name the last board played — the
   last mode's last board choice, once it was played — which the menu's
-  session strip describes and its *Play again* starts.
+  session strip describes and its *Play again* starts. The Learn 3D guided
+  board, outside the 3D board choice, is never the last mode or board
+  played.
 - **Source of truth** — the active mode owns its game and timer; the shell
   holds only whether a game is in progress and paused, as the mode reports
   it.
@@ -218,12 +220,19 @@ it generalises.
   end abandons nothing and neither asks nor shows the toast. `F2` and
   Start + Y do nothing during the 3D end delay, while a confirmation or the
   controls modal shows, or on a screen with no game; `R` and `Home` in 3D
-  play keep returning the camera to the start view.
+  play keep returning the camera to the start view. On the Learn 3D guided
+  game, which counts as no loss, restart proceeds at once with no
+  confirmation and no toast, whatever the setting, and opens the guided
+  board again from its closed box.
 - **Main menu** — leaves the mode and returns to the main menu; during a
   started, unfinished game it asks for confirmation, saying the game will
-  count as a loss.
+  count as a loss — except on the Learn 3D guided game, where it proceeds at
+  once.
 - **Game finished** — the shell hands the mode's summary to `results-screen`
   and routes to it; *Play again* comes back as `start` with the same choice.
+  The Learn 3D guided game has no summary: its end goes to the Learn 3D end
+  card over the stopped scene, not the results screen — *Play First box 1*
+  or *Try again*, and *Back to board choice*.
 - **Game abandoned** — the shell records the mode's summary with
   `personal-records` and goes where the player asked, showing no results
   screen.

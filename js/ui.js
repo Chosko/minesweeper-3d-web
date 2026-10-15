@@ -7,6 +7,7 @@ import { GLYPHS } from './gamepad.js';
 import { bindingsHtml, hudStripHtml, hintStripHtml, helpFootHtml, hintText } from './settings/bindings.js';
 import { settingsPageHtml, bindingsSectionHtml, bindResetPanel } from './settings/page.js';
 import { DIM_MIN, DIM_MAX } from './mode3d/board-choice.js';
+import { LEARN_TITLE } from './mode3d/learn.js';
 import { formatTime } from './results/view.js';
 import { readoutText } from './readability.js';
 
@@ -27,7 +28,11 @@ export const fmtDims = (s) => `${s.X} × ${s.Y} × ${s.Z}`;
 export const progressLine = ({ candidates, seconds }) => `candidate ${candidates} · ${seconds} s`;
 
 /** The pause card's status line, its time (seconds) in the results time format: "Time 11.643 s · 12 mines left". */
-export const pauseLine = (time, minesLeft) => `Time ${formatTime(Math.round(time * 1000))} · ${minesLeft} mine${minesLeft === 1 ? '' : 's'} left`;
+/** The pause card's status line: the time and mines left, or mines left alone for a game with no timer (`timed` false: Learn 3D). */
+export function pauseLine(time, minesLeft, { timed = true } = {}) {
+  const mines = `${minesLeft} mine${minesLeft === 1 ? '' : 's'} left`;
+  return timed ? `Time ${formatTime(Math.round(time * 1000))} · ${mines}` : mines;
+}
 const NO_GUESS = ' · no-guess';
 /**
  * The Classic 2D panel's frame: its 1 px border and the --space-2 (8 px) inside it, around the
@@ -50,7 +55,7 @@ export const TOUCH_MSG = 'Both modes play by touch: 3D and Classic 2D.';
 
 export class UI {
   constructor(cb) {
-    this.cb = cb; // { onMenuEntry, onMenuPlayAgain, onBack, onReadyClick, onReadyDrag, onReadyBack, onResume, onRestart, onMainMenu, onPause, onToggleSwap, onToggleTap, onToggleSound, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll, onLayer, onTouchMode }
+    this.cb = cb; // { onMenuEntry, onMenuPlayAgain, onBack, onReadyClick, onReadyDrag, onReadyBack, onReadyLearn, onLearnEnd, onLearnBack, onResume, onRestart, onMainMenu, onPause, onToggleSwap, onToggleTap, onToggleSound, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll, onLayer, onTouchMode }
     this.el = {
       hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), clicks: $('hud-clicks'), size: $('hud-size'), hudTools: $('hud-tools'), hudSwap: $('hud-swap'), hudTap: $('hud-tap'),
       help: $('help'), helpList: $('help').querySelector('.controls'), helpFoot: $('help-foot'),
@@ -58,6 +63,8 @@ export class UI {
       readyRules: $('ready-rules'), pauseBoard: $('pause-board'), pauseControls: $('pause-controls'),
       controlsBody: $('controls-body'),
       flash: $('flash'), menu: $('menu'), ready: $('ready'), readyBoard: $('ready-board'), readyMsg: $('ready-msg'), readyBlocked: $('ready-blocked'),
+      readyLearn: $('ready-learn'), hintClose: $('hint-strip-close'), timeStat: $('hud-time').closest('.ui-stat'),
+      learnEnd: $('learn-end'), learnEndTitle: $('learn-end-title'), learnEndPrimary: $('learn-end-primary'),
       boardChoice: $('board-choice'), comingSoon: $('coming-soon'), comingSoonTitle: $('coming-soon-title'),
       settings: $('settings'), settingsBindings: null, records: $('records'), daily: $('daily'),
       comingSoonText: $('coming-soon-text'),
@@ -88,9 +95,12 @@ export class UI {
     this._muted = false;
     this._hint = false; // the hint strip shows
     this._controlsTab = 'classic-2d'; // the Controls panel's tab
-    this._touch = false; // a coarse-only device: 3D plays by touch, and its help lists the touch rows
+    this._touch = false; // a coarse-only device: both modes play by touch, and every help surface speaks touch (`_bindDevice`)
     this._stick = ''; // the touch stick's place shown, '' while hidden
     this._boardText = '';
+    this._learnHint = null; // the Learn 3D prompt the hint strip shows (js/mode3d/learn.js LEARN_HINTS), or null
+    this._learnWon = false; // the Learn 3D end card's outcome
+    this._timed = true; // the game shown has a timer (Learn 3D has none)
 
     // main menu entries: each a route (the shell decides where); the last mode played is marked
     document.querySelectorAll('[data-entry]').forEach((b) => {
@@ -123,6 +133,9 @@ export class UI {
     $('p-sound').addEventListener('click', () => cb.onToggleSound());
     $('ready-btn').addEventListener('click', () => cb.onReadyClick());
     $('ready-drag').addEventListener('click', () => cb.onReadyDrag?.());
+    $('ready-learn-btn').addEventListener('click', () => cb.onReadyLearn?.());
+    this.el.learnEndPrimary.addEventListener('click', () => cb.onLearnEnd?.(this._learnWon));
+    $('learn-end-back').addEventListener('click', () => cb.onLearnBack?.());
     this.el.resume.addEventListener('click', () => cb.onResume());
     this.el.home.addEventListener('click', () => cb.onBackToStart?.());
     this.el.restart.addEventListener('click', () => cb.onRestart());
@@ -160,13 +173,15 @@ export class UI {
     note.classList.toggle('hidden', !on);
   }
   /**
-   * On a coarse-only device 3D plays by touch: the ready card reads "Tap to play" and lists the touch
-   * gestures in place of the key list, and the 3D help surfaces list the touch rows.
+   * On a coarse-only device both modes play by touch: the ready card reads "Tap to play" and lists the
+   * touch gestures in place of the key list, its rules name the toolbar's Ctrl button and its Back stands
+   * without the "Esc: Back" hint, the help surfaces of either mode list its touch rows and
+   * the clipped Classic 2D board's hint names the touch gestures.
    */
   setTouch3D(on) {
     this._touch = !!on;
     const btn = $('ready-btn');
-    btn.classList.toggle('ready--touch', this._touch);
+    this.el.ready.classList.toggle('ready--touch', this._touch);
     btn.querySelector('.ready-title').textContent = this._touch ? 'Tap to play' : 'Click to play';
     this.el.ready.setAttribute('aria-label', this._touch ? 'Tap to play' : 'Click to play');
     this._renderBindings();
@@ -361,10 +376,14 @@ export class UI {
   }
   /**
    * The room the panel's frame takes around the board (js/classic2d/board-view.js frame): the
-   * readouts and the gap above it, the inset on every side, and at least the readouts' width.
+   * readouts, as many rows as they wrap to, and the gap above it, the inset on every side, and at
+   * least the readouts' width — measured as the bar plays, with the buttons the pause card hides.
    */
   panelFrame2D() {
+    const paused = [this.el.hudSwap, this.el.hudTap].filter((b) => b.classList.contains('hidden'));
+    for (const b of paused) b.classList.remove('hidden');
     const bar = this.el.hudBar.getBoundingClientRect();
+    for (const b of paused) b.classList.add('hidden');
     return {
       top: PANEL_INSET + Math.ceil(bar.height) + PANEL_GAP,
       right: PANEL_INSET,
@@ -427,19 +446,22 @@ export class UI {
     el('Offer').classList.toggle('hidden', !failure);
   }
   /**
-   * The 3D ready card: its board, a message, the "How 3D works" block while `rules` is set, and
-   * the drag-to-look and controller offer while the browser blocks pointer lock (`blocked`).
+   * The 3D ready card: its board, a message, the "How 3D works" block while `rules` is set, the
+   * Learn 3D line under the card while `learn` is set, and the drag-to-look and controller offer
+   * while the browser blocks pointer lock (`blocked`). The guided board (`settings.learn`) is named
+   * "Learn 3D".
    */
-  showReady(settings, msg = '', { rules = false, blocked = false } = {}) {
+  showReady(settings, msg = '', { rules = false, blocked = false, learn = false } = {}) {
     this._hideMenus();
     this._hide2D();
     this._setMode('3d');
     this.el.pause.classList.add('hidden');
     this.el.ready.classList.remove('hidden', 'ready--pending');
     this.el.hud.classList.remove('hidden');
-    this.el.readyBoard.textContent = boardLine3D(settings, { mines: true });
+    this.el.readyBoard.textContent = settings.learn ? LEARN_TITLE : boardLine3D(settings, { mines: true });
     this.el.readyMsg.textContent = msg;
     this.el.readyRules.classList.toggle('hidden', !rules);
+    this.el.readyLearn.classList.toggle('hidden', !learn);
     this.el.readyBlocked.classList.toggle('hidden', !blocked);
     this._syncHelp();
   }
@@ -462,23 +484,29 @@ export class UI {
   _syncHelp() { if (!this._helpByUser) this.toggleHelp(false); }
   /**
    * The first-use hint strip of the shown mode, in the active device's names — or, with `scroll`,
-   * the one-time hint beside a clipped Classic 2D board; on the 2D board it takes room at the
+   * the one-time hint beside a clipped Classic 2D board, or, with `learn`, a Learn 3D prompt (its
+   * hint name in the bindings source) with no close button; on the 2D board it takes room at the
    * bottom. It steps aside while the help panel is open.
    */
-  setHintStrip(on, { scroll = false } = {}) {
+  setHintStrip(on, { scroll = false, learn = null } = {}) {
     this._hint = !!on;
-    this._hintKind = on && scroll ? 'scroll' : 'mode';
+    this._hintKind = on && learn ? 'learn' : on && scroll ? 'scroll' : 'mode';
+    this._learnHint = on && learn ? learn : null;
     if (on) {
-      this.el.hintStripText.innerHTML = scroll ? hintText('scrollHint', this._device, this._glyphs)
-        : hintStripHtml(this._mode, this._device, this._glyphs);
+      if (learn) this.el.hintStripText.textContent = this.hint(learn);
+      else {
+        this.el.hintStripText.innerHTML = scroll ? hintText('scrollHint', this._bindDevice(this._mode), this._glyphs)
+          : hintStripHtml(this._mode, this._bindDevice(this._mode), this._glyphs);
+      }
     }
+    this.el.hintClose.classList.toggle('hidden', this._hintKind === 'learn');
     this._showHint();
     this.el.c2d.classList.toggle('c2d--hint', this._hint && this._mode === 'classic-2d');
   }
   _showHint() { this.el.hintStrip.classList.toggle('hidden', !this._hint || !this.el.help.classList.contains('hidden')); }
   /** The hint strip's dismiss button (the shell keeps the dismissal for good). */
   dismissHint() {
-    if (!this._hint) return;
+    if (!this._hint || this._hintKind === 'learn') return;
     const kind = this._hintKind;
     this.setHintStrip(false);
     this.cb.onDismissHint?.(this._mode, kind);
@@ -537,7 +565,7 @@ export class UI {
     this.el.pauseActions.insertBefore(this.el.home, this.el.pauseMenu);
     this.el.pauseActions.insertBefore(second, this.el.pauseMenu);
     this.el.pauseTitle.textContent = state === 'won' ? 'You won!' : state === 'lost' ? 'Game over' : 'Paused';
-    this.el.pauseSub.textContent = pauseLine(time, minesLeft);
+    this.el.pauseSub.textContent = pauseLine(time, minesLeft, { timed: this._timed });
     this.el.pauseBoard.textContent = this._boardText;
     // The look settings only on a 3D game's pause card; volume and Sound in both modes.
     for (const key of ['lookSensitivity', 'invertY']) this.el.pause.querySelector(`[data-setting="${key}"]`).classList.toggle('hidden', mode !== '3d');
@@ -547,9 +575,24 @@ export class UI {
   }
   /** The pause card's status line while it shows: the game's running time and mines left. */
   updatePause({ time, minesLeft }) {
-    const line = pauseLine(time, minesLeft);
+    const line = pauseLine(time, minesLeft, { timed: this._timed });
     if (this.el.pauseSub.textContent !== line) this.el.pauseSub.textContent = line;
   }
+  /**
+   * The Learn 3D end card over the guided board's stopped scene: on a win "You've got the basics of
+   * 3D." with Play First box 1, on a loss "That cube was a mine." with Try again; Back to board choice
+   * on both, and no time.
+   */
+  showLearnEnd(won) {
+    this._learnWon = !!won;
+    this._hideMenus();
+    this.el.ready.classList.add('hidden');
+    this.el.pause.classList.add('hidden');
+    this.el.learnEndTitle.textContent = won ? 'You\'ve got the basics of 3D.' : 'That cube was a mine.';
+    this.el.learnEndPrimary.textContent = won ? 'Play First box 1' : 'Try again';
+    this.el.learnEnd.classList.remove('hidden');
+  }
+  hideLearnEnd() { this.el.learnEnd.classList.add('hidden'); }
   isPauseVisible() { return !this.el.pause.classList.contains('hidden'); }
   /** Ask on the pause card, in place of its actions: onYes on confirm, onNo on Cancel or Back. */
   showConfirm({ message, confirmLabel }, onYes, onNo) {
@@ -579,7 +622,12 @@ export class UI {
 
   // ---------- HUD ----------
   /** The 3D board the overlay bar and the pause card name ("6 × 6 × 6 · no-guess"). */
-  setBoard(settings) { this._setBoardText(boardLine3D(settings)); this._sizeMines(settings.mines); }
+  setBoard(settings) { this._setBoardText(settings.learn ? LEARN_TITLE : boardLine3D(settings)); this._sizeMines(settings.mines); }
+  /** The overlay bar's timer, shown unless the game has none (Learn 3D); the pause card follows it. */
+  setTimed(on) {
+    this._timed = !!on;
+    this.el.timeStat.classList.toggle('hidden', !this._timed);
+  }
   /**
    * Overlay bar readouts: the display formats clamp (timer at 999, counter at -99); `time` itself is
    * never clamped. `clicks` is the game's counted clicks, wasted included; without it the readout
@@ -651,16 +699,23 @@ export class UI {
     return this._device === 'controller' && this._mapping !== 'standard'
       ? ' <span class="pad-note">This controller does not report the standard layout, so some buttons may be unmapped.</span>' : '';
   }
-  /** The device whose rows a surface of `mode` lists: on a touch device, 3D's touch rows unless a controller is in use. */
+  /** A one-time hint's or Learn 3D prompt's text (js/settings/bindings.js HINT_TEXT) for the device the help surfaces speak for. */
+  hint(name) {
+    return hintText(name, this._bindDevice(this._mode), this._glyphs);
+  }
+  /** The device a help surface of `mode` speaks for: on a touch device, touch unless a controller is in use. */
   _bindDevice(mode) {
-    return this._touch && mode === '3d' && this._device === 'keyboard' ? 'touch' : this._device;
+    return this._touch && this._device === 'keyboard' ? 'touch' : this._device;
   }
   _renderHelp() {
     this.el.helpList.innerHTML = bindingsHtml(this._mode, this._bindDevice(this._mode), this._glyphs, this._camera);
-    this.el.helpFoot.innerHTML = `${helpFootHtml(this._mode, this._device, this._glyphs)}${this._note()}`;
+    this.el.helpFoot.innerHTML = `${helpFootHtml(this._mode, this._bindDevice(this._mode), this._glyphs)}${this._note()}`;
   }
+  /** The HUD strip; one with no entries (Classic 2D on touch) hides its panel. */
   _renderHudStrip() {
-    this.el.hudTools.innerHTML = hudStripHtml(this._mode, this._device, this._glyphs, { muted: this._muted, spacing: this._spacing });
+    const html = hudStripHtml(this._mode, this._bindDevice(this._mode), this._glyphs, { muted: this._muted, spacing: this._spacing });
+    this.el.hudTools.innerHTML = html;
+    this.el.hudTools.classList.toggle('hidden', !html);
   }
   /** Redraw every bindings surface for the active mode and device. */
   _renderBindings() {
@@ -668,7 +723,7 @@ export class UI {
     this._renderHudStrip();
     this.el.controlsBody.innerHTML = bindingsHtml(this._controlsTab, this._bindDevice(this._controlsTab), this._glyphs, this._camera);
     this.el.pauseControls.innerHTML = bindingsHtml(this._mode, this._bindDevice(this._mode), this._glyphs, this._camera);
-    if (this._hint) this.setHintStrip(true, { scroll: this._hintKind === 'scroll' });
+    if (this._hint) this.setHintStrip(true, { scroll: this._hintKind === 'scroll', learn: this._learnHint });
     if (!this.el.settings.classList.contains('hidden')) this.el.settingsBindings.innerHTML = bindingsSectionHtml(this._glyphs, this._camera);
   }
 

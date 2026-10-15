@@ -9,8 +9,8 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { GLYPHS } from '../js/gamepad.js';
 import {
-  BINDING_MODES, BINDING_DEVICES, bindingRows, bindingsListHtml, bindingsHtml, hudStripHtml, helpFootHtml,
-  createActiveDevice,
+  BINDING_MODES, BINDING_DEVICES, bindingRows, bindingsListHtml, bindingsHtml, hudStripHtml, hintStripHtml, helpFootHtml,
+  HUD_STRIP, HINT_STRIP, HELP_FOOT, HINT_TEXT, hintText, createActiveDevice,
 } from '../js/settings/bindings.js';
 import { TapToggle, SPACE_TAP_MS } from '../js/input.js';
 import { boardLine3D, boardLine2D } from '../js/ui.js';
@@ -20,6 +20,7 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const suite = browserSuite();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const text = (html) => html.replace(/<[^>]+>/g, '');
+const plain = (html) => text(html).replace(/&middot;/g, '·');
 
 // ---------------------------------------------------------------- the bindings component
 
@@ -176,6 +177,69 @@ test('the pause card, the Controls panel and the H panel have no hard-coded bind
   assert.match(UI, /bindingsHtml\(/);
 });
 
+test('on a touch device Classic 2D\'s touch rows reach the H panel, the pause card and the Controls panel as 3D\'s do; no table is read for touch without a touch entry', () => {
+  const touch2d = text(bindingsHtml('classic-2d', 'touch'));
+  assert.match(touch2d, /Long-press/);
+  assert.match(touch2d, /Tap a number/);
+  assert.doesNotMatch(bindingsHtml('classic-2d', 'touch'), /<kbd/, 'a touch row names no key or button');
+  assert.doesNotMatch(touch2d, /Move the cursor|Look around/, 'neither the keyboard rows nor a 3D row');
+  assert.match(UI, /this\.el\.helpList\.innerHTML = bindingsHtml\(this\._mode, this\._bindDevice\(this\._mode\)/);
+  assert.match(UI, /this\.el\.pauseControls\.innerHTML = bindingsHtml\(this\._mode, this\._bindDevice\(this\._mode\)/);
+  assert.match(UI, /this\.el\.controlsBody\.innerHTML = bindingsHtml\(this\._controlsTab, this\._bindDevice\(this\._controlsTab\)/);
+  // The foot line, the HUD strip, the mode's hint strip and the scroll hint follow the same device.
+  assert.match(UI, /helpFootHtml\(this\._mode, this\._bindDevice\(this\._mode\),/);
+  assert.match(UI, /hudStripHtml\(this\._mode, this\._bindDevice\(this\._mode\),/);
+  assert.match(UI, /hintStripHtml\(this\._mode, this\._bindDevice\(this\._mode\),/);
+  assert.match(UI, /hintText\('scrollHint', this\._bindDevice\(this\._mode\),/);
+  assert.doesNotMatch(UI, /(helpFootHtml|hudStripHtml|hintStripHtml)\(this\._mode, this\._device,/, 'no help surface is drawn for the keyboard on a touch device');
+  assert.match(helpFootHtml('classic-2d', 'keyboard'), /hides this panel/);
+});
+
+test('the help foot, the HUD strip and the hint strip have touch wording in both modes, naming no key or button', () => {
+  for (const mode of ['classic-2d', '3d']) {
+    for (const t of [HUD_STRIP, HINT_STRIP, HELP_FOOT]) assert.ok(Object.hasOwn(t[mode], 'touch'), `${mode} has a touch entry`);
+    for (const html of [hudStripHtml(mode, 'touch', GLYPHS.xbox), hintStripHtml(mode, 'touch', GLYPHS.xbox), helpFootHtml(mode, 'touch', GLYPHS.xbox)]) {
+      assert.doesNotMatch(html, /<kbd/, `${mode}: no key cap or pad glyph on a touch surface`);
+      assert.doesNotMatch(text(html), /\b(Esc|Space|Shift|Ctrl|Arrows|[HMFXD]|Left|Right)\b(?! button)/, `${mode}: no key named (${text(html)})`);
+    }
+  }
+  // The hint strips: each mode's touch gestures and on-screen buttons, as its touch rows have them.
+  assert.equal(plain(hintStripHtml('classic-2d', 'touch')), 'Tap reveal · Long-press flag · Tap a number chord');
+  assert.equal(plain(hintStripHtml('3d', 'touch')), 'Tap reveal · Long-press flag · Space button aim through · Shift button neighbours');
+  for (const [input] of [...HINT_STRIP['classic-2d'].touch, ...HINT_STRIP['3d'].touch]) {
+    const rows = [...bindingRows('classic-2d', 'touch'), ...bindingRows('3d', 'touch')].map(([i]) => i);
+    assert.ok(rows.includes(input), `"${input}" is a touch row's input`);
+  }
+  // The help foot: 3D's release rule for a finger; Classic 2D's carries no instruction.
+  assert.equal(text(helpFootHtml('3d', 'touch')), 'Actions fire when your finger lifts.');
+  assert.equal(helpFootHtml('classic-2d', 'touch'), '');
+  // The HUD strip: 3D's spacing readout, labelled for pinch; nothing else a finger cannot press.
+  assert.equal(text(hudStripHtml('3d', 'touch', GLYPHS.generic, { spacing: 2 })), 'Pinch spacing 2.0');
+  assert.equal(hudStripHtml('classic-2d', 'touch'), '', 'Classic 2D lists nothing on touch');
+  assert.match(UI, /this\.el\.hudTools\.classList\.toggle\('hidden', !html\)/, 'a strip left with no entries hides its panel');
+});
+
+test('every one-time hint and Learn 3D prompt has a touch text naming only the touch rows\' buttons and gestures', () => {
+  const inputs = bindingRows('3d', 'touch').map(([i]) => i);
+  for (const name of Object.keys(HINT_TEXT)) {
+    for (const device of ['keyboard', 'controller', 'touch']) assert.ok(Object.hasOwn(HINT_TEXT[name], device), `${name} has a ${device} text`);
+    const t = hintText(name, 'touch', GLYPHS.xbox);
+    assert.doesNotMatch(t, /\b(Hold|Click|Esc|RT|LT|RB|LB)\b|\b(Ctrl|Space|Shift)\b(?! button)/, `${name}: no key or pad button named (${t})`);
+    for (const [, button] of t.matchAll(/\b(Ctrl|Space|Shift) button\b/g)) assert.ok(inputs.includes(`${button} button`), `${button} button is a touch row`);
+  }
+  assert.ok(inputs.includes('Long-press') && inputs.includes('Two-finger tap') && inputs.includes('Tap'), 'the gestures the prompts name are touch rows');
+});
+
+test('on a mouse and keyboard and with a controller the three surfaces read as before', () => {
+  assert.equal(text(hudStripHtml('3d', 'keyboard')), 'X spacing 1.1H helpM sound onF fullscreenEsc menu');
+  assert.equal(text(hudStripHtml('classic-2d', 'keyboard')), 'H helpM sound onEsc menu');
+  assert.equal(text(hudStripHtml('3d', 'controller', GLYPHS.xbox)), 'D-pad ↑ ↓ spacing 1.1X helpMenu menu');
+  assert.equal(plain(hintStripHtml('classic-2d', 'keyboard')), 'Arrows move · Space reveal · F flag · D chord');
+  assert.equal(plain(hintStripHtml('3d', 'controller', GLYPHS.xbox)), 'RT reveal · LT flag · Hold RB aim through · Hold LB neighbours');
+  assert.equal(text(helpFootHtml('classic-2d', 'keyboard')), 'H hides this panel.');
+  assert.equal(text(helpFootHtml('3d', 'controller', GLYPHS.xbox)), 'Actions fire when the trigger is released. X hides this panel.');
+});
+
 test('the HUD strip is generated and shows in Classic 2D; the hint strip shows there too', () => {
   assert.match(INDEX, /<div id="hud-tools" class="hud-panel hud-tools"><\/div>/);
   const style = read('css/style.css');
@@ -259,6 +323,7 @@ test('in a browser: the Controls panel tabs, H, M and the HUD strip in Classic 2
     assert.equal(await mode(), 'paused');
     assert.match(await textOf('#pause-controls'), /Move the cursor/);
     assert.doesNotMatch(await textOf('#pause-controls'), /Look around/);
+    assert.doesNotMatch(await textOf('#pause-controls'), /Long-press/, 'no touch rows with a mouse and keyboard');
     assert.equal(await textOf('#pause-board'), '9 × 9');
     assert.equal(await shown('p-sens'), false, 'no look sensitivity in Classic 2D');
     assert.equal(await shown('p-invert'), false, 'no invert Y in Classic 2D');

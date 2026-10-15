@@ -7,7 +7,7 @@ import { UI, clampSettings, NO_MOUSE_MSG } from './ui.js';
 import * as audio from './audio.js';
 import { Controls } from './controls.js';
 import { createTouch3D, mountTouch3D, applyTouchStick, touchZone, VIBRATE_MS } from './touch-3d.js';
-import { GamepadReader, BTN, Repeat, stickCurve, padGlyphs, pickInDirection, GLYPHS, STICK_DEADZONE, PAD_PRESS, PAD_FLAG, PAD_BOOM, padPulse } from './gamepad.js';
+import { GamepadReader, BTN, Repeat, stickCurve, padGlyphs, pickInDirection, STICK_DEADZONE, PAD_PRESS, PAD_FLAG, PAD_BOOM, padPulse } from './gamepad.js';
 import { createRouter } from './shell/router.js';
 import { FOCUSABLE, topLayer, resolveFocus, focusMove, inertSections, tabWrap, isBackKey, arrowDirection, keepsArrow, backButtons, createHeldSuppressor } from './shell/navigation.js';
 import { createHistorySync, storedSet } from './shell/history.js';
@@ -20,7 +20,7 @@ import { createMenu, createLastMode, createLastBoardChoice, UNAVAILABLE_REASONS 
 import { CHOICE_ITEMS, presetDetails, lastBoard, returningMenu } from './shell/returning.js';
 import { aimReadout } from './readability.js';
 import { createFirstUse, stripShown, hidCube, aimHintCell, createDwell, AIM_DWELL_MS } from './shell/first-use.js';
-import { createActiveDevice, hintText } from './settings/bindings.js';
+import { createActiveDevice } from './settings/bindings.js';
 import { createPauseController, restartInput, RESTART_NOTICE } from './shell/pause.js';
 import { createLockFallback } from './shell/lock-fallback.js';
 import { createEndSkip } from './shell/end-skip.js';
@@ -55,8 +55,9 @@ import { bindBoardChoice } from './classic2d/board-choice.js';
 import { createLastChoice, DEFAULT_CHOICE } from './classic2d/board-setup.js';
 import {
   bindBoardChoice as bindBoardChoice3D, boardOf, normaliseChoice as normaliseChoice3D, DEFAULT_CHOICE as DEFAULT_CHOICE_3D,
-  LAST_CHOICE_DOC as LAST_CHOICE_DOC_3D, LAST_CHOICE_VERSION as LAST_CHOICE_VERSION_3D,
+  LAST_CHOICE_DOC as LAST_CHOICE_DOC_3D, LAST_CHOICE_VERSION as LAST_CHOICE_VERSION_3D, startSpacing,
 } from './mode3d/board-choice.js';
+import { LEARN_BOARD, LEARN_HINTS, learnChoice, createLearnPrompts, closedAround } from './mode3d/learn.js';
 
 const canvas = document.getElementById('scene');
 
@@ -135,6 +136,7 @@ const S = {
   orbit: 0,
   lockless: false, // playing without pointer lock (controller session, drag-to-look, or the debug hook)
   dragLook: false, // drag-to-look play: the browser blocks pointer lock; ends when the game is left
+  learn: null, // the Learn 3D prompt sequence while the guided board is the game (js/mode3d/learn.js), else null
 };
 
 // ---------- actions ----------
@@ -160,6 +162,7 @@ function onAction(type) {
     return;
   }
   if (!r) return;
+  if (S.learn) learnAction(type, sel, r);
   actionSounds(type, r, onNumber);
   if (g.version === v0 && before === 'playing' && g.state === 'playing' && typeof sfx.noop === 'function') sfx.noop(); // action changed nothing
 }
@@ -179,8 +182,8 @@ function actionSounds(type, r, onNumber = false) {
 function boom() { sfx.explode(); ui.flash(); padRumble(PAD_BOOM); }
 /** The first time auto-hide hides a cube in any 3D game, a toast says so; once per browser. */
 function noteAutoHide(r) {
-  if (FIRST_USE.shown('autoHideToast') || !S.game || !hidCube(S.game, r.changed)) return;
-  if (FIRST_USE.once('autoHideToast')) ui.toast(hintText('autoHide', DEVICE.current, activeGlyphs()), 4000);
+  if (S.learn || FIRST_USE.shown('autoHideToast') || !S.game || !hidCube(S.game, r.changed)) return;
+  if (FIRST_USE.once('autoHideToast')) ui.toast(ui.hint('autoHide'), 4000);
 }
 /**
  * The end of the 3D game: the HUD freezes and the end effect plays; the 3D mode's end delay then
@@ -389,6 +392,9 @@ const ui = new UI({
   onBack: () => shellBack('pointer'),
   onReadyClick: () => { sfx.unlock(); if (COARSE_ONLY) enterPlaying(true); else if (padGesture) padResume(); else requestLock3D(); }, // a coarse-only device: lockless touch play
   onReadyDrag: () => enterDragLook(),
+  onReadyLearn: () => startLearn(),
+  onLearnEnd: (won) => (won ? playFirstBox() : PAUSE.restart(padGesture ? 'pad' : 'pointer')), // Try again restarts the guided board
+  onLearnBack: () => SHELL.go('board-choice'),
   onResume: () => PAUSE.resume(padGesture ? 'pad' : 'pointer'),
   onBackToStart: () => { placeAtSpawn(); PAUSE.resume(padGesture ? 'pad' : 'pointer'); }, // a 3D game in play: resumes as Resume does
   onRestart: () => PAUSE.restart(padGesture ? 'pad' : 'pointer'),
@@ -420,8 +426,6 @@ ui.setTouch3D(COARSE_ONLY);
 // mouse; every help surface follows it.
 const DEVICE = createActiveDevice({ onChange: (d) => ui.setDevice(d) });
 window.addEventListener('keydown', () => DEVICE.input('keyboard'), true);
-/** The glyphs of the connected controller, for the hints' button names. */
-function activeGlyphs() { const p = pads.activePad(); return p ? padGlyphs(p.id) : GLYPHS.generic; }
 /** A poll with a press or a stick off its deadzone: the controller is in use. */
 function padUsed(p) {
   return p.pressed.some(Boolean) || Math.hypot(p.ls[0], p.ls[1]) > STICK_DEADZONE || Math.hypot(p.rs[0], p.rs[1]) > STICK_DEADZONE;
@@ -465,10 +469,11 @@ const SHELL = createRouter({
     records: { defaultFocus: '#records-picker [aria-checked="true"]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showRecords(); RECORDS_PAGE.show({ mode: d.mode, boardKey: d.boardKey }); }, hide: () => RECORDS_PAGE.hide() },
     settings: { defaultFocus: '#set-lookSensitivity', show: () => { MODES.leave(); showMenuBackdrop(); ui.showSettings(); SETTINGS_EXPORT.show(RECORDS_EXPORT.hasGames()); } },
     'classic-2d-choice': { defaultFocus: '[data-size][data-last]', show: (d = {}) => { MODES.leave(); mode2d.warm(); showMenuBackdrop(); ui.showBoardChoice2D(); showChoice2D(d.choice ?? LAST_CHOICE_2D.current); } },
-    ready: { defaultFocus: '#ready-btn', show: (d = {}) => ui.showReady(board3dChoice ?? S.settings, LOCK_FALLBACK.readyMessage(d.msg), { rules: FIRST_USE.rules3D, blocked: LOCK_FALLBACK.blocked }), back: ({ source }) => { if (source !== 'key' || performance.now() - input.unlockedAt >= 500) readyBack(); } }, // the Esc that released the pointer lock already meant Back
+    ready: { defaultFocus: '#ready-btn', show: (d = {}) => ui.showReady(board3dChoice ?? S.settings, LOCK_FALLBACK.readyMessage(d.msg), { rules: FIRST_USE.rules3D && !S.learn, blocked: LOCK_FALLBACK.blocked, learn: FIRST_USE.rules3D && !S.learn && !S.started }), back: ({ source }) => { if (source !== 'key' || performance.now() - input.unlockedAt >= 500) readyBack(); } }, // the Esc that released the pointer lock already meant Back
     playing: { defaultFocus: null, show: (d = {}) => { setLockless(!!d.lockless); ui.showPlaying(); }, back: ({ source }) => backGame(source) },
     'classic-2d': { defaultFocus: null, show: () => ui.showClassic2D(), back: ({ source }) => backGame(source) },
     paused: { defaultFocus: () => (ui.isConfirmOpen() ? '#p-confirm-no' : gameOver() ? '#p-restart' : '#p-resume'), show: (d = {}) => { stopPlayInput(); setBoardHidden(true); ui.showPause(pauseInfo(d.note)); }, hide: () => setBoardHidden(false), back: ({ source }) => resumeFromPause(source) },
+    'learn-end': { defaultFocus: '#learn-end-primary', show: (d = {}) => ui.showLearnEnd(!!d.won), hide: () => ui.hideLearnEnd(), back: () => SHELL.go('board-choice') },
     results: { defaultFocus: '#r-again', show: (d) => showResults(d ?? RESULTS.current), hide: () => { lookPending = false; RESULTS_VIEW.hide(); }, back: ({ source }) => resultsBack(source) },
     look: { defaultFocus: null, show: () => showLook(true), hide: () => showLook(false), back: () => endLook() },
     [REPLAY_SCREEN]: { defaultFocus: () => REPLAY_VIEWER.defaultFocus(), show: (d = {}) => { ui.showReplay(); REPLAY_VIEWER.show(d); }, hide: () => { REPLAY_VIEWER.hide(); ui.hideReplay(); }, back: () => REPLAY_VIEWER.back() },
@@ -520,9 +525,65 @@ const LAST_CHOICE_3D = createLastBoardChoice({ storage, doc: LAST_CHOICE_DOC_3D,
 const CHOICE_3D = bindBoardChoice3D({
   root: document.getElementById('board-choice'),
   onStart: (choice) => { sfx.unlock(); LAST_CHOICE_3D.save(choice).catch(() => {}); MODES.start('3d', boardOf(choice)); }, // storage never stops a game
+  onLearn: () => startLearn(),
   onBack: () => shellBack('pointer'),
   code: { resolve: (text) => checkCode(text, '3d'), onPlay: (text) => playCode(text, '3d') },
 });
+// ---------- Learn 3D ----------
+// The guided board (js/mode3d/learn.js): a fixed board with a forced, marked start cell, played
+// through the 3D mode with no timer and no summary, so nothing reaches the records or the replay
+// library, nothing is saved as the last mode or board choice, and the pause controller asks
+// nothing before a restart or back to menu (unrecorded). Its four prompts show in the hint strip,
+// in the active device's names, with the start-cell tint on the cell the prompt points at; it ends
+// on the Learn 3D end card in place of the results screen. Nothing else teaches meanwhile: no
+// first-use hint strip, "How 3D works" block, auto-hide toast or aim hint, and it counts toward
+// no first-use window; its win marks the rules block seen, and its second prompt the auto-hide
+// toast shown.
+/** Start the guided board, any number of times; never saved as the last 3D choice. */
+function startLearn() {
+  if (!WEBGL2) return;
+  sfx.unlock();
+  MODES.start('3d', learnChoice());
+}
+/** The Learn 3D game's terms for the first-use state, or undefined for any other game. */
+function learnGame() {
+  return MODES.active === '3d' && S.learn ? { learn: true, won: S.game?.state === 'won' } : undefined;
+}
+/** The Learn 3D win's Play First box 1: an ordinary pick of First box 1 with the presets' no-guess switch as remembered, saved as the last choice. */
+function playFirstBox() {
+  const last = LAST_CHOICE_3D.current;
+  const choice = { size: 'box-1', custom: { ...last.custom }, noGuess: !!last.noGuess };
+  sfx.unlock();
+  LAST_CHOICE_3D.save(choice).catch(() => {});
+  MODES.start('3d', boardOf(choice));
+}
+/** The prompt line changed: the hint strip and the tint follow it. */
+function learnChanged() {
+  refreshHints();
+  if (S.learn && S.started && renderer.setMark(S.learn.tinted)) needRender = true;
+}
+/**
+ * A board action in the guided game: a flag on the lesson mine, a chord on the lesson number, and,
+ * after any action while the game is on, the lesson number's closed, unflagged neighbours — none
+ * left skips the chord prompt.
+ */
+function learnAction(type, cell, r) {
+  const L = S.learn;
+  let changed = false;
+  if (type === 'right') changed = L.flagged(Array.from(r.changed).filter((c) => S.game.flagged[c]));
+  else if (type !== 'left') changed = L.chorded(cell, r.revealed);
+  if (S.game.state === 'playing') changed = L.lessonClosed(closedAround(S.game, LEARN_BOARD.lessonNumber)) || changed;
+  if (changed) learnChanged();
+}
+/** The view modes held in the guided game: Shift on the lesson number, Ctrl anywhere (which marks the auto-hide toast shown). */
+function learnViews(shift, ctrl) {
+  const L = S.learn;
+  if (!L || !S.started || S.endState) return;
+  let changed = false;
+  if (shift) changed = L.shift(S.selected) || changed;
+  if (ctrl && !L.done('ctrl')) { changed = L.ctrl() || changed; FIRST_USE.once('autoHideToast'); }
+  if (changed) learnChanged();
+}
 // Classic 2D: the mode drives its own board; the shell hands it the board area, the overlay bar and
 // its screens. The last board choice is a platform-storage document.
 const LAST_CHOICE_2D = createLastChoice({ storage });
@@ -532,7 +593,7 @@ const FLOW_2D = {
   show: () => SHELL.go('classic-2d'),
   container: () => document.getElementById('c2d-board'),
   scale: () => SETTINGS.get('boardScale'),
-  frame: () => (frame2D = ui.panelFrame2D()), // measured as each board opens, the readouts showing
+  frame: () => (frame2D = ui.panelFrame2D()), // measured at each refit, the readouts showing: a wrapped bar's rows follow the width
   layout: (layout) => { ui.placePanel2D(panelRect(layout, frame2D)); clipped2D(layout.scrolls); },
   scrolled: () => scrolled2D(),
   hud: ({ seconds, minesLeft, clicks }) => ui.updateHud(seconds, minesLeft, clicks),
@@ -645,8 +706,13 @@ const LINKS = createChallengeLinks({
   toast: (text) => ui.toast(text, 4000),
 });
 MODES.on('failed', ({ screen }) => SHELL.go(screen ?? 'menu'));
-// A 3D game with no summary (the debug hook's fixed board) has no results screen: it ends on the pause card.
-MODES.on('finished', ({ mode, summary }) => { if (mode === '3d' && !summary) showPauseCard(); });
+// A 3D game with no summary has no results screen: the guided board ends on the Learn 3D end card,
+// the debug hook's fixed board on the pause card.
+MODES.on('finished', ({ mode, summary }) => {
+  if (mode !== '3d' || summary) return;
+  if (S.learn) SHELL.go('learn-end', { data: { won: S.game?.state === 'won' } });
+  else showPauseCard();
+});
 
 // ---------- pause controller ----------
 // The one owner of pause, resume, restart and back to menu, and of the game hand-offs.
@@ -661,6 +727,7 @@ const PAUSE = createPauseController({
   cancelGeneration: () => cancelGeneration(),
   askRestart: () => SETTINGS.get('confirmRestart'), // "Always ask before restarting"
   restarted: () => ui.toast(RESTART_NOTICE, 5000), // once per session
+  unrecorded: () => MODES.active === '3d' && mode3d.learn, // Learn 3D: nothing it abandons counts
 });
 window.addEventListener('blur', () => pauseGame('blur'));
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') pauseGame('hidden'); });
@@ -705,7 +772,7 @@ RECORDS.attach(PAUSE);
 // show during each mode's first three games (judged as each game begins) until dismissed.
 const FIRST_USE = createFirstUse({ storage, records: RECORDS });
 const firstUseLoaded = recordsLoaded.then(() => FIRST_USE.load(), () => FIRST_USE.load());
-MODES.on('finished', ({ mode }) => FIRST_USE.gameFinished(mode));
+MODES.on('finished', ({ mode }) => FIRST_USE.gameFinished(mode, learnGame()));
 const hint3D = { eligible: false };
 const hint2D = { eligible: false, used: false, clipped: false };
 let standard2D = false; // the failed 2D board's offer is playing it standard: the same game
@@ -738,20 +805,21 @@ function scrolled2D() {
 function refreshHints() {
   const mode = MODES.active;
   if (mode !== '3d' && mode !== 'classic-2d') { ui.setHintStrip(false); return; }
+  if (mode === '3d' && S.learn) { ui.setHintStrip(S.mode === 'playing', { learn: LEARN_HINTS[S.learn.current] }); return; } // the Learn 3D prompt line
   if (mode === 'classic-2d' && S.mode === 'classic-2d' && hint2D.clipped && !FIRST_USE.shown('scrollHint')) {
     ui.setHintStrip(true, { scroll: true });
     return;
   }
   const h = mode === '3d' ? hint3D : hint2D;
-  ui.setHintStrip(stripShown({ mode, screen: S.mode, eligible: h.eligible, used: h.used, dismissed: FIRST_USE.dismissed(mode) }));
+  ui.setHintStrip(stripShown({ mode, screen: S.mode, eligible: h.eligible, used: h.used, dismissed: FIRST_USE.dismissed(mode), touchOnly: COARSE_ONLY }));
 }
 // The aim hint: the crosshair rests about a second on a revealed number with a closed cube behind it.
 const AIM_DWELL = createDwell(AIM_DWELL_MS);
 function aimHint(g, now) {
-  if (FIRST_USE.shown('aimHint')) return;
+  if (S.learn || FIRST_USE.shown('aimHint')) return;
   const sel = S.selected;
   const cell = !controls.space && sel >= 0 && g.pressed[sel] && g.number[sel] > 0 ? aimHintCell(g, sel, aimedCell(g, S.spacing, true)) : null;
-  if (AIM_DWELL.update(cell, now) && FIRST_USE.once('aimHint')) ui.toast(hintText('aimHint', DEVICE.current, activeGlyphs()), 4000);
+  if (AIM_DWELL.update(cell, now) && FIRST_USE.once('aimHint')) ui.toast(ui.hint('aimHint'), 4000);
 }
 
 // ---------- replay library ----------
@@ -1078,8 +1146,9 @@ for (const { id } of MENU.entries) {
   const reason = MENU.unavailable(id);
   if (reason) ui.setEntryUnavailable(id, reason);
 }
-const LAST_MODE = createLastMode({ storage, modes: MODES });
-MODES.on('started', ({ mode }) => { ui.setLastMode(mode); FIRST_USE.gameStarted(mode); });
+// The guided board is never the last mode played: its game started is not passed on.
+const LAST_MODE = createLastMode({ storage, modes: { on: (type, fn) => MODES.on(type, (e) => { if (!learnGame()) fn(e); }) } });
+MODES.on('started', ({ mode }) => { if (!learnGame()) ui.setLastMode(mode); FIRST_USE.gameStarted(mode, learnGame()); });
 
 // The returning player's surfaces: the session strip under the entries and Play again in the title
 // row, over the last board played (the last mode played and that mode's last board choice, once
@@ -1178,12 +1247,15 @@ function startGame(settings, pregenerated = null) {
   play.on('generating', ({ shown }) => { if (S.play === play) { board3d.generating = shown; board3d.progress = shown ? play.progress : null; showStatus3D(); } });
   play.on('failed', (failure) => { if (S.play === play) { board3d.failure = failure; showStatus3D(); } });
   play.on('mark', ({ cell }) => { if (S.play === play && renderer.setMark(cell)) needRender = true; });
-  play.on('started', () => { if (S.play === play) S.started = true; });
+  play.on('started', () => { if (S.play !== play) return; S.started = true; if (S.learn?.started()) learnChanged(); });
   play.on('finished', () => { if (S.play === play) endGame(); });
   const g = play.view;
-  S.settings = { X: s.X, Y: s.Y, Z: s.Z, mines: play.mines };
-  board3dChoice = { ...S.settings, noGuess };
-  hint3D.eligible = FIRST_USE.inFirstGames('3d');
+  const learn = !!settings.learn; // the Learn 3D guided board: its restart plays it again
+  S.learn = learn ? createLearnPrompts(LEARN_BOARD) : null;
+  S.settings = { X: s.X, Y: s.Y, Z: s.Z, mines: play.mines, ...(learn ? { learn } : {}) };
+  board3dChoice = { ...S.settings, noGuess, ...(learn ? { minePositions: settings.minePositions } : {}) };
+  hint3D.eligible = !learn && FIRST_USE.inFirstGames('3d');
+  ui.setTimed(!learn);
   S.play = play;
   S.game = g;
   S.started = false;
@@ -1191,7 +1263,7 @@ function startGame(settings, pregenerated = null) {
   S.endState = null;
   S.selected = -1;
   S.pickKey = '';
-  S.spacing = SPACING_START;
+  S.spacing = startSpacing(s);
   ui.setSpacing(S.spacing);
   board3d.generating = false;
   board3d.failure = null;
@@ -1378,6 +1450,8 @@ function leaveGame() {
   S.play?.leave();
   S.game = null;
   S.play = null;
+  S.learn = null;
+  ui.setTimed(true);
   board3d.generating = false;
   board3d.failure = null;
   board3d.progress = null;
@@ -1471,7 +1545,7 @@ function padClick(el) {
 // Spatial focus navigation inside the topmost visible overlay (its screen, or the controls modal).
 // The board status cards sit above the pause card, and take their default focus from the card.
 const LAYER_SCREEN = {
-  'ctx-lost': 'ctxlost', 'controls-modal': null, 'c2d-status': null, 'm3d-status': null, replay: 'replay', pause: 'paused', ready: 'ready', results: 'results', look: 'look',
+  'ctx-lost': 'ctxlost', 'controls-modal': null, 'c2d-status': null, 'm3d-status': null, replay: 'replay', pause: 'paused', ready: 'ready', 'learn-end': 'learn-end', results: 'results', look: 'look',
   'coming-soon': 'coming-soon', daily: 'daily', records: 'records', settings: 'settings', 'board-choice': 'board-choice', 'c2d-choice': 'classic-2d-choice', c2d: 'classic-2d', menu: 'menu',
 };
 const SCREEN_LAYER = Object.fromEntries(Object.entries(LAYER_SCREEN).filter(([, s]) => s).map(([l, s]) => [s, l]));
@@ -1501,7 +1575,7 @@ function isInert(el) {
   return false;
 }
 /** The overlays that contain focus while they are the topmost visible layer. */
-const CONTAINED = new Set(['controls-modal', 'pause', 'results', 'replay']);
+const CONTAINED = new Set(['controls-modal', 'pause', 'learn-end', 'results', 'replay']);
 /** Top-level elements that are not page content, never made inert by an overlay. */
 const NOT_SECTIONS = new Set(['SCRIPT', 'NOSCRIPT', 'TEMPLATE']);
 /** The open overlay that contains focus (the topmost visible layer, when it is one of CONTAINED), or null. */
@@ -1527,7 +1601,14 @@ function applyContainment() {
   const sections = [...document.body.children].filter((el) => el.id && !NOT_SECTIONS.has(el.tagName));
   holdInert('overlay', inertSections(sections, layer, [document.getElementById('toast')]));
   const area = containedArea(layer);
-  holdInert('confirm', area && area !== layer ? inertSections([...area.parentElement.children], area, []) : []);
+  holdInert('confirm', area && area !== layer ? cardBeside(area) : []);
+}
+/** Everything on the pause card beside `area`: its siblings, and its column's siblings up to the card. */
+function cardBeside(area) {
+  const card = document.getElementById('pause-card');
+  const beside = [];
+  for (let el = area; el !== card; el = el.parentElement) beside.push(...inertSections([...el.parentElement.children], el, []));
+  return beside;
 }
 new MutationObserver(() => applyContainment()).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
 /** Tab at the open overlay's edges wraps inside it, only where the browser has no `inert`. */
@@ -1984,6 +2065,7 @@ function frame(now) {
       const shift = flying && controls.shift, space = flying && controls.space, ctrl = flying && controls.ctrl;
       renderer.setToggles(shift, space, ctrl);
       ui.setModes(shift, space, ctrl);
+      if (S.learn && playing) learnViews(shift, ctrl);
     }
   }
   if (MODES.active === '3d') mode3d.tick(); // the replay's camera sampler
@@ -2046,6 +2128,11 @@ window.__ms = {
   spawnPose: (X, Y, Z) => spawnPose({ X, Y, Z }, S.spacing, renderer?.camera.fov, renderer?.camera.aspect),
   THREE,
   start(X, Y, Z, mines, minePositions) { if (!WEBGL2) throw new Error(UNAVAILABLE_REASONS.webgl2); MODES.start('3d', { X, Y, Z, mines, minePositions }); },
+  /** Start the Learn 3D guided board, as its board choice entry does. */
+  learn() { startLearn(); },
+  /** The guided board (js/mode3d/learn.js LEARN_BOARD) and the open game's prompt sequence, or null. */
+  get learnBoard() { return LEARN_BOARD; },
+  get learnPrompts() { return S.learn; },
   /** Enter playing mode without pointer lock (headless tests). */
   forcePlay() { enterPlaying(true); },
   get controls() { return controls; },

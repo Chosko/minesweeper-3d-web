@@ -3,12 +3,15 @@
 ## OVERVIEW
 
 Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
-Covers how `js/main.js` wires the 3D game to the screens, renderer, camera
-and pointer lock: the adapter's flow `FLOW_3D`, the ready card and its
-pointer-lock fallback (`js/shell/lock-fallback.js`, pure), the board status
-card, action dispatch, the end sequence, the camera aids and the frame
-loop's render-on-demand. The 3D board choice, session and adapter
-(`js/shell/mode-3d.js`) themselves are [mode3d.md](mode3d.md).
+Covers how `js/main.js` runs the 3D game's flow: the adapter's flow
+`FLOW_3D`, entering play, the ready card and its pointer-lock fallback
+(`js/shell/lock-fallback.js`, pure), lockless and drag-to-look play, the
+board status card, the session, Learn 3D's wiring and the end sequence. The
+play inputs and the camera — action dispatch, keyboard-only and touch play,
+the controller in play, the Camera setting's Fly and Orbit, the camera
+aids, spacing and render on demand — are
+[app-shell-3d-play.md](app-shell-3d-play.md). The 3D board choice, session
+and adapter (`js/shell/mode-3d.js`) themselves are [mode3d.md](mode3d.md).
 
 ## PUBLIC API
 
@@ -29,7 +32,7 @@ loop's render-on-demand. The 3D board choice, session and adapter
   `enterPlay3D`; `leave` is `leaveGame` (leaves the session, releases lock
   and lockless play, hides `#m3d-status`); `release` exits pointer lock
   before the results screen shows; `sampler` builds `createSampler3D`
-  ([replay.md](replay.md)) over camera, controls and `S.spacing`.
+  ([replay-samplers.md](replay-samplers.md)) over camera, controls and `S.spacing`.
   `js/main.js` reads `mode3d.ending` (via `endDelay()`) and calls only
   `contextLost()`, `finishNow()`, `cancelGeneration()` and `mode3d.tick()`
   (every frame while the 3D mode is active, driving the sampler).
@@ -41,27 +44,9 @@ loop's render-on-demand. The 3D board choice, session and adapter
   card waits unseen (`ui.setReadyPending(true)`, `#ready.ready--pending`),
   a granted lock enters play with no card shown, and a refusal's
   `onLockError` shows it with its message. A UI click made with controller
-  A sets `padGesture`, routing resume/restart to lockless play.
-- **Coarse-only devices: touch play.** Every lock request goes through
-  `requestLock3D()`, which makes none while `COARSE_ONLY` (coarse and no
-  fine pointer); the ready card (`onReadyClick`), resume (`resumeGame`),
-  restart and Play again (`enterPlay3D`), the failed board's Retry and
-  standard offer (`retry3D`) enter lockless play instead, fullscreen keeps
-  it, and Look at the board opens lockless. `ui.setTouch3D(COARSE_ONLY)`
-  makes the card "Tap to play" with the touch gestures in place of the
-  keys. `touch3D` (`createTouch3D`, [input.md](input.md)) is mounted on the
-  canvas only while `COARSE_ONLY`, zones from `touchZone3D` (below the
-  overlay bar): it drives the page's `mouse`, `view3D().look`,
-  `setSpacing` through `spacingStep` (pinch), and the frame loop's
-  `applyTouchStick` (Fly: `moveAxes`; Orbit: the dolly); `ui.setStick`
-  draws the stick each frame. `syncTouch3D` (every router change) sets
-  `body.touch-play` in 3D play and the look, which shows `#touch-3d` (the
-  stick and the `#touch-modes` toolbar), and resets the machine off it;
-  `stopPlayInput` and a failed board's offer drop held touches. The
-  toolbar's taps (`onTouchMode`) toggle `controls.touch`, kept through
-  pause and cleared by `clearTouchModes` in `startGame` and `leaveGame`.
-  In the look a touch on the scene skips `LOOK_END` (`lookTouch`) and its
-  tap (`onTap`) ends the look.
+  A sets `padGesture`, routing resume/restart to lockless play. A
+  coarse-only device never asks for the lock
+  ([app-shell-3d-play.md](app-shell-3d-play.md) § touch play).
 - **Pointer lock.** In locked play the browser consumes Esc to release the
   lock; `onLockChange` calls `backGame('key')` instead — during the end
   delay the release ends it (`END_SKIP.lockLost()`), a lock lost with the
@@ -97,58 +82,44 @@ loop's render-on-demand. The 3D board choice, session and adapter
   status card.
 - **Session.** `startGame(settings, pregenerated?)` leaves the previous
   session, opens one (`createSession` over `GEN_3D`; `__ms` mine positions
-  give a fixed board), subscribes to its events (`mark` →
-  `renderer.setMark`) and returns it. `S.play` is the session, `S.game` its
-  3D state view, which every board reader uses; `S.started` is set at the
-  session's `started`.
-- **Actions.** `onAction(type)` is the only dispatcher (`MouseActions`'
-  callback): `left` → `S.play.reveal`, `right` → `toggleFlag`, `chord` →
-  `chord`. `renderer.snapshotBeforeAction()` precedes left/chord;
-  `actionSounds` plays SFX from the result (awaiting a no-guess board's
-  first reveal; null does nothing; `sfx.noop` when `version` is unchanged);
-  a flag sound carries the changed-cell count and a flag click on a number
-  hands `r.changed` to `renderer.flash`.
+  give a fixed board; Learn 3D's `learnChoice()` a fixed board with its
+  forced start), subscribes to its events (`mark` → `renderer.setMark`) and
+  returns it. `S.play` is the session, `S.game` its 3D state view, which
+  every board reader uses; `S.started` is set at the session's `started`.
+  `board3dChoice`, the board a restart plays again, keeps the guided board's
+  mine positions and `learn`.
+- **Ready card.** `showReady` gets `rules` (the "How 3D works" block) and
+  `learn` (the `#ready-learn` line "New to 3D? Learn 3D walks you through a
+  small box." with `#ready-learn-btn` → `startLearn`, outside the card's own
+  button) while `FIRST_USE.rules3D`; neither on the guided board's own card,
+  and the line only before the game started.
+- **Learn 3D.** `startLearn()` (the board choice's `onLearn`, the ready
+  card's line, `__ms.learn()`) starts `learnChoice()` (`js/mode3d/learn.js`)
+  and saves nothing. `S.learn` holds the guided game's prompt sequence
+  (`createLearnPrompts`), null otherwise; `ui.setTimed(false)` hides the
+  timer. `refreshHints` shows its prompt in the hint strip in play
+  (`LEARN_HINTS`, no close button); `learnAction` feeds flags and chords
+  from `onAction`, and after every action while the game is on L's closed,
+  unflagged neighbour count (`closedAround`), which skips the chord prompt
+  at 0; `learnViews` the Shift and Ctrl the frame loop reads (Ctrl also
+  `FIRST_USE.once('autoHideToast')`), and `learnChanged` redraws the
+  strip and puts the start-cell tint (`renderer.setMark`) on the prompt's
+  cell. `noteAutoHide`, `aimHint` and the 3D first-use strip stay quiet.
+  `learnGame()` gives the first-use state its `{learn, won}` and keeps the
+  game out of `LAST_MODE` and the menu's last-mode mark.
 - **End sequence.** The session's `finished` runs `endGame`, which freezes
   `S.endState = {state, time, minesLeft, clicks}` (`minesLeft` from before
   the final action, as the original froze; `clicks` from `clicks3D()`) and
   plays the win sound; HUD, pause card and timer read it once set (until
   then `S.time` is `S.play.elapsedMs()`). During the end delay nothing else
-  acts: `Input.isActive` is false, the frame loop moves no camera and
+  acts: `Input.isActive`, `canAct` and `canLook` are false, the frame loop moves no camera and
   changes no view mode, `handlePad` only releases held controls. After it
   the adapter releases lock and reports finished
-  ([app-shell-pause.md](app-shell-pause.md) § End delay). A fixed board's
-  null summary ends the game on the pause card instead.
-- **Camera aids.** `placeAtSpawn()` puts the camera at `spawnPose`
-  ([input.md](input.md)): every `startGame`, `retry3D`, and the return to
-  start (`Home` / `R` while `Input.isActive`, the pause card's "Back to
-  start" `onBackToStart`, which then resumes). In play `updateArrow` hands
-  `ui.setArrow` the off-screen arrow's angle; `updatePick` keeps
-  `S.readout` (`aimReadout`, `js/readability.js`) and `updateReadout` shows
-  it only under the `aimReadout` setting in 3D play. Picking is cached by
-  `S.pickKey`. Spacing resets to `SPACING_START` per game; the menu demo
-  (`makeDemo`, 7³/30, decorative) uses 1.25 and an orbiting camera.
-- **Spacing.** Every change in play goes through `setSpacing(s)`: clamped
-  to [1, 10], the camera rescaled about the board centre by new / old
-  (`FlyCamera.rescale`, yaw and pitch kept), `ui.setSpacing` for the tools
-  strip's readout. The wheel (`wheelSpacing`, its run held in `wheelRun`)
-  and the debug hook's `wheel` step through `spacingStep` timed by
-  `performance.now()`; the D-pad's presses and repeats take one untimed
-  step each; `X` while `Input.isActive` sets `spacingToggle`
-  ([input.md](input.md)).
-- **Render on demand.** While `results` shows a 3D game `shouldRender`
-  draws only on `needRender`, a sync or a running effect; otherwise it draws when `needRender` is set or
-  `renderer.sync()` reported changes, on every frame of a menu screen (the
-  orbiting demo, except under the `?still-backdrop` hook,
-  [app-shell.md](app-shell.md) § PUBLIC API), `endState` changed,
-  `renderer.isAnimating()`, or the signature (camera, spacing, toggles,
-  selection, `game.version`, aspect, field of view, mode) changed; the field
-  of view applier also sets `needRender`. Set `needRender = true`
-  after any change the signature does not capture.
-- `applyPixelRatio(n)` follows the render resolution setting
-  (`pixelRatioFor`, [settings.md](settings.md)) for the board's cell count.
-  `F` (3D only) sets the fullscreen setting, whose applier also requests
-  Keyboard Lock.
-
+  ([app-shell-pause.md](app-shell-pause.md) § End delay). A null summary
+  ends the guided board on the `learn-end` screen (`#learn-end`, Play First
+  box 1 → `playFirstBox`, an ordinary pick saved as the last choice, or Try
+  again → `PAUSE.restart`; Back to board choice) and the debug hook's fixed
+  board on the pause card.
 ## DOMAIN DEPENDENCIES
 
 - [../domain/features/3d-play-flow.md](../domain/features/3d-play-flow.md) —
@@ -161,18 +132,20 @@ loop's render-on-demand. The 3D board choice, session and adapter
 
 - [mode3d.md](mode3d.md), [engine-3d.md](engine-3d.md) (the 3D state view),
   [generation.md](generation.md) (`GEN_3D`).
-- [rendering.md](rendering.md) — `setGame`, `setToggles`, `setSpacing`,
-  `setSelected`, `sync`, `render`, `snapshotBeforeAction`, `isAnimating`.
-- [input.md](input.md) — `Input` callbacks, picking, spawn pose.
-- [audio.md](audio.md) — the `sfx` calls.
+- [app-shell-3d-play.md](app-shell-3d-play.md) — the play inputs, camera
+  and render on demand.
+- [rendering.md](rendering.md) — `setGame`, `setMark`, `sync`.
+- [input.md](input.md) — `Input`'s lock callbacks and `isDragLook`.
+- [audio.md](audio.md) — the win sound.
 - [testing.md](testing.md) — `tests/mode3d-*.test.mjs` (wiring, end
   sequence, the results over the scene and the look), the pointer-lock fallback tests.
 
 ## WHEN TO READ THE SOURCE
 
 - Changing the 3D end-of-game flow or the frozen HUD (`endGame`,
-  `S.endState`, the `MODES.on('finished')` pause card for a fixed board),
+  `S.endState`, the `MODES.on('finished')` Learn 3D end card and fixed
+  board's pause card),
   the board status card (`showStatus3D`, `retry3D`) or how the session's
   timer follows the screens (`sync3D`).
-- Debugging frames that do not redraw, or never stop: `shouldRender`.
-- Changing controller mapping in play: `padPlaying`, `padStatus3D`.
+- Changing the ready card, the lock refusal messages or lockless entry:
+  `showReady`, `LOCK_FALLBACK`, `enterPlay3D`, `enterDragLook`.

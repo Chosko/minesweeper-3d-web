@@ -72,8 +72,8 @@ Game (`rules.js`)
   backwards with ([replay-playback.md](replay-playback.md)).
 
 Metrics (`metrics.js`)
-- `createBoardMetrics(graph, mine, number)`, `createClickCounts()`,
-  `CLICK_KINDS`; both carry `save()` / `restore()` for the game's snapshots.
+- `bbbvPartition(graph, mine, number)` (the 3BV regions per cell), `createBoardMetrics(graph, mine,
+  number)`, `createClickCounts()`, `CLICK_KINDS`; the counters carry `save()` / `restore()`.
 
 ## INTERNAL PATTERNS
 
@@ -108,8 +108,8 @@ Metrics (`metrics.js`)
   click under the reference profile and one flag click under the 3D
   profile, however many cells it changes.
 - **3BV.** Each opening (connected safe zeros) once plus each safe number
-  with no zero neighbour once, computed when the mines are placed; an
-  opening counts as solved when every zero in it is open.
+  with no zero neighbour once, from `bbbvPartition` when the mines are placed
+  (Show 3BV paints it); an opening is solved when every zero in it is open.
 - **Determinism.** The same board and action stream give the same game.
 - **Every branch is a marker.** A behaviour the engine branches on is a
   profile marker with a `fidelity` citation. A rule fixed against the

@@ -180,14 +180,14 @@ Context: none
 /task-implement 172 --review
 ```
 
-## [ ] 36. Implement task 192 — Daily screen won time in the standard time format
+## [ ] 36. Implement task 206 — Daily screen won time in the standard time format
 
 Depends on: none
 
 Context: none
 
 ```prompt
-/task-implement 192 --review
+/task-implement 206 --review
 ```
 
 ## [ ] 17. Implement task 173 — Update documentation for feature `shared-screen-layout`
@@ -365,26 +365,26 @@ Context: none
 /task-implement 189 --review
 ```
 
-## [x] 34. Implement task 190 — Daily screen won time in the standard time format
+## [x] 34. Implement task 204 — Daily screen won time in the standard time format
 
 Depends on: none
 
 Context: none
 
 ```prompt
-/task-implement 190 --review
+/task-implement 204 --review
 ```
 
-Done: struck — task 190 replaced by task 192, step 36, placed before step 17 because task 173 waits on it.
+Done: struck — task 204 replaced by task 206, step 36, placed before step 17 because task 173 waits on it.
 
-## [x] 35. Implement task 191 — Update documentation for feature `game-shell`
+## [x] 35. Implement task 205 — Update documentation for feature `game-shell`
 
 Depends on: 34
 
 Context: none
 
 ```prompt
-/task-implement 191 --review
+/task-implement 205 --review
 ```
 
-Done: struck — task 191 dropped; task 173 documents the Daily won time.
+Done: struck — task 205 dropped; task 173 documents the Daily won time.

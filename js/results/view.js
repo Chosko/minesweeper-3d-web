@@ -56,7 +56,7 @@
 // createResultsView({ root, onPlayAgain, onWatch?, onWatchBest?, onRecords, onMenu, onLook?, onCopy? }) →
 // { show(content), hide(), noteLook(text) }: fills the #results markup by id and calls back on its
 // actions; the challenge label shows in #results-label and the code in the #results-code chip
-// (bindCodeChip, js/ui/components.js), whose Copy and Copy link call onCopy({ kind, code, select }); Look at the board (#r-look) shows only while content.look, Watch replay (#r-watch)
+// (bindCodeChip, js/ui/components.js), whose Copy and Copy link call onCopy({ kind, code, select }); Look at the board (#r-look) shows only while content.look, the Esc hint then reading "Esc: Look at the board" (else "Esc: Back"), Watch replay (#r-watch)
 // only while content.watch and Watch best (#r-watch-best) only while content.watchBest, the root carries `results--over3d` while content.over3d, the bests
 // panel `ui-panel--muted` while not eligible, each improved stat `data-new-best` and each best's
 // detail `data-delta` (its direction). noteLook(text) shows the one-line note under the actions
@@ -283,6 +283,7 @@ export function createResultsView({
       }
       line('results-note', content.notes.join(' '));
       $('r-look').classList.toggle('hidden', !content.look);
+      root.querySelector('[data-esc-hint]').textContent = content.look ? 'Esc: Look at the board' : 'Esc: Back';
       $('r-watch').classList.toggle('hidden', !content.watch);
       $('r-watch-best').classList.toggle('hidden', !content.watchBest);
       line('results-look-note', null);

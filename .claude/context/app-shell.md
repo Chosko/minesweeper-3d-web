@@ -9,14 +9,18 @@ others:
 | File | Covers |
 | ---- | ------ |
 | this file | `js/main.js` as a whole, mode host, context loss, no-WebGL 2 path, start-up loading, storage, `__ms` |
-| [app-shell-navigation.md](app-shell-navigation.md) | router and back stack, session history and the browser's Back, Back inputs, default focus |
+| [app-shell-navigation.md](app-shell-navigation.md) | router and back stack, session history and the browser's Back, Back inputs, default focus, overlay focus containment, the focus walk |
 | [app-shell-pause.md](app-shell-pause.md) | pause controller, confirmations, restart keys, hand-offs, leave-page guard, both modes' end delay and its skip |
 | [app-shell-menu.md](app-shell-menu.md) | main menu, placeholder, last mode and last board choices, the returning player's surfaces |
-| [app-shell-3d.md](app-shell-3d.md) | the 3D game's wiring: adapter flow, ready card and pointer lock, board status card, actions, end sequence, camera aids, render on demand |
+| [app-shell-3d.md](app-shell-3d.md) | the 3D game's flow: adapter flow, entering play, ready card and pointer lock, board status card, session, Learn 3D, end sequence |
+| [app-shell-3d-play.md](app-shell-3d-play.md) | the 3D game's play inputs and camera: actions and rumble, keyboard-only, touch and controller play, the Camera setting's Fly and Orbit, camera aids, spacing, render on demand |
 | [app-shell-2d.md](app-shell-2d.md) | the Classic 2D mode's wiring: `FLOW_2D`, button swap, board area and panel, status card, controller |
-| [app-shell-results.md](app-shell-results.md) | results flow and view, the replay viewer route, the 3D replay scene |
-| [app-shell-ui.md](app-shell-ui.md) | `js/ui.js` (`UI`), HUD overlay bar, help surfaces, active device, first-use hints, controller menus |
-| [app-shell-kit.md](app-shell-kit.md) | component kit, kit-built screens' markup, tokens, theme, scene palette, stylesheets, `index.html`, gallery, deploy files |
+| [app-shell-results.md](app-shell-results.md) | results flow and view, Watch replay and Watch best, Look at the board |
+| [app-shell-replay.md](app-shell-replay.md) | the replay viewer route, replay files, the 3D replay scene and its free camera |
+| [app-shell-ui.md](app-shell-ui.md) | `js/ui.js` (`UI`), HUD overlay bar, aimed-cell readout, controller menus |
+| [app-shell-help.md](app-shell-help.md) | help surfaces from the bindings source, help panel, active device, first-use hints |
+| [app-shell-kit.md](app-shell-kit.md) | component kit, tokens, theme, scene palette, gallery, deploy files |
+| [app-shell-markup.md](app-shell-markup.md) | kit-built screens' markup in `index.html` and the ids the shell wires, `css/style.css`, pointer sizes |
 
 `js/main.js` — entry module, exports nothing. Builds the renderer (null
 without WebGL 2; `WEBGL2`), `FlyCamera`, `Input`, `MouseActions`,
@@ -35,7 +39,7 @@ maps controller polls (`handlePad`, `padPlaying`, `padMenus`, `padBoard2D`,
 screens, elements and callbacks. `mode-host.js` is here, the others in the
 part that owns their topic; `navigation.js` is
 [input-controller.md](input-controller.md) and `mode-3d.js` is
-[mode3d-session.md](mode3d-session.md).
+[mode3d-adapter.md](mode3d-adapter.md).
 
 ## PUBLIC API
 
@@ -56,16 +60,18 @@ part that owns their topic; `navigation.js` is
 `window.__ms` (tests, Playwright)
 - getters `state` (`S`), `game`, `renderer`, `camera`, `controls`, `pads`,
   `fps`, `frameStats` (`{renders, skipped}`), `modes`, `pauser`, `settings`,
-  `records`, `replayViewer`, `board2D`, `game2D` (the open Classic 2D
+  `records`, `replays`, `replayViewer`, `board2D`, `game2D` (the open Classic 2D
   board's engine game), `daily` (the daily boards held since the menu
   showed: `has(code)`, `take(code)`); `THREE`, `spawnPose(X, Y, Z)`.
 - `watch(data)` → `SHELL.go('replay', {data})`, `data` `{replay | replayId,
   returnTo}`; `start(X, Y, Z, mines, minePositions?)` →
-  `MODES.start('3d', …)`; `forcePlay()` (lockless play); `pause()`.
+  `MODES.start('3d', …)`; `learn()` (the Learn 3D guided board),
+  `learnBoard` (`LEARN_BOARD`), `learnPrompts` (the open guided game's
+  prompt sequence, or null); `forcePlay()` (lockless play); `pause()`.
 - camera/aim `moveTo`, `look(yaw, pitch)`, `aimAt(idx | [x,y,z])` → idx,
   `cellCenter(idx)` (each runs `refresh()` first); actions `mouseDown`,
-  `mouseUp`, `click('left'|'right'|'chord')`, `key(code, down)`,
-  `wheel(notches)`; picking `selected`, `pickBrute`, `pickWith(o, d, space)`
+  `mouseUp`, `click('left'|'right'|'chord')`, `key(code, down)` (Enter and
+  ' act as their keys do), `wheel(notches)` (spacing, or the orbit's dolly); picking `selected`, `pickBrute`, `pickWith(o, d, space)`
   → `[dda, brute]`; `info()` → mode, time, HUD text, readout, cam, stats.
 - `?still-backdrop` in the page's address (`STILL_BACKDROP`, read once at
   load): the menu screens' demo board stops orbiting and is drawn only when
@@ -84,10 +90,10 @@ part that owns their topic; `navigation.js` is
   mode's `failureScreen`. `activeMode()` is the hosted `mode3d` or `mode2d`.
 - **Context loss.** `webglcontextlost` sets `contextLost`; in a 3D game the
   adapter reports `failed` → `ctxlost`, otherwise the shell routes there; a
-  later 3D `start` fails at once. `ctxlost` exits lock, hides and `inert`s
-  the other overlays (the menu only inert) and shows `#ctx-lost`
-  (`#ctx-lost-btn` reloads, `#ctx-lost-menu` routes to the menu and lifts
-  the inert).
+  later 3D `start` fails at once. `ctxlost` exits lock, hides the other
+  overlays (the menu stays shown), holds them all inert (`holdInert`,
+  [app-shell-navigation.md](app-shell-navigation.md)) and shows `#ctx-lost`
+  (`#ctx-lost-btn` reloads, `#ctx-lost-menu` goes to the menu, released).
 - **No WebGL 2.** `createRenderer()` returns null (three.js's expected
   console report held back through `THREE.setConsoleFunction`), and `WEBGL2`
   false is the one flag every 3D-only path reads: `body.no-webgl2` hides
@@ -123,7 +129,8 @@ replaced by the pause menu).
 ## CROSS-REFERENCES
 
 - [mode3d.md](mode3d.md), [classic2d.md](classic2d.md) — the two modes.
-- [input.md](input.md) — `Input` callbacks, `MouseActions`, picking;
+- [input.md](input.md) — `Input` callbacks, `MouseActions`;
+  [input-camera.md](input-camera.md) — picking;
   [input-controller.md](input-controller.md) — `Controls`, gamepad, the
   shell navigation layer.
 - [platform.md](platform.md), [settings.md](settings.md),

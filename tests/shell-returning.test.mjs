@@ -61,8 +61,9 @@ test('every named board has a typical 3BV, keyed by its size and mines, the same
   assert.equal(typicalBbbvKey(EXPERT), '30x16:99');
   assert.equal(typicalBbbvKey(CUBE_INT), '8x8x8:40');
   assert.equal(typicalBbbv(square(20, 12, 50)), null, 'a custom board has none');
-  assert.equal(typicalBbbv(box(12, 12, 8, 131)), null, 'a preset whose mines change has no entry until it is measured again');
-  assert.equal(typicalBbbv(box(12, 12, 9, 130)), null, 'nor one whose size changes');
+  assert.equal(typicalBbbv(box(10, 10, 10, 101)), null, 'a preset whose mines change has no entry until it is measured again');
+  assert.equal(typicalBbbv(box(10, 10, 11, 100)), null, 'nor one whose size changes');
+  assert.equal(typicalBbbv(box(12, 12, 8, 130)), null, 'the former Cube Expert is no named board');
   assert.ok(Object.isFrozen(TYPICAL_BBBV));
 });
 
@@ -134,7 +135,7 @@ test('the session strip names the last board, its best, today\'s games on it and
 
 test('Play again names the last board as the records do', () => {
   assert.equal(playAgainLabel(EXPERT_NG), 'Play again: Expert · no-guess');
-  assert.equal(playAgainLabel(box(12, 12, 8, 130)), 'Play again: Cube Expert');
+  assert.equal(playAgainLabel(box(10, 10, 10, 100)), 'Play again: Cube Expert');
   assert.equal(playAgainLabel(square(20, 12, 50)), 'Play again: 20 × 12 · 50 mines');
 });
 

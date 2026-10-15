@@ -18,17 +18,18 @@ themselves are [classic2d.md](classic2d.md).
   `classic-2d`, whose Back is `backGame`.
 - **Board area and panel.** The board area is `#c2d-board`; the board opens
   at the `boardScale` setting (`scale`) inside the panel's frame (`frame`,
-  measured as each board opens through `ui.panelFrame2D()`). Each refit
+  measured at every refit through `ui.panelFrame2D()`, with the buttons
+  the pause card hides, so a wrapped bar's rows follow a rotation). Each refit
   places the panel through `layout` (`panelRect`, `ui.placePanel2D`) and
   tells whether the board scrolls: the first clipped board shows the
   one-time scroll hint until dismissed or scrolled (`scrolled`), kept as
-  `scrollHint` in `shell.firstUse` ([app-shell-ui.md](app-shell-ui.md)
+  `scrollHint` in `shell.firstUse` ([app-shell-help.md](app-shell-help.md)
   § First-use hints). A `boardScale` change reaches the open board and the
   replay viewer at once.
 - **HUD.** The overlay bar names the board through `board`
   (`ui.setBoard2D`); its timer, counter and clicks come from `hud`, fed by
   `mode2d.tick()` every frame, which also drives the movement sampler
-  ([replay.md](replay.md)) and draws the end effect during the 2D end delay
+  ([replay-samplers.md](replay-samplers.md)) and draws the end effect during the 2D end delay
   (`mode2d.ending`, read through `endDelay()`).
 - **Pause.** The paused screen's `setBoardHidden` hides the 2D board;
   `pauseInfo` / `gameOver` read `mode2d.status()`.
@@ -46,7 +47,7 @@ themselves are [classic2d.md](classic2d.md).
   navigated as a menu, every other poll goes to `mode2d.pad` after
   held-button suppression.
 - `F` flags in Classic 2D (fullscreen is 3D only); `M` and `H` act in both
-  modes ([app-shell-ui.md](app-shell-ui.md)).
+  modes ([app-shell-help.md](app-shell-help.md)).
 
 ## DOMAIN DEPENDENCIES
 

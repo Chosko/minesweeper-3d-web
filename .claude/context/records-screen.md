@@ -1,30 +1,23 @@
-# Records screen — 2D | 3D switch, board picker, history charts, Top 10, filters, export, library view
+# Records screen — 2D | 3D switch, board picker, layout, filters, export
 
 ## OVERVIEW
 
 The Records screen (`records-screen`) shows the personal records
-([records-store.md](records-store.md)) for Classic 2D or 3D through its
-2D | 3D switch, with the chosen board's kept replays (`replay-library`'s
-library view). `js/main.js` builds `RECORDS_PAGE` over the records store,
-the replay library `REPLAYS`, the router and the `#records` view, shown on
-the shell's `records` route from the main menu or the results screen
-([app-shell.md](app-shell.md)).
+([records-store.md](records-store.md)) for Classic 2D or 3D through its 2D |
+3D switch, with the chosen board's kept replays. `js/main.js` builds
+`RECORDS_PAGE` over the records store, `REPLAYS`, the router and `#records`,
+on the shell's `records` route ([app-shell.md](app-shell.md)).
 
 - `js/records/screen.js` — content (`recordsContent`), controller and the
   `#records` binder; its head comment documents the content shape.
-- `js/records/replay-list.js` — the library view and the `#records-replays`
-  binder; its head comment documents the row shape. Imports `PIN_BEST`
-  ([replay-library.md](replay-library.md)).
-- `js/records/history-chart.js` — the history chart (canvas, no chart
-  library) and `pageOf`, the paging of both lists.
-- `js/records/view-prefs.js` — the remembered Pinned first switch, the
-  `records.view` document.
-- `js/records/stats.js` — pure figures over a board's history: the one
-  ranking (also the results screen's rank), the Top 10, averages, the
-  last-50 win rate, the period and outcome filters, the best time's steps.
 - `js/records/export.js` — the CSV and JSON export of every game and the
   kept replays' listing, the injected download, and the export actions'
   binder shared with the Settings page's Data panel.
+
+The history charts, paging and stats (`history-chart.js`, `stats.js`) are
+[records-history.md](records-history.md); the library view
+(`replay-list.js`, `view-prefs.js`) is
+[records-library-view.md](records-library-view.md).
 
 ## PUBLIC API
 
@@ -36,67 +29,36 @@ Records screen (`js/records/screen.js`)
   listed), then its custom boards in `boardsPlayed(mode)` order.
 - `lastBoardPlayed(records, mode?)` → key or null.
 - `recordsContent(records, { mode?, boardKey?, notSaved?, page?, replays?,
-  replayPage?, pinnedFirst?, canWatch?, replaysNotSaved?, period?, outcome?,
-  tab?, topStat?, now?, exportable? })` → the content. Never throws. Every
+  replayPage?, pinnedFirst?, canWatch?, canOpen?, replaysNotSaved?, period?,
+  outcome?, tab?, topStat?, now?, exportable? })` → the content. Never throws. Every
   recent game and Top 10 row carries its `code` (`codeOf` over the history
   entry and the board, null for an entry from before codes); a Daily board's
   counters replace the streak pair with "Days in a row" and "Longest days
   in a row" (`daysInARow` as of `now`'s local date), each figure carrying
-  its label. The stats (`stats.js`) leave challenges out of the ranking,
-  the Top 10, the rank, the averages and the recent win rate.
+  its label.
 - `GAME_TABS`, `TOP_STATS`, `TOP_EMPTY_TEXT`, `TOP_EMPTY_PERIOD`,
   `GAMES_EMPTY_TEXT`, `WON_ONLY_TEXT`.
 - `formatDate(iso)` → `"9 Oct 2026"` (the bests); `formatDateTime(iso)` →
   `"9 Oct 2026 14:32"` (local, 24-hour: the games and replays);
   `formatWinRate` (re-exported from `js/results/view.js`).
+- `TRIGGER_MODES` — `{lt: 'classic-2d', rt: '3d'}`, the triggers' modes.
 - `createRecordsScreen({ records, view, replays?, router?, viewPrefs?,
-  exporter?, now? })` → `show({ mode, boardKey }?)`, `hide()`, `select(key)`,
-  `setMode(mode)`, `showPage(n)`, `showReplayPage(n)`, `setPeriod(v)`,
-  `setOutcome(v)`, `setTab(v)`, `setTopStat(v)`, `exportFile(format)`,
+  exporter?, files?, now? })` → `show({ mode, boardKey }?)`, `hide()`,
+  `select(key)`, `stepBoard(±1)` (the picker's previous / next board; false
+  at either end), `setMode(mode)`, `showPage(n)`, `showReplayPage(n)`,
+  `setPeriod(v)`, `setOutcome(v)`, `setTab(v)`, `setTopStat(v)`,
+  `exportFile(format)`, `downloadReplay(id)`, `openReplayFile()`,
   `filters`, `togglePin(id)`, `deleteReplay(id)`, `setPinnedFirst(on)`,
-  `watch(id)`, `closeConfirm()`, `confirmOpen`.
+  `watch(id)`, `closeConfirm()`, `confirmOpen`. `content.canOpen` offers
+  Open replay file (the viewer's route and `files.pick`).
 - `createRecordsView({ root, onSelect, onMode?, onBack, onPage, onWatch?,
   onTogglePin?, onPinnedFirst?, onReplayPage?, onDelete?, onPeriod?,
-  onOutcome?, onTab?, onTopStat?, onExport?, onCopy?, chart?, bestChart? })` →
+  onOutcome?, onTab?, onTopStat?, onExport?, onDownload?, onOpenFile?,
+  onCopy?, chart?, bestChart? })` →
   `show(content)`, `hide()`, `closeConfirm()`, `isConfirmOpen()`; the
   switch is `#records-mode`, the chart defaults to `#records-chart`; the
   games, Top 10 and library tables gain a Board code column of compact
   code chips (`codeCell`) whose Copy and Copy link call `onCopy`.
-
-Library view (`js/records/replay-list.js`)
-- `REPLAY_SCREEN` — `'replay'`; `REPLAYS_EMPTY_TEXT`; `REPLAYS_NOT_SAVED`;
-  `REPLAY_HEADERS`; `CODE_HEADER`; `codeCell(doc, code, onCopy)` — a table
-  cell with a compact code chip (empty for none), shared by every Records
-  row that names one game. A row's `code` is its listing's, or null.
-- `replayList(library, boardKey, opts)` → `{ rows, empty, emptyText,
-  pinnedFirst, canWatch, page, pages, label, pager }`. Never throws.
-- `pinState(pins)`, `deleteMessage({ date, outcome, pins })`,
-  `togglePin(library, row)`, `watchRoute(replayId, returnTo)`,
-  `createReplayListView({ root, onWatch, onTogglePin, onPinnedFirst,
-  onPage?, onDelete? })` → `show(list)`, `closeConfirm()`,
-  `isConfirmOpen()`, `hide()`.
-
-Remembered view (`js/records/view-prefs.js`)
-- `VIEW_PREFS_DOC` — `'records.view'`, `VIEW_PREFS_VERSION` — 1.
-- `createRecordsViewPrefs({ storage })` → `pinnedFirst`, `load()`,
-  `setPinnedFirst(on)`.
-
-History chart (`js/records/history-chart.js`)
-- `chartPoints(history)`, `niceCeiling(v)`, `chartScale(points, size)`,
-  `chartText(points, empty?)` / `NO_WON_GAMES`, `drawHistoryChart(ctx, opts)`,
-  `CHART_TOKENS`; the best-time chart: `dateTicks`, `bestTimeScale`,
-  `bestTimeText`, `drawBestTimeChart`; hover: `nearestIndex`,
-  `rateReadout`, `bestReadout`; `formatDate`, `formatShortDate`;
-  `createHistoryChart({ canvas, kind?: 'rate' | 'best', ... })` →
-  `draw(data)`, `hoverAt(x)`, `leave()`, `readout`, `destroy()`.
-- `pageOf(items, page, size = PAGE_SIZE)`; `PAGE_SIZE` — 10.
-
-Stats (`js/records/stats.js`)
-- `rankedGames(history, stat)`, `gameRank(history, summary, stat?)`,
-  `topGames`, `averages`, `recentWinRate`, `filterHistory(history,
-  { period, outcome }, now)`, `periodStart`, `bestTimeSteps`, `statValue`;
-  `PERIODS`, `OUTCOME_FILTERS`, `AVERAGE_WINDOWS`, `TOP_SIZE`,
-  `RECENT_GAMES`.
 
 Export (`js/records/export.js`)
 - `createRecordsExport({ records, replays?, now?, trigger?, objectUrl? })` →
@@ -120,8 +82,7 @@ Export (`js/records/export.js`)
 - **Live update.** While shown, the controller subscribes to the store's and
   the library's `onChange` and redraws both lists on the same page, each
   clamped to its last; `hide` unsubscribes. `show`, `select` and `setMode`
-  start both lists on page one, toggling Pinned first the replays. A rebuilt
-  replay list keeps focus on the button of the replay that had it.
+  start both lists on page one, toggling Pinned first the replays.
 - **Never blocks.** Every store query is wrapped: unreadable records show
   the empty state, and Back always works. A board with no games hides the
   bests, counters and history. When `records.available()` is false, the
@@ -136,44 +97,33 @@ Export (`js/records/export.js`)
   outcome choices, both charts in a `ui-columns--pair` (side by side at the
   kit breakpoint), the Recent games | Top 10 tabs and the Top 10's stat
   choice — and the replays panel; one column below the kit's 1024 px
-  breakpoint. Below the columns, Back and the two export actions. A table narrower than its columns (a phone, a
-  half-width column) stacks each row's cells under their `data-label`
-  (`css/style.css`, a container query on the two panels).
-- **The chart is a picture; text carries the numbers.** The canvas is
-  `role="img"` with `chartText` as its label; 3BV/s reads on the left axis,
-  efficiency on the right (at least 100%); a missing value is a gap.
-- **Chart colours are tokens.** Every colour and its font come through the
-  token reader; it redraws on every theme change and canvas resize
-  (`ResizeObserver`) at the device pixel ratio; a zero-size canvas is
-  skipped.
+  breakpoint. Below the columns, Back and the two export actions. The
+  bests' figures keep one line (the kit's `ui-stat--tile`). A table
+  narrower than a row of its figures, board code and actions on one line —
+  every width the two panels take — stacks each row's cells under their
+  `data-label`, the board code and the actions each on a line of their own
+  (`css/style.css`, a container query on the two panels); the averages
+  table stacks the same way, each row a card headed by its label, in a
+  panel narrower than its row of three-digit times (a container query on
+  `#records-averages`, a table at 1024 px and wider); a time never wraps.
 - **History views and filters.** The choices are kit segmented choices
-  whose options are in the markup. The period filters
-  every history view, the outcome only the recent games; the bests,
-  counters and overall row stay all-time. Filters, tab and stat are screen
-  state, reset on each `show`; a filter change starts the recent games on
-  page one.
-- **Hover readouts.** Each chart marks the nearest point under a pointer
-  (or a tap) and draws its values beside it, also on
-  `canvas.dataset.readout`; no focus stop.
+  whose options are in the markup. The period filters every history view,
+  the outcome only the recent games; the bests, counters and overall row
+  stay all-time. Filters, tab and stat are screen state, reset on each
+  `show`; a filter change starts the recent games on page one.
 - **Export.** `js/main.js` builds one `RECORDS_EXPORT` over the store and
   the library; the screen's actions below the lists and the Settings Data
   panel's both save through it, disabled with `NOTHING_TO_EXPORT` until a
   game is recorded.
-- **Paged lists.** Both lists newest first, `PAGE_SIZE` per page, past the
-  end clamped, each under a kit pager (`bindPager`: First, five numbered
-  pages, Last; hidden on one page) and a range caption.
-- **The library view.** The board's kept replays (`forBoard`), newest first,
-  or pinned first under the filter, remembered in `records.view` (loaded at
-  start-up, saved on each change); Pin adds the hand pin, Unpin clears
-  every reason. Delete opens `#records-replays-confirm` in place of the list
-  (focus on Cancel); Cancel and Back (`RECORDS_PAGE.closeConfirm()` in
-  `shellBack` / `historyBack`) return focus to that row's Delete; confirming
-  calls `library.remove`, then focus goes to the Delete of the row in its
-  place, else the previous row's, else the Pinned first switch.
-- **Watch opens the viewer.** Watch shows only when the router registers
-  `REPLAY_SCREEN`, and on a best or a game only when its replay is kept;
-  `watch(id)` routes to the viewer ([replay-playback.md](replay-playback.md))
-  with this screen on its board to return to.
+- **Paged lists.** Both lists newest first, `PAGE_SIZE` per page
+  (`pageOf`), past the end clamped, each under a kit pager (`bindPager`:
+  First, five numbered pages, Last; hidden on one page) and a range caption.
+- **Controller.** `padRecords` in `js/main.js` (off while a modal or a
+  confirmation is open): LT / RT choose the mode (`TRIGGER_MODES`), LB / RB
+  step the board (`stepBoard`); `[data-pad-glyph]` hints beside the switch
+  and the picker show the active pad's glyphs (`UI.setPad`). The arrow keys
+  do not walk Records; the D-pad walks it column by column
+  ([app-shell-navigation.md](app-shell-navigation.md) § Focus walk).
 
 ## DOMAIN DEPENDENCIES
 
@@ -181,32 +131,25 @@ Export (`js/records/export.js`)
   — content, picker, chart, recent games, live update, empty state.
 - [../domain/features/3d-results-records-screens.md](../domain/features/3d-results-records-screens.md)
   — the 2D | 3D switch, the 3D picker, the mode the screen opens on.
-- [../domain/features/replay-library.md](../domain/features/replay-library.md)
-  — the library view, pin state and filter, Watch.
 
 ## CROSS-REFERENCES
 
 - [records-store.md](records-store.md) — the queries the screen reads.
 - [records.md](records.md) — board labels and the summary stats.
-- [replay-library.md](replay-library.md) — the library it lists and pins.
+- [records-history.md](records-history.md) — the charts, paging and stats;
+  [records-library-view.md](records-library-view.md) — the replays panel.
 - [app-shell.md](app-shell.md) — `RECORDS_PAGE`;
   [app-shell-navigation.md](app-shell-navigation.md) — the `records` route,
   Back; [app-shell-results.md](app-shell-results.md) — the results formats
   and `NOTES`; [app-shell-kit.md](app-shell-kit.md) — the token reader, the
   `#records` markup.
 - [testing.md](testing.md) — `tests/records-screen*.test.mjs`,
-  `tests/records-history.test.mjs`, `tests/records-replays.test.mjs`.
+  `tests/records-export.test.mjs`, `tests/shell-pad-walk.test.mjs` (the
+  controller on Records).
 
 ## WHEN TO READ THE SOURCE
 
 - Changing what the screen shows or how it picks its mode and board: the
   head comment, `recordsContent` and `RECORDS_MODES` in `screen.js`; its
   markup is `#records` in `index.html`, catalogued in `css/components.css`.
-- Changing the library view's rows, order or buttons: the head comment of
-  `replay-list.js`; its composition, `createRecordsScreen` and
-  `createRecordsView`.
-- Changing the chart's drawing, scale or colours: `drawHistoryChart` and
-  `chartScale` in `history-chart.js`.
-- Changing a ranking, an average, a filter or the best time's steps: the
-  head comment of `stats.js`; the export's columns or files: the head
-  comment of `export.js`.
+- Changing the export's columns or files: the head comment of `export.js`.

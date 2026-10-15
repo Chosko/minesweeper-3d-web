@@ -3,7 +3,7 @@
 // are DOM-free; createRecordsView() binds the #records markup handed in.
 //
 // The switch chooses a mode (RECORDS_MODES: Classic 2D, 3D) and the picker lists that mode's boards:
-// for Classic 2D, Beginner, Intermediate and Expert, for 3D the three cube presets (PRESETS_3D
+// for Classic 2D, Beginner, Intermediate and Expert, for 3D the six presets (PRESETS_3D
 // order), each without no-guess then with it, then every custom board of the mode played
 // (boardsPlayed(mode), most recently played first), labelled by boardLabel. The screen opens on
 // the board it was asked

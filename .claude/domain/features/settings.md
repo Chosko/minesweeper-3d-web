@@ -27,7 +27,7 @@ In scope (m1-classic-2d):
   board's centre; "Always ask before restarting", which brings back
   the confirmation before a restart abandons a started game (`game-shell`
   § Restart); and a read-only list of the bindings for each mode and input
-  device, touch included for 3D, drawn from the same source as the in-game
+  device, touch included for both modes, drawn from the same source as the in-game
   help.
 - Graphics: fullscreen; the 3D render resolution — Auto (the current
   adaptive pixel-ratio cap), Sharp (the highest the screen allows) and Fast

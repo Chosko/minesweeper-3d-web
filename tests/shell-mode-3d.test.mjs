@@ -6,6 +6,12 @@ import { fileURLToPath } from 'node:url';
 import { createModeHost, MODE_METHODS, MODE_EVENTS } from '../js/shell/mode-host.js';
 import { create3DMode, END_DELAY_MS, END_DELAY_MAX_MS, endDelayMs, waveStepS, WAVE_CELL_S } from '../js/shell/mode-3d.js';
 import { startCell } from '../js/generation/start-cell.js';
+import { createSession } from '../js/mode3d/session.js';
+import { LEARN_BOARD, learnChoice } from '../js/mode3d/learn.js';
+import { generate } from '../js/generation/generate.js';
+import { createBoxGrid } from '../js/engine/box-grid.js';
+import { createGameWithMines, PHASE, CELL } from '../js/engine/rules.js';
+import { PROFILE_3D } from '../js/engine/profiles.js';
 import { browserSuite } from './helpers/browser.mjs';
 import { patience } from './helpers/timing.mjs';
 
@@ -443,6 +449,65 @@ test('the 3D pre-generation: the same board from the choice takes it, another bo
   assert.equal(t.flow.handed.at(-1), null);
 });
 
+// The guided board through the real session: what the shell's flow does with a start.
+function learnSetup() {
+  const host = createModeHost();
+  const events = [];
+  for (const t of MODE_EVENTS) host.on(t, (e) => events.push([t, e]));
+  const sessions = [];
+  const clock = fakeClock();
+  const open = (board, forced) => {
+    const { forced: _f, ...rest } = board;
+    const s = createSession({ board: rest, client: { request() { throw new Error('no request'); }, cancel() {} }, forced });
+    sessions.push(s);
+    return s;
+  };
+  let last = null;
+  const flow = {
+    clock,
+    contextLost: () => false,
+    openBoardChoice() {},
+    start: (c) => { last = c; return open(c, c.forced ?? null); },
+    pause() {}, resume() {}, leave() {},
+    restart: (source, pregen, forced) => open(last, forced ?? null),
+    client: { request() { throw new Error('no request'); }, cancel() {} },
+  };
+  const mode = host.register('3d', (report) => create3DMode(flow, report));
+  return { host, events, sessions, clock, mode, session: () => sessions.at(-1) };
+}
+const winLesson = (s) => {
+  s.reveal(LEARN_BOARD.startCell);
+  for (let c = 0; c < s.view.n; c++) if (!LEARN_BOARD.minePositions.includes(c) && !s.view.pressed[c]) s.reveal(c);
+};
+
+test('the Learn 3D guided game reports no summary and no replay at a win, a loss, a restart and a leave', () => {
+  const t = learnSetup();
+  const records = [];
+  t.host.on('finished', ({ summary, replay }) => records.push(['finished', summary, replay]));
+  t.host.on('abandoned', ({ summary, replay }) => records.push(['abandoned', summary, replay]));
+  t.host.start('3d', learnChoice());
+  assert.equal(t.mode.learn, true, 'the adapter knows the guided game');
+  winLesson(t.session());
+  assert.equal(t.session().state, 'won');
+  assert.equal(t.host.summary(), null);
+  t.clock.advance(END_DELAY_MS * 3);
+  t.host.restart({ source: 'pointer' }); // Try again
+  assert.equal(t.session().markedCell, LEARN_BOARD.startCell, 'the guided board again, from the closed box');
+  assert.equal(t.mode.learn, true);
+  t.session().reveal(LEARN_BOARD.startCell);
+  t.session().reveal(LEARN_BOARD.lessonMine); // a loss
+  assert.equal(t.session().state, 'lost');
+  t.clock.advance(END_DELAY_MS * 3);
+  t.host.restart({ source: 'pointer' });
+  t.session().reveal(LEARN_BOARD.startCell);
+  t.host.restart({ source: 'pointer' }); // a restart of a started game
+  t.session().reveal(LEARN_BOARD.startCell);
+  t.host.leave();
+  assert.deepEqual(records.map(([k]) => k), ['finished', 'finished', 'abandoned', 'abandoned']);
+  for (const [, summary, replay] of records) { assert.equal(summary, null); assert.equal(replay, null); }
+  assert.equal(t.mode.learn, false, 'left');
+});
+
 test('the 3D adapter is DOM-free and imports at most the 3D session, the records\' summary and board, and the pre-generation', () => {
   const src = read('js/shell/mode-3d.js').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
   assert.doesNotMatch(src, /\b(document|window|navigator)\b/, 'the 3D adapter touches no browser global');
@@ -572,7 +637,7 @@ test('in a browser, the 3D game starts, pauses, resumes, restarts and leaves thr
       globalThis.__ms.click('left');
     }, BOARD);
     assert.equal(await ms(() => globalThis.__ms.game.state), 'won');
-    await page.waitForFunction(() => globalThis.__events.at(-1)[0] === 'finished', null, { timeout: 5000 });
+    await page.waitForFunction(() => globalThis.__events.at(-1)[0] === 'finished', null, { timeout: patience(5000) });
     assert.equal(await mode(), 'paused', 'a fixed board, which has no results, ends on the pause card');
     const won = await ms(() => {
       const [type, e] = globalThis.__events.at(-1);
@@ -598,6 +663,20 @@ test('in a browser, the 3D game starts, pauses, resumes, restarts and leaves thr
   }
 });
 
+// The generating-card test's first board: the no-guess 5 × 5 × 1 · 4 box from seed 1 with its first
+// click on cell 0 (mines at 4, 9, 12, 20), whose first click opens 12 of the 21 safe cells.
+const FIRST_SEED = 1;
+
+test('the generating-card test\'s fixed first board is not won by its first click, and keeps a mine to lose on', () => {
+  const result = generate({ graph: { kind: 'box', X: 5, Y: 5, Z: 1 }, mineCount: 4, firstClick: 0, noGuess: true, seed: FIRST_SEED });
+  assert.equal(result.ok, true);
+  const game = createGameWithMines({ graph: createBoxGrid(5, 5, 1).graph, profile: PROFILE_3D, mines: result.mines });
+  game.reveal(0);
+  assert.equal(game.phase, PHASE.PLAYING, 'the first click does not win');
+  assert.equal(Array.from({ length: 25 }, (_, c) => game.cellState(c)).filter((v) => v === CELL.REVEALED).length, 12);
+  assert.ok(Array.from(result.mines).some((m) => game.cellState(m) === CELL.CLOSED), 'a closed mine is left to reveal');
+});
+
 test('in a browser, the 3D generating card shows by its delay in pointer-locked play, with its progress line; Play again marks the start cell and the in-flight board shows it too', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
@@ -606,17 +685,28 @@ test('in a browser, the 3D generating card shows by its delay in pointer-locked 
     const page = await browser.newPage({ viewport: { width: 640, height: 480 } }); // a small canvas: software GL draws its frames fast enough
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    // a slow worker: progress at once, the first board 4 s later and every later one (the
-    // pre-generation) 12 s later, so it is still in flight after the loss and Play again; the real
-    // generator behind it
+    // A slow worker for this test's 5 × 5 × 1 box: progress at once, the first board 4 s later and
+    // every later one (the pre-generation) 12 s later, so it is still in flight after the loss and
+    // Play again; the real generator behind it. The first board is a fixed one (FIRST_SEED, whose
+    // first click opens 12 of the 21 safe cells and leaves the mines to lose on), since a random
+    // no-guess board's first click can win outright. Any other request — the start-up's daily
+    // pre-generation shares this worker — is answered at once with no board, so it never takes the
+    // first board's slot.
     await page.route('**/js/generation/worker.js', (route) => route.fulfill({
       contentType: 'text/javascript',
       body: `import { handleMessage } from './worker-real.js';
         let boards = 0;
         globalThis.onmessage = ({ data }) => {
           if (data.warm) { globalThis.postMessage({ id: data.id, warm: true }); return; }
+          const g = data.request.graph;
+          if (!(g.kind === 'box' && g.X === 5 && g.Y === 5 && g.Z === 1)) {
+            globalThis.postMessage({ id: data.id, result: { ok: false, reason: 'another board' } });
+            return;
+          }
           globalThis.postMessage({ id: data.id, progress: { candidates: 7 } });
-          setTimeout(() => globalThis.postMessage(handleMessage(data)), boards++ === 0 ? 4000 : 12000);
+          const first = boards++ === 0;
+          const message = first ? { ...data, request: { ...data.request, seed: ${FIRST_SEED} } } : data;
+          setTimeout(() => globalThis.postMessage(handleMessage(message)), first ? 4000 : 12000);
         };`,
     }));
     await page.route('**/js/generation/worker-real.js', (route) => route.fulfill({ contentType: 'text/javascript', body: read('js/generation/worker.js') }));
@@ -631,7 +721,7 @@ test('in a browser, the 3D generating card shows by its delay in pointer-locked 
     };
     const lockAndPlay = async () => {
       if (await ms(() => globalThis.__ms.state.mode) === 'ready') await press('#ready-btn');
-      await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing' && !!document.pointerLockElement, null, { timeout: 5000, polling: 100 });
+      await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing' && !!document.pointerLockElement, null, { timeout: patience(5000), polling: 100 });
     };
     // Click `cell` and measure, in the page, when the card loses its hidden class, and the main-thread
     // long tasks meanwhile: a timer cannot fire inside one (software GL makes frames long).
@@ -664,7 +754,7 @@ test('in a browser, the 3D generating card shows by its delay in pointer-locked 
     assert.ok(first.after <= 200 + first.stall + 250, `the card shows by the delay under pointer lock (${first.after.toFixed(0)} ms, long tasks ${first.stall.toFixed(0)} ms)`);
     assert.equal(await ms(() => !!document.pointerLockElement), true, 'still pointer-locked');
     assert.match(first.line, /^candidate \d+ · \d+ s$/, `the progress line shows with the card (${JSON.stringify(first)})`);
-    await page.waitForFunction(() => globalThis.__ms.state.started, null, { timeout: 30000, polling: 100 });
+    await page.waitForFunction(() => globalThis.__ms.state.started, null, { timeout: patience(4000), polling: 100 });
     assert.equal(await ms(() => document.getElementById('m3d-status').classList.contains('hidden')), true, 'the card goes with the board');
     assert.equal(await ms(() => globalThis.__ms.renderer.mark), -1, 'no mark on a game with no pre-generated board');
 
@@ -674,11 +764,11 @@ test('in a browser, the 3D generating card shows by its delay in pointer-locked 
       for (let c = 0; c < g.n; c++) if (g.number[c] === -1 && m.aimAt(c) === c) { m.click('left'); return; }
     });
     assert.equal(await ms(() => globalThis.__ms.game.state), 'lost');
-    await page.waitForFunction(() => globalThis.__ms.state.mode === 'results', null, { timeout: 5000, polling: 100 });
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'results', null, { timeout: patience(5000), polling: 100 });
 
     // Play again: the closed box opens with its marked start cell tinted, the next board on its way
     await page.keyboard.press('Enter'); // Play again: a user gesture, which asks for pointer lock
-    await page.waitForFunction(() => globalThis.__ms.state.mode !== 'results', null, { timeout: 5000, polling: 100 });
+    await page.waitForFunction(() => globalThis.__ms.state.mode !== 'results', null, { timeout: patience(5000), polling: 100 });
     await lockAndPlay();
     const marked = await ms(() => ({ tinted: globalThis.__ms.renderer.mark, cell: globalThis.__ms.state.play.markedCell, state: globalThis.__ms.state.play.state }));
     assert.deepEqual(marked, { tinted: MARK, cell: MARK, state: 'ready' }, 'the marked start cell is tinted');
@@ -686,7 +776,7 @@ test('in a browser, the 3D generating card shows by its delay in pointer-locked 
     assert.equal(again.state, 'generating', 'the pre-generated board is still in flight: the session waits for it');
     assert.ok(again.after <= 200 + again.stall + 250, `the card shows by the delay for the in-flight board (${again.after.toFixed(0)} ms, long tasks ${again.stall.toFixed(0)} ms)`);
     assert.equal(await ms(() => globalThis.__ms.renderer.mark), -1, 'the mark goes at the first click');
-    await page.waitForFunction(() => globalThis.__ms.state.started, null, { timeout: 30000, polling: 100 });
+    await page.waitForFunction(() => globalThis.__ms.state.started, null, { timeout: patience(12000), polling: 100 });
     assert.equal(await ms((c) => globalThis.__ms.game.pressed[c], MARK), 1, 'the first click is applied on the board that arrived');
     assert.deepEqual(errors, []);
   } finally {
@@ -710,13 +800,18 @@ function watchPage() {
   for (const type of ['mousedown', 'mouseup']) window.addEventListener(type, () => { globalThis.__mouse += 1; }, true);
 }
 
-// Touches through the DevTools protocol, so fingers can be held and moved together.
+// Touches through the DevTools protocol, so fingers can be held and moved together. A tap and a
+// one-finger drag in the look are gestures the browser synthesizes itself, touch to lift: sent as
+// separate touch events, the time between them is the test's round trip, which on a loaded machine
+// passes the 400 ms long-press and turns a tap or a drag into a flag.
 function fingers(cdp) {
   const send = (type, points) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points.map(([x, y, id]) => ({ x, y, id })) });
   return {
     start: (points) => send('touchStart', points),
     move: (points) => send('touchMove', points),
     end: () => send('touchEnd', []),
+    tap: ([x, y]) => cdp.send('Input.synthesizeTapGesture', { x, y, duration: 50, tapCount: 1, gestureSourceType: 'touch' }),
+    drag: ([x, y], [dx, dy]) => cdp.send('Input.synthesizeScrollGesture', { x, y, xDistance: dx, yDistance: dy, speed: 2000, gestureSourceType: 'touch', preventFling: true }),
   };
 }
 
@@ -752,8 +847,13 @@ test('in a browser with touch on a tablet, the 3D ready card is a start: Tap to 
         touch: shown(btn.querySelector('.ready-touch')), keys: shown(btn.querySelector('.ready-keys')),
         list: btn.querySelector('.ready-touch')?.textContent ?? '', back: shown(document.getElementById('ready-back')),
         notice: !!document.getElementById('ready-notice'),
+        rules: shown(document.getElementById('ready-rules')) ? document.getElementById('ready-rules').innerText : '',
+        escHint: shown(document.querySelector('#ready [data-esc-hint]')),
       };
     });
+    assert.match(card.rules, /tap Ctrl on the right to show them/, 'the rules name the toolbar\'s Ctrl button');
+    assert.doesNotMatch(card.rules, /hold Ctrl/, 'not the Ctrl key');
+    assert.equal(card.escHint, false, 'no "Esc: Back" beside the touch card\'s Back');
     assert.ok(card.btn, 'the ready card is a button again');
     assert.equal(card.title, 'Tap to play');
     assert.ok(card.touch && !card.keys, 'the touch gestures in place of the key list');
@@ -785,6 +885,24 @@ test('in a browser with touch on a tablet, the 3D ready card is a start: Tap to 
   }
 });
 
+test('in a browser with touch on a phone, Learn 3D\'s prompt line speaks touch', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const { page, errors, ms } = await openTouchPage(browser, base, PHONE);
+    await ms(() => globalThis.__ms.learn());
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'ready');
+    await page.tap('#ready-btn');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing');
+    await page.waitForFunction(() => !document.getElementById('hint-strip').classList.contains('hidden'), null, { timeout: patience(2000) });
+    assert.equal(await ms(() => document.getElementById('hint-strip-text').textContent), 'Aim at the marked cube and tap to start');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
 test('in a browser with touch on a tablet, 3D plays by touch: stick, look, tap, long-press, two-finger chord, the toolbar, pinch, Pause and resume, and Orbit', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
@@ -803,6 +921,20 @@ test('in a browser with touch on a tablet, 3D plays by touch: stick, look, tap, 
     await page.tap('#ready-btn');
     await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing');
 
+    // The hint strip and the HUD strip speak touch: gestures and on-screen buttons, no key.
+    const help = await ms(() => ({
+      strip: document.getElementById('hint-strip-text').innerHTML,
+      stripShown: !document.getElementById('hint-strip').classList.contains('hidden'),
+      tools: document.getElementById('hud-tools').innerHTML,
+      toolsShown: getComputedStyle(document.getElementById('hud-tools')).display !== 'none',
+    }));
+    assert.ok(help.stripShown, 'the first-use strip shows in the first games');
+    assert.match(help.strip, /Tap reveal/);
+    assert.match(help.strip, /Shift button neighbours/);
+    assert.doesNotMatch(help.strip + help.tools, /<kbd|Esc|Left|Right|Hold/, `no key named (${help.strip} | ${help.tools})`);
+    assert.ok(help.toolsShown, 'the HUD strip keeps its spacing readout');
+    assert.match(help.tools, /Pinch spacing/);
+
     // The stick flies; lifting it stops; it acts on nothing.
     const c0 = await camOf();
     await f.start([[...STICK, 1]]);
@@ -817,11 +949,9 @@ test('in a browser with touch on a tablet, 3D plays by touch: stick, look, tap, 
     assert.deepEqual(await camOf(), c1, 'lifted: it stops');
     assert.equal(await ms(() => getComputedStyle(document.getElementById('touch-stick')).display), 'none', 'and hides');
 
-    // The look drag turns the camera and acts on nothing. Its moves are sent together, so a slow
-    // software-rendered frame cannot hold them past the long-press.
+    // The look drag turns the camera and acts on nothing.
     await frames(4);
-    await Promise.all([f.start([[...LOOK, 2]]), f.move([[LOOK[0] + 20, LOOK[1], 2]]), f.move([[LOOK[0] + 60, LOOK[1] + 10, 2]])]);
-    await f.end();
+    await f.drag(LOOK, [60, 10]);
     assert.equal(await ms(() => globalThis.__vibrations), 0, 'a drag, not a long-press');
     const c2 = await camOf();
     assert.ok(Math.abs(c2.yaw - c1.yaw) > 0.1, 'the drag turned the view');
@@ -830,7 +960,7 @@ test('in a browser with touch on a tablet, 3D plays by touch: stick, look, tap, 
     // Tap reveals the crosshair cube, once, with no emulated mouse event (from the start pose again).
     await ms((c) => globalThis.__ms.moveTo(c.x, c.y, c.z), c0);
     assert.equal(await ms(() => { globalThis.__mouse = 0; return globalThis.__ms.aimAt(4); }), 4);
-    await page.touchscreen.tap(...LOOK);
+    await f.tap(LOOK);
     await page.waitForFunction(() => globalThis.__ms.game.pressed[4] === 1);
     assert.equal((await counts()).reveal.effective, 1, 'one reveal counted');
     assert.equal(await ms(() => globalThis.__mouse), 0, 'no mouse listener saw the tap');
@@ -885,9 +1015,9 @@ test('in a browser with touch on a tablet, 3D plays by touch: stick, look, tap, 
     const dist = (c) => Math.hypot(c.x, c.y, c.z);
     const o0 = await camOf();
     await frames(4);
-    await Promise.all([f.start([[...LOOK, 8]]), f.move([[LOOK[0] + 80, LOOK[1], 8]])]);
-    await f.end();
+    await f.drag(LOOK, [80, 0]);
     const o1 = await camOf();
+    assert.equal(await ms(() => globalThis.__vibrations), 1, 'a drag, not a long-press');
     assert.ok(Math.abs(o1.yaw - o0.yaw) > 0.1 && Math.abs(dist(o1) - dist(o0)) < 1e-6, 'rotated about the centre');
     await f.start([[...STICK, 9]]);
     await f.move([[STICK[0], STICK[1] - 70, 9]]);
@@ -899,7 +1029,7 @@ test('in a browser with touch on a tablet, 3D plays by touch: stick, look, tap, 
     // Revealing 1 wins.
     await ms((c) => globalThis.__ms.moveTo(c.x, c.y, c.z), c0);
     assert.equal(await ms(() => globalThis.__ms.aimAt(1)), 1);
-    await page.touchscreen.tap(...LOOK);
+    await f.tap(LOOK);
     await page.waitForFunction(() => globalThis.__ms.game.state === 'won');
     assert.equal(await ms(() => globalThis.__locks), 0, 'no pointer lock asked, start to finish');
     assert.deepEqual(errors, []);
@@ -951,8 +1081,94 @@ test('in a browser with a mouse at 1280 × 800, 3D starts with pointer lock and 
     assert.equal(await ms(() => globalThis.__locks), 1, 'the click asks for pointer lock');
     await ms(() => globalThis.__ms.forcePlay());
     assert.equal(await ms(() => getComputedStyle(document.getElementById('touch-3d')).display), 'none', 'no touch layer');
+    const help = await ms(() => ({ strip: document.getElementById('hint-strip-text').textContent, tools: document.getElementById('hud-tools').textContent }));
+    assert.equal(help.strip, 'Left reveal · Right flag · Hold Space aim through · Hold Shift neighbours', 'the keyboard\'s hint strip, as before');
+    assert.match(help.tools, /Esc menu/, 'the keyboard\'s HUD strip, as before');
     assert.equal(await ms(() => document.body.classList.contains('touch-play')), false);
     assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser at 1024 × 768 with a mouse in both themes: a 3D game\'s pause card in two columns fits the window with its look settings, and with the restart confirmation in place of the actions', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  // The card's layout, measured in the page: its rectangle, the scroll of the card, its overlay and the
+  // document, where its two panels sit, its key cap rows and the font size of each kind of text.
+  const measure = () => {
+    const c = document.getElementById('pause-card');
+    const box = (el) => { const r = el.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, left: r.left, right: r.right }; };
+    const scrolls = (el) => el.scrollHeight > el.clientHeight;
+    const size = (sel) => { const el = c.querySelector(sel); return el ? parseFloat(getComputedStyle(el).fontSize) : null; };
+    const confirm = document.getElementById('pause-confirm');
+    return {
+      card: box(c),
+      scrolls: { card: scrolls(c), overlay: scrolls(document.getElementById('pause')), document: scrolls(document.documentElement) },
+      columns: c.classList.contains('ui-screen--columns') && !!c.querySelector('.ui-columns.ui-columns--two'),
+      actions: box(confirm.classList.contains('hidden') ? document.getElementById('pause-actions') : confirm),
+      confirm: !confirm.classList.contains('hidden'),
+      list: box(document.getElementById('pause-controls').closest('.ui-panel')),
+      settings: box(document.getElementById('p-settings-title').closest('.ui-panel')),
+      look: ['p-sens', 'p-invert'].every((id) => document.getElementById(id).closest('[data-setting]').getBoundingClientRect().height > 0),
+      innerRight: c.getBoundingClientRect().right - parseFloat(getComputedStyle(c).paddingRight) + 0.5,
+      rows: [...c.querySelectorAll('#pause-controls dt')].filter((dt) => dt.querySelector('kbd')).map((dt) => {
+        const caps = [...dt.querySelectorAll('kbd')].map((k) => k.getBoundingClientRect());
+        return { right: Math.max(...caps.map((k) => k.right)), tops: caps.map((k) => k.top) };
+      }),
+      fonts: {
+        title: size('#pause-title'), status: size('#pause-sub'), button: size('#p-menu'), slider: size('.ui-slider__label'),
+        switch: size('.ui-toggle__label'), heading: size('#p-settings-title'), list: size('#pause-controls dd'),
+        keyName: size('#pause-controls dt'), kbd: size('#pause-controls kbd'), statLabel: size('.ui-stat__label'),
+      },
+    };
+  };
+  // The card's font sizes with a fine pointer, which its two columns leave as they are.
+  const FONTS = { title: 24, status: 15, button: 15, slider: 15, switch: 15, heading: 13, list: 13, keyName: 13, kbd: 11, statLabel: null };
+  const fits = (m, at) => {
+    assert.ok(m.columns, `${at}: the card composed with ui-screen--columns and a ui-columns--two`);
+    assert.ok(m.card.top >= 0 && m.card.left >= 0 && m.card.right <= 1024 && m.card.bottom <= 768,
+      `${at}: the whole pause card inside the viewport (${JSON.stringify(m.card)})`);
+    assert.deepEqual(m.scrolls, { card: false, overlay: false, document: false }, `${at}: nothing scrolls`);
+    assert.ok(m.list.left >= m.settings.right && m.list.left >= m.actions.right, `${at}: the controls list in the second column`);
+    assert.ok(m.actions.bottom <= m.settings.top, `${at}: the first column runs the actions, then Settings`);
+    assert.ok(m.rows.length > 0, `${at}: the controls list key caps`);
+    for (const row of m.rows) {
+      assert.ok(row.tops.every((y) => Math.abs(y - row.tops[0]) <= 2), `${at}: a key cap row on one line`);
+      assert.ok(row.right <= m.innerRight, `${at}: a key cap row unclipped`);
+    }
+    assert.deepEqual(m.fonts, FONTS, `${at}: every font size on the card as it was`);
+  };
+  try {
+    for (const theme of ['light', 'dark']) {
+      const at = `1024 × 768 ${theme}`;
+      const page = await browser.newPage({ viewport: { width: 1024, height: 768 }, deviceScaleFactor: 1 });
+      await page.goto(`${base}/index.html`);
+      await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+      const ms = (fn, arg) => page.evaluate(fn, arg);
+      await ms((th) => globalThis.msTheme.setTheme(th), theme);
+      assert.ok(await ms(() => matchMedia('(pointer: fine)').matches), `${at}: a fine pointer`);
+      await ms(() => {
+        globalThis.__ms.settings.set('confirmRestart', true);
+        globalThis.__ms.modes.start('3d', { X: 5, Y: 1, Z: 1, mines: 1, minePositions: [4] });
+        globalThis.__ms.forcePlay();
+        globalThis.__ms.aimAt(3);
+        globalThis.__ms.click('left');
+        globalThis.__ms.pause();
+      });
+      await page.waitForFunction(() => globalThis.__ms.state.mode === 'paused');
+      const play = await ms(measure);
+      assert.equal(play.look, true, `${at}: the look settings on a 3D game's card`);
+      assert.equal(play.confirm, false);
+      fits(play, `${at}, in play`);
+
+      await page.click('#p-restart');
+      const asking = await ms(measure);
+      assert.equal(asking.confirm, true, `${at}: the restart confirmation shows`);
+      fits(asking, `${at}, the restart confirmation`);
+      await page.close();
+    }
   } finally {
     await browser.close();
   }

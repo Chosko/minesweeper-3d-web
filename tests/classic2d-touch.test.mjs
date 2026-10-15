@@ -444,13 +444,18 @@ function removeWebGL2() {
 
 const PHONE = { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 };
 
-// Touches through the DevTools protocol, so a finger can be held and two can move at once.
+// Touches through the DevTools protocol, so a finger can be held and two can move at once. A tap
+// and a one-finger drag are gestures the browser synthesizes itself, touch to lift: sent as separate
+// touch events, the time between them is the test's round trip, which on a loaded machine passes
+// the 400 ms long-press and turns a tap or a drag into a flag.
 function fingers(cdp) {
   const send = (type, points) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points.map(([x, y], id) => ({ x, y, id })) });
   return {
     start: (points) => send('touchStart', points),
     move: (points) => send('touchMove', points),
     end: () => send('touchEnd', []),
+    tap: ([x, y]) => cdp.send('Input.synthesizeTapGesture', { x, y, duration: 50, tapCount: 1, gestureSourceType: 'touch' }),
+    drag: ([x, y], [dx, dy]) => cdp.send('Input.synthesizeScrollGesture', { x, y, xDistance: dx, yDistance: dy, speed: 2000, gestureSourceType: 'touch', preventFling: true }),
   };
 }
 
@@ -503,6 +508,9 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
     });
     const v0 = await view();
     assert.ok(v0.scrolls, 'Expert scrolls on a phone');
+    // The clipped board's one-time hint names the touch gestures, not the wheel.
+    await page.waitForFunction(() => !document.getElementById('hint-strip').classList.contains('hidden'), null, { timeout: patience(2000) });
+    assert.equal(await ms(() => document.getElementById('hint-strip-text').textContent), 'Drag to pan · pinch to zoom');
     const centreOf = async (c) => {
       const v = await view();
       const r = await ms((cell) => globalThis.__ms.board2D.cellRect(cell), c);
@@ -513,18 +521,20 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
     // The first tap reveals and starts the game; it acts exactly once (no emulated mouse press).
     const first = 2 * 30 + 2;
     await ms(() => { globalThis.__mouse = []; });
-    await page.touchscreen.tap(...(await centreOf(first)));
+    await f.tap(await centreOf(first));
     await page.waitForFunction(() => globalThis.__ms.modes.state.started, null, { timeout: patience(5000) });
     assert.equal(await cellState(first), 'revealed');
     assert.equal(await ms(() => Number(document.getElementById('hud-clicks').textContent)), 1, 'one click counted');
     assert.deepEqual(await ms(() => globalThis.__mouse), [], 'the tap reached no mouse listener');
 
-    // A closed cell to flag, found on the page.
+    // A closed mine to flag, found on the page: a mine, so that a number beside it still chords below
+    // once its other mines are flagged — a flag on a safe cell beside it would block that chord.
     const closedCell = () => ms(() => {
       const g = globalThis.__ms.game2D;
       const v = globalThis.__ms.board2D;
+      const mines = new Set(Array.from(g.snapshot().mines));
       for (let c = 0; c < 30 * 16; c++) {
-        if (g.cellState(c) !== 'closed') continue;
+        if (g.cellState(c) !== 'closed' || !mines.has(c)) continue;
         const r = v.cellRect(c);
         if (r.x >= v.layout.viewX && r.y >= v.layout.viewY && r.x + r.size <= v.layout.viewX + v.layout.viewWidth && r.y + r.size <= v.layout.viewY + v.layout.viewHeight) return c;
       }
@@ -542,9 +552,12 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
     // The switch on Flag: a tap takes the flag back; back on Reveal.
     await page.tap('#hud-tap');
     assert.equal(await ms(() => document.getElementById('hud-tap').getAttribute('aria-pressed')), 'true');
-    await page.touchscreen.tap(...(await centreOf(target)));
+    const becomes = (c, state) => page.waitForFunction(([cell, s]) => globalThis.__ms.game2D.cellState(cell) === s, [c, state], { timeout: patience(2000) });
+    await f.tap(await centreOf(target));
+    await becomes(target, 'closed');
     assert.equal(await cellState(target), 'closed', 'a tap in Flag toggles the flag');
-    await page.touchscreen.tap(...(await centreOf(target)));
+    await f.tap(await centreOf(target));
+    await becomes(target, 'flagged');
     assert.equal(await cellState(target), 'flagged');
     await page.tap('#hud-tap');
     assert.equal(await ms(() => document.getElementById('hud-tap').getAttribute('aria-pressed')), 'false');
@@ -579,7 +592,8 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
         await f.end();
       }
       await ms((c) => globalThis.__ms.board2D.ensureVisible(c), chordable.c);
-      await page.touchscreen.tap(...(await centreOf(chordable.c)));
+      await f.tap(await centreOf(chordable.c));
+      await becomes(chordable.safe[0], 'revealed');
       assert.equal(await cellState(chordable.safe[0]), 'revealed', 'the tap on the number chorded');
     }
 
@@ -587,12 +601,13 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
     const clicks = await ms(() => Number(document.getElementById('hud-clicks').textContent));
     await ms(() => globalThis.__ms.board2D.scrollTo(0, 0));
     const p = [v0.left + v0.viewX + v0.viewWidth / 2, v0.top + v0.viewY + v0.viewHeight / 2];
-    await f.start([p]);
-    await f.move([[p[0] - 4, p[1]]]);
-    await f.move([[p[0] - 60, p[1] - 30]]);
-    await f.end();
+    await f.drag(p, [-60, -30]);
+    await page.waitForFunction(() => globalThis.__ms.board2D.scroll.x >= 50, null, { timeout: patience(2000) });
     const panned = await view();
     assert.ok(panned.scroll.x >= 50, `the board followed the finger (${JSON.stringify(panned.scroll)})`);
+    // The pan retired the scroll hint, as a wheel scroll does: the mode's strip, which shows from the
+    // game's start on a coarse-only device, takes its place.
+    await page.waitForFunction(() => document.getElementById('hint-strip-text').textContent === 'Tap reveal · Long-press flag · Tap a number chord', null, { timeout: patience(2000) });
     assert.equal(await ms(() => Number(document.getElementById('hud-clicks').textContent)), clicks, 'a pan is no click');
 
     // A pinch zooms out to the whole board and back to the minimum tile; a pan or zoom records nothing.
@@ -614,7 +629,171 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
     await ms((tile) => globalThis.__ms.board2D.zoom(tile, 10, 10), range.min);
     await ms(() => globalThis.__ms.pauser.restart('key'));
     await page.waitForFunction((tile) => globalThis.__ms.board2D && globalThis.__ms.board2D.layout.tile === tile, v0.tile);
+
+    // On the coarse-only device the restarted game shows the mode's strip before any input, in touch
+    // wording, and a key keeps it; the HUD strip, with nothing a finger can press, hides.
+    await page.waitForFunction(() => !document.getElementById('hint-strip').classList.contains('hidden'), null, { timeout: patience(2000) });
+    assert.equal(await ms(() => document.getElementById('hint-strip-text').textContent), 'Tap reveal · Long-press flag · Tap a number chord', 'the strip shows before the key');
+    await page.keyboard.press('KeyQ');
+    assert.equal(await ms(() => document.getElementById('hint-strip').classList.contains('hidden')), false, 'the key keeps the strip');
+    const strip = await ms(() => document.getElementById('hint-strip-text').innerHTML);
+    assert.doesNotMatch(strip, /<kbd/, 'no key cap in the strip');
+    const tools = await ms(() => { const el = document.getElementById('hud-tools'); return { html: el.innerHTML, hidden: el.classList.contains('hidden') }; });
+    assert.equal(strip, 'Tap reveal · Long-press flag · Tap a number chord');
+    assert.deepEqual(tools, { html: '', hidden: true }, 'no key in the HUD strip, and no empty box');
+
+    // The pause card lists Classic 2D's touch rows, not the mouse and keyboard ones.
+    await page.tap('#hud-pause');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'paused', null, { timeout: patience(2000) });
+    const pauseRows = await ms(() => document.getElementById('pause-controls').textContent);
+    assert.match(pauseRows, /Long-press/, 'the pause card shows the touch rows');
+    assert.match(pauseRows, /Tap a number/);
+    assert.match(pauseRows, /Two fingers/);
+    assert.doesNotMatch(pauseRows, /Move the cursor|Right click|Wheel/, 'and no mouse or keyboard row');
     assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser with touch on a phone, a fresh profile\'s Classic 2D game shows the touch hint strip from its start, before any input', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const context = await browser.newContext(PHONE);
+    const page = await context.newPage();
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(removeWebGL2);
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined);
+    const ms = (fn, arg) => page.evaluate(fn, arg);
+
+    await page.tap('#menu-entry-classic-2d');
+    await page.tap('#c2d-choice [data-size="beginner"]');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'classic-2d');
+    assert.equal(await ms(() => globalThis.__ms.board2D.layout.scrolls), false, 'Beginner fits a phone: no scroll hint first');
+    await page.waitForFunction(() => !document.getElementById('hint-strip').classList.contains('hidden'), null, { timeout: patience(2000) });
+    const shown = await ms(() => ({ text: document.getElementById('hint-strip-text').textContent, started: globalThis.__ms.modes.state.started }));
+    assert.equal(shown.text, 'Tap reveal · Long-press flag · Tap a number chord');
+    assert.ok(!shown.started, 'before the first tap on the board');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+// Every visible control and readout of the 2D overlay bar, the bar itself and the board's panel.
+function barGeometry() {
+  const box = (el) => { const r = el.getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height }; };
+  const bar = document.querySelector('#hud .hud-bar');
+  const children = [...bar.children]
+    .filter((el) => getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().width > 0)
+    .map((el) => ({ id: el.id || el.querySelector('.ui-stat__value')?.id, ...box(el) }));
+  const swap = document.getElementById('hud-swap');
+  return {
+    viewport: { width: innerWidth, height: innerHeight },
+    bar: box(bar),
+    panel: box(document.getElementById('c2d-panel')),
+    children,
+    swapShown: getComputedStyle(swap).display !== 'none' && swap.getBoundingClientRect().width > 0,
+  };
+}
+
+// Waits until the bar, the panel and the board's view stay put across two frames: the board's
+// container is sized, and the panel placed, a frame or two after the board opens.
+async function settled(page) {
+  await page.waitForFunction(() => {
+    const v = globalThis.__ms.board2D;
+    if (!v?.layout) return false;
+    const now = JSON.stringify([document.querySelector('#hud .hud-bar').getBoundingClientRect(), document.getElementById('c2d-panel').getBoundingClientRect(), v.canvas.getBoundingClientRect(), v.layout.viewY]);
+    const same = globalThis.__lastGeometry === now;
+    globalThis.__lastGeometry = now;
+    return same;
+  }, null, { polling: 'raf', timeout: patience(5000) });
+}
+
+const PHONES = [
+  { name: '390 × 844', viewport: { width: 390, height: 844 } },
+  { name: '360 × 740', viewport: { width: 360, height: 740 } },
+];
+const BOARDS_2D = ['beginner', 'intermediate', 'expert', 'custom'];
+
+test('in a browser with touch on a phone, the 2D overlay bar fits the screen on every board: Pause and the switch take a tap, no Swap clicks', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    for (const phone of PHONES) {
+      const context = await browser.newContext({ ...PHONE, viewport: phone.viewport });
+      const page = await context.newPage();
+      const errors = [];
+      page.on('pageerror', (e) => errors.push(e.message));
+      await page.addInitScript(removeWebGL2);
+      const ms = (fn, arg) => page.evaluate(fn, arg);
+      for (const size of BOARDS_2D) {
+        const where = `${phone.name}, ${size}`;
+        await page.goto(`${base}/index.html`);
+        await page.waitForFunction(() => globalThis.__ms !== undefined);
+        await page.tap('#menu-entry-classic-2d');
+        await page.locator('#c2d-noguess').setChecked(true);
+        if (size === 'custom') {
+          await page.fill('#c2d-width', '100');
+          await page.fill('#c2d-height', '100');
+          await page.fill('#c2d-mines', '2000');
+          await page.tap('#c2d-start');
+        } else {
+          await page.tap(`#c2d-choice [data-size="${size}"]`);
+        }
+        await page.waitForFunction(() => globalThis.__ms.state.mode === 'classic-2d');
+        await settled(page);
+        const g = await ms(barGeometry);
+        const ids = g.children.map((c) => c.id);
+        for (const id of ['hud-time', 'hud-mines', 'hud-clicks', 'hud-size', 'hud-tap', 'hud-pause']) {
+          assert.ok(ids.includes(id), `${where}: ${id} shows in the bar (${ids})`);
+        }
+        for (const c of g.children) {
+          assert.ok(c.left >= 0 && c.top >= 0 && c.right <= g.viewport.width && c.bottom <= g.viewport.height,
+            `${where}: ${c.id} lies inside the viewport (${JSON.stringify(c)})`);
+        }
+        assert.equal(g.swapShown, false, `${where}: no Swap clicks on a coarse-only device`);
+        const tap = g.children.find((c) => c.id === 'hud-tap');
+        assert.ok(tap.width >= 44 && tap.height >= 44, `${where}: the switch keeps a 44 px hit area (${tap.width} × ${tap.height})`);
+        assert.ok(g.bar.left >= g.panel.left && g.bar.right <= g.panel.right && g.bar.top >= g.panel.top,
+          `${where}: the bar sits inside the panel's top edge (${JSON.stringify({ bar: g.bar, panel: g.panel })})`);
+        const view = await ms(() => globalThis.__ms.board2D.canvas.getBoundingClientRect().top + globalThis.__ms.board2D.layout.viewY);
+        assert.ok(view >= g.bar.bottom, `${where}: the board starts below the bar, not under it (${view} vs ${g.bar.bottom})`);
+      }
+
+      // The phone turns mid-game: a board opened in landscape, where the bar takes one row, is laid
+      // out again below the bar in portrait rather than under its new rows.
+      await page.setViewportSize({ width: phone.viewport.height, height: phone.viewport.width });
+      await page.goto(`${base}/index.html`);
+      await page.waitForFunction(() => globalThis.__ms !== undefined);
+      await page.tap('#menu-entry-classic-2d');
+      await page.tap('#c2d-choice [data-size="expert"]');
+      await page.waitForFunction(() => globalThis.__ms.state.mode === 'classic-2d');
+      await settled(page);
+      await page.setViewportSize(phone.viewport);
+      await settled(page);
+      {
+        const g = await ms(barGeometry);
+        const view = await ms(() => globalThis.__ms.board2D.canvas.getBoundingClientRect().top + globalThis.__ms.board2D.layout.viewY);
+        assert.ok(view >= g.bar.bottom, `${phone.name}, turned: the board starts below the bar (${view} vs ${g.bar.bottom})`);
+      }
+
+      // On the last board: a real tap flips the switch, and a real tap on Pause opens the pause card.
+      await page.tap('#hud-tap');
+      assert.equal(await ms(() => document.getElementById('hud-tap').textContent), 'Tap: Flag', `${phone.name}: the switch takes a tap`);
+      await page.tap('#hud-tap');
+      assert.equal(await ms(() => document.getElementById('hud-tap').textContent), 'Tap: Reveal');
+      await page.tap('#hud-pause');
+      await page.waitForFunction(() => globalThis.__ms.state.mode === 'paused', null, { timeout: patience(2000) });
+      assert.equal(await ms(() => document.getElementById('pause').classList.contains('hidden')), false, `${phone.name}: Pause opens the pause card`);
+      assert.deepEqual(errors, []);
+      await context.close();
+    }
   } finally {
     await browser.close();
   }
@@ -652,7 +831,23 @@ test('in a browser with a mouse at 1280 × 800, the 2D overlay bar, the menu, Se
       label: getComputedStyle(document.querySelector('#hud .ui-stat__label')).fontSize,
       swap: getComputedStyle(document.getElementById('hud-swap')).display,
     }));
-    assert.deepEqual(bar, { tap: 'none', label: '11px', swap: 'flex' }, 'no switch, the labels at 11 px, the swap toggle as before');
+    assert.deepEqual(bar, { tap: 'none', label: '12px', swap: 'flex' }, 'no switch, the labels at 12 px on every pointer, the swap toggle as before');
+    const g = await ms(barGeometry);
+    assert.equal(g.swapShown, true, 'Swap clicks shows with a mouse');
+    const rows = new Set(g.children.map((c) => Math.round(c.top + c.height / 2)));
+    assert.equal(rows.size, 1, `the bar keeps one row (${JSON.stringify(g.children)})`);
+    assert.equal(Math.round(g.bar.top - g.panel.top), 9, 'the bar on the panel\'s top edge, as before');
+    const viewTop = await ms(() => globalThis.__ms.board2D.canvas.getBoundingClientRect().top + globalThis.__ms.board2D.layout.viewY);
+    assert.equal(Math.round(viewTop - g.bar.bottom), 8, 'the board 8 px below the bar, as before');
+
+    // The clicks that chose the board brought no strip; a key brings the mode's strip in the
+    // keyboard's words; the HUD strip reads as before.
+    assert.equal(await ms(() => document.getElementById('hint-strip').classList.contains('hidden')), true, 'no strip before a key on a fine pointer');
+    await page.keyboard.press('KeyQ');
+    await page.waitForFunction(() => !document.getElementById('hint-strip').classList.contains('hidden'), null, { timeout: patience(2000) });
+    const help = await ms(() => ({ strip: document.getElementById('hint-strip-text').textContent, tools: document.getElementById('hud-tools').textContent }));
+    assert.equal(help.strip, 'Arrows move · Space reveal · F flag · D chord');
+    assert.equal(help.tools, 'H helpM sound onEsc menu');
 
     await page.keyboard.press('Escape');
     assert.equal(await ms(() => globalThis.__ms.state.mode), 'paused');
@@ -661,7 +856,7 @@ test('in a browser with a mouse at 1280 × 800, the 2D overlay bar, the menu, Se
       return k ? getComputedStyle(k).fontSize : null;
     });
     assert.ok(kbd, 'the pause card shows key caps');
-    assert.ok(parseFloat(kbd) < 11, `the pause card's key caps keep their size on a fine pointer (${kbd})`);
+    assert.ok(parseFloat(kbd) >= 11, `the pause card's key caps at 11 px or more on a fine pointer too (${kbd})`);
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

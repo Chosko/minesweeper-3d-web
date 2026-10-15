@@ -21,9 +21,10 @@ const suite = browserSuite();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const DEG = Math.PI / 180;
 
+// Each box at its start spacing: a preset's own (the first-box presets 1.5), SPACING_START otherwise.
 const BOXES = [
-  ...PRESETS.map((p) => [p.X, p.Y, p.Z]),
-  [1, 1, 2], [30, 16, 1], [100, 100, 100], [2, 9, 40],
+  ...PRESETS.map((p) => [p.X, p.Y, p.Z, p.spacing]),
+  [1, 1, 2, SPACING_START], [30, 16, 1, SPACING_START], [100, 100, 100, SPACING_START], [2, 9, 40, SPACING_START],
 ];
 const ASPECTS = { '16:9': 16 / 9, '4:3': 4 / 3, '21:9': 21 / 9, '9:16': 9 / 16 };
 const FOVS = [45, 90];
@@ -62,11 +63,11 @@ test('the spawn angles and the framing margin are named constants: about 15° do
 
 test('the spawn pose frames every box with a margin, from three quarters, its crosshair on the near face\'s centre cube', () => {
   const view = new Map();
-  for (const [X, Y, Z] of BOXES) {
+  for (const [X, Y, Z, spacing] of BOXES) {
     for (const [name, aspect] of Object.entries(ASPECTS)) {
       for (const fov of FOVS) {
-        const label = `${X}×${Y}×${Z} at ${name}, ${fov}°`;
-        const pose = spawnPose({ X, Y, Z }, SPACING_START, fov, aspect);
+        const label = `${X}×${Y}×${Z} at spacing ${spacing}, ${name}, ${fov}°`;
+        const pose = spawnPose({ X, Y, Z }, spacing, fov, aspect);
         // the angles, in FlyCamera's convention (pitch + = down, yaw PI = toward +Z)
         assert.ok(Math.abs(pose.pitch - SPAWN_PITCH_DEG * DEG) < 1e-12, `${label}: pitch`);
         assert.ok(Math.abs(Math.abs(pose.yaw - Math.PI) - SPAWN_YAW_DEG * DEG) < 1e-12, `${label}: yaw`);
@@ -74,7 +75,7 @@ test('the spawn pose frames every box with a margin, from three quarters, its cr
         const cam = threeCamera(pose, fov, aspect);
         const lim = 1 - 2 * SPAWN_MARGIN;
         let widest = 0;
-        for (const c of corners(X, Y, Z, SPACING_START)) {
+        for (const c of corners(X, Y, Z, spacing)) {
           const local = c.clone().applyMatrix4(cam.matrixWorldInverse);
           assert.ok(local.z < -1, `${label}: corner in front of the camera`);
           const ndc = c.clone().project(cam);
@@ -82,7 +83,7 @@ test('the spawn pose frames every box with a margin, from three quarters, its cr
           widest = Math.max(widest, Math.abs(ndc.x), Math.abs(ndc.y));
         }
         // three faces visible: the camera lies beyond the near face, the top face and one side face
-        const [hx, hy, hz] = halfExtents(X, Y, Z, SPACING_START);
+        const [hx, hy, hz] = halfExtents(X, Y, Z, spacing);
         assert.ok(pose.z < -hz, `${label}: in front of the near face`);
         assert.ok(pose.y > hy, `${label}: above the top face`);
         assert.ok(Math.abs(pose.x) > hx, `${label}: beside a side face`);
@@ -93,13 +94,17 @@ test('the spawn pose frames every box with a margin, from three quarters, its cr
         if (widest < lim - 1e-9) assert.ok(at(pose.y, hy * k) || at(-pose.x, hx * k) || at(-pose.z, hz * k), `${label}: no closer pose frames the box`);
         // the crosshair: the screen-centre ray picks the near face's centre cube
         const centre = Math.floor(X / 2) + X * Math.floor(Y / 2);
-        assert.equal(pickCell(fakeView(X, Y, Z), SPACING_START, pose, forward(pose), false), centre, `${label}: aims at the near face's centre cube`);
+        assert.equal(pickCell(fakeView(X, Y, Z), spacing, pose, forward(pose), false), centre, `${label}: aims at the near face's centre cube`);
         view.set(label, widest);
       }
     }
   }
-  // in the standard window the presets fill most of the frame
-  for (const p of PRESETS) assert.ok(view.get(`${p.X}×${p.Y}×${p.Z} at 16:9, 45°`) > 0.7, `${p.id} fills the frame`);
+  // in the standard window the presets fill most of the frame; a shallow first box, framed from the
+  // clearance its top and side faces need, a little less
+  for (const p of PRESETS) {
+    const fill = p.family === 'box' ? 0.6 : 0.7;
+    assert.ok(view.get(`${p.X}×${p.Y}×${p.Z} at spacing ${p.spacing}, 16:9, 45°`) > fill, `${p.id} fills the frame`);
+  }
 });
 
 test('the spawn pose follows the spacing, and still aims at the near face\'s centre cube', () => {
@@ -180,6 +185,45 @@ test('Home and R return to start during 3D play only, unrepeated, with the brows
 });
 
 // ---------------------------------------------------------------- in a browser
+
+test('in a browser, First box 1 picked from the board choice starts at spacing 1.5, the whole box on screen', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1100, height: 700 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`${base}/index.html?still-backdrop`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+    const ms = (fn, arg) => page.evaluate(fn, arg);
+    await page.click('#menu-entry-3d');
+    await page.click('#board-choice [data-preset="4,4,3,4"]');
+    await page.waitForFunction(() => globalThis.__ms.modes.active === '3d' && globalThis.__ms.game);
+    assert.deepEqual(await ms(() => globalThis.__ms.state.settings), { X: 4, Y: 4, Z: 3, mines: 4 });
+    assert.equal(await ms(() => globalThis.__ms.state.spacing), 1.5, 'the first-box start spacing');
+    assert.match(await ms(() => document.getElementById('hud-tools').textContent), /spacing 1\.5/, 'the readout shows it');
+    const cam = await ms(() => globalThis.__ms.info().cam);
+    const spawn = await ms(() => globalThis.__ms.spawnPose(4, 4, 3));
+    assert.ok(['x', 'y', 'z', 'yaw', 'pitch'].every((k) => Math.abs(cam[k] - spawn[k]) < 1e-9), 'at the spawn pose for that spacing');
+    const ndc = await ms(() => {
+      const { THREE, renderer, state } = globalThis.__ms;
+      const c = renderer.camera;
+      c.updateMatrixWorld();
+      const p = 4 * state.spacing, h = [(4 - 1) * p / 2 + 2, (4 - 1) * p / 2 + 2, (3 - 1) * p / 2 + 2];
+      const out = [];
+      for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
+        const v = new THREE.Vector3(sx * h[0], sy * h[1], sz * h[2]).project(c);
+        out.push([v.x, v.y, v.z]);
+      }
+      return out;
+    });
+    for (const [x, y, z] of ndc) assert.ok(Math.abs(x) < 1 && Math.abs(y) < 1 && z < 1, `corner on screen (${x.toFixed(3)}, ${y.toFixed(3)})`);
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
 
 test('in a browser, a 3D game starts framed, and Home, R and "Back to start" return there during play only', async (t) => {
   const env = await suite.open(t);

@@ -21,11 +21,11 @@ implementation's default `indexedDB` factory.
 | `js/platform/index.js` | The selector: builds the one `storage` and the one `blobStore`; re-exports the storage methods. |
 
 Document owners register here: settings ([settings.md](settings.md)),
-`shell.lastMode` ([app-shell-menu.md](app-shell-menu.md)) and `shell.firstUse` ([app-shell-ui.md](app-shell-ui.md)), the
+`shell.lastMode` ([app-shell-menu.md](app-shell-menu.md)) and `shell.firstUse` ([app-shell-help.md](app-shell-help.md)), the
 last Classic 2D and 3D board choices ([classic2d.md](classic2d.md),
 [mode3d.md](mode3d.md)), the records store's three documents
 ([records-store.md](records-store.md)), the Records screen's `records.view`
-([records-screen.md](records-screen.md)) and `replays.library`
+([records-library-view.md](records-library-view.md)) and `replays.library`
 ([replay-library.md](replay-library.md)), the blob store's one user.
 `js/theme.js`, a classic script that cannot import, reads the settings
 document's browser key directly at start-up.

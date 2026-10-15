@@ -255,7 +255,7 @@ void main() {
   vAlpha = a;
   vTint = (sel && kind != 4) ? 1.0 : 0.0; // hidden cells shown with Ctrl are never tinted
   vec3 dm = abs(c - uMark);
-  vMark = (uHasMark > 0.5 && max(dm.x, max(dm.y, dm.z)) < 0.5 && kind <= 1) ? 1.0 : 0.0; // a closed or flagged cube
+  vMark = (uHasMark > 0.5 && max(dm.x, max(dm.y, dm.z)) < 0.5 && kind <= 2) ? 1.0 : 0.0; // a closed or flagged cube, or Learn 3D's revealed number
   vShade = aShade;
   vRegion = uRegionOn > 0.5 ? texelFetch(uRegion, ivec2(idx % ${STATE_W}, idx / ${STATE_W}), 0) : vec4(0.0);
   vFlash = flash;
@@ -1034,8 +1034,10 @@ export class BoardRenderer {
   }
 
   /**
-   * Tints the cube of the marked start cell a pre-generated board waits for (js/mode3d/session.js
-   * markedCell); -1 for none. Returns whether it changed, so the caller draws a frame.
+   * Tints the cube of the marked start cell a pre-generated or forced board waits for
+   * (js/mode3d/session.js markedCell), or the cell a Learn 3D prompt points at (js/mode3d/learn.js
+   * `tinted`, a revealed number or a closed cube); -1 for none. Returns whether it changed, so the
+   * caller draws a frame.
    */
   setMark(idx) {
     const next = this.game && Number.isInteger(idx) && idx >= 0 && idx < this.n ? idx : -1;

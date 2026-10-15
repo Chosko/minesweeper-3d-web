@@ -1,4 +1,4 @@
-// Measures the typical 3BV of every named board — Classic 2D's standard boards and the 3D cube
+// Measures the typical 3BV of every named board — Classic 2D's standard boards and the 3D
 // presets — and prints it in the form of TYPICAL_BBBV in js/records/typical-bbbv.js: the
 // measurement behind that table.
 //

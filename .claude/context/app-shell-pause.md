@@ -19,7 +19,7 @@ Both modules are pure; their rules are documented in their head comments.
   `'pad'` (Start + Y) on a `RESTART_SCREENS` screen, `'playAgain'` for
   `'KeyR'` on `results`, else null; null for anything while `blocked`.
 - `createPauseController({modes, showCard, isPaused?, onBoard?, confirm,
-  goMenu, guard?, cancelGeneration?, askRestart?, restarted?})` →
+  goMenu, guard?, cancelGeneration?, askRestart?, restarted?, unrecorded?})` →
   `inProgress`, `pause(source, {note})` → whether the card opened,
   `back(source)`, `resume(source)`, `restart(source)`, `toMenu()`,
   `pageHide()`, `attach(handOff, listener)` → detach, `dispose()`.
@@ -61,7 +61,11 @@ Both modules are pure; their rules are documented in their head comments.
   of `#pause-actions`); Back or Cancel closes it. Restart of such a game
   proceeds at once, the page's first one toasting `RESTART_NOTICE`
   (`restarted`); under the `confirmRestart` setting (`askRestart`) it
-  confirms too, pausing first. Outside such a game both proceed at once.
+  confirms too, pausing first. Outside such a game both proceed at once,
+  and so does a game outside the records (`unrecorded`, the shell's
+  `mode3d.learn`: the Learn 3D guided game), with no toast. The guided
+  game's end goes to the Learn 3D end card (`learn-end`,
+  [app-shell-3d.md](app-shell-3d.md)), not the results screen.
 - **Restart keys.** `restartKey(code, e)` in `onKey` (after the 3D `Home` /
   `R` camera return), through `restartInput`, never with Ctrl/Alt/Meta:
   `F2` (default always prevented) → `PAUSE.restart('key')`; `R` on `results`

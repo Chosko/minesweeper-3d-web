@@ -12,7 +12,7 @@ waves, confetti, shake, ground grid — and the replay and end-of-game behaviour
 | --- | --- |
 | `js/render.js` | `BoardRenderer`: cube geometry, cell/sky/confetti shaders, opaque and transparent instance lists, back-to-front sort, effects, selection glow |
 | `js/textures.js` | procedural tile atlas: every tile drawn on a 2D canvas through the shared tile recipe (`js/tile-art.js`, [classic2d-tile-skin.md](classic2d-tile-skin.md)) with the atlas's own literal palette (`ATLAS`), packed into one `THREE.DataArrayTexture` (one layer per tile) |
-| `js/readability.js` | the 3D readability aids' pure functions: the aimed-cell readout ([app-shell-3d.md](app-shell-3d.md)) and, read here, Space's depth dimming — `spaceAlpha(d)` (`SPACE_NEAR_ALPHA` 0.7, `SPACE_FLOOR_ALPHA` 0.1, `SPACE_FALLOFF` 3, interpolated into `VERT`) and `boxDepth(cam, box)`, the camera's lattice distance from the box's nearest face |
+| `js/readability.js` | the 3D readability aids' pure functions: the aimed-cell readout ([app-shell-3d-play.md](app-shell-3d-play.md)) and, read here, Space's depth dimming — `spaceAlpha(d)` (`SPACE_NEAR_ALPHA` 0.7, `SPACE_FLOOR_ALPHA` 0.1, `SPACE_FALLOFF` 3, interpolated into `VERT`) and `boxDepth(cam, box)`, the camera's lattice distance from the box's nearest face |
 
 ## Public API
 
@@ -27,16 +27,21 @@ waves, confetti, shake, ground grid — and the replay and end-of-game behaviour
   `render()`.
 - View: `setToggles(shift, space, ctrl)`, `setSpacing(s)` (pitch `4 * s`), `setSelected(idx)`,
   `setMark(idx)` (the marked start cell a pre-generated board waits for, or a daily's or a
-  challenge's forced start cell, tinted green; → whether it changed), `pulseMark()` (the tint swells
+  challenge's forced start cell, or the cell a Learn 3D prompt points at, revealed number
+  included, tinted green; → whether it changed), `pulseMark()` (the tint swells
   `MARK_PULSE_COUNT` times over `MARK_PULSE_S` through `uMarkPulse`, kept animating by
   `isAnimating()`; → whether there is a mark), `boardRadius()` (far plane, fog, confetti size), `setScenePalette({horizon, zenith,
   nadir})`, `setPixelRatio(pr)` (→ `false` when unchanged; main then skips the redraw), `resize()`.
 - Effects: `snapshotBeforeAction()` (before a reveal or chord, so a loss can show wrong flags),
-  `flash(cells)`, `isAnimating()` (main's render-on-demand loop polls it), `setWrongFlags(indices)`
-  (no caller: `_beginLoss` computes them itself).
+  `flash(cells)`, `isAnimating()` (main's render-on-demand loop polls it), `wrongFlags()` /
+  `setWrongFlags(indices)` (the loss's crossed flags, kept and given back across the replay viewer).
+- Replay: `setRegionTint(rgba | null)` — Show 3BV's per-cell tint, 4 bytes a cell (colour, then how
+  much covers the tile) in a second RGBA8 data texture the fragment shader mixes in (`uRegion`,
+  `uRegionOn`); the caller redraws. `cellScreen(idx)` → `{x, y}` the cell centre in canvas CSS
+  pixels through the camera as it is, or null behind it (the replay's press rings).
 - Constants: kinds `K_CLOSED, K_FLAG, K_NUMBER, K_MINE, K_HIDDEN` (0..4), `GHOST_ALPHA` (0.25),
   `FLY_THROUGH_ALPHA` (0.25), `FLY_THROUGH_BAND` (half a pitch at the start spacing, 2.2) and
-  `flyThroughAlpha(dist)` (the shader's `flyAlpha`; the distance is `FLY_THROUGH_DIST`, [input.md](input.md)),
+  `flyThroughAlpha(dist)` (the shader's `flyAlpha`; the distance is `FLY_THROUGH_DIST`, [input-camera.md](input-camera.md)),
   the pulse and flash constants and envelopes ([rendering-effects.md](rendering-effects.md)).
   Node imports the module only with `three` resolved to `vendor/three/` (the test's resolve hook).
 
@@ -122,8 +127,9 @@ waves, confetti, shake, ground grid — and the replay and end-of-game behaviour
 - [app-shell.md](app-shell.md) — `js/main.js` owns the renderer: `sync`/`render` per frame,
   `snapshotBeforeAction` before reveals, `isAnimating`, the pixel ratio, `stats` via `__ms`.
 - [settings.md](settings.md) — the render resolution setting and `pixelRatioFor`.
-- [input.md](input.md) — camera and modifier state feed `camera`, `setToggles`, `setSpacing`,
-  `setSelected`; picking must use the same pitch and Space/hidden visibility rules.
+- [input-camera.md](input-camera.md) — the camera feeds `camera`; picking must use the same pitch and
+  Space/hidden visibility rules. [input.md](input.md) — modifier state feeds `setToggles`.
+- [app-shell-replay.md](app-shell-replay.md) — the replay scene's tints, rings and wrong flags.
 - [classic2d-tile-skin.md](classic2d-tile-skin.md) — the Classic 2D tile skin and the shared tile recipe.
 - [testing.md](testing.md) — `tests/render-3d-feedback.test.mjs` (`GHOST_ALPHA`, ghosts in
   `stats.trans`), `tests/camera-flight.test.mjs` (the fly-through constants and the near-camera list), `tests/tile-skin.test.mjs` (every atlas layer pixel for pixel),

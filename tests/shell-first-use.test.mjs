@@ -114,6 +114,38 @@ test('a game counts toward the three when the mode reports game started; a finis
   assert.equal(docOf(backend).finished3D, true);
 });
 
+test('a Learn 3D game counts toward no window; its win marks the rules block seen, its loss does not', async () => {
+  const backend = createMemoryBackend();
+  const first = createFirstUse({ storage: createStorage({ backend }), records: records(0, 0) });
+  await first.load();
+  first.gameStarted('3d', { learn: true });
+  first.gameStarted('3d', { learn: true });
+  first.gameStarted('3d', { learn: true });
+  assert.equal(first.inFirstGames('3d'), true, 'still the first game');
+  first.gameFinished('3d', { learn: true, won: false });
+  assert.equal(first.rules3D, true, 'a loss marks nothing');
+  await settle();
+  assert.equal(docOf(backend).games['3d'], 0);
+  assert.equal(docOf(backend).finished3D, false);
+  first.gameFinished('3d', { learn: true, won: true });
+  assert.equal(first.rules3D, false, 'the win: the "How 3D works" block and the ready card\'s Learn 3D line stop showing');
+  await settle();
+  assert.equal(docOf(backend).finished3D, true);
+});
+
+test('Learn 3D\'s second prompt marks the auto-hide toast shown; storage failure never blocks it', async () => {
+  const first = createFirstUse({ storage: createStorage({ backend: createMemoryBackend() }), records: records(0, 0) });
+  await first.load();
+  assert.equal(first.once('autoHideToast'), true, 'the shell marks it at prompt 2 through once()');
+  assert.equal(first.shown('autoHideToast'), true);
+  const broken = { register() {}, load: () => Promise.reject(new Error('no storage')), save: () => { throw new Error('no storage'); } };
+  const off = createFirstUse({ storage: broken, records: records(0, 0) });
+  await off.load();
+  off.gameStarted('3d', { learn: true });
+  off.gameFinished('3d', { learn: true, won: true });
+  assert.equal(off.rules3D, false, 'kept for the session');
+});
+
 test('the toast and the aim hint show once, and never again on that browser', async () => {
   const backend = createMemoryBackend();
   const first = createFirstUse({ storage: createStorage({ backend }), records: records(0, 0) });
@@ -148,6 +180,29 @@ test('the Classic 2D scroll hint is a one-time hint of the same document; one st
   await bad.load();
   assert.equal(bad.inFirstGames('classic-2d'), false, 'a malformed value is seeded afresh');
   assert.equal(hintText('scrollHint', 'keyboard'), 'Wheel scrolls · Shift+wheel sideways');
+});
+
+test('the scroll hint reads "Drag to pan · pinch to zoom" on a coarse-only device; the keyboard and controller texts are unchanged', () => {
+  assert.equal(hintText('scrollHint', 'touch'), 'Drag to pan · pinch to zoom');
+  assert.equal(hintText('scrollHint', 'keyboard'), 'Wheel scrolls · Shift+wheel sideways');
+  assert.equal(hintText('scrollHint', 'controller'), 'Wheel scrolls · Shift+wheel sideways');
+  const ui = read('js/ui.js');
+  assert.match(ui, /scroll \? hintText\('scrollHint', this\._bindDevice\(this\._mode\), this\._glyphs\)/,
+    'the clipped-board hint takes the touch text where the help surfaces take the touch rows');
+  assert.match(ui, /_bindDevice\(mode\) \{\n    return this\._touch && this\._device === 'keyboard' \? 'touch' : this\._device;/,
+    'on a coarse-only device (setTouch3D), unless a controller is in use');
+  assert.match(read('js/main.js'), /ui\.setTouch3D\(COARSE_ONLY\)/);
+  assert.match(read('js/classic2d/touch-input.js'), /onPan: \(dx, dy\) => \{ if \(view\.pan\(dx, dy\)\) onUserScroll\(\); \}/,
+    'a touch pan of a clipped board retires it as a wheel scroll does');
+});
+
+test('on a coarse-only device each mode\'s hint strip reads its touch wording, unless a controller is in use', () => {
+  assert.equal(text(hintStripHtml('classic-2d', 'touch')), 'Tap reveal · Long-press flag · Tap a number chord');
+  assert.equal(text(hintStripHtml('3d', 'touch')), 'Tap reveal · Long-press flag · Space button aim through · Shift button neighbours');
+  for (const mode of ['classic-2d', '3d']) assert.doesNotMatch(hintStripHtml(mode, 'touch', GLYPHS.xbox), /<kbd/, `${mode}: no key or pad glyph`);
+  const ui = read('js/ui.js');
+  assert.match(ui, /: hintStripHtml\(this\._mode, this\._bindDevice\(this\._mode\), this\._glyphs\)/,
+    'the mode\'s strip takes the device the bindings lists take: touch on a coarse-only device, the controller while it is in use');
 });
 
 test('dismissing a mode\'s strip hides it for good in that mode only', async () => {
@@ -201,6 +256,17 @@ test('the strips: 3D from the start of play, Classic 2D once a key or the contro
   assert.equal(stripShown({ ...base, mode: 'classic-2d', screen: 'classic-2d', used: true, eligible: false }), false);
 });
 
+test('on a touch-only device the Classic 2D strip shows from the start of the game, still in the first games and until dismissed', () => {
+  const base = { mode: 'classic-2d', screen: 'classic-2d', eligible: true, used: false, dismissed: false };
+  assert.equal(stripShown({ ...base, touchOnly: true }), true, 'touch-only: shown before any input');
+  assert.equal(stripShown({ ...base, touchOnly: false }), false, 'a fine pointer: not before a key or the controller');
+  assert.equal(stripShown({ ...base, touchOnly: true, used: true }), true);
+  assert.equal(stripShown({ ...base, touchOnly: true, eligible: false }), false, 'touch-only: past the first three games');
+  assert.equal(stripShown({ ...base, touchOnly: true, dismissed: true }), false, 'touch-only: dismissed for good');
+  assert.equal(stripShown({ ...base, touchOnly: true, screen: 'results' }), false, 'touch-only: only on its board');
+  assert.equal(stripShown({ ...base, touchOnly: true, mode: '3d', screen: 'ready' }), false, 'the 3D strip is unchanged');
+});
+
 test('the strips\' words come from the bindings source, with the controller\'s glyphs while it is the active device', () => {
   assert.equal(text(hintStripHtml('classic-2d', 'keyboard')), 'Arrows move · Space reveal · F flag · D chord');
   assert.equal(text(hintStripHtml('3d', 'keyboard')), 'Left reveal · Right flag · Hold Space aim through · Hold Shift neighbours');
@@ -249,6 +315,17 @@ test('the aim hint: the crosshair rests about a second on a revealed number with
   assert.equal(hintText('aimHint', 'controller', GLYPHS.playstation), 'Hold R1 to aim through numbers.');
 });
 
+test('on a coarse-only device the auto-hide toast and the aim hint name the touch toolbar\'s buttons, not keys', () => {
+  assert.equal(hintText('autoHide', 'touch', GLYPHS.xbox), 'Solved cubes hide. Tap the Ctrl button to see them.');
+  assert.equal(hintText('aimHint', 'touch', GLYPHS.xbox), 'Tap the Space button to aim through numbers.');
+  // Both are drawn for the device the help surfaces speak for: touch unless a controller is in use.
+  const ui = read('js/ui.js');
+  assert.match(ui, /hint\(name\) \{\s*return hintText\(name, this\._bindDevice\(this\._mode\), this\._glyphs\);/);
+  assert.match(MAIN, /ui\.toast\(ui\.hint\('autoHide'\), 4000\)/);
+  assert.match(MAIN, /ui\.toast\(ui\.hint\('aimHint'\), 4000\)/);
+  assert.doesNotMatch(MAIN, /hintText\(/, 'the shell never picks a hint\'s device itself');
+});
+
 // ---------------------------------------------------------------- markup and wiring
 
 const INDEX = read('index.html');
@@ -267,6 +344,20 @@ test('the ready card holds the "How 3D works" block and the Space and Shift line
   assert.match(MAIN, /FIRST_USE\.rules3D/, 'the block shows until a 3D game is finished');
 });
 
+test('on a coarse-only device the "How 3D works" block names the toolbar\'s Ctrl button and the ready card drops its "Esc: Back" hint', () => {
+  const ready = INDEX.slice(INDEX.indexOf('<section id="ready"'), INDEX.indexOf('<!-- Controls modal'));
+  const keys = ready.match(/<span class="ready-rules-keys">([\s\S]*?)<\/span>\n/);
+  const touch = ready.match(/<span class="ready-rules-touch">([\s\S]*?)<\/span>\n/);
+  assert.ok(keys && touch, 'the hidden-cubes line in a keyboard and a touch form');
+  assert.equal(text(keys[1]), 'Empty and solved cubes hide themselves; hold Ctrl to show them.');
+  assert.equal(text(touch[1]), 'Empty and solved cubes hide themselves; tap Ctrl on the right to show them.');
+  const css = read('css/style.css');
+  assert.match(css, /\.ready-rules-touch, \.ready--touch \.ready-rules-keys \{ display: none; \}/, 'the keyboard line on a mouse, keyboard or controller');
+  assert.match(css, /\.ready--touch \.ready-rules-touch \{ display: inline; \}/, 'the touch line on touch');
+  assert.match(css, /#ready\.ready--touch \.esc-row \[data-esc-hint\] \{ display: none; \}/, 'no Esc hint beside the touch card\'s Back');
+  assert.match(UI, /this\.el\.ready\.classList\.toggle\('ready--touch', this\._touch\)/, 'the touch class sits on the whole ready overlay, Back row included');
+});
+
 test('the 3D hint strip replaces the "H controls" pill and its localStorage flag', () => {
   assert.doesNotMatch(INDEX, /id="hint-h"/);
   assert.doesNotMatch(UI + MAIN, /hintH|ms3d\.hintH\.done|LS_HINT_DONE/);
@@ -275,8 +366,8 @@ test('the 3D hint strip replaces the "H controls" pill and its localStorage flag
 
 test('the shell counts games and finishes from the mode host, and keeps the first-use document in platform storage', () => {
   assert.match(MAIN, /createFirstUse\(\{ storage, records: RECORDS \}\)/);
-  assert.match(MAIN, /MODES\.on\('started', \(\{ mode \}\) => \{[^\n]*FIRST_USE\.gameStarted\(mode\)/);
-  assert.match(MAIN, /MODES\.on\('finished', \(\{ mode \}\) => FIRST_USE\.gameFinished\(mode\)\)/);
+  assert.match(MAIN, /MODES\.on\('started', \(\{ mode \}\) => \{[^\n]*FIRST_USE\.gameStarted\(mode, learnGame\(\)\)/);
+  assert.match(MAIN, /MODES\.on\('finished', \(\{ mode \}\) => FIRST_USE\.gameFinished\(mode, learnGame\(\)\)\)/);
   assert.match(MAIN, /FIRST_USE\.once\('autoHideToast'\)/);
   assert.match(MAIN, /FIRST_USE\.once\('aimHint'\)/);
   assert.match(read('js/shell/first-use.js'), /^\/\/ /, 'the module documents itself');
@@ -306,6 +397,9 @@ test('in a browser: the rules block until a finished 3D game, the one-time toast
     await start();
     assert.equal(await mode(), 'ready');
     assert.ok(await shown('ready-rules'), 'the "How 3D works" block on a first launch');
+    assert.match(await ms(() => document.getElementById('ready-rules').innerText), /hold Ctrl to show them/, 'with a mouse and keyboard the rules name the Ctrl key');
+    assert.doesNotMatch(await ms(() => document.getElementById('ready-rules').innerText), /tap Ctrl/);
+    assert.ok(await ms(() => document.querySelector('#ready [data-esc-hint]').getClientRects().length > 0), '"Esc: Back" beside the ready card\'s Back');
     await ms(() => globalThis.__ms.forcePlay());
     assert.ok(await shown('hint-strip'), 'the 3D strip from the start of play');
     assert.equal(await ms(() => document.getElementById('hint-strip-text').textContent), 'Left reveal · Right flag · Hold Space aim through · Hold Shift neighbours');

@@ -28,8 +28,10 @@ the shell hands in its flow and its sound sink. The area overview is
 - `flow` is `{openBoardChoice(choice), show(), container(), hud({seconds,
   minesLeft, clicks}), board({width, height, mines, noGuess}),
   generating(shown), progress?(p|null), failed(failure|null), hint?(text), scale?(),
-  frame?(), layout?(layout), scrolled?()}` — `board` once per game and
-  again when `playStandard()` turns no-guess off.
+  frame?(), layout?(layout), scrolled?(), padCue?(kind)}` — `board` once
+  per game and again when `playStandard()` turns no-guess off; `padCue`
+  the cursor input's `onPadCue` (`'press'` | `'flag'`), which the shell
+  answers with a rumble ([app-shell-3d-play.md](app-shell-3d-play.md)).
 - `mount` defaults to `{board: mountBoardView, pointer: mountPointerInput,
   cursor: mountCursorInput, touch: mountTouchInput, sampler:
   mountSampler2D}`; without `touch` no touch input, without `sampler` no
@@ -57,7 +59,7 @@ the shell hands in its flow and its sound sink. The area overview is
   session through a gate that reads paused while the board is hidden and
   redraws what an action before the first reveal changed (the session
   emits no event then). The view opens at `flow.scale()` inside
-  `flow.frame()`, reports each layout to `flow.layout` (the shell places
+  `flow.frame()`, measured again at every refit, reports each layout to `flow.layout` (the shell places
   the panel) and each player scroll to `flow.scrolled`. `tick()` drives the
   sampler every frame, with the cursor's ring cell beside the view (-1
   when hidden). The session's `changed` redraws the listed cells and
@@ -121,7 +123,7 @@ the shell hands in its flow and its sound sink. The area overview is
   and the button swap; [app-shell-pause.md](app-shell-pause.md) — the end
   delay's skip.
 - [generation.md](generation.md) — the client and `pregenerate`.
-- [replay.md](replay.md) — the 2D movement sampler the mode mounts.
+- [replay-samplers.md](replay-samplers.md) — the 2D movement sampler the mode mounts.
 - [audio.md](audio.md) — the `sfx` cues and their volume and mute.
 - [testing.md](testing.md) — `tests/classic2d-mode.test.mjs` the mode, its
   end delay and the cue each action plays;

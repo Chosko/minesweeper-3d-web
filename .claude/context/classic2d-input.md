@@ -51,15 +51,18 @@ not a new state machine. The area overview is [classic2d.md](classic2d.md).
 - `CURSOR_KEYS` (key code → `up`/`down`/`left`/`right`/`reveal`/`flag`/
   `chord`), `PAD_MAP` (`BTN` index → the same), `STICK_THRESHOLD`.
 - `createCursorInput({grid, game, onPress, onAction, onCursor?, onUse?,
-  rules?, active?, delay?, interval?, start?})` → `{cell, setCell(c), move(dx, dy),
+  onPadCue?, rules?, active?, delay?, interval?, start?})` → `{cell, setCell(c), move(dx, dy),
   hold(source, dir), let(source, dir), tick(now), down(source, button),
   up(source, button), pad(poll, now), reset(), holding, moving}` —
   `start` the cell the cursor starts on (0; a daily's or a challenge's
-  forced start cell, through `mountCursorInput`'s `start`); `onUse()` before each cursor input the board takes; `poll` a
+  forced start cell, through `mountCursorInput`'s `start`); `onUse()` before each cursor input the board takes;
+  `onPadCue(kind)` a controller press the shell answers with a rumble — `'flag'` when X or LT placed or
+  removed a flag, else `'press'` when RT or LT was pressed while the board takes input (keys, A and Y
+  never report); `poll` a
   `GamepadReader` poll after the shell's held-button suppression
   ([input-controller.md](input-controller.md)).
 - `mountCursorInput({view, session, grid?, win?, rules?, delay?,
-  interval?})` → `{input, pad(poll, now?), shown, destroy()}`.
+  interval?, onPadCue?})` → `{input, pad(poll, now?), shown, destroy()}`.
 
 ## INTERNAL PATTERNS
 

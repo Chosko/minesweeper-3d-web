@@ -1,7 +1,7 @@
 # Runbook: ux-review-tasks-implementation
 
 Created: 2026-10-12 · Source: /runbook-create interview · Model: opus
-Last step number: 41
+Last step number: 55
 Sequencing: Run in list order, one step at a time: most tasks edit js/main.js, index.html and css/style.css, and each body says whichever of two overlapping tasks lands second merges around the first; task 119's help component is reused by many later tasks, so it goes first.
 Archive: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 28, 34, 41
 
@@ -185,7 +185,7 @@ Context:
 
 Done: 2026-10-14, commit `7663531` (93 files, +3316/-358). Records format goes to version 4, history to 2 and `BOARD_KEY_FORMAT` to 2 (new `daily:` keys); a daily code from another day plays as a challenge.
 
-## [ ] 35. Implement task 152 — Cube preset re-tune and first-box presets
+## [x] 35. Implement task 152 — Cube preset re-tune and first-box presets
 
 Depends on: 15
 
@@ -197,17 +197,22 @@ Context:
 /task-implement 152 --review
 ```
 
-## [ ] 36. Implement task 153 — Learn 3D guided board
+Done: 2026-10-14, commit `f4c0b03` (32 files, +479/-146). Cube Beginner is 6 × 6 × 6 · 20 and First box 1 is 4 × 4 × 3 · 4; the cube curve misses the ×2.5–×3 target at Beginner → Intermediate (×1.9), shipped as decided.
+
+## [x] 36. Implement task 153 — Learn 3D guided board
 
 Depends on: 1, 35
 
-Context: none
+Context:
+- 2026-10-14 (from step 35): `PRESETS_3D` holds six presets, two first boxes then four cubes; First box 1 is 4 × 4 × 3 · 4 and Cube Beginner 6 × 6 × 6 · 20 (old 6 × 6 × 6 · 10 records read as Cube Intro). With nothing played, focus goes to Cube Beginner, not the first item.
 
 ```prompt
 /task-implement 153 --review
 ```
 
-## [ ] 37. Check the result against the UX review
+Done: 2026-10-14, commit `2c25d21` (36 files, +1063/-109). The guided board is First box 1 (seed 75, generator version 1, mines 1, 2, 3, 40, start cell 26), whose marked start cell is an interior cube the player flies in to click.
+
+## [x] 37. Check the result against the UX review
 
 Depends on: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 35, 36
 
@@ -271,6 +276,186 @@ the current branch.
 The closing report names the counts per status and the five most important
 findings.
 ```
+
+Done: 2026-10-15, commit `59ba9f4` (1 file, +190/-0). Bare `node --test` also runs the review scripts under docs/; the project's suite command is .claude/external/run-full-tests.sh.
+
+## [x] 42. Implement task 197 — Bare `node --test` runs only the project's tests
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 197 --review
+```
+
+Done: 2026-10-15, commit `a1e4aca` (4 files, +26/-6).
+
+## [x] 43. Implement task 196 — Browser tests: root-cause and fix the flakes seen under full-suite load
+
+Depends on: none
+
+Context:
+- 2026-10-15 docs/UX_REVIEW_DRIFT.md line ~167 records which pad-walk assertions failed: the 3D walk read `bc-noguess` / `10,10,10,100`, and the Up walk missed `records-replays-table:7`.
+
+```prompt
+/task-implement 196 --review
+```
+
+Done: 2026-10-15, commit `460a99c` (7 files, +117/-51). The pad-walk flake was a button release crossing the 380 ms menu auto-repeat under load; the touch test stays on a random board and flags only mines instead.
+
+## [x] 44. Implement task 190 — Classic 2D overlay bar fits a phone: Pause and Reveal / Flag on screen
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 190 --review
+```
+
+Done: 2026-10-15, commit `381d4b5` (17 files, +197/-24). The Classic 2D overlay bar wraps onto more rows on narrow screens, and the board view re-measures its frame on every resize.
+
+## [x] 45. Implement task 191 — Classic 2D touch help: touch binding rows and a touch clipped-board hint
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 191 --review
+```
+
+Done: 2026-10-15, commit `5c9f617` (15 files, +110/-26). A touch pan already retired the clipped-board hint, so no wiring was needed there; the help foot, HUD strip and first-use hints still show key names on a phone, as in 3D.
+
+## [x] 46. Implement task 192 — 3D ready and results cards: key hints that match the device and the screen
+
+Depends on: none
+
+Context:
+- 2026-10-15 (from step 45): on a coarse-only device Classic 2D's bindings lists (H panel, pause card, Controls tab) and scroll hint show the touch device, as 3D's do; the help foot, HUD strip and first-use hint strip still follow keyboard or controller in both modes.
+
+```prompt
+/task-implement 192 --review
+```
+
+Done: 2026-10-15, commit `1faae2c` (11 files, +55/-9). `ready--touch` sits on the whole `#ready` overlay rather than on `#ready-btn`, so it reaches the Esc row.
+
+## [x] 47. Implement task 193 — Records: best tiles and tables keep their figures on one line
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 193 --review
+```
+
+Done: 2026-10-15, commit `a64d126` (7 files, +130/-16). The body assumed the tables could keep columns on desktop; one row needs about 1,050 px against panels of 522–728 px, so they stack as cards at every width (the switch moved from 539 px to 1099 px).
+
+## [x] 48. Implement task 194 — Best-time chart: axis ticks with the fewest decimals that tell them apart
+
+Depends on: none
+
+Context:
+- 2026-10-15 (from step 47): the Records tables stack as cards at every desktop width (the switch is a 1099 px container query) and best-tile figures shrink between 24 px and 32 px to stay on one line.
+
+```prompt
+/task-implement 194 --review
+```
+
+Done: 2026-10-15, commit `8d1753f` (3 files, +24/-5). Ticks print exactly to the millisecond with trailing zeros dropped (2.5 s, 1.25 s), since the body's fewest-distinguishing-decimals rule fails its own examples.
+
+## [x] 49. Implement task 195 — Learn 3D guided board: the chord prompt moves on when a chord can no longer teach
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 195 --review
+```
+
+Done: 2026-10-15, commit `14ff74d` (6 files, +125/-10).
+
+## [x] 50. Implement task 198 — Classic 2D no-guess switch back under the presets, with the D-pad walk to match
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 198 --review
+```
+
+Done: 2026-10-15, commit `a6f3a56` (5 files, +25/-22). Moving the markup alone gave the 2D walk Expert → No-guess → Width; navigation code was not touched.
+
+## [x] 51. Implement task 199 — Larger stat labels and key caps on every pointer, 44 px hit areas still touch-only
+
+Depends on: none
+
+Context:
+- 2026-10-15 (from step 44): the Classic 2D overlay bar wraps onto more rows when it does not fit, never wider than the board area minus the panel inset; the board view takes its frame as a function and re-measures it on every resize (`panelFrame2D`).
+- 2026-10-15 parked: Q1. Acceptance criterion 3 requires the pause card to fit the window at 1024 × 768 with a mouse, with no scrolling. It doesn't: the card was already 822 px tall before this change, and is 838 px with the larger labels and key caps, in a 768 px window that scrolls. What holds in both themes: the overlay bar stays on one line, inside the panel and above the board; every row of key caps stays on one line, uncut. Making the card fit needs a pause-card layout change this task doesn't cover, and the Decisions forbid shrinking other text. How should task 199 proceed?
+  a. Land it as is. Amend criterion 3 to what holds (bar on one line, card within the window's width, key cap rows whole), and record the card's height at 1024 × 768 as a follow-up for a new task (`/task-add`).
+  b. Keep criterion 3 and make the card fit inside this task. Name the layout change, e.g. hiding the 3D look settings when Classic 2D is paused, or laying the card out in two columns.
+  c. Drop the change and keep the larger sizes for touch only.
+  Recommendation: a — the overflow existed before this change, the Decisions call a card that doesn't fit a finding to report, and the larger text adds only 16 px. (The finished work is on branch `park/task-199`, 1f3dad6.)
+- 2026-10-15 unparked with answer: a — land it as is; amend criterion 3 to what holds (bar on one line, card within the window's width, key cap rows whole), and record the pause card's height at 1024 × 768 as a follow-up for a new task.
+
+```prompt
+/task-implement 199 --review
+```
+
+Done: 2026-10-15, commit `b4be6b7` (12 files, +136/-44). Landed with criterion 3 amended per the answer: the pause card still overflows the window height at 1024 × 768, which a new task will address.
+
+## [x] 52. Implement task 200 — Touch wording on a coarse-only device for the help foot, HUD strip and hint strip
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 200 --review
+```
+
+Done: 2026-10-15, commit `7b17ddc` (10 files, +131/-35). The Classic 2D hint strip only appears after a key or controller press, so a pure-touch player never sees its new touch wording; when it shows was left unchanged, as the task said.
+
+## [x] 53. Implement task 201 — Pause card in two columns at 1024 px and wider, fitting a 1024 × 768 window
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 201 --review
+```
+
+Done: 2026-10-15, commit `9d0830a` (9 files, +260/-47). The column rule lives in the 1024 px block of css/components.css, and js/main.js needed a `cardBeside` helper so the restart confirmation keeps focus; the body expected css/style.css and js/ui.js changes, which were not needed.
+
+## [x] 54. Implement task 202 — Records Averages table stays inside its panel on a phone
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 202 --review
+```
+
+Done: 2026-10-15, commit `5a432d5` (4 files, +93/-3). The Averages table has its own container query on `#records-averages`, set just under the panel's width at 1024 px, with a margin of a few pixels that depends on the font; a 1024 × 768 test guards it.
+
+## [x] 55. Implement task 203 — Classic 2D hint strip from the game's start on a touch-only device
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 203 --review
+```
+
+Done: 2026-10-15, commit `c1e3e9d` (6 files, +65/-17). On a board too big for the phone, the one-time scroll hint keeps priority and the touch strip replaces it once the player pans.
 
 ## Do not re-propose
 

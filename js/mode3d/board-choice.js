@@ -1,5 +1,6 @@
-// 3D board choice: the three cube presets, a custom board, the Random fill and the no-guess switch,
-// preselected from the last 3D board choice. Touches only the elements it is handed.
+// 3D board choice: Learn 3D, the two first-box presets and the four cube presets, a custom board, the
+// Random fill and the no-guess switch, preselected from the last 3D board choice. Touches only the
+// elements it is handed.
 //
 // A board choice is { size, custom, noGuess }: `size` one of BOARD_SIZES (a preset id or
 // 'custom'); `custom` the custom board's { X, Y, Z, mines }, kept with a preset so the custom
@@ -14,11 +15,15 @@
 // one of them is always a guess.
 //
 // Pure helpers:
-//   PRESETS, FAMILIES        the presets in menu order, each { id, family, name, X, Y, Z, mines },
-//                            and their families { id, label }.
+//   PRESETS, FAMILIES        the presets in menu order, each { id, family, name, X, Y, Z, mines,
+//                            spacing }, and their families { id, label }. `spacing` is the board's
+//                            start spacing.
+//   startSpacing(board)      the start spacing of { X, Y, Z, mines }: the preset's with that size and
+//                            mines (a custom board of a preset's size and mines included, as the
+//                            records recognise a preset), else SPACING_START (js/input.js).
 //   presetKey(p) / presetByKey(key)   '6,6,6,10', the preset items' data-preset value.
-//   presetTitle(p)           'Cube Beginner': family and name, the preset item's label, as results
-//                            and Records name the board.
+//   presetTitle(p)           'Cube Beginner', 'First box 1': family and name, the preset item's label,
+//                            as results and Records name the board.
 //   presetLabel(p)           '6 × 6 × 6 · 10 mines'.
 //   validateCustom(board)    { ok: true } or { ok: false, field, reason }; field 'X' | 'Y' | 'Z' | 'mines'.
 //   customStatus(board)      { ok, field, max, text, warn? }: the info line under the custom fields;
@@ -34,8 +39,9 @@
 //   boardOf(choice)          { X, Y, Z, mines, noGuess } of the board to play.
 //   randomBoard(random?)     the Random fill, the original formula, always a valid board.
 //
-// bindBoardChoice({ root, onStart, onBack, code? }) → { show(choice, { played }), destroy() }
-//   root      the screen's element: preset items [data-preset="X,Y,Z,mines"], the custom form
+// bindBoardChoice({ root, onStart, onLearn, onBack, code? }) → { show(choice, { played }), destroy() }
+//   root      the screen's element: the Learn 3D item [data-learn] first (js/mode3d/learn.js; no
+//             preset, so show() never marks it), preset items [data-preset="X,Y,Z,mines"], the custom form
 //             (form) with its submit button [data-preset="custom"], inputs
 //             [data-field="X|Y|Z|mines"], Random [data-random], the info line [data-info], the
 //             presets' no-guess switch [data-noguess="presets"], the custom board's no-guess
@@ -49,13 +55,15 @@
 //             from js/shell/returning.js) fills each preset's detail line [data-detail], under its
 //             size line, for the position of the presets' no-guess switch, and again whenever the
 //             switch changes; a preset without one shows no detail line.
-//   onStart(choice) when a preset is picked or a valid custom board submitted; onBack() on Back.
+//   onStart(choice) when a preset is picked or a valid custom board submitted; onLearn() when Learn
+//             3D is picked; onBack() on Back.
 //   code      { resolve, onPlay }: the board code field, as Classic 2D's (js/classic2d/board-choice.js):
 //             [data-code-field], [data-code-play] and [data-code-info], cleared by every show.
 
 import { aboveDensityHint, DENSITY_HINT_TEXT } from '../classic2d/board-setup.js';
 import { bindCodeField } from '../ui/components.js';
 import { CODE_PROMPT } from '../classic2d/board-choice.js';
+import { SPACING_START } from '../input.js';
 
 export const DIM_MIN = 1;
 export const DIM_MAX = 100;
@@ -67,13 +75,28 @@ export const NOGUESS_CELL_LIMIT = 8000;
 export const LAST_CHOICE_DOC = 'mode3d.lastChoice';
 export const LAST_CHOICE_VERSION = 1;
 
-const preset = (id, family, name, X, Y, Z, mines) => Object.freeze({ id, family, name, X, Y, Z, mines });
+/** The first-box presets' start spacing: the boxes open up, read as slabs before the cubes. */
+const SPACING_FIRST_BOX = 1.5;
+
+// The presets in menu order. The cube steps aim at about ×2.5 to ×3 in 3BV; measured ×2.9, ×1.9 and
+// ×3.0 (js/records/typical-bbbv.js). The mine counts of First box 1 and Cube Beginner are measured by
+// dev/measure-first-box-3d.mjs (no-guess, the first click on the marked start cell, 100 seeds a count):
+//   First box 1, 4 mines — the count nearest 4 that leaves work after the first click: every seed
+//     generates, the first click wins outright on none, median 3BV left 12.
+//   Cube Beginner, 20 mines — of 16 to 20 (every seed generates, median 3BV left at least 40), the one
+//     whose first click opens nearest 60 % of the safe cells: 60.5 %, median 3BV left 57.
+// Preset ids name the tier, so a remembered choice follows it to the tier's current board.
+const preset = (id, family, name, X, Y, Z, mines, spacing = SPACING_START) => Object.freeze({ id, family, name, X, Y, Z, mines, spacing });
 export const PRESETS = Object.freeze([
-  preset('cube-beginner', 'cube', 'Beginner', 6, 6, 6, 10),
+  preset('box-1', 'box', '1', 4, 4, 3, 4, SPACING_FIRST_BOX),
+  preset('box-2', 'box', '2', 5, 5, 3, 6, SPACING_FIRST_BOX),
+  preset('cube-intro', 'cube', 'Intro', 6, 6, 6, 10),
+  preset('cube-beginner', 'cube', 'Beginner', 6, 6, 6, 20),
   preset('cube-intermediate', 'cube', 'Intermediate', 8, 8, 8, 40),
-  preset('cube-expert', 'cube', 'Expert', 12, 12, 8, 130),
+  preset('cube-expert', 'cube', 'Expert', 10, 10, 10, 100),
 ]);
 export const FAMILIES = Object.freeze([
+  Object.freeze({ id: 'box', label: 'First box' }),
   Object.freeze({ id: 'cube', label: 'Cube' }),
 ]);
 export const BOARD_SIZES = Object.freeze([...PRESETS.map((p) => p.id), 'custom']);
@@ -89,6 +112,7 @@ export const presetByKey = (key) => PRESETS.find((p) => presetKey(p) === key) ??
 export const presetTitle = (p) => `${FAMILIES.find((f) => f.id === p.family).label} ${p.name}`;
 const presetById = (id) => PRESETS.find((p) => p.id === id) ?? null;
 export const presetLabel = (p) => `${p.X} × ${p.Y} × ${p.Z} · ${p.mines} mines`;
+export const startSpacing = ({ X, Y, Z, mines }) => presetByKey(presetKey({ X, Y, Z, mines }))?.spacing ?? SPACING_START;
 
 const n = (v) => v.toLocaleString('en-US');
 const dim = (v) => Number.isInteger(v) && v >= DIM_MIN && v <= DIM_MAX;
@@ -180,8 +204,9 @@ export function randomBoard(random = Math.random) {
 
 const FIELDS = Object.freeze(['X', 'Y', 'Z', 'mines']);
 
-export function bindBoardChoice({ root, onStart, onBack, code = null }) {
+export function bindBoardChoice({ root, onStart, onLearn, onBack, code = null }) {
   const items = [...root.querySelectorAll('[data-preset]')];
+  const learn = root.querySelector('[data-learn]');
   const form = root.querySelector('form');
   const inputs = FIELDS.map((f) => root.querySelector(`[data-field="${f}"]`));
   const info = root.querySelector('[data-info]');
@@ -265,6 +290,7 @@ export function bindBoardChoice({ root, onStart, onBack, code = null }) {
   };
   const onNoGuess = () => { wanted = noGuess.checked; update(); };
   const onBackClick = () => onBack?.();
+  const onLearnClick = () => onLearn?.();
 
   for (const b of items) b.addEventListener('click', onItem);
   for (const inp of inputs) inp.addEventListener('input', update);
@@ -273,6 +299,7 @@ export function bindBoardChoice({ root, onStart, onBack, code = null }) {
   noGuess.addEventListener('change', onNoGuess);
   noGuessPresets.addEventListener('change', fillDetails);
   back?.addEventListener('click', onBackClick);
+  learn?.addEventListener('click', onLearnClick);
 
   const codeInput = root.querySelector('[data-code-field]');
   const codeField = code && codeInput ? bindCodeField({
@@ -304,6 +331,7 @@ export function bindBoardChoice({ root, onStart, onBack, code = null }) {
       noGuess.removeEventListener('change', onNoGuess);
       noGuessPresets.removeEventListener('change', fillDetails);
       back?.removeEventListener('click', onBackClick);
+      learn?.removeEventListener('click', onLearnClick);
     },
   };
 }

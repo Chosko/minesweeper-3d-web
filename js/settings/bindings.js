@@ -8,17 +8,20 @@
 // back) and drawn with the active controller's glyphs (js/gamepad.js GLYPHS).
 //
 // bindingRows(mode, device, camera = 'fly') → the rows; 3D's for the Camera setting's camera (Fly or
-//   Orbit), kept in one table whose camera slots fill from CAMERA_ROWS. 3D also lists a touch
+//   Orbit), kept in one table whose camera slots fill from CAMERA_ROWS. Both modes also list a touch
 //   device (TOUCH_DEVICE), the gestures of a coarse-only device; bindingDevices(mode) names the
 //   devices a mode lists. An unknown mode, device or camera throws.
 // bindingsListHtml(rows, glyphs?) → the <dt>/<dd> pairs of a `dl.controls` list, text escaped.
 // bindingsHtml(mode, device, glyphs?, camera?) → the bindings component: that mode's rows for that device.
-// hudStripHtml(mode, device, glyphs?, { muted, spacing }) → the HUD strip: only the keys or buttons
-//   the mode binds on that device (F flags in Classic 2D, so it is not listed there); 3D's carries
-//   the spacing to one decimal.
+// hudStripHtml(mode, device, glyphs?, { muted, spacing }) → the HUD strip: only the keys, buttons or
+//   gestures the mode binds on that device (F flags in Classic 2D, so it is not listed there); 3D's
+//   carries the spacing to one decimal. Touch lists only 3D's spacing; Classic 2D's is empty.
 // hintStripHtml(mode, device, glyphs?) → the first-use hint strip of that mode, " · " between items.
-// helpFootHtml(mode, device, glyphs?) → the H panel's foot line; the release rule only in 3D.
-// hintText(name, device, glyphs?) → a one-time hint's plain text (`autoHide`, `aimHint`, `scrollHint`).
+// helpFootHtml(mode, device, glyphs?) → the H panel's foot line; the release rule only in 3D, and
+//   empty for Classic 2D's touch.
+// hintText(name, device, glyphs?) → a one-time hint's plain text (`autoHide`, `aimHint`, `scrollHint`),
+//   or a Learn 3D prompt's (`learnStart`, `learnShift`, `learnCtrl`, `learnFlag`, `learnChord`, `learnRest`),
+//   for the keyboard, the controller or touch.
 // createActiveDevice({ onChange }) → the active device: the controller while the last input came
 //   from a connected controller, otherwise the keyboard and mouse.
 
@@ -34,7 +37,7 @@ export const BINDING_DEVICES = Object.freeze([
   Object.freeze({ id: 'keyboard', label: 'Keyboard and mouse' }),
   Object.freeze({ id: 'controller', label: 'Controller' }),
 ]);
-/** The touch device: 3D's gestures on a coarse-only device (js/touch-3d.js). */
+/** The touch device: each mode's gestures on a coarse-only device (js/touch-3d.js, js/classic2d/touch-input.js). */
 export const TOUCH_DEVICE = Object.freeze({ id: 'touch', label: 'Touch' });
 
 const rows = (list) => Object.freeze(list.map((r) => Object.freeze(r)));
@@ -139,6 +142,15 @@ export const BINDINGS = Object.freeze({
       ['{start} / {b} / {back}', 'Pause'],
       ['{start} + {y}', 'Restart: a new board of the same choice'],
     ]),
+    touch: rows([
+      ['Tap', 'Reveal a closed cell; with the switch on Flag, flag / unflag it'],
+      ['Long-press', 'Flag / unflag (hold 0.4 s)'],
+      ['Tap a number', 'Chord: reveal the neighbours of a satisfied number'],
+      ['Tap: Reveal / Flag', 'Switch what a tap does on a closed cell'],
+      ['One finger: drag', 'Pan a board larger than the screen'],
+      ['Two fingers', 'Pan; pinch to zoom'],
+      ['Pause button', 'Pause menu (at the top)'],
+    ]),
   }),
   '3d': Object.freeze({ keyboard: threeD('fly', 'keyboard'), controller: threeD('fly', 'controller'), touch: threeD('fly', 'touch') }),
 });
@@ -147,7 +159,7 @@ export const BINDINGS = Object.freeze({
 export const BINDINGS_3D = Object.freeze(Object.fromEntries(CAMERAS.map((camera) => [camera,
   camera === 'fly' ? BINDINGS['3d'] : Object.freeze({ keyboard: threeD(camera, 'keyboard'), controller: threeD(camera, 'controller'), touch: threeD(camera, 'touch') })])));
 
-/** The input devices a mode lists bindings for: the keyboard and the controller, and touch in 3D. */
+/** The input devices a mode lists bindings for: the keyboard and the controller, and touch where the mode has touch rows. */
 export function bindingDevices(mode) {
   return Object.hasOwn(BINDINGS, mode) && Object.hasOwn(BINDINGS[mode], 'touch') ? [...BINDING_DEVICES, TOUCH_DEVICE] : [...BINDING_DEVICES];
 }
@@ -196,10 +208,12 @@ export const HUD_STRIP = table({
   'classic-2d': {
     keyboard: [['[H]', 'help'], ['[M]', 'sound'], ['[Esc]', 'menu']],
     controller: [['{start}', 'menu']],
+    touch: [],
   },
   '3d': {
     keyboard: [['[X]', 'spacing'], ['[H]', 'help'], ['[M]', 'sound'], ['[F]', 'fullscreen'], ['[Esc]', 'menu']],
     controller: [['D-pad ↑ ↓', 'spacing'], ['{x}', 'help'], ['{start}', 'menu']],
+    touch: [['Pinch', 'spacing']],
   },
 });
 
@@ -208,27 +222,36 @@ export const HINT_STRIP = table({
   'classic-2d': {
     keyboard: [['Arrows', 'move'], ['[Space]', 'reveal'], ['[F]', 'flag'], ['[D]', 'chord']],
     controller: [['D-pad', 'move'], ['{a}', 'reveal'], ['{x}', 'flag'], ['{y}', 'chord']],
+    touch: [['Tap', 'reveal'], ['Long-press', 'flag'], ['Tap a number', 'chord']],
   },
   '3d': {
     keyboard: [['Left', 'reveal'], ['Right', 'flag'], ['Hold [Space]', 'aim through'], ['Hold [Shift]', 'neighbours']],
     controller: [['{rt}', 'reveal'], ['{lt}', 'flag'], ['Hold {rb}', 'aim through'], ['Hold {lb}', 'neighbours']],
+    touch: [['Tap', 'reveal'], ['Long-press', 'flag'], ['Space button', 'aim through'], ['Shift button', 'neighbours']],
   },
 });
 
-/** The H panel's foot line: the release rule only in the mode that has it (3D). */
+/** The H panel's foot line: the release rule only in the mode that has it (3D); touch names no key. */
 export const HELP_FOOT = Object.freeze({
-  'classic-2d': Object.freeze({ keyboard: '[H] hides this panel.', controller: '[H] hides this panel.' }),
+  'classic-2d': Object.freeze({ keyboard: '[H] hides this panel.', controller: '[H] hides this panel.', touch: '' }),
   '3d': Object.freeze({
     keyboard: 'Actions fire when the mouse button is released. [H] hides this panel.',
     controller: 'Actions fire when the trigger is released. {x} hides this panel.',
+    touch: 'Actions fire when your finger lifts.',
   }),
 });
 
-/** The one-time hints' text per device. */
+/** The one-time hints' and Learn 3D prompts' text per device; touch names the toolbar's buttons and the gestures (js/touch-3d.js). */
 export const HINT_TEXT = Object.freeze({
-  autoHide: Object.freeze({ keyboard: 'Solved cubes hide. Hold [Ctrl] to see them.', controller: 'Solved cubes hide. Hold {y} to see them.' }),
-  aimHint: Object.freeze({ keyboard: 'Hold [Space] to aim through numbers.', controller: 'Hold {rb} to aim through numbers.' }),
-  scrollHint: Object.freeze({ keyboard: 'Wheel scrolls · Shift+wheel sideways', controller: 'Wheel scrolls · Shift+wheel sideways' }),
+  autoHide: Object.freeze({ keyboard: 'Solved cubes hide. Hold [Ctrl] to see them.', controller: 'Solved cubes hide. Hold {y} to see them.', touch: 'Solved cubes hide. Tap the Ctrl button to see them.' }),
+  aimHint: Object.freeze({ keyboard: 'Hold [Space] to aim through numbers.', controller: 'Hold {rb} to aim through numbers.', touch: 'Tap the Space button to aim through numbers.' }),
+  scrollHint: Object.freeze({ keyboard: 'Wheel scrolls · Shift+wheel sideways', controller: 'Wheel scrolls · Shift+wheel sideways', touch: 'Drag to pan · pinch to zoom' }),
+  learnStart: Object.freeze({ keyboard: 'Click the marked cube to start', controller: 'Press {rt} on the marked cube to start', touch: 'Aim at the marked cube and tap to start' }),
+  learnShift: Object.freeze({ keyboard: 'Hold [Shift] to see what this number counts', controller: 'Hold {lb} to see what this number counts', touch: 'Tap the Shift button to see what this number counts' }),
+  learnCtrl: Object.freeze({ keyboard: 'Hold [Ctrl] to see the cubes you cleared', controller: 'Hold {y} to see the cubes you cleared', touch: 'Tap the Ctrl button to see the cubes you cleared' }),
+  learnFlag: Object.freeze({ keyboard: 'Flag the one cube that must be a mine', controller: 'Press {lt} on the one cube that must be a mine', touch: 'Aim at the one cube that must be a mine and long-press to flag it' }),
+  learnChord: Object.freeze({ keyboard: 'Press left and right together on the number to chord', controller: 'Press {lt} and {rt} together on the number to chord', touch: 'Aim at the number and tap two fingers together on the right half to chord' }),
+  learnRest: Object.freeze({ keyboard: 'Clear the rest of the box', controller: 'Clear the rest of the box', touch: 'Clear the rest of the box' }),
 });
 
 export function hudStripHtml(mode, device, glyphs = GLYPHS.generic, { muted = false, spacing = SPACING_START } = {}) {

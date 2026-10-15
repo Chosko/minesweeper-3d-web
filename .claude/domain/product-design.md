@@ -70,9 +70,13 @@ no-guess on, and plays. The results screen shows the time, 3BV/s, efficiency,
 the comparison against their personal best, and their Steam global and
 friends rank. They can watch the replay, then play again in one step.
 
-**The 3D on-ramp.** A player curious about 3D starts the 3D campaign rather
-than free play. Its early levels are small, oddly shaped boards that teach
-reading numbers in depth; as levels unlock, boards grow and shapes get more
+**The 3D on-ramp.** A player curious about 3D starts with Learn 3D on the 3D
+board choice: one small guided box whose prompts teach that a number counts
+the mines among up to 26 cubes in three layers and that solved cubes
+disappear, with no timer and no records. Its win offers the First box
+presets, the smallest real boards. The 3D campaign follows, ahead of free
+play: its early levels are small, oddly shaped boards that teach reading
+numbers in depth; as levels unlock, boards grow and shapes get more
 demanding, until free 3D play is within reach.
 
 ## Design decisions
@@ -255,13 +259,13 @@ orbited around its centre, with solved cells hiding
 themselves and the Shift / Space / Ctrl view modes for seeing inside. The
 first click is always safe, and a no-guess switch is available, except on a
 box with a side of exactly 2 cells, which can never be solved without
-guessing. Three presets — Beginner, Intermediate and Expert cubes — plus
-custom boards; flat boards are Classic 2D's. When a game ends, its win or
+guessing. Two first-box presets, then the Intro, Beginner, Intermediate
+and Expert cubes, plus custom boards; flat boards are Classic 2D's. When a game ends, its win or
 loss effect plays — on a loss, the wave that shows where the mines were —
 and then the results screen shows over the dimmed board; from it the
 player can choose to fly over the frozen finished board, read-only. Serves
-the 3D on-ramp, once the
-campaign has taught the player to read numbers in depth.
+the 3D on-ramp, once Learn 3D, the First box presets and the campaign have
+taught the player to read numbers in depth.
 
 ### Surface
 

@@ -281,6 +281,23 @@ test('the best-time chart draws its step line and markers in the token colour, t
   assert.match(src, /best: '--color-[a-z-]+'/, 'the best line is a token');
 });
 
+/** The best-time chart's time-axis labels, top to bottom: its first three texts, drawn before the legend. */
+function timeAxisLabels(steps) {
+  const ctx = fakeContext();
+  const data = { steps, start: steps[0].endedAt, end: steps.at(-1).endedAt };
+  drawBestTimeChart(ctx, { width: 400, height: 160, data, token: (name) => THEMES.light[name] });
+  return ctx.calls.filter((c) => c.op === 'fillText').slice(0, 3).map((c) => c.args[0]);
+}
+
+test('the time axis reads in seconds with the fewest decimals that tell its ticks apart, never as thousands', () => {
+  const axis = (slowest) => timeAxisLabels([{ id: 'a', endedAt: localIso(2026, 9, 1), elapsedMs: slowest }, { ...STEPS[2], elapsedMs: 1000 }]);
+  assert.deepEqual(axis(4200), ['5 s', '2.5 s', '0 s'], 'a 0–5 s axis');
+  assert.deepEqual(axis(73000), ['100 s', '50 s', '0 s'], 'a 0–100 s axis');
+  assert.deepEqual(axis(2300), ['2.5 s', '1.25 s', '0 s'], 'a 0–2.5 s axis: 1.25 s does not force 2.50 s');
+  assert.deepEqual(bestReadout([{ endedAt: localIso(2026, 9, 1), elapsedMs: 2500 }], 0).at(-1), 'Best time 2.500 s', 'the hover readout keeps thousandths');
+  assert.equal(bestTimeText([{ endedAt: localIso(2026, 9, 1), elapsedMs: 2500 }]), 'Best time by date, 1 new best: 2.500 s on 1 Oct 2026.', 'so does the text alternative');
+});
+
 // ---------------------------------------------------------------- hover values
 
 test('the hover lookup finds the nearest point on both charts', () => {
