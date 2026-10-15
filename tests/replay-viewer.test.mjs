@@ -26,6 +26,7 @@ import { REPLAY_SCREEN } from '../js/records/replay-list.js';
 import { BTN } from '../js/gamepad.js';
 import { CELL } from '../js/engine/rules.js';
 import { browserSuite } from './helpers/browser.mjs';
+import { patience } from './helpers/timing.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const suite = browserSuite();
@@ -776,7 +777,7 @@ test('in a browser without WebGL 2, a 2D replay plays and a 3D replay says it ne
       HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
     });
     await page.goto(`${base}/index.html`);
-    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu', null, { timeout: patience(5000) });
     assert.equal(await page.evaluate(() => globalThis.__ms.renderer), null, 'no WebGL 2 here');
     const watch = (file) => page.evaluate(async (f) => {
       const bytes = new Uint8Array(await (await fetch(`/tests/fixtures/replays/${f}`)).arrayBuffer());
@@ -784,17 +785,17 @@ test('in a browser without WebGL 2, a 2D replay plays and a 3D replay says it ne
     }, file);
 
     await watch(WON);
-    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready');
+    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready', null, { timeout: patience(5000) });
     assert.equal(await page.evaluate(() => document.querySelectorAll('#replay-board canvas').length), 1, 'the 2D board view is mounted');
     await page.click('#rp-speed [data-value="4"]');
     await page.click('#rp-play');
-    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.ended, null, { timeout: 15000 });
+    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.ended, null, { timeout: patience(3000) });
     assert.equal(await page.evaluate(() => document.getElementById('replay-end').textContent), 'Won · 9.971 s');
     await page.click('#rp-back');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
 
     await watch(CUBE);
-    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'failed');
+    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'failed', null, { timeout: patience(5000) });
     assert.equal(await page.evaluate(() => document.getElementById('replay-message-text').textContent), FAILURES.webgl2);
     assert.equal(await page.evaluate(() => document.getElementById('replay').classList.contains('replay--scene')), false, 'no 3D scene is let through');
     assert.equal(await page.evaluate(() => document.activeElement?.id), 'replay-message-back');
@@ -816,12 +817,12 @@ test('in a browser, a recorded 2D replay plays from its fixture through to the e
     page.on('pageerror', (e) => errors.push(e.message));
     await page.addInitScript(removeWebGL2);
     await page.goto(`${base}/index.html`);
-    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu', null, { timeout: patience(5000) });
     await page.evaluate(async () => {
       const bytes = new Uint8Array(await (await fetch('/tests/fixtures/replays/2d-beginner-won.msrp')).arrayBuffer());
       globalThis.__ms.watch({ replay: bytes, returnTo: { screen: 'menu' } });
     });
-    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready');
+    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready', null, { timeout: patience(5000) });
     const text = (id) => page.evaluate((i) => document.getElementById(i).textContent, id);
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'replay');
     assert.equal(await page.evaluate(() => document.activeElement?.id), 'rp-play', 'focus on Play');
@@ -834,9 +835,11 @@ test('in a browser, a recorded 2D replay plays from its fixture through to the e
 
     await page.click('#rp-speed [data-value="4"]');
     await page.click('#rp-play');
-    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.playing && globalThis.__ms.replayViewer.state.time > 1000);
+    // Past 1 s of replay time, playing or already at its end: at 4× the playing window is about 2.5 s,
+    // which one stalled frame on a loaded machine can step past. The recorded pointer stays when it stops.
+    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.time > 1000, null, { timeout: patience(3000) });
     assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('#replay-board .replay-pointer')).display !== 'none'), true, 'the recorded pointer shows');
-    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.ended, null, { timeout: 15000 });
+    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.ended, null, { timeout: patience(3000) });
     assert.equal(await text('replay-end'), 'Won · 9.971 s');
     assert.equal(await text('rp-clock'), '09.971');
     assert.equal(await text('rp-bbbv'), '15 / 15');
@@ -893,7 +896,7 @@ test('in a browser, a recorded 2D replay plays from its fixture through to the e
       r.header.pauses = [{ start: 1000, end: 3000 }, { start: 5000, end: 8000 }]; // marks over the bar; the actions are the fixture's
       globalThis.__ms.watch({ replay: encodeReplay(r), returnTo: { screen: 'menu' } });
     });
-    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready');
+    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready', null, { timeout: patience(5000) });
     const marks = await page.evaluate(() => [...document.querySelectorAll('#rp-pauses .replay-pause')].map((m) => [m.style.left, m.style.width, getComputedStyle(m).backgroundColor]));
     assert.equal(marks.length, 2);
     assert.match(marks[0][0], /^14\.3\d*%$/, 'placed after the lead-in');
@@ -904,7 +907,7 @@ test('in a browser, a recorded 2D replay plays from its fixture through to the e
 
     // A replay that cannot be read says so, and Back still works.
     await page.evaluate(() => globalThis.__ms.watch({ replay: new Uint8Array([1, 2, 3]), returnTo: { screen: 'menu' } }));
-    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'failed');
+    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'failed', null, { timeout: patience(5000) });
     assert.match(await text('replay-message-text'), /cannot be read/);
     assert.equal(await page.evaluate(() => document.getElementById('replay-controls').classList.contains('hidden')), true);
     assert.deepEqual(await page.evaluate(() => ['rp-clock', 'rp-mines', 'rp-bbbv', 'rp-rate'].map((id) => document.getElementById(id).textContent)),

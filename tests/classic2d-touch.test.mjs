@@ -444,13 +444,18 @@ function removeWebGL2() {
 
 const PHONE = { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 };
 
-// Touches through the DevTools protocol, so a finger can be held and two can move at once.
+// Touches through the DevTools protocol, so a finger can be held and two can move at once. A tap
+// and a one-finger drag are gestures the browser synthesizes itself, touch to lift: sent as separate
+// touch events, the time between them is the test's round trip, which on a loaded machine passes
+// the 400 ms long-press and turns a tap or a drag into a flag.
 function fingers(cdp) {
   const send = (type, points) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points.map(([x, y], id) => ({ x, y, id })) });
   return {
     start: (points) => send('touchStart', points),
     move: (points) => send('touchMove', points),
     end: () => send('touchEnd', []),
+    tap: ([x, y]) => cdp.send('Input.synthesizeTapGesture', { x, y, duration: 50, tapCount: 1, gestureSourceType: 'touch' }),
+    drag: ([x, y], [dx, dy]) => cdp.send('Input.synthesizeScrollGesture', { x, y, xDistance: dx, yDistance: dy, speed: 2000, gestureSourceType: 'touch', preventFling: true }),
   };
 }
 
@@ -513,18 +518,20 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
     // The first tap reveals and starts the game; it acts exactly once (no emulated mouse press).
     const first = 2 * 30 + 2;
     await ms(() => { globalThis.__mouse = []; });
-    await page.touchscreen.tap(...(await centreOf(first)));
+    await f.tap(await centreOf(first));
     await page.waitForFunction(() => globalThis.__ms.modes.state.started, null, { timeout: patience(5000) });
     assert.equal(await cellState(first), 'revealed');
     assert.equal(await ms(() => Number(document.getElementById('hud-clicks').textContent)), 1, 'one click counted');
     assert.deepEqual(await ms(() => globalThis.__mouse), [], 'the tap reached no mouse listener');
 
-    // A closed cell to flag, found on the page.
+    // A closed mine to flag, found on the page: a mine, so that a number beside it still chords below
+    // once its other mines are flagged — a flag on a safe cell beside it would block that chord.
     const closedCell = () => ms(() => {
       const g = globalThis.__ms.game2D;
       const v = globalThis.__ms.board2D;
+      const mines = new Set(Array.from(g.snapshot().mines));
       for (let c = 0; c < 30 * 16; c++) {
-        if (g.cellState(c) !== 'closed') continue;
+        if (g.cellState(c) !== 'closed' || !mines.has(c)) continue;
         const r = v.cellRect(c);
         if (r.x >= v.layout.viewX && r.y >= v.layout.viewY && r.x + r.size <= v.layout.viewX + v.layout.viewWidth && r.y + r.size <= v.layout.viewY + v.layout.viewHeight) return c;
       }
@@ -542,9 +549,12 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
     // The switch on Flag: a tap takes the flag back; back on Reveal.
     await page.tap('#hud-tap');
     assert.equal(await ms(() => document.getElementById('hud-tap').getAttribute('aria-pressed')), 'true');
-    await page.touchscreen.tap(...(await centreOf(target)));
+    const becomes = (c, state) => page.waitForFunction(([cell, s]) => globalThis.__ms.game2D.cellState(cell) === s, [c, state], { timeout: patience(2000) });
+    await f.tap(await centreOf(target));
+    await becomes(target, 'closed');
     assert.equal(await cellState(target), 'closed', 'a tap in Flag toggles the flag');
-    await page.touchscreen.tap(...(await centreOf(target)));
+    await f.tap(await centreOf(target));
+    await becomes(target, 'flagged');
     assert.equal(await cellState(target), 'flagged');
     await page.tap('#hud-tap');
     assert.equal(await ms(() => document.getElementById('hud-tap').getAttribute('aria-pressed')), 'false');
@@ -579,7 +589,8 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
         await f.end();
       }
       await ms((c) => globalThis.__ms.board2D.ensureVisible(c), chordable.c);
-      await page.touchscreen.tap(...(await centreOf(chordable.c)));
+      await f.tap(await centreOf(chordable.c));
+      await becomes(chordable.safe[0], 'revealed');
       assert.equal(await cellState(chordable.safe[0]), 'revealed', 'the tap on the number chorded');
     }
 
@@ -587,10 +598,8 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
     const clicks = await ms(() => Number(document.getElementById('hud-clicks').textContent));
     await ms(() => globalThis.__ms.board2D.scrollTo(0, 0));
     const p = [v0.left + v0.viewX + v0.viewWidth / 2, v0.top + v0.viewY + v0.viewHeight / 2];
-    await f.start([p]);
-    await f.move([[p[0] - 4, p[1]]]);
-    await f.move([[p[0] - 60, p[1] - 30]]);
-    await f.end();
+    await f.drag(p, [-60, -30]);
+    await page.waitForFunction(() => globalThis.__ms.board2D.scroll.x >= 50, null, { timeout: patience(2000) });
     const panned = await view();
     assert.ok(panned.scroll.x >= 50, `the board followed the finger (${JSON.stringify(panned.scroll)})`);
     assert.equal(await ms(() => Number(document.getElementById('hud-clicks').textContent)), clicks, 'a pan is no click');

@@ -8,6 +8,10 @@ import { create3DMode, END_DELAY_MS, END_DELAY_MAX_MS, endDelayMs, waveStepS, WA
 import { startCell } from '../js/generation/start-cell.js';
 import { createSession } from '../js/mode3d/session.js';
 import { LEARN_BOARD, learnChoice } from '../js/mode3d/learn.js';
+import { generate } from '../js/generation/generate.js';
+import { createBoxGrid } from '../js/engine/box-grid.js';
+import { createGameWithMines, PHASE, CELL } from '../js/engine/rules.js';
+import { PROFILE_3D } from '../js/engine/profiles.js';
 import { browserSuite } from './helpers/browser.mjs';
 import { patience } from './helpers/timing.mjs';
 
@@ -633,7 +637,7 @@ test('in a browser, the 3D game starts, pauses, resumes, restarts and leaves thr
       globalThis.__ms.click('left');
     }, BOARD);
     assert.equal(await ms(() => globalThis.__ms.game.state), 'won');
-    await page.waitForFunction(() => globalThis.__events.at(-1)[0] === 'finished', null, { timeout: 5000 });
+    await page.waitForFunction(() => globalThis.__events.at(-1)[0] === 'finished', null, { timeout: patience(5000) });
     assert.equal(await mode(), 'paused', 'a fixed board, which has no results, ends on the pause card');
     const won = await ms(() => {
       const [type, e] = globalThis.__events.at(-1);
@@ -659,6 +663,20 @@ test('in a browser, the 3D game starts, pauses, resumes, restarts and leaves thr
   }
 });
 
+// The generating-card test's first board: the no-guess 5 × 5 × 1 · 4 box from seed 1 with its first
+// click on cell 0 (mines at 4, 9, 12, 20), whose first click opens 12 of the 21 safe cells.
+const FIRST_SEED = 1;
+
+test('the generating-card test\'s fixed first board is not won by its first click, and keeps a mine to lose on', () => {
+  const result = generate({ graph: { kind: 'box', X: 5, Y: 5, Z: 1 }, mineCount: 4, firstClick: 0, noGuess: true, seed: FIRST_SEED });
+  assert.equal(result.ok, true);
+  const game = createGameWithMines({ graph: createBoxGrid(5, 5, 1).graph, profile: PROFILE_3D, mines: result.mines });
+  game.reveal(0);
+  assert.equal(game.phase, PHASE.PLAYING, 'the first click does not win');
+  assert.equal(Array.from({ length: 25 }, (_, c) => game.cellState(c)).filter((v) => v === CELL.REVEALED).length, 12);
+  assert.ok(Array.from(result.mines).some((m) => game.cellState(m) === CELL.CLOSED), 'a closed mine is left to reveal');
+});
+
 test('in a browser, the 3D generating card shows by its delay in pointer-locked play, with its progress line; Play again marks the start cell and the in-flight board shows it too', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
@@ -667,17 +685,28 @@ test('in a browser, the 3D generating card shows by its delay in pointer-locked 
     const page = await browser.newPage({ viewport: { width: 640, height: 480 } }); // a small canvas: software GL draws its frames fast enough
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    // a slow worker: progress at once, the first board 4 s later and every later one (the
-    // pre-generation) 12 s later, so it is still in flight after the loss and Play again; the real
-    // generator behind it
+    // A slow worker for this test's 5 × 5 × 1 box: progress at once, the first board 4 s later and
+    // every later one (the pre-generation) 12 s later, so it is still in flight after the loss and
+    // Play again; the real generator behind it. The first board is a fixed one (FIRST_SEED, whose
+    // first click opens 12 of the 21 safe cells and leaves the mines to lose on), since a random
+    // no-guess board's first click can win outright. Any other request — the start-up's daily
+    // pre-generation shares this worker — is answered at once with no board, so it never takes the
+    // first board's slot.
     await page.route('**/js/generation/worker.js', (route) => route.fulfill({
       contentType: 'text/javascript',
       body: `import { handleMessage } from './worker-real.js';
         let boards = 0;
         globalThis.onmessage = ({ data }) => {
           if (data.warm) { globalThis.postMessage({ id: data.id, warm: true }); return; }
+          const g = data.request.graph;
+          if (!(g.kind === 'box' && g.X === 5 && g.Y === 5 && g.Z === 1)) {
+            globalThis.postMessage({ id: data.id, result: { ok: false, reason: 'another board' } });
+            return;
+          }
           globalThis.postMessage({ id: data.id, progress: { candidates: 7 } });
-          setTimeout(() => globalThis.postMessage(handleMessage(data)), boards++ === 0 ? 4000 : 12000);
+          const first = boards++ === 0;
+          const message = first ? { ...data, request: { ...data.request, seed: ${FIRST_SEED} } } : data;
+          setTimeout(() => globalThis.postMessage(handleMessage(message)), first ? 4000 : 12000);
         };`,
     }));
     await page.route('**/js/generation/worker-real.js', (route) => route.fulfill({ contentType: 'text/javascript', body: read('js/generation/worker.js') }));
@@ -692,7 +721,7 @@ test('in a browser, the 3D generating card shows by its delay in pointer-locked 
     };
     const lockAndPlay = async () => {
       if (await ms(() => globalThis.__ms.state.mode) === 'ready') await press('#ready-btn');
-      await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing' && !!document.pointerLockElement, null, { timeout: 5000, polling: 100 });
+      await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing' && !!document.pointerLockElement, null, { timeout: patience(5000), polling: 100 });
     };
     // Click `cell` and measure, in the page, when the card loses its hidden class, and the main-thread
     // long tasks meanwhile: a timer cannot fire inside one (software GL makes frames long).
@@ -725,7 +754,7 @@ test('in a browser, the 3D generating card shows by its delay in pointer-locked 
     assert.ok(first.after <= 200 + first.stall + 250, `the card shows by the delay under pointer lock (${first.after.toFixed(0)} ms, long tasks ${first.stall.toFixed(0)} ms)`);
     assert.equal(await ms(() => !!document.pointerLockElement), true, 'still pointer-locked');
     assert.match(first.line, /^candidate \d+ · \d+ s$/, `the progress line shows with the card (${JSON.stringify(first)})`);
-    await page.waitForFunction(() => globalThis.__ms.state.started, null, { timeout: 30000, polling: 100 });
+    await page.waitForFunction(() => globalThis.__ms.state.started, null, { timeout: patience(4000), polling: 100 });
     assert.equal(await ms(() => document.getElementById('m3d-status').classList.contains('hidden')), true, 'the card goes with the board');
     assert.equal(await ms(() => globalThis.__ms.renderer.mark), -1, 'no mark on a game with no pre-generated board');
 
@@ -735,11 +764,11 @@ test('in a browser, the 3D generating card shows by its delay in pointer-locked 
       for (let c = 0; c < g.n; c++) if (g.number[c] === -1 && m.aimAt(c) === c) { m.click('left'); return; }
     });
     assert.equal(await ms(() => globalThis.__ms.game.state), 'lost');
-    await page.waitForFunction(() => globalThis.__ms.state.mode === 'results', null, { timeout: 5000, polling: 100 });
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'results', null, { timeout: patience(5000), polling: 100 });
 
     // Play again: the closed box opens with its marked start cell tinted, the next board on its way
     await page.keyboard.press('Enter'); // Play again: a user gesture, which asks for pointer lock
-    await page.waitForFunction(() => globalThis.__ms.state.mode !== 'results', null, { timeout: 5000, polling: 100 });
+    await page.waitForFunction(() => globalThis.__ms.state.mode !== 'results', null, { timeout: patience(5000), polling: 100 });
     await lockAndPlay();
     const marked = await ms(() => ({ tinted: globalThis.__ms.renderer.mark, cell: globalThis.__ms.state.play.markedCell, state: globalThis.__ms.state.play.state }));
     assert.deepEqual(marked, { tinted: MARK, cell: MARK, state: 'ready' }, 'the marked start cell is tinted');
@@ -747,7 +776,7 @@ test('in a browser, the 3D generating card shows by its delay in pointer-locked 
     assert.equal(again.state, 'generating', 'the pre-generated board is still in flight: the session waits for it');
     assert.ok(again.after <= 200 + again.stall + 250, `the card shows by the delay for the in-flight board (${again.after.toFixed(0)} ms, long tasks ${again.stall.toFixed(0)} ms)`);
     assert.equal(await ms(() => globalThis.__ms.renderer.mark), -1, 'the mark goes at the first click');
-    await page.waitForFunction(() => globalThis.__ms.state.started, null, { timeout: 30000, polling: 100 });
+    await page.waitForFunction(() => globalThis.__ms.state.started, null, { timeout: patience(12000), polling: 100 });
     assert.equal(await ms((c) => globalThis.__ms.game.pressed[c], MARK), 1, 'the first click is applied on the board that arrived');
     assert.deepEqual(errors, []);
   } finally {

@@ -71,6 +71,20 @@ change trips. Where tests go and how the suite runs is
   `shell-history` (Back's entries settling) and `shell-lock-fallback` (the
   refusal's second signal).
   `MS_TIME_SLACK` sets the factor (default 2, at least 1).
+- **Input that a round trip cannot stretch.** An input whose meaning
+  depends on how long it is held is completed inside the browser, never
+  across a test-to-page round trip, which on a loaded machine passes any
+  threshold: a faked controller's tap is pressed and released in the page
+  within one animation frame (the shell's frame loop polls first), so menu
+  auto-repeat never fires (`shell-pad-walk`, `shell-menu`); a touch tap or
+  one-finger drag is a gesture the browser synthesizes
+  (`Input.synthesizeTapGesture`, `Input.synthesizeScrollGesture`), so the
+  400 ms long-press never sees it (`classic2d-touch`).
+- **A browser test that needs a game state plays a fixed board** — fixed
+  mines or a fixed seed that reaches it (a loss, not a first-click win),
+  pinned by a fast test beside it; a stubbed generation worker answers only
+  the test's own board, so the start-up's daily pre-generation never takes
+  its place (`shell-mode-3d`).
 - Untested by Node beyond static and stub checks: most of `js/render.js`,
   `js/textures.js`, `js/picking.js`, `js/ui.js`, `js/main.js`, the WebAudio
   output — verify these in the browser.

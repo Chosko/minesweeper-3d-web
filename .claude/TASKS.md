@@ -844,7 +844,7 @@ Preconditions: none
 
 ## 196. Browser tests: root-cause and fix the flakes seen under full-suite load
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: tests/shell-pad-walk.test.mjs, tests/shell-mode-3d.test.mjs, tests/classic2d-touch.test.mjs, tests/replay-viewer.test.mjs, tests/shell-menu.test.mjs, tests/helpers/timing.mjs, tests/helpers/browser.mjs, .claude/context/testing-conventions.md
 Preconditions: none

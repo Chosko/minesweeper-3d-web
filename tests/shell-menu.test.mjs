@@ -431,7 +431,7 @@ test('in a browser without WebGL 2, the shell starts with a static background, 3
     page.on('console', (m) => { if (m.type() === 'error') errors.push(`console: ${m.text()}`); });
     await page.addInitScript(removeWebGL2);
     await page.goto(`${base}/index.html`);
-    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu', null, { timeout: patience(5000) });
     const ms = (fn, arg) => page.evaluate(fn, arg);
     const mode = () => ms(() => globalThis.__ms.state.mode);
     const active = () => ms(() => document.activeElement?.id || '');
@@ -500,7 +500,7 @@ test('in a browser without WebGL 2, the shell starts with a static background, 3
     const box = await page.locator('#c2d-board canvas').boundingBox();
     const cell = (i) => [box.x + (box.width / 9) * ((i % 9) + 0.5), box.y + (box.height / 9) * (Math.floor(i / 9) + 0.5)];
     await page.mouse.click(...cell(40));
-    await page.waitForFunction(() => globalThis.__ms.modes.state.started);
+    await page.waitForFunction(() => globalThis.__ms.modes.state.started, null, { timeout: patience(5000) });
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'paused');
     await page.click('#p-restart');
@@ -524,9 +524,9 @@ test('in a browser without WebGL 2, the shell starts with a static background, 3
       .catch(async (error) => { throw new Error(`no results screen: ${JSON.stringify(await where())} (${error.message})`); });
 
     // Watch replay from the results screen plays the game's 2D replay.
-    await page.waitForFunction(() => !document.getElementById('r-watch').classList.contains('hidden'));
+    await page.waitForFunction(() => !document.getElementById('r-watch').classList.contains('hidden'), null, { timeout: patience(5000) });
     await page.click('#r-watch');
-    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready');
+    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready', null, { timeout: patience(5000) });
     await page.keyboard.press('End');
     assert.equal(await ms(() => globalThis.__ms.replayViewer.state.ended), true, 'the replay plays through to its end');
     await page.click('#rp-back');
@@ -535,9 +535,9 @@ test('in a browser without WebGL 2, the shell starts with a static background, 3
     // Records from the results screen; its library view's Watch plays the kept replay; the 3D side opens.
     await page.click('#r-records');
     assert.equal(await mode(), 'records');
-    await page.waitForSelector('#records-replays-table [data-act="watch"]');
+    await page.waitForSelector('#records-replays-table [data-act="watch"]', { timeout: patience(5000) });
     await page.click('#records-replays-table [data-act="watch"]');
-    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready');
+    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready', null, { timeout: patience(5000) });
     assert.equal(await ms(() => document.querySelectorAll('#replay-board canvas').length), 1, 'the 2D board view is mounted');
     await page.click('#rp-back');
     assert.equal(await mode(), 'records');
@@ -560,7 +560,7 @@ test('in a browser without WebGL 2, the shell starts with a static background, 3
     assert.equal(await mode(), 'settings');
     await page.click('#set-renderResolution [data-value="sharp"]');
     await page.click('#set-theme [data-value="dark"]');
-    await page.waitForFunction(() => JSON.parse(localStorage.getItem('ms3d:doc:settings') ?? '{}').data?.renderResolution === 'sharp');
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem('ms3d:doc:settings') ?? '{}').data?.renderResolution === 'sharp', null, { timeout: patience(5000) });
     assert.equal(await ms(() => document.documentElement.dataset.theme), 'dark');
     assert.equal(await ms(() => JSON.parse(localStorage.getItem('ms3d:doc:settings')).data.theme), 'dark');
     await page.keyboard.press('Escape');
@@ -569,8 +569,8 @@ test('in a browser without WebGL 2, the shell starts with a static background, 3
     // A last mode played of 3D still marks it; the focus falls to the first enabled entry.
     await ms(() => localStorage.setItem('ms3d:doc:shell.lastMode', JSON.stringify({ version: 1, data: { mode: '3d' } })));
     await page.reload();
-    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
-    await page.waitForFunction(() => document.getElementById('menu-entry-3d').hasAttribute('data-last'));
+    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu', null, { timeout: patience(5000) });
+    await page.waitForFunction(() => document.getElementById('menu-entry-3d').hasAttribute('data-last'), null, { timeout: patience(5000) });
     assert.ok(await ms(() => !document.querySelector('#menu-entry-3d [data-last]').classList.contains('hidden')), '"Last played" shows');
     await frames(2);
     assert.equal(await active(), 'menu-entry-classic-2d');
