@@ -390,12 +390,17 @@ Context: none
 
 Done: 2026-10-15, commit `a6f3a56` (5 files, +25/-22). Moving the markup alone gave the 2D walk Expert → No-guess → Width; navigation code was not touched.
 
-## [ ] 51. Implement task 199 — Larger stat labels and key caps on every pointer, 44 px hit areas still touch-only
+## [P] 51. Implement task 199 — Larger stat labels and key caps on every pointer, 44 px hit areas still touch-only
 
 Depends on: none
 
 Context:
 - 2026-10-15 (from step 44): the Classic 2D overlay bar wraps onto more rows when it does not fit, never wider than the board area minus the panel inset; the board view takes its frame as a function and re-measures it on every resize (`panelFrame2D`).
+- 2026-10-15 parked: Q1. Acceptance criterion 3 requires the pause card to fit the window at 1024 × 768 with a mouse, with no scrolling. It doesn't: the card was already 822 px tall before this change, and is 838 px with the larger labels and key caps, in a 768 px window that scrolls. What holds in both themes: the overlay bar stays on one line, inside the panel and above the board; every row of key caps stays on one line, uncut. Making the card fit needs a pause-card layout change this task doesn't cover, and the Decisions forbid shrinking other text. How should task 199 proceed?
+  a. Land it as is. Amend criterion 3 to what holds (bar on one line, card within the window's width, key cap rows whole), and record the card's height at 1024 × 768 as a follow-up for a new task (`/task-add`).
+  b. Keep criterion 3 and make the card fit inside this task. Name the layout change, e.g. hiding the 3D look settings when Classic 2D is paused, or laying the card out in two columns.
+  c. Drop the change and keep the larger sizes for touch only.
+  Recommendation: a — the overflow existed before this change, the Decisions call a card that doesn't fit a finding to report, and the larger text adds only 16 px. (The finished work is on branch `park/task-199`, 1f3dad6.)
 
 ```prompt
 /task-implement 199 --review
