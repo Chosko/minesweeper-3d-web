@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 199
+Last task number: 200
 
 ---
 
@@ -874,6 +874,15 @@ Preconditions: none
 Status: [PARKED]
 Target: claude
 Files: css/components.css, css/style.css, tests/components.test.mjs, .claude/domain/features/screen-components.md, .claude/context/app-shell-markup.md
+Preconditions: none
+
+---
+
+## 200. Touch wording on a coarse-only device for the help foot, HUD strip and hint strip
+
+Status: [MISSING]
+Target: claude
+Files: js/settings/bindings.js, js/ui.js, tests/shell-help.test.mjs, tests/shell-first-use.test.mjs, tests/settings-page.test.mjs, tests/classic2d-touch.test.mjs, tests/shell-mode-3d.test.mjs, .claude/context/settings-bindings.md, .claude/context/app-shell-help.md
 Preconditions: none
 
 ---
