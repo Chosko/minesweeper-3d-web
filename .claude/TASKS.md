@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 192
+Last task number: 193
 
 ---
 
@@ -811,6 +811,15 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: index.html, js/ui.js, js/results/, css/style.css, tests/shell-first-use.test.mjs, tests/results.test.mjs, tests/shell-mode-3d.test.mjs
+Preconditions: none
+
+---
+
+## 193. Records: best tiles and tables keep their figures on one line
+
+Status: [MISSING]
+Target: claude
+Files: css/components.css, css/style.css, js/records/screen.js, js/records/replay-list.js, dev/components.html, tests/records-screen.test.mjs, tests/records-replays.test.mjs, tests/components.test.mjs
 Preconditions: none
 
 ---
