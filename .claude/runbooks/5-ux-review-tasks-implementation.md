@@ -1,7 +1,7 @@
 # Runbook: ux-review-tasks-implementation
 
 Created: 2026-10-12 · Source: /runbook-create interview · Model: opus
-Last step number: 41
+Last step number: 49
 Sequencing: Run in list order, one step at a time: most tasks edit js/main.js, index.html and css/style.css, and each body says whichever of two overlapping tasks lands second merges around the first; task 119's help component is reused by many later tasks, so it goes first.
 Archive: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 28, 34, 41
 
@@ -278,6 +278,87 @@ findings.
 ```
 
 Done: 2026-10-15, commit `59ba9f4` (1 file, +190/-0). Bare `node --test` also runs the review scripts under docs/; the project's suite command is .claude/external/run-full-tests.sh.
+
+## [ ] 42. Implement task 197 — Bare `node --test` runs only the project's tests
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 197 --review
+```
+
+## [ ] 43. Implement task 196 — Browser tests: root-cause and fix the flakes seen under full-suite load
+
+Depends on: none
+
+Context:
+- 2026-10-15 docs/UX_REVIEW_DRIFT.md line ~167 records which pad-walk assertions failed: the 3D walk read `bc-noguess` / `10,10,10,100`, and the Up walk missed `records-replays-table:7`.
+
+```prompt
+/task-implement 196 --review
+```
+
+## [ ] 44. Implement task 190 — Classic 2D overlay bar fits a phone: Pause and Reveal / Flag on screen
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 190 --review
+```
+
+## [ ] 45. Implement task 191 — Classic 2D touch help: touch binding rows and a touch clipped-board hint
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 191 --review
+```
+
+## [ ] 46. Implement task 192 — 3D ready and results cards: key hints that match the device and the screen
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 192 --review
+```
+
+## [ ] 47. Implement task 193 — Records: best tiles and tables keep their figures on one line
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 193 --review
+```
+
+## [ ] 48. Implement task 194 — Best-time chart: axis ticks with the fewest decimals that tell them apart
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 194 --review
+```
+
+## [ ] 49. Implement task 195 — Learn 3D guided board: the chord prompt moves on when a chord can no longer teach
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 195 --review
+```
 
 ## Do not re-propose
 
