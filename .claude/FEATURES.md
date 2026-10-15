@@ -58,7 +58,7 @@ Tasks: 32, 33, 34, 35, 36, 37, 38
 
 ## game-shell — Main menu, screen routing, mode host and the shared pause flow
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/game-shell.md
 Source: product-design.md § Main menu and game shell (m1-classic-2d)
 Tasks: 24, 25, 26, 27, 28, 190, 191
@@ -277,7 +277,7 @@ Tasks: 180, 181, 182, 183, 184, 185, 186, 187
 Status: [PLANNED]
 Doc: .claude/domain/features/shared-screen-layout.md
 Source: product-design.md § Visual design system (m2b-themes)
-Tasks: 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173
+Tasks: 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 192
 
 ---
 

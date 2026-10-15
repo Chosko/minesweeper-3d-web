@@ -1,7 +1,7 @@
 # Runbook: themes-tasks-implementation
 
 Created: 2026-10-13 · Source: /runbook-create interview (runbook themes-planning step 8) · Model: opus
-Last step number: 35
+Last step number: 36
 Sequencing: Runs after the ux-review-tasks-implementation runbook is done and before the remaining steps of m3-tasks-implementation; steps follow PLAN.md's m2b-themes feature order, then task id.
 
 ## [ ] 1. Implement task 157 — Theme registry, kit catalogue and the Joyful tiles theme folder
@@ -180,6 +180,16 @@ Context: none
 /task-implement 172 --review
 ```
 
+## [ ] 36. Implement task 192 — Daily screen won time in the standard time format
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 192 --review
+```
+
 ## [ ] 17. Implement task 173 — Update documentation for feature `shared-screen-layout`
 
 Depends on: 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
@@ -355,7 +365,7 @@ Context: none
 /task-implement 189 --review
 ```
 
-## [ ] 34. Implement task 190 — Daily screen won time in the standard time format
+## [x] 34. Implement task 190 — Daily screen won time in the standard time format
 
 Depends on: none
 
@@ -365,7 +375,9 @@ Context: none
 /task-implement 190 --review
 ```
 
-## [ ] 35. Implement task 191 — Update documentation for feature `game-shell`
+Done: struck — task 190 replaced by task 192, step 36, placed before step 17 because task 173 waits on it.
+
+## [x] 35. Implement task 191 — Update documentation for feature `game-shell`
 
 Depends on: 34
 
@@ -374,3 +386,5 @@ Context: none
 ```prompt
 /task-implement 191 --review
 ```
+
+Done: struck — task 191 dropped; task 173 documents the Daily won time.

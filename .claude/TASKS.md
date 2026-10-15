@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 191
+Last task number: 192
 
 ---
 
@@ -622,8 +622,8 @@ Feature: shared-screen-layout
 
 Status: [MISSING]
 Target: claude
-Files: .claude/context/app-shell-kit.md, .claude/context/rendering.md, .claude/context/classic2d.md, .claude/context/mode3d.md, .claude/context/records-screen.md, .claude/context/settings.md, .claude/context/replay-playback.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md, .claude/domain/features/shared-screen-layout.md
-Preconditions: 163, 164, 165, 166, 167, 168, 169, 170, 171, 172
+Files: .claude/context/app-shell-kit.md, .claude/context/app-shell-menu.md, .claude/context/rendering.md, .claude/context/classic2d.md, .claude/context/mode3d.md, .claude/context/records-screen.md, .claude/context/settings.md, .claude/context/replay-playback.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md, .claude/domain/features/shared-screen-layout.md
+Preconditions: 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 192
 Feature: shared-screen-layout
 
 ---
@@ -790,7 +790,7 @@ Feature: theme-implement-skill
 
 ## 190. Daily screen won time in the standard time format
 
-Status: [MISSING]
+Status: [SKIP]
 Target: claude
 Files: js/shell/daily.js, tests/shell-daily.test.mjs
 Preconditions: none
@@ -800,10 +800,20 @@ Feature: game-shell
 
 ## 191. Update documentation for feature `game-shell`
 
-Status: [MISSING]
+Status: [SKIP]
 Target: claude
 Files: .claude/context/app-shell-menu.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
-Preconditions: 190
+Preconditions: none
 Feature: game-shell
+
+---
+
+## 192. Daily screen won time in the standard time format
+
+Status: [MISSING]
+Target: claude
+Files: js/shell/daily.js, tests/shell-daily.test.mjs
+Preconditions: none
+Feature: shared-screen-layout
 
 ---

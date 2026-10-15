@@ -37,7 +37,8 @@ In scope (m1-classic-2d):
   each mode's warm client, and the menu never waits for them. The Daily
   screen — built from the component kit, with the router's focus and Back,
   by mouse, keyboard and controller — has one row per board: today's date,
-  the row's state (*Not played*, *Won 48.213 s*, *Lost*), the days in a row,
+  the row's state (*Not played*, *Won* with its time in the format
+  `shared-screen-layout` gives, *Lost*), the days in a row,
   today's code with Copy and Copy link, Play while today's counted attempt
   is unused, and Watch replay once played when the library kept the replay.
   A board code typed in a board choice, or a `#board=<code>` link, starts a

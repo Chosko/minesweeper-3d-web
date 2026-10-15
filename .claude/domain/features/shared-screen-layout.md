@@ -50,8 +50,8 @@ In scope (m2b-themes):
   drawn by that mode's own renderer — the real cube for 3D, a real board for
   Classic 2D, and each later mode's real board (a hexagon board for
   Hexagon, and so on) once that mode is built; while a locked entry or an
-  entry that is not a mode has focus, the panel keeps the last mode
-  previewed, and it opens on the menu's default focus; the key hints for the active input device, the build label, and
+  entry that is not a mode has focus, what the panel shows follows the
+  *Joyful tiles* design; the menu opens on its default focus; the key hints for the active input device, the build label, and
   the existing Play again and last-played detail placed in the layout. The
   menu shows no bests and no credit line; the controls reference, the sound
   switch and the volume live on the Settings page only.
@@ -76,6 +76,9 @@ In scope (m2b-themes):
   viewer, generating and failed-board cards, the placeholder screen and the
   confirmations** — each inside the screen frame, with the content their
   owning features define.
+- **Daily screen** — a won row shows its time in the game's standard time
+  format, to the thousandth of a second (*Won 48.213 s*), as the results,
+  Records and leaderboard screens show it.
 - **The 3D scene in a panel** — the 3D renderer draws into the scene panel's
   rectangle when a screen has one (the menu's 3D preview), and full-window
   in a 3D game and the 3D replay viewer as today.
