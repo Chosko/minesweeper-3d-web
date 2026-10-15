@@ -341,7 +341,7 @@ Context:
 
 Done: 2026-10-15, commit `1faae2c` (11 files, +55/-9). `ready--touch` sits on the whole `#ready` overlay rather than on `#ready-btn`, so it reaches the Esc row.
 
-## [ ] 47. Implement task 193 — Records: best tiles and tables keep their figures on one line
+## [x] 47. Implement task 193 — Records: best tiles and tables keep their figures on one line
 
 Depends on: none
 
@@ -351,11 +351,14 @@ Context: none
 /task-implement 193 --review
 ```
 
+Done: 2026-10-15, commit `a64d126` (7 files, +130/-16). The body assumed the tables could keep columns on desktop; one row needs about 1,050 px against panels of 522–728 px, so they stack as cards at every width (the switch moved from 539 px to 1099 px).
+
 ## [ ] 48. Implement task 194 — Best-time chart: axis ticks with the fewest decimals that tell them apart
 
 Depends on: none
 
-Context: none
+Context:
+- 2026-10-15 (from step 47): the Records tables stack as cards at every desktop width (the switch is a 1099 px container query) and best-tile figures shrink between 24 px and 32 px to stay on one line.
 
 ```prompt
 /task-implement 194 --review
