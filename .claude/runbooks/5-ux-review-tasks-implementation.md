@@ -291,7 +291,7 @@ Context: none
 
 Done: 2026-10-15, commit `a1e4aca` (4 files, +26/-6).
 
-## [ ] 43. Implement task 196 — Browser tests: root-cause and fix the flakes seen under full-suite load
+## [x] 43. Implement task 196 — Browser tests: root-cause and fix the flakes seen under full-suite load
 
 Depends on: none
 
@@ -301,6 +301,8 @@ Context:
 ```prompt
 /task-implement 196 --review
 ```
+
+Done: 2026-10-15, commit `460a99c` (7 files, +117/-51). The pad-walk flake was a button release crossing the 380 ms menu auto-repeat under load; the touch test stays on a random board and flags only mines instead.
 
 ## [ ] 44. Implement task 190 — Classic 2D overlay bar fits a phone: Pause and Reveal / Flag on screen
 
