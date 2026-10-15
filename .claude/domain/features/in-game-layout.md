@@ -5,7 +5,7 @@ the framed game window with its title and Pause, the counter strip with the
 mines-left and time readouts and Restart, the board, a side panel of live
 figures — 3BV progress, pace against the personal best, 3BV/s, clicks with
 efficiency, flags — with the controls reminder, and a foot line naming the
-board and the cursor's cell.
+board.
 
 ## Purpose
 
@@ -25,8 +25,7 @@ In scope (m2b-themes):
   (`shared-screen-layout`): the head with the mode and board title and
   Pause with its key hint; the counter strip with mines left, Restart and
   the timer; the board in its themed frame; the side panel; the foot line
-  (board size, mine count, no-guess, and the cursor's cell name while the
-  cursor shows).
+  (board size, mine count and no-guess).
 - **Counter readouts** — new kit components (digits and icon as parts), so
   a theme can draw them as plain figures, LED digits on black or anything
   between. The timer and mine-counter formats and limits are unchanged
@@ -76,7 +75,10 @@ board view in [classic2d-board-view.md](../../context/classic2d-board-view.md).
   window: head, counter strip, board area, side panel, foot. The board area
   keeps the board view's fit rule, minimum tile size and scrolling; the
   window's chrome reduces the space the fit rule works in, and the side
-  panel moves under the board when the window is too narrow for both.
+  panel moves under the board when the window is too narrow for both, and
+  may be hidden on a narrow or mobile window
+  ([shared-screen-layout.md](./shared-screen-layout.md) § Interfaces and
+  contracts, **Window sizes**).
 - **Live figures model.** A small DOM-free module that turns the game's
   counts (3BV, 3BV solved, clicks, flags, mines), the elapsed time and the
   board's bests into the figures and their detail lines. Both modes and the

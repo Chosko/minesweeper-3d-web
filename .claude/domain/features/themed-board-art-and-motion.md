@@ -29,8 +29,8 @@ In scope (m2b-themes):
   look into a small set of named drawing styles, each with parameters. This
   milestone ships two: **bevel** (the raised-and-sunk cube face the recipe
   draws today, its band widths, light and dark edges and gloss as
-  parameters) and **chunky raised** (a flat face with a light top band and a
-  deep darker bottom edge, the *Joyful tiles* look). A theme picks one.
+  parameters) and **flat** (a face with no relief, the *Joyful tiles* look).
+  A theme picks one.
 - **Classic 2D tiles** — the tile painter and its cache draw from the
   active theme's board module and style, and redraw on theme change.
 - **3D cubes** — the tile atlas is built from the active theme's palette and
@@ -43,8 +43,13 @@ In scope (m2b-themes):
   flag, unflag, chord press, solved pulse), from the fixed motion
   vocabulary, played per cell by the 2D painter and per cube by the 3D
   renderer.
-- **The *Joyful tiles* board module** — its palette, number colours, sky,
-  chunky raised parameters and motion, from its artboards.
+- **The *Joyful tiles* board module** — the flat style; its closed face a
+  tint close to the game's current light closed tile, so the flag stays
+  visible on it; its flag, and its numbers 1–8 in the glyph style and
+  colours the game draws today in the light look (weight, outline, shadow),
+  set in one fixed self-hosted font the design chooses; the flat faces
+  passing the board conformance checks unchanged; its other palette entries,
+  sky, flat-style parameters and motion from its artboards.
 - **The board conformance checks** that `theme-system`'s conformance tests
   run for every theme.
 
@@ -219,15 +224,20 @@ reads a stylesheet or imports a theme.
 
 ## Open questions
 
-- *Joyful tiles*' artboards draw the closed, flagged, revealed and cursor
-  states and numbers 1–8 only. Its mine, exploded mine, wrong-flag cross,
+- *Joyful tiles*' artboards draw the closed, revealed and cursor states
+  only; its flag and numbers 1–8 are the game's own (§ Scope and
+  non-goals). Its mine, exploded mine, wrong-flag cross,
   pressed face, numbers 9–26 and 3D sky are not drawn yet; until its
   components artboard shows them, they take the derivation rules above
   (the sky from the menu artboard's navy 3D panel), and are replaced by
   the artboard's values through the theme skill's update of an existing
   theme.
 - *Joyful tiles*' cell motion is not designed yet — the components
-  artboard is to carry it as keyframes on a sample cell. Until then its
-  motion is a plain press-down (depth to flat on press and chord press,
-  back on release) and a short scale-in on reveal, with the reference solved
-  pulse. Blocks nothing; replaced like the values above.
+  artboard is to carry it as keyframes on a sample cell, the press and
+  chord press of a flat tile included, which the design proposes. Until
+  then its motion is a short scale-in on reveal and the reference solved
+  pulse, with no press motion. Blocks nothing; replaced like the values
+  above.
+- How *Joyful tiles*' flat closed and revealed faces differ by more than
+  colour, as the board conformance checks require, is the design's to
+  decide; its components artboard carries it.

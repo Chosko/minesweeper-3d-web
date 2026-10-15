@@ -25,9 +25,9 @@ In scope (m1-classic-2d):
   Expert (30 × 16, 99) and Custom (width and height each 1 to 100, at
   least one mine and at most the limit Board setup states), plus the
   no-guess switch, which says it keeps separate records. Each standard size
-  keeps its size line and gains the 3D presets' detail line (density,
-  typical 3BV, the player's best and streak on the board the switch names,
-  or a dash; `3d-play-flow` § Architecture, "3D board choice"). A board
+  keeps its size line with its mine density and the Last played mark; the
+  board's bests show in the screen's records panel (`shared-screen-layout`
+  § Scope and non-goals, *Board choice screens*). A board
   code field with *Play this board* starts a Classic 2D code as a
   challenge; a 3D code is refused with a hint naming the 3D board choice,
   and a refused code shows its reason live, as the custom fields'

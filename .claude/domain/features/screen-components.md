@@ -98,7 +98,9 @@ described in [app-shell.md](../../context/app-shell.md).
   Pause always takes a tap. On either board, the timer
   shows the elapsed time in whole seconds, zero-padded to three digits
   (047), and stops at 999 while the game's elapsed time keeps counting; the
-  mine counter shows the real mines left, kept at −99 at the low end; on a
+  mine counter shows the real mines left in three digits, a negative count
+  taking the minus in the first digit (−05), down to −99, where it stays
+  for any lower count; on a
   board of more than 999 mines it is as wide as the board's mine count, so
   the bar does not shift as the count falls, and a board of up to 999 mines
   keeps the standard counter. The timer's 999 and the counter's −99

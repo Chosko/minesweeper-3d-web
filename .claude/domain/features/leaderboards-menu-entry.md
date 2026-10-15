@@ -1,9 +1,8 @@
 # Leaderboards menu entry
 
-The m3-on-steam additions to the main menu: a Leaderboards entry, between
-Records and Settings in both builds, that opens the leaderboard screen; and,
-in the desktop build only, a Quit entry at the end of the list that closes
-the game with its saves flushed.
+The m3-on-steam additions to the main menu: the Leaderboards entry, unlocked
+in both builds, that opens the leaderboard screen; and, in the desktop build,
+the Quit control, unlocked, that closes the game with its saves flushed.
 
 ## Purpose
 
@@ -20,15 +19,13 @@ layout (`shared-screen-layout`); the screen itself is
 
 In scope (m3-on-steam):
 
-- The Leaderboards entry, between Records and Settings, in the desktop and
-  the web build alike. It routes to the leaderboard screen with no board, so
+- The Leaderboards entry, in the desktop and the web build alike. It routes to the leaderboard screen with no board, so
   the screen opens on its own default; Back returns to the main menu.
-- The Quit entry, last in the list, shown only when the game runs inside the
-  desktop host. It asks the host to quit and the host runs its closing
+- The Quit control, working only when the game runs inside the desktop
+  host. It asks the host to quit and the host runs its closing
   sequence.
 - Both entries as mode entries of the redesigned main menu, each with its
-  icon, label, detail line and accent, as the main menu's artboard draws
-  them.
+  icon, label and accent, as the main menu's artboard draws them.
 - Both entries in the menu's focus order and controller navigation.
 
 Non-goals:
@@ -58,11 +55,12 @@ over ES modules, no framework (see
 menu `shared-screen-layout` composes and `game-shell`'s screen router, and
 adds no component and no theme style of its own.
 
-- **Menu entries.** The main menu's column of mode entries becomes Classic
-  2D, 3D, Records, Leaderboards, Settings and, in the desktop build, Quit.
-  Each new entry is one mode entry — icon, label, detail line and one of
-  the accents the kit catalogue declares for the mode entry — joining the
-  open-ended column with no change to the menu's composition
+- **Menu entries.** Leaderboards and Quit unlock in the places the main
+  menu gives their locked entries
+  ([shared-screen-layout.md](./shared-screen-layout.md) § Scope and
+  non-goals, **Main menu**). Each is one mode entry — icon, label and one of
+  the accents the kit catalogue declares for the mode entry — unlocking in
+  the open-ended column with no change to the menu's composition
   ([shared-screen-layout.md](./shared-screen-layout.md) § Architecture,
   **Mode entry list**); the active theme styles it, and the menu's default
   focus stays on its first entry.
@@ -70,15 +68,15 @@ adds no component and no theme style of its own.
   router to the leaderboard screen with no board identity, pushing the menu
   on the back stack. Back from the screen pops to the menu with focus on the
   Leaderboards entry.
-- **Quit action.** The entry is shown when the platform layer's capability
+- **Quit action.** The entry is unlocked when the platform layer's capability
   flags report the desktop host — whether or not Steam itself started — and
-  is absent from the list, not disabled, otherwise. Choosing it sends the
+  stays locked otherwise. Choosing it sends the
   host's quit request over the page bridge and disables the entry until the
   window closes.
 
 ## Data and state
 
-- **Menu composition** — which entries show, derived at menu build from the
+- **Menu composition** — which entries are unlocked, derived at menu build from the
   capability flags. Nothing is persisted.
 - **Quitting** — a flag held while the quit request is in flight, so a
   second activation sends nothing. In memory only.

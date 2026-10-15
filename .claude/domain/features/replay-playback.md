@@ -30,8 +30,8 @@ In scope (m2-3d-joins):
   them in its text alternative and ticking every action at its time — left
   (reveal), right (flag) and chord each in its own colour —, step to the
   previous or next action, step one frame back or on (a frame is the
-  replay's movement sampling interval), *Show 3BV*, a sound toggle, *Follow*
-  / *Free* camera in 3D, *Download* and *Open replay file*, and back;
+  replay's movement sampling interval), *Show 3BV*, a sound toggle, the
+  *Free camera* toggle in 3D, *Download* and *Open replay file*, and back;
   operable by mouse, keyboard and controller. Playback runs through a
   paused span at the chosen speed with the board as it was.
 - Playback opens on the closed board: a lead-in of 500 ms of replay time
@@ -119,17 +119,18 @@ and is never paused into hiding the board.
   and never scrolls a board that fits.
 - **3D viewer.** The 3D renderer over the simulator's 3D state view, with
   the camera placed from the recorded position and direction by the
-  movement interpolation, and the recorded view mode applied, on *Follow*
-  (the default). *Free* detaches the camera at its pose and lets the viewer
+  movement interpolation, and the recorded view mode applied, while *Free
+  camera* is off (the default). Turning *Free camera* on (C) detaches the
+  camera at its pose and lets the viewer
   fly it with the game's flight controls — the movement keys, mouse look
   under pointer lock taken by clicking the scene, the controller sticks, and
   the Camera setting's orbit — while playback runs on and the recorded view
-  mode still applies; back to *Follow* returns to the recorded camera at the
+  mode still applies; turning it off returns to the recorded camera at the
   current time. No flight key is a replay key. After the point where a
   replay's movement was capped, the recorded camera holds its last recorded
   position. Through the lead-in the camera is the first recorded sample. A
   press ring sits on the acted cell's projected screen position, the
-  crosshair on *Follow*. While a 3D replay shows, the game's view chips and
+  crosshair while *Free camera* is off. While a 3D replay shows, the game's view chips and
   toasts are hidden and do not appear; the viewer shows its own key line of
   the replay keys and their controller buttons.
 - **Show 3BV.** Paints the board's 3BV partition from the engine's 3BV
@@ -161,8 +162,8 @@ and is never paused into hiding the board.
 ## Data and state
 
 - **Viewer state** — the decoded replay, the simulator and its snapshots,
-  replay time, speed, playing or paused, *Show 3BV*, the camera's *Follow*
-  or *Free*, and where the viewer was opened from. In memory only, for as
+  replay time, speed, playing or paused, *Show 3BV*, whether *Free camera*
+  is on, and where the viewer was opened from. In memory only, for as
   long as the screen is open; the sound toggle lasts the session.
 - Nothing is persisted. The viewer never writes records or replays.
 

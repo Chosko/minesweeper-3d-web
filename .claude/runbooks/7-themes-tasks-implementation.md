@@ -1,7 +1,7 @@
 # Runbook: themes-tasks-implementation
 
 Created: 2026-10-13 · Source: /runbook-create interview (runbook themes-planning step 8) · Model: opus
-Last step number: 33
+Last step number: 35
 Sequencing: Runs after the ux-review-tasks-implementation runbook is done and before the remaining steps of m3-tasks-implementation; steps follow PLAN.md's m2b-themes feature order, then task id.
 
 ## [ ] 1. Implement task 157 — Theme registry, kit catalogue and the Joyful tiles theme folder
@@ -258,7 +258,8 @@ Context: none
 
 Depends on: none
 
-Context: none
+Context:
+- 2026-10-15 (amend): Task 180 is retitled "Tile recipe drawing styles: bevel and flat, with depth" — *Joyful tiles* uses a flat style, not chunky raised.
 
 ```prompt
 /task-implement 180 --review
@@ -352,4 +353,24 @@ Context: none
 
 ```prompt
 /task-implement 189 --review
+```
+
+## [ ] 34. Implement task 190 — Daily screen won time in the standard time format
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 190 --review
+```
+
+## [ ] 35. Implement task 191 — Update documentation for feature `game-shell`
+
+Depends on: 34
+
+Context: none
+
+```prompt
+/task-implement 191 --review
 ```

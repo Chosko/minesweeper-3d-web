@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 189
+Last task number: 191
 
 ---
 
@@ -542,7 +542,7 @@ Feature: shared-screen-layout
 
 Status: [MISSING]
 Target: claude
-Files: index.html, js/shell/menu.js, js/shell/returning.js, js/main.js, themes/joyful-tiles/theme.css, tests/shell-menu.test.mjs, tests/shell-returning.test.mjs, tests/components.test.mjs
+Files: index.html, js/shell/menu.js, js/shell/returning.js, js/main.js, js/ui.js, js/settings/page.js, themes/joyful-tiles/theme.css, tests/shell-menu.test.mjs, tests/shell-returning.test.mjs, tests/settings-page.test.mjs, tests/components.test.mjs
 Preconditions: 163, 164
 Feature: shared-screen-layout
 
@@ -552,7 +552,7 @@ Feature: shared-screen-layout
 
 Status: [MISSING]
 Target: claude
-Files: index.html, js/classic2d/board-choice.js, js/classic2d/board-setup.js, js/main.js, js/records/history-chart.js, tests/classic2d-mode.test.mjs, tests/shell-returning.test.mjs, tests/components.test.mjs
+Files: index.html, js/classic2d/board-choice.js, js/classic2d/board-setup.js, js/main.js, js/records/history-chart.js, js/records/stats.js, tests/classic2d-mode.test.mjs, tests/shell-returning.test.mjs, tests/components.test.mjs
 Preconditions: 163
 Feature: shared-screen-layout
 
@@ -652,7 +652,7 @@ Feature: in-game-layout
 
 Status: [MISSING]
 Target: claude
-Files: index.html, js/classic2d/mode.js, js/classic2d/session.js, js/classic2d/board-view.js, js/ui.js, js/main.js, tests/classic2d-mode.test.mjs, tests/classic2d-view.test.mjs, tests/components.test.mjs
+Files: index.html, js/classic2d/mode.js, js/classic2d/session.js, js/classic2d/board-view.js, js/ui.js, js/ui/components.js, js/main.js, tests/classic2d-mode.test.mjs, tests/classic2d-view.test.mjs, tests/components.test.mjs
 Preconditions: 163, 174, 175
 Feature: in-game-layout
 
@@ -688,7 +688,7 @@ Feature: in-game-layout
 
 ---
 
-## 180. Tile recipe drawing styles: bevel and chunky raised, with depth
+## 180. Tile recipe drawing styles: bevel and flat, with depth
 
 Status: [MISSING]
 Target: claude
@@ -702,7 +702,7 @@ Feature: themed-board-art-and-motion
 
 Status: [MISSING]
 Target: claude
-Files: js/themes/board-module.js, themes/joyful-tiles/board.js, tests/theme-conformance.test.mjs, tests/board-module.test.mjs
+Files: js/themes/board-module.js, themes/joyful-tiles/board.js, themes/joyful-tiles/fonts/, tests/theme-conformance.test.mjs, tests/board-module.test.mjs
 Preconditions: 161, 180
 Feature: themed-board-art-and-motion
 
@@ -785,5 +785,25 @@ Target: claude
 Files: README.md, .claude/context/INDEX.md, .claude/domain/features/theme-implement-skill.md
 Preconditions: 188
 Feature: theme-implement-skill
+
+---
+
+## 190. Daily screen won time in the standard time format
+
+Status: [MISSING]
+Target: claude
+Files: js/shell/daily.js, tests/shell-daily.test.mjs
+Preconditions: none
+Feature: game-shell
+
+---
+
+## 191. Update documentation for feature `game-shell`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/app-shell-menu.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md
+Preconditions: 190
+Feature: game-shell
 
 ---

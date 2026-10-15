@@ -22,11 +22,12 @@ mode's front-end.
 In scope (m1-classic-2d):
 
 - The main menu with five entries: Classic 2D, 3D, Daily, Records and
-  Settings. Classic 2D opens its board choice; 3D opens the existing 3D
+  Settings, in the order `shared-screen-layout` § Scope and non-goals,
+  *Main menu*, gives them. Classic 2D opens its board choice; 3D opens the existing 3D
   presets and custom board; Daily opens the Daily screen; Records opens the
   records screen; Settings opens the Settings page. In a browser without
   WebGL 2 the 3D entry is disabled, its line *Needs WebGL 2 — not available
-  in this browser* under its label in place of its description, no route
+  in this browser* under its label, no route
   starts a 3D game and the Daily screen's cube row is disabled with that
   line; Classic 2D, Daily, Records and Settings run as everywhere else.
 - The daily boards and challenges. Each day has two boards, Expert
@@ -36,7 +37,7 @@ In scope (m1-classic-2d):
   each mode's warm client, and the menu never waits for them. The Daily
   screen — built from the component kit, with the router's focus and Back,
   by mouse, keyboard and controller — has one row per board: today's date,
-  the row's state (*Not played*, *Won 48.2 s*, *Lost*), the days in a row,
+  the row's state (*Not played*, *Won 48.213 s*, *Lost*), the days in a row,
   today's code with Copy and Copy link, Play while today's counted attempt
   is unused, and Watch replay once played when the library kept the replay.
   A board code typed in a board choice, or a `#board=<code>` link, starts a
@@ -107,11 +108,11 @@ it generalises.
   resolves Back. Every screen change goes through it; no screen shows
   another directly.
 - **Main menu.** The entry list composed from `screen-components`, each entry
-  a route. The decorative 3D demo board behind the current menu stays as the
-  menu's backdrop. WebGL 2 is not a requirement of the shell: whether the
+  a route. The menu's scene panel previews the focused mode live, drawn by
+  that mode's renderer (`shared-screen-layout`). WebGL 2 is not a requirement of the shell: whether the
   3D renderer could be created is the one availability flag every 3D-only
   path reads. Without it the menu screens show a static background built
-  from the theme's tokens in place of the demo board, the 3D entry is
+  from the theme's tokens in place of the 3D preview, the 3D entry is
   disabled with its reason, its "Last played" mark still showing and the
   menu's default focus falling to the first enabled entry, and no
   full-page "Cannot start" card shows — that card stays only for game files

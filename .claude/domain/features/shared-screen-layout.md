@@ -29,32 +29,55 @@ In scope (m2b-themes):
     centre, screen action right), a body and a foot (a status line), and a
     decoration slot for window chrome such as a title bar's decorative
     buttons;
-  - the **mode entry** — the main menu's large entry with icon, label and
-    detail line, each mode with its own accent;
-  - the **board option** — a board preset with its name, size line and best
-    time, selectable, with the selected state;
+  - the **mode entry** — the main menu's large entry with icon and label,
+    each mode with its own accent, and a locked state, greyed with a lock,
+    for an entry not built yet;
+  - the **board option** — a board preset with its name, size line, mine
+    density and the Last played mark, selectable, with the selected state;
   - the **section label**, the **key hint** (a key or controller button
     shown beside an action), the **stat tile** (label, figure, detail line)
     and the **list row** of recent games;
-  - the **scene panel** — a framed region of a screen the 3D scene draws
-    into.
-- **Main menu** — the title block, the mode entries (Classic 2D, 3D,
-  Records, Settings, in that order), a scene panel with the orbiting 3D demo
-  board, a column of the player's headline bests and streak, the key hints
-  for the active input device, the build label, and the existing Play again
-  and last-played detail placed in the layout.
-- **Board choice screens** — Classic 2D and 3D: the board options with each
-  board's best time, the no-guess switch, the Play action with its key
-  hint, and beside them the chosen board's bests (time, 3BV/s, efficiency
-  with when each was set), its wins, win rate and streak, its recent games
-  and a chart of its last 30 times, from the records store. Custom keeps
-  its size fields, revealed when Custom is chosen.
+  - the **scene panel** — a framed region of a screen a mode's own renderer
+    draws into.
+- **Main menu** — the title block with the game's name and no tagline or
+  page subtitle; the mode entries in this order — Classic 2D and 3D; then
+  the entries of
+  [product-design.md § Main menu and game shell](../product-design.md#main-menu-and-game-shell)
+  not built yet, locked: Hexagon, Triangle, Surface and Leaderboards; then
+  Daily, Records and Settings — and Quit, locked until it is built, as the
+  final control after Settings, set apart from the list; a scene panel, as
+  tall as the column allows, showing a live preview of the focused mode
+  drawn by that mode's own renderer — the real cube for 3D, a real board for
+  Classic 2D, and each later mode's real board (a hexagon board for
+  Hexagon, and so on) once that mode is built; while a locked entry or an
+  entry that is not a mode has focus, the panel keeps the last mode
+  previewed, and it opens on the menu's default focus; the key hints for the active input device, the build label, and
+  the existing Play again and last-played detail placed in the layout. The
+  menu shows no bests and no credit line; the controls reference, the sound
+  switch and the volume live on the Settings page only.
+- **Board choice screens** — Classic 2D and 3D: the board options, the
+  no-guess switch, the Play action with its key hint, and beside them the
+  chosen board's records panel, from the records store. Custom keeps its
+  size fields, revealed when Custom is chosen.
+  - **Classic 2D** — Play sits on the right, beside a non-accent *Records*
+    action that opens the Records screen on the selected board. The records
+    panel shows the selected board under the no-guess switch's setting, its
+    title naming both ("INTERMEDIATE · YOUR BESTS", "INTERMEDIATE ·
+    NO-GUESS · YOUR BESTS"): the bests (time, 3BV/s, efficiency with when
+    each was set), wins, win rate and streak; the chart of the times of its
+    last 30 won games and under it a chart of 3BV/s and efficiency over the
+    same 30 wins, as the Records screen's history chart draws them; the recent
+    games and under them a Top 5 table of its fastest wins. Every part follows the
+    switch. The panel carries no trend figure.
+  - **3D** — the panel shows the chosen board's bests (time, 3BV/s,
+    efficiency with when each was set), its wins, win rate and streak, its
+    recent games and a chart of its last 30 times.
 - **Pause card, results screen, Records screen, Settings page, replay
   viewer, generating and failed-board cards, the placeholder screen and the
   confirmations** — each inside the screen frame, with the content their
   owning features define.
 - **The 3D scene in a panel** — the 3D renderer draws into the scene panel's
-  rectangle when a screen has one (the menu's demo board), and full-window
+  rectangle when a screen has one (the menu's 3D preview), and full-window
   in a 3D game and the 3D replay viewer as today.
 - The shared layout at every window size the game supports, down to the
   1024 px-wide window the Classic 2D board is measured against.
@@ -66,11 +89,11 @@ Non-goals:
   contents, records rules, settings behaviour — their owning features
   (`game-shell`, `settings`, `results-screen`, `records-screen`,
   `replay-playback`, `3d-results-records-screens`). This feature arranges
-  and styles them; it adds only the board choice screens' records panel and
-  the menu's bests column, which are views over the records store.
-- Menu entries the artboards draw but no milestone has built — Campaign,
-  Daily, Hexagon, Triangle, Surface, Leaderboards, Quit and the demo's
-  entries arrive with their milestones as ordinary mode entries.
+  and styles them; it adds only the board choice screens' records panel, a
+  view over the records store.
+- What the locked entries open, and the Campaign and demo entries the
+  artboards draw — each arrives with its milestone; Leaderboards and Quit
+  unlock with `leaderboards-menu-entry`.
 - Text the artboards carry as placeholder (the number of 3D presets, the
   build label's version) — the screens show the game's real content.
 - Theme styling beyond *Joyful tiles* — later themes style these components
@@ -107,20 +130,22 @@ kit are described in [app-shell.md](../../context/app-shell.md) and
   from kit components, keeping every element id, route, default focus and
   controller navigation target their owners and tests rely on, or moving
   them with their owners in the same change.
-- **Records views.** The board choice screens' records panel and the
-  menu's bests column read the records store through its existing read
-  interface and its change notification; they hold no records of their own.
-  The chart reuses the Records screen's chart component.
+- **Records views.** The board choice screens' records panel reads the
+  records store through its existing read interface and its change
+  notification; it holds no records of its own. Its charts reuse the
+  Records screen's chart component.
 - **Scene panel.** The 3D renderer gains a target rectangle: the shell
   hands it the panel's rectangle while a screen with a scene panel shows,
   and the full window otherwise; it draws only there, with the panel's own
-  frame and corners drawn by the theme stylesheet over it.
+  frame and corners drawn by the theme stylesheet over it. The Classic 2D
+  preview is the Classic 2D board view drawing a board in the panel; the
+  preview shown follows menu focus.
 - **Mode entry list.** The menu's entries are an open-ended column: a mode
   joins it by adding one mode entry, with no change to the menu's
   composition. When the entries are taller than their column, the column
-  scrolls on its own, keeping the scene panel, the bests column and the
-  key hints in place, so the m4–m6 entries (Hexagon, Triangle and Surface
-  among them) fit without a redesign.
+  scrolls on its own, keeping the scene panel and the key hints in place. A
+  locked entry unlocks in its place when what it opens is built, with no change to the menu's
+  composition.
 - **Design status per screen.** The finished *Joyful tiles* artboards cover
   the main menu and the Classic 2D board choice (and the Classic 2D game,
   `in-game-layout`). Every other screen — the 3D board choice included — is
@@ -130,7 +155,7 @@ kit are described in [app-shell.md](../../context/app-shell.md) and
 
 ## Data and state
 
-- No new persisted state. The records panel and bests column are views over
+- No new persisted state. The records panel is a view over
   `personal-records` and `3d-game-records`; the last board choices and the
   last mode played stay with their owners.
 - Component state (focus, selection, the open Custom fields) is DOM state of
@@ -148,7 +173,9 @@ kit are described in [app-shell.md](../../context/app-shell.md) and
   the recomposition, so the shell's navigation and the existing browser
   tests keep their footing.
 - **Window sizes** — no screen scrolls horizontally at 1024 px wide; the
-  frame's body scrolls vertically when needed.
+  frame's body scrolls vertically when needed. On a narrow or mobile window
+  a screen may hide its non-vital parts, such as the in-game live figures
+  panel.
 
 ## Dependencies
 
@@ -158,8 +185,8 @@ kit are described in [app-shell.md](../../context/app-shell.md) and
 - `game-shell`, `settings`, `results-screen`, `records-screen`,
   `replay-playback`, `3d-results-records-screens`, `3d-play-flow`,
   `classic-2d-square-play` — the screens' content and behaviour.
-- `personal-records`, `3d-game-records` — the bests, streaks and recent
-  games the records panel and the menu column show.
+- `personal-records`, `3d-game-records` — the bests, streaks, recent games
+  and top games the records panel shows.
 - No new libraries.
 
 ## Open questions
@@ -168,7 +195,3 @@ kit are described in [app-shell.md](../../context/app-shell.md) and
   screen, Settings page, replay viewer and the cards are not drawn yet; the
   owner is designing them on the Claude Design canvas, with a components
   artboard. Their tasks wait on them as **Design status per screen** says.
-- The menu artboard's bests column shows two Classic 2D bests, one 3D best
-  and the win streak. Which boards it shows for a player with bests on
-  several boards is decided here as: the last board played in each mode,
-  plus the current streak; revisit when the menu's artboard is final.
