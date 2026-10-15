@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 200
+Last task number: 201
 
 ---
 
@@ -883,6 +883,15 @@ Preconditions: none
 Status: [DONE]
 Target: claude
 Files: js/settings/bindings.js, js/ui.js, tests/shell-help.test.mjs, tests/shell-first-use.test.mjs, tests/settings-page.test.mjs, tests/classic2d-touch.test.mjs, tests/shell-mode-3d.test.mjs, .claude/context/settings-bindings.md, .claude/context/app-shell-help.md
+Preconditions: none
+
+---
+
+## 201. Pause card in two columns at 1024 px and wider, fitting a 1024 × 768 window
+
+Status: [MISSING]
+Target: claude
+Files: index.html, css/components.css, css/style.css, js/ui.js, tests/classic2d-mode.test.mjs, tests/shell-mode-3d.test.mjs, .claude/domain/features/screen-components.md, .claude/context/app-shell-markup.md
 Preconditions: none
 
 ---
