@@ -142,7 +142,7 @@ it generalises.
   pointer lock, and resume returns to lockless touch play.
 - **Shell navigation.** Keyboard and controller navigation for every shell
   screen, built on the existing controller reader and spatial focus search
-  ([input.md](../../context/input.md)): the topmost visible layer takes
+  ([input-controller.md](../../context/input-controller.md)): the topmost visible layer takes
   input; while an overlay is open (the Controls modal, the pause card, the
   results card, the replay viewer) the rest of the page is inert, the status
   toast excepted, and Tab wraps at its edges where `inert` is unavailable;

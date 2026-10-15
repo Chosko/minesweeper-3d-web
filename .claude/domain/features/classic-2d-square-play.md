@@ -104,7 +104,7 @@ independent of three.js, as one mode front-end over the shared engine (see
 front-end ([rendering.md](../../context/rendering.md),
 [input.md](../../context/input.md),
 [input-camera.md](../../context/input-camera.md)) is left as it is; the controller reader
-and its pure helpers in [input.md](../../context/input.md) are reused, not
+and its pure helpers in [input-controller.md](../../context/input-controller.md) are reused, not
 copied.
 
 - **Board setup.** Turns the chosen size and no-guess switch into a board
