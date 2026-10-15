@@ -84,6 +84,20 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
   :is(#records-games, #records-replays-table, #records-top-table) td:is([data-label="Board code"], :last-child) { grid-column: 1 / -1; }
   #records-replays-table td .ui-button { margin: 0 var(--space-2) 0 0; }
 }
+/* The Averages table stacks the same way in a panel narrower than its row of three-digit times on one
+   line (about 333 px; the panel is 336 px at 1024 px and wider), each row a card headed by its label. */
+#records-averages { container-type: inline-size; }
+@container (max-width: 335px) {
+  #records-averages-table, #records-averages-table tbody { display: block; }
+  #records-averages-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  #records-averages-table tr {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--space-8) * 2.5), 1fr));
+    gap: var(--space-1) var(--space-3); padding: var(--space-2) 0; border-bottom: 1px solid var(--color-border);
+  }
+  #records-averages-table :is(th, td) { display: block; padding: 0; border: 0; text-align: left; }
+  #records-averages-table th { grid-column: 1 / -1; color: var(--color-ink); }
+  #records-averages-table td[data-label]::before { content: attr(data-label); display: block; font-size: var(--font-size-xs); color: var(--color-ink-muted); }
+}
 #pause, #ready, #results { background: var(--color-backdrop-scrim-soft); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
 /* The ready card waiting unseen for a pointer lock the player's own Play again asked for. */
 #ready.ready--pending { visibility: hidden; }

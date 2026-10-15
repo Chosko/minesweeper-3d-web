@@ -898,7 +898,7 @@ Preconditions: none
 
 ## 202. Records Averages table stays inside its panel on a phone
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: css/style.css, tests/records-screen.test.mjs, .claude/context/records-screen.md
 Preconditions: none

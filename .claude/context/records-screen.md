@@ -102,8 +102,10 @@ Export (`js/records/export.js`)
   narrower than a row of its figures, board code and actions on one line —
   every width the two panels take — stacks each row's cells under their
   `data-label`, the board code and the actions each on a line of their own
-  (`css/style.css`, a container query on the two panels); a time never
-  wraps.
+  (`css/style.css`, a container query on the two panels); the averages
+  table stacks the same way, each row a card headed by its label, in a
+  panel narrower than its row of three-digit times (a container query on
+  `#records-averages`, a table at 1024 px and wider); a time never wraps.
 - **History views and filters.** The choices are kit segmented choices
   whose options are in the markup. The period filters every history view,
   the outcome only the recent games; the bests, counters and overall row
