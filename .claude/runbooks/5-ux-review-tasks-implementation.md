@@ -328,7 +328,7 @@ Context: none
 
 Done: 2026-10-15, commit `5c9f617` (15 files, +110/-26). A touch pan already retired the clipped-board hint, so no wiring was needed there; the help foot, HUD strip and first-use hints still show key names on a phone, as in 3D.
 
-## [ ] 46. Implement task 192 — 3D ready and results cards: key hints that match the device and the screen
+## [x] 46. Implement task 192 — 3D ready and results cards: key hints that match the device and the screen
 
 Depends on: none
 
@@ -338,6 +338,8 @@ Context:
 ```prompt
 /task-implement 192 --review
 ```
+
+Done: 2026-10-15, commit `1faae2c` (11 files, +55/-9). `ready--touch` sits on the whole `#ready` overlay rather than on `#ready-btn`, so it reaches the Esc row.
 
 ## [ ] 47. Implement task 193 — Records: best tiles and tables keep their figures on one line
 
