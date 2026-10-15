@@ -24,7 +24,7 @@ leaderboard logic; the screen is `leaderboard-screen`.
 
 In scope (m3-on-steam):
 
-- The leaderboard catalogue: 12 boards — Classic 2D square Beginner,
+- The leaderboard catalogue — Classic 2D square Beginner,
   Intermediate and Expert, and the three 3D cube presets (Beginner,
   Intermediate and Expert), each with no-guess on and off — and the stable
   Steam leaderboard name of each.
@@ -124,7 +124,7 @@ only through `steam-desktop-host`'s bridge and capability adapter.
 - **Outbox blob store** — the pending replays, one per outbox entry, deleted
   once the entry is submitted or dropped.
 - **Shared replay files** — in Steam remote storage, one per leaderboard,
-  replaced when a new best is attached. At most 12 files.
+  replaced when a new best is attached.
 - **Best cache** — in memory for the session.
 
 ## Interfaces and contracts
