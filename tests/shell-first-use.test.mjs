@@ -196,6 +196,15 @@ test('the scroll hint reads "Drag to pan · pinch to zoom" on a coarse-only devi
     'a touch pan of a clipped board retires it as a wheel scroll does');
 });
 
+test('on a coarse-only device each mode\'s hint strip reads its touch wording, unless a controller is in use', () => {
+  assert.equal(text(hintStripHtml('classic-2d', 'touch')), 'Tap reveal · Long-press flag · Tap a number chord');
+  assert.equal(text(hintStripHtml('3d', 'touch')), 'Tap reveal · Long-press flag · Space button aim through · Shift button neighbours');
+  for (const mode of ['classic-2d', '3d']) assert.doesNotMatch(hintStripHtml(mode, 'touch', GLYPHS.xbox), /<kbd/, `${mode}: no key or pad glyph`);
+  const ui = read('js/ui.js');
+  assert.match(ui, /: hintStripHtml\(this\._mode, this\._bindDevice\(this\._mode\), this\._glyphs\)/,
+    'the mode\'s strip takes the device the bindings lists take: touch on a coarse-only device, the controller while it is in use');
+});
+
 test('dismissing a mode\'s strip hides it for good in that mode only', async () => {
   const backend = createMemoryBackend();
   const first = createFirstUse({ storage: createStorage({ backend }), records: records(0, 0) });

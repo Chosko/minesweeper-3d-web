@@ -13,11 +13,12 @@
 //   devices a mode lists. An unknown mode, device or camera throws.
 // bindingsListHtml(rows, glyphs?) → the <dt>/<dd> pairs of a `dl.controls` list, text escaped.
 // bindingsHtml(mode, device, glyphs?, camera?) → the bindings component: that mode's rows for that device.
-// hudStripHtml(mode, device, glyphs?, { muted, spacing }) → the HUD strip: only the keys or buttons
-//   the mode binds on that device (F flags in Classic 2D, so it is not listed there); 3D's carries
-//   the spacing to one decimal.
+// hudStripHtml(mode, device, glyphs?, { muted, spacing }) → the HUD strip: only the keys, buttons or
+//   gestures the mode binds on that device (F flags in Classic 2D, so it is not listed there); 3D's
+//   carries the spacing to one decimal. Touch lists only 3D's spacing; Classic 2D's is empty.
 // hintStripHtml(mode, device, glyphs?) → the first-use hint strip of that mode, " · " between items.
-// helpFootHtml(mode, device, glyphs?) → the H panel's foot line; the release rule only in 3D.
+// helpFootHtml(mode, device, glyphs?) → the H panel's foot line; the release rule only in 3D, and
+//   empty for Classic 2D's touch.
 // hintText(name, device, glyphs?) → a one-time hint's plain text (`autoHide`, `aimHint`, `scrollHint`),
 //   or a Learn 3D prompt's (`learnStart`, `learnShift`, `learnCtrl`, `learnFlag`, `learnChord`, `learnRest`).
 // createActiveDevice({ onChange }) → the active device: the controller while the last input came
@@ -206,10 +207,12 @@ export const HUD_STRIP = table({
   'classic-2d': {
     keyboard: [['[H]', 'help'], ['[M]', 'sound'], ['[Esc]', 'menu']],
     controller: [['{start}', 'menu']],
+    touch: [],
   },
   '3d': {
     keyboard: [['[X]', 'spacing'], ['[H]', 'help'], ['[M]', 'sound'], ['[F]', 'fullscreen'], ['[Esc]', 'menu']],
     controller: [['D-pad ↑ ↓', 'spacing'], ['{x}', 'help'], ['{start}', 'menu']],
+    touch: [['Pinch', 'spacing']],
   },
 });
 
@@ -218,19 +221,22 @@ export const HINT_STRIP = table({
   'classic-2d': {
     keyboard: [['Arrows', 'move'], ['[Space]', 'reveal'], ['[F]', 'flag'], ['[D]', 'chord']],
     controller: [['D-pad', 'move'], ['{a}', 'reveal'], ['{x}', 'flag'], ['{y}', 'chord']],
+    touch: [['Tap', 'reveal'], ['Long-press', 'flag'], ['Tap a number', 'chord']],
   },
   '3d': {
     keyboard: [['Left', 'reveal'], ['Right', 'flag'], ['Hold [Space]', 'aim through'], ['Hold [Shift]', 'neighbours']],
     controller: [['{rt}', 'reveal'], ['{lt}', 'flag'], ['Hold {rb}', 'aim through'], ['Hold {lb}', 'neighbours']],
+    touch: [['Tap', 'reveal'], ['Long-press', 'flag'], ['Space button', 'aim through'], ['Shift button', 'neighbours']],
   },
 });
 
-/** The H panel's foot line: the release rule only in the mode that has it (3D). */
+/** The H panel's foot line: the release rule only in the mode that has it (3D); touch names no key. */
 export const HELP_FOOT = Object.freeze({
-  'classic-2d': Object.freeze({ keyboard: '[H] hides this panel.', controller: '[H] hides this panel.' }),
+  'classic-2d': Object.freeze({ keyboard: '[H] hides this panel.', controller: '[H] hides this panel.', touch: '' }),
   '3d': Object.freeze({
     keyboard: 'Actions fire when the mouse button is released. [H] hides this panel.',
     controller: 'Actions fire when the trigger is released. {x} hides this panel.',
+    touch: 'Actions fire when your finger lifts.',
   }),
 });
 

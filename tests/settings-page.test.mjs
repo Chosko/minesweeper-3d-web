@@ -269,6 +269,7 @@ test('the in-game help reads the same bindings source', () => {
   const ui = read('js/ui.js');
   assert.match(ui, /from '\.\/settings\/bindings\.js'/);
   assert.match(ui, /bindingsHtml\(this\._mode, this\._bindDevice\(this\._mode\), this\._glyphs, this\._camera\)/, 'the help panel shows the active mode\'s rows for the active device (touch on a touch device) and camera');
+  assert.match(ui, /helpFootHtml\(this\._mode, this\._bindDevice\(this\._mode\), this\._glyphs\)/, 'its foot line follows the same device');
   assert.equal(bindingsHtml('3d', 'controller', GLYPHS.xbox), bindingsListHtml(bindingRows('3d', 'controller'), GLYPHS.xbox), 'the component is the source\'s rows');
 });
 

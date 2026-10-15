@@ -26,13 +26,16 @@ The module's head comment lists every function.
   keys as `<kbd>`, buttons as `<kbd class="pad">`, text escaped),
   `bindingsHtml(mode, device, glyphs?, camera?)` — the bindings component.
 - `HUD_STRIP`, `HINT_STRIP`, `hudStripHtml(mode, device, glyphs?, { muted,
-  spacing })` (only the keys or buttons the mode binds on that device; F is
-  not listed in Classic 2D, where it flags; 3D's first entry is the spacing
-  readout, `X` spacing 1.1 to one decimal, D-pad on the controller),
-  `hintStripHtml(mode, device, glyphs?)`.
+  spacing })` (only the keys, buttons or gestures the mode binds on that
+  device; F is not listed in Classic 2D, where it flags; 3D's first entry is
+  the spacing readout, `X` spacing 1.1 to one decimal, D-pad on the
+  controller, Pinch on touch, its only touch entry; Classic 2D's touch strip
+  is empty), `hintStripHtml(mode, device, glyphs?)` (touch: tap, long-press,
+  the tap chord in Classic 2D, the Space and Shift buttons in 3D).
 - `HELP_FOOT`, `helpFootHtml(mode, device, glyphs?)` — the H panel's foot
-  line, naming the release rule in 3D only.
-- `HINT_TEXT` (`autoHide`, `aimHint`, `scrollHint`, also by touch, and the Learn 3D
+  line, naming the release rule in 3D only (on touch, the finger's lift;
+  Classic 2D's touch foot is empty).
+- `HINT_TEXT` (`autoHide`, `aimHint`, `scrollHint` — only the scroll hint also by touch — and the Learn 3D
   prompts `learnStart`, `learnShift`, `learnCtrl`, `learnFlag`,
   `learnChord`, `learnRest`), `hintText(name, device, glyphs?)` — a
   one-time hint or prompt as plain text.
@@ -49,10 +52,12 @@ The module's head comment lists every function.
   `rt`, `start`, `back`), drawn in the connected pad's glyphs
   (`js/gamepad.js` `GLYPHS`).
 - **Bindings are one table.** The Settings page shows every mode × device;
-  the pause card, the H panel and the HUD strip show the active mode's rows
-  for the active device, the main menu's Controls panel the rows of its
-  Classic 2D | 3D tab for the active device, and the hint strip its mode's
-  strip. A row's text is edited in `BINDINGS` (`HUD_STRIP`, `HINT_STRIP`,
+  the pause card, the H panel with its foot line and the HUD strip show the
+  active mode's rows for the active device, the main menu's Controls panel
+  the rows of its Classic 2D | 3D tab for the active device, and the hint
+  strip its mode's strip — on a coarse-only device all of them touch's,
+  unless a controller is in use (`UI._bindDevice`,
+  [app-shell-help.md](app-shell-help.md)). A row's text is edited in `BINDINGS` (`HUD_STRIP`, `HINT_STRIP`,
   `HELP_FOOT`, `HINT_TEXT` for those surfaces), never in markup, so a later
   rebinding feature reaches every surface through this source.
 - **Camera-selected rows.** 3D's rows are one table per device (`ROWS_3D`)

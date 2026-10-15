@@ -903,6 +903,20 @@ test('in a browser with touch on a tablet, 3D plays by touch: stick, look, tap, 
     await page.tap('#ready-btn');
     await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing');
 
+    // The hint strip and the HUD strip speak touch: gestures and on-screen buttons, no key.
+    const help = await ms(() => ({
+      strip: document.getElementById('hint-strip-text').innerHTML,
+      stripShown: !document.getElementById('hint-strip').classList.contains('hidden'),
+      tools: document.getElementById('hud-tools').innerHTML,
+      toolsShown: getComputedStyle(document.getElementById('hud-tools')).display !== 'none',
+    }));
+    assert.ok(help.stripShown, 'the first-use strip shows in the first games');
+    assert.match(help.strip, /Tap reveal/);
+    assert.match(help.strip, /Shift button neighbours/);
+    assert.doesNotMatch(help.strip + help.tools, /<kbd|Esc|Left|Right|Hold/, `no key named (${help.strip} | ${help.tools})`);
+    assert.ok(help.toolsShown, 'the HUD strip keeps its spacing readout');
+    assert.match(help.tools, /Pinch spacing/);
+
     // The stick flies; lifting it stops; it acts on nothing.
     const c0 = await camOf();
     await f.start([[...STICK, 1]]);
@@ -1049,6 +1063,9 @@ test('in a browser with a mouse at 1280 × 800, 3D starts with pointer lock and 
     assert.equal(await ms(() => globalThis.__locks), 1, 'the click asks for pointer lock');
     await ms(() => globalThis.__ms.forcePlay());
     assert.equal(await ms(() => getComputedStyle(document.getElementById('touch-3d')).display), 'none', 'no touch layer');
+    const help = await ms(() => ({ strip: document.getElementById('hint-strip-text').textContent, tools: document.getElementById('hud-tools').textContent }));
+    assert.equal(help.strip, 'Left reveal · Right flag · Hold Space aim through · Hold Shift neighbours', 'the keyboard\'s hint strip, as before');
+    assert.match(help.tools, /Esc menu/, 'the keyboard\'s HUD strip, as before');
     assert.equal(await ms(() => document.body.classList.contains('touch-play')), false);
     assert.deepEqual(errors, []);
   } finally {

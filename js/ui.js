@@ -95,7 +95,7 @@ export class UI {
     this._muted = false;
     this._hint = false; // the hint strip shows
     this._controlsTab = 'classic-2d'; // the Controls panel's tab
-    this._touch = false; // a coarse-only device: both modes play by touch, their help lists the touch rows and the scroll hint its touch text
+    this._touch = false; // a coarse-only device: both modes play by touch, and every help surface speaks touch (`_bindDevice`)
     this._stick = ''; // the touch stick's place shown, '' while hidden
     this._boardText = '';
     this._learnHint = null; // the Learn 3D prompt the hint strip shows (js/mode3d/learn.js LEARN_HINTS), or null
@@ -496,7 +496,7 @@ export class UI {
       if (learn) this.el.hintStripText.textContent = hintText(learn, this._device, this._glyphs);
       else {
         this.el.hintStripText.innerHTML = scroll ? hintText('scrollHint', this._bindDevice(this._mode), this._glyphs)
-          : hintStripHtml(this._mode, this._device, this._glyphs);
+          : hintStripHtml(this._mode, this._bindDevice(this._mode), this._glyphs);
       }
     }
     this.el.hintClose.classList.toggle('hidden', this._hintKind === 'learn');
@@ -699,16 +699,19 @@ export class UI {
     return this._device === 'controller' && this._mapping !== 'standard'
       ? ' <span class="pad-note">This controller does not report the standard layout, so some buttons may be unmapped.</span>' : '';
   }
-  /** The device whose rows a surface of `mode` lists: on a touch device, the touch rows unless a controller is in use. */
+  /** The device a help surface of `mode` speaks for: on a touch device, touch unless a controller is in use. */
   _bindDevice(mode) {
     return this._touch && this._device === 'keyboard' ? 'touch' : this._device;
   }
   _renderHelp() {
     this.el.helpList.innerHTML = bindingsHtml(this._mode, this._bindDevice(this._mode), this._glyphs, this._camera);
-    this.el.helpFoot.innerHTML = `${helpFootHtml(this._mode, this._device, this._glyphs)}${this._note()}`;
+    this.el.helpFoot.innerHTML = `${helpFootHtml(this._mode, this._bindDevice(this._mode), this._glyphs)}${this._note()}`;
   }
+  /** The HUD strip; one with no entries (Classic 2D on touch) hides its panel. */
   _renderHudStrip() {
-    this.el.hudTools.innerHTML = hudStripHtml(this._mode, this._device, this._glyphs, { muted: this._muted, spacing: this._spacing });
+    const html = hudStripHtml(this._mode, this._bindDevice(this._mode), this._glyphs, { muted: this._muted, spacing: this._spacing });
+    this.el.hudTools.innerHTML = html;
+    this.el.hudTools.classList.toggle('hidden', !html);
   }
   /** Redraw every bindings surface for the active mode and device. */
   _renderBindings() {

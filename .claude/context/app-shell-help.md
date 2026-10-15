@@ -27,10 +27,12 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
   ([settings-bindings.md](settings-bindings.md)); edit a binding's text in `BINDINGS` only.
   They show the mode the last screen method set (`showReady` /
   `showPlaying` 3D, `showClassic2D` 2D, `showPause`'s `mode`) for the
-  device `setDevice` set (the touch rows of either mode on a coarse-only
-  device unless a controller is in use, `_bindDevice`, which the scroll
-  hint's text follows too) and the camera `setCamera` set, and every change of any
-  of them, or of the pad's glyphs, redraws them.
+  device `setDevice` set (touch in either mode on a coarse-only device
+  unless a controller is in use, `_bindDevice`, which every one of these
+  surfaces follows — the lists, the help foot, the HUD strip, the hint strip
+  and the scroll hint) and the camera `setCamera` set, and every change of
+  any of them, or of the pad's glyphs, redraws them. A HUD strip with no
+  entries (Classic 2D on touch) hides `#hud-tools`.
 - **Help panel.** `_helpByUser` keeps an H-opened panel open across
   screens; screen methods otherwise hide it. `H` toggles it and `M` sets
   `muted` in both modes; the store's `muted` subscription updates every
@@ -58,8 +60,9 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
   first-use strip, auto-hide toast or aim hint shows.
   `noteAutoHide` gives the one-time toast at the first auto-hide; the
   frame loop's `aimHint` shows the aim hint once the crosshair rests
-  `AIM_DWELL_MS` on a revealed number with a closed cube behind it. Hint
-  words come from `hintText` in the active device's names.
+  `AIM_DWELL_MS` on a revealed number with a closed cube behind it. The
+  toast's, the aim hint's and Learn 3D's words come from `hintText` in the
+  active device's names (keyboard or controller, never touch).
 
 ## DOMAIN DEPENDENCIES
 

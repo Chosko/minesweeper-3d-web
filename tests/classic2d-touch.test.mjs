@@ -629,6 +629,16 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
     await ms(() => globalThis.__ms.pauser.restart('key'));
     await page.waitForFunction((tile) => globalThis.__ms.board2D && globalThis.__ms.board2D.layout.tile === tile, v0.tile);
 
+    // A key on the coarse-only device brings the mode's strip, in touch wording; the HUD strip, with
+    // nothing a finger can press, hides.
+    await page.keyboard.press('KeyQ');
+    await page.waitForFunction(() => !document.getElementById('hint-strip').classList.contains('hidden'), null, { timeout: patience(2000) });
+    const strip = await ms(() => document.getElementById('hint-strip-text').innerHTML);
+    assert.doesNotMatch(strip, /<kbd/, 'no key cap in the strip');
+    const tools = await ms(() => { const el = document.getElementById('hud-tools'); return { html: el.innerHTML, hidden: el.classList.contains('hidden') }; });
+    assert.equal(strip, 'Tap reveal · Long-press flag · Tap a number chord');
+    assert.deepEqual(tools, { html: '', hidden: true }, 'no key in the HUD strip, and no empty box');
+
     // The pause card lists Classic 2D's touch rows, not the mouse and keyboard ones.
     await page.tap('#hud-pause');
     await page.waitForFunction(() => globalThis.__ms.state.mode === 'paused', null, { timeout: patience(2000) });
@@ -798,6 +808,13 @@ test('in a browser with a mouse at 1280 × 800, the 2D overlay bar, the menu, Se
     assert.equal(Math.round(g.bar.top - g.panel.top), 9, 'the bar on the panel\'s top edge, as before');
     const viewTop = await ms(() => globalThis.__ms.board2D.canvas.getBoundingClientRect().top + globalThis.__ms.board2D.layout.viewY);
     assert.equal(Math.round(viewTop - g.bar.bottom), 8, 'the board 8 px below the bar, as before');
+
+    // A key brings the mode's strip in the keyboard's words; the HUD strip reads as before.
+    await page.keyboard.press('KeyQ');
+    await page.waitForFunction(() => !document.getElementById('hint-strip').classList.contains('hidden'), null, { timeout: patience(2000) });
+    const help = await ms(() => ({ strip: document.getElementById('hint-strip-text').textContent, tools: document.getElementById('hud-tools').textContent }));
+    assert.equal(help.strip, 'Arrows move · Space reveal · F flag · D chord');
+    assert.equal(help.tools, 'H helpM sound onEsc menu');
 
     await page.keyboard.press('Escape');
     assert.equal(await ms(() => globalThis.__ms.state.mode), 'paused');
