@@ -826,7 +826,7 @@ Preconditions: none
 
 ## 194. Best-time chart: axis ticks with the fewest decimals that tell them apart
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/records/history-chart.js, tests/records-history.test.mjs
 Preconditions: none
