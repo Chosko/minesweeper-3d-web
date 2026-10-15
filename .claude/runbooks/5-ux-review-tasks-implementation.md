@@ -390,7 +390,7 @@ Context: none
 
 Done: 2026-10-15, commit `a6f3a56` (5 files, +25/-22). Moving the markup alone gave the 2D walk Expert → No-guess → Width; navigation code was not touched.
 
-## [ ] 51. Implement task 199 — Larger stat labels and key caps on every pointer, 44 px hit areas still touch-only
+## [x] 51. Implement task 199 — Larger stat labels and key caps on every pointer, 44 px hit areas still touch-only
 
 Depends on: none
 
@@ -406,6 +406,8 @@ Context:
 ```prompt
 /task-implement 199 --review
 ```
+
+Done: 2026-10-15, commit `b4be6b7` (12 files, +136/-44). Landed with criterion 3 amended per the answer: the pause card still overflows the window height at 1024 × 768, which a new task will address.
 
 ## [ ] 52. Implement task 200 — Touch wording on a coarse-only device for the help foot, HUD strip and hint strip
 
