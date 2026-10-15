@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 198
+Last task number: 199
 
 ---
 
@@ -865,6 +865,15 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: index.html, css/style.css, tests/shell-pad-walk.test.mjs
+Preconditions: none
+
+---
+
+## 199. Larger stat labels and key caps on every pointer, 44 px hit areas still touch-only
+
+Status: [MISSING]
+Target: claude
+Files: css/components.css, css/style.css, tests/components.test.mjs, .claude/domain/features/screen-components.md, .claude/context/app-shell-markup.md
 Preconditions: none
 
 ---
