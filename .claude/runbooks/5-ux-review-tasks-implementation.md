@@ -1,7 +1,7 @@
 # Runbook: ux-review-tasks-implementation
 
 Created: 2026-10-12 · Source: /runbook-create interview · Model: opus
-Last step number: 49
+Last step number: 51
 Sequencing: Run in list order, one step at a time: most tasks edit js/main.js, index.html and css/style.css, and each body says whichever of two overlapping tasks lands second merges around the first; task 119's help component is reused by many later tasks, so it goes first.
 Archive: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 28, 34, 41
 
@@ -358,6 +358,26 @@ Context: none
 
 ```prompt
 /task-implement 195 --review
+```
+
+## [ ] 50. Implement task 198 — Classic 2D no-guess switch back under the presets, with the D-pad walk to match
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 198 --review
+```
+
+## [ ] 51. Implement task 199 — Larger stat labels and key caps on every pointer, 44 px hit areas still touch-only
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 199 --review
 ```
 
 ## Do not re-propose
