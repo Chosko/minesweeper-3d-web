@@ -493,7 +493,7 @@ export class UI {
     this._hintKind = on && learn ? 'learn' : on && scroll ? 'scroll' : 'mode';
     this._learnHint = on && learn ? learn : null;
     if (on) {
-      if (learn) this.el.hintStripText.textContent = hintText(learn, this._device, this._glyphs);
+      if (learn) this.el.hintStripText.textContent = this.hint(learn);
       else {
         this.el.hintStripText.innerHTML = scroll ? hintText('scrollHint', this._bindDevice(this._mode), this._glyphs)
           : hintStripHtml(this._mode, this._bindDevice(this._mode), this._glyphs);
@@ -698,6 +698,10 @@ export class UI {
   _note() {
     return this._device === 'controller' && this._mapping !== 'standard'
       ? ' <span class="pad-note">This controller does not report the standard layout, so some buttons may be unmapped.</span>' : '';
+  }
+  /** A one-time hint's or Learn 3D prompt's text (js/settings/bindings.js HINT_TEXT) for the device the help surfaces speak for. */
+  hint(name) {
+    return hintText(name, this._bindDevice(this._mode), this._glyphs);
   }
   /** The device a help surface of `mode` speaks for: on a touch device, touch unless a controller is in use. */
   _bindDevice(mode) {

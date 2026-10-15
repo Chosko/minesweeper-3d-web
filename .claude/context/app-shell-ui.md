@@ -51,7 +51,8 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
     card), `showReady`'s `learn` line;
   - help and hints: `toggleHelp`, `userToggleHelp`, `setHintStrip(on,
     {scroll, learn})` (`learn` a Learn 3D prompt's hint name, shown with no
-    close button), `dismissHint`, `setDevice`, `setPad` (also fills every
+    close button), `hint(name)` (a `HINT_TEXT` entry for the device
+    `_bindDevice` gives), `dismissHint`, `setDevice`, `setPad` (also fills every
     `[data-pad-glyph]` slot, the Records screen's LB / RB and LT / RT hints),
     `setCamera('fly' | 'orbit')` (the 3D rows and the ready card's
     `[data-camera]` movement line follow the Camera setting), `flash`,

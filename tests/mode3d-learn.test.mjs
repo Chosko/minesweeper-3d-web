@@ -242,6 +242,22 @@ test('the prompt texts come from the bindings source, in the controller\'s names
   assert.equal(say('chord', 'controller', GLYPHS.xbox), 'Press LT and RT together on the number to chord');
 });
 
+test('on a coarse-only device the prompts name the touch toolbar\'s buttons and the touch gestures', () => {
+  const say = (name) => hintText(LEARN_HINTS[name], 'touch', GLYPHS.xbox);
+  assert.equal(say('start'), 'Aim at the marked cube and tap to start');
+  assert.equal(say('shift'), 'Tap the Shift button to see what this number counts');
+  assert.equal(say('ctrl'), 'Tap the Ctrl button to see the cubes you cleared');
+  assert.equal(say('flag'), 'Aim at the one cube that must be a mine and long-press to flag it');
+  // The chord: a second finger on the look half while the first is still a pending tap (js/touch-3d.js).
+  assert.equal(say('chord'), 'Aim at the number and tap two fingers together on the right half to chord');
+  assert.equal(say('rest'), 'Clear the rest of the box');
+  for (const name of LEARN_PROMPTS) {
+    assert.doesNotMatch(say(name), /\b(Hold|Click|Press)\b|\b(Ctrl|Space|Shift)\b(?! button)/, `${name}: no key named (${say(name)})`);
+  }
+  // The strip draws the prompt for the device every help surface speaks for.
+  assert.match(read('js/ui.js'), /if \(learn\) this\.el\.hintStripText\.textContent = this\.hint\(learn\);/);
+});
+
 test('no timer: the overlay hides its time and the pause card shows mines left alone', () => {
   assert.equal(pauseLine(12.5, 3, { timed: false }), '3 mines left');
   assert.equal(pauseLine(12.5, 1, { timed: false }), '1 mine left');

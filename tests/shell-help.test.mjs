@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { GLYPHS } from '../js/gamepad.js';
 import {
   BINDING_MODES, BINDING_DEVICES, bindingRows, bindingsListHtml, bindingsHtml, hudStripHtml, hintStripHtml, helpFootHtml,
-  HUD_STRIP, HINT_STRIP, HELP_FOOT, createActiveDevice,
+  HUD_STRIP, HINT_STRIP, HELP_FOOT, HINT_TEXT, hintText, createActiveDevice,
 } from '../js/settings/bindings.js';
 import { TapToggle, SPACE_TAP_MS } from '../js/input.js';
 import { boardLine3D, boardLine2D } from '../js/ui.js';
@@ -217,6 +217,17 @@ test('the help foot, the HUD strip and the hint strip have touch wording in both
   assert.equal(text(hudStripHtml('3d', 'touch', GLYPHS.generic, { spacing: 2 })), 'Pinch spacing 2.0');
   assert.equal(hudStripHtml('classic-2d', 'touch'), '', 'Classic 2D lists nothing on touch');
   assert.match(UI, /this\.el\.hudTools\.classList\.toggle\('hidden', !html\)/, 'a strip left with no entries hides its panel');
+});
+
+test('every one-time hint and Learn 3D prompt has a touch text naming only the touch rows\' buttons and gestures', () => {
+  const inputs = bindingRows('3d', 'touch').map(([i]) => i);
+  for (const name of Object.keys(HINT_TEXT)) {
+    for (const device of ['keyboard', 'controller', 'touch']) assert.ok(Object.hasOwn(HINT_TEXT[name], device), `${name} has a ${device} text`);
+    const t = hintText(name, 'touch', GLYPHS.xbox);
+    assert.doesNotMatch(t, /\b(Hold|Click|Esc|RT|LT|RB|LB)\b|\b(Ctrl|Space|Shift)\b(?! button)/, `${name}: no key or pad button named (${t})`);
+    for (const [, button] of t.matchAll(/\b(Ctrl|Space|Shift) button\b/g)) assert.ok(inputs.includes(`${button} button`), `${button} button is a touch row`);
+  }
+  assert.ok(inputs.includes('Long-press') && inputs.includes('Two-finger tap') && inputs.includes('Tap'), 'the gestures the prompts name are touch rows');
 });
 
 test('on a mouse and keyboard and with a controller the three surfaces read as before', () => {

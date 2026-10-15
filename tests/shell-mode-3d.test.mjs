@@ -885,6 +885,24 @@ test('in a browser with touch on a tablet, the 3D ready card is a start: Tap to 
   }
 });
 
+test('in a browser with touch on a phone, Learn 3D\'s prompt line speaks touch', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const { page, errors, ms } = await openTouchPage(browser, base, PHONE);
+    await ms(() => globalThis.__ms.learn());
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'ready');
+    await page.tap('#ready-btn');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing');
+    await page.waitForFunction(() => !document.getElementById('hint-strip').classList.contains('hidden'), null, { timeout: patience(2000) });
+    assert.equal(await ms(() => document.getElementById('hint-strip-text').textContent), 'Aim at the marked cube and tap to start');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
 test('in a browser with touch on a tablet, 3D plays by touch: stick, look, tap, long-press, two-finger chord, the toolbar, pinch, Pause and resume, and Orbit', async (t) => {
   const env = await suite.open(t);
   if (!env) return;

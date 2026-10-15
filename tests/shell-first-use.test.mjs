@@ -304,6 +304,17 @@ test('the aim hint: the crosshair rests about a second on a revealed number with
   assert.equal(hintText('aimHint', 'controller', GLYPHS.playstation), 'Hold R1 to aim through numbers.');
 });
 
+test('on a coarse-only device the auto-hide toast and the aim hint name the touch toolbar\'s buttons, not keys', () => {
+  assert.equal(hintText('autoHide', 'touch', GLYPHS.xbox), 'Solved cubes hide. Tap the Ctrl button to see them.');
+  assert.equal(hintText('aimHint', 'touch', GLYPHS.xbox), 'Tap the Space button to aim through numbers.');
+  // Both are drawn for the device the help surfaces speak for: touch unless a controller is in use.
+  const ui = read('js/ui.js');
+  assert.match(ui, /hint\(name\) \{\s*return hintText\(name, this\._bindDevice\(this\._mode\), this\._glyphs\);/);
+  assert.match(MAIN, /ui\.toast\(ui\.hint\('autoHide'\), 4000\)/);
+  assert.match(MAIN, /ui\.toast\(ui\.hint\('aimHint'\), 4000\)/);
+  assert.doesNotMatch(MAIN, /hintText\(/, 'the shell never picks a hint\'s device itself');
+});
+
 // ---------------------------------------------------------------- markup and wiring
 
 const INDEX = read('index.html');

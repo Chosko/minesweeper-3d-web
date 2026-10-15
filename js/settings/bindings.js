@@ -20,7 +20,8 @@
 // helpFootHtml(mode, device, glyphs?) → the H panel's foot line; the release rule only in 3D, and
 //   empty for Classic 2D's touch.
 // hintText(name, device, glyphs?) → a one-time hint's plain text (`autoHide`, `aimHint`, `scrollHint`),
-//   or a Learn 3D prompt's (`learnStart`, `learnShift`, `learnCtrl`, `learnFlag`, `learnChord`, `learnRest`).
+//   or a Learn 3D prompt's (`learnStart`, `learnShift`, `learnCtrl`, `learnFlag`, `learnChord`, `learnRest`),
+//   for the keyboard, the controller or touch.
 // createActiveDevice({ onChange }) → the active device: the controller while the last input came
 //   from a connected controller, otherwise the keyboard and mouse.
 
@@ -240,17 +241,17 @@ export const HELP_FOOT = Object.freeze({
   }),
 });
 
-/** The one-time hints' text per device; the scroll hint also by touch. */
+/** The one-time hints' and Learn 3D prompts' text per device; touch names the toolbar's buttons and the gestures (js/touch-3d.js). */
 export const HINT_TEXT = Object.freeze({
-  autoHide: Object.freeze({ keyboard: 'Solved cubes hide. Hold [Ctrl] to see them.', controller: 'Solved cubes hide. Hold {y} to see them.' }),
-  aimHint: Object.freeze({ keyboard: 'Hold [Space] to aim through numbers.', controller: 'Hold {rb} to aim through numbers.' }),
+  autoHide: Object.freeze({ keyboard: 'Solved cubes hide. Hold [Ctrl] to see them.', controller: 'Solved cubes hide. Hold {y} to see them.', touch: 'Solved cubes hide. Tap the Ctrl button to see them.' }),
+  aimHint: Object.freeze({ keyboard: 'Hold [Space] to aim through numbers.', controller: 'Hold {rb} to aim through numbers.', touch: 'Tap the Space button to aim through numbers.' }),
   scrollHint: Object.freeze({ keyboard: 'Wheel scrolls · Shift+wheel sideways', controller: 'Wheel scrolls · Shift+wheel sideways', touch: 'Drag to pan · pinch to zoom' }),
-  learnStart: Object.freeze({ keyboard: 'Click the marked cube to start', controller: 'Press {rt} on the marked cube to start' }),
-  learnShift: Object.freeze({ keyboard: 'Hold [Shift] to see what this number counts', controller: 'Hold {lb} to see what this number counts' }),
-  learnCtrl: Object.freeze({ keyboard: 'Hold [Ctrl] to see the cubes you cleared', controller: 'Hold {y} to see the cubes you cleared' }),
-  learnFlag: Object.freeze({ keyboard: 'Flag the one cube that must be a mine', controller: 'Press {lt} on the one cube that must be a mine' }),
-  learnChord: Object.freeze({ keyboard: 'Press left and right together on the number to chord', controller: 'Press {lt} and {rt} together on the number to chord' }),
-  learnRest: Object.freeze({ keyboard: 'Clear the rest of the box', controller: 'Clear the rest of the box' }),
+  learnStart: Object.freeze({ keyboard: 'Click the marked cube to start', controller: 'Press {rt} on the marked cube to start', touch: 'Aim at the marked cube and tap to start' }),
+  learnShift: Object.freeze({ keyboard: 'Hold [Shift] to see what this number counts', controller: 'Hold {lb} to see what this number counts', touch: 'Tap the Shift button to see what this number counts' }),
+  learnCtrl: Object.freeze({ keyboard: 'Hold [Ctrl] to see the cubes you cleared', controller: 'Hold {y} to see the cubes you cleared', touch: 'Tap the Ctrl button to see the cubes you cleared' }),
+  learnFlag: Object.freeze({ keyboard: 'Flag the one cube that must be a mine', controller: 'Press {lt} on the one cube that must be a mine', touch: 'Aim at the one cube that must be a mine and long-press to flag it' }),
+  learnChord: Object.freeze({ keyboard: 'Press left and right together on the number to chord', controller: 'Press {lt} and {rt} together on the number to chord', touch: 'Aim at the number and tap two fingers together on the right half to chord' }),
+  learnRest: Object.freeze({ keyboard: 'Clear the rest of the box', controller: 'Clear the rest of the box', touch: 'Clear the rest of the box' }),
 });
 
 export function hudStripHtml(mode, device, glyphs = GLYPHS.generic, { muted = false, spacing = SPACING_START } = {}) {

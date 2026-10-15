@@ -14,7 +14,7 @@ the overlay bar and the controller menus are [app-shell-ui.md](app-shell-ui.md).
 
 `js/shell/first-use.js` — `createFirstUse` (its head comment lists the
 document and every query). The `UI` methods these surfaces use (`setDevice`,
-`setPad`, `setCamera`, `setTouch3D`, `setHintStrip`, `dismissHint`,
+`setPad`, `setCamera`, `setTouch3D`, `setHintStrip`, `hint`, `dismissHint`,
 `toggleHelp`, `userToggleHelp`, `toast`) are listed in
 [app-shell-ui.md](app-shell-ui.md) § PUBLIC API.
 
@@ -29,8 +29,8 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
   `showPlaying` 3D, `showClassic2D` 2D, `showPause`'s `mode`) for the
   device `setDevice` set (touch in either mode on a coarse-only device
   unless a controller is in use, `_bindDevice`, which every one of these
-  surfaces follows — the lists, the help foot, the HUD strip, the hint strip
-  and the scroll hint) and the camera `setCamera` set, and every change of
+  surfaces follows — the lists, the help foot, the HUD strip, the hint strip,
+  the scroll hint, the one-time hints and Learn 3D's prompts) and the camera `setCamera` set, and every change of
   any of them, or of the pad's glyphs, redraws them. A HUD strip with no
   entries (Classic 2D on touch) hides `#hud-tools`.
 - **Help panel.** `_helpByUser` keeps an H-opened panel open across
@@ -61,8 +61,9 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
   `noteAutoHide` gives the one-time toast at the first auto-hide; the
   frame loop's `aimHint` shows the aim hint once the crosshair rests
   `AIM_DWELL_MS` on a revealed number with a closed cube behind it. The
-  toast's, the aim hint's and Learn 3D's words come from `hintText` in the
-  active device's names (keyboard or controller, never touch).
+  toast's, the aim hint's and Learn 3D's words come from `ui.hint`, in the
+  names of the device the other help surfaces follow (`_bindDevice`): on
+  touch, the toolbar's buttons and the gestures.
 
 ## DOMAIN DEPENDENCIES
 

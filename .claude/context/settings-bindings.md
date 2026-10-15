@@ -35,10 +35,12 @@ The module's head comment lists every function.
 - `HELP_FOOT`, `helpFootHtml(mode, device, glyphs?)` — the H panel's foot
   line, naming the release rule in 3D only (on touch, the finger's lift;
   Classic 2D's touch foot is empty).
-- `HINT_TEXT` (`autoHide`, `aimHint`, `scrollHint` — only the scroll hint also by touch — and the Learn 3D
+- `HINT_TEXT` (`autoHide`, `aimHint`, `scrollHint` and the Learn 3D
   prompts `learnStart`, `learnShift`, `learnCtrl`, `learnFlag`,
-  `learnChord`, `learnRest`), `hintText(name, device, glyphs?)` — a
-  one-time hint or prompt as plain text.
+  `learnChord`, `learnRest`, each for the keyboard, the controller and
+  touch — touch naming the 3D toolbar's buttons and the gestures, the chord
+  the two-finger tap), `hintText(name, device, glyphs?)` — a one-time hint
+  or prompt as plain text.
 - `createActiveDevice({ onChange })` → `current` (`'keyboard'` |
   `'controller'`), `input('pad' | 'keyboard' | 'pointer')`,
   `connected(on)`: the controller while the last input came from a

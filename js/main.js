@@ -7,7 +7,7 @@ import { UI, clampSettings, NO_MOUSE_MSG } from './ui.js';
 import * as audio from './audio.js';
 import { Controls } from './controls.js';
 import { createTouch3D, mountTouch3D, applyTouchStick, touchZone, VIBRATE_MS } from './touch-3d.js';
-import { GamepadReader, BTN, Repeat, stickCurve, padGlyphs, pickInDirection, GLYPHS, STICK_DEADZONE, PAD_PRESS, PAD_FLAG, PAD_BOOM, padPulse } from './gamepad.js';
+import { GamepadReader, BTN, Repeat, stickCurve, padGlyphs, pickInDirection, STICK_DEADZONE, PAD_PRESS, PAD_FLAG, PAD_BOOM, padPulse } from './gamepad.js';
 import { createRouter } from './shell/router.js';
 import { FOCUSABLE, topLayer, resolveFocus, focusMove, inertSections, tabWrap, isBackKey, arrowDirection, keepsArrow, backButtons, createHeldSuppressor } from './shell/navigation.js';
 import { createHistorySync, storedSet } from './shell/history.js';
@@ -20,7 +20,7 @@ import { createMenu, createLastMode, createLastBoardChoice, UNAVAILABLE_REASONS 
 import { CHOICE_ITEMS, presetDetails, lastBoard, returningMenu } from './shell/returning.js';
 import { aimReadout } from './readability.js';
 import { createFirstUse, stripShown, hidCube, aimHintCell, createDwell, AIM_DWELL_MS } from './shell/first-use.js';
-import { createActiveDevice, hintText } from './settings/bindings.js';
+import { createActiveDevice } from './settings/bindings.js';
 import { createPauseController, restartInput, RESTART_NOTICE } from './shell/pause.js';
 import { createLockFallback } from './shell/lock-fallback.js';
 import { createEndSkip } from './shell/end-skip.js';
@@ -183,7 +183,7 @@ function boom() { sfx.explode(); ui.flash(); padRumble(PAD_BOOM); }
 /** The first time auto-hide hides a cube in any 3D game, a toast says so; once per browser. */
 function noteAutoHide(r) {
   if (S.learn || FIRST_USE.shown('autoHideToast') || !S.game || !hidCube(S.game, r.changed)) return;
-  if (FIRST_USE.once('autoHideToast')) ui.toast(hintText('autoHide', DEVICE.current, activeGlyphs()), 4000);
+  if (FIRST_USE.once('autoHideToast')) ui.toast(ui.hint('autoHide'), 4000);
 }
 /**
  * The end of the 3D game: the HUD freezes and the end effect plays; the 3D mode's end delay then
@@ -426,8 +426,6 @@ ui.setTouch3D(COARSE_ONLY);
 // mouse; every help surface follows it.
 const DEVICE = createActiveDevice({ onChange: (d) => ui.setDevice(d) });
 window.addEventListener('keydown', () => DEVICE.input('keyboard'), true);
-/** The glyphs of the connected controller, for the hints' button names. */
-function activeGlyphs() { const p = pads.activePad(); return p ? padGlyphs(p.id) : GLYPHS.generic; }
 /** A poll with a press or a stick off its deadzone: the controller is in use. */
 function padUsed(p) {
   return p.pressed.some(Boolean) || Math.hypot(p.ls[0], p.ls[1]) > STICK_DEADZONE || Math.hypot(p.rs[0], p.rs[1]) > STICK_DEADZONE;
@@ -821,7 +819,7 @@ function aimHint(g, now) {
   if (S.learn || FIRST_USE.shown('aimHint')) return;
   const sel = S.selected;
   const cell = !controls.space && sel >= 0 && g.pressed[sel] && g.number[sel] > 0 ? aimHintCell(g, sel, aimedCell(g, S.spacing, true)) : null;
-  if (AIM_DWELL.update(cell, now) && FIRST_USE.once('aimHint')) ui.toast(hintText('aimHint', DEVICE.current, activeGlyphs()), 4000);
+  if (AIM_DWELL.update(cell, now) && FIRST_USE.once('aimHint')) ui.toast(ui.hint('aimHint'), 4000);
 }
 
 // ---------- replay library ----------
