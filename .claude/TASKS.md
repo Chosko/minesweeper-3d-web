@@ -871,7 +871,7 @@ Preconditions: none
 
 ## 199. Larger stat labels and key caps on every pointer, 44 px hit areas still touch-only
 
-Status: [PARKED]
+Status: [DONE]
 Target: claude
 Files: css/components.css, css/style.css, tests/components.test.mjs, .claude/domain/features/screen-components.md, .claude/context/app-shell-markup.md
 Preconditions: none

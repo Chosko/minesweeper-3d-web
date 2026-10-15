@@ -129,10 +129,11 @@ described in [app-shell.md](../../context/app-shell.md).
   every screen that uses it.
 - **Accessibility** — every control has an accessible name; focus is always
   visible; text meets the contrast contract of `design-tokens-and-themes` in
-  both themes. On a coarse pointer, and only there, switches (the Reveal /
+  both themes. On every pointer, labels are at least 12 px and key caps at
+  least 11 px. On a coarse pointer, and only there, switches (the Reveal /
   Flag switch included), slider thumbs, the overlay bar's Pause and the 3D
-  touch toolbar's buttons take a 44 px touch, labels are at
-  least 12 px and key caps at least 11 px; a fine pointer keeps every size.
+  touch toolbar's buttons take a 44 px touch; a fine pointer keeps every
+  hit area's size.
 - **Overlay readability** — the overlay bar meets the contrast contract
   against the surface it sits on — its own over the 3D board, the panel's
   in Classic 2D — in both themes.
