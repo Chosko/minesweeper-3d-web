@@ -366,7 +366,7 @@ Context:
 
 Done: 2026-10-15, commit `8d1753f` (3 files, +24/-5). Ticks print exactly to the millisecond with trailing zeros dropped (2.5 s, 1.25 s), since the body's fewest-distinguishing-decimals rule fails its own examples.
 
-## [ ] 49. Implement task 195 — Learn 3D guided board: the chord prompt moves on when a chord can no longer teach
+## [x] 49. Implement task 195 — Learn 3D guided board: the chord prompt moves on when a chord can no longer teach
 
 Depends on: none
 
@@ -375,6 +375,8 @@ Context: none
 ```prompt
 /task-implement 195 --review
 ```
+
+Done: 2026-10-15, commit `14ff74d` (6 files, +125/-10).
 
 ## [ ] 50. Implement task 198 — Classic 2D no-guess switch back under the presets, with the D-pad walk to match
 
