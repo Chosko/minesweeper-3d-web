@@ -1,9 +1,9 @@
 // The test runner scripts under .claude/external/: the fast and browser tiers split by test name, the
-// full run's per-test timeout, and the affected-tests mapping from changed files to the tests that
-// import them.
+// full run's per-test timeout, the affected-tests mapping from changed files to the tests that
+// import them, and that a bare `node --test` from the root finds only the suite's test files.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { importClosure, isBrowserTest, selectTests, testFiles } from '../.claude/external/affected-tests.mjs';
@@ -72,4 +72,22 @@ test('a changed test file selects itself, and a path no test reaches selects not
   assert.deepEqual(selectTests(['docs/UX_REVIEW.md'], ROOT), []);
   assert.deepEqual(selectTests(['./tests/engine-rules.test.mjs', 'tests/engine-rules.test.mjs'], ROOT), ['tests/engine-rules.test.mjs']);
   assert.deepEqual(selectTests(['tests/deleted.test.mjs'], ROOT), [], 'a test file that no longer exists is not run');
+});
+
+// Node 22's default `node --test` patterns, each over .js, .mjs and .cjs.
+const NODE_DEFAULT_TEST = /(^|\/)test\/.*\.[cm]?js$|(\.test|-test|_test)\.[cm]?js$|(^|\/)test-[^/]*\.[cm]?js$|(^|\/)test\.[cm]?js$/;
+
+test('a bare node --test from the root finds only the suite: no file outside tests/ matches the default patterns', () => {
+  const files = [];
+  const walk = (dir) => {
+    for (const e of readdirSync(join(ROOT, dir), { withFileTypes: true })) {
+      const rel = dir ? `${dir}/${e.name}` : e.name;
+      if (e.isDirectory()) { if (e.name !== '.git' && e.name !== 'node_modules') walk(rel); } else files.push(rel);
+    }
+  };
+  walk('');
+  const outside = files.filter((f) => !f.startsWith('tests/') && NODE_DEFAULT_TEST.test(f));
+  assert.deepEqual(outside, [], 'rename these so a bare node --test does not run them');
+  const inside = files.filter((f) => f.startsWith('tests/') && NODE_DEFAULT_TEST.test(f)).sort();
+  assert.deepEqual(inside, [...testFiles(ROOT)].sort(), 'inside tests/ the default patterns pick exactly the scripts\' glob');
 });

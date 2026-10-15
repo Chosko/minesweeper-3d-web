@@ -853,7 +853,7 @@ Preconditions: none
 
 ## 197. Bare `node --test` runs only the project's tests
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: docs/ux-review/ux-first-run/s7-hit-test.mjs, tests/affected-tests.test.mjs, .claude/context/testing.md
 Preconditions: none

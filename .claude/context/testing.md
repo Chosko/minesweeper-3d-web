@@ -11,8 +11,10 @@ and passes extra arguments through to `node --test`; no `package.json`, no
 dependencies (Node 22's `node:test`, `node:assert/strict`):
 - `run-full-tests.sh` — the whole suite:
   `node --test --test-concurrency=2 --test-timeout=180000 "tests/**/*.test.mjs"`.
-  The glob keeps the `*-test.mjs` review scripts under `docs/` out of the run
-  (bare `node --test` picks them up); the concurrency cap keeps the
+  Every script passes the `tests/**/*.test.mjs` glob, and no file outside
+  `tests/` matches Node's default test patterns
+  (`tests/affected-tests.test.mjs` pins this), so a bare `node --test` from the
+  root finds the same files; the concurrency cap keeps the
   software-rendered browser tests from timing out on a 4-core box; the
   per-test timeout stops a hung test holding the run.
 - `run-fast-tests.sh` — the fast tier, every test not named "in a browser"
