@@ -99,8 +99,9 @@ composed from the `screen-components` kit.
   thousandth of a second, truncated rather than rounded (47 380 ms shows as
   47.380 s), while the stored time keeps its millisecond precision; this is
   the one format for every time the game shows except the in-game overlay's
-  timer and the replay viewer's playback clock, which keep the overlay's
-  whole seconds (`screen-components`, `replay-playback`). 3BV/s is shown to
+  timer, which keeps whole seconds (`screen-components`), and the replay
+  viewer's clock and position, which read the same truncated thousandths
+  with no unit (`13.342`, `replay-playback`). 3BV/s is shown to
   two decimals; efficiency to one decimal (94.7%). A difference from a best
   shows the same precision with a sign, time truncated toward zero
   ("−1.270 s"); one that is zero at that precision reads "= best", with no
