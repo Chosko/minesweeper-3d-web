@@ -45,8 +45,9 @@ In scope (m2-3d-joins):
 
 Non-goals:
 
-- Changing the end effects themselves, or any other part of the 3D scene's
-  look — kept, per the m2 slice.
+- Changing the look of the end effects or of any other part of the 3D
+  scene — kept, per the m2 slice. The end effects' pacing follows the end
+  delay (§ Architecture).
 - Showing bests on the 3D board choice — no mode's board choice shows
   bests; they are on the Records screen.
 - A combined 2D and 3D view in Records — `3d-game-records` keeps the modes
@@ -68,7 +69,7 @@ described in [app-shell.md](../../context/app-shell.md) and
 
 - **3D end sequence.** At a win or loss the 3D session stops the timer,
   freezes the HUD's end state as today, and stops accepting board actions
-  and camera movement. The renderer plays the end effect it plays today.
+  and camera movement. The renderer plays the end effect.
   After the end delay — or at once, when the player presses any mouse
   button, key or controller button during it — the mode releases pointer
   lock and reports `game finished(summary)` to the shell. The delay is one
