@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 191
+Last task number: 192
 
 ---
 
@@ -802,6 +802,15 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: js/settings/bindings.js, js/ui.js, js/main.js, js/classic2d/touch-input.js, tests/settings-page.test.mjs, tests/shell-help.test.mjs, tests/shell-first-use.test.mjs, tests/classic2d-mode.test.mjs, tests/classic2d-touch.test.mjs, .claude/domain/features/settings.md, .claude/domain/features/classic-2d-square-play.md
+Preconditions: none
+
+---
+
+## 192. 3D ready and results cards: key hints that match the device and the screen
+
+Status: [MISSING]
+Target: claude
+Files: index.html, js/ui.js, js/results/, css/style.css, tests/shell-first-use.test.mjs, tests/results.test.mjs, tests/shell-mode-3d.test.mjs
 Preconditions: none
 
 ---
