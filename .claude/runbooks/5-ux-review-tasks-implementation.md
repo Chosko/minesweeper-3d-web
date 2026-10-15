@@ -1,7 +1,7 @@
 # Runbook: ux-review-tasks-implementation
 
 Created: 2026-10-12 · Source: /runbook-create interview · Model: opus
-Last step number: 52
+Last step number: 53
 Sequencing: Run in list order, one step at a time: most tasks edit js/main.js, index.html and css/style.css, and each body says whichever of two overlapping tasks lands second merges around the first; task 119's help component is reused by many later tasks, so it goes first.
 Archive: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 28, 34, 41
 
@@ -420,6 +420,16 @@ Context: none
 ```
 
 Done: 2026-10-15, commit `7b17ddc` (10 files, +131/-35). The Classic 2D hint strip only appears after a key or controller press, so a pure-touch player never sees its new touch wording; when it shows was left unchanged, as the task said.
+
+## [ ] 53. Implement task 201 — Pause card in two columns at 1024 px and wider, fitting a 1024 × 768 window
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 201 --review
+```
 
 ## Do not re-propose
 
