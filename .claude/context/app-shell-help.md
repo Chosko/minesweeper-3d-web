@@ -49,10 +49,13 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
   at `finished`, a Learn 3D game toward no window and only its win as
   finished (`learnGame()`). Strip eligibility is judged as the game begins (`hint3D`
   in `startGame`; `hint2D` at the 2D `board` report, not again for the
-  standard-board offer); `refreshHints` shows the active mode's strip on
+  standard-board offer); `refreshHints` redraws the active mode's strip on
   every router change, at the first key or pad input of a 2D game
-  (`used2D`) and at a dismissal; a scrolling 2D board (`clipped2D`) shows
-  the one-time scroll hint instead until `FIRST_USE.once('scrollHint')`.
+  (`used2D`) and at a dismissal. A 2D game's strip shows from its board on
+  a coarse-only device (`COARSE_ONLY`, passed as `stripShown`'s
+  `touchOnly`), and otherwise once `used2D` is set; a
+  scrolling 2D board (`clipped2D`) shows the one-time scroll hint instead
+  until `FIRST_USE.once('scrollHint')`.
   The ready card shows "How 3D works" and the Learn 3D line while
   `FIRST_USE.rules3D` (its hidden-cubes line names the Ctrl key, or the
   touch toolbar's Ctrl button under `#ready.ready--touch`), except on the

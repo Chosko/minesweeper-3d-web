@@ -26,10 +26,11 @@
 //   once(name) }. A Learn 3D game (`learn`, js/mode3d/learn.js) counts toward no window, and only its
 //   win marks the rules block seen. once(name) is true the first time only ('autoHideToast' |
 //   'aimHint' | 'scrollHint') and records it.
-// stripShown({ mode, screen, eligible, used, dismissed }) — whether a mode's hint strip shows: in
-//   a game that began inside the first FIRST_GAMES games of its mode (`eligible`, judged before its
-//   game started), not dismissed; the 3D strip from the start of play (`playing`), the Classic 2D
-//   strip on its board once a key or the controller was first used in the game (`used`).
+// stripShown({ mode, screen, eligible, used, dismissed, touchOnly }) — whether a mode's hint strip
+//   shows: in a game that began inside the first FIRST_GAMES games of its mode (`eligible`, judged
+//   before its game started), not dismissed; the 3D strip from the start of play (`playing`), the
+//   Classic 2D strip on its board from the game's start on a touch-only device (`touchOnly`, the
+//   page's pointer media), otherwise once a key or the controller was first used in the game (`used`).
 // hidCube(view, changed) — an action's changed cells include one auto-hide hid (never at a loss).
 // aimHintCell(view, selected, through) — the aimed cell when it is a revealed number and the cell
 //   picked through numbers (`through`) is a closed cube, else null.
@@ -136,10 +137,10 @@ export function createFirstUse({ storage, records }) {
   };
 }
 
-export function stripShown({ mode, screen, eligible, used, dismissed }) {
+export function stripShown({ mode, screen, eligible, used, dismissed, touchOnly }) {
   if (!eligible || dismissed) return false;
   if (mode === '3d') return screen === 'playing';
-  if (mode === 'classic-2d') return screen === 'classic-2d' && !!used;
+  if (mode === 'classic-2d') return screen === 'classic-2d' && (!!used || !!touchOnly);
   return false;
 }
 

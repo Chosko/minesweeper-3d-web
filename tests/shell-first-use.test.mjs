@@ -256,6 +256,17 @@ test('the strips: 3D from the start of play, Classic 2D once a key or the contro
   assert.equal(stripShown({ ...base, mode: 'classic-2d', screen: 'classic-2d', used: true, eligible: false }), false);
 });
 
+test('on a touch-only device the Classic 2D strip shows from the start of the game, still in the first games and until dismissed', () => {
+  const base = { mode: 'classic-2d', screen: 'classic-2d', eligible: true, used: false, dismissed: false };
+  assert.equal(stripShown({ ...base, touchOnly: true }), true, 'touch-only: shown before any input');
+  assert.equal(stripShown({ ...base, touchOnly: false }), false, 'a fine pointer: not before a key or the controller');
+  assert.equal(stripShown({ ...base, touchOnly: true, used: true }), true);
+  assert.equal(stripShown({ ...base, touchOnly: true, eligible: false }), false, 'touch-only: past the first three games');
+  assert.equal(stripShown({ ...base, touchOnly: true, dismissed: true }), false, 'touch-only: dismissed for good');
+  assert.equal(stripShown({ ...base, touchOnly: true, screen: 'results' }), false, 'touch-only: only on its board');
+  assert.equal(stripShown({ ...base, touchOnly: true, mode: '3d', screen: 'ready' }), false, 'the 3D strip is unchanged');
+});
+
 test('the strips\' words come from the bindings source, with the controller\'s glyphs while it is the active device', () => {
   assert.equal(text(hintStripHtml('classic-2d', 'keyboard')), 'Arrows move · Space reveal · F flag · D chord');
   assert.equal(text(hintStripHtml('3d', 'keyboard')), 'Left reveal · Right flag · Hold Space aim through · Hold Shift neighbours');

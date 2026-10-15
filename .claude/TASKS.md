@@ -907,7 +907,7 @@ Preconditions: none
 
 ## 203. Classic 2D hint strip from the game's start on a touch-only device
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/main.js, js/shell/first-use.js, tests/shell-first-use.test.mjs, tests/classic2d-touch.test.mjs, .claude/context/app-shell-help.md
 Preconditions: none

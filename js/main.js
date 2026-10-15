@@ -811,7 +811,7 @@ function refreshHints() {
     return;
   }
   const h = mode === '3d' ? hint3D : hint2D;
-  ui.setHintStrip(stripShown({ mode, screen: S.mode, eligible: h.eligible, used: h.used, dismissed: FIRST_USE.dismissed(mode) }));
+  ui.setHintStrip(stripShown({ mode, screen: S.mode, eligible: h.eligible, used: h.used, dismissed: FIRST_USE.dismissed(mode), touchOnly: COARSE_ONLY }));
 }
 // The aim hint: the crosshair rests about a second on a revealed number with a closed cube behind it.
 const AIM_DWELL = createDwell(AIM_DWELL_MS);
