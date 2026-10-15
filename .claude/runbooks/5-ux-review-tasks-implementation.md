@@ -353,7 +353,7 @@ Context: none
 
 Done: 2026-10-15, commit `a64d126` (7 files, +130/-16). The body assumed the tables could keep columns on desktop; one row needs about 1,050 px against panels of 522–728 px, so they stack as cards at every width (the switch moved from 539 px to 1099 px).
 
-## [ ] 48. Implement task 194 — Best-time chart: axis ticks with the fewest decimals that tell them apart
+## [x] 48. Implement task 194 — Best-time chart: axis ticks with the fewest decimals that tell them apart
 
 Depends on: none
 
@@ -363,6 +363,8 @@ Context:
 ```prompt
 /task-implement 194 --review
 ```
+
+Done: 2026-10-15, commit `8d1753f` (3 files, +24/-5). Ticks print exactly to the millisecond with trailing zeros dropped (2.5 s, 1.25 s), since the body's fewest-distinguishing-decimals rule fails its own examples.
 
 ## [ ] 49. Implement task 195 — Learn 3D guided board: the chord prompt moves on when a chord can no longer teach
 
