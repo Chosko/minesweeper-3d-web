@@ -20,7 +20,7 @@ others:
 | [app-shell-ui.md](app-shell-ui.md) | `js/ui.js` (`UI`), HUD overlay bar, aimed-cell readout, controller menus |
 | [app-shell-help.md](app-shell-help.md) | help surfaces from the bindings source, help panel, active device, first-use hints |
 | [app-shell-kit.md](app-shell-kit.md) | component kit, tokens, theme, scene palette, gallery, deploy files |
-| [app-shell-markup.md](app-shell-markup.md) | kit-built screens' markup in `index.html` and the ids the shell wires, `css/style.css`, coarse pointers |
+| [app-shell-markup.md](app-shell-markup.md) | kit-built screens' markup in `index.html` and the ids the shell wires, `css/style.css`, pointer sizes |
 
 `js/main.js` — entry module, exports nothing. Builds the renderer (null
 without WebGL 2; `WEBGL2`), `FlyCamera`, `Input`, `MouseActions`,

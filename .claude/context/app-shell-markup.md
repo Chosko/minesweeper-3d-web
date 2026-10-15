@@ -1,4 +1,4 @@
-# App shell — screens' markup, shell stylesheet, coarse pointers
+# App shell — screens' markup, shell stylesheet, pointer sizes
 
 ## OVERVIEW
 
@@ -59,12 +59,16 @@ bind.
     (`#…-offer`).
   `#c2d` is the 2D board layer: `#c2d-board` holds the panel `#c2d-panel`
   behind the canvas; `#c2d.c2d--hint` gives the hint strip room below.
-- **Coarse pointers.** Each stylesheet ends with one `@media (pointer:
-  coarse)` block and nothing else depends on the pointer: the kit's gives
-  `ui-toggle__input` a 44 px hit square (`::after`), `ui-slider__input` a
-  44 px height and `ui-stat__label` 12 px; the shell's shows `#hud-tap` in
-  Classic 2D at 44 px, hides `#hud-swap` and keeps `kbd` at least 11 px. Every fine-pointer
-  size stays as above (`tests/components.test.mjs` pins both).
+- **Pointer sizes.** The text minimums hold on every pointer, in the
+  top-level rules: `ui-stat__label` 12 px (one step above `--font-size-xs`,
+  which stays 11 px) and `kbd` `max(11px, 0.78em)`. Only the 44 px hit areas
+  depend on the pointer: each stylesheet ends with one `@media (pointer:
+  coarse)` block — the kit's gives `ui-toggle__input` a 44 px hit square
+  (`::after`) and `ui-slider__input` a 44 px height; the shell's shows
+  `#hud-tap` in Classic 2D at 44 px, gives `#hud-pause` a 44 px band
+  (`::after`) and `#touch-modes` buttons 44 px, and hides `#hud-swap`. Every
+  fine-pointer hit area stays as above (`tests/components.test.mjs` pins
+  both).
 
 
 ## DOMAIN DEPENDENCIES
@@ -78,7 +82,7 @@ bind.
   the tokens `css/style.css` reads.
 - [app-shell-ui.md](app-shell-ui.md) — `UI.el`, which binds these ids.
 - [testing.md](testing.md) — `tests/components.test.mjs` (screens, the
-  coarse-pointer sizes).
+  pointer sizes).
 
 ## WHEN TO READ THE SOURCE
 

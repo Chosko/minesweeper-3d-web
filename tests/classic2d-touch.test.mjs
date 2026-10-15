@@ -790,7 +790,7 @@ test('in a browser with a mouse at 1280 × 800, the 2D overlay bar, the menu, Se
       label: getComputedStyle(document.querySelector('#hud .ui-stat__label')).fontSize,
       swap: getComputedStyle(document.getElementById('hud-swap')).display,
     }));
-    assert.deepEqual(bar, { tap: 'none', label: '11px', swap: 'flex' }, 'no switch, the labels at 11 px, the swap toggle as before');
+    assert.deepEqual(bar, { tap: 'none', label: '12px', swap: 'flex' }, 'no switch, the labels at 12 px on every pointer, the swap toggle as before');
     const g = await ms(barGeometry);
     assert.equal(g.swapShown, true, 'Swap clicks shows with a mouse');
     const rows = new Set(g.children.map((c) => Math.round(c.top + c.height / 2)));
@@ -806,7 +806,7 @@ test('in a browser with a mouse at 1280 × 800, the 2D overlay bar, the menu, Se
       return k ? getComputedStyle(k).fontSize : null;
     });
     assert.ok(kbd, 'the pause card shows key caps');
-    assert.ok(parseFloat(kbd) < 11, `the pause card's key caps keep their size on a fine pointer (${kbd})`);
+    assert.ok(parseFloat(kbd) >= 11, `the pause card's key caps at 11 px or more on a fine pointer too (${kbd})`);
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

@@ -93,7 +93,7 @@ log?})`.
   never reads tokens or subscribes to theme changes: sky, fog and clear
   colour come from `bindScenePalette`; tiles and effects keep one palette.
 - **Screens** are built from the kit as catalogued; their markup, the ids
-  the shell wires and the coarse-pointer sizes are
+  the shell wires and the pointer sizes are
   [app-shell-markup.md](app-shell-markup.md).
 
 ## DOMAIN DEPENDENCIES

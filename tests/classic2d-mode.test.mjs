@@ -1390,6 +1390,69 @@ test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800 in both themes: 
   }
 });
 
+test('in a browser, at 1024 × 768 with a mouse in both themes: the larger labels and key caps keep the overlay bar on one line above the board and the pause card\'s key cap rows whole', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    for (const theme of ['light', 'dark']) {
+      const at = `1024 × 768 ${theme}`;
+      const page = await browser.newPage({ viewport: { width: 1024, height: 768 }, deviceScaleFactor: 1 });
+      await page.addInitScript(removeWebGL2);
+      await page.goto(`${base}/index.html`);
+      await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+      await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
+      const ms = (fn, arg) => page.evaluate(fn, arg);
+      await ms(() => globalThis.__ms.modes.start('classic-2d', { size: 'expert', noGuess: false }));
+      await page.waitForFunction(() => globalThis.__ms.board2D);
+      const bar = await ms(() => {
+        const rect = (el) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, height: r.height }; };
+        const v = globalThis.__ms.board2D;
+        const area = document.getElementById('c2d-board').getBoundingClientRect();
+        return {
+          fine: matchMedia('(pointer: fine)').matches,
+          label: parseFloat(getComputedStyle(document.querySelector('#hud .ui-stat__label')).fontSize),
+          panel: rect(document.getElementById('c2d-panel')), bar: rect(document.querySelector('#hud .ui-overlay-bar')),
+          items: ['hud-time', 'hud-mines', 'hud-clicks', 'hud-pause'].map((id) => rect(document.getElementById(id).closest('.ui-stat') || document.getElementById(id))),
+          boardTop: area.top + v.layout.viewY,
+        };
+      });
+      assert.ok(bar.fine, `${at}: a fine pointer`);
+      assert.equal(bar.label, 12, `${at}: the readouts' labels at 12 px`);
+      const tallest = Math.max(...bar.items.map((r) => r.height));
+      assert.ok(bar.items.every((r) => r.y >= bar.bar.y - 0.5 && r.bottom <= bar.bar.y + tallest + 0.5), `${at}: the readouts and Pause on one line`);
+      assert.ok(bar.bar.height <= tallest + 1, `${at}: the bar is one row tall (${bar.bar.height} for items ${tallest})`);
+      assert.ok(bar.bar.right <= bar.panel.right + 0.5 && bar.bar.x >= bar.panel.x - 0.5, `${at}: the bar inside the panel`);
+      assert.ok(bar.bar.bottom <= bar.boardTop, `${at}: the bar above the board`);
+
+      await page.click('#hud-pause');
+      await page.waitForFunction(() => globalThis.__ms.state.mode === 'paused');
+      const card = await ms(() => {
+        const c = document.getElementById('pause-card');
+        const r = c.getBoundingClientRect();
+        const rows = [...document.querySelectorAll('#pause-controls dt')].filter((dt) => dt.querySelector('kbd')).map((dt) => {
+          const caps = [...dt.querySelectorAll('kbd')].map((k) => k.getBoundingClientRect());
+          return { right: Math.max(...caps.map((k) => k.right)), tops: caps.map((k) => k.top), cap: parseFloat(getComputedStyle(dt.querySelector('kbd')).fontSize) };
+        });
+        return {
+          top: r.top, bottom: r.bottom, left: r.left, right: r.right,
+          innerRight: r.right - parseFloat(getComputedStyle(c).paddingRight) + 0.5, rows,
+        };
+      });
+      assert.ok(card.top >= 0 && card.left >= 0 && card.right <= 1024, `${at}: the pause card inside the viewport's width`);
+      assert.ok(card.rows.length > 0, `${at}: the controls list key caps`);
+      for (const row of card.rows) {
+        assert.ok(row.cap >= 11, `${at}: a key cap at ${row.cap} px`);
+        assert.ok(row.tops.every((y) => Math.abs(y - row.tops[0]) <= 2), `${at}: a key cap row on one line`);
+        assert.ok(row.right <= card.innerRight, `${at}: a key cap row unclipped`);
+      }
+      await page.close();
+    }
+  } finally {
+    await browser.close();
+  }
+});
+
 test('in a browser, a Classic 2D Beginner game played by mouse and by keyboard calls the cues on the one sound instance, muted while the setting is on', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
