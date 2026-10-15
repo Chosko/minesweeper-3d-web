@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 195
+Last task number: 196
 
 ---
 
@@ -838,6 +838,15 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: js/mode3d/learn.js, js/main.js, tests/mode3d-learn.test.mjs, .claude/context/mode3d.md, .claude/context/app-shell-3d.md
+Preconditions: none
+
+---
+
+## 196. Browser tests: root-cause and fix the flakes seen under full-suite load
+
+Status: [MISSING]
+Target: claude
+Files: tests/shell-pad-walk.test.mjs, tests/shell-mode-3d.test.mjs, tests/classic2d-touch.test.mjs, tests/replay-viewer.test.mjs, tests/shell-menu.test.mjs, tests/helpers/timing.mjs, tests/helpers/browser.mjs, .claude/context/testing-conventions.md
 Preconditions: none
 
 ---
