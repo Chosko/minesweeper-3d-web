@@ -1,7 +1,7 @@
 # Runbook: themes-tasks-implementation
 
 Created: 2026-10-13 · Source: /runbook-create interview (runbook themes-planning step 8) · Model: opus
-Last step number: 36
+Last step number: 37
 Sequencing: Runs after the ux-review-tasks-implementation runbook is done and before the remaining steps of m3-tasks-implementation; steps follow PLAN.md's m2b-themes feature order, then task id.
 
 ## [ ] 1. Implement task 157 — Theme registry, kit catalogue and the Joyful tiles theme folder
@@ -190,9 +190,21 @@ Context: none
 /task-implement 206 --review
 ```
 
-## [ ] 17. Implement task 173 — Update documentation for feature `shared-screen-layout`
+## [x] 17. Implement task 173 — Update documentation for feature `shared-screen-layout`
 
 Depends on: 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
+
+Context: none
+
+```prompt
+/task-implement 173 --review
+```
+
+Done: struck — task 173 waits on task 206, and its step lacked the edge to step 36; replaced by step 37.
+
+## [ ] 37. Implement task 173 — Update documentation for feature `shared-screen-layout`
+
+Depends on: 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 36
 
 Context: none
 

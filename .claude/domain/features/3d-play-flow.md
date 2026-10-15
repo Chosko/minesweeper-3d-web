@@ -23,15 +23,18 @@ game shell — while the scene, camera and controls stay as they are.
 
 In scope (m2-3d-joins):
 
-- Board choice: Learn 3D first, then six presets in two groups, labelled as results and Records
-  name them — the First box group, First box 1 (4 × 4 × 3, 4 mines) and
-  First box 2 (5 × 5 × 3, 6), then the Cube group, Cube Intro (6 × 6 × 6,
-  10), Cube Beginner (6 × 6 × 6, 20), Cube Intermediate (8 × 8 × 8, 40) and
-  Cube Expert (10 × 10 × 10, 100) — each with a detail line under its size
-  (density, typical 3BV, the player's best and streak), plus Custom and the
-  Random fill, and the no-guess switch, which says it keeps separate
-  records. The mine counts of First box 1 and Cube Beginner are measured by
-  `dev/measure-first-box-3d.mjs`: no-guess boards with the first click on
+- Board choice: Learn 3D first, then six presets, named as results and
+  Records name them, in two groups — the First box group, First box 1
+  (4 × 4 × 3, 4 mines) and First box 2 (5 × 5 × 3, 6), then the Cube group,
+  Cube Intro (6 × 6 × 6, 10), Cube Beginner (6 × 6 × 6, 20), Cube
+  Intermediate (8 × 8 × 8, 40) and Cube Expert (10 × 10 × 10, 100) — each
+  showing its name, size line, mine density and the Last played mark, plus
+  Custom and the Random fill, and the no-guess switch, which says it keeps
+  separate records. How the two groups are labelled follows the 3D board
+  choice's *Joyful tiles* design. The selected board's bests show in the
+  screen's records panel (`shared-screen-layout` § Scope and non-goals,
+  *Board choice screens*). The mine counts of First box 1 and Cube
+  Beginner are measured by `dev/measure-first-box-3d.mjs`: no-guess boards with the first click on
   the marked start cell, so that First box 1's first click leaves work to
   do and Cube Beginner's opens about 60 % of the safe cells.
 - Learn 3D: one guided 4 × 4 × 3 box at First box 1's mine count, a fixed
@@ -95,16 +98,17 @@ and input ([rendering.md](../../context/rendering.md),
 behaviour.
 
 - **3D board choice.** The 3D menu's presets, custom fields, Random fill
-  and no-guess switch. Each preset keeps its size line and gains one detail
-  line, filled from the records each time the screen shows: the density
-  (mines ÷ cells as a whole percent, one decimal below 10 %), the typical
-  3BV from a measured table keyed by size and mines (left out for a board
-  the table has no entry for), then the player's best time and current
-  streak on the board the preset would start — following the presets'
-  no-guess switch, since a board and its no-guess twin are separate
-  records — or a dash before a won game ("7.8 % mines · ~124 3BV · Best
-  48.213 s · 3 in a row"). Each no-guess switch says once that no-guess
-  boards keep separate records. Validates custom sizes (each dimension 1 to 100,
+  and no-guess switches. Each preset shows its name, size line, mine
+  density (mines ÷ cells as a whole percent, one decimal below 10 %) and the
+  Last played mark, as Classic 2D's board options do, and nothing from the
+  records. The selected board's bests, recent games and charts are the
+  screen's records panel, composed as Classic 2D's
+  (`shared-screen-layout` § Scope and non-goals, *Board choice screens*):
+  it follows the no-guess switch that governs the selected board, since a
+  board and its no-guess twin are separate records. What the panel shows
+  while Learn 3D is selected follows the 3D board choice's *Joyful tiles*
+  design. Each no-guess switch says once that no-guess boards keep separate
+  records. Validates custom sizes (each dimension 1 to 100,
   mines 1 to cells minus one) and decides whether no-guess is available for
   the chosen size, by the availability rule under Interfaces and contracts. Remembers the last 3D choice through the shell's
   last-board-choice mechanism. A board code field with *Play this board*

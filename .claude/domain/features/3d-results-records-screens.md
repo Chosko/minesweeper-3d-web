@@ -48,8 +48,7 @@ Non-goals:
 - Changing the look of the end effects or of any other part of the 3D
   scene — kept, per the m2 slice. The end effects' pacing follows the end
   delay (§ Architecture).
-- Showing bests on the 3D board choice — no mode's board choice shows
-  bests; they are on the Records screen.
+- The 3D board choice's records panel — `shared-screen-layout`.
 - A combined 2D and 3D view in Records — `3d-game-records` keeps the modes
   apart.
 - The replay library view and the replay viewer — `replay-library` and

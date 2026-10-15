@@ -55,23 +55,25 @@ In scope (m2b-themes):
   the existing Play again and last-played detail placed in the layout. The
   menu shows no bests and no credit line; the controls reference, the sound
   switch and the volume live on the Settings page only.
-- **Board choice screens** — Classic 2D and 3D: the board options, the
-  no-guess switch, the Play action with its key hint, and beside them the
-  chosen board's records panel, from the records store. Custom keeps its
-  size fields, revealed when Custom is chosen.
-  - **Classic 2D** — Play sits on the right, beside a non-accent *Records*
-    action that opens the Records screen on the selected board. The records
-    panel shows the selected board under the no-guess switch's setting, its
-    title naming both ("INTERMEDIATE · YOUR BESTS", "INTERMEDIATE ·
-    NO-GUESS · YOUR BESTS"): the bests (time, 3BV/s, efficiency with when
-    each was set), wins, win rate and streak; the chart of the times of its
-    last 30 won games and under it a chart of 3BV/s and efficiency over the
-    same 30 wins, as the Records screen's history chart draws them; the recent
-    games and under them a Top 5 table of its fastest wins. Every part follows the
-    switch. The panel carries no trend figure.
-  - **3D** — the panel shows the chosen board's bests (time, 3BV/s,
-    efficiency with when each was set), its wins, win rate and streak, its
-    recent games and a chart of its last 30 times.
+- **Board choice screens** — Classic 2D and 3D, one composition: the board
+  options, the no-guess switch, Play on the right with its key hint beside
+  a non-accent *Records* action that opens the Records screen on the
+  selected board, and beside them the selected board's records panel, from
+  the records store. Custom keeps its size fields, revealed when Custom is
+  chosen. The records panel shows the selected board under the no-guess
+  switch's setting, its title naming both ("INTERMEDIATE · YOUR BESTS",
+  "INTERMEDIATE · NO-GUESS · YOUR BESTS"): the bests (time, 3BV/s,
+  efficiency with when each was set), wins, win rate and streak; the chart
+  of the times of its last 30 won games and under it a chart of 3BV/s and
+  efficiency over the same 30 wins, as the Records screen's history chart
+  draws them; the recent games and under them a Top 5 table of its fastest
+  wins. Every part follows the switch. The panel carries no trend figure.
+  - **3D** — the board options open with Learn 3D and show the presets in
+    two groups, First box and Cube (`3d-play-flow`); the panel follows the
+    no-guess switch that governs the selected board. How the groups are
+    labelled, and what the panel shows while Learn 3D, which keeps no
+    records, is selected, follow the 3D board choice's *Joyful tiles*
+    artboard.
 - **Pause card, results screen, Records screen, Settings page, replay
   viewer, generating and failed-board cards, the placeholder screen and the
   confirmations** — each inside the screen frame, with the content their

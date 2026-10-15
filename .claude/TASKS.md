@@ -562,7 +562,7 @@ Feature: shared-screen-layout
 
 Status: [MISSING]
 Target: claude+human
-Files: index.html, js/mode3d/board-choice.js, js/main.js, tests/mode3d-board-choice.test.mjs, tests/components.test.mjs
+Files: index.html, js/mode3d/board-choice.js, js/shell/returning.js, js/main.js, tests/mode3d-board-choice.test.mjs, tests/shell-returning.test.mjs, tests/components.test.mjs
 Preconditions: 166
 Feature: shared-screen-layout
 
