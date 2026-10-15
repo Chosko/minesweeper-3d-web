@@ -304,7 +304,7 @@ Context:
 
 Done: 2026-10-15, commit `460a99c` (7 files, +117/-51). The pad-walk flake was a button release crossing the 380 ms menu auto-repeat under load; the touch test stays on a random board and flags only mines instead.
 
-## [ ] 44. Implement task 190 — Classic 2D overlay bar fits a phone: Pause and Reveal / Flag on screen
+## [x] 44. Implement task 190 — Classic 2D overlay bar fits a phone: Pause and Reveal / Flag on screen
 
 Depends on: none
 
@@ -313,6 +313,8 @@ Context: none
 ```prompt
 /task-implement 190 --review
 ```
+
+Done: 2026-10-15, commit `381d4b5` (17 files, +197/-24). The Classic 2D overlay bar wraps onto more rows on narrow screens, and the board view re-measures its frame on every resize.
 
 ## [ ] 45. Implement task 191 — Classic 2D touch help: touch binding rows and a touch clipped-board hint
 
@@ -378,7 +380,8 @@ Context: none
 
 Depends on: none
 
-Context: none
+Context:
+- 2026-10-15 (from step 44): the Classic 2D overlay bar wraps onto more rows when it does not fit, never wider than the board area minus the panel inset; the board view takes its frame as a function and re-measures it on every resize (`panelFrame2D`).
 
 ```prompt
 /task-implement 199 --review
