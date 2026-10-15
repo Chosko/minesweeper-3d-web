@@ -316,7 +316,7 @@ Context: none
 
 Done: 2026-10-15, commit `381d4b5` (17 files, +197/-24). The Classic 2D overlay bar wraps onto more rows on narrow screens, and the board view re-measures its frame on every resize.
 
-## [ ] 45. Implement task 191 — Classic 2D touch help: touch binding rows and a touch clipped-board hint
+## [x] 45. Implement task 191 — Classic 2D touch help: touch binding rows and a touch clipped-board hint
 
 Depends on: none
 
@@ -326,11 +326,14 @@ Context: none
 /task-implement 191 --review
 ```
 
+Done: 2026-10-15, commit `5c9f617` (15 files, +110/-26). A touch pan already retired the clipped-board hint, so no wiring was needed there; the help foot, HUD strip and first-use hints still show key names on a phone, as in 3D.
+
 ## [ ] 46. Implement task 192 — 3D ready and results cards: key hints that match the device and the screen
 
 Depends on: none
 
-Context: none
+Context:
+- 2026-10-15 (from step 45): on a coarse-only device Classic 2D's bindings lists (H panel, pause card, Controls tab) and scroll hint show the touch device, as 3D's do; the help foot, HUD strip and first-use hint strip still follow keyboard or controller in both modes.
 
 ```prompt
 /task-implement 192 --review
