@@ -1,7 +1,7 @@
 # Runbook: ux-review-tasks-implementation
 
 Created: 2026-10-12 · Source: /runbook-create interview · Model: opus
-Last step number: 53
+Last step number: 55
 Sequencing: Run in list order, one step at a time: most tasks edit js/main.js, index.html and css/style.css, and each body says whichever of two overlapping tasks lands second merges around the first; task 119's help component is reused by many later tasks, so it goes first.
 Archive: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 28, 34, 41
 
@@ -429,6 +429,26 @@ Context: none
 
 ```prompt
 /task-implement 201 --review
+```
+
+## [ ] 54. Implement task 202 — Records Averages table stays inside its panel on a phone
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 202 --review
+```
+
+## [ ] 55. Implement task 203 — Classic 2D hint strip from the game's start on a touch-only device
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 203 --review
 ```
 
 ## Do not re-propose
