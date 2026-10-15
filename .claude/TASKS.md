@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 194
+Last task number: 195
 
 ---
 
@@ -829,6 +829,15 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: js/records/history-chart.js, tests/records-history.test.mjs
+Preconditions: none
+
+---
+
+## 195. Learn 3D guided board: the chord prompt moves on when a chord can no longer teach
+
+Status: [MISSING]
+Target: claude
+Files: js/mode3d/learn.js, js/main.js, tests/mode3d-learn.test.mjs, .claude/context/mode3d.md, .claude/context/app-shell-3d.md
 Preconditions: none
 
 ---
