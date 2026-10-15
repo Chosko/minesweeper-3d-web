@@ -1,7 +1,7 @@
 # Runbook: ux-review-tasks-implementation
 
 Created: 2026-10-12 · Source: /runbook-create interview · Model: opus
-Last step number: 51
+Last step number: 52
 Sequencing: Run in list order, one step at a time: most tasks edit js/main.js, index.html and css/style.css, and each body says whichever of two overlapping tasks lands second merges around the first; task 119's help component is reused by many later tasks, so it goes first.
 Archive: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 28, 34, 41
 
@@ -405,6 +405,16 @@ Context:
 
 ```prompt
 /task-implement 199 --review
+```
+
+## [ ] 52. Implement task 200 — Touch wording on a coarse-only device for the help foot, HUD strip and hint strip
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 200 --review
 ```
 
 ## Do not re-propose
