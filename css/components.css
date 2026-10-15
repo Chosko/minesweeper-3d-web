@@ -233,7 +233,8 @@
      ui-screen         a screen's card column: <section class="ui-card
                        ui-screen" aria-labelledby="…">; ui-screen--wide for
                        the main menu; ui-screen--columns for a screen laid
-                       out with ui-columns (Records, Settings).
+                       out with ui-columns (Records, Settings, the pause
+                       card).
      ui-row            a horizontal group that wraps (title with logo,
                        fields, footer actions).
      ui-grid           equal columns that collapse to one on a narrow screen.
@@ -391,16 +392,22 @@
      primary, Play a standard board, Main menu); it sits above the pause
      card. Default focus: Cancel; on the offer Retry, or Play a standard
      board after a second failure in a row.
-   Pause card (index.html #pause): ui-card ui-screen holding the title,
-     ui-text status lines, ui-actions (Resume primary while playing, Play
-     again primary and first once the game ended, Main menu), the board
-     line, the active mode's controls list for the active device in a
-     ui-panel, a Settings ui-panel (the look sensitivity and invert Y
-     controls on a 3D game's card only, then the Sound button and volume;
-     data-setting like the Settings page's). While restart or Main menu asks for confirmation, a
-     ui-panel ui-actions (a ui-text line, the action as primary, Cancel)
-     shows in place of the actions. Default focus: Resume, or Play again once
-     ended; Cancel while the confirmation shows.
+   Pause card (index.html #pause): ui-card ui-screen ui-screen--columns
+     holding a ui-columns--two of, in order, a ui-column (the title, the
+     board line, ui-text status lines, the warning note and ui-actions:
+     Resume primary while playing, Play again primary and first once the
+     game ended, Main menu), the active mode's controls list for the active
+     device in a ui-panel (#pause-list), and a ui-column of the Settings
+     ui-panel (the look sensitivity and invert Y controls on a 3D game's card
+     only, then the Sound button and volume; data-setting like the Settings
+     page's). At 1024 px and wider the controls list sits alone in the
+     second, wider column and the Settings panel in the first, under the
+     actions, so the card fits a 1024 × 768 window unscrolled; below 1024 px
+     everything is one column in that order. While
+     restart or Main menu asks for confirmation, a ui-panel ui-actions (a
+     ui-text line, the action as primary, Cancel) shows in place of the
+     actions. Default focus: Resume, or Play again once ended; Cancel while
+     the confirmation shows.
    Learn 3D end card (index.html #learn-end): ui-card ui-screen over the
      guided board's stopped scene, holding the outcome title, a
      ui-text--muted "Learn 3D" line and ui-actions--row (Play First box 1
@@ -954,7 +961,7 @@
   margin: auto;
 }
 .ui-screen--wide { width: min(880px, 100%); }
-.ui-screen > .ui-card__title { margin: 0; }
+.ui-screen > .ui-card__title, .ui-column > .ui-card__title { margin: 0; }
 .ui-row {
   display: flex;
   flex-wrap: wrap;
@@ -1006,12 +1013,16 @@
   min-width: 0;
 }
 .ui-columns__span { grid-column: 1 / -1; }
-/* The kit's one breakpoint: the column layout of Records and Settings. */
+/* The kit's one breakpoint: the column layout of Records, Settings and the pause card. */
 @media (min-width: 1024px) {
   .ui-screen--columns { width: min(1280px, 100%); }
   .ui-columns { grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--space-8) * 9)), 1fr)); }
   .ui-columns--two { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
   .ui-columns--pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* The pause card's controls list alone in the second column, beside both rows of the first: the
+     title, status lines and actions, then the Settings panel under them. */
+  #pause-card > .ui-columns--two { grid-template-rows: auto 1fr; }
+  #pause-list { grid-column: 2; grid-row: 1 / span 2; }
 }
 
 /* ---------- focus ring (keyboard and controller) ---------- */

@@ -1453,6 +1453,104 @@ test('in a browser, at 1024 × 768 with a mouse in both themes: the larger label
   }
 });
 
+// The pause card's layout, measured in the page: its rectangle, the scroll of the card, its overlay and
+// the document, where its two panels sit, its key cap rows and the font size of each kind of text.
+function measurePauseCard() {
+  const c = document.getElementById('pause-card');
+  const box = (el) => { const r = el.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, left: r.left, right: r.right }; };
+  const scrolls = (el) => el.scrollHeight > el.clientHeight;
+  const size = (sel) => { const el = c.querySelector(sel); return el ? parseFloat(getComputedStyle(el).fontSize) : null; };
+  const innerRight = c.getBoundingClientRect().right - parseFloat(getComputedStyle(c).paddingRight) + 0.5;
+  const rows = [...c.querySelectorAll('#pause-controls dt')].filter((dt) => dt.querySelector('kbd')).map((dt) => {
+    const caps = [...dt.querySelectorAll('kbd')].map((k) => k.getBoundingClientRect());
+    return { right: Math.max(...caps.map((k) => k.right)), tops: caps.map((k) => k.top) };
+  });
+  const confirm = document.getElementById('pause-confirm');
+  return {
+    viewport: { width: innerWidth, height: innerHeight },
+    card: box(c),
+    scrolls: { card: scrolls(c), overlay: scrolls(document.getElementById('pause')), document: scrolls(document.documentElement) },
+    columns: c.classList.contains('ui-screen--columns') && !!c.querySelector('.ui-columns.ui-columns--two'),
+    title: box(document.getElementById('pause-title')),
+    actions: box(confirm.classList.contains('hidden') ? document.getElementById('pause-actions') : confirm),
+    confirm: !confirm.classList.contains('hidden'),
+    list: box(document.getElementById('pause-controls').closest('.ui-panel')),
+    settings: box(document.getElementById('p-settings-title').closest('.ui-panel')),
+    look: document.getElementById('p-sens').getBoundingClientRect().width > 0,
+    rows, innerRight,
+    fonts: {
+      title: size('#pause-title'), status: size('#pause-sub'), button: size('#p-menu'), slider: size('.ui-slider__label'),
+      switch: size('.ui-toggle__label'), heading: size('#p-settings-title'), list: size('#pause-controls dd'),
+      keyName: size('#pause-controls dt'), kbd: size('#pause-controls kbd'), statLabel: size('.ui-stat__label'),
+    },
+  };
+}
+// The pause card's font sizes with a fine pointer, which its two columns leave as they are.
+const PAUSE_FONTS_FINE = Object.freeze({ title: 24, status: 15, button: 15, slider: 15, switch: 15, heading: 13, list: 13, keyName: 13, kbd: 11, statLabel: null });
+
+test('in a browser, at 1024 × 768 with a mouse in both themes: the Classic 2D pause card in two columns fits the window, no text shrinks, and below 1024 px it stays one column in its order', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    for (const theme of ['light', 'dark']) {
+      const at = `1024 × 768 ${theme}`;
+      const page = await browser.newPage({ viewport: { width: 1024, height: 768 }, deviceScaleFactor: 1 });
+      await page.addInitScript(removeWebGL2);
+      await page.goto(`${base}/index.html`);
+      await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+      await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
+      await page.evaluate(() => globalThis.__ms.modes.start('classic-2d', { size: 'expert', noGuess: false }));
+      await page.waitForFunction(() => globalThis.__ms.board2D);
+      // The first click starts the game, so a restart asks first.
+      const board = await page.locator('#c2d-board canvas').boundingBox();
+      await page.mouse.click(board.x + board.width / 2, board.y + board.height / 2);
+      await page.waitForFunction(() => globalThis.__ms.modes.state.started);
+      await page.click('#hud-pause');
+      await page.waitForFunction(() => globalThis.__ms.state.mode === 'paused');
+      assert.ok(await page.evaluate(() => matchMedia('(pointer: fine)').matches), `${at}: a fine pointer`);
+      const m = await page.evaluate(measurePauseCard);
+      assert.equal(m.look, false, `${at}: no look settings on a Classic 2D card`);
+      assert.ok(m.columns, `${at}: the card composed with ui-screen--columns and a ui-columns--two`);
+      assert.ok(m.card.top >= 0 && m.card.left >= 0 && m.card.right <= 1024 && m.card.bottom <= 768,
+        `${at}: the whole pause card inside the viewport (${JSON.stringify(m.card)})`);
+      assert.deepEqual(m.scrolls, { card: false, overlay: false, document: false }, `${at}: nothing scrolls`);
+      assert.ok(m.list.left >= m.settings.right && m.list.left >= m.actions.right && m.list.left >= m.title.right,
+        `${at}: the controls list in the second column, beside the title, the actions and the settings`);
+      assert.ok(m.list.right - m.list.left > m.settings.right - m.settings.left, `${at}: the second column the wider`);
+      assert.ok(m.title.bottom <= m.actions.top && m.actions.bottom <= m.settings.top, `${at}: the first column runs title, actions, Settings`);
+      assert.ok(m.rows.length > 0, `${at}: the controls list key caps`);
+      for (const row of m.rows) {
+        assert.ok(row.tops.every((y) => Math.abs(y - row.tops[0]) <= 2), `${at}: a key cap row on one line`);
+        assert.ok(row.right <= m.innerRight, `${at}: a key cap row unclipped`);
+      }
+      assert.deepEqual(m.fonts, PAUSE_FONTS_FINE, `${at}: every font size on the card as it was`);
+
+      // The restart confirmation in place of the actions fits too.
+      await page.evaluate(() => globalThis.__ms.settings.set('confirmRestart', true));
+      await page.click('#p-restart');
+      const asking = await page.evaluate(measurePauseCard);
+      assert.equal(asking.confirm, true, `${at}: the restart confirmation shows`);
+      assert.ok(asking.card.top >= 0 && asking.card.left >= 0 && asking.card.right <= 1024 && asking.card.bottom <= 768,
+        `${at}, the restart confirmation: the whole pause card inside the viewport (${JSON.stringify(asking.card)})`);
+      assert.deepEqual(asking.scrolls, { card: false, overlay: false, document: false }, `${at}, the restart confirmation: nothing scrolls`);
+      assert.ok(asking.list.left >= asking.actions.right && asking.actions.bottom <= asking.settings.top,
+        `${at}, the restart confirmation: in the first column above Settings, beside the controls list`);
+      await page.click('#p-confirm-no');
+
+      // Below the kit's breakpoint the card is one column in its order: the list above the settings.
+      await page.setViewportSize({ width: 1023, height: 768 });
+      const one = await page.evaluate(measurePauseCard);
+      assert.ok(one.title.bottom <= one.actions.top && one.actions.bottom <= one.list.top && one.list.bottom <= one.settings.top,
+        `${at} at 1023 px: one column, title, actions, the controls list, then Settings`);
+      assert.deepEqual(one.fonts, PAUSE_FONTS_FINE, `${at} at 1023 px: every font size as it was`);
+      await page.close();
+    }
+  } finally {
+    await browser.close();
+  }
+});
+
 test('in a browser, a Classic 2D Beginner game played by mouse and by keyboard calls the cues on the one sound instance, muted while the setting is on', async (t) => {
   const env = await suite.open(t);
   if (!env) return;

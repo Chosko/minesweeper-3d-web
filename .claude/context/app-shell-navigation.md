@@ -106,7 +106,8 @@ layers are [app-shell-ui.md](app-shell-ui.md) § Controller menus.
   the open overlay — the topmost visible layer when it is one of
   `CONTAINED` (`controls-modal`, `pause`, `learn-end`, `results`, `replay`),
   the toast kept live — and the rest of the pause card inert behind its
-  confirmation. The walk (`padFocusables`) skips inert subtrees, and a layer
+  confirmation (`cardBeside`: the confirmation's siblings and its column's,
+  up to the card). The walk (`padFocusables`) skips inert subtrees, and a layer
   inside one is not open. Where the browser has no `inert`, Tab at the
   overlay's (or the confirmation's) edges wraps through `tabWrap`.
 - **Focus walk.** `navStep(layer, items, cur, dir)` is the D-pad's and the

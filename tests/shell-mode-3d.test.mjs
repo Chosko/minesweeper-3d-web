@@ -1090,3 +1090,86 @@ test('in a browser with a mouse at 1280 × 800, 3D starts with pointer lock and 
     await browser.close();
   }
 });
+
+test('in a browser at 1024 × 768 with a mouse in both themes: a 3D game\'s pause card in two columns fits the window with its look settings, and with the restart confirmation in place of the actions', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  // The card's layout, measured in the page: its rectangle, the scroll of the card, its overlay and the
+  // document, where its two panels sit, its key cap rows and the font size of each kind of text.
+  const measure = () => {
+    const c = document.getElementById('pause-card');
+    const box = (el) => { const r = el.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, left: r.left, right: r.right }; };
+    const scrolls = (el) => el.scrollHeight > el.clientHeight;
+    const size = (sel) => { const el = c.querySelector(sel); return el ? parseFloat(getComputedStyle(el).fontSize) : null; };
+    const confirm = document.getElementById('pause-confirm');
+    return {
+      card: box(c),
+      scrolls: { card: scrolls(c), overlay: scrolls(document.getElementById('pause')), document: scrolls(document.documentElement) },
+      columns: c.classList.contains('ui-screen--columns') && !!c.querySelector('.ui-columns.ui-columns--two'),
+      actions: box(confirm.classList.contains('hidden') ? document.getElementById('pause-actions') : confirm),
+      confirm: !confirm.classList.contains('hidden'),
+      list: box(document.getElementById('pause-controls').closest('.ui-panel')),
+      settings: box(document.getElementById('p-settings-title').closest('.ui-panel')),
+      look: ['p-sens', 'p-invert'].every((id) => document.getElementById(id).closest('[data-setting]').getBoundingClientRect().height > 0),
+      innerRight: c.getBoundingClientRect().right - parseFloat(getComputedStyle(c).paddingRight) + 0.5,
+      rows: [...c.querySelectorAll('#pause-controls dt')].filter((dt) => dt.querySelector('kbd')).map((dt) => {
+        const caps = [...dt.querySelectorAll('kbd')].map((k) => k.getBoundingClientRect());
+        return { right: Math.max(...caps.map((k) => k.right)), tops: caps.map((k) => k.top) };
+      }),
+      fonts: {
+        title: size('#pause-title'), status: size('#pause-sub'), button: size('#p-menu'), slider: size('.ui-slider__label'),
+        switch: size('.ui-toggle__label'), heading: size('#p-settings-title'), list: size('#pause-controls dd'),
+        keyName: size('#pause-controls dt'), kbd: size('#pause-controls kbd'), statLabel: size('.ui-stat__label'),
+      },
+    };
+  };
+  // The card's font sizes with a fine pointer, which its two columns leave as they are.
+  const FONTS = { title: 24, status: 15, button: 15, slider: 15, switch: 15, heading: 13, list: 13, keyName: 13, kbd: 11, statLabel: null };
+  const fits = (m, at) => {
+    assert.ok(m.columns, `${at}: the card composed with ui-screen--columns and a ui-columns--two`);
+    assert.ok(m.card.top >= 0 && m.card.left >= 0 && m.card.right <= 1024 && m.card.bottom <= 768,
+      `${at}: the whole pause card inside the viewport (${JSON.stringify(m.card)})`);
+    assert.deepEqual(m.scrolls, { card: false, overlay: false, document: false }, `${at}: nothing scrolls`);
+    assert.ok(m.list.left >= m.settings.right && m.list.left >= m.actions.right, `${at}: the controls list in the second column`);
+    assert.ok(m.actions.bottom <= m.settings.top, `${at}: the first column runs the actions, then Settings`);
+    assert.ok(m.rows.length > 0, `${at}: the controls list key caps`);
+    for (const row of m.rows) {
+      assert.ok(row.tops.every((y) => Math.abs(y - row.tops[0]) <= 2), `${at}: a key cap row on one line`);
+      assert.ok(row.right <= m.innerRight, `${at}: a key cap row unclipped`);
+    }
+    assert.deepEqual(m.fonts, FONTS, `${at}: every font size on the card as it was`);
+  };
+  try {
+    for (const theme of ['light', 'dark']) {
+      const at = `1024 × 768 ${theme}`;
+      const page = await browser.newPage({ viewport: { width: 1024, height: 768 }, deviceScaleFactor: 1 });
+      await page.goto(`${base}/index.html`);
+      await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+      const ms = (fn, arg) => page.evaluate(fn, arg);
+      await ms((th) => globalThis.msTheme.setTheme(th), theme);
+      assert.ok(await ms(() => matchMedia('(pointer: fine)').matches), `${at}: a fine pointer`);
+      await ms(() => {
+        globalThis.__ms.settings.set('confirmRestart', true);
+        globalThis.__ms.modes.start('3d', { X: 5, Y: 1, Z: 1, mines: 1, minePositions: [4] });
+        globalThis.__ms.forcePlay();
+        globalThis.__ms.aimAt(3);
+        globalThis.__ms.click('left');
+        globalThis.__ms.pause();
+      });
+      await page.waitForFunction(() => globalThis.__ms.state.mode === 'paused');
+      const play = await ms(measure);
+      assert.equal(play.look, true, `${at}: the look settings on a 3D game's card`);
+      assert.equal(play.confirm, false);
+      fits(play, `${at}, in play`);
+
+      await page.click('#p-restart');
+      const asking = await ms(measure);
+      assert.equal(asking.confirm, true, `${at}: the restart confirmation shows`);
+      fits(asking, `${at}, the restart confirmation`);
+      await page.close();
+    }
+  } finally {
+    await browser.close();
+  }
+});

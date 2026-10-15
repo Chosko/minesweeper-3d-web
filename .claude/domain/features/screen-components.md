@@ -34,7 +34,7 @@ In scope (m1-classic-2d):
   overlay bar.
 - The column composition: one column below about 1024 px, side by side
   at that width and above, its one breakpoint stated once; the Records
-  and Settings screens lay out with it.
+  and Settings screens and the pause card lay out with it.
 - States for every interactive component: default, hover, pressed, focused
   (a visible focus ring for keyboard and controller) and disabled.
 - The m1 screens composed from the kit: the main menu, the in-game overlay

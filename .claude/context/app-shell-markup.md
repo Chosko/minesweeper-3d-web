@@ -39,11 +39,18 @@ bind.
     `settingsPageHtml()`, Bindings `#settings-bindings`, Data
     `#settings-data`, sticky Back row `#settings-actions`,
     [settings-page.md](settings-page.md));
-  - pause card `#pause-card`: status lines, `#pause-actions` (primary
-    first; `#p-home` "Back to start" only for a 3D game in play),
-    `#pause-confirm` (`#p-confirm-yes`, `#p-confirm-no`), `#pause-board`,
-    `#pause-controls`, a Settings panel (3D look controls, Sound, volume)
-    whose shortcuts carry `data-setting`;
+  - pause card `#pause-card` (`ui-screen--columns`, a `ui-columns--two`):
+    a `ui-column` of the title, `#pause-board`, the status lines,
+    `#pause-actions` (primary first; `#p-home` "Back to start" only for a
+    3D game in play) and `#pause-confirm` (`#p-confirm-yes`,
+    `#p-confirm-no`), then the panel `#pause-list` of `#pause-controls`, then
+    a `ui-column` of the Settings panel (3D look controls, Sound, volume)
+    whose shortcuts carry `data-setting`; at 1024 px and wider `#pause-list`
+    takes the second column beside both (`css/components.css`'s breakpoint
+    block), so the card fits 1024 × 768 unscrolled, and below that it is one
+    column in markup order. Settings sits in a `ui-column` of its own so the
+    arrow and D-pad walk leaves it upward to the actions
+    ([app-shell-navigation.md](app-shell-navigation.md) § Focus walk);
   - results `#results`: banner, `#results-stats` (`rs-*`), `#results-figures`,
     `#results-next`, `#results-bests` (`rb-*`, `ui-panel--muted` on a
     loss), `#results-note`, actions `#r-again`, `#r-watch`, `#r-watch-best`,

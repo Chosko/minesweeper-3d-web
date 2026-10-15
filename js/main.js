@@ -1601,7 +1601,14 @@ function applyContainment() {
   const sections = [...document.body.children].filter((el) => el.id && !NOT_SECTIONS.has(el.tagName));
   holdInert('overlay', inertSections(sections, layer, [document.getElementById('toast')]));
   const area = containedArea(layer);
-  holdInert('confirm', area && area !== layer ? inertSections([...area.parentElement.children], area, []) : []);
+  holdInert('confirm', area && area !== layer ? cardBeside(area) : []);
+}
+/** Everything on the pause card beside `area`: its siblings, and its column's siblings up to the card. */
+function cardBeside(area) {
+  const card = document.getElementById('pause-card');
+  const beside = [];
+  for (let el = area; el !== card; el = el.parentElement) beside.push(...inertSections([...el.parentElement.children], el, []));
+  return beside;
 }
 new MutationObserver(() => applyContainment()).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
 /** Tab at the open overlay's edges wraps inside it, only where the browser has no `inert`. */

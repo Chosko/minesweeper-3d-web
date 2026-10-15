@@ -889,7 +889,7 @@ Preconditions: none
 
 ## 201. Pause card in two columns at 1024 px and wider, fitting a 1024 × 768 window
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, css/components.css, css/style.css, js/ui.js, tests/classic2d-mode.test.mjs, tests/shell-mode-3d.test.mjs, .claude/domain/features/screen-components.md, .claude/context/app-shell-markup.md
 Preconditions: none
