@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 190
+Last task number: 191
 
 ---
 
@@ -793,6 +793,15 @@ Feature: theme-implement-skill
 Status: [MISSING]
 Target: claude
 Files: css/style.css, css/components.css, index.html, js/ui.js, js/main.js, tests/classic2d-touch.test.mjs, tests/components.test.mjs, .claude/domain/features/classic-2d-square-play.md, .claude/domain/features/screen-components.md
+Preconditions: none
+
+---
+
+## 191. Classic 2D touch help: touch binding rows and a touch clipped-board hint
+
+Status: [MISSING]
+Target: claude
+Files: js/settings/bindings.js, js/ui.js, js/main.js, js/classic2d/touch-input.js, tests/settings-page.test.mjs, tests/shell-help.test.mjs, tests/shell-first-use.test.mjs, tests/classic2d-mode.test.mjs, tests/classic2d-touch.test.mjs, .claude/domain/features/settings.md, .claude/domain/features/classic-2d-square-play.md
 Preconditions: none
 
 ---
