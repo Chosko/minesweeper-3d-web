@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 201
+Last task number: 202
 
 ---
 
@@ -892,6 +892,15 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: index.html, css/components.css, css/style.css, js/ui.js, tests/classic2d-mode.test.mjs, tests/shell-mode-3d.test.mjs, .claude/domain/features/screen-components.md, .claude/context/app-shell-markup.md
+Preconditions: none
+
+---
+
+## 202. Records Averages table stays inside its panel on a phone
+
+Status: [MISSING]
+Target: claude
+Files: css/style.css, tests/records-screen.test.mjs, .claude/context/records-screen.md
 Preconditions: none
 
 ---
