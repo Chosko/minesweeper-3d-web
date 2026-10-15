@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 196
+Last task number: 197
 
 ---
 
@@ -847,6 +847,15 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: tests/shell-pad-walk.test.mjs, tests/shell-mode-3d.test.mjs, tests/classic2d-touch.test.mjs, tests/replay-viewer.test.mjs, tests/shell-menu.test.mjs, tests/helpers/timing.mjs, tests/helpers/browser.mjs, .claude/context/testing-conventions.md
+Preconditions: none
+
+---
+
+## 197. Bare `node --test` runs only the project's tests
+
+Status: [MISSING]
+Target: claude
+Files: docs/ux-review/ux-first-run/s7-hit-test.mjs, tests/affected-tests.test.mjs, .claude/context/testing.md
 Preconditions: none
 
 ---
