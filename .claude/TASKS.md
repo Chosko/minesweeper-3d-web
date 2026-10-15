@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 193
+Last task number: 194
 
 ---
 
@@ -820,6 +820,15 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: css/components.css, css/style.css, js/records/screen.js, js/records/replay-list.js, dev/components.html, tests/records-screen.test.mjs, tests/records-replays.test.mjs, tests/components.test.mjs
+Preconditions: none
+
+---
+
+## 194. Best-time chart: axis ticks with the fewest decimals that tell them apart
+
+Status: [MISSING]
+Target: claude
+Files: js/records/history-chart.js, tests/records-history.test.mjs
 Preconditions: none
 
 ---
