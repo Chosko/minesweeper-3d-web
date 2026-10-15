@@ -862,7 +862,7 @@ Preconditions: none
 
 ## 198. Classic 2D no-guess switch back under the presets, with the D-pad walk to match
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, css/style.css, tests/shell-pad-walk.test.mjs
 Preconditions: none

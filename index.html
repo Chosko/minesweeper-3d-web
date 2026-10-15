@@ -36,6 +36,8 @@
         <button type="button" class="ui-menu__item" data-size="intermediate"><span class="ui-menu__label">Intermediate</span><span class="ui-menu__detail">16 &times; 16 &middot; 40 mines</span></button>
         <button type="button" class="ui-menu__item" data-size="expert"><span class="ui-menu__label">Expert</span><span class="ui-menu__detail">30 &times; 16 &middot; 99 mines</span></button>
       </div>
+      <label class="ui-toggle"><input type="checkbox" role="switch" id="c2d-noguess" class="ui-toggle__input" data-noguess><span class="ui-toggle__label">No-guess board</span></label>
+      <p id="c2d-noguess-help" class="ui-text ui-text--muted">Solvable by logic alone, no 50/50 guesses. Separate records.</p>
       <form id="c2d-custom" class="ui-panel" aria-labelledby="c2d-custom-title" novalidate>
         <h2 class="ui-heading" id="c2d-custom-title">Custom</h2>
         <div class="ui-row">
@@ -49,8 +51,6 @@
         <p id="c2d-info" class="ui-text ui-text--muted" data-info>480 cells &middot; up to 99 mines</p>
         <p id="c2d-density-hint" class="ui-text ui-text--muted hidden" data-density-hint></p>
       </form>
-      <label class="ui-toggle"><input type="checkbox" role="switch" id="c2d-noguess" class="ui-toggle__input" data-noguess><span class="ui-toggle__label">No-guess board</span></label>
-      <p id="c2d-noguess-help" class="ui-text ui-text--muted">Solvable by logic alone, no 50/50 guesses. Separate records.</p>
       <div class="ui-panel" role="group" aria-labelledby="c2d-code-title">
         <h2 class="ui-heading" id="c2d-code-title">Board code</h2>
         <div class="ui-row">

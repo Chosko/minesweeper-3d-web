@@ -1098,12 +1098,14 @@ test('index.html builds the Classic 2D board choice from kit components', () => 
   assert.match(CHOICE, /id="c2d-mines"[^>]*min="1"/, 'a custom board takes at least one mine');
   assert.match(CHOICE, /<button type="submit" id="c2d-start" class="ui-button ui-button--primary" data-size="custom">/);
   assert.match(CHOICE, /<label class="ui-toggle"><input type="checkbox" role="switch" id="c2d-noguess" class="ui-toggle__input"/);
-  // The switch sits under the custom panel, with its helper line, before Back, so the D-pad walks
-  // sizes, custom row, switch, Back.
+  // The switch sits directly under the sizes, with its helper line, before the custom panel — the 3D
+  // board choice's arrangement — so the D-pad walks sizes, switch, custom row, Back.
   const sw = CHOICE.indexOf('id="c2d-noguess"');
   const help = CHOICE.indexOf(`<p id="c2d-noguess-help" class="ui-text ui-text--muted">${NOGUESS_HELP_TEXT}</p>`);
-  assert.ok(sw > CHOICE.indexOf('</form>') && sw < CHOICE.indexOf('id="c2d-choice-back"'), 'the switch sits under the custom panel');
-  assert.ok(help > sw && help < CHOICE.indexOf('id="c2d-choice-back"'), 'its helper line under it');
+  const sizesEnd = CHOICE.indexOf('</div>', CHOICE.indexOf('data-size="expert"'));
+  const label = CHOICE.lastIndexOf('<label class="ui-toggle">', sw);
+  assert.equal(CHOICE.slice(sizesEnd + '</div>'.length, label).trim(), '', 'the switch directly under the sizes');
+  assert.ok(help > sw && help < CHOICE.indexOf('<form id="c2d-custom"'), 'its helper line under it, before the custom panel');
   const form = CHOICE.slice(CHOICE.indexOf('<form id="c2d-custom"'), CHOICE.indexOf('</form>'));
   const hint = form.indexOf('<p id="c2d-density-hint" class="ui-text ui-text--muted hidden" data-density-hint></p>');
   assert.ok(hint > form.indexOf('data-info'), 'the density hint sits under the custom panel\'s info line');

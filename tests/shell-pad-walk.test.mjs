@@ -65,20 +65,21 @@ test('in a browser, the D-pad walks every control of the 2D board choice and the
   try {
     const { page, errors, ms, tap, focused, walk } = await open(browser, base);
 
-    // Classic 2D: Down walks the sizes into the custom row; Left / Right walk the row; Down reaches the switch, then Back.
+    // Classic 2D: Down walks the sizes, the switch under them and into the custom row; Left / Right walk the row;
+    // Down goes on to the code field, then Back.
     await page.click('#menu-entry-classic-2d');
     await ms(() => document.querySelector('#c2d-choice [data-size="beginner"]').focus());
     assert.equal(await focused(), 'beginner');
-    assert.deepEqual(await walk(['down', 'down', 'down']), ['intermediate', 'expert', 'c2d-width']);
+    assert.deepEqual(await walk(['down', 'down', 'down', 'down']), ['intermediate', 'expert', 'c2d-noguess', 'c2d-width']);
     assert.deepEqual(await walk(['right', 'right', 'right']), ['c2d-height', 'c2d-mines', 'c2d-start']);
     assert.deepEqual(await walk(['left', 'left', 'left']), ['c2d-mines', 'c2d-height', 'c2d-width']);
-    assert.deepEqual(await walk(['down', 'down', 'down', 'down']), ['c2d-noguess', 'c2d-code', 'c2d-choice-back', 'c2d-choice-back'], 'no wrap past Back; the code field\'s Play this board waits disabled');
-    assert.deepEqual(await walk(['up', 'up', 'up', 'up', 'up', 'up', 'up']), ['c2d-code', 'c2d-noguess', 'c2d-width', 'expert', 'intermediate', 'beginner', 'beginner'],
+    assert.deepEqual(await walk(['down', 'down', 'down']), ['c2d-code', 'c2d-choice-back', 'c2d-choice-back'], 'no wrap past Back; the code field\'s Play this board waits disabled');
+    assert.deepEqual(await walk(['up', 'up', 'up', 'up', 'up', 'up', 'up']), ['c2d-code', 'c2d-width', 'c2d-noguess', 'expert', 'intermediate', 'beginner', 'beginner'],
       'Up retraces the walk');
-    // From any control of the custom row, Down goes on to the switch.
+    // From any control of the custom row, Down goes on to the code field.
     for (const id of ['c2d-height', 'c2d-mines', 'c2d-start']) {
       await ms((i) => document.getElementById(i).focus(), id);
-      assert.deepEqual(await walk(['down']), ['c2d-noguess'], `Down from #${id}`);
+      assert.deepEqual(await walk(['down']), ['c2d-code'], `Down from #${id}`);
     }
     // Every focusable control on the screen is reached by the D-pad alone.
     const all = await ms(() => [...document.querySelectorAll('#c2d-choice button:not(:disabled), #c2d-choice input')].map((e) => e.id || e.dataset.size));
