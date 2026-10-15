@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 202
+Last task number: 203
 
 ---
 
@@ -901,6 +901,15 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: css/style.css, tests/records-screen.test.mjs, .claude/context/records-screen.md
+Preconditions: none
+
+---
+
+## 203. Classic 2D hint strip from the game's start on a touch-only device
+
+Status: [MISSING]
+Target: claude
+Files: js/main.js, js/shell/first-use.js, tests/shell-first-use.test.mjs, tests/classic2d-touch.test.mjs, .claude/context/app-shell-help.md
 Preconditions: none
 
 ---
