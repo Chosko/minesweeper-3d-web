@@ -859,3 +859,12 @@ Files: docs/ux-review/ux-first-run/s7-hit-test.mjs, tests/affected-tests.test.mj
 Preconditions: none
 
 ---
+
+## 195. Classic 2D no-guess switch back under the presets, with the D-pad walk to match
+
+Status: [MISSING]
+Target: claude
+Files: index.html, css/style.css, tests/shell-pad-walk.test.mjs
+Preconditions: none
+
+---
