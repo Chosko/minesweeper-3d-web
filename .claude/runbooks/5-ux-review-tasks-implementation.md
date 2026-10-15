@@ -279,7 +279,7 @@ findings.
 
 Done: 2026-10-15, commit `59ba9f4` (1 file, +190/-0). Bare `node --test` also runs the review scripts under docs/; the project's suite command is .claude/external/run-full-tests.sh.
 
-## [ ] 42. Implement task 197 — Bare `node --test` runs only the project's tests
+## [x] 42. Implement task 197 — Bare `node --test` runs only the project's tests
 
 Depends on: none
 
@@ -288,6 +288,8 @@ Context: none
 ```prompt
 /task-implement 197 --review
 ```
+
+Done: 2026-10-15, commit `a1e4aca` (4 files, +26/-6).
 
 ## [ ] 43. Implement task 196 — Browser tests: root-cause and fix the flakes seen under full-suite load
 
