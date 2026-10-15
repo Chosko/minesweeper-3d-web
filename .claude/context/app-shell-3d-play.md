@@ -49,7 +49,7 @@ presses and releases Enter and ' through `input.actions` as their keys do;
   standard offer (`retry3D`) enter lockless play instead, fullscreen keeps
   it, and Look at the board opens lockless. `ui.setTouch3D(COARSE_ONLY)`
   makes the card "Tap to play" with the touch gestures in place of the
-  keys, and the help surfaces show 3D's touch rows (`TOUCH_DEVICE`,
+  keys, and the help surfaces show the touch rows (`TOUCH_DEVICE`,
   [settings-bindings.md](settings-bindings.md)). `touch3D` (`createTouch3D`,
   [input.md](input.md)) is mounted on the canvas only while `COARSE_ONLY`,
   zones from `touchZone3D` (below the overlay bar): it drives the page's

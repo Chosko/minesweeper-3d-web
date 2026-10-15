@@ -95,7 +95,7 @@ export class UI {
     this._muted = false;
     this._hint = false; // the hint strip shows
     this._controlsTab = 'classic-2d'; // the Controls panel's tab
-    this._touch = false; // a coarse-only device: 3D plays by touch, and its help lists the touch rows
+    this._touch = false; // a coarse-only device: both modes play by touch, their help lists the touch rows and the scroll hint its touch text
     this._stick = ''; // the touch stick's place shown, '' while hidden
     this._boardText = '';
     this._learnHint = null; // the Learn 3D prompt the hint strip shows (js/mode3d/learn.js LEARN_HINTS), or null
@@ -173,8 +173,9 @@ export class UI {
     note.classList.toggle('hidden', !on);
   }
   /**
-   * On a coarse-only device 3D plays by touch: the ready card reads "Tap to play" and lists the touch
-   * gestures in place of the key list, and the 3D help surfaces list the touch rows.
+   * On a coarse-only device both modes play by touch: the ready card reads "Tap to play" and lists the
+   * touch gestures in place of the key list, the help surfaces of either mode list its touch rows and
+   * the clipped Classic 2D board's hint names the touch gestures.
    */
   setTouch3D(on) {
     this._touch = !!on;
@@ -493,7 +494,7 @@ export class UI {
     if (on) {
       if (learn) this.el.hintStripText.textContent = hintText(learn, this._device, this._glyphs);
       else {
-        this.el.hintStripText.innerHTML = scroll ? hintText('scrollHint', this._device, this._glyphs)
+        this.el.hintStripText.innerHTML = scroll ? hintText('scrollHint', this._bindDevice(this._mode), this._glyphs)
           : hintStripHtml(this._mode, this._device, this._glyphs);
       }
     }
@@ -697,9 +698,9 @@ export class UI {
     return this._device === 'controller' && this._mapping !== 'standard'
       ? ' <span class="pad-note">This controller does not report the standard layout, so some buttons may be unmapped.</span>' : '';
   }
-  /** The device whose rows a surface of `mode` lists: on a touch device, 3D's touch rows unless a controller is in use. */
+  /** The device whose rows a surface of `mode` lists: on a touch device, the touch rows unless a controller is in use. */
   _bindDevice(mode) {
-    return this._touch && mode === '3d' && this._device === 'keyboard' ? 'touch' : this._device;
+    return this._touch && this._device === 'keyboard' ? 'touch' : this._device;
   }
   _renderHelp() {
     this.el.helpList.innerHTML = bindingsHtml(this._mode, this._bindDevice(this._mode), this._glyphs, this._camera);

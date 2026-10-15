@@ -50,13 +50,13 @@ test('the bindings source lists each mode\'s bindings for each input device', ()
   }
   assert.equal(bindingRows('3d', 'keyboard'), BINDINGS['3d'].keyboard);
   assert.throws(() => bindingRows('records', 'keyboard'), /unknown/);
-  assert.throws(() => bindingRows('classic-2d', 'touch'), /unknown/, 'Classic 2D lists no touch rows');
+  assert.throws(() => bindingRows('records', 'touch'), /unknown/);
+  assert.throws(() => bindingRows('classic-2d', 'mouse'), /unknown/);
 });
 
 test('3D lists a touch device\'s rows: the stick, the look drag, tap, long-press, two-finger tap, pinch and the toolbar\'s three modes', () => {
   assert.deepEqual(TOUCH_DEVICE, { id: 'touch', label: 'Touch' });
   assert.deepEqual(bindingDevices('3d').map((d) => d.id), ['keyboard', 'controller', 'touch']);
-  assert.deepEqual(bindingDevices('classic-2d').map((d) => d.id), ['keyboard', 'controller']);
   const rows = bindingRows('3d', 'touch');
   assert.equal(rows, BINDINGS['3d'].touch);
   const row = (input) => rows.find(([i]) => i === input);
@@ -80,9 +80,33 @@ test('3D lists a touch device\'s rows: the stick, the look drag, tap, long-press
   const section = bindingsSectionHtml(GLYPHS.xbox);
   assert.ok(section.includes('3D · Touch'), 'the Settings page lists them');
   assert.ok(section.includes(bindingsListHtml(rows, GLYPHS.xbox)));
-  assert.ok(!section.includes('Classic 2D · Touch'));
   const ui = read('js/ui.js');
   assert.match(ui, /_bindDevice\(mode\)/, 'the help surfaces show the touch rows on a touch device');
+});
+
+test('Classic 2D lists a touch device\'s rows: tap, the 400 ms long-press, the tap chord, the Reveal / Flag switch, pan, pinch and Pause', () => {
+  assert.deepEqual(bindingDevices('classic-2d').map((d) => d.id), ['keyboard', 'controller', 'touch']);
+  const rows = bindingRows('classic-2d', 'touch');
+  assert.equal(rows, BINDINGS['classic-2d'].touch);
+  assert.equal(bindingRows('classic-2d', 'touch', 'orbit'), rows, 'the camera does not reach Classic 2D');
+  const row = (input) => rows.find(([i]) => i === input);
+  assert.match(row('Tap')[1], /Reveal a closed cell/);
+  assert.match(row('Tap')[1], /Flag/, 'a tap flags while the switch is on Flag');
+  assert.match(row('Long-press')[1], /Flag \/ unflag/);
+  assert.match(row('Long-press')[1], /0\.4 s|400 ms/, 'the long-press names its hold');
+  assert.match(row('Tap a number')[1], /^Chord/);
+  assert.match(row('Tap: Reveal / Flag')[1], /what a tap does/);
+  assert.match(row('One finger: drag')[1], /[Pp]an/);
+  assert.match(row('Two fingers')[1], /[Pp]an/);
+  assert.match(row('Two fingers')[1], /[Pp]inch to zoom/);
+  assert.match(row('Pause button')[1], /Pause menu/);
+  for (const [input, action] of rows) assert.doesNotMatch(`${input} ${action}`, /\[|\{|[Cc]lick|[Ww]heel|[Mm]ouse/, 'no key, button or mouse in a touch row');
+  const section = bindingsSectionHtml(GLYPHS.xbox);
+  assert.ok(section.includes('Classic 2D · Touch'), 'the Settings page lists them');
+  assert.ok(section.includes(bindingsListHtml(rows, GLYPHS.xbox)));
+  const ui = read('js/ui.js');
+  assert.match(ui, /_bindDevice\(mode\) \{\n    return this\._touch && this\._device === 'keyboard' \? 'touch' : this\._device;/,
+    'on a touch device both modes\' help surfaces show the touch rows, unless a controller is in use');
 });
 
 test('the Classic 2D keyboard bindings name every key the cursor input acts on', () => {

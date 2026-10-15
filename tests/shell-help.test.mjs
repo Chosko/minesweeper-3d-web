@@ -176,6 +176,24 @@ test('the pause card, the Controls panel and the H panel have no hard-coded bind
   assert.match(UI, /bindingsHtml\(/);
 });
 
+test('on a touch device Classic 2D\'s touch rows reach the H panel, the pause card and the Controls panel as 3D\'s do; no table is read for touch without a touch entry', () => {
+  const touch2d = text(bindingsHtml('classic-2d', 'touch'));
+  assert.match(touch2d, /Long-press/);
+  assert.match(touch2d, /Tap a number/);
+  assert.doesNotMatch(bindingsHtml('classic-2d', 'touch'), /<kbd/, 'a touch row names no key or button');
+  assert.doesNotMatch(touch2d, /Move the cursor|Look around/, 'neither the keyboard rows nor a 3D row');
+  assert.match(UI, /this\.el\.helpList\.innerHTML = bindingsHtml\(this\._mode, this\._bindDevice\(this\._mode\)/);
+  assert.match(UI, /this\.el\.pauseControls\.innerHTML = bindingsHtml\(this\._mode, this\._bindDevice\(this\._mode\)/);
+  assert.match(UI, /this\.el\.controlsBody\.innerHTML = bindingsHtml\(this\._controlsTab, this\._bindDevice\(this\._controlsTab\)/);
+  // The foot line, the HUD strip and the mode's hint strip follow the keyboard or the controller, so
+  // their tables are never read for touch; the scroll hint is, and has a touch text.
+  assert.match(UI, /helpFootHtml\(this\._mode, this\._device,/);
+  assert.match(UI, /hudStripHtml\(this\._mode, this\._device,/);
+  assert.match(UI, /hintStripHtml\(this\._mode, this\._device,/);
+  assert.match(UI, /hintText\('scrollHint', this\._bindDevice\(this\._mode\),/);
+  assert.match(helpFootHtml('classic-2d', 'keyboard'), /hides this panel/);
+});
+
 test('the HUD strip is generated and shows in Classic 2D; the hint strip shows there too', () => {
   assert.match(INDEX, /<div id="hud-tools" class="hud-panel hud-tools"><\/div>/);
   const style = read('css/style.css');
@@ -259,6 +277,7 @@ test('in a browser: the Controls panel tabs, H, M and the HUD strip in Classic 2
     assert.equal(await mode(), 'paused');
     assert.match(await textOf('#pause-controls'), /Move the cursor/);
     assert.doesNotMatch(await textOf('#pause-controls'), /Look around/);
+    assert.doesNotMatch(await textOf('#pause-controls'), /Long-press/, 'no touch rows with a mouse and keyboard');
     assert.equal(await textOf('#pause-board'), '9 × 9');
     assert.equal(await shown('p-sens'), false, 'no look sensitivity in Classic 2D');
     assert.equal(await shown('p-invert'), false, 'no invert Y in Classic 2D');

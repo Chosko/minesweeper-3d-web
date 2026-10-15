@@ -152,8 +152,9 @@ copied.
   scrolls or pans it; each edge beyond which cells are hidden carries an
   inset shadow, each overflowing axis a thin scroll bar showing the visible
   part's size and place, and the first clipped board shows a one-time hint
-  beside it, "Wheel scrolls · Shift+wheel sideways", which never shows
-  again once dismissed or once the player scrolls. A board that fits draws
+  beside it, "Wheel scrolls · Shift+wheel sideways" — on a coarse-only
+  device "Drag to pan · pinch to zoom" — which never shows again once
+  dismissed or once the player scrolls or pans. A board that fits draws
   none of the three. By touch, one finger pans a board that scrolls and two
   fingers pan and pinch: the pinch sets the tile anywhere between the
   minimum tile and the fit-to-view tile, its midpoint kept over the same

@@ -182,6 +182,20 @@ test('the Classic 2D scroll hint is a one-time hint of the same document; one st
   assert.equal(hintText('scrollHint', 'keyboard'), 'Wheel scrolls · Shift+wheel sideways');
 });
 
+test('the scroll hint reads "Drag to pan · pinch to zoom" on a coarse-only device; the keyboard and controller texts are unchanged', () => {
+  assert.equal(hintText('scrollHint', 'touch'), 'Drag to pan · pinch to zoom');
+  assert.equal(hintText('scrollHint', 'keyboard'), 'Wheel scrolls · Shift+wheel sideways');
+  assert.equal(hintText('scrollHint', 'controller'), 'Wheel scrolls · Shift+wheel sideways');
+  const ui = read('js/ui.js');
+  assert.match(ui, /scroll \? hintText\('scrollHint', this\._bindDevice\(this\._mode\), this\._glyphs\)/,
+    'the clipped-board hint takes the touch text where the help surfaces take the touch rows');
+  assert.match(ui, /_bindDevice\(mode\) \{\n    return this\._touch && this\._device === 'keyboard' \? 'touch' : this\._device;/,
+    'on a coarse-only device (setTouch3D), unless a controller is in use');
+  assert.match(read('js/main.js'), /ui\.setTouch3D\(COARSE_ONLY\)/);
+  assert.match(read('js/classic2d/touch-input.js'), /onPan: \(dx, dy\) => \{ if \(view\.pan\(dx, dy\)\) onUserScroll\(\); \}/,
+    'a touch pan of a clipped board retires it as a wheel scroll does');
+});
+
 test('dismissing a mode\'s strip hides it for good in that mode only', async () => {
   const backend = createMemoryBackend();
   const first = createFirstUse({ storage: createStorage({ backend }), records: records(0, 0) });

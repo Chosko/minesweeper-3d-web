@@ -27,8 +27,9 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
   ([settings-bindings.md](settings-bindings.md)); edit a binding's text in `BINDINGS` only.
   They show the mode the last screen method set (`showReady` /
   `showPlaying` 3D, `showClassic2D` 2D, `showPause`'s `mode`) for the
-  device `setDevice` set (3D's touch rows on a coarse-only device,
-  `_bindDevice`) and the camera `setCamera` set, and every change of any
+  device `setDevice` set (the touch rows of either mode on a coarse-only
+  device unless a controller is in use, `_bindDevice`, which the scroll
+  hint's text follows too) and the camera `setCamera` set, and every change of any
   of them, or of the pad's glyphs, redraws them.
 - **Help panel.** `_helpByUser` keeps an H-opened panel open across
   screens; screen methods otherwise hide it. `H` toggles it and `M` sets

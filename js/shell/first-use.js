@@ -11,7 +11,8 @@
 //   autoHideToast the toast at the first auto-hide was shown;
 //   aimHint       the hint to hold Space at a number with a closed cube behind it was shown;
 //   scrollHint    the Classic 2D hint beside a clipped board, "Wheel scrolls · Shift+wheel
-//                 sideways", was dismissed or the player scrolled the board: it never shows again
+//                 sideways" ("Drag to pan · pinch to zoom" by touch), was dismissed or the player
+//                 scrolled or panned the board: it never shows again
 //                 (a document without it reads as not yet);
 //   dismissed     the mode's hint strip was dismissed, for good.
 // When the document is first created it is seeded from the records store's per-mode game

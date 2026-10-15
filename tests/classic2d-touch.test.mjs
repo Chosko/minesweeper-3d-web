@@ -508,6 +508,9 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
     });
     const v0 = await view();
     assert.ok(v0.scrolls, 'Expert scrolls on a phone');
+    // The clipped board's one-time hint names the touch gestures, not the wheel.
+    await page.waitForFunction(() => !document.getElementById('hint-strip').classList.contains('hidden'), null, { timeout: patience(2000) });
+    assert.equal(await ms(() => document.getElementById('hint-strip-text').textContent), 'Drag to pan · pinch to zoom');
     const centreOf = async (c) => {
       const v = await view();
       const r = await ms((cell) => globalThis.__ms.board2D.cellRect(cell), c);
@@ -602,6 +605,8 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
     await page.waitForFunction(() => globalThis.__ms.board2D.scroll.x >= 50, null, { timeout: patience(2000) });
     const panned = await view();
     assert.ok(panned.scroll.x >= 50, `the board followed the finger (${JSON.stringify(panned.scroll)})`);
+    // The pan retired the scroll hint, as a wheel scroll does.
+    await page.waitForFunction(() => document.getElementById('hint-strip').classList.contains('hidden'), null, { timeout: patience(2000) });
     assert.equal(await ms(() => Number(document.getElementById('hud-clicks').textContent)), clicks, 'a pan is no click');
 
     // A pinch zooms out to the whole board and back to the minimum tile; a pan or zoom records nothing.
@@ -623,6 +628,15 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
     await ms((tile) => globalThis.__ms.board2D.zoom(tile, 10, 10), range.min);
     await ms(() => globalThis.__ms.pauser.restart('key'));
     await page.waitForFunction((tile) => globalThis.__ms.board2D && globalThis.__ms.board2D.layout.tile === tile, v0.tile);
+
+    // The pause card lists Classic 2D's touch rows, not the mouse and keyboard ones.
+    await page.tap('#hud-pause');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'paused', null, { timeout: patience(2000) });
+    const pauseRows = await ms(() => document.getElementById('pause-controls').textContent);
+    assert.match(pauseRows, /Long-press/, 'the pause card shows the touch rows');
+    assert.match(pauseRows, /Tap a number/);
+    assert.match(pauseRows, /Two fingers/);
+    assert.doesNotMatch(pauseRows, /Move the cursor|Right click|Wheel/, 'and no mouse or keyboard row');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

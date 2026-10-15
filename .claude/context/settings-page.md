@@ -41,7 +41,7 @@ Page (`js/settings/page.js`)
   — then warning line `#set-reset-note`, button `#set-reset`, hidden confirmation
   `#set-reset-confirm` with `#set-reset-yes` / `#set-reset-no`);
   `bindingsSectionHtml(glyphs?, camera?)` — one `dl.controls` per mode and
-  each device `bindingDevices` lists (3D adds Touch), 3D's rows for the
+  each device `bindingDevices` lists (both modes add Touch), 3D's rows for the
   Camera setting's `camera`.
 - `bindResetPanel({ open, panel, yes, no, note }, { reset })` → `{ isOpen,
   close, clear }`: the confirmation opens with focus on Cancel; confirming

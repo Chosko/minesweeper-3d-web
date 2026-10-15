@@ -13,7 +13,7 @@ The module's head comment lists every function.
 ## PUBLIC API
 
 - `BINDING_MODES` (`classic-2d`, `3d`), `BINDING_DEVICES` (`keyboard`,
-  `controller`), `TOUCH_DEVICE` (`touch`, 3D only), `bindingDevices(mode)`
+  `controller`), `TOUCH_DEVICE` (`touch`, both modes), `bindingDevices(mode)`
   (the devices a mode lists), `BINDINGS[mode][device]` — frozen
   `[input, action]` rows, 3D's being Fly's. `CAMERAS` (`fly`, `orbit`) and
   `BINDINGS_3D[camera][device]` — the 3D rows per Camera setting.
@@ -32,7 +32,7 @@ The module's head comment lists every function.
   `hintStripHtml(mode, device, glyphs?)`.
 - `HELP_FOOT`, `helpFootHtml(mode, device, glyphs?)` — the H panel's foot
   line, naming the release rule in 3D only.
-- `HINT_TEXT` (`autoHide`, `aimHint`, `scrollHint`, and the Learn 3D
+- `HINT_TEXT` (`autoHide`, `aimHint`, `scrollHint`, also by touch, and the Learn 3D
   prompts `learnStart`, `learnShift`, `learnCtrl`, `learnFlag`,
   `learnChord`, `learnRest`), `hintText(name, device, glyphs?)` — a
   one-time hint or prompt as plain text.

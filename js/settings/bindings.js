@@ -8,7 +8,7 @@
 // back) and drawn with the active controller's glyphs (js/gamepad.js GLYPHS).
 //
 // bindingRows(mode, device, camera = 'fly') → the rows; 3D's for the Camera setting's camera (Fly or
-//   Orbit), kept in one table whose camera slots fill from CAMERA_ROWS. 3D also lists a touch
+//   Orbit), kept in one table whose camera slots fill from CAMERA_ROWS. Both modes also list a touch
 //   device (TOUCH_DEVICE), the gestures of a coarse-only device; bindingDevices(mode) names the
 //   devices a mode lists. An unknown mode, device or camera throws.
 // bindingsListHtml(rows, glyphs?) → the <dt>/<dd> pairs of a `dl.controls` list, text escaped.
@@ -35,7 +35,7 @@ export const BINDING_DEVICES = Object.freeze([
   Object.freeze({ id: 'keyboard', label: 'Keyboard and mouse' }),
   Object.freeze({ id: 'controller', label: 'Controller' }),
 ]);
-/** The touch device: 3D's gestures on a coarse-only device (js/touch-3d.js). */
+/** The touch device: each mode's gestures on a coarse-only device (js/touch-3d.js, js/classic2d/touch-input.js). */
 export const TOUCH_DEVICE = Object.freeze({ id: 'touch', label: 'Touch' });
 
 const rows = (list) => Object.freeze(list.map((r) => Object.freeze(r)));
@@ -140,6 +140,15 @@ export const BINDINGS = Object.freeze({
       ['{start} / {b} / {back}', 'Pause'],
       ['{start} + {y}', 'Restart: a new board of the same choice'],
     ]),
+    touch: rows([
+      ['Tap', 'Reveal a closed cell; with the switch on Flag, flag / unflag it'],
+      ['Long-press', 'Flag / unflag (hold 0.4 s)'],
+      ['Tap a number', 'Chord: reveal the neighbours of a satisfied number'],
+      ['Tap: Reveal / Flag', 'Switch what a tap does on a closed cell'],
+      ['One finger: drag', 'Pan a board larger than the screen'],
+      ['Two fingers', 'Pan; pinch to zoom'],
+      ['Pause button', 'Pause menu (at the top)'],
+    ]),
   }),
   '3d': Object.freeze({ keyboard: threeD('fly', 'keyboard'), controller: threeD('fly', 'controller'), touch: threeD('fly', 'touch') }),
 });
@@ -148,7 +157,7 @@ export const BINDINGS = Object.freeze({
 export const BINDINGS_3D = Object.freeze(Object.fromEntries(CAMERAS.map((camera) => [camera,
   camera === 'fly' ? BINDINGS['3d'] : Object.freeze({ keyboard: threeD(camera, 'keyboard'), controller: threeD(camera, 'controller'), touch: threeD(camera, 'touch') })])));
 
-/** The input devices a mode lists bindings for: the keyboard and the controller, and touch in 3D. */
+/** The input devices a mode lists bindings for: the keyboard and the controller, and touch where the mode has touch rows. */
 export function bindingDevices(mode) {
   return Object.hasOwn(BINDINGS, mode) && Object.hasOwn(BINDINGS[mode], 'touch') ? [...BINDING_DEVICES, TOUCH_DEVICE] : [...BINDING_DEVICES];
 }
@@ -225,11 +234,11 @@ export const HELP_FOOT = Object.freeze({
   }),
 });
 
-/** The one-time hints' text per device. */
+/** The one-time hints' text per device; the scroll hint also by touch. */
 export const HINT_TEXT = Object.freeze({
   autoHide: Object.freeze({ keyboard: 'Solved cubes hide. Hold [Ctrl] to see them.', controller: 'Solved cubes hide. Hold {y} to see them.' }),
   aimHint: Object.freeze({ keyboard: 'Hold [Space] to aim through numbers.', controller: 'Hold {rb} to aim through numbers.' }),
-  scrollHint: Object.freeze({ keyboard: 'Wheel scrolls · Shift+wheel sideways', controller: 'Wheel scrolls · Shift+wheel sideways' }),
+  scrollHint: Object.freeze({ keyboard: 'Wheel scrolls · Shift+wheel sideways', controller: 'Wheel scrolls · Shift+wheel sideways', touch: 'Drag to pan · pinch to zoom' }),
   learnStart: Object.freeze({ keyboard: 'Click the marked cube to start', controller: 'Press {rt} on the marked cube to start' }),
   learnShift: Object.freeze({ keyboard: 'Hold [Shift] to see what this number counts', controller: 'Hold {lb} to see what this number counts' }),
   learnCtrl: Object.freeze({ keyboard: 'Hold [Ctrl] to see the cubes you cleared', controller: 'Hold {y} to see the cubes you cleared' }),
