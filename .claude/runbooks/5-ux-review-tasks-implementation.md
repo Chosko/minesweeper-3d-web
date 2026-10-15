@@ -409,7 +409,7 @@ Context:
 
 Done: 2026-10-15, commit `b4be6b7` (12 files, +136/-44). Landed with criterion 3 amended per the answer: the pause card still overflows the window height at 1024 × 768, which a new task will address.
 
-## [ ] 52. Implement task 200 — Touch wording on a coarse-only device for the help foot, HUD strip and hint strip
+## [x] 52. Implement task 200 — Touch wording on a coarse-only device for the help foot, HUD strip and hint strip
 
 Depends on: none
 
@@ -418,6 +418,8 @@ Context: none
 ```prompt
 /task-implement 200 --review
 ```
+
+Done: 2026-10-15, commit `7b17ddc` (10 files, +131/-35). The Classic 2D hint strip only appears after a key or controller press, so a pure-touch player never sees its new touch wording; when it shows was left unchanged, as the task said.
 
 ## Do not re-propose
 
