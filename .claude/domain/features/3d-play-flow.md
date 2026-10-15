@@ -90,7 +90,8 @@ Worker (see
 mode's existing game flow ([app-shell.md](../../context/app-shell.md)) and
 its adapter to the game shell's mode contract (`game-shell`); the renderer
 and input ([rendering.md](../../context/rendering.md),
-[input.md](../../context/input.md)) are reused without change to their
+[input.md](../../context/input.md),
+[input-camera.md](../../context/input-camera.md)) are reused without change to their
 behaviour.
 
 - **3D board choice.** The 3D menu's presets, custom fields, Random fill
