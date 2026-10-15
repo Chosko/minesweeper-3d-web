@@ -390,7 +390,7 @@ Context: none
 
 Done: 2026-10-15, commit `a6f3a56` (5 files, +25/-22). Moving the markup alone gave the 2D walk Expert → No-guess → Width; navigation code was not touched.
 
-## [P] 51. Implement task 199 — Larger stat labels and key caps on every pointer, 44 px hit areas still touch-only
+## [ ] 51. Implement task 199 — Larger stat labels and key caps on every pointer, 44 px hit areas still touch-only
 
 Depends on: none
 
@@ -401,6 +401,7 @@ Context:
   b. Keep criterion 3 and make the card fit inside this task. Name the layout change, e.g. hiding the 3D look settings when Classic 2D is paused, or laying the card out in two columns.
   c. Drop the change and keep the larger sizes for touch only.
   Recommendation: a — the overflow existed before this change, the Decisions call a card that doesn't fit a finding to report, and the larger text adds only 16 px. (The finished work is on branch `park/task-199`, 1f3dad6.)
+- 2026-10-15 unparked with answer: a — land it as is; amend criterion 3 to what holds (bar on one line, card within the window's width, key cap rows whole), and record the pause card's height at 1024 × 768 as a follow-up for a new task.
 
 ```prompt
 /task-implement 199 --review
