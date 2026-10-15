@@ -817,7 +817,7 @@ Preconditions: none
 
 ## 193. Records: best tiles and tables keep their figures on one line
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: css/components.css, css/style.css, js/records/screen.js, js/records/replay-list.js, dev/components.html, tests/records-screen.test.mjs, tests/records-replays.test.mjs, tests/components.test.mjs
 Preconditions: none

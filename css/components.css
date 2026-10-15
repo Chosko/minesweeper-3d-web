@@ -128,8 +128,11 @@
      Look:    a bordered raised tile: the label, the figure large, and
               beneath it, small, the detail line (a date) and an optional
               secondary button (Watch); a figure not yet set is a dash.
-              Laid out in a ui-stat-row--tiles, which gives the tiles equal
-              shares of the row and wraps them on a narrow screen.
+              The figure keeps one line, its size scaling with the row
+              between --font-size-xl and --font-size-2xl. Laid out in a
+              ui-stat-row--tiles, which gives the tiles equal shares of the
+              row and wraps them where a tile would narrow past its
+              content.
 
    ui-code — a board code with Copy and Copy link (js/records/board-code.js)
      Element: <div class="ui-code">
@@ -849,16 +852,18 @@
 .ui-panel--muted .ui-stat__detail { color: var(--color-ink-muted); }
 .ui-stat--tile {
   flex: 1 1 0;
-  min-width: calc(var(--space-8) * 4);
+  min-width: max-content;
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface-raised);
 }
-.ui-stat--tile .ui-stat__value { font-size: var(--font-size-2xl); }
+.ui-stat--tile .ui-stat__value { font-size: clamp(var(--font-size-xl), 5.5cqi, var(--font-size-2xl)); white-space: nowrap; }
 .ui-stat--tile > .ui-button { align-self: flex-start; }
-.ui-stat-row--tiles { gap: var(--space-3); }
+/* The figure keeps one line: it scales with the row, and a tile never narrows past its content, so
+   tiles wrap onto a second line before a figure would wrap or cross its border. */
+.ui-stat-row.ui-stat-row--tiles { gap: var(--space-3); container-type: inline-size; }
 
 /* ---------- pager ---------- */
 .ui-pager {

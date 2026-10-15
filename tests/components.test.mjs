@@ -894,7 +894,9 @@ test('the stat tile, the pager and the column composition are styled from tokens
   assert.match(tile, /padding:\s*var\(--space-/);
   assert.match(tile, /border[^;]*var\(--color-/);
   const figure = rulesFor('.ui-stat--tile .ui-stat__value').map(([, b]) => b).join('');
-  assert.match(figure, /font-size:\s*var\(--font-size-/);
+  assert.match(figure, /font-size:[^;]*var\(--font-size-[^;]*var\(--font-size-/, 'the figure scales between two token sizes');
+  assert.match(figure, /white-space:\s*nowrap/, 'the figure keeps one line');
+  assert.match(tile, /min-width:\s*max-content/, 'a tile never narrows past its figure');
   for (const m of (tile + figure + rulesFor('.ui-stat-row--tiles').map(([, b]) => b).join('')).matchAll(/(padding|gap|font-size|min-width)\s*:\s*([^;]+)/g)) {
     assert.doesNotMatch(m[2], /\d+(px|rem|em)\b/, `${m[1]}: ${m[2]} — tile sizes come from the tokens`);
   }
@@ -918,6 +920,7 @@ test('the gallery shows the stat tile, the pager in each state and the column co
   const tiles = section(GALLERY, '<!-- component: stat tile -->', '<!-- /component: stat tile -->');
   assert.match(tiles, /ui-stat__detail[\s\S]*Watch/, 'a tile with its date and Watch');
   assert.match(tiles, /&mdash;/, 'a best not yet set');
+  assert.match(tiles, /999\.999 s[\s\S]*99\.99[\s\S]*100\.0%/, 'the longest figures');
   const pagers = section(GALLERY, '<!-- component: pager -->', '<!-- /component: pager -->');
   for (const state of ['First page', 'Middle page', 'Last page', 'Long history']) assert.ok(pagers.includes(state), `pager: ${state}`);
   assert.match(pagers, /aria-current="page"/);

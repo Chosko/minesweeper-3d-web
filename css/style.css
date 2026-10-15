@@ -64,11 +64,14 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
 #records-replays-table td .ui-button { margin: var(--space-1) 0 var(--space-1) var(--space-2); }
 #records-export-note { flex-basis: 100%; }
 #records-averages-table :is(th, td) { white-space: nowrap; padding-inline: var(--space-1); }
-/* A Records table narrower than its columns (a phone, or a half-width column) stacks each row's
-   cells, each under its column's name (data-label, set by the views), the actions across, so the
-   screen never scrolls sideways. */
+:is(#records-games, #records-replays-table, #records-top-table) td[data-label="Time"] { white-space: nowrap; }
+/* A Records table narrower than a row of its figures, board code and actions on one line (about
+   1,100 px, wider than either Records panel gets) stacks each row's cells, each under its column's
+   name (data-label, set by the views), the board code and the actions each on a line of their own,
+   so a time, a code or a replay's actions never wrap but on a phone, and the screen never scrolls
+   sideways. */
 #records-history, #records-replays { container-type: inline-size; }
-@container (max-width: 539px) {
+@container (max-width: 1099px) {
   :is(#records-games, #records-replays-table, #records-top-table), :is(#records-games, #records-replays-table, #records-top-table) :is(tbody, caption) { display: block; }
   :is(#records-games, #records-replays-table, #records-top-table) thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   :is(#records-games, #records-replays-table, #records-top-table) tr {
@@ -78,7 +81,7 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
   :is(#records-games, #records-replays-table, #records-top-table) td { display: block; padding: 0; border: 0; text-align: left; }
   :is(#records-games, #records-replays-table, #records-top-table) td[data-label]::before { content: attr(data-label); display: block; font-size: var(--font-size-xs); color: var(--color-ink-muted); }
   :is(#records-games, #records-top-table) td:empty { display: none; }
-  #records-replays-table td:last-child { grid-column: 1 / -1; }
+  :is(#records-games, #records-replays-table, #records-top-table) td:is([data-label="Board code"], :last-child) { grid-column: 1 / -1; }
   #records-replays-table td .ui-button { margin: 0 var(--space-2) 0 0; }
 }
 #pause, #ready, #results { background: var(--color-backdrop-scrim-soft); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }

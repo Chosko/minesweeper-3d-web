@@ -97,10 +97,13 @@ Export (`js/records/export.js`)
   outcome choices, both charts in a `ui-columns--pair` (side by side at the
   kit breakpoint), the Recent games | Top 10 tabs and the Top 10's stat
   choice — and the replays panel; one column below the kit's 1024 px
-  breakpoint. Below the columns, Back and the two export actions. A table
-  narrower than its columns (a phone, a half-width column) stacks each
-  row's cells under their `data-label` (`css/style.css`, a container query
-  on the two panels).
+  breakpoint. Below the columns, Back and the two export actions. The
+  bests' figures keep one line (the kit's `ui-stat--tile`). A table
+  narrower than a row of its figures, board code and actions on one line —
+  every width the two panels take — stacks each row's cells under their
+  `data-label`, the board code and the actions each on a line of their own
+  (`css/style.css`, a container query on the two panels); a time never
+  wraps.
 - **History views and filters.** The choices are kit segmented choices
   whose options are in the markup. The period filters every history view,
   the outcome only the recent games; the bests, counters and overall row
