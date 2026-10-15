@@ -421,7 +421,7 @@ Context: none
 
 Done: 2026-10-15, commit `7b17ddc` (10 files, +131/-35). The Classic 2D hint strip only appears after a key or controller press, so a pure-touch player never sees its new touch wording; when it shows was left unchanged, as the task said.
 
-## [ ] 53. Implement task 201 — Pause card in two columns at 1024 px and wider, fitting a 1024 × 768 window
+## [x] 53. Implement task 201 — Pause card in two columns at 1024 px and wider, fitting a 1024 × 768 window
 
 Depends on: none
 
@@ -430,6 +430,8 @@ Context: none
 ```prompt
 /task-implement 201 --review
 ```
+
+Done: 2026-10-15, commit `9d0830a` (9 files, +260/-47). The column rule lives in the 1024 px block of css/components.css, and js/main.js needed a `cardBeside` helper so the restart confirmation keeps focus; the body expected css/style.css and js/ui.js changes, which were not needed.
 
 ## [ ] 54. Implement task 202 — Records Averages table stays inside its panel on a phone
 
