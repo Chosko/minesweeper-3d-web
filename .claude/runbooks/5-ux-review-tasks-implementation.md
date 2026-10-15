@@ -378,7 +378,7 @@ Context: none
 
 Done: 2026-10-15, commit `14ff74d` (6 files, +125/-10).
 
-## [ ] 50. Implement task 198 — Classic 2D no-guess switch back under the presets, with the D-pad walk to match
+## [x] 50. Implement task 198 — Classic 2D no-guess switch back under the presets, with the D-pad walk to match
 
 Depends on: none
 
@@ -387,6 +387,8 @@ Context: none
 ```prompt
 /task-implement 198 --review
 ```
+
+Done: 2026-10-15, commit `a6f3a56` (5 files, +25/-22). Moving the markup alone gave the 2D walk Expert → No-guess → Width; navigation code was not touched.
 
 ## [ ] 51. Implement task 199 — Larger stat labels and key caps on every pointer, 44 px hit areas still touch-only
 
