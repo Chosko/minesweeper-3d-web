@@ -60,7 +60,8 @@ In scope (m1-classic-2d):
   moves 8 px or more never acts: it pans a board that scrolls. The switch,
   a 44 px control beside Pause on a coarse pointer only, starts on Reveal
   and lives for the page, never a setting. Touch never reaches the mouse
-  input, and the 3D mode takes no touch play.
+  input; the 3D mode's touch play is its own and shares only the long-press
+  time, the 8 px threshold and the vibration length.
 - Keyboard and controller play: a visible cell cursor moved by arrow keys,
   d-pad or stick, with reveal, flag and chord on buttons, so Classic 2D is
   fully playable with a controller.
@@ -99,7 +100,8 @@ Built within the recorded technical direction — Canvas 2D for Classic 2D,
 independent of three.js, as one mode front-end over the shared engine (see
 [technical-direction.md](../technical-direction.md)). The 3D mode's
 front-end ([rendering.md](../../context/rendering.md),
-[input.md](../../context/input.md)) is left as it is; the controller reader
+[input.md](../../context/input.md),
+[input-camera.md](../../context/input-camera.md)) is left as it is; the controller reader
 and its pure helpers in [input.md](../../context/input.md) are reused, not
 copied.
 
