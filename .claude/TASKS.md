@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 197
+Last task number: 198
 
 ---
 
@@ -860,7 +860,7 @@ Preconditions: none
 
 ---
 
-## 195. Classic 2D no-guess switch back under the presets, with the D-pad walk to match
+## 198. Classic 2D no-guess switch back under the presets, with the D-pad walk to match
 
 Status: [MISSING]
 Target: claude
