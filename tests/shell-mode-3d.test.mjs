@@ -800,13 +800,18 @@ function watchPage() {
   for (const type of ['mousedown', 'mouseup']) window.addEventListener(type, () => { globalThis.__mouse += 1; }, true);
 }
 
-// Touches through the DevTools protocol, so fingers can be held and moved together.
+// Touches through the DevTools protocol, so fingers can be held and moved together. A tap and a
+// one-finger drag in the look are gestures the browser synthesizes itself, touch to lift: sent as
+// separate touch events, the time between them is the test's round trip, which on a loaded machine
+// passes the 400 ms long-press and turns a tap or a drag into a flag.
 function fingers(cdp) {
   const send = (type, points) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points.map(([x, y, id]) => ({ x, y, id })) });
   return {
     start: (points) => send('touchStart', points),
     move: (points) => send('touchMove', points),
     end: () => send('touchEnd', []),
+    tap: ([x, y]) => cdp.send('Input.synthesizeTapGesture', { x, y, duration: 50, tapCount: 1, gestureSourceType: 'touch' }),
+    drag: ([x, y], [dx, dy]) => cdp.send('Input.synthesizeScrollGesture', { x, y, xDistance: dx, yDistance: dy, speed: 2000, gestureSourceType: 'touch', preventFling: true }),
   };
 }
 
@@ -912,11 +917,9 @@ test('in a browser with touch on a tablet, 3D plays by touch: stick, look, tap, 
     assert.deepEqual(await camOf(), c1, 'lifted: it stops');
     assert.equal(await ms(() => getComputedStyle(document.getElementById('touch-stick')).display), 'none', 'and hides');
 
-    // The look drag turns the camera and acts on nothing. Its moves are sent together, so a slow
-    // software-rendered frame cannot hold them past the long-press.
+    // The look drag turns the camera and acts on nothing.
     await frames(4);
-    await Promise.all([f.start([[...LOOK, 2]]), f.move([[LOOK[0] + 20, LOOK[1], 2]]), f.move([[LOOK[0] + 60, LOOK[1] + 10, 2]])]);
-    await f.end();
+    await f.drag(LOOK, [60, 10]);
     assert.equal(await ms(() => globalThis.__vibrations), 0, 'a drag, not a long-press');
     const c2 = await camOf();
     assert.ok(Math.abs(c2.yaw - c1.yaw) > 0.1, 'the drag turned the view');
@@ -925,7 +928,7 @@ test('in a browser with touch on a tablet, 3D plays by touch: stick, look, tap, 
     // Tap reveals the crosshair cube, once, with no emulated mouse event (from the start pose again).
     await ms((c) => globalThis.__ms.moveTo(c.x, c.y, c.z), c0);
     assert.equal(await ms(() => { globalThis.__mouse = 0; return globalThis.__ms.aimAt(4); }), 4);
-    await page.touchscreen.tap(...LOOK);
+    await f.tap(LOOK);
     await page.waitForFunction(() => globalThis.__ms.game.pressed[4] === 1);
     assert.equal((await counts()).reveal.effective, 1, 'one reveal counted');
     assert.equal(await ms(() => globalThis.__mouse), 0, 'no mouse listener saw the tap');
@@ -980,9 +983,9 @@ test('in a browser with touch on a tablet, 3D plays by touch: stick, look, tap, 
     const dist = (c) => Math.hypot(c.x, c.y, c.z);
     const o0 = await camOf();
     await frames(4);
-    await Promise.all([f.start([[...LOOK, 8]]), f.move([[LOOK[0] + 80, LOOK[1], 8]])]);
-    await f.end();
+    await f.drag(LOOK, [80, 0]);
     const o1 = await camOf();
+    assert.equal(await ms(() => globalThis.__vibrations), 1, 'a drag, not a long-press');
     assert.ok(Math.abs(o1.yaw - o0.yaw) > 0.1 && Math.abs(dist(o1) - dist(o0)) < 1e-6, 'rotated about the centre');
     await f.start([[...STICK, 9]]);
     await f.move([[STICK[0], STICK[1] - 70, 9]]);
@@ -994,7 +997,7 @@ test('in a browser with touch on a tablet, 3D plays by touch: stick, look, tap, 
     // Revealing 1 wins.
     await ms((c) => globalThis.__ms.moveTo(c.x, c.y, c.z), c0);
     assert.equal(await ms(() => globalThis.__ms.aimAt(1)), 1);
-    await page.touchscreen.tap(...LOOK);
+    await f.tap(LOOK);
     await page.waitForFunction(() => globalThis.__ms.game.state === 'won');
     assert.equal(await ms(() => globalThis.__locks), 0, 'no pointer lock asked, start to finish');
     assert.deepEqual(errors, []);

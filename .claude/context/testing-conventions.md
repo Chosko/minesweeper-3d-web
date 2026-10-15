@@ -79,7 +79,8 @@ change trips. Where tests go and how the suite runs is
   auto-repeat never fires (`shell-pad-walk`, `shell-menu`); a touch tap or
   one-finger drag is a gesture the browser synthesizes
   (`Input.synthesizeTapGesture`, `Input.synthesizeScrollGesture`), so the
-  400 ms long-press never sees it (`classic2d-touch`).
+  400 ms long-press never sees it (`classic2d-touch`, the 3D look in
+  `shell-mode-3d`).
 - **A browser test that needs a game state plays a fixed board** — fixed
   mines or a fixed seed that reaches it (a loss, not a first-click win),
   pinned by a fast test beside it; a stubbed generation worker answers only
