@@ -445,7 +445,7 @@ Context: none
 
 Done: 2026-10-15, commit `5a432d5` (4 files, +93/-3). The Averages table has its own container query on `#records-averages`, set just under the panel's width at 1024 px, with a margin of a few pixels that depends on the font; a 1024 × 768 test guards it.
 
-## [ ] 55. Implement task 203 — Classic 2D hint strip from the game's start on a touch-only device
+## [x] 55. Implement task 203 — Classic 2D hint strip from the game's start on a touch-only device
 
 Depends on: none
 
@@ -454,6 +454,8 @@ Context: none
 ```prompt
 /task-implement 203 --review
 ```
+
+Done: 2026-10-15, commit `c1e3e9d` (6 files, +65/-17). On a board too big for the phone, the one-time scroll hint keeps priority and the touch strip replaces it once the player pans.
 
 ## Do not re-propose
 
