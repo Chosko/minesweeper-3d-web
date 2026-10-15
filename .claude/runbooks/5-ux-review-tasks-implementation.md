@@ -433,7 +433,7 @@ Context: none
 
 Done: 2026-10-15, commit `9d0830a` (9 files, +260/-47). The column rule lives in the 1024 px block of css/components.css, and js/main.js needed a `cardBeside` helper so the restart confirmation keeps focus; the body expected css/style.css and js/ui.js changes, which were not needed.
 
-## [ ] 54. Implement task 202 — Records Averages table stays inside its panel on a phone
+## [x] 54. Implement task 202 — Records Averages table stays inside its panel on a phone
 
 Depends on: none
 
@@ -442,6 +442,8 @@ Context: none
 ```prompt
 /task-implement 202 --review
 ```
+
+Done: 2026-10-15, commit `5a432d5` (4 files, +93/-3). The Averages table has its own container query on `#records-averages`, set just under the panel's width at 1024 px, with a margin of a few pixels that depends on the font; a 1024 × 768 test guards it.
 
 ## [ ] 55. Implement task 203 — Classic 2D hint strip from the game's start on a touch-only device
 
