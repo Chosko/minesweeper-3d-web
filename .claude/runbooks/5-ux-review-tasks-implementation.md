@@ -212,7 +212,7 @@ Context:
 
 Done: 2026-10-14, commit `2c25d21` (36 files, +1063/-109). The guided board is First box 1 (seed 75, generator version 1, mines 1, 2, 3, 40, start cell 26), whose marked start cell is an interior cube the player flies in to click.
 
-## [ ] 37. Check the result against the UX review
+## [x] 37. Check the result against the UX review
 
 Depends on: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 35, 36
 
@@ -276,6 +276,8 @@ the current branch.
 The closing report names the counts per status and the five most important
 findings.
 ```
+
+Done: 2026-10-15, commit `59ba9f4` (1 file, +190/-0). Bare `node --test` also runs the review scripts under docs/; the project's suite command is .claude/external/run-full-tests.sh.
 
 ## Do not re-propose
 
