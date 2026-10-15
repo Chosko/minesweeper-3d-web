@@ -174,13 +174,14 @@ export class UI {
   }
   /**
    * On a coarse-only device both modes play by touch: the ready card reads "Tap to play" and lists the
-   * touch gestures in place of the key list, the help surfaces of either mode list its touch rows and
+   * touch gestures in place of the key list, its rules name the toolbar's Ctrl button and its Back stands
+   * without the "Esc: Back" hint, the help surfaces of either mode list its touch rows and
    * the clipped Classic 2D board's hint names the touch gestures.
    */
   setTouch3D(on) {
     this._touch = !!on;
     const btn = $('ready-btn');
-    btn.classList.toggle('ready--touch', this._touch);
+    this.el.ready.classList.toggle('ready--touch', this._touch);
     btn.querySelector('.ready-title').textContent = this._touch ? 'Tap to play' : 'Click to play';
     this.el.ready.setAttribute('aria-label', this._touch ? 'Tap to play' : 'Click to play');
     this._renderBindings();

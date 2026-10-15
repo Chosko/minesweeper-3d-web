@@ -808,7 +808,7 @@ Preconditions: none
 
 ## 192. 3D ready and results cards: key hints that match the device and the screen
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, js/ui.js, js/results/, css/style.css, tests/shell-first-use.test.mjs, tests/results.test.mjs, tests/shell-mode-3d.test.mjs
 Preconditions: none

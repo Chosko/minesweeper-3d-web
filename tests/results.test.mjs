@@ -418,6 +418,18 @@ test('the view shows Look at the board for a 3D summary only, calls back on it, 
   assert.match(LOOK_REFUSED, /^[^\n]{10,120}$/, 'one line');
 });
 
+test('the Esc hint names what Esc does: Look at the board on a 3D card that offers it, Back otherwise', () => {
+  const root = fakeRoot();
+  const hint = root.querySelector('[data-esc-hint]');
+  const view = createResultsView({ root, onPlayAgain() {}, onRecords() {}, onMenu() {} });
+  view.show(resultsContent({ summary: summary({ board: { ...BOARD_3D } }), comparison }));
+  assert.equal(hint.textContent, 'Esc: Look at the board', 'a 3D results card');
+  view.show(resultsContent({ summary: summary(), comparison }));
+  assert.equal(hint.textContent, 'Esc: Back', 'a Classic 2D results card');
+  view.show({ ...resultsContent({ summary: summary({ board: { ...BOARD_3D } }), comparison }), look: false });
+  assert.equal(hint.textContent, 'Esc: Back', 'a 3D card whose board can no longer be looked at: Esc goes back to the menu');
+});
+
 test('Back on a 3D results card opens the look, Main menu still goes to the menu; Back on a Classic 2D card goes to the menu', () => {
   const main = read('js/main.js').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
   const row = main.match(/results: \{ defaultFocus: '#r-again'[^\n]*/)[0];

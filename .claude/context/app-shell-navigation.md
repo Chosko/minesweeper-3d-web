@@ -83,7 +83,9 @@ layers are [app-shell-ui.md](app-shell-ui.md) § Controller menus.
   into `backGame('pad')`). Pointer-locked Esc:
   [app-shell-3d.md](app-shell-3d.md) § Pointer lock; Esc on the pause card:
   [app-shell-pause.md](app-shell-pause.md). Each Back Esc triggers carries
-  an "Esc: Back" hint (`[data-esc-hint]`).
+  an "Esc: Back" hint (`[data-esc-hint]`), except the coarse-only ready
+  card's (`#ready.ready--touch` hides it); the 3D results card's hint:
+  [app-shell-results.md](app-shell-results.md) § Look at the board.
 - **Focus.** Each router entry declares `defaultFocus`; the `focus`
   hand-off (`focusScreen`) resolves it inside the screen's layer, falling
   back to its first focusable control. Defaults: menu the last mode played

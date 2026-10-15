@@ -74,7 +74,8 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
 - **Look at the board** (the `look` screen, `#look` its hint line). A 3D
   card's *Look at the board* (`openLook`) and Back on it (`resultsBack`;
   the browser's Back still goes to the menu) are offered while `lookable()`
-  — the 3D mode still holds the finished board, so not after Records. A
+  — the 3D mode still holds the finished board, so not after Records; the
+  card's Esc hint then reads "Esc: Look at the board", else "Esc: Back". A
   controller opens it lockless; a click or key asks for pointer lock
   (`lookPending`) and `onLockChange` opens it once granted, `onLockError`
   leaves the card with `LOOK_REFUSED` and focus on Look at the board (`refusedLook`), so Enter retries. In the look `Input.isActive` is

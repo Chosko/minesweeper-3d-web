@@ -52,7 +52,9 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
   (`used2D`) and at a dismissal; a scrolling 2D board (`clipped2D`) shows
   the one-time scroll hint instead until `FIRST_USE.once('scrollHint')`.
   The ready card shows "How 3D works" and the Learn 3D line while
-  `FIRST_USE.rules3D`, except on the guided board, during which no
+  `FIRST_USE.rules3D` (its hidden-cubes line names the Ctrl key, or the
+  touch toolbar's Ctrl button under `#ready.ready--touch`), except on the
+  guided board, during which no
   first-use strip, auto-hide toast or aim hint shows.
   `noteAutoHide` gives the one-time toast at the first auto-hide; the
   frame loop's `aimHint` shows the aim hint once the crosshair rests

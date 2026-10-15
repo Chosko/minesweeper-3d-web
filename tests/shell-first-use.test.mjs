@@ -313,6 +313,20 @@ test('the ready card holds the "How 3D works" block and the Space and Shift line
   assert.match(MAIN, /FIRST_USE\.rules3D/, 'the block shows until a 3D game is finished');
 });
 
+test('on a coarse-only device the "How 3D works" block names the toolbar\'s Ctrl button and the ready card drops its "Esc: Back" hint', () => {
+  const ready = INDEX.slice(INDEX.indexOf('<section id="ready"'), INDEX.indexOf('<!-- Controls modal'));
+  const keys = ready.match(/<span class="ready-rules-keys">([\s\S]*?)<\/span>\n/);
+  const touch = ready.match(/<span class="ready-rules-touch">([\s\S]*?)<\/span>\n/);
+  assert.ok(keys && touch, 'the hidden-cubes line in a keyboard and a touch form');
+  assert.equal(text(keys[1]), 'Empty and solved cubes hide themselves; hold Ctrl to show them.');
+  assert.equal(text(touch[1]), 'Empty and solved cubes hide themselves; tap Ctrl on the right to show them.');
+  const css = read('css/style.css');
+  assert.match(css, /\.ready-rules-touch, \.ready--touch \.ready-rules-keys \{ display: none; \}/, 'the keyboard line on a mouse, keyboard or controller');
+  assert.match(css, /\.ready--touch \.ready-rules-touch \{ display: inline; \}/, 'the touch line on touch');
+  assert.match(css, /#ready\.ready--touch \.esc-row \[data-esc-hint\] \{ display: none; \}/, 'no Esc hint beside the touch card\'s Back');
+  assert.match(UI, /this\.el\.ready\.classList\.toggle\('ready--touch', this\._touch\)/, 'the touch class sits on the whole ready overlay, Back row included');
+});
+
 test('the 3D hint strip replaces the "H controls" pill and its localStorage flag', () => {
   assert.doesNotMatch(INDEX, /id="hint-h"/);
   assert.doesNotMatch(UI + MAIN, /hintH|ms3d\.hintH\.done|LS_HINT_DONE/);
@@ -352,6 +366,9 @@ test('in a browser: the rules block until a finished 3D game, the one-time toast
     await start();
     assert.equal(await mode(), 'ready');
     assert.ok(await shown('ready-rules'), 'the "How 3D works" block on a first launch');
+    assert.match(await ms(() => document.getElementById('ready-rules').innerText), /hold Ctrl to show them/, 'with a mouse and keyboard the rules name the Ctrl key');
+    assert.doesNotMatch(await ms(() => document.getElementById('ready-rules').innerText), /tap Ctrl/);
+    assert.ok(await ms(() => document.querySelector('#ready [data-esc-hint]').getClientRects().length > 0), '"Esc: Back" beside the ready card\'s Back');
     await ms(() => globalThis.__ms.forcePlay());
     assert.ok(await shown('hint-strip'), 'the 3D strip from the start of play');
     assert.equal(await ms(() => document.getElementById('hint-strip-text').textContent), 'Left reveal · Right flag · Hold Space aim through · Hold Shift neighbours');

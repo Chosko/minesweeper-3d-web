@@ -842,8 +842,13 @@ test('in a browser with touch on a tablet, the 3D ready card is a start: Tap to 
         touch: shown(btn.querySelector('.ready-touch')), keys: shown(btn.querySelector('.ready-keys')),
         list: btn.querySelector('.ready-touch')?.textContent ?? '', back: shown(document.getElementById('ready-back')),
         notice: !!document.getElementById('ready-notice'),
+        rules: shown(document.getElementById('ready-rules')) ? document.getElementById('ready-rules').innerText : '',
+        escHint: shown(document.querySelector('#ready [data-esc-hint]')),
       };
     });
+    assert.match(card.rules, /tap Ctrl on the right to show them/, 'the rules name the toolbar\'s Ctrl button');
+    assert.doesNotMatch(card.rules, /hold Ctrl/, 'not the Ctrl key');
+    assert.equal(card.escHint, false, 'no "Esc: Back" beside the touch card\'s Back');
     assert.ok(card.btn, 'the ready card is a button again');
     assert.equal(card.title, 'Tap to play');
     assert.ok(card.touch && !card.keys, 'the touch gestures in place of the key list');
