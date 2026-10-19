@@ -1,0 +1,7 @@
+/* Broken on purpose (test-only): the switch is styled in every state but disabled. */
+:root[data-theme="broken-missing-state"] .ui-toggle__input { background: #ffffff; }
+:root[data-theme="broken-missing-state"] .ui-toggle__input:hover { background: #eeeeee; }
+:root[data-theme="broken-missing-state"] .ui-toggle__input:active { background: #dddddd; }
+:root[data-theme="broken-missing-state"] .ui-toggle__input:focus-visible,
+:root[data-theme="broken-missing-state"] body.pad-nav .ui-toggle__input:focus { outline: 3px solid #16204a; }
+:root[data-theme="broken-missing-state"] .ui-toggle__input:checked { background: #2a9488; }

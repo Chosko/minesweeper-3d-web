@@ -1,0 +1,4 @@
+/* Broken on purpose (test-only): a theme's own reduced-motion rule. */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="broken-reduced-motion"] .ui-spinner { animation-duration: 10s; }
+}

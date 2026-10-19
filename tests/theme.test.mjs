@@ -500,7 +500,7 @@ test('no light or dark rule remains anywhere, and the gallery has no light/dark 
   }
   const gallery = read('../dev/components.html');
   assert.doesNotMatch(gallery, /theme-switch|data-value="(light|dark)"|>(Light|Dark)</, 'no light/dark segmented switch');
-  assert.doesNotMatch(gallery, /searchParams|URLSearchParams|[?&]theme=/, 'no ?theme= handling');
+  assert.doesNotMatch(gallery, /[?&]theme=(light|dark)\b/, 'no ?theme=light or ?theme=dark');
 });
 
 // ---------- the theme stylesheet ----------

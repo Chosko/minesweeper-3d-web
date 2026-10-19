@@ -1,0 +1,5 @@
+/* Broken on purpose (test-only): the token block leaves out --color-ink. */
+:root[data-theme="broken-missing-token"] {
+  --color-surface: #ffffff;
+  --color-ink-muted: #5a6385;
+}

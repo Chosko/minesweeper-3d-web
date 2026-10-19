@@ -7,8 +7,10 @@
 // A component: { name, kind ('component' | 'composition'), className, selector (the class's own
 // selector), base (a class it shares with other components, or null), variants (modifier classes),
 // parts, slots }. A part: { name, selector, optional (a theme may hide it), interactive, states
-// (interactive parts only: state name → selector list) }. A slot: { name, selector }, an
-// element present in the markup and hidden unless a theme styles it into view; none exists yet.
+// (interactive parts only: state name → selector list), as (the component whose rules draw it, when
+// its markup carries that component's class) }. A slot: { name, selector }, an element present in
+// the markup, marked data-slot="<name>", and hidden unless a theme styles it into view; none exists
+// yet.
 //
 // States. On buttons and menu entries hover and focus are one `selected` state
 // (screen-components § Scope and non-goals), so those parts carry default, selected, pressed and
@@ -31,7 +33,7 @@ const control = (name, sel, extra = {}) => Object.freeze({
   states: Object.freeze({ default: sel, hover: `${sel}:hover`, pressed: `${sel}:active`, focused: focus(sel), disabled: `${sel}:disabled`, ...extra }),
 });
 
-const part = (name, selector, { optional = false } = {}) => Object.freeze({ name, selector, optional, interactive: false });
+const part = (name, selector, { optional = false, as = null } = {}) => Object.freeze({ name, selector, optional, interactive: false, as });
 
 const entry = (kind, className, { base = null, variants = [], parts = [], slots = [] } = {}) => Object.freeze({
   name: className,
@@ -106,7 +108,7 @@ export const KIT_CATALOGUE = Object.freeze([
   // The pager's buttons are secondary buttons and take that component's states.
   component('ui-pager', {
     parts: [
-      part('button', '.ui-pager__button'),
+      part('button', '.ui-pager__button', { as: 'ui-button--secondary' }),
       part('current', '.ui-pager__button[aria-current="page"]'),
     ],
   }),
@@ -121,7 +123,7 @@ export const KIT_CATALOGUE = Object.freeze([
   }),
   component('ui-spinner'),
   // The bar's stats are ui-stat readouts; its pause is a secondary button and takes its states.
-  component('ui-overlay-bar', { parts: [part('pause', '.ui-overlay-bar__pause')] }),
+  component('ui-overlay-bar', { parts: [part('pause', '.ui-overlay-bar__pause', { as: 'ui-button--secondary' })] }),
 
   composition('ui-screen', { variants: ['ui-screen--wide', 'ui-screen--columns'] }),
   composition('ui-row'),
@@ -134,4 +136,43 @@ export const KIT_CATALOGUE = Object.freeze([
     variants: ['ui-columns--two', 'ui-columns--pair'],
     parts: [part('column', '.ui-column'), part('span', '.ui-columns__span')],
   }),
+]);
+
+// The contrast contract's token roles: body text on each surface token at least 4.5:1, large text
+// and essential glyphs at least 3:1. The conformance tests measure every theme against them.
+export const CONTRAST_ROLES = Object.freeze({
+  surfaces: Object.freeze(['--color-surface', '--color-surface-raised', '--color-surface-sunk', '--color-ground']),
+  bodyText: Object.freeze(['--color-ink', '--color-ink-muted']),
+  largeText: Object.freeze(['--color-accent', '--color-figure', '--color-success', '--color-danger', '--color-warning', '--color-focus-ring']),
+});
+
+// The required token set: every token a theme stylesheet must declare, because something outside
+// the theme reads it — the base stylesheets (css/components.css, css/style.css), the screens'
+// scripts that draw from tokens (the Records chart, the 2D board view, tile skin and end effect, the
+// replay viewer, the scene palette) — plus the contrast roles above. The conformance tests and the
+// theme skill read this one list; tests/theme-conformance.test.mjs keeps it equal to those reads.
+export const REQUIRED_TOKENS = Object.freeze([
+  // type, read by the base stylesheets and the Records chart
+  '--font-family-sans',
+  '--font-size-xs', '--font-size-sm', '--font-size-md', '--font-size-lg', '--font-size-xl', '--font-size-2xl',
+  '--font-weight-regular', '--font-weight-bold', '--font-weight-heavy',
+  // surfaces, ink and status: the contrast roles and the Records chart
+  ...new Set([...CONTRAST_ROLES.surfaces, ...CONTRAST_ROLES.bodyText, ...CONTRAST_ROLES.largeText, '--color-border']),
+  // the 2D board view and its end effect
+  '--color-board-frame', '--color-board-shadow', '--color-board-scrollbar', '--color-tile-cursor',
+  // the 2D tile skin
+  '--color-tile-rim', '--color-tile-bevel-light', '--color-tile-bevel-dark', '--color-tile-closed', '--color-tile-flagged',
+  '--color-tile-face-shade', '--color-tile-gloss', '--color-tile-gloss-fade', '--color-tile-pressed',
+  '--color-tile-revealed-rim', '--color-tile-revealed-edge', '--color-tile-revealed', '--color-tile-revealed-shade',
+  '--color-tile-mine', '--color-tile-wrong-flag', '--color-tile-exploded', '--color-tile-exploded-edge',
+  '--color-tile-exploded-shade', '--color-tile-number-shadow', '--color-tile-mine-glyph', '--color-tile-mine-highlight',
+  '--color-tile-flag', '--color-tile-flag-shade', '--color-tile-flag-shadow', '--color-tile-wrong-flag-mark',
+  '--color-tile-wrong-flag-outline',
+  '--color-number-1', '--color-number-2', '--color-number-3', '--color-number-4',
+  '--color-number-5', '--color-number-6', '--color-number-7', '--color-number-8',
+  // the replay viewer's Show 3BV tints
+  '--color-replay-bbbv-1', '--color-replay-bbbv-2', '--color-replay-bbbv-3', '--color-replay-bbbv-4',
+  '--color-replay-bbbv-5', '--color-replay-bbbv-6', '--color-replay-bbbv-isolated',
+  // the 3D scene's sky
+  '--color-scene-zenith', '--color-scene-horizon', '--color-scene-nadir',
 ]);

@@ -550,6 +550,9 @@
   text-decoration-style: dashed;
 }
 
+/* ---------- the labels of switches, sliders and fields: their control's ink, locked while it is disabled ---------- */
+:root[data-theme="joyful-tiles"] :is(.ui-toggle__label, .ui-slider__label, .ui-field__label) { color: inherit; }
+
 /* ---------- the focus ring of switches, sliders, segmented choices, fields and links ---------- */
 :root[data-theme="joyful-tiles"] .ui-toggle__input:focus-visible,
 :root[data-theme="joyful-tiles"] body.pad-nav .ui-toggle__input:focus,

@@ -1,0 +1,4 @@
+/* Broken on purpose (test-only): keyframes named outside the theme's id, which another theme's
+   keyframes of the same name would replace. */
+@keyframes turn { to { transform: rotate(1turn); } }
+:root[data-theme="broken-unscoped-keyframes"] .ui-spinner { animation: turn 1s linear infinite; }

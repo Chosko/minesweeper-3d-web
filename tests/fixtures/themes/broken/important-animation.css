@@ -1,0 +1,4 @@
+/* Broken on purpose (test-only): an !important animation would beat the base stylesheet's
+   reduced-motion rule. */
+:root[data-theme="broken-important-animation"] .ui-spinner { animation: broken-important-animation-turn 1s linear infinite !important; }
+@keyframes broken-important-animation-turn { to { transform: rotate(1turn); } }

@@ -500,7 +500,7 @@ Feature: theme-system
 
 ## 161. Theme conformance tests and the component gallery per theme
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: tests/theme-conformance.test.mjs, tests/fixtures/themes/, js/ui/kit-catalogue.js, themes/joyful-tiles/theme.css, dev/components.html
 Preconditions: 157, 158, 159

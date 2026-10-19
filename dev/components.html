@@ -30,7 +30,8 @@
 </head>
 <body>
   <h1>Component kit</h1>
-  <p class="intro ui-text ui-text--muted">Every component of <code>css/components.css</code> in every state, drawn by the Joyful tiles theme. Hover, pressed and focused are previewed with <code>data-force</code>; on buttons, menu entries and board options hover and focus are one selected state.</p>
+  <p class="intro ui-text ui-text--muted">Every component of <code>css/components.css</code> in every state and every decoration slot, drawn by the theme picked below (or named by <code>?theme=&lt;id&gt;</code>; an unknown id shows the default). Hover, pressed and focused are previewed with <code>data-force</code>; on buttons, menu entries and board options hover and focus are one selected state.</p>
+  <div class="ui-segmented intro" id="g-theme" role="radiogroup" aria-label="Theme"></div>
 
   <div class="grid">
     <section class="ui-card" aria-labelledby="g-primary">
@@ -291,8 +292,44 @@
 
   <script type="module">
     import { initComponents, bindSelectOnHover } from '../js/ui/components.js';
+    import { THEMES } from '../js/themes/registry.js';
+    import { themeApplier } from '../js/themes/applier.js';
+
+    // The theme picker: one option per registered theme, in catalogue order.
+    const picker = document.getElementById('g-theme');
+    for (const theme of THEMES) {
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.className = 'ui-segmented__option';
+      option.setAttribute('role', 'radio');
+      option.setAttribute('aria-checked', 'false');
+      option.dataset.value = theme.id;
+      option.textContent = theme.name;
+      picker.append(option);
+    }
+    const showPicked = (id) => {
+      for (const option of picker.children) {
+        const on = option.dataset.value === id;
+        option.setAttribute('aria-checked', String(on));
+        option.tabIndex = on ? 0 : -1;
+      }
+      return id;
+    };
+
     initComponents(document);
     bindSelectOnHover(document);
+
+    // The theme named by ?theme=<id> (unknown or absent: the default), applied by the applier;
+    // globalThis.galleryReady resolves with the id shown once it is fully applied.
+    const applier = themeApplier();
+    const requested = new URL(location.href).searchParams.get('theme');
+    globalThis.galleryReady = applier.start().then(() => applier.setTheme(requested)).then(showPicked);
+    picker.addEventListener('change', (e) => {
+      const url = new URL(location.href);
+      url.searchParams.set('theme', e.detail.value);
+      history.replaceState(null, '', url);
+      globalThis.galleryReady = applier.setTheme(e.detail.value).then(showPicked, () => showPicked(applier.current()));
+    });
   </script>
 </body>
 </html>

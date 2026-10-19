@@ -1,0 +1,2 @@
+/* Broken on purpose (test-only): a decoration slot the kit catalogue does not declare. */
+:root[data-theme="broken-uncatalogued-slot"] .ui-card [data-slot="ornament"] { display: block; }

@@ -1,0 +1,3 @@
+/* Broken on purpose (test-only): a font fetched from a remote server. */
+@font-face { font-family: "Remote"; font-weight: 500; src: url("https://example.com/fonts/remote.woff2") format("woff2"); }
+:root[data-theme="broken-remote-font"] body { font-family: "Remote", sans-serif; }
