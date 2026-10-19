@@ -640,7 +640,7 @@ Feature: shared-screen-layout
 
 ## 174. Live figures model: 3BV progress, pace vs PB, 3BV/s, clicks and flags
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/shell/live-figures.js, tests/live-figures.test.mjs
 Preconditions: none

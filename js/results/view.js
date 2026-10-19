@@ -78,7 +78,7 @@ export const FIRST_BEST = 'Win this board to set a best';
 export const CHALLENGE_LABEL = 'Challenge · not eligible for bests';
 /** The bests panel's note for a challenge. */
 export const CHALLENGE_NOTE = 'Not eligible — a challenge sets no bests';
-const MINUS = '−';
+export const MINUS = '−';
 
 /** The note under the actions when the look's pointer lock was refused; a fresh press tries again. */
 export const LOOK_REFUSED = 'The mouse could not be captured — press Look at the board again to retry.';
