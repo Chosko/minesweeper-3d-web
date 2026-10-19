@@ -241,7 +241,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on named struck step 38; lacked the edge to task 212, its precondition; replaced by step 56.
 
-## [~] 56. Implement task 167 — 3D board choice screen in the shared layout
+## [x] 56. Implement task 167 — 3D board choice screen in the shared layout
 
 Depends on: 54, 55
 
@@ -252,6 +252,8 @@ Context:
 ```prompt
 /task-implement 167 --review
 ```
+
+Done: 2026-10-19, commit `d622b1d` (18 files, +907/-450). A 3D option click only chooses it and Play (`#bc-play`) starts it; `presetDetail(s)`, `CHOICE_ITEMS` and `densityText` are gone from `js/shell/returning.js`, and options show a static density.
 
 ## [x] 12. Implement task 168 — Pause card, generating and failed-board cards, placeholder and confirmations in the shared layout
 
@@ -279,7 +281,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against tasks 165, 167, 212, which edit the same files; replaced by step 57.
 
-## [ ] 57. Implement task 168 — Pause card, generating and failed-board cards, placeholder and confirmations in the shared layout
+## [~] 57. Implement task 168 — Pause card, generating and failed-board cards, placeholder and confirmations in the shared layout
 
 Depends on: 7, 56
 
@@ -568,6 +570,7 @@ Depends on: 6, 7, 8, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65
 
 Context:
 - 2026-10-19 (from step 54): `.claude/context/` files (e.g. `classic2d.md`, `app-shell-menu.md`) still describe the old Classic 2D board choice API; task 173 owns that update.
+- 2026-10-19 (from step 56): `.claude/context/mode3d.md` and `app-shell-menu.md` still describe the old 3D board choice (removed ids `c-start`, `bc-code-play`; `presetDetail(s)`); task 173 owns that update.
 
 ```prompt
 /task-implement 173 --review
