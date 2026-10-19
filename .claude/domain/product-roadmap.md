@@ -130,9 +130,16 @@ Covers:
   colour-blind-safe number set.
 - product-design.md § Main menu and game shell — the Settings theme list in
   place of the light and dark choice, and a stored light or dark choice
-  carried over to *Joyful tiles*. No new menu entries, no theme locks.
+  carried over to *Joyful tiles*; the Hexagon, Triangle and Surface entries
+  enabled, each opening the *Coming soon* page; Leaderboards moved from the
+  menu to a Records tab that says they are coming soon; Play again and the
+  session strip removed, the menu opening on the last mode played; the Daily
+  screen listing every mode; the board code as an option of each board
+  choice, and a Random fill for the Classic 2D custom size. No new playable
+  mode, no theme locks.
 - product-design.md § 3D mode — the cubes, numbers and sky follow the
-  chosen theme. No change to its controls, pick rules or rules.
+  chosen theme; the First box presets removed, Learn 3D's win offering Cube
+  Intro. No change to its controls, pick rules or rules.
 
 ---
 
@@ -160,11 +167,11 @@ Covers:
 - product-design.md § Steam features — free-play leaderboards with attached
   replays, cloud saves, and achievements for the 2D and 3D modes. Windows
   only. No campaign or daily leaderboards, no campaign achievements.
-- product-design.md § Main menu and game shell — the Leaderboards entry;
-  the Quit entry, on the desktop build only; and, in Settings, rebinding
-  keys, mouse buttons and controller buttons for Classic 2D and 3D. No Quit
-  entry on the web preview, no Start/Continue, Campaign, Daily or Surface
-  entries.
+- product-design.md § Main menu and game shell — the leaderboards in the
+  Records screen's Leaderboards tab; the Quit entry working on the desktop
+  build only; and, in Settings, rebinding keys, mouse buttons and controller
+  buttons for Classic 2D and 3D. Quit stays locked on the web preview; no
+  Start/Continue or Campaign entries.
 - product-design.md § Results and records — the Steam global and friends
   rank on the results screen.
 

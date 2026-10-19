@@ -1,7 +1,7 @@
 # Runbook: themes-tasks-implementation
 
 Created: 2026-10-13 · Source: /runbook-create interview (runbook themes-planning step 8) · Model: opus
-Last step number: 37
+Last step number: 51
 Sequencing: Runs after the ux-review-tasks-implementation runbook is done and before the remaining steps of m3-tasks-implementation; steps follow PLAN.md's m2b-themes feature order, then task id.
 
 ## [ ] 1. Implement task 157 — Theme registry, kit catalogue and the Joyful tiles theme folder
@@ -92,7 +92,8 @@ Context: none
 
 Depends on: 7, 8
 
-Context: none
+Context:
+- 2026-10-19 (amend): Task 165 is rebuilt from the J-Menu artboards: nine entries (Hexagon, Triangle and Surface enabled, opening the Coming soon page), no Leaderboards entry, no Play again or session strip, the menu opening on the last mode played.
 
 ```prompt
 /task-implement 165 --review
@@ -102,13 +103,34 @@ Context: none
 
 Depends on: 7
 
-Context: none
+Context:
+- 2026-10-19 (amend): Task 166 is retitled "Classic 2D board choice screen with its bests, Insert Board Code and Custom Random" and rebuilt from the J-C2D artboards: no records panel; the board code is a board option played with Play; Custom gains Random.
 
 ```prompt
 /task-implement 166 --review
 ```
 
-## [ ] 11. Implement task 167 — 3D board choice screen in the shared layout
+## [ ] 38. Implement task 207 — 3D presets without First box 1 and 2; Learn 3D's win offers Cube Intro
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 207 --review
+```
+
+## [ ] 39. Implement task 208 — Update documentation for feature `3d-play-flow`
+
+Depends on: 38
+
+Context: none
+
+```prompt
+/task-implement 208 --review
+```
+
+## [x] 11. Implement task 167 — 3D board choice screen in the shared layout
 
 Depends on: 10
 
@@ -120,7 +142,19 @@ Context: none
 /task-implement 167 --review
 ```
 
-## [ ] 12. Implement task 168 — Pause card, generating and failed-board cards, placeholder and confirmations in the shared layout
+Done: struck — task 167 now also waits on task 207 (First box presets removed) and needs no human, its artboards being drawn; replaced by step 40.
+
+## [ ] 40. Implement task 167 — 3D board choice screen in the shared layout
+
+Depends on: 10, 38
+
+Context: none
+
+```prompt
+/task-implement 167 --review
+```
+
+## [x] 12. Implement task 168 — Pause card, generating and failed-board cards, placeholder and confirmations in the shared layout
 
 Depends on: 7
 
@@ -132,7 +166,19 @@ Context: none
 /task-implement 168 --review
 ```
 
-## [ ] 13. Implement task 169 — Results screen in the shared layout
+Done: struck — task 168 needs no human, its artboards being drawn; replaced by step 41.
+
+## [ ] 41. Implement task 168 — Pause card, generating and failed-board cards, placeholder and confirmations in the shared layout
+
+Depends on: 7
+
+Context: none
+
+```prompt
+/task-implement 168 --review
+```
+
+## [x] 13. Implement task 169 — Results screen in the shared layout
 
 Depends on: 7
 
@@ -144,7 +190,19 @@ Context: none
 /task-implement 169 --review
 ```
 
-## [ ] 14. Implement task 170 — Records screen in the shared layout
+Done: struck — task 169 needs no human, its artboards being drawn; replaced by step 42.
+
+## [ ] 42. Implement task 169 — Results screen redesigned in the shared layout
+
+Depends on: 7
+
+Context: none
+
+```prompt
+/task-implement 169 --review
+```
+
+## [x] 14. Implement task 170 — Records screen in the shared layout
 
 Depends on: 7
 
@@ -156,7 +214,19 @@ Context: none
 /task-implement 170 --review
 ```
 
-## [ ] 15. Implement task 171 — Settings page in the shared layout
+Done: struck — task 170 now also waits on task 207 and needs no human, its artboards being drawn; replaced by step 43.
+
+## [ ] 43. Implement task 170 — Records screen in the shared layout, with its Leaderboards tab
+
+Depends on: 7, 38
+
+Context: none
+
+```prompt
+/task-implement 170 --review
+```
+
+## [x] 15. Implement task 171 — Settings page in the shared layout
 
 Depends on: 4, 7
 
@@ -168,11 +238,35 @@ Context: none
 /task-implement 171 --review
 ```
 
-## [ ] 16. Implement task 172 — Replay viewer in the shared layout
+Done: struck — task 171 needs no human, its artboards being drawn; replaced by step 44.
+
+## [ ] 44. Implement task 171 — Settings page in the shared layout
+
+Depends on: 4, 7
+
+Context: none
+
+```prompt
+/task-implement 171 --review
+```
+
+## [x] 16. Implement task 172 — Replay viewer in the shared layout
 
 Depends on: 7
 
 Needs: agent+human
+
+Context: none
+
+```prompt
+/task-implement 172 --review
+```
+
+Done: struck — task 172 needs no human, its artboards being drawn; replaced by step 45.
+
+## [ ] 45. Implement task 172 — Replay viewer in the shared layout
+
+Depends on: 7
 
 Context: none
 
@@ -190,6 +284,36 @@ Context: none
 /task-implement 206 --review
 ```
 
+## [ ] 46. Implement task 209 — Daily screen in the board-choice layout, listing every mode
+
+Depends on: 7, 8, 10, 36
+
+Context: none
+
+```prompt
+/task-implement 209 --review
+```
+
+## [ ] 47. Implement task 210 — 3D ready card, lock states and Learn 3D cards in the shared layout
+
+Depends on: 7, 38
+
+Context: none
+
+```prompt
+/task-implement 210 --review
+```
+
+## [ ] 48. Implement task 211 — Toasts, fatal card, no-JavaScript notice and 404 page in the shared layout
+
+Depends on: 7
+
+Context: none
+
+```prompt
+/task-implement 211 --review
+```
+
 ## [x] 17. Implement task 173 — Update documentation for feature `shared-screen-layout`
 
 Depends on: 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
@@ -202,9 +326,21 @@ Context: none
 
 Done: struck — task 173 waits on task 206, and its step lacked the edge to step 36; replaced by step 37.
 
-## [ ] 37. Implement task 173 — Update documentation for feature `shared-screen-layout`
+## [x] 37. Implement task 173 — Update documentation for feature `shared-screen-layout`
 
 Depends on: 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 36
+
+Context: none
+
+```prompt
+/task-implement 173 --review
+```
+
+Done: struck — task 173 now also waits on tasks 209, 210 and 211; replaced by step 49.
+
+## [ ] 49. Implement task 173 — Update documentation for feature `shared-screen-layout`
+
+Depends on: 7, 8, 9, 10, 36, 40, 41, 42, 43, 44, 45, 46, 47, 48
 
 Context: none
 
@@ -242,7 +378,7 @@ Context: none
 /task-implement 176 --review
 ```
 
-## [ ] 21. Implement task 177 — 3D game overlay in the in-game layout
+## [x] 21. Implement task 177 — 3D game overlay in the in-game layout
 
 Depends on: 20
 
@@ -254,11 +390,35 @@ Context: none
 /task-implement 177 --review
 ```
 
-## [ ] 22. Implement task 178 — Live figures in the replay viewer
+Done: struck — task 177 needs no human, its artboards being drawn; replaced by step 50.
+
+## [ ] 50. Implement task 177 — 3D game overlay in the in-game layout
+
+Depends on: 20
+
+Context: none
+
+```prompt
+/task-implement 177 --review
+```
+
+## [x] 22. Implement task 178 — Live figures in the replay viewer
 
 Depends on: 16, 18, 19
 
 Needs: agent+human
+
+Context: none
+
+```prompt
+/task-implement 178 --review
+```
+
+Done: struck — task 178 needs no human, its artboards being drawn, and waits on the re-added step 45; replaced by step 51.
+
+## [ ] 51. Implement task 178 — Live figures in the replay viewer
+
+Depends on: 16, 18, 19, 45
 
 Context: none
 
@@ -282,6 +442,7 @@ Depends on: none
 
 Context:
 - 2026-10-15 (amend): Task 180 is retitled "Tile recipe drawing styles: bevel and flat, with depth" — *Joyful tiles* uses a flat style, not chunky raised.
+- 2026-10-19 (amend): Supersedes the fact above: task 180 is retitled "Tile recipe drawing styles: flat and bevel, with corner radius and depth" — flat 2D tiles with a corner radius that scales with the tile, bevel 3D cubes with four lit sides (J-BoardSheet, J-3DSheet).
 
 ```prompt
 /task-implement 180 --review

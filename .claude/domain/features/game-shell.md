@@ -21,27 +21,36 @@ mode's front-end.
 
 In scope (m1-classic-2d):
 
-- The main menu with five entries: Classic 2D, 3D, Daily, Records and
-  Settings, in the order `shared-screen-layout` § Scope and non-goals,
-  *Main menu*, gives them. Classic 2D opens its board choice; 3D opens the existing 3D
-  presets and custom board; Daily opens the Daily screen; Records opens the
-  records screen; Settings opens the Settings page. In a browser without
+- The main menu's entries: the modes Classic 2D, Hexagon, Triangle,
+  Surface and 3D, then Daily, Records and Settings, then Quit, in the order
+  and arrangement `shared-screen-layout` § Scope and non-goals, *Main
+  menu*, gives them. Classic 2D opens its board choice; 3D opens the 3D
+  board choice; Hexagon, Triangle and Surface each open the *Coming soon*
+  page (the placeholder screen, Back returning to the menu) until their
+  mode is built; Daily opens the Daily screen; Records opens the records
+  screen; Settings opens the Settings page; Quit is `leaderboards-menu-entry`'s.
+  In a browser without
   WebGL 2 the 3D entry is disabled, its line *Needs WebGL 2 — not available
   in this browser* under its label, no route
-  starts a 3D game and the Daily screen's cube row is disabled with that
-  line; Classic 2D, Daily, Records and Settings run as everywhere else.
+  starts a 3D game and the Daily screen's 3D row is disabled with that
+  line; every other entry runs as everywhere else.
 - The daily boards and challenges. Each day has two boards, Expert
   no-guess and the cube 8 × 8 × 8 · 40 no-guess, the same for everyone on
   that local calendar date; when the main menu shows, today's boards whose
   counted attempt is unused are pre-generated in the background through
   each mode's warm client, and the menu never waits for them. The Daily
-  screen — built from the component kit, with the router's focus and Back,
-  by mouse, keyboard and controller — has one row per board: today's date,
-  the row's state (*Not played*, *Won* with its time in the format
-  `shared-screen-layout` gives, *Lost*), the days in a row,
+  screen — with the router's focus and Back, by mouse, keyboard and
+  controller — shows today's date and lists every mode in menu order:
+  Classic 2D and 3D with their board and their state (*Not played*, *Won*
+  with its time in the format `shared-screen-layout` gives, *Lost*), and
+  Hexagon, Triangle and Surface as *Coming soon*, which cannot be played.
+  For the selected mode it shows the days in a row (current and longest),
   today's code with Copy and Copy link, Play while today's counted attempt
-  is unused, and Watch replay once played when the library kept the replay.
-  A board code typed in a board choice, or a `#board=<code>` link, starts a
+  is unused, and Watch replay once won when the library kept the replay;
+  Play is disabled once the attempt is used, on a coming-soon mode and on
+  the 3D row without WebGL 2. Its arrangement is `shared-screen-layout`'s.
+  A board code entered in a board choice's *Insert Board Code* option, or a
+  `#board=<code>` link, starts a
   challenge in its mode; today's daily code opens the Daily screen instead,
   so the counted-attempt rules hold. A daily and a challenge open closed
   with their start cell marked and forced: a first reveal elsewhere changes
@@ -83,11 +92,12 @@ In scope (m1-classic-2d):
 Non-goals:
 
 - Start / Continue and the Campaign entry — deferred to `m4-campaigns`.
-- The Leaderboards entry and Quit — deferred to `m3-on-steam`
-  (`leaderboards-menu-entry`).
+- The leaderboards in the Records screen's Leaderboards tab, and Quit's
+  action — deferred to `m3-on-steam` (`leaderboards-menu-entry`).
 - The demo's menu entries (*Buy full game*, visible locks) — deferred to
   `m5-core-complete`.
-- The Surface entry and grid choice in Classic 2D — deferred to `m6-launch`.
+- The Hexagon, Triangle and Surface modes and their daily boards — deferred
+  to `m6-launch`; until then their entries and Daily rows say *Coming soon*.
 - The records screen's contents and the results screen — Results and
   records (m1-classic-2d). The shell only routes to them.
 - The layout and look of any screen — `shared-screen-layout`,
@@ -117,18 +127,10 @@ it generalises.
   disabled with its reason, its "Last played" mark still showing and the
   menu's default focus falling to the first enabled entry, and no
   full-page "Cannot start" card shows — that card stays only for game files
-  that fail to load. Once a board was played, the menu also speaks to the
-  returning player about the last board played: a one-line session strip
-  under the entries names it with its best time, the games on it that ended
-  today and its current streak ("Expert · best 13.343 s · today 7 games ·
-  streak 2"), and the title row carries *Play again: <board>*, which starts
-  that board in its mode in one step, without a route through its board
-  choice — Classic 2D opens on the closed board, a 3D board enters play as
-  the results screen's *Play again* enters it. Every figure comes from the
-  records; starting this way saves nothing new, and the menu's default focus
-  stays the last mode played. Without WebGL 2 a 3D last board keeps its
-  strip and shows no *Play again*, the 3D entry already giving the
-  reason.
+  that fail to load. The menu opens with the last mode played selected,
+  its entry carrying the Last played mark, and that mode's board choice
+  opens on its last board selected, so Enter and then *Play* replay it; with
+  no mode played yet, the first entry is selected.
 - **Mode host.** A registry of mode front-ends behind one contract (see
   Interfaces). The shell knows modes only through it. Classic 2D implements
   it directly; the 3D mode implements it through an adapter that wraps the
@@ -174,7 +176,7 @@ it generalises.
   can resume it. Each mode keeps its own last board choice; the shell keeps
   only which mode it was. Together they name the last board played — the
   last mode's last board choice, once it was played — which the menu's
-  session strip describes and its *Play again* starts. The Learn 3D guided
+  default selection and its board choice's selection follow. The Learn 3D guided
   board, outside the 3D board choice, is never the last mode or board
   played.
 - **Source of truth** — the active mode owns its game and timer; the shell
@@ -231,8 +233,8 @@ it generalises.
 - **Game finished** — the shell hands the mode's summary to `results-screen`
   and routes to it; *Play again* comes back as `start` with the same choice.
   The Learn 3D guided game has no summary: its end goes to the Learn 3D end
-  card over the stopped scene, not the results screen — *Play First box 1*
-  or *Try again*, and *Back to board choice*.
+  card over the stopped scene, not the results screen, with the actions
+  `3d-play-flow` gives it.
 - **Game abandoned** — the shell records the mode's summary with
   `personal-records` and goes where the player asked, showing no results
   screen.

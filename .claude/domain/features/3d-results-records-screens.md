@@ -28,13 +28,10 @@ In scope (m2-3d-joins):
   results screen; any click, key or controller button during the effect
   shows the results screen at once and does nothing else.
 - The results screen for won and lost 3D games: the same contents and
-  actions as Classic 2D's (`results-screen`) — outcome, board label, the
-  new-best banner, time, 3BV (and 3BV solved on a loss), 3BV/s, efficiency,
-  the second row of clicks and, on a win, the board rank, the next-target
-  line, the board's win rate and longest streak each with its completed
-  games' figure beside it, the three-best comparison (on a loss greyed and not eligible, with
-  the pace), *Play again*, *Watch replay*, *Watch best*, *Records* and
-  *Main menu*, plus *Look at the board*.
+  actions as Classic 2D's (`results-screen`), plus *Look at the board*.
+  Over the scene the header carries *Look at the board* with its `Esc`
+  hint, the rank moves under the title, and *Main menu* drops its `Esc`
+  hint.
 - The results screen shown over the dimmed 3D scene; the end banner is
   removed.
 - *Look at the board*: a read-only free flight over the frozen finished
@@ -48,7 +45,7 @@ Non-goals:
 - Changing the look of the end effects or of any other part of the 3D
   scene — kept, per the m2 slice. The end effects' pacing follows the end
   delay (§ Architecture).
-- The 3D board choice's records panel — `shared-screen-layout`.
+- The 3D board choice's bests — `shared-screen-layout`.
 - A combined 2D and 3D view in Records — `3d-game-records` keeps the modes
   apart.
 - The replay library view and the replay viewer — `replay-library` and

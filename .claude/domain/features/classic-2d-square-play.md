@@ -26,12 +26,15 @@ In scope (m1-classic-2d):
   least one mine and at most the limit Board setup states), plus the
   no-guess switch, which says it keeps separate records. Each standard size
   keeps its size line with its mine density and the Last played mark; the
-  board's bests show in the screen's records panel (`shared-screen-layout`
-  § Scope and non-goals, *Board choice screens*). A board
-  code field with *Play this board* starts a Classic 2D code as a
-  challenge; a 3D code is refused with a hint naming the 3D board choice,
-  and a refused code shows its reason live, as the custom fields'
-  validation does, with the button disabled (`game-shell`).
+  board's three bests show beside the options (`shared-screen-layout`
+  § Scope and non-goals, *Board choice screens*). Custom's size form has a
+  *Random* fill, as the 3D custom form does: it fills width, height and
+  mines with a valid random board. *Insert Board Code* is the last board
+  option: its code field starts a Classic 2D code as a challenge with the
+  screen's *Play*, which is disabled while the field is empty or its code
+  is refused — the reason shown live, as the custom fields' validation
+  does, and a 3D code refused with a hint naming the 3D board choice
+  (`game-shell`). *Play* is likewise disabled on a refused custom size.
 - The start-of-game flow: a closed board, the first click, board
   generation around it, the timer starting once the board is ready. The
   "generating" card's *Cancel* goes back to the closed board, recording

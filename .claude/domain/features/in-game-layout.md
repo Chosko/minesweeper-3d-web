@@ -45,9 +45,17 @@ In scope (m2b-themes):
 - **Controls reminder** — the side panel's foot lists the board's main
   bindings for the active input device, from the bindings source.
 - **3D game** — the 3D overlay keeps the full-window scene and takes the
-  same parts: a head strip with title and Pause, the counter readouts and
-  Restart, and the side panel's figures, placed over the scene on their
-  own themed surfaces.
+  same parts, over the scene on their own themed surfaces: the flags
+  counter, Restart and the timer at the top centre; on the right, the
+  figures panel headed by a bar with the title and Pause, the live figures
+  below, the panel — and the help panel beside it — centred vertically. The
+  title drops the difficulty when the full name does not fit on one line
+  ("3D" for "3D · Cube Intermediate"), keeping the full name as its
+  tooltip. On a phone in landscape the title is a pill at the top left, the
+  counters and Restart at the top centre and Pause an icon button at the
+  top right; in portrait the title and Pause bar sits on top with the
+  counters below; both keep the full name, and the touch hint strip wraps
+  onto a second line rather than overflowing.
 - **Replay viewer** — shows the same live figures for the replayed game
   beside its playback controls, from the replay's frames.
 
@@ -92,10 +100,16 @@ board view in [classic2d-board-view.md](../../context/classic2d-board-view.md).
 - **Bests read once.** The board's best time and best 3BV/s are read from
   the records store when the game starts and held for the game; a best set
   by this game shows on the results screen, not mid-game.
-- **3D overlay.** The 3D game's head strip, counters and figures panel sit
-  over the scene with their own themed surfaces so they stay readable over
-  any sky; the crosshair readout, the HUD key strip and the first-use hints
-  keep their places.
+- **3D overlay.** The 3D game's counters and figures panel with its title
+  bar sit over the scene with their own themed surfaces so they stay
+  readable over any sky; the crosshair readout, the HUD key strip and the
+  first-use hints keep their places. Whether the title fits is measured
+  against the panel's width, so the shortening follows the window.
+- **Design source.** Every in-game screen is drawn on the canvas — the
+  Classic 2D window, the 3D game and the replay viewer at every supported
+  window size with their states — and is built from those artboards, as
+  [shared-screen-layout.md](./shared-screen-layout.md) § Architecture,
+  **Design status per screen**, says.
 
 ## Data and state
 
@@ -133,10 +147,3 @@ board view in [classic2d-board-view.md](../../context/classic2d-board-view.md).
 - `replay-playback` — the viewer that shows the replayed figures.
 - `game-shell` — Pause and Restart.
 
-## Open questions
-
-- The 3D game window and the replay viewer are not drawn yet; the owner is
-  designing them. The 3D overlay's parts above are the parts its artboard
-  arranges, and its task and the replay viewer's wait on their artboards
-  as [shared-screen-layout.md](./shared-screen-layout.md) § Architecture,
-  **Design status per screen**, says.

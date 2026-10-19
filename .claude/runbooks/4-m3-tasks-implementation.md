@@ -306,6 +306,7 @@ Depends on: 3, 21
 
 Context:
 - 2026-10-13 (amend): task 107 was re-planned so Leaderboards and Quit are mode entries of the redesigned main menu; it now waits on task 165 (themes-tasks-implementation step 9).
+- 2026-10-19 (amend): Supersedes the fact above: task 107 is "Leaderboards tab in Records and Quit in the main menu" — Leaderboards is the Records screen's fourth tab, not a menu entry; the task also waits on task 170 (themes-tasks-implementation step 43) and is `claude+human`: the owner first decides how the tab shows the leaderboards.
 
 ```prompt
 /task-implement 107 --review

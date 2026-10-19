@@ -1,9 +1,9 @@
 # Results screen
 
 The end-of-game screen: whether the game was won or lost, its time, 3BV,
-3BV/s, efficiency and clicks, its rank on the board, the comparison with the
-board's three personal bests, the next target, and *Play again* one step
-away.
+3BV/s, efficiency and clicks, its rank on the board, each figure's
+comparison with the board's personal best, the next target, and *Play
+again* one step away.
 
 ## Purpose
 
@@ -18,52 +18,53 @@ comes from `screen-components` and its numbers from `game-summary` and
 
 In scope (m1-classic-2d):
 
-- The screen shown after every won or lost Classic 2D game, reading top to
-  bottom: outcome and board label; a banner naming the bests the game set
-  ("New best time and 3BV/s!"); the game's own stats — time, 3BV (and 3BV
-  solved on a loss), 3BV/s and efficiency — as the card's largest figures,
-  each one that set a best highlighted; a second row with the clicks
-  ("Clicks 183 (L 183 · R 0 · D 0 · wasted 0)": the counted clicks, then the
-  reveal, flag and chord clicks and the wasted total) and, on a win, the
-  game's rank by time among the board's won games ("#3 of 12 on this
-  board"); the next-target line; the board's standing counting this game —
-  its win rate and longest streak, each with its completed games' figure
-  beside it ("Win rate 67% (completed games 80%) · Longest streak 4
-  (completed games 5)", `personal-records`); then the bests panel. The
-  card shows no IOE. Under the second row, the game's board code with Copy
-  and Copy link, for won and lost games alike (a daily game's in its daily
-  form, none for a game with no seed); Copy link writes
-  `<origin><path>#board=<code>`, and a refused clipboard selects the code
-  with a toast saying to press Ctrl+C.
-- A challenge — a game started from a board code — is labelled
-  "Challenge · not eligible for bests" under its board label, in the style
-  of "Paused · not eligible"; it sets no best, its bests panel is greyed as
-  a loss's, it has no next-target line, and its rank figure shows a dash
-  ("#— of — on this board"): the board's ranking, here and in the Top 10,
-  leaves challenges out, in N as well. *Play again* after a challenge or a
+- The screen shown after every won or lost Classic 2D game, one column
+  reading top to bottom: a header with the outcome ("You won!", or "Game
+  over"), the board label and, on a win, the game's rank by time among the
+  board's won games as a chip ("#3 of 12 wins on this board"); four figure
+  tiles, each carrying its own comparison; the details; the board code; the
+  action bar. No separate new-best banner and no separate bests panel. The
+  card shows no IOE.
+- The figure tiles: on a win time, 3BV/s, efficiency and 3BV (the board's
+  difficulty); on a loss time, 3BV solved out of the board's 3BV with a
+  progress bar, 3BV/s and efficiency. Under each comparable figure, its
+  comparison with the matching best — fastest time, best 3BV/s, best
+  efficiency — as the standing best and the difference; when the game set
+  that best, the line gives the best it replaced and the tile carries a
+  "New best" badge. On a win each difference is coloured (better in the
+  success colour, worse in the danger colour, "= best" in the muted ink;
+  the sign and the "New best" text stay, so colour is never the only
+  signal). On a loss no tile is eligible: the time tile says losses set no
+  bests, and the 3BV/s and efficiency tiles show the standing best without
+  a difference.
+- The details, three labelled rows: *Clicks* — the counted clicks, then the
+  reveal, flag and chord clicks and the wasted total; *Next target* after a
+  win, *Streak* after a loss; *Win rate* — the board's standing counting
+  this game, its win rate with its completed games' figure, and its longest
+  streak (`personal-records`).
+- The next-target row: after a win the board's best time as it stands after
+  this game, to beat for a new best, and the board's current streak. The
+  streak row after a loss that ended a streak: the streak ended and the
+  board's longest; after any other loss, the board's best time to beat, or
+  that winning sets a best when the board has none.
+- The game's board code with Copy and Copy link, for won and lost games
+  alike (a daily game's in its daily form, none for a game with no seed);
+  Copy link writes `<origin><path>#board=<code>`, and a refused clipboard
+  selects the code with a toast saying to press Ctrl+C.
+- A challenge — a game started from a board code — shows the chip
+  "Challenge · not eligible for bests" in place of the rank; it sets no
+  best and no tile carries a badge, and its details row says it is kept in
+  the history and sets no best and no rank: the board's ranking, here and
+  in the Top 10, leaves challenges out. *Play again* after a challenge or a
   daily starts a fresh free-play board of the same size, mines and
   no-guess setting, never the same seed.
-- The comparison with each of the three bests — fastest time, best 3BV/s,
-  best efficiency — showing the standing best and the difference. On a win
-  each difference is coloured (better in the success colour, worse in the
-  danger colour, "= best" in the muted ink; the sign and the "New best"
-  text stay, so colour is never the only signal) and each new best is
-  marked. On a loss the panel is greyed and labelled "Not eligible — only
-  won games set bests": each standing best with the game's difference from
-  it, never "New best", and for time the pace — the time at this game's
-  rate, elapsed × 3BV ÷ 3BV solved ("Pace 47.912 s") — with its difference
-  from the best time.
-- The next-target line: after a win "Beat 48.213 s for a new best · streak
-  3" (the board's best time as it stands after this game and the board's
-  current streak); after a loss that ended a streak "Streak ended at 3 ·
-  best 7" (the streak ended and the board's longest); after any other loss
-  "Beat 48.213 s for a new best", or "Win this board to set a best" when
-  the board has no best time.
-- Actions: *Play again* (default focus, and `Enter` or `R` on the keyboard;
-  the screen's hint names `R`), *Watch replay* (when the game handed over its
-  replay — `replay-playback`), *Watch best* beside it (when the board's
-  fastest-time best has a kept replay and is not this game), *Records*
-  (opens the records screen on this board), *Main menu*.
+- The action bar: *Main menu* (with its `Esc` hint) on the left; on the
+  right *Watch replay* (when the game handed over its replay —
+  `replay-playback`), *Watch best* (after a win that set no new best, when
+  the board's fastest-time best has a kept replay), *Records* (opens the records screen
+  on this board) and *Play again* (default focus, and `Enter` or `R` on the
+  keyboard). The bar stays one row: with *Watch best* present the secondary
+  actions take their small size.
 - Telling the player once when records are not being saved this session.
 - Mouse, keyboard and controller operation, per the shell's navigation.
 
@@ -93,9 +94,10 @@ composed from the `screen-components` kit.
   first), out of the board's won games including this one; a no-guess board
   ranks only among its own games. The records model and its documents are
   unchanged by it.
-- **Results view.** The composition from `screen-components`: an outcome
-  header, the banner, the stat readouts, the second row, the next-target
-  line, the three best comparisons, the actions. Time is shown to the
+- **Results view.** One column sized to its content, arranged by
+  `shared-screen-layout`: the header, the figure tiles with their
+  comparisons and badges, the details, the board code, the action bar.
+  Time is shown to the
   thousandth of a second, truncated rather than rounded (47 380 ms shows as
   47.380 s), while the stored time keeps its millisecond precision; this is
   the one format for every time the game shows except the in-game overlay's
@@ -110,7 +112,7 @@ composed from the `screen-components` kit.
   available shows a dash.
 - **Rank panel.** In the Steam build, after a won game on a board with a
   leaderboard, the view carries `results-steam-rank`'s panel below the
-  comparison; the flow starts it when the screen shows and stops it when
+  figure tiles; the flow starts it when the screen shows and stops it when
   the screen is left. In the same build, after any game on a board with a
   leaderboard, the actions carry `results-steam-rank`'s *Leaderboard*
   action, which opens the leaderboard screen on this game's board.
@@ -138,17 +140,17 @@ composed from the `screen-components` kit.
   replay and the shell has the replay viewer's route; asks the shell to open
   `replay-playback`'s viewer with that replay, returning to this screen. It
   plays the game's own replay even when the library could not save it.
-- **Watch best** — shown only when the board's fastest-time best, as the
-  records stand after this game, has a replay kept in `replay-library`, that
-  best is not the game shown and the shell has the replay viewer's route;
+- **Watch best** — shown only after a win that set no new best, when the
+  board's fastest-time best, as the records stand after this game, has a
+  replay kept in `replay-library` and the shell has the replay viewer's route;
   asks the shell to open the viewer on that replay by id, returning to this
   screen.
 - **Records** — asks the shell to route to `records-screen`, opened on this
   game's board.
 - **Main menu** — asks the shell to return to the main menu.
 - **Failure** — when recording fails, the screen still shows the game's own
-  stats, without a comparison, a next-target line or the standing line and
-  with the rank as a dash, and says the result could not be saved.
+  figures, without comparisons, a next-target or a win-rate row and with no
+  rank chip, and says the result could not be saved.
 
 ## Dependencies
 

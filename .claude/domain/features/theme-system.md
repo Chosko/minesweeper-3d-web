@@ -50,7 +50,10 @@ In scope (m2b-themes):
   *Joyful tiles*.
 - **The first theme's DOM look** — *Joyful tiles*' registry entry, fonts
   (Rubik and JetBrains Mono) and its stylesheet for the kit components that
-  exist when this feature lands. `shared-screen-layout` styles the
+  exist when this feature lands, its tokens and component styles taken from
+  the canvas's *J-Tokens* and *J-Components* artboards
+  (`shared-screen-layout` § Architecture, **Design status per screen**).
+  `shared-screen-layout` styles the
   components it adds, and `themed-board-art-and-motion` writes the board
   module.
 - **Removing the light and dark looks** — their token values, the dark
@@ -117,7 +120,9 @@ reader, and the kit stylesheet: [app-shell-kit.md](../../context/app-shell-kit.m
   the contract: every registered theme must style it in the same change.
 - **Base stylesheet.** The kit's structure: layout, display, the sizes the
   layout depends on, the hidden default of every decoration slot, and the
-  focus-ring presence rule. It carries no colour, font, border, radius,
+  rule that every focusable part shows a focused state — the selected state
+  on buttons, menu entries and board options (`screen-components` § Scope
+  and non-goals), with no separate focus ring. It carries no colour, font, border, radius,
   shadow or motion value of any theme. Its shipped
   `@media (prefers-reduced-motion: reduce)` rule, which stops every DOM
   animation and transition, stays in it unchanged.

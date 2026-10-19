@@ -67,12 +67,11 @@ owns records.
   mode 3D, width X, height Y, depth Z, mines and no-guess, with no grid
   field. Its key is derived the same way and carries the mode, so a 3D key
   never equals a 2D key; Classic 2D keys are unchanged. The label names a
-  preset by its family and name — "First box 1", "First box 2", "Cube
-  Intro", "Cube Beginner", "Cube Intermediate", "Cube Expert" — recognised
-  from the exact size and mine count `3d-play-flow` lists, and any other
-  board by its size and mine count — a double-layer board and
-  12 × 12 × 8 with 130 mines, whose sizes `3d-play-flow` does not offer as
-  presets, included, with their bests, history and replays as they were. A custom board that
+  preset by its name as `3d-play-flow` lists the presets ("Cube Intro"),
+  recognised from the exact size and mine count it gives, and any other
+  board by its size and mine count — a board whose size `3d-play-flow` no
+  longer offers as a preset included, with its bests, history and replays
+  as they were. A custom board that
   matches a preset exactly is that preset's board.
 - **3D summary.** `game-summary`'s builder accepts the 3D board choice. The
   engine's counts over the box graph (`3d-board-graph`) give 3BV, 3BV
@@ -93,8 +92,7 @@ owns records.
   and every recorded 3D summary returns the comparison against the bests
   that stood before it.
 - **Board listing.** The boards-played query takes a mode: for 3D, the
-  six presets in table order — First box 1 and 2, then cube Intro,
-  Beginner, Intermediate and Expert — each without then with no-guess, then
+  presets in `3d-play-flow`'s order, each without then with no-guess, then
   custom 3D boards by last played.
 
 ## Data and state

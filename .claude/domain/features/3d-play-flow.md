@@ -1,8 +1,8 @@
 # 3D play flow
 
 The 3D mode's game from board choice to result under the game's rules: the
-Learn 3D guided board, then the two first-box and four cube 3D presets and
-custom boards with a no-guess switch. Every game but that fixed, unrecorded
+Learn 3D guided board, then the four cube 3D presets and custom boards with
+a no-guess switch. Every game but that fixed, unrecorded
 lesson board has a first click that is always safe because the board is
 generated around it, the timer starting once that board is ready, and is
 handed, finished or abandoned, to the shared results and records like a
@@ -23,28 +23,28 @@ game shell — while the scene, camera and controls stay as they are.
 
 In scope (m2-3d-joins):
 
-- Board choice: Learn 3D first, then six presets, named as results and
-  Records name them, in two groups — the First box group, First box 1
-  (4 × 4 × 3, 4 mines) and First box 2 (5 × 5 × 3, 6), then the Cube group,
-  Cube Intro (6 × 6 × 6, 10), Cube Beginner (6 × 6 × 6, 20), Cube
-  Intermediate (8 × 8 × 8, 40) and Cube Expert (10 × 10 × 10, 100) — each
-  showing its name, size line, mine density and the Last played mark, plus
-  Custom and the Random fill, and the no-guess switch, which says it keeps
-  separate records. How the two groups are labelled follows the 3D board
-  choice's *Joyful tiles* design. The selected board's bests show in the
-  screen's records panel (`shared-screen-layout` § Scope and non-goals,
-  *Board choice screens*). The mine counts of First box 1 and Cube
-  Beginner are measured by `dev/measure-first-box-3d.mjs`: no-guess boards with the first click on
-  the marked start cell, so that First box 1's first click leaves work to
-  do and Cube Beginner's opens about 60 % of the safe cells.
-- Learn 3D: one guided 4 × 4 × 3 box at First box 1's mine count, a fixed
-  board taken from a fixed seed (`dev/find-learn-3d.mjs`) with a forced,
-  marked start cell, played through the 3D game with four prompts in the
-  hint strip — hold Shift on the lesson number, hold Ctrl, flag the one cube
-  that must be a mine, chord the lesson number — then "Clear the rest of the
-  box". No timer, no summary, no records and no replay; it ends on its own
-  end card, not the results screen: a win offers First box 1 and marks the
-  3D rules as learned, a loss offers Try again. It is repeatable and never
+- Board choice: Learn 3D first, then four presets in one group with no
+  group label, named as results and Records name them — Cube Intro
+  (6 × 6 × 6, 10 mines), Cube Beginner (6 × 6 × 6, 20), Cube Intermediate
+  (8 × 8 × 8, 40) and Cube Expert (10 × 10 × 10, 100) — each showing its
+  name, size line, mine density and the Last played mark, then Custom with
+  the Random fill, then *Insert Board Code*, and the no-guess switch, which
+  says it keeps separate records. The selected board's bests show beside
+  the options (`shared-screen-layout` § Scope and non-goals, *Board choice
+  screens*). Cube Beginner's mine count is measured by
+  `dev/measure-first-box-3d.mjs`: no-guess boards with the first click on
+  the marked start cell, so that its first click opens about 60 % of the
+  safe cells.
+- Learn 3D: one guided 4 × 4 × 3 lesson box, a fixed board with its own
+  mine count taken from a fixed seed (`dev/find-learn-3d.mjs`) with a
+  forced, marked start cell, played through the 3D game with four prompts
+  in the hint strip — hold Shift on the lesson number, hold Ctrl, flag the
+  one cube that must be a mine, chord the lesson number — then "Clear the
+  rest of the box". No timer, no summary, no records and no replay; it ends
+  on its own end card, not the results screen, which also offers *Back to
+  board choice*: a win marks the 3D rules as learned and offers *Play Cube
+  Intro*, with a line saying Cube Intro is a real board with a timer and
+  records; a loss offers Try again. It is repeatable and never
   the last 3D choice. Until the player finishes a 3D game or wins Learn 3D,
   every other 3D board's ready card offers it in one line.
 - The start-of-game flow: a closed box, the first reveal, generation around
@@ -71,11 +71,11 @@ Non-goals:
   12 × 12 × 8 with 130 mines, stay in the history as custom boards, since
   the preset labels and listing in `3d-game-records` recognise only the
   presets listed here.
+- The First box presets (4 × 4 × 3 with 4 mines, 5 × 5 × 3 with 6) —
+  dropped; their records and replays stay in the history as custom boards,
+  by the same rule.
 - The 3D scene's look, the camera, view modes and controls — kept as they
-  are, per the m2 slice, except that the two first-box presets start at
-  spacing 1.5 in the three-quarter spawn view. The start spacing follows
-  the board, matched by size and mines as the records match a preset, with
-  no new control or setting.
+  are, per the m2 slice.
 - 3D board identities, 3D personal bests and history, and the 3D results
   and Records screens — the Results and records slice of `m2-3d-joins`.
 - Recording and watching 3D replays — the Replays slice of `m2-3d-joins`.
@@ -101,20 +101,21 @@ behaviour.
   and no-guess switches. Each preset shows its name, size line, mine
   density (mines ÷ cells as a whole percent, one decimal below 10 %) and the
   Last played mark, as Classic 2D's board options do, and nothing from the
-  records. The selected board's bests, recent games and charts are the
-  screen's records panel, composed as Classic 2D's
-  (`shared-screen-layout` § Scope and non-goals, *Board choice screens*):
-  it follows the no-guess switch that governs the selected board, since a
-  board and its no-guess twin are separate records. What the panel shows
-  while Learn 3D is selected follows the 3D board choice's *Joyful tiles*
-  design. Each no-guess switch says once that no-guess boards keep separate
+  records. The selected board's bests show beside the options, composed as
+  Classic 2D's (`shared-screen-layout` § Scope and non-goals, *Board
+  choice screens*): they follow the no-guess switch that governs the
+  selected board, since a board and its no-guess twin are separate records.
+  While Learn 3D is selected the screen shows how 3D works and that the
+  lesson keeps no records, with no switch and no bests. Each no-guess switch says once that no-guess boards keep separate
   records. Validates custom sizes (each dimension 1 to 100,
   mines 1 to cells minus one) and decides whether no-guess is available for
   the chosen size, by the availability rule under Interfaces and contracts. Remembers the last 3D choice through the shell's
-  last-board-choice mechanism. A board code field with *Play this board*
-  starts a 3D code as a challenge; a Classic 2D code is refused with a hint
-  naming the Classic 2D board choice, and a refused code shows its reason
-  live, the button disabled (`game-shell`). Learn 3D, the first item, starts
+  last-board-choice mechanism. The *Insert Board Code* option's code field
+  starts a 3D code as a challenge with the screen's *Play*, which is
+  disabled while the field is empty or its code is refused — the reason
+  shown live, and a Classic 2D code refused with a hint naming the Classic
+  2D board choice (`game-shell`); *Play* is likewise disabled on a refused
+  custom size. Learn 3D, the first item, starts
   the guided board without saving or marking a choice.
 - **3D game session.** Owns one 3D game: builds the box graph and the game
   awaiting its first click, shows the closed box, and on the first reveal

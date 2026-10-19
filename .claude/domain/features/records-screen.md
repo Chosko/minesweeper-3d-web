@@ -32,9 +32,12 @@ In scope (m1-classic-2d):
 - Stats history for the chosen board: 3BV/s and efficiency of won games
   over time as a chart, the best time by date as a second chart, the mean
   time, 3BV/s and efficiency over the last 10, last 50 and all won games,
-  the win rate over the last 50 games, and two tabs — a list of recent
-  games with the date and time each ended, its outcome, time, 3BV, 3BV/s
-  and efficiency, and a Top 10 of the board's best won games. Every row
+  the win rate over the last 50 games, and the tabs Recent games — a list of
+  recent games with the date and time each ended, its outcome, time, 3BV,
+  3BV/s and efficiency —, Top 10 — the board's best won games —, Replays
+  (`replay-library`) and Leaderboards. Until the leaderboards exist, the
+  Leaderboards tab shows a panel saying they are coming soon, with no
+  pager. Every row
   that names one game — the recent games, the Top 10 and the library
   view's rows — shows its board code with Copy and Copy link, none for a
   game from before codes; the Top 10 leaves challenges out, as the
@@ -50,7 +53,8 @@ Non-goals:
 
 - The replay library and watching replays — deferred to `m2-3d-joins`.
 - 3D boards and a 2D/3D switch — deferred to `m2-3d-joins`.
-- Steam leaderboards — the Leaderboards entry, deferred to `m3-on-steam`.
+- The leaderboards the Leaderboards tab shows — deferred to `m3-on-steam`
+  (`leaderboards-menu-entry`).
 - Resetting or deleting records.
 - Exporting or importing the replay files themselves.
 
@@ -68,8 +72,8 @@ no framework and no external chart library (see
   board's counters are one row and the mode's overall figures a row of
   their own. At about 1024 px wide and more the screen lays out in two
   columns: the picker, the bests, both rows of figures and the averages on
-  one side, the period and outcome filters, both charts, the Recent games |
-  Top 10 tabs and the replays on the other; narrower, one column in that
+  one side, the period and outcome filters, both charts and the Recent
+  games | Top 10 | Replays | Leaderboards tabs on the other; narrower, one column in that
   order. Opens on the board it was asked for, otherwise on
   the last board played. The fastest-time best is shown in
   `results-screen`'s time format (47.380 s), and the efficiency best to one

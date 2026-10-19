@@ -48,15 +48,19 @@ campaign's level order (and, in the demo, the demo's locks).
   switch.
 - **Triangle** — the triangle grid, with the same board choice and no-guess
   switch.
-- **3D** — the 3D presets and custom boards, with a no-guess switch.
 - **Surface** — a shape to play on, chosen inside Surface, with a no-guess
   switch.
-- **Daily** — today's 2D board and today's 3D board.
-- **Records** — personal bests, stats history and the replay library.
-- **Leaderboards** — Steam global and friends rankings, with the replay
-  attached to each entry.
+- **3D** — the 3D presets and custom boards, with a no-guess switch.
+- **Daily** — today's board of every mode.
+- **Records** — personal bests, stats history, the replay library and, in a
+  tab of their own, the Steam global and friends leaderboards, with the
+  replay attached to each entry.
 - **Settings** — controls, graphics, theme, audio, accessibility.
 - **Quit.**
+- Every mode entry is enabled from the start: a mode not built yet opens a
+  *Coming soon* page.
+- The menu opens with the last mode played selected; its board choice opens
+  on the last board played.
 - Achievements have no menu entry; they live in Steam's overlay.
 - In the demo only, a **Buy full game** entry; locked content stays visible in
   the menus.
@@ -73,8 +77,8 @@ friends rank. They can watch the replay, then play again in one step.
 **The 3D on-ramp.** A player curious about 3D starts with Learn 3D on the 3D
 board choice: one small guided box whose prompts teach that a number counts
 the mines among up to 26 cubes in three layers and that solved cubes
-disappear, with no timer and no records. Its win offers the First box
-presets, the smallest real boards. The 3D campaign follows, ahead of free
+disappear, with no timer and no records. Its win offers Cube Intro, the
+smallest real cube. The 3D campaign follows, ahead of free
 play: its early levels are small, oddly shaped boards that teach reading
 numbers in depth; as levels unlock, boards grow and shapes get more
 demanding, until free 3D play is within reach.
@@ -169,8 +173,8 @@ Listed in the order a player meets them. The last two are after launch.
 ### Main menu and game shell
 
 Everything around a game: the main menu (Start / Continue, Campaign, the
-Classic 2D, Hexagon, Triangle, 3D and Surface modes, Daily, Records,
-Leaderboards, Settings, Quit), pausing and resuming, restarting, returning to
+Classic 2D, Hexagon, Triangle, Surface and 3D modes, Daily, Records,
+Settings, Quit), pausing and resuming, restarting, returning to
 the menu, and the settings — controls, graphics, the theme, picked from a
 list of the catalogue's themes, audio and accessibility (colour-blind-safe
 numbers, and after launch a reduced-motion setting, on or off, whose first
@@ -192,7 +196,13 @@ live figures — 3BV progress, pace against the personal best, 3BV/s, clicks
 and flags) and the results screen, and a catalogue of themes that style it. The
 player picks a theme from a list on the Settings page; *Joyful tiles* is
 the default until they pick. The shared layout is designed together with
-*Joyful tiles*; later themes add styles, not layouts.
+*Joyful tiles*, and both are finished: every screen, at every window size
+the game supports, is drawn on the Claude Design canvas, with the theme's
+tokens and every kit component in every state. Later themes add styles, not
+layouts. Buttons, menu entries and board options have one *selected* state,
+shared by the pointer's hover and by keyboard or controller focus, and drawn
+by the theme rather than as a separate focus ring; a chosen board option
+keeps its own mark, so focused and chosen stay apart.
 
 A theme is one fixed look and changes more than colour: borders and bevels,
 shadows, corner radii, fonts, window chrome (such as a title bar with
@@ -259,13 +269,13 @@ orbited around its centre, with solved cells hiding
 themselves and the Shift / Space / Ctrl view modes for seeing inside. The
 first click is always safe, and a no-guess switch is available, except on a
 box with a side of exactly 2 cells, which can never be solved without
-guessing. Two first-box presets, then the Intro, Beginner, Intermediate
-and Expert cubes, plus custom boards; flat boards are Classic 2D's. When a game ends, its win or
+guessing. The Intro, Beginner, Intermediate and Expert cubes, plus custom
+boards; flat boards are Classic 2D's. When a game ends, its win or
 loss effect plays — on a loss, the wave that shows where the mines were —
 and then the results screen shows over the dimmed board; from it the
 player can choose to fly over the frozen finished board, read-only. Serves
-the 3D on-ramp, once Learn 3D, the First box presets and the campaign have
-taught the player to read numbers in depth.
+the 3D on-ramp, once Learn 3D and the campaign have taught the player to
+read numbers in depth.
 
 ### Surface
 
@@ -304,15 +314,18 @@ system that plays it.
 ### Daily board
 
 One 2D board and one 3D board per day, the same for every player, worked out
-from the date so no server is needed. Each day's board has its own Steam
-leaderboard, ranked by 3BV/s. Gives enthusiasts a reason to return every day.
+from the date so no server is needed. The Daily screen lists every mode in
+menu order; a mode not built yet shows *Coming soon* and cannot be played.
+Each day's board has its own Steam leaderboard, ranked by 3BV/s. Gives
+enthusiasts a reason to return every day.
 
 ### Results and records
 
 The end-of-game screen — time, 3BV, 3BV/s, efficiency, the comparison with the
 personal bests, and the Steam global and friends rank — with *Play again* and
 *Watch replay* one step away. Behind it, the Records screen: personal bests
-per board, stats history (3BV/s and efficiency over time, win rate, streaks).
+per board, stats history (3BV/s and efficiency over time, win rate, streaks),
+the replay library and the board's leaderboards.
 Each board keeps three bests from won games — fastest time, best 3BV/s and
 best efficiency — and every exact size, mine count and no-guess setting is
 its own board, custom boards included; a 3D board is named by its X × Y × Z

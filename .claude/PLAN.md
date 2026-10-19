@@ -1,7 +1,7 @@
 # Plan
 
 Roadmap: .claude/domain/product-roadmap.md
-Last reconciled: 2026-10-13
+Last reconciled: 2026-10-19
 
 ---
 
@@ -97,7 +97,7 @@ Features: none
 - steam-leaderboards: depends on steam-desktop-host, steam-cloud-saves, replay-playback, replay-recording, replay-library, game-summary, 3d-game-records, personal-records, game-shell, platform-storage
 - leaderboard-screen: depends on steam-leaderboards, replay-playback, game-summary, 3d-game-records, screen-components, game-shell, results-screen, shared-screen-layout, theme-system
 - steam-achievements: depends on steam-desktop-host, game-summary, 3d-game-records, personal-records, game-shell
-- leaderboards-menu-entry: depends on game-shell, leaderboard-screen, steam-desktop-host, shared-screen-layout, theme-system
+- leaderboards-menu-entry: depends on records-screen, game-shell, leaderboard-screen, steam-desktop-host, shared-screen-layout, theme-system
 - results-steam-rank: depends on results-screen, steam-leaderboards, steam-desktop-host, 3d-results-records-screens, leaderboard-screen, shared-screen-layout, theme-system
 - input-rebinding: depends on settings, classic-2d-square-play, 3d-play-flow, game-shell, screen-components, shared-screen-layout, in-game-layout, theme-system
 - theme-system: depends on screen-components, settings, platform-storage

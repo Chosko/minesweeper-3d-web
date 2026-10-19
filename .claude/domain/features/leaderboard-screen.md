@@ -9,7 +9,7 @@ player's own local ranking.
 ## Purpose
 
 [product-design.md § User experience and key flows](../product-design.md#user-experience-and-key-flows)
-gives the main menu a Leaderboards entry with Steam global and friends
+gives the Records screen a Leaderboards tab with Steam global and friends
 rankings and the replay attached to each entry, and
 [§ Replays](../product-design.md#replays) lets the player watch a
 leaderboard replay, their own or someone else's. The m3-on-steam exit
@@ -31,8 +31,9 @@ In scope (m3-on-steam):
 
 Non-goals:
 
-- The Leaderboards entry in the main menu — `leaderboards-menu-entry`;
-  this screen provides the route it opens.
+- The way in from the Records screen's Leaderboards tab —
+  `leaderboards-menu-entry`, whose open question decides whether the tab
+  shows this screen's rankings in place or opens this screen.
 - Ranks on the results screen — the Results and records slice of
   m3-on-steam.
 - Campaign, daily, hexagonal, triangle and Surface leaderboards — deferred
@@ -98,8 +99,8 @@ composed inside `shared-screen-layout`'s screen frame and routed by
 ## Interfaces and contracts
 
 - **Open** — the shell routes to the screen with an optional board identity
-  and returns to the caller on Back. The main menu's Leaderboards entry
-  opens it with no board; the results screen's *Leaderboard* action
+  and returns to the caller on Back. The Records screen's Leaderboards tab
+  reaches it as `leaderboards-menu-entry` settles; the results screen's *Leaderboard* action
   (`results-steam-rank`) opens it on the finished game's board.
 - **Reads** — `steam-leaderboards`' entries, own standing, replay fetch and
   availability.
@@ -129,6 +130,7 @@ composed inside `shared-screen-layout`'s screen frame and routed by
 
 - The global page size and the Around me range. Set with the screen's
   layout at real list heights; blocks only the constants.
-- The screen's *Joyful tiles* artboard is not drawn yet; its task waits on
-  it as [shared-screen-layout.md](./shared-screen-layout.md)
-  § Architecture, **Design status per screen**, says.
+- The screen's *Joyful tiles* artboard is not drawn yet: the canvas draws
+  only the Records tab's coming-soon panel. Its task waits on it as
+  [shared-screen-layout.md](./shared-screen-layout.md) § Architecture,
+  **Design status per screen**, says.

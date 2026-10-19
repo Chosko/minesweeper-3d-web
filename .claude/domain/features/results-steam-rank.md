@@ -63,7 +63,7 @@ own, and the active theme styles it. It extends `results-screen`'s view and
 flow and reads everything from `steam-leaderboards`.
 
 - **Rank panel.** A non-interactive group in the results screen's framed
-  body below the three-best comparison: a section label over two stat
+  body below the figure tiles: a section label over two stat
   tiles, global and friends, each with the rank as its figure and the move
   or "your best" as its detail line. It never takes focus, never moves the
   default focus off *Play again*, and its text changes are announced

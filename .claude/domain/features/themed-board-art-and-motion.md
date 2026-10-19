@@ -27,29 +27,42 @@ In scope (m2b-themes):
   cell motion per cell event.
 - **Tile drawing styles** — the shared tile recipe grows from one fixed
   look into a small set of named drawing styles, each with parameters. This
-  milestone ships two: **bevel** (the raised-and-sunk cube face the recipe
-  draws today, its band widths, light and dark edges and gloss as
-  parameters) and **flat** (a face with no relief, the *Joyful tiles* look).
-  A theme picks one.
+  milestone ships two: **bevel** (a raised face framed by a thin edge and
+  four sloped sides, each side its own shade so the face reads as lit from
+  one corner, the edge and slope widths as parameters; the revealed face
+  flat inside its edge, with no slope — the recipe's look today is one
+  setting of it) and **flat** (a face with no slope: the closed face with a
+  light top band and a dark bottom edge, the revealed face flush with a
+  hairline). A theme picks one style for its Classic 2D tiles and one for
+  its 3D cubes.
 - **Classic 2D tiles** — the tile painter and its cache draw from the
-  active theme's board module and style, and redraw on theme change.
-- **3D cubes** — the tile atlas is built from the active theme's palette and
-  style, every state and number 0–26 included, and rebuilt on theme change;
-  the selection outline and the marked start cell's tint come from the
-  palette.
+  active theme's board module and style, and redraw on theme change. The
+  module sets the tile's corner radius and the gap between tiles as
+  fractions of the tile size, so both scale with it; the cursor ring's
+  radius follows the tile's, and the board frame's radius scales with the
+  tile too.
+- **3D cubes** — the tile atlas is generated from the active theme's
+  palette and 3D style, every state and number 0–26 included, never shipped
+  as a picture, and rebuilt on theme change; the selection outline and the
+  marked start cell's tint come from the palette. A painted slope is lit the
+  same way on every face of a cube, top faces included.
 - **Sky, fog and background** — from the board module, replacing the sky
   tokens.
 - **Cell motion** — per theme, per cell event (press, release, reveal,
   flag, unflag, chord press, solved pulse), from the fixed motion
   vocabulary, played per cell by the 2D painter and per cube by the 3D
   renderer.
-- **The *Joyful tiles* board module** — the flat style; its closed face a
-  tint close to the game's current light closed tile, so the flag stays
-  visible on it; its flag, and its numbers 1–8 in the glyph style and
-  colours the game draws today in the light look (weight, outline, shadow),
-  set in one fixed self-hosted font the design chooses; the flat faces
-  passing the board conformance checks unchanged; its other palette entries,
-  sky, flat-style parameters and motion from its artboards.
+- **The *Joyful tiles* board module** — flat Classic 2D tiles and bevel 3D
+  cubes, whose closed and flagged cubes take the slope and
+  whose revealed cubes are flat inside their edge, so open and closed
+  differ by relief as well as colour; its flag, and its numbers 1–8 in the
+  glyph style and colours the game draws today in the light look (weight,
+  outline, shadow), set in Rubik, the theme's self-hosted font; every value
+  — palette, numbers 1–26 in both modes, sky and fog, both styles'
+  parameters, the cursor ring and the marked start cell, the selection
+  outline and glow, and the cell motion with the solved pulse — from the
+  canvas's *J-BoardSheet* (2D) and *J-3DSheet* (3D) artboards, passing the
+  board conformance checks unchanged.
 - **The board conformance checks** that `theme-system`'s conformance tests
   run for every theme.
 
@@ -101,10 +114,14 @@ reads a stylesheet or imports a theme.
 - **Classic 2D tile skin.** Paints each tile state through the recipe with
   the theme's style, palette and number font; its cache is keyed by theme as
   well as size and pixel ratio, and dropped on theme change. The board
-  frame, its ground between tiles and the cursor ring's colour come from the
-  theme too — the frame as a kit component styled by the theme stylesheet,
-  the cursor ring from the board module.
-- **3D tile atlas and scene.** The atlas is built from the board module —
+  frame, its ground between tiles, the gap and the cursor ring's colour and
+  radius come from the theme too — the frame as a kit component styled by
+  the theme stylesheet, its radius following the tile size; the gap and
+  the cursor ring from the board module. The board view lays tiles out on
+  the tile size plus the gap, and hit-tests a cell's whole slot, gap
+  included.
+- **3D tile atlas and scene.** The atlas is built from the board module's
+  3D style —
   one layer per state and per number 0–26, plus the sunk closed face the
   depth ingredient blends towards — and rebuilt when the theme changes. The
   sky gradient, fog and clear colour come from the board module's sky; the
@@ -151,7 +168,9 @@ reads a stylesheet or imports a theme.
     number font family and weight;
   - *sky*: horizon, zenith and nadir, and the fog colour (the horizon when
     absent);
-  - *drawing style*: the style's name and its parameters;
+  - *drawing style*: per mode — Classic 2D tiles and 3D cubes — the style's
+    name and its parameters, the Classic 2D one with the corner radius and
+    the gap as fractions of the tile;
   - *motion*: one description per cell event, or none for an event the
     theme leaves still.
 - **Motion description** — a duration, an easing (a named curve or a cubic
@@ -192,7 +211,7 @@ reads a stylesheet or imports a theme.
   animating cell restarts it from the new state.
 - **Board conformance checks** (run by `theme-system`'s tests for every
   theme) — every palette entry, 26 number colours, a shipped style with all
-  its parameters, an entry for every cell event — a motion description
+  its parameters for each mode, an entry for every cell event — a motion description
   built only from the vocabulary with a positive duration, or none; each number colour at least 4.5:1
   against every point of its theme's revealed face; closed and revealed
   faces distinguishable by more than colour (relief or border); the
@@ -222,22 +241,3 @@ reads a stylesheet or imports a theme.
 - `replay-playback` — the 2D and 3D viewers, whose seeks drop motion.
 - No new libraries.
 
-## Open questions
-
-- *Joyful tiles*' artboards draw the closed, revealed and cursor states
-  only; its flag and numbers 1–8 are the game's own (§ Scope and
-  non-goals). Its mine, exploded mine, wrong-flag cross,
-  pressed face, numbers 9–26 and 3D sky are not drawn yet; until its
-  components artboard shows them, they take the derivation rules above
-  (the sky from the menu artboard's navy 3D panel), and are replaced by
-  the artboard's values through the theme skill's update of an existing
-  theme.
-- *Joyful tiles*' cell motion is not designed yet — the components
-  artboard is to carry it as keyframes on a sample cell, the press and
-  chord press of a flat tile included, which the design proposes. Until
-  then its motion is a short scale-in on reveal and the reference solved
-  pulse, with no press motion. Blocks nothing; replaced like the values
-  above.
-- How *Joyful tiles*' flat closed and revealed faces differ by more than
-  colour, as the board conformance checks require, is the design's to
-  decide; its components artboard carries it.

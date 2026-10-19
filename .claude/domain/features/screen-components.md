@@ -36,7 +36,13 @@ In scope (m1-classic-2d):
   at that width and above, its one breakpoint stated once; the Records
   and Settings screens and the pause card lay out with it.
 - States for every interactive component: default, hover, pressed, focused
-  (a visible focus ring for keyboard and controller) and disabled.
+  and disabled, and selected where it applies. On buttons, menu entries and
+  board options, hover and keyboard or controller focus share one
+  *selected* state, drawn by the theme with no separate focus ring, and
+  pressed is drawn apart from it; a board option's chosen board keeps its
+  own mark beside that state, so a focused option and the chosen one stay
+  distinguishable. Every other control (switches, fields, segmented
+  choices, tabs) keeps its own hover and focus states.
 - The m1 screens composed from the kit: the main menu, the in-game overlay
   over both the Classic 2D board and the 3D board, the pause card and the
   results screen.
@@ -82,8 +88,9 @@ described in [app-shell.md](../../context/app-shell.md).
   behaviour (slider value display, segmented choice selection, the pager's
   buttons) get a small helper each.
 - **Focus and navigation contract.** Every interactive component is
-  reachable by keyboard and by the shell's controller navigation, shows the
-  focus ring when focused, and declares its default focus target per screen
+  reachable by keyboard and by the shell's controller navigation, shows its
+  focused state when focused (the selected state, on the components Scope
+  names), and declares its default focus target per screen
   in the way the shell's controller layer already expects.
 - **Overlay bar.** The in-game overlay — timer, mine counter, click
   counter, pause — as one component for both boards. Over the 3D board it
@@ -129,8 +136,10 @@ described in [app-shell.md](../../context/app-shell.md).
 - **Component catalogue** — the class names and markup patterns are the
   contract screens build against; changing one is a breaking change for
   every screen that uses it.
-- **Accessibility** — every control has an accessible name; focus is always
-  visible; text meets the contrast contract of `design-tokens-and-themes` in
+- **Accessibility** — every control has an accessible name; keyboard and
+  controller focus is always visible — on buttons, menu entries and board
+  options as the selected state, which hover shares, so while the pointer
+  rests on one of them and focus is on another, both show it. Text meets the contrast contract of `design-tokens-and-themes` in
   both themes. On every pointer, labels are at least 12 px and key caps at
   least 11 px. On a coarse pointer, and only there, switches (the Reveal /
   Flag switch included), slider thumbs, the overlay bar's Pause and the 3D
