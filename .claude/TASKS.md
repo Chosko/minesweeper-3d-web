@@ -790,7 +790,7 @@ Feature: themed-board-art-and-motion
 
 ## 188. The theme-implement skill
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/skills/theme-implement/SKILL.md, .claude/skills/theme-implement/references/
 Preconditions: 161, 163, 175, 181
