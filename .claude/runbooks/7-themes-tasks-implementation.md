@@ -15,7 +15,7 @@ Context: none
 
 Done: 2026-10-19, commit `2d774b9` (15 files, +561/-3). The two OFL licence files ship with their URL lines removed (copyright notices and licence text kept), so the theme folder holds no remote URL; buttons and menu entries carry default/selected/pressed/disabled, with hover and focus merged into selected.
 
-## [~] 2. Implement task 158 — Base stylesheet and the Joyful tiles theme stylesheet; retire light and dark
+## [x] 2. Implement task 158 — Base stylesheet and the Joyful tiles theme stylesheet; retire light and dark
 
 Depends on: 1
 
@@ -26,11 +26,14 @@ Context:
 /task-implement 158 --review
 ```
 
-## [ ] 3. Implement task 159 — Registry-driven theme applier with run-time switch and board module hand-off
+Done: 2026-10-19, commit `ca8a74a` (29 files, +1959/-1527). The four tile tokens shared with the 2D tile skin keep the skin's values; the canvas spacing scale is not used; font sizes come from the canvas. The body's premise that the canvas draws every component in every state was wrong — the theme gives slider, segmented choice, field and link the switch's focus ring.
+
+## [~] 3. Implement task 159 — Registry-driven theme applier with run-time switch and board module hand-off
 
 Depends on: 1, 2
 
-Context: none
+Context:
+- 2026-10-19 (from step 2): `setTheme` is a no-op after task 158, and the `classic2d-view` browser check that the board repaints after a theme switch was removed; task 159 should restore it.
 
 ```prompt
 /task-implement 159 --review
@@ -42,6 +45,7 @@ Depends on: 3
 
 Context:
 - Task 160 adds no reduced-motion setting, settings field, root marker, accessibility section or preference read: the shipped `prefers-reduced-motion` rule in `css/style.css`, which task 158 keeps, is the game's one reduced-motion behaviour until `m7-after-launch`.
+- 2026-10-19 (from step 2): the Settings page still offers Light / Dark after task 158, and choosing one changes nothing.
 
 ```prompt
 /task-implement 160 --review
@@ -53,6 +57,7 @@ Depends on: 1, 2, 3
 
 Context:
 - 2026-10-19 (from step 1): the OFL licence files in `themes/joyful-tiles/` had their URL lines stripped so no theme file references a remote URL; the no-URL check need not exclude `OFL-*.txt` unless that is reverted. `themes/joyful-tiles/board.js` uses a `/* */` header comment so a `//` scan does not trip on it; its export is `BOARD`. Catalogue selectors are each component's own single class, with a shared class in a `base` field.
+- 2026-10-19 (from step 2): the canvas draws a focus state only for the switch and no hover/focus for the slider, segmented choice, field or link; the Joyful tiles theme gives those the switch's ring with a halo. Five buttons (swap clicks, Tap: Reveal/Flag, the three 3D touch view-mode buttons) carry `data-no-focus` and are skipped by hover-to-focus.
 
 ```prompt
 /task-implement 161 --review
