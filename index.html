@@ -631,42 +631,44 @@
   <!-- /Results -->
 
   <!-- Daily -->
-  <section id="daily" class="overlay hidden" aria-label="Daily">
-    <section class="ui-card ui-screen ui-screen--wide" aria-labelledby="daily-title">
-      <h2 class="ui-card__title" id="daily-title">Daily</h2>
-      <p class="ui-text ui-text--muted">The same two boards for everyone each day, started on the marked cell. One counted try each.</p>
-      <div class="ui-columns">
-        <div id="daily-expert" class="ui-panel" role="group" aria-labelledby="daily-expert-title" data-daily="expert">
-          <h3 class="ui-heading" id="daily-expert-title">Expert</h3>
-          <p class="ui-text ui-text--muted" data-date></p>
-          <p class="ui-text ui-text--muted" data-board></p>
-          <p class="ui-text" data-state>Not played</p>
-          <p class="ui-text ui-text--muted" data-streak></p>
-          <p class="ui-text ui-text--warning hidden" data-reason></p>
-          <div class="ui-code" data-code><span class="ui-code__label">Board code</span><code class="ui-code__value"></code><button type="button" id="daily-expert-copy" class="ui-button ui-button--secondary" data-copy="code">Copy</button><button type="button" id="daily-expert-copy-link" class="ui-button ui-button--secondary" data-copy="link">Copy link</button></div>
-          <div class="ui-actions ui-actions--row">
-            <button type="button" id="daily-expert-play" class="ui-button ui-button--primary" data-play>Play</button>
-            <button type="button" id="daily-expert-watch" class="ui-button ui-button--secondary hidden" data-watch>Watch replay</button>
+  <section id="daily" class="overlay ui-backdrop hidden" aria-label="Daily">
+    <div id="daily-top"><h1 class="ui-wordmark" id="daily-wordmark" aria-label="Minesweeper 3D"><span class="ui-wordmark__word" aria-hidden="true">Mine</span><span class="ui-wordmark__word" aria-hidden="true">sweeper</span><span class="ui-wordmark__word" aria-hidden="true">3D</span></h1></div>
+    <section class="ui-frame" id="daily-frame" aria-labelledby="daily-title">
+      <div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"></div>
+      <header class="ui-frame__head">
+        <div class="ui-frame__start"><button type="button" id="daily-back" class="ui-button ui-button--secondary ui-button--sm" data-back>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button></div>
+        <h2 class="ui-frame__title" id="daily-title">Daily</h2>
+        <div class="ui-frame__end"></div>
+      </header>
+      <div class="ui-frame__body" id="daily-body">
+        <div class="ui-column" id="daily-modes">
+          <div class="ui-section-label"><h3 class="ui-section-label__text" id="daily-today">Today</h3><span class="ui-section-label__aside" id="daily-date" data-date></span></div>
+          <p class="ui-text ui-text--muted">The same boards for everyone each day, started on the marked cell. One counted try each.</p>
+          <div class="ui-options" role="group" aria-labelledby="daily-today">
+            <button type="button" class="ui-option" aria-pressed="false" id="daily-entry-classic-2d" data-mode="classic-2d"><span class="ui-option__name">Classic 2D</span><span class="ui-chip ui-chip--muted" data-state>Not played</span><span class="ui-option__meta" data-line></span><span class="ui-option__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></button>
+            <button type="button" class="ui-option" aria-pressed="false" id="daily-entry-hexagon" data-mode="hexagon"><span class="ui-option__name">Hexagon</span><span class="ui-chip hidden" data-state></span><span class="ui-option__meta" data-line>Coming soon</span><span class="ui-option__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></button>
+            <button type="button" class="ui-option" aria-pressed="false" id="daily-entry-triangle" data-mode="triangle"><span class="ui-option__name">Triangle</span><span class="ui-chip hidden" data-state></span><span class="ui-option__meta" data-line>Coming soon</span><span class="ui-option__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></button>
+            <button type="button" class="ui-option" aria-pressed="false" id="daily-entry-surface" data-mode="surface"><span class="ui-option__name">Surface</span><span class="ui-chip hidden" data-state></span><span class="ui-option__meta" data-line>Coming soon</span><span class="ui-option__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></button>
+            <button type="button" class="ui-option" aria-pressed="false" id="daily-entry-3d" data-mode="3d"><span class="ui-option__name">3D</span><span class="ui-chip ui-chip--muted" data-state>Not played</span><span class="ui-option__meta" data-line></span><span class="ui-option__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></button>
           </div>
         </div>
-        <div id="daily-cube" class="ui-panel" role="group" aria-labelledby="daily-cube-title" data-daily="cube">
-          <h3 class="ui-heading" id="daily-cube-title">Cube</h3>
-          <p class="ui-text ui-text--muted" data-date></p>
-          <p class="ui-text ui-text--muted" data-board></p>
-          <p class="ui-text" data-state>Not played</p>
-          <p class="ui-text ui-text--muted" data-streak></p>
-          <p class="ui-text ui-text--warning hidden" data-reason></p>
-          <div class="ui-code" data-code><span class="ui-code__label">Board code</span><code class="ui-code__value"></code><button type="button" id="daily-cube-copy" class="ui-button ui-button--secondary" data-copy="code">Copy</button><button type="button" id="daily-cube-copy-link" class="ui-button ui-button--secondary" data-copy="link">Copy link</button></div>
-          <div class="ui-actions ui-actions--row">
-            <button type="button" id="daily-cube-play" class="ui-button ui-button--primary" data-play>Play</button>
-            <button type="button" id="daily-cube-watch" class="ui-button ui-button--secondary hidden" data-watch>Watch replay</button>
-          </div>
+        <div class="ui-divider ui-divider--vertical" role="separator" aria-orientation="vertical"></div>
+        <div class="ui-column" id="daily-detail">
+          <div class="ui-section-label"><h3 class="ui-section-label__text" id="daily-detail-title" data-title></h3></div>
+          <figure class="ui-scene-panel" id="daily-preview" aria-labelledby="daily-detail-title"><div class="ui-scene-panel__stage" id="daily-preview-stage"></div><figcaption class="ui-scene-panel__tag hidden" id="daily-preview-tag"></figcaption></figure>
+          <p class="ui-text ui-text--warning hidden" id="daily-reason" data-reason></p>
+          <p class="ui-text ui-text--muted hidden" id="daily-note" data-note></p>
+          <div class="ui-row" id="daily-status" data-status><span class="ui-chip ui-chip--muted" id="daily-result" data-result>Not played</span><span class="ui-text ui-text--muted" id="daily-streak" data-streak></span></div>
+          <div class="ui-code" id="daily-code" data-code><span class="ui-code__label">Board code</span><code class="ui-code__value"></code><button type="button" id="daily-copy" class="ui-button ui-button--secondary" data-copy="code">Copy</button><button type="button" id="daily-copy-link" class="ui-button ui-button--secondary" data-copy="link">Copy link</button></div>
         </div>
       </div>
-      <div class="ui-actions ui-actions--row">
-        <button type="button" id="daily-back" class="ui-button ui-button--secondary" data-back>Back</button>
-        <span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>
-      </div>
+      <footer class="ui-frame__foot">
+        <p class="ui-frame__summary" id="daily-summary" data-summary></p>
+        <div class="ui-actions ui-actions--row">
+          <button type="button" id="daily-watch" class="ui-button ui-button--secondary hidden" data-watch>Watch replay</button>
+          <button type="button" id="daily-play" class="ui-button ui-button--primary ui-button--lg" data-play>Play <span class="ui-key-hint" data-action="select" aria-hidden="true"></span></button>
+        </div>
+      </footer>
     </section>
   </section>
   <!-- /Daily -->

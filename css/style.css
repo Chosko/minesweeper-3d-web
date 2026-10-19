@@ -12,6 +12,8 @@ body {
 body.no-webgl2 #scene { display: none; }
 /* The main menu shows a preview other than its 3D one: the scene is not shown. */
 body.scene-off #scene { visibility: hidden; }
+/* A live scene panel inside a screen frame: the canvas, clipped to the panel, in front of the frame. */
+body.scene-front #scene { z-index: calc(var(--z-overlay) + 1); pointer-events: none; }
 .hidden { display: none !important; }
 
 kbd {
@@ -431,7 +433,9 @@ body.replaying #menu { display: none; }
    both pushes it down; the 3D one, taller, starts just under the wordmark. The window holds the
    options (left) beside what the chosen one needs (right); its option rows grow denser on the
    smaller desktop windows. On a phone: one full-bleed column, no wordmark, no bests and no summary,
-   the bar pinned at the bottom and the column scrolling above it. */
+   the bar pinned at the bottom and the column scrolling above it. The Daily screen (#daily) is the
+   Classic 2D board choice's composition: every mode on the left, the selected one's board in its
+   scene panel, its state and code on the right; on a phone no preview either. */
 #c2d-choice, #board-choice { flex-direction: column; justify-content: flex-start; padding: 0 var(--space-5); overflow: hidden; }
 #c2d-choice-top, #board-choice-top { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; }
 #board-choice-top { flex: none; }
@@ -442,6 +446,19 @@ body.replaying #menu { display: none; }
 #c2d-choice-options, #c2d-choice-detail, #board-choice-options, #board-choice-detail { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; padding: var(--space-6); }
 #c2d-choice-detail, #board-choice-detail { gap: var(--space-5); }
 #c2d-choice-options .ui-divider, #board-choice-options .ui-divider { margin: var(--space-1) 0; }
+#daily { flex-direction: column; justify-content: flex-start; padding: 0 var(--space-5); overflow: hidden; }
+#daily-top { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; }
+#daily-wordmark { margin: clamp(24px, 4vh, 44px) 0 var(--space-6); }
+#daily::after { content: ""; flex: 1 1 0; min-height: var(--space-4); }
+#daily-frame { flex: 0 1 auto; width: 1120px; }
+#daily-body { display: grid; grid-template-columns: minmax(0, 480fr) auto minmax(0, 640fr); padding: 0; }
+#daily-modes, #daily-detail { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; padding: var(--space-6); }
+#daily-detail { gap: var(--space-5); }
+#daily-modes > p, #daily-detail > p { margin: 0; }
+#daily-preview { flex: none; aspect-ratio: 16 / 9; min-height: 0; }
+#daily-preview-stage > [data-preview] { position: absolute; inset: var(--space-4); display: grid; place-items: center; }
+#daily-preview-stage > [data-preview][hidden] { display: none; }
+#daily-status { flex-wrap: wrap; align-items: center; gap: var(--space-3); }
 #c2d-choice-detail > :where([data-settings], [data-bests], [data-code-panel], form),
 #board-choice-detail > :where([data-settings], [data-bests], [data-code-panel], [data-learn-panel], form),
 #board-choice :where([data-preset-settings], [data-custom-settings]) { display: flex; flex-direction: column; gap: var(--space-3); }
@@ -458,6 +475,16 @@ body.replaying #menu { display: none; }
   #board-choice .ui-option__badge { width: 32px; height: 32px; }
 }
 @media (max-width: 1199px) { #c2d-choice-frame, #board-choice-frame { width: 984px; } }
+@media (max-width: 1439px) {
+  #daily-frame { width: 1080px; }
+  #daily-modes, #daily-detail { padding: var(--space-5) var(--space-6); }
+  #daily-detail { gap: var(--space-4); }
+  #daily .ui-option { min-height: 46px; padding: 6px 14px; }
+  #daily .ui-option__name { font-size: 18px; }
+  #daily .ui-option__meta { font-size: 13px; }
+  #daily .ui-option__check { width: 24px; height: 24px; }
+}
+@media (max-width: 1199px) { #daily-frame { width: 984px; } }
 /* The placeholder (#coming-soon): its window centred on the backdrop at the canvas's size, the body
    centring its line and Back; on a phone the window is full-bleed. */
 #coming-soon-frame { width: 900px; height: 560px; }
@@ -473,6 +500,12 @@ body.replaying #menu { display: none; }
   #c2d-choice-body, #board-choice-body { display: block; }
   #c2d-choice-options, #board-choice-options { padding-bottom: var(--space-3); }
   #c2d-choice-detail, #board-choice-detail { padding-top: var(--space-3); }
+  #daily { padding: 0; }
+  #daily-top, #daily-preview, #daily-summary, #daily-body > .ui-divider--vertical, #daily::after { display: none; }
+  #daily-frame { flex: 1 1 auto; width: 100%; border-radius: 0; box-shadow: none; }
+  #daily-body { display: block; }
+  #daily-modes { padding-bottom: var(--space-3); }
+  #daily-detail { padding-top: var(--space-3); }
   #coming-soon { padding: 0; }
   #coming-soon-frame { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
 }

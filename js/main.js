@@ -42,7 +42,7 @@ import { createViewer3D } from './replay/viewer-3d.js';
 import { REPLAY_SCREEN } from './records/replay-list.js';
 import { createResultsView, resultsContent, resultsEnter, LOOK_REFUSED } from './results/view.js';
 import { copyBoardCode } from './ui/components.js';
-import { DAILY_SCREEN, dailyRows, createDailyBoards, bindDailyScreen, countedAttempt, dailyPreview } from './shell/daily.js';
+import { DAILY_SCREEN, dailyModes, dailyPanel, createDailyBoards, bindDailyScreen, countedAttempt, dailyPreview } from './shell/daily.js';
 import { resolveCode, gameStart, freeStart, createChallengeLinks } from './shell/challenge.js';
 import { dailyGame, dateText } from './records/board-code.js';
 import { boardLabel, boardKey, createBoardIdentity, MODE_3D } from './records/board.js';
@@ -695,18 +695,54 @@ const CHOICE_2D = bindBoardChoice({
 // ---------------------------------------------------------------- daily boards and board codes
 // The daily boards: each mode's warm client pre-generates today's unused ones when the main menu
 // shows, a daily starts on its forced, marked start cell with that board, and the Daily screen shows
-// each row's state. A board code — typed in a board choice or carried by a #board= link — starts a
-// challenge in its mode; today's daily code opens the Daily screen instead (js/shell/challenge.js).
+// every mode with its state. A board code — typed in a board choice or carried by a #board= link —
+// starts a challenge in its mode; today's daily code opens the Daily screen instead
+// (js/shell/challenge.js).
 const DAILY_BOARDS_HELD = createDailyBoards({ clients: { 'classic-2d': () => mode2d.client, '3d': () => (WEBGL2 ? GEN_3D : null) } });
+// The Daily screen's panel shows the selected mode's board: today's Expert closed with its start cell
+// marked, drawn by a Classic 2D board view; today's cube drawn live by the 3D renderer
+// (showDailyScene); or a coming-soon mode's colour badge.
+const DAILY_PREVIEW = bindMenuPreview({
+  panel: document.getElementById('daily-preview'),
+  stage: document.getElementById('daily-preview-stage'),
+  tag: document.getElementById('daily-preview-tag'),
+  iconOf: (entry) => document.querySelector(`#menu-entry-${entry} .ui-mode-entry__icon > svg`),
+  mountBoard: ({ container, grid }) => mountBoardView({ container, grid, minTile: 1 }),
+  boardOf: () => {
+    const daily = dailyPreview();
+    return { key: daily.date, ...dailyBoard2D(daily) };
+  },
+});
 const DAILY_VIEW = bindDailyScreen({
   root: document.getElementById('daily'),
   onPlay: (id) => playDaily(id, padGesture ? 'pad' : 'pointer'),
   onWatch: (replayId) => SHELL.go(REPLAY_SCREEN, { data: { replayId, returnTo: { screen: DAILY_SCREEN } } }),
   onBack: () => shellBack('pointer'),
   onCopy: (c) => copyCode(c),
+  onSelect: (entry) => {
+    const panel = dailyPanel(entry, { missing: MISSING });
+    DAILY_PREVIEW.show(panel);
+    if (panel.kind === 'scene') showDailyScene();
+    syncScenePanel();
+    needRender = true;
+  },
 });
 const UNAVAILABLE_MODES = WEBGL2 ? {} : { '3d': UNAVAILABLE_REASONS.webgl2 };
-function showDaily() { DAILY_VIEW.show(dailyRows({ records: RECORDS, replays: REPLAYS, unavailable: UNAVAILABLE_MODES })); }
+function showDaily() { DAILY_VIEW.show(dailyModes({ records: RECORDS, replays: REPLAYS, unavailable: UNAVAILABLE_MODES })); }
+/** Today's daily cube in the renderer, closed, its start cube marked: the Daily screen's 3D preview. */
+let dailyCube = null; // { date, view, mark }
+function showDailyScene() {
+  if (!WEBGL2) return;
+  const date = dateText();
+  if (dailyCube?.date !== date) {
+    const { board, startCell } = dailyGame('cube', date);
+    dailyCube = { date, view: create3DGame({ X: board.width, Y: board.height, Z: board.depth, mines: board.mines }).view, mark: startCell };
+  }
+  renderer.setGame(dailyCube.view);
+  renderer.setMark(dailyCube.mark);
+  applyPixelRatio(dailyCube.view.n);
+  renderer.setSelected(-1);
+}
 /** Start a forced game — a daily or a challenge — in its mode; a 3D one enters play as Play again does. */
 function startForced(start, source) {
   if (start.mode === '3d' && !WEBGL2) return;
@@ -1501,8 +1537,8 @@ function makeDemo() {
 }
 
 function showMainMenu() { SHELL.go('menu'); }
-/** The menu screens show the decorative demo board behind them; without WebGL 2, the page's static background. */
-const BACKDROP_SCREENS = new Set(['menu', 'board-choice', 'coming-soon', 'records', 'classic-2d-choice', 'settings']);
+/** The menu screens orbit the camera about the board behind them or in their scene panel (the decorative demo board, the Daily screen's cube); without WebGL 2, the page's static background. */
+const BACKDROP_SCREENS = new Set(['menu', 'board-choice', 'coming-soon', 'records', 'classic-2d-choice', 'settings', 'daily']);
 function onBackdrop() { return BACKDROP_SCREENS.has(S.mode); }
 /** Test hook: `?still-backdrop` in the page's address draws the backdrop when it changes instead of orbiting it every frame. */
 const STILL_BACKDROP = new URLSearchParams(location.search).has('still-backdrop');
@@ -1553,16 +1589,28 @@ function syncScenePanel() {
   }
   const box = stage?.getBoundingClientRect();
   const round = box ? getComputedStyle(stage.closest('.ui-scene-panel')).borderTopLeftRadius : '';
-  renderer.renderer.domElement.style.clipPath = box
-    ? `inset(${box.top}px ${window.innerWidth - box.right}px ${window.innerHeight - box.bottom}px ${box.left}px round ${round})` : '';
+  // A panel inside a screen frame (the Daily screen's) is drawn in front of the frame, clipped to the
+  // part of the panel the frame's scrolling body shows.
+  const body = stage?.closest('.ui-frame__body')?.getBoundingClientRect();
+  const clip = box && body
+    ? { top: Math.max(box.top, body.top), right: Math.min(box.right, body.right), bottom: Math.min(box.bottom, body.bottom), left: Math.max(box.left, body.left) }
+    : box;
+  renderer.renderer.domElement.style.clipPath = clip
+    ? `inset(${clip.top}px ${window.innerWidth - clip.right}px ${window.innerHeight - clip.bottom}px ${clip.left}px round ${round})` : '';
+  document.body.classList.toggle('scene-front', !!body);
   document.body.classList.toggle('scene-off', sceneOff());
   if (renderer.setTarget(box ? { x: box.left, y: box.top, width: box.width, height: box.height } : null)) needRender = true;
 }
-/** The main menu shows a preview other than its 3D one, or a board choice its own backdrop: no 3D scene shows or draws. */
+/**
+ * The main menu shows a preview other than its 3D one, the Daily screen no 3D panel in view, or a
+ * board choice its own backdrop: no 3D scene shows or draws.
+ */
 function sceneOff() {
-  return (S.mode === 'menu' && !menuSceneShown()) || S.mode === 'classic-2d-choice' || S.mode === 'board-choice';
+  return (S.mode === 'menu' && !menuSceneShown()) || S.mode === 'classic-2d-choice' || S.mode === 'board-choice'
+    || (S.mode === DAILY_SCREEN && !(DAILY_PREVIEW.shown?.kind === 'scene' && scenePanel));
 }
 if (WEBGL2) window.addEventListener('resize', () => syncScenePanel()); // the panel may move with the window
+if (WEBGL2) document.getElementById('daily-body').addEventListener('scroll', () => syncScenePanel(), { passive: true }); // or with its frame's body
 if (WEBGL2) window.addEventListener('resize', () => { renderer.resize(); needRender = true; });
 // The orbit's dolly range follows the new aspect; the camera stays where it is.
 if (WEBGL2) window.addEventListener('resize', () => { if (cameraMode === 'orbit' && S.game) orbitCam.setRange(orbitRangeAt(S.spacing)); });

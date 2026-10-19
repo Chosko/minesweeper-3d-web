@@ -985,7 +985,7 @@ Feature: 3d-play-flow
 
 ## 209. Daily screen in the board-choice layout, listing every mode
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, js/shell/daily.js, js/main.js, tests/shell-daily.test.mjs, tests/components.test.mjs
 Preconditions: 163, 164, 166, 206

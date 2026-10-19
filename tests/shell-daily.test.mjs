@@ -1,14 +1,16 @@
 // The daily boards in the shell (js/shell/daily.js): each row's counted attempt and state from the
 // records — across a reload and across midnight —, the days in a row, the boards pre-generated when
-// the main menu shows and nothing asked for a used attempt, and the Daily screen's binding; its
-// markup in index.html and its wiring in js/main.js.
+// the main menu shows and nothing asked for a used attempt, the Daily screen's entries — every mode
+// in menu order, the modes not built coming soon — and its binding; its markup in index.html and its
+// wiring in js/main.js.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  DAILY_SCREEN, NOT_PLAYED, LOST, dailyIdentity, countedAttempt, dailyRows, createDailyBoards, bindDailyScreen, dailyDateLabel,
+  DAILY_SCREEN, NOT_PLAYED, LOST, dailyIdentity, countedAttempt, dailyRows, dailyModes, dailyPanel, createDailyBoards, bindDailyScreen,
+  dailyDateLabel,
 } from '../js/shell/daily.js';
 import { dailyGame } from '../js/records/board-code.js';
 import { createRecordsModel } from '../js/records/model.js';
@@ -16,7 +18,7 @@ import { createRecordsStore, IN_PROGRESS_DOC } from '../js/records/store.js';
 import { createStorage } from '../js/platform/storage.js';
 import { createMemoryBackend } from '../js/platform/memory-backend.js';
 import { buildSummary } from '../js/records/summary.js';
-import { UNAVAILABLE_REASONS } from '../js/shell/menu.js';
+import { UNAVAILABLE_REASONS, MENU_ENTRIES, COMING_SOON } from '../js/shell/menu.js';
 import { dateText } from '../js/records/board-code.js';
 import { browserSuite } from './helpers/browser.mjs';
 import { patience } from './helpers/timing.mjs';
@@ -63,9 +65,9 @@ test('daily rows: Expert and Cube, today\'s local date, not played, their codes,
 test('daily rows: the counted attempt is the first daily game of the date; its result shows and Play is gone', () => {
   const won = daily('expert', '20261011', { ms: 48291 });
   const records = store([daily('cube', '20261010'), won, daily('cube', '20261011', { outcome: 'lost' })]);
-  const [expert, cube] = dailyRows({ records, now: TODAY, replays: { has: (id) => id === won.id } });
+  const [expert, cube] = dailyRows({ records, now: TODAY, replays: { has: () => true } });
   assert.deepEqual([expert.state, expert.result, expert.canPlay, expert.attempt, expert.watch], ['won', 'Won 48.291 s', false, won.id, won.id]);
-  assert.deepEqual([cube.state, cube.result, cube.canPlay, cube.watch], ['lost', LOST, false, null]);
+  assert.deepEqual([cube.state, cube.result, cube.canPlay, cube.watch], ['lost', LOST, false, null], 'a lost game\'s kept replay offers no Watch replay');
   assert.deepEqual([cube.current, cube.longest], [2, 2]);
   assert.equal(cube.streak, 'Days in a row 2 · longest 2');
   assert.equal(countedAttempt(records, 'expert', '20261011').id, won.id);
@@ -104,6 +106,44 @@ test('daily rows: a daily started before midnight is its own date\'s attempt; th
   assert.equal(after.state, 'unplayed');
   assert.equal(after.canPlay, true);
   assert.equal(after.current, 1, 'yesterday\'s daily keeps the run alive today');
+});
+
+test('daily modes: every mode in menu order; Classic 2D and 3D with their board, the others coming soon', () => {
+  const modes = dailyModes({ records: store(), now: TODAY });
+  assert.deepEqual(modes.map((m) => m.mode), MENU_ENTRIES.filter((e) => e.mode).map((e) => e.mode));
+  assert.deepEqual(modes.map((m) => m.mode), ['classic-2d', 'hexagon', 'triangle', 'surface', '3d']);
+  assert.deepEqual(modes.map((m) => [m.label, m.daily?.id ?? null, m.line]), [
+    ['Classic 2D', 'expert', 'Expert · 30 × 16 · 99 mines · no-guess'],
+    ['Hexagon', null, COMING_SOON],
+    ['Triangle', null, COMING_SOON],
+    ['Surface', null, COMING_SOON],
+    ['3D', 'cube', 'Cube · 8 × 8 × 8 · 40 mines · no-guess'],
+  ]);
+  assert.deepEqual(modes.map((m) => m.title), [
+    'Classic 2D · Expert · no-guess', 'Hexagon · daily', 'Triangle · daily', 'Surface · daily', '3D · Cube 8 × 8 × 8 · 40 mines · no-guess',
+  ]);
+  assert.deepEqual(modes.map((m) => m.summary), [
+    'Daily · Classic 2D · Expert · no-guess', 'Daily · Hexagon · coming soon', 'Daily · Triangle · coming soon', 'Daily · Surface · coming soon',
+    'Daily · 3D · Cube 8 × 8 × 8 · 40 mines · no-guess',
+  ]);
+  assert.equal(modes[1].note, 'Hexagon gets its own daily board when the mode arrives.');
+  assert.equal(modes[0].note, null);
+  assert.deepEqual(modes.map((m) => m.canPlay), [true, false, false, false, true], 'a coming-soon mode cannot be played');
+});
+
+test('daily modes: a played row says so in the summary; 3D without WebGL 2 reads its reason and cannot be played', () => {
+  const records = store([daily('expert', '20261011', { ms: 48213 })]);
+  const [two, , , , three] = dailyModes({ records, now: TODAY, unavailable: { '3d': UNAVAILABLE_REASONS.webgl2 } });
+  assert.deepEqual([two.daily.result, two.summary, two.canPlay], ['Won 48.213 s', 'Daily · Classic 2D · played today', false]);
+  assert.deepEqual([three.line, three.summary, three.canPlay, three.daily.reason], [UNAVAILABLE_REASONS.webgl2, 'Daily · 3D · needs WebGL 2', false, UNAVAILABLE_REASONS.webgl2]);
+});
+
+test('daily panel: the closed Expert board for Classic 2D, the 3D scene for the cube (still without WebGL 2), a colour badge for a coming-soon mode', () => {
+  const modes = dailyModes({ records: store(), now: TODAY });
+  assert.deepEqual(dailyPanel(modes[0]), { kind: 'daily', tag: '' });
+  assert.deepEqual(dailyPanel(modes[4]), { kind: 'scene', tag: '' });
+  assert.deepEqual(dailyPanel(modes[4], { missing: ['webgl2'] }), { kind: 'still', tag: '' });
+  assert.deepEqual(dailyPanel(modes[1]), { kind: 'badge', entry: 'hexagon', label: COMING_SOON, note: null, locked: false });
 });
 
 // ---------------------------------------------------------------- pre-generation
@@ -156,39 +196,63 @@ test('pre-generation: nothing is asked for a used attempt; take hands a board ov
 
 // ---------------------------------------------------------------- the screen
 
-function fakeEl(data = {}, id = '') {
+// A small element tree: enough of the DOM for the binder — attribute and class selectors, the
+// disabled flag, attributes, listeners and keydown events.
+function el(attrs = {}, ...children) {
+  const classes = new Set((attrs.class ?? '').split(/\s+/).filter(Boolean));
   const e = {
-    id, dataset: data, textContent: '', disabled: false, hidden: new Set(), listeners: {}, children: [], attrs: {},
-    classList: { toggle: (c, on) => { if (on) e.hidden.add(c); else e.hidden.delete(c); } },
-    setAttribute(k, v) { e.attrs[k] = v; },
+    id: attrs.id ?? '', dataset: {}, attrs: {}, textContent: '', disabled: 'disabled' in attrs, listeners: {}, children,
+    classList: { toggle: (c, on) => { if (on ?? !classes.has(c)) classes.add(c); else classes.delete(c); }, contains: (c) => classes.has(c), add: (c) => classes.add(c), remove: (c) => classes.delete(c) },
+    setAttribute(k, v) { e.attrs[k] = String(v); },
+    getAttribute(k) { return e.attrs[k] ?? null; },
+    removeAttribute(k) { delete e.attrs[k]; },
+    toggleAttribute(k, on) { if (on) e.attrs[k] = ''; else delete e.attrs[k]; },
     addEventListener(t, f) { (e.listeners[t] ??= []).push(f); },
-    click() { for (const f of e.listeners.click ?? []) f(); },
-    querySelector(sel) {
-      const m = /^\[data-([\w-]+)\]$/.exec(sel);
-      const name = m ? m[1] : sel === '.ui-code__value' ? 'value' : null;
-      return e.children.find((c) => c.dataset[name] !== undefined) ?? null;
-    },
-    querySelectorAll(sel) {
-      if (sel === '[data-copy]') return e.children.filter((c) => c.dataset.copy);
-      const m = /^\[data-([\w-]+)\]$/.exec(sel);
-      return e.children.filter((c) => c.dataset[m[1]] !== undefined);
-    },
+    fire(t, props = {}) { const ev = { target: e, currentTarget: e, preventDefault() { ev.prevented = true; }, ...props }; for (const f of e.listeners[t] ?? []) f(ev); return ev; },
+    click() { if (!e.disabled) e.fire('click'); },
+    closest(sel) { for (let n = e; n; n = n.parent) if (matches(n, sel)) return n; return null; },
+    querySelectorAll(sel) { const out = []; const walk = (n) => { for (const c of n.children) { if (matches(c, sel)) out.push(c); walk(c); } }; walk(e); return out; },
+    querySelector(sel) { return e.querySelectorAll(sel)[0] ?? null; },
+    get classes() { return classes; },
   };
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k.startsWith('data-')) e.dataset[k.slice(5).replace(/-(\w)/g, (_, c) => c.toUpperCase())] = v;
+    else if (k !== 'class' && k !== 'id' && k !== 'disabled') e.attrs[k] = v;
+  }
+  for (const c of children) c.parent = e;
   return e;
 }
-function fakeScreen() {
-  const root = fakeEl();
-  for (const id of ['expert', 'cube']) {
-    const row = fakeEl({ daily: id });
-    const code = fakeEl({ code: '' });
-    code.children.push(fakeEl({ value: '' }), fakeEl({ copy: 'code' }), fakeEl({ copy: 'link' }));
-    row.children.push(...['date', 'board', 'state', 'streak', 'reason'].map((k) => fakeEl({ [k]: '' })), code,
-      fakeEl({ play: '' }, `daily-${id}-play`), fakeEl({ watch: '' }, `daily-${id}-watch`));
-    root.children.push(row);
-  }
-  root.children.push(fakeEl({ back: '' }, 'daily-back'));
-  return root;
+function matches(n, sel) {
+  return sel.split(',').map((s) => s.trim()).some((one) => {
+    if (one.startsWith('.')) return n.classList.contains(one.slice(1));
+    if (one === 'button') return n.attrs.type === 'button';
+    const m = /^\[data-([\w-]+)(?:="([^"]*)")?\]$/.exec(one);
+    if (!m) return false;
+    const key = m[1].replace(/-(\w)/g, (_, c) => c.toUpperCase());
+    return n.dataset[key] !== undefined && (m[2] === undefined || n.dataset[key] === m[2]);
+  });
 }
+// The Daily screen's markup as the binder reads it: the date, one option per mode (a chip and a meta
+// line), the selected mode's title, reason, note, state and streak, code chip, summary, Watch replay,
+// Play and Back.
+function fakeScreen() {
+  const option = (mode) => el({ class: 'ui-option', type: 'button', id: `daily-entry-${mode}`, 'data-mode': mode },
+    el({ class: 'ui-chip hidden', 'data-state': '' }), el({ class: 'ui-option__meta', 'data-line': '' }));
+  const code = el({ class: 'ui-code', 'data-code': '' }, el({ class: 'ui-code__value' }), el({ type: 'button', 'data-copy': 'code' }), el({ type: 'button', 'data-copy': 'link' }));
+  return el({ id: 'daily' },
+    el({ type: 'button', id: 'daily-back', 'data-back': '' }),
+    el({ 'data-date': '' }),
+    el({}, ...['classic-2d', 'hexagon', 'triangle', 'surface', '3d'].map(option)),
+    el({ 'data-title': '' }),
+    el({ class: 'hidden', 'data-reason': '' }),
+    el({ class: 'hidden', 'data-note': '' }),
+    el({ 'data-status': '' }, el({ class: 'ui-chip', 'data-result': '' }), el({ 'data-streak': '' })),
+    code,
+    el({ 'data-summary': '' }),
+    el({ type: 'button', class: 'hidden', id: 'daily-watch', 'data-watch': '' }),
+    el({ type: 'button', id: 'daily-play', 'data-play': '' }));
+}
+const at = (root, sel) => root.querySelector(sel);
 
 test('a won daily\'s time is the results screen\'s formatTime, never a local tenths format', () => {
   const src = read('js/shell/daily.js');
@@ -196,48 +260,122 @@ test('a won daily\'s time is the results screen\'s formatTime, never a local ten
   assert.doesNotMatch(src, /\btenths\b/);
 });
 
-test('the Daily screen shows each row, plays and watches through its callbacks, and focuses the first Play', () => {
+test('the Daily screen lists every mode with its state chip and board line, selects the first playable one and focuses it', () => {
+  const root = fakeScreen();
+  const selected = [];
+  const screen = bindDailyScreen({ root, onPlay: () => {}, onWatch: () => {}, onBack: () => {}, onSelect: (m) => selected.push(m.mode) });
+  const won = daily('expert', '20261011', { ms: 47380 });
+  screen.show(dailyModes({ records: store([won]), now: TODAY, replays: { has: () => true } }));
+  const opt = (mode) => at(root, `[data-mode="${mode}"]`);
+  assert.equal(at(root, '[data-date]').textContent, '11 Oct 2026');
+  assert.equal(at(opt('classic-2d'), '[data-state]').textContent, 'Won 47.380 s', 'the results screen\'s formatTime, trailing zeros kept');
+  assert.equal(at(opt('classic-2d'), '[data-state]').classes.has('ui-chip--won'), true);
+  assert.equal(at(opt('3d'), '[data-state]').textContent, NOT_PLAYED);
+  assert.equal(at(opt('3d'), '[data-state]').classes.has('ui-chip--muted'), true);
+  for (const mode of ['hexagon', 'triangle', 'surface']) {
+    assert.equal(at(opt(mode), '[data-state]').classes.has('hidden'), true, `${mode}: no state chip`);
+    assert.equal(at(opt(mode), '[data-line]').textContent, COMING_SOON);
+  }
+  assert.equal(at(opt('classic-2d'), '[data-line]').textContent, 'Expert · 30 × 16 · 99 mines · no-guess');
+  assert.equal(screen.selected, '3d', 'today\'s first playable mode');
+  assert.deepEqual(selected, ['3d']);
+  assert.deepEqual(['classic-2d', 'hexagon', 'triangle', 'surface', '3d'].map((m) => opt(m).attrs['aria-pressed']), ['false', 'false', 'false', 'false', 'true']);
+  assert.equal(screen.defaultFocus(), '#daily-entry-3d');
+  assert.equal(at(root, '[data-title]').textContent, '3D · Cube 8 × 8 × 8 · 40 mines · no-guess');
+  assert.equal(at(root, '[data-streak]').textContent, 'Days in a row 0 · longest 0');
+  assert.equal(at(root, '.ui-code__value').textContent, dailyGame('cube', '20261011').code);
+  assert.equal(at(root, '[data-summary]').textContent, 'Daily · 3D · Cube 8 × 8 × 8 · 40 mines · no-guess');
+  assert.equal(at(root, '[data-play]').disabled, false);
+  assert.equal(at(root, '[data-watch]').classes.has('hidden'), true);
+});
+
+test('the Daily screen: Play plays the selected mode\'s board, Watch replay only for a won game the library kept, Play disabled once played and on a coming-soon mode', () => {
   const root = fakeScreen();
   const calls = [];
   const screen = bindDailyScreen({ root, onPlay: (id) => calls.push(['play', id]), onWatch: (id) => calls.push(['watch', id]), onBack: () => calls.push(['back']) });
   const won = daily('expert', '20261011', { ms: 47380 });
-  screen.show(dailyRows({ records: store([won]), now: TODAY, replays: { has: () => true } }));
-  const [expert, cube] = root.children;
-  const part = (row, k) => row.querySelector(`[data-${k}]`);
-  assert.equal(part(expert, 'state').textContent, 'Won 47.380 s'); // the results screen's formatTime, trailing zeros kept
-  assert.equal(part(expert, 'play').disabled, true);
-  assert.equal(part(expert, 'watch').hidden.has('hidden'), false);
-  assert.equal(part(cube, 'play').disabled, false);
-  assert.equal(part(cube, 'state').textContent, NOT_PLAYED);
-  assert.equal(part(cube, 'date').textContent, '11 Oct 2026');
-  assert.equal(part(cube, 'code').querySelector('.ui-code__value').textContent, dailyGame('cube', '20261011').code);
-  assert.equal(screen.defaultFocus(), '#daily-cube-play');
-  part(expert, 'play').click();
-  part(cube, 'play').click();
-  part(expert, 'watch').click();
-  root.querySelector('[data-back]').click();
+  const kept = new Set([won.id]);
+  screen.show(dailyModes({ records: store([won]), now: TODAY, replays: { has: (id) => kept.has(id) } }));
+  at(root, '[data-play]').click();
+  at(root, '[data-mode="classic-2d"]').click();
+  assert.equal(screen.selected, 'classic-2d');
+  assert.equal(at(root, '[data-play]').disabled, true, 'today\'s try is used');
+  assert.equal(at(root, '[data-watch]').classes.has('hidden'), false, 'its replay was kept');
+  assert.equal(at(root, '[data-result]').textContent, 'Won 47.380 s');
+  assert.equal(at(root, '[data-summary]').textContent, 'Daily · Classic 2D · played today');
+  at(root, '[data-watch]').click();
+  at(root, '[data-play]').click();
+  at(root, '[data-mode="hexagon"]').click();
+  assert.equal(at(root, '[data-play]').disabled, true, 'a coming-soon mode cannot be played');
+  assert.equal(at(root, '[data-watch]').classes.has('hidden'), true);
+  assert.equal(at(root, '[data-code]').classes.has('hidden'), true, 'no board, no code');
+  assert.equal(at(root, '[data-status]').classes.has('hidden'), true, 'no state, no days in a row');
+  assert.equal(at(root, '[data-note]').classes.has('hidden'), false);
+  assert.equal(at(root, '[data-note]').textContent, 'Hexagon gets its own daily board when the mode arrives.');
+  assert.equal(at(root, '[data-summary]').textContent, 'Daily · Hexagon · coming soon');
+  at(root, '[data-back]').click();
   assert.deepEqual(calls, [['play', 'cube'], ['watch', won.id], ['back']]);
-  screen.show(dailyRows({ records: store([won, daily('cube', '20261011')]), now: TODAY }));
-  assert.equal(screen.defaultFocus(), '#daily-back', 'nothing left to play today');
+  kept.clear();
+  screen.show(dailyModes({ records: store([won]), now: TODAY, replays: { has: (id) => kept.has(id) } }));
+  assert.equal(screen.selected, 'hexagon', 'the selection stays across a refresh');
+  screen.select('classic-2d');
+  assert.equal(at(root, '[data-watch]').classes.has('hidden'), true, 'a replay the library no longer keeps');
+});
+
+test('the Daily screen: Enter on a mode selects it and plays it; 3D without WebGL 2 is disabled with its reason', () => {
+  const root = fakeScreen();
+  const calls = [];
+  const screen = bindDailyScreen({ root, onPlay: (id) => calls.push(id), onWatch: () => {}, onBack: () => {} });
+  screen.show(dailyModes({ records: store(), now: TODAY, unavailable: { '3d': UNAVAILABLE_REASONS.webgl2 } }));
+  const three = at(root, '[data-mode="3d"]');
+  assert.equal(three.disabled, true, 'the 3D entry is disabled');
+  assert.equal(at(three, '[data-line]').textContent, UNAVAILABLE_REASONS.webgl2, 'with its reason');
+  assert.equal(screen.selected, 'classic-2d');
+  screen.select('3d');
+  assert.equal(screen.selected, 'classic-2d', 'a disabled entry is never selected');
+  const hex = at(root, '[data-mode="hexagon"]');
+  const enter = (target) => root.fire('keydown', { key: 'Enter', target });
+  assert.ok(enter(hex).prevented);
+  assert.equal(screen.selected, 'hexagon');
+  assert.deepEqual(calls, [], 'a coming-soon mode does not play');
+  enter(at(root, '[data-mode="classic-2d"]'));
+  assert.deepEqual(calls, ['expert']);
+  assert.equal(enter(at(root, '[data-back]')).prevented, undefined, 'another button activates itself');
+  root.fire('keydown', { key: 'Enter', target: hex, repeat: true });
+  assert.equal(screen.selected, 'classic-2d', 'a held Enter does nothing');
+  screen.show(dailyModes({ records: store([daily('expert', '20261011')]), now: TODAY, unavailable: { '3d': UNAVAILABLE_REASONS.webgl2 } }));
+  assert.equal(screen.defaultFocus(), '#daily-entry-classic-2d', 'the selected entry, played or not');
 });
 
 // ---------------------------------------------------------------- markup and wiring
 
 const INDEX = read('index.html');
 const MAIN = read('js/main.js');
+const STYLE = read('css/style.css');
 const DAILY_HTML = INDEX.slice(INDEX.indexOf('<section id="daily"'), INDEX.indexOf('<!-- /Daily -->'));
 
-test('index.html holds the Daily screen from the kit: two rows, each with its code chip, Play and Watch replay, and Back', () => {
+test('index.html holds the Daily screen in the board choice composition: wordmark, frame, five mode options, the panel, code chip and bottom bar', () => {
   assert.ok(DAILY_HTML.length > 400, 'index.html has #daily');
-  for (const id of ['expert', 'cube']) {
-    const row = DAILY_HTML.slice(DAILY_HTML.indexOf(`data-daily="${id}"`));
-    assert.match(row, new RegExp(`id="daily-${id}-play" class="ui-button ui-button--primary" data-play>Play</button>`));
-    assert.match(row, new RegExp(`id="daily-${id}-watch" class="ui-button ui-button--secondary hidden" data-watch>Watch replay</button>`));
-    assert.match(row, /<div class="ui-code" data-code>/);
-  }
-  assert.match(DAILY_HTML, /id="daily-back" class="ui-button ui-button--secondary" data-back>Back<\/button>/);
+  assert.match(DAILY_HTML, /^<section id="daily" class="overlay ui-backdrop hidden" aria-label="Daily">/);
+  assert.match(DAILY_HTML, /<h1 class="ui-wordmark" id="daily-wordmark"/);
+  assert.match(DAILY_HTML, /<section class="ui-frame" id="daily-frame" aria-labelledby="daily-title">/);
+  assert.match(DAILY_HTML, /id="daily-back" class="ui-button ui-button--secondary ui-button--sm" data-back>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/);
+  const modes = [...DAILY_HTML.matchAll(/<button type="button" class="ui-option" aria-pressed="false" id="daily-entry-([\w-]+)" data-mode="([\w-]+)"/g)];
+  assert.deepEqual(modes.map((m) => [m[1], m[2]]), MENU_ENTRIES.filter((e) => e.mode).map((e) => [e.mode, e.mode]), 'one option per mode, in menu order');
+  assert.match(DAILY_HTML, /<figure class="ui-scene-panel" id="daily-preview"/);
+  assert.match(DAILY_HTML, /<div class="ui-code" id="daily-code" data-code>/);
+  assert.match(DAILY_HTML, /<footer class="ui-frame__foot">\s*<p class="ui-frame__summary" id="daily-summary" data-summary><\/p>/);
+  assert.match(DAILY_HTML, /id="daily-watch" class="ui-button ui-button--secondary hidden" data-watch>Watch replay<\/button>/);
+  assert.match(DAILY_HTML, /id="daily-play" class="ui-button ui-button--primary ui-button--lg" data-play>Play <span class="ui-key-hint" data-action="select" aria-hidden="true"><\/span><\/button>/);
+  assert.doesNotMatch(DAILY_HTML, /ui-card/, 'no card');
   const classes = [...DAILY_HTML.matchAll(/class="([^"]*)"/g)].flatMap((m) => m[1].split(/\s+/));
   for (const c of classes) assert.ok(c.startsWith('ui-') || c === 'hidden' || c === 'overlay', `kit class only: ${c}`);
+});
+
+test('the Daily screen on a phone: one full-bleed column, no wordmark, no preview and no summary; Watch replay and Play pinned at the bottom', () => {
+  const phone = STYLE.slice(STYLE.lastIndexOf('@media (max-width: 719px)'));
+  assert.match(phone, /#daily-top[^{]*#daily-preview|#daily-preview[^{]*#daily-top/);
+  assert.match(phone, /#daily-frame[^{]*\{[^}]*width: 100%[^}]*border-radius: 0[^}]*\}/);
 });
 
 test('the shell routes the Daily screen, pre-generates when the menu shows and starts a daily with its board', () => {
@@ -245,6 +383,8 @@ test('the shell routes the Daily screen, pre-generates when the menu shows and s
   assert.match(MAIN, /menu: \{[^\n]*DAILY_BOARDS_HELD\.prepare\(RECORDS\)/, 'the menu shows: the daily boards are asked for');
   assert.match(MAIN, /function playDaily\(id, source\)/);
   assert.match(MAIN, /DAILY_BOARDS_HELD\.take\(game\.code\)/);
+  assert.match(MAIN, /dailyModes\(\{ records: RECORDS, replays: REPLAYS, unavailable: UNAVAILABLE_MODES \}\)/);
+  assert.match(MAIN, /BACKDROP_SCREENS = new Set\(\[[^\]]*'daily'/, 'the Daily screen sits on the backdrop');
 });
 
 // ---------------------------------------------------------------- in a browser
@@ -270,11 +410,17 @@ test('in a browser, the menu pre-generates today\'s Expert, Daily plays it on th
     assert.deepEqual(entries, ['classic-2d', 'hexagon', 'triangle', 'surface', '3d', 'daily', 'records', 'settings', 'quit']);
     await page.click('#menu-entry-daily');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'daily');
-    assert.equal(await page.evaluate(() => document.activeElement.id), 'daily-expert-play', 'the first Play has the focus');
-    assert.equal(await page.evaluate(() => document.querySelector('#daily-expert [data-code] .ui-code__value').textContent), code);
-    assert.equal(await page.evaluate(() => document.getElementById('daily-cube-play').disabled), true, 'no WebGL 2: the cube cannot be played');
-    assert.equal(await page.evaluate(() => document.querySelector('#daily-cube [data-reason]').textContent), UNAVAILABLE_REASONS.webgl2);
-    await page.click('#daily-expert-play');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'daily-entry-classic-2d', 'the first playable mode has the focus');
+    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#daily [data-mode]')].map((b) => b.dataset.mode)), ['classic-2d', 'hexagon', 'triangle', 'surface', '3d']);
+    assert.equal(await page.evaluate(() => document.querySelector('#daily [data-code] .ui-code__value').textContent), code);
+    assert.equal(await page.evaluate(() => document.getElementById('daily-entry-3d').disabled), true, 'no WebGL 2: the cube cannot be played');
+    assert.equal(await page.evaluate(() => document.querySelector('#daily-entry-3d [data-line]').textContent), UNAVAILABLE_REASONS.webgl2);
+    assert.equal(await page.evaluate(() => { const l = document.querySelector('#daily-preview [data-preview="daily"]'); return !!l && !l.hidden && !!l.querySelector('canvas'); }), true, 'the closed Expert board in the panel');
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, 'no horizontal scroll');
+    await page.click('#daily-entry-hexagon');
+    assert.equal(await page.evaluate(() => document.getElementById('daily-play').disabled), true, 'a coming-soon mode cannot be played');
+    await page.click('#daily-entry-classic-2d');
+    await page.click('#daily-play');
     await page.waitForFunction(() => globalThis.__ms.state.mode === 'classic-2d');
     const mark = dailyGame('expert', dateText()).startCell;
     assert.equal(await page.evaluate(() => globalThis.__ms.board2D.mark), mark);
@@ -296,9 +442,9 @@ test('in a browser, the menu pre-generates today\'s Expert, Daily plays it on th
     await page.click('#p-confirm-yes');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
     await page.click('#menu-entry-daily');
-    assert.equal(await page.evaluate(() => document.querySelector('#daily-expert [data-state]').textContent), 'Lost');
-    assert.equal(await page.evaluate(() => document.getElementById('daily-expert-play').disabled), true, 'the counted attempt is used');
-    assert.equal(await page.evaluate(() => globalThis.__ms.daily.has(document.querySelector('#daily-expert [data-code] .ui-code__value').textContent)), false, 'nothing asked for a used attempt');
+    assert.equal(await page.evaluate(() => document.querySelector('#daily-entry-classic-2d [data-state]').textContent), 'Lost');
+    assert.equal(await page.evaluate(() => document.getElementById('daily-play').disabled), true, 'the counted attempt is used');
+    assert.equal(await page.evaluate(() => globalThis.__ms.daily.has(document.querySelector('#daily [data-code] .ui-code__value').textContent)), false, 'nothing asked for a used attempt');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

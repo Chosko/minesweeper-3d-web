@@ -523,16 +523,26 @@
      height, depth, mines). Play on Learn 3D starts it without saving a
      choice.
      Default focus: the last board choice, the chosen option.
-   Daily (index.html #daily, filled by js/shell/daily.js): ui-card
-     ui-screen--wide holding the title, a ui-text--muted line, a ui-columns
-     of one ui-panel per daily board (data-daily: Expert, Cube) — a
-     ui-heading, ui-text--muted date and board lines, a ui-text state line
-     ("Not played", "Won 48.2 s", "Lost"), a ui-text--muted days-in-a-row
-     line, a ui-text--warning reason line while the board cannot run here, a
-     ui-code chip of today's code and ui-actions--row (Play primary, disabled
-     once the day's attempt is used; Watch replay secondary, shown for a kept
-     replay) — and ui-actions--row (Back). Default focus: the first enabled
-     Play, else Back.
+   Daily (index.html #daily, filled by js/shell/daily.js): the Classic 2D
+     board choice's composition (below), titled "Daily". On the left a
+     ui-section-label "Today" with the date as its aside, a ui-text--muted
+     intro line and a ui-options of one ui-option per mode in menu order
+     (data-mode: Classic 2D, Hexagon, Triangle, Surface, 3D) — a mode with
+     a daily board shows its state ui-chip (--muted "Not played", --won
+     "Won 48.213 s", --lost "Lost") beside its name and its board line as
+     meta, disabled with its reason as meta while it cannot run here; the
+     others read "Coming soon". On the right the selected mode's
+     ui-section-label title, its ui-scene-panel (the closed Expert board
+     with its marked start cell, the 3D scene live, or a coming-soon
+     mode's badge card), a ui-text--warning reason line, a ui-text--muted
+     note for a coming-soon mode, a ui-row of its state ui-chip and days
+     in a row, and the ui-code chip of today's code. The foot: the summary,
+     Watch replay (secondary, shown for a kept replay) and Play (primary,
+     large, with its select key hint; disabled once the day's attempt is
+     used and on a mode that cannot be played). On a phone: one full-bleed
+     column, no wordmark, no preview and no summary, the bar pinned at the
+     bottom. Default focus: the selected mode, the first playable one when
+     the screen first shows.
    Coming soon (index.html #coming-soon): the one placeholder every menu
      entry whose screen has not landed routes to; ui-backdrop holding a
      ui-frame (Main menu, a secondary button with its back key hint; the

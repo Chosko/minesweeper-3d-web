@@ -49,13 +49,18 @@ The menu's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
 - `DAILY_SCREEN` = `'daily'`; `dailyIdentity(id)`, `countedAttempt(records,
   id, date)` — the first daily game of that date on the row's Daily board.
 - `dailyRows({ records, replays?, now?, unavailable? })` → per daily board
-  `{ id, label, board, date, dateLabel, code, state, result, current,
-  longest, streak, canPlay, attempt, watch, reason }`.
+  `{ id, mode, label, board, line, date, dateLabel, code, state, result,
+  current, longest, streak, canPlay, attempt, watch, reason }`.
+- `dailyModes({ records, replays?, now?, unavailable? })` → one entry per
+  mode of `MENU_ENTRIES` in menu order, `{ mode, label, daily, line, title,
+  summary, note, canPlay }`, `daily` null (*Coming soon*) for a mode with no
+  daily board; `dailyPanel(entry, { missing? })` → the scene panel's preview
+  for the menu's preview binder (`daily`, `scene`, `still` or `badge`).
 - `createDailyBoards({ clients })` → `{ prepare(records, now?), take(code),
   has(code) }`: today's unused boards pre-generated through each mode's
   client, held by code; `take` hands one over once.
-- `bindDailyScreen({ root, onPlay, onWatch, onBack, onCopy? })` → `{ show(rows),
-  defaultFocus() }` over `#daily`.
+- `bindDailyScreen({ root, onPlay, onWatch, onBack, onCopy?, onSelect? })` →
+  `{ show(entries), select(mode), selected, defaultFocus() }` over `#daily`.
 
 `js/shell/challenge.js`
 - `resolveCode(text, { today, mode? })` → `{ kind: 'refused' | 'daily' |
@@ -78,7 +83,11 @@ The menu's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
 - **Daily and challenges in `js/main.js`.** `DAILY_BOARDS_HELD` (clients:
   `mode2d.client`, `GEN_3D` given WebGL 2) is prepared on every menu show;
   `DAILY_VIEW` fills `#daily` on its router screen (`DAILY_SCREEN`, default
-  focus the first enabled Play). `playDaily` refuses a used attempt, takes
+  focus the selected mode's entry, the first playable one on a first show);
+  each selection shows `DAILY_PREVIEW` (`bindMenuPreview` over
+  `#daily-preview`), and the 3D one puts today's closed cube with its marked
+  start cube in the renderer (`showDailyScene`), drawn in front of the frame
+  through its scene panel (`scene-front`). `playDaily` refuses a used attempt, takes
   the held board and starts through `startForced` (`MODES.start`, then
   `enterPlay3D` for 3D); `playChallenge` the same from a parsed code. Both
   board choices' code fields go through `checkCode` / `playCode` (today's

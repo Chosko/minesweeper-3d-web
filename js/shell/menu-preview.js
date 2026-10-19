@@ -16,7 +16,8 @@
 //   boardOf(kind)        → { key, grid, game, mark? } for 'board' and 'daily'; a board whose key
 //                        changed (a new day) is handed to its view again.
 //   show(preview)        shows `preview`: the panel is ui-scene-panel--live only for 'scene', the tag
-//                        names the board (hidden for a card); `shown` is the preview showing.
+//                        names the board (hidden for a card and for an empty tag); `shown` is the
+//                        preview showing.
 // The board views stay mounted, each in its own [data-preview] layer of the stage, hidden while
 // another preview shows.
 
@@ -125,7 +126,7 @@ export function bindMenuPreview({ panel, stage, tag, iconOf, mountBoard, boardOf
       for (const l of layers.values()) l.el.hidden = true;
       panel.classList.toggle('ui-scene-panel--live', preview.kind === 'scene');
       tag.textContent = preview.kind === 'badge' ? preview.label : (preview.tag ?? '');
-      tag.classList.toggle('hidden', preview.kind === 'badge');
+      tag.classList.toggle('hidden', preview.kind === 'badge' || !preview.tag);
       if (preview.kind === 'board' || preview.kind === 'daily') showBoard(preview.kind);
       else if (preview.kind === 'badge') showCard(preview);
     },

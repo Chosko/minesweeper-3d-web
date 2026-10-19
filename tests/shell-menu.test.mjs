@@ -193,6 +193,10 @@ test('the preview binder shows each preview: a board view mounted once per board
   assert.equal(layer('card').children[0].children.length, 2, 'a place: badge and name, no note');
   assert.deepEqual(layer('card').children[0].children[0].dataset, { entry: 'records' });
   assert.deepEqual(preview.shown, { kind: 'badge', entry: 'records', label: 'Records', note: null, locked: false });
+  preview.show({ kind: 'daily', tag: '' });
+  assert.equal(tag.classes.has('hidden'), true, 'an empty tag is hidden');
+  preview.show({ kind: 'daily', tag: 'Daily · 17 Oct 2026' });
+  assert.equal(tag.classes.has('hidden'), false);
 });
 
 test('a mode entry opens its mode\'s board choice once the mode is registered', () => {
