@@ -493,7 +493,7 @@ const SHELL = createRouter({
     ctxlost: { defaultFocus: '#ctx-lost-btn', show: () => showContextLost(), hide: () => hideContextLost(), back: () => showMainMenu() },
   },
   focus: (target, name) => focusScreen(target, name),
-  onChange: () => { layerChanged(); needRender = true; sync3D(); syncTouch3D(); showStatus2D(); refreshHints(); HISTORY.sync(); },
+  onChange: () => { layerChanged(); needRender = true; syncScenePanel(); sync3D(); syncTouch3D(); showStatus2D(); refreshHints(); HISTORY.sync(); },
 });
 // end of screen table
 Object.defineProperty(S, 'mode', { get: () => SHELL.current, enumerable: true });
@@ -1480,6 +1480,25 @@ function showMenuBackdrop() {
   S.spacing = 1.25;
 }
 
+/**
+ * The shown screen's scene panel takes the 3D scene: its stage's rectangle is the renderer's target,
+ * set on every screen change, window resize and change of the panel's box; with no panel shown (a 3D
+ * game, the replay viewer, every screen without one) the scene draws full-window.
+ */
+let scenePanel = null;
+const SCENE_PANEL_OBSERVER = WEBGL2 && typeof ResizeObserver === 'function' ? new ResizeObserver(() => syncScenePanel()) : null;
+function syncScenePanel() {
+  if (!WEBGL2) return;
+  const stage = [...document.querySelectorAll('.ui-scene-panel__stage')].find((el) => el.getClientRects().length > 0) ?? null;
+  if (stage !== scenePanel) {
+    if (scenePanel) SCENE_PANEL_OBSERVER?.unobserve(scenePanel);
+    if (stage) SCENE_PANEL_OBSERVER?.observe(stage);
+    scenePanel = stage;
+  }
+  const box = stage?.getBoundingClientRect();
+  if (renderer.setTarget(box ? { x: box.left, y: box.top, width: box.width, height: box.height } : null)) needRender = true;
+}
+if (WEBGL2) window.addEventListener('resize', () => syncScenePanel()); // the panel may move with the window
 if (WEBGL2) window.addEventListener('resize', () => { renderer.resize(); needRender = true; });
 // The orbit's dolly range follows the new aspect; the camera stays where it is.
 if (WEBGL2) window.addEventListener('resize', () => { if (cameraMode === 'orbit' && S.game) orbitCam.setRange(orbitRangeAt(S.spacing)); });

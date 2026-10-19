@@ -512,6 +512,7 @@ export class BoardRenderer {
     this._wrong = null;      // Uint8Array mask of wrong flags (loss only)
     this._tmpQ = new THREE.Quaternion();
     this._tmpE = new THREE.Euler(0, 0, 0, 'YXZ');
+    this._target = null;     // the scene panel's rectangle, or null for the full window
     this._buildSky();
     this._buildConfetti();
     this.resize();
@@ -580,10 +581,38 @@ export class BoardRenderer {
     return true;
   }
 
+  /** The rectangle the scene draws into, in CSS pixels from the window's top left, or null for the full window. */
+  get target() { return this._target ? { ...this._target } : null; }
+
+  /**
+   * Draw only into `rect` ({x, y, width, height}, CSS pixels from the window's top left; null for the
+   * full window): a screen's scene panel. False when it already had that target; the caller redraws.
+   */
+  setTarget(rect) {
+    const t = this._target ?? null;
+    if (!rect && !t) return false;
+    if (rect && t && rect.x === t.x && rect.y === t.y && rect.width === t.width && rect.height === t.height) return false;
+    if (!rect) this._target = null;
+    else this._target = { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+    this.resize();
+    return true;
+  }
+
+  /** Size the drawing buffer to the window, then the viewport, scissor and camera aspect to the target. */
   resize() {
     const w = window.innerWidth, h = window.innerHeight;
-    this.renderer.setSize(w, h, false);
-    this.camera.aspect = w / Math.max(1, h);
+    const r = this.renderer, t = this._target;
+    r.setSize(w, h, false);
+    if (t) {
+      const y = h - t.y - t.height; // WebGL counts from the bottom
+      r.setViewport(t.x, y, t.width, t.height);
+      r.setScissor(t.x, y, t.width, t.height);
+      r.setScissorTest(true);
+      this.camera.aspect = t.width / Math.max(1, t.height);
+    } else {
+      r.setScissorTest(false);
+      this.camera.aspect = w / Math.max(1, h);
+    }
     this.camera.updateProjectionMatrix();
   }
 
@@ -1223,7 +1252,8 @@ export class BoardRenderer {
     if (Math.abs(far - cam.far) > 1) { cam.far = far; cam.updateProjectionMatrix(); }
     // fog scaled to the board: nearest cells clear, the far side at most ~40% toward the sky colour
     this.uniforms.uFog.value.set(Math.max(0, dist - 0.25 * R) + 4, dist + R, 0.4);
-    this.confUniforms.uPx.value = this.renderer.domElement.height / (2 * Math.tan((cam.fov * Math.PI) / 360));
+    const viewH = this._target ? this._target.height * this.renderer.getPixelRatio() : this.renderer.domElement.height;
+    this.confUniforms.uPx.value = viewH / (2 * Math.tan((cam.fov * Math.PI) / 360));
     if (this.game) {
       // Space's depth dimming counts from the box's nearest face (js/readability.js boxDepth)
       const g = this.game, p = 4 * this.spacing;
@@ -1247,6 +1277,10 @@ export class BoardRenderer {
     this._placeGround(dist, R);
     this.skyUniforms.uInvProj.value.copy(cam.projectionMatrixInverse);
     this.skyUniforms.uCamWorld.value.copy(cam.matrixWorld);
+    if (this._target) { // the page shows outside the target: clear the whole canvas to transparent first
+      const r = this.renderer, alpha = r.getClearAlpha();
+      r.setScissorTest(false); r.setClearAlpha(0); r.clear(); r.setClearAlpha(alpha); r.setScissorTest(true);
+    }
     this.renderer.render(this.scene, cam);
     if (shaken) { cam.quaternion.copy(this._tmpQ); cam.updateMatrixWorld(true); }
   }

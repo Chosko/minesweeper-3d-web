@@ -530,7 +530,7 @@ Feature: shared-screen-layout
 
 ## 164. 3D scene drawn into a screen's scene panel
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/render.js, js/main.js, js/shell/router.js, tests/shell-menu.test.mjs, tests/render-3d-feedback.test.mjs
 Preconditions: 163

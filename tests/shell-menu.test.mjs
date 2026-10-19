@@ -414,6 +414,90 @@ test('in a browser, the backdrop orbits and draws every frame, and the ?still-ba
   }
 });
 
+test('the shell hands the renderer the shown screen\'s scene panel on screen change, resize and a panel resize', () => {
+  const main = read('js/main.js');
+  const sync = main.slice(main.indexOf('function syncScenePanel('), main.indexOf('\n}\n', main.indexOf('function syncScenePanel(')));
+  assert.match(sync, /\.ui-scene-panel__stage/, 'the panel\'s stage is the rectangle');
+  assert.match(sync, /renderer\.setTarget\(/, 'handed to the renderer');
+  assert.match(sync, /SCENE_PANEL_OBSERVER\?\.observe\(/, 'the panel\'s box is tracked');
+  assert.match(main, /new ResizeObserver\(\(\) => syncScenePanel\(\)\)/, 'a change of the panel\'s box re-applies it');
+  assert.match(main, /onChange: \(\) => \{[^\n]*syncScenePanel\(\)/, 'every screen change sets or clears it');
+  assert.match(main, /addEventListener\('resize', \(\) => syncScenePanel\(\)\)/, 'a window resize too');
+});
+
+test('in a browser, a scene panel takes the 3D scene: outside it the page, inside the scene, moving with the panel', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 800, height: 600 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`${base}/index.html?still-backdrop`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+    const ms = (fn, arg) => page.evaluate(fn, arg);
+    const target = () => ms(() => globalThis.__ms.renderer.target);
+    // Draw a frame and read the drawing buffer before the page composites it: [alpha] at each CSS point.
+    const alphas = (points) => ms((pts) => {
+      const r = globalThis.__ms.renderer;
+      r.render();
+      const gl = r.renderer.getContext(), pr = r.renderer.getPixelRatio(), out = new Uint8Array(4);
+      return pts.map(([x, y]) => {
+        gl.readPixels(Math.floor(x * pr), Math.floor(gl.drawingBufferHeight - y * pr - 1), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, out);
+        return out[3];
+      });
+    }, points);
+    const around = ({ x, y, width, height }) => [
+      [x + width / 2, y + height / 2], // inside
+      [x - 6, y + height / 2], [x + width + 6, y + height / 2], [x + width / 2, y - 6], [x + width / 2, y + height + 6], // outside
+    ];
+
+    assert.equal(await target(), null, 'no screen has a panel yet: the full window');
+    assert.deepEqual(await alphas([[400, 300], [5, 5], [795, 595]]), [255, 255, 255], 'the scene fills the window');
+
+    // A panel on the menu, its own background cleared so the scene shows through it.
+    await ms(() => {
+      const fig = document.createElement('figure');
+      fig.className = 'ui-scene-panel';
+      fig.id = 'test-panel';
+      fig.style.cssText = 'position: fixed; right: 100px; top: 120px; width: 300px; height: 200px; margin: 0; background: none; box-shadow: none';
+      fig.innerHTML = '<div class="ui-scene-panel__stage"></div>';
+      document.getElementById('menu').append(fig);
+    });
+    await page.click('#menu-entry-records');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'records');
+    assert.equal(await target(), null, 'a screen without a panel draws full-window');
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'menu' && globalThis.__ms.renderer.target !== null);
+    let rect = await target();
+    assert.deepEqual(rect, { x: 400, y: 120, width: 300, height: 200 }, 'the shown screen\'s panel');
+    assert.equal(await ms(() => globalThis.__ms.renderer.camera.aspect), 1.5, 'the camera takes the panel\'s aspect');
+    assert.deepEqual(await alphas(around(rect)), [255, 0, 0, 0, 0], 'the scene inside the panel, the page outside it');
+
+    // The panel's box changes: the scene follows.
+    await ms(() => { document.getElementById('test-panel').style.height = '260px'; });
+    await page.waitForFunction(() => globalThis.__ms.renderer.target?.height === 260);
+    rect = await target();
+    assert.deepEqual(await alphas(around(rect)), [255, 0, 0, 0, 0], 'a resized panel');
+
+    // The window resizes: the panel moves with its right edge, and the scene with it.
+    await page.setViewportSize({ width: 1000, height: 700 });
+    await page.waitForFunction(() => globalThis.__ms.renderer.target?.x === 600);
+    rect = await target();
+    assert.deepEqual(rect, { x: 600, y: 120, width: 300, height: 260 });
+    assert.deepEqual(await alphas(around(rect)), [255, 0, 0, 0, 0], 'the scene moved with the panel');
+
+    // A 3D game draws full-window.
+    await ms(() => { globalThis.__ms.start(4, 4, 4, 3); globalThis.__ms.forcePlay(); });
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing');
+    assert.equal(await target(), null, 'a 3D game is full-window');
+    assert.deepEqual(await alphas([[5, 5], [995, 695]]), [255, 255], 'drawn to the window\'s corners');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
 // A browser without WebGL 2: every canvas refuses a 'webgl2' context, as a locked-down browser or a
 // blocklisted GPU does; the other context types are untouched.
 function removeWebGL2() {

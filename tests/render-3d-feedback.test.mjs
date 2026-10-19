@@ -85,6 +85,24 @@ test('pulses start when a visible number hides, end with the game\'s loss or a s
   assert.doesNotMatch(tick, /this\.n\b|< n;/, 'never the whole board');
 });
 
+// ---------------------------------------------------------------- the target rectangle
+
+test('the renderer draws into a target rectangle: viewport, scissor and camera aspect from it, re-applied on resize', () => {
+  const target = RENDER.slice(RENDER.indexOf('  setTarget('), RENDER.indexOf('  setGame('));
+  assert.match(target, /if \(!rect\) this\._target = null/, 'null is the full window');
+  assert.match(target, /this\.resize\(\)/, 'a new target is applied at once');
+  const resize = target.slice(target.indexOf('  resize() {'));
+  assert.match(resize, /setViewport\(/, 'the viewport is the rectangle');
+  assert.match(resize, /setScissor\(/, 'and nothing is drawn outside it');
+  assert.match(resize, /setScissorTest\(true\)/);
+  assert.match(resize, /setScissorTest\(false\)/, 'the full window draws without a scissor');
+  assert.match(resize, /camera\.aspect = t\.width \/ Math\.max\(1, t\.height\)/, 'the camera takes the rectangle\'s aspect');
+  const pr = RENDER.slice(RENDER.indexOf('  setPixelRatio('), RENDER.indexOf('  resize() {'));
+  assert.match(pr, /this\.resize\(\)/, 'a pixel-ratio change re-applies it');
+  const render = RENDER.slice(RENDER.indexOf('  render() {'));
+  assert.match(render, /if \(this\._target\) \{[^}]*setScissorTest\(false\)[^}]*setClearAlpha\(0\)[^}]*clear\(\)/, 'a frame first clears the whole canvas to transparent, so the page shows outside the rectangle');
+});
+
 // ---------------------------------------------------------------- in a browser
 
 test('in a browser, Ctrl draws hidden cells as transparent ghosts and a hidden number pulses, then stops drawing', async (t) => {
