@@ -54,7 +54,7 @@ Context:
 /task-implement 160 --review
 ```
 
-## [~] 5. Implement task 161 — Theme conformance tests and the component gallery per theme
+## [x] 5. Implement task 161 — Theme conformance tests and the component gallery per theme
 
 Depends on: 1, 2, 3
 
@@ -65,6 +65,8 @@ Context:
 ```prompt
 /task-implement 161 --review
 ```
+
+Done: 2026-10-19, commit `d6c6d81` (16 files, +659/-8). The required token list is `REQUIRED_TOKENS` in `js/ui/kit-catalogue.js`; a decoration slot is an element marked `data-slot="<name>"`. The premise that `tests/tokens.test.mjs` and `tests/components.test.mjs` export contrast helpers was wrong — the conformance file carries its own.
 
 ## [ ] 6. Implement task 162 — Update documentation for feature `theme-system`
 
@@ -77,11 +79,12 @@ Context:
 /task-implement 162 --review
 ```
 
-## [ ] 7. Implement task 163 — Layout kit components: backdrop, screen frame, mode entry, board option, stat tile and the rest
+## [~] 7. Implement task 163 — Layout kit components: backdrop, screen frame, mode entry, board option, stat tile and the rest
 
 Depends on: 2, 5
 
-Context: none
+Context:
+- 2026-10-19 (from step 5): a decoration slot is an element marked `data-slot="<name>"`; the conformance check flags any `[data-slot=…]` a theme styles that the kit catalogue (`js/ui/kit-catalogue.js`) does not list — task 163 picks the slot names. A catalogue part can carry `as`, naming the component whose rules draw it.
 
 ```prompt
 /task-implement 163 --review
