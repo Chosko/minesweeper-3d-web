@@ -647,7 +647,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against tasks 165, 166, 211, which edit the same files; replaced by step 68.
 
-## [ ] 68. Implement task 176 — Classic 2D game window: counter strip, side panel and foot line
+## [~] 68. Implement task 176 — Classic 2D game window: counter strip, side panel and foot line
 
 Depends on: 7, 18, 67
 
@@ -954,7 +954,7 @@ Context: none
 
 Done: struck — the steps its Depends on names are re-added for a parallel run; replaced by step 80.
 
-## [ ] 80. Implement task 188 — The theme-implement skill
+## [x] 80. Implement task 188 — The theme-implement skill
 
 Depends on: 5, 7, 67, 72
 
@@ -963,6 +963,8 @@ Context: none
 ```prompt
 /task-implement 188 --review
 ```
+
+Done: 2026-10-19, commit `8d30ac6` (8 files, +605/-1). Premise wrong: the canvas draws cell motion as labelled frame strips, not CSS keyframes (the skill accepts both). The dry run showed two blockers for a real second theme: `tests/settings-page.test.mjs` assumes one theme, and a theme switch in Chromium unloads font faces the page has not drawn.
 
 ## [x] 33. Implement task 189 — Update documentation for feature `theme-implement-skill`
 
@@ -980,7 +982,8 @@ Done: struck — for a parallel run its Depends on lacked the order against task
 
 Depends on: 79, 80
 
-Context: none
+Context:
+- 2026-10-19 (from step 80): the skill's write scope includes the theme-list mirror in `js/theme.js`; only derived number colours are adjusted for contrast (a drawn number that fails is a question/stop); fetched font licences have their URLs stripped; motion may be given as frame strips or CSS keyframes.
 
 ```prompt
 /task-implement 189 --review
