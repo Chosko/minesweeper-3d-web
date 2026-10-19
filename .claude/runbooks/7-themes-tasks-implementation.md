@@ -3,7 +3,7 @@
 Created: 2026-10-13 · Source: /runbook-create interview (runbook themes-planning step 8) · Model: opus
 Last step number: 81
 
-## [ ] 1. Implement task 157 — Theme registry, kit catalogue and the Joyful tiles theme folder
+## [~] 1. Implement task 157 — Theme registry, kit catalogue and the Joyful tiles theme folder
 
 Depends on: none
 
@@ -527,7 +527,7 @@ Context: none
 /task-implement 173 --review
 ```
 
-## [ ] 18. Implement task 174 — Live figures model: 3BV progress, pace vs PB, 3BV/s, clicks and flags
+## [~] 18. Implement task 174 — Live figures model: 3BV progress, pace vs PB, 3BV/s, clicks and flags
 
 Depends on: none
 
@@ -675,7 +675,7 @@ Context: none
 /task-implement 179 --review
 ```
 
-## [ ] 24. Implement task 180 — Tile recipe drawing styles: flat and bevel, with corner radius and depth
+## [x] 24. Implement task 180 — Tile recipe drawing styles: flat and bevel, with corner radius and depth
 
 Depends on: none
 
@@ -685,6 +685,8 @@ Context:
 ```prompt
 /task-implement 180 --review
 ```
+
+Done: 2026-10-19, commit `eb90d70` (5 files, +675/-87). The sunk tile is a face of its own (`closed | sunk | revealed`), not a depth value; depth (0–1) scales the bevel slope on closed and sunk faces.
 
 ## [x] 25. Implement task 181 — Board module shape, the Joyful tiles board module and the board conformance checks
 
@@ -702,7 +704,8 @@ Done: struck — for a parallel run its Depends on lacked the order against task
 
 Depends on: 5, 7, 24
 
-Context: none
+Context:
+- 2026-10-19 (from step 24): bevel side shades are numbers from −1 (`bevelDark`) to 1 (`bevelLight`); an in-between shade mixes colours and works only with `#rrggbb` palette values, so task 181's palettes must use that form. Flat reuses bevel's palette keys (`bevelLight`, `bevelDark`, `rim`), and flat's built-in values are placeholders for task 181 to set.
 
 ```prompt
 /task-implement 181 --review
