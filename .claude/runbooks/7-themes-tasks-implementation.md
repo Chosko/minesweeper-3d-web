@@ -97,7 +97,7 @@ Context:
 
 Done: 2026-10-19, commit `841d1ff` (10 files, +1540/-50). Disabled mode entries use `aria-disabled="true"` (focusable) rather than native `disabled`; the board option's chosen state is `aria-pressed="true"`. Counter strip and figures panel are left to task 175.
 
-## [~] 8. Implement task 164 — 3D scene drawn into a screen's scene panel
+## [x] 8. Implement task 164 — 3D scene drawn into a screen's scene panel
 
 Depends on: 7
 
@@ -106,6 +106,8 @@ Context: none
 ```prompt
 /task-implement 164 --review
 ```
+
+Done: 2026-10-19, commit `2613bb8` (5 files, +160/-5). The renderer draws into the visible `.ui-scene-panel__stage` (`setTarget(rect)`), found without a list of screens; a screen with no visible panel draws full-window.
 
 ## [x] 9. Implement task 165 — Main menu in the shared layout
 
@@ -120,7 +122,7 @@ Context:
 
 Done: struck — for a parallel run its Depends on lacked the order against task 160, which edits the same files; replaced by step 53.
 
-## [ ] 53. Implement task 165 — Main menu in the shared layout
+## [~] 53. Implement task 165 — Main menu in the shared layout
 
 Depends on: 4, 7, 8
 
