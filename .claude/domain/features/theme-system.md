@@ -126,6 +126,13 @@ reader, and the kit stylesheet: [app-shell-kit.md](../../context/app-shell-kit.m
   shadow or motion value of any theme. Its shipped
   `@media (prefers-reduced-motion: reduce)` rule, which stops every DOM
   animation and transition, stays in it unchanged.
+- **One selected control.** On buttons, menu entries and board options the
+  selected state is the focused state, so one control shows it at a time,
+  and the input method in use moves focus: moving the mouse over one of
+  them focuses it; keys and controller buttons move focus from control to
+  control; and once a key or button is pressed, a control under a resting
+  pointer is not selected until the mouse moves again. No theme styles
+  hover apart from focus on them.
 - **Theme stylesheet.** One per theme. Every rule is scoped to the theme's
   id on the document root, so two theme stylesheets can be loaded at once
   during a switch without either affecting the other. It declares the

@@ -1,9 +1,9 @@
-# Leaderboards menu entry
+# Leaderboards tab and Quit
 
-The m3-on-steam ways into the leaderboards and out of the game: the Records
-screen's Leaderboards tab, in both builds, which leads to the leaderboards;
-and, in the desktop build, the main menu's Quit, which closes the game with
-its saves flushed.
+The m3-on-steam leaderboards in Records and the way out of the game: the
+Records screen's Leaderboards tab, in both builds, which shows the rankings
+of the board Records shows; and, in the desktop build, the main menu's
+Quit, which closes the game with its saves flushed.
 
 ## Purpose
 
@@ -11,7 +11,7 @@ its saves flushed.
 puts the leaderboards in a tab of the Records screen, beside the player's
 own figures, and lists Quit among the main menu's entries. The m3-on-steam
 milestone brings the leaderboards and the first desktop build, so the
-Records screen needs its way into `leaderboard-screen` and, now that the
+Records screen's Leaderboards tab needs `leaderboard-screen`'s rankings and, now that the
 game runs fullscreen in a window of its own, the menu needs a way out that
 does not depend on the window's frame. The Leaderboards tab, with its
 coming-soon panel, and the Quit entry already exist in the shared layout
@@ -24,16 +24,18 @@ The rankings are `leaderboard-screen`'s and the closing sequence is
 In scope (m3-on-steam):
 
 - The Records screen's Leaderboards tab, in the desktop and the web build
-  alike, leading to the leaderboards of the board Records shows in place of
-  its coming-soon panel.
+  alike, showing the rankings of the board Records shows in place of its
+  coming-soon panel, inside Records, with no link out to the leaderboard
+  screen.
 - The Quit entry, working only when the game runs inside the desktop host.
   It asks the host to quit and the host runs its closing sequence.
 - Both in the focus order and controller navigation of their screens.
 
 Non-goals:
 
-- The leaderboard screen — its board picker, rankings, states and replays
-  are `leaderboard-screen`'s.
+- The leaderboard screen and its rankings — the scope tabs, own standing,
+  entry list, states and replays are `leaderboard-screen`'s; this feature
+  places the rankings in the tab.
 - The closing sequence itself — flushing saves, shutting Steam down and
   exiting are `steam-desktop-host`'s.
 - Leaderboard ranks on the results screen, and a route from the results
@@ -61,9 +63,12 @@ its own.
 
 - **Leaderboards tab.** The fourth tab of the Records screen
   (`records-screen` § Scope and non-goals), after Recent games, Top 10 and
-  Replays. This feature replaces its coming-soon panel with the leaderboards
-  of the board Records shows, as the open question below settles; Back from
-  the leaderboards returns to Records with the tab selected.
+  Replays. This feature replaces its coming-soon panel with
+  `leaderboard-screen`'s rankings (§ Architecture, **Rankings**) for the
+  board Records shows, following Records' board and no-guess choice; the
+  tab adds no board picker and opens no other screen. A board with no
+  leaderboard, such as a custom board, shows that it has none. Back from a
+  replay watched from the tab returns to Records on this tab.
 - **Quit entry.** The menu's final entry, set apart from the others
   ([shared-screen-layout.md](./shared-screen-layout.md) § Scope and
   non-goals, **Main menu**). It is enabled when the platform layer's
@@ -84,9 +89,9 @@ its own.
 
 ## Interfaces and contracts
 
-- **Open leaderboards** — from the Leaderboards tab, for the board Records
-  shows, through `leaderboard-screen`'s Open. Every other caller is out of
-  this feature.
+- **Show rankings** — the Leaderboards tab composes `leaderboard-screen`'s
+  Rankings for the board Records shows; it never routes to the leaderboard
+  screen.
 - **Quit** — the page bridge's quit request. The host answers it with the
   same sequence a window close runs: it asks the page to flush pending
   saves, waits bounded by its timeout, shuts Steam down and exits. The page
@@ -103,7 +108,7 @@ its own.
 - `records-screen` — the Records screen and its Leaderboards tab.
 - `game-shell` — the main menu, the screen router and its back stack, and
   menu navigation.
-- `leaderboard-screen` — the leaderboards the tab leads to.
+- `leaderboard-screen` — the rankings the tab shows.
 - `steam-desktop-host` — the desktop-host capability flag and the page
   bridge's quit request, run through its closing sequence.
 - `shared-screen-layout` — the redesigned main menu, its Quit entry and the
@@ -114,8 +119,4 @@ its own.
 
 ## Open questions
 
-- How the Leaderboards tab shows the leaderboards: the rankings of the
-  board Records shows in place, in the tab (the coming-soon panel's "no
-  pager" and "this board" point that way), or a link opening
-  `leaderboard-screen` on that board. The owner decides before the tab is
-  built; it blocks nothing in m2b-themes.
+None.

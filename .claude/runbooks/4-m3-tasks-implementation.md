@@ -275,6 +275,7 @@ Depends on: 14, 15
 Context:
 - 2026-10-11 (amend): task 104 was re-planned so the 3D board picker lists the three cube presets only.
 - 2026-10-13 (amend): task 104 was re-planned into the shared layout's screen frame: it now waits on task 163 (themes-tasks-implementation step 7) and is claude+human — the owner supplies the leaderboard screen's *Joyful tiles* artboard before any markup is written.
+- 2026-10-19 (amend): task 104 also builds the rankings (scope tabs, own standing, entry list, states) as one part for a given board, which the Records Leaderboards tab of task 107 (step 24) shows in place.
 
 ```prompt
 /task-implement 104 --review
@@ -307,6 +308,7 @@ Depends on: 3, 21
 Context:
 - 2026-10-13 (amend): task 107 was re-planned so Leaderboards and Quit are mode entries of the redesigned main menu; it now waits on task 165 (themes-tasks-implementation step 9).
 - 2026-10-19 (amend): Supersedes the fact above: task 107 is "Leaderboards tab in Records and Quit in the main menu" — Leaderboards is the Records screen's fourth tab, not a menu entry; the task also waits on task 170 (themes-tasks-implementation step 43) and is `claude+human`: the owner first decides how the tab shows the leaderboards.
+- 2026-10-19 (amend): Supersedes the `claude+human` part of the fact above: the owner settled the tab — it shows the rankings of the board Records shows in place, inside Records — so task 107 is `claude` with no manual intervention; it reuses the rankings part of task 104 and also waits on task 105 (step 22).
 
 ```prompt
 /task-implement 107 --review

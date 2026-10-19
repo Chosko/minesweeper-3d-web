@@ -88,9 +88,19 @@ In scope (m2b-themes):
   On a phone: one column, full-bleed, no game title and no bests, with
   *Records* and *Play* pinned at the bottom.
   - **3D** — the options open with Learn 3D, outlined in its own accent,
-    then the cube presets in one group (`3d-play-flow`); while Learn 3D is
-    selected the right side shows only how 3D works and that the lesson
-    keeps no records.
+    then the cube presets in one group (**3D presets** below); while Learn
+    3D is selected the right side shows only how 3D works and that the
+    lesson keeps no records.
+- **3D presets** — the 3D board choice offers four presets in one group
+  with no group label, named as results and Records name them: Cube Intro
+  (6 × 6 × 6, 10 mines), Cube Beginner (6 × 6 × 6, 20), Cube Intermediate
+  (8 × 8 × 8, 40) and Cube Expert (10 × 10 × 10, 100). The First box
+  presets (4 × 4 × 3 with 4 mines, 5 × 5 × 3 with 6) are dropped: their
+  records and replays stay in the history as custom boards, by
+  `3d-play-flow`'s rule for dropped presets, and the start spacing only they
+  had goes, every 3D board starting at the camera's ordinary spacing. A
+  Learn 3D win offers *Play Cube Intro* in their place, with a line saying
+  Cube Intro is a real board with a timer and records.
 - **Daily screen** — the board choice composition: the title above a window
   sized to its content; on the left today's date, the intro line and one
   entry per mode in menu order (`game-shell`), Classic 2D and 3D with their
@@ -136,7 +146,8 @@ Non-goals:
   (`game-shell`, `settings`, `results-screen`, `records-screen`,
   `replay-playback`, `3d-results-records-screens`, `3d-play-flow`,
   `classic-2d-square-play`). This feature arranges and styles them; it adds
-  only the board choice screens' bests, a view over the records store.
+  only the board choice screens' bests, a view over the records store, and
+  changes only the 3D presets (**3D presets**).
 - The Hexagon, Triangle and Surface modes and their screens — deferred to
   `m6-launch`; until then their entries open the placeholder screen. The
   Campaign and demo entries — each arrives with its milestone.

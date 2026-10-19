@@ -200,9 +200,12 @@ the default until they pick. The shared layout is designed together with
 the game supports, is drawn on the Claude Design canvas, with the theme's
 tokens and every kit component in every state. Later themes add styles, not
 layouts. Buttons, menu entries and board options have one *selected* state,
-shared by the pointer's hover and by keyboard or controller focus, and drawn
-by the theme rather than as a separate focus ring; a chosen board option
-keeps its own mark, so focused and chosen stay apart.
+drawn by the theme rather than as a separate focus ring, and one control
+shows it at a time, chosen by the input method in use: moving the mouse
+selects the control under the pointer, keys and controller buttons move the
+selection from control to control, and once a key or button is pressed the
+pointer's hover counts for nothing until the mouse moves again. A chosen
+board option keeps its own mark, so selected and chosen stay apart.
 
 A theme is one fixed look and changes more than colour: borders and bevels,
 shadows, corner radii, fonts, window chrome (such as a title bar with

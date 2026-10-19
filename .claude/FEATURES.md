@@ -130,7 +130,7 @@ Tasks: 51, 52, 53, 54, 55
 
 ## 3d-play-flow — 3D board choice, safe first click, no-guess switch and results hand-off
 
-Status: [PLANNED]
+Status: [DONE]
 Doc: .claude/domain/features/3d-play-flow.md
 Source: product-design.md § 3D mode (m2-3d-joins)
 Tasks: 56, 57, 58, 59, 60, 115, 116, 207, 208
@@ -227,7 +227,7 @@ Tasks: 100, 101, 102, 103
 
 ---
 
-## leaderboards-menu-entry — Leaderboards entry in the main menu, and Quit on the desktop build
+## leaderboards-menu-entry — Leaderboards tab in Records showing the board's rankings, and Quit on the desktop build
 
 Status: [PLANNED]
 Doc: .claude/domain/features/leaderboards-menu-entry.md
@@ -277,7 +277,7 @@ Tasks: 180, 181, 182, 183, 184, 185, 186, 187
 Status: [PLANNED]
 Doc: .claude/domain/features/shared-screen-layout.md
 Source: product-design.md § Visual design system (m2b-themes)
-Tasks: 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 206, 209, 210, 211
+Tasks: 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 206, 209, 210, 211, 212
 
 ---
 

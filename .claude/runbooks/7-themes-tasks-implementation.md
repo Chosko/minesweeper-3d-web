@@ -1,7 +1,7 @@
 # Runbook: themes-tasks-implementation
 
 Created: 2026-10-13 · Source: /runbook-create interview (runbook themes-planning step 8) · Model: opus
-Last step number: 51
+Last step number: 52
 Sequencing: Runs after the ux-review-tasks-implementation runbook is done and before the remaining steps of m3-tasks-implementation; steps follow PLAN.md's m2b-themes feature order, then task id.
 
 ## [ ] 1. Implement task 157 — Theme registry, kit catalogue and the Joyful tiles theme folder
@@ -110,7 +110,7 @@ Context:
 /task-implement 166 --review
 ```
 
-## [ ] 38. Implement task 207 — 3D presets without First box 1 and 2; Learn 3D's win offers Cube Intro
+## [x] 38. Implement task 207 — 3D presets without First box 1 and 2; Learn 3D's win offers Cube Intro
 
 Depends on: none
 
@@ -120,7 +120,9 @@ Context: none
 /task-implement 207 --review
 ```
 
-## [ ] 39. Implement task 208 — Update documentation for feature `3d-play-flow`
+Done: struck — task 207 skipped, replaced by task 212 in feature shared-screen-layout (step 52), placed before steps 40, 43 and 47, whose tasks wait on it.
+
+## [x] 39. Implement task 208 — Update documentation for feature `3d-play-flow`
 
 Depends on: 38
 
@@ -128,6 +130,18 @@ Context: none
 
 ```prompt
 /task-implement 208 --review
+```
+
+Done: struck — task 208 skipped; task 173 (step 49) documents task 212.
+
+## [ ] 52. Implement task 212 — 3D presets without First box 1 and 2; Learn 3D's win offers Cube Intro
+
+Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 212 --review
 ```
 
 ## [x] 11. Implement task 167 — 3D board choice screen in the shared layout

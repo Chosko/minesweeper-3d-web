@@ -37,10 +37,11 @@ In scope (m1-classic-2d):
   and Settings screens and the pause card lay out with it.
 - States for every interactive component: default, hover, pressed, focused
   and disabled, and selected where it applies. On buttons, menu entries and
-  board options, hover and keyboard or controller focus share one
-  *selected* state, drawn by the theme with no separate focus ring, and
-  pressed is drawn apart from it; a board option's chosen board keeps its
-  own mark beside that state, so a focused option and the chosen one stay
+  board options, hover and focus are one *selected* state, drawn by the
+  theme with no separate focus ring and shown on one control at a time
+  (`theme-system` § Architecture, **One selected control**), and pressed is
+  drawn apart from it; a board option's chosen board keeps its own mark
+  beside that state, so a selected option and the chosen one stay
   distinguishable. Every other control (switches, fields, segmented
   choices, tabs) keeps its own hover and focus states.
 - The m1 screens composed from the kit: the main menu, the in-game overlay
@@ -138,8 +139,7 @@ described in [app-shell.md](../../context/app-shell.md).
   every screen that uses it.
 - **Accessibility** — every control has an accessible name; keyboard and
   controller focus is always visible — on buttons, menu entries and board
-  options as the selected state, which hover shares, so while the pointer
-  rests on one of them and focus is on another, both show it. Text meets the contrast contract of `design-tokens-and-themes` in
+  options as the selected state. Text meets the contrast contract of `design-tokens-and-themes` in
   both themes. On every pointer, labels are at least 12 px and key caps at
   least 11 px. On a coarse pointer, and only there, switches (the Reveal /
   Flag switch included), slider thumbs, the overlay bar's Pause and the 3D

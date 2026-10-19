@@ -1,8 +1,8 @@
 # 3D play flow
 
 The 3D mode's game from board choice to result under the game's rules: the
-Learn 3D guided board, then the four cube 3D presets and custom boards with
-a no-guess switch. Every game but that fixed, unrecorded
+Learn 3D guided board, then the cube 3D presets and custom boards with a
+no-guess switch. Every game but that fixed, unrecorded
 lesson board has a first click that is always safe because the board is
 generated around it, the timer starting once that board is ready, and is
 handed, finished or abandoned, to the shared results and records like a
@@ -23,13 +23,12 @@ game shell — while the scene, camera and controls stay as they are.
 
 In scope (m2-3d-joins):
 
-- Board choice: Learn 3D first, then four presets in one group with no
-  group label, named as results and Records name them — Cube Intro
-  (6 × 6 × 6, 10 mines), Cube Beginner (6 × 6 × 6, 20), Cube Intermediate
-  (8 × 8 × 8, 40) and Cube Expert (10 × 10 × 10, 100) — each showing its
-  name, size line, mine density and the Last played mark, then Custom with
-  the Random fill, then *Insert Board Code*, and the no-guess switch, which
-  says it keeps separate records. The selected board's bests show beside
+- Board choice: Learn 3D first, then the 3D presets
+  (`shared-screen-layout` § Scope and non-goals, **3D presets**), named as
+  results and Records name them, each showing its name, size line, mine
+  density and the Last played mark, then Custom with the Random fill, then
+  *Insert Board Code*, and the no-guess switch, which says it keeps
+  separate records. The selected board's bests show beside
   the options (`shared-screen-layout` § Scope and non-goals, *Board choice
   screens*). Cube Beginner's mine count is measured by
   `dev/measure-first-box-3d.mjs`: no-guess boards with the first click on
@@ -42,9 +41,9 @@ In scope (m2-3d-joins):
   one cube that must be a mine, chord the lesson number — then "Clear the
   rest of the box". No timer, no summary, no records and no replay; it ends
   on its own end card, not the results screen, which also offers *Back to
-  board choice*: a win marks the 3D rules as learned and offers *Play Cube
-  Intro*, with a line saying Cube Intro is a real board with a timer and
-  records; a loss offers Try again. It is repeatable and never
+  board choice*: a win marks the 3D rules as learned and offers a first
+  real board (`shared-screen-layout` § Scope and non-goals, **3D
+  presets**); a loss offers Try again. It is repeatable and never
   the last 3D choice. Until the player finishes a 3D game or wins Learn 3D,
   every other 3D board's ready card offers it in one line.
 - The start-of-game flow: a closed box, the first reveal, generation around
@@ -70,10 +69,7 @@ Non-goals:
   coin flip. Records and replays already made on those sizes, and on
   12 × 12 × 8 with 130 mines, stay in the history as custom boards, since
   the preset labels and listing in `3d-game-records` recognise only the
-  presets listed here.
-- The First box presets (4 × 4 × 3 with 4 mines, 5 × 5 × 3 with 6) —
-  dropped; their records and replays stay in the history as custom boards,
-  by the same rule.
+  presets the board choice offers.
 - The 3D scene's look, the camera, view modes and controls — kept as they
   are, per the m2 slice.
 - 3D board identities, 3D personal bests and history, and the 3D results

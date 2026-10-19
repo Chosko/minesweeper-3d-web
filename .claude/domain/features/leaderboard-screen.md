@@ -31,9 +31,8 @@ In scope (m3-on-steam):
 
 Non-goals:
 
-- The way in from the Records screen's Leaderboards tab —
-  `leaderboards-menu-entry`, whose open question decides whether the tab
-  shows this screen's rankings in place or opens this screen.
+- The Records screen's Leaderboards tab, which shows this screen's rankings
+  in place, inside Records — `leaderboards-menu-entry`.
 - Ranks on the results screen — the Results and records slice of
   m3-on-steam.
 - Campaign, daily, hexagonal, triangle and Surface leaderboards — deferred
@@ -66,6 +65,11 @@ composed inside `shared-screen-layout`'s screen frame and routed by
   `steam-leaderboards`' catalogue are offered. It opens on the board passed
   by the route, or else on the board last viewed here this session, or else
   Classic 2D Expert with no-guess off.
+- **Rankings.** The scope tabs, the own standing, the entry list with
+  *Watch replay* and the states below, for one given board, are one part:
+  this screen composes it under its board picker, and the Records screen's
+  Leaderboards tab composes it for the board Records shows
+  (`leaderboards-menu-entry`).
 - **Scope tabs.** Global, Friends and Around me; Global is the default.
   Key hints beside the tabs show the inputs that switch scope.
 - **Entry list.** One list row per entry: rank, player name, time to the
@@ -79,8 +83,9 @@ composed inside `shared-screen-layout`'s screen frame and routed by
   in the same format as the rows, and global and friends rank on the chosen
   board, or "no time yet".
 - **Watch replay.** Asks `steam-leaderboards` for the entry's replay and,
-  on success, routes to `replay-playback`'s viewer with Back returning here
-  on the same board, scope and position. A replay that fails is reported on
+  on success, routes to `replay-playback`'s viewer with Back returning to
+  where the rankings showed — this screen, or the Records screen on its
+  Leaderboards tab — on the same board, scope and position. A replay that fails is reported on
   the row with its reason; the list stays usable.
 - **States.** Loading; empty ("no entries yet"); offline (Steam is running
   but not connected — with a retry); Steam unavailable (Steam did not
@@ -99,9 +104,11 @@ composed inside `shared-screen-layout`'s screen frame and routed by
 ## Interfaces and contracts
 
 - **Open** — the shell routes to the screen with an optional board identity
-  and returns to the caller on Back. The Records screen's Leaderboards tab
-  reaches it as `leaderboards-menu-entry` settles; the results screen's *Leaderboard* action
-  (`results-steam-rank`) opens it on the finished game's board.
+  and returns to the caller on Back. The results screen's *Leaderboard*
+  action (`results-steam-rank`) opens it on the finished game's board; the
+  Records screen's Leaderboards tab never opens it.
+- **Rankings** — the part above, given a board identity, for the Records
+  screen's Leaderboards tab.
 - **Reads** — `steam-leaderboards`' entries, own standing, replay fetch and
   availability.
 - **Navigation** — every control reachable by keyboard and controller;

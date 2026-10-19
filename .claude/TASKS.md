@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 211
+Last task number: 212
 
 ---
 
@@ -237,9 +237,9 @@ Feature: leaderboard-screen
 ## 107. Leaderboards tab in Records and Quit in the main menu
 
 Status: [MISSING]
-Target: claude+human
+Target: claude
 Files: js/records/screen.js, js/shell/menu.js, index.html, js/shell/router.js, tests/shell-menu.test.mjs, tests/records-screen.test.mjs
-Preconditions: 86, 104, 165, 170
+Preconditions: 86, 104, 105, 165, 170
 Feature: leaderboards-menu-entry
 
 ---
@@ -472,7 +472,7 @@ Feature: theme-system
 
 Status: [MISSING]
 Target: claude
-Files: css/tokens.css, css/components.css, css/style.css, themes/joyful-tiles/theme.css, index.html, js/theme.js, dev/components.html, js/shell/scene-palette.js, js/tokens.js, tests/tokens.test.mjs, tests/theme.test.mjs, tests/components.test.mjs, tests/settings-appliers.test.mjs
+Files: css/tokens.css, css/components.css, css/style.css, themes/joyful-tiles/theme.css, js/ui/components.js, index.html, js/theme.js, dev/components.html, js/shell/scene-palette.js, js/tokens.js, tests/tokens.test.mjs, tests/theme.test.mjs, tests/components.test.mjs, tests/settings-appliers.test.mjs
 Preconditions: 157
 Feature: theme-system
 
@@ -558,12 +558,22 @@ Feature: shared-screen-layout
 
 ---
 
+## 212. 3D presets without First box 1 and 2; Learn 3D's win offers Cube Intro
+
+Status: [MISSING]
+Target: claude
+Files: js/mode3d/board-choice.js, js/records/board.js, js/records/model.js, js/records/screen.js, js/records/typical-bbbv.js, js/mode3d/learn.js, js/ui.js, js/main.js, js/shell/returning.js, index.html, dev/measure-first-box-3d.mjs, tests/mode3d-board-choice.test.mjs, tests/records-board-3d.test.mjs, tests/records-model-3d.test.mjs, tests/records-screen-3d.test.mjs, tests/mode3d-learn.test.mjs, tests/camera-spawn.test.mjs, tests/shell-menu.test.mjs
+Preconditions: none
+Feature: shared-screen-layout
+
+---
+
 ## 167. 3D board choice screen in the shared layout
 
 Status: [MISSING]
 Target: claude
 Files: index.html, js/mode3d/board-choice.js, js/shell/returning.js, js/main.js, tests/mode3d-board-choice.test.mjs, tests/shell-challenge.test.mjs, tests/shell-returning.test.mjs, tests/components.test.mjs
-Preconditions: 166, 207
+Preconditions: 166, 212
 Feature: shared-screen-layout
 
 ---
@@ -593,7 +603,7 @@ Feature: shared-screen-layout
 Status: [MISSING]
 Target: claude
 Files: index.html, js/records/screen.js, js/records/history-chart.js, js/records/replay-list.js, tests/records-screen.test.mjs, tests/records-screen-3d.test.mjs, tests/records-replays.test.mjs, tests/components.test.mjs
-Preconditions: 163, 207
+Preconditions: 163, 212
 Feature: shared-screen-layout
 
 ---
@@ -623,7 +633,7 @@ Feature: shared-screen-layout
 Status: [MISSING]
 Target: claude
 Files: .claude/context/app-shell-kit.md, .claude/context/app-shell-menu.md, .claude/context/app-shell-markup.md, .claude/context/app-shell-pause.md, .claude/context/app-shell-results.md, .claude/context/app-shell-3d.md, .claude/context/rendering.md, .claude/context/classic2d.md, .claude/context/mode3d.md, .claude/context/records-screen.md, .claude/context/settings.md, .claude/context/replay-playback.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md, .claude/domain/features/shared-screen-layout.md
-Preconditions: 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 206, 209, 210, 211
+Preconditions: 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 206, 209, 210, 211, 212
 Feature: shared-screen-layout
 
 ---
@@ -945,7 +955,7 @@ Feature: shared-screen-layout
 ---
 ## 207. 3D presets without First box 1 and 2; Learn 3D's win offers Cube Intro
 
-Status: [MISSING]
+Status: [SKIP]
 Target: claude
 Files: js/mode3d/board-choice.js, js/records/board.js, js/records/model.js, js/records/screen.js, js/records/typical-bbbv.js, js/mode3d/learn.js, js/ui.js, js/main.js, js/shell/returning.js, index.html, dev/measure-first-box-3d.mjs, tests/mode3d-board-choice.test.mjs, tests/records-board-3d.test.mjs, tests/records-model-3d.test.mjs, tests/records-screen-3d.test.mjs, tests/mode3d-learn.test.mjs, tests/camera-spawn.test.mjs, tests/shell-menu.test.mjs
 Preconditions: none
@@ -955,10 +965,10 @@ Feature: 3d-play-flow
 
 ## 208. Update documentation for feature `3d-play-flow`
 
-Status: [MISSING]
+Status: [SKIP]
 Target: claude
 Files: .claude/context/mode3d.md, .claude/context/app-shell-3d.md, .claude/context/records-screen.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md, .claude/domain/features/3d-play-flow.md
-Preconditions: 207
+Preconditions: none
 Feature: 3d-play-flow
 
 ---
@@ -978,7 +988,7 @@ Feature: shared-screen-layout
 Status: [MISSING]
 Target: claude
 Files: index.html, js/ui.js, js/shell/mode-3d.js, js/shell/first-use.js, js/main.js, tests/shell-mode-3d.test.mjs, tests/shell-first-use.test.mjs, tests/mode3d-learn.test.mjs, tests/shell-lock-fallback.test.mjs, tests/components.test.mjs
-Preconditions: 163, 207
+Preconditions: 163, 212
 Feature: shared-screen-layout
 
 ---
