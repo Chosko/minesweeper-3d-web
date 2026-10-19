@@ -435,7 +435,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against task 171, which edits the same files; replaced by step 61.
 
-## [~] 61. Implement task 172 — Replay viewer in the shared layout
+## [x] 61. Implement task 172 — Replay viewer in the shared layout
 
 Depends on: 7, 60
 
@@ -444,6 +444,8 @@ Context: none
 ```prompt
 /task-implement 172 --review
 ```
+
+Done: 2026-10-19, commit `dfd5fc7` (12 files, +386/-165). Premise wrong: the 3D scene did not stay full-window when the viewer opens over the main menu; `syncScenePanel` now ignores scene panels on the replay screen. Some controls sit off their artboard places so Expert fits at 1024 × 768.
 
 ## [x] 36. Implement task 206 — Daily screen won time in the standard time format
 
@@ -481,7 +483,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against tasks 168, 172, which edit the same files; replaced by step 63.
 
-## [ ] 63. Implement task 209 — Daily screen in the board-choice layout, listing every mode
+## [~] 63. Implement task 209 — Daily screen in the board-choice layout, listing every mode
 
 Depends on: 7, 8, 54, 61, 62
 
@@ -709,7 +711,8 @@ Done: struck — for a parallel run its Depends on named struck step 16; lacked 
 
 Depends on: 18, 61, 67, 69
 
-Context: none
+Context:
+- 2026-10-19 (from step 61): the replay viewer's end line (outcome chip plus time, e.g. "Won 9.971 s") sits in the figures bar; Download and Open replay file sit beside the key line; Expert must fit at 1024 × 768 with tiles of at least 26 px (`tests/classic2d-mode.test.mjs`).
 
 ```prompt
 /task-implement 178 --review
