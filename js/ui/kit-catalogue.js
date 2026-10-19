@@ -9,22 +9,23 @@
 // parts, slots }. A part: { name, selector, optional (a theme may hide it), interactive, states
 // (interactive parts only: state name → selector list), as (the component whose rules draw it, when
 // its markup carries that component's class) }. A slot: { name, selector }, an element present in
-// the markup, marked data-slot="<name>", and hidden unless a theme styles it into view; none exists
-// yet.
+// the markup, marked data-slot="<name>", and hidden unless a theme styles it into view.
 //
-// States. On buttons and menu entries hover and focus are one `selected` state
-// (screen-components § Scope and non-goals), so those parts carry default, selected, pressed and
-// disabled. Every other control carries default, hover, pressed, focused and disabled, plus
-// `checked` where it holds a chosen value (a switch, a segmented option).
+// States. On buttons, menu entries, mode entries and board options hover and focus are one
+// `selected` state (screen-components § Scope and non-goals), so those parts carry default,
+// selected, pressed and disabled, and a board option also `chosen`, the board it holds, apart from
+// selected. Every other control carries default, hover, pressed, focused and disabled, plus
+// `checked` where it holds a chosen value (a switch, a checkbox, a segmented option, a tab).
 
-export const STATES = Object.freeze(['default', 'hover', 'pressed', 'focused', 'selected', 'checked', 'disabled']);
+export const STATES = Object.freeze(['default', 'hover', 'pressed', 'focused', 'selected', 'checked', 'chosen', 'disabled']);
 
 const focus = (sel) => `${sel}:focus-visible, body.pad-nav ${sel}:focus`;
 
-// A button or menu entry: hover and focus are its selected state.
-const selectable = (name, sel) => Object.freeze({
+// A button, menu entry, mode entry or board option: hover and focus are its selected state; `extra`
+// adds `chosen`.
+const selectable = (name, sel, extra = {}) => Object.freeze({
   name, selector: sel, optional: false, interactive: true,
-  states: Object.freeze({ default: sel, selected: focus(sel), pressed: `${sel}:active`, disabled: `${sel}:disabled` }),
+  states: Object.freeze({ default: sel, selected: focus(sel), pressed: `${sel}:active`, disabled: `${sel}:disabled`, ...extra }),
 });
 
 // Any other control: its own hover and focus states; `extra` adds `checked` or overrides one.
@@ -46,16 +47,20 @@ const entry = (kind, className, { base = null, variants = [], parts = [], slots 
   slots: Object.freeze(slots),
 });
 
+const slot = (name, selector) => Object.freeze({ name, selector: `${selector}[data-slot="${name}"]` });
+
 const component = (className, options) => entry('component', className, options);
 const composition = (className, options) => entry('composition', className, options);
 
 export const KIT_CATALOGUE = Object.freeze([
   component('ui-button--primary', {
     base: 'ui-button',
+    variants: ['ui-button--sm', 'ui-button--lg'],
     parts: [selectable('button', '.ui-button--primary')],
   }),
   component('ui-button--secondary', {
     base: 'ui-button',
+    variants: ['ui-button--sm', 'ui-button--lg'],
     parts: [selectable('button', '.ui-button--secondary')],
   }),
   component('ui-menu', {
@@ -100,6 +105,7 @@ export const KIT_CATALOGUE = Object.freeze([
       part('label', '.ui-stat--tile .ui-stat__label'),
       part('value', '.ui-stat--tile .ui-stat__value'),
       part('detail', '.ui-stat--tile .ui-stat__detail', { optional: true }),
+      part('badge', '.ui-stat--tile .ui-chip', { optional: true, as: 'ui-chip' }),
     ],
   }),
   component('ui-code', {
@@ -129,6 +135,83 @@ export const KIT_CATALOGUE = Object.freeze([
   // The bar's stats are ui-stat readouts; its pause is a secondary button and takes its states.
   component('ui-overlay-bar', { parts: [part('pause', '.ui-overlay-bar__pause', { as: 'ui-button--secondary' })] }),
 
+  // The shared layout's components (shared-screen-layout).
+  component('ui-button--danger', {
+    base: 'ui-button',
+    parts: [selectable('button', '.ui-button--danger')],
+  }),
+  component('ui-backdrop'),
+  component('ui-frame', {
+    parts: [
+      part('head', '.ui-frame__head'),
+      part('back', '.ui-frame__start .ui-button', { optional: true, as: 'ui-button--secondary' }),
+      part('title', '.ui-frame__title'),
+      part('action', '.ui-frame__end .ui-button', { optional: true, as: 'ui-button--primary' }),
+      part('body', '.ui-frame__body'),
+      part('foot', '.ui-frame__foot', { optional: true }),
+      part('status', '.ui-frame__status', { optional: true }),
+      part('summary', '.ui-frame__summary', { optional: true }),
+    ],
+    slots: [slot('window-chrome', '.ui-frame__chrome')],
+  }),
+  // Each entry's accent follows its data-entry; the selected entry is taller, with a bigger icon and label.
+  // A disabled entry is aria-disabled, so it can still be selected and show its preview.
+  component('ui-mode-entry', {
+    parts: [
+      selectable('entry', '.ui-mode-entry', { disabled: '.ui-mode-entry[aria-disabled="true"]' }),
+      part('icon', '.ui-mode-entry__icon'),
+      part('label', '.ui-mode-entry__label'),
+      part('reason', '.ui-mode-entry__reason', { optional: true }),
+      part('last', '.ui-mode-entry .ui-chip', { optional: true, as: 'ui-chip' }),
+      part('lock', '.ui-mode-entry__lock', { optional: true }),
+    ],
+  }),
+  component('ui-option', {
+    variants: ['ui-option--learn'],
+    parts: [
+      selectable('option', '.ui-option', { chosen: '.ui-option[aria-pressed="true"]' }),
+      part('badge', '.ui-option__badge', { optional: true }),
+      part('name', '.ui-option__name'),
+      part('last', '.ui-option .ui-chip', { optional: true, as: 'ui-chip' }),
+      part('meta', '.ui-option__meta', { optional: true }),
+      part('size', '.ui-option__size', { optional: true }),
+      part('density', '.ui-option__density', { optional: true }),
+      part('check', '.ui-option__check'),
+    ],
+  }),
+  component('ui-section-label', {
+    parts: [part('text', '.ui-section-label__text'), part('aside', '.ui-section-label__aside', { optional: true })],
+  }),
+  component('ui-key-hint', {
+    variants: ['ui-key-hint--pad'],
+    parts: [part('key', '.ui-key-hint__key'), part('label', '.ui-key-hint__label', { optional: true })],
+  }),
+  component('ui-chip', { variants: ['ui-chip--won', 'ui-chip--lost', 'ui-chip--muted', 'ui-chip--best'] }),
+  component('ui-list-row', {
+    parts: [
+      part('date', '.ui-list-row__date'),
+      part('board', '.ui-list-row__board', { optional: true }),
+      part('figure', '.ui-list-row__figure'),
+      part('outcome', '.ui-list-row .ui-chip', { as: 'ui-chip' }),
+    ],
+  }),
+  component('ui-scene-panel', {
+    parts: [part('stage', '.ui-scene-panel__stage'), part('tag', '.ui-scene-panel__tag', { optional: true })],
+  }),
+  component('ui-divider', { variants: ['ui-divider--vertical'] }),
+  component('ui-tabs', {
+    parts: [control('tab', '.ui-tabs__tab', { checked: '.ui-tabs__tab[aria-selected="true"]' })],
+  }),
+  component('ui-checkbox', {
+    parts: [
+      control('input', '.ui-checkbox__input', { checked: '.ui-checkbox__input:checked' }),
+      part('label', '.ui-checkbox__label'),
+    ],
+  }),
+  component('ui-table', {
+    parts: [part('heading', '.ui-table th'), part('cell', '.ui-table td'), part('figure', '.ui-table__figure', { optional: true })],
+  }),
+
   composition('ui-screen', { variants: ['ui-screen--wide', 'ui-screen--columns'] }),
   composition('ui-row'),
   composition('ui-grid'),
@@ -140,6 +223,10 @@ export const KIT_CATALOGUE = Object.freeze([
     variants: ['ui-columns--two', 'ui-columns--pair'],
     parts: [part('column', '.ui-column'), part('span', '.ui-columns__span')],
   }),
+  composition('ui-mode-list'),
+  composition('ui-options'),
+  composition('ui-key-hints'),
+  composition('ui-list'),
 ]);
 
 // The contrast contract's token roles: body text on each surface token at least 4.5:1, large text

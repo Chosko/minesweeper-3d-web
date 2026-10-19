@@ -6,23 +6,30 @@
    active theme's stylesheet (themes/<id>/theme.css, every rule scoped to
    :root[data-theme="<id>"]) draws every part and state named below.
    Behaviour helpers live in js/ui/components.js (initComponents(root) binds
-   every slider and segmented choice under root; bindSelectOnHover(root)
-   moves focus to the button, menu entry or board option the mouse moves
-   over). js/ui/kit-catalogue.js declares the components below as data
+   every slider, segmented choice and tablist under root; bindSelectOnHover(root)
+   moves focus to the button, menu entry, mode entry or board option the mouse
+   moves over; showKeyHints(root, keysFor) fills the key hints).
+   js/ui/kit-catalogue.js declares the components below as data
    (classes, parts, states, decoration slots) and changes with this comment.
    Changing a class name or a markup pattern below is a breaking change for
    every screen using it.
 
-   States. On buttons, menu entries and board options (ui-button, ui-menu__item)
+   States. On buttons, menu entries, mode entries and board options
+   (ui-button, ui-menu__item, ui-mode-entry, ui-option)
    hover and focus are one selected state: the mouse moving over one focuses
    it, so the selected control is the focused one (:focus, body.pad-nav :focus
    for the controller), and none draws a focus ring or a hover look of its
    own. A control that never takes focus (data-no-focus: the in-game toggles
    that leave the keys to the board) is not focused by the mouse. They have:
    at rest, selected, pressed (:active) and disabled (the native `disabled`
-   attribute). Every other interactive control has: at rest,
+   attribute; aria-disabled="true" on a mode entry); a board option also has chosen (aria-pressed="true"), drawn
+   apart from selected. Every other interactive control has: at rest,
    hover, pressed (:active), focused (:focus-visible for keyboard,
    body.pad-nav :focus for the controller) and disabled.
+
+   Decoration slots. An element marked data-slot="<name>" is present in the
+   markup and hidden unless a theme styles it into view; js/ui/kit-catalogue.js
+   lists every slot a theme may fill.
    `data-force="hover|active|focus"` previews a state statically; only the
    gallery (dev/components.html) uses it.
 
@@ -48,6 +55,19 @@
      Element: <button type="button" class="ui-button ui-button--secondary">
      Role:    button (native)
      Name:    its text
+
+   ui-button--danger — an action that deletes (Delete replay)
+     Element: <button type="button" class="ui-button ui-button--danger">
+     Role:    button (native)
+     Name:    its text
+
+   Sizes: ui-button--sm (a dense bar's or a frame head's actions) and
+   ui-button--lg (a screen's one large action) beside the button's own
+   class; without either a button takes the kit's middle size.
+
+   A button's key hint sits inside it after its text, out of its name:
+     <span class="ui-key-hint" data-action="select" aria-hidden="true">
+       <kbd class="ui-key-hint__key">Enter</kbd></span>
 
    ui-menu — vertical menu list
      Element: <div class="ui-menu" role="group" aria-label="…">
@@ -244,6 +264,175 @@
               it is the top edge of the board's framed panel
               (css/style.css .c2d-panel) and sits on the panel's surface.
 
+   ui-backdrop — the page behind a screen (Joyful tiles' dotted paper)
+     Element: <div class="ui-backdrop"> holding the screen's ui-frame </div>
+     Role:    none (presentational)
+     Name:    none
+     Layout:  fills its layer and centres the frame on it.
+
+   ui-frame — a screen's window: head, scrolling body, foot
+     Element: <section class="ui-frame" aria-labelledby="T">
+                <div class="ui-frame__chrome" data-slot="window-chrome"
+                     aria-hidden="true"></div>
+                <header class="ui-frame__head">
+                  <div class="ui-frame__start">[Back: a ui-button--secondary with its back key hint]</div>
+                  <h2 class="ui-frame__title" id="T">…</h2>
+                  <div class="ui-frame__end">[the screen's action, or nothing]</div>
+                </header>
+                <div class="ui-frame__body">…</div>
+                <footer class="ui-frame__foot">…</footer>
+              </section>
+     Role:    region (section named by its title)
+     Name:    aria-labelledby → the title
+     Foot:    a status line, <p class="ui-frame__status">…</p>, or a bottom
+              bar: <p class="ui-frame__summary">…</p> (the selection
+              summarised) beside a ui-actions ui-actions--row; a frame
+              without a foot leaves it out.
+     Slot:    window-chrome, the frame's title-bar decoration (a title bar's
+              decorative buttons), hidden unless a theme draws it.
+     Layout:  sized to its content, never wider or taller than its
+              backdrop; head and foot stay in view while the body scrolls
+              vertically. The title sits centred between Back and the action.
+
+   ui-mode-entry — a main-menu entry: a mode, or a place (Records, Settings)
+     Element: <div class="ui-mode-list" role="group" aria-label="…">
+                <button type="button" class="ui-mode-entry" data-entry="classic-2d">
+                  <span class="ui-mode-entry__icon" aria-hidden="true"><svg>…</svg></span>
+                  <span class="ui-mode-entry__label">Classic 2D</span>
+                  <span class="ui-chip">Last played</span>
+                  <span class="ui-mode-entry__lock" aria-hidden="true"><svg>…</svg></span>
+                </button> …
+              </div>
+     Role:    group; each entry a button (native)
+     Name:    group: aria-label; entry: its text (label, chip, reason)
+     Accent:  data-entry names the entry (classic-2d, hexagon, triangle,
+              surface, 3d, daily, records, settings, quit); the theme gives
+              each its accent, and the places a neutral one.
+     Last:    the Last played ui-chip on the last mode played.
+     Disabled: aria-disabled="true" (not the native attribute, so the
+              entry stays selectable and its preview shows; its screen
+              opens nothing on it) and a
+              <span class="ui-mode-entry__reason">…</span> after the label
+              saying why it cannot open here (3D without WebGL 2, Quit on
+              the web); the lock shows only while disabled. There is no
+              locked state: a mode not built yet is an ordinary entry.
+     Selected: the selected entry is taller than the others, with a bigger
+              icon and label. In a ui-mode-list the entries share the
+              list's height.
+
+   ui-option — a board option: a preset, Custom, Insert Board Code, Learn 3D
+     Element: <div class="ui-options" role="group" aria-label="…">
+                <button type="button" class="ui-option" aria-pressed="false" data-value="…">
+                  <span class="ui-option__name">Intermediate</span>
+                  <span class="ui-chip">Last played</span>
+                  <span class="ui-option__meta"><span class="ui-option__size">16 × 16 · 40 mines</span>
+                    · <span class="ui-option__density">15.6 % mines</span></span>
+                  <span class="ui-option__check" aria-hidden="true"><svg>…</svg></span>
+                </button> …
+              </div>
+     Role:    group; each option a button (native)
+     Name:    group: aria-label; option: its text
+     Chosen:  aria-pressed="true" on the board the screen holds: a fill and
+              the check, apart from the selected (focused) option.
+     Parts:   the Last played ui-chip beside the name; the meta line holds
+              the size line and the mine density, or a one-line
+              description instead (Insert Board Code); no 3BV and no best.
+              ui-option--learn (Learn 3D) leads with
+              <span class="ui-option__badge" aria-hidden="true"><svg>…</svg></span>.
+
+   ui-section-label — a section's label, with an optional aside
+     Element: <div class="ui-section-label">
+                <h3 class="ui-section-label__text">Board</h3>
+                <span class="ui-section-label__aside">…</span>
+              </div>
+     Role:    heading (native)
+     Name:    its text
+
+   ui-key-hint — the keys or buttons that act on an action, beside it
+     Element: <span class="ui-key-hint" data-action="move|select|back">
+                <kbd class="ui-key-hint__key">↑</kbd><kbd class="ui-key-hint__key">↓</kbd>
+                <span class="ui-key-hint__label">Move</span>
+              </span>
+              ui-key-hint--pad draws controller buttons; a hint inside a
+              button has no label and is aria-hidden="true".
+     Role:    none (text)
+     Name:    its text
+     Helper:  showKeyHints(root, keysFor) writes each hint's keys for the
+              active input device from the bindings source
+              (js/settings/bindings.js keyHintKeys), and hides a hint with
+              none (touch); the shell calls it on every device change.
+     Row:     ui-key-hints lays hints in a row.
+
+   ui-chip — a short state, rank or "Coming soon" beside a name or figure
+     Element: <span class="ui-chip">Last played</span>
+              ui-chip--won (a won game, its time), ui-chip--lost,
+              ui-chip--muted (abandoned, not played, Coming soon),
+              ui-chip--best (New best).
+     Role:    none (text)
+     Name:    its text
+     Badge:   a ui-stat--tile may end with one (New best).
+
+   ui-list-row — a recent game in a list
+     Element: <ul class="ui-list" aria-label="…">
+                <li class="ui-list-row">
+                  <span class="ui-list-row__date">16 Oct 2026 14:02</span>
+                  <span class="ui-list-row__board">Intermediate</span>
+                  <span class="ui-list-row__figure">51.744 s</span>
+                  <span class="ui-chip ui-chip--won">Won</span>
+                </li> …
+              </ul>
+     Role:    list of listitem
+     Name:    list: aria-label
+     Layout:  the rows share their columns; the board is optional.
+
+   ui-scene-panel — a framed region a mode's own renderer draws into
+     Element: <figure class="ui-scene-panel" aria-labelledby="T">
+                <div class="ui-scene-panel__stage">[the drawn preview]</div>
+                <figcaption class="ui-scene-panel__tag" id="T">CLASSIC 2D · INTERMEDIATE</figcaption>
+              </figure>
+     Role:    figure
+     Name:    aria-labelledby → the tag
+     Layout:  sized by the screen; the stage fills it, the tag sits over
+              its top-left corner.
+
+   ui-divider — a rule between groups
+     Element: <hr class="ui-divider">; between columns
+              <div class="ui-divider ui-divider--vertical" role="separator"
+                   aria-orientation="vertical"></div>
+     Role:    separator
+     Name:    none
+
+   ui-tabs — one list among a few, shown below (Recent games, Top 10)
+     Element: <div class="ui-tabs" role="tablist" aria-label="…">
+                <button type="button" role="tab" aria-selected="true|false"
+                        id="TAB" aria-controls="PANEL"
+                        class="ui-tabs__tab" data-value="…">…</button> …
+              </div>
+              <div role="tabpanel" id="PANEL" aria-labelledby="TAB">…</div>
+     Role:    tablist of tab; each tab controls its tabpanel
+     Name:    tablist: aria-label; tab: its text; tabpanel: its tab
+     Helper:  bindTabs — click or Left / Right select; dispatches `change`
+              on the list with detail { value, index }; the selected tab is
+              the only one in the Tab order.
+
+   ui-checkbox — a labelled on/off choice in a list's tools (Pinned first)
+     Element: <label class="ui-checkbox">
+                <input type="checkbox" class="ui-checkbox__input">
+                <span class="ui-checkbox__label">…</span>
+              </label>
+     Role:    checkbox (native)
+     Name:    the wrapping label's text
+
+   ui-table — rows of figures (Top 10, averages)
+     Element: <table class="ui-table">
+                <thead><tr><th scope="col">Date</th>
+                  <th scope="col" class="ui-table__figure">Time</th></tr></thead>
+                <tbody><tr><td>…</td><td class="ui-table__figure">48.213 s</td></tr></tbody>
+              </table>
+     Role:    table (native)
+     Name:    a <caption> when the screen has one
+     Figures: ui-table__figure cells align right in tabular numbers.
+
    Screen compositions. Layout-only classes a screen is assembled with; they
    carry no colour of their own beyond the text roles of ui-heading and
    ui-text.
@@ -273,6 +462,10 @@
                        ui-screen--columns widens the screen beyond
                        ui-screen--wide at that width. Gaps come from the
                        spacing tokens.
+     ui-mode-list      a column of ui-mode-entry sharing its height.
+     ui-options        a column of ui-option.
+     ui-key-hints      a row of ui-key-hint.
+     ui-list           the list of ui-list-row, its columns shared.
 
    Main menu (index.html #menu): ui-card ui-screen--wide holding the title
      row (ending in the Play again primary button, "Play again: <board>",
@@ -501,6 +694,8 @@
   cursor: pointer;
 }
 .ui-button:disabled { cursor: not-allowed; }
+.ui-button--sm { min-height: 38px; padding: 7px 13px; font-size: 15px; }
+.ui-button--lg { min-height: 62px; padding: 15px 28px; font-size: var(--font-size-xl); }
 
 /* ---------- menu list ---------- */
 .ui-menu {
@@ -759,6 +954,303 @@
   height: var(--space-8);
 }
 
+/* ---------- decoration slots: hidden unless a theme styles one into view ---------- */
+[data-slot] { display: none; }
+
+/* ---------- page backdrop and screen frame ---------- */
+.ui-backdrop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: var(--space-6);
+  overflow: hidden;
+}
+/* Sized to its content, never past its backdrop: the body takes what is left between head and foot
+   and scrolls. */
+.ui-frame {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  max-width: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+.ui-frame__head {
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--space-3);
+  box-sizing: border-box;
+  min-height: 64px;
+  padding: var(--space-2) var(--space-4);
+}
+.ui-frame__start, .ui-frame__end { display: flex; align-items: center; gap: var(--space-2); white-space: nowrap; }
+.ui-frame__end { justify-content: flex-end; }
+.ui-frame__title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-heavy);
+  text-align: center;
+  white-space: nowrap;
+}
+.ui-frame__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: var(--space-6);
+}
+.ui-frame__foot {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-4);
+  padding: var(--space-2) var(--space-5);
+}
+.ui-frame__status, .ui-frame__summary { margin: 0; font-size: var(--font-size-sm); }
+
+/* ---------- mode entry: icon, label (and reason), chip, lock ---------- */
+.ui-mode-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.ui-mode-list > .ui-mode-entry { flex: 1 1 auto; }
+.ui-mode-entry {
+  appearance: none;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-rows: 1fr auto auto 1fr;
+  grid-template-areas: "icon . chip lock" "icon label chip lock" "icon reason chip lock" "icon . chip lock";
+  align-items: center;
+  column-gap: var(--space-4);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 64px;
+  margin: 0;
+  padding: var(--space-2) var(--space-5);
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+}
+.ui-mode-entry[aria-disabled="true"] { cursor: not-allowed; }
+.ui-mode-entry__icon { grid-area: icon; display: grid; place-items: center; width: 44px; height: 44px; }
+.ui-mode-entry__icon > svg, .ui-option__badge > svg { width: 60%; height: 60%; }
+.ui-mode-entry__label { grid-area: label; font-size: var(--font-size-xl); font-weight: var(--font-weight-heavy); line-height: 1.05; }
+.ui-mode-entry__reason { grid-area: reason; margin-top: var(--space-1); font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); }
+.ui-mode-entry > .ui-chip { grid-area: chip; }
+.ui-mode-entry__lock { grid-area: lock; display: grid; margin-inline-start: var(--space-3); }
+.ui-mode-entry__lock > svg { width: 20px; height: 20px; }
+.ui-mode-entry:not([aria-disabled="true"]) .ui-mode-entry__lock { display: none; }
+
+/* ---------- board option: name and chip over the meta line, the check at the end ---------- */
+.ui-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.ui-option {
+  appearance: none;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  grid-template-rows: 1fr auto auto 1fr;
+  grid-template-areas: "badge . . check" "badge name chip check" "badge meta meta check" "badge . . check";
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 62px;
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+}
+.ui-option:disabled { cursor: not-allowed; }
+.ui-option__badge { grid-area: badge; display: grid; place-items: center; width: 40px; height: 40px; margin-inline-end: var(--space-3); }
+.ui-option__name { grid-area: name; font-size: var(--font-size-lg); font-weight: var(--font-weight-heavy); line-height: 1.1; }
+.ui-option > .ui-chip { grid-area: chip; justify-self: start; margin-inline-start: var(--space-3); }
+.ui-option__meta { grid-area: meta; margin-top: var(--space-1); font-size: var(--font-size-sm); }
+.ui-option__check { grid-area: check; display: grid; place-items: center; width: 28px; height: 28px; margin-inline-start: var(--space-3); }
+.ui-option__check > svg { width: 16px; height: 16px; }
+.ui-option:not([aria-pressed="true"]) .ui-option__check > * { visibility: hidden; }
+
+/* ---------- section label, key hints, chip ---------- */
+.ui-section-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-4);
+}
+.ui-section-label__text {
+  margin: 0;
+  font-size: 13px;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.ui-section-label__aside { font-size: var(--font-size-sm); }
+.ui-key-hints {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-6);
+}
+.ui-key-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 15px;
+  white-space: nowrap;
+}
+.ui-key-hint.hidden { display: none; }
+.ui-button > .ui-key-hint { gap: var(--space-1); font-size: inherit; }
+.ui-key-hint__key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 22px;
+  padding: 2px 6px;
+  font-size: max(11px, 0.78em);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+}
+.ui-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) 9px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.ui-stat--tile > .ui-chip { align-self: flex-start; }
+
+/* ---------- list rows: the rows share the list's columns ---------- */
+.ui-list {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  column-gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ui-list-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+  padding: var(--space-2) 0;
+}
+.ui-list-row__date { grid-column: 1; font-size: var(--font-size-sm); font-variant-numeric: var(--font-numeric-tabular); white-space: nowrap; }
+.ui-list-row__board { grid-column: 2; min-width: 0; overflow-wrap: anywhere; }
+.ui-list-row__figure { grid-column: 3; font-variant-numeric: var(--font-numeric-tabular); text-align: right; white-space: nowrap; }
+.ui-list-row > .ui-chip { grid-column: 4; justify-self: start; }
+
+/* ---------- scene panel: the stage fills it, the tag over its corner ---------- */
+.ui-scene-panel {
+  position: relative;
+  display: block;
+  min-height: 160px;
+  margin: 0;
+  overflow: hidden;
+}
+.ui-scene-panel__stage { position: absolute; inset: 0; display: grid; place-items: center; }
+.ui-scene-panel__tag {
+  position: absolute;
+  top: var(--space-4);
+  left: var(--space-5);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+/* ---------- divider ---------- */
+.ui-divider {
+  flex: none;
+  box-sizing: border-box;
+  width: 100%;
+  height: 1px;
+  margin: 0;
+  border: 0;
+}
+.ui-divider--vertical { align-self: stretch; width: 1px; height: auto; }
+
+/* ---------- tabs ---------- */
+.ui-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+.ui-tabs__tab {
+  appearance: none;
+  min-height: 40px;
+  margin: 0;
+  padding: var(--space-2) 14px;
+  border: 0;
+  font-size: 15px;
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+.ui-tabs__tab:disabled { cursor: not-allowed; }
+
+/* ---------- checkbox: the theme draws the box and the check ---------- */
+.ui-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--font-size-md);
+  cursor: pointer;
+}
+.ui-checkbox__input {
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  border: 0;
+  cursor: pointer;
+}
+.ui-checkbox__input::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 7px;
+  width: 6px;
+  height: 11px;
+  transform: rotate(45deg);
+}
+.ui-checkbox__input:not(:checked)::before { visibility: hidden; }
+.ui-checkbox__input:disabled { cursor: not-allowed; }
+.ui-checkbox:has(.ui-checkbox__input:disabled) { cursor: not-allowed; }
+
+/* ---------- table ---------- */
+.ui-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.ui-table th {
+  padding: 6px var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.1em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.ui-table td { padding: var(--space-2); white-space: nowrap; }
+.ui-table .ui-table__figure { font-variant-numeric: var(--font-numeric-tabular); text-align: right; }
+
 /* ---------- screen compositions ---------- */
 .ui-screen {
   display: flex;
@@ -830,16 +1322,16 @@
 }
 
 /* ---------- focused state ----------
-   Every focusable part shows a focused state, drawn by the theme: on buttons, menu entries and
-   board options it is their selected state, so none draws a separate focus ring here. */
-:is(.ui-button, .ui-menu__item, .ui-toggle__input, .ui-slider__input, .ui-segmented__option, .ui-field__input, .ui-link):focus { outline: none; }
+   Every focusable part shows a focused state, drawn by the theme: on buttons, menu entries, mode
+   entries and board options it is their selected state, so none draws a separate focus ring here. */
+:is(.ui-button, .ui-menu__item, .ui-mode-entry, .ui-option, .ui-toggle__input, .ui-slider__input, .ui-segmented__option, .ui-tabs__tab, .ui-checkbox__input, .ui-field__input, .ui-link):focus { outline: none; }
 
 /* ---------- coarse pointers ---------- */
 /* A finger's targets, on a coarse pointer only: every size above stays the fine pointer's.
-   A switch takes a touch anywhere in a 44 px square around its centre; a slider is 44 px
+   A switch or a checkbox takes a touch anywhere in a 44 px square around its centre; a slider is 44 px
    tall, so its thumb is pressed anywhere in that height. */
 @media (pointer: coarse) {
-  .ui-toggle__input::after {
+  .ui-toggle__input::after, .ui-checkbox__input::after {
     content: "";
     position: absolute;
     top: calc(50% - 22px);

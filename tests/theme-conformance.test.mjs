@@ -341,6 +341,45 @@ for (const entry of THEMES) {
   test(`${entry.name}: the board module passes the board conformance checks`, { todo: 'its checks are defined by themed-board-art-and-motion' }, () => {});
 }
 
+// ---------- the shared layout's components in the catalogue ----------
+
+const byName = (name) => KIT_CATALOGUE.find((c) => c.name === name);
+const partNames = (name) => byName(name).parts.map((p) => p.name);
+const opt = (name, part) => byName(name).parts.find((p) => p.name === part);
+
+test('the catalogue declares the shared layout\'s components, their parts, states and slots, so every theme is held to them', () => {
+  for (const name of ['ui-backdrop', 'ui-frame', 'ui-mode-entry', 'ui-option', 'ui-section-label', 'ui-key-hint', 'ui-chip', 'ui-list-row',
+    'ui-scene-panel', 'ui-button--danger', 'ui-divider', 'ui-tabs', 'ui-checkbox', 'ui-table']) {
+    assert.equal(byName(name)?.kind, 'component', `${name} is catalogued`);
+  }
+  for (const name of ['ui-mode-list', 'ui-options', 'ui-key-hints', 'ui-list']) assert.equal(byName(name)?.kind, 'composition', `${name} is catalogued`);
+  assert.deepEqual(byName('ui-frame').slots.map((s) => [s.name, s.selector]), [['window-chrome', '.ui-frame__chrome[data-slot="window-chrome"]']]);
+  for (const p of ['head', 'back', 'title', 'action', 'body', 'foot', 'status', 'summary']) assert.ok(partNames('ui-frame').includes(p), `the frame's ${p}`);
+  for (const name of ['ui-button--primary', 'ui-button--secondary']) assert.deepEqual(byName(name).variants, ['ui-button--sm', 'ui-button--lg'], `${name} sizes`);
+  assert.equal(opt('ui-mode-entry', 'entry').states.disabled, '.ui-mode-entry[aria-disabled="true"]', 'a disabled mode entry stays selectable');
+  for (const p of ['entry', 'icon', 'label', 'reason', 'last', 'lock']) assert.ok(partNames('ui-mode-entry').includes(p), `the mode entry's ${p}`);
+  for (const p of ['option', 'name', 'last', 'meta', 'size', 'density', 'check', 'badge']) assert.ok(partNames('ui-option').includes(p), `the board option's ${p}`);
+  assert.ok(partNames('ui-stat--tile').includes('badge'), 'the stat tile\'s badge');
+  for (const [name, part] of [['ui-frame', 'status'], ['ui-frame', 'summary'], ['ui-mode-entry', 'reason'], ['ui-mode-entry', 'last'],
+    ['ui-option', 'size'], ['ui-option', 'density'], ['ui-option', 'badge'], ['ui-stat--tile', 'badge'], ['ui-section-label', 'aside']]) {
+    assert.equal(opt(name, part).optional, true, `${name} ${part} is optional`);
+  }
+  // Mode entries and board options follow the button rule: one selected state, no hover or focus of their own.
+  assert.deepEqual(Object.keys(opt('ui-mode-entry', 'entry').states), ['default', 'selected', 'pressed', 'disabled']);
+  assert.deepEqual(Object.keys(opt('ui-option', 'option').states), ['default', 'selected', 'pressed', 'disabled', 'chosen']);
+  assert.equal(opt('ui-option', 'option').states.chosen, '.ui-option[aria-pressed="true"]');
+  assert.ok(!Object.hasOwn(opt('ui-mode-entry', 'entry').states, 'locked'), 'no locked state for a mode entry');
+  for (const [name, part] of [['ui-mode-entry', 'last'], ['ui-option', 'last'], ['ui-stat--tile', 'badge'], ['ui-list-row', 'outcome']]) {
+    assert.equal(opt(name, part).as, 'ui-chip', `${name}'s ${part} is a chip`);
+  }
+});
+
+test('the slot check passes the frame\'s window chrome and flags any other name', () => {
+  const sheet = (sel) => ({ sheet: parseCss(`${sel} { display: block; }`) });
+  assert.deepEqual(checkSlots(sheet(':root[data-theme="x"] .ui-frame__chrome[data-slot="window-chrome"]')), []);
+  assert.deepEqual(checkSlots(sheet(':root[data-theme="x"] [data-slot="title-bar"]')), [{ check: 'slot', subject: 'title-bar' }]);
+});
+
 // ---------- the required token set ----------
 
 const walk = (dir) => readdirSync(join(ROOT, dir), { withFileTypes: true })
@@ -410,7 +449,8 @@ const SHOWS = {
   focused: (t) => forced(t, 'focus'),
   selected: (t) => forced(t, 'focus'),
   disabled: off,
-  checked: (t) => 'checked' in t.attrs || t.attrs['aria-checked'] === 'true',
+  checked: (t) => 'checked' in t.attrs || t.attrs['aria-checked'] === 'true' || t.attrs['aria-selected'] === 'true',
+  chosen: (t) => t.attrs['aria-pressed'] === 'true',
 };
 
 test('the gallery renders every catalogued component, every interactive part in every state, and every decoration slot', () => {

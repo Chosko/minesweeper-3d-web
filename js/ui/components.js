@@ -1,6 +1,6 @@
 // Behaviour helpers for the component kit (css/components.css): the slider's
-// value display, the segmented choice's selection, the one selected control
-// under a moving mouse, the pager, the code chip and the board code field. The logic is plain
+// value display, the segmented choice's and the tabs' selection, the one selected control
+// under a moving mouse, the key hints, the pager, the code chip and the board code field. The logic is plain
 // functions; the binders touch only the elements they are handed, so the
 // module needs no document and runs under Node with stub elements.
 
@@ -142,14 +142,28 @@ export function bindSlider(root) {
  * Returns unbind.
  */
 export function bindSegmented(group, { onChange, horizontal = false } = {}) {
-  const options = [...group.querySelectorAll('.ui-segmented__option')];
-  // The selection is read from the markup (aria-checked); it changes through
+  return bindChoice(group, { item: '.ui-segmented__option', attr: 'aria-checked', onChange, horizontal });
+}
+
+/**
+ * Single selection over a `.ui-tabs` tablist of `.ui-tabs__tab` buttons, as bindSegmented with
+ * `horizontal` does it: click or Left / Right select (aria-selected), disabled tabs are skipped, the
+ * selected tab alone is in the tab order, and a change dispatches `change` on the list and calls
+ * onChange(value, index). Returns unbind.
+ */
+export function bindTabs(list, { onChange } = {}) {
+  return bindChoice(list, { item: '.ui-tabs__tab', attr: 'aria-selected', onChange, horizontal: true });
+}
+
+function bindChoice(group, { item, attr, onChange, horizontal }) {
+  const options = [...group.querySelectorAll(item)];
+  // The selection is read from the markup (`attr`); it changes through
   // click and arrow keys here, which also keep the roving tab order in step.
-  const current = () => options.findIndex((o) => o.getAttribute('aria-checked') === 'true');
+  const current = () => options.findIndex((o) => o.getAttribute(attr) === 'true');
 
   const render = (selected) => {
     segmentedState(options.length, selected).forEach((s, i) => {
-      options[i].setAttribute('aria-checked', String(s.checked));
+      options[i].setAttribute(attr, String(s.checked));
       options[i].tabIndex = s.tabIndex;
     });
   };
@@ -227,11 +241,12 @@ export function bindPager(nav, { onPage, name = '' } = {}) {
 
 // ---------------------------------------------------------------- one selected control
 
-/** The controls whose hover and focus are one selected state: buttons, menu entries and board options. */
-export const SELECT_ON_HOVER = '.ui-button, .ui-menu__item';
+/** The controls whose hover and focus are one selected state: buttons, menu entries, mode entries and board options. */
+export const SELECT_ON_HOVER = '.ui-button, .ui-menu__item, .ui-mode-entry, .ui-option';
 
 /**
- * Moving the mouse over an enabled button, menu entry or board option focuses it (without scrolling),
+ * Moving the mouse over an enabled button, menu entry, mode entry or board option focuses it (without
+ * scrolling), and over a disabled mode entry too (aria-disabled: it stays selectable and opens nothing),
  * so the selected control is always the focused one; a control that never takes focus (data-no-focus:
  * the in-game toggles that leave the keys to the board) is left alone. One delegated listener on `root` (the document)
  * serves every such control, present and future. A mousemove that did not move the pointer (one a
@@ -246,7 +261,8 @@ export function bindSelectOnHover(root) {
     if (at === last) return;
     last = at;
     const el = e.target?.closest?.(SELECT_ON_HOVER);
-    if (!el || el.disabled || el.getAttribute('aria-disabled') === 'true' || el.hasAttribute('data-no-focus')) return;
+    if (!el || el.disabled || el.hasAttribute('data-no-focus')) return;
+    if (el.getAttribute('aria-disabled') === 'true' && !el.matches?.('.ui-mode-entry')) return;
     if (el.ownerDocument?.activeElement === el) return;
     el.focus({ preventScroll: true });
   };
@@ -254,13 +270,39 @@ export function bindSelectOnHover(root) {
   return () => root.removeEventListener('mousemove', onMove, true);
 }
 
-/** Binds every slider and segmented choice under `root`. Returns unbind-all. */
+/** Binds every slider, segmented choice and tablist under `root`. Returns unbind-all. */
 export function initComponents(root) {
   const unbinds = [
     ...[...root.querySelectorAll('.ui-slider')].map((el) => bindSlider(el)),
     ...[...root.querySelectorAll('.ui-segmented')].map((el) => bindSegmented(el)),
+    ...[...root.querySelectorAll('.ui-tabs')].map((el) => bindTabs(el)),
   ];
   return () => { for (const u of unbinds) u(); };
+}
+
+// ---------------------------------------------------------------- key hints
+
+/**
+ * Fills every `.ui-key-hint[data-action]` under `root` with the keys keysFor(action) gives — a list
+ * of { text, pad }, the bindings source's keyHintKeys for the active device — as its
+ * `.ui-key-hint__key` kbd elements, ahead of its label; a hint of controller buttons takes
+ * `ui-key-hint--pad`, and a hint with no keys (touch) is hidden. Call it again on every change of the
+ * active device.
+ */
+export function showKeyHints(root, keysFor) {
+  for (const hint of root.querySelectorAll('.ui-key-hint[data-action]')) {
+    const keys = keysFor(hint.getAttribute('data-action'));
+    for (const old of hint.querySelectorAll('.ui-key-hint__key')) old.remove();
+    const label = hint.querySelector('.ui-key-hint__label');
+    for (const { text } of keys) {
+      const kbd = hint.ownerDocument.createElement('kbd');
+      kbd.className = 'ui-key-hint__key';
+      kbd.textContent = text;
+      hint.insertBefore(kbd, label);
+    }
+    hint.classList.toggle('ui-key-hint--pad', keys.length > 0 && keys.every((k) => k.pad));
+    hint.classList.toggle('hidden', keys.length === 0);
+  }
 }
 
 // ---------------------------------------------------------------- the code chip

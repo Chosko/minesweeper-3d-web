@@ -143,7 +143,11 @@ test('the kit catalogue is frozen data of the documented shape', () => {
     assert.ok(['component', 'composition'].includes(c.kind), `${c.name} kind`);
     assert.equal(c.selector, `.${c.className}`, `${c.name} selector is its class`);
     assert.ok(c.base === null || typeof c.base === 'string', `${c.name} base`);
-    assert.deepEqual(c.slots, [], 'no decoration slot exists yet');
+    for (const s of c.slots) {
+      assert.ok(Object.isFrozen(s), `${c.name} slot ${s.name} is frozen`);
+      assert.match(s.name, /^[a-z][a-z-]*$/, `${c.name} slot name`);
+      assert.ok(s.selector.endsWith(`[data-slot="${s.name}"]`), `${c.name} slot ${s.name} is marked data-slot="${s.name}"`);
+    }
     for (const p of c.parts) {
       assert.ok(Object.isFrozen(p), `${c.name} ${p.name} is frozen`);
       assert.equal(typeof p.optional, 'boolean');
@@ -163,7 +167,10 @@ test('the kit catalogue is frozen data of the documented shape', () => {
 test('the kit catalogue declares every component the stylesheet head documents', () => {
   const documented = ['ui-button--primary', 'ui-button--secondary', 'ui-menu', 'ui-card', 'ui-panel', 'ui-banner', 'ui-toggle',
     'ui-slider', 'ui-segmented', 'ui-stat', 'ui-stat--tile', 'ui-code', 'ui-pager', 'ui-field', 'ui-link', 'ui-spinner',
-    'ui-overlay-bar', 'ui-screen', 'ui-row', 'ui-grid', 'ui-heading', 'ui-text', 'ui-actions', 'ui-stat-row', 'ui-columns'];
+    'ui-overlay-bar', 'ui-screen', 'ui-row', 'ui-grid', 'ui-heading', 'ui-text', 'ui-actions', 'ui-stat-row', 'ui-columns',
+    'ui-button--danger', 'ui-backdrop', 'ui-frame', 'ui-mode-entry', 'ui-option', 'ui-section-label', 'ui-key-hint',
+    'ui-chip', 'ui-list-row', 'ui-scene-panel', 'ui-divider', 'ui-tabs', 'ui-checkbox', 'ui-table',
+    'ui-mode-list', 'ui-options', 'ui-key-hints', 'ui-list'];
   for (const name of documented) {
     assert.ok(HEAD.includes(name), `the head documents ${name}`);
     assert.ok(KIT_CATALOGUE.some((c) => c.className === name), `the catalogue declares ${name}`);

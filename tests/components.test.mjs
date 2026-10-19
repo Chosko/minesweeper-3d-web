@@ -6,9 +6,11 @@ import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import {
   decimalsOf, formatSliderValue, segmentedTargetIndex, segmentedState,
-  bindSlider, bindSegmented, initComponents, formatOverlayTime, formatMineCount, mineCounterDigits, pagerState, PAGER_WINDOW,
+  bindSlider, bindSegmented, bindTabs, initComponents, formatOverlayTime, formatMineCount, mineCounterDigits, pagerState, PAGER_WINDOW,
   boardLink, copyBoardCode, bindCodeChip, COPY_FALLBACK, COPIED, bindCodeField, bindSelectOnHover, SELECT_ON_HOVER,
 } from '../js/ui/components.js';
+import { KEY_HINTS, keyHintKeys } from '../js/settings/bindings.js';
+import { GLYPHS } from '../js/gamepad.js';
 import { UI } from '../js/ui.js';
 import { FOCUSABLE } from '../js/shell/navigation.js';
 import { browserSuite } from './helpers/browser.mjs';
@@ -44,9 +46,27 @@ const COMPONENTS = {
   'ui-stat--tile': { interactive: false },
   'ui-pager': { interactive: false },
   'ui-code': { interactive: false },
+  // the shared layout's components
+  'ui-button--danger': { interactive: true, selectable: true, control: '.ui-button.ui-button--danger' },
+  'ui-backdrop': { interactive: false },
+  'ui-frame': { interactive: false },
+  'ui-mode-entry': { interactive: true, selectable: true, control: '.ui-mode-entry' },
+  'ui-option': { interactive: true, selectable: true, control: '.ui-option' },
+  'ui-section-label': { interactive: false },
+  'ui-key-hint': { interactive: false },
+  'ui-chip': { interactive: false },
+  'ui-list-row': { interactive: false },
+  'ui-scene-panel': { interactive: false },
+  'ui-divider': { interactive: false },
+  'ui-tabs': { interactive: true, control: '.ui-tabs__tab' },
+  'ui-checkbox': { interactive: true, control: '.ui-checkbox__input' },
+  'ui-table': { interactive: false },
 };
 // Screen compositions: layout-only classes the screens are assembled with.
-const COMPOSITIONS = ['ui-screen', 'ui-row', 'ui-grid', 'ui-heading', 'ui-text', 'ui-actions', 'ui-stat-row', 'ui-columns'];
+const COMPOSITIONS = ['ui-screen', 'ui-row', 'ui-grid', 'ui-heading', 'ui-text', 'ui-actions', 'ui-stat-row', 'ui-columns',
+  'ui-mode-list', 'ui-options', 'ui-key-hints', 'ui-list'];
+// The controls whose hover and focus are one selected state.
+const SELECTABLE = '.ui-button, .ui-menu__item, .ui-mode-entry, .ui-option';
 const STATES = ['hover', 'active', 'focus', 'disabled'];
 
 // css rules as [selector, body] pairs (top level and inside @media).
@@ -175,7 +195,7 @@ test('buttons, menu entries and board options draw no outline: the selected stat
   const focus = THEME_RULES.filter(([sel]) => /:focus/.test(sel));
   assert.ok(focus.length > 0);
   for (const [sel, body] of focus) {
-    if (/ui-button|ui-menu__item/.test(sel) && !/ui-toggle/.test(sel)) {
+    if (/ui-button|ui-menu__item|ui-mode-entry|ui-option\b/.test(sel) && !/ui-toggle/.test(sel)) {
       assert.doesNotMatch(body, /outline\s*:(?!\s*none)/, `${sel} draws no outline`);
       assert.doesNotMatch(body, /--color-focus-halo/, `${sel} draws no halo`);
     }
@@ -902,7 +922,7 @@ test('in a browser, the "Esc: Back" hints meet the contrast contract', async (t)
 // ---------------------------------------------------------------- one selected control
 
 test('one selected control: a moving mouse focuses the enabled button, menu entry or board option under it, without scrolling', () => {
-  assert.equal(SELECT_ON_HOVER, '.ui-button, .ui-menu__item');
+  assert.equal(SELECT_ON_HOVER, SELECTABLE);
   const doc = { activeElement: null };
   const control = (attrs = {}) => {
     const el = new FakeEl(attrs);
@@ -937,6 +957,10 @@ test('one selected control: a moving mouse focuses the enabled button, menu entr
   move(toggle, 15, 70);
   move(plain, 16, 70);
   assert.equal(doc.activeElement, b, 'a disabled control, a control that never takes focus, or no control, takes none');
+  const entryOff = control({ class: 'ui-mode-entry', 'aria-disabled': 'true' });
+  entryOff.matches = (sel) => sel === '.ui-mode-entry';
+  move(entryOff, 17, 90);
+  assert.equal(doc.activeElement, entryOff, 'a disabled mode entry is still selected: it shows its preview and opens nothing');
   unbind();
   assert.equal(root.listeners.mousemove.length, 0, 'unbound');
 });
@@ -1343,7 +1367,7 @@ function measureContrast() {
   }
   const focus = [...document.querySelectorAll('[data-force~="focus"]')].map((el) => {
     const s = getComputedStyle(el);
-    return { cls: el.className, selectable: el.matches('.ui-button, .ui-menu__item'), style: s.outlineStyle, width: parseFloat(s.outlineWidth), transform: s.transform };
+    return { cls: el.className, selectable: el.matches('.ui-button, .ui-menu__item, .ui-mode-entry, .ui-option'), style: s.outlineStyle, width: parseFloat(s.outlineWidth), transform: s.transform };
   });
   return { runs: out, focus };
 }
@@ -1453,7 +1477,7 @@ test('in a browser, the menu, the pause card and the results layout meet the con
     return page.evaluate(() => {
       const el = document.activeElement;
       const s = getComputedStyle(el);
-      return { id: el.id, selectable: el.matches('.ui-button, .ui-menu__item'), style: s.outlineStyle, width: parseFloat(s.outlineWidth), transform: s.transform };
+      return { id: el.id, selectable: el.matches('.ui-button, .ui-menu__item, .ui-mode-entry, .ui-option'), style: s.outlineStyle, width: parseFloat(s.outlineWidth), transform: s.transform };
     });
   };
   try {
@@ -1567,6 +1591,394 @@ test('in a browser, the menu, the pause card and the results layout meet the con
     results.on('pageerror', (e) => errors.push(e.message));
     await results.goto(`${base}/dev/components.html`);
     await check(results, '#g-results', 'results');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+// ---------------------------------------------------------------- the shared layout's components
+
+const LAYOUT = section(GALLERY, '<!-- components: shared layout -->', '<!-- /components: shared layout -->');
+const LAYOUT_TAGS = tags(LAYOUT);
+const within = (list, sel) => list.filter((t) => hasClasses(t, sel));
+// The tags between an element's start and the close of its own tag name, at the same depth.
+function inside(html, all, t) {
+  let depth = 0;
+  const re = new RegExp(`<(/?)${t.tag}\\b[^>]*>`, 'gi');
+  re.lastIndex = t.index;
+  for (let m = re.exec(html); m; m = re.exec(html)) {
+    depth += m[1] ? -1 : 1;
+    if (depth === 0) return all.filter((x) => x.index > t.index && x.index < m.index);
+  }
+  return [];
+}
+const textOf = (html, t) => {
+  let depth = 0;
+  const re = new RegExp(`<(/?)${t.tag}\\b[^>]*>`, 'gi');
+  re.lastIndex = t.index;
+  for (let m = re.exec(html); m; m = re.exec(html)) {
+    depth += m[1] ? -1 : 1;
+    if (depth === 0) return html.slice(t.end, m.index).replace(/<svg[\s\S]*?<\/svg>/g, '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  }
+  return '';
+};
+const MODE_ENTRIES = ['classic-2d', 'hexagon', 'triangle', 'surface', '3d', 'daily', 'records', 'settings', 'quit'];
+
+test('the gallery marks the shared layout\'s components and none of them is on a screen yet', () => {
+  assert.ok(LAYOUT.length > 1000, 'dev/components.html holds the shared layout\'s components');
+  const screens = INDEX.replace(/<!--[\s\S]*?-->/g, '');
+  for (const cls of ['ui-backdrop', 'ui-frame', 'ui-mode-entry', 'ui-option', 'ui-section-label', 'ui-key-hint', 'ui-chip', 'ui-list-row',
+    'ui-scene-panel', 'ui-divider', 'ui-tabs', 'ui-checkbox', 'ui-table', 'ui-button--danger']) {
+    assert.doesNotMatch(screens, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `no screen uses ${cls} yet`);
+  }
+});
+
+test('screen frame: a named section on the backdrop with its head (back with its key hint, title, action), body, foot and the window-chrome slot', () => {
+  const backdrop = within(LAYOUT_TAGS, '.ui-backdrop')[0];
+  assert.ok(backdrop, 'a page backdrop');
+  const frames = within(inside(LAYOUT, LAYOUT_TAGS, backdrop), '.ui-frame');
+  assert.ok(frames.length >= 2, 'frames sit on the backdrop: one with a status line, one with a bottom bar');
+  for (const frame of frames) {
+    assert.equal(frame.tag, 'section');
+    const parts = inside(LAYOUT, LAYOUT_TAGS, frame);
+    const title = within(parts, '.ui-frame__title')[0];
+    assert.ok(title && /^h[1-6]$/.test(title.tag), 'the title is a heading');
+    assert.equal(frame.attrs['aria-labelledby'], title.attrs.id, 'the frame is named by its title');
+    const head = within(parts, '.ui-frame__head')[0];
+    assert.equal(head.tag, 'header');
+    const chrome = within(parts, '.ui-frame__chrome')[0];
+    assert.ok(chrome, 'the window-chrome slot is in the markup');
+    assert.equal(chrome.attrs['data-slot'], 'window-chrome');
+    assert.equal(chrome.attrs['aria-hidden'], 'true', 'decoration only');
+    assert.ok(chrome.index < head.index, 'the chrome slot opens the frame, above its head');
+    const start = within(inside(LAYOUT, LAYOUT_TAGS, head), '.ui-frame__start')[0];
+    assert.ok(start && within(inside(LAYOUT, LAYOUT_TAGS, head), '.ui-frame__end').length === 1, 'the head\'s start and end cells');
+    const back = within(inside(LAYOUT, LAYOUT_TAGS, start), '.ui-button.ui-button--secondary')[0];
+    assert.ok(back, 'the head\'s start holds the screen\'s Back');
+    const hint = within(inside(LAYOUT, LAYOUT_TAGS, back), '.ui-key-hint')[0];
+    assert.ok(hint && hint.attrs['data-action'] === 'back' && hint.attrs['aria-hidden'] === 'true', 'Back carries its key hint, out of its name');
+    assert.equal(within(parts, '.ui-frame__body').length, 1, 'one body');
+    const foot = within(parts, '.ui-frame__foot')[0];
+    assert.equal(foot.tag, 'footer');
+  }
+  const feet = frames.map((f) => inside(LAYOUT, LAYOUT_TAGS, f));
+  assert.ok(feet.some((p) => within(p, '.ui-frame__status').length === 1), 'a foot as a status line');
+  assert.ok(feet.some((p) => within(p, '.ui-frame__summary').length === 1 && within(p, '.ui-actions.ui-actions--row').length === 1), 'a foot as a bottom bar: the summary beside the actions');
+});
+
+test('mode entry: a native button with its icon, label, accent by entry, the Last played chip, and a disabled entry with its reason and lock', () => {
+  const list = within(LAYOUT_TAGS, '.ui-mode-list')[0];
+  assert.ok(list && list.attrs.role === 'group' && list.attrs['aria-label'], 'the entries sit in a named group');
+  const entries = within(inside(LAYOUT, LAYOUT_TAGS, list), '.ui-mode-entry');
+  assert.deepEqual([...new Set(entries.map((e) => e.attrs['data-entry']))].sort(), [...MODE_ENTRIES].sort(), 'every entry the menu draws, each its own accent');
+  for (const e of entries) {
+    assert.equal(e.tag, 'button');
+    assert.equal(e.attrs.type, 'button');
+    const parts = inside(LAYOUT, LAYOUT_TAGS, e);
+    assert.equal(within(parts, '.ui-mode-entry__icon')[0]?.attrs['aria-hidden'], 'true', 'the icon is decoration');
+    assert.ok(textOf(LAYOUT, within(parts, '.ui-mode-entry__label')[0]), 'the label names it');
+    assert.equal(within(parts, '.ui-mode-entry__lock')[0]?.attrs['aria-hidden'], 'true', 'the lock is decoration');
+  }
+  const last = entries.filter((e) => within(inside(LAYOUT, LAYOUT_TAGS, e), '.ui-chip').some((c) => textOf(LAYOUT, c) === 'Last played'));
+  assert.ok(last.length >= 1, 'an entry carries the Last played chip');
+  assert.ok(!entries.some((e) => 'disabled' in e.attrs), 'no entry uses the native disabled: a disabled entry stays selectable');
+  const off = entries.filter((e) => e.attrs['aria-disabled'] === 'true');
+  assert.ok(off.length >= 1, 'a disabled entry');
+  for (const e of off) {
+    const reason = within(inside(LAYOUT, LAYOUT_TAGS, e), '.ui-mode-entry__reason')[0];
+    assert.ok(reason && textOf(LAYOUT, reason), 'a disabled entry shows its reason line');
+    assert.match(textOf(LAYOUT, e), new RegExp(textOf(LAYOUT, reason)), 'the reason is part of its name');
+  }
+  for (const e of entries.filter((x) => x.attrs['aria-disabled'] !== 'true')) {
+    assert.equal(within(inside(LAYOUT, LAYOUT_TAGS, e), '.ui-mode-entry__reason').length, 0, 'an enabled entry has no reason line');
+  }
+  assert.ok(entries.some((e) => e.attrs['data-force'] === 'focus') && entries.some((e) => e.attrs['data-force'] === 'active'), 'shown selected and pressed');
+  assert.doesNotMatch(LAYOUT, /data-entry="[^"]*"[^>]*data-locked|ui-mode-entry--locked/, 'no locked state for a mode entry');
+});
+
+test('board option: a native button with its name, size line, density, Last played chip beside the name, and its chosen state apart from selected', () => {
+  const list = within(LAYOUT_TAGS, '.ui-options')[0];
+  assert.ok(list && list.attrs.role === 'group' && list.attrs['aria-label'], 'the options sit in a named group');
+  const options = within(inside(LAYOUT, LAYOUT_TAGS, list), '.ui-option');
+  assert.ok(options.length >= 6);
+  for (const o of options) {
+    assert.equal(o.tag, 'button');
+    assert.equal(o.attrs.type, 'button');
+    assert.ok(['true', 'false'].includes(o.attrs['aria-pressed']), 'its chosen state is aria-pressed');
+    const parts = inside(LAYOUT, LAYOUT_TAGS, o);
+    assert.ok(textOf(LAYOUT, within(parts, '.ui-option__name')[0]), 'a name');
+    assert.equal(within(parts, '.ui-option__check')[0]?.attrs['aria-hidden'], 'true', 'the check is decoration');
+    assert.doesNotMatch(textOf(LAYOUT, o), /3BV|[Bb]est/, 'no 3BV and no best on an option');
+  }
+  const sized = options.filter((o) => within(inside(LAYOUT, LAYOUT_TAGS, o), '.ui-option__size').length === 1);
+  assert.ok(sized.length >= 4, 'presets carry their size line');
+  for (const o of sized) assert.equal(within(inside(LAYOUT, LAYOUT_TAGS, o), '.ui-option__density').length, 1, 'and their mine density');
+  const described = options.filter((o) => {
+    const p = inside(LAYOUT, LAYOUT_TAGS, o);
+    return within(p, '.ui-option__size').length === 0 && within(p, '.ui-option__density').length === 0 && within(p, '.ui-option__meta').length === 1;
+  });
+  assert.ok(described.length >= 1, 'an option carrying a one-line description instead (Insert Board Code)');
+  const chosen = options.filter((o) => o.attrs['aria-pressed'] === 'true');
+  assert.ok(chosen.some((o) => !o.attrs['data-force']) && chosen.some((o) => o.attrs['data-force'] === 'focus'), 'chosen, and chosen and selected');
+  assert.ok(options.some((o) => o.attrs['aria-pressed'] === 'false' && o.attrs['data-force'] === 'focus'), 'selected but not chosen');
+  const last = options.find((o) => within(inside(LAYOUT, LAYOUT_TAGS, o), '.ui-chip').length === 1);
+  assert.ok(last, 'an option with the Last played chip');
+  const lp = inside(LAYOUT, LAYOUT_TAGS, last);
+  assert.ok(within(lp, '.ui-chip')[0].index > within(lp, '.ui-option__name')[0].index && within(lp, '.ui-chip')[0].index < within(lp, '.ui-option__meta')[0].index, 'the chip sits beside the name, before the size line');
+  const learn = options.find((o) => hasClasses(o, '.ui-option.ui-option--learn'));
+  assert.ok(learn && within(inside(LAYOUT, LAYOUT_TAGS, learn), '.ui-option__badge')[0]?.attrs['aria-hidden'] === 'true', 'Learn 3D with its badge');
+});
+
+test('section label, key hints, stat tile badge, chips, list rows, scene panel, tabs, checkbox, divider and table in their markup patterns', () => {
+  const label = within(LAYOUT_TAGS, '.ui-section-label')[0];
+  const lp = inside(LAYOUT, LAYOUT_TAGS, label);
+  assert.ok(/^h[2-6]$/.test(within(lp, '.ui-section-label__text')[0].tag), 'the label is a heading');
+  assert.equal(within(lp, '.ui-section-label__aside').length, 1, 'with its aside');
+
+  const hints = within(LAYOUT_TAGS, '.ui-key-hint');
+  assert.ok(hints.some((h) => !hasClasses(h, '.ui-key-hint--pad')) && hints.some((h) => hasClasses(h, '.ui-key-hint.ui-key-hint--pad')), 'keyboard and controller hints');
+  for (const h of hints) {
+    assert.ok(['move', 'select', 'back'].includes(h.attrs['data-action']), 'a hint names the action whose keys it shows');
+    const keys = within(inside(LAYOUT, LAYOUT_TAGS, h), '.ui-key-hint__key');
+    assert.ok(keys.length >= 1 && keys.every((k) => k.tag === 'kbd'), 'its keys are kbd');
+  }
+  assert.ok(within(LAYOUT_TAGS, '.ui-key-hints').length >= 2, 'hints in a row');
+
+  const tile = within(LAYOUT_TAGS, '.ui-stat.ui-stat--tile').find((t) => within(inside(LAYOUT, LAYOUT_TAGS, t), '.ui-chip').length === 1);
+  assert.ok(tile && tile.attrs.role === 'group' && tile.attrs['aria-labelledby'], 'a stat tile with its badge');
+
+  const chips = within(LAYOUT_TAGS, '.ui-chip');
+  for (const v of ['', 'ui-chip--won', 'ui-chip--lost', 'ui-chip--muted', 'ui-chip--best']) {
+    assert.ok(chips.some((c) => (v ? hasClasses(c, `.${v}`) : classesOf(c).length === 1)), `a chip ${v || 'plain'}`);
+  }
+  assert.ok(chips.some((c) => textOf(LAYOUT, c) === 'Coming soon'), 'the Coming soon chip');
+
+  const list = within(LAYOUT_TAGS, '.ui-list')[0];
+  assert.ok(list.tag === 'ul' && list.attrs['aria-label'], 'a named list');
+  const rows = within(inside(LAYOUT, LAYOUT_TAGS, list), '.ui-list-row');
+  assert.ok(rows.length >= 3 && rows.every((r) => r.tag === 'li'));
+  for (const r of rows) {
+    const p = inside(LAYOUT, LAYOUT_TAGS, r);
+    for (const part of ['.ui-list-row__date', '.ui-list-row__figure', '.ui-chip']) assert.equal(within(p, part).length, 1, `a row's ${part}`);
+  }
+  for (const outcome of ['Won', 'Lost', 'Abandoned']) assert.ok(rows.some((r) => within(inside(LAYOUT, LAYOUT_TAGS, r), '.ui-chip').some((c) => textOf(LAYOUT, c) === outcome)), outcome);
+
+  const panels = within(LAYOUT_TAGS, '.ui-scene-panel');
+  assert.ok(panels.length >= 2);
+  for (const panel of panels) {
+    assert.equal(panel.tag, 'figure');
+    const p = inside(LAYOUT, LAYOUT_TAGS, panel);
+    const tag = within(p, '.ui-scene-panel__tag')[0];
+    assert.equal(tag.tag, 'figcaption');
+    assert.equal(panel.attrs['aria-labelledby'], tag.attrs.id, 'the panel is named by its tag');
+    assert.equal(within(p, '.ui-scene-panel__stage').length, 1, 'the stage the renderer draws into');
+  }
+
+  const tablist = within(LAYOUT_TAGS, '.ui-tabs')[0];
+  assert.ok(tablist.attrs.role === 'tablist' && tablist.attrs['aria-label']);
+  const tabs = within(LAYOUT_TAGS, '.ui-tabs__tab');
+  for (const tab of tabs) {
+    assert.equal(tab.attrs.role, 'tab');
+    assert.ok(['true', 'false'].includes(tab.attrs['aria-selected']));
+  }
+  for (const box of within(LAYOUT_TAGS, '.ui-checkbox__input')) assert.equal(box.attrs.type, 'checkbox');
+  assert.ok(within(LAYOUT_TAGS, '.ui-divider').some((d) => d.tag === 'hr'), 'a divider');
+  const table = within(LAYOUT_TAGS, '.ui-table')[0];
+  assert.equal(table.tag, 'table');
+  assert.ok(within(inside(LAYOUT, LAYOUT_TAGS, table), '.ui-table__figure').length >= 2, 'figures in their own cells');
+});
+
+test('the base gives the frame, backdrop and slots their structure: the frame bounded by the window, its body scrolling between head and foot, every slot hidden', () => {
+  const body = (sel) => RULES.filter(([s]) => s.split(',').map((x) => x.trim()).includes(sel)).map(([, b]) => b).join(';');
+  assert.match(body('.ui-backdrop'), /display:\s*flex/);
+  assert.match(body('.ui-backdrop'), /height:\s*100%/, 'the backdrop fills the window');
+  const frame = body('.ui-frame');
+  assert.match(frame, /flex-direction:\s*column/);
+  assert.match(frame, /max-height:\s*100%/, 'never taller than the window');
+  assert.match(frame, /max-width:\s*100%/, 'never wider than the window');
+  assert.match(body('.ui-frame__body'), /overflow-y:\s*auto/, 'the body scrolls');
+  assert.match(body('.ui-frame__body'), /min-height:\s*0/);
+  for (const part of ['.ui-frame__head', '.ui-frame__foot']) assert.match(body(part), /flex:\s*none/, `${part} stays in view`);
+  assert.match(body('[data-slot]'), /display:\s*none/, 'a decoration slot is hidden unless a theme styles it into view');
+  assert.match(body('.ui-mode-entry:not([aria-disabled="true"]) .ui-mode-entry__lock'), /display:\s*none/, 'the lock shows only on a disabled entry');
+  assert.match(body('.ui-option:not([aria-pressed="true"]) .ui-option__check > *'), /visibility:\s*hidden/, 'the check shows only on the chosen option');
+});
+
+test('the theme draws the mode entry taller when selected, the chosen board option as a fill and check apart from selected, and no hover on either', () => {
+  const focusRules = (cls) => THEME_RULES.filter(([sel]) => sel.includes(`.${cls}:focus,`) && sel.includes(`.${cls}[data-force~="focus"]`)).map(([, b]) => b).join(';');
+  assert.match(focusRules('ui-mode-entry'), /flex-grow:\s*1\.45/, 'the selected entry takes a larger share of the list');
+  assert.match(focusRules('ui-mode-entry'), /min-height:/, 'and is taller');
+  assert.ok(THEME_RULES.some(([sel, b]) => sel.includes('.ui-mode-entry:focus .ui-mode-entry__label') && /font-size:\s*var\(--font-size-2xl\)/.test(b)), 'with a bigger label');
+  assert.ok(THEME_RULES.some(([sel, b]) => sel.includes('.ui-mode-entry:focus .ui-mode-entry__icon') && /width:/.test(b)), 'and a bigger icon');
+  const chosen = THEME_RULES.filter(([sel]) => sel === '.ui-option[aria-pressed="true"]').map(([, b]) => b).join(';');
+  assert.match(chosen, /background:\s*var\(--color-blue\)/, 'the chosen option is a blue fill');
+  assert.match(focusRules('ui-option'), /transform:\s*translateY/, 'the selected option sits level with the surface');
+  assert.doesNotMatch(focusRules('ui-option'), /background:/, 'selecting an option does not change its fill');
+  for (const cls of ['ui-mode-entry', 'ui-option']) assert.ok(!THEME_RULES.some(([sel]) => sel.includes(`.${cls}:hover`)), `${cls} has no hover rule`);
+  for (const entry of MODE_ENTRIES.filter((e) => !['records', 'settings', 'quit'].includes(e))) {
+    assert.ok(THEME_RULES.some(([sel, b]) => sel === `.ui-mode-entry[data-entry="${entry}"]` && /--f:\s*var\(--color-/.test(b)), `${entry} has its accent`);
+  }
+  const backdrop = THEME_RULES.filter(([sel]) => sel === '.ui-backdrop').map(([, b]) => b).join(';');
+  assert.match(backdrop, /radial-gradient\(circle, var\(--color-ground-dot\)/, 'the dotted paper');
+  assert.match(THEME_RULES.filter(([sel]) => sel === '.ui-frame__head').map(([, b]) => b).join(';'), /background:\s*var\(--color-head\)/, 'the yellow head');
+});
+
+test('keyHintKeys: the keys of move, select and back for each device, the controller\'s in its glyphs, none on touch', () => {
+  assert.deepEqual(Object.keys(KEY_HINTS), ['move', 'select', 'back']);
+  assert.deepEqual(keyHintKeys('move', 'keyboard'), [{ text: '↑', pad: false }, { text: '↓', pad: false }]);
+  assert.deepEqual(keyHintKeys('select', 'keyboard'), [{ text: 'Enter', pad: false }]);
+  assert.deepEqual(keyHintKeys('back', 'keyboard'), [{ text: 'Esc', pad: false }]);
+  assert.deepEqual(keyHintKeys('move', 'controller'), [{ text: 'D-pad', pad: true }]);
+  assert.deepEqual(keyHintKeys('select', 'controller', GLYPHS.xbox), [{ text: GLYPHS.xbox.a, pad: true }]);
+  assert.deepEqual(keyHintKeys('back', 'controller', GLYPHS.playstation), [{ text: GLYPHS.playstation.b, pad: true }]);
+  for (const action of Object.keys(KEY_HINTS)) assert.deepEqual(keyHintKeys(action, 'touch'), []);
+  assert.throws(() => keyHintKeys('jump', 'keyboard'), /unknown action/);
+  assert.throws(() => keyHintKeys('move', 'mouse'), /unknown device/);
+});
+
+test('bindTabs selects on click and Left / Right, skips disabled tabs, keeps one tab in the tab order and reports changes', () => {
+  const list = new FakeEl({ class: 'ui-tabs', role: 'tablist' });
+  const tabs = ['recent', 'top', 'replays'].map((v, i) => new FakeEl({
+    class: 'ui-tabs__tab', role: 'tab', 'data-value': v, 'aria-selected': String(i === 0), ...(i === 1 ? { disabled: '' } : {}),
+  }));
+  list.children.push(...tabs);
+  const seen = [];
+  bindTabs(list, { onChange: (value, index) => seen.push([value, index]) });
+  assert.deepEqual(tabs.map((t) => [t.attrs['aria-selected'], t.tabIndex]), [['true', 0], ['false', -1], ['false', -1]]);
+  tabs[2].fire('click');
+  assert.deepEqual(tabs.map((t) => t.attrs['aria-selected']), ['false', 'false', 'true']);
+  assert.deepEqual(seen, [['replays', 2]]);
+  assert.equal(list.dispatched.at(-1).type, 'change');
+  tabs[1].fire('click');
+  assert.deepEqual(seen, [['replays', 2]], 'a disabled tab is not selectable');
+  const down = tabs[2].fire('keydown', { key: 'ArrowDown' });
+  assert.equal(down.prevented, undefined, 'Up and Down are left to the shell\'s focus moves');
+  const right = tabs[2].fire('keydown', { key: 'ArrowRight' });
+  assert.ok(right.prevented);
+  assert.ok(tabs[0].focused, 'the arrow moves focus with the selection');
+  assert.deepEqual(seen.at(-1), ['recent', 0]);
+});
+
+test('in a browser, the shared layout\'s components: a mouse-selected mode entry loses the selection to a key, options tell chosen from selected, the frame scrolls its body, key hints follow the device', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`${base}/dev/components.html`);
+    await page.evaluate(() => globalThis.galleryReady);
+    const settle = () => page.waitForTimeout(250);
+    const look = (sel) => page.evaluate((s) => {
+      const el = document.querySelector(s);
+      const c = getComputedStyle(el);
+      const r = el.getBoundingClientRect();
+      return { focused: document.activeElement === el, transform: c.transform, shadow: c.boxShadow, outline: c.outlineStyle, background: c.backgroundColor, height: r.height };
+    }, sel);
+
+    // A mode entry the mouse moved onto is selected; a key moving focus away leaves it unselected under the resting pointer.
+    const entry = '#g-entry-classic';
+    const next = '#g-entry-hexagon';
+    await page.locator(entry).scrollIntoViewIfNeeded();
+    const rest = await look(entry);
+    const box = await page.locator(entry).boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await settle();
+    const selected = await look(entry);
+    assert.equal(selected.focused, true, 'moving the mouse over a mode entry focuses it');
+    assert.notEqual(selected.transform, rest.transform, 'it shows the selected look');
+    assert.equal(selected.outline, 'none', 'no outline');
+    await page.keyboard.press('Tab');
+    await settle();
+    assert.equal((await look(next)).focused, true, 'Tab moves the focus to the next entry');
+    // The list's layout moves as the next entry grows: let the entry's own transition finish.
+    await page.waitForFunction(([s, want]) => getComputedStyle(document.querySelector(s)).transform === want, [entry, rest.transform], { timeout: 3000 }).catch(() => {});
+    const left = await look(entry);
+    assert.equal(left.focused, false, 'the entry under the resting pointer is no longer selected');
+    assert.equal(left.transform, rest.transform, 'nor looks it');
+    const forced = await look('#g-modes [data-force="focus"]');
+    const atRest = await look('#g-modes .ui-mode-entry:not([data-force]):not([aria-disabled="true"])');
+    assert.ok(forced.height > atRest.height * 1.2, `the selected entry is taller (${forced.height} vs ${atRest.height})`);
+
+    // The disabled entry: still selectable, so its preview can show, drawn flat with its reason and lock.
+    const off = await page.evaluate(() => {
+      const e = document.querySelector('#g-modes .ui-mode-entry[aria-disabled="true"]');
+      e.focus();
+      const shown = (sel) => { const x = e.querySelector(sel); return !!x && x.getBoundingClientRect().width > 0 && getComputedStyle(x).visibility !== 'hidden'; };
+      const enabledLock = document.querySelector('#g-modes .ui-mode-entry:not([aria-disabled="true"]) .ui-mode-entry__lock');
+      return { focused: document.activeElement === e, reason: shown('.ui-mode-entry__reason'), lock: shown('.ui-mode-entry__lock'), enabledLock: enabledLock.getBoundingClientRect().width };
+    });
+    assert.deepEqual(off, { focused: true, reason: true, lock: true, enabledLock: 0 }, 'a disabled entry takes the selection and shows its reason and lock; an enabled one shows no lock');
+
+    // A chosen board option and a selected one read apart: fill and check against level with the surface.
+    const option = (sel) => page.evaluate((s) => {
+      const el = document.querySelector(s);
+      const c = getComputedStyle(el);
+      const check = el.querySelector('.ui-option__check > svg');
+      return { background: c.backgroundColor, transform: c.transform, outline: c.outlineStyle, check: !!check && getComputedStyle(check).visibility === 'visible' };
+    }, sel);
+    const plain = await option('#g-option-rest');
+    const focused = await option('#g-option-focus');
+    const chosen = await option('#g-option-chosen');
+    assert.equal(focused.background, plain.background, 'selected keeps the option\'s fill');
+    assert.notEqual(focused.transform, plain.transform, 'selected sits level with the surface');
+    assert.notEqual(chosen.background, plain.background, 'chosen is a fill of its own');
+    assert.notEqual(chosen.background, focused.background, 'chosen and selected read apart');
+    assert.deepEqual([plain.check, focused.check, chosen.check], [false, false, true], 'only the chosen option shows its check');
+    assert.equal(focused.outline, 'none', 'no outline on a selected option');
+
+    // The frame at a short window: the body scrolls, head and foot stay in view.
+    await page.setViewportSize({ width: 1100, height: 360 });
+    const frame = await page.evaluate(() => {
+      const backdrop = document.getElementById('g-backdrop');
+      // The window is the backdrop's layer, as a screen's is: the gallery's fixed demo height is lifted.
+      backdrop.style.cssText = 'position: fixed; inset: 0; height: 100%; z-index: 99';
+      const f = backdrop.querySelector('.ui-frame');
+      const rect = (sel) => f.querySelector(sel).getBoundingClientRect();
+      const body = f.querySelector('.ui-frame__body');
+      return {
+        frameBottom: f.getBoundingClientRect().bottom, height: innerHeight,
+        head: rect('.ui-frame__head').top >= 0, foot: rect('.ui-frame__foot').bottom <= innerHeight,
+        scrolls: body.scrollHeight > body.clientHeight, overflow: getComputedStyle(body).overflowY,
+        chrome: getComputedStyle(f.querySelector('[data-slot="window-chrome"]')).display,
+        pageScrollX: document.documentElement.scrollWidth <= innerWidth,
+      };
+    });
+    assert.ok(frame.frameBottom <= frame.height, 'the frame fits the window');
+    assert.deepEqual([frame.head, frame.foot, frame.scrolls, frame.overflow], [true, true, true, 'auto'], 'head and foot in view, the body scrolling');
+    assert.equal(frame.chrome, 'none', 'Joyful tiles draws no window chrome');
+    await page.setViewportSize({ width: 1100, height: 900 });
+
+    // Key hints follow the active device through the bindings source.
+    const hints = await page.evaluate(async () => {
+      const { showKeyHints } = await import('/js/ui/components.js');
+      const { keyHintKeys } = await import('/js/settings/bindings.js');
+      const { GLYPHS } = await import('/js/gamepad.js');
+      const root = document.getElementById('g-hints-live');
+      const read = () => [...root.querySelectorAll('.ui-key-hint')].map((h) => ({
+        keys: [...h.querySelectorAll('.ui-key-hint__key')].map((k) => k.textContent),
+        pad: h.classList.contains('ui-key-hint--pad'), label: h.querySelector('.ui-key-hint__label')?.textContent ?? null, hidden: h.classList.contains('hidden'),
+      }));
+      showKeyHints(root, (action) => keyHintKeys(action, 'controller', GLYPHS.xbox));
+      const pad = read();
+      showKeyHints(root, (action) => keyHintKeys(action, 'keyboard'));
+      const keyboard = read();
+      showKeyHints(root, (action) => keyHintKeys(action, 'touch'));
+      return { pad, keyboard, touch: read(), a: GLYPHS.xbox.a, b: GLYPHS.xbox.b };
+    });
+    assert.deepEqual(hints.pad, [
+      { keys: ['D-pad'], pad: true, label: 'Move', hidden: false },
+      { keys: [hints.a], pad: true, label: 'Select', hidden: false },
+      { keys: [hints.b], pad: true, label: 'Back', hidden: false },
+    ]);
+    assert.deepEqual(hints.keyboard, [
+      { keys: ['↑', '↓'], pad: false, label: 'Move', hidden: false },
+      { keys: ['Enter'], pad: false, label: 'Select', hidden: false },
+      { keys: ['Esc'], pad: false, label: 'Back', hidden: false },
+    ]);
+    assert.ok(hints.touch.every((h) => h.hidden && h.keys.length === 0), 'no key hints on touch');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

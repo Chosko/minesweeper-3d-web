@@ -520,7 +520,7 @@ Feature: theme-system
 
 ## 163. Layout kit components: backdrop, screen frame, mode entry, board option, stat tile and the rest
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/ui/kit-catalogue.js, css/components.css, themes/joyful-tiles/theme.css, js/ui/components.js, dev/components.html, tests/components.test.mjs, tests/theme-conformance.test.mjs
 Preconditions: 158, 161

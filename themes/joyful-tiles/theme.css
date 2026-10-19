@@ -14,13 +14,16 @@
    takes them over (themed-board-art-and-motion): the tile, number, board and
    Show 3BV tokens below are those palettes; the sky stops are the theme's.
 
-   On buttons, menu entries and board options the selected state is the
-   focused state: raised at rest, level with the surface when selected (no
-   outline, no halo), sunk with an inset shadow when pressed, flat when
-   disabled, and no hover look of their own (js/ui/components.js
-   bindSelectOnHover moves focus to the one under a moving mouse). Switches,
-   fields, sliders, segmented choices and links keep their own hover and a
-   focus ring with a halo. */
+   On buttons, menu entries, mode entries and board options the selected
+   state is the focused state: raised at rest, level with the surface when
+   selected (no outline, no halo), sunk with an inset shadow when pressed,
+   flat when disabled, and no hover look of their own (js/ui/components.js
+   bindSelectOnHover moves focus to the one under a moving mouse); the
+   selected mode entry is also taller, and a chosen board option is a blue
+   fill with its check. Switches, checkboxes, fields, sliders, segmented
+   choices, tabs and links keep their own hover and a focus ring with a
+   halo. Joyful tiles draws no window chrome: the frame's slot stays
+   hidden. */
 
 /* ---------- fonts: the theme's own files, fetched only while this theme is used ---------- */
 @font-face { font-family: "Rubik"; font-style: normal; font-weight: 500; font-display: swap; src: url("fonts/rubik-latin-500-normal.woff2") format("woff2"); }
@@ -332,6 +335,46 @@
   transform: none;
 }
 
+/* sizes: the large button's radius and deeper edge; the small one's radius */
+:root[data-theme="joyful-tiles"] .ui-button--sm { border-radius: var(--radius-md); }
+:root[data-theme="joyful-tiles"] .ui-button--lg { border-radius: 18px; }
+:root[data-theme="joyful-tiles"] .ui-button--lg.ui-button--primary { box-shadow: inset 0 3px 0 var(--highlight), 0 7px 0 var(--color-accent-edge); }
+:root[data-theme="joyful-tiles"] .ui-button--lg.ui-button--primary:focus,
+:root[data-theme="joyful-tiles"] .ui-button--lg.ui-button--primary:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-button--lg.ui-button--primary:focus,
+:root[data-theme="joyful-tiles"] .ui-button--lg.ui-button--primary[data-force~="focus"] { transform: translateY(7px); box-shadow: inset 0 3px 0 var(--highlight); }
+:root[data-theme="joyful-tiles"] .ui-button--lg.ui-button--primary:active:not(:disabled),
+:root[data-theme="joyful-tiles"] .ui-button--lg.ui-button--primary[data-force~="active"] { transform: translateY(9px); }
+:root[data-theme="joyful-tiles"] .ui-button--lg:disabled { box-shadow: 0 var(--edge-sm) 0 var(--color-locked-edge); transform: none; }
+/* the danger button: a deletion */
+:root[data-theme="joyful-tiles"] .ui-button--danger {
+  background: var(--color-danger);
+  color: var(--color-ink-inverse);
+  box-shadow: inset 0 3px 0 var(--highlight), 0 var(--edge-sm) 0 var(--color-danger-edge);
+}
+:root[data-theme="joyful-tiles"] .ui-button--danger:focus,
+:root[data-theme="joyful-tiles"] .ui-button--danger:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-button--danger:focus,
+:root[data-theme="joyful-tiles"] .ui-button--danger[data-force~="focus"] {
+  outline: none;
+  transform: translateY(var(--edge-sm));
+  box-shadow: inset 0 3px 0 var(--highlight);
+}
+:root[data-theme="joyful-tiles"] .ui-button--danger:active:not(:disabled),
+:root[data-theme="joyful-tiles"] .ui-button--danger[data-force~="active"] {
+  outline: none;
+  transform: translateY(calc(var(--edge-sm) + 2px));
+  box-shadow: inset 0 4px 0 var(--shade-press), inset 0 0 0 1px var(--shade-soft);
+}
+:root[data-theme="joyful-tiles"] .ui-button--danger:disabled {
+  background: var(--color-locked);
+  color: var(--color-locked-ink);
+  box-shadow: 0 var(--edge-sm) 0 var(--color-locked-edge);
+  transform: none;
+}
+/* a key hint inside a button: its keys in the button's ink */
+:root[data-theme="joyful-tiles"] .ui-button .ui-key-hint__key { border-color: currentColor; color: inherit; }
+
 /* ---------- menu list: board options (raised cards) and the main menu's entries (accent fills) ---------- */
 :root[data-theme="joyful-tiles"] .ui-menu__item {
   border-radius: var(--radius-lg);
@@ -575,7 +618,13 @@
 :root[data-theme="joyful-tiles"] .ui-field__input[data-force~="focus"],
 :root[data-theme="joyful-tiles"] .ui-link:focus-visible,
 :root[data-theme="joyful-tiles"] body.pad-nav .ui-link:focus,
-:root[data-theme="joyful-tiles"] .ui-link[data-force~="focus"] {
+:root[data-theme="joyful-tiles"] .ui-link[data-force~="focus"],
+:root[data-theme="joyful-tiles"] .ui-tabs__tab:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-tabs__tab:focus,
+:root[data-theme="joyful-tiles"] .ui-tabs__tab[data-force~="focus"],
+:root[data-theme="joyful-tiles"] .ui-checkbox__input:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-checkbox__input:focus,
+:root[data-theme="joyful-tiles"] .ui-checkbox__input[data-force~="focus"] {
   outline: 3px solid var(--color-focus-ring);
   outline-offset: 3px;
 }
@@ -611,6 +660,238 @@
   background: var(--color-surface-raised);
   box-shadow: inset 0 -2px 0 var(--color-edge-inset), 0 var(--edge-md) 0 var(--color-edge);
 }
+
+/* ---------- page backdrop and screen frame: dotted paper, a white window under a yellow head ---------- */
+:root[data-theme="joyful-tiles"] .ui-backdrop {
+  background-color: var(--color-ground);
+  background-image: radial-gradient(circle, var(--color-ground-dot) 1.6px, transparent 1.7px);
+  background-size: 22px 22px;
+}
+:root[data-theme="joyful-tiles"] .ui-frame {
+  border-radius: var(--radius-2xl);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: inset 0 -2px 0 var(--color-line), 0 10px 0 var(--color-head-edge), var(--elevation-2);
+}
+:root[data-theme="joyful-tiles"] .ui-frame__head {
+  border-bottom: 2px solid var(--color-head-edge);
+  background: var(--color-head);
+  color: var(--color-ink);
+}
+:root[data-theme="joyful-tiles"] .ui-frame__title { font-size: 20px; color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ui-frame__body { color: var(--color-ink); scrollbar-color: var(--color-edge) transparent; }
+:root[data-theme="joyful-tiles"] .ui-frame__foot {
+  border-top: 2px solid var(--color-head-edge);
+  background: var(--color-head);
+  color: var(--color-ink);
+}
+:root[data-theme="joyful-tiles"] :is(.ui-frame__status, .ui-frame__summary) { font-size: 15px; color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ui-frame__summary { font-weight: var(--font-weight-bold); }
+
+/* ---------- mode entry: its accent fill (--f), drop edge (--e) and text (--o); places neutral ---------- */
+:root[data-theme="joyful-tiles"] .ui-mode-entry {
+  --f: var(--color-surface-raised);
+  --e: var(--color-edge);
+  --o: var(--color-ink);
+  border-radius: var(--radius-xl);
+  background: var(--f);
+  color: var(--o);
+  box-shadow: inset 0 3px 0 var(--highlight), 0 var(--edge-lg) 0 var(--e), var(--elevation-1);
+  transition: transform var(--duration-fast) var(--easing-out);
+}
+:root[data-theme="joyful-tiles"] .ui-mode-entry[data-entry="classic-2d"] { --f: var(--color-blue); --e: var(--color-blue-edge); --o: var(--color-blue-on); }
+:root[data-theme="joyful-tiles"] .ui-mode-entry[data-entry="hexagon"] { --f: var(--color-teal); --e: var(--color-teal-edge); --o: var(--color-teal-on); }
+:root[data-theme="joyful-tiles"] .ui-mode-entry[data-entry="triangle"] { --f: var(--color-green); --e: var(--color-green-edge); --o: var(--color-green-on); }
+:root[data-theme="joyful-tiles"] .ui-mode-entry[data-entry="surface"] { --f: var(--color-orange); --e: var(--color-orange-edge); --o: var(--color-orange-on); }
+:root[data-theme="joyful-tiles"] .ui-mode-entry[data-entry="3d"] { --f: var(--color-accent-fill); --e: var(--color-accent-edge); --o: var(--color-accent-on); }
+:root[data-theme="joyful-tiles"] .ui-mode-entry[data-entry="daily"] { --f: var(--color-violet); --e: var(--color-violet-edge); --o: var(--color-violet-on); }
+:root[data-theme="joyful-tiles"] .ui-mode-entry__icon { border-radius: var(--radius-md); background: var(--veil); }
+:root[data-theme="joyful-tiles"] .ui-mode-entry__label { letter-spacing: -0.01em; }
+:root[data-theme="joyful-tiles"] .ui-mode-entry__reason { color: inherit; }
+:root[data-theme="joyful-tiles"] .ui-mode-entry__lock { color: inherit; }
+:root[data-theme="joyful-tiles"] .ui-mode-entry .ui-chip { box-shadow: none; }
+/* selected: level with the surface, its edge gone, taller, with a bigger icon and label */
+:root[data-theme="joyful-tiles"] .ui-mode-entry:focus,
+:root[data-theme="joyful-tiles"] .ui-mode-entry:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-mode-entry:focus,
+:root[data-theme="joyful-tiles"] .ui-mode-entry[data-force~="focus"] {
+  outline: none;
+  flex-grow: 1.45;
+  min-height: 92px;
+  transform: translateY(var(--edge-lg));
+  box-shadow: inset 0 3px 0 var(--highlight);
+}
+:root[data-theme="joyful-tiles"] .ui-mode-entry:focus .ui-mode-entry__icon,
+:root[data-theme="joyful-tiles"] .ui-mode-entry:focus-visible .ui-mode-entry__icon,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-mode-entry:focus .ui-mode-entry__icon,
+:root[data-theme="joyful-tiles"] .ui-mode-entry[data-force~="focus"] .ui-mode-entry__icon { width: 56px; height: 56px; border-radius: var(--radius-lg); }
+:root[data-theme="joyful-tiles"] .ui-mode-entry:focus .ui-mode-entry__label,
+:root[data-theme="joyful-tiles"] .ui-mode-entry:focus-visible .ui-mode-entry__label,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-mode-entry:focus .ui-mode-entry__label,
+:root[data-theme="joyful-tiles"] .ui-mode-entry[data-force~="focus"] .ui-mode-entry__label { font-size: var(--font-size-2xl); }
+:root[data-theme="joyful-tiles"] .ui-mode-entry:active:not([aria-disabled="true"]),
+:root[data-theme="joyful-tiles"] .ui-mode-entry[data-force~="active"] {
+  outline: none;
+  transform: translateY(calc(var(--edge-lg) + 2px));
+  box-shadow: inset 0 4px 0 var(--shade-press), inset 0 0 0 1px var(--shade-soft);
+}
+:root[data-theme="joyful-tiles"] .ui-mode-entry[aria-disabled="true"] {
+  --f: var(--color-locked);
+  --e: var(--color-locked-edge);
+  --o: var(--color-locked-ink);
+  box-shadow: 0 var(--edge-sm) 0 var(--e);
+  transform: none;
+}
+:root[data-theme="joyful-tiles"] .ui-mode-entry[aria-disabled="true"] .ui-mode-entry__icon { background: var(--color-surface-raised); }
+/* a disabled entry selected: level with the surface, still flat */
+:root[data-theme="joyful-tiles"] .ui-mode-entry[aria-disabled="true"]:focus,
+:root[data-theme="joyful-tiles"] .ui-mode-entry[aria-disabled="true"]:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-mode-entry[aria-disabled="true"]:focus,
+:root[data-theme="joyful-tiles"] .ui-mode-entry[aria-disabled="true"][data-force~="focus"] {
+  transform: translateY(var(--edge-sm));
+  box-shadow: none;
+}
+
+/* ---------- board option: a raised card; chosen a blue fill with its check; selected level with the surface ---------- */
+:root[data-theme="joyful-tiles"] .ui-option {
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-raised);
+  color: var(--color-ink);
+  box-shadow: inset 0 -2px 0 var(--color-edge-inset), 0 var(--edge-sm) 0 var(--color-edge);
+  transition: transform var(--duration-fast) var(--easing-out);
+}
+:root[data-theme="joyful-tiles"] .ui-option__name { font-size: 22px; }
+:root[data-theme="joyful-tiles"] .ui-option__meta { font-size: 15px; color: var(--color-ink-muted); }
+:root[data-theme="joyful-tiles"] :is(.ui-option__size, .ui-option__density) { color: inherit; }
+:root[data-theme="joyful-tiles"] .ui-option__check { border-radius: var(--radius-pill); box-shadow: inset 0 0 0 2px var(--color-edge); }
+:root[data-theme="joyful-tiles"] .ui-option .ui-chip { box-shadow: inset 0 0 0 2px var(--color-border); }
+:root[data-theme="joyful-tiles"] .ui-option__badge { border-radius: var(--radius-md); background: var(--color-teal); color: var(--color-teal-on); }
+:root[data-theme="joyful-tiles"] .ui-option[aria-pressed="true"] {
+  background: var(--color-blue);
+  color: var(--color-blue-on);
+  box-shadow: inset 0 3px 0 var(--highlight), 0 5px 0 var(--color-blue-edge);
+}
+:root[data-theme="joyful-tiles"] .ui-option[aria-pressed="true"] .ui-option__meta { color: var(--color-blue-on); }
+:root[data-theme="joyful-tiles"] .ui-option[aria-pressed="true"] .ui-option__check { background: var(--color-surface); color: var(--color-blue); box-shadow: none; }
+:root[data-theme="joyful-tiles"] .ui-option--learn {
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 2px var(--color-teal-edge), 0 var(--edge-sm) 0 var(--color-teal-edge);
+}
+:root[data-theme="joyful-tiles"] .ui-option:focus,
+:root[data-theme="joyful-tiles"] .ui-option:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-option:focus,
+:root[data-theme="joyful-tiles"] .ui-option[data-force~="focus"] {
+  outline: none;
+  transform: translateY(var(--edge-sm));
+  box-shadow: inset 0 -2px 0 var(--color-edge-inset);
+}
+:root[data-theme="joyful-tiles"] .ui-option[aria-pressed="true"]:focus,
+:root[data-theme="joyful-tiles"] .ui-option[aria-pressed="true"]:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-option[aria-pressed="true"]:focus,
+:root[data-theme="joyful-tiles"] .ui-option[aria-pressed="true"][data-force~="focus"] {
+  transform: translateY(5px);
+  box-shadow: inset 0 3px 0 var(--highlight);
+}
+:root[data-theme="joyful-tiles"] .ui-option--learn:focus,
+:root[data-theme="joyful-tiles"] .ui-option--learn:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-option--learn:focus,
+:root[data-theme="joyful-tiles"] .ui-option--learn[data-force~="focus"] { box-shadow: inset 0 0 0 2px var(--color-teal-edge); }
+:root[data-theme="joyful-tiles"] .ui-option:active:not(:disabled),
+:root[data-theme="joyful-tiles"] .ui-option[data-force~="active"] {
+  outline: none;
+  transform: translateY(calc(var(--edge-sm) + 2px));
+  box-shadow: inset 0 4px 0 var(--shade-press), inset 0 0 0 1px var(--shade-soft);
+}
+:root[data-theme="joyful-tiles"] .ui-option:disabled {
+  background: var(--color-locked);
+  color: var(--color-locked-ink);
+  box-shadow: 0 var(--edge-sm) 0 var(--color-locked-edge);
+  transform: none;
+}
+:root[data-theme="joyful-tiles"] .ui-option:disabled .ui-option__meta { color: var(--color-locked-ink); }
+
+/* ---------- section label, key hints, chips ---------- */
+:root[data-theme="joyful-tiles"] .ui-section-label__text { color: var(--color-accent); }
+:root[data-theme="joyful-tiles"] .ui-section-label__aside { color: var(--color-ink-muted); }
+:root[data-theme="joyful-tiles"] .ui-key-hint { color: var(--color-ink-muted); }
+:root[data-theme="joyful-tiles"] .ui-key-hint__key {
+  border: 1.5px solid currentColor;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-family: var(--font-family-mono);
+}
+:root[data-theme="joyful-tiles"] .ui-key-hint--pad .ui-key-hint__key { border-radius: var(--radius-pill); }
+:root[data-theme="joyful-tiles"] .ui-key-hint__label { color: inherit; }
+:root[data-theme="joyful-tiles"] .ui-chip {
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+:root[data-theme="joyful-tiles"] .ui-chip--won { background: var(--color-success-fill); color: var(--color-success); }
+:root[data-theme="joyful-tiles"] .ui-chip--lost { background: var(--color-danger-fill); color: var(--color-danger); }
+:root[data-theme="joyful-tiles"] .ui-chip--muted { background: var(--color-locked); color: var(--color-locked-ink); }
+:root[data-theme="joyful-tiles"] .ui-chip--best { background: var(--color-head); color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ui-stat--tile .ui-chip { box-shadow: none; }
+
+/* ---------- list rows of recent games ---------- */
+:root[data-theme="joyful-tiles"] .ui-list-row { border-top: 1px solid var(--color-line); color: var(--color-ink); font-size: 15px; }
+:root[data-theme="joyful-tiles"] .ui-list-row__date { color: var(--color-ink-muted); font-family: var(--font-family-mono); }
+:root[data-theme="joyful-tiles"] .ui-list-row__board { color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ui-list-row__figure { color: var(--color-ink); font-family: var(--font-family-mono); }
+
+/* ---------- scene panel: the night sky in a rounded frame on a hard yellow edge ---------- */
+:root[data-theme="joyful-tiles"] .ui-scene-panel {
+  border-radius: 24px;
+  background-color: var(--color-scene-zenith);
+  background-image: radial-gradient(ellipse at 55% 40%, var(--color-scene-horizon) 0%, var(--color-scene-zenith) 78%);
+  box-shadow: inset 0 -2px 0 var(--color-edge-inset), 0 10px 0 var(--color-head-edge), var(--elevation-2);
+}
+:root[data-theme="joyful-tiles"] .ui-scene-panel__stage { border-radius: inherit; color: var(--color-ink-inverse); }
+:root[data-theme="joyful-tiles"] .ui-scene-panel__tag { color: var(--color-scene-ink); font-family: var(--font-family-mono); }
+
+/* ---------- divider ---------- */
+:root[data-theme="joyful-tiles"] .ui-divider { background: var(--color-line); }
+:root[data-theme="joyful-tiles"] .ui-divider--vertical { background: var(--color-line); }
+
+/* ---------- tabs: muted labels on a rule, the shown one inked and underlined in the accent ---------- */
+:root[data-theme="joyful-tiles"] .ui-tabs { box-shadow: inset 0 -2px 0 var(--color-line); }
+:root[data-theme="joyful-tiles"] .ui-tabs__tab {
+  border-bottom: 3px solid transparent;
+  border-radius: 10px 10px 0 0;
+  background: transparent;
+  color: var(--color-ink-muted);
+}
+:root[data-theme="joyful-tiles"] .ui-tabs__tab[aria-selected="true"] { border-bottom-color: var(--color-accent); color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ui-tabs__tab:hover:not(:disabled),
+:root[data-theme="joyful-tiles"] .ui-tabs__tab[data-force~="hover"] { background: var(--color-surface-raised); color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ui-tabs__tab:active:not(:disabled),
+:root[data-theme="joyful-tiles"] .ui-tabs__tab[data-force~="active"] { background: var(--color-surface-sunk); box-shadow: inset 0 3px 0 var(--shade-press); }
+:root[data-theme="joyful-tiles"] .ui-tabs__tab:disabled { color: var(--color-locked-ink); text-decoration: line-through; }
+
+/* ---------- checkbox: a box that fills with ink, a white check ---------- */
+:root[data-theme="joyful-tiles"] .ui-checkbox { color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ui-checkbox__input {
+  border-radius: 6px;
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 2px var(--color-ink-muted);
+}
+:root[data-theme="joyful-tiles"] .ui-checkbox__input::before { border: solid var(--color-ink-inverse); border-width: 0 3px 3px 0; }
+:root[data-theme="joyful-tiles"] .ui-checkbox__input:checked { background: var(--color-ink); box-shadow: none; }
+:root[data-theme="joyful-tiles"] .ui-checkbox__input:hover:not(:disabled),
+:root[data-theme="joyful-tiles"] .ui-checkbox__input[data-force~="hover"] { box-shadow: inset 0 0 0 2px var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ui-checkbox__input:active:not(:disabled),
+:root[data-theme="joyful-tiles"] .ui-checkbox__input[data-force~="active"] { box-shadow: inset 0 0 0 3px var(--color-ink), inset 0 4px 0 var(--shade-press); }
+:root[data-theme="joyful-tiles"] .ui-checkbox__input:disabled { background: var(--color-locked); box-shadow: inset 0 0 0 2px var(--color-locked-edge); }
+:root[data-theme="joyful-tiles"] .ui-checkbox:has(.ui-checkbox__input:disabled) { color: var(--color-locked-ink); }
+:root[data-theme="joyful-tiles"] .ui-checkbox__label { color: inherit; }
+
+/* ---------- table ---------- */
+:root[data-theme="joyful-tiles"] .ui-table th { color: var(--color-ink-muted); }
+:root[data-theme="joyful-tiles"] .ui-table td { border-top: 1px solid var(--color-line); color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ui-table__figure { font-family: var(--font-family-mono); }
 
 /* ---------- code chip: a sunk pill holding the label, the code and its quiet Copy buttons ---------- */
 :root[data-theme="joyful-tiles"] .ui-code {
@@ -673,7 +954,7 @@
   font-weight: var(--font-weight-bold);
 }
 :root[data-theme="joyful-tiles"] :is(.link-btn, .ready-card, .hint-close):focus-visible,
-:root[data-theme="joyful-tiles"] body.pad-nav :is(button, input, summary, a, select):not(.ui-button, .ui-menu__item, .ui-toggle__input, .ui-slider__input, .ui-segmented__option, .ui-field__input, .ui-link):focus {
+:root[data-theme="joyful-tiles"] body.pad-nav :is(button, input, summary, a, select):not(.ui-button, .ui-menu__item, .ui-mode-entry, .ui-option, .ui-toggle__input, .ui-slider__input, .ui-segmented__option, .ui-tabs__tab, .ui-checkbox__input, .ui-field__input, .ui-link):focus {
   outline: 3px solid var(--color-focus-ring);
   outline-offset: 3px;
 }

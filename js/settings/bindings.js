@@ -22,6 +22,8 @@
 // hintText(name, device, glyphs?) → a one-time hint's plain text (`autoHide`, `aimHint`, `scrollHint`),
 //   or a Learn 3D prompt's (`learnStart`, `learnShift`, `learnCtrl`, `learnFlag`, `learnChord`, `learnRest`),
 //   for the keyboard, the controller or touch.
+// keyHintKeys(action, device, glyphs?) → the keys of a key hint (`move`, `select`, `back`) on that
+//   device, each { text, pad }; none on touch. The kit's showKeyHints (js/ui/components.js) draws them.
 // createActiveDevice({ onChange }) → the active device: the controller while the last input came
 //   from a connected controller, otherwise the keyboard and mouse.
 
@@ -274,6 +276,25 @@ export function hintText(name, device, glyphs = GLYPHS.generic) {
   const t = HINT_TEXT[name][device];
   if (t === undefined) throw new Error(`hint text: unknown device "${device}"`);
   return t.replace(/\[([^\]]+)\]/g, '$1').replace(/\{([a-z]+)\}/g, (m, name2) => (Object.hasOwn(glyphs, name2) ? glyphs[name2] : m));
+}
+
+/** The key hints shown beside an action, per device: `[Key]` a key, `{name}` a controller button, plain text a controller control. */
+export const KEY_HINTS = Object.freeze({
+  move: Object.freeze({ keyboard: Object.freeze(['[↑]', '[↓]']), controller: Object.freeze(['D-pad']), touch: Object.freeze([]) }),
+  select: Object.freeze({ keyboard: Object.freeze(['[Enter]']), controller: Object.freeze(['{a}']), touch: Object.freeze([]) }),
+  back: Object.freeze({ keyboard: Object.freeze(['[Esc]']), controller: Object.freeze(['{b}']), touch: Object.freeze([]) }),
+});
+
+export function keyHintKeys(action, device, glyphs = GLYPHS.generic) {
+  if (!Object.hasOwn(KEY_HINTS, action)) throw new Error(`key hint: unknown action "${action}"`);
+  if (!Object.hasOwn(KEY_HINTS[action], device)) throw new Error(`key hint: unknown device "${device}"`);
+  return KEY_HINTS[action][device].map((key) => {
+    const k = key.match(/^\[(.+)\]$/);
+    if (k) return { text: k[1], pad: false };
+    const b = key.match(/^\{([a-z]+)\}$/);
+    if (b) return { text: Object.hasOwn(glyphs, b[1]) ? glyphs[b[1]] : b[1], pad: true };
+    return { text: key, pad: device === 'controller' };
+  });
 }
 
 const DEVICE_OF_INPUT = Object.freeze({ pad: 'controller', keyboard: 'keyboard', pointer: 'keyboard' });
