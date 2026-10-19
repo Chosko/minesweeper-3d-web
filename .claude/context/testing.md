@@ -6,38 +6,60 @@ Two layers in one suite: Node unit tests for the DOM-free modules, and
 Playwright browser checks for what needs WebGL, the DOM or computed styles.
 Each test file is self-explanatory; this file maps the suite, not the tests.
 
-Running — four scripts under `.claude/external/`, each `cd`s to the repo root
+Tiers — the three `CLAUDE.md` § Tasks implementation defines, split on the
+test's name alone:
+- **fast** — every test not named "…in a browser…";
+- **browser** — tests named "…in a browser…" (a test that launches a
+  browser carries that name, and no other test does, so a misnamed browser
+  test lands in the fast tier);
+- **slow** — browser tests whose name starts with the tag `[slow] ` ahead of
+  "in a browser": the long controller and focus walks (`shell-pad-walk`,
+  `shell-focus-containment`, the menu's controller walk and the router's
+  arrow-key walk) and the flavour checks of animation timing, frame counts
+  and motion (the menu backdrop's frame count, the 3D loss wave, the flag
+  flash, the pulse, the fixture replays played to the end). A functional
+  browser check stays untagged. No test name outside the slow tier carries
+  the tag, since the runners match it anywhere in a name;
+  `tests/affected-tests.test.mjs` pins that every tagged test is a browser
+  test.
+
+Running — five scripts under `.claude/external/`, each `cd`s to the repo root
 and passes extra arguments through to `node --test`; no `package.json`, no
 dependencies (Node 22's `node:test`, `node:assert/strict`):
-- `run-full-tests.sh` — the whole suite:
-  `node --test --test-concurrency=2 --test-timeout=180000 "tests/**/*.test.mjs"`.
-  Every script passes the `tests/**/*.test.mjs` glob, and no file outside
-  `tests/` matches Node's default test patterns
+- `run-full-tests.sh` — the fast and browser tiers, every test except the
+  `[slow]` ones (`--test-skip-pattern`), at concurrency 2 with a per-test
+  timeout. Every script passes the `tests/**/*.test.mjs` glob, and no file
+  outside `tests/` matches Node's default test patterns
   (`tests/affected-tests.test.mjs` pins this), so a bare `node --test` from the
-  root finds the same files; the concurrency cap keeps the
-  software-rendered browser tests from timing out on a 4-core box; the
-  per-test timeout stops a hung test holding the run.
-- `run-fast-tests.sh` — the fast tier, every test not named "in a browser"
-  (`--test-skip-pattern`); the regression tool to run after each change.
-- `run-browser-tests.sh` — the browser tier, only the tests named "in a
-  browser" (`--test-name-pattern`), at concurrency 2.
+  root finds the same files (and runs the slow tier too); the concurrency cap
+  keeps the software-rendered browser tests from timing out on a 4-core box;
+  the per-test timeout stops a hung test holding the run.
+- `run-fast-tests.sh` — the fast tier; the regression tool to run after each
+  change.
+- `run-browser-tests.sh` — the browser tier less the `[slow]` tests, at
+  concurrency 2.
+- `run-slow-tests.sh` — the slow tier alone (`--test-name-pattern`), with the
+  full run's concurrency and timeout: run when a change touches the code a
+  slow test exercises, and in full before a milestone closes.
 - `run-affected-tests.sh [path...]` — a `tests/*.test.mjs` argument runs as
   given; any other path is a changed file, mapped by `affected-tests.mjs` to
   every test file whose import closure reaches it (relative static imports
-  and `import()` calls with a literal path, transitive); `js/main.js`, `index.html`, `css/**` and `js/render.js` also
-  select every browser test file, since the page loads them rather than a
-  test importing them. With no arguments the changed files are git's against
-  `HEAD` (staged, unstaged, untracked). `tests/affected-tests.test.mjs` pins
-  the scripts and the mapping.
+  and `import()` calls with a literal path, transitive). Those files run
+  whole, `[slow]` tests included. Two rules add files the page loads rather
+  than a test importing them, run with `[slow]` skipped unless the closure
+  also reached them: a change to the page shell (`js/main.js`, `index.html`,
+  `css/**`) selects the smoke set — one browser test file per screen, or the
+  closest file that drives it, `SHELL_SMOKE` in `affected-tests.mjs` — and a
+  change to `js/render.js` selects every browser test file. With no
+  arguments the changed files are git's against `HEAD` (staged, unstaged,
+  untracked). `tests/affected-tests.test.mjs` pins the scripts, the mapping
+  and the smoke set.
 
-Measured on the 4-core cloud box with no GPU: the fast tier about 7 s wall
-(about 1500 tests); the full run about 4 minutes wall, nearly all of it the
-browser tier, which alone takes about as long.
+Measured on the 4-core cloud box with no GPU: the fast tier takes seconds,
+and the browser tier nearly all of the full run's wall time; the slow tier,
+run apart, holds a large share of the browser time.
 
-Browser tests sit in their area's test file. The tier convention: a test
-that launches a browser is named "…in a browser…", and no other test is —
-the two tiers split on that name alone, so a misnamed browser test lands in
-the fast tier.
+Browser tests, slow ones included, sit in their area's test file.
 Every browser test file goes through the shared helper
 `tests/helpers/browser.mjs` and launches no browser and runs no server of its
 own (`tests/helpers.test.mjs` pins this). `const suite = browserSuite()` at
@@ -75,7 +97,7 @@ Test files by name prefix:
 | `render-`, `readability-` | 3D renderer, readability aids; feedback effects (pulse, flash); the target rectangle (`render-3d-feedback`) | [rendering.md](rendering.md), [rendering-effects.md](rendering-effects.md) |
 | `gamepad`, `input-`, `camera-` | `FlyCamera`, `MouseActions`, drag-to-look, spawn pose (`camera-spawn`); keyboard-only 3D (`input-keyboard-3d`); the 3D touch gesture machine (`input-touch-3d`); flight (`camera-flight`: forward vector, spacing step, toggle and camera scaling, fly-through fade and pick rule); the orbit camera (`camera-orbit`); gamepad helpers, rumble, `Controls` | [input.md](input.md), [input-camera.md](input-camera.md), [input-controller.md](input-controller.md), [rendering.md](rendering.md) |
 | `audio-` | sound voices over recorded primitives | [audio.md](audio.md) |
-| `affected-tests` | the runner scripts and the affected-tests mapping (`.claude/external/`) | this file |
+| `affected-tests` | the runner scripts, the `[slow]` tag, the affected-tests mapping and the smoke set (`.claude/external/`) | this file |
 | `helpers` | the browser and timing helpers under `tests/helpers/` and the rule that browser files use them | this file |
 
 Data beside the tests:

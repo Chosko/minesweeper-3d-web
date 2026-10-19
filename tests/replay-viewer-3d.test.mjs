@@ -309,7 +309,7 @@ test('a lost graphics context is reported as a mode\'s failure, during a 3D repl
 
 // ---------------------------------------------------------------- in a browser
 
-test('in a browser, a recorded 3D replay plays from its fixture through to the end', async (t) => {
+test('[slow] in a browser, a recorded 3D replay plays from its fixture through to the end', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;

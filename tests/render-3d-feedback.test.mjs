@@ -105,7 +105,7 @@ test('the renderer draws into a target rectangle: viewport, scissor and camera a
 
 // ---------------------------------------------------------------- in a browser
 
-test('in a browser, Ctrl draws hidden cells as transparent ghosts and a hidden number pulses, then stops drawing', async (t) => {
+test('[slow] in a browser, Ctrl draws hidden cells as transparent ghosts and a hidden number pulses, then stops drawing', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;

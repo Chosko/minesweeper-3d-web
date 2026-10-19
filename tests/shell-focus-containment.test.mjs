@@ -77,7 +77,7 @@ async function open(browser, base, { inert }) {
 for (const inert of [true, false]) {
   const how = inert ? 'with inert' : 'without inert (the Tab wrap)';
 
-  test(`in a browser ${how}, focus stays inside the Controls modal, the pause card and its confirmation, and is restored on close`, async (t) => {
+  test(`[slow] in a browser ${how}, focus stays inside the Controls modal, the pause card and its confirmation, and is restored on close`, async (t) => {
     const env = await suite.open(t);
     if (!env) return;
     const { browser, base } = env;
@@ -164,7 +164,7 @@ for (const inert of [true, false]) {
     }
   });
 
-  test(`in a browser ${how}, focus stays inside the results card and the replay viewer over a finished Classic 2D board`, async (t) => {
+  test(`[slow] in a browser ${how}, focus stays inside the results card and the replay viewer over a finished Classic 2D board`, async (t) => {
     const env = await suite.open(t);
     if (!env) return;
     const { browser, base } = env;

@@ -498,7 +498,7 @@ test('in a browser, the keyboard walks menu → screen → Back with the default
   }
 });
 
-test('in a browser, the arrow keys alone walk the menu, the 2D board choice, the pause card and Settings', async (t) => {
+test('[slow] in a browser, the arrow keys alone walk the menu, the 2D board choice, the pause card and Settings', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;

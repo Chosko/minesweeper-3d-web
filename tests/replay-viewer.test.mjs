@@ -834,7 +834,7 @@ test('in a browser without WebGL 2, a 2D replay plays and a 3D replay says it ne
   }
 });
 
-test('in a browser, a recorded 2D replay plays from its fixture through to the end', async (t) => {
+test('[slow] in a browser, a recorded 2D replay plays from its fixture through to the end', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;

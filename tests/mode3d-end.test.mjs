@@ -714,7 +714,7 @@ test('in a browser, a press during the 3D end delay shows the results at once; R
   }
 });
 
-test('in a browser, Look at the board: the loss wave reaches the far side before the card, which shows over the scene; the frozen board is flown over read-only until Esc or a button brings the card back', async (t) => {
+test('[slow] in a browser, Look at the board: the loss wave reaches the far side before the card, which shows over the scene; the frozen board is flown over read-only until Esc or a button brings the card back', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;

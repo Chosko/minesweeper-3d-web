@@ -58,7 +58,7 @@ async function open(browser, base) {
   return { page, errors, ms, frames, hold, tap, focused, walk };
 }
 
-test('in a browser, the D-pad walks every control of the 2D board choice and the 3D board choice alike', async (t) => {
+test('[slow] in a browser, the D-pad walks every control of the 2D board choice and the 3D board choice alike', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -168,7 +168,7 @@ async function seed(ms) {
   });
 }
 
-test('in a browser, the Records walk stops on every Watch, Download, Pin and Delete of the shown tab, and Right from "Pinned first" enters the replays', async (t) => {
+test('[slow] in a browser, the Records walk stops on every Watch, Download, Pin and Delete of the shown tab, and Right from "Pinned first" enters the replays', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -237,7 +237,7 @@ test('in a browser, the Records walk stops on every Watch, Download, Pin and Del
   }
 });
 
-test('in a browser, LB / RB step the Records board and LT / RT switch 2D and 3D, with their glyphs shown only under pad navigation', async (t) => {
+test('[slow] in a browser, LB / RB step the Records board and LT / RT switch 2D and 3D, with their glyphs shown only under pad navigation', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;

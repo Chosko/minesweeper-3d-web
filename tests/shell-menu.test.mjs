@@ -754,7 +754,7 @@ test('in a browser, the menu\'s key hints follow the active device: the keyboard
   }
 });
 
-test('in a browser, the backdrop orbits and draws every frame, and the ?still-backdrop test hook draws it only when it changes', async (t) => {
+test('[slow] in a browser, the backdrop orbits and draws every frame, and the ?still-backdrop test hook draws it only when it changes', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -1106,7 +1106,7 @@ async function controllerPage(browser, base, { route } = {}) {
   return { page, errors, press, mode, focused };
 }
 
-test('in a browser, a controller alone walks the menu, the 3D board choice and the placeholder', async (t) => {
+test('[slow] in a browser, a controller alone walks the menu, the 3D board choice and the placeholder', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;

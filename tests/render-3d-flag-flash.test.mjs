@@ -96,7 +96,7 @@ function minesColour() {
   return { fg, danger, ratio: ratio(fg, bg), text: el.textContent, negative: el.classList.contains('negative') };
 }
 
-test('in a browser, a flag click on a number flashes the cubes it changed, then stops; the mines figure tints below zero; the copy says what it does', async (t) => {
+test('[slow] in a browser, a flag click on a number flashes the cubes it changed, then stops; the mines figure tints below zero; the copy says what it does', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
