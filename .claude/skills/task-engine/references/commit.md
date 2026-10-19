@@ -71,8 +71,9 @@ invocation, and never bundles two units into one commit.
 Do NOT use `--no-verify`, `--amend`, `--no-gpg-sign`, or skip any hooks
 unless the user explicitly asked for it. If a pre-commit hook fails,
 investigate and fix the underlying issue, then create a NEW commit (do
-not amend). Never branch or tag — the one exception is `/task-implement`'s
-parking branch, `./parking.md`.
+not amend). Never branch, tag or rebase — the exceptions are
+`/task-implement`'s parking branch, `./parking.md`, and a parallel run's
+worktree branch, `./worktree.md`.
 
 ## The push protocol
 

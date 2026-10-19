@@ -1,9 +1,9 @@
 ---
 name: runbook-run
-version: 0.21.0
+version: 0.23.1
 type: skill
-description: Execute a runbook under .claude/runbooks/ one step at a time, each in a fresh subagent by default, relaying its questions to the user — or, under the `unattended` policy, parking the step that asked and going on — recording what each did and committing after every step. Use it to carry out a runbook, whole or a range of its steps.
-requires: command:follow-ups, skill:follow-ups-resolve, skill:interaction-engine
+description: Execute a runbook under .claude/runbooks/ one step at a time, each in a fresh subagent by default, relaying its questions to the user — or, under the `unattended` policy, parking the step that asked and going on — recording what each did and committing after every step; `--parallel` runs independent steps at once, each in its own worktree. Use it to carry out a runbook, whole or a range of its steps.
+requires: command:follow-ups, skill:follow-ups-resolve, skill:interaction-engine, skill:task-engine
 ---
 
 # /runbook-run
@@ -24,6 +24,7 @@ requires: command:follow-ups, skill:follow-ups-resolve, skill:interaction-engine
 #        /runbook-run <id|name|id-name> --model sonnet  (override the header model)
 #        /runbook-run <id|name|id-name> --inline        (execute the selected steps in this session)
 #        /runbook-run <id|name|id-name> --relay-spawns  (force the spawn relay for this run)
+#        /runbook-run <id|name|id-name> --parallel N|max | --no-parallel  (see references/parallel.md)
 #        /runbook-run <id|name|id-name> --unattended    (park a step at a question instead of waiting; pre-ask the parked steps in range first)
 #        /runbook-run <id|name|id-name> --attended      (relay and wait, overriding a header `Execution policy: unattended`)
 #        /runbook-run <id|name|id-name> --unattended --skip-parked  (no pre-ask; a parked step stays parked)
@@ -46,9 +47,10 @@ Execute a runbook. For each step, in order: spawn one subagent with a fresh
 context and the assembled prompt, wait for its result, relay any question it
 asks to the user and the answer back to it, then record what it did and commit.
 
-That is the default mode. Its one opt-in exception is `--inline`: this session
-executes each selected step itself in place of the spawn-and-wait, and
-everything else is unchanged — see THE INLINE MODE.
+That is the default mode. Its opt-in exceptions, which never combine, are
+`--inline`: this session executes each selected step itself in place of the
+spawn-and-wait, and everything else is unchanged — see THE INLINE MODE; and
+a parallelism above one — see `./references/parallel.md`.
 
 > **Install path assumption:** this skill installs beside the files it reads
 > (`chosko-llm add skill:runbook-run` writes it under the same home as those
@@ -69,6 +71,7 @@ everything else is unchanged — see THE INLINE MODE.
 > | `../interaction-engine/references/messages.md` | Always — before the first relayed question, gate or closing report. |
 > | `../interaction-engine/references/gates.md` | **Only when the policy resolves to `unattended`**, in step 1. |
 > | `./references/body-migration.md` | **Only when the migration check fires** in step 1 — a legacy body to rename. A run with nothing to migrate never loads it. |
+> | `./references/parallel.md` | **Only when step 1's parallelism hook fires.** A sequential run never loads it, nor anything it names. |
 > | `./references/step-amend.md` | **Never by this body.** It sits beside the others, holding the rules for amending one step, read by path by whatever amends one. |
 
 ---
@@ -165,6 +168,7 @@ failure line the halt already calls for.
 | `--steps N` | Run at most N steps in this run, then stop. N is a positive integer. Composes with `--from`; refused beside `--to` or `--only`. |
 | `--model <model>` | Override the runbook header's `Model:` for **this whole run**. There is no per-step model. |
 | `--inline` | Execute every selected step in **this session** instead of in a fresh subagent, for the whole run. Composes with `--from`, `--to`, `--only`, `--steps N`, `--no-commit`, `--no-push`, `--attended`, `--unattended` and `--skip-parked`, and changes nothing about selection, committing or the policy. Refused beside `--relay-spawns` or `--model`; the header `Model:` is not applied. See THE INLINE MODE. |
+| `--parallel <N\|max>` \| `--no-parallel` | The run's parallelism, against the header's `Parallelism:`: values, precedence and errors are `./references/parallel.md`, read per step 1. |
 | `--relay-spawns` | Force the spawn relay for the whole run, for an environment already known to be flat. Without it the relay still works — the step's own subagent triggers it when it finds it cannot spawn. See THE SPAWN RELAY. |
 | `--unattended` | Run under the `unattended` policy for this whole run: a step that asks a question is parked and the run goes on (`./references/parking.md`). At launch, unless `--skip-parked`, the `[P]` steps in range are pre-asked. |
 | `--attended` | Run under the `attended` policy for this whole run: a question is relayed and the run waits. |
@@ -318,6 +322,11 @@ here.
     `--skip-parked` was passed. The pre-ask is the one thing that writes to
     the body before step 4, and its commit is its own.
   - Under `attended`, nothing more happens here.
+- **The parallelism hook.** When `--parallel` was passed, or the header
+  carries `Parallelism:` and `--no-parallel` was not, read
+  `./references/parallel.md` now and follow it for the whole run; where it
+  speaks, it wins. Otherwise the run is sequential and nothing about
+  parallelism applies.
 
 ### 2. Re-read the body
 
@@ -397,7 +406,8 @@ marker is `[ ]`, `[~]` or `[!]`, and whose every `Depends on:` step is `[x]`.
   (CHAT OUTPUT).
 - One at a time, never two — THE SPAWN RELAY holds the one exception, a
   relayed child running while its caller is suspended. Steps are sequential
-  always, even where the runbook declares them independent.
+  always, even where the runbook declares them independent — the
+  parallelism hook of step 1 the one exception.
 - **Under `--inline`**, spawn nothing. The **execution phase** takes the place
   of this step and step 6: the session assembles the step's brief and executes
   it itself, under the inline contract (THE INLINE MODE), printing the

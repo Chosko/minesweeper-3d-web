@@ -1,6 +1,6 @@
 ---
 name: runbook-describe
-version: 0.3.5
+version: 0.4.0
 type: command
 description: Print a compact summary of one runbook — its index line, header, and one line per step with marker, title, dependencies and who it needs — without opening a step prompt. Use it to see where a runbook stands.
 requires: skill:runbook-run
@@ -111,6 +111,9 @@ WORKFLOW
      its heading, its header line, its `Archived:` line and its count
      (`7 steps: 7 done.`) and nothing between them. Do not report it as an
      error, and do not render an empty step list with no explanation.
+   - A body carrying `Parallelism:` renders as
+     `../skills/runbook-run/references/parallel-schema.md` § *Per-consumer
+     notes* says; read it only then.
 
    **The step lines.** One line per step, in body order:
    - The marker **as the body carries it** — `[ ]`, `[~]`, `[x]`, `[!]`,
@@ -198,7 +201,8 @@ that block's `File:` path, pull **only the lines the command prints**, by
 targeted line extraction with the Grep tool (with line numbers) — never a full
 Read of the body:
 
-- the header fields `Created:`, `Source:`, `Model:` and `Archive:`;
+- the header fields `Created:`, `Source:`, `Model:`, `Archive:` and
+  `Parallelism:`;
 - the step headings — `##` lines carrying a marker and a number;
 - each step's `Depends on:` and `Needs:` lines;
 - the first line of each step's `Done:`;
@@ -210,9 +214,10 @@ Rules for the extraction:
 
 - Attach each field to the nearest preceding step heading. The
   `## Do not re-propose` heading is not a step; do not read its contents.
-- `Archive:` is optional and usually absent — its absence is the common case,
-  not a malformed body. Extract it when present as one more field of the same
-  Grep over the same body (no extra pass); print nothing for it when absent.
+- `Archive:` and `Parallelism:` are optional and usually absent — their
+  absence is the common case, not a malformed body. Extract each when present
+  as one more field of the same Grep over the same body (no extra pass);
+  print nothing for it when absent.
 - Report a body whose extracted lines do not fit the schema — a step with no
   `Depends on:`, a heading without a number — **as found**, in one line of
   prose. Never compensate by reading more of the body.
