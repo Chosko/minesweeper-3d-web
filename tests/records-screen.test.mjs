@@ -208,6 +208,7 @@ test('a board with no games shows the empty state, and a best not yet set shows 
   const c = recordsContent(fakeStore({ games: [game(CUSTOM)] }), { boardKey: boardKey(BEGINNER) });
   assert.equal(c.empty, true);
   assert.equal(c.emptyText, EMPTY_TEXT);
+  assert.deepEqual([c.games.empty, c.games.emptyText], [true, EMPTY_TEXT], 'the Recent games tab says the board has no games, not that a filter left none');
   assert.deepEqual(c.counters.map((s) => s.value), ['0', '0', DASH, DASH, '0', '0', '0']);
   const lostOnly = recordsContent(fakeStore({ games: [game(BEGINNER, { outcome: 'lost' })] }), { boardKey: boardKey(BEGINNER) });
   assert.equal(lostOnly.empty, false);
@@ -357,8 +358,8 @@ test('the Top 10 by time: ten rows best first, each with rank, time, 3BV/s, effi
   const store = fakeStore({ games: [...games, game(BEGINNER, { id: 'lost', outcome: 'lost', elapsedMs: 1000, endedAt: daysAgo(0) })] });
   const c = recordsContent(store, { boardKey: boardKey(BEGINNER), now: NOW, replays: keptLibrary(['t12', 't5']), canWatch: true });
   assert.equal(c.tab, 'recent', 'Recent games is the default tab');
-  assert.deepEqual(c.tabs.map((t) => [t.label, t.selected]), [['Recent games', true], ['Top 10', false]]);
-  assert.deepEqual(GAME_TABS.map((t) => t.value), ['recent', 'top']);
+  assert.deepEqual(c.tabs.map((t) => [t.label, t.selected]), [['Recent games', true], ['Top 10', false], ['Replays', false], ['Leaderboards', false]]);
+  assert.deepEqual(GAME_TABS.map((t) => t.value), ['recent', 'top', 'replays', 'leaderboards']);
   const { top } = c;
   assert.equal(top.stat, 'time');
   assert.deepEqual(top.stats.map((t) => [t.label, t.selected]), [['Time', true], ['3BV/s', false], ['Efficiency', false]]);
@@ -470,6 +471,10 @@ test('the filters are screen state: kept across board and mode changes, starting
   screen.setOutcome('won');
   assert.equal(screen.page, 0);
   assert.ok(view.shown.at(-1).games.rows.every((r) => r.outcome === 'Won'));
+  for (const tab of ['leaderboards', 'replays']) {
+    screen.setTab(tab);
+    assert.equal(view.shown.at(-1).tab, tab, `the ${tab} tab`);
+  }
   screen.setTab('top');
   screen.setTopStat('efficiency');
   assert.equal(view.shown.at(-1).tab, 'top');
@@ -517,15 +522,16 @@ const RECORDS_HTML = INDEX.slice(INDEX.indexOf('<section id="records"'), INDEX.i
 
 test('the records screen is the kit composition: picker, figures, overall, empty state, note and Back', () => {
   assert.ok(RECORDS_HTML.length > 400, 'index.html holds #records');
-  assert.match(RECORDS_HTML, /^<section id="records" class="overlay hidden"/);
+  assert.match(RECORDS_HTML, /^<section id="records" class="overlay ui-backdrop hidden"/);
   const classes = [...RECORDS_HTML.matchAll(/class="([^"]*)"/g)].flatMap((m) => m[1].split(/\s+/));
   for (const c of classes) assert.ok(c.startsWith('ui-') || c === 'hidden' || c === 'overlay', `kit class only: ${c}`);
-  assert.match(RECORDS_HTML, /class="ui-card ui-screen ui-screen--wide ui-screen--columns" aria-labelledby="records-title"/);
+  assert.match(RECORDS_HTML, /<section class="ui-frame" id="records-frame" aria-labelledby="records-title">/);
+  assert.match(RECORDS_HTML, /<h2 class="ui-frame__title" id="records-title">Records<\/h2>/);
   assert.match(RECORDS_HTML, /<div id="records-picker" class="ui-segmented" role="radiogroup" aria-label="Board"><\/div>/);
   for (const id of ['records-title', 'records-picker', 'records-figures', 'records-board', 'records-empty', 'records-bests', 'records-counters',
     'rec-time', 'rec-bbbvPerSecond', 'rec-efficiency', 'rec-games', 'rec-wins', 'rec-winRate', 'rec-completedWinRate', 'rec-currentStreak',
     'rec-longestStreak', 'rec-longestCompletedStreak', 'records-overall', 'ro-games', 'ro-wins', 'ro-winRate', 'ro-completedWinRate',
-    'ro-currentStreak', 'ro-longestStreak', 'ro-longestCompletedStreak', 'records-note', 'records-back']) {
+    'ro-currentStreak', 'ro-longestStreak', 'ro-longestCompletedStreak', 'records-note', 'records-back', 'records-leaderboards']) {
     assert.ok(RECORDS_HTML.includes(`id="${id}"`), `#${id}`);
   }
   for (const prefix of ['rec', 'ro']) {
@@ -534,18 +540,19 @@ test('the records screen is the kit composition: picker, figures, overall, empty
   }
   const buttons = [...RECORDS_HTML.matchAll(/<button[^>]*>/g)].map((m) => m[0]);
   const option = (value, on) => `<button type="button" class="ui-segmented__option" role="radio" aria-checked="${on}" data-value="${value}">`;
+  const tab = (value, on) => `<button type="button" class="ui-tabs__tab" role="tab" aria-selected="${on}" id="records-tab-${value}" aria-controls="records-${value}" data-value="${value}">`;
   assert.deepEqual(buttons, [
+    '<button type="button" id="records-back" class="ui-button ui-button--secondary ui-button--sm" data-back>',
     option('classic-2d', true), option('3d', false),
+    '<button type="button" id="records-export-csv" class="ui-button ui-button--secondary ui-button--sm">',
+    '<button type="button" id="records-export-json" class="ui-button ui-button--secondary ui-button--sm">',
     option('all', true), option('12m', false), option('30d', false), option('7d', false),
     option('all', true), option('won', false), option('lost', false), option('abandoned', false),
-    option('recent', true), option('top', false),
+    tab('recent', true), tab('top', false), tab('replays', false), tab('leaderboards', false),
     option('time', true), option('bbbvPerSecond', false), option('efficiency', false),
-    '<button type="button" id="records-replays-open" class="ui-button ui-button--secondary hidden">',
+    '<button type="button" id="records-replays-open" class="ui-button ui-button--secondary ui-button--sm hidden">',
     '<button type="button" id="records-replays-yes" class="ui-button ui-button--primary">',
     '<button type="button" id="records-replays-no" class="ui-button ui-button--secondary">',
-    '<button type="button" id="records-back" class="ui-button ui-button--primary">',
-    '<button type="button" id="records-export-csv" class="ui-button ui-button--secondary">',
-    '<button type="button" id="records-export-json" class="ui-button ui-button--secondary">',
   ]);
 });
 
@@ -559,21 +566,28 @@ test('the bests are three kit stat tiles: label, large figure, then the date and
   }
 });
 
-test('the screen lays out in two columns: switch, picker, figures and the mode overall; then history and replays; note and Back below', () => {
+test('the screen is a frame: Back, the title and the switch in its head; the picker, then two columns — figures and export; history and the tabs — then the note', () => {
   const at = (needle) => { const i = RECORDS_HTML.indexOf(needle); assert.ok(i >= 0, needle); return i; };
-  const cols = RECORDS_HTML.slice(at('<div class="ui-columns ui-columns--two">'));
+  const head = RECORDS_HTML.slice(at('<header class="ui-frame__head">'), at('</header>'));
+  assert.ok(head.includes('id="records-back"') && head.includes('id="records-title"') && head.includes('id="records-mode"'), 'Back, the title and the switch in the head');
+  assert.match(head, /<div class="ui-frame__start"><button type="button" id="records-back"[^>]*>Back <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>/);
+  assert.match(head, /<div class="ui-frame__end">/);
+  assert.ok(at('id="records-picker"') > at('<div class="ui-frame__body" id="records-body">'), 'the picker in the body');
+  assert.ok(at('id="records-picker"') < at('<div class="ui-columns ui-columns--two" id="records-columns">'), 'the picker above both columns');
+  const cols = RECORDS_HTML.slice(at('<div class="ui-columns ui-columns--two" id="records-columns">'));
   const [, first, second] = cols.split('<div class="ui-column">');
   assert.ok(first && second, 'two ui-column children');
+  assert.ok(first.includes('<div class="ui-divider ui-divider--vertical" role="separator" aria-orientation="vertical"></div>'), 'a rule between the columns');
   const order = (text, ids) => {
     const where = ids.map((id) => text.indexOf(id));
     for (const w of where) assert.ok(w >= 0);
     assert.deepEqual(where, [...where].sort((a, b) => a - b), ids.join(' < '));
   };
-  order(first, ['id="records-mode"', 'id="records-picker"', 'id="records-bests"', 'id="records-counters"', 'id="records-averages"', 'id="records-overall"']);
+  order(first, ['id="records-bests"', 'id="records-counters"', 'id="records-averages"', 'id="records-overall"', 'id="records-export-csv"', 'id="records-export-json"']);
   assert.doesNotMatch(first, /records-history|records-replays/);
   order(second, ['id="records-history"', 'id="records-period"', 'id="records-outcome"', 'id="records-won-only"', 'id="records-chart"',
-    'id="records-best-chart"', 'id="records-tabs"', 'id="records-games"', 'id="records-top"', 'id="records-replays"']);
-  assert.ok(at('id="records-note"') > at('id="records-replays-table"') && at('id="records-back"') > at('id="records-note"'), 'note and Back below both columns');
+    'id="records-best-chart"', 'id="records-tabs"', 'id="records-games"', 'id="records-top"', 'id="records-replays"', 'id="records-leaderboards"']);
+  assert.ok(at('id="records-note"') > at('id="records-leaderboards"'), 'the note below both columns');
 });
 
 test('the averages panel sits under the board\'s figures: a table of Time, 3BV/s and Efficiency by window, and the last-50 win rates', () => {
@@ -586,25 +600,38 @@ test('the averages panel sits under the board\'s figures: a table of Time, 3BV/s
   assert.match(panel, /id="rec-recentCompletedWinRate-label">Win rate, last 50, completed games</);
 });
 
-test('the history area: period and outcome choices above it, both charts, the Recent games | Top 10 tabs and the Top 10 table', () => {
+test('the history area: period and outcome choices above it, both charts, the four tabs, the Top 10 table and the Leaderboards coming-soon panel', () => {
   const panel = RECORDS_HTML.slice(RECORDS_HTML.indexOf('<div id="records-history"'), RECORDS_HTML.indexOf('<div id="records-replays"'));
   assert.match(panel, /<div id="records-period" class="ui-segmented" role="radiogroup" aria-label="Period">/);
   assert.match(panel, /<div id="records-outcome" class="ui-segmented" role="radiogroup" aria-label="Outcome">/);
   assert.match(panel, /<canvas id="records-best-chart" role="img" aria-label="[^"]+">[^<]*<\/canvas>/, 'the best-time chart is an image with a text alternative');
-  assert.match(panel, /<div id="records-tabs" class="ui-segmented" role="radiogroup" aria-label="Games list">/);
-  assert.match(panel, /<div id="records-recent">\s*<p id="records-games-empty" class="ui-text ui-text--muted hidden">/);
-  assert.match(panel, /<div id="records-top" class="hidden">\s*<div id="records-top-stat" class="ui-segmented" role="radiogroup" aria-label="Rank by">/);
-  const top = panel.slice(panel.indexOf('<table id="records-top-table">'));
+  assert.match(panel, /<div id="records-tabs" class="ui-tabs" role="tablist" aria-label="Lists">/);
+  const tabs = [...RECORDS_HTML.matchAll(/<button type="button" class="ui-tabs__tab" role="tab" aria-selected="(?:true|false)" id="records-tab-(\w+)" aria-controls="records-(\w+)" data-value="(\w+)">([^<]+)<\/button>/g)]
+    .map((m) => [m[1], m[2], m[3], m[4]]);
+  assert.deepEqual(tabs, [['recent', 'recent', 'recent', 'Recent games'], ['top', 'top', 'top', 'Top 10'], ['replays', 'replays', 'replays', 'Replays'],
+    ['leaderboards', 'leaderboards', 'leaderboards', 'Leaderboards']], 'four tabs, in order, each controlling its panel');
+  for (const value of ['recent', 'top', 'replays', 'leaderboards']) {
+    assert.match(RECORDS_HTML, new RegExp(`<div id="records-${value}"[^>]* role="tabpanel" aria-labelledby="records-tab-${value}"`), `the ${value} panel`);
+  }
+  assert.match(panel, /<div id="records-recent" role="tabpanel" aria-labelledby="records-tab-recent">\s*<p id="records-games-empty" class="ui-text ui-text--muted hidden">/);
+  assert.match(panel, /<div id="records-top" class="hidden" role="tabpanel" aria-labelledby="records-tab-top">\s*<div id="records-top-stat" class="ui-segmented" role="radiogroup" aria-label="Rank by">/);
+  const soon = RECORDS_HTML.slice(RECORDS_HTML.indexOf('<div id="records-leaderboards"'), RECORDS_HTML.indexOf('<p id="records-note"'));
+  assert.match(soon, /^<div id="records-leaderboards" class="ui-panel ui-panel--muted hidden" role="tabpanel" aria-labelledby="records-tab-leaderboards">/);
+  assert.match(soon, /<h4 class="ui-heading">Leaderboards are coming soon<\/h4>/);
+  assert.match(soon, /<p class="ui-text ui-text--muted">They will rank this board against other players, beside your own records\.<\/p>/);
+  assert.doesNotMatch(soon, /ui-pager/, 'no pager');
+  const top = panel.slice(panel.indexOf('<table id="records-top-table" class="ui-table">'));
   const heads = [...top.slice(0, top.indexOf('</thead>')).matchAll(/<th scope="col"[^>]*>([^<]+)<\/th>/g)].map((m) => m[1]);
   assert.deepEqual(heads, ['Rank', 'Time', '3BV/s', 'Efficiency', 'Date', '3BV', 'Clicks', 'Board code', 'Replay']);
   assert.match(top, /<th scope="col" id="records-top-replay" class="hidden">Replay<\/th>/);
   assert.match(panel, /<p id="records-top-empty" class="ui-text ui-text--muted hidden">No won games on this board yet\.<\/p>/);
 });
 
-test('the export actions sit below the lists, beside Back, with their nothing-to-export line', () => {
-  const actions = RECORDS_HTML.slice(RECORDS_HTML.indexOf('<div class="ui-actions ui-actions--row">'));
+test('the export actions sit under the mode\'s overall figures, with their nothing-to-export line', () => {
+  const actions = RECORDS_HTML.slice(RECORDS_HTML.indexOf('<div id="records-export" class="ui-actions ui-actions--row">'));
+  assert.ok(RECORDS_HTML.indexOf('<div id="records-export"') > RECORDS_HTML.indexOf('<div id="records-overall"'), 'under the overall figures');
   const at = (id) => actions.indexOf(`id="${id}"`);
-  assert.ok(at('records-back') > 0 && at('records-export-csv') > at('records-back') && at('records-export-json') > at('records-export-csv'));
+  assert.ok(at('records-export-csv') > 0 && at('records-export-json') > at('records-export-csv'));
   assert.match(actions, />Export history \(CSV\)<\/button>/);
   assert.match(actions, />Export all \(JSON\)<\/button>/);
   assert.match(actions, /<span id="records-export-note" class="ui-text ui-text--muted hidden" role="status"><\/span>/);
@@ -625,6 +652,7 @@ test('the mode overall figures are a row of their own, titled for the mode, neve
   const figures = RECORDS_HTML.slice(at0('<div id="records-figures"'), at0('<div id="records-overall"'));
   assert.doesNotMatch(figures, /id="ro-/);
   const overall = RECORDS_HTML.slice(at0('<div id="records-overall"'), at0('<div id="records-history"'));
+  assert.match(overall, /^<div id="records-overall" class="ui-panel ui-panel--muted" role="group" aria-labelledby="records-overall-title">/);
   assert.match(overall, /<h3 class="ui-heading" id="records-overall-title">Classic 2D overall<\/h3>\s*<div class="ui-stat-row">/);
   assert.doesNotMatch(overall, /id="rec-/);
 });
@@ -644,7 +672,8 @@ test('the catalogue documents the records screen', () => {
   const head = read('css/components.css').match(/^\/\*([\s\S]*?)\*\//)[1];
   assert.match(head, /Records \(index\.html #records\)[\s\S]*?Default focus: the chosen board/);
   const records = head.slice(head.indexOf('Records (index.html #records)'), head.indexOf('Settings page (index.html #settings)'));
-  for (const part of ['averages', 'period', 'outcome', 'best time', 'Top 10', 'Export history (CSV)', 'Export all (JSON)', 'ui-columns--pair']) {
+  for (const part of ['ui-frame', 'averages', 'period', 'outcome', 'best time', 'Top 10', 'ui-tabs', 'Replays', 'Leaderboards', 'coming soon',
+    'Export history (CSV)', 'Export all (JSON)', 'ui-columns--pair']) {
     assert.ok(records.includes(part), `the catalogue names ${part}`);
   }
 });
@@ -727,6 +756,26 @@ test('in a browser, the menu opens the records screen on the last board played, 
     assert.equal(await value('rec-longestCompletedStreak'), '1');
     assert.equal(await value('ro-completedWinRate'), '67%');
 
+    // The tabs: the mouse opens Leaderboards' coming-soon panel, with no pager; the arrow keys walk the four tabs.
+    const tabShown = () => page.evaluate(() => ['recent', 'top', 'replays', 'leaderboards'].filter((v) => {
+      const el = document.getElementById(`records-${v}`);
+      return !el.classList.contains('hidden') && el.getBoundingClientRect().height > 0;
+    }));
+    assert.deepEqual(await tabShown(), ['recent']);
+    await page.click('#records-tab-leaderboards');
+    assert.deepEqual(await tabShown(), ['leaderboards']);
+    assert.equal(await page.evaluate(() => document.querySelector('#records-tabs [aria-selected="true"]').id), 'records-tab-leaderboards');
+    assert.match(await page.evaluate(() => document.getElementById('records-leaderboards').textContent), /Leaderboards are coming soon/);
+    assert.equal(await page.evaluate(() => [...document.querySelectorAll('#records .ui-pager')].some((p) => p.getClientRects().length > 0)), false, 'no pager under Leaderboards');
+    await page.focus('#records-tab-leaderboards');
+    await page.keyboard.press('ArrowLeft');
+    assert.deepEqual(await tabShown(), ['replays'], 'Left: Replays');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'records-tab-replays');
+    await page.keyboard.press('ArrowRight');
+    assert.deepEqual(await tabShown(), ['leaderboards'], 'Right: Leaderboards');
+    await page.keyboard.press('ArrowRight');
+    assert.deepEqual(await tabShown(), ['recent'], 'the arrows wrap');
+
     await page.click('#records-back');
     assert.equal(await mode(), 'menu', 'the Back button returns to the menu');
     assert.deepEqual(errors, []);
@@ -767,7 +816,7 @@ test('in a browser, Records and Settings lay out in columns at 1280 px, one colu
     const measure = (id, items) => page.evaluate(([screen, sel]) => {
       const root = document.getElementById(screen);
       const lefts = new Set([...root.querySelectorAll(sel)].filter((e) => e.offsetParent).map((e) => Math.round(e.getBoundingClientRect().left)));
-      const card = root.querySelector('.ui-card');
+      const card = root.querySelector('.ui-card, .ui-frame__body');
       const wide = [document.documentElement, root, card].filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.id || e.tagName);
       return { columns: lefts.size, wide };
     }, [id, items]);
@@ -794,6 +843,7 @@ test('in a browser, Records and Settings lay out in columns at 1280 px, one colu
     // Esc, the browser's Back and the controller's Back close an open Delete confirmation first, staying on Records.
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.click('#menu-entry-records');
+    await page.click('#records-tab-replays');
     assert.equal(await page.evaluate(() => document.querySelectorAll('#records-replays-body tr').length), 10, 'ten replays a page');
     assert.equal(await page.evaluate(() => document.getElementById('records-replays-page').textContent), 'Replays 1–10 of 12');
     for (const back of ['key', 'history']) {
@@ -855,7 +905,7 @@ test('in a browser, at 1280 × 800 and 390 × 844, the Top 10 opens, both charts
       const after = await page.evaluate((i) => document.getElementById(i).dataset.readout ?? null, id);
       return { readout, after };
     };
-    const wide = () => page.evaluate(() => [document.documentElement, document.getElementById('records'), document.querySelector('#records .ui-card')]
+    const wide = () => page.evaluate(() => [document.documentElement, document.getElementById('records'), document.getElementById('records-body')]
       .filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.id || e.tagName));
     for (const theme of ['joyful-tiles']) {
       for (const [width, height] of [[1280, 800], [390, 844]]) {
@@ -901,8 +951,8 @@ test('in a browser, at 1280 × 800 and 390 × 844, the Top 10 opens, both charts
         assert.deepEqual(await wide(), [], `${at}: Records never scrolls sideways`);
         await page.keyboard.press('Escape');
         await page.click('#menu-entry-records');
-        assert.deepEqual(await page.evaluate(() => ['records-period', 'records-outcome', 'records-tabs'].map((id) => document.querySelector(`#${id} [aria-checked="true"]`).dataset.value)),
-          ['all', 'all', 'recent'], `${at}: each show starts on All time · All`);
+        assert.deepEqual(await page.evaluate(() => [...['records-period', 'records-outcome'].map((id) => document.querySelector(`#${id} [aria-checked="true"]`).dataset.value),
+          document.querySelector('#records-tabs [aria-selected="true"]').dataset.value]), ['all', 'all', 'recent'], `${at}: each show starts on All time · All`);
         await page.keyboard.press('Escape');
       }
     }
@@ -1014,12 +1064,12 @@ test('in a browser, the best tiles and the Records tables keep every figure on o
             }
           }
           if (width >= 1024) {
-            for (const tab of ['recent', 'top']) {
+            for (const tab of ['recent', 'top', 'replays']) {
               await page.click(`#records-tabs [data-value="${tab}"]`);
               const { cells, rows } = await measure();
               assert.ok(cells.some((c) => c.text === '999.999 s') && cells.some((c) => /-/.test(c.text)), `${at} ${tab}: a long time and a board code shown`);
               for (const c of cells) assert.equal(c.lines, 1, `${at} ${tab}: "${c.text}" on one line`);
-              assert.ok(rows.length > 0 && rows.every((n) => n === 1), `${at}: each replay row's actions in one row (${rows})`);
+              if (tab === 'replays') assert.ok(rows.length > 0 && rows.every((n) => n === 1), `${at}: each replay row's actions in one row (${rows})`);
             }
           }
           await page.keyboard.press('Escape');

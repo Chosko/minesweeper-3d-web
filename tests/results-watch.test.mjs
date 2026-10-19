@@ -358,6 +358,7 @@ test('in a browser, a just-won 2D game is watched from the results screen and ag
     const id = await page.evaluate(() => document.querySelector('#records-replays-body button[data-act="watch"]')?.dataset.id);
     assert.ok(id, 'the game\'s replay is kept and offers Watch');
     for (const selector of [`#records-replays-body button[data-act="watch"][data-id="${id}"]`, `#rec-time [data-watch="${id}"]`, `#records-games-body [data-watch="${id}"]`]) {
+      if (selector.startsWith('#records-replays')) await page.click('#records-tab-replays');
       await page.click(selector);
       assert.equal(await mode(), 'replay', selector);
       await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready');

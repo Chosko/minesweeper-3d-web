@@ -1007,6 +1007,7 @@ test('in a browser without WebGL 2, the shell starts with a static background, 3
     // Records from the results screen; its library view's Watch plays the kept replay; the 3D side opens.
     await page.click('#r-records');
     assert.equal(await mode(), 'records');
+    await page.click('#records-tab-replays');
     await page.waitForSelector('#records-replays-table [data-act="watch"]', { timeout: patience(5000) });
     await page.click('#records-replays-table [data-act="watch"]');
     await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready', null, { timeout: patience(5000) });

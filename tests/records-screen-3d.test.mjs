@@ -90,11 +90,11 @@ const value = (list, key) => list.find((s) => s.key === key || s.stat === key).v
 
 // ---------------------------------------------------------------- the switch and the picker
 
-test('the switch offers 2D and 3D; the content carries the chosen mode', () => {
-  assert.deepEqual(RECORDS_MODES.map((m) => [m.value, m.label]), [['classic-2d', '2D'], ['3d', '3D']]);
+test('the switch offers Classic 2D and 3D; the content carries the chosen mode', () => {
+  assert.deepEqual(RECORDS_MODES.map((m) => [m.value, m.label]), [['classic-2d', 'Classic 2D'], ['3d', '3D']]);
   const c = recordsContent(fakeStore(), { mode: '3d' });
   assert.equal(c.mode, '3d');
-  assert.deepEqual(c.modes, [{ value: 'classic-2d', label: '2D', selected: false }, { value: '3d', label: '3D', selected: true }]);
+  assert.deepEqual(c.modes, [{ value: 'classic-2d', label: 'Classic 2D', selected: false }, { value: '3d', label: '3D', selected: true }]);
   assert.equal(recordsContent(fakeStore()).mode, 'classic-2d');
 });
 
@@ -327,7 +327,7 @@ const INDEX = read('index.html');
 const MAIN = read('js/main.js');
 const RECORDS_HTML = INDEX.slice(INDEX.indexOf('<section id="records"'), INDEX.indexOf('<!-- /Records -->'));
 
-test('the 2D | 3D switch is a kit segmented choice above the board picker', () => {
+test('the 2D | 3D switch is a kit segmented choice in the frame\'s head, above the board picker', () => {
   const at = RECORDS_HTML.indexOf('id="records-mode"');
   assert.ok(at > 0, '#records-mode');
   assert.ok(at < RECORDS_HTML.indexOf('id="records-picker"'), 'above the picker');
@@ -335,7 +335,9 @@ test('the 2D | 3D switch is a kit segmented choice above the board picker', () =
   assert.match(group, /<div id="records-mode" class="ui-segmented" role="radiogroup" aria-label="Mode">/);
   const options = [...group.matchAll(/<button type="button" class="ui-segmented__option" role="radio" aria-checked="(true|false)" data-value="([^"]+)">([^<]+)<\/button>/g)]
     .map((m) => [m[2], m[3], m[1]]);
-  assert.deepEqual(options, [['classic-2d', '2D', 'true'], ['3d', '3D', 'false']]);
+  assert.deepEqual(options, [['classic-2d', 'Classic 2D', 'true'], ['3d', '3D', 'false']]);
+  const head = RECORDS_HTML.slice(RECORDS_HTML.indexOf('<div class="ui-frame__end">'), RECORDS_HTML.indexOf('</header>'));
+  assert.ok(head.includes('id="records-mode"'), 'the switch is the frame head\'s end');
 });
 
 test('the shell opens the records screen with its mode and board, and the switch calls the controller', () => {

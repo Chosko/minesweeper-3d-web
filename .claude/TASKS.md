@@ -600,7 +600,7 @@ Feature: shared-screen-layout
 
 ## 170. Records screen in the shared layout, with its Leaderboards tab
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, js/records/screen.js, js/records/history-chart.js, js/records/replay-list.js, tests/records-screen.test.mjs, tests/records-screen-3d.test.mjs, tests/records-replays.test.mjs, tests/components.test.mjs
 Preconditions: 163, 212

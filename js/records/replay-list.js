@@ -31,9 +31,9 @@
 //
 // createReplayListView({ root, onWatch, onTogglePin, onPinnedFirst, onPage, onDelete, onDownload,
 //   onOpenFile, onCopy }) → { show(list), closeConfirm(), isConfirmOpen(), hide() }: fills
-//   #records-replays by id — the pinned-first toggle, Open replay file (#records-replays-open,
+//   #records-replays by id — the Pinned first checkbox, Open replay file (#records-replays-open,
 //   onOpenFile(), shown while list.canOpen), the empty state, one table row per replay with its
-//   board code as a compact code chip (createCodeChip; Copy and Copy link call onCopy), its
+//   outcome as a kit chip (outcomeChip), its board code as a compact code chip (createCodeChip; Copy and Copy link call onCopy), its
 //   Download (onDownload(id)), Pin / Unpin and Delete buttons and, when list.canWatch, its Watch
 //   button, the range caption and the kit pager
 //   (bindPager; onPage(page)). A rebuilt list keeps focus on the button of the replay that had it.
@@ -41,7 +41,7 @@
 //   Cancel) in place of the list, focus on Cancel; Cancel or closeConfirm() (Back) hides it and
 //   focuses that row's Delete again; Delete replay hides it and calls onDelete(id), and the next list
 //   shown puts focus on the Delete of the row in its place, else the previous row's, else the Pinned
-//   first switch. closeConfirm() → false when none is open; hide() closes it without moving focus.
+//   first checkbox. closeConfirm() → false when none is open; hide() closes it without moving focus.
 
 import { DASH, formatTime, formatRate, formatEfficiency } from '../results/view.js';
 import { PIN_BEST, PIN_HAND } from '../replay/library.js';
@@ -112,6 +112,15 @@ export function replayList(library, boardKey, {
   };
 }
 
+const OUTCOME_CHIPS = Object.freeze({ Won: 'ui-chip--won', Lost: 'ui-chip--lost' });
+/** A kit chip naming a game's outcome label: Won and Lost in their colours, any other muted. */
+export function outcomeChip(doc, label) {
+  const chip = doc.createElement('span');
+  chip.className = `ui-chip ${OUTCOME_CHIPS[label] ?? 'ui-chip--muted'}`;
+  chip.textContent = label;
+  return chip;
+}
+
 /** A table cell holding a compact code chip for `code` (empty for none), for every Records row that names one game. */
 export function codeCell(doc, code, onCopy) {
   const td = doc.createElement('td');
@@ -139,7 +148,7 @@ export function createReplayListView({
   const $ = (id) => root.querySelector(`#${id}`);
   const doc = root.ownerDocument;
   const toggle = $('records-pinned-first');
-  const toggleRow = toggle.closest('.ui-toggle') ?? toggle;
+  const toggleRow = toggle.closest('.ui-row') ?? toggle.closest('.ui-checkbox') ?? toggle;
   const body = $('records-replays-body');
   const table = $('records-replays-table');
   const empty = $('records-replays-empty');
@@ -167,7 +176,7 @@ export function createReplayListView({
     return b;
   };
   const deleteButtons = () => [...body.querySelectorAll('button[data-act="delete"]')];
-  // The list, its toggle and its pager show unless the confirmation stands in their place.
+  // The list, its tools row (Pinned first, Open replay file) and its pager show unless the confirmation stands in their place.
   const layout = () => {
     const open = asking !== null;
     confirm.classList.toggle('hidden', !open);
@@ -214,7 +223,8 @@ export function createReplayListView({
         const tr = doc.createElement('tr');
         [r.date, r.outcome, r.time, r.rate, r.efficiency, r.pin].forEach((text, i) => {
           const td = doc.createElement('td');
-          td.textContent = text;
+          if (i === 1) td.append(outcomeChip(doc, text));
+          else td.textContent = text;
           td.dataset.label = REPLAY_HEADERS[i];
           tr.append(td);
         });

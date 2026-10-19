@@ -168,7 +168,7 @@ async function seed(ms) {
   });
 }
 
-test('in a browser, the Records walk stops on every Watch, Download, Pin and Delete, and Right from "Pinned first" enters the replays', async (t) => {
+test('in a browser, the Records walk stops on every Watch, Download, Pin and Delete of the shown tab, and Right from "Pinned first" enters the replays', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -180,24 +180,30 @@ test('in a browser, the Records walk stops on every Watch, Download, Pin and Del
     const key = () => ms(() => {
       const e = document.activeElement;
       const table = e.closest('table');
-      return table ? `${table.id}:${[...table.querySelectorAll('button')].indexOf(e)}` : e.id || e.dataset.value || e.textContent.trim();
+      return table ? `${table.id}:${[...table.querySelectorAll('button')].indexOf(e)}` : e.id || `${e.parentElement.closest('[id]').id}:${e.dataset.value || e.textContent.trim()}`;
     });
-    const tableButtons = await ms(() => ['records-games', 'records-replays-table'].flatMap((id) =>
-      [...document.querySelectorAll(`#${id} button`)].map((_, i) => `${id}:${i}`)));
-    assert.equal(tableButtons.length, 10, 'two Watch in the games list, a Watch, a Download, a Pin and a Delete on each replay');
+    const buttonsOf = (id) => ms((i) => [...document.querySelectorAll(`#${i} button`)].map((_, n) => `${i}:${n}`), id);
+    const games = await buttonsOf('records-games');
+    const replays = await buttonsOf('records-replays-table');
+    assert.deepEqual([games.length, replays.length], [2, 8], 'two Watch in the games list, a Watch, a Download, a Pin and a Delete on each replay');
 
-    // Down from the picker visits every table button, table by table in DOM order, before Back.
-    await ms(() => document.querySelector('#records-picker [aria-checked="true"]').focus());
-    const down = [];
-    for (let i = 0; i < 30 && (await focused()) !== 'records-back'; i++) { await tap(BTN.DOWN); down.push(await key()); }
-    assert.equal(down.at(-1), 'records-back', 'Down reaches Back');
-    assert.deepEqual(down.filter((k) => tableButtons.includes(k)), tableButtons, 'each Watch, Download, Pin and Delete a stop, in DOM order');
-    // Up retraces them.
-    const up = [];
-    for (let i = 0; i < 30 && !(await ms(() => !!document.activeElement.closest('#records-picker'))); i++) { await tap(BTN.UP); up.push(await key()); }
-    assert.deepEqual(up.filter((k) => tableButtons.includes(k)), [...tableButtons].reverse(), 'Up visits them in reverse');
+    // Down from the picker visits every button of the shown tab's table in DOM order, to the end of the screen; Up from there retraces them.
+    const walkDown = async () => {
+      await ms(() => document.querySelector('#records-picker [aria-checked="true"]').focus());
+      const down = [await key()];
+      for (let i = 0; i < 40; i++) { await tap(BTN.DOWN); const k = await key(); if (k === down.at(-1)) break; down.push(k); }
+      const up = [down.at(-1)];
+      for (let i = 0; i < 40 && !(await ms(() => !!document.activeElement.closest('#records-picker'))); i++) { await tap(BTN.UP); up.push(await key()); }
+      return { down, up };
+    };
+    for (const [tab, buttons] of [['recent', games], ['replays', replays]]) {
+      await page.click(`#records-tab-${tab}`);
+      const { down, up } = await walkDown();
+      assert.deepEqual(down.filter((k) => /^records-(games|replays-table):/.test(k)), buttons, `${tab}: each button a stop, in DOM order`);
+      assert.deepEqual(up.filter((k) => buttons.includes(k)), [...buttons].reverse(), `${tab}: Up visits them in reverse`);
+    }
 
-    // Right from "Pinned first" goes to Open replay file beside it, then on into the replays table's first button, never to Back.
+    // Right from "Pinned first" goes to Open replay file beside it, then on into the replays table's first button.
     await ms(() => document.getElementById('records-pinned-first').focus());
     await tap(BTN.RIGHT);
     assert.equal(await key(), 'records-replays-open');
@@ -212,7 +218,16 @@ test('in a browser, the Records walk stops on every Watch, Download, Pin and Del
     await page.waitForFunction(() => document.activeElement?.textContent === 'Unpin');
     assert.equal(await ms(() => document.activeElement.closest('table')?.id), 'records-replays-table');
 
+    // The controller reaches every tab: Right walks the tabs and A selects one, Leaderboards' coming-soon panel among them.
+    await ms(() => document.getElementById('records-tab-recent').focus());
+    await page.click('#records-tab-recent');
+    for (const next of ['records-tab-top', 'records-tab-replays', 'records-tab-leaderboards']) { await tap(BTN.RIGHT); assert.equal(await key(), next); }
+    await tap(BTN.A);
+    assert.equal(await ms(() => document.querySelector('#records-tabs [aria-selected="true"]').id), 'records-tab-leaderboards');
+    assert.equal(await ms(() => document.getElementById('records-leaderboards').classList.contains('hidden')), false, 'A shows the coming-soon panel');
+
     // A on Watch opens the replay viewer, as a click does.
+    await page.click('#records-tab-recent');
     await ms(() => document.querySelector('#records-games button[data-watch]').focus());
     await tap(BTN.A);
     await page.waitForFunction(() => globalThis.__ms.state.mode === 'replay');
@@ -243,12 +258,12 @@ test('in a browser, LB / RB step the Records board and LT / RT switch 2D and 3D,
 
     const order = await ms(() => [...document.querySelectorAll('#records-picker .ui-segmented__option')].map((o) => o.dataset.value));
     assert.equal(await board(), order[0]);
-    await ms(() => document.getElementById('records-pinned-first').focus());
+    await ms(() => document.getElementById('records-export-csv').focus());
     await tap(BTN.LB);
     assert.equal(await board(), order[0], 'LB at the first board: held');
     await tap(BTN.RB);
     assert.equal(await board(), order[1], 'RB: the next board');
-    assert.equal(await ms(() => document.activeElement.id), 'records-pinned-first', 'focus stays on a control that still exists');
+    assert.equal(await ms(() => document.activeElement.id), 'records-export-csv', 'focus stays on a control that still exists');
     await tap(BTN.RB);
     assert.equal(await board(), order[2]);
     await tap(BTN.LB);

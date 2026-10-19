@@ -858,7 +858,7 @@ test('bindSegmented with horizontal leaves Up and Down unhandled', () => {
 
 // Each button Esc triggers, with the hint beside it; the pause card's Main menu has none (Esc resumes there),
 // and a screen frame's Back carries its key hint inside it.
-const ESC_BACKS = ['ready-back', 'settings-back', 'records-back', 'daily-back',
+const ESC_BACKS = ['ready-back', 'settings-back', 'daily-back',
   'rp-back', 'replay-message-back', 'ctx-lost-menu'];
 const HINT = '<span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>';
 
@@ -876,7 +876,9 @@ test('an "Esc: Back" hint sits beside each Back that Esc triggers, and is no foc
   for (const id of ['c2d-choice-back', 'board-choice-back', 'coming-soon-menu', 'r-menu']) {
     assert.match(html, new RegExp(`id="${id}"[^>]*>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>`), `the frame's Back holds its key hint (#${id})`);
   }
-  assert.match(html, /id="coming-soon-back"[^>]*>Back <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/, 'so does the placeholder\'s Back');
+  for (const id of ['coming-soon-back', 'records-back']) {
+    assert.match(html, new RegExp(`id="${id}"[^>]*>Back <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>`), `so does a Back that returns one step (#${id})`);
+  }
   assert.doesNotMatch(HINT, /tabindex|<button|<a /, 'the hint is plain text');
 });
 
@@ -938,7 +940,8 @@ test('in a browser, the "Esc: Back" hints meet the contrast contract', async (t)
     await hints('Settings');
     await page.keyboard.press('Escape');
     await page.click('#menu-entry-records');
-    await hints('Records');
+    assert.equal(await page.evaluate(() => document.querySelector('#records-back .ui-key-hint__key')?.textContent), 'Esc', 'Records\' frame carries its key hint inside its Back');
+    assert.equal((await page.evaluate(measureContrast)).runs.filter((r) => r.text === 'Esc: Back').length, 0);
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
@@ -1118,7 +1121,9 @@ test('the column composition has one breakpoint, 1024 px, stated once, used by R
   assert.doesNotMatch(read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, ''), /min-width:\s*1024px/, 'no second copy in the shell stylesheet');
   const head = RAW.match(/^\/\*([\s\S]*?)\*\//)[1];
   assert.match(head, /ui-columns[\s\S]*1024 px/, 'the catalogue states the breakpoint');
-  assert.match(INDEX, /<section class="ui-card ui-screen ui-screen--wide ui-screen--columns" aria-labelledby="records-title">/);
+  assert.match(INDEX, /<section class="ui-frame" id="records-frame" aria-labelledby="records-title">[\s\S]*?<div class="ui-columns ui-columns--two" id="records-columns">/);
+  const block = CSS.slice(CSS.indexOf('@media (min-width: 1024px)'));
+  assert.match(block.slice(0, block.indexOf('\n}')), /#records-columns \{ grid-template-columns: [^}]+ auto [^}]+; \}/, 'Records\' rule between its columns, inside the one breakpoint');
   assert.match(INDEX, /<section class="ui-card ui-screen ui-screen--wide ui-screen--columns" aria-labelledby="settings-title">/);
 });
 
@@ -1550,6 +1555,23 @@ test('in a browser, the menu, the pause card and the results layout meet the con
     await page.keyboard.press('Escape');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
 
+    // The Records screen over a won and a lost game: its frame, figures, muted overall row and the outcome chips in
+    // the games table, then the Leaderboards tab's coming-soon panel.
+    await page.evaluate(() => {
+      const clicks = { reveal: { effective: 25, wasted: 0 }, flag: { effective: 0, wasted: 0 }, chord: { effective: 0, wasted: 0 } };
+      const board = { mode: 'classic-2d', grid: 'square', width: 9, height: 9, mines: 10, noGuess: false };
+      for (const [id, outcome, endedAt] of [['c1', 'won', '2026-10-08T12:00:00.000Z'], ['c2', 'lost', '2026-10-09T12:00:00.000Z']]) {
+        globalThis.__ms.records.record({ id, board, outcome, elapsedMs: 40000, bbbv: 20, bbbvSolved: outcome === 'won' ? 20 : 5, clicks,
+          bbbvPerSecond: 0.5, efficiency: 80, seed: 1, generatorVersion: 1, endedAt });
+      }
+    });
+    await page.click('#menu-entry-records');
+    await check(page, '#records', 'records');
+    await page.click('#records-tab-leaderboards');
+    await check(page, '#records-leaderboards', 'records-leaderboards', 2);
+    await page.keyboard.press('Escape');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
+
     // The Classic 2D board choice in each of its selections, readable, its options showing their focused state.
     await page.click('#menu-entry-classic-2d');
     await check(page, '#c2d-choice', 'c2d-choice');
@@ -1733,7 +1755,7 @@ const textOf = (html, t) => {
 };
 const MODE_ENTRIES = ['classic-2d', 'hexagon', 'triangle', 'surface', '3d', 'daily', 'records', 'settings', 'quit'];
 
-test('the gallery marks the shared layout\'s components; the main menu, both board choices, the placeholder, the pause card and the results screen are the screens built from them so far', () => {
+test('the gallery marks the shared layout\'s components; the main menu, both board choices, the placeholder, the pause card, the results and the Records screen are the screens built from them so far', () => {
   assert.ok(LAYOUT.length > 1000, 'dev/components.html holds the shared layout\'s components');
   const screens = INDEX.replace(/<!--[\s\S]*?-->/g, '');
   const menu = SCREENS.menu;
@@ -1742,12 +1764,17 @@ test('the gallery marks the shared layout\'s components; the main menu, both boa
   const soon = screens.slice(screens.indexOf('<section id="coming-soon"'), screens.indexOf('<section id="ready"'));
   const pause = screens.slice(screens.indexOf('<section id="pause"'), screens.indexOf('<noscript>'));
   const results = screens.slice(screens.indexOf('<section id="results"'), screens.indexOf('<section id="daily"'));
+  const records = screens.slice(screens.indexOf('<section id="records"'), screens.indexOf('<section id="replay"'));
+  for (const cls of ['ui-backdrop', 'ui-frame', 'ui-key-hint', 'ui-divider', 'ui-tabs', 'ui-checkbox', 'ui-table', 'ui-panel--muted', 'ui-stat--tile']) {
+    assert.match(records, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the Records screen uses ${cls}`);
+  }
+  assert.doesNotMatch(records, /class="[^"]*\bui-card(?![\w-])/, 'the Records screen holds no card');
   for (const cls of ['ui-frame', 'ui-key-hint', 'ui-chip', 'ui-chip--best', 'ui-stat--tile', 'ui-table']) assert.match(results, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the results screen uses ${cls}`);
   assert.doesNotMatch(results, /class="[^"]*\bui-card(?![\w-])/, 'the results screen holds no card');
   for (const cls of ['ui-backdrop', 'ui-frame', 'ui-key-hint']) assert.match(soon, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the placeholder uses ${cls}`);
   assert.doesNotMatch(soon, /class="[^"]*\bui-card(?![\w-])/, 'the placeholder holds no card');
   for (const cls of ['ui-section-label', 'ui-button--danger', 'ui-key-hint', 'ui-panel--muted']) assert.match(pause, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the pause card uses ${cls}`);
-  const others = screens.replace(menu, '').replace(choice, '').replace(choice3d, '').replace(soon, '').replace(pause, '').replace(results, '');
+  const others = screens.replace(menu, '').replace(choice, '').replace(choice3d, '').replace(soon, '').replace(pause, '').replace(results, '').replace(records, '');
   for (const cls of ['ui-wordmark', 'ui-mode-entry', 'ui-key-hint', 'ui-chip', 'ui-scene-panel']) {
     assert.match(menu, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the main menu uses ${cls}`);
   }

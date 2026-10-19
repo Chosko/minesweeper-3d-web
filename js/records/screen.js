@@ -41,7 +41,8 @@
 // period's last 10, last 50 and all won games, a column short of its size labelled with its count ("Last 50 (12)"),
 // and the win rates are over its last 50 games of every outcome, with the completed games' beside it;
 // the best-time chart's steps are the period's new standing bests, start and end its first and last
-// won game. A filter leaving nothing gives each view its empty line, never the board's empty state.
+// won game. A filter leaving nothing gives each view its empty line, never the board's empty state;
+// on a board with no games the recent games' empty line is the board's (EMPTY_TEXT).
 // exportable says whether the export actions are enabled.
 // The bests show as the screen's three stat tiles; the board's counters and the mode's overall
 // figures are two separate rows. A game's bbbv is its board's 3BV from its history entry.
@@ -91,29 +92,34 @@
 // createReplayListView; the 2D | 3D switch (#records-mode, a kit segmented choice whose two options
 // are in the markup) shows content.mode and calls onMode(mode); a best and a recent game whose
 // watch is set get a Watch button calling onWatch(id), every recent game, Top 10 and library row its
-// board code as a compact code chip whose Copy and Copy link call onCopy, a counter its label from
-// the content (a Daily board's days in a row), and the games list gains its Replay column
-// while content.canWatch; the picker is a kit segmented choice whose options are rebuilt only when
-// the board list changes; the chart (createHistoryChart over #records-chart by default) is drawn after the
-// screen shows; the recent games' kit pager (#records-games-pager, bindPager) calls onPage with the
-// page to show. The period, outcome, tab and Top 10 stat choices (#records-period, #records-outcome,
-// #records-tabs, #records-top-stat, kit segmented choices whose options are in the markup) call onPeriod,
-// onOutcome, onTab and onTopStat; the tab shows #records-recent or #records-top; the best-time chart
-// (createHistoryChart kind 'best' over #records-best-chart by default) is drawn beside the other; the
-// export actions (#records-export-csv, #records-export-json, bindExportActions) call onExport(format).
+// board code as a compact code chip whose Copy and Copy link call onCopy, a recent game its outcome
+// as a kit chip (outcomeChip), a counter its label from the content (a Daily board's days in a row),
+// and the games list gains its Replay column while content.canWatch; the picker is a kit segmented
+// choice whose options are rebuilt only when the board list changes; the chart (createHistoryChart over
+// #records-chart by default) is drawn after the screen shows; the recent games' kit pager
+// (#records-games-pager, bindPager) calls onPage with the page to show. The period, outcome and Top 10
+// stat choices (#records-period, #records-outcome, #records-top-stat, kit segmented choices whose
+// options are in the markup) call onPeriod, onOutcome and onTopStat; the tabs (#records-tabs, a kit
+// tablist whose tabs are in the markup, bindTabs) call onTab, and the selected tab shows the panel its
+// aria-controls names (#records-recent, #records-top, #records-replays or #records-leaderboards, the
+// last a coming-soon panel with no pager), another tab closing the replays' Delete confirmation
+// without moving focus; an empty board hides the period and outcome choices, the
+// charts and the averages, the tabs staying; the best-time chart (createHistoryChart kind 'best' over
+// #records-best-chart by default) is drawn beside the other; the export actions (#records-export-csv,
+// #records-export-json, bindExportActions) call onExport(format).
 
 import { MODE_3D, PRESETS_3D, STANDARD_BOARDS, boardKey, boardLabel, createBoardIdentity, parseBoardKey } from './board.js';
 import { DAILY_BOARDS, codeOf, dateText } from './board-code.js';
 import { daysInARow } from './model.js';
 import { DASH, NOTES, formatTime, formatRate, formatEfficiency, formatWinRate } from '../results/view.js';
-import { bindSegmented, bindPager, pagerState } from '../ui/components.js';
+import { bindSegmented, bindTabs, bindPager, pagerState } from '../ui/components.js';
 import { BEST_STATS, bbbvPerSecond, countedClicks, efficiency } from './summary.js';
 import {
   NO_WON_GAMES, NO_WON_GAMES_PERIOD, NO_BEST_TIME, NO_BEST_TIME_PERIOD, chartPoints, chartText, bestTimeText, formatDate, pageOf, createHistoryChart,
 } from './history-chart.js';
 import { PERIODS, OUTCOME_FILTERS, AVERAGE_WINDOWS, RECENT_GAMES, filterHistory, topGames, averages, recentWinRate, bestTimeSteps } from './stats.js';
 import { bindExportActions } from './export.js';
-import { REPLAY_SCREEN, REPLAYS_NOT_SAVED, replayList, togglePin, watchRoute, createReplayListView, codeCell } from './replay-list.js';
+import { REPLAY_SCREEN, REPLAYS_NOT_SAVED, replayList, togglePin, watchRoute, createReplayListView, codeCell, outcomeChip } from './replay-list.js';
 
 export const RECORDS_SCREEN = 'records';
 export const EMPTY_TEXT = 'No games on this board yet.';
@@ -122,7 +128,7 @@ const MODE_2D = 'classic-2d';
 export const TRIGGER_MODES = Object.freeze({ lt: MODE_2D, rt: MODE_3D });
 /** The switch's modes, in order. */
 export const RECORDS_MODES = Object.freeze([
-  Object.freeze({ value: MODE_2D, label: '2D', overallTitle: 'Classic 2D overall' }),
+  Object.freeze({ value: MODE_2D, label: 'Classic 2D', overallTitle: 'Classic 2D overall' }),
   Object.freeze({ value: MODE_3D, label: '3D', overallTitle: '3D overall' }),
 ]);
 const isMode = (mode) => RECORDS_MODES.some((m) => m.value === mode);
@@ -175,10 +181,12 @@ const OUTCOME_LABELS = Object.freeze({ won: 'Won', lost: 'Lost', abandoned: 'Aba
 const outcomeLabel = (outcome) => OUTCOME_LABELS[outcome] ?? outcome;
 const GAME_HEADERS = Object.freeze(['Date', 'Outcome', 'Time', '3BV', '3BV/s', 'Efficiency']);
 const TOP_HEADERS = Object.freeze(['Rank', 'Time', '3BV/s', 'Efficiency', 'Date', '3BV', 'Clicks']);
-/** The games area's tabs, the first the default. */
+/** The lists' tabs, in order, the first the default. */
 export const GAME_TABS = Object.freeze([
   Object.freeze({ value: 'recent', label: 'Recent games' }),
   Object.freeze({ value: 'top', label: 'Top 10' }),
+  Object.freeze({ value: 'replays', label: 'Replays' }),
+  Object.freeze({ value: 'leaderboards', label: 'Leaderboards' }),
 ]);
 /** The Top 10's ranking choice, the first the default. */
 export const TOP_STATS = Object.freeze([
@@ -244,13 +252,13 @@ const gameRow = (e, kept, board) => ({
   watch: kept(e.id),
 });
 
-function gamesList(history, page, kept, board) {
+function gamesList(history, page, kept, board, boardEmpty) {
   const p = pageOf(history.toReversed(), page);
   return {
     headers: [...GAME_HEADERS],
     rows: p.items.map((e) => gameRow(e, kept, board)),
     empty: p.total === 0,
-    emptyText: GAMES_EMPTY_TEXT,
+    emptyText: boardEmpty ? EMPTY_TEXT : GAMES_EMPTY_TEXT,
     page: p.page, pages: p.pages,
     label: p.total ? `Games ${p.from}–${p.to} of ${p.total}` : '',
     pager: pagerState(p.page, p.pages),
@@ -327,12 +335,13 @@ export function recordsContent(records, {
   const kept = (id) => (canWatch && typeof id === 'string' && attempt(() => replays.has(id), false) ? id : null);
   const identity = attempt(() => parseBoardKey(key), null);
   const days = identity?.daily ? daysInARow(counters, dateText(now)) : null;
+  const empty = !(counters.games > 0);
   return {
     mode,
     modes: RECORDS_MODES.map((m) => ({ value: m.value, label: m.label, selected: m.value === mode })),
     boards: boards.map((b) => ({ key: b.key, label: b.label, selected: b.key === key })),
     board: { key, label: chosen.label },
-    empty: !(counters.games > 0),
+    empty,
     emptyText: EMPTY_TEXT,
     bests: BESTS.map(({ stat, label, format }) => {
       const best = bests?.[stat] ?? null;
@@ -353,7 +362,7 @@ export function recordsContent(records, {
     averages: averagesPanel(shown),
     tab,
     tabs: choices(GAME_TABS, tab),
-    games: gamesList(listed, page, kept, identity),
+    games: gamesList(listed, page, kept, identity, empty),
     top: topList(shown, topStat, kept, filtered, identity),
     exportable: !!exportable,
     replays: { ...replayList(replays, key, { pinnedFirst, canWatch, formatDate: formatDateTime, outcomeLabel, page: replayPage }), canOpen: !!canOpen },
@@ -522,13 +531,15 @@ export function createRecordsView({
   const bestCanvas = $('records-best-chart');
   const best = bestChart ?? createHistoryChart({ canvas: bestCanvas, kind: 'best' });
   const choiceGroups = [
-    ['records-period', onPeriod], ['records-outcome', onOutcome], ['records-tabs', onTab], ['records-top-stat', onTopStat],
+    ['records-period', onPeriod], ['records-outcome', onOutcome], ['records-top-stat', onTopStat],
   ].map(([id, fn]) => {
     const group = $(id);
     bindSegmented(group, { onChange: (value) => fn(value) });
     return group;
   });
-  const [periodGroup, outcomeGroup, tabsGroup, statGroup] = choiceGroups;
+  const [periodGroup, outcomeGroup, statGroup] = choiceGroups;
+  const tabsList = $('records-tabs');
+  bindTabs(tabsList, { onChange: (value) => onTab(value) });
   const exportActions = bindExportActions(
     { csv: $('records-export-csv'), json: $('records-export-json'), note: $('records-export-note') },
     { onExport: (format) => onExport(format) },
@@ -559,7 +570,8 @@ export function createRecordsView({
       const tr = doc.createElement('tr');
       [g.date, g.outcome, g.time, g.bbbv, g.rate, g.efficiency].forEach((text, i) => {
         const td = doc.createElement('td');
-        td.textContent = text;
+        if (i === 1) td.append(outcomeChip(doc, text));
+        else td.textContent = text;
         td.dataset.label = games.headers[i];
         tr.append(td);
       });
@@ -677,8 +689,7 @@ export function createRecordsView({
       empty.classList.toggle('hidden', !content.empty);
       $('records-bests').classList.toggle('hidden', content.empty);
       $('records-counters').classList.toggle('hidden', content.empty);
-      $('records-history').classList.toggle('hidden', content.empty);
-      $('records-averages').classList.toggle('hidden', content.empty);
+      for (const id of ['records-period', 'records-outcome', 'records-won-only', 'records-charts', 'records-averages']) $(id).classList.toggle('hidden', content.empty);
       check(periodGroup, content.filters.period);
       check(outcomeGroup, content.filters.outcome);
       $('records-won-only').textContent = content.filters.wonOnly;
@@ -686,9 +697,12 @@ export function createRecordsView({
       canvas.textContent = content.chart.text;
       bestCanvas.setAttribute('aria-label', content.bestChart.text);
       bestCanvas.textContent = content.bestChart.text;
-      check(tabsGroup, content.tabs);
-      $('records-recent').classList.toggle('hidden', content.tab !== 'recent');
-      $('records-top').classList.toggle('hidden', content.tab !== 'top');
+      for (const tab of tabsList.querySelectorAll('.ui-tabs__tab')) {
+        const on = content.tab === tab.dataset.value;
+        tab.setAttribute('aria-selected', String(on));
+        tab.tabIndex = on ? 0 : -1;
+        $(tab.getAttribute('aria-controls')).classList.toggle('hidden', !on);
+      }
       showGames(content.games, content.canWatch);
       showTop(content.top, content.canWatch);
       showAverages(content.averages);
@@ -707,6 +721,7 @@ export function createRecordsView({
           if (hadFocus) w.focus({ preventScroll: true });
         }
       }
+      if (content.tab !== 'replays') list.hide();
       list.show(content.replays);
       fill('rec', content.counters);
       $('records-overall-title').textContent = content.overallTitle;

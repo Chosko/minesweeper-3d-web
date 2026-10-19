@@ -66,15 +66,16 @@ no framework and no external chart library (see
 `screen-components` kit.
 
 - **Records view.** The board picker, the figures panel and the history
-  area, from `screen-components`' segmented choice, cards, stat readouts
-  and column composition. The three bests are stat tiles — the label, the
+  area, from `screen-components`' segmented choice, screen frame, tabs,
+  stat readouts and column composition. The three bests are stat tiles — the label, the
   figure large, and beneath it the date the best was set; under them the
   board's counters are one row and the mode's overall figures a row of
-  their own. At about 1024 px wide and more the screen lays out in two
-  columns: the picker, the bests, both rows of figures and the averages on
-  one side, the period and outcome filters, both charts and the Recent
-  games | Top 10 | Replays | Leaderboards tabs on the other; narrower, one column in that
-  order. Opens on the board it was asked for, otherwise on
+  their own. The picker runs across the top; at about 1024 px wide and
+  more the screen lays out in two columns under it: the bests, both rows
+  of figures, the averages and the export actions on one side, the period
+  and outcome filters, both charts and the Recent games | Top 10 | Replays
+  | Leaderboards tabs on the other; narrower, one column in that order.
+  Opens on the board it was asked for, otherwise on
   the last board played. The fastest-time best is shown in
   `results-screen`'s time format (47.380 s), and the efficiency best to one
   decimal (94.7%).
@@ -132,8 +133,8 @@ no framework and no external chart library (see
   with the replay state as columns, RFC 4180 quoting, a dot decimal and no
   units). It exports everything, not the filtered view, and writes no
   document; with no game recorded the actions are disabled and say there is
-  nothing to export yet. The actions sit below the lists, beside Back, and
-  in `settings`' Data panel, both through the one module.
+  nothing to export yet. The actions sit under the mode's overall figures
+  and in `settings`' Data panel, both through the one module.
 - **Recent games list.** The newest games first, ten to a page, with a
   pager of First, at most five numbered pages around the current one and
   Last, hidden when one page holds everything, so a long history stays

@@ -125,7 +125,7 @@ test('a library row carries its listing\'s board code, or none for a replay from
   const library = fakeLibrary([listing('coded', { code: 'B-00000001-40-1ABC' }), listing('old', { endedAt: '2026-10-01T12:00:00.000Z' })]);
   const rows = replayList(library, KEY).rows;
   assert.deepEqual(rows.map((r) => [r.id, r.code]), [['coded', 'B-00000001-40-1ABC'], ['old', null]]);
-  const table = read('index.html').match(/<table id="records-replays-table">[\s\S]*?<\/thead>/)[0];
+  const table = read('index.html').match(/<table id="records-replays-table" class="ui-table">[\s\S]*?<\/thead>/)[0];
   assert.match(table, /<th scope="col">Pin<\/th><th scope="col">Board code<\/th><th scope="col">Actions<\/th>/);
 });
 
@@ -433,7 +433,7 @@ test('Open replay file picks a file and opens it in the viewer, Back returning t
 });
 
 test('the panel carries Open replay file, and the shell wires Download and Open to the screen', () => {
-  assert.match(RECORDS_HTML_DL(), /<button type="button" id="records-replays-open" class="ui-button ui-button--secondary hidden">Open replay file<\/button>/);
+  assert.match(RECORDS_HTML_DL(), /<button type="button" id="records-replays-open" class="ui-button ui-button--secondary ui-button--sm hidden">Open replay file<\/button>/);
   assert.match(read('js/records/replay-list.js'), /button\('Download', `Download \$\{what\}`/);
   assert.match(read('js/main.js'), /onDownload: \(id\) => RECORDS_PAGE\.downloadReplay\(id\)/);
   assert.match(read('js/main.js'), /onOpenFile: \(\) => RECORDS_PAGE\.openReplayFile\(\)/);
@@ -498,12 +498,11 @@ const INDEX = read('index.html');
 const MAIN = read('js/main.js');
 const RECORDS_HTML = INDEX.slice(INDEX.indexOf('<section id="records"'), INDEX.indexOf('<!-- /Records -->'));
 
-test('the records screen holds the replays panel: heading, pinned-first toggle, empty state and list', () => {
-  const panel = RECORDS_HTML.slice(RECORDS_HTML.indexOf('<div id="records-replays"'), RECORDS_HTML.indexOf('<p id="records-note"'));
-  assert.ok(panel.length > 100, 'the replays panel sits before the note');
-  assert.match(panel, /^<div id="records-replays" class="ui-panel" role="group" aria-labelledby="records-replays-title">/);
-  assert.match(panel, /<h3 class="ui-heading" id="records-replays-title">Replays<\/h3>/);
-  assert.match(panel, /<label class="ui-toggle"><input type="checkbox" role="switch" id="records-pinned-first" class="ui-toggle__input"><span class="ui-toggle__label">Pinned first<\/span><\/label>/);
+test('the records screen holds the Replays tab\'s panel: pinned-first checkbox, empty state and list', () => {
+  const panel = RECORDS_HTML.slice(RECORDS_HTML.indexOf('<div id="records-replays"'), RECORDS_HTML.indexOf('<div id="records-leaderboards"'));
+  assert.ok(panel.length > 100, 'the replays panel sits before the Leaderboards panel');
+  assert.match(panel, /^<div id="records-replays" class="hidden" role="tabpanel" aria-labelledby="records-tab-replays">/);
+  assert.match(panel, /<label class="ui-checkbox"><input type="checkbox" id="records-pinned-first" class="ui-checkbox__input"><span class="ui-checkbox__label">Pinned first<\/span><\/label>/);
   assert.match(panel, new RegExp(`<p id="records-replays-empty" class="ui-text ui-text--muted hidden">${REPLAYS_EMPTY_TEXT}</p>`));
   assert.match(panel, /<tbody id="records-replays-body"><\/tbody>/);
   for (const h of REPLAY_HEADERS) assert.ok(panel.includes(`<th scope="col">${h}</th>`), `header ${h}`);
@@ -601,6 +600,7 @@ test('in a browser, the replays panel lists, pins by keyboard keeping focus, fil
       });
       globalThis.__t = { screen, went, library };
       screen.show({ boardKey: key });
+      screen.setTab('replays');
     }, KEY);
     const T = '#records-test';
     const rows = () => page.evaluate((s) => [...document.querySelectorAll(`${s} #records-replays-body tr`)].map((r) => [...r.cells].map((c) => c.textContent)), T);
@@ -619,7 +619,7 @@ test('in a browser, the replays panel lists, pins by keyboard keeping focus, fil
     assert.deepEqual(await active(), { id: 'b', act: 'pin' }, 'focus stays on the replay\'s Pin / Unpin button');
     assert.equal((await rows())[1][5], 'Pinned');
 
-    // The Pinned first switch reorders the list.
+    // The Pinned first checkbox reorders the list.
     await page.focus(`${T} #records-pinned-first`);
     await page.keyboard.press('Space');
     await page.waitForFunction((s) => document.querySelector(`${s} #records-replays-body tr td:nth-child(2)`)?.textContent === 'Lost', T);
@@ -628,11 +628,13 @@ test('in a browser, the replays panel lists, pins by keyboard keeping focus, fil
     // Watch on a replay, on a best and on a recent game routes with the id and the Records screen to return to.
     await page.click(`${T} #records-replays-body button[data-act="watch"][data-id="a"]`);
     await page.click(`${T} #rec-time [data-watch="a"]`);
+    await page.evaluate(() => globalThis.__t.screen.setTab('recent'));
     await page.click(`${T} #records-games-body [data-watch="a"]`);
     const went = await page.evaluate(() => globalThis.__t.went);
     const route = ['replay', { data: { replayId: 'a', returnTo: { screen: 'records', data: { boardKey: KEY } } } }];
     assert.deepEqual(went, [route, route, route]);
     assert.equal(await page.evaluate((s) => document.querySelector(`${s} #records-games-replay`).classList.contains('hidden'), T), false, 'the Replay column shows');
+    await page.evaluate(() => globalThis.__t.screen.setTab('replays'));
 
     // Delete asks first, in the replays panel; Cancel and Back change nothing and return to that row's Delete.
     const confirm = () => page.evaluate((s) => ({
@@ -655,7 +657,17 @@ test('in a browser, the replays panel lists, pins by keyboard keeping focus, fil
     c = await confirm();
     assert.deepEqual([c.open, c.focus], [false, { id: 'b', act: 'delete' }]);
     assert.equal((await rows()).length, 2, 'nothing changed');
-    // Confirming removes the replay; focus goes to the Delete of the row that took its place, then to the switch.
+    // The confirmation stands in place of the whole tools row; another tab closes it, so nothing waits on a hidden question.
+    await page.keyboard.press('Enter');
+    assert.equal((await confirm()).open, true);
+    assert.equal(await page.evaluate((s) => document.querySelector(`${s} #records-pinned-first`).closest('.ui-row').getClientRects().length, T), 0,
+      'the Pinned first label hides with its box');
+    await page.evaluate(() => globalThis.__t.screen.setTab('recent'));
+    assert.equal(await page.evaluate(() => globalThis.__t.screen.confirmOpen), false, 'leaving the Replays tab closes the confirmation');
+    await page.evaluate(() => globalThis.__t.screen.setTab('replays'));
+    assert.equal((await confirm()).open, false, 'and it stays closed on coming back');
+    await page.focus(`${T} #records-replays-body button[data-act="delete"][data-id="b"]`);
+    // Confirming removes the replay; focus goes to the Delete of the row that took its place, then to the checkbox.
     await page.keyboard.press('Enter');
     await page.click(`${T} #records-replays-yes`);
     await page.waitForFunction((s) => document.querySelectorAll(`${s} #records-replays-body tr`).length === 1, T);
@@ -665,7 +677,7 @@ test('in a browser, the replays panel lists, pins by keyboard keeping focus, fil
     assert.equal((await confirm()).focus, 'records-replays-yes', 'Shift+Tab from Cancel reaches Delete replay');
     await page.keyboard.press('Enter');
     await page.waitForFunction((s) => document.querySelectorAll(`${s} #records-replays-body tr`).length === 0, T);
-    assert.equal((await confirm()).focus, 'records-pinned-first', 'with no row left, the Pinned first switch');
+    assert.equal((await confirm()).focus, 'records-pinned-first', 'with no row left, the Pinned first checkbox');
     assert.equal(await page.evaluate((s) => document.querySelector(`${s} #rec-time [data-watch]`), T), null, 'the best\'s Watch is gone with its replay');
 
     // The only row of a last page: the list clamps to the page before, and focus goes to the previous row, its last.

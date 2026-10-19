@@ -70,11 +70,30 @@ kbd {
   #menu-foot { flex-direction: column; align-items: flex-start; }
   #menu-foot > #menu-build { margin-inline-start: 0; }
 }
+/* The Records screen (#records): its window on the backdrop at the canvas's size, the switch in its
+   head, the picker across the body over the two columns (a rule between them at the kit breakpoint,
+   css/components.css), the body scrolling; on a phone the window is full-bleed and the switch takes
+   a row of the head of its own. */
+#records-frame { width: 1640px; height: 100%; }
+#records-body { display: flex; flex-direction: column; gap: var(--space-4); }
+#records-body > p { margin: 0; }
+/* The history panel's parts and each tab's list a column apart, a tab's list set off below the tabs. */
+#records-history, #records-history > [role="tabpanel"]:not(.ui-panel) { display: flex; flex-direction: column; gap: var(--space-3); }
+#records-history > [role="tabpanel"] { margin-top: var(--space-3); }
+#records-history :is(h3, p) { margin: 0; }
+@media (max-width: 1023px) { #records-columns > .ui-divider--vertical { display: none; } }
+@media (max-width: 719px) {
+  #records { padding: 0; }
+  #records-frame { width: 100%; border-radius: 0; box-shadow: none; }
+  #records-frame > .ui-frame__head { grid-template-columns: auto minmax(0, 1fr); }
+  #records-frame .ui-frame__end { grid-column: 1 / -1; justify-content: flex-start; }
+  #records-body { padding: var(--space-4); }
+}
 #records-chart { display: block; width: 100%; height: 160px; }
 #records-best-chart { display: block; width: 100%; height: 160px; }
 :is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) { width: 100%; border-collapse: collapse; font-variant-numeric: var(--font-numeric-tabular); }
 :is(#records-games, #records-replays-table) caption { caption-side: bottom; text-align: left; padding-top: var(--space-2); }
-:is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) :is(th, td) { padding: var(--space-1) var(--space-2); text-align: right; }
+:is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) :is(th, td) { padding: var(--space-1) var(--space-2); text-align: right; white-space: normal; }
 :is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) th { font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); }
 :is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) :is(th, td):first-child { text-align: left; }
 #rec-time .ui-button, #rec-bbbvPerSecond .ui-button, #rec-efficiency .ui-button, :is(#records-replays-table, #records-top-table) td .ui-button { white-space: nowrap; }
@@ -102,7 +121,7 @@ kbd {
   #records-replays-table td .ui-button { margin: 0 var(--space-2) 0 0; }
 }
 /* The Averages table stacks the same way in a panel narrower than its row of three-digit times on one
-   line (about 333 px; the panel is 336 px at 1024 px and wider), each row a card headed by its label. */
+   line (about 333 px, narrower than the panel at 1024 px and wider), each row a card headed by its label. */
 #records-averages { container-type: inline-size; }
 @container (max-width: 335px) {
   #records-averages-table, #records-averages-table tbody { display: block; }
