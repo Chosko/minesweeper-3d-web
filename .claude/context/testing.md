@@ -71,6 +71,7 @@ Test files by name prefix:
 | `settings-` | schema, store and its format step (the `light` / `dark` carry-over, an unknown theme id kept), appliers (the theme through the theme applier); page with its theme list, Reset all data; bindings | [settings.md](settings.md), [settings-page.md](settings-page.md), [settings-bindings.md](settings-bindings.md) |
 | `tokens`, `theme`, `components` | *Joyful tiles*' tokens and their contrast, the structural token sheet (`tokens`); the pre-paint script, the theme applier and its failure contract, the token reader, the scene palette, the theme stylesheet's scoping (`theme`); the component kit, the base stylesheets' no-visual-value check, the gallery, the screens' markup (`components`) | [app-shell-kit.md](app-shell-kit.md), [app-shell-markup.md](app-shell-markup.md) |
 | `theme-registry`, `theme-conformance`, `board-module` | the theme registry and the kit catalogue (`theme-registry`); the conformance suite every registered theme passes, its board case included, proved against the broken fixture themes, and the per-theme gallery (`theme-conformance`); the board module's shape, its checks proved against broken board modules, *Joyful tiles*' board values (`board-module`) | [app-shell-kit.md](app-shell-kit.md) |
+| `cell-motion` | the cell motion player: interpolation, easing, flip midpoint, restart, the cap, dropping | [classic2d-tile-skin.md](classic2d-tile-skin.md) |
 | `render-`, `readability-` | 3D renderer, readability aids; feedback effects (pulse, flash) | [rendering.md](rendering.md), [rendering-effects.md](rendering-effects.md) |
 | `gamepad`, `input-`, `camera-` | `FlyCamera`, `MouseActions`, drag-to-look, spawn pose (`camera-spawn`); keyboard-only 3D (`input-keyboard-3d`); the 3D touch gesture machine (`input-touch-3d`); flight (`camera-flight`: forward vector, spacing step, toggle and camera scaling, fly-through fade and pick rule); the orbit camera (`camera-orbit`); gamepad helpers, rumble, `Controls` | [input.md](input.md), [input-camera.md](input-camera.md), [input-controller.md](input-controller.md), [rendering.md](rendering.md) |
 | `audio-` | sound voices over recorded primitives | [audio.md](audio.md) |
@@ -91,7 +92,8 @@ Data beside the tests:
   format changes, never by a test.
 - `dev/measure-*.mjs` — measurements, not tests, behind `NOGUESS_CELL_LIMIT`,
   `TYPICAL_BBBV`, the mine counts of the First box 1 and Cube Beginner presets
-  (`measure-first-box-3d.mjs`) and the replay sampler constants; each head
+  (`measure-first-box-3d.mjs`), the replay sampler constants and
+  `MOTION_CAP` (`measure-cell-motion.mjs`); each head
   comment says how to read it. `dev/find-learn-3d.mjs` is the search behind
   `LEARN_BOARD` (its `findLearnBoard` also used by `tests/mode3d-learn.test.mjs`).
 

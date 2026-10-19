@@ -14,6 +14,11 @@ How a Classic 2D tile looks. The area overview is
   ([rendering.md](rendering.md)) at any size: raised, sunken and revealed
   faces, the number, mine and flag glyphs and the wrong-flag cross, every
   colour an argument. It imports nothing and touches no DOM.
+- `js/cell-motion.js` — the cell motion player both renderers use: the
+  running cell animations a theme's motion descriptions play
+  ([app-shell-kit.md](app-shell-kit.md), the board module's `motion`), and
+  each animating cell's values per frame. It imports nothing and touches no
+  DOM, game state, timer, replay, setting or media query.
 
 ## PUBLIC API
 
@@ -32,6 +37,19 @@ How a Classic 2D tile looks. The area overview is
   pixelRatio = 1), invalidate, cacheKey, dispose}` — one skin per board
   view; every option defaults to the browser one; `redraw` is the view's
   full repaint.
+
+`js/cell-motion.js`
+- `createCellMotion({now, cap})` → `{start(cell, event, before, after,
+  description), valuesAt(time), dropAll(), animating(time)}` — `now` is the
+  clock in ms (`performance.now` by default), `cap` defaults to
+  `MOTION_CAP`. `start` answers whether an animation started; `valuesAt`
+  maps each animating cell to `{event, face, scale, offset {x, y, z},
+  rotation {axis, angle}, depth, brightness, opacity}`, `face` being the
+  `before` or `after` the caller passed; `animating` defaults its time to
+  `now()`.
+- `MOTION_CAP` — how many cells animate at once.
+- `easingFunction(easing)`, `cubicBezier(x1, y1, x2, y2)` — a description's
+  easing as a function of progress.
 
 ## INTERNAL PATTERNS
 
@@ -62,6 +80,19 @@ How a Classic 2D tile looks. The area overview is
   `tests/tokens.test.mjs`, its value the 3D atlas's own where the atlas has
   one. The recipe stays token-free, so the 3D atlas draws through it
   unthemed.
+- **Cell motion.** Each track interpolates its keyframes with the
+  description's easing applied per keyframe segment, as a CSS animation's
+  timing function is, holding its end values outside them. A flip
+  (rotation with `flip: true`) shows `before` until halfway between its
+  first and last keyframe and `after` from then on; without a flip a cell
+  shows `after` throughout, and a property no track animates rests (depth
+  `null`, the face's own). An animation past its duration leaves the
+  player, so the cell shows `after`. A second `start` on an animating cell
+  restarts it; a `null` description, or a new cell past the cap, starts
+  nothing and drops the cell's running animation, so it shows its new
+  state at once. `MOTION_CAP` is measured by `dev/measure-cell-motion.mjs`,
+  a flood reveal on a 100 × 100 board, and the module's head comment holds
+  the measurement and the rule that picks it.
 
 ## DOMAIN DEPENDENCIES
 
@@ -70,6 +101,8 @@ How a Classic 2D tile looks. The area overview is
   contrast contract and the minimum tile size.
 - [../domain/features/design-tokens-and-themes.md](../domain/features/design-tokens-and-themes.md)
   — the tile and number tokens, the token reader and theme changes.
+- [../domain/features/themed-board-art-and-motion.md](../domain/features/themed-board-art-and-motion.md)
+  — the cell motion player, the motion description and its vocabulary.
 
 ## CROSS-REFERENCES
 
@@ -81,7 +114,8 @@ How a Classic 2D tile looks. The area overview is
 - [classic2d-board-view.md](classic2d-board-view.md) — the view that owns a
   skin.
 - [testing.md](testing.md) — `tests/tile-skin.test.mjs` the painter, cache
-  and `MIN_TILE_SIZE`; `tests/tokens.test.mjs` the tile tokens.
+  and `MIN_TILE_SIZE`; `tests/tokens.test.mjs` the tile tokens;
+  `tests/cell-motion.test.mjs` the cell motion player.
 
 ## WHEN TO READ THE SOURCE
 
@@ -90,5 +124,7 @@ How a Classic 2D tile looks. The area overview is
   too, which `tests/tile-skin.test.mjs` pins pixel for pixel.
 - Changing the cache key or what invalidates it (`drawTile`, the
   `onThemeChange` subscription).
+- Changing how motion is interpolated or capped (`js/cell-motion.js`);
+  re-run `node dev/measure-cell-motion.mjs` before changing `MOTION_CAP`.
 - A legibility failure in the browser test: read its per-tile glyph pixel
   counts and saved screenshots before changing a token or glyph geometry.

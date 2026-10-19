@@ -24,6 +24,7 @@ board; the skin owns how a tile looks.
 | `js/classic2d/cursor-input.js` | Keyboard and controller cell cursor, auto-repeat, reveal / flag / chord, `mountCursorInput`. DOM-free at import. | [classic2d-input.md](classic2d-input.md) |
 | `js/classic2d/tile-skin.js` | Stateless tile painter, tile cache, `MIN_TILE_SIZE`. DOM-free at import. | [classic2d-tile-skin.md](classic2d-tile-skin.md) |
 | `js/tile-art.js` | The shared tile recipe — the 3D atlas's cube face at any size, every colour an argument; imports nothing. | [classic2d-tile-skin.md](classic2d-tile-skin.md) |
+| `js/cell-motion.js` | The cell motion player both renderers use — running cell animations and their values per frame; imports nothing. | [classic2d-tile-skin.md](classic2d-tile-skin.md) |
 
 ## PUBLIC API
 

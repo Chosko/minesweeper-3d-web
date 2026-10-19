@@ -750,7 +750,7 @@ Feature: themed-board-art-and-motion
 
 ## 184. Cell motion player
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/cell-motion.js, tests/cell-motion.test.mjs
 Preconditions: 181
