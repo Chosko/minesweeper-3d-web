@@ -98,13 +98,15 @@ waves, confetti, shake, ground grid — and the replay and end-of-game behaviour
   for the board shown and calls `setPixelRatio` at each new board and on every setting change. The
   renderer never reads the setting.
 - **Themed sky, theme-independent cubes.** The sky gradient, the fog toward it and the clear
-  colour follow the theme: the shell (`js/shell/scene-palette.js`) reads the `--color-scene-*`
-  tokens and calls `setScenePalette` at start-up and on every theme change
-  ([app-shell-kit.md](app-shell-kit.md)); the sky is black until then and the caller requests the redraw.
-  The atlas tiles, number colours, selection outline and effects are the same under both themes and
+  colour follow the theme. The sky stops are the `--color-scene-*` tokens the active theme's
+  stylesheet (`themes/<id>/theme.css`) declares, not its board module: the shell
+  (`js/shell/scene-palette.js`) reads them through the token reader and calls `setScenePalette` at
+  start-up and on every theme change ([app-shell-kit.md](app-shell-kit.md)); the sky is black until
+  then and the caller requests the redraw.
+  The atlas tiles, number colours, selection outline and effects are the same under every theme and
   separate from the Classic 2D tile skin's tokens ([classic2d-tile-skin.md](classic2d-tile-skin.md)); the two share
   only the drawing, `js/tile-art.js`, which takes every colour as an argument. The renderer never
-  reads `css/tokens.css` or subscribes to theme changes, and its sky carries no constant colour
+  reads a token or subscribes to theme changes, and its sky carries no constant colour
   (`tests/tokens.test.mjs`, `tests/theme.test.mjs`).
 
 ## Domain dependencies
@@ -115,7 +117,7 @@ waves, confetti, shake, ground grid — and the replay and end-of-game behaviour
   "Web port:" notes there —, Ctrl shows hidden cells — as 25 % ghosts, a "Web port:" note there —, the
   "solved" pulse before a number hides, back-to-front transparency); *Cube face orientation*
   (corners and UVs); *Grid & geometry* (cube edge 4, pitch `4*s`, background RGB(200,225,255) —
-  the light theme's sky horizon, handed in by the shell — unlit textured cubes, centred grid); the
+  the web port draws the theme's sky instead, handed in by the shell — unlit textured cubes, centred grid); the
   web port's fly-through glass (a "Web port:" note under *Controls*).
 - [../domain/INDEX.md](../domain/INDEX.md) — product and feature design for visual extras.
 

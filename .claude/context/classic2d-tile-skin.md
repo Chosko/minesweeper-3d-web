@@ -7,8 +7,8 @@ How a Classic 2D tile looks. The area overview is
 
 - `js/classic2d/tile-skin.js` — the stateless tile painter, the tile cache
   that pre-renders every state and number, and the shared minimum tile
-  size. It holds no palette: every colour is a tile or number token from
-  `css/tokens.css` read through `js/tokens.js`
+  size. It holds no palette: every colour is a tile or number token of the
+  active theme's stylesheet read through `js/tokens.js`
   ([app-shell-kit.md](app-shell-kit.md)). DOM-free at import.
 - `js/tile-art.js` — the shared tile recipe, the cube face of the 3D atlas
   ([rendering.md](rendering.md)) at any size: raised, sunken and revealed
@@ -54,13 +54,14 @@ How a Classic 2D tile looks. The area overview is
 - **`MIN_TILE_SIZE`** is 26 px, the readable floor of decision 10 in
   `docs/UX_REVIEW.md`: Expert (30 × 16) fits, in the framed panel with
   16 px window margins, any window 1024 px wide from 520 px tall, and plays
-  at 32 px at 1024 × 768. Every state is legible at it in both themes (the
-  browser test in `tests/tile-skin.test.mjs`).
+  at 32 px at 1024 × 768. Every state is legible at it (the browser test in
+  `tests/tile-skin.test.mjs`).
 - **No second palette.** Neither the skin nor the recipe holds a literal
-  colour; a new tile colour is a token in `css/tokens.css` with a dark
-  value, held to the contrast contract by `tests/tokens.test.mjs`, its
-  light value the 3D atlas's own where the atlas has one. The recipe stays
-  token-free, so the 3D atlas draws through it unthemed.
+  colour; a new tile colour is a token every theme declares, listed in
+  `REQUIRED_TOKENS` and held to the contrast contract by
+  `tests/tokens.test.mjs`, its value the 3D atlas's own where the atlas has
+  one. The recipe stays token-free, so the 3D atlas draws through it
+  unthemed.
 
 ## DOMAIN DEPENDENCIES
 
@@ -72,9 +73,9 @@ How a Classic 2D tile looks. The area overview is
 
 ## CROSS-REFERENCES
 
-- [app-shell-kit.md](app-shell-kit.md) — owns `css/tokens.css`, `js/tokens.js`
-  (`token`, `onThemeChange`, `FALLBACK_COLOR`) and `js/theme.js`
-  (`msTheme.current()`).
+- [app-shell-kit.md](app-shell-kit.md) — owns the theme stylesheets,
+  `js/tokens.js` (`token`, `onThemeChange`, `FALLBACK_COLOR`) and the theme
+  applier (`themeApplier().current()`, the skin's default `currentTheme`).
 - [rendering.md](rendering.md) — the 3D tile atlas, drawn through the same
   `js/tile-art.js` with its own palette.
 - [classic2d-board-view.md](classic2d-board-view.md) — the view that owns a

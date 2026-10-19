@@ -510,7 +510,7 @@ Feature: theme-system
 
 ## 162. Update documentation for feature `theme-system`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/app-shell-kit.md, .claude/context/settings.md, .claude/context/testing.md, .claude/context/rendering.md, .claude/context/INDEX.md, README.md, .claude/domain/features/theme-system.md, .claude/domain/features/design-tokens-and-themes.md, .claude/domain/features/settings.md
 Preconditions: 157, 158, 159, 160, 161

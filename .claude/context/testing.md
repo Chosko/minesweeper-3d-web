@@ -68,8 +68,9 @@ Test files by name prefix:
 | `replay-` | format, recorder and samplers, determinism; library; simulator and verifier, viewer screen, 2D and 3D viewers | [replay.md](replay.md), [replay-samplers.md](replay-samplers.md), [replay-library.md](replay-library.md), [replay-playback.md](replay-playback.md), [replay-viewers.md](replay-viewers.md) |
 | `results` | results flow and screen, Watch replay and Watch best | [app-shell-results.md](app-shell-results.md), [app-shell-replay.md](app-shell-replay.md) |
 | `shell-` | mode host; router, history mirror; menu, returning player; the daily boards and the Daily screen (`shell-daily`); board codes in the shell and `#board=` links (`shell-challenge`); pause, end skip; help, first-use hints; lock fallback; the controller's walk and rumble (`shell-pad-walk`); overlay focus containment (`shell-focus-containment`); the 3D adapter (`shell-mode-3d`, which also holds the Playwright 3D touch runs on a tablet and a phone, and the mouse at 1280 × 800) | [app-shell.md](app-shell.md), [app-shell-navigation.md](app-shell-navigation.md), [app-shell-menu.md](app-shell-menu.md), [app-shell-pause.md](app-shell-pause.md), [app-shell-ui.md](app-shell-ui.md), [app-shell-help.md](app-shell-help.md), [app-shell-3d.md](app-shell-3d.md), [app-shell-3d-play.md](app-shell-3d-play.md), [mode3d-adapter.md](mode3d-adapter.md) |
-| `settings-` | schema, store, appliers; page, Reset all data; bindings | [settings.md](settings.md), [settings-page.md](settings-page.md), [settings-bindings.md](settings-bindings.md) |
-| `tokens`, `theme`, `components` | token sheet, theme applier and token reader, component kit and gallery, the screens' markup | [app-shell-kit.md](app-shell-kit.md), [app-shell-markup.md](app-shell-markup.md) |
+| `settings-` | schema, store and its format step (the `light` / `dark` carry-over, an unknown theme id kept), appliers (the theme through the theme applier); page with its theme list, Reset all data; bindings | [settings.md](settings.md), [settings-page.md](settings-page.md), [settings-bindings.md](settings-bindings.md) |
+| `tokens`, `theme`, `components` | *Joyful tiles*' tokens and their contrast, the structural token sheet (`tokens`); the pre-paint script, the theme applier and its failure contract, the token reader, the scene palette, the theme stylesheet's scoping (`theme`); the component kit, the base stylesheets' no-visual-value check, the gallery, the screens' markup (`components`) | [app-shell-kit.md](app-shell-kit.md), [app-shell-markup.md](app-shell-markup.md) |
+| `theme-registry`, `theme-conformance` | the theme registry and the kit catalogue (`theme-registry`); the conformance suite every registered theme passes, proved against the broken fixture themes, and the per-theme gallery (`theme-conformance`) | [app-shell-kit.md](app-shell-kit.md) |
 | `render-`, `readability-` | 3D renderer, readability aids; feedback effects (pulse, flash) | [rendering.md](rendering.md), [rendering-effects.md](rendering-effects.md) |
 | `gamepad`, `input-`, `camera-` | `FlyCamera`, `MouseActions`, drag-to-look, spawn pose (`camera-spawn`); keyboard-only 3D (`input-keyboard-3d`); the 3D touch gesture machine (`input-touch-3d`); flight (`camera-flight`: forward vector, spacing step, toggle and camera scaling, fly-through fade and pick rule); the orbit camera (`camera-orbit`); gamepad helpers, rumble, `Controls` | [input.md](input.md), [input-camera.md](input-camera.md), [input-controller.md](input-controller.md), [rendering.md](rendering.md) |
 | `audio-` | sound voices over recorded primitives | [audio.md](audio.md) |
@@ -81,6 +82,10 @@ Data beside the tests:
   per rule of Minesweeper Online with default options (date, source,
   confidence), cited by the reference profile's markers and the fidelity
   tests.
+- `tests/fixtures/themes/` — test-only themes, never in the registry's
+  `THEMES`: `fixture-theme.js` is the entry of `fixture-dusk/`, which the
+  run-time switch tests register with `registerTheme`; `broken-themes.js` lists the `broken/` themes, each one
+  defect the conformance checks must catch.
 - `tests/fixtures/replays/` — recorded `.msrp` games listed in `index.json`,
   written only by `node dev/measure-replays.mjs --write-fixtures` when the
   format changes, never by a test.

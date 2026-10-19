@@ -27,7 +27,10 @@ Page (`js/settings/page.js`)
   label, … }` by schema type; `SLIDERS` adds a number's step, format,
   scale (volume shows 0–100 %) and unit (the field of view's `°`, carried
   as `data-unit`); a toggle in `INVERTED` (`muted`) shows on
-  while its value is false.
+  while its value is false; the theme is a segmented control with `list:
+  true` and one option per `THEMES` entry, rendered as a
+  `ui-segmented--list` whose options each lead with a
+  `.ui-segmented__swatch`.
 - `settingControlHtml(key, value?, { labelledBy? })` — the control's kit
   markup, root carrying `data-setting="<key>"`, ids `set-<key>`.
 - `settingsPageHtml()` — one `ui-columns` composition: the four sections,
@@ -48,9 +51,19 @@ Page (`js/settings/page.js`)
   disables both buttons and calls `reset()` once, a failure's message
   replacing the confirmation on the warning line; `close()` → false when
   closed, true and nothing done while the reset runs.
-- `bindSettingControls(elements, store, { onUserChange? })` → unbind. Each
-  root carrying `data-setting` shows the store's value (loaded and every
-  change made elsewhere) and writes the player's change at once.
+- `bindSettingControls(elements, store, { onUserChange?, theme?,
+  themeSheet? })` → unbind. Each root carrying `data-setting` shows the
+  store's value (loaded and every change made elsewhere) and writes the
+  player's change at once. Given the theme applier (`theme`), the theme list
+  shows the active theme instead and a pick calls `setTheme(id)`, saving the
+  setting once the switch resolves, a failed one putting the selection back;
+  each swatch is filled from `themeSheet(entry)` → Promise of the
+  stylesheet's text (default: fetched from the site root), a failure leaving
+  it blank.
+- `SWATCH_TOKENS` (ground, surface, accent fill, ink),
+  `themeSwatchColors(cssText, id)` → `{ token: value }` from the theme's
+  `:root[data-theme="<id>"]` token block, `swatchBackground(colors)` → a
+  stripe per token.
 
 Reset (`js/settings/reset.js`)
 - `RESET_KEYS` — `LEGACY_KEYS`' four keys and `FIRST_USE_LEGACY_KEY`

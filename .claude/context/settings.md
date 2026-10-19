@@ -13,7 +13,7 @@ Each module's head comment states its full contract.
 | File | Responsibility |
 | --- | --- |
 | `js/settings/schema.js` | each setting's key, type, range or values, default; drives both validation and the page's controls, so a setting is added here and nowhere else |
-| `js/settings/store.js` | load at start-up, validated writes, whole-document saves, change notification, the one-time `ms3d.*` carry-over; knows none of the appliers |
+| `js/settings/store.js` | load at start-up, the document's format steps, validated writes, whole-document saves, change notification, the one-time `ms3d.*` carry-over; knows none of the appliers |
 | `js/settings/appliers.js` | each setting's effect, applied by its owner subscribing to the store; the render-resolution pixel-ratio rule |
 | `js/settings/page.js` | the Settings page, the Data panel's binder, the control binder ([settings-page.md](settings-page.md)) |
 | `js/settings/reset.js` | Reset all data ([settings-page.md](settings-page.md)) |
@@ -27,7 +27,7 @@ Each module's head comment states its full contract.
 | `fullscreen` | boolean | | false | browser fullscreen |
 | `renderResolution` | choice | `auto`, `sharp`, `fast` | `auto` | 3D renderer pixel ratio |
 | `boardScale` | choice | `fit`, `100`, `125` | `100` | the Classic 2D tile's cap (`js/classic2d/board-view.js` `tileCap`): the open board (`mode2d.setScale`) and the replay viewer's 2D board (`REPLAY_VIEWER.setScale`), wired in `js/main.js` |
-| `theme` | choice | `light`, `dark` | `light` | `msTheme.setTheme` |
+| `theme` | choice | an id of the theme registry (`js/themes/registry.js`) | `joyful-tiles` | the theme applier's `setTheme` ([app-shell-kit.md](app-shell-kit.md)) |
 | `volume` | number | 0–1 | 0.7 | `sfx.setVolume` |
 | `muted` | boolean | | false | `sfx.setMuted`, the Sound buttons' label, the page's Sound toggle (on while false) |
 | `aimReadout` | boolean | | true | "3D neighbour count": the aimed-cell readout beside the crosshair, read each frame by `updateReadout` in `js/main.js` ([app-shell-3d-play.md](app-shell-3d-play.md)) |
@@ -37,17 +37,21 @@ Each module's head comment states its full contract.
 ## PUBLIC API
 
 - Schema: `SCHEMA` (frozen `{ key, type: 'number' | 'boolean' | 'choice',
-  min?, max?, values?, default }` per setting), `SETTING_KEYS`, `DEFAULTS`,
-  `isValid(key, value)`.
-- Store: `SETTINGS_DOC` = `'settings'`, `SETTINGS_VERSION` = 1;
+  min?, max?, values?, default, known? }` per setting; a choice with
+  `known(value)` accepts what it accepts — the theme's `values` are
+  `THEMES`' ids in catalogue order, its `known` is `isRegisteredTheme`),
+  `SETTING_KEYS`, `DEFAULTS`, `isValid(key, value)`.
+- Store: `SETTINGS_DOC` = `'settings'`, `SETTINGS_VERSION`;
   `LEGACY_KEYS` (`lookSensitivity`, `invertY`, `volume`, `muted` → their
   `ms3d.*` keys), `EXISTING_FIELD_OF_VIEW` = 45.
   `createSettingsStore({ storage, legacy?, onNotKept? })` →
   `{ load, get, set, onChange }`:
   - `load()` → one shared Promise; fills missing or invalid values with
     defaults, except that a stored document without `fieldOfView` loads it
-    as `EXISTING_FIELD_OF_VIEW`; unreadable, corrupt or newer storage gives
-    every default.
+    as `EXISTING_FIELD_OF_VIEW`, and a stored theme id the registry does
+    not know loads as the default and is kept in the document, saves
+    included, until the player sets the theme; unreadable, corrupt or newer
+    storage gives every default.
   - `get(key)` is always valid (the default before load).
   - `set(key, value)` → `{ ok: true }` or `{ ok: false, reason }` —
     `'invalid'` keeps the old value; a save failure keeps the change for the
@@ -58,7 +62,8 @@ Each module's head comment states its full contract.
 - Appliers (each returns its unsubscribe): `pixelRatioFor(resolution,
   devicePixelRatio, cells)` — `auto` the device ratio capped at 2, at 1.5
   above 20³ cells and 1 above 50³; `sharp` the full device ratio; `fast` 1.
-  `applyTheme`, `applyAudio`, `applyLook`, `applyCamera(store, setMode)`
+  `applyTheme(store, theme)` (the theme applier's `setTheme`; a rejected
+  switch is left to the applier, which has told the player), `applyAudio`, `applyLook`, `applyCamera(store, setMode)`
   (`setMode('fly' | 'orbit')`), `applyResolution`,
   `applyFullscreen(store, { doc, enter, exit })`, `applyFieldOfView(store,
   { camera, redraw })` (the renderer's `THREE.PerspectiveCamera`; `js/main.js`'s
@@ -70,10 +75,32 @@ Each module's head comment states its full contract.
 
 - **Start-up order.** `js/theme.js` runs before first paint and reads the
   theme straight from the saved document (`localStorage` key
-  `ms3d:doc:settings`, `{ version, data }`, version 1 only), so a Dark player
-  never sees Light. `js/main.js` then creates the store, starts `load()`,
-  calls `applySettings` and `bindSettingControls`, and awaits the load before
-  `showMainMenu()`; the load's notification applies every value once.
+  `ms3d:doc:settings`, `{ version, data }`, at the current version or the
+  one before the format step), mapping it as the format step does, so the
+  first paint is already the stored theme ([app-shell-kit.md](app-shell-kit.md)).
+  `js/main.js` then starts the theme applier, creates the store, starts
+  `load()`, calls `applySettings` and `bindSettingControls`, and awaits the
+  load before `showMainMenu()`; the load's notification applies every value
+  once.
+- **Theme id and its format step.** The theme setting is a registry id. The
+  store's format step (`UPGRADES`, run by platform storage on an older
+  document) maps a stored `light` or `dark` to `joyful-tiles`, leaving every
+  other value as it was; `js/theme.js` and the applier's `themeIdFor` map
+  them the same way.
+- **Theme list.** The Settings page's Theme section is a
+  `ui-segmented--list`: one row per `THEMES` entry in catalogue order, its
+  name after a swatch striped from that theme's own tokens, read from its
+  stylesheet's text without applying it. The active theme is selected; a
+  pick calls the applier's `setTheme` and saves the setting once the switch
+  resolves, and a failed switch puts the selection back on the active
+  theme. It reads the registry, so a new theme appears with no page change
+  ([settings-page.md](settings-page.md)).
+- **No reduced-motion setting.** There is no settings field, root marker
+  or preference read for reduced motion until `m7-after-launch`: the base
+  stylesheet's shipped `@media (prefers-reduced-motion: reduce)` rule
+  (`css/style.css`), which stops every DOM animation and transition, is the
+  one reduced-motion behaviour, and cell motion on the boards ignores the
+  preference.
 - **One owner per value.** The store is the only holder: the sound module
   starts at its own defaults and keeps no copy, the camera's fields are
   written only by `applyLook` and its mode only by `applyCamera`, and the
@@ -101,8 +128,9 @@ Each module's head comment states its full contract.
 - [../domain/features/settings.md](../domain/features/settings.md) — the
   settings, their ranges and defaults, the store's read/write/subscribe and
   failure contracts, the start-up order, the carry-over and the page.
-- [../domain/features/design-tokens-and-themes.md](../domain/features/design-tokens-and-themes.md)
-  — the theme applier the theme setting drives.
+- [../domain/features/theme-system.md](../domain/features/theme-system.md)
+  — the theme preference, its carry-over, the theme applier the setting
+  drives and the theme list.
 - [../domain/features/platform-storage.md](../domain/features/platform-storage.md)
   — the versioned document the store saves.
 
@@ -112,14 +140,16 @@ Each module's head comment states its full contract.
   Data panel and Reset all data.
 - [settings-bindings.md](settings-bindings.md) — the bindings source and the
   active device.
-- [app-shell.md](app-shell.md) — wiring in `js/main.js`, the theme script.
+- [app-shell.md](app-shell.md) — wiring in `js/main.js`.
+- [app-shell-kit.md](app-shell-kit.md) — the theme registry, the pre-paint
+  script and the theme applier.
 - [platform.md](platform.md) — `register`/`load`/`save` and the browser key
   format `js/theme.js` reads.
 - [audio.md](audio.md) — `setVolume`, `setMuted`, the module's defaults.
 - [rendering.md](rendering.md) — `BoardRenderer.setPixelRatio`, its `camera`'s `fov`.
 - [input-camera.md](input-camera.md) — `FlyCamera.sensitivity` / `invertY`; `OrbitCamera`, the Camera setting's Orbit.
 - [testing.md](testing.md) — `tests/settings-store.test.mjs`,
-  `tests/settings-appliers.test.mjs`.
+  `tests/settings-appliers.test.mjs`, `tests/settings-page.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 
@@ -127,7 +157,9 @@ Each module's head comment states its full contract.
   `SLIDERS` entry in `page.js` ([settings-page.md](settings-page.md)), and
   its applier; a setting that changes the stored shape bumps
   `SETTINGS_VERSION` with an upgrade step.
-- Changing load, carry-over or save-failure behaviour: `doLoad`,
-  `readLegacy` and `persist` in `store.js`.
+- Changing load, carry-over, the format steps or save-failure behaviour:
+  `doLoad`, `readLegacy`, `UPGRADES` and `persist` in `store.js`; a format
+  step that maps a theme is mirrored in `js/theme.js` and
+  `js/themes/applier.js`.
 - Fullscreen state drifting from the browser: `applyFullscreen` and the
   `enterFullscreen` / `exitFullscreen` pair in `js/main.js`.

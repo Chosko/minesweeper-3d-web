@@ -92,7 +92,7 @@ screen shown after a game, opens the Records screen:
   (JSON)** saves the history and the list of kept replays as one file. The replay files themselves
   are not exported.
 
-The screen updates as games are recorded and follows the Light / Dark theme. It works with the
+The screen updates as games are recorded and follows the theme. It works with the
 mouse, the keyboard or a controller; `Esc` or `B` goes back.
 
 ## Daily boards and board codes

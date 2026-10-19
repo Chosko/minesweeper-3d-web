@@ -17,7 +17,7 @@ layer.
 | [technical-direction.md](./technical-direction.md) | The product's technical foundations: stack, topology, data, hosting, cross-cutting concerns |
 | [business-model.md](./business-model.md) | The business model: revenue, costs, segments, pricing, go-to-market, unit economics, risks |
 | [product-roadmap.md](./product-roadmap.md) | The product roadmap: ordered milestones, their goals, exit criteria, rationale and the scope slice each takes of each high-level feature |
-| [features/design-tokens-and-themes.md](./features/design-tokens-and-themes.md) | Design tokens (palette, type, spacing, motion) with the m1 light and dark values; its theme parts are superseded by theme-system |
+| [features/design-tokens-and-themes.md](./features/design-tokens-and-themes.md) | Design tokens (palette, type, spacing, motion): their names, the token reader, the scene palette hand-off and the contrast contract; the values, the themes, the applier and the theme setting are theme-system's |
 | [features/square-tile-skin.md](./features/square-tile-skin.md) | Classic 2D square tiles in every state and the number colours of the m1 light and dark looks; its theme parts are superseded by themed-board-art-and-motion |
 | [features/screen-components.md](./features/screen-components.md) | The DOM component kit and the m1 screens built from it: main menu, in-game overlay, results screen; their styling and layout are superseded by theme-system, shared-screen-layout and in-game-layout |
 | [features/cell-graph-rules-engine.md](./features/cell-graph-rules-engine.md) | The one rules engine over a graph of cells, the square-grid graph, and the reference ruleset pinned by fidelity tests |

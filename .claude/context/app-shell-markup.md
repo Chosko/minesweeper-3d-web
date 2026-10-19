@@ -12,8 +12,9 @@ tokens, theme and deploy files are [app-shell-kit.md](app-shell-kit.md).
 | `index.html` | every overlay as static markup toggled by `.hidden`; importmap `three` → `vendor/three/three.module.min.js` (r186, no build step); a module `onerror` shows `.fatal` |
 | `css/style.css` | shell styling: fixed layers, the Classic 2D board area and panel, the replay layer (`replay--scene` transparent over the 3D scene; the recorded pointer and its trail, press rings, Show 3BV's 2D canvas; `body.replaying` hides the view chips, tools strip, hint strip and toast), Back rows (`.esc-row`, `[data-esc-hint]`), the controller's hints (`[data-pad-hint]`, visible only under `body.pad-nav`, their room kept; `[data-pad-hinted]` rows), the menu-screen and translucent backdrops, the results scrim over the 3D scene, the look's hint (`.look-hint`), the ready/help/controls/ctx-lost overlays, the 3D touch stick and toolbar, HUD placement; declares no custom property |
 
-`index.html` head order: `js/theme.js`, `css/tokens.css`,
-`css/components.css`, `css/style.css`, then the module graph.
+`index.html` head order: `css/tokens.css`, `css/components.css`,
+`css/style.css`, `js/theme.js` (which appends the theme stylesheet), then
+the module graph ([app-shell-kit.md](app-shell-kit.md)).
 
 ## PUBLIC API
 

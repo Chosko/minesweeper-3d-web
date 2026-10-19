@@ -106,7 +106,10 @@ reader, and the kit stylesheet: [app-shell-kit.md](../../context/app-shell-kit.m
 - **Theme registry.** One module listing every theme, in catalogue order.
   It is the only place a theme is registered: the settings choice, the
   applier, the gallery, the conformance tests and the theme skill all read
-  it. It also names the default theme, *Joyful tiles*.
+  it. It also names the default theme, *Joyful tiles*. It is
+  `js/themes/registry.js`; each theme's files sit in its own folder,
+  `themes/<id>/` — the stylesheet `theme.css`, the board module `board.js`
+  and `fonts/` with the licences.
 - **Kit catalogue.** One declaration of the kit: each named component, its
   parts, the states each interactive part has (default, hover, pressed,
   focused, disabled, selected where it applies), and the decoration slots.
@@ -118,6 +121,9 @@ reader, and the kit stylesheet: [app-shell-kit.md](../../context/app-shell-kit.m
   hidden by a theme — Restart as a text label in one theme and a face icon in
   another. Adding a component, part or slot to the catalogue is a change to
   the contract: every registered theme must style it in the same change.
+  It is `js/ui/kit-catalogue.js`, which also declares the required token
+  set — every token read outside the theme stylesheet, plus the contrast
+  roles — as the one list the conformance tests and the theme skill read.
 - **Base stylesheet.** The kit's structure: layout, display, the sizes the
   layout depends on, the hidden default of every decoration slot, and the
   rule that every focusable part shows a focused state — the selected state
@@ -146,6 +152,9 @@ reader, and the kit stylesheet: [app-shell-kit.md](../../context/app-shell-kit.m
   fog, the tile drawing style and its parameters, the number font, and the
   cell motion descriptions. Its shape and its consumers are
   `themed-board-art-and-motion`'s; this feature loads it and hands it on.
+  Until that feature writes it, a theme's board module is an empty, frozen
+  description no renderer reads, and the sky stays in the theme stylesheet
+  as the scene tokens the shell hands the 3D renderer.
 - **Theme fonts.** Each theme's font files sit in the theme's own folder
   with their licence. The theme stylesheet declares them; because a browser
   fetches a declared font only when a loaded stylesheet uses it, a theme's
@@ -160,6 +169,10 @@ reader, and the kit stylesheet: [app-shell-kit.md](../../context/app-shell-kit.m
   loads the new stylesheet, its board module and its fonts, and only when
   all three are ready flips the root attribute, removes the old stylesheet
   and notifies listeners — the screen never shows a half-applied theme.
+  The pre-paint script (`js/theme.js`) cannot import the ES registry
+  without delaying first paint, so it carries a mirrored id → stylesheet
+  table that a test keeps equal to the registry; the run-time applier is
+  `js/themes/applier.js`.
 - **Token reader.** Kept for DOM-free consumers that draw from tokens (the
   Records history chart): it reads the active theme's computed tokens and
   notifies on theme change. Board renderers read the board module instead.
@@ -185,6 +198,10 @@ reader, and the kit stylesheet: [app-shell-kit.md](../../context/app-shell-kit.m
     4.5:1, large text and essential glyphs at least 3:1;
   - in a browser: the gallery renders under the theme with no missing
     font, no failed file and no console error.
+
+  Until `themed-board-art-and-motion` defines the board checks, each
+  theme's board case is a to-do test. A test-only fixture theme, registered
+  by the tests and never shipped, exercises the run-time switch.
 - **Component gallery.** The development gallery takes a theme from the
   registry (a picker and a query parameter), renders every component in
   every state and every decoration slot under it, and is what the theme
@@ -194,7 +211,8 @@ reader, and the kit stylesheet: [app-shell-kit.md](../../context/app-shell-kit.m
 
 - **The theme preference** — a theme id in the settings document, owned by
   the settings store; default *Joyful tiles*. The settings document's
-  format step maps a stored `light` or `dark` to *Joyful tiles*, and the
+  format step, raising its version by one, maps a stored `light` or `dark`
+  to *Joyful tiles*, and the
   pre-paint script applies the same mapping so the first paint after the
   update is already right. A stored id the registry does not know (a theme
   removed, or a document from a newer build) applies the default and is

@@ -57,7 +57,9 @@ change trips. Where tests go and how the suite runs is
   screenshots (`components.test.mjs`) are taken only with `MS_SHOTS=1` set,
   into a `mkdtemp` directory; without it a theme's look is compared through
   computed colours, and the contrast checks run either way.
-- **Contrast** is checked from parsed tokens per theme (`tokens.test.mjs`)
+- **Contrast** is checked from parsed tokens for every registered theme
+  (`theme-conformance.test.mjs`) and for *Joyful tiles*' own pairs
+  (`tokens.test.mjs`)
   and in the page (`measureContrast` in `components.test.mjs`: 4.5:1, or 3:1
   for large text and accent labels, over each run's effective background).
 - **Timing slack** (`tests/helpers/timing.mjs`): a performance budget

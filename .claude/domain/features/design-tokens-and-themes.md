@@ -1,13 +1,13 @@
 # Design tokens and themes
 
 The game's shared visual vocabulary — colours, type, spacing, radii,
-elevation and motion — named once as design tokens, with a light and a dark
-value for every colour, and the mechanism that applies the player's chosen
-theme to every screen and to the Classic 2D board.
+elevation and motion — named once as design tokens, read alike by every
+screen and the Classic 2D board.
 
-The light and dark themes this document defines are retired. How a theme is
-registered, applied and switched, which tokens it must declare, and its
-fonts are [theme-system](./theme-system.md)'s; the 3D cubes and numbers
+There is no light or dark theme. The tokens' values, the themes that
+declare them, how a theme is registered, applied and switched, which tokens
+it must declare, its fonts and the theme setting are
+[theme-system](./theme-system.md)'s; the 3D cubes and numbers
 follow the theme through
 [themed-board-art-and-motion](./themed-board-art-and-motion.md). The
 token categories, the contrast contract and the token reader below hold only
@@ -16,12 +16,12 @@ where those documents cite them.
 ## Purpose
 
 [product-design.md § Visual design system](../product-design.md#visual-design-system)
-asks for one visual language across every mode and screen, with a light and
-a dark theme the player picks on the Settings page, held to the bar the
-current 3D look sets. This feature is that language's foundation: the
-values everything else draws with, and the one switch that moves all of
-them between themes. The Canvas 2D board and the DOM screens read the same
-tokens, so a Classic 2D board and the menu around it never drift apart.
+asks for one visual language across every mode and screen, in the theme
+the player picks on the Settings page ([theme-system](./theme-system.md)),
+held to the bar the current 3D look sets. This feature is that language's
+foundation: the token names everything else draws with. The Canvas 2D
+board and the DOM screens read the same tokens, so a Classic 2D board and
+the menu around it never drift apart.
 
 ## Scope and non-goals
 
@@ -32,17 +32,10 @@ In scope (m1-classic-2d):
   tabular figures for timers and counters), spacing scale, radii, elevation
   (shadows), motion (durations and easings) and the z-layer order of
   overlays.
-- A light and a dark value for every colour token. Light is derived from the
-  current look — the pale sky-blue, deep-blue accent and dark navy ink of
-  the existing menus — so the light theme reads as the game players already
-  know.
-- Low-fidelity values: the full token structure and names, with plain,
-  functional values. Where a value is a visual-design judgement — the dark
-  palette, elevation shadows, motion durations and easings — it is a simple
-  placeholder that still meets the contrast contract in its theme.
-- Theme application: Light is the default and the fallback; the active
-  theme is set by one attribute on the document root, applied before first
-  paint so no screen flashes the wrong theme.
+- The full token structure and names. Every token's value is a theme's,
+  declared in that theme's stylesheet — [theme-system](./theme-system.md).
+- Theme application — the default theme, the fallback, and the root
+  attribute set before first paint — is [theme-system](./theme-system.md)'s.
 - A read API for Canvas renderers, which cannot read stylesheet values
   directly, and a change notification so a board redraws when the theme
   changes.
@@ -51,15 +44,12 @@ Non-goals:
 
 - High-fidelity visual dressing — a later pass from the approved designs.
   The designs under iteration are not an input to this feature's tasks.
-- The 3D scene's cubes. The cube tiles, number colours, selection outline
-  and end-of-game effects keep one look under both themes; only the sky,
-  fog and background behind them follow the theme. This is a decision, not
-  a deferral.
+- The 3D scene's cubes and numbers — they follow the theme through
+  [themed-board-art-and-motion](./themed-board-art-and-motion.md).
 - A "Match system" theme option or reading the operating system's colour
-  preference. The first-launch theme is Light; the player's choice is Light
-  or Dark.
-- The Settings page and its theme control — the Main menu and game shell
-  settings feature (m1-classic-2d) stores the value and shows the control.
+  preference — each theme is one fixed look ([theme-system](./theme-system.md)).
+- The Settings page and its theme list — the settings feature stores the
+  theme id; the list is [theme-system](./theme-system.md)'s.
 - Tile and number styling — `square-tile-skin`. Component styling —
   `screen-components`.
 - Hexagonal and triangle tiles and Surface styling — deferred to
@@ -73,21 +63,15 @@ Built within the recorded technical direction — plain ES modules, no
 bundler, Canvas 2D for Classic 2D and DOM screens in the game shell (see
 [technical-direction.md](../technical-direction.md)).
 
-- **Token sheet.** One stylesheet declaring every token as a CSS custom
-  property: the light values on the root, the dark values under the dark
-  theme attribute. It is the single source of truth for token values; the
-  existing variables in the shell stylesheet (`--sky`, `--ink`, `--blue`,
-  `--card`, …, see [app-shell.md](../../context/app-shell.md)) are folded
-  into it under the token names, so the existing screens keep their look
-  in the light theme.
-- **Theme applier.** A small script that runs before first paint: reads the
-  stored theme, falls back to Light when it is absent or not a known value,
-  and sets the root attribute. After start-up it exposes a call to switch
-  theme at run time, which sets the attribute and notifies listeners.
+- **Token values.** Each theme's stylesheet declares the token values as
+  CSS custom properties under its own root attribute —
+  [theme-system](./theme-system.md) § Architecture, *Theme stylesheet*.
+- **Theme applier** — [theme-system](./theme-system.md) § Architecture,
+  *Theme applier*.
 - **Token reader.** A module for non-DOM consumers — the Classic 2D Canvas
   renderer, and the shell reading the 3D scene's sky — that returns the resolved value of a named token for the
   active theme and lets a consumer subscribe to theme changes. It reads the
-  token sheet's computed values rather than holding a second copy of them.
+  active theme's computed values rather than holding a second copy of them.
 - **Scene palette handed in.** The 3D renderer
   ([rendering.md](../../context/rendering.md)) reads no token and never
   subscribes to theme changes. The shell reads the sky tokens through the
@@ -97,43 +81,38 @@ bundler, Canvas 2D for Classic 2D and DOM screens in the game shell (see
 
 ## Data and state
 
-- The theme preference is a single value, `light` or `dark`, owned and
-  persisted by the settings feature through the platform layer (browser
-  storage on the web build, the user-data directory on Steam). This feature
-  reads it; it never writes it.
-- The active theme lives only as the root attribute; it is derived at
-  start-up from the stored value and changed at run time by the settings
-  feature through the theme applier.
-- Token values are static, held in the token sheet; nothing about them is
-  persisted.
+- The theme preference and the active theme are
+  [theme-system](./theme-system.md)'s (§ Data and state).
+- Token values are static, held in each theme's stylesheet; nothing about
+  them is persisted.
 
 ## Interfaces and contracts
 
-- **Root attribute** — the theme is `light` or `dark`; every themed style
-  keys off it. No other mechanism (classes, per-screen switches) applies
-  themes.
+- **Root attribute** — the active theme's id
+  ([theme-system](./theme-system.md)); every themed style keys off it. No
+  other mechanism (classes, per-screen switches) applies themes.
 - **Token names** — stable, semantic names (surface, surface-raised, ink,
   ink-muted, accent, accent-ink, danger, success, focus ring, …), never
   named after a hue. Renaming a token is a breaking change for every
   consumer.
-- **Theme applier** — `apply at start-up`; `set theme(light | dark)`. An
-  unknown value is treated as Light, never thrown.
+- **Theme applier** — [theme-system](./theme-system.md) § Interfaces and
+  contracts, *Applier*.
 - **Token reader** — `token(name)` returns the active value; an unknown name
   returns a visible fallback and logs once in development, so a missing
   token shows on screen instead of failing silently. `onThemeChange(listener)`
-  fires after the attribute changes.
+  fires after a theme switch is applied.
 - **Contrast contract** — in each theme, body text against its surface meets
   WCAG AA (4.5:1); large text and essential UI glyphs meet 3:1.
 
 ## Dependencies
 
-- Main menu and game shell — the settings feature (m1-classic-2d) stores
-  the `light` / `dark` value and calls the theme applier when the player
-  changes it.
+- `settings` stores the theme id and drives the theme applier of
+  [theme-system](./theme-system.md).
+- [theme-system](./theme-system.md) — the token values, the themes and the
+  applier.
 - No external libraries.
 
 ## Typeface
 
-The typography tokens use the current system font stack; no typeface is
-bundled, because a bundled one brings licence and web-build size cost for no
-gameplay gain. Swapping it later changes only token values, not structure.
+Each theme ships its own fonts as its typography tokens' values —
+[theme-system](./theme-system.md) § Architecture, *Theme fonts*.
