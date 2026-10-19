@@ -799,7 +799,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on waited on task 160, which neither a precondition nor a shared file needs; replaced by step 75.
 
-## [~] 75. Implement task 184 — Cell motion player
+## [x] 75. Implement task 184 — Cell motion player
 
 Depends on: 72
 
@@ -808,6 +808,8 @@ Context: none
 ```prompt
 /task-implement 184 --review
 ```
+
+Done: 2026-10-19, commit `6674cc0` (8 files, +547/-4). `MOTION_CAP` is 256, measured on stand-ins for the 2D motion layer and 3D motion mesh (tasks 185/186 not yet built) with `dev/measure-cell-motion.mjs`. Easing applies per keyframe segment.
 
 ## [x] 29. Implement task 185 — Classic 2D cell motion: motion layer and event sources
 
@@ -825,7 +827,8 @@ Done: struck — for a parallel run its Depends on lacked the order against task
 
 Depends on: 73, 75
 
-Context: none
+Context:
+- 2026-10-19 (from step 75): `MOTION_CAP` (256) was measured on a stand-in 2D motion layer with `dev/measure-cell-motion.mjs`; the player has an injectable `now()` clock, and a `null` description or a cell past the cap drops any running animation on that cell.
 
 ```prompt
 /task-implement 185 --review
@@ -849,6 +852,7 @@ Depends on: 74, 75
 
 Context:
 - 2026-10-19 (from step 72): the board module writes the solved pulse's "toward white" 25 % / 45 % as brightness ×1.25 / ×1.45, which saturates a number glyph rather than whitening it; handle this when replaying the pulse.
+- 2026-10-19 (from step 75): `MOTION_CAP` (256) was measured on a stand-in 3D mesh; re-run `node dev/measure-cell-motion.mjs` against the real motion mesh and adjust the cap if the 3D side is heavier than the stand-in.
 
 ```prompt
 /task-implement 186 --review
