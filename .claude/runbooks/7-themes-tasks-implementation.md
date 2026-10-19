@@ -281,7 +281,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against tasks 165, 167, 212, which edit the same files; replaced by step 57.
 
-## [~] 57. Implement task 168 — Pause card, generating and failed-board cards, placeholder and confirmations in the shared layout
+## [x] 57. Implement task 168 — Pause card, generating and failed-board cards, placeholder and confirmations in the shared layout
 
 Depends on: 7, 56
 
@@ -290,6 +290,8 @@ Context: none
 ```prompt
 /task-implement 168 --review
 ```
+
+Done: 2026-10-19, commit `a335002` (15 files, +251/-104). The pause card keeps the kit's uneven 2fr/3fr columns (the canvas's equal columns make a 3D game's controls list scroll at 1024 × 768); its Sound control is the Settings switch bound to `muted`. Premise wrong: the placeholder line does not name the mode, only the frame title does.
 
 ## [x] 13. Implement task 169 — Results screen in the shared layout
 
@@ -317,7 +319,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against task 168, which edits the same files; replaced by step 58.
 
-## [ ] 58. Implement task 169 — Results screen redesigned in the shared layout
+## [~] 58. Implement task 169 — Results screen redesigned in the shared layout
 
 Depends on: 7, 57
 
