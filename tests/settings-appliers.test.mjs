@@ -53,10 +53,26 @@ test('the resolution applier fires with the loaded value and on every change', a
 test('the theme value drives setTheme, at load and on change', async () => {
   const store = storeOf({ theme: 'dark' });
   const calls = [];
-  applyTheme(store, { setTheme: (t) => calls.push(t) });
+  applyTheme(store, { setTheme: async (t) => { calls.push(t); return t; } });
   await store.load();
   await store.set('theme', 'light');
   assert.deepEqual(calls, ['dark', 'light']);
+});
+
+test('a switch the theme applier rejects is left to the applier, which has told the player', async () => {
+  const store = storeOf({ theme: 'dark' });
+  const unhandled = [];
+  const onUnhandled = (e) => unhandled.push(e);
+  process.on('unhandledRejection', onUnhandled);
+  try {
+    applyTheme(store, { setTheme: () => Promise.reject(new Error('theme files failed')) });
+    await store.load();
+    await tick();
+    await tick();
+    assert.deepEqual(unhandled, []);
+  } finally {
+    process.off('unhandledRejection', onUnhandled);
+  }
 });
 
 test('volume and mute drive the sound module', async () => {
@@ -249,9 +265,19 @@ test('the appliers module is DOM-free and the store knows none of the appliers',
 
 // ---------------------------------------------------------------- theme start-up
 
-function stubRoot() {
+// Runs js/theme.js as the browser does, against a global carrying `document` and `localStorage`;
+// the root attribute it sets before first paint.
+function startTheme(localStorage) {
   const attrs = new Map();
-  return { getAttribute: (k) => (attrs.has(k) ? attrs.get(k) : null), setAttribute: (k, v) => attrs.set(k, String(v)) };
+  const root = { getAttribute: (k) => (attrs.has(k) ? attrs.get(k) : null), setAttribute: (k, v) => attrs.set(k, String(v)) };
+  const link = () => {
+    const a = new Map();
+    return { setAttribute: (k, v) => a.set(k, v), getAttribute: (k) => a.get(k) ?? null, addEventListener() {} };
+  };
+  const document = { documentElement: root, head: { appendChild: (el) => el }, createElement: link };
+  const ctx = vm.createContext({ document, ...(localStorage === undefined ? {} : { localStorage }) });
+  vm.runInContext(read('js/theme.js'), ctx);
+  return root.getAttribute('data-theme');
 }
 function fakeWebStorage(init = {}) {
   const m = new Map(Object.entries(init));
@@ -261,15 +287,8 @@ function fakeWebStorage(init = {}) {
     removeItem: (k) => m.delete(k),
   };
 }
-// Runs js/theme.js as the browser does, against a global carrying `document` and `localStorage`.
-function startTheme(localStorage) {
-  const root = stubRoot();
-  const ctx = vm.createContext({ document: { documentElement: root }, localStorage });
-  vm.runInContext(read('js/theme.js'), ctx);
-  return root.getAttribute('data-theme');
-}
 
-test('the stored theme no longer changes the look: start-up applies Joyful tiles whatever the settings document holds', async () => {
+test('start-up reads the theme the settings store saved: light and dark apply Joyful tiles, as does anything unusable', async () => {
   const web = fakeWebStorage();
   const storage = createStorage({ backend: createBrowserBackend({ getStorage: () => web }) });
   const store = createSettingsStore({ storage, legacy: { get: () => null } });
@@ -280,6 +299,7 @@ test('the stored theme no longer changes the look: start-up applies Joyful tiles
     assert.equal(startTheme(web), 'joyful-tiles', `a stored ${theme}`);
   }
   const doc = (version, data) => ({ 'ms3d:doc:settings': JSON.stringify({ version, data }) });
+  assert.equal(startTheme(fakeWebStorage(doc(SETTINGS_VERSION, { theme: 'joyful-tiles' }))), 'joyful-tiles', 'a registered id');
   assert.equal(startTheme(undefined), 'joyful-tiles', 'no storage');
   assert.equal(startTheme({ getItem() { throw new Error('blocked'); } }), 'joyful-tiles', 'blocked storage');
   assert.equal(startTheme(fakeWebStorage({ 'ms3d:doc:settings': '{nope' })), 'joyful-tiles', 'corrupt text');

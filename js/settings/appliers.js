@@ -8,7 +8,8 @@
 //   auto   the adaptive cap — at most 2, 1.5 above 20³ cells, 1 above 50³;
 //   sharp  the full device pixel ratio;
 //   fast   1.
-// applyTheme(store, theme)          theme.setTheme(value) — the theme applier (globalThis.msTheme).
+// applyTheme(store, theme)          theme.setTheme(value) — the theme applier (js/themes/applier.js), which tells
+//                                   the player itself when a switch fails.
 // applyAudio(store, sfx)            sfx.setVolume(v), sfx.setMuted(m) — the sound module.
 // applyLook(store, camera)          camera.sensitivity, camera.invertY — the 3D camera.
 // applyCamera(store, setMode)       setMode('fly' | 'orbit') — the 3D camera's mode; this applier is its
@@ -36,7 +37,7 @@ export function pixelRatioFor(resolution, devicePixelRatio, cells) {
 const all = (offs) => () => { for (const off of offs) off(); };
 
 export function applyTheme(store, theme) {
-  return store.onChange('theme', (value) => theme.setTheme(value));
+  return store.onChange('theme', (value) => { Promise.resolve(theme.setTheme(value)).catch(() => {}); });
 }
 
 export function applyAudio(store, sfx) {

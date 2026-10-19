@@ -1,5 +1,6 @@
 // The theme registry: the one place a theme is registered. The settings choice, the applier, the
-// gallery, the conformance tests and the theme skill all read it. DOM-free.
+// gallery, the conformance tests and the theme skill all read it; the pre-paint script js/theme.js
+// mirrors each entry's id and stylesheet. DOM-free.
 //
 // An entry: id (stable, kebab-case, never reused), display name, stylesheet, board module, font
 // files grouped by family with each family's licence file, catalogue order, and the demo field
@@ -36,7 +37,16 @@ export const DEFAULT_THEME_ID = 'joyful-tiles';
 
 const DEFAULT_THEME = THEMES.find((t) => t.id === DEFAULT_THEME_ID);
 
+// Entries registered at run time: only a test's fixture theme, never a shipped one. They are found
+// by the lookup and stay out of THEMES, which every listing and conformance test reads.
+const registered = [];
+
+export function registerTheme(entry) {
+  if (THEMES.some((t) => t.id === entry.id) || registered.some((t) => t.id === entry.id)) return;
+  registered.push(Object.freeze({ ...entry }));
+}
+
 // The entry for `id`; the default entry for an unknown or absent id, never a failure.
 export function themeById(id) {
-  return THEMES.find((t) => t.id === id) ?? DEFAULT_THEME;
+  return THEMES.find((t) => t.id === id) ?? registered.find((t) => t.id === id) ?? DEFAULT_THEME;
 }

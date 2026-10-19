@@ -26,6 +26,7 @@ import { createLockFallback } from './shell/lock-fallback.js';
 import { createEndSkip } from './shell/end-skip.js';
 import { bindScenePalette, parseRgb } from './shell/scene-palette.js';
 import { token, onThemeChange } from './tokens.js';
+import { themeApplier } from './themes/applier.js';
 import { storage, blobStore } from './platform/index.js';
 import { createSettingsStore } from './settings/store.js';
 import { createRecordsStore } from './records/store.js';
@@ -431,6 +432,16 @@ function padUsed(p) {
   return p.pressed.some(Boolean) || Math.hypot(p.ls[0], p.ls[1]) > STICK_DEADZONE || Math.hypot(p.rs[0], p.rs[1]) > STICK_DEADZONE;
 }
 
+// ---------- theme ----------
+// The theme applier takes over from the pre-paint script: the active theme's board module and fonts
+// load, a theme that failed falls back with a notice, and the default failing shows the fatal card.
+// The fatal card is index.html's #fatal-card template, the one the page shows when main.js fails to load.
+function showFatal() {
+  document.body.append(document.getElementById('fatal-card').content.cloneNode(true));
+}
+const THEME = themeApplier();
+THEME.start({ notice: (text) => ui.toast(text, 4000) }).catch(() => showFatal());
+
 // ---------- settings ----------
 // The store loads before the first screen shows; each setting's owner applies it by subscribing.
 const SETTINGS = createSettingsStore({
@@ -439,7 +450,7 @@ const SETTINGS = createSettingsStore({
 });
 const settingsLoaded = SETTINGS.load();
 applySettings(SETTINGS, {
-  theme: globalThis.msTheme,
+  theme: THEME,
   sfx: typeof sfx.setVolume === 'function' ? sfx : null,
   camera: cam,
   cameraMode: (mode) => setCameraMode(mode),

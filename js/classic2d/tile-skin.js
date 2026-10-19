@@ -8,6 +8,7 @@
 // appearance only.
 
 import { token as readerToken, onThemeChange as readerOnThemeChange, FALLBACK_COLOR } from '../tokens.js';
+import { themeApplier } from '../themes/applier.js';
 import { drawFace, drawNumberGlyph, drawMineGlyph, drawFlagGlyph, drawCross } from '../tile-art.js';
 
 // The smallest tile size the Classic 2D renderer allows, shared with it: the
@@ -157,7 +158,7 @@ const keyOf = (state, number) => {
 export function createTileSkin({
   token = readerToken,
   onThemeChange = readerOnThemeChange,
-  currentTheme = () => globalThis.msTheme?.current?.() ?? 'light',
+  currentTheme = () => themeApplier().current(),
   createCanvas = defaultCreateCanvas,
   redraw = () => {},
 } = {}) {

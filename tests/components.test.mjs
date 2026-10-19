@@ -186,21 +186,20 @@ test('buttons, menu entries and board options draw no outline: the selected stat
 
 // ---------------------------------------------------------------- pages
 
-test('index.html loads tokens, then the component kit, then the shell stylesheet, then the theme', () => {
+test('index.html loads tokens, then the component kit, then the shell stylesheet, then the theme applier that inserts the theme', () => {
   const html = read('index.html');
   const t = html.indexOf('href="css/tokens.css"');
   const c = html.indexOf('href="css/components.css"');
   const s = html.indexOf('href="css/style.css"');
-  const j = html.indexOf('href="themes/joyful-tiles/theme.css"');
-  assert.ok(t >= 0 && c > t && s > c && j > s, 'tokens.css < components.css < style.css < theme.css');
+  const j = html.indexOf('src="js/theme.js"');
+  assert.ok(t >= 0 && c > t && s > c && j > s, 'tokens.css < components.css < style.css < theme.js');
 });
 
-test('the gallery applies the theme first and loads only the token sheet, the kit and the theme', () => {
+test('the gallery loads only the token sheet and the kit, then the theme applier that inserts the theme', () => {
   const theme = GALLERY.indexOf('src="../js/theme.js"');
   const t = GALLERY.indexOf('href="../css/tokens.css"');
   const c = GALLERY.indexOf('href="../css/components.css"');
-  const j = GALLERY.indexOf('href="../themes/joyful-tiles/theme.css"');
-  assert.ok(theme >= 0 && t > theme && c > t && j > c, 'theme.js < tokens.css < components.css < theme.css');
+  assert.ok(t >= 0 && c > t && theme > c, 'tokens.css < components.css < theme.js');
   assert.doesNotMatch(GALLERY, /css\/style\.css/);
   const inline = [...GALLERY.matchAll(/<style>([\s\S]*?)<\/style>/g)].map((m) => m[1]).join('\n');
   assert.doesNotMatch(inline, /#[0-9a-f]{3,8}\b|\brgba?\(|var\(--color-|border-radius|box-shadow|font-family/i, 'the gallery lays out; the theme styles');

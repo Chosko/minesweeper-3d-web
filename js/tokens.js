@@ -1,8 +1,11 @@
 // Token reader for consumers that cannot read stylesheet values directly —
-// chiefly Canvas renderers. Values come from the token sheet's computed
-// values on the document root (css/tokens.css); this module holds no copy of
-// them. Theme changes come from the theme applier (js/theme.js, msTheme).
-// The 3D renderer never reads tokens or subscribes to theme changes.
+// chiefly Canvas renderers. Values are the active theme's computed tokens on
+// the document root (its stylesheet, themes/<id>/theme.css); this module holds
+// no copy of them. Theme changes come from the theme applier
+// (js/themes/applier.js). The 3D renderer never reads tokens or subscribes to
+// theme changes.
+
+import { themeApplier } from './themes/applier.js';
 
 // Visible on screen, so a missing token is noticed instead of failing silently.
 export const FALLBACK_COLOR = '#ff00ff';
@@ -22,9 +25,9 @@ export function createTokenReader({ root, getStyle, theme, dev = false, log = co
     return FALLBACK_COLOR;
   }
 
-  // listener(theme) runs after the root attribute changes; returns an unsubscribe.
+  // listener(id, boardModule) runs once a switch is fully applied; returns an unsubscribe.
   function onThemeChange(listener) {
-    return theme.onChange(listener);
+    return theme.onThemeChange(listener);
   }
 
   return { token, onThemeChange };
@@ -38,7 +41,7 @@ function reader() {
     browserReader = createTokenReader({
       root: document.documentElement,
       getStyle: (el) => getComputedStyle(el),
-      theme: globalThis.msTheme,
+      theme: themeApplier(),
       dev: /^(localhost|127\.0\.0\.1|\[::1\]|)$/.test(host),
     });
   }

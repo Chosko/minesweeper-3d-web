@@ -373,10 +373,9 @@ test('an unknown state, or a revealed number outside 0–8, paints the visibly w
 
 test('paintTile reads the tile tokens through the token reader', async () => {
   const values = new Map(JOYFUL);
-  const saved = { document: globalThis.document, getComputedStyle: globalThis.getComputedStyle, msTheme: globalThis.msTheme };
+  const saved = { document: globalThis.document, getComputedStyle: globalThis.getComputedStyle };
   globalThis.document = { documentElement: {} };
   globalThis.getComputedStyle = () => ({ getPropertyValue: (p) => values.get(p) ?? '' });
-  globalThis.msTheme = { current: () => 'joyful-tiles', onChange: () => () => {} };
   try {
     const { paintTile } = await skinModule();
     const ctx = fakeContext();

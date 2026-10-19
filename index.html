@@ -16,11 +16,10 @@
   <meta name="twitter:title" content="Minesweeper 3D">
   <meta name="twitter:description" content="Minesweeper in three dimensions: fly around a 3D grid of cubes and clear the mines.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 4 58 18v28L32 60 6 46V18z' fill='%233f78e0'/%3E%3Cpath d='M32 4 58 18 32 32 6 18z' fill='%239cc4ff'/%3E%3Cpath d='M32 32v28L6 46V18z' fill='%232b5cb8'/%3E%3Ccircle cx='45' cy='38' r='7' fill='%231b1b1b'/%3E%3C/svg%3E">
-  <script src="js/theme.js"></script>
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="themes/joyful-tiles/theme.css">
+  <script src="js/theme.js"></script>
   <script type="importmap">
     { "imports": { "three": "./vendor/three/three.module.min.js" } }
   </script>
@@ -632,6 +631,7 @@
 
   <noscript><div class="noscript">Minesweeper 3D needs JavaScript.</div></noscript>
   <script type="module">import { bindSelectOnHover } from './js/ui/components.js'; bindSelectOnHover(document);</script>
-  <script type="module" src="js/main.js" onerror="document.body.insertAdjacentHTML('beforeend','<div class=&quot;fatal&quot;><div><h2 style=&quot;margin-top:0&quot;>Cannot start Minesweeper 3D</h2><p>The game files failed to load. Check your connection and reload the page.</p></div></div>')"></script>
+  <template id="fatal-card"><div class="fatal"><div><h2 style="margin-top:0">Cannot start Minesweeper 3D</h2><p>The game files failed to load. Check your connection and reload the page.</p></div></div></template>
+  <script type="module" src="js/main.js" onerror="document.body.append(document.getElementById('fatal-card').content.cloneNode(true))"></script>
 </body>
 </html>

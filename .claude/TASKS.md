@@ -480,7 +480,7 @@ Feature: theme-system
 
 ## 159. Registry-driven theme applier with run-time switch and board module hand-off
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/theme.js, js/tokens.js, js/shell/scene-palette.js, js/settings/appliers.js, js/main.js, index.html, dev/components.html, js/themes/registry.js, tests/theme.test.mjs, tests/settings-appliers.test.mjs
 Preconditions: 157, 158

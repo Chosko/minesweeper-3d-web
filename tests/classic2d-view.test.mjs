@@ -3,8 +3,8 @@
 // the game must fit — hit-testing in a fitted and a scrolled board, per-cell redraw from the
 // engine's change lists through the tile skin, full repaints on resize, pixel-ratio, scale and
 // theme change, scrolling and panning, a clipped board's shadows and scroll bars, the focus ring's
-// redraws, the hidden board while paused, and in a browser the board drawn in the theme and the
-// Classic 2D screen at the windows it must fit.
+// redraws, the hidden board while paused, and in a browser the board drawn in the theme, repainted on
+// a theme switch, and the Classic 2D screen at the windows it must fit.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
@@ -854,7 +854,7 @@ async function mountBoard({ cols, rows, scroll }) {
 
 const near = (a, b) => a.every((v, i) => Math.abs(v - b[i]) <= 6);
 
-test('in a browser, Beginner and Expert and a large scrolled custom board are drawn correctly', async (t) => {
+test('in a browser, Beginner and Expert, a theme switch and a large scrolled custom board are drawn correctly', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -868,9 +868,11 @@ test('in a browser, Beginner and Expert and a large scrolled custom board are dr
     const area = { width: 1366 - 32, height: 768 - 96 - 16 };
     const M = 26;
 
+    let r9 = null;
     for (const theme of ['joyful-tiles']) {
       for (const [name, cols, rows] of [['beginner', 9, 9], ['expert', 30, 16]]) {
         const r = await page.evaluate(mountBoard, { cols, rows });
+        if (name === 'beginner') r9 = r;
         const tile = Math.max(M, Math.min(48, Math.floor(Math.min(area.width / cols, area.height / rows))));
         assert.equal(r.layout.tile, tile, `${theme} ${name}: tile ${tile}`);
         if (name === 'beginner') assert.equal(r.layout.tile, 48, 'Beginner at the default cap');
@@ -887,6 +889,27 @@ test('in a browser, Beginner and Expert and a large scrolled custom board are dr
         assert.ok(shot.length > 1000, `${theme} ${name}: screenshot taken`);
       }
     }
+
+    // A theme change repaints through the skin's redraw callback.
+    await page.evaluate(mountBoard, { cols: 9, rows: 9 });
+    const after = await page.evaluate(async () => {
+      const { registerTheme } = await import('/js/themes/registry.js');
+      const { FIXTURE_THEME } = await import('/tests/fixtures/themes/fixture-theme.js');
+      const { themeApplier } = await import('/js/themes/applier.js');
+      const { token } = await import('/js/tokens.js');
+      registerTheme(FIXTURE_THEME);
+      await themeApplier().setTheme(FIXTURE_THEME.id);
+      const v = globalThis.__view;
+      const r = v.cellRect(8 * 9);
+      const d = v.canvas.getContext('2d').getImageData(Math.round(r.x + r.size / 2), Math.round(r.y + r.size / 2), 1, 1).data;
+      const hex = (name) => { const v = token(name).trim(); return [1, 3, 5].map((i) => parseInt(v.slice(i, i + 2), 16)); };
+      const want = hex('--color-tile-revealed').map((v, i) => Math.round((v + hex('--color-tile-revealed-shade')[i]) / 2));
+      return { got: [d[0], d[1], d[2]], want, theme: document.documentElement.getAttribute('data-theme') };
+    });
+    assert.equal(after.theme, 'fixture-dusk');
+    assert.ok(near(after.got, after.want), `repainted in the fixture theme ${after.got} ~ ${after.want}`);
+    assert.ok(!near(after.got, r9.revealed.want), 'the colour changed with the theme');
+    await page.evaluate(async () => { const { themeApplier } = await import('/js/themes/applier.js'); await themeApplier().setTheme('joyful-tiles'); });
 
     // A large custom board keeps the minimum tile and scrolls by wheel, shift-drag and cursor follow.
     const big = await page.evaluate(mountBoard, { cols: 100, rows: 100, scroll: { x: 600, y: 900 } });
