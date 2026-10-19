@@ -70,7 +70,7 @@ Context:
 
 Done: 2026-10-19, commit `d6c6d81` (16 files, +659/-8). The required token list is `REQUIRED_TOKENS` in `js/ui/kit-catalogue.js`; a decoration slot is an element marked `data-slot="<name>"`. The premise that `tests/tokens.test.mjs` and `tests/components.test.mjs` export contrast helpers was wrong — the conformance file carries its own.
 
-## [~] 6. Implement task 162 — Update documentation for feature `theme-system`
+## [x] 6. Implement task 162 — Update documentation for feature `theme-system`
 
 Depends on: 1, 2, 3, 4, 5
 
@@ -81,6 +81,8 @@ Context:
 ```prompt
 /task-implement 162 --review
 ```
+
+Done: 2026-10-19, commit `2fba8f2` (14 files, +287/-164).
 
 ## [~] 7. Implement task 163 — Layout kit components: backdrop, screen frame, mode entry, board option, stat tile and the rest
 
@@ -867,7 +869,8 @@ Done: struck — for a parallel run its Depends on lacked the edge to task 213, 
 
 Depends on: 24, 71, 72, 73, 74, 75, 76, 77, 78
 
-Context: none
+Context:
+- 2026-10-19 (from step 6): `.claude/domain/features/theme-system.md` records the placeholder board module and the to-do board-check test; remove those two sentences once `themed-board-art-and-motion` replaces them.
 
 ```prompt
 /task-implement 187 --review
