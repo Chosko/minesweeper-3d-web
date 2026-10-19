@@ -1,6 +1,6 @@
 ---
 name: runbook-clean
-version: 0.3.2
+version: 0.4.0
 type: command
 description: Prune finished runbooks — delete each [DONE] runbook's body under .claude/runbooks/ and remove its .claude/RUNBOOKS.md index block, every finished runbook by default or exactly the ones named. Use it once a runbook's work has landed and its record is no longer needed.
 disable-model-invocation: true
@@ -85,6 +85,16 @@ visible, committed edit.
 
 This is narrower than `/task-clean`, which prunes `[DONE]` and `[SKIP]`: there
 is no `[SKIP]` in the runbook vocabulary at all.
+
+---
+
+THE WORKTREE SWEEP
+
+When `.claude/worktrees/` exists (one Glob, no shell), read
+`../skills/task-engine/references/worktree-sweep.md` in STAGE 1 and follow
+it: it adds one plan section, one removal and one report line, and its git
+and its removals sit outside DO NOT. Otherwise nothing in this command
+changes.
 
 ---
 

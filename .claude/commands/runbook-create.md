@@ -1,9 +1,10 @@
 ---
 name: runbook-create
-version: 0.9.1
+version: 0.10.0
 type: command
 description: Author a runbook — an ordered list of self-contained prompts under .claude/runbooks/, indexed in .claude/RUNBOOKS.md — from this conversation's follow-up list or a free-form description, or append steps to one. Use it to hand ordered work to later sessions that lack this conversation's context.
 requires: skill:runbook-run, skill:interaction-engine
+project-policy: line:Parallel policy=off|max
 ---
 
 # /runbook-create
@@ -119,6 +120,7 @@ which is what makes appending safe while a run is in progress:
 | --- | --- | --- |
 | the header, `Last step number:`, `Sequencing:`, `Companion:` | yes | `Archive:`, which is `/runbook-prune`'s — an append never writes, normalises or drops it |
 | `Execution policy:` | only when the user asks for an unattended runbook | by default — absent, the project's `CLAUDE.md` policy decides, else `attended`; and never by a run, which overrides it per run with a flag instead |
+| `Parallelism:` | only for a parallel runbook (§ *A parallel runbook*) | by default, and on an append |
 | a step's title and its ```prompt``` block | yes | — |
 | `Depends on:` | yes | — |
 | `Needs:` | `agent+human` and `human` only | `agent`, which is the default and is never written |
@@ -304,6 +306,14 @@ A seventh question — **the model** — is asked **only when the default `opus`
 is not wanted**. Do not ask it routinely. The header's `Execution policy:` is
 never asked at all, in either mode: it is written only when the user asked for
 an unattended runbook, and a runbook nobody asked that of carries no line.
+
+### A parallel runbook
+
+Read `../skills/runbook-run/references/parallel-authoring.md` before the
+interview, and follow it, when the user asks for a parallel runbook, when the
+append's target carries `Parallelism:`, or when a new runbook's project
+`CLAUDE.md` carries a `Parallel policy:` line other than `off` and the user
+did not ask for a sequential one. Otherwise nothing in this command changes.
 
 ---
 

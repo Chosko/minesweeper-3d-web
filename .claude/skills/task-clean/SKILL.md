@@ -1,6 +1,6 @@
 ---
 name: task-clean
-version: 0.11.2
+version: 0.12.0
 type: skill
 description: Prune tasks in a terminal status from the backlog by archiving them — each summary block leaves TASKS.md and the body moves to .claude/tasks/archive/<N>.md, never deleted. Use it when finished tasks clutter the backlog; a backfill mode recovers, from git history, bodies earlier runs deleted.
 replaces: command:task-clean
@@ -144,6 +144,15 @@ replaced, leaves one behind.
   `git push origin --delete park/task-<N>` for a remote one. Report a delete
   that fails in PHASE 2's report; it is neither fatal nor retried.
 - With no orphans, add no plan section and say nothing about the sweep.
+
+---
+
+## THE WORKTREE SWEEP
+
+When `.claude/worktrees/` exists (one Glob, no shell), read
+`../task-engine/references/worktree-sweep.md` in PHASE 1 and follow it: it
+adds one plan section, one removal and one report line. Otherwise nothing in
+this skill changes.
 
 ---
 
