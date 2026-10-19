@@ -30,13 +30,15 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
   device `setDevice` set (touch in either mode on a coarse-only device
   unless a controller is in use, `_bindDevice`, which every one of these
   surfaces follows — the lists, the help foot, the HUD strip, the hint strip,
-  the scroll hint, the one-time hints and Learn 3D's prompts) and the camera `setCamera` set, and every change of
+  the scroll hint, the one-time hints, Learn 3D's prompts and every screen's
+  key hints, filled by `showKeyHints`) and the camera `setCamera` set, and every change of
   any of them, or of the pad's glyphs, redraws them. A HUD strip with no
   entries (Classic 2D on touch) hides `#hud-tools`.
 - **Help panel.** `_helpByUser` keeps an H-opened panel open across
   screens; screen methods otherwise hide it. `H` toggles it and `M` sets
-  `muted` in both modes; the store's `muted` subscription updates every
-  Sound label (`ui.setSound`). `onKey` ignores H/M/F whose target is inside
+  `muted` in both modes; the store's `muted` subscription updates the HUD
+  strip (`ui.setSound`), and the Sound switches follow through their
+  `data-setting` binding. `onKey` ignores H/M/F whose target is inside
   `input, select, textarea`; the arrow keys go to `keyNav` before that.
 - **Active device.** `DEVICE` (`createActiveDevice`,
   [settings-bindings.md](settings-bindings.md)) is told of every keydown and

@@ -43,17 +43,22 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
   `readChoice({size, fields, noGuess}, fallbackCustom?)`; `boardOf(choice)`
   → `{X, Y, Z, mines, noGuess}` (a `RangeError` on an invalid choice);
   `randomBoard(random?)` — the original Random formula, always valid.
-- `presetKey(p)` (`'6,6,6,10'`, the items' `data-preset`), `presetByKey`,
-  `presetLabel(p)`, `presetTitle(p)` → 'Cube Beginner' (as
-  results and Records name the board).
+- `presetKey(p)` (`'6,6,6,10'`, the options' `data-preset`), `presetByKey`,
+  `presetLabel(p)` / `boxLine(board)` (the size line), `mineDensity(board)`,
+  `presetTitle(p)` → 'Cube Beginner' (as results and Records name the
+  board); `CUSTOM_HINT`, `customInfo(board)`; `LEARN_SUMMARY`,
+  `choiceSummary({selected, custom, noGuess, code})` (the bottom bar's
+  line), `bestsTitle({selected, custom, noGuess})`.
 - `LAST_CHOICE_DOC` = `'mode3d.lastChoice'`, `LAST_CHOICE_VERSION` = 1.
-- `bindBoardChoice({root, onStart, onLearn, onBack, code?})` (`onLearn` the
-  Learn 3D item `[data-learn]`, first and no preset; `code` the board code
-  field, as Classic 2D's, [classic2d.md](classic2d.md)) → `show(choice, {played,
-  details})`, `destroy()`. Its head comment lists the `data-*` hooks it
-  reads. `details` (the shell's `presetDetails`,
-  [app-shell-menu.md](app-shell-menu.md)) fills each preset's `[data-detail]` line for
-  the presets' switch; the binder never reads the records itself.
+- `bindBoardChoice({root, onStart, onLearn, onBack, onRecords?, code?,
+  bests?})` → `{show(choice, {played, held}), state(), refresh(),
+  destroy()}`, the Classic 2D binder's shape ([classic2d.md](classic2d.md))
+  over `#board-choice`: `onLearn` for the Learn 3D option (first, no
+  preset), `onRecords(board)` with the chosen board as `boardOf` gives it
+  (null for Learn 3D, a code or a refused custom board), `bests(board)` the
+  shell's `boardBests` text. Its head comment lists the `data-*` hooks it
+  reads and what each option shows; the binder never reads the records
+  itself.
 
 `js/mode3d/learn.js`
 - `LEARN_BOARD` — frozen `{X, Y, Z, mines, seed, generatorVersion,
@@ -104,9 +109,20 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
   `normaliseChoice` refuses falls back to `DEFAULT_CHOICE`. Picking a board
   saves the choice (a failed save never stops the game) and starts
   `MODES.start('3d', boardOf(choice))`; `show` marks it `data-last`, with
-  "Last played" only once a choice was played or loaded. Each preset item
-  holds its label, size line, detail line and "Last played" line, in that
-  order.
+  its Last played chip only once a choice was played or loaded.
+- **The screen.** The Classic 2D board choice's composition, its window
+  taller (`css/components.css` head comment, *3D board choice*): Learn 3D
+  shows only its panel (how 3D works, no records), a preset the presets'
+  switch and the board's bests, Custom its own switch, the form with Random
+  and the bests for that size, Insert Board Code its field alone; the
+  bottom bar's summary, Records and Play follow the choice live. Records
+  holds the screen's state (`state()`) and Back from Records brings it back
+  (`held`). The First box sizes (4 × 4 × 3 · 4, 5 × 5 × 3 · 6) are no
+  preset: the records and replays played on them read as custom boards
+  ([records.md](records.md)).
+- **Learn 3D's end.** A win offers *Play Cube Intro* — an ordinary pick of
+  Cube Intro, saved as the last choice — a loss *Try again*
+  ([app-shell-3d.md](app-shell-3d.md) § End sequence).
 
 ## DOMAIN DEPENDENCIES
 
@@ -123,8 +139,8 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
   the chosen board is handed to.
 - [classic2d.md](classic2d.md) — `NOGUESS_DENSITY_HINT` and the density
   hint text.
-- [app-shell-menu.md](app-shell-menu.md) — the `#board-choice` screen in
-  `js/main.js`, `createLastBoardChoice` and `presetDetails`.
+- [app-shell-menu.md](app-shell-menu.md) — the board choices' wiring in
+  `js/main.js`, `createLastBoardChoice` and `boardBests`.
 - [platform.md](platform.md) — the storage the last 3D choice is a document
   in.
 - [records.md](records.md) — `PRESETS_3D`, kept equal to `PRESETS` by a test.

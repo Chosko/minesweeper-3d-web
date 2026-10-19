@@ -1,6 +1,10 @@
 # Minesweeper 3D (web)
 
-Minesweeper in two modes, both picked from the main menu:
+Minesweeper in two modes, both picked from the main menu, whose entries are Classic 2D, Hexagon,
+Triangle, Surface and 3D, then Daily, Records and Settings, then Quit. Hexagon, Triangle and Surface
+open a "Coming soon" page for now, and Quit is the desktop build's. The menu opens on the mode you
+played last and previews the selected entry beside the list: a Classic 2D board, the cube orbiting,
+or today's daily board.
 
 - **Classic 2D** — flat Minesweeper on a square grid that plays like Minesweeper Online with its
   default options, with mouse, keyboard or controller.
@@ -16,7 +20,10 @@ the site is a set of static files served by GitHub Pages from `main`.
 
 ## Classic 2D
 
-Pick a board, switch **No-guess board** on or off, and play:
+Pick a board on the left of the board choice, switch **No-guess board** on or off on the right,
+and play; the right side also shows your best time, 3BV/s and efficiency on that board, and
+**Records** opens the Records screen on it. **Insert Board Code** plays a board code (see
+[Daily boards and board codes](#daily-boards-and-board-codes)).
 
 | Board | Size | Mines |
 |---|---|---|
@@ -30,7 +37,7 @@ Pick a board, switch **No-guess board** on or off, and play:
 - **No-guess** boards can be solved from the first click by logic alone. If no such board is found,
   the game offers to try again or to play a standard board of the same size.
 - A custom board takes as many mines as Minesweeper Online allows for its size, but always keeps
-  one cell free for the first click.
+  one cell free for the first click. **Random** fills the custom fields with a random board.
 - The board is scaled to fit the window. A board too large to fit scrolls: use the mouse wheel
   (`Shift` + wheel scrolls sideways) or drag with `Shift` held.
 - Pausing hides the board while the timer keeps running; each game records its pauses. The board
@@ -70,10 +77,11 @@ Every Classic 2D and 3D game is recorded in the browser. **Records**, on the mai
 screen shown after a game, opens the Records screen:
 
 - Pick a mode with the **2D | 3D** switch, then a board: in 2D, Beginner, Intermediate and Expert,
-  in 3D, the two first boxes and the four cube boards, each with and without no-guess, then the
-  mode's **Daily** board, then every custom board of that mode you have played, the former double
-  layer boards (8 × 8 × 2, 14 × 14 × 2, 25 × 16 × 2) and 12 × 12 × 8 · 130 among them. The screen opens on the board you played last, in its mode, or on the board of the game
-  you just finished.
+  in 3D, the four cube boards, each with and without no-guess, then the mode's **Daily** board,
+  then every custom board of that mode you have played, the former first boxes (4 × 4 × 3 · 4,
+  5 × 5 × 3 · 6), the former double layer boards (8 × 8 × 2, 14 × 14 × 2, 25 × 16 × 2) and
+  12 × 12 × 8 · 130 among them. The screen opens on the board you played last, in its mode, or on
+  the board of the game you just finished, or of the board choice it was opened from.
 - For that board: the best time, best 3BV/s and best efficiency with their dates, games played,
   wins, win rate, and the current and longest winning streak. A restarted or abandoned game counts
   as a loss there; beside them, the win rate and the best streak over completed games (won or lost)
@@ -82,15 +90,16 @@ screen shown after a game, opens the Records screen:
 - The board's averages of time, 3BV/s and efficiency over its last 10, last 50 and all won games,
   and its win rate over the last 50 games.
 - A chart of 3BV/s and efficiency over your won games and a chart of your best time by date, each
-  showing a point's values when you hover it (or tap it), and a list of your recent games, newest
-  first, ten to a page, with each game's outcome, time, 3BV/s, efficiency and board code. The **Top 10** tab
-  ranks your ten best won games on the board by time, 3BV/s or efficiency, the rank the screen
-  after a game shows ("#4 of 57").
+  showing a point's values when you hover it (or tap it). Under them, four tabs: **Recent games**,
+  newest first, ten to a page, with each game's outcome, time, 3BV/s, efficiency and board code;
+  **Top 10**, your ten best won games on the board by time, 3BV/s or efficiency, the rank the
+  screen after a game shows ("#4 of 57"); **Replays**, the board's kept replays (see
+  [Replays](#replays)); and **Leaderboards**, coming soon.
 - Filters by period (all time, 12 months, 30 days, 7 days) and by outcome (all, won, lost,
   abandoned) narrow the history; the bests and counters stay all-time.
-- **Export history (CSV)** saves every game of both modes as a spreadsheet table; **Export all
-  (JSON)** saves the history and the list of kept replays as one file. The replay files themselves
-  are not exported.
+- **Export history (CSV)**, under the mode's totals, saves every game of both modes as a
+  spreadsheet table; **Export all (JSON)** saves the history and the list of kept replays as one
+  file. The replay files themselves are not exported.
 
 The screen updates as games are recorded and follows the theme. It works with the
 mouse, the keyboard or a controller; `Esc` or `B` goes back.
@@ -103,12 +112,15 @@ cell: the first click must go there (a click anywhere else does nothing and the 
 timer starts with it. You get one counted try per board per day: once a daily's first click is made,
 leaving, restarting or closing the page counts as a loss. Dailies are recorded on their own **Daily**
 board in Records, whose streak counts the days in a row you played, won or lost. The boards are
-prepared in the background while the menu shows, so they open at once.
+prepared in the background while the menu shows, so they open at once. The Daily screen lists
+every mode of the menu: Classic 2D and 3D with today's board and whether you won it (with your
+time), lost it or have not played it yet, the other modes coming soon; beside the list, the
+selected mode's board, your days in a row and its board code.
 
 Every game has a **board code** that rebuilds its board exactly, such as `EN-20261011-184A` (a
 daily) or `EN-9C41D07A-247-1486` (any game). The screen after a game, the Records rows and the replay
-viewer show it with **Copy** and **Copy link**. Paste a code in a board choice's code field and press
-**Play this board**, or open a link ending in `#board=<code>`, to play that board as a
+viewer show it with **Copy** and **Copy link**. Paste a code under a board choice's **Insert Board
+Code** and press **Play**, or open a link ending in `#board=<code>`, to play that board as a
 **challenge**: it starts on the same marked cell, is kept in your history and games played, and is
 not eligible for bests, win rate, streaks or the Top 10. Today's daily code opens the Daily screen
 instead. A code from another version of the game's board generator is refused rather than opening a
@@ -118,9 +130,9 @@ different board.
 
 Every Classic 2D and 3D game you finish, or leave after its first click, is kept as a replay in the
 browser: your personal bests and the replays you pin are always kept, along with your newest 100
-others. **Watch replay** on the screen shown after a game plays that game again, and **Watch best**
-beside it plays the board's fastest-time best when its replay is kept. On the Records screen, the
-chosen board's replays are listed with **Watch**, **Download** and **Pin** / **Unpin**, and a best or
+others. **Watch replay** on the screen shown after a game plays that game again, and after a win
+that set no new best, **Watch best** beside it plays the board's fastest-time best when its replay
+is kept. On the Records screen's **Replays** tab, the chosen board's replays are listed with **Watch**, **Download** and **Pin** / **Unpin**, and a best or
 a recent game with a kept replay can be watched too.
 
 A replay plays on the same board view as the game: in Classic 2D with your pointer (outlined, with a
@@ -161,7 +173,8 @@ with the controller, focus it and the D-pad left / right steps it. Below it:
 New to 3D? **Learn 3D**, first on the 3D board choice, walks you through a small 4 × 4 × 3 box:
 start on the marked cube, then four prompts show what `Shift` and `Ctrl` reveal, which cube must be
 a mine and how a chord opens cubes. It has no timer and keeps no records, and you can repeat it any
-time; a win offers First box 1. Until you have finished a 3D game or won Learn 3D, the "Click to
+time; a win offers **Play Cube Intro**, a real board with a timer and records. Until
+you have finished a 3D game or won Learn 3D, the "Click to
 play" card of every other 3D board offers it too.
 
 The rules are classic Minesweeper with one more dimension:
@@ -181,32 +194,31 @@ The rules are classic Minesweeper with one more dimension:
 - When the game ends, the board freezes while the end effect plays (the loss wave showing where
   the mines were, or the win confetti): a second on a small board, longer on a large one so the
   loss wave reaches the far side, never more than 2.5 seconds; any click, key or controller button
-  skips it. Then the screen shown after a game appears over the dimmed board, as in Classic 2D:
-  time (to the thousandth of a second), 3BV, 3BV/s, efficiency, your clicks, the game's rank on
-  that board after a win, the time to beat next, your win rate and longest streak on that board
-  each beside its figure over completed games, and your bests on that board (greyed after a loss,
-  with the pace you were on), with **Play again** (or `Enter` or `R`), **Watch replay**, **Look at
-  the board**, **Records** and **Main menu**. Play again with the mouse or the keyboard captures
+  skips it. Then the screen shown after a game appears over the dimmed board, as in Classic 2D, one
+  column: the game's rank on that board after a win, then four figure tiles — time (to the
+  thousandth of a second), 3BV/s, efficiency and 3BV after a win; time, 3BV solved, 3BV/s and
+  efficiency after a loss — each beside your best on that board, then your clicks, the time to
+  beat next (or the streak a loss ended), your win rate and longest streak on that board each
+  beside its figure over completed games, and the board code; under them **Main menu** on the
+  left and **Watch replay**, **Records** and **Play again** (or `Enter` or `R`) on the right, with
+  **Look at the board** at the top. Play again with the mouse or the keyboard captures
   the mouse at once, with no "Click to play" card unless the browser refuses the capture.
 - **Look at the board** (or `Esc` on that screen) hides it and lets you fly over the finished
   board — every mine shown, the exploded cube and wrong flags marked, or the solved board — with
   the usual flight controls, view-mode keys and spacing, but no clicks on the board. `Esc`, any
   mouse button or any controller button brings the screen back.
 
-Pick a board and play:
+Pick a board and play — the 3D board choice is laid out as Classic 2D's, with Learn 3D first, your
+bests on the right and **Insert Board Code** last:
 
 | Board | Size | Mines |
 |---|---|---|
-| First box 1 | 4 × 4 × 3 | 4 |
-| First box 2 | 5 × 5 × 3 | 6 |
 | Cube Intro | 6 × 6 × 6 | 10 |
 | Cube Beginner | 6 × 6 × 6 | 20 |
 | Cube Intermediate | 8 × 8 × 8 | 40 |
 | Cube Expert | 10 × 10 × 10 | 100 |
 | Custom | each side 1–100 | up to one fewer than the cells |
 
-- The two first boxes start with the cubes spread wider (spacing 1.5), so a small box reads layer
-  by layer before the cubes.
 - **Random** fills the custom fields with a random board.
 - **No-guess board:** one switch under the presets applies to the preset you pick; the custom board
   has its own, available up to 8,000 cells (20 × 20 × 20) and shown disabled, with the reason, on a
@@ -316,16 +328,16 @@ and rumbles on an explosion. Some browsers only start sound after a key press or
 
 ## What's new compared to the original
 
-- **Interface:** a main menu with presets and a custom-board form (cell count, mine limit and
-  validation hints). The HUD shows time, mines left, clicks and board size, with indicators for the
+- **Interface:** a main menu of modes and places with a preview of the selected entry, and a
+  board choice per mode with presets, your bests and a custom-board form (cell count, mine limit
+  and validation hints). The HUD shows time, mines left, clicks and board size, with indicators for the
   Shift/Space/Ctrl view modes. There is an in-game controls panel (`H`), and a results screen
   after every game.
 - **Pause menu** (`Esc`): resume, go back to the start view (3D), restart or return to the main menu.
 - **Settings:** mouse sensitivity (0.25×–3×), invert mouse Y, volume, the 3D neighbour count and
   the 3D field of view (45°–90°). They are saved in `localStorage`. The defaults match the original,
   except the 3D neighbour count, which is on, and the field of view, 60° (45° in the original, which
-  a browser that already had settings keeps). The Data panel at the bottom of the Settings page
-  offers the same two exports as the Records screen first; then "Reset all data" deletes the records, history, replays, settings, last board choices and first-use hints
+  a browser that already had settings keeps). The Settings page's Data panel offers the same two exports as the Records screen first; then "Reset all data" deletes the records, history, replays, settings, last board choices and first-use hints
   from this browser, after a confirmation, and starts the game again as a new player's.
 - **Sound:** synthesized sound effects (Web Audio, no audio files) for revealing, flagging,
   chording, actions that change nothing, explosions and wins. They can be muted.
@@ -451,8 +463,8 @@ js/classic2d/           Classic 2D mode: board setup, game session and timer, Ca
                         end-of-game effect, mouse, keyboard and controller input, tile skin
 js/records/             Personal records: board identity, board codes and the daily boards, game summary,
                         bests and history, Records screen and its history chart
-js/shell/               Game shell: screen router, mode host, menu, pause, the Daily screen and board-code
-                        links
+js/shell/               Game shell: screen router, mode host, menu and its previews, pause, the Daily screen
+                        and board-code links
 js/replay/              Replays: format, recording, the replay library, simulator and verifier, the replay
                         viewer with its 2D and 3D viewers
 js/render.js            three.js instanced renderer, shaders, transparency sort, end-of-game effects

@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-The Records screen's replays panel ([records-screen.md](records-screen.md)):
+The Records screen's Replays tab ([records-screen.md](records-screen.md)):
 the chosen board's kept replays from the replay library
 ([replay-library.md](replay-library.md)), paged, with Watch, Download, Pin /
 Unpin and Delete per row, Open replay file, and the Pinned first filter
@@ -11,7 +11,7 @@ remembered in `records.view`.
 - `js/records/replay-list.js` — the library view and the `#records-replays`
   binder; its head comment documents the row shape. Imports `PIN_BEST`
   ([replay-library.md](replay-library.md)).
-- `js/records/view-prefs.js` — the remembered Pinned first switch, the
+- `js/records/view-prefs.js` — the remembered Pinned first checkbox, the
   `records.view` document.
 
 ## PUBLIC API
@@ -50,7 +50,7 @@ Remembered view (`js/records/view-prefs.js`)
   and Back (`RECORDS_PAGE.closeConfirm()` in `shellBack` / `historyBack`)
   return focus to that row's Delete; confirming calls `library.remove`, then
   focus goes to the Delete of the row in its place, else the previous row's,
-  else the Pinned first switch. A rebuilt list keeps focus on the button of
+  else the Pinned first checkbox. A rebuilt list keeps focus on the button of
   the replay that had it.
 - **Watch opens the viewer.** Watch shows only when the router registers
   `REPLAY_SCREEN`, and on a best or a game only when its replay is kept;

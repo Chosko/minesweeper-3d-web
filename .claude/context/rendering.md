@@ -10,7 +10,7 @@ waves, confetti, shake, ground grid — and the replay and end-of-game behaviour
 
 | File | Responsibility |
 | --- | --- |
-| `js/render.js` | `BoardRenderer`: cube geometry, cell/sky/confetti shaders, opaque and transparent instance lists, back-to-front sort, effects, selection glow |
+| `js/render.js` | `BoardRenderer`: cube geometry, cell/sky/confetti shaders, opaque and transparent instance lists, back-to-front sort, effects, selection glow, the target rectangle it draws into |
 | `js/textures.js` | procedural tile atlas: every tile drawn on a 2D canvas through the shared tile recipe (`js/tile-art.js`, [classic2d-tile-skin.md](classic2d-tile-skin.md)) with the atlas's own literal palette (`ATLAS`), packed into one `THREE.DataArrayTexture` (one layer per tile) |
 | `js/readability.js` | the 3D readability aids' pure functions: the aimed-cell readout ([app-shell-3d-play.md](app-shell-3d-play.md)) and, read here, Space's depth dimming — `spaceAlpha(d)` (`SPACE_NEAR_ALPHA` 0.7, `SPACE_FLOOR_ALPHA` 0.1, `SPACE_FALLOFF` 3, interpolated into `VERT`) and `boxDepth(cam, box)`, the camera's lattice distance from the box's nearest face |
 
@@ -32,6 +32,9 @@ waves, confetti, shake, ground grid — and the replay and end-of-game behaviour
   `MARK_PULSE_COUNT` times over `MARK_PULSE_S` through `uMarkPulse`, kept animating by
   `isAnimating()`; → whether there is a mark), `boardRadius()` (far plane, fog, confetti size), `setScenePalette({horizon, zenith,
   nadir})`, `setPixelRatio(pr)` (→ `false` when unchanged; main then skips the redraw), `resize()`.
+- Target rectangle: `setTarget(rect | null)` — `{x, y, width, height}` in CSS pixels from the
+  window's top left, the rectangle a screen's scene panel gives, or null for the full window
+  (→ `false` when unchanged; the caller redraws); `target` reads it back (a copy, or null).
 - Effects: `snapshotBeforeAction()` (before a reveal or chord, so a loss can show wrong flags),
   `flash(cells)`, `isAnimating()` (main's render-on-demand loop polls it), `wrongFlags()` /
   `setWrongFlags(indices)` (the loss's crossed flags, kept and given back across the replay viewer).
@@ -93,6 +96,13 @@ waves, confetti, shake, ground grid — and the replay and end-of-game behaviour
   winding. Atlas rows are top-first and `flipY = false`, so v = 0 is the image top.
 - **Colour.** Tiles and state use `NoColorSpace`; shaders output raw sRGB. Number colours are
   darkened until ≥ 5:1 contrast against `REVEALED_DARK`.
+- **Target rectangle.** The drawing buffer always spans the window; `resize()` sets the viewport,
+  the scissor and the camera aspect to the target, WebGL's y counted from the bottom, and turns the
+  scissor test off with no target. With a target, `render()` first clears the whole canvas to
+  transparent, so the page shows outside the panel, and the confetti's point size follows the
+  target's height. The shell sets the target from the shown screen's live scene panel and clears it
+  everywhere else — a 3D game, the 3D replay viewer — so picking and the HUD keep mapping the full
+  window ([app-shell-3d.md](app-shell-3d.md) § Scene panel).
 - **Render resolution.** The pixel ratio is the player's 3D resolution setting
   ([settings.md](settings.md) states `pixelRatioFor`): `js/main.js::applyPixelRatio` computes it
   for the board shown and calls `setPixelRatio` at each new board and on every setting change. The
@@ -134,7 +144,7 @@ waves, confetti, shake, ground grid — and the replay and end-of-game behaviour
 - [app-shell-replay.md](app-shell-replay.md) — the replay scene's tints, rings and wrong flags.
 - [classic2d-tile-skin.md](classic2d-tile-skin.md) — the Classic 2D tile skin and the shared tile recipe.
 - [testing.md](testing.md) — `tests/render-3d-feedback.test.mjs` (`GHOST_ALPHA`, ghosts in
-  `stats.trans`), `tests/camera-flight.test.mjs` (the fly-through constants and the near-camera list), `tests/tile-skin.test.mjs` (every atlas layer pixel for pixel),
+  `stats.trans`, the target rectangle), `tests/camera-flight.test.mjs` (the fly-through constants and the near-camera list), `tests/tile-skin.test.mjs` (every atlas layer pixel for pixel),
   `tests/settings-appliers.test.mjs` (`pixelRatioFor`); verification is visual via Playwright.
 
 ## When to read the source
@@ -146,4 +156,5 @@ waves, confetti, shake, ground grid — and the replay and end-of-game behaviour
   tiles and pinned by `tests/tile-skin.test.mjs`; the colours are `ATLAS` in `js/textures.js`.
 - Debugging transparency artefacts or sort cost (`_updateTransparent`).
 - Changing cell indexing, board dimension limits (state texture height) or spacing math.
+- Drawing into a part of the window (`setTarget`, `resize`, the transparent clear in `render`).
 - Fixing mirrored or rotated numbers on a face (`createCubeGeometry`).

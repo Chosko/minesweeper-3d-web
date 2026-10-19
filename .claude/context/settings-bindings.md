@@ -5,7 +5,7 @@
 `js/settings/bindings.js` is the one table of each mode's controls per input
 device, read by the Settings page's Bindings panel
 ([settings-page.md](settings-page.md)) and by every help surface in
-`js/ui.js` — the pause card, the main menu's Controls panel, the H panel,
+`js/ui.js` — the pause card, the Controls panel the Settings page opens, the H panel,
 the HUD strip, the first-use hint strips and the one-time hints — plus the
 active device those surfaces follow. DOM-free; rebinding is not offered.
 The module's head comment lists every function.
@@ -41,6 +41,10 @@ The module's head comment lists every function.
   touch — touch naming the 3D toolbar's buttons and the gestures, the chord
   the two-finger tap), `hintText(name, device, glyphs?)` — a one-time hint
   or prompt as plain text.
+- `KEY_HINTS` (`move`, `select`, `back`, `restart`, each per device, none
+  on touch), `keyHintKeys(action, device, glyphs?)` → `[{text, pad}]`: the
+  keys or buttons a screen's `ui-key-hint` shows beside an action
+  (`showKeyHints`, [app-shell-kit.md](app-shell-kit.md)).
 - `createActiveDevice({ onChange })` → `current` (`'keyboard'` |
   `'controller'`), `input('pad' | 'keyboard' | 'pointer')`,
   `connected(on)`: the controller while the last input came from a
@@ -53,9 +57,10 @@ The module's head comment lists every function.
   button by its standard-mapping name (`a`, `b`, `x`, `y`, `lb`, `rb`, `lt`,
   `rt`, `start`, `back`), drawn in the connected pad's glyphs
   (`js/gamepad.js` `GLYPHS`).
-- **Bindings are one table.** The Settings page shows every mode × device;
-  the pause card, the H panel with its foot line and the HUD strip show the
-  active mode's rows for the active device, the main menu's Controls panel
+- **Bindings are one table.** The Settings page shows one mode × device at
+  a time, picked by its Mode and Device choices; the pause card, the H
+  panel with its foot line and the HUD strip show the active mode's rows
+  for the active device, the Controls panel
   the rows of its Classic 2D | 3D tab for the active device, and the hint
   strip its mode's strip — on a coarse-only device all of them touch's,
   unless a controller is in use (`UI._bindDevice`,

@@ -55,7 +55,9 @@ Viewer (`js/replay/viewer.js`)
   `library.bytes`, a `file` read unless over the cap.
 - `replayCode(replay)` → the game's board code in its game form, from the
   header's board, seed and generator version and the first reveal action
-  (no format change), or null; handed to `view.ready({ …, code })`.
+  (no format change), or null; `replayTitle(replay)` → the frame's title,
+  "Replay · Classic 2D · Intermediate" (the board as the records name it);
+  both handed to `view.ready({ …, code, title })`.
 - `clockText(ms)` (`"13.342"`, seconds to the thousandth, truncated),
   `overlayFigures(frame, ms)`, `endLine(check)`, `seekStep(duration)`,
   `pauseMarks(pauses, duration, leadIn?)`, `pausesText`,
@@ -66,16 +68,24 @@ Viewer (`js/replay/viewer.js`)
 - `createReplayViewer({library, router, view, viewers?, sound?, files?})` →
   `show({replay?, replayId?, file?, returnTo?})`, `hide()`, `tick(ms)`,
   `command`, `seek`, `setSpeed`, `download()`, `openFile(file)`, `key`,
-  `pad`, `back()`, `defaultFocus()`, `setScale`, `state`. `viewers` maps a
-  graph kind to a mount; default `{square: mountViewer2D}`; `sound` is the
-  sfx sink, `files.save(bytes, name)` the download.
+  `pad`, `back()`, `defaultFocus()` (Play once ready, the failure card's
+  Back once failed, the frame's Back while opening), `setScale`, `state`.
+  `viewers` maps a graph kind to a mount; default `{square:
+  mountViewer2D}`; `sound` is the sfx sink, `files.save(bytes, name)` the
+  download.
 - `createReplayView({root, win?, onCommand, onSpeed, onSeek, onBack,
   onDownload?, onOpen?, onCopy?})` → the `#replay` binder (its ids in the
-  head comment): the overlay bar with the code chip `#rp-code` (Copy and
-  Copy link call `onCopy`; hidden while loading, failed or with no code),
-  `#replay-board` 16 px from the bar and the controls (re-measured through
-  a `ResizeObserver`), the controls (`#rp-camera` in 3D only), the key line
-  `#rp-keys` (3D only; a 2D board keeps its room) and the end line.
+  head comment): a `ui-frame` on the backdrop (`#replay-frame`; Back
+  `#rp-back` and the title `#replay-title` in its head), whose body holds
+  the overlay bar of figures with the code chip `#rp-code` (Copy and Copy
+  link call `onCopy`; hidden while loading, failed or with no code), the
+  board area `#replay-stage`, which takes the room the figures and the
+  controls leave, with the message card over it, and the controls (the
+  seek bar, transport, speed, the toggles — `#rp-camera` in 3D only —,
+  the end line with its outcome chip, Download, Open replay file, the key
+  line `#rp-keys`). While a replay opens or has failed the controls stay
+  in place, those that need a replay disabled. The composition, by window
+  size, is the head comment of `css/components.css` (*Replay viewer*).
 
 ## INTERNAL PATTERNS
 
@@ -120,6 +130,8 @@ Viewer (`js/replay/viewer.js`)
 - [../domain/features/replay-playback.md](../domain/features/replay-playback.md)
   — simulator, verifier, viewer, controls, overlay, entry points, failure
   contracts, the measured snapshot interval.
+- [../domain/features/shared-screen-layout.md](../domain/features/shared-screen-layout.md)
+  — the viewer in the frame.
 
 ## CROSS-REFERENCES
 

@@ -23,9 +23,10 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
   replay?)`, `current`, `playAgain(source)`, `openRecords()`, `watch()`,
   `watchBest()`, `toMenu()`. Without `replays` no replay is kept and no best
   is watched. `watch` is set when the game handed over a sealed replay and
-  the router has the `replay` route; `watchBest` is the board's
-  fastest-time best's id (after recording) when the library `has` its
-  replay and it is not the game shown, else null. `rank` is
+  the router has the `replay` route; `watchBest` is, after a win that set
+  no new best on any stat, the board's fastest-time best's id (after
+  recording) when the library `has` its replay and it is not the game
+  shown, else null. `rank` is
   null for a challenge (`gameRank` leaves challenges out). The shell's
   `restart(source, {mode, summary})` plays a daily's or a challenge's
   `freeStart(summary.board)` once its mode was left.
@@ -38,15 +39,23 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
   `NOTES`, `NOT_ELIGIBLE`, `FIRST_BEST`, `CHALLENGE_LABEL` ("Challenge · not
   eligible for bests"), `CHALLENGE_NOTE`.
 - `resultsContent({summary, comparison?, saved?, notSaved?, watch?, rank?,
-  streak?, standing?, watchBest?})` → `{outcome, title, board, label, code, banner, stats, figures,
-  next, standing, eligible, bestsNote, bests, notes, watch, watchBest, look, over3d}`
-  (fields in the head comment; `look` and `over3d` true for a 3D summary;
-  `code` the game's board code, `label` a challenge's label; a challenge is
-  not eligible, has no next target and its rank figure is a dash).
+  streak?, standing?, watchBest?})` → `{outcome, title, board, rank, label,
+  tiles, details, code, notes, watch, watchBest, compact, look, over3d}`
+  (fields in the head comment): `rank` the chip on a ranked win, `label` a
+  challenge's chip in its place; `tiles` the four figure tiles (a win's
+  time, 3BV/s, efficiency and 3BV; a loss's time, 3BV solved with its
+  progress, 3BV/s and efficiency), each with its comparison and `newBest`;
+  `details` the Clicks, next target, streak or challenge, and win rate
+  rows; `compact` the small secondary actions beside Watch best; `look`
+  and `over3d` true for a 3D summary. `BOARD_DIFFICULTY`, `LOSS_NO_BESTS`.
 - `createResultsView({root, onPlayAgain, onWatch?, onWatchBest?, onRecords, onMenu, onLook?, onCopy?})` →
-  `show(content)`, `hide()`, `noteLook(text)`; `LOOK_REFUSED`. The label
-  fills `#results-label`, the code the `#results-code` chip, whose Copy
-  and Copy link call `onCopy` (the shell's `copyCode`).
+  `show(content)`, `hide()`, `noteLook(text)`; `LOOK_REFUSED`. It fills
+  `#results-frame`'s head (the trophy on a win, the title, the board line,
+  the rank or challenge chip — under the title over the 3D scene), the
+  tiles `#rs-<key>`, the detail rows `#rd-<key>` and the `#results-code`
+  chip, whose Copy and Copy link call `onCopy` (the shell's `copyCode`).
+  The screen's composition is the head comment of `css/components.css`
+  (*Results screen*).
 - `RESULTS_ACTIONS` (`r-again`, `r-watch`, `r-watch-best`, `r-look`,
   `r-records`, `r-menu`);
   `resultsEnter({focused, repeat})` → `'playAgain'` (focus on Play again or
@@ -75,7 +84,8 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
   card's *Look at the board* (`openLook`) and Back on it (`resultsBack`;
   the browser's Back still goes to the menu) are offered while `lookable()`
   — the 3D mode still holds the finished board, so not after Records; the
-  card's Esc hint then reads "Esc: Look at the board", else "Esc: Back". A
+  frame's head then shows `#r-look` with the back key hint, and Main menu
+  shows none (`#results.results--look`). A
   controller opens it lockless; a click or key asks for pointer lock
   (`lookPending`) and `onLockChange` opens it once granted, `onLockError`
   leaves the card with `LOOK_REFUSED` and focus on Look at the board (`refusedLook`), so Enter retries. In the look `Input.isActive` is
@@ -94,8 +104,9 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
   board's `boardKey`; Back returns to `results`. Watch replay →
   `RESULTS.watch()` routes to `replay` with `{replay, returnTo: {screen:
   'results'}}` — the game's own sealed replay, so it plays whether or not
-  the library saved it. Watch best → `RESULTS.watchBest()` routes to
-  `replay` with the best's `replayId`. Main menu and Back → `showMainMenu`. Returning to
+  the library saved it. Watch best (only after a win that set no best) →
+  `RESULTS.watchBest()` routes to `replay` with the best's `replayId`.
+  Main menu and Back → `showMainMenu`. Returning to
   `results` without data shows `RESULTS.current` again.
 - **Abandoned** games are recorded (a no-op when the store already did) and
   show nothing.
@@ -113,6 +124,8 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
   — where the Records screen is opened from, Back and focus.
 - [../domain/features/replay-library.md](../domain/features/replay-library.md)
   — the end-of-game hand-off, best pinning, the session-only replay.
+- [../domain/features/shared-screen-layout.md](../domain/features/shared-screen-layout.md)
+  — the results screen's one-column layout and its phone arrangement.
 
 ## CROSS-REFERENCES
 

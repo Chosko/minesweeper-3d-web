@@ -10,7 +10,7 @@ tokens, theme and deploy files are [app-shell-kit.md](app-shell-kit.md).
 | File | Responsibility |
 | ---- | -------------- |
 | `index.html` | every overlay as static markup toggled by `.hidden`; importmap `three` → `vendor/three/three.module.min.js` (r186, no build step); a module `onerror` shows `.fatal` |
-| `css/style.css` | shell styling: fixed layers, the Classic 2D board area and panel, the replay layer (`replay--scene` transparent over the 3D scene; the recorded pointer and its trail, press rings, Show 3BV's 2D canvas; `body.replaying` hides the view chips, tools strip, hint strip and toast), the controller's hints (`[data-pad-hint]`, visible only under `body.pad-nav`, their room kept; `[data-pad-hinted]` rows), the menu-screen and translucent backdrops, the results scrim over the 3D scene, the look's hint (`.look-hint`), the ready card's placement (`.ready-body`), the Learn 3D step (`.hint-step`), the help/controls/ctx-lost overlays, the toast's place and the message pages' (`.fatal`, `.noscript`, `.not-found`: the card's width and its margin from the window's edges), the 3D touch stick and toolbar, HUD placement; declares no custom property |
+| `css/style.css` | shell styling: fixed layers, each screen's placement in its frame (the main menu's grid, the board choices' and Daily's window under the wordmark, Records', Settings', the placeholder's and the replay viewer's window, the results frame's head, tiles and action bar, the ready card's columns) and what each gives way at the smaller window sizes and on a phone, the scene panel's canvas (`body.scene-off`, `body.scene-front`), the Classic 2D board area and panel, the replay layer (`replay--scene` transparent over the 3D scene; the recorded pointer and its trail, press rings, Show 3BV's 2D canvas; `body.replaying` hides the view chips, tools strip, hint strip and toast), the controller's hints (`[data-pad-hint]`, visible only under `body.pad-nav`, their room kept; `[data-pad-hinted]` rows), the menu-screen and translucent backdrops, the results scrim over the 3D scene, the look's hint (`.look-hint`), the ready card's placement (`.ready-body`), the Learn 3D step (`.hint-step`), the help/controls/ctx-lost overlays, the toast's place and the message pages' (`.fatal`, `.noscript`, `.not-found`: the card's width and its margin from the window's edges), the 3D touch stick and toolbar, HUD placement; declares no custom property |
 
 `index.html` head order: `css/tokens.css`, `css/components.css`,
 `css/style.css`, `js/theme.js` (which appends the theme stylesheet), then
@@ -23,44 +23,64 @@ bind.
 
 ## INTERNAL PATTERNS
 
-- **Screens** — each a `ui-card` (`ui-screen--wide` for the menu, both
-  board choices, Records and Settings; Records and Settings add
-  `ui-screen--columns` and lay out in `ui-columns`, the kit's one
-  breakpoint, 1024 px, in `css/components.css`). Ids the shell wires:
-  - main menu `#menu`: title row ending in Play again `#menu-again`, one
-    `ui-menu` of `data-entry` items (`data-last`, "Last played" detail),
-    session strip `#menu-strip`, footer (Controls, Sound, volume, credit);
-  - board choices `#board-choice` ([mode3d.md](mode3d.md)) and
-    `#c2d-choice` ([classic2d.md](classic2d.md)): `ui-menu` of `data-preset`
-    / `data-size` items with `data-detail` lines, custom `ui-panel` of
-    `ui-field`s, no-guess `ui-toggle`, Back;
-  - placeholder `#coming-soon`; Records `#records` (the view and its ids:
-    [records-screen.md](records-screen.md); the switch and the picker each
-    in a `data-pad-hinted` row between `data-pad-glyph` hints); Settings `#settings` (`#settings-body` from
-    `settingsPageHtml()`, Bindings `#settings-bindings`, Data
-    `#settings-data`, sticky Back row `#settings-actions`,
+- **Screens.** Every screen's composition — which kit components, in what
+  order, at which window sizes, its default focus — is the head comment of
+  `css/components.css`; this list names the ids the shell wires. The
+  non-game screens sit on a `ui-backdrop`, each in a `ui-frame`
+  (`#<screen>-frame`: Back in `ui-frame__start` with its back key hint, the
+  title, an optional action, a scrolling `ui-frame__body`, a foot); the
+  main menu sits on the backdrop with no frame.
+  - main menu `#menu`: `#menu-title` (a `ui-wordmark`), `#menu-entries` (a
+    `ui-mode-list` of `#menu-entry-<id>`, `data-entry`,
+    `data-block-start` on each block's first), the preview `#menu-preview`
+    (`#menu-preview-stage`, `#menu-preview-tag`), `#menu-foot` with the key
+    hints `#menu-hints`, `#touch-note` and the build label `#menu-build`
+    ([app-shell-menu.md](app-shell-menu.md));
+  - board choices `#c2d-choice` ([classic2d.md](classic2d.md)) and
+    `#board-choice` ([mode3d.md](mode3d.md)), one markup: `#…-top` holding
+    the wordmark and the frame, `#…-back`, the options `#…-options`
+    (`ui-option`s, `data-size` / `data-preset`; `#bc-learn` on the 3D one),
+    the detail column `#…-detail` (settings, the custom form with Random
+    `#c2d-random` / `#c-random`, the bests `#c2d-bests` / `#bc-bests` of
+    `ui-stat--tile`s, the code panel), and the foot's summary
+    (`#c2d-summary`, `#bc-summary`), Records (`#c2d-records`,
+    `#bc-records`) and Play (`#c2d-play`, `#bc-play`); the binders read
+    their `data-*` hooks, not the ids;
+  - Daily `#daily` (the board choices' markup, `#daily-modes` of
+    `#daily-entry-<mode>`, `#daily-preview`, `#daily-code`, `#daily-watch`,
+    `#daily-play`; [app-shell-menu.md](app-shell-menu.md));
+  - placeholder `#coming-soon` (`#coming-soon-menu` in the head,
+    `#coming-soon-title`, `#coming-soon-back`); Records `#records` (the view
+    and its ids: [records-screen.md](records-screen.md); the switch
+    `#records-mode` in the frame's head, the switch and the picker each in
+    a `data-pad-hinted` row between `data-pad-glyph` hints); Settings
+    `#settings` (Back `#settings-back` in the head `#settings-actions`, the
+    body `#settings-body` from `settingsPageHtml()`,
     [settings-page.md](settings-page.md));
-  - pause card `#pause-card` (`ui-screen--columns`, a `ui-columns--two`):
+  - pause card `#pause-card` (`ui-screen--wide`, a `ui-columns--two`):
     a `ui-column` of the title, `#pause-board`, the status lines,
     `#pause-actions` (primary first; `#p-home` "Back to start" only for a
-    3D game in play) and `#pause-confirm` (`#p-confirm-yes`,
-    `#p-confirm-no`), then the panel `#pause-list` of `#pause-controls`, then
-    a `ui-column` of the Settings panel (3D look controls, Sound, volume)
-    whose shortcuts carry `data-setting`; at 1024 px and wider `#pause-list`
-    takes the second column beside both (`css/components.css`'s breakpoint
-    block), so the card fits 1024 × 768 unscrolled, and below that it is one
-    column in markup order. Settings sits in a `ui-column` of its own so the
-    arrow and D-pad walk leaves it upward to the actions
-    ([app-shell-navigation.md](app-shell-navigation.md) § Focus walk);
-  - results `#results`: banner, `#results-stats` (`rs-*`), `#results-figures`,
-    `#results-next`, `#results-bests` (`rb-*`, `ui-panel--muted` on a
-    loss), `#results-note`, actions `#r-again`, `#r-watch`, `#r-watch-best`,
-    `#r-look`, `#r-records`, `#r-menu`;
+    3D game in play) and `#pause-confirm` (`#p-confirm-yes` a
+    `ui-button--danger`, `#p-confirm-no`), then the Settings panel (Sound,
+    volume, the 3D look controls) whose shortcuts carry `data-setting`,
+    then the panel `#pause-list` of `#pause-controls`; at the kit's
+    breakpoint `#pause-list` takes the second column alone, and below it
+    everything is one column in markup order
+    ([app-shell-pause.md](app-shell-pause.md));
+  - results `#results`: the frame `#results-frame`, its head
+    (`#results-trophy`, `#results-title`, `#results-board`, the rank
+    `#results-rank`, `#r-look`), the tiles `#results-tiles` (`rs-*`), the
+    details table `#results-details` (`rd-*`), the code chip
+    `#results-code`, `#results-note`, and the foot `#results-actions`:
+    `#r-menu` at the start, `#r-watch`, `#r-watch-best`, `#r-records`,
+    `#r-again` at the end ([app-shell-results.md](app-shell-results.md));
   - replay viewer `#replay` (its ids: [replay-playback.md](replay-playback.md)):
-    figures bar with the code chip and `#rp-back`, board area
-    `#replay-board`, `#replay-message`, `#replay-controls` (seek bar with
-    pause marks and action ticks, toggles, Download, Open replay file, the
-    key line); the hidden file input `#replay-file`;
+    the frame `#replay-frame` with `#rp-back` and `#replay-title`, the
+    figures bar with the code chip and the outcome `#replay-end`, the board
+    area `#replay-stage` holding `#replay-board` and the card
+    `#replay-message`, `#replay-controls` (seek bar with pause marks and
+    action ticks, transport, speed, toggles, the key line, Download, Open
+    replay file); the hidden file input `#replay-file`;
   - status cards `#c2d-status` (beside the board) and `#m3d-status`,
     stacked above the pause card: progress line, `ui-spinner`, Cancel and
     Play a standard board (`#…-wait`, `#…-wait-standard`), the offer
@@ -91,10 +111,11 @@ bind.
   top-level rules: `ui-stat__label` 12 px (one step above `--font-size-xs`,
   which stays 11 px) and `kbd` `max(11px, 0.78em)`. Only the 44 px hit areas
   depend on the pointer: each stylesheet ends with one `@media (pointer:
-  coarse)` block — the kit's gives `ui-toggle__input` a 44 px hit square
-  (`::after`) and `ui-slider__input` a 44 px height; the shell's shows
-  `#hud-tap` in Classic 2D at 44 px, gives `#hud-pause` a 44 px band
-  (`::after`) and `#touch-modes` buttons 44 px, and hides `#hud-swap`. Every
+  coarse)` block — the kit's gives `ui-toggle__input` and
+  `ui-checkbox__input` a 44 px hit square (`::after`) and `ui-slider__input`
+  a 44 px height; the shell's shows `#hud-tap` in Classic 2D at 44 px, gives
+  `#hud-pause` a 44 px band (`::after`), `#touch-modes` buttons 44 px and
+  every main menu entry at least 44 px, and hides `#hud-swap`. Every
   fine-pointer hit area stays as above (`tests/components.test.mjs` pins
   both).
 
@@ -103,6 +124,8 @@ bind.
 
 - [../domain/features/screen-components.md](../domain/features/screen-components.md)
   — the kit-built screens, the controller contract.
+- [../domain/features/shared-screen-layout.md](../domain/features/shared-screen-layout.md)
+  — the shared layout every screen is composed in.
 
 ## CROSS-REFERENCES
 

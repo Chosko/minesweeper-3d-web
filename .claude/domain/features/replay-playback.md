@@ -181,8 +181,8 @@ and is never paused into hiding the board.
   again*, for the game it shows; the replay comes from the finished game's
   hand-off, so it plays even when it could not be saved. Back returns to the
   results screen.
-- **Watch best** — beside *Watch replay*, when the board's fastest-time best
-  has a replay kept in the library and that best is not the game shown; it
+- **Watch best** — beside *Watch replay*, after a win that set no new best,
+  when the board's fastest-time best has a replay kept in the library; it
   opens the viewer on that replay by id. Back returns to the results screen.
 - **End of replay** — the final board stays, with the outcome and the
   recorded time, shown in `results-screen`'s time format

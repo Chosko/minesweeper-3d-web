@@ -25,8 +25,11 @@ Records screen (`js/records/screen.js`)
 - `RECORDS_SCREEN` — `'records'`; `EMPTY_TEXT`; `RECORDS_MODES` — frozen
   `{ value, label, overallTitle }` for `classic-2d` and `3d`.
 - `pickerBoards(records, mode?)` → `[{ key, label, board }]`: the mode's
-  named boards (each without, then with no-guess), its Daily board (always
-  listed), then its custom boards in `boardsPlayed(mode)` order.
+  named boards (each without, then with no-guess — for 3D the four cube
+  presets, Cube Intro to Cube Expert), its Daily board (always listed), then
+  its custom boards in `boardsPlayed(mode)` order; a game played on a
+  former First box preset is listed there as a custom board
+  ([records.md](records.md)).
 - `lastBoardPlayed(records, mode?)` → key or null.
 - `recordsContent(records, { mode?, boardKey?, notSaved?, page?, replays?,
   replayPage?, pinnedFirst?, canWatch?, canOpen?, replaysNotSaved?, period?,
@@ -36,7 +39,8 @@ Records screen (`js/records/screen.js`)
   counters replace the streak pair with "Days in a row" and "Longest days
   in a row" (`daysInARow` as of `now`'s local date), each figure carrying
   its label.
-- `GAME_TABS`, `TOP_STATS`, `TOP_EMPTY_TEXT`, `TOP_EMPTY_PERIOD`,
+- `GAME_TABS` (Recent games, Top 10, Replays, Leaderboards, the first the
+  default), `TOP_STATS`, `TOP_EMPTY_TEXT`, `TOP_EMPTY_PERIOD`,
   `GAMES_EMPTY_TEXT`, `WON_ONLY_TEXT`.
 - `formatDate(iso)` → `"9 Oct 2026"` (the bests); `formatDateTime(iso)` →
   `"9 Oct 2026 14:32"` (local, 24-hour: the games and replays);
@@ -57,8 +61,11 @@ Records screen (`js/records/screen.js`)
   onCopy?, chart?, bestChart? })` →
   `show(content)`, `hide()`, `closeConfirm()`, `isConfirmOpen()`; the
   switch is `#records-mode`, the chart defaults to `#records-chart`; the
-  games, Top 10 and library tables gain a Board code column of compact
-  code chips (`codeCell`) whose Copy and Copy link call `onCopy`.
+  tabs `#records-tabs` are a kit tablist (`bindTabs`), each showing the
+  panel its `aria-controls` names; the games, Top 10 and library tables
+  gain a Board code column of compact code chips (`codeCell`) whose Copy
+  and Copy link call `onCopy`, and a recent game or replay its outcome as a
+  kit chip (`outcomeChip`, `js/records/replay-list.js`).
 
 Export (`js/records/export.js`)
 - `createRecordsExport({ records, replays?, now?, trigger?, objectUrl? })` →
@@ -91,13 +98,16 @@ Export (`js/records/export.js`)
 - **Formats are the results screen's** (`formatTime`, `formatRate`,
   `formatEfficiency` from `js/results/view.js`); the screen defines only
   the date, the date and time, and the win rate.
-- **Layout.** `#records` is a `ui-columns--two`: switch, picker, the bests as
-  `ui-stat--tile`s, the board's counters, the averages panel and the mode's
-  overall row on one side; on the other the history panel — the period and
-  outcome choices, both charts in a `ui-columns--pair` (side by side at the
-  kit breakpoint), the Recent games | Top 10 tabs and the Top 10's stat
-  choice — and the replays panel; one column below the kit's 1024 px
-  breakpoint. Below the columns, Back and the two export actions. The
+- **Layout** (`css/components.css` head comment, *Records*). `#records` is
+  a `ui-frame` on the backdrop: Back and the 2D | 3D switch in its head,
+  the picker at the top of its body, then a `ui-columns--two` — the
+  board's figures (the bests as `ui-stat--tile`s, the counters), the
+  averages panel, the mode's overall figures and under them the two export
+  actions on one side; on the other the history panel — the period and
+  outcome choices, both charts in a `ui-columns--pair`, then the Recent
+  games | Top 10 | Replays | Leaderboards tabs, Leaderboards a coming-soon
+  panel with no pager; one column below the kit breakpoint. An empty board
+  hides the choices, the charts and the averages; the tabs stay. The
   bests' figures keep one line (the kit's `ui-stat--tile`). A table
   narrower than a row of its figures, board code and actions on one line —
   every width the two panels take — stacks each row's cells under their
@@ -112,8 +122,8 @@ Export (`js/records/export.js`)
   stay all-time. Filters, tab and stat are screen state, reset on each
   `show`; a filter change starts the recent games on page one.
 - **Export.** `js/main.js` builds one `RECORDS_EXPORT` over the store and
-  the library; the screen's actions below the lists and the Settings Data
-  panel's both save through it, disabled with `NOTHING_TO_EXPORT` until a
+  the library; the screen's actions under the mode's overall figures and
+  the Settings Data panel's both save through it, disabled with `NOTHING_TO_EXPORT` until a
   game is recorded.
 - **Paged lists.** Both lists newest first, `PAGE_SIZE` per page
   (`pageOf`), past the end clamped, each under a kit pager (`bindPager`:
@@ -131,13 +141,15 @@ Export (`js/records/export.js`)
   — content, picker, chart, recent games, live update, empty state.
 - [../domain/features/3d-results-records-screens.md](../domain/features/3d-results-records-screens.md)
   — the 2D | 3D switch, the 3D picker, the mode the screen opens on.
+- [../domain/features/shared-screen-layout.md](../domain/features/shared-screen-layout.md)
+  — the screen in the frame, the Leaderboards tab's coming-soon panel.
 
 ## CROSS-REFERENCES
 
 - [records-store.md](records-store.md) — the queries the screen reads.
 - [records.md](records.md) — board labels and the summary stats.
 - [records-history.md](records-history.md) — the charts, paging and stats;
-  [records-library-view.md](records-library-view.md) — the replays panel.
+  [records-library-view.md](records-library-view.md) — the Replays tab.
 - [app-shell.md](app-shell.md) — `RECORDS_PAGE`;
   [app-shell-navigation.md](app-shell-navigation.md) — the `records` route,
   Back; [app-shell-results.md](app-shell-results.md) — the results formats

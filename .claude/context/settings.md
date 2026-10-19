@@ -29,7 +29,7 @@ Each module's head comment states its full contract.
 | `boardScale` | choice | `fit`, `100`, `125` | `100` | the Classic 2D tile's cap (`js/classic2d/board-view.js` `tileCap`): the open board (`mode2d.setScale`) and the replay viewer's 2D board (`REPLAY_VIEWER.setScale`), wired in `js/main.js` |
 | `theme` | choice | an id of the theme registry (`js/themes/registry.js`) | `joyful-tiles` | the theme applier's `setTheme` ([app-shell-kit.md](app-shell-kit.md)) |
 | `volume` | number | 0–1 | 0.7 | `sfx.setVolume` |
-| `muted` | boolean | | false | `sfx.setMuted`, the Sound buttons' label, the page's Sound toggle (on while false) |
+| `muted` | boolean | | false | `sfx.setMuted`, the HUD strip (`UI.setSound`), the Sound switch of the page and the pause card (on while false) |
 | `aimReadout` | boolean | | true | "3D neighbour count": the aimed-cell readout beside the crosshair, read each frame by `updateReadout` in `js/main.js` ([app-shell-3d-play.md](app-shell-3d-play.md)) |
 | `fieldOfView` | number | 45–90 | 60 (45 for an existing install) | the 3D renderer camera's vertical `fov` and projection, then a redraw — play, the menu backdrop and the 3D replay viewer |
 | `camera` | choice | `fly`, `orbit` | `fly` | the 3D camera's mode: `js/main.js`'s `setCameraMode`, also mid-game ([app-shell-3d-play.md](app-shell-3d-play.md)), and the 3D rows every help surface shows ([settings-bindings.md](settings-bindings.md)) |

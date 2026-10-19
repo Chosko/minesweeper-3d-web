@@ -17,8 +17,8 @@ cues through the `sfx` instance `main.js` hands it as its `sound` option and
 imports no sound module itself, and the settings appliers
 (`js/settings/appliers.js`), which call `setVolume` and `setMuted` with the
 store's values at start-up and on every change. Both modes therefore play at
-the one shared volume and mute. The mute
-label and volume sliders are bound to the store, not to this module — see
+the one shared volume and mute. The Sound
+switches and volume sliders are bound to the store, not to this module — see
 [app-shell.md](app-shell.md).
 
 ## PUBLIC API
@@ -110,7 +110,7 @@ not these.
   `reveal`/`toggleFlag`/`chord` results (`revealed`, `flagged`, `unflagged`, `exploded`) and the
   state view's `version` pick the sound — and calls
   `unlock()` on start, ready-click, controller resume and after a volume or
-  mute change; the M key and Sound buttons set the `muted` setting.
+  mute change; the M key and the Sound switches set the `muted` setting.
 - [classic2d-mode.md](classic2d-mode.md) — the Classic 2D mode's `sound` option: every
   2D action, by mouse, keyboard or controller, plays the 3D game's cue for
   its outcome (reveal, flag, chord, noop, explode, win); a flag before the

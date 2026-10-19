@@ -11,7 +11,7 @@ binders touch only the elements they are handed. `page.js`'s and
 
 | File | Responsibility |
 | --- | --- |
-| `js/settings/page.js` | page markup from the schema, the bindings section, the Data panel and its confirmation's binder, the control binder for the page, pause card and main menu |
+| `js/settings/page.js` | page markup from the schema, the bindings section, the Data panel and its confirmation's binder, the control binder for the page and the pause card |
 | `js/settings/reset.js` | Reset all data: clears every document, replay blob and reset key, then reloads; reports what could not be deleted |
 
 ## PUBLIC API
@@ -22,7 +22,10 @@ Page (`js/settings/page.js`)
   `renderResolution`, `boardScale` "2D board scale", `aimReadout` "3D
   neighbour count", `fieldOfView` "Field of view"), Theme (`theme`), Audio
   (`muted`, `volume`); `SETTING_LABELS` (`muted` reads Sound),
-  `CHOICE_LABELS`.
+  `CHOICE_LABELS`; `SETTINGS_COLUMNS` — the widest window's columns, each a
+  stack of section ids (Controls and Audio, Graphics and Theme, Bindings
+  and Data); `SETTING_NOTES` — the settings noted "3D" under their name;
+  `CONTROLS_ACTION`.
 - `settingControl(key)` → `{ key, kind: 'slider' | 'toggle' | 'segmented',
   label, … }` by schema type; `SLIDERS` adds a number's step, format,
   scale (volume shows 0–100 %) and unit (the field of view's `°`, carried
@@ -33,19 +36,26 @@ Page (`js/settings/page.js`)
   `.ui-segmented__swatch`.
 - `settingControlHtml(key, value?, { labelledBy? })` — the control's kit
   markup, root carrying `data-setting="<key>"`, ids `set-<key>`.
-- `settingsPageHtml()` — one `ui-columns` composition: the four sections,
-  each a column, then across the width (`ui-columns__span`) the Bindings
-  panel, whose empty `#settings-bindings` is itself a `ui-columns`, and the
-  Data panel (`#settings-data`: first the export — its line
+- `settingsPageHtml()` — one `ui-columns` (`#settings-columns`) of the
+  `SETTINGS_COLUMNS`, each a `ui-column` stacking its sections (a
+  `ui-panel` with `data-section`, under its `ui-section-label`; each
+  setting a `ui-row` of its name and its control): the four setting
+  sections, Controls ending in the Controls action `#set-controls` (it
+  opens the controls reference), the Bindings panel (the Mode and Device
+  choices `#set-bind-mode`, `#set-bind-device` over the list
+  `#settings-bindings`, filled by `bindingsSectionHtml`), and the Data
+  panel (`#settings-data`: first the export — its line
   `#set-export-text` (`EXPORT_LINE`), the nothing-to-export line
   `#set-export-note`, buttons `#set-export-csv` and `#set-export-json`,
   bound in `js/main.js` by `bindExportActions` over `RECORDS_EXPORT` and
   refreshed on each show of the page ([records-screen.md](records-screen.md))
   — then warning line `#set-reset-note`, button `#set-reset`, hidden confirmation
   `#set-reset-confirm` with `#set-reset-yes` / `#set-reset-no`);
-  `bindingsSectionHtml(glyphs?, camera?)` — one `dl.controls` per mode and
-  each device `bindingDevices` lists (both modes add Touch), 3D's rows for the
-  Camera setting's `camera`.
+  `bindingsSectionHtml(glyphs?, camera?, {mode?, device?})` — the
+  `dl.controls` of one mode for one device (default Classic 2D and the
+  keyboard; a device the mode does not list falls back to its first), 3D's
+  rows for the Camera setting's `camera`; `UI` redraws it on each Mode or
+  Device change.
 - `bindResetPanel({ open, panel, yes, no, note }, { reset })` → `{ isOpen,
   close, clear }`: the confirmation opens with focus on Cancel; confirming
   disables both buttons and calls `reset()` once, a failure's message
@@ -76,10 +86,16 @@ Reset (`js/settings/reset.js`)
 
 ## INTERNAL PATTERNS
 
-- **Controls are bound by `data-setting`.** The page's generated controls,
-  the pause card's sensitivity, invert-Y and volume shortcuts (the first two
-  only on a 3D game's pause card) and the main menu's volume slider all
-  carry `data-setting`, and one
+- **The page** (`css/components.css` head comment, *Settings page*) is a
+  `ui-frame` on the backdrop, Back ("Main menu", `#settings-back`) in its
+  head and no foot. The sections sit in three columns on the largest
+  windows, two from the kit breakpoint and one below it, regrouped by
+  placement alone (`css/style.css`); on a phone the Device choice spans the
+  panel, each option wrapping its label.
+- **Controls are bound by `data-setting`.** The page's generated controls
+  and the pause card's Sound, volume, sensitivity and invert-Y shortcuts
+  (the last two only on a 3D game's pause card) all carry `data-setting`,
+  and one
   `bindSettingControls(document.querySelectorAll('[data-setting]'), …)` in
   `js/main.js` binds them, so every copy shows the same value. A slider's
   `data-scale` converts its units to the stored value.
@@ -105,6 +121,8 @@ Reset (`js/settings/reset.js`)
   page, its sections and the Data panel.
 - [../domain/features/platform-storage.md](../domain/features/platform-storage.md)
   — clearing every document and the blob store.
+- [../domain/features/shared-screen-layout.md](../domain/features/shared-screen-layout.md)
+  — the page in the frame and its phone arrangement.
 
 ## CROSS-REFERENCES
 

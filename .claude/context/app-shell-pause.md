@@ -3,7 +3,7 @@
 ## OVERVIEW
 
 Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
-Covers the pause controller (`js/shell/pause.js`: pause, resume, restart,
+Covers the pause card and the pause controller (`js/shell/pause.js`: pause, resume, restart,
 back to menu, confirmations, game hand-offs, leave-page guard), the end
 delay's skip (`js/shell/end-skip.js`), and their wiring in `js/main.js`.
 Both modules are pure; their rules are documented in their head comments.
@@ -56,9 +56,18 @@ Both modules are pure; their rules are documented in their head comments.
   held Esc's auto-repeat: `resumeFromPause` asks `escResumes(input.lastKey)`
   ([input.md](input.md)). Browsers hand the page at most the releasing
   press's `keyup`, never its `keydown`, while the lock holds.
+- **The card** (`css/components.css` head comment, *Pause card*;
+  `#pause-card`, [app-shell-markup.md](app-shell-markup.md) § Screens):
+  `ui.showPause` shows Resume (with its back key hint) only while the game
+  is on, "Back to start" only for a 3D game in play, and labels
+  `#p-restart` Restart (with its restart key hint) or, once the game ended,
+  Play again. Its Settings panel is muted and bound like the Settings
+  page's controls (`data-setting`: Sound, volume, then the look controls
+  on a 3D game's card only) through `bindSettingControls`.
 - **Confirmation.** Back to menu during a started, unfinished game calls
   `confirm` → `ui.showConfirm` on the pause card (`#pause-confirm` in place
-  of `#pause-actions`); Back or Cancel closes it. Restart of such a game
+  of `#pause-actions`, its action `#p-confirm-yes` a `ui-button--danger`);
+  Back or Cancel closes it. Restart of such a game
   proceeds at once, the page's first one toasting `RESTART_NOTICE`
   (`restarted`); under the `confirmRestart` setting (`askRestart`) it
   confirms too, pausing first. Outside such a game both proceed at once,
@@ -109,6 +118,8 @@ Both modules are pure; their rules are documented in their head comments.
   — the end sequence and its skip.
 - [../domain/features/replay-recording.md](../domain/features/replay-recording.md)
   — the replay beside the summary in the finished and abandoned reports.
+- [../domain/features/shared-screen-layout.md](../domain/features/shared-screen-layout.md)
+  — the pause card's and the confirmations' layout.
 
 ## CROSS-REFERENCES
 

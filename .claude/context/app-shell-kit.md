@@ -34,9 +34,18 @@ The screens' markup in `index.html` and the shell stylesheet are
   `segmentedState(count, selected)`.
 - `bindSlider(root)`, `bindSegmented(group, {onChange, horizontal?})`
   (`horizontal` leaves Up/Down to the shell's focus moves),
-  `bindSelectOnHover(root)` (the one selected control: a moving mouse
-  focuses the enabled `SELECT_ON_HOVER` control under it),
-  `initComponents(root)` — each returns an unbind.
+  `bindTabs(list, {onChange})` (a `ui-tabs` tablist, Left / Right select,
+  the selected tab alone in the Tab order), `bindSelectOnHover(root)` (the
+  one selected control: a moving mouse focuses the enabled
+  `SELECT_ON_HOVER` control under it — a button, menu entry, mode entry or
+  board option — a disabled mode entry included),
+  `initComponents(root)` (every slider, segmented choice and tablist) —
+  each returns an unbind.
+- `showKeyHints(root, keysFor)`: fills every `.ui-key-hint[data-action]`
+  under `root` with the keys `keysFor(action)` gives (the bindings source's
+  `keyHintKeys` for the active device), `ui-key-hint--pad` for controller
+  buttons, hidden with none (touch); `UI` calls it on every device change
+  ([app-shell-help.md](app-shell-help.md)).
 - `PAGER_WINDOW` (5), `pagerState(page, pages)` → `{hidden, page, pages,
   first, last, numbers: [{page, label, current}]}`; `bindPager(nav, {onPage,
   name?})` → `{show(state)}`: fills a `.ui-pager` with First, the numbered
@@ -68,8 +77,21 @@ subject}` (`palette`, `numbers`, `font`, `sky`, `style`, `relief`, `legible`,
 
 `js/ui/kit-catalogue.js` — `KIT_CATALOGUE` (frozen `{name, kind, className,
 selector, base, variants, parts, slots}`; a part `{name, selector, optional,
-interactive, states, as}`), `STATES`, `CONTRAST_ROLES` (`surfaces`,
-`bodyText`, `largeText`), `REQUIRED_TOKENS`.
+interactive, states, as}`; a slot `{name, selector}`), `STATES` (a
+selectable part's `default`, `selected`, `pressed`, `disabled`, and a board
+option's `chosen`; every other control's `hover` and `focused`, and
+`checked`), `CONTRAST_ROLES` (`surfaces`, `bodyText`, `largeText`),
+`REQUIRED_TOKENS`. Beside the m1 kit, the catalogue holds the shared
+layout's components: `ui-button--danger`, `ui-wordmark`, `ui-backdrop`,
+`ui-frame` (parts `head`, `back`, `title`, `action`, `body`, `foot`,
+`status`, `summary`; slot `window-chrome`), `ui-mode-entry` (`entry`,
+`icon`, `label`, `reason`, `last`, `lock`), `ui-option` (`option`,
+`badge`, `name`, `last`, `meta`, `size`, `density`, `check`; variant
+`ui-option--learn`), `ui-section-label`, `ui-key-hint`, `ui-chip`,
+`ui-list-row`, `ui-scene-panel` (`stage`, `tag`, `card`, `badge`, `name`,
+`note`; variant `ui-scene-panel--live`), `ui-divider`, `ui-tabs`,
+`ui-checkbox`, `ui-table`, `ui-toast`, a message `ui-card`'s `icon`, and
+the compositions `ui-mode-list`, `ui-options`, `ui-key-hints`, `ui-list`.
 
 `js/theme.js` — `globalThis.msThemeBoot` `{id, fellBackFrom, link, ready}`
 (`ready` resolves once the active stylesheet loaded, rejects when the
@@ -108,9 +130,13 @@ getStyle, theme, dev?, log?})`.
   `tests/components.test.mjs`; a new composition into the catalogue and
   `COMPOSITIONS`.
 - **Controls.** Every interactive control is a native `<button>`, `<input>`
-  or `<a>`. Buttons, menu entries and board options have one selected
-  state — hover and focus alike, no outline — and `bindSelectOnHover` keeps
-  it on one control at a time; every other control keeps its own hover,
+  or `<a>`. Buttons, menu entries, mode entries and board options have one
+  selected state — hover and focus alike, no outline; *Joyful tiles* draws
+  them raised at rest, level when selected, sunk when pressed, flat when
+  disabled — and `bindSelectOnHover` keeps it on one control at a time; a
+  board option's chosen state (`aria-pressed`, a fill and a check) is
+  drawn apart from selected, and the selected mode entry is taller, with a
+  bigger icon and label; every other control keeps its own hover,
   `:active`, `:focus-visible` (and `body.pad-nav :focus`) and disabled
   states, ringed from `--color-focus-ring`. `data-force` previews a state
   (gallery only). Only the selected segmented option is in the Tab order.
@@ -166,8 +192,25 @@ getStyle, theme, dev?, log?})`.
 - **The 3D scene** (`js/render.js`, `js/textures.js`, `js/tile-art.js`)
   never reads tokens or subscribes to theme changes: sky, fog and clear
   colour come from `bindScenePalette`; tiles and effects keep one palette.
-- **Screens** are built from the kit as catalogued; their markup, the ids
-  the shell wires and the pointer sizes are
+- **The screen frame.** Every non-game screen is a `ui-frame` on a
+  `ui-backdrop`, sized to its content and never larger than the window: a
+  head (Back with its back key hint, the title centred, an optional
+  action), a body that scrolls vertically while head and foot stay in
+  view, and a foot — a status line, or a bottom bar of the selection's
+  summary beside the screen's actions; the `window-chrome` slot is hidden
+  unless a theme draws it. A `ui-scene-panel` is a framed region a mode's
+  own renderer draws into: a Classic 2D board view, the 3D scene through
+  the renderer's target rectangle while the panel is `--live`
+  ([app-shell-3d.md](app-shell-3d.md) § Scene panel), or a card with an
+  entry's badge.
+- **Screens** composed in the kit — the main menu, both board choices,
+  Daily, the placeholder, Records, Settings, the board status cards, the
+  pause card with its confirmation, the 3D ready card, the context-lost
+  card, the Learn 3D end card, the results screen, the replay viewer, the
+  toast, the fatal card, the no-JavaScript notice and the 404 page — are
+  each described, element by element and by window size, at the end of the
+  head comment of `css/components.css`; the gallery shows the results
+  layout. Their markup, the ids the shell wires and the pointer sizes are
   [app-shell-markup.md](app-shell-markup.md).
 
 ## DOMAIN DEPENDENCIES
@@ -181,6 +224,9 @@ getStyle, theme, dev?, log?})`.
 - [../domain/features/screen-components.md](../domain/features/screen-components.md)
   — component set, states, focus and controller contract, the kit-built
   screens.
+- [../domain/features/shared-screen-layout.md](../domain/features/shared-screen-layout.md)
+  — the shared layout's components, the selected state, the screen frame,
+  the scene panel and every screen composed in them.
 
 ## CROSS-REFERENCES
 

@@ -21,13 +21,13 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
   `boardLine2D({width, height, noGuess})` (`"30 × 16 · no-guess"`).
 - `UI(cb)` — callbacks are named after the control they serve
   (`onMenuEntry`, `onBack`, `onReady*`, `onResume`, `onRestart`,
-  `onMainMenu`, `onPause`, `onToggleSwap`, `onToggleTap`, `onToggleSound`,
+  `onMainMenu`, `onPause`, `onToggleSwap`, `onToggleTap`,
   `onDismissHint(mode, kind)`, `on{Retry,Standard,OfferMenu,Cancel}{2D,3D}`,
-  `onStandardWait3D`, `onMenuPlayAgain`, `onBackToStart`, `onResetAll`,
-  `onLayer` — the Controls modal opened or closed, for the containment).
-  Method groups:
+  `onStandardWait3D`, `onLearnEnd(won)`, `onLearnBack`, `onBackToStart`,
+  `onResetAll`, `onLayer` — the Controls modal opened or closed, for the
+  containment). Method groups:
   - screens: `showMenu`, `showBoardChoice`, `showBoardChoice2D`,
-    `showComingSoon`, `showRecords`, `showSettings`, `showReady(board, msg,
+    `showComingSoon(title)`, `showDaily`, `showRecords`, `showSettings`, `showReady(board, msg,
     {rules, blocked})`, `setReadyPending`, `showPlaying`, `showClassic2D`,
     `showPause({state, time, minesLeft, note, mode})`, `updatePause`,
     `showReplay` / `hideReplay` (`body.replaying`: no HUD, view chips, tools
@@ -37,8 +37,8 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
     bar height + `PANEL_GAP` 8 px on top), `placePanel2D(rect)`,
     `setBoard2D`, `setBoardStatus`; 3D `setBoardStatus3D` (progress drawn by
     `progressLine`);
-  - menu: `setLastMode`, `setReturning({strip, again})`,
-    `setEntryUnavailable`;
+  - menu: `setLastMode` (the Last played chip), `setEntryUnavailable`,
+    `setBuild` (the build label);
   - confirmations: `showConfirm({message, confirmLabel}, onYes, onNo)`,
     `isConfirmOpen`, `closeConfirm`, `closeResetConfirm` (→ false when none
     is open);

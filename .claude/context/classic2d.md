@@ -13,7 +13,7 @@ board; the skin owns how a tile looks.
 | File | Responsibility | Context file |
 | --- | --- | --- |
 | `js/classic2d/board-setup.js` | Board choice → board request: standard sizes, custom limits and validation, grid and records identity of a choice, the last board choice document. DOM-free. | this file |
-| `js/classic2d/board-choice.js` | The board choice screen: custom info line and validation, the choice its fields describe, `bindBoardChoice` (touches only the elements it is handed). | this file |
+| `js/classic2d/board-choice.js` | The board choice screen: custom info line, validation and Random, the choice its fields describe, the summary and bests lines, `bindBoardChoice` (touches only the elements it is handed). | this file |
 | `js/classic2d/session.js` | The game session and timer: closed board, first click's board (standard, no-guess, pre-generated), generating state, failure offer, pause, end, restart and leave with summaries and replays, the replay recorder. DOM-free. | [classic2d-session.md](classic2d-session.md) |
 | `js/classic2d/mode.js` | The mode behind the shell's contract: one session, view, inputs and sampler per game, overlay feed, sound cues, pause by hiding the board, generation client and pre-generation, end delay. DOM-free. | [classic2d-mode.md](classic2d-mode.md) |
 | `js/classic2d/end-effect.js` | The 3D win and loss waves and the win confetti at board scale, and their Canvas 2D drawing. DOM-free and token-free. | [classic2d-mode.md](classic2d-mode.md) |
@@ -48,18 +48,24 @@ board; the skin owns how a tile looks.
   `createLastChoice({storage})` → `{current, load(), save(choice)}`
   ([platform.md](platform.md)).
 
-`js/classic2d/board-choice.js`
-- `CHOICE_SIZES`, `sizeLabel(size)`, `customStatus(custom)` → `{ok, field,
-  max, text}`, `readChoice({size, fields, noGuess}, fallbackCustom?)`,
-  `densityHintShown(custom, noGuess)`, `bindBoardChoice({root, onStart,
-  onBack, code?})` → `{show(choice, {played, details}), destroy()}` — the density
-  hint `[data-density-hint]` follows the fields and switch live; `details`
-  (the shell's `presetDetails`, [app-shell-menu.md](app-shell-menu.md)) fills each
-  size's `[data-detail]` line for the switch's position; `code` `{resolve,
-  onPlay}` binds the board code field (`[data-code-field]`,
-  `[data-code-play]`, `[data-code-info]`, `bindCodeField` in
-  `js/ui/components.js`), cleared by every show. `CODE_PROMPT` is its empty
-  line on both board choices.
+`js/classic2d/board-choice.js` (its head comment is the contract)
+- `CHOICE_SIZES`, `CUSTOM_HINT`, `boardLine(board)`, `sizeLabel(size)`,
+  `mineDensity(board)`, `customInfo(custom)`, `customStatus(custom)` →
+  `{ok, field, max, text}`, `randomCustom(random?)` (the Random fill, at
+  most about one mine in five cells), `readChoice({size, fields, noGuess},
+  fallbackCustom?)`, `densityHintShown(custom, noGuess)`,
+  `choiceSummary({selected, custom, noGuess, code})` (the bottom bar's
+  line), `bestsTitle({selected, custom, noGuess})`; `CODE_PROMPT`, the code
+  field's empty line on both board choices.
+- `bindBoardChoice({root, onStart, onBack, onRecords?, code?, bests?})` →
+  `{show(choice, {played, held}), state(), refresh(), destroy()}` over
+  `#c2d-choice`: the options `[data-size]` (`beginner`, `intermediate`,
+  `expert`, `custom`, `code`; `aria-pressed` the chosen one); `onRecords(identity)`
+  with the chosen board's records identity (null with no board chosen);
+  `code` `{resolve, onPlay}` validates the pasted code live; `bests(identity)`
+  the shell's `boardBests` text ([app-shell-menu.md](app-shell-menu.md)),
+  redrawn by `refresh()`; `held` (a `state()` taken before Records opened)
+  brings the screen back as it was.
 
 ## INTERNAL PATTERNS
 
@@ -77,6 +83,16 @@ board; the skin owns how a tile looks.
   no-guess request gets the session's failure offer.
 - **Stored choice.** One that does not normalise reads as
   `DEFAULT_CHOICE`; an invalid one is never saved.
+- **The board choice screen** (`css/components.css` head comment, *Classic
+  2D board choice*): the options on the left; on the right a preset's
+  no-guess switch and the board's three bests, Custom's switch, form,
+  Random and refusal line with the bests for that size, or Insert Board
+  Code's field alone; the bottom bar's summary, Records and Play. Choosing
+  an option is a click (a tap, the controller's A); Enter plays. The info
+  line, refusal line, density hint, bests, summary and Play follow the
+  fields and the switch live; Play is disabled on a refused custom board
+  and an empty or refused code. The binder reads no records: the shell
+  hands it `bests` and calls `refresh()` on the records' change.
 
 ## DOMAIN DEPENDENCIES
 
@@ -115,5 +131,6 @@ board; the skin owns how a tile looks.
 - Changing the custom limits or the stored choice (`customMineCap`,
   `normaliseChoice` in `board-setup.js`, `CUSTOM_LIMITS` in
   `js/engine/profiles.js`).
-- Changing the board choice screen's fields, info line or detail lines
-  (`customStatus`, `bindBoardChoice` in `board-choice.js`).
+- Changing the board choice screen's options, fields, info line, summary
+  or bests (`customStatus`, `choiceSummary`, `bindBoardChoice` in
+  `board-choice.js`; the `#c2d-choice` markup in `index.html`).

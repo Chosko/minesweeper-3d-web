@@ -117,11 +117,13 @@ layers are [app-shell-ui.md](app-shell-ui.md) § Controller menus.
   Up / Down treat a board choice's row of custom fields (`form .ui-row`) as
   one control, measured from the whole row and skipping its own controls;
   aim at a table's buttons by their row (`tr`), so a table is entered from
-  above or below wherever its buttons sit; and inside a column layout
-  (`.ui-column`, as Records) search only `cur`'s column, so the walk leaves
-  a column at its ends in page order, and a move from outside enters the
-  columns at their first control (Down) or last (Up). Left / Right on a
-  range input step its value. The arrow keys do not walk on `playing`,
+  above or below wherever its buttons sit; and a move from outside a column
+  layout (`.ui-column`) enters the columns at their first control (Down) or
+  last (Up), while inside one laid out as a column (Records; not Settings'
+  columns below its widest windows, whose sections are placed one by one)
+  it searches only `cur`'s column, so the walk leaves a column at its ends
+  in page order. Up / Down into a radio group land on its one stop, the
+  checked option. Left / Right on a range input step its value. The arrow keys do not walk on `playing`,
   `classic-2d`, `records`, the replay viewer or the look (`KEY_NAV_OFF`),
   which handle arrows of their own.
 

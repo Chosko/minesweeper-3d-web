@@ -25,7 +25,9 @@ and adapter (`js/shell/mode-3d.js`) themselves are [mode3d.md](mode3d.md).
 ## INTERNAL PATTERNS
 
 - **Adapter flow.** `FLOW_3D` is handed to `create3DMode`: board choice
-  routes to `board-choice` (filled from `LAST_CHOICE_3D`); `start` is
+  routes to `board-choice` (filled from `LAST_CHOICE_3D`; Learn 3D, the
+  four cube presets, Custom and Insert Board Code, a First box size played
+  as a custom board — [mode3d.md](mode3d.md)); `start` is
   `startGame`; `pause` shows the pause card; `resume` is `resumeGame`;
   `restart` starts a session of the same board (no-guess off once the
   player took the failed board's standard offer) and enters play through
@@ -77,6 +79,19 @@ and adapter (`js/shell/mode-3d.js`) themselves are [mode3d.md](mode3d.md).
   `standardFromWait3D` is the generating card's Play a standard board (the
   session's `playStandard()`); Main menu is `PAUSE.toMenu()`. While the card
   shows, the controller goes to `padStatus3D`.
+- **Scene panel.** `syncScenePanel` (every router change, window resize,
+  the Daily body's scroll, and a `ResizeObserver` on the panel's stage)
+  hands `renderer.setTarget` the rectangle of the shown screen's live
+  scene panel (`.ui-scene-panel--live`: the menu's 3D preview, the Daily
+  screen's cube), and null — the full window — everywhere else, the replay
+  viewer included ([rendering.md](rendering.md) § Internal patterns, *Target rectangle*). The
+  canvas is clipped to the panel's rounded corners; a panel inside a
+  frame's scrolling body draws in front of the frame
+  (`body.scene-front`), clipped to the part the body shows.
+  `body.scene-off` hides the canvas where no scene shows: a menu preview
+  other than the 3D one, the board choices, the Daily screen with no 3D
+  panel in view. The menu screens behind them hold the demo board
+  (`showMenuBackdrop`), orbiting.
 - **`sync3D`** (every router change) resumes the session on `playing` and
   pauses it elsewhere, so board input runs only in play; it refreshes the
   status card.
@@ -150,3 +165,5 @@ and adapter (`js/shell/mode-3d.js`) themselves are [mode3d.md](mode3d.md).
   timer follows the screens (`sync3D`).
 - Changing the ready card, the lock refusal messages or lockless entry:
   `showReady`, `LOCK_FALLBACK`, `enterPlay3D`, `enterDragLook`.
+- Changing where the scene draws on a screen with a scene panel:
+  `syncScenePanel`, `sceneOff`.

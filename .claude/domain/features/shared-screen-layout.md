@@ -55,7 +55,10 @@ In scope (m2b-themes):
   left the entries in three blocks — Classic 2D, Hexagon, Triangle, Surface
   and 3D; Daily, Records and Settings; Quit — with no group labels, every
   entry the same height but the selected one, which is taller with a bigger
-  icon and label, the blocks together exactly as tall as the preview; on
+  icon and label, the blocks together exactly as tall as the preview — the
+  entries and the preview share one row of the menu, every entry growing
+  from nothing to an equal share of the column and the selected one to a
+  larger share; on
   the right the preview of the selected entry: a real Classic 2D board drawn
   by its board view, the real cube orbiting for 3D (a static themed
   background without WebGL 2), today's daily Expert board with its marked
@@ -81,7 +84,11 @@ In scope (m2b-themes):
   unavailable), the size form with its info line, *Random* and the refusal
   line, then the bests for that size; for *Insert Board Code* only the code
   field and its one-line feedback. The foot is a bottom bar: the selected
-  board summarised on the left, *Records* (opening the Records screen on
+  board summarised on the left — *<board> · <size> · <mines> mines*, with
+  *· no-guess* when the switch is on and *Custom* as a custom board's name;
+  *Board code · <the code's board>*, or *Board code · paste a code to play*
+  while there is none; *Learn 3D · guided <size> box · no timer* —,
+  *Records* (opening the Records screen on
   the selected board and switch) and *Play* with its key hint on the right,
   *Play* disabled while there is nothing valid to play. The window's option
   rows grow denser on the smaller desktop windows so the window fits them.
@@ -192,8 +199,10 @@ kit are described in [app-shell.md](../../context/app-shell.md) and
   through its existing read interface and its change notification; they
   hold no records of their own.
 - **Scene panel.** The 3D renderer gains a target rectangle: the shell
-  hands it the panel's rectangle while a screen with a scene panel shows,
-  and the full window otherwise; it draws only there, with the panel's own
+  hands it the panel's rectangle while a screen with a scene panel shows —
+  measured again on every screen change, window resize and change of the
+  panel's own box, which a `ResizeObserver` reports —, and the full window
+  otherwise; it draws only there, with the panel's own
   frame and corners drawn by the theme stylesheet over it. The Classic 2D
   preview is the Classic 2D board view drawing a board in the panel; the
   preview shown follows the menu's selection.
@@ -222,7 +231,21 @@ kit are described in [app-shell.md](../../context/app-shell.md) and
 ## Interfaces and contracts
 
 - **Kit catalogue additions** — the new components' names, parts and slots
-  join the contract `theme-system` enforces.
+  join the contract `theme-system` enforces: `ui-backdrop`; `ui-frame`
+  (parts `head`, `back`, `title`, `action`, `body`, `foot`, `status`,
+  `summary`; slot `window-chrome`); `ui-mode-entry` (`entry`, `icon`,
+  `label`, `reason`, `last`, `lock`); `ui-option` (`option`, `badge`,
+  `name`, `last`, `meta`, `size`, `density`, `check`; variant
+  `ui-option--learn`); `ui-section-label` (`text`, `aside`);
+  `ui-key-hint` (`key`, `label`; variant `ui-key-hint--pad`); `ui-chip`
+  (variants `--won`, `--lost`, `--muted`, `--best`); `ui-list-row`
+  (`date`, `board`, `figure`, `outcome`); `ui-scene-panel` (`stage`,
+  `tag`, `card`, `badge`, `name`, `note`; variant `ui-scene-panel--live`);
+  `ui-stat--tile` (with its `badge`); `ui-wordmark` (`word`);
+  `ui-button--danger`; `ui-divider`; `ui-tabs` (`tab`); `ui-checkbox`;
+  `ui-table`; `ui-toast` (`icon`, `text`); a message `ui-card`'s `icon`;
+  and the compositions `ui-mode-list`, `ui-options`, `ui-key-hints` and
+  `ui-list`.
 - **Accessibility and controller parity** — every control has an accessible
   name, focus is always visible as `screen-components` § Interfaces and
   contracts, **Accessibility**, states it, every action is reachable by
