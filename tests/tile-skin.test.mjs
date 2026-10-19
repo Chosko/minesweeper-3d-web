@@ -9,9 +9,9 @@ import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const suite = browserSuite({ args: [] });
-const CSS = readFileSync(join(ROOT, 'css/tokens.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+const CSS = readFileSync(join(ROOT, 'themes/joyful-tiles/theme.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 
-// ---------- token maps parsed from the sheet, per theme ----------
+// ---------- token maps: the theme's, parsed from its stylesheet, and a second palette ----------
 function block(selector) {
   const at = CSS.indexOf(selector + ' {');
   assert.ok(at >= 0, `${selector} block present`);
@@ -22,9 +22,23 @@ function tokensOf(text) {
   for (const m of text.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) map.set(m[1], m[2].trim());
   return map;
 }
-const LIGHT = tokensOf(block(':root'));
-const DARK = new Map([...LIGHT, ...tokensOf(block(':root[data-theme="dark"]'))]);
-const THEMES = { light: LIGHT, dark: DARK };
+const JOYFUL = tokensOf(block(':root[data-theme="joyful-tiles"]'));
+// A second theme's tile palette, every recipe colour unlike Joyful tiles', for the painter's and the
+// cache's per-theme behaviour.
+const OTHER = new Map([...JOYFUL, ...Object.entries({
+  '--color-tile-rim': '#0b1424', '--color-tile-bevel-light': '#3e5f9c', '--color-tile-bevel-dark': '#1d3157',
+  '--color-tile-closed': '#3a5a92', '--color-tile-flagged': '#3a5a92', '--color-tile-face-shade': '#2f4b7d',
+  '--color-tile-gloss': 'rgba(255, 255, 255, 0.14)', '--color-tile-pressed': '#2c3e60',
+  '--color-tile-revealed-rim': '#33415d', '--color-tile-revealed-edge': '#141d31', '--color-tile-revealed': '#1b2740',
+  '--color-tile-mine': '#1b2740', '--color-tile-wrong-flag': '#1b2740', '--color-tile-revealed-shade': '#17223a',
+  '--color-tile-exploded': '#b3261e', '--color-tile-exploded-edge': '#7a1712', '--color-tile-exploded-shade': '#a3221b',
+  '--color-tile-number-shadow': 'rgba(0, 0, 0, 0.3)', '--color-tile-mine-glyph': '#e6edf8', '--color-tile-mine-highlight': 'rgba(255, 255, 255, 0.9)',
+  '--color-tile-flag': '#ff7b7b', '--color-tile-flag-shade': '#e04a4a', '--color-tile-flag-shadow': 'rgba(0, 0, 0, 0.35)',
+  '--color-tile-wrong-flag-mark': '#ff7b7b', '--color-tile-wrong-flag-outline': 'rgba(11, 20, 36, 0.95)',
+  '--color-number-1': '#82b1ff', '--color-number-2': '#81c784', '--color-number-3': '#ff8a80', '--color-number-4': '#b39ddb',
+  '--color-number-5': '#ffab91', '--color-number-6': '#4dd0e1', '--color-number-7': '#eceff1', '--color-number-8': '#a0a8b4',
+})]);
+const THEMES = { 'joyful-tiles': JOYFUL, other: OTHER };
 
 const tokenFrom = (map) => (name) => {
   const key = name.startsWith('--') ? name : `--${name}`;
@@ -102,7 +116,7 @@ function fakeCanvasFactory() {
   return { made, createCanvas };
 }
 
-function fakeTheme(initial = 'light') {
+function fakeTheme(initial = 'joyful-tiles') {
   const listeners = new Set();
   let current = initial;
   return {
@@ -143,7 +157,7 @@ test('the visual states are the engine cell states plus pressed', async () => {
   assert.equal(TILE_STATES.length, Object.values(CELL).length + 1);
 });
 
-test('each state paints with its own tile tokens, in both themes, at its position', async () => {
+test('each state paints with its own tile tokens, in each theme\'s palette, at its position', async () => {
   const { paintTileWith } = await skinModule();
   for (const [name, map] of Object.entries(THEMES)) {
     const t = tokenFrom(map);
@@ -263,7 +277,7 @@ test('the pressed tile is the cube face sunk in: bevel inverted, no gloss, face 
   }
 });
 
-test('closed and revealed tiles differ by relief and border, not by colour alone, in both themes', async () => {
+test('closed and revealed tiles differ by relief and border, not by colour alone, in each theme\'s palette', async () => {
   const { paintTileWith } = await skinModule();
   for (const [name, map] of Object.entries(THEMES)) {
     const t = tokenFrom(map);
@@ -323,7 +337,7 @@ test('the wrong flag is the 3D flag under the 3D cross on the revealed face, and
 test('the recipe scales with the tile, and every rim, border and bevel band is at least one device pixel', async () => {
   const { tileBands } = await artModule();
   const { paintTileWith, MIN_TILE_SIZE } = await skinModule();
-  const t = tokenFrom(LIGHT);
+  const t = tokenFrom(JOYFUL);
   for (const size of [...new Set([26, MIN_TILE_SIZE])]) {
     for (const ratio of [1, 2]) {
       const px = 1 / ratio;
@@ -348,7 +362,7 @@ test('the recipe scales with the tile, and every rim, border and bevel band is a
 
 test('an unknown state, or a revealed number outside 0–8, paints the visibly wrong placeholder', async () => {
   const { paintTileWith } = await skinModule();
-  const t = tokenFrom(LIGHT);
+  const t = tokenFrom(JOYFUL);
   for (const [state, number] of [['bogus', 0], [undefined, 0], ['revealed', 9], ['revealed', -1]]) {
     const ctx = fakeContext();
     paintTileWith(t, ctx, 5, 5, 20, state, number);
@@ -358,17 +372,17 @@ test('an unknown state, or a revealed number outside 0–8, paints the visibly w
 });
 
 test('paintTile reads the tile tokens through the token reader', async () => {
-  const values = new Map(LIGHT);
+  const values = new Map(JOYFUL);
   const saved = { document: globalThis.document, getComputedStyle: globalThis.getComputedStyle, msTheme: globalThis.msTheme };
   globalThis.document = { documentElement: {} };
   globalThis.getComputedStyle = () => ({ getPropertyValue: (p) => values.get(p) ?? '' });
-  globalThis.msTheme = { current: () => 'light', onChange: () => () => {} };
+  globalThis.msTheme = { current: () => 'joyful-tiles', onChange: () => () => {} };
   try {
     const { paintTile } = await skinModule();
     const ctx = fakeContext();
     paintTile(ctx, 0, 0, 16, 'revealed', 4);
     const glyph = (c) => c.calls.filter((call) => call.op === 'fillText').at(-1).fill;
-    assert.equal(glyph(ctx), LIGHT.get('--color-number-4'));
+    assert.equal(glyph(ctx), JOYFUL.get('--color-number-4'));
     values.set('--color-number-4', '#123456');
     const again = fakeContext();
     paintTile(again, 0, 0, 16, 'revealed', 4);
@@ -400,21 +414,21 @@ test('the cache pre-renders every state and number once, and a redraw is only im
 
 test('the cache is keyed by tile size, pixel ratio and theme', async () => {
   const mod = await skinModule();
-  const theme = fakeTheme('light');
+  const theme = fakeTheme('joyful-tiles');
   const { skin, canvases } = makeSkin(mod, { theme });
   const board = fakeContext();
   const per = canvases.made.length;
   skin.drawTile(board, 0, 0, 24, 'closed', 0, 1);
   const one = canvases.made.length;
   assert.ok(one > per);
-  assert.equal(skin.cacheKey(), '24|1|light');
+  assert.equal(skin.cacheKey(), '24|1|joyful-tiles');
 
   skin.drawTile(board, 0, 0, 24, 'closed', 0, 1);
   assert.equal(canvases.made.length, one, 'same key, no rebuild');
 
   skin.drawTile(board, 0, 0, 32, 'closed', 0, 1);
   assert.equal(canvases.made.length, one * 2, 'size change rebuilds');
-  assert.equal(skin.cacheKey(), '32|1|light');
+  assert.equal(skin.cacheKey(), '32|1|joyful-tiles');
 
   skin.drawTile(board, 0, 0, 32, 'closed', 0, 2);
   assert.equal(canvases.made.length, one * 3, 'pixel-ratio change rebuilds');
@@ -423,22 +437,22 @@ test('the cache is keyed by tile size, pixel ratio and theme', async () => {
   assert.ok(scaled, 'the offscreen context is scaled to the pixel ratio');
   assert.equal(board.calls.at(-1).args.slice(1).join(), '0,0,32,32', 'copied at CSS-pixel size');
 
-  theme.set('dark');
+  theme.set('other');
   skin.drawTile(board, 0, 0, 32, 'closed', 0, 2);
   assert.equal(canvases.made.length, one * 4, 'theme change rebuilds');
-  assert.equal(skin.cacheKey(), '32|2|dark');
-  const darkClosed = canvases.made.find((c) => colours(c.ctx).has(DARK.get('--color-tile-closed')));
-  assert.ok(darkClosed, 'the rebuilt images use the dark tokens');
+  assert.equal(skin.cacheKey(), '32|2|other');
+  const otherClosed = canvases.made.find((c) => colours(c.ctx).has(OTHER.get('--color-tile-closed')));
+  assert.ok(otherClosed, 'the rebuilt images use the new theme\'s tokens');
 });
 
 test('a theme change drops the cache and asks the renderer for a redraw; dispose unsubscribes', async () => {
   const mod = await skinModule();
-  const theme = fakeTheme('light');
+  const theme = fakeTheme('joyful-tiles');
   const redraws = [];
   const { skin, canvases } = makeSkin(mod, { theme, redraw: () => redraws.push(skin.cacheKey()) });
   skin.drawTile(fakeContext(), 0, 0, 20, 'flagged', 0, 1);
   assert.equal(theme.listeners.size, 1, 'subscribed to theme changes');
-  theme.set('dark');
+  theme.set('other');
   assert.equal(redraws.length, 1, 'redraw requested once');
   assert.equal(redraws[0], null, 'the cache is already dropped when the redraw runs');
   const made = canvases.made.length;
@@ -550,7 +564,7 @@ async function drawAllStates([size, ratio]) {
   return out;
 }
 
-test('in a browser, Expert fits a 1024px wide window at MIN_TILE_SIZE or more, and every state is legible at 26 px and at it, at pixel ratios 1 and 2, in both themes', async (t) => {
+test('in a browser, Expert fits a 1024px wide window at MIN_TILE_SIZE or more, and every state is legible at 26 px and at it, at pixel ratios 1 and 2', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -576,8 +590,7 @@ test('in a browser, Expert fits a 1024px wide window at MIN_TILE_SIZE or more, a
     await page.waitForFunction(() => globalThis.__ms.board2D.layout.scrolls);
     await page.goto(`${base}/dev/components.html`);
 
-    for (const theme of ['light', 'dark']) {
-      await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
+    for (const theme of ['joyful-tiles']) {
       for (const size of [...new Set([26, MIN_TILE_SIZE])]) {
         for (const ratio of [1, 2]) {
           const tiles = await page.evaluate(drawAllStates, [size, ratio]);

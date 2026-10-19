@@ -7,52 +7,39 @@
   <script src="../js/theme.js"></script>
   <link rel="stylesheet" href="../css/tokens.css">
   <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../themes/joyful-tiles/theme.css">
   <style>
-    body {
-      margin: 0;
-      padding: var(--space-6);
-      background: var(--color-backdrop);
-      color: var(--color-ink);
-      font-family: var(--font-family-sans);
-    }
+    /* layout only: the theme stylesheet draws the page and every component */
+    body { margin: 0; padding: var(--space-6); font-size: var(--font-size-md); }
     h1 { margin: 0 0 var(--space-2); font-size: var(--font-size-2xl); }
-    .intro { margin: 0 0 var(--space-6); color: var(--color-ink-muted); }
-    .bar { display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-6); }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--space-6); }
-    .states { display: grid; grid-template-columns: 90px 1fr; align-items: center; gap: var(--space-3) var(--space-4); }
-    .state { font-size: var(--font-size-sm); color: var(--color-ink-muted); }
+    .intro { margin: 0 0 var(--space-6); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--space-6) var(--space-6); }
+    .states { display: grid; grid-template-columns: 90px 1fr; align-items: center; gap: var(--space-4) var(--space-4); }
+    .state { font-size: var(--font-size-sm); }
     .stats { display: flex; gap: var(--space-6); }
     .wide { grid-column: 1 / -1; }
     .states > .ui-segmented { justify-self: start; }
     /* the 3D touch controls, composed from the kit as the game page composes them */
     .touch-row { display: flex; align-items: center; gap: var(--space-6); }
-    .touch-modes { display: inline-flex; flex-direction: column; gap: var(--space-2); }
+    .touch-modes { display: inline-flex; flex-direction: column; gap: var(--space-3); }
     .touch-modes .ui-button { min-width: 44px; min-height: 44px; }
-    .touch-modes .ui-button[aria-pressed="true"] { border-color: var(--color-accent); background: var(--color-accent); color: var(--color-accent-ink); }
-    .touch-stick { position: relative; width: 120px; height: 120px; border-radius: 50%; border: 2px solid var(--color-border); background: var(--color-surface-raised); }
-    .touch-stick__knob { position: absolute; left: 36px; top: 12px; width: 48px; height: 48px; border-radius: 50%; background: var(--color-accent); box-shadow: var(--elevation-2); }
+    .stick-box { position: relative; width: 120px; height: 120px; }
+    .stick-box .touch-stick { position: absolute; left: 60px; top: 60px; width: 0; height: 0; }
+    .stick-box .touch-stick::before { content: ""; position: absolute; left: -60px; top: -60px; width: 120px; height: 120px; }
+    .stick-box .touch-stick__knob { position: absolute; left: -24px; top: -48px; width: 48px; height: 48px; }
   </style>
 </head>
 <body>
   <h1>Component kit</h1>
-  <p class="intro">Every component of <code>css/components.css</code> in every state. Hover, pressed and focused are previewed with <code>data-force</code>.</p>
-
-  <div class="bar">
-    <span id="theme-label">Theme</span>
-    <div class="ui-segmented" role="radiogroup" aria-labelledby="theme-label" id="theme-switch">
-      <button type="button" role="radio" aria-checked="true" class="ui-segmented__option" data-value="light">Light</button>
-      <button type="button" role="radio" aria-checked="false" class="ui-segmented__option" data-value="dark">Dark</button>
-    </div>
-  </div>
+  <p class="intro ui-text ui-text--muted">Every component of <code>css/components.css</code> in every state, drawn by the Joyful tiles theme. Hover, pressed and focused are previewed with <code>data-force</code>; on buttons, menu entries and board options hover and focus are one selected state.</p>
 
   <div class="grid">
     <section class="ui-card" aria-labelledby="g-primary">
       <h2 class="ui-card__title" id="g-primary">Primary button</h2>
       <div class="states">
         <span class="state">At rest</span><div><button type="button" class="ui-button ui-button--primary">Play</button></div>
-        <span class="state">Hover</span><div><button type="button" class="ui-button ui-button--primary" data-force="hover">Play</button></div>
+        <span class="state">Selected</span><div><button type="button" class="ui-button ui-button--primary" data-force="focus">Play</button></div>
         <span class="state">Pressed</span><div><button type="button" class="ui-button ui-button--primary" data-force="active">Play</button></div>
-        <span class="state">Focused</span><div><button type="button" class="ui-button ui-button--primary" data-force="focus">Play</button></div>
         <span class="state">Disabled</span><div><button type="button" class="ui-button ui-button--primary" disabled>Play</button></div>
       </div>
     </section>
@@ -61,9 +48,8 @@
       <h2 class="ui-card__title" id="g-secondary">Secondary button</h2>
       <div class="states">
         <span class="state">At rest</span><div><button type="button" class="ui-button ui-button--secondary">Back</button></div>
-        <span class="state">Hover</span><div><button type="button" class="ui-button ui-button--secondary" data-force="hover">Back</button></div>
+        <span class="state">Selected</span><div><button type="button" class="ui-button ui-button--secondary" data-force="focus">Back</button></div>
         <span class="state">Pressed</span><div><button type="button" class="ui-button ui-button--secondary" data-force="active">Back</button></div>
-        <span class="state">Focused</span><div><button type="button" class="ui-button ui-button--secondary" data-force="focus">Back</button></div>
         <span class="state">Disabled</span><div><button type="button" class="ui-button ui-button--secondary" disabled>Back</button></div>
       </div>
     </section>
@@ -71,11 +57,19 @@
     <section class="ui-card" aria-labelledby="g-menu">
       <h2 class="ui-card__title" id="g-menu">Menu list</h2>
       <div class="ui-menu" role="group" aria-label="Main menu">
-        <button type="button" class="ui-menu__item">Classic 2D — at rest</button>
-        <button type="button" class="ui-menu__item" data-force="hover">3D — hover</button>
-        <button type="button" class="ui-menu__item" data-force="active">Records — pressed</button>
-        <button type="button" class="ui-menu__item" data-force="focus">Settings — focused</button>
-        <button type="button" class="ui-menu__item" disabled>Campaign — disabled</button>
+        <button type="button" class="ui-menu__item" data-entry="classic-2d"><span class="ui-menu__label">Classic 2D</span><span class="ui-menu__detail">at rest</span></button>
+        <button type="button" class="ui-menu__item" data-entry="3d" data-force="focus"><span class="ui-menu__label">3D</span><span class="ui-menu__detail">selected</span></button>
+        <button type="button" class="ui-menu__item" data-entry="daily" data-force="active"><span class="ui-menu__label">Daily</span><span class="ui-menu__detail">pressed</span></button>
+        <button type="button" class="ui-menu__item" data-entry="records"><span class="ui-menu__label">Records</span></button>
+        <button type="button" class="ui-menu__item" data-entry="settings"><span class="ui-menu__label">Settings</span></button>
+        <button type="button" class="ui-menu__item" data-entry="3d" disabled><span class="ui-menu__label">3D</span><span class="ui-menu__detail">disabled: needs WebGL 2</span></button>
+      </div>
+      <div class="ui-menu" role="group" aria-label="Board size">
+        <button type="button" class="ui-menu__item"><span class="ui-menu__label">Intermediate</span><span class="ui-menu__detail">board option at rest</span></button>
+        <button type="button" class="ui-menu__item" data-force="focus"><span class="ui-menu__label">Expert</span><span class="ui-menu__detail">selected</span></button>
+        <button type="button" class="ui-menu__item" data-force="active"><span class="ui-menu__label">Beginner</span><span class="ui-menu__detail">pressed</span></button>
+        <button type="button" class="ui-menu__item" disabled><span class="ui-menu__label">Custom</span><span class="ui-menu__detail">disabled</span></button>
+        <button type="button" class="ui-menu__item" data-learn><span class="ui-menu__label">Learn 3D</span><span class="ui-menu__detail">A guided 4 &times; 4 &times; 3 box</span></button>
       </div>
     </section>
 
@@ -151,9 +145,8 @@
         <button type="button" class="ui-button ui-button--secondary ui-overlay-bar__pause" aria-label="Pause game">Pause</button>
       </div>
       <div class="states">
-        <span class="state">Hover</span><div><button type="button" class="ui-button ui-button--secondary ui-overlay-bar__pause" aria-label="Pause game" data-force="hover">Pause</button></div>
+        <span class="state">Selected</span><div><button type="button" class="ui-button ui-button--secondary ui-overlay-bar__pause" aria-label="Pause game" data-force="focus">Pause</button></div>
         <span class="state">Pressed</span><div><button type="button" class="ui-button ui-button--secondary ui-overlay-bar__pause" aria-label="Pause game" data-force="active">Pause</button></div>
-        <span class="state">Focused</span><div><button type="button" class="ui-button ui-button--secondary ui-overlay-bar__pause" aria-label="Pause game" data-force="focus">Pause</button></div>
         <span class="state">Disabled</span><div><button type="button" class="ui-button ui-button--secondary ui-overlay-bar__pause" aria-label="Pause game" disabled>Pause</button></div>
       </div>
     </section>
@@ -167,7 +160,7 @@
           <button type="button" class="ui-button ui-button--secondary" data-mode="space" aria-pressed="true">Space</button>
           <button type="button" class="ui-button ui-button--secondary" data-mode="ctrl" aria-pressed="false">Ctrl</button>
         </div>
-        <div class="touch-stick" aria-hidden="true"><span class="touch-stick__knob"></span></div>
+        <div class="stick-box" aria-hidden="true"><div class="touch-stick"><span class="touch-stick__knob"></span></div></div>
       </div>
     </section>
 
@@ -222,7 +215,7 @@
         <span class="state">Middle page</span><nav class="ui-pager" aria-label="Pager on a middle page"><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="First page" data-page="first">First</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 1" data-page="0">1</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 2" data-page="1" aria-current="page" aria-disabled="true">2</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 3" data-page="2">3</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Last page" data-page="last">Last</button></nav>
         <span class="state">Last page</span><nav class="ui-pager" aria-label="Pager on its last page"><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="First page" data-page="first">First</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 1" data-page="0">1</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 2" data-page="1">2</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 3" data-page="2" aria-current="page" aria-disabled="true">3</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Last page" data-page="last" disabled>Last</button></nav>
         <span class="state">Long history</span><nav class="ui-pager" aria-label="Pager over a long history"><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="First page" data-page="first">First</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 10" data-page="9">10</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 11" data-page="10">11</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 12" data-page="11" aria-current="page" aria-disabled="true">12</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 13" data-page="12">13</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 14" data-page="13">14</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Last page" data-page="last">Last</button></nav>
-        <span class="state">Focused</span><nav class="ui-pager" aria-label="Pager with a focused button"><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="First page" data-page="first" data-force="focus">First</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 1" data-page="0" aria-current="page" aria-disabled="true">1</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Last page" data-page="last">Last</button></nav>
+        <span class="state">Selected</span><nav class="ui-pager" aria-label="Pager with a selected button"><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="First page" data-page="first" data-force="focus">First</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Page 1" data-page="0" aria-current="page" aria-disabled="true">1</button><button type="button" class="ui-button ui-button--secondary ui-pager__button" aria-label="Last page" data-page="last">Last</button></nav>
         <span class="state">One page</span><span class="ui-text ui-text--muted">hidden: one page holds everything</span>
       </div>
     </section>
@@ -298,21 +291,9 @@
   </div>
 
   <script type="module">
-    import { initComponents } from '../js/ui/components.js';
+    import { initComponents, bindSelectOnHover } from '../js/ui/components.js';
     initComponents(document);
-    const sw = document.getElementById('theme-switch');
-    const sync = (theme) => {
-      for (const o of sw.querySelectorAll('.ui-segmented__option')) {
-        const on = o.dataset.value === theme;
-        o.setAttribute('aria-checked', String(on));
-        o.tabIndex = on ? 0 : -1;
-      }
-    };
-    sync(globalThis.msTheme.current());
-    globalThis.msTheme.onChange(sync);
-    sw.addEventListener('change', (e) => globalThis.msTheme.setTheme(e.detail.value));
-    const wanted = new URLSearchParams(location.search).get('theme');
-    if (wanted) globalThis.msTheme.setTheme(wanted);
+    bindSelectOnHover(document);
   </script>
 </body>
 </html>

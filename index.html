@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Minesweeper 3D</title>
   <meta name="description" content="Minesweeper in three dimensions: fly around a 3D grid of cubes and clear the mines. A web port of the XNA game Minesweeper 3D.">
-  <meta name="theme-color" content="#c8e1ff">
+  <meta name="theme-color" content="#fff6e8">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Minesweeper 3D">
   <meta property="og:description" content="Minesweeper in three dimensions: fly around a 3D grid of cubes and clear the mines.">
@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="themes/joyful-tiles/theme.css">
   <script type="importmap">
     { "imports": { "three": "./vendor/three/three.module.min.js" } }
   </script>
@@ -113,8 +114,8 @@
       <div class="ui-stat" role="group" aria-labelledby="hud-mines-label"><span class="ui-stat__label" id="hud-mines-label">Mines</span><span id="hud-mines" class="ui-stat__value">0</span></div>
       <div class="ui-stat" role="group" aria-labelledby="hud-clicks-label"><span class="ui-stat__label" id="hud-clicks-label">Clicks</span><span id="hud-clicks" class="ui-stat__value">0</span></div>
       <div class="ui-stat hud-board" role="group" aria-labelledby="hud-size-label"><span class="ui-stat__label" id="hud-size-label">Board</span><span id="hud-size" class="ui-stat__value">-</span></div>
-      <button type="button" id="hud-swap" class="ui-button ui-button--secondary" aria-pressed="false" title="Swap left and right click on closed cells">Swap clicks</button>
-      <button type="button" id="hud-tap" class="ui-button ui-button--secondary" aria-pressed="false" title="What a tap on a closed cell does: reveal it, or flag it">Tap: Reveal</button>
+      <button type="button" id="hud-swap" class="ui-button ui-button--secondary" aria-pressed="false" data-no-focus title="Swap left and right click on closed cells">Swap clicks</button>
+      <button type="button" id="hud-tap" class="ui-button ui-button--secondary" aria-pressed="false" data-no-focus title="What a tap on a closed cell does: reveal it, or flag it">Tap: Reveal</button>
       <button type="button" id="hud-pause" class="ui-button ui-button--secondary ui-overlay-bar__pause" aria-label="Pause game">Pause</button>
     </div>
     <div id="hud-tools" class="hud-panel hud-tools"></div>
@@ -130,9 +131,9 @@
     <div id="touch-3d">
       <div id="touch-stick" class="touch-stick" aria-hidden="true"><span id="touch-stick-knob" class="touch-stick__knob"></span></div>
       <div id="touch-modes" class="touch-modes" role="toolbar" aria-label="View modes" aria-orientation="vertical">
-        <button type="button" class="ui-button ui-button--secondary" data-mode="shift" aria-pressed="false" title="Neighbours only">Shift</button>
-        <button type="button" class="ui-button ui-button--secondary" data-mode="space" aria-pressed="false" title="Aim through numbers">Space</button>
-        <button type="button" class="ui-button ui-button--secondary" data-mode="ctrl" aria-pressed="false" title="Show hidden cells">Ctrl</button>
+        <button type="button" class="ui-button ui-button--secondary" data-mode="shift" aria-pressed="false" data-no-focus title="Neighbours only">Shift</button>
+        <button type="button" class="ui-button ui-button--secondary" data-mode="space" aria-pressed="false" data-no-focus title="Aim through numbers">Space</button>
+        <button type="button" class="ui-button ui-button--secondary" data-mode="ctrl" aria-pressed="false" data-no-focus title="Show hidden cells">Ctrl</button>
       </div>
     </div>
     <!-- end of touch controls -->
@@ -630,6 +631,7 @@
   </section>
 
   <noscript><div class="noscript">Minesweeper 3D needs JavaScript.</div></noscript>
+  <script type="module">import { bindSelectOnHover } from './js/ui/components.js'; bindSelectOnHover(document);</script>
   <script type="module" src="js/main.js" onerror="document.body.insertAdjacentHTML('beforeend','<div class=&quot;fatal&quot;><div><h2 style=&quot;margin-top:0&quot;>Cannot start Minesweeper 3D</h2><p>The game files failed to load. Check your connection and reload the page.</p></div></div>')"></script>
 </body>
 </html>

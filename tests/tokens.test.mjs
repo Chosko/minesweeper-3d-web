@@ -2,14 +2,17 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const CSS = readFileSync(new URL('../css/tokens.css', import.meta.url), 'utf8')
-  .replace(/\/\*[\s\S]*?\*\//g, '');
+const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
+const strip = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '');
+const BASE_TOKENS_CSS = strip(read('../css/tokens.css'));
+const THEME_CSS = strip(read('../themes/joyful-tiles/theme.css'));
+const SCOPE = ':root[data-theme="joyful-tiles"]';
 
 // ---------- parsing ----------
-function block(selector) {
-  const re = new RegExp(`(^|\\})\\s*${selector.replace(/[[\]"().]/g, '\\$&')}\\s*\\{([^}]*)\\}`);
-  const m = CSS.match(re);
-  assert.ok(m, `tokens.css has a ${selector} block`);
+function block(css, selector, file) {
+  const re = new RegExp(`(^|\\})\\s*${selector.replace(/[[\]"().:]/g, '\\$&')}\\s*\\{([^}]*)\\}`);
+  const m = css.match(re);
+  assert.ok(m, `${file} has a ${selector} block`);
   const decls = new Map();
   for (const d of m[2].split(';')) {
     const i = d.indexOf(':');
@@ -20,10 +23,9 @@ function block(selector) {
   return decls;
 }
 
-const THEMES = {
-  light: block(':root'),
-  dark: block(':root[data-theme="dark"]'),
-};
+const BASE = block(BASE_TOKENS_CSS, ':root', 'css/tokens.css');
+const THEME = block(THEME_CSS, SCOPE, 'theme.css');
+const ALL = new Map([...BASE, ...THEME]);
 
 function parseColor(v) {
   let m = v.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
@@ -47,55 +49,148 @@ const contrast = (a, b) => {
   const [x, y] = [luminance(a), luminance(b)].sort((p, q) => q - p);
   return (x + 0.05) / (y + 0.05);
 };
+const color = (name) => {
+  assert.ok(THEME.has(name), `Joyful tiles declares ${name}`);
+  return parseColor(THEME.get(name));
+};
 
-// Resolved, opaque colours for one theme. Translucent surfaces sit on the
-// backdrop; the sunken surface sits inside a card.
-function palette(theme) {
-  const t = THEMES[theme];
-  const c = (name) => {
-    assert.ok(t.has(name), `${theme} theme declares ${name}`);
-    return parseColor(t.get(name));
-  };
-  const backdrop = c('--color-backdrop');
-  assert.equal(backdrop[3], 1, `${theme} --color-backdrop is opaque`);
-  const surface = over(c('--color-surface'), backdrop);
-  return {
-    c: (name) => over(c(name), surface),
-    surfaces: {
-      backdrop,
-      surface,
-      'surface-raised': over(c('--color-surface-raised'), surface),
-      'surface-sunken': over(c('--color-surface-sunken'), surface),
-    },
-  };
-}
-
-// ---------- token set ----------
-test('tokens.css declares the full token set on :root', () => {
-  const light = THEMES.light;
-  const groups = {
-    'colour: surfaces': ['--color-backdrop', '--color-surface', '--color-surface-raised', '--color-surface-sunken'],
-    'colour: ink': ['--color-ink', '--color-ink-muted'],
-    'colour: accent': ['--color-accent', '--color-accent-strong', '--color-accent-soft', '--color-accent-ink'],
-    'colour: states': ['--color-success', '--color-danger', '--color-warning'],
-    'colour: focus ring': ['--color-focus-ring'],
-    'type: families': ['--font-family-sans', '--font-family-mono'],
-    'type: numerals': ['--font-numeric-tabular'],
-  };
-  for (const [group, names] of Object.entries(groups)) {
-    for (const n of names) assert.ok(light.has(n), `${group}: ${n} is declared`);
+// ---------- the base token sheet: structure only ----------
+test('css/tokens.css keeps only structural tokens: spacing, z-layers and tabular numerals', () => {
+  assert.ok(BASE.size > 0);
+  for (const name of BASE.keys()) {
+    assert.match(name, /^--(space-\d+|z-[\w-]+|font-numeric-tabular)$/, `${name} is structural`);
   }
-  const prefixes = {
-    'size scale': '--font-size-', weights: '--font-weight-', spacing: '--space-', radii: '--radius-',
-    elevation: '--elevation-', durations: '--duration-', easings: '--easing-', 'z-layers': '--z-',
-  };
-  for (const [group, prefix] of Object.entries(prefixes)) {
-    const n = [...light.keys()].filter((k) => k.startsWith(prefix)).length;
-    assert.ok(n >= 2, `${group}: at least two ${prefix}* tokens (found ${n})`);
-  }
-  assert.equal(light.get('--font-numeric-tabular'), 'tabular-nums');
+  assert.equal(BASE.get('--font-numeric-tabular'), 'tabular-nums');
+  assert.ok([...BASE.keys()].filter((k) => k.startsWith('--space-')).length >= 6, 'the spacing scale');
+  assert.doesNotMatch(BASE_TOKENS_CSS, /data-theme|#[0-9a-f]{3,8}\b|rgba?\(/i, 'nothing per-theme');
+  const rules = [...BASE_TOKENS_CSS.matchAll(/([^{}]+)\{/g)].map((m) => m[1].trim());
+  assert.deepEqual(rules, [':root'], 'one :root block');
 });
 
+test('the z-layers stack the overlays in order', () => {
+  const z = (n) => Number(BASE.get(`--z-${n}`));
+  const order = ['hud', 'help', 'flash', 'overlay', 'modal', 'context-lost', 'toast', 'fatal'];
+  for (let i = 1; i < order.length; i++) assert.ok(z(order[i]) > z(order[i - 1]), `${order[i]} above ${order[i - 1]}`);
+  assert.equal(BASE.get('--z-banner'), undefined, 'no layer for the removed end banner');
+});
+
+// ---------- Joyful tiles: the canvas's token block ----------
+// J-Tokens, the canvas artboard the theme's tokens come from: every one, with its value. Its spacing
+// scale is not here: spacing is structural, the base's (css/tokens.css).
+const J_TOKENS = {
+  '--color-ground': '#fff6e8', '--color-ground-dot': '#dcc9ad',
+  '--color-surface': '#ffffff', '--color-surface-raised': '#fff6e8', '--color-surface-sunk': '#fbf1df',
+  '--color-border': '#ece2d0', '--color-line': '#f3dca0', '--color-edge': '#d6c6ab', '--color-edge-inset': '#e2d5bf', '--color-field-border': '#8a7a5c',
+  '--color-ink': '#16204a', '--color-ink-muted': '#5a6385', '--color-ink-inverse': '#ffffff',
+  '--color-head': '#ffc93c', '--color-head-edge': '#c9930c',
+  '--color-accent': '#b8323a', '--color-accent-fill': '#ff6b6b', '--color-accent-edge': '#c9403f', '--color-accent-on': '#16204a',
+  '--color-blue': '#3563d8', '--color-blue-edge': '#22409a', '--color-blue-on': '#ffffff',
+  '--color-teal': '#49c6b8', '--color-teal-edge': '#2a9488', '--color-teal-on': '#16204a',
+  '--color-yellow': '#ffc93c', '--color-yellow-edge': '#c9930c', '--color-yellow-on': '#16204a',
+  '--color-violet': '#6d4ee8', '--color-violet-edge': '#4b30b8', '--color-violet-on': '#ffffff',
+  '--color-green': '#5fd07e', '--color-green-edge': '#2f9a4f', '--color-green-on': '#16204a',
+  '--color-orange': '#ff9a3c', '--color-orange-edge': '#c96a12', '--color-orange-on': '#16204a', '--color-ink-edge': '#0a1030',
+  '--color-figure': '#0d7064', '--color-success': '#0d7064', '--color-success-fill': '#d9f4ef',
+  '--color-danger': '#b42a2a', '--color-danger-edge': '#7d1c1c', '--color-danger-fill': '#ffe1de',
+  '--color-warning': '#8a5f00', '--color-warning-fill': '#fff0c2',
+  '--color-locked': '#ece5d8', '--color-locked-edge': '#d8cdb9', '--color-locked-ink': '#5a6385',
+  '--color-focus-ring': '#16204a', '--color-focus-halo': '#ffc93c',
+  '--color-backdrop': 'rgba(22, 32, 74, 0.55)', '--color-backdrop-strong': 'rgba(14, 22, 64, 0.72)',
+  '--color-scene-zenith': '#0e1640', '--color-scene-horizon': '#2b3f8a', '--color-scene-nadir': '#1a265f', '--color-scene-ink': '#dfe6ff',
+  '--color-tile-closed-top': '#a9c9fb', '--color-tile-closed-edge': '#2b56b5',
+  '--color-tile-open': '#f3f0ea', '--color-tile-open-border': '#ddd3c1', '--color-tile-boom': '#ff6b6b', '--color-tile-boom-edge': '#c9403f',
+  '--color-tile-mark': '#49c6b8',
+  '--color-number-1': '#1565c0', '--color-number-2': '#2b742f', '--color-number-3': '#c32727', '--color-number-4': '#1a237e',
+  '--color-number-5': '#8d1c1c', '--color-number-6': '#00717c', '--color-number-7': '#212121', '--color-number-8': '#666666',
+  '--color-replay-reveal': '#3563d8', '--color-replay-flag': '#b8323a', '--color-replay-chord': '#0d7064', '--color-replay-pointer': '#16204a', '--color-replay-pause': '#c9930c',
+  '--color-confetti-1': '#ff6b6b', '--color-confetti-2': '#ffc93c', '--color-confetti-3': '#49c6b8', '--color-confetti-4': '#78aaf8', '--color-confetti-5': '#6d4ee8',
+  '--highlight': 'rgba(255, 255, 255, 0.32)', '--veil': 'rgba(255, 255, 255, 0.22)', '--shade-soft': 'rgba(22, 32, 74, 0.06)', '--shade-press': 'rgba(22, 32, 74, 0.2)',
+  '--elevation-1': '0 24px 30px -14px rgba(22, 32, 74, 0.4)',
+  '--elevation-2': '0 24px 28px -10px rgba(22, 32, 74, 0.22), 0 48px 70px -18px rgba(22, 32, 74, 0.35)',
+  '--font-family-sans': '"Rubik", system-ui, sans-serif', '--font-family-mono': '"JetBrains Mono", ui-monospace, monospace', '--font-family-numbers': '"Rubik", sans-serif',
+  '--font-size-xs': '12px', '--font-size-sm': '14px', '--font-size-md': '16px', '--font-size-lg': '19px', '--font-size-xl': '24px',
+  '--font-size-2xl': '32px', '--font-size-3xl': '44px', '--font-size-display': '80px',
+  '--font-weight-regular': '500', '--font-weight-bold': '700', '--font-weight-heavy': '800', '--font-weight-black': '900',
+  '--radius-xs': '4px', '--radius-sm': '8px', '--radius-md': '12px', '--radius-lg': '16px', '--radius-xl': '20px', '--radius-2xl': '26px', '--radius-pill': '999px',
+  '--edge-sm': '4px', '--edge-md': '6px', '--edge-lg': '8px',
+  '--duration-fast': '90ms', '--duration-base': '160ms', '--duration-slow': '260ms',
+  '--easing-out': 'cubic-bezier(.2, .8, .2, 1)', '--easing-spring': 'cubic-bezier(.34, 1.56, .64, 1)',
+  '--touch-target': '44px',
+};
+// The canvas's tile tokens that share a name with the 2D tile skin's palette: the skin keeps its own
+// until the board module draws the tiles (themed-board-art-and-motion).
+const SKIN_KEPT = ['--color-tile-closed', '--color-tile-pressed', '--color-tile-cursor', '--color-board-frame'];
+
+const norm = (v) => v.replace(/\s+/g, ' ').replace(/\s*,\s*/g, ', ').toLowerCase();
+
+test('Joyful tiles declares every token of the canvas\'s J-Tokens block, with its value', () => {
+  for (const [name, value] of Object.entries(J_TOKENS)) {
+    assert.ok(THEME.has(name), `declares ${name}`);
+    if (name.startsWith('--color') || name.startsWith('--highlight') || name.startsWith('--veil') || name.startsWith('--shade')) {
+      assert.deepEqual(parseColor(THEME.get(name)), parseColor(value), `${name} is ${value}`);
+    } else assert.equal(norm(THEME.get(name)), norm(value), `${name} is ${value}`);
+  }
+  for (const name of SKIN_KEPT) assert.ok(THEME.has(name), `declares the tile skin's ${name}`);
+});
+
+test('the theme declares every token the base stylesheets and the screens read', () => {
+  const sources = ['../css/components.css', '../css/style.css', '../themes/joyful-tiles/theme.css'];
+  for (const f of sources) {
+    for (const [, name] of strip(read(f)).matchAll(/var\((--[\w-]+)/g)) {
+      if (['--f', '--e', '--o'].includes(name)) continue; // the menu entries' own accent slots
+      assert.ok(ALL.has(name), `${f} reads undeclared ${name}`);
+    }
+  }
+  for (const f of ['../js/records/history-chart.js', '../js/classic2d/board-view.js', '../js/classic2d/end-effect.js', '../js/main.js', '../js/replay/viewer-2d.js', '../js/shell/scene-palette.js']) {
+    for (const [, name] of read(f).matchAll(/'(--color-[\w-]+)'/g)) assert.ok(THEME.has(name), `${f} reads undeclared ${name}`);
+  }
+});
+
+// ---------- contrast contract ----------
+const SURFACES = ['--color-surface', '--color-surface-raised', '--color-surface-sunk', '--color-ground'];
+
+test('Joyful tiles: body text meets 4.5:1 on every surface token', () => {
+  for (const ink of ['--color-ink', '--color-ink-muted']) {
+    for (const s of SURFACES) {
+      const r = contrast(color(ink), color(s));
+      assert.ok(r >= 4.5, `${ink} on ${s}: ${r.toFixed(2)}:1`);
+    }
+  }
+});
+
+test('Joyful tiles: large text and essential glyphs meet 3:1 on every surface token', () => {
+  const glyphs = ['--color-accent', '--color-figure', '--color-success', '--color-danger', '--color-warning',
+    '--color-focus-ring', '--color-field-border', '--color-teal-edge', '--color-blue-edge'];
+  for (const g of glyphs) {
+    for (const s of SURFACES) {
+      const r = contrast(color(g), color(s));
+      assert.ok(r >= 3, `${g} on ${s}: ${r.toFixed(2)}:1`);
+    }
+  }
+});
+
+test('Joyful tiles: text on every fill meets 4.5:1 (the canvas\'s measured pairs)', () => {
+  const pairs = [
+    ['--color-accent-on', '--color-accent-fill'], ['--color-blue-on', '--color-blue'], ['--color-teal-on', '--color-teal'],
+    ['--color-yellow-on', '--color-yellow'], ['--color-violet-on', '--color-violet'], ['--color-green-on', '--color-green'],
+    ['--color-orange-on', '--color-orange'], ['--color-ink-inverse', '--color-ink'], ['--color-locked-ink', '--color-locked'],
+    ['--color-ink', '--color-head'], ['--color-ink', '--color-success-fill'], ['--color-warning', '--color-warning-fill'],
+    ['--color-danger', '--color-danger-fill'], ['--color-success', '--color-success-fill'],
+  ];
+  for (const [fg, bg] of pairs) {
+    const r = contrast(color(fg), color(bg));
+    assert.ok(r >= 4.5, `${fg} on ${bg}: ${r.toFixed(2)}:1`);
+  }
+});
+
+test('Joyful tiles: the scrims are translucent, so the scene shows dimmed behind the cards', () => {
+  for (const name of ['--color-backdrop', '--color-backdrop-strong']) {
+    const a = color(name)[3];
+    assert.ok(a > 0 && a < 1, `${name} is translucent`);
+  }
+});
+
+// ---------- the 2D tile skin's palette ----------
 const TILE_TOKENS = [
   '--color-tile-closed', '--color-tile-cursor', '--color-tile-pressed', '--color-tile-revealed',
   '--color-tile-flagged', '--color-tile-flag', '--color-tile-mine', '--color-tile-mine-glyph',
@@ -115,25 +210,16 @@ const TILE_LAYER_TOKENS = [
 ];
 const NUMBER_TOKENS = Array.from({ length: 8 }, (_, i) => `--color-number-${i + 1}`);
 
-test('tile tokens cover every state, the cube-face recipe, the board frame and gap, and numbers 1–8, in both themes', () => {
-  for (const theme of ['light', 'dark']) {
-    for (const name of [...TILE_TOKENS, ...NUMBER_TOKENS]) {
-      assert.ok(THEMES[theme].has(name), `${theme} theme declares ${name}`);
-      assert.equal(parseColor(THEMES[theme].get(name))[3], 1, `${theme} ${name} is opaque`);
-    }
-    for (const name of TILE_LAYER_TOKENS) {
-      assert.ok(THEMES[theme].has(name), `${theme} theme declares ${name}`);
-      assert.doesNotThrow(() => parseColor(THEMES[theme].get(name)), `${theme} ${name} is a colour`);
-    }
-  }
-  assert.ok(!THEMES.light.has('--color-tile-edge'), 'the flat edge is gone: the rim and bevel replace it');
-  const numbers = new Set(NUMBER_TOKENS.map((n) => THEMES.light.get(n).toLowerCase()));
-  assert.equal(numbers.size, 8, 'the eight light number colours are distinct');
+test('the tile skin\'s tokens cover every state, the cube-face recipe, the board frame and gap, and numbers 1–8', () => {
+  for (const name of [...TILE_TOKENS, ...NUMBER_TOKENS]) assert.equal(color(name)[3], 1, `${name} is opaque`);
+  for (const name of TILE_LAYER_TOKENS) assert.doesNotThrow(() => color(name), `${name} is a colour`);
+  const numbers = new Set(NUMBER_TOKENS.map((n) => THEME.get(n).toLowerCase()));
+  assert.equal(numbers.size, 8, 'the eight number colours are distinct');
 });
 
 // The 3D atlas's own palette (js/textures.js ATLAS), read from its source: the 3D
 // renderer imports three.js and stays unthemed, so it is never imported here.
-const ATLAS_SRC = readFileSync(new URL('../js/textures.js', import.meta.url), 'utf8');
+const ATLAS_SRC = read('../js/textures.js');
 const ATLAS = (() => {
   const at = ATLAS_SRC.indexOf('const ATLAS = Object.freeze({');
   assert.ok(at >= 0, 'js/textures.js declares its literal ATLAS palette');
@@ -141,7 +227,7 @@ const ATLAS = (() => {
   return new Map([...body.matchAll(/(\w+): '([^']+)'/g)].map((m) => [m[1], m[2]]));
 })();
 
-test('light, the 2D tile looks like the 3D cube: each recipe token is the 3D atlas colour', async () => {
+test('the 2D tile looks like the 3D cube: each recipe token is the 3D atlas colour', async () => {
   const { shade } = await import('../js/tile-art.js');
   const FACE_SHADE = -0.06; // the atlas shades a revealed face 6% darker toward its bottom-right
   const same = {
@@ -158,246 +244,98 @@ test('light, the 2D tile looks like the 3D cube: each recipe token is the 3D atl
   };
   for (const [name, key] of Object.entries(same)) {
     assert.ok(ATLAS.has(key), `the atlas palette has ${key}`);
-    assert.deepEqual(parseColor(THEMES.light.get(name)), parseColor(ATLAS.get(key)), `light ${name} is the atlas's ${key}`);
+    assert.deepEqual(color(name), parseColor(ATLAS.get(key)), `${name} is the atlas's ${key}`);
   }
-  assert.equal(THEMES.light.get('--color-tile-revealed-shade'), shade(ATLAS.get('revealed'), FACE_SHADE), 'the revealed face shades as the atlas does');
-  assert.equal(THEMES.light.get('--color-tile-exploded-shade'), shade(ATLAS.get('exploded'), FACE_SHADE), 'the exploded face shades as the atlas does');
+  assert.equal(THEME.get('--color-tile-revealed-shade'), shade(ATLAS.get('revealed'), FACE_SHADE), 'the revealed face shades as the atlas does');
+  assert.equal(THEME.get('--color-tile-exploded-shade'), shade(ATLAS.get('exploded'), FACE_SHADE), 'the exploded face shades as the atlas does');
 });
 
-test('dark, the recipe is drawn for the dark theme: every face and band differs from its light value', () => {
-  for (const name of ['--color-tile-rim', '--color-tile-bevel-light', '--color-tile-bevel-dark', '--color-tile-closed', '--color-tile-face-shade',
-    '--color-tile-revealed-rim', '--color-tile-revealed-edge', '--color-tile-revealed', '--color-tile-revealed-shade', '--color-tile-pressed']) {
-    assert.notDeepEqual(parseColor(THEMES.dark.get(name)), parseColor(THEMES.light.get(name)), `dark ${name} differs`);
-  }
-});
-
-test('token names are semantic, never named after a hue', () => {
-  const hues = /(^|-)(red|green|blue|navy|sky|yellow|orange|amber|purple|pink|teal|cyan|gr[ae]y|white|black)(-|$)/;
-  for (const name of THEMES.light.keys()) assert.doesNotMatch(name.slice(2), hues, name);
-});
-
-test('every colour token has both a light and a dark value', () => {
-  const colours = (t) => [...t.keys()].filter((k) => k.startsWith('--color-')).sort();
-  const light = colours(THEMES.light);
-  assert.ok(light.length >= 14, 'the palette is declared on :root');
-  assert.deepEqual(colours(THEMES.dark), light);
-  for (const theme of ['light', 'dark']) {
-    for (const name of light) assert.doesNotThrow(() => parseColor(THEMES[theme].get(name)), `${theme} ${name}`);
+test('every number colour meets 4.5:1 on every point of the shaded revealed face', () => {
+  for (const face of ['--color-tile-revealed', '--color-tile-revealed-shade']) {
+    for (const n of NUMBER_TOKENS) {
+      const r = contrast(color(n), color(face));
+      assert.ok(r >= 4.5, `${n} on ${face}: ${r.toFixed(2)}:1`);
+    }
   }
 });
 
-test('the z-layers stack the overlays in order', () => {
-  const z = (n) => Number(THEMES.light.get(`--z-${n}`));
-  const order = ['hud', 'help', 'flash', 'overlay', 'modal', 'context-lost', 'toast', 'fatal'];
-  for (let i = 1; i < order.length; i++) assert.ok(z(order[i]) > z(order[i - 1]), `${order[i]} above ${order[i - 1]}`);
-  assert.equal(THEMES.light.get('--z-banner'), undefined, 'no layer for the removed end banner');
+test('closed and revealed differ by relief and border: a bevel lit and shaded, a rim unlike the revealed rim', () => {
+  const lum = (name) => luminance(color(name));
+  assert.ok(lum('--color-tile-bevel-light') > lum('--color-tile-closed'), 'the lit bevel is lighter than the face');
+  assert.ok(lum('--color-tile-bevel-dark') < lum('--color-tile-face-shade'), 'the dark bevel is darker than the face');
+  assert.notDeepEqual(color('--color-tile-rim'), color('--color-tile-revealed-rim'), 'the rims differ');
 });
 
-// ---------- contrast contract ----------
-for (const theme of ['light', 'dark']) {
-  test(`${theme}: body text meets 4.5:1 on every surface`, () => {
-    const p = palette(theme);
-    for (const ink of ['--color-ink', '--color-ink-muted']) {
-      for (const [s, bg] of Object.entries(p.surfaces)) {
-        const r = contrast(p.c(ink), bg);
-        assert.ok(r >= 4.5, `${ink} on ${s}: ${r.toFixed(2)}:1`);
-      }
-    }
-  });
-
-  test(`${theme}: large text and essential UI glyphs meet 3:1 on every surface`, () => {
-    const p = palette(theme);
-    const glyphs = ['--color-accent', '--color-accent-strong', '--color-success', '--color-danger',
-      '--color-warning', '--color-focus-ring'];
-    for (const g of glyphs) {
-      for (const [s, bg] of Object.entries(p.surfaces)) {
-        const r = contrast(p.c(g), bg);
-        assert.ok(r >= 3, `${g} on ${s}: ${r.toFixed(2)}:1`);
-      }
-    }
-    const label = contrast(p.c('--color-accent-ink'), p.c('--color-accent'));
-    assert.ok(label >= 3, `--color-accent-ink on --color-accent: ${label.toFixed(2)}:1`);
-  });
-
-  test(`${theme}: every number colour meets 4.5:1 on every point of the shaded revealed face`, () => {
-    const t = THEMES[theme];
-    for (const face of ['--color-tile-revealed', '--color-tile-revealed-shade']) {
-      const bg = parseColor(t.get(face));
-      for (const n of NUMBER_TOKENS) {
-        const r = contrast(parseColor(t.get(n)), bg);
-        assert.ok(r >= 4.5, `${n} on ${face}: ${r.toFixed(2)}:1`);
-      }
-    }
-  });
-
-  test(`${theme}: closed and revealed differ by relief and border: a bevel lit and shaded, a rim unlike the revealed rim`, () => {
-    const t = THEMES[theme];
-    const lum = (name) => luminance(parseColor(t.get(name)));
-    assert.ok(lum('--color-tile-bevel-light') > lum('--color-tile-closed'), `${theme}: the lit bevel is lighter than the face`);
-    assert.ok(lum('--color-tile-bevel-dark') < lum('--color-tile-face-shade'), `${theme}: the dark bevel is darker than the face`);
-    assert.notDeepEqual(parseColor(t.get('--color-tile-rim')), parseColor(t.get('--color-tile-revealed-rim')), `${theme}: the rims differ`);
-  });
-
-  test(`${theme}: a scrolling board's shadow and scroll bar are translucent tokens; the bar meets 3:1 on every tile`, () => {
-    const t = THEMES[theme];
-    for (const name of ['--color-board-shadow', '--color-board-scrollbar']) {
-      assert.ok(t.has(name), `${theme} theme declares ${name}`);
-      const a = parseColor(t.get(name))[3];
-      assert.ok(a > 0 && a < 1, `${theme} ${name} is translucent`);
-    }
-    const bar = parseColor(t.get('--color-board-scrollbar'));
-    for (const bg of ['--color-tile-closed', '--color-tile-pressed', '--color-tile-revealed', '--color-tile-flagged']) {
-      const under = parseColor(t.get(bg));
-      const r = contrast(over(bar, under), under);
-      assert.ok(r >= 3, `--color-board-scrollbar on ${bg}: ${r.toFixed(2)}:1`);
-    }
-  });
-
-  test(`${theme}: the cursor ring meets 3:1 on the lit bevel it covers and every tile face it can sit on`, () => {
-    const t = THEMES[theme];
-    const ring = parseColor(t.get('--color-tile-cursor'));
-    for (const bg of ['--color-tile-bevel-light', '--color-tile-closed', '--color-tile-face-shade', '--color-tile-pressed', '--color-tile-revealed']) {
-      const r = contrast(ring, parseColor(t.get(bg)));
-      assert.ok(r >= 3, `--color-tile-cursor on ${bg}: ${r.toFixed(2)}:1`);
-    }
-  });
-}
-
-// ---------- consumers ----------
-test('style.css declares no variables of its own and reads only declared tokens', () => {
-  const style = readFileSync(new URL('../css/style.css', import.meta.url), 'utf8');
-  assert.doesNotMatch(style, /(^|[;{\s])--[\w-]+\s*:/, 'style.css declares a custom property');
-  for (const [, name] of style.matchAll(/var\((--[\w-]+)/g)) {
-    assert.ok(THEMES.light.has(name), `style.css reads undeclared ${name}`);
+test('a scrolling board\'s shadow and scroll bar are translucent tokens; the bar meets 3:1 on every tile', () => {
+  for (const name of ['--color-board-shadow', '--color-board-scrollbar']) {
+    const a = color(name)[3];
+    assert.ok(a > 0 && a < 1, `${name} is translucent`);
+  }
+  const bar = color('--color-board-scrollbar');
+  for (const bg of ['--color-tile-closed', '--color-tile-pressed', '--color-tile-revealed', '--color-tile-flagged']) {
+    const under = color(bg);
+    const r = contrast(over(bar, under), under);
+    assert.ok(r >= 3, `--color-board-scrollbar on ${bg}: ${r.toFixed(2)}:1`);
   }
 });
 
-test('index.html loads the token sheet before the shell stylesheet', () => {
-  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-  const tokens = html.indexOf('href="css/tokens.css"');
-  const style = html.indexOf('href="css/style.css"');
-  assert.ok(tokens >= 0, 'index.html links css/tokens.css');
-  assert.ok(style > tokens, 'css/tokens.css is linked before css/style.css');
+test('the cursor ring meets 3:1 on the lit bevel it covers and every tile face it can sit on', () => {
+  const ring = color('--color-tile-cursor');
+  for (const bg of ['--color-tile-bevel-light', '--color-tile-closed', '--color-tile-face-shade', '--color-tile-pressed', '--color-tile-revealed']) {
+    const r = contrast(ring, color(bg));
+    assert.ok(r >= 3, `--color-tile-cursor on ${bg}: ${r.toFixed(2)}:1`);
+  }
 });
 
 // ---------- the 3D scene: themed sky, theme-independent cubes ----------
-// The sky gradient's three stops (also the fog and clear colour). The light values are the scene's
-// original sky, so the light theme's scene is unchanged.
-const SCENE_TOKENS = {
-  '--color-scene-horizon': [200, 225, 255],
-  '--color-scene-zenith': [158, 194, 243],
-  '--color-scene-nadir': [222, 236, 255],
-};
-
-test('every sky token has an opaque light and dark value, the light ones being the original sky', () => {
-  for (const [name, original] of Object.entries(SCENE_TOKENS)) {
-    for (const theme of ['light', 'dark']) {
-      assert.ok(THEMES[theme].has(name), `${theme} theme declares ${name}`);
-      assert.equal(parseColor(THEMES[theme].get(name))[3], 1, `${theme} ${name} is opaque`);
-    }
-    assert.deepEqual(parseColor(THEMES.light.get(name)).slice(0, 3), original, `light ${name} is the original sky`);
-    assert.notDeepEqual(parseColor(THEMES.dark.get(name)), parseColor(THEMES.light.get(name)), `dark ${name} differs`);
-  }
-});
-
-test('the dark sky sits with the dark backdrop: darker than the light sky, no lighter than the backdrop highlight', () => {
-  const highlight = luminance(parseColor(THEMES.dark.get('--color-backdrop-highlight')));
-  for (const name of Object.keys(SCENE_TOKENS)) {
-    const dark = luminance(parseColor(THEMES.dark.get(name)));
-    assert.ok(dark < luminance(parseColor(THEMES.light.get(name))), `dark ${name} is darker than the light one`);
-    assert.ok(dark <= highlight, `dark ${name} is no lighter than --color-backdrop-highlight`);
+test('the sky stops are opaque and dark under the scene ink', () => {
+  for (const name of ['--color-scene-horizon', '--color-scene-zenith', '--color-scene-nadir']) {
+    assert.equal(color(name)[3], 1, `${name} is opaque`);
+    assert.ok(contrast(color('--color-scene-ink'), color(name)) >= 4.5, `--color-scene-ink reads on ${name}`);
   }
 });
 
 test('the 3D renderer reads no token: the shell hands it the scene palette', () => {
   for (const f of ['../js/render.js', '../js/textures.js', '../js/tile-art.js']) {
-    const src = readFileSync(new URL(f, import.meta.url), 'utf8');
-    assert.doesNotMatch(src, /--color-|data-theme|getPropertyValue/, f);
+    assert.doesNotMatch(read(f), /--color-|data-theme|getPropertyValue/, f);
   }
 });
 
-// ---------- scrims over the scene ----------
-// The translucent tints laid over the scene: the Controls modal's backdrop, the pause / ready /
-// results overlays and the context-lost screen. The light values are the original tints.
-const SCRIM_TOKENS = {
-  '--color-backdrop-scrim': [150, 185, 235, 0.4],
-  '--color-backdrop-scrim-soft': [170, 200, 240, 0.35],
-  '--color-backdrop-scrim-strong': [150, 185, 235, 0.55],
-};
-
-test('every backdrop-scrim token has a translucent light and dark value, the light ones being the original tints', () => {
-  for (const [name, original] of Object.entries(SCRIM_TOKENS)) {
-    for (const theme of ['light', 'dark']) {
-      assert.ok(THEMES[theme].has(name), `${theme} theme declares ${name}`);
-      const a = parseColor(THEMES[theme].get(name))[3];
-      assert.ok(a > 0 && a < 1, `${theme} ${name} is translucent`);
-    }
-    assert.deepEqual(parseColor(THEMES.light.get(name)), original, `light ${name} is the original tint`);
-    const dark = parseColor(THEMES.dark.get(name));
-    assert.ok(luminance(dark) < luminance(parseColor(THEMES.dark.get('--color-ink'))), `dark ${name} is a dark tint`);
-  }
-});
-
-// The declarations of the rule whose selector list is exactly `selector`.
-function styleRule(style, selector) {
-  const esc = selector.replace(/[.#()[\]]/g, '\\$&').replace(/,\s*/g, ',\\s*');
-  const m = style.match(new RegExp(`(^|\\})\\s*${esc}\\s*\\{([^}]*)\\}`));
-  assert.ok(m, `style.css has a ${selector} rule`);
-  return m[2];
-}
-
-test('the Controls modal and the overlay scrims take their colours from the tokens, with no literal colour', () => {
-  const style = readFileSync(new URL('../css/style.css', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
-  const literal = /#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(|\b(white|black)\b/i;
-  const expect = {
-    '.modal': [['background', '--color-backdrop-scrim']],
-    '.modal-card': [['background', '--color-surface'], ['border', '--color-surface-border']],
-    '#pause, #ready, #results': [['background', '--color-backdrop-scrim-soft']],
-    '#ctx-lost': [['background', '--color-backdrop-scrim-strong']],
-  };
-  for (const [selector, props] of Object.entries(expect)) {
-    const body = styleRule(style, selector);
-    assert.doesNotMatch(body, literal, `${selector} carries no literal colour`);
-    for (const [prop, name] of props) {
-      assert.match(body, new RegExp(`(^|;)\\s*${prop}\\s*:[^;]*var\\(${name}\\)`), `${selector} ${prop} reads ${name}`);
-    }
-  }
+// ---------- the scrims over the scene, read from the theme ----------
+test('the overlays over the scene and the context-lost screen read the theme\'s scrims, with no hard-coded tint', () => {
+  assert.match(THEME_CSS, /:is\(#pause, #ready, #results, #learn-end, \.modal\) \{[^}]*background: var\(--color-backdrop\)/);
+  assert.match(THEME_CSS, /#ctx-lost \{[^}]*background: var\(--color-backdrop-strong\)/);
+  assert.match(THEME_CSS, /#results\.results--over3d \{[^}]*background: var\(--color-backdrop-strong\)/);
+  assert.match(THEME_CSS, /\.ready-card \{[^}]*background: var\(--color-surface\)/, 'the context-lost card is the ready card, on the surface');
+  const style = strip(read('../css/style.css'));
+  assert.doesNotMatch(style, /:[^;{}]*(rgba?\(|#[0-9a-f]{3,8}\b)/i, 'css/style.css carries no tint');
 });
 
 // ---------- replay viewer marks ----------
 const REPLAY_MARKS = ['--color-replay-reveal', '--color-replay-flag', '--color-replay-chord'];
 const distance = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 
-test('the replay ticks and press rings: three colours per theme, distinct from each other and from the seek bar\'s fill and thumb', () => {
-  for (const theme of ['light', 'dark']) {
-    const p = palette(theme);
-    const marks = REPLAY_MARKS.map((n) => p.c(n));
-    const track = p.surfaces['surface-sunken'];
-    const others = ['--color-accent', '--color-accent-strong', '--color-replay-pause'].map((n) => p.c(n));
-    for (let i = 0; i < marks.length; i++) {
-      assert.ok(contrast(marks[i], track) >= 3, `${theme} ${REPLAY_MARKS[i]} reads on the bar's track`);
-      for (let j = i + 1; j < marks.length; j++) assert.ok(distance(marks[i], marks[j]) > 60, `${theme} ${REPLAY_MARKS[i]} vs ${REPLAY_MARKS[j]}`);
-      for (const o of [...others, track]) assert.ok(distance(marks[i], o) > 60, `${theme} ${REPLAY_MARKS[i]} differs from the fill and thumb`);
-    }
+test('the replay ticks and press rings: three colours, distinct from each other, the pause mark and the seek bar\'s track and thumb', () => {
+  const marks = REPLAY_MARKS.map(color);
+  const track = color('--color-line');
+  const others = ['--color-replay-pause', '--color-surface'].map(color);
+  for (let i = 0; i < marks.length; i++) {
+    assert.ok(contrast(marks[i], track) >= 3, `${REPLAY_MARKS[i]} reads on the bar's track`);
+    for (let j = i + 1; j < marks.length; j++) assert.ok(distance(marks[i], marks[j]) > 60, `${REPLAY_MARKS[i]} vs ${REPLAY_MARKS[j]}`);
+    for (const o of [...others, track]) assert.ok(distance(marks[i], o) > 60, `${REPLAY_MARKS[i]} differs from the pause mark, track and thumb`);
   }
 });
 
-test('the replay pointer: a core and a contrasting outline, reversed in the dark theme', () => {
-  for (const theme of ['light', 'dark']) {
-    const p = palette(theme);
-    const core = p.c('--color-replay-pointer'), ring = p.c('--color-replay-pointer-outline');
-    assert.ok(contrast(core, ring) >= 7, `${theme} core against outline`);
-  }
-  assert.ok(luminance(palette('light').c('--color-replay-pointer')) < luminance(palette('light').c('--color-replay-pointer-outline')), 'light: a dark core in a light ring');
-  assert.ok(luminance(palette('dark').c('--color-replay-pointer')) > luminance(palette('dark').c('--color-replay-pointer-outline')), 'dark: the reverse');
+test('the replay pointer: a dark core in a light outline', () => {
+  const core = color('--color-replay-pointer');
+  const ring = color('--color-replay-pointer-outline');
+  assert.ok(contrast(core, ring) >= 7, 'core against outline');
+  assert.ok(luminance(core) < luminance(ring));
 });
 
 test('Show 3BV: a small cycle of translucent opening tints, neighbours distinct, and the isolated number\'s mark', () => {
-  for (const theme of ['light', 'dark']) {
-    const t = THEMES[theme];
-    const tints = [1, 2, 3, 4, 5, 6].map((i) => parseColor(t.get(`--color-replay-bbbv-${i}`)));
-    for (const c of tints) assert.ok(c[3] > 0 && c[3] < 1, `${theme}: a tint lets the tile show through`);
-    for (let i = 0; i < tints.length; i++) for (let j = i + 1; j < tints.length; j++) assert.ok(distance(tints[i], tints[j]) > 60, `${theme} tints ${i + 1} and ${j + 1} differ`);
-    assert.ok(parseColor(t.get('--color-replay-bbbv-isolated'))[3] === 1, `${theme}: the isolated mark is opaque`);
-  }
+  const tints = [1, 2, 3, 4, 5, 6].map((i) => color(`--color-replay-bbbv-${i}`));
+  for (const c of tints) assert.ok(c[3] > 0 && c[3] < 1, 'a tint lets the tile show through');
+  for (let i = 0; i < tints.length; i++) for (let j = i + 1; j < tints.length; j++) assert.ok(distance(tints[i], tints[j]) > 60, `tints ${i + 1} and ${j + 1} differ`);
+  assert.equal(color('--color-replay-bbbv-isolated')[3], 1, 'the isolated mark is opaque');
 });

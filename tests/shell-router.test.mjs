@@ -510,16 +510,22 @@ test('in a browser, the arrow keys alone walk the menu, the 2D board choice, the
       return {
         id: el?.id || el?.dataset?.size || el?.dataset?.value || '', visible: !!el?.matches(':focus-visible'),
         pad: document.body.classList.contains('pad-nav'), ring: el ? getComputedStyle(el).outlineStyle : 'none',
+        selectable: !!el?.matches('.ui-button, .ui-menu__item'),
       };
     });
-    /** Press `key` until the focus is on `id`, at most `max` times; each press must move or keep a ring. */
+    // The focused state a button, menu entry or board option shows is its selected look, once its move settles.
+    const selected = async () => {
+      await page.waitForTimeout(200);
+      return page.evaluate(() => getComputedStyle(document.activeElement).transform !== 'none');
+    };
+    /** Press `key` until the focus is on `id`, at most `max` times; each press must move or keep a focused state. */
     const walkTo = async (key, id, max = 30) => {
       for (let i = 0; i < max; i++) {
         if ((await focus()).id === id) return;
         await page.keyboard.press(key);
         const f = await focus();
         assert.equal(f.pad, false, 'the keyboard path never shows the controller ring');
-        assert.ok(f.visible && f.ring !== 'none', `#${f.id} shows the keyboard focus ring`);
+        assert.ok(f.visible && (f.selectable ? f.ring === 'none' && await selected() : f.ring !== 'none'), `#${f.id} shows its keyboard focused state`);
       }
       assert.equal((await focus()).id, id, `${key} reaches #${id}`);
     };

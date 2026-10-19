@@ -246,7 +246,7 @@ test('a viewer that leaves the screen while it mounts is dropped', async () => {
 test('a 3D replay opens on the scene: the screen lets the 3D scene show', () => {
   const src = read('js/replay/viewer.js');
   assert.match(src, /replay--scene/, 'the view marks a 3D replay');
-  assert.match(read('css/style.css'), /#replay\.replay--scene\s*\{[^}]*background: transparent/);
+  assert.match(read('themes/joyful-tiles/theme.css'), /#replay\.replay--scene\s*\{[^}]*background: transparent/);
 });
 
 test('the 3D viewer is DOM-free and reaches no records, sound, pause or player input', () => {

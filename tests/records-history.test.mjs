@@ -2,7 +2,7 @@
 // points, scaling, text alternative and drawing over a fake canvas with injected tokens, its redraw
 // on a theme change; the recent games list's rows, time format and paging; the screen controller's
 // paging and live redraw; the #records history markup; and in a browser a seeded history drawn in
-// both themes (with screenshots) and paged by keyboard.
+// the theme (with screenshots) and paged by keyboard.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, mkdtempSync } from 'node:fs';
@@ -512,7 +512,7 @@ function removeWebGL2() {
   const getContext = HTMLCanvasElement.prototype.getContext;
   HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
 }
-test('in a browser, a seeded history is charted in both themes and its games list paged by keyboard', async (t) => {
+test('in a browser, a seeded history is charted and its games list paged by keyboard', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -557,8 +557,7 @@ test('in a browser, a seeded history is charted in both themes and its games lis
       }
       return { count, width: canvas.width, label: canvas.getAttribute('aria-label') };
     });
-    for (const theme of ['light', 'dark']) {
-      await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
+    for (const theme of ['joyful-tiles']) {
       const m = await measure();
       assert.ok(m.width > 200, `${theme}: the canvas is sized`);
       assert.ok(m.count.rate > 100, `${theme}: the 3BV/s line in the accent token (${m.count.rate} px)`);
@@ -567,7 +566,6 @@ test('in a browser, a seeded history is charted in both themes and its games lis
       const shot = await page.locator('#records-chart').screenshot({ path: join(shots, `records-chart-${theme}.png`) });
       assert.ok(shot.length > 1000, `${theme}: screenshot taken`);
     }
-    await page.evaluate(() => globalThis.msTheme.setTheme('light'));
 
     const rows = () => page.evaluate(() => [...document.querySelectorAll('#records-games-body tr')].map((r) => [...r.cells].map((c) => c.textContent)));
     const label = () => page.evaluate(() => document.getElementById('records-page').textContent);

@@ -1091,7 +1091,7 @@ test('in a browser with a mouse at 1280 × 800, 3D starts with pointer lock and 
   }
 });
 
-test('in a browser at 1024 × 768 with a mouse in both themes: a 3D game\'s pause card in two columns fits the window with its look settings, and with the restart confirmation in place of the actions', async (t) => {
+test('in a browser at 1024 × 768 with a mouse: a 3D game\'s pause card in two columns fits the window with its look settings, and with the restart confirmation in place of the actions', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -1125,7 +1125,7 @@ test('in a browser at 1024 × 768 with a mouse in both themes: a 3D game\'s paus
     };
   };
   // The card's font sizes with a fine pointer, which its two columns leave as they are.
-  const FONTS = { title: 24, status: 15, button: 15, slider: 15, switch: 15, heading: 13, list: 13, keyName: 13, kbd: 11, statLabel: null };
+  const FONTS = { title: 24, status: 16, button: 16, slider: 16, switch: 16, heading: 14, list: 13, keyName: 13, kbd: 11, statLabel: null };
   const fits = (m, at) => {
     assert.ok(m.columns, `${at}: the card composed with ui-screen--columns and a ui-columns--two`);
     assert.ok(m.card.top >= 0 && m.card.left >= 0 && m.card.right <= 1024 && m.card.bottom <= 768,
@@ -1141,13 +1141,12 @@ test('in a browser at 1024 × 768 with a mouse in both themes: a 3D game\'s paus
     assert.deepEqual(m.fonts, FONTS, `${at}: every font size on the card as it was`);
   };
   try {
-    for (const theme of ['light', 'dark']) {
+    for (const theme of ['joyful-tiles']) {
       const at = `1024 × 768 ${theme}`;
       const page = await browser.newPage({ viewport: { width: 1024, height: 768 }, deviceScaleFactor: 1 });
       await page.goto(`${base}/index.html`);
       await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
       const ms = (fn, arg) => page.evaluate(fn, arg);
-      await ms((th) => globalThis.msTheme.setTheme(th), theme);
       assert.ok(await ms(() => matchMedia('(pointer: fine)').matches), `${at}: a fine pointer`);
       await ms(() => {
         globalThis.__ms.settings.set('confirmRestart', true);

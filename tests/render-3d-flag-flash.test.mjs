@@ -1,6 +1,6 @@
 // A right-click on a number made visible (task 127, P-21): the cubes a flag click on a revealed
 // number flags or unflags play a short flash drawn through the cubes in front of them; the HUD's
-// mines figure turns the danger colour below zero in both themes; the ready card and the bindings
+// mines figure turns the danger colour below zero; the ready card and the bindings
 // say what the action does. The flash envelope is a pure function of elapsed time; the drawing,
 // the tint and the copy are checked in a browser through `__ms`.
 import { test } from 'node:test';
@@ -158,9 +158,8 @@ test('in a browser, a flag click on a number flashes the cubes it changed, then 
     assert.equal(await ms(() => globalThis.__ms.renderer._flashFx.mesh.visible), false, 'no longer drawn');
     assert.equal(await ms(() => globalThis.__ms.game.minesLeft), -3);
 
-    // The HUD tint below zero, in both themes, at 4.5:1 or better on the overlay bar.
-    for (const theme of ['light', 'dark']) {
-      await ms((th) => globalThis.msTheme.setTheme(th), theme);
+    // The HUD tint below zero, at 4.5:1 or better on the overlay bar.
+    for (const theme of ['joyful-tiles']) {
       await frames();
       const c = await ms(minesColour);
       assert.equal(c.text, '-3');
@@ -168,7 +167,6 @@ test('in a browser, a flag click on a number flashes the cubes it changed, then 
       assert.deepEqual(c.fg, c.danger, `${theme}: the mines figure shows in --color-danger`);
       assert.ok(c.ratio >= 4.5, `${theme}: ${c.ratio.toFixed(2)}:1 against the overlay bar`);
     }
-    await ms(() => globalThis.msTheme.setTheme('light'));
 
     // The undo flashes the same seven; a hand flag on a closed cube flashes nothing.
     await ms(() => globalThis.__ms.click('right'));

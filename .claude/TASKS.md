@@ -470,7 +470,7 @@ Feature: theme-system
 
 ## 158. Base stylesheet and the Joyful tiles theme stylesheet; retire light and dark
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: css/tokens.css, css/components.css, css/style.css, themes/joyful-tiles/theme.css, js/ui/components.js, index.html, js/theme.js, dev/components.html, js/shell/scene-palette.js, js/tokens.js, tests/tokens.test.mjs, tests/theme.test.mjs, tests/components.test.mjs, tests/settings-appliers.test.mjs
 Preconditions: 157

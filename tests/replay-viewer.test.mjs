@@ -736,7 +736,7 @@ test('the viewer screen is kit markup: the overlay, the board area, the message 
   assert.match(html, /id="rp-ticks" class="replay-ticks" aria-hidden="true"/, 'the ticks are decoration');
   for (const id of ['rp-show-bbbv', 'rp-sound', 'rp-camera']) assert.match(html, new RegExp(`id="${id}"[^>]*aria-pressed="false"`), `${id} is a toggle`);
   assert.match(html, /id="replay-file" type="file" accept="\.msrp"[^>]*hidden/, 'one hidden file input picks a replay file');
-  assert.match(read('css/components.css'), /\.replay-pause \{[^}]*var\(--color-replay-pause\)/, 'the marks take their colour from a token');
+  assert.match(read('themes/joyful-tiles/theme.css'), /\.replay-pause \{[^}]*var\(--color-replay-pause\)/, 'the marks take their colour from a token');
   for (const b of html.match(/<button[^>]*>/g)) assert.match(b, /type="button"/);
   assert.match(read('css/components.css'), /Replay viewer \(index\.html #replay/, 'the catalogue lists the screen');
 });

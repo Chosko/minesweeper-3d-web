@@ -1,6 +1,6 @@
 // Behaviour helpers for the component kit (css/components.css): the slider's
-// value display, the segmented choice's selection, the pager, the code chip and
-// the board code field. The logic is plain
+// value display, the segmented choice's selection, the one selected control
+// under a moving mouse, the pager, the code chip and the board code field. The logic is plain
 // functions; the binders touch only the elements they are handed, so the
 // module needs no document and runs under Node with stub elements.
 
@@ -223,6 +223,35 @@ export function bindPager(nav, { onPage, name = '' } = {}) {
       (again ?? nav.querySelector('[aria-current="page"]'))?.focus({ preventScroll: true });
     },
   };
+}
+
+// ---------------------------------------------------------------- one selected control
+
+/** The controls whose hover and focus are one selected state: buttons, menu entries and board options. */
+export const SELECT_ON_HOVER = '.ui-button, .ui-menu__item';
+
+/**
+ * Moving the mouse over an enabled button, menu entry or board option focuses it (without scrolling),
+ * so the selected control is always the focused one; a control that never takes focus (data-no-focus:
+ * the in-game toggles that leave the keys to the board) is left alone. One delegated listener on `root` (the document)
+ * serves every such control, present and future. A mousemove that did not move the pointer (one a
+ * browser sends when the page moves under a resting pointer) selects nothing, so after a key or
+ * controller press moved the focus the control under the resting pointer stays unselected until the
+ * mouse moves again. Returns the unbind.
+ */
+export function bindSelectOnHover(root) {
+  let last = null;
+  const onMove = (e) => {
+    const at = `${e.clientX},${e.clientY}`;
+    if (at === last) return;
+    last = at;
+    const el = e.target?.closest?.(SELECT_ON_HOVER);
+    if (!el || el.disabled || el.getAttribute('aria-disabled') === 'true' || el.hasAttribute('data-no-focus')) return;
+    if (el.ownerDocument?.activeElement === el) return;
+    el.focus({ preventScroll: true });
+  };
+  root.addEventListener('mousemove', onMove, true);
+  return () => root.removeEventListener('mousemove', onMove, true);
 }
 
 /** Binds every slider and segmented choice under `root`. Returns unbind-all. */

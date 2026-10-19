@@ -1,18 +1,28 @@
 /* Component kit — the catalogue screens build against.
 
-   Every value comes from css/tokens.css; no rule here is theme-specific, so
-   both themes follow from the token values. Low-fidelity pass: plain,
-   functional styling; relief, shadow and motion are token placeholders.
+   This is the kit's base stylesheet: structure only — layout, display, the
+   sizes the layout depends on and the reset of each control. It carries no
+   colour, font family, border, radius, shadow, transition or animation: the
+   active theme's stylesheet (themes/<id>/theme.css, every rule scoped to
+   :root[data-theme="<id>"]) draws every part and state named below.
    Behaviour helpers live in js/ui/components.js (initComponents(root) binds
-   every slider and segmented choice under root). js/ui/kit-catalogue.js
-   declares the components below as data (classes, parts, states, decoration
-   slots) and changes with this comment. Changing a class name or a markup
-   pattern below is a breaking change for every screen using it.
+   every slider and segmented choice under root; bindSelectOnHover(root)
+   moves focus to the button, menu entry or board option the mouse moves
+   over). js/ui/kit-catalogue.js declares the components below as data
+   (classes, parts, states, decoration slots) and changes with this comment.
+   Changing a class name or a markup pattern below is a breaking change for
+   every screen using it.
 
-   States. Every interactive control has: at rest, hover, pressed (:active),
-   focused (:focus-visible for keyboard, body.pad-nav :focus for the
-   controller) and disabled (the native `disabled` attribute). The focus ring
-   is a solid outline in --color-focus-ring; state changes are instant.
+   States. On buttons, menu entries and board options (ui-button, ui-menu__item)
+   hover and focus are one selected state: the mouse moving over one focuses
+   it, so the selected control is the focused one (:focus, body.pad-nav :focus
+   for the controller), and none draws a focus ring or a hover look of its
+   own. A control that never takes focus (data-no-focus: the in-game toggles
+   that leave the keys to the board) is not focused by the mouse. They have:
+   at rest, selected, pressed (:active) and disabled (the native `disabled`
+   attribute). Every other interactive control has: at rest,
+   hover, pressed (:active), focused (:focus-visible for keyboard,
+   body.pad-nav :focus for the controller) and disabled.
    `data-force="hover|active|focus"` previews a state statically; only the
    gallery (dev/components.html) uses it.
 
@@ -452,116 +462,63 @@
      line. Default focus: Play, or the message's Back.
 */
 
+
 /* ---------- replay seek bar: the paused spans and the action ticks on its track ----------
    Four layers: the track's fill (::before), the pause marks, the ticks above
    them (taller and narrow, so a span never hides a tick nor a tick a span),
    then the input with a transparent track, so the thumb and the track's edge
    draw over both. */
 .replay-seek { position: relative; grid-column: 1 / -1; }
-.replay-seek::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 8px; transform: translateY(-50%); border-radius: var(--radius-pill); background: var(--color-surface-sunken); }
+.replay-seek::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 8px; transform: translateY(-50%); }
 .replay-seek .ui-slider__input { position: relative; z-index: 2; display: block; }
-.replay-seek .ui-slider__input::-webkit-slider-runnable-track { background: transparent; }
-.replay-seek .ui-slider__input::-moz-range-track { background: transparent; }
 .replay-pauses { position: absolute; z-index: 1; left: 10px; right: 10px; top: 50%; height: 8px; transform: translateY(-50%); pointer-events: none; }
-.replay-pause { position: absolute; top: 0; bottom: 0; min-width: 2px; border-radius: 2px; background: var(--color-replay-pause); }
+.replay-pause { position: absolute; top: 0; bottom: 0; min-width: 2px; }
 .replay-ticks { position: absolute; z-index: 1; left: 10px; right: 10px; top: 50%; height: 14px; transform: translateY(-50%); pointer-events: none; }
-.replay-tick { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; border-radius: 1px; }
-.replay-tick--reveal { background: var(--color-replay-reveal); }
-.replay-tick--flag { background: var(--color-replay-flag); }
-.replay-tick--chord { background: var(--color-replay-chord); }
+.replay-tick { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; }
 .replay-pauses-text { grid-column: 1 / -1; font-size: var(--font-size-sm); }
 .replay-pauses-text[hidden] { display: none; }
 
 /* ---------- buttons ---------- */
 .ui-button {
   appearance: none;
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
   min-height: 44px;
+  margin: 0;
   padding: var(--space-3) var(--space-5);
-  border: 2px solid transparent;
-  border-radius: var(--radius-md);
-  font-family: var(--font-family-sans);
+  border: 0;
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-bold);
   line-height: 1;
   cursor: pointer;
 }
-.ui-button--primary {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  color: var(--color-accent-ink);
-}
-.ui-button--primary:hover:not(:disabled), .ui-button--primary[data-force~="hover"] {
-  background: var(--color-accent-strong);
-  border-color: var(--color-accent-strong);
-}
-.ui-button--primary:active:not(:disabled), .ui-button--primary[data-force~="active"] {
-  background: var(--color-accent-strong);
-  border-color: var(--color-ink);
-}
-.ui-button--secondary {
-  background: var(--color-surface-raised);
-  border-color: var(--color-ink-muted);
-  color: var(--color-ink);
-}
-.ui-button--secondary:hover:not(:disabled), .ui-button--secondary[data-force~="hover"] {
-  background: var(--color-accent-soft);
-  border-color: var(--color-accent-strong);
-}
-.ui-button--secondary:active:not(:disabled), .ui-button--secondary[data-force~="active"] {
-  background: var(--color-accent-soft);
-  border-color: var(--color-ink);
-}
-.ui-button--primary:disabled, .ui-button--secondary:disabled {
-  background: var(--color-surface-sunken);
-  border-color: var(--color-ink-muted);
-  border-style: dashed;
-  color: var(--color-ink-muted);
-  cursor: not-allowed;
-}
+.ui-button:disabled { cursor: not-allowed; }
 
 /* ---------- menu list ---------- */
 .ui-menu {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 .ui-menu__item {
   appearance: none;
+  position: relative;
   display: flex;
   align-items: center;
   width: 100%;
   min-height: 48px;
+  margin: 0;
   padding: var(--space-3) var(--space-4);
-  border: 2px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-raised);
-  color: var(--color-ink);
-  font-family: var(--font-family-sans);
+  border: 0;
   font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-regular);
   text-align: left;
   cursor: pointer;
 }
-.ui-menu__item:hover:not(:disabled), .ui-menu__item[data-force~="hover"] {
-  background: var(--color-accent-soft);
-  border-color: var(--color-accent-strong);
-}
-.ui-menu__item:active:not(:disabled), .ui-menu__item[data-force~="active"] {
-  background: var(--color-accent-soft);
-  border-color: var(--color-ink);
-}
-.ui-menu__item:disabled {
-  background: var(--color-surface-sunken);
-  border-color: var(--color-ink-muted);
-  border-style: dashed;
-  color: var(--color-ink-muted);
-  cursor: not-allowed;
-}
-
+.ui-menu__item:disabled { cursor: not-allowed; }
 .ui-menu__item:has(.ui-menu__detail) {
   flex-direction: column;
   align-items: flex-start;
@@ -570,39 +527,24 @@
 .ui-menu__label { font-weight: var(--font-weight-bold); }
 .ui-menu__detail {
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-ink-muted);
+  font-weight: var(--font-weight-regular);
   font-variant-numeric: var(--font-numeric-tabular);
 }
 
 /* ---------- surfaces ---------- */
-.ui-card {
-  padding: var(--space-6);
-  border: 1px solid var(--color-surface-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  color: var(--color-ink);
-  box-shadow: var(--elevation-3);
-}
+.ui-card { padding: var(--space-6); }
 .ui-card__title {
   margin: 0 0 var(--space-4);
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-heavy);
 }
-.ui-panel {
-  padding: var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-sunken);
-  color: var(--color-ink);
-}
+.ui-panel { padding: var(--space-4); }
 
 /* ---------- toggle ---------- */
 .ui-toggle {
   display: inline-flex;
   align-items: center;
   gap: var(--space-3);
-  color: var(--color-ink);
   font-size: var(--font-size-md);
   cursor: pointer;
 }
@@ -613,45 +555,20 @@
   width: 44px;
   height: 24px;
   margin: 0;
-  border: 2px solid var(--color-ink-muted);
-  border-radius: var(--radius-pill);
-  background: var(--color-surface-sunken);
+  border: 0;
   cursor: pointer;
 }
 .ui-toggle__input::before {
   content: "";
   position: absolute;
-  top: 2px;
-  left: 2px;
+  top: 4px;
+  left: 4px;
   width: 16px;
   height: 16px;
-  border-radius: var(--radius-pill);
-  background: var(--color-ink-muted);
 }
-.ui-toggle__input:checked {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-}
-.ui-toggle__input:checked::before {
-  left: 22px;
-  background: var(--color-accent-ink);
-}
-.ui-toggle__input:hover:not(:disabled), .ui-toggle__input[data-force~="hover"] {
-  border-color: var(--color-accent-strong);
-}
-.ui-toggle__input:active:not(:disabled), .ui-toggle__input[data-force~="active"] {
-  border-color: var(--color-ink);
-}
-.ui-toggle__input:disabled {
-  border-style: dashed;
-  background: var(--color-surface-sunken);
-  cursor: not-allowed;
-}
-.ui-toggle__input:disabled::before { background: var(--color-border); }
-.ui-toggle:has(.ui-toggle__input:disabled) {
-  color: var(--color-ink-muted);
-  cursor: not-allowed;
-}
+.ui-toggle__input:checked::before { left: 24px; }
+.ui-toggle__input:disabled { cursor: not-allowed; }
+.ui-toggle:has(.ui-toggle__input:disabled) { cursor: not-allowed; }
 
 /* ---------- slider ---------- */
 .ui-slider {
@@ -659,13 +576,12 @@
   grid-template-columns: 1fr auto;
   align-items: center;
   gap: var(--space-2) var(--space-3);
-  color: var(--color-ink);
 }
-.ui-slider__label { font-size: var(--font-size-md); font-weight: var(--font-weight-medium); }
+.ui-slider__label { font-size: var(--font-size-md); font-weight: var(--font-weight-regular); }
 .ui-slider__value {
-  font-family: var(--font-family-mono);
   font-variant-numeric: var(--font-numeric-tabular);
   font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
 }
 .ui-slider__input {
   appearance: none;
@@ -673,200 +589,91 @@
   width: 100%;
   height: 28px;
   margin: 0;
-  background: transparent;
   cursor: pointer;
 }
-.ui-slider__input::-webkit-slider-runnable-track {
-  height: 8px;
-  border: 1px solid var(--color-ink-muted);
-  border-radius: var(--radius-pill);
-  background: var(--color-surface-sunken);
-}
-.ui-slider__input::-moz-range-track {
-  height: 8px;
-  border: 1px solid var(--color-ink-muted);
-  border-radius: var(--radius-pill);
-  background: var(--color-surface-sunken);
-}
+.ui-slider__input::-webkit-slider-runnable-track { height: 8px; }
+.ui-slider__input::-moz-range-track { height: 8px; }
 .ui-slider__input::-webkit-slider-thumb {
   appearance: none;
   width: 20px;
   height: 20px;
-  margin-top: -7px;
-  border: 2px solid var(--color-surface-raised);
-  border-radius: var(--radius-pill);
-  background: var(--color-accent);
+  margin-top: -6px;
 }
-.ui-slider__input::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--color-surface-raised);
-  border-radius: var(--radius-pill);
-  background: var(--color-accent);
-}
-.ui-slider__input:hover:not(:disabled)::-webkit-slider-thumb, .ui-slider__input[data-force~="hover"]::-webkit-slider-thumb {
-  background: var(--color-accent-strong);
-}
-.ui-slider__input:hover:not(:disabled)::-moz-range-thumb, .ui-slider__input[data-force~="hover"]::-moz-range-thumb {
-  background: var(--color-accent-strong);
-}
-.ui-slider__input:active:not(:disabled)::-webkit-slider-thumb, .ui-slider__input[data-force~="active"]::-webkit-slider-thumb {
-  background: var(--color-accent-strong);
-  border-color: var(--color-ink);
-}
-.ui-slider__input:active:not(:disabled)::-moz-range-thumb, .ui-slider__input[data-force~="active"]::-moz-range-thumb {
-  background: var(--color-accent-strong);
-  border-color: var(--color-ink);
-}
+.ui-slider__input::-moz-range-thumb { width: 20px; height: 20px; }
 .ui-slider__input:disabled { cursor: not-allowed; }
-.ui-slider__input:disabled::-webkit-slider-thumb { background: var(--color-ink-muted); }
-.ui-slider__input:disabled::-moz-range-thumb { background: var(--color-ink-muted); }
-.ui-slider:has(.ui-slider__input:disabled) { color: var(--color-ink-muted); }
 
 /* ---------- segmented choice ---------- */
 .ui-segmented {
   display: inline-flex;
   flex-wrap: wrap;
   max-width: 100%;
-  gap: var(--space-1);
+  gap: 2px;
   padding: var(--space-1);
-  border: 1px solid var(--color-ink-muted);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-sunken);
 }
 .ui-segmented__option {
   appearance: none;
   min-height: 36px;
+  margin: 0;
   padding: var(--space-2) var(--space-4);
-  border: 2px solid transparent;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--color-ink);
-  font-family: var(--font-family-sans);
+  border: 0;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
   cursor: pointer;
 }
-.ui-segmented__option[aria-checked="true"] {
-  background: var(--color-accent);
-  color: var(--color-accent-ink);
-}
-.ui-segmented__option:hover:not(:disabled), .ui-segmented__option[data-force~="hover"] {
-  border-color: var(--color-accent-strong);
-}
-.ui-segmented__option:active:not(:disabled), .ui-segmented__option[data-force~="active"] {
-  border-color: var(--color-ink);
-}
-.ui-segmented__option:disabled {
-  background: transparent;
-  color: var(--color-ink-muted);
-  text-decoration: line-through;
-  cursor: not-allowed;
-}
+.ui-segmented__option:disabled { cursor: not-allowed; }
 
 /* ---------- number field ---------- */
 .ui-field {
   display: inline-flex;
   flex-direction: column;
   gap: var(--space-1);
-  color: var(--color-ink);
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-bold);
 }
 .ui-field__input {
   appearance: none;
   width: 96px;
   min-height: 44px;
+  margin: 0;
   padding: var(--space-2) var(--space-3);
-  border: 2px solid var(--color-ink-muted);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-raised);
-  color: var(--color-ink);
-  font-family: var(--font-family-sans);
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-bold);
   font-variant-numeric: var(--font-numeric-tabular);
   user-select: text;
 }
-.ui-field__input:hover:not(:disabled), .ui-field__input[data-force~="hover"] {
-  border-color: var(--color-accent-strong);
-}
-.ui-field__input:active:not(:disabled), .ui-field__input[data-force~="active"] {
-  border-color: var(--color-ink);
-}
-.ui-field__input[data-adjusted] { border-color: var(--color-warning); }
-.ui-field__input:disabled {
-  border-style: dashed;
-  background: var(--color-surface-sunken);
-  color: var(--color-ink-muted);
-  cursor: not-allowed;
-}
-.ui-field:has(.ui-field__input:disabled) { color: var(--color-ink-muted); }
+.ui-field__input:disabled { cursor: not-allowed; }
 
 /* ---------- link ---------- */
-.ui-link {
-  color: var(--color-accent-strong);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
-}
-.ui-link:hover, .ui-link[data-force~="hover"] { text-decoration-thickness: 2px; }
-.ui-link:active, .ui-link[data-force~="active"] { color: var(--color-ink); }
-.ui-link[aria-disabled="true"] {
-  color: var(--color-ink-muted);
-  text-decoration-style: dashed;
-  cursor: not-allowed;
-}
+.ui-link { cursor: pointer; }
+.ui-link[aria-disabled="true"] { cursor: not-allowed; }
 
 /* ---------- stat readout ---------- */
 .ui-stat {
   display: inline-flex;
   flex-direction: column;
   gap: var(--space-1);
-  color: var(--color-ink);
 }
 .ui-stat__label {
   font-size: 12px; /* the low-vision label minimum, on every pointer: one step above --font-size-xs */
   font-weight: var(--font-weight-bold);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-ink-muted);
 }
 .ui-stat__value {
-  font-family: var(--font-family-mono);
   font-variant-numeric: var(--font-numeric-tabular);
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
 }
 .ui-stat__detail {
-  font-family: var(--font-family-mono);
   font-variant-numeric: var(--font-numeric-tabular);
   font-size: var(--font-size-sm);
-  color: var(--color-ink-muted);
 }
-.ui-stat__detail[data-new-best] {
-  font-weight: var(--font-weight-bold);
-  color: var(--color-ink);
-}
-.ui-stat__detail[data-delta="better"] { color: var(--color-success); }
-.ui-stat__detail[data-delta="worse"] { color: var(--color-danger); }
-.ui-stat__detail[data-delta="equal"] { color: var(--color-ink-muted); }
-.ui-stat[data-new-best] {
-  outline: 2px solid var(--color-success);
-  outline-offset: var(--space-1);
-  border-radius: var(--radius-sm);
-}
-.ui-panel--muted .ui-stat,
-.ui-panel--muted .ui-stat__value,
-.ui-panel--muted .ui-stat__detail { color: var(--color-ink-muted); }
+.ui-stat__detail[data-new-best] { font-weight: var(--font-weight-bold); }
 .ui-stat--tile {
   flex: 1 1 0;
   min-width: max-content;
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-raised);
 }
 .ui-stat--tile .ui-stat__value { font-size: clamp(var(--font-size-xl), 5.5cqi, var(--font-size-2xl)); white-space: nowrap; }
 .ui-stat--tile > .ui-button { align-self: flex-start; }
@@ -883,13 +690,7 @@
   margin-top: var(--space-3);
 }
 .ui-pager__button { min-width: var(--space-8); padding: var(--space-2) var(--space-3); }
-.ui-pager__button[aria-current="page"] {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  border-style: solid;
-  color: var(--color-accent-ink);
-  cursor: default;
-}
+.ui-pager__button[aria-current="page"] { cursor: default; }
 
 /* ---------- code chip ---------- */
 .ui-code {
@@ -898,26 +699,21 @@
   align-items: center;
   gap: var(--space-2);
 }
-.ui-code__label { color: var(--color-ink-muted); font-size: var(--font-size-sm); }
+.ui-code__label { font-size: var(--font-size-sm); }
 .ui-code__value {
-  font-family: var(--font-family-mono);
   font-size: var(--font-size-md);
-  color: var(--color-ink);
+  font-weight: var(--font-weight-bold);
   overflow-wrap: anywhere;
   user-select: all;
 }
 .ui-code--compact { gap: var(--space-1); }
 .ui-code--compact .ui-code__value { font-size: var(--font-size-sm); }
-.ui-code--compact .ui-button { padding: var(--space-1) var(--space-2); font-size: var(--font-size-sm); }
+.ui-code--compact .ui-button { min-height: 30px; padding: var(--space-1) var(--space-2); font-size: var(--font-size-sm); }
 
 /* ---------- banner ---------- */
 .ui-banner {
   margin: 0;
   padding: var(--space-2) var(--space-3);
-  border-left: var(--space-1) solid var(--color-success);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-sunken);
-  color: var(--color-ink);
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-bold);
 }
@@ -928,11 +724,6 @@
   align-items: center;
   gap: var(--space-5);
   padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface-raised);
-  color: var(--color-ink);
-  box-shadow: var(--elevation-2);
 }
 .ui-overlay-bar__pause {
   min-height: 40px;
@@ -945,13 +736,6 @@
   align-self: center;
   width: var(--space-8);
   height: var(--space-8);
-  border: var(--space-1) solid var(--color-border);
-  border-top-color: var(--color-accent);
-  border-radius: var(--radius-pill);
-  animation: ui-spinner-turn calc(var(--duration-slow) * 4) linear infinite;
-}
-@keyframes ui-spinner-turn {
-  to { transform: rotate(1turn); }
 }
 
 /* ---------- screen compositions ---------- */
@@ -981,20 +765,17 @@
   font-weight: var(--font-weight-bold);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--color-ink-muted);
 }
 .ui-text {
   margin: 0;
   font-size: var(--font-size-md);
-  color: var(--color-ink);
 }
-.ui-text--muted { color: var(--color-ink-muted); }
-.ui-text--warning { color: var(--color-warning); font-weight: var(--font-weight-bold); }
+.ui-text--warning { font-weight: var(--font-weight-bold); }
 .ui-actions {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 .ui-actions--row { flex-direction: row; flex-wrap: wrap; align-items: center; }
 .ui-stat-row {
@@ -1027,19 +808,10 @@
   #pause-list { grid-column: 2; grid-row: 1 / span 2; }
 }
 
-/* ---------- focus ring (keyboard and controller) ---------- */
-.ui-button--primary:focus-visible, .ui-button--primary[data-force~="focus"], body.pad-nav .ui-button--primary:focus,
-.ui-button--secondary:focus-visible, .ui-button--secondary[data-force~="focus"], body.pad-nav .ui-button--secondary:focus,
-.ui-menu__item:focus-visible, .ui-menu__item[data-force~="focus"], body.pad-nav .ui-menu__item:focus,
-.ui-toggle__input:focus-visible, .ui-toggle__input[data-force~="focus"], body.pad-nav .ui-toggle__input:focus,
-.ui-slider__input:focus-visible, .ui-slider__input[data-force~="focus"], body.pad-nav .ui-slider__input:focus,
-.ui-segmented__option:focus-visible, .ui-segmented__option[data-force~="focus"], body.pad-nav .ui-segmented__option:focus,
-.ui-field__input:focus-visible, .ui-field__input[data-force~="focus"], body.pad-nav .ui-field__input:focus,
-.ui-link:focus-visible, .ui-link[data-force~="focus"], body.pad-nav .ui-link:focus {
-  outline: 3px solid var(--color-focus-ring);
-  outline-offset: 2px;
-  box-shadow: none;
-}
+/* ---------- focused state ----------
+   Every focusable part shows a focused state, drawn by the theme: on buttons, menu entries and
+   board options it is their selected state, so none draws a separate focus ring here. */
+:is(.ui-button, .ui-menu__item, .ui-toggle__input, .ui-slider__input, .ui-segmented__option, .ui-field__input, .ui-link):focus { outline: none; }
 
 /* ---------- coarse pointers ---------- */
 /* A finger's targets, on a coarse pointer only: every size above stays the fine pointer's.

@@ -637,7 +637,7 @@ test('the shell registers the records screen, its default focus on the picker, i
   assert.match(MAIN, /LAYER_SCREEN = \{[^}]*records: 'records'/, 'the controller reaches the records layer');
   assert.match(MAIN, /BACKDROP_SCREENS = new Set\(\[[^\]]*'records'/);
   assert.match(MAIN, /createRecordsScreen\(\{ records: RECORDS/);
-  assert.match(read('css/style.css'), /#settings, #records \{/);
+  assert.doesNotMatch(read('css/style.css'), /#records\b[^{]*\{[^}]*background/, 'the screen sits on the scene with no tint of its own');
 });
 
 test('the catalogue documents the records screen', () => {
@@ -735,7 +735,7 @@ test('in a browser, the menu opens the records screen on the last board played, 
   }
 });
 
-test('in a browser, Records and Settings lay out in columns at 1280 px, one column at 900 and 390 px, in both themes, never scrolling sideways', async (t) => {
+test('in a browser, Records and Settings lay out in columns at 1280 px, one column at 900 and 390 px, never scrolling sideways', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -772,8 +772,7 @@ test('in a browser, Records and Settings lay out in columns at 1280 px, one colu
       return { columns: lefts.size, wide };
     }, [id, items]);
     const cases = [[1280, 800, 2], [900, 800, 1], [390, 844, 1]];
-    for (const theme of ['light', 'dark']) {
-      await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
+    for (const theme of ['joyful-tiles']) {
       for (const [width, height, columns] of cases) {
         await page.setViewportSize({ width, height });
         await page.click('#menu-entry-records');
@@ -816,7 +815,7 @@ test('in a browser, Records and Settings lay out in columns at 1280 px, one colu
   }
 });
 
-test('in a browser, at 1280 × 800 and 390 × 844 in both themes, the Top 10 opens, both charts hover, the filters change and both files export', async (t) => {
+test('in a browser, at 1280 × 800 and 390 × 844, the Top 10 opens, both charts hover, the filters change and both files export', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -858,8 +857,7 @@ test('in a browser, at 1280 × 800 and 390 × 844 in both themes, the Top 10 ope
     };
     const wide = () => page.evaluate(() => [document.documentElement, document.getElementById('records'), document.querySelector('#records .ui-card')]
       .filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.id || e.tagName));
-    for (const theme of ['light', 'dark']) {
-      await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
+    for (const theme of ['joyful-tiles']) {
       for (const [width, height] of [[1280, 800], [390, 844]]) {
         const at = `${theme} ${width} px`;
         await page.setViewportSize({ width, height });
@@ -1000,8 +998,7 @@ test('in a browser, the best tiles and the Records tables keep every figure on o
       document.querySelector(`#${id} .ui-stat__value`).textContent = list[i];
     }), texts);
     const FIGURES = [['999.999 s', '99.99', '100.0%'], ['—', '—', '—']];
-    for (const theme of ['light', 'dark']) {
-      await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
+    for (const theme of ['joyful-tiles']) {
       for (const [width, height] of [[1024, 768], [1280, 800], [1440, 900], [1920, 1080], [390, 844]]) {
         await page.setViewportSize({ width, height });
         for (const key of keys) {
@@ -1035,7 +1032,7 @@ test('in a browser, the best tiles and the Records tables keep every figure on o
   }
 });
 
-test('in a browser, at 390 × 844 and 360 × 800 in both themes and modes, the Averages table stays inside its panel with times over 500 s, its figures on one line; a table still at 1024 px', async (t) => {
+test('in a browser, at 390 × 844 and 360 × 800 in both modes, the Averages table stays inside its panel with times over 500 s, its figures on one line; a table still at 1024 px', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -1083,8 +1080,7 @@ test('in a browser, at 390 × 844 and 360 × 800 in both themes and modes, the A
         cells: [...document.querySelectorAll('#records-averages-body td')].map((td) => ({ text: td.textContent, lines: lines(td) })),
       };
     });
-    for (const theme of ['light', 'dark']) {
-      await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
+    for (const theme of ['joyful-tiles']) {
       for (const [width, height] of [[390, 844], [360, 800], [1024, 768]]) {
         await page.setViewportSize({ width, height });
         for (const key of keys) {

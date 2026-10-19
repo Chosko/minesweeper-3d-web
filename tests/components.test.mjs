@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import {
   decimalsOf, formatSliderValue, segmentedTargetIndex, segmentedState,
   bindSlider, bindSegmented, initComponents, formatOverlayTime, formatMineCount, mineCounterDigits, pagerState, PAGER_WINDOW,
-  boardLink, copyBoardCode, bindCodeChip, COPY_FALLBACK, COPIED, bindCodeField,
+  boardLink, copyBoardCode, bindCodeChip, COPY_FALLBACK, COPIED, bindCodeField, bindSelectOnHover, SELECT_ON_HOVER,
 } from '../js/ui/components.js';
 import { UI } from '../js/ui.js';
 import { FOCUSABLE } from '../js/shell/navigation.js';
@@ -19,14 +19,17 @@ const read = (f) => readFileSync(join(ROOT, f), 'utf8');
 const RAW = read('css/components.css');
 const CSS = RAW.replace(/\/\*[\s\S]*?\*\//g, '');
 const GALLERY = read('dev/components.html');
-const TOKENS = new Set([...read('css/tokens.css').matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]));
+const THEME_RAW = read('themes/joyful-tiles/theme.css');
+const THEME_CSS = THEME_RAW.replace(/\/\*[\s\S]*?\*\//g, '');
+const SCOPE = ':root[data-theme="joyful-tiles"]';
+const TOKENS = new Set([...`${read('css/tokens.css')}\n${THEME_RAW}`.matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]));
 
 // The catalogue: every component the kit ships, its root class, and whether
 // it is interactive (so it owns the five states and the focus contract).
 const COMPONENTS = {
-  'ui-button--primary': { interactive: true, control: '.ui-button.ui-button--primary' },
-  'ui-button--secondary': { interactive: true, control: '.ui-button.ui-button--secondary' },
-  'ui-menu': { interactive: true, control: '.ui-menu__item' },
+  'ui-button--primary': { interactive: true, selectable: true, control: '.ui-button.ui-button--primary' },
+  'ui-button--secondary': { interactive: true, selectable: true, control: '.ui-button.ui-button--secondary' },
+  'ui-menu': { interactive: true, selectable: true, control: '.ui-menu__item' },
   'ui-card': { interactive: false },
   'ui-panel': { interactive: false },
   'ui-toggle': { interactive: true, control: '.ui-toggle__input' },
@@ -54,6 +57,9 @@ function rules(css) {
 }
 const RULES = rules(CSS);
 const rulesFor = (needle) => RULES.filter(([sel]) => sel.includes(needle));
+// The theme's rules, each selector list with the theme's scope taken off its selectors.
+const THEME_RULES = rules(THEME_CSS).filter(([sel]) => sel.includes(SCOPE)).map(([sel, body]) => [sel.split(SCOPE).join('').trim(), body]);
+const themeRulesFor = (needle) => THEME_RULES.filter(([sel]) => sel.includes(needle));
 
 // ---------------------------------------------------------------- tokens only
 
@@ -64,31 +70,68 @@ test('components.css declares no custom properties and reads only declared token
   for (const name of reads) assert.ok(TOKENS.has(name), `components.css reads undeclared ${name}`);
 });
 
-test('components.css carries no literal colour and no theme-specific rule', () => {
-  assert.doesNotMatch(CSS, /#[0-9a-f]{3,8}\b/i, 'hex colour literal');
-  assert.doesNotMatch(CSS, /\b(rgb|rgba|hsl|hsla|hwb|lab|lch|oklch|color-mix)\(/i, 'functional colour literal');
-  const named = /:\s*[^;]*\b(white|black|red|green|blue|gray|grey|silver|navy|orange|yellow)\b/i;
-  assert.doesNotMatch(CSS, named, 'named colour literal');
-  assert.doesNotMatch(CSS, /data-theme|prefers-color-scheme/, 'theme-specific rule');
-});
+// The base stylesheets carry structure only: no colour, font family, border style or colour, radius,
+// shadow, transition or animation value, outside the shipped reduced-motion rule.
+const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce) {\n  *, *::before, *::after { animation: none !important; transition: none !important; }\n}';
+const VISUAL = /^(color|background(-color|-image)?|border(-(top|right|bottom|left))?(-(color|style))?|border-style|border-color|outline(-color|-style)?|border(-[a-z-]+)?-radius|box-shadow|text-shadow|filter|backdrop-filter|-webkit-backdrop-filter|font-family|font|transition[\w-]*|animation[\w-]*|fill|stroke|caret-color|accent-color|text-decoration-color|-webkit-tap-highlight-color)$/;
 
-test('low fidelity: no animation but the spinner\'s turn, and shadows and transitions come only from tokens', () => {
-  assert.deepEqual([...CSS.matchAll(/@keyframes\s+([\w-]+)/g)].map((m) => m[1]), ['ui-spinner-turn'], 'the spinner is the one keyframed motion');
-  assert.deepEqual(RULES.filter(([, body]) => /animation[\w-]*\s*:/.test(body)).map(([sel]) => sel), ['.ui-spinner'], 'only the spinner animates');
-  const [[, spinner]] = RULES.filter(([sel]) => sel === '.ui-spinner');
-  assert.match(spinner, /animation: ui-spinner-turn calc\(var\(--duration-\w+\) \* \d+\) linear infinite;/, 'its pace comes from a motion token');
-  assert.match(spinner, /border[\w-]*:[^;]*var\(--color-/, 'its colours come from tokens');
-  for (const [sel, body] of RULES) {
-    for (const m of body.matchAll(/(box-shadow|transition|text-shadow|filter)\s*:\s*([^;]+)/g)) {
-      const [, prop, value] = m;
-      if (prop === 'box-shadow') assert.match(value.trim(), /^(none|var\(--elevation-\d\))$/, `${sel} ${prop}: ${value}`);
-      else if (prop === 'transition') {
-        for (const part of value.split(',')) {
-          assert.match(part.trim(), /^[\w-]+ var\(--duration-\w+\) var\(--easing-\w+\)$/, `${sel} transition: ${part}`);
-        }
-      } else assert.fail(`${sel} uses ${prop}`);
+function visualValues(file) {
+  let css = read(file).replace(/\/\*[\s\S]*?\*\//g, '');
+  if (file === 'css/style.css') {
+    assert.ok(css.includes(REDUCED_MOTION), 'css/style.css keeps its reduced-motion rule unchanged');
+    css = css.replace(REDUCED_MOTION, '');
+  }
+  const found = [];
+  if (/@keyframes/.test(css)) found.push('@keyframes');
+  if (/data-theme|prefers-color-scheme|prefers-reduced-motion/.test(css)) found.push('a theme-specific or motion-preference rule');
+  for (const [sel, body] of rules(css)) {
+    for (const d of body.split(';')) {
+      const i = d.indexOf(':');
+      if (i < 0) continue;
+      const prop = d.slice(0, i).trim();
+      const value = d.slice(i + 1).trim();
+      if (prop.startsWith('--')) continue;
+      if (/#[0-9a-f]{3,8}\b|\b(rgb|rgba|hsl|hsla|hwb|lab|lch|oklch|color-mix)\(|\b(white|black|transparent|currentcolor)\b/i.test(value)) found.push(`${sel} { ${prop}: ${value} }`);
+      if (VISUAL.test(prop) && !/^(none|0)$/.test(value)) found.push(`${sel} { ${prop}: ${value} }`);
+      if (/var\(--(color|font-family|radius|elevation|duration|easing|edge|highlight|veil|shade)/.test(value)) found.push(`${sel} { ${prop}: ${value} }`);
     }
   }
+  return found;
+}
+
+test('the base stylesheets carry no colour, font family, border, radius, shadow, transition or animation value outside the reduced-motion rule', () => {
+  for (const f of ['css/tokens.css', 'css/components.css', 'css/style.css']) assert.deepEqual(visualValues(f), [], f);
+});
+
+test('the base check bites: a colour, a radius, a shadow, a transition, an animation and a font family are each caught', () => {
+  const caught = (css) => {
+    const found = [];
+    for (const [sel, body] of rules(css)) {
+      for (const d of body.split(';')) {
+        const i = d.indexOf(':');
+        if (i > 0 && VISUAL.test(d.slice(0, i).trim()) && !/^(none|0)$/.test(d.slice(i + 1).trim())) found.push(sel);
+      }
+    }
+    return found.length;
+  };
+  for (const decl of ['color: red', 'background: var(--color-ink)', 'border-radius: 4px', 'box-shadow: 0 1px 0 x', 'transition: color 1s', 'animation: spin 1s', 'font-family: serif', 'border: 1px solid']) {
+    assert.equal(caught(`.x { ${decl}; }`), 1, decl);
+  }
+  assert.equal(caught('.x { border: 0; outline: none; background: none; }'), 0, 'a reset is structure');
+});
+
+test('the theme draws the code chip as the canvas does: a sunk pill with an inset border, compact too', () => {
+  const chip = themeRulesFor('.ui-code').filter(([sel]) => sel === '.ui-code').map(([, b]) => b).join(';');
+  assert.match(chip, /background:\s*var\(--color-surface-sunk\)/);
+  assert.match(chip, /box-shadow:\s*inset 0 0 0 2px var\(--color-border\)/);
+  assert.match(chip, /border-radius:\s*var\(--radius-md\)/);
+  assert.ok(themeRulesFor('.ui-code--compact').length > 0, 'the compact chip has its own size');
+});
+
+test('the theme carries the spinner\'s turn, timed from a motion token, and the kit\'s colours', () => {
+  const spinner = themeRulesFor('.ui-spinner').map(([, b]) => b).join(';');
+  assert.match(spinner, /animation: [\w-]+ calc\(var\(--duration-\w+\) \* \d+\) linear infinite/, 'its pace comes from a motion token');
+  assert.match(spinner, /border[\w-]*:[^;]*var\(--color-/, 'its colours come from tokens');
 });
 
 // ---------------------------------------------------------------- catalogue
@@ -104,49 +147,63 @@ test('the stylesheet head documents every component as the catalogue', () => {
   for (const word of ['Element', 'Role', 'Name']) assert.match(text, new RegExp(word), `catalogue states each component's ${word}`);
   assert.match(text, /defaultFocus/, 'catalogue states how a screen declares its default focus target');
   for (const name of Object.keys(COMPONENTS)) {
-    assert.ok(rulesFor(`.${name}`).length > 0, `${name} is styled`);
+    const own = new RegExp(`\\.(${name}|${name.split('--')[0]})(?![\\w-])`);
+    assert.ok(RULES.some(([sel]) => own.test(sel)), `${name} has its structure in the base`);
+    assert.ok(themeRulesFor(`.${name}`).length > 0, `${name} is styled by the theme`);
   }
 });
 
-test('every interactive component has hover, pressed, focused and disabled states', () => {
+test('every interactive component has its states in the theme: buttons, menu entries and board options a selected state and no hover of their own', () => {
   for (const [name, c] of Object.entries(COMPONENTS)) {
     if (!c.interactive) continue;
-    const own = rulesFor(c.control.split('.').pop()).map(([sel]) => sel).join('\n');
-    assert.match(own, /:hover/, `${name} hover`);
+    const own = themeRulesFor(c.control.split('.').pop()).map(([sel]) => sel).join('\n');
     assert.match(own, /:active/, `${name} pressed`);
-    assert.match(own, /:focus-visible/, `${name} keyboard focus`);
     assert.match(own, /body\.pad-nav [^,]*:focus\b/, `${name} controller focus`);
     assert.match(own, /:disabled|\[aria-disabled="true"\]/, `${name} disabled`);
+    if (c.selectable) {
+      const cls = c.control.split('.').pop();
+      assert.match(own, new RegExp(`(^|\\s)\\.${cls}:focus,`), `${name} selected while focused, by any input`);
+      assert.doesNotMatch(own, /:hover/, `${name} has no hover look of its own`);
+    } else {
+      assert.match(own, /:hover/, `${name} hover`);
+      assert.match(own, /:focus-visible/, `${name} keyboard focus`);
+    }
   }
 });
 
-test('the focus ring is drawn from --color-focus-ring and outranks the shell controller ring', () => {
-  const focus = RULES.filter(([sel]) => /:focus-visible|:focus\b/.test(sel));
+test('buttons, menu entries and board options draw no outline: the selected state is their focus cue; the other controls ring from --color-focus-ring', () => {
+  const focus = THEME_RULES.filter(([sel]) => /:focus/.test(sel));
   assert.ok(focus.length > 0);
   for (const [sel, body] of focus) {
-    assert.match(body, /outline\s*:\s*[^;]*var\(--color-focus-ring\)/, `${sel} draws the focus ring`);
-    if (sel.includes('pad-nav')) assert.match(body, /box-shadow\s*:\s*none/, `${sel} replaces the shell ring`);
+    if (/ui-button|ui-menu__item/.test(sel) && !/ui-toggle/.test(sel)) {
+      assert.doesNotMatch(body, /outline\s*:(?!\s*none)/, `${sel} draws no outline`);
+      assert.doesNotMatch(body, /--color-focus-halo/, `${sel} draws no halo`);
+    }
   }
+  const ring = focus.filter(([sel]) => /ui-toggle__input, \.ui-slider__input/.test(sel)).map(([, b]) => b).join(';');
+  assert.match(ring, /outline\s*:\s*[^;]*var\(--color-focus-ring\)/, 'the other controls draw the focus ring');
 });
 
 // ---------------------------------------------------------------- pages
 
-test('index.html loads tokens, then the component kit, then the shell stylesheet', () => {
+test('index.html loads tokens, then the component kit, then the shell stylesheet, then the theme', () => {
   const html = read('index.html');
   const t = html.indexOf('href="css/tokens.css"');
   const c = html.indexOf('href="css/components.css"');
   const s = html.indexOf('href="css/style.css"');
-  assert.ok(t >= 0 && c > t && s > c, 'tokens.css < components.css < style.css');
+  const j = html.indexOf('href="themes/joyful-tiles/theme.css"');
+  assert.ok(t >= 0 && c > t && s > c && j > s, 'tokens.css < components.css < style.css < theme.css');
 });
 
-test('the gallery applies the theme first and loads only the token sheet and the kit', () => {
+test('the gallery applies the theme first and loads only the token sheet, the kit and the theme', () => {
   const theme = GALLERY.indexOf('src="../js/theme.js"');
   const t = GALLERY.indexOf('href="../css/tokens.css"');
   const c = GALLERY.indexOf('href="../css/components.css"');
-  assert.ok(theme >= 0 && t > theme && c > t, 'theme.js < tokens.css < components.css');
+  const j = GALLERY.indexOf('href="../themes/joyful-tiles/theme.css"');
+  assert.ok(theme >= 0 && t > theme && c > t && j > c, 'theme.js < tokens.css < components.css < theme.css');
   assert.doesNotMatch(GALLERY, /css\/style\.css/);
   const inline = [...GALLERY.matchAll(/<style>([\s\S]*?)<\/style>/g)].map((m) => m[1]).join('\n');
-  assert.doesNotMatch(inline, /#[0-9a-f]{3,8}\b|\brgba?\(/i, 'gallery styles use tokens only');
+  assert.doesNotMatch(inline, /#[0-9a-f]{3,8}\b|\brgba?\(|var\(--color-|border-radius|box-shadow|font-family/i, 'the gallery lays out; the theme styles');
 });
 
 // Minimal parse of the gallery: each tag with its attributes.
@@ -169,7 +226,8 @@ test('the gallery renders every component, and every interactive one in every st
     assert.ok(found.length > 0, `gallery shows ${name}`);
     if (!c.interactive) continue;
     const forced = new Set(found.map((t) => t.attrs['data-force']).filter(Boolean));
-    for (const s of ['hover', 'active', 'focus']) assert.ok(forced.has(s), `${name} shown ${s}`);
+    for (const s of c.selectable ? ['active', 'focus'] : ['hover', 'active', 'focus']) assert.ok(forced.has(s), `${name} shown ${s}`);
+    if (c.selectable) assert.ok(!forced.has('hover'), `${name}: hover is its selected state, shown once`);
     const off = (t) => 'disabled' in t.attrs || t.attrs['aria-disabled'] === 'true';
     assert.ok(found.some(off), `${name} shown disabled`);
     assert.ok(found.some((t) => !off(t) && !t.attrs['data-force']), `${name} shown at rest`);
@@ -178,12 +236,13 @@ test('the gallery renders every component, and every interactive one in every st
 
 test('the gallery preview hooks mirror the real pseudo-classes', () => {
   for (const s of ['hover', 'active', 'focus']) {
-    const pseudo = s === 'focus' ? ':focus-visible' : `:${s}`;
-    for (const [sel] of RULES.filter(([x]) => x.includes(`[data-force~="${s}"]`))) {
+    const pseudo = s === 'focus' ? ':focus' : `:${s}`;
+    for (const [sel] of THEME_RULES.filter(([x]) => x.includes(`[data-force~="${s}"]`))) {
       assert.ok(sel.includes(pseudo), `${sel} pairs the ${s} hook with ${pseudo}`);
     }
-    assert.ok(RULES.some(([x]) => x.includes(`[data-force~="${s}"]`)), `a rule previews ${s}`);
+    assert.ok(THEME_RULES.some(([x]) => x.includes(`[data-force~="${s}"]`)), `a rule previews ${s}`);
   }
+  assert.doesNotMatch(CSS, /data-force/, 'the base previews nothing: it draws no state');
 });
 
 // The shell's controller navigation collects these elements.
@@ -363,19 +422,14 @@ test('the overlay bar is documented with its stats and its pause button', () => 
   for (const part of ['ui-stat', 'ui-stat__value', 'ui-overlay-bar__pause', 'aria-label', 'formatOverlayTime', 'formatMineCount']) {
     assert.ok(doc.includes(part), `overlay bar pattern names ${part}`);
   }
-  const bar = rulesFor('.ui-overlay-bar').find(([sel]) => sel === '.ui-overlay-bar');
+  const bar = themeRulesFor('.ui-overlay-bar').find(([sel]) => sel === '.ui-overlay-bar');
   assert.ok(bar, '.ui-overlay-bar is styled');
-  assert.match(bar[1], /background\s*:\s*var\(--color-surface-raised\)/, 'the bar carries its own surface');
+  assert.match(bar[1], /background\s*:\s*var\(--color-surface\)/, 'the bar carries its own surface');
 });
 
-test('the overlay surface is opaque in both themes, so the scene behind it never shows through', () => {
-  const sheet = read('css/tokens.css').replace(/\/\*[\s\S]*?\*\//g, '');
-  const light = sheet.match(/:root\s*\{([\s\S]*?)\}/)[1];
-  const dark = sheet.match(/:root\[data-theme="dark"\]\s*\{([\s\S]*?)\}/)[1];
-  for (const [theme, block] of [['light', light], ['dark', dark]]) {
-    const value = block.match(/--color-surface-raised\s*:\s*([^;]+);/)[1].trim();
-    assert.match(value, /^#[0-9a-f]{6}$|^rgb\(/i, `${theme}: --color-surface-raised is opaque (${value})`);
-  }
+test('the overlay surface is opaque, so the scene behind it never shows through', () => {
+  const value = THEME_CSS.match(/--color-surface\s*:\s*([^;]+);/)[1].trim();
+  assert.match(value, /^#[0-9a-f]{6}$|^rgb\(/i, `--color-surface is opaque (${value})`);
 });
 
 // The in-game HUD in index.html, parsed with the gallery's tag reader.
@@ -408,12 +462,12 @@ test('the 3D HUD renders through the overlay bar: timer, mine counter, click cou
 
 test('in Classic 2D the overlay bar is the top edge of the board\'s framed panel, drawn in theme tokens', () => {
   const style = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
-  const panel = style.match(/\.c2d-panel\s*\{([^}]*)\}/);
-  assert.ok(panel, '.c2d-panel is styled');
-  assert.match(panel[1], /border\s*:\s*1px solid var\(--color-border\)/, 'its frame');
-  assert.match(panel[1], /background\s*:\s*var\(--color-surface-raised\)/, 'the overlay\'s surface, opaque in both themes');
-  assert.doesNotMatch(panel[1], /#[0-9a-f]{3,8}\b|rgba?\(/i, 'tokens only');
-  assert.match(style, /#hud\.hud--2d \.hud-bar \{ padding: 0; border-width: 0; background: none; box-shadow: none; \}/, 'the bar sits on the panel with no surface of its own');
+  assert.match(style, /\.c2d-panel \{ position: absolute; \}/, 'the base places the panel');
+  const panel = themeRulesFor('.c2d-panel').map(([, b]) => b).join(';');
+  assert.match(panel, /box-shadow\s*:\s*inset 0 0 0 2px var\(--color-border\)/, 'its frame');
+  assert.match(panel, /background\s*:\s*var\(--color-surface\)/, 'the overlay\'s surface, opaque');
+  assert.match(style, /#hud\.hud--2d \.hud-bar \{ padding: 0; \}/);
+  assert.match(THEME_CSS, /#hud\.hud--2d \.hud-bar \{ border: 0; background: none; box-shadow: none; \}/, 'the bar sits on the panel with no surface of its own');
   assert.match(INDEX, /<div id="c2d-board"><div id="c2d-panel" class="c2d-panel hidden" aria-hidden="true"><\/div><\/div>/);
   const ui = read('js/ui.js');
   assert.match(ui, /export const PANEL_INSET = 9;/, 'the frame: 1 px border and --space-2 inside it');
@@ -426,7 +480,7 @@ test('the gallery shows the overlay bar with its pause button in every state', (
   const pauses = TAGS.filter((t) => hasClasses(t, '.ui-overlay-bar__pause'));
   for (const p of pauses) assert.ok(hasClasses(p, '.ui-button.ui-button--secondary'), 'the pause button is a secondary button');
   const forced = new Set(pauses.map((t) => t.attrs['data-force']).filter(Boolean));
-  for (const s of ['hover', 'active', 'focus']) assert.ok(forced.has(s), `pause shown ${s}`);
+  for (const s of ['active', 'focus']) assert.ok(forced.has(s), `pause shown ${s}`);
   assert.ok(pauses.some((t) => 'disabled' in t.attrs), 'pause shown disabled');
 });
 
@@ -806,7 +860,7 @@ test('Restart discards an unfinished game; Play again starts the same choice onc
     'only the F2 and Start + Y rows name a restart; no help line names Play again or a new game');
 });
 
-test('in a browser, the "Esc: Back" hints meet the contrast contract in both themes', async (t) => {
+test('in a browser, the "Esc: Back" hints meet the contrast contract', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -817,13 +871,10 @@ test('in a browser, the "Esc: Back" hints meet the contrast contract in both the
     await page.goto(`${base}/index.html?still-backdrop`);
     await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
     const hints = async (label) => {
-      for (const theme of ['light', 'dark']) {
-        await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
-        await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
-        const runs = (await page.evaluate(measureContrast)).runs.filter((r) => r.text === 'Esc: Back');
-        assert.equal(runs.length, 1, `${label} ${theme}: one hint shows`);
-        assert.ok(runs[0].ratio >= runs[0].min, `${label} ${theme}: ${runs[0].ratio.toFixed(2)}:1 meets ${runs[0].min}:1`);
-      }
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+      const runs = (await page.evaluate(measureContrast)).runs.filter((r) => r.text === 'Esc: Back');
+      assert.equal(runs.length, 1, `${label}: one hint shows`);
+      assert.ok(runs[0].ratio >= runs[0].min, `${label}: ${runs[0].ratio.toFixed(2)}:1 meets ${runs[0].min}:1`);
       const stop = await page.evaluate(() => [...document.querySelectorAll('[data-esc-hint]')].some((e) => e.tabIndex >= 0));
       assert.equal(stop, false, 'no hint is a focus stop');
     };
@@ -843,6 +894,113 @@ test('in a browser, the "Esc: Back" hints meet the contrast contract in both the
     await page.keyboard.press('Escape');
     await page.click('#menu-entry-records');
     await hints('Records');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+// ---------------------------------------------------------------- one selected control
+
+test('one selected control: a moving mouse focuses the enabled button, menu entry or board option under it, without scrolling', () => {
+  assert.equal(SELECT_ON_HOVER, '.ui-button, .ui-menu__item');
+  const doc = { activeElement: null };
+  const control = (attrs = {}) => {
+    const el = new FakeEl(attrs);
+    el.ownerDocument = doc;
+    el.closest = (sel) => (sel === SELECT_ON_HOVER ? el : null);
+    el.focus = (opts) => { el.focusedWith = opts; doc.activeElement = el; };
+    return el;
+  };
+  const a = control({ class: 'ui-button' });
+  const b = control({ class: 'ui-menu__item' });
+  const off = control({ class: 'ui-button', disabled: '' });
+  const current = control({ class: 'ui-button', 'aria-disabled': 'true' });
+  const toggle = control({ class: 'ui-button', 'data-no-focus': '' });
+  const plain = { closest: () => null };
+  const root = new FakeEl();
+  const unbind = bindSelectOnHover(root);
+  assert.equal(root.listeners.mousemove.length, 1, 'one delegated listener on the root');
+  const move = (target, x, y) => root.fire('mousemove', { target, clientX: x, clientY: y });
+
+  move(a, 10, 10);
+  assert.equal(doc.activeElement, a, 'the mouse moving over a button focuses it');
+  assert.deepEqual(a.focusedWith, { preventScroll: true }, 'without scrolling the page');
+  doc.activeElement = b; // a key or controller press moves the focus on
+  move(a, 10, 10);
+  assert.equal(doc.activeElement, b, 'a move that did not move the pointer selects nothing: the resting pointer\'s control stays unselected');
+  move(a, 11, 10);
+  assert.equal(doc.activeElement, a, 'the next real move re-selects the control under the pointer');
+  move(b, 12, 40);
+  assert.equal(doc.activeElement, b, 'a menu entry or board option too');
+  move(off, 13, 70);
+  move(current, 14, 70);
+  move(toggle, 15, 70);
+  move(plain, 16, 70);
+  assert.equal(doc.activeElement, b, 'a disabled control, a control that never takes focus, or no control, takes none');
+  unbind();
+  assert.equal(root.listeners.mousemove.length, 0, 'unbound');
+});
+
+test('the page and the gallery install the one listener once; no screen wires it itself', () => {
+  const install = /import \{ bindSelectOnHover \} from '\.{1,2}\/js\/ui\/components\.js';\s*bindSelectOnHover\(document\);/;
+  assert.match(read('index.html'), install, 'index.html installs it on the document');
+  assert.match(GALLERY, /bindSelectOnHover\(document\)/, 'the gallery installs it on the document');
+  const callers = ['js/main.js', 'js/ui.js', 'js/shell/router.js', 'js/shell/menu.js', 'js/records/screen.js', 'js/settings/page.js', 'js/mode3d/board-choice.js']
+    .filter((f) => /bindSelectOnHover|mouseenter|mouseover/.test(read(f)));
+  assert.deepEqual(callers, [], 'no screen moves the focus on hover itself');
+});
+
+test('in a browser, the mouse selects a button by focusing it, keys move the selection away from a resting pointer, and pressed differs from selected', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`${base}/dev/components.html`);
+    const [first, second] = ['#g-results .ui-actions button:nth-child(2)', '#g-results .ui-actions button:nth-child(3)'];
+    await page.locator(first).scrollIntoViewIfNeeded();
+    const look = (sel) => page.evaluate((s) => {
+      const el = document.querySelector(s);
+      const c = getComputedStyle(el);
+      return { focused: document.activeElement === el, transform: c.transform, shadow: c.boxShadow, outline: c.outlineStyle };
+    }, sel);
+    const settle = () => page.waitForTimeout(250);
+    const box = await page.locator(first).boundingBox();
+    const rest = await look(first);
+    assert.equal(rest.focused, false);
+
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await settle();
+    const selected = await look(first);
+    assert.equal(selected.focused, true, 'moving the mouse over a button focuses it');
+    assert.notEqual(selected.transform, rest.transform, 'it shows the selected look');
+    assert.equal(selected.outline, 'none', 'no outline is drawn');
+
+    await page.keyboard.press('Tab');
+    await settle();
+    const moved = await look(second);
+    assert.equal(moved.focused, true, 'Tab moves the focus to the next button');
+    assert.equal(moved.transform, selected.transform, 'which shows the selected look');
+    assert.equal(moved.outline, 'none', 'no outline is drawn');
+    const left = await look(first);
+    assert.equal(left.focused, false);
+    assert.equal(left.transform, rest.transform, 'the button under the resting pointer no longer looks selected');
+    assert.equal(left.shadow, rest.shadow);
+
+    await page.mouse.move(box.x + box.width / 2 + 3, box.y + box.height / 2);
+    await settle();
+    assert.equal((await look(first)).focused, true, 'moving the mouse again re-selects the button under it');
+    assert.equal((await look(second)).transform, rest.transform, 'one control looks selected at a time');
+
+    await page.mouse.down();
+    await settle();
+    const pressed = await look(first);
+    assert.notDeepEqual([pressed.transform, pressed.shadow], [selected.transform, selected.shadow], 'pressed differs from selected');
+    assert.equal(pressed.outline, 'none');
+    await page.mouse.up();
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
@@ -889,10 +1047,10 @@ test('pagerState: First, at most five numbered pages around the current one, Las
   assert.ok(pagerState(50, 100).numbers.length <= PAGER_WINDOW, 'a long history keeps one pager row');
 });
 
-test('the stat tile, the pager and the column composition are styled from tokens only', () => {
+test('the stat tile, the pager and the column composition are laid out from the spacing tokens and styled by the theme', () => {
   const tile = rulesFor('.ui-stat--tile').map(([, b]) => b).join('');
   assert.match(tile, /padding:\s*var\(--space-/);
-  assert.match(tile, /border[^;]*var\(--color-/);
+  assert.match(themeRulesFor('.ui-stat--tile').map(([, b]) => b).join(''), /(background|box-shadow)[^;]*var\(--color-/, 'the theme draws the tile');
   const figure = rulesFor('.ui-stat--tile .ui-stat__value').map(([, b]) => b).join('');
   assert.match(figure, /font-size:[^;]*var\(--font-size-[^;]*var\(--font-size-/, 'the figure scales between two token sizes');
   assert.match(figure, /white-space:\s*nowrap/, 'the figure keeps one line');
@@ -900,7 +1058,7 @@ test('the stat tile, the pager and the column composition are styled from tokens
   for (const m of (tile + figure + rulesFor('.ui-stat-row--tiles').map(([, b]) => b).join('')).matchAll(/(padding|gap|font-size|min-width)\s*:\s*([^;]+)/g)) {
     assert.doesNotMatch(m[2], /\d+(px|rem|em)\b/, `${m[1]}: ${m[2]} — tile sizes come from the tokens`);
   }
-  const current = rulesFor('.ui-pager').filter(([sel]) => sel.includes('aria-current="page"'));
+  const current = themeRulesFor('.ui-pager').filter(([sel]) => sel.includes('aria-current="page"'));
   assert.ok(current.length > 0, 'the current page has its own styling');
   assert.ok(rulesFor('.ui-columns').some(([, b]) => /gap:\s*var\(--space-/.test(b)), 'column spacing from the tokens');
 });
@@ -945,8 +1103,7 @@ test('the helper module keeps DOM access out of its logic and imports nothing', 
 
 // ---------------------------------------------------------------- browser: screenshots and contrast
 
-// The element screenshots are artefacts for a person to look at: taken only with MS_SHOTS=1 set. Without
-// them, a theme's look is compared through the element's computed colours.
+// The element screenshots are artefacts for a person to look at: taken only with MS_SHOTS=1 set.
 // ---------------------------------------------------------------- coarse pointers
 
 // The bodies of the stylesheet's (pointer: coarse) media blocks, comments stripped.
@@ -1011,7 +1168,6 @@ test('on a fine pointer every hit area the coarse rules touch is as it was', () 
   assert.match(body('.ui-slider__input'), /height: 28px;/);
   assert.match(body('.ui-slider__input::-webkit-slider-thumb'), /width: 20px;[\s\S]*height: 20px;/);
   assert.doesNotMatch(topLevel(CSS), /\.ui-toggle__input::after\s*\{/, 'the 44 px switch square only under the coarse rule');
-  assert.match(read('css/tokens.css'), /--font-size-xs: 11px;/, 'the token itself is unchanged');
   assert.doesNotMatch(topLevel(STYLE), /#hud-tap[^{]*\{[^}]*display:\s*(inline-)?(flex|block)/, 'the switch shows only under the coarse rule');
   assert.doesNotMatch(topLevel(STYLE), /#touch-modes \.ui-button[^{]*\{[^}]*44px/, 'the touch toolbar keeps its fine-pointer size');
 });
@@ -1044,7 +1200,7 @@ test('touch play: the toolbar and the stick show only in touch play, the toolbar
   const body = (needle) => top.filter(([sel]) => sel.includes(needle)).map(([, b]) => b).join(';');
   assert.match(body('#touch-3d'), /display:\s*none/, 'hidden unless in touch play');
   assert.match(style, /body\.touch-play #touch-3d\s*\{[^}]*display:\s*block/, 'shown in touch play');
-  assert.match(body('#touch-modes .ui-button[aria-pressed="true"]'), /var\(--color-accent\)/, 'the pressed state is visible');
+  assert.match(themeRulesFor('.ui-button--secondary[aria-pressed="true"]').map(([, b]) => b).join(';'), /background:\s*var\(--color-blue\)/, 'the pressed state is visible');
   assert.match(style, /body\.touch-play #scene\s*\{[^}]*touch-action:\s*none/, 'no browser scroll or zoom on the scene in touch play');
   assert.match(style, /body\.touch-play #scene\s*\{[^}]*user-select:\s*none/, 'no text selection');
   assert.match(style, /body\.touch-play #scene\s*\{[^}]*-webkit-touch-callout:\s*none/, 'no long-press menu');
@@ -1143,10 +1299,6 @@ test('in a browser with a mouse, labels and key caps reach their minimum sizes a
 });
 
 const SHOTS = process.env.MS_SHOTS === '1';
-const looks = (page, selector) => page.evaluate((sel) => {
-  const s = getComputedStyle(document.querySelector(sel));
-  return `${s.color} ${s.backgroundColor} ${s.borderTopColor}`;
-}, selector);
 
 // Runs in the page: every visible text run with its colour composited over
 // its effective background, and the contract threshold it must meet.
@@ -1174,18 +1326,6 @@ function measureContrast() {
     for (const c of layers.reverse()) bg = over(c, bg);
     return bg;
   };
-  const rootStyle = getComputedStyle(document.documentElement);
-  const tokenRgb = (name) => {
-    const probe = document.createElement('i');
-    probe.style.color = rootStyle.getPropertyValue(name);
-    document.body.appendChild(probe);
-    const c = parse(getComputedStyle(probe).color);
-    probe.remove();
-    return c;
-  };
-  const accent = tokenRgb('--color-accent');
-  const ink = tokenRgb('--color-accent-ink');
-  const same = (a, b) => a && b && a.slice(0, 3).every((v, i) => Math.abs(v - b[i]) < 1);
   const out = [];
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   for (let n = walker.nextNode(); n; n = walker.nextNode()) {
@@ -1200,17 +1340,20 @@ function measureContrast() {
     const size = parseFloat(s.fontSize);
     const weight = Number(s.fontWeight);
     const large = size >= 24 || (size >= 18.66 && weight >= 700);
-    const accentLabel = same(fg, ink) && same(bg, accent);
-    out.push({ text: n.textContent.trim().slice(0, 30), ratio: ratio(fg, bg), min: large || accentLabel ? 3 : 4.5 });
+    out.push({ text: n.textContent.trim().slice(0, 30), ratio: ratio(fg, bg), min: large ? 3 : 4.5 });
   }
   const focus = [...document.querySelectorAll('[data-force~="focus"]')].map((el) => {
     const s = getComputedStyle(el);
-    return { cls: el.className, style: s.outlineStyle, width: parseFloat(s.outlineWidth) };
+    return { cls: el.className, selectable: el.matches('.ui-button, .ui-menu__item'), style: s.outlineStyle, width: parseFloat(s.outlineWidth), transform: s.transform };
   });
   return { runs: out, focus };
 }
 
-test('in a browser, the gallery renders in both themes and its text meets the contrast contract', async (t) => {
+// A focused control's look: a button, menu entry or board option shows its selected state (moved level
+// with the surface, no outline); any other control a focus ring.
+const focusShows = (f) => (f.selectable ? f.style === 'none' && f.transform !== 'none' : f.style !== 'none' && f.width >= 2);
+
+test('in a browser, the gallery renders in Joyful tiles, with its fonts, and its text meets the contrast contract', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -1218,31 +1361,30 @@ test('in a browser, the gallery renders in both themes and its text meets the co
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
+    const failed = [];
     page.on('pageerror', (e) => errors.push(e.message));
+    page.on('requestfailed', (r) => failed.push(r.url()));
     await page.goto(`${base}/dev/components.html`);
-    const images = {};
-    for (const theme of ['light', 'dark']) {
-      await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
-      assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), theme);
-      if (SHOTS) {
-        images[theme] = await page.screenshot({ path: join(shots, `components-${theme}.png`), fullPage: true });
-        assert.ok(images[theme].length > 1000, `${theme} screenshot taken`);
-      } else images[theme] = await looks(page, 'body');
-      const { runs, focus } = await page.evaluate(measureContrast);
-      assert.ok(runs.length > 40, `${theme}: the gallery shows its text (${runs.length} runs)`);
-      const failing = runs.filter((r) => r.ratio < r.min).map((r) => `${r.text}: ${r.ratio.toFixed(2)}:1 < ${r.min}`);
-      assert.deepEqual(failing, [], `${theme}: text below the contrast contract`);
-      assert.ok(focus.length >= 6, 'every interactive component is shown focused');
-      for (const f of focus) assert.ok(f.style !== 'none' && f.width >= 2, `${theme}: ${f.cls} shows a focus ring`);
-    }
-    assert.notDeepEqual(images.light, images.dark, 'the themes render differently');
+    assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'joyful-tiles');
+    await page.evaluate(() => document.fonts.ready);
+    const fonts = await page.evaluate(() => ['500 16px Rubik', '800 16px Rubik', '700 16px "JetBrains Mono"'].map((f) => document.fonts.check(f)));
+    assert.deepEqual(fonts, [true, true, true], 'Rubik and JetBrains Mono load from the theme\'s files');
+    assert.match(await page.evaluate(() => getComputedStyle(document.body).fontFamily), /^Rubik/);
+    if (SHOTS) await page.screenshot({ path: join(shots, 'components-joyful-tiles.png'), fullPage: true });
+    const { runs, focus } = await page.evaluate(measureContrast);
+    assert.ok(runs.length > 40, `the gallery shows its text (${runs.length} runs)`);
+    const failing = runs.filter((r) => r.ratio < r.min).map((r) => `${r.text}: ${r.ratio.toFixed(2)}:1 < ${r.min}`);
+    assert.deepEqual(failing, [], 'text below the contrast contract');
+    assert.ok(focus.length >= 6, 'every interactive component is shown focused');
+    for (const f of focus) assert.ok(focusShows(f), `${f.cls} shows its focused state (${f.style} ${f.width} ${f.transform})`);
+    assert.deepEqual(failed, [], 'no file fails to load');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
   }
 });
 
-test('in a browser, the overlay bar over the 3D scene meets the contrast contract in both themes', async (t) => {
+test('in a browser, the overlay bar over the 3D scene meets the contrast contract', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -1258,28 +1400,21 @@ test('in a browser, the overlay bar over the 3D scene meets the contrast contrac
     await page.evaluate(() => { globalThis.__ms.state.time = 1234.5; });
     await page.waitForFunction(() => document.getElementById('hud-time').textContent === '999');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.time), 1234.5);
-    const images = {};
-    for (const theme of ['light', 'dark']) {
-      await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
-      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
-      const bar = page.locator('#hud .ui-overlay-bar');
-      if (SHOTS) {
-        images[theme] = await bar.screenshot({ path: join(shots, `overlay-${theme}.png`) });
-        assert.ok(images[theme].length > 1000, `${theme} overlay screenshot taken`);
-        await page.screenshot({ path: join(shots, `overlay-scene-${theme}.png`) });
-      } else images[theme] = await looks(page, '#hud .ui-overlay-bar');
-      const background = await page.evaluate(() => getComputedStyle(document.querySelector('#hud .ui-overlay-bar')).backgroundColor);
-      assert.match(background, /^rgb\(/, `${theme}: the overlay surface is opaque (${background})`);
-      const { runs: text } = await page.evaluate(measureContrast);
-      const own = await page.evaluate(() => [...document.querySelectorAll('#hud .ui-overlay-bar *')]
-        .filter((e) => [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()))
-        .map((e) => e.textContent.trim().slice(0, 30)));
-      const barRuns = text.filter((r) => own.includes(r.text));
-      assert.ok(barRuns.length >= 4, `${theme}: the overlay shows its labels and values (${barRuns.length})`);
-      const failing = barRuns.filter((r) => r.ratio < r.min).map((r) => `${r.text}: ${r.ratio.toFixed(2)}:1 < ${r.min}`);
-      assert.deepEqual(failing, [], `${theme}: overlay text below the contrast contract`);
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    if (SHOTS) {
+      await page.locator('#hud .ui-overlay-bar').screenshot({ path: join(shots, 'overlay.png') });
+      await page.screenshot({ path: join(shots, 'overlay-scene.png') });
     }
-    assert.notDeepEqual(images.light, images.dark, 'the overlay follows the theme');
+    const background = await page.evaluate(() => getComputedStyle(document.querySelector('#hud .ui-overlay-bar')).backgroundColor);
+    assert.match(background, /^rgb\(/, `the overlay surface is opaque (${background})`);
+    const { runs: text } = await page.evaluate(measureContrast);
+    const own = await page.evaluate(() => [...document.querySelectorAll('#hud .ui-overlay-bar *')]
+      .filter((e) => [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()))
+      .map((e) => e.textContent.trim().slice(0, 30)));
+    const barRuns = text.filter((r) => own.includes(r.text));
+    assert.ok(barRuns.length >= 4, `the overlay shows its labels and values (${barRuns.length})`);
+    const failing = barRuns.filter((r) => r.ratio < r.min).map((r) => `${r.text}: ${r.ratio.toFixed(2)}:1 < ${r.min}`);
+    assert.deepEqual(failing, [], 'overlay text below the contrast contract');
     // The pause button pauses the game.
     await page.click('#hud-pause');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'paused');
@@ -1294,35 +1429,34 @@ const MS_HOOK = ['state', 'game', 'renderer', 'camera', 'fps', 'frameStats', 'sp
   'controls', 'pads', 'pause', 'cellCenter', 'moveTo', 'look', 'aimAt', 'mouseDown', 'mouseUp', 'click', 'key', 'wheel',
   'selected', 'pickBrute', 'pickWith', 'info', 'modes', 'pauser', 'settings', 'records', 'replayViewer', 'replays', 'board2D', 'game2D', 'watch', 'daily'];
 
-test('in a browser, the menu, the pause card and the results layout meet the contrast contract in both themes', async (t) => {
+test('in a browser, the menu, the pause card and the results layout meet the contrast contract', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
   const shots = SHOTS ? mkdtempSync(join(tmpdir(), 'ms3d-screens-')) : null;
   const frames = (page) => page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
   // Contrast of the text inside one element, and the focus ring a keyboard focus draws there.
-  const check = async (page, selector, label, theme, minRuns = 5) => {
-    await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
+  const check = async (page, selector, label, minRuns = 5) => {
     await frames(page);
-    let shot;
-    if (SHOTS) {
-      shot = await page.locator(selector).screenshot({ path: join(shots, `${label}-${theme}.png`) });
-      assert.ok(shot.length > 1000, `${label} ${theme}: screenshot taken`);
-    } else shot = await looks(page, selector);
+    if (SHOTS) await page.locator(selector).screenshot({ path: join(shots, `${label}.png`) });
     const { runs } = await page.evaluate(measureContrast);
     const own = await page.evaluate((sel) => [...document.querySelectorAll(`${sel} *`)]
       .filter((e) => [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()))
       .map((e) => e.textContent.trim().slice(0, 30)), selector);
     const mine = runs.filter((r) => own.includes(r.text));
-    assert.ok(mine.length >= minRuns, `${label} ${theme}: its text is measured (${mine.length})`);
+    assert.ok(mine.length >= minRuns, `${label}: its text is measured (${mine.length})`);
     const failing = mine.filter((r) => r.ratio < r.min).map((r) => `${r.text}: ${r.ratio.toFixed(2)}:1 < ${r.min}`);
-    assert.deepEqual(failing, [], `${label} ${theme}: text below the contrast contract`);
-    return shot;
+    assert.deepEqual(failing, [], `${label}: text below the contrast contract`);
   };
-  const ring = (page) => page.evaluate(() => {
-    const s = getComputedStyle(document.activeElement);
-    return { id: document.activeElement.id, style: s.outlineStyle, width: parseFloat(s.outlineWidth) };
-  });
+  // The focused control's look once its move has settled.
+  const ring = async (page) => {
+    await page.waitForTimeout(250);
+    return page.evaluate(() => {
+      const el = document.activeElement;
+      const s = getComputedStyle(el);
+      return { id: el.id, selectable: el.matches('.ui-button, .ui-menu__item'), style: s.outlineStyle, width: parseFloat(s.outlineWidth), transform: s.transform };
+    });
+  };
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
@@ -1339,10 +1473,8 @@ test('in a browser, the menu, the pause card and the results layout meet the con
     assert.deepEqual(await page.evaluate(() => Object.keys(globalThis.__ms)), MS_HOOK, 'the __ms hook is unchanged');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
 
-    const menu = {};
-    for (const theme of ['light', 'dark']) menu[theme] = await check(page, '#menu .ui-card', 'menu', theme);
-    assert.notDeepEqual(menu.light, menu.dark, 'the menu follows the theme');
-    // Keyboard focus shows the kit ring on every control of the menu, in tab order.
+    await check(page, '#menu .ui-card', 'menu');
+    // Keyboard focus shows its focused state on every control of the menu, in tab order.
     const menuControls = await page.evaluate(() => [...document.querySelectorAll('#menu button, #menu input, #menu a[href]')]
       .filter((e) => e.getBoundingClientRect().width > 0).length);
     // The menu opens with its default target focused: start the Tab walk from the menu layer's top instead.
@@ -1350,26 +1482,21 @@ test('in a browser, the menu, the pause card and the results layout meet the con
     for (let i = 0; i < menuControls; i++) {
       await page.keyboard.press('Tab');
       const f = await ring(page);
-      assert.ok(f.style !== 'none' && f.width >= 2, `menu control #${f.id || i} shows a focus ring (${f.style} ${f.width})`);
+      assert.ok(focusShows(f), `menu control #${f.id || i} shows its focused state (${f.style} ${f.width} ${f.transform})`);
     }
 
-    // The main menu's Controls panel: the kit's surface on a themed backdrop, readable in both themes.
+    // The main menu's Controls panel: the theme's surface on its scrim, readable.
     await page.click('#menu-help');
     assert.equal(await page.evaluate(() => document.getElementById('controls-modal').classList.contains('hidden')), false);
-    const controls = {};
-    for (const theme of ['light', 'dark']) controls[theme] = await check(page, '#controls-modal .modal-card', 'controls', theme);
-    assert.notDeepEqual(controls.light, controls.dark, 'the Controls panel follows the theme');
+    await check(page, '#controls-modal .modal-card', 'controls');
     await page.click('#controls-close');
     assert.equal(await page.evaluate(() => document.getElementById('controls-modal').classList.contains('hidden')), true);
 
-    // The menu's demo board: the shell hands the renderer each theme's sky, with no reload.
-    const sky = {};
-    for (const theme of ['light', 'dark']) {
-      await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
-      sky[theme] = await page.evaluate(() => globalThis.__ms.renderer.scenePalette);
-    }
-    assert.deepEqual(sky.light.horizon, [200, 225, 255], 'the light sky is the original sky');
-    assert.notDeepEqual(sky.light, sky.dark, 'the sky follows the theme');
+    // The menu's demo board: the shell hands the renderer the theme's sky.
+    const sky = await page.evaluate(() => globalThis.__ms.renderer.scenePalette);
+    assert.deepEqual(sky.horizon, [0x2b, 0x3f, 0x8a], 'Joyful tiles\' sky');
+    // The menu screens sit on the scene with no hard-coded tint.
+    assert.equal(await page.evaluate(() => getComputedStyle(document.getElementById('menu')).backgroundColor), 'rgba(0, 0, 0, 0)');
 
     // menu → 3D board choice → ready → playing → pause, as before.
     await page.click('#menu-entry-3d');
@@ -1381,17 +1508,15 @@ test('in a browser, the menu, the pause card and the results layout meet the con
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'paused');
     assert.equal(await page.evaluate(() => document.activeElement.id), 'p-resume', 'Resume takes the focus');
     assert.ok(await page.evaluate(() => document.getElementById('p-resume').classList.contains('ui-button--primary')), 'Resume is the primary action');
-    const pause = {};
-    for (const theme of ['light', 'dark']) pause[theme] = await check(page, '#pause .ui-card', 'pause', theme);
-    assert.notDeepEqual(pause.light, pause.dark, 'the pause card follows the theme');
+    await check(page, '#pause .ui-card', 'pause');
     await page.keyboard.press('Tab');
     const f = await ring(page);
-    assert.ok(f.style !== 'none' && f.width >= 2, `pause control #${f.id} shows a focus ring`);
+    assert.ok(focusShows(f), `pause control #${f.id} shows its focused state`);
     await page.click('#p-menu');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu', 'Main menu returns to the menu');
 
     // The board status card: the generating card with its progress line, spinner, Cancel and Play a
-    // standard board, then the failure offer with its three buttons, readable in both themes. Only a
+    // standard board, then the failure offer with its three buttons, readable. Only a
     // no-guess board is generated by the worker.
     const firstClick = () => page.evaluate(() => { globalThis.__ms.aimAt(0); globalThis.__ms.click('left'); });
     await page.evaluate(() => { globalThis.__ms.modes.start('3d', { X: 6, Y: 6, Z: 6, mines: 10, noGuess: true }); globalThis.__ms.forcePlay(); });
@@ -1407,8 +1532,8 @@ test('in a browser, the menu, the pause card and the results layout meet the con
     await page.keyboard.press('Tab');
     assert.equal(await page.evaluate(() => document.activeElement.id), 'm3d-wait-standard', 'Play a standard board is the next control');
     const fs = await ring(page);
-    assert.ok(fs.style !== 'none' && fs.width >= 2, 'Play a standard board shows a focus ring');
-    for (const theme of ['light', 'dark']) await check(page, '#m3d-status', 'generating', theme, 4);
+    assert.ok(focusShows(fs), 'Play a standard board shows its selected state');
+    await check(page, '#m3d-status', 'generating', 4);
     worker = 'fail';
     await page.click('#m3d-cancel');
     assert.equal(await page.evaluate(() => document.getElementById('m3d-status').classList.contains('hidden')), true, 'Cancel closes the card');
@@ -1416,7 +1541,7 @@ test('in a browser, the menu, the pause card and the results layout meet the con
     await page.waitForFunction(() => !document.getElementById('m3d-offer').classList.contains('hidden'));
     assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#m3d-offer button')].map((b) => b.textContent)),
       ['Retry', 'Play a standard board', 'Main menu']);
-    for (const theme of ['light', 'dark']) await check(page, '#m3d-status', 'offer', theme);
+    await check(page, '#m3d-status', 'offer');
     await page.click('#m3d-offer-menu');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu', 'Main menu from the offer');
 
@@ -1442,9 +1567,7 @@ test('in a browser, the menu, the pause card and the results layout meet the con
     const results = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     results.on('pageerror', (e) => errors.push(e.message));
     await results.goto(`${base}/dev/components.html`);
-    const layout = {};
-    for (const theme of ['light', 'dark']) layout[theme] = await check(results, '#g-results', 'results', theme);
-    assert.notDeepEqual(layout.light, layout.dark, 'the results layout follows the theme');
+    await check(results, '#g-results', 'results');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

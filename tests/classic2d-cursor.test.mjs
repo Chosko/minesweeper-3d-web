@@ -419,7 +419,7 @@ const rings = (canvas) => canvas.ctx.calls.filter((c) => c.op === 'strokeRect' &
 
 test('the board view draws the cursor as a focus ring from the tile-cursor token, redrawing only the two cells a move touches', () => {
   assert.equal(CURSOR_RING, '--color-tile-cursor');
-  const css = readFileSync(join(ROOT, 'css/tokens.css'), 'utf8');
+  const css = readFileSync(join(ROOT, 'themes/joyful-tiles/theme.css'), 'utf8');
   assert.match(css, new RegExp(`${CURSOR_RING}:`), 'the token exists');
   const v = ringView();
   assert.equal(v.view.cursor, -1, 'no cursor until one is set');
@@ -764,17 +764,16 @@ test('in a browser, a Beginner game on a fixed board is played by keyboard to a 
   }
 });
 
-test('in a browser, the cursor ring an arrow key moves stands out from the lit bevel of the tile in both themes', async (t) => {
+test('in a browser, the cursor ring an arrow key moves stands out from the lit bevel of the tile', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
   try {
-    for (const theme of ['light', 'dark']) {
+    for (const theme of ['joyful-tiles']) {
       const page = await browser.newPage({ viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 });
       const errors = [];
       page.on('pageerror', (e) => errors.push(e.message));
       await page.goto(`${base}/dev/components.html`);
-      await page.evaluate((th) => document.documentElement.setAttribute('data-theme', th), theme);
       await page.evaluate(mountGame);
       await page.keyboard.press('ArrowRight');
       await page.keyboard.press('ArrowDown');

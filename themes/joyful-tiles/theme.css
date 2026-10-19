@@ -1,0 +1,896 @@
+/* Joyful tiles — the theme stylesheet.
+
+   Every visual value of the game in this theme: its tokens, every part and
+   state of the kit catalogue (js/ui/kit-catalogue.js) and of the shell's own
+   screens, its fonts and its DOM animation. Every rule is scoped to
+   :root[data-theme="joyful-tiles"], so another theme's stylesheet can be
+   loaded beside it without either affecting the other. The base stylesheets
+   (css/tokens.css, css/components.css, css/style.css) carry the structure,
+   and their prefers-reduced-motion rule stands: nothing here overrides it.
+
+   Source: the canvas's J-Tokens artboard (the token block, its contrast
+   pairs) and J-Components artboard (every component in every state). The 2D
+   tile skin and the 3D scene keep their own palettes until the board module
+   takes them over (themed-board-art-and-motion): the tile, number, board and
+   Show 3BV tokens below are those palettes; the sky stops are the theme's.
+
+   On buttons, menu entries and board options the selected state is the
+   focused state: raised at rest, level with the surface when selected (no
+   outline, no halo), sunk with an inset shadow when pressed, flat when
+   disabled, and no hover look of their own (js/ui/components.js
+   bindSelectOnHover moves focus to the one under a moving mouse). Switches,
+   fields, sliders, segmented choices and links keep their own hover and a
+   focus ring with a halo. */
+
+/* ---------- fonts: the theme's own files, fetched only while this theme is used ---------- */
+@font-face { font-family: "Rubik"; font-style: normal; font-weight: 500; font-display: swap; src: url("fonts/rubik-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Rubik"; font-style: normal; font-weight: 600; font-display: swap; src: url("fonts/rubik-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Rubik"; font-style: normal; font-weight: 700; font-display: swap; src: url("fonts/rubik-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Rubik"; font-style: normal; font-weight: 800; font-display: swap; src: url("fonts/rubik-latin-800-normal.woff2") format("woff2"); }
+@font-face { font-family: "Rubik"; font-style: normal; font-weight: 900; font-display: swap; src: url("fonts/rubik-latin-900-normal.woff2") format("woff2"); }
+@font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 500; font-display: swap; src: url("fonts/jetbrains-mono-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 700; font-display: swap; src: url("fonts/jetbrains-mono-latin-700-normal.woff2") format("woff2"); }
+
+/* ---------- tokens ---------- */
+:root[data-theme="joyful-tiles"] {
+  color-scheme: light;
+
+  /* ground and surfaces */
+  --color-ground: #fff6e8;
+  --color-ground-dot: #dcc9ad;
+  --color-surface: #ffffff;
+  --color-surface-raised: #fff6e8;
+  --color-surface-sunk: #fbf1df;
+  --color-border: #ece2d0;
+  --color-line: #f3dca0;
+  --color-edge: #d6c6ab;
+  --color-edge-inset: #e2d5bf;
+  --color-field-border: #8a7a5c;
+
+  /* ink, head and focus */
+  --color-ink: #16204a;
+  --color-ink-muted: #5a6385;
+  --color-ink-inverse: #ffffff;
+  --color-head: #ffc93c;
+  --color-head-edge: #c9930c;
+  --color-focus-ring: #16204a;
+  --color-focus-halo: #ffc93c;
+  --color-backdrop: rgba(22, 32, 74, 0.55);
+  --color-backdrop-strong: rgba(14, 22, 64, 0.72);
+
+  /* accents: fill, edge and the text on the fill */
+  --color-accent: #b8323a;
+  --color-accent-fill: #ff6b6b;
+  --color-accent-edge: #c9403f;
+  --color-accent-on: #16204a;
+  --color-blue: #3563d8;
+  --color-blue-edge: #22409a;
+  --color-blue-on: #ffffff;
+  --color-teal: #49c6b8;
+  --color-teal-edge: #2a9488;
+  --color-teal-on: #16204a;
+  --color-yellow: #ffc93c;
+  --color-yellow-edge: #c9930c;
+  --color-yellow-on: #16204a;
+  --color-violet: #6d4ee8;
+  --color-violet-edge: #4b30b8;
+  --color-violet-on: #ffffff;
+  --color-green: #5fd07e;
+  --color-green-edge: #2f9a4f;
+  --color-green-on: #16204a;
+  --color-orange: #ff9a3c;
+  --color-orange-edge: #c96a12;
+  --color-orange-on: #16204a;
+  --color-ink-edge: #0a1030;
+
+  /* status */
+  --color-figure: #0d7064;
+  --color-success: #0d7064;
+  --color-success-fill: #d9f4ef;
+  --color-danger: #b42a2a;
+  --color-danger-edge: #7d1c1c;
+  --color-danger-fill: #ffe1de;
+  --color-warning: #8a5f00;
+  --color-warning-fill: #fff0c2;
+  --color-locked: #ece5d8;
+  --color-locked-edge: #d8cdb9;
+  --color-locked-ink: #5a6385;
+
+  /* the 3D scene's sky stops, also its fog and clear colour */
+  --color-scene-zenith: #0e1640;
+  --color-scene-horizon: #2b3f8a;
+  --color-scene-nadir: #1a265f;
+  --color-scene-ink: #dfe6ff;
+
+  /* the canvas's own board tokens, beside the tile skin's palette below */
+  --color-tile-closed-top: #a9c9fb;
+  --color-tile-closed-edge: #2b56b5;
+  --color-tile-open: #f3f0ea;
+  --color-tile-open-border: #ddd3c1;
+  --color-tile-boom: #ff6b6b;
+  --color-tile-boom-edge: #c9403f;
+  --color-tile-mark: #49c6b8;
+
+  /* the 2D tile skin's palette (js/tile-art.js recipe; the 3D atlas's colours), kept until the
+     board module draws the tiles */
+  --color-tile-rim: #21407a;
+  --color-tile-bevel-light: #9cc4ff;
+  --color-tile-bevel-dark: #2b5cb8;
+  --color-tile-closed: #6fa3f7;
+  --color-tile-flagged: #6fa3f7;
+  --color-tile-face-shade: #3f78e0;
+  --color-tile-gloss: rgba(255, 255, 255, 0.35);
+  --color-tile-gloss-fade: rgba(255, 255, 255, 0);
+  --color-tile-pressed: #c9dbf7;
+  --color-tile-revealed-rim: #8f9bb0;
+  --color-tile-revealed-edge: #c4cfdd;
+  --color-tile-revealed: #eef3fa;
+  --color-tile-mine: #eef3fa;
+  --color-tile-wrong-flag: #eef3fa;
+  --color-tile-revealed-shade: #e0e4eb;
+  --color-tile-exploded: #ff5a4f;
+  --color-tile-exploded-edge: #b3261e;
+  --color-tile-exploded-shade: #f0554a;
+  --color-tile-number-shadow: rgba(0, 0, 0, 0.12);
+  --color-tile-mine-glyph: #1b1b1b;
+  --color-tile-mine-highlight: rgba(255, 255, 255, 0.85);
+  --color-tile-flag: #ff3b30;
+  --color-tile-flag-shade: #c4161c;
+  --color-tile-flag-shadow: rgba(0, 0, 0, 0.25);
+  --color-tile-wrong-flag-mark: #d50000;
+  --color-tile-wrong-flag-outline: rgba(255, 255, 255, 0.95);
+  --color-tile-cursor: #14233f;
+  --color-board-frame: #2b5cb8;
+  --color-board-gap: #9fb7dd;
+  --color-board-shadow: rgba(16, 32, 61, 0.55);
+  --color-board-scrollbar: rgba(16, 32, 61, 0.75);
+
+  /* numbers 1–8 on the revealed tile */
+  --color-number-1: #1565c0;
+  --color-number-2: #2b742f;
+  --color-number-3: #c32727;
+  --color-number-4: #1a237e;
+  --color-number-5: #8d1c1c;
+  --color-number-6: #00717c;
+  --color-number-7: #212121;
+  --color-number-8: #666666;
+
+  /* the replay viewer: action marks, the paused span, the recorded pointer, Show 3BV's tints */
+  --color-replay-reveal: #3563d8;
+  --color-replay-flag: #b8323a;
+  --color-replay-chord: #0d7064;
+  --color-replay-pointer: #16204a;
+  --color-replay-pointer-outline: #ffffff;
+  --color-replay-pause: #c9930c;
+  --color-replay-bbbv-1: rgba(46, 125, 230, 0.38);
+  --color-replay-bbbv-2: rgba(230, 126, 34, 0.38);
+  --color-replay-bbbv-3: rgba(39, 174, 96, 0.38);
+  --color-replay-bbbv-4: rgba(155, 89, 182, 0.38);
+  --color-replay-bbbv-5: rgba(214, 48, 120, 0.38);
+  --color-replay-bbbv-6: rgba(22, 160, 170, 0.38);
+  --color-replay-bbbv-isolated: #7a4f00;
+
+  /* confetti */
+  --color-confetti-1: #ff6b6b;
+  --color-confetti-2: #ffc93c;
+  --color-confetti-3: #49c6b8;
+  --color-confetti-4: #78aaf8;
+  --color-confetti-5: #6d4ee8;
+
+  /* light and shade laid over a fill */
+  --highlight: rgba(255, 255, 255, 0.32);
+  --veil: rgba(255, 255, 255, 0.22);
+  --shade-soft: rgba(22, 32, 74, 0.06);
+  --shade-press: rgba(22, 32, 74, 0.2);
+
+  /* elevation */
+  --elevation-1: 0 24px 30px -14px rgba(22, 32, 74, 0.4);
+  --elevation-2: 0 24px 28px -10px rgba(22, 32, 74, 0.22), 0 48px 70px -18px rgba(22, 32, 74, 0.35);
+
+  /* type */
+  --font-family-sans: "Rubik", system-ui, sans-serif;
+  --font-family-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-family-numbers: "Rubik", sans-serif;
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 19px;
+  --font-size-xl: 24px;
+  --font-size-2xl: 32px;
+  --font-size-3xl: 44px;
+  --font-size-display: 80px;
+  --font-weight-regular: 500;
+  --font-weight-bold: 700;
+  --font-weight-heavy: 800;
+  --font-weight-black: 900;
+
+  /* radii and hard drop edges */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 26px;
+  --radius-pill: 999px;
+  --edge-sm: 4px;
+  --edge-md: 6px;
+  --edge-lg: 8px;
+
+  /* motion */
+  --duration-fast: 90ms;
+  --duration-base: 160ms;
+  --duration-slow: 260ms;
+  --easing-out: cubic-bezier(.2, .8, .2, 1);
+  --easing-spring: cubic-bezier(.34, 1.56, .64, 1);
+
+  --touch-target: 44px;
+}
+
+/* ---------- page ---------- */
+:root[data-theme="joyful-tiles"] body {
+  font-family: var(--font-family-sans);
+  color: var(--color-ink);
+  background-color: var(--color-ground);
+  background-image: radial-gradient(circle, var(--color-ground-dot) 1.6px, transparent 1.7px);
+  background-size: 22px 22px;
+  -webkit-tap-highlight-color: transparent;
+}
+:root[data-theme="joyful-tiles"] :is(button, input, select, textarea) { font-family: inherit; color: inherit; }
+:root[data-theme="joyful-tiles"] :is(.ui-code__value, .ui-stat__value, .ui-stat__detail, .ui-slider__value, .ui-field__input, kbd, #aim-readout) { font-family: var(--font-family-mono); }
+
+/* ---------- buttons: raised, selected level with the surface, pressed sunk below it ---------- */
+:root[data-theme="joyful-tiles"] .ui-button {
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-heavy);
+  transition: transform var(--duration-fast) var(--easing-out);
+}
+:root[data-theme="joyful-tiles"] .ui-button--primary {
+  background: var(--color-accent-fill);
+  color: var(--color-accent-on);
+  box-shadow: inset 0 3px 0 var(--highlight), 0 var(--edge-sm) 0 var(--color-accent-edge);
+}
+:root[data-theme="joyful-tiles"] .ui-button--secondary {
+  background: var(--color-surface-raised);
+  color: var(--color-ink);
+  box-shadow: inset 0 -2px 0 var(--color-edge-inset), 0 var(--edge-sm) 0 var(--color-edge);
+}
+/* a latched toggle (aria-pressed): Swap clicks, Tap: Flag, the touch view modes, the replay's tools */
+:root[data-theme="joyful-tiles"] .ui-button--secondary[aria-pressed="true"] {
+  background: var(--color-blue);
+  color: var(--color-blue-on);
+  box-shadow: inset 0 3px 0 var(--highlight), 0 var(--edge-sm) 0 var(--color-blue-edge);
+}
+/* the pager's current page */
+:root[data-theme="joyful-tiles"] .ui-pager__button[aria-current="page"] {
+  background: var(--color-ink);
+  color: var(--color-ink-inverse);
+  box-shadow: 0 var(--edge-sm) 0 var(--color-ink-edge);
+}
+/* the code chip's Copy buttons: quiet, on the chip's sunk surface */
+:root[data-theme="joyful-tiles"] .ui-code .ui-button--secondary {
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 2px var(--color-border);
+}
+:root[data-theme="joyful-tiles"] .ui-button--primary:focus,
+:root[data-theme="joyful-tiles"] .ui-button--primary:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-button--primary:focus,
+:root[data-theme="joyful-tiles"] .ui-button--primary[data-force~="focus"],
+:root[data-theme="joyful-tiles"] .ui-button--secondary:focus,
+:root[data-theme="joyful-tiles"] .ui-button--secondary:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-button--secondary:focus,
+:root[data-theme="joyful-tiles"] .ui-button--secondary[data-force~="focus"] {
+  outline: none;
+  transform: translateY(var(--edge-sm));
+}
+:root[data-theme="joyful-tiles"] .ui-button--primary:focus,
+:root[data-theme="joyful-tiles"] .ui-button--primary:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-button--primary:focus,
+:root[data-theme="joyful-tiles"] .ui-button--primary[data-force~="focus"],
+:root[data-theme="joyful-tiles"] .ui-button--secondary[aria-pressed="true"]:focus,
+:root[data-theme="joyful-tiles"] .ui-button--secondary[aria-pressed="true"]:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-button--secondary[aria-pressed="true"]:focus,
+:root[data-theme="joyful-tiles"] .ui-button--secondary[aria-pressed="true"][data-force~="focus"] {
+  box-shadow: inset 0 3px 0 var(--highlight);
+}
+:root[data-theme="joyful-tiles"] .ui-button--secondary:not([aria-pressed="true"]):focus,
+:root[data-theme="joyful-tiles"] .ui-button--secondary:not([aria-pressed="true"]):focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-button--secondary:not([aria-pressed="true"]):focus,
+:root[data-theme="joyful-tiles"] .ui-button--secondary:not([aria-pressed="true"])[data-force~="focus"] {
+  box-shadow: inset 0 -2px 0 var(--color-edge-inset);
+}
+:root[data-theme="joyful-tiles"] .ui-pager__button[aria-current="page"]:focus,
+:root[data-theme="joyful-tiles"] .ui-pager__button[aria-current="page"]:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-pager__button[aria-current="page"]:focus,
+:root[data-theme="joyful-tiles"] .ui-pager__button[aria-current="page"][data-force~="focus"] { box-shadow: none; }
+:root[data-theme="joyful-tiles"] .ui-code .ui-button--secondary:focus,
+:root[data-theme="joyful-tiles"] .ui-code .ui-button--secondary:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-code .ui-button--secondary:focus,
+:root[data-theme="joyful-tiles"] .ui-code .ui-button--secondary[data-force~="focus"] {
+  transform: none;
+  background: var(--color-surface-sunk);
+  box-shadow: inset 0 0 0 2px var(--color-edge);
+}
+:root[data-theme="joyful-tiles"] .ui-button--primary:active:not(:disabled, [aria-disabled="true"]),
+:root[data-theme="joyful-tiles"] .ui-button--primary[data-force~="active"],
+:root[data-theme="joyful-tiles"] .ui-button--secondary:active:not(:disabled, [aria-disabled="true"]),
+:root[data-theme="joyful-tiles"] .ui-button--secondary[data-force~="active"] {
+  outline: none;
+  transform: translateY(calc(var(--edge-sm) + 2px));
+  box-shadow: inset 0 4px 0 var(--shade-press), inset 0 0 0 1px var(--shade-soft);
+}
+:root[data-theme="joyful-tiles"] .ui-code .ui-button--secondary:active:not(:disabled),
+:root[data-theme="joyful-tiles"] .ui-code .ui-button--secondary[data-force~="active"] {
+  transform: translateY(2px);
+  background: var(--color-surface-sunk);
+}
+:root[data-theme="joyful-tiles"] .ui-button--primary:disabled,
+:root[data-theme="joyful-tiles"] .ui-button--secondary:disabled {
+  background: var(--color-locked);
+  color: var(--color-locked-ink);
+  box-shadow: 0 var(--edge-sm) 0 var(--color-locked-edge);
+  transform: none;
+}
+
+/* ---------- menu list: board options (raised cards) and the main menu's entries (accent fills) ---------- */
+:root[data-theme="joyful-tiles"] .ui-menu__item {
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-raised);
+  color: var(--color-ink);
+  box-shadow: inset 0 -2px 0 var(--color-edge-inset), 0 var(--edge-sm) 0 var(--color-edge);
+  transition: transform var(--duration-fast) var(--easing-out);
+}
+:root[data-theme="joyful-tiles"] .ui-menu__label { font-weight: var(--font-weight-heavy); }
+:root[data-theme="joyful-tiles"] .ui-menu__detail { color: var(--color-ink-muted); }
+:root[data-theme="joyful-tiles"] .ui-menu__item:focus,
+:root[data-theme="joyful-tiles"] .ui-menu__item:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-menu__item:focus,
+:root[data-theme="joyful-tiles"] .ui-menu__item[data-force~="focus"] {
+  outline: none;
+  transform: translateY(var(--edge-sm));
+  box-shadow: inset 0 -2px 0 var(--color-edge-inset);
+}
+:root[data-theme="joyful-tiles"] .ui-menu__item:active:not(:disabled),
+:root[data-theme="joyful-tiles"] .ui-menu__item[data-force~="active"] {
+  outline: none;
+  transform: translateY(calc(var(--edge-sm) + 2px));
+  box-shadow: inset 0 4px 0 var(--shade-press), inset 0 0 0 1px var(--shade-soft);
+}
+/* Learn 3D: a white option edged in teal */
+:root[data-theme="joyful-tiles"] .ui-menu__item[data-learn] {
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 2px var(--color-teal-edge), 0 var(--edge-sm) 0 var(--color-teal-edge);
+}
+:root[data-theme="joyful-tiles"] .ui-menu__item[data-learn]:focus,
+:root[data-theme="joyful-tiles"] .ui-menu__item[data-learn]:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-menu__item[data-learn]:focus,
+:root[data-theme="joyful-tiles"] .ui-menu__item[data-learn][data-force~="focus"] { box-shadow: inset 0 0 0 2px var(--color-teal-edge); }
+/* the main menu's entries: each its accent fill (--f), drop edge (--e) and text (--o) */
+:root[data-theme="joyful-tiles"] .ui-menu__item[data-entry] {
+  --f: var(--color-surface-raised);
+  --e: var(--color-edge);
+  --o: var(--color-ink);
+  border-radius: var(--radius-xl);
+  background: var(--f);
+  color: var(--o);
+  box-shadow: inset 0 3px 0 var(--highlight), 0 var(--edge-lg) 0 var(--e), var(--elevation-1);
+}
+:root[data-theme="joyful-tiles"] .ui-menu__item[data-entry] .ui-menu__detail { color: inherit; }
+:root[data-theme="joyful-tiles"] .ui-menu__item[data-entry="classic-2d"] { --f: var(--color-blue); --e: var(--color-blue-edge); --o: var(--color-blue-on); }
+:root[data-theme="joyful-tiles"] .ui-menu__item[data-entry="hexagon"] { --f: var(--color-teal); --e: var(--color-teal-edge); --o: var(--color-teal-on); }
+:root[data-theme="joyful-tiles"] .ui-menu__item[data-entry="triangle"] { --f: var(--color-green); --e: var(--color-green-edge); --o: var(--color-green-on); }
+:root[data-theme="joyful-tiles"] .ui-menu__item[data-entry="surface"] { --f: var(--color-orange); --e: var(--color-orange-edge); --o: var(--color-orange-on); }
+:root[data-theme="joyful-tiles"] .ui-menu__item[data-entry="3d"] { --f: var(--color-accent-fill); --e: var(--color-accent-edge); --o: var(--color-accent-on); }
+:root[data-theme="joyful-tiles"] .ui-menu__item[data-entry="daily"] { --f: var(--color-violet); --e: var(--color-violet-edge); --o: var(--color-violet-on); }
+:root[data-theme="joyful-tiles"] .ui-menu__item[data-entry]:focus,
+:root[data-theme="joyful-tiles"] .ui-menu__item[data-entry]:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-menu__item[data-entry]:focus,
+:root[data-theme="joyful-tiles"] .ui-menu__item[data-entry][data-force~="focus"] {
+  transform: translateY(var(--edge-lg));
+  box-shadow: inset 0 3px 0 var(--highlight);
+}
+:root[data-theme="joyful-tiles"] .ui-menu__item[data-entry]:active:not(:disabled),
+:root[data-theme="joyful-tiles"] .ui-menu__item[data-entry][data-force~="active"] {
+  transform: translateY(calc(var(--edge-lg) + 2px));
+  box-shadow: inset 0 4px 0 var(--shade-press), inset 0 0 0 1px var(--shade-soft);
+}
+:root[data-theme="joyful-tiles"] .ui-menu__item:disabled,
+:root[data-theme="joyful-tiles"] .ui-menu__item[data-entry]:disabled {
+  --f: var(--color-locked);
+  --e: var(--color-locked-edge);
+  --o: var(--color-locked-ink);
+  background: var(--color-locked);
+  color: var(--color-locked-ink);
+  box-shadow: 0 var(--edge-sm) 0 var(--color-locked-edge);
+  transform: none;
+}
+:root[data-theme="joyful-tiles"] .ui-menu__item:disabled .ui-menu__detail { color: var(--color-locked-ink); }
+
+/* ---------- surfaces ---------- */
+:root[data-theme="joyful-tiles"] .ui-card {
+  border-radius: 22px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: inset 0 -2px 0 var(--color-line), 0 8px 0 var(--color-head-edge), var(--elevation-2);
+}
+:root[data-theme="joyful-tiles"] .ui-card__title { color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ui-panel {
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: inset 0 0 0 2px var(--color-border), 0 var(--edge-md) 0 var(--color-edge);
+}
+:root[data-theme="joyful-tiles"] .ui-panel--muted { background: var(--color-surface-sunk); }
+:root[data-theme="joyful-tiles"] .ui-banner {
+  border-radius: var(--radius-sm);
+  background: var(--color-success-fill);
+  color: var(--color-ink);
+  box-shadow: inset 4px 0 0 var(--color-success);
+}
+
+/* ---------- switch ---------- */
+:root[data-theme="joyful-tiles"] .ui-toggle { color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ui-toggle__input {
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 2px var(--color-ink-muted);
+}
+:root[data-theme="joyful-tiles"] .ui-toggle__input::before {
+  border-radius: var(--radius-pill);
+  background: var(--color-ink-muted);
+  transition: left var(--duration-base) var(--easing-spring);
+}
+:root[data-theme="joyful-tiles"] .ui-toggle__input:checked {
+  background: var(--color-teal-edge);
+  box-shadow: none;
+}
+:root[data-theme="joyful-tiles"] .ui-toggle__input:checked::before { background: var(--color-surface); }
+:root[data-theme="joyful-tiles"] .ui-toggle__input:hover:not(:disabled),
+:root[data-theme="joyful-tiles"] .ui-toggle__input[data-force~="hover"] { box-shadow: inset 0 0 0 2px var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ui-toggle__input:checked:hover:not(:disabled),
+:root[data-theme="joyful-tiles"] .ui-toggle__input:checked[data-force~="hover"] { box-shadow: inset 0 0 0 2px var(--color-ink-edge); }
+:root[data-theme="joyful-tiles"] .ui-toggle__input:active:not(:disabled),
+:root[data-theme="joyful-tiles"] .ui-toggle__input[data-force~="active"] { box-shadow: inset 0 0 0 3px var(--color-ink), inset 0 4px 0 var(--shade-press); }
+:root[data-theme="joyful-tiles"] .ui-toggle__input:disabled {
+  background: var(--color-locked);
+  box-shadow: inset 0 0 0 2px var(--color-locked-edge);
+}
+:root[data-theme="joyful-tiles"] .ui-toggle__input:disabled::before { background: var(--color-locked-edge); }
+:root[data-theme="joyful-tiles"] .ui-toggle:has(.ui-toggle__input:disabled) { color: var(--color-locked-ink); }
+
+/* ---------- slider ---------- */
+:root[data-theme="joyful-tiles"] .ui-slider { color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ui-slider__input { background: transparent; border-radius: var(--radius-pill); }
+:root[data-theme="joyful-tiles"] .ui-slider__input::-webkit-slider-runnable-track { border-radius: var(--radius-pill); background: var(--color-line); }
+:root[data-theme="joyful-tiles"] .ui-slider__input::-moz-range-track { border-radius: var(--radius-pill); background: var(--color-line); }
+:root[data-theme="joyful-tiles"] .ui-slider__input::-webkit-slider-thumb {
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 3px var(--color-ink), 0 3px 0 var(--color-edge);
+}
+:root[data-theme="joyful-tiles"] .ui-slider__input::-moz-range-thumb {
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 3px var(--color-ink), 0 3px 0 var(--color-edge);
+}
+:root[data-theme="joyful-tiles"] .ui-slider__input:hover:not(:disabled)::-webkit-slider-thumb,
+:root[data-theme="joyful-tiles"] .ui-slider__input[data-force~="hover"]::-webkit-slider-thumb { background: var(--color-head); }
+:root[data-theme="joyful-tiles"] .ui-slider__input:hover:not(:disabled)::-moz-range-thumb,
+:root[data-theme="joyful-tiles"] .ui-slider__input[data-force~="hover"]::-moz-range-thumb { background: var(--color-head); }
+:root[data-theme="joyful-tiles"] .ui-slider__input:active:not(:disabled)::-webkit-slider-thumb,
+:root[data-theme="joyful-tiles"] .ui-slider__input[data-force~="active"]::-webkit-slider-thumb { background: var(--color-head); box-shadow: inset 0 0 0 3px var(--color-ink), inset 0 4px 0 var(--shade-press); }
+:root[data-theme="joyful-tiles"] .ui-slider__input:active:not(:disabled)::-moz-range-thumb,
+:root[data-theme="joyful-tiles"] .ui-slider__input[data-force~="active"]::-moz-range-thumb { background: var(--color-head); box-shadow: inset 0 0 0 3px var(--color-ink), inset 0 4px 0 var(--shade-press); }
+:root[data-theme="joyful-tiles"] .ui-slider__input:disabled::-webkit-slider-runnable-track { background: var(--color-locked); }
+:root[data-theme="joyful-tiles"] .ui-slider__input:disabled::-moz-range-track { background: var(--color-locked); }
+:root[data-theme="joyful-tiles"] .ui-slider__input:disabled::-webkit-slider-thumb { background: var(--color-locked); box-shadow: inset 0 0 0 3px var(--color-locked-edge); }
+:root[data-theme="joyful-tiles"] .ui-slider__input:disabled::-moz-range-thumb { background: var(--color-locked); box-shadow: inset 0 0 0 3px var(--color-locked-edge); }
+:root[data-theme="joyful-tiles"] .ui-slider:has(.ui-slider__input:disabled) { color: var(--color-locked-ink); }
+
+/* ---------- segmented choice ---------- */
+:root[data-theme="joyful-tiles"] .ui-segmented {
+  border-radius: 14px;
+  background: var(--color-surface-sunk);
+  box-shadow: inset 0 0 0 2px var(--color-border);
+}
+:root[data-theme="joyful-tiles"] .ui-segmented__option {
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-ink);
+}
+:root[data-theme="joyful-tiles"] .ui-segmented__option[aria-checked="true"] {
+  background: var(--color-ink);
+  color: var(--color-ink-inverse);
+}
+:root[data-theme="joyful-tiles"] .ui-segmented__option:hover:not(:disabled, [aria-checked="true"]),
+:root[data-theme="joyful-tiles"] .ui-segmented__option[data-force~="hover"]:not([aria-checked="true"]) { background: var(--color-surface); }
+:root[data-theme="joyful-tiles"] .ui-segmented__option:active:not(:disabled),
+:root[data-theme="joyful-tiles"] .ui-segmented__option[data-force~="active"] { box-shadow: inset 0 3px 0 var(--shade-press); }
+:root[data-theme="joyful-tiles"] .ui-segmented__option:disabled {
+  background: transparent;
+  color: var(--color-locked-ink);
+  text-decoration: line-through;
+}
+
+/* ---------- number field ---------- */
+:root[data-theme="joyful-tiles"] .ui-field { color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ui-field__input {
+  border: 2px solid var(--color-field-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+:root[data-theme="joyful-tiles"] .ui-field__input:hover:not(:disabled),
+:root[data-theme="joyful-tiles"] .ui-field__input[data-force~="hover"] { border-color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ui-field__input:active:not(:disabled),
+:root[data-theme="joyful-tiles"] .ui-field__input[data-force~="active"] { border-color: var(--color-ink); box-shadow: inset 0 2px 0 var(--shade-soft); }
+:root[data-theme="joyful-tiles"] .ui-field__input[data-adjusted] { border-color: var(--color-warning); background: var(--color-warning-fill); }
+:root[data-theme="joyful-tiles"] .ui-field__input:disabled {
+  border-color: var(--color-locked-edge);
+  background: var(--color-locked);
+  color: var(--color-locked-ink);
+}
+:root[data-theme="joyful-tiles"] .ui-field:has(.ui-field__input:disabled) { color: var(--color-locked-ink); }
+
+/* ---------- link ---------- */
+:root[data-theme="joyful-tiles"] .ui-link {
+  border-radius: var(--radius-xs);
+  color: var(--color-blue-edge);
+  font-weight: var(--font-weight-bold);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+:root[data-theme="joyful-tiles"] .ui-link:hover,
+:root[data-theme="joyful-tiles"] .ui-link[data-force~="hover"] { text-decoration-thickness: 2px; }
+:root[data-theme="joyful-tiles"] .ui-link:active,
+:root[data-theme="joyful-tiles"] .ui-link[data-force~="active"] { color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ui-link[aria-disabled="true"] {
+  color: var(--color-ink-muted);
+  text-decoration-style: dashed;
+}
+
+/* ---------- the focus ring of switches, sliders, segmented choices, fields and links ---------- */
+:root[data-theme="joyful-tiles"] .ui-toggle__input:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-toggle__input:focus,
+:root[data-theme="joyful-tiles"] .ui-toggle__input[data-force~="focus"],
+:root[data-theme="joyful-tiles"] .ui-slider__input:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-slider__input:focus,
+:root[data-theme="joyful-tiles"] .ui-slider__input[data-force~="focus"],
+:root[data-theme="joyful-tiles"] .ui-segmented__option:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-segmented__option:focus,
+:root[data-theme="joyful-tiles"] .ui-segmented__option[data-force~="focus"],
+:root[data-theme="joyful-tiles"] .ui-field__input:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-field__input:focus,
+:root[data-theme="joyful-tiles"] .ui-field__input[data-force~="focus"],
+:root[data-theme="joyful-tiles"] .ui-link:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-link:focus,
+:root[data-theme="joyful-tiles"] .ui-link[data-force~="focus"] {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 3px;
+}
+:root[data-theme="joyful-tiles"] .ui-toggle__input:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-toggle__input:focus,
+:root[data-theme="joyful-tiles"] .ui-toggle__input[data-force~="focus"],
+:root[data-theme="joyful-tiles"] .ui-field__input:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-field__input:focus,
+:root[data-theme="joyful-tiles"] .ui-field__input[data-force~="focus"] {
+  box-shadow: inset 0 0 0 2px var(--color-ink-muted), 0 0 0 9px var(--color-focus-halo);
+}
+:root[data-theme="joyful-tiles"] .ui-toggle__input:checked:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-toggle__input:checked:focus,
+:root[data-theme="joyful-tiles"] .ui-toggle__input:checked[data-force~="focus"] { box-shadow: 0 0 0 9px var(--color-focus-halo); }
+
+/* ---------- stat readout and tile ---------- */
+:root[data-theme="joyful-tiles"] .ui-stat { color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ui-stat__label { color: var(--color-ink-muted); }
+:root[data-theme="joyful-tiles"] .ui-stat__value { color: var(--color-figure); }
+:root[data-theme="joyful-tiles"] .ui-stat__detail { color: var(--color-ink-muted); }
+:root[data-theme="joyful-tiles"] .ui-stat__detail[data-new-best] { color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ui-stat__detail[data-delta="better"] { color: var(--color-success); }
+:root[data-theme="joyful-tiles"] .ui-stat__detail[data-delta="worse"] { color: var(--color-danger); }
+:root[data-theme="joyful-tiles"] .ui-stat__detail[data-delta="equal"] { color: var(--color-ink-muted); }
+:root[data-theme="joyful-tiles"] .ui-stat[data-new-best] {
+  border-radius: var(--radius-sm);
+  outline: 3px solid var(--color-success);
+  outline-offset: var(--space-1);
+}
+:root[data-theme="joyful-tiles"] :is(.ui-panel--muted .ui-stat, .ui-panel--muted .ui-stat__value, .ui-panel--muted .ui-stat__detail) { color: var(--color-ink-muted); }
+:root[data-theme="joyful-tiles"] .ui-stat--tile {
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-raised);
+  box-shadow: inset 0 -2px 0 var(--color-edge-inset), 0 var(--edge-md) 0 var(--color-edge);
+}
+
+/* ---------- code chip: a sunk pill holding the label, the code and its quiet Copy buttons ---------- */
+:root[data-theme="joyful-tiles"] .ui-code {
+  padding: 5px 5px 5px 12px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunk);
+  box-shadow: inset 0 0 0 2px var(--color-border);
+}
+:root[data-theme="joyful-tiles"] .ui-code--compact { padding: 3px 3px 3px 8px; border-radius: var(--radius-sm); }
+:root[data-theme="joyful-tiles"] .ui-code__label { color: var(--color-ink-muted); }
+:root[data-theme="joyful-tiles"] .ui-code__value { color: var(--color-ink); }
+
+/* ---------- overlay bar ---------- */
+:root[data-theme="joyful-tiles"] .ui-overlay-bar {
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: inset 0 0 0 2px var(--color-border), 0 4px 0 var(--color-edge);
+}
+:root[data-theme="joyful-tiles"] .ui-overlay-bar .ui-stat__value { color: var(--color-ink); }
+
+/* ---------- spinner ---------- */
+:root[data-theme="joyful-tiles"] .ui-spinner {
+  border: 5px solid var(--color-line);
+  border-top-color: var(--color-accent-fill);
+  border-radius: var(--radius-pill);
+  animation: joyful-tiles-turn calc(var(--duration-slow) * 4) linear infinite;
+}
+@keyframes joyful-tiles-turn { to { transform: rotate(1turn); } }
+
+/* ---------- text roles ---------- */
+:root[data-theme="joyful-tiles"] .ui-heading { color: var(--color-accent); letter-spacing: 0.16em; }
+:root[data-theme="joyful-tiles"] .ui-text { color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ui-text--muted { color: var(--color-ink-muted); }
+:root[data-theme="joyful-tiles"] .ui-text--warning { color: var(--color-warning); }
+
+/* ---------- replay seek bar ---------- */
+:root[data-theme="joyful-tiles"] .replay-seek::before { border-radius: var(--radius-pill); background: var(--color-line); }
+:root[data-theme="joyful-tiles"] .replay-seek .ui-slider__input::-webkit-slider-runnable-track { background: transparent; }
+:root[data-theme="joyful-tiles"] .replay-seek .ui-slider__input::-moz-range-track { background: transparent; }
+:root[data-theme="joyful-tiles"] .replay-pause { border-radius: 2px; background: var(--color-replay-pause); }
+:root[data-theme="joyful-tiles"] .replay-tick { border-radius: 1px; }
+:root[data-theme="joyful-tiles"] .replay-tick--reveal { background: var(--color-replay-reveal); }
+:root[data-theme="joyful-tiles"] .replay-tick--flag { background: var(--color-replay-flag); }
+:root[data-theme="joyful-tiles"] .replay-tick--chord { background: var(--color-replay-chord); }
+
+/* ---------- the shell's screens ---------- */
+:root[data-theme="joyful-tiles"] kbd {
+  border: 1.5px solid currentColor;
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+:root[data-theme="joyful-tiles"] :is(kbd.pad, kbd[data-pad-glyph]) { border-radius: var(--radius-pill); }
+
+:root[data-theme="joyful-tiles"] .link-btn {
+  border-radius: var(--radius-xs);
+  background: none;
+  color: var(--color-blue-edge);
+  font-weight: var(--font-weight-bold);
+}
+:root[data-theme="joyful-tiles"] :is(.link-btn, .ready-card, .hint-close):focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav :is(button, input, summary, a, select):not(.ui-button, .ui-menu__item, .ui-toggle__input, .ui-slider__input, .ui-segmented__option, .ui-field__input, .ui-link):focus {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 3px;
+}
+:root[data-theme="joyful-tiles"] body.pad-nav .ready-card:focus .ready-title { color: var(--color-accent); }
+
+/* overlays laid over the scene: a navy scrim; the menu screens sit on the scene itself */
+:root[data-theme="joyful-tiles"] :is(#pause, #ready, #results, #learn-end, .modal) {
+  background: var(--color-backdrop);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+:root[data-theme="joyful-tiles"] #results.results--over3d {
+  background: var(--color-backdrop-strong);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+:root[data-theme="joyful-tiles"] #ctx-lost {
+  background: var(--color-backdrop-strong);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+:root[data-theme="joyful-tiles"] .look-hint {
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: inset 0 0 0 2px var(--color-border), 0 4px 0 var(--color-edge);
+}
+
+/* the click-to-play card, and the context-lost card built like it */
+@keyframes joyful-tiles-pop { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: none; } }
+:root[data-theme="joyful-tiles"] .ready-card {
+  border-radius: 22px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: inset 0 -2px 0 var(--color-line), 0 8px 0 var(--color-head-edge), var(--elevation-2);
+  animation: joyful-tiles-pop var(--duration-slow) var(--easing-out);
+}
+:root[data-theme="joyful-tiles"] .ready-title { transition: color var(--duration-base) var(--easing-out); }
+:root[data-theme="joyful-tiles"] .ready-card:hover .ready-title { color: var(--color-accent); }
+:root[data-theme="joyful-tiles"] :is(.ready-board, .ready-keys, .ready-touch, .ready-tip, .ready-pad) { color: var(--color-ink-muted); }
+:root[data-theme="joyful-tiles"] :is(.ready-keys b, .ready-touch b, .ready-pad b, .ready-rules) { color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ready-msg { color: var(--color-warning); }
+:root[data-theme="joyful-tiles"] .ready-back {
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+}
+:root[data-theme="joyful-tiles"] .ready-back:hover { background: var(--color-surface); }
+:root[data-theme="joyful-tiles"] :is(.ready-learn, .ready-blocked) {
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  color: var(--color-ink);
+}
+
+/* "Esc: Back" on the raised surface, so it reads the same over any scene */
+:root[data-theme="joyful-tiles"] .esc-row [data-esc-hint] {
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+}
+:root[data-theme="joyful-tiles"] #settings-actions {
+  border-radius: 0 0 22px 22px;
+  background: var(--color-surface);
+  box-shadow: inset 0 2px 0 var(--color-line);
+}
+
+/* the Controls modal and the H help panel */
+:root[data-theme="joyful-tiles"] .modal-card {
+  border-radius: 22px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: inset 0 -2px 0 var(--color-line), 0 8px 0 var(--color-head-edge), var(--elevation-2);
+  animation: joyful-tiles-pop var(--duration-slow) var(--easing-out);
+}
+:root[data-theme="joyful-tiles"] :is(.modal-head h3, #help h3, .help-foot, .controls dd, .hud-tools, .hud-board .ui-stat__value) { color: var(--color-ink-muted); }
+:root[data-theme="joyful-tiles"] .controls dt { color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .hint-close {
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-ink-muted);
+}
+:root[data-theme="joyful-tiles"] .hint-close:hover { background: var(--color-surface-sunk); color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .hud-panel {
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: inset 0 0 0 2px var(--color-border), 0 4px 0 var(--color-edge);
+}
+/* the first-use hint strip: an ink pill */
+:root[data-theme="joyful-tiles"] #hint-strip {
+  border-radius: var(--radius-pill);
+  background: var(--color-ink);
+  color: var(--color-ink-inverse);
+  box-shadow: 0 4px 0 var(--color-blue-edge);
+}
+:root[data-theme="joyful-tiles"] #hint-strip .hint-close {
+  border-radius: var(--radius-pill);
+  background: var(--veil);
+  color: var(--color-ink-inverse);
+}
+:root[data-theme="joyful-tiles"] #hint-strip kbd { background: var(--color-ink); color: var(--color-ink-inverse); }
+
+/* Classic 2D: the board layer on the ground, the board in a framed panel whose top edge is the overlay bar */
+:root[data-theme="joyful-tiles"] :is(#c2d, #replay) {
+  background-color: var(--color-ground);
+  background-image: radial-gradient(circle, var(--color-ground-dot) 1.6px, transparent 1.7px);
+  background-size: 22px 22px;
+}
+:root[data-theme="joyful-tiles"] #replay.replay--scene { background: transparent; }
+:root[data-theme="joyful-tiles"] .c2d-panel {
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 2px var(--color-border), 0 var(--edge-md) 0 var(--color-edge), var(--elevation-1);
+}
+:root[data-theme="joyful-tiles"] #hud.hud--2d .hud-bar { border: 0; background: none; box-shadow: none; }
+:root[data-theme="joyful-tiles"] #hud-mines.negative { color: var(--color-danger); }
+
+/* the replay viewer: the recorded pointer and its trail, the press rings */
+:root[data-theme="joyful-tiles"] .replay-pointer {
+  border: 2px solid var(--color-replay-pointer-outline);
+  border-radius: 50%;
+  background: var(--color-replay-pointer);
+  box-shadow: 0 0 0 1px var(--color-replay-pointer);
+}
+:root[data-theme="joyful-tiles"] .replay-trail {
+  border: 1px solid var(--color-replay-pointer-outline);
+  border-radius: 50%;
+  background: var(--color-replay-pointer);
+}
+@keyframes joyful-tiles-ring { from { transform: scale(0.35); opacity: 1; } to { transform: scale(1.4); opacity: 0; } }
+:root[data-theme="joyful-tiles"] .replay-ring {
+  border: 3px solid currentColor;
+  border-radius: 50%;
+  animation: joyful-tiles-ring 0.4s var(--easing-out) forwards;
+}
+:root[data-theme="joyful-tiles"] .replay-ring--reveal { color: var(--color-replay-reveal); }
+:root[data-theme="joyful-tiles"] .replay-ring--flag { color: var(--color-replay-flag); }
+:root[data-theme="joyful-tiles"] .replay-ring--chord { color: var(--color-replay-chord); }
+:root[data-theme="joyful-tiles"] .replay-key__pad { opacity: 0.8; }
+
+/* the 3D game's crosshair, off-screen arrow and aimed-cell readout */
+:root[data-theme="joyful-tiles"] #crosshair {
+  border-radius: 50%;
+  transition: opacity var(--duration-base) var(--easing-out), box-shadow var(--duration-base) var(--easing-out);
+}
+:root[data-theme="joyful-tiles"] #crosshair::before,
+:root[data-theme="joyful-tiles"] #crosshair::after {
+  border-radius: 1px;
+  background: var(--color-ink);
+  box-shadow: 0 0 0 1px var(--color-surface);
+}
+:root[data-theme="joyful-tiles"] #crosshair.on { box-shadow: 0 0 0 3px var(--color-surface), 0 0 0 5px var(--color-blue); }
+:root[data-theme="joyful-tiles"] #crosshair-arrow::before {
+  border-style: solid;
+  border-color: transparent;
+  border-left-color: var(--color-ink);
+  filter: drop-shadow(0 0 1px var(--color-surface)) drop-shadow(0 0 1px var(--color-surface));
+}
+:root[data-theme="joyful-tiles"] #aim-readout {
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: 0 3px 0 var(--color-edge);
+}
+:root[data-theme="joyful-tiles"] #aim-readout .aim-icon--cube rect { fill: var(--color-tile-closed); stroke: var(--color-ink); stroke-width: 1; }
+:root[data-theme="joyful-tiles"] #aim-readout .aim-icon__pole { fill: none; stroke: var(--color-ink); stroke-width: 1.6; stroke-linecap: round; }
+:root[data-theme="joyful-tiles"] #aim-readout .aim-icon__cloth { fill: var(--color-danger); }
+
+/* the view chips (Shift, Space, Ctrl) */
+:root[data-theme="joyful-tiles"] .chip {
+  border-radius: var(--radius-pill);
+  background: var(--color-yellow);
+  color: var(--color-yellow-on);
+  box-shadow: 0 3px 0 var(--color-yellow-edge);
+}
+
+/* the loss flash over the 3D scene */
+@keyframes joyful-tiles-flash { 0% { opacity: 0.95; } 100% { opacity: 0; } }
+:root[data-theme="joyful-tiles"] #flash { background: radial-gradient(circle at 50% 50%, rgba(255, 245, 200, 0.95), rgba(255, 90, 40, 0.75) 45%, rgba(160, 0, 0, 0.55)); }
+:root[data-theme="joyful-tiles"] #flash.go { animation: joyful-tiles-flash 0.9s ease-out; }
+
+:root[data-theme="joyful-tiles"] .fatal div {
+  border-radius: 22px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: 0 8px 0 var(--color-head-edge), var(--elevation-2);
+}
+:root[data-theme="joyful-tiles"] .pad-note {
+  border-radius: var(--radius-sm);
+  background: var(--color-warning-fill);
+  color: var(--color-warning);
+}
+
+/* the 3D touch stick */
+:root[data-theme="joyful-tiles"] .touch-stick::before {
+  border-radius: 50%;
+  background: var(--veil);
+  box-shadow: inset 0 0 0 3px var(--color-surface);
+  opacity: 0.8;
+}
+:root[data-theme="joyful-tiles"] .touch-stick__knob {
+  border-radius: 50%;
+  background: var(--color-surface);
+  box-shadow: 0 4px 0 var(--color-edge);
+}
+
+/* the toast */
+:root[data-theme="joyful-tiles"] .toast {
+  border-radius: var(--radius-lg);
+  background: var(--color-ink);
+  color: var(--color-ink-inverse);
+  box-shadow: 0 6px 0 var(--color-blue-edge), var(--elevation-1);
+  transition: opacity var(--duration-slow) var(--easing-out), transform var(--duration-slow) var(--easing-out);
+}
+
+/* the Records tables */
+:root[data-theme="joyful-tiles"] :is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) { font-size: 15px; }
+:root[data-theme="joyful-tiles"] :is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) :is(th, td) { border-bottom: 1px solid var(--color-line); }
+:root[data-theme="joyful-tiles"] :is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) th { color: var(--color-ink-muted); }
+:root[data-theme="joyful-tiles"] :is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) thead th { font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+:root[data-theme="joyful-tiles"] :is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) td { color: var(--color-ink); }
+@container (max-width: 1099px) {
+  :root[data-theme="joyful-tiles"] :is(#records-games, #records-replays-table, #records-top-table) tr { border-bottom: 1px solid var(--color-line); }
+  :root[data-theme="joyful-tiles"] :is(#records-games, #records-replays-table, #records-top-table) td { border: 0; }
+  :root[data-theme="joyful-tiles"] :is(#records-games, #records-replays-table, #records-top-table) td[data-label]::before { color: var(--color-ink-muted); }
+}
+@container (max-width: 335px) {
+  :root[data-theme="joyful-tiles"] #records-averages-table tr { border-bottom: 1px solid var(--color-line); }
+  :root[data-theme="joyful-tiles"] #records-averages-table :is(th, td) { border: 0; }
+  :root[data-theme="joyful-tiles"] #records-averages-table th { color: var(--color-ink); }
+  :root[data-theme="joyful-tiles"] #records-averages-table td[data-label]::before { color: var(--color-ink-muted); }
+}

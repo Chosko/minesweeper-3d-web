@@ -247,9 +247,10 @@ test('without WebGL 2 the shell starts on one availability flag: no "Cannot star
   assert.match(MAIN, /document\.body\.classList\.toggle\('no-webgl2', !WEBGL2\)/, 'the page knows it has no 3D scene');
   const css = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
   assert.match(css, /body\.no-webgl2 #scene \{ display: none; \}/, 'the #scene canvas is hidden');
-  assert.match(css, /body\.no-webgl2 :is\(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #records\) \{ background: none; \}/,
-    'the menu screens sit on the body\'s static background, built from the theme tokens');
-  assert.match(css, /body \{[^}]*background-image: radial-gradient\([^)]*var\(--color-backdrop-highlight\)[^)]*var\(--color-backdrop\)[^)]*var\(--color-backdrop-shade\)/);
+  assert.doesNotMatch(css, /:is\(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #records\) \{[^}]*background/,
+    'the menu screens carry no tint of their own: without WebGL 2 they sit on the body\'s static backdrop');
+  assert.match(read('themes/joyful-tiles/theme.css'), /body \{[^}]*background-color: var\(--color-ground\);[^}]*background-image: radial-gradient\([^)]*var\(--color-ground-dot\)/,
+    'the body\'s backdrop, built from the theme tokens');
   const hook = MAIN.slice(MAIN.indexOf('window.__ms = {'));
   assert.match(hook.match(/start\(X, Y, Z, mines, minePositions\) \{[^\n]*/)[0], /if \(!WEBGL2\) throw new Error\(/, 'the start hook reports the reason');
   assert.match(INDEX, /<noscript><div class="noscript">Minesweeper 3D needs JavaScript\.<\/div><\/noscript>/, 'the noscript line asks only for JavaScript');
@@ -450,27 +451,19 @@ test('in a browser without WebGL 2, the shell starts with a static background, 3
     assert.equal(await ms(() => globalThis.__ms.frameStats.renders), 0, 'nothing is drawn');
     assert.ok(await ms(() => globalThis.__ms.frameStats.skipped) >= skipped + 3, 'the frame loop keeps running');
 
-    // The static background, from the theme's tokens, in both themes.
-    const background = () => ms(() => {
+    // The static backdrop, from the theme's tokens.
+    const bg = await ms(() => {
       const probe = document.createElement('div');
-      probe.style.background = 'var(--color-backdrop)';
+      probe.style.background = 'var(--color-ground)';
       document.body.append(probe);
       const token = getComputedStyle(probe).backgroundColor;
       probe.remove();
       const body = getComputedStyle(document.body);
       return { color: body.backgroundColor, token, image: body.backgroundImage, menu: getComputedStyle(document.getElementById('menu')).backgroundImage };
     });
-    const seen = [];
-    for (const theme of ['light', 'dark']) {
-      await ms((th) => globalThis.msTheme.setTheme(th), theme);
-      const bg = await background();
-      assert.equal(bg.color, bg.token, `${theme}: the page is the theme's backdrop colour`);
-      assert.match(bg.image, /radial-gradient/, `${theme}: the themed gradient shows`);
-      assert.equal(bg.menu, 'none', `${theme}: the menu screen lays no tint of its own over it`);
-      seen.push(bg.color);
-    }
-    assert.notEqual(seen[0], seen[1], 'light and dark differ');
-    await ms(() => globalThis.msTheme.setTheme('light'));
+    assert.equal(bg.color, bg.token, 'the page is the theme\'s ground colour');
+    assert.match(bg.image, /radial-gradient/, 'the theme\'s dotted ground shows');
+    assert.equal(bg.menu, 'none', 'the menu screen lays no tint of its own over it');
 
     // The 3D entry: disabled, its reason in place of its detail line; the focus starts on Classic 2D.
     assert.deepEqual(await ms(() => {
@@ -561,8 +554,8 @@ test('in a browser without WebGL 2, the shell starts with a static background, 3
     await page.click('#set-renderResolution [data-value="sharp"]');
     await page.click('#set-theme [data-value="dark"]');
     await page.waitForFunction(() => JSON.parse(localStorage.getItem('ms3d:doc:settings') ?? '{}').data?.renderResolution === 'sharp', null, { timeout: patience(5000) });
-    assert.equal(await ms(() => document.documentElement.dataset.theme), 'dark');
     assert.equal(await ms(() => JSON.parse(localStorage.getItem('ms3d:doc:settings')).data.theme), 'dark');
+    assert.equal(await ms(() => document.documentElement.dataset.theme), 'joyful-tiles', 'the stored theme no longer changes the look');
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'menu');
 

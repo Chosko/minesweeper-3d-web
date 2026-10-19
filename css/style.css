@@ -1,17 +1,14 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; overflow: hidden; }
 body {
-  font-family: var(--font-family-sans);
-  color: var(--color-ink);
-  background: var(--color-backdrop);
-  background-image: radial-gradient(ellipse at 50% 38%, var(--color-backdrop-highlight) 0%, var(--color-backdrop) 55%, var(--color-backdrop-shade) 100%);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-regular);
   -webkit-font-smoothing: antialiased;
   user-select: none;
   -webkit-user-select: none;
-  -webkit-tap-highlight-color: transparent;
 }
 #scene { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; outline: none; }
-/* Without WebGL 2 there is no 3D scene: the menu screens sit on the body's static, themed background. */
+/* Without WebGL 2 there is no 3D scene: the menu screens sit on the body's static, themed backdrop. */
 body.no-webgl2 #scene { display: none; }
 .hidden { display: none !important; }
 
@@ -20,23 +17,16 @@ kbd {
   min-width: 1.6em;
   padding: 0.05em 0.4em;
   margin: 0 0.08em;
-  font: 600 max(11px, 0.78em)/1.5 var(--font-family-sans);
+  font-size: max(11px, 0.78em);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.5;
   text-align: center;
-  color: var(--color-ink);
-  background: var(--color-surface-raised);
-  border: 1px solid #c9d5ea;
-  border-bottom-width: 2px;
-  border-radius: 6px;
 }
 
 /* ---------- buttons ---------- */
-.link-btn:focus-visible, .ready-card:focus-visible {
-  outline: 3px solid var(--color-focus-ring);
-  outline-offset: 2px;
-}
 .link-btn {
-  appearance: none; border: 0; background: none; padding: 0;
-  font: inherit; color: var(--color-accent-strong); cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+  appearance: none; border: 0; padding: 0;
+  font-size: inherit; font-weight: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
 }
 
 /* ---------- overlays ---------- */
@@ -47,8 +37,6 @@ kbd {
   z-index: var(--z-overlay);
   overflow-y: auto;
 }
-#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #records { background: linear-gradient(180deg, rgba(200, 225, 255, 0.15), rgba(200, 225, 255, 0.35)); }
-body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #records) { background: none; }
 /* The main menu's Play again sits at the end of the title row; the session strip under the entries keeps its numbers aligned. */
 #menu-again { margin-inline-start: auto; }
 #menu-strip { font-variant-numeric: var(--font-numeric-tabular); }
@@ -56,9 +44,8 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
 #records-best-chart { display: block; width: 100%; height: 160px; }
 :is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) { width: 100%; border-collapse: collapse; font-variant-numeric: var(--font-numeric-tabular); }
 :is(#records-games, #records-replays-table) caption { caption-side: bottom; text-align: left; padding-top: var(--space-2); }
-:is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) :is(th, td) { padding: var(--space-1) var(--space-2); text-align: right; border-bottom: 1px solid var(--color-border); }
-:is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) th { font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); color: var(--color-ink-muted); }
-:is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) td { color: var(--color-ink); }
+:is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) :is(th, td) { padding: var(--space-1) var(--space-2); text-align: right; }
+:is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) th { font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); }
 :is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) :is(th, td):first-child { text-align: left; }
 #rec-time .ui-button, #rec-bbbvPerSecond .ui-button, #rec-efficiency .ui-button, :is(#records-replays-table, #records-top-table) td .ui-button { white-space: nowrap; }
 #records-replays-table td .ui-button { margin: var(--space-1) 0 var(--space-1) var(--space-2); }
@@ -76,10 +63,10 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
   :is(#records-games, #records-replays-table, #records-top-table) thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   :is(#records-games, #records-replays-table, #records-top-table) tr {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--space-8) * 2.5), 1fr));
-    gap: var(--space-1) var(--space-3); padding: var(--space-2) 0; border-bottom: 1px solid var(--color-border);
+    gap: var(--space-1) var(--space-3); padding: var(--space-2) 0;
   }
   :is(#records-games, #records-replays-table, #records-top-table) td { display: block; padding: 0; border: 0; text-align: left; }
-  :is(#records-games, #records-replays-table, #records-top-table) td[data-label]::before { content: attr(data-label); display: block; font-size: var(--font-size-xs); color: var(--color-ink-muted); }
+  :is(#records-games, #records-replays-table, #records-top-table) td[data-label]::before { content: attr(data-label); display: block; font-size: var(--font-size-xs); }
   :is(#records-games, #records-top-table) td:empty { display: none; }
   :is(#records-games, #records-replays-table, #records-top-table) td:is([data-label="Board code"], :last-child) { grid-column: 1 / -1; }
   #records-replays-table td .ui-button { margin: 0 var(--space-2) 0 0; }
@@ -92,78 +79,62 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
   #records-averages-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   #records-averages-table tr {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--space-8) * 2.5), 1fr));
-    gap: var(--space-1) var(--space-3); padding: var(--space-2) 0; border-bottom: 1px solid var(--color-border);
+    gap: var(--space-1) var(--space-3); padding: var(--space-2) 0;
   }
   #records-averages-table :is(th, td) { display: block; padding: 0; border: 0; text-align: left; }
-  #records-averages-table th { grid-column: 1 / -1; color: var(--color-ink); }
-  #records-averages-table td[data-label]::before { content: attr(data-label); display: block; font-size: var(--font-size-xs); color: var(--color-ink-muted); }
+  #records-averages-table th { grid-column: 1 / -1; }
+  #records-averages-table td[data-label]::before { content: attr(data-label); display: block; font-size: var(--font-size-xs); }
 }
-#pause, #ready, #results { background: var(--color-backdrop-scrim-soft); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
 /* The ready card waiting unseen for a pointer lock the player's own Play again asked for. */
 #ready.ready--pending { visibility: hidden; }
-/* The Learn 3D end card over the guided board's stopped scene. */
-#learn-end { background: var(--color-backdrop-scrim-soft); }
-/* Over a 3D game the results screen shows on a dimmed translucent scrim of the chosen theme, the finished board drawn unblurred behind it. */
-#results.results--over3d { background: var(--color-backdrop-scrim-strong); backdrop-filter: none; -webkit-backdrop-filter: none; }
 /* Look at the board: the one-line way back, over the finished 3D board. */
 .look-hint {
   position: fixed; top: var(--space-4); left: 50%; transform: translateX(-50%);
   z-index: var(--z-overlay);
   margin: 0; padding: var(--space-2) var(--space-3);
   max-width: calc(100% - 32px);
-  border-radius: var(--radius-md); border: 1px solid var(--color-surface-border);
-  background: var(--color-surface); color: var(--color-ink);
-  font-family: var(--font-family-sans); font-size: var(--font-size-sm); text-align: center;
+  font-size: var(--font-size-sm); text-align: center;
   pointer-events: none;
 }
 /* The game's own figures are the results card's largest; the bests panel reads below them. */
 #results-stats .ui-stat__value { font-size: var(--font-size-2xl); }
 #results-bests .ui-stat__value { font-size: var(--font-size-lg); }
 
-@keyframes pop { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: none; } }
-
 /* ---------- click to play ---------- */
 .ready-card {
   appearance: none;
   display: flex; flex-direction: column; align-items: center; gap: 12px;
+  margin: 0;
   padding: 30px 40px;
-  border-radius: 24px;
-  border: 1px solid var(--color-surface-border);
-  background: var(--color-surface);
-  box-shadow: var(--elevation-3);
-  color: var(--color-ink);
-  font-family: var(--font-family-sans);
+  border: 0;
   cursor: pointer;
-  animation: pop 0.2s ease-out;
   max-width: 100%;
 }
-.ready-card:hover .ready-title { color: var(--color-accent); }
-.ready-title { font-size: 34px; font-weight: 800; letter-spacing: -0.01em; transition: color 0.15s; }
-.ready-board { font-size: 15px; color: var(--color-ink-muted); font-variant-numeric: tabular-nums; }
-.ready-keys { font-size: 13px; color: var(--color-ink-muted); line-height: 1.9; display: flex; flex-direction: column; align-items: center; }
-.ready-keys b { color: var(--color-ink); font-weight: 600; }
+.ready-title { font-size: 34px; font-weight: var(--font-weight-heavy); letter-spacing: -0.01em; }
+.ready-board { font-size: 15px; font-variant-numeric: tabular-nums; }
+.ready-keys { font-size: 13px; line-height: 1.9; display: flex; flex-direction: column; align-items: center; }
+.ready-keys b { font-weight: var(--font-weight-bold); }
 /* On a coarse-only device (#ready.ready--touch, UI.setTouch3D) the ready card lists the touch gestures in place of
    the keys, its rules name the toolbar's Ctrl button, and its Back has no "Esc: Back" hint. */
 .ready-touch { display: none; }
-.ready--touch .ready-touch { font-size: 13px; color: var(--color-ink-muted); line-height: 1.9; display: flex; flex-direction: column; align-items: center; text-align: center; }
-.ready-touch b { color: var(--color-ink); font-weight: 600; }
+.ready--touch .ready-touch { font-size: 13px; line-height: 1.9; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.ready-touch b { font-weight: var(--font-weight-bold); }
 .ready--touch .ready-keys, .ready--touch .ready-tip { display: none; }
-.ready-rules { font-size: 13px; color: var(--color-ink); line-height: 1.7; display: flex; flex-direction: column; align-items: center; }
+.ready-rules { font-size: 13px; line-height: 1.7; display: flex; flex-direction: column; align-items: center; }
 .ready-rules-touch, .ready--touch .ready-rules-keys { display: none; }
 .ready--touch .ready-rules-touch { display: inline; }
 #ready.ready--touch .esc-row [data-esc-hint] { display: none; }
-.ready-tip { font-size: 12px; color: var(--color-ink-muted); opacity: 0.9; }
-.ready-msg { font-size: 14px; font-weight: 600; color: var(--color-warning); max-width: 440px; }
+.ready-tip { font-size: 12px; }
+.ready-msg { font-size: 14px; font-weight: var(--font-weight-bold); max-width: 440px; }
 .ready-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; max-width: 100%; margin: auto; }
-.ready-back { font-size: 14px; padding: 6px 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.55); text-decoration: none; }
-.ready-back:hover { background: rgba(255, 255, 255, 0.85); }
+.ready-back { font-size: 14px; padding: 6px 10px; text-decoration: none; }
 
 /* ---------- Back rows ---------- */
 /* "Esc: Back" beside each Back that Esc triggers; over the click-to-play and context-lost scrims it
    sits on the raised surface, so it reads the same over any scene. */
 .esc-row { display: flex; align-items: center; gap: var(--space-3); }
 [data-esc-hint] { white-space: nowrap; }
-.esc-row [data-esc-hint] { padding: var(--space-1) var(--space-2); border-radius: var(--radius-md); background: var(--color-surface-raised); }
+.esc-row [data-esc-hint] { padding: var(--space-1) var(--space-2); }
 /* Settings' Back stays in view: a sticky row at the bottom of the card's scroll area, which focus
    moves keep the focused control above. */
 #settings { scroll-padding-bottom: calc(var(--space-8) * 3); }
@@ -171,33 +142,25 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
   position: sticky; bottom: 0;
   margin: 0 calc(-1 * var(--space-6)) calc(-1 * var(--space-6));
   padding: var(--space-3) var(--space-6);
-  border-top: 1px solid var(--color-border);
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-  background: var(--color-surface-raised);
 }
 
 /* ---------- controls modal ---------- */
-.modal { z-index: var(--z-modal); background: var(--color-backdrop-scrim); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
-.modal-card {
-  width: min(520px, 100%); margin: auto; padding: 18px 22px 20px;
-  background: var(--color-surface); border: 1px solid var(--color-surface-border); border-radius: 20px;
-  box-shadow: var(--elevation-3); animation: pop 0.2s ease-out;
-}
+.modal { z-index: var(--z-modal); }
+.modal-card { width: min(520px, 100%); margin: auto; padding: 18px 22px 20px; }
 .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.modal-head h3 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-ink-muted); }
+.modal-head h3 { margin: 0; font-size: 13px; font-weight: var(--font-weight-bold); text-transform: uppercase; letter-spacing: 0.1em; }
 #controls-tabs { margin-bottom: var(--space-3); }
 .hint-close {
-  appearance: none; border: 0; background: transparent; color: var(--color-ink-muted);
-  font: 700 18px/1 var(--font-family-sans); width: 28px; height: 28px; border-radius: 8px; cursor: pointer;
+  appearance: none; border: 0; padding: 0;
+  font-size: 18px; font-weight: var(--font-weight-bold); line-height: 1; width: 28px; height: 28px; cursor: pointer;
 }
-.hint-close:hover { background: var(--color-accent-soft); color: var(--color-ink); }
 .modal-close { font-size: 24px; width: 34px; height: 34px; }
 
 /* ---------- first-use hint strip ---------- */
 /* At the bottom left of the play area; on the Classic 2D board it takes the room below the board. */
 #hint-strip {
   position: absolute; left: var(--space-4); bottom: var(--space-4); pointer-events: auto;
-  display: flex; align-items: center; gap: 6px; padding: 6px 6px 6px 14px; font-size: 13px; color: var(--color-ink-muted);
+  display: flex; align-items: center; gap: 6px; padding: 6px 6px 6px 14px; font-size: 13px;
   max-width: calc(100vw - 32px);
 }
 #c2d.c2d--hint #c2d-board { bottom: 64px; }
@@ -206,25 +169,19 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
 
 /* ---------- controls list ---------- */
 .controls { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; font-size: 14px; }
-.controls dt { font-weight: 600; white-space: nowrap; }
-.controls dd { margin: 0; color: var(--color-ink-muted); }
+.controls dt { font-weight: var(--font-weight-bold); white-space: nowrap; }
+.controls dd { margin: 0; }
 .controls.compact { grid-template-columns: max-content 1fr max-content 1fr; font-size: 13px; }
 
 /* ---------- Classic 2D board ---------- */
 /* The board layer covers the 3D scene; the board area is the window with --space-4 margins. The
    board sits centred there in a framed panel (UI.placePanel2D from the board view's layout), whose
    top edge carries the overlay readouts; a board that does not fit fills the area and scrolls. */
-#c2d { position: fixed; inset: 0; background: var(--color-backdrop); }
+#c2d { position: fixed; inset: 0; }
 #c2d-board { position: absolute; top: var(--space-4); left: var(--space-4); right: var(--space-4); bottom: var(--space-4); }
-.c2d-panel {
-  position: absolute;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface-raised);
-  box-shadow: var(--elevation-2);
-}
-/* On the Classic 2D panel the overlay bar is the panel's top edge: no surface of its own. */
-#hud.hud--2d .hud-bar { padding: 0; border-width: 0; background: none; box-shadow: none; }
+.c2d-panel { position: absolute; }
+/* On the Classic 2D panel the overlay bar is the panel's top edge: no surface of its own (the theme draws none). */
+#hud.hud--2d .hud-bar { padding: 0; }
 /* It wraps inside the widest panel — the board area less the panel's 9 px inset (js/ui.js PANEL_INSET)
    on each side — so on a phone its readouts and buttons take more rows instead of leaving the screen.
    Its width never depends on where it sits, so the height panelFrame2D measures is the height placed. */
@@ -232,72 +189,49 @@ body.no-webgl2 :is(#menu, #board-choice, #coming-soon, #c2d-choice, #settings, #
 @media (max-width: 560px) { #hud.hud--2d .hud-bar { column-gap: var(--space-3); } }
 /* A board status card (generating, or a failed board's offer) sits above the pause card. */
 #c2d-status, #m3d-status { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: calc(var(--z-overlay) + 1); }
-#replay { position: fixed; inset: 0; z-index: var(--z-overlay); background: var(--color-backdrop); }
-#replay.replay--scene { background: transparent; }
+#replay { position: fixed; inset: 0; z-index: var(--z-overlay); }
 .replay-bar { position: absolute; top: 16px; left: 16px; }
 /* The board area between the overlay bar and the controls: top and bottom set from their real sizes. */
 #replay-board { position: absolute; top: 96px; left: var(--space-4); right: var(--space-4); bottom: var(--space-4); overflow: hidden; }
 #replay-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
 #replay-controls { position: absolute; left: var(--space-4); right: var(--space-4); bottom: var(--space-4); max-width: 720px; margin: 0 auto; }
-/* The recorded pointer: a core in a contrasting outline, readable on any tile in either theme; its trail fades behind it. */
-.replay-pointer { position: absolute; top: 0; left: 0; z-index: 3; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: var(--color-replay-pointer); border: 2px solid var(--color-replay-pointer-outline); box-shadow: 0 0 0 1px var(--color-replay-pointer); pointer-events: none; }
-.replay-trail { position: absolute; top: 0; left: 0; z-index: 2; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: var(--color-replay-pointer); border: 1px solid var(--color-replay-pointer-outline); pointer-events: none; }
+/* The recorded pointer: a core in a contrasting outline, readable on any tile; its trail fades behind it. */
+.replay-pointer { position: absolute; top: 0; left: 0; z-index: 3; width: 12px; height: 12px; margin: -6px 0 0 -6px; pointer-events: none; }
+.replay-trail { position: absolute; top: 0; left: 0; z-index: 2; width: 8px; height: 8px; margin: -4px 0 0 -4px; pointer-events: none; }
 :is(.replay-pointer, .replay-trail)[hidden] { display: none; }
 /* Show 3BV over a 2D board: drawn on its own canvas above the tiles, below the pointer. */
 .replay-bbbv { position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none; }
 .replay-bbbv[hidden] { display: none; }
-/* A press ring: expands and fades over 400 ms, coloured by its action's button. */
-.replay-ring { position: absolute; z-index: 4; width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%; border: 3px solid currentColor; pointer-events: none; animation: replay-ring 0.4s var(--easing-out) forwards; }
-.replay-ring--reveal { color: var(--color-replay-reveal); }
-.replay-ring--flag { color: var(--color-replay-flag); }
-.replay-ring--chord { color: var(--color-replay-chord); }
-@keyframes replay-ring { from { transform: scale(0.35); opacity: 1; } to { transform: scale(1.4); opacity: 0; } }
+/* A press ring: the theme expands and fades it, coloured by its action's button. */
+.replay-ring { position: absolute; z-index: 4; width: 36px; height: 36px; margin: -18px 0 0 -18px; pointer-events: none; }
 .replay-tools { flex-wrap: wrap; margin-top: var(--space-2); }
 .replay-keys { margin: var(--space-2) 0 0; font-size: var(--font-size-sm); display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); }
-.replay-key__pad { opacity: 0.8; }
 /* While the replay viewer shows, the game's view chips, tools strip, hint strip and toast neither show nor appear. */
 body.replaying :is(#mode-chips, #hud-tools, #hint-strip, #toast) { display: none; }
 
 /* ---------- HUD ---------- */
 #hud { position: fixed; inset: 0; pointer-events: none; z-index: var(--z-hud); }
-.hud-panel {
-  background: var(--color-surface-raised);
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  box-shadow: 0 8px 24px -12px rgba(20, 45, 95, 0.45);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
 .hud-bar { position: absolute; top: 16px; left: 16px; pointer-events: auto; }
 /* the mine counter: as wide as a large board's count (UI.setBoard), tabular, so the bar does not shift as it falls */
 #hud-mines { font-variant-numeric: var(--font-numeric-tabular); }
-.hud-board .ui-stat__value { font-size: var(--font-size-md); color: var(--color-ink-muted); }
-#hud-mines.negative { color: var(--color-danger); }
+.hud-board .ui-stat__value { font-size: var(--font-size-md); }
 #hud.hud--2d #crosshair, #hud.hud--2d #crosshair-arrow, #hud.hud--2d #aim-readout, #hud.hud--2d #mode-chips { display: none; }
 /* The Classic 2D mouse button swap (js/classic2d/button-swap.js): on the 2D board only, accented while on. */
 #hud-swap { min-height: 40px; padding: var(--space-2) var(--space-4); }
 #hud:not(.hud--2d) #hud-swap { display: none; }
-#hud-swap[aria-pressed="true"] { border-color: var(--color-accent); color: var(--color-accent); }
 /* The Classic 2D Reveal / Flag switch (js/classic2d/touch-input.js): on a coarse pointer only, accented on Flag. */
 #hud-tap { display: none; }
-#hud-tap[aria-pressed="true"] { border-color: var(--color-accent); color: var(--color-accent); }
-.hud-tools { position: absolute; top: 16px; right: 16px; padding: 8px 12px; display: flex; gap: 12px; font-size: 13px; color: var(--color-ink-muted); font-variant-numeric: tabular-nums; }
+.hud-tools { position: absolute; top: 16px; right: 16px; padding: 8px 12px; display: flex; gap: 12px; font-size: 13px; font-variant-numeric: tabular-nums; }
 .kbd-hint { white-space: nowrap; }
 
 #crosshair {
   position: absolute; left: 50%; top: 50%;
   width: 22px; height: 22px; margin: -11px 0 0 -11px;
 }
-#crosshair::before, #crosshair::after {
-  content: ""; position: absolute; background: #10203d;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.85);
-  border-radius: 1px;
-}
+#crosshair::before, #crosshair::after { content: ""; position: absolute; }
 #crosshair::before { left: 10px; top: 0; width: 2px; height: 22px; }
 #crosshair::after { top: 10px; left: 0; height: 2px; width: 22px; }
-#crosshair { border-radius: 50%; transition: opacity 0.12s ease, box-shadow 0.12s ease; }
 #crosshair.off { opacity: 0.4; }
-#crosshair.on { box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9), 0 0 0 5px rgba(63, 120, 224, 0.85); }
 /* the off-screen arrow: on the crosshair's ring, turned toward the box (UI.setArrow), drawn like the crosshair */
 #crosshair-arrow {
   position: absolute; left: 50%; top: 50%;
@@ -306,29 +240,22 @@ body.replaying :is(#mode-chips, #hud-tools, #hint-strip, #toast) { display: none
 }
 #crosshair-arrow::before {
   content: ""; position: absolute; left: calc(100% + 10px); top: 50%; margin-top: -9px;
-  border-style: solid; border-color: transparent; border-width: 9px 0 9px 14px; border-left-color: #10203d;
-  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 1px rgba(255, 255, 255, 0.95));
+  width: 0; height: 0; border-width: 9px 0 9px 14px;
 }
 /* the aimed-cell readout (UI.setReadout): below and right of the crosshair, clear of the arrow's ring */
 #aim-readout {
   position: absolute; left: calc(50% + 40px); top: calc(50% + 28px);
-  padding: 3px 10px; border-radius: var(--radius-md);
-  font-size: var(--font-size-sm); font-weight: 600; font-variant-numeric: var(--font-numeric-tabular); white-space: nowrap;
-  color: var(--color-ink); background: var(--color-surface-raised); border: 1px solid var(--color-border);
-  box-shadow: var(--elevation-1);
+  padding: 3px 10px;
+  font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); font-variant-numeric: var(--font-numeric-tabular); white-space: nowrap;
 }
 /* its icons: an unrevealed cube and a flag, drawn in the theme's colours */
-#aim-readout .aim-icon--cube rect { fill: var(--color-accent); stroke: var(--color-ink); stroke-width: 1; }
 #aim-readout .aim-icon { width: 1.15em; height: 1.15em; vertical-align: -0.22em; }
-#aim-readout .aim-icon__pole { fill: none; stroke: var(--color-ink); stroke-width: 1.6; stroke-linecap: round; }
-#aim-readout .aim-icon__cloth { fill: var(--color-danger); }
 
 #mode-chips { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; }
 .chip {
   display: none;
-  font-size: 12px; font-weight: 600;
-  padding: 5px 10px; border-radius: 999px;
-  background: rgba(20, 35, 63, 0.75); color: #fff;
+  font-size: 12px; font-weight: var(--font-weight-bold);
+  padding: 5px 10px;
 }
 .chip.on { display: inline-block; }
 
@@ -338,18 +265,16 @@ body.replaying :is(#mode-chips, #hud-tools, #hint-strip, #toast) { display: none
   padding: 14px 18px;
   pointer-events: none;
 }
-#help h3 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-ink-muted); }
+#help h3 { margin: 0 0 10px; font-size: 13px; font-weight: var(--font-weight-bold); text-transform: uppercase; letter-spacing: 0.1em; }
 #help .controls { font-size: 13px; }
-.help-foot { margin: 10px 0 0; font-size: 12px; color: var(--color-ink-muted); }
+.help-foot { margin: 10px 0 0; font-size: 12px; }
 .help-foot .pad-note { display: block; margin: 8px 0 0; }
 
-#flash { position: fixed; inset: 0; pointer-events: none; z-index: var(--z-flash); opacity: 0; background: radial-gradient(circle at 50% 50%, rgba(255, 245, 200, 0.95), rgba(255, 90, 40, 0.75) 45%, rgba(160, 0, 0, 0.55)); }
-#flash.go { animation: flash 0.9s ease-out; }
-@keyframes flash { 0% { opacity: 0.95; } 100% { opacity: 0; } }
+#flash { position: fixed; inset: 0; pointer-events: none; z-index: var(--z-flash); opacity: 0; }
 
 .noscript { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; }
 .fatal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: var(--z-fatal); padding: 16px; }
-.fatal div { background: var(--color-surface-raised); padding: 24px 28px; border-radius: 16px; box-shadow: var(--elevation-3); max-width: 520px; }
+.fatal div { padding: 24px 28px; max-width: 520px; }
 
 @media (max-width: 760px) {
   .controls.compact { grid-template-columns: max-content 1fr; }
@@ -364,28 +289,27 @@ body.replaying :is(#mode-chips, #hud-tools, #hint-strip, #toast) { display: none
 }
 
 /* ---------- WebGL context lost ---------- */
-#ctx-lost { z-index: var(--z-context-lost); background: var(--color-backdrop-scrim-strong); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
-#ctx-lost .ready-card { background: rgba(255, 255, 255, 0.96); }
+#ctx-lost { z-index: var(--z-context-lost); }
 
 /* ---------- game controller ---------- */
-.pad-note { margin: 0 0 10px; padding: 6px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; color: #6b3d00; background: #fff4d6; border: 1px solid #f0c66b; }
-kbd.pad { min-width: 1.9em; border-radius: 999px; }
+.pad-note { margin: 0 0 10px; padding: 6px 10px; font-size: 12px; font-weight: var(--font-weight-bold); }
+kbd.pad { min-width: 1.9em; }
 /* the controller's routes (Records' LB / RB and LT / RT, the seek bar's D-pad): shown under pad navigation
    only, their room kept so the layout never shifts */
 [data-pad-hint] { visibility: hidden; }
 body.pad-nav [data-pad-hint] { visibility: visible; }
-kbd[data-pad-glyph] { min-width: 1.9em; border-radius: 999px; }
+kbd[data-pad-glyph] { min-width: 1.9em; }
 [data-pad-hinted] { display: flex; align-items: center; gap: var(--space-2); max-width: 100%; }
 [data-pad-hinted] > .ui-segmented { min-width: 0; }
 #replay-controls .ui-slider { grid-template-columns: 1fr auto auto; }
-.ready-pad { font-size: 13px; color: var(--color-ink-muted); line-height: 1.7; text-align: center; max-width: 520px; }
-.ready-pad b { color: var(--color-ink); font-weight: 600; }
+.ready-pad { font-size: 13px; line-height: 1.7; text-align: center; max-width: 520px; }
+.ready-pad b { font-weight: var(--font-weight-bold); }
 .ready-pad .pad-note { display: inline-block; margin: 4px 0 0; }
 /* the ready card's offer once the browser blocks pointer lock: drag-to-look, or the controller */
 /* The ready card's Learn 3D line, under the card while the player has not learned 3D. */
-.ready-learn { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); background: var(--color-surface-raised); text-align: left; }
+.ready-learn { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-4); text-align: left; }
 .ready-learn .ui-text { margin: 0; }
-.ready-blocked { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--color-surface-raised); text-align: center; }
+.ready-blocked { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); text-align: center; }
 #help { max-height: calc(100vh - 80px); overflow: hidden; }
 /* lockless controller play: the system cursor would sit over the crosshair */
 body.lockless #scene { cursor: none; }
@@ -398,37 +322,21 @@ body.touch-play #scene { touch-action: none; user-select: none; -webkit-user-sel
 #touch-stick { position: absolute; left: 0; top: 0; pointer-events: none; display: none; }
 #touch-stick.on { display: block; }
 .touch-stick { width: 0; height: 0; }
-.touch-stick::before {
-  content: ""; position: absolute; left: -60px; top: -60px; width: 120px; height: 120px; border-radius: 50%;
-  border: 2px solid var(--color-border); background: var(--color-surface-raised); opacity: 0.55;
-}
-.touch-stick__knob {
-  position: absolute; left: -24px; top: -24px; width: 48px; height: 48px; border-radius: 50%;
-  background: var(--color-accent); opacity: 0.8; box-shadow: var(--elevation-2);
-}
+.touch-stick::before { content: ""; position: absolute; left: -60px; top: -60px; width: 120px; height: 120px; }
+.touch-stick__knob { position: absolute; left: -24px; top: -24px; width: 48px; height: 48px; }
 .touch-modes {
   position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
   display: flex; flex-direction: column; gap: var(--space-2); pointer-events: auto;
 }
-#touch-modes .ui-button[aria-pressed="true"] { border-color: var(--color-accent); background: var(--color-accent); color: var(--color-accent-ink); }
 /* drag-to-look play: the mouse drags the view, so its cursor shows */
 body.lockless.drag-look #scene { cursor: grab; }
 body.lockless.drag-look #scene:active { cursor: grabbing; }
 
-/* focus ring for controller navigation */
-body.pad-nav :is(button, input, summary, a, select):focus {
-  outline: none;
-  box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--color-accent), 0 0 18px 6px rgba(63, 120, 224, 0.45);
-}
-body.pad-nav .ready-card:focus .ready-title { color: var(--color-accent); }
-
 .toast {
   position: fixed; left: 50%; bottom: 64px; z-index: var(--z-toast);
   transform: translate(-50%, 8px); opacity: 0; pointer-events: none;
-  padding: 8px 16px; border-radius: 999px;
-  font-size: 14px; font-weight: 600; color: #fff; background: rgba(20, 35, 63, 0.86);
-  box-shadow: 0 6px 18px rgba(20, 35, 63, 0.25);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  padding: 8px 16px;
+  font-size: 14px; font-weight: var(--font-weight-bold);
 }
 .toast.on { opacity: 1; transform: translate(-50%, 0); }
 

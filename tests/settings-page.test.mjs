@@ -673,7 +673,7 @@ test('Settings\' Back sits in a sticky action row at the bottom of the card\'s s
   assert.ok(rule, 'css/style.css styles the row');
   assert.match(rule[1], /position:\s*sticky/);
   assert.match(rule[1], /bottom:\s*0/);
-  assert.match(rule[1], /background:\s*var\(--color-surface-raised\)/, 'an opaque surface: the controls scroll under it');
+  assert.match(read('themes/joyful-tiles/theme.css'), /#settings-actions \{[^}]*background: var\(--color-surface\)/, 'an opaque surface: the controls scroll under it');
   assert.match(css, /#settings\s*\{[^}]*scroll-padding-bottom:/, 'a focus move scrolls a control into view above the row');
 });
 
@@ -726,7 +726,7 @@ function removeWebGL2() {
   HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
 }
 
-test('in a browser: Settings from the menu, Dark chosen, and Dark applied before the menu shows after a reload', async (t) => {
+test('in a browser: Settings from the menu, Dark chosen and kept, and the look Joyful tiles before the menu shows after a reload', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -750,7 +750,7 @@ test('in a browser: Settings from the menu, Dark chosen, and Dark applied before
     const theme = () => ms(() => document.documentElement.getAttribute('data-theme'));
     const setting = (key) => ms((k) => globalThis.__ms.settings.get(k), key);
 
-    assert.equal(await theme(), 'light');
+    assert.equal(await theme(), 'joyful-tiles');
     await page.click('#menu-entry-settings');
     assert.equal(await mode(), 'settings');
     assert.equal(await active(), 'set-lookSensitivity', 'the declared default focus');
@@ -760,9 +760,9 @@ test('in a browser: Settings from the menu, Dark chosen, and Dark applied before
     assert.deepEqual(headings.slice(0, 4), ['Controls', 'Graphics', 'Theme', 'Audio']);
     assert.ok(await ms(() => document.querySelectorAll('#settings-body dl.controls').length) >= 4, 'the bindings lists');
 
-    // Mouse: Dark applies at once.
+    // Mouse: Dark is chosen and stored; the stored theme no longer changes the look.
     await page.click('#set-theme [data-value="dark"]');
-    assert.equal(await theme(), 'dark');
+    assert.equal(await theme(), 'joyful-tiles');
     assert.equal(await setting('theme'), 'dark');
 
     // Keyboard: arrows on the slider and the segmented choice, Space on a toggle.
@@ -800,15 +800,15 @@ test('in a browser: Settings from the menu, Dark chosen, and Dark applied before
     assert.equal(await ms(() => document.getElementById('menu-vol').value), '40');
     await ms(() => globalThis.__ms.pauser.toMenu());
 
-    // Reload: Dark is on the root before the menu is in the document.
+    // Reload: Joyful tiles is on the root before the menu is in the document, whatever is stored.
     await page.waitForFunction(() => { // the saves settle
       const d = JSON.parse(localStorage.getItem('ms3d:doc:settings') ?? 'null')?.data;
       return d?.theme === 'dark' && d?.volume === 0.4;
     }, null, { timeout: patience(5000) });
     await page.reload();
     await page.waitForFunction(() => globalThis.__ms !== undefined);
-    assert.equal(await ms(() => globalThis.__themeAtMenu), 'dark', 'Dark before the menu shows');
-    assert.equal(await theme(), 'dark');
+    assert.equal(await ms(() => globalThis.__themeAtMenu), 'joyful-tiles', 'Joyful tiles before the menu shows');
+    assert.equal(await theme(), 'joyful-tiles');
     assert.equal(await setting('theme'), 'dark');
     assert.equal(await mode(), 'menu');
     assert.deepEqual(errors, []);
@@ -954,7 +954,7 @@ test('in a browser, Reset all data turns a played profile back into a new player
     await page.goBack();
     assert.equal(await mode(), 'settings', 'the browser\'s Back closes it first too');
     assert.equal(await visible('set-reset-confirm'), false);
-    assert.equal(await ms(() => document.documentElement.getAttribute('data-theme')), 'dark', 'nothing changed');
+    assert.equal(await ms(() => globalThis.__ms.settings.get('theme')), 'dark', 'nothing changed');
     assert.equal(await blobCount(), 1);
 
     // Confirm: everything goes and the page reloads into a fresh profile.
@@ -962,7 +962,7 @@ test('in a browser, Reset all data turns a played profile back into a new player
     await Promise.all([page.waitForEvent('load'), page.click('#set-reset-yes')]);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     assert.equal(await mode(), 'menu');
-    assert.equal(await ms(() => document.documentElement.getAttribute('data-theme')), 'light');
+    assert.equal(await ms(() => document.documentElement.getAttribute('data-theme')), 'joyful-tiles');
     assert.equal(await ms(() => globalThis.__ms.settings.get('theme')), 'light');
     assert.equal(await ms(() => globalThis.__ms.settings.get('lookSensitivity')), 1, 'every setting at its default: nothing carried over');
     assert.equal(await ms(() => document.querySelector('[data-entry][data-last]')), null, 'no Last played mark');

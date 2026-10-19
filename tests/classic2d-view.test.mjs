@@ -3,7 +3,7 @@
 // the game must fit — hit-testing in a fitted and a scrolled board, per-cell redraw from the
 // engine's change lists through the tile skin, full repaints on resize, pixel-ratio, scale and
 // theme change, scrolling and panning, a clipped board's shadows and scroll bars, the focus ring's
-// redraws, the hidden board while paused, and in a browser the board drawn in both themes and the
+// redraws, the hidden board while paused, and in a browser the board drawn in the theme and the
 // Classic 2D screen at the windows it must fit.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -299,7 +299,7 @@ test('the background and the marks are drawn from design tokens, never a literal
   const src = readFileSync(join(ROOT, 'js/classic2d/board-view.js'), 'utf8');
   assert.doesNotMatch(src, /#[0-9a-fA-F]{3,8}\b/, 'no literal colours');
   assert.doesNotMatch(src, /\brgba?\(/, 'no literal colours');
-  const css = readFileSync(join(ROOT, 'css/tokens.css'), 'utf8');
+  const css = readFileSync(join(ROOT, 'themes/joyful-tiles/theme.css'), 'utf8');
   for (const name of [BOARD_BACKGROUND, BOARD_SHADOW, BOARD_SCROLLBAR]) assert.match(css, new RegExp(`${name}:`), `${name} exists`);
 });
 
@@ -610,8 +610,8 @@ test('the focus ring: setCursor redraws only the cells it leaves and enters, and
 
 test('the start-cell mark: a ring in the cursor ring\'s style from an existing token, redrawn on its cells only, under the cursor', () => {
   assert.equal(START_MARK, '--color-success', 'an existing design token, apart from the cursor ring\'s');
-  const tokensCss = readFileSync(new URL('../css/tokens.css', import.meta.url), 'utf8');
-  assert.equal((tokensCss.match(/--color-success:/g) ?? []).length >= 2, true, 'defined in both themes');
+  const themeCss = readFileSync(new URL('../themes/joyful-tiles/theme.css', import.meta.url), 'utf8');
+  assert.match(themeCss, /--color-success:/, 'the theme declares it');
   const { view, canvas, skin, grid } = makeView();
   view.setGame(beginnerGame().game);
   const marks = () => canvas.ctx.calls.filter((c) => c.op === 'strokeRect' && c.stroke === '#00aa00');
@@ -854,7 +854,7 @@ async function mountBoard({ cols, rows, scroll }) {
 
 const near = (a, b) => a.every((v, i) => Math.abs(v - b[i]) <= 6);
 
-test('in a browser, Beginner and Expert in both themes and a large scrolled custom board are drawn correctly', async (t) => {
+test('in a browser, Beginner and Expert and a large scrolled custom board are drawn correctly', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -868,8 +868,7 @@ test('in a browser, Beginner and Expert in both themes and a large scrolled cust
     const area = { width: 1366 - 32, height: 768 - 96 - 16 };
     const M = 26;
 
-    for (const theme of ['light', 'dark']) {
-      await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
+    for (const theme of ['joyful-tiles']) {
       for (const [name, cols, rows] of [['beginner', 9, 9], ['expert', 30, 16]]) {
         const r = await page.evaluate(mountBoard, { cols, rows });
         const tile = Math.max(M, Math.min(48, Math.floor(Math.min(area.width / cols, area.height / rows))));
@@ -889,23 +888,7 @@ test('in a browser, Beginner and Expert in both themes and a large scrolled cust
       }
     }
 
-    // A theme change repaints through the skin's redraw callback.
-    await page.evaluate(() => globalThis.msTheme.setTheme('light'));
-    await page.evaluate(mountBoard, { cols: 9, rows: 9 });
-    await page.evaluate(() => globalThis.msTheme.setTheme('dark'));
-    const after = await page.evaluate(async () => {
-      const { token } = await import('/js/tokens.js');
-      const v = globalThis.__view;
-      const r = v.cellRect(8 * 9);
-      const d = v.canvas.getContext('2d').getImageData(Math.round(r.x + r.size / 2), Math.round(r.y + r.size / 2), 1, 1).data;
-      const hex = (name) => { const v = token(name).trim(); return [1, 3, 5].map((i) => parseInt(v.slice(i, i + 2), 16)); };
-      const want = hex('--color-tile-revealed').map((v, i) => Math.round((v + hex('--color-tile-revealed-shade')[i]) / 2));
-      return { got: [d[0], d[1], d[2]], want };
-    });
-    assert.ok(near(after.got, after.want), `repainted in the dark theme ${after.got} ~ ${after.want}`);
-
     // A large custom board keeps the minimum tile and scrolls by wheel, shift-drag and cursor follow.
-    await page.evaluate(() => globalThis.msTheme.setTheme('light'));
     const big = await page.evaluate(mountBoard, { cols: 100, rows: 100, scroll: { x: 600, y: 900 } });
     assert.equal(big.layout.tile, M);
     assert.equal(big.layout.scrolls, true);

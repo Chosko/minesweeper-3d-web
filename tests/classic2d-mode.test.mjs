@@ -1270,14 +1270,14 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
   }
 });
 
-test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800 in both themes: Expert unclipped in play and in the viewer, Beginner at 48 px, the panel\'s readouts and Pause, a clipped board\'s marks and hint, and no ring for a mouse player', async (t) => {
+test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800: Expert unclipped in play and in the viewer, Beginner at 48 px, the panel\'s readouts and Pause, a clipped board\'s marks and hint, and no ring for a mouse player', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
   const STANDARD = { beginner: { size: 'beginner', noGuess: false }, expert: { size: 'expert', noGuess: false } };
   try {
     for (const viewport of [{ width: 1024, height: 768 }, { width: 1366, height: 650 }, { width: 1280, height: 800 }]) {
-      for (const theme of ['light', 'dark']) {
+      for (const theme of ['joyful-tiles']) {
         const at = `${viewport.width} × ${viewport.height} ${theme}`;
         const page = await browser.newPage({ viewport, deviceScaleFactor: 1 });
         const errors = [];
@@ -1285,7 +1285,6 @@ test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800 in both themes: 
         await page.addInitScript(removeWebGL2);
         await page.goto(`${base}/index.html`);
         await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
-        await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
         const ms = (fn, arg) => page.evaluate(fn, arg);
         const start = (choice) => ms((c) => globalThis.__ms.modes.start('classic-2d', c), choice);
         const geometry = () => ms(() => {
@@ -1390,18 +1389,17 @@ test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800 in both themes: 
   }
 });
 
-test('in a browser, at 1024 × 768 with a mouse in both themes: the larger labels and key caps keep the overlay bar on one line above the board and the pause card\'s key cap rows whole', async (t) => {
+test('in a browser, at 1024 × 768 with a mouse: the larger labels and key caps keep the overlay bar on one line above the board and the pause card\'s key cap rows whole', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
   try {
-    for (const theme of ['light', 'dark']) {
+    for (const theme of ['joyful-tiles']) {
       const at = `1024 × 768 ${theme}`;
       const page = await browser.newPage({ viewport: { width: 1024, height: 768 }, deviceScaleFactor: 1 });
       await page.addInitScript(removeWebGL2);
       await page.goto(`${base}/index.html`);
       await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
-      await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
       const ms = (fn, arg) => page.evaluate(fn, arg);
       await ms(() => globalThis.__ms.modes.start('classic-2d', { size: 'expert', noGuess: false }));
       await page.waitForFunction(() => globalThis.__ms.board2D);
@@ -1486,20 +1484,19 @@ function measurePauseCard() {
   };
 }
 // The pause card's font sizes with a fine pointer, which its two columns leave as they are.
-const PAUSE_FONTS_FINE = Object.freeze({ title: 24, status: 15, button: 15, slider: 15, switch: 15, heading: 13, list: 13, keyName: 13, kbd: 11, statLabel: null });
+const PAUSE_FONTS_FINE = Object.freeze({ title: 24, status: 16, button: 16, slider: 16, switch: 16, heading: 14, list: 13, keyName: 13, kbd: 11, statLabel: null });
 
-test('in a browser, at 1024 × 768 with a mouse in both themes: the Classic 2D pause card in two columns fits the window, no text shrinks, and below 1024 px it stays one column in its order', async (t) => {
+test('in a browser, at 1024 × 768 with a mouse: the Classic 2D pause card in two columns fits the window, no text shrinks, and below 1024 px it stays one column in its order', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
   try {
-    for (const theme of ['light', 'dark']) {
+    for (const theme of ['joyful-tiles']) {
       const at = `1024 × 768 ${theme}`;
       const page = await browser.newPage({ viewport: { width: 1024, height: 768 }, deviceScaleFactor: 1 });
       await page.addInitScript(removeWebGL2);
       await page.goto(`${base}/index.html`);
       await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
-      await page.evaluate((th) => globalThis.msTheme.setTheme(th), theme);
       await page.evaluate(() => globalThis.__ms.modes.start('classic-2d', { size: 'expert', noGuess: false }));
       await page.waitForFunction(() => globalThis.__ms.board2D);
       // The first click starts the game, so a restart asks first.

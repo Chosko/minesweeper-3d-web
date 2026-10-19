@@ -717,14 +717,15 @@ test('the kit catalogue documents the stat detail line the comparison uses', () 
 });
 
 test('the kit carries the deltas\' colours, the greyed panel, the highlighted stat and the banner, all from tokens', () => {
-  const css = read('css/components.css');
-  const head = css.match(/^\/\*([\s\S]*?)\*\//)[1];
+  const head = read('css/components.css').match(/^\/\*([\s\S]*?)\*\//)[1];
+  const css = read('themes/joyful-tiles/theme.css').replace(/:root\[data-theme="joyful-tiles"\] /g, '');
   for (const part of ['data-delta', 'ui-panel--muted', 'ui-banner']) assert.ok(head.includes(part), `the catalogue documents ${part}`);
   const rule = (sel) => css.match(new RegExp(`${sel.replace(/[[\]().]/g, '\\$&')}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
   assert.match(rule('.ui-stat__detail[data-delta="better"]'), /color:\s*var\(--color-success\)/);
   assert.match(rule('.ui-stat__detail[data-delta="worse"]'), /color:\s*var\(--color-danger\)/);
   assert.match(rule('.ui-stat__detail[data-delta="equal"]'), /color:\s*var\(--color-ink-muted\)/);
   assert.match(css, /\.ui-panel--muted[^{]*\{[^}]*color:\s*var\(--color-ink-muted\)/);
+  assert.match(css, /\.ui-panel--muted\s*\{[^}]*background:\s*var\(--color-surface-sunk\)/);
   assert.match(css, /\.ui-stat\[data-new-best\]\s*\{/);
   assert.match(css, /\.ui-banner\s*\{/);
   const gallery = read('dev/components.html');
@@ -733,8 +734,8 @@ test('the kit carries the deltas\' colours, the greyed panel, the highlighted st
   }
 });
 
-test('the coloured deltas meet the body-text contrast contract on the bests panel in both themes', () => {
-  const tokens = read('css/tokens.css').replace(/\/\*[\s\S]*?\*\//g, '');
+test('the coloured deltas meet the body-text contrast contract on the bests panel, plain or greyed', () => {
+  const tokens = read('themes/joyful-tiles/theme.css').replace(/\/\*[\s\S]*?\*\//g, '');
   const block = (sel) => {
     const i = tokens.indexOf(`${sel} {`);
     const m = new Map();
@@ -753,13 +754,12 @@ test('the coloured deltas meet the body-text contrast contract on the bests pane
   const over = ([r, g, b, a], base) => [r * a + base[0] * (1 - a), g * a + base[1] * (1 - a), b * a + base[2] * (1 - a), 1];
   const lum = ([r, g, b]) => { const l = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * l(r) + 0.7152 * l(g) + 0.0722 * l(b); };
   const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
-  for (const [theme, sel] of [['light', ':root'], ['dark', ':root[data-theme="dark"]']]) {
-    const t = block(sel);
-    const card = over(parse(t.get('--color-surface')), parse(t.get('--color-backdrop')));
-    const panel = over(parse(t.get('--color-surface-sunken')), card);
+  const t = block(':root[data-theme="joyful-tiles"]');
+  for (const surface of ['--color-surface', '--color-surface-sunk']) {
+    const panel = over(parse(t.get(surface)), [255, 255, 255, 1]);
     for (const ink of ['--color-success', '--color-danger', '--color-ink-muted']) {
       const r = ratio(parse(t.get(ink)), panel);
-      assert.ok(r >= 4.5, `${theme}: ${ink} on the bests panel ${r.toFixed(2)}:1`);
+      assert.ok(r >= 4.5, `${ink} on the bests panel (${surface}) ${r.toFixed(2)}:1`);
     }
   }
 });

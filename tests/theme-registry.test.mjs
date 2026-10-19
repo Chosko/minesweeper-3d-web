@@ -12,6 +12,13 @@ const RAW = read('css/components.css');
 const HEAD = RAW.match(/^\/\*([\s\S]*?)\*\//)[1];
 const CSS = RAW.replace(/\/\*[\s\S]*?\*\//g, '');
 const SELECTORS = [...CSS.matchAll(/([^{}]+)\{[^{}]*\}/g)].flatMap((m) => m[1].split(',').map((s) => s.trim()));
+// The selectors every registered theme's stylesheet styles, each with the theme's scope taken off.
+const themeSelectors = (t) => {
+  const scope = `:root[data-theme="${t.id}"]`;
+  const css = read(t.stylesheet).replace(/\/\*[\s\S]*?\*\//g, '');
+  return [...css.matchAll(/([^{}]+)\{[^{}]*\}/g)].flatMap((m) => m[1].split(/,(?![^(]*\))/).map((s) => s.trim()))
+    .filter((s) => s.startsWith(scope)).map((s) => s.slice(scope.length).trim());
+};
 const KEBAB = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 // ---------------------------------------------------------------- registry
@@ -171,17 +178,20 @@ test('the kit catalogue lists every ui-* class the stylesheet uses, and every ca
   for (const cls of catalogued) assert.ok(RAW.includes(cls), `${cls} exists in css/components.css`);
 });
 
-test('every interactive part and state maps to a selector the stylesheet styles', () => {
-  let count = 0;
-  for (const c of KIT_CATALOGUE) {
-    for (const p of c.parts.filter((x) => x.interactive)) {
-      for (const [state, list] of Object.entries(p.states)) {
-        for (const sel of list.split(',').map((x) => x.trim())) {
-          count++;
-          assert.ok(SELECTORS.some((s) => s.includes(sel)), `${c.name} ${p.name} ${state}: a rule styles ${sel}`);
+test('every interactive part and state maps to a selector every registered theme styles', () => {
+  for (const t of THEMES) {
+    const styled = themeSelectors(t);
+    let count = 0;
+    for (const c of KIT_CATALOGUE) {
+      for (const p of c.parts.filter((x) => x.interactive)) {
+        for (const [state, list] of Object.entries(p.states)) {
+          for (const sel of list.split(',').map((x) => x.trim())) {
+            count++;
+            assert.ok(styled.some((s) => s.includes(sel)), `${t.id}: ${c.name} ${p.name} ${state}: a rule styles ${sel}`);
+          }
         }
       }
     }
+    assert.ok(count > 40, 'the interactive parts carry their states');
   }
-  assert.ok(count > 40, 'the interactive parts carry their states');
 });
