@@ -662,12 +662,16 @@ test('every control on the menu and the pause card is named and reachable by key
 test('the gallery holds the results screen composition with placeholder content', () => {
   assert.ok(RESULTS.length > 200, 'dev/components.html marks the results composition');
   const all = tags(RESULTS);
-  const card = all.find((t) => classesOf(t).includes('ui-card') && classesOf(t).includes('ui-screen'));
-  assert.ok(card && card.attrs['aria-labelledby'], 'a named ui-card screen');
-  assert.ok(all.some((t) => classesOf(t).includes('ui-card__title') && t.attrs.id === card.attrs['aria-labelledby']), 'its title names it');
-  const row = all.find((t) => classesOf(t).includes('ui-stat-row'));
-  assert.ok(row, 'stat readouts sit in a ui-stat-row');
-  assert.ok(all.filter((t) => classesOf(t).includes('ui-stat')).length >= 4, 'at least four stat readouts');
+  const frame = all.find((t) => classesOf(t).includes('ui-frame'));
+  assert.ok(frame && frame.attrs['aria-labelledby'], 'a named screen frame');
+  assert.ok(all.some((t) => classesOf(t).includes('ui-frame__title') && t.attrs.id === frame.attrs['aria-labelledby']), 'its title names it');
+  assert.ok(all.some((t) => classesOf(t).includes('ui-chip')), 'the rank chip');
+  const row = all.find((t) => classesOf(t).includes('ui-stat-row--tiles'));
+  assert.ok(row, 'the figure tiles sit in a ui-stat-row--tiles');
+  assert.equal(all.filter((t) => classesOf(t).includes('ui-stat--tile')).length, 4, 'four figure tiles');
+  assert.ok(all.some((t) => classesOf(t).includes('ui-chip--best')), 'a New best badge');
+  for (const d of ['better', 'worse', 'equal']) assert.ok(all.some((t) => t.attrs['data-delta'] === d), `a ${d} comparison`);
+  assert.ok(all.some((t) => classesOf(t).includes('ui-table')), 'the detail rows');
   const actions = all.find((t) => classesOf(t).includes('ui-actions'));
   assert.ok(actions, 'the actions sit in ui-actions');
   const buttons = all.filter((t) => t.tag === 'button' && t.index > actions.index);
@@ -855,7 +859,7 @@ test('bindSegmented with horizontal leaves Up and Down unhandled', () => {
 // Each button Esc triggers, with the hint beside it; the pause card's Main menu has none (Esc resumes there),
 // and a screen frame's Back carries its key hint inside it.
 const ESC_BACKS = ['ready-back', 'settings-back', 'records-back', 'daily-back',
-  'rp-back', 'replay-message-back', 'r-menu', 'ctx-lost-menu'];
+  'rp-back', 'replay-message-back', 'ctx-lost-menu'];
 const HINT = '<span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>';
 
 test('an "Esc: Back" hint sits beside each Back that Esc triggers, and is no focus stop', () => {
@@ -869,7 +873,7 @@ test('an "Esc: Back" hint sits beside each Back that Esc triggers, and is no foc
   assert.equal(html.split(HINT).length - 1, ESC_BACKS.length, 'one hint per Back, and no other');
   const pmenu = html.slice(html.indexOf('</button>', html.indexOf('id="p-menu"')) + 9).trimStart();
   assert.ok(!pmenu.startsWith(HINT), 'none beside the pause card\'s Main menu, where Esc resumes');
-  for (const id of ['c2d-choice-back', 'board-choice-back', 'coming-soon-menu']) {
+  for (const id of ['c2d-choice-back', 'board-choice-back', 'coming-soon-menu', 'r-menu']) {
     assert.match(html, new RegExp(`id="${id}"[^>]*>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>`), `the frame's Back holds its key hint (#${id})`);
   }
   assert.match(html, /id="coming-soon-back"[^>]*>Back <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/, 'so does the placeholder\'s Back');
@@ -879,9 +883,10 @@ test('an "Esc: Back" hint sits beside each Back that Esc triggers, and is no foc
 test('one vocabulary: Back returns one step, Main menu goes to the menu, and no Back to menu label remains', () => {
   const html = read('index.html');
   assert.doesNotMatch(html, /Back to menu/);
-  for (const id of ['r-menu', 'ctx-lost-menu', 'c2d-offer-menu', 'm3d-offer-menu', 'p-menu']) {
+  for (const id of ['ctx-lost-menu', 'c2d-offer-menu', 'm3d-offer-menu', 'p-menu']) {
     assert.match(html, new RegExp(`id="${id}"[^>]*>Main menu</button>`), `#${id} reads Main menu`);
   }
+  assert.match(html, /id="r-menu"[^>]*>Main menu </, '#r-menu reads Main menu');
   for (const f of ['js/ui.js', 'js/main.js', 'js/settings/bindings.js', 'js/settings/page.js', 'js/shell/pause.js', 'js/results/view.js', 'dev/components.html']) {
     assert.doesNotMatch(read(f), /Back to menu/, `${f} says Main menu`);
   }
@@ -892,7 +897,7 @@ test('Restart discards an unfinished game; Play again starts the same choice onc
   assert.match(ui, /this\.el\.restartLabel\.textContent = ended \? 'Play again' : 'Restart';/, 'the pause card swaps them on the moment');
   assert.match(read('js/shell/pause.js'), /message: 'Restart this game\? It will count as a loss\.', confirmLabel: 'Restart'/);
   assert.match(read('js/shell/pause.js'), /'Leave this game for the main menu\? It will count as a loss\.'/);
-  assert.match(read('index.html'), /id="r-again"[^>]*>Play again</);
+  assert.match(read('index.html'), /id="r-again"[^>]*>Play again </);
   const lines = read('js/settings/bindings.js').split('\n').filter((l) => /Restart|Play again|New game/.test(l));
   assert.ok(lines.length > 0 && lines.every((l) => /^\s*\['(\[F2\]|\{start\} \+ \{y\})', 'Restart: a new board of the same choice'\],$/.test(l)),
     'only the F2 and Start + Y rows name a restart; no help line names Play again or a new game');
@@ -1004,7 +1009,7 @@ test('in a browser, the mouse selects a button by focusing it, keys move the sel
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto(`${base}/dev/components.html`);
-    const [first, second] = ['#g-results .ui-actions button:nth-child(2)', '#g-results .ui-actions button:nth-child(3)'];
+    const [first, second] = ['#g-results .ui-actions:last-child button:nth-child(1)', '#g-results .ui-actions:last-child button:nth-child(2)'];
     await page.locator(first).scrollIntoViewIfNeeded();
     const look = (sel) => page.evaluate((s) => {
       const el = document.querySelector(s);
@@ -1728,7 +1733,7 @@ const textOf = (html, t) => {
 };
 const MODE_ENTRIES = ['classic-2d', 'hexagon', 'triangle', 'surface', '3d', 'daily', 'records', 'settings', 'quit'];
 
-test('the gallery marks the shared layout\'s components; the main menu, both board choices, the placeholder and the pause card are the screens built from them so far', () => {
+test('the gallery marks the shared layout\'s components; the main menu, both board choices, the placeholder, the pause card and the results screen are the screens built from them so far', () => {
   assert.ok(LAYOUT.length > 1000, 'dev/components.html holds the shared layout\'s components');
   const screens = INDEX.replace(/<!--[\s\S]*?-->/g, '');
   const menu = SCREENS.menu;
@@ -1736,10 +1741,13 @@ test('the gallery marks the shared layout\'s components; the main menu, both boa
   const choice3d = screens.slice(screens.indexOf('<section id="board-choice"'), screens.indexOf('<section id="coming-soon"'));
   const soon = screens.slice(screens.indexOf('<section id="coming-soon"'), screens.indexOf('<section id="ready"'));
   const pause = screens.slice(screens.indexOf('<section id="pause"'), screens.indexOf('<noscript>'));
+  const results = screens.slice(screens.indexOf('<section id="results"'), screens.indexOf('<section id="daily"'));
+  for (const cls of ['ui-frame', 'ui-key-hint', 'ui-chip', 'ui-chip--best', 'ui-stat--tile', 'ui-table']) assert.match(results, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the results screen uses ${cls}`);
+  assert.doesNotMatch(results, /class="[^"]*\bui-card(?![\w-])/, 'the results screen holds no card');
   for (const cls of ['ui-backdrop', 'ui-frame', 'ui-key-hint']) assert.match(soon, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the placeholder uses ${cls}`);
   assert.doesNotMatch(soon, /class="[^"]*\bui-card(?![\w-])/, 'the placeholder holds no card');
   for (const cls of ['ui-section-label', 'ui-button--danger', 'ui-key-hint', 'ui-panel--muted']) assert.match(pause, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the pause card uses ${cls}`);
-  const others = screens.replace(menu, '').replace(choice, '').replace(choice3d, '').replace(soon, '').replace(pause, '');
+  const others = screens.replace(menu, '').replace(choice, '').replace(choice3d, '').replace(soon, '').replace(pause, '').replace(results, '');
   for (const cls of ['ui-wordmark', 'ui-mode-entry', 'ui-key-hint', 'ui-chip', 'ui-scene-panel']) {
     assert.match(menu, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the main menu uses ${cls}`);
   }

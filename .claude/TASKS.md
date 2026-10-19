@@ -590,7 +590,7 @@ Feature: shared-screen-layout
 
 ## 169. Results screen redesigned in the shared layout
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, js/results/view.js, js/results/flow.js, tests/results.test.mjs, tests/results-watch.test.mjs, tests/mode3d-end.test.mjs, tests/components.test.mjs
 Preconditions: 163

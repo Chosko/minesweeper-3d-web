@@ -79,7 +79,7 @@
               followed by one or more <span class="ui-menu__detail">…</span>
               stacks them, the details as smaller muted lines.
 
-   ui-card — raised surface for a screen's content (menu, pause, results)
+   ui-card — raised surface for a screen's content (the pause card, the board status cards)
      Element: <section class="ui-card" aria-labelledby="…">
                 <h2 class="ui-card__title" id="…">…</h2> …
               </section>
@@ -92,9 +92,9 @@
      Name:    none
      Muted:   ui-panel--muted greys its figures (values and detail lines
               in muted ink, no delta colour) for content shown for
-              reference only (a lost game's comparison).
+              reference only (the pause card's settings).
 
-   ui-banner — one line announcing an event (a new best)
+   ui-banner — one line announcing an event
      Element: <p class="ui-banner" role="status">…</p>
      Role:    status
      Name:    its text
@@ -154,7 +154,7 @@
      Highlight: data-new-best on the ui-stat itself rings the readout in
               --color-success (a figure that set a best).
 
-   ui-stat--tile — a stat readout as a tile (the Records bests)
+   ui-stat--tile — a stat readout as a tile (the Records bests, the results figures)
      Element: <div class="ui-stat ui-stat--tile" role="group" aria-labelledby="ID">
                 <span class="ui-stat__label" id="ID">…</span>
                 <span class="ui-stat__value">…</span>
@@ -667,22 +667,32 @@
      on a win or Try again on a loss, primary; Back to board choice). No
      time and no records. Default focus: the primary action.
    Results screen (index.html #results, filled by js/results/view.js; the
-     gallery's #g-results shows it with placeholder content): ui-card
-     ui-screen holding, top to bottom, the outcome title, a ui-text board
-     line, a ui-text--muted challenge label for a challenge ("Challenge · not
-     eligible for bests"), a ui-banner when the game set a best, a ui-stat-row of the game's
-     stats (the card's largest figures, each one that set a best with
-     data-new-best), a ui-text--muted second row (clicks, and the board rank
-     on a win), a ui-code chip of the game's board code, a ui-text
-     next-target line, a ui-panel with a ui-stat-row of
-     the best comparisons (each ui-stat with a ui-stat__detail difference
-     line coloured by data-delta on a win; on a loss ui-panel--muted under a
-     ui-text--muted "Not eligible" line), a ui-text--warning note, and
-     ui-actions--row (Play again primary, Watch replay, Watch best, Look at the board on a
-     3D game, Records, Main menu) with a ui-text--warning note under
-     them. Default focus: Play again. Over Classic 2D the finished board
-     shows behind it; over a 3D game the finished board is drawn dimmed
-     behind it, on a translucent scrim (results--over3d, css/style.css).
+     gallery's #g-results shows it with placeholder content): one ui-frame
+     (#results-frame) sized to its content over the game it ended, no card
+     and no second column. Its head: the trophy on a win (ui-frame__start),
+     the outcome title with the board line under it (and, over the 3D scene,
+     the rank), and on the right (ui-frame__end) the rank ui-chip ("#3 of 12
+     wins on this board"), a challenge's ui-chip--muted "Challenge · not
+     eligible for bests" in its place, and on a 3D game Look at the board (a
+     small secondary button with its back key hint). Its body: a
+     ui-stat-row--tiles of four ui-stat--tile — on a win Time, 3BV/s,
+     Efficiency and 3BV, on a loss Time, 3BV solved (with a <progress> bar),
+     3BV/s and Efficiency — each comparable tile's ui-stat__detail its
+     comparison (coloured by data-delta on a win) and, when the game set that
+     best, data-new-best on the tile and its ui-chip--best "New best"; a
+     ui-table of the three details (Clicks; Next target, Streak or
+     Challenge; Win rate); the ui-code chip; a ui-text--warning note. Its
+     foot, the action bar: Main menu (secondary, its back key hint) on the
+     left; Watch replay, Watch best, Records (secondary, ui-button--sm while
+     Watch best shows) and Play again (primary, large, its select key hint)
+     on the right; a ui-text--warning note under them. Over a 3D game the
+     Main menu shows no key hint (results--look, css/style.css). On a phone
+     the tiles go two by two, the code chip stacks, Play again runs full
+     width, the secondary actions sit in pairs and Main menu comes last; the
+     body scrolls. Default focus: Play again. Over Classic 2D the finished
+     board shows behind it; over a 3D game the finished board is drawn
+     dimmed behind it, on a translucent scrim (results--over3d,
+     css/style.css).
    Replay viewer (index.html #replay, filled by js/replay/viewer.js): a
      ui-overlay-bar of the replay's figures (Time in seconds to the
      thousandth, Mines, 3BV solved / 3BV, 3BV/s), a ui-code--compact chip of

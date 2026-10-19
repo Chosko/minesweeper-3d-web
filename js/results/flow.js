@@ -41,7 +41,8 @@
 //                             player is told once. watch is whether Watch replay is offered: the
 //                             game handed over its sealed replay and the router has the replay
 //                             viewer's route (REPLAY_SCREEN, js/records/replay-list.js). The replay
-//                             is then kept (below). watchBest is the id of the board's
+//                             is then kept (below). watchBest is, after a win that set no new
+//                             best (no stat of the comparison newBest), the id of the board's
 //                             fastest-time best (records.bests(board).time, after recording) when
 //                             the library keeps its replay (replays.has), the router has the
 //                             viewer's route and that best is not the game shown; else null.
@@ -142,7 +143,8 @@ export function createResultsFlow({ records, replays = null, router, restart, go
       if (notSaved) told = true;
       shownReplay = replay?.blob ? replay : null;
       const watch = shownReplay !== null && router.has(REPLAY_SCREEN);
-      const best = saved && replays ? lookup(() => records.bests(summary.board)?.time?.id) : null;
+      const setBest = comparison && Object.values(comparison).some((c) => c?.newBest === true);
+      const best = saved && replays && summary.outcome === 'won' && !setBest ? lookup(() => records.bests(summary.board)?.time?.id) : null;
       const watchBest = typeof best === 'string' && best !== summary.id && router.has(REPLAY_SCREEN)
         && lookup(() => replays.has(best)) === true ? best : null;
       current = { summary, mode, comparison, saved, notSaved, watch, watchBest, rank, streak, standing };

@@ -127,6 +127,16 @@ test('Watch best shows when the board\'s fastest-time best has a kept replay and
   assert.equal(resultsContent({ summary: summary() }).watchBest, false);
 });
 
+test('Watch best shows only after a win that set no new best: never after a loss, nor after a win that set any of the three bests', () => {
+  const cmp = (set) => Object.fromEntries(['time', 'bbbvPerSecond', 'efficiency'].map((k) => [k, { best: { id: 'best1', value: 1 }, value: 1, difference: 0, newBest: k === set }]));
+  const flow = (comparison) => createResultsFlow({ records: { ...bestRecords('best1'), record: () => comparison }, replays: keptReplays(['best1']), router: fakeRouter(), restart() {}, goMenu() {} });
+  assert.equal(flow(cmp(null)).finished(summary(), 'classic-2d', sealed()).watchBest, 'best1', 'a win that set no best');
+  assert.equal(flow(cmp(null)).finished(summary({ outcome: 'lost', bbbvSolved: 3 }), 'classic-2d', sealed()).watchBest, null, 'a loss');
+  for (const set of ['time', 'bbbvPerSecond', 'efficiency']) {
+    assert.equal(flow(cmp(set)).finished(summary(), 'classic-2d', sealed()).watchBest, null, `a win that set the ${set} best`);
+  }
+});
+
 test('Watch best opens the viewer on the best\'s replay by id, returning to the results screen', () => {
   const router = fakeRouter();
   const flow = createResultsFlow({ records: bestRecords('best1'), replays: keptReplays(['best1']), router, restart() {}, goMenu() {} });
@@ -148,6 +158,8 @@ test('the view shows Watch best beside Watch replay only when offered, and calls
   view.show(resultsContent({ summary: summary(), watch: true, watchBest: null }));
   assert.equal(root.el('r-watch-best').classList.contains('hidden'), true);
   assert.match(RESULTS_HTML_ALL(), /id="r-watch"[^>]*>Watch replay<\/button>\s*<button type="button" id="r-watch-best" class="ui-button ui-button--secondary hidden">Watch best<\/button>/);
+  view.show(resultsContent({ summary: summary(), watch: true, watchBest: 'b' }));
+  assert.equal(root.el('r-watch').classList.contains('ui-button--sm'), true, 'beside Watch best the secondary actions take their small size');
   assert.match(read('js/main.js'), /onWatchBest: \(\) => RESULTS\.watchBest\(\)/);
 });
 const RESULTS_HTML_ALL = () => { const html = read('index.html'); return html.slice(html.indexOf('<section id="results"'), html.indexOf('<!-- /Results -->')); };
@@ -169,6 +181,8 @@ function fakeRoot() {
       },
       addEventListener: (type, fn) => { listeners[type] = fn; },
       toggleAttribute() {},
+      setAttribute() {},
+      removeAttribute() {},
       querySelector: (sel) => (kids[sel] ??= el(`${id} ${sel}`)),
     };
     els[id] = node;
@@ -195,11 +209,13 @@ const INDEX = read('index.html');
 const MAIN = read('js/main.js');
 const RESULTS_HTML = INDEX.slice(INDEX.indexOf('<section id="results"'), INDEX.indexOf('<!-- /Results -->'));
 
-test('Watch replay sits beside Play again, a kit button hidden until offered', () => {
-  const buttons = [...RESULTS_HTML.matchAll(/<button type="button" id="(r-[a-z]+)" class="([^"]+)">([^<]+)</g)].map((m) => [m[1], m[2], m[3]]);
-  assert.deepEqual(buttons.slice(0, 2), [
-    ['r-again', 'ui-button ui-button--primary', 'Play again'],
+test('Watch replay sits on the right of the action bar before Records and Play again, a kit button hidden until offered', () => {
+  const buttons = [...RESULTS_HTML.matchAll(/<button type="button" id="(r-[a-z-]+)" class="([^"]+)">([^<]+)</g)].map((m) => [m[1], m[2], m[3].trim()]);
+  assert.deepEqual(buttons.slice(-4), [
     ['r-watch', 'ui-button ui-button--secondary hidden', 'Watch replay'],
+    ['r-watch-best', 'ui-button ui-button--secondary hidden', 'Watch best'],
+    ['r-records', 'ui-button ui-button--secondary', 'Records'],
+    ['r-again', 'ui-button ui-button--primary ui-button--lg', 'Play again'],
   ]);
 });
 
@@ -259,7 +275,7 @@ test('in a browser, a just-won 2D game is watched from the results screen and ag
       }), b);
       await frames(2);
     };
-    const PAD = { A: 0, B: 1, RIGHT: 15 };
+    const PAD = { A: 0, B: 1, LEFT: 14 };
     const viewer = () => page.evaluate(() => globalThis.__ms.replayViewer.state.status);
     const visible = (id) => page.evaluate((i) => {
       const el = document.getElementById(i);
@@ -311,9 +327,11 @@ test('in a browser, a just-won 2D game is watched from the results screen and ag
     assert.equal(await visible('r-watch'), true);
     assert.equal(await visible('c2d'), true, 'the finished board is still behind the results screen');
 
-    // The keyboard reaches it too: Tab from Play again, Enter.
+    // The keyboard reaches it too: back from Play again past Records, Enter.
     assert.equal(await page.evaluate(() => document.activeElement.id), 'r-again');
-    await page.keyboard.press('Tab');
+    await page.keyboard.press('Shift+Tab');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'r-records');
+    await page.keyboard.press('Shift+Tab');
     assert.equal(await page.evaluate(() => document.activeElement.id), 'r-watch');
     await page.keyboard.press('Enter');
     assert.equal(await mode(), 'replay');
@@ -321,9 +339,11 @@ test('in a browser, a just-won 2D game is watched from the results screen and ag
     await page.click('#rp-back');
     assert.equal(await mode(), 'results');
 
-    // And the controller: right from Play again, A opens the viewer, B comes back.
+    // And the controller: left from Play again past Records, A opens the viewer, B comes back.
     assert.equal(await page.evaluate(() => document.activeElement.id), 'r-again');
-    await press(PAD.RIGHT);
+    await press(PAD.LEFT);
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'r-records');
+    await press(PAD.LEFT);
     assert.equal(await page.evaluate(() => document.activeElement.id), 'r-watch');
     await press(PAD.A);
     assert.equal(await mode(), 'replay');

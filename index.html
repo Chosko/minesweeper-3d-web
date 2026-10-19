@@ -559,43 +559,51 @@
 
   <!-- Results -->
   <section id="results" class="overlay hidden" aria-label="Results">
-    <section class="ui-card ui-screen" aria-labelledby="results-title">
-      <h2 class="ui-card__title" id="results-title">You won!</h2>
-      <p id="results-board" class="ui-text ui-text--muted">Beginner</p>
-      <p id="results-label" class="ui-text ui-text--muted hidden"></p>
-      <p id="results-banner" class="ui-banner hidden" role="status"></p>
-      <div id="results-stats" class="ui-stat-row">
-        <div id="rs-time" class="ui-stat" role="group" aria-labelledby="rs-time-label"><span class="ui-stat__label" id="rs-time-label">Time</span><span class="ui-stat__value">&mdash;</span></div>
-        <div id="rs-bbbv" class="ui-stat" role="group" aria-labelledby="rs-bbbv-label"><span class="ui-stat__label" id="rs-bbbv-label">3BV</span><span class="ui-stat__value">&mdash;</span></div>
-        <div id="rs-bbbvSolved" class="ui-stat hidden" role="group" aria-labelledby="rs-bbbvSolved-label"><span class="ui-stat__label" id="rs-bbbvSolved-label">3BV solved</span><span class="ui-stat__value">&mdash;</span></div>
-        <div id="rs-bbbvPerSecond" class="ui-stat" role="group" aria-labelledby="rs-bbbvPerSecond-label"><span class="ui-stat__label" id="rs-bbbvPerSecond-label">3BV/s</span><span class="ui-stat__value">&mdash;</span></div>
-        <div id="rs-efficiency" class="ui-stat" role="group" aria-labelledby="rs-efficiency-label"><span class="ui-stat__label" id="rs-efficiency-label">Efficiency</span><span class="ui-stat__value">&mdash;</span></div>
-      </div>
-      <p id="results-figures" class="ui-text ui-text--muted"></p>
-      <div id="results-code" class="ui-code hidden"><span class="ui-code__label">Board code</span><code class="ui-code__value"></code><button type="button" id="results-copy" class="ui-button ui-button--secondary" data-copy="code">Copy</button><button type="button" id="results-copy-link" class="ui-button ui-button--secondary" data-copy="link">Copy link</button></div>
-      <p id="results-next" class="ui-text hidden"></p>
-      <p id="results-standing" class="ui-text ui-text--muted hidden"></p>
-      <div id="results-bests" class="ui-panel" role="group" aria-labelledby="results-bests-title">
-        <h3 class="ui-heading" id="results-bests-title">Your bests on this board</h3>
-        <p id="results-bests-note" class="ui-text ui-text--muted hidden">Not eligible — only won games set bests</p>
-        <div class="ui-stat-row">
-          <div id="rb-time" class="ui-stat" role="group" aria-labelledby="rb-time-label"><span class="ui-stat__label" id="rb-time-label">Best time</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail">&mdash;</span></div>
-          <div id="rb-bbbvPerSecond" class="ui-stat" role="group" aria-labelledby="rb-bbbvPerSecond-label"><span class="ui-stat__label" id="rb-bbbvPerSecond-label">Best 3BV/s</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail">&mdash;</span></div>
-          <div id="rb-efficiency" class="ui-stat" role="group" aria-labelledby="rb-efficiency-label"><span class="ui-stat__label" id="rb-efficiency-label">Best efficiency</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail">&mdash;</span></div>
+    <section id="results-frame" class="ui-frame" aria-labelledby="results-title" data-outcome="won">
+      <div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"></div>
+      <header class="ui-frame__head" id="results-head">
+        <div class="ui-frame__start"><svg id="results-trophy" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/></svg></div>
+        <div id="results-heading">
+          <h2 class="ui-frame__title" id="results-title">You won!</h2>
+          <p id="results-board" class="ui-text">Beginner</p>
+          <p id="results-rank-line" class="ui-text hidden"></p>
         </div>
+        <div class="ui-frame__end">
+          <span id="results-rank" class="ui-chip hidden"></span>
+          <span id="results-label" class="ui-chip ui-chip--muted hidden"></span>
+          <button type="button" id="r-look" class="ui-button ui-button--secondary ui-button--sm hidden">Look at the board <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>
+        </div>
+      </header>
+      <div class="ui-frame__body" id="results-body">
+        <div id="results-tiles" class="ui-stat-row ui-stat-row--tiles">
+          <div id="rs-time" class="ui-stat ui-stat--tile" role="group" aria-labelledby="rs-time-label"><span class="ui-stat__label" id="rs-time-label">Time</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail"></span><span class="ui-chip ui-chip--best hidden">New best</span></div>
+          <div id="rs-bbbvSolved" class="ui-stat ui-stat--tile hidden" role="group" aria-labelledby="rs-bbbvSolved-label"><span class="ui-stat__label" id="rs-bbbvSolved-label">3BV solved</span><span class="ui-stat__value">&mdash;</span><progress id="rs-progress" max="1" value="0" aria-labelledby="rs-bbbvSolved-label"></progress><span class="ui-stat__detail"></span></div>
+          <div id="rs-bbbvPerSecond" class="ui-stat ui-stat--tile" role="group" aria-labelledby="rs-bbbvPerSecond-label"><span class="ui-stat__label" id="rs-bbbvPerSecond-label">3BV/s</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail"></span><span class="ui-chip ui-chip--best hidden">New best</span></div>
+          <div id="rs-efficiency" class="ui-stat ui-stat--tile" role="group" aria-labelledby="rs-efficiency-label"><span class="ui-stat__label" id="rs-efficiency-label">Efficiency</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail"></span><span class="ui-chip ui-chip--best hidden">New best</span></div>
+          <div id="rs-bbbv" class="ui-stat ui-stat--tile" role="group" aria-labelledby="rs-bbbv-label"><span class="ui-stat__label" id="rs-bbbv-label">3BV</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail"></span></div>
+        </div>
+        <table id="results-details" class="ui-table">
+          <tbody>
+            <tr id="rd-clicks"><th scope="row">Clicks</th><td></td></tr>
+            <tr id="rd-target" class="hidden"><th scope="row">Next target</th><td></td></tr>
+            <tr id="rd-winRate" class="hidden"><th scope="row">Win rate</th><td></td></tr>
+          </tbody>
+        </table>
+        <div id="results-code" class="ui-code hidden"><span class="ui-code__label">Board code</span><code class="ui-code__value"></code><button type="button" id="results-copy" class="ui-button ui-button--secondary" data-copy="code">Copy</button><button type="button" id="results-copy-link" class="ui-button ui-button--secondary" data-copy="link">Copy link</button></div>
+        <p id="results-note" class="ui-text ui-text--warning hidden" role="status"></p>
       </div>
-      <p id="results-note" class="ui-text ui-text--warning hidden" role="status"></p>
-      <div class="ui-actions ui-actions--row">
-        <button type="button" id="r-again" class="ui-button ui-button--primary">Play again</button>
-        <button type="button" id="r-watch" class="ui-button ui-button--secondary hidden">Watch replay</button>
-        <button type="button" id="r-watch-best" class="ui-button ui-button--secondary hidden">Watch best</button>
-        <button type="button" id="r-look" class="ui-button ui-button--secondary hidden">Look at the board</button>
-        <button type="button" id="r-records" class="ui-button ui-button--secondary">Records</button>
-        <button type="button" id="r-menu" class="ui-button ui-button--secondary">Main menu</button>
-        <span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>
-        <span class="ui-text ui-text--muted" id="results-keys">R: Play again</span>
-      </div>
-      <p id="results-look-note" class="ui-text ui-text--warning hidden" role="status"></p>
+      <footer class="ui-frame__foot" id="results-actions">
+        <div class="ui-actions ui-actions--row" id="results-actions-start">
+          <button type="button" id="r-menu" class="ui-button ui-button--secondary">Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>
+        </div>
+        <div class="ui-actions ui-actions--row" id="results-actions-end">
+          <button type="button" id="r-watch" class="ui-button ui-button--secondary hidden">Watch replay</button>
+          <button type="button" id="r-watch-best" class="ui-button ui-button--secondary hidden">Watch best</button>
+          <button type="button" id="r-records" class="ui-button ui-button--secondary">Records</button>
+          <button type="button" id="r-again" class="ui-button ui-button--primary ui-button--lg">Play again <span class="ui-key-hint" data-action="select" aria-hidden="true"></span></button>
+        </div>
+        <p id="results-look-note" class="ui-text ui-text--warning hidden" role="status"></p>
+      </footer>
     </section>
   </section>
   <!-- /Results -->

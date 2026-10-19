@@ -14,53 +14,60 @@
 // resultsContent({ summary, comparison, saved, notSaved, watch, watchBest, rank, streak, standing }) → the
 // screen's content, top to bottom:
 //   { outcome, title, board,
-//     label       a challenge's CHALLENGE_LABEL ("Challenge · not eligible for bests"), or null;
+//     rank        on a ranked win the chip "#3 of 12 wins on this board", from the flow's rank
+//                 { position, of }; null on a loss, a challenge or without a rank;
+//     label       a challenge's CHALLENGE_LABEL ("Challenge · not eligible for bests"), shown in the
+//                 rank's place, or null;
+//     tiles       the four figure tiles [{ key, label, value, detail, direction, newBest, progress }]:
+//                 on a win time, 3BV/s, efficiency and 3BV (its detail BOARD_DIFFICULTY); on a loss
+//                 time, 3BV solved ("40 / 120", progress { value, max } for its bar), 3BV/s and
+//                 efficiency. With a comparison, a won tile's detail is the standing best and the
+//                 difference ("best 45.120 s · +2.260 s"), or, when the game set that best, the best
+//                 it replaced ("was 48.213 s · −0.833 s", newBest marking its "New best" badge); a
+//                 difference that is a dash or "= best" at display precision is left off a replaced
+//                 best. direction is 'better', 'worse' or 'equal' (lower is better for time, higher
+//                 for 3BV/s and efficiency; null without a difference). A challenge sets no best: its
+//                 tiles show the standing best and the game's own difference, uncoloured and never
+//                 badged. On a loss the time tile says LOSS_NO_BESTS and the 3BV/s and efficiency
+//                 tiles show the standing best alone. Without a comparison (a failed recording) no
+//                 tile carries a comparison;
+//     details     the labelled rows [{ key, label, value }]: clicks ("183 · reveal 153 · flag 22 ·
+//                 chord 8 · wasted 6": the counted clicks, then the reveal, flag and chord clicks,
+//                 effective plus wasted, and the wasted total); then, with a comparison, next after a
+//                 win ("Beat <the board's best time as it stands> for a new best · streak <current>")
+//                 or streak after a loss ("Ended at <before> · longest <longest>" when it ended one,
+//                 else "Beat <best time> for a new best", or FIRST_BEST when the board has no best
+//                 time) — a challenge's row is challenge (CHALLENGE_NOTE) instead; then winRate
+//                 ("67% · completed games 80% · longest streak 4", from the flow's standing
+//                 { winRate, completedWinRate, longestStreak }) when the recording saved one;
 //     code        the game's board code (js/records/board-code.js codeOf — a daily's in its daily
 //                 form), shown with Copy and Copy link; null for a game with no seed;
-//     banner      "New best time and 3BV/s!" naming the bests this game set, or null;
-//     stats       [{ key, label, value, shown, newBest }] — the game's own figures, newBest marking
-//                 each one that set a best;
-//     figures     { clicks, rank } — the second row: "Clicks 183 (L 183 · R 0 · D 0 · wasted 0)",
-//                 the counted clicks, then the reveal, flag and chord clicks (effective plus wasted)
-//                 and the wasted total; on a win the rank "#3 of 12 on this board", else null — a
-//                 challenge, never ranked, shows its rank figure as a dash ("#— of — on this board");
-//     next        the next-target line, or null without a comparison;
-//     standing    the board's figures counting this game, the reference figure first and its
-//                 completed-games figure beside it: "Win rate 67% (completed games 80%) · Longest
-//                 streak 4 (completed games 5)", from the flow's standing { winRate,
-//                 completedWinRate, longestStreak, longestCompletedStreak }; null without one (a
-//                 recording that failed);
-//     eligible, bestsNote, bests  [{ stat, label, best, difference, newBest, direction, detail }]
-//                 | null — the bests panel;
-//     notes: [text], watch, watchBest, look, over3d }
-// The bests panel shows whenever there is a comparison (the bests that stood before this game). On
-// a win each detail is the difference, led by "New best" when the game set one (alone when the
-// difference is a dash or "= best"), and direction is 'better', 'worse' or 'equal' (lower is better
-// for time, higher for 3BV/s and efficiency; null without a difference). On a loss the panel is not
-// eligible (bestsNote NOT_ELIGIBLE, direction null, never "New best"): each detail is the game's
-// difference from the standing best, and the time's is the pace — the time at this game's rate,
-// elapsed × 3BV ÷ 3BV solved, a dash with no 3BV solved — with its difference ("Pace 47.912 s ·
-// +2.792 s"). rank is { position, of } from the results flow; streak is { before, current, longest },
-// the board's streak before this game and its counters after. The next-target line: after a win
-// "Beat <the board's best time as it stands> for a new best · streak <current>"; after a loss that
-// ended a streak "Streak ended at <before> · best <longest>", else "Beat <best time> for a new best",
-// or FIRST_BEST when the board has no best time. A challenge sets no best and counts in no streak:
-// its bests panel is not eligible under CHALLENGE_NOTE and it has no next-target line. notes say that the result could not be saved
-// (saved false) or that records are not being saved this session (notSaved, told once by the
-// flow); watch is whether Watch replay shows (the flow's watch), watchBest whether Watch best shows
-// (the flow's watchBest, the best's replay id or null); look is whether Look at the board
-// shows and over3d whether the screen shows on the dimmed translucent surface over the 3D scene —
-// both a 3D game's, whose finished board is drawn dimmed behind the screen, as the Classic 2D board
-// stays visible behind it.
+//     notes: [text], watch, watchBest, compact, look, over3d }
+// streak is { before, current, longest }, the board's streak before this game and its counters
+// after. notes say that the result could not be saved (saved false) or that records are not being
+// saved this session (notSaved, told once by the flow); watch is whether Watch replay shows (the
+// flow's watch), watchBest whether Watch best shows (the flow's watchBest, the best's replay id or
+// null), compact whether the secondary actions take their small size (beside Watch best, so the
+// bar stays one row); look is whether Look at the board shows and over3d whether the screen shows
+// on the dimmed translucent surface over the 3D scene — both a 3D game's, whose finished board is
+// drawn dimmed behind the screen, as the Classic 2D board stays visible behind it.
 //
 // createResultsView({ root, onPlayAgain, onWatch?, onWatchBest?, onRecords, onMenu, onLook?, onCopy? }) →
 // { show(content), hide(), noteLook(text) }: fills the #results markup by id and calls back on its
-// actions; the challenge label shows in #results-label and the code in the #results-code chip
-// (bindCodeChip, js/ui/components.js), whose Copy and Copy link call onCopy({ kind, code, select }); Look at the board (#r-look) shows only while content.look, the Esc hint then reading "Esc: Look at the board" (else "Esc: Back"), Watch replay (#r-watch)
-// only while content.watch and Watch best (#r-watch-best) only while content.watchBest, the root carries `results--over3d` while content.over3d, the bests
-// panel `ui-panel--muted` while not eligible, each improved stat `data-new-best` and each best's
-// detail `data-delta` (its direction). noteLook(text) shows the one-line note under the actions
-// (LOOK_REFUSED: the pointer lock the look asked for was refused) until the card next shows.
+// actions. The frame (#results-frame) carries data-outcome; the head the trophy on a win
+// (#results-trophy), the title, the board line, the rank chip (#results-rank) — under the title
+// instead (#results-rank-line) over the 3D scene — or the challenge chip (#results-label); the
+// tiles (#rs-<key>) each their value, detail line (data-delta its direction), the tile's
+// data-new-best and its "New best" ui-chip--best, and 3BV solved its <progress>; the detail rows
+// (#rd-clicks, #rd-target, #rd-winRate) their label and value, a row without one hidden; the code
+// the #results-code chip (bindCodeChip, js/ui/components.js), whose Copy and Copy link call
+// onCopy({ kind, code, select }). Look at the board (#r-look, in the head) shows only while
+// content.look, the root then carrying `results--look`, under which Main menu shows no Esc key hint
+// (css/style.css); Watch replay (#r-watch) only
+// while content.watch and Watch best (#r-watch-best) only while content.watchBest; the secondary
+// actions take ui-button--sm while content.compact; the root carries `results--over3d` while
+// content.over3d. noteLook(text) shows the one-line note under the actions (LOOK_REFUSED: the
+// pointer lock the look asked for was refused) until the card next shows.
 //
 // Keys: Play again is also Enter (resultsEnter, wired by js/main.js) and R (js/shell/pause.js
 // restartInput); Enter on another focused action activates that action.
@@ -72,12 +79,15 @@ import { bindCodeChip } from '../ui/components.js';
 
 export const DASH = '—';
 export const EQUAL_BEST = '= best';
-export const NOT_ELIGIBLE = 'Not eligible — only won games set bests';
 export const FIRST_BEST = 'Win this board to set a best';
-/** A challenge's label on the results screen, in the style of "Paused · not eligible". */
+/** The 3BV tile's detail line on a win. */
+export const BOARD_DIFFICULTY = 'board difficulty';
+/** A lost game's time tile: no tile of a loss is eligible. */
+export const LOSS_NO_BESTS = 'Losses set no bests';
+/** A challenge's chip on the results screen, in the rank's place, in the style of "Paused · not eligible". */
 export const CHALLENGE_LABEL = 'Challenge · not eligible for bests';
-/** The bests panel's note for a challenge. */
-export const CHALLENGE_NOTE = 'Not eligible — a challenge sets no bests';
+/** A challenge's details row. */
+export const CHALLENGE_NOTE = 'Kept in your history; sets no best and no rank';
 export const MINUS = '−';
 
 /** The note under the actions when the look's pointer lock was refused; a fresh press tries again. */
@@ -117,41 +127,46 @@ export function formatRateDifference(v) { return difference(v, (a) => a.toFixed(
 export function formatEfficiency(v) { return missing(v) ? DASH : `${v.toFixed(1)}%`; }
 export function formatEfficiencyDifference(v) { return difference(v, formatEfficiency, '0.0%'); }
 
-/** The second row's clicks: "Clicks 183 (L 183 · R 0 · D 0 · wasted 0)"; a dash for what is missing. */
+/** The clicks row: "183 · reveal 153 · flag 22 · chord 8 · wasted 6"; a dash for what is missing. */
 export function formatClicks(clicks) {
   const kinds = ['reveal', 'flag', 'chord'];
   const known = clicks && kinds.every((k) => Number.isFinite(clicks[k]?.effective) && Number.isFinite(clicks[k]?.wasted));
-  if (!known) return `Clicks ${DASH} (L ${DASH} · R ${DASH} · D ${DASH} · wasted ${DASH})`;
-  const [l, r, d] = kinds.map((k) => clicks[k].effective + clicks[k].wasted);
+  if (!known) return `${DASH} · reveal ${DASH} · flag ${DASH} · chord ${DASH} · wasted ${DASH}`;
+  const [reveal, flag, chord] = kinds.map((k) => clicks[k].effective + clicks[k].wasted);
   const wasted = kinds.reduce((n, k) => n + clicks[k].wasted, 0);
-  return `Clicks ${countedClicks(clicks)} (L ${l} · R ${r} · D ${d} · wasted ${wasted})`;
+  return `${countedClicks(clicks)} · reveal ${reveal} · flag ${flag} · chord ${chord} · wasted ${wasted}`;
 }
 
-const rankText = (rank) => {
-  const n = (v) => (Number.isInteger(v) ? String(v) : DASH);
-  return `#${n(rank?.position)} of ${n(rank?.of)} on this board`;
-};
+const COMPARABLE = Object.freeze({
+  time: { label: 'Time', lowerIsBetter: true, format: formatTime, difference: formatTimeDifference },
+  bbbvPerSecond: { label: '3BV/s', lowerIsBetter: false, format: formatRate, difference: formatRateDifference },
+  efficiency: { label: 'Efficiency', lowerIsBetter: false, format: formatEfficiency, difference: formatEfficiencyDifference },
+});
 
-/** The projected time at this game's rate, elapsed × 3BV ÷ 3BV solved; null with nothing solved. */
-function pace(summary) {
-  const { elapsedMs, bbbv, bbbvSolved } = summary;
-  if (missing(elapsedMs) || missing(bbbv) || missing(bbbvSolved) || bbbvSolved <= 0) return null;
-  return (elapsedMs * bbbv) / bbbvSolved;
-}
-
-const BESTS = Object.freeze([
-  { stat: 'time', label: 'Best time', name: 'time', lowerIsBetter: true, format: formatTime, difference: formatTimeDifference },
-  { stat: 'bbbvPerSecond', label: 'Best 3BV/s', name: '3BV/s', lowerIsBetter: false, format: formatRate, difference: formatRateDifference },
-  { stat: 'efficiency', label: 'Best efficiency', name: 'efficiency', lowerIsBetter: false, format: formatEfficiency, difference: formatEfficiencyDifference },
-]);
-
-const listed = (names) => (names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`);
-
-/** The standing line: each reference figure with its completed-games figure beside it. */
-function standingText(s) {
-  const count = (v) => (Number.isInteger(v) ? String(v) : DASH);
-  return `Win rate ${formatWinRate(s.winRate)} (completed games ${formatWinRate(s.completedWinRate)})`
-    + ` · Longest streak ${count(s.longestStreak)} (completed games ${count(s.longestCompletedStreak)})`;
+/** A comparable tile's comparison: its detail line, the direction that colours it and whether the game set that best. */
+function compared(stat, { summary, comparison, won, challenge }) {
+  const { lowerIsBetter, format, difference: diff } = COMPARABLE[stat];
+  const none = { detail: null, direction: null, newBest: false };
+  if (!won) {
+    if (stat === 'time') return { ...none, detail: LOSS_NO_BESTS };
+    return comparison ? { ...none, detail: `best ${format(comparison[stat]?.best?.value ?? null)}` } : none;
+  }
+  if (!comparison) return none;
+  const c = comparison[stat];
+  const standing = c?.best ? c.best.value : null;
+  const best = format(standing);
+  if (challenge) {
+    const own = summary[stat === 'time' ? 'elapsedMs' : stat];
+    const d = diff(missing(own) || missing(standing) ? null : own - standing);
+    return { ...none, detail: d === DASH ? `best ${best}` : `best ${best} · ${d}` };
+  }
+  const d = diff(c?.difference ?? null);
+  const direction = d === DASH ? null : d === EQUAL_BEST ? 'equal' : (c.difference < 0) === lowerIsBetter ? 'better' : 'worse';
+  if (c?.newBest === true) {
+    const detail = standing === null ? null : d === DASH || d === EQUAL_BEST ? `was ${best}` : `was ${best} · ${d}`;
+    return { detail, direction, newBest: true };
+  }
+  return { detail: d === DASH ? `best ${best}` : `best ${best} · ${d}`, direction, newBest: false };
 }
 
 export function resultsContent({
@@ -159,66 +174,66 @@ export function resultsContent({
 }) {
   const won = summary.outcome === 'won';
   const challenge = summary.challenge === true;
-  const eligible = won && !challenge;
   const count = (v) => (missing(v) ? DASH : String(v));
-  const setBest = (stat) => eligible && comparison?.[stat]?.newBest === true;
-  const stats = [
-    { key: 'time', label: 'Time', value: formatTime(summary.elapsedMs), shown: true, newBest: setBest('time') },
-    { key: 'bbbv', label: '3BV', value: count(summary.bbbv), shown: true, newBest: false },
-    { key: 'bbbvSolved', label: '3BV solved', value: count(summary.bbbvSolved), shown: !won, newBest: false },
-    { key: 'bbbvPerSecond', label: '3BV/s', value: formatRate(summary.bbbvPerSecond), shown: true, newBest: setBest('bbbvPerSecond') },
-    { key: 'efficiency', label: 'Efficiency', value: formatEfficiency(summary.efficiency), shown: true, newBest: setBest('efficiency') },
-  ];
-  const set = BESTS.filter(({ stat }) => setBest(stat)).map(({ name }) => name);
+  const ctx = { summary, comparison, won, challenge };
+  const figure = (key, value) => ({ key, label: COMPARABLE[key].label, value, progress: null, ...compared(key, ctx) });
+  const plain = { detail: null, direction: null, newBest: false, progress: null };
+  const solved = summary.bbbvSolved;
+  const tiles = won
+    ? [
+      figure('time', formatTime(summary.elapsedMs)),
+      figure('bbbvPerSecond', formatRate(summary.bbbvPerSecond)),
+      figure('efficiency', formatEfficiency(summary.efficiency)),
+      { key: 'bbbv', label: '3BV', value: count(summary.bbbv), ...plain, detail: BOARD_DIFFICULTY },
+    ]
+    : [
+      figure('time', formatTime(summary.elapsedMs)),
+      {
+        key: 'bbbvSolved', label: '3BV solved', value: `${count(solved)} / ${count(summary.bbbv)}`, ...plain,
+        progress: missing(solved) || missing(summary.bbbv) || summary.bbbv <= 0 ? null : { value: solved, max: summary.bbbv },
+      },
+      figure('bbbvPerSecond', formatRate(summary.bbbvPerSecond)),
+      figure('efficiency', formatEfficiency(summary.efficiency)),
+    ];
 
-  const bests = comparison
-    ? BESTS.map(({ stat, label, lowerIsBetter, format, difference: diff }) => {
-      const c = comparison[stat];
-      const standing = c?.best ? c.best.value : null;
-      if (eligible) {
-        const d = diff(c?.difference ?? null);
-        const newBest = c?.newBest === true;
-        const direction = d === DASH ? null : d === EQUAL_BEST ? 'equal' : (c.difference < 0) === lowerIsBetter ? 'better' : 'worse';
-        const detail = newBest ? (d === DASH || d === EQUAL_BEST ? 'New best' : `New best · ${d}`) : d;
-        return { stat, label, best: format(standing), difference: d, newBest, direction, detail };
-      }
-      const own = stat === 'time' ? pace(summary) : summary[stat];
-      const d = diff(missing(own) || missing(standing) ? null : own - standing);
-      const detail = stat === 'time' ? `Pace ${formatTime(own)} · ${d}` : d;
-      return { stat, label, best: format(standing), difference: d, newBest: false, direction: null, detail };
-    })
-    : null;
-
-  let next = null;
-  if (comparison && !challenge) {
+  const details = [{ key: 'clicks', label: 'Clicks', value: formatClicks(summary.clicks) }];
+  if (challenge) details.push({ key: 'challenge', label: 'Challenge', value: CHALLENGE_NOTE });
+  else if (comparison) {
     const time = comparison.time;
     const bestTime = won && time?.newBest ? summary.elapsedMs : time?.best ? time.best.value : null;
     const beat = `Beat ${formatTime(bestTime)} for a new best`;
-    if (won) next = `${beat} · streak ${count(streak?.current)}`;
-    else if (streak?.before >= 1) next = `Streak ended at ${streak.before} · best ${count(streak.longest)}`;
-    else next = missing(bestTime) ? FIRST_BEST : beat;
+    if (won) details.push({ key: 'next', label: 'Next target', value: `${beat} · streak ${count(streak?.current)}` });
+    else {
+      const value = streak?.before >= 1 ? `Ended at ${streak.before} · longest ${count(streak.longest)}` : missing(bestTime) ? FIRST_BEST : beat;
+      details.push({ key: 'streak', label: 'Streak', value });
+    }
+  }
+  if (saved && standing) {
+    const longest = Number.isInteger(standing.longestStreak) ? String(standing.longestStreak) : DASH;
+    details.push({
+      key: 'winRate', label: 'Win rate',
+      value: `${formatWinRate(standing.winRate)} · completed games ${formatWinRate(standing.completedWinRate)} · longest streak ${longest}`,
+    });
   }
 
+  const ranked = won && !challenge && Number.isInteger(rank?.position) && Number.isInteger(rank?.of);
   const notes = [];
   if (!saved) notes.push(NOTES.notRecorded);
   if (notSaved) notes.push(NOTES.notSaved);
+  const best = typeof watchBest === 'string' && watchBest !== '';
   return {
     outcome: summary.outcome,
     title: won ? 'You won!' : 'Game over',
     board: boardLabel(summary.board),
+    rank: ranked ? `#${rank.position} of ${rank.of} wins on this board` : null,
     label: challenge ? CHALLENGE_LABEL : null,
+    tiles,
+    details,
     code: codeOf(summary),
-    banner: set.length ? `New best ${listed(set)}!` : null,
-    stats,
-    figures: { clicks: formatClicks(summary.clicks), rank: won ? rankText(rank) : null },
-    next,
-    standing: saved && standing ? standingText(standing) : null,
-    eligible,
-    bestsNote: eligible ? null : challenge ? CHALLENGE_NOTE : NOT_ELIGIBLE,
-    bests,
     notes,
     watch: watch === true,
-    watchBest: typeof watchBest === 'string' && watchBest !== '',
+    watchBest: best,
+    compact: best,
     look: summary.board?.mode === MODE_3D,
     over3d: summary.board?.mode === MODE_3D,
   };
@@ -242,10 +257,10 @@ export function createResultsView({
   root, onPlayAgain, onWatch = () => {}, onWatchBest = () => {}, onRecords, onMenu, onLook = () => {}, onCopy = () => {},
 }) {
   const $ = (id) => root.querySelector(`#${id}`);
-  const value = (id) => $(id).querySelector('.ui-stat__value');
+  const show = (el, on) => el.classList.toggle('hidden', !on);
   const line = (id, text) => {
     $(id).textContent = text ?? '';
-    $(id).classList.toggle('hidden', !text);
+    show($(id), !!text);
   };
   $('r-again').addEventListener('click', () => onPlayAgain());
   $('r-look').addEventListener('click', () => onLook());
@@ -254,40 +269,53 @@ export function createResultsView({
   $('r-records').addEventListener('click', () => onRecords());
   $('r-menu').addEventListener('click', () => onMenu());
   const code = bindCodeChip($('results-code'), { onCopy: (c) => onCopy(c) });
+  const TILES = ['time', 'bbbvSolved', 'bbbvPerSecond', 'efficiency', 'bbbv'];
+  const ROWS = { clicks: 'rd-clicks', next: 'rd-target', streak: 'rd-target', challenge: 'rd-target', winRate: 'rd-winRate' };
+  const fillTile = (key, t) => {
+    const tile = $(`rs-${key}`);
+    show(tile, !!t);
+    if (!t) return;
+    tile.querySelector('.ui-stat__value').textContent = t.value;
+    const detail = tile.querySelector('.ui-stat__detail');
+    detail.textContent = t.detail ?? '';
+    show(detail, !!t.detail);
+    if (t.direction) detail.setAttribute('data-delta', t.direction);
+    else detail.removeAttribute('data-delta');
+    tile.toggleAttribute('data-new-best', !!t.newBest);
+    if (key === 'bbbvSolved') {
+      const bar = tile.querySelector('progress');
+      bar.setAttribute('max', t.progress?.max ?? 1);
+      bar.setAttribute('value', t.progress?.value ?? 0);
+      show(bar, !!t.progress);
+    } else if (key !== 'bbbv') show(tile.querySelector('.ui-chip'), !!t.newBest);
+  };
   return {
     show(content) {
+      const over3d = !!content.over3d;
+      $('results-frame').setAttribute('data-outcome', content.outcome === 'won' ? 'won' : 'lost');
+      show($('results-trophy'), content.outcome === 'won');
       $('results-title').textContent = content.title;
       $('results-board').textContent = content.board;
+      line('results-rank', over3d ? null : content.rank);
+      line('results-rank-line', over3d ? content.rank : null);
       line('results-label', content.label);
+      for (const key of TILES) fillTile(key, content.tiles.find((t) => t.key === key));
+      for (const id of new Set(Object.values(ROWS))) show($(id), false);
+      for (const d of content.details) {
+        const row = $(ROWS[d.key]);
+        row.querySelector('th').textContent = d.label;
+        row.querySelector('td').textContent = d.value;
+        show(row, true);
+      }
       code.show(content.code ?? null);
-      line('results-banner', content.banner);
-      for (const s of content.stats) {
-        value(`rs-${s.key}`).textContent = s.value;
-        $(`rs-${s.key}`).classList.toggle('hidden', !s.shown);
-        $(`rs-${s.key}`).toggleAttribute('data-new-best', !!s.newBest);
-      }
-      line('results-figures', [content.figures.clicks, content.figures.rank].filter(Boolean).join(' · '));
-      line('results-next', content.next);
-      line('results-standing', content.standing);
-      const panel = $('results-bests');
-      panel.classList.toggle('hidden', !content.bests);
-      panel.classList.toggle('ui-panel--muted', !!content.bests && !content.eligible);
-      line('results-bests-note', content.bests ? content.bestsNote : null);
-      for (const b of content.bests ?? []) {
-        value(`rb-${b.stat}`).textContent = b.best;
-        const detail = $(`rb-${b.stat}`).querySelector('.ui-stat__detail');
-        detail.textContent = b.detail;
-        detail.toggleAttribute('data-new-best', b.newBest);
-        if (b.direction) detail.setAttribute('data-delta', b.direction);
-        else detail.removeAttribute('data-delta');
-      }
       line('results-note', content.notes.join(' '));
-      $('r-look').classList.toggle('hidden', !content.look);
-      root.querySelector('[data-esc-hint]').textContent = content.look ? 'Esc: Look at the board' : 'Esc: Back';
-      $('r-watch').classList.toggle('hidden', !content.watch);
-      $('r-watch-best').classList.toggle('hidden', !content.watchBest);
+      show($('r-look'), !!content.look);
+      show($('r-watch'), !!content.watch);
+      show($('r-watch-best'), !!content.watchBest);
+      for (const id of ['r-watch', 'r-watch-best', 'r-records']) $(id).classList.toggle('ui-button--sm', !!content.compact);
       line('results-look-note', null);
-      root.classList.toggle('results--over3d', !!content.over3d);
+      root.classList.toggle('results--over3d', over3d);
+      root.classList.toggle('results--look', !!content.look);
       root.classList.remove('hidden');
     },
     hide() { root.classList.add('hidden'); },
