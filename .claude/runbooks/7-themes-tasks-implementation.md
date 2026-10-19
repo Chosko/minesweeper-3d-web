@@ -203,7 +203,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against tasks 165, 166, which edit the same files; replaced by step 55.
 
-## [~] 55. Implement task 212 — 3D presets without First box 1 and 2; Learn 3D's win offers Cube Intro
+## [x] 55. Implement task 212 — 3D presets without First box 1 and 2; Learn 3D's win offers Cube Intro
 
 Depends on: 54
 
@@ -212,6 +212,8 @@ Context: none
 ```prompt
 /task-implement 212 --review
 ```
+
+Done: 2026-10-19, commit `e9b6523` (26 files, +218/-200). Start spacing is removed entirely (`startSpacing` and preset `spacing` gone): every 3D game, the Learn 3D lesson included, starts at `SPACING_START`.
 
 ## [x] 11. Implement task 167 — 3D board choice screen in the shared layout
 
@@ -239,12 +241,13 @@ Context: none
 
 Done: struck — for a parallel run its Depends on named struck step 38; lacked the edge to task 212, its precondition; replaced by step 56.
 
-## [ ] 56. Implement task 167 — 3D board choice screen in the shared layout
+## [~] 56. Implement task 167 — 3D board choice screen in the shared layout
 
 Depends on: 54, 55
 
 Context:
 - 2026-10-19 (from step 54): on the Classic 2D board choice, a click/tap/A on a board option only chooses it (`aria-pressed="true"`) and Play starts it; Enter on an option chooses and plays. Bests come from `boardBests(board, records)` in `js/shell/returning.js`. The 2D options dropped their detail lines; the 3D board choice keeps them.
+- 2026-10-19 (from step 55): the First box 1 and 2 presets and `startSpacing` are gone; an old `box-1`/`box-2` choice fails `normaliseChoice` and opens on Cube Beginner with no-guess on.
 
 ```prompt
 /task-implement 167 --review
@@ -494,7 +497,8 @@ Done: struck — for a parallel run its Depends on named struck step 38; lacked 
 
 Depends on: 7, 55, 63
 
-Context: none
+Context:
+- 2026-10-19 (from step 55): the Learn 3D end card's text line has id `learn-end-line` (a win shows the Cube Intro line, a loss "Learn 3D"); the lesson board is `LESSON_BOX` (4 × 4 × 3, 4 mines) and starts at `SPACING_START` like every 3D game.
 
 ```prompt
 /task-implement 210 --review
