@@ -111,12 +111,12 @@ test('in a browser, the D-pad walks every control of the 2D board choice and the
 
     // 3D: the walk pinned as it stood before the DOM-order fallback.
     await page.click('#menu-entry-3d');
-    await ms(() => document.querySelector('#board-choice [data-preset="4,4,3,4"]').focus());
-    const presetsDown = ['5,5,3,6', '6,6,6,10', '6,6,6,20', '8,8,8,40', '10,10,10,100'];
-    assert.deepEqual(await walk(Array(10).fill('down')),
+    await ms(() => document.querySelector('#board-choice [data-preset="6,6,6,10"]').focus());
+    const presetsDown = ['6,6,6,20', '8,8,8,40', '10,10,10,100'];
+    assert.deepEqual(await walk(Array(8).fill('down')),
       [...presetsDown, 'bc-noguess', 'c-x', 'c-noguess', 'bc-code', 'board-choice-back']);
-    assert.deepEqual(await walk(Array(10).fill('up')),
-      ['bc-code', 'c-noguess', 'c-x', 'bc-noguess', '10,10,10,100', '8,8,8,40', '6,6,6,20', '6,6,6,10', '5,5,3,6', '4,4,3,4']);
+    assert.deepEqual(await walk(Array(8).fill('up')),
+      ['bc-code', 'c-noguess', 'c-x', 'bc-noguess', '10,10,10,100', '8,8,8,40', '6,6,6,20', '6,6,6,10']);
     await ms(() => document.getElementById('c-x').focus());
     assert.deepEqual(await walk(['right', 'right', 'right', 'right', 'right']), ['c-y', 'c-z', 'c-m', 'c-random', 'c-start']);
     assert.deepEqual(await walk(['left', 'left', 'left', 'left', 'left']), ['c-random', 'c-m', 'c-z', 'c-y', 'c-x']);

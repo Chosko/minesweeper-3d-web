@@ -10,26 +10,20 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
 | File | Responsibility | Context file |
 | --- | --- | --- |
 | `js/mode3d/learn.js` | Learn 3D: the guided board `LEARN_BOARD`, `lessonCells`, `learnChoice` and the prompt sequence `createLearnPrompts`. DOM-free. | this file |
-| `js/mode3d/board-choice.js` | The six presets and their start spacing (`startSpacing`), custom validation, Random fill, the no-guess switch with its cell-count limit and side-of-2 rule, the last 3D choice's document name, and `bindBoardChoice` over `#board-choice`. Helpers DOM-free; the binder touches only the elements it is handed. | this file |
+| `js/mode3d/board-choice.js` | The presets, custom validation, Random fill, the no-guess switch with its cell-count limit and side-of-2 rule, the last 3D choice's document name, and `bindBoardChoice` over `#board-choice`. Helpers DOM-free; the binder touches only the elements it is handed. | this file |
 | `js/mode3d/session.js` | The 3D game on the shared engine (`create3DGame`) and the game session (`createSession`): closed box, flags before the first reveal, the first reveal's board, generating, failure offer, timer, pause, restart, leave, replay recorder. DOM-free. | [mode3d-session.md](mode3d-session.md) |
 | `js/shell/mode-3d.js` | The adapter (`create3DMode`) behind the mode contract: end delay, summaries, sealed replays, the movement sampler, pre-generation for Play again. DOM-free. | [mode3d-adapter.md](mode3d-adapter.md) |
 
 ## PUBLIC API
 
 `js/mode3d/board-choice.js`
-- `PRESETS` — six frozen `{id, family, name, X, Y, Z, mines, spacing}` in
-  menu order: `box-1` First box 1 4 × 4 × 3 / 4, `box-2` First box 2
-  5 × 5 × 3 / 6, `cube-intro` Cube Intro 6 × 6 × 6 / 10, `cube-beginner`
-  6 × 6 × 6 / 20, `cube-intermediate` 8 × 8 × 8 / 40, `cube-expert`
-  10 × 10 × 10 / 100. `spacing` is the start spacing: 1.5 for the first
-  boxes, `SPACING_START` ([input-camera.md](input-camera.md)) for the cubes. `FAMILIES`
-  (`box` "First box", `cube` "Cube"); `BOARD_SIZES` (the preset ids plus
-  `'custom'`). The two measured mine counts (First box 1, Cube Beginner)
-  come from `dev/measure-first-box-3d.mjs`, named in the presets' comment.
-- `startSpacing({X, Y, Z, mines})` — the matching preset's `spacing` (by
-  size and mines, so a custom board of a preset's size is that preset's),
-  else `SPACING_START`; `startGame` in `js/main.js` sets it on every 3D
-  start.
+- `PRESETS` — frozen `{id, family, name, X, Y, Z, mines}` in menu order:
+  `cube-intro` Cube Intro, `cube-beginner`, `cube-intermediate`,
+  `cube-expert` (sizes and mines in `PRESETS` itself). `FAMILIES` (`cube` "Cube");
+  `BOARD_SIZES` (the preset ids plus `'custom'`). Cube Beginner's measured
+  mine count comes from `dev/measure-first-box-3d.mjs`, named in the
+  presets' comment. No preset has a start spacing of its own: every 3D game
+  starts at `SPACING_START` ([input-camera.md](input-camera.md)).
 - A board choice is `{size, custom: {X, Y, Z, mines}, noGuess}`; `custom` is
   kept beside a preset so the custom fields reopen as the player left them.
   `DEFAULT_CHOICE` is cube Beginner, custom 10 × 10 × 10 / 25, no-guess on.
@@ -44,13 +38,13 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
   `densityHintShown(custom, noGuess)` — from Classic 2D's
   `NOGUESS_DENSITY_HINT` ([classic2d.md](classic2d.md)).
 - `normaliseChoice(choice)` → a valid plain copy or null (null for a `size`
-  outside `BOARD_SIZES`, such as a double layer preset's id), with no-guess
+  outside `BOARD_SIZES`, such as a double layer or First box preset's id), with no-guess
   dropped on a custom board that does not offer it;
   `readChoice({size, fields, noGuess}, fallbackCustom?)`; `boardOf(choice)`
   → `{X, Y, Z, mines, noGuess}` (a `RangeError` on an invalid choice);
   `randomBoard(random?)` — the original Random formula, always valid.
 - `presetKey(p)` (`'6,6,6,10'`, the items' `data-preset`), `presetByKey`,
-  `presetLabel(p)`, `presetTitle(p)` → 'Cube Beginner', 'First box 1' (as
+  `presetLabel(p)`, `presetTitle(p)` → 'Cube Beginner' (as
   results and Records name the board).
 - `LAST_CHOICE_DOC` = `'mode3d.lastChoice'`, `LAST_CHOICE_VERSION` = 1.
 - `bindBoardChoice({root, onStart, onLearn, onBack, code?})` (`onLearn` the
@@ -63,8 +57,8 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
 
 `js/mode3d/learn.js`
 - `LEARN_BOARD` — frozen `{X, Y, Z, mines, seed, generatorVersion,
-  startCell, minePositions, proofNumber, lessonNumber, lessonMine}`: First
-  box 1's 4 × 4 × 3 · 4, seed 75, start cell 26 (the marked centre cell),
+  startCell, minePositions, proofNumber, lessonNumber, lessonMine}`: the
+  lesson box, 4 × 4 × 3 · 4 outside the presets, seed 75, start cell 26 (the marked centre cell),
   P 36, L 25, M 40; `LEARN_TITLE` 'Learn 3D'.
 - `lessonCells(view, startCell)` → `{proofNumber, lessonNumber, lessonMine}`
   or null: the board conditions after the first reveal (not won, a cube
@@ -140,8 +134,8 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
 
 - Changing a preset, the custom limits or the stored choice
   (`PRESETS`, `validateCustom`, `normaliseChoice` in `board-choice.js`; the
-  `data-preset` markup in `index.html`, one group per family). A changed
-  preset re-runs `node dev/measure-first-box-3d.mjs` (the measured counts)
+  `data-preset` markup in `index.html`, one unlabelled group). A changed
+  preset re-runs `node dev/measure-first-box-3d.mjs` (the measured count)
   and `node dev/measure-typical-bbbv.mjs`, whose lines go into
   `js/records/typical-bbbv.js`.
 - Changing the no-guess limit: re-run `node dev/measure-noguess-3d.mjs` and

@@ -47,10 +47,10 @@ Board identity (`js/records/board.js`; its header documents the key format)
   no-guess"`, `"Daily · 8 × 8 × 8 · 40 mines · no-guess"` (a Daily 3D board
   by its dimensions).
 - `standardBoard(identity)` / `STANDARD_BOARDS` (Beginner, Intermediate,
-  Expert); `preset3D(identity)` / `PRESETS_3D` (First box 1 4×4×3/4, First
-  box 2 5×5×3/6, Cube Intro 6×6×6/10, Beginner 6×6×6/20, Intermediate
-  8×8×8/40, Expert 10×10×10/100 — equal to the 3D board choice's `PRESETS`,
-  [mode3d.md](mode3d.md)). Null for a custom board.
+  Expert); `preset3D(identity)` / `PRESETS_3D` (Cube Intro, Beginner,
+  Intermediate, Expert — equal to the 3D board choice's `PRESETS`,
+  [mode3d.md](mode3d.md)). Null for a custom board, a former preset's
+  size included.
 - Every function validates through `createBoardIdentity`, so any object with
   a form's fields works and an impossible one throws.
 

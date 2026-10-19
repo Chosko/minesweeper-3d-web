@@ -83,7 +83,7 @@ function fakeView() {
   const shown = [];
   return { shown, show(c) { shown.push(c); }, hide() {} };
 }
-const PRESET_LABELS = ['First box 1', 'First box 2', 'Cube Intro', 'Cube Beginner', 'Cube Intermediate', 'Cube Expert']
+const PRESET_LABELS = ['Cube Intro', 'Cube Beginner', 'Cube Intermediate', 'Cube Expert']
   .flatMap((l) => [l, `${l} · no-guess`]);
 const DAILY_3D = 'Daily · 8 × 8 × 8 · 40 mines · no-guess';
 const value = (list, key) => list.find((s) => s.key === key || s.stat === key).value;
@@ -98,12 +98,13 @@ test('the switch offers 2D and 3D; the content carries the chosen mode', () => {
   assert.equal(recordsContent(fakeStore()).mode, 'classic-2d');
 });
 
-test('the 3D picker lists the six presets with and without no-guess, then the custom 3D boards played, under their 3D labels', () => {
+test('the 3D picker lists the four presets with and without no-guess, then the custom 3D boards played, under their 3D labels', () => {
   const store = fakeStore({ games: [game(CUSTOM_3D), game(BEGINNER), game(CUSTOM_2D), game(CUBE_EXPERT_NG)] });
   const three = pickerBoards(store, '3d');
   assert.deepEqual(three.map((b) => b.label), [...PRESET_LABELS, DAILY_3D, '10 × 10 × 10 · 80 mines']);
-  assert.equal(three[0].key, boardKey(board3D(4, 4, 3, 4)));
-  assert.equal(three[6].key, boardKey(CUBE_BEGINNER));
+  assert.equal(three[0].key, boardKey(CUBE_INTRO));
+  assert.equal(three[2].key, boardKey(CUBE_BEGINNER));
+  assert.ok(three.every((b) => !b.label.startsWith('First box')), 'no First box entry');
   assert.equal(new Set(three.map((b) => b.key)).size, three.length, 'a preset played is not listed twice');
   const two = pickerBoards(store, 'classic-2d');
   assert.ok(two.every((b) => b.board.mode === 'classic-2d'), 'no 3D board in the 2D picker');
@@ -122,6 +123,18 @@ test('the 3D picker lists a former double layer board with the custom boards, un
   const c = recordsContent(store, { boardKey: boardKey(FORMER_DOUBLE) });
   assert.equal(c.board.label, '8 × 8 × 2 · 10 mines');
   assert.equal(c.board.key, '3d:8x8x2:10:guess', 'its records keep their board key');
+});
+
+test('the 3D picker lists a former First box board with the custom boards, under its size and mine count', () => {
+  const store = fakeStore({ games: [
+    game(board3D(4, 4, 3, 4), { endedAt: '2026-10-07T12:00:00.000Z' }),
+    game(CUSTOM_3D, { endedAt: '2026-10-08T12:00:00.000Z' }),
+  ] });
+  const three = pickerBoards(store, '3d');
+  assert.deepEqual(three.map((b) => b.label), [...PRESET_LABELS, DAILY_3D, '10 × 10 × 10 · 80 mines', '4 × 4 × 3 · 4 mines']);
+  const c = recordsContent(store, { boardKey: boardKey(board3D(4, 4, 3, 4)) });
+  assert.equal(c.board.label, '4 × 4 × 3 · 4 mines');
+  assert.equal(c.board.key, '3d:4x4x3:4:guess', 'its records keep their board key');
 });
 
 test('the 3D picker lists the former Cube Expert with the custom boards, and the old Beginner\'s records as Cube Intro', () => {
@@ -160,7 +173,7 @@ test('a mode alone opens on its last board played, else on its first board', () 
   ] });
   assert.equal(recordsContent(store, { mode: '3d' }).board.key, boardKey(CUSTOM_3D));
   assert.equal(recordsContent(store, { mode: 'classic-2d' }).board.key, boardKey(BEGINNER));
-  assert.equal(recordsContent(fakeStore({ games: [game(BEGINNER)] }), { mode: '3d' }).board.key, boardKey(board3D(4, 4, 3, 4)));
+  assert.equal(recordsContent(fakeStore({ games: [game(BEGINNER)] }), { mode: '3d' }).board.key, boardKey(CUBE_INTRO));
   assert.equal(lastBoardPlayed(store, '3d'), boardKey(CUSTOM_3D));
   assert.equal(lastBoardPlayed(store, 'classic-2d'), boardKey(BEGINNER));
 });
@@ -384,9 +397,9 @@ test('in a browser, mouse, keyboard and controller operate the 2D | 3D switch', 
     assert.equal(await checked(), '3d');
     assert.equal(await boardShown(), 'Cube Intro');
     assert.equal(await overallTitle(), '3D overall');
-    assert.equal(await firstOption(), 'First box 1');
+    assert.equal(await firstOption(), 'Cube Intro');
     assert.deepEqual((await ms(() => [...document.querySelectorAll('#records-picker .ui-segmented__option')].map((o) => o.textContent))).slice(0, PRESET_LABELS.length),
-      PRESET_LABELS, 'the picker offers the six presets, each without then with no-guess');
+      PRESET_LABELS, 'the picker offers the four presets, each without then with no-guess');
     const figure = (id) => ms((i) => document.querySelector(`#${i} .ui-stat__value`).textContent, id);
     assert.equal(await figure('rec-completedWinRate'), '100%', 'the 3D board\'s completed-games figures');
     assert.equal(await figure('ro-longestCompletedStreak'), '1');

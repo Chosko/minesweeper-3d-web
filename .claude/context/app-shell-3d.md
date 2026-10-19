@@ -116,8 +116,8 @@ and adapter (`js/shell/mode-3d.js`) themselves are [mode3d.md](mode3d.md).
   changes no view mode, `handlePad` only releases held controls. After it
   the adapter releases lock and reports finished
   ([app-shell-pause.md](app-shell-pause.md) § End delay). A null summary
-  ends the guided board on the `learn-end` screen (`#learn-end`, Play First
-  box 1 → `playFirstBox`, an ordinary pick saved as the last choice, or Try
+  ends the guided board on the `learn-end` screen (`#learn-end`, Play Cube
+  Intro → `playCubeIntro`, an ordinary pick saved as the last choice, or Try
   again → `PAUSE.restart`; Back to board choice) and the debug hook's fixed
   board on the pause card.
 ## DOMAIN DEPENDENCIES

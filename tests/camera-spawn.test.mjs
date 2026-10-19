@@ -21,10 +21,11 @@ const suite = browserSuite();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const DEG = Math.PI / 180;
 
-// Each box at its start spacing: a preset's own (the first-box presets 1.5), SPACING_START otherwise.
+// Each box at the start spacing, SPACING_START: the presets, a shallow box (the Learn 3D box and a
+// former First box) and custom boards.
 const BOXES = [
-  ...PRESETS.map((p) => [p.X, p.Y, p.Z, p.spacing]),
-  [1, 1, 2, SPACING_START], [30, 16, 1, SPACING_START], [100, 100, 100, SPACING_START], [2, 9, 40, SPACING_START],
+  ...PRESETS.map((p) => [p.X, p.Y, p.Z, SPACING_START]),
+  [4, 4, 3, SPACING_START], [5, 5, 3, SPACING_START], [1, 1, 2, SPACING_START], [30, 16, 1, SPACING_START], [100, 100, 100, SPACING_START], [2, 9, 40, SPACING_START],
 ];
 const ASPECTS = { '16:9': 16 / 9, '4:3': 4 / 3, '21:9': 21 / 9, '9:16': 9 / 16 };
 const FOVS = [45, 90];
@@ -99,11 +100,9 @@ test('the spawn pose frames every box with a margin, from three quarters, its cr
       }
     }
   }
-  // in the standard window the presets fill most of the frame; a shallow first box, framed from the
-  // clearance its top and side faces need, a little less
+  // in the standard window the presets fill most of the frame
   for (const p of PRESETS) {
-    const fill = p.family === 'box' ? 0.6 : 0.7;
-    assert.ok(view.get(`${p.X}×${p.Y}×${p.Z} at spacing ${p.spacing}, 16:9, 45°`) > fill, `${p.id} fills the frame`);
+    assert.ok(view.get(`${p.X}×${p.Y}×${p.Z} at spacing ${SPACING_START}, 16:9, 45°`) > 0.7, `${p.id} fills the frame`);
   }
 });
 
@@ -186,7 +185,7 @@ test('Home and R return to start during 3D play only, unrepeated, with the brows
 
 // ---------------------------------------------------------------- in a browser
 
-test('in a browser, First box 1 picked from the board choice starts at spacing 1.5, the whole box on screen', async (t) => {
+test('in a browser, Cube Intro picked from the board choice starts at the ordinary spacing in the three-quarter view, the whole box on screen', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -198,19 +197,19 @@ test('in a browser, First box 1 picked from the board choice starts at spacing 1
     await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
     const ms = (fn, arg) => page.evaluate(fn, arg);
     await page.click('#menu-entry-3d');
-    await page.click('#board-choice [data-preset="4,4,3,4"]');
+    await page.click('#board-choice [data-preset="6,6,6,10"]');
     await page.waitForFunction(() => globalThis.__ms.modes.active === '3d' && globalThis.__ms.game);
-    assert.deepEqual(await ms(() => globalThis.__ms.state.settings), { X: 4, Y: 4, Z: 3, mines: 4 });
-    assert.equal(await ms(() => globalThis.__ms.state.spacing), 1.5, 'the first-box start spacing');
-    assert.match(await ms(() => document.getElementById('hud-tools').textContent), /spacing 1\.5/, 'the readout shows it');
+    assert.deepEqual(await ms(() => globalThis.__ms.state.settings), { X: 6, Y: 6, Z: 6, mines: 10 });
+    assert.equal(await ms(() => globalThis.__ms.state.spacing), SPACING_START, 'the ordinary start spacing');
+    assert.match(await ms(() => document.getElementById('hud-tools').textContent), new RegExp(`spacing ${SPACING_START.toFixed(1).replace('.', '\\.')}`), 'the readout shows it');
     const cam = await ms(() => globalThis.__ms.info().cam);
-    const spawn = await ms(() => globalThis.__ms.spawnPose(4, 4, 3));
+    const spawn = await ms(() => globalThis.__ms.spawnPose(6, 6, 6));
     assert.ok(['x', 'y', 'z', 'yaw', 'pitch'].every((k) => Math.abs(cam[k] - spawn[k]) < 1e-9), 'at the spawn pose for that spacing');
     const ndc = await ms(() => {
       const { THREE, renderer, state } = globalThis.__ms;
       const c = renderer.camera;
       c.updateMatrixWorld();
-      const p = 4 * state.spacing, h = [(4 - 1) * p / 2 + 2, (4 - 1) * p / 2 + 2, (3 - 1) * p / 2 + 2];
+      const p = 4 * state.spacing, h = [(6 - 1) * p / 2 + 2, (6 - 1) * p / 2 + 2, (6 - 1) * p / 2 + 2];
       const out = [];
       for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
         const v = new THREE.Vector3(sx * h[0], sy * h[1], sz * h[2]).project(c);

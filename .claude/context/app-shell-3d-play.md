@@ -93,8 +93,7 @@ presses and releases Enter and ' through `input.actions` as their keys do;
   `ui.setArrow` the off-screen arrow's angle; `updatePick` keeps
   `S.readout` (`aimReadout`, `js/readability.js`) and `updateReadout` shows
   it only under the `aimReadout` setting in 3D play. Picking is cached by
-  `S.pickKey`. Spacing resets per game to the board's start spacing
-  (`startSpacing`, [mode3d.md](mode3d.md)); the menu demo (`makeDemo`,
+  `S.pickKey`. Spacing resets per game to `SPACING_START`; the menu demo (`makeDemo`,
   7³/30, decorative) uses 1.25 and an orbiting camera.
 - **Spacing.** Every change in play goes through `setSpacing(s)`: clamped
   to [1, 10], the camera rescaled about the board centre by new / old

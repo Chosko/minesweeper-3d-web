@@ -1,4 +1,4 @@
-// The 3D board choice (js/mode3d/board-choice.js): the six presets and their start spacing, the validated custom
+// The 3D board choice (js/mode3d/board-choice.js): the four cube presets, the validated custom
 // board, the Random fill, the no-guess switch with its cell-count limit and its side-of-2 rule, the
 // last 3D board choice kept through the shell's last-board-choice mechanism (js/shell/menu.js), and
 // the screen's markup and wiring in index.html and js/main.js.
@@ -11,9 +11,9 @@ import { fileURLToPath } from 'node:url';
 import {
   PRESETS, FAMILIES, BOARD_SIZES, DEFAULT_CHOICE, DIM_MIN, DIM_MAX, NOGUESS_CELL_LIMIT, LAST_CHOICE_DOC, LAST_CHOICE_VERSION,
   presetKey, presetByKey, presetLabel, presetTitle, validateCustom, customStatus, noGuessAvailable, noGuessReason, normaliseChoice,
-  readChoice, boardOf, randomBoard, densityHintShown, startSpacing,
+  readChoice, boardOf, randomBoard, densityHintShown,
 } from '../js/mode3d/board-choice.js';
-import { SPACING_START } from '../js/input.js';
+import * as BOARD_CHOICE_3D from '../js/mode3d/board-choice.js';
 import { NOGUESS_DENSITY_HINT, DENSITY_HINT_TEXT, NOGUESS_HELP_TEXT } from '../js/classic2d/board-setup.js';
 import { createLastBoardChoice } from '../js/shell/menu.js';
 import { typicalBbbv } from '../js/records/typical-bbbv.js';
@@ -31,28 +31,28 @@ const strip = (src) => src.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
 
 // ---------------------------------------------------------------- presets
 
-test('the 3D board choice offers two first-box presets then four cube presets, and no flat or double layer preset', () => {
+test('the 3D board choice offers the four cube presets, and no first-box, flat or double layer preset', () => {
   const rows = PRESETS.map((p) => [p.id, p.family, p.name, p.X, p.Y, p.Z, p.mines]);
   assert.deepEqual(rows, [
-    ['box-1', 'box', '1', 4, 4, 3, 4],
-    ['box-2', 'box', '2', 5, 5, 3, 6],
     ['cube-intro', 'cube', 'Intro', 6, 6, 6, 10],
     ['cube-beginner', 'cube', 'Beginner', 6, 6, 6, 20],
     ['cube-intermediate', 'cube', 'Intermediate', 8, 8, 8, 40],
     ['cube-expert', 'cube', 'Expert', 10, 10, 10, 100],
   ]);
   assert.ok(PRESETS.every((p) => [p.X, p.Y, p.Z].every((side) => side > 2)), 'no flat or double layer preset');
-  assert.deepEqual(FAMILIES.map((f) => [f.id, f.label]), [['box', 'First box'], ['cube', 'Cube']]);
-  assert.deepEqual(PRESETS.map(presetTitle), ['First box 1', 'First box 2', 'Cube Intro', 'Cube Beginner', 'Cube Intermediate', 'Cube Expert']);
+  assert.deepEqual(FAMILIES.map((f) => [f.id, f.label]), [['cube', 'Cube']]);
+  assert.deepEqual(PRESETS.map(presetTitle), ['Cube Intro', 'Cube Beginner', 'Cube Intermediate', 'Cube Expert']);
   assert.deepEqual(BOARD_SIZES, [...PRESETS.map((p) => p.id), 'custom']);
   assert.ok(Object.isFrozen(PRESETS) && PRESETS.every(Object.isFrozen));
-  assert.equal(presetKey(PRESETS[0]), '4,4,3,4');
+  assert.equal(presetKey(PRESETS[0]), '6,6,6,10');
+  assert.equal(presetByKey('4,4,3,4'), null, 'the former First box 1 is no preset');
+  assert.equal(presetByKey('5,5,3,6'), null, 'the former First box 2 is no preset');
   assert.equal(presetByKey('6,6,6,10').id, 'cube-intro');
   assert.equal(presetByKey('10,10,10,100').id, 'cube-expert');
   assert.equal(presetByKey('12,12,8,130'), null, 'the former Cube Expert is no preset');
   assert.equal(presetByKey('9,9,1,10'), null, 'a flat preset is no preset');
   assert.equal(presetByKey('8,8,2,10'), null, 'a double layer board is no preset');
-  assert.equal(presetLabel(PRESETS[5]), '10 × 10 × 10 · 100 mines');
+  assert.equal(presetLabel(PRESETS[3]), '10 × 10 × 10 · 100 mines');
   for (const p of PRESETS) {
     assert.equal(validateCustom(p).ok, true, `${p.id} is a valid board`);
     assert.equal(noGuessAvailable({ size: p.id, custom: DEFAULT_CHOICE.custom, noGuess: true }), true, `${p.id} offers no-guess`);
@@ -60,15 +60,13 @@ test('the 3D board choice offers two first-box presets then four cube presets, a
   }
 });
 
-test('each preset carries its start spacing, and startSpacing matches a board by size and mines', () => {
-  assert.deepEqual(PRESETS.map((p) => p.spacing), [1.5, 1.5, SPACING_START, SPACING_START, SPACING_START, SPACING_START]);
-  assert.equal(startSpacing({ X: 4, Y: 4, Z: 3, mines: 4 }), 1.5, 'First box 1');
-  assert.equal(startSpacing({ X: 5, Y: 5, Z: 3, mines: 6 }), 1.5, 'First box 2');
-  assert.equal(startSpacing(boardOf({ size: 'box-2', custom: DEFAULT_CHOICE.custom, noGuess: true })), 1.5, 'a board picked from the menu');
-  assert.equal(startSpacing(boardOf({ size: 'custom', custom: { X: 5, Y: 5, Z: 3, mines: 6 }, noGuess: false })), 1.5, 'a custom board of First box 2\'s size and mines');
-  for (const p of PRESETS.filter((q) => q.family === 'cube')) assert.equal(startSpacing(p), SPACING_START, p.id);
-  assert.equal(startSpacing({ X: 5, Y: 5, Z: 3, mines: 7 }), SPACING_START, 'a custom board one mine off');
-  assert.equal(startSpacing({ X: 12, Y: 12, Z: 8, mines: 130 }), SPACING_START, 'the former Cube Expert');
+test('no preset carries a start spacing of its own: every 3D board starts at the camera\'s ordinary spacing', () => {
+  assert.ok(PRESETS.every((p) => !('spacing' in p)), 'no preset spacing');
+  assert.equal('startSpacing' in BOARD_CHOICE_3D, false, 'no per-board start spacing');
+  assert.doesNotMatch(read('js/mode3d/board-choice.js'), /SPACING_FIRST_BOX|First box|'box-[12]'/,'no First box left in the board choice');
+  const main = read('js/main.js');
+  const startGame = main.slice(main.indexOf('function startGame('), main.indexOf('\n}\n', main.indexOf('function startGame(')));
+  assert.match(startGame, /S\.spacing = SPACING_START;\s*ui\.setSpacing\(S\.spacing\);/, 'a new game starts at the ordinary spacing');
 });
 
 // ---------------------------------------------------------------- custom validation
@@ -282,8 +280,19 @@ test('a remembered double layer choice opens on cube Beginner', async () => {
   }
 });
 
+test('a remembered First box choice opens on cube Beginner with no-guess on', async () => {
+  for (const size of ['box-1', 'box-2']) {
+    assert.equal(normaliseChoice({ size, custom: DEFAULT_CHOICE.custom, noGuess: false }), null, `${size} is no longer offered`);
+    const data = { size, custom: { X: 4, Y: 5, Z: 6, mines: 11 }, noGuess: false };
+    const last = lastChoice(memoryStorage({ [LAST_CHOICE_DOC]: JSON.stringify({ version: LAST_CHOICE_VERSION, data }) }));
+    const choice = await last.load();
+    assert.equal(choice.size, 'cube-beginner', size);
+    assert.deepEqual(boardOf(choice), { X: 6, Y: 6, Z: 6, mines: 20, noGuess: true }, 'the fallback opens with no-guess on');
+  }
+});
+
 test('a remembered preset id opens on that id\'s current board', async () => {
-  for (const [size, board] of [['cube-expert', { X: 10, Y: 10, Z: 10, mines: 100 }], ['cube-beginner', { X: 6, Y: 6, Z: 6, mines: 20 }], ['box-1', { X: 4, Y: 4, Z: 3, mines: 4 }]]) {
+  for (const [size, board] of [['cube-expert', { X: 10, Y: 10, Z: 10, mines: 100 }], ['cube-beginner', { X: 6, Y: 6, Z: 6, mines: 20 }], ['cube-intro', { X: 6, Y: 6, Z: 6, mines: 10 }]]) {
     const data = { size, custom: { X: 4, Y: 5, Z: 6, mines: 11 }, noGuess: false };
     const last = lastChoice(memoryStorage({ [LAST_CHOICE_DOC]: JSON.stringify({ version: LAST_CHOICE_VERSION, data }) }));
     const choice = await last.load();
@@ -331,18 +340,17 @@ const MAIN = read('js/main.js');
 const UI_SRC = strip(read('js/ui.js'));
 const BOARD = INDEX.slice(INDEX.indexOf('<section id="board-choice"'), INDEX.indexOf('<!-- Coming soon -->'));
 
-test('index.html offers the First box and Cube groups of presets, the custom board, Random, the no-guess switch and Back', () => {
+test('index.html offers the four presets in one unlabelled group, the custom board, Random, the no-guess switch and Back', () => {
   const presets = [...BOARD.matchAll(/<button type="button" class="ui-menu__item" data-preset="([\d,]+)"><span class="ui-menu__label">([^<]+)<\/span><span class="ui-menu__detail">([^<]+)<\/span><\/button>/g)];
   assert.deepEqual(presets.map((m) => m[1]), PRESETS.map(presetKey));
-  assert.deepEqual(presets.map((m) => m[2]), ['First box 1', 'First box 2', 'Cube Intro', 'Cube Beginner', 'Cube Intermediate', 'Cube Expert'], 'the preset says its family, as results and Records do');
+  assert.deepEqual(presets.map((m) => m[2]), ['Cube Intro', 'Cube Beginner', 'Cube Intermediate', 'Cube Expert'], 'the preset says its family, as results and Records do');
   assert.deepEqual(presets.map((m) => m[2]), PRESETS.map(presetTitle));
   assert.deepEqual(presets.map((m) => m[3].replace(/&times;/g, '×').replace(/&middot;/g, '·')), PRESETS.map(presetLabel));
-  const groups = [...BOARD.matchAll(/<h3 class="ui-heading" id="bc-([a-z]+)">([^<]+)<\/h3>\s*<div class="ui-menu" role="group" aria-labelledby="bc-([a-z]+)">([\s\S]*?)<\/div>/g)];
-  assert.deepEqual(groups.map((m) => [m[1], m[2], m[3]]), FAMILIES.map((f) => [f.id, f.label, f.id]), 'one named group per family, First box then Cube');
-  for (const [i, f] of FAMILIES.entries()) {
-    assert.deepEqual([...groups[i][4].matchAll(/data-preset="([\d,]+)"/g)].map((m) => m[1]),
-      PRESETS.filter((p) => p.family === f.id).map(presetKey), `the ${f.label} group holds its presets`);
-  }
+  const groups = [...BOARD.matchAll(/<div class="ui-menu" role="group" aria-label="Presets">([\s\S]*?)<\/div>/g)];
+  assert.equal(groups.length, 1, 'one group of presets');
+  assert.deepEqual([...groups[0][1].matchAll(/data-preset="([\d,]+)"/g)].map((m) => m[1]), PRESETS.map(presetKey), 'the group holds every preset');
+  assert.doesNotMatch(BOARD, /<h3 class="ui-heading" id="bc-(box|cube)"/, 'no group label');
+  assert.doesNotMatch(BOARD, /First box|first-box|bc-box/, 'no First box text in the board choice');
   assert.doesNotMatch(BOARD, /data-preset="\d+,\d+,1,\d+"/, 'no flat preset');
   assert.doesNotMatch(BOARD, /data-preset="\d+,\d+,2,\d+"|bc-double|Double layer/, 'no double layer group');
   assert.doesNotMatch(read('css/components.css'), /Double layer|bc-double/, 'no double layer group in the styles');
@@ -371,7 +379,7 @@ test('index.html offers the First box and Cube groups of presets, the custom boa
 
 test('the board choice leads with Learn 3D, reported through onLearn, never a preset, the last choice or its "Last played" mark', () => {
   const learn = BOARD.indexOf('data-learn');
-  assert.ok(learn > 0 && learn < BOARD.indexOf('data-preset='), 'the first item, above the First box group');
+  assert.ok(learn > 0 && learn < BOARD.indexOf('data-preset='), 'the first item, above the presets');
   assert.doesNotMatch(BOARD.slice(learn - 200, learn + 300), /data-preset/, 'not a preset item');
   const src = read('js/mode3d/board-choice.js');
   assert.match(src, /bindBoardChoice\(\{ root, onStart, onLearn, onBack, code = null \}\)/);
@@ -433,7 +441,7 @@ test('in a browser, the custom board validates, the switch follows the limit and
     assert.equal(await ms(() => document.querySelectorAll('#board-choice [data-best]').length), 0, 'no best times');
     // Each preset carries one detail line, between its size line and its "Last played" line.
     assert.deepEqual(await ms(() => [...document.querySelectorAll('#board-choice [data-preset]:not([type="submit"])')].map((b) => [...b.children].map((c) => (c.hasAttribute('data-detail') ? `detail: ${c.textContent}` : c.className)))),
-      PRESETS.map((p) => ['ui-menu__label', 'ui-menu__detail', `detail: ${['8.3', '8.0', '4.6', '9.3', '7.8', '10'][PRESETS.indexOf(p)]} % mines · ~${typicalBbbv({ mode: '3d', width: p.X, height: p.Y, depth: p.Z, mines: p.mines, noGuess: true })} 3BV · —`, 'ui-menu__detail hidden']));
+      PRESETS.map((p) => ['ui-menu__label', 'ui-menu__detail', `detail: ${['4.6', '9.3', '7.8', '10'][PRESETS.indexOf(p)]} % mines · ~${typicalBbbv({ mode: '3d', width: p.X, height: p.Y, depth: p.Z, mines: p.mines, noGuess: true })} 3BV · —`, 'ui-menu__detail hidden']));
 
     // The fields name what is out of range.
     await page.fill('#c-y', '0');

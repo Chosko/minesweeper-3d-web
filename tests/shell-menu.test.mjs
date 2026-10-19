@@ -399,7 +399,7 @@ test('index.html: the wordmark, one mode list of the nine entries in their block
 test('the 3D board choice holds the presets and custom board, and a Back button', () => {
   assert.ok(BOARD.length > 500, 'index.html has the 3D board choice');
   assert.match(BOARD, /class="overlay hidden"/);
-  assert.equal([...BOARD.matchAll(/data-preset="\d/g)].length, 6, 'the two first-box and four cube presets');
+  assert.equal([...BOARD.matchAll(/data-preset="\d/g)].length, 4, 'the four cube presets');
   assert.match(BOARD, /<form id="custom"/);
   assert.match(BOARD, /id="board-choice-back"/);
 });

@@ -16,7 +16,7 @@ import { solve } from '../js/generation/solver.js';
 import { GENERATOR_VERSION } from '../js/generation/placer.js';
 import { startCell } from '../js/generation/start-cell.js';
 import { createBoxGrid } from '../js/engine/box-grid.js';
-import { PRESETS, startSpacing } from '../js/mode3d/board-choice.js';
+import { PRESETS } from '../js/mode3d/board-choice.js';
 import { hintText } from '../js/settings/bindings.js';
 import { GLYPHS } from '../js/gamepad.js';
 import { pauseLine } from '../js/ui.js';
@@ -32,19 +32,19 @@ const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
 const MAIN = read('js/main.js');
 const INDEX = read('index.html');
 const B = LEARN_BOARD;
-const BOX1 = PRESETS.find((p) => p.id === 'box-1');
+const INTRO = PRESETS.find((p) => p.id === 'cube-intro');
 const graphOf = () => ({ kind: 'box', X: B.X, Y: B.Y, Z: B.Z });
 
 // ---------------------------------------------------------------- the guided board
 
-test('the guided board is a frozen 4 × 4 × 3 box at First box 1\'s mine count, its start cell the marked centre cell', () => {
+test('the guided board is a frozen 4 × 4 × 3 box with its own mine count, its start cell the marked centre cell', () => {
   assert.ok(Object.isFrozen(B) && Object.isFrozen(B.minePositions));
-  assert.deepEqual([B.X, B.Y, B.Z], [4, 4, 3]);
-  assert.deepEqual([BOX1.X, BOX1.Y, BOX1.Z, BOX1.mines], [B.X, B.Y, B.Z, B.mines], 'First box 1\'s size and count');
+  assert.deepEqual([B.X, B.Y, B.Z, B.mines], [4, 4, 3, 4]);
+  assert.ok(!PRESETS.some((p) => p.X === B.X && p.Y === B.Y && p.Z === B.Z), 'a board outside the presets');
+  assert.doesNotMatch(read('js/mode3d/learn.js'), /First box/, 'not described as a preset\'s');
   assert.equal(B.minePositions.length, B.mines);
   assert.equal(B.startCell, startCell(graphOf()));
   assert.deepEqual(createBoxGrid(B.X, B.Y, B.Z).coords(B.startCell), [2, 2, 1], 'floor(X / 2), floor(Y / 2), floor(Z / 2)');
-  assert.equal(startSpacing(B), 1.5, 'First box 1\'s start spacing');
   assert.equal(LEARN_TITLE, 'Learn 3D');
 });
 
@@ -79,7 +79,7 @@ test('the first reveal on the start cell meets every board condition, and the so
   assert.equal(cleared.cleared, true, 'no guess needed');
 });
 
-test('the dev script finds the guided board: the first seed from 1 that qualifies at First box 1\'s count', () => {
+test('the dev script finds the guided board: the first seed from 1 that qualifies at the lesson box\'s count', () => {
   const found = findLearnBoard({ X: B.X, Y: B.Y, Z: B.Z, count: B.mines, maxSeed: B.seed });
   assert.deepEqual(found, {
     X: B.X, Y: B.Y, Z: B.Z, mines: B.mines, seed: B.seed, generatorVersion: B.generatorVersion, startCell: B.startCell,
@@ -277,12 +277,31 @@ test('the learn module is DOM-free and documents itself', () => {
 test('index.html holds the Learn 3D entry first on the 3D board choice, the ready card\'s line and the Learn 3D end card', () => {
   const board = INDEX.slice(INDEX.indexOf('<section id="board-choice"'), INDEX.indexOf('<!-- Coming soon -->'));
   const learn = board.indexOf('data-learn');
-  assert.ok(learn > 0 && learn < board.indexOf('id="bc-box"'), 'above the First box group');
+  assert.ok(learn > 0 && learn < board.indexOf('data-preset='), 'above the presets');
   assert.match(board, /data-learn[^>]*>[\s\S]*?Learn 3D[\s\S]*?A guided 4 &times; 4 &times; 3 box &middot; no timer, no records/);
   const ready = INDEX.slice(INDEX.indexOf('<section id="ready"'), INDEX.indexOf('<!-- Controls modal'));
   assert.match(ready, /id="ready-learn"[^>]*hidden[\s\S]*New to 3D\? Learn 3D walks you through a small box\.[\s\S]*id="ready-learn-btn"[^>]*>Learn 3D</);
   assert.ok(ready.indexOf('id="ready-learn"') > ready.indexOf('</button>'), 'outside the card\'s own button');
-  assert.match(INDEX, /<section id="learn-end" class="overlay hidden"[\s\S]*?id="learn-end-title"[\s\S]*?id="learn-end-primary"[\s\S]*?id="learn-end-back"[^>]*>Back to board choice</);
+  assert.match(INDEX, /<section id="learn-end" class="overlay hidden"[\s\S]*?id="learn-end-title"[\s\S]*?id="learn-end-line"[\s\S]*?id="learn-end-primary"[\s\S]*?id="learn-end-back"[^>]*>Back to board choice</);
+  const card = INDEX.slice(INDEX.indexOf('<section id="learn-end"'), INDEX.indexOf('<section id="pause"'));
+  assert.doesNotMatch(card, /First box/, 'no First box on the end card');
+});
+
+test('the Learn 3D end card: a win reads "You cleared the box!" and offers Play Cube Intro; the loss card is unchanged', () => {
+  const ui = code('js/ui.js');
+  const show = ui.slice(ui.indexOf('showLearnEnd(won) {'), ui.indexOf('hideLearnEnd()'));
+  assert.match(show, /learnEndTitle\.textContent = won \? 'You cleared the box!' : 'That cube was a mine\.'/);
+  assert.match(show, /learnEndLine\.textContent = won \? 'Ready for a real board\? Cube Intro is a 6 × 6 × 6 box with 10 mines, a timer and records\.' : 'Learn 3D'/);
+  assert.match(show, /learnEndPrimary\.textContent = won \? 'Play Cube Intro' : 'Try again'/);
+  assert.deepEqual([INTRO.X, INTRO.Y, INTRO.Z, INTRO.mines], [6, 6, 6, 10], 'the line names Cube Intro\'s board');
+  assert.match(ui, /learnEndLine: \$\('learn-end-line'\)/);
+  assert.match(INDEX, /<p class="ui-text ui-text--muted" id="learn-end-line">Learn 3D<\/p>/, 'the loss card\'s line, as it was');
+  assert.match(MAIN, /onLearnEnd: \(won\) => \(won \? playCubeIntro\(\) : PAUSE\.restart\(/);
+  const play = MAIN.slice(MAIN.indexOf('function playCubeIntro('), MAIN.indexOf('\n}\n', MAIN.indexOf('function playCubeIntro(')));
+  assert.match(play, /const choice = \{ size: 'cube-intro', custom: \{ \.\.\.last\.custom \}, noGuess: !!last\.noGuess \};/, 'Cube Intro with the presets\' no-guess switch as remembered');
+  assert.match(play, /LAST_CHOICE_3D\.save\(choice\)/, 'saved as the last choice');
+  assert.match(play, /MODES\.start\('3d', boardOf\(choice\)\)/);
+  assert.doesNotMatch(MAIN, /playFirstBox|First box/, 'no First box left in the shell');
 });
 
 test('js/main.js starts the guided board from the entry, the ready card and Try again, with none of the records\' hand-offs', () => {
@@ -382,8 +401,9 @@ test('in a browser, Learn 3D: the entry, the marked cube, the four prompts, the 
     }, await ms(() => [...globalThis.__ms.learnBoard.minePositions]));
     await page.waitForFunction(() => globalThis.__ms.game.state === 'won');
     await page.waitForFunction(() => globalThis.__ms.state.mode === 'learn-end', null, { timeout: patience(10000) });
-    assert.equal(await ms(() => document.getElementById('learn-end-title').textContent), 'You\'ve got the basics of 3D.');
-    assert.equal(await ms(() => document.getElementById('learn-end-primary').textContent), 'Play First box 1');
+    assert.equal(await ms(() => document.getElementById('learn-end-title').textContent), 'You cleared the box!');
+    assert.equal(await ms(() => document.getElementById('learn-end-line').textContent), 'Ready for a real board? Cube Intro is a 6 × 6 × 6 box with 10 mines, a timer and records.');
+    assert.equal(await ms(() => document.getElementById('learn-end-primary').textContent), 'Play Cube Intro');
     assert.equal(await ms(() => document.getElementById('learn-end').textContent.includes('Time')), false, 'no time on the card');
     await page.waitForFunction(() => document.activeElement?.id === 'learn-end-primary', null, { timeout: patience(5000) });
     await page.keyboard.press('ArrowRight');

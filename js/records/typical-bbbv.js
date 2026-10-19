@@ -9,14 +9,12 @@
 // change has no entry until it is measured again, and its detail line leaves the 3BV part out. A
 // board and its no-guess twin share the entry.
 
-// The 3D presets' curve (median 3BV): First box 1 11, First box 2 17, Cube Intro 22, Cube Beginner 63,
-// Cube Intermediate 120, Cube Expert 358 — the cube steps from Beginner ×1.9 and ×3.0.
+// The 3D presets' curve (median 3BV): Cube Intro 22, Cube Beginner 63, Cube Intermediate 120,
+// Cube Expert 358 — the cube steps from Beginner ×1.9 and ×3.0.
 export const TYPICAL_BBBV = Object.freeze({
   '9x9:10': 15,
   '16x16:40': 63,
   '30x16:99': 171,
-  '4x4x3:4': 11,
-  '5x5x3:6': 17,
   '6x6x6:10': 22,
   '6x6x6:20': 63,
   '8x8x8:40': 120,

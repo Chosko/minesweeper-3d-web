@@ -4,9 +4,9 @@
 // It takes one of two forms, chosen by its mode:
 //   2D — mode, grid, width, height, mines and noGuess. Beginner, Intermediate and Expert are
 //        recognised from their exact size and mine count on the square grid.
-//   3D — mode `3d`, width (X), height (Y), depth (Z), mines and noGuess, with no grid. The six
-//        presets, "First box" 1 and 2 and "Cube" Intro, Beginner, Intermediate and Expert, are
-//        recognised from their exact size and mine count.
+//   3D — mode `3d`, width (X), height (Y), depth (Z), mines and noGuess, with no grid. The presets,
+//        "Cube" Intro, Beginner, Intermediate and Expert, are recognised from their exact size and
+//        mine count; any other 3D board, a former preset's included, is a custom board.
 // A name is never stored, so a custom board that matches a standard board or a preset is that
 // board. Either form may carry `daily: true`: the mode's Daily board, the board the day's daily
 // games are recorded on (js/records/board-code.js), a board of its own beside the plain one.
@@ -36,8 +36,6 @@ export const STANDARD_BOARDS = Object.freeze([
 // (js/mode3d/board-choice.js, kept equal by a test).
 const preset = (family, name, width, height, depth, mines) => Object.freeze({ family, name, width, height, depth, mines });
 export const PRESETS_3D = Object.freeze([
-  preset('First box', '1', 4, 4, 3, 4),
-  preset('First box', '2', 5, 5, 3, 6),
   preset('Cube', 'Intro', 6, 6, 6, 10),
   preset('Cube', 'Beginner', 6, 6, 6, 20),
   preset('Cube', 'Intermediate', 8, 8, 8, 40),

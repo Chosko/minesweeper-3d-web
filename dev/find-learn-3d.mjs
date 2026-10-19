@@ -2,7 +2,7 @@
 //
 // Usage: node dev/find-learn-3d.mjs
 //
-// For First box 1's box (4 × 4 × 3) and mine count, it asks generate() for a no-guess board with the
+// For the lesson box, LESSON_BOX (4 × 4 × 3 at 4 mines), it asks generate() for a no-guess board with the
 // first click on the box's marked start cell (startCell, the centre cell floor(X / 2), floor(Y / 2),
 // floor(Z / 2)), over seeds from 1 upwards, plays the first reveal on that cell through create3DGame
 // and takes the first seed whose board meets lessonCells() (js/mode3d/learn.js): the first reveal
@@ -14,17 +14,18 @@
 // It prints the count, seed, generator version, start cell, mine positions, P, L and M, the lines
 // LEARN_BOARD and its head comment carry.
 //
-// Found under Node 22: count 4 (First box 1's), seed 75, generator version 1, start cell 26, mines 1,
+// Found under Node 22: count 4 (LESSON_BOX's), seed 75, generator version 1, start cell 26, mines 1,
 // 2, 3, 40; P 36, L 25, M 40.
 
 import { generate } from '../js/generation/generate.js';
 import { startCell } from '../js/generation/start-cell.js';
 import { create3DGame } from '../js/mode3d/session.js';
 import { lessonCells } from '../js/mode3d/learn.js';
-import { PRESETS } from '../js/mode3d/board-choice.js';
 
 export const MAX_SEED = 10000;
 export const MAX_COUNT = 6;
+/** The lesson box's size and the mine count the search starts from. */
+export const LESSON_BOX = Object.freeze({ X: 4, Y: 4, Z: 3, mines: 4 });
 
 /** The first qualifying board for an X × Y × Z box from `count` mines up, or null. */
 export function findLearnBoard({ X, Y, Z, count, maxSeed = MAX_SEED, maxCount = MAX_COUNT }) {
@@ -44,13 +45,13 @@ export function findLearnBoard({ X, Y, Z, count, maxSeed = MAX_SEED, maxCount = 
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const box = PRESETS.find((p) => p.id === 'box-1');
+  const box = LESSON_BOX;
   const found = findLearnBoard({ X: box.X, Y: box.Y, Z: box.Z, count: box.mines });
   if (!found) {
     console.log(`no board up to seed ${MAX_SEED} at ${box.mines} to ${MAX_COUNT} mines`);
     process.exitCode = 1;
   } else {
-    console.log(`count ${found.mines}${found.mines !== box.mines ? ` (First box 1 has ${box.mines})` : ''}`);
+    console.log(`count ${found.mines}${found.mines !== box.mines ? ` (the lesson box aims at ${box.mines})` : ''}`);
     console.log(`seed ${found.seed}, generator version ${found.generatorVersion}, start cell ${found.startCell}`);
     console.log(`mines ${found.minePositions.join(', ')}`);
     console.log(`P ${found.proofNumber}, L ${found.lessonNumber}, M ${found.lessonMine}`);

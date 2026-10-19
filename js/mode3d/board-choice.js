@@ -1,4 +1,4 @@
-// 3D board choice: Learn 3D, the two first-box presets and the four cube presets, a custom board, the
+// 3D board choice: Learn 3D, the four cube presets, a custom board, the
 // Random fill and the no-guess switch, preselected from the last 3D board choice. Touches only the
 // elements it is handed.
 //
@@ -15,14 +15,10 @@
 // one of them is always a guess.
 //
 // Pure helpers:
-//   PRESETS, FAMILIES        the presets in menu order, each { id, family, name, X, Y, Z, mines,
-//                            spacing }, and their families { id, label }. `spacing` is the board's
-//                            start spacing.
-//   startSpacing(board)      the start spacing of { X, Y, Z, mines }: the preset's with that size and
-//                            mines (a custom board of a preset's size and mines included, as the
-//                            records recognise a preset), else SPACING_START (js/input.js).
+//   PRESETS, FAMILIES        the presets in menu order, each { id, family, name, X, Y, Z, mines },
+//                            and their families { id, label }.
 //   presetKey(p) / presetByKey(key)   '6,6,6,10', the preset items' data-preset value.
-//   presetTitle(p)           'Cube Beginner', 'First box 1': family and name, the preset item's label,
+//   presetTitle(p)           'Cube Beginner': family and name, the preset item's label,
 //                            as results and Records name the board.
 //   presetLabel(p)           '6 × 6 × 6 · 10 mines'.
 //   validateCustom(board)    { ok: true } or { ok: false, field, reason }; field 'X' | 'Y' | 'Z' | 'mines'.
@@ -63,7 +59,6 @@
 import { aboveDensityHint, DENSITY_HINT_TEXT } from '../classic2d/board-setup.js';
 import { bindCodeField } from '../ui/components.js';
 import { CODE_PROMPT } from '../classic2d/board-choice.js';
-import { SPACING_START } from '../input.js';
 
 export const DIM_MIN = 1;
 export const DIM_MAX = 100;
@@ -75,28 +70,21 @@ export const NOGUESS_CELL_LIMIT = 8000;
 export const LAST_CHOICE_DOC = 'mode3d.lastChoice';
 export const LAST_CHOICE_VERSION = 1;
 
-/** The first-box presets' start spacing: the boxes open up, read as slabs before the cubes. */
-const SPACING_FIRST_BOX = 1.5;
-
 // The presets in menu order. The cube steps aim at about ×2.5 to ×3 in 3BV; measured ×2.9, ×1.9 and
-// ×3.0 (js/records/typical-bbbv.js). The mine counts of First box 1 and Cube Beginner are measured by
+// ×3.0 (js/records/typical-bbbv.js). Cube Beginner's mine count is measured by
 // dev/measure-first-box-3d.mjs (no-guess, the first click on the marked start cell, 100 seeds a count):
-//   First box 1, 4 mines — the count nearest 4 that leaves work after the first click: every seed
-//     generates, the first click wins outright on none, median 3BV left 12.
 //   Cube Beginner, 20 mines — of 16 to 20 (every seed generates, median 3BV left at least 40), the one
 //     whose first click opens nearest 60 % of the safe cells: 60.5 %, median 3BV left 57.
-// Preset ids name the tier, so a remembered choice follows it to the tier's current board.
-const preset = (id, family, name, X, Y, Z, mines, spacing = SPACING_START) => Object.freeze({ id, family, name, X, Y, Z, mines, spacing });
+// Preset ids name the tier, so a remembered choice follows it to the tier's current board; one naming
+// a preset no longer offered does not normalise and opens on DEFAULT_CHOICE.
+const preset = (id, family, name, X, Y, Z, mines) => Object.freeze({ id, family, name, X, Y, Z, mines });
 export const PRESETS = Object.freeze([
-  preset('box-1', 'box', '1', 4, 4, 3, 4, SPACING_FIRST_BOX),
-  preset('box-2', 'box', '2', 5, 5, 3, 6, SPACING_FIRST_BOX),
   preset('cube-intro', 'cube', 'Intro', 6, 6, 6, 10),
   preset('cube-beginner', 'cube', 'Beginner', 6, 6, 6, 20),
   preset('cube-intermediate', 'cube', 'Intermediate', 8, 8, 8, 40),
   preset('cube-expert', 'cube', 'Expert', 10, 10, 10, 100),
 ]);
 export const FAMILIES = Object.freeze([
-  Object.freeze({ id: 'box', label: 'First box' }),
   Object.freeze({ id: 'cube', label: 'Cube' }),
 ]);
 export const BOARD_SIZES = Object.freeze([...PRESETS.map((p) => p.id), 'custom']);
@@ -112,7 +100,6 @@ export const presetByKey = (key) => PRESETS.find((p) => presetKey(p) === key) ??
 export const presetTitle = (p) => `${FAMILIES.find((f) => f.id === p.family).label} ${p.name}`;
 const presetById = (id) => PRESETS.find((p) => p.id === id) ?? null;
 export const presetLabel = (p) => `${p.X} × ${p.Y} × ${p.Z} · ${p.mines} mines`;
-export const startSpacing = ({ X, Y, Z, mines }) => presetByKey(presetKey({ X, Y, Z, mines }))?.spacing ?? SPACING_START;
 
 const n = (v) => v.toLocaleString('en-US');
 const dim = (v) => Number.isInteger(v) && v >= DIM_MIN && v <= DIM_MAX;

@@ -56,7 +56,7 @@ test('3D identity: a 2D identity is unchanged — it keeps its grid and has no d
 
 // ---------- presets ----------
 
-test('3D presets: the six presets, the same sizes and mines as the 3D board choice', () => {
+test('3D presets: the four cube presets, the same sizes and mines as the 3D board choice', () => {
   assert.ok(Object.isFrozen(PRESETS_3D));
   const family = (id) => FAMILIES.find((f) => f.id === id).label;
   assert.deepEqual(
@@ -64,8 +64,7 @@ test('3D presets: the six presets, the same sizes and mines as the 3D board choi
     PRESETS.map((p) => [family(p.family), p.name, p.X, p.Y, p.Z, p.mines]),
   );
   assert.deepEqual(PRESETS_3D.map((p) => [p.family, p.name, p.width, p.height, p.depth, p.mines]), [
-    ['First box', '1', 4, 4, 3, 4], ['First box', '2', 5, 5, 3, 6], ['Cube', 'Intro', 6, 6, 6, 10],
-    ['Cube', 'Beginner', 6, 6, 6, 20], ['Cube', 'Intermediate', 8, 8, 8, 40], ['Cube', 'Expert', 10, 10, 10, 100],
+    ['Cube', 'Intro', 6, 6, 6, 10], ['Cube', 'Beginner', 6, 6, 6, 20], ['Cube', 'Intermediate', 8, 8, 8, 40], ['Cube', 'Expert', 10, 10, 10, 100],
   ]);
 });
 
@@ -73,7 +72,8 @@ test('3D presets: recognised from the exact size and mine count, never for a 2D 
   assert.equal(preset3D(box(6, 6, 6, 10)).name, 'Intro');
   assert.equal(preset3D(box(6, 6, 6, 20)).name, 'Beginner');
   assert.equal(preset3D(box(10, 10, 10, 100, true)).family, 'Cube');
-  assert.equal(preset3D(box(4, 4, 3, 4)).family, 'First box');
+  assert.equal(preset3D(box(4, 4, 3, 4)), null, 'the former First box 1 is a custom board');
+  assert.equal(preset3D(box(5, 5, 3, 6, true)), null, 'the former First box 2 is a custom board');
   assert.equal(preset3D(box(6, 6, 6, 11)), null);
   assert.equal(preset3D(box(12, 12, 8, 130)), null, 'the former Cube Expert is a custom board');
   for (const [w, h, d, m] of [[8, 8, 2, 10], [14, 14, 2, 60], [25, 16, 2, 130]]) {
@@ -88,15 +88,13 @@ test('3D presets: recognised from the exact size and mine count, never for a 2D 
 // ---------- key ----------
 
 const PRESET_KEYS = [
-  [[4, 4, 3, 4], '3d:4x4x3:4'],
-  [[5, 5, 3, 6], '3d:5x5x3:6'],
   [[6, 6, 6, 10], '3d:6x6x6:10'],
   [[6, 6, 6, 20], '3d:6x6x6:20'],
   [[8, 8, 8, 40], '3d:8x8x8:40'],
   [[10, 10, 10, 100], '3d:10x10x10:100'],
 ];
 
-test('3D key: pinned for the six presets with and without no-guess', () => {
+test('3D key: pinned for the four presets with and without no-guess', () => {
   for (const [[w, h, d, m], key] of PRESET_KEYS) {
     assert.equal(boardKey(box(w, h, d, m)), `${key}:guess`);
     assert.equal(boardKey(box(w, h, d, m, true)), `${key}:no-guess`);
@@ -109,7 +107,9 @@ test('3D key: pinned for custom boards', () => {
   assert.equal(boardKey(box(1, 1, 2, 1)), '3d:1x1x2:1:guess');
   assert.equal(boardKey(box(100, 100, 100, 999999)), '3d:100x100x100:999999:guess');
   assert.equal(boardKey(box(2, 8, 8, 10)), '3d:2x8x8:10:guess');
-  // A former double layer board, and the former Cube Expert, keep their keys.
+  // A former double layer board, a former First box and the former Cube Expert keep their keys.
+  assert.equal(boardKey(box(4, 4, 3, 4)), '3d:4x4x3:4:guess');
+  assert.equal(boardKey(box(5, 5, 3, 6, true)), '3d:5x5x3:6:no-guess');
   assert.equal(boardKey(box(12, 12, 8, 130, true)), '3d:12x12x8:130:no-guess');
   assert.equal(boardKey(box(8, 8, 2, 10)), '3d:8x8x2:10:guess');
   assert.equal(boardKey(box(25, 16, 2, 130, true)), '3d:25x16x2:130:no-guess');
@@ -163,10 +163,8 @@ test('3D key: a malformed or impossible 3D key throws a range error', () => {
 
 // ---------- label ----------
 
-test('3D label: the six presets with and without no-guess', () => {
+test('3D label: the four presets with and without no-guess', () => {
   const names = [
-    [[4, 4, 3, 4], 'First box 1'],
-    [[5, 5, 3, 6], 'First box 2'],
     [[6, 6, 6, 10], 'Cube Intro'],
     [[6, 6, 6, 20], 'Cube Beginner'],
     [[8, 8, 8, 40], 'Cube Intermediate'],
@@ -195,6 +193,12 @@ test('3D label: a former double layer board is labelled as a custom board', () =
   assert.equal(boardLabel(parseBoardKey('3d:8x8x2:10:guess')), '8 × 8 × 2 · 10 mines');
 });
 
+test('3D label: a former First box board is labelled by its size and mine count', () => {
+  assert.equal(boardLabel(box(4, 4, 3, 4)), '4 × 4 × 3 · 4 mines');
+  assert.equal(boardLabel(box(5, 5, 3, 6, true)), '5 × 5 × 3 · 6 mines · no-guess');
+  assert.equal(boardLabel(parseBoardKey('3d:4x4x3:4:no-guess')), '4 × 4 × 3 · 4 mines · no-guess');
+});
+
 test('3D label: the former Cube Expert, 12 × 12 × 8 · 130, is labelled as a custom board', () => {
   assert.equal(boardLabel(box(12, 12, 8, 130)), '12 × 12 × 8 · 130 mines');
   assert.equal(boardLabel(parseBoardKey('3d:12x12x8:130:no-guess')), '12 × 12 × 8 · 130 mines · no-guess');
@@ -206,7 +210,7 @@ test('3D label: a custom board matching a preset exactly is that preset\'s board
   assert.equal(boardLabel(custom), 'Cube Expert · no-guess');
   assert.equal(boardKey(custom), boardKey(box(10, 10, 10, 100, true)));
   assert.equal(preset3D(custom).name, 'Expert');
-  assert.equal(boardLabel({ mode: '3d', width: 5, height: 5, depth: 3, mines: 6, noGuess: true }), 'First box 2 · no-guess');
+  assert.equal(boardLabel({ mode: '3d', width: 6, height: 6, depth: 6, mines: 10, noGuess: true }), 'Cube Intro · no-guess');
 });
 
 // ---------- module ----------

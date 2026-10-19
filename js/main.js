@@ -58,7 +58,7 @@ import { bindBoardChoice } from './classic2d/board-choice.js';
 import { createLastChoice, DEFAULT_CHOICE } from './classic2d/board-setup.js';
 import {
   bindBoardChoice as bindBoardChoice3D, boardOf, normaliseChoice as normaliseChoice3D, DEFAULT_CHOICE as DEFAULT_CHOICE_3D,
-  LAST_CHOICE_DOC as LAST_CHOICE_DOC_3D, LAST_CHOICE_VERSION as LAST_CHOICE_VERSION_3D, startSpacing,
+  LAST_CHOICE_DOC as LAST_CHOICE_DOC_3D, LAST_CHOICE_VERSION as LAST_CHOICE_VERSION_3D,
 } from './mode3d/board-choice.js';
 import { LEARN_BOARD, LEARN_HINTS, learnChoice, createLearnPrompts, closedAround } from './mode3d/learn.js';
 
@@ -395,7 +395,7 @@ const ui = new UI({
   onReadyClick: () => { sfx.unlock(); if (COARSE_ONLY) enterPlaying(true); else if (padGesture) padResume(); else requestLock3D(); }, // a coarse-only device: lockless touch play
   onReadyDrag: () => enterDragLook(),
   onReadyLearn: () => startLearn(),
-  onLearnEnd: (won) => (won ? playFirstBox() : PAUSE.restart(padGesture ? 'pad' : 'pointer')), // Try again restarts the guided board
+  onLearnEnd: (won) => (won ? playCubeIntro() : PAUSE.restart(padGesture ? 'pad' : 'pointer')), // Try again restarts the guided board
   onLearnBack: () => SHELL.go('board-choice'),
   onResume: () => PAUSE.resume(padGesture ? 'pad' : 'pointer'),
   onBackToStart: () => { placeAtSpawn(); PAUSE.resume(padGesture ? 'pad' : 'pointer'); }, // a 3D game in play: resumes as Resume does
@@ -563,10 +563,10 @@ function startLearn() {
 function learnGame() {
   return MODES.active === '3d' && S.learn ? { learn: true, won: S.game?.state === 'won' } : undefined;
 }
-/** The Learn 3D win's Play First box 1: an ordinary pick of First box 1 with the presets' no-guess switch as remembered, saved as the last choice. */
-function playFirstBox() {
+/** The Learn 3D win's Play Cube Intro: an ordinary pick of Cube Intro with the presets' no-guess switch as remembered, saved as the last choice. */
+function playCubeIntro() {
   const last = LAST_CHOICE_3D.current;
-  const choice = { size: 'box-1', custom: { ...last.custom }, noGuess: !!last.noGuess };
+  const choice = { size: 'cube-intro', custom: { ...last.custom }, noGuess: !!last.noGuess };
   sfx.unlock();
   LAST_CHOICE_3D.save(choice).catch(() => {});
   MODES.start('3d', boardOf(choice));
@@ -1313,7 +1313,7 @@ function startGame(settings, pregenerated = null) {
   S.endState = null;
   S.selected = -1;
   S.pickKey = '';
-  S.spacing = startSpacing(s);
+  S.spacing = SPACING_START;
   ui.setSpacing(S.spacing);
   board3d.generating = false;
   board3d.failure = null;

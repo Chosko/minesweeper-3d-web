@@ -204,13 +204,7 @@
       <div class="ui-menu" role="group" aria-label="Learn 3D">
         <button type="button" class="ui-menu__item" id="bc-learn" data-learn><span class="ui-menu__label">Learn 3D</span><span class="ui-menu__detail">A guided 4 &times; 4 &times; 3 box &middot; no timer, no records</span></button>
       </div>
-      <h3 class="ui-heading" id="bc-box">First box</h3>
-      <div class="ui-menu" role="group" aria-labelledby="bc-box">
-        <button type="button" class="ui-menu__item" data-preset="4,4,3,4"><span class="ui-menu__label">First box 1</span><span class="ui-menu__detail">4 &times; 4 &times; 3 &middot; 4 mines</span></button>
-        <button type="button" class="ui-menu__item" data-preset="5,5,3,6"><span class="ui-menu__label">First box 2</span><span class="ui-menu__detail">5 &times; 5 &times; 3 &middot; 6 mines</span></button>
-      </div>
-      <h3 class="ui-heading" id="bc-cube">Cube</h3>
-      <div class="ui-menu" role="group" aria-labelledby="bc-cube">
+      <div class="ui-menu" role="group" aria-label="Presets">
         <button type="button" class="ui-menu__item" data-preset="6,6,6,10"><span class="ui-menu__label">Cube Intro</span><span class="ui-menu__detail">6 &times; 6 &times; 6 &middot; 10 mines</span></button>
         <button type="button" class="ui-menu__item" data-preset="6,6,6,20"><span class="ui-menu__label">Cube Beginner</span><span class="ui-menu__detail">6 &times; 6 &times; 6 &middot; 20 mines</span></button>
         <button type="button" class="ui-menu__item" data-preset="8,8,8,40"><span class="ui-menu__label">Cube Intermediate</span><span class="ui-menu__detail">8 &times; 8 &times; 8 &middot; 40 mines</span></button>
@@ -602,10 +596,10 @@
   <!-- Learn 3D end card: over the stopped scene of the guided board (js/mode3d/learn.js) -->
   <section id="learn-end" class="overlay hidden" aria-label="Learn 3D">
     <section class="ui-card ui-screen" aria-labelledby="learn-end-title">
-      <h2 class="ui-card__title" id="learn-end-title">You've got the basics of 3D.</h2>
-      <p class="ui-text ui-text--muted">Learn 3D</p>
+      <h2 class="ui-card__title" id="learn-end-title">You cleared the box!</h2>
+      <p class="ui-text ui-text--muted" id="learn-end-line">Learn 3D</p>
       <div class="ui-actions ui-actions--row">
-        <button type="button" id="learn-end-primary" class="ui-button ui-button--primary">Play First box 1</button>
+        <button type="button" id="learn-end-primary" class="ui-button ui-button--primary">Play Cube Intro</button>
         <button type="button" id="learn-end-back" class="ui-button ui-button--secondary">Back to board choice</button>
       </div>
     </section>

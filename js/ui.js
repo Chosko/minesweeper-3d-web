@@ -65,7 +65,7 @@ export class UI {
       controlsBody: $('controls-body'),
       flash: $('flash'), menu: $('menu'), ready: $('ready'), readyBoard: $('ready-board'), readyMsg: $('ready-msg'), readyBlocked: $('ready-blocked'),
       readyLearn: $('ready-learn'), hintClose: $('hint-strip-close'), timeStat: $('hud-time').closest('.ui-stat'),
-      learnEnd: $('learn-end'), learnEndTitle: $('learn-end-title'), learnEndPrimary: $('learn-end-primary'),
+      learnEnd: $('learn-end'), learnEndTitle: $('learn-end-title'), learnEndLine: $('learn-end-line'), learnEndPrimary: $('learn-end-primary'),
       boardChoice: $('board-choice'), comingSoon: $('coming-soon'), comingSoonTitle: $('coming-soon-title'),
       settings: $('settings'), settingsBindings: null, records: $('records'), daily: $('daily'),
       comingSoonText: $('coming-soon-text'),
@@ -574,17 +574,18 @@ export class UI {
     if (this.el.pauseSub.textContent !== line) this.el.pauseSub.textContent = line;
   }
   /**
-   * The Learn 3D end card over the guided board's stopped scene: on a win "You've got the basics of
-   * 3D." with Play First box 1, on a loss "That cube was a mine." with Try again; Back to board choice
-   * on both, and no time.
+   * The Learn 3D end card over the guided board's stopped scene: on a win "You cleared the box!", the
+   * line offering Cube Intro and Play Cube Intro, on a loss "That cube was a mine." under "Learn 3D"
+   * with Try again; Back to board choice on both, and no time.
    */
   showLearnEnd(won) {
     this._learnWon = !!won;
     this._hideMenus();
     this.el.ready.classList.add('hidden');
     this.el.pause.classList.add('hidden');
-    this.el.learnEndTitle.textContent = won ? 'You\'ve got the basics of 3D.' : 'That cube was a mine.';
-    this.el.learnEndPrimary.textContent = won ? 'Play First box 1' : 'Try again';
+    this.el.learnEndTitle.textContent = won ? 'You cleared the box!' : 'That cube was a mine.';
+    this.el.learnEndLine.textContent = won ? 'Ready for a real board? Cube Intro is a 6 × 6 × 6 box with 10 mines, a timer and records.' : 'Learn 3D';
+    this.el.learnEndPrimary.textContent = won ? 'Play Cube Intro' : 'Try again';
     this.el.learnEnd.classList.remove('hidden');
   }
   hideLearnEnd() { this.el.learnEnd.classList.add('hidden'); }

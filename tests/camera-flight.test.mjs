@@ -204,7 +204,7 @@ test('every spacing change goes through the one setter, which scales the camera;
   const onKey = main.slice(main.indexOf('onKey: (code, e) => {'));
   assert.match(onKey.slice(0, onKey.indexOf('onLockChange')), /code === 'KeyX' && input\.o\.isActive\(\)[^\n]*spacingToggle\(/, 'X toggles in 3D play only');
   const startGame = main.slice(main.indexOf('function startGame('), main.indexOf('\n}\n', main.indexOf('function startGame(')));
-  assert.match(startGame, /S\.spacing = startSpacing\(s\);\s*ui\.setSpacing\(S\.spacing\);/, 'a new game resets the spacing to the board\'s start spacing, and the readout with it');
+  assert.match(startGame, /S\.spacing = SPACING_START;\s*ui\.setSpacing\(S\.spacing\);/, 'a new game resets the spacing to the start spacing, and the readout with it');
 });
 
 test('the 3D tools strip carries the spacing to one decimal, like its other key hints; the toast is gone; not in Classic 2D', () => {

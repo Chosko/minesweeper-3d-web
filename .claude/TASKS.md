@@ -560,7 +560,7 @@ Feature: shared-screen-layout
 
 ## 212. 3D presets without First box 1 and 2; Learn 3D's win offers Cube Intro
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/mode3d/board-choice.js, js/records/board.js, js/records/model.js, js/records/screen.js, js/records/typical-bbbv.js, js/mode3d/learn.js, js/ui.js, js/main.js, js/shell/returning.js, index.html, dev/measure-first-box-3d.mjs, tests/mode3d-board-choice.test.mjs, tests/records-board-3d.test.mjs, tests/records-model-3d.test.mjs, tests/records-screen-3d.test.mjs, tests/mode3d-learn.test.mjs, tests/camera-spawn.test.mjs, tests/shell-menu.test.mjs
 Preconditions: none

@@ -1,14 +1,14 @@
 // Learn 3D: the guided board and its prompt sequence. DOM-free.
 //
-// LEARN_BOARD — the one guided board, a frozen constant: First box 1's size and mine count
-//   (4 × 4 × 3 · 4, js/mode3d/board-choice.js), the seed and generator version it was generated
-//   with, its start cell (the box's marked start cell, js/generation/start-cell.js: the centre cell
-//   floor(X / 2), floor(Y / 2), floor(Z / 2)), its mine positions, the lesson number (`lessonNumber`,
-//   L) and the lesson mine (`lessonMine`, M), with the revealed 1 that proves M a mine
-//   (`proofNumber`, P). Found by dev/find-learn-3d.mjs, which takes the first seed from 1 upwards
-//   whose no-guess board, after the first reveal on the start cell, meets lessonCells(): First box 1's
-//   count 4, seed 75, generator version 1, mines 1, 2, 3, 40 (cells i + 4 × (j + 4 × k)), start cell
-//   26 (2, 2, 1), P 36 (0, 1, 2), L 25 (1, 2, 1), M 40 (0, 2, 2). The mine positions are
+// LEARN_BOARD — the one guided board, a frozen constant: the lesson box's size and mine count
+//   (4 × 4 × 3 · 4, a box outside the presets, dev/find-learn-3d.mjs LESSON_BOX), the seed and
+//   generator version it was generated with, its start cell (the box's marked start cell,
+//   js/generation/start-cell.js: the centre cell floor(X / 2), floor(Y / 2), floor(Z / 2)), its mine
+//   positions, the lesson number (`lessonNumber`, L) and the lesson mine (`lessonMine`, M), with the
+//   revealed 1 that proves M a mine (`proofNumber`, P). Found by dev/find-learn-3d.mjs, which takes
+//   the first seed from 1 upwards whose no-guess board, after the first reveal on the start cell,
+//   meets lessonCells(): count 4, seed 75, generator version 1, mines 1, 2, 3, 40 (cells
+//   i + 4 × (j + 4 × k)), start cell 26 (2, 2, 1), P 36 (0, 1, 2), L 25 (1, 2, 1), M 40 (0, 2, 2). The mine positions are
 //   committed, so a later GENERATOR_VERSION changes no lesson; the seed and version stay recorded.
 //
 // lessonCells(view, startCell) → { proofNumber, lessonNumber, lessonMine } or null: the board

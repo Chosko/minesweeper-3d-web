@@ -1,6 +1,6 @@
-// Measures the no-guess first click from the marked start cell on the small 3D presets, for each
-// candidate mine count: the measurement behind the mine counts of First box 1 and Cube Beginner in
-// PRESETS (js/mode3d/board-choice.js).
+// Measures the no-guess first click from the marked start cell on Cube Beginner's box, for each
+// candidate mine count: the measurement behind Cube Beginner's mine count in PRESETS
+// (js/mode3d/board-choice.js).
 //
 // Usage: node dev/measure-first-box-3d.mjs [seeds]   (default 100 seeds per count)
 //
@@ -9,21 +9,12 @@
 // requests that met the attempt budget, the median share of safe cells the first click opens, the
 // median 3BV left after the first click, and the seeds the first click wins outright.
 //
-// The rules that pick a count:
-//   First box 1 (4 × 4 × 3, 3 to 6 mines) — the count nearest 4 where every seed meets the budget,
-//     the first click wins outright on at most 5 % of seeds and the median 3BV left is at least 3;
-//     between two equally near counts, the one with more 3BV left.
-//   Cube Beginner (6 × 6 × 6, 16 to 20 mines) — among the counts where every seed meets the budget
-//     and the median 3BV left is at least 40, the one whose median opening is nearest 60 %.
-//   With no count meeting every condition, the count nearest the rule's target among those every
-//   seed meets the budget for.
+// The rule that picks the count: Cube Beginner (6 × 6 × 6, 16 to 20 mines) — among the counts where
+// every seed meets the budget and the median 3BV left is at least 40, the one whose median opening is
+// nearest 60 %; with no count meeting every condition, the count nearest 60 % among those every seed
+// meets the budget for.
 //
 // Measured under Node 22, 100 seeds, attempt budget 2000 (every request met it):
-//   4 × 4 × 3:  3 mines opens 2 %, 3BV left 8, 1 win;  4 mines 2 %, 12, 0 wins;  5 mines 77 %, 9,
-//               0 wins;  6 mines 74 %, 9, 0 wins.  Every count meets every condition: First box 1
-//               takes 4. On 70 of its 100 seeds the first click lands on a number whose neighbourhood
-//               holds every mine, so it opens that one cell and the rest is read from the mine count.
-//   5 × 5 × 3 · 6: 100/100 from its centre (opens 83 %, 3BV left 11, 0 wins).
 //   6 × 6 × 6:  16 mines opens 72.0 %, 3BV left 42.5;  17 68.1 %, 45;  18 60.6 %, 53;  19 61.2 %, 51;
 //               20 60.5 %, 57; no wins at any count.  Every count meets the budget and leaves at least
 //               40: Cube Beginner takes 20, its opening nearest 60 %.
@@ -33,8 +24,6 @@ import { startCell } from '../js/generation/start-cell.js';
 
 // The boxes measured and the mine counts tried on each.
 export const SERIES = Object.freeze([
-  Object.freeze({ name: 'First box 1', X: 4, Y: 4, Z: 3, counts: Object.freeze([3, 4, 5, 6]) }),
-  Object.freeze({ name: 'First box 2', X: 5, Y: 5, Z: 3, counts: Object.freeze([6]) }),
   Object.freeze({ name: 'Cube Beginner', X: 6, Y: 6, Z: 6, counts: Object.freeze([16, 17, 18, 19, 20]) }),
 ]);
 
