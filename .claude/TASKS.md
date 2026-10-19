@@ -956,7 +956,7 @@ Feature: game-shell
 
 ## 206. Daily screen won time in the standard time format
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/shell/daily.js, tests/shell-daily.test.mjs
 Preconditions: none

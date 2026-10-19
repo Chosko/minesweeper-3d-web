@@ -13,9 +13,9 @@
 // countedAttempt(records, id, date) → the row's counted history entry for date, or null.
 // dailyRows({ records, replays?, now?, unavailable? }) → one row per daily board, in DAILY_BOARDS
 //   order: { id, label, board, date, dateLabel, code, state ('unplayed' | 'won' | 'lost'), result
-//   ("Not played", "Won 48.2 s", "Lost"), current, longest (days in a row, daysInARow,
-//   js/records/model.js), streak ("Days in a row 3 · longest 5"), canPlay, attempt (its summary id
-//   or null), watch (that id when the replay library keeps its replay, else null), reason }.
+//   ("Not played", "Won 48.213 s" (formatTime, js/results/view.js), "Lost"), current, longest
+//   (days in a row, daysInARow, js/records/model.js), streak ("Days in a row 3 · longest 5"),
+//   canPlay, attempt (its summary id or null), watch (that id when the replay library keeps its replay, else null), reason }.
 //   unavailable maps a mode to the reason it cannot run here (the cube row's 3D, task 132's reason);
 //   such a row cannot be played. A records query that throws reads as no game.
 // createDailyBoards({ clients }) → { prepare(records, now?), take(code), has(code) }: clients maps a
@@ -41,6 +41,7 @@ import { createBoardIdentity, boardLabel } from '../records/board.js';
 import { daysInARow } from '../records/model.js';
 import { pregenerate } from '../generation/client.js';
 import { bindCodeChip } from '../ui/components.js';
+import { formatTime } from '../results/view.js';
 
 export const DAILY_SCREEN = 'daily';
 export const NOT_PLAYED = 'Not played';
@@ -62,8 +63,6 @@ export function countedAttempt(records, id, date) {
   return history.find((e) => e?.daily === date) ?? null;
 }
 
-/** A won daily's time: seconds to the tenth, truncated ("48.2 s"). */
-const tenths = (ms) => `${(Math.trunc(ms / 100) / 10).toFixed(1)} s`;
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 /** A YYYYMMDD date as "14 Oct 2026". */
 export const dailyDateLabel = (date) => `${Number(date.slice(6, 8))} ${MONTHS[Number(date.slice(4, 6)) - 1]} ${date.slice(0, 4)}`;
@@ -86,7 +85,7 @@ export function dailyRows({ records, replays = null, now = new Date(), unavailab
       dateLabel: dailyDateLabel(date),
       code: game.code,
       state,
-      result: state === 'unplayed' ? NOT_PLAYED : state === 'won' ? `Won ${tenths(counted.elapsedMs)}` : LOST,
+      result: state === 'unplayed' ? NOT_PLAYED : state === 'won' ? `Won ${formatTime(counted.elapsedMs)}` : LOST,
       current: days.current,
       longest: days.longest,
       streak: `Days in a row ${days.current} · longest ${days.longest}`,

@@ -64,7 +64,7 @@ test('daily rows: the counted attempt is the first daily game of the date; its r
   const won = daily('expert', '20261011', { ms: 48291 });
   const records = store([daily('cube', '20261010'), won, daily('cube', '20261011', { outcome: 'lost' })]);
   const [expert, cube] = dailyRows({ records, now: TODAY, replays: { has: (id) => id === won.id } });
-  assert.deepEqual([expert.state, expert.result, expert.canPlay, expert.attempt, expert.watch], ['won', 'Won 48.2 s', false, won.id, won.id]);
+  assert.deepEqual([expert.state, expert.result, expert.canPlay, expert.attempt, expert.watch], ['won', 'Won 48.291 s', false, won.id, won.id]);
   assert.deepEqual([cube.state, cube.result, cube.canPlay, cube.watch], ['lost', LOST, false, null]);
   assert.deepEqual([cube.current, cube.longest], [2, 2]);
   assert.equal(cube.streak, 'Days in a row 2 · longest 2');
@@ -190,15 +190,21 @@ function fakeScreen() {
   return root;
 }
 
+test('a won daily\'s time is the results screen\'s formatTime, never a local tenths format', () => {
+  const src = read('js/shell/daily.js');
+  assert.match(src, /import \{[^}]*\bformatTime\b[^}]*\} from '\.\.\/results\/view\.js'/);
+  assert.doesNotMatch(src, /\btenths\b/);
+});
+
 test('the Daily screen shows each row, plays and watches through its callbacks, and focuses the first Play', () => {
   const root = fakeScreen();
   const calls = [];
   const screen = bindDailyScreen({ root, onPlay: (id) => calls.push(['play', id]), onWatch: (id) => calls.push(['watch', id]), onBack: () => calls.push(['back']) });
-  const won = daily('expert', '20261011');
+  const won = daily('expert', '20261011', { ms: 47380 });
   screen.show(dailyRows({ records: store([won]), now: TODAY, replays: { has: () => true } }));
   const [expert, cube] = root.children;
   const part = (row, k) => row.querySelector(`[data-${k}]`);
-  assert.equal(part(expert, 'state').textContent, 'Won 48.2 s');
+  assert.equal(part(expert, 'state').textContent, 'Won 47.380 s'); // the results screen's formatTime, trailing zeros kept
   assert.equal(part(expert, 'play').disabled, true);
   assert.equal(part(expert, 'watch').hidden.has('hidden'), false);
   assert.equal(part(cube, 'play').disabled, false);
