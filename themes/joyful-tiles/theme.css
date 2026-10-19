@@ -457,6 +457,11 @@
   box-shadow: inset 0 -2px 0 var(--color-line), 0 8px 0 var(--color-head-edge), var(--elevation-2);
 }
 :root[data-theme="joyful-tiles"] .ui-card__title { color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ui-card__icon {
+  border-radius: 16px;
+  background: var(--color-danger-fill);
+  color: var(--color-danger);
+}
 :root[data-theme="joyful-tiles"] .ui-panel {
   border-radius: var(--radius-xl);
   background: var(--color-surface);
@@ -464,6 +469,14 @@
   box-shadow: inset 0 0 0 2px var(--color-border), 0 var(--edge-md) 0 var(--color-edge);
 }
 :root[data-theme="joyful-tiles"] .ui-panel--muted { background: var(--color-surface-sunk); }
+:root[data-theme="joyful-tiles"] .ui-toast {
+  border-radius: var(--radius-lg);
+  background: var(--color-ink);
+  color: var(--color-ink-inverse);
+  box-shadow: 0 6px 0 var(--color-blue-edge), var(--elevation-1);
+}
+:root[data-theme="joyful-tiles"] .ui-toast__icon,
+:root[data-theme="joyful-tiles"] .ui-toast__text { color: var(--color-ink-inverse); }
 :root[data-theme="joyful-tiles"] .ui-banner {
   border-radius: var(--radius-sm);
   background: var(--color-success-fill);
@@ -1135,12 +1148,6 @@
 :root[data-theme="joyful-tiles"] #flash { background: radial-gradient(circle at 50% 50%, rgba(255, 245, 200, 0.95), rgba(255, 90, 40, 0.75) 45%, rgba(160, 0, 0, 0.55)); }
 :root[data-theme="joyful-tiles"] #flash.go { animation: joyful-tiles-flash 0.9s ease-out; }
 
-:root[data-theme="joyful-tiles"] .fatal div {
-  border-radius: 22px;
-  background: var(--color-surface);
-  color: var(--color-ink);
-  box-shadow: 0 8px 0 var(--color-head-edge), var(--elevation-2);
-}
 :root[data-theme="joyful-tiles"] .pad-note {
   border-radius: var(--radius-sm);
   background: var(--color-warning-fill);
@@ -1160,14 +1167,8 @@
   box-shadow: 0 4px 0 var(--color-edge);
 }
 
-/* the toast */
-:root[data-theme="joyful-tiles"] .toast {
-  border-radius: var(--radius-lg);
-  background: var(--color-ink);
-  color: var(--color-ink-inverse);
-  box-shadow: 0 6px 0 var(--color-blue-edge), var(--elevation-1);
-  transition: opacity var(--duration-slow) var(--easing-out), transform var(--duration-slow) var(--easing-out);
-}
+/* the toast: it slides up into view */
+:root[data-theme="joyful-tiles"] .toast { transition: opacity var(--duration-slow) var(--easing-out), transform var(--duration-slow) var(--easing-out); }
 
 /* the Records tables */
 :root[data-theme="joyful-tiles"] :is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) { font-size: 15px; }

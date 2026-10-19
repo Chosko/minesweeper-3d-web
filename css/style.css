@@ -509,9 +509,10 @@ body.replaying #menu { display: none; }
 
 #flash { position: fixed; inset: 0; pointer-events: none; z-index: var(--z-flash); opacity: 0; }
 
-.noscript { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; }
-.fatal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: var(--z-fatal); padding: 16px; }
-.fatal div { padding: 24px 28px; max-width: 520px; }
+/* The fatal card, the no-JavaScript notice and the 404 page: a message card on a backdrop filling the page. */
+.fatal, .noscript, .not-found { position: fixed; inset: 0; z-index: var(--z-fatal); padding: 12px; }
+:is(.fatal, .noscript, .not-found) > .ui-card { width: min(560px, 100%); }
+:is(.fatal, .noscript, .not-found) > .ui-card > .ui-text { margin: 0 0 var(--space-4); }
 
 @media (max-width: 760px) {
   .controls.compact { grid-template-columns: max-content 1fr; }
@@ -560,9 +561,8 @@ body.lockless.drag-look #scene:active { cursor: grabbing; }
 
 .toast {
   position: fixed; left: 50%; bottom: 64px; z-index: var(--z-toast);
+  width: max-content; max-width: min(640px, calc(100vw - 32px));
   transform: translate(-50%, 8px); opacity: 0; pointer-events: none;
-  padding: 8px 16px;
-  font-size: 14px; font-weight: var(--font-weight-bold);
 }
 .toast.on { opacity: 1; transform: translate(-50%, 0); }
 

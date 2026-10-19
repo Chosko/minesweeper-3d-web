@@ -1,16 +1,21 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="joyful-tiles">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Minesweeper 3D</title>
+  <title>Page not found · Minesweeper 3D</title>
   <meta name="robots" content="noindex">
-  <meta http-equiv="refresh" content="0; url=/">
-  <link rel="canonical" href="https://minesweeper3d.chosko.com/">
-  <script>location.replace('/');</script>
-  <style>body { margin: 0; font-family: system-ui, sans-serif; background: #c8e1ff; color: #14233f; display: flex; align-items: center; justify-content: center; min-height: 100vh; }</style>
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/themes/joyful-tiles/theme.css">
 </head>
 <body>
-  <p>Page not found. <a href="/">Go to Minesweeper 3D</a></p>
+  <main class="not-found ui-backdrop">
+    <section class="ui-card" role="alert" aria-labelledby="not-found-title"><span class="ui-card__icon" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/></svg></span>
+      <h1 class="ui-card__title" id="not-found-title">Page not found.</h1>
+      <div class="ui-actions ui-actions--row"><a class="ui-button ui-button--primary" href="/">Go to Minesweeper 3D</a></div>
+    </section>
+  </main>
 </body>
 </html>

@@ -56,7 +56,7 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
     `[data-pad-glyph]` slot, the Records screen's LB / RB and LT / RT hints),
     `setCamera('fly' | 'orbit')` (the 3D rows and the ready card's
     `[data-camera]` movement line follow the Camera setting), `flash`,
-    `toast(msg, ms)`, `setNoMouse(on, touch)`, `setTouch3D(on)` (the touch ready card and the help's touch rows, `_bindDevice`), `setTouchModes(modes)`, `setStick(view|null)`, `openControls` / `closeControls` /
+    `toast(msg, ms)` (the text into `#toast-text`, the icon kept), `setNoMouse(on, touch)`, `setTouch3D(on)` (the touch ready card and the help's touch rows, `_bindDevice`), `setTouchModes(modes)`, `setStick(view|null)`, `openControls` / `closeControls` /
     `isControlsOpen`, `isPauseVisible`, `setReadyMessage`.
   HUD writes (`updateHud`, `setArrow`, `setReadout`) touch the DOM only on
   change.

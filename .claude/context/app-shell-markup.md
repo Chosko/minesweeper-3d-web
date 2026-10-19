@@ -10,7 +10,7 @@ tokens, theme and deploy files are [app-shell-kit.md](app-shell-kit.md).
 | File | Responsibility |
 | ---- | -------------- |
 | `index.html` | every overlay as static markup toggled by `.hidden`; importmap `three` → `vendor/three/three.module.min.js` (r186, no build step); a module `onerror` shows `.fatal` |
-| `css/style.css` | shell styling: fixed layers, the Classic 2D board area and panel, the replay layer (`replay--scene` transparent over the 3D scene; the recorded pointer and its trail, press rings, Show 3BV's 2D canvas; `body.replaying` hides the view chips, tools strip, hint strip and toast), the controller's hints (`[data-pad-hint]`, visible only under `body.pad-nav`, their room kept; `[data-pad-hinted]` rows), the menu-screen and translucent backdrops, the results scrim over the 3D scene, the look's hint (`.look-hint`), the ready card's placement (`.ready-body`), the Learn 3D step (`.hint-step`), the help/controls/ctx-lost overlays, the 3D touch stick and toolbar, HUD placement; declares no custom property |
+| `css/style.css` | shell styling: fixed layers, the Classic 2D board area and panel, the replay layer (`replay--scene` transparent over the 3D scene; the recorded pointer and its trail, press rings, Show 3BV's 2D canvas; `body.replaying` hides the view chips, tools strip, hint strip and toast), the controller's hints (`[data-pad-hint]`, visible only under `body.pad-nav`, their room kept; `[data-pad-hinted]` rows), the menu-screen and translucent backdrops, the results scrim over the 3D scene, the look's hint (`.look-hint`), the ready card's placement (`.ready-body`), the Learn 3D step (`.hint-step`), the help/controls/ctx-lost overlays, the toast's place and the message pages' (`.fatal`, `.noscript`, `.not-found`: the card's width and its margin from the window's edges), the 3D touch stick and toolbar, HUD placement; declares no custom property |
 
 `index.html` head order: `css/tokens.css`, `css/components.css`,
 `css/style.css`, `js/theme.js` (which appends the theme stylesheet), then
@@ -76,7 +76,15 @@ bind.
     `#ctx-lost` (`#ctx-lost-btn`, `#ctx-lost-menu`); the Learn 3D end card
     `#learn-end` (`#learn-end-title`, `#learn-end-line`,
     `#learn-end-primary` around `#learn-end-primary-label` and its select
-    key hint, `#learn-end-back`).
+    key hint, `#learn-end-back`);
+  - the messages: the toast `#toast` (a `ui-toast`, its text in
+    `#toast-text`); the fatal card, the template `#fatal-card` (`.fatal`, a
+    `ui-backdrop` holding a `role="alert"` message `ui-card`: its badge,
+    `#fatal-title`, the line, Reload, which reloads the page); the
+    no-JavaScript notice, the one `<noscript>` (the default theme's
+    stylesheet, then `.noscript`, the same card titled `#noscript-title`),
+    styled without JavaScript through the root's static `data-theme`;
+    `404.html`'s `.not-found` is the same card ([app-shell-kit.md](app-shell-kit.md)).
   `#c2d` is the 2D board layer: `#c2d-board` holds the panel `#c2d-panel`
   behind the canvas; `#c2d.c2d--hint` gives the hint strip room below.
 - **Pointer sizes.** The text minimums hold on every pointer, in the

@@ -742,11 +742,11 @@ export class UI {
     if (!this.el.settings.classList.contains('hidden')) this._renderSettingsBindings();
   }
 
-  /** Short global notice (e.g. "Controller connected"); none while the replay viewer shows. */
+  /** Short global notice (e.g. "Controller connected") in the toast's text, its icon kept; none while the replay viewer shows. */
   toast(msg, ms = 2200) {
     if (this._replaying) return;
     const t = $('toast');
-    t.textContent = msg;
+    $('toast-text').textContent = msg;
     t.classList.add('on');
     clearTimeout(this._toastTimer);
     this._toastTimer = setTimeout(() => t.classList.remove('on'), ms);

@@ -354,7 +354,7 @@ const opt = (name, part) => byName(name).parts.find((p) => p.name === part);
 
 test('the catalogue declares the shared layout\'s components, their parts, states and slots, so every theme is held to them', () => {
   for (const name of ['ui-backdrop', 'ui-frame', 'ui-mode-entry', 'ui-option', 'ui-section-label', 'ui-key-hint', 'ui-chip', 'ui-list-row',
-    'ui-scene-panel', 'ui-button--danger', 'ui-divider', 'ui-tabs', 'ui-checkbox', 'ui-table']) {
+    'ui-scene-panel', 'ui-button--danger', 'ui-divider', 'ui-tabs', 'ui-checkbox', 'ui-table', 'ui-toast']) {
     assert.equal(byName(name)?.kind, 'component', `${name} is catalogued`);
   }
   for (const name of ['ui-mode-list', 'ui-options', 'ui-key-hints', 'ui-list']) assert.equal(byName(name)?.kind, 'composition', `${name} is catalogued`);
@@ -365,8 +365,10 @@ test('the catalogue declares the shared layout\'s components, their parts, state
   for (const p of ['entry', 'icon', 'label', 'reason', 'last', 'lock']) assert.ok(partNames('ui-mode-entry').includes(p), `the mode entry's ${p}`);
   for (const p of ['option', 'name', 'last', 'meta', 'size', 'density', 'check', 'badge']) assert.ok(partNames('ui-option').includes(p), `the board option's ${p}`);
   assert.ok(partNames('ui-stat--tile').includes('badge'), 'the stat tile\'s badge');
+  assert.deepEqual(partNames('ui-toast'), ['icon', 'text'], 'the toast\'s icon and text');
+  assert.ok(partNames('ui-card').includes('icon'), 'a message card\'s badge');
   for (const [name, part] of [['ui-frame', 'status'], ['ui-frame', 'summary'], ['ui-mode-entry', 'reason'], ['ui-mode-entry', 'last'],
-    ['ui-option', 'size'], ['ui-option', 'density'], ['ui-option', 'badge'], ['ui-stat--tile', 'badge'], ['ui-section-label', 'aside']]) {
+    ['ui-option', 'size'], ['ui-option', 'density'], ['ui-option', 'badge'], ['ui-stat--tile', 'badge'], ['ui-section-label', 'aside'], ['ui-card', 'icon']]) {
     assert.equal(opt(name, part).optional, true, `${name} ${part} is optional`);
   }
   // Mode entries and board options follow the button rule: one selected state, no hover or focus of their own.

@@ -20,7 +20,7 @@ The screens' markup in `index.html` and the shell stylesheet are
 | `js/themes/applier.js` | the run-time theme applier: takes over from `js/theme.js`, loads and switches themes, hands the board module to subscribers |
 | `js/tokens.js` | token reader for consumers that cannot read stylesheets, chiefly Canvas |
 | `js/shell/scene-palette.js` | the 3D scene's themed sky from the `--color-scene-*` tokens |
-| `404.html`, `CNAME`, `.nojekyll` | GitHub Pages: redirect to `/`, `minesweeper3d.chosko.com`, files served as-is |
+| `404.html`, `CNAME`, `.nojekyll` | GitHub Pages: the not-found page (the fatal card's composition, "Page not found." and a link to `/`; the base and default theme stylesheets from the site root, no script, no remote file), `minesweeper3d.chosko.com`, files served as-is |
 
 ## PUBLIC API
 
@@ -135,8 +135,12 @@ getStyle, theme, dev?, log?})`.
 - **Head order.** `index.html` loads `css/tokens.css`,
   `css/components.css` and `css/style.css`, the gallery only the first two;
   each then runs `js/theme.js`, which appends the theme's `<link
-  blocking="render" data-theme-sheet>` after them. No page links a theme
-  stylesheet itself.
+  blocking="render" data-theme-sheet>` after them. No scripted page links a
+  theme stylesheet itself; only what a page without JavaScript reads names
+  the default theme — `index.html`'s root `data-theme`, which the script
+  replaces, and the default's stylesheet inside its `<noscript>` — and
+  `404.html`, which runs no script, links the base and default theme
+  stylesheets.
 - **Pre-paint.** `js/theme.js` runs synchronously in `<head>`;
   `readStoredTheme` reads the settings document (`ms3d:doc:settings`, at
   any version the store has written) straight from `localStorage`, and
@@ -201,5 +205,5 @@ getStyle, theme, dev?, log?})`.
 - Changing how start-up reads the stored theme (`readStoredTheme`, kept in
   step with the settings document's key and versions), or the switch order
   and failure handling (`switchTo` and `start` in `js/themes/applier.js`).
-- Changing deploy behaviour (custom domain, 404 redirect, vendored three.js
-  path).
+- Changing deploy behaviour (custom domain, the not-found page, vendored
+  three.js path).

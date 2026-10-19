@@ -457,7 +457,7 @@ test('without WebGL 2 the shell starts on one availability flag: no "Cannot star
     'the body\'s backdrop, built from the theme tokens');
   const hook = MAIN.slice(MAIN.indexOf('window.__ms = {'));
   assert.match(hook.match(/start\(X, Y, Z, mines, minePositions\) \{[^\n]*/)[0], /if \(!WEBGL2\) throw new Error\(/, 'the start hook reports the reason');
-  assert.match(INDEX, /<noscript><div class="noscript">Minesweeper 3D needs JavaScript\.<\/div><\/noscript>/, 'the noscript line asks only for JavaScript');
+  assert.match(INDEX, /<noscript>[\s\S]*<h2 class="ui-card__title" id="noscript-title">Minesweeper 3D needs JavaScript\.<\/h2>[\s\S]*<\/noscript>/, 'the noscript line asks only for JavaScript');
   assert.match(INDEX, /The game files failed to load\. Check your connection and reload the page\./, 'the onerror card stays');
   assert.match(read('README.md'), /3D needs WebGL 2; Classic 2D, Records and Settings run without it\./);
 });

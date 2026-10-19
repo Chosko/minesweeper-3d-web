@@ -32,6 +32,7 @@
     .scene-demo--card { flex: 1 1 200px; height: 340px; }
     .divider-demo { align-items: stretch; margin-top: var(--space-4); }
     #g-labels > * + *, #g-rows > * + * { margin-top: var(--space-4); }
+    .message-demo { margin-top: var(--space-6); }
   </style>
 </head>
 <body>
@@ -353,6 +354,11 @@
         <span class="state">Pressed</span><div><button type="button" class="ui-button ui-button--danger" data-force="active">Delete replay</button></div>
         <span class="state">Disabled</span><div><button type="button" class="ui-button ui-button--danger" disabled>Delete replay</button></div>
       </div>
+    </section>
+    <section class="ui-card" aria-labelledby="g-messages">
+      <h2 class="ui-card__title" id="g-messages">Toast and message card</h2>
+      <div class="ui-toast" role="status" aria-live="polite"><svg class="ui-toast__icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg><span class="ui-toast__text">Settings could not be saved in this browser. They last until you close the page.</span></div>
+      <section class="ui-card message-demo" aria-labelledby="g-message-title"><span class="ui-card__icon" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/></svg></span><h2 class="ui-card__title" id="g-message-title">Cannot start Minesweeper 3D</h2><p class="ui-text">The game files failed to load. Check your connection and reload the page.</p><div class="ui-actions ui-actions--row"><button type="button" class="ui-button ui-button--primary">Reload</button></div></section>
     </section>
     <!-- /components: shared layout -->
 

@@ -1005,7 +1005,7 @@ Feature: shared-screen-layout
 
 ## 211. Toasts, fatal card, no-JavaScript notice and 404 page in the shared layout
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, 404.html, js/ui.js, js/main.js, tests/components.test.mjs, tests/shell-router.test.mjs
 Preconditions: 163

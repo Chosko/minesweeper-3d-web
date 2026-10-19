@@ -70,7 +70,8 @@ export const KIT_CATALOGUE = Object.freeze([
       part('detail', '.ui-menu__detail', { optional: true }),
     ],
   }),
-  component('ui-card', { parts: [part('title', '.ui-card__title')] }),
+  // A message card (the fatal card, the no-JavaScript notice, the 404 page) opens with its badge.
+  component('ui-card', { parts: [part('title', '.ui-card__title'), part('icon', '.ui-card__icon', { optional: true })] }),
   component('ui-panel', { variants: ['ui-panel--muted'] }),
   component('ui-banner'),
   component('ui-toggle', {
@@ -223,6 +224,8 @@ export const KIT_CATALOGUE = Object.freeze([
   component('ui-table', {
     parts: [part('heading', '.ui-table th'), part('cell', '.ui-table td'), part('figure', '.ui-table__figure', { optional: true })],
   }),
+  // A short notice, polite and transient, at the bottom centre.
+  component('ui-toast', { parts: [part('icon', '.ui-toast__icon'), part('text', '.ui-toast__text')] }),
 
   composition('ui-screen', { variants: ['ui-screen--wide', 'ui-screen--columns'] }),
   composition('ui-row'),

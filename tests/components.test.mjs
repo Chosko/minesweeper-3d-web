@@ -62,6 +62,7 @@ const COMPONENTS = {
   'ui-tabs': { interactive: true, control: '.ui-tabs__tab' },
   'ui-checkbox': { interactive: true, control: '.ui-checkbox__input' },
   'ui-table': { interactive: false },
+  'ui-toast': { interactive: false },
 };
 // Screen compositions: layout-only classes the screens are assembled with.
 const COMPOSITIONS = ['ui-screen', 'ui-row', 'ui-grid', 'ui-heading', 'ui-text', 'ui-actions', 'ui-stat-row', 'ui-columns',
@@ -1859,7 +1860,7 @@ const textOf = (html, t) => {
 };
 const MODE_ENTRIES = ['classic-2d', 'hexagon', 'triangle', 'surface', '3d', 'daily', 'records', 'settings', 'quit'];
 
-test('the gallery marks the shared layout\'s components; the main menu, both board choices, the Daily screen, the placeholder, the pause card, the results, the Records screen, the Settings page, the replay viewer, the 3D ready card, the context-lost card and the Learn 3D end card are the screens built from them so far', () => {
+test('the gallery marks the shared layout\'s components; the main menu, both board choices, the Daily screen, the placeholder, the pause card, the results, the Records screen, the Settings page, the replay viewer, the 3D ready card, the context-lost card, the Learn 3D end card, the fatal card and the no-JavaScript notice are the screens built from them so far', () => {
   assert.ok(LAYOUT.length > 1000, 'dev/components.html holds the shared layout\'s components');
   const screens = INDEX.replace(/<!--[\s\S]*?-->/g, '');
   const menu = SCREENS.menu;
@@ -1875,6 +1876,9 @@ test('the gallery marks the shared layout\'s components; the main menu, both boa
   const ready = screens.slice(screens.indexOf('<section id="ready"'), screens.indexOf('<section id="controls-modal"'));
   const ctxLost = screens.slice(screens.indexOf('<section id="ctx-lost"'), screens.indexOf('<section id="settings"'));
   const learnEnd = screens.slice(screens.indexOf('<section id="learn-end"'), screens.indexOf('<section id="pause"'));
+  const noscript = screens.slice(screens.indexOf('<noscript>'), screens.indexOf('</noscript>'));
+  const fatal = screens.slice(screens.indexOf('<template id="fatal-card">'), screens.indexOf('</template>'));
+  for (const html of [noscript, fatal]) for (const cls of ['ui-backdrop', 'ui-card', 'ui-card__icon', 'ui-card__title']) assert.match(html, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the message cards use ${cls}`);
   for (const cls of ['ui-card', 'ui-screen', 'ui-button--lg', 'ui-button--sm', 'ui-key-hint', 'ui-section-label', 'ui-panel--muted', 'ui-banner', 'ui-text--warning']) {
     assert.match(ready, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the 3D ready card uses ${cls}`);
   }
@@ -1900,7 +1904,7 @@ test('the gallery marks the shared layout\'s components; the main menu, both boa
   assert.doesNotMatch(soon, /class="[^"]*\bui-card(?![\w-])/, 'the placeholder holds no card');
   for (const cls of ['ui-section-label', 'ui-button--danger', 'ui-key-hint', 'ui-panel--muted']) assert.match(pause, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the pause card uses ${cls}`);
   const others = screens.replace(menu, '').replace(choice, '').replace(choice3d, '').replace(daily, '').replace(soon, '').replace(pause, '').replace(results, '').replace(records, '').replace(settings, '').replace(replay, '')
-    .replace(ready, '').replace(ctxLost, '').replace(learnEnd, '');
+    .replace(ready, '').replace(ctxLost, '').replace(learnEnd, '').replace(noscript, '').replace(fatal, '');
   for (const cls of ['ui-wordmark', 'ui-mode-entry', 'ui-key-hint', 'ui-chip', 'ui-scene-panel']) {
     assert.match(menu, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the main menu uses ${cls}`);
   }
@@ -2268,6 +2272,204 @@ test('in a browser, the shared layout\'s components: a mouse-selected mode entry
     ]);
     assert.ok(hints.touch.every((h) => h.hidden && h.keys.length === 0), 'no key hints on touch');
     assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+// ---------------------------------------------------------------- messages: the toast, the fatal card, the no-JavaScript notice, the 404 page
+
+const NOT_FOUND = read('404.html');
+const FATAL = section(INDEX, '<template id="fatal-card">', '</template>');
+const NOSCRIPT = section(INDEX, '<noscript>', '</noscript>');
+// A message card on the backdrop, as J-Other-states draws it: the danger badge, the title, then its line and action.
+const messageCard = (html, id, title) => {
+  assert.match(html, new RegExp(`<section class="ui-card" role="alert" aria-labelledby="${id}"><span class="ui-card__icon" aria-hidden="true"><svg\\b`), `${id}: a ui-card alert opening with its badge`);
+  assert.match(html, new RegExp(`<h([12]) class="ui-card__title" id="${id}">${title.replace(/\./g, '\\.')}</h\\1>`), `${id}: its title`);
+};
+
+test('the toast, the fatal card, the no-JavaScript notice and the 404 page are composed from catalogued components, keeping their text, live regions and actions', () => {
+  // The toast: polite, its info icon out of its text.
+  assert.match(INDEX, /<div id="toast" class="toast ui-toast" role="status" aria-live="polite"><svg class="ui-toast__icon" aria-hidden="true"[^>]*>[\s\S]*?<\/svg><span class="ui-toast__text" id="toast-text"><\/span><\/div>/);
+  // The fatal card: on the backdrop, an alert with Reload.
+  assert.match(FATAL, /^<template id="fatal-card"><div class="fatal ui-backdrop">/);
+  messageCard(FATAL, 'fatal-title', 'Cannot start Minesweeper 3D');
+  assert.match(FATAL, /<p class="ui-text">The game files failed to load\. Check your connection and reload the page\.<\/p>/);
+  assert.match(FATAL, /<div class="ui-actions ui-actions--row"><button type="button" class="ui-button ui-button--primary" onclick="location\.reload\(\)" autofocus><svg\b[^>]*aria-hidden="true"[\s\S]*?<\/svg>Reload<\/button><\/div>/);
+  // The no-JavaScript notice: the theme stylesheet it needs, linked where only a page without JavaScript reads it.
+  assert.match(NOSCRIPT, /^<noscript><link rel="stylesheet" href="themes\/joyful-tiles\/theme\.css"><div class="noscript ui-backdrop">/);
+  messageCard(NOSCRIPT, 'noscript-title', 'Minesweeper 3D needs JavaScript.');
+  assert.equal((INDEX.match(/<noscript>/g) ?? []).length, 1, 'one no-JavaScript block');
+  assert.match(INDEX.match(/<html\b[^>]*>/)[0], /data-theme="joyful-tiles"/, 'without JavaScript the page is in the default theme');
+  // The 404 page: the same card, its one action a link home.
+  assert.match(NOT_FOUND, /<main class="not-found ui-backdrop">/);
+  messageCard(NOT_FOUND, 'not-found-title', 'Page not found.');
+  assert.match(NOT_FOUND, /<div class="ui-actions ui-actions--row"><a class="ui-button ui-button--primary" href="\/">Go to Minesweeper 3D<\/a><\/div>/);
+  // Nothing but kit classes and each surface's placement class.
+  const allowed = new Set(['toast', 'fatal', 'noscript', 'not-found']);
+  for (const [name, html] of [['toast', section(INDEX, '<div id="toast"', '</div>')], ['fatal', FATAL], ['noscript', NOSCRIPT], ['404', NOT_FOUND]]) {
+    for (const t of tags(html)) for (const c of classesOf(t)) assert.ok(c.startsWith('ui-') || allowed.has(c), `${name}: ${c} is a kit class`);
+  }
+  assert.doesNotMatch(STYLE, /\.fatal div|\.noscript \{[^}]*font-size/, 'no one-off card styling remains');
+});
+
+test('the toast writes its text into its text part, keeping its icon, and hides after its time; none while the replay viewer shows', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const classes = new Set();
+  const els = {
+    toast: { classList: { add: (c) => classes.add(c), remove: (c) => classes.delete(c), contains: (c) => classes.has(c) }, textContent: '' },
+    'toast-text': { textContent: '' },
+  };
+  const saved = globalThis.document;
+  globalThis.document = { getElementById: (id) => els[id] };
+  try {
+    const ui = { _replaying: false };
+    UI.prototype.toast.call(ui, 'Controller connected');
+    assert.equal(els['toast-text'].textContent, 'Controller connected');
+    assert.equal(els.toast.textContent, '', 'the toast itself is not overwritten: its icon stays');
+    assert.ok(classes.has('on'));
+    t.mock.timers.tick(2199);
+    assert.ok(classes.has('on'), 'shown for its time');
+    t.mock.timers.tick(1);
+    assert.ok(!classes.has('on'), 'then hidden');
+    UI.prototype.toast.call({ _replaying: true }, 'Hidden');
+    assert.equal(els['toast-text'].textContent, 'Controller connected', 'none while the replay viewer shows');
+  } finally {
+    globalThis.document = saved;
+  }
+});
+
+test('the 404 page loads only local files: the base and theme stylesheets, whose fonts are the theme\'s own; no script, no redirect, no remote resource', () => {
+  assert.doesNotMatch(NOT_FOUND, /<script\b|http-equiv="refresh"|location\./i, 'no script and no redirect');
+  assert.doesNotMatch(NOT_FOUND, /\b(https?:)?\/\/[\w.-]/i, 'no remote URL');
+  assert.match(NOT_FOUND.match(/<html\b[^>]*>/)[0], /data-theme="joyful-tiles"/, 'the default theme, with no theme switch');
+  const refs = [...NOT_FOUND.matchAll(/\b(?:href|src)="([^"]*)"/g)].map((m) => m[1]);
+  const sheets = [...NOT_FOUND.matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map((m) => m[1]);
+  assert.deepEqual(sheets, ['/css/tokens.css', '/css/components.css', '/css/style.css', '/themes/joyful-tiles/theme.css'],
+    'the base stylesheets, then the theme, from the site root so any missing path finds them');
+  for (const ref of refs) {
+    if (ref === '/') continue;
+    assert.match(ref, /^\/[\w./-]+$/, `${ref} is a local path`);
+    assert.doesNotThrow(() => read(ref.slice(1)), `${ref} exists`);
+  }
+  const fonts = [...read('themes/joyful-tiles/theme.css').matchAll(/@font-face \{[^}]*src: url\("([^"]+)"\)/g)].map((m) => m[1]);
+  assert.ok(fonts.length > 0 && fonts.every((f) => /^fonts\/[\w.-]+\.woff2$/.test(f)), 'the theme stylesheet brings its self-hosted fonts');
+});
+
+test('the toast and the message card\'s badge are catalogued, structured in the base and drawn by the theme from contrast-checked pairs', () => {
+  const head = RAW.match(/^\/\*([\s\S]*?)\*\//)[1];
+  for (const doc of ['ui-toast', 'ui-toast__icon', 'ui-toast__text', 'ui-card__icon', 'Toast (index.html #toast)', 'Fatal card (index.html #fatal-card',
+    'No-JavaScript notice (index.html <noscript>)', '404 page (404.html)']) assert.ok(head.includes(doc), `the catalogue documents ${doc}`);
+  const toast = themeRulesFor('.ui-toast').filter(([sel]) => /^\.ui-toast$/.test(sel)).map(([, b]) => b).join(';');
+  assert.match(toast, /background: var\(--color-ink\)/);
+  assert.match(toast, /color: var\(--color-ink-inverse\)/, 'inverse ink on ink, a pair the token tests hold to 4.5:1');
+  const icon = themeRulesFor('.ui-card__icon').map(([, b]) => b).join(';');
+  assert.match(icon, /background: var\(--color-danger-fill\)/);
+  assert.match(icon, /color: var\(--color-danger\)/, 'danger on its fill, a pair the token tests hold to 4.5:1');
+  assert.ok(rulesFor('.ui-toast').length > 0 && rulesFor('.ui-card__icon').length > 0, 'their structure is in the base');
+  // Placement: each message fills the page above everything; a card at most 560 px wide, 12 px from a phone's edges.
+  const place = STYLE.match(/\.fatal, \.noscript, \.not-found \{([^}]*)\}/);
+  assert.ok(place, 'one placement rule for the three message pages');
+  assert.match(place[1], /position: fixed; inset: 0;/);
+  assert.match(place[1], /z-index: var\(--z-fatal\);/);
+  assert.match(place[1], /padding: 12px;/);
+  assert.match(STYLE, /:is\(\.fatal, \.noscript, \.not-found\) > \.ui-card \{ width: min\(560px, 100%\); \}/);
+  assert.match(STYLE, /\.toast \{[^}]*width: max-content; max-width: min\(640px, calc\(100vw - 32px\)\);/, 'the toast wraps inside a phone');
+});
+
+test('in a browser, the 404 page, the no-JavaScript notice and the fatal card show on the backdrop in Joyful tiles at every window size, with its fonts, no remote file, and the contrast contract met', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  const SIZES = [
+    ['xl', { viewport: { width: 1920, height: 1080 } }],
+    ['m', { viewport: { width: 1024, height: 768 } }],
+    ['p', { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }],
+  ];
+  const look = (page, card) => page.locator(card).evaluate((el) => {
+    const box = el.getBoundingClientRect();
+    const s = getComputedStyle(el);
+    const backdrop = getComputedStyle(el.parentElement);
+    return {
+      theme: document.documentElement.dataset.theme,
+      surface: s.backgroundColor, radius: s.borderTopLeftRadius,
+      dots: /radial-gradient/.test(backdrop.backgroundImage),
+      fits: box.left >= 0 && box.right <= innerWidth + 0.5 && box.top >= 0 && box.bottom <= innerHeight + 0.5 && document.documentElement.scrollWidth <= innerWidth,
+      width: Math.round(box.width), font: getComputedStyle(el.querySelector('.ui-card__title')).fontFamily,
+    };
+  });
+  const contrast = async (page, label) => {
+    const { runs } = await page.evaluate(measureContrast);
+    assert.ok(runs.length >= 1, `${label}: its text is measured`);
+    assert.deepEqual(runs.filter((r) => r.ratio < r.min).map((r) => `${r.text}: ${r.ratio.toFixed(2)}:1`), [], `${label}: text below the contrast contract`);
+  };
+  try {
+    for (const [size, device] of SIZES) {
+      const width = Math.min(560, device.viewport.width - 24);
+      // The 404 page.
+      let context = await browser.newContext(device);
+      try {
+        const page = await context.newPage();
+        const remote = [];
+        const failed = [];
+        page.on('request', (r) => { if (!r.url().startsWith(base) && !r.url().startsWith('data:')) remote.push(r.url()); });
+        page.on('requestfailed', (r) => failed.push(r.url()));
+        await page.goto(`${base}/404.html`);
+        await page.evaluate(() => document.fonts.ready);
+        const got = await look(page, '.not-found > .ui-card');
+        assert.equal(got.theme, 'joyful-tiles');
+        assert.ok(got.dots, `404-${size}: on the dotted backdrop`);
+        assert.equal(got.surface, 'rgb(255, 255, 255)', `404-${size}: the card's surface`);
+        assert.equal(got.radius, '22px');
+        assert.ok(got.fits, `404-${size}: fits without a scroll`);
+        assert.equal(got.width, width, `404-${size}: the card's width`);
+        assert.match(got.font, /^Rubik/);
+        assert.ok(await page.evaluate(() => [...document.fonts].some((f) => f.family.replace(/"/g, '') === 'Rubik' && f.status === 'loaded')), 'Rubik loads from the theme\'s files');
+        assert.equal(await page.textContent('.not-found .ui-card__title'), 'Page not found.');
+        assert.equal(await page.getAttribute('.not-found a.ui-button', 'href'), '/');
+        assert.equal(await page.evaluate(() => document.scripts.length), 0);
+        await contrast(page, `404-${size}`);
+        assert.deepEqual(remote, [], 'no remote resource');
+        assert.deepEqual(failed, [], 'every file loads');
+      } finally {
+        await context.close();
+      }
+      // The no-JavaScript notice.
+      context = await browser.newContext({ ...device, javaScriptEnabled: false });
+      try {
+        const page = await context.newPage();
+        await page.goto(`${base}/index.html`);
+        const got = await look(page, '.noscript > .ui-card');
+        assert.ok(got.dots && got.surface === 'rgb(255, 255, 255)' && got.radius === '22px', `noscript-${size}: styled with JavaScript off`);
+        assert.ok(got.fits, `noscript-${size}: fits`);
+        assert.equal(got.width, width);
+        assert.equal(await page.textContent('.noscript .ui-card__title'), 'Minesweeper 3D needs JavaScript.');
+        await contrast(page, `noscript-${size}`);
+      } finally {
+        await context.close();
+      }
+      // The fatal card, the module graph failing to load.
+      context = await browser.newContext(device);
+      try {
+        const page = await context.newPage();
+        let blocked = true;
+        await page.route('**/js/main.js', (r) => (blocked ? r.abort() : r.continue()));
+        await page.goto(`${base}/index.html`);
+        await page.waitForSelector('.fatal .ui-card');
+        const got = await look(page, '.fatal > .ui-card');
+        assert.ok(got.dots && got.surface === 'rgb(255, 255, 255)', `fatal-${size}: on the backdrop`);
+        assert.ok(got.fits, `fatal-${size}: fits`);
+        assert.equal(got.width, width);
+        assert.equal(await page.textContent('.fatal .ui-button'), 'Reload');
+        await contrast(page, `fatal-${size}`);
+        blocked = false;
+        await Promise.all([page.waitForEvent('load'), page.click('.fatal .ui-button')]);
+        await page.waitForFunction(() => globalThis.__ms !== undefined);
+        assert.equal(await page.evaluate(() => document.querySelector('.fatal')), null, 'Reload loads the game again');
+      } finally {
+        await context.close();
+      }
+    }
   } finally {
     await browser.close();
   }

@@ -267,7 +267,7 @@ test('the default theme failing to load rejects start-up, for the fatal card', a
   const cloneCard = "document.body.append(document.getElementById('fatal-card').content.cloneNode(true))";
   assert.ok(main.slice(main.indexOf('function showFatal')).startsWith(`function showFatal() {\n  ${cloneCard};`), 'showFatal clones the fatal card');
   const html = read('../index.html');
-  assert.match(html, /<template id="fatal-card"><div class="fatal">/, 'one fatal card, in the page');
+  assert.match(html, /<template id="fatal-card"><div class="fatal ui-backdrop">/, 'one fatal card, in the page');
   assert.ok(html.includes(`onerror="${cloneCard}"`), 'the module graph failing to load shows the same card');
 });
 
@@ -401,8 +401,11 @@ test('index.html and the gallery run the pre-paint script after the base stylesh
       const i = html.indexOf(`<link rel="stylesheet" href="${prefix}${s}">`);
       assert.ok(i >= 0 && i < at, `${file}: ${s} comes before the theme, which the script inserts after it`);
     }
-    assert.doesNotMatch(html, /themes\/[\w-]+\/theme\.css/, `${file}: no static theme stylesheet`);
-    assert.doesNotMatch(html.match(/<html\b[^>]*>/)[0], /data-theme/, `${file}: no fixed root attribute`);
+    // Only a page without JavaScript reads a static theme: the default's stylesheet inside <noscript>, the root's default id.
+    const scripted = html.replace(/<noscript>[\s\S]*?<\/noscript>/g, '');
+    assert.doesNotMatch(scripted, /themes\/[\w-]+\/theme\.css/, `${file}: no static theme stylesheet outside <noscript>`);
+    assert.match(html.match(/<html\b[^>]*>/)[0], file === '../index.html' ? /^<html lang="en" data-theme="joyful-tiles">$/ : /^<html lang="en">$/,
+      `${file}: no root attribute but the default theme the no-JavaScript notice shows, which the script replaces`);
     if (file === '../index.html') {
       assert.ok(at < html.indexOf('type="importmap"'), 'before the import map');
       assert.ok(at < html.indexOf('src="js/main.js"'), 'before the module graph');

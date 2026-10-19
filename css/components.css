@@ -84,6 +84,11 @@
               </section>
      Role:    region (section named by its title)
      Name:    aria-labelledby → the title
+     Message: a card that tells the player the game cannot go on (the
+              fatal card, the no-JavaScript notice, the 404 page) is
+              role="alert" and opens with its badge,
+              <span class="ui-card__icon" aria-hidden="true"><svg>…</svg></span>,
+              the danger sign on the danger fill.
 
    ui-panel — sunken surface grouping content inside a card
      Element: <div class="ui-panel">…</div>
@@ -103,6 +108,16 @@
      Name:    its text; an offer its aria-label
      Look:    bold ink on the sunken surface, marked by a success-coloured
               edge; no animation.
+
+   ui-toast — a short notice: polite, transient, at the bottom centre
+     Element: <div class="ui-toast" role="status" aria-live="polite">
+                <svg class="ui-toast__icon" aria-hidden="true">…</svg>
+                <span class="ui-toast__text">…</span>
+              </div>
+     Role:    status (a polite live region)
+     Name:    none; its text is announced
+     Look:    one bold line of inverse ink on the ink fill, the info icon
+              before it; it wraps inside the window.
 
    ui-toggle — on/off switch
      Element: <label class="ui-toggle">
@@ -714,6 +729,18 @@
      Cube Intro on a win or Try again on a loss, ui-button--lg primary
      with its select key hint; Back to board choice). No time and no
      records. Default focus: the primary action.
+   Toast (index.html #toast): one ui-toast, its text in #toast-text, shown
+     at the bottom centre for its time (js/ui.js toast).
+   Fatal card (index.html #fatal-card, the template the page shows when the
+     game cannot start): a ui-backdrop filling the page, holding a message
+     ui-card: its badge, the title, a ui-text line and ui-actions--row of
+     Reload (primary). Default focus: Reload.
+   No-JavaScript notice (index.html <noscript>): the fatal card's
+     composition with its title only, in the default theme, whose
+     stylesheet the <noscript> links.
+   404 page (404.html): the fatal card's composition, its title then
+     ui-actions--row of Go to Minesweeper 3D (a ui-button--primary link to
+     the game); the base and default theme stylesheets, no script.
    Results screen (index.html #results, filled by js/results/view.js; the
      gallery's #g-results shows it with placeholder content): one ui-frame
      (#results-frame) sized to its content over the game it ended, no card
@@ -803,6 +830,7 @@
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-bold);
   line-height: 1;
+  text-decoration: none;
   cursor: pointer;
 }
 .ui-button:disabled { cursor: not-allowed; }
@@ -849,6 +877,14 @@
   margin: 0 0 var(--space-4);
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-heavy);
+}
+.ui-card__title:last-child { margin-bottom: 0; }
+.ui-card__icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: var(--space-4);
 }
 .ui-panel { padding: var(--space-4); }
 
@@ -1045,6 +1081,17 @@
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-bold);
 }
+
+/* ---------- toast ---------- */
+.ui-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 18px;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+}
+.ui-toast__icon { flex: none; }
 
 /* ---------- overlay bar ---------- */
 .ui-overlay-bar {
