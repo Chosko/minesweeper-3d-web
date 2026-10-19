@@ -155,7 +155,7 @@ Context:
 
 Done: struck — for a parallel run its Depends on lacked the order against task 165, which edits the same files; replaced by step 54.
 
-## [~] 54. Implement task 166 — Classic 2D board choice screen with its bests, Insert Board Code and Custom Random
+## [x] 54. Implement task 166 — Classic 2D board choice screen with its bests, Insert Board Code and Custom Random
 
 Depends on: 7, 53
 
@@ -164,6 +164,8 @@ Context: none
 ```prompt
 /task-implement 166 --review
 ```
+
+Done: 2026-10-19, commit `be6cee0` (25 files, +808/-249). A board option click only chooses it and Play (`#c2d-play`) starts it; the custom Start and code "Play this board" buttons are gone. Classic 2D options no longer show detail lines.
 
 ## [x] 38. Implement task 207 — 3D presets without First box 1 and 2; Learn 3D's win offers Cube Intro
 
@@ -201,7 +203,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against tasks 165, 166, which edit the same files; replaced by step 55.
 
-## [ ] 55. Implement task 212 — 3D presets without First box 1 and 2; Learn 3D's win offers Cube Intro
+## [~] 55. Implement task 212 — 3D presets without First box 1 and 2; Learn 3D's win offers Cube Intro
 
 Depends on: 54
 
@@ -241,7 +243,8 @@ Done: struck — for a parallel run its Depends on named struck step 38; lacked 
 
 Depends on: 54, 55
 
-Context: none
+Context:
+- 2026-10-19 (from step 54): on the Classic 2D board choice, a click/tap/A on a board option only chooses it (`aria-pressed="true"`) and Play starts it; Enter on an option chooses and plays. Bests come from `boardBests(board, records)` in `js/shell/returning.js`. The 2D options dropped their detail lines; the 3D board choice keeps them.
 
 ```prompt
 /task-implement 167 --review
@@ -559,7 +562,8 @@ Done: struck — for a parallel run its Depends on lacked the edge to task 212, 
 
 Depends on: 6, 7, 8, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65
 
-Context: none
+Context:
+- 2026-10-19 (from step 54): `.claude/context/` files (e.g. `classic2d.md`, `app-shell-menu.md`) still describe the old Classic 2D board choice API; task 173 owns that update.
 
 ```prompt
 /task-implement 173 --review
