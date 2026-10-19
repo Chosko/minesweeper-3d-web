@@ -246,7 +246,9 @@ test('a viewer that leaves the screen while it mounts is dropped', async () => {
 test('a 3D replay opens on the scene: the screen lets the 3D scene show', () => {
   const src = read('js/replay/viewer.js');
   assert.match(src, /replay--scene/, 'the view marks a 3D replay');
-  assert.match(read('themes/joyful-tiles/theme.css'), /#replay\.replay--scene\s*\{[^}]*background: transparent/);
+  const theme = read('themes/joyful-tiles/theme.css');
+  assert.match(theme, /#replay\.replay--scene\s*\{[^}]*background: transparent/);
+  assert.match(theme, /#replay\.replay--scene #replay-frame\s*\{[^}]*background: transparent/, 'the frame\'s window lets the scene through');
 });
 
 test('the 3D viewer is DOM-free and reaches no records, sound, pause or player input', () => {
@@ -328,6 +330,16 @@ test('in a browser, a recorded 3D replay plays from its fixture through to the e
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'replay');
     assert.equal(await page.evaluate(() => globalThis.__ms.renderer.game.n), 216, 'the renderer draws the replay\'s 6 × 6 × 6 box');
     assert.equal(await page.evaluate(() => getComputedStyle(document.getElementById('replay')).backgroundColor), 'rgba(0, 0, 0, 0)', 'the scene shows through');
+    const scene = await page.evaluate(() => {
+      const style = (id) => getComputedStyle(document.getElementById(id));
+      const canvas = globalThis.__ms.renderer.renderer.domElement;
+      const box = canvas.getBoundingClientRect();
+      return { frame: style('replay-frame').backgroundColor, body: style('replay-body').backgroundColor,
+        full: box.width === innerWidth && box.height === innerHeight && canvas.style.clipPath === '' && style('menu').display === 'none',
+        title: /^Replay · 3D · Cube /.test(document.getElementById('replay-title').textContent) };
+    });
+    assert.deepEqual(scene, { frame: 'rgba(0, 0, 0, 0)', body: 'rgba(0, 0, 0, 0)', full: true, title: true },
+      'the 3D scene stays full-window behind the frame, whose window lets it through, and no menu preview takes it from under the viewer');
     assert.equal(await page.evaluate(() => document.querySelectorAll('#replay-board canvas').length), 0, 'no 2D board view');
 
     // The camera follows the recording and the view mode is applied; player input does not move it.
@@ -382,7 +394,7 @@ test('in a browser, a recorded 3D replay plays from its fixture through to the e
     await page.click('#rp-speed [data-value="4"]');
     await page.click('#rp-play');
     await page.waitForFunction(() => globalThis.__ms.replayViewer.state.ended, null, { timeout: patience(15000) });
-    assert.equal(await text('replay-end'), 'Lost · 13.578 s');
+    assert.equal(await text('replay-end'), 'Lost 13.578 s');
     assert.equal(await page.evaluate(() => globalThis.__ms.renderer.game.state), 'lost');
     // Back before the loss, the end-of-game effect stops and the board is in play again.
     await page.keyboard.press('Home');

@@ -12,7 +12,7 @@ import { SPEEDS, DEFAULT_SPEED, LEAD_IN_MS, createPlaybackClock } from '../js/re
 import { movementTrack, pointerAt, cursorAt, pointerPixel, createViewer2D, trailPoints, TRAIL_MS } from '../js/replay/viewer-2d.js';
 import {
   FAILURES, COMMANDS, REPLAY_KEYS, REPLAY_PAD, REPLAY_KEY_LINE, SEEK_STEP_MIN_MS, MAX_REPLAY_FILE_BYTES, seekStep, clockText, overlayFigures, endLine,
-  pauseMarks, pausesText, seekTicks, actionCue, regionTints, prepareReplay, createReplayViewer, replayCode,
+  pauseMarks, pausesText, seekTicks, actionCue, regionTints, prepareReplay, createReplayViewer, replayCode, replayTitle,
 } from '../js/replay/viewer.js';
 import { encodeBoardCode, parseBoardCode } from '../js/records/board-code.js';
 import { replayFileName } from '../js/records/replay-list.js';
@@ -478,8 +478,23 @@ test('the viewer shows the game\'s board code, built from the header and the fir
   assert.equal(view.log[2][1].code, replayCode(decodeReplay(blobOf(WON))));
   const html = read('index.html');
   const replayHtml = html.slice(html.indexOf('<section id="replay"'), html.indexOf('<!-- /Replay viewer -->'));
-  assert.match(replayHtml, /<div class="ui-overlay-bar replay-bar"[\s\S]*<div id="rp-code" class="ui-code ui-code--compact hidden">[\s\S]*<button type="button" id="rp-back"/, 'in the overlay bar, taking no room from the board');
+  assert.match(replayHtml, /<header class="ui-frame__head">[\s\S]*<button type="button" id="rp-back"[\s\S]*<\/header>[\s\S]*<div class="ui-overlay-bar replay-bar"[\s\S]*<div id="rp-code" class="ui-code ui-code--compact hidden">[\s\S]*<div id="replay-stage">/,
+    'Back in the frame\'s head; the code chip in the overlay bar, above the board area and taking no room from it');
   assert.match(read('js/main.js'), /onOpen: [^\n]+\n\s*onCopy: \(c\) => copyCode\(c\),/);
+});
+
+test('the frame is titled with the replay\'s mode and board; while a replay opens the frame\'s Back has focus', async () => {
+  assert.equal(replayTitle(decodeReplay(blobOf(WON))), 'Replay · Classic 2D · Beginner');
+  assert.equal(replayTitle(decodeReplay(blobOf(LOST))), 'Replay · Classic 2D · Intermediate');
+  assert.match(replayTitle(decodeReplay(blobOf(CUBE))), /^Replay · 3D · Cube /);
+  const { viewer, view } = viewerOver();
+  const opening = viewer.show({ replay: blobOf(WON) });
+  assert.equal(viewer.defaultFocus(), '#rp-back', 'nothing plays yet: the frame\'s Back');
+  await opening;
+  assert.equal(view.log[2][1].title, 'Replay · Classic 2D · Beginner', 'handed to the view with the replay');
+  assert.equal(viewer.defaultFocus(), '#rp-play');
+  await viewer.show({ replay: new Uint8Array([1, 2, 3]) });
+  assert.equal(viewer.defaultFocus(), '#replay-message-back', 'a failure focuses its card\'s Back');
 });
 
 test('a replay that cannot play says why, and Back still works', async () => {
@@ -719,15 +734,27 @@ test('the viewer is a shell screen, not a mode: no records, no pause; its sound 
 const INDEX = read('index.html');
 const MAIN = read('js/main.js');
 
-test('the viewer screen is kit markup: the overlay, the board area, the message and the controls', () => {
+test('the viewer screen is kit markup: a screen frame holding the overlay, the board area, the message and the controls', () => {
   const at = INDEX.indexOf('<!-- Replay viewer -->');
   assert.ok(at > 0, 'index.html has the replay viewer section');
   const html = INDEX.slice(at, INDEX.indexOf('<!-- /Replay viewer -->'));
-  for (const id of ['replay', 'rp-clock', 'rp-mines', 'rp-bbbv', 'rp-rate', 'rp-back', 'replay-board', 'replay-message', 'replay-message-text',
+  for (const id of ['replay', 'replay-frame', 'replay-title', 'replay-body', 'replay-stage', 'rp-play-label', 'rp-clock', 'rp-mines', 'rp-bbbv', 'rp-rate', 'rp-back', 'replay-board', 'replay-message', 'replay-message-text',
     'replay-message-back', 'replay-controls', 'rp-play', 'rp-prev', 'rp-next', 'rp-speed', 'rp-seek', 'rp-pauses', 'rp-pauses-text', 'replay-end',
     'rp-ticks', 'rp-keys', 'rp-show-bbbv', 'rp-sound', 'rp-camera', 'rp-download', 'rp-open', 'replay-file']) {
     assert.match(html, new RegExp(`id="${id}"`), `#${id}`);
   }
+  assert.match(html, /<section id="replay" class="ui-backdrop hidden" aria-label="Replay">\s*<section class="ui-frame" id="replay-frame" aria-labelledby="replay-title">/, 'a screen frame on the backdrop');
+  assert.match(html, /<header class="ui-frame__head">\s*<div class="ui-frame__start"><button type="button" id="rp-back" class="ui-button ui-button--secondary ui-button--sm">Back <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>\s*<h2 class="ui-frame__title" id="replay-title">Replay<\/h2>/,
+    'its head: Back with its key hint, then the title');
+  assert.match(html, /<div class="ui-frame__body" id="replay-body">\s*<div class="ui-overlay-bar replay-bar"[\s\S]*<div id="replay-stage">\s*<div id="replay-board"><\/div>\s*<section id="replay-message"[\s\S]*<div id="replay-controls"/,
+    'its body: the figures, the board area with the message over it, then the controls');
+  assert.match(html, /id="replay-message" class="ui-card hidden"[\s\S]*?<span id="replay-message-spinner" class="ui-spinner" aria-hidden="true"><\/span>/, 'opening shows the spinner');
+  assert.match(html, /id="replay-message-back" class="ui-button ui-button--secondary">Back <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/, 'the failure card\'s Back with its key hint');
+  assert.match(html, /id="rp-play" class="ui-button ui-button--primary"><span id="rp-play-label">Play<\/span> <span class="ui-key-hint replay-key-hint" aria-hidden="true"><kbd class="ui-key-hint__key">Space<\/kbd><\/span><\/button>/,
+    'Play carries its key, out of its name');
+  assert.match(html, /<span id="replay-end" class="replay-end hidden" role="status"><span id="replay-end-outcome" class="ui-chip"><\/span> <span id="replay-end-time" class="ui-text"><\/span><\/span>/, 'the end line: the outcome as a chip, then the time');
+  assert.match(html, /<div id="rp-keys" class="ui-key-hints replay-keys"><\/div>/, 'the key line is a row of key hints');
+  assert.doesNotMatch(html, /data-esc-hint/, 'each Back carries its key hint; no text hint beside it');
   assert.match(html, /class="ui-overlay-bar[^"]*"/);
   assert.match(html, /id="rp-speed" class="ui-segmented" role="radiogroup"/);
   for (const s of SPEEDS) assert.match(html, new RegExp(`role="radio"[^>]*data-value="${s}"`), `${s}× option`);
@@ -790,7 +817,7 @@ test('in a browser without WebGL 2, a 2D replay plays and a 3D replay says it ne
     await page.click('#rp-speed [data-value="4"]');
     await page.click('#rp-play');
     await page.waitForFunction(() => globalThis.__ms.replayViewer.state.ended, null, { timeout: patience(3000) });
-    assert.equal(await page.evaluate(() => document.getElementById('replay-end').textContent), 'Won · 9.971 s');
+    assert.equal(await page.evaluate(() => document.getElementById('replay-end').textContent), 'Won 9.971 s');
     await page.click('#rp-back');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
 
@@ -832,6 +859,17 @@ test('in a browser, a recorded 2D replay plays from its fixture through to the e
     assert.equal(await page.evaluate(() => document.querySelectorAll('#rp-ticks .replay-tick').length) > 0, true, 'the actions tick the seek bar');
     assert.equal(await page.evaluate(() => document.querySelectorAll('#rp-pauses .replay-pause').length), 0, 'no pauses, no marks');
     assert.equal(await text('rp-pauses-text'), '');
+    assert.equal(await text('replay-title'), 'Replay · Classic 2D · Beginner');
+    assert.equal(await page.evaluate(() => document.querySelector('#rp-back .ui-key-hint__key')?.textContent), 'Esc', 'the frame\'s Back carries its key hint');
+    assert.ok(await page.evaluate(() => document.querySelectorAll('#rp-keys .ui-key-hint').length) > 0, 'a 2D replay shows the key line too');
+    assert.equal(await page.evaluate(() => document.getElementById('rp-keys').checkVisibility()), true);
+    const placed = await page.evaluate(() => {
+      const r = (id) => document.getElementById(id).getBoundingClientRect();
+      const [frame, board, bar, controls] = ['replay-frame', 'replay-board', 'rp-clock', 'replay-controls'].map(r);
+      return { inside: board.left >= frame.left && board.right <= frame.right && board.top >= frame.top && board.bottom <= frame.bottom,
+        below: board.top >= bar.bottom, above: board.bottom <= controls.top, room: board.width > 200 && board.height > 200 };
+    });
+    assert.deepEqual(placed, { inside: true, below: true, above: true, room: true }, 'the 2D board sits in the frame, between the figures and the controls');
 
     await page.click('#rp-speed [data-value="4"]');
     await page.click('#rp-play');
@@ -840,7 +878,9 @@ test('in a browser, a recorded 2D replay plays from its fixture through to the e
     await page.waitForFunction(() => globalThis.__ms.replayViewer.state.time > 1000, null, { timeout: patience(3000) });
     assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('#replay-board .replay-pointer')).display !== 'none'), true, 'the recorded pointer shows');
     await page.waitForFunction(() => globalThis.__ms.replayViewer.state.ended, null, { timeout: patience(3000) });
-    assert.equal(await text('replay-end'), 'Won · 9.971 s');
+    assert.equal(await text('replay-end'), 'Won 9.971 s');
+    assert.equal(await page.evaluate(() => document.getElementById('replay-end-outcome').className), 'ui-chip ui-chip--won', 'the outcome as its chip');
+    assert.equal(await text('rp-play-label'), 'Play again', 'at the end Play plays it again');
     assert.equal(await text('rp-clock'), '09.971');
     assert.equal(await text('rp-bbbv'), '15 / 15');
     assert.equal(await text('rp-mines'), '5');
@@ -909,13 +949,59 @@ test('in a browser, a recorded 2D replay plays from its fixture through to the e
     await page.evaluate(() => globalThis.__ms.watch({ replay: new Uint8Array([1, 2, 3]), returnTo: { screen: 'menu' } }));
     await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'failed', null, { timeout: patience(5000) });
     assert.match(await text('replay-message-text'), /cannot be read/);
-    assert.equal(await page.evaluate(() => document.getElementById('replay-controls').classList.contains('hidden')), true);
+    assert.equal(await page.evaluate(() => document.getElementById('replay-controls').classList.contains('hidden')), false, 'the controls stay in place, drawn disabled');
+    assert.deepEqual(await page.evaluate(() => ['rp-prev', 'rp-play', 'rp-next', 'rp-seek', 'rp-show-bbbv', 'rp-camera', 'rp-download'].filter((id) => !document.getElementById(id).disabled)), [],
+      'nothing that needs a replay can be used');
+    assert.equal(await page.evaluate(() => [...document.querySelectorAll('#rp-speed [role="radio"]')].every((o) => o.disabled)), true);
+    assert.deepEqual(await page.evaluate(() => ['rp-sound', 'rp-open'].filter((id) => document.getElementById(id).disabled)), [], 'Sound and Open replay file still work');
     assert.deepEqual(await page.evaluate(() => ['rp-clock', 'rp-mines', 'rp-bbbv', 'rp-rate'].map((id) => document.getElementById(id).textContent)),
       [DASH, DASH, DASH, DASH], 'nothing of the replay played before');
     assert.deepEqual(await page.evaluate(() => [document.getElementById('rp-position').textContent, document.querySelectorAll('#rp-ticks .replay-tick, #rp-pauses .replay-pause').length,
       document.getElementById('replay-end').classList.contains('hidden')]), ['', 0, true], 'the bar is cleared');
     await page.keyboard.press('Escape');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, the viewer fills its frame at every supported window size with no horizontal scroll; the code chip and key line give way on small windows', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(removeWebGL2);
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu', null, { timeout: patience(5000) });
+    await page.evaluate(async () => {
+      const bytes = new Uint8Array(await (await fetch('/tests/fixtures/replays/2d-intermediate-lost.msrp')).arrayBuffer());
+      globalThis.__ms.watch({ replay: bytes, returnTo: { screen: 'menu' } });
+    });
+    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready', null, { timeout: patience(5000) });
+    // [width, height, the code chip shows, the key line shows]
+    for (const [width, height, code, keys] of [[1920, 1080, true, true], [1366, 768, true, true], [1024, 768, false, true], [390, 844, false, false], [844, 390, false, false]]) {
+      await page.setViewportSize({ width, height });
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+      const got = await page.evaluate(() => {
+        const r = (id) => document.getElementById(id).getBoundingClientRect();
+        const body = document.getElementById('replay-body');
+        const [frame, board, play] = ['replay-frame', 'replay-board', 'rp-play'].map(r);
+        const shows = (id) => document.getElementById(id).checkVisibility();
+        return {
+          scroll: document.documentElement.scrollWidth <= innerWidth && body.scrollWidth <= body.clientWidth,
+          frame: frame.left >= 0 && frame.right <= innerWidth && frame.top >= 0 && frame.bottom <= innerHeight,
+          board: board.width > 100 && board.height > 100 && board.left >= frame.left && board.right <= frame.right,
+          play: play.width > 0,
+          code: shows('rp-code'),
+          keys: shows('rp-keys'),
+        };
+      });
+      assert.deepEqual(got, { scroll: true, frame: true, board: true, play: true, code, keys }, `${width} × ${height}`);
+    }
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

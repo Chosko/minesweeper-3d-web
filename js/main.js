@@ -1536,14 +1536,16 @@ function showMenuBackdrop() {
  * The shown screen's live scene panel (ui-scene-panel--live) takes the 3D scene: its stage's rectangle
  * is the renderer's target, set on every screen change, window resize and change of the panel's box,
  * and the canvas is clipped to the panel's rounded corners; with no live panel shown (a 3D game, the
- * replay viewer, every screen without one) the scene draws full-window. On the main menu it draws only
+ * replay viewer, even over the menu it was opened from, every screen without one) the scene draws
+ * full-window. On the main menu it draws only
  * into its 3D preview: on any other preview the canvas is hidden and nothing is drawn.
  */
 let scenePanel = null;
 const SCENE_PANEL_OBSERVER = WEBGL2 && typeof ResizeObserver === 'function' ? new ResizeObserver(() => syncScenePanel()) : null;
 function syncScenePanel() {
   if (!WEBGL2) return;
-  const stage = [...document.querySelectorAll('.ui-scene-panel--live .ui-scene-panel__stage')].find((el) => el.getClientRects().length > 0) ?? null;
+  const stage = S.mode === REPLAY_SCREEN ? null
+    : [...document.querySelectorAll('.ui-scene-panel--live .ui-scene-panel__stage')].find((el) => el.getClientRects().length > 0) ?? null;
   if (stage !== scenePanel) {
     if (scenePanel) SCENE_PANEL_OBSERVER?.unobserve(scenePanel);
     if (stage) SCENE_PANEL_OBSERVER?.observe(stage);

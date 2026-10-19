@@ -311,13 +311,13 @@ test('in a browser, the replay viewer\'s seek bar shows the D-pad hint under pad
     await seed(ms);
     await page.click('#menu-entry-records');
     await page.click('#records-games button[data-watch]');
-    await page.waitForFunction(() => globalThis.__ms.state.mode === 'replay' && !document.getElementById('replay-controls').classList.contains('hidden'));
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'replay' && globalThis.__ms.replayViewer.state.status === 'ready');
     const hint = () => ms(() => { const e = document.getElementById('rp-seek-pad'); return [e.textContent.replace(/\s+/g, ' ').trim(), getComputedStyle(e).visibility]; });
     assert.equal((await hint())[1], 'hidden', 'hidden with the mouse');
-    // The seek bar is on the viewer's D-pad walk.
+    // The seek bar is on the viewer's D-pad walk, above the transport.
     let reached = false;
-    for (let i = 0; i < 12 && !reached; i++) { await tap(BTN.DOWN); reached = await ms(() => document.activeElement?.id === 'rp-seek'); }
-    assert.equal(reached, true, 'Down reaches the seek bar');
+    for (let i = 0; i < 12 && !reached; i++) { await tap(BTN.UP); reached = await ms(() => document.activeElement?.id === 'rp-seek'); }
+    assert.equal(reached, true, 'Up reaches the seek bar');
     assert.deepEqual(await hint(), ['D-pad ◀ ▶ seek', 'visible']);
     const step = await ms(() => Number(document.getElementById('rp-seek').step));
     const at = await ms(() => Number(document.getElementById('rp-seek').value));

@@ -1079,12 +1079,19 @@
 :root[data-theme="joyful-tiles"] #hint-strip kbd { background: var(--color-ink); color: var(--color-ink-inverse); }
 
 /* Classic 2D: the board layer on the ground, the board in a framed panel whose top edge is the overlay bar */
-:root[data-theme="joyful-tiles"] :is(#c2d, #replay) {
+:root[data-theme="joyful-tiles"] #c2d {
   background-color: var(--color-ground);
   background-image: radial-gradient(circle, var(--color-ground-dot) 1.6px, transparent 1.7px);
   background-size: 22px 22px;
 }
 :root[data-theme="joyful-tiles"] #replay.replay--scene { background: transparent; }
+/* A 3D replay: the frame's window lets the full-window scene through; the controls keep a surface of their own over it. */
+:root[data-theme="joyful-tiles"] #replay.replay--scene #replay-frame { background: transparent; box-shadow: none; }
+:root[data-theme="joyful-tiles"] #replay.replay--scene #replay-controls {
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 2px var(--color-border), 0 4px 0 var(--color-edge);
+}
 :root[data-theme="joyful-tiles"] .c2d-panel {
   border-radius: var(--radius-xl);
   background: var(--color-surface);

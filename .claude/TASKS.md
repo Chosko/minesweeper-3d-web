@@ -620,7 +620,7 @@ Feature: shared-screen-layout
 
 ## 172. Replay viewer in the shared layout
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, js/replay/viewer.js, js/replay/viewer-2d.js, js/replay/viewer-3d.js, tests/replay-viewer.test.mjs, tests/replay-viewer-3d.test.mjs, tests/components.test.mjs
 Preconditions: 163

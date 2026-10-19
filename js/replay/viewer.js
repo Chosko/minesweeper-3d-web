@@ -45,6 +45,9 @@
 //   Classic 2D's cue map it: a flag click flag(on, count); a click that loses explode(); a reveal or
 //   a chord that opens cells reveal(n) / chord(n); one that changes nothing in play noop(); then a
 //   win's win().
+// replayTitle(replay) → the viewer frame's title: "Replay · <mode> · <board>", the board as the records
+//   name it (js/records/board.js boardLabel) — "Replay · Classic 2D · Intermediate", "Replay · 3D · Cube
+//   Beginner".
 // replayCode(replay) → the game's board code in its game form (js/records/board-code.js), built from
 //   the header's board, seed and generator version and the first reveal in the action stream — no
 //   format change; an imported replay shows its code too. Null without a reveal.
@@ -55,8 +58,9 @@
 //
 // createReplayViewer({ library, router, view, viewers?, sound?, files? }) → viewer
 //   view     the screen binder: open(), close(), loading(), failed(message), ready({ duration,
-//            leadIn, kind, pauses, actions, code }) → the board area, render(state); pauses are the
-//            header's pause spans, actions the replay's [{ time, kind }], code replayCode's.
+//            leadIn, kind, pauses, actions, code, title }) → the board area, render(state); pauses are
+//            the header's pause spans, actions the replay's [{ time, kind }], code replayCode's, title
+//            replayTitle's.
 //   viewers  { [graph kind]: ({ container, sim }) → { draw(frame, { playing }), place?(),
 //            setScale?(scale), press?(actions), still?(), showBbbv?(tints), setFree?(on),
 //            destroy() } }: draw is told whether playback drew the frame (a seek did not); place()
@@ -98,27 +102,32 @@
 //   openFile(file) shows that file, Back going where this replay's Back went.
 //   key(code) → whether REPLAY_KEYS took it; pad(pressed) → whether a REPLAY_PAD button was pressed,
 //            `pressed(button)` the shell's held-suppressed press test.
-//   back()   routes to returnTo. defaultFocus() → the screen's default focus target.
+//   back()   routes to returnTo. defaultFocus() → the screen's default focus target: Play once the
+//            replay is ready, the failure card's Back once it failed, the frame's Back while it opens.
 //   state    { status: 'closed' | 'loading' | 'ready' | 'failed', message, kind, time (game time,
 //            negative through the lead-in), duration, leadIn, playing, speed, ended, figures, end,
 //            bbbv, sound, camera ('follow' | 'free' in 3D, else null) } — what render(state) is
 //            handed.
 //
 // createReplayView({ root, win?, onCommand, onSpeed, onSeek, onBack, onDownload?, onOpen?, onCopy? }) → the
-// view above, filling #replay by id: the overlay bar (#rp-clock, #rp-mines, #rp-bbbv, #rp-rate,
-// Back #rp-back), the board area #replay-board — the room between the bar and the controls, each
-// measured from its real size when the replay shows and again whenever either changes size, with
-// 16 px (--space-4) beside each —, the message card #replay-message (loading or failure, its Back
-// #replay-message-back), and the controls #replay-controls (#rp-prev, #rp-play, #rp-next, the speed
-// choice #rp-speed, the seek bar #rp-seek over the timeline with its pause marks #rp-pauses, their
-// text alternative #rp-pauses-text and its action ticks #rp-ticks, the position #rp-position, the
-// toggles #rp-show-bbbv, #rp-sound and #rp-camera (3D only), #rp-download, #rp-open, the code chip
-// #rp-code (its Copy and Copy link call onCopy; hidden while loading, failed or with no code), the key line
-// #rp-keys (REPLAY_KEY_LINE, 3D only: a 2D board keeps its room) and the end line #replay-end). While a replay loads or has failed,
-// nothing of one shown earlier stays: the figures read DASH and the position, the seek bar, its
-// marks and ticks and the end line are cleared. A 3D replay marks #replay replay--scene, which lets
-// the 3D scene behind it show. While it shows, REPLAY_KEYS typed anywhere but in a field reach
-// onCommand; Space and Enter on a button keep their own click.
+// view above, filling #replay by id: a screen frame on the backdrop (#replay-frame), its head Back
+// (#rp-back) and title (#replay-title: "Replay" until a replay is ready, then replayTitle's); its body
+// the overlay bar of figures (#rp-clock, #rp-mines, #rp-bbbv, #rp-rate) with the code chip #rp-code
+// (its Copy and Copy link call onCopy; hidden while loading, failed or with no code), the board area
+// #replay-board in #replay-stage, which takes the room the figures and the controls leave, the message
+// card over it (#replay-message: the spinner while a replay opens, the reason and its Back
+// #replay-message-back when it cannot play), and the controls #replay-controls — the seek bar #rp-seek
+// over the timeline with its pause marks #rp-pauses and its action ticks #rp-ticks, the position
+// #rp-position; #rp-prev, #rp-play (its label #rp-play-label: Play, Pause, or Play again at the end),
+// #rp-next, the speed choice #rp-speed, the toggles #rp-show-bbbv, #rp-sound and #rp-camera (3D only),
+// the end line #replay-end (the outcome as a chip, #replay-end-outcome, and the time, #replay-end-time),
+// #rp-download, #rp-open; the key line #rp-keys (REPLAY_KEY_LINE as key hints) and the pauses' text
+// alternative #rp-pauses-text. While a replay loads or has failed the controls stay in place, every one
+// that needs a replay disabled (Sound and Open replay file still work), and nothing of one shown earlier
+// stays: the figures read DASH and the position, the seek bar, its marks and ticks and the end line are
+// cleared. A 3D replay marks #replay replay--scene, which lets the full-window 3D scene behind it show.
+// While it shows, REPLAY_KEYS typed anywhere but in a field reach onCommand; Space and Enter on a
+// button keep their own click.
 
 import { createSimulator, REFUSAL } from './simulator.js';
 import { verify } from './verify.js';
@@ -130,7 +139,7 @@ import { codeOf } from '../records/board-code.js';
 import { formatTime, formatRate, DASH } from '../results/view.js';
 import { BTN } from '../gamepad.js';
 import { REPLAY_SCREEN, replayFileName } from '../records/replay-list.js';
-import { boardKey } from '../records/board.js';
+import { boardKey, boardLabel, MODE_3D } from '../records/board.js';
 import { bbbvPartition } from '../engine/metrics.js';
 
 export { LEAD_IN_MS };
@@ -459,7 +468,9 @@ export function createReplayViewer({ library, router, view, viewers = { square: 
       clock = createPlaybackClock({ duration: sim.duration + LEAD_IN_MS });
       const { graph, pauses } = sim.replay.header;
       const actions = sim.replay.actions.map(({ time, kind: k }) => ({ time, kind: k }));
-      const container = view.ready({ duration: sim.duration, leadIn: LEAD_IN_MS, kind: graph.kind, pauses, actions, code: replayCode(sim.replay) });
+      const container = view.ready({
+        duration: sim.duration, leadIn: LEAD_IN_MS, kind: graph.kind, pauses, actions, code: replayCode(sim.replay), title: replayTitle(sim.replay),
+      });
       status = 'ready';
       const mounted = mount({ container, sim });
       if (mine !== opening) { mounted.destroy(); return; } // mounting left the screen (a lost graphics context)
@@ -537,10 +548,16 @@ export function createReplayViewer({ library, router, view, viewers = { square: 
       router.go(returnTo?.screen ?? 'menu', { data: returnTo?.data });
     },
     defaultFocus() {
-      return status === 'ready' ? '#rp-play' : '#replay-message-back';
+      if (status === 'ready') return '#rp-play';
+      return status === 'failed' ? '#replay-message-back' : '#rp-back';
     },
   };
   return viewer;
+}
+
+export function replayTitle(replay) {
+  const { board } = replay.header;
+  return `Replay · ${board.mode === MODE_3D ? '3D' : 'Classic 2D'} · ${boardLabel(board)}`;
 }
 
 export function replayCode(replay) {
@@ -551,23 +568,29 @@ export function replayCode(replay) {
 }
 
 const IN_FIELD = 'input, select, textarea';
-/** The room between the board area and the overlay bar or the controls (--space-4). */
-const BOARD_GAP = 16;
+/** The frame's title until a replay is ready. */
+const TITLE = 'Replay';
+/** The end line's chip for each outcome (js/replay/viewer.js endLine), else ui-chip--muted. */
+const END_CHIPS = Object.freeze({ Won: 'ui-chip--won', Lost: 'ui-chip--lost' });
 
 export function createReplayView({
   root, win = globalThis, onCommand, onSpeed, onSeek, onBack, onDownload = () => {}, onOpen = () => {}, onCopy = () => {},
 }) {
   const $ = (id) => root.querySelector(`#${id}`);
   const el = {
-    clock: $('rp-clock'), mines: $('rp-mines'), bbbv: $('rp-bbbv'), rate: $('rp-rate'),
+    title: $('replay-title'), clock: $('rp-clock'), mines: $('rp-mines'), bbbv: $('rp-bbbv'), rate: $('rp-rate'),
     board: $('replay-board'), message: $('replay-message'), messageTitle: $('replay-message-title'), messageText: $('replay-message-text'),
-    controls: $('replay-controls'), play: $('rp-play'), prev: $('rp-prev'), next: $('rp-next'), speed: $('rp-speed'),
-    seek: $('rp-seek'), position: $('rp-position'), end: $('replay-end'), pauses: $('rp-pauses'), pausesText: $('rp-pauses-text'),
+    spinner: $('replay-message-spinner'), messageActions: $('replay-message-actions'),
+    controls: $('replay-controls'), play: $('rp-play'), playLabel: $('rp-play-label'), prev: $('rp-prev'), next: $('rp-next'), speed: $('rp-speed'),
+    seek: $('rp-seek'), position: $('rp-position'), end: $('replay-end'), endOutcome: $('replay-end-outcome'), endTime: $('replay-end-time'),
+    pauses: $('rp-pauses'), pausesText: $('rp-pauses-text'),
     ticks: $('rp-ticks'), keys: $('rp-keys'), showBbbv: $('rp-show-bbbv'), sound: $('rp-sound'), camera: $('rp-camera'),
     download: $('rp-download'), open: $('rp-open'),
   };
   const code = $('rp-code') ? bindCodeChip($('rp-code'), { onCopy: (c) => onCopy(c) }) : null;
   const options = [...el.speed.querySelectorAll('.ui-segmented__option')];
+  // The controls that need a replay: disabled while one opens or has failed.
+  const needReplay = [el.prev, el.play, el.next, el.seek, el.showBbbv, el.camera, el.download, ...options];
   const doc = root.ownerDocument;
   const shown = {};
   const set = (key, node, text) => { if (shown[key] !== text) { node.textContent = text; shown[key] = text; } };
@@ -613,21 +636,15 @@ export function createReplayView({
       return tick;
     }));
   };
-
-  // The board area: below the overlay bar and above the controls, as measured now.
-  const bar = root.querySelector('.replay-bar');
+  // The seek bar's width follows the window: the ticks are merged again whenever it changes.
   let tickWidth = -1;
-  const fitBoard = () => {
-    if (el.controls.classList.contains('hidden')) return;
-    const box = root.getBoundingClientRect();
-    const top = bar ? bar.getBoundingClientRect().bottom - box.top : 0;
-    const bottom = box.bottom - el.controls.getBoundingClientRect().top;
-    el.board.style.top = `${Math.round(top) + BOARD_GAP}px`;
-    el.board.style.bottom = `${Math.round(bottom) + BOARD_GAP}px`;
+  const refit = () => {
     const w = el.ticks.getBoundingClientRect().width;
     if (w !== tickWidth) { tickWidth = w; drawTicks(); }
   };
-  const sizes = win.ResizeObserver ? new win.ResizeObserver(fitBoard) : null;
+  const sizes = win.ResizeObserver ? new win.ResizeObserver(refit) : null;
+
+  const enable = (on) => { for (const node of needReplay) node.disabled = !on; };
 
   // Nothing of a replay shown earlier: the figures read DASH, the bar is empty.
   const clear = () => {
@@ -635,7 +652,8 @@ export function createReplayView({
     tickWidth = -1;
     for (const [key, node] of [['clock', el.clock], ['mines', el.mines], ['bbbv', el.bbbv], ['rate', el.rate]]) set(key, node, DASH);
     set('position', el.position, '');
-    set('end', el.end, '');
+    set('play', el.playLabel, 'Play');
+    set('title', el.title, TITLE);
     el.end.classList.add('hidden');
     el.seek.min = '0';
     el.seek.max = '0';
@@ -647,33 +665,39 @@ export function createReplayView({
     el.ticks.replaceChildren();
   };
 
-  const card = (title, text) => {
+  // The message card over the board area: the spinner while a replay opens, the reason and Back once it failed.
+  const card = (title, text, failed) => {
     root.classList.remove('replay--scene');
     clear();
+    enable(false);
+    el.camera.classList.add('hidden');
     el.messageTitle.textContent = title;
     el.messageText.textContent = text;
     el.messageText.classList.toggle('hidden', !text);
+    el.spinner.classList.toggle('hidden', failed);
+    el.messageActions.classList.toggle('hidden', !failed);
+    el.message.setAttribute('role', failed ? 'alert' : 'status');
     el.message.classList.remove('hidden');
-    el.controls.classList.add('hidden');
   };
 
-  // The key line shows over a 3D replay, in place of the game's chips; a 2D board keeps the room.
+  // The key line: each replay key as a key hint, its controller buttons beside it where it has one.
+  const kbd = (text, pad) => {
+    const key = doc.createElement('kbd');
+    key.className = pad ? 'ui-key-hint__key replay-key__pad' : 'ui-key-hint__key';
+    key.textContent = text;
+    return key;
+  };
   const keyLine = (kind) => {
-    el.keys.classList.toggle('hidden', kind !== 'box');
     el.keys.replaceChildren(...REPLAY_KEY_LINE.filter((k) => !k.only || k.only === kind).map((k) => {
-      const item = doc.createElement('span');
-      item.className = 'replay-key';
-      const keys = doc.createElement('kbd');
-      keys.textContent = k.keys;
-      item.append(keys);
-      if (k.pad) {
-        const pad = doc.createElement('kbd');
-        pad.className = 'replay-key__pad';
-        pad.textContent = k.pad;
-        item.append(' ', pad);
-      }
-      item.append(` ${k.label}`);
-      return item;
+      const hint = doc.createElement('span');
+      hint.className = 'ui-key-hint';
+      hint.append(...k.keys.split(' / ').map((t) => kbd(t, false)));
+      if (k.pad) hint.append(...k.pad.split(' / ').map((t) => kbd(t, true)));
+      const label = doc.createElement('span');
+      label.className = 'ui-key-hint__label';
+      label.textContent = k.label;
+      hint.append(label);
+      return hint;
     }));
   };
 
@@ -683,8 +707,7 @@ export function createReplayView({
     open() {
       root.classList.remove('hidden');
       win.addEventListener('keydown', onKey);
-      sizes?.observe(el.controls);
-      if (bar) sizes?.observe(bar);
+      sizes?.observe(el.ticks);
     },
     close() {
       win.removeEventListener('keydown', onKey);
@@ -695,13 +718,14 @@ export function createReplayView({
       for (const k of Object.keys(shown)) delete shown[k];
       timeline = null;
     },
-    loading() { code?.show(null); card('Opening the replay…', ''); },
-    failed(message) { code?.show(null); card('This replay cannot be played', message); },
-    ready({ duration, leadIn = 0, kind, pauses = [], actions = [], code: boardCode = null }) {
+    loading() { code?.show(null); card('Opening the replay…', '', false); },
+    failed(message) { code?.show(null); card('This replay cannot be played', message, true); },
+    ready({ duration, leadIn = 0, kind, pauses = [], actions = [], code: boardCode = null, title = TITLE }) {
       code?.show(boardCode);
+      set('title', el.title, title);
       root.classList.toggle('replay--scene', kind === 'box');
       el.message.classList.add('hidden');
-      el.controls.classList.remove('hidden');
+      enable(true);
       el.camera.classList.toggle('hidden', kind !== 'box');
       const step = seekStep(duration);
       el.seek.step = String(step);
@@ -718,8 +742,8 @@ export function createReplayView({
       el.pausesText.hidden = pauses.length === 0;
       timeline = { duration, leadIn, actions };
       keyLine(kind);
-      fitBoard();
-      drawTicks();
+      tickWidth = -1;
+      refit();
       return el.board;
     },
     render(state) {
@@ -730,7 +754,7 @@ export function createReplayView({
       set('mines', el.mines, f.mines);
       set('bbbv', el.bbbv, f.bbbv);
       set('rate', el.rate, f.rate);
-      set('play', el.play, state.playing ? 'Pause' : 'Play');
+      set('play', el.playLabel, state.playing ? 'Pause' : state.ended ? 'Play again' : 'Play');
       set('position', el.position, `${f.clock} / ${clockText(state.duration)}`);
       if (!seeking && Number(el.seek.value) !== Math.round(state.time)) el.seek.value = String(Math.round(state.time));
       const at = Math.max(0, state.time);
@@ -739,8 +763,11 @@ export function createReplayView({
       options.forEach((o, i) => { o.setAttribute('aria-checked', String(i === speed)); o.tabIndex = i === speed ? 0 : -1; });
       pressed(el.showBbbv, state.bbbv === true);
       pressed(el.camera, state.camera === 'free');
-      set('end', el.end, state.end ? state.end.text : '');
-      el.end.classList.toggle('hidden', !state.end);
+      const end = state.end;
+      set('endOutcome', el.endOutcome, end ? end.outcome : '');
+      set('endTime', el.endTime, end ? end.time : '');
+      el.endOutcome.className = `ui-chip ${END_CHIPS[end?.outcome] ?? 'ui-chip--muted'}`;
+      el.end.classList.toggle('hidden', !end);
     },
     destroy() {
       win.removeEventListener('keydown', onKey);

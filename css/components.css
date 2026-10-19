@@ -708,24 +708,35 @@
      board shows behind it; over a 3D game the finished board is drawn
      dimmed behind it, on a translucent scrim (results--over3d,
      css/style.css).
-   Replay viewer (index.html #replay, filled by js/replay/viewer.js): a
-     ui-overlay-bar of the replay's figures (Time in seconds to the
-     thousandth, Mines, 3BV solved / 3BV, 3BV/s), a ui-code--compact chip of
-     the replay's board code, and a secondary Back, the board
-     area, a ui-card ui-screen message while the replay opens or when it
-     cannot play (a ui-text reason and ui-actions--row with Back primary),
-     and a ui-panel of the
-     playback controls: a ui-text end line, a ui-row of Previous, Play /
-     Pause (primary) and Next with the speed as a ui-segmented choice (0.25×,
-     0.5×, 1×, 2×, 4×), the seek bar as a ui-slider whose track carries a
-     .replay-pause mark per paused span (--color-replay-pause), a
-     .replay-tick per action (--color-replay-reveal, -flag, -chord) and a
-     ui-text--muted line naming the pauses, its text alternative, its label
-     row carrying the controller's D-pad hint (#rp-seek-pad, data-pad-hint:
-     shown under pad navigation only, css/style.css), a ui-row of secondary
-     toggles and actions (Show 3BV, Sound, Free camera in 3D — each
-     aria-pressed —, Download, Open replay file) and the ui-text--muted key
-     line. Default focus: Play, or the message's Back.
+   Replay viewer (index.html #replay, filled by js/replay/viewer.js): ui-backdrop
+     holding a ui-frame (#replay-frame) that fills it: Back (a small secondary
+     button with its back key hint) and the title, "Replay · <mode> · <board>"
+     once a replay is ready. Its body, top to bottom: a ui-overlay-bar of the
+     replay's figures (Time in seconds to the thousandth, Mines, 3BV solved /
+     3BV, 3BV/s) with a ui-code--compact chip of the replay's board code and,
+     at the end, the outcome as a ui-chip with the recorded time; the board
+     area, taking the room left, with a ui-card over it while the replay opens
+     (the ui-spinner beside its title) or when it cannot play (its
+     ui-card__title, a ui-text reason and ui-actions--row with Back, secondary
+     with its back key hint); then the playback controls: the seek bar as a
+     ui-slider whose track carries a .replay-pause mark per paused span
+     (--color-replay-pause) and a .replay-tick per action
+     (--color-replay-reveal, -flag, -chord), its row carrying the
+     controller's D-pad hint (#rp-seek-pad, data-pad-hint: shown under pad
+     navigation only, css/style.css); a ui-row of Previous and Next (icons,
+     named by aria-label) around Play / Pause / Play again (primary, with its
+     Space key hint), the speed as a ui-segmented choice (0.25×, 0.5×, 1×, 2×,
+     4×) and small secondary toggles (Show 3BV, Sound, Free camera in 3D — each
+     aria-pressed); a ui-row of the ui-key-hints key line, the ui-text--muted
+     line naming the pauses (the seek bar's text alternative) and Download and
+     Open replay file. While a replay opens or has failed the controls stay,
+     those that need a replay disabled. A 3D
+     replay's scene is the full window behind the frame, whose window lets it
+     through, the controls keeping a surface of their own. Below 1200 px the
+     code chip gives way; on a phone the frame is full-bleed and the key line
+     gives way; on a phone held sideways the board takes the left of the body.
+     Default focus: Play; the failure card's Back; the frame's Back while the
+     replay opens.
 */
 
 

@@ -858,8 +858,7 @@ test('bindSegmented with horizontal leaves Up and Down unhandled', () => {
 
 // Each button Esc triggers, with the hint beside it; the pause card's Main menu has none (Esc resumes there),
 // and a screen frame's Back carries its key hint inside it.
-const ESC_BACKS = ['ready-back', 'daily-back',
-  'rp-back', 'replay-message-back', 'ctx-lost-menu'];
+const ESC_BACKS = ['ready-back', 'daily-back', 'ctx-lost-menu'];
 const HINT = '<span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>';
 
 test('an "Esc: Back" hint sits beside each Back that Esc triggers, and is no focus stop', () => {
@@ -876,7 +875,7 @@ test('an "Esc: Back" hint sits beside each Back that Esc triggers, and is no foc
   for (const id of ['c2d-choice-back', 'board-choice-back', 'coming-soon-menu', 'r-menu', 'settings-back']) {
     assert.match(html, new RegExp(`id="${id}"[^>]*>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>`), `the frame's Back holds its key hint (#${id})`);
   }
-  for (const id of ['coming-soon-back', 'records-back']) {
+  for (const id of ['coming-soon-back', 'records-back', 'rp-back', 'replay-message-back']) {
     assert.match(html, new RegExp(`id="${id}"[^>]*>Back <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>`), `so does a Back that returns one step (#${id})`);
   }
   assert.doesNotMatch(HINT, /tabindex|<button|<a /, 'the hint is plain text');
@@ -1550,6 +1549,19 @@ test('in a browser, the menu, the pause card and the results layout meet the con
     // The Settings page in its frame, then its Controls panel: the theme's surface on its scrim, readable.
     await page.click('#menu-entry-settings');
     await check(page, '#settings-frame', 'settings');
+    // The replay viewer in its frame: the figures, the board area and the controls, readable.
+    await page.keyboard.press('Escape');
+    await page.evaluate(async () => {
+      const bytes = new Uint8Array(await (await fetch('/tests/fixtures/replays/2d-beginner-won.msrp')).arrayBuffer());
+      globalThis.__ms.watch({ replay: bytes, returnTo: { screen: 'menu' } });
+    });
+    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready');
+    await check(page, '#replay-frame', 'replay');
+    await page.evaluate(() => globalThis.__ms.replayViewer.command('end'));
+    await check(page, '#replay-controls', 'replay-end');
+    await page.keyboard.press('Escape');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
+    await page.click('#menu-entry-settings');
     await page.click('#set-controls');
     assert.equal(await page.evaluate(() => document.getElementById('controls-modal').classList.contains('hidden')), false);
     await check(page, '#controls-modal .modal-card', 'controls');
@@ -1758,7 +1770,7 @@ const textOf = (html, t) => {
 };
 const MODE_ENTRIES = ['classic-2d', 'hexagon', 'triangle', 'surface', '3d', 'daily', 'records', 'settings', 'quit'];
 
-test('the gallery marks the shared layout\'s components; the main menu, both board choices, the placeholder, the pause card, the results, the Records screen and the Settings page are the screens built from them so far', () => {
+test('the gallery marks the shared layout\'s components; the main menu, both board choices, the placeholder, the pause card, the results, the Records screen, the Settings page and the replay viewer are the screens built from them so far', () => {
   assert.ok(LAYOUT.length > 1000, 'dev/components.html holds the shared layout\'s components');
   const screens = INDEX.replace(/<!--[\s\S]*?-->/g, '');
   const menu = SCREENS.menu;
@@ -1769,6 +1781,10 @@ test('the gallery marks the shared layout\'s components; the main menu, both boa
   const results = screens.slice(screens.indexOf('<section id="results"'), screens.indexOf('<section id="daily"'));
   const records = screens.slice(screens.indexOf('<section id="records"'), screens.indexOf('<section id="replay"'));
   const settings = screens.slice(screens.indexOf('<section id="settings"'), screens.indexOf('<section id="records"'));
+  const replay = screens.slice(screens.indexOf('<section id="replay"'), screens.indexOf('<section id="results"'));
+  for (const cls of ['ui-backdrop', 'ui-frame', 'ui-key-hint', 'ui-key-hints', 'ui-chip', 'ui-spinner', 'ui-overlay-bar', 'ui-code', 'ui-segmented', 'ui-slider']) {
+    assert.match(replay, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the replay viewer uses ${cls}`);
+  }
   for (const cls of ['ui-backdrop', 'ui-frame', 'ui-key-hint']) assert.match(settings, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the Settings page uses ${cls}`);
   assert.doesNotMatch(settings, /class="[^"]*\bui-card(?![\w-])/, 'the Settings page holds no card');
   for (const cls of ['ui-backdrop', 'ui-frame', 'ui-key-hint', 'ui-divider', 'ui-tabs', 'ui-checkbox', 'ui-table', 'ui-panel--muted', 'ui-stat--tile']) {
@@ -1780,7 +1796,7 @@ test('the gallery marks the shared layout\'s components; the main menu, both boa
   for (const cls of ['ui-backdrop', 'ui-frame', 'ui-key-hint']) assert.match(soon, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the placeholder uses ${cls}`);
   assert.doesNotMatch(soon, /class="[^"]*\bui-card(?![\w-])/, 'the placeholder holds no card');
   for (const cls of ['ui-section-label', 'ui-button--danger', 'ui-key-hint', 'ui-panel--muted']) assert.match(pause, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the pause card uses ${cls}`);
-  const others = screens.replace(menu, '').replace(choice, '').replace(choice3d, '').replace(soon, '').replace(pause, '').replace(results, '').replace(records, '').replace(settings, '');
+  const others = screens.replace(menu, '').replace(choice, '').replace(choice3d, '').replace(soon, '').replace(pause, '').replace(results, '').replace(records, '').replace(settings, '').replace(replay, '');
   for (const cls of ['ui-wordmark', 'ui-mode-entry', 'ui-key-hint', 'ui-chip', 'ui-scene-panel']) {
     assert.match(menu, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the main menu uses ${cls}`);
   }
