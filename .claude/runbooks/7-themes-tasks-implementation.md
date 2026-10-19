@@ -122,7 +122,7 @@ Context:
 
 Done: struck — for a parallel run its Depends on lacked the order against task 160, which edits the same files; replaced by step 53.
 
-## [ ] 53. Implement task 165 — Main menu in the shared layout
+## [x] 53. Implement task 165 — Main menu in the shared layout
 
 Depends on: 4, 7, 8
 
@@ -140,6 +140,8 @@ Context:
 /task-implement 165 --review
 ```
 
+Done: 2026-10-19, commit `3135e53` (26 files, +1137/-548). The release version lives in a hand-bumped `js/version.js` (0.2.0); the menu shows "Web · v0.2.0".
+
 ## [x] 10. Implement task 166 — Classic 2D board choice screen with its records panel
 
 Depends on: 7
@@ -153,7 +155,7 @@ Context:
 
 Done: struck — for a parallel run its Depends on lacked the order against task 165, which edits the same files; replaced by step 54.
 
-## [ ] 54. Implement task 166 — Classic 2D board choice screen with its bests, Insert Board Code and Custom Random
+## [~] 54. Implement task 166 — Classic 2D board choice screen with its bests, Insert Board Code and Custom Random
 
 Depends on: 7, 53
 
@@ -439,7 +441,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against task 165, which edits the same files; replaced by step 62.
 
-## [ ] 62. Implement task 206 — Daily screen won time in the standard time format
+## [~] 62. Implement task 206 — Daily screen won time in the standard time format
 
 Depends on: 53
 
