@@ -460,7 +460,7 @@ Preconditions: 154
 
 ## 157. Theme registry, kit catalogue and the Joyful tiles theme folder
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/themes/registry.js, js/ui/kit-catalogue.js, themes/joyful-tiles/board.js, themes/joyful-tiles/fonts/, tests/theme-registry.test.mjs, css/components.css, dev/components.html
 Preconditions: none

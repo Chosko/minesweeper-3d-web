@@ -4,8 +4,10 @@
    both themes follow from the token values. Low-fidelity pass: plain,
    functional styling; relief, shadow and motion are token placeholders.
    Behaviour helpers live in js/ui/components.js (initComponents(root) binds
-   every slider and segmented choice under root). Changing a class name or a
-   markup pattern below is a breaking change for every screen using it.
+   every slider and segmented choice under root). js/ui/kit-catalogue.js
+   declares the components below as data (classes, parts, states, decoration
+   slots) and changes with this comment. Changing a class name or a markup
+   pattern below is a breaking change for every screen using it.
 
    States. Every interactive control has: at rest, hover, pressed (:active),
    focused (:focus-visible for keyboard, body.pad-nav :focus for the
