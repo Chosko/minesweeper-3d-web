@@ -727,7 +727,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against tasks 157, 163, which edit the same files; replaced by step 72.
 
-## [~] 72. Implement task 181 — Board module shape, the Joyful tiles board module and the board conformance checks
+## [x] 72. Implement task 181 — Board module shape, the Joyful tiles board module and the board conformance checks
 
 Depends on: 5, 7, 24
 
@@ -737,6 +737,8 @@ Context:
 ```prompt
 /task-implement 181 --review
 ```
+
+Done: 2026-10-19, commit `a65f170` (10 files, +612/-14). Classic 2D numbers 1–8 use J-3DSheet's 3D colours (one number list; the 2D colours fail 4.5:1 against the hairline). Mid-animation face changes are zero-angle flips; the solved pulse's "toward white" is a brightness multiplier (×1.25/×1.45).
 
 ## [x] 26. Implement task 182 — Classic 2D tiles drawn from the active theme's board module
 
@@ -754,7 +756,8 @@ Done: struck — for a parallel run its Depends on lacked the order against task
 
 Depends on: 3, 69, 72
 
-Context: none
+Context:
+- 2026-10-19 (from step 72): the flat style has no separate width settings, so the pressed tile's top shade is 0.1 of the tile (J-BoardSheet: 0.08) and the exploded tile's border is 1 px (sheet: 2 px); accept the difference or record a follow-up. Classic 2D numbers 1–8 come from the board module's single (3D-sheet) number list.
 
 ```prompt
 /task-implement 182 --review
@@ -794,7 +797,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on waited on task 160, which neither a precondition nor a shared file needs; replaced by step 75.
 
-## [ ] 75. Implement task 184 — Cell motion player
+## [~] 75. Implement task 184 — Cell motion player
 
 Depends on: 72
 
@@ -842,7 +845,8 @@ Done: struck — for a parallel run its Depends on lacked the order against task
 
 Depends on: 74, 75
 
-Context: none
+Context:
+- 2026-10-19 (from step 72): the board module writes the solved pulse's "toward white" 25 % / 45 % as brightness ×1.25 / ×1.45, which saturates a number glyph rather than whitening it; handle this when replaying the pulse.
 
 ```prompt
 /task-implement 186 --review
