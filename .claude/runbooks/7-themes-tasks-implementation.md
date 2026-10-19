@@ -41,7 +41,7 @@ Context:
 
 Done: 2026-10-19, commit `2b6ba85` (18 files, +810/-123). The importable switcher is a new `js/themes/applier.js` (`themeApplier()`); `globalThis.msTheme` is gone and `js/theme.js` stays the pre-paint classic script.
 
-## [~] 4. Implement task 160 — Settings theme list and light/dark carry-over
+## [x] 4. Implement task 160 — Settings theme list and light/dark carry-over
 
 Depends on: 3
 
@@ -53,6 +53,8 @@ Context:
 ```prompt
 /task-implement 160 --review
 ```
+
+Done: 2026-10-19, commit `fdc5b69` (15 files, +520/-99). The settings document is version 2; the theme setting accepts any id the registry knows (`isRegisteredTheme`). The swatch reads four colours from each theme stylesheet (`themeSwatchColors`), since a preview element scoped by theme id cannot work.
 
 ## [x] 5. Implement task 161 — Theme conformance tests and the component gallery per theme
 
@@ -68,12 +70,13 @@ Context:
 
 Done: 2026-10-19, commit `d6c6d81` (16 files, +659/-8). The required token list is `REQUIRED_TOKENS` in `js/ui/kit-catalogue.js`; a decoration slot is an element marked `data-slot="<name>"`. The premise that `tests/tokens.test.mjs` and `tests/components.test.mjs` export contrast helpers was wrong — the conformance file carries its own.
 
-## [ ] 6. Implement task 162 — Update documentation for feature `theme-system`
+## [~] 6. Implement task 162 — Update documentation for feature `theme-system`
 
 Depends on: 1, 2, 3, 4, 5
 
 Context:
 - 2026-10-19 (from step 3): `.claude/context/app-shell-kit.md` and `.claude/context/settings.md` still describe `globalThis.msTheme` and light/dark; the switcher now lives in `js/themes/applier.js` (`themeApplier()`), with a test-only `registerTheme` and a fixture theme under `tests/fixtures/themes/`.
+- 2026-10-19 (from step 4): the settings document is version 2 (`js/theme.js` reads 1 and 2); the Settings theme list is a `ui-segmented--list` variant with a per-theme swatch; `--color-accent-fill` joined `REQUIRED_TOKENS`.
 
 ```prompt
 /task-implement 162 --review
