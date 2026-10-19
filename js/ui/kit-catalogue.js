@@ -82,7 +82,11 @@ export const KIT_CATALOGUE = Object.freeze([
     ],
   }),
   component('ui-segmented', {
-    parts: [control('option', '.ui-segmented__option', { checked: '.ui-segmented__option[aria-checked="true"]' })],
+    variants: ['ui-segmented--list'],
+    parts: [
+      control('option', '.ui-segmented__option', { checked: '.ui-segmented__option[aria-checked="true"]' }),
+      part('swatch', '.ui-segmented__swatch', { optional: true }),
+    ],
   }),
   component('ui-stat', {
     parts: [
@@ -175,4 +179,6 @@ export const REQUIRED_TOKENS = Object.freeze([
   '--color-replay-bbbv-5', '--color-replay-bbbv-6', '--color-replay-bbbv-isolated',
   // the 3D scene's sky
   '--color-scene-zenith', '--color-scene-horizon', '--color-scene-nadir',
+  // the Settings theme list's swatch (js/settings/page.js SWATCH_TOKENS) beyond the contrast roles
+  '--color-accent-fill',
 ]);

@@ -46,6 +46,11 @@ export function registerTheme(entry) {
   registered.push(Object.freeze({ ...entry }));
 }
 
+// Whether `id` is a registered theme's id — a catalogue entry's or a run-time registration's.
+export function isRegisteredTheme(id) {
+  return THEMES.some((t) => t.id === id) || registered.some((t) => t.id === id);
+}
+
 // The entry for `id`; the default entry for an unknown or absent id, never a failure.
 export function themeById(id) {
   return THEMES.find((t) => t.id === id) ?? registered.find((t) => t.id === id) ?? DEFAULT_THEME;

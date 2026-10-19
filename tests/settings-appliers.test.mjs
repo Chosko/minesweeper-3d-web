@@ -11,12 +11,18 @@ import { createSettingsStore, SETTINGS_DOC, SETTINGS_VERSION } from '../js/setti
 import {
   pixelRatioFor, applyTheme, applyAudio, applyLook, applyResolution, applyFullscreen, applyFieldOfView, applyCamera, applySettings,
 } from '../js/settings/appliers.js';
+import { registerTheme } from '../js/themes/registry.js';
+import { FIXTURE_THEME } from './fixtures/themes/fixture-theme.js';
 import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const suite = browserSuite();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const tick = () => new Promise((r) => setTimeout(r, 0));
+
+// The test-only second theme: a registered id the theme setting accepts.
+registerTheme(FIXTURE_THEME);
+const FIXTURE_ID = FIXTURE_THEME.id;
 
 function storeOf(data) {
   const initial = data === undefined ? {} : { [SETTINGS_DOC]: JSON.stringify({ version: SETTINGS_VERSION, data }) };
@@ -50,17 +56,28 @@ test('the resolution applier fires with the loaded value and on every change', a
 
 // ---------------------------------------------------------------- theme, audio, look
 
-test('the theme value drives setTheme, at load and on change', async () => {
-  const store = storeOf({ theme: 'dark' });
+test('the theme setting is applied through the theme applier\'s setTheme, at load and on change', async () => {
+  const store = storeOf({ theme: FIXTURE_ID });
   const calls = [];
   applyTheme(store, { setTheme: async (t) => { calls.push(t); return t; } });
   await store.load();
-  await store.set('theme', 'light');
-  assert.deepEqual(calls, ['dark', 'light']);
+  await store.set('theme', 'joyful-tiles');
+  assert.deepEqual(calls, [FIXTURE_ID, 'joyful-tiles']);
+});
+
+test('a stored id the registry does not know applies the default theme; a carried-over light or dark applies Joyful tiles', async () => {
+  for (const [data, version] of [[{ theme: 'sepia' }, SETTINGS_VERSION], [{ theme: 'dark' }, 1], [{ theme: 'light' }, 1]]) {
+    const storage = createStorage({ backend: createMemoryBackend({ initial: { [SETTINGS_DOC]: JSON.stringify({ version, data }) } }) });
+    const store = createSettingsStore({ storage, legacy: { get: () => null } });
+    const calls = [];
+    applyTheme(store, { setTheme: async (t) => { calls.push(t); return t; } });
+    await store.load();
+    assert.deepEqual(calls, ['joyful-tiles'], `stored ${data.theme}`);
+  }
 });
 
 test('a switch the theme applier rejects is left to the applier, which has told the player', async () => {
-  const store = storeOf({ theme: 'dark' });
+  const store = storeOf({ theme: FIXTURE_ID });
   const unhandled = [];
   const onUnhandled = (e) => unhandled.push(e);
   process.on('unhandledRejection', onUnhandled);
@@ -125,7 +142,7 @@ test('the Camera setting drives the 3D camera\'s mode, at load and on every chan
   off();
   await store.set('camera', 'fly');
   assert.deepEqual(modes, ['orbit', 'fly', 'orbit'], 'unsubscribed');
-  const missing = storeOf({ theme: 'dark' });
+  const missing = storeOf({ theme: FIXTURE_ID });
   const seen = [];
   applySettings(missing, { cameraMode: (m) => seen.push(m) });
   await missing.load();
@@ -224,7 +241,7 @@ test('the fullscreen unsubscribe removes the browser listener', async () => {
 // ---------------------------------------------------------------- all together
 
 test('applySettings wires every owner given and unsubscribes them all', async () => {
-  const store = storeOf({ theme: 'dark', volume: 0.2, lookSensitivity: 2, renderResolution: 'fast' });
+  const store = storeOf({ theme: FIXTURE_ID, volume: 0.2, lookSensitivity: 2, renderResolution: 'fast' });
   const themes = [];
   const sfx = { volume: null, muted: null, setVolume(v) { this.volume = v; }, setMuted(m) { this.muted = m; } };
   const camera = { sensitivity: 1, invertY: false };
@@ -241,14 +258,14 @@ test('applySettings wires every owner given and unsubscribes them all', async ()
   });
   await store.load();
   assert.equal(view.fov, 45, 'a stored document without the field of view keeps 45');
-  assert.deepEqual(themes, ['dark']);
+  assert.deepEqual(themes, [FIXTURE_ID]);
   assert.equal(sfx.volume, 0.2);
   assert.equal(sfx.muted, false);
   assert.equal(camera.sensitivity, 2);
   assert.deepEqual(resolutions, ['fast']);
   off();
-  await store.set('theme', 'light');
-  assert.deepEqual(themes, ['dark']);
+  await store.set('theme', 'joyful-tiles');
+  assert.deepEqual(themes, [FIXTURE_ID]);
   assert.equal(doc.listeners.size, 0);
 
   // An owner left out is not wired.
@@ -288,17 +305,17 @@ function fakeWebStorage(init = {}) {
   };
 }
 
-test('start-up reads the theme the settings store saved: light and dark apply Joyful tiles, as does anything unusable', async () => {
+test('start-up reads the theme the settings store saved, at either version: light and dark apply Joyful tiles, as does anything unusable', async () => {
   const web = fakeWebStorage();
   const storage = createStorage({ backend: createBrowserBackend({ getStorage: () => web }) });
   const store = createSettingsStore({ storage, legacy: { get: () => null } });
   await store.load();
   assert.equal(startTheme(web), 'joyful-tiles');
-  for (const theme of ['dark', 'light']) {
-    await store.set('theme', theme);
-    assert.equal(startTheme(web), 'joyful-tiles', `a stored ${theme}`);
-  }
+  await store.set('theme', 'joyful-tiles');
+  assert.equal(JSON.parse(web.getItem('ms3d:doc:settings')).version, SETTINGS_VERSION);
+  assert.equal(startTheme(web), 'joyful-tiles', 'the store\'s own document');
   const doc = (version, data) => ({ 'ms3d:doc:settings': JSON.stringify({ version, data }) });
+  for (const theme of ['dark', 'light']) assert.equal(startTheme(fakeWebStorage(doc(1, { theme }))), 'joyful-tiles', `a version-1 ${theme}`);
   assert.equal(startTheme(fakeWebStorage(doc(SETTINGS_VERSION, { theme: 'joyful-tiles' }))), 'joyful-tiles', 'a registered id');
   assert.equal(startTheme(undefined), 'joyful-tiles', 'no storage');
   assert.equal(startTheme({ getItem() { throw new Error('blocked'); } }), 'joyful-tiles', 'blocked storage');
@@ -331,7 +348,7 @@ test('the look settings loader and its keys are retired from the UI module', () 
 
 // ---------------------------------------------------------------- browser
 
-test('in a browser, a resolution change applies at once, and a theme change leaves the look on Joyful tiles', async (t) => {
+test('in a browser, a resolution change applies at once, and a saved light or dark starts on Joyful tiles', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -351,16 +368,20 @@ test('in a browser, a resolution change applies at once, and a theme change leav
     assert.equal(await ratio(), 2, 'Auto caps the 3x screen at 2 on the small backdrop board');
 
     // Each change is visible on the very next read, with no reload and no frame awaited.
-    assert.equal(await ms(() => { globalThis.__ms.settings.set('theme', 'dark'); return document.documentElement.getAttribute('data-theme'); }), 'joyful-tiles');
     assert.equal(await ms(() => { globalThis.__ms.settings.set('renderResolution', 'sharp'); return globalThis.__ms.renderer.renderer.getPixelRatio(); }), 3);
     assert.equal(await ms(() => { globalThis.__ms.settings.set('renderResolution', 'fast'); return globalThis.__ms.renderer.renderer.getPixelRatio(); }), 1);
     const canvasWidth = await ms(() => document.querySelector('canvas').width);
     assert.equal(canvasWidth, 900, 'the drawing buffer follows the new ratio');
 
-    // Joyful tiles is on the root before any module runs, whatever theme is saved.
+    // Joyful tiles is on the root before any module runs, whatever theme is saved: here a
+    // version-1 document's Dark.
     await page.waitForFunction(() => { // the saves have landed
       const doc = JSON.parse(localStorage.getItem('ms3d:doc:settings') ?? 'null');
-      return doc?.data?.theme === 'dark' && doc?.data?.renderResolution === 'fast';
+      return doc?.data?.renderResolution === 'fast';
+    });
+    await ms(() => {
+      const doc = JSON.parse(localStorage.getItem('ms3d:doc:settings'));
+      localStorage.setItem('ms3d:doc:settings', JSON.stringify({ version: 1, data: { ...doc.data, theme: 'dark' } }));
     });
     await page.route('**/js/main.js', (route) => route.abort());
     await page.reload();
@@ -370,6 +391,7 @@ test('in a browser, a resolution change applies at once, and a theme change leav
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     assert.equal(await theme(), 'joyful-tiles');
     assert.equal(await ratio(), 1, 'the saved resolution applies at start-up');
+    assert.equal(await ms(() => globalThis.__ms.settings.get('theme')), 'joyful-tiles', 'the stored Dark is carried over to Joyful tiles');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

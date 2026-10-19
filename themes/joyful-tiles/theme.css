@@ -507,6 +507,13 @@
 :root[data-theme="joyful-tiles"] .ui-segmented__option[data-force~="hover"]:not([aria-checked="true"]) { background: var(--color-surface); }
 :root[data-theme="joyful-tiles"] .ui-segmented__option:active:not(:disabled),
 :root[data-theme="joyful-tiles"] .ui-segmented__option[data-force~="active"] { box-shadow: inset 0 3px 0 var(--shade-press); }
+:root[data-theme="joyful-tiles"] .ui-segmented--list {
+  border-radius: 16px;
+}
+:root[data-theme="joyful-tiles"] .ui-segmented__swatch {
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 2px var(--color-edge);
+}
 :root[data-theme="joyful-tiles"] .ui-segmented__option:disabled {
   background: transparent;
   color: var(--color-locked-ink);

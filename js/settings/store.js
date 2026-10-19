@@ -15,6 +15,8 @@
 //                          existing install (EXISTING_FIELD_OF_VIEW). With no settings document it
 //                          carries the legacy values over once and saves the new document; storage
 //                          that cannot be read, a corrupt document or a newer one gives every default.
+//                          A stored theme id the registry does not know reads as the default and is
+//                          kept in the document, saves included, until the player sets the theme.
 //                          Fires every listener once with the loaded value. Repeated calls return
 //                          the first call's Promise.
 //   get(key)             → the current value, always valid (the default before load).
@@ -27,11 +29,20 @@
 //   onChange(key, fn)    → unsubscribe. fn(value, key) fires after the value changes, and once
 //                          with the loaded value — at load, or at once when added after it.
 // An unknown key throws: that is a programming error.
+//
+// The document's format steps (UPGRADES), run by platform storage on an older document:
+//   1 → 2   a stored theme `light` or `dark` becomes `joyful-tiles`.
 
 import { SCHEMA, SETTING_KEYS, DEFAULTS, isValid } from './schema.js';
 
 export const SETTINGS_DOC = 'settings';
-export const SETTINGS_VERSION = 1;
+export const SETTINGS_VERSION = 2;
+
+const UPGRADES = Object.freeze({
+  1: (data) => (data && typeof data === 'object' && (data.theme === 'light' || data.theme === 'dark')
+    ? { ...data, theme: 'joyful-tiles' }
+    : data),
+});
 
 // The current build's separate keys, read once to carry the player's values over.
 export const LEGACY_KEYS = Object.freeze({
@@ -65,7 +76,7 @@ function legacyValue(key, text) {
 
 export function createSettingsStore({ storage, legacy = browserLegacy, onNotKept = () => {} }) {
   let loadTrouble = false;
-  storage.register(SETTINGS_DOC, SETTINGS_VERSION, {}, {
+  storage.register(SETTINGS_DOC, SETTINGS_VERSION, UPGRADES, {
     onIssue: (issue) => { if (LOAD_TROUBLE.has(issue.kind)) loadTrouble = true; },
   });
 
@@ -74,6 +85,8 @@ export function createSettingsStore({ storage, legacy = browserLegacy, onNotKept
   let loaded = false;
   let loading = null;
   let reported = false;
+  // A stored theme id the registry does not know, saved back as stored until the player sets one.
+  let keptTheme = null;
 
   const known = (key) => {
     if (!listeners.has(key)) throw new Error(`settings: unknown setting "${key}"`);
@@ -86,7 +99,7 @@ export function createSettingsStore({ storage, legacy = browserLegacy, onNotKept
   const notify = (key) => { for (const fn of [...listeners.get(key)]) call(fn, key); };
 
   async function persist() {
-    const result = await storage.save(SETTINGS_DOC, { ...values });
+    const result = await storage.save(SETTINGS_DOC, keptTheme === null ? { ...values } : { ...values, theme: keptTheme });
     if (!result.ok && !reported) {
       reported = true;
       try { onNotKept({ reason: result.reason }); } catch { /* reporting never fails a save */ }
@@ -113,6 +126,7 @@ export function createSettingsStore({ storage, legacy = browserLegacy, onNotKept
       await persist();
     } else if (data && typeof data === 'object' && !Array.isArray(data)) {
       for (const key of SETTING_KEYS) if (isValid(key, data[key])) values[key] = data[key];
+      if (typeof data.theme === 'string' && data.theme !== '' && !isValid('theme', data.theme)) keptTheme = data.theme;
       if (!Object.hasOwn(data, 'fieldOfView')) values.fieldOfView = EXISTING_FIELD_OF_VIEW;
     }
     loaded = true;
@@ -133,6 +147,10 @@ export function createSettingsStore({ storage, legacy = browserLegacy, onNotKept
       if (!loading) throw new Error('settings: set before load()');
       if (!loaded) return loading.then(() => this.set(key, value));
       if (!isValid(key, value)) return Promise.resolve({ ok: false, reason: 'invalid' });
+      if (key === 'theme' && keptTheme !== null) {
+        keptTheme = null;
+        if (Object.is(values[key], value)) return persist();
+      }
       if (Object.is(values[key], value)) return Promise.resolve({ ok: true });
       values[key] = value;
       notify(key);

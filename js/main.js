@@ -460,8 +460,10 @@ applySettings(SETTINGS, {
 });
 SETTINGS.onChange('muted', (m) => ui.setSound(m));
 BUTTON_SWAP.onChange((on) => ui.setSwap(on));
-// Every setting control — the Settings page, the pause card's shortcuts, the menu's volume — is bound to the store.
+// Every setting control — the Settings page, the pause card's shortcuts, the menu's volume — is bound to the store;
+// the page's theme list picks through the theme applier.
 bindSettingControls(document.querySelectorAll('[data-setting]'), SETTINGS, {
+  theme: THEME,
   onUserChange: (key) => { if (key === 'volume' || key === 'muted') sfx.unlock?.(); },
 });
 

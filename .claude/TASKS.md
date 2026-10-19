@@ -490,7 +490,7 @@ Feature: theme-system
 
 ## 160. Settings theme list and light/dark carry-over
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/settings/schema.js, js/settings/store.js, js/settings/page.js, js/settings/appliers.js, js/theme.js, index.html, tests/settings-store.test.mjs, tests/settings-page.test.mjs, tests/settings-appliers.test.mjs, tests/settings-reset.test.mjs
 Preconditions: 159

@@ -11,7 +11,12 @@
 //
 // A toggle in INVERTED shows on while its boolean is false: Sound is on while `muted` is false.
 //
-// settingControl(key)          → { key, kind: 'slider' | 'toggle' | 'segmented', label, inverted?, … }.
+// The theme is a list (ui-segmented--list): one row per theme of the registry (js/themes/registry.js
+// THEMES, in catalogue order), its display name after a swatch drawn from that theme's own tokens.
+// The swatch's colours are read from the theme's stylesheet text (themeSwatchColors) without
+// applying it, so a theme not in use shows its swatch once its stylesheet is fetched.
+//
+// settingControl(key)          → { key, kind: 'slider' | 'toggle' | 'segmented', label, inverted?, list?, … }.
 // settingControlHtml(key, v?, { labelledBy? }) → the control's kit markup showing v (default: the
 //                                schema default), carrying data-setting="key"; ids are `set-<key>`.
 //                                With labelledBy, a choice shows no label of its own and takes its
@@ -29,10 +34,17 @@
 //                                whose label is its section's title is named by the section heading.
 // bindingsSectionHtml(glyphs?, camera?) → each mode's bindings per input device, controller
 //                                buttons in `glyphs`, 3D's for the Camera setting's `camera`.
-// bindSettingControls(elements, store, { onUserChange? }) → unbind. Each element is a control
-//   root carrying data-setting: it shows the store's value (also the loaded one, and every change
-//   made elsewhere) and writes the player's change to the store at once; onUserChange(key) follows
-//   each such write. An unknown setting throws.
+// bindSettingControls(elements, store, { onUserChange?, theme?, themeSheet? }) → unbind. Each element
+//   is a control root carrying data-setting: it shows the store's value (also the loaded one, and
+//   every change made elsewhere) and writes the player's change to the store at once; onUserChange(key)
+//   follows each such write. An unknown setting throws. Given the theme applier (`theme`,
+//   js/themes/applier.js), the theme list shows the active theme instead and a pick calls its
+//   setTheme(id), saving the setting once the switch resolves; a failed switch puts the selection back
+//   on the active theme. Each row's swatch is filled from themeSheet(entry) → Promise of the
+//   stylesheet's text (default: fetched from the site root); one that fails leaves it blank.
+// themeSwatchColors(cssText, id) → { token: value } for each SWATCH_TOKENS entry the theme's token
+//   block (the rule whose selector is :root[data-theme="<id>"]) declares; swatchBackground(colors) →
+//   the swatch's background, a stripe per token.
 // bindResetPanel({ open, panel, yes, no, note }, { reset }) → { isOpen, close, clear }. The Data
 //   panel's elements: `open` shows the confirmation `panel` in its place with focus on Cancel
 //   (`no`); Cancel or close() hides it and focuses `open` again. Confirming (`yes`) calls reset()
@@ -41,6 +53,8 @@
 //   nothing is open; clear() closes it and the warning, without moving focus.
 
 import { SCHEMA } from './schema.js';
+import { THEMES, themeById } from '../themes/registry.js';
+import { SITE_ROOT } from '../themes/applier.js';
 import { BINDING_MODES, bindingDevices, bindingRows, bindingsListHtml } from './bindings.js';
 import { formatSliderValue, decimalsOf, segmentedState, bindSegmented } from '../ui/components.js';
 import { EXPORT_LINE } from '../records/export.js';
@@ -71,7 +85,7 @@ export const SETTING_LABELS = Object.freeze({
 const INVERTED = new Set(['muted']);
 
 export const CHOICE_LABELS = Object.freeze({
-  auto: 'Auto', sharp: 'Sharp', fast: 'Fast', light: 'Light', dark: 'Dark', fit: 'Fit', 100: '100 %', 125: '125 %', fly: 'Fly', orbit: 'Orbit',
+  auto: 'Auto', sharp: 'Sharp', fast: 'Fast', fit: 'Fit', 100: '100 %', 125: '125 %', fly: 'Fly', orbit: 'Orbit',
 });
 
 const SLIDERS = Object.freeze({
@@ -81,6 +95,31 @@ const SLIDERS = Object.freeze({
 });
 
 const KINDS = { number: 'slider', boolean: 'toggle', choice: 'segmented' };
+
+/** The tokens a theme's swatch shows, in stripe order: its ground, surface, accent and ink. */
+export const SWATCH_TOKENS = Object.freeze(['--color-ground', '--color-surface', '--color-accent-fill', '--color-ink']);
+
+export function themeSwatchColors(cssText, id) {
+  const scope = `:root[data-theme="${id}"]`;
+  const css = cssText.replace(/\/\*[\s\S]*?\*\//g, '');
+  const colors = {};
+  for (const [, selectors, body] of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    if (!selectors.split(',').some((sel) => sel.trim() === scope)) continue;
+    for (const [, name, value] of body.matchAll(/(--[\w-]+)\s*:\s*([^;]+)/g)) {
+      if (SWATCH_TOKENS.includes(name)) colors[name] = value.trim();
+    }
+  }
+  return colors;
+}
+
+/** The swatch's background: one equal stripe per SWATCH_TOKENS entry, transparent where the theme declares none. */
+export function swatchBackground(colors) {
+  const step = 100 / SWATCH_TOKENS.length;
+  const stops = SWATCH_TOKENS.map((t, i) => `${colors[t] ?? 'transparent'} ${i * step}% ${(i + 1) * step}%`);
+  return `linear-gradient(90deg, ${stops.join(', ')})`;
+}
+
+const fetchSheet = (entry) => fetch(new URL(entry.stylesheet, SITE_ROOT)).then((r) => (r.ok ? r.text() : Promise.reject(new Error(`${r.status}`))));
 
 const entryOf = (key) => {
   if (!Object.hasOwn(SCHEMA, key)) throw new Error(`settings page: unknown setting "${key}"`);
@@ -94,6 +133,9 @@ export function settingControl(key) {
   if (entry.type === 'number') {
     const { step = 0.01, format = 'number', scale = 1, unit = '' } = SLIDERS[key] ?? {};
     return { ...control, min: entry.min * scale, max: entry.max * scale, step, format, scale, unit };
+  }
+  if (key === 'theme') {
+    return { ...control, list: true, options: THEMES.map((t) => ({ value: t.id, label: t.name })) };
   }
   if (entry.type === 'choice') {
     return { ...control, options: entry.values.map((value) => ({ value, label: CHOICE_LABELS[value] ?? value })) };
@@ -120,9 +162,11 @@ export function settingControlHtml(key, value = SCHEMA[key]?.default, { labelled
     return `<label class="ui-toggle" data-setting="${key}"><input type="checkbox" role="switch" id="${id}" class="ui-toggle__input"${on ? ' checked' : ''}>`
       + `<span class="ui-toggle__label">${c.label}</span></label>`;
   }
-  const options = c.options.map((o) => `<button type="button" role="radio" aria-checked="${o.value === value}" class="ui-segmented__option" data-value="${o.value}">${o.label}</button>`);
+  const swatch = c.list ? '<span class="ui-segmented__swatch" aria-hidden="true"></span>' : '';
+  const options = c.options.map((o) => `<button type="button" role="radio" aria-checked="${o.value === value}" class="ui-segmented__option" data-value="${o.value}">${swatch}${o.label}</button>`);
   const label = labelledBy ? '' : `<p class="ui-text" id="${id}-label">${c.label}</p>`;
-  return `${label}<div class="ui-segmented" role="radiogroup" aria-labelledby="${labelledBy ?? `${id}-label`}" data-setting="${key}" id="${id}">${options.join('')}</div>`;
+  const cls = c.list ? 'ui-segmented ui-segmented--list' : 'ui-segmented';
+  return `${label}<div class="${cls}" role="radiogroup" aria-labelledby="${labelledBy ?? `${id}-label`}" data-setting="${key}" id="${id}">${options.join('')}</div>`;
 }
 
 export function settingsPageHtml() {
@@ -256,6 +300,14 @@ function bindToggle(root, key, store, changed) {
   return () => { off(); input.removeEventListener('change', onChange); };
 }
 
+function showChoice(options, v) {
+  const states = segmentedState(options.length, options.findIndex((o) => o.getAttribute('data-value') === v));
+  states.forEach((s, i) => {
+    options[i].setAttribute('aria-checked', String(s.checked));
+    options[i].tabIndex = s.tabIndex;
+  });
+}
+
 function bindChoice(root, key, store, changed) {
   const options = [...root.querySelectorAll('.ui-segmented__option')];
   const unbind = bindSegmented(root, {
@@ -265,23 +317,50 @@ function bindChoice(root, key, store, changed) {
       changed(key);
     },
   });
-  const off = store.onChange(key, (v) => {
-    const states = segmentedState(options.length, options.findIndex((o) => o.getAttribute('data-value') === v));
-    states.forEach((s, i) => {
-      options[i].setAttribute('aria-checked', String(s.checked));
-      options[i].tabIndex = s.tabIndex;
-    });
-  });
+  const off = store.onChange(key, (v) => showChoice(options, v));
   return () => { off(); unbind(); };
 }
 
-export function bindSettingControls(elements, store, { onUserChange = () => {} } = {}) {
+// The theme list bound to the theme applier: it shows the active theme, and a pick is saved only once
+// the applier has switched to it.
+function bindThemeList(root, store, changed, theme, themeSheet) {
+  const options = [...root.querySelectorAll('.ui-segmented__option')];
+  let live = true;
+  const unbind = bindSegmented(root, {
+    horizontal: true, // Up and Down move focus from row to row
+    onChange: (value) => {
+      let switching;
+      try { switching = Promise.resolve(theme.setTheme(value)); } catch (e) { switching = Promise.reject(e); }
+      switching.then(() => {
+          store.set('theme', value);
+          changed('theme');
+        }, () => { if (live) showChoice(options, theme.current()); });
+    },
+  });
+  const off = theme.onThemeChange((id) => showChoice(options, id));
+  showChoice(options, theme.current());
+  for (const option of options) {
+    const swatch = option.querySelector('.ui-segmented__swatch');
+    if (!swatch) continue;
+    const id = option.getAttribute('data-value');
+    let sheet;
+    try { sheet = Promise.resolve(themeSheet(themeById(id))); } catch (e) { sheet = Promise.reject(e); }
+    sheet.then((css) => {
+      if (!live) return;
+      swatch.style.setProperty('background', swatchBackground(themeSwatchColors(css, id)));
+    }, () => { /* no swatch: the row still names its theme */ });
+  }
+  return () => { live = false; off(); unbind(); };
+}
+
+export function bindSettingControls(elements, store, { onUserChange = () => {}, theme = null, themeSheet = fetchSheet } = {}) {
   const changed = (key) => { try { onUserChange(key); } catch { /* reporting never blocks a change */ } };
   const unbinds = [...elements].map((el) => {
     const key = el.getAttribute('data-setting');
     entryOf(key);
     if (hasClass(el, 'ui-slider')) return bindSlider(el, key, store, changed);
     if (hasClass(el, 'ui-toggle')) return bindToggle(el, key, store, changed);
+    if (hasClass(el, 'ui-segmented') && key === 'theme' && theme) return bindThemeList(el, store, changed, theme, themeSheet);
     if (hasClass(el, 'ui-segmented')) return bindChoice(el, key, store, changed);
     throw new Error(`settings page: no control for "${key}"`);
   });

@@ -112,6 +112,11 @@
               `change` on the group with detail { value, index }. With
               { horizontal: true } (Settings' choices) only Left and Right
               select, and Up and Down are left to the shell's focus moves.
+     List:    ui-segmented--list stacks the options as full-width rows
+              (Settings' theme list); a row may open with
+              <span class="ui-segmented__swatch" aria-hidden="true"></span>,
+              whose background the page draws as stripes of a theme's own
+              tokens (js/settings/page.js SWATCH_TOKENS).
 
    ui-stat — numeric stat readout
      Element: <div class="ui-stat" role="group" aria-labelledby="ID">
@@ -621,6 +626,22 @@
   cursor: pointer;
 }
 .ui-segmented__option:disabled { cursor: not-allowed; }
+.ui-segmented--list {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.ui-segmented--list .ui-segmented__option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  text-align: start;
+}
+.ui-segmented__swatch {
+  flex: none;
+  width: 48px;
+  height: 24px;
+}
 
 /* ---------- number field ---------- */
 .ui-field {

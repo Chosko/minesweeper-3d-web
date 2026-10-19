@@ -23,16 +23,17 @@
   var RETIRED = { light: 'joyful-tiles', dark: 'joyful-tiles' };
 
   // The settings document (js/settings/store.js), read straight from the web build's storage —
-  // its key and format are js/platform/browser-backend.js's, and only the version the store reads
-  // is used. Anything unusable reads as no theme.
+  // its key and format are js/platform/browser-backend.js's. The store's version is read, and so is
+  // version 1, whose light or dark the mapping below carries over as the store's format step does
+  // once settings load. Anything unusable reads as no theme.
   var SETTINGS_KEY = 'ms3d:doc:settings';
-  var SETTINGS_VERSION = 1;
+  var SETTINGS_VERSIONS = [1, 2];
 
   function readStoredTheme(storage) {
     var text = storage ? storage.getItem(SETTINGS_KEY) : null;
     if (!text) return null;
     var doc = JSON.parse(text);
-    if (!doc || doc.version !== SETTINGS_VERSION || !doc.data) return null;
+    if (!doc || SETTINGS_VERSIONS.indexOf(doc.version) < 0 || !doc.data) return null;
     return doc.data.theme;
   }
 

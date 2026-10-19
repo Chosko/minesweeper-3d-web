@@ -3,10 +3,18 @@
 // a setting is added here and nowhere else. DOM-free.
 //
 // Types: 'number' ({ min, max }, finite, inclusive), 'boolean', 'choice' ({ values }).
+//
+// The theme is a choice among the theme registry's ids (js/themes/registry.js): its values are the
+// catalogue's ids in order, and a choice carrying `known(value)` accepts what that predicate accepts —
+// for the theme, any id the registry knows.
+
+import { THEMES, DEFAULT_THEME_ID, isRegisteredTheme } from '../themes/registry.js';
 
 const number = (key, min, max, def) => Object.freeze({ key, type: 'number', min, max, default: def });
 const boolean = (key, def) => Object.freeze({ key, type: 'boolean', default: def });
-const choice = (key, values, def) => Object.freeze({ key, type: 'choice', values: Object.freeze(values), default: def });
+const choice = (key, values, def, known) => Object.freeze({
+  key, type: 'choice', values: Object.freeze(values), default: def, ...(known ? { known } : {}),
+});
 
 export const SCHEMA = Object.freeze({
   lookSensitivity: number('lookSensitivity', 0.25, 3, 1),
@@ -14,7 +22,7 @@ export const SCHEMA = Object.freeze({
   fullscreen: boolean('fullscreen', false),
   renderResolution: choice('renderResolution', ['auto', 'sharp', 'fast'], 'auto'),
   boardScale: choice('boardScale', ['fit', '100', '125'], '100'),
-  theme: choice('theme', ['light', 'dark'], 'light'),
+  theme: choice('theme', THEMES.map((t) => t.id), DEFAULT_THEME_ID, isRegisteredTheme),
   volume: number('volume', 0, 1, 0.7),
   muted: boolean('muted', false),
   confirmRestart: boolean('confirmRestart', false),
@@ -34,7 +42,7 @@ export function isValid(key, value) {
   switch (entry.type) {
     case 'number': return typeof value === 'number' && Number.isFinite(value) && value >= entry.min && value <= entry.max;
     case 'boolean': return typeof value === 'boolean';
-    case 'choice': return entry.values.includes(value);
+    case 'choice': return entry.known ? entry.known(value) : entry.values.includes(value);
     default: return false;
   }
 }

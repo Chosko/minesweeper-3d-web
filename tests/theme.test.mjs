@@ -6,6 +6,7 @@ import { createTokenReader, FALLBACK_COLOR } from '../js/tokens.js';
 import { SCENE_TOKENS, parseRgb, scenePalette, bindScenePalette } from '../js/shell/scene-palette.js';
 import { THEMES, DEFAULT_THEME_ID, registerTheme, themeById } from '../js/themes/registry.js';
 import { createThemeApplier, themeIdFor, START_FALLBACK, SWITCH_FAILED } from '../js/themes/applier.js';
+import { SETTINGS_VERSION } from '../js/settings/store.js';
 import { FIXTURE_THEME } from './fixtures/themes/fixture-theme.js';
 import { browserSuite } from './helpers/browser.mjs';
 
@@ -179,6 +180,22 @@ test('the pre-paint script maps the stored theme: absent or unknown → the defa
     assert.equal(boot.id, want, label);
     assert.deepEqual(sheets(), [want], `${label}: its stylesheet is inserted`);
   }
+});
+
+test('the pre-paint script reads the settings document at the store\'s version and at version 1, before its format step runs', () => {
+  const { prePaint } = loadThemeScript();
+  assert.equal(SETTINGS_VERSION, 2);
+  assert.equal(prePaint.readStoredTheme(stubStorage(settingsDoc(FIXTURE_ID, SETTINGS_VERSION))), FIXTURE_ID, 'the store\'s version');
+  assert.equal(prePaint.readStoredTheme(stubStorage(settingsDoc('dark', 1))), 'dark', 'version 1, mapped afterwards');
+  assert.equal(prePaint.readStoredTheme(stubStorage(settingsDoc(FIXTURE_ID, SETTINGS_VERSION + 1))), null, 'a newer document reads as none');
+  const fake = fakeDoc();
+  const boot = prePaint.boot({
+    doc: fake.doc,
+    storage: stubStorage(settingsDoc(FIXTURE_ID, SETTINGS_VERSION)),
+    stylesheets: { [THEME_ID]: 'themes/joyful-tiles/theme.css', [FIXTURE_ID]: FIXTURE_THEME.stylesheet },
+  });
+  boot.ready.catch(() => {});
+  assert.equal(boot.id, FIXTURE_ID, 'a registered id saved at the store\'s version starts in that theme');
 });
 
 test('the pre-paint mapping keeps a registered id and maps the rest, as the run-time applier does', () => {

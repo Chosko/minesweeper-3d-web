@@ -6,6 +6,12 @@ import { SCHEMA, SETTING_KEYS, DEFAULTS, isValid } from '../js/settings/schema.j
 import {
   createSettingsStore, SETTINGS_DOC, SETTINGS_VERSION, LEGACY_KEYS,
 } from '../js/settings/store.js';
+import { THEMES, registerTheme } from '../js/themes/registry.js';
+import { FIXTURE_THEME } from './fixtures/themes/fixture-theme.js';
+
+// The test-only second theme: a registered id the theme setting accepts.
+registerTheme(FIXTURE_THEME);
+const FIXTURE_ID = FIXTURE_THEME.id;
 
 const raw = (version, data) => JSON.stringify({ version, data });
 
@@ -36,7 +42,7 @@ const EXPECTED_DEFAULTS = {
   fullscreen: false,
   renderResolution: 'auto',
   boardScale: '100',
-  theme: 'light',
+  theme: 'joyful-tiles',
   volume: 0.7,
   muted: false,
   confirmRestart: false,
@@ -61,7 +67,7 @@ test('the schema declares every setting with its type, range or values, and defa
   assert.equal(SCHEMA.boardScale.type, 'choice');
   assert.deepEqual([...SCHEMA.boardScale.values], ['fit', '100', '125'], 'the 2D board scale: Fit, 100 % and 125 %');
   assert.equal(SCHEMA.theme.type, 'choice');
-  assert.deepEqual([...SCHEMA.theme.values], ['light', 'dark']);
+  assert.deepEqual([...SCHEMA.theme.values], THEMES.map((t) => t.id), 'the theme: the registry\'s ids in catalogue order');
   assert.deepEqual(
     { type: SCHEMA.fieldOfView.type, min: SCHEMA.fieldOfView.min, max: SCHEMA.fieldOfView.max },
     { type: 'number', min: 45, max: 90 },
@@ -96,6 +102,55 @@ test('isValid checks type and range or values', () => {
   assert.ok(!isValid('nope', 1));
 });
 
+// ---------------------------------------------------------------- the theme setting
+
+test('the theme is a choice among the registry\'s ids, Joyful tiles by default; light and dark are no longer values', () => {
+  assert.equal(SCHEMA.theme.type, 'choice');
+  assert.equal(DEFAULTS.theme, 'joyful-tiles');
+  for (const t of THEMES) assert.ok(isValid('theme', t.id), `${t.id} is a value`);
+  assert.ok(isValid('theme', FIXTURE_ID), 'a theme registered with the registry is a value');
+  for (const bad of ['light', 'dark', 'sepia', '', 1, null]) assert.ok(!isValid('theme', bad), `${String(bad)} is not`);
+});
+
+test('the format step maps a stored light or dark to Joyful tiles; a version-1 document loads with everything else intact', async () => {
+  assert.equal(SETTINGS_VERSION, 2, 'the settings document\'s version is raised by one');
+  for (const theme of ['light', 'dark']) {
+    const before = { ...EXPECTED_DEFAULTS, theme, lookSensitivity: 2, invertY: true, volume: 0.3, camera: 'orbit', fieldOfView: 70, boardScale: 'fit' };
+    const { store, stored } = setup({ initial: { [SETTINGS_DOC]: raw(1, before) } });
+    await store.load();
+    assert.equal(store.get('theme'), 'joyful-tiles', `a stored ${theme}`);
+    for (const key of SETTING_KEYS.filter((k) => k !== 'theme')) assert.equal(store.get(key), before[key], `${theme}: ${key} intact`);
+    assert.deepEqual(stored(), { version: SETTINGS_VERSION, data: { ...before, theme: 'joyful-tiles' } }, 'saved back at the new version');
+  }
+  const { store } = setup({ initial: { [SETTINGS_DOC]: raw(1, { lookSensitivity: 2, theme: 'dark' }) } });
+  await store.load();
+  assert.equal(store.get('fieldOfView'), 45, 'a version-1 document without the field of view still keeps 45');
+});
+
+test('a stored theme id the registry does not know is kept as stored while the default applies, until the player picks', async () => {
+  for (const version of [1, SETTINGS_VERSION]) {
+    const { store, stored } = setup({ initial: { [SETTINGS_DOC]: raw(version, { ...EXPECTED_DEFAULTS, theme: 'sepia', volume: 0.3 }) } });
+    const seen = [];
+    store.onChange('theme', (v) => seen.push(v));
+    await store.load();
+    assert.equal(store.get('theme'), 'joyful-tiles', `version ${version}: the default applies`);
+    assert.deepEqual(seen, ['joyful-tiles']);
+    await store.set('volume', 0.5);
+    assert.equal(stored().data.theme, 'sepia', 'another setting\'s save keeps the stored id');
+    assert.equal(stored().data.volume, 0.5);
+    assert.deepEqual(await store.set('theme', 'joyful-tiles'), { ok: true });
+    assert.equal(stored().data.theme, 'joyful-tiles', 'the player\'s pick replaces it, even of the theme already shown');
+  }
+  const { store, stored } = setup({ initial: { [SETTINGS_DOC]: raw(SETTINGS_VERSION, { ...EXPECTED_DEFAULTS, theme: 'sepia' }) } });
+  await store.load();
+  assert.deepEqual(await store.set('theme', FIXTURE_ID), { ok: true });
+  assert.equal(stored().data.theme, FIXTURE_ID);
+  const garbage = setup({ initial: { [SETTINGS_DOC]: raw(SETTINGS_VERSION, { ...EXPECTED_DEFAULTS, theme: 42 }) } });
+  await garbage.store.load();
+  await garbage.store.set('volume', 0.5);
+  assert.equal(garbage.stored().data.theme, 'joyful-tiles', 'a value that is no id at all is replaced like any invalid value');
+});
+
 test('"Always ask before restarting" is a boolean, off by default, validated and saved like any setting, with no legacy key', async () => {
   assert.equal(SCHEMA.confirmRestart.type, 'boolean');
   assert.equal(DEFAULTS.confirmRestart, false);
@@ -119,17 +174,17 @@ test('the Camera setting is a choice of Fly and Orbit, Fly by default; an invali
   assert.ok(isValid('camera', 'orbit') && isValid('camera', 'fly'));
   assert.ok(!isValid('camera', 'Orbit') && !isValid('camera', 'free') && !isValid('camera', 1));
   assert.ok(!Object.hasOwn(LEGACY_KEYS, 'camera'), 'no legacy carry-over');
-  const before = { lookSensitivity: 2, invertY: true, theme: 'dark', fieldOfView: 70 };
+  const before = { lookSensitivity: 2, invertY: true, theme: FIXTURE_ID, fieldOfView: 70 };
   const { store, stored } = setup({ initial: { [SETTINGS_DOC]: raw(SETTINGS_VERSION, before) } });
   await store.load();
-  assert.equal(SETTINGS_VERSION, 1, 'the settings version is kept');
+
   assert.equal(store.get('camera'), 'fly', 'a document from before the setting reads Fly');
   assert.equal(store.get('fieldOfView'), 70, 'the rest as stored');
   assert.deepEqual(await store.set('camera', 'free'), { ok: false, reason: 'invalid' });
   assert.equal(store.get('camera'), 'fly');
   assert.deepEqual(await store.set('camera', 'orbit'), { ok: true });
   assert.equal(stored().data.camera, 'orbit', 'saved with the other settings');
-  assert.equal(stored().version, 1);
+  assert.equal(stored().version, SETTINGS_VERSION);
 });
 
 // ---------------------------------------------------------------- load
@@ -141,14 +196,13 @@ test('load fills missing and invalid values with defaults', async () => {
   await store.load();
   assert.equal(store.get('lookSensitivity'), 2);
   assert.equal(store.get('muted'), true);
-  assert.equal(store.get('theme'), 'light');
+  assert.equal(store.get('theme'), 'joyful-tiles');
   assert.equal(store.get('volume'), 0.7);
   assert.equal(store.get('renderResolution'), 'auto');
 });
 
 test('the board scale is saved with the other settings: a document from before it reads 100 %, with no version bump', async () => {
-  assert.equal(SETTINGS_VERSION, 1);
-  const before = { lookSensitivity: 2, invertY: true, fullscreen: false, renderResolution: 'fast', theme: 'dark', volume: 0.5, muted: false, confirmRestart: true };
+  const before = { lookSensitivity: 2, invertY: true, fullscreen: false, renderResolution: 'fast', theme: FIXTURE_ID, volume: 0.5, muted: false, confirmRestart: true };
   const { store, backend, stored } = setup({ initial: { [SETTINGS_DOC]: raw(1, before) } });
   await store.load();
   assert.equal(store.get('boardScale'), '100');
@@ -165,12 +219,11 @@ test('the board scale is saved with the other settings: a document from before i
 });
 
 test('the field of view: 60 for a new install, 45 for a stored document without it, with no version bump', async () => {
-  assert.equal(SETTINGS_VERSION, 1);
   const fresh = setup();
   await fresh.store.load();
   assert.equal(fresh.store.get('fieldOfView'), 60, 'a new install');
   assert.equal(fresh.stored().data.fieldOfView, 60);
-  const before = { lookSensitivity: 2, invertY: true, theme: 'dark', volume: 0.5 };
+  const before = { lookSensitivity: 2, invertY: true, theme: FIXTURE_ID, volume: 0.5 };
   const old = setup({ initial: { [SETTINGS_DOC]: raw(1, before) } });
   await old.store.load();
   assert.equal(old.store.get('fieldOfView'), 45, 'an existing install keeps 45');
@@ -213,7 +266,7 @@ test('get returns a valid default before load, and throws on an unknown key', ()
   for (const key of SETTING_KEYS) assert.equal(store.get(key), EXPECTED_DEFAULTS[key]);
   assert.throws(() => store.get('nope'), /unknown setting/);
   assert.throws(() => store.set('nope', 1), /unknown setting/);
-  assert.throws(() => store.set('theme', 'dark'), /before load/);
+  assert.throws(() => store.set('theme', FIXTURE_ID), /before load/);
   assert.throws(() => store.onChange('nope', () => {}), /unknown setting/);
 });
 
@@ -225,11 +278,11 @@ test('set validates, saves the whole document and notifies', async () => {
   const seen = [];
   store.onChange('theme', (value, key) => seen.push([key, value]));
   seen.length = 0;
-  const result = await store.set('theme', 'dark');
+  const result = await store.set('theme', FIXTURE_ID);
   assert.deepEqual(result, { ok: true });
-  assert.equal(store.get('theme'), 'dark');
-  assert.deepEqual(seen, [['theme', 'dark']]);
-  assert.deepEqual(stored(), { version: SETTINGS_VERSION, data: { ...EXPECTED_DEFAULTS, theme: 'dark' } });
+  assert.equal(store.get('theme'), FIXTURE_ID);
+  assert.deepEqual(seen, [['theme', FIXTURE_ID]]);
+  assert.deepEqual(stored(), { version: SETTINGS_VERSION, data: { ...EXPECTED_DEFAULTS, theme: FIXTURE_ID } });
 });
 
 test('an invalid value is rejected, the old value kept and nothing saved or notified', async () => {
@@ -252,14 +305,14 @@ test('an invalid value is rejected, the old value kept and nothing saved or noti
 });
 
 test('a set while load runs applies after the loaded values, keeping the stored ones', async () => {
-  const { store, stored } = setup({ initial: { [SETTINGS_DOC]: raw(SETTINGS_VERSION, { ...EXPECTED_DEFAULTS, volume: 0.2, theme: 'dark' }) } });
+  const { store, stored } = setup({ initial: { [SETTINGS_DOC]: raw(SETTINGS_VERSION, { ...EXPECTED_DEFAULTS, volume: 0.2, theme: FIXTURE_ID }) } });
   const loading = store.load();
   const pending = store.set('fullscreen', true);
   await loading;
   assert.deepEqual(await pending, { ok: true });
   assert.equal(store.get('fullscreen'), true);
   assert.equal(store.get('volume'), 0.2);
-  assert.deepEqual(stored(), { version: SETTINGS_VERSION, data: { ...EXPECTED_DEFAULTS, volume: 0.2, theme: 'dark', fullscreen: true } });
+  assert.deepEqual(stored(), { version: SETTINGS_VERSION, data: { ...EXPECTED_DEFAULTS, volume: 0.2, theme: FIXTURE_ID, fullscreen: true } });
 });
 
 test('setting the current value again neither saves nor notifies', async () => {
@@ -366,7 +419,7 @@ test('a legacy reader that throws is treated as no legacy values', async () => {
 
 test('unreadable storage gives every default and carries nothing over', async () => {
   const legacy = legacyOf({ 'ms3d.lookSens': '2', 'ms3d.muted': '1' });
-  const { store, backend } = setup({ legacy, initial: { [SETTINGS_DOC]: raw(SETTINGS_VERSION, { theme: 'dark' }) } });
+  const { store, backend } = setup({ legacy, initial: { [SETTINGS_DOC]: raw(SETTINGS_VERSION, { theme: FIXTURE_ID }) } });
   backend.read = async () => { throw new Error('denied'); };
   await store.load();
   for (const key of SETTING_KEYS) assert.equal(store.get(key), EXPECTED_DEFAULTS[key]);
@@ -380,11 +433,11 @@ test('a failed save keeps the change for the session and reports once that setti
   const seen = [];
   store.onChange('theme', (v) => seen.push(v));
   seen.length = 0;
-  const first = await store.set('theme', 'dark');
+  const first = await store.set('theme', FIXTURE_ID);
   assert.equal(first.ok, false);
   assert.equal(first.reason, 'write-failed');
-  assert.equal(store.get('theme'), 'dark');
-  assert.deepEqual(seen, ['dark']);
+  assert.equal(store.get('theme'), FIXTURE_ID);
+  assert.deepEqual(seen, [FIXTURE_ID]);
   await store.set('volume', 0.1);
   await store.set('muted', true);
   assert.equal(store.get('volume'), 0.1);
@@ -402,13 +455,13 @@ test('storage that does not persist reports once, at the carry-over save', async
 });
 
 test('a newer settings document is left untouched; defaults apply and saving reports once', async () => {
-  const newer = raw(SETTINGS_VERSION + 1, { theme: 'dark' });
+  const newer = raw(SETTINGS_VERSION + 1, { theme: FIXTURE_ID });
   const { store, backend, unsaved } = setup({ initial: { [SETTINGS_DOC]: newer } });
   await store.load();
-  assert.equal(store.get('theme'), 'light');
-  const result = await store.set('theme', 'dark');
+  assert.equal(store.get('theme'), 'joyful-tiles');
+  const result = await store.set('theme', FIXTURE_ID);
   assert.deepEqual(result, { ok: false, reason: 'newer-version' });
-  assert.equal(store.get('theme'), 'dark');
+  assert.equal(store.get('theme'), FIXTURE_ID);
   assert.equal(backend.documents.get(SETTINGS_DOC), newer);
   assert.equal(unsaved.length, 1);
 });
