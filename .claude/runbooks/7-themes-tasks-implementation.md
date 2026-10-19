@@ -441,7 +441,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against task 165, which edits the same files; replaced by step 62.
 
-## [~] 62. Implement task 206 — Daily screen won time in the standard time format
+## [x] 62. Implement task 206 — Daily screen won time in the standard time format
 
 Depends on: 53
 
@@ -450,6 +450,8 @@ Context: none
 ```prompt
 /task-implement 206 --review
 ```
+
+Done: 2026-10-19, commit `61354da` (3 files, +15/-10).
 
 ## [x] 46. Implement task 209 — Daily screen in the board-choice layout, listing every mode
 
