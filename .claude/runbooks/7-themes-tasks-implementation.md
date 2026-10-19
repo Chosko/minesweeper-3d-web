@@ -530,7 +530,7 @@ Context: none
 /task-implement 173 --review
 ```
 
-## [~] 18. Implement task 174 — Live figures model: 3BV progress, pace vs PB, 3BV/s, clicks and flags
+## [x] 18. Implement task 174 — Live figures model: 3BV progress, pace vs PB, 3BV/s, clicks and flags
 
 Depends on: none
 
@@ -539,6 +539,8 @@ Context: none
 ```prompt
 /task-implement 174 --review
 ```
+
+Done: 2026-10-19, commit `d0d5dce` (4 files, +214/-2). Mines left stays signed (over-flagging shows "-2 mines left"), matching the overlay counter and pause card; `MINUS` is now exported from `js/results/view.js` and shared.
 
 ## [x] 19. Implement task 175 — Counter readout and figures panel kit components
 
