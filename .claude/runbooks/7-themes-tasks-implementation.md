@@ -319,7 +319,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against task 168, which edits the same files; replaced by step 58.
 
-## [~] 58. Implement task 169 — Results screen redesigned in the shared layout
+## [x] 58. Implement task 169 — Results screen redesigned in the shared layout
 
 Depends on: 7, 57
 
@@ -329,6 +329,8 @@ Context:
 ```prompt
 /task-implement 169 --review
 ```
+
+Done: 2026-10-19, commit `1d695b3` (12 files, +662/-453). The "neutral band on a loss" criterion stays unmet: the kit has no neutral header variant, so a lost game keeps the yellow band (the frame carries `data-outcome`); the 3BV solved bar is a plain browser progress bar. Watch best is offered only after a win that set no best.
 
 ## [x] 14. Implement task 170 — Records screen in the shared layout
 
@@ -356,7 +358,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on named struck step 38; lacked the edge to task 212, its precondition; lacked the order against task 169, which edits the same files; replaced by step 59.
 
-## [ ] 59. Implement task 170 — Records screen in the shared layout, with its Leaderboards tab
+## [~] 59. Implement task 170 — Records screen in the shared layout, with its Leaderboards tab
 
 Depends on: 7, 55, 58
 
@@ -573,6 +575,7 @@ Depends on: 6, 7, 8, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65
 Context:
 - 2026-10-19 (from step 54): `.claude/context/` files (e.g. `classic2d.md`, `app-shell-menu.md`) still describe the old Classic 2D board choice API; task 173 owns that update.
 - 2026-10-19 (from step 56): `.claude/context/mode3d.md` and `app-shell-menu.md` still describe the old 3D board choice (removed ids `c-start`, `bc-code-play`; `presetDetail(s)`); task 173 owns that update.
+- 2026-10-19 (from step 58): `.claude/context/app-shell-results.md` still describes the old results screen and Watch best rule; `.claude/domain/features/replay-playback.md` (around lines 184–186) still states the old Watch best rule — Watch best is now offered only after a win that set no best.
 
 ```prompt
 /task-implement 173 --review
