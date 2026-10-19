@@ -3,13 +3,17 @@
 // the hint strip and the main menu's key hints — is drawn from the bindings source
 // (js/settings/bindings.js) for the active mode and the active device (the controller in the
 // connected controller's glyphs).
-import { formatOverlayTime, formatMineCount, mineCounterDigits, bindSegmented, segmentedState, showKeyHints } from './ui/components.js';
+import {
+  formatOverlayTime, formatMineCount, mineCounterDigits, bindSegmented, segmentedState, showKeyHints, bindFigures, bindFiguresLive,
+} from './ui/components.js';
 import { GLYPHS } from './gamepad.js';
-import { bindingsHtml, hudStripHtml, hintStripHtml, helpFootHtml, hintText, keyHintKeys } from './settings/bindings.js';
+import { bindingsHtml, hudStripHtml, hintStripHtml, helpFootHtml, hintText, keyHintKeys, reminderKeys } from './settings/bindings.js';
 import { settingsPageHtml, bindingsSectionHtml, bindResetPanel } from './settings/page.js';
 import { DIM_MIN, DIM_MAX } from './mode3d/board-choice.js';
 import { LEARN_TITLE, learnStepOf } from './mode3d/learn.js';
 import { formatTime } from './results/view.js';
+import { liveFigures } from './shell/live-figures.js';
+import { standardBoard } from './records/board.js';
 import { readoutText } from './readability.js';
 
 const $ = (id) => document.getElementById(id);
@@ -35,20 +39,25 @@ export function pauseLine(time, minesLeft, { timed = true } = {}) {
   return timed ? `Time ${formatTime(Math.round(time * 1000))} · ${mines}` : mines;
 }
 const NO_GUESS = ' · no-guess';
-/**
- * The Classic 2D panel's frame: its 1 px border and the --space-2 (8 px) inside it, around the
- * board and around the overlay readouts on its top edge, with --space-2 between the readouts and
- * the board.
- */
+/** The Classic 2D board's frame: its 1 px border and the --space-2 (8 px) inside it, on every side of the board. */
 export const PANEL_INSET = 9;
-export const PANEL_GAP = 8;
 /** A 3D board as the overlay bar, the ready card (with `mines`) and the pause card name it. */
 export function boardLine3D(s, { mines = false } = {}) {
   const count = mines ? ` · ${s.mines} mine${s.mines === 1 ? '' : 's'}` : '';
   return `${fmtDims(s)}${count}${s.noGuess ? NO_GUESS : ''}`;
 }
-/** A Classic 2D board as the overlay bar and the pause card name it. */
+/** A Classic 2D board as the pause card names it. */
 export const boardLine2D = (b) => `${b.width} × ${b.height}${b.noGuess ? NO_GUESS : ''}`;
+/** The Classic 2D window's foot line: the board's size, mines and no-guess, never a cell ("16 × 16 · 40 mines · no-guess"). */
+export const boardFoot2D = (b) => `${b.width} × ${b.height} · ${b.mines} mine${b.mines === 1 ? '' : 's'}${b.noGuess ? NO_GUESS : ''}`;
+/** The Classic 2D window's title: the mode and the board — a standard board's name, a daily, or Custom. */
+export function boardTitle2D(b) {
+  const id = b.identity;
+  const name = id?.daily ? 'Daily' : (id && standardBoard(id)?.name) || 'Custom';
+  return `Classic 2D · ${name}`;
+}
+/** What the figures panel's live part says when the game's counts change: the 3BV solved and the mines left. */
+export const figuresLine = (f) => `3BV ${f.bbbv.text}, ${f.flags.detail}`;
 
 export const NO_MOUSE_MSG = 'Minesweeper 3D needs a mouse and keyboard — open it on a desktop browser.';
 /** The menu's note on a coarse-only device, where both modes play by touch. */
@@ -76,6 +85,8 @@ export class UI {
       confirm: $('pause-confirm'), confirmText: $('pause-confirm-text'), confirmYes: $('p-confirm-yes'),
       chipShift: $('chip-shift'), chipSpace: $('chip-space'), chipCtrl: $('chip-ctrl'),
       c2dChoice: $('c2d-choice'), c2d: $('c2d'), c2dBoard: $('c2d-board'), c2dPanel: $('c2d-panel'), c2dStatus: $('c2d-status'),
+      c2dTitle: $('c2d-title'), c2dSize: $('c2d-size'), c2dMines: $('c2d-mines-left'), c2dTime: $('c2d-time'), c2dFigures: $('c2d-figures'),
+      c2dReminder: $('c2d-reminder'),
       hudBar: $('hud').querySelector('.hud-bar'),
       c2dStatusTitle: $('c2d-status-title'), c2dStatusText: $('c2d-status-text'), c2dOffer: $('c2d-offer'),
       c2dSpinner: $('c2d-spinner'), c2dWait: $('c2d-wait'), c2dProgress: $('c2d-progress'),
@@ -137,6 +148,15 @@ export class UI {
     this.el.restart.addEventListener('click', () => cb.onRestart());
     $('p-menu').addEventListener('click', () => cb.onMainMenu());
     $('hud-pause').addEventListener('click', () => cb.onPause?.());
+    $('c2d-pause').addEventListener('click', () => cb.onPause?.());
+    // Restart in the Classic 2D counter strip never takes focus either, so Space and Enter keep playing.
+    $('c2d-restart').addEventListener('mousedown', (e) => e.preventDefault());
+    $('c2d-restart').addEventListener('click', () => cb.onRestart2D?.());
+    // The Classic 2D window's counters and live figures.
+    this._readouts2D = { time: this.el.c2dTime, mines: this.el.c2dMines, counter: this.el.c2dMines.closest('.ui-counter') };
+    this._readouts = null; // the counters updateHud writes: the Classic 2D window's while it shows, else the overlay bar's
+    this._figures2D = bindFigures(this.el.c2dFigures);
+    this._figuresLive2D = bindFiguresLive(this.el.c2dFigures);
     // The 3D touch toolbar: each button latches or clears its view mode; it never takes focus.
     for (const b of document.querySelectorAll('#touch-modes [data-mode]')) {
       b.addEventListener('mousedown', (e) => e.preventDefault());
@@ -256,12 +276,18 @@ export class UI {
   _hideMenus() {
     for (const el of [this.el.menu, this.el.boardChoice, this.el.comingSoon, this.el.records, this.el.c2dChoice, this.el.settings, this.el.daily]) el?.classList.add('hidden');
   }
-  /** Hide the Classic 2D board layer and give the overlay bar back to the 3D game. */
+  /** Hide the Classic 2D window and give the counters back to the 3D game's overlay bar. */
   _hide2D() {
     this.el.c2d.classList.add('hidden');
     this.el.hud.classList.remove('hud--2d');
-    this.el.hudBar.style.left = '';
-    this.el.hudBar.style.top = '';
+    this._useReadouts(null);
+    this._figuresLive2D.stop();
+  }
+  /** The counters updateHud writes from now on, each written afresh. */
+  _useReadouts(readouts) {
+    if (this._readouts === readouts) return;
+    this._readouts = readouts;
+    this._last = { time: '', mines: '', clicks: '' };
   }
   showMenu() {
     this._hideMenus();
@@ -360,9 +386,9 @@ export class UI {
     this.el.c2dChoice.classList.remove('hidden');
   }
   /**
-   * The Classic 2D board: the board area fills the window with --space-4 (16 px) margins, and the
-   * board sits in a framed panel there whose top edge carries the overlay readouts (time, mines,
-   * clicks, board, Pause) — the overlay bar, without the 3D tools, placed by placePanel2D.
+   * The Classic 2D game window: the head (Swap clicks, the title, Pause), the counter strip over the
+   * board in its framed panel (placePanel2D), the live figures panel and the foot line; the 3D
+   * overlay bar does not show over it.
    */
   showClassic2D() {
     this._hideMenus();
@@ -371,6 +397,7 @@ export class UI {
     this._setMode('classic-2d');
     this._syncHelp();
     this.el.hud.classList.add('hud--2d');
+    this._useReadouts(this._readouts2D);
     this.el.hud.classList.remove('hidden');
     this.el.hudSwap.classList.remove('hidden');
     this.el.hudTap.classList.remove('hidden');
@@ -384,43 +411,41 @@ export class UI {
     this.el.hudTap.setAttribute('aria-pressed', flag ? 'true' : 'false');
     this.el.hudTap.textContent = flag ? 'Tap: Flag' : 'Tap: Reveal';
   }
-  /**
-   * The room the panel's frame takes around the board (js/classic2d/board-view.js frame): the
-   * readouts, as many rows as they wrap to, and the gap above it, the inset on every side, and at
-   * least the readouts' width — measured as the bar plays, with the buttons the pause card hides.
-   */
+  /** The room the board's frame takes around the board (js/classic2d/board-view.js frame): the inset on every side. */
   panelFrame2D() {
-    const paused = [this.el.hudSwap, this.el.hudTap].filter((b) => b.classList.contains('hidden'));
-    for (const b of paused) b.classList.remove('hidden');
-    const bar = this.el.hudBar.getBoundingClientRect();
-    for (const b of paused) b.classList.add('hidden');
-    return {
-      top: PANEL_INSET + Math.ceil(bar.height) + PANEL_GAP,
-      right: PANEL_INSET,
-      bottom: PANEL_INSET,
-      left: PANEL_INSET,
-      minWidth: Math.ceil(bar.width) + 2 * PANEL_INSET,
-    };
+    return { top: PANEL_INSET, right: PANEL_INSET, bottom: PANEL_INSET, left: PANEL_INSET };
   }
-  /** The panel at `rect` in the board area (board-view.js panelRect), its readouts on its top edge. */
+  /** The board's frame at `rect` in the board area (board-view.js panelRect). */
   placePanel2D(rect) {
     const panel = this.el.c2dPanel;
     Object.assign(panel.style, { left: `${rect.x}px`, top: `${rect.y}px`, width: `${rect.width}px`, height: `${rect.height}px` });
     panel.classList.remove('hidden');
-    const area = this.el.c2dBoard.getBoundingClientRect();
-    this.el.hudBar.style.left = `${Math.round(area.left + rect.x + PANEL_INSET)}px`;
-    this.el.hudBar.style.top = `${Math.round(area.top + rect.y + PANEL_INSET)}px`;
   }
-  /** The Classic 2D board the overlay bar and the pause card name ("30 × 16 · no-guess"). */
-  setBoard2D(board) { this._setBoardText(boardLine2D(board)); this._sizeMines(board.mines); }
+  /** The Classic 2D board the window's title and foot line and the pause card name; { width, height, mines, noGuess, identity }. */
+  setBoard2D(board) { this._board2D(board); this._sizeMines(board.mines, this.el.c2dMines); }
+  _board2D(board) {
+    this._boardText = boardLine2D(board);
+    this.el.c2dTitle.textContent = boardTitle2D(board);
+    this.el.c2dSize.textContent = boardFoot2D(board);
+  }
   _setBoardText(text) { this._boardText = text; this.el.size.textContent = text; }
   /**
-   * The mine counter as wide as a board's mine count past three digits, so the bar does not shift
-   * as it falls; a board of up to 999 mines keeps today's counter.
+   * A mine counter as wide as a board's mine count past three digits, so it does not shift as it
+   * falls; a board of up to 999 mines keeps the standard counter.
    */
-  _sizeMines(mines) {
+  _sizeMines(mines, el = this.el.mines) {
     const digits = mineCounterDigits(mines);
-    this.el.mines.style.minWidth = digits > 3 ? `${digits}ch` : '';
+    el.style.minWidth = digits > 3 ? `${digits}ch` : '';
+  }
+  /**
+   * The Classic 2D live figures (js/shell/live-figures.js) from the game's counts and the board's
+   * bests read at the game's start: on a change every figure whose text changed and the live part's
+   * line; on the timer's second (`tick`) only the figures that take the time.
+   */
+  updateFigures2D(input, { tick = false, bests = null } = {}) {
+    const figures = liveFigures({ ...input, bests });
+    this._figures2D.show(figures, tick ? ['pace', 'rate'] : null);
+    if (!tick) this._figuresLive2D.announce(figuresLine(figures));
   }
   /** Classic 2D: the "generating" card of a slow first click, or a failed board and its offer. */
   setBoardStatus(status) { this._boardStatus('c2d', status); }
@@ -651,15 +676,17 @@ export class UI {
    * stays as it is. Each readout is written only when its text changes.
    */
   updateHud(time, minesLeft, clicks) {
+    const el = this._readouts ?? this.el;
     const t = formatOverlayTime(time), m = formatMineCount(minesLeft);
-    if (t !== this._last.time) { this.el.time.textContent = t; this._last.time = t; }
+    if (t !== this._last.time) { el.time.textContent = t; this._last.time = t; }
     if (m !== this._last.mines) {
-      this.el.mines.textContent = m; this._last.mines = m;
-      this.el.mines.classList.toggle('negative', minesLeft < 0);
+      el.mines.textContent = m; this._last.mines = m;
+      el.mines.classList.toggle('negative', minesLeft < 0);
+      el.counter?.toggleAttribute('data-negative', minesLeft < 0);
     }
-    if (Number.isFinite(clicks)) {
+    if (Number.isFinite(clicks) && el.clicks) {
       const c = String(clicks);
-      if (c !== this._last.clicks) { this.el.clicks.textContent = c; this._last.clicks = c; }
+      if (c !== this._last.clicks) { el.clicks.textContent = c; this._last.clicks = c; }
     }
   }
   setModes(shift, space, ctrl) {
@@ -725,6 +752,14 @@ export class UI {
     this.el.helpList.innerHTML = bindingsHtml(this._mode, this._bindDevice(this._mode), this._glyphs, this._camera);
     this.el.helpFoot.innerHTML = `${helpFootHtml(this._mode, this._bindDevice(this._mode), this._glyphs)}${this._note()}`;
   }
+  /** The Classic 2D figures panel's controls reminder: the board's main bindings for the active device. */
+  _renderReminder() {
+    const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    this.el.c2dReminder.innerHTML = reminderKeys('classic-2d', this._bindDevice('classic-2d'), this._glyphs).map(({ keys, label }) => {
+      const caps = keys.map((k) => `<kbd class="ui-key-hint__key">${esc(k.text)}</kbd>`).join('+');
+      return `<span class="ui-key-hint${keys.every((k) => k.pad) ? ' ui-key-hint--pad' : ''}">${caps}<span class="ui-key-hint__label">${esc(label)}</span></span>`;
+    }).join('');
+  }
   /** The HUD strip; one with no entries (Classic 2D on touch) hides its panel. */
   _renderHudStrip() {
     const html = hudStripHtml(this._mode, this._bindDevice(this._mode), this._glyphs, { muted: this._muted, spacing: this._spacing });
@@ -733,7 +768,8 @@ export class UI {
   }
   /** Redraw every bindings surface for the active mode and device. */
   _renderBindings() {
-    for (const id of ['menu-hints', 'c2d-choice', 'board-choice', 'pause', 'coming-soon', 'results', 'records', 'settings', 'replay', 'ready', 'learn-end', 'ctx-lost']) showKeyHints($(id), (action) => keyHintKeys(action, this._bindDevice(this._mode), this._glyphs));
+    for (const id of ['menu-hints', 'c2d-choice', 'c2d', 'board-choice', 'pause', 'coming-soon', 'results', 'records', 'settings', 'replay', 'ready', 'learn-end', 'ctx-lost']) showKeyHints($(id), (action) => keyHintKeys(action, this._bindDevice(this._mode), this._glyphs));
+    this._renderReminder();
     this._renderHelp();
     this._renderHudStrip();
     this.el.controlsBody.innerHTML = bindingsHtml(this._controlsTab, this._bindDevice(this._controlsTab), this._glyphs, this._camera);

@@ -6,9 +6,8 @@
 //                               generatingDelayMs?, place?, buttonSwap? }) → mode
 //   flow        the shell's side:
 //                 openBoardChoice(choice)  show the board choice preselected with `choice`
-//                 show()                   show the board screen (the board's framed panel, its
-//                                          edge carrying the overlay readouts, in the area
-//                                          container() is)
+//                 show()                   show the board screen (the game window, the board in
+//                                          its framed panel in the area container() is)
 //                 container()              the element the board view fills
 //                 scale()?                 the board scale setting (js/classic2d/board-view.js
 //                                          BOARD_SCALES) a new board opens at
@@ -19,10 +18,16 @@
 //                                          the panel (board-view.js panelRect) and to tell a
 //                                          board that scrolls
 //                 scrolled()?              the player scrolled the board (wheel or pan)
-//                 hud({ seconds, minesLeft, clicks })  the overlay bar's timer, mine counter and
-//                                          click counter (the session's clicks())
-//                 board({ width, height, mines, noGuess })  the board the overlay bar names; again
-//                                          when a failed board's offer plays it standard
+//                 hud({ seconds, minesLeft, clicks })  the window's timer, mine counter and
+//                                          click count (the session's clicks())
+//                 figures(input, { tick })?  the live figures' input (js/shell/live-figures.js):
+//                                          { bbbv, bbbvSolved, clicks, flags, mines, elapsedMs }
+//                                          from the engine's counts — at once on every change
+//                                          (tick false), and when the timer's second changes
+//                                          (tick true: only elapsedMs moved)
+//                 board({ width, height, mines, noGuess, identity })  the board the window names,
+//                                          with its board identity; again when a failed board's
+//                                          offer plays it standard
 //                 generating(shown)        the "generating" state of a slow first click
 //                 progress(p | null)?      while it shows: { candidates, seconds }, again whenever
 //                                          either changes; null when it hides
@@ -100,6 +105,7 @@
 // with it, its clock running on (a no-op before the first click and after the end), the inputs drop what they hold and
 // take nothing while it is hidden; pause() is hideBoard(true) and resume() hideBoard(false) plus
 // flow.show(); neither hides the board during the end delay. tick() pushes the timer, mine counter and click count to flow.hud when any changed,
+// and the figures' input to flow.figures when the timer's second changed,
 // draws the end effect's frame during the end delay and drives the movement sampler (call it every
 // frame); every action pushes them at once. The cursor input's
 // ring reaches the sampler as well as the view: its cell while it shows, -1 when it hides. pad(poll, now) hands the shell's controller poll
@@ -163,6 +169,7 @@ export function createClassic2DMode(report, {
   let hidden = false;
   let tapMode = TAP_MODES[0]; // the Reveal / Flag switch: what a tap on a closed cell does, kept for the page's life
   let shown = { seconds: null, minesLeft: null, clicks: null };
+  let figuresInput = null; // the live figures' input last fed
   let progressShown = null; // the progress last pushed to flow.progress
   let client = null; // the mode's one generation client, made on first use
   let ahead = null; // { choice, board }: the next no-guess board, pre-generated while the results show
@@ -212,10 +219,23 @@ export function createClassic2DMode(report, {
     if (ended && g.phase === PHASE.WON) sound.win();
   }
 
-  const push = () => {
+  // counted: the game's counts may have changed (an action, a new board), so the figures are fed at
+  // once; otherwise only a new second of the timer feeds them.
+  const push = (counted = false) => {
     if (!game) return;
-    const h = { seconds: game.session.seconds(), minesLeft: game.session.minesLeft, clicks: game.session.clicks() };
-    if (h.seconds === shown.seconds && h.minesLeft === shown.minesLeft && h.clicks === shown.clicks) return;
+    const s = game.session;
+    const h = { seconds: s.seconds(), minesLeft: s.minesLeft, clicks: s.clicks() };
+    const tick = h.seconds !== shown.seconds;
+    if (counted || !figuresInput) {
+      const { bbbv, bbbvSolved, clicks } = s.counts();
+      const mines = s.setup.mines;
+      figuresInput = { bbbv, bbbvSolved, clicks, flags: mines - s.minesLeft, mines, elapsedMs: s.elapsedMs() };
+      flow.figures?.(figuresInput, { tick: false });
+    } else if (tick) {
+      figuresInput = { ...figuresInput, elapsedMs: s.elapsedMs() };
+      flow.figures?.(figuresInput, { tick: true });
+    }
+    if (!tick && h.minesLeft === shown.minesLeft && h.clicks === shown.clicks) return;
     shown = h;
     flow.hud(h);
   };
@@ -253,9 +273,10 @@ export function createClassic2DMode(report, {
     const session = createSession(options);
     hidden = false;
     shown = { seconds: null, minesLeft: null, clicks: null };
+    figuresInput = null;
     flow.show();
     const { width, height, mines, noGuess } = session.setup;
-    flow.board({ width, height, mines, noGuess });
+    flow.board({ width, height, mines, noGuess, identity: session.identity });
     const view = mount.board({
       container: flow.container(),
       grid: session.setup.grid,
@@ -279,7 +300,7 @@ export function createClassic2DMode(report, {
       }
       if (before === SESSION_STATE.READY && r?.changed?.length) {
         view.update(r.changed);
-        push();
+        push(true);
       }
       if (sound && r) cue(session, kind, r, before);
       return r;
@@ -303,9 +324,9 @@ export function createClassic2DMode(report, {
       : null;
     const offs = [
       session.on('started', () => { report.started(); report.canPause(true); }),
-      session.on('changed', ({ changed }) => { view.update(changed); push(); }),
+      session.on('changed', ({ changed }) => { view.update(changed); push(true); }),
       session.on('finished', ({ summary, replay }) => {
-        push();
+        push(true);
         report.canPause(false);
         const g = game;
         if (g?.session !== session) return;
@@ -323,7 +344,7 @@ export function createClassic2DMode(report, {
       session.on('failed', (failure) => flow.failed(failure)),
     ];
     game = { session, view, pointer, cursor, touch, sampler, offs, ending: null };
-    push();
+    push(true);
   }
 
   // The end delay is over, or cut short: the board in its end state, then game finished, once.
@@ -411,7 +432,7 @@ export function createClassic2DMode(report, {
       if (game?.session.state !== SESSION_STATE.GENERATING && game?.session.state !== SESSION_STATE.FAILED) return null;
       flow.failed(null);
       const r = game.session.playStandard();
-      if (r && game) { const { width, height, mines, noGuess } = game.session.setup; flow.board({ width, height, mines, noGuess }); }
+      if (r && game) { const { width, height, mines, noGuess } = game.session.setup; flow.board({ width, height, mines, noGuess, identity: game.session.identity }); push(true); }
       return r;
     },
     loadChoice: () => lastChoice.load(),

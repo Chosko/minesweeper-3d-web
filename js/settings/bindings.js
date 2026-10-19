@@ -278,6 +278,30 @@ export function hintText(name, device, glyphs = GLYPHS.generic) {
   return t.replace(/\[([^\]]+)\]/g, '$1').replace(/\{([a-z]+)\}/g, (m, name2) => (Object.hasOwn(glyphs, name2) ? glyphs[name2] : m));
 }
 
+/**
+ * The figures panel's controls reminder per mode and device: the board's main bindings, each key
+ * `[Key]`, a controller button `{name}`, two keys pressed together joined by `+`.
+ */
+export const REMINDER = table({
+  'classic-2d': {
+    keyboard: [['[Left]', 'reveal'], ['[Right]', 'flag'], ['[Left]+[Right]', 'chord']],
+    controller: [['{a}', 'reveal'], ['{x}', 'flag'], ['{y}', 'chord']],
+    touch: [['[Tap]', 'reveal'], ['[Long-press]', 'flag'], ['[Tap a number]', 'chord']],
+  },
+});
+
+/** The reminder's rows for `mode` and `device`: [{ keys: [{ text, pad }], label }], the controller's buttons in `glyphs`. */
+export function reminderKeys(mode, device, glyphs = GLYPHS.generic) {
+  return pick(REMINDER, mode, device, 'reminder').map(([input, label]) => ({
+    keys: input.split('+').map((key) => {
+      const b = key.match(/^\{([a-z]+)\}$/);
+      if (b) return { text: Object.hasOwn(glyphs, b[1]) ? glyphs[b[1]] : b[1], pad: true };
+      return { text: key.replace(/^\[(.+)\]$/, '$1'), pad: false };
+    }),
+    label,
+  }));
+}
+
 /** The key hints shown beside an action, per device: `[Key]` a key, `{name}` a controller button, plain text a controller control. */
 export const KEY_HINTS = Object.freeze({
   move: Object.freeze({ keyboard: Object.freeze(['[↑]', '[↓]']), controller: Object.freeze(['D-pad']), touch: Object.freeze([]) }),

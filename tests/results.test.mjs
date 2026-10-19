@@ -864,7 +864,7 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
       const r = generate({ graph: { kind: 'square', width: 9, height: 9 }, mineCount: 10, firstClick: fc, noGuess: false, seed: 12345 });
       return [...r.mines];
     }, first);
-    const hudClicks = () => page.evaluate(() => document.getElementById('hud-clicks').textContent);
+    const hudClicks = () => page.evaluate(() => document.getElementById('c2d-clicks').textContent);
     assert.equal(await hudClicks(), '0', 'the overlay counts no click before the first');
     await page.mouse.click(centres[first].x, centres[first].y);
     await page.waitForFunction(() => globalThis.__ms.modes.state.started);
@@ -1006,7 +1006,7 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
     assert.equal(await mode(), 'classic-2d', 'Play again goes back to the board');
     assert.deepEqual(await page.evaluate(() => ({ ...globalThis.__ms.modes.state })),
       { mode: 'classic-2d', started: false, finished: false, canPause: false }, 'a fresh game of the same choice');
-    assert.equal(await page.evaluate(() => document.getElementById('hud-size').textContent), '9 × 9');
+    assert.equal(await page.evaluate(() => document.getElementById('c2d-size').textContent), '9 × 9 · 10 mines');
 
     // The same board won again, its end delay cut short by R: the card shows at once, and the R that
     // ended the delay — held, repeating, released — does not also play again; a fresh R does, as the

@@ -1116,7 +1116,7 @@
 :root[data-theme="joyful-tiles"] #hint-strip kbd { background: var(--color-ink); color: var(--color-ink-inverse); }
 :root[data-theme="joyful-tiles"] #hint-strip .hint-step { font-family: var(--font-family-mono); }
 
-/* Classic 2D: the board layer on the ground, the board in a framed panel whose top edge is the overlay bar */
+/* Classic 2D: the game window on the ground, the board in its framed panel */
 :root[data-theme="joyful-tiles"] #c2d {
   background-color: var(--color-ground);
   background-image: radial-gradient(circle, var(--color-ground-dot) 1.6px, transparent 1.7px);
@@ -1135,7 +1135,6 @@
   background: var(--color-surface);
   box-shadow: inset 0 0 0 2px var(--color-border), 0 var(--edge-md) 0 var(--color-edge), var(--elevation-1);
 }
-:root[data-theme="joyful-tiles"] #hud.hud--2d .hud-bar { border: 0; background: none; box-shadow: none; }
 :root[data-theme="joyful-tiles"] #hud-mines.negative { color: var(--color-danger); }
 
 /* the replay viewer: the recorded pointer and its trail, the press rings */

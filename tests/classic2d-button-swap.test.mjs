@@ -211,9 +211,9 @@ test('in a browser: the swap toggle shows on the Classic 2D board while unpaused
     await page.waitForFunction(() => globalThis.__ms.modes.state.started);
     const corner = await at(0, 0);
     await page.mouse.click(corner.x, corner.y);
-    assert.equal(await ms(() => document.getElementById('hud-mines').textContent), '30', 'a left click flags');
+    assert.equal(await ms(() => document.getElementById('c2d-mines-left').textContent), '030', 'a left click flags');
 
-    await page.click('#hud-pause');
+    await page.click('#c2d-pause');
     assert.equal(await shown(), false, 'hidden while paused');
     await page.click('#p-resume');
     assert.equal(await shown(), true, 'back after resume');
@@ -232,7 +232,10 @@ test('in a browser: the swap toggle shows on the Classic 2D board while unpaused
   }
 });
 
-test('the 3D overlay never shows the swap toggle', () => {
-  const css = readFileSync(join(ROOT, 'css', 'style.css'), 'utf8');
-  assert.match(css, /#hud:not\(\.hud--2d\) #hud-swap\s*\{[^}]*display:\s*none/);
+test('the 3D overlay never shows the swap toggle: it sits in the Classic 2D window\'s head', () => {
+  const html = readFileSync(join(ROOT, 'index.html'), 'utf8');
+  const window2D = html.slice(html.indexOf('<section id="c2d"'), html.indexOf('<section id="c2d-status"'));
+  const hud = html.slice(html.indexOf('<div id="hud"'), html.indexOf('<div id="crosshair"'));
+  assert.match(window2D, /<div class="ui-frame__start"><button type="button" id="hud-swap"/);
+  assert.doesNotMatch(hud, /hud-swap/);
 });

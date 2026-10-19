@@ -69,7 +69,8 @@
 // end. Summaries are built by js/records/summary.js's buildSummary from the game's pause spans
 // too; every summary of one game carries the same id, so the in-progress summary and the final one
 // name the same game. clicks() is the game's counted clicks so far, wasted included — the engine's
-// click counts the summary carries, 0 before the first click and unchanged once the game ended.
+// click counts the summary carries, 0 before the first click and unchanged once the game ended;
+// counts() is the engine's counts() (3BV, 3BV solved, the click counts by kind) the live figures read.
 //
 // Recording (js/replay/recorder.js): each closed board opens a recorder, and restart() and leave()
 // discard it. Every action the session hands to the engine while the game accepts actions is
@@ -457,6 +458,7 @@ export function createSession({
     seconds: () => timer.seconds(),
     pauses: () => timer.pauses(),
     clicks: () => countedClicks(game.counts().clicks),
+    counts: () => game.counts(),
     get recording() { return recording(); },
     recordSample(values) { if (recording()) recorder.sample(values, timer.elapsedMs()); },
     recordCursor(c) { if (recording()) recorder.cursor(c, timer.elapsedMs()); },

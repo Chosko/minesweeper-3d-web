@@ -147,6 +147,8 @@ function fakeFlow() {
     openBoardChoice(choice) { calls.push(['openBoardChoice', choice]); },
     show() { calls.push(['show']); },
     hud(h) { flow.huds.push(h); },
+    fed: [],
+    figures(input, opts) { flow.fed.push({ input, ...opts }); },
     board(b) { calls.push(['board', b]); },
     generating(shown) { calls.push(['generating', shown]); },
     progress(p) { calls.push(['progress', p]); },
@@ -222,7 +224,9 @@ test('start shows the board in the container, mounts the inputs, feeds the overl
   assert.equal(pointer().view, board());
   assert.equal(Object.getPrototypeOf(cursor().view), board(), 'the cursor input draws on the board view');
   assert.deepEqual(flow.calls.filter((c) => c[0] === 'show').length, 1);
-  assert.deepEqual(flow.calls.find((c) => c[0] === 'board'), ['board', { width: 30, height: 16, mines: 99, noGuess: false }]);
+  const [, named] = flow.calls.find((c) => c[0] === 'board');
+  assert.deepEqual({ ...named, identity: undefined }, { width: 30, height: 16, mines: 99, noGuess: false, identity: undefined });
+  assert.deepEqual([named.identity.mode, named.identity.width, named.identity.height, named.identity.mines], ['classic-2d', 30, 16, 99], 'with the board\'s identity, for its bests');
   assert.deepEqual(flow.huds.at(-1), { seconds: 0, minesLeft: 99, clicks: 0 });
   await settle();
   assert.equal(lastChoice.current.size, 'expert', 'the choice is the last board choice from now on');
@@ -310,6 +314,31 @@ test('the overlay\'s click count: none before the first click, every counted cli
   act('reveal', 2);
   assert.equal(flow.huds.at(-1).clicks, 4, 'nothing changes the count once the game ended');
   assert.equal(flow.huds.at(-1).seconds, frozen.seconds, 'frozen with the timer');
+});
+
+test('the figures feed: the game\'s counts at once on every change, and on the timer\'s second for the figures that take the time', async () => {
+  // 3 × 3 with mines on 0 and 8: cell 4 reveals a 2.
+  const { act, flow, clock, mode } = setup({ choice: CUSTOM_3X3, mines: [0, 8] });
+  const last = () => flow.fed.at(-1);
+  assert.deepEqual({ ...last(), input: { ...last().input, clicks: undefined } }, {
+    input: { bbbv: null, bbbvSolved: 0, clicks: undefined, flags: 0, mines: 2, elapsedMs: 0 }, tick: false,
+  }, 'the closed board: nothing solved, no 3BV yet');
+  await act('reveal', 4);
+  const revealed = last();
+  assert.equal(revealed.tick, false);
+  assert.ok(revealed.input.bbbv > 0, 'the board\'s 3BV once its mines are placed');
+  assert.equal(revealed.input.clicks.reveal.effective + revealed.input.clicks.reveal.wasted, 1, 'the engine\'s click counts');
+  const count = flow.fed.length;
+  clock.advance(400);
+  mode.tick();
+  assert.equal(flow.fed.length, count, 'nothing between the timer\'s seconds');
+  clock.advance(600);
+  mode.tick();
+  assert.deepEqual([last().tick, last().input.elapsedMs, last().input.bbbvSolved], [true, 1000, revealed.input.bbbvSolved], 'the timer\'s second: the same counts, the new time');
+  mode.tick();
+  assert.equal(flow.fed.length, count + 1, 'the same second is not fed again');
+  act('toggleFlag', 0);
+  assert.deepEqual([last().tick, last().input.flags], [false, 1], 'a change is fed at once');
 });
 
 test('pause hides the board while the timer keeps running, so the pause card\'s time advances; resume shows it again', async () => {
@@ -1208,8 +1237,8 @@ test('the shell stylesheet lays the board choice out: the window under the title
 });
 
 test('index.html holds the Classic 2D board layer with its generating and failure card', () => {
-  assert.match(LAYER, /^<section id="c2d" class="hidden"/);
-  assert.match(LAYER, /<div id="c2d-board"><div id="c2d-panel" class="c2d-panel hidden" aria-hidden="true"><\/div><\/div>/, 'the board area holds the framed panel, behind the canvas');
+  assert.match(LAYER, /^<section id="c2d" class="ui-backdrop hidden"/);
+  assert.match(LAYER, /<div id="c2d-board"><div id="c2d-panel" class="c2d-panel hidden" aria-hidden="true"><\/div><\/div>/, 'the board area holds the board\'s frame, behind the canvas');
   assert.match(LAYER, /id="c2d-retry" class="ui-button ui-button--primary"/);
   assert.match(LAYER, /id="c2d-standard" class="ui-button ui-button--secondary">Play a standard board/);
   assert.match(LAYER, /id="c2d-offer-menu" class="ui-button ui-button--secondary">Main menu/, 'the offer has a way out');
@@ -1238,8 +1267,10 @@ test('the shell registers the mode, routes its screens and reaches the board wit
 test('the shell hands the board its scale, frame and panel, keeps the scale live and shows the scroll hint once', () => {
   const flow = MAIN.slice(MAIN.indexOf('const FLOW_2D = {'), MAIN.indexOf('const board2d ='));
   assert.match(flow, /scale: \(\) => SETTINGS\.get\('boardScale'\)/, 'a new board opens at the setting');
-  assert.match(flow, /frame: \(\) => \(frame2D = ui\.panelFrame2D\(\)\)/, 'the frame measured from the readouts');
-  assert.match(flow, /layout: \(layout\) => \{ ui\.placePanel2D\(panelRect\(layout, frame2D\)\); clipped2D\(layout\.scrolls\); \}/, 'each refit places the panel');
+  assert.match(flow, /frame: \(\) => ui\.panelFrame2D\(\)/, 'the board\'s frame inset');
+  assert.match(flow, /layout: \(layout\) => \{ ui\.placePanel2D\(panelRect\(layout, ui\.panelFrame2D\(\)\)\); clipped2D\(layout\.scrolls\); \}/, 'each refit places the board\'s frame');
+  assert.match(flow, /figures: \(input, \{ tick \}\) => ui\.updateFigures2D\(input, \{ tick, bests: bests2D \}\)/, 'the live figures, with the bests read at the game\'s start');
+  assert.match(MAIN, /bests2D = RECORDS\.bests\(b\.identity\)/, 'the board\'s bests read once per game from the records store');
   assert.match(flow, /scrolled: \(\) => scrolled2D\(\)/);
   assert.match(MAIN, /SETTINGS\.onChange\('boardScale', \(scale\) => \{ mode2d\.setScale\(scale\); REPLAY_VIEWER\.setScale\(scale\); \}\)/, 'a change applies at once, in play and in the viewer');
   assert.match(MAIN, /function scrolled2D\(\) \{\n  if \(FIRST_USE\.once\('scrollHint'\)\) refreshHints\(\);/, 'a scroll ends the hint for good');
@@ -1310,14 +1341,14 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
     const edge = await ms(() => {
       const l = globalThis.__ms.board2D.layout;
       const area = document.getElementById('c2d-board').getBoundingClientRect();
-      const bar = document.querySelector('#hud .ui-overlay-bar').getBoundingClientRect();
-      return { barBottom: bar.bottom, boardTop: area.top + l.viewY };
+      const strip = document.getElementById('c2d-counters').getBoundingClientRect();
+      return { stripBottom: strip.bottom, boardTop: area.top + l.viewY };
     });
-    assert.ok(Math.abs(edge.boardTop - (edge.barBottom + 8)) <= 1, `the board sits 8 px below the readouts on the panel's edge (${edge.boardTop}, ${edge.barBottom})`);
-    assert.equal(await ms(() => document.getElementById('hud-mines').textContent), '99');
+    assert.ok(edge.boardTop >= edge.stripBottom, `the board sits below the counter strip (${edge.boardTop}, ${edge.stripBottom})`);
+    assert.equal(await ms(() => document.getElementById('c2d-mines-left').textContent), '099');
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
     await page.waitForFunction(() => globalThis.__ms.modes.state.started);
-    await page.waitForFunction(() => document.getElementById('hud-time').textContent !== '000', null, { timeout: 10000 });
+    await page.waitForFunction(() => document.getElementById('c2d-time').textContent !== '000', null, { timeout: 10000 });
 
     // Pause hides the board; resume brings it back.
     await page.keyboard.press('Escape');
@@ -1325,13 +1356,13 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
     assert.equal(await active(), 'p-resume');
     // The clock runs through the pause: the HUD and the pause card's time go on.
     await ms(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
-    const before = Number(await ms(() => document.getElementById('hud-time').textContent));
+    const before = Number(await ms(() => document.getElementById('c2d-time').textContent));
     const card = async () => Number((await ms(() => document.getElementById('pause-sub').textContent)).match(/^Time (\d+)\./)[1]);
     const cardBefore = await card();
-    await page.waitForFunction(([hud, sub]) => Number(document.getElementById('hud-time').textContent) > hud
+    await page.waitForFunction(([hud, sub]) => Number(document.getElementById('c2d-time').textContent) > hud
       && Number(document.getElementById('pause-sub').textContent.match(/^Time (\d+)\./)[1]) > sub, [before, cardBefore], { timeout: patience(5000) });
     assert.equal(await mode(), 'paused', 'still paused');
-    assert.ok(Number(await ms(() => document.getElementById('hud-time').textContent)) > before, 'the timer runs while paused');
+    assert.ok(Number(await ms(() => document.getElementById('c2d-time').textContent)) > before, 'the timer runs while paused');
     assert.ok(await card() > cardBefore, 'the pause card\'s time advances while it shows');
     await page.click('#p-resume');
     assert.equal(await mode(), 'classic-2d');
@@ -1464,7 +1495,7 @@ test('in a browser, the board choice: a click chooses, Play or Enter plays; the 
     await ms(() => document.querySelector('#c2d-choice [data-size="expert"]').focus());
     await page.keyboard.press('Enter');
     assert.equal(await mode(), 'classic-2d');
-    assert.equal(await text('hud-size'), '30 × 16 · no-guess');
+    assert.equal(await text('c2d-size'), '30 × 16 · 99 mines · no-guess');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
@@ -1517,7 +1548,7 @@ test('in a browser, the board choice at every supported window size: its window\
   }
 });
 
-test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800: Expert unclipped in play and in the viewer, Beginner at 48 px, the panel\'s readouts and Pause, a clipped board\'s marks and hint, and no ring for a mouse player', async (t) => {
+test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800: Expert in the window, unclipped at 1280 × 800 and in the viewer, Beginner at 48 px, the counters and Pause, a clipped board\'s marks and hint, and no ring for a mouse player', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -1540,28 +1571,28 @@ test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800: Expert unclippe
           const rect = (el) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; };
           return {
             layout: { ...v.layout }, scale: v.scale, cursor: v.cursor, area: rect(document.getElementById('c2d-board')),
-            panel: rect(document.getElementById('c2d-panel')), bar: rect(document.querySelector('#hud .ui-overlay-bar')),
-            pause: rect(document.getElementById('hud-pause')), areaTop: area.top, areaLeft: area.left,
+            panel: rect(document.getElementById('c2d-panel')), strip: rect(document.getElementById('c2d-counters')),
+            pause: rect(document.getElementById('c2d-pause')), frame: rect(document.getElementById('c2d-frame')), areaTop: area.top, areaLeft: area.left,
           };
         });
 
-        // Expert at the default scale: every cell in view, the panel around it, the readouts on its top edge.
+        // Expert at the default scale, in the window: the board's frame around it, the counter strip above it.
         await start(STANDARD.expert);
         await page.waitForFunction(() => globalThis.__ms.board2D);
         const g = await geometry();
         assert.equal(g.scale, '100', `${at}: the default scale`);
-        assert.equal(g.layout.scrolls, false, `${at}: Expert fits with no scrolling`);
         assert.ok(g.layout.tile >= 26 && g.layout.tile <= 48, `${at}: Expert at ${g.layout.tile} px`);
-        assert.deepEqual([g.layout.viewWidth, g.layout.viewHeight], [30 * g.layout.tile, 16 * g.layout.tile], `${at}: no clipped cell`);
-        assert.ok(g.panel.x >= g.area.x && g.panel.x + g.panel.width <= g.area.x + g.area.width + 0.5, `${at}: the panel inside the area`);
-        assert.ok(g.panel.y >= g.area.y && g.panel.y + g.panel.height <= g.area.y + g.area.height + 0.5, `${at}: the panel inside the area`);
-        assert.ok(Math.abs(g.bar.x - (g.panel.x + 9)) <= 1 && Math.abs(g.bar.y - (g.panel.y + 9)) <= 1, `${at}: the readouts on the panel's top edge`);
-        assert.ok(g.bar.y + g.bar.height <= g.areaTop + g.layout.viewY, `${at}: above the board`);
-        assert.ok(g.pause.x + g.pause.width <= g.panel.x + g.panel.width, `${at}: Pause on the panel`);
-        assert.deepEqual(await ms(() => ['hud-time', 'hud-mines', 'hud-clicks'].map((id) => document.getElementById(id).textContent)), ['000', '99', '0']);
-        const surface = await ms(() => [getComputedStyle(document.getElementById('c2d-panel')).backgroundColor, getComputedStyle(document.querySelector('#hud .ui-overlay-bar')).backgroundColor]);
-        assert.match(surface[0], /^rgb\(/, `${at}: the panel is an opaque surface`);
-        assert.equal(surface[1], 'rgba(0, 0, 0, 0)', `${at}: the readouts sit on it with no surface of their own`);
+        if (viewport.width === 1280) {
+          assert.equal(g.layout.scrolls, false, `${at}: Expert fits with no scrolling`);
+          assert.deepEqual([g.layout.viewWidth, g.layout.viewHeight], [30 * g.layout.tile, 16 * g.layout.tile], `${at}: no clipped cell`);
+        }
+        assert.ok(g.panel.x >= g.area.x - 0.5 && g.panel.x + g.panel.width <= g.area.x + g.area.width + 0.5, `${at}: the board's frame inside the area`);
+        assert.ok(g.panel.y >= g.area.y - 0.5 && g.panel.y + g.panel.height <= g.area.y + g.area.height + 0.5, `${at}: the board's frame inside the area`);
+        assert.ok(g.strip.y + g.strip.height <= g.areaTop + g.layout.viewY, `${at}: the counter strip above the board`);
+        assert.ok(g.pause.y + g.pause.height <= g.strip.y && g.pause.x + g.pause.width <= g.frame.x + g.frame.width, `${at}: Pause in the window's head`);
+        assert.ok(g.frame.x >= 0 && g.frame.x + g.frame.width <= viewport.width && g.frame.y + g.frame.height <= viewport.height, `${at}: the window inside the screen`);
+        assert.deepEqual(await ms(() => ['c2d-time', 'c2d-mines-left', 'c2d-clicks'].map((id) => document.getElementById(id).textContent)), ['000', '099', '0']);
+        assert.match(await ms(() => getComputedStyle(document.getElementById('c2d-panel')).backgroundColor), /^rgb\(/, `${at}: the board's frame is an opaque surface`);
 
         // A mouse player: the first click plays, and no ring is ever drawn.
         const cx = g.areaLeft + g.layout.viewX + g.layout.viewWidth / 2;
@@ -1570,8 +1601,8 @@ test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800: Expert unclippe
         await page.mouse.click(cx, cy);
         await page.waitForFunction(() => globalThis.__ms.modes.state.started);
         assert.equal(await ms(() => globalThis.__ms.board2D.cursor), -1, `${at}: no ring for a mouse player`);
-        // Pause is on the panel's edge and pauses.
-        await page.click('#hud-pause');
+        // Pause is in the head and pauses.
+        await page.click('#c2d-pause');
         assert.equal(await ms(() => globalThis.__ms.state.mode), 'paused', `${at}: Pause pauses`);
         await page.click('#p-resume');
 
@@ -1585,7 +1616,7 @@ test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800: Expert unclippe
         const c = await geometry();
         assert.equal(c.layout.scrolls, true, `${at}: a 100 × 60 board scrolls`);
         assert.equal(c.layout.tile, 26, `${at}: at the floor`);
-        assert.ok(Math.abs(c.panel.width - c.area.width) <= 1, `${at}: the panel fills the area`);
+        assert.ok(Math.abs(c.panel.width - c.area.width) <= 1, `${at}: the board's frame fills the area`);
         await page.waitForFunction(() => !document.getElementById('hint-strip').classList.contains('hidden'));
         assert.equal(await ms(() => document.getElementById('hint-strip-text').textContent), 'Wheel scrolls · Shift+wheel sideways');
         const marks = await ms(() => {
@@ -1636,7 +1667,7 @@ test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800: Expert unclippe
   }
 });
 
-test('in a browser, at 1024 × 768 with a mouse: the larger labels and key caps keep the overlay bar on one line above the board and the pause card\'s key cap rows whole', async (t) => {
+test('in a browser, at 1024 × 768 with a mouse: the window\'s head and counter strip keep one line each above the board, and the pause card\'s key cap rows whole', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -1650,38 +1681,36 @@ test('in a browser, at 1024 × 768 with a mouse: the larger labels and key caps 
       const ms = (fn, arg) => page.evaluate(fn, arg);
       await ms(() => globalThis.__ms.modes.start('classic-2d', { size: 'expert', noGuess: false }));
       await page.waitForFunction(() => globalThis.__ms.board2D);
-      const bar = await ms(() => {
+      await ms(() => document.fonts.ready.then(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))));
+      const rows = await ms(() => {
         const rect = (el) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, height: r.height }; };
         const v = globalThis.__ms.board2D;
         const area = document.getElementById('c2d-board').getBoundingClientRect();
+        const line = (els) => { const r = els.map(rect); const top = Math.min(...r.map((x) => x.y)); return r.every((x) => x.y < top + Math.max(...r.map((y) => y.height)) - 1); };
         return {
           fine: matchMedia('(pointer: fine)').matches,
-          label: parseFloat(getComputedStyle(document.querySelector('#hud .ui-stat__label')).fontSize),
-          panel: rect(document.getElementById('c2d-panel')), bar: rect(document.querySelector('#hud .ui-overlay-bar')),
-          items: ['hud-time', 'hud-mines', 'hud-clicks', 'hud-pause'].map((id) => rect(document.getElementById(id).closest('.ui-stat') || document.getElementById(id))),
-          boardTop: area.top + v.layout.viewY,
+          head: line([document.getElementById('hud-swap'), document.getElementById('c2d-title'), document.getElementById('c2d-pause')]),
+          strip: line([document.getElementById('c2d-mines-left'), document.getElementById('c2d-restart'), document.getElementById('c2d-time')]),
+          stripBox: rect(document.getElementById('c2d-counters')), boardTop: area.top + v.layout.viewY,
         };
       });
-      assert.ok(bar.fine, `${at}: a fine pointer`);
-      assert.equal(bar.label, 12, `${at}: the readouts' labels at 12 px`);
-      const tallest = Math.max(...bar.items.map((r) => r.height));
-      assert.ok(bar.items.every((r) => r.y >= bar.bar.y - 0.5 && r.bottom <= bar.bar.y + tallest + 0.5), `${at}: the readouts and Pause on one line`);
-      assert.ok(bar.bar.height <= tallest + 1, `${at}: the bar is one row tall (${bar.bar.height} for items ${tallest})`);
-      assert.ok(bar.bar.right <= bar.panel.right + 0.5 && bar.bar.x >= bar.panel.x - 0.5, `${at}: the bar inside the panel`);
-      assert.ok(bar.bar.bottom <= bar.boardTop, `${at}: the bar above the board`);
+      assert.ok(rows.fine, `${at}: a fine pointer`);
+      assert.ok(rows.head, `${at}: Swap clicks, the title and Pause on one line`);
+      assert.ok(rows.strip, `${at}: mines left, Restart and the timer on one line`);
+      assert.ok(rows.stripBox.bottom <= rows.boardTop, `${at}: the strip above the board`);
 
-      await page.click('#hud-pause');
+      await page.click('#c2d-pause');
       await page.waitForFunction(() => globalThis.__ms.state.mode === 'paused');
       const card = await ms(() => {
         const c = document.getElementById('pause-card');
         const r = c.getBoundingClientRect();
-        const rows = [...document.querySelectorAll('#pause-controls dt')].filter((dt) => dt.querySelector('kbd')).map((dt) => {
+        const capRows = [...document.querySelectorAll('#pause-controls dt')].filter((dt) => dt.querySelector('kbd')).map((dt) => {
           const caps = [...dt.querySelectorAll('kbd')].map((k) => k.getBoundingClientRect());
           return { right: Math.max(...caps.map((k) => k.right)), tops: caps.map((k) => k.top), cap: parseFloat(getComputedStyle(dt.querySelector('kbd')).fontSize) };
         });
         return {
           top: r.top, bottom: r.bottom, left: r.left, right: r.right,
-          innerRight: r.right - parseFloat(getComputedStyle(c).paddingRight) + 0.5, rows,
+          innerRight: r.right - parseFloat(getComputedStyle(c).paddingRight) + 0.5, rows: capRows,
         };
       });
       assert.ok(card.top >= 0 && card.left >= 0 && card.right <= 1024, `${at}: the pause card inside the viewport's width`);
@@ -1750,7 +1779,7 @@ test('in a browser, at 1024 × 768 with a mouse: the Classic 2D pause card in tw
       const board = await page.locator('#c2d-board canvas').boundingBox();
       await page.mouse.click(board.x + board.width / 2, board.y + board.height / 2);
       await page.waitForFunction(() => globalThis.__ms.modes.state.started);
-      await page.click('#hud-pause');
+      await page.click('#c2d-pause');
       await page.waitForFunction(() => globalThis.__ms.state.mode === 'paused');
       assert.ok(await page.evaluate(() => matchMedia('(pointer: fine)').matches), `${at}: a fine pointer`);
       const m = await page.evaluate(measurePauseCard);
@@ -1899,6 +1928,82 @@ test('in a browser, a Classic 2D Beginner game played by mouse and by keyboard c
     await page.keyboard.press('KeyF');
     await page.keyboard.press('KeyF');
     assert.deepEqual(await cues(), [['flag', true, 1], ['flag', false, 1]]);
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, a few moves on a board with a best: the figures panel follows the game, pace against the best shows once a 3BV is solved, and the figures are never live', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1366, height: 900 }, deviceScaleFactor: 1 });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(removeWebGL2);
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+    const ms = (fn, arg) => page.evaluate(fn, arg);
+    // A best on a 16 × 16 board of 10 mines, whose first click opens an area: 30 s and 0.67 3BV/s.
+    await ms(async () => {
+      const { buildSummary } = await import('/js/records/summary.js');
+      const none = { effective: 0, wasted: 0 };
+      const board = { mode: 'classic-2d', grid: 'square', width: 16, height: 16, mines: 10, noGuess: false };
+      const engine = { outcome: 'won', mineCount: 10, bbbv: 20, bbbvSolved: 20, clicks: { reveal: { effective: 20, wasted: 0 }, flag: none, chord: none } };
+      globalThis.__ms.records.record(buildSummary({ engine, elapsedMs: 30000, board, seed: 1, generatorVersion: 1 }));
+    });
+    await ms(() => globalThis.__ms.modes.start('classic-2d', { size: 'custom', custom: { width: 16, height: 16, mines: 10 }, noGuess: false }));
+    await page.waitForFunction(() => globalThis.__ms.board2D);
+    const figures = () => ms(() => Object.fromEntries([...document.querySelectorAll('#c2d-figures .ui-figure[data-figure]')].map((f) => [f.dataset.figure, {
+      shown: !f.classList.contains('hidden'),
+      value: f.querySelector('.ui-figure__value').textContent,
+      detail: f.querySelector('.ui-figure__detail')?.classList.contains('hidden') ? null : f.querySelector('.ui-figure__detail')?.textContent ?? null,
+    }])));
+    const before = await figures();
+    assert.equal(before.pace.shown, false, 'no pace before the first 3BV');
+    assert.equal(before.rate.detail, 'Best 0.67', 'the board\'s best 3BV/s, read at the game\'s start');
+    assert.equal(before.clicks.value, '0');
+    assert.equal(before.flags.value, '0');
+    assert.equal(before.flags.detail, '10 mines left');
+    assert.match(before.bbbv.value, /^0 \/ /);
+
+    // The first click, then a flag on a closed cell.
+    const cell = (c) => ms((i) => {
+      const v = globalThis.__ms.board2D;
+      const r = v.cellRect(i);
+      const box = v.canvas.getBoundingClientRect();
+      return { x: box.x + r.x + r.size / 2, y: box.y + r.y + r.size / 2 };
+    }, c);
+    const first = await cell(136);
+    await page.mouse.click(first.x, first.y);
+    await page.waitForFunction(() => globalThis.__ms.modes.state.started);
+    await page.waitForFunction(() => document.querySelector('#c2d-figures [data-figure="clicks"] .ui-figure__value').textContent === '1');
+    const closed = await ms(() => { const g = globalThis.__ms.game2D; for (let c = 0; c < 256; c++) if (g.cellState(c) === 'closed') return c; return -1; });
+    assert.ok(closed >= 0, 'a closed cell is left');
+    const flag = await cell(closed);
+    await page.mouse.click(flag.x, flag.y, { button: 'right' });
+    await page.waitForFunction(() => document.querySelector('#c2d-figures [data-figure="flags"] .ui-figure__value').textContent === '1');
+    const after = await figures();
+    assert.equal(after.flags.detail, '9 mines left');
+    assert.equal(after.clicks.value, '2', 'both clicks counted');
+    assert.match(after.clicks.detail, /^Efficiency /);
+    assert.doesNotMatch(after.bbbv.value, /^0 \//, 'the first click solved some 3BV');
+    assert.equal(after.pace.shown, true, 'pace against the best once a 3BV is solved');
+    assert.match(after.pace.value, /^[−+]?\d+\.\d{3} s$/);
+    assert.equal(after.pace.detail, 'Best 30.000 s');
+    const fill = await ms(() => document.querySelector('#c2d-figures .ui-figure__fill').style.width);
+    assert.match(fill, /^\d+%$/);
+    assert.notEqual(fill, '0%', 'the bar fills as 3BV is solved');
+    // The timer's second moves the figures that take the time, and nothing in the panel but its live part is live.
+    const rate = after.rate.value;
+    await page.waitForFunction((r) => document.querySelector('#c2d-figures [data-figure="rate"] .ui-figure__value').textContent !== r, rate, { timeout: patience(5000) });
+    assert.deepEqual(await ms(() => [...document.querySelectorAll('#c2d [aria-live], #c2d [role="status"]')].map((e) => e.className)), ['ui-figures__live']);
+    await page.waitForFunction(() => document.querySelector('#c2d-figures .ui-figures__live').textContent !== '', null, { timeout: patience(3000) });
+    assert.match(await ms(() => document.querySelector('#c2d-figures .ui-figures__live').textContent), /3BV/, 'the polite live part speaks the progress');
+    // The controls reminder follows the device.
+    assert.match(await ms(() => document.getElementById('c2d-reminder').textContent), /Left\s*reveal/);
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

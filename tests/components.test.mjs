@@ -8,10 +8,10 @@ import {
   decimalsOf, formatSliderValue, segmentedTargetIndex, segmentedState,
   bindSlider, bindSegmented, bindTabs, initComponents, formatOverlayTime, formatMineCount, mineCounterDigits, pagerState, PAGER_WINDOW,
   boardLink, copyBoardCode, bindCodeChip, COPY_FALLBACK, COPIED, bindCodeField, bindSelectOnHover, SELECT_ON_HOVER,
-  bindFiguresLive, LIVE_FIGURES_INTERVAL,
+  bindFiguresLive, LIVE_FIGURES_INTERVAL, bindFigures,
 } from '../js/ui/components.js';
 import { KIT_CATALOGUE } from '../js/ui/kit-catalogue.js';
-import { KEY_HINTS, keyHintKeys } from '../js/settings/bindings.js';
+import { KEY_HINTS, keyHintKeys, reminderKeys } from '../js/settings/bindings.js';
 import { GLYPHS } from '../js/gamepad.js';
 import { UI } from '../js/ui.js';
 import { FOCUSABLE } from '../js/shell/navigation.js';
@@ -400,11 +400,15 @@ test('formatOverlayTime shows whole elapsed seconds, three digits, stopping at 9
   assert.equal(formatOverlayTime(NaN), '000');
 });
 
-test('formatMineCount shows the real mines left, kept at -99 at the low end', () => {
-  assert.equal(formatMineCount(0), '0');
-  assert.equal(formatMineCount(10), '10');
+test('formatMineCount shows the real mines left in three digits, a negative count\'s minus in the first, kept at -99 at the low end', () => {
+  assert.equal(formatMineCount(0), '000');
+  assert.equal(formatMineCount(7), '007');
+  assert.equal(formatMineCount(10), '010');
+  assert.equal(formatMineCount(-5), '-05', 'the minus takes the first digit');
+  assert.equal(formatMineCount(-1), '-01');
   assert.equal(formatMineCount(-12), '-12');
   assert.equal(formatMineCount(-99), '-99');
+  assert.equal(formatMineCount(NaN), '000');
   assert.equal(formatMineCount(-100), '-99', 'below -99');
   assert.equal(formatMineCount(-5000), '-99');
   assert.equal(formatMineCount(999), '999');
@@ -427,8 +431,14 @@ test('UI.setBoard and setBoard2D size the mine counter to the board\'s digits', 
   const fake = { _setBoardText() {}, _sizeMines: UI.prototype._sizeMines, el: { mines: { style: {} } } };
   UI.prototype.setBoard.call(fake, { X: 20, Y: 20, Z: 20, mines: 2480 });
   assert.equal(fake.el.mines.style.minWidth, '4ch');
-  UI.prototype.setBoard2D.call(fake, { width: 9, height: 9, mines: 10 });
-  assert.equal(fake.el.mines.style.minWidth, '', 'a standard board looks as it does today');
+  const fake2D = {
+    _sizeMines: UI.prototype._sizeMines, _board2D() {},
+    el: { c2dMines: { style: {} }, c2dTitle: { textContent: '' }, c2dSize: { textContent: '' } },
+  };
+  UI.prototype.setBoard2D.call(fake2D, { width: 100, height: 100, mines: 2480 });
+  assert.equal(fake2D.el.c2dMines.style.minWidth, '4ch', 'the Classic 2D counter too');
+  UI.prototype.setBoard2D.call(fake2D, { width: 9, height: 9, mines: 10 });
+  assert.equal(fake2D.el.c2dMines.style.minWidth, '', 'a standard board looks as it does today');
   UI.prototype.setBoard.call(fake, { X: 12, Y: 12, Z: 8, mines: 130 });
   assert.equal(fake.el.mines.style.minWidth, '', 'up to 999 mines: no width of its own');
   assert.doesNotMatch(read('css/style.css'), /#hud-mines\s*\{[^}]*text-align/, 'the count stays left-aligned under its label');
@@ -488,18 +498,145 @@ test('the 3D HUD renders through the overlay bar: timer, mine counter, click cou
   assert.doesNotMatch(HUD, /class="stat\b|hud-stats/, 'the one-off HUD stat markup is gone');
 });
 
-test('in Classic 2D the overlay bar is the top edge of the board\'s framed panel, drawn in theme tokens', () => {
+// The Classic 2D game window in index.html.
+const WINDOW_2D = INDEX.slice(INDEX.indexOf('<section id="c2d"'), INDEX.indexOf('<section id="c2d-status"'));
+const WINDOW_2D_TAGS = tags(WINDOW_2D);
+const byId2D = (id) => WINDOW_2D_TAGS.find((t) => t.attrs.id === id);
+
+test('the Classic 2D game window is built from catalogued components: head with Swap clicks, the title and Pause; the counter strip; the board; the figures panel; the foot line', () => {
+  const [root, ...inner] = WINDOW_2D_TAGS;
+  assert.deepEqual(classesOf(root).filter((c) => c !== 'hidden'), ['ui-backdrop'], '#c2d is the window\'s backdrop');
+  // Besides the kit: the shell's visibility utility and the board's themed frame drawn behind the canvas.
+  const allowed = new Set(['hidden', 'c2d-panel']);
+  for (const t of inner) for (const c of classesOf(t)) assert.ok(c.startsWith('ui-') || allowed.has(c), `#c2d <${t.tag} class="${c}"> is not a kit class`);
+  const frame = byId2D('c2d-frame');
+  assert.ok(hasClasses(frame, '.ui-frame') && frame.tag === 'section' && frame.attrs['aria-labelledby'] === 'c2d-title', 'a screen frame named by its title');
+  const head = within(inner, '.ui-frame__head')[0];
+  const parts = inside(WINDOW_2D, WINDOW_2D_TAGS, head);
+  const start = within(parts, '.ui-frame__start')[0];
+  assert.ok(inside(WINDOW_2D, WINDOW_2D_TAGS, start).some((t) => t.attrs.id === 'hud-swap'), 'Swap clicks at the head\'s start');
+  const title = byId2D('c2d-title');
+  assert.ok(hasClasses(title, '.ui-frame__title') && /^h[2-6]$/.test(title.tag), 'the mode and board title');
+  const end = within(parts, '.ui-frame__end')[0];
+  const pause = byId2D('c2d-pause');
+  assert.ok(inside(WINDOW_2D, WINDOW_2D_TAGS, end).includes(pause), 'Pause at the head\'s end');
+  assert.ok(hasClasses(pause, '.ui-button.ui-button--primary.ui-button--sm') && pause.tag === 'button' && pause.attrs.type === 'button');
+  assert.match(pause.attrs['aria-label'] ?? '', /pause/i, 'Pause is named');
+  const pauseHint = within(inside(WINDOW_2D, WINDOW_2D_TAGS, pause), '.ui-key-hint')[0];
+  assert.ok(pauseHint && pauseHint.attrs['data-action'] === 'back' && pauseHint.attrs['aria-hidden'] === 'true', 'Pause carries its key hint');
+
+  const strip = byId2D('c2d-counters');
+  assert.ok(hasClasses(strip, '.ui-counter-strip') && strip.attrs.role === 'group' && strip.attrs['aria-label'], 'the counter strip, a named group');
+  const sp = inside(WINDOW_2D, WINDOW_2D_TAGS, strip);
+  const [mines, time] = within(sp, '.ui-counter');
+  const restart = byId2D('c2d-restart');
+  assert.ok(mines.index < restart.index && restart.index < time.index, 'mines left, Restart, the timer');
+  assert.deepEqual([mines.attrs['aria-label'], time.attrs['aria-label']], ['Mines left', 'Time']);
+  for (const c of [mines, time]) assert.ok(c.attrs.role === 'group' && !('aria-live' in c.attrs), 'a counter is never live');
+  assert.ok(hasClasses(byId2D('c2d-mines-left'), '.ui-counter__digits') && inside(WINDOW_2D, WINDOW_2D_TAGS, mines).includes(byId2D('c2d-mines-left')));
+  assert.ok(hasClasses(byId2D('c2d-time'), '.ui-counter__digits') && inside(WINDOW_2D, WINDOW_2D_TAGS, time).includes(byId2D('c2d-time')));
+  assert.equal(textOf(WINDOW_2D, byId2D('c2d-time')), '000');
+  assert.ok(hasClasses(restart, '.ui-button.ui-button--secondary.ui-button--sm') && restart.attrs.type === 'button');
+  assert.match(textOf(WINDOW_2D, restart), /^Restart/);
+  const restartHint = within(inside(WINDOW_2D, WINDOW_2D_TAGS, restart), '.ui-key-hint')[0];
+  assert.ok(restartHint && restartHint.attrs['data-action'] === 'restart', 'Restart carries its key hint');
+  assert.ok('data-no-focus' in restart.attrs, 'Restart never takes the board\'s keys');
+  assert.match(WINDOW_2D, /<div id="c2d-board"><div id="c2d-panel" class="c2d-panel hidden" aria-hidden="true"><\/div><\/div>/, 'the board area holds the board\'s frame');
+  assert.ok(byId2D('hud-tap'), 'the Reveal / Flag switch sits in the window');
+
+  const panel = byId2D('c2d-figures');
+  assert.ok(hasClasses(panel, '.ui-figures') && panel.tag === 'section' && panel.attrs['aria-label'] === 'Live figures', 'the figures panel');
+  const pp = inside(WINDOW_2D, WINDOW_2D_TAGS, panel);
+  const figures = within(pp, '.ui-figure');
+  assert.deepEqual(figures.map((f) => f.attrs['data-figure']), ['bbbv', 'pace', 'rate', 'clicks', 'flags'], 'the live figures in their order');
+  for (const f of figures) {
+    const label = within(inside(WINDOW_2D, WINDOW_2D_TAGS, f), '.ui-figure__label')[0];
+    assert.ok(f.attrs.role === 'group' && f.attrs['aria-labelledby'] === label.attrs.id, 'a figure named by its label');
+  }
+  assert.ok(hasClasses(figures[0], '.ui-figure--progress'), '3BV with its progress bar');
+  const bar = within(inside(WINDOW_2D, WINDOW_2D_TAGS, figures[0]), '.ui-figure__bar')[0];
+  assert.ok(bar.attrs.role === 'progressbar' && bar.attrs['aria-labelledby'], 'a labelled progress bar');
+  assert.ok(classesOf(figures[1]).includes('hidden'), 'pace hidden until a best and a first 3BV');
+  assert.ok(hasClasses(byId2D('c2d-clicks'), '.ui-figure__value'), 'the click count is the clicks figure');
+  const live = within(pp, '.ui-figures__live');
+  assert.equal(live.length, 1);
+  assert.ok(WINDOW_2D_TAGS.filter((t) => 'aria-live' in t.attrs || t.attrs.role === 'status').every((t) => t === live[0]), 'only the panel\'s live part is live');
+  assert.ok(inside(WINDOW_2D, WINDOW_2D_TAGS, within(pp, '.ui-figures__foot')[0]).some((t) => t.attrs.id === 'c2d-reminder' && hasClasses(t, '.ui-key-hints')), 'the controls reminder at the panel\'s foot');
+
+  const foot = within(inner, '.ui-frame__foot')[0];
+  const size = byId2D('c2d-size');
+  assert.ok(inside(WINDOW_2D, WINDOW_2D_TAGS, foot).includes(size) && hasClasses(size, '.ui-frame__status'), 'the foot line names the board');
+  assert.ok(!HUD.includes('id="c2d-'), 'the window is not part of the 3D overlay');
+});
+
+test('the Classic 2D window\'s board keeps its themed frame, an inset all round; the overlay bar stays the 3D game\'s', () => {
   const style = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
-  assert.match(style, /\.c2d-panel \{ position: absolute; \}/, 'the base places the panel');
+  assert.match(style, /\.c2d-panel \{ position: absolute; \}/, 'the base places the board\'s frame');
   const panel = themeRulesFor('.c2d-panel').map(([, b]) => b).join(';');
   assert.match(panel, /box-shadow\s*:\s*inset 0 0 0 2px var\(--color-border\)/, 'its frame');
-  assert.match(panel, /background\s*:\s*var\(--color-surface\)/, 'the overlay\'s surface, opaque');
-  assert.match(style, /#hud\.hud--2d \.hud-bar \{ padding: 0; \}/);
-  assert.match(THEME_CSS, /#hud\.hud--2d \.hud-bar \{ border: 0; background: none; box-shadow: none; \}/, 'the bar sits on the panel with no surface of its own');
-  assert.match(INDEX, /<div id="c2d-board"><div id="c2d-panel" class="c2d-panel hidden" aria-hidden="true"><\/div><\/div>/);
+  assert.match(panel, /background\s*:\s*var\(--color-surface\)/, 'on the surface, opaque');
+  assert.match(style, /#hud\.hud--2d \.hud-bar \{ display: none; \}/, 'the overlay bar never shows over the Classic 2D window');
   const ui = read('js/ui.js');
   assert.match(ui, /export const PANEL_INSET = 9;/, 'the frame: 1 px border and --space-2 inside it');
-  assert.match(ui, /placePanel2D\(rect\)/, 'the shell places the panel and the bar on its edge');
+  assert.match(ui, /panelFrame2D\(\) \{\s*return \{ top: PANEL_INSET, right: PANEL_INSET, bottom: PANEL_INSET, left: PANEL_INSET \};/, 'the same inset on every side');
+});
+
+test('bindFigures writes each figure only when its text changes, hides a figure the model cannot give and a missing detail, and fills the progress bar', () => {
+  const el = (cls) => {
+    const classes = new Set(cls ? [cls] : []);
+    let text = '';
+    const node = {
+      writes: 0, attrs: {}, style: {},
+      classList: { add: (c) => classes.add(c), remove: (c) => classes.delete(c), contains: (c) => classes.has(c), toggle: (c, on) => (on ? classes.add(c) : classes.delete(c)) },
+      get textContent() { return text; }, set textContent(v) { node.writes += 1; text = v; },
+      setAttribute(n, v) { node.attrs[n] = String(v); },
+    };
+    return node;
+  };
+  const figure = (name, { detail = true, bar = false } = {}) => {
+    const parts = { '.ui-figure__value': el(), '.ui-figure__detail': detail ? el() : null, '.ui-figure__bar': bar ? el() : null, '.ui-figure__fill': bar ? el() : null };
+    const root = el();
+    root.dataset = { figure: name };
+    root.querySelector = (sel) => parts[sel] ?? null;
+    root.parts = parts;
+    return root;
+  };
+  const roots = [figure('bbbv', { detail: false, bar: true }), figure('pace'), figure('rate'), figure('clicks'), figure('flags')];
+  const panel = { querySelectorAll: (sel) => (sel === '.ui-figure[data-figure]' ? roots : []) };
+  const [bbbv, pace, rate, clicks] = roots;
+  const shown = bindFigures(panel);
+  const figures = {
+    bbbv: { text: '54 / 118', detail: null, progress: 54 / 118 },
+    pace: null,
+    rate: { text: '2.70', detail: null },
+    clicks: { text: '61', detail: 'Efficiency 88.5%' },
+    flags: { text: '16', detail: '24 mines left' },
+  };
+  shown.show(figures);
+  assert.equal(bbbv.parts['.ui-figure__value'].textContent, '54 / 118');
+  assert.equal(bbbv.parts['.ui-figure__fill'].style.width, '46%', 'the fill as wide as the share solved');
+  assert.equal(bbbv.parts['.ui-figure__bar'].attrs['aria-valuenow'], '46');
+  assert.equal(pace.classList.contains('hidden'), true, 'no pace: hidden');
+  assert.equal(rate.parts['.ui-figure__detail'].classList.contains('hidden'), true, 'no best 3BV/s: no detail line');
+  assert.equal(clicks.parts['.ui-figure__detail'].textContent, 'Efficiency 88.5%');
+  const writes = roots.map((r) => r.parts['.ui-figure__value'].writes);
+  shown.show(figures);
+  assert.deepEqual(roots.map((r) => r.parts['.ui-figure__value'].writes), writes, 'the same text is not written again');
+  shown.show({ ...figures, pace: { text: '−2.063 s', detail: 'Best 48.213 s', ahead: true }, rate: { text: '2.71', detail: 'Best 2.91' } }, ['pace', 'rate']);
+  assert.equal(pace.classList.contains('hidden'), false, 'pace shows once the model gives it');
+  assert.equal(pace.parts['.ui-figure__value'].textContent, '−2.063 s');
+  assert.equal(rate.parts['.ui-figure__detail'].textContent, 'Best 2.91');
+  assert.equal(rate.parts['.ui-figure__detail'].classList.contains('hidden'), false);
+  assert.equal(clicks.parts['.ui-figure__value'].writes, writes[3], 'a figure not named is left alone');
+});
+
+test('reminderKeys: the board\'s main bindings for the active device from the bindings source, the controller\'s in its glyphs', () => {
+  assert.deepEqual(reminderKeys('classic-2d', 'keyboard').map((r) => [r.keys.map((k) => k.text), r.label]),
+    [[['Left'], 'reveal'], [['Right'], 'flag'], [['Left', 'Right'], 'chord']]);
+  const pad = reminderKeys('classic-2d', 'controller', GLYPHS.xbox);
+  assert.deepEqual(pad.map((r) => [r.keys.map((k) => [k.text, k.pad]), r.label]), [[[['A', true]], 'reveal'], [[['X', true]], 'flag'], [[['Y', true]], 'chord']]);
+  assert.deepEqual(reminderKeys('classic-2d', 'touch').map((r) => r.label), ['reveal', 'flag', 'chord']);
+  assert.throws(() => reminderKeys('classic-2d', 'mouse'), /unknown device/);
 });
 
 test('the gallery shows the overlay bar with its pause button in every state', () => {
@@ -523,11 +660,22 @@ test('UI.updateHud writes the overlay formats and keeps the negative mine flag',
   };
   UI.prototype.updateHud.call(fake, 47.83, 10);
   assert.equal(fake.el.time.textContent, '047');
-  assert.equal(fake.el.mines.textContent, '10');
+  assert.equal(fake.el.mines.textContent, '010');
   UI.prototype.updateHud.call(fake, 1234.5, -150);
   assert.equal(fake.el.time.textContent, '999');
   assert.equal(fake.el.mines.textContent, '-99');
   assert.ok(cls.has('negative'));
+  const counter = { attrs: new Set(), toggleAttribute(n, on) { if (on) counter.attrs.add(n); else counter.attrs.delete(n); } };
+  const fake2D = {
+    _last: { time: '', mines: '' },
+    _readouts: { time: { textContent: '' }, mines: { textContent: '', classList: { toggle() {} } }, counter },
+    el: fake.el,
+  };
+  UI.prototype.updateHud.call(fake2D, 3, -5);
+  assert.deepEqual([fake2D._readouts.time.textContent, fake2D._readouts.mines.textContent], ['003', '-05'], 'in Classic 2D the window\'s counters');
+  assert.ok(counter.attrs.has('data-negative'), 'the counter marks a count below zero');
+  UI.prototype.updateHud.call(fake2D, 3, 2);
+  assert.ok(!counter.attrs.has('data-negative'));
   UI.prototype.updateHud.call(fake, 0, 1200);
   assert.equal(fake.el.mines.textContent, '1200', 'the real count past 999');
   assert.ok(!cls.has('negative'));
@@ -1201,14 +1349,14 @@ test('coarse pointers get 44 px switch and slider targets inside (pointer: coars
   assert.ok(styleCoarse.some(([sel, body]) => sel.trim() === '#hud-swap' && /display:\s*none/.test(body)), 'no Swap clicks on a coarse-only device');
 });
 
-test('the Classic 2D overlay bar wraps inside the widest panel, whatever its place; Swap clicks hides only under the coarse rule', () => {
+test('the Classic 2D window lays the figures panel beside the board, under it below 1024 px, and hides it on a phone; Swap clicks hides only under the coarse rule', () => {
   const top = rules(topLevel(STYLE));
-  const bar = top.filter(([s]) => s.trim() === '#hud.hud--2d .hud-bar').map(([, b]) => b).join(';');
-  assert.match(bar, /flex-wrap:\s*wrap/);
-  assert.match(bar, /width:\s*max-content/, 'its width never depends on its left offset');
-  assert.match(bar, /max-width:\s*calc\(100vw - 2 \* var\(--space-4\) - 18px\)/, 'the board area less the panel inset on each side');
+  const body = (sel) => top.filter(([s]) => s.trim() === sel).map(([, b]) => b).join(';');
+  assert.match(body('#c2d-body'), /grid-template-columns:\s*minmax\(0, 1fr\) auto/, 'the board column, then the divider and the panel');
+  assert.match(STYLE, /@media \(max-width: 1023px\) \{[^@]*#c2d-body \{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/, 'one column below the kit\'s breakpoint: the panel under the board');
+  assert.match(STYLE, /@media \(max-width: 719px\), \(max-height: 500px\) and \(orientation: landscape\) \{[^@]*#c2d-figures[^{]*\{[^}]*display: none/, 'a phone hides the panel so the board keeps its room');
   const hides = top.filter(([s, b]) => s.includes('#hud-swap') && /display:\s*none/.test(b)).map(([s]) => s.trim());
-  assert.deepEqual(hides, ['#hud:not(.hud--2d) #hud-swap'], 'a fine pointer still shows it in Classic 2D');
+  assert.deepEqual(hides, [], 'a fine pointer shows it on the Classic 2D window');
 });
 
 test('on a fine pointer every hit area the coarse rules touch is as it was', () => {
@@ -1867,7 +2015,7 @@ const textOf = (html, t) => {
 };
 const MODE_ENTRIES = ['classic-2d', 'hexagon', 'triangle', 'surface', '3d', 'daily', 'records', 'settings', 'quit'];
 
-test('the gallery marks the shared layout\'s components; the main menu, both board choices, the Daily screen, the placeholder, the pause card, the results, the Records screen, the Settings page, the replay viewer, the 3D ready card, the context-lost card, the Learn 3D end card, the fatal card and the no-JavaScript notice are the screens built from them so far', () => {
+test('the gallery marks the shared layout\'s components; the main menu, both board choices, the Daily screen, the placeholder, the pause card, the results, the Records screen, the Settings page, the replay viewer, the 3D ready card, the context-lost card, the Learn 3D end card, the Classic 2D game window, the fatal card and the no-JavaScript notice are the screens built from them so far', () => {
   assert.ok(LAYOUT.length > 1000, 'dev/components.html holds the shared layout\'s components');
   const screens = INDEX.replace(/<!--[\s\S]*?-->/g, '');
   const menu = SCREENS.menu;
@@ -1885,6 +2033,10 @@ test('the gallery marks the shared layout\'s components; the main menu, both boa
   const learnEnd = screens.slice(screens.indexOf('<section id="learn-end"'), screens.indexOf('<section id="pause"'));
   const noscript = screens.slice(screens.indexOf('<noscript>'), screens.indexOf('</noscript>'));
   const fatal = screens.slice(screens.indexOf('<template id="fatal-card">'), screens.indexOf('</template>'));
+  const game2d = screens.slice(screens.indexOf('<section id="c2d"'), screens.indexOf('<section id="c2d-status"'));
+  for (const cls of ['ui-backdrop', 'ui-frame', 'ui-key-hint', 'ui-counter-strip', 'ui-counter', 'ui-figures', 'ui-figure', 'ui-divider']) {
+    assert.match(game2d, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the Classic 2D game window uses ${cls}`);
+  }
   for (const html of [noscript, fatal]) for (const cls of ['ui-backdrop', 'ui-card', 'ui-card__icon', 'ui-card__title']) assert.match(html, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the message cards use ${cls}`);
   for (const cls of ['ui-card', 'ui-screen', 'ui-button--lg', 'ui-button--sm', 'ui-key-hint', 'ui-section-label', 'ui-panel--muted', 'ui-banner', 'ui-text--warning']) {
     assert.match(ready, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the 3D ready card uses ${cls}`);
@@ -1911,7 +2063,7 @@ test('the gallery marks the shared layout\'s components; the main menu, both boa
   assert.doesNotMatch(soon, /class="[^"]*\bui-card(?![\w-])/, 'the placeholder holds no card');
   for (const cls of ['ui-section-label', 'ui-button--danger', 'ui-key-hint', 'ui-panel--muted']) assert.match(pause, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the pause card uses ${cls}`);
   const others = screens.replace(menu, '').replace(choice, '').replace(choice3d, '').replace(daily, '').replace(soon, '').replace(pause, '').replace(results, '').replace(records, '').replace(settings, '').replace(replay, '')
-    .replace(ready, '').replace(ctxLost, '').replace(learnEnd, '').replace(noscript, '').replace(fatal, '');
+    .replace(ready, '').replace(ctxLost, '').replace(learnEnd, '').replace(noscript, '').replace(fatal, '').replace(game2d, '');
   for (const cls of ['ui-wordmark', 'ui-mode-entry', 'ui-key-hint', 'ui-chip', 'ui-scene-panel']) {
     assert.match(menu, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the main menu uses ${cls}`);
   }
@@ -2728,3 +2880,120 @@ test('in a browser, the counter strip and the figures panel draw in Joyful tiles
     await browser.close();
   }
 });
+
+// The Classic 2D game window at each artboard size: the panel beside, under or hidden.
+const WINDOW_SIZES = [
+  ['xl', { viewport: { width: 1920, height: 1080 } }, 'beside'],
+  ['l', { viewport: { width: 1366, height: 768 } }, 'beside'],
+  ['m', { viewport: { width: 1024, height: 768 } }, 'beside'],
+  ['tablet', { viewport: { width: 800, height: 1024 } }, 'under'],
+  ['p', { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, 'hidden'],
+  ['ls', { viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true }, 'hidden'],
+];
+const noWebGL = () => {
+  const get = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function getContext(type, ...rest) { return type === 'webgl2' ? null : get.call(this, type, ...rest); };
+};
+for (const [size, device, place] of WINDOW_SIZES) {
+  test(`in a browser, the Classic 2D game window at ${size} (${device.viewport.width} × ${device.viewport.height}) and in its states: the panel ${place}, no sideways scroll with an Expert board, and the contrast contract met`, async (t) => {
+    const env = await suite.open(t);
+    if (!env) return;
+    const { browser } = env;
+    const { base } = env;
+    const context = await browser.newContext({ ...device, deviceScaleFactor: 1 });
+    try {
+      const page = await context.newPage();
+      const errors = [];
+      page.on('pageerror', (e) => errors.push(e.message));
+      await page.addInitScript(noWebGL);
+      await page.goto(`${base}/index.html?still-backdrop`);
+      await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+      const ms = (fn, arg) => page.evaluate(fn, arg);
+      const frames = () => ms(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+      const check = async (label, { min = 8 } = {}) => {
+        await frames();
+        const { runs } = await ms(measureContrast);
+        const own = await ms(() => [...document.querySelectorAll('#c2d *, #c2d-status *, #hud *')]
+          .filter((e) => [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()))
+          .map((e) => e.textContent.trim().slice(0, 30)));
+        const mine = runs.filter((r) => own.includes(r.text));
+        assert.ok(mine.length >= min, `${label}: its text is measured (${mine.length})`);
+        assert.deepEqual(mine.filter((r) => r.ratio < r.min).map((r) => `${r.text}: ${r.ratio.toFixed(2)}:1 < ${r.min}`), [], `${label}: text below the contrast contract`);
+        assert.equal(await ms(() => document.documentElement.scrollWidth <= innerWidth && document.body.scrollWidth <= innerWidth), true, `${label}: no sideways scroll`);
+      };
+      const geometry = () => ms(() => {
+        const box = (id) => { const r = document.getElementById(id).getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, width: r.width, height: r.height }; };
+        return {
+          frame: box('c2d-frame'), board: box('c2d-board'), strip: box('c2d-counters'), panel: box('c2d-figures'), foot: box('c2d-size'),
+          panelShown: getComputedStyle(document.getElementById('c2d-figures')).display !== 'none',
+          title: document.getElementById('c2d-title').textContent, size: document.getElementById('c2d-size').textContent,
+        };
+      });
+      const touch = !!device.hasTouch;
+      // A click (a tap on a touch screen) on cell c of the open board.
+      const press = async (c) => {
+        const at = await ms((i) => {
+          const v = globalThis.__ms.board2D;
+          const r = v.cellRect(i);
+          const box = v.canvas.getBoundingClientRect();
+          return { x: box.x + r.x + r.size / 2, y: box.y + r.y + r.size / 2 };
+        }, c);
+        if (touch) await page.touchscreen.tap(at.x, at.y); else await page.mouse.click(at.x, at.y);
+      };
+
+      await ms(() => globalThis.__ms.modes.start('classic-2d', { size: 'expert', noGuess: false }));
+      await page.waitForFunction(() => globalThis.__ms.board2D);
+      const g = await geometry();
+      assert.equal(g.title, 'Classic 2D · Expert', `${size}: the head names the mode and the board`);
+      assert.equal(g.size, '30 × 16 · 99 mines', `${size}: the foot line names the board, never a cell`);
+      assert.ok(g.frame.right <= device.viewport.width + 0.5 && g.frame.x >= -0.5, `${size}: the window inside the screen`);
+      if (size === 'ls') assert.ok(g.strip.x >= g.board.right - 0.5, `${size}: held sideways, the counter strip beside the board`);
+      else assert.ok(g.strip.bottom <= g.board.y + 0.5, `${size}: the counter strip above the board`);
+      if (place === 'beside') assert.ok(g.panelShown && g.panel.x >= g.board.right - 0.5 && g.panel.y < g.board.bottom, `${size}: the panel beside the board`);
+      if (place === 'under') assert.ok(g.panelShown && g.panel.y >= g.board.bottom - 0.5, `${size}: the panel under the board`);
+      if (place === 'hidden') assert.equal(g.panelShown, false, `${size}: no panel on a phone`);
+      assert.equal(await ms(() => getComputedStyle(document.querySelector('#hud .hud-bar')).display), 'none', `${size}: no 3D overlay bar`);
+      assert.equal(await ms(() => getComputedStyle(document.getElementById('hud-swap')).display !== 'none'), !touch, `${size}: Swap clicks on a fine pointer only`);
+      assert.equal(await ms(() => getComputedStyle(document.getElementById('hud-tap')).display !== 'none'), touch, `${size}: the Reveal / Flag switch on a coarse pointer only`);
+      const view = await ms(() => ({ ...globalThis.__ms.board2D.layout }));
+      assert.ok(view.tile >= 26, `${size}: never below the minimum tile`);
+      await check(`${size} Expert`, { min: touch ? 5 : 10 });
+
+      // A negative mine counter, red and three characters.
+      await ms(() => globalThis.__ms.modes.start('classic-2d', { size: 'intermediate', noGuess: false }));
+      await page.waitForFunction(() => globalThis.__ms.board2D);
+      await press(120);
+      await page.waitForFunction(() => globalThis.__ms.modes.state.started);
+      await ms(() => {
+        const g = globalThis.__ms.game2D;
+        let flags = 0;
+        for (let c = 0; c < 256 && flags < 45; c++) if (g.cellState(c) === 'closed') { g.toggleFlag(c); flags += 1; }
+      });
+      await page.waitForFunction(() => document.getElementById('c2d-mines-left').textContent === '-05');
+      assert.equal(await ms(() => document.getElementById('c2d-mines-left').closest('.ui-counter').hasAttribute('data-negative')), true, `${size}: the counter marks a negative count`);
+      await check(`${size} negative counter`, { min: touch ? 5 : 10 });
+
+      // A clipped board's scroll hint, worded for the device.
+      await ms(() => globalThis.__ms.modes.start('classic-2d', { size: 'custom', custom: { width: 100, height: 60, mines: 600 }, noGuess: false }));
+      await page.waitForFunction(() => !document.getElementById('hint-strip').classList.contains('hidden'));
+      assert.equal(await ms(() => document.getElementById('hint-strip-text').textContent), touch ? 'Drag to pan · pinch to zoom' : 'Wheel scrolls · Shift+wheel sideways');
+      await check(`${size} scroll hint`, { min: 5 });
+
+      // Intermediate in play.
+      await ms(() => globalThis.__ms.modes.start('classic-2d', { size: 'intermediate', noGuess: false }));
+      await page.waitForFunction(() => globalThis.__ms.board2D);
+      await press(120);
+      await page.waitForFunction(() => globalThis.__ms.modes.state.started);
+      if (!touch) {
+        // The H help panel beside the window.
+        await page.keyboard.press('KeyH');
+        await page.waitForFunction(() => !document.getElementById('help').classList.contains('hidden'));
+        await check(`${size} help panel`);
+        await page.keyboard.press('KeyH');
+      }
+      assert.deepEqual(errors, [], `${size}: no page errors`);
+    } finally {
+      await context.close();
+    }
+  });
+}

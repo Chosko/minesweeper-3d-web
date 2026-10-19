@@ -95,13 +95,9 @@ described in [app-shell.md](../../context/app-shell.md).
 - **Overlay bar.** The in-game overlay — timer, mine counter, click
   counter, pause — as one component for both boards. Over the 3D board it
   stays readable over the scene's sky in every theme by carrying its own
-  themed surface rather than drawing directly on the scene. In Classic 2D it sits on the top
-  edge of the board's framed panel (`classic-2d-square-play`
-  § Architecture, "Board view"), with the board-size label, on the panel's
-  themed surface in place of its own, and on a coarse pointer carries the
-  Reveal / Flag switch beside Pause; where the panel's width cannot hold it
-  on one row, as on a phone, it wraps onto more rows, so every readout and
-  control stays on screen. Over the 3D board it stays above the
+  themed surface rather than drawing directly on the scene. In Classic 2D
+  the game window's head and counter strip take its place
+  (`in-game-layout`). Over the 3D board it stays above the
   scene and the touch-controls layer during lockless and touch play, so
   Pause always takes a tap. On either board, the timer
   shows the elapsed time in whole seconds, zero-padded to three digits
@@ -140,12 +136,13 @@ described in [app-shell.md](../../context/app-shell.md).
   options as the selected state. Text meets the contrast contract of `theme-system`'s conformance
   tests in every theme. On every pointer, labels are at least 12 px and key caps at
   least 11 px. On a coarse pointer, and only there, switches (the Reveal /
-  Flag switch included), slider thumbs, the overlay bar's Pause and the 3D
-  touch toolbar's buttons take a 44 px touch; a fine pointer keeps every
+  Flag switch included), slider thumbs, the overlay bar's Pause, the Classic
+  2D game window's Pause and Restart and the 3D touch toolbar's buttons take
+  a 44 px touch; a fine pointer keeps every
   hit area's size.
 - **Overlay readability** — the overlay bar meets the contrast contract
-  against the surface it sits on — its own over the 3D board, the panel's
-  in Classic 2D — in every theme.
+  against its own surface over the 3D board in every theme; the Classic 2D
+  game window's readouts are `in-game-layout`'s Readability contract.
 - **Controller parity** — anything clickable is reachable and operable with
   a controller, per the shell's controller navigation.
 

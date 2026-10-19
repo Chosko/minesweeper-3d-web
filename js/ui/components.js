@@ -74,9 +74,13 @@ export function formatOverlayTime(seconds) {
   return String(s).padStart(3, '0');
 }
 
-/** Overlay bar mine counter text: the real mines left, kept at -99 at the low end. */
+/**
+ * Mine counter text: the real mines left in at least three digits ('024'), a negative count's minus
+ * in the first digit ('-05'), kept at '-99' at the low end. Display only, as formatOverlayTime.
+ */
 export function formatMineCount(minesLeft) {
-  return String(Math.max(-99, Math.trunc(minesLeft)));
+  const n = Math.max(-99, Math.trunc(minesLeft) || 0);
+  return n < 0 ? `-${String(-n).padStart(2, '0')}` : String(n).padStart(3, '0');
 }
 
 /** Width of the mine counter, in digits, for a board of `mines` mines: its count's digits, at least three. */
@@ -309,6 +313,42 @@ export function showKeyHints(root, keysFor) {
 
 /** The shortest time between two writes of a figures panel's live part, in ms. */
 export const LIVE_FIGURES_INTERVAL = 1000;
+
+/**
+ * A figures panel's figures (.ui-figure[data-figure="<name>"], js/shell/live-figures.js FIGURES):
+ * show(figures, names?) writes the named figures — every one the panel holds when not given — from
+ * liveFigures' { text, detail, progress } per figure. A null figure (pace with no best or no 3BV
+ * solved yet) hides, a null detail hides its line, and a progress bar's fill takes the share solved;
+ * each part is written only when its text changes.
+ */
+export function bindFigures(panel) {
+  const parts = [...panel.querySelectorAll('.ui-figure[data-figure]')].map((root) => ({
+    name: root.dataset.figure, root, shown: {},
+    value: root.querySelector('.ui-figure__value'), detail: root.querySelector('.ui-figure__detail'),
+    bar: root.querySelector('.ui-figure__bar'), fill: root.querySelector('.ui-figure__fill'),
+  }));
+  const write = (p, key, value, apply) => { if (p.shown[key] !== value) { p.shown[key] = value; apply(value); } };
+  return {
+    show(figures, names = null) {
+      for (const p of parts) {
+        if (names && !names.includes(p.name)) continue;
+        const f = figures[p.name] ?? null;
+        write(p, 'hidden', !f, (hidden) => p.root.classList.toggle('hidden', hidden));
+        if (!f) continue;
+        write(p, 'text', f.text, (text) => { p.value.textContent = text; });
+        if (p.detail) {
+          write(p, 'detail', f.detail ?? '', (detail) => { p.detail.textContent = detail; p.detail.classList.toggle('hidden', !detail); });
+        }
+        if (p.fill && typeof f.progress === 'number') {
+          write(p, 'progress', Math.round(Math.min(1, Math.max(0, f.progress)) * 100), (pct) => {
+            p.fill.style.width = `${pct}%`;
+            p.bar?.setAttribute('aria-valuenow', String(pct));
+          });
+        }
+      }
+    },
+  };
+}
 
 /**
  * The figures panel's live part (`.ui-figures__live`, a polite live region): announce(text) writes

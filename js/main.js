@@ -400,6 +400,7 @@ const ui = new UI({
   onResume: () => PAUSE.resume(padGesture ? 'pad' : 'pointer'),
   onBackToStart: () => { placeAtSpawn(); PAUSE.resume(padGesture ? 'pad' : 'pointer'); }, // a 3D game in play: resumes as Resume does
   onRestart: () => PAUSE.restart(padGesture ? 'pad' : 'pointer'),
+  onRestart2D: () => { if (restartInput('F2', { screen: S.mode, blocked: restartBlocked() })) PAUSE.restart('pointer'); }, // the counter strip's Restart: F2's restart
   onMainMenu: () => PAUSE.toMenu(),
   onPause: () => pauseGame(padGesture ? 'pad' : 'button'),
   onReadyBack: () => readyBack(),
@@ -612,20 +613,26 @@ function learnViews(shift, ctrl) {
   if (ctrl && !L.done('ctrl')) { changed = L.ctrl() || changed; FIRST_USE.once('autoHideToast'); }
   if (changed) learnChanged();
 }
-// Classic 2D: the mode drives its own board; the shell hands it the board area, the overlay bar and
-// its screens. The last board choice is a platform-storage document.
+// Classic 2D: the mode drives its own board; the shell hands it the board area, the game window and
+// its screens. The last board choice is a platform-storage document; the board's bests, which the
+// live figures compare against, are read from the records store once per game.
 const LAST_CHOICE_2D = createLastChoice({ storage });
-let frame2D = null; // the room the board's framed panel takes around the open board
+let bests2D = null;
 const FLOW_2D = {
   openBoardChoice: (choice) => SHELL.go('classic-2d-choice', { data: { choice } }),
   show: () => SHELL.go('classic-2d'),
   container: () => document.getElementById('c2d-board'),
   scale: () => SETTINGS.get('boardScale'),
-  frame: () => (frame2D = ui.panelFrame2D()), // measured at each refit, the readouts showing: a wrapped bar's rows follow the width
-  layout: (layout) => { ui.placePanel2D(panelRect(layout, frame2D)); clipped2D(layout.scrolls); },
+  frame: () => ui.panelFrame2D(),
+  layout: (layout) => { ui.placePanel2D(panelRect(layout, ui.panelFrame2D())); clipped2D(layout.scrolls); },
   scrolled: () => scrolled2D(),
   hud: ({ seconds, minesLeft, clicks }) => ui.updateHud(seconds, minesLeft, clicks),
-  board: (b) => { ui.setBoard2D(b); if (!standard2D) newGame2D(); }, // once per game, and again when played standard
+  figures: (input, { tick }) => ui.updateFigures2D(input, { tick, bests: bests2D }),
+  board: (b) => { // once per game, and again when played standard
+    bests2D = RECORDS.bests(b.identity);
+    ui.setBoard2D(b);
+    if (!standard2D) newGame2D();
+  },
   generating: (shown) => { board2d.generating = shown; showStatus2D(); },
   progress: (p) => { board2d.progress = p; drawStatus2D(); }, // the progress line, without moving the focus
   failed: (failure) => { board2d.failure = failure; showStatus2D(); },
@@ -1977,14 +1984,14 @@ function padLook(p, dt) {
 }
 
 /**
- * The Classic 2D board: Start pauses through the overlay's pause button and the back buttons are
+ * The Classic 2D board: Start pauses through the window's Pause and the back buttons are
  * Back (Pause, or cancelling a board being generated); the board status card is a menu, and
  * everything else goes to the board's cursor input.
  */
 function padBoard2D(p, held, pressed, now) {
   controls.releasePad();
   if (padUsed(p)) used2D();
-  if (pressed(BTN.START)) { padClick(document.getElementById('hud-pause')); return; }
+  if (pressed(BTN.START)) { padClick(document.getElementById('c2d-pause')); return; }
   if (backButtons(S.mode).some(pressed)) { backGame('pad'); return; }
   if (board2d.failure || board2d.generating) { padMenus(p, held, pressed, now); return; }
   mode2d.pad({ ...p, held: p.held.map((_, b) => held(b)) }, now);

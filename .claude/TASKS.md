@@ -660,7 +660,7 @@ Feature: in-game-layout
 
 ## 176. Classic 2D game window: counter strip, side panel and foot line
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, js/classic2d/mode.js, js/classic2d/session.js, js/classic2d/board-view.js, js/ui.js, js/ui/components.js, js/main.js, tests/classic2d-mode.test.mjs, tests/classic2d-view.test.mjs, tests/components.test.mjs
 Preconditions: 163, 174, 175

@@ -48,7 +48,7 @@ In scope (m1-classic-2d):
   down, reveal and chord on release and a flag on the right press, the
   chord gestures the reference accepts (left or middle on a number,
   left + right), and cancelling by moving off a cell before release.
-- A *Swap clicks* toggle on the overlay bar, beside Pause, that trades the
+- A *Swap clicks* toggle in the game window's head, across from Pause, that trades the
   left and right mouse buttons for presses starting on a closed or flagged
   cell, so the left button alone flags, unflags and chords. The switch
   lives for the page — kept across games, off on reload, never a setting —
@@ -63,7 +63,7 @@ In scope (m1-classic-2d):
   unflags the cell under it while still held, with a short vibration where
   the device has one, and does nothing on a revealed cell. A touch that
   moves 8 px or more never acts: it pans a board that scrolls. The switch,
-  a 44 px control beside Pause on a coarse pointer only, starts on Reveal
+  a 44 px control by the board on a coarse pointer only, starts on Reveal
   and lives for the page, never a setting. Touch never reaches the mouse
   input; the 3D mode's touch play is its own and shares only the long-press
   time, the 8 px threshold and the vibration length.
@@ -145,13 +145,12 @@ copied.
 - **Board view.** Fits the board to the window at the largest whole tile
   size that fits, capped by the board-scale setting (`settings`): 48 px at
   100 %, the default, 60 px at 125 %, no cap at Fit. Every scale shrinks the
-  tile to the skin's minimum tile size before the board scrolls, so Expert
-  fits any window 1024 px wide whose height leaves room for its 16 rows at
-  that minimum. The board sits centred in a fixed, framed panel sized to
-  the board at its tile, centred in the window below its top margin; the
-  panel's top edge carries the time, mines left, clicks, the board-size
-  label and Pause (`screen-components`). A board that does not fit at the
-  minimum fills the panel, the panel fills the window, and the player
+  tile to the skin's minimum tile size before the board scrolls. The board
+  sits centred in a framed panel sized to the board at its tile, in the
+  board area of the game window, whose head, counter strip, figures panel
+  and foot line reduce the room the fit rule works in (`in-game-layout`).
+  A board that does not fit at the
+  minimum fills the panel, the panel fills the board area, and the player
   scrolls or pans it; each edge beyond which cells are hidden carries an
   inset shadow, each overflowing axis a thin scroll bar showing the visible
   part's size and place, and the first clipped board shows a one-time hint
@@ -229,7 +228,9 @@ copied.
   does nothing before the first click or after the game ends.
 - **Overlay feed** — timer, mines left and the game's counted clicks (the
   engine's click counts the summary carries, wasted ones included), pushed
-  to the in-game overlay from `screen-components` whenever they change.
+  to the game window's counters whenever they change, and the live figures'
+  input — the engine's counts, flags, mines and elapsed time — fed to its
+  figures panel (`in-game-layout`).
 - **Game finished** — one event per won or lost game with its summary, sent
   to the game shell, which opens `results-screen`, after a short end delay
   (about one second, a named constant of the mode) in which the win
@@ -273,7 +274,8 @@ copied.
 - `themed-board-art-and-motion` — the board ground and cursor ring
   colours of the active theme; `theme-system` — the theme-change
   notification.
-- `screen-components` — the in-game overlay bar.
+- `screen-components` — the counters' display formats; `in-game-layout` —
+  the game window around the board.
 - Main menu and game shell (m1-classic-2d) — entry from the menu, pause,
   restart, back to menu, settings storage, controller navigation outside
   the board.

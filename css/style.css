@@ -279,20 +279,75 @@ kbd {
 .controls dd { margin: 0; }
 .controls.compact { grid-template-columns: max-content 1fr max-content 1fr; font-size: 13px; }
 
-/* ---------- Classic 2D board ---------- */
-/* The board layer covers the 3D scene; the board area is the window with --space-4 margins. The
-   board sits centred there in a framed panel (UI.placePanel2D from the board view's layout), whose
-   top edge carries the overlay readouts; a board that does not fit fills the area and scrolls. */
-#c2d { position: fixed; inset: 0; }
-#c2d-board { position: absolute; top: var(--space-4); left: var(--space-4); right: var(--space-4); bottom: var(--space-4); }
+/* ---------- Classic 2D game window ---------- */
+/* The window covers the 3D scene on its backdrop, with room below it for the HUD strip. Its body is
+   the board column — the counter strip over the board area, which takes the room left — then the
+   figures panel beside it; below the kit's 1024 px breakpoint the panel moves under the board, and on
+   a phone it hides so the board keeps its room. The board sits centred in the board area in its
+   framed panel (UI.placePanel2D from the board view's layout); a board that does not fit fills the
+   area and scrolls. The 3D game's overlay bar never shows over the window. */
+#c2d { position: fixed; inset: 0; padding: var(--space-4) var(--space-4) 52px; }
+#c2d-frame { width: 100%; height: 100%; max-width: 1600px; }
+#c2d-frame > .ui-frame__head { min-height: 56px; }
+#c2d-body { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(220px, 260px); padding: 0; overflow: hidden; }
+#c2d-main { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; min-height: 0; padding: var(--space-4); }
+#c2d-counters { flex: none; }
+#c2d-stage { position: relative; flex: 1 1 auto; min-height: 0; }
+#c2d-board { position: absolute; inset: 0; overflow: hidden; }
 .c2d-panel { position: absolute; }
-/* On the Classic 2D panel the overlay bar is the panel's top edge: no surface of its own (the theme draws none). */
-#hud.hud--2d .hud-bar { padding: 0; }
-/* It wraps inside the widest panel — the board area less the panel's 9 px inset (js/ui.js PANEL_INSET)
-   on each side — so on a phone its readouts and buttons take more rows instead of leaving the screen.
-   Its width never depends on where it sits, so the height panelFrame2D measures is the height placed. */
-#hud.hud--2d .hud-bar { flex-wrap: wrap; row-gap: var(--space-2); width: max-content; max-width: calc(100vw - 2 * var(--space-4) - 18px); }
-@media (max-width: 560px) { #hud.hud--2d .hud-bar { column-gap: var(--space-3); } }
+#c2d-figures { min-height: 0; overflow-y: auto; }
+#c2d-figures .ui-figure__value { white-space: nowrap; }
+#c2d-size { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#hud.hud--2d .hud-bar { display: none; }
+/* The HUD strip sits centred below the window. */
+#hud.hud--2d .hud-tools { top: auto; right: auto; bottom: 10px; left: 50%; transform: translateX(-50%); }
+/* The first-use hint strip sits in the room the board area leaves it at the board column's foot (#c2d.c2d--hint). */
+#hud.hud--2d #hint-strip { left: 50%; transform: translateX(-50%); bottom: 116px; }
+@media (max-height: 820px) {
+  #c2d { padding-top: var(--space-2); padding-bottom: 46px; }
+  #c2d-frame > .ui-frame__head { min-height: 48px; padding-block: var(--space-1); }
+  #c2d-main { gap: var(--space-2); padding: var(--space-2) var(--space-3); }
+  #c2d-counters { padding-block: var(--space-1); }
+  #c2d-frame > .ui-frame__foot { padding-block: var(--space-1); }
+  #c2d-figures .ui-figures__body { padding-block: var(--space-3); }
+  #c2d-figures .ui-figure { padding-block: 7px; }
+  #hud.hud--2d .hud-tools { bottom: 6px; }
+  #hud.hud--2d #hint-strip { bottom: 96px; }
+}
+@media (max-width: 1023px) {
+  #c2d-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  #c2d-divider { display: none; }
+  #c2d-figures { overflow: visible; }
+  #c2d-figures .ui-figures__body { flex-direction: row; flex-wrap: wrap; align-items: flex-start; gap: 0 var(--space-5); padding: var(--space-2) var(--space-4); }
+  #c2d-figures .ui-figure { flex: 1 1 96px; padding: var(--space-1) 0; border-top: 0; }
+  #c2d-figures .ui-figures__foot { flex: 1 1 100%; flex-direction: row; margin-top: 0; padding-top: var(--space-2); }
+  #c2d-figures .ui-figures__foot .ui-key-hints { flex-direction: row; flex-wrap: wrap; gap: var(--space-1) var(--space-4); }
+}
+/* A phone: the window full-bleed, no figures panel and no HUD strip; held sideways, the counters and
+   the Reveal / Flag switch stand beside the board. */
+@media (max-width: 719px), (max-height: 500px) and (orientation: landscape) {
+  #c2d { padding: 0; }
+  #c2d-frame { border-radius: 0; box-shadow: none; }
+  #c2d-figures, #c2d-divider, #hud.hud--2d .hud-tools { display: none; }
+  #c2d-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+  #c2d-frame > .ui-frame__head { grid-template-columns: auto minmax(0, 1fr) auto; }
+  #c2d-title { overflow: hidden; text-overflow: ellipsis; font-size: var(--font-size-md); }
+  #hud.hud--2d #hint-strip { bottom: 52px; }
+}
+/* On a coarse pointer the Reveal / Flag switch sits under the board in a portrait window: the hint strip clears it. */
+@media (pointer: coarse) and (min-height: 501px), (pointer: coarse) and (orientation: portrait) {
+  #hud.hud--2d #hint-strip { bottom: 168px; }
+}
+@media (pointer: coarse) and (min-height: 501px) and (max-height: 820px) { #hud.hud--2d #hint-strip { bottom: 148px; } }
+@media (pointer: coarse) and (max-width: 719px) and (min-height: 501px), (pointer: coarse) and (max-width: 719px) and (orientation: portrait) {
+  #hud.hud--2d #hint-strip { bottom: 104px; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  #c2d-main { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto minmax(0, 1fr); gap: var(--space-2) var(--space-3); }
+  #c2d-stage { grid-column: 1; grid-row: 1 / -1; }
+  #c2d-counters { grid-column: 2; grid-row: 1; flex-direction: column; align-items: stretch; }
+  #hud-tap { grid-column: 2; grid-row: 2; }
+}
 /* A board status card (generating, or a failed board's offer) sits above the pause card, centred on
    the board at the canvas's width and never past a phone's. */
 #c2d-status, #m3d-status { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: calc(var(--z-overlay) + 1); width: min(480px, calc(100vw - 2 * var(--space-4))); box-sizing: border-box; }
@@ -371,10 +426,7 @@ body.replaying #menu { display: none; }
 #hud-mines { font-variant-numeric: var(--font-numeric-tabular); }
 .hud-board .ui-stat__value { font-size: var(--font-size-md); }
 #hud.hud--2d #crosshair, #hud.hud--2d #crosshair-arrow, #hud.hud--2d #aim-readout, #hud.hud--2d #mode-chips { display: none; }
-/* The Classic 2D mouse button swap (js/classic2d/button-swap.js): on the 2D board only, accented while on. */
-#hud-swap { min-height: 40px; padding: var(--space-2) var(--space-4); }
-#hud:not(.hud--2d) #hud-swap { display: none; }
-/* The Classic 2D Reveal / Flag switch (js/classic2d/touch-input.js): on a coarse pointer only, accented on Flag. */
+/* The Classic 2D Reveal / Flag switch (js/classic2d/touch-input.js): under the board on a coarse pointer only, accented on Flag. */
 #hud-tap { display: none; }
 .hud-tools { position: absolute; top: 16px; right: 16px; padding: 8px 12px; display: flex; gap: 12px; font-size: 13px; font-variant-numeric: tabular-nums; }
 .kbd-hint { white-space: nowrap; }
@@ -569,12 +621,14 @@ body.lockless.drag-look #scene:active { cursor: grabbing; }
 /* ---------- coarse pointers ---------- */
 /* Touch targets a finger needs; a fine pointer keeps every size above. */
 @media (pointer: coarse) {
-  #hud.hud--2d #hud-tap { display: flex; min-width: 44px; min-height: 44px; padding: var(--space-2) var(--space-4); }
+  #hud-tap { display: flex; flex: none; align-self: center; min-width: 44px; min-height: 44px; padding: var(--space-2) var(--space-4); }
   /* Swap clicks trades mouse buttons: a coarse primary pointer is never fine, so this is js/main.js COARSE_ONLY */
   #hud-swap { display: none; }
-  /* the pause button takes a touch anywhere in a 44 px band around its centre, the bar's layout unchanged */
-  #hud-pause { position: relative; }
+  /* Pause (the 3D bar's and the Classic 2D window's) and the window's Restart take a touch anywhere in a 44 px band around their centre, their layout unchanged */
+  #hud-pause, #c2d-pause, #c2d-restart { position: relative; }
   #hud-pause::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 22px); height: 44px; }
+  #c2d-restart::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 22px); height: 44px; }
+  #c2d-pause::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 22px); height: 44px; }
   #touch-modes .ui-button { min-width: 44px; min-height: 44px; padding: var(--space-2) var(--space-3); }
   /* every main menu entry at least a finger tall, the selected one still taller */
   #menu-entries > .ui-mode-entry { min-height: 44px; }

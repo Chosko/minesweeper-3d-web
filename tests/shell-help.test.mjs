@@ -309,7 +309,7 @@ test('in a browser: the Controls panel tabs, H, M and the HUD strip in Classic 2
     assert.match(strip, /H help/);
     assert.match(strip, /M sound on/);
     assert.doesNotMatch(strip, /fullscreen/);
-    assert.equal(await textOf('#hud-size'), '9 × 9');
+    assert.equal(await textOf('#c2d-size'), '9 × 9 · 10 mines');
     await page.keyboard.press('KeyH');
     assert.ok(await shown('help'));
     assert.match(await textOf('#help .controls'), /Move the cursor/);
@@ -337,7 +337,7 @@ test('in a browser: the Controls panel tabs, H, M and the HUD strip in Classic 2
 
     // A no-guess Classic 2D board says so on the readout and the pause card.
     await ms(() => globalThis.__ms.modes.start('classic-2d', { size: 'beginner', custom: { width: 9, height: 9, mines: 10 }, noGuess: true }));
-    assert.equal(await textOf('#hud-size'), '9 × 9 · no-guess');
+    assert.equal(await textOf('#c2d-size'), '9 × 9 · 10 mines · no-guess');
     await page.keyboard.press('Escape');
     assert.equal(await textOf('#pause-board'), '9 × 9 · no-guess');
     await ms(() => globalThis.__ms.pauser.toMenu());

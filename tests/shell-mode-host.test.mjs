@@ -395,7 +395,7 @@ test('in a browser, a 3D game on the shared engine plays a fixed mine set to a w
     assert.deepEqual(won.pressed, [0, 1, 1, 1, 1, 1, 1, 1, 1]);
     assert.equal(won.minesLeft, 0);
     await frames(3);
-    assert.equal(await ms(() => document.getElementById('hud-mines').textContent), '0', 'the HUD reads the state view');
+    assert.equal(await ms(() => document.getElementById('hud-mines').textContent), '000', 'the HUD reads the state view');
     assert.equal(await ms(() => globalThis.__ms.state.endState?.state), 'won');
 
     const lost = await play(BOARD, [[4, 'left'], [0, 'left']]);

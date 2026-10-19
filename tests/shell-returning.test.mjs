@@ -243,7 +243,7 @@ test('in a browser, both board choices\' bests follow the records and the switch
     await page.keyboard.press('Enter');
     assert.equal(await mode(), 'classic-2d', 'onto the closed board');
     assert.equal(await ms(() => globalThis.__ms.modes.active), 'classic-2d');
-    assert.equal(await text('#hud-size'), '30 × 16 · no-guess');
+    assert.equal(await text('#c2d-size'), '30 × 16 · 99 mines · no-guess');
     assert.equal(await ms(() => localStorage.getItem('ms3d:doc:classic2d.lastChoice')), savedChoice, 'the last choice is as it was');
     assert.deepEqual(errors, []);
   } finally {

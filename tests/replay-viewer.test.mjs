@@ -626,7 +626,7 @@ test('at the end the final board stays with the outcome and recorded time; play 
   assert.deepEqual([view.last.time, view.last.playing, view.last.ended], [9971, false, true]);
   assert.deepEqual(view.last.end, endLine(createSimulator(blobOf(WON)).replay.check));
   assert.equal(viewers.drawn.at(-1).phase, 'won');
-  assert.deepEqual([view.last.figures.bbbv, view.last.figures.mines], ['15 / 15', '5']);
+  assert.deepEqual([view.last.figures.bbbv, view.last.figures.mines], ['15 / 15', '005']);
   const drawn = viewers.drawn.length;
   viewer.tick(1000);
   assert.equal(viewers.drawn.length, drawn, 'the final board stays');

@@ -253,7 +253,7 @@
               tokens; it runs only while the spinner shows (a hidden card
               draws nothing).
 
-   ui-overlay-bar — in-game timer, mine counter, click counter and pause, for either board
+   ui-overlay-bar — the 3D game's timer, mine counter, click counter and pause
      Element: <div class="ui-overlay-bar" role="group" aria-label="Game">
                 <div class="ui-stat" role="group" aria-labelledby="T">
                   <span class="ui-stat__label" id="T">Time</span>
@@ -261,7 +261,7 @@
                 </div>
                 <div class="ui-stat" role="group" aria-labelledby="M">
                   <span class="ui-stat__label" id="M">Mines</span>
-                  <span class="ui-stat__value">-12</span>
+                  <span class="ui-stat__value">-05</span>
                 </div>
                 <div class="ui-stat" role="group" aria-labelledby="C">
                   <span class="ui-stat__label" id="C">Clicks</span>
@@ -279,9 +279,7 @@
               -99) are display-only. Clicks is the game's counted clicks
               (wasted included) as a plain number, 0 before the first
               click and frozen with the timer at the end. Over the 3D
-              scene the bar carries its own opaque surface; in Classic 2D
-              it is the top edge of the board's framed panel
-              (css/style.css .c2d-panel) and sits on the panel's surface.
+              scene the bar carries its own opaque surface.
 
    ui-counter — an in-game count: mines left, or the time
      Element: <div class="ui-counter" role="group" aria-label="Mines left">
@@ -745,6 +743,21 @@
      are denser. On a phone: one full-bleed column, no wordmark, no bests
      and no summary, Records and Play pinned at the bottom.
      Default focus: the last board choice, the chosen option.
+   Classic 2D game window (index.html #c2d): ui-backdrop holding a
+     ui-frame filling it; its head Swap clicks (a small secondary toggle
+     button, a fine pointer only), the title (the mode and the board) and
+     Pause (small primary, with its back key hint). Its body: the board
+     column — a ui-counter-strip (mines left, Restart with its restart key
+     hint, the timer) over the board area, where the board sits in its
+     framed panel (css/style.css .c2d-panel), and under it the Reveal / Flag
+     switch on a coarse pointer — a ui-divider--vertical and the ui-figures
+     panel of the live figures (3BV with its bar, pace vs PB, 3BV/s, clicks,
+     flags) with the controls reminder at its foot. The foot is a
+     ui-frame__status line naming the board's size, mines and no-guess.
+     Below 1024 px the panel moves under the board, its figures in a row; on
+     a phone the window is full-bleed and the panel hidden, and held
+     sideways the counters and the switch stand beside the board.
+     Default focus: none (the board takes the keys).
    Board status (index.html #c2d-status over the Classic 2D board, and
      #m3d-status over the 3D box): ui-card ui-screen while a slow first
      click generates its no-guess board, a ui-row of the ui-spinner beside

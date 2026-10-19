@@ -96,8 +96,40 @@
   </section>
 
   <!-- Classic 2D board -->
-  <section id="c2d" class="hidden" aria-label="Classic 2D board">
-    <div id="c2d-board"><div id="c2d-panel" class="c2d-panel hidden" aria-hidden="true"></div></div>
+  <!-- The game window: the head, the counter strip over the board, the live figures beside it, the foot line -->
+  <section id="c2d" class="ui-backdrop hidden">
+    <section class="ui-frame" id="c2d-frame" aria-labelledby="c2d-title">
+      <div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"></div>
+      <header class="ui-frame__head">
+        <div class="ui-frame__start"><button type="button" id="hud-swap" class="ui-button ui-button--secondary ui-button--sm" aria-pressed="false" data-no-focus title="Swap left and right click on closed cells"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>Swap clicks</button></div>
+        <h2 class="ui-frame__title" id="c2d-title">Classic 2D</h2>
+        <div class="ui-frame__end"><button type="button" id="c2d-pause" class="ui-button ui-button--primary ui-button--sm" aria-label="Pause game"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>Pause <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button></div>
+      </header>
+      <div class="ui-frame__body" id="c2d-body">
+        <div id="c2d-main">
+          <div class="ui-counter-strip" id="c2d-counters" role="group" aria-label="Counters">
+            <div class="ui-counter" role="group" aria-label="Mines left"><svg class="ui-counter__icon" aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4h12l-3 4 3 4H5"/></svg><span id="c2d-mines-left" class="ui-counter__digits">000</span></div>
+            <button type="button" id="c2d-restart" class="ui-button ui-button--secondary ui-button--sm" data-no-focus><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>Restart <span class="ui-key-hint" data-action="restart" aria-hidden="true"></span></button>
+            <div class="ui-counter" role="group" aria-label="Time"><span id="c2d-time" class="ui-counter__digits">000</span><svg class="ui-counter__icon" aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+          </div>
+          <div id="c2d-stage"><div id="c2d-board"><div id="c2d-panel" class="c2d-panel hidden" aria-hidden="true"></div></div></div>
+          <button type="button" id="hud-tap" class="ui-button ui-button--secondary" aria-pressed="false" data-no-focus title="What a tap on a closed cell does: reveal it, or flag it">Tap: Reveal</button>
+        </div>
+        <div class="ui-divider ui-divider--vertical" id="c2d-divider" role="separator" aria-orientation="vertical"></div>
+        <section class="ui-figures" id="c2d-figures" aria-label="Live figures">
+          <div class="ui-figures__body">
+            <div class="ui-figure ui-figure--progress" role="group" aria-labelledby="c2d-fig-bbbv" data-figure="bbbv"><span class="ui-figure__label" id="c2d-fig-bbbv">3BV</span><span class="ui-figure__value">0 / &mdash;</span><span class="ui-figure__bar" role="progressbar" aria-labelledby="c2d-fig-bbbv" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="ui-figure__fill" style="width: 0%"></span></span></div>
+            <div class="ui-figure hidden" role="group" aria-labelledby="c2d-fig-pace" data-figure="pace"><span class="ui-figure__label" id="c2d-fig-pace">Pace vs PB</span><span class="ui-figure__value">&mdash;</span><span class="ui-figure__detail"></span></div>
+            <div class="ui-figure" role="group" aria-labelledby="c2d-fig-rate" data-figure="rate"><span class="ui-figure__label" id="c2d-fig-rate">3BV/s</span><span class="ui-figure__value">&mdash;</span><span class="ui-figure__detail"></span></div>
+            <div class="ui-figure" role="group" aria-labelledby="c2d-fig-clicks" data-figure="clicks"><span class="ui-figure__label" id="c2d-fig-clicks">Clicks</span><span class="ui-figure__value" id="c2d-clicks">0</span><span class="ui-figure__detail"></span></div>
+            <div class="ui-figure" role="group" aria-labelledby="c2d-fig-flags" data-figure="flags"><span class="ui-figure__label" id="c2d-fig-flags">Flags</span><span class="ui-figure__value">0</span><span class="ui-figure__detail"></span></div>
+            <footer class="ui-figures__foot"><div class="ui-key-hints" id="c2d-reminder"></div></footer>
+          </div>
+          <p class="ui-figures__live" role="status" aria-live="polite" aria-atomic="true"></p>
+        </section>
+      </div>
+      <footer class="ui-frame__foot"><p class="ui-frame__status" id="c2d-size"></p></footer>
+    </section>
   </section>
   <!-- Classic 2D board status: a slow first click's generation, or a failed board and its offer -->
   <section id="c2d-status" class="ui-card ui-screen hidden" aria-labelledby="c2d-status-title" role="status">
@@ -148,8 +180,6 @@
       <div class="ui-stat" role="group" aria-labelledby="hud-mines-label"><span class="ui-stat__label" id="hud-mines-label">Mines</span><span id="hud-mines" class="ui-stat__value">0</span></div>
       <div class="ui-stat" role="group" aria-labelledby="hud-clicks-label"><span class="ui-stat__label" id="hud-clicks-label">Clicks</span><span id="hud-clicks" class="ui-stat__value">0</span></div>
       <div class="ui-stat hud-board" role="group" aria-labelledby="hud-size-label"><span class="ui-stat__label" id="hud-size-label">Board</span><span id="hud-size" class="ui-stat__value">-</span></div>
-      <button type="button" id="hud-swap" class="ui-button ui-button--secondary" aria-pressed="false" data-no-focus title="Swap left and right click on closed cells">Swap clicks</button>
-      <button type="button" id="hud-tap" class="ui-button ui-button--secondary" aria-pressed="false" data-no-focus title="What a tap on a closed cell does: reveal it, or flag it">Tap: Reveal</button>
       <button type="button" id="hud-pause" class="ui-button ui-button--secondary ui-overlay-bar__pause" aria-label="Pause game">Pause</button>
     </div>
     <div id="hud-tools" class="hud-panel hud-tools"></div>

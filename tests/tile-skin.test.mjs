@@ -503,15 +503,11 @@ function removeWebGL2() {
   HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
 }
 
-// The measurement behind MIN_TILE_SIZE: an Expert board (30 × 16) fitted, in
-// the Classic 2D screen's framed panel, to a window 1024px wide with --space-4
-// (16px) margins — the panel's 1px border and 8px inside it on every side, and
-// the overlay readouts on its top edge with 8px between them and the board.
+// An Expert board (30 × 16) in the Classic 2D window at the narrowest desktop width, in its framed
+// panel: the panel's 1px border and 8px inside it on every side of the board.
 const EXPERT = { cols: 30, rows: 16 };
 const NARROWEST = 1024;
-const MARGIN = 16;
 const INSET = 9;
-const GAP = 8;
 
 // Runs in the page: draws every state and number at `size` CSS pixels and
 // `ratio` device pixels each, in one row, and reports per tile how many device
@@ -563,7 +559,7 @@ async function drawAllStates([size, ratio]) {
   return out;
 }
 
-test('in a browser, Expert fits a 1024px wide window at MIN_TILE_SIZE or more, and every state is legible at 26 px and at it, at pixel ratios 1 and 2', async (t) => {
+test('in a browser, Expert at 1024 px wide keeps the fit rule in the game window\'s board area, never below MIN_TILE_SIZE, and every state is legible at 26 px and at it, at pixel ratios 1 and 2', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -577,16 +573,20 @@ test('in a browser, Expert fits a 1024px wide window at MIN_TILE_SIZE or more, a
     await page.goto(`${base}/index.html`);
     await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
     await page.evaluate(() => globalThis.__ms.modes.start('classic-2d', { size: 'expert', noGuess: false }));
-    const bar = await page.evaluate(() => document.querySelector('#hud .ui-overlay-bar').getBoundingClientRect().height);
-    assert.ok(bar > 0, 'the readouts on the panel\'s edge are measured');
-    const across = Math.floor((NARROWEST - 2 * MARGIN - 2 * INSET) / EXPERT.cols);
-    assert.ok(across >= MIN_TILE_SIZE, `Expert's width fits 1024px at ${across}px`);
-    const tallest = 2 * MARGIN + 2 * INSET + Math.ceil(bar) + GAP + EXPERT.rows * MIN_TILE_SIZE;
-    await page.setViewportSize({ width: NARROWEST, height: tallest });
-    await page.waitForFunction((min) => globalThis.__ms.board2D.layout.tile === min, MIN_TILE_SIZE);
-    assert.equal(await page.evaluate(() => globalThis.__ms.board2D.layout.scrolls), false, `Expert fits 1024 × ${tallest} at the floor`);
-    await page.setViewportSize({ width: NARROWEST, height: tallest - 1 });
-    await page.waitForFunction(() => globalThis.__ms.board2D.layout.scrolls);
+    await page.waitForFunction(() => globalThis.__ms.board2D?.layout);
+    // The fit rule in the board area the window's chrome leaves: the largest whole tile, never below the floor.
+    for (const height of [768, 1100]) {
+      await page.setViewportSize({ width: NARROWEST, height });
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+      const { area, layout } = await page.evaluate(() => {
+        const r = document.getElementById('c2d-board').getBoundingClientRect();
+        return { area: { width: r.width, height: r.height }, layout: { ...globalThis.__ms.board2D.layout } };
+      });
+      assert.ok(area.width > 0 && area.height > 0, 'the board area is measured');
+      const fit = Math.floor(Math.min((area.width - 2 * INSET) / EXPERT.cols, (area.height - 2 * INSET) / EXPERT.rows));
+      assert.equal(layout.tile, Math.max(MIN_TILE_SIZE, Math.min(48, fit)), `1024 × ${height}: the fit rule's tile`);
+      assert.equal(layout.scrolls, fit < MIN_TILE_SIZE, `1024 × ${height}: Expert scrolls only below the floor`);
+    }
     await page.goto(`${base}/dev/components.html`);
 
     for (const theme of ['joyful-tiles']) {

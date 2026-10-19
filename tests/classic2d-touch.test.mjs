@@ -525,7 +525,7 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
     await f.tap(await centreOf(first));
     await page.waitForFunction(() => globalThis.__ms.modes.state.started, null, { timeout: patience(5000) });
     assert.equal(await cellState(first), 'revealed');
-    assert.equal(await ms(() => Number(document.getElementById('hud-clicks').textContent)), 1, 'one click counted');
+    assert.equal(await ms(() => Number(document.getElementById('c2d-clicks').textContent)), 1, 'one click counted');
     assert.deepEqual(await ms(() => globalThis.__mouse), [], 'the tap reached no mouse listener');
 
     // A closed mine to flag, found on the page: a mine, so that a number beside it still chords below
@@ -599,7 +599,7 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
     }
 
     // A one-finger drag pans the board and acts on nothing.
-    const clicks = await ms(() => Number(document.getElementById('hud-clicks').textContent));
+    const clicks = await ms(() => Number(document.getElementById('c2d-clicks').textContent));
     await ms(() => globalThis.__ms.board2D.scrollTo(0, 0));
     const p = [v0.left + v0.viewX + v0.viewWidth / 2, v0.top + v0.viewY + v0.viewHeight / 2];
     await f.drag(p, [-60, -30]);
@@ -609,7 +609,7 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
     // The pan retired the scroll hint, as a wheel scroll does: the mode's strip, which shows from the
     // game's start on a coarse-only device, takes its place.
     await page.waitForFunction(() => document.getElementById('hint-strip-text').textContent === 'Tap reveal · Long-press flag · Tap a number chord', null, { timeout: patience(2000) });
-    assert.equal(await ms(() => Number(document.getElementById('hud-clicks').textContent)), clicks, 'a pan is no click');
+    assert.equal(await ms(() => Number(document.getElementById('c2d-clicks').textContent)), clicks, 'a pan is no click');
 
     // A pinch zooms out to the whole board and back to the minimum tile; a pan or zoom records nothing.
     const range = await ms(() => globalThis.__ms.board2D.zoomRange);
@@ -624,7 +624,7 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
     await f.move([[p[0] - 150, p[1]], [p[0] + 150, p[1]]]);
     await f.end();
     assert.equal((await view()).tile, range.max, 'spread: back to the largest tile of the range');
-    assert.equal(await ms(() => Number(document.getElementById('hud-clicks').textContent)), clicks, 'a zoom is no click');
+    assert.equal(await ms(() => Number(document.getElementById('c2d-clicks').textContent)), clicks, 'a zoom is no click');
 
     // Restart opens at the fit rule's tile again.
     await ms((tile) => globalThis.__ms.board2D.zoom(tile, 10, 10), range.min);
@@ -644,7 +644,7 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
     assert.deepEqual(tools, { html: '', hidden: true }, 'no key in the HUD strip, and no empty box');
 
     // The pause card lists Classic 2D's touch rows, not the mouse and keyboard ones.
-    await page.tap('#hud-pause');
+    await page.tap('#c2d-pause');
     await page.waitForFunction(() => globalThis.__ms.state.mode === 'paused', null, { timeout: patience(2000) });
     const pauseRows = await ms(() => document.getElementById('pause-controls').textContent);
     assert.match(pauseRows, /Long-press/, 'the pause card shows the touch rows');
@@ -686,17 +686,16 @@ test('in a browser with touch on a phone, a fresh profile\'s Classic 2D game sho
   }
 });
 
-// Every visible control and readout of the 2D overlay bar, the bar itself and the board's panel.
+// Every visible control and readout of the Classic 2D window, its counter strip and the board's panel.
 function barGeometry() {
   const box = (el) => { const r = el.getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height }; };
-  const bar = document.querySelector('#hud .hud-bar');
-  const children = [...bar.children]
-    .filter((el) => getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().width > 0)
-    .map((el) => ({ id: el.id || el.querySelector('.ui-stat__value')?.id, ...box(el) }));
+  const children = ['c2d-time', 'c2d-mines-left', 'c2d-clicks', 'c2d-size', 'c2d-restart', 'hud-tap', 'c2d-pause', 'hud-swap'].map((id) => document.getElementById(id))
+    .filter((el) => getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().width > 0 && !el.closest('.hidden, [style*="display: none"]') && el.checkVisibility())
+    .map((el) => ({ id: el.id, ...box(el) }));
   const swap = document.getElementById('hud-swap');
   return {
     viewport: { width: innerWidth, height: innerHeight },
-    bar: box(bar),
+    bar: box(document.getElementById('c2d-counters')),
     panel: box(document.getElementById('c2d-panel')),
     children,
     swapShown: getComputedStyle(swap).display !== 'none' && swap.getBoundingClientRect().width > 0,
@@ -709,7 +708,7 @@ async function settled(page) {
   await page.waitForFunction(() => {
     const v = globalThis.__ms.board2D;
     if (!v?.layout) return false;
-    const now = JSON.stringify([document.querySelector('#hud .hud-bar').getBoundingClientRect(), document.getElementById('c2d-panel').getBoundingClientRect(), v.canvas.getBoundingClientRect(), v.layout.viewY]);
+    const now = JSON.stringify([document.getElementById('c2d-counters').getBoundingClientRect(), document.getElementById('c2d-panel').getBoundingClientRect(), v.canvas.getBoundingClientRect(), v.layout.viewY]);
     const same = globalThis.__lastGeometry === now;
     globalThis.__lastGeometry = now;
     return same;
@@ -722,7 +721,7 @@ const PHONES = [
 ];
 const BOARDS_2D = ['beginner', 'intermediate', 'expert', 'custom'];
 
-test('in a browser with touch on a phone, the 2D overlay bar fits the screen on every board: Pause and the switch take a tap, no Swap clicks', async (t) => {
+test('in a browser with touch on a phone, the Classic 2D window fits the screen on every board: Pause and the switch take a tap, no Swap clicks', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -751,8 +750,8 @@ test('in a browser with touch on a phone, the 2D overlay bar fits the screen on 
         await settled(page);
         const g = await ms(barGeometry);
         const ids = g.children.map((c) => c.id);
-        for (const id of ['hud-time', 'hud-mines', 'hud-clicks', 'hud-size', 'hud-tap', 'hud-pause']) {
-          assert.ok(ids.includes(id), `${where}: ${id} shows in the bar (${ids})`);
+        for (const id of ['c2d-time', 'c2d-mines-left', 'c2d-size', 'c2d-restart', 'hud-tap', 'c2d-pause']) {
+          assert.ok(ids.includes(id), `${where}: ${id} shows in the window (${ids})`);
         }
         for (const c of g.children) {
           assert.ok(c.left >= 0 && c.top >= 0 && c.right <= g.viewport.width && c.bottom <= g.viewport.height,
@@ -761,14 +760,12 @@ test('in a browser with touch on a phone, the 2D overlay bar fits the screen on 
         assert.equal(g.swapShown, false, `${where}: no Swap clicks on a coarse-only device`);
         const tap = g.children.find((c) => c.id === 'hud-tap');
         assert.ok(tap.width >= 44 && tap.height >= 44, `${where}: the switch keeps a 44 px hit area (${tap.width} × ${tap.height})`);
-        assert.ok(g.bar.left >= g.panel.left && g.bar.right <= g.panel.right && g.bar.top >= g.panel.top,
-          `${where}: the bar sits inside the panel's top edge (${JSON.stringify({ bar: g.bar, panel: g.panel })})`);
         const view = await ms(() => globalThis.__ms.board2D.canvas.getBoundingClientRect().top + globalThis.__ms.board2D.layout.viewY);
-        assert.ok(view >= g.bar.bottom, `${where}: the board starts below the bar, not under it (${view} vs ${g.bar.bottom})`);
+        assert.ok(view >= g.bar.bottom, `${where}: the board starts below the counter strip, not under it (${view} vs ${g.bar.bottom})`);
       }
 
-      // The phone turns mid-game: a board opened in landscape, where the bar takes one row, is laid
-      // out again below the bar in portrait rather than under its new rows.
+      // The phone turns mid-game: a board opened in landscape, where the counter strip stands beside
+      // the board, is laid out again below the strip in portrait.
       await page.setViewportSize({ width: phone.viewport.height, height: phone.viewport.width });
       await page.goto(`${base}/index.html`);
       await page.waitForFunction(() => globalThis.__ms !== undefined);
@@ -782,7 +779,7 @@ test('in a browser with touch on a phone, the 2D overlay bar fits the screen on 
       {
         const g = await ms(barGeometry);
         const view = await ms(() => globalThis.__ms.board2D.canvas.getBoundingClientRect().top + globalThis.__ms.board2D.layout.viewY);
-        assert.ok(view >= g.bar.bottom, `${phone.name}, turned: the board starts below the bar (${view} vs ${g.bar.bottom})`);
+        assert.ok(view >= g.bar.bottom, `${phone.name}, turned: the board starts below the counter strip (${view} vs ${g.bar.bottom})`);
       }
 
       // On the last board: a real tap flips the switch, and a real tap on Pause opens the pause card.
@@ -790,7 +787,7 @@ test('in a browser with touch on a phone, the 2D overlay bar fits the screen on 
       assert.equal(await ms(() => document.getElementById('hud-tap').textContent), 'Tap: Flag', `${phone.name}: the switch takes a tap`);
       await page.tap('#hud-tap');
       assert.equal(await ms(() => document.getElementById('hud-tap').textContent), 'Tap: Reveal');
-      await page.tap('#hud-pause');
+      await page.tap('#c2d-pause');
       await page.waitForFunction(() => globalThis.__ms.state.mode === 'paused', null, { timeout: patience(2000) });
       assert.equal(await ms(() => document.getElementById('pause').classList.contains('hidden')), false, `${phone.name}: Pause opens the pause card`);
       assert.deepEqual(errors, []);
@@ -801,7 +798,7 @@ test('in a browser with touch on a phone, the 2D overlay bar fits the screen on 
   }
 });
 
-test('in a browser with a mouse at 1280 × 800, the 2D overlay bar, the menu, Settings and the pause card keep their sizes and show no touch controls', async (t) => {
+test('in a browser with a mouse at 1280 × 800, the Classic 2D window, the menu, Settings and the pause card keep their sizes and show no touch controls', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -829,19 +826,18 @@ test('in a browser with a mouse at 1280 × 800, the 2D overlay bar, the menu, Se
     await page.click('#menu-entry-classic-2d');
     await page.click('#c2d-choice [data-size="beginner"]');
     await page.click('#c2d-play');
+    await settled(page);
     const bar = await ms(() => ({
       tap: getComputedStyle(document.getElementById('hud-tap')).display,
-      label: getComputedStyle(document.querySelector('#hud .ui-stat__label')).fontSize,
-      swap: getComputedStyle(document.getElementById('hud-swap')).display,
+      label: getComputedStyle(document.querySelector('#c2d-figures .ui-figure__label')).fontSize,
     }));
-    assert.deepEqual(bar, { tap: 'none', label: '12px', swap: 'flex' }, 'no switch, the labels at 12 px on every pointer, the swap toggle as before');
+    assert.deepEqual(bar, { tap: 'none', label: '13px' }, 'no switch, the figures\' labels at their size');
     const g = await ms(barGeometry);
     assert.equal(g.swapShown, true, 'Swap clicks shows with a mouse');
-    const rows = new Set(g.children.map((c) => Math.round(c.top + c.height / 2)));
-    assert.equal(rows.size, 1, `the bar keeps one row (${JSON.stringify(g.children)})`);
-    assert.equal(Math.round(g.bar.top - g.panel.top), 9, 'the bar on the panel\'s top edge, as before');
+    const strip = g.children.filter((c) => ['c2d-time', 'c2d-mines-left', 'c2d-restart'].includes(c.id));
+    assert.ok(strip.every((c) => c.top >= g.bar.top && c.bottom <= g.bar.bottom), `the counter strip keeps one row (${JSON.stringify(strip)})`);
     const viewTop = await ms(() => globalThis.__ms.board2D.canvas.getBoundingClientRect().top + globalThis.__ms.board2D.layout.viewY);
-    assert.equal(Math.round(viewTop - g.bar.bottom), 8, 'the board 8 px below the bar, as before');
+    assert.ok(viewTop >= g.bar.bottom, 'the board below the counter strip');
 
     // The clicks that chose the board brought no strip; a key brings the mode's strip in the
     // keyboard's words; the HUD strip reads as before.

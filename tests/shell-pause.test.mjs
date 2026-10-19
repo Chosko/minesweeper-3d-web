@@ -829,7 +829,7 @@ test('in a browser, the Classic 2D generating card cancels by Cancel and Esc, an
     // Paused while generating, the card hides under the pause card; on resume it shows with Cancel focused again.
     await clickBoard();
     await page.waitForFunction(() => !document.getElementById('c2d-status').classList.contains('hidden'));
-    await page.click('#hud-pause');
+    await page.click('#c2d-pause');
     assert.equal(await mode(), 'paused');
     assert.equal(await shown('c2d-status'), false, 'the generating card does not show over the pause card');
     await page.click('#p-resume');
@@ -872,7 +872,7 @@ test('in a browser, the Classic 2D generating card cancels by Cancel and Esc, an
     worker = 'failLater';
     await open();
     await clickBoard();
-    await page.click('#hud-pause');
+    await page.click('#c2d-pause');
     assert.equal(await mode(), 'paused', 'the pause button still pauses while a board is generated');
     await page.waitForFunction(() => document.getElementById('c2d-status-title').textContent === 'No board found' && !document.getElementById('c2d-status').classList.contains('hidden'));
     assert.equal(await mode(), 'paused');
@@ -939,7 +939,7 @@ test('in a browser, F2 and the controller\'s Start + Y restart a Classic 2D game
     assert.equal(await mode(), 'classic-2d', 'no pause card, no confirmation');
     assert.equal(await started(), false, 'a fresh game');
     assert.deepEqual(await hand(), ['abandoned']);
-    assert.equal(await ms(() => document.getElementById('hud-size').textContent), '9 × 9', 'the same board choice');
+    assert.equal(await ms(() => document.getElementById('c2d-size').textContent), '9 × 9 · 10 mines', 'the same board choice');
 
     // Start + Y: Start pauses on its press; Y while it is held restarts.
     await begin();
