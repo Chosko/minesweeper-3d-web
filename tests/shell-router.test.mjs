@@ -401,7 +401,7 @@ test('every screen change in the shell goes through the router', () => {
 test('the shell declares a default focus for each screen it shows', () => {
   const decl = Object.fromEntries([...SCREEN_TABLE.matchAll(/'?\b([\w-]+)'?: \{[^\n]*?defaultFocus: (?:'([^']+)'|null|\(\))/g)]
     .map((m) => [m[1], m[2] ?? null]));
-  assert.equal(decl.menu, '[data-entry][data-last]', 'the menu focuses the last mode played');
+  assert.match(SCREEN_TABLE, /\bmenu: \{ defaultFocus: \(\) => `#menu-entry-\$\{menuFocusEntry\(\)\}`/, 'the menu focuses its selection: the entry Back returns to, else the last mode played');
   assert.match(decl['board-choice'], /data-preset/, 'the 3D board choice focuses the last played board');
   assert.equal(decl.ready, '#ready-btn');
   assert.equal(decl.ctxlost, '#ctx-lost-btn');
@@ -471,19 +471,23 @@ test('in a browser, the keyboard walks menu → screen → Back with the default
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'menu');
     assert.deepEqual(await shown(), ['menu']);
-    assert.equal(await active(), first, 'Back returns to the menu and its default focus');
+    assert.equal(await active(), 'menu-entry-3d', 'Back returns to the menu with the entry it opened selected');
+    assert.equal(first, 'menu-entry-classic-2d');
 
-    // Esc while playing pauses; the controls modal on the menu closes on Esc before anything else.
+    // Esc while playing pauses; the controls reference over Settings closes on Esc before anything else.
     await page.evaluate(() => { globalThis.__ms.start(5, 5, 5, 5); globalThis.__ms.forcePlay(); });
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'paused', 'Esc while playing means Pause');
     assert.equal(await active(), 'p-resume');
     await page.evaluate(() => globalThis.__ms.state.game && document.getElementById('p-menu').click());
     assert.equal(await mode(), 'menu');
-    await page.click('#menu-help');
+    await page.click('#menu-entry-settings');
+    await page.click('#set-controls');
+    await page.keyboard.press('Escape');
+    assert.equal(await mode(), 'settings');
+    assert.equal(await page.evaluate(() => document.getElementById('controls-modal').classList.contains('hidden')), true);
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'menu');
-    assert.equal(await page.evaluate(() => document.getElementById('controls-modal').classList.contains('hidden')), true);
 
     // The existing 3D flow keeps working through the hook.
     await page.evaluate(() => { globalThis.__ms.start(5, 5, 5, 5); globalThis.__ms.forcePlay(); });
@@ -510,7 +514,7 @@ test('in a browser, the arrow keys alone walk the menu, the 2D board choice, the
       return {
         id: el?.id || el?.dataset?.size || el?.dataset?.value || '', visible: !!el?.matches(':focus-visible'),
         pad: document.body.classList.contains('pad-nav'), ring: el ? getComputedStyle(el).outlineStyle : 'none',
-        selectable: !!el?.matches('.ui-button, .ui-menu__item'),
+        selectable: !!el?.matches('.ui-button, .ui-menu__item, .ui-mode-entry, .ui-option'),
       };
     });
     // The focused state a button, menu entry or board option shows is its selected look, once its move settles.
@@ -533,25 +537,16 @@ test('in a browser, the arrow keys alone walk the menu, the 2D board choice, the
     // The main menu: Down walks the entries; Up walks back.
     assert.equal((await focus()).id, 'menu-entry-classic-2d', 'the menu opens on its default');
     await page.keyboard.press('ArrowDown');
-    assert.equal((await focus()).id, 'menu-entry-3d');
+    assert.equal((await focus()).id, 'menu-entry-hexagon');
     await page.keyboard.press('ArrowUp');
     assert.equal((await focus()).id, 'menu-entry-classic-2d');
     // Held down, the key repeats as the browser delivers it.
     await page.keyboard.down('ArrowDown');
     await page.keyboard.down('ArrowDown');
     await page.keyboard.up('ArrowDown');
-    assert.equal((await focus()).id, 'menu-entry-daily', 'a repeated keydown moves again');
+    assert.equal((await focus()).id, 'menu-entry-triangle', 'a repeated keydown moves again');
+    await walkTo('ArrowDown', 'menu-entry-quit');
     await walkTo('ArrowUp', 'menu-entry-classic-2d');
-
-    // The Controls panel: its tabs keep Left/Right, and Up leaves them for Close.
-    await page.click('#menu-help');
-    const inTabs = () => page.evaluate(() => !!document.activeElement.closest('#controls-tabs'));
-    for (let i = 0; i < 4 && !(await inTabs()); i++) await page.keyboard.press('ArrowDown');
-    assert.equal(await inTabs(), true, 'Down reaches the tabs');
-    await page.keyboard.press('ArrowUp');
-    assert.equal((await focus()).id, 'controls-close', 'Up leaves the tabs');
-    await page.keyboard.press('Escape');
-    await page.focus('#menu-entry-classic-2d');
 
     // The Classic 2D board choice: arrows walk the sizes; a number field keeps Left/Right; Down reaches Back.
     await page.keyboard.press('Enter');
@@ -626,6 +621,16 @@ test('in a browser, the arrow keys alone walk the menu, the 2D board choice, the
       return document.activeElement.getBoundingClientRect().bottom <= row.top && tops.length > 0;
     });
     assert.equal(clear, true, 'the focused control is not under the Back row');
+
+    // The Controls action's panel: its tabs keep Left/Right, and Up leaves them for Close.
+    await page.click('#set-controls');
+    const inTabs = () => page.evaluate(() => !!document.activeElement.closest('#controls-tabs'));
+    for (let i = 0; i < 4 && !(await inTabs()); i++) await page.keyboard.press('ArrowDown');
+    assert.equal(await inTabs(), true, 'Down reaches the tabs');
+    await page.keyboard.press('ArrowUp');
+    assert.equal((await focus()).id, 'controls-close', 'Up leaves the tabs');
+    await page.keyboard.press('Escape');
+    assert.equal((await focus()).id, 'set-controls', 'closing gives the focus back to the action');
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'menu', 'Back returns to the screen Settings was opened from');
     assert.deepEqual(errors, []);

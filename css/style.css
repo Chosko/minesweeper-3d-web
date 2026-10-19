@@ -10,6 +10,8 @@ body {
 #scene { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; outline: none; }
 /* Without WebGL 2 there is no 3D scene: the menu screens sit on the body's static, themed backdrop. */
 body.no-webgl2 #scene { display: none; }
+/* The main menu shows a preview other than its 3D one: the scene is not shown. */
+body.scene-off #scene { visibility: hidden; }
 .hidden { display: none !important; }
 
 kbd {
@@ -37,9 +39,37 @@ kbd {
   z-index: var(--z-overlay);
   overflow-y: auto;
 }
-/* The main menu's Play again sits at the end of the title row; the session strip under the entries keeps its numbers aligned. */
-#menu-again { margin-inline-start: auto; }
-#menu-strip { font-variant-numeric: var(--font-numeric-tabular); }
+/* The main menu, on the page's backdrop: the wordmark over the entries (left) and the preview (right),
+   the key hints and the build label under them. The entries share the preview's height, the selected
+   one taller (its theme's flex-grow); a gap opens before each block's first entry. On a phone the
+   preview goes and the entries fill the screen. */
+#menu {
+  display: grid;
+  grid-template-columns: minmax(0, 590fr) minmax(0, 964fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas: "title title" "entries preview" "foot foot";
+  align-items: stretch;
+  justify-content: stretch;
+  gap: clamp(20px, 4.4vh, 48px) clamp(24px, 4vw, 96px);
+  padding: clamp(24px, 4vh, 44px) clamp(20px, 5vw, 96px) clamp(16px, 3.3vh, 36px);
+  overflow: hidden;
+}
+#menu-title { grid-area: title; }
+#menu-entries { grid-area: entries; min-height: 0; }
+#menu-entries > .ui-mode-entry { flex-basis: 0; min-height: 0; }
+#menu-entries > [data-block-start] { margin-top: var(--space-3); }
+#menu-preview { grid-area: preview; min-height: 0; }
+#menu-preview-stage > [data-preview] { position: absolute; inset: var(--space-8); display: grid; place-items: center; }
+#menu-preview-stage > [data-preview][hidden] { display: none; }
+#menu-foot { grid-area: foot; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-6); }
+#menu-foot > p { margin: 0; }
+#menu-foot > #menu-build { margin-inline-start: auto; }
+@media (max-width: 719px) {
+  #menu { grid-template-columns: minmax(0, 1fr); grid-template-areas: "title" "entries" "foot"; gap: var(--space-6); padding: 34px 20px 24px; }
+  #menu-preview { display: none; }
+  #menu-foot { flex-direction: column; align-items: flex-start; }
+  #menu-foot > #menu-build { margin-inline-start: 0; }
+}
 #records-chart { display: block; width: 100%; height: 160px; }
 #records-best-chart { display: block; width: 100%; height: 160px; }
 :is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) { width: 100%; border-collapse: collapse; font-variant-numeric: var(--font-numeric-tabular); }
@@ -350,4 +380,6 @@ body.lockless.drag-look #scene:active { cursor: grabbing; }
   #hud-pause { position: relative; }
   #hud-pause::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 22px); height: 44px; }
   #touch-modes .ui-button { min-width: 44px; min-height: 44px; padding: var(--space-2) var(--space-3); }
+  /* every main menu entry at least a finger tall, the selected one still taller */
+  #menu-entries > .ui-mode-entry { min-height: 44px; }
 }

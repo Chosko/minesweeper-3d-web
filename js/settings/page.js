@@ -1,6 +1,6 @@
 // The Settings page: its sections and their controls, generated from the settings schema
 // (js/settings/schema.js), the read-only bindings list (js/settings/bindings.js), and the binder
-// that ties any setting control — on the page, the pause card or the main menu — to the store
+// that ties any setting control — on the page or the pause card — to the store
 // (js/settings/store.js). DOM-free: markup is returned as text, and the binder touches only the
 // elements it is handed.
 //
@@ -22,7 +22,9 @@
 //                                With labelledBy, a choice shows no label of its own and takes its
 //                                name from that element.
 // settingsPageHtml()           → one kit column composition (ui-columns) holding a section per
-//                                SETTINGS_SECTIONS entry, each a column, then, across the width
+//                                SETTINGS_SECTIONS entry, each a column — the Controls section ending
+//                                in the Controls action (#set-controls, CONTROLS_ACTION), which opens
+//                                the controls reference — then, across the width
 //                                (ui-columns__span), the bindings panel whose lists (#settings-bindings,
 //                                filled by bindingsSectionHtml) are columns of their own, and the Data panel
 //                                (#settings-data): first the export — its line (EXPORT_LINE), the
@@ -169,10 +171,15 @@ export function settingControlHtml(key, value = SCHEMA[key]?.default, { labelled
   return `${label}<div class="${cls}" role="radiogroup" aria-labelledby="${labelledBy ?? `${id}-label`}" data-setting="${key}" id="${id}">${options.join('')}</div>`;
 }
 
+/** The Controls section's action: the controls reference, each mode's bindings, in a panel over the page. */
+export const CONTROLS_ACTION = 'Controls';
+
 export function settingsPageHtml() {
+  const action = (id) => (id === 'controls'
+    ? `<button type="button" class="ui-button ui-button--secondary" id="set-controls">${CONTROLS_ACTION}</button>` : '');
   const sections = SETTINGS_SECTIONS.map((s) => `<section class="ui-panel ui-actions" aria-labelledby="set-sec-${s.id}">`
     + `<h3 class="ui-heading" id="set-sec-${s.id}">${s.title}</h3>`
-    + `${s.settings.map((k) => settingControlHtml(k, undefined, { labelledBy: SETTING_LABELS[k] === s.title ? `set-sec-${s.id}` : null })).join('')}</section>`);
+    + `${s.settings.map((k) => settingControlHtml(k, undefined, { labelledBy: SETTING_LABELS[k] === s.title ? `set-sec-${s.id}` : null })).join('')}${action(s.id)}</section>`);
   return `<div class="ui-columns">${sections.join('')}`
     + '<section class="ui-panel ui-columns__span" aria-labelledby="set-sec-bindings"><h3 class="ui-heading" id="set-sec-bindings">Bindings</h3>'
     + '<div id="settings-bindings" class="ui-columns"></div></section>'

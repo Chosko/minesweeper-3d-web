@@ -13,7 +13,7 @@ import {
   BINDING_MODES, BINDING_DEVICES, TOUCH_DEVICE, bindingDevices, BINDINGS, bindingRows, bindingsListHtml, bindingsHtml,
 } from '../js/settings/bindings.js';
 import {
-  SETTINGS_SECTIONS, SETTING_LABELS, settingControl, settingControlHtml, settingsPageHtml, bindingsSectionHtml,
+  SETTINGS_SECTIONS, SETTING_LABELS, CONTROLS_ACTION, settingControl, settingControlHtml, settingsPageHtml, bindingsSectionHtml,
   bindSettingControls, bindResetPanel, RESET_MESSAGE, SWATCH_TOKENS, themeSwatchColors, swatchBackground,
 } from '../js/settings/page.js';
 import { EXPORT_LINE } from '../js/records/export.js';
@@ -846,26 +846,39 @@ test('the Settings choices and the Controls panel\'s tabs take only Left and Rig
   assert.match(read('js/ui.js'), /bindSegmented\(\$\('controls-tabs'\), \{ horizontal: true,/);
 });
 
-test('the pause card\'s sensitivity, invert Y and volume, and the menu\'s volume, are bound to the store', () => {
+test('the pause card\'s sensitivity, invert Y and volume are bound to the store; the main menu holds no setting', () => {
   const pause = between(INDEX, '<section id="pause"', '<noscript>');
   assert.match(pause, /<div class="ui-slider" data-setting="lookSensitivity">/);
   assert.match(pause, /<label class="ui-toggle" data-setting="invertY">/);
   assert.match(pause, /<div class="ui-slider" data-setting="volume">/);
-  assert.match(between(INDEX, '<section id="menu"', '<!-- 3D board choice -->'), /<div class="ui-slider" data-setting="volume">/);
+  assert.doesNotMatch(between(INDEX, '<section id="menu"', '<!-- 3D board choice -->'), /data-setting|menu-sound|menu-vol/, 'sound and volume live on the Settings page');
   assert.match(MAIN, /bindSettingControls\(document\.querySelectorAll\('\[data-setting\]'\), SETTINGS/);
   assert.doesNotMatch(MAIN, /onLookSettings|initVolume/, 'no second path between those controls and the store');
   assert.doesNotMatch(read('js/ui.js'), /onLookSettings|initVolume|setLook\(/);
 });
 
-test('on the main menu and the pause card, Sound comes first, then Volume, and M still toggles it', () => {
-  const menu = between(INDEX, '<section id="menu"', '<!-- 3D board choice -->');
-  assert.match(menu, /<button type="button" id="menu-sound" class="ui-button ui-button--secondary">Sound: on<\/button>/);
-  assert.ok(menu.indexOf('id="menu-sound"') < menu.indexOf('data-setting="volume"'), 'menu: Sound, then Volume');
+test('on the pause card Sound comes first, then Volume, and M still toggles it; the Settings audio section keeps both', () => {
+  const audio = SETTINGS_SECTIONS.find((sec) => sec.id === 'audio');
+  assert.deepEqual(audio.settings, ['muted', 'volume'], 'the Settings page: Sound, then Volume');
+  assert.doesNotMatch(read('js/ui.js'), /menu-sound/);
   const pause = between(INDEX, '<section id="pause"', '<noscript>');
   assert.match(pause, /<button type="button" id="p-sound" class="ui-button ui-button--secondary">Sound: on<\/button>/);
   assert.ok(pause.indexOf('id="p-sound"') < pause.indexOf('data-setting="volume"'), 'pause card: Sound, then Volume');
   assert.match(read('js/ui.js'), /\$\('p-sound'\)\.textContent = `Sound: \$\{t\}`/);
   assert.match(MAIN, /code === 'KeyM'\) toggleSound\(\)/);
+});
+
+test('the Controls section ends in the Controls action, which opens the controls reference and gives the focus back on close', () => {
+  const html = settingsPageHtml();
+  const controls = html.slice(html.indexOf('id="set-sec-controls"'), html.indexOf('id="set-sec-graphics"'));
+  assert.match(controls, /data-setting="confirmRestart"[\s\S]*<button type="button" class="ui-button ui-button--secondary" id="set-controls">Controls<\/button><\/section>/,
+    'after the section\'s settings');
+  assert.equal(CONTROLS_ACTION, 'Controls');
+  assert.equal([...html.matchAll(/id="set-controls"/g)].length, 1);
+  const ui = read('js/ui.js');
+  assert.match(ui, /\$\('set-controls'\)\.addEventListener\('click', \(\) => this\.openControls\(\)\)/);
+  assert.match(ui.slice(ui.indexOf('  closeControls() {')), /this\._controlsOpener\?\.isConnected \? this\._controlsOpener : \$\('set-controls'\)/, 'the focus returns to what opened it');
+  assert.doesNotMatch(ui, /menu-help/, 'the main menu has no Controls button');
 });
 
 test('the main menu\'s Settings entry routes to the page, which declares its focus, Back and controller layer', () => {
@@ -972,7 +985,7 @@ test('in a browser: Settings from the menu, the theme list with its swatches, an
     assert.equal(await ms(() => document.getElementById('p-sens').value), '1.05');
     await ms(() => { const s = document.getElementById('p-vol'); s.value = '40'; s.dispatchEvent(new Event('input', { bubbles: true })); });
     assert.equal(await setting('volume'), 0.4);
-    assert.equal(await ms(() => document.getElementById('menu-vol').value), '40');
+    assert.equal(await ms(() => document.getElementById('set-volume').value), '40', 'the Settings page shows it too');
     await ms(() => globalThis.__ms.pauser.toMenu());
 
     // Reload: Joyful tiles is on the root before the menu is in the document, here from a stored
@@ -1157,6 +1170,34 @@ test('in a browser, Reset all data turns a played profile back into a new player
     }
     assert.equal(await ms(() => localStorage.getItem('ms3d.custom')), '1', 'an unread old key stays');
     assert.equal(await blobCount(), 0, 'no replay left');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, the Settings page\'s Controls action opens the controls reference over it, and Esc gives the focus back', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(removeWebGL2);
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
+    await page.click('#menu-entry-settings');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'settings');
+    await page.click('#set-controls');
+    assert.equal(await page.evaluate(() => document.getElementById('controls-modal').classList.contains('hidden')), false, 'the controls reference opens');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'controls-close');
+    assert.ok(await page.evaluate(() => document.getElementById('controls-body').textContent.length > 50), 'each mode\'s bindings');
+    assert.equal(await page.evaluate(() => document.getElementById('settings').inert), true, 'the page is inert behind it');
+    await page.keyboard.press('Escape');
+    assert.equal(await page.evaluate(() => document.getElementById('controls-modal').classList.contains('hidden')), true, 'Esc closes it');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'settings', 'and leaves the page as it was');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'set-controls', 'the focus returns to the action');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

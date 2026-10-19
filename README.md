@@ -332,8 +332,8 @@ and rumbles on an explosion. Some browsers only start sound after a key press or
 - **Visual polish:** procedurally drawn tiles with a distinct colour for each number from 1 to 26, a
   sky gradient, distance fog, per-face shading and crisp tile borders. The aimed cube gets a pulsing
   outline. Winning plays a pulse wave and confetti. Losing plays a reveal wave from the exploded
-  cell, a screen flash and camera shake, and marks wrong flags. A slowly orbiting demo board sits
-  behind the main menu.
+  cell, a screen flash and camera shake, and marks wrong flags. A slowly orbiting demo board is the
+  main menu's 3D preview and sits behind the screens the menu opens.
 - **Performance:**
   - *Instanced rendering:* every cube is drawn by two instanced meshes. Each cell's state is stored
     in a data texture, transparent cubes are depth-sorted with an exact O(n) counting sort, and a

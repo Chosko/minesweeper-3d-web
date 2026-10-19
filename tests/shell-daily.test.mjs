@@ -259,9 +259,9 @@ test('in a browser, the menu pre-generates today\'s Expert, Daily plays it on th
     await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
     const code = dailyGame('expert', dateText()).code;
     await page.waitForFunction((c) => globalThis.__ms.daily.has(c), code, { timeout: patience(10000) });
-    // The Daily entry sits between 3D and Records.
+    // The Daily entry opens the second block, before Records.
     const entries = await page.evaluate(() => [...document.querySelectorAll('#menu [data-entry]')].map((b) => b.dataset.entry));
-    assert.deepEqual(entries, ['classic-2d', '3d', 'daily', 'records', 'settings']);
+    assert.deepEqual(entries, ['classic-2d', 'hexagon', 'triangle', 'surface', '3d', 'daily', 'records', 'settings', 'quit']);
     await page.click('#menu-entry-daily');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'daily');
     assert.equal(await page.evaluate(() => document.activeElement.id), 'daily-expert-play', 'the first Play has the focus');

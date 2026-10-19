@@ -140,6 +140,8 @@ export const KIT_CATALOGUE = Object.freeze([
     base: 'ui-button',
     parts: [selectable('button', '.ui-button--danger')],
   }),
+  // The game's title: three words on one line, each in its own accent.
+  component('ui-wordmark', { parts: [part('word', '.ui-wordmark__word')] }),
   component('ui-backdrop'),
   component('ui-frame', {
     parts: [
@@ -195,8 +197,18 @@ export const KIT_CATALOGUE = Object.freeze([
       part('outcome', '.ui-list-row .ui-chip', { as: 'ui-chip' }),
     ],
   }),
+  // --live while the 3D renderer draws through it; a preview with no board is a card in the stage,
+  // its badge in the accent its data-entry names.
   component('ui-scene-panel', {
-    parts: [part('stage', '.ui-scene-panel__stage'), part('tag', '.ui-scene-panel__tag', { optional: true })],
+    variants: ['ui-scene-panel--live'],
+    parts: [
+      part('stage', '.ui-scene-panel__stage'),
+      part('tag', '.ui-scene-panel__tag', { optional: true }),
+      part('card', '.ui-scene-panel__card', { optional: true }),
+      part('badge', '.ui-scene-panel__badge', { optional: true }),
+      part('name', '.ui-scene-panel__name', { optional: true }),
+      part('note', '.ui-scene-panel__note', { optional: true }),
+    ],
   }),
   component('ui-divider', { variants: ['ui-divider--vertical'] }),
   component('ui-tabs', {

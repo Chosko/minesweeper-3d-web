@@ -84,29 +84,32 @@ for (const inert of [true, false]) {
     try {
       const { page, errors, ms, frames, tap, mode, focused, isInert, tabWalk } = await open(browser, base, { inert });
 
-      // The Controls modal: the menu behind it is inert; Tab never reaches it.
-      await page.click('#menu-help');
+      // The Controls modal over the Settings page: the page behind it is inert; Tab never reaches it.
+      await page.click('#menu-entry-settings');
+      assert.equal(await mode(), 'settings');
+      await page.click('#set-controls');
       assert.equal(await focused(), 'controls-close');
-      if (inert) assert.equal(await isInert('menu'), true, 'the menu is inert behind the Controls modal');
+      if (inert) assert.equal(await isInert('settings'), true, 'the Settings page is inert behind the Controls modal');
       assert.equal(await isInert('toast'), false, 'the toast stays live');
       await tabWalk('#controls-modal', false);
       await tabWalk('#controls-modal', true);
-      // Every way out focuses the menu's Controls button, and the menu is live again.
+      // Every way out focuses the page's Controls action, and the page is live again.
       await page.keyboard.press('Escape');
-      assert.equal(await focused(), 'menu-help', 'Esc');
-      assert.equal(await isInert('menu'), false, 'the menu is live again');
-      await page.click('#menu-help');
+      assert.equal(await focused(), 'set-controls', 'Esc');
+      assert.equal(await isInert('settings'), false, 'the page is live again');
+      assert.equal(await mode(), 'settings', 'Esc closed the modal only');
+      await page.click('#set-controls');
       await page.click('#controls-close');
-      assert.equal(await focused(), 'menu-help', 'the close button');
-      await page.click('#menu-help');
+      assert.equal(await focused(), 'set-controls', 'the close button');
+      await page.click('#set-controls');
       await page.mouse.click(4, 4);
       assert.equal(await ms(() => document.getElementById('controls-modal').classList.contains('hidden')), true);
-      assert.equal(await focused(), 'menu-help', 'a backdrop click');
-      await page.click('#menu-help');
+      assert.equal(await focused(), 'set-controls', 'a backdrop click');
+      await page.click('#set-controls');
       await frames(2);
       await tap(BTN.B);
       assert.equal(await ms(() => document.getElementById('controls-modal').classList.contains('hidden')), true);
-      assert.equal(await focused(), 'menu-help', 'the controller');
+      assert.equal(await focused(), 'set-controls', 'the controller');
 
       // The pause card of a started 3D game: the overlay bar (its Pause button) and the boards are inert.
       await ms(() => {

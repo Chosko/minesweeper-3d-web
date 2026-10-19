@@ -661,6 +661,12 @@
   box-shadow: inset 0 -2px 0 var(--color-edge-inset), 0 var(--edge-md) 0 var(--color-edge);
 }
 
+/* ---------- wordmark: blue, coral and yellow words (--f), each on a stack of its own hard edge (--e) ---------- */
+:root[data-theme="joyful-tiles"] .ui-wordmark { font-weight: 900; }
+:root[data-theme="joyful-tiles"] .ui-wordmark__word { --f: var(--color-blue); --e: var(--color-blue-edge); color: var(--f); text-shadow: 0 0.05em 0 var(--e), 0 0.1em 0 var(--e), 0 0.2em 0.24em var(--shade-press); }
+:root[data-theme="joyful-tiles"] .ui-wordmark__word:nth-child(2) { --f: var(--color-accent-fill); --e: var(--color-accent-edge); }
+:root[data-theme="joyful-tiles"] .ui-wordmark__word:nth-child(3) { --f: var(--color-yellow); --e: var(--color-yellow-edge); }
+
 /* ---------- page backdrop and screen frame: dotted paper, a white window under a yellow head ---------- */
 :root[data-theme="joyful-tiles"] .ui-backdrop {
   background-color: var(--color-ground);
@@ -851,6 +857,28 @@
 }
 :root[data-theme="joyful-tiles"] .ui-scene-panel__stage { border-radius: inherit; color: var(--color-ink-inverse); }
 :root[data-theme="joyful-tiles"] .ui-scene-panel__tag { color: var(--color-scene-ink); font-family: var(--font-family-mono); }
+
+/* the 3D scene drawn from beneath: no sky of the panel's own over it, the frame still drawn */
+:root[data-theme="joyful-tiles"] .ui-scene-panel--live { background: none; }
+/* a preview with no board: a raised badge in the entry's accent (the places cream, an entry that cannot open here locked), its name and note */
+:root[data-theme="joyful-tiles"] .ui-scene-panel__card { color: var(--color-ink-inverse); }
+:root[data-theme="joyful-tiles"] .ui-scene-panel__badge {
+  --f: var(--color-surface-raised);
+  --e: var(--color-edge);
+  border-radius: 44px;
+  background: var(--f);
+  color: var(--color-ink);
+  box-shadow: inset 0 4px 0 var(--highlight), 0 10px 0 var(--e);
+}
+:root[data-theme="joyful-tiles"] .ui-scene-panel__badge[data-entry="classic-2d"] { --f: var(--color-blue); --e: var(--color-blue-edge); }
+:root[data-theme="joyful-tiles"] .ui-scene-panel__badge[data-entry="hexagon"] { --f: var(--color-teal); --e: var(--color-teal-edge); }
+:root[data-theme="joyful-tiles"] .ui-scene-panel__badge[data-entry="triangle"] { --f: var(--color-green); --e: var(--color-green-edge); }
+:root[data-theme="joyful-tiles"] .ui-scene-panel__badge[data-entry="surface"] { --f: var(--color-orange); --e: var(--color-orange-edge); }
+:root[data-theme="joyful-tiles"] .ui-scene-panel__badge[data-entry="3d"] { --f: var(--color-accent-fill); --e: var(--color-accent-edge); }
+:root[data-theme="joyful-tiles"] .ui-scene-panel__badge[data-entry="daily"] { --f: var(--color-violet); --e: var(--color-violet-edge); }
+:root[data-theme="joyful-tiles"] .ui-scene-panel__badge[data-unavailable] { --f: var(--color-locked); --e: var(--color-locked-edge); box-shadow: 0 10px 0 var(--e); }
+:root[data-theme="joyful-tiles"] .ui-scene-panel__name { color: var(--color-ink-inverse); }
+:root[data-theme="joyful-tiles"] .ui-scene-panel__note { color: var(--color-scene-ink); }
 
 /* ---------- divider ---------- */
 :root[data-theme="joyful-tiles"] .ui-divider { background: var(--color-line); }

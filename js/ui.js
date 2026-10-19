@@ -1,10 +1,11 @@
 // DOM menus, HUD and overlays. No game rules here.
-// Every help surface — the pause card, the main menu's Controls panel, the H panel, the HUD strip
-// and the hint strip — is drawn from the bindings source (js/settings/bindings.js) for the active
-// mode and the active device (the controller in the connected controller's glyphs).
-import { formatOverlayTime, formatMineCount, mineCounterDigits, bindSegmented } from './ui/components.js';
+// Every help surface — the pause card, the Settings page's Controls panel, the H panel, the HUD strip,
+// the hint strip and the main menu's key hints — is drawn from the bindings source
+// (js/settings/bindings.js) for the active mode and the active device (the controller in the
+// connected controller's glyphs).
+import { formatOverlayTime, formatMineCount, mineCounterDigits, bindSegmented, showKeyHints } from './ui/components.js';
 import { GLYPHS } from './gamepad.js';
-import { bindingsHtml, hudStripHtml, hintStripHtml, helpFootHtml, hintText } from './settings/bindings.js';
+import { bindingsHtml, hudStripHtml, hintStripHtml, helpFootHtml, hintText, keyHintKeys } from './settings/bindings.js';
 import { settingsPageHtml, bindingsSectionHtml, bindResetPanel } from './settings/page.js';
 import { DIM_MIN, DIM_MAX } from './mode3d/board-choice.js';
 import { LEARN_TITLE } from './mode3d/learn.js';
@@ -55,7 +56,7 @@ export const TOUCH_MSG = 'Both modes play by touch: 3D and Classic 2D.';
 
 export class UI {
   constructor(cb) {
-    this.cb = cb; // { onMenuEntry, onMenuPlayAgain, onBack, onReadyClick, onReadyDrag, onReadyBack, onReadyLearn, onLearnEnd, onLearnBack, onResume, onRestart, onMainMenu, onPause, onToggleSwap, onToggleTap, onToggleSound, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll, onLayer, onTouchMode }
+    this.cb = cb; // { onMenuEntry, onBack, onReadyClick, onReadyDrag, onReadyBack, onReadyLearn, onLearnEnd, onLearnBack, onResume, onRestart, onMainMenu, onPause, onToggleSwap, onToggleTap, onToggleSound, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll, onLayer, onTouchMode }
     this.el = {
       hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), clicks: $('hud-clicks'), size: $('hud-size'), hudTools: $('hud-tools'), hudSwap: $('hud-swap'), hudTap: $('hud-tap'),
       help: $('help'), helpList: $('help').querySelector('.controls'), helpFoot: $('help-foot'),
@@ -102,17 +103,10 @@ export class UI {
     this._learnWon = false; // the Learn 3D end card's outcome
     this._timed = true; // the game shown has a timer (Learn 3D has none)
 
-    // main menu entries: each a route (the shell decides where); the last mode played is marked
-    document.querySelectorAll('[data-entry]').forEach((b) => {
-      const line = document.createElement('span');
-      line.className = 'ui-menu__detail hidden';
-      line.dataset.last = '';
-      line.textContent = 'Last played';
-      b.appendChild(line);
-      b.addEventListener('click', () => cb.onMenuEntry?.(b.dataset.entry));
+    // main menu entries: each a route (the shell decides where; a disabled entry opens nothing)
+    document.querySelectorAll('#menu [data-entry]').forEach((b) => {
+      b.addEventListener('click', () => { if (b.getAttribute('aria-disabled') !== 'true') cb.onMenuEntry?.(b.dataset.entry); });
     });
-    // the menu's Play again: the last board played, started in one step (the shell decides how)
-    $('menu-again').addEventListener('click', () => cb.onMenuPlayAgain?.());
     for (const id of ['coming-soon-back', 'settings-back']) $(id).addEventListener('click', () => cb.onBack?.());
     // The Settings page's controls are generated from the settings schema and bound by the shell.
     $('settings-body').innerHTML = settingsPageHtml();
@@ -121,15 +115,14 @@ export class UI {
     this._reset = bindResetPanel({
       open: $('set-reset'), panel: $('set-reset-confirm'), yes: $('set-reset-yes'), no: $('set-reset-no'), note: $('set-reset-note'),
     }, { reset: () => cb.onResetAll?.() });
-    // Controls panel (main menu): Classic 2D and 3D tabs over the bindings component.
+    // Controls panel (the Settings page's Controls action): Classic 2D and 3D tabs over the bindings component.
     bindSegmented($('controls-tabs'), { horizontal: true, onChange: (mode) => { this._controlsTab = mode; this._renderBindings(); } });
     this._renderBindings();
-    $('menu-help').addEventListener('click', () => this.openControls());
+    $('set-controls').addEventListener('click', () => this.openControls());
     $('controls-close').addEventListener('click', () => this.closeControls());
     this.el.controlsModal.addEventListener('click', (e) => { if (e.target === this.el.controlsModal) this.closeControls(); });
     $('ready-back').addEventListener('click', () => cb.onReadyBack?.());
     $('hint-strip-close').addEventListener('click', () => this.dismissHint());
-    $('menu-sound').addEventListener('click', () => cb.onToggleSound());
     $('p-sound').addEventListener('click', () => cb.onToggleSound());
     $('ready-btn').addEventListener('click', () => cb.onReadyClick());
     $('ready-drag').addEventListener('click', () => cb.onReadyDrag?.());
@@ -203,52 +196,54 @@ export class UI {
   }
 
   /**
-   * Disable main menu entry `id`, which this browser cannot run: its reason shows under its label
-   * in place of its detail line; mouse, keyboard, controller and shell navigation pass it by.
+   * Disable main menu entry `id`, which cannot open here: aria-disabled, so it stays selectable and
+   * its preview shows, its reason under its label and its lock shown; a click opens nothing.
    */
   setEntryUnavailable(id, reason) {
-    const b = document.querySelector(`[data-entry="${id}"]`);
+    const b = document.querySelector(`#menu [data-entry="${id}"]`);
     if (!b) return;
-    b.disabled = true;
-    const detail = b.querySelector('.ui-menu__detail:not([data-last])');
-    if (detail) detail.textContent = reason;
+    b.setAttribute('aria-disabled', 'true');
+    let line = b.querySelector('.ui-mode-entry__reason');
+    if (!line) {
+      line = document.createElement('span');
+      line.className = 'ui-mode-entry__reason';
+      b.querySelector('.ui-mode-entry__label').after(line);
+    }
+    line.textContent = reason;
   }
 
-  /** Mark the main menu entry of the last mode played (null: none). */
+  /** Mark the main menu entry of the last mode played with the Last played chip (null: none). */
   setLastMode(mode) {
-    document.querySelectorAll('[data-entry]').forEach((b) => {
+    document.querySelectorAll('#menu [data-entry]').forEach((b) => {
       const isLast = !!mode && b.dataset.entry === mode;
       b.toggleAttribute('data-last', isLast);
-      b.querySelector('[data-last]')?.classList.toggle('hidden', !isLast);
+      b.querySelector('.ui-chip[data-last]')?.classList.toggle('hidden', !isLast);
     });
   }
 
-  /**
-   * The main menu's returning-player surfaces over the last board played: the session strip under
-   * the entries and Play again in the title row, each hidden when its text is null.
-   */
-  setReturning({ strip = null, again = null } = {}) {
-    const line = $('menu-strip');
-    const button = $('menu-again');
-    line.textContent = strip ?? '';
-    line.classList.toggle('hidden', !strip);
-    button.textContent = again ?? 'Play again';
-    button.classList.toggle('hidden', !again);
+  /** The main menu's build label. */
+  setBuild(text) {
+    $('menu-build').textContent = text;
   }
 
   // ---------- controls modal ----------
+  /** Open the controls reference over the Settings page; closing it gives the focus back to what opened it. */
   openControls() {
+    const opener = document.activeElement;
+    this._controlsOpener = opener && opener !== document.body ? opener : null;
     this._renderBindings();
     this.el.controlsModal.classList.remove('hidden');
     this.cb.onLayer?.();
     $('controls-close').focus({ preventScroll: true });
   }
-  /** Close the modal; the containment lifts before the menu's Controls button takes focus back. */
+  /** Close the modal; the containment lifts before the control that opened it takes focus back. */
   closeControls() {
     if (this.el.controlsModal.classList.contains('hidden')) return false;
     this.el.controlsModal.classList.add('hidden');
     this.cb.onLayer?.();
-    $('menu-help').focus({ preventScroll: true });
+    const back = this._controlsOpener?.isConnected ? this._controlsOpener : $('set-controls');
+    this._controlsOpener = null;
+    back.focus({ preventScroll: true });
     return true;
   }
   isControlsOpen() { return !this.el.controlsModal.classList.contains('hidden'); }
@@ -660,7 +655,6 @@ export class UI {
     const t = muted ? 'off' : 'on';
     this._muted = !!muted;
     this._renderHudStrip();
-    $('menu-sound').textContent = `Sound: ${t}`;
     $('p-sound').textContent = `Sound: ${t}`;
   }
   toggleHelp(force) {
@@ -719,6 +713,7 @@ export class UI {
   }
   /** Redraw every bindings surface for the active mode and device. */
   _renderBindings() {
+    showKeyHints($('menu-hints'), (action) => keyHintKeys(action, this._bindDevice(this._mode), this._glyphs));
     this._renderHelp();
     this._renderHudStrip();
     this.el.controlsBody.innerHTML = bindingsHtml(this._controlsTab, this._bindDevice(this._controlsTab), this._glyphs, this._camera);

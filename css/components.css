@@ -264,6 +264,18 @@
               it is the top edge of the board's framed panel
               (css/style.css .c2d-panel) and sits on the panel's surface.
 
+   ui-wordmark — the game's title in one line (the main menu, the board choices)
+     Element: <h1 class="ui-wordmark" aria-label="Minesweeper 3D">
+                <span class="ui-wordmark__word" aria-hidden="true">Mine</span>
+                <span class="ui-wordmark__word" aria-hidden="true">sweeper</span>
+                <span class="ui-wordmark__word" aria-hidden="true">3D</span>
+              </h1>
+     Role:    heading (native)
+     Name:    aria-label
+     Look:    the three words on one line, centred, in capitals, each in its
+              own accent; sized with the window — 84 px on the largest
+              desktop window, 50 px at 1024 × 768, 31 px on a phone.
+
    ui-backdrop — the page behind a screen (Joyful tiles' dotted paper)
      Element: <div class="ui-backdrop"> holding the screen's ui-frame </div>
      Role:    none (presentational)
@@ -394,6 +406,19 @@
      Name:    aria-labelledby → the tag
      Layout:  sized by the screen; the stage fills it, the tag sits over
               its top-left corner.
+     Live:    ui-scene-panel--live while the 3D renderer draws its scene
+              into the stage's rectangle from beneath the page: the panel
+              lays no background of its own, its frame drawn over the scene.
+     Card:    a preview with no board — a mode not built yet, a place, an
+              entry that cannot open here — is a card in the stage:
+                <div class="ui-scene-panel__card">
+                  <span class="ui-scene-panel__badge" data-entry="hexagon" aria-hidden="true"><svg>…</svg></span>
+                  <span class="ui-scene-panel__name">Hexagon</span>
+                  <span class="ui-scene-panel__note">Coming soon</span>
+                </div>
+              the badge in the accent its data-entry names, as the mode
+              entry's (the places neutral), locked grey with data-unavailable
+              for an entry that cannot open here; the note optional.
 
    ui-divider — a rule between groups
      Element: <hr class="ui-divider">; between columns
@@ -438,7 +463,7 @@
    ui-text.
      ui-screen         a screen's card column: <section class="ui-card
                        ui-screen" aria-labelledby="…">; ui-screen--wide for
-                       the main menu; ui-screen--columns for a screen laid
+                       a wide one (the board choices, Daily); ui-screen--columns for a screen laid
                        out with ui-columns (Records, Settings, the pause
                        card).
      ui-row            a horizontal group that wraps (title with logo,
@@ -467,17 +492,21 @@
      ui-key-hints      a row of ui-key-hint.
      ui-list           the list of ui-list-row, its columns shared.
 
-   Main menu (index.html #menu): ui-card ui-screen--wide holding the title
-     row (ending in the Play again primary button, "Play again: <board>",
-     which starts the last board played in one step and is hidden while
-     there is none, or for a 3D board without WebGL 2), one ui-menu of the
-     entries (Classic 2D, 3D, Daily, Records, Settings; each a route, data-entry
-     naming it, the last mode played marked with a "Last played"
-     ui-menu__detail), the ui-text--muted session strip under it (the last
-     board played, its best, today's games on it and its streak; hidden
-     while there is none) and a ui-row footer (Controls, Sound, volume
-     ui-slider, credit ui-link). Default focus: the last mode played
-     (data-last), else the first entry.
+   Main menu (index.html #menu): on the page's own backdrop, the
+     ui-wordmark at the top; under it, on the left, one ui-mode-list of the
+     nine entries (Classic 2D, Hexagon, Triangle, Surface, 3D; Daily,
+     Records, Settings; Quit — three blocks, data-block-start on the first
+     entry of the second and third, no group labels; each a ui-mode-entry
+     route, data-entry naming it, the last mode played marked with the Last
+     played ui-chip, an entry that cannot open here aria-disabled with its
+     reason), the entries together as tall as the preview; on the right the
+     preview of the selected entry, a ui-scene-panel (a board drawn by its
+     board view, the 3D scene live, or a card); under them the
+     ui-key-hints (move, select) and the build label, a ui-text--muted line,
+     with the touch note on a coarse-only device. On a phone: no preview,
+     the entries filling the screen. Default focus: the entry last opened
+     from the menu when Back returns to it, else the last mode played's,
+     else the first available entry.
    3D board choice (index.html #board-choice): ui-card ui-screen--wide
      holding the title, the Learn 3D item first in its own ui-menu (its
      detail line "A guided 4 × 4 × 3 box · no timer, no records"), the
@@ -1158,6 +1187,21 @@
 .ui-list-row__figure { grid-column: 3; font-variant-numeric: var(--font-numeric-tabular); text-align: right; white-space: nowrap; }
 .ui-list-row > .ui-chip { grid-column: 4; justify-self: start; }
 
+/* ---------- wordmark: one centred line, sized with the window ---------- */
+.ui-wordmark {
+  display: flex;
+  justify-content: center;
+  gap: 0.28em;
+  margin: 0;
+  font-size: clamp(31px, min(3.8vw + 11px, 7.8vh), 84px);
+  font-weight: var(--font-weight-heavy);
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+@media (max-width: 719px) { .ui-wordmark { font-size: 31px; } }
+
 /* ---------- scene panel: the stage fills it, the tag over its corner ---------- */
 .ui-scene-panel {
   position: relative;
@@ -1167,6 +1211,17 @@
   overflow: hidden;
 }
 .ui-scene-panel__stage { position: absolute; inset: 0; display: grid; place-items: center; }
+.ui-scene-panel__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  text-align: center;
+}
+.ui-scene-panel__badge { display: grid; place-items: center; width: 200px; height: 200px; max-width: 40vmin; max-height: 40vmin; }
+.ui-scene-panel__badge > svg { width: 45%; height: 45%; }
+.ui-scene-panel__name { font-size: var(--font-size-2xl); font-weight: var(--font-weight-heavy); }
+.ui-scene-panel__note { font-size: var(--font-size-md); font-weight: var(--font-weight-bold); }
 .ui-scene-panel__tag {
   position: absolute;
   top: var(--space-4);

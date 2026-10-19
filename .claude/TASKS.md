@@ -540,7 +540,7 @@ Feature: shared-screen-layout
 
 ## 165. Main menu in the shared layout
 
-Status: [PARKED]
+Status: [DONE]
 Target: claude
 Files: index.html, js/shell/menu.js, js/shell/returning.js, js/shell/daily.js, js/main.js, js/ui.js, js/settings/page.js, js/classic2d/board-view.js, themes/joyful-tiles/theme.css, tests/shell-menu.test.mjs, tests/shell-returning.test.mjs, tests/shell-router.test.mjs, tests/settings-page.test.mjs, tests/components.test.mjs
 Preconditions: 163, 164

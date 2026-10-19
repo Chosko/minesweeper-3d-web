@@ -25,6 +25,9 @@
 //   never waits. A finished board is held under its code: it is deterministic, so it equals a fresh
 //   generation. take(code) hands the held board over (in flight or arrived) and forgets it; a failed
 //   or cancelled one is not handed over, so the session generates it afresh.
+// dailyPreview(now?) → the main menu's Daily preview: today's daily Expert board, closed, its start cell
+//   marked — { board, startCell, date, dateLabel, tag } (tag "Daily · 16 Oct 2026"); nothing is
+//   generated, the start cell comes with the day's board (dailyGame).
 // bindDailyScreen({ root, onPlay, onWatch, onBack, onCopy? }) → { show(rows), defaultFocus() }: each
 //   row's element [data-daily="<id>"] shows its date [data-date], board [data-board], state
 //   [data-state], streak [data-streak], the reason [data-reason] (hidden without one), its code chip
@@ -93,6 +96,17 @@ export function dailyRows({ records, replays = null, now = new Date(), unavailab
       reason,
     };
   });
+}
+
+/** The daily board the main menu's Daily preview shows: today's Expert. */
+export const PREVIEW_DAILY = 'expert';
+
+export function dailyPreview(now = new Date()) {
+  const game = dailyGame(PREVIEW_DAILY, dateText(now));
+  const dateLabel = dailyDateLabel(game.date);
+  return {
+    board: game.board, startCell: game.startCell, date: game.date, dateLabel, tag: `Daily · ${dateLabel}`,
+  };
 }
 
 export function createDailyBoards({ clients }) {

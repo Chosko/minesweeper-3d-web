@@ -29,6 +29,7 @@
     /* the shared layout's components */
     .frame-demo { height: 420px; gap: var(--space-6); margin-top: var(--space-4); }
     .scene-demo { width: 100%; height: 200px; margin-top: var(--space-4); }
+    .scene-demo--card { flex: 1 1 200px; height: 340px; }
     .divider-demo { align-items: stretch; margin-top: var(--space-4); }
     #g-labels > * + *, #g-rows > * + * { margin-top: var(--space-4); }
   </style>
@@ -250,6 +251,11 @@
       </div>
     </section>
 
+    <section class="ui-card wide" aria-labelledby="g-wordmark-title">
+      <h2 class="ui-card__title" id="g-wordmark-title">Wordmark</h2>
+      <h1 class="ui-wordmark" aria-label="Minesweeper 3D"><span class="ui-wordmark__word" aria-hidden="true">Mine</span><span class="ui-wordmark__word" aria-hidden="true">sweeper</span><span class="ui-wordmark__word" aria-hidden="true">3D</span></h1>
+    </section>
+
     <section class="ui-card" aria-labelledby="g-mode">
       <h2 class="ui-card__title" id="g-mode">Mode entry</h2>
       <div class="ui-mode-list" id="g-modes" role="group" aria-label="Modes">
@@ -308,7 +314,11 @@
     <section class="ui-card" aria-labelledby="g-scene">
       <h2 class="ui-card__title" id="g-scene">Scene panel</h2>
       <figure class="ui-scene-panel scene-demo" aria-labelledby="g-scene-2d"><div class="ui-scene-panel__stage"></div><figcaption class="ui-scene-panel__tag" id="g-scene-2d">Classic 2D · Intermediate</figcaption></figure>
-      <figure class="ui-scene-panel scene-demo" aria-labelledby="g-scene-hex"><div class="ui-scene-panel__stage"><span class="ui-chip ui-chip--muted">Coming soon</span></div><figcaption class="ui-scene-panel__tag" id="g-scene-hex">Hexagon</figcaption></figure>
+      <div class="ui-row">
+        <figure class="ui-scene-panel scene-demo scene-demo--card" aria-labelledby="g-scene-hex"><div class="ui-scene-panel__stage"><div class="ui-scene-panel__card"><span class="ui-scene-panel__badge" data-entry="hexagon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8.7 5v10L12 22l-8.7-5V7z"/><path d="M12 7l4.3 2.5v5L12 17l-4.3-2.5v-5z"/></svg></span><span class="ui-scene-panel__name">Hexagon</span><span class="ui-scene-panel__note">Coming soon</span></div></div><figcaption class="ui-scene-panel__tag" id="g-scene-hex">Hexagon</figcaption></figure>
+        <figure class="ui-scene-panel scene-demo scene-demo--card" aria-labelledby="g-scene-records"><div class="ui-scene-panel__stage"><div class="ui-scene-panel__card"><span class="ui-scene-panel__badge" data-entry="records" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></span><span class="ui-scene-panel__name">Records</span></div></div><figcaption class="ui-scene-panel__tag" id="g-scene-records">Records</figcaption></figure>
+        <figure class="ui-scene-panel scene-demo scene-demo--card" aria-labelledby="g-scene-quit"><div class="ui-scene-panel__stage"><div class="ui-scene-panel__card"><span class="ui-scene-panel__badge" data-entry="quit" data-unavailable aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v9"/><path d="M6.3 6.3a8 8 0 1 0 11.4 0"/></svg></span><span class="ui-scene-panel__name">Quit</span><span class="ui-scene-panel__note">Desktop build only</span></div></div><figcaption class="ui-scene-panel__tag" id="g-scene-quit">Quit</figcaption></figure>
+      </div>
     </section>
 
     <section class="ui-card" aria-labelledby="g-tabs">

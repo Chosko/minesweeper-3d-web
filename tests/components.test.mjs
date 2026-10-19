@@ -57,6 +57,7 @@ const COMPONENTS = {
   'ui-chip': { interactive: false },
   'ui-list-row': { interactive: false },
   'ui-scene-panel': { interactive: false },
+  'ui-wordmark': { interactive: false },
   'ui-divider': { interactive: false },
   'ui-tabs': { interactive: true, control: '.ui-tabs__tab' },
   'ui-checkbox': { interactive: true, control: '.ui-checkbox__input' },
@@ -598,9 +599,18 @@ test('the main menu and the pause card are built only from kit classes', () => {
     assert.ok(html.length > 200, `${name} found in index.html`);
     const [root, ...inner] = tags(html);
     assert.deepEqual(classesOf(root).filter((c) => c !== 'hidden'), ['overlay'], `#${name} is a shell overlay layer`);
-    const card = inner.find((t) => classesOf(t).includes('ui-card'));
-    assert.ok(card, `#${name} holds a ui-card`);
-    assert.ok(card.attrs['aria-labelledby'], `#${name} card is named by its title`);
+    if (name === 'menu') {
+      // The main menu sits on the page's backdrop with no card: the wordmark, the entries, the preview, the hints.
+      assert.ok(root.attrs['aria-label'], '#menu is named');
+      for (const cls of ['ui-wordmark', 'ui-mode-list', 'ui-mode-entry', 'ui-scene-panel', 'ui-key-hints', 'ui-key-hint', 'ui-chip', 'ui-text']) {
+        assert.ok(inner.some((t) => classesOf(t).includes(cls)), `#menu uses ${cls}`);
+      }
+      assert.ok(!inner.some((t) => classesOf(t).includes('ui-card')), '#menu holds no card');
+    } else {
+      const card = inner.find((t) => classesOf(t).includes('ui-card'));
+      assert.ok(card, `#${name} holds a ui-card`);
+      assert.ok(card.attrs['aria-labelledby'], `#${name} card is named by its title`);
+    }
     for (const t of inner) {
       for (const c of classesOf(t)) assert.ok(c.startsWith('ui-') || allowed.has(c), `#${name} <${t.tag} class="${c}"> is not a kit class`);
     }
@@ -641,7 +651,7 @@ test('every control on the menu and the pause card is named and reachable by key
   assert.ok(SCREENS.pause.includes('id="p-resume"') && SCREENS.pause.includes('id="p-restart"'));
   assert.match(SCREENS.pause, /id="p-resume"[^\n]*\n\s*<button id="p-home" class="ui-button ui-button--secondary" type="button">Back to start<\/button>/, 'Back to start follows Resume');
   assert.doesNotMatch(read('js/ui.js'), /Keep looking around/, 'an ended game offers no look-around resume');
-  assert.match(line('menu'), /^'\[data-entry\]\[data-last\]'/, 'the menu focuses the last mode played by default');
+  assert.match(line('menu'), /^\(\) => `#menu-entry-\$\{menuFocusEntry\(\)\}`/, 'the menu focuses its selection by default');
   assert.match(line('board-choice'), /^'[^']*data-preset/, 'the 3D board choice focuses the last played board by default');
 });
 
@@ -1496,7 +1506,7 @@ test('in a browser, the menu, the pause card and the results layout meet the con
     assert.deepEqual(await page.evaluate(() => Object.keys(globalThis.__ms)), MS_HOOK, 'the __ms hook is unchanged');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
 
-    await check(page, '#menu .ui-card', 'menu');
+    await check(page, '#menu', 'menu');
     // Keyboard focus shows its focused state on every control of the menu, in tab order.
     const menuControls = await page.evaluate(() => [...document.querySelectorAll('#menu button, #menu input, #menu a[href]')]
       .filter((e) => e.getBoundingClientRect().width > 0).length);
@@ -1508,12 +1518,21 @@ test('in a browser, the menu, the pause card and the results layout meet the con
       assert.ok(focusShows(f), `menu control #${f.id || i} shows its focused state (${f.style} ${f.width} ${f.transform})`);
     }
 
-    // The main menu's Controls panel: the theme's surface on its scrim, readable.
-    await page.click('#menu-help');
+    // Each preview of the menu, readable: the cards' names and notes on the panel, the daily board's tag.
+    for (const id of ['hexagon', 'records', 'quit', 'daily']) {
+      await page.focus(`#menu-entry-${id}`);
+      await check(page, '#menu-preview', `menu-preview-${id}`, 1);
+    }
+
+    // The Settings page's Controls panel: the theme's surface on its scrim, readable.
+    await page.click('#menu-entry-settings');
+    await page.click('#set-controls');
     assert.equal(await page.evaluate(() => document.getElementById('controls-modal').classList.contains('hidden')), false);
     await check(page, '#controls-modal .modal-card', 'controls');
     await page.click('#controls-close');
     assert.equal(await page.evaluate(() => document.getElementById('controls-modal').classList.contains('hidden')), true);
+    await page.keyboard.press('Escape');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
 
     // The menu's demo board: the shell hands the renderer the theme's sky.
     const sky = await page.evaluate(() => globalThis.__ms.renderer.scenePalette);
@@ -1625,12 +1644,17 @@ const textOf = (html, t) => {
 };
 const MODE_ENTRIES = ['classic-2d', 'hexagon', 'triangle', 'surface', '3d', 'daily', 'records', 'settings', 'quit'];
 
-test('the gallery marks the shared layout\'s components and none of them is on a screen yet', () => {
+test('the gallery marks the shared layout\'s components; the main menu is the screen built from them so far', () => {
   assert.ok(LAYOUT.length > 1000, 'dev/components.html holds the shared layout\'s components');
   const screens = INDEX.replace(/<!--[\s\S]*?-->/g, '');
-  for (const cls of ['ui-backdrop', 'ui-frame', 'ui-mode-entry', 'ui-option', 'ui-section-label', 'ui-key-hint', 'ui-chip', 'ui-list-row',
-    'ui-scene-panel', 'ui-divider', 'ui-tabs', 'ui-checkbox', 'ui-table', 'ui-button--danger']) {
-    assert.doesNotMatch(screens, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `no screen uses ${cls} yet`);
+  const menu = SCREENS.menu;
+  const others = screens.replace(menu, '');
+  for (const cls of ['ui-wordmark', 'ui-mode-entry', 'ui-key-hint', 'ui-chip', 'ui-scene-panel']) {
+    assert.match(menu, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the main menu uses ${cls}`);
+  }
+  for (const cls of ['ui-backdrop', 'ui-frame', 'ui-option', 'ui-section-label', 'ui-list-row', 'ui-divider', 'ui-tabs', 'ui-checkbox',
+    'ui-table', 'ui-button--danger', 'ui-mode-entry', 'ui-scene-panel']) {
+    assert.doesNotMatch(others, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `no other screen uses ${cls} yet`);
   }
 });
 

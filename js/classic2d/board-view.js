@@ -4,7 +4,8 @@
 // canvas and is driven by calls; mountBoardView is the browser wiring around it.
 //
 // Fit rule: the tile is the largest whole size at which the board fits the area left inside the
-// frame, at most the board scale's cap (tileCap) and never below MIN_TILE_SIZE. A board that fits
+// frame, at most the board scale's cap (tileCap) and never below MIN_TILE_SIZE (minTile, for a board
+// shown and not played: the main menu's preview fits whole at any tile). A board that fits
 // is centred, frame and all, and never scrolls; one that does not keeps the minimum tile, fills the
 // area, starts at its top-left corner and scrolls (wheel, drag with the pan modifier, ensureVisible
 // for the cursor). Tiles sit edge to edge inside the view rectangle (layout.viewX, viewY,
@@ -14,7 +15,7 @@
 // hidden (gone once scrolled to that edge) and a thin scroll bar per overflowing axis, its length
 // and place the visible part's (clipMarks).
 //
-// createBoardView({ canvas, grid, createSkin?, token?, scale?, frame?, onLayout? }) → view
+// createBoardView({ canvas, grid, createSkin?, token?, scale?, frame?, minTile?, onLayout? }) → view
 //   canvas      a <canvas> or anything with width, height, style and getContext('2d').
 //   grid        the square grid (js/engine/square-grid.js): width, height, index, colRow.
 //   createSkin  ({ redraw }) → skin with drawTile and dispose; defaults to createTileSkin, whose
@@ -24,6 +25,8 @@
 //   frame       { top, right, bottom, left, minWidth } in CSS pixels: the room a page's frame
 //               takes around the view (minWidth the frame's smallest width); none by default.
 //               A function returning one is called again at every refit (resize, setScale).
+//   minTile     the fit rule's smallest tile, MIN_TILE_SIZE when not given; a smaller one lets a
+//               board that is shown and not played fit whole instead of scrolling.
 //   onLayout    (layout) → after every refit, the new layout.
 //
 //   resize(width, height, pixelRatio)  the area in CSS pixels; repaints when anything changed.
@@ -215,7 +218,7 @@ export function cellAtLayout(layout, scroll, cols, rows, x, y) {
 
 export function createBoardView({
   canvas, grid, createSkin = createTileSkin, token = readerToken, scale: initialScale = DEFAULT_BOARD_SCALE, frame = null,
-  onLayout = () => {}, timers = globalThis,
+  minTile = MIN_TILE_SIZE, onLayout = () => {}, timers = globalThis,
 } = {}) {
   if (!canvas || typeof canvas.getContext !== 'function') throw new TypeError('createBoardView needs a canvas');
   if (!grid || !Number.isInteger(grid.width) || !Number.isInteger(grid.height)) throw new TypeError('createBoardView needs a square grid');
@@ -235,7 +238,7 @@ export function createBoardView({
   };
   const clampTile = (tile, range) => Math.max(range.min, Math.min(range.max, Math.round(tile)));
   const fit = (width, height) => {
-    if (zoomTile === null) return boardLayout({ cols, rows, width, height, max: tileCap(scale), frame: f });
+    if (zoomTile === null) return boardLayout({ cols, rows, width, height, min: minTile, max: tileCap(scale), frame: f });
     zoomTile = clampTile(zoomTile, rangeOf(width, height));
     return boardLayout({ cols, rows, width, height, min: zoomTile, max: zoomTile, frame: f });
   };

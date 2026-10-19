@@ -1,5 +1,5 @@
 // Mode-aware help: the one bindings component per mode × device, the active device, the pause card's
-// mode-dependent controls and look settings, the main menu's Controls panel and its tabs, H and M in
+// mode-dependent controls and look settings, the Settings page's Controls panel and its tabs, H and M in
 // Classic 2D, the HUD strip, Space as tap-toggle as well as hold, and " · no-guess" on the ready
 // card, the overlay bar's readout and the pause card.
 import { test } from 'node:test';
@@ -284,8 +284,9 @@ test('in a browser: the Controls panel tabs, H, M and the HUD strip in Classic 2
     const shown = (id) => ms((i) => { const el = document.getElementById(i); return !!el && !el.classList.contains('hidden') && el.getClientRects().length > 0; }, id);
     const textOf = (sel) => ms((s) => document.querySelector(s).textContent, sel);
 
-    // The main menu's Controls panel: Classic 2D and 3D tabs.
-    await page.click('#menu-help');
+    // The Settings page's Controls panel: Classic 2D and 3D tabs.
+    await page.click('#menu-entry-settings');
+    await page.click('#set-controls');
     assert.ok(await shown('controls-modal'));
     assert.match(await textOf('#controls-body'), /Move the cursor/, 'Classic 2D first');
     assert.match(await textOf('#controls-body'), /Help/, 'H is named');
@@ -294,6 +295,8 @@ test('in a browser: the Controls panel tabs, H, M and the HUD strip in Classic 2
     assert.doesNotMatch(await textOf('#controls-body'), /Move the cursor/);
     await page.keyboard.press('Escape');
     assert.equal(await shown('controls-modal'), false);
+    await page.keyboard.press('Escape');
+    assert.equal(await mode(), 'menu');
 
     // Classic 2D: the HUD strip with only its keys, H opens the 2D help, M toggles sound.
     await page.click('#menu-entry-classic-2d');
@@ -410,8 +413,8 @@ test('in a browser: the controller as the active device redraws every shown surf
     assert.doesNotMatch(await textOf('#pause-controls'), /Fly \/ look around/);
     assert.match(await textOf('#hud-tools'), /H help/);
     await ms(() => globalThis.__ms.pauser.toMenu());
-    // The main menu's Controls panel follows the device too.
-    await ms(() => document.getElementById('menu-help').click());
+    // The Settings page's Controls panel follows the device too.
+    await ms(() => { document.getElementById('menu-entry-settings').click(); document.getElementById('set-controls').click(); });
     assert.doesNotMatch(await textOf('#controls-body'), /D-pad/);
     await tap(BTN.DOWN);
     assert.match(await textOf('#controls-body'), /D-pad/);
