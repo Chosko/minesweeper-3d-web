@@ -122,7 +122,7 @@ Context:
 
 Done: struck — for a parallel run its Depends on lacked the order against task 160, which edits the same files; replaced by step 53.
 
-## [P] 53. Implement task 165 — Main menu in the shared layout
+## [ ] 53. Implement task 165 — Main menu in the shared layout
 
 Depends on: 4, 7, 8
 
@@ -134,6 +134,7 @@ Context:
   c. The latest commit of `main`, fetched from the GitHub API at run time (a network call on every load, no label offline).
   d. "Web" alone until the game has release versions.
   Recommendation: a — no build step, one file to bump, nothing fetched. The implementation is on `park/task-165` (task 165 `[PARKED]`); the review round runs after unparking.
+- 2026-10-19 unparked with answer: Q1a — the build label reads its version from one file, `js/version.js`, holding a release version bumped by hand, starting at 0.2.0; the label reads "Web · v0.2.0".
 
 ```prompt
 /task-implement 165 --review

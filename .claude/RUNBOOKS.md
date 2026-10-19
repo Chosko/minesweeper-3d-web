@@ -31,6 +31,5 @@ File: .claude/runbooks/7-themes-tasks-implementation.md
 Created: 2026-10-13
 Source: /runbook-create interview (runbook themes-planning step 8)
 Steps: 54/81
-Parked: steps 53
 
 ---
