@@ -309,6 +309,7 @@ Context:
 - 2026-10-13 (amend): task 107 was re-planned so Leaderboards and Quit are mode entries of the redesigned main menu; it now waits on task 165 (themes-tasks-implementation step 9).
 - 2026-10-19 (amend): Supersedes the fact above: task 107 is "Leaderboards tab in Records and Quit in the main menu" — Leaderboards is the Records screen's fourth tab, not a menu entry; the task also waits on task 170 (themes-tasks-implementation step 43) and is `claude+human`: the owner first decides how the tab shows the leaderboards.
 - 2026-10-19 (amend): Supersedes the `claude+human` part of the fact above: the owner settled the tab — it shows the rankings of the board Records shows in place, inside Records — so task 107 is `claude` with no manual intervention; it reuses the rankings part of task 104 and also waits on task 105 (step 22).
+- 2026-10-19 (amend): themes-tasks-implementation steps 9 and 43 are struck; task 165 runs at its step 53 and task 170 at its step 59.
 
 ```prompt
 /task-implement 107 --review
@@ -331,6 +332,7 @@ Depends on: 3, 14
 Context:
 - 2026-10-09 (amend): task 109 also builds the results screen's *Leaderboard* action and now waits on task 104, the leaderboard screen (step 21).
 - 2026-10-13 (amend): task 109 was re-planned into the framed results screen: it now waits on task 169 (themes-tasks-implementation step 13) and is claude+human — the owner supplies an artboard drawing the rank panel and the *Leaderboard* action.
+- 2026-10-19 (amend): themes-tasks-implementation step 13 is struck; task 169 runs at its step 58.
 
 ```prompt
 /task-implement 109 --review
@@ -352,6 +354,7 @@ Depends on: none
 
 Context:
 - 2026-10-13 (amend): task 111 now also switches the shared layout's key hints and the in-game controls reminder to the resolver, and waits on tasks 163, 176 and 177 (themes-tasks-implementation steps 7, 20 and 21).
+- 2026-10-19 (amend): themes-tasks-implementation steps 20 and 21 are struck; task 176 runs at its step 68 and task 177 at its step 69; task 163 stays at step 7.
 
 ```prompt
 /task-implement 111 --review --rounds 2
@@ -373,6 +376,7 @@ Depends on: 28, 29
 
 Context:
 - 2026-10-13 (amend): task 113 was re-planned into the framed Settings page: it now waits on task 171 (themes-tasks-implementation step 15) and is claude+human — the owner supplies an artboard drawing the rebinding panels.
+- 2026-10-19 (amend): themes-tasks-implementation step 15 is struck; task 171 runs at its step 60.
 
 ```prompt
 /task-implement 113 --review
