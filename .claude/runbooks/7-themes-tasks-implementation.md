@@ -28,7 +28,7 @@ Context:
 
 Done: 2026-10-19, commit `ca8a74a` (29 files, +1959/-1527). The four tile tokens shared with the 2D tile skin keep the skin's values; the canvas spacing scale is not used; font sizes come from the canvas. The body's premise that the canvas draws every component in every state was wrong — the theme gives slider, segmented choice, field and link the switch's focus ring.
 
-## [~] 3. Implement task 159 — Registry-driven theme applier with run-time switch and board module hand-off
+## [x] 3. Implement task 159 — Registry-driven theme applier with run-time switch and board module hand-off
 
 Depends on: 1, 2
 
@@ -39,19 +39,22 @@ Context:
 /task-implement 159 --review
 ```
 
-## [ ] 4. Implement task 160 — Settings theme list and light/dark carry-over
+Done: 2026-10-19, commit `2b6ba85` (18 files, +810/-123). The importable switcher is a new `js/themes/applier.js` (`themeApplier()`); `globalThis.msTheme` is gone and `js/theme.js` stays the pre-paint classic script.
+
+## [~] 4. Implement task 160 — Settings theme list and light/dark carry-over
 
 Depends on: 3
 
 Context:
 - Task 160 adds no reduced-motion setting, settings field, root marker, accessibility section or preference read: the shipped `prefers-reduced-motion` rule in `css/style.css`, which task 158 keeps, is the game's one reduced-motion behaviour until `m7-after-launch`.
 - 2026-10-19 (from step 2): the Settings page still offers Light / Dark after task 158, and choosing one changes nothing.
+- 2026-10-19 (from step 3): the run-time switcher is `themeApplier()` in `js/themes/applier.js`; `globalThis.msTheme` no longer exists. A saved theme that fails at start-up shows the fallback notice once and is not retried when settings load.
 
 ```prompt
 /task-implement 160 --review
 ```
 
-## [ ] 5. Implement task 161 — Theme conformance tests and the component gallery per theme
+## [~] 5. Implement task 161 — Theme conformance tests and the component gallery per theme
 
 Depends on: 1, 2, 3
 
@@ -67,7 +70,8 @@ Context:
 
 Depends on: 1, 2, 3, 4, 5
 
-Context: none
+Context:
+- 2026-10-19 (from step 3): `.claude/context/app-shell-kit.md` and `.claude/context/settings.md` still describe `globalThis.msTheme` and light/dark; the switcher now lives in `js/themes/applier.js` (`themeApplier()`), with a test-only `registerTheme` and a fixture theme under `tests/fixtures/themes/`.
 
 ```prompt
 /task-implement 162 --review
