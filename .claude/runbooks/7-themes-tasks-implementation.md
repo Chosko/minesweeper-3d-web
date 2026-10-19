@@ -358,7 +358,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on named struck step 38; lacked the edge to task 212, its precondition; lacked the order against task 169, which edits the same files; replaced by step 59.
 
-## [~] 59. Implement task 170 — Records screen in the shared layout, with its Leaderboards tab
+## [x] 59. Implement task 170 — Records screen in the shared layout, with its Leaderboards tab
 
 Depends on: 7, 55, 58
 
@@ -368,6 +368,8 @@ Context:
 ```prompt
 /task-implement 170 --review
 ```
+
+Done: 2026-10-19, commit `d869374` (15 files, +424/-251). Back is labelled "Back" (Records returns one step through the back stack), not the artboard's "Main menu"; Replays is now a tab. Records tables still render as stacked cards at desktop sizes, unlike J-Records-xl — left for its own task.
 
 ## [x] 15. Implement task 171 — Settings page in the shared layout
 
@@ -395,7 +397,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against tasks 165, 170, which edit the same files; replaced by step 60.
 
-## [ ] 60. Implement task 171 — Settings page in the shared layout
+## [~] 60. Implement task 171 — Settings page in the shared layout
 
 Depends on: 4, 7, 59
 
@@ -576,6 +578,7 @@ Context:
 - 2026-10-19 (from step 54): `.claude/context/` files (e.g. `classic2d.md`, `app-shell-menu.md`) still describe the old Classic 2D board choice API; task 173 owns that update.
 - 2026-10-19 (from step 56): `.claude/context/mode3d.md` and `app-shell-menu.md` still describe the old 3D board choice (removed ids `c-start`, `bc-code-play`; `presetDetail(s)`); task 173 owns that update.
 - 2026-10-19 (from step 58): `.claude/context/app-shell-results.md` still describes the old results screen and Watch best rule; `.claude/domain/features/replay-playback.md` (around lines 184–186) still states the old Watch best rule — Watch best is now offered only after a win that set no best.
+- 2026-10-19 (from step 59): `.claude/context/records-screen.md` still describes the old Records layout (Replays is now a tab; exports sit under the mode's overall figures).
 
 ```prompt
 /task-implement 173 --review
