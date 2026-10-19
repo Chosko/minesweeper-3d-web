@@ -122,12 +122,18 @@ Context:
 
 Done: struck — for a parallel run its Depends on lacked the order against task 160, which edits the same files; replaced by step 53.
 
-## [~] 53. Implement task 165 — Main menu in the shared layout
+## [P] 53. Implement task 165 — Main menu in the shared layout
 
 Depends on: 4, 7, 8
 
 Context:
 - 2026-10-19 (from step 7): disabled mode entries are marked `aria-disabled="true"`, not native `disabled`, so they stay focusable for the "Desktop build only" / "no WebGL 2" previews; the screen's click handler must stop them opening anything.
+- 2026-10-19 parked: The main menu's build label must show "the game's real version", but the game has no version anywhere — no version constant, no build step (GitHub Pages serves `main` as it is) and no tags; the artboards' "WEB · BUILD 0B437AA" is placeholder text. Where should the label's version come from?
+  a. One file, `js/version.js`, holding a release version bumped by hand (0.2.0 suggested); the label reads "Web · v0.2.0".
+  b. The deployed commit's short hash, written into a generated `js/build-info.js` by a new GitHub Actions deploy step (the site gains a build step).
+  c. The latest commit of `main`, fetched from the GitHub API at run time (a network call on every load, no label offline).
+  d. "Web" alone until the game has release versions.
+  Recommendation: a — no build step, one file to bump, nothing fetched. The implementation is on `park/task-165` (task 165 `[PARKED]`); the review round runs after unparking.
 
 ```prompt
 /task-implement 165 --review
