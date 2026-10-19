@@ -1,67 +1,122 @@
-// Classic 2D board choice screen: Beginner, Intermediate, Expert, a custom board and the no-guess
-// switch, preselected from the last board choice. Touches only the elements it is handed.
+// Classic 2D board choice screen: the board options (Beginner, Intermediate, Expert, Custom and
+// Insert Board Code) on the left, what the chosen one needs on the right (the no-guess switch and
+// the board's three bests, the custom form with Random, or the board code field), and a bottom bar
+// with the choice summarised, Records and Play. Opens on the last board choice. Touches only the
+// elements it is handed.
 //
 // Pure helpers:
-//   CHOICE_SIZES             the standard sizes offered as menu items, in order.
-//   sizeLabel(size)          '30 × 16 · 99 mines'.
-//   customStatus(custom)     { ok, field, max, text } for a custom { width, height, mines }: the info
-//                            line under the custom fields, validated against CUSTOM_LIMITS
-//                            (js/classic2d/board-setup.js validateCustom) — a refusal's reason as a
-//                            sentence, or '2 cells · up to 1 mine' with both counts pluralised;
-//                            `max` is the mine limit for that width and height (null while the size
-//                            is invalid).
+//   CHOICE_SIZES             the standard sizes offered as board options, in order.
+//   CUSTOM_HINT              Custom's meta line while it is not chosen: 'Width and height 1–100'.
+//   boardLine(board)         '30 × 16 · 99 mines' for { width, height, mines }, the mines pluralised.
+//   sizeLabel(size)          a standard size's board line.
+//   mineDensity(board)       '20.6 % mines': mines ÷ cells, one decimal.
+//   customStatus(custom)     { ok, field, max, text } for a custom { width, height, mines }, validated
+//                            against CUSTOM_LIMITS (js/classic2d/board-setup.js validateCustom): a
+//                            refusal's reason as a sentence, or the info line; `max` is the mine
+//                            limit for that width and height (null while the size is invalid).
+//   customInfo(custom)       the custom form's info line from its width and height: '480 cells · up to
+//                            99 mines', '1 cell · no room for a mine', or '' while a side is invalid.
+//   randomCustom(random?)    the Random fill: a random valid custom board, at most about one mine in
+//                            five cells, as the 3D form's Random (js/mode3d/board-choice.js).
 //   readChoice({ size, fields, noGuess }, fallbackCustom?)  the board choice the screen's fields
 //                            describe, or null. A standard size keeps the fields' custom board
 //                            when it is valid, else `fallbackCustom`; 'custom' needs valid fields.
 //   densityHintShown(custom, noGuess)  whether the density hint shows for a custom board: no-guess
 //                            on and a valid board above NOGUESS_DENSITY_HINT (board-setup.js).
+//   choiceSummary({ selected, custom, noGuess, code })  the bottom bar's summary of the chosen
+//                            option: 'Intermediate · 16 × 16 · 40 mines · no-guess', 'Custom · 30 × 16
+//                            · 99 mines', 'Board code · <code.label>' for an accepted code, else
+//                            'Board code · paste a code to play'.
+//   bestsTitle({ selected, custom, noGuess })  'Intermediate · no-guess · your bests', or the custom
+//                            board's line in place of the name.
 //
-// bindBoardChoice({ root, onStart, onBack, code? }) → { show(choice), destroy() }
-//   root      the screen's element: items [data-size] (the standard sizes, and the custom form's
-//             submit button as data-size="custom"), the custom form (form), inputs
-//             [data-field="width|height|mines"], the info line [data-info] and the density hint
-//             [data-density-hint] under it, the no-guess switch [data-noguess] (under the sizes,
-//             for every board) and the Back button [data-back]. The info line and the density hint
-//             follow the fields and the switch live; the hint never refuses a board.
-//   show(choice, { played, details })  fills the fields and the switch from `choice` and marks its
-//             size with data-last, the screen's default focus; its "Last played" detail line shows
+// bindBoardChoice({ root, onStart, onBack, onRecords?, code?, bests? }) → { show, state, refresh, destroy }
+//   root      the screen's element: the options [data-size] (beginner, intermediate, expert, custom,
+//             code; aria-pressed marks the chosen one), each with its Last played chip [data-last]
+//             and Custom's meta line [data-custom-meta]; the settings [data-settings] with the
+//             no-guess switch [data-noguess] and the density hint [data-density-hint]; the custom
+//             form (form) with its inputs [data-field="width|height|mines"], the info line
+//             [data-info], Random [data-random] and the refusal line [data-refusal]; the bests
+//             [data-bests], titled [data-bests-title], one tile [data-best="<stat>"] per best; the
+//             code panel [data-code-panel] with the field [data-code-field] and its line
+//             [data-code-info]; the bottom bar's summary [data-summary], Records [data-records] and
+//             Play [data-play]; Back [data-back].
+//             A click (a tap, the controller's A) chooses an option; Enter plays, on an option after
+//             choosing it, and anywhere else in the screen but on another button. Play starts the
+//             chosen board: onStart(choice) for a preset or a valid custom board, code.onPlay(text)
+//             for an accepted code; it is disabled on a refused custom board and on an empty or
+//             refused code. The settings show for a preset and Custom, the form for Custom, the bests
+//             for both (for the board the fields and the switch name), the code panel alone for the
+//             code. The info line, refusal line, density hint, bests, summary and Play follow the
+//             fields and the switch live; the hint never refuses a board, and Random fills the fields
+//             with randomCustom and validates them.
+//   show(choice, { played, held })  fills the fields and the switch from `choice`, chooses its size
+//             and marks its option data-last, the screen's default focus; its Last played chip shows
 //             only when `played` (default true) — not for the default choice of a player who never
-//             played. `details` ({ [size]: { guess, noGuess } }, the shell's from
-//             js/shell/returning.js) fills each size's detail line [data-detail], under its size line,
-//             for the position of the no-guess switch, and again whenever the switch changes; a size
-//             without one shows no detail line.
-//   onStart(choice) when a size is picked or a valid custom board submitted; onBack() on Back.
-//   code      { resolve, onPlay }: the board code field [data-code-field], its "Play this board"
-//             button [data-code-play] and its info line [data-code-info] (js/ui/components.js
-//             bindCodeField): resolve(text) → { ok, reason?, text? } validates the code live, and
-//             onPlay(text) plays an accepted one; every show clears the field.
+//             played. `held` (a state() taken earlier) brings back the chosen option, fields, switch
+//             and code text, the last board's mark staying with `choice`.
+//   state()   → { selected, fields, noGuess, code }: what the screen holds.
+//   refresh() redraws the bests (the shell's records changed).
+//   onRecords(identity) Records: the chosen board's records identity (board-setup.js boardSetup),
+//             or null with no board chosen (a code, a refused custom board).
+//   code      { resolve, onPlay }: resolve(text) → { ok, reason?, text?, label? } validates the code
+//             live — its line shows CODE_PROMPT while empty, a refused code's reason as a warning,
+//             an accepted one's `text`, and the summary its `label`; onPlay(text) plays it.
+//   bests     (identity) → [{ stat, label, value, note }]: the board's three bests as text, read
+//             through the records' queries by the shell (js/shell/returning.js boardBests).
 
 import {
-  STANDARD_SIZES, validateCustom, maxMines, normaliseChoice, aboveDensityHint, DENSITY_HINT_TEXT,
+  STANDARD_SIZES, validateCustom, maxMines, normaliseChoice, aboveDensityHint, DENSITY_HINT_TEXT, boardSetup,
 } from './board-setup.js';
 import { CUSTOM_LIMITS } from '../engine/profiles.js';
-import { bindCodeField } from '../ui/components.js';
 
 /** The code field's info line while nothing is typed, on both board choice screens. */
 export const CODE_PROMPT = 'Paste a board code to play that exact board.';
 
 export const CHOICE_SIZES = Object.freeze(['beginner', 'intermediate', 'expert']);
 
-export function sizeLabel(size) {
-  const { width, height, mines } = STANDARD_SIZES[size];
-  return `${width} × ${height} · ${mines} mines`;
+export const CUSTOM_HINT = `Width and height ${CUSTOM_LIMITS.minSide}–${CUSTOM_LIMITS.maxSide}`;
+
+const NAMES = Object.freeze({ beginner: 'Beginner', intermediate: 'Intermediate', expert: 'Expert' });
+const count = (v, noun) => `${v.toLocaleString('en-US')} ${v === 1 ? noun : `${noun}s`}`;
+const side = (v) => Number.isInteger(v) && v >= CUSTOM_LIMITS.minSide && v <= CUSTOM_LIMITS.maxSide;
+const ints = (b) => !!b && Number.isInteger(b.width) && Number.isInteger(b.height) && Number.isInteger(b.mines);
+
+export function boardLine({ width, height, mines }) {
+  return `${width} × ${height} · ${count(mines, 'mine')}`;
 }
 
-const side = (v) => Number.isInteger(v) && v >= CUSTOM_LIMITS.minSide && v <= CUSTOM_LIMITS.maxSide;
-const count = (v, noun) => `${v.toLocaleString('en-US')} ${v === 1 ? noun : `${noun}s`}`;
+export function sizeLabel(size) {
+  return boardLine(STANDARD_SIZES[size]);
+}
+
+export function mineDensity({ width, height, mines }) {
+  return `${((mines / (width * height)) * 100).toFixed(1)} % mines`;
+}
+
+export function customInfo(custom) {
+  const { width, height } = custom ?? {};
+  if (!side(width) || !side(height)) return '';
+  const max = maxMines(width, height);
+  return `${count(width * height, 'cell')} · ${max < 1 ? 'no room for a mine' : `up to ${count(max, 'mine')}`}`;
+}
 
 export function customStatus(custom) {
   const { width, height } = custom ?? {};
   const v = validateCustom(custom);
   const max = side(width) && side(height) ? maxMines(width, height) : null;
   if (!v.ok) return { ok: false, field: v.field, max, text: `${v.reason[0].toUpperCase()}${v.reason.slice(1)}.` };
+  return { ok: true, field: null, max, text: customInfo(custom) };
+}
+
+export function randomCustom(random = Math.random) {
+  const randInt = (lo, hi) => lo + Math.floor(random() * (hi - lo + 1)); // inclusive
+  const height = randInt(1, 24);
+  let width = randInt(1, 30);
+  if (width * height < 2) width = 2; // a one-cell board has no room for a mine
   const cells = width * height;
-  return { ok: true, field: null, max, text: `${count(cells, 'cell')} · up to ${count(max, 'mine')}` };
+  const mines = Math.min(maxMines(width, height), randInt(1, Math.max(1, Math.floor(cells / 5) - 1)));
+  return { width, height, mines };
 }
 
 const int = (v) => (typeof v === 'number' ? v : /^\s*-?\d+\s*$/.test(String(v)) ? parseInt(v, 10) : NaN);
@@ -78,110 +133,186 @@ export function densityHintShown(custom, noGuess) {
   return aboveDensityHint(custom.mines, custom.width * custom.height);
 }
 
-export function bindBoardChoice({ root, onStart, onBack, code = null }) {
-  const items = [...root.querySelectorAll('[data-size]')];
-  const form = root.querySelector('form');
-  const field = (name) => root.querySelector(`[data-field="${name}"]`);
-  const inputs = ['width', 'height', 'mines'].map(field);
-  const info = root.querySelector('[data-info]');
-  const hint = root.querySelector('[data-density-hint]');
-  const noGuess = root.querySelector('[data-noguess]');
-  const back = root.querySelector('[data-back]');
-  hint.textContent = DENSITY_HINT_TEXT;
-  let last = null;
-  let details = {};
+const NO_GUESS = ' · no-guess';
 
-  for (const b of items) {
-    if (!b.classList.contains('ui-menu__item')) continue;
-    const detail = b.ownerDocument.createElement('span');
-    detail.className = 'ui-menu__detail hidden';
-    detail.dataset.detail = '';
-    b.appendChild(detail);
-    const line = b.ownerDocument.createElement('span');
-    line.className = 'ui-menu__detail hidden';
-    line.dataset.last = '';
-    line.textContent = 'Last played';
-    b.appendChild(line);
-  }
-  const fillDetails = () => {
-    for (const b of items) {
-      const line = b.querySelector('[data-detail]');
-      if (!line) continue;
-      const text = details[b.dataset.size]?.[noGuess.checked ? 'noGuess' : 'guess'] ?? '';
-      line.textContent = text;
-      line.classList.toggle('hidden', !text);
-    }
-  };
-  const onNoGuess = () => { fillDetails(); update(); };
+export function choiceSummary({ selected, custom, noGuess, code = null }) {
+  if (selected === 'code') return `Board code · ${code?.ok && code.label ? code.label : 'paste a code to play'}`;
+  const ng = noGuess ? NO_GUESS : '';
+  if (selected === 'custom') return ints(custom) ? `Custom · ${boardLine(custom)}${ng}` : 'Custom';
+  return `${NAMES[selected]} · ${sizeLabel(selected)}${ng}`;
+}
+
+export function bestsTitle({ selected, custom, noGuess }) {
+  const name = selected === 'custom' ? (ints(custom) ? boardLine(custom) : 'Custom') : NAMES[selected];
+  return `${name}${noGuess ? NO_GUESS : ''} · your bests`;
+}
+
+export function bindBoardChoice({ root, onStart, onBack, onRecords = null, code = null, bests = null }) {
+  const options = [...root.querySelectorAll('[data-size]')];
+  const option = (size) => options.find((b) => b.dataset.size === size);
+  const form = root.querySelector('form');
+  const inputs = ['width', 'height', 'mines'].map((name) => root.querySelector(`[data-field="${name}"]`));
+  const $ = (sel) => root.querySelector(sel);
+  const info = $('[data-info]');
+  const refusal = $('[data-refusal]');
+  const hint = $('[data-density-hint]');
+  const noGuess = $('[data-noguess]');
+  const settings = $('[data-settings]');
+  const bestsBox = $('[data-bests]');
+  const codePanel = $('[data-code-panel]');
+  const codeInput = $('[data-code-field]');
+  const codeInfo = $('[data-code-info]');
+  const summary = $('[data-summary]');
+  const play = $('[data-play]');
+  const records = $('[data-records]');
+  const random = $('[data-random]');
+  const back = $('[data-back]');
+  const customMeta = $('[data-custom-meta]');
+  hint.textContent = DENSITY_HINT_TEXT;
+  let selected = 'beginner';
+  let last = null;
 
   const fields = () => ({ width: inputs[0].value, height: inputs[1].value, mines: inputs[2].value });
   const custom = () => ({ width: int(inputs[0].value), height: int(inputs[1].value), mines: int(inputs[2].value) });
-  const update = () => {
-    const s = customStatus(custom());
-    info.textContent = s.text;
-    info.classList.toggle('ui-text--warning', !s.ok);
-    info.classList.toggle('ui-text--muted', s.ok);
-    if (s.max !== null) inputs[2].max = String(s.max);
-    for (const [i, name] of ['width', 'height', 'mines'].entries()) {
-      inputs[i].toggleAttribute('data-adjusted', s.field === name);
+  const codeText = () => String(codeInput?.value ?? '').trim();
+  const codeResult = () => (code && codeText() ? code.resolve(codeText()) : null);
+  /** The chosen board's choice: a preset, a valid custom board, or null (a code, a refused custom board). */
+  const chosen = () => (selected === 'code' ? null : readChoice({ size: selected, fields: fields(), noGuess: noGuess.checked }, last?.custom));
+
+  const drawBests = () => {
+    if (!bestsBox) return;
+    $('[data-bests-title]').textContent = bestsTitle({ selected, custom: custom(), noGuess: noGuess.checked });
+    const choice = chosen();
+    const tiles = choice && bests ? bests(boardSetup(choice).identity) : [];
+    for (const tile of bestsBox.querySelectorAll('[data-best]')) {
+      const t = tiles.find((x) => x.stat === tile.dataset.best);
+      tile.querySelector('.ui-stat__value').textContent = t?.value ?? '—';
+      tile.querySelector('.ui-stat__detail').textContent = t?.note ?? 'no best yet';
     }
-    hint.classList.toggle('hidden', !densityHintShown(custom(), noGuess.checked));
-    return s;
-  };
-  const start = (size) => {
-    const choice = readChoice({ size, fields: fields(), noGuess: noGuess.checked }, last?.custom);
-    if (choice) onStart(choice);
-    return choice;
   };
 
-  const onItem = (event) => {
-    const size = event.currentTarget.dataset.size;
-    if (size !== 'custom') start(size);
+  const update = () => {
+    const c = custom();
+    const s = customStatus(c);
+    const isCustom = selected === 'custom';
+    const isCode = selected === 'code';
+    info.textContent = customInfo(c);
+    info.classList.toggle('hidden', !info.textContent);
+    refusal.textContent = s.ok ? '' : s.text;
+    refusal.classList.toggle('hidden', s.ok);
+    if (s.max !== null) inputs[2].max = String(Math.max(1, s.max));
+    for (const [i, name] of ['width', 'height', 'mines'].entries()) {
+      inputs[i].toggleAttribute('data-adjusted', s.field === name);
+      if (s.field === name) inputs[i].setAttribute('aria-invalid', 'true');
+      else inputs[i].removeAttribute('aria-invalid');
+    }
+    hint.classList.toggle('hidden', !(isCustom && densityHintShown(c, noGuess.checked)));
+    if (customMeta) {
+      customMeta.textContent = isCustom && ints(c) ? (s.ok ? `${boardLine(c)} · ${mineDensity(c)}` : boardLine(c)) : CUSTOM_HINT;
+    }
+    const r = isCode ? codeResult() : null;
+    if (codeInfo) {
+      codeInfo.textContent = !r ? CODE_PROMPT : r.ok ? r.text ?? '' : r.reason;
+      codeInfo.classList.toggle('ui-text--warning', !!r && !r.ok);
+      codeInfo.classList.toggle('ui-text--muted', !r || r.ok);
+    }
+    settings.classList.toggle('hidden', isCode);
+    form.classList.toggle('hidden', !isCustom);
+    bestsBox?.classList.toggle('hidden', isCode);
+    codePanel?.classList.toggle('hidden', !isCode);
+    for (const b of options) b.setAttribute('aria-pressed', String(b.dataset.size === selected));
+    summary.textContent = choiceSummary({ selected, custom: c, noGuess: noGuess.checked, code: r });
+    play.disabled = isCode ? !r?.ok : isCustom && !s.ok;
+    drawBests();
+    return s;
   };
-  const onSubmit = (event) => {
-    event.preventDefault();
+
+  const choose = (size) => {
+    if (!option(size)) return;
+    selected = size;
+    update();
+  };
+  const start = () => {
+    if (selected === 'code') {
+      const r = codeResult();
+      if (r?.ok) code.onPlay(codeText());
+      return;
+    }
     const s = update();
-    if (!s.ok) {
+    if (selected === 'custom' && !s.ok) {
       root.querySelector(`[data-field="${s.field}"]`)?.focus();
       return;
     }
-    start('custom');
+    const choice = chosen();
+    if (choice) onStart(choice);
+  };
+
+  const onOption = (event) => choose(event.currentTarget.dataset.size);
+  const onKey = (event) => {
+    if (event.key !== 'Enter' || event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    const target = event.target;
+    const opt = target?.closest?.('[data-size]');
+    if (!opt && target?.closest?.('button')) return; // another button activates itself
+    event.preventDefault();
+    if (opt) choose(opt.dataset.size);
+    start();
+  };
+  const onSubmit = (event) => event.preventDefault();
+  const onRandom = () => {
+    const b = randomCustom();
+    inputs[0].value = String(b.width);
+    inputs[1].value = String(b.height);
+    inputs[2].value = String(b.mines);
+    update();
+  };
+  const onRecordsClick = () => {
+    const choice = chosen();
+    onRecords?.(choice ? boardSetup(choice).identity : null);
   };
   const onBackClick = () => onBack?.();
 
-  for (const b of items) b.addEventListener('click', onItem);
+  for (const b of options) b.addEventListener('click', onOption);
   for (const inp of inputs) inp.addEventListener('input', update);
-  noGuess.addEventListener('change', onNoGuess);
+  noGuess.addEventListener('change', update);
+  codeInput?.addEventListener('input', update);
   form.addEventListener('submit', onSubmit);
+  root.addEventListener('keydown', onKey);
+  random?.addEventListener('click', onRandom);
+  records?.addEventListener('click', onRecordsClick);
+  play.addEventListener('click', start);
   back?.addEventListener('click', onBackClick);
-  const codeInput = root.querySelector('[data-code-field]');
-  const codeField = code && codeInput ? bindCodeField({
-    input: codeInput, button: root.querySelector('[data-code-play]'), info: root.querySelector('[data-code-info]'),
-    resolve: code.resolve, onPlay: code.onPlay, prompt: CODE_PROMPT,
-  }) : null;
 
   return {
-    show(choice, { played = true, details: lines = {} } = {}) {
-      codeField?.clear();
+    show(choice, { played = true, held = null } = {}) {
       last = choice;
-      details = lines;
-      inputs[0].value = String(choice.custom.width);
-      inputs[1].value = String(choice.custom.height);
-      inputs[2].value = String(choice.custom.mines);
-      noGuess.checked = !!choice.noGuess;
-      for (const b of items) {
+      const f = held?.fields ?? { width: choice.custom.width, height: choice.custom.height, mines: choice.custom.mines };
+      inputs[0].value = String(f.width);
+      inputs[1].value = String(f.height);
+      inputs[2].value = String(f.mines);
+      noGuess.checked = held ? !!held.noGuess : !!choice.noGuess;
+      if (codeInput) codeInput.value = held?.code ?? '';
+      for (const b of options) {
         const isLast = b.dataset.size === choice.size;
         b.toggleAttribute('data-last', isLast);
         b.querySelector('[data-last]')?.classList.toggle('hidden', !(isLast && played));
       }
-      fillDetails();
+      selected = option(held?.selected) ? held.selected : choice.size;
       update();
     },
+    state() {
+      return { selected, fields: fields(), noGuess: noGuess.checked, code: codeInput?.value ?? '' };
+    },
+    refresh() { drawBests(); },
     destroy() {
-      for (const b of items) b.removeEventListener('click', onItem);
+      for (const b of options) b.removeEventListener('click', onOption);
       for (const inp of inputs) inp.removeEventListener('input', update);
-      noGuess.removeEventListener('change', onNoGuess);
+      noGuess.removeEventListener('change', update);
+      codeInput?.removeEventListener('input', update);
       form.removeEventListener('submit', onSubmit);
+      root.removeEventListener('keydown', onKey);
+      random?.removeEventListener('click', onRandom);
+      records?.removeEventListener('click', onRecordsClick);
+      play.removeEventListener('click', start);
       back?.removeEventListener('click', onBackClick);
     },
   };

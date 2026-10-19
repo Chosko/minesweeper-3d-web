@@ -848,8 +848,9 @@ test('bindSegmented with horizontal leaves Up and Down unhandled', () => {
 
 // ---------------------------------------------------------------- "Esc: Back" beside every Back
 
-// Each button Esc triggers, with the hint beside it; the pause card's Main menu has none (Esc resumes there).
-const ESC_BACKS = ['c2d-choice-back', 'board-choice-back', 'coming-soon-back', 'ready-back', 'settings-back', 'records-back', 'daily-back',
+// Each button Esc triggers, with the hint beside it; the pause card's Main menu has none (Esc resumes there),
+// and a screen frame's Back carries its key hint inside it.
+const ESC_BACKS = ['board-choice-back', 'coming-soon-back', 'ready-back', 'settings-back', 'records-back', 'daily-back',
   'rp-back', 'replay-message-back', 'r-menu', 'ctx-lost-menu'];
 const HINT = '<span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>';
 
@@ -864,6 +865,7 @@ test('an "Esc: Back" hint sits beside each Back that Esc triggers, and is no foc
   assert.equal(html.split(HINT).length - 1, ESC_BACKS.length, 'one hint per Back, and no other');
   const pmenu = html.slice(html.indexOf('</button>', html.indexOf('id="p-menu"')) + 9).trimStart();
   assert.ok(!pmenu.startsWith(HINT), 'none beside the pause card\'s Main menu, where Esc resumes');
+  assert.match(html, /id="c2d-choice-back"[^>]*>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/, 'the frame\'s Back holds its key hint');
   assert.doesNotMatch(HINT, /tabindex|<button|<a /, 'the hint is plain text');
 });
 
@@ -907,8 +909,10 @@ test('in a browser, the "Esc: Back" hints meet the contrast contract', async (t)
       const stop = await page.evaluate(() => [...document.querySelectorAll('[data-esc-hint]')].some((e) => e.tabIndex >= 0));
       assert.equal(stop, false, 'no hint is a focus stop');
     };
+    // The 2D board choice's frame carries its key hint inside its Back, a kit key hint, and no text hint.
     await page.click('#menu-entry-classic-2d');
-    await hints('2D board choice');
+    assert.equal(await page.evaluate(() => document.querySelector('#c2d-choice-back .ui-key-hint__key')?.textContent), 'Esc');
+    assert.equal((await page.evaluate(measureContrast)).runs.filter((r) => r.text === 'Esc: Back').length, 0);
     await page.keyboard.press('Escape');
     await page.click('#menu-entry-3d');
     await hints('3D board choice');
@@ -1534,6 +1538,21 @@ test('in a browser, the menu, the pause card and the results layout meet the con
     await page.keyboard.press('Escape');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
 
+    // The Classic 2D board choice in each of its selections, readable, its options showing their focused state.
+    await page.click('#menu-entry-classic-2d');
+    await check(page, '#c2d-choice', 'c2d-choice');
+    await page.keyboard.press('ArrowDown');
+    const opt = await ring(page);
+    assert.ok(opt.selectable && focusShows(opt), `a board option shows its focused state (${opt.style} ${opt.transform})`);
+    await page.click('#c2d-choice [data-size="custom"]');
+    await page.fill('#c2d-mines', '999');
+    await check(page, '#c2d-choice', 'c2d-choice-custom');
+    await page.click('#c2d-choice [data-size="code"]');
+    await page.fill('#c2d-code', 'nonsense');
+    await check(page, '#c2d-choice', 'c2d-choice-code');
+    await page.click('#c2d-choice-back');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
+
     // The menu's demo board: the shell hands the renderer the theme's sky.
     const sky = await page.evaluate(() => globalThis.__ms.renderer.scenePalette);
     assert.deepEqual(sky.horizon, [0x2b, 0x3f, 0x8a], 'Joyful tiles\' sky');
@@ -1644,13 +1663,17 @@ const textOf = (html, t) => {
 };
 const MODE_ENTRIES = ['classic-2d', 'hexagon', 'triangle', 'surface', '3d', 'daily', 'records', 'settings', 'quit'];
 
-test('the gallery marks the shared layout\'s components; the main menu is the screen built from them so far', () => {
+test('the gallery marks the shared layout\'s components; the main menu and the Classic 2D board choice are the screens built from them so far', () => {
   assert.ok(LAYOUT.length > 1000, 'dev/components.html holds the shared layout\'s components');
   const screens = INDEX.replace(/<!--[\s\S]*?-->/g, '');
   const menu = SCREENS.menu;
-  const others = screens.replace(menu, '');
+  const choice = screens.slice(screens.indexOf('<section id="c2d-choice"'), screens.indexOf('<section id="c2d"'));
+  const others = screens.replace(menu, '').replace(choice, '');
   for (const cls of ['ui-wordmark', 'ui-mode-entry', 'ui-key-hint', 'ui-chip', 'ui-scene-panel']) {
     assert.match(menu, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the main menu uses ${cls}`);
+  }
+  for (const cls of ['ui-backdrop', 'ui-wordmark', 'ui-frame', 'ui-option', 'ui-section-label', 'ui-divider', 'ui-key-hint', 'ui-chip', 'ui-stat--tile']) {
+    assert.match(choice, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the Classic 2D board choice uses ${cls}`);
   }
   for (const cls of ['ui-backdrop', 'ui-frame', 'ui-option', 'ui-section-label', 'ui-list-row', 'ui-divider', 'ui-tabs', 'ui-checkbox',
     'ui-table', 'ui-button--danger', 'ui-mode-entry', 'ui-scene-panel']) {

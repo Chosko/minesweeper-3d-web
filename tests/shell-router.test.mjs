@@ -548,17 +548,24 @@ test('in a browser, the arrow keys alone walk the menu, the 2D board choice, the
     await walkTo('ArrowDown', 'menu-entry-quit');
     await walkTo('ArrowUp', 'menu-entry-classic-2d');
 
-    // The Classic 2D board choice: arrows walk the sizes; a number field keeps Left/Right; Down reaches Back.
+    // The Classic 2D board choice: arrows walk the options, Space chooses Custom, a number field keeps
+    // Left/Right, Down reaches Play and Up from the first option Back.
     await page.keyboard.press('Enter');
     assert.equal(await mode(), 'classic-2d-choice');
-    await walkTo('ArrowDown', 'c2d-width');
+    await walkTo('ArrowDown', 'custom');
+    await page.keyboard.press('Space');
+    assert.equal(await page.evaluate(() => document.querySelector('#c2d-choice [aria-pressed="true"]').dataset.size), 'custom');
+    assert.equal(await mode(), 'classic-2d-choice', 'choosing starts nothing');
+    await walkTo('ArrowRight', 'c2d-random');
+    await walkTo('ArrowUp', 'c2d-width');
     const before = await page.inputValue('#c2d-width');
     await page.keyboard.press('ArrowLeft');
     assert.equal((await focus()).id, 'c2d-width', 'Left stays in the field for its caret');
     await page.keyboard.press('ArrowUp');
     assert.notEqual((await focus()).id, 'c2d-width', 'Up moves focus out of the field');
     assert.equal(await page.inputValue('#c2d-width'), before, 'and leaves its value alone');
-    await walkTo('ArrowDown', 'c2d-choice-back');
+    await walkTo('ArrowDown', 'c2d-play');
+    await walkTo('ArrowUp', 'c2d-choice-back');
     await page.keyboard.press('Enter');
     assert.equal(await mode(), 'menu');
 

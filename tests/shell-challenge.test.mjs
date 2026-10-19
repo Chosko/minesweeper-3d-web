@@ -157,6 +157,16 @@ test('the shell follows links once settings and records have loaded, and on hash
   assert.doesNotMatch(read('404.html'), /board=/, 'no 404.html change: /#board= is served by /');
 });
 
+test('a board choice\'s code says what it opens and names its board for the summary; the Classic 2D one is played with Play', () => {
+  const check = MAIN.slice(MAIN.indexOf('function checkCode('), MAIN.indexOf('function playCode('));
+  assert.ok(check.includes("if (r.kind === 'daily') return { ok: true, text: 'Today\\'s daily board — it opens the Daily screen.', label: 'Today\\'s daily board' };"));
+  assert.match(check, /return \{ ok: true, text: `\$\{boardLabel\(r\.parsed\.board\)\} · a challenge, not eligible for bests`, label: boardLabel\(r\.parsed\.board\) \}/);
+  const choice = read('index.html').slice(read('index.html').indexOf('<section id="c2d-choice"'), read('index.html').indexOf('<!-- Classic 2D board -->'));
+  assert.match(choice, /<button type="button" class="ui-option" aria-pressed="false" data-size="code" id="c2d-code-option">/, 'Insert Board Code is a board option');
+  assert.doesNotMatch(choice, /data-code-play|Play this board/, 'no button of its own: Play plays it');
+  assert.match(read('js/classic2d/board-choice.js'), /if \(r\?\.ok\) code\.onPlay\(codeText\(\)\);/, 'Play plays an accepted code only');
+});
+
 // ---------------------------------------------------------------- in a browser
 
 function removeWebGL2(page) {

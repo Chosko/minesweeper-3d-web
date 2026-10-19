@@ -550,7 +550,7 @@ Feature: shared-screen-layout
 
 ## 166. Classic 2D board choice screen with its bests, Insert Board Code and Custom Random
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, js/classic2d/board-choice.js, js/classic2d/board-setup.js, js/main.js, tests/classic2d-mode.test.mjs, tests/shell-challenge.test.mjs, tests/shell-returning.test.mjs, tests/components.test.mjs
 Preconditions: 163

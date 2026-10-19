@@ -952,6 +952,7 @@ test('in a browser without WebGL 2, the shell starts with a static background, 3
     assert.equal(await mode(), 'classic-2d-choice');
     await page.uncheck('#c2d-noguess');
     await page.click('#c2d-choice [data-size="beginner"]');
+    await page.click('#c2d-play');
     assert.equal(await mode(), 'classic-2d');
     const box = await page.locator('#c2d-board canvas').boundingBox();
     const cell = (i) => [box.x + (box.width / 9) * ((i % 9) + 0.5), box.y + (box.height / 9) * (Math.floor(i / 9) + 0.5)];

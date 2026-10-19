@@ -470,6 +470,7 @@ test('fidelity in a browser: press feedback and releasing off the pressed cell o
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     await page.click('#menu-entry-classic-2d');
     await page.click('#c2d-choice [data-size="beginner"]');
+    await page.click('#c2d-play');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'classic-2d');
 
     const fill = (col, row) => page.evaluate(tileFill, [col, row]);

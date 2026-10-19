@@ -269,6 +269,7 @@ test('in a browser, a just-won 2D game is watched from the results screen and ag
     await page.click('#menu-entry-classic-2d');
     if (await page.isChecked('#c2d-noguess')) await page.click('#c2d-noguess');
     await page.click('#c2d-choice [data-size="beginner"]');
+    await page.click('#c2d-play');
     const centres = await page.evaluate(async () => {
       const r = document.querySelector('#c2d-board canvas').getBoundingClientRect();
       const L = globalThis.__ms.board2D.layout;

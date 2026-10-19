@@ -755,6 +755,7 @@ test('in a browser, the Classic 2D generating card cancels by Cancel and Esc, an
       await page.click('#menu-entry-classic-2d');
       assert.equal(await ms(() => document.getElementById('c2d-noguess').checked), true, 'no-guess on by default');
       await page.click('#c2d-choice [data-size="beginner"]');
+      await page.click('#c2d-play');
       assert.equal(await mode(), 'classic-2d');
     };
 
@@ -882,6 +883,7 @@ test('in a browser, F2 and the controller\'s Start + Y restart a Classic 2D game
     await page.click('#menu-entry-classic-2d');
     if (await page.isChecked('#c2d-noguess')) await page.click('#c2d-noguess');
     await page.click('#c2d-choice [data-size="beginner"]');
+    await page.click('#c2d-play');
     assert.equal(await mode(), 'classic-2d');
 
     // F2 in play: a new board of the same choice at once, the old game abandoned.

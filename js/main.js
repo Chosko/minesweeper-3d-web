@@ -19,7 +19,7 @@ import { createGenerationClient } from './generation/client.js';
 import { createMenu, createLastMode, createLastBoardChoice, openingEntry, menuPreview, buildLabel, DEMO_BOARD_3D, UNAVAILABLE_REASONS, WEB_MISSING } from './shell/menu.js';
 import { VERSION } from './version.js';
 import { bindMenuPreview, demoBoard2D, dailyBoard2D } from './shell/menu-preview.js';
-import { CHOICE_ITEMS, presetDetails } from './shell/returning.js';
+import { CHOICE_ITEMS, presetDetails, boardBests } from './shell/returning.js';
 import { aimReadout } from './readability.js';
 import { createFirstUse, stripShown, hidCube, aimHintCell, createDwell, AIM_DWELL_MS } from './shell/first-use.js';
 import { createActiveDevice } from './settings/bindings.js';
@@ -45,7 +45,7 @@ import { copyBoardCode } from './ui/components.js';
 import { DAILY_SCREEN, dailyRows, createDailyBoards, bindDailyScreen, countedAttempt, dailyPreview } from './shell/daily.js';
 import { resolveCode, gameStart, freeStart, createChallengeLinks } from './shell/challenge.js';
 import { dailyGame, dateText } from './records/board-code.js';
-import { boardLabel } from './records/board.js';
+import { boardLabel, boardKey } from './records/board.js';
 import { createRecordsScreen, createRecordsView, TRIGGER_MODES } from './records/screen.js';
 import { createRecordsViewPrefs } from './records/view-prefs.js';
 import { createRecordsExport, bindExportActions } from './records/export.js';
@@ -482,7 +482,7 @@ const SHELL = createRouter({
     'coming-soon': { defaultFocus: '#coming-soon-back', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showComingSoon(d.title ?? 'This screen'); } },
     records: { defaultFocus: '#records-picker [aria-checked="true"]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showRecords(); RECORDS_PAGE.show({ mode: d.mode, boardKey: d.boardKey }); }, hide: () => RECORDS_PAGE.hide() },
     settings: { defaultFocus: '#set-lookSensitivity', show: () => { MODES.leave(); showMenuBackdrop(); ui.showSettings(); SETTINGS_EXPORT.show(RECORDS_EXPORT.hasGames()); } },
-    'classic-2d-choice': { defaultFocus: '[data-size][data-last]', show: (d = {}) => { MODES.leave(); mode2d.warm(); showMenuBackdrop(); ui.showBoardChoice2D(); showChoice2D(d.choice ?? LAST_CHOICE_2D.current); } },
+    'classic-2d-choice': { defaultFocus: '[data-size][aria-pressed="true"]', show: (d = {}, from) => { MODES.leave(); mode2d.warm(); showMenuBackdrop(); ui.showBoardChoice2D(); showChoice2D(d.choice ?? LAST_CHOICE_2D.current, from); } },
     ready: { defaultFocus: '#ready-btn', show: (d = {}) => ui.showReady(board3dChoice ?? S.settings, LOCK_FALLBACK.readyMessage(d.msg), { rules: FIRST_USE.rules3D && !S.learn, blocked: LOCK_FALLBACK.blocked, learn: FIRST_USE.rules3D && !S.learn && !S.started }), back: ({ source }) => { if (source !== 'key' || performance.now() - input.unlockedAt >= 500) readyBack(); } }, // the Esc that released the pointer lock already meant Back
     playing: { defaultFocus: null, show: (d = {}) => { setLockless(!!d.lockless); ui.showPlaying(); }, back: ({ source }) => backGame(source) },
     'classic-2d': { defaultFocus: null, show: () => ui.showClassic2D(), back: ({ source }) => backGame(source) },
@@ -657,14 +657,25 @@ function answer2D(answer) {
 const mode2d = MODES.register('classic-2d', (report) => createClassic2DMode(report, { flow: FLOW_2D, lastChoice: LAST_CHOICE_2D, sound: sfx, buttonSwap: BUTTON_SWAP }));
 /**
  * The board choice on `choice`; the default choice of a player who never played is not "last
- * played". Each size's detail line is read from the records each time it shows.
+ * played". Back from the Records screen it opened brings back what the screen held then.
  */
-function showChoice2D(choice) { CHOICE_2D.show(choice, { played: choice !== DEFAULT_CHOICE, details: presetDetails(CHOICE_ITEMS['classic-2d'], RECORDS) }); }
+let held2D = null;
+function showChoice2D(choice, from) {
+  const held = from === 'records' ? held2D : null;
+  held2D = null;
+  CHOICE_2D.show(choice, { played: choice !== DEFAULT_CHOICE, held });
+}
+// The bests are read through the records store's queries, and redrawn on its change notification.
 const CHOICE_2D = bindBoardChoice({
   root: document.getElementById('c2d-choice'),
   onStart: (choice) => { sfx.unlock(); MODES.start('classic-2d', choice); },
   onBack: () => shellBack('pointer'),
+  onRecords: (identity) => {
+    held2D = CHOICE_2D.state();
+    SHELL.go('records', { data: { mode: 'classic-2d', boardKey: identity ? boardKey(identity) : null } });
+  },
   code: { resolve: (text) => checkCode(text, 'classic-2d'), onPlay: (text) => playCode(text, 'classic-2d') },
+  bests: (identity) => boardBests(identity, RECORDS),
 });
 
 // ---------------------------------------------------------------- daily boards and board codes
@@ -701,8 +712,8 @@ function playChallenge({ board, seed, startCell }, source) { startForced(gameSta
 function checkCode(text, mode) {
   const r = resolveCode(text, { mode });
   if (r.kind === 'refused') return { ok: false, reason: r.reason };
-  if (r.kind === 'daily') return { ok: true, text: 'Today\'s daily board — it opens the Daily screen.' };
-  return { ok: true, text: `${boardLabel(r.parsed.board)} · a challenge, not eligible for bests` };
+  if (r.kind === 'daily') return { ok: true, text: 'Today\'s daily board — it opens the Daily screen.', label: 'Today\'s daily board' };
+  return { ok: true, text: `${boardLabel(r.parsed.board)} · a challenge, not eligible for bests`, label: boardLabel(r.parsed.board) };
 }
 function playCode(text, mode) {
   const r = resolveCode(text, { mode });
@@ -779,6 +790,7 @@ const RECORDS = createRecordsStore({
 });
 const recordsLoaded = RECORDS.load();
 RECORDS.attach(PAUSE);
+RECORDS.onChange(() => CHOICE_2D.refresh());
 
 // ---------- first-use hints ----------
 // What a new player has been taught, in the platform-storage document shell.firstUse, seeded from
@@ -1530,9 +1542,9 @@ function syncScenePanel() {
   document.body.classList.toggle('scene-off', sceneOff());
   if (renderer.setTarget(box ? { x: box.left, y: box.top, width: box.width, height: box.height } : null)) needRender = true;
 }
-/** The main menu shows a preview other than its 3D one: no 3D scene shows or draws. */
+/** The main menu shows a preview other than its 3D one, or the Classic 2D board choice its own backdrop: no 3D scene shows or draws. */
 function sceneOff() {
-  return S.mode === 'menu' && !menuSceneShown();
+  return (S.mode === 'menu' && !menuSceneShown()) || S.mode === 'classic-2d-choice';
 }
 if (WEBGL2) window.addEventListener('resize', () => syncScenePanel()); // the panel may move with the window
 if (WEBGL2) window.addEventListener('resize', () => { renderer.resize(); needRender = true; });

@@ -606,22 +606,33 @@
      (Back primary), sticky at the bottom of the card's scroll area so Back
      is always in view (#settings-actions, css/style.css).
      Default focus: the look sensitivity slider.
-   Classic 2D board choice (index.html #c2d-choice): ui-card ui-screen--wide
-     holding the title, one ui-menu of the standard sizes (data-size; each
-     item's size line over a detail line — density, typical 3BV, the
-     player's best and streak on the board the switch names, or a dash —
-     and the last board choice marked data-last with a "Last played"
-     ui-menu__detail), the no-guess ui-toggle under the sizes with its
-     ui-text--muted helper line, the custom board as a ui-panel of ui-field
-     entries (width, height, mines) with ui-actions--row (Start,
-     data-size="custom"), a ui-text info line that turns ui-text--warning on
-     a board outside the custom limits and a ui-text--muted density hint
-     under it, shown above 25 % mines with no-guess on, the board code
-     ui-panel (ui-heading, a text ui-field and "Play this board" secondary
-     button in a ui-row, disabled until the code is accepted, and a ui-text
-     info line that turns ui-text--warning on a refused code;
-     bindCodeField, js/ui/components.js), and ui-actions--row (Back).
-     Default focus: the last board choice, else the first item.
+   Classic 2D board choice (index.html #c2d-choice): ui-backdrop holding
+     the ui-wordmark over a ui-frame (Back, a secondary "Main menu" with
+     its back key hint, and the title "Classic 2D") sized to its content
+     and centred on the page, pushed below the wordmark only when the page
+     is too short for both. Its body: on the left a ui-section-label
+     (Board), a ui-options of the standard sizes and Custom (data-size;
+     each a ui-option with its Last played ui-chip, the presets' size and
+     density meta, Custom's meta its board once chosen), a ui-divider and a
+     ui-options of Insert Board Code; a ui-divider--vertical; on the right
+     what the chosen option needs — for a preset the Board settings
+     ui-section-label, the no-guess ui-toggle with its ui-text--muted helper
+     line, then a ui-divider and the board's bests: a ui-section-label
+     naming the board and the switch, a ui-stat-row--tiles of Time, 3BV/s
+     and Efficiency as ui-stat--tile, each with its date or a dash and "no
+     best yet"; for Custom the same with, between the switch (and its
+     density hint, above 25 % mines with no-guess on) and the bests, a
+     ui-panel of ui-field entries (width, height, mines), a ui-text--muted
+     info line, a Random secondary button and a ui-text--warning refusal
+     line; for Insert Board Code only a ui-section-label, a text ui-field
+     and its ui-text info line, ui-text--warning on a refused code. The
+     foot is a bottom bar: a ui-frame__summary of the chosen board, and
+     ui-actions--row of Records (secondary) and Play (primary, large, with
+     its select key hint), disabled on a refused custom board and on an
+     empty or refused code. On the smaller desktop windows the option rows
+     are denser. On a phone: one full-bleed column, no wordmark, no bests
+     and no summary, Records and Play pinned at the bottom.
+     Default focus: the last board choice, the chosen option.
    Board status (index.html #c2d-status over the Classic 2D board, and
      #m3d-status over the 3D box): ui-card ui-screen while a slow first
      click generates its no-guess board, with a ui-text--muted progress

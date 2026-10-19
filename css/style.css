@@ -297,6 +297,42 @@ body.replaying :is(#mode-chips, #hud-tools, #hint-strip, #toast) { display: none
 }
 #help h3 { margin: 0 0 10px; font-size: 13px; font-weight: var(--font-weight-bold); text-transform: uppercase; letter-spacing: 0.1em; }
 #help .controls { font-size: 13px; }
+/* The Classic 2D board choice, on the page's backdrop: the wordmark at the top and the window under
+   it, sized to its content and centred on the page — the space above it never less than the
+   wordmark's, so a page too short for both pushes the window down. The window holds the options
+   (left) beside what the chosen one needs (right); its option rows grow denser on the smaller
+   desktop windows. On a phone: one full-bleed column, no wordmark, no bests and no summary, the
+   bar pinned at the bottom. */
+#c2d-choice { flex-direction: column; justify-content: flex-start; padding: 0 var(--space-5); overflow: hidden; }
+#c2d-choice-top { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; }
+#c2d-choice-wordmark { margin: clamp(24px, 4vh, 44px) 0 var(--space-6); }
+#c2d-choice::after { content: ""; flex: 1 1 0; min-height: var(--space-4); }
+#c2d-choice-frame { flex: 0 1 auto; width: 1120px; }
+#c2d-choice-body { display: grid; grid-template-columns: minmax(0, 480fr) auto minmax(0, 640fr); padding: 0; }
+#c2d-choice-options, #c2d-choice-detail { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; padding: var(--space-6); }
+#c2d-choice-detail { gap: var(--space-5); }
+#c2d-choice-options .ui-divider { margin: var(--space-1) 0; }
+#c2d-settings, #c2d-bests, #c2d-code-panel, #c2d-custom { display: flex; flex-direction: column; gap: var(--space-3); }
+#c2d-custom > .ui-actions { margin: 0; }
+#c2d-code-panel > .ui-field, #c2d-code { width: 100%; box-sizing: border-box; }
+@media (max-width: 1439px) {
+  #c2d-choice-frame { width: 1080px; }
+  #c2d-choice-options, #c2d-choice-detail { padding: var(--space-5) var(--space-6); }
+  #c2d-choice-detail { gap: var(--space-4); }
+  #c2d-choice .ui-option { min-height: 46px; padding: 6px 14px; }
+  #c2d-choice .ui-option__name { font-size: 18px; }
+  #c2d-choice .ui-option__meta { font-size: 13px; }
+  #c2d-choice .ui-option__check { width: 24px; height: 24px; }
+}
+@media (max-width: 1199px) { #c2d-choice-frame { width: 984px; } }
+@media (max-width: 719px) {
+  #c2d-choice { padding: 0; }
+  #c2d-choice-top, #c2d-choice-body > .ui-divider--vertical, #c2d-bests, #c2d-summary, #c2d-choice::after { display: none; }
+  #c2d-choice-frame { flex: 1 1 auto; width: 100%; border-radius: 0; box-shadow: none; }
+  #c2d-choice-body { display: block; }
+  #c2d-choice-options { padding-bottom: var(--space-3); }
+  #c2d-choice-detail { padding-top: var(--space-3); }
+}
 .help-foot { margin: 10px 0 0; font-size: 12px; }
 .help-foot .pad-note { display: block; margin: 8px 0 0; }
 

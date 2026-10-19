@@ -1,6 +1,7 @@
-// The returning player's surface, as text (no DOM): the detail line of each preset on both board
-// choices. Every figure comes from the records' queries handed in (`bests`, `counters` — the records
-// store or a records model); nothing is stored here.
+// The returning player's surface, as text (no DOM): the detail line of each preset on the 3D board
+// choice and the board's three bests on the Classic 2D one. Every figure comes from the records'
+// queries handed in (`bests`, `counters` — the records store or a records model); nothing is stored
+// here.
 //
 //   densityText(board)            '7.8 % mines': mines ÷ cells as a whole percent, one decimal below 10 %.
 //   presetDetail(board, records)  '7.8 % mines · ~124 3BV · Best 48.213 s · 3 in a row': the density,
@@ -13,13 +14,17 @@
 //                                 identity fields without noGuess, as CHOICE_ITEMS does.
 //   CHOICE_ITEMS                  { [mode]: items }: each board choice's preset items — Classic 2D's
 //                                 standard sizes, 3D's presets by id.
+//   boardBests(board, records)    [{ stat, label, value, note }]: the board's best time, 3BV/s and
+//                                 efficiency in the results screen's formats, each noted with the
+//                                 date it was set ('9 Oct 2026'), or DASH and 'no best yet'.
 //
 // The streak is the reference current streak (counters().currentStreak), in which an abandoned game
 // is a loss; the time is the results screen's format (formatTime, js/results/view.js).
 
 import { createBoardIdentity, MODE_3D } from '../records/board.js';
 import { typicalBbbv } from '../records/typical-bbbv.js';
-import { formatTime, DASH } from '../results/view.js';
+import { formatTime, formatRate, formatEfficiency, DASH } from '../results/view.js';
+import { formatDate } from '../records/history-chart.js';
 import { MODE as MODE_2D, GRID, STANDARD_SIZES } from '../classic2d/board-setup.js';
 import { PRESETS } from '../mode3d/board-choice.js';
 
@@ -54,3 +59,18 @@ export const CHOICE_ITEMS = Object.freeze({
   [MODE_3D]: Object.freeze(Object.fromEntries(PRESETS
     .map((p) => [p.id, Object.freeze({ mode: MODE_3D, width: p.X, height: p.Y, depth: p.Z, mines: p.mines })]))),
 });
+
+const BEST_TILES = Object.freeze([
+  { stat: 'time', label: 'Time', format: formatTime },
+  { stat: 'bbbvPerSecond', label: '3BV/s', format: formatRate },
+  { stat: 'efficiency', label: 'Efficiency', format: formatEfficiency },
+]);
+export const NO_BEST = 'no best yet';
+
+export function boardBests(board, records) {
+  const bests = records.bests(board);
+  return BEST_TILES.map(({ stat, label, format }) => {
+    const best = bests?.[stat] ?? null;
+    return { stat, label, value: best ? format(best.value) : DASH, note: best ? formatDate(best.endedAt) : NO_BEST };
+  });
+}

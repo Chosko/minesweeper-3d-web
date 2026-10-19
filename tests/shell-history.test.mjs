@@ -421,6 +421,7 @@ test('in a browser, Back steps back inside the game and leaves only from the mai
       await page.click('#menu-entry-classic-2d');
       if (await page.isChecked('#c2d-noguess')) await page.click('#c2d-noguess');
       await page.click('#c2d-choice [data-size="beginner"]');
+      await page.click('#c2d-play');
       assert.equal(await mode(), 'classic-2d');
       const centres = await page.evaluate(async () => {
         const r = document.querySelector('#c2d-board canvas').getBoundingClientRect();

@@ -12,9 +12,13 @@ import { fileURLToPath } from 'node:url';
 
 import { createClassic2DMode, MODE_ID, END_DELAY_MS } from '../js/classic2d/mode.js';
 import { WIN, LOSS } from '../js/classic2d/end-effect.js';
-import { CHOICE_SIZES, customStatus, readChoice, sizeLabel, densityHintShown } from '../js/classic2d/board-choice.js';
+import {
+  CHOICE_SIZES, CUSTOM_HINT, CODE_PROMPT, customStatus, customInfo, readChoice, sizeLabel, boardLine, mineDensity, densityHintShown,
+  randomCustom, choiceSummary, bestsTitle,
+} from '../js/classic2d/board-choice.js';
 import {
   createLastChoice, DEFAULT_CHOICE, LAST_CHOICE_DOC, maxMines, NOGUESS_DENSITY_HINT, DENSITY_HINT_TEXT, NOGUESS_HELP_TEXT,
+  STANDARD_SIZES, validateCustom,
 } from '../js/classic2d/board-setup.js';
 import { createModeHost, MODE_METHODS } from '../js/shell/mode-host.js';
 import { createPointerInput, BUTTON } from '../js/classic2d/pointer-input.js';
@@ -1070,6 +1074,49 @@ test('the board choice opens with no-guess on for a player who never played; its
     { size: 'custom', custom: { width: 10, height: 10, mines: 38 }, noGuess: true }, 'a dense no-guess board is still offered');
 });
 
+test('the board choice\'s lines: each option\'s board line and density, the custom info line, the summary and the bests title follow the switch', () => {
+  assert.equal(boardLine({ width: 16, height: 16, mines: 40 }), '16 × 16 · 40 mines');
+  assert.equal(boardLine({ width: 1, height: 2, mines: 1 }), '1 × 2 · 1 mine');
+  assert.deepEqual(CHOICE_SIZES.map((s) => mineDensity(STANDARD_SIZES[s])), ['12.3 % mines', '15.6 % mines', '20.6 % mines']);
+  assert.equal(CUSTOM_HINT, `Width and height ${CUSTOM_LIMITS.minSide}–${CUSTOM_LIMITS.maxSide}`);
+
+  // The info line names the cells and the mine limit of the width and height, refused mines or not.
+  assert.equal(customInfo({ width: 30, height: 16, mines: 99 }), `480 cells · up to ${maxMines(30, 16)} mines`);
+  assert.equal(customInfo({ width: 30, height: 16, mines: 9999 }), `480 cells · up to ${maxMines(30, 16)} mines`);
+  assert.equal(customInfo({ width: 1, height: 1, mines: 1 }), '1 cell · no room for a mine');
+  assert.equal(customInfo({ width: 1, height: 2, mines: 1 }), '2 cells · up to 1 mine');
+  assert.equal(customInfo({ width: CUSTOM_LIMITS.maxSide + 1, height: 2, mines: 1 }), '', 'no line while a side is refused');
+  assert.equal(customInfo({ width: NaN, height: 2, mines: 1 }), '');
+
+  const custom = { width: 30, height: 16, mines: 140 };
+  assert.equal(choiceSummary({ selected: 'intermediate', custom, noGuess: true }), 'Intermediate · 16 × 16 · 40 mines · no-guess');
+  assert.equal(choiceSummary({ selected: 'intermediate', custom, noGuess: false }), 'Intermediate · 16 × 16 · 40 mines');
+  assert.equal(choiceSummary({ selected: 'custom', custom, noGuess: true }), 'Custom · 30 × 16 · 140 mines · no-guess', 'a refused board is still summarised');
+  assert.equal(choiceSummary({ selected: 'custom', custom: { width: NaN, height: 16, mines: 1 }, noGuess: false }), 'Custom');
+  assert.equal(choiceSummary({ selected: 'code', custom, noGuess: true, code: null }), 'Board code · paste a code to play');
+  assert.equal(choiceSummary({ selected: 'code', custom, noGuess: true, code: { ok: false, reason: 'x' } }), 'Board code · paste a code to play');
+  assert.equal(choiceSummary({ selected: 'code', custom, noGuess: true, code: { ok: true, text: 't', label: 'Intermediate · no-guess' } }), 'Board code · Intermediate · no-guess');
+
+  assert.equal(bestsTitle({ selected: 'intermediate', custom, noGuess: true }), 'Intermediate · no-guess · your bests');
+  assert.equal(bestsTitle({ selected: 'intermediate', custom, noGuess: false }), 'Intermediate · your bests');
+  assert.equal(bestsTitle({ selected: 'custom', custom: { width: 30, height: 16, mines: 99 }, noGuess: true }), '30 × 16 · 99 mines · no-guess · your bests');
+  assert.equal(bestsTitle({ selected: 'custom', custom: { width: 'x', height: 16, mines: 99 }, noGuess: false }), 'Custom · your bests');
+});
+
+test('Random fills a valid custom board every time, at most about one mine in five cells, as the 3D form\'s Random does', () => {
+  for (const r of [() => 0, () => 0.999999]) assert.equal(validateCustom(randomCustom(r)).ok, true);
+  let seed = 7;
+  const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const sizes = new Set();
+  for (let i = 0; i < 500; i++) {
+    const b = randomCustom(rand);
+    assert.equal(validateCustom(b).ok, true, JSON.stringify(b));
+    assert.ok(b.mines <= Math.max(1, Math.floor((b.width * b.height) / 5) - 1), JSON.stringify(b));
+    sizes.add(`${b.width}x${b.height}`);
+  }
+  assert.ok(sizes.size > 100, 'the fill varies');
+});
+
 test('the board choice module touches only the elements it is handed', () => {
   const src = read('js/classic2d/board-choice.js').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
   assert.doesNotMatch(src, /\b(document|window|localStorage)\b/);
@@ -1085,34 +1132,78 @@ const between = (src, start, end) => src.slice(src.indexOf(start), src.indexOf(e
 const CHOICE = between(INDEX, '<section id="c2d-choice"', '<!-- Classic 2D board -->');
 const LAYER = between(INDEX, '<section id="c2d"', '<!-- In-game HUD -->');
 
-test('index.html builds the Classic 2D board choice from kit components', () => {
+test('index.html builds the Classic 2D board choice from kit components: the title over a window, the options beside what the chosen one needs, a bottom bar', () => {
   assert.ok(CHOICE.length > 500, 'index.html has the Classic 2D board choice');
-  assert.match(CHOICE, /^<section id="c2d-choice" class="overlay hidden"/);
-  assert.match(CHOICE, /<section class="ui-card ui-screen ui-screen--wide" aria-labelledby="c2d-choice-title">/);
-  const sizes = [...CHOICE.matchAll(/<button type="button" class="ui-menu__item" data-size="(\w+)">/g)].map((m) => m[1]);
-  assert.deepEqual(sizes, ['beginner', 'intermediate', 'expert']);
-  for (const f of ['width', 'height', 'mines']) {
-    assert.match(CHOICE, new RegExp(`<label class="ui-field"><span class="ui-field__label">[^<]+</span><input id="c2d-${f}" data-field="${f}" class="ui-field__input" type="number"`), f);
+  assert.match(CHOICE, /^<section id="c2d-choice" class="overlay ui-backdrop hidden" aria-label="Classic 2D board choice">/);
+  assert.match(CHOICE, /<h1 class="ui-wordmark" id="c2d-choice-wordmark" aria-label="Minesweeper 3D">/, 'the game\'s title, as on the menu');
+  assert.match(CHOICE, /<section class="ui-frame" id="c2d-choice-frame" aria-labelledby="c2d-choice-title">/);
+  assert.match(CHOICE, /<div class="ui-frame__start"><button type="button" id="c2d-choice-back" class="ui-button ui-button--secondary ui-button--sm" data-back>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>/);
+  assert.match(CHOICE, /<h2 class="ui-frame__title" id="c2d-choice-title">Classic 2D<\/h2>/);
+
+  // Left: Board, the presets and Custom, a divider, Insert Board Code with no icon.
+  const left = between(CHOICE, '<div class="ui-column" id="c2d-choice-options">', '<div class="ui-divider ui-divider--vertical"');
+  assert.match(left, /<h3 class="ui-section-label__text" id="c2d-board-label">Board<\/h3>/);
+  const options = [...left.matchAll(/<button type="button" class="ui-option" aria-pressed="false" data-size="(\w+)"/g)].map((m) => m[1]);
+  assert.deepEqual(options, ['beginner', 'intermediate', 'expert', 'custom', 'code']);
+  const unescape = (t) => t.replace(/&times;/g, '×').replace(/&middot;/g, '·').replace(/&ndash;/g, '–');
+  for (const size of CHOICE_SIZES) {
+    const b = unescape(left.slice(left.indexOf(`data-size="${size}"`), left.indexOf('</button>', left.indexOf(`data-size="${size}"`))));
+    assert.match(b, /<span class="ui-option__name">[A-Z]\w+<\/span><span class="ui-chip hidden" data-last>Last played<\/span><span class="ui-option__meta">/, `${size}: its name, then its Last played chip`);
+    assert.ok(b.includes(`<span class="ui-option__size">${sizeLabel(size)}</span> · <span class="ui-option__density">${mineDensity(STANDARD_SIZES[size])}</span>`), `${size}: its size line and density`);
   }
-  assert.match(CHOICE, new RegExp(`id="c2d-width"[^>]*min="${CUSTOM_LIMITS.minSide}" max="${CUSTOM_LIMITS.maxSide}"`));
-  assert.match(CHOICE, /id="c2d-mines"[^>]*min="1"/, 'a custom board takes at least one mine');
-  assert.match(CHOICE, /<button type="submit" id="c2d-start" class="ui-button ui-button--primary" data-size="custom">/);
-  assert.match(CHOICE, /<label class="ui-toggle"><input type="checkbox" role="switch" id="c2d-noguess" class="ui-toggle__input"/);
-  // The switch sits directly under the sizes, with its helper line, before the custom panel — the 3D
-  // board choice's arrangement — so the D-pad walks sizes, switch, custom row, Back.
-  const sw = CHOICE.indexOf('id="c2d-noguess"');
-  const help = CHOICE.indexOf(`<p id="c2d-noguess-help" class="ui-text ui-text--muted">${NOGUESS_HELP_TEXT}</p>`);
-  const sizesEnd = CHOICE.indexOf('</div>', CHOICE.indexOf('data-size="expert"'));
-  const label = CHOICE.lastIndexOf('<label class="ui-toggle">', sw);
-  assert.equal(CHOICE.slice(sizesEnd + '</div>'.length, label).trim(), '', 'the switch directly under the sizes');
-  assert.ok(help > sw && help < CHOICE.indexOf('<form id="c2d-custom"'), 'its helper line under it, before the custom panel');
-  const form = CHOICE.slice(CHOICE.indexOf('<form id="c2d-custom"'), CHOICE.indexOf('</form>'));
-  const hint = form.indexOf('<p id="c2d-density-hint" class="ui-text ui-text--muted hidden" data-density-hint></p>');
-  assert.ok(hint > form.indexOf('data-info'), 'the density hint sits under the custom panel\'s info line');
-  assert.match(CHOICE, /id="c2d-choice-back" class="ui-button ui-button--secondary"[^>]*>Back/);
+  assert.ok(unescape(left).includes(`<span class="ui-option__meta" data-custom-meta>${CUSTOM_HINT}</span>`));
+  const divider = left.indexOf('<hr class="ui-divider">');
+  assert.ok(divider > left.indexOf('data-size="custom"') && divider < left.indexOf('data-size="code"'), 'a divider before Insert Board Code');
+  const code = left.slice(left.indexOf('data-size="code"'), left.indexOf('</button>', left.indexOf('data-size="code"')));
+  assert.match(code, /<span class="ui-option__name">Insert Board Code<\/span><span class="ui-option__meta">Play the exact board a code describes<\/span>/);
+  assert.doesNotMatch(code, /ui-option__badge|ui-chip/, 'no icon');
+  assert.doesNotMatch(left, /ui-menu|data-detail|3BV|Best /, 'no detail lines: no 3BV and no best on an option');
+
+  // Right: the settings, the custom form, the bests, the code panel.
+  const right = between(CHOICE, '<div class="ui-column" id="c2d-choice-detail">', '<footer class="ui-frame__foot">');
+  assert.match(right, /<div id="c2d-settings" data-settings>\s*<div class="ui-section-label"><h3 class="ui-section-label__text">Board settings<\/h3><\/div>\s*<label class="ui-toggle"><input type="checkbox" role="switch" id="c2d-noguess" class="ui-toggle__input" data-noguess><span class="ui-toggle__label">No-guess<\/span><\/label>/);
+  assert.ok(right.includes(`<p id="c2d-noguess-help" class="ui-text ui-text--muted">${NOGUESS_HELP_TEXT}</p>`));
+  assert.ok(right.indexOf('data-density-hint') > right.indexOf('c2d-noguess-help') && right.indexOf('data-density-hint') < right.indexOf('<form id="c2d-custom"'), 'the density hint under the switch');
+  const form = right.slice(right.indexOf('<form id="c2d-custom"'), right.indexOf('</form>'));
+  assert.match(form, /^<form id="c2d-custom" class="ui-panel hidden"/, 'the form shows for Custom only');
+  for (const f of ['width', 'height', 'mines']) {
+    assert.match(form, new RegExp(`<label class="ui-field"><span class="ui-field__label">[^<]+</span><input id="c2d-${f}" data-field="${f}" class="ui-field__input" type="number"`), f);
+  }
+  assert.match(form, new RegExp(`id="c2d-width"[^>]*min="${CUSTOM_LIMITS.minSide}" max="${CUSTOM_LIMITS.maxSide}"`));
+  assert.match(form, /id="c2d-mines"[^>]*min="1"/, 'a custom board takes at least one mine');
+  const [info, random, refusal] = ['data-info', 'id="c2d-random"', 'data-refusal'].map((x) => form.indexOf(x));
+  assert.ok(info > form.indexOf('id="c2d-mines"') && random > info && refusal > random, 'the fields, the info line, Random, the refusal line');
+  assert.match(form, /<button type="button" id="c2d-random" class="ui-button ui-button--secondary ui-button--sm" data-random>Random<\/button>/);
+  assert.match(form, /<p id="c2d-refusal" class="ui-text ui-text--warning hidden" data-refusal><\/p>/);
+  assert.doesNotMatch(CHOICE, /c2d-start|type="submit"/, 'Play starts a custom board');
+  const bests = right.slice(right.indexOf('<div id="c2d-bests"'), right.indexOf('<div id="c2d-code-panel"'));
+  assert.ok(right.indexOf('<div id="c2d-bests"') > right.indexOf('</form>'), 'the bests under the form');
+  assert.match(bests, /<hr class="ui-divider">\s*<div class="ui-section-label"><h3 class="ui-section-label__text" id="c2d-bests-title" data-bests-title>/);
+  const tiles = [...bests.matchAll(/<div id="c2d-best-(\w+)" class="ui-stat ui-stat--tile" role="group" aria-labelledby="c2d-best-\1-label" data-best="\1"><span class="ui-stat__label" id="c2d-best-\1-label">([^<]+)<\/span>/g)];
+  assert.deepEqual(tiles.map((m) => [m[1], m[2]]), [['time', 'Time'], ['bbbvPerSecond', '3BV/s'], ['efficiency', 'Efficiency']], 'three tiles only');
+  assert.doesNotMatch(right, /[Ww]in rate|[Ss]treak|[Rr]ecent|Top 5|<canvas/, 'no wins, rates, streak, charts, recent games or Top 5');
+  const panel = right.slice(right.indexOf('<div id="c2d-code-panel"'));
+  assert.match(panel, /^<div id="c2d-code-panel" class="hidden" role="group" aria-labelledby="c2d-code-title" data-code-panel>/);
+  assert.match(panel, /<input id="c2d-code" data-code-field class="ui-field__input" type="text"/);
+  assert.ok(panel.includes(`<p id="c2d-code-info" class="ui-text ui-text--muted" data-code-info>${CODE_PROMPT}</p>`));
+  assert.doesNotMatch(CHOICE, /c2d-code-play|Play this board/, 'the code is played with Play');
+
+  // The bottom bar: the summary, Records and Play with its Enter hint.
+  const foot = between(CHOICE, '<footer class="ui-frame__foot">', '</footer>');
+  assert.match(foot, /<p class="ui-frame__summary" id="c2d-summary" data-summary><\/p>\s*<div class="ui-actions ui-actions--row">\s*<button type="button" id="c2d-records" class="ui-button ui-button--secondary" data-records>Records<\/button>\s*<button type="button" id="c2d-play" class="ui-button ui-button--primary ui-button--lg" data-play>Play <span class="ui-key-hint" data-action="select" aria-hidden="true"><\/span><\/button>/);
   for (const [, cls] of CHOICE.matchAll(/class="([^"]+)"/g)) {
     for (const c of cls.split(/\s+/)) assert.ok(c.startsWith('ui-') || ['overlay', 'hidden'].includes(c), `kit class: ${c}`);
   }
+});
+
+test('the shell stylesheet lays the board choice out: the window under the title, centred unless the page is too short, denser rows, one column on a phone', () => {
+  const css = read('css/style.css');
+  assert.match(css, /#c2d-choice-top \{ flex: 1 1 0;/, 'the space above the window grows with the page');
+  assert.match(css, /#c2d-choice::after \{ content: ""; flex: 1 1 0;/, 'as much as the space below it');
+  assert.match(css, /#c2d-choice-frame \{ flex: 0 1 auto; width: 1120px; \}/);
+  assert.match(css, /@media \(max-width: 1439px\) \{\n  #c2d-choice-frame \{ width: 1080px; \}[\s\S]*?#c2d-choice \.ui-option \{ min-height: 46px;/);
+  assert.match(css, /@media \(max-width: 1199px\) \{ #c2d-choice-frame \{ width: 984px; \} \}/);
+  assert.match(css, /@media \(max-width: 719px\) \{\n  #c2d-choice \{ padding: 0; \}\n  #c2d-choice-top, #c2d-choice-body > \.ui-divider--vertical, #c2d-bests, #c2d-summary, #c2d-choice::after \{ display: none; \}/);
 });
 
 test('index.html holds the Classic 2D board layer with its generating and failure card', () => {
@@ -1133,7 +1224,7 @@ test('the shell cancels a 2D generation from its Cancel and Back, and shows the 
 
 test('the shell registers the mode, routes its screens and reaches the board with the controller', () => {
   const table = MAIN.slice(MAIN.indexOf('const SHELL = createRouter('), MAIN.indexOf('// end of screen table'));
-  assert.match(table, /'classic-2d-choice': \{[^\n]*defaultFocus: '\[data-size\]\[data-last\]'/, 'the board choice focuses the last choice');
+  assert.match(table, /'classic-2d-choice': \{[^\n]*defaultFocus: '\[data-size\]\[aria-pressed="true"\]'/, 'the board choice focuses the chosen option, the last choice when it opens');
   assert.match(table, /'classic-2d': \{[^\n]*defaultFocus: null[^\n]*back: \(\{ source \}\) => backGame\(/, 'Back on the board is Pause, or cancels a board being generated');
   assert.match(MAIN, /MODES\.register\('classic-2d', \(report\) => createClassic2DMode\(report, /);
   assert.match(MAIN, /c2d: 'classic-2d'/, 'the board layer is a controller layer');
@@ -1192,14 +1283,16 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
     await page.click('#menu-entry-classic-2d');
     assert.equal(await mode(), 'classic-2d-choice');
     assert.equal(await active(), 'beginner');
-    // Custom: an impossible mine count is refused with its reason.
+    // Custom: an impossible mine count is refused with its reason, and Play waits.
+    await page.click('#c2d-choice [data-size="custom"]');
     await page.fill('#c2d-width', '5');
     await page.fill('#c2d-height', '5');
     await page.fill('#c2d-mines', '25');
-    assert.match(await ms(() => document.getElementById('c2d-info').textContent), /mines/i);
-    assert.ok(await ms(() => document.getElementById('c2d-info').classList.contains('ui-text--warning')));
-    await page.click('#c2d-start');
-    assert.equal(await mode(), 'classic-2d-choice', 'an invalid custom board does not start');
+    assert.equal(await ms(() => document.getElementById('c2d-info').textContent), '25 cells · up to 24 mines');
+    assert.match(await ms(() => document.getElementById('c2d-refusal').textContent), /mines/i);
+    assert.equal(await ms(() => document.getElementById('c2d-play').disabled), true, 'an invalid custom board does not start');
+    await page.press('#c2d-mines', 'Enter');
+    assert.equal(await mode(), 'classic-2d-choice');
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'menu');
 
@@ -1207,6 +1300,8 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
     await page.click('#menu-entry-classic-2d');
     await page.uncheck('#c2d-noguess'); // a standard Expert board: no-guess is on by default
     await page.click('#c2d-choice [data-size="expert"]');
+    assert.equal(await mode(), 'classic-2d-choice', 'a click chooses the board');
+    await page.click('#c2d-play');
     assert.equal(await mode(), 'classic-2d');
     assert.equal(await ms(() => globalThis.__ms.modes.active), 'classic-2d');
     const box = await page.locator('#c2d-board canvas').boundingBox();
@@ -1256,15 +1351,166 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
     assert.equal(abandoned[0].summary.pauses, 2, 'two pauses: the one resumed, and the one left from');
     assert.ok(abandoned[0].summary.pausedMs >= 1200);
 
-    // The board choice reopens on the last choice.
+    // The board choice reopens on the last choice; the abandoned game set no best.
     await page.click('#menu-entry-classic-2d');
     assert.equal(await active(), 'expert');
-    // Each size carries one detail line under its size line; the abandoned game set no best.
-    const lines = await ms(() => [...document.querySelectorAll('#c2d-choice [data-size] [data-detail]')].map((l) => [l.closest('[data-size]').dataset.size, l.className, l.textContent]));
-    assert.deepEqual(lines.map(([size, cls]) => [size, cls]), [['beginner', 'ui-menu__detail'], ['intermediate', 'ui-menu__detail'], ['expert', 'ui-menu__detail']]);
-    assert.match(lines[2][2], /^21 % mines · ~\d+ 3BV · —$/);
+    assert.equal(await ms(() => document.querySelector('#c2d-choice [aria-pressed="true"]').dataset.size), 'expert');
     assert.equal(await ms(() => document.getElementById('c2d-noguess').checked), false, 'the switch as last played');
+    assert.equal(await ms(() => document.getElementById('c2d-bests-title').textContent), 'Expert · your bests');
+    assert.equal(await ms(() => document.querySelector('#c2d-best-time .ui-stat__detail').textContent), 'no best yet');
     assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, the board choice: a click chooses, Play or Enter plays; the bests follow the switch and the records; Custom with Random; Insert Board Code; Records and back', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(removeWebGL2);
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
+    const ms = (fn, arg) => page.evaluate(fn, arg);
+    const mode = () => ms(() => globalThis.__ms.state.mode);
+    const text = (id) => ms((i) => document.getElementById(i).textContent, id);
+    const shown = (id) => ms((i) => { const e = document.getElementById(i); return !e.closest('.hidden') && e.getBoundingClientRect().height > 0; }, id);
+    const chosen = () => ms(() => [...document.querySelectorAll('#c2d-choice [aria-pressed="true"]')].map((b) => b.dataset.size));
+    const tiles = () => ms(() => [...document.querySelectorAll('#c2d-bests [data-best]')].map((t) => [t.querySelector('.ui-stat__label').textContent, t.querySelector('.ui-stat__value').textContent, t.querySelector('.ui-stat__detail').textContent]));
+
+    // A new player: Beginner chosen and focused, no-guess on, no bests yet.
+    await page.click('#menu-entry-classic-2d');
+    assert.deepEqual(await chosen(), ['beginner']);
+    assert.equal(await ms(() => document.activeElement?.dataset.size), 'beginner');
+    assert.equal(await ms(() => document.querySelector('#c2d-choice [data-size="beginner"] [data-last]').classList.contains('hidden')), true, 'not "Last played" before a game');
+    assert.equal(await text('c2d-summary'), 'Beginner · 9 × 9 · 10 mines · no-guess');
+    assert.equal(await text('c2d-bests-title'), 'Beginner · no-guess · your bests');
+    assert.deepEqual(await tiles(), [['Time', '—', 'no best yet'], ['3BV/s', '—', 'no best yet'], ['Efficiency', '—', 'no best yet']]);
+    assert.deepEqual([await shown('c2d-settings'), await shown('c2d-custom'), await shown('c2d-bests'), await shown('c2d-code-panel')], [true, false, true, false]);
+
+    // Intermediate with no-guess off; a win recorded meanwhile shows at once, with its date.
+    await page.click('#c2d-choice [data-size="intermediate"]');
+    assert.deepEqual(await chosen(), ['intermediate']);
+    assert.equal(await mode(), 'classic-2d-choice');
+    await page.click('#c2d-noguess');
+    assert.equal(await text('c2d-summary'), 'Intermediate · 16 × 16 · 40 mines');
+    assert.equal(await text('c2d-bests-title'), 'Intermediate · your bests');
+    await ms(async () => {
+      const { buildSummary } = await import('/js/records/summary.js');
+      const engine = { outcome: 'won', bbbv: 20, bbbvSolved: 20, clicks: { reveal: { effective: 25, wasted: 0 }, flag: { effective: 0, wasted: 0 }, chord: { effective: 0, wasted: 0 } } };
+      globalThis.__ms.records.record(buildSummary({ engine, elapsedMs: 48213, board: { mode: 'classic-2d', grid: 'square', width: 16, height: 16, mines: 40, noGuess: false }, seed: 1, generatorVersion: 1, endedAt: new Date(2026, 9, 9, 12), id: 'w-1' }));
+    });
+    assert.deepEqual(await tiles(), [['Time', '48.213 s', '9 Oct 2026'], ['3BV/s', '0.41', '9 Oct 2026'], ['Efficiency', '80.0%', '9 Oct 2026']]);
+    await page.click('#c2d-noguess');
+    assert.deepEqual((await tiles()).map((x) => x[1]), ['—', '—', '—'], 'the no-guess twin is another board');
+    await page.click('#c2d-noguess');
+
+    // Records opens on the chosen board and switch; Back returns here, as it was.
+    await page.click('#c2d-records');
+    assert.equal(await mode(), 'records');
+    assert.match(await ms(() => document.querySelector('#records-picker [aria-checked="true"]')?.textContent ?? ''), /Intermediate/);
+    await page.keyboard.press('Escape');
+    assert.equal(await mode(), 'classic-2d-choice');
+    assert.deepEqual(await chosen(), ['intermediate']);
+    assert.equal(await ms(() => document.getElementById('c2d-noguess').checked), false);
+
+    // Custom: the form and the bests for that size; Random fills a valid board; a refused one disables Play.
+    await page.click('#c2d-choice [data-size="custom"]');
+    assert.deepEqual([await shown('c2d-settings'), await shown('c2d-custom'), await shown('c2d-bests'), await shown('c2d-code-panel')], [true, true, true, false]);
+    assert.equal(await text('c2d-summary'), 'Custom · 30 × 16 · 99 mines');
+    assert.equal(await text('c2d-bests-title'), '30 × 16 · 99 mines · your bests');
+    assert.equal(await ms(() => document.querySelector('#c2d-choice [data-custom-meta]').textContent), '30 × 16 · 99 mines · 20.6 % mines');
+    await page.fill('#c2d-mines', '400');
+    assert.equal(await ms(() => document.getElementById('c2d-play').disabled), true);
+    assert.equal(await shown('c2d-refusal'), true);
+    assert.equal(await ms(() => document.getElementById('c2d-mines').getAttribute('aria-invalid')), 'true');
+    assert.equal(await text('c2d-summary'), 'Custom · 30 × 16 · 400 mines', 'the refused board summarised');
+    for (let i = 0; i < 5; i++) {
+      await page.click('#c2d-random');
+      const f = await ms(() => ['width', 'height', 'mines'].map((n) => Number(document.getElementById(`c2d-${n}`).value)));
+      assert.ok(f.every(Number.isInteger) && f[0] * f[1] >= 2 && f[2] >= 1 && f[2] < f[0] * f[1], `a valid board: ${f}`);
+      assert.equal(await ms(() => document.getElementById('c2d-play').disabled), false);
+      assert.equal(await shown('c2d-refusal'), false);
+      assert.equal(await text('c2d-info'), `${(f[0] * f[1]).toLocaleString('en-US')} ${f[0] * f[1] === 1 ? 'cell' : 'cells'} · up to ${maxMines(f[0], f[1]).toLocaleString('en-US')} ${maxMines(f[0], f[1]) === 1 ? 'mine' : 'mines'}`);
+    }
+
+    // Insert Board Code: only the code field; Play waits for an accepted code, then plays it.
+    await page.click('#c2d-choice [data-size="code"]');
+    assert.deepEqual([await shown('c2d-settings'), await shown('c2d-custom'), await shown('c2d-bests'), await shown('c2d-code-panel')], [false, false, false, true]);
+    assert.equal(await text('c2d-code-info'), CODE_PROMPT);
+    assert.equal(await text('c2d-summary'), 'Board code · paste a code to play');
+    assert.equal(await ms(() => document.getElementById('c2d-play').disabled), true);
+    await page.fill('#c2d-code', 'nonsense');
+    assert.equal(await ms(() => document.getElementById('c2d-code-info').classList.contains('ui-text--warning')), true);
+    assert.equal(await ms(() => document.getElementById('c2d-play').disabled), true);
+    const code = await ms(async () => (await import('/js/records/board-code.js')).encodeBoardCode({ board: { mode: 'classic-2d', grid: 'square', width: 16, height: 16, mines: 40, noGuess: true }, seed: 3, startCell: 40, generatorVersion: 1 }));
+    await page.fill('#c2d-code', code);
+    assert.equal(await ms(() => document.getElementById('c2d-play').disabled), false);
+    assert.equal(await text('c2d-summary'), 'Board code · Intermediate · no-guess');
+    await page.click('#c2d-play');
+    assert.equal(await mode(), 'classic-2d', 'Play plays the code\'s challenge');
+    assert.equal(await ms(() => globalThis.__ms.modes.state.mode), 'classic-2d');
+    await ms(() => globalThis.__ms.pause());
+    await page.click('#p-menu');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'menu');
+
+    // Enter on an option chooses it and plays it.
+    await page.click('#menu-entry-classic-2d');
+    await ms(() => document.querySelector('#c2d-choice [data-size="expert"]').focus());
+    await page.keyboard.press('Enter');
+    assert.equal(await mode(), 'classic-2d');
+    assert.equal(await text('hud-size'), '30 × 16 · no-guess');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, the board choice at every supported window size: its window\'s width, centred under the title, no horizontal scroll, the presets unscrolled at 768 px high, one column on a phone', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    for (const [width, height, frame] of [[1920, 1080, 1120], [1440, 900, 1120], [1366, 768, 1080], [1280, 800, 1080], [1024, 768, 984], [390, 844, 390]]) {
+      const page = await browser.newPage({ viewport: { width, height } });
+      await page.addInitScript(removeWebGL2);
+      await page.goto(`${base}/index.html`);
+      await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
+      await page.click('#menu-entry-classic-2d');
+      const at = `${width} × ${height}`;
+      for (const size of ['intermediate', 'custom', 'code']) {
+        await page.click(`#c2d-choice [data-size="${size}"]`);
+        const m = await page.evaluate(() => {
+          const r = (id) => document.getElementById(id).getBoundingClientRect();
+          const body = document.getElementById('c2d-choice-body');
+          return {
+            scroll: document.documentElement.scrollWidth, layer: document.getElementById('c2d-choice').scrollWidth,
+            frame: r('c2d-choice-frame'), title: r('c2d-choice-wordmark'), body: [body.scrollHeight, body.clientHeight, body.scrollWidth, body.clientWidth],
+            bests: getComputedStyle(document.getElementById('c2d-bests')).display, summary: getComputedStyle(document.getElementById('c2d-summary')).display,
+            play: r('c2d-play'),
+          };
+        });
+        assert.ok(m.scroll <= width && m.layer <= width && m.body[2] <= m.body[3], `${at} ${size}: no horizontal scroll`);
+        assert.equal(Math.round(m.frame.width), frame, `${at}: the window's width`);
+        assert.ok(m.frame.bottom <= height + 0.5 && m.play.bottom <= height, `${at} ${size}: the window and Play in the page`);
+        if (width > 719) {
+          assert.ok(m.frame.top >= m.title.bottom, `${at} ${size}: the window under the title`);
+          const centred = Math.abs((m.frame.top + m.frame.bottom) / 2 - height / 2) <= 1;
+          assert.ok(centred || m.frame.top - m.title.bottom <= 40, `${at} ${size}: centred, or pushed just below the title`);
+          if (size !== 'custom' && height <= 900) assert.ok(m.body[0] <= m.body[1], `${at} ${size}: the window fits the page unscrolled`);
+        } else {
+          assert.equal(m.title.height, 0, 'no title on a phone');
+          assert.equal(m.bests, 'none', 'no bests on a phone');
+          assert.equal(m.summary, 'none');
+          assert.ok(Math.abs(m.play.bottom - height) <= 24, 'Play pinned at the bottom');
+        }
+      }
+      await page.close();
+    }
   } finally {
     await browser.close();
   }
@@ -1601,6 +1847,7 @@ test('in a browser, a Classic 2D Beginner game played by mouse and by keyboard c
 
     await page.click('#menu-entry-classic-2d');
     await page.click('#c2d-choice [data-size="beginner"]');
+    await page.click('#c2d-play');
     assert.equal(await ms(() => globalThis.__ms.state.mode), 'classic-2d');
 
     // By mouse: the first click is heard when its board arrives; a right click flags and unflags.

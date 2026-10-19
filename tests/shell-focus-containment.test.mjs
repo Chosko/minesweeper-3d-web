@@ -175,6 +175,7 @@ for (const inert of [true, false]) {
       await page.click('#menu-entry-classic-2d');
       if (await page.isChecked('#c2d-noguess')) await page.click('#c2d-noguess');
       await page.click('#c2d-choice [data-size="beginner"]');
+      await page.click('#c2d-play');
       const centres = await ms(() => {
         const r = document.querySelector('#c2d-board canvas').getBoundingClientRect();
         const L = globalThis.__ms.board2D.layout;

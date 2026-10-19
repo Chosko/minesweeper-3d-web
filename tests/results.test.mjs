@@ -794,6 +794,7 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
     await page.click('#menu-entry-classic-2d');
     if (await page.isChecked('#c2d-noguess')) await page.click('#c2d-noguess');
     await page.click('#c2d-choice [data-size="beginner"]');
+    await page.click('#c2d-play');
     assert.equal(await mode(), 'classic-2d');
 
     // The cell centres, from the board view's own layout of the canvas.

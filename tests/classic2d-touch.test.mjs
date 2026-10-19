@@ -490,6 +490,7 @@ test('in a browser with touch on a phone, Expert is played by touch: long-press 
     await page.tap('#menu-entry-classic-2d');
     await page.locator('#c2d-noguess').setChecked(false);
     await page.tap('#c2d-choice [data-size="expert"]');
+    await page.tap('#c2d-play');
     await page.waitForFunction(() => globalThis.__ms.state.mode === 'classic-2d');
     // The Reveal / Flag switch shows in the overlay bar, with a 44 px hit area, on Reveal.
     const sw = await ms(() => {
@@ -672,6 +673,7 @@ test('in a browser with touch on a phone, a fresh profile\'s Classic 2D game sho
 
     await page.tap('#menu-entry-classic-2d');
     await page.tap('#c2d-choice [data-size="beginner"]');
+    await page.tap('#c2d-play');
     await page.waitForFunction(() => globalThis.__ms.state.mode === 'classic-2d');
     assert.equal(await ms(() => globalThis.__ms.board2D.layout.scrolls), false, 'Beginner fits a phone: no scroll hint first');
     await page.waitForFunction(() => !document.getElementById('hint-strip').classList.contains('hidden'), null, { timeout: patience(2000) });
@@ -738,14 +740,13 @@ test('in a browser with touch on a phone, the 2D overlay bar fits the screen on 
         await page.waitForFunction(() => globalThis.__ms !== undefined);
         await page.tap('#menu-entry-classic-2d');
         await page.locator('#c2d-noguess').setChecked(true);
+        await page.tap(`#c2d-choice [data-size="${size}"]`);
         if (size === 'custom') {
           await page.fill('#c2d-width', '100');
           await page.fill('#c2d-height', '100');
           await page.fill('#c2d-mines', '2000');
-          await page.tap('#c2d-start');
-        } else {
-          await page.tap(`#c2d-choice [data-size="${size}"]`);
         }
+        await page.tap('#c2d-play');
         await page.waitForFunction(() => globalThis.__ms.state.mode === 'classic-2d');
         await settled(page);
         const g = await ms(barGeometry);
@@ -773,6 +774,7 @@ test('in a browser with touch on a phone, the 2D overlay bar fits the screen on 
       await page.waitForFunction(() => globalThis.__ms !== undefined);
       await page.tap('#menu-entry-classic-2d');
       await page.tap('#c2d-choice [data-size="expert"]');
+      await page.tap('#c2d-play');
       await page.waitForFunction(() => globalThis.__ms.state.mode === 'classic-2d');
       await settled(page);
       await page.setViewportSize(phone.viewport);
@@ -826,6 +828,7 @@ test('in a browser with a mouse at 1280 × 800, the 2D overlay bar, the menu, Se
 
     await page.click('#menu-entry-classic-2d');
     await page.click('#c2d-choice [data-size="beginner"]');
+    await page.click('#c2d-play');
     const bar = await ms(() => ({
       tap: getComputedStyle(document.getElementById('hud-tap')).display,
       label: getComputedStyle(document.querySelector('#hud .ui-stat__label')).fontSize,

@@ -540,14 +540,14 @@ test('in a browser, the custom board validates, the switch follows the limit and
 
 // ---------------------------------------------------------------- Play this board
 
-test('both board choices hold a board code field with Play this board, wired to the shell', () => {
+test('both board choices hold a board code field wired to the shell, the 3D one with Play this board', () => {
   const html = read('index.html');
   for (const [section, prefix] of [['<section id="board-choice"', 'bc'], ['<section id="c2d-choice"', 'c2d']]) {
     const part = html.slice(html.indexOf(section), html.indexOf('</section>\n  </section>', html.indexOf(section)));
     assert.match(part, new RegExp(`<input id="${prefix}-code" data-code-field class="ui-field__input" type="text"`));
-    assert.match(part, new RegExp(`<button type="button" id="${prefix}-code-play" class="ui-button ui-button--secondary" data-code-play disabled>Play this board</button>`));
     assert.match(part, new RegExp(`<p id="${prefix}-code-info" class="ui-text ui-text--muted" data-code-info>${CODE_PROMPT}</p>`));
   }
+  assert.match(html, /<button type="button" id="bc-code-play" class="ui-button ui-button--secondary" data-code-play disabled>Play this board<\/button>/);
   assert.match(MAIN_SRC, /code: \{ resolve: \(text\) => checkCode\(text, '3d'\), onPlay: \(text\) => playCode\(text, '3d'\) \}/);
   assert.match(MAIN_SRC, /code: \{ resolve: \(text\) => checkCode\(text, 'classic-2d'\), onPlay: \(text\) => playCode\(text, 'classic-2d'\) \}/);
 });
@@ -567,7 +567,7 @@ test('in a browser, a board code in a board choice: validated live, the other mo
     const field = (prefix) => ms((p) => ({
       info: document.getElementById(`${p}-code-info`).textContent,
       warn: document.getElementById(`${p}-code-info`).classList.contains('ui-text--warning'),
-      disabled: document.getElementById(`${p}-code-play`).disabled,
+      disabled: document.getElementById(p === 'c2d' ? 'c2d-play' : `${p}-code-play`).disabled,
     }), prefix);
     const two = encodeBoardCode({ board: { mode: 'classic-2d', grid: 'square', width: 9, height: 9, mines: 10, noGuess: false }, seed: 3, startCell: 40, generatorVersion: 1 });
     const three = encodeBoardCode({ board: { mode: '3d', width: 6, height: 6, depth: 6, mines: 10, noGuess: false }, seed: 9, startCell: 129, generatorVersion: 1 });
@@ -594,6 +594,7 @@ test('in a browser, a board code in a board choice: validated live, the other mo
     await page.waitForFunction(() => globalThis.__ms.state.mode === 'menu');
 
     await page.click('#menu-entry-classic-2d');
+    await page.click('#c2d-choice [data-size="code"]');
     await page.fill('#c2d-code', dailyGame('expert', dateText()).code);
     assert.equal((await field('c2d')).disabled, false);
     await page.press('#c2d-code', 'Enter');
