@@ -623,7 +623,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against tasks 165, 211, which edit the same files; replaced by step 67.
 
-## [~] 67. Implement task 175 — Counter readout and figures panel kit components
+## [x] 67. Implement task 175 — Counter readout and figures panel kit components
 
 Depends on: 7, 65
 
@@ -632,6 +632,8 @@ Context: none
 ```prompt
 /task-implement 175 --review
 ```
+
+Done: 2026-10-19, commit `aefe406` (9 files, +578/-4). The counters and figures are not live regions (unlike J-Components); each figures panel has one hidden polite live part, `.ui-figures__live`, written only by `bindFiguresLive` at most every `LIVE_FIGURES_INTERVAL`.
 
 ## [x] 20. Implement task 176 — Classic 2D game window: counter strip, side panel and foot line
 
@@ -649,7 +651,8 @@ Done: struck — for a parallel run its Depends on lacked the order against task
 
 Depends on: 7, 18, 67
 
-Context: none
+Context:
+- 2026-10-19 (from step 67): kit components are `ui-counter` (`data-negative` below zero), `ui-counter-strip`, `ui-figure` (`ui-figure--progress`) and `ui-figures` (head, body, foot, live). Announce figures only through `bindFiguresLive(panel).announce(text)` in `js/ui/components.js`; never put `aria-live` on counters or figures — this task decides the announced text.
 
 ```prompt
 /task-implement 176 --review
@@ -685,7 +688,8 @@ Done: struck — for a parallel run its Depends on lacked the order against task
 
 Depends on: 68
 
-Context: none
+Context:
+- 2026-10-19 (from step 67): announce figures only through `bindFiguresLive(panel).announce(text)` (`js/ui/components.js`); never put `aria-live` on the counters or figures — this task decides the announced text.
 
 ```prompt
 /task-implement 177 --review
@@ -723,6 +727,7 @@ Depends on: 18, 61, 67, 69
 
 Context:
 - 2026-10-19 (from step 61): the replay viewer's end line (outcome chip plus time, e.g. "Won 9.971 s") sits in the figures bar; Download and Open replay file sit beside the key line; Expert must fit at 1024 × 768 with tiles of at least 26 px (`tests/classic2d-mode.test.mjs`).
+- 2026-10-19 (from step 67): announce figures only through `bindFiguresLive(panel).announce(text)` (`js/ui/components.js`); never put `aria-live` on the counters or figures — this task decides the announced text.
 
 ```prompt
 /task-implement 178 --review
