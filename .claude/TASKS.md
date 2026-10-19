@@ -700,7 +700,7 @@ Feature: in-game-layout
 
 ## 180. Tile recipe drawing styles: flat and bevel, with corner radius and depth
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/tile-art.js, js/classic2d/tile-skin.js, js/textures.js, tests/tile-skin.test.mjs, tests/tile-art.test.mjs
 Preconditions: none

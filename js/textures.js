@@ -2,7 +2,7 @@
 // Row 0 of every layer is the TOP of the drawn image, so a UV with v = 0 samples the top
 // (matches the XNA convention used by the original Cube.cs UVs).
 import * as THREE from 'three';
-import { shade, drawRaisedFace, drawRevealedFace, drawNumberGlyph, drawMineGlyph, drawFlagGlyph, drawCross } from './tile-art.js';
+import { shade, drawFace, drawNumberGlyph, drawMineGlyph, drawFlagGlyph, drawCross } from './tile-art.js';
 
 export const TILE = 256;
 export const L_CLOSED = 0;
@@ -88,17 +88,20 @@ const MINE = { body: ATLAS.mine, highlight: ATLAS.mineHighlight };
 const FLAG = { base: ATLAS.mine, shadow: ATLAS.flagShadow, cloth: ATLAS.flag, clothShade: ATLAS.flagShade };
 const CROSS = { outline: ATLAS.wrongFlagOutline, mark: ATLAS.wrongFlagMark };
 
+// The atlas's drawing style: the bevelled cube face, unsnapped.
+const face = (ctx, name, palette) => drawFace(ctx, TILE, name, { style: 'bevel', palette });
+
 /** Draws one layer onto a 2D context of size TILE x TILE. */
 export function drawLayer(ctx, layer) {
   ctx.clearRect(0, 0, TILE, TILE);
-  if (layer === L_CLOSED) drawRaisedFace(ctx, TILE, RAISED);
-  else if (layer === L_FLAG) { drawRaisedFace(ctx, TILE, RAISED); drawFlagGlyph(ctx, TILE, FLAG); }
-  else if (layer === L_MINE) { drawRevealedFace(ctx, TILE, REVEALED); drawMineGlyph(ctx, TILE, MINE); }
-  else if (layer === L_MINE_EXPLODED) { drawRevealedFace(ctx, TILE, EXPLODED); drawMineGlyph(ctx, TILE, MINE); }
-  else if (layer === L_WRONG_FLAG) { drawRevealedFace(ctx, TILE, REVEALED); drawFlagGlyph(ctx, TILE, FLAG); drawCross(ctx, TILE, CROSS); }
+  if (layer === L_CLOSED) face(ctx, 'closed', RAISED);
+  else if (layer === L_FLAG) { face(ctx, 'closed', RAISED); drawFlagGlyph(ctx, TILE, FLAG); }
+  else if (layer === L_MINE) { face(ctx, 'revealed', REVEALED); drawMineGlyph(ctx, TILE, MINE); }
+  else if (layer === L_MINE_EXPLODED) { face(ctx, 'revealed', EXPLODED); drawMineGlyph(ctx, TILE, MINE); }
+  else if (layer === L_WRONG_FLAG) { face(ctx, 'revealed', REVEALED); drawFlagGlyph(ctx, TILE, FLAG); drawCross(ctx, TILE, CROSS); }
   else {
     const n = layer - L_NUM0;
-    drawRevealedFace(ctx, TILE, REVEALED);
+    face(ctx, 'revealed', REVEALED);
     if (n > 0) drawNumberGlyph(ctx, TILE, n, { color: numberColor(n), shadow: ATLAS.numberShadow });
   }
 }

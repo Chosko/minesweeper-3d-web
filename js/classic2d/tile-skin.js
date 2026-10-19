@@ -8,9 +8,7 @@
 // appearance only.
 
 import { token as readerToken, onThemeChange as readerOnThemeChange, FALLBACK_COLOR } from '../tokens.js';
-import {
-  drawRaisedFace, drawSunkenFace, drawRevealedFace, drawNumberGlyph, drawMineGlyph, drawFlagGlyph, drawCross,
-} from '../tile-art.js';
+import { drawFace, drawNumberGlyph, drawMineGlyph, drawFlagGlyph, drawCross } from '../tile-art.js';
 
 // The smallest tile size the Classic 2D renderer allows, shared with it: the
 // readable floor a board shrinks to before it scrolls. With it an Expert board
@@ -77,6 +75,10 @@ function placeholder(ctx, x, y, size) {
   ctx.stroke();
 }
 
+// The recipe's drawing style for every tile: the bevelled cube face.
+const STYLE = 'bevel';
+const face = (ctx, size, name, palette, px) => drawFace(ctx, size, name, { style: STYLE, palette, px });
+
 const validNumber = (n) => Number.isInteger(n) && n >= 0 && n <= 8;
 
 // One device pixel in the context's CSS pixels, from the scale it draws at, so
@@ -97,29 +99,29 @@ export function paintTileWith(token, ctx, x, y, size, state, number) {
   ctx.translate(x, y);
   switch (state) {
     case 'closed':
-      drawRaisedFace(ctx, size, raised(token, 'tile-closed'), px);
+      face(ctx, size, 'closed', raised(token, 'tile-closed'), px);
       break;
     case 'pressed':
-      drawSunkenFace(ctx, size, sunken(token), px);
+      face(ctx, size, 'sunk', sunken(token), px);
       break;
     case 'revealed':
-      drawRevealedFace(ctx, size, revealed(token, 'tile-revealed'), px);
+      face(ctx, size, 'revealed', revealed(token, 'tile-revealed'), px);
       if (number > 0) drawNumberGlyph(ctx, size, number, { color: color(token, `number-${number}`), shadow: color(token, 'tile-number-shadow') });
       break;
     case 'flagged':
-      drawRaisedFace(ctx, size, raised(token, 'tile-flagged'), px);
+      face(ctx, size, 'closed', raised(token, 'tile-flagged'), px);
       drawFlagGlyph(ctx, size, flag(token));
       break;
     case 'mine':
-      drawRevealedFace(ctx, size, revealed(token, 'tile-mine'), px);
+      face(ctx, size, 'revealed', revealed(token, 'tile-mine'), px);
       drawMineGlyph(ctx, size, mine(token));
       break;
     case 'exploded':
-      drawRevealedFace(ctx, size, exploded(token), px);
+      face(ctx, size, 'revealed', exploded(token), px);
       drawMineGlyph(ctx, size, mine(token));
       break;
     case 'wrong-flag':
-      drawRevealedFace(ctx, size, revealed(token, 'tile-wrong-flag'), px);
+      face(ctx, size, 'revealed', revealed(token, 'tile-wrong-flag'), px);
       drawFlagGlyph(ctx, size, flag(token));
       drawCross(ctx, size, cross(token));
       break;
