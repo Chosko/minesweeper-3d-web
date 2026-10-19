@@ -1,6 +1,9 @@
-// 3D board choice: Learn 3D, the four cube presets, a custom board, the
-// Random fill and the no-guess switch, preselected from the last 3D board choice. Touches only the
-// elements it is handed.
+// 3D board choice screen, the Classic 2D one's composition (js/classic2d/board-choice.js): the board
+// options (Learn 3D, the four cube presets, Custom and Insert Board Code) on the left, what the
+// chosen one needs on the right (how 3D works for Learn 3D, the no-guess switch and the board's three
+// bests, the custom form with Random, or the board code field), and a bottom bar with the choice
+// summarised, Records and Play. Opens on the last 3D board choice. Touches only the elements it is
+// handed.
 //
 // A board choice is { size, custom, noGuess }: `size` one of BOARD_SIZES (a preset id or
 // 'custom'); `custom` the custom board's { X, Y, Z, mines }, kept with a preset so the custom
@@ -20,10 +23,17 @@
 //   presetKey(p) / presetByKey(key)   '6,6,6,10', the preset items' data-preset value.
 //   presetTitle(p)           'Cube Beginner': family and name, the preset item's label,
 //                            as results and Records name the board.
-//   presetLabel(p)           '6 × 6 × 6 · 10 mines'.
+//   boxLine(board) / presetLabel(p)   '10 × 10 × 10 · 2,000 mines' for { X, Y, Z, mines }, the mines
+//                            pluralised; a preset's size line.
+//   mineDensity(board)       '7.8 % mines': mines ÷ cells, one decimal.
+//   CUSTOM_HINT              Custom's meta line while it is not chosen: 'Each side 1–100'.
+//   LEARN_SUMMARY            the bottom bar's summary of Learn 3D: 'Learn 3D · guided 4 × 4 × 3 box · no timer'.
 //   validateCustom(board)    { ok: true } or { ok: false, field, reason }; field 'X' | 'Y' | 'Z' | 'mines'.
-//   customStatus(board)      { ok, field, max, text, warn? }: the info line under the custom fields;
-//                            `max` the mine limit (null while the size is invalid).
+//   customInfo(board)        the custom form's info line from its size: '1,000 cells · up to 999 mines'
+//                            (with a warning past the very large board), '1 cell · no room for a
+//                            mine', or '' while a side is invalid.
+//   customStatus(board)      { ok, field, max, text, warn? }: a refusal's reason as a sentence, or the
+//                            info line; `max` the mine limit (null while the size is invalid).
 //   noGuessAvailable(choice) whether the switch is offered for that choice.
 //   noGuessReason(choice?)   the line shown above the disabled switch: the side-of-2 line when a
 //                            side is 2, else the cell-limit line.
@@ -34,31 +44,58 @@
 //   readChoice({ size, fields, noGuess }, fallbackCustom?)  the choice the fields describe, or null.
 //   boardOf(choice)          { X, Y, Z, mines, noGuess } of the board to play.
 //   randomBoard(random?)     the Random fill, the original formula, always a valid board.
+//   choiceSummary({ selected, custom, noGuess, code })  the bottom bar's summary of the chosen
+//                            option (`selected` 'learn', a preset id, 'custom' or 'code'): 'Cube
+//                            Intermediate · 8 × 8 × 8 · 40 mines · no-guess', 'Custom · 10 × 10 × 10 ·
+//                            120 mines', LEARN_SUMMARY, 'Board code · <code.label>' for an accepted
+//                            code, else 'Board code · paste a code to play'.
+//   bestsTitle({ selected, custom, noGuess })  'Cube Intermediate · no-guess · your bests', or the
+//                            custom board's line in place of the name.
 //
-// bindBoardChoice({ root, onStart, onLearn, onBack, code? }) → { show(choice, { played }), destroy() }
-//   root      the screen's element: the Learn 3D item [data-learn] first (js/mode3d/learn.js; no
-//             preset, so show() never marks it), preset items [data-preset="X,Y,Z,mines"], the custom form
-//             (form) with its submit button [data-preset="custom"], inputs
-//             [data-field="X|Y|Z|mines"], Random [data-random], the info line [data-info], the
-//             presets' no-guess switch [data-noguess="presets"], the custom board's no-guess
-//             switch [data-noguess="custom"] — disabled above NOGUESS_CELL_LIMIT or on a side of
-//             2 cells, its reason line [data-noguess-reason] above it, the density hint
-//             [data-density-hint] under it, which follows the fields and the switch live and never
-//             disables it — and Back [data-back].
-//   show(choice, { played, details })  fills the fields and the switch from `choice` and marks its
-//             item data-last, the screen's default focus; the "Last played" line shows only when
-//             `played` (default true). `details` ({ [preset id]: { guess, noGuess } }, the shell's
-//             from js/shell/returning.js) fills each preset's detail line [data-detail], under its
-//             size line, for the position of the presets' no-guess switch, and again whenever the
-//             switch changes; a preset without one shows no detail line.
-//   onStart(choice) when a preset is picked or a valid custom board submitted; onLearn() when Learn
-//             3D is picked; onBack() on Back.
-//   code      { resolve, onPlay }: the board code field, as Classic 2D's (js/classic2d/board-choice.js):
-//             [data-code-field], [data-code-play] and [data-code-info], cleared by every show.
+// bindBoardChoice({ root, onStart, onLearn, onBack, onRecords?, code?, bests? })
+//   → { show, state, refresh, destroy }
+//   root      the screen's element: the options [data-preset] — Learn 3D ('learn', also [data-learn];
+//             js/mode3d/learn.js), the presets ('X,Y,Z,mines'), 'custom' and 'code';
+//             aria-pressed marks the chosen one — each preset and Custom with its Last played chip
+//             [data-last], Custom with its meta line [data-custom-meta]; Learn 3D's panel
+//             [data-learn-panel]; the settings [data-settings] holding the presets' no-guess switch
+//             [data-noguess="presets"] in [data-preset-settings] and, in [data-custom-settings], the
+//             custom board's no-guess switch [data-noguess="custom"] — disabled above
+//             NOGUESS_CELL_LIMIT or on a side of 2 cells, its reason line [data-noguess-reason] above
+//             it, the density hint [data-density-hint] under it, which follows the fields and the
+//             switch live and never disables it; the custom form (form) with its inputs
+//             [data-field="X|Y|Z|mines"], the info line [data-info], Random [data-random] and the
+//             refusal line [data-refusal]; the bests [data-bests], titled [data-bests-title], one
+//             tile [data-best="<stat>"] per best; the code panel [data-code-panel] with the field
+//             [data-code-field] and its line [data-code-info]; the bottom bar's summary
+//             [data-summary], Records [data-records] and Play [data-play]; Back [data-back].
+//             A click (a tap, the controller's A) chooses an option; Enter plays, on an option after
+//             choosing it, and anywhere else in the screen but on another button. Play starts the
+//             chosen board: onLearn() for Learn 3D, onStart(choice) for a preset or a valid custom
+//             board, code.onPlay(text) for an accepted code; it is disabled on a refused custom board
+//             and on an empty or refused code. Learn 3D shows its panel alone; a preset the settings
+//             with the presets' switch, Custom with its own switch and the form; both the bests (for
+//             the board the fields and the switch name); the code its panel alone. The info line,
+//             refusal line, switch, density hint, bests, summary and Play follow the fields and the
+//             switches live; Random fills the fields with randomBoard.
+//   show(choice, { played, held })  fills the fields and the switches from `choice`, chooses its
+//             size and marks its option data-last, the screen's default focus; its Last played chip
+//             shows only when `played` (default true). `held` (a state() taken earlier) brings back
+//             the chosen option, fields, switches and code text, the last board's mark staying with
+//             `choice`.
+//   state()   → { selected, fields, noGuess, customNoGuess, code }: what the screen holds.
+//   refresh() redraws the bests (the shell's records changed).
+//   onRecords(board) Records: the chosen board as boardOf gives it, or null with no board chosen
+//             (Learn 3D, a code, a refused custom board).
+//   code      { resolve, onPlay }: resolve(text) → { ok, reason?, text?, label? } validates the code
+//             live, as Classic 2D's.
+//   bests     (board) → [{ stat, label, value, note }]: the board's ({ X, Y, Z, mines, noGuess })
+//             three bests as text, read through the records' queries by the shell
+//             (js/shell/returning.js boardBests).
 
 import { aboveDensityHint, DENSITY_HINT_TEXT } from '../classic2d/board-setup.js';
-import { bindCodeField } from '../ui/components.js';
 import { CODE_PROMPT } from '../classic2d/board-choice.js';
+import { LEARN_BOARD, LEARN_TITLE } from './learn.js';
 
 export const DIM_MIN = 1;
 export const DIM_MAX = 100;
@@ -99,10 +136,17 @@ export const presetKey = (p) => `${p.X},${p.Y},${p.Z},${p.mines}`;
 export const presetByKey = (key) => PRESETS.find((p) => presetKey(p) === key) ?? null;
 export const presetTitle = (p) => `${FAMILIES.find((f) => f.id === p.family).label} ${p.name}`;
 const presetById = (id) => PRESETS.find((p) => p.id === id) ?? null;
-export const presetLabel = (p) => `${p.X} × ${p.Y} × ${p.Z} · ${p.mines} mines`;
 
 const n = (v) => v.toLocaleString('en-US');
+const count = (v, noun) => `${n(v)} ${v === 1 ? noun : `${noun}s`}`;
 const dim = (v) => Number.isInteger(v) && v >= DIM_MIN && v <= DIM_MAX;
+const ints = (b) => !!b && [b.X, b.Y, b.Z, b.mines].every(Number.isInteger);
+
+export const boxLine = ({ X, Y, Z, mines }) => `${X} × ${Y} × ${Z} · ${count(mines, 'mine')}`;
+export const presetLabel = (p) => boxLine(p);
+export const mineDensity = ({ X, Y, Z, mines }) => `${((mines / (X * Y * Z)) * 100).toFixed(1)} % mines`;
+export const CUSTOM_HINT = `Each side ${DIM_MIN}–${DIM_MAX}`;
+export const LEARN_SUMMARY = `${LEARN_TITLE} · guided ${LEARN_BOARD.X} × ${LEARN_BOARD.Y} × ${LEARN_BOARD.Z} box · no timer`;
 const FIELD_LABELS = Object.freeze({ X: 'Width', Y: 'Height', Z: 'Depth' });
 
 export function validateCustom(board) {
@@ -122,15 +166,22 @@ export function validateCustom(board) {
 
 const LARGE_BOARD = 250000;
 
+export function customInfo(board) {
+  const { X, Y, Z } = board ?? {};
+  if (!dim(X) || !dim(Y) || !dim(Z)) return '';
+  const cells = X * Y * Z;
+  const max = cells - 1;
+  const text = `${count(cells, 'cell')} · ${max < 1 ? 'no room for a mine' : `up to ${count(max, 'mine')}`}`;
+  return cells > LARGE_BOARD ? `${text} · very large board, may run slowly` : text;
+}
+
 export function customStatus(board) {
   const { X, Y, Z } = board ?? {};
   const v = validateCustom(board);
   const max = dim(X) && dim(Y) && dim(Z) ? X * Y * Z - 1 : null;
   if (!v.ok) return { ok: false, field: v.field, max, text: `${v.reason}.` };
-  const cells = X * Y * Z;
-  const status = { ok: true, field: null, max, text: `${n(cells)} cells · up to ${n(max)} mines` };
-  if (cells > LARGE_BOARD) return { ...status, text: `${status.text} · very large board, may run slowly`, warn: true };
-  return status;
+  const status = { ok: true, field: null, max, text: customInfo(board) };
+  return X * Y * Z > LARGE_BOARD ? { ...status, warn: true } : status;
 }
 
 const sideOf2 = (choice) => choice?.size === 'custom' && [choice.custom?.X, choice.custom?.Y, choice.custom?.Z].includes(2);
@@ -189,136 +240,219 @@ export function randomBoard(random = Math.random) {
   return { X, Y, Z, mines };
 }
 
-const FIELDS = Object.freeze(['X', 'Y', 'Z', 'mines']);
+const NO_GUESS = ' · no-guess';
 
-export function bindBoardChoice({ root, onStart, onLearn, onBack, code = null }) {
-  const items = [...root.querySelectorAll('[data-preset]')];
-  const learn = root.querySelector('[data-learn]');
-  const form = root.querySelector('form');
-  const inputs = FIELDS.map((f) => root.querySelector(`[data-field="${f}"]`));
-  const info = root.querySelector('[data-info]');
-  const noGuessPresets = root.querySelector('[data-noguess="presets"]');
-  const noGuess = root.querySelector('[data-noguess="custom"]');
-  const reason = root.querySelector('[data-noguess-reason]');
-  const hint = root.querySelector('[data-density-hint]');
-  const random = root.querySelector('[data-random]');
-  const back = root.querySelector('[data-back]');
+export function choiceSummary({ selected, custom, noGuess, code = null }) {
+  if (selected === 'learn') return LEARN_SUMMARY;
+  if (selected === 'code') return `Board code · ${code?.ok && code.label ? code.label : 'paste a code to play'}`;
+  const ng = noGuess ? NO_GUESS : '';
+  if (selected === 'custom') return ints(custom) ? `Custom · ${boxLine(custom)}${ng}` : 'Custom';
+  const p = presetById(selected);
+  return `${presetTitle(p)} · ${boxLine(p)}${ng}`;
+}
+
+export function bestsTitle({ selected, custom, noGuess }) {
+  const name = selected === 'custom' ? (ints(custom) ? boxLine(custom) : 'Custom') : presetTitle(presetById(selected));
+  return `${name}${noGuess ? NO_GUESS : ''} · your bests`;
+}
+
+const FIELDS = Object.freeze(['X', 'Y', 'Z', 'mines']);
+/** An option's value: a preset's id for its key, else 'learn', 'custom' or 'code'. */
+const optionOf = (b) => presetByKey(b.dataset.preset)?.id ?? b.dataset.preset;
+const large = (b) => dim(b.X) && dim(b.Y) && dim(b.Z) && b.X * b.Y * b.Z > LARGE_BOARD;
+
+export function bindBoardChoice({ root, onStart, onLearn, onBack, onRecords = null, code = null, bests = null }) {
+  const $ = (sel) => root.querySelector(sel);
+  const options = [...root.querySelectorAll('[data-preset]')];
+  const option = (value) => options.find((b) => optionOf(b) === value);
+  const form = $('form');
+  const inputs = FIELDS.map((f) => $(`[data-field="${f}"]`));
+  const info = $('[data-info]');
+  const refusal = $('[data-refusal]');
+  const noGuessPresets = $('[data-noguess="presets"]');
+  const noGuess = $('[data-noguess="custom"]');
+  const reason = $('[data-noguess-reason]');
+  const hint = $('[data-density-hint]');
+  const learnPanel = $('[data-learn-panel]');
+  const settings = $('[data-settings]');
+  const presetSettings = $('[data-preset-settings]');
+  const customSettings = $('[data-custom-settings]');
+  const bestsBox = $('[data-bests]');
+  const codePanel = $('[data-code-panel]');
+  const codeInput = $('[data-code-field]');
+  const codeInfo = $('[data-code-info]');
+  const summary = $('[data-summary]');
+  const play = $('[data-play]');
+  const records = $('[data-records]');
+  const random = $('[data-random]');
+  const back = $('[data-back]');
+  const customMeta = $('[data-custom-meta]');
+  hint.textContent = DENSITY_HINT_TEXT;
+  let selected = DEFAULT_CHOICE.size;
   let last = null;
   let wanted = false; // the custom board's no-guess choice, kept while the board does not offer it
-  hint.textContent = DENSITY_HINT_TEXT;
-
-  let details = {};
-  for (const b of items) {
-    if (!b.classList.contains('ui-menu__item')) continue;
-    const detail = b.ownerDocument.createElement('span');
-    detail.className = 'ui-menu__detail hidden';
-    detail.dataset.detail = '';
-    b.appendChild(detail);
-    const line = b.ownerDocument.createElement('span');
-    line.className = 'ui-menu__detail hidden';
-    line.dataset.last = '';
-    line.textContent = 'Last played';
-    b.appendChild(line);
-  }
 
   const fields = () => Object.fromEntries(FIELDS.map((f, i) => [f, inputs[i].value]));
-  const update = () => {
-    const custom = readCustom(fields());
-    const s = customStatus(custom);
-    info.textContent = s.text;
-    const warn = !s.ok || !!s.warn;
-    info.classList.toggle('ui-text--warning', warn);
-    info.classList.toggle('ui-text--muted', !warn);
-    if (s.max !== null) inputs[3].max = String(s.max);
-    for (const [i, f] of FIELDS.entries()) inputs[i].toggleAttribute('data-adjusted', s.field === f);
-    const choice = { size: 'custom', custom };
-    const available = s.max === null || noGuessAvailable(choice);
-    noGuess.disabled = !available;
-    noGuess.checked = available && wanted;
-    reason.textContent = available ? '' : noGuessReason(choice);
-    reason.classList.toggle('hidden', available);
-    hint.classList.toggle('hidden', !densityHintShown(custom, noGuess.checked));
-    return s;
-  };
-  const start = (size) => {
-    const ng = size === 'custom' ? wanted : noGuessPresets.checked;
-    const choice = readChoice({ size, fields: fields(), noGuess: ng }, last?.custom);
-    if (choice) onStart(choice);
-    return choice;
-  };
-  const sizeOf = (b) => (b.dataset.preset === 'custom' ? 'custom' : presetByKey(b.dataset.preset)?.id);
-  const fillDetails = () => {
-    for (const b of items) {
-      const line = b.querySelector('[data-detail]');
-      if (!line) continue;
-      const text = details[sizeOf(b)]?.[noGuessPresets.checked ? 'noGuess' : 'guess'] ?? '';
-      line.textContent = text;
-      line.classList.toggle('hidden', !text);
+  const custom = () => readCustom(fields());
+  const codeText = () => String(codeInput?.value ?? '').trim();
+  const codeResult = () => (code && codeText() ? code.resolve(codeText()) : null);
+  const isBoard = () => selected === 'custom' || !!presetById(selected);
+  /** The position of the switch that governs the chosen board: the custom board's, or the presets'. */
+  const switchOn = () => (selected === 'custom' ? noGuess.checked : noGuessPresets.checked);
+  /** The chosen board's choice: a preset, a valid custom board, or null (Learn 3D, a code, a refused custom board). */
+  const chosen = () => (isBoard()
+    ? readChoice({ size: selected, fields: fields(), noGuess: selected === 'custom' ? wanted : noGuessPresets.checked }, last?.custom)
+    : null);
+
+  const drawBests = () => {
+    if (!bestsBox || !isBoard()) return;
+    $('[data-bests-title]').textContent = bestsTitle({ selected, custom: custom(), noGuess: switchOn() });
+    const choice = chosen();
+    const tiles = choice && bests ? bests(boardOf(choice)) : [];
+    for (const tile of bestsBox.querySelectorAll('[data-best]')) {
+      const t = tiles.find((x) => x.stat === tile.dataset.best);
+      tile.querySelector('.ui-stat__value').textContent = t?.value ?? '—';
+      tile.querySelector('.ui-stat__detail').textContent = t?.note ?? 'no best yet';
     }
   };
 
-  const onItem = (event) => {
-    const size = sizeOf(event.currentTarget);
-    if (size && size !== 'custom') start(size);
+  const update = () => {
+    const c = custom();
+    const s = customStatus(c);
+    const isCustom = selected === 'custom';
+    const isCode = selected === 'code';
+    const isLearn = selected === 'learn';
+    info.textContent = customInfo(c);
+    info.classList.toggle('hidden', !info.textContent);
+    info.classList.toggle('ui-text--warning', large(c));
+    info.classList.toggle('ui-text--muted', !large(c));
+    refusal.textContent = s.ok ? '' : s.text;
+    refusal.classList.toggle('hidden', s.ok);
+    if (s.max !== null) inputs[3].max = String(Math.max(1, s.max));
+    for (const [i, f] of FIELDS.entries()) {
+      inputs[i].toggleAttribute('data-adjusted', s.field === f);
+      if (s.field === f) inputs[i].setAttribute('aria-invalid', 'true');
+      else inputs[i].removeAttribute('aria-invalid');
+    }
+    const board = { size: 'custom', custom: c };
+    const available = s.max === null || noGuessAvailable(board);
+    noGuess.disabled = !available;
+    noGuess.checked = available && wanted;
+    reason.textContent = available ? '' : noGuessReason(board);
+    reason.classList.toggle('hidden', available);
+    hint.classList.toggle('hidden', !densityHintShown(c, noGuess.checked));
+    if (customMeta) customMeta.textContent = isCustom && ints(c) ? (s.ok ? `${boxLine(c)} · ${mineDensity(c)}` : boxLine(c)) : CUSTOM_HINT;
+    const r = isCode ? codeResult() : null;
+    if (codeInfo) {
+      codeInfo.textContent = !r ? CODE_PROMPT : r.ok ? r.text ?? '' : r.reason;
+      codeInfo.classList.toggle('ui-text--warning', !!r && !r.ok);
+      codeInfo.classList.toggle('ui-text--muted', !r || r.ok);
+    }
+    learnPanel?.classList.toggle('hidden', !isLearn);
+    settings.classList.toggle('hidden', !isBoard());
+    presetSettings?.classList.toggle('hidden', isCustom);
+    customSettings?.classList.toggle('hidden', !isCustom);
+    form.classList.toggle('hidden', !isCustom);
+    bestsBox?.classList.toggle('hidden', !isBoard());
+    codePanel?.classList.toggle('hidden', !isCode);
+    for (const b of options) b.setAttribute('aria-pressed', String(optionOf(b) === selected));
+    summary.textContent = choiceSummary({ selected, custom: c, noGuess: switchOn(), code: r });
+    play.disabled = isCode ? !r?.ok : isCustom && !s.ok;
+    drawBests();
+    return s;
   };
-  const onSubmit = (event) => {
-    event.preventDefault();
-    const s = update();
-    if (!s.ok) {
-      root.querySelector(`[data-field="${s.field}"]`)?.focus();
+
+  const choose = (value) => {
+    if (!option(value)) return;
+    selected = value;
+    update();
+  };
+  const start = () => {
+    if (selected === 'learn') {
+      onLearn?.();
       return;
     }
-    start('custom');
+    if (selected === 'code') {
+      const r = codeResult();
+      if (r?.ok) code.onPlay(codeText());
+      return;
+    }
+    const s = update();
+    if (selected === 'custom' && !s.ok) {
+      $(`[data-field="${s.field}"]`)?.focus();
+      return;
+    }
+    const choice = chosen();
+    if (choice) onStart(choice);
   };
+
+  const onOption = (event) => choose(optionOf(event.currentTarget));
+  const onKey = (event) => {
+    if (event.key !== 'Enter' || event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    const target = event.target;
+    const opt = target?.closest?.('[data-preset]');
+    if (!opt && target?.closest?.('button')) return; // another button activates itself
+    event.preventDefault();
+    if (opt) choose(optionOf(opt));
+    start();
+  };
+  const onSubmit = (event) => event.preventDefault();
   const onRandom = () => {
     const b = randomBoard();
     for (const [i, f] of FIELDS.entries()) inputs[i].value = String(b[f]);
     update();
   };
   const onNoGuess = () => { wanted = noGuess.checked; update(); };
+  const onRecordsClick = () => {
+    const choice = chosen();
+    onRecords?.(choice ? boardOf(choice) : null);
+  };
   const onBackClick = () => onBack?.();
-  const onLearnClick = () => onLearn?.();
 
-  for (const b of items) b.addEventListener('click', onItem);
+  for (const b of options) b.addEventListener('click', onOption);
   for (const inp of inputs) inp.addEventListener('input', update);
-  form.addEventListener('submit', onSubmit);
-  random.addEventListener('click', onRandom);
   noGuess.addEventListener('change', onNoGuess);
-  noGuessPresets.addEventListener('change', fillDetails);
+  noGuessPresets.addEventListener('change', update);
+  codeInput?.addEventListener('input', update);
+  form.addEventListener('submit', onSubmit);
+  root.addEventListener('keydown', onKey);
+  random.addEventListener('click', onRandom);
+  records?.addEventListener('click', onRecordsClick);
+  play.addEventListener('click', start);
   back?.addEventListener('click', onBackClick);
-  learn?.addEventListener('click', onLearnClick);
-
-  const codeInput = root.querySelector('[data-code-field]');
-  const codeField = code && codeInput ? bindCodeField({
-    input: codeInput, button: root.querySelector('[data-code-play]'), info: root.querySelector('[data-code-info]'),
-    resolve: code.resolve, onPlay: code.onPlay, prompt: CODE_PROMPT,
-  }) : null;
 
   return {
-    show(choice, { played = true, details: lines = {} } = {}) {
-      codeField?.clear();
+    show(choice, { played = true, held = null } = {}) {
       last = choice;
-      details = lines;
-      for (const [i, f] of FIELDS.entries()) inputs[i].value = String(choice.custom[f]);
-      wanted = !!choice.noGuess;
-      noGuessPresets.checked = !!choice.noGuess;
-      for (const b of items) {
-        const isLast = sizeOf(b) === choice.size;
+      const f = held?.fields ?? choice.custom;
+      for (const [i, k] of FIELDS.entries()) inputs[i].value = String(f[k]);
+      noGuessPresets.checked = held ? !!held.noGuess : !!choice.noGuess;
+      wanted = held ? !!held.customNoGuess : !!choice.noGuess;
+      if (codeInput) codeInput.value = held?.code ?? '';
+      for (const b of options) {
+        const isLast = optionOf(b) === choice.size;
         b.toggleAttribute('data-last', isLast);
         b.querySelector('[data-last]')?.classList.toggle('hidden', !(isLast && played));
       }
-      fillDetails();
+      selected = option(held?.selected) ? held.selected : choice.size;
       update();
     },
+    state() {
+      return { selected, fields: fields(), noGuess: noGuessPresets.checked, customNoGuess: wanted, code: codeInput?.value ?? '' };
+    },
+    refresh() { drawBests(); },
     destroy() {
-      for (const b of items) b.removeEventListener('click', onItem);
+      for (const b of options) b.removeEventListener('click', onOption);
       for (const inp of inputs) inp.removeEventListener('input', update);
-      form.removeEventListener('submit', onSubmit);
-      random.removeEventListener('click', onRandom);
       noGuess.removeEventListener('change', onNoGuess);
-      noGuessPresets.removeEventListener('change', fillDetails);
+      noGuessPresets.removeEventListener('change', update);
+      codeInput?.removeEventListener('input', update);
+      form.removeEventListener('submit', onSubmit);
+      root.removeEventListener('keydown', onKey);
+      random.removeEventListener('click', onRandom);
+      records?.removeEventListener('click', onRecordsClick);
+      play.removeEventListener('click', start);
       back?.removeEventListener('click', onBackClick);
-      learn?.removeEventListener('click', onLearnClick);
     },
   };
 }

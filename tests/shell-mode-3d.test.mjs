@@ -838,6 +838,7 @@ test('in a browser with touch on a tablet, the 3D ready card is a start: Tap to 
     assert.match(note, /[Bb]oth modes play by touch/, 'the menu\'s note says 3D plays by touch too');
     await page.tap('#menu-entry-3d');
     await page.tap('#board-choice [data-preset="6,6,6,10"]');
+    await page.tap('#bc-play');
     await page.waitForFunction(() => globalThis.__ms.state.mode === 'ready');
     const card = await ms(() => {
       const shown = (el) => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';

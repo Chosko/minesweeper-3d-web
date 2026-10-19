@@ -507,24 +507,22 @@
      the entries filling the screen. Default focus: the entry last opened
      from the menu when Back returns to it, else the last mode played's,
      else the first available entry.
-   3D board choice (index.html #board-choice): ui-card ui-screen--wide
-     holding the title, the Learn 3D item first in its own ui-menu (its
-     detail line "A guided 4 × 4 × 3 box · no timer, no records"), the
-     presets in two ui-menu groups, each under its
-     ui-heading and named by it (First box, Cube), each item
-     labelled with its family (First box 1, Cube Beginner, …) over its size line and a
-     detail line (density, typical 3BV, the player's best and streak on the
-     board the presets' switch names, or a dash), with the presets' no-guess ui-toggle under it and its ui-text--muted helper
-     line, the custom board as a ui-panel of ui-field entries with
-     ui-actions--row (Random, Start), an info line (ui-text--warning on an
-     invalid board) and the custom board's no-guess ui-toggle under a
-     ui-text--muted line giving why while it is disabled (a side of 2 cells,
-     or the cell-count limit), labelled as keeping separate records, and over a ui-text--muted density hint shown
-     above 25 % mines with no-guess on, the board code ui-panel (as Classic
-     2D's below), and ui-actions--row (Back);
-     js/mode3d/board-choice.js marks the last board choice data-last with a
-     "Last played" line once the player has played. Default focus: the last
-     board choice, else the first item.
+   3D board choice (index.html #board-choice): the Classic 2D board choice's composition
+     (below), with the title "3D", and, its window taller, starting just
+     under the wordmark at every desktop size. Its left ui-options: Learn
+     3D first (ui-option--learn, its cube badge, no Last played ui-chip),
+     the four presets (data-preset, each named with its family — Cube
+     Beginner — its size and density meta) and Custom (its meta its board
+     once chosen), one group with no group label; then the ui-divider and
+     Insert Board Code. On the right, for Learn 3D only a ui-section-label
+     with its "keeps no records" aside, a ui-panel "How 3D works" of its
+     three lines and a ui-text--muted line on the lesson; a preset shows the
+     presets' no-guess ui-toggle; Custom its own no-guess ui-toggle, under a
+     ui-text--warning line giving why while it is disabled (a side of 2
+     cells, or the cell-count limit), and the form's four fields (width,
+     height, depth, mines). Play on Learn 3D starts it without saving a
+     choice.
+     Default focus: the last board choice, the chosen option.
    Daily (index.html #daily, filled by js/shell/daily.js): ui-card
      ui-screen--wide holding the title, a ui-text--muted line, a ui-columns
      of one ui-panel per daily board (data-daily: Expert, Cube) — a

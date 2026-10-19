@@ -1,7 +1,8 @@
-// The 3D board choice (js/mode3d/board-choice.js): the four cube presets, the validated custom
-// board, the Random fill, the no-guess switch with its cell-count limit and its side-of-2 rule, the
-// last 3D board choice kept through the shell's last-board-choice mechanism (js/shell/menu.js), and
-// the screen's markup and wiring in index.html and js/main.js.
+// The 3D board choice (js/mode3d/board-choice.js): Learn 3D, the four cube presets, the validated
+// custom board, the Random fill, the no-guess switches with the cell-count limit and the side-of-2
+// rule, the board's bests, Insert Board Code, the last 3D board choice kept through the shell's
+// last-board-choice mechanism (js/shell/menu.js), and the screen's markup, layout and wiring in
+// index.html, css/style.css and js/main.js.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -11,12 +12,12 @@ import { fileURLToPath } from 'node:url';
 import {
   PRESETS, FAMILIES, BOARD_SIZES, DEFAULT_CHOICE, DIM_MIN, DIM_MAX, NOGUESS_CELL_LIMIT, LAST_CHOICE_DOC, LAST_CHOICE_VERSION,
   presetKey, presetByKey, presetLabel, presetTitle, validateCustom, customStatus, noGuessAvailable, noGuessReason, normaliseChoice,
-  readChoice, boardOf, randomBoard, densityHintShown,
+  readChoice, boardOf, randomBoard, densityHintShown, boxLine, mineDensity, customInfo, choiceSummary, bestsTitle, CUSTOM_HINT, LEARN_SUMMARY,
 } from '../js/mode3d/board-choice.js';
+import { LEARN_BOARD } from '../js/mode3d/learn.js';
 import * as BOARD_CHOICE_3D from '../js/mode3d/board-choice.js';
 import { NOGUESS_DENSITY_HINT, DENSITY_HINT_TEXT, NOGUESS_HELP_TEXT } from '../js/classic2d/board-setup.js';
 import { createLastBoardChoice } from '../js/shell/menu.js';
-import { typicalBbbv } from '../js/records/typical-bbbv.js';
 import { createStorage } from '../js/platform/storage.js';
 import { createMemoryBackend } from '../js/platform/memory-backend.js';
 import { browserSuite } from './helpers/browser.mjs';
@@ -122,6 +123,40 @@ test('a very large custom board stays valid with a warning', () => {
   assert.equal(s.warn, true);
   assert.match(s.text, /^1,000,000 cells · up to 999,999 mines · very large board, may run slowly$/);
   assert.ok(!customStatus({ X: 10, Y: 10, Z: 10, mines: 25 }).warn);
+});
+
+test('the board choice\'s lines: each option\'s board line and density, the custom info line, the summary and the bests title follow the switch', () => {
+  assert.deepEqual(PRESETS.map(boxLine), ['6 × 6 × 6 · 10 mines', '6 × 6 × 6 · 20 mines', '8 × 8 × 8 · 40 mines', '10 × 10 × 10 · 100 mines']);
+  assert.deepEqual(PRESETS.map(presetLabel), PRESETS.map(boxLine));
+  assert.equal(boxLine({ X: 24, Y: 24, Z: 24, mines: 2000 }), '24 × 24 × 24 · 2,000 mines');
+  assert.equal(boxLine({ X: 1, Y: 1, Z: 2, mines: 1 }), '1 × 1 × 2 · 1 mine');
+  assert.deepEqual(PRESETS.map(mineDensity), ['4.6 % mines', '9.3 % mines', '7.8 % mines', '10.0 % mines']);
+  assert.equal(CUSTOM_HINT, 'Each side 1–100');
+
+  assert.equal(customInfo({ X: 10, Y: 10, Z: 10, mines: 1000 }), '1,000 cells · up to 999 mines', 'the size\'s line, whatever the mines');
+  assert.equal(customInfo({ X: 24, Y: 24, Z: 24, mines: 2000 }), '13,824 cells · up to 13,823 mines');
+  assert.equal(customInfo({ X: 100, Y: 100, Z: 100, mines: 1 }), '1,000,000 cells · up to 999,999 mines · very large board, may run slowly');
+  assert.equal(customInfo({ X: 1, Y: 1, Z: 1, mines: 1 }), '1 cell · no room for a mine');
+  assert.equal(customInfo({ X: 0, Y: 10, Z: 10, mines: 1 }), '', 'nothing while a side is out of range');
+  assert.equal(customStatus({ X: 10, Y: 10, Z: 10, mines: 25 }).text, customInfo({ X: 10, Y: 10, Z: 10, mines: 25 }), 'a valid board\'s status is its info line');
+
+  const intermediate = PRESETS[2].id;
+  const custom = { X: 10, Y: 10, Z: 10, mines: 120 };
+  assert.equal(choiceSummary({ selected: intermediate, custom, noGuess: true }), 'Cube Intermediate · 8 × 8 × 8 · 40 mines · no-guess');
+  assert.equal(choiceSummary({ selected: intermediate, custom, noGuess: false }), 'Cube Intermediate · 8 × 8 × 8 · 40 mines');
+  assert.equal(choiceSummary({ selected: 'custom', custom, noGuess: true }), 'Custom · 10 × 10 × 10 · 120 mines · no-guess');
+  assert.equal(choiceSummary({ selected: 'custom', custom: { X: 10, Y: NaN, Z: 10, mines: 1 }, noGuess: true }), 'Custom', 'no board line while a field is not a number');
+  assert.equal(choiceSummary({ selected: 'learn', custom, noGuess: true }), LEARN_SUMMARY);
+  assert.equal(LEARN_SUMMARY, `Learn 3D · guided ${LEARN_BOARD.X} × ${LEARN_BOARD.Y} × ${LEARN_BOARD.Z} box · no timer`);
+  assert.equal(LEARN_SUMMARY, 'Learn 3D · guided 4 × 4 × 3 box · no timer');
+  assert.equal(choiceSummary({ selected: 'code', custom, noGuess: true, code: null }), 'Board code · paste a code to play');
+  assert.equal(choiceSummary({ selected: 'code', custom, noGuess: true, code: { ok: false, reason: 'x' } }), 'Board code · paste a code to play');
+  assert.equal(choiceSummary({ selected: 'code', custom, noGuess: true, code: { ok: true, text: 't', label: 'Cube Intro' } }), 'Board code · Cube Intro');
+
+  assert.equal(bestsTitle({ selected: intermediate, custom, noGuess: true }), 'Cube Intermediate · no-guess · your bests');
+  assert.equal(bestsTitle({ selected: intermediate, custom, noGuess: false }), 'Cube Intermediate · your bests');
+  assert.equal(bestsTitle({ selected: 'custom', custom, noGuess: true }), '10 × 10 × 10 · 120 mines · no-guess · your bests');
+  assert.equal(bestsTitle({ selected: 'custom', custom: { X: NaN, Y: 1, Z: 1, mines: 1 }, noGuess: false }), 'Custom · your bests');
 });
 
 // ---------------------------------------------------------------- no-guess availability
@@ -339,52 +374,115 @@ const INDEX = read('index.html');
 const MAIN = read('js/main.js');
 const UI_SRC = strip(read('js/ui.js'));
 const BOARD = INDEX.slice(INDEX.indexOf('<section id="board-choice"'), INDEX.indexOf('<!-- Coming soon -->'));
+const between = (src, start, end) => src.slice(src.indexOf(start), src.indexOf(end));
+const unescape = (t) => t.replace(/&times;/g, '×').replace(/&middot;/g, '·').replace(/&ndash;/g, '–');
+const C2D = between(INDEX, '<section id="c2d-choice"', '<!-- Classic 2D board -->');
 
-test('index.html offers the four presets in one unlabelled group, the custom board, Random, the no-guess switch and Back', () => {
-  const presets = [...BOARD.matchAll(/<button type="button" class="ui-menu__item" data-preset="([\d,]+)"><span class="ui-menu__label">([^<]+)<\/span><span class="ui-menu__detail">([^<]+)<\/span><\/button>/g)];
-  assert.deepEqual(presets.map((m) => m[1]), PRESETS.map(presetKey));
-  assert.deepEqual(presets.map((m) => m[2]), ['Cube Intro', 'Cube Beginner', 'Cube Intermediate', 'Cube Expert'], 'the preset says its family, as results and Records do');
-  assert.deepEqual(presets.map((m) => m[2]), PRESETS.map(presetTitle));
-  assert.deepEqual(presets.map((m) => m[3].replace(/&times;/g, '×').replace(/&middot;/g, '·')), PRESETS.map(presetLabel));
-  const groups = [...BOARD.matchAll(/<div class="ui-menu" role="group" aria-label="Presets">([\s\S]*?)<\/div>/g)];
-  assert.equal(groups.length, 1, 'one group of presets');
-  assert.deepEqual([...groups[0][1].matchAll(/data-preset="([\d,]+)"/g)].map((m) => m[1]), PRESETS.map(presetKey), 'the group holds every preset');
-  assert.doesNotMatch(BOARD, /<h3 class="ui-heading" id="bc-(box|cube)"/, 'no group label');
-  assert.doesNotMatch(BOARD, /First box|first-box|bc-box/, 'no First box text in the board choice');
-  assert.doesNotMatch(BOARD, /data-preset="\d+,\d+,1,\d+"/, 'no flat preset');
-  assert.doesNotMatch(BOARD, /data-preset="\d+,\d+,2,\d+"|bc-double|Double layer/, 'no double layer group');
-  assert.doesNotMatch(read('css/components.css'), /Double layer|bc-double/, 'no double layer group in the styles');
-  for (const [f, id] of [['X', 'c-x'], ['Y', 'c-y'], ['Z', 'c-z'], ['mines', 'c-m']]) {
-    assert.match(BOARD, new RegExp(`<input id="${id}" data-field="${f}" class="ui-field__input" type="number"`), f);
+test('index.html builds the 3D board choice from kit components, as the Classic 2D one: the title over a window, the options beside what the chosen one needs, a bottom bar', () => {
+  assert.match(BOARD, /^<section id="board-choice" class="overlay ui-backdrop hidden" aria-label="3D board choice">/);
+  assert.match(BOARD, /<h1 class="ui-wordmark" id="board-choice-wordmark" aria-label="Minesweeper 3D">/, 'the game\'s title, as on the menu');
+  assert.match(BOARD, /<section class="ui-frame" id="board-choice-frame" aria-labelledby="board-choice-title">/);
+  assert.match(BOARD, /<div class="ui-frame__start"><button type="button" id="board-choice-back" class="ui-button ui-button--secondary ui-button--sm" data-back>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>/);
+  assert.match(BOARD, /<h2 class="ui-frame__title" id="board-choice-title">3D<\/h2>/);
+  // The Classic 2D composition: the same parts in the same order.
+  const parts = (html, prefix) => [...html.matchAll(/class="(ui-[\w-]+(?: ui-[\w-]+)*)" id="([\w-]+)"/g)]
+    .map((m) => [m[1], m[2].replace(prefix, '')]).filter(([, id]) => /^(choice-(wordmark|frame|body|options|detail))$/.test(id));
+  assert.deepEqual(parts(BOARD, /^board-/), parts(C2D, /^c2d-/), 'the wordmark, the window, its body and its two columns, as Classic 2D\'s');
+
+  // Left: Board; Learn 3D, the four presets and Custom in one group with no group label; a divider; Insert Board Code.
+  const left = between(BOARD, '<div class="ui-column" id="board-choice-options">', '<div class="ui-divider ui-divider--vertical"');
+  assert.match(left, /<h3 class="ui-section-label__text" id="bc-board-label">Board<\/h3>/);
+  const options = [...left.matchAll(/<button type="button" class="ui-option[^"]*" aria-pressed="false" data-preset="([\w,]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(options, ['learn', ...PRESETS.map(presetKey), 'custom', 'code']);
+  assert.equal([...left.matchAll(/class="ui-options"/g)].length, 2, 'one group of boards, one of the code');
+  assert.doesNotMatch(left, /class="ui-heading"|aria-label="Presets"|>Cube<\/h/, 'no group label');
+  const learn = unescape(left.slice(left.indexOf('data-preset="learn"') - 120, left.indexOf('</button>', left.indexOf('data-preset="learn"'))));
+  assert.match(learn, /<button type="button" class="ui-option ui-option--learn" aria-pressed="false" data-preset="learn" id="bc-learn" data-learn><span class="ui-option__badge" aria-hidden="true"><svg [^>]*>[\s\S]*?<\/svg><\/span><span class="ui-option__name">Learn 3D<\/span><span class="ui-option__meta">A guided 4 × 4 × 3 box<\/span>/,
+    'Learn 3D: its accent outline and cube badge, no Last played chip');
+  for (const p of PRESETS) {
+    const key = presetKey(p);
+    const b = unescape(left.slice(left.indexOf(`data-preset="${key}"`), left.indexOf('</button>', left.indexOf(`data-preset="${key}"`))));
+    assert.ok(b.includes(`<span class="ui-option__name">${presetTitle(p)}</span><span class="ui-chip hidden" data-last>Last played</span><span class="ui-option__meta"><span class="ui-option__size">${boxLine(p)}</span> · <span class="ui-option__density">${mineDensity(p)}</span></span>`),
+      `${p.id}: its name, its Last played chip, its size line and density`);
   }
-  assert.match(BOARD, /id="c-x"[^>]*min="1" max="100"/);
-  assert.match(BOARD, /<button type="button" id="c-random" class="ui-button ui-button--secondary" data-random>Random<\/button>/);
-  assert.match(BOARD, /<button type="submit" id="c-start" class="ui-button ui-button--primary" data-preset="custom">Start<\/button>/);
-  assert.match(BOARD, /<p id="c-info" class="ui-text ui-text--muted" data-info>/);
-  const presetsSwitch = BOARD.indexOf('<label class="ui-toggle"><input type="checkbox" role="switch" id="bc-noguess" class="ui-toggle__input" data-noguess="presets">');
-  assert.ok(presetsSwitch > BOARD.lastIndexOf('data-preset="1') && presetsSwitch < BOARD.indexOf('<form id="custom"'), 'the presets\' switch sits under the presets');
-  const help = BOARD.indexOf(`<p id="bc-noguess-help" class="ui-text ui-text--muted">${NOGUESS_HELP_TEXT}</p>`);
+  assert.ok(unescape(left).includes(`<span class="ui-option__meta" data-custom-meta>${CUSTOM_HINT}</span>`));
+  const divider = left.indexOf('<hr class="ui-divider">');
+  assert.ok(divider > left.indexOf('data-preset="custom"') && divider < left.indexOf('data-preset="code"'), 'a divider before Insert Board Code');
+  const code = left.slice(left.indexOf('data-preset="code"'), left.indexOf('</button>', left.indexOf('data-preset="code"')));
+  assert.match(code, /^data-preset="code" id="bc-code-option"><span class="ui-option__name">Insert Board Code<\/span><span class="ui-option__meta">Play the exact board a code describes<\/span>/);
+  assert.doesNotMatch(left, /ui-menu|data-detail|3BV|Best /, 'nothing from the records on an option');
+  assert.doesNotMatch(BOARD, /First box|first-box|bc-box|Double layer|bc-double/, 'no First box or double layer');
+  assert.doesNotMatch(read('css/components.css'), /Double layer|bc-double/, 'no double layer group in the styles');
+
+  // Right: Learn 3D's panel, the settings with both switches, the custom form, the bests, the code panel.
+  const right = between(BOARD, '<div class="ui-column" id="board-choice-detail">', '<footer class="ui-frame__foot">');
+  const lesson = between(right, '<div id="bc-learn-panel"', '<div id="bc-settings"');
+  assert.match(lesson, /^<div id="bc-learn-panel" class="hidden" data-learn-panel>\s*<div class="ui-section-label"><h3 class="ui-section-label__text">Learn 3D<\/h3><span class="ui-section-label__aside">keeps no records<\/span><\/div>/);
+  assert.deepEqual([...lesson.matchAll(/<p class="ui-text">([^<]+)<\/p>/g)].map((m) => m[1]), [
+    'A number counts the mines among the 26 cubes around it.', 'Empty and solved cubes hide themselves; hold Ctrl to show them.', 'The first click is always safe.',
+  ], 'How 3D works, its three lines');
+  assert.match(lesson, /<div class="ui-panel" role="group" aria-labelledby="bc-rules-title">\s*<div class="ui-section-label"><h4 class="ui-section-label__text" id="bc-rules-title">How 3D works<\/h4><\/div>/);
+  assert.doesNotMatch(lesson, /data-noguess|data-best/, 'no switch and no bests');
+  const settings = between(right, '<div id="bc-settings"', '<form id="custom"');
+  assert.match(settings, /^<div id="bc-settings" data-settings>\s*<div class="ui-section-label"><h3 class="ui-section-label__text">Board settings<\/h3><\/div>/);
+  assert.match(settings, /<div id="bc-preset-settings" data-preset-settings>\s*<label class="ui-toggle"><input type="checkbox" role="switch" id="bc-noguess" class="ui-toggle__input" data-noguess="presets"><span class="ui-toggle__label">No-guess<\/span><\/label>/);
+  assert.ok(settings.includes(`<p id="bc-noguess-help" class="ui-text ui-text--muted">${NOGUESS_HELP_TEXT}</p>`));
   assert.equal(NOGUESS_HELP_TEXT, 'Solvable by logic alone, no 50/50 guesses. Separate records.');
-  assert.ok(help > presetsSwitch && help < BOARD.indexOf('<form id="custom"'), 'one helper line under the presets\' switch, before the custom panel');
-  const form = BOARD.slice(BOARD.indexOf('<form id="custom"'), BOARD.indexOf('</form>'));
-  const reason = form.indexOf('data-noguess-reason');
-  const toggle = form.indexOf('<label class="ui-toggle"><input type="checkbox" role="switch" id="c-noguess" class="ui-toggle__input" data-noguess="custom">');
-  assert.ok(reason > 0 && toggle > reason, 'the custom board\'s switch sits in its panel, under its reason line');
-  assert.match(form, /<p id="c-noguess-reason" class="ui-text ui-text--muted hidden" data-noguess-reason><\/p>/);
-  const hint = form.indexOf('<p id="c-density-hint" class="ui-text ui-text--muted hidden" data-density-hint></p>');
-  assert.ok(hint > toggle, 'the density hint sits under the custom board\'s switch');
-  assert.match(BOARD, /id="board-choice-back" class="ui-button ui-button--secondary" data-back>Back/);
-  assert.doesNotMatch(BOARD, /data-best/);
+  const customSettings = settings.slice(settings.indexOf('<div id="bc-custom-settings"'));
+  assert.match(customSettings, /^<div id="bc-custom-settings" class="hidden" data-custom-settings>\s*<p id="c-noguess-reason" class="ui-text ui-text--warning hidden" data-noguess-reason><\/p>\s*<label class="ui-toggle"><input type="checkbox" role="switch" id="c-noguess" class="ui-toggle__input" data-noguess="custom"><span class="ui-toggle__label">No-guess<\/span><\/label>\s*<p id="c-noguess-help" class="ui-text ui-text--muted">Keeps separate records\.<\/p>\s*<p id="c-density-hint" class="ui-text ui-text--muted hidden" data-density-hint><\/p>/,
+    'the custom switch under its reason line, over the density hint');
+  const form = right.slice(right.indexOf('<form id="custom"'), right.indexOf('</form>'));
+  assert.match(form, /^<form id="custom" class="ui-panel hidden" aria-label="Custom board" novalidate>/, 'the form shows for Custom only');
+  for (const [f, id] of [['X', 'c-x'], ['Y', 'c-y'], ['Z', 'c-z'], ['mines', 'c-m']]) {
+    assert.match(form, new RegExp(`<label class="ui-field"><span class="ui-field__label">[^<]+</span><input id="${id}" data-field="${f}" class="ui-field__input" type="number"`), f);
+  }
+  assert.deepEqual([...form.matchAll(/<span class="ui-field__label">([^<]+)<\/span>/g)].map((m) => m[1]), ['Width', 'Height', 'Depth', 'Mines']);
+  assert.match(form, /id="c-x"[^>]*min="1" max="100"/);
+  const [info, random, refusal] = ['data-info', 'id="c-random"', 'data-refusal'].map((x) => form.indexOf(x));
+  assert.ok(info > form.indexOf('id="c-m"') && random > info && refusal > random, 'the fields, the info line, Random, the refusal line');
+  assert.match(form, /<p id="c-info" class="ui-text ui-text--muted" data-info>/);
+  assert.match(form, /<button type="button" id="c-random" class="ui-button ui-button--secondary ui-button--sm" data-random>Random<\/button>/);
+  assert.match(form, /<p id="c-refusal" class="ui-text ui-text--warning hidden" data-refusal><\/p>/);
+  assert.doesNotMatch(BOARD, /c-start|type="submit"/, 'Play starts a custom board');
+  const bests = between(right, '<div id="bc-bests"', '<div id="bc-code-panel"');
+  assert.ok(right.indexOf('<div id="bc-bests"') > right.indexOf('</form>'), 'the bests under the form');
+  assert.match(bests, /<hr class="ui-divider">\s*<div class="ui-section-label"><h3 class="ui-section-label__text" id="bc-bests-title" data-bests-title>/);
+  const tiles = [...bests.matchAll(/<div id="bc-best-(\w+)" class="ui-stat ui-stat--tile" role="group" aria-labelledby="bc-best-\1-label" data-best="\1"><span class="ui-stat__label" id="bc-best-\1-label">([^<]+)<\/span>/g)];
+  assert.deepEqual(tiles.map((m) => [m[1], m[2]]), [['time', 'Time'], ['bbbvPerSecond', '3BV/s'], ['efficiency', 'Efficiency']], 'three tiles only');
+  const panel = right.slice(right.indexOf('<div id="bc-code-panel"'));
+  assert.match(panel, /^<div id="bc-code-panel" class="hidden" role="group" aria-labelledby="bc-code-title" data-code-panel>/);
+  assert.match(panel, /<input id="bc-code" data-code-field class="ui-field__input" type="text"/);
+  assert.ok(panel.includes(`<p id="bc-code-info" class="ui-text ui-text--muted" data-code-info>${CODE_PROMPT}</p>`));
+  assert.doesNotMatch(BOARD, /bc-code-play|Play this board|data-esc-hint/, 'the code is played with Play; Back carries its key hint');
+
+  // The bottom bar: the summary, Records and Play with its Enter hint.
+  const foot = between(BOARD, '<footer class="ui-frame__foot">', '</footer>');
+  assert.match(foot, /<p class="ui-frame__summary" id="bc-summary" data-summary><\/p>\s*<div class="ui-actions ui-actions--row">\s*<button type="button" id="bc-records" class="ui-button ui-button--secondary" data-records>Records<\/button>\s*<button type="button" id="bc-play" class="ui-button ui-button--primary ui-button--lg" data-play>Play <span class="ui-key-hint" data-action="select" aria-hidden="true"><\/span><\/button>/);
+  for (const [, cls] of BOARD.matchAll(/class="([^"]+)"/g)) {
+    for (const c of cls.split(/\s+/)) assert.ok(c.startsWith('ui-') || ['overlay', 'hidden'].includes(c), `kit class: ${c}`);
+  }
 });
 
-test('the board choice leads with Learn 3D, reported through onLearn, never a preset, the last choice or its "Last played" mark', () => {
+test('the shell stylesheet lays both board choices out alike: the window under the title, the 3D one starting just under it, denser rows, one column on a phone', () => {
+  const css = read('css/style.css');
+  assert.match(css, /\n#c2d-choice, #board-choice \{ flex-direction: column; justify-content: flex-start;/);
+  assert.match(css, /\n#c2d-choice-top, #board-choice-top \{ flex: 1 1 0;/, 'the space above the Classic 2D window grows with the page');
+  assert.match(css, /\n#board-choice-top \{ flex: none; \}/, 'the 3D window starts just under the title');
+  assert.match(css, /\n#c2d-choice::after, #board-choice::after \{ content: ""; flex: 1 1 0;/);
+  assert.match(css, /\n#c2d-choice-frame, #board-choice-frame \{ flex: 0 1 auto; width: 1120px; \}/);
+  assert.match(css, /@media \(max-width: 1439px\) \{\n  #c2d-choice-frame, #board-choice-frame \{ width: 1080px; \}[\s\S]*?#c2d-choice \.ui-option, #board-choice \.ui-option \{ min-height: 46px;/);
+  assert.match(css, /@media \(max-width: 1199px\) \{ #c2d-choice-frame, #board-choice-frame \{ width: 984px; \} \}/);
+  assert.match(css, /@media \(max-width: 719px\) \{\n  #c2d-choice, #board-choice \{ padding: 0; \}\n  #c2d-choice-top, #board-choice-top, #c2d-choice-body > \.ui-divider--vertical, #board-choice-body > \.ui-divider--vertical,\n  #c2d-bests, #bc-bests, #c2d-summary, #bc-summary, #c2d-choice::after, #board-choice::after \{ display: none; \}/);
+  assert.doesNotMatch(css, /\n#c2d-choice-frame \{|\n#c2d-choice-top \{/, 'no rule for one board choice that the other repeats');
+});
+
+test('the board choice leads with Learn 3D, played through onLearn, never a preset, the last choice or its "Last played" mark', () => {
   const learn = BOARD.indexOf('data-learn');
-  assert.ok(learn > 0 && learn < BOARD.indexOf('data-preset='), 'the first item, above the presets');
-  assert.doesNotMatch(BOARD.slice(learn - 200, learn + 300), /data-preset/, 'not a preset item');
+  assert.ok(learn > 0 && learn < BOARD.indexOf('data-preset="6'), 'the first option, above the presets');
+  assert.doesNotMatch(BOARD.slice(learn, BOARD.indexOf('</button>', learn)), /data-last/, 'no Last played chip');
   const src = read('js/mode3d/board-choice.js');
-  assert.match(src, /bindBoardChoice\(\{ root, onStart, onLearn, onBack, code = null \}\)/);
-  assert.match(src, /root\.querySelector\('\[data-learn\]'\)/);
-  assert.match(src, /onLearn\?\.\(\)/);
+  assert.match(src, /bindBoardChoice\(\{ root, onStart, onLearn, onBack, onRecords = null, code = null, bests = null \}\)/);
+  assert.match(src, /if \(selected === 'learn'\) \{\s*onLearn\?\.\(\);/, 'Play on Learn 3D starts the guided board');
   assert.match(MAIN, /onLearn: \(\) => startLearn\(/);
   const onLearn = MAIN.slice(MAIN.indexOf('onLearn:'), MAIN.indexOf('\n', MAIN.indexOf('onLearn:')));
   assert.doesNotMatch(onLearn, /LAST_CHOICE_3D\.save/, 'starting it does not save the last 3D choice');
@@ -406,10 +504,17 @@ test('the shell wires the 3D board choice, its last choice and every control', (
   assert.match(MAIN, /import \{[^}]*bindBoardChoice as bindBoardChoice3D[^}]*\} from '\.\/mode3d\/board-choice\.js'/);
   assert.match(MAIN, /createLastBoardChoice\(\{ storage, doc: LAST_CHOICE_DOC_3D/);
   assert.match(MAIN, /LAST_CHOICE_3D\.load\(\)/, 'the last 3D choice is loaded at start-up');
-  assert.match(MAIN, /'board-choice': \{[^\n]*defaultFocus: '\[data-preset\]\[data-last\]'[^\n]*CHOICE_3D\.show\(LAST_CHOICE_3D\.current, \{ played: LAST_CHOICE_3D\.played, details: presetDetails\(CHOICE_ITEMS\['3d'\], RECORDS\) \}\)/);
+  assert.match(MAIN, /'board-choice': \{ defaultFocus: '\[data-preset\]\[aria-pressed="true"\]', show: \(d = \{\}, from\) => \{[^\n]*showChoice3D\(from\); \} \}/,
+    'the board choice focuses the chosen option, the last choice when it opens');
+  assert.match(MAIN, /CHOICE_3D\.show\(LAST_CHOICE_3D\.current, \{ played: LAST_CHOICE_3D\.played, held \}\)/);
   assert.match(MAIN, /onStart: \(choice\) => \{[^\n]*LAST_CHOICE_3D\.save\(choice\)[^\n]*MODES\.start\('3d', boardOf\(choice\)\)/);
+  assert.match(MAIN, /bests: \(board\) => boardBests\(identity3D\(board\), RECORDS\)/, 'the bests read through the store\'s queries');
+  assert.match(MAIN, /RECORDS\.onChange\(\(\) => \{ CHOICE_2D\.refresh\(\); CHOICE_3D\.refresh\(\); \}\)/, 'and redrawn on its change notification');
+  assert.match(MAIN, /onRecords: \(board\) => \{\s*held3D = CHOICE_3D\.state\(\);\s*SHELL\.go\('records', \{ data: \{ mode: MODE_3D, boardKey: board \? boardKey\(identity3D\(board\)\) : null \} \}\);/,
+    'Records opens on the chosen board and switch, Back returning to what the screen held');
+  assert.doesNotMatch(MAIN, /presetDetails|CHOICE_ITEMS/, 'no detail lines on the options');
   const head = read('css/components.css').match(/^\/\*([\s\S]*?)\*\//)[1];
-  assert.match(head, /3D board choice \(index\.html #board-choice\)[\s\S]*?no-guess ui-toggle[\s\S]*?Default focus: the last board choice/);
+  assert.match(head, /3D board choice \(index\.html #board-choice\): the Classic 2D board choice's composition[\s\S]*?Learn 3D[\s\S]*?no-guess ui-toggle[\s\S]*?Default focus: the last board choice/);
 });
 
 // ---------------------------------------------------------------- browser
@@ -427,6 +532,7 @@ test('in a browser, the custom board validates, the switch follows the limit and
     const ms = (fn, arg) => page.evaluate(fn, arg);
     const mode = () => ms(() => globalThis.__ms.state.mode);
     const info = () => ms(() => document.getElementById('c-info').textContent);
+    const refusal = () => ms(() => { const r = document.getElementById('c-refusal'); return r.classList.contains('hidden') ? '' : r.textContent; });
     const sw = () => ms(() => {
       const s = document.getElementById('c-noguess');
       const r = document.getElementById('c-noguess-reason');
@@ -438,21 +544,27 @@ test('in a browser, the custom board validates, the switch follows the limit and
     assert.equal(await ms(() => document.activeElement?.dataset.preset), '6,6,6,20', 'the default preset, cube Beginner, takes the focus when none was played');
     assert.equal(await ms(() => [...document.querySelectorAll('#board-choice [data-preset] [data-last]')].filter((l) => !l.classList.contains('hidden')).length), 0,
       'nothing is "Last played" before a game');
-    assert.equal(await ms(() => document.querySelectorAll('#board-choice [data-best]').length), 0, 'no best times');
-    // Each preset carries one detail line, between its size line and its "Last played" line.
-    assert.deepEqual(await ms(() => [...document.querySelectorAll('#board-choice [data-preset]:not([type="submit"])')].map((b) => [...b.children].map((c) => (c.hasAttribute('data-detail') ? `detail: ${c.textContent}` : c.className)))),
-      PRESETS.map((p) => ['ui-menu__label', 'ui-menu__detail', `detail: ${['4.6', '9.3', '7.8', '10'][PRESETS.indexOf(p)]} % mines · ~${typicalBbbv({ mode: '3d', width: p.X, height: p.Y, depth: p.Z, mines: p.mines, noGuess: true })} 3BV · —`, 'ui-menu__detail hidden']));
+    // Each preset carries its name, its Last played chip, its size line and density, and nothing from the records.
+    assert.deepEqual(await ms(() => [...document.querySelectorAll('#board-choice [data-preset]')].filter((b) => /,/.test(b.dataset.preset))
+      .map((b) => [...b.children].map((c) => `${c.className}${c.classList.contains('ui-option__meta') ? `: ${c.textContent}` : ''}`))),
+    PRESETS.map((p) => ['ui-option__name', 'ui-chip hidden', `ui-option__meta: ${boxLine(p)} · ${mineDensity(p)}`, 'ui-option__check']));
+    assert.equal(await ms(() => document.querySelectorAll('#board-choice [data-detail]').length), 0, 'no detail lines');
 
-    // The fields name what is out of range.
+    // The fields name what is out of range, under Random; the info line keeps the size's line.
+    await page.click('#board-choice [data-preset="custom"]');
     await page.fill('#c-y', '0');
-    assert.equal(await info(), 'Height must be a whole number from 1 to 100.');
+    assert.equal(await refusal(), 'Height must be a whole number from 1 to 100.');
+    assert.equal(await info(), '', 'no size line while a side is out of range');
     assert.ok(await ms(() => document.getElementById('c-y').hasAttribute('data-adjusted')));
+    assert.equal(await ms(() => document.getElementById('c-y').getAttribute('aria-invalid')), 'true');
     await page.fill('#c-y', '1');
     await page.fill('#c-x', '1');
     await page.fill('#c-z', '1');
     await page.fill('#c-m', '1');
-    assert.match(await info(), /^A 1 × 1 × 1 board has no room for a mine/);
-    await page.click('#c-start');
+    assert.match(await refusal(), /^A 1 × 1 × 1 board has no room for a mine/);
+    assert.equal(await info(), '1 cell · no room for a mine');
+    assert.equal(await ms(() => document.getElementById('bc-play').disabled), true, 'Play waits for a valid board');
+    await page.press('#c-m', 'Enter');
     assert.equal(await mode(), 'board-choice', 'an invalid custom board does not start');
     assert.equal(await ms(() => document.activeElement?.id), 'c-m', 'the field out of range takes the focus');
 
@@ -497,22 +609,26 @@ test('in a browser, the custom board validates, the switch follows the limit and
     await page.fill('#c-z', '3');
     assert.equal((await sw()).checked, true, 'the custom board\'s choice comes back on a board that offers it');
 
-    // Random fills valid fields.
-    await page.click('#c-random');
-    assert.ok(await ms(() => ['c-x', 'c-y', 'c-z', 'c-m'].every((id) => /^\d+$/.test(document.getElementById(id).value))));
+    // Random fills valid fields, and Play is offered again.
+    for (let i = 0; i < 5; i++) {
+      await page.click('#c-random');
+      const f = await ms(() => ['c-x', 'c-y', 'c-z', 'c-m'].map((id) => Number(document.getElementById(id).value)));
+      assert.equal(validateCustom({ X: f[0], Y: f[1], Z: f[2], mines: f[3] }).ok, true, `a valid board: ${f}`);
+      assert.equal(await refusal(), '');
+      assert.equal(await ms(() => document.getElementById('bc-play').disabled), false);
+    }
 
-    // Start a custom board by keyboard; the choice is remembered and restored on return.
+    // Start a custom board by keyboard: Enter in a field plays; the choice is remembered and restored on return.
     await page.fill('#c-x', '4');
     await page.fill('#c-y', '5');
     await page.fill('#c-z', '6');
     await page.fill('#c-m', '11');
-    await page.focus('#c-start');
-    await page.keyboard.press('Enter');
+    await page.press('#c-m', 'Enter');
     assert.equal(await mode(), 'ready');
     assert.deepEqual(await ms(() => globalThis.__ms.state.settings), { X: 4, Y: 5, Z: 6, mines: 11 });
     await page.click('#ready-back');
     assert.equal(await mode(), 'board-choice');
-    assert.equal(await ms(() => document.activeElement?.id), 'c-start', 'the custom board keeps the focus');
+    assert.equal(await ms(() => document.activeElement?.dataset.preset), 'custom', 'Custom, chosen, keeps the focus');
     await page.waitForFunction(() => localStorage.getItem('ms3d:doc:mode3d.lastChoice') !== null);
     assert.deepEqual(await ms(() => JSON.parse(localStorage.getItem('ms3d:doc:mode3d.lastChoice')).data),
       { size: 'custom', custom: { X: 4, Y: 5, Z: 6, mines: 11 }, noGuess: true });
@@ -522,7 +638,8 @@ test('in a browser, the custom board validates, the switch follows the limit and
     await page.click('#menu-entry-3d');
     assert.deepEqual(await ms(() => ['c-x', 'c-y', 'c-z', 'c-m'].map((id) => document.getElementById(id).value)), ['4', '5', '6', '11']);
     assert.equal((await sw()).checked, true, 'the no-guess switch is restored');
-    assert.equal(await ms(() => document.activeElement?.id), 'c-start', 'the last choice takes the focus');
+    assert.equal(await ms(() => document.activeElement?.dataset.preset), 'custom', 'the last choice takes the focus');
+    assert.equal(await ms(() => document.querySelector('#board-choice [data-custom-meta]').textContent), '4 × 5 × 6 · 11 mines · 9.2 % mines', 'Custom names its board');
 
     assert.equal(await ms(() => document.getElementById('bc-noguess').checked), true, 'the presets\' switch shows the choice');
 
@@ -530,10 +647,12 @@ test('in a browser, the custom board validates, the switch follows the limit and
     await page.fill('#c-x', '100');
     await page.fill('#c-y', '100');
     await page.fill('#c-z', '100');
+    await page.click('#board-choice [data-preset="8,8,8,40"]');
+    assert.equal(await mode(), 'board-choice', 'a click chooses, and starts nothing');
     await page.focus('#bc-noguess');
     await page.keyboard.press('Space');
     assert.equal(await ms(() => document.getElementById('bc-noguess').checked), false);
-    await page.click('#board-choice [data-preset="8,8,8,40"]');
+    await page.click('#bc-play');
     assert.equal(await mode(), 'ready');
     await page.waitForFunction(() => JSON.parse(localStorage.getItem('ms3d:doc:mode3d.lastChoice')).data.size === 'cube-intermediate');
     assert.equal(await ms(() => JSON.parse(localStorage.getItem('ms3d:doc:mode3d.lastChoice')).data.noGuess), false);
@@ -546,16 +665,16 @@ test('in a browser, the custom board validates, the switch follows the limit and
   }
 });
 
-// ---------------------------------------------------------------- Play this board
+// ---------------------------------------------------------------- Insert Board Code
 
-test('both board choices hold a board code field wired to the shell, the 3D one with Play this board', () => {
+test('both board choices hold a board code field wired to the shell, played with Play', () => {
   const html = read('index.html');
   for (const [section, prefix] of [['<section id="board-choice"', 'bc'], ['<section id="c2d-choice"', 'c2d']]) {
     const part = html.slice(html.indexOf(section), html.indexOf('</section>\n  </section>', html.indexOf(section)));
     assert.match(part, new RegExp(`<input id="${prefix}-code" data-code-field class="ui-field__input" type="text"`));
     assert.match(part, new RegExp(`<p id="${prefix}-code-info" class="ui-text ui-text--muted" data-code-info>${CODE_PROMPT}</p>`));
   }
-  assert.match(html, /<button type="button" id="bc-code-play" class="ui-button ui-button--secondary" data-code-play disabled>Play this board<\/button>/);
+  assert.doesNotMatch(html, /data-code-play|Play this board/, 'no button of its own');
   assert.match(MAIN_SRC, /code: \{ resolve: \(text\) => checkCode\(text, '3d'\), onPlay: \(text\) => playCode\(text, '3d'\) \}/);
   assert.match(MAIN_SRC, /code: \{ resolve: \(text\) => checkCode\(text, 'classic-2d'\), onPlay: \(text\) => playCode\(text, 'classic-2d'\) \}/);
 });
@@ -575,12 +694,16 @@ test('in a browser, a board code in a board choice: validated live, the other mo
     const field = (prefix) => ms((p) => ({
       info: document.getElementById(`${p}-code-info`).textContent,
       warn: document.getElementById(`${p}-code-info`).classList.contains('ui-text--warning'),
-      disabled: document.getElementById(p === 'c2d' ? 'c2d-play' : `${p}-code-play`).disabled,
+      disabled: document.getElementById(`${p}-play`).disabled,
     }), prefix);
     const two = encodeBoardCode({ board: { mode: 'classic-2d', grid: 'square', width: 9, height: 9, mines: 10, noGuess: false }, seed: 3, startCell: 40, generatorVersion: 1 });
     const three = encodeBoardCode({ board: { mode: '3d', width: 6, height: 6, depth: 6, mines: 10, noGuess: false }, seed: 9, startCell: 129, generatorVersion: 1 });
 
     await page.click('#menu-entry-3d');
+    await page.click('#board-choice [data-preset="code"]');
+    const shown = (id) => ms((i) => { const e = document.getElementById(i); return !e.closest('.hidden') && e.getBoundingClientRect().height > 0; }, id);
+    assert.deepEqual(await Promise.all(['bc-learn-panel', 'bc-settings', 'custom', 'bc-bests', 'bc-code-panel'].map(shown)), [false, false, false, false, true], 'only the code field');
+    assert.equal(await ms(() => document.getElementById('bc-summary').textContent), 'Board code · paste a code to play');
     assert.deepEqual(await field('bc'), { info: CODE_PROMPT, warn: false, disabled: true });
     await page.fill('#bc-code', 'nonsense');
     assert.deepEqual(await field('bc'), { info: CODE_REASONS.malformed, warn: true, disabled: true });
@@ -589,7 +712,8 @@ test('in a browser, a board code in a board choice: validated live, the other mo
     await page.fill('#bc-code', three.toLowerCase());
     assert.equal((await field('bc')).disabled, false);
     assert.match((await field('bc')).info, /^Cube Intro · a challenge, not eligible for bests$/);
-    await page.click('#bc-code-play');
+    assert.equal(await ms(() => document.getElementById('bc-summary').textContent), 'Board code · Cube Intro');
+    await page.click('#bc-play');
     await page.waitForFunction(() => globalThis.__ms.modes.active === '3d');
     assert.equal(await ms(() => globalThis.__ms.renderer.mark), 129, 'the start cell is tinted');
     await page.evaluate(() => globalThis.__ms.forcePlay());
@@ -608,6 +732,157 @@ test('in a browser, a board code in a board choice: validated live, the other mo
     await page.press('#c2d-code', 'Enter');
     assert.equal(await ms(() => globalThis.__ms.state.mode), 'daily', 'today\'s daily opens the Daily screen');
     assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+// ---------------------------------------------------------------- the screen in a browser
+
+const PANELS = ['bc-learn-panel', 'bc-settings', 'bc-preset-settings', 'bc-custom-settings', 'custom', 'bc-bests', 'bc-code-panel'];
+
+test('in a browser, the 3D board choice: a click chooses, Play or Enter plays; Learn 3D shows how 3D works; the bests follow the switch and the records; Custom; Records and back', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`${base}/index.html?still-backdrop`);
+    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
+    const ms = (fn, arg) => page.evaluate(fn, arg);
+    const mode = () => ms(() => globalThis.__ms.state.mode);
+    const text = (id) => ms((i) => document.getElementById(i).textContent, id);
+    const shown = (id) => ms((i) => { const e = document.getElementById(i); return !e.closest('.hidden') && e.getBoundingClientRect().height > 0; }, id);
+    const panels = async () => Object.fromEntries(await Promise.all(PANELS.map(async (id) => [id, await shown(id)])));
+    const only = (...ids) => Object.fromEntries(PANELS.map((id) => [id, ids.includes(id)]));
+    const chosen = () => ms(() => [...document.querySelectorAll('#board-choice [aria-pressed="true"]')].map((b) => b.dataset.preset));
+    const tiles = () => ms(() => [...document.querySelectorAll('#bc-bests [data-best]')].map((x) => [x.querySelector('.ui-stat__label').textContent, x.querySelector('.ui-stat__value').textContent, x.querySelector('.ui-stat__detail').textContent]));
+    const lastChoice = () => ms(() => localStorage.getItem('ms3d:doc:mode3d.lastChoice'));
+
+    // A new player: Cube Beginner chosen and focused, no-guess on, no bests yet.
+    await page.click('#menu-entry-3d');
+    assert.deepEqual(await chosen(), ['6,6,6,20']);
+    assert.equal(await ms(() => document.activeElement?.dataset.preset), '6,6,6,20');
+    assert.equal(await text('bc-summary'), 'Cube Beginner · 6 × 6 × 6 · 20 mines · no-guess');
+    assert.equal(await text('bc-bests-title'), 'Cube Beginner · no-guess · your bests');
+    assert.deepEqual(await tiles(), [['Time', '—', 'no best yet'], ['3BV/s', '—', 'no best yet'], ['Efficiency', '—', 'no best yet']]);
+    assert.deepEqual(await panels(), only('bc-settings', 'bc-preset-settings', 'bc-bests'));
+    assert.equal(await ms(() => document.querySelector('#board-choice-back .ui-key-hint__key')?.textContent), 'Esc', 'Back carries its key hint');
+
+    // Learn 3D: only how 3D works and the note that it keeps no records.
+    await page.click('#bc-learn');
+    assert.deepEqual(await chosen(), ['learn']);
+    assert.equal(await mode(), 'board-choice', 'a click chooses, and starts nothing');
+    assert.deepEqual(await panels(), only('bc-learn-panel'));
+    assert.equal(await text('bc-summary'), LEARN_SUMMARY);
+    assert.match(await text('bc-learn-panel'), /keeps no records[\s\S]*How 3D works[\s\S]*26 cubes around it[\s\S]*hold Ctrl to show them[\s\S]*always safe/);
+
+    // Cube Intermediate with no-guess off; a win recorded meanwhile shows at once, with its date.
+    await page.click('#board-choice [data-preset="8,8,8,40"]');
+    await page.click('#bc-noguess');
+    assert.equal(await text('bc-summary'), 'Cube Intermediate · 8 × 8 × 8 · 40 mines');
+    assert.equal(await text('bc-bests-title'), 'Cube Intermediate · your bests');
+    await ms(async () => {
+      const { buildSummary } = await import('/js/records/summary.js');
+      const engine = { outcome: 'won', bbbv: 20, bbbvSolved: 20, clicks: { reveal: { effective: 25, wasted: 0 }, flag: { effective: 0, wasted: 0 }, chord: { effective: 0, wasted: 0 } } };
+      globalThis.__ms.records.record(buildSummary({ engine, elapsedMs: 71902, board: { mode: '3d', width: 8, height: 8, depth: 8, mines: 40, noGuess: false }, seed: 1, generatorVersion: 1, endedAt: new Date(2026, 9, 11, 12), id: 'w-3d' }));
+    });
+    assert.deepEqual(await tiles(), [['Time', '71.902 s', '11 Oct 2026'], ['3BV/s', '0.28', '11 Oct 2026'], ['Efficiency', '80.0%', '11 Oct 2026']]);
+    await page.click('#bc-noguess');
+    assert.deepEqual((await tiles()).map((x) => x[1]), ['—', '—', '—'], 'the no-guess twin is another board');
+    await page.click('#bc-noguess');
+
+    // Records opens on the chosen board and switch; Back returns here, as it was.
+    await page.click('#bc-records');
+    assert.equal(await mode(), 'records');
+    assert.match(await ms(() => document.querySelector('#records-picker [aria-checked="true"]')?.textContent ?? ''), /Cube Intermediate/);
+    await page.keyboard.press('Escape');
+    assert.equal(await mode(), 'board-choice');
+    assert.deepEqual(await chosen(), ['8,8,8,40']);
+    assert.equal(await ms(() => document.getElementById('bc-noguess').checked), false);
+
+    // Custom: its own switch, the four fields, Random, then the bests for that size; a refused board disables Play.
+    await page.click('#board-choice [data-preset="custom"]');
+    assert.deepEqual(await panels(), only('bc-settings', 'bc-custom-settings', 'custom', 'bc-bests'));
+    assert.equal(await text('bc-summary'), 'Custom · 10 × 10 × 10 · 25 mines · no-guess');
+    assert.equal(await text('bc-bests-title'), '10 × 10 × 10 · 25 mines · no-guess · your bests');
+    assert.equal(await text('c-info'), '1,000 cells · up to 999 mines');
+    await page.fill('#c-m', '1000');
+    assert.equal(await ms(() => document.getElementById('bc-play').disabled), true);
+    assert.equal(await text('c-refusal'), 'Mines must be a whole number from 1 to 999 on a 10 × 10 × 10 board.');
+    assert.equal(await text('c-info'), '1,000 cells · up to 999 mines', 'the info line keeps the size\'s line');
+    assert.equal(await text('bc-summary'), 'Custom · 10 × 10 × 10 · 1,000 mines · no-guess', 'the refused board summarised');
+    await page.fill('#c-y', '2');
+    await page.fill('#c-m', '40');
+    assert.equal(await text('c-noguess-reason'), 'No-guess isn\'t available when a side is 2 cells');
+    assert.equal(await text('bc-summary'), 'Custom · 10 × 2 × 10 · 40 mines', 'no no-guess where it is not offered');
+    assert.equal(await text('bc-bests-title'), '10 × 2 × 10 · 40 mines · your bests');
+    await page.fill('#c-y', '10');
+
+    // Play on Learn 3D starts the guided board and saves no choice.
+    await page.click('#bc-learn');
+    await page.click('#bc-play');
+    await page.waitForFunction(() => globalThis.__ms.state.mode === 'ready');
+    assert.equal(await text('hud-size'), 'Learn 3D');
+    assert.equal(await lastChoice(), null, 'no last choice saved');
+    await page.keyboard.press('Escape');
+    assert.equal(await mode(), 'board-choice');
+
+    // Enter on an option chooses it and plays it, saved as the last choice.
+    await ms(() => document.querySelector('#board-choice [data-preset="10,10,10,100"]').focus());
+    await page.keyboard.press('Enter');
+    assert.equal(await mode(), 'ready');
+    assert.deepEqual(await ms(() => globalThis.__ms.state.settings), { X: 10, Y: 10, Z: 10, mines: 100 });
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem('ms3d:doc:mode3d.lastChoice') ?? 'null')?.data.size === 'cube-expert');
+    await page.keyboard.press('Escape');
+    assert.deepEqual(await chosen(), ['10,10,10,100']);
+    assert.equal(await ms(() => document.querySelector('#board-choice [data-preset="10,10,10,100"] [data-last]').classList.contains('hidden')), false, 'Last played');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, the 3D board choice at every supported window size: its window\'s width, just under the title, no horizontal scroll, Play in the page, one column on a phone that scrolls past the fold', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    for (const [width, height, frame] of [[1920, 1080, 1120], [1440, 900, 1120], [1366, 768, 1080], [1280, 800, 1080], [1024, 768, 984], [390, 844, 390]]) {
+      const page = await browser.newPage({ viewport: { width, height } });
+      await page.goto(`${base}/index.html?still-backdrop`);
+      await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
+      await page.click('#menu-entry-3d');
+      const at = `${width} × ${height}`;
+      for (const option of ['learn', '8,8,8,40', 'custom', 'code']) {
+        await page.click(`#board-choice [data-preset="${option}"]`);
+        const m = await page.evaluate(() => {
+          const r = (id) => document.getElementById(id).getBoundingClientRect();
+          const body = document.getElementById('board-choice-body');
+          return {
+            scroll: document.documentElement.scrollWidth, layer: document.getElementById('board-choice').scrollWidth,
+            frame: r('board-choice-frame'), title: r('board-choice-wordmark'), body: [body.scrollHeight, body.clientHeight, body.scrollWidth, body.clientWidth],
+            bests: getComputedStyle(document.getElementById('bc-bests')).display, summary: getComputedStyle(document.getElementById('bc-summary')).display,
+            play: r('bc-play'),
+          };
+        });
+        assert.ok(m.scroll <= width && m.layer <= width && m.body[2] <= m.body[3], `${at} ${option}: no horizontal scroll`);
+        assert.equal(Math.round(m.frame.width), frame, `${at}: the window's width`);
+        assert.ok(m.frame.bottom <= height + 0.5 && m.play.bottom <= height, `${at} ${option}: the window and Play in the page`);
+        if (width > 719) {
+          assert.ok(m.frame.top >= m.title.bottom && m.frame.top - m.title.bottom <= 40, `${at} ${option}: the window just under the title`);
+        } else {
+          assert.equal(m.title.height, 0, 'no title on a phone');
+          assert.equal(m.bests, 'none', 'no bests on a phone');
+          assert.equal(m.summary, 'none');
+          assert.ok(Math.abs(m.play.bottom - height) <= 24, 'Play pinned at the bottom');
+          if (option === 'custom') assert.ok(m.body[0] > m.body[1], 'the column scrolls past the fold');
+        }
+      }
+      await page.close();
+    }
   } finally {
     await browser.close();
   }

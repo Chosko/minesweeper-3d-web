@@ -58,7 +58,7 @@ async function open(browser, base) {
   return { page, errors, ms, frames, hold, tap, focused, walk };
 }
 
-test('in a browser, the D-pad walks every control of the 2D board choice and the 3D board choice as before', async (t) => {
+test('in a browser, the D-pad walks every control of the 2D board choice and the 3D board choice alike', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -109,17 +109,40 @@ test('in a browser, the D-pad walks every control of the 2D board choice and the
     await tap(BTN.B);
     assert.equal(await ms(() => globalThis.__ms.state.mode), 'menu');
 
-    // 3D: the walk pinned as it stood before the DOM-order fallback.
+    // 3D, as Classic 2D: Down walks the options, then the switch on the right, then the bar's Records and
+    // Play; Up retraces the walk, and from Learn 3D reaches Back.
     await page.click('#menu-entry-3d');
-    await ms(() => document.querySelector('#board-choice [data-preset="6,6,6,10"]').focus());
-    const presetsDown = ['6,6,6,20', '8,8,8,40', '10,10,10,100'];
-    assert.deepEqual(await walk(Array(8).fill('down')),
-      [...presetsDown, 'bc-noguess', 'c-x', 'c-noguess', 'bc-code', 'board-choice-back']);
-    assert.deepEqual(await walk(Array(8).fill('up')),
-      ['bc-code', 'c-noguess', 'c-x', 'bc-noguess', '10,10,10,100', '8,8,8,40', '6,6,6,20', '6,6,6,10']);
-    await ms(() => document.getElementById('c-x').focus());
-    assert.deepEqual(await walk(['right', 'right', 'right', 'right', 'right']), ['c-y', 'c-z', 'c-m', 'c-random', 'c-start']);
-    assert.deepEqual(await walk(['left', 'left', 'left', 'left', 'left']), ['c-random', 'c-m', 'c-z', 'c-y', 'c-x']);
+    await ms(() => document.querySelector('#board-choice [data-learn]').focus());
+    assert.equal(await focused(), 'bc-learn');
+    assert.deepEqual(await walk(Array(10).fill('down')),
+      ['6,6,6,10', '6,6,6,20', '8,8,8,40', '10,10,10,100', 'custom', 'bc-code-option', 'bc-noguess', 'bc-records', 'bc-play', 'bc-play'], 'no wrap past Play');
+    assert.deepEqual(await walk(Array(10).fill('up')),
+      ['bc-noguess', 'bc-code-option', 'custom', '10,10,10,100', '8,8,8,40', '6,6,6,20', '6,6,6,10', 'bc-learn', 'board-choice-back', 'board-choice-back'],
+      'Up from Play retraces the walk, no wrap past Back');
+    // A on Custom chooses it: its switch and form join the walk, Left / Right walk its row.
+    await ms(() => document.querySelector('#board-choice [data-preset="custom"]').focus());
+    await tap(BTN.A);
+    assert.equal(await ms(() => document.querySelector('#board-choice [aria-pressed="true"]').dataset.preset), 'custom');
+    assert.equal(await ms(() => globalThis.__ms.state.mode), 'board-choice', 'A chooses, and starts nothing');
+    await ms(() => document.getElementById('c-noguess').focus());
+    assert.deepEqual(await walk(['down', 'right', 'right', 'right', 'left', 'left', 'left']), ['c-x', 'c-y', 'c-z', 'c-m', 'c-z', 'c-y', 'c-x']);
+    assert.deepEqual(await walk(['down', 'down', 'down']), ['c-random', 'bc-records', 'bc-play']);
+    // Every focusable control on the screen is reached by the D-pad alone.
+    const all3d = await ms(() => [...document.querySelectorAll('#board-choice button:not(:disabled), #board-choice input:not(:disabled)')]
+      .filter((e) => e.getClientRects().length > 0).map((e) => e.id || e.dataset.preset));
+    const reached3d = new Set();
+    const queue3d = ['bc-learn'];
+    while (queue3d.length) {
+      const at = queue3d.shift();
+      if (reached3d.has(at)) continue;
+      reached3d.add(at);
+      for (const d of ['up', 'down', 'left', 'right']) {
+        await ms((i) => (document.getElementById(i) ?? document.querySelector(`#board-choice [data-preset="${i}"]`)).focus(), at);
+        const [to] = await walk([d]);
+        if (to && !reached3d.has(to)) queue3d.push(to);
+      }
+    }
+    assert.deepEqual([...reached3d].sort(), all3d.sort(), 'every control reached');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

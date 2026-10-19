@@ -592,14 +592,18 @@ test('the catalogue documents the screen compositions and the kit styles them', 
   for (const screen of ['Main menu', 'Pause card', 'Results screen']) assert.ok(head.includes(screen), `catalogue documents the ${screen} composition`);
 });
 
-test('the main menu and the pause card are built only from kit classes', () => {
+test('the main menu, the 3D board choice and the pause card are built only from kit classes', () => {
   // Allowed besides ui-*: the shell's visibility utility and the shared controls list of the help panel.
   const allowed = new Set(['hidden', 'controls', 'compact']);
   for (const [name, html] of Object.entries(SCREENS)) {
     assert.ok(html.length > 200, `${name} found in index.html`);
     const [root, ...inner] = tags(html);
-    assert.deepEqual(classesOf(root).filter((c) => c !== 'hidden'), ['overlay'], `#${name} is a shell overlay layer`);
-    if (name === 'menu') {
+    assert.deepEqual(classesOf(root).filter((c) => c !== 'hidden'), name === 'board-choice' ? ['overlay', 'ui-backdrop'] : ['overlay'], `#${name} is a shell overlay layer`);
+    if (name === 'board-choice') {
+      // The board choice sits on the page's backdrop: the wordmark over a screen frame, no card.
+      for (const cls of ['ui-wordmark', 'ui-frame', 'ui-option', 'ui-key-hint']) assert.ok(inner.some((t) => classesOf(t).includes(cls)), `#${name} uses ${cls}`);
+      assert.ok(!inner.some((t) => classesOf(t).includes('ui-card')), `#${name} holds no card`);
+    } else if (name === 'menu') {
       // The main menu sits on the page's backdrop with no card: the wordmark, the entries, the preview, the hints.
       assert.ok(root.attrs['aria-label'], '#menu is named');
       for (const cls of ['ui-wordmark', 'ui-mode-list', 'ui-mode-entry', 'ui-scene-panel', 'ui-key-hints', 'ui-key-hint', 'ui-chip', 'ui-text']) {
@@ -850,7 +854,7 @@ test('bindSegmented with horizontal leaves Up and Down unhandled', () => {
 
 // Each button Esc triggers, with the hint beside it; the pause card's Main menu has none (Esc resumes there),
 // and a screen frame's Back carries its key hint inside it.
-const ESC_BACKS = ['board-choice-back', 'coming-soon-back', 'ready-back', 'settings-back', 'records-back', 'daily-back',
+const ESC_BACKS = ['coming-soon-back', 'ready-back', 'settings-back', 'records-back', 'daily-back',
   'rp-back', 'replay-message-back', 'r-menu', 'ctx-lost-menu'];
 const HINT = '<span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>';
 
@@ -865,7 +869,9 @@ test('an "Esc: Back" hint sits beside each Back that Esc triggers, and is no foc
   assert.equal(html.split(HINT).length - 1, ESC_BACKS.length, 'one hint per Back, and no other');
   const pmenu = html.slice(html.indexOf('</button>', html.indexOf('id="p-menu"')) + 9).trimStart();
   assert.ok(!pmenu.startsWith(HINT), 'none beside the pause card\'s Main menu, where Esc resumes');
-  assert.match(html, /id="c2d-choice-back"[^>]*>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/, 'the frame\'s Back holds its key hint');
+  for (const id of ['c2d-choice-back', 'board-choice-back']) {
+    assert.match(html, new RegExp(`id="${id}"[^>]*>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>`), `the frame's Back holds its key hint (#${id})`);
+  }
   assert.doesNotMatch(HINT, /tabindex|<button|<a /, 'the hint is plain text');
 });
 
@@ -909,13 +915,13 @@ test('in a browser, the "Esc: Back" hints meet the contrast contract', async (t)
       const stop = await page.evaluate(() => [...document.querySelectorAll('[data-esc-hint]')].some((e) => e.tabIndex >= 0));
       assert.equal(stop, false, 'no hint is a focus stop');
     };
-    // The 2D board choice's frame carries its key hint inside its Back, a kit key hint, and no text hint.
-    await page.click('#menu-entry-classic-2d');
-    assert.equal(await page.evaluate(() => document.querySelector('#c2d-choice-back .ui-key-hint__key')?.textContent), 'Esc');
-    assert.equal((await page.evaluate(measureContrast)).runs.filter((r) => r.text === 'Esc: Back').length, 0);
-    await page.keyboard.press('Escape');
-    await page.click('#menu-entry-3d');
-    await hints('3D board choice');
+    // Each board choice's frame carries its key hint inside its Back, a kit key hint, and no text hint.
+    for (const [entry, back] of [['classic-2d', 'c2d-choice-back'], ['3d', 'board-choice-back']]) {
+      await page.click(`#menu-entry-${entry}`);
+      assert.equal(await page.evaluate((id) => document.querySelector(`#${id} .ui-key-hint__key`)?.textContent, back), 'Esc');
+      assert.equal((await page.evaluate(measureContrast)).runs.filter((r) => r.text === 'Esc: Back').length, 0);
+      if (entry === 'classic-2d') await page.keyboard.press('Escape');
+    }
     await page.keyboard.press('Enter');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'ready');
     await hints('ready card');
@@ -1559,9 +1565,30 @@ test('in a browser, the menu, the pause card and the results layout meet the con
     // The menu screens sit on the scene with no hard-coded tint.
     assert.equal(await page.evaluate(() => getComputedStyle(document.getElementById('menu')).backgroundColor), 'rgba(0, 0, 0, 0)');
 
+    // The 3D board choice in each of its selections, readable, Learn 3D's option showing its focused state.
+    await page.click('#menu-entry-3d');
+    await check(page, '#board-choice', 'board-choice');
+    await page.keyboard.press('ArrowUp');
+    await page.keyboard.press('ArrowUp');
+    const learnOpt = await ring(page);
+    assert.equal(learnOpt.id, 'bc-learn');
+    assert.ok(learnOpt.selectable && focusShows(learnOpt), `Learn 3D shows its focused state (${learnOpt.style} ${learnOpt.transform})`);
+    await page.click('#bc-learn');
+    await check(page, '#board-choice', 'board-choice-learn');
+    await page.click('#board-choice [data-preset="custom"]');
+    await page.fill('#c-y', '2');
+    await page.fill('#c-m', '9999');
+    await check(page, '#board-choice', 'board-choice-custom');
+    await page.click('#board-choice [data-preset="code"]');
+    await page.fill('#bc-code', 'nonsense');
+    await check(page, '#board-choice', 'board-choice-code');
+    await page.click('#board-choice-back');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
+
     // menu → 3D board choice → ready → playing → pause, as before.
     await page.click('#menu-entry-3d');
     await page.click('#board-choice [data-preset="6,6,6,10"]');
+    await page.click('#bc-play');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'ready');
     await page.evaluate(() => globalThis.__ms.forcePlay());
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'playing');
@@ -1663,18 +1690,22 @@ const textOf = (html, t) => {
 };
 const MODE_ENTRIES = ['classic-2d', 'hexagon', 'triangle', 'surface', '3d', 'daily', 'records', 'settings', 'quit'];
 
-test('the gallery marks the shared layout\'s components; the main menu and the Classic 2D board choice are the screens built from them so far', () => {
+test('the gallery marks the shared layout\'s components; the main menu and both board choices are the screens built from them so far', () => {
   assert.ok(LAYOUT.length > 1000, 'dev/components.html holds the shared layout\'s components');
   const screens = INDEX.replace(/<!--[\s\S]*?-->/g, '');
   const menu = SCREENS.menu;
   const choice = screens.slice(screens.indexOf('<section id="c2d-choice"'), screens.indexOf('<section id="c2d"'));
-  const others = screens.replace(menu, '').replace(choice, '');
+  const choice3d = screens.slice(screens.indexOf('<section id="board-choice"'), screens.indexOf('<section id="coming-soon"'));
+  const others = screens.replace(menu, '').replace(choice, '').replace(choice3d, '');
   for (const cls of ['ui-wordmark', 'ui-mode-entry', 'ui-key-hint', 'ui-chip', 'ui-scene-panel']) {
     assert.match(menu, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the main menu uses ${cls}`);
   }
-  for (const cls of ['ui-backdrop', 'ui-wordmark', 'ui-frame', 'ui-option', 'ui-section-label', 'ui-divider', 'ui-key-hint', 'ui-chip', 'ui-stat--tile']) {
-    assert.match(choice, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the Classic 2D board choice uses ${cls}`);
+  for (const [name, html] of [['Classic 2D', choice], ['3D', choice3d]]) {
+    for (const cls of ['ui-backdrop', 'ui-wordmark', 'ui-frame', 'ui-option', 'ui-section-label', 'ui-divider', 'ui-key-hint', 'ui-chip', 'ui-stat--tile']) {
+      assert.match(html, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the ${name} board choice uses ${cls}`);
+    }
   }
+  assert.match(choice3d, /class="ui-option ui-option--learn"/, 'the 3D board choice uses ui-option--learn');
   for (const cls of ['ui-backdrop', 'ui-frame', 'ui-option', 'ui-section-label', 'ui-list-row', 'ui-divider', 'ui-tabs', 'ui-checkbox',
     'ui-table', 'ui-button--danger', 'ui-mode-entry', 'ui-scene-panel']) {
     assert.doesNotMatch(others, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `no other screen uses ${cls} yet`);

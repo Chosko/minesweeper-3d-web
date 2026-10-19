@@ -398,7 +398,7 @@ test('index.html: the wordmark, one mode list of the nine entries in their block
 
 test('the 3D board choice holds the presets and custom board, and a Back button', () => {
   assert.ok(BOARD.length > 500, 'index.html has the 3D board choice');
-  assert.match(BOARD, /class="overlay hidden"/);
+  assert.match(BOARD, /class="overlay ui-backdrop hidden"/);
   assert.equal([...BOARD.matchAll(/data-preset="\d/g)].length, 4, 'the four cube presets');
   assert.match(BOARD, /<form id="custom"/);
   assert.match(BOARD, /id="board-choice-back"/);
@@ -584,9 +584,10 @@ test('in a browser, the menu shows the nine entries with the selected one\'s pre
     assert.equal(await mode(), 'board-choice');
     assert.deepEqual(await shown(), ['board-choice']);
     assert.ok(await ms(() => document.activeElement?.matches('[data-preset]')), 'a preset takes the focus');
-    assert.ok(await ms(() => document.getElementById('custom').getBoundingClientRect().height > 0), 'the custom board shows');
+    assert.ok(await ms(() => document.querySelector('#board-choice [data-preset="custom"]').getBoundingClientRect().height > 0), 'Custom is offered');
     assert.ok(await backdrop());
     assert.equal(await ms(() => globalThis.__ms.renderer.target), null, 'a screen without a panel: the scene full-window');
+    assert.equal(await ms(() => document.body.classList.contains('scene-off')), true, 'its own backdrop: no 3D scene shows or draws');
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'menu');
     assert.equal(await active(), 'menu-entry-3d');
@@ -598,6 +599,7 @@ test('in a browser, the menu shows the nine entries with the selected one\'s pre
     // A 3D game started from its board choice records the mode once the first click starts it.
     await page.click('#menu-entry-3d');
     await page.click('#board-choice [data-preset="6,6,6,10"]');
+    await page.click('#bc-play');
     assert.equal(await mode(), 'ready');
     await ms(() => { globalThis.__ms.forcePlay(); globalThis.__ms.aimAt(0); globalThis.__ms.click('left'); });
     await page.waitForFunction(() => localStorage.getItem('ms3d:doc:shell.lastMode') !== null);
@@ -1114,7 +1116,11 @@ test('in a browser, a controller alone walks the menu, the 3D board choice and t
       assert.equal(await mode(), 'board-choice', 'moving changes no screen');
 
       await press(PAD_BTN.A);
-      assert.equal(await mode(), 'ready', 'A confirms the focused preset');
+      assert.equal(await mode(), 'board-choice', 'A chooses the focused preset');
+      assert.equal(await page.evaluate(() => document.querySelector('#board-choice [aria-pressed="true"]')?.dataset.preset), chosen);
+      await page.evaluate(() => document.getElementById('bc-play').focus());
+      await press(PAD_BTN.A);
+      assert.equal(await mode(), 'ready', 'A on Play plays the chosen preset');
       const [X, Y, Z, mines] = chosen.split(',').map(Number);
       assert.deepEqual(await page.evaluate(() => globalThis.__ms.state.settings), { X, Y, Z, mines }, 'the confirmed preset is the board');
 

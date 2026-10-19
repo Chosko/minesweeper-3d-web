@@ -1,6 +1,6 @@
-// The returning player's surface: the preset detail line on the 3D board choice and the board's bests
-// on the Classic 2D one, over a records model built here; the typical 3BV table; that the main menu keeps no Play again and no session strip; and
-// a browser run of them.
+// The returning player's surface: the board's bests on both board choices, over a records model built
+// here; the typical 3BV table; that the main menu keeps no Play again and no session strip and the
+// board options no detail line; and a browser run of them.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -12,7 +12,7 @@ import { createRecordsModel } from '../js/records/model.js';
 import { TYPICAL_BBBV, typicalBbbv, typicalBbbvKey } from '../js/records/typical-bbbv.js';
 import * as RETURNING from '../js/shell/returning.js';
 
-const { densityText, presetDetail, presetDetails, boardBests, NO_BEST } = RETURNING;
+const { boardBests, NO_BEST } = RETURNING;
 import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -75,41 +75,7 @@ test('the typical 3BV table is measured: its head comment names the script, whic
   assert.match(script, /noGuess: true/, 'no-guess on, the board choices\' default');
 });
 
-// ---------------------------------------------------------------- the preset detail line
-
-test('density is mines ÷ cells as a whole percent, with one decimal below 10 %', () => {
-  assert.equal(densityText(square(9, 9, 10)), '12 % mines');
-  assert.equal(densityText(square(16, 16, 40)), '16 % mines');
-  assert.equal(densityText(EXPERT), '21 % mines');
-  assert.equal(densityText(box(6, 6, 6, 10)), '4.6 % mines');
-  assert.equal(densityText(CUBE_INT), '7.8 % mines');
-  assert.equal(densityText(box(12, 12, 8, 130)), '11 % mines');
-  assert.equal(densityText(square(10, 10, 5)), '5.0 % mines');
-  assert.equal(densityText(square(50, 50, 249)), '10 % mines', '9.96 % rounds up to a whole 10 %');
-  assert.equal(densityText(square(10, 10, 10)), '10 % mines');
-});
-
-test('the preset detail line: density, typical 3BV, then the best and streak, or a dash', () => {
-  const bbbv = typicalBbbv(CUBE_INT);
-  assert.equal(presetDetail(CUBE_INT, model([])), `7.8 % mines · ~${bbbv} 3BV · —`, 'no won game: a dash');
-  assert.equal(presetDetail(CUBE_INT, model([{ board: CUBE_INT, outcome: 'lost' }])), `7.8 % mines · ~${bbbv} 3BV · —`, 'a lost game sets no best');
-  const won = model([{ board: CUBE_INT, ms: 48213 }, { board: CUBE_INT, ms: 50000 }, { board: CUBE_INT, ms: 49000 }]);
-  assert.equal(presetDetail(CUBE_INT, won), `7.8 % mines · ~${bbbv} 3BV · Best 48.213 s · 3 in a row`);
-  const broken = model([{ board: CUBE_INT, ms: 48213 }, { board: CUBE_INT, outcome: 'abandoned' }]);
-  assert.equal(presetDetail(CUBE_INT, broken), `7.8 % mines · ~${bbbv} 3BV · Best 48.213 s`, 'no streak: the best alone (an abandoned game ends it)');
-  assert.equal(presetDetail(square(20, 12, 50), model([])), '21 % mines · —', 'no typical 3BV: that part is left out');
-});
-
-test('a board and its no-guess twin are read separately', () => {
-  const m = model([{ board: EXPERT_NG, ms: 13343 }, { board: EXPERT_NG, ms: 14000 }, { board: EXPERT, ms: 99999, outcome: 'lost' }]);
-  const bbbv = typicalBbbv(EXPERT);
-  assert.equal(presetDetail(EXPERT_NG, m), `21 % mines · ~${bbbv} 3BV · Best 13.343 s · 2 in a row`);
-  assert.equal(presetDetail(EXPERT, m), `21 % mines · ~${bbbv} 3BV · —`);
-  const details = presetDetails({ expert: { mode: 'classic-2d', grid: 'square', width: 30, height: 16, mines: 99 } }, m);
-  assert.deepEqual(details, { expert: { guess: presetDetail(EXPERT, m), noGuess: presetDetail(EXPERT_NG, m) } }, 'one line per switch state, per item');
-});
-
-// ---------------------------------------------------------------- the Classic 2D board's bests
+// ---------------------------------------------------------------- the board's bests
 
 test('the board\'s bests: time, 3BV/s and efficiency in the results formats, each with its date, or a dash and no best yet', () => {
   assert.equal(NO_BEST, 'no best yet');
@@ -125,12 +91,15 @@ test('the board\'s bests: time, 3BV/s and efficiency in the results formats, eac
     ['time', 'Time', '40.000 s', '9 Oct 2026'], ['bbbvPerSecond', '3BV/s', '0.50', '9 Oct 2026'], ['efficiency', 'Efficiency', '100.0%', '2 Oct 2026'],
   ], 'each best with the date it was set');
   assert.deepEqual(rows(boardBests(EXPERT_NG, m)), none, 'the no-guess twin is another board');
+  const cube = model([{ board: CUBE_INT_NG, ms: 71902, endedAt: new Date(2026, 9, 11, 12) }]);
+  assert.deepEqual(rows(boardBests(CUBE_INT_NG, cube)).map((r) => r.slice(2)), [['71.902 s', '11 Oct 2026'], ['0.28', '11 Oct 2026'], ['100.0%', '11 Oct 2026']], 'a 3D board alike');
+  assert.deepEqual(rows(boardBests(CUBE_INT, cube)), none);
 });
 
 // ---------------------------------------------------------------- no Play again, no session strip
 
-test('the main menu keeps no Play again and no session strip: returning.js has no menu surfaces and the shell none', () => {
-  assert.deepEqual(Object.keys(RETURNING).sort(), ['CHOICE_ITEMS', 'NO_BEST', 'boardBests', 'densityText', 'presetDetail', 'presetDetails']);
+test('the main menu keeps no Play again and no session strip, nor a board option a detail line: returning.js has the bests alone', () => {
+  assert.deepEqual(Object.keys(RETURNING).sort(), ['NO_BEST', 'boardBests']);
   const index = read('index.html');
   const menu = index.slice(index.indexOf('<section id="menu"'), index.indexOf('<!-- 3D board choice -->'));
   assert.doesNotMatch(menu, /menu-again|menu-strip|Play again/);
@@ -145,7 +114,7 @@ test('the helpers are DOM-free and read the records only through the queries the
   assert.doesNotMatch(src, /records\/store\.js|createRecordsStore/);
   assert.match(src, /import \{[^}]*\bformatTime\b[^}]*\} from '\.\.\/results\/view\.js'/, 'the results time format');
   for (const binder of ['js/mode3d/board-choice.js', 'js/classic2d/board-choice.js']) {
-    assert.doesNotMatch(strip(read(binder)), /records\/|returning\.js/, `${binder} receives its detail text, never the store`);
+    assert.doesNotMatch(strip(read(binder)), /records\/|returning\.js/, `${binder} receives its bests as text, never the store`);
   }
 });
 
@@ -168,27 +137,29 @@ test('each no-guess switch says once that no-guess boards keep separate records'
       const label = raw.replace(/&middot;/g, '·');
       const said = [label, help ?? ''].join(' ').match(/separate records/gi)?.length ?? 0;
       assert.equal(said, 1, `#${id} says it once`);
-      if (!help) assert.equal(label, 'No-guess board · separate records', `#${id} has no helper line: its label says it`);
+      assert.equal(label, 'No-guess', `#${id}: its label names it, its helper line says the rest`);
     }
   }
   assert.equal(switches, 3, 'the 2D switch and both 3D switches');
 });
 
-test('the shell hands the 3D board choice its detail lines and the Classic 2D one its bests, redrawn on the records\' change notification', () => {
+test('the shell hands both board choices their bests, redrawn on the records\' change notification, and no detail lines', () => {
   const table = MAIN.slice(MAIN.indexOf('const SHELL = createRouter('), MAIN.indexOf('// end of screen table'));
-  assert.match(table, /'board-choice': \{[^\n]*CHOICE_3D\.show\([^\n]*details: /, 'the 3D board choice is handed its detail lines');
+  assert.match(table, /'board-choice': \{[^\n]*showChoice3D\(/);
   assert.match(table, /'classic-2d-choice': \{[^\n]*showChoice2D\(/);
-  assert.doesNotMatch(MAIN, /presetDetails\(CHOICE_ITEMS\['classic-2d'\]/, 'no detail lines on the Classic 2D options');
+  assert.doesNotMatch(MAIN, /presetDetails|CHOICE_ITEMS|details: /, 'no detail lines on the options');
   assert.match(MAIN, /bests: \(identity\) => boardBests\(identity, RECORDS\)/, 'read through the store\'s queries');
-  assert.match(MAIN, /RECORDS\.onChange\(\(\) => CHOICE_2D\.refresh\(\)\)/, 'and its change notification');
+  assert.match(MAIN, /bests: \(board\) => boardBests\(identity3D\(board\), RECORDS\)/);
+  assert.match(MAIN, /RECORDS\.onChange\(\(\) => \{ CHOICE_2D\.refresh\(\); CHOICE_3D\.refresh\(\); \}\)/, 'and its change notification');
 });
 
-test('the catalogue documents the preset detail lines, and no Play again or session strip on the main menu', () => {
+test('the catalogue documents both board choices\' bests, and no Play again or session strip on the main menu', () => {
   const head = read('css/components.css').match(/^\/\*([\s\S]*?)\*\//)[1];
   const menu = head.slice(head.indexOf('Main menu (index.html #menu)'), head.indexOf('3D board choice (index.html #board-choice)'));
   assert.doesNotMatch(menu, /Play again|session strip/);
-  assert.match(head, /3D board choice \(index\.html #board-choice\)[\s\S]*?detail line[\s\S]*?Default focus/);
   assert.match(head, /Classic 2D board choice \(index\.html #c2d-choice\)[\s\S]*?bests[\s\S]*?Default focus/);
+  const three = head.slice(head.indexOf('3D board choice (index.html #board-choice)'));
+  assert.doesNotMatch(three.slice(0, three.indexOf('Default focus')), /detail line|typical 3BV|streak/, 'no detail line on a 3D option');
 });
 
 // ---------------------------------------------------------------- browser
@@ -202,7 +173,7 @@ function recordWin(page, { board, ms }) {
   }, { board, ms });
 }
 
-test('in a browser, the detail lines and the bests follow the records and the switch, and the menu opens on the last mode, whose board choice opens on the last board', async (t) => {
+test('in a browser, both board choices\' bests follow the records and the switch, and the menu opens on the last mode, whose board choice opens on the last board', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -216,8 +187,6 @@ test('in a browser, the detail lines and the bests follow the records and the sw
     const mode = () => ms(() => globalThis.__ms.state.mode);
     const shown = (sel) => ms((s) => { const e = document.querySelector(s); return !!e && !e.classList.contains('hidden') && e.getBoundingClientRect().width > 0; }, sel);
     const text = (sel) => ms((s) => document.querySelector(s).textContent, sel);
-    const detail = (item) => ms((s) => document.querySelector(`${s} [data-detail]`).textContent, item);
-    const c3d = typicalBbbv(CUBE_INT);
 
     // The 2D board choice: the chosen board's bests, no detail line on an option.
     const best = () => ms(() => document.querySelector('#c2d-best-time .ui-stat__value').textContent);
@@ -236,17 +205,18 @@ test('in a browser, the detail lines and the bests follow the records and the sw
     await page.click('#c2d-noguess');
     assert.equal(await best(), '61.234 s');
 
-    // The 3D board choice too, following its presets' switch.
+    // The 3D board choice too, following its presets' switch, with no detail line on an option.
+    const best3d = () => ms(() => document.querySelector('#bc-best-time .ui-stat__value').textContent);
     await page.click('#c2d-choice-back');
     await page.click('#menu-entry-3d');
-    assert.equal(await detail('#board-choice [data-preset="8,8,8,40"]'), `7.8 % mines · ~${c3d} 3BV · —`);
+    assert.equal(await ms(() => document.querySelectorAll('#board-choice [data-detail]').length), 0);
+    await page.click('#board-choice [data-preset="8,8,8,40"]');
+    assert.equal(await best3d(), '—');
     await recordWin(page, { board: { ...CUBE_INT_NG }, ms: 45000 });
-    await page.click('#board-choice-back');
-    await page.click('#menu-entry-3d');
-    assert.equal(await detail('#board-choice [data-preset="8,8,8,40"]'), `7.8 % mines · ~${c3d} 3BV · Best 45.000 s · 1 in a row`);
+    assert.equal(await best3d(), '45.000 s');
     await page.click('#bc-noguess');
-    assert.equal(await detail('#board-choice [data-preset="8,8,8,40"]'), `7.8 % mines · ~${c3d} 3BV · —`);
-    assert.equal(await text('#c-noguess + .ui-toggle__label'), 'No-guess board · separate records');
+    assert.equal(await best3d(), '—', 'the guessing twin has no game');
+    assert.equal(await text('#c-noguess + .ui-toggle__label'), 'No-guess');
     await page.click('#board-choice-back');
 
     // Play an Expert no-guess game to its first click, then leave it: the last board played.

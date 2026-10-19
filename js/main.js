@@ -19,7 +19,7 @@ import { createGenerationClient } from './generation/client.js';
 import { createMenu, createLastMode, createLastBoardChoice, openingEntry, menuPreview, buildLabel, DEMO_BOARD_3D, UNAVAILABLE_REASONS, WEB_MISSING } from './shell/menu.js';
 import { VERSION } from './version.js';
 import { bindMenuPreview, demoBoard2D, dailyBoard2D } from './shell/menu-preview.js';
-import { CHOICE_ITEMS, presetDetails, boardBests } from './shell/returning.js';
+import { boardBests } from './shell/returning.js';
 import { aimReadout } from './readability.js';
 import { createFirstUse, stripShown, hidCube, aimHintCell, createDwell, AIM_DWELL_MS } from './shell/first-use.js';
 import { createActiveDevice } from './settings/bindings.js';
@@ -45,7 +45,7 @@ import { copyBoardCode } from './ui/components.js';
 import { DAILY_SCREEN, dailyRows, createDailyBoards, bindDailyScreen, countedAttempt, dailyPreview } from './shell/daily.js';
 import { resolveCode, gameStart, freeStart, createChallengeLinks } from './shell/challenge.js';
 import { dailyGame, dateText } from './records/board-code.js';
-import { boardLabel, boardKey } from './records/board.js';
+import { boardLabel, boardKey, createBoardIdentity, MODE_3D } from './records/board.js';
 import { createRecordsScreen, createRecordsView, TRIGGER_MODES } from './records/screen.js';
 import { createRecordsViewPrefs } from './records/view-prefs.js';
 import { createRecordsExport, bindExportActions } from './records/export.js';
@@ -478,7 +478,7 @@ const SHELL = createRouter({
   screens: {
     menu: { defaultFocus: () => `#menu-entry-${menuFocusEntry()}`, show: () => { MODES.leave(); showMenuBackdrop(); ui.showMenu(); showPreview(); DAILY_BOARDS_HELD.prepare(RECORDS); } },
     [DAILY_SCREEN]: { defaultFocus: () => DAILY_VIEW.defaultFocus(), show: () => { MODES.leave(); showMenuBackdrop(); ui.showDaily(); showDaily(); } },
-    'board-choice': { defaultFocus: '[data-preset][data-last]', show: () => { MODES.leave(); GEN_3D.warm(); showMenuBackdrop(); ui.showBoardChoice(); CHOICE_3D.show(LAST_CHOICE_3D.current, { played: LAST_CHOICE_3D.played, details: presetDetails(CHOICE_ITEMS['3d'], RECORDS) }); } },
+    'board-choice': { defaultFocus: '[data-preset][aria-pressed="true"]', show: (d = {}, from) => { MODES.leave(); GEN_3D.warm(); showMenuBackdrop(); ui.showBoardChoice(); showChoice3D(from); } },
     'coming-soon': { defaultFocus: '#coming-soon-back', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showComingSoon(d.title ?? 'This screen'); } },
     records: { defaultFocus: '#records-picker [aria-checked="true"]', show: (d = {}) => { MODES.leave(); showMenuBackdrop(); ui.showRecords(); RECORDS_PAGE.show({ mode: d.mode, boardKey: d.boardKey }); }, hide: () => RECORDS_PAGE.hide() },
     settings: { defaultFocus: '#set-lookSensitivity', show: () => { MODES.leave(); showMenuBackdrop(); ui.showSettings(); SETTINGS_EXPORT.show(RECORDS_EXPORT.hasGames()); } },
@@ -536,12 +536,27 @@ const FLOW_3D = {
 const mode3d = MODES.register('3d', (report) => create3DMode(FLOW_3D, report));
 // The 3D board choice; the last 3D choice is a platform-storage document kept by the shell.
 const LAST_CHOICE_3D = createLastBoardChoice({ storage, doc: LAST_CHOICE_DOC_3D, version: LAST_CHOICE_VERSION_3D, normalise: normaliseChoice3D, fallback: DEFAULT_CHOICE_3D });
+/** The records identity of a 3D board as boardOf gives it. */
+const identity3D = ({ X, Y, Z, mines, noGuess }) => createBoardIdentity({ mode: MODE_3D, width: X, height: Y, depth: Z, mines, noGuess });
+/** The board choice on the last 3D choice; back from the Records screen it opened, what the screen held then. */
+let held3D = null;
+function showChoice3D(from) {
+  const held = from === 'records' ? held3D : null;
+  held3D = null;
+  CHOICE_3D.show(LAST_CHOICE_3D.current, { played: LAST_CHOICE_3D.played, held });
+}
+// The bests are read through the records store's queries, and redrawn on its change notification.
 const CHOICE_3D = bindBoardChoice3D({
   root: document.getElementById('board-choice'),
   onStart: (choice) => { sfx.unlock(); LAST_CHOICE_3D.save(choice).catch(() => {}); MODES.start('3d', boardOf(choice)); }, // storage never stops a game
   onLearn: () => startLearn(),
   onBack: () => shellBack('pointer'),
+  onRecords: (board) => {
+    held3D = CHOICE_3D.state();
+    SHELL.go('records', { data: { mode: MODE_3D, boardKey: board ? boardKey(identity3D(board)) : null } });
+  },
   code: { resolve: (text) => checkCode(text, '3d'), onPlay: (text) => playCode(text, '3d') },
+  bests: (board) => boardBests(identity3D(board), RECORDS),
 });
 // ---------- Learn 3D ----------
 // The guided board (js/mode3d/learn.js): a fixed board with a forced, marked start cell, played
@@ -790,7 +805,7 @@ const RECORDS = createRecordsStore({
 });
 const recordsLoaded = RECORDS.load();
 RECORDS.attach(PAUSE);
-RECORDS.onChange(() => CHOICE_2D.refresh());
+RECORDS.onChange(() => { CHOICE_2D.refresh(); CHOICE_3D.refresh(); });
 
 // ---------- first-use hints ----------
 // What a new player has been taught, in the platform-storage document shell.firstUse, seeded from
@@ -1542,9 +1557,9 @@ function syncScenePanel() {
   document.body.classList.toggle('scene-off', sceneOff());
   if (renderer.setTarget(box ? { x: box.left, y: box.top, width: box.width, height: box.height } : null)) needRender = true;
 }
-/** The main menu shows a preview other than its 3D one, or the Classic 2D board choice its own backdrop: no 3D scene shows or draws. */
+/** The main menu shows a preview other than its 3D one, or a board choice its own backdrop: no 3D scene shows or draws. */
 function sceneOff() {
-  return (S.mode === 'menu' && !menuSceneShown()) || S.mode === 'classic-2d-choice';
+  return (S.mode === 'menu' && !menuSceneShown()) || S.mode === 'classic-2d-choice' || S.mode === 'board-choice';
 }
 if (WEBGL2) window.addEventListener('resize', () => syncScenePanel()); // the panel may move with the window
 if (WEBGL2) window.addEventListener('resize', () => { renderer.resize(); needRender = true; });

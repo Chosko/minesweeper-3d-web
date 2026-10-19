@@ -198,6 +198,7 @@ test('in a browser, Cube Intro picked from the board choice starts at the ordina
     const ms = (fn, arg) => page.evaluate(fn, arg);
     await page.click('#menu-entry-3d');
     await page.click('#board-choice [data-preset="6,6,6,10"]');
+    await page.click('#bc-play');
     await page.waitForFunction(() => globalThis.__ms.modes.active === '3d' && globalThis.__ms.game);
     assert.deepEqual(await ms(() => globalThis.__ms.state.settings), { X: 6, Y: 6, Z: 6, mines: 10 });
     assert.equal(await ms(() => globalThis.__ms.state.spacing), SPACING_START, 'the ordinary start spacing');

@@ -570,7 +570,7 @@ Feature: shared-screen-layout
 
 ## 167. 3D board choice screen in the shared layout
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, js/mode3d/board-choice.js, js/shell/returning.js, js/main.js, tests/mode3d-board-choice.test.mjs, tests/shell-challenge.test.mjs, tests/shell-returning.test.mjs, tests/components.test.mjs
 Preconditions: 166, 212

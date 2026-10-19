@@ -277,8 +277,9 @@ test('the learn module is DOM-free and documents itself', () => {
 test('index.html holds the Learn 3D entry first on the 3D board choice, the ready card\'s line and the Learn 3D end card', () => {
   const board = INDEX.slice(INDEX.indexOf('<section id="board-choice"'), INDEX.indexOf('<!-- Coming soon -->'));
   const learn = board.indexOf('data-learn');
-  assert.ok(learn > 0 && learn < board.indexOf('data-preset='), 'above the presets');
-  assert.match(board, /data-learn[^>]*>[\s\S]*?Learn 3D[\s\S]*?A guided 4 &times; 4 &times; 3 box &middot; no timer, no records/);
+  assert.ok(learn > 0 && learn < board.indexOf('data-preset="6'), 'above the presets');
+  assert.match(board, /data-learn>[\s\S]*?Learn 3D[\s\S]*?A guided 4 &times; 4 &times; 3 box</);
+  assert.match(board, /<div id="bc-learn-panel"[^>]*>[\s\S]*?keeps no records[\s\S]*?How 3D works/, 'what it is, on the right when chosen');
   const ready = INDEX.slice(INDEX.indexOf('<section id="ready"'), INDEX.indexOf('<!-- Controls modal'));
   assert.match(ready, /id="ready-learn"[^>]*hidden[\s\S]*New to 3D\? Learn 3D walks you through a small box\.[\s\S]*id="ready-learn-btn"[^>]*>Learn 3D</);
   assert.ok(ready.indexOf('id="ready-learn"') > ready.indexOf('</button>'), 'outside the card\'s own button');
@@ -351,9 +352,11 @@ test('in a browser, Learn 3D: the entry, the marked cube, the four prompts, the 
 
     await page.evaluate(() => document.querySelector('[data-entry="3d"]')?.click());
     await page.waitForFunction(() => globalThis.__ms.state.mode === 'board-choice');
-    const first = await ms(() => document.querySelector('#board-choice .ui-menu__item').hasAttribute('data-learn'));
+    const first = await ms(() => document.querySelector('#board-choice .ui-option').hasAttribute('data-learn'));
     assert.ok(first, 'Learn 3D leads the board choice');
     await ms(() => document.querySelector('#board-choice [data-learn]').click());
+    assert.equal(await mode(), 'board-choice', 'a click chooses Learn 3D');
+    await ms(() => document.getElementById('bc-play').click());
     await page.waitForFunction(() => globalThis.__ms.state.mode === 'ready');
     assert.equal(await shown('ready-learn'), false, 'no Learn 3D line on its own ready card');
     assert.equal(await shown('ready-rules'), false, 'the "How 3D works" block does not show');

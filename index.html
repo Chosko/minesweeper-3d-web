@@ -198,53 +198,90 @@
   </section>
 
   <!-- 3D board choice -->
-  <section id="board-choice" class="overlay hidden" aria-label="3D board choice">
-    <section class="ui-card ui-screen ui-screen--wide" aria-labelledby="board-choice-title">
-      <h2 class="ui-card__title" id="board-choice-title">3D</h2>
-      <div class="ui-menu" role="group" aria-label="Learn 3D">
-        <button type="button" class="ui-menu__item" id="bc-learn" data-learn><span class="ui-menu__label">Learn 3D</span><span class="ui-menu__detail">A guided 4 &times; 4 &times; 3 box &middot; no timer, no records</span></button>
-      </div>
-      <div class="ui-menu" role="group" aria-label="Presets">
-        <button type="button" class="ui-menu__item" data-preset="6,6,6,10"><span class="ui-menu__label">Cube Intro</span><span class="ui-menu__detail">6 &times; 6 &times; 6 &middot; 10 mines</span></button>
-        <button type="button" class="ui-menu__item" data-preset="6,6,6,20"><span class="ui-menu__label">Cube Beginner</span><span class="ui-menu__detail">6 &times; 6 &times; 6 &middot; 20 mines</span></button>
-        <button type="button" class="ui-menu__item" data-preset="8,8,8,40"><span class="ui-menu__label">Cube Intermediate</span><span class="ui-menu__detail">8 &times; 8 &times; 8 &middot; 40 mines</span></button>
-        <button type="button" class="ui-menu__item" data-preset="10,10,10,100"><span class="ui-menu__label">Cube Expert</span><span class="ui-menu__detail">10 &times; 10 &times; 10 &middot; 100 mines</span></button>
-      </div>
-      <label class="ui-toggle"><input type="checkbox" role="switch" id="bc-noguess" class="ui-toggle__input" data-noguess="presets"><span class="ui-toggle__label">No-guess board</span></label>
-      <p id="bc-noguess-help" class="ui-text ui-text--muted">Solvable by logic alone, no 50/50 guesses. Separate records.</p>
-
-      <form id="custom" class="ui-panel" aria-labelledby="custom-title" novalidate>
-        <h2 class="ui-heading" id="custom-title">Custom</h2>
-        <div class="ui-row">
-          <label class="ui-field"><span class="ui-field__label">Width</span><input id="c-x" data-field="X" class="ui-field__input" type="number" min="1" max="100" step="1" inputmode="numeric" value="10"></label>
-          <label class="ui-field"><span class="ui-field__label">Height</span><input id="c-y" data-field="Y" class="ui-field__input" type="number" min="1" max="100" step="1" inputmode="numeric" value="10"></label>
-          <label class="ui-field"><span class="ui-field__label">Depth</span><input id="c-z" data-field="Z" class="ui-field__input" type="number" min="1" max="100" step="1" inputmode="numeric" value="10"></label>
-          <label class="ui-field"><span class="ui-field__label">Mines</span><input id="c-m" data-field="mines" class="ui-field__input" type="number" min="1" max="999" step="1" inputmode="numeric" value="25"></label>
-          <div class="ui-actions ui-actions--row">
-            <button type="button" id="c-random" class="ui-button ui-button--secondary" data-random>Random</button>
-            <button type="submit" id="c-start" class="ui-button ui-button--primary" data-preset="custom">Start</button>
+  <section id="board-choice" class="overlay ui-backdrop hidden" aria-label="3D board choice">
+    <div id="board-choice-top"><h1 class="ui-wordmark" id="board-choice-wordmark" aria-label="Minesweeper 3D"><span class="ui-wordmark__word" aria-hidden="true">Mine</span><span class="ui-wordmark__word" aria-hidden="true">sweeper</span><span class="ui-wordmark__word" aria-hidden="true">3D</span></h1></div>
+    <section class="ui-frame" id="board-choice-frame" aria-labelledby="board-choice-title">
+      <div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"></div>
+      <header class="ui-frame__head">
+        <div class="ui-frame__start"><button type="button" id="board-choice-back" class="ui-button ui-button--secondary ui-button--sm" data-back>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button></div>
+        <h2 class="ui-frame__title" id="board-choice-title">3D</h2>
+        <div class="ui-frame__end"></div>
+      </header>
+      <div class="ui-frame__body" id="board-choice-body">
+        <div class="ui-column" id="board-choice-options">
+          <div class="ui-section-label"><h3 class="ui-section-label__text" id="bc-board-label">Board</h3></div>
+          <div class="ui-options" role="group" aria-labelledby="bc-board-label">
+            <button type="button" class="ui-option ui-option--learn" aria-pressed="false" data-preset="learn" id="bc-learn" data-learn><span class="ui-option__badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 12l9-5M12 12v10M12 12L3 7"/></svg></span><span class="ui-option__name">Learn 3D</span><span class="ui-option__meta">A guided 4 &times; 4 &times; 3 box</span><span class="ui-option__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></button>
+            <button type="button" class="ui-option" aria-pressed="false" data-preset="6,6,6,10"><span class="ui-option__name">Cube Intro</span><span class="ui-chip hidden" data-last>Last played</span><span class="ui-option__meta"><span class="ui-option__size">6 &times; 6 &times; 6 &middot; 10 mines</span> &middot; <span class="ui-option__density">4.6 % mines</span></span><span class="ui-option__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></button>
+            <button type="button" class="ui-option" aria-pressed="false" data-preset="6,6,6,20"><span class="ui-option__name">Cube Beginner</span><span class="ui-chip hidden" data-last>Last played</span><span class="ui-option__meta"><span class="ui-option__size">6 &times; 6 &times; 6 &middot; 20 mines</span> &middot; <span class="ui-option__density">9.3 % mines</span></span><span class="ui-option__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></button>
+            <button type="button" class="ui-option" aria-pressed="false" data-preset="8,8,8,40"><span class="ui-option__name">Cube Intermediate</span><span class="ui-chip hidden" data-last>Last played</span><span class="ui-option__meta"><span class="ui-option__size">8 &times; 8 &times; 8 &middot; 40 mines</span> &middot; <span class="ui-option__density">7.8 % mines</span></span><span class="ui-option__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></button>
+            <button type="button" class="ui-option" aria-pressed="false" data-preset="10,10,10,100"><span class="ui-option__name">Cube Expert</span><span class="ui-chip hidden" data-last>Last played</span><span class="ui-option__meta"><span class="ui-option__size">10 &times; 10 &times; 10 &middot; 100 mines</span> &middot; <span class="ui-option__density">10.0 % mines</span></span><span class="ui-option__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></button>
+            <button type="button" class="ui-option" aria-pressed="false" data-preset="custom"><span class="ui-option__name">Custom</span><span class="ui-chip hidden" data-last>Last played</span><span class="ui-option__meta" data-custom-meta>Each side 1&ndash;100</span><span class="ui-option__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></button>
+          </div>
+          <hr class="ui-divider">
+          <div class="ui-options" role="group" aria-label="Board code">
+            <button type="button" class="ui-option" aria-pressed="false" data-preset="code" id="bc-code-option"><span class="ui-option__name">Insert Board Code</span><span class="ui-option__meta">Play the exact board a code describes</span><span class="ui-option__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></button>
           </div>
         </div>
-        <p id="c-info" class="ui-text ui-text--muted" data-info>1,000 cells &middot; up to 999 mines</p>
-        <p id="c-noguess-reason" class="ui-text ui-text--muted hidden" data-noguess-reason></p>
-        <label class="ui-toggle"><input type="checkbox" role="switch" id="c-noguess" class="ui-toggle__input" data-noguess="custom"><span class="ui-toggle__label">No-guess board &middot; separate records</span></label>
-        <p id="c-density-hint" class="ui-text ui-text--muted hidden" data-density-hint></p>
-      </form>
-      <div class="ui-panel" role="group" aria-labelledby="bc-code-title">
-        <h2 class="ui-heading" id="bc-code-title">Board code</h2>
-        <div class="ui-row">
-          <label class="ui-field"><span class="ui-field__label">Code</span><input id="bc-code" data-code-field class="ui-field__input" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
-          <div class="ui-actions ui-actions--row">
-            <button type="button" id="bc-code-play" class="ui-button ui-button--secondary" data-code-play disabled>Play this board</button>
+        <div class="ui-divider ui-divider--vertical" role="separator" aria-orientation="vertical"></div>
+        <div class="ui-column" id="board-choice-detail">
+          <div id="bc-learn-panel" class="hidden" data-learn-panel>
+            <div class="ui-section-label"><h3 class="ui-section-label__text">Learn 3D</h3><span class="ui-section-label__aside">keeps no records</span></div>
+            <div class="ui-panel" role="group" aria-labelledby="bc-rules-title">
+              <div class="ui-section-label"><h4 class="ui-section-label__text" id="bc-rules-title">How 3D works</h4></div>
+              <p class="ui-text">A number counts the mines among the 26 cubes around it.</p>
+              <p class="ui-text">Empty and solved cubes hide themselves; hold Ctrl to show them.</p>
+              <p class="ui-text">The first click is always safe.</p>
+            </div>
+            <p class="ui-text ui-text--muted">Four short prompts walk you through Shift, Ctrl, flagging and chording on a small 4 &times; 4 &times; 3 box. No timer; a win offers Cube Intro.</p>
+          </div>
+          <div id="bc-settings" data-settings>
+            <div class="ui-section-label"><h3 class="ui-section-label__text">Board settings</h3></div>
+            <div id="bc-preset-settings" data-preset-settings>
+              <label class="ui-toggle"><input type="checkbox" role="switch" id="bc-noguess" class="ui-toggle__input" data-noguess="presets"><span class="ui-toggle__label">No-guess</span></label>
+              <p id="bc-noguess-help" class="ui-text ui-text--muted">Solvable by logic alone, no 50/50 guesses. Separate records.</p>
+            </div>
+            <div id="bc-custom-settings" class="hidden" data-custom-settings>
+              <p id="c-noguess-reason" class="ui-text ui-text--warning hidden" data-noguess-reason></p>
+              <label class="ui-toggle"><input type="checkbox" role="switch" id="c-noguess" class="ui-toggle__input" data-noguess="custom"><span class="ui-toggle__label">No-guess</span></label>
+              <p id="c-noguess-help" class="ui-text ui-text--muted">Keeps separate records.</p>
+              <p id="c-density-hint" class="ui-text ui-text--muted hidden" data-density-hint></p>
+            </div>
+          </div>
+          <form id="custom" class="ui-panel hidden" aria-label="Custom board" novalidate>
+            <div class="ui-row">
+              <label class="ui-field"><span class="ui-field__label">Width</span><input id="c-x" data-field="X" class="ui-field__input" type="number" min="1" max="100" step="1" inputmode="numeric" value="10"></label>
+              <label class="ui-field"><span class="ui-field__label">Height</span><input id="c-y" data-field="Y" class="ui-field__input" type="number" min="1" max="100" step="1" inputmode="numeric" value="10"></label>
+              <label class="ui-field"><span class="ui-field__label">Depth</span><input id="c-z" data-field="Z" class="ui-field__input" type="number" min="1" max="100" step="1" inputmode="numeric" value="10"></label>
+              <label class="ui-field"><span class="ui-field__label">Mines</span><input id="c-m" data-field="mines" class="ui-field__input" type="number" min="1" max="999" step="1" inputmode="numeric" value="25"></label>
+            </div>
+            <p id="c-info" class="ui-text ui-text--muted" data-info>1,000 cells &middot; up to 999 mines</p>
+            <div class="ui-actions ui-actions--row"><button type="button" id="c-random" class="ui-button ui-button--secondary ui-button--sm" data-random>Random</button></div>
+            <p id="c-refusal" class="ui-text ui-text--warning hidden" data-refusal></p>
+          </form>
+          <div id="bc-bests" data-bests>
+            <hr class="ui-divider">
+            <div class="ui-section-label"><h3 class="ui-section-label__text" id="bc-bests-title" data-bests-title>Cube Beginner &middot; no-guess &middot; your bests</h3></div>
+            <div class="ui-stat-row ui-stat-row--tiles">
+              <div id="bc-best-time" class="ui-stat ui-stat--tile" role="group" aria-labelledby="bc-best-time-label" data-best="time"><span class="ui-stat__label" id="bc-best-time-label">Time</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail">no best yet</span></div>
+              <div id="bc-best-bbbvPerSecond" class="ui-stat ui-stat--tile" role="group" aria-labelledby="bc-best-bbbvPerSecond-label" data-best="bbbvPerSecond"><span class="ui-stat__label" id="bc-best-bbbvPerSecond-label">3BV/s</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail">no best yet</span></div>
+              <div id="bc-best-efficiency" class="ui-stat ui-stat--tile" role="group" aria-labelledby="bc-best-efficiency-label" data-best="efficiency"><span class="ui-stat__label" id="bc-best-efficiency-label">Efficiency</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail">no best yet</span></div>
+            </div>
+          </div>
+          <div id="bc-code-panel" class="hidden" role="group" aria-labelledby="bc-code-title" data-code-panel>
+            <div class="ui-section-label"><h3 class="ui-section-label__text" id="bc-code-title">Board code</h3></div>
+            <label class="ui-field"><span class="ui-field__label">Code</span><input id="bc-code" data-code-field class="ui-field__input" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+            <p id="bc-code-info" class="ui-text ui-text--muted" data-code-info>Paste a board code to play that exact board.</p>
           </div>
         </div>
-        <p id="bc-code-info" class="ui-text ui-text--muted" data-code-info>Paste a board code to play that exact board.</p>
       </div>
-
-      <div class="ui-actions ui-actions--row">
-        <button type="button" id="board-choice-back" class="ui-button ui-button--secondary" data-back>Back</button>
-        <span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>
-      </div>
+      <footer class="ui-frame__foot">
+        <p class="ui-frame__summary" id="bc-summary" data-summary></p>
+        <div class="ui-actions ui-actions--row">
+          <button type="button" id="bc-records" class="ui-button ui-button--secondary" data-records>Records</button>
+          <button type="button" id="bc-play" class="ui-button ui-button--primary ui-button--lg" data-play>Play <span class="ui-key-hint" data-action="select" aria-hidden="true"></span></button>
+        </div>
+      </footer>
     </section>
   </section>
 
