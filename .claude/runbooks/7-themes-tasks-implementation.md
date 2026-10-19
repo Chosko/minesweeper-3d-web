@@ -397,7 +397,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against tasks 165, 170, which edit the same files; replaced by step 60.
 
-## [~] 60. Implement task 171 — Settings page in the shared layout
+## [x] 60. Implement task 171 — Settings page in the shared layout
 
 Depends on: 4, 7, 59
 
@@ -406,6 +406,8 @@ Context: none
 ```prompt
 /task-implement 171 --review
 ```
+
+Done: 2026-10-19, commit `243c528` (13 files, +428/-170). Back is "Main menu" in the window header; the `#set-controls` button is kept (every id survives) though the Bindings panel may make it redundant. Arrow/D-pad moves into a choice now land on its checked option on every screen.
 
 ## [x] 16. Implement task 172 — Replay viewer in the shared layout
 
@@ -433,7 +435,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against task 171, which edits the same files; replaced by step 61.
 
-## [ ] 61. Implement task 172 — Replay viewer in the shared layout
+## [~] 61. Implement task 172 — Replay viewer in the shared layout
 
 Depends on: 7, 60
 
@@ -579,6 +581,7 @@ Context:
 - 2026-10-19 (from step 56): `.claude/context/mode3d.md` and `app-shell-menu.md` still describe the old 3D board choice (removed ids `c-start`, `bc-code-play`; `presetDetail(s)`); task 173 owns that update.
 - 2026-10-19 (from step 58): `.claude/context/app-shell-results.md` still describes the old results screen and Watch best rule; `.claude/domain/features/replay-playback.md` (around lines 184–186) still states the old Watch best rule — Watch best is now offered only after a win that set no best.
 - 2026-10-19 (from step 59): `.claude/context/records-screen.md` still describes the old Records layout (Replays is now a tab; exports sit under the mode's overall figures).
+- 2026-10-19 (from step 60): `.claude/context/app-shell-markup.md` and `settings-page.md` still describe the old Settings layout (Back is now "Main menu" in the header; three/two/one columns by width).
 
 ```prompt
 /task-implement 173 --review
