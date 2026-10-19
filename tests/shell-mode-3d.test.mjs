@@ -1107,7 +1107,7 @@ test('in a browser at 1024 × 768 with a mouse: a 3D game\'s pause card in two c
     return {
       card: box(c),
       scrolls: { card: scrolls(c), overlay: scrolls(document.getElementById('pause')), document: scrolls(document.documentElement) },
-      columns: c.classList.contains('ui-screen--columns') && !!c.querySelector('.ui-columns.ui-columns--two'),
+      columns: c.classList.contains('ui-screen--wide') && !!c.querySelector('.ui-columns.ui-columns--two'),
       actions: box(confirm.classList.contains('hidden') ? document.getElementById('pause-actions') : confirm),
       confirm: !confirm.classList.contains('hidden'),
       list: box(document.getElementById('pause-controls').closest('.ui-panel')),
@@ -1126,9 +1126,9 @@ test('in a browser at 1024 × 768 with a mouse: a 3D game\'s pause card in two c
     };
   };
   // The card's font sizes with a fine pointer, which its two columns leave as they are.
-  const FONTS = { title: 24, status: 16, button: 16, slider: 16, switch: 16, heading: 14, list: 13, keyName: 13, kbd: 11, statLabel: null };
+  const FONTS = { title: 24, status: 16, button: 16, slider: 16, switch: 16, heading: 13, list: 14, keyName: 14, kbd: 11, statLabel: null };
   const fits = (m, at) => {
-    assert.ok(m.columns, `${at}: the card composed with ui-screen--columns and a ui-columns--two`);
+    assert.ok(m.columns, `${at}: the card composed with ui-screen--wide and a ui-columns--two`);
     assert.ok(m.card.top >= 0 && m.card.left >= 0 && m.card.right <= 1024 && m.card.bottom <= 768,
       `${at}: the whole pause card inside the viewport (${JSON.stringify(m.card)})`);
     assert.deepEqual(m.scrolls, { card: false, overlay: false, document: false }, `${at}: nothing scrolls`);

@@ -404,10 +404,23 @@ test('the 3D board choice holds the presets and custom board, and a Back button'
   assert.match(BOARD, /id="board-choice-back"/);
 });
 
-test('the placeholder screen is a kit card with a title and a Back button', () => {
-  assert.match(SOON, /class="overlay hidden"/);
-  assert.match(SOON, /class="ui-card ui-screen" aria-labelledby="coming-soon-title"/);
-  assert.match(SOON, /<button type="button" id="coming-soon-back" class="ui-button ui-button--primary">Back<\/button>/);
+test('the placeholder screen is a screen frame on the backdrop: Main menu with its key hint, the mode as title, the line and Back', () => {
+  assert.match(SOON, /<section id="coming-soon" class="overlay ui-backdrop hidden" aria-label="Coming soon">/);
+  assert.match(SOON, /<section class="ui-frame" id="coming-soon-frame" aria-labelledby="coming-soon-title">\s*<div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"><\/div>/);
+  assert.match(SOON, /<div class="ui-frame__start"><button type="button" id="coming-soon-menu" class="ui-button ui-button--secondary ui-button--sm" data-back>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>\s*<h2 class="ui-frame__title" id="coming-soon-title">Coming soon<\/h2>\s*<div class="ui-frame__end"><\/div>/,
+    'the head: Main menu, the title the shell sets to the mode, no action');
+  assert.match(SOON, /<h3 class="ui-card__title" id="coming-soon-heading">Coming soon<\/h3>\s*<p id="coming-soon-text" class="ui-text ui-text--muted">This part of the game is coming soon\.<\/p>/);
+  assert.match(SOON, /<button type="button" id="coming-soon-back" class="ui-button ui-button--secondary">Back <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/);
+  assert.doesNotMatch(SOON, /ui-card ui-screen|data-esc-hint/, 'no card: the frame, its Back holding its key hint');
+  const ui = read('js/ui.js');
+  const show = ui.slice(ui.indexOf('showComingSoon(title) {'), ui.indexOf('\n  }\n', ui.indexOf('showComingSoon(title) {')));
+  assert.match(show, /this\.el\.comingSoonTitle\.textContent = title;/, 'the mode it was opened for names it');
+  assert.doesNotMatch(show, /comingSoonText/, 'the line stays "This part of the game is coming soon."');
+  assert.match(ui, /for \(const id of \['coming-soon-back', 'coming-soon-menu', 'settings-back'\]\) \$\(id\)\.addEventListener\('click', \(\) => cb\.onBack\?\.\(\)\);/,
+    'both go Back');
+  const css = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.match(css, /#coming-soon-frame \{[^}]*width: 900px;[^}]*height: 560px;/, 'the frame at the canvas\'s size');
+  assert.match(css, /@media \(max-width: 719px\) \{[^@]*#coming-soon-frame \{[^}]*width: 100%;[^}]*height: 100%;/, 'full-bleed on a phone');
 });
 
 test('the shell routes the new screens, declares their default focus and lets the controller reach them', () => {
@@ -1145,6 +1158,14 @@ test('in a browser, a controller alone walks the menu, the 3D board choice and t
       assert.ok(await page.evaluate(() => !document.getElementById('coming-soon').classList.contains('hidden')));
       assert.equal(await page.evaluate(() => document.getElementById('coming-soon-title').textContent), 'Triangle');
       assert.equal(await focused(), 'coming-soon-back', 'its Back button takes the focus');
+      assert.equal(await page.evaluate(() => document.getElementById('coming-soon-text').textContent), 'This part of the game is coming soon.');
+      assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#coming-soon .ui-key-hint')].map((h) => [h.classList.contains('ui-key-hint--pad'), h.textContent])),
+        [[true, 'B'], [true, 'B']], 'the head\'s Main menu and Back show the controller\'s Back button');
+      // The head's Main menu goes back too, as the frame's Back does on every screen.
+      await press(PAD_BTN.UP);
+      assert.equal(await focused(), 'coming-soon-menu', 'the D-pad reaches the head\'s Main menu');
+      await press(PAD_BTN.DOWN);
+      assert.equal(await focused(), 'coming-soon-back');
       await press(PAD_BTN.B);
       assert.equal(await mode(), 'menu', 'B is Back: the placeholder returns to the menu');
       assert.equal(await focused(), 'menu-entry-triangle', 'with Triangle selected');

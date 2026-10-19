@@ -160,9 +160,9 @@ const between = (src, start, end) => src.slice(src.indexOf(start), src.indexOf(e
 
 test('the pause card, the Controls panel and the H panel have no hard-coded bindings list', () => {
   const pause = between(INDEX, '<section id="pause"', '<noscript>');
-  assert.match(pause, /<dl id="pause-controls" class="controls compact"><\/dl>/);
+  assert.match(pause, /<dl id="pause-controls" class="controls"><\/dl>/);
   assert.doesNotMatch(pause, /<dt>/, 'the 3D list is gone from the markup');
-  assert.match(pause, /<p id="pause-board" class="ui-text ui-text--muted">/, 'the pause card names the board');
+  assert.match(pause, /<p id="pause-board" class="ui-text">/, 'the pause card names the board');
   const modal = between(INDEX, '<section id="controls-modal"', '</section>');
   assert.match(modal, /<div id="controls-tabs" class="ui-segmented" role="radiogroup" aria-label="Mode">/);
   assert.match(modal, /data-value="classic-2d">Classic 2D<\/button>/);

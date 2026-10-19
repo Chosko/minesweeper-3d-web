@@ -47,6 +47,12 @@ test('the pause card resumes on every Esc but the releasing one, with no time wi
   assert.match(MAIN, /import \{[^}]*\bescResumes\b[^}]*\} from '\.\/input\.js'/);
 });
 
+test('Resume carries the Back key hint, the key that resumes from the pause card', () => {
+  const html = read('index.html');
+  assert.match(html, /id="p-resume"[^>]*>Resume <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/);
+  assert.match(MAIN, /paused: \{[^\n]*back: \(\{ source \}\) => resumeFromPause\(source\)/, 'Back on the card is the resume the hint names');
+});
+
 // ---------------------------------------------------------------- in a browser
 
 test('in a browser, a quick Esc after the lock release resumes; the releasing press and a held Esc do not', async (t) => {

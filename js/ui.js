@@ -56,7 +56,7 @@ export const TOUCH_MSG = 'Both modes play by touch: 3D and Classic 2D.';
 
 export class UI {
   constructor(cb) {
-    this.cb = cb; // { onMenuEntry, onBack, onReadyClick, onReadyDrag, onReadyBack, onReadyLearn, onLearnEnd, onLearnBack, onResume, onRestart, onMainMenu, onPause, onToggleSwap, onToggleTap, onToggleSound, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll, onLayer, onTouchMode }
+    this.cb = cb; // { onMenuEntry, onBack, onReadyClick, onReadyDrag, onReadyBack, onReadyLearn, onLearnEnd, onLearnBack, onResume, onRestart, onMainMenu, onPause, onToggleSwap, onToggleTap, onDismissHint, onRetry2D, onStandard2D, onRetry3D, onStandard3D, onResetAll, onLayer, onTouchMode }
     this.el = {
       hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), clicks: $('hud-clicks'), size: $('hud-size'), hudTools: $('hud-tools'), hudSwap: $('hud-swap'), hudTap: $('hud-tap'),
       help: $('help'), helpList: $('help').querySelector('.controls'), helpFoot: $('help-foot'),
@@ -68,11 +68,10 @@ export class UI {
       learnEnd: $('learn-end'), learnEndTitle: $('learn-end-title'), learnEndLine: $('learn-end-line'), learnEndPrimary: $('learn-end-primary'),
       boardChoice: $('board-choice'), comingSoon: $('coming-soon'), comingSoonTitle: $('coming-soon-title'),
       settings: $('settings'), settingsBindings: null, records: $('records'), daily: $('daily'),
-      comingSoonText: $('coming-soon-text'),
       crosshair: $('crosshair'), crosshairArrow: $('crosshair-arrow'), aimReadout: $('aim-readout'), aimCubes: $('aim-cubes'), aimFlagPart: $('aim-flag-part'), aimFlags: $('aim-flags'),
       controlsModal: $('controls-modal'),
       pause: $('pause'), pauseTitle: $('pause-title'), pauseSub: $('pause-sub'),
-      resume: $('p-resume'), home: $('p-home'), restart: $('p-restart'), pauseMenu: $('p-menu'), pauseActions: $('pause-actions'),
+      resume: $('p-resume'), home: $('p-home'), restart: $('p-restart'), restartLabel: $('p-restart').querySelector('[data-label]'), pauseMenu: $('p-menu'), pauseActions: $('pause-actions'),
       confirm: $('pause-confirm'), confirmText: $('pause-confirm-text'), confirmYes: $('p-confirm-yes'),
       chipShift: $('chip-shift'), chipSpace: $('chip-space'), chipCtrl: $('chip-ctrl'),
       c2dChoice: $('c2d-choice'), c2d: $('c2d'), c2dBoard: $('c2d-board'), c2dPanel: $('c2d-panel'), c2dStatus: $('c2d-status'),
@@ -107,7 +106,7 @@ export class UI {
     document.querySelectorAll('#menu [data-entry]').forEach((b) => {
       b.addEventListener('click', () => { if (b.getAttribute('aria-disabled') !== 'true') cb.onMenuEntry?.(b.dataset.entry); });
     });
-    for (const id of ['coming-soon-back', 'settings-back']) $(id).addEventListener('click', () => cb.onBack?.());
+    for (const id of ['coming-soon-back', 'coming-soon-menu', 'settings-back']) $(id).addEventListener('click', () => cb.onBack?.());
     // The Settings page's controls are generated from the settings schema and bound by the shell.
     $('settings-body').innerHTML = settingsPageHtml();
     this.el.settingsBindings = $('settings-bindings');
@@ -123,7 +122,6 @@ export class UI {
     this.el.controlsModal.addEventListener('click', (e) => { if (e.target === this.el.controlsModal) this.closeControls(); });
     $('ready-back').addEventListener('click', () => cb.onReadyBack?.());
     $('hint-strip-close').addEventListener('click', () => this.dismissHint());
-    $('p-sound').addEventListener('click', () => cb.onToggleSound());
     $('ready-btn').addEventListener('click', () => cb.onReadyClick());
     $('ready-drag').addEventListener('click', () => cb.onReadyDrag?.());
     $('ready-learn-btn').addEventListener('click', () => cb.onReadyLearn?.());
@@ -311,7 +309,6 @@ export class UI {
     this.showMenu();
     this._hideMenus();
     this.el.comingSoonTitle.textContent = title;
-    this.el.comingSoonText.textContent = `${title} is coming soon.`;
     this.el.comingSoon.classList.remove('hidden');
   }
   /** The Daily screen over the menu backdrop; js/shell/daily.js fills its rows. */
@@ -566,7 +563,7 @@ export class UI {
     for (const key of ['lookSensitivity', 'invertY']) this.el.pause.querySelector(`[data-setting="${key}"]`).classList.toggle('hidden', mode !== '3d');
     this.el.resume.classList.toggle('hidden', ended);
     this.el.home.classList.toggle('hidden', ended || mode !== '3d'); // back to the 3D start view, while the box is in play
-    this.el.restart.textContent = ended ? 'Play again' : 'Restart';
+    this.el.restartLabel.textContent = ended ? 'Play again' : 'Restart';
   }
   /** The pause card's status line while it shows: the game's running time and mines left. */
   updatePause({ time, minesLeft }) {
@@ -653,10 +650,8 @@ export class UI {
     this._renderHudStrip();
   }
   setSound(muted) {
-    const t = muted ? 'off' : 'on';
     this._muted = !!muted;
     this._renderHudStrip();
-    $('p-sound').textContent = `Sound: ${t}`;
   }
   toggleHelp(force) {
     clearTimeout(this._helpTimer);
@@ -714,7 +709,7 @@ export class UI {
   }
   /** Redraw every bindings surface for the active mode and device. */
   _renderBindings() {
-    for (const id of ['menu-hints', 'c2d-choice', 'board-choice']) showKeyHints($(id), (action) => keyHintKeys(action, this._bindDevice(this._mode), this._glyphs));
+    for (const id of ['menu-hints', 'c2d-choice', 'board-choice', 'pause', 'coming-soon']) showKeyHints($(id), (action) => keyHintKeys(action, this._bindDevice(this._mode), this._glyphs));
     this._renderHelp();
     this._renderHudStrip();
     this.el.controlsBody.innerHTML = bindingsHtml(this._controlsTab, this._bindDevice(this._controlsTab), this._glyphs, this._camera);

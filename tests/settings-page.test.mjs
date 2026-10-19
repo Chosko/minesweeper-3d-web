@@ -862,9 +862,9 @@ test('on the pause card Sound comes first, then Volume, and M still toggles it; 
   assert.deepEqual(audio.settings, ['muted', 'volume'], 'the Settings page: Sound, then Volume');
   assert.doesNotMatch(read('js/ui.js'), /menu-sound/);
   const pause = between(INDEX, '<section id="pause"', '<noscript>');
-  assert.match(pause, /<button type="button" id="p-sound" class="ui-button ui-button--secondary">Sound: on<\/button>/);
+  assert.match(pause, /<label class="ui-toggle" data-setting="muted"><input type="checkbox" role="switch" id="p-sound" class="ui-toggle__input"><span class="ui-toggle__label">Sound<\/span><\/label>/,
+    'the pause card\'s Sound is the Settings page\'s switch, bound to the store');
   assert.ok(pause.indexOf('id="p-sound"') < pause.indexOf('data-setting="volume"'), 'pause card: Sound, then Volume');
-  assert.match(read('js/ui.js'), /\$\('p-sound'\)\.textContent = `Sound: \$\{t\}`/);
   assert.match(MAIN, /code === 'KeyM'\) toggleSound\(\)/);
 });
 
@@ -964,7 +964,7 @@ test('in a browser: Settings from the menu, the theme list with its swatches, an
     await page.keyboard.press('Space');
     assert.equal(await setting('muted'), true, 'Sound switched off mutes');
     assert.equal(await ms(() => document.getElementById('set-muted').checked), false, 'and shows off');
-    assert.equal(await ms(() => document.getElementById('p-sound').textContent), 'Sound: off', 'as the pause card says');
+    assert.equal(await ms(() => document.getElementById('p-sound').checked), false, 'as the pause card shows');
     assert.equal(await ms(() => document.getElementById('p-invert').checked), false);
     await page.focus('#set-invertY');
     await page.keyboard.press('Space');

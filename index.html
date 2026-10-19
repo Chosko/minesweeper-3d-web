@@ -101,9 +101,13 @@
   </section>
   <!-- Classic 2D board status: a slow first click's generation, or a failed board and its offer -->
   <section id="c2d-status" class="ui-card ui-screen hidden" aria-labelledby="c2d-status-title" role="status">
-    <h2 class="ui-card__title" id="c2d-status-title">Generating the board&hellip;</h2>
-    <p id="c2d-progress" class="ui-text ui-text--muted hidden"></p>
-    <span id="c2d-spinner" class="ui-spinner" aria-hidden="true"></span>
+    <div class="ui-row">
+      <span id="c2d-spinner" class="ui-spinner" aria-hidden="true"></span>
+      <div>
+        <h2 class="ui-card__title" id="c2d-status-title">Generating the board&hellip;</h2>
+        <p id="c2d-progress" class="ui-text ui-text--muted hidden"></p>
+      </div>
+    </div>
     <p id="c2d-status-text" class="ui-text ui-text--muted hidden"></p>
     <div id="c2d-wait" class="ui-actions ui-actions--row">
       <button type="button" id="c2d-cancel" class="ui-button ui-button--secondary">Cancel</button>
@@ -118,9 +122,13 @@
 
   <!-- 3D board status: a slow first click's generation, or a failed board and its offer -->
   <section id="m3d-status" class="ui-card ui-screen hidden" aria-labelledby="m3d-status-title" role="status">
-    <h2 class="ui-card__title" id="m3d-status-title">Generating the board&hellip;</h2>
-    <p id="m3d-progress" class="ui-text ui-text--muted hidden"></p>
-    <span id="m3d-spinner" class="ui-spinner" aria-hidden="true"></span>
+    <div class="ui-row">
+      <span id="m3d-spinner" class="ui-spinner" aria-hidden="true"></span>
+      <div>
+        <h2 class="ui-card__title" id="m3d-status-title">Generating the board&hellip;</h2>
+        <p id="m3d-progress" class="ui-text ui-text--muted hidden"></p>
+      </div>
+    </div>
     <p id="m3d-status-text" class="ui-text ui-text--muted hidden"></p>
     <div id="m3d-wait" class="ui-actions ui-actions--row">
       <button type="button" id="m3d-cancel" class="ui-button ui-button--secondary">Cancel</button>
@@ -286,13 +294,20 @@
   </section>
 
   <!-- Coming soon -->
-  <section id="coming-soon" class="overlay hidden" aria-label="Coming soon">
-    <section class="ui-card ui-screen" aria-labelledby="coming-soon-title">
-      <h2 class="ui-card__title" id="coming-soon-title">Coming soon</h2>
-      <p id="coming-soon-text" class="ui-text ui-text--muted">This part of the game is coming soon.</p>
-      <div class="ui-actions ui-actions--row">
-        <button type="button" id="coming-soon-back" class="ui-button ui-button--primary">Back</button>
-        <span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>
+  <section id="coming-soon" class="overlay ui-backdrop hidden" aria-label="Coming soon">
+    <section class="ui-frame" id="coming-soon-frame" aria-labelledby="coming-soon-title">
+      <div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"></div>
+      <header class="ui-frame__head">
+        <div class="ui-frame__start"><button type="button" id="coming-soon-menu" class="ui-button ui-button--secondary ui-button--sm" data-back>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button></div>
+        <h2 class="ui-frame__title" id="coming-soon-title">Coming soon</h2>
+        <div class="ui-frame__end"></div>
+      </header>
+      <div class="ui-frame__body" id="coming-soon-body">
+        <div class="ui-column" id="coming-soon-panel">
+          <h3 class="ui-card__title" id="coming-soon-heading">Coming soon</h3>
+          <p id="coming-soon-text" class="ui-text ui-text--muted">This part of the game is coming soon.</p>
+          <button type="button" id="coming-soon-back" class="ui-button ui-button--secondary">Back <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>
+        </div>
       </div>
     </section>
   </section>
@@ -643,37 +658,40 @@
   </section>
 
   <section id="pause" class="overlay hidden" aria-label="Pause menu">
-    <section id="pause-card" class="ui-card ui-screen ui-screen--columns" aria-labelledby="pause-title">
+    <section id="pause-card" class="ui-card ui-screen ui-screen--wide" aria-labelledby="pause-title">
       <div class="ui-columns ui-columns--two">
         <div class="ui-column">
           <h2 class="ui-card__title" id="pause-title">Paused</h2>
-          <p id="pause-board" class="ui-text ui-text--muted"></p>
-          <p id="pause-sub" class="ui-text ui-text--muted">Time 0.00 &middot; 10 mines left</p>
+          <p id="pause-board" class="ui-text"></p>
+          <p id="pause-sub" class="ui-text">Time 0.00 &middot; 10 mines left</p>
           <p id="pause-note" class="ui-text ui-text--warning hidden" role="alert"></p>
           <div id="pause-actions" class="ui-actions">
-            <button id="p-resume" class="ui-button ui-button--primary" type="button">Resume</button>
+            <button id="p-resume" class="ui-button ui-button--primary" type="button">Resume <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>
             <button id="p-home" class="ui-button ui-button--secondary" type="button">Back to start</button>
-            <button id="p-restart" class="ui-button ui-button--secondary" type="button">Restart</button>
+            <button id="p-restart" class="ui-button ui-button--secondary" type="button"><span data-label>Restart</span> <span class="ui-key-hint" data-action="restart" aria-hidden="true"></span></button>
             <button id="p-menu" class="ui-button ui-button--secondary" type="button">Main menu</button>
           </div>
           <div id="pause-confirm" class="ui-panel ui-actions hidden" role="alertdialog" aria-labelledby="pause-confirm-text">
             <p id="pause-confirm-text" class="ui-text">This game will count as a loss.</p>
-            <button id="p-confirm-yes" class="ui-button ui-button--primary" type="button">Confirm</button>
-            <button id="p-confirm-no" class="ui-button ui-button--secondary" type="button">Cancel</button>
+            <div class="ui-actions ui-actions--row">
+              <button id="p-confirm-yes" class="ui-button ui-button--danger" type="button">Confirm</button>
+              <button id="p-confirm-no" class="ui-button ui-button--secondary" type="button">Cancel</button>
+            </div>
           </div>
-        </div>
-        <div id="pause-list" class="ui-panel">
-          <dl id="pause-controls" class="controls compact"></dl>
         </div>
         <div class="ui-column">
-          <div class="ui-panel ui-actions" role="group" aria-labelledby="p-settings-title">
-            <h3 class="ui-heading" id="p-settings-title">Settings</h3>
+          <div class="ui-panel ui-panel--muted ui-actions" role="group" aria-labelledby="p-settings-title">
+            <div class="ui-section-label"><h3 class="ui-section-label__text" id="p-settings-title">Settings</h3></div>
+            <label class="ui-toggle" data-setting="muted"><input type="checkbox" role="switch" id="p-sound" class="ui-toggle__input"><span class="ui-toggle__label">Sound</span></label>
+            <div class="ui-slider" data-setting="volume"><label class="ui-slider__label" for="p-vol">Volume</label><output class="ui-slider__value" id="p-vol-val" for="p-vol">70%</output><input type="range" id="p-vol" class="ui-slider__input" min="0" max="100" step="1" value="70" data-format="percent" data-scale="100"></div>
             <div class="ui-slider" data-setting="lookSensitivity"><label class="ui-slider__label" for="p-sens">Look sensitivity</label><output class="ui-slider__value" id="p-sens-val" for="p-sens">1.00&times;</output><input type="range" id="p-sens" class="ui-slider__input" min="0.25" max="3" step="0.05" value="1" data-format="multiplier"></div>
             <label class="ui-toggle" data-setting="invertY"><input type="checkbox" role="switch" id="p-invert" class="ui-toggle__input"><span class="ui-toggle__label">Invert look Y</span></label>
-            <button type="button" id="p-sound" class="ui-button ui-button--secondary">Sound: on</button>
-            <div class="ui-slider" data-setting="volume"><label class="ui-slider__label" for="p-vol">Volume</label><output class="ui-slider__value" id="p-vol-val" for="p-vol">70%</output><input type="range" id="p-vol" class="ui-slider__input" min="0" max="100" step="1" value="70" data-format="percent" data-scale="100"></div>
           </div>
         </div>
+        <aside id="pause-list" class="ui-panel" aria-labelledby="pause-list-title">
+          <h3 class="ui-card__title" id="pause-list-title">Controls</h3>
+          <dl id="pause-controls" class="controls"></dl>
+        </aside>
       </div>
     </section>
   </section>

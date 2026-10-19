@@ -524,16 +524,63 @@ test('the leave-page guard is a listener armed and disarmed by the controller', 
   assert.doesNotMatch(MAIN, /addEventListener\('beforeunload', \(e\)/, 'no always-on beforeunload handler');
 });
 
-test('the pause card holds the confirmation built from kit classes', () => {
+test('the pause card holds the confirmation built from kit classes: its message, then the action as danger beside Cancel', () => {
   const html = read('index.html');
   const card = html.slice(html.indexOf('<section id="pause"'), html.indexOf('<noscript>'));
-  const confirm = card.slice(card.indexOf('id="pause-confirm"'));
+  const confirm = card.slice(card.indexOf('id="pause-confirm"'), card.indexOf('<aside id="pause-list"'));
   assert.ok(card.includes('id="pause-confirm"'), 'a confirmation panel in the pause card');
-  assert.match(confirm, /id="p-confirm-yes"[^>]*class="ui-button ui-button--primary"|class="ui-button ui-button--primary"[^>]*id="p-confirm-yes"/);
-  assert.match(confirm, /id="p-confirm-no"/);
+  assert.match(confirm, /<p id="pause-confirm-text" class="ui-text">[^<]*<\/p>\s*<div class="ui-actions ui-actions--row">\s*<button id="p-confirm-yes" class="ui-button ui-button--danger" type="button">Confirm<\/button>\s*<button id="p-confirm-no" class="ui-button ui-button--secondary" type="button">Cancel<\/button>/,
+    'the message, then the action (danger) and Cancel side by side');
   assert.match(MAIN, /paused: \{[^\n]*'#p-confirm-no'/, 'an open confirmation focuses Cancel');
   // Cancel or Back refocuses through the router's hand-off, which lifts the confirmation's containment first.
   assert.match(MAIN, /ui\.showConfirm\(request, proceed, \(\) => SHELL\.refocus\(\)\)/, 'Cancel refocuses the card\'s default');
+});
+
+test('the pause card in the shared layout: the card and its settings in one column, the Controls panel in the other', () => {
+  const html = read('index.html');
+  const card = html.slice(html.indexOf('<section id="pause"'), html.indexOf('<noscript>'));
+  assert.match(card, /<section id="pause-card" class="ui-card ui-screen ui-screen--wide" aria-labelledby="pause-title">\s*<div class="ui-columns ui-columns--two">/,
+    'a card as wide as the canvas draws it, the Controls column the wider, so a 3D game\'s list fits a 1024 × 768 window');
+  const at = (s) => { const i = card.indexOf(s); assert.ok(i > 0, `${s} is on the card`); return i; };
+  assert.ok(at('id="pause-title"') < at('id="pause-actions"') && at('id="pause-actions"') < at('id="p-settings-title"')
+    && at('id="p-settings-title"') < at('<aside id="pause-list"'), 'the title and actions, then Settings, then the Controls card');
+  assert.match(card, /<p id="pause-board" class="ui-text"><\/p>/, 'the board line in the ink');
+  assert.match(card, /<aside id="pause-list" class="ui-panel" aria-labelledby="pause-list-title">\s*<h3 class="ui-card__title" id="pause-list-title">Controls<\/h3>\s*<dl id="pause-controls" class="controls"><\/dl>\s*<\/aside>/,
+    'the Controls panel: its title over one binding per row');
+  // The actions with the key hints of the keys that work on the card: Back (Esc) resumes, F2 restarts.
+  const actions = card.slice(at('id="pause-actions"'), at('id="pause-confirm"'));
+  assert.match(actions, /<button id="p-resume" class="ui-button ui-button--primary" type="button">Resume <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/);
+  assert.match(actions, /<button id="p-home" class="ui-button ui-button--secondary" type="button">Back to start<\/button>/);
+  assert.match(actions, /<button id="p-restart" class="ui-button ui-button--secondary" type="button"><span data-label>Restart<\/span> <span class="ui-key-hint" data-action="restart" aria-hidden="true"><\/span><\/button>/);
+  assert.match(actions, /<button id="p-menu" class="ui-button ui-button--secondary" type="button">Main menu<\/button>/);
+  // Settings: a muted panel under its section label, Sound a switch, then Volume, then the 3D look settings.
+  const settings = card.slice(at('role="group" aria-labelledby="p-settings-title"') - 80, at('<aside id="pause-list"'));
+  assert.match(settings, /<div class="ui-panel ui-panel--muted ui-actions" role="group" aria-labelledby="p-settings-title">\s*<div class="ui-section-label"><h3 class="ui-section-label__text" id="p-settings-title">Settings<\/h3><\/div>/);
+  assert.match(settings, /<label class="ui-toggle" data-setting="muted"><input type="checkbox" role="switch" id="p-sound" class="ui-toggle__input"><span class="ui-toggle__label">Sound<\/span><\/label>/);
+  assert.deepEqual([...settings.matchAll(/data-setting="(\w+)"/g)].map((m) => m[1]), ['muted', 'volume', 'lookSensitivity', 'invertY']);
+  // At the kit's breakpoint the Controls panel takes the second column beside both rows of the first.
+  const kit = read('css/components.css');
+  assert.match(kit, /#pause-card > \.ui-columns--two \{ grid-template-rows: auto 1fr; \}\s*#pause-list \{ grid-column: 2; grid-row: 1 \/ span 2; \}/);
+});
+
+test('the pause card names its Restart through its label, so the key hint stays', () => {
+  const ui = read('js/ui.js');
+  assert.match(ui, /restartLabel: \$\('p-restart'\)\.querySelector\('\[data-label\]'\)/);
+  assert.match(ui, /this\.el\.restartLabel\.textContent = ended \? 'Play again' : 'Restart';/);
+  assert.doesNotMatch(ui, /\$\('p-sound'\)/, 'Sound is a settings switch, bound to the store like the Settings page\'s');
+  assert.match(ui, /for \(const id of \[[^\]]*'pause'[^\]]*'coming-soon'[^\]]*\]\) showKeyHints\(/, 'the pause card and the placeholder show their key hints');
+});
+
+test('the generating and failed-board cards: the spinner beside the title and progress line, at the canvas\'s width', () => {
+  const html = read('index.html');
+  for (const p of ['c2d', 'm3d']) {
+    const card = html.slice(html.indexOf(`<section id="${p}-status"`), html.indexOf('</section>', html.indexOf(`<section id="${p}-status"`)));
+    assert.match(card, new RegExp(`<div class="ui-row">\\s*<span id="${p}-spinner" class="ui-spinner" aria-hidden="true"></span>\\s*<div>\\s*<h2 class="ui-card__title" id="${p}-status-title">Generating the board&hellip;</h2>\\s*<p id="${p}-progress" class="ui-text ui-text--muted hidden"></p>\\s*</div>\\s*</div>`),
+      `#${p}-status: the spinner, then the title over the progress line`);
+    assert.ok(card.indexOf(`id="${p}-status-text"`) < card.indexOf(`id="${p}-wait"`), 'the failure line above the actions');
+  }
+  const css = read('css/style.css');
+  assert.match(css, /#c2d-status, #m3d-status \{[^}]*width: min\(480px, calc\(100vw - 2 \* var\(--space-4\)\)\)/, 'as wide as the canvas draws them, inside a phone');
 });
 
 // ---------------------------------------------------------------- browser: pause / resume / restart / menu in 3D

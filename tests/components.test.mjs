@@ -854,7 +854,7 @@ test('bindSegmented with horizontal leaves Up and Down unhandled', () => {
 
 // Each button Esc triggers, with the hint beside it; the pause card's Main menu has none (Esc resumes there),
 // and a screen frame's Back carries its key hint inside it.
-const ESC_BACKS = ['coming-soon-back', 'ready-back', 'settings-back', 'records-back', 'daily-back',
+const ESC_BACKS = ['ready-back', 'settings-back', 'records-back', 'daily-back',
   'rp-back', 'replay-message-back', 'r-menu', 'ctx-lost-menu'];
 const HINT = '<span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>';
 
@@ -869,9 +869,10 @@ test('an "Esc: Back" hint sits beside each Back that Esc triggers, and is no foc
   assert.equal(html.split(HINT).length - 1, ESC_BACKS.length, 'one hint per Back, and no other');
   const pmenu = html.slice(html.indexOf('</button>', html.indexOf('id="p-menu"')) + 9).trimStart();
   assert.ok(!pmenu.startsWith(HINT), 'none beside the pause card\'s Main menu, where Esc resumes');
-  for (const id of ['c2d-choice-back', 'board-choice-back']) {
+  for (const id of ['c2d-choice-back', 'board-choice-back', 'coming-soon-menu']) {
     assert.match(html, new RegExp(`id="${id}"[^>]*>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>`), `the frame's Back holds its key hint (#${id})`);
   }
+  assert.match(html, /id="coming-soon-back"[^>]*>Back <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/, 'so does the placeholder\'s Back');
   assert.doesNotMatch(HINT, /tabindex|<button|<a /, 'the hint is plain text');
 });
 
@@ -888,7 +889,7 @@ test('one vocabulary: Back returns one step, Main menu goes to the menu, and no 
 
 test('Restart discards an unfinished game; Play again starts the same choice once it ended; the help names only the restart keys', () => {
   const ui = read('js/ui.js');
-  assert.match(ui, /this\.el\.restart\.textContent = ended \? 'Play again' : 'Restart';/, 'the pause card swaps them on the moment');
+  assert.match(ui, /this\.el\.restartLabel\.textContent = ended \? 'Play again' : 'Restart';/, 'the pause card swaps them on the moment');
   assert.match(read('js/shell/pause.js'), /message: 'Restart this game\? It will count as a loss\.', confirmLabel: 'Restart'/);
   assert.match(read('js/shell/pause.js'), /'Leave this game for the main menu\? It will count as a loss\.'/);
   assert.match(read('index.html'), /id="r-again"[^>]*>Play again</);
@@ -1559,6 +1560,16 @@ test('in a browser, the menu, the pause card and the results layout meet the con
     await page.click('#c2d-choice-back');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
 
+    // The placeholder in its frame, readable: Back focused, its key hint and the head's beside it.
+    await page.click('#menu-entry-hexagon');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'coming-soon');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'coming-soon-back');
+    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#coming-soon .ui-key-hint__key')].map((k) => k.textContent)), ['Esc', 'Esc']);
+    await check(page, '#coming-soon', 'coming-soon', 3);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no horizontal scroll');
+    await page.click('#coming-soon-menu');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu', 'the head\'s Main menu goes back');
+
     // The menu's demo board: the shell hands the renderer the theme's sky.
     const sky = await page.evaluate(() => globalThis.__ms.renderer.scenePalette);
     assert.deepEqual(sky.horizon, [0x2b, 0x3f, 0x8a], 'Joyful tiles\' sky');
@@ -1596,12 +1607,38 @@ test('in a browser, the menu, the pause card and the results layout meet the con
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'paused');
     assert.equal(await page.evaluate(() => document.activeElement.id), 'p-resume', 'Resume takes the focus');
     assert.ok(await page.evaluate(() => document.getElementById('p-resume').classList.contains('ui-button--primary')), 'Resume is the primary action');
-    await check(page, '#pause .ui-card', 'pause');
+    await check(page, '#pause-card', 'pause');
     await page.keyboard.press('Tab');
     const f = await ring(page);
     assert.ok(focusShows(f), `pause control #${f.id} shows its focused state`);
+    // A 3D game's card, its longest controls list, fits the smallest desktop window unscrolled, and a phone with no horizontal scroll.
+    for (const [width, height, fits] of [[1024, 768, true], [390, 844, false]]) {
+      await page.setViewportSize({ width, height });
+      const box = await page.evaluate(() => { const o = document.getElementById('pause'); return { sh: o.scrollHeight, ch: o.clientHeight, sw: document.documentElement.scrollWidth, w: innerWidth }; });
+      if (fits) assert.ok(box.sh <= box.ch, `the pause card fits ${width} × ${height} (${box.sh} > ${box.ch})`);
+      assert.ok(box.sw <= box.w, `no horizontal scroll at ${width} × ${height}`);
+    }
+    await page.setViewportSize({ width: 1100, height: 900 });
+    assert.deepEqual(await page.evaluate(() => ['p-resume', 'p-home', 'p-restart', 'p-menu'].map((id) => document.querySelector(`#${id} .ui-key-hint__key`)?.textContent ?? null)),
+      ['Esc', null, 'F2', null], 'Resume and Restart show the keys that work on the card');
     await page.click('#p-menu');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu', 'Main menu returns to the menu');
+
+    // A started game's Main menu asks first: the confirmation in place of the actions, readable.
+    await page.evaluate(() => {
+      globalThis.__ms.modes.start('3d', { X: 5, Y: 1, Z: 1, mines: 1, minePositions: [4] });
+      globalThis.__ms.forcePlay();
+      globalThis.__ms.aimAt(3);
+      globalThis.__ms.click('left');
+      globalThis.__ms.pause();
+    });
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'paused');
+    await page.click('#p-menu');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'p-confirm-no', 'Cancel takes the focus');
+    assert.equal(await page.evaluate(() => document.getElementById('pause-actions').classList.contains('hidden')), true);
+    await check(page, '#pause-confirm', 'pause-confirm', 3);
+    await page.click('#p-confirm-yes');
+    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu', 'confirmed, the game is left');
 
     // The board status card: the generating card with its progress line, spinner, Cancel and Play a
     // standard board, then the failure offer with its three buttons, readable. Only a
@@ -1647,7 +1684,8 @@ test('in a browser, the menu, the pause card and the results layout meet the con
     assert.equal(order[0][0], 'p-restart', 'Play again comes first once the game ended');
     assert.match(order[0][1], /ui-button--primary/);
     assert.equal(await page.evaluate(() => document.getElementById('p-resume').offsetParent), null, 'an ended game has nothing to resume');
-    assert.equal(await page.evaluate(() => document.getElementById('p-restart').textContent), 'Play again');
+    assert.equal(await page.evaluate(() => document.querySelector('#p-restart [data-label]').textContent), 'Play again');
+    assert.equal(await page.evaluate(() => document.querySelector('#p-restart .ui-key-hint__key')?.textContent), 'F2', 'its key hint stays');
     // Back on an ended game's card goes to the main menu, asking nothing.
     await page.keyboard.press('Escape');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu', 'Back leaves an ended game for the menu');
@@ -1690,13 +1728,18 @@ const textOf = (html, t) => {
 };
 const MODE_ENTRIES = ['classic-2d', 'hexagon', 'triangle', 'surface', '3d', 'daily', 'records', 'settings', 'quit'];
 
-test('the gallery marks the shared layout\'s components; the main menu and both board choices are the screens built from them so far', () => {
+test('the gallery marks the shared layout\'s components; the main menu, both board choices, the placeholder and the pause card are the screens built from them so far', () => {
   assert.ok(LAYOUT.length > 1000, 'dev/components.html holds the shared layout\'s components');
   const screens = INDEX.replace(/<!--[\s\S]*?-->/g, '');
   const menu = SCREENS.menu;
   const choice = screens.slice(screens.indexOf('<section id="c2d-choice"'), screens.indexOf('<section id="c2d"'));
   const choice3d = screens.slice(screens.indexOf('<section id="board-choice"'), screens.indexOf('<section id="coming-soon"'));
-  const others = screens.replace(menu, '').replace(choice, '').replace(choice3d, '');
+  const soon = screens.slice(screens.indexOf('<section id="coming-soon"'), screens.indexOf('<section id="ready"'));
+  const pause = screens.slice(screens.indexOf('<section id="pause"'), screens.indexOf('<noscript>'));
+  for (const cls of ['ui-backdrop', 'ui-frame', 'ui-key-hint']) assert.match(soon, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the placeholder uses ${cls}`);
+  assert.doesNotMatch(soon, /class="[^"]*\bui-card(?![\w-])/, 'the placeholder holds no card');
+  for (const cls of ['ui-section-label', 'ui-button--danger', 'ui-key-hint', 'ui-panel--muted']) assert.match(pause, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the pause card uses ${cls}`);
+  const others = screens.replace(menu, '').replace(choice, '').replace(choice3d, '').replace(soon, '').replace(pause, '');
   for (const cls of ['ui-wordmark', 'ui-mode-entry', 'ui-key-hint', 'ui-chip', 'ui-scene-panel']) {
     assert.match(menu, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the main menu uses ${cls}`);
   }
@@ -1902,8 +1945,10 @@ test('the theme draws the mode entry taller when selected, the chosen board opti
   assert.match(THEME_RULES.filter(([sel]) => sel === '.ui-frame__head').map(([, b]) => b).join(';'), /background:\s*var\(--color-head\)/, 'the yellow head');
 });
 
-test('keyHintKeys: the keys of move, select and back for each device, the controller\'s in its glyphs, none on touch', () => {
-  assert.deepEqual(Object.keys(KEY_HINTS), ['move', 'select', 'back']);
+test('keyHintKeys: the keys of move, select, back and restart for each device, the controller\'s in its glyphs, none on touch', () => {
+  assert.deepEqual(Object.keys(KEY_HINTS), ['move', 'select', 'back', 'restart']);
+  assert.deepEqual(keyHintKeys('restart', 'keyboard'), [{ text: 'F2', pad: false }]);
+  assert.deepEqual(keyHintKeys('restart', 'controller', GLYPHS.xbox), [{ text: GLYPHS.xbox.start, pad: true }, { text: GLYPHS.xbox.y, pad: true }], 'Start + Y');
   assert.deepEqual(keyHintKeys('move', 'keyboard'), [{ text: '↑', pad: false }, { text: '↓', pad: false }]);
   assert.deepEqual(keyHintKeys('select', 'keyboard'), [{ text: 'Enter', pad: false }]);
   assert.deepEqual(keyHintKeys('back', 'keyboard'), [{ text: 'Esc', pad: false }]);

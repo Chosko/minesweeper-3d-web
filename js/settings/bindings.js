@@ -283,6 +283,7 @@ export const KEY_HINTS = Object.freeze({
   move: Object.freeze({ keyboard: Object.freeze(['[↑]', '[↓]']), controller: Object.freeze(['D-pad']), touch: Object.freeze([]) }),
   select: Object.freeze({ keyboard: Object.freeze(['[Enter]']), controller: Object.freeze(['{a}']), touch: Object.freeze([]) }),
   back: Object.freeze({ keyboard: Object.freeze(['[Esc]']), controller: Object.freeze(['{b}']), touch: Object.freeze([]) }),
+  restart: Object.freeze({ keyboard: Object.freeze(['[F2]']), controller: Object.freeze(['{start}', '{y}']), touch: Object.freeze([]) }),
 });
 
 export function keyHintKeys(action, device, glyphs = GLYPHS.generic) {

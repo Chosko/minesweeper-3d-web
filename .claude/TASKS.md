@@ -580,7 +580,7 @@ Feature: shared-screen-layout
 
 ## 168. Pause card, generating and failed-board cards, placeholder and confirmations in the shared layout
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, js/shell/pause.js, js/shell/menu.js, js/main.js, js/ui.js, tests/shell-pause.test.mjs, tests/shell-pause-esc.test.mjs, tests/shell-menu.test.mjs, tests/components.test.mjs
 Preconditions: 163

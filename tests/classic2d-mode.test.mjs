@@ -1715,7 +1715,7 @@ function measurePauseCard() {
     viewport: { width: innerWidth, height: innerHeight },
     card: box(c),
     scrolls: { card: scrolls(c), overlay: scrolls(document.getElementById('pause')), document: scrolls(document.documentElement) },
-    columns: c.classList.contains('ui-screen--columns') && !!c.querySelector('.ui-columns.ui-columns--two'),
+    columns: c.classList.contains('ui-screen--wide') && !!c.querySelector('.ui-columns.ui-columns--two'),
     title: box(document.getElementById('pause-title')),
     actions: box(confirm.classList.contains('hidden') ? document.getElementById('pause-actions') : confirm),
     confirm: !confirm.classList.contains('hidden'),
@@ -1731,7 +1731,7 @@ function measurePauseCard() {
   };
 }
 // The pause card's font sizes with a fine pointer, which its two columns leave as they are.
-const PAUSE_FONTS_FINE = Object.freeze({ title: 24, status: 16, button: 16, slider: 16, switch: 16, heading: 14, list: 13, keyName: 13, kbd: 11, statLabel: null });
+const PAUSE_FONTS_FINE = Object.freeze({ title: 24, status: 16, button: 16, slider: 16, switch: 16, heading: 13, list: 14, keyName: 14, kbd: 11, statLabel: null });
 
 test('in a browser, at 1024 × 768 with a mouse: the Classic 2D pause card in two columns fits the window, no text shrinks, and below 1024 px it stays one column in its order', async (t) => {
   const env = await suite.open(t);
@@ -1755,7 +1755,7 @@ test('in a browser, at 1024 × 768 with a mouse: the Classic 2D pause card in tw
       assert.ok(await page.evaluate(() => matchMedia('(pointer: fine)').matches), `${at}: a fine pointer`);
       const m = await page.evaluate(measurePauseCard);
       assert.equal(m.look, false, `${at}: no look settings on a Classic 2D card`);
-      assert.ok(m.columns, `${at}: the card composed with ui-screen--columns and a ui-columns--two`);
+      assert.ok(m.columns, `${at}: the card composed with ui-screen--wide and a ui-columns--two`);
       assert.ok(m.card.top >= 0 && m.card.left >= 0 && m.card.right <= 1024 && m.card.bottom <= 768,
         `${at}: the whole pause card inside the viewport (${JSON.stringify(m.card)})`);
       assert.deepEqual(m.scrolls, { card: false, overlay: false, document: false }, `${at}: nothing scrolls`);
@@ -1782,11 +1782,11 @@ test('in a browser, at 1024 × 768 with a mouse: the Classic 2D pause card in tw
         `${at}, the restart confirmation: in the first column above Settings, beside the controls list`);
       await page.click('#p-confirm-no');
 
-      // Below the kit's breakpoint the card is one column in its order: the list above the settings.
+      // Below the kit's breakpoint the card is one column in its order: the settings above the controls list.
       await page.setViewportSize({ width: 1023, height: 768 });
       const one = await page.evaluate(measurePauseCard);
-      assert.ok(one.title.bottom <= one.actions.top && one.actions.bottom <= one.list.top && one.list.bottom <= one.settings.top,
-        `${at} at 1023 px: one column, title, actions, the controls list, then Settings`);
+      assert.ok(one.title.bottom <= one.actions.top && one.actions.bottom <= one.settings.top && one.settings.bottom <= one.list.top,
+        `${at} at 1023 px: one column, title, actions, Settings, then the controls list`);
       assert.deepEqual(one.fonts, PAUSE_FONTS_FINE, `${at} at 1023 px: every font size as it was`);
       await page.close();
     }
