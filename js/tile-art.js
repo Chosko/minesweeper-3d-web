@@ -198,7 +198,7 @@ function bevelRevealed(ctx, S, q, p, depth, px) {
 // dark bottom edge, `hairline` the revealed face's border, `radius` the corner
 // radius. Depth changes nothing it draws; a sunk face is flat, its dark edge
 // along the top.
-const FLAT = Object.freeze({ band: 0.08, edge: 0.1, hairline: 1 / 32, radius: 0.12 });
+const FLAT = Object.freeze({ band: 0.1, edge: 0.1, hairline: 1 / 48, radius: 0.15 });
 
 function flatClosed(ctx, S, q, p, depth, px) {
   clipped(ctx, S, q.radius, () => {

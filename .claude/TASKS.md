@@ -710,7 +710,7 @@ Feature: themed-board-art-and-motion
 
 ## 181. Board module shape, the Joyful tiles board module and the board conformance checks
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/themes/board-module.js, themes/joyful-tiles/board.js, themes/joyful-tiles/fonts/, tests/theme-conformance.test.mjs, tests/board-module.test.mjs
 Preconditions: 161, 180

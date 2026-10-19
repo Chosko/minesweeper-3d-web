@@ -14,6 +14,7 @@ The screens' markup in `index.html` and the shell stylesheet are
 | `dev/components.html` | the kit gallery (development only): every catalogued component in every state (`data-force` previews) and every decoration slot, the overlay bar, the results layout `#g-results`, under the theme picked in `#g-theme` or named by `?theme=<id>` (unknown → the default) |
 | `css/tokens.css` | the structural tokens only (base stylesheet): `--space-*`, `--z-*`, `--font-numeric-tabular`; nothing per-theme |
 | `js/themes/registry.js` | the theme registry (DOM-free): `THEMES` in catalogue order, the default id, the lookup; the one place a theme is registered |
+| `js/themes/board-module.js` | the board module's shape (head comment: palette, numbers, font, sky, a drawing style per mode, cursor ring, 3D selection and start-cell tint, motion per cell event and the motion vocabulary) and the board conformance checks (DOM-free) |
 | `themes/<id>/` | one theme: `theme.css` (its stylesheet: tokens, every catalogued part and state, `@font-face`, DOM animation, every rule under `:root[data-theme="<id>"]`), `board.js` (its board module), `fonts/` (its `woff2` files and their licences) |
 | `js/theme.js` | classic pre-paint script: maps the stored theme, inserts its stylesheet render-blocking, sets root `data-theme`, exposes `globalThis.msThemeBoot` |
 | `js/themes/applier.js` | the run-time theme applier: takes over from `js/theme.js`, loads and switches themes, hands the board module to subscribers |
@@ -57,6 +58,13 @@ order, demo}`, paths from the site root), `DEFAULT_THEME_ID`
 (`joyful-tiles`), `themeById(id)` (the default entry for an unknown or
 absent id), `isRegisteredTheme(id)`; `registerTheme(entry)` is test-only — a
 fixture theme found by the lookup and kept out of `THEMES`.
+
+`js/themes/board-module.js` — `CELL_EVENTS`, `MOTION_PROPERTIES`,
+`NAMED_EASINGS`, `FACE_ENTRIES` (each face's recipe palette entries),
+`BOARD_ENTRIES` (every entry's path), `contrast(a, b)`,
+`checkBoardModule(board, {fonts?, minTileSize?})` → problems `{check,
+subject}` (`palette`, `numbers`, `font`, `sky`, `style`, `relief`, `legible`,
+`contrast`, `motion`), none when the module conforms.
 
 `js/ui/kit-catalogue.js` — `KIT_CATALOGUE` (frozen `{name, kind, className,
 selector, base, variants, parts, slots}`; a part `{name, selector, optional,

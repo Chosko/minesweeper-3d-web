@@ -1,15 +1,17 @@
 // Theme conformance: "a theme is done" as a mechanical fact. Every theme the registry lists runs every
 // check below; a theme that fails one fails the suite. The deliberately broken fixture themes
-// (tests/fixtures/themes/broken-themes.js) prove each check bites. The development gallery
+// (tests/fixtures/themes/broken-themes.js) prove each check bites; the board module's checks
+// (js/themes/board-module.js) are proved against broken board modules in tests/board-module.test.mjs. The development gallery
 // (dev/components.html) renders every catalogued component in every state under any registered theme.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join, posix } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { THEMES, DEFAULT_THEME_ID } from '../js/themes/registry.js';
 import { KIT_CATALOGUE, REQUIRED_TOKENS, CONTRAST_ROLES } from '../js/ui/kit-catalogue.js';
 import { BROKEN_THEMES } from './fixtures/themes/broken-themes.js';
+import { checkBoardModule } from '../js/themes/board-module.js';
 import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -338,7 +340,10 @@ for (const entry of THEMES) {
       assert.deepEqual(check(theme), []);
     });
   }
-  test(`${entry.name}: the board module passes the board conformance checks`, { todo: 'its checks are defined by themed-board-art-and-motion' }, () => {});
+  test(`${entry.name}: the board module passes the board conformance checks`, async () => {
+    const { BOARD } = await import(pathToFileURL(join(ROOT, entry.boardModule)).href);
+    assert.deepEqual(checkBoardModule(BOARD, { fonts: entry.fonts }), []);
+  });
 }
 
 // ---------- the shared layout's components in the catalogue ----------
