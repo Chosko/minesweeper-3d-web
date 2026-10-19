@@ -483,7 +483,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against tasks 168, 172, which edit the same files; replaced by step 63.
 
-## [~] 63. Implement task 209 — Daily screen in the board-choice layout, listing every mode
+## [x] 63. Implement task 209 — Daily screen in the board-choice layout, listing every mode
 
 Depends on: 7, 8, 54, 61, 62
 
@@ -492,6 +492,8 @@ Context: none
 ```prompt
 /task-implement 209 --review
 ```
+
+Done: 2026-10-19, commit `03f9e06` (11 files, +556/-170). The Daily 3D entry without WebGL 2 uses native `disabled`, not the artboard's selected `aria-disabled` state (the kit has no disabled-but-selectable `ui-option`); a live scene panel inside a window raises the 3D canvas in front (`body.scene-front`).
 
 ## [x] 47. Implement task 210 — 3D ready card, lock states and Learn 3D cards in the shared layout
 
@@ -505,12 +507,13 @@ Context: none
 
 Done: struck — for a parallel run its Depends on named struck step 38; lacked the edge to task 212, its precondition; lacked the order against tasks 168, 209, which edit the same files; replaced by step 64.
 
-## [ ] 64. Implement task 210 — 3D ready card, lock states and Learn 3D cards in the shared layout
+## [~] 64. Implement task 210 — 3D ready card, lock states and Learn 3D cards in the shared layout
 
 Depends on: 7, 55, 63
 
 Context:
 - 2026-10-19 (from step 55): the Learn 3D end card's text line has id `learn-end-line` (a win shows the Cube Intro line, a loss "Learn 3D"); the lesson board is `LESSON_BOX` (4 × 4 × 3, 4 mines) and starts at `SPACING_START` like every 3D game.
+- 2026-10-19 (from step 63): `ui-option` has no disabled-but-selectable state in the kit or theme; the Daily 3D entry without WebGL 2 uses native `disabled` with its reason as the second line. A live scene panel inside a window raises the 3D canvas in front of it (`body.scene-front`, in `syncScenePanel`).
 
 ```prompt
 /task-implement 210 --review
