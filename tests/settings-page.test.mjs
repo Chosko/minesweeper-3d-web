@@ -13,7 +13,7 @@ import {
   BINDING_MODES, BINDING_DEVICES, TOUCH_DEVICE, bindingDevices, BINDINGS, bindingRows, bindingsListHtml, bindingsHtml,
 } from '../js/settings/bindings.js';
 import {
-  SETTINGS_SECTIONS, SETTING_LABELS, CONTROLS_ACTION, settingControl, settingControlHtml, settingsPageHtml, bindingsSectionHtml,
+  SETTINGS_SECTIONS, SETTINGS_COLUMNS, SETTING_LABELS, SETTING_NOTES, CONTROLS_ACTION, settingControl, settingControlHtml, settingsPageHtml, bindingsSectionHtml,
   bindSettingControls, bindResetPanel, RESET_MESSAGE, SWATCH_TOKENS, themeSwatchColors, swatchBackground,
 } from '../js/settings/page.js';
 import { EXPORT_LINE } from '../js/records/export.js';
@@ -84,9 +84,7 @@ test('3D lists a touch device\'s rows: the stick, the look drag, tap, long-press
   assert.equal(orow('Left thumb: stick'), undefined);
   assert.deepEqual(orow('Pinch'), row('Pinch'), 'pinch changes the spacing in both cameras');
   assert.deepEqual(orow('Tap'), row('Tap'));
-  const section = bindingsSectionHtml(GLYPHS.xbox);
-  assert.ok(section.includes('3D · Touch'), 'the Settings page lists them');
-  assert.ok(section.includes(bindingsListHtml(rows, GLYPHS.xbox)));
+  assert.equal(bindingsSectionHtml(GLYPHS.xbox, 'fly', { mode: '3d', device: 'touch' }), `<dl class="controls">${bindingsListHtml(rows, GLYPHS.xbox)}</dl>`, 'the Settings page lists them');
   const ui = read('js/ui.js');
   assert.match(ui, /_bindDevice\(mode\)/, 'the help surfaces show the touch rows on a touch device');
 });
@@ -108,9 +106,7 @@ test('Classic 2D lists a touch device\'s rows: tap, the 400 ms long-press, the t
   assert.match(row('Two fingers')[1], /[Pp]inch to zoom/);
   assert.match(row('Pause button')[1], /Pause menu/);
   for (const [input, action] of rows) assert.doesNotMatch(`${input} ${action}`, /\[|\{|[Cc]lick|[Ww]heel|[Mm]ouse/, 'no key, button or mouse in a touch row');
-  const section = bindingsSectionHtml(GLYPHS.xbox);
-  assert.ok(section.includes('Classic 2D · Touch'), 'the Settings page lists them');
-  assert.ok(section.includes(bindingsListHtml(rows, GLYPHS.xbox)));
+  assert.equal(bindingsSectionHtml(GLYPHS.xbox, 'fly', { mode: 'classic-2d', device: 'touch' }), `<dl class="controls">${bindingsListHtml(rows, GLYPHS.xbox)}</dl>`, 'the Settings page lists them');
   const ui = read('js/ui.js');
   assert.match(ui, /_bindDevice\(mode\) \{\n    return this\._touch && this\._device === 'keyboard' \? 'touch' : this\._device;/,
     'on a touch device both modes\' help surfaces show the touch rows, unless a controller is in use');
@@ -143,8 +139,9 @@ test('both modes list F2 as Restart on the keyboard and Start + Y on the control
     assert.match(pad[1], /^Restart/);
   }
   assert.match(bindingsHtml('classic-2d', 'controller', GLYPHS.xbox), /<kbd class="pad">Menu<\/kbd> \+ <kbd class="pad">Y<\/kbd>/);
-  const html = bindingsSectionHtml(GLYPHS.xbox);
-  assert.equal(html.match(/<kbd>F2<\/kbd>/g).length, 2, 'the Settings bindings section shows F2 for both modes');
+  for (const mode of BINDING_MODES) {
+    assert.equal(bindingsSectionHtml(GLYPHS.xbox, 'fly', { mode: mode.id }).match(/<kbd>F2<\/kbd>/g).length, 1, `the Settings bindings show F2 for ${mode.id}`);
+  }
 });
 
 test('the "Always ask before restarting" toggle sits in the Controls section, off by default', () => {
@@ -199,7 +196,7 @@ test('the 3D keyboard bindings list keyboard look on the arrows and Enter, \' an
   assert.ok(rows.indexOf(row('Arrow keys')) === rows.indexOf(row('Mouse')) + 1, 'beside mouse look');
   const html = bindingsHtml('3d', 'keyboard');
   assert.match(html, /<dt><kbd>Enter<\/kbd> \+ <kbd>'<\/kbd><\/dt><dd>Chord<\/dd>/);
-  assert.match(bindingsSectionHtml(GLYPHS.xbox), /<dt>Arrow keys<\/dt><dd>Look around<\/dd>/, 'the Settings page lists them');
+  assert.match(bindingsSectionHtml(GLYPHS.xbox, 'fly', { mode: '3d' }), /<dt>Arrow keys<\/dt><dd>Look around<\/dd>/, 'the Settings page lists them');
 });
 
 test('the Camera setting is a Fly | Orbit choice in the Controls section, after look sensitivity and invert Y', () => {
@@ -241,12 +238,12 @@ test('the 3D bindings follow the Camera setting: Orbit rotates, dollies and leav
   assert.equal(bindingRows('classic-2d', 'keyboard', 'orbit'), bindingRows('classic-2d', 'keyboard'), 'Classic 2D has no camera');
   assert.throws(() => bindingRows('3d', 'keyboard', 'free'), /unknown/);
   assert.equal(bindingsHtml('3d', 'keyboard', GLYPHS.generic, 'orbit'), bindingsListHtml(kb, GLYPHS.generic));
-  const section = bindingsSectionHtml(GLYPHS.xbox, 'orbit');
+  const section = bindingsSectionHtml(GLYPHS.xbox, 'orbit', { mode: '3d' });
   assert.ok(section.includes(bindingsListHtml(kb, GLYPHS.xbox)), 'the Settings page lists the chosen camera\'s rows');
   assert.ok(!section.includes('Fly forward'));
   const ui = read('js/ui.js');
   assert.match(ui, /setCamera\(camera\)/, 'the help surfaces follow the setting');
-  assert.match(ui, /bindingsSectionHtml\(this\._glyphs, this\._camera\)/);
+  assert.match(ui, /bindingsSectionHtml\(this\._glyphs, this\._camera, \{ mode, device \}\)/);
   const index = read('index.html');
   const ready = index.slice(index.indexOf('<span class="ready-keys">'), index.indexOf('<span id="ready-pad"'));
   assert.match(ready, /data-camera="fly"/);
@@ -362,35 +359,68 @@ test('the page markup is kit components only, one bound control per setting', ()
   assert.match(theme, /<button type="button" role="radio" aria-checked="true" class="ui-segmented__option" data-value="joyful-tiles"><span class="ui-segmented__swatch" aria-hidden="true"><\/span>Joyful tiles<\/button>/);
   const classes = [...html.matchAll(/class="([^"]+)"/g)].flatMap((m) => m[1].split(/\s+/));
   for (const c of classes) assert.ok(c.startsWith('ui-') || c === 'hidden', `kit class only (and the shell's hidden), got ${c}`);
-  for (const s of SETTINGS_SECTIONS) assert.match(html, new RegExp(`<h3 class="ui-heading" id="set-sec-${s.id}">${s.title}</h3>`));
+  for (const s of SETTINGS_SECTIONS) {
+    assert.match(html, new RegExp(`<div class="ui-section-label"><h3 class="ui-section-label__text" id="set-sec-${s.id}">${s.title}</h3></div>`), `${s.title} under its section label`);
+  }
+  assert.doesNotMatch(html, /ui-heading/, 'section labels, not headings');
 });
 
-test('the bindings section shows each mode per input device with the pad\'s glyphs', () => {
-  const html = bindingsSectionHtml(GLYPHS.xbox);
+test('each setting is a row of its name and its control, the 3D-only ones noted as the canvas draws them', () => {
+  const html = settingsPageHtml();
+  assert.deepEqual(SETTING_NOTES, { lookSensitivity: '3D', camera: '3D', fieldOfView: '3D' });
+  for (const key of SETTING_KEYS.filter((k) => k !== 'theme')) {
+    const note = SETTING_NOTES[key] ? `<span class="ui-text ui-text--muted" id="set-${key}-note">${SETTING_NOTES[key]}</span>` : '';
+    assert.ok(html.includes(`<div class="ui-row" data-setting-row="${key}">${settingControlHtml(key)}${note}</div>`), `${key}: one row`);
+  }
+  assert.doesNotMatch(html, /data-setting-row="theme"/, 'the theme list is the section\'s own rows');
+});
+
+test('the bindings panel picks a mode and a device and lists that one pair, in the pad\'s glyphs', () => {
+  const html = settingsPageHtml();
+  const panel = html.slice(html.lastIndexOf('<section', html.indexOf('id="set-sec-bindings"')), html.indexOf('id="settings-data"'));
+  const choice = (id, label, options, checked) => `<div class="ui-segmented" role="radiogroup" aria-label="${label}" id="${id}">`
+    + options.map((o) => `<button type="button" role="radio" aria-checked="${o.id === checked}" class="ui-segmented__option" data-value="${o.id}">${o.label}</button>`).join('')
+    + '</div>';
+  assert.ok(panel.includes(`<div class="ui-row" id="set-bind-choices">${choice('set-bind-mode', 'Mode', BINDING_MODES, 'classic-2d')}`
+    + `${choice('set-bind-device', 'Device', [...BINDING_DEVICES, TOUCH_DEVICE], 'keyboard')}</div><div id="settings-bindings"></div>`), 'Mode, then Device (Touch included), then the list');
   for (const mode of BINDING_MODES) {
-    for (const device of BINDING_DEVICES) {
-      assert.ok(html.includes(`${mode.label} · ${device.label}`), `${mode.label} / ${device.label} heading`);
-      assert.ok(html.includes(bindingsListHtml(bindingRows(mode.id, device.id), GLYPHS.xbox)), `${mode.id} / ${device.id} list`);
+    assert.deepEqual(bindingDevices(mode.id).map((d) => d.id), ['keyboard', 'controller', 'touch'], `${mode.id} lists every device the choice offers`);
+    for (const device of bindingDevices(mode.id)) {
+      assert.equal(bindingsSectionHtml(GLYPHS.xbox, 'fly', { mode: mode.id, device: device.id }),
+        `<dl class="controls">${bindingsListHtml(bindingRows(mode.id, device.id), GLYPHS.xbox)}</dl>`, `${mode.id} / ${device.id}: that one list`);
     }
   }
-  assert.ok(bindingsSectionHtml(GLYPHS.playstation).includes('<kbd class="pad">R2</kbd>'), 'the glyphs follow the controller');
+  assert.equal(bindingsSectionHtml(GLYPHS.xbox, 'orbit', { mode: '3d', device: 'keyboard' }), `<dl class="controls">${bindingsListHtml(bindingRows('3d', 'keyboard', 'orbit'), GLYPHS.xbox)}</dl>`, 'the Camera setting\'s rows');
+  assert.equal(bindingsSectionHtml(GLYPHS.xbox), bindingsSectionHtml(GLYPHS.xbox, 'fly', { mode: 'classic-2d', device: 'keyboard' }), 'Classic 2D with the keyboard by default');
+  assert.ok(bindingsSectionHtml(GLYPHS.playstation, 'fly', { mode: '3d', device: 'controller' }).includes('<kbd class="pad">R2</kbd>'), 'the glyphs follow the controller');
 });
 
 // ---------------------------------------------------------------- the column layout
 
-test('the page is one column composition generated from the sections: each section a column, Bindings and Data across the width', () => {
+test('the page is one column composition generated from the sections, in the widest window\'s three columns', () => {
   const html = settingsPageHtml();
-  assert.ok(html.startsWith('<div class="ui-columns">'), 'the kit column composition');
-  assert.ok(html.endsWith('</section></div>'), 'everything inside it');
-  const sections = [...html.matchAll(/<section class="([^"]*)"[^>]*aria-labelledby="set-sec-(\w+)"/g)].map((m) => [m[2], m[1]]);
-  assert.deepEqual(sections.map(([id]) => id), [...SETTINGS_SECTIONS.map((s) => s.id), 'bindings', 'data'], 'in the schema\'s order');
-  for (const [id, cls] of sections) {
-    const spans = cls.split(' ').includes('ui-columns__span');
-    assert.equal(spans, id === 'bindings' || id === 'data', `${id}: ${cls}`);
-  }
-  assert.match(html, /<div id="settings-bindings" class="ui-columns"><\/div>/, 'the mode × device lists side by side in columns');
-  assert.doesNotMatch(html, /ui-grid/, 'one composition, not two');
+  assert.deepEqual(SETTINGS_COLUMNS, [['controls', 'audio'], ['graphics', 'theme'], ['bindings', 'data']]);
+  assert.deepEqual(SETTINGS_COLUMNS.flat().sort(), [...SETTINGS_SECTIONS.map((s) => s.id), 'bindings', 'data'].sort(), 'every section in one column');
+  assert.ok(html.startsWith('<div class="ui-columns" id="settings-columns"><div class="ui-column">'), 'the kit column composition');
+  assert.ok(html.endsWith('</section></div></div>'), 'everything inside it');
+  const columns = html.split('<div class="ui-column">').slice(1)
+    .map((col) => [...col.matchAll(/<section class="[^"]*"[^>]* data-section="(\w+)" aria-labelledby="set-sec-\1"/g)].map((m) => m[1]));
+  assert.deepEqual(columns, SETTINGS_COLUMNS, 'each column stacks its sections');
+  assert.doesNotMatch(html, /ui-columns__span|ui-grid/, 'one composition, nothing across it');
   assert.doesNotMatch(read('js/settings/page.js'), /@media|1024/, 'no layout code of its own');
+});
+
+test('narrower windows regroup the sections by placement alone: two columns from 1024 px, then one in the phone\'s order', () => {
+  const kit = read('css/components.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const block = kit.slice(kit.indexOf('@media (min-width: 1024px)'));
+  assert.match(block.slice(0, block.indexOf('\n}')),
+    /#settings-columns \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\); grid-template-areas: "controls theme" "graphics data" "audio bindings"; \}/,
+    'the canvas\'s two columns, inside the kit\'s one breakpoint');
+  const css = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.match(css, /@media \(max-width: 1599px\) \{ #settings-columns > \.ui-column \{ display: contents; \} \}/, 'below the widest windows the columns let their sections be placed');
+  assert.match(css, /@media \(min-width: 1600px\) \{ #settings-columns \{ grid-template-columns: repeat\(3, minmax\(0, 1fr\)\); grid-template-areas: none; \} \}/, 'three columns on the widest windows');
+  assert.match(css, /@media \(max-width: 1023px\) \{[^}]*#settings-columns \{ grid-template-areas: "controls" "graphics" "theme" "audio" "bindings" "data"; \}/, 'one column in the phone\'s order');
+  for (const id of SETTINGS_COLUMNS.flat()) assert.match(css, new RegExp(`#settings-columns \\[data-section="${id}"\\] \\{ grid-area: ${id}; \\}`), `${id} names its area`);
 });
 
 // ---------------------------------------------------------------- the Data panel and Reset all data
@@ -401,11 +431,11 @@ test('the page ends, after Bindings, with a Data panel: the export offered first
   const data = html.indexOf('id="set-sec-data"');
   assert.ok(bindings > 0 && data > bindings, 'Data comes after Bindings');
   const panel = html.slice(html.lastIndexOf('<section', data));
-  assert.match(panel, /^<section class="ui-panel ui-actions ui-columns__span" id="settings-data" aria-labelledby="set-sec-data"><h3 class="ui-heading" id="set-sec-data">Data<\/h3>/);
+  assert.match(panel, /^<section class="ui-panel ui-actions" id="settings-data" data-section="data" aria-labelledby="set-sec-data"><div class="ui-section-label"><h3 class="ui-section-label__text" id="set-sec-data">Data<\/h3><\/div>/);
   assert.match(panel, /<p class="ui-text ui-text--muted">[^<]*this browser[^<]*<\/p>/, 'one line saying what the action does');
   assert.match(panel, /<button type="button" class="ui-button ui-button--secondary" id="set-reset">Reset all data…<\/button>/);
   assert.match(panel, /<p class="ui-text ui-text--warning hidden" id="set-reset-note" role="status"><\/p>/);
-  assert.ok(panel.trimEnd().endsWith('</section></div>'), 'the page ends with it, closing the column composition');
+  assert.ok(panel.trimEnd().endsWith('</section></div></div>'), 'the page ends with it, closing its column and the composition');
   assert.ok(panel.includes(`<p class="ui-text ui-text--muted" id="set-export-text">${EXPORT_LINE}</p>`), 'a line saying what the exports save');
   assert.match(EXPORT_LINE, /CSV/);
   assert.match(EXPORT_LINE, /JSON/);
@@ -414,6 +444,8 @@ test('the page ends, after Bindings, with a Data panel: the export offered first
   const json = panel.indexOf('<button type="button" class="ui-button ui-button--secondary" id="set-export-json">Export all (JSON)</button>');
   const reset = panel.indexOf('id="set-reset"');
   assert.ok(csv > 0 && json > csv && reset > json, 'Export history (CSV), then Export all (JSON), then Reset all data…: an export is offered first');
+  const rule = panel.indexOf('<hr class="ui-divider">');
+  assert.ok(rule > json && rule < reset, 'a rule between the export and the reset');
 });
 
 test('the Settings export actions are bound to the one records export, refreshed each time the page shows', () => {
@@ -818,27 +850,34 @@ const INDEX = read('index.html');
 const MAIN = read('js/main.js');
 const between = (text, start, end) => text.slice(text.indexOf(start), text.indexOf(end, text.indexOf(start)));
 
-test('index.html holds the Settings page as a kit card with a Back button, filled from the schema', () => {
-  const page = between(INDEX, '<!-- Settings -->', '<!-- Pause / end menu -->');
-  assert.match(page, /<section id="settings" class="overlay hidden" aria-label="Settings">/);
-  assert.match(page, /class="ui-card ui-screen ui-screen--wide ui-screen--columns" aria-labelledby="settings-title"/);
-  assert.match(page, /<div id="settings-body"><\/div>/, 'the controls are generated, not written in the markup');
-  assert.match(page, /<button type="button" id="settings-back" class="ui-button ui-button--primary">Back<\/button>/);
+test('index.html holds the Settings page in a screen frame on the backdrop, its body filled from the schema', () => {
+  const page = between(INDEX, '<!-- Settings -->', '<!-- Records -->');
+  assert.match(page, /<section id="settings" class="overlay ui-backdrop hidden" aria-label="Settings">\s*<section class="ui-frame" id="settings-frame" aria-labelledby="settings-title">/);
+  assert.match(page, /<h2 class="ui-frame__title" id="settings-title">Settings<\/h2>/);
+  assert.match(page, /<div class="ui-frame__body" id="settings-body"><\/div>/, 'the controls are generated, not written in the markup');
+  assert.doesNotMatch(page, /ui-card|ui-frame__foot|data-esc-hint/, 'no card, no foot, no text hint');
   assert.match(read('js/ui.js'), /settingsPageHtml\(\)/);
 });
 
-test('Settings\' Back sits in a sticky action row at the bottom of the card\'s scroll area', () => {
-  const page = between(INDEX, '<!-- Settings -->', '<!-- Pause / end menu -->');
-  assert.match(page, /<div id="settings-actions" class="ui-actions ui-actions--row">\s*<button type="button" id="settings-back"/,
-    'one Back, in the action row');
-  assert.ok(page.indexOf('id="settings-actions"') > page.indexOf('id="settings-body"'), 'the row comes after the controls');
+test('Settings\' Back is the frame head\'s Main menu with its key hint, in view while the body scrolls', () => {
+  const page = between(INDEX, '<!-- Settings -->', '<!-- Records -->');
+  assert.match(page, /<div class="ui-frame__start" id="settings-actions"><button type="button" id="settings-back" class="ui-button ui-button--secondary ui-button--sm" data-back>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>/,
+    'one Back, at the start of the head');
+  assert.ok(page.indexOf('id="settings-back"') < page.indexOf('id="settings-body"'), 'the head comes before the body');
   const css = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
-  const rule = css.match(/#settings-actions\s*\{([^}]*)\}/);
-  assert.ok(rule, 'css/style.css styles the row');
-  assert.match(rule[1], /position:\s*sticky/);
-  assert.match(rule[1], /bottom:\s*0/);
-  assert.match(read('themes/joyful-tiles/theme.css'), /#settings-actions \{[^}]*background: var\(--color-surface\)/, 'an opaque surface: the controls scroll under it');
-  assert.match(css, /#settings\s*\{[^}]*scroll-padding-bottom:/, 'a focus move scrolls a control into view above the row');
+  assert.doesNotMatch(css, /#settings-actions|#settings \{[^}]*scroll-padding/, 'no sticky row of its own: the frame keeps its head in view');
+  assert.doesNotMatch(read('themes/joyful-tiles/theme.css'), /#settings-actions/);
+  assert.match(css, /#settings-frame \{ width: 1640px; height: 100%; \}/, 'the window at the canvas\'s size, bounded by the backdrop');
+  assert.match(read('js/ui.js'), /for \(const id of \[[^\]]*'settings'[^\]]*\]\) showKeyHints\(/, 'its key hint follows the active device');
+});
+
+test('on a phone the frame is full-bleed and the bindings device choice spans the width, each option wrapping its label', () => {
+  const css = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const phone = css.slice(css.indexOf('@media (max-width: 719px)', css.indexOf('#settings-frame')));
+  const block = phone.slice(0, phone.indexOf('\n}'));
+  assert.match(block, /#settings-frame \{ width: 100%; border-radius: 0; box-shadow: none; \}/);
+  assert.match(block, /#set-bind-device \{ display: flex; width: 100%; \}/);
+  assert.match(block, /#set-bind-device > \.ui-segmented__option \{ flex: 1 1 0; min-width: 0; padding-inline: var\(--space-2\); white-space: normal; \}/);
 });
 
 test('the Settings choices and the Controls panel\'s tabs take only Left and Right, so Up and Down move focus', () => {
@@ -934,8 +973,24 @@ test('in a browser: Settings from the menu, the theme list with its swatches, an
     assert.ok(await ms(() => !document.getElementById('settings').classList.contains('hidden')));
     assert.ok(await ms(() => document.getElementById('menu').classList.contains('hidden')));
     const headings = await ms(() => [...document.querySelectorAll('#settings-body h3')].map((h) => h.textContent));
-    assert.deepEqual(headings.slice(0, 4), ['Controls', 'Graphics', 'Theme', 'Audio']);
-    assert.ok(await ms(() => document.querySelectorAll('#settings-body dl.controls').length) >= 4, 'the bindings lists');
+    assert.deepEqual(headings, ['Controls', 'Audio', 'Graphics', 'Theme', 'Bindings', 'Data'], 'the columns\' sections, in order');
+    assert.equal(await ms(() => document.querySelectorAll('#settings-body dl.controls').length), 1, 'one bindings list');
+
+    // The bindings panel: Classic 2D with the active device first; each pick lists that mode and device.
+    const bindings = () => ms(() => ({
+      mode: document.querySelector('#set-bind-mode [aria-checked="true"]').dataset.value,
+      device: document.querySelector('#set-bind-device [aria-checked="true"]').dataset.value,
+      list: document.querySelector('#settings-bindings dl.controls').innerHTML,
+    }));
+    const listOf = (mode, device) => ms(([m, d]) => import('/js/settings/bindings.js').then((b) => b.bindingsHtml(m, d, undefined, globalThis.__ms.settings.get('camera'))), [mode, device]);
+    assert.deepEqual(await bindings(), { mode: 'classic-2d', device: 'keyboard', list: await listOf('classic-2d', 'keyboard') });
+    await page.click('#set-bind-mode [data-value="3d"]');
+    assert.deepEqual(await bindings(), { mode: '3d', device: 'keyboard', list: await listOf('3d', 'keyboard') });
+    await page.click('#set-bind-device [data-value="touch"]');
+    assert.deepEqual(await bindings(), { mode: '3d', device: 'touch', list: await listOf('3d', 'touch') });
+    await page.focus('#set-bind-device [data-value="touch"]');
+    await page.keyboard.press('ArrowLeft');
+    assert.equal((await bindings()).device, 'controller', 'Left steps the device choice');
 
     // The theme list: the registry's themes by name, the active one checked, each swatch drawn
     // from its theme's tokens once the stylesheet is fetched; a pick of a row applies and saves it.
@@ -1199,6 +1254,71 @@ test('in a browser, the Settings page\'s Controls action opens the controls refe
     assert.equal(await page.evaluate(() => document.getElementById('controls-modal').classList.contains('hidden')), true, 'Esc closes it');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'settings', 'and leaves the page as it was');
     assert.equal(await page.evaluate(() => document.activeElement.id), 'set-controls', 'the focus returns to the action');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, the Settings page takes the canvas\'s columns at each window size, never scrolls sideways, and its phone device choice wraps', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(removeWebGL2);
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
+    await page.click('#menu-entry-settings');
+    // The sections grouped by their left edge, each group top to bottom; the boxes wider than their port.
+    const layout = () => page.evaluate(() => {
+      const columns = new Map();
+      const sections = [...document.querySelectorAll('#settings-columns [data-section]')].map((e) => [e.dataset.section, e.getBoundingClientRect()]);
+      for (const [id, r] of sections.sort((a, b) => a[1].top - b[1].top)) {
+        const left = Math.round(r.left);
+        if (!columns.has(left)) columns.set(left, []);
+        columns.get(left).push(id);
+      }
+      const body = document.getElementById('settings-body');
+      const wide = [document.documentElement, document.getElementById('settings'), document.getElementById('settings-frame'), body]
+        .filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.id || e.tagName);
+      return { columns: [...columns.entries()].sort((a, b) => a[0] - b[0]).map(([, ids]) => ids), wide, scrolls: getComputedStyle(body).overflowY };
+    });
+    const cases = [
+      [1920, 1080, [['controls', 'audio'], ['graphics', 'theme'], ['bindings', 'data']]],
+      [1366, 768, [['controls', 'graphics', 'audio'], ['theme', 'data', 'bindings']]],
+      [1024, 768, [['controls', 'graphics', 'audio'], ['theme', 'data', 'bindings']]],
+      [390, 844, [['controls', 'graphics', 'theme', 'audio', 'bindings', 'data']]],
+    ];
+    for (const [width, height, columns] of cases) {
+      await page.setViewportSize({ width, height });
+      const l = await layout();
+      assert.deepEqual(l.columns, columns, `${width} × ${height}: the canvas's columns`);
+      assert.deepEqual(l.wide, [], `${width} × ${height}: nothing scrolls sideways`);
+      assert.equal(l.scrolls, 'auto', `${width} × ${height}: the frame's body scrolls vertically`);
+    }
+    // The phone: the device choice spans the panel, "Keyboard and mouse" on two lines inside its option.
+    await page.click('#set-bind-mode [data-value="3d"]');
+    const device = await page.evaluate(() => {
+      const group = document.getElementById('set-bind-device').getBoundingClientRect();
+      const panel = document.querySelector('[data-section="bindings"]');
+      const inner = panel.getBoundingClientRect().width - parseFloat(getComputedStyle(panel).paddingLeft) - parseFloat(getComputedStyle(panel).paddingRight);
+      const options = [...document.querySelectorAll('#set-bind-device .ui-segmented__option')].map((o) => {
+        const range = document.createRange();
+        range.selectNodeContents(o);
+        const lines = new Set([...range.getClientRects()].map((r) => Math.round(r.top)));
+        const box = o.getBoundingClientRect();
+        const text = range.getBoundingClientRect();
+        return { label: o.textContent, lines: lines.size, inside: text.left >= box.left - 0.5 && text.right <= box.right + 0.5 };
+      });
+      return { width: group.width, inner, options };
+    });
+    assert.ok(Math.abs(device.width - device.inner) <= 1, `the device choice spans the panel (${device.width} of ${device.inner})`);
+    assert.deepEqual(device.options.map((o) => [o.label, o.inside]), [['Keyboard and mouse', true], ['Controller', true], ['Touch', true]], 'each label inside its option');
+    assert.equal(device.options[0].lines, 2, '"Keyboard and mouse" wraps onto two lines');
+    assert.deepEqual((await layout()).wide, [], 'nothing overflows the screen');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

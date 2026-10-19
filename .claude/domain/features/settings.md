@@ -84,17 +84,14 @@ settings handling for the shell's UI module and the sound module ([app-shell.md]
   knows none of them.
 - **Settings page.** The page itself: sections for controls, graphics,
   theme and audio, each control bound to one schema entry, then the
-  bindings list, and last a Data panel, with Back to the screen it was
-  opened from in a sticky action row at the bottom of the page, so Back
-  stays in view at any scroll position and a focused control is never under
-  it. At about 1024 px wide and more the page widens and shows its
-  sections side by side in as many columns as fit, the bindings list with
-  its mode × device lists side by side, and the Data panel and Back across
-  the full width at the bottom; narrower, one column. The layout is
-  generated from the section list and the bindings source, so a section
-  or setting added later joins a column with no layout of its own. The
-  bindings list reads the same source as the in-game help, so the two
-  never disagree.
+  bindings list — one mode's bindings for one input device, each picked by
+  a choice — and a Data panel, with Back to the screen it was opened from
+  in the head of the page's window, which stays in view at any scroll
+  position. How the sections are arranged at each window size is
+  `shared-screen-layout`'s. The layout is generated from the section list
+  and the bindings source, so a section or setting added later joins a
+  column with no layout of its own. The bindings list reads the same
+  source as the in-game help, so the two never disagree.
 - **Export.** The Data panel offers `records-screen`'s two exports first —
   "Export history (CSV)" and "Export all (JSON)", with a line saying what
   they save — before "Reset all data…", so the player can keep a copy

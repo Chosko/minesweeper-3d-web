@@ -1777,26 +1777,32 @@ function padStep(el, delta) {
  * control in DOM order. Up and down, the search treats a board choice's row of custom fields as one
  * control, starting from the whole row past its own controls, and aims at a table's buttons by their
  * row, so a table is entered from above or below wherever its buttons sit in the row. In a column
- * layout (a ui-columns of ui-column, as Records), Up and Down search only the column `cur` is in, so
- * the walk leaves a column at its ends in DOM order, and a move from outside into the columns enters
- * them at their first control (Down) or last (Up).
+ * layout (a ui-columns of ui-column), a move from outside into the columns enters them at their first
+ * control (Down) or last (Up); inside, Up and Down search only the column `cur` is in while it is laid
+ * out as one (Records; not Settings' columns below its widest windows, whose sections are placed one
+ * by one), so the walk leaves a column at its ends in DOM order. Up and Down into a radio group land
+ * on its one stop, the checked option.
  */
+const laidOutColumn = (el) => (el && getComputedStyle(el).display !== 'contents' ? el : null);
 function navStep(layer, items, cur, dir) {
-  return focusMove(items, cur, dir, {
+  const vertical = dir === 'up' || dir === 'down';
+  const found = focusMove(items, cur, dir, {
     spatial: (d) => {
-      const vertical = d === 'up' || d === 'down';
       const row = vertical && cur.closest('form .ui-row');
-      const column = vertical && cur.closest('.ui-column');
+      const column = vertical && laidOutColumn(cur.closest('.ui-column'));
       const from = (row || cur).getBoundingClientRect();
       const cands = items.filter((e) => e !== cur && !(row && row.contains(e)) && (!column || column.contains(e)));
-      const found = pickInDirection(from, cands.map((e) => ({ rect: ((vertical && e.closest('tr')) || e).getBoundingClientRect(), item: e })), d);
-      const columns = vertical && !column && found?.closest('.ui-column')?.parentElement;
-      if (!columns) return found;
+      const pick = pickInDirection(from, cands.map((e) => ({ rect: ((vertical && e.closest('tr')) || e).getBoundingClientRect(), item: e })), d);
+      const columns = vertical && !cur.closest('.ui-column') && pick?.closest('.ui-column')?.parentElement;
+      if (!columns) return pick;
       const inside = items.filter((e) => columns.contains(e));
       return d === 'down' ? inside[0] : inside[inside.length - 1];
     },
     groupOf: (el) => el.closest('table, .ui-menu'),
   });
+  const group = vertical && found?.getAttribute('role') === 'radio' ? found.closest('[role="radiogroup"]') : null;
+  if (!group || group.contains(cur)) return found;
+  return items.find((e) => group.contains(e) && e.tabIndex === 0) ?? found;
 }
 function padNav(dir) {
   const layer = padLayer();

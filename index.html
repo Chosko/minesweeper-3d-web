@@ -382,14 +382,15 @@
   </section>
 
   <!-- Settings -->
-  <section id="settings" class="overlay hidden" aria-label="Settings">
-    <section class="ui-card ui-screen ui-screen--wide ui-screen--columns" aria-labelledby="settings-title">
-      <h2 class="ui-card__title" id="settings-title">Settings</h2>
-      <div id="settings-body"></div>
-      <div id="settings-actions" class="ui-actions ui-actions--row">
-        <button type="button" id="settings-back" class="ui-button ui-button--primary">Back</button>
-        <span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>
-      </div>
+  <section id="settings" class="overlay ui-backdrop hidden" aria-label="Settings">
+    <section class="ui-frame" id="settings-frame" aria-labelledby="settings-title">
+      <div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"></div>
+      <header class="ui-frame__head">
+        <div class="ui-frame__start" id="settings-actions"><button type="button" id="settings-back" class="ui-button ui-button--secondary ui-button--sm" data-back>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button></div>
+        <h2 class="ui-frame__title" id="settings-title">Settings</h2>
+        <div class="ui-frame__end"></div>
+      </header>
+      <div class="ui-frame__body" id="settings-body"></div>
     </section>
   </section>
 

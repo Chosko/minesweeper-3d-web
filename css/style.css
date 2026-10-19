@@ -89,6 +89,40 @@ kbd {
   #records-frame .ui-frame__end { grid-column: 1 / -1; justify-content: flex-start; }
   #records-body { padding: var(--space-4); }
 }
+/* The Settings page (#settings): its window on the backdrop at the canvas's size, Back in its head,
+   the body scrolling. The widest window's three columns (js/settings/page.js SETTINGS_COLUMNS)
+   regroup by placement alone: two from the kit breakpoint (css/components.css), one below it in the
+   phone's order. Each setting is a row, its name (and note) at the start and its control at the end,
+   a slider's value before its track so every control ends on the row's edge for the focus moves;
+   on a phone the window is full-bleed and the bindings device choice spans the panel, each option
+   wrapping its label. */
+#settings-frame { width: 1640px; height: 100%; }
+#settings-columns [data-section="controls"] { grid-area: controls; }
+#settings-columns [data-section="graphics"] { grid-area: graphics; }
+#settings-columns [data-section="theme"] { grid-area: theme; }
+#settings-columns [data-section="audio"] { grid-area: audio; }
+#settings-columns [data-section="bindings"] { grid-area: bindings; }
+#settings-columns [data-section="data"] { grid-area: data; }
+@media (min-width: 1600px) { #settings-columns { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-areas: none; } }
+@media (max-width: 1599px) { #settings-columns > .ui-column { display: contents; } }
+@media (max-width: 1023px) { #settings-columns { grid-template-areas: "controls" "graphics" "theme" "audio" "bindings" "data"; } }
+#settings-columns [data-setting-row] { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-rows: 1fr auto; align-items: center; gap: 0 var(--space-3); }
+#settings-columns [data-setting-row] > :is(.ui-slider, .ui-toggle) { display: contents; }
+#settings-columns [data-setting-row] :is(.ui-slider__label, .ui-toggle__label, .ui-text) { grid-area: 1 / 1; }
+#settings-columns [data-setting-row]:has(> .ui-text--muted) :is(.ui-slider__label, .ui-toggle__label, .ui-text) { align-self: end; }
+#settings-columns [data-setting-row] > .ui-text--muted { grid-area: 2 / 1; align-self: start; }
+#settings-columns [data-setting-row] .ui-slider__value { grid-area: 1 / 2 / span 2; justify-self: end; }
+#settings-columns [data-setting-row] .ui-slider__input { grid-area: 1 / 3 / span 2; width: 220px; }
+#settings-columns [data-setting-row] :is(.ui-toggle__input, .ui-segmented) { grid-area: 1 / 2 / span 2 / span 2; justify-self: end; }
+#set-bind-choices { align-items: flex-start; }
+@media (max-width: 719px) {
+  #settings { padding: 0; }
+  #settings-frame { width: 100%; border-radius: 0; box-shadow: none; }
+  #settings-body { padding: var(--space-4); }
+  #settings-columns [data-setting-row] .ui-slider__input { width: 170px; }
+  #set-bind-device { display: flex; width: 100%; }
+  #set-bind-device > .ui-segmented__option { flex: 1 1 0; min-width: 0; padding-inline: var(--space-2); white-space: normal; }
+}
 #records-chart { display: block; width: 100%; height: 160px; }
 #records-best-chart { display: block; width: 100%; height: 160px; }
 :is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) { width: 100%; border-collapse: collapse; font-variant-numeric: var(--font-numeric-tabular); }
@@ -218,14 +252,6 @@ kbd {
 .esc-row { display: flex; align-items: center; gap: var(--space-3); }
 [data-esc-hint] { white-space: nowrap; }
 .esc-row [data-esc-hint] { padding: var(--space-1) var(--space-2); }
-/* Settings' Back stays in view: a sticky row at the bottom of the card's scroll area, which focus
-   moves keep the focused control above. */
-#settings { scroll-padding-bottom: calc(var(--space-8) * 3); }
-#settings-actions {
-  position: sticky; bottom: 0;
-  margin: 0 calc(-1 * var(--space-6)) calc(-1 * var(--space-6));
-  padding: var(--space-3) var(--space-6);
-}
 
 /* ---------- controls modal ---------- */
 .modal { z-index: var(--z-modal); }

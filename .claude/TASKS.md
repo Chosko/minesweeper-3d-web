@@ -610,7 +610,7 @@ Feature: shared-screen-layout
 
 ## 171. Settings page in the shared layout
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, js/settings/page.js, tests/settings-page.test.mjs, tests/settings-reset.test.mjs, tests/components.test.mjs
 Preconditions: 160, 163

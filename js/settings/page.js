@@ -21,20 +21,28 @@
 //                                schema default), carrying data-setting="key"; ids are `set-<key>`.
 //                                With labelledBy, a choice shows no label of its own and takes its
 //                                name from that element.
-// settingsPageHtml()           → one kit column composition (ui-columns) holding a section per
-//                                SETTINGS_SECTIONS entry, each a column — the Controls section ending
-//                                in the Controls action (#set-controls, CONTROLS_ACTION), which opens
-//                                the controls reference — then, across the width
-//                                (ui-columns__span), the bindings panel whose lists (#settings-bindings,
-//                                filled by bindingsSectionHtml) are columns of their own, and the Data panel
-//                                (#settings-data): first the export — its line (EXPORT_LINE), the
-//                                hidden nothing-to-export line and "Export history (CSV)" and
-//                                "Export all (JSON)" (bound by bindExportActions,
-//                                js/records/export.js) — then the reset's line, the
-//                                "Reset all data…" button, the hidden confirmation (RESET_MESSAGE,
-//                                Reset all data, Cancel) and the hidden warning line. A control
-//                                whose label is its section's title is named by the section heading.
-// bindingsSectionHtml(glyphs?, camera?) → each mode's bindings per input device, controller
+// settingsPageHtml()           → one kit column composition (ui-columns, #settings-columns) of the
+//                                SETTINGS_COLUMNS, each a ui-column stacking its sections (ui-panel,
+//                                data-section naming it, under its ui-section-label): a section per
+//                                SETTINGS_SECTIONS entry, each setting a ui-row of its control and,
+//                                for a SETTING_NOTES entry, its muted note — the Controls section
+//                                ending in the Controls action (#set-controls, CONTROLS_ACTION),
+//                                which opens the controls reference — the bindings panel (the Mode
+//                                and Device choices, #set-bind-mode and #set-bind-device, then the
+//                                list, #settings-bindings, filled by bindingsSectionHtml) and the
+//                                Data panel (#settings-data): first the export — its line
+//                                (EXPORT_LINE), the hidden nothing-to-export line and "Export history
+//                                (CSV)" and "Export all (JSON)" (bound by bindExportActions,
+//                                js/records/export.js) — then a rule, the reset's line, the "Reset
+//                                all data…" button, the hidden confirmation (RESET_MESSAGE, Reset all
+//                                data, Cancel) and the hidden warning line. A control whose label is
+//                                its section's title is named by the section label. The columns are
+//                                the widest window's; narrower windows regroup the sections by
+//                                placement alone (css/style.css), and a section SETTINGS_COLUMNS does
+//                                not list joins the last column.
+// bindingsSectionHtml(glyphs?, camera?, { mode?, device? }) → the bindings list (dl.controls) of one
+//                                mode (default Classic 2D) for one input device (default the keyboard;
+//                                one the mode does not list falls back to its first), controller
 //                                buttons in `glyphs`, 3D's for the Camera setting's `camera`.
 // bindSettingControls(elements, store, { onUserChange?, theme?, themeSheet? }) → unbind. Each element
 //   is a control root carrying data-setting: it shows the store's value (also the loaded one, and
@@ -97,6 +105,16 @@ const SLIDERS = Object.freeze({
 });
 
 const KINDS = { number: 'slider', boolean: 'toggle', choice: 'segmented' };
+
+/** The page's columns on the widest window, each a stack of section ids. */
+export const SETTINGS_COLUMNS = Object.freeze([
+  Object.freeze(['controls', 'audio']),
+  Object.freeze(['graphics', 'theme']),
+  Object.freeze(['bindings', 'data']),
+]);
+
+/** A setting's muted note beside its name: the settings only the 3D game uses. */
+export const SETTING_NOTES = Object.freeze({ lookSensitivity: '3D', camera: '3D', fieldOfView: '3D' });
 
 /** The tokens a theme's swatch shows, in stripe order: its ground, surface, accent and ink. */
 export const SWATCH_TOKENS = Object.freeze(['--color-ground', '--color-surface', '--color-accent-fill', '--color-ink']);
@@ -174,16 +192,40 @@ export function settingControlHtml(key, value = SCHEMA[key]?.default, { labelled
 /** The Controls section's action: the controls reference, each mode's bindings, in a panel over the page. */
 export const CONTROLS_ACTION = 'Controls';
 
+const sectionLabel = (id, title) => `<div class="ui-section-label"><h3 class="ui-section-label__text" id="set-sec-${id}">${title}</h3></div>`;
+const sectionOpen = (id, extra = '') => `<section class="ui-panel ui-actions"${extra} data-section="${id}" aria-labelledby="set-sec-${id}">`;
+
+// One setting's row: its control and, for a SETTING_NOTES entry, the note.
+function settingRowHtml(key) {
+  const note = SETTING_NOTES[key] ? `<span class="ui-text ui-text--muted" id="set-${key}-note">${SETTING_NOTES[key]}</span>` : '';
+  return `<div class="ui-row" data-setting-row="${key}">${settingControlHtml(key)}${note}</div>`;
+}
+
+const choiceHtml = (id, label, options, checked) => `<div class="ui-segmented" role="radiogroup" aria-label="${label}" id="${id}">`
+  + options.map((o) => `<button type="button" role="radio" aria-checked="${o.id === checked}" class="ui-segmented__option" data-value="${o.id}">${o.label}</button>`).join('')
+  + '</div>';
+
+// The devices the Device choice offers: every device a mode lists, in their order.
+const choiceDevices = () => [...new Map(BINDING_MODES.flatMap((m) => bindingDevices(m.id)).map((d) => [d.id, d])).values()];
+
+function bindingsPanelHtml() {
+  return `${sectionOpen('bindings')}${sectionLabel('bindings', 'Bindings')}`
+    + `<div class="ui-row" id="set-bind-choices">${choiceHtml('set-bind-mode', 'Mode', BINDING_MODES, BINDING_MODES[0].id)}`
+    + `${choiceHtml('set-bind-device', 'Device', choiceDevices(), choiceDevices()[0].id)}</div>`
+    + '<div id="settings-bindings"></div></section>';
+}
+
 export function settingsPageHtml() {
   const action = (id) => (id === 'controls'
     ? `<button type="button" class="ui-button ui-button--secondary" id="set-controls">${CONTROLS_ACTION}</button>` : '');
-  const sections = SETTINGS_SECTIONS.map((s) => `<section class="ui-panel ui-actions" aria-labelledby="set-sec-${s.id}">`
-    + `<h3 class="ui-heading" id="set-sec-${s.id}">${s.title}</h3>`
-    + `${s.settings.map((k) => settingControlHtml(k, undefined, { labelledBy: SETTING_LABELS[k] === s.title ? `set-sec-${s.id}` : null })).join('')}${action(s.id)}</section>`);
-  return `<div class="ui-columns">${sections.join('')}`
-    + '<section class="ui-panel ui-columns__span" aria-labelledby="set-sec-bindings"><h3 class="ui-heading" id="set-sec-bindings">Bindings</h3>'
-    + '<div id="settings-bindings" class="ui-columns"></div></section>'
-    + `${dataPanelHtml()}</div>`;
+  const panels = new Map(SETTINGS_SECTIONS.map((s) => [s.id, `${sectionOpen(s.id)}${sectionLabel(s.id, s.title)}`
+    + `${s.settings.map((k) => (SETTING_LABELS[k] === s.title
+      ? settingControlHtml(k, undefined, { labelledBy: `set-sec-${s.id}` }) : settingRowHtml(k))).join('')}${action(s.id)}</section>`]));
+  panels.set('bindings', bindingsPanelHtml());
+  panels.set('data', dataPanelHtml());
+  const listed = new Set(SETTINGS_COLUMNS.flat());
+  const columns = SETTINGS_COLUMNS.map((ids, i) => [...ids, ...(i === SETTINGS_COLUMNS.length - 1 ? [...panels.keys()].filter((id) => !listed.has(id)) : [])]);
+  return `<div class="ui-columns" id="settings-columns">${columns.map((ids) => `<div class="ui-column">${ids.map((id) => panels.get(id)).join('')}</div>`).join('')}</div>`;
 }
 
 export const RESET_MESSAGE = 'Delete your records, game history, replays, settings, last board choices (Classic 2D and 3D) '
@@ -191,14 +233,13 @@ export const RESET_MESSAGE = 'Delete your records, game history, replays, settin
 
 // The Data panel: the place of everything about the player's stored data.
 function dataPanelHtml() {
-  return '<section class="ui-panel ui-actions ui-columns__span" id="settings-data" aria-labelledby="set-sec-data">'
-    + '<h3 class="ui-heading" id="set-sec-data">Data</h3>'
+  return `${sectionOpen('data', ' id="settings-data"')}${sectionLabel('data', 'Data')}`
     + `<p class="ui-text ui-text--muted" id="set-export-text">${EXPORT_LINE}</p>`
     + '<p class="ui-text ui-text--muted hidden" id="set-export-note" role="status"></p>'
     + '<div class="ui-actions ui-actions--row">'
     + '<button type="button" class="ui-button ui-button--secondary" id="set-export-csv">Export history (CSV)</button>'
     + '<button type="button" class="ui-button ui-button--secondary" id="set-export-json">Export all (JSON)</button>'
-    + '</div>'
+    + '</div><hr class="ui-divider">'
     + '<p class="ui-text ui-text--muted">Delete everything the game keeps in this browser and start over as a new player.</p>'
     + '<p class="ui-text ui-text--warning hidden" id="set-reset-note" role="status"></p>'
     + '<button type="button" class="ui-button ui-button--secondary" id="set-reset">Reset all data…</button>'
@@ -261,10 +302,10 @@ export function bindResetPanel({ open, panel, yes, no, note }, { reset }) {
   };
 }
 
-export function bindingsSectionHtml(glyphs, camera) {
-  return BINDING_MODES.flatMap((mode) => bindingDevices(mode.id).map((device) => '<div>'
-    + `<h4 class="ui-heading">${mode.label} · ${device.label}</h4>`
-    + `<dl class="controls">${bindingsListHtml(bindingRows(mode.id, device.id, camera), glyphs)}</dl></div>`)).join('');
+export function bindingsSectionHtml(glyphs, camera, { mode = BINDING_MODES[0].id, device = 'keyboard' } = {}) {
+  const devices = bindingDevices(mode);
+  const shown = devices.some((d) => d.id === device) ? device : devices[0].id;
+  return `<dl class="controls">${bindingsListHtml(bindingRows(mode, shown, camera), glyphs)}</dl>`;
 }
 
 const hasClass = (el, cls) => (el.getAttribute('class') ?? '').split(/\s+/).includes(cls);

@@ -3,7 +3,7 @@
 // the hint strip and the main menu's key hints — is drawn from the bindings source
 // (js/settings/bindings.js) for the active mode and the active device (the controller in the
 // connected controller's glyphs).
-import { formatOverlayTime, formatMineCount, mineCounterDigits, bindSegmented, showKeyHints } from './ui/components.js';
+import { formatOverlayTime, formatMineCount, mineCounterDigits, bindSegmented, segmentedState, showKeyHints } from './ui/components.js';
 import { GLYPHS } from './gamepad.js';
 import { bindingsHtml, hudStripHtml, hintStripHtml, helpFootHtml, hintText, keyHintKeys } from './settings/bindings.js';
 import { settingsPageHtml, bindingsSectionHtml, bindResetPanel } from './settings/page.js';
@@ -110,6 +110,10 @@ export class UI {
     // The Settings page's controls are generated from the settings schema and bound by the shell.
     $('settings-body').innerHTML = settingsPageHtml();
     this.el.settingsBindings = $('settings-bindings');
+    // Its bindings panel: one mode's list for one device, each picked by its choice; the device opens on the active one.
+    this._settingsBind = { mode: 'classic-2d', device: 'keyboard' };
+    bindSegmented($('set-bind-mode'), { horizontal: true, onChange: (mode) => { this._settingsBind.mode = mode; this._renderSettingsBindings(); } });
+    bindSegmented($('set-bind-device'), { horizontal: true, onChange: (device) => { this._settingsBind.device = device; this._renderSettingsBindings(); } });
     // The Data panel's Reset all data, behind its confirmation; the shell runs the reset.
     this._reset = bindResetPanel({
       open: $('set-reset'), panel: $('set-reset-confirm'), yes: $('set-reset-yes'), no: $('set-reset-no'), note: $('set-reset-note'),
@@ -327,8 +331,21 @@ export class UI {
     this.showMenu();
     this._hideMenus();
     this._reset.clear(); // left with its confirmation open: it opens closed
-    this.el.settingsBindings.innerHTML = bindingsSectionHtml(this._glyphs, this._camera);
+    this._settingsBind.device = this._bindDevice(this._settingsBind.mode);
+    this._renderSettingsBindings();
     this.el.settings.classList.remove('hidden');
+  }
+  /** The Settings page's bindings list for the mode and device its choices show. */
+  _renderSettingsBindings() {
+    const { mode, device } = this._settingsBind;
+    for (const [id, value] of [['set-bind-mode', mode], ['set-bind-device', device]]) {
+      const options = [...$(id).querySelectorAll('.ui-segmented__option')];
+      segmentedState(options.length, options.findIndex((o) => o.dataset.value === value)).forEach((st, i) => {
+        options[i].setAttribute('aria-checked', String(st.checked));
+        options[i].tabIndex = st.tabIndex;
+      });
+    }
+    this.el.settingsBindings.innerHTML = bindingsSectionHtml(this._glyphs, this._camera, { mode, device });
   }
   /** Close the Settings page's Reset all data confirmation (Back); false when none is open. */
   closeResetConfirm() {
@@ -709,13 +726,13 @@ export class UI {
   }
   /** Redraw every bindings surface for the active mode and device. */
   _renderBindings() {
-    for (const id of ['menu-hints', 'c2d-choice', 'board-choice', 'pause', 'coming-soon', 'results', 'records']) showKeyHints($(id), (action) => keyHintKeys(action, this._bindDevice(this._mode), this._glyphs));
+    for (const id of ['menu-hints', 'c2d-choice', 'board-choice', 'pause', 'coming-soon', 'results', 'records', 'settings']) showKeyHints($(id), (action) => keyHintKeys(action, this._bindDevice(this._mode), this._glyphs));
     this._renderHelp();
     this._renderHudStrip();
     this.el.controlsBody.innerHTML = bindingsHtml(this._controlsTab, this._bindDevice(this._controlsTab), this._glyphs, this._camera);
     this.el.pauseControls.innerHTML = bindingsHtml(this._mode, this._bindDevice(this._mode), this._glyphs, this._camera);
     if (this._hint) this.setHintStrip(true, { scroll: this._hintKind === 'scroll', learn: this._learnHint });
-    if (!this.el.settings.classList.contains('hidden')) this.el.settingsBindings.innerHTML = bindingsSectionHtml(this._glyphs, this._camera);
+    if (!this.el.settings.classList.contains('hidden')) this._renderSettingsBindings();
   }
 
   /** Short global notice (e.g. "Controller connected"); none while the replay viewer shows. */

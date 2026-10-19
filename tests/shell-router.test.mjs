@@ -592,7 +592,9 @@ test('in a browser, the arrow keys alone walk the menu, the 2D board choice, the
     assert.equal(await mode(), 'settings');
     assert.equal((await focus()).id, 'set-lookSensitivity');
     await page.keyboard.press('ArrowUp');
-    assert.equal((await focus()).id, 'set-lookSensitivity', 'nothing above the first control: Up stays (no wrap)');
+    assert.equal((await focus()).id, 'settings-back', 'above the first control: the head\'s Back');
+    await page.keyboard.press('ArrowDown');
+    assert.equal((await focus()).id, 'set-lookSensitivity', 'and Down returns to it');
     await page.focus('#set-fullscreen');
     await page.keyboard.press('ArrowDown');
     assert.equal(await page.evaluate(() => !!document.activeElement.closest('#set-renderResolution')), true, 'Down reaches its choice');
@@ -606,7 +608,50 @@ test('in a browser, the arrow keys alone walk the menu, the 2D board choice, the
     await page.keyboard.press('ArrowDown');
     assert.notEqual((await focus()).id, on, 'Down moves focus off the choice');
     assert.equal(await choice(), was, 'without changing it');
-    await walkTo('ArrowDown', 'settings-back');
+    // At 1280 px the sections sit in two placed columns: Down walks them as they show.
+    await page.focus('#set-controls');
+    await page.keyboard.press('ArrowDown');
+    assert.equal((await focus()).id, 'set-fullscreen', 'Down from Controls reaches Graphics, below it');
+    // Down into a choice lands on its checked option, wherever that sits.
+    await page.evaluate(() => globalThis.__ms.settings.set('renderResolution', 'sharp'));
+    await page.focus('#set-fullscreen');
+    await page.keyboard.press('ArrowDown');
+    assert.deepEqual(await page.evaluate(() => [document.activeElement.closest('[role="radiogroup"]')?.id, document.activeElement.dataset.value]),
+      ['set-renderResolution', 'sharp'], 'Down lands on the checked option, not the nearest one');
+    await page.evaluate(() => globalThis.__ms.settings.set('renderResolution', 'auto'));
+    // From the first control, the arrows alone reach every control of the page: each control, and each
+    // choice at one of its options, in the placed columns (1280 px) and the laid-out ones (1920 px).
+    const keyOf = () => page.evaluate(() => {
+      const el = document.activeElement;
+      return el.id || `${el.closest('[role="radiogroup"]').id}|${el.dataset.value}`;
+    });
+    const focusKey = (key) => page.evaluate((k) => {
+      const [group, value] = k.split('|');
+      (value === undefined ? document.getElementById(group) : document.querySelector(`#${group} [data-value="${value}"]`)).focus();
+    }, key);
+    for (const size of [{ width: 1280, height: 800 }, { width: 1920, height: 1080 }]) {
+      await page.setViewportSize(size);
+      await page.focus('#set-lookSensitivity');
+      const seen = new Set([await keyOf()]);
+      const queue = [...seen];
+      while (queue.length) {
+        const from = queue.shift();
+        for (const key of ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']) {
+          await focusKey(from);
+          await page.keyboard.press(key);
+          const to = await keyOf();
+          if (!seen.has(to)) { seen.add(to); queue.push(to); }
+        }
+      }
+      const targets = await page.evaluate(() => [...document.querySelectorAll('#settings button, #settings input')]
+        .filter((e) => !e.disabled && e.getBoundingClientRect().width > 0)
+        .map((e) => e.closest('[role="radiogroup"]')?.id ?? e.id));
+      const reached = new Set([...seen].map((k) => k.split('|')[0]));
+      assert.deepEqual([...new Set(targets)].filter((id) => !reached.has(id)), [], `${size.width} px: the arrows reach every control`);
+      for (const id of ['set-reset', 'set-bind-device', 'settings-back']) assert.ok(reached.has(id), `${size.width} px: #${id} reached`);
+    }
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.evaluate(() => globalThis.__ms.settings.set('renderResolution', 'auto'));
     const backInView = () => page.evaluate(() => {
       const r = document.getElementById('settings-back').getBoundingClientRect();
       return r.top >= 0 && r.bottom <= innerHeight && r.height > 0;
@@ -614,20 +659,20 @@ test('in a browser, the arrow keys alone walk the menu, the 2D board choice, the
     for (const size of [{ width: 1280, height: 800 }, { width: 390, height: 700 }]) {
       await page.setViewportSize(size);
       for (const top of [0, 1e6]) {
-        await page.evaluate((y) => { document.getElementById('settings').scrollTop = y; }, top);
+        await page.evaluate((y) => { document.getElementById('settings-body').scrollTop = y; }, top);
         assert.equal(await backInView(), true, `Back is in view at ${size.width}×${size.height}, scrolled to ${top ? 'the bottom' : 'the top'}`);
       }
     }
-    // A focus move scrolls the focused control into view above the sticky row.
-    await page.evaluate(() => { document.getElementById('settings').scrollTop = 0; });
-    await walkTo('ArrowDown', 'settings-back');
-    await walkTo('ArrowUp', 'set-lookSensitivity');
-    const clear = await page.evaluate(() => {
-      const row = document.getElementById('settings-back').parentElement.getBoundingClientRect();
-      const tops = [...document.querySelectorAll('#settings-body button, #settings-body input')].map((e) => e.getBoundingClientRect());
-      return document.activeElement.getBoundingClientRect().bottom <= row.top && tops.length > 0;
+    // A focus move scrolls the focused control into the frame's body, below its head.
+    await page.evaluate(() => { document.getElementById('settings-body').scrollTop = 0; });
+    await page.focus('#set-reset');
+    const shown = await page.evaluate(() => {
+      const body = document.getElementById('settings-body').getBoundingClientRect();
+      const r = document.activeElement.getBoundingClientRect();
+      return r.top >= body.top && r.bottom <= body.bottom;
     });
-    assert.equal(clear, true, 'the focused control is not under the Back row');
+    assert.equal(shown, true, 'the focused control is in view under the head');
+    await page.setViewportSize({ width: 1280, height: 800 });
 
     // The Controls action's panel: its tabs keep Left/Right, and Up leaves them for Close.
     await page.click('#set-controls');

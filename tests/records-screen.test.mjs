@@ -830,12 +830,9 @@ test('in a browser, Records and Settings lay out in columns at 1280 px, one colu
         assert.deepEqual(records.wide, [], `${theme} ${width} px: Records never scrolls sideways`);
         await page.keyboard.press('Escape');
         await page.click('#menu-entry-settings');
-        const settings = await measure('settings', '#settings-body > .ui-columns > section:not(.ui-columns__span)');
-        if (width >= 1024) assert.ok(settings.columns >= 2, `${theme} ${width} px: Settings sections side by side (${settings.columns})`);
-        else assert.equal(settings.columns, 1, `${theme} ${width} px: Settings in one column`);
+        const settings = await measure('settings', '#settings-columns [data-section]');
+        assert.equal(settings.columns, width >= 1024 ? 2 : 1, `${theme} ${width} px: Settings in ${width >= 1024 ? 2 : 1} column(s)`);
         assert.deepEqual(settings.wide, [], `${theme} ${width} px: Settings never scrolls sideways`);
-        const bindings = await measure('settings', '#settings-bindings > div');
-        assert.equal(bindings.columns > 1, width >= 1024, `${theme} ${width} px: the bindings lists side by side only in columns`);
         await page.keyboard.press('Escape');
       }
     }
