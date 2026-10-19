@@ -3,7 +3,7 @@
 The kit of DOM components every screen of the game is built from — buttons,
 menu lists, cards and panels, toggles, sliders, segmented choices, stat
 readouts and the overlay bar — and the m1 screens composed from it: the main
-menu, the in-game overlay and the results screen, in both themes.
+menu, the in-game overlay and the results screen, in every theme.
 
 The kit's component catalogue below still holds; its styling is superseded
 by [theme-system](./theme-system.md), where every theme styles each
@@ -47,7 +47,7 @@ In scope (m1-classic-2d):
 - The m1 screens composed from the kit: the main menu, the in-game overlay
   over both the Classic 2D board and the 3D board, the pause card and the
   results screen.
-- Both themes for all of the above, from `design-tokens-and-themes`.
+- Every theme for all of the above, styled by `theme-system`.
 - Low-fidelity styling: plain, functional components and screens, every
   state distinct and legible, with simple placeholder values wherever a
   value is a visual-design judgement (relief, shadows, motion). The
@@ -69,9 +69,8 @@ Non-goals:
   screen are built from the kit, with its code chip (a board code with Copy
   and Copy link) on the results screen, the Daily screen, the Records rows
   and the replay viewer.
-- The 3D scene behind the overlay: its sky follows the theme through
-  `design-tokens-and-themes`, and its cubes keep one look under both
-  themes.
+- The 3D scene behind the overlay: its sky and its cubes follow the theme
+  through `themed-board-art-and-motion`.
 
 ## Architecture
 
@@ -81,8 +80,8 @@ with no framework and no build step (see
 described in [app-shell.md](../../context/app-shell.md).
 
 - **Component styles.** One stylesheet of component classes, each styled
-  only from tokens. A component's look in either theme follows from the
-  token values; no component carries theme-specific rules of its own.
+  only from tokens. A component's look in each theme comes from that
+  theme's stylesheet (`theme-system`).
 - **Markup conventions.** Each component is a documented markup pattern —
   element, class and ARIA role — rather than a JavaScript widget, matching
   the shell's static-markup-toggled-by-class approach. Components that need
@@ -95,9 +94,8 @@ described in [app-shell.md](../../context/app-shell.md).
   in the way the shell's controller layer already expects.
 - **Overlay bar.** The in-game overlay — timer, mine counter, click
   counter, pause — as one component for both boards. Over the 3D board it
-  stays readable over the scene's sky in both themes — light in the light
-  theme, dark in the dark one — by carrying its own themed surface rather
-  than drawing directly on the scene. In Classic 2D it sits on the top
+  stays readable over the scene's sky in every theme by carrying its own
+  themed surface rather than drawing directly on the scene. In Classic 2D it sits on the top
   edge of the board's framed panel (`classic-2d-square-play`
   § Architecture, "Board view"), with the board-size label, on the panel's
   themed surface in place of its own, and on a coarse pointer carries the
@@ -130,7 +128,7 @@ described in [app-shell.md](../../context/app-shell.md).
 
 - No persisted state. Component state (focus, pressed, selected option) is
   DOM state owned by the screen that hosts the component.
-- All visual values come from `design-tokens-and-themes`.
+- All visual values come from the active theme (`theme-system`).
 
 ## Interfaces and contracts
 
@@ -139,15 +137,15 @@ described in [app-shell.md](../../context/app-shell.md).
   every screen that uses it.
 - **Accessibility** — every control has an accessible name; keyboard and
   controller focus is always visible — on buttons, menu entries and board
-  options as the selected state. Text meets the contrast contract of `design-tokens-and-themes` in
-  both themes. On every pointer, labels are at least 12 px and key caps at
+  options as the selected state. Text meets the contrast contract of `theme-system`'s conformance
+  tests in every theme. On every pointer, labels are at least 12 px and key caps at
   least 11 px. On a coarse pointer, and only there, switches (the Reveal /
   Flag switch included), slider thumbs, the overlay bar's Pause and the 3D
   touch toolbar's buttons take a 44 px touch; a fine pointer keeps every
   hit area's size.
 - **Overlay readability** — the overlay bar meets the contrast contract
   against the surface it sits on — its own over the 3D board, the panel's
-  in Classic 2D — in both themes.
+  in Classic 2D — in every theme.
 - **Controller parity** — anything clickable is reachable and operable with
   a controller, per the shell's controller navigation.
 

@@ -2,8 +2,7 @@
 
 How a square-grid Classic 2D tile looks in every state — closed, pressed,
 revealed, flagged, mine, exploded mine, wrong flag — and the colours of the
-numbers 1 to 8, in the light and the dark theme, drawn on the Canvas 2D
-board.
+numbers 1 to 8, in every theme, drawn on the Canvas 2D board.
 
 The tile and number colours, the cube-face look as the one drawing and the
 unthemed 3D palette below are superseded by
@@ -25,7 +24,7 @@ Classic 2D offers.
 
 In scope (m1-classic-2d):
 
-- The square tile in each state, for both themes: closed, pressed (the
+- The square tile in each state, in every theme: closed, pressed (the
   feedback under a held click or chord), revealed empty, revealed number,
   flagged, mine, exploded mine and wrong flag after a loss.
 - Number colours 1–8 for each theme, each meeting the contrast contract
@@ -35,7 +34,7 @@ In scope (m1-classic-2d):
   owns layout and hit-testing while this feature owns appearance.
 - Legibility down to the smallest tile size Classic 2D uses for an Expert or
   large custom board.
-- The cube-face look, in both themes: each state is drawn from the recipe a
+- The cube-face look, in every theme: each state is drawn from the recipe a
   3D cube face is drawn from — rim, bevel, highlight and border — with the
   3D number, flag and mine artwork, so both modes read as one game:
   - closed is the raised face (rim, bevel lit top-left and dark
@@ -54,9 +53,9 @@ In scope (m1-classic-2d):
 
 Non-goals:
 
-- The 3D cube tiles. The recipe is shared, but the 3D scene keeps its tile
-  atlas, number colours and unthemed palette exactly as they are, under both
-  themes ([rendering.md](../../context/rendering.md)).
+- The 3D cube tiles. The recipe is shared; the 3D atlas, number colours
+  and palette are `themed-board-art-and-motion`'s
+  ([rendering.md](../../context/rendering.md)).
 - Hexagonal and triangle tiles, and Surface tiles — deferred to `m6-launch`.
 - A colour-blind-safe number set, unless the base number colours already
   meet it — deferred to `m6-launch`.
@@ -111,7 +110,7 @@ palette.
 - **Contrast contract** — every number colour reaches at least 4.5:1 against
   every point of its theme's shaded revealed face, both ends of its shading,
   and closed and revealed tiles are distinguishable by more than colour
-  alone (relief and border), in both themes.
+  alone (relief and border), in every theme.
 - **Minimum size** — states and numbers stay legible down to the smallest
   tile size the Classic 2D renderer allows; that minimum is a shared
   constant both features respect.
@@ -132,4 +131,4 @@ any window 1024 px wide (`docs/UX_REVIEW.md` decision 10). Measured in the
 Classic 2D screen's framed panel with 16 px window margins, Expert fits a
 1024 px wide window at the floor from 520 px tall, and plays at 32 px in a
 1024 × 768 window. Screenshots at 26 px, at device pixel ratios 1 and 2,
-show every state and number of the cube-face look legible in both themes.
+show every state and number of the cube-face look legible in every theme.

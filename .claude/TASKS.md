@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 212
+Last task number: 213
 
 ---
 
@@ -512,7 +512,7 @@ Feature: theme-system
 
 Status: [MISSING]
 Target: claude
-Files: .claude/context/app-shell-kit.md, .claude/context/settings.md, .claude/context/testing.md, .claude/context/rendering.md, .claude/context/INDEX.md, README.md, .claude/domain/features/theme-system.md, .claude/domain/features/design-tokens-and-themes.md, .claude/domain/features/screen-components.md, .claude/domain/features/settings.md
+Files: .claude/context/app-shell-kit.md, .claude/context/settings.md, .claude/context/testing.md, .claude/context/rendering.md, .claude/context/INDEX.md, README.md, .claude/domain/features/theme-system.md, .claude/domain/features/design-tokens-and-themes.md, .claude/domain/features/settings.md
 Preconditions: 157, 158, 159, 160, 161
 Feature: theme-system
 
@@ -738,6 +738,16 @@ Feature: themed-board-art-and-motion
 
 ---
 
+## 213. 3D selection glow line, selected-face tint and confetti colours drawn from the board module
+
+Status: [MISSING]
+Target: claude
+Files: js/render.js, tests/render-3d-selection.test.mjs, tests/render-3d-feedback.test.mjs
+Preconditions: 181, 183
+Feature: themed-board-art-and-motion
+
+---
+
 ## 184. Cell motion player
 
 Status: [MISSING]
@@ -772,8 +782,8 @@ Feature: themed-board-art-and-motion
 
 Status: [MISSING]
 Target: claude
-Files: .claude/context/classic2d-tile-skin.md, .claude/context/classic2d-board-view.md, .claude/context/rendering.md, .claude/context/app-shell-kit.md, .claude/context/replay-playback.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md, .claude/domain/features/themed-board-art-and-motion.md, .claude/domain/features/square-tile-skin.md
-Preconditions: 180, 181, 182, 183, 184, 185, 186
+Files: .claude/context/classic2d-tile-skin.md, .claude/context/classic2d-board-view.md, .claude/context/rendering.md, .claude/context/rendering-effects.md, .claude/context/app-shell-kit.md, .claude/context/replay-playback.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md, .claude/domain/features/themed-board-art-and-motion.md, .claude/domain/features/square-tile-skin.md
+Preconditions: 180, 181, 182, 183, 184, 185, 186, 213
 Feature: themed-board-art-and-motion
 
 ---

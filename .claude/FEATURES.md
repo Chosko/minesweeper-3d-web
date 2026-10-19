@@ -268,7 +268,7 @@ Tasks: 157, 158, 159, 160, 161, 162
 Status: [PLANNED]
 Doc: .claude/domain/features/themed-board-art-and-motion.md
 Source: product-design.md § Visual design system (m2b-themes)
-Tasks: 180, 181, 182, 183, 184, 185, 186, 187
+Tasks: 180, 181, 182, 183, 184, 185, 186, 187, 213
 
 ---
 

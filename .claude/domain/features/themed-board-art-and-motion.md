@@ -43,9 +43,10 @@ In scope (m2b-themes):
   tile too.
 - **3D cubes** — the tile atlas is generated from the active theme's
   palette and 3D style, every state and number 0–26 included, never shipped
-  as a picture, and rebuilt on theme change; the selection outline and the
-  marked start cell's tint come from the palette. A painted slope is lit the
-  same way on every face of a cube, top faces included.
+  as a picture, and rebuilt on theme change; the selection outline, the
+  glow line inside it and the selected face's tint, the marked start cell's
+  tint and the confetti colours come from the palette. A painted slope is
+  lit the same way on every face of a cube, top faces included.
 - **Sky, fog and background** — from the board module, replacing the sky
   tokens.
 - **Cell motion** — per theme, per cell event (press, release, reveal,
@@ -60,7 +61,8 @@ In scope (m2b-themes):
   outline, shadow), set in Rubik, the theme's self-hosted font; every value
   — palette, numbers 1–26 in both modes, sky and fog, both styles'
   parameters, the cursor ring and the marked start cell, the selection
-  outline and glow, and the cell motion with the solved pulse — from the
+  outline, its glow line and the selected face's tint, the confetti
+  colours, and the cell motion with the solved pulse — from the
   canvas's *J-BoardSheet* (2D) and *J-3DSheet* (3D) artboards, passing the
   board conformance checks unchanged.
 - **The board conformance checks** that `theme-system`'s conformance tests
@@ -125,8 +127,9 @@ reads a stylesheet or imports a theme.
   one layer per state and per number 0–26, plus the sunk closed face the
   depth ingredient blends towards — and rebuilt when the theme changes. The
   sky gradient, fog and clear colour come from the board module's sky; the
-  ground grid keeps deriving its ink from the horizon. The selection outline
-  and the marked-cell tint come from the palette.
+  ground grid keeps deriving its ink from the horizon. The selection
+  outline, its inner glow line, the selected face's tint, the marked-cell
+  tint and the confetti colours come from the palette.
 - **Cell motion player.** One DOM-free module both renderers use. It holds
   the running cell animations: started by a cell event with the cell, the
   event, the visual state before and after, and the theme's description for
@@ -162,8 +165,9 @@ reads a stylesheet or imports a theme.
 - **Board module (per theme, static)** —
   - *palette*: closed face, closed edge and highlight, sunk face, revealed
     face and border, flag (pole and cloth), mine, exploded ground, wrong-flag
-    cross, board ground, cursor ring, 3D selection outline, 3D marked-cell
-    tint;
+    cross, board ground, cursor ring, 3D selection outline, its inner glow
+    line and the selected face's tint, 3D marked-cell tint, 3D confetti
+    colours;
   - *numbers*: 26 colours, 1 to 26 — Classic 2D uses 1–8, 3D all 26; the
     number font family and weight;
   - *sky*: horizon, zenith and nadir, and the fog colour (the horizon when

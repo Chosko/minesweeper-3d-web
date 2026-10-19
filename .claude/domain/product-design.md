@@ -195,7 +195,9 @@ in-game window around a board (timer, mine counter, restart, pause, and the
 live figures — 3BV progress, pace against the personal best, 3BV/s, clicks
 and flags) and the results screen, and a catalogue of themes that style it. The
 player picks a theme from a list on the Settings page; *Joyful tiles* is
-the default until they pick. The shared layout is designed together with
+the default until they pick. *Joyful tiles* replaces the light and dark
+looks: neither stays in the game, as a theme or as a variant of one, and a
+player whose stored choice is light or dark plays in *Joyful tiles*. The shared layout is designed together with
 *Joyful tiles*, and both are finished: every screen, at every window size
 the game supports, is drawn on the Claude Design canvas, with the theme's
 tokens and every kit component in every state. Later themes add styles, not

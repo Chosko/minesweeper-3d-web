@@ -1,8 +1,7 @@
 # Runbook: themes-tasks-implementation
 
 Created: 2026-10-13 · Source: /runbook-create interview (runbook themes-planning step 8) · Model: opus
-Last step number: 52
-Sequencing: Runs after the ux-review-tasks-implementation runbook is done and before the remaining steps of m3-tasks-implementation; steps follow PLAN.md's m2b-themes feature order, then task id.
+Last step number: 81
 
 ## [ ] 1. Implement task 157 — Theme registry, kit catalogue and the Joyful tiles theme folder
 
@@ -88,7 +87,7 @@ Context: none
 /task-implement 164 --review
 ```
 
-## [ ] 9. Implement task 165 — Main menu in the shared layout
+## [x] 9. Implement task 165 — Main menu in the shared layout
 
 Depends on: 7, 8
 
@@ -99,12 +98,36 @@ Context:
 /task-implement 165 --review
 ```
 
-## [ ] 10. Implement task 166 — Classic 2D board choice screen with its records panel
+Done: struck — for a parallel run its Depends on lacked the order against task 160, which edits the same files; replaced by step 53.
+
+## [ ] 53. Implement task 165 — Main menu in the shared layout
+
+Depends on: 4, 7, 8
+
+Context: none
+
+```prompt
+/task-implement 165 --review
+```
+
+## [x] 10. Implement task 166 — Classic 2D board choice screen with its records panel
 
 Depends on: 7
 
 Context:
 - 2026-10-19 (amend): Task 166 is retitled "Classic 2D board choice screen with its bests, Insert Board Code and Custom Random" and rebuilt from the J-C2D artboards: no records panel; the board code is a board option played with Play; Custom gains Random.
+
+```prompt
+/task-implement 166 --review
+```
+
+Done: struck — for a parallel run its Depends on lacked the order against task 165, which edits the same files; replaced by step 54.
+
+## [ ] 54. Implement task 166 — Classic 2D board choice screen with its bests, Insert Board Code and Custom Random
+
+Depends on: 7, 53
+
+Context: none
 
 ```prompt
 /task-implement 166 --review
@@ -134,9 +157,21 @@ Context: none
 
 Done: struck — task 208 skipped; task 173 (step 49) documents task 212.
 
-## [ ] 52. Implement task 212 — 3D presets without First box 1 and 2; Learn 3D's win offers Cube Intro
+## [x] 52. Implement task 212 — 3D presets without First box 1 and 2; Learn 3D's win offers Cube Intro
 
 Depends on: none
+
+Context: none
+
+```prompt
+/task-implement 212 --review
+```
+
+Done: struck — for a parallel run its Depends on lacked the order against tasks 165, 166, which edit the same files; replaced by step 55.
+
+## [ ] 55. Implement task 212 — 3D presets without First box 1 and 2; Learn 3D's win offers Cube Intro
+
+Depends on: 54
 
 Context: none
 
@@ -158,9 +193,21 @@ Context: none
 
 Done: struck — task 167 now also waits on task 207 (First box presets removed) and needs no human, its artboards being drawn; replaced by step 40.
 
-## [ ] 40. Implement task 167 — 3D board choice screen in the shared layout
+## [x] 40. Implement task 167 — 3D board choice screen in the shared layout
 
 Depends on: 10, 38
+
+Context: none
+
+```prompt
+/task-implement 167 --review
+```
+
+Done: struck — for a parallel run its Depends on named struck step 38; lacked the edge to task 212, its precondition; replaced by step 56.
+
+## [ ] 56. Implement task 167 — 3D board choice screen in the shared layout
+
+Depends on: 54, 55
 
 Context: none
 
@@ -182,9 +229,21 @@ Context: none
 
 Done: struck — task 168 needs no human, its artboards being drawn; replaced by step 41.
 
-## [ ] 41. Implement task 168 — Pause card, generating and failed-board cards, placeholder and confirmations in the shared layout
+## [x] 41. Implement task 168 — Pause card, generating and failed-board cards, placeholder and confirmations in the shared layout
 
 Depends on: 7
+
+Context: none
+
+```prompt
+/task-implement 168 --review
+```
+
+Done: struck — for a parallel run its Depends on lacked the order against tasks 165, 167, 212, which edit the same files; replaced by step 57.
+
+## [ ] 57. Implement task 168 — Pause card, generating and failed-board cards, placeholder and confirmations in the shared layout
+
+Depends on: 7, 56
 
 Context: none
 
@@ -206,9 +265,21 @@ Context: none
 
 Done: struck — task 169 needs no human, its artboards being drawn; replaced by step 42.
 
-## [ ] 42. Implement task 169 — Results screen redesigned in the shared layout
+## [x] 42. Implement task 169 — Results screen redesigned in the shared layout
 
 Depends on: 7
+
+Context: none
+
+```prompt
+/task-implement 169 --review
+```
+
+Done: struck — for a parallel run its Depends on lacked the order against task 168, which edits the same files; replaced by step 58.
+
+## [ ] 58. Implement task 169 — Results screen redesigned in the shared layout
+
+Depends on: 7, 57
 
 Context: none
 
@@ -230,9 +301,21 @@ Context: none
 
 Done: struck — task 170 now also waits on task 207 and needs no human, its artboards being drawn; replaced by step 43.
 
-## [ ] 43. Implement task 170 — Records screen in the shared layout, with its Leaderboards tab
+## [x] 43. Implement task 170 — Records screen in the shared layout, with its Leaderboards tab
 
 Depends on: 7, 38
+
+Context: none
+
+```prompt
+/task-implement 170 --review
+```
+
+Done: struck — for a parallel run its Depends on named struck step 38; lacked the edge to task 212, its precondition; lacked the order against task 169, which edits the same files; replaced by step 59.
+
+## [ ] 59. Implement task 170 — Records screen in the shared layout, with its Leaderboards tab
+
+Depends on: 7, 55, 58
 
 Context: none
 
@@ -254,9 +337,21 @@ Context: none
 
 Done: struck — task 171 needs no human, its artboards being drawn; replaced by step 44.
 
-## [ ] 44. Implement task 171 — Settings page in the shared layout
+## [x] 44. Implement task 171 — Settings page in the shared layout
 
 Depends on: 4, 7
+
+Context: none
+
+```prompt
+/task-implement 171 --review
+```
+
+Done: struck — for a parallel run its Depends on lacked the order against tasks 165, 170, which edit the same files; replaced by step 60.
+
+## [ ] 60. Implement task 171 — Settings page in the shared layout
+
+Depends on: 4, 7, 59
 
 Context: none
 
@@ -278,7 +373,7 @@ Context: none
 
 Done: struck — task 172 needs no human, its artboards being drawn; replaced by step 45.
 
-## [ ] 45. Implement task 172 — Replay viewer in the shared layout
+## [x] 45. Implement task 172 — Replay viewer in the shared layout
 
 Depends on: 7
 
@@ -288,7 +383,19 @@ Context: none
 /task-implement 172 --review
 ```
 
-## [ ] 36. Implement task 206 — Daily screen won time in the standard time format
+Done: struck — for a parallel run its Depends on lacked the order against task 171, which edits the same files; replaced by step 61.
+
+## [ ] 61. Implement task 172 — Replay viewer in the shared layout
+
+Depends on: 7, 60
+
+Context: none
+
+```prompt
+/task-implement 172 --review
+```
+
+## [x] 36. Implement task 206 — Daily screen won time in the standard time format
 
 Depends on: none
 
@@ -298,7 +405,19 @@ Context: none
 /task-implement 206 --review
 ```
 
-## [ ] 46. Implement task 209 — Daily screen in the board-choice layout, listing every mode
+Done: struck — for a parallel run its Depends on lacked the order against task 165, which edits the same files; replaced by step 62.
+
+## [ ] 62. Implement task 206 — Daily screen won time in the standard time format
+
+Depends on: 53
+
+Context: none
+
+```prompt
+/task-implement 206 --review
+```
+
+## [x] 46. Implement task 209 — Daily screen in the board-choice layout, listing every mode
 
 Depends on: 7, 8, 10, 36
 
@@ -308,7 +427,19 @@ Context: none
 /task-implement 209 --review
 ```
 
-## [ ] 47. Implement task 210 — 3D ready card, lock states and Learn 3D cards in the shared layout
+Done: struck — for a parallel run its Depends on lacked the order against tasks 168, 172, which edit the same files; replaced by step 63.
+
+## [ ] 63. Implement task 209 — Daily screen in the board-choice layout, listing every mode
+
+Depends on: 7, 8, 54, 61, 62
+
+Context: none
+
+```prompt
+/task-implement 209 --review
+```
+
+## [x] 47. Implement task 210 — 3D ready card, lock states and Learn 3D cards in the shared layout
 
 Depends on: 7, 38
 
@@ -318,9 +449,33 @@ Context: none
 /task-implement 210 --review
 ```
 
-## [ ] 48. Implement task 211 — Toasts, fatal card, no-JavaScript notice and 404 page in the shared layout
+Done: struck — for a parallel run its Depends on named struck step 38; lacked the edge to task 212, its precondition; lacked the order against tasks 168, 209, which edit the same files; replaced by step 64.
+
+## [ ] 64. Implement task 210 — 3D ready card, lock states and Learn 3D cards in the shared layout
+
+Depends on: 7, 55, 63
+
+Context: none
+
+```prompt
+/task-implement 210 --review
+```
+
+## [x] 48. Implement task 211 — Toasts, fatal card, no-JavaScript notice and 404 page in the shared layout
 
 Depends on: 7
+
+Context: none
+
+```prompt
+/task-implement 211 --review
+```
+
+Done: struck — for a parallel run its Depends on lacked the order against tasks 165, 210, which edit the same files; replaced by step 65.
+
+## [ ] 65. Implement task 211 — Toasts, fatal card, no-JavaScript notice and 404 page in the shared layout
+
+Depends on: 7, 64
 
 Context: none
 
@@ -352,9 +507,21 @@ Context: none
 
 Done: struck — task 173 now also waits on tasks 209, 210 and 211; replaced by step 49.
 
-## [ ] 49. Implement task 173 — Update documentation for feature `shared-screen-layout`
+## [x] 49. Implement task 173 — Update documentation for feature `shared-screen-layout`
 
 Depends on: 7, 8, 9, 10, 36, 40, 41, 42, 43, 44, 45, 46, 47, 48
+
+Context: none
+
+```prompt
+/task-implement 173 --review
+```
+
+Done: struck — for a parallel run its Depends on lacked the edge to task 212, its precondition; lacked the order against task 162, which edits the same files; replaced by step 66.
+
+## [ ] 66. Implement task 173 — Update documentation for feature `shared-screen-layout`
+
+Depends on: 6, 7, 8, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65
 
 Context: none
 
@@ -372,7 +539,7 @@ Context: none
 /task-implement 174 --review
 ```
 
-## [ ] 19. Implement task 175 — Counter readout and figures panel kit components
+## [x] 19. Implement task 175 — Counter readout and figures panel kit components
 
 Depends on: 7
 
@@ -382,9 +549,33 @@ Context: none
 /task-implement 175 --review
 ```
 
-## [ ] 20. Implement task 176 — Classic 2D game window: counter strip, side panel and foot line
+Done: struck — for a parallel run its Depends on lacked the order against tasks 165, 211, which edit the same files; replaced by step 67.
+
+## [ ] 67. Implement task 175 — Counter readout and figures panel kit components
+
+Depends on: 7, 65
+
+Context: none
+
+```prompt
+/task-implement 175 --review
+```
+
+## [x] 20. Implement task 176 — Classic 2D game window: counter strip, side panel and foot line
 
 Depends on: 7, 18, 19
+
+Context: none
+
+```prompt
+/task-implement 176 --review
+```
+
+Done: struck — for a parallel run its Depends on lacked the order against tasks 165, 166, 211, which edit the same files; replaced by step 68.
+
+## [ ] 68. Implement task 176 — Classic 2D game window: counter strip, side panel and foot line
+
+Depends on: 7, 18, 67
 
 Context: none
 
@@ -406,9 +597,21 @@ Context: none
 
 Done: struck — task 177 needs no human, its artboards being drawn; replaced by step 50.
 
-## [ ] 50. Implement task 177 — 3D game overlay in the in-game layout
+## [x] 50. Implement task 177 — 3D game overlay in the in-game layout
 
 Depends on: 20
+
+Context: none
+
+```prompt
+/task-implement 177 --review
+```
+
+Done: struck — for a parallel run its Depends on lacked the order against task 210, which edits the same files; replaced by step 69.
+
+## [ ] 69. Implement task 177 — 3D game overlay in the in-game layout
+
+Depends on: 68
 
 Context: none
 
@@ -430,7 +633,7 @@ Context: none
 
 Done: struck — task 178 needs no human, its artboards being drawn, and waits on the re-added step 45; replaced by step 51.
 
-## [ ] 51. Implement task 178 — Live figures in the replay viewer
+## [x] 51. Implement task 178 — Live figures in the replay viewer
 
 Depends on: 16, 18, 19, 45
 
@@ -440,9 +643,33 @@ Context: none
 /task-implement 178 --review
 ```
 
-## [ ] 23. Implement task 179 — Update documentation for feature `in-game-layout`
+Done: struck — for a parallel run its Depends on named struck step 16; lacked the order against task 177, which edits the same files; replaced by step 70.
+
+## [ ] 70. Implement task 178 — Live figures in the replay viewer
+
+Depends on: 18, 61, 67, 69
+
+Context: none
+
+```prompt
+/task-implement 178 --review
+```
+
+## [x] 23. Implement task 179 — Update documentation for feature `in-game-layout`
 
 Depends on: 18, 19, 20, 21, 22
+
+Context: none
+
+```prompt
+/task-implement 179 --review
+```
+
+Done: struck — for a parallel run its Depends on named struck steps 21, 22; lacked the edges to tasks 177, 178, its preconditions; lacked the order against task 173, which edits the same files; replaced by step 71.
+
+## [ ] 71. Implement task 179 — Update documentation for feature `in-game-layout`
+
+Depends on: 18, 66, 67, 68, 69, 70
 
 Context: none
 
@@ -462,7 +689,7 @@ Context:
 /task-implement 180 --review
 ```
 
-## [ ] 25. Implement task 181 — Board module shape, the Joyful tiles board module and the board conformance checks
+## [x] 25. Implement task 181 — Board module shape, the Joyful tiles board module and the board conformance checks
 
 Depends on: 5, 24
 
@@ -472,7 +699,19 @@ Context: none
 /task-implement 181 --review
 ```
 
-## [ ] 26. Implement task 182 — Classic 2D tiles drawn from the active theme's board module
+Done: struck — for a parallel run its Depends on lacked the order against tasks 157, 163, which edit the same files; replaced by step 72.
+
+## [ ] 72. Implement task 181 — Board module shape, the Joyful tiles board module and the board conformance checks
+
+Depends on: 5, 7, 24
+
+Context: none
+
+```prompt
+/task-implement 181 --review
+```
+
+## [x] 26. Implement task 182 — Classic 2D tiles drawn from the active theme's board module
 
 Depends on: 3, 25
 
@@ -482,7 +721,19 @@ Context: none
 /task-implement 182 --review
 ```
 
-## [ ] 27. Implement task 183 — 3D cubes, numbers and sky drawn from the active theme's board module
+Done: struck — for a parallel run its Depends on lacked the order against tasks 175, 176, 177, 180, which edit the same files; replaced by step 73.
+
+## [ ] 73. Implement task 182 — Classic 2D tiles drawn from the active theme's board module
+
+Depends on: 3, 69, 72
+
+Context: none
+
+```prompt
+/task-implement 182 --review
+```
+
+## [x] 27. Implement task 183 — 3D cubes, numbers and sky drawn from the active theme's board module
 
 Depends on: 3, 25
 
@@ -492,7 +743,19 @@ Context: none
 /task-implement 183 --review
 ```
 
-## [ ] 28. Implement task 184 — Cell motion player
+Done: struck — for a parallel run its Depends on lacked the order against tasks 158, 164, 180, 182, which edit the same files; replaced by step 74.
+
+## [ ] 74. Implement task 183 — 3D cubes, numbers and sky drawn from the active theme's board module
+
+Depends on: 3, 72, 73
+
+Context: none
+
+```prompt
+/task-implement 183 --review
+```
+
+## [x] 28. Implement task 184 — Cell motion player
 
 Depends on: 4, 25
 
@@ -502,7 +765,19 @@ Context: none
 /task-implement 184 --review
 ```
 
-## [ ] 29. Implement task 185 — Classic 2D cell motion: motion layer and event sources
+Done: struck — for a parallel run its Depends on waited on task 160, which neither a precondition nor a shared file needs; replaced by step 75.
+
+## [ ] 75. Implement task 184 — Cell motion player
+
+Depends on: 72
+
+Context: none
+
+```prompt
+/task-implement 184 --review
+```
+
+## [x] 29. Implement task 185 — Classic 2D cell motion: motion layer and event sources
 
 Depends on: 26, 28
 
@@ -512,7 +787,19 @@ Context: none
 /task-implement 185 --review
 ```
 
-## [ ] 30. Implement task 186 — 3D cell motion: motion mesh, event sources and the solved pulse as a cell event
+Done: struck — for a parallel run its Depends on lacked the order against tasks 172, 176, which edit the same files; replaced by step 76.
+
+## [ ] 76. Implement task 185 — Classic 2D cell motion: motion layer and event sources
+
+Depends on: 73, 75
+
+Context: none
+
+```prompt
+/task-implement 185 --review
+```
+
+## [x] 30. Implement task 186 — 3D cell motion: motion mesh, event sources and the solved pulse as a cell event
 
 Depends on: 27, 28
 
@@ -522,7 +809,29 @@ Context: none
 /task-implement 186 --review
 ```
 
-## [ ] 31. Implement task 187 — Update documentation for feature `themed-board-art-and-motion`
+Done: struck — for a parallel run its Depends on lacked the order against tasks 172, 177, which edit the same files; replaced by step 77.
+
+## [ ] 77. Implement task 186 — 3D cell motion: motion mesh, event sources and the solved pulse as a cell event
+
+Depends on: 74, 75
+
+Context: none
+
+```prompt
+/task-implement 186 --review
+```
+
+## [ ] 78. Implement task 213 — 3D selection glow line, selected-face tint and confetti colours drawn from the board module
+
+Depends on: 72, 74, 77
+
+Context: none
+
+```prompt
+/task-implement 213 --review
+```
+
+## [x] 31. Implement task 187 — Update documentation for feature `themed-board-art-and-motion`
 
 Depends on: 24, 25, 26, 27, 28, 29, 30
 
@@ -532,7 +841,19 @@ Context: none
 /task-implement 187 --review
 ```
 
-## [ ] 32. Implement task 188 — The theme-implement skill
+Done: struck — for a parallel run its Depends on lacked the edge to task 213, its precondition; lacked the order against tasks 173, 179, which edit the same files; replaced by step 79.
+
+## [ ] 79. Implement task 187 — Update documentation for feature `themed-board-art-and-motion`
+
+Depends on: 24, 71, 72, 73, 74, 75, 76, 77, 78
+
+Context: none
+
+```prompt
+/task-implement 187 --review
+```
+
+## [x] 32. Implement task 188 — The theme-implement skill
 
 Depends on: 5, 7, 19, 25
 
@@ -542,9 +863,33 @@ Context: none
 /task-implement 188 --review
 ```
 
-## [ ] 33. Implement task 189 — Update documentation for feature `theme-implement-skill`
+Done: struck — the steps its Depends on names are re-added for a parallel run; replaced by step 80.
+
+## [ ] 80. Implement task 188 — The theme-implement skill
+
+Depends on: 5, 7, 67, 72
+
+Context: none
+
+```prompt
+/task-implement 188 --review
+```
+
+## [x] 33. Implement task 189 — Update documentation for feature `theme-implement-skill`
 
 Depends on: 32
+
+Context: none
+
+```prompt
+/task-implement 189 --review
+```
+
+Done: struck — for a parallel run its Depends on lacked the order against task 187, which edits the same files; replaced by step 81.
+
+## [ ] 81. Implement task 189 — Update documentation for feature `theme-implement-skill`
+
+Depends on: 79, 80
 
 Context: none
 

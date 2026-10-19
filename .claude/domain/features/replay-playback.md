@@ -101,7 +101,7 @@ and is never paused into hiding the board.
 - **2D viewer.** The Classic 2D board view in a read-only configuration,
   fed by the simulator's changes, with the recorded pointer placed by the
   movement interpolation — a core in a contrasting outline from tokens,
-  visible on any tile in both themes, trailing its last 150 ms of replay
+  visible on any tile in every theme, trailing its last 150 ms of replay
   time while playing (no trail after a seek or while paused) —, a press
   ring on each click, on the recorded pointer when it was on the acted
   cell and else on the cell's centre, and the recorded
