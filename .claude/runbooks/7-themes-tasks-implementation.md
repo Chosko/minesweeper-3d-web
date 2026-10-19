@@ -581,7 +581,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the edge to task 212, its precondition; lacked the order against task 162, which edits the same files; replaced by step 66.
 
-## [~] 66. Implement task 173 — Update documentation for feature `shared-screen-layout`
+## [x] 66. Implement task 173 — Update documentation for feature `shared-screen-layout`
 
 Depends on: 6, 7, 8, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65
 
@@ -596,6 +596,8 @@ Context:
 ```prompt
 /task-implement 173 --review
 ```
+
+Done: 2026-10-19, commit `4ccc319` (25 files, +592/-304).
 
 ## [x] 18. Implement task 174 — Live figures model: 3BV progress, pace vs PB, 3BV/s, clicks and flags
 
