@@ -8,7 +8,9 @@ import {
   decimalsOf, formatSliderValue, segmentedTargetIndex, segmentedState,
   bindSlider, bindSegmented, bindTabs, initComponents, formatOverlayTime, formatMineCount, mineCounterDigits, pagerState, PAGER_WINDOW,
   boardLink, copyBoardCode, bindCodeChip, COPY_FALLBACK, COPIED, bindCodeField, bindSelectOnHover, SELECT_ON_HOVER,
+  bindFiguresLive, LIVE_FIGURES_INTERVAL,
 } from '../js/ui/components.js';
+import { KIT_CATALOGUE } from '../js/ui/kit-catalogue.js';
 import { KEY_HINTS, keyHintKeys } from '../js/settings/bindings.js';
 import { GLYPHS } from '../js/gamepad.js';
 import { UI } from '../js/ui.js';
@@ -63,6 +65,11 @@ const COMPONENTS = {
   'ui-checkbox': { interactive: true, control: '.ui-checkbox__input' },
   'ui-table': { interactive: false },
   'ui-toast': { interactive: false },
+  // the in-game components
+  'ui-counter': { interactive: false },
+  'ui-counter-strip': { interactive: false },
+  'ui-figure': { interactive: false },
+  'ui-figures': { interactive: false },
 };
 // Screen compositions: layout-only classes the screens are assembled with.
 const COMPOSITIONS = ['ui-screen', 'ui-row', 'ui-grid', 'ui-heading', 'ui-text', 'ui-actions', 'ui-stat-row', 'ui-columns',
@@ -2470,6 +2477,253 @@ test('in a browser, the 404 page, the no-JavaScript notice and the fatal card sh
         await context.close();
       }
     }
+  } finally {
+    await browser.close();
+  }
+});
+
+// ---------------------------------------------------------------- in game: the counter readout and the figures panel
+
+const IN_GAME = section(GALLERY, '<!-- components: in-game -->', '<!-- /components: in-game -->');
+const IN_GAME_TAGS = tags(IN_GAME);
+const kit = (name) => KIT_CATALOGUE.find((c) => c.name === name);
+const kitPart = (name, part) => kit(name).parts.find((p) => p.name === part);
+// The selector list a theme rule names, its scope taken off: whether one of them is exactly `sel`.
+const themeBody = (sel) => THEME_RULES.filter(([s]) => s.split(',').map((x) => x.trim()).includes(sel)).map(([, b]) => b).join(';');
+const baseBody = (sel) => RULES.filter(([s]) => s.split(',').map((x) => x.trim()).includes(sel)).map(([, b]) => b).join(';');
+
+test('the counter readout, the counter strip, the live figure and the figures panel are catalogued with their parts, the optional ones marked', () => {
+  assert.deepEqual(kit('ui-counter').parts.map((p) => [p.name, p.selector, p.optional]), [
+    ['icon', '.ui-counter__icon', true],
+    ['digits', '.ui-counter__digits', false],
+  ], 'the counter\'s digits, and an icon a theme may hide');
+  assert.equal(kitPart('ui-counter-strip', 'restart').as, 'ui-button--secondary', 'Restart in the strip is a secondary button');
+  assert.deepEqual(kit('ui-figure').variants, ['ui-figure--progress']);
+  assert.deepEqual(kit('ui-figure').parts.map((p) => [p.name, p.optional]), [
+    ['label', false], ['value', false], ['detail', true], ['bar', true], ['fill', true],
+  ], 'a figure\'s label and value, its detail line and progress bar optional');
+  assert.deepEqual(kit('ui-figures').parts.map((p) => [p.name, p.optional]), [
+    ['head', true], ['title', true], ['action', true], ['body', false], ['foot', true], ['live', false],
+  ], 'the panel\'s optional head bar (title and an action), its body, its controls-reminder foot and its live part');
+  assert.equal(kitPart('ui-figures', 'action').as, 'ui-button--primary', 'the head bar\'s action is a primary button');
+  for (const name of ['ui-counter', 'ui-counter-strip', 'ui-figure', 'ui-figures']) {
+    assert.equal(kit(name).kind, 'component');
+    assert.ok(kit(name).parts.every((p) => !p.interactive), `${name} has no interactive part of its own`);
+  }
+  const head = RAW.match(/^\/\*([\s\S]*?)\*\//)[1];
+  for (const doc of ['ui-counter__icon', 'ui-counter__digits', 'data-negative', 'ui-counter-strip', 'ui-figure__label', 'ui-figure__value',
+    'ui-figure__detail', 'ui-figure__bar', 'ui-figure__fill', 'ui-figure--progress', 'ui-figures__head', 'ui-figures__title', 'ui-figures__body',
+    'ui-figures__live', 'ui-figures__foot', 'bindFiguresLive']) assert.ok(head.includes(doc), `the catalogue documents ${doc}`);
+});
+
+test('in-game markup: counters named and never live, the strip holding Restart between them, figures named by their label, a labelled progress bar, and one polite live part per panel', () => {
+  assert.ok(IN_GAME.length > 1000, 'dev/components.html holds the in-game components');
+  const counters = within(IN_GAME_TAGS, '.ui-counter');
+  assert.ok(counters.length >= 4);
+  for (const c of counters) {
+    assert.equal(c.attrs.role, 'group', 'a counter is a named group');
+    assert.ok(['Mines left', 'Time'].includes(c.attrs['aria-label']), `named by what it counts (${c.attrs['aria-label']})`);
+    assert.ok(!('aria-live' in c.attrs) && c.attrs.role !== 'status', 'a counter is not announced on every change');
+    const parts = inside(IN_GAME, IN_GAME_TAGS, c);
+    assert.equal(within(parts, '.ui-counter__digits').length, 1, 'its digits');
+    assert.match(textOf(IN_GAME, within(parts, '.ui-counter__digits')[0]), /^(-\d{2}|\d{3})$/, 'three characters, as the overlay formats them');
+    for (const icon of within(parts, '.ui-counter__icon')) assert.ok(icon.tag === 'svg' && icon.attrs['aria-hidden'] === 'true', 'the icon is decoration');
+  }
+  assert.ok(counters.some((c) => within(inside(IN_GAME, IN_GAME_TAGS, c), '.ui-counter__icon').length === 0), 'a counter without its icon');
+  assert.ok(counters.some((c) => 'data-negative' in c.attrs && /^-/.test(textOf(IN_GAME, within(inside(IN_GAME, IN_GAME_TAGS, c), '.ui-counter__digits')[0]))), 'a negative mine counter');
+  const strips = within(IN_GAME_TAGS, '.ui-counter-strip');
+  assert.ok(strips.length >= 2);
+  for (const strip of strips) {
+    assert.ok(strip.attrs.role === 'group' && strip.attrs['aria-label'], 'the strip is a named group');
+    assert.ok(!('aria-live' in strip.attrs));
+    const parts = inside(IN_GAME, IN_GAME_TAGS, strip);
+    const [mines, time] = within(parts, '.ui-counter');
+    const restart = within(parts, '.ui-button.ui-button--secondary.ui-button--sm')[0];
+    assert.ok(mines && time && restart, 'mines left, Restart and the timer');
+    assert.ok(mines.index < restart.index && restart.index < time.index, 'Restart between the counters');
+    assert.equal(mines.attrs['aria-label'], 'Mines left');
+    assert.equal(time.attrs['aria-label'], 'Time');
+    const tp = inside(IN_GAME, IN_GAME_TAGS, time);
+    assert.ok(within(tp, '.ui-counter__digits')[0].index < within(tp, '.ui-counter__icon')[0].index, 'the timer\'s icon after its digits');
+    assert.match(textOf(IN_GAME, restart), /^Restart/);
+    const hint = within(inside(IN_GAME, IN_GAME_TAGS, restart), '.ui-key-hint')[0];
+    assert.ok(hint && hint.attrs['data-action'] === 'restart' && hint.attrs['aria-hidden'] === 'true', 'Restart carries its key hint, out of its name');
+  }
+
+  const panels = within(IN_GAME_TAGS, '.ui-figures');
+  assert.ok(panels.length >= 3);
+  const shapes = panels.map((panel) => {
+    assert.equal(panel.tag, 'section');
+    const parts = inside(IN_GAME, IN_GAME_TAGS, panel);
+    const head = within(parts, '.ui-figures__head')[0];
+    if (head) {
+      const title = within(parts, '.ui-figures__title')[0];
+      assert.ok(/^h[2-6]$/.test(title.tag), 'the head\'s title is a heading');
+      assert.equal(panel.attrs['aria-labelledby'], title.attrs.id, 'a panel with a head is named by its title');
+      assert.ok(title.attrs.title, 'the title keeps the full name as its tooltip');
+      const action = within(inside(IN_GAME, IN_GAME_TAGS, head), '.ui-figures__action')[0];
+      assert.ok(action && hasClasses(action, '.ui-button.ui-button--primary') && action.tag === 'button' && action.attrs.type === 'button', 'the head\'s action is a primary button');
+    } else {
+      assert.equal(panel.attrs['aria-label'], 'Live figures', 'a panel without a head is named');
+    }
+    const body = within(parts, '.ui-figures__body');
+    assert.equal(body.length, 1, 'one body');
+    const figures = within(parts, '.ui-figure');
+    assert.ok(figures.length >= 3);
+    for (const f of figures) {
+      const fp = inside(IN_GAME, IN_GAME_TAGS, f);
+      const label = within(fp, '.ui-figure__label')[0];
+      assert.equal(f.attrs.role, 'group');
+      assert.equal(f.attrs['aria-labelledby'], label.attrs.id, 'a figure is named by its label');
+      assert.ok(textOf(IN_GAME, within(fp, '.ui-figure__value')[0]), 'its figure');
+      const bar = within(fp, '.ui-figure__bar')[0];
+      if (bar) {
+        assert.ok(hasClasses(f, '.ui-figure.ui-figure--progress'), 'a figure with a bar is the progress figure');
+        assert.equal(bar.attrs.role, 'progressbar');
+        assert.equal(bar.attrs['aria-labelledby'], label.attrs.id, 'the bar is named by the figure\'s label');
+        const [min, max, now] = ['aria-valuemin', 'aria-valuemax', 'aria-valuenow'].map((a) => Number(bar.attrs[a]));
+        assert.ok(min === 0 && now >= min && now <= max, 'the bar states its value');
+        const fill = within(fp, '.ui-figure__fill')[0];
+        assert.match(fill.attrs.style, new RegExp(`width: ${Math.round((now / max) * 100)}%`), 'the fill as wide as the share solved');
+      }
+    }
+    const live = within(parts, '.ui-figures__live');
+    assert.equal(live.length, 1, 'one live part');
+    assert.equal(live[0].attrs.role, 'status');
+    assert.equal(live[0].attrs['aria-live'], 'polite', 'a polite live region');
+    assert.equal(live[0].attrs['aria-atomic'], 'true');
+    assert.equal(textOf(IN_GAME, live[0]), '', 'empty until bindFiguresLive writes it');
+    assert.ok(parts.filter((t) => 'aria-live' in t.attrs || t.attrs.role === 'status').every((t) => t === live[0]), 'nothing else in the panel is live');
+    const foot = within(parts, '.ui-figures__foot')[0];
+    if (foot) {
+      const hints = within(inside(IN_GAME, IN_GAME_TAGS, foot), '.ui-key-hint');
+      assert.ok(hints.length >= 3 && hints.every((h) => within(inside(IN_GAME, IN_GAME_TAGS, h), '.ui-key-hint__label').length === 1), 'the controls reminder: keys and what they do');
+    }
+    const labels = figures.map((f) => textOf(IN_GAME, within(inside(IN_GAME, IN_GAME_TAGS, f), '.ui-figure__label')[0]));
+    return { head: Boolean(head), bar: within(parts, '.ui-figure__bar').length === 1, pace: labels.includes('Pace vs PB'), foot: Boolean(foot), labels };
+  });
+  assert.ok(shapes.some((s) => s.bar && s.pace && s.foot && !s.head), 'the panel with its progress bar and pace row');
+  assert.ok(shapes.some((s) => !s.bar && !s.pace), 'the panel without its progress bar and pace row');
+  assert.ok(shapes.some((s) => s.head), 'the panel with its head bar, as the 3D game\'s');
+  for (const s of shapes) assert.deepEqual(s.labels.filter((l) => l !== 'Pace vs PB'), ['3BV', '3BV/s', 'Clicks', 'Flags'], 'the live figures in their order');
+});
+
+test('the base lays the in-game components out and hides the live part; Joyful tiles draws every part as J-Components does', () => {
+  assert.match(baseBody('.ui-counter-strip'), /display: flex/);
+  assert.match(baseBody('.ui-counter-strip'), /justify-content: space-between/);
+  assert.match(baseBody('.ui-counter'), /display: inline-flex/);
+  assert.match(baseBody('.ui-counter__digits'), /font-variant-numeric: var\(--font-numeric-tabular\)/);
+  assert.match(baseBody('.ui-figure'), /flex-direction: column/);
+  assert.match(baseBody('.ui-figure--progress'), /display: grid/);
+  assert.match(baseBody('.ui-figure__fill'), /display: block/);
+  assert.match(baseBody('.ui-figures'), /flex-direction: column/);
+  assert.match(baseBody('.ui-figures__foot'), /margin-top: auto/, 'the controls reminder at the panel\'s foot');
+  const live = baseBody('.ui-figures__live');
+  for (const d of ['position: absolute', 'width: 1px', 'height: 1px', 'overflow: hidden', 'clip-path: inset\\(50%\\)']) assert.match(live, new RegExp(d), `the live part is read, not shown: ${d}`);
+
+  const strip = themeBody('.ui-counter-strip');
+  assert.match(strip, /background: var\(--color-surface\)/);
+  assert.match(strip, /border-radius: var\(--radius-lg\)/);
+  assert.match(strip, /box-shadow: inset 0 4px 0 var\(--shade-soft\), inset 0 0 0 2px var\(--color-border\)/);
+  assert.match(themeBody('.ui-counter__icon'), /color: var\(--color-ink-muted\)/, 'the icon in muted ink');
+  const digits = themeBody('.ui-counter__digits');
+  assert.match(digits, /font-family: var\(--font-family-mono\)/);
+  assert.match(digits, /font-size: 34px/);
+  assert.match(digits, /color: var\(--color-ink\)/);
+  assert.match(themeBody('.ui-counter[data-negative] .ui-counter__digits'), /color: var\(--color-danger\)/, 'a negative count in danger');
+  assert.match(themeBody('.ui-figure'), /border-top: 1px solid var\(--color-line\)/, 'figures ruled apart');
+  assert.match(themeBody('.ui-figure:first-child'), /border-top: 0/);
+  assert.match(themeBody('.ui-figure__label'), /color: var\(--color-accent\)/);
+  assert.match(themeBody('.ui-figure__label'), /text-transform: uppercase/);
+  const value = themeBody('.ui-figure__value');
+  assert.match(value, /font-family: var\(--font-family-mono\)/);
+  assert.match(value, /font-size: 28px/);
+  assert.match(value, /color: var\(--color-figure\)/);
+  assert.match(themeBody('.ui-figure--progress .ui-figure__value'), /color: var\(--color-ink\)/, 'the 3BV figure small, in ink');
+  assert.match(themeBody('.ui-figure__detail'), /color: var\(--color-ink-muted\)/);
+  const bar = themeBody('.ui-figure__bar');
+  assert.match(bar, /background: var\(--color-line\)/);
+  assert.match(bar, /border-radius: 6px/);
+  assert.match(themeBody('.ui-figure__fill'), /background: var\(--color-teal-edge\)/);
+  const panel = themeBody('.ui-figures');
+  assert.match(panel, /background: var\(--color-surface\)/);
+  assert.match(panel, /border-radius: var\(--radius-xl\)/);
+  const head = themeBody('.ui-figures__head');
+  assert.match(head, /background: var\(--color-head\)/);
+  assert.match(head, /border-bottom: 2px solid var\(--color-head-edge\)/);
+  assert.match(themeBody('.ui-figures__foot'), /border-top: 1px solid var\(--color-line\)/);
+  for (const [, body] of themeRulesFor('.ui-figures__live')) assert.doesNotMatch(body, /position|width|height|clip|display|overflow/, 'the theme leaves the live part hidden');
+});
+
+test('bindFiguresLive writes the panel\'s live part at most once a second, the latest text winning, and stops', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 0 });
+  assert.equal(LIVE_FIGURES_INTERVAL, 1000);
+  const live = { textContent: '' };
+  const panel = { querySelector: (sel) => (sel === '.ui-figures__live' ? live : null) };
+  const writes = [];
+  Object.defineProperty(live, 'textContent', { get() { return writes.at(-1) ?? ''; }, set(v) { writes.push(v); } });
+  const figures = bindFiguresLive(panel);
+  figures.announce('3BV 1 of 118');
+  assert.deepEqual(writes, ['3BV 1 of 118'], 'the first announcement is written at once');
+  t.mock.timers.tick(200);
+  figures.announce('3BV 2 of 118');
+  t.mock.timers.tick(300);
+  figures.announce('3BV 3 of 118');
+  assert.deepEqual(writes, ['3BV 1 of 118'], 'nothing more within the second');
+  t.mock.timers.tick(499);
+  assert.equal(writes.length, 1);
+  t.mock.timers.tick(1);
+  assert.deepEqual(writes, ['3BV 1 of 118', '3BV 3 of 118'], 'a second after the last write, only the latest text');
+  t.mock.timers.tick(5000);
+  assert.equal(writes.length, 2, 'nothing waits');
+  figures.announce('3BV 3 of 118');
+  assert.equal(writes.length, 2, 'an unchanged text is not announced again');
+  figures.announce('3BV 4 of 118');
+  assert.equal(writes.at(-1), '3BV 4 of 118', 'a second after the last write, written at once');
+  figures.announce('3BV 5 of 118');
+  figures.stop();
+  t.mock.timers.tick(5000);
+  assert.equal(writes.at(-1), '3BV 4 of 118', 'stop drops the waiting text');
+});
+
+test('in a browser, the counter strip and the figures panel draw in Joyful tiles: mono digits, the fill as wide as its share, the live part read but not shown, and the contrast contract met', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`${base}/dev/components.html`);
+    await page.evaluate(() => document.fonts.ready);
+    const got = await page.evaluate(() => {
+      const q = (sel) => document.querySelector(`#g-in-game ${sel}`);
+      const s = (sel) => getComputedStyle(q(sel));
+      const bar = q('.ui-figure__bar').getBoundingClientRect();
+      const fill = q('.ui-figure__fill').getBoundingClientRect();
+      const live = q('.ui-figures__live').getBoundingClientRect();
+      return {
+        digits: s('.ui-counter__digits').fontFamily, size: s('.ui-counter__digits').fontSize,
+        negative: s('.ui-counter[data-negative] .ui-counter__digits').color, danger: getComputedStyle(document.documentElement).getPropertyValue('--color-danger').trim(),
+        strip: s('.ui-counter-strip').backgroundColor, value: s('.ui-figure__value').fontFamily,
+        share: Math.round((fill.width / bar.width) * 100), live: [live.width, live.height],
+      };
+    });
+    assert.match(got.digits, /^"?JetBrains Mono/);
+    assert.equal(got.size, '34px');
+    assert.equal(got.negative, 'rgb(180, 42, 42)', `a negative count in danger (${got.danger})`);
+    assert.equal(got.strip, 'rgb(255, 255, 255)', 'the strip on the surface');
+    assert.match(got.value, /^"?JetBrains Mono/);
+    assert.equal(got.share, 46, 'the fill as wide as the share solved');
+    assert.deepEqual(got.live, [1, 1], 'the live part is read, not shown');
+    const { runs } = await page.evaluate(measureContrast);
+    const own = await page.evaluate(() => [...document.querySelectorAll('#g-in-game :is(.ui-counter-strip, .ui-figures) *')]
+      .filter((e) => [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()))
+      .map((e) => e.textContent.trim().slice(0, 30)));
+    const inGame = runs.filter((r) => own.includes(r.text));
+    assert.ok(inGame.length >= 20, `the in-game components show their text (${inGame.length})`);
+    assert.deepEqual(inGame.filter((r) => r.ratio < r.min).map((r) => `${r.text}: ${r.ratio.toFixed(2)}:1 < ${r.min}`), [], 'in-game text below the contrast contract');
+    assert.deepEqual(errors, []);
   } finally {
     await browser.close();
   }

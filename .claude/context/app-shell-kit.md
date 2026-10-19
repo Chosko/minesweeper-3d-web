@@ -60,6 +60,11 @@ The screens' markup in `index.html` and the shell stylesheet are
   compact})`; `bindCodeChip(root, {onCopy})` → `{show(code | null), code}`.
 - `bindCodeField({input, button, info, resolve, onPlay, prompt?})` →
   `{refresh(), clear()}`: the board choices' code field, validated live.
+- The figures panel's live part (`.ui-figures__live`, a polite live region
+  the base hides; the figures themselves and the counter readouts are never
+  live): `bindFiguresLive(panel, {interval?})` → `{announce(text), stop()}`
+  writes it at most once per `LIVE_FIGURES_INTERVAL`, the latest
+  held text winning, an unchanged text not written again.
 
 `js/themes/registry.js` — `THEMES` (frozen entries `{id, name, stylesheet,
 boardModule, fonts: [{family, licence, files: [{weight, style, path}]}],

@@ -1,6 +1,6 @@
 // Behaviour helpers for the component kit (css/components.css): the slider's
 // value display, the segmented choice's and the tabs' selection, the one selected control
-// under a moving mouse, the key hints, the pager, the code chip and the board code field. The logic is plain
+// under a moving mouse, the key hints, the figures panel's live part, the pager, the code chip and the board code field. The logic is plain
 // functions; the binders touch only the elements they are handed, so the
 // module needs no document and runs under Node with stub elements.
 
@@ -303,6 +303,49 @@ export function showKeyHints(root, keysFor) {
     hint.classList.toggle('ui-key-hint--pad', keys.length > 0 && keys.every((k) => k.pad));
     hint.classList.toggle('hidden', keys.length === 0);
   }
+}
+
+// ---------------------------------------------------------------- the figures panel
+
+/** The shortest time between two writes of a figures panel's live part, in ms. */
+export const LIVE_FIGURES_INTERVAL = 1000;
+
+/**
+ * The figures panel's live part (`.ui-figures__live`, a polite live region): announce(text) writes
+ * it at once when the last write is a full interval old, else holds the text until then, a later
+ * text replacing a held one; a text already written is not written again. stop() drops a held text.
+ */
+export function bindFiguresLive(panel, { interval = LIVE_FIGURES_INTERVAL } = {}) {
+  const live = panel.querySelector('.ui-figures__live');
+  let last = -Infinity;
+  let held = null;
+  let timer = null;
+  const write = (text) => {
+    if (text === live.textContent) return;
+    live.textContent = text;
+    last = Date.now();
+  };
+  const flush = () => {
+    timer = null;
+    const text = held;
+    held = null;
+    write(text);
+  };
+  return {
+    announce(text) {
+      if (timer !== null) { held = text; return; }
+      if (text === live.textContent) return;
+      const wait = last + interval - Date.now();
+      if (wait <= 0) { write(text); return; }
+      held = text;
+      timer = setTimeout(flush, wait);
+    },
+    stop() {
+      clearTimeout(timer);
+      timer = null;
+      held = null;
+    },
+  };
 }
 
 // ---------------------------------------------------------------- the code chip

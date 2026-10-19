@@ -227,6 +227,36 @@ export const KIT_CATALOGUE = Object.freeze([
   // A short notice, polite and transient, at the bottom centre.
   component('ui-toast', { parts: [part('icon', '.ui-toast__icon'), part('text', '.ui-toast__text')] }),
 
+  // The in-game components (in-game-layout). A counter readout: its digits and an icon a theme may
+  // hide, so a theme draws plain figures, LED digits or anything between; data-negative marks a count
+  // below zero.
+  component('ui-counter', { parts: [part('icon', '.ui-counter__icon', { optional: true }), part('digits', '.ui-counter__digits')] }),
+  // Mines left, Restart (a secondary button, which takes its states) and the timer.
+  component('ui-counter-strip', { parts: [part('restart', '.ui-counter-strip .ui-button', { as: 'ui-button--secondary' })] }),
+  // A live figure; ui-figure--progress sets the label and the figure on one row over the bar.
+  component('ui-figure', {
+    variants: ['ui-figure--progress'],
+    parts: [
+      part('label', '.ui-figure__label'),
+      part('value', '.ui-figure__value'),
+      part('detail', '.ui-figure__detail', { optional: true }),
+      part('bar', '.ui-figure__bar', { optional: true }),
+      part('fill', '.ui-figure__fill', { optional: true }),
+    ],
+  }),
+  // The figures panel: an optional head bar (title and an action), the figures, the controls reminder,
+  // and the live part a screen reader hears, which the base hides.
+  component('ui-figures', {
+    parts: [
+      part('head', '.ui-figures__head', { optional: true }),
+      part('title', '.ui-figures__title', { optional: true }),
+      part('action', '.ui-figures__action', { optional: true, as: 'ui-button--primary' }),
+      part('body', '.ui-figures__body'),
+      part('foot', '.ui-figures__foot', { optional: true }),
+      part('live', '.ui-figures__live'),
+    ],
+  }),
+
   composition('ui-screen', { variants: ['ui-screen--wide', 'ui-screen--columns'] }),
   composition('ui-row'),
   composition('ui-grid'),

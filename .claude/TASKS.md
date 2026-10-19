@@ -650,7 +650,7 @@ Feature: in-game-layout
 
 ## 175. Counter readout and figures panel kit components
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/ui/kit-catalogue.js, css/components.css, themes/joyful-tiles/theme.css, dev/components.html, tests/components.test.mjs
 Preconditions: 163

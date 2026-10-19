@@ -8,7 +8,8 @@
    Behaviour helpers live in js/ui/components.js (initComponents(root) binds
    every slider, segmented choice and tablist under root; bindSelectOnHover(root)
    moves focus to the button, menu entry, mode entry or board option the mouse
-   moves over; showKeyHints(root, keysFor) fills the key hints).
+   moves over; showKeyHints(root, keysFor) fills the key hints;
+   bindFiguresLive(panel) writes a figures panel's live part).
    js/ui/kit-catalogue.js declares the components below as data
    (classes, parts, states, decoration slots) and changes with this comment.
    Changing a class name or a markup pattern below is a breaking change for
@@ -281,6 +282,71 @@
               scene the bar carries its own opaque surface; in Classic 2D
               it is the top edge of the board's framed panel
               (css/style.css .c2d-panel) and sits on the panel's surface.
+
+   ui-counter — an in-game count: mines left, or the time
+     Element: <div class="ui-counter" role="group" aria-label="Mines left">
+                <svg class="ui-counter__icon" aria-hidden="true">…</svg>
+                <span class="ui-counter__digits">024</span>
+              </div>
+              the timer (aria-label="Time") sets its icon after its digits
+     Role:    group; never a live region, so no change is announced
+     Name:    aria-label
+     Parts:   the digits, and the icon a theme may hide: a theme draws them
+              as plain figures, LED digits on black or anything between.
+     Values:  as the overlay bar's (formatMineCount, formatOverlayTime);
+              data-negative on the counter marks a count below zero.
+
+   ui-counter-strip — mines left, Restart and the timer
+     Element: <div class="ui-counter-strip" role="group" aria-label="Counters">
+                <div class="ui-counter" …>…</div>
+                <button type="button" class="ui-button ui-button--secondary ui-button--sm">
+                  <svg aria-hidden="true">…</svg>Restart
+                  <span class="ui-key-hint" data-action="restart" aria-hidden="true">…</span></button>
+                <div class="ui-counter" …>…</div>
+              </div>
+     Role:    group; Restart a button (native)
+     Name:    group: aria-label; Restart: its text
+     Layout:  the counters at the ends, Restart between them.
+
+   ui-figure — a live figure: 3BV, pace vs PB, 3BV/s, clicks, flags
+     Element: <div class="ui-figure" role="group" aria-labelledby="L">
+                <span class="ui-figure__label" id="L">Clicks</span>
+                <span class="ui-figure__value">61</span>
+                <span class="ui-figure__detail">efficiency 88.5%</span>
+              </div>
+     Role:    group
+     Name:    aria-labelledby → the label
+     Detail:  the detail line is optional (a board with no best has none).
+     Progress: ui-figure--progress sets the label and a small figure on one
+              row over its bar:
+                <span class="ui-figure__bar" role="progressbar" aria-labelledby="L"
+                      aria-valuemin="0" aria-valuemax="118" aria-valuenow="54">
+                  <span class="ui-figure__fill" style="width: 46%"></span></span>
+              the screen sets the fill's width to the share solved.
+
+   ui-figures — the figures panel: the live figures and the controls reminder
+     Element: <section class="ui-figures" aria-label="Live figures">
+                [<header class="ui-figures__head">
+                  <h2 class="ui-figures__title" id="T" title="3D · Cube Intermediate">3D</h2>
+                  <button type="button" class="ui-button ui-button--primary ui-button--sm
+                          ui-figures__action">Pause</button>
+                </header>]
+                <div class="ui-figures__body">
+                  <div class="ui-figure" …>…</div> …
+                  <footer class="ui-figures__foot"><div class="ui-key-hints">…</div></footer>
+                </div>
+                <p class="ui-figures__live" role="status" aria-live="polite" aria-atomic="true"></p>
+              </section>
+     Role:    region; its live part a polite live region
+     Name:    aria-label; with a head, aria-labelledby → the title
+     Head:    optional (the 3D game's panel): the title, its full name as
+              its tooltip, and an action.
+     Foot:    optional: the board's main bindings for the active device as
+              ui-key-hint, each with its label.
+     Live:    the figures themselves are never announced; the live part,
+              hidden by the base, is what a screen reader hears, written by
+              bindFiguresLive(panel).announce(text) at most once a second
+              (LIVE_FIGURES_INTERVAL), the latest text winning.
 
    ui-wordmark — the game's title in one line (the main menu, the board choices)
      Element: <h1 class="ui-wordmark" aria-label="Minesweeper 3D">
@@ -1103,6 +1169,108 @@
 .ui-overlay-bar__pause {
   min-height: 40px;
   padding: var(--space-2) var(--space-4);
+}
+
+/* ---------- counter readout and counter strip ---------- */
+.ui-counter-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 14px;
+}
+.ui-counter {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.ui-counter__icon { flex: none; }
+.ui-counter__digits {
+  font-variant-numeric: var(--font-numeric-tabular);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* ---------- live figure and figures panel ---------- */
+.ui-figures {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.ui-figures__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 10px 10px var(--space-4);
+}
+.ui-figures__title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-figures__action { flex: none; }
+.ui-figures__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: var(--space-4) 18px;
+}
+.ui-figures__foot {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: auto;
+  padding-top: var(--space-3);
+}
+.ui-figures__foot .ui-key-hints { flex-direction: column; align-items: flex-start; gap: 7px; }
+/* Read by a screen reader, never shown. */
+.ui-figures__live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.ui-figure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: 11px 0;
+}
+.ui-figure:first-child { padding-top: 0; }
+.ui-figure--progress {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-2);
+}
+.ui-figure--progress .ui-figure__bar,
+.ui-figure--progress .ui-figure__detail { grid-column: 1 / -1; }
+.ui-figure__label {
+  font-size: 13px;
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+}
+.ui-figure__value {
+  font-variant-numeric: var(--font-numeric-tabular);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+}
+.ui-figure__detail { font-size: var(--font-size-sm); }
+.ui-figure__bar {
+  display: block;
+  overflow: hidden;
+}
+.ui-figure__fill {
+  display: block;
+  height: 100%;
 }
 
 /* ---------- spinner ---------- */
