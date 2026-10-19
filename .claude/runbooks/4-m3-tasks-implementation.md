@@ -272,10 +272,12 @@ Context: none
 
 Depends on: 14, 15
 
+Needs: agent+human
+
 Context:
 - 2026-10-11 (amend): task 104 was re-planned so the 3D board picker lists the three cube presets only.
 - 2026-10-13 (amend): task 104 was re-planned into the shared layout's screen frame: it now waits on task 163 (themes-tasks-implementation step 7) and is claude+human — the owner supplies the leaderboard screen's *Joyful tiles* artboard before any markup is written.
-- 2026-10-19 (amend): task 104 also builds the rankings (scope tabs, own standing, entry list, states) as one part for a given board, which the Records Leaderboards tab of task 107 (step 24) shows in place.
+- Task 104 also builds the rankings (scope tabs, own standing, entry list, states) as one part for a given board, which the Records Leaderboards tab of task 107 (step 24) shows in place.
 
 ```prompt
 /task-implement 104 --review
@@ -301,15 +303,12 @@ Context: none
 /task-implement 106 --review
 ```
 
-## [ ] 24. Implement task 107 — Leaderboards and Quit entries in the main menu
+## [ ] 24. Implement task 107 — Leaderboards tab in Records and Quit in the main menu
 
-Depends on: 3, 21
+Depends on: 3, 21, 22
 
 Context:
-- 2026-10-13 (amend): task 107 was re-planned so Leaderboards and Quit are mode entries of the redesigned main menu; it now waits on task 165 (themes-tasks-implementation step 9).
-- 2026-10-19 (amend): Supersedes the fact above: task 107 is "Leaderboards tab in Records and Quit in the main menu" — Leaderboards is the Records screen's fourth tab, not a menu entry; the task also waits on task 170 (themes-tasks-implementation step 43) and is `claude+human`: the owner first decides how the tab shows the leaderboards.
-- 2026-10-19 (amend): Supersedes the `claude+human` part of the fact above: the owner settled the tab — it shows the rankings of the board Records shows in place, inside Records — so task 107 is `claude` with no manual intervention; it reuses the rankings part of task 104 and also waits on task 105 (step 22).
-- 2026-10-19 (amend): themes-tasks-implementation steps 9 and 43 are struck; task 165 runs at its step 53 and task 170 at its step 59.
+- Leaderboards is the Records screen's fourth tab, not a main-menu entry: it shows the rankings part of task 104 for the board Records shows, in place, inside Records; Quit is the main menu's final entry. Task 107 waits on tasks 165 and 170 (themes-tasks-implementation steps 53 and 59).
 
 ```prompt
 /task-implement 107 --review
@@ -327,12 +326,13 @@ Context: none
 
 ## [ ] 26. Implement task 109 — Steam rank panel on the results screen
 
-Depends on: 3, 14
+Depends on: 3, 14, 21
+
+Needs: agent+human
 
 Context:
 - 2026-10-09 (amend): task 109 also builds the results screen's *Leaderboard* action and now waits on task 104, the leaderboard screen (step 21).
-- 2026-10-13 (amend): task 109 was re-planned into the framed results screen: it now waits on task 169 (themes-tasks-implementation step 13) and is claude+human — the owner supplies an artboard drawing the rank panel and the *Leaderboard* action.
-- 2026-10-19 (amend): themes-tasks-implementation step 13 is struck; task 169 runs at its step 58.
+- Task 109 builds into the framed results screen and waits on task 169 (themes-tasks-implementation step 58); the owner supplies an artboard drawing the rank panel and the *Leaderboard* action.
 
 ```prompt
 /task-implement 109 --review
@@ -353,8 +353,7 @@ Context: none
 Depends on: none
 
 Context:
-- 2026-10-13 (amend): task 111 now also switches the shared layout's key hints and the in-game controls reminder to the resolver, and waits on tasks 163, 176 and 177 (themes-tasks-implementation steps 7, 20 and 21).
-- 2026-10-19 (amend): themes-tasks-implementation steps 20 and 21 are struck; task 176 runs at its step 68 and task 177 at its step 69; task 163 stays at step 7.
+- Task 111 also switches the shared layout's key hints and the in-game controls reminder to the resolver, and waits on tasks 163, 176 and 177 (themes-tasks-implementation steps 7, 68 and 69).
 
 ```prompt
 /task-implement 111 --review --rounds 2
@@ -374,9 +373,10 @@ Context: none
 
 Depends on: 28, 29
 
+Needs: agent+human
+
 Context:
-- 2026-10-13 (amend): task 113 was re-planned into the framed Settings page: it now waits on task 171 (themes-tasks-implementation step 15) and is claude+human — the owner supplies an artboard drawing the rebinding panels.
-- 2026-10-19 (amend): themes-tasks-implementation step 15 is struck; task 171 runs at its step 60.
+- Task 113 builds into the framed Settings page and waits on task 171 (themes-tasks-implementation step 60); the owner supplies an artboard drawing the rebinding panels.
 
 ```prompt
 /task-implement 113 --review

@@ -34,14 +34,12 @@ Context: none
 /task-implement 159 --review
 ```
 
-## [ ] 4. Implement task 160 — Settings theme list, light/dark carry-over and the reduced-motion setting
+## [ ] 4. Implement task 160 — Settings theme list and light/dark carry-over
 
 Depends on: 3
 
 Context:
-- 2026-10-13 (amend): Task 160 adds no reduced-motion setting; theme motion follows the operating system's `prefers-reduced-motion` preference, and the task is titled "Settings theme list and light/dark carry-over".
-- 2026-10-13 (amend): Supersedes the fact above: reduced motion is deferred whole to `m7-after-launch`. Until then the game has no reduced-motion behaviour — no setting and no reading of the operating system's `prefers-reduced-motion` preference; theme motion always plays. Task 160 adds no settings field, root marker, accessibility section or preference read.
-- 2026-10-13 (amend): Supersedes the fact above: the shipped `prefers-reduced-motion` rule in `css/style.css` stays (task 158 keeps it) and is the game's one reduced-motion behaviour until `m7-after-launch`; nothing new reads the preference. Task 160 still adds no settings field, root marker, accessibility section or preference read.
+- Task 160 adds no reduced-motion setting, settings field, root marker, accessibility section or preference read: the shipped `prefers-reduced-motion` rule in `css/style.css`, which task 158 keeps, is the game's one reduced-motion behaviour until `m7-after-launch`.
 
 ```prompt
 /task-implement 160 --review
@@ -677,13 +675,12 @@ Context: none
 /task-implement 179 --review
 ```
 
-## [ ] 24. Implement task 180 — Tile recipe drawing styles: bevel and chunky raised, with depth
+## [ ] 24. Implement task 180 — Tile recipe drawing styles: flat and bevel, with corner radius and depth
 
 Depends on: none
 
 Context:
-- 2026-10-15 (amend): Task 180 is retitled "Tile recipe drawing styles: bevel and flat, with depth" — *Joyful tiles* uses a flat style, not chunky raised.
-- 2026-10-19 (amend): Supersedes the fact above: task 180 is retitled "Tile recipe drawing styles: flat and bevel, with corner radius and depth" — flat 2D tiles with a corner radius that scales with the tile, bevel 3D cubes with four lit sides (J-BoardSheet, J-3DSheet).
+- *Joyful tiles* draws flat 2D tiles with a corner radius that scales with the tile and bevel 3D cubes with four lit sides (J-BoardSheet, J-3DSheet).
 
 ```prompt
 /task-implement 180 --review
