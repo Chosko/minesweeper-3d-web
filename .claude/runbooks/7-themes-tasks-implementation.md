@@ -84,7 +84,7 @@ Context:
 
 Done: 2026-10-19, commit `2fba8f2` (14 files, +287/-164).
 
-## [~] 7. Implement task 163 — Layout kit components: backdrop, screen frame, mode entry, board option, stat tile and the rest
+## [x] 7. Implement task 163 — Layout kit components: backdrop, screen frame, mode entry, board option, stat tile and the rest
 
 Depends on: 2, 5
 
@@ -95,7 +95,9 @@ Context:
 /task-implement 163 --review
 ```
 
-## [ ] 8. Implement task 164 — 3D scene drawn into a screen's scene panel
+Done: 2026-10-19, commit `841d1ff` (10 files, +1540/-50). Disabled mode entries use `aria-disabled="true"` (focusable) rather than native `disabled`; the board option's chosen state is `aria-pressed="true"`. Counter strip and figures panel are left to task 175.
+
+## [~] 8. Implement task 164 — 3D scene drawn into a screen's scene panel
 
 Depends on: 7
 
@@ -122,7 +124,8 @@ Done: struck — for a parallel run its Depends on lacked the order against task
 
 Depends on: 4, 7, 8
 
-Context: none
+Context:
+- 2026-10-19 (from step 7): disabled mode entries are marked `aria-disabled="true"`, not native `disabled`, so they stay focusable for the "Desktop build only" / "no WebGL 2" previews; the screen's click handler must stop them opening anything.
 
 ```prompt
 /task-implement 165 --review
@@ -299,7 +302,8 @@ Done: struck — for a parallel run its Depends on lacked the order against task
 
 Depends on: 7, 57
 
-Context: none
+Context:
+- 2026-10-19 (from step 7): the kit has no quiet button variant or plain white stat tile; if the results screen needs one, it cannot add it itself (kit files are not in its `Files:`) — record a follow-up instead.
 
 ```prompt
 /task-implement 169 --review
@@ -335,7 +339,8 @@ Done: struck — for a parallel run its Depends on named struck step 38; lacked 
 
 Depends on: 7, 55, 58
 
-Context: none
+Context:
+- 2026-10-19 (from step 7): the kit has no quiet button variant or plain white stat tile; if Records needs one, it cannot add it itself (kit files are not in its `Files:`) — record a follow-up instead. Tabs, table, chip and list row are kit components.
 
 ```prompt
 /task-implement 170 --review
@@ -722,7 +727,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against tasks 157, 163, which edit the same files; replaced by step 72.
 
-## [ ] 72. Implement task 181 — Board module shape, the Joyful tiles board module and the board conformance checks
+## [~] 72. Implement task 181 — Board module shape, the Joyful tiles board module and the board conformance checks
 
 Depends on: 5, 7, 24
 
