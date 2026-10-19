@@ -17,7 +17,20 @@ are designed, and why the architecture is what it is — read
 
 Testing policy for /task-implement: full-tdd
 
-This project has a test suite. Always run the tests-first sequence.
+This project has a test suite. Always run the tests-first sequence. Tests
+come in three tiers, and a task's "full test suite" is the first two:
+
+- **Fast** — every test not named "in a browser". Runs on every change.
+- **Browser** — tests named "in a browser". Run only the files the change
+  reaches, as `run-affected-tests.sh` maps them; a change to the page shell
+  (`index.html`, `js/main.js`, shared CSS) does not by itself select every
+  browser file.
+- **Slow** — browser tests tagged `[slow]` in their name: long walks
+  (controller and focus walks) and flavour checks of animation timing,
+  frame counts and motion. Run only when the change touches the code
+  they exercise, and in full before a milestone closes.
+
+The tag, the mapping and the runner scripts are `.claude/context/testing.md`'s.
 
 <!-- chosko-llm:editing-discipline:begin v0.1.0 -->
 
