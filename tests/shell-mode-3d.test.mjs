@@ -843,19 +843,20 @@ test('in a browser with touch on a tablet, the 3D ready card is a start: Tap to 
     const card = await ms(() => {
       const shown = (el) => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
       const btn = document.getElementById('ready-btn');
+      const ready = document.getElementById('ready');
       return {
         btn: shown(btn), title: btn.querySelector('.ready-title').textContent,
-        touch: shown(btn.querySelector('.ready-touch')), keys: shown(btn.querySelector('.ready-keys')),
-        list: btn.querySelector('.ready-touch')?.textContent ?? '', back: shown(document.getElementById('ready-back')),
+        touch: shown(ready.querySelector('.ready-touch')), keys: shown(ready.querySelector('.ready-keys')),
+        list: ready.querySelector('.ready-touch')?.textContent ?? '', back: shown(document.getElementById('ready-back')),
         notice: !!document.getElementById('ready-notice'),
         rules: shown(document.getElementById('ready-rules')) ? document.getElementById('ready-rules').innerText : '',
-        escHint: shown(document.querySelector('#ready [data-esc-hint]')),
+        escHint: shown(document.querySelector('#ready-back .ui-key-hint')),
       };
     });
     assert.match(card.rules, /tap Ctrl on the right to show them/, 'the rules name the toolbar\'s Ctrl button');
     assert.doesNotMatch(card.rules, /hold Ctrl/, 'not the Ctrl key');
-    assert.equal(card.escHint, false, 'no "Esc: Back" beside the touch card\'s Back');
-    assert.ok(card.btn, 'the ready card is a button again');
+    assert.equal(card.escHint, false, 'no Esc key hint in the touch card\'s Back');
+    assert.ok(card.btn, 'the ready card\'s play button shows');
     assert.equal(card.title, 'Tap to play');
     assert.ok(card.touch && !card.keys, 'the touch gestures in place of the key list');
     for (const gesture of [/stick/i, /[Dd]rag/, /[Tt]ap/, /[Ll]ong-press/, /[Tt]wo-finger/, /[Pp]inch/]) assert.match(card.list, gesture);
@@ -1076,7 +1077,7 @@ test('in a browser with a mouse at 1280 × 800, 3D starts with pointer lock and 
     assert.equal(await ms(() => document.getElementById('touch-note').classList.contains('hidden')), true);
     await ms(() => { globalThis.__ms.modes.start('3d', { X: 6, Y: 6, Z: 6, mines: 10 }); });
     await page.waitForFunction(() => globalThis.__ms.state.mode === 'ready');
-    const card = await ms(() => ({ title: document.querySelector('#ready-btn .ready-title').textContent, keys: getComputedStyle(document.querySelector('#ready-btn .ready-keys')).display, touch: getComputedStyle(document.querySelector('#ready-btn .ready-touch')).display }));
+    const card = await ms(() => ({ title: document.querySelector('#ready-btn .ready-title').textContent, keys: getComputedStyle(document.querySelector('#ready .ready-keys')).display, touch: getComputedStyle(document.querySelector('#ready .ready-touch')).display }));
     assert.deepEqual(card, { title: 'Click to play', keys: 'flex', touch: 'none' });
     await page.click('#ready-btn');
     assert.equal(await ms(() => globalThis.__locks), 1, 'the click asks for pointer lock');

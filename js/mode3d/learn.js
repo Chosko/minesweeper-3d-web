@@ -26,7 +26,8 @@
 // LEARN_PROMPTS — the prompt line's names in order: 'start' until the first reveal, then 'shift',
 //   'ctrl', 'flag', 'chord', and 'rest' once all four are done. LEARN_HINTS maps each to its text in
 //   the bindings source (js/settings/bindings.js HINT_TEXT), so a controller player reads the
-//   controller's inputs.
+//   controller's inputs. learnStepOf(hint) → a step prompt's place among the four ("1 / 4"), shown
+//   beside it in the hint strip; null for 'start', 'rest' and any other hint.
 // createLearnPrompts({ lessonNumber, lessonMine }) → the prompt sequence of one guided game:
 //   started()               the first reveal: the prompts begin;
 //   shift(selected)         Shift (or its controller button) is held with the crosshair on `selected`:
@@ -71,6 +72,11 @@ const STEPS = Object.freeze(['shift', 'ctrl', 'flag', 'chord']);
 export const LEARN_HINTS = Object.freeze({
   start: 'learnStart', shift: 'learnShift', ctrl: 'learnCtrl', flag: 'learnFlag', chord: 'learnChord', rest: 'learnRest',
 });
+
+export function learnStepOf(hint) {
+  const n = STEPS.findIndex((step) => LEARN_HINTS[step] === hint);
+  return n < 0 ? null : `${n + 1} / ${STEPS.length}`;
+}
 
 // Whether key a sorts before key b, element by element.
 const before = (a, b) => {

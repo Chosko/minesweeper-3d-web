@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  LEARN_BOARD, LEARN_TITLE, LEARN_PROMPTS, LEARN_HINTS, lessonCells, learnChoice, createLearnPrompts, closedAround,
+  LEARN_BOARD, LEARN_TITLE, LEARN_PROMPTS, LEARN_HINTS, lessonCells, learnChoice, createLearnPrompts, closedAround, learnStepOf,
 } from '../js/mode3d/learn.js';
 import { create3DGame } from '../js/mode3d/session.js';
 import { generate, boardGraph } from '../js/generation/generate.js';
@@ -242,6 +242,16 @@ test('the prompt texts come from the bindings source, in the controller\'s names
   assert.equal(say('chord', 'controller', GLYPHS.xbox), 'Press LT and RT together on the number to chord');
 });
 
+test('the four steps\' prompts carry their place in the lesson ("1 / 4"); the start and the rest carry none', () => {
+  assert.deepEqual(LEARN_PROMPTS.map((p) => learnStepOf(LEARN_HINTS[p])), [null, '1 / 4', '2 / 4', '3 / 4', '4 / 4', null]);
+  assert.equal(learnStepOf('modeHint'), null, 'no other hint');
+  assert.match(INDEX, /<div id="hint-strip"[^>]*><span id="hint-strip-step" class="hint-step hidden"><\/span><span id="hint-strip-text"><\/span>/, 'the step sits before the prompt');
+  const set = code('js/ui.js').slice(code('js/ui.js').indexOf('setHintStrip(on, {'), code('js/ui.js').indexOf('_showHint()'));
+  assert.match(set, /const step = on && learn \? learnStepOf\(learn\) : null;/);
+  assert.match(set, /this\.el\.hintStep\.textContent = step \?\? '';/);
+  assert.match(set, /this\.el\.hintStep\.classList\.toggle\('hidden', !step\);/);
+});
+
 test('on a coarse-only device the prompts name the touch toolbar\'s buttons and the touch gestures', () => {
   const say = (name) => hintText(LEARN_HINTS[name], 'touch', GLYPHS.xbox);
   assert.equal(say('start'), 'Aim at the marked cube and tap to start');
@@ -286,6 +296,10 @@ test('index.html holds the Learn 3D entry first on the 3D board choice, the read
   assert.match(INDEX, /<section id="learn-end" class="overlay hidden"[\s\S]*?id="learn-end-title"[\s\S]*?id="learn-end-line"[\s\S]*?id="learn-end-primary"[\s\S]*?id="learn-end-back"[^>]*>Back to board choice</);
   const card = INDEX.slice(INDEX.indexOf('<section id="learn-end"'), INDEX.indexOf('<section id="pause"'));
   assert.doesNotMatch(card, /First box/, 'no First box on the end card');
+  // As J-Ready-states draws it: the "Learn 3D" section label over the outcome, the line, then the large primary
+  // action with its select key hint beside Back to board choice.
+  assert.match(card, /<div class="ui-section-label"><span class="ui-section-label__text">Learn 3D<\/span><\/div>\s*<h2 class="ui-card__title" id="learn-end-title">/);
+  assert.match(card, /<button type="button" id="learn-end-primary" class="ui-button ui-button--primary ui-button--lg"><span id="learn-end-primary-label">Play Cube Intro<\/span> <span class="ui-key-hint" data-action="select" aria-hidden="true"><\/span><\/button>/);
 });
 
 test('the Learn 3D end card: a win reads "You cleared the box!" and offers Play Cube Intro; the loss card is unchanged', () => {
@@ -293,7 +307,8 @@ test('the Learn 3D end card: a win reads "You cleared the box!" and offers Play 
   const show = ui.slice(ui.indexOf('showLearnEnd(won) {'), ui.indexOf('hideLearnEnd()'));
   assert.match(show, /learnEndTitle\.textContent = won \? 'You cleared the box!' : 'That cube was a mine\.'/);
   assert.match(show, /learnEndLine\.textContent = won \? 'Ready for a real board\? Cube Intro is a 6 × 6 × 6 box with 10 mines, a timer and records\.' : 'Learn 3D'/);
-  assert.match(show, /learnEndPrimary\.textContent = won \? 'Play Cube Intro' : 'Try again'/);
+  assert.match(show, /learnEndPrimaryLabel\.textContent = won \? 'Play Cube Intro' : 'Try again'/);
+  assert.match(show, /learnEndLine\.classList\.toggle\('hidden', !won\)/, 'on a loss the section label carries "Learn 3D", so the line hides');
   assert.deepEqual([INTRO.X, INTRO.Y, INTRO.Z, INTRO.mines], [6, 6, 6, 10], 'the line names Cube Intro\'s board');
   assert.match(ui, /learnEndLine: \$\('learn-end-line'\)/);
   assert.match(INDEX, /<p class="ui-text ui-text--muted" id="learn-end-line">Learn 3D<\/p>/, 'the loss card\'s line, as it was');
@@ -368,6 +383,7 @@ test('in a browser, Learn 3D: the entry, the marked cube, the four prompts, the 
     const start = await ms(() => globalThis.__ms.learnBoard.startCell);
     assert.equal(await ms(() => globalThis.__ms.renderer.mark), start, 'the start cell is marked');
     assert.equal(await strip(), 'Click the marked cube to start');
+    assert.equal(await shown('hint-strip-step'), false, 'the start prompt carries no step');
 
     // A reveal off the start cell changes nothing and hints.
     await aim(start === 0 ? 1 : 0);
@@ -379,6 +395,8 @@ test('in a browser, Learn 3D: the entry, the marked cube, the four prompts, the 
     await ms(() => globalThis.__ms.click('left'));
     await page.waitForFunction(() => globalThis.__ms.state.started);
     assert.equal(await strip(), 'Hold Shift to see what this number counts');
+    assert.equal(await ms(() => document.getElementById('hint-strip-step').textContent), '1 / 4', 'the first step says so');
+    assert.equal(await shown('hint-strip-step'), true);
     assert.equal(await ms(() => globalThis.__ms.renderer.mark), L, 'L carries the tint');
     assert.equal(await ms(() => document.getElementById('toast').classList.contains('on') && /Solved cubes hide/.test(document.getElementById('toast').textContent)), false, 'no auto-hide toast');
 
@@ -396,6 +414,7 @@ test('in a browser, Learn 3D: the entry, the marked cube, the four prompts, the 
     assert.equal(await aim(L), L);
     await ms(() => globalThis.__ms.click('chord'));
     assert.equal(await strip(), 'Clear the rest of the box');
+    assert.equal(await shown('hint-strip-step'), false, 'the rest carries no step');
 
     // Clear the rest of the box.
     await ms((mines) => {
@@ -406,7 +425,8 @@ test('in a browser, Learn 3D: the entry, the marked cube, the four prompts, the 
     await page.waitForFunction(() => globalThis.__ms.state.mode === 'learn-end', null, { timeout: patience(10000) });
     assert.equal(await ms(() => document.getElementById('learn-end-title').textContent), 'You cleared the box!');
     assert.equal(await ms(() => document.getElementById('learn-end-line').textContent), 'Ready for a real board? Cube Intro is a 6 × 6 × 6 box with 10 mines, a timer and records.');
-    assert.equal(await ms(() => document.getElementById('learn-end-primary').textContent), 'Play Cube Intro');
+    assert.equal(await ms(() => document.getElementById('learn-end-primary-label').textContent), 'Play Cube Intro');
+    assert.equal(await ms(() => document.getElementById('learn-end-line').classList.contains('hidden')), false, 'the win\'s line shows');
     assert.equal(await ms(() => document.getElementById('learn-end').textContent.includes('Time')), false, 'no time on the card');
     await page.waitForFunction(() => document.activeElement?.id === 'learn-end-primary', null, { timeout: patience(5000) });
     await page.keyboard.press('ArrowRight');

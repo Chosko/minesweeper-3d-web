@@ -71,7 +71,7 @@ const MAIN = read('js/main.js');
 const UI_SRC = read('js/ui.js');
 const READY = INDEX.slice(INDEX.indexOf('<section id="ready"'), INDEX.indexOf('<!-- Controls modal'));
 
-test('the ready card holds the drag-to-look offer and the controller line outside the click-to-play card', () => {
+test('the ready card holds the drag-to-look offer and the controller line outside the click-to-play button', () => {
   const card = READY.slice(READY.indexOf('<button id="ready-btn"'), READY.indexOf('</button>', READY.indexOf('<button id="ready-btn"')));
   assert.doesNotMatch(card, /ready-drag|ready-blocked/, 'the offer is not inside the click-to-play button');
   assert.match(READY, /<div id="ready-blocked" class="[^"]*\bhidden\b[^"]*"/, 'hidden until the lock is blocked');
@@ -79,7 +79,10 @@ test('the ready card holds the drag-to-look offer and the controller line outsid
   const offer = READY.slice(READY.indexOf('id="ready-blocked"'), READY.indexOf('</div>', READY.indexOf('id="ready-blocked"')));
   assert.match(offer, /controller/i, 'a line names the controller');
   assert.match(offer, /press[^<]*<kbd[^>]*>A<\/kbd>/, 'and its A button');
-  assert.ok(READY.indexOf('id="ready-blocked"') < READY.indexOf('id="ready-back"'), 'Back stays below the offer');
+  assert.ok(READY.indexOf('id="ready-back"') < READY.indexOf('id="ready-btn"'), 'Back sits in the card\'s head, above Click to play');
+  assert.ok(READY.indexOf('id="ready-btn"') < READY.indexOf('id="ready-blocked"'), 'the offer comes under Click to play');
+  assert.ok(READY.indexOf('id="ready-msg"') < READY.indexOf('id="ready-btn"'), 'the refusal\'s message above it');
+  assert.match(READY, /<p id="ready-msg" class="ui-text ui-text--warning[^"]*"><\/p>/, 'the message is a warning line');
 });
 
 test('the shell counts refusals on the ready card and offers drag-to-look from the second', () => {

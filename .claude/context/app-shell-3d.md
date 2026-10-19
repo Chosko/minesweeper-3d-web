@@ -90,15 +90,16 @@ and adapter (`js/shell/mode-3d.js`) themselves are [mode3d.md](mode3d.md).
   mine positions and `learn`.
 - **Ready card.** `showReady` gets `rules` (the "How 3D works" block) and
   `learn` (the `#ready-learn` line "New to 3D? Learn 3D walks you through a
-  small box." with `#ready-learn-btn` → `startLearn`, outside the card's own
-  button) while `FIRST_USE.rules3D`; neither on the guided board's own card,
+  small box." with `#ready-learn-btn` → `startLearn`, outside the Click to
+  play button) while `FIRST_USE.rules3D`; neither on the guided board's own card,
   and the line only before the game started.
 - **Learn 3D.** `startLearn()` (the board choice's `onLearn`, the ready
   card's line, `__ms.learn()`) starts `learnChoice()` (`js/mode3d/learn.js`)
   and saves nothing. `S.learn` holds the guided game's prompt sequence
   (`createLearnPrompts`), null otherwise; `ui.setTimed(false)` hides the
   timer. `refreshHints` shows its prompt in the hint strip in play
-  (`LEARN_HINTS`, no close button); `learnAction` feeds flags and chords
+  (`LEARN_HINTS`, after its step `#hint-strip-step` from `learnStepOf`, no
+  close button); `learnAction` feeds flags and chords
   from `onAction`, and after every action while the game is on L's closed,
   unflagged neighbour count (`closedAround`), which skips the chord prompt
   at 0; `learnViews` the Shift and Ctrl the frame loop reads (Ctrl also

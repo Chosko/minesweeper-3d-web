@@ -27,12 +27,6 @@ kbd {
   text-align: center;
 }
 
-/* ---------- buttons ---------- */
-.link-btn {
-  appearance: none; border: 0; padding: 0;
-  font-size: inherit; font-weight: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
-}
-
 /* ---------- overlays ---------- */
 .overlay {
   position: fixed; inset: 0;
@@ -219,41 +213,41 @@ kbd {
   #results-look-note { grid-column: 1 / -1; order: 2; }
 }
 
-/* ---------- click to play ---------- */
-.ready-card {
-  appearance: none;
-  display: flex; flex-direction: column; align-items: center; gap: 12px;
-  margin: 0;
-  padding: 30px 40px;
-  border: 0;
-  cursor: pointer;
-  max-width: 100%;
-}
-.ready-title { font-size: 34px; font-weight: var(--font-weight-heavy); letter-spacing: -0.01em; }
-.ready-board { font-size: 15px; font-variant-numeric: tabular-nums; }
-.ready-keys { font-size: 13px; line-height: 1.9; display: flex; flex-direction: column; align-items: center; }
-.ready-keys b { font-weight: var(--font-weight-bold); }
-/* On a coarse-only device (#ready.ready--touch, UI.setTouch3D) the ready card lists the touch gestures in place of
-   the keys, its rules name the toolbar's Ctrl button, and its Back has no "Esc: Back" hint. */
-.ready-touch { display: none; }
-.ready--touch .ready-touch { font-size: 13px; line-height: 1.9; display: flex; flex-direction: column; align-items: center; text-align: center; }
-.ready-touch b { font-weight: var(--font-weight-bold); }
-.ready--touch .ready-keys, .ready--touch .ready-tip { display: none; }
-.ready-rules { font-size: 13px; line-height: 1.7; display: flex; flex-direction: column; align-items: center; }
+/* ---------- the 3D ready card ---------- */
+/* A kit card over the scene: Back with its key hint beside the board line, the refusal's warning line,
+   Click to play as the one large action, the drag-to-look offer once the lock is blocked, the "How 3D
+   works" panel, the Learn 3D line, then the device's key list in rows and the fullscreen tip. Narrower
+   below a 1200 px window; on a phone held sideways the actions and the lists sit side by side. On a
+   coarse-only device (#ready.ready--touch, UI.setTouch3D) it reads Tap to play, lists the touch gestures
+   in place of the keys, and its rules name the toolbar's Ctrl button. */
+.ready-body { width: min(640px, 100%); gap: var(--space-3); }
+.ready-main, .ready-aside { display: contents; }
+.ready-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.ready-board { font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); font-variant-numeric: var(--font-numeric-tabular); text-align: end; }
+.ready-play { width: 100%; }
+#ready-rules { order: 1; }
+#ready-learn { order: 2; }
+.ready-keys, .ready-touch, .ready-pad, .ready-tip { order: 3; }
+.ready-rules { display: flex; flex-direction: column; gap: var(--space-1); }
+.ready-rules .ui-text { font-size: var(--font-size-sm); }
 .ready-rules-touch, .ready--touch .ready-rules-keys { display: none; }
 .ready--touch .ready-rules-touch { display: inline; }
-#ready.ready--touch .esc-row [data-esc-hint] { display: none; }
-.ready-tip { font-size: 12px; }
-.ready-msg { font-size: 14px; font-weight: var(--font-weight-bold); max-width: 440px; }
-.ready-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; max-width: 100%; margin: auto; }
-.ready-back { font-size: 14px; padding: 6px 10px; text-decoration: none; }
-
-/* ---------- Back rows ---------- */
-/* "Esc: Back" beside each Back that Esc triggers; over the click-to-play and context-lost scrims it
-   sits on the raised surface, so it reads the same over any scene. */
-.esc-row { display: flex; align-items: center; gap: var(--space-3); }
-[data-esc-hint] { white-space: nowrap; }
-.esc-row [data-esc-hint] { padding: var(--space-1) var(--space-2); }
+.ready-learn { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.ready-learn > .ui-button { flex: none; }
+.ready-blocked { display: flex; flex-direction: column; gap: var(--space-2); }
+.ready-keys, .ready--touch .ready-touch { display: flex; flex-direction: column; font-size: var(--font-size-sm); line-height: 1.5; }
+.ready-keys > span, .ready-touch > span { padding: var(--space-1) 0; }
+.ready-keys b, .ready-touch b, .ready-pad b { font-weight: var(--font-weight-bold); }
+.ready-touch { display: none; }
+.ready--touch .ready-keys, .ready--touch .ready-tip { display: none; }
+.ready-tip { font-size: var(--font-size-xs); }
+.ready-msg:empty { display: none; }
+@media (max-width: 1199px) { .ready-body { width: min(560px, 100%); } }
+@media (max-width: 719px) { .ready-body { padding: var(--space-4); } }
+@media (max-height: 500px) and (orientation: landscape) {
+  .ready-body { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; width: min(760px, 100%); padding: var(--space-4); }
+  .ready-main, .ready-aside { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+}
 
 /* ---------- controls modal ---------- */
 .modal { z-index: var(--z-modal); }
@@ -275,7 +269,8 @@ kbd {
   max-width: calc(100vw - 32px);
 }
 #c2d.c2d--hint #c2d-board { bottom: 64px; }
-.ready-msg:empty { display: none; }
+/* A Learn 3D step's place ("1 / 4") before its prompt. */
+.hint-step { font-weight: var(--font-weight-bold); font-variant-numeric: var(--font-numeric-tabular); white-space: nowrap; }
 
 
 /* ---------- controls list ---------- */
@@ -522,10 +517,6 @@ body.replaying #menu { display: none; }
   .controls.compact { grid-template-columns: max-content 1fr; }
   .hud-tools { display: none; }
 }
-@media (max-height: 600px) {
-  .ready-card { padding: 18px 24px; gap: 8px; }
-  .ready-title { font-size: 26px; }
-}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
@@ -543,14 +534,8 @@ body.pad-nav [data-pad-hint] { visibility: visible; }
 kbd[data-pad-glyph] { min-width: 1.9em; }
 [data-pad-hinted] { display: flex; align-items: center; gap: var(--space-2); max-width: 100%; }
 [data-pad-hinted] > .ui-segmented { min-width: 0; }
-.ready-pad { font-size: 13px; line-height: 1.7; text-align: center; max-width: 520px; }
-.ready-pad b { font-weight: var(--font-weight-bold); }
+.ready-pad { font-size: var(--font-size-sm); line-height: 1.5; }
 .ready-pad .pad-note { display: inline-block; margin: 4px 0 0; }
-/* the ready card's offer once the browser blocks pointer lock: drag-to-look, or the controller */
-/* The ready card's Learn 3D line, under the card while the player has not learned 3D. */
-.ready-learn { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-4); text-align: left; }
-.ready-learn .ui-text { margin: 0; }
-.ready-blocked { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); text-align: center; }
 #help { max-height: calc(100vh - 80px); overflow: hidden; }
 /* lockless controller play: the system cursor would sit over the crosshair */
 body.lockless #scene { cursor: none; }

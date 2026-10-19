@@ -306,7 +306,8 @@ test('the overlays over the scene and the context-lost screen read the theme\'s 
   assert.match(THEME_CSS, /:is\(#pause, #ready, #results, #learn-end, \.modal\) \{[^}]*background: var\(--color-backdrop\)/);
   assert.match(THEME_CSS, /#ctx-lost \{[^}]*background: var\(--color-backdrop-strong\)/);
   assert.match(THEME_CSS, /#results\.results--over3d \{[^}]*background: var\(--color-backdrop-strong\)/);
-  assert.match(THEME_CSS, /\.ready-card \{[^}]*background: var\(--color-surface\)/, 'the context-lost card is the ready card, on the surface');
+  assert.match(THEME_CSS, /\.ui-card \{[^}]*background: var\(--color-surface\)/, 'the ready and context-lost cards are kit cards, on the surface');
+  assert.doesNotMatch(THEME_CSS, /\.ready-card/, 'no one-off card of their own');
   const style = strip(read('../css/style.css'));
   assert.doesNotMatch(style, /:[^;{}]*(rgba?\(|#[0-9a-f]{3,8}\b)/i, 'css/style.css carries no tint');
 });

@@ -69,7 +69,8 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
   session's forced, marked start cell ([mode3d-session.md](mode3d-session.md)).
 - `LEARN_PROMPTS` (`start`, `shift`, `ctrl`, `flag`, `chord`, `rest`),
   `LEARN_HINTS` (each prompt's `HINT_TEXT` name,
-  [settings-bindings.md](settings-bindings.md));
+  [settings-bindings.md](settings-bindings.md)), `learnStepOf(hint)` (a
+  step prompt's "1 / 4", null for the start and the rest);
   `createLearnPrompts({lessonNumber, lessonMine})` → `current`,
   `done(name)`, `tinted`, `started()`, `shift(selected)`, `ctrl()`,
   `flagged(cells)`, `chorded(cell, revealed)`, `lessonClosed(count)` (L's

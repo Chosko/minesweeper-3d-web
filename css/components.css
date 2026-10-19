@@ -43,8 +43,7 @@
    move focus as the D-pad does, except an arrow the focused control owns. The
    selected segmented option is the only option in the Tab order (arrow keys
    move the selection); controller navigation reaches every option.
-   Each Back that Esc triggers has a ui-text--muted "Esc: Back" hint beside it
-   (<span class="ui-text ui-text--muted" data-esc-hint>), not a focus stop.
+   Each Back that Esc triggers carries its back ui-key-hint inside it.
 
    ui-button--primary — the screen's main action
      Element: <button type="button" class="ui-button ui-button--primary">
@@ -94,10 +93,14 @@
               in muted ink, no delta colour) for content shown for
               reference only (the pause card's settings).
 
-   ui-banner — one line announcing an event
+   ui-banner — one line announcing an event, or offering one action
      Element: <p class="ui-banner" role="status">…</p>
-     Role:    status
-     Name:    its text
+              an offer: <div class="ui-banner" role="group" aria-label="…">
+                <p class="ui-text">…</p><button class="ui-button …">…</button>
+              </div> (the 3D ready card's Learn 3D line), the action after
+              the line
+     Role:    status; group for an offer
+     Name:    its text; an offer its aria-label
      Look:    bold ink on the sunken surface, marked by a success-coloured
               edge; no animation.
 
@@ -357,7 +360,10 @@
                 <h3 class="ui-section-label__text">Board</h3>
                 <span class="ui-section-label__aside">…</span>
               </div>
-     Role:    heading (native)
+              a label set above a card's own title (the Learn 3D end card)
+              takes <span class="ui-section-label__text">, so the heading
+              order stays the title's
+     Role:    heading (native); none in the span form
      Name:    its text
 
    ui-key-hint — the keys or buttons that act on an action, beside it
@@ -686,11 +692,28 @@
      action as ui-button--danger and Cancel) shows in place of the actions.
      Default focus: Resume, or Play again once ended; Cancel while the
      confirmation shows.
+   3D ready card (index.html #ready): ui-card ui-screen over the 3D scene:
+     a head row of Back (ui-button--sm secondary with its back key hint)
+     and the board line; the refusal's ui-text--warning line; Click to
+     play (Tap to play on a coarse-only device) as the ui-button--lg
+     primary; once the browser blocks the lock, the drag-to-look primary
+     and its controller line; a ui-panel--muted "How 3D works" under its
+     ui-section-label and the ui-banner Learn 3D line with its
+     ui-button--sm, both until 3D is learned; the device's key list in
+     rows; the fullscreen tip. Narrower below 1200 px; on a phone held
+     sideways the actions and the lists sit in two columns. Default
+     focus: Click to play.
+   Context lost (index.html #ctx-lost): ui-card ui-screen on the strong
+     scrim, its title, a ui-text line and ui-actions--row (Click to
+     reload primary; Main menu with its back key hint). Default focus:
+     Click to reload.
    Learn 3D end card (index.html #learn-end): ui-card ui-screen over the
-     guided board's stopped scene, holding the outcome title, a
-     ui-text--muted "Learn 3D" line and ui-actions--row (Play First box 1
-     on a win or Try again on a loss, primary; Back to board choice). No
-     time and no records. Default focus: the primary action.
+     guided board's stopped scene, holding the "Learn 3D"
+     ui-section-label, the outcome title, a ui-text--muted line (the
+     win's offer of Cube Intro; none on a loss) and ui-actions--row (Play
+     Cube Intro on a win or Try again on a loss, ui-button--lg primary
+     with its select key hint; Back to board choice). No time and no
+     records. Default focus: the primary action.
    Results screen (index.html #results, filled by js/results/view.js; the
      gallery's #g-results shows it with placeholder content): one ui-frame
      (#results-frame) sized to its content over the game it ended, no card

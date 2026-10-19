@@ -156,7 +156,7 @@
     <div id="crosshair" class="off" aria-hidden="true"></div>
     <div id="crosshair-arrow" class="hidden" aria-hidden="true"></div>
     <div id="aim-readout" class="hidden" aria-hidden="true"><svg class="aim-icon aim-icon--cube" viewBox="0 0 16 16" aria-label="cubes"><rect x="2" y="2" width="12" height="12" rx="2.5"/></svg> <span id="aim-cubes">0</span><span id="aim-flag-part" class="hidden"> - <svg class="aim-icon aim-icon--flag" viewBox="0 0 16 16" aria-label="flags"><path class="aim-icon__pole" d="M4.5 1.5v13"/><path class="aim-icon__cloth" d="M5 2l9 3.5L5 9z"/></svg> <span id="aim-flags">0</span></span></div>
-    <div id="hint-strip" class="hud-panel hidden" role="note"><span id="hint-strip-text"></span><button type="button" id="hint-strip-close" class="hint-close" aria-label="Dismiss hint">&times;</button></div>
+    <div id="hint-strip" class="hud-panel hidden" role="note"><span id="hint-strip-step" class="hint-step hidden"></span><span id="hint-strip-text"></span><button type="button" id="hint-strip-close" class="hint-close" aria-label="Dismiss hint">&times;</button></div>
     <div id="mode-chips" aria-hidden="true">
       <span id="chip-shift" class="chip">Shift: neighbours only</span>
       <span id="chip-space" class="chip">Space: see through revealed</span>
@@ -314,17 +314,33 @@
 
   <!-- Click to play -->
   <section id="ready" class="overlay hidden" aria-label="Click to play">
-    <div class="ready-wrap">
-      <button id="ready-btn" class="ready-card" type="button">
-        <span class="ready-title">Click to play</span>
-        <span id="ready-board" class="ready-board">9 &times; 9 &times; 1 &middot; 10 mines</span>
-        <span id="ready-msg" class="ready-msg"></span>
-        <span id="ready-rules" class="ready-rules hidden" role="group" aria-label="How 3D works">
-          <span>A number counts the mines among the 26 cubes around it.</span>
-          <span class="ready-rules-keys">Empty and solved cubes hide themselves; hold <kbd>Ctrl</kbd> to show them.</span>
-          <span class="ready-rules-touch">Empty and solved cubes hide themselves; tap <b>Ctrl</b> on the right to show them.</span>
-          <span>The first click is always safe.</span>
-        </span>
+    <section class="ui-card ui-screen ready-body" aria-labelledby="ready-title">
+      <div class="ready-main">
+        <div class="ready-head">
+          <button type="button" id="ready-back" class="ui-button ui-button--secondary ui-button--sm">Back <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>
+          <span id="ready-board" class="ready-board">9 &times; 9 &times; 1 &middot; 10 mines</span>
+        </div>
+        <p id="ready-msg" class="ui-text ui-text--warning ready-msg"></p>
+        <button id="ready-btn" class="ui-button ui-button--primary ui-button--lg ready-play" type="button"><span class="ready-title" id="ready-title">Click to play</span></button>
+        <div id="ready-blocked" class="ready-blocked hidden" role="group" aria-label="Play without mouse capture">
+          <button type="button" id="ready-drag" class="ui-button ui-button--primary">Play with drag-to-look</button>
+          <p class="ui-text ui-text--muted">Or connect a controller and press <kbd class="pad">A</kbd>.</p>
+        </div>
+        <div id="ready-learn" class="ui-banner ready-learn hidden" role="group" aria-label="Learn 3D">
+          <p class="ui-text">New to 3D? Learn 3D walks you through a small box.</p>
+          <button type="button" id="ready-learn-btn" class="ui-button ui-button--secondary ui-button--sm">Learn 3D</button>
+        </div>
+      </div>
+      <div class="ready-aside">
+        <div id="ready-rules" class="ui-panel ui-panel--muted ready-rules hidden" role="group" aria-labelledby="ready-rules-title">
+          <div class="ui-section-label"><h3 class="ui-section-label__text" id="ready-rules-title">How 3D works</h3></div>
+          <p class="ui-text">A number counts the mines among the 26 cubes around it.</p>
+          <p class="ui-text">
+            <span class="ready-rules-keys">Empty and solved cubes hide themselves; hold <kbd>Ctrl</kbd> to show them.</span>
+            <span class="ready-rules-touch">Empty and solved cubes hide themselves; tap <b>Ctrl</b> on the right to show them.</span>
+          </p>
+          <p class="ui-text">The first click is always safe.</p>
+        </div>
         <span class="ready-keys">
           <span><b>Left</b> reveal &middot; <b>Right</b> flag &middot; <b>Left+Right</b> chord</span>
           <span><b>Arrows</b> look &middot; <kbd>Enter</kbd> reveal &middot; <kbd>'</kbd> flag &middot; <kbd>Enter</kbd>+<kbd>'</kbd> chord</span>
@@ -341,21 +357,9 @@
           <span><b>Pinch</b> spacing &middot; <b>Shift</b>, <b>Space</b> and <b>Ctrl</b> on the right: a tap turns each on or off &middot; <b>Pause</b> at the top</span>
         </span>
         <span id="ready-pad" class="ready-pad hidden"></span>
-        <span class="ready-tip">Tip: press <kbd>F</kbd> for fullscreen &mdash; keeps <kbd>Ctrl</kbd>+<kbd>W</kbd> from closing the tab</span>
-      </button>
-      <div id="ready-learn" class="ready-learn hidden" role="group" aria-label="Learn 3D">
-        <p class="ui-text">New to 3D? Learn 3D walks you through a small box.</p>
-        <button type="button" id="ready-learn-btn" class="ui-button ui-button--secondary">Learn 3D</button>
+        <p class="ui-text ui-text--muted ready-tip">Tip: press <kbd>F</kbd> for fullscreen &mdash; keeps <kbd>Ctrl</kbd>+<kbd>W</kbd> from closing the tab</p>
       </div>
-      <div id="ready-blocked" class="ready-blocked hidden" role="group" aria-label="Play without mouse capture">
-        <button type="button" id="ready-drag" class="ui-button ui-button--primary">Play with drag-to-look</button>
-        <p class="ui-text">Or connect a controller and press <kbd class="pad">A</kbd>.</p>
-      </div>
-      <div class="esc-row">
-        <button type="button" id="ready-back" class="link-btn ready-back">Back</button>
-        <span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>
-      </div>
-    </div>
+    </section>
   </section>
 
   <!-- Controls modal (main menu) -->
@@ -372,13 +376,14 @@
 
   <!-- WebGL context lost -->
   <section id="ctx-lost" class="overlay hidden" aria-label="Graphics context lost">
-    <div class="ready-wrap">
-      <button type="button" id="ctx-lost-btn" class="ready-card"><span class="ready-title">Graphics context lost</span><span class="ready-board">Click to reload</span></button>
-      <div class="esc-row">
-        <button type="button" id="ctx-lost-menu" class="link-btn ready-back">Main menu</button>
-        <span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>
+    <section class="ui-card ui-screen" role="alertdialog" aria-labelledby="ctx-lost-title" aria-describedby="ctx-lost-text">
+      <h2 class="ui-card__title" id="ctx-lost-title">Graphics context lost</h2>
+      <p class="ui-text" id="ctx-lost-text">The browser stopped the 3D view. Reloading restores it.</p>
+      <div class="ui-actions ui-actions--row">
+        <button type="button" id="ctx-lost-btn" class="ui-button ui-button--primary">Click to reload</button>
+        <button type="button" id="ctx-lost-menu" class="ui-button ui-button--secondary">Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>
       </div>
-    </div>
+    </section>
   </section>
 
   <!-- Settings -->
@@ -680,10 +685,11 @@
   <!-- Learn 3D end card: over the stopped scene of the guided board (js/mode3d/learn.js) -->
   <section id="learn-end" class="overlay hidden" aria-label="Learn 3D">
     <section class="ui-card ui-screen" aria-labelledby="learn-end-title">
+      <div class="ui-section-label"><span class="ui-section-label__text">Learn 3D</span></div>
       <h2 class="ui-card__title" id="learn-end-title">You cleared the box!</h2>
       <p class="ui-text ui-text--muted" id="learn-end-line">Learn 3D</p>
       <div class="ui-actions ui-actions--row">
-        <button type="button" id="learn-end-primary" class="ui-button ui-button--primary">Play Cube Intro</button>
+        <button type="button" id="learn-end-primary" class="ui-button ui-button--primary ui-button--lg"><span id="learn-end-primary-label">Play Cube Intro</span> <span class="ui-key-hint" data-action="select" aria-hidden="true"></span></button>
         <button type="button" id="learn-end-back" class="ui-button ui-button--secondary">Back to board choice</button>
       </div>
     </section>

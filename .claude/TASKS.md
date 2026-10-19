@@ -995,7 +995,7 @@ Feature: shared-screen-layout
 
 ## 210. 3D ready card, lock states and Learn 3D cards in the shared layout
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, js/ui.js, js/shell/mode-3d.js, js/shell/first-use.js, js/main.js, tests/shell-mode-3d.test.mjs, tests/shell-first-use.test.mjs, tests/mode3d-learn.test.mjs, tests/shell-lock-fallback.test.mjs, tests/components.test.mjs
 Preconditions: 163, 212

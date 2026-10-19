@@ -975,18 +975,11 @@
 }
 :root[data-theme="joyful-tiles"] :is(kbd.pad, kbd[data-pad-glyph]) { border-radius: var(--radius-pill); }
 
-:root[data-theme="joyful-tiles"] .link-btn {
-  border-radius: var(--radius-xs);
-  background: none;
-  color: var(--color-blue-edge);
-  font-weight: var(--font-weight-bold);
-}
-:root[data-theme="joyful-tiles"] :is(.link-btn, .ready-card, .hint-close):focus-visible,
+:root[data-theme="joyful-tiles"] .hint-close:focus-visible,
 :root[data-theme="joyful-tiles"] body.pad-nav :is(button, input, summary, a, select):not(.ui-button, .ui-menu__item, .ui-mode-entry, .ui-option, .ui-toggle__input, .ui-slider__input, .ui-segmented__option, .ui-tabs__tab, .ui-checkbox__input, .ui-field__input, .ui-link):focus {
   outline: 3px solid var(--color-focus-ring);
   outline-offset: 3px;
 }
-:root[data-theme="joyful-tiles"] body.pad-nav .ready-card:focus .ready-title { color: var(--color-accent); }
 
 /* overlays laid over the scene: a navy scrim; the menu screens sit on the scene itself */
 :root[data-theme="joyful-tiles"] :is(#pause, #ready, #results, #learn-end, .modal) {
@@ -1011,36 +1004,13 @@
   box-shadow: inset 0 0 0 2px var(--color-border), 0 4px 0 var(--color-edge);
 }
 
-/* the click-to-play card, and the context-lost card built like it */
+/* the cards over the scene — the 3D ready card, the context-lost card and the Learn 3D end card — pop in;
+   the ready card's key list sits in ruled rows, keys in ink and their actions muted */
 @keyframes joyful-tiles-pop { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: none; } }
-:root[data-theme="joyful-tiles"] .ready-card {
-  border-radius: 22px;
-  background: var(--color-surface);
-  color: var(--color-ink);
-  box-shadow: inset 0 -2px 0 var(--color-line), 0 8px 0 var(--color-head-edge), var(--elevation-2);
-  animation: joyful-tiles-pop var(--duration-slow) var(--easing-out);
-}
-:root[data-theme="joyful-tiles"] .ready-title { transition: color var(--duration-base) var(--easing-out); }
-:root[data-theme="joyful-tiles"] .ready-card:hover .ready-title { color: var(--color-accent); }
-:root[data-theme="joyful-tiles"] :is(.ready-board, .ready-keys, .ready-touch, .ready-tip, .ready-pad) { color: var(--color-ink-muted); }
-:root[data-theme="joyful-tiles"] :is(.ready-keys b, .ready-touch b, .ready-pad b, .ready-rules) { color: var(--color-ink); }
-:root[data-theme="joyful-tiles"] .ready-msg { color: var(--color-warning); }
-:root[data-theme="joyful-tiles"] .ready-back {
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-raised);
-}
-:root[data-theme="joyful-tiles"] .ready-back:hover { background: var(--color-surface); }
-:root[data-theme="joyful-tiles"] :is(.ready-learn, .ready-blocked) {
-  border-radius: var(--radius-md);
-  background: var(--color-surface-raised);
-  color: var(--color-ink);
-}
-
-/* "Esc: Back" on the raised surface, so it reads the same over any scene */
-:root[data-theme="joyful-tiles"] .esc-row [data-esc-hint] {
-  border-radius: var(--radius-md);
-  background: var(--color-surface-raised);
-}
+:root[data-theme="joyful-tiles"] :is(#ready, #ctx-lost, #learn-end) > .ui-card { animation: joyful-tiles-pop var(--duration-slow) var(--easing-out); }
+:root[data-theme="joyful-tiles"] :is(.ready-keys, .ready-touch, .ready-pad, .ready-tip) { color: var(--color-ink-muted); }
+:root[data-theme="joyful-tiles"] :is(.ready-board, .ready-keys b, .ready-touch b, .ready-pad b) { color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] :is(.ready-keys, .ready-touch) > span { border-top: 1px solid var(--color-line); }
 
 /* the Controls modal and the H help panel */
 :root[data-theme="joyful-tiles"] .modal-card {
@@ -1077,6 +1047,7 @@
   color: var(--color-ink-inverse);
 }
 :root[data-theme="joyful-tiles"] #hint-strip kbd { background: var(--color-ink); color: var(--color-ink-inverse); }
+:root[data-theme="joyful-tiles"] #hint-strip .hint-step { font-family: var(--font-family-mono); }
 
 /* Classic 2D: the board layer on the ground, the board in a framed panel whose top edge is the overlay bar */
 :root[data-theme="joyful-tiles"] #c2d {

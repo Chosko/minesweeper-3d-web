@@ -589,7 +589,9 @@ test('the catalogue documents the screen compositions and the kit styles them', 
     assert.ok(head.includes(name), `catalogue documents ${name}`);
     assert.ok(rulesFor(`.${name}`).length > 0, `${name} is styled in components.css`);
   }
-  for (const screen of ['Main menu', 'Pause card', 'Results screen']) assert.ok(head.includes(screen), `catalogue documents the ${screen} composition`);
+  for (const screen of ['Main menu', 'Pause card', 'Results screen', '3D ready card', 'Context lost', 'Learn 3D end card']) assert.ok(head.includes(screen), `catalogue documents the ${screen} composition`);
+  assert.doesNotMatch(head, /First box/, 'the catalogue names no First box');
+  assert.doesNotMatch(head, /data-esc-hint|"Esc: Back"/, 'and no text Esc hint');
 });
 
 test('the main menu, the 3D board choice and the pause card are built only from kit classes', () => {
@@ -854,39 +856,32 @@ test('bindSegmented with horizontal leaves Up and Down unhandled', () => {
   assert.deepEqual(seen, ['b']);
 });
 
-// ---------------------------------------------------------------- "Esc: Back" beside every Back
+// ---------------------------------------------------------------- the back key hint inside every Back
 
-// Each button Esc triggers, with the hint beside it; the pause card's Main menu has none (Esc resumes there),
-// and a screen frame's Back carries its key hint inside it.
-const ESC_BACKS = ['ready-back', 'ctx-lost-menu'];
-const HINT = '<span class="ui-text ui-text--muted" data-esc-hint>Esc: Back</span>';
-
-test('an "Esc: Back" hint sits beside each Back that Esc triggers, and is no focus stop', () => {
+// Each button Esc triggers carries its back key hint inside it; the pause card's Main menu has none (Esc
+// resumes there), and no text "Esc: Back" hint remains.
+test('each Back that Esc triggers holds its back key hint, and no "Esc: Back" text hint remains', () => {
   const html = read('index.html');
-  for (const id of ESC_BACKS) {
-    const at = html.indexOf(`id="${id}"`);
-    assert.ok(at > 0, `#${id} exists`);
-    const after = html.slice(html.indexOf('</button>', at) + '</button>'.length).trimStart();
-    assert.ok(after.startsWith(HINT), `#${id} is followed by the hint`);
+  assert.doesNotMatch(html, /data-esc-hint|Esc: Back/, 'no text hint');
+  assert.doesNotMatch(read('css/style.css'), /data-esc-hint|\.esc-row/);
+  assert.doesNotMatch(THEME_RAW, /data-esc-hint|\.esc-row/);
+  assert.match(html, /id="p-menu"[^>]*>Main menu<\/button>/, 'none in the pause card\'s Main menu, where Esc resumes');
+  for (const id of ['c2d-choice-back', 'board-choice-back', 'daily-back', 'coming-soon-menu', 'r-menu', 'settings-back', 'ctx-lost-menu']) {
+    assert.match(html, new RegExp(`id="${id}"[^>]*>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>`), `the Back holds its key hint (#${id})`);
   }
-  assert.equal(html.split(HINT).length - 1, ESC_BACKS.length, 'one hint per Back, and no other');
-  const pmenu = html.slice(html.indexOf('</button>', html.indexOf('id="p-menu"')) + 9).trimStart();
-  assert.ok(!pmenu.startsWith(HINT), 'none beside the pause card\'s Main menu, where Esc resumes');
-  for (const id of ['c2d-choice-back', 'board-choice-back', 'daily-back', 'coming-soon-menu', 'r-menu', 'settings-back']) {
-    assert.match(html, new RegExp(`id="${id}"[^>]*>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>`), `the frame's Back holds its key hint (#${id})`);
-  }
-  for (const id of ['coming-soon-back', 'records-back', 'rp-back', 'replay-message-back']) {
+  for (const id of ['coming-soon-back', 'records-back', 'rp-back', 'replay-message-back', 'ready-back']) {
     assert.match(html, new RegExp(`id="${id}"[^>]*>Back <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>`), `so does a Back that returns one step (#${id})`);
   }
-  assert.doesNotMatch(HINT, /tabindex|<button|<a /, 'the hint is plain text');
+  assert.match(read('js/ui.js'), /for \(const id of \[[^\]]*'ready', 'learn-end', 'ctx-lost'[^\]]*\]\) showKeyHints\(/, 'the ready, Learn 3D end and context-lost cards\' key hints follow the device');
 });
 
 test('one vocabulary: Back returns one step, Main menu goes to the menu, and no Back to menu label remains', () => {
   const html = read('index.html');
   assert.doesNotMatch(html, /Back to menu/);
-  for (const id of ['ctx-lost-menu', 'c2d-offer-menu', 'm3d-offer-menu', 'p-menu']) {
+  for (const id of ['c2d-offer-menu', 'm3d-offer-menu', 'p-menu']) {
     assert.match(html, new RegExp(`id="${id}"[^>]*>Main menu</button>`), `#${id} reads Main menu`);
   }
+  assert.match(html, /id="ctx-lost-menu"[^>]*>Main menu </, '#ctx-lost-menu reads Main menu');
   assert.match(html, /id="r-menu"[^>]*>Main menu </, '#r-menu reads Main menu');
   for (const f of ['js/ui.js', 'js/main.js', 'js/settings/bindings.js', 'js/settings/page.js', 'js/shell/pause.js', 'js/results/view.js', 'dev/components.html']) {
     assert.doesNotMatch(read(f), /Back to menu/, `${f} says Main menu`);
@@ -904,7 +899,7 @@ test('Restart discards an unfinished game; Play again starts the same choice onc
     'only the F2 and Start + Y rows name a restart; no help line names Play again or a new game');
 });
 
-test('in a browser, the "Esc: Back" hints meet the contrast contract', async (t) => {
+test('in a browser, every Back that Esc triggers shows its Esc key hint, and no text hint shows', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -914,14 +909,6 @@ test('in a browser, the "Esc: Back" hints meet the contrast contract', async (t)
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto(`${base}/index.html?still-backdrop`);
     await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
-    const hints = async (label) => {
-      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
-      const runs = (await page.evaluate(measureContrast)).runs.filter((r) => r.text === 'Esc: Back');
-      assert.equal(runs.length, 1, `${label}: one hint shows`);
-      assert.ok(runs[0].ratio >= runs[0].min, `${label}: ${runs[0].ratio.toFixed(2)}:1 meets ${runs[0].min}:1`);
-      const stop = await page.evaluate(() => [...document.querySelectorAll('[data-esc-hint]')].some((e) => e.tabIndex >= 0));
-      assert.equal(stop, false, 'no hint is a focus stop');
-    };
     // Each board choice's frame carries its key hint inside its Back, a kit key hint, and no text hint.
     for (const [entry, back] of [['classic-2d', 'c2d-choice-back'], ['3d', 'board-choice-back']]) {
       await page.click(`#menu-entry-${entry}`);
@@ -931,7 +918,7 @@ test('in a browser, the "Esc: Back" hints meet the contrast contract', async (t)
     }
     await page.keyboard.press('Enter');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'ready');
-    await hints('ready card');
+    assert.equal(await page.evaluate(() => document.querySelector('#ready-back .ui-key-hint__key')?.textContent), 'Esc', 'the ready card\'s Back carries its key hint');
     await page.keyboard.press('Escape');
     await page.keyboard.press('Escape');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
@@ -1479,6 +1466,99 @@ test('in a browser, the overlay bar over the 3D scene meets the contrast contrac
   }
 });
 
+// The cards over the 3D scene (J-Ready-xl, -m, -p, -ls and J-Ready-states): readable on their surface and never
+// wider than the window, at the large and small desktop sizes and on a phone held either way.
+test('in a browser, the 3D ready card, its lock states, the Learn 3D end cards and the context-lost card fit every window size without a sideways scroll and meet the contrast contract', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  const SIZES = [
+    ['xl', { viewport: { width: 1920, height: 1080 } }],
+    ['m', { viewport: { width: 1024, height: 768 } }],
+    ['p', { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }],
+    ['ls', { viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true }],
+  ];
+  try {
+    for (const [size, device] of SIZES) {
+      const context = await browser.newContext(device);
+      try {
+        const page = await context.newPage();
+        const errors = [];
+        page.on('pageerror', (e) => errors.push(e.message));
+        // Every pointer-lock request refused, so the lock states show.
+        await page.addInitScript(() => {
+          Element.prototype.requestPointerLock = function requestPointerLock() {
+            setTimeout(() => document.dispatchEvent(new Event('pointerlockerror')), 0);
+            return Promise.reject(new Error('blocked'));
+          };
+        });
+        await page.goto(`${base}/index.html?still-backdrop`);
+        await page.waitForFunction(() => globalThis.__ms !== undefined);
+        const ms = (fn, arg) => page.evaluate(fn, arg);
+        const check = async (selector, label) => {
+          await ms(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+          const { runs } = await ms(measureContrast);
+          const own = await ms((sel) => [...document.querySelectorAll(`${sel} *`)]
+            .filter((e) => [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()))
+            .map((e) => e.textContent.trim().slice(0, 30)), selector);
+          const mine = runs.filter((r) => own.includes(r.text));
+          assert.ok(mine.length >= 3, `${label}: its text is measured (${mine.length})`);
+          const failing = mine.filter((r) => r.ratio < r.min).map((r) => `${r.text}: ${r.ratio.toFixed(2)}:1 < ${r.min}`);
+          assert.deepEqual(failing, [], `${label}: text below the contrast contract`);
+          const fit = await ms((sel) => {
+            const box = document.querySelector(sel).getBoundingClientRect();
+            return { page: document.documentElement.scrollWidth <= innerWidth, card: box.left >= 0 && box.right <= innerWidth + 0.5 };
+          }, selector);
+          assert.deepEqual(fit, { page: true, card: true }, `${label}: no sideways scroll`);
+        };
+        const touch = !!device.hasTouch;
+  
+        await ms(() => globalThis.__ms.modes.start('3d', { X: 8, Y: 8, Z: 8, mines: 40 }));
+        await page.waitForFunction(() => globalThis.__ms.state.mode === 'ready');
+        assert.equal(await ms(() => document.querySelector('#ready-btn .ready-title').textContent), touch ? 'Tap to play' : 'Click to play');
+        assert.equal(await ms(() => !document.getElementById('ready-rules').classList.contains('hidden')), true, 'the first-use card');
+        await check('#ready .ui-card', `ready-${size}`);
+        if (!touch) {
+          await ms(() => document.getElementById('ready-btn').click());
+          await page.waitForFunction(() => document.getElementById('ready-msg').textContent !== '');
+          await page.waitForTimeout(50);
+          await check('#ready .ui-card', `ready-refused-${size}`);
+          await ms(() => document.getElementById('ready-btn').click());
+          await page.waitForFunction(() => !document.getElementById('ready-blocked').classList.contains('hidden'));
+          await check('#ready .ui-card', `ready-blocked-${size}`);
+        }
+  
+        // The Learn 3D end cards: a lost lesson, then a won one.
+        for (const won of [false, true]) {
+          await ms(() => { globalThis.__ms.learn(); globalThis.__ms.forcePlay(); });
+          await ms(() => globalThis.__ms.state.play.reveal(globalThis.__ms.learnBoard.startCell));
+          await page.waitForFunction(() => globalThis.__ms.state.started);
+          await ms((w) => {
+            const g = globalThis.__ms.game;
+            const mines = [...globalThis.__ms.learnBoard.minePositions];
+            if (!w) globalThis.__ms.state.play.reveal(mines[0]);
+            else for (let c = 0; c < g.n; c++) if (!mines.includes(c) && !g.pressed[c]) globalThis.__ms.state.play.reveal(c);
+          }, won);
+          await page.waitForFunction(() => globalThis.__ms.state.mode === 'learn-end', null, { timeout: 15000 });
+          assert.equal(await ms(() => document.getElementById('learn-end-primary-label').textContent), won ? 'Play Cube Intro' : 'Try again');
+          await check('#learn-end .ui-card', `learn-end-${won ? 'won' : 'lost'}-${size}`);
+        }
+  
+        // The context-lost card, last: the canvas does not come back.
+        await ms(() => { globalThis.__ms.modes.start('3d', { X: 3, Y: 3, Z: 3, mines: 1 }); globalThis.__ms.forcePlay(); });
+        await ms(() => globalThis.__ms.renderer.renderer.getContext().getExtension('WEBGL_lose_context').loseContext());
+        await page.waitForFunction(() => globalThis.__ms.state.mode === 'ctxlost');
+        await check('#ctx-lost .ui-card', `ctx-lost-${size}`);
+        assert.deepEqual(errors, []);
+      } finally {
+        await context.close();
+      }
+    }
+  } finally {
+    await browser.close();
+  }
+});
+
 // The debug hook's surface, pinned so the screen rebuild leaves it unchanged.
 const MS_HOOK = ['state', 'game', 'renderer', 'camera', 'fps', 'frameStats', 'spawnPose', 'THREE', 'start', 'learn', 'learnBoard', 'learnPrompts', 'forcePlay',
   'controls', 'pads', 'pause', 'cellCenter', 'moveTo', 'look', 'aimAt', 'mouseDown', 'mouseUp', 'click', 'key', 'wheel',
@@ -1779,7 +1859,7 @@ const textOf = (html, t) => {
 };
 const MODE_ENTRIES = ['classic-2d', 'hexagon', 'triangle', 'surface', '3d', 'daily', 'records', 'settings', 'quit'];
 
-test('the gallery marks the shared layout\'s components; the main menu, both board choices, the Daily screen, the placeholder, the pause card, the results, the Records screen, the Settings page and the replay viewer are the screens built from them so far', () => {
+test('the gallery marks the shared layout\'s components; the main menu, both board choices, the Daily screen, the placeholder, the pause card, the results, the Records screen, the Settings page, the replay viewer, the 3D ready card, the context-lost card and the Learn 3D end card are the screens built from them so far', () => {
   assert.ok(LAYOUT.length > 1000, 'dev/components.html holds the shared layout\'s components');
   const screens = INDEX.replace(/<!--[\s\S]*?-->/g, '');
   const menu = SCREENS.menu;
@@ -1792,6 +1872,19 @@ test('the gallery marks the shared layout\'s components; the main menu, both boa
   const records = screens.slice(screens.indexOf('<section id="records"'), screens.indexOf('<section id="replay"'));
   const settings = screens.slice(screens.indexOf('<section id="settings"'), screens.indexOf('<section id="records"'));
   const replay = screens.slice(screens.indexOf('<section id="replay"'), screens.indexOf('<section id="results"'));
+  const ready = screens.slice(screens.indexOf('<section id="ready"'), screens.indexOf('<section id="controls-modal"'));
+  const ctxLost = screens.slice(screens.indexOf('<section id="ctx-lost"'), screens.indexOf('<section id="settings"'));
+  const learnEnd = screens.slice(screens.indexOf('<section id="learn-end"'), screens.indexOf('<section id="pause"'));
+  for (const cls of ['ui-card', 'ui-screen', 'ui-button--lg', 'ui-button--sm', 'ui-key-hint', 'ui-section-label', 'ui-panel--muted', 'ui-banner', 'ui-text--warning']) {
+    assert.match(ready, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the 3D ready card uses ${cls}`);
+  }
+  for (const cls of ['ui-card', 'ui-screen', 'ui-card__title', 'ui-actions--row', 'ui-key-hint']) {
+    assert.match(ctxLost, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the context-lost card uses ${cls}`);
+  }
+  for (const cls of ['ui-card', 'ui-screen', 'ui-section-label', 'ui-card__title', 'ui-button--lg', 'ui-key-hint']) {
+    assert.match(learnEnd, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the Learn 3D end card uses ${cls}`);
+  }
+  for (const card of [ready, ctxLost, learnEnd]) assert.doesNotMatch(card, /class="[^"]*\b(ready-card|link-btn|esc-row)\b/, 'no one-off card or link button');
   for (const cls of ['ui-backdrop', 'ui-frame', 'ui-key-hint', 'ui-key-hints', 'ui-chip', 'ui-spinner', 'ui-overlay-bar', 'ui-code', 'ui-segmented', 'ui-slider']) {
     assert.match(replay, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the replay viewer uses ${cls}`);
   }
@@ -1806,7 +1899,8 @@ test('the gallery marks the shared layout\'s components; the main menu, both boa
   for (const cls of ['ui-backdrop', 'ui-frame', 'ui-key-hint']) assert.match(soon, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the placeholder uses ${cls}`);
   assert.doesNotMatch(soon, /class="[^"]*\bui-card(?![\w-])/, 'the placeholder holds no card');
   for (const cls of ['ui-section-label', 'ui-button--danger', 'ui-key-hint', 'ui-panel--muted']) assert.match(pause, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the pause card uses ${cls}`);
-  const others = screens.replace(menu, '').replace(choice, '').replace(choice3d, '').replace(daily, '').replace(soon, '').replace(pause, '').replace(results, '').replace(records, '').replace(settings, '').replace(replay, '');
+  const others = screens.replace(menu, '').replace(choice, '').replace(choice3d, '').replace(daily, '').replace(soon, '').replace(pause, '').replace(results, '').replace(records, '').replace(settings, '').replace(replay, '')
+    .replace(ready, '').replace(ctxLost, '').replace(learnEnd, '');
   for (const cls of ['ui-wordmark', 'ui-mode-entry', 'ui-key-hint', 'ui-chip', 'ui-scene-panel']) {
     assert.match(menu, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the main menu uses ${cls}`);
   }

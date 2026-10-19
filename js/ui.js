@@ -8,7 +8,7 @@ import { GLYPHS } from './gamepad.js';
 import { bindingsHtml, hudStripHtml, hintStripHtml, helpFootHtml, hintText, keyHintKeys } from './settings/bindings.js';
 import { settingsPageHtml, bindingsSectionHtml, bindResetPanel } from './settings/page.js';
 import { DIM_MIN, DIM_MAX } from './mode3d/board-choice.js';
-import { LEARN_TITLE } from './mode3d/learn.js';
+import { LEARN_TITLE, learnStepOf } from './mode3d/learn.js';
 import { formatTime } from './results/view.js';
 import { readoutText } from './readability.js';
 
@@ -60,12 +60,13 @@ export class UI {
     this.el = {
       hud: $('hud'), time: $('hud-time'), mines: $('hud-mines'), clicks: $('hud-clicks'), size: $('hud-size'), hudTools: $('hud-tools'), hudSwap: $('hud-swap'), hudTap: $('hud-tap'),
       help: $('help'), helpList: $('help').querySelector('.controls'), helpFoot: $('help-foot'),
-      hintStrip: $('hint-strip'), hintStripText: $('hint-strip-text'),
+      hintStrip: $('hint-strip'), hintStripText: $('hint-strip-text'), hintStep: $('hint-strip-step'),
       readyRules: $('ready-rules'), pauseBoard: $('pause-board'), pauseControls: $('pause-controls'),
       controlsBody: $('controls-body'),
       flash: $('flash'), menu: $('menu'), ready: $('ready'), readyBoard: $('ready-board'), readyMsg: $('ready-msg'), readyBlocked: $('ready-blocked'),
       readyLearn: $('ready-learn'), hintClose: $('hint-strip-close'), timeStat: $('hud-time').closest('.ui-stat'),
       learnEnd: $('learn-end'), learnEndTitle: $('learn-end-title'), learnEndLine: $('learn-end-line'), learnEndPrimary: $('learn-end-primary'),
+      learnEndPrimaryLabel: $('learn-end-primary-label'),
       boardChoice: $('board-choice'), comingSoon: $('coming-soon'), comingSoonTitle: $('coming-soon-title'),
       settings: $('settings'), settingsBindings: null, records: $('records'), daily: $('daily'),
       crosshair: $('crosshair'), crosshairArrow: $('crosshair-arrow'), aimReadout: $('aim-readout'), aimCubes: $('aim-cubes'), aimFlagPart: $('aim-flag-part'), aimFlags: $('aim-flags'),
@@ -169,8 +170,8 @@ export class UI {
   }
   /**
    * On a coarse-only device both modes play by touch: the ready card reads "Tap to play" and lists the
-   * touch gestures in place of the key list, its rules name the toolbar's Ctrl button and its Back stands
-   * without the "Esc: Back" hint, the help surfaces of either mode list its touch rows and
+   * touch gestures in place of the key list, its rules name the toolbar's Ctrl button and its Back shows
+   * no key hint (the bindings source has none on touch), the help surfaces of either mode list its touch rows and
    * the clipped Classic 2D board's hint names the touch gestures.
    */
   setTouch3D(on) {
@@ -456,7 +457,7 @@ export class UI {
   }
   /**
    * The 3D ready card: its board, a message, the "How 3D works" block while `rules` is set, the
-   * Learn 3D line under the card while `learn` is set, and the drag-to-look and controller offer
+   * Learn 3D line while `learn` is set, and the drag-to-look and controller offer
    * while the browser blocks pointer lock (`blocked`). The guided board (`settings.learn`) is named
    * "Learn 3D".
    */
@@ -494,13 +495,17 @@ export class UI {
   /**
    * The first-use hint strip of the shown mode, in the active device's names — or, with `scroll`,
    * the one-time hint beside a clipped Classic 2D board, or, with `learn`, a Learn 3D prompt (its
-   * hint name in the bindings source) with no close button; on the 2D board it takes room at the
+   * hint name in the bindings source) after its step ("1 / 4", the four steps only) and with no close
+   * button; on the 2D board it takes room at the
    * bottom. It steps aside while the help panel is open.
    */
   setHintStrip(on, { scroll = false, learn = null } = {}) {
     this._hint = !!on;
     this._hintKind = on && learn ? 'learn' : on && scroll ? 'scroll' : 'mode';
     this._learnHint = on && learn ? learn : null;
+    const step = on && learn ? learnStepOf(learn) : null;
+    this.el.hintStep.textContent = step ?? '';
+    this.el.hintStep.classList.toggle('hidden', !step);
     if (on) {
       if (learn) this.el.hintStripText.textContent = this.hint(learn);
       else {
@@ -588,9 +593,10 @@ export class UI {
     if (this.el.pauseSub.textContent !== line) this.el.pauseSub.textContent = line;
   }
   /**
-   * The Learn 3D end card over the guided board's stopped scene: on a win "You cleared the box!", the
-   * line offering Cube Intro and Play Cube Intro, on a loss "That cube was a mine." under "Learn 3D"
-   * with Try again; Back to board choice on both, and no time.
+   * The Learn 3D end card over the guided board's stopped scene, under its "Learn 3D" section label: on
+   * a win "You cleared the box!", the line offering Cube Intro and Play Cube Intro, on a loss "That cube
+   * was a mine." with Try again (its "Learn 3D" line hidden, the label carrying it); Back to board choice
+   * on both, and no time.
    */
   showLearnEnd(won) {
     this._learnWon = !!won;
@@ -599,7 +605,8 @@ export class UI {
     this.el.pause.classList.add('hidden');
     this.el.learnEndTitle.textContent = won ? 'You cleared the box!' : 'That cube was a mine.';
     this.el.learnEndLine.textContent = won ? 'Ready for a real board? Cube Intro is a 6 × 6 × 6 box with 10 mines, a timer and records.' : 'Learn 3D';
-    this.el.learnEndPrimary.textContent = won ? 'Play Cube Intro' : 'Try again';
+    this.el.learnEndLine.classList.toggle('hidden', !won);
+    this.el.learnEndPrimaryLabel.textContent = won ? 'Play Cube Intro' : 'Try again';
     this.el.learnEnd.classList.remove('hidden');
   }
   hideLearnEnd() { this.el.learnEnd.classList.add('hidden'); }
@@ -726,7 +733,7 @@ export class UI {
   }
   /** Redraw every bindings surface for the active mode and device. */
   _renderBindings() {
-    for (const id of ['menu-hints', 'c2d-choice', 'board-choice', 'pause', 'coming-soon', 'results', 'records', 'settings', 'replay']) showKeyHints($(id), (action) => keyHintKeys(action, this._bindDevice(this._mode), this._glyphs));
+    for (const id of ['menu-hints', 'c2d-choice', 'board-choice', 'pause', 'coming-soon', 'results', 'records', 'settings', 'replay', 'ready', 'learn-end', 'ctx-lost']) showKeyHints($(id), (action) => keyHintKeys(action, this._bindDevice(this._mode), this._glyphs));
     this._renderHelp();
     this._renderHudStrip();
     this.el.controlsBody.innerHTML = bindingsHtml(this._controlsTab, this._bindDevice(this._controlsTab), this._glyphs, this._camera);
