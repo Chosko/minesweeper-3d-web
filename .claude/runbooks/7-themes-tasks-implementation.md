@@ -507,7 +507,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on named struck step 38; lacked the edge to task 212, its precondition; lacked the order against tasks 168, 209, which edit the same files; replaced by step 64.
 
-## [~] 64. Implement task 210 — 3D ready card, lock states and Learn 3D cards in the shared layout
+## [x] 64. Implement task 210 — 3D ready card, lock states and Learn 3D cards in the shared layout
 
 Depends on: 7, 55, 63
 
@@ -518,6 +518,8 @@ Context:
 ```prompt
 /task-implement 210 --review
 ```
+
+Done: 2026-10-19, commit `03021c8` (17 files, +339/-206). The Learn 3D loss card keeps task 212's copy, not the artboard's; the "Esc: Back" text hint (`.link-btn`, `.esc-row`) is gone from the kit, replaced by the back key hint inside the button.
 
 ## [x] 48. Implement task 211 — Toasts, fatal card, no-JavaScript notice and 404 page in the shared layout
 
@@ -531,7 +533,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against tasks 165, 210, which edit the same files; replaced by step 65.
 
-## [ ] 65. Implement task 211 — Toasts, fatal card, no-JavaScript notice and 404 page in the shared layout
+## [~] 65. Implement task 211 — Toasts, fatal card, no-JavaScript notice and 404 page in the shared layout
 
 Depends on: 7, 64
 
