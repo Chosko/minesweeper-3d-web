@@ -533,7 +533,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against tasks 165, 210, which edit the same files; replaced by step 65.
 
-## [~] 65. Implement task 211 — Toasts, fatal card, no-JavaScript notice and 404 page in the shared layout
+## [x] 65. Implement task 211 — Toasts, fatal card, no-JavaScript notice and 404 page in the shared layout
 
 Depends on: 7, 64
 
@@ -542,6 +542,8 @@ Context: none
 ```prompt
 /task-implement 211 --review
 ```
+
+Done: 2026-10-19, commit `124a60c` (17 files, +332/-51). Premise wrong: the old fatal card had no Reload, so Reload is new. The 404 page no longer redirects to `/`; it shows a themed "Page not found." card. `index.html` carries a fixed `data-theme="joyful-tiles"` for the no-JavaScript path.
 
 ## [x] 17. Implement task 173 — Update documentation for feature `shared-screen-layout`
 
@@ -579,7 +581,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the edge to task 212, its precondition; lacked the order against task 162, which edits the same files; replaced by step 66.
 
-## [ ] 66. Implement task 173 — Update documentation for feature `shared-screen-layout`
+## [~] 66. Implement task 173 — Update documentation for feature `shared-screen-layout`
 
 Depends on: 6, 7, 8, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65
 
@@ -589,6 +591,7 @@ Context:
 - 2026-10-19 (from step 58): `.claude/context/app-shell-results.md` still describes the old results screen and Watch best rule; `.claude/domain/features/replay-playback.md` (around lines 184–186) still states the old Watch best rule — Watch best is now offered only after a win that set no best.
 - 2026-10-19 (from step 59): `.claude/context/records-screen.md` still describes the old Records layout (Replays is now a tab; exports sit under the mode's overall figures).
 - 2026-10-19 (from step 60): `.claude/context/app-shell-markup.md` and `settings-page.md` still describe the old Settings layout (Back is now "Main menu" in the header; three/two/one columns by width).
+- 2026-10-19 (from step 65): the kit gained `ui-toast` and an optional card badge part `ui-card__icon`; the 404 page no longer redirects (it shows a themed card linking to `/`); `index.html`'s root carries a fixed `data-theme="joyful-tiles"` for the no-JavaScript path.
 
 ```prompt
 /task-implement 173 --review
@@ -618,7 +621,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against tasks 165, 211, which edit the same files; replaced by step 67.
 
-## [ ] 67. Implement task 175 — Counter readout and figures panel kit components
+## [~] 67. Implement task 175 — Counter readout and figures panel kit components
 
 Depends on: 7, 65
 
