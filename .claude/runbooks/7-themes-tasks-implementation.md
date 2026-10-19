@@ -3,7 +3,7 @@
 Created: 2026-10-13 · Source: /runbook-create interview (runbook themes-planning step 8) · Model: opus
 Last step number: 81
 
-## [~] 1. Implement task 157 — Theme registry, kit catalogue and the Joyful tiles theme folder
+## [x] 1. Implement task 157 — Theme registry, kit catalogue and the Joyful tiles theme folder
 
 Depends on: none
 
@@ -13,7 +13,9 @@ Context: none
 /task-implement 157 --review
 ```
 
-## [ ] 2. Implement task 158 — Base stylesheet and the Joyful tiles theme stylesheet; retire light and dark
+Done: 2026-10-19, commit `2d774b9` (15 files, +561/-3). The two OFL licence files ship with their URL lines removed (copyright notices and licence text kept), so the theme folder holds no remote URL; buttons and menu entries carry default/selected/pressed/disabled, with hover and focus merged into selected.
+
+## [~] 2. Implement task 158 — Base stylesheet and the Joyful tiles theme stylesheet; retire light and dark
 
 Depends on: 1
 
@@ -49,7 +51,8 @@ Context:
 
 Depends on: 1, 2, 3
 
-Context: none
+Context:
+- 2026-10-19 (from step 1): the OFL licence files in `themes/joyful-tiles/` had their URL lines stripped so no theme file references a remote URL; the no-URL check need not exclude `OFL-*.txt` unless that is reverted. `themes/joyful-tiles/board.js` uses a `/* */` header comment so a `//` scan does not trip on it; its export is `BOARD`. Catalogue selectors are each component's own single class, with a shared class in a `base` field.
 
 ```prompt
 /task-implement 161 --review
