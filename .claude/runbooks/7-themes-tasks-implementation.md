@@ -686,7 +686,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against task 210, which edits the same files; replaced by step 69.
 
-## [~] 69. Implement task 177 — 3D game overlay in the in-game layout
+## [x] 69. Implement task 177 — 3D game overlay in the in-game layout
 
 Depends on: 68
 
@@ -697,6 +697,8 @@ Context:
 ```prompt
 /task-implement 177 --review
 ```
+
+Done: 2026-10-19, commit `481e9c5` (20 files, +689/-236). `#hud-size` is replaced by the panel title `#hud-title`; the board line lives only on the pause card. The aim readout keeps its +40/+28 offset (the artboard's falls inside the off-screen arrow's ring). The 3D overlay's per-size browser tests moved to `tests/components-game3d.test.mjs`.
 
 ## [x] 22. Implement task 178 — Live figures in the replay viewer
 
@@ -724,7 +726,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on named struck step 16; lacked the order against task 177, which edits the same files; replaced by step 70.
 
-## [ ] 70. Implement task 178 — Live figures in the replay viewer
+## [~] 70. Implement task 178 — Live figures in the replay viewer
 
 Depends on: 18, 61, 67, 69
 
@@ -732,6 +734,7 @@ Context:
 - 2026-10-19 (from step 61): the replay viewer's end line (outcome chip plus time, e.g. "Won 9.971 s") sits in the figures bar; Download and Open replay file sit beside the key line; Expert must fit at 1024 × 768 with tiles of at least 26 px (`tests/classic2d-mode.test.mjs`).
 - 2026-10-19 (from step 67): announce figures only through `bindFiguresLive(panel).announce(text)` (`js/ui/components.js`); never put `aria-live` on the counters or figures — this task decides the announced text.
 - 2026-10-19 (from step 68): the mine counter format is three digits everywhere (`010`, `-05`); Classic 2D announces "3BV <solved> / <total>, <n> mines left" on count changes only. Figures detail wording follows task 174 ("Best 48.213 s", "Efficiency 88.5%").
+- 2026-10-19 (from step 69): `ui-overlay-bar` is now used only by the replay viewer. The 3D panel announces "3BV <solved> / <total>, <n> mines left" through `bindFiguresLive`, like Classic 2D; Learn 3D hides timer, pace and 3BV/s.
 
 ```prompt
 /task-implement 178 --review
@@ -755,6 +758,7 @@ Depends on: 18, 66, 67, 68, 69, 70
 
 Context:
 - 2026-10-19 (from step 68): the Classic 2D window ids are `c2d-time`, `c2d-mines-left`, `c2d-clicks`, `c2d-size` (foot line) and `c2d-pause`; `hud-swap`/`hud-tap` moved into the window; Expert scrolls below 1280 × 800. Context files for the Classic 2D window were left for this task.
+- 2026-10-19 (from step 69): `.claude/context/app-shell-ui.md`, `mode3d-session.md` and `testing.md` still describe the old 3D overlay bar; `#hud-size` is now `#hud-title`, and `measureContrast` moved to `tests/helpers/contrast.mjs`.
 
 ```prompt
 /task-implement 179 --review
@@ -810,7 +814,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against tasks 175, 176, 177, 180, which edit the same files; replaced by step 73.
 
-## [ ] 73. Implement task 182 — Classic 2D tiles drawn from the active theme's board module
+## [~] 73. Implement task 182 — Classic 2D tiles drawn from the active theme's board module
 
 Depends on: 3, 69, 72
 
