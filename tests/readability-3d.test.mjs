@@ -215,7 +215,7 @@ test('in a browser, the readout shows on an aimed number and hides off it, while
       const c = document.getElementById('crosshair').getBoundingClientRect();
       const cx = (c.left + c.right) / 2, cy = (c.top + c.bottom) / 2;
       const dx = Math.max(r.left - cx, 0, cx - r.right), dy = Math.max(r.top - cy, 0, cy - r.bottom);
-      return { distance: Math.hypot(dx, dy), ring: c.width / 2 + 10 + 14 }; // #crosshair-arrow::before: 10px out, 14px long
+      return { distance: Math.hypot(dx, dy), ring: 46 }; // #crosshair-arrow svg: its tip 46 px from the crosshair's centre
     });
     assert.ok(clear.distance > clear.ring, `the readout leaves the crosshair and its arrow ring clear (${clear.distance.toFixed(1)} px > ${clear.ring} px)`);
 

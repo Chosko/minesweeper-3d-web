@@ -670,7 +670,7 @@ Feature: in-game-layout
 
 ## 177. 3D game overlay in the in-game layout
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: index.html, js/shell/mode-3d.js, js/mode3d/session.js, js/ui.js, js/main.js, js/touch-3d.js, tests/shell-mode-3d.test.mjs, tests/mode3d-session.test.mjs, tests/input-touch-3d.test.mjs, tests/components.test.mjs
 Preconditions: 176

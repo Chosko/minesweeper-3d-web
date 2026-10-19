@@ -346,7 +346,7 @@ test('in a browser: the Controls panel tabs, H, M and the HUD strip in Classic 2
     await ms(() => globalThis.__ms.modes.start('3d', { X: 6, Y: 6, Z: 6, mines: 10, noGuess: true }));
     assert.equal(await mode(), 'ready');
     assert.equal(await textOf('#ready-board'), '6 × 6 × 6 · 10 mines · no-guess');
-    assert.equal(await textOf('#hud-size'), '6 × 6 × 6 · no-guess');
+    assert.equal(await ms(() => document.getElementById('hud-title').getAttribute('title')), '3D · Cube Intro');
     assert.match(await textOf('#hud-tools'), /F fullscreen/);
     await ms(() => { globalThis.__ms.forcePlay(); globalThis.__ms.pause(); });
     assert.equal(await mode(), 'paused');

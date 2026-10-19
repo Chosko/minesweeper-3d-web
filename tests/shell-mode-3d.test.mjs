@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createModeHost, MODE_METHODS, MODE_EVENTS } from '../js/shell/mode-host.js';
-import { create3DMode, END_DELAY_MS, END_DELAY_MAX_MS, endDelayMs, waveStepS, WAVE_CELL_S } from '../js/shell/mode-3d.js';
+import { create3DMode, END_DELAY_MS, END_DELAY_MAX_MS, endDelayMs, waveStepS, WAVE_CELL_S, createFiguresFeed } from '../js/shell/mode-3d.js';
 import { startCell } from '../js/generation/start-cell.js';
 import { createSession } from '../js/mode3d/session.js';
 import { LEARN_BOARD, learnChoice } from '../js/mode3d/learn.js';
@@ -533,6 +533,41 @@ test('js/main.js hands the adapter each session and leaves the reports to it', (
   assert.doesNotMatch(main, /snapshot:/, 'the summary comes from the session, not a snapshot of the shell state');
 });
 
+test('the 3D live figures feed: the game\'s counts at once on a change, the time alone on a new second, nothing between', () => {
+  const fed = [];
+  const feed = createFiguresFeed((input, { tick }) => fed.push([tick, input]));
+  const clicks = (reveal) => ({ reveal: { effective: reveal, wasted: 0 }, flag: { effective: 0, wasted: 0 }, chord: { effective: 0, wasted: 0 } });
+  const at = (counts, flags, elapsedMs) => feed.push({ counts, flags, mines: 40, elapsedMs });
+  at(null, 0, 0);
+  assert.deepEqual(fed.pop(), [false, { bbbv: null, bbbvSolved: 0, clicks: clicks(0), flags: 0, mines: 40, elapsedMs: 0 }], 'before the board: no 3BV, no click');
+  at(null, 1, 0);
+  assert.deepEqual(fed.pop(), [false, { bbbv: null, bbbvSolved: 0, clicks: clicks(0), flags: 1, mines: 40, elapsedMs: 0 }], 'a flag before the first reveal');
+  at({ bbbv: 90, bbbvSolved: 4, clicks: clicks(1) }, 1, 120);
+  assert.deepEqual(fed.pop(), [false, { bbbv: 90, bbbvSolved: 4, clicks: clicks(1), flags: 1, mines: 40, elapsedMs: 120 }], 'the first reveal');
+  at({ bbbv: 90, bbbvSolved: 4, clicks: clicks(1) }, 1, 900);
+  assert.equal(fed.length, 0, 'nothing changed, the same second');
+  at({ bbbv: 90, bbbvSolved: 4, clicks: clicks(1) }, 1, 1010);
+  assert.deepEqual(fed.pop(), [true, { bbbv: 90, bbbvSolved: 4, clicks: clicks(1), flags: 1, mines: 40, elapsedMs: 1010 }], 'a new second: the time alone');
+  at({ bbbv: 90, bbbvSolved: 4, clicks: clicks(2) }, 1, 1100);
+  assert.equal(fed.pop()[0], false, 'a wasted click is a change');
+  feed.reset();
+  at({ bbbv: 90, bbbvSolved: 4, clicks: clicks(2) }, 1, 1100);
+  assert.equal(fed.pop()[0], false, 'after a reset the next push feeds afresh');
+});
+
+test('js/main.js feeds the 3D figures panel every frame, frozen at the end, with the board\'s bests read once per game', () => {
+  const main = read('js/main.js');
+  assert.match(main, /const FIGURES_3D = createFiguresFeed\(\(input, \{ tick \}\) => ui\.updateFigures3D\(input, \{ tick, bests: bests3D \}\)\);/);
+  assert.match(main, /FIGURES_3D\.push\(\{ counts: S\.play\?\.counts\(\) \?\? null, flags: S\.settings\.mines - \(e \? e\.minesLeft : g\.minesLeft\), mines: S\.settings\.mines, elapsedMs: \(e \? e\.time : S\.time\) \* 1000 \}\);/,
+    'the counts, the flags and the time — the frozen end state\'s once the game ends');
+  assert.match(main, /bests3D = board\.learn \? null : RECORDS\.bests\(identity3D\(board\)\);/, 'the bests read from the records store when the board is shown');
+  assert.match(main, /function showBoard3D\(\) \{[\s\S]*?FIGURES_3D\.reset\(\);/, 'a new board feeds afresh');
+});
+
+test('js/main.js takes the scene\'s touches below the overlay\'s top row', () => {
+  assert.match(read('js/main.js'), /touchZone\(x, y, \{ width: canvas\.clientWidth, top: ui\.overlayBottom3D\(\) \}\)/);
+});
+
 // ---------------------------------------------------------------- browser: the 3D game through the adapter
 
 test('in a browser, the 3D game starts, pauses, resumes, restarts and leaves through the adapter', async (t) => {
@@ -875,6 +910,8 @@ test('in a browser with touch on a tablet, the 3D ready card is a start: Tap to 
       return { shown: getComputedStyle(el).display !== 'none', right: innerWidth - r.right, min: Math.min(...b.flatMap((x) => [x.width, x.height])) };
     });
     assert.ok(bar.shown && bar.right < 40 && bar.min >= 44, `the toolbar on the right edge with 44 px buttons (${JSON.stringify(bar)})`);
+    const clear = await ms(() => document.getElementById('hud-figures').getBoundingClientRect().bottom <= document.getElementById('touch-modes').getBoundingClientRect().top);
+    assert.ok(clear, 'the figures panel ends above the toolbar');
     // Restart from the pause card and Look-free paths stay lockless.
     await ms(() => globalThis.__ms.pause());
     await page.tap('#p-restart');
@@ -913,7 +950,7 @@ test('in a browser with touch on a tablet, 3D plays by touch: stick, look, tap, 
     const { page, errors, ms, frames, f } = await openTouchPage(browser, base, TABLET);
     const W = TABLET.viewport.width;
     const H = TABLET.viewport.height;
-    const LOOK = [Math.round(W * 0.62), Math.round(H * 0.6)];
+    const LOOK = [Math.round(W * 0.62), Math.round(H * 0.85)]; // below the figures panel, which takes its own touches
     const STICK = [Math.round(W * 0.25), Math.round(H * 0.7)];
     const camOf = () => ms(() => ({ ...globalThis.__ms.info().cam }));
     const counts = () => ms(() => globalThis.__ms.state.play.counts().clicks);
@@ -1040,7 +1077,7 @@ test('in a browser with touch on a tablet, 3D plays by touch: stick, look, tap, 
   }
 });
 
-test('in a browser with touch on a phone, the ready card starts touch play with the toolbar clear of the overlay bar', async (t) => {
+test('in a browser with touch on a phone, the ready card starts touch play with the toolbar clear of the overlay\'s counters and title bar', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -1051,9 +1088,9 @@ test('in a browser with touch on a phone, the ready card starts touch play with 
     await page.tap('#ready-btn');
     await page.waitForFunction(() => globalThis.__ms.state.mode === 'playing');
     const layout = await ms(() => {
-      const bar = document.querySelector('#hud .hud-bar').getBoundingClientRect();
       const tb = document.getElementById('touch-modes').getBoundingClientRect();
-      return { overlap: !(tb.top >= bar.bottom || tb.bottom <= bar.top || tb.left >= bar.right || tb.right <= bar.left), locks: globalThis.__locks };
+      const apart = (el) => { const r = el.getBoundingClientRect(); return tb.top >= r.bottom || tb.bottom <= r.top || tb.left >= r.right || tb.right <= r.left; };
+      return { overlap: !apart(document.getElementById('hud-counters')) || !apart(document.querySelector('#hud-figures .ui-figures__head')), locks: globalThis.__locks };
     });
     assert.deepEqual(layout, { overlap: false, locks: 0 });
     assert.deepEqual(errors, []);

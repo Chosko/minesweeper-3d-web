@@ -92,26 +92,25 @@ described in [app-shell.md](../../context/app-shell.md).
   focused state when focused (the selected state, on the components Scope
   names), and declares its default focus target per screen
   in the way the shell's controller layer already expects.
-- **Overlay bar.** The in-game overlay — timer, mine counter, click
-  counter, pause — as one component for both boards. Over the 3D board it
-  stays readable over the scene's sky in every theme by carrying its own
-  themed surface rather than drawing directly on the scene. In Classic 2D
-  the game window's head and counter strip take its place
-  (`in-game-layout`). Over the 3D board it stays above the
-  scene and the touch-controls layer during lockless and touch play, so
-  Pause always takes a tap. On either board, the timer
+- **Overlay bar.** The timer, mine counter and click counter as one
+  component, which the replay viewer shows. In play, both modes take
+  `in-game-layout`'s counter strip and figures panel in its place: over the
+  3D board each part carries its own themed surface rather than drawing
+  directly on the scene, and stays above the scene and the touch-controls
+  layer during lockless and touch play, so Pause always takes a tap. On
+  either board, the timer
   shows the elapsed time in whole seconds, zero-padded to three digits
   (047), and stops at 999 while the game's elapsed time keeps counting; the
   mine counter shows the real mines left in three digits, a negative count
   taking the minus in the first digit (−05), down to −99, where it stays
   for any lower count; on a
   board of more than 999 mines it is as wide as the board's mine count, so
-  the bar does not shift as the count falls, and a board of up to 999 mines
+  it does not shift as the count falls, and a board of up to 999 mines
   keeps the standard counter. The timer's 999 and the counter's −99
   copy the reference game's displays
   ([tests/fidelity/minesweeper-online.md](../../../tests/fidelity/minesweeper-online.md));
   the results, records and leaderboard screens show the real time. The
-  click counter ("Clicks") shows the game's counted clicks — every click,
+  click counter ("Clicks", in play the figures panel's clicks figure) shows the game's counted clicks — every click,
   wasted ones included, from the same engine click counts as the game's
   summary: 0 before the first click, each click as it is made, frozen with
   the timer when the game ends, and written only when it changes.
@@ -136,13 +135,12 @@ described in [app-shell.md](../../context/app-shell.md).
   options as the selected state. Text meets the contrast contract of `theme-system`'s conformance
   tests in every theme. On every pointer, labels are at least 12 px and key caps at
   least 11 px. On a coarse pointer, and only there, switches (the Reveal /
-  Flag switch included), slider thumbs, the overlay bar's Pause, the Classic
-  2D game window's Pause and Restart and the 3D touch toolbar's buttons take
+  Flag switch included), slider thumbs, the 3D overlay's Pause and Restart,
+  the Classic 2D game window's Pause and Restart and the 3D touch toolbar's buttons take
   a 44 px touch; a fine pointer keeps every
   hit area's size.
-- **Overlay readability** — the overlay bar meets the contrast contract
-  against its own surface over the 3D board in every theme; the Classic 2D
-  game window's readouts are `in-game-layout`'s Readability contract.
+- **Overlay readability** — the 3D overlay's and the Classic 2D game
+  window's readouts are `in-game-layout`'s Readability contract.
 - **Controller parity** — anything clickable is reachable and operable with
   a controller, per the shell's controller navigation.
 

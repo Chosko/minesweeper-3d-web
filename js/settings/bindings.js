@@ -288,6 +288,11 @@ export const REMINDER = table({
     controller: [['{a}', 'reveal'], ['{x}', 'flag'], ['{y}', 'chord']],
     touch: [['[Tap]', 'reveal'], ['[Long-press]', 'flag'], ['[Tap a number]', 'chord']],
   },
+  '3d': {
+    keyboard: [['[Left]', 'reveal'], ['[Right]', 'flag'], ['[Left]+[Right]', 'chord']],
+    controller: [['{rt}', 'reveal'], ['{lt}', 'flag'], ['{lt}+{rt}', 'chord']],
+    touch: [['[Tap]', 'reveal'], ['[Long-press]', 'flag'], ['[Two-finger tap]', 'chord']],
+  },
 });
 
 /** The reminder's rows for `mode` and `device`: [{ keys: [{ text, pad }], label }], the controller's buttons in `glyphs`. */

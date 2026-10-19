@@ -262,11 +262,17 @@ kbd {
 .modal-close { font-size: 24px; width: 34px; height: 34px; }
 
 /* ---------- first-use hint strip ---------- */
-/* At the bottom left of the play area; on the Classic 2D board it takes the room below the board. */
+/* Centred above the HUD strip; on the Classic 2D board it takes the room below the board. Too long for
+   the window, its text wraps onto a second line. */
 #hint-strip {
-  position: absolute; left: var(--space-4); bottom: var(--space-4); pointer-events: auto;
+  position: absolute; left: 50%; transform: translateX(-50%); bottom: 78px; pointer-events: auto;
   display: flex; align-items: center; gap: 6px; padding: 6px 6px 6px 14px; font-size: 13px;
-  max-width: calc(100vw - 32px);
+  width: max-content; max-width: calc(100vw - 24px); box-sizing: border-box;
+}
+#hint-strip-text { min-width: 0; }
+/* While a view chip shows in the chip row, the hint strip stands above it (on a phone it sits under the counters). */
+@media (min-width: 720px) and (min-height: 501px), (min-width: 720px) and (orientation: portrait) {
+  #hud:not(.hud--2d):has(.chip.on) #hint-strip { bottom: 122px; }
 }
 #c2d.c2d--hint #c2d-board { bottom: 64px; }
 /* A Learn 3D step's place ("1 / 4") before its prompt. */
@@ -298,7 +304,7 @@ kbd {
 #c2d-figures { min-height: 0; overflow-y: auto; }
 #c2d-figures .ui-figure__value { white-space: nowrap; }
 #c2d-size { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#hud.hud--2d .hud-bar { display: none; }
+#hud.hud--2d #hud-overlay { display: none; }
 /* The HUD strip sits centred below the window. */
 #hud.hud--2d .hud-tools { top: auto; right: auto; bottom: 10px; left: 50%; transform: translateX(-50%); }
 /* The first-use hint strip sits in the room the board area leaves it at the board column's foot (#c2d.c2d--hint). */
@@ -421,34 +427,50 @@ body.replaying #menu { display: none; }
 
 /* ---------- HUD ---------- */
 #hud { position: fixed; inset: 0; pointer-events: none; z-index: var(--z-hud); }
-.hud-bar { position: absolute; top: 16px; left: 16px; pointer-events: auto; }
-/* the mine counter: as wide as a large board's count (UI.setBoard), tabular, so the bar does not shift as it falls */
-#hud-mines { font-variant-numeric: var(--font-numeric-tabular); }
-.hud-board .ui-stat__value { font-size: var(--font-size-md); }
+/* The 3D game's overlay over the full-window scene (J-Game3D-xl, -l, -m): the counter strip — mines left,
+   Restart, the timer — at the top centre; the figures panel on the right, centred vertically, headed by
+   the title and Pause, its width stepping down with the window. Each part carries its own surface. */
+.hud-overlay { display: contents; }
+.hud-counters { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); gap: 18px; width: max-content; pointer-events: auto; }
+.hud-figures { position: absolute; right: 24px; top: 50%; transform: translateY(-50%); width: 300px; max-height: calc(100vh - 2 * 104px); box-sizing: border-box; pointer-events: auto; }
+.hud-figures .ui-figures__body { min-height: 0; overflow-y: auto; padding-top: 14px; }
+.hud-figures .ui-figure__value { white-space: nowrap; }
+.hud-figures--untimed :is([data-figure="pace"], [data-figure="rate"]) { display: none; }
+/* In touch play on a tablet it ends above the touch toolbar; the help panel stands beside it, centred vertically as it is. */
+body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
+@media (min-width: 720px) and (min-height: 501px), (min-width: 720px) and (orientation: portrait) {
+  #hud:not(.hud--2d) ~ #help { right: 348px; top: 50%; transform: translateY(-50%); width: 320px; }
+}
+@media (max-width: 1439px) {
+  .hud-figures { width: 290px; }
+  .hud-figures .ui-figures__title { font-size: var(--font-size-sm); }
+  #hud:not(.hud--2d) ~ #help { right: 338px; }
+}
+@media (max-width: 1199px) {
+  .hud-figures { width: 280px; }
+  #hud:not(.hud--2d) ~ #help { right: 328px; }
+}
 #hud.hud--2d #crosshair, #hud.hud--2d #crosshair-arrow, #hud.hud--2d #aim-readout, #hud.hud--2d #mode-chips { display: none; }
 /* The Classic 2D Reveal / Flag switch (js/classic2d/touch-input.js): under the board on a coarse pointer only, accented on Flag. */
 #hud-tap { display: none; }
-.hud-tools { position: absolute; top: 16px; right: 16px; padding: 8px 12px; display: flex; gap: 12px; font-size: 13px; font-variant-numeric: tabular-nums; }
+/* The HUD key strip at the bottom centre. */
+.hud-tools { position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); padding: 7px 16px; display: flex; gap: 16px; font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .kbd-hint { white-space: nowrap; }
 
+/* The crosshair (J-Game3D-states): four arms around an open centre, each over a halo. */
 #crosshair {
   position: absolute; left: 50%; top: 50%;
-  width: 22px; height: 22px; margin: -11px 0 0 -11px;
+  width: 28px; height: 28px; margin: -14px 0 0 -14px;
 }
-#crosshair::before, #crosshair::after { content: ""; position: absolute; }
-#crosshair::before { left: 10px; top: 0; width: 2px; height: 22px; }
-#crosshair::after { top: 10px; left: 0; height: 2px; width: 22px; }
+#crosshair svg { display: block; }
 #crosshair.off { opacity: 0.4; }
-/* the off-screen arrow: on the crosshair's ring, turned toward the box (UI.setArrow), drawn like the crosshair */
+/* the off-screen arrow: a line and chevron on the crosshair's ring, its tip 46 px out, turned toward the box (UI.setArrow) */
 #crosshair-arrow {
   position: absolute; left: 50%; top: 50%;
-  width: 22px; height: 22px; margin: -11px 0 0 -11px;
+  width: 28px; height: 28px; margin: -14px 0 0 -14px;
   pointer-events: none;
 }
-#crosshair-arrow::before {
-  content: ""; position: absolute; left: calc(100% + 10px); top: 50%; margin-top: -9px;
-  width: 0; height: 0; border-width: 9px 0 9px 14px;
-}
+#crosshair-arrow svg { position: absolute; left: calc(50% + 20px); top: calc(50% - 16px); }
 /* the aimed-cell readout (UI.setReadout): below and right of the crosshair, clear of the arrow's ring */
 #aim-readout {
   position: absolute; left: calc(50% + 40px); top: calc(50% + 28px);
@@ -458,13 +480,15 @@ body.replaying #menu { display: none; }
 /* its icons: an unrevealed cube and a flag, drawn in the theme's colours */
 #aim-readout .aim-icon { width: 1.15em; height: 1.15em; vertical-align: -0.22em; }
 
-#mode-chips { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; }
+/* The view chips above the HUD strip, centred. */
+#mode-chips { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; width: max-content; max-width: calc(100vw - 24px); }
 .chip {
-  display: none;
-  font-size: 12px; font-weight: var(--font-weight-bold);
-  padding: 5px 10px;
+  display: none; align-items: center; gap: var(--space-2);
+  font-size: var(--font-size-sm); font-weight: var(--font-weight-heavy);
+  padding: 6px 14px;
 }
-.chip.on { display: inline-block; }
+.chip.on { display: inline-flex; }
+.chip__icon { flex: none; }
 
 #help {
   position: fixed; right: 16px; top: 64px; z-index: var(--z-help);
@@ -602,10 +626,10 @@ body.touch-play #scene { touch-action: none; user-select: none; -webkit-user-sel
 #touch-stick.on { display: block; }
 .touch-stick { width: 0; height: 0; }
 .touch-stick::before { content: ""; position: absolute; left: -60px; top: -60px; width: 120px; height: 120px; }
-.touch-stick__knob { position: absolute; left: -24px; top: -24px; width: 48px; height: 48px; }
+.touch-stick__knob { position: absolute; left: -28px; top: -28px; width: 56px; height: 56px; }
 .touch-modes {
-  position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
-  display: flex; flex-direction: column; gap: var(--space-2); pointer-events: auto;
+  position: absolute; right: 16px; bottom: 40px;
+  display: flex; flex-direction: column; gap: 10px; pointer-events: auto;
 }
 /* drag-to-look play: the mouse drags the view, so its cursor shows */
 body.lockless.drag-look #scene { cursor: grab; }
@@ -617,6 +641,37 @@ body.lockless.drag-look #scene:active { cursor: grabbing; }
   transform: translate(-50%, 8px); opacity: 0; pointer-events: none;
 }
 .toast.on { opacity: 1; transform: translate(-50%, 0); }
+/* Over the 3D scene, below the crosshair. */
+#hud:not(.hidden):not(.hud--2d) ~ #toast { top: 58%; bottom: auto; }
+
+/* The 3D overlay on a phone (J-Game3D-p, -ls): no figures and no key strip. Upright, the title and Pause
+   bar on top and the counters under it; held sideways, the title a pill at the top left, the counters
+   and Restart at the top centre and Pause an icon button at the top right. The touch hint strip sits
+   under them, the view chips above the toolbar. */
+@media (max-height: 500px) and (orientation: landscape), (max-width: 719px) {
+  .hud-figures .ui-figures__body, #hud .hud-tools { display: none; }
+  .hud-figures, body.touch-play .hud-figures { max-height: none; }
+}
+@media (min-height: 501px) and (max-width: 719px), (orientation: portrait) and (max-width: 719px) {
+  .hud-overlay { display: flex; flex-direction: column; gap: 10px; position: absolute; top: 12px; left: 12px; right: 12px; }
+  .hud-counters, .hud-figures { position: static; transform: none; width: auto; }
+  .hud-figures { order: -1; }
+  .hud-figures .ui-figures__head { padding: 8px 8px 8px 20px; }
+  .hud-figures .ui-figures__title { font-size: var(--font-size-md); }
+  #hud:not(.hud--2d) #hint-strip { top: 150px; bottom: auto; }
+  #hud:not(.hud--2d) #mode-chips { bottom: 190px; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .hud-counters { top: 10px; gap: var(--space-3); }
+  #hud-counters .ui-counter__digits { font-size: 28px; }
+  .hud-figures { top: 10px; left: 12px; right: 12px; width: auto; transform: none; overflow: visible; pointer-events: none; }
+  .hud-figures .ui-figures__head { padding: 0; }
+  .hud-figures .ui-figures__title { flex: none; display: flex; align-items: center; height: 48px; padding: 0 16px; font-size: var(--font-size-sm); overflow: visible; }
+  #hud-pause { width: 48px; height: 48px; min-height: 48px; padding: 0; gap: 0; font-size: 0; pointer-events: auto; }
+  #hud-pause .ui-key-hint { display: none; }
+  #hud:not(.hud--2d) .touch-modes { bottom: 20px; }
+  #hud:not(.hud--2d) #hint-strip { top: 76px; bottom: auto; }
+}
 
 /* ---------- coarse pointers ---------- */
 /* Touch targets a finger needs; a fine pointer keeps every size above. */
@@ -625,8 +680,9 @@ body.lockless.drag-look #scene:active { cursor: grabbing; }
   /* Swap clicks trades mouse buttons: a coarse primary pointer is never fine, so this is js/main.js COARSE_ONLY */
   #hud-swap { display: none; }
   /* Pause (the 3D bar's and the Classic 2D window's) and the window's Restart take a touch anywhere in a 44 px band around their centre, their layout unchanged */
-  #hud-pause, #c2d-pause, #c2d-restart { position: relative; }
+  #hud-pause, #hud-restart, #c2d-pause, #c2d-restart { position: relative; }
   #hud-pause::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 22px); height: 44px; }
+  #hud-restart::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 22px); height: 44px; }
   #c2d-restart::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 22px); height: 44px; }
   #c2d-pause::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 22px); height: 44px; }
   #touch-modes .ui-button { min-width: 44px; min-height: 44px; padding: var(--space-2) var(--space-3); }

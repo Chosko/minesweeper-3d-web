@@ -273,6 +273,9 @@ test('no timer: the overlay hides its time and the pause card shows mines left a
   assert.equal(pauseLine(12.5, 1, { timed: false }), '1 mine left');
   assert.match(read('js/ui.js'), /setTimed\(on\) \{[\s\S]*?timeStat\.classList\.toggle\('hidden', !this\._timed\)/);
   assert.match(MAIN, /ui\.setTimed\(!learn\)/);
+  assert.match(read('js/ui.js'), /setTimed\(on\) \{[\s\S]*?hudFigures\.classList\.toggle\('hud-figures--untimed', !this\._timed\)/, 'nor the figures that take the time');
+  assert.match(read('css/style.css'), /\.hud-figures--untimed :is\(\[data-figure="pace"\], \[data-figure="rate"\]\) \{ display: none; \}/);
+  assert.match(MAIN, /bests3D = board\.learn \? null : RECORDS\.bests/, 'the guided board reads no bests');
 });
 
 test('the learn module is DOM-free and documents itself', () => {
@@ -375,7 +378,7 @@ test('in a browser, Learn 3D: the entry, the marked cube, the four prompts, the 
     await page.waitForFunction(() => globalThis.__ms.state.mode === 'ready');
     assert.equal(await shown('ready-learn'), false, 'no Learn 3D line on its own ready card');
     assert.equal(await shown('ready-rules'), false, 'the "How 3D works" block does not show');
-    assert.equal(await ms(() => document.getElementById('hud-size').textContent), 'Learn 3D');
+    assert.equal(await ms(() => document.getElementById('hud-title').textContent), 'Learn 3D');
     assert.equal(await shown('hud-time'), false, 'no timer');
     await ms(() => globalThis.__ms.forcePlay());
     const L = await ms(() => globalThis.__ms.learnBoard.lessonNumber);

@@ -102,8 +102,10 @@ board view in [classic2d-board-view.md](../../context/classic2d-board-view.md).
   by this game shows on the results screen, not mid-game.
 - **3D overlay.** The 3D game's counters and figures panel with its title
   bar sit over the scene with their own themed surfaces so they stay
-  readable over any sky; the crosshair readout, the HUD key strip and the
-  first-use hints keep their places. Whether the title fits is measured
+  readable over any sky; the crosshair and its readout, the off-screen
+  arrow, the view chips, the HUD key strip, the first-use hints, the toast
+  and the touch controls take the places the 3D game's artboards draw — a
+  hint stands above a view chip shown with it. Whether the title fits is measured
   against the panel's width, so the shortening follows the window.
 - **Design source.** Every in-game screen is drawn on the canvas — the
   Classic 2D window, the 3D game and the replay viewer at every supported

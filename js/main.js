@@ -12,7 +12,7 @@ import { createRouter } from './shell/router.js';
 import { FOCUSABLE, topLayer, resolveFocus, focusMove, inertSections, tabWrap, isBackKey, arrowDirection, keepsArrow, backButtons, createHeldSuppressor } from './shell/navigation.js';
 import { createHistorySync, storedSet } from './shell/history.js';
 import { createModeHost } from './shell/mode-host.js';
-import { create3DMode } from './shell/mode-3d.js';
+import { create3DMode, createFiguresFeed } from './shell/mode-3d.js';
 import { createSession, create3DGame } from './mode3d/session.js';
 import { createSampler3D } from './replay/sampler-3d.js';
 import { createGenerationClient } from './generation/client.js';
@@ -307,9 +307,9 @@ const touch3D = createTouch3D({
   onTap: () => { if (looking()) endLook(); },
   vibrate: () => { try { navigator.vibrate?.(VIBRATE_MS); } catch { /* no vibration */ } },
 });
-/** The scene's touch zones: the left half the stick, the right half the look, below the overlay bar. */
+/** The scene's touch zones: the left half the stick, the right half the look, below the overlay's top row. */
 function touchZone3D(x, y) {
-  return touchZone(x, y, { width: canvas.clientWidth, top: document.querySelector('#hud .hud-bar').getBoundingClientRect().bottom });
+  return touchZone(x, y, { width: canvas.clientWidth, top: ui.overlayBottom3D() });
 }
 if (COARSE_ONLY) mountTouch3D({ canvas, touch: touch3D, zone: touchZone3D });
 /** Touch play shows the toolbar and the stick: a coarse-only device in 3D play or the look at its finished board. */
@@ -400,7 +400,7 @@ const ui = new UI({
   onResume: () => PAUSE.resume(padGesture ? 'pad' : 'pointer'),
   onBackToStart: () => { placeAtSpawn(); PAUSE.resume(padGesture ? 'pad' : 'pointer'); }, // a 3D game in play: resumes as Resume does
   onRestart: () => PAUSE.restart(padGesture ? 'pad' : 'pointer'),
-  onRestart2D: () => { if (restartInput('F2', { screen: S.mode, blocked: restartBlocked() })) PAUSE.restart('pointer'); }, // the counter strip's Restart: F2's restart
+  onRestartStrip: () => { if (restartInput('F2', { screen: S.mode, blocked: restartBlocked() })) PAUSE.restart('pointer'); }, // either counter strip's Restart: F2's restart
   onMainMenu: () => PAUSE.toMenu(),
   onPause: () => pauseGame(padGesture ? 'pad' : 'button'),
   onReadyBack: () => readyBack(),
@@ -537,7 +537,7 @@ const mode3d = MODES.register('3d', (report) => create3DMode(FLOW_3D, report));
 // The 3D board choice; the last 3D choice is a platform-storage document kept by the shell.
 const LAST_CHOICE_3D = createLastBoardChoice({ storage, doc: LAST_CHOICE_DOC_3D, version: LAST_CHOICE_VERSION_3D, normalise: normaliseChoice3D, fallback: DEFAULT_CHOICE_3D });
 /** The records identity of a 3D board as boardOf gives it. */
-const identity3D = ({ X, Y, Z, mines, noGuess }) => createBoardIdentity({ mode: MODE_3D, width: X, height: Y, depth: Z, mines, noGuess });
+const identity3D = ({ X, Y, Z, mines, noGuess, daily }) => createBoardIdentity({ mode: MODE_3D, width: X, height: Y, depth: Z, mines, noGuess, daily });
 /** The board choice on the last 3D choice; back from the Records screen it opened, what the screen held then. */
 let held3D = null;
 function showChoice3D(from) {
@@ -1342,6 +1342,17 @@ function applyPixelRatio(n = boardCells) {
 
 const board3d = { generating: false, failure: null, progress: null }; // the 3D board status card: a slow first click, a failed board
 let board3dChoice = null; // the board a restart plays again: S.settings and the no-guess switch
+// The 3D overlay's live figures, fed every frame from the session's counts; the board's bests, which
+// they compare against, are read from the records store when the board is shown.
+let bests3D = null;
+const FIGURES_3D = createFiguresFeed((input, { tick }) => ui.updateFigures3D(input, { tick, bests: bests3D }));
+/** The open 3D board in the overlay's title and the pause card, and its bests read for the figures. */
+function showBoard3D() {
+  const board = { ...board3dChoice, daily: !!S.play?.forced?.daily };
+  ui.setBoard(board);
+  try { bests3D = board.learn ? null : RECORDS.bests(identity3D(board)); } catch { bests3D = null; } // the guided board, and a board no record can name, have no bests
+  FIGURES_3D.reset();
+}
 
 function startGame(settings, pregenerated = null) {
   const s = clampSettings(settings);
@@ -1381,7 +1392,7 @@ function startGame(settings, pregenerated = null) {
   renderer.setMark(play.markedCell);
   applyPixelRatio(g.n);
   placeAtSpawn();
-  ui.setBoard(board3dChoice);
+  showBoard3D();
   ui.updateHud(0, g.minesLeft, 0);
   SHELL.go('ready', { data: { msg: NO_MOUSE && !COARSE_ONLY ? NO_MOUSE_MSG : '' } });
   needRender = true;
@@ -1429,7 +1440,7 @@ function standardFromWait3D() {
   if (!play || play.state !== 'generating') return;
   const r = play.playStandard();
   board3dChoice = { ...board3dChoice, noGuess: false }; // a restart keeps the standard board
-  ui.setBoard(board3dChoice);
+  showBoard3D();
   showStatus3D();
   if (r && S.play === play) actionSounds('left', r);
 }
@@ -1439,7 +1450,7 @@ function retry3D(kind) {
   if (!play || !board3d.failure) return;
   board3d.failure = null;
   const r = kind === 'retry' ? play.retry() : play.playStandard();
-  if (kind === 'standard') { board3dChoice = { ...board3dChoice, noGuess: false }; ui.setBoard(board3dChoice); } // a restart keeps the standard board
+  if (kind === 'standard') { board3dChoice = { ...board3dChoice, noGuess: false }; showBoard3D(); } // a restart keeps the standard board
   placeAtSpawn();
   showStatus3D();
   if (padGesture || S.lockless || COARSE_ONLY) { // a coarse-only device answers in lockless touch play
@@ -2240,6 +2251,7 @@ function frame(now) {
     if (S.play && S.started && !S.endState) S.time = S.play.elapsedMs() / 1000;
     const e = S.endState;
     ui.updateHud(e ? e.time : S.time, e ? e.minesLeft : g.minesLeft, e ? e.clicks : clicks3D());
+    FIGURES_3D.push({ counts: S.play?.counts() ?? null, flags: S.settings.mines - (e ? e.minesLeft : g.minesLeft), mines: S.settings.mines, elapsedMs: (e ? e.time : S.time) * 1000 });
     if (playing && !endDelay()) aimHint(g, now);
     else AIM_DWELL.reset();
   }

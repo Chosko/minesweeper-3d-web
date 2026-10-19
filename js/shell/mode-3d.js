@@ -72,7 +72,7 @@
 // has no summary: null throughout.
 
 import { MODE_3D } from '../records/board.js';
-import { buildSummary } from '../records/summary.js';
+import { buildSummary, countedClicks } from '../records/summary.js';
 import { pregenerate } from '../generation/client.js';
 import { startCell } from '../generation/start-cell.js';
 
@@ -108,6 +108,42 @@ export function waveStepS(board) {
   const d = diagonal(board);
   if (d <= 0) return WAVE_STEP_MAX_S;
   return Math.min(WAVE_STEP_MAX_S, (endDelayMs(board) / 1000 - WAVE_CELL_S - END_MARGIN_S) / d);
+}
+
+const NO_CLICKS = Object.freeze({ reveal: { effective: 0, wasted: 0 }, flag: { effective: 0, wasted: 0 }, chord: { effective: 0, wasted: 0 } });
+
+/**
+ * The 3D game's live figures feed (js/shell/live-figures.js's input), pushed every frame with the
+ * session's engine counts (null before the board arrives), the flags placed, the board's mines and
+ * the elapsed time in ms: when the counts change — 3BV, 3BV solved, the counted clicks, the flags —
+ * it calls figures(input, { tick: false }) at once; otherwise only when the elapsed time's whole
+ * second changes, figures(input, { tick: true }) with only elapsedMs moved. reset() makes the next
+ * push feed afresh (a new board).
+ */
+export function createFiguresFeed(figures) {
+  let key = null;
+  let second = null;
+  let input = null;
+  return {
+    push({ counts, flags, mines, elapsedMs }) {
+      const bbbv = counts?.bbbv ?? null;
+      const bbbvSolved = counts?.bbbvSolved ?? 0;
+      const clicks = counts?.clicks ?? NO_CLICKS;
+      const now = [bbbv, bbbvSolved, countedClicks(clicks), flags, mines].join('|');
+      const s = Math.floor(elapsedMs / 1000);
+      if (now !== key) {
+        key = now;
+        second = s;
+        input = { bbbv, bbbvSolved, clicks, flags, mines, elapsedMs };
+        figures(input, { tick: false });
+      } else if (s !== second) {
+        second = s;
+        input = { ...input, elapsedMs };
+        figures(input, { tick: true });
+      }
+    },
+    reset() { key = null; },
+  };
 }
 
 const globalClock = {

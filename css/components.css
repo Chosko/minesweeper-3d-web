@@ -253,7 +253,7 @@
               tokens; it runs only while the spinner shows (a hidden card
               draws nothing).
 
-   ui-overlay-bar — the 3D game's timer, mine counter, click counter and pause
+   ui-overlay-bar — a row of game readouts (timer, mine counter, a count) and an optional pause: the replay viewer's
      Element: <div class="ui-overlay-bar" role="group" aria-label="Game">
                 <div class="ui-stat" role="group" aria-labelledby="T">
                   <span class="ui-stat__label" id="T">Time</span>
@@ -278,8 +278,8 @@
               (mineCounterDigits); the clamps (timer at 999, counter at
               -99) are display-only. Clicks is the game's counted clicks
               (wasted included) as a plain number, 0 before the first
-              click and frozen with the timer at the end. Over the 3D
-              scene the bar carries its own opaque surface.
+              click and frozen with the timer at the end. Over a 3D
+              replay's scene the bar carries its own opaque surface.
 
    ui-counter — an in-game count: mines left, or the time
      Element: <div class="ui-counter" role="group" aria-label="Mines left">
@@ -758,6 +758,21 @@
      a phone the window is full-bleed and the panel hidden, and held
      sideways the counters and the switch stand beside the board.
      Default focus: none (the board takes the keys).
+   3D game overlay (index.html #hud-overlay over the full-window scene): a
+     ui-counter-strip (mines left, Restart with its restart key hint, the
+     timer) at the top centre, and on the right, centred vertically, the
+     ui-figures panel headed by the title and Pause (small primary, with its
+     back key hint) — the live figures and the controls reminder under it,
+     the H help panel beside it. Each part carries its own surface over the
+     sky. The title is the mode and the board, the full name its tooltip and
+     accessible name; it drops the board when the full name does not fit on
+     its line, as measured. The HUD key strip sits at the bottom centre,
+     the hint strip and the view chips above it. On a phone no figures and
+     no key strip: upright, the title and Pause bar on top and the counters
+     under it; held sideways, the title a pill at the top left, the counters
+     at the top centre and Pause an icon button at the top right; the touch
+     hint strip wraps under them.
+     Default focus: none (the scene takes the keys).
    Board status (index.html #c2d-status over the Classic 2D board, and
      #m3d-status over the 3D box): ui-card ui-screen while a slow first
      click generates its no-guess board, a ui-row of the ui-spinner beside

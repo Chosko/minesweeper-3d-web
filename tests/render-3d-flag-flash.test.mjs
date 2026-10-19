@@ -92,7 +92,7 @@ function minesColour() {
   probe.remove();
   const el = document.getElementById('hud-mines');
   const fg = parse(getComputedStyle(el).color);
-  const bg = parse(getComputedStyle(document.querySelector('#hud .ui-overlay-bar')).backgroundColor);
+  const bg = parse(getComputedStyle(document.getElementById('hud-counters')).backgroundColor);
   return { fg, danger, ratio: ratio(fg, bg), text: el.textContent, negative: el.classList.contains('negative') };
 }
 
