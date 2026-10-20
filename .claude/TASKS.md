@@ -248,7 +248,7 @@ Feature: leaderboards-menu-entry
 
 Status: [MISSING]
 Target: claude
-Files: .claude/context/records-screen.md, .claude/context/app-shell-menu.md, .claude/context/testing.md, README.md
+Files: .claude/context/records-screen-view.md, .claude/context/app-shell-menu.md, .claude/context/testing.md, README.md
 Preconditions: 107
 Feature: leaderboards-menu-entry
 
