@@ -223,7 +223,7 @@ export async function playGame2D(spec, { interval = INTERVAL_2D, steps = SAMPLE_
   const { width, height, grid } = session.setup;
   const n = width * height;
   const pose = [between(rng, 0, width), between(rng, 0, height)];
-  const unit = { offsetX: 0, offsetY: 0, tile: 1 };
+  const unit = { offsetX: 0, offsetY: 0, tile: 1, pitch: 1 };
   const origin = { x: 0, y: 0 };
   const sampler = createSampler2D({ session, point: () => boardPoint(unit, origin, pose[0], pose[1], steps), interval });
   const drive = createDriver({ session, clock, rng, pose, apply: () => {}, tick: () => sampler.tick() });

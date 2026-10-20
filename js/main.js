@@ -29,6 +29,8 @@ import { createEndSkip } from './shell/end-skip.js';
 import { bindScenePalette, parseRgb } from './shell/scene-palette.js';
 import { token, onThemeChange } from './tokens.js';
 import { themeApplier } from './themes/applier.js';
+import { bindBoardArt } from './shell/board-art.js';
+import { BOARD_ART } from './classic2d/tile-skin.js';
 import { storage, blobStore } from './platform/index.js';
 import { createSettingsStore } from './settings/store.js';
 import { createRecordsStore } from './records/store.js';
@@ -441,6 +443,8 @@ function showFatal() {
   document.body.append(document.getElementById('fatal-card').content.cloneNode(true));
 }
 const THEME = themeApplier();
+// The Classic 2D tile skin draws from the active board module, handed over once its number font loads.
+bindBoardArt({ applier: THEME, fonts: document.fonts });
 THEME.start({ notice: (text) => ui.toast(text, 4000) }).catch(() => showFatal());
 
 // ---------- settings ----------
@@ -617,6 +621,8 @@ function learnViews(shift, ctrl) {
 // its screens. The last board choice is a platform-storage document; the board's bests, which the
 // live figures compare against, are read from the records store once per game.
 const LAST_CHOICE_2D = createLastChoice({ storage });
+/** The board frame's corner radius at a tile size: the active board module's frame radius, a fraction of the tile. */
+const boardFrameRadius = (tile) => Math.round((BOARD_ART.current()?.board.style2d.params.frameRadius ?? 0) * tile);
 let bests2D = null;
 const FLOW_2D = {
   openBoardChoice: (choice) => SHELL.go('classic-2d-choice', { data: { choice } }),
@@ -624,7 +630,7 @@ const FLOW_2D = {
   container: () => document.getElementById('c2d-board'),
   scale: () => SETTINGS.get('boardScale'),
   frame: () => ui.panelFrame2D(),
-  layout: (layout) => { ui.placePanel2D(panelRect(layout, ui.panelFrame2D())); clipped2D(layout.scrolls); },
+  layout: (layout) => { ui.placePanel2D(panelRect(layout, ui.panelFrame2D()), boardFrameRadius(layout.tile)); clipped2D(layout.scrolls); },
   scrolled: () => scrolled2D(),
   hud: ({ seconds, minesLeft, clicks }) => ui.updateHud(seconds, minesLeft, clicks),
   figures: (input, { tick }) => ui.updateFigures2D(input, { tick, bests: bests2D }),

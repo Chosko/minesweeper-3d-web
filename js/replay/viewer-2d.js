@@ -107,7 +107,7 @@ export function cursorAt(track, t) {
 }
 
 export function pointerPixel(layout, scroll, [x, y]) {
-  return { x: layout.offsetX - scroll.x + x * layout.tile, y: layout.offsetY - scroll.y + y * layout.tile };
+  return { x: layout.offsetX - scroll.x + x * layout.pitch, y: layout.offsetY - scroll.y + y * layout.pitch };
 }
 
 export function trailPoints(track, t, ms = TRAIL_MS) {
@@ -142,7 +142,7 @@ export function createViewer2D({ view, sim, pointer, overlay = null }) {
   const pixel = (p) => pointerPixel(view.layout, view.scroll, p);
   const layoutKey = () => {
     const { layout, scroll } = view;
-    return `${layout.tile},${layout.offsetX},${layout.offsetY},${scroll.x},${scroll.y}`;
+    return `${layout.tile},${layout.pitch},${layout.offsetX},${layout.offsetY},${scroll.x},${scroll.y}`;
   };
   function paint(force = false) {
     if (!tints || !overlay) return;
@@ -197,7 +197,8 @@ export function createViewer2D({ view, sim, pointer, overlay = null }) {
     press(actions) {
       for (const a of actions) {
         const p = pointerAt(track, a.time);
-        const centre = [a.cell % width + 0.5, Math.floor(a.cell / width) + 0.5];
+        const half = view.layout.tile / view.layout.pitch / 2; // the tile's centre, in pitches
+        const centre = [a.cell % width + half, Math.floor(a.cell / width) + half];
         const at = pixel(p && cellOf(p) === a.cell ? p : centre);
         pointer.ring?.(at.x, at.y, a.kind);
       }

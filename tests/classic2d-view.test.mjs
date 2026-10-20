@@ -13,7 +13,7 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 import {
-  fitTileSize, boardLayout, cellAtLayout, createBoardView, PAN_MODIFIER, BOARD_BACKGROUND, BOARD_SHADOW, BOARD_SCROLLBAR,
+  fitTileSize, gapPx, boardLayout, cellAtLayout, createBoardView, PAN_MODIFIER, BOARD_BACKGROUND, BOARD_SHADOW, BOARD_SCROLLBAR,
   BOARD_SCALES, DEFAULT_BOARD_SCALE, TILE_CAP, tileCap, panelRect, clipMarks, SCROLLBAR, CURSOR_RING, START_MARK,
 } from '../js/classic2d/board-view.js';
 import { SCHEMA } from '../js/settings/schema.js';
@@ -785,6 +785,115 @@ test('the view needs a grid and a canvas', () => {
   assert.throws(() => createBoardView({ grid: createSquareGrid(2, 2) }), TypeError);
 });
 
+// ---------- the board module: gap, corner radius, ground and cursor ring ----------
+
+// A skin holding a board module with `params` for its Classic 2D style, handing over another with
+// swap(params): the view lays out on its gap and draws its ground and ring.
+function boardSkinFactory(params) {
+  const out = fakeSkinFactory();
+  const make = out.createSkin;
+  const moduleOf = (p) => ({
+    style2d: { name: 'flat', params: { radius: 0, gap: 0, frameRadius: 0, ...p } },
+    palette: { boardGround: '#fefefe' },
+    cursor: { color: '#0a0a0a', inner: '#f0f0f0', width: 3, radius: { tile: 0.15, px: 3 } },
+  });
+  let board = moduleOf(params);
+  out.createSkin = (options) => Object.assign(make(options), { board: () => board });
+  out.swap = (p) => { board = moduleOf(p); out.redraw(); };
+  return out;
+}
+
+function boardModuleView({ cols = 9, rows = 9, width = 600, height = 500, params = { gap: 0.09, radius: 0.15 }, frame, onLayout, scale = 'fit' } = {}) {
+  const grid = createSquareGrid(cols, rows);
+  const canvas = fakeCanvas();
+  const skin = boardSkinFactory(params);
+  const view = createBoardView({ canvas, grid, createSkin: skin.createSkin, scale, frame, onLayout, token: tokenMap({ '--color-board-frame': '#111111', '--color-success': '#00aa00' }) });
+  view.resize(width, height, 1);
+  return { grid, canvas, skin, view };
+}
+
+test('tiles sit one pitch apart, the tile plus the module\'s gap, and the fit rule counts the gaps', () => {
+  assert.equal(gapPx(48, 0.09), 4, 'the gap is a fraction of the tile, in whole pixels');
+  assert.equal(gapPx(26, 0.09), 2);
+  assert.equal(gapPx(48, 0), 0);
+  const l = boardLayout({ cols: 9, rows: 9, width: 600, height: 500, max: 48, gap: 0.09 });
+  assert.deepEqual([l.tile, l.gap, l.pitch], [48, 4, 52]);
+  assert.deepEqual([l.boardWidth, l.boardHeight], [9 * 48 + 8 * 4, 9 * 48 + 8 * 4], 'the gaps lie between tiles, none outside');
+  const tight = boardLayout({ cols: 9, rows: 9, width: 470, height: 470, gap: 0.09 });
+  assert.ok(tight.boardWidth <= 470 && 9 * (tight.tile + 1) + 8 * gapPx(tight.tile + 1, 0.09) > 470, `the largest tile whose board fits, gaps included (${tight.tile})`);
+  assert.equal(fitTileSize(30, 16, 600, 300, M, 48, 0.09), M, 'a board too large keeps the floor');
+  const none = boardLayout({ cols: 9, rows: 9, width: 600, height: 500, max: 48 });
+  assert.deepEqual([none.tile, none.gap, none.pitch, none.boardWidth], [48, 0, 48, 9 * 48], 'no gap: tiles edge to edge, as before');
+});
+
+test('the view lays tiles out on the pitch, and a pointer in a gap is the cell whose slot holds it', () => {
+  const { grid, view, skin } = boardModuleView({ scale: '100' });
+  const l = view.layout;
+  assert.deepEqual([l.tile, l.gap], [48, 4]);
+  const r = view.cellRect(grid.index(2, 1));
+  assert.deepEqual(r, { x: l.offsetX + 2 * 52, y: l.offsetY + 52, size: 48 }, 'a cell\'s tile is at its column and row times the pitch');
+  assert.equal(view.cellAt(r.x + 1, r.y + 1), grid.index(2, 1));
+  assert.equal(view.cellAt(r.x + 48 + 2, r.y + 10), grid.index(2, 1), 'the gap after a tile is its cell\'s slot');
+  assert.equal(view.cellAt(r.x + 52, r.y + 10), grid.index(3, 1), 'the next tile starts the next slot');
+  assert.equal(view.cellAt(l.offsetX + l.boardWidth - 1, l.offsetY + l.boardHeight - 1), grid.index(8, 8));
+  assert.equal(view.cellAt(l.offsetX + l.boardWidth, l.offsetY), -1, 'past the last tile is no cell');
+  const { game } = beginnerGame();
+  view.setGame(game);
+  const draws = skin.draws.filter((d) => d.state === CELL.CLOSED);
+  assert.deepEqual([...new Set(draws.map((d) => d.x - l.offsetX))].sort((a, b) => a - b), Array.from({ length: 9 }, (_, i) => i * 52), 'every column at its pitch');
+  assert.deepEqual(view.boardPoint(r.x + 24, r.y + 24), { u: (2 * 52 + 24) / 52, v: (52 + 24) / 52 }, 'a board point is in pitches');
+});
+
+test('the ground is the module\'s, and a rounded tile is laid on fresh ground when it is redrawn', () => {
+  const { view, canvas, grid } = boardModuleView();
+  const { game } = beginnerGame();
+  view.setGame(game);
+  const l = view.layout;
+  const fills = canvas.ctx.calls.filter((c) => c.op === 'fillRect');
+  assert.deepEqual(fills[0].args, [l.viewX, l.viewY, l.viewWidth, l.viewHeight]);
+  assert.equal(fills[0].fill, '#fefefe', 'the view filled with the module\'s ground');
+  canvas.ctx.calls.length = 0;
+  view.update([grid.index(3, 3)]);
+  const r = view.cellRect(grid.index(3, 3));
+  assert.deepEqual(canvas.ctx.calls.filter((c) => c.op === 'fillRect').map((c) => [c.fill, ...c.args]), [['#fefefe', r.x, r.y, r.size, r.size]], 'the tile\'s square laid with ground first');
+  const square = boardModuleView({ params: { gap: 0, radius: 0 } });
+  square.view.setGame(beginnerGame().game);
+  square.canvas.ctx.calls.length = 0;
+  square.view.update([grid.index(3, 3)]);
+  assert.equal(square.canvas.ctx.calls.filter((c) => c.op === 'fillRect').length, 0, 'a square tile covers its old self: no ground under it');
+});
+
+test('the cursor ring is the module\'s: its colour, width and hairline, its corners following the tile\'s', () => {
+  const { view, canvas, grid } = boardModuleView({ scale: '100' });
+  view.setGame(beginnerGame().game);
+  canvas.ctx.calls.length = 0;
+  const c = grid.index(4, 4);
+  view.setCursor(c);
+  const r = view.cellRect(c);
+  const strokes = canvas.ctx.calls.filter((x) => x.op === 'stroke');
+  assert.deepEqual(strokes.map((x) => x.stroke), ['#0a0a0a', '#f0f0f0'], 'the ring, then its hairline inside it');
+  const corners = canvas.ctx.calls.filter((x) => x.op === 'arcTo');
+  const tileCorner = 48 * 0.15;
+  assert.equal(corners[0].args[4], tileCorner - 1.5, 'the ring\'s centre line runs concentric with the tile\'s corner');
+  const start = canvas.ctx.calls.find((x) => x.op === 'moveTo');
+  assert.equal(start.args[1], r.y + 1.5, 'inside the tile: half the ring\'s width in');
+  assert.ok(!canvas.ctx.calls.some((x) => x.op === 'strokeRect'), 'no square ring');
+});
+
+test('a hand-off with a new gap lays the board out again and reports it', () => {
+  const layouts = [];
+  const { view, skin } = boardModuleView({ scale: '100', onLayout: (l) => layouts.push(l) });
+  view.setGame(beginnerGame().game);
+  assert.equal(view.layout.gap, 4);
+  layouts.length = 0;
+  skin.draws.length = 0;
+  skin.swap({ gap: 0, radius: 0 });
+  assert.equal(view.layout.gap, 0, 'the new module\'s gap');
+  assert.equal(view.layout.pitch, 48);
+  assert.equal(layouts.length, 1, 'the new layout is reported, so the frame follows');
+  assert.equal(skin.draws.length, 81, 'and the whole board repainted');
+});
+
 test('the module is DOM-free at import and independent of three.js', () => {
   const src = readFileSync(join(ROOT, 'js/classic2d/board-view.js'), 'utf8');
   assert.doesNotMatch(src, /^(?!\s*\/\/).*\bthree\b/im);
@@ -800,7 +909,10 @@ async function mountBoard({ cols, rows, scroll }) {
   const { mountBoardView } = await import('/js/classic2d/board-view.js');
   const { createSquareGrid } = await import('/js/engine/square-grid.js');
   const { createGameWithMines } = await import('/js/engine/rules.js');
-  const { token } = await import('/js/tokens.js');
+  const { BOARD_ART } = await import('/js/classic2d/tile-skin.js');
+  await globalThis.galleryReady;
+  while (!BOARD_ART.current()) await new Promise((r) => setTimeout(r, 20));
+  const board = BOARD_ART.current().board;
   globalThis.__view?.destroy();
   let host = document.getElementById('board-host');
   if (!host) {
@@ -822,9 +934,10 @@ async function mountBoard({ cols, rows, scroll }) {
   const ctx = view.canvas.getContext('2d');
   const dpr = view.pixelRatio;
   const rgb = (x, y) => [...ctx.getImageData(Math.round(x * dpr), Math.round(y * dpr), 1, 1).data.slice(0, 3)];
-  const hex = (name) => { const v = token(name).trim(); return [1, 3, 5].map((i) => parseInt(v.slice(i, i + 2), 16)); };
-  // A tile's centre is halfway along its face's shading, from the face colour to its shade.
-  const face = (name, shade) => hex(name).map((v, i) => Math.round((v + hex(shade)[i]) / 2));
+  const hex = (v) => [1, 3, 5].map((i) => parseInt(v.slice(i, i + 2), 16));
+  // A tile's centre is halfway along its face's shading, from the face colour to its shade (the
+  // face itself when it has none).
+  const face = (p) => hex(p.face).map((v, i) => Math.round((v + hex(p.faceShade ?? p.face)[i]) / 2));
   const centre = (c) => { const r = view.cellRect(c); return rgb(r.x + r.size / 2, r.y + r.size / 2); };
   const revealedZero = grid.index(0, rows - 1);
   return {
@@ -842,8 +955,11 @@ async function mountBoard({ cols, rows, scroll }) {
         inner: [game.cellState(inner), game.cellNumber(inner)],
       };
     })(),
-    revealed: { want: face('--color-tile-revealed', '--color-tile-revealed-shade'), got: centre(revealedZero), cell: revealedZero, state: game.cellState(revealedZero) },
-    closed: { want: face('--color-tile-closed', '--color-tile-face-shade'), got: centre(grid.index(cols - 1, 1)) },
+    revealed: { want: face(board.palette.faces2d.revealed), got: centre(revealedZero), cell: revealedZero, state: game.cellState(revealedZero) },
+    closed: { want: face(board.palette.faces2d.closed), got: centre(grid.index(cols - 1, 1)) },
+    ground: { want: hex(board.palette.boardGround), got: (() => { const r = view.cellRect(0); return rgb(r.x + r.size + view.layout.gap / 2, r.y + r.size / 2); })() },
+    corner: (() => { const r = view.cellRect(revealedZero); return rgb(r.x + 0.5, r.y + 0.5); })(),
+    gapFraction: board.style2d.params.gap,
     topLeftCell: view.cellAt(1, 1),
     middle: (() => {
       const c = view.cellAt(view.layout.width / 2, view.layout.height / 2);
@@ -853,6 +969,13 @@ async function mountBoard({ cols, rows, scroll }) {
 }
 
 const near = (a, b) => a.every((v, i) => Math.abs(v - b[i]) <= 6);
+// The largest whole tile at which `n` tiles and the gaps between them fit `room`, with a module's gap.
+const span = (n, tile, gap) => n * tile + (n - 1) * Math.round(tile * gap);
+const fitWith = (n, room, gap) => {
+  let tile = Math.floor(room / n);
+  while (tile > 1 && span(n, tile, gap) > room) tile--;
+  return tile;
+};
 
 test('in a browser, Beginner and Expert, a theme switch and a large scrolled custom board are drawn correctly', async (t) => {
   const env = await suite.open(t);
@@ -873,8 +996,11 @@ test('in a browser, Beginner and Expert, a theme switch and a large scrolled cus
       for (const [name, cols, rows] of [['beginner', 9, 9], ['expert', 30, 16]]) {
         const r = await page.evaluate(mountBoard, { cols, rows });
         if (name === 'beginner') r9 = r;
-        const tile = Math.max(M, Math.min(48, Math.floor(Math.min(area.width / cols, area.height / rows))));
+        const tile = Math.max(M, Math.min(48, fitWith(cols, area.width, r.gapFraction), fitWith(rows, area.height, r.gapFraction)));
         assert.equal(r.layout.tile, tile, `${theme} ${name}: tile ${tile}`);
+        assert.equal(r.layout.gap, Math.round(tile * r.gapFraction), `${theme} ${name}: the module's gap at that tile`);
+        assert.ok(near(r.ground.got, r.ground.want), `${theme} ${name}: the ground between tiles ${r.ground.got} ~ ${r.ground.want}`);
+        assert.ok(near(r.corner, r.ground.want), `${theme} ${name}: a tile's rounded corner shows the ground ${r.corner}`);
         if (name === 'beginner') assert.equal(r.layout.tile, 48, 'Beginner at the default cap');
         assert.equal(r.layout.scrolls, false, `${theme} ${name}: fits without scrolling`);
         assert.deepEqual(r.canvas, area, `${theme} ${name}: canvas fills the area`);
@@ -896,27 +1022,36 @@ test('in a browser, Beginner and Expert, a theme switch and a large scrolled cus
       const { registerTheme } = await import('/js/themes/registry.js');
       const { FIXTURE_THEME } = await import('/tests/fixtures/themes/fixture-theme.js');
       const { themeApplier } = await import('/js/themes/applier.js');
-      const { token } = await import('/js/tokens.js');
+      const { BOARD_ART } = await import('/js/classic2d/tile-skin.js');
       registerTheme(FIXTURE_THEME);
       await themeApplier().setTheme(FIXTURE_THEME.id);
+      while (BOARD_ART.current().id !== FIXTURE_THEME.id) await new Promise((r) => setTimeout(r, 20));
       const v = globalThis.__view;
       const r = v.cellRect(8 * 9);
       const d = v.canvas.getContext('2d').getImageData(Math.round(r.x + r.size / 2), Math.round(r.y + r.size / 2), 1, 1).data;
-      const hex = (name) => { const v = token(name).trim(); return [1, 3, 5].map((i) => parseInt(v.slice(i, i + 2), 16)); };
-      const want = hex('--color-tile-revealed').map((v, i) => Math.round((v + hex('--color-tile-revealed-shade')[i]) / 2));
-      return { got: [d[0], d[1], d[2]], want, theme: document.documentElement.getAttribute('data-theme') };
+      const hex = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+      const { face, faceShade } = BOARD_ART.current().board.palette.faces2d.revealed;
+      const want = hex(face).map((x, i) => Math.round((x + hex(faceShade)[i]) / 2));
+      return { got: [d[0], d[1], d[2]], want, gap: v.layout.gap, theme: document.documentElement.getAttribute('data-theme') };
     });
     assert.equal(after.theme, 'fixture-dusk');
     assert.ok(near(after.got, after.want), `repainted in the fixture theme ${after.got} ~ ${after.want}`);
     assert.ok(!near(after.got, r9.revealed.want), 'the colour changed with the theme');
-    await page.evaluate(async () => { const { themeApplier } = await import('/js/themes/applier.js'); await themeApplier().setTheme('joyful-tiles'); });
+    assert.equal(after.gap, 0, 'laid out again on the fixture\'s pitch: no gap');
+    await page.evaluate(async () => {
+      const { themeApplier } = await import('/js/themes/applier.js');
+      const { BOARD_ART } = await import('/js/classic2d/tile-skin.js');
+      await themeApplier().setTheme('joyful-tiles');
+      while (BOARD_ART.current().id !== 'joyful-tiles') await new Promise((r) => setTimeout(r, 20));
+    });
 
     // A large custom board keeps the minimum tile and scrolls by wheel, shift-drag and cursor follow.
     const big = await page.evaluate(mountBoard, { cols: 100, rows: 100, scroll: { x: 600, y: 900 } });
     assert.equal(big.layout.tile, M);
     assert.equal(big.layout.scrolls, true);
     assert.deepEqual(big.scroll, { x: 600, y: 900 });
-    assert.equal(big.topLeftCell, Math.floor(901 / M) * 100 + Math.floor(601 / M));
+    const pitch = M + big.layout.gap;
+    assert.equal(big.topLeftCell, Math.floor(901 / pitch) * 100 + Math.floor(601 / pitch));
     assert.deepEqual(big.marks.inner, ['revealed', 0]);
     assert.ok(near(big.marks.middle, big.revealed.want), 'the middle is the plain tile');
     assert.ok(!near(big.marks.bar, big.revealed.want), `the vertical scroll bar shows on the right edge ${big.marks.bar}`);
@@ -948,10 +1083,105 @@ test('in a browser, Beginner and Expert, a theme switch and a large scrolled cus
     // Resizing the window refits the board.
     await page.evaluate(mountBoard, { cols: 9, rows: 9 });
     await page.setViewportSize({ width: 500, height: 400 });
-    await page.waitForFunction(() => globalThis.__view.layout.tile === Math.max(26, Math.min(48, Math.floor(Math.min(468 / 9, 288 / 9)))));
+    const small = Math.max(26, Math.min(48, fitWith(9, 468, r9.gapFraction), fitWith(9, 288, r9.gapFraction)));
+    await page.waitForFunction((tile) => globalThis.__view.layout.tile === tile, small);
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
     rmSync(shots, { recursive: true, force: true });
+  }
+});
+
+// A browser without WebGL 2, for a test where 3D is irrelevant: the menu screens keep no 3D backdrop
+// redrawing under software rendering. Every canvas refuses a 'webgl2' context; the others are untouched.
+function removeWebGL2() {
+  const getContext = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
+}
+
+// Runs in the game page: what the open Classic 2D board shows — every cell's state, the colour at the
+// centre of a revealed and of a closed tile against the active board module's faces, the gap, and the
+// board frame's corner radius against the module's frame radius at the tile.
+function boardSeen() {
+  const view = globalThis.__ms.board2D;
+  const game = globalThis.__ms.game2D;
+  const { BOARD_ART } = globalThis.__boardArt;
+  const { id, board } = BOARD_ART.current();
+  const ctx = view.canvas.getContext('2d');
+  const ratio = view.pixelRatio;
+  const states = Array.from({ length: 81 }, (_, c) => game.cellState(c));
+  const centre = (c) => { const r = view.cellRect(c); return [...ctx.getImageData(Math.round((r.x + r.size / 2) * ratio), Math.round((r.y + r.size / 2) * ratio), 1, 1).data.slice(0, 3)]; };
+  const hex = (v) => [1, 3, 5].map((i) => parseInt(v.slice(i, i + 2), 16));
+  const face = (p) => hex(p.face).map((v, i) => Math.round((v + hex(p.faceShade ?? p.face)[i]) / 2));
+  const revealed = states.findIndex((s, c) => s === 'revealed' && game.cellNumber(c) === 0);
+  const closed = states.indexOf('closed');
+  return {
+    id,
+    states,
+    revealed: { got: centre(revealed), want: face(board.palette.faces2d.revealed) },
+    closed: { got: centre(closed), want: face(board.palette.faces2d.closed) },
+    gap: view.layout.gap,
+    wantGap: Math.round(view.layout.tile * board.style2d.params.gap),
+    frameRadius: getComputedStyle(document.getElementById('c2d-panel')).borderTopLeftRadius,
+    wantFrameRadius: `${Math.round(view.layout.tile * board.style2d.params.frameRadius)}px`,
+  };
+}
+
+test('in a browser, switching between Joyful tiles and a fixture theme mid-game redraws the tiles, the gap and the frame in each, with no state change', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(removeWebGL2);
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+    await page.evaluate(async () => {
+      globalThis.__boardArt = await import('/js/classic2d/tile-skin.js');
+      globalThis.__ms.modes.start('classic-2d', { size: 'beginner', noGuess: false });
+    });
+    await page.waitForFunction(() => globalThis.__ms.board2D?.layout && globalThis.__boardArt.BOARD_ART.current());
+    // The first reveal, in the middle of the board, opens a region.
+    const box = await page.locator('#c2d-board canvas').boundingBox();
+    const at = await page.evaluate(() => { const r = globalThis.__ms.board2D.cellRect(40); return { x: r.x + r.size / 2, y: r.y + r.size / 2 }; });
+    await page.mouse.click(box.x + at.x, box.y + at.y);
+    await page.waitForFunction(() => globalThis.__ms.modes.state.started && globalThis.__ms.game2D.cellState(40) === 'revealed');
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+
+    const joyful = await page.evaluate(boardSeen);
+    assert.equal(joyful.id, 'joyful-tiles');
+    assert.ok(joyful.gap > 0 && joyful.gap === joyful.wantGap, `Joyful tiles: the module's gap (${joyful.gap} px)`);
+    assert.ok(near(joyful.revealed.got, joyful.revealed.want), `Joyful tiles: revealed ${joyful.revealed.got} ~ ${joyful.revealed.want}`);
+    assert.ok(near(joyful.closed.got, joyful.closed.want), `Joyful tiles: closed ${joyful.closed.got} ~ ${joyful.closed.want}`);
+    assert.equal(joyful.frameRadius, joyful.wantFrameRadius, 'Joyful tiles: the frame\'s radius follows the tile');
+
+    const switchTo = (id) => page.evaluate(async (theme) => {
+      const { registerTheme } = await import('/js/themes/registry.js');
+      const { FIXTURE_THEME } = await import('/tests/fixtures/themes/fixture-theme.js');
+      const { themeApplier } = await import('/js/themes/applier.js');
+      registerTheme(FIXTURE_THEME);
+      await themeApplier().setTheme(theme);
+      while (globalThis.__boardArt.BOARD_ART.current().id !== theme) await new Promise((r) => setTimeout(r, 20));
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    }, id);
+
+    await switchTo('fixture-dusk');
+    const fixture = await page.evaluate(boardSeen);
+    assert.deepEqual(fixture.states, joyful.states, 'the switch changes no cell');
+    assert.equal(fixture.gap, 0, 'the fixture\'s tiles sit edge to edge');
+    assert.ok(near(fixture.revealed.got, fixture.revealed.want), `fixture: revealed ${fixture.revealed.got} ~ ${fixture.revealed.want}`);
+    assert.ok(near(fixture.closed.got, fixture.closed.want), `fixture: closed ${fixture.closed.got} ~ ${fixture.closed.want}`);
+    assert.ok(!near(fixture.revealed.got, joyful.revealed.got), 'the tiles redrew in the new theme');
+
+    await switchTo('joyful-tiles');
+    const back = await page.evaluate(boardSeen);
+    assert.deepEqual(back.states, joyful.states, 'and back, still no cell changed');
+    assert.deepEqual([back.gap, back.revealed.got, back.closed.got, back.frameRadius], [joyful.gap, joyful.revealed.got, joyful.closed.got, joyful.frameRadius], 'Joyful tiles drawn as before');
+    assert.equal(await page.evaluate(() => globalThis.__ms.modes.state.started), true, 'the game goes on');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
   }
 });

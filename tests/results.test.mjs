@@ -855,7 +855,7 @@ test('in a browser, a fixed Beginner board won through the shell shows the resul
       const r = document.querySelector('#c2d-board canvas').getBoundingClientRect();
       const L = globalThis.__ms.board2D.layout;
       return Array.from({ length: 81 }, (_, c) => ({
-        x: r.left + L.offsetX + ((c % 9) + 0.5) * L.tile, y: r.top + L.offsetY + (Math.floor(c / 9) + 0.5) * L.tile,
+        x: r.left + L.offsetX + (c % 9) * L.pitch + 0.5 * L.tile, y: r.top + L.offsetY + Math.floor(c / 9) * L.pitch + 0.5 * L.tile,
       }));
     });
     const first = 40;

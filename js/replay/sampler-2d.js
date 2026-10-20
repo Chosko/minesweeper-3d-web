@@ -3,7 +3,8 @@
 // at import: createSampler2D is driven by calls; mountSampler2D is its browser wiring.
 //
 // boardPoint(layout, scroll, x, y, steps?) → [bx, by]: canvas position x, y (CSS pixels) in cell
-//   units from the board's top-left corner, quantised to 1/steps of a cell (SAMPLE_STEPS by
+//   units from the board's top-left corner — a unit is the layout's pitch, a cell's tile and the
+//   gap after it, so a point's whole part is the cell under it in any theme — quantised to 1/steps of a cell (SAMPLE_STEPS by
 //   default; another step is for the measurement, dev/measure-replays.mjs); off the board the
 //   values run below 0 or past the board's size, so a replay plays at any window size and zoom.
 //
@@ -41,8 +42,8 @@ const LIMIT = 2 ** 30;
 const clampInt = (v) => Math.max(-LIMIT, Math.min(LIMIT, Math.round(v)));
 
 export function boardPoint(layout, scroll, x, y, steps = SAMPLE_STEPS) {
-  const bx = (x - layout.offsetX + scroll.x) / layout.tile;
-  const by = (y - layout.offsetY + scroll.y) / layout.tile;
+  const bx = (x - layout.offsetX + scroll.x) / layout.pitch;
+  const by = (y - layout.offsetY + scroll.y) / layout.pitch;
   return [clampInt(bx * steps), clampInt(by * steps)];
 }
 

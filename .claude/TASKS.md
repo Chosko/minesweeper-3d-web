@@ -720,7 +720,7 @@ Feature: themed-board-art-and-motion
 
 ## 182. Classic 2D tiles drawn from the active theme's board module
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/classic2d/tile-skin.js, js/classic2d/board-view.js, js/classic2d/mode.js, js/main.js, themes/joyful-tiles/theme.css, tests/tile-skin.test.mjs, tests/classic2d-view.test.mjs, tests/classic2d-pointer.test.mjs, tests/classic2d-touch.test.mjs
 Preconditions: 159, 181

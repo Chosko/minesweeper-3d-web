@@ -300,7 +300,6 @@ kbd {
 #c2d-counters { flex: none; }
 #c2d-stage { position: relative; flex: 1 1 auto; min-height: 0; }
 #c2d-board { position: absolute; inset: 0; overflow: hidden; }
-.c2d-panel { position: absolute; }
 #c2d-figures { min-height: 0; overflow-y: auto; }
 #c2d-figures .ui-figure__value { white-space: nowrap; }
 #c2d-size { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

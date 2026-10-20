@@ -275,12 +275,13 @@ export function drawRevealedFace(ctx, S, p, px) { drawFace(ctx, S, 'revealed', {
 
 // Number n in its colour at the heavy weight, under a darker outline of its own
 // hue and over a soft drop shadow, its glyph box centred on the tile; numbers
-// of two digits are narrowed to fit.
-// p: { color, shadow }
+// of two digits are narrowed to fit. `font`, when given, is the face to set it
+// in, NUMBER_FONT standing behind it.
+// p: { color, shadow, font? { family, weight } }
 export function drawNumberGlyph(ctx, S, n, p) {
   const txt = String(n);
   const size = txt.length === 1 ? S * 0.68 : S * 0.62;
-  ctx.font = `800 ${size}px ${NUMBER_FONT}`;
+  ctx.font = p.font ? `${p.font.weight} ${size}px "${p.font.family}", ${NUMBER_FONT}` : `800 ${size}px ${NUMBER_FONT}`;
   ctx.textAlign = 'center';
   // Measure against the alphabetic baseline (the glyph box metrics are relative to the current
   // baseline) and centre the actual glyph box vertically.

@@ -1,65 +1,49 @@
 // Square tile skin for the Classic 2D Canvas board: the stateless tile
-// painter, the tile cache that pre-renders every state and number, and the
-// shared minimum tile size. Every tile is drawn from the cube-face recipe the
-// 3D atlas draws from (js/tile-art.js), with the 3D number, flag and mine
-// artwork, so both modes read as one game. Colours come from the tile and
-// number tokens (css/tokens.css) through the token reader; this module holds
-// no palette. The renderer owns layout and hit-testing; the skin owns
-// appearance only.
+// painter, the tile cache that pre-renders every state and number, the board
+// art hand-off it draws from, and the shared minimum tile size. Every tile is
+// drawn through the shared tile recipe (js/tile-art.js) in the active theme's
+// Classic 2D drawing style, palette and number font, all from the theme's board
+// module (js/themes/board-module.js), which the shell hands over through
+// BOARD_ART once the number font has loaded (js/shell/board-art.js). The skin
+// holds no palette, imports no theme and reads no stylesheet. The renderer owns
+// layout and hit-testing; the skin owns appearance only.
 
-import { token as readerToken, onThemeChange as readerOnThemeChange, FALLBACK_COLOR } from '../tokens.js';
-import { themeApplier } from '../themes/applier.js';
+import { FALLBACK_COLOR } from '../tokens.js';
 import { drawFace, drawNumberGlyph, drawMineGlyph, drawFlagGlyph, drawCross } from '../tile-art.js';
 
 // The smallest tile size the Classic 2D renderer allows, shared with it: the
 // readable floor a board shrinks to before it scrolls. With it an Expert board
 // (30 × 16) fits, inside the framed panel with 16px margins, every window
 // 1024px wide whose height leaves room for 16 rows at it (tests/tile-skin.test.mjs
-// measures the window). Every state and number stays legible at it in both
-// themes (the same test).
+// measures the window). Every state and number stays legible at it in every
+// theme (the same test).
 export const MIN_TILE_SIZE = 26;
 
 // The rules engine's cell states (js/engine/rules.js CELL) plus `pressed`,
 // the renderer's feedback under a held click or chord.
 export const TILE_STATES = Object.freeze(['closed', 'pressed', 'revealed', 'flagged', 'mine', 'exploded', 'wrong-flag']);
 
-// The recipe's palettes, read from the tile and number tokens at paint time.
-const color = (token, name) => token(`--color-${name}`);
-const raised = (token, face) => ({
-  rim: color(token, 'tile-rim'),
-  bevelLight: color(token, 'tile-bevel-light'),
-  bevelDark: color(token, 'tile-bevel-dark'),
-  face: color(token, face),
-  faceShade: color(token, 'tile-face-shade'),
-  gloss: color(token, 'tile-gloss'),
-  glossFade: color(token, 'tile-gloss-fade'),
-});
-const sunken = (token) => ({
-  rim: color(token, 'tile-rim'),
-  bevelLight: color(token, 'tile-bevel-light'),
-  bevelDark: color(token, 'tile-bevel-dark'),
-  face: color(token, 'tile-pressed'),
-});
-const revealed = (token, face) => ({
-  rim: color(token, 'tile-revealed-rim'),
-  edge: color(token, 'tile-revealed-edge'),
-  face: color(token, face),
-  faceShade: color(token, 'tile-revealed-shade'),
-});
-const exploded = (token) => ({
-  rim: color(token, 'tile-revealed-rim'),
-  edge: color(token, 'tile-exploded-edge'),
-  face: color(token, 'tile-exploded'),
-  faceShade: color(token, 'tile-exploded-shade'),
-});
-const mine = (token) => ({ body: color(token, 'tile-mine-glyph'), highlight: color(token, 'tile-mine-highlight') });
-const flag = (token) => ({
-  base: color(token, 'tile-mine-glyph'),
-  shadow: color(token, 'tile-flag-shadow'),
-  cloth: color(token, 'tile-flag'),
-  clothShade: color(token, 'tile-flag-shade'),
-});
-const cross = (token) => ({ outline: color(token, 'tile-wrong-flag-outline'), mark: color(token, 'tile-wrong-flag-mark') });
+// The board art hand-off: the board module the shell last handed over, as { id, board } (null until
+// the first), and its subscribers. set(id, board) replaces it and tells every subscriber;
+// onChange(listener) returns the unsubscribe.
+export function createBoardArt() {
+  let art = null;
+  const listeners = new Set();
+  return {
+    current: () => art,
+    set(id, board) {
+      art = Object.freeze({ id, board });
+      for (const listener of [...listeners]) listener(art);
+    },
+    onChange(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+  };
+}
+
+// The page's one hand-off, every skin's default.
+export const BOARD_ART = createBoardArt();
 
 // Visibly wrong on purpose, so an unhandled state is noticed on the board.
 function placeholder(ctx, x, y, size) {
@@ -76,10 +60,6 @@ function placeholder(ctx, x, y, size) {
   ctx.stroke();
 }
 
-// The recipe's drawing style for every tile: the bevelled cube face.
-const STYLE = 'bevel';
-const face = (ctx, size, name, palette, px) => drawFace(ctx, size, name, { style: STYLE, palette, px });
-
 const validNumber = (n) => Number.isInteger(n) && n >= 0 && n <= 8;
 
 // One device pixel in the context's CSS pixels, from the scale it draws at, so
@@ -89,53 +69,52 @@ function devicePixel(ctx) {
   return scale > 0 ? 1 / scale : 1;
 }
 
-// Paints one tile with tokens from `token(name)`.
-export function paintTileWith(token, ctx, x, y, size, state, number) {
-  if (!TILE_STATES.includes(state) || (state === 'revealed' && !validNumber(number))) {
+// Paints one tile of `state` (and `number` when revealed) at x, y, size CSS pixels from `board`, a
+// theme's board module: its Classic 2D style and parameters, its 2D faces, flag, mine and cross,
+// and its numbers in its number font.
+export function paintTileWith(board, ctx, x, y, size, state, number) {
+  if (!board || !TILE_STATES.includes(state) || (state === 'revealed' && !validNumber(number))) {
     placeholder(ctx, x, y, size);
     return;
   }
+  const { style2d: style, palette } = board;
+  const faces = palette.faces2d;
   const px = devicePixel(ctx);
+  const face = (name, colours) => drawFace(ctx, size, name, { style: style.name, params: style.params, palette: colours, px });
   ctx.save();
   ctx.translate(x, y);
   switch (state) {
     case 'closed':
-      face(ctx, size, 'closed', raised(token, 'tile-closed'), px);
+      face('closed', faces.closed);
       break;
     case 'pressed':
-      face(ctx, size, 'sunk', sunken(token), px);
+      face('sunk', faces.sunk);
       break;
     case 'revealed':
-      face(ctx, size, 'revealed', revealed(token, 'tile-revealed'), px);
-      if (number > 0) drawNumberGlyph(ctx, size, number, { color: color(token, `number-${number}`), shadow: color(token, 'tile-number-shadow') });
+      face('revealed', faces.revealed);
+      if (number > 0) drawNumberGlyph(ctx, size, number, { color: board.numbers[number], shadow: palette.numberShadow, font: board.font });
       break;
     case 'flagged':
-      face(ctx, size, 'closed', raised(token, 'tile-flagged'), px);
-      drawFlagGlyph(ctx, size, flag(token));
+      face('closed', faces.closed);
+      drawFlagGlyph(ctx, size, palette.flag);
       break;
     case 'mine':
-      face(ctx, size, 'revealed', revealed(token, 'tile-mine'), px);
-      drawMineGlyph(ctx, size, mine(token));
+      face('revealed', faces.revealed);
+      drawMineGlyph(ctx, size, palette.mine);
       break;
     case 'exploded':
-      face(ctx, size, 'revealed', exploded(token), px);
-      drawMineGlyph(ctx, size, mine(token));
+      face('revealed', faces.exploded);
+      drawMineGlyph(ctx, size, palette.mine);
       break;
     case 'wrong-flag':
-      face(ctx, size, 'revealed', revealed(token, 'tile-wrong-flag'), px);
-      drawFlagGlyph(ctx, size, flag(token));
-      drawCross(ctx, size, cross(token));
+      face('revealed', faces.revealed);
+      drawFlagGlyph(ctx, size, palette.flag);
+      drawCross(ctx, size, palette.cross);
       break;
     default:
       break;
   }
   ctx.restore();
-}
-
-// Paints one tile of `state` (and `number` when revealed) at x, y, size
-// CSS pixels, reading the tile tokens through the token reader.
-export function paintTile(ctx, x, y, size, state, number) {
-  paintTileWith(readerToken, ctx, x, y, size, state, number);
 }
 
 function defaultCreateCanvas(width, height) {
@@ -153,26 +132,26 @@ const keyOf = (state, number) => {
 };
 
 // A skin for one renderer: draws tiles from a cache of pre-rendered images
-// keyed by tile size, device pixel ratio and theme. On a theme change it
-// drops the cache and calls `redraw`, which the renderer supplies.
+// keyed by tile size, device pixel ratio and theme, from the board module the
+// hand-off `art` holds. Until one is handed over it draws and caches nothing.
+// On a hand-off it drops the cache and calls `redraw`, which the renderer
+// supplies; board() is the module it draws from, or null.
 export function createTileSkin({
-  token = readerToken,
-  onThemeChange = readerOnThemeChange,
-  currentTheme = () => themeApplier().current(),
+  art = BOARD_ART,
   createCanvas = defaultCreateCanvas,
   redraw = () => {},
 } = {}) {
-  let theme = currentTheme();
+  let current = art.current();
   let key = null;
   let images = null;
 
-  function build(size, ratio) {
+  function build(board, size, ratio) {
     const px = Math.max(1, Math.round(size * ratio));
     const render = (state, number) => {
       const canvas = createCanvas(px, px);
       const ctx = canvas.getContext('2d');
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-      paintTileWith(token, ctx, 0, 0, size, state, number);
+      paintTileWith(board, ctx, 0, 0, size, state, number);
       return canvas;
     };
     const out = new Map();
@@ -189,8 +168,8 @@ export function createTileSkin({
     images = null;
   }
 
-  const unsubscribe = onThemeChange((next) => {
-    theme = next;
+  const unsubscribe = art.onChange((next) => {
+    current = next;
     invalidate();
     redraw();
   });
@@ -198,17 +177,19 @@ export function createTileSkin({
   // Copies the pre-rendered tile to ctx at x, y, size CSS pixels; rebuilds
   // the cache first when size, pixel ratio or theme changed.
   function drawTile(ctx, x, y, size, state, number, pixelRatio = 1) {
-    const want = `${size}|${pixelRatio}|${theme}`;
+    if (!current) return;
+    const want = `${size}|${pixelRatio}|${current.id}`;
     if (want !== key) {
-      images = build(size, pixelRatio);
+      images = build(current.board, size, pixelRatio);
       key = want;
     }
     ctx.drawImage(images.get(keyOf(state, number)), x, y, size, size);
   }
 
   return {
-    paintTile: (ctx, x, y, size, state, number) => paintTileWith(token, ctx, x, y, size, state, number),
+    paintTile: (ctx, x, y, size, state, number) => paintTileWith(current?.board ?? null, ctx, x, y, size, state, number),
     drawTile,
+    board: () => current?.board ?? null,
     invalidate,
     cacheKey: () => key,
     dispose() {

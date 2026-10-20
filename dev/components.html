@@ -31,6 +31,8 @@
     .scene-demo { width: 100%; height: 200px; margin-top: var(--space-4); }
     .scene-demo--card { flex: 1 1 200px; height: 340px; }
     .divider-demo { align-items: stretch; margin-top: var(--space-4); }
+    .board-frame-demo { position: relative; height: 160px; margin-top: var(--space-4); }
+    .board-frame-demo .ui-board-frame { inset: 0; }
     #g-labels > * + *, #g-rows > * + * { margin-top: var(--space-4); }
     .message-demo { margin-top: var(--space-6); }
     /* the in-game components */
@@ -310,6 +312,12 @@
       <div class="ui-stat-row ui-stat-row--tiles"><div class="ui-stat ui-stat--tile" role="group" aria-labelledby="tl-badge"><span class="ui-stat__label" id="tl-badge">Time</span><span class="ui-stat__value">47.380 s</span><span class="ui-stat__detail">was 48.213 s · −0.833 s</span><span class="ui-chip ui-chip--best">New best</span></div></div>
     </section>
 
+    <section class="ui-card" aria-labelledby="g-board-frame">
+      <h2 class="ui-card__title" id="g-board-frame">Board frame</h2>
+      <p class="ui-text ui-text--muted">The frame a Classic 2D board sits in, its corner radius the board module's frame radius at a 48 px tile.</p>
+      <div class="board-frame-demo"><div class="ui-board-frame" aria-hidden="true" style="--board-frame-radius: 14px"></div></div>
+    </section>
+
     <section class="ui-card" aria-labelledby="g-rows">
       <h2 class="ui-card__title" id="g-rows">List rows, table and divider</h2>
       <ul class="ui-list" aria-label="Recent games">
@@ -431,6 +439,7 @@
     import { initComponents, bindSelectOnHover } from '../js/ui/components.js';
     import { THEMES } from '../js/themes/registry.js';
     import { themeApplier } from '../js/themes/applier.js';
+    import { bindBoardArt } from '../js/shell/board-art.js';
 
     // The theme picker: one option per registered theme, in catalogue order.
     const picker = document.getElementById('g-theme');
@@ -459,6 +468,8 @@
     // The theme named by ?theme=<id> (unknown or absent: the default), applied by the applier;
     // globalThis.galleryReady resolves with the id shown once it is fully applied.
     const applier = themeApplier();
+    // A Classic 2D board on the page draws from the theme's board module, as in the game.
+    bindBoardArt({ applier, fonts: document.fonts });
     const requested = new URL(location.href).searchParams.get('theme');
     globalThis.galleryReady = applier.start().then(() => applier.setTheme(requested)).then(showPicked);
     picker.addEventListener('change', (e) => {

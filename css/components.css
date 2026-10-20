@@ -505,6 +505,16 @@
               entry's (the places neutral), locked grey with data-unavailable
               for an entry that cannot open here; the note optional.
 
+   ui-board-frame — the frame a Classic 2D board sits in, drawn behind
+              the board's canvas
+     Element: <div class="ui-board-frame" aria-hidden="true"></div>
+     Role:    none (decoration)
+     Name:    none
+     Layout:  placed by the shell around the board (absolute, at the
+              rectangle board-view.js panelRect gives); its corner radius
+              is --board-frame-radius, which the shell sets on it from the
+              board module's frame radius, so it scales with the tile.
+
    ui-divider — a rule between groups
      Element: <hr class="ui-divider">; between columns
               <div class="ui-divider ui-divider--vertical" role="separator"
@@ -749,7 +759,7 @@
      Pause (small primary, with its back key hint). Its body: the board
      column — a ui-counter-strip (mines left, Restart with its restart key
      hint, the timer) over the board area, where the board sits in its
-     framed panel (css/style.css .c2d-panel), and under it the Reveal / Flag
+     ui-board-frame, and under it the Reveal / Flag
      switch on a coarse pointer — a ui-divider--vertical and the ui-figures
      panel of the live figures (3BV with its bar, pace vs PB, 3BV/s, clicks,
      flags) with the controls reminder at its foot. The foot is a
@@ -1560,6 +1570,9 @@
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
+
+/* ---------- board frame ---------- */
+.ui-board-frame { position: absolute; }
 
 /* ---------- divider ---------- */
 .ui-divider {

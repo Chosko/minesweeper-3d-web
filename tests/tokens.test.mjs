@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { BOARD as JOYFUL_BOARD } from '../themes/joyful-tiles/board.js';
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 const strip = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '');
@@ -266,16 +267,17 @@ test('closed and revealed differ by relief and border: a bevel lit and shaded, a
   assert.notDeepEqual(color('--color-tile-rim'), color('--color-tile-revealed-rim'), 'the rims differ');
 });
 
-test('a scrolling board\'s shadow and scroll bar are translucent tokens; the bar meets 3:1 on every tile', () => {
+test('a scrolling board\'s shadow and scroll bar are translucent tokens; the bar meets 3:1 on every tile face the board module draws', () => {
   for (const name of ['--color-board-shadow', '--color-board-scrollbar']) {
     const a = color(name)[3];
     assert.ok(a > 0 && a < 1, `${name} is translucent`);
   }
   const bar = color('--color-board-scrollbar');
-  for (const bg of ['--color-tile-closed', '--color-tile-pressed', '--color-tile-revealed', '--color-tile-flagged']) {
-    const under = color(bg);
+  for (const face of ['closed', 'sunk', 'revealed', 'exploded']) {
+    const value = JOYFUL_BOARD.palette.faces2d[face].face;
+    const under = parseColor(value);
     const r = contrast(over(bar, under), under);
-    assert.ok(r >= 3, `--color-board-scrollbar on ${bg}: ${r.toFixed(2)}:1`);
+    assert.ok(r >= 3, `--color-board-scrollbar on the ${face} face ${value}: ${r.toFixed(2)}:1`);
   }
 });
 

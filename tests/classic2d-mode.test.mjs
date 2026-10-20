@@ -1238,7 +1238,7 @@ test('the shell stylesheet lays the board choice out: the window under the title
 
 test('index.html holds the Classic 2D board layer with its generating and failure card', () => {
   assert.match(LAYER, /^<section id="c2d" class="ui-backdrop hidden"/);
-  assert.match(LAYER, /<div id="c2d-board"><div id="c2d-panel" class="c2d-panel hidden" aria-hidden="true"><\/div><\/div>/, 'the board area holds the board\'s frame, behind the canvas');
+  assert.match(LAYER, /<div id="c2d-board"><div id="c2d-panel" class="ui-board-frame hidden" aria-hidden="true"><\/div><\/div>/, 'the board area holds the board\'s frame, behind the canvas');
   assert.match(LAYER, /id="c2d-retry" class="ui-button ui-button--primary"/);
   assert.match(LAYER, /id="c2d-standard" class="ui-button ui-button--secondary">Play a standard board/);
   assert.match(LAYER, /id="c2d-offer-menu" class="ui-button ui-button--secondary">Main menu/, 'the offer has a way out');
@@ -1268,7 +1268,7 @@ test('the shell hands the board its scale, frame and panel, keeps the scale live
   const flow = MAIN.slice(MAIN.indexOf('const FLOW_2D = {'), MAIN.indexOf('const board2d ='));
   assert.match(flow, /scale: \(\) => SETTINGS\.get\('boardScale'\)/, 'a new board opens at the setting');
   assert.match(flow, /frame: \(\) => ui\.panelFrame2D\(\)/, 'the board\'s frame inset');
-  assert.match(flow, /layout: \(layout\) => \{ ui\.placePanel2D\(panelRect\(layout, ui\.panelFrame2D\(\)\)\); clipped2D\(layout\.scrolls\); \}/, 'each refit places the board\'s frame');
+  assert.match(flow, /layout: \(layout\) => \{ ui\.placePanel2D\(panelRect\(layout, ui\.panelFrame2D\(\)\), boardFrameRadius\(layout\.tile\)\); clipped2D\(layout\.scrolls\); \}/, 'each refit places the board\'s frame, its radius following the tile');
   assert.match(flow, /figures: \(input, \{ tick \}\) => ui\.updateFigures2D\(input, \{ tick, bests: bests2D \}\)/, 'the live figures, with the bests read at the game\'s start');
   assert.match(MAIN, /bests2D = RECORDS\.bests\(b\.identity\)/, 'the board\'s bests read once per game from the records store');
   assert.match(flow, /scrolled: \(\) => scrolled2D\(\)/);
@@ -1564,8 +1564,23 @@ test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800: Expert in the w
         await page.goto(`${base}/index.html`);
         await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
         const ms = (fn, arg) => page.evaluate(fn, arg);
-        const start = (choice) => ms((c) => globalThis.__ms.modes.start('classic-2d', c), choice);
-        const geometry = () => ms(() => {
+        // A game starts once the theme's board module is handed over, so its first layout is on its pitch.
+        const start = (choice) => ms(async (c) => {
+          const { BOARD_ART } = await import('/js/classic2d/tile-skin.js');
+          while (!BOARD_ART.current()) await new Promise((r) => setTimeout(r, 20));
+          globalThis.__ms.modes.start('classic-2d', c);
+        }, choice);
+        // Read once the board is laid out in the area as it stands: a board that scrolls shows the
+        // hint strip, which shrinks the area, and the board fits again when the area's resize lands.
+        const geometry = async () => {
+          await page.waitForFunction(() => {
+            const v = globalThis.__ms.board2D;
+            const r = document.getElementById('c2d-board').getBoundingClientRect();
+            return v && v.layout.width === Math.round(r.width) && v.layout.height === Math.round(r.height);
+          });
+          return measure();
+        };
+        const measure = () => ms(() => {
           const v = globalThis.__ms.board2D;
           const area = document.getElementById('c2d-board').getBoundingClientRect();
           const rect = (el) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; };
@@ -1584,7 +1599,7 @@ test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800: Expert in the w
         assert.ok(g.layout.tile >= 26 && g.layout.tile <= 48, `${at}: Expert at ${g.layout.tile} px`);
         if (viewport.width === 1280) {
           assert.equal(g.layout.scrolls, false, `${at}: Expert fits with no scrolling`);
-          assert.deepEqual([g.layout.viewWidth, g.layout.viewHeight], [30 * g.layout.tile, 16 * g.layout.tile], `${at}: no clipped cell`);
+          assert.deepEqual([g.layout.viewWidth, g.layout.viewHeight], [30 * g.layout.tile + 29 * g.layout.gap, 16 * g.layout.tile + 15 * g.layout.gap], `${at}: no clipped cell`);
         }
         assert.ok(g.panel.x >= g.area.x - 0.5 && g.panel.x + g.panel.width <= g.area.x + g.area.width + 0.5, `${at}: the board's frame inside the area`);
         assert.ok(g.panel.y >= g.area.y - 0.5 && g.panel.y + g.panel.height <= g.area.y + g.area.height + 0.5, `${at}: the board's frame inside the area`);
@@ -1606,10 +1621,14 @@ test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800: Expert in the w
         assert.equal(await ms(() => globalThis.__ms.state.mode), 'paused', `${at}: Pause pauses`);
         await page.click('#p-resume');
 
-        // Beginner: 48 px tiles at 1280 × 800 (no larger anywhere at 100 %).
+        // Beginner: the largest tile whose board, gaps included, fits the frame, at most 48 px — 48 px
+        // at 1280 × 800.
         await start(STANDARD.beginner);
         const b = await geometry();
-        assert.equal(b.layout.tile, 48, `${at}: Beginner at 48 px`);
+        const room = Math.min(b.area.width, b.area.height) - 2 * 9;
+        assert.ok(b.layout.tile <= 48 && 9 * b.layout.tile + 8 * b.layout.gap <= room, `${at}: Beginner fits at ${b.layout.tile} px`);
+        assert.ok(9 * (b.layout.tile + 1) + 8 * Math.round((b.layout.tile + 1) * b.layout.gap / b.layout.tile) > room || b.layout.tile === 48, `${at}: at the largest tile that fits`);
+        if (viewport.width === 1280) assert.equal(b.layout.tile, 48, `${at}: Beginner at 48 px`);
 
         // A clipped custom board: the shadow, the scroll bar and the one-time hint.
         await start({ size: 'custom', custom: { width: 100, height: 60, mines: 600 }, noGuess: false });
@@ -1848,21 +1867,20 @@ test('in a browser, a Classic 2D Beginner game played by mouse and by keyboard c
     const cues = () => ms(() => globalThis.__cues.splice(0));
     const muted = () => ms(async () => (await import('/js/audio.js')).sfx.muted);
     // The board's cells, read from the canvas: the closed ones (a tile's centre is halfway along
-    // the closed face's shading), and a cell's centre on the page.
-    const closedCells = () => ms(() => {
+    // the board module's closed face's shading), and a cell's centre on the page.
+    const closedCells = () => ms(async () => {
+      const { BOARD_ART } = await import('/js/classic2d/tile-skin.js');
       const canvas = document.querySelector('#c2d-board canvas');
       const l = globalThis.__ms.board2D.layout;
       const ratio = canvas.width / canvas.getBoundingClientRect().width;
-      const rgb = (name) => {
-        const hex = getComputedStyle(document.documentElement).getPropertyValue(name).trim().replace('#', '');
-        return [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
-      };
-      const want = rgb('--color-tile-closed').map((v, i) => (v + rgb('--color-tile-face-shade')[i]) / 2);
+      const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+      const closed = BOARD_ART.current().board.palette.faces2d.closed;
+      const want = rgb(closed.face).map((v, i) => (v + rgb(closed.faceShade ?? closed.face)[i]) / 2);
       const ctx = canvas.getContext('2d');
       const out = [];
       for (let c = 0; c < 81; c++) {
-        const x = Math.round((l.offsetX + (c % 9) * l.tile + l.tile * 0.5) * ratio);
-        const y = Math.round((l.offsetY + Math.floor(c / 9) * l.tile + l.tile * 0.5) * ratio);
+        const x = Math.round((l.offsetX + (c % 9) * l.pitch + l.tile * 0.5) * ratio);
+        const y = Math.round((l.offsetY + Math.floor(c / 9) * l.pitch + l.tile * 0.5) * ratio);
         const [r, g, b] = ctx.getImageData(x, y, 1, 1).data;
         if (Math.abs(want[0] - r) + Math.abs(want[1] - g) + Math.abs(want[2] - b) <= 6) out.push(c);
       }
@@ -1871,7 +1889,7 @@ test('in a browser, a Classic 2D Beginner game played by mouse and by keyboard c
     const centre = (c) => ms((cell) => {
       const box = document.querySelector('#c2d-board canvas').getBoundingClientRect();
       const l = globalThis.__ms.board2D.layout;
-      return { x: box.left + l.offsetX + ((cell % 9) + 0.5) * l.tile, y: box.top + l.offsetY + (Math.floor(cell / 9) + 0.5) * l.tile };
+      return { x: box.left + l.offsetX + (cell % 9) * l.pitch + 0.5 * l.tile, y: box.top + l.offsetY + Math.floor(cell / 9) * l.pitch + 0.5 * l.tile };
     }, c);
     const frames = () => ms(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
 

@@ -439,10 +439,14 @@ export class UI {
   panelFrame2D() {
     return { top: PANEL_INSET, right: PANEL_INSET, bottom: PANEL_INSET, left: PANEL_INSET };
   }
-  /** The board's frame at `rect` in the board area (board-view.js panelRect). */
-  placePanel2D(rect) {
+  /**
+   * The board's frame (the kit's ui-board-frame) at `rect` in the board area (board-view.js panelRect),
+   * its corner radius `radius` CSS pixels, which the theme stylesheet reads as --board-frame-radius.
+   */
+  placePanel2D(rect, radius = 0) {
     const panel = this.el.c2dPanel;
     Object.assign(panel.style, { left: `${rect.x}px`, top: `${rect.y}px`, width: `${rect.width}px`, height: `${rect.height}px` });
+    panel.style.setProperty('--board-frame-radius', `${radius}px`);
     panel.classList.remove('hidden');
   }
   /** The Classic 2D board the window's title and foot line and the pause card name; { width, height, mines, noGuess, identity }. */

@@ -207,7 +207,7 @@ test('a recording made before the ring could hide shows no ring until its first 
 });
 
 test('a pointer in cells lands on the canvas through the board layout and scroll', () => {
-  const layout = { tile: 40, offsetX: 10, offsetY: 20 };
+  const layout = { tile: 40, pitch: 40, offsetX: 10, offsetY: 20 };
   assert.deepEqual(pointerPixel(layout, { x: 0, y: 0 }, [1.5, 2]), { x: 70, y: 100 });
   assert.deepEqual(pointerPixel(layout, { x: 30, y: 5 }, [1.5, 2]), { x: 40, y: 95 });
 });
@@ -217,7 +217,7 @@ function fakeView() {
   const calls = { game: [], update: [], cursor: [], ensure: [] };
   return {
     calls,
-    layout: { tile: 40, offsetX: 0, offsetY: 0, scrolls: false, width: 360, height: 360 },
+    layout: { tile: 40, pitch: 40, offsetX: 0, offsetY: 0, scrolls: false, width: 360, height: 360 },
     scroll: { x: 0, y: 0 },
     setGame(g) { calls.game.push(g); },
     update(changed) { calls.update.push([...changed]); },
@@ -295,7 +295,7 @@ test('every 2D fixture recorded before the ring hid plays with no ring at any po
 test('a board that fits is never scrolled by the viewer; the board scale reaches its view', () => {
   const view = fakeView();
   view.scales = [];
-  view.setScale = (s) => { view.scales.push(s); view.layout = { ...view.layout, tile: 30 }; };
+  view.setScale = (s) => { view.scales.push(s); view.layout = { ...view.layout, tile: 30, pitch: 30 }; };
   const replay = decodeReplay(blobOf(WON));
   replay.movement = [{ time: 0, type: 'cursor', cell: -1 }, { time: 10, type: 'cursor', cell: 80 }, ...replay.movement];
   const s = createSimulator(replay);
@@ -316,7 +316,7 @@ test('a pointer left in place while paused follows the board view when it refits
   const placed = pointer.at.length;
   v.place();
   assert.equal(pointer.at.length, placed, 'nothing moved: the pointer is not placed again');
-  view.layout = { ...view.layout, tile: 50, offsetX: 20 };
+  view.layout = { ...view.layout, tile: 50, pitch: 50, offsetX: 20 };
   v.place();
   assert.deepEqual(pointer.at.at(-1), [20 + first.values[0] / 64 * 50, first.values[1] / 64 * 50], 'refitted');
   view.scroll = { x: 5, y: 7 };

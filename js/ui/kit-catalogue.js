@@ -211,6 +211,8 @@ export const KIT_CATALOGUE = Object.freeze([
       part('note', '.ui-scene-panel__note', { optional: true }),
     ],
   }),
+  // The frame a Classic 2D board sits in; its corner radius follows the tile (--board-frame-radius).
+  component('ui-board-frame'),
   component('ui-divider', { variants: ['ui-divider--vertical'] }),
   component('ui-tabs', {
     parts: [control('tab', '.ui-tabs__tab', { checked: '.ui-tabs__tab[aria-selected="true"]' })],
@@ -284,9 +286,10 @@ export const CONTRAST_ROLES = Object.freeze({
 
 // The required token set: every token a theme stylesheet must declare, because something outside
 // the theme reads it — the base stylesheets (css/components.css, css/style.css), the screens'
-// scripts that draw from tokens (the Records chart, the 2D board view, tile skin and end effect, the
-// replay viewer, the scene palette) — plus the contrast roles above. The conformance tests and the
-// theme skill read this one list; tests/theme-conformance.test.mjs keeps it equal to those reads.
+// scripts that draw from tokens (the Records chart, the 2D board view and its end effect, the
+// replay viewer, the scene palette) — plus the contrast roles above. The Classic 2D tiles read none:
+// they draw from the theme's board module. The conformance tests and the theme skill read this one
+// list; tests/theme-conformance.test.mjs keeps it equal to those reads.
 export const REQUIRED_TOKENS = Object.freeze([
   // type, read by the base stylesheets and the Records chart
   '--font-family-sans',
@@ -294,18 +297,15 @@ export const REQUIRED_TOKENS = Object.freeze([
   '--font-weight-regular', '--font-weight-bold', '--font-weight-heavy',
   // surfaces, ink and status: the contrast roles and the Records chart
   ...new Set([...CONTRAST_ROLES.surfaces, ...CONTRAST_ROLES.bodyText, ...CONTRAST_ROLES.largeText, '--color-border']),
-  // the 2D board view and its end effect
+  // the 2D board view (its ground and cursor ring while its skin holds no board module, its marks)
+  // and its end effect (the win pulse, the confetti in number colours)
   '--color-board-frame', '--color-board-shadow', '--color-board-scrollbar', '--color-tile-cursor',
-  // the 2D tile skin
-  '--color-tile-rim', '--color-tile-bevel-light', '--color-tile-bevel-dark', '--color-tile-closed', '--color-tile-flagged',
-  '--color-tile-face-shade', '--color-tile-gloss', '--color-tile-gloss-fade', '--color-tile-pressed',
-  '--color-tile-revealed-rim', '--color-tile-revealed-edge', '--color-tile-revealed', '--color-tile-revealed-shade',
-  '--color-tile-mine', '--color-tile-wrong-flag', '--color-tile-exploded', '--color-tile-exploded-edge',
-  '--color-tile-exploded-shade', '--color-tile-number-shadow', '--color-tile-mine-glyph', '--color-tile-mine-highlight',
-  '--color-tile-flag', '--color-tile-flag-shade', '--color-tile-flag-shadow', '--color-tile-wrong-flag-mark',
-  '--color-tile-wrong-flag-outline',
+  '--color-tile-bevel-light',
   '--color-number-1', '--color-number-2', '--color-number-3', '--color-number-4',
-  '--color-number-5', '--color-number-6', '--color-number-7', '--color-number-8',
+  '--color-number-5', '--color-number-6', '--color-number-7',
+  // the board frame's corner radius, which the shell sets on the frame from the board module; a
+  // theme declares the frame's radius before the shell first sets it
+  '--board-frame-radius',
   // the replay viewer's Show 3BV tints
   '--color-replay-bbbv-1', '--color-replay-bbbv-2', '--color-replay-bbbv-3', '--color-replay-bbbv-4',
   '--color-replay-bbbv-5', '--color-replay-bbbv-6', '--color-replay-bbbv-isolated',

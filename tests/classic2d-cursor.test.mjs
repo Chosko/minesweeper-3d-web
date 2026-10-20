@@ -764,7 +764,7 @@ test('in a browser, a Beginner game on a fixed board is played by keyboard to a 
   }
 });
 
-test('in a browser, the cursor ring an arrow key moves stands out from the lit bevel of the tile', async (t) => {
+test('in a browser, the cursor ring an arrow key moves is the board module\'s and stands out from the closed tile it sits on', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -774,29 +774,31 @@ test('in a browser, the cursor ring an arrow key moves stands out from the lit b
       const errors = [];
       page.on('pageerror', (e) => errors.push(e.message));
       await page.goto(`${base}/dev/components.html`);
+      await page.evaluate(async () => {
+        const { BOARD_ART } = await import('/js/classic2d/tile-skin.js');
+        await globalThis.galleryReady;
+        while (!BOARD_ART.current()) await new Promise((r) => setTimeout(r, 20));
+      });
       await page.evaluate(mountGame);
       await page.keyboard.press('ArrowRight');
       await page.keyboard.press('ArrowDown');
-      const seen = await page.evaluate(() => {
+      const seen = await page.evaluate(async () => {
+        const { BOARD_ART } = await import('/js/classic2d/tile-skin.js');
+        const { cursor, palette } = BOARD_ART.current().board;
         const { view } = globalThis.__play;
         const ctx = view.canvas.getContext('2d');
-        // The middle of a tile's left band, where both the lit bevel and the ring are drawn.
+        // The middle of a tile's left side, where the ring is drawn.
         const band = (c) => {
           const r = view.cellRect(c);
-          const w = Math.max(2, Math.round(r.size / 12));
-          return [...ctx.getImageData(Math.floor(r.x + w / 2), Math.floor(r.y + r.size / 2), 1, 1).data.slice(0, 3)];
+          return [...ctx.getImageData(Math.floor(r.x + cursor.width / 2), Math.floor(r.y + r.size / 2), 1, 1).data.slice(0, 3)];
         };
-        const probe = document.createElement('div');
-        probe.style.color = getComputedStyle(document.documentElement).getPropertyValue('--color-tile-bevel-light');
-        document.body.append(probe);
-        const bevel = getComputedStyle(probe).color.match(/\d+/g).slice(0, 3).map(Number);
-        probe.remove();
-        return { cursor: view.cursor, ring: band(view.cursor), neighbour: band(view.cursor + 1), bevel };
+        const hex = (v) => [1, 3, 5].map((i) => parseInt(v.slice(i, i + 2), 16));
+        return { cursor: view.cursor, ring: band(view.cursor), neighbour: band(view.cursor + 1), colour: hex(cursor.color), face: hex(palette.faces2d.closed.face) };
       });
       assert.equal(seen.cursor, 10, `${theme}: the arrows moved the cursor to (1, 1)`);
-      assert.deepEqual(seen.neighbour, seen.bevel, `${theme}: a closed tile's band is its lit bevel`);
-      assert.notDeepEqual(seen.ring, seen.bevel, `${theme}: the ring differs from the lit bevel`);
-      assert.notDeepEqual(seen.ring, seen.neighbour, `${theme}: the ring differs from its neighbour's band`);
+      assert.deepEqual(seen.neighbour, seen.face, `${theme}: a closed tile's side is its face`);
+      assert.deepEqual(seen.ring, seen.colour, `${theme}: the ring in the board module's colour`);
+      assert.notDeepEqual(seen.ring, seen.neighbour, `${theme}: the ring differs from its neighbour's side`);
       assert.deepEqual(errors, []);
       await page.close();
     }

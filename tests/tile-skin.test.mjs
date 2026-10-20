@@ -5,45 +5,16 @@ import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { FALLBACK_COLOR } from '../js/tokens.js';
+import { BOARD as JOYFUL } from '../themes/joyful-tiles/board.js';
+import { BOARD as FIXTURE } from './fixtures/themes/fixture-dusk/board.js';
 import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const suite = browserSuite({ args: [] });
-const CSS = readFileSync(join(ROOT, 'themes/joyful-tiles/theme.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 
-// ---------- token maps: the theme's, parsed from its stylesheet, and a second palette ----------
-function block(selector) {
-  const at = CSS.indexOf(selector + ' {');
-  assert.ok(at >= 0, `${selector} block present`);
-  return CSS.slice(at, CSS.indexOf('}', at));
-}
-function tokensOf(text) {
-  const map = new Map();
-  for (const m of text.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) map.set(m[1], m[2].trim());
-  return map;
-}
-const JOYFUL = tokensOf(block(':root[data-theme="joyful-tiles"]'));
-// A second theme's tile palette, every recipe colour unlike Joyful tiles', for the painter's and the
-// cache's per-theme behaviour.
-const OTHER = new Map([...JOYFUL, ...Object.entries({
-  '--color-tile-rim': '#0b1424', '--color-tile-bevel-light': '#3e5f9c', '--color-tile-bevel-dark': '#1d3157',
-  '--color-tile-closed': '#3a5a92', '--color-tile-flagged': '#3a5a92', '--color-tile-face-shade': '#2f4b7d',
-  '--color-tile-gloss': 'rgba(255, 255, 255, 0.14)', '--color-tile-pressed': '#2c3e60',
-  '--color-tile-revealed-rim': '#33415d', '--color-tile-revealed-edge': '#141d31', '--color-tile-revealed': '#1b2740',
-  '--color-tile-mine': '#1b2740', '--color-tile-wrong-flag': '#1b2740', '--color-tile-revealed-shade': '#17223a',
-  '--color-tile-exploded': '#b3261e', '--color-tile-exploded-edge': '#7a1712', '--color-tile-exploded-shade': '#a3221b',
-  '--color-tile-number-shadow': 'rgba(0, 0, 0, 0.3)', '--color-tile-mine-glyph': '#e6edf8', '--color-tile-mine-highlight': 'rgba(255, 255, 255, 0.9)',
-  '--color-tile-flag': '#ff7b7b', '--color-tile-flag-shade': '#e04a4a', '--color-tile-flag-shadow': 'rgba(0, 0, 0, 0.35)',
-  '--color-tile-wrong-flag-mark': '#ff7b7b', '--color-tile-wrong-flag-outline': 'rgba(11, 20, 36, 0.95)',
-  '--color-number-1': '#82b1ff', '--color-number-2': '#81c784', '--color-number-3': '#ff8a80', '--color-number-4': '#b39ddb',
-  '--color-number-5': '#ffab91', '--color-number-6': '#4dd0e1', '--color-number-7': '#eceff1', '--color-number-8': '#a0a8b4',
-})]);
-const THEMES = { 'joyful-tiles': JOYFUL, other: OTHER };
-
-const tokenFrom = (map) => (name) => {
-  const key = name.startsWith('--') ? name : `--${name}`;
-  return map.get(key) ?? FALLBACK_COLOR;
-};
+// The board modules the skin is tested with: Joyful tiles' (the flat style, with a gap and a corner
+// radius) and the fixture theme's (the bevel style, neither), every colour unlike the other's.
+const BOARDS = { 'joyful-tiles': JOYFUL, 'fixture-dusk': FIXTURE };
 
 // ---------- a fake Canvas 2D context: records every call with the fill/stroke style in force ----------
 // Gradients record their stops; measureText answers a glyph box; getTransform
@@ -94,16 +65,7 @@ const colours = (ctx) => new Set([...filledWith(ctx), ...strokedWith(ctx)]);
 const trace = (ctx) => ctx.calls.map((c) => [c.op, JSON.stringify(c.args), styleColours(c.fill).join(), styleColours(c.stroke).join()].join('|'));
 
 const artModule = () => import('../js/tile-art.js');
-
-// The palettes a state's drawing takes, from token names (without --color-).
-const RAISED = { rim: 'tile-rim', bevelLight: 'tile-bevel-light', bevelDark: 'tile-bevel-dark', faceShade: 'tile-face-shade', gloss: 'tile-gloss', glossFade: 'tile-gloss-fade' };
-const SUNKEN = { rim: 'tile-rim', bevelLight: 'tile-bevel-light', bevelDark: 'tile-bevel-dark', face: 'tile-pressed' };
-const REVEALED = { rim: 'tile-revealed-rim', edge: 'tile-revealed-edge', faceShade: 'tile-revealed-shade' };
-const EXPLODED = { rim: 'tile-revealed-rim', edge: 'tile-exploded-edge', face: 'tile-exploded', faceShade: 'tile-exploded-shade' };
-const MINE = { body: 'tile-mine-glyph', highlight: 'tile-mine-highlight' };
-const FLAG = { base: 'tile-mine-glyph', shadow: 'tile-flag-shadow', cloth: 'tile-flag', clothShade: 'tile-flag-shade' };
-const CROSS = { outline: 'tile-wrong-flag-outline', mark: 'tile-wrong-flag-mark' };
-const resolve = (t, names) => Object.fromEntries(Object.entries(names).map(([k, n]) => [k, t(`--color-${n}`)]));
+const skinModule = () => import('../js/classic2d/tile-skin.js');
 
 function fakeCanvasFactory() {
   const made = [];
@@ -116,35 +78,19 @@ function fakeCanvasFactory() {
   return { made, createCanvas };
 }
 
-function fakeTheme(initial = 'joyful-tiles') {
-  const listeners = new Set();
-  let current = initial;
-  return {
-    current: () => current,
-    onThemeChange(fn) {
-      listeners.add(fn);
-      return () => listeners.delete(fn);
-    },
-    set(next) {
-      current = next;
-      for (const fn of [...listeners]) fn(next);
-    },
-    listeners,
-  };
+// A board art hand-off of its own, holding `initial` (a theme id) when given.
+async function fakeArt(initial = 'joyful-tiles') {
+  const { createBoardArt } = await skinModule();
+  const art = createBoardArt();
+  if (initial) art.set(initial, BOARDS[initial]);
+  return art;
 }
 
-const skinModule = () => import('../js/classic2d/tile-skin.js');
-
-function makeSkin(mod, { theme = fakeTheme(), redraw = () => {} } = {}) {
+async function makeSkin(mod, { art, redraw = () => {} } = {}) {
   const canvases = fakeCanvasFactory();
-  const skin = mod.createTileSkin({
-    token: (name) => tokenFrom(THEMES[theme.current()])(name),
-    onThemeChange: theme.onThemeChange,
-    currentTheme: theme.current,
-    createCanvas: canvases.createCanvas,
-    redraw,
-  });
-  return { skin, canvases, theme };
+  const handOff = art ?? await fakeArt();
+  const skin = mod.createTileSkin({ art: handOff, createCanvas: canvases.createCanvas, redraw });
+  return { skin, canvases, art: handOff };
 }
 
 // ---------------------------------------------------------------- state dispatch
@@ -157,74 +103,64 @@ test('the visual states are the engine cell states plus pressed', async () => {
   assert.equal(TILE_STATES.length, Object.values(CELL).length + 1);
 });
 
-test('each state paints with its own tile tokens, in each theme\'s palette, at its position', async () => {
+// Every colour a state draws with, from its board module.
+function stateColours(b) {
+  const p = b.palette;
+  const f = p.faces2d;
+  const face = (x) => Object.values(x);
+  return {
+    closed: face(f.closed),
+    pressed: face(f.sunk),
+    revealed: face(f.revealed),
+    flagged: [...face(f.closed), ...Object.values(p.flag)],
+    mine: [...face(f.revealed), ...Object.values(p.mine)],
+    exploded: [...face(f.exploded), ...Object.values(p.mine)],
+    'wrong-flag': [...face(f.revealed), ...Object.values(p.flag), ...Object.values(p.cross)],
+  };
+}
+
+test('each state paints from its board module\'s palette, in each theme, at its position', async () => {
   const { paintTileWith } = await skinModule();
-  for (const [name, map] of Object.entries(THEMES)) {
-    const t = tokenFrom(map);
-    const paint = (state, number) => {
+  for (const [name, b] of Object.entries(BOARDS)) {
+    for (const [state, wanted] of Object.entries(stateColours(b))) {
       const ctx = fakeContext();
-      paintTileWith(t, ctx, 10, 20, 32, state, number);
-      return ctx;
-    };
-    const raised = Object.values(RAISED);
-    const revealed = Object.values(REVEALED);
-    const expect = {
-      closed: [...raised, 'tile-closed'],
-      pressed: Object.values(SUNKEN),
-      revealed: [...revealed, 'tile-revealed'],
-      flagged: [...raised, 'tile-flagged', ...Object.values(FLAG)],
-      mine: [...revealed, 'tile-mine', ...Object.values(MINE)],
-      exploded: [...Object.values(EXPLODED), ...Object.values(MINE)],
-      'wrong-flag': [...revealed, 'tile-wrong-flag', ...Object.values(FLAG), ...Object.values(CROSS)],
-    };
-    for (const [state, names] of Object.entries(expect)) {
-      const ctx = paint(state, 0);
+      paintTileWith(b, ctx, 10, 20, 32, state, 0);
       const used = colours(ctx);
-      for (const n of names) assert.ok(used.has(t(`--color-${n}`)), `${name}: ${state} uses --color-${n}`);
-      assert.ok(!used.has(FALLBACK_COLOR), `${name}: ${state} reads only declared tokens`);
-      // The tile is drawn at its position: translated there, its first fill covering the tile.
+      // The flat style's face draws no bevel slopes: every colour it does draw is the module's.
+      for (const c of used) assert.ok(wanted.includes(c), `${name}: ${state} draws ${c}, a colour of its module`);
+      assert.ok(used.has(b.palette.faces2d[{ closed: 'closed', flagged: 'closed', pressed: 'sunk', exploded: 'exploded' }[state] ?? 'revealed'].face), `${name}: ${state} draws its face`);
+      assert.ok(!used.has(FALLBACK_COLOR), `${name}: ${state} is no placeholder`);
       const at = ctx.calls.findIndex((c) => c.op === 'translate');
       assert.deepEqual(ctx.calls[at].args, [10, 20], `${name}: ${state} is drawn at the tile's position`);
-      const first = ctx.calls.find((c) => c.op === 'fillRect');
-      assert.deepEqual(first.args, [0, 0, 32, 32], `${name}: ${state}'s rim covers the tile`);
       assert.equal(ctx.calls.filter((c) => c.op === 'save').length, ctx.calls.filter((c) => c.op === 'restore').length, `${name}: ${state} restores the context`);
     }
   }
 });
 
-test('each state draws through the shared tile recipe with its own tokens', async () => {
+test('each state draws through the shared tile recipe in the module\'s Classic 2D style, palette and number font', async () => {
   const { paintTileWith } = await skinModule();
   const art = await artModule();
   const src = readFileSync(join(ROOT, 'js/classic2d/tile-skin.js'), 'utf8');
   assert.match(src, /from '\.\.\/tile-art\.js'/, 'the skin imports the shared recipe');
-  for (const [name, map] of Object.entries(THEMES)) {
-    const t = tokenFrom(map);
-    const c = (n) => t(`--color-${n}`);
+  for (const [name, b] of Object.entries(BOARDS)) {
+    const { faces2d: f, flag, mine, cross, numberShadow } = b.palette;
+    const face = (ctx, s, px, which, palette) => art.drawFace(ctx, s, which, { style: b.style2d.name, params: b.style2d.params, palette, px });
     const recipes = {
-      closed: (ctx, s, px) => art.drawRaisedFace(ctx, s, { ...resolve(t, RAISED), face: c('tile-closed') }, px),
-      pressed: (ctx, s, px) => art.drawSunkenFace(ctx, s, resolve(t, SUNKEN), px),
-      flagged: (ctx, s, px) => {
-        art.drawRaisedFace(ctx, s, { ...resolve(t, RAISED), face: c('tile-flagged') }, px);
-        art.drawFlagGlyph(ctx, s, resolve(t, FLAG));
-      },
-      mine: (ctx, s, px) => {
-        art.drawRevealedFace(ctx, s, { ...resolve(t, REVEALED), face: c('tile-mine') }, px);
-        art.drawMineGlyph(ctx, s, resolve(t, MINE));
-      },
-      exploded: (ctx, s, px) => {
-        art.drawRevealedFace(ctx, s, resolve(t, EXPLODED), px);
-        art.drawMineGlyph(ctx, s, resolve(t, MINE));
-      },
+      closed: (ctx, s, px) => face(ctx, s, px, 'closed', f.closed),
+      pressed: (ctx, s, px) => face(ctx, s, px, 'sunk', f.sunk),
+      flagged: (ctx, s, px) => { face(ctx, s, px, 'closed', f.closed); art.drawFlagGlyph(ctx, s, flag); },
+      mine: (ctx, s, px) => { face(ctx, s, px, 'revealed', f.revealed); art.drawMineGlyph(ctx, s, mine); },
+      exploded: (ctx, s, px) => { face(ctx, s, px, 'revealed', f.exploded); art.drawMineGlyph(ctx, s, mine); },
       'wrong-flag': (ctx, s, px) => {
-        art.drawRevealedFace(ctx, s, { ...resolve(t, REVEALED), face: c('tile-wrong-flag') }, px);
-        art.drawFlagGlyph(ctx, s, resolve(t, FLAG));
-        art.drawCross(ctx, s, resolve(t, CROSS));
+        face(ctx, s, px, 'revealed', f.revealed);
+        art.drawFlagGlyph(ctx, s, flag);
+        art.drawCross(ctx, s, cross);
       },
     };
     for (let n = 0; n <= 8; n++) {
       recipes[`revealed-${n}`] = (ctx, s, px) => {
-        art.drawRevealedFace(ctx, s, { ...resolve(t, REVEALED), face: c('tile-revealed') }, px);
-        if (n > 0) art.drawNumberGlyph(ctx, s, n, { color: c(`number-${n}`), shadow: c('tile-number-shadow') });
+        face(ctx, s, px, 'revealed', f.revealed);
+        if (n > 0) art.drawNumberGlyph(ctx, s, n, { color: b.numbers[n], shadow: numberShadow, font: b.font });
       };
     }
     for (const ratio of [1, 2]) {
@@ -232,162 +168,109 @@ test('each state draws through the shared tile recipe with its own tokens', asyn
         const [state, number] = key.startsWith('revealed-') ? ['revealed', Number(key.slice(9))] : [key, 0];
         const skin = fakeContext();
         skin.setTransform(ratio, 0, 0, ratio, 0, 0);
-        paintTileWith(t, skin, 4, 8, 26, state, number);
+        paintTileWith(b, skin, 4, 8, 26, state, number);
         const direct = fakeContext();
         direct.setTransform(ratio, 0, 0, ratio, 0, 0);
         recipe(direct, 26, 1 / ratio);
         // The skin's own save / translate / restore around the recipe aside, the drawing is the recipe's.
         const drawing = (ctx) => trace(ctx).filter((op) => !/^(save|restore|translate)\|/.test(op));
-        assert.deepEqual(drawing(skin), drawing(direct), `${name} at ratio ${ratio}: ${key} is the shared recipe with its tokens`);
+        assert.deepEqual(drawing(skin), drawing(direct), `${name} at ratio ${ratio}: ${key} is the shared recipe with its module`);
       }
     }
   }
 });
 
-test('closed and flagged tiles are the raised cube face: rim, light top-left and dark bottom-right bevel, shaded face, gloss', async () => {
+test('under Joyful tiles the tiles are the flat style with its corner radius: a light top band and dark bottom edge on the closed face, the revealed face flush inside a hairline', async () => {
   const { paintTileWith } = await skinModule();
-  for (const [name, map] of Object.entries(THEMES)) {
-    const t = tokenFrom(map);
-    for (const state of ['closed', 'flagged']) {
-      const ctx = fakeContext();
-      paintTileWith(t, ctx, 0, 0, 32, state, 0);
-      const fills = ctx.calls.filter((c) => c.op === 'fill' || c.op === 'fillRect');
-      assert.equal(fills[0].fill, t('--color-tile-rim'), `${name}: ${state} starts with its rim`);
-      assert.equal(fills[1].fill, t('--color-tile-bevel-light'), `${name}: ${state}'s top-left bevel is lit`);
-      assert.equal(fills[2].fill, t('--color-tile-bevel-dark'), `${name}: ${state}'s bottom-right bevel is dark`);
-      const face = fills[3].fill;
-      assert.equal(typeof face, 'object', `${name}: ${state}'s face is shaded`);
-      assert.deepEqual(face.stops, [t(`--color-tile-${state}`), t('--color-tile-face-shade')]);
-      assert.deepEqual(fills[4].fill.stops, [t('--color-tile-gloss'), t('--color-tile-gloss-fade')], `${name}: ${state} carries the gloss`);
-    }
-  }
-});
-
-test('the pressed tile is the cube face sunk in: bevel inverted, no gloss, face in --color-tile-pressed', async () => {
-  const { paintTileWith } = await skinModule();
-  for (const [name, map] of Object.entries(THEMES)) {
-    const t = tokenFrom(map);
+  const f = JOYFUL.palette.faces2d;
+  assert.equal(JOYFUL.style2d.name, 'flat');
+  for (const state of ['closed', 'flagged']) {
     const ctx = fakeContext();
-    paintTileWith(t, ctx, 0, 0, 32, 'pressed', 0);
-    const fills = ctx.calls.filter((c) => c.op === 'fill' || c.op === 'fillRect');
-    assert.deepEqual(fills.map((c) => c.fill), [
-      t('--color-tile-rim'), t('--color-tile-bevel-dark'), t('--color-tile-bevel-light'), t('--color-tile-pressed'),
-    ], `${name}: rim, dark top-left, lit bottom-right, flat face`);
-    assert.ok(!ctx.calls.some((c) => c.op === 'createLinearGradient'), `${name}: no gloss or face shading`);
+    paintTileWith(JOYFUL, ctx, 0, 0, 48, state, 0);
+    assert.ok(ctx.calls.some((c) => c.op === 'clip'), `${state}: drawn inside the rounded tile`);
+    const arcs = ctx.calls.filter((c) => c.op === 'arcTo').slice(0, 4); // the clip's corners, before any glyph
+    assert.ok(arcs.length === 4 && arcs.every((c) => Math.abs(c.args[4] - 48 * JOYFUL.style2d.params.radius) < 1e-9), `${state}: corners rounded by the module's radius`);
+    const fills = ctx.calls.filter((c) => c.op === 'fillRect').map((c) => [c.fill, ...c.args]);
+    assert.deepEqual(fills.slice(0, 3), [
+      [f.closed.face, 0, 0, 48, 48],
+      [f.closed.bevelLight, 0, 0, 48, Math.round(48 * JOYFUL.style2d.params.band)],
+      [f.closed.bevelDark, 0, 48 - Math.round(48 * JOYFUL.style2d.params.edge), 48, Math.round(48 * JOYFUL.style2d.params.edge)],
+    ], `${state}: the face, its top band, its bottom edge`);
   }
+  const open = fakeContext();
+  paintTileWith(JOYFUL, open, 0, 0, 48, 'revealed', 0);
+  const fills = open.calls.filter((c) => c.op === 'fillRect' || c.op === 'fill').map((c) => c.fill);
+  assert.deepEqual(fills, [f.revealed.rim, f.revealed.face], 'the revealed face: its hairline, then the face inside it');
+  assert.ok(!colours(open).has(f.closed.bevelLight) && !colours(open).has(f.closed.bevelDark), 'no relief on the revealed face');
 });
 
-test('closed and revealed tiles differ by relief and border, not by colour alone, in each theme\'s palette', async () => {
+test('a theme with no gap and no radius draws its tiles square, as the recipe\'s bevel draws them', async () => {
   const { paintTileWith } = await skinModule();
-  for (const [name, map] of Object.entries(THEMES)) {
-    const t = tokenFrom(map);
-    const closed = fakeContext();
-    paintTileWith(t, closed, 0, 0, 32, 'closed', 0);
-    const revealed = fakeContext();
-    paintTileWith(t, revealed, 0, 0, 32, 'revealed', 0);
-    for (const bevel of ['--color-tile-bevel-light', '--color-tile-bevel-dark']) {
-      assert.ok(colours(closed).has(t(bevel)), `${name}: the closed tile carries ${bevel}`);
-    }
-    assert.ok(!closed.calls.some((c) => c.op === 'fill' && c.fill === t('--color-tile-revealed-edge')), `${name}: the closed tile has no flat edge`);
-    const fills = revealed.calls.filter((c) => c.op === 'fill' || c.op === 'fillRect');
-    assert.deepEqual(fills.slice(0, 2).map((c) => c.fill), [t('--color-tile-revealed-rim'), t('--color-tile-revealed-edge')], `${name}: the revealed tile is rim and flat edge`);
-    assert.deepEqual(fills[2].fill.stops, [t('--color-tile-revealed'), t('--color-tile-revealed-shade')], `${name}: then its shaded face`);
-    assert.ok(!revealed.calls.some((c) => c.op === 'fill' && c.args.length === 0 && [t('--color-tile-bevel-light'), t('--color-tile-bevel-dark')].includes(c.fill)), `${name}: no bevel on the revealed tile`);
-  }
+  const ctx = fakeContext();
+  paintTileWith(FIXTURE, ctx, 0, 0, 32, 'closed', 0);
+  assert.ok(!ctx.calls.some((c) => c.op === 'clip' || c.op === 'arcTo'), 'no rounded clip');
+  const fills = ctx.calls.filter((c) => c.op === 'fill' || c.op === 'fillRect');
+  assert.equal(fills[0].fill, FIXTURE.palette.faces2d.closed.rim, 'the rim first');
+  assert.deepEqual(fills[0].args, [0, 0, 32, 32], 'covering the whole tile');
 });
 
-test('a revealed number is the 3D glyph in its own number colour, with a darker outline of its hue and a soft shadow; zero draws no glyph', async () => {
+test('a revealed number is the glyph in the module\'s number colour and font, outlined in its own hue, over the module\'s shadow; zero draws no glyph', async () => {
   const { paintTileWith } = await skinModule();
-  const { shade, NUMBER_OUTLINE } = await artModule();
-  for (const [name, map] of Object.entries(THEMES)) {
-    const t = tokenFrom(map);
+  const { shade, NUMBER_OUTLINE, NUMBER_FONT } = await artModule();
+  for (const [name, b] of Object.entries(BOARDS)) {
     for (let n = 1; n <= 8; n++) {
       const ctx = fakeContext();
-      paintTileWith(t, ctx, 0, 0, 26, 'revealed', n);
+      paintTileWith(b, ctx, 0, 0, 26, 'revealed', n);
       const text = ctx.calls.filter((c) => c.op === 'fillText');
       assert.deepEqual(text.map((c) => c.args[0]), [String(n), String(n)], `${name}: a shadow and the glyph for ${n}`);
-      assert.equal(text[0].fill, t('--color-tile-number-shadow'), `${name}: ${n}'s shadow`);
-      assert.equal(text[1].fill, t(`--color-number-${n}`), `${name}: ${n} uses --color-number-${n}`);
+      assert.equal(text[0].fill, b.palette.numberShadow, `${name}: ${n}'s shadow`);
+      assert.equal(text[1].fill, b.numbers[n], `${name}: ${n} in the module's number colour`);
       const outline = ctx.calls.filter((c) => c.op === 'strokeText');
-      assert.equal(outline.length, 1, `${name}: ${n} is outlined`);
-      assert.equal(outline[0].stroke, shade(t(`--color-number-${n}`), NUMBER_OUTLINE), `${name}: ${n}'s outline is its own hue, darker`);
-      assert.match(ctx.font, /^800 /, `${name}: ${n} is set in the heavy weight`);
+      assert.equal(outline[0].stroke, shade(b.numbers[n], NUMBER_OUTLINE), `${name}: ${n}'s outline is its own hue, darker`);
+      assert.equal(ctx.font, `${b.font.weight} ${26 * 0.68}px "${b.font.family}", ${NUMBER_FONT}`, `${name}: ${n} in the module's number font`);
     }
     const empty = fakeContext();
-    paintTileWith(t, empty, 0, 0, 24, 'revealed', 0);
+    paintTileWith(b, empty, 0, 0, 24, 'revealed', 0);
     assert.equal(empty.calls.filter((c) => c.op === 'fillText' || c.op === 'strokeText').length, 0, `${name}: revealed empty has no glyph`);
   }
 });
 
-test('the wrong flag is the 3D flag under the 3D cross on the revealed face, and no mine', async () => {
+test('the wrong flag is the flag under the cross on the revealed face, and no mine', async () => {
   const { paintTileWith } = await skinModule();
-  for (const [name, map] of Object.entries(THEMES)) {
-    const t = tokenFrom(map);
+  for (const [name, b] of Object.entries(BOARDS)) {
     const ctx = fakeContext();
-    paintTileWith(t, ctx, 0, 0, 32, 'wrong-flag', 0);
-    const clothAt = ctx.calls.findIndex((c) => c.op === 'fill' && typeof c.fill === 'object' && c.fill.stops.includes(t('--color-tile-flag')));
+    paintTileWith(b, ctx, 0, 0, 32, 'wrong-flag', 0);
+    const clothAt = ctx.calls.findIndex((c) => c.op === 'fill' && typeof c.fill === 'object' && c.fill.stops.includes(b.palette.flag.cloth));
     assert.ok(clothAt > 0, `${name}: the flag's cloth is drawn`);
     const strokes = ctx.calls.map((c, i) => [c, i]).filter(([c]) => c.op === 'stroke');
-    assert.deepEqual(strokes.map(([c]) => c.stroke), [t('--color-tile-wrong-flag-outline'), t('--color-tile-wrong-flag-mark')], `${name}: the cross, outlined`);
+    assert.deepEqual(strokes.map(([c]) => c.stroke), [b.palette.cross.outline, b.palette.cross.mark], `${name}: the cross, outlined`);
     assert.ok(strokes.every(([, i]) => i > clothAt), `${name}: the cross is over the flag`);
     assert.ok(!ctx.calls.some((c) => c.op === 'arc'), `${name}: no mine on a wrong flag`);
   }
 });
 
-test('the recipe scales with the tile, and every rim, border and bevel band is at least one device pixel', async () => {
-  const { tileBands } = await artModule();
+test('every band a style draws is whole device pixels, never thinner than one, at the minimum tile', async () => {
   const { paintTileWith, MIN_TILE_SIZE } = await skinModule();
-  const t = tokenFrom(JOYFUL);
-  for (const size of [...new Set([26, MIN_TILE_SIZE])]) {
-    for (const ratio of [1, 2]) {
-      const px = 1 / ratio;
-      const b = tileBands(size, px);
-      for (const [band, width] of Object.entries({ rim: b.rim, bevel: b.bevel, edge: b.edge - b.rim })) {
-        assert.ok(width >= px, `${size}px at ratio ${ratio}: the ${band} band is ${width * ratio} device px`);
-        assert.ok(Number.isInteger(Math.round(width * ratio * 1e9) / 1e9), `${size}px at ratio ${ratio}: the ${band} band is whole device pixels`);
-      }
-      const ctx = fakeContext();
-      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-      paintTileWith(t, ctx, 0, 0, size, 'closed', 0);
-      assert.deepEqual(ctx.calls.find((c) => c.op === 'moveTo').args, [b.rim, b.rim], `${size}px at ratio ${ratio}: the bevel starts inside the rim`);
-      const face = ctx.calls.find((c) => c.op === 'fillRect' && c.args[0] > 0);
-      assert.equal(face.args[0], b.rim + b.bevel, `${size}px at ratio ${ratio}: the face starts inside the bevel`);
+  for (const ratio of [1, 2]) {
+    const px = 1 / ratio;
+    const ctx = fakeContext();
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    paintTileWith(JOYFUL, ctx, 0, 0, MIN_TILE_SIZE, 'closed', 0);
+    const [, band, edge] = ctx.calls.filter((c) => c.op === 'fillRect');
+    for (const [what, width] of [['top band', band.args[3]], ['bottom edge', edge.args[3]]]) {
+      assert.ok(width >= px, `ratio ${ratio}: the ${what} is ${width * ratio} device px`);
+      assert.ok(Number.isInteger(Math.round(width * ratio * 1e9) / 1e9), `ratio ${ratio}: the ${what} is whole device pixels`);
     }
   }
-  // At the 3D atlas's size the bands are the cube face's own proportions.
-  assert.deepEqual(tileBands(256), { rim: 4, bevel: 256 * 0.075, edge: 12 });
-  const big = tileBands(512, 1);
-  assert.deepEqual([big.rim, big.edge], [8, 24], 'the proportions scale with the tile');
 });
 
-test('an unknown state, or a revealed number outside 0–8, paints the visibly wrong placeholder', async () => {
+test('an unknown state, a revealed number outside 0–8, or no board module paints the visibly wrong placeholder', async () => {
   const { paintTileWith } = await skinModule();
-  const t = tokenFrom(JOYFUL);
-  for (const [state, number] of [['bogus', 0], [undefined, 0], ['revealed', 9], ['revealed', -1]]) {
+  for (const [board, state, number] of [[JOYFUL, 'bogus', 0], [JOYFUL, undefined, 0], [JOYFUL, 'revealed', 9], [JOYFUL, 'revealed', -1], [null, 'closed', 0]]) {
     const ctx = fakeContext();
-    paintTileWith(t, ctx, 5, 5, 20, state, number);
+    paintTileWith(board, ctx, 5, 5, 20, state, number);
     assert.ok(filledWith(ctx).has(FALLBACK_COLOR), `${String(state)}/${number} paints the placeholder colour`);
     assert.ok(ctx.calls.some((c) => c.op === 'fillRect' && c.args.join() === '5,5,20,20'), 'the placeholder fills the whole tile');
-  }
-});
-
-test('paintTile reads the tile tokens through the token reader', async () => {
-  const values = new Map(JOYFUL);
-  const saved = { document: globalThis.document, getComputedStyle: globalThis.getComputedStyle };
-  globalThis.document = { documentElement: {} };
-  globalThis.getComputedStyle = () => ({ getPropertyValue: (p) => values.get(p) ?? '' });
-  try {
-    const { paintTile } = await skinModule();
-    const ctx = fakeContext();
-    paintTile(ctx, 0, 0, 16, 'revealed', 4);
-    const glyph = (c) => c.calls.filter((call) => call.op === 'fillText').at(-1).fill;
-    assert.equal(glyph(ctx), JOYFUL.get('--color-number-4'));
-    values.set('--color-number-4', '#123456');
-    const again = fakeContext();
-    paintTile(again, 0, 0, 16, 'revealed', 4);
-    assert.equal(glyph(again), '#123456', 'values are read at paint time, not copied');
-  } finally {
-    Object.assign(globalThis, saved);
   }
 });
 
@@ -395,7 +278,7 @@ test('paintTile reads the tile tokens through the token reader', async () => {
 
 test('the cache pre-renders every state and number once, and a redraw is only image copies', async () => {
   const mod = await skinModule();
-  const { skin, canvases } = makeSkin(mod);
+  const { skin, canvases } = await makeSkin(mod);
   const board = fakeContext();
   skin.drawTile(board, 0, 0, 30, 'closed', 0, 1);
   const prerendered = canvases.made.length;
@@ -413,8 +296,7 @@ test('the cache pre-renders every state and number once, and a redraw is only im
 
 test('the cache is keyed by tile size, pixel ratio and theme', async () => {
   const mod = await skinModule();
-  const theme = fakeTheme('joyful-tiles');
-  const { skin, canvases } = makeSkin(mod, { theme });
+  const { skin, canvases, art } = await makeSkin(mod);
   const board = fakeContext();
   const per = canvases.made.length;
   skin.drawTile(board, 0, 0, 24, 'closed', 0, 1);
@@ -436,30 +318,138 @@ test('the cache is keyed by tile size, pixel ratio and theme', async () => {
   assert.ok(scaled, 'the offscreen context is scaled to the pixel ratio');
   assert.equal(board.calls.at(-1).args.slice(1).join(), '0,0,32,32', 'copied at CSS-pixel size');
 
-  theme.set('other');
+  art.set('fixture-dusk', FIXTURE);
   skin.drawTile(board, 0, 0, 32, 'closed', 0, 2);
   assert.equal(canvases.made.length, one * 4, 'theme change rebuilds');
-  assert.equal(skin.cacheKey(), '32|2|other');
-  const otherClosed = canvases.made.find((c) => colours(c.ctx).has(OTHER.get('--color-tile-closed')));
-  assert.ok(otherClosed, 'the rebuilt images use the new theme\'s tokens');
+  assert.equal(skin.cacheKey(), '32|2|fixture-dusk');
+  const fixtureClosed = canvases.made.find((c) => colours(c.ctx).has(FIXTURE.palette.faces2d.closed.face));
+  assert.ok(fixtureClosed, 'the rebuilt images use the new theme\'s board module');
+  assert.equal(skin.board(), FIXTURE, 'the skin holds the board module it was handed');
 });
 
 test('a theme change drops the cache and asks the renderer for a redraw; dispose unsubscribes', async () => {
   const mod = await skinModule();
-  const theme = fakeTheme('joyful-tiles');
+  const art = await fakeArt('joyful-tiles');
   const redraws = [];
-  const { skin, canvases } = makeSkin(mod, { theme, redraw: () => redraws.push(skin.cacheKey()) });
+  const { skin, canvases } = await makeSkin(mod, { art, redraw: () => redraws.push(skin.cacheKey()) });
   skin.drawTile(fakeContext(), 0, 0, 20, 'flagged', 0, 1);
-  assert.equal(theme.listeners.size, 1, 'subscribed to theme changes');
-  theme.set('other');
+  art.set('fixture-dusk', FIXTURE);
   assert.equal(redraws.length, 1, 'redraw requested once');
   assert.equal(redraws[0], null, 'the cache is already dropped when the redraw runs');
   const made = canvases.made.length;
   skin.drawTile(fakeContext(), 0, 0, 20, 'flagged', 0, 1);
   assert.ok(canvases.made.length > made, 'the next draw re-renders');
   skin.dispose();
-  assert.equal(theme.listeners.size, 0, 'dispose unsubscribes');
+  art.set('joyful-tiles', JOYFUL);
+  assert.equal(redraws.length, 1, 'dispose unsubscribes');
   assert.equal(skin.cacheKey(), null);
+});
+
+test('until a board module is handed over the skin draws and caches nothing; the hand-off redraws', async () => {
+  const mod = await skinModule();
+  const art = await fakeArt(null);
+  let redraws = 0;
+  const { skin, canvases } = await makeSkin(mod, { art, redraw: () => { redraws++; } });
+  const board = fakeContext();
+  skin.drawTile(board, 0, 0, 30, 'closed', 0, 1);
+  assert.equal(skin.board(), null);
+  assert.equal(canvases.made.length, 0, 'nothing cached');
+  assert.equal(board.calls.length, 0, 'nothing drawn');
+  art.set('joyful-tiles', JOYFUL);
+  assert.equal(redraws, 1, 'the hand-off asks for a redraw');
+  skin.drawTile(board, 0, 0, 30, 'closed', 0, 1);
+  assert.ok(canvases.made.length > 0 && board.calls.at(-1).op === 'drawImage', 'then it draws');
+});
+
+test('the page\'s board art hand-off keeps the last module handed to it and tells each subscriber', async () => {
+  const { BOARD_ART, createBoardArt } = await skinModule();
+  assert.equal(typeof BOARD_ART.current, 'function');
+  const art = createBoardArt();
+  assert.equal(art.current(), null, 'nothing until the shell hands a module over');
+  const heard = [];
+  const off = art.onChange((next) => heard.push(next.id));
+  art.set('joyful-tiles', JOYFUL);
+  assert.deepEqual(art.current(), { id: 'joyful-tiles', board: JOYFUL });
+  off();
+  art.set('fixture-dusk', FIXTURE);
+  assert.deepEqual(heard, ['joyful-tiles'], 'an unsubscribed listener hears nothing more');
+});
+
+// ---------------------------------------------------------------- the shell's hand-off
+
+function fakeApplier(id = null, mod = null) {
+  const listeners = [];
+  let current = id;
+  let board = mod;
+  return {
+    current: () => current,
+    board: () => board,
+    onThemeChange(fn) { listeners.push(fn); return () => listeners.splice(listeners.indexOf(fn), 1); },
+    emit(nextId, nextMod) { current = nextId; board = nextMod; for (const fn of [...listeners]) fn(nextId, nextMod); },
+    listeners,
+  };
+}
+function fakeFonts() {
+  const loads = [];
+  return {
+    loads,
+    load(spec) {
+      let resolve;
+      const p = new Promise((r) => { resolve = r; });
+      loads.push({ spec, resolve: () => resolve([]) });
+      return p;
+    },
+  };
+}
+const settle = () => new Promise((r) => setImmediate(r));
+
+test('the shell hands the board module over at start-up and on every theme change, only once its number font has loaded', async () => {
+  const { createBoardArt } = await skinModule();
+  const { bindBoardArt, numberFontSpec } = await import('../js/shell/board-art.js');
+  const art = createBoardArt();
+  const applier = fakeApplier();
+  const fonts = fakeFonts();
+  const off = bindBoardArt({ applier, fonts, art });
+  assert.equal(art.current(), null, 'nothing before start-up');
+
+  applier.emit('joyful-tiles', { BOARD: JOYFUL });
+  assert.deepEqual(fonts.loads.map((l) => l.spec), [numberFontSpec(JOYFUL.font)], 'the number font is loaded first');
+  assert.equal(numberFontSpec(JOYFUL.font), '800 1em "Rubik"');
+  await settle();
+  assert.equal(art.current(), null, 'no tile is drawn in a fallback font: nothing is handed over before the font loads');
+  fonts.loads[0].resolve();
+  await settle();
+  assert.deepEqual(art.current(), { id: 'joyful-tiles', board: JOYFUL }, 'handed over once it has');
+
+  // A switch that another overtakes before its font loads is never handed over.
+  applier.emit('fixture-dusk', { BOARD: FIXTURE });
+  applier.emit('joyful-tiles', { BOARD: JOYFUL });
+  fonts.loads[2].resolve();
+  await settle();
+  fonts.loads[1].resolve();
+  await settle();
+  assert.equal(art.current().id, 'joyful-tiles', 'the latest theme wins');
+
+  off();
+  assert.equal(applier.listeners.length, 0, 'the unsubscribe stops the hand-off');
+});
+
+test('a hand-off bound after start-up hands the active module over at once', async () => {
+  const { createBoardArt } = await skinModule();
+  const { bindBoardArt } = await import('../js/shell/board-art.js');
+  const art = createBoardArt();
+  const fonts = fakeFonts();
+  bindBoardArt({ applier: fakeApplier('fixture-dusk', { BOARD: FIXTURE }), fonts, art });
+  fonts.loads[0].resolve();
+  await settle();
+  assert.equal(art.current().board, FIXTURE);
+});
+
+test('the shell binds the hand-off before the theme applier starts', () => {
+  const main = readFileSync(join(ROOT, 'js/main.js'), 'utf8');
+  const bind = main.indexOf('bindBoardArt({');
+  assert.ok(bind > 0, 'js/main.js binds the board art hand-off');
+  assert.ok(bind < main.indexOf('THEME.start('), 'before start-up, so start-up\'s module is handed over');
 });
 
 // ---------------------------------------------------------------- minimum tile size
@@ -470,11 +460,21 @@ test('MIN_TILE_SIZE is the shared floor, 26 px (decision 10 of docs/UX_REVIEW.md
   assert.equal(MIN_TILE_SIZE, 26);
 });
 
-test('the tile skin is DOM-free at import and holds no copy of a token value', () => {
+test('the tile skin is DOM-free at import and holds no palette of its own', () => {
   const src = readFileSync(join(ROOT, 'js/classic2d/tile-skin.js'), 'utf8');
   assert.doesNotMatch(src, /#[0-9a-fA-F]{3,8}\b/, 'no literal colours');
   assert.doesNotMatch(src, /rgba?\(/, 'no literal translucent colours');
+  assert.doesNotMatch(src, /--color-|\btoken\(/, 'no token read: every colour is the board module\'s');
   assert.doesNotMatch(src, /^(?!\s*\/\/).*\bthree\b/im, 'independent of three.js');
+});
+
+test('the tile skin, the board view and the replay 2D viewer never import a theme or read a stylesheet', () => {
+  for (const file of ['js/classic2d/tile-skin.js', 'js/classic2d/board-view.js', 'js/replay/viewer-2d.js']) {
+    const src = readFileSync(join(ROOT, file), 'utf8').replace(/^\s*\/\/.*$/gm, '');
+    const imports = [...src.matchAll(/\bimport\b[^;]*?from\s*['"]([^'"]+)['"]|\bimport\(\s*['"]([^'"]+)['"]/g)].map((m) => m[1] ?? m[2]);
+    for (const path of imports) assert.doesNotMatch(path, /(^|\/)themes\//, `${file} imports ${path}`);
+    assert.doesNotMatch(src, /getComputedStyle|styleSheets|cssRules|getPropertyValue|data-theme|\.css['"]/, `${file} reads no stylesheet`);
+  }
 });
 
 test('the shared tile recipe is three-free and token-free: every colour is an argument', async () => {
@@ -509,20 +509,24 @@ const EXPERT = { cols: 30, rows: 16 };
 const NARROWEST = 1024;
 const INSET = 9;
 
-// Runs in the page: draws every state and number at `size` CSS pixels and
-// `ratio` device pixels each, in one row, and reports per tile how many device
-// pixels carry one of its glyph's colours.
-async function drawAllStates([size, ratio]) {
-  const { createTileSkin, TILE_STATES } = await import('/js/classic2d/tile-skin.js');
-  const { token } = await import('/js/tokens.js');
+// Runs in the page: draws every state and number at `size` CSS pixels and `ratio` device pixels
+// each, in one row, from the board module at `module` (handed over as theme `id`), and reports per
+// tile how many device pixels carry one of its glyph's colours.
+async function drawAllStates([size, ratio, id, module]) {
+  const { createTileSkin, createBoardArt, TILE_STATES } = await import('/js/classic2d/tile-skin.js');
+  const { BOARD } = await import(module);
+  await document.fonts.load(`${BOARD.font.weight} 1em "${BOARD.font.family}"`);
+  const art = createBoardArt();
+  art.set(id, BOARD);
   const tiles = [];
   for (const s of TILE_STATES) if (s !== 'revealed') tiles.push([s, 0]);
   for (let n = 0; n <= 8; n++) tiles.push(['revealed', n]);
+  const { flag, mine, cross } = BOARD.palette;
   const glyph = {
-    flagged: ['tile-flag', 'tile-flag-shade', 'tile-mine-glyph'],
-    mine: ['tile-mine-glyph'],
-    exploded: ['tile-mine-glyph'],
-    'wrong-flag': ['tile-wrong-flag-mark', 'tile-flag', 'tile-flag-shade'],
+    flagged: [flag.cloth, flag.clothShade, flag.base],
+    mine: [mine.body],
+    exploded: [mine.body],
+    'wrong-flag': [cross.mark, flag.cloth, flag.clothShade],
   };
   const gap = 1;
   let canvas = document.getElementById('tile-skin-shot');
@@ -540,26 +544,33 @@ async function drawAllStates([size, ratio]) {
   canvas.style.height = `${height}px`;
   const ctx = canvas.getContext('2d');
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-  ctx.fillStyle = token('color-board-gap');
+  ctx.fillStyle = BOARD.palette.boardGround;
   ctx.fillRect(0, 0, width, height);
-  const skin = createTileSkin({ redraw: () => {} });
+  const skin = createTileSkin({ art, redraw: () => {} });
   tiles.forEach(([s, n], i) => skin.drawTile(ctx, gap + i * (size + gap), gap, size, s, n, ratio));
   const parse = (hex) => [1, 3, 5].map((i) => parseInt(hex.trim().slice(i, i + 2), 16));
   const out = tiles.map(([s, n], i) => {
-    const names = s === 'revealed' ? (n ? [`number-${n}`] : []) : (glyph[s] ?? []);
-    const wanted = names.map((name) => parse(token(`color-${name}`)));
+    const wanted = (s === 'revealed' ? (n ? [BOARD.numbers[n]] : []) : (glyph[s] ?? [])).map(parse);
     const data = ctx.getImageData((gap + i * (size + gap)) * ratio, gap * ratio, size * ratio, size * ratio).data;
     let hits = 0;
     for (let p = 0; p < data.length; p += 4) {
       if (wanted.some(([r, g, b]) => Math.abs(data[p] - r) + Math.abs(data[p + 1] - g) + Math.abs(data[p + 2] - b) < 40)) hits++;
     }
-    return { state: s, number: n, glyph: names.join('+') || null, hits };
+    return { state: s, number: n, glyph: wanted.length > 0, hits };
   });
   skin.dispose();
   return out;
 }
 
-test('in a browser, Expert at 1024 px wide keeps the fit rule in the game window\'s board area, never below MIN_TILE_SIZE, and every state is legible at 26 px and at it, at pixel ratios 1 and 2', async (t) => {
+// The largest whole tile at which `n` tiles and the gaps between them fit `room`, with a module's gap.
+const span = (n, tile, gap) => n * tile + (n - 1) * Math.round(tile * gap);
+const fitWith = (n, room, gap) => {
+  let tile = Math.floor(room / n);
+  while (tile > 1 && span(n, tile, gap) > room) tile--;
+  return tile;
+};
+
+test('in a browser, Expert at 1024 px wide keeps the fit rule on the tile and gap in the game window\'s board area, never below MIN_TILE_SIZE, and every state of every board module is legible at 48 px, 26 px and at it, at pixel ratios 1 and 2', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -583,16 +594,18 @@ test('in a browser, Expert at 1024 px wide keeps the fit rule in the game window
         return { area: { width: r.width, height: r.height }, layout: { ...globalThis.__ms.board2D.layout } };
       });
       assert.ok(area.width > 0 && area.height > 0, 'the board area is measured');
-      const fit = Math.floor(Math.min((area.width - 2 * INSET) / EXPERT.cols, (area.height - 2 * INSET) / EXPERT.rows));
+      const gap = JOYFUL.style2d.params.gap;
+      const fit = Math.min(fitWith(EXPERT.cols, area.width - 2 * INSET, gap), fitWith(EXPERT.rows, area.height - 2 * INSET, gap));
       assert.equal(layout.tile, Math.max(MIN_TILE_SIZE, Math.min(48, fit)), `1024 × ${height}: the fit rule's tile`);
       assert.equal(layout.scrolls, fit < MIN_TILE_SIZE, `1024 × ${height}: Expert scrolls only below the floor`);
     }
     await page.goto(`${base}/dev/components.html`);
 
-    for (const theme of ['joyful-tiles']) {
-      for (const size of [...new Set([26, MIN_TILE_SIZE])]) {
+    const modules = { 'joyful-tiles': '/themes/joyful-tiles/board.js', 'fixture-dusk': '/tests/fixtures/themes/fixture-dusk/board.js' };
+    for (const [theme, module] of Object.entries(modules)) {
+      for (const size of [...new Set([48, 26, MIN_TILE_SIZE])]) {
         for (const ratio of [1, 2]) {
-          const tiles = await page.evaluate(drawAllStates, [size, ratio]);
+          const tiles = await page.evaluate(drawAllStates, [size, ratio, theme, module]);
           const shot = await page.locator('#tile-skin-shot').screenshot({ path: join(shots, `tile-skin-${theme}-${size}px-x${ratio}.png`) });
           assert.ok(shot.length > 500, `${theme} ${size}px x${ratio}: screenshot taken`);
           const area = size * size * ratio * ratio;

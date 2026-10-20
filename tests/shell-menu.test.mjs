@@ -990,7 +990,7 @@ test('in a browser without WebGL 2, the shell starts with a static background, 3
     // the restarted board's own layout, the hint strip or a scale change may have moved it
     const at = (i) => ms((c) => {
       const v = globalThis.__ms.board2D, area = document.getElementById('c2d-board').getBoundingClientRect(), t = v.layout.tile;
-      return [area.left + v.layout.viewX + ((c % 9) + 0.5) * t, area.top + v.layout.viewY + (Math.floor(c / 9) + 0.5) * t];
+      return [area.left + v.layout.viewX + (c % 9) * v.layout.pitch + 0.5 * t, area.top + v.layout.viewY + Math.floor(c / 9) * v.layout.pitch + 0.5 * t];
     }, i);
     await page.mouse.click(...await at(0));
     await page.waitForFunction(() => globalThis.__ms.modes.state.started, null, { timeout: patience(5000) })

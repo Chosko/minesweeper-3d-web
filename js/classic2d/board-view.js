@@ -8,9 +8,12 @@
 // shown and not played: the main menu's preview fits whole at any tile). A board that fits
 // is centred, frame and all, and never scrolls; one that does not keeps the minimum tile, fills the
 // area, starts at its top-left corner and scrolls (wheel, drag with the pan modifier, ensureVisible
-// for the cursor). Tiles sit edge to edge inside the view rectangle (layout.viewX, viewY,
-// viewWidth, viewHeight), which is filled with the board background token; the canvas is left
-// clear outside it, for the frame a page draws there (panelRect).
+// for the cursor). Tiles sit one pitch apart — the tile plus the gap the skin's board module sets,
+// a fraction of the tile rounded to whole pixels, none without one — inside the view rectangle
+// (layout.viewX, viewY, viewWidth, viewHeight), which is filled with the board module's ground (the
+// board background token while the skin has no module); the fit rule counts the gaps, and a cell's
+// slot is its tile and the gap after it, so hit-testing maps a pointer in a gap to a cell. The
+// canvas is left clear outside the view, for the frame a page draws there (panelRect).
 // A board that scrolls marks what is hidden: an inset shadow on each edge beyond which cells are
 // hidden (gone once scrolled to that edge) and a thin scroll bar per overflowing axis, its length
 // and place the visible part's (clipMarks).
@@ -18,8 +21,9 @@
 // createBoardView({ canvas, grid, createSkin?, token?, scale?, frame?, minTile?, onLayout? }) → view
 //   canvas      a <canvas> or anything with width, height, style and getContext('2d').
 //   grid        the square grid (js/engine/square-grid.js): width, height, index, colRow.
-//   createSkin  ({ redraw }) → skin with drawTile and dispose; defaults to createTileSkin, whose
-//               theme-change callback repaints the whole board.
+//   createSkin  ({ redraw }) → skin with drawTile, dispose and optionally board() (the board module
+//               it draws from: its gap, corner radius, ground and cursor ring); defaults to
+//               createTileSkin, whose hand-off callback lays the board out again and repaints it.
 //   token       the token reader's token(name); defaults to js/tokens.js.
 //   scale       a BOARD_SCALES value, DEFAULT_BOARD_SCALE when not given.
 //   frame       { top, right, bottom, left, minWidth } in CSS pixels: the room a page's frame
@@ -37,9 +41,11 @@
 //   cellAt(x, y)         the cell under a canvas position in CSS pixels, or -1.
 //   cellRect(c)          { x, y, size } of a cell's tile in canvas CSS pixels.
 //   scroll, scrollTo(x, y), scrollBy(dx, dy), pan(dx, dy), wheel(event), ensureVisible(c)
+//   layout               boardLayout's: tile, gap and pitch (tile + gap) among the rest.
 //   zoomRange            { min, max }: the touch zoom's tiles, MIN_TILE_SIZE to the fit-to-view tile
 //                        (the whole board in the area inside the frame), whichever is larger.
-//   boardPoint(x, y)     { u, v }: the board point under a canvas position, in tiles.
+//   boardPoint(x, y)     { u, v }: the board point under a canvas position, in pitches (cell c's
+//                        slot is u from its column to the next).
 //   zoom(tile, x, y, point?)  a touch pinch: the tile (whole, clamped to zoomRange) replaces the fit
 //                        rule's for the view's life — kept through a resize, clamped to the new
 //                        range — with `point` (the one under x, y by default) under x, y and the
@@ -49,7 +55,8 @@
 //   setPressed(cells)    the cells a held button presses (js/classic2d/pointer-input.js); a closed
 //                        one is drawn in the skin's pressed state. setGame clears them.
 //   setCursor(c)         the keyboard and controller cursor (js/classic2d/cursor-input.js), drawn
-//                        as a focus ring inside cell c's tile; -1 for none.
+//                        as a focus ring inside cell c's tile — the board module's ring, its colour,
+//                        width and hairline, its corners following the tile's; -1 for none.
 //   setMark(c)           the marked start cell a pre-generated board waits for, drawn as a ring
 //                        inside cell c's tile in the cursor ring's style, in START_MARK, under the
 //                        cursor ring; -1 for none.
@@ -68,15 +75,16 @@
 
 import { MIN_TILE_SIZE, createTileSkin } from './tile-skin.js';
 import { token as readerToken } from '../tokens.js';
+import { roundRect } from '../tile-art.js';
 import { CELL, PHASE } from '../engine/rules.js';
 import {
   shownState, wonState, pulseAlpha, confettiAt, drawPulse, drawConfetti, PULSE_COLOR, CONFETTI_COLORS,
 } from './end-effect.js';
 
-/** The design token the area around the board is filled with. */
+/** The design token the board's ground is filled with while the skin has no board module. */
 export const BOARD_BACKGROUND = '--color-board-frame';
 
-/** The design token the cursor's focus ring is drawn in, distinct from the tile's rim and lit bevel it covers. */
+/** The design token the cursor's focus ring is drawn in while the skin has no board module. */
 export const CURSOR_RING = '--color-tile-cursor';
 
 /** The design token the marked start cell's ring is drawn in: an existing token, apart from the cursor's. */
@@ -115,29 +123,41 @@ export function tileCap(scale = DEFAULT_BOARD_SCALE) {
   return TILE_CAP;
 }
 
+/** The gap between tiles of `tile` px for a gap fraction: whole pixels, none for no fraction. */
+export function gapPx(tile, gap = 0) {
+  return gap > 0 ? Math.round(tile * gap) : 0;
+}
+
+/** How far n tiles of `tile` px and the gaps between them reach. */
+const spanOf = (n, tile, gap) => n * tile + (n - 1) * gapPx(tile, gap);
+
 /**
- * The largest whole tile size at which cols × rows fits width × height, at most `max` and never
- * below `min`.
+ * The largest whole tile size at which cols × rows, with the gaps between tiles (`gap`, a fraction
+ * of the tile), fits width × height, at most `max` and never below `min`.
  */
-export function fitTileSize(cols, rows, width, height, min = MIN_TILE_SIZE, max = Infinity) {
-  const fit = Math.floor(Math.min(width / cols, height / rows));
-  return Number.isFinite(fit) ? Math.max(min, Math.min(max, fit)) : min;
+export function fitTileSize(cols, rows, width, height, min = MIN_TILE_SIZE, max = Infinity, gap = 0) {
+  let fit = Math.floor(Math.min(width / cols, height / rows));
+  if (!Number.isFinite(fit)) return min;
+  while (fit > min && (spanOf(cols, fit, gap) > width || spanOf(rows, fit, gap) > height)) fit--;
+  return Math.max(min, Math.min(max, fit));
 }
 
 const frameOf = (frame) => ({ ...NO_FRAME, ...(frame ?? {}) });
 
 /**
- * Where the board sits in an area (the canvas): tile size, board size, the view rectangle it shows
- * through — centred with its frame when the board fits, the area inside the frame when it scrolls —
- * the board's offsets (its top-left corner at scroll 0) and the scroll range.
+ * Where the board sits in an area (the canvas): tile size, the gap between tiles (`gap` a fraction
+ * of the tile) and the pitch, board size, the view rectangle it shows through — centred with its
+ * frame when the board fits, the area inside the frame when it scrolls — the board's offsets (its
+ * top-left corner at scroll 0) and the scroll range.
  */
-export function boardLayout({ cols, rows, width, height, min = MIN_TILE_SIZE, max = Infinity, frame }) {
+export function boardLayout({ cols, rows, width, height, min = MIN_TILE_SIZE, max = Infinity, frame, gap = 0 }) {
   const f = frameOf(frame);
   const availWidth = Math.max(0, width - f.left - f.right);
   const availHeight = Math.max(0, height - f.top - f.bottom);
-  const tile = fitTileSize(cols, rows, availWidth, availHeight, min, max);
-  const boardWidth = cols * tile;
-  const boardHeight = rows * tile;
+  const tile = fitTileSize(cols, rows, availWidth, availHeight, min, max, gap);
+  const space = gapPx(tile, gap);
+  const boardWidth = spanOf(cols, tile, gap);
+  const boardHeight = spanOf(rows, tile, gap);
   const maxScrollX = Math.max(0, boardWidth - availWidth);
   const maxScrollY = Math.max(0, boardHeight - availHeight);
   const viewWidth = Math.min(boardWidth, availWidth);
@@ -148,6 +168,8 @@ export function boardLayout({ cols, rows, width, height, min = MIN_TILE_SIZE, ma
     width,
     height,
     tile,
+    gap: space,
+    pitch: tile + space,
     boardWidth,
     boardHeight,
     viewX,
@@ -205,14 +227,18 @@ export function clipMarks(layout, scroll) {
   };
 }
 
-/** The cell at canvas position x, y (CSS pixels) for a layout and scroll position, or -1. */
+/**
+ * The cell at canvas position x, y (CSS pixels) for a layout and scroll position, or -1: the cell
+ * whose slot — its tile and the gap after it — holds the position.
+ */
 export function cellAtLayout(layout, scroll, cols, rows, x, y) {
   if (!(x >= layout.viewX && y >= layout.viewY && x < layout.viewX + layout.viewWidth && y < layout.viewY + layout.viewHeight)) return -1;
   const bx = x - layout.offsetX + scroll.x;
   const by = y - layout.offsetY + scroll.y;
   if (!(bx >= 0 && by >= 0 && bx < layout.boardWidth && by < layout.boardHeight)) return -1;
-  const col = Math.floor(bx / layout.tile);
-  const row = Math.floor(by / layout.tile);
+  const pitch = layout.pitch ?? layout.tile;
+  const col = Math.min(cols - 1, Math.floor(bx / pitch));
+  const row = Math.min(rows - 1, Math.floor(by / pitch));
   return col + cols * row;
 }
 
@@ -231,17 +257,26 @@ export function createBoardView({
   let zoomTile = null; // a touch zoom's tile, or null for the fit rule's
   const measure = typeof frame === 'function' ? frame : () => frame;
   let f = frameOf(measure());
+  // The board module the skin draws from (null for a skin without one), and what the view reads of
+  // it: the gap and corner radius as fractions of the tile, the ground and the cursor ring.
+  const boardOf = () => skin?.board?.() ?? null;
+  const gapOf = () => boardOf()?.style2d?.params?.gap ?? 0;
   // The zoom range for an area: MIN_TILE_SIZE to the tile at which the whole board fits, either way round.
   const rangeOf = (width, height) => {
-    const whole = Math.max(1, Math.floor(Math.min((width - f.left - f.right) / cols, (height - f.top - f.bottom) / rows)) || 1);
+    const whole = Math.max(1, fitTileSize(cols, rows, width - f.left - f.right, height - f.top - f.bottom, 1, Infinity, gapOf()) || 1);
     return { min: Math.min(MIN_TILE_SIZE, whole), max: Math.max(MIN_TILE_SIZE, whole) };
   };
   const clampTile = (tile, range) => Math.max(range.min, Math.min(range.max, Math.round(tile)));
   const fit = (width, height) => {
-    if (zoomTile === null) return boardLayout({ cols, rows, width, height, min: minTile, max: tileCap(scale), frame: f });
+    const gap = gapOf();
+    if (zoomTile === null) return boardLayout({ cols, rows, width, height, min: minTile, max: tileCap(scale), frame: f, gap });
     zoomTile = clampTile(zoomTile, rangeOf(width, height));
-    return boardLayout({ cols, rows, width, height, min: zoomTile, max: zoomTile, frame: f });
+    return boardLayout({ cols, rows, width, height, min: zoomTile, max: zoomTile, frame: f, gap });
   };
+  // The skin first, so the first layout has its gap; a hand-off lays the board out again (its gap
+  // may change) and repaints.
+  let skin = null;
+  skin = createSkin({ redraw: () => { if (sized) refit(layout.width, layout.height); } });
   let layout = fit(0, 0);
   let ratio = 1;
   let sized = false;
@@ -258,10 +293,8 @@ export function createBoardView({
   let pulse = null; // the pulse colour, read with each effect frame
   const scroll = { x: 0, y: 0 };
 
-  const skin = createSkin({ redraw: () => repaint() });
-
-  const tileX = (col) => layout.offsetX + col * layout.tile - scroll.x;
-  const tileY = (row) => layout.offsetY + row * layout.tile - scroll.y;
+  const tileX = (col) => layout.offsetX + col * layout.pitch - scroll.x;
+  const tileY = (row) => layout.offsetY + row * layout.pitch - scroll.y;
 
   function clipTo(x, y, w, h) {
     ctx.beginPath();
@@ -312,6 +345,34 @@ export function createBoardView({
     ctx.restore();
   }
 
+  const ground = () => boardOf()?.palette?.boardGround ?? token(BOARD_BACKGROUND);
+
+  // A ring inside the tile at x, y of `t` px, `w` wide, in `colour`: the board module's ring with
+  // its hairline inside it, its corners following the tile's — concentric with the ring the module
+  // describes (radius tile × radius.tile + radius.px, radius.px outside the tile), drawn inside the
+  // tile so a cell's redraw moves or hides it — or, without a module, a square ring a twelfth of the
+  // tile wide.
+  function ring(x, y, t, colour, { wide = 1, hairline = true } = {}) {
+    const look = boardOf()?.cursor;
+    if (!look) {
+      const w = Math.max(2, Math.round(t / 12)) * wide;
+      ctx.strokeStyle = colour;
+      ctx.lineWidth = w;
+      ctx.strokeRect(x + w / 2, y + w / 2, t - w, t - w);
+      return;
+    }
+    const w = look.width * wide;
+    const corner = t * look.radius.tile;
+    const stroke = (inset, width, style) => {
+      ctx.strokeStyle = style;
+      ctx.lineWidth = width;
+      roundRect(ctx, x + inset, y + inset, t - 2 * inset, t - 2 * inset, Math.max(0, corner - inset));
+      ctx.stroke();
+    };
+    stroke(w / 2, w, colour);
+    if (hairline) stroke(w + 0.5, 1, look.inner);
+  }
+
   // Paints cell c's tile and the ring on it; returns false when it is out of view.
   function drawCell(c) {
     const col = c % cols;
@@ -323,22 +384,18 @@ export function createBoardView({
     let state = game.cellState(c);
     if (effect) state = shownState(effect, c, state, effectT);
     else if (game.phase === PHASE.WON) state = wonState(state);
+    // A rounded tile leaves its corners to the ground: lay it again under the tile it replaces.
+    if (boardOf()?.style2d?.params?.radius > 0) {
+      ctx.fillStyle = ground();
+      ctx.fillRect(x, y, t, t);
+    }
     skin.drawTile(ctx, x, y, t, state === CELL.CLOSED && pressed.has(c) ? PRESSED : state, game.cellNumber(c), ratio);
     if (effect) drawPulse(ctx, x, y, t, pulseAlpha(effect, c, effectT), pulse ?? (pulse = token(PULSE_COLOR)));
-    const w = Math.max(2, Math.round(t / 12));
-    const ring = (colour) => {
-      ctx.strokeStyle = token(colour);
-      ctx.lineWidth = w;
-      ctx.strokeRect(x + w / 2, y + w / 2, t - w, t - w);
-    };
     if (c === mark && c !== cursor) {
-      ring(START_MARK);
-      if (markPulse) {
-        ctx.lineWidth = w * 2;
-        ctx.strokeRect(x + w, y + w, t - 2 * w, t - 2 * w);
-      }
+      ring(x, y, t, token(START_MARK), { hairline: false });
+      if (markPulse) ring(x, y, t, token(START_MARK), { wide: 2, hairline: false });
     }
-    if (c === cursor) ring(CURSOR_RING);
+    if (c === cursor) ring(x, y, t, boardOf()?.cursor?.color ?? token(CURSOR_RING));
     return true;
   }
 
@@ -346,15 +403,15 @@ export function createBoardView({
     if (!sized) return;
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     ctx.clearRect(0, 0, layout.width, layout.height);
-    ctx.fillStyle = token(BOARD_BACKGROUND);
+    ctx.fillStyle = ground();
     ctx.fillRect(layout.viewX, layout.viewY, layout.viewWidth, layout.viewHeight);
     marks = null;
     if (hidden || !game) return;
-    const t = layout.tile;
-    const c0 = Math.max(0, Math.floor(scroll.x / t));
-    const r0 = Math.max(0, Math.floor(scroll.y / t));
-    const c1 = Math.min(cols - 1, Math.floor((scroll.x + layout.viewWidth - 1) / t));
-    const r1 = Math.min(rows - 1, Math.floor((scroll.y + layout.viewHeight - 1) / t));
+    const p = layout.pitch;
+    const c0 = Math.max(0, Math.floor(scroll.x / p));
+    const r0 = Math.max(0, Math.floor(scroll.y / p));
+    const c1 = Math.min(cols - 1, Math.floor((scroll.x + layout.viewWidth - 1) / p));
+    const r1 = Math.min(rows - 1, Math.floor((scroll.y + layout.viewHeight - 1) / p));
     ctx.save();
     if (layout.scrolls) clipTo(layout.viewX, layout.viewY, layout.viewWidth, layout.viewHeight);
     for (let row = r0; row <= r1; row++) {
@@ -442,15 +499,15 @@ export function createBoardView({
     let dx = deltaX;
     let dy = deltaY;
     if (shiftKey && dx === 0) { dx = dy; dy = 0; }
-    if (deltaMode === LINE) { dx *= layout.tile; dy *= layout.tile; }
+    if (deltaMode === LINE) { dx *= layout.pitch; dy *= layout.pitch; }
     else if (deltaMode === PAGE) { dx *= layout.viewWidth; dy *= layout.viewHeight; }
     scrollTo(scroll.x + dx, scroll.y + dy);
     return true;
   }
 
-  // The board point under canvas position x, y, in tiles from the board's top-left corner.
+  // The board point under canvas position x, y, in pitches from the board's top-left corner.
   function boardPoint(x, y) {
-    return { u: (x - layout.offsetX + scroll.x) / layout.tile, v: (y - layout.offsetY + scroll.y) / layout.tile };
+    return { u: (x - layout.offsetX + scroll.x) / layout.pitch, v: (y - layout.offsetY + scroll.y) / layout.pitch };
   }
 
   // A touch zoom: the tile clamped to the zoom range, board point `point` (the one under x, y by
@@ -461,8 +518,8 @@ export function createBoardView({
     const before = { tile: layout.tile, x: scroll.x, y: scroll.y };
     zoomTile = clampTile(tile, rangeOf(layout.width, layout.height));
     layout = fit(layout.width, layout.height);
-    scroll.x = Math.round(Math.min(layout.maxScrollX, Math.max(0, point.u * layout.tile - (x - layout.offsetX))));
-    scroll.y = Math.round(Math.min(layout.maxScrollY, Math.max(0, point.v * layout.tile - (y - layout.offsetY))));
+    scroll.x = Math.round(Math.min(layout.maxScrollX, Math.max(0, point.u * layout.pitch - (x - layout.offsetX))));
+    scroll.y = Math.round(Math.min(layout.maxScrollY, Math.max(0, point.v * layout.pitch - (y - layout.offsetY))));
     if (layout.tile === before.tile && scroll.x === before.x && scroll.y === before.y) return false;
     repaint();
     onLayout(layout);

@@ -62,6 +62,7 @@ const COMPONENTS = {
   'ui-scene-panel': { interactive: false },
   'ui-wordmark': { interactive: false },
   'ui-divider': { interactive: false },
+  'ui-board-frame': { interactive: false },
   'ui-tabs': { interactive: true, control: '.ui-tabs__tab' },
   'ui-checkbox': { interactive: true, control: '.ui-checkbox__input' },
   'ui-table': { interactive: false },
@@ -540,7 +541,7 @@ test('the Classic 2D game window is built from catalogued components: head with 
   const [root, ...inner] = WINDOW_2D_TAGS;
   assert.deepEqual(classesOf(root).filter((c) => c !== 'hidden'), ['ui-backdrop'], '#c2d is the window\'s backdrop');
   // Besides the kit: the shell's visibility utility and the board's themed frame drawn behind the canvas.
-  const allowed = new Set(['hidden', 'c2d-panel']);
+  const allowed = new Set(['hidden']);
   for (const t of inner) for (const c of classesOf(t)) assert.ok(c.startsWith('ui-') || allowed.has(c), `#c2d <${t.tag} class="${c}"> is not a kit class`);
   const frame = byId2D('c2d-frame');
   assert.ok(hasClasses(frame, '.ui-frame') && frame.tag === 'section' && frame.attrs['aria-labelledby'] === 'c2d-title', 'a screen frame named by its title');
@@ -574,7 +575,7 @@ test('the Classic 2D game window is built from catalogued components: head with 
   const restartHint = within(inside(WINDOW_2D, WINDOW_2D_TAGS, restart), '.ui-key-hint')[0];
   assert.ok(restartHint && restartHint.attrs['data-action'] === 'restart', 'Restart carries its key hint');
   assert.ok('data-no-focus' in restart.attrs, 'Restart never takes the board\'s keys');
-  assert.match(WINDOW_2D, /<div id="c2d-board"><div id="c2d-panel" class="c2d-panel hidden" aria-hidden="true"><\/div><\/div>/, 'the board area holds the board\'s frame');
+  assert.match(WINDOW_2D, /<div id="c2d-board"><div id="c2d-panel" class="ui-board-frame hidden" aria-hidden="true"><\/div><\/div>/, 'the board area holds the board\'s frame');
   assert.ok(byId2D('hud-tap'), 'the Reveal / Flag switch sits in the window');
 
   const panel = byId2D('c2d-figures');
@@ -602,12 +603,14 @@ test('the Classic 2D game window is built from catalogued components: head with 
   assert.ok(!HUD.includes('id="c2d-'), 'the window is not part of the 3D overlay');
 });
 
-test('the Classic 2D window\'s board keeps its themed frame, an inset all round; the 3D game\'s overlay stays the 3D game\'s', () => {
+test('the Classic 2D window\'s board sits in the board frame, an inset all round, its radius following the tile; the 3D game\'s overlay stays the 3D game\'s', () => {
   const style = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
-  assert.match(style, /\.c2d-panel \{ position: absolute; \}/, 'the base places the board\'s frame');
-  const panel = themeRulesFor('.c2d-panel').map(([, b]) => b).join(';');
+  assert.match(CSS, /\.ui-board-frame \{ position: absolute; \}/, 'the base places the board frame');
+  const panel = themeRulesFor('.ui-board-frame').map(([, b]) => b).join(';');
   assert.match(panel, /box-shadow\s*:\s*inset 0 0 0 2px var\(--color-border\)/, 'its frame');
   assert.match(panel, /background\s*:\s*var\(--color-surface\)/, 'on the surface, opaque');
+  assert.match(panel, /border-radius\s*:\s*var\(--board-frame-radius\)/, 'its corners the radius the shell sets from the board module');
+  assert.match(read('js/ui.js'), /setProperty\('--board-frame-radius', `\$\{radius\}px`\)/, 'placePanel2D sets it');
   assert.match(style, /#hud\.hud--2d #hud-overlay \{ display: none; \}/, 'the 3D game\'s overlay never shows over the Classic 2D window');
   const ui = read('js/ui.js');
   assert.match(ui, /export const PANEL_INSET = 9;/, 'the frame: 1 px border and --space-2 inside it');

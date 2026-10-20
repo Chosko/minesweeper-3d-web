@@ -434,24 +434,22 @@ function removeWebGL2() {
 }
 
 // Runs in the page: the drawn face of a Beginner tile (col, row), sampled at its centre, as the
-// tile face it matches ('closed', 'pressed', 'revealed') or the raw colour. A shaded face is
-// sampled halfway along its shading, from its colour to its shade.
+// tile face of the active board module it matches ('closed', 'pressed', 'revealed') or the raw
+// colour. A shaded face is sampled halfway along its shading, from its colour to its shade.
 async function tileFill([col, row]) {
+  const { BOARD_ART } = await import('/js/classic2d/tile-skin.js');
   const canvas = document.querySelector('#c2d-board canvas');
   const box = canvas.getBoundingClientRect();
   const layout = globalThis.__ms.board2D.layout;
   const ratio = canvas.width / box.width;
-  const x = Math.round((layout.offsetX + col * layout.tile + layout.tile * 0.5) * ratio);
-  const y = Math.round((layout.offsetY + row * layout.tile + layout.tile * 0.5) * ratio);
+  const x = Math.round((layout.offsetX + col * layout.pitch + layout.tile * 0.5) * ratio);
+  const y = Math.round((layout.offsetY + row * layout.pitch + layout.tile * 0.5) * ratio);
   const [r, g, b] = canvas.getContext('2d').getImageData(x, y, 1, 1).data;
-  const style = getComputedStyle(document.documentElement);
-  const rgb = (name) => {
-    const hex = style.getPropertyValue(`--color-tile-${name}`).trim().replace('#', '');
-    return [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
-  };
-  const faces = { closed: ['closed', 'face-shade'], pressed: ['pressed', 'pressed'], revealed: ['revealed', 'revealed-shade'] };
-  for (const [name, [face, shade]] of Object.entries(faces)) {
-    const t = rgb(face).map((v, i) => (v + rgb(shade)[i]) / 2);
+  const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const { faces2d } = BOARD_ART.current().board.palette;
+  const faces = { closed: faces2d.closed, pressed: faces2d.sunk, revealed: faces2d.revealed };
+  for (const [name, p] of Object.entries(faces)) {
+    const t = rgb(p.face).map((v, i) => (v + rgb(p.faceShade ?? p.face)[i]) / 2);
     if (Math.abs(t[0] - r) + Math.abs(t[1] - g) + Math.abs(t[2] - b) <= 6) return name;
   }
   return `rgb(${r}, ${g}, ${b})`;
@@ -477,7 +475,7 @@ test('fidelity in a browser: press feedback and releasing off the pressed cell o
     const centre = (col, row) => page.evaluate(async ([c, r]) => {
       const box = document.querySelector('#c2d-board canvas').getBoundingClientRect();
       const l = globalThis.__ms.board2D.layout;
-      return { x: box.left + l.offsetX + (c + 0.5) * l.tile, y: box.top + l.offsetY + (r + 0.5) * l.tile };
+      return { x: box.left + l.offsetX + c * l.pitch + 0.5 * l.tile, y: box.top + l.offsetY + r * l.pitch + 0.5 * l.tile };
     }, [col, row]);
     const moveTo = async (col, row) => { const p = await centre(col, row); await page.mouse.move(p.x, p.y, { steps: 2 }); };
     const started = () => page.evaluate(() => globalThis.__ms.modes.state.started);
@@ -524,7 +522,7 @@ test('fidelity in a browser: press feedback and releasing off the pressed cell o
       const l = globalThis.__ms.board2D.layout;
       const ratio = canvas.width / b.width;
       const [r] = canvas.getContext('2d').getImageData(
-        Math.round((l.offsetX + 6.2 * l.tile) * ratio), Math.round((l.offsetY + 6.2 * l.tile) * ratio), 1, 1).data;
+        Math.round((l.offsetX + 6 * l.pitch + 0.2 * l.tile) * ratio), Math.round((l.offsetY + 6 * l.pitch + 0.2 * l.tile) * ratio), 1, 1).data;
       return r > 0xe0; // the revealed tile, far lighter than closed or pressed
     }, null, { timeout: 10000 });
     assert.equal(await fill(6, 6), 'revealed', 'the cell released on opened');

@@ -204,7 +204,7 @@ test('in a browser: the swap toggle shows on the Classic 2D board while unpaused
       const v = globalThis.__ms.board2D;
       const area = document.getElementById('c2d-board').getBoundingClientRect();
       const t = v.layout.tile;
-      return { x: area.left + v.layout.viewX + (col + 0.5) * t, y: area.top + v.layout.viewY + (row + 0.5) * t };
+      return { x: area.left + v.layout.viewX + col * v.layout.pitch + 0.5 * t, y: area.top + v.layout.viewY + row * v.layout.pitch + 0.5 * t };
     }, [col, row]);
     const centre = await at(4, 4);
     await page.mouse.click(centre.x, centre.y, { button: 'right' });
