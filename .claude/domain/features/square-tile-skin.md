@@ -123,11 +123,11 @@ nothing here holds a palette.
 
 ## Minimum tile size
 
-The minimum tile size is 26 px (`MIN_TILE_SIZE`): the readable floor a
-Classic 2D board shrinks to before it scrolls, so that Expert (30 × 16) fits
-any window 1024 px wide (`docs/UX_REVIEW.md` decision 10). Measured in the
-Classic 2D screen's framed panel with 16 px window margins, Expert fits a
-1024 px wide window at the floor from 520 px tall, and plays at 32 px in a
-1024 × 768 window. Screenshots at 26 px, at device pixel ratios 1 and 2,
-show every state and number of every theme's board module legible, per
+The minimum tile size, `MIN_TILE_SIZE`, is the readable floor a Classic 2D
+board shrinks to before it scrolls (`docs/UX_REVIEW.md` decision 10). The
+board fits the game window's board area — the room the window's chrome
+leaves — so Expert (30 × 16) fits unscrolled in the larger desktop windows,
+and in the smaller ones keeps the floor and scrolls on the axis that
+overflows. Screenshots at the floor, at device pixel ratios 1 and 2, show
+every state and number of every theme's board module legible, per
 [themed-board-art-and-motion](./themed-board-art-and-motion.md).
