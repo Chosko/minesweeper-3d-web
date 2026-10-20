@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import {
   decimalsOf, formatSliderValue, segmentedTargetIndex, segmentedState,
   bindSlider, bindSliderFill, sliderFill, bindSegmented, bindTabs, initComponents, formatOverlayTime, formatMineCount, mineCounterDigits, pagerState, PAGER_WINDOW,
-  boardLink, copyBoardCode, bindCodeChip, COPY_FALLBACK, COPIED, bindSelectOnHover, SELECT_ON_HOVER,
+  boardLink, copyBoardCode, createCodeChip, bindCodeChip, COPY_FALLBACK, COPIED, bindSelectOnHover, SELECT_ON_HOVER,
   bindFiguresLive, LIVE_FIGURES_INTERVAL, bindFigures, ICONS, iconMarkup, createIcon, setButtonIcon, createButton, applyIcons,
   setNote, NOTE_TONES,
 } from '../js/ui/components.js';
@@ -157,12 +157,42 @@ test('the base check bites: a colour, a radius, a shadow, a transition, an anima
   assert.equal(caught('.x { border: 0; outline: none; background: none; }'), 0, 'a reset is structure');
 });
 
-test('the theme draws the code chip as the canvas does: a sunk pill with an inset border, compact too', () => {
+test('the code chip draws as the canvas does: a 40 px sunk pill with an inset border, 15 px bold code, quiet compact buttons', () => {
   const chip = themeRulesFor('.ui-code').filter(([sel]) => sel === '.ui-code').map(([, b]) => b).join(';');
   assert.match(chip, /background:\s*var\(--color-surface-sunk\)/);
   assert.match(chip, /box-shadow:\s*inset 0 0 0 2px var\(--color-border\)/);
   assert.match(chip, /border-radius:\s*var\(--radius-md\)/);
-  assert.ok(themeRulesFor('.ui-code--compact').length > 0, 'the compact chip has its own size');
+  assert.match(chip, /padding:\s*5px 5px 5px 12px/);
+  const base = (sel) => RULES.filter(([x]) => x === sel).map(([, b]) => b).join(';');
+  assert.match(base('.ui-code'), /min-height:\s*40px/);
+  assert.match(base('.ui-code'), /gap:\s*6px/);
+  assert.match(base('.ui-code__value'), /font-size:\s*15px/);
+  assert.match(base('.ui-code__value'), /font-weight:\s*var\(--font-weight-bold\)/);
+  const buttons = base('.ui-code .ui-button');
+  assert.match(buttons, /min-height:\s*30px/);
+  assert.match(buttons, /padding:\s*4px 10px/);
+  assert.match(buttons, /font-size:\s*13px/);
+  assert.match(themeRulesFor('.ui-code .ui-button').filter(([sel]) => sel === '.ui-code .ui-button').map(([, b]) => b).join(';'), /border-radius:\s*9px/);
+  assert.equal(rulesFor('.ui-code--compact').length + themeRulesFor('.ui-code--compact').length, 0, 'one shape: no compact variant');
+  assert.equal(rulesFor('.ui-code__label').length + themeRulesFor('.ui-code__label').length, 0, 'no inline label: the section label sits outside');
+  assert.deepEqual(KIT_CATALOGUE.find((c) => c.name === 'ui-code').variants, []);
+  assert.deepEqual(KIT_CATALOGUE.find((c) => c.name === 'ui-code').parts.map((p) => p.name), ['value']);
+  // on a phone the chip runs the full width and wraps
+  const phone = CSS.slice(CSS.indexOf('@media (max-width: 719px), (max-height: 500px) and (orientation: landscape)'));
+  assert.match(phone.slice(0, phone.indexOf('\n}')), /\.ui-code \{[^}]*width: 100%/);
+});
+
+test('createCodeChip builds the one chip shape for every caller: the code, then quiet small Copy and Copy link with their icons, no label', () => {
+  const doc = stubDocument();
+  const chip = createCodeChip(doc);
+  assert.equal(chip.className, 'ui-code');
+  assert.deepEqual(chip.children.map((c) => c.className), ['ui-code__value', 'ui-button ui-button--quiet ui-button--sm', 'ui-button ui-button--quiet ui-button--sm']);
+  assert.equal(chip.children[0].localName, 'code');
+  const [, copy, link] = chip.children;
+  assert.deepEqual([copy.getAttribute('data-copy'), copy.textContent, copy.children[0].attrs['data-icon']], ['code', 'Copy', 'copy']);
+  assert.deepEqual([link.getAttribute('data-copy'), link.textContent, link.children[0].attrs['data-icon']], ['link', 'Copy link', 'link']);
+  assert.equal(copy.type, 'button');
+  assert.equal(createCodeChip(doc, { compact: true, label: 'Board code' }).className, 'ui-code', 'no variant and no inline label, whatever a caller asks');
 });
 
 test('the theme carries the spinner\'s turn, timed from a motion token, and the kit\'s colours', () => {
@@ -1341,20 +1371,205 @@ test('pagerState: First, at most five numbered pages around the current one, Las
   assert.ok(pagerState(50, 100).numbers.length <= PAGER_WINDOW, 'a long history keeps one pager row');
 });
 
-test('the stat tile, the pager and the column composition are laid out from the spacing tokens and styled by the theme', () => {
-  const tile = rulesFor('.ui-stat--tile').map(([, b]) => b).join('');
-  assert.match(tile, /padding:\s*var\(--space-/);
-  assert.match(themeRulesFor('.ui-stat--tile').map(([, b]) => b).join(''), /(background|box-shadow)[^;]*var\(--color-/, 'the theme draws the tile');
-  const figure = rulesFor('.ui-stat--tile .ui-stat__value').map(([, b]) => b).join('');
+// The base rule bodies of a selector exactly, and the theme's.
+const baseRule = (sel) => RULES.filter(([x]) => x === sel).map(([, b]) => b).join(';');
+const themeRule = (sel) => THEME_RULES.filter(([x]) => x.split(',').map((y) => y.trim()).includes(sel)).map(([, b]) => b).join(';');
+const PHONE = (() => {
+  const block = CSS.slice(CSS.indexOf('@media (max-width: 719px), (max-height: 500px) and (orientation: landscape)'));
+  return block.slice(0, block.indexOf('\n}'));
+})();
+
+test('the stat tile is plain by default: white, a 2 px inset border, no drop, radius 16, 14 × 16 padding; warm is a variant', () => {
+  assert.match(baseRule('.ui-stat--tile'), /padding:\s*14px var\(--space-4\)/);
+  assert.match(baseRule('.ui-stat--tile'), /gap:\s*var\(--space-1\)/);
+  assert.match(baseRule('.ui-stat--tile'), /min-width:\s*max-content/, 'a tile never narrows past its figure');
+  const figure = baseRule('.ui-stat--tile .ui-stat__value');
   assert.match(figure, /font-size:[^;]*var\(--font-size-[^;]*var\(--font-size-/, 'the figure scales between two token sizes');
   assert.match(figure, /white-space:\s*nowrap/, 'the figure keeps one line');
-  assert.match(tile, /min-width:\s*max-content/, 'a tile never narrows past its figure');
-  for (const m of (tile + figure + rulesFor('.ui-stat-row--tiles').map(([, b]) => b).join('')).matchAll(/(padding|gap|font-size|min-width)\s*:\s*([^;]+)/g)) {
-    assert.doesNotMatch(m[2], /\d+(px|rem|em)\b/, `${m[1]}: ${m[2]} — tile sizes come from the tokens`);
-  }
-  const current = themeRulesFor('.ui-pager').filter(([sel]) => sel.includes('aria-current="page"'));
-  assert.ok(current.length > 0, 'the current page has its own styling');
+  const plain = themeRule('.ui-stat--tile');
+  assert.match(plain, /background:\s*var\(--color-surface\);/);
+  assert.match(plain, /box-shadow:\s*inset 0 0 0 2px var\(--color-border\);/, 'its border, and no drop');
+  assert.match(plain, /border-radius:\s*var\(--radius-lg\)/);
+  const warm = themeRule('.ui-stat--warm');
+  assert.match(warm, /background:\s*var\(--color-surface-raised\)/, 'cream');
+  assert.match(warm, /0 var\(--edge-md\) 0 var\(--color-edge\)/, 'on its 6 px edge');
+  assert.deepEqual(KIT_CATALOGUE.find((c) => c.name === 'ui-stat--tile').variants, ['ui-stat--warm']);
+  // on a phone: a 24 px figure and 12 px padding
+  assert.match(PHONE, /\.ui-stat--tile \{ padding: var\(--space-3\); \}/);
+  assert.match(PHONE, /\.ui-stat--tile \.ui-stat__value \{ font-size: var\(--font-size-xl\); \}/);
+});
+
+test('the stat tile\'s label is 14 px bold muted in sentence case, its note 13 px bold sans; a better note in success, a worse one muted; a new best a 3 px head-colour ring', () => {
+  const label = baseRule('.ui-stat--tile .ui-stat__label');
+  assert.match(label, /font-size:\s*var\(--font-size-sm\)/);
+  assert.match(label, /text-transform:\s*none/);
+  assert.match(label, /letter-spacing:\s*normal/);
+  assert.match(baseRule('.ui-stat__label'), /font-weight:\s*var\(--font-weight-bold\)/);
+  assert.match(themeRule('.ui-stat__label'), /color:\s*var\(--color-ink-muted\)/);
+  const note = baseRule('.ui-stat--tile .ui-stat__detail');
+  assert.match(note, /font-size:\s*13px/);
+  assert.match(note, /font-weight:\s*var\(--font-weight-bold\)/);
+  assert.match(themeRule('.ui-stat--tile .ui-stat__detail'), /font-family:\s*var\(--font-family-sans\)/, 'Rubik, not the mono face');
+  assert.match(themeRule('.ui-stat__detail[data-delta="better"]'), /color:\s*var\(--color-success\)/);
+  assert.match(themeRule('.ui-stat__detail[data-delta="worse"]'), /color:\s*var\(--color-ink-muted\)/, 'a worse difference is muted, not red');
+  const best = themeRule('.ui-stat--tile[data-new-best]');
+  assert.match(best, /box-shadow:\s*inset 0 0 0 3px var\(--color-head\)/);
+  assert.match(best, /outline:\s*none/);
+  assert.match(best, /border-radius:\s*var\(--radius-lg\)/, 'it keeps the tile\'s radius');
+  const head = RAW.match(/^\/\*([\s\S]*?)\*\//)[1];
+  assert.match(head, /ui-stat--warm/, 'the catalogue documents the warm variant');
+  assert.match(head, /ui-stat__detail[^]*ui-link[^]*Watch/, 'and a note\'s inline Watch link');
+});
+
+test('the muted panel: the sunk fill, 14 × 16 padding, an 8 px gap, no border and no drop, the panel\'s radius', () => {
+  const base = baseRule('.ui-panel--muted');
+  assert.match(base, /padding:\s*14px var\(--space-4\)/);
+  assert.match(base, /display:\s*flex/);
+  assert.match(base, /flex-direction:\s*column/);
+  assert.match(base, /gap:\s*var\(--space-2\)/);
+  const theme = themeRule('.ui-panel--muted');
+  assert.match(theme, /background:\s*var\(--color-surface-sunk\)/);
+  assert.match(theme, /box-shadow:\s*none/);
+  assert.match(themeRule('.ui-panel'), /border-radius:\s*var\(--radius-xl\)/, '20, as the Records overall block draws it');
+});
+
+test('the ruled table: 12 px uppercase headers, bold ink row labels, mono right-aligned values, 8 px cells, a rule across the whole row, a rank column; a recent-games variant', () => {
+  assert.match(baseRule('.ui-table th'), /font-size:\s*var\(--font-size-xs\)/);
+  assert.match(baseRule('.ui-table th'), /text-transform:\s*uppercase/);
+  assert.match(baseRule('.ui-table th'), /letter-spacing:\s*0\.1em/);
+  assert.match(baseRule('.ui-table th'), /padding:\s*var\(--space-2\)/);
+  assert.match(baseRule('.ui-table td'), /padding:\s*var\(--space-2\)/);
+  const label = baseRule('.ui-table th[scope="row"]');
+  assert.match(label, /font-size:\s*inherit/);
+  assert.match(label, /text-transform:\s*none/);
+  assert.match(label, /letter-spacing:\s*normal/);
+  assert.match(themeRule('.ui-table th[scope="row"]'), /color:\s*var\(--color-ink\)/);
+  assert.match(baseRule('.ui-table .ui-table__figure, .ui-table th[scope="row"] ~ td'), /text-align:\s*right/);
+  assert.match(themeRule('.ui-table__figure'), /font-family:\s*var\(--font-family-mono\)/);
+  assert.match(themeRule('.ui-table th[scope="row"] ~ td'), /font-family:\s*var\(--font-family-mono\)/);
+  assert.match(themeRule('.ui-table tbody tr'), /border-top:\s*1px solid var\(--color-line\)/, 'the rule spans the row');
+  assert.doesNotMatch(themeRule('.ui-table td'), /border/, 'not the value cell alone');
+  assert.match(baseRule('.ui-table__rank'), /font-size:\s*var\(--font-size-sm\)/);
+  assert.match(themeRule('.ui-table__rank'), /color:\s*var\(--color-ink-muted\)[^]*font-family:\s*var\(--font-family-mono\)/);
+  assert.match(baseRule('.ui-table__date'), /font-size:\s*13px/);
+  assert.match(baseRule('.ui-table__date'), /white-space:\s*nowrap/);
+  assert.match(themeRule('.ui-table--recent .ui-table__date'), /color:\s*var\(--color-ink-muted\)[^]*font-family:\s*var\(--font-family-mono\)/);
+  assert.match(baseRule('.ui-table__code'), /font-size:\s*13px/);
+  assert.match(themeRule('.ui-table__code'), /font-family:\s*var\(--font-family-mono\)/);
+  assert.match(PHONE, /\.ui-table:not\(:has\(thead\)\) tr:has\(> th\[scope="row"\]\) \{ display: flex; flex-direction: column; gap: 2px; \}/, 'a details table (no thead) stacks label over value on a phone, a headed table keeps its columns');
+  const table = KIT_CATALOGUE.find((c) => c.name === 'ui-table');
+  assert.deepEqual(table.variants, ['ui-table--recent']);
+  for (const p of ['heading', 'label', 'cell', 'figure', 'rank', 'date', 'code']) assert.ok(table.parts.some((x) => x.name === p), `the table's ${p}`);
+});
+
+test('the pager: 38 px buttons, radius 10, bold, a 3 px edge, 6 px apart; the current page an ink fill and the disabled ones locked, neither with an edge', () => {
+  assert.match(baseRule('.ui-pager'), /gap:\s*6px/);
+  const button = baseRule('.ui-pager__button');
+  assert.match(button, /min-height:\s*38px/);
+  assert.match(button, /min-width:\s*38px/);
+  assert.match(button, /padding:\s*0 10px/);
+  const rest = themeRule('.ui-pager .ui-pager__button');
+  assert.match(rest, /border-radius:\s*10px/);
+  assert.match(rest, /font-weight:\s*var\(--font-weight-bold\)/);
+  assert.match(rest, /box-shadow:\s*0 3px 0 var\(--color-edge\)/);
+  const current = themeRule('.ui-pager .ui-pager__button[aria-current="page"]');
+  assert.match(current, /background:\s*var\(--color-ink\)/);
+  assert.match(current, /box-shadow:\s*none/);
+  const disabled = themeRule('.ui-pager .ui-pager__button:disabled');
+  assert.match(disabled, /background:\s*var\(--color-locked\)/);
+  assert.match(disabled, /box-shadow:\s*none/);
+  assert.match(themeRule('.ui-pager .ui-pager__button:focus'), /transform:\s*translateY\(3px\)/, 'selected: level, down its 3 px edge');
   assert.ok(rulesFor('.ui-columns').some(([, b]) => /gap:\s*var\(--space-/.test(b)), 'column spacing from the tokens');
+});
+
+test('in a browser, the gallery\'s surfaces draw as J-Components: the plain, warm and new-best tiles, the muted panel, the ruled table, the pager and the code chip, and their phone sizes', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  const measure = () => {
+    const css = (el) => getComputedStyle(el);
+    const box = (el) => el.getBoundingClientRect();
+    const tile = document.querySelector('[aria-labelledby="tl-7"]');
+    const warm = document.querySelector('[aria-labelledby="tl-9"]');
+    const best = document.querySelector('[aria-labelledby="tl-11"]');
+    const worse = document.querySelector('[aria-labelledby="tl-12"] .ui-stat__detail');
+    const muted = document.querySelector('.ui-panel--muted');
+    const table = document.querySelector('#g-table ~ .states .ui-table');
+    const row = table.querySelector('tbody tr');
+    const details = [...document.querySelectorAll('#g-table ~ .states .ui-table')][2];
+    const pager = document.querySelector('.ui-pager');
+    const button = pager.querySelector('[data-page="1"]');
+    const current = pager.querySelector('[aria-current="page"]');
+    const chip = document.querySelector('.code-demo .ui-code');
+    const copy = chip.querySelector('[data-copy="code"]');
+    return {
+      tile: { bg: css(tile).backgroundColor, shadow: css(tile).boxShadow, radius: css(tile).borderRadius, padding: css(tile).padding, value: css(tile.querySelector('.ui-stat__value')).fontSize },
+      label: { size: css(tile.querySelector('.ui-stat__label')).fontSize, transform: css(tile.querySelector('.ui-stat__label')).textTransform, weight: css(tile.querySelector('.ui-stat__label')).fontWeight },
+      note: { size: css(tile.querySelector('.ui-stat__detail')).fontSize, family: css(tile.querySelector('.ui-stat__detail')).fontFamily, weight: css(tile.querySelector('.ui-stat__detail')).fontWeight, link: !!tile.querySelector('.ui-stat__detail > .ui-link') },
+      warm: { bg: css(warm).backgroundColor },
+      best: { shadow: css(best).boxShadow, outline: css(best).outlineStyle, radius: css(best).borderRadius },
+      worse: css(worse).color,
+      muted: { bg: css(muted).backgroundColor, shadow: css(muted).boxShadow, padding: css(muted).padding, radius: css(muted).borderRadius },
+      table: { rule: css(row).borderTopWidth, ruleWidth: Math.round(box(row).width), tableWidth: Math.round(box(table).width), rank: css(row.querySelector('.ui-table__rank')).fontSize, rankFamily: css(row.querySelector('.ui-table__rank')).fontFamily, label: css(details.querySelector('th[scope="row"]')).textTransform, value: css(details.querySelector('td')).textAlign, row: css(details.querySelector('tr')).display },
+      pager: { h: box(button).height, w: box(button).width, radius: css(button).borderRadius, weight: css(button).fontWeight, shadow: css(button).boxShadow, gap: css(pager).columnGap, current: css(current).backgroundColor, currentShadow: css(current).boxShadow },
+      chip: { h: box(chip).height, w: Math.round(box(chip).width), parent: Math.round(box(chip.parentElement).width), gap: css(chip).columnGap, code: css(chip.querySelector('.ui-code__value')).fontSize, button: box(copy).height, radius: css(copy).borderRadius, font: css(copy).fontSize, icon: copy.firstElementChild.getAttribute('data-icon') },
+    };
+  };
+  try {
+    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+    await page.goto(`${base}/dev/components.html`);
+    await page.evaluate(() => globalThis.galleryReady);
+    const got = await page.evaluate(measure);
+    assert.equal(got.tile.bg, 'rgb(255, 255, 255)', 'the plain tile is white');
+    assert.equal(got.tile.shadow, 'rgb(236, 226, 208) 0px 0px 0px 2px inset', 'its 2 px border and no drop');
+    assert.equal(got.tile.radius, '16px');
+    assert.equal(got.tile.padding, '14px 16px');
+    assert.deepEqual(got.label, { size: '14px', transform: 'none', weight: '700' });
+    assert.equal(got.note.size, '13px');
+    assert.equal(got.note.weight, '700');
+    assert.match(got.note.family, /^"?Rubik/, 'the note in the sans face');
+    assert.ok(got.note.link, 'a note carries its inline Watch link');
+    assert.equal(got.warm.bg, 'rgb(255, 246, 232)', 'the warm variant in cream');
+    assert.equal(got.best.shadow, 'rgb(255, 201, 60) 0px 0px 0px 3px inset', 'a new best ringed in the head colour');
+    assert.equal(got.best.outline, 'none');
+    assert.equal(got.best.radius, '16px');
+    assert.equal(got.worse, 'rgb(90, 99, 133)', 'a worse difference muted');
+    assert.equal(got.muted.bg, 'rgb(251, 241, 223)');
+    assert.equal(got.muted.shadow, 'none');
+    assert.equal(got.muted.padding, '14px 16px');
+    assert.equal(got.muted.radius, '20px');
+    assert.equal(got.table.rule, '1px');
+    assert.equal(got.table.ruleWidth, got.table.tableWidth, 'the rule spans the row');
+    assert.equal(got.table.rank, '14px');
+    assert.match(got.table.rankFamily, /JetBrains Mono/);
+    assert.equal(got.table.label, 'none', 'row labels in sentence case');
+    assert.equal(got.table.value, 'right');
+    assert.equal(got.table.row, 'table-row');
+    assert.equal(got.pager.h, 38);
+    assert.ok(got.pager.w >= 38);
+    assert.equal(got.pager.radius, '10px');
+    assert.equal(got.pager.weight, '700');
+    assert.equal(got.pager.shadow, 'rgb(214, 198, 171) 0px 3px 0px 0px');
+    assert.equal(got.pager.gap, '6px');
+    assert.equal(got.pager.current, 'rgb(22, 32, 74)', 'the current page in ink');
+    assert.equal(got.pager.currentShadow, 'none');
+    assert.equal(got.chip.h, 40);
+    assert.ok(got.chip.w < got.chip.parent, 'the chip sized to its content');
+    assert.equal(got.chip.gap, '6px');
+    assert.equal(got.chip.code, '15px');
+    assert.equal(got.chip.button, 30);
+    assert.equal(got.chip.radius, '9px');
+    assert.equal(got.chip.font, '13px');
+    assert.equal(got.chip.icon, 'copy');
+    await page.setViewportSize({ width: 390, height: 844 });
+    const phone = await page.evaluate(measure);
+    assert.equal(phone.tile.padding, '12px');
+    assert.equal(phone.tile.value, '24px');
+    assert.equal(phone.chip.w, phone.chip.parent, 'on a phone the chip runs the full width');
+    assert.equal(phone.table.row, 'flex', 'a details row stacks label over value');
+  } finally {
+    await browser.close();
+  }
 });
 
 test('the column composition has one breakpoint, 1024 px, stated once, used by Records and Settings', () => {
@@ -1376,6 +1591,23 @@ test('the gallery shows the stat tile, the pager in each state and the column co
   assert.match(tiles, /ui-stat__detail[\s\S]*Watch/, 'a tile with its date and Watch');
   assert.match(tiles, /&mdash;/, 'a best not yet set');
   assert.match(tiles, /999\.999 s[\s\S]*99\.99[\s\S]*100\.0%/, 'the longest figures');
+  const tileTags = tags(tiles);
+  assert.ok(tileTags.some((t) => hasClasses(t, '.ui-stat--tile.ui-stat--warm')), 'the warm variant');
+  assert.ok(tileTags.some((t) => hasClasses(t, '.ui-stat--tile') && 'data-new-best' in t.attrs), 'a new best');
+  assert.match(tiles, /<span class="ui-stat__detail">[^<]*<a [^>]*class="ui-link"[^>]*>Watch<\/a><\/span>/, 'a note with its inline Watch link');
+  assert.match(tiles, /data-delta="better">was /, 'a "was …" note');
+  assert.match(tiles, /data-delta="worse"/, 'a worse note');
+  const chip = section(GALLERY, '<!-- component: code chip -->', '<!-- /component: code chip -->');
+  assert.match(chip, /<div class="ui-section-label"><h3 class="ui-section-label__text"[^>]*>Board code<\/h3><\/div><div class="ui-code">/, 'the label sits outside the chip');
+  assert.doesNotMatch(chip, /ui-code__label|ui-code--compact/);
+  assert.match(chip, /class="ui-button ui-button--quiet ui-button--sm" data-copy="code"/, 'quiet compact buttons');
+  const tables = section(GALLERY, '<!-- component: table -->', '<!-- /component: table -->');
+  assert.match(tables, /class="ui-table__rank"/, 'a rank column');
+  assert.match(tables, /<table class="ui-table ui-table--recent">[\s\S]*Date[\s\S]*Outcome[\s\S]*Time[\s\S]*class="ui-table__date"[\s\S]*ui-chip--won/, 'the recent-games variant');
+  assert.match(tables, /<th scope="row">/, 'a details table of row labels');
+  assert.match(tables, /class="ui-table__code"/, 'a board code as plain text');
+  const muted = section(GALLERY, '<!-- component: muted panel -->', '<!-- /component: muted panel -->');
+  assert.match(muted, /class="ui-panel ui-panel--muted"/, 'the muted panel');
   const pagers = section(GALLERY, '<!-- component: pager -->', '<!-- /component: pager -->');
   for (const state of ['First page', 'Middle page', 'Last page', 'Long history']) assert.ok(pagers.includes(state), `pager: ${state}`);
   assert.match(pagers, /aria-current="page"/);
@@ -1988,9 +2220,6 @@ test('in a browser, the gallery\'s icons fill the slot: 18 px on sm and md, 24 p
 });
 
 // ---------------------------------------------------------------- the feedback parts: the confirm box and the notes
-
-const baseRule = (sel) => RULES.filter(([x]) => x === sel).map(([, b]) => b).join(';');
-const themeRule = (sel) => THEME_RULES.filter(([x]) => x === sel).map(([, b]) => b).join(';');
 
 test('the confirm box: the danger fill, radius 16, 16px 18px padding, a 12 px gap, no border and no drop; 17 px bold ink text, a 24 px heading, its actions side by side', () => {
   assert.match(baseRule('.ui-confirm'), /display:\s*flex;\s*flex-direction:\s*column/);

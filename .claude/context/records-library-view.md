@@ -19,7 +19,7 @@ remembered in `records.view`.
 Library view (`js/records/replay-list.js`)
 - `REPLAY_SCREEN` — `'replay'`; `REPLAYS_EMPTY_TEXT`; `REPLAYS_NOT_SAVED`;
   `REPLAY_HEADERS`; `CODE_HEADER`; `REPLAY_FILE_TYPE` — `'.msrp'`;
-  `codeCell(doc, code, onCopy)` — a table cell with a compact code chip
+  `codeCell(doc, code, onCopy)` — a table cell with a code chip
   (empty for none), shared by every Records row that names one game. A
   row's `code` is its listing's, or null.
 - `replayFileName(boardKey, endedAt)` → `"minesweeper-<board key>-<end

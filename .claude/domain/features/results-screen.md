@@ -32,7 +32,7 @@ In scope (m1-classic-2d):
   efficiency — as the standing best and the difference; when the game set
   that best, the line gives the best it replaced and the tile carries a
   "New best" badge. On a win each difference is coloured (better in the
-  success colour, worse in the danger colour, "= best" in the muted ink;
+  success colour; worse and "= best" in the muted ink;
   the sign and the "New best" text stay, so colour is never the only
   signal). On a loss no tile is eligible: the time tile says losses set no
   bests, and the 3BV/s and efficiency tiles show the standing best without

@@ -775,7 +775,7 @@ test('the kit carries the deltas\' colours, the greyed panel, the highlighted st
   for (const part of ['data-delta', 'ui-panel--muted', 'ui-banner']) assert.ok(head.includes(part), `the catalogue documents ${part}`);
   const rule = (sel) => css.match(new RegExp(`${sel.replace(/[[\]().]/g, '\\$&')}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
   assert.match(rule('.ui-stat__detail[data-delta="better"]'), /color:\s*var\(--color-success\)/);
-  assert.match(rule('.ui-stat__detail[data-delta="worse"]'), /color:\s*var\(--color-danger\)/);
+  assert.match(rule('.ui-stat__detail[data-delta="worse"]'), /color:\s*var\(--color-ink-muted\)/);
   assert.match(rule('.ui-stat__detail[data-delta="equal"]'), /color:\s*var\(--color-ink-muted\)/);
   assert.match(css, /\.ui-panel--muted[^{]*\{[^}]*color:\s*var\(--color-ink-muted\)/);
   assert.match(css, /\.ui-panel--muted\s*\{[^}]*background:\s*var\(--color-surface-sunk\)/);

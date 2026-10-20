@@ -219,7 +219,8 @@
   -webkit-tap-highlight-color: transparent;
 }
 :root[data-theme="joyful-tiles"] :is(button, input, select, textarea) { font-family: inherit; color: inherit; }
-:root[data-theme="joyful-tiles"] :is(.ui-code__value, .ui-stat__value, .ui-stat__detail, .ui-slider__value, .ui-field__input, kbd, #aim-readout) { font-family: var(--font-family-mono); }
+:root[data-theme="joyful-tiles"] :is(.ui-code__value, .ui-stat__value, .ui-slider__value, .ui-field__input, kbd, #aim-readout) { font-family: var(--font-family-mono); }
+:root[data-theme="joyful-tiles"] .ui-stat__detail { font-family: var(--font-family-mono); }
 
 /* ---------- buttons: raised, selected level with the surface, pressed sunk below it ---------- */
 :root[data-theme="joyful-tiles"] .ui-button {
@@ -242,12 +243,6 @@
   background: var(--color-blue);
   color: var(--color-blue-on);
   box-shadow: inset 0 3px 0 var(--highlight), 0 var(--edge-sm) 0 var(--color-blue-edge);
-}
-/* the pager's current page */
-:root[data-theme="joyful-tiles"] .ui-pager__button[aria-current="page"] {
-  background: var(--color-ink);
-  color: var(--color-ink-inverse);
-  box-shadow: 0 var(--edge-sm) 0 var(--color-ink-edge);
 }
 /* the code chip's Copy buttons: quiet, on the chip's sunk surface */
 :root[data-theme="joyful-tiles"] .ui-code .ui-button--secondary {
@@ -282,10 +277,6 @@
 :root[data-theme="joyful-tiles"] .ui-button--secondary:not([aria-pressed="true"])[data-force~="focus"] {
   box-shadow: inset 0 -2px 0 var(--color-edge-inset);
 }
-:root[data-theme="joyful-tiles"] .ui-pager__button[aria-current="page"]:focus,
-:root[data-theme="joyful-tiles"] .ui-pager__button[aria-current="page"]:focus-visible,
-:root[data-theme="joyful-tiles"] body.pad-nav .ui-pager__button[aria-current="page"]:focus,
-:root[data-theme="joyful-tiles"] .ui-pager__button[aria-current="page"][data-force~="focus"] { box-shadow: none; }
 :root[data-theme="joyful-tiles"] .ui-code .ui-button--secondary:focus,
 :root[data-theme="joyful-tiles"] .ui-code .ui-button--secondary:focus-visible,
 :root[data-theme="joyful-tiles"] body.pad-nav .ui-code .ui-button--secondary:focus,
@@ -312,6 +303,37 @@
   background: var(--color-locked);
   color: var(--color-locked-ink);
   box-shadow: 0 var(--edge-sm) 0 var(--color-locked-edge);
+  transform: none;
+}
+
+/* the pager: lighter buttons on a 3 px edge, selected level with the surface; the current page an ink
+   fill and a disabled button locked, neither with an edge */
+:root[data-theme="joyful-tiles"] .ui-pager .ui-pager__button {
+  border-radius: 10px;
+  font-weight: var(--font-weight-bold);
+  box-shadow: 0 3px 0 var(--color-edge);
+}
+:root[data-theme="joyful-tiles"] .ui-pager .ui-pager__button:focus,
+:root[data-theme="joyful-tiles"] .ui-pager .ui-pager__button:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-pager .ui-pager__button:focus,
+:root[data-theme="joyful-tiles"] .ui-pager .ui-pager__button[data-force~="focus"] {
+  transform: translateY(3px);
+  box-shadow: none;
+}
+:root[data-theme="joyful-tiles"] .ui-pager .ui-pager__button:active:not(:disabled, [aria-disabled="true"]),
+:root[data-theme="joyful-tiles"] .ui-pager .ui-pager__button[data-force~="active"] {
+  transform: translateY(5px);
+  box-shadow: inset 0 3px 0 var(--shade-press);
+}
+:root[data-theme="joyful-tiles"] .ui-pager .ui-pager__button[aria-current="page"] {
+  background: var(--color-ink);
+  color: var(--color-ink-inverse);
+  box-shadow: none;
+}
+:root[data-theme="joyful-tiles"] .ui-pager .ui-pager__button:disabled {
+  background: var(--color-locked);
+  color: var(--color-locked-ink);
+  box-shadow: none;
   transform: none;
 }
 
@@ -498,7 +520,7 @@
   color: var(--color-ink);
   box-shadow: inset 0 0 0 2px var(--color-border), 0 var(--edge-md) 0 var(--color-edge);
 }
-:root[data-theme="joyful-tiles"] .ui-panel--muted { background: var(--color-surface-sunk); }
+:root[data-theme="joyful-tiles"] .ui-panel--muted { background: var(--color-surface-sunk); box-shadow: none; }
 /* the confirm box: the danger fill, no border and no drop; a table row of it, square */
 :root[data-theme="joyful-tiles"] .ui-confirm {
   border-radius: var(--radius-lg);
@@ -675,7 +697,7 @@
 :root[data-theme="joyful-tiles"] .ui-stat__detail { color: var(--color-ink-muted); }
 :root[data-theme="joyful-tiles"] .ui-stat__detail[data-new-best] { color: var(--color-ink); }
 :root[data-theme="joyful-tiles"] .ui-stat__detail[data-delta="better"] { color: var(--color-success); }
-:root[data-theme="joyful-tiles"] .ui-stat__detail[data-delta="worse"] { color: var(--color-danger); }
+:root[data-theme="joyful-tiles"] .ui-stat__detail[data-delta="worse"] { color: var(--color-ink-muted); }
 :root[data-theme="joyful-tiles"] .ui-stat__detail[data-delta="equal"] { color: var(--color-ink-muted); }
 :root[data-theme="joyful-tiles"] .ui-stat[data-new-best] {
   border-radius: var(--radius-sm);
@@ -685,8 +707,20 @@
 :root[data-theme="joyful-tiles"] :is(.ui-panel--muted .ui-stat, .ui-panel--muted .ui-stat__value, .ui-panel--muted .ui-stat__detail) { color: var(--color-ink-muted); }
 :root[data-theme="joyful-tiles"] .ui-stat--tile {
   border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 2px var(--color-border);
+}
+:root[data-theme="joyful-tiles"] .ui-stat--tile .ui-stat__detail { font-family: var(--font-family-sans); }
+/* the warm tile: cream on its 6 px edge */
+:root[data-theme="joyful-tiles"] .ui-stat--warm {
   background: var(--color-surface-raised);
   box-shadow: inset 0 -2px 0 var(--color-edge-inset), 0 var(--edge-md) 0 var(--color-edge);
+}
+/* a tile that set a best: ringed inside in the head colour, keeping its radius */
+:root[data-theme="joyful-tiles"] .ui-stat--tile[data-new-best] {
+  border-radius: var(--radius-lg);
+  outline: none;
+  box-shadow: inset 0 0 0 3px var(--color-head);
 }
 
 /* ---------- wordmark: blue, coral and yellow words (--f), each on a stack of its own hard edge (--e) ---------- */
@@ -977,18 +1011,23 @@
 
 /* ---------- table ---------- */
 :root[data-theme="joyful-tiles"] .ui-table th { color: var(--color-ink-muted); }
-:root[data-theme="joyful-tiles"] .ui-table td { border-top: 1px solid var(--color-line); color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ui-table th[scope="row"] { color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ui-table td { color: var(--color-ink); }
+:root[data-theme="joyful-tiles"] .ui-table tbody tr { border-top: 1px solid var(--color-line); }
 :root[data-theme="joyful-tiles"] .ui-table__figure { font-family: var(--font-family-mono); }
+:root[data-theme="joyful-tiles"] .ui-table__code { font-family: var(--font-family-mono); }
+:root[data-theme="joyful-tiles"] .ui-table th[scope="row"] ~ td { font-family: var(--font-family-mono); }
+:root[data-theme="joyful-tiles"] .ui-table__rank { color: var(--color-ink-muted); font-family: var(--font-family-mono); }
+:root[data-theme="joyful-tiles"] .ui-table--recent .ui-table__date { color: var(--color-ink-muted); font-family: var(--font-family-mono); }
 
-/* ---------- code chip: a sunk pill holding the label, the code and its quiet Copy buttons ---------- */
+/* ---------- code chip: a sunk pill holding the code and its quiet compact Copy and Copy link ---------- */
 :root[data-theme="joyful-tiles"] .ui-code {
   padding: 5px 5px 5px 12px;
   border-radius: var(--radius-md);
   background: var(--color-surface-sunk);
   box-shadow: inset 0 0 0 2px var(--color-border);
 }
-:root[data-theme="joyful-tiles"] .ui-code--compact { padding: 3px 3px 3px 8px; border-radius: var(--radius-sm); }
-:root[data-theme="joyful-tiles"] .ui-code__label { color: var(--color-ink-muted); }
+:root[data-theme="joyful-tiles"] .ui-code .ui-button { border-radius: 9px; }
 :root[data-theme="joyful-tiles"] .ui-code__value { color: var(--color-ink); }
 
 /* ---------- overlay bar ---------- */

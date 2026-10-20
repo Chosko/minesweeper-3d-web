@@ -136,9 +136,12 @@
      Element: <div class="ui-panel">…</div>
      Role:    none (presentational grouping)
      Name:    none
-     Muted:   ui-panel--muted greys its figures (values and detail lines
-              in muted ink, no delta colour) for content shown for
-              reference only (the pause card's settings).
+     Muted:   ui-panel--muted is a sunk surface with no border and no drop,
+              its content stacked with a small gap (the Custom form, the
+              Learn 3D explanation, the Records overall block, the pause
+              card's settings); it greys its figures (values and detail
+              lines in muted ink, no delta colour) for content shown for
+              reference only.
 
    ui-banner — one line announcing an event, or offering one action
      Element: <p class="ui-banner" role="status">…</p>
@@ -262,9 +265,10 @@
      Detail:  an optional <span class="ui-stat__detail">…</span> after the
               value adds a smaller muted line (a best's difference);
               data-new-best on it sets it in bold ink, and
-              data-delta="better|worse|equal" colours it --color-success,
-              --color-danger or the muted ink. The colour is never the only
-              signal: the text carries the sign or "= best".
+              data-delta="better|worse|equal" colours it --color-success
+              (a "was …" line), or the muted ink for worse and equal. The
+              colour is never the only signal: the text carries the sign or
+              "= best".
      Highlight: data-new-best on the ui-stat itself rings the readout in
               --color-success (a figure that set a best).
 
@@ -274,32 +278,42 @@
                 <span class="ui-stat__value">…</span>
                 <span class="ui-stat__detail">…</span> [a secondary button]
               </div>
+              the note may carry an inline Watch link:
+                <span class="ui-stat__detail">9 Oct 2026 · <a class="ui-link"
+                  href="…" aria-label="Watch the replay of …">Watch</a></span>
      Role:    group
      Name:    aria-labelledby → the label
-     Look:    a bordered raised tile: the label, the figure large, and
-              beneath it, small, the detail line (a date) and an optional
-              secondary button (Watch); a figure not yet set is a dash.
-              The figure keeps one line, its size scaling with the row
-              between --font-size-xl and --font-size-2xl. Laid out in a
-              ui-stat-row--tiles, which gives the tiles equal shares of the
-              row and wraps them where a tile would narrow past its
-              content.
+     Look:    a plain tile, its border and no drop: the label in sentence
+              case, the figure large, and beneath it the note (a date, a
+              comparison) in the sans face, and an optional secondary
+              button (Watch); a figure not yet set is a dash. The figure
+              keeps one line, its size scaling with the row between
+              --font-size-xl and --font-size-2xl, --font-size-xl on a
+              phone. Laid out in a ui-stat-row--tiles, which gives the
+              tiles equal shares of the row and wraps them where a tile
+              would narrow past its content.
+     Warm:    ui-stat--warm draws the tile in cream on its edge.
+     New best: data-new-best on the tile rings it inside in the head
+              colour, keeping its radius; its note reads "New best".
 
    ui-code — a board code with Copy and Copy link (js/records/board-code.js)
      Element: <div class="ui-code">
-                <span class="ui-code__label">Board code</span>
                 <code class="ui-code__value">EN-20261011-1F3A</code>
-                <button type="button" class="ui-button ui-button--secondary"
-                        data-copy="code">Copy</button>
-                <button type="button" class="ui-button ui-button--secondary"
-                        data-copy="link">Copy link</button>
+                <button type="button" class="ui-button ui-button--quiet
+                        ui-button--sm" data-copy="code" data-icon="copy">Copy</button>
+                <button type="button" class="ui-button ui-button--quiet
+                        ui-button--sm" data-copy="link" data-icon="link">Copy link</button>
               </div>
-              ui-code--compact (a table cell's) has no label.
+              one shape for every caller: a compact sunk pill sized to its
+              content, its quiet buttons compact with their 14 px icons.
+              Its label is a ui-section-label "Board code" outside the
+              chip; on a phone the label sits above and the chip runs the
+              full width and wraps.
      Role:    a group of text and two native buttons; not a focus stop
               itself
      Name:    each button: aria-label naming what it copies ("Copy the board
               code EN-…", "Copy the challenge link of board EN-…")
-     Helper:  createCodeChip(doc, { label, compact }) builds one;
+     Helper:  createCodeChip(doc) builds one;
               bindCodeChip(root, { onCopy }) fills it (show(code), hidden for
               none) and calls onCopy({ kind, code, select }); copyBoardCode
               writes the code or its link (boardLink) to the clipboard, and a
@@ -316,10 +330,13 @@
               </nav>
      Role:    navigation; each button a native button
      Name:    nav: aria-label; button: aria-label ("Page 2 of games")
+     Look:    lighter than a row of buttons: small buttons on a shallow
+              edge; the current page an ink fill and a disabled button
+              locked, neither with an edge.
      Helper:  pagerState(page, pages) gives First, at most PAGER_WINDOW (5)
               numbered pages around the current one, and Last; bindPager
               fills the nav from it and calls onPage(page). The current page
-              is marked aria-current="page" (accent fill) and aria-disabled,
+              is marked aria-current="page" and aria-disabled,
               so it stays focusable and takes focus from a pager button that
               becomes disabled; First and Last are disabled on the first and
               last page. The nav is hidden when one page holds everything.
@@ -641,15 +658,26 @@
      Role:    checkbox (native)
      Name:    the wrapping label's text
 
-   ui-table — rows of figures (Top 10, averages)
+   ui-table — rows of figures (Top 10, averages, a details list)
      Element: <table class="ui-table">
-                <thead><tr><th scope="col">Date</th>
+                <thead><tr><th scope="col">#</th>
                   <th scope="col" class="ui-table__figure">Time</th></tr></thead>
-                <tbody><tr><td>…</td><td class="ui-table__figure">48.213 s</td></tr></tbody>
+                <tbody><tr><td class="ui-table__rank">1</td>
+                  <td class="ui-table__figure">48.213 s</td></tr></tbody>
               </table>
+              a details table: <tr><th scope="row">Clicks</th><td>128</td></tr>
      Role:    table (native)
      Name:    a <caption> when the screen has one
-     Figures: ui-table__figure cells align right in tabular numbers.
+     Look:    small uppercase headers, a rule across each full row; a row
+              label (th scope="row") bold in sentence case, its value after
+              it in the monospace face, aligned right; on a phone a details
+              table (one with no thead) stacks each label over its value.
+     Figures: ui-table__figure cells align right in tabular numbers, in
+              the monospace face; ui-table__rank a rank, small and muted;
+              ui-table__code a board code as plain monospace text.
+     Recent:  ui-table--recent, the recent games: Date, Outcome (a ui-chip)
+              and Time, no board column; its ui-table__date cells muted
+              monospace on one line.
 
    Screen compositions. Layout-only classes a screen is assembled with; they
    carry no colour of their own beyond the text roles of ui-heading and
@@ -780,7 +808,7 @@
      Leaderboards ui-tabs (#records-tabs), each tab controlling its
      tabpanel: Recent games, a ui-text--muted empty line and a ui-table of
      recent games (Date, Outcome as a ui-chip, Time, 3BV, 3BV/s,
-     Efficiency, and a Board code column of ui-code--compact chips)
+     Efficiency, and a Board code column of ui-code chips)
      captioned by its ui-text--muted range, with a Replay column of
      secondary Watch buttons once the replay route is registered, and its
      ui-pager; Top 10, the Time · 3BV/s · Efficiency ui-segmented choice
@@ -985,7 +1013,7 @@
      button with its back key hint) and the title, "Replay · <mode> · <board>"
      once a replay is ready. Its body, top to bottom: a ui-overlay-bar of the
      replay's figures (Time in seconds to the thousandth, Mines, 3BV solved /
-     3BV, 3BV/s) with a ui-code--compact chip of the replay's board code and,
+     3BV, 3BV/s) with a ui-code chip of the replay's board code and,
      at the end, the outcome as a ui-chip with the recorded time; the board
      area, taking the room left, with a ui-card over it while the replay opens
      (the ui-spinner beside its title) or when it cannot play (its
@@ -1107,6 +1135,12 @@
   margin-bottom: var(--space-4);
 }
 .ui-panel { padding: var(--space-4); }
+.ui-panel--muted {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 14px var(--space-4);
+}
 
 /* ---------- confirm box and notes ---------- */
 .ui-confirm {
@@ -1314,10 +1348,12 @@
 .ui-stat--tile {
   flex: 1 1 0;
   min-width: max-content;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
+  gap: var(--space-1);
+  padding: 14px var(--space-4);
 }
+.ui-stat--tile .ui-stat__label { font-size: var(--font-size-sm); text-transform: none; letter-spacing: normal; }
 .ui-stat--tile .ui-stat__value { font-size: clamp(var(--font-size-xl), 5.5cqi, var(--font-size-2xl)); white-space: nowrap; }
+.ui-stat--tile .ui-stat__detail { font-size: 13px; font-weight: var(--font-weight-bold); }
 .ui-stat--tile > .ui-button { align-self: flex-start; }
 /* The figure keeps one line: it scales with the row, and a tile never narrows past its content, so
    tiles wrap onto a second line before a figure would wrap or cross its border. */
@@ -1328,10 +1364,10 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
+  gap: 6px;
   margin-top: var(--space-3);
 }
-.ui-pager__button { min-width: var(--space-8); padding: var(--space-2) var(--space-3); }
+.ui-pager__button { min-height: 38px; min-width: 38px; padding: 0 10px; }
 .ui-pager__button[aria-current="page"] { cursor: default; }
 
 /* ---------- code chip ---------- */
@@ -1339,18 +1375,19 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
+  gap: 6px;
+  box-sizing: border-box;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 40px;
 }
-.ui-code__label { font-size: var(--font-size-sm); }
 .ui-code__value {
-  font-size: var(--font-size-md);
+  font-size: 15px;
   font-weight: var(--font-weight-bold);
   overflow-wrap: anywhere;
   user-select: all;
 }
-.ui-code--compact { gap: var(--space-1); }
-.ui-code--compact .ui-code__value { font-size: var(--font-size-sm); }
-.ui-code--compact .ui-button { min-height: 30px; padding: var(--space-1) var(--space-2); font-size: var(--font-size-sm); }
+.ui-code .ui-button { min-height: 30px; padding: 4px 10px; font-size: 13px; }
 
 /* ---------- banner ---------- */
 .ui-banner {
@@ -1810,7 +1847,7 @@
 /* ---------- table ---------- */
 .ui-table { width: 100%; border-collapse: collapse; font-size: 15px; }
 .ui-table th {
-  padding: 6px var(--space-2);
+  padding: var(--space-2);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.1em;
@@ -1818,8 +1855,12 @@
   text-transform: uppercase;
   white-space: nowrap;
 }
+.ui-table th[scope="row"] { font-size: inherit; letter-spacing: normal; text-transform: none; }
 .ui-table td { padding: var(--space-2); white-space: nowrap; }
-.ui-table .ui-table__figure { font-variant-numeric: var(--font-numeric-tabular); text-align: right; }
+.ui-table .ui-table__figure, .ui-table th[scope="row"] ~ td { font-variant-numeric: var(--font-numeric-tabular); text-align: right; }
+.ui-table__rank { font-size: var(--font-size-sm); }
+.ui-table__date { font-size: 13px; white-space: nowrap; }
+.ui-table__code { font-size: 13px; }
 
 /* ---------- screen compositions ---------- */
 .ui-screen {
@@ -1900,6 +1941,11 @@
 @media (max-width: 719px), (max-height: 500px) and (orientation: landscape) {
   .ui-toggle__input { width: 64px; height: 38px; }
   .ui-toggle__input::before { width: 28px; height: 28px; }
+  .ui-stat--tile { padding: var(--space-3); }
+  .ui-stat--tile .ui-stat__value { font-size: var(--font-size-xl); }
+  .ui-code { width: 100%; }
+  .ui-table:not(:has(thead)) tr:has(> th[scope="row"]) { display: flex; flex-direction: column; gap: 2px; }
+  .ui-table:not(:has(thead)) th[scope="row"] ~ td { text-align: left; }
 }
 
 /* ---------- focused state ----------

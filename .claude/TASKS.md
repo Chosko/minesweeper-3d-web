@@ -1091,7 +1091,7 @@ Feature: shared-screen-layout
 
 ## 222. Kit surfaces: plain stat tile, muted panel, tables, pager, code chip
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: themes/joyful-tiles/theme.css, css/components.css, js/ui/components.js, js/ui/kit-catalogue.js, dev/components.html, tests/components.test.mjs, .claude/context/app-shell-kit.md
 Preconditions: 218, 220

@@ -39,7 +39,9 @@ inked while the switch is locked) and the shared layout's components: `ui-button
 `ui-option--learn`), `ui-section-label`, `ui-key-hint`, `ui-chip`,
 `ui-list-row`, `ui-scene-panel` (`stage`, `tag`, `card`, `badge`, `name`,
 `note`; variant `ui-scene-panel--live`), `ui-divider`, `ui-tabs`,
-`ui-checkbox`, `ui-table`, `ui-toast`, the confirm box `ui-confirm`
+`ui-checkbox`, `ui-table` (`heading`, `label` — a `th scope="row"` —,
+`cell`, `figure`, `rank`, `date`, `code`; variant `ui-table--recent`),
+`ui-toast`, the confirm box `ui-confirm`
 (`title`, optional, and `text`; variant `ui-confirm--row`), the note
 `ui-note` (variants `ui-note--warn`, `ui-note--err`), a message `ui-card`'s `icon`, and
 the compositions `ui-mode-list`, `ui-options`, `ui-key-hints`, `ui-list`;
@@ -109,6 +111,18 @@ control around it inks.
   ([app-shell-kit-helpers.md](app-shell-kit-helpers.md)), which also turns
   the board code field's line between a plain line and a note. An
   accepted code's line is `ui-text--success`.
+- **The surfaces.** The stat tile `ui-stat--tile` is plain by default
+  (white, its border, no drop) with `ui-stat--warm` the cream tile on its
+  edge; `data-new-best` rings it inside in the head colour, and its note
+  may carry an inline Watch `ui-link`. `ui-panel--muted` is a sunk panel
+  with no border and no drop. The table rules each full row, sets row
+  labels bold and their values in the monospace face, and on a phone
+  stacks a details table's labels (a table with no `thead`) over their values. The pager's buttons are
+  lighter than the kit's buttons, the current page an ink fill. The code chip has
+  one shape for every caller, built by `createCodeChip`
+  ([app-shell-kit-helpers.md](app-shell-kit-helpers.md)): no inline label,
+  its *Board code* label a `ui-section-label` outside it, running the full
+  width on a phone. Their metrics live in the base and the theme stylesheets.
 - **The slider's fill.** The theme draws a slider's track filled from its
   start to the thumb by `--slider-fill`, which the kit's fill updater
   (`bindSliderFill`, [app-shell-kit-helpers.md](app-shell-kit-helpers.md))

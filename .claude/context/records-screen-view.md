@@ -24,7 +24,7 @@ Records view (`js/records/screen.js`)
   switch is `#records-mode`, the chart defaults to `#records-chart`; the
   tabs `#records-tabs` are a kit tablist (`bindTabs`), each showing the
   panel its `aria-controls` names; the games, Top 10 and library tables
-  gain a Board code column of compact code chips (`codeCell`) whose Copy
+  gain a Board code column of code chips (`codeCell`) whose Copy
   and Copy link call `onCopy`, and a recent game or replay its outcome as a
   kit chip (`outcomeChip`, `js/records/replay-list.js`).
 - `TRIGGER_MODES` — `{lt: 'classic-2d', rt: '3d'}`, the triggers' modes.

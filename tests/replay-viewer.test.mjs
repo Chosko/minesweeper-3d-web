@@ -479,7 +479,7 @@ test('the viewer shows the game\'s board code, built from the header and the fir
   assert.equal(view.log[2][1].code, replayCode(decodeReplay(blobOf(WON))));
   const html = read('index.html');
   const replayHtml = html.slice(html.indexOf('<section id="replay"'), html.indexOf('<!-- /Replay viewer -->'));
-  assert.match(replayHtml, /<header class="ui-frame__head">[\s\S]*<button type="button" id="rp-back"[\s\S]*<\/header>[\s\S]*<div class="ui-overlay-bar replay-bar"[\s\S]*<div id="rp-code" class="ui-code ui-code--compact hidden">[\s\S]*<div id="replay-stage">/,
+  assert.match(replayHtml, /<header class="ui-frame__head">[\s\S]*<button type="button" id="rp-back"[\s\S]*<\/header>[\s\S]*<div class="ui-overlay-bar replay-bar"[\s\S]*<div id="rp-code" class="ui-code hidden">[\s\S]*<div id="replay-stage">/,
     'Back in the frame\'s head; the code chip in the overlay bar, above the board area and taking no room from it');
   assert.match(read('js/main.js'), /onOpen: [^\n]+\n\s*onCopy: \(c\) => copyCode\(c\),/);
 });

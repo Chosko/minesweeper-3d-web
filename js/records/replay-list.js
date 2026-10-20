@@ -33,7 +33,7 @@
 //   onOpenFile, onCopy }) → { show(list), closeConfirm(), isConfirmOpen(), hide() }: fills
 //   #records-replays by id — the Pinned first checkbox, Open replay file (#records-replays-open,
 //   onOpenFile(), shown while list.canOpen), the empty state, one table row per replay with its
-//   outcome as a kit chip (outcomeChip), its board code as a compact code chip (createCodeChip; Copy and Copy link call onCopy), its
+//   outcome as a kit chip (outcomeChip), its board code as a code chip (createCodeChip; Copy and Copy link call onCopy), its
 //   Download (onDownload(id)), Pin / Unpin and Delete buttons and, when list.canWatch, its Watch
 //   button, the range caption and the kit pager
 //   (bindPager; onPage(page)). A rebuilt list keeps focus on the button of the replay that had it.
@@ -122,12 +122,12 @@ export function outcomeChip(doc, label) {
   return chip;
 }
 
-/** A table cell holding a compact code chip for `code` (empty for none), for every Records row that names one game. */
+/** A table cell holding a code chip for `code` (empty for none), for every Records row that names one game. */
 export function codeCell(doc, code, onCopy) {
   const td = doc.createElement('td');
   td.dataset.label = CODE_HEADER;
   if (code) {
-    const chip = createCodeChip(doc, { compact: true });
+    const chip = createCodeChip(doc);
     bindCodeChip(chip, { onCopy }).show(code);
     td.append(chip);
   }

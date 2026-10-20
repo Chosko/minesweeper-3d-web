@@ -35,6 +35,7 @@
     .board-frame-demo .ui-board-frame { inset: 0; }
     #g-labels > * + *, #g-rows > * + * { margin-top: var(--space-4); }
     .message-demo { margin-top: var(--space-6); }
+    .code-demo { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); }
     .icon-set { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: var(--space-3); margin: 0 0 var(--space-4); }
     .icon-set figure { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); margin: 0; font-size: var(--font-size-sm); }
     .icon-set .ui-icon { width: 24px; height: 24px; }
@@ -104,12 +105,15 @@
           <div class="ui-stat" role="group" aria-labelledby="st-mines"><span class="ui-stat__label" id="st-mines">Mines</span><span class="ui-stat__value">-12</span></div>
         </div>
       </div>
+      <!-- component: muted panel -->
       <div class="ui-panel ui-panel--muted">
+        <h3 class="ui-heading">Classic 2D overall</h3>
         <p class="ui-text ui-text--muted">A muted panel: content shown for reference only.</p>
         <div class="ui-stat-row">
           <div class="ui-stat" role="group" aria-labelledby="st-muted"><span class="ui-stat__label" id="st-muted">Best time</span><span class="ui-stat__value">45.120 s</span><span class="ui-stat__detail">+2.792 s</span></div>
         </div>
       </div>
+      <!-- /component: muted panel -->
       <p class="ui-banner" role="status">A banner announcing an event</p>
     </section>
 
@@ -230,6 +234,9 @@
       <h2 class="ui-card__title" id="g-tile">Stat tile</h2>
       <div class="states">
         <span class="state">Set, kept</span><div class="ui-stat-row ui-stat-row--tiles"><div class="ui-stat ui-stat--tile" role="group" aria-labelledby="tl-1"><span class="ui-stat__label" id="tl-1">Best time</span><span class="ui-stat__value">47.380 s</span><span class="ui-stat__detail">9 Oct 2026</span><button type="button" class="ui-button ui-button--secondary" aria-label="Watch the replay of the best time">Watch</button></div><div class="ui-stat ui-stat--tile" role="group" aria-labelledby="tl-2"><span class="ui-stat__label" id="tl-2">Best 3BV/s</span><span class="ui-stat__value">1.23</span><span class="ui-stat__detail">2 Oct 2026</span></div><div class="ui-stat ui-stat--tile" role="group" aria-labelledby="tl-3"><span class="ui-stat__label" id="tl-3">Best efficiency</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail">&mdash;</span></div></div>
+        <span class="state">Inline Watch</span><div class="ui-stat-row ui-stat-row--tiles"><div class="ui-stat ui-stat--tile" role="group" aria-labelledby="tl-7"><span class="ui-stat__label" id="tl-7">Best time</span><span class="ui-stat__value">47.380 s</span><span class="ui-stat__detail">9 Oct 2026 · <a class="ui-link" href="#g-tile" aria-label="Watch the replay of the best time">Watch</a></span></div><div class="ui-stat ui-stat--tile" role="group" aria-labelledby="tl-8"><span class="ui-stat__label" id="tl-8">Best 3BV/s</span><span class="ui-stat__value">1.23</span><span class="ui-stat__detail">2 Oct 2026</span></div></div>
+        <span class="state">Warm</span><div class="ui-stat-row ui-stat-row--tiles"><div class="ui-stat ui-stat--tile ui-stat--warm" role="group" aria-labelledby="tl-9"><span class="ui-stat__label" id="tl-9">Best time</span><span class="ui-stat__value">47.380 s</span><span class="ui-stat__detail">9 Oct 2026</span></div><div class="ui-stat ui-stat--tile ui-stat--warm" role="group" aria-labelledby="tl-10"><span class="ui-stat__label" id="tl-10">Best 3BV/s</span><span class="ui-stat__value">&mdash;</span><span class="ui-stat__detail">no best yet</span></div></div>
+        <span class="state">New best, compared</span><div class="ui-stat-row ui-stat-row--tiles"><div class="ui-stat ui-stat--tile" role="group" aria-labelledby="tl-11" data-new-best><span class="ui-stat__label" id="tl-11">Time</span><span class="ui-stat__value">47.380 s</span><span class="ui-stat__detail" data-delta="better">was 48.213 s · −0.833 s</span></div><div class="ui-stat ui-stat--tile" role="group" aria-labelledby="tl-12"><span class="ui-stat__label" id="tl-12">3BV/s</span><span class="ui-stat__value">2.49</span><span class="ui-stat__detail" data-delta="worse">best 2.91 · −0.42</span></div><div class="ui-stat ui-stat--tile" role="group" aria-labelledby="tl-13"><span class="ui-stat__label" id="tl-13">Efficiency</span><span class="ui-stat__value">94.7%</span><span class="ui-stat__detail" data-delta="equal">best 94.7% · = best</span></div></div>
         <span class="state">Longest figures</span><div class="ui-stat-row ui-stat-row--tiles"><div class="ui-stat ui-stat--tile" role="group" aria-labelledby="tl-4"><span class="ui-stat__label" id="tl-4">Best time</span><span class="ui-stat__value">999.999 s</span><span class="ui-stat__detail">28 Sep 2026</span><button type="button" class="ui-button ui-button--secondary" aria-label="Watch the replay of the best time">Watch</button></div><div class="ui-stat ui-stat--tile" role="group" aria-labelledby="tl-5"><span class="ui-stat__label" id="tl-5">Best 3BV/s</span><span class="ui-stat__value">99.99</span><span class="ui-stat__detail">28 Sep 2026</span></div><div class="ui-stat ui-stat--tile" role="group" aria-labelledby="tl-6"><span class="ui-stat__label" id="tl-6">Best efficiency</span><span class="ui-stat__value">100.0%</span><span class="ui-stat__detail">28 Sep 2026</span></div></div>
       </div>
     </section>
@@ -253,11 +260,22 @@
     <section class="ui-card wide" aria-labelledby="g-code">
       <h2 class="ui-card__title" id="g-code">Code chip</h2>
       <div class="states">
-        <span class="state">Board code</span><div class="ui-code"><span class="ui-code__label">Board code</span><code class="ui-code__value">EN-20261011-184A</code><button type="button" class="ui-button ui-button--secondary" data-copy="code" data-icon="copy" aria-label="Copy the board code EN-20261011-184A">Copy</button><button type="button" class="ui-button ui-button--secondary" data-copy="link" data-icon="link" aria-label="Copy the challenge link of board EN-20261011-184A">Copy link</button></div>
-        <span class="state">Compact, a table row's</span><div class="ui-code ui-code--compact"><code class="ui-code__value">8X8X8M40N-9C41D07A-292-1A7F</code><button type="button" class="ui-button ui-button--secondary" data-copy="code" data-icon="copy" aria-label="Copy the board code 8X8X8M40N-9C41D07A-292-1A7F">Copy</button><button type="button" class="ui-button ui-button--secondary" data-copy="link" data-icon="link" aria-label="Copy the challenge link of board 8X8X8M40N-9C41D07A-292-1A7F">Copy link</button></div>
+        <span class="state">Board code</span><div class="code-demo"><div class="ui-section-label"><h3 class="ui-section-label__text" id="g-code-label">Board code</h3></div><div class="ui-code"><code class="ui-code__value">EN-20261011-184A</code><button type="button" class="ui-button ui-button--quiet ui-button--sm" data-copy="code" data-icon="copy" aria-label="Copy the board code EN-20261011-184A">Copy</button><button type="button" class="ui-button ui-button--quiet ui-button--sm" data-copy="link" data-icon="link" aria-label="Copy the challenge link of board EN-20261011-184A">Copy link</button></div></div>
+        <span class="state">A long code</span><div><div class="ui-code"><code class="ui-code__value">8X8X8M40N-9C41D07A-292-1A7F</code><button type="button" class="ui-button ui-button--quiet ui-button--sm" data-copy="code" data-icon="copy" aria-label="Copy the board code 8X8X8M40N-9C41D07A-292-1A7F">Copy</button><button type="button" class="ui-button ui-button--quiet ui-button--sm" data-copy="link" data-icon="link" aria-label="Copy the challenge link of board 8X8X8M40N-9C41D07A-292-1A7F">Copy link</button></div></div>
       </div>
     </section>
     <!-- /component: code chip -->
+
+    <!-- component: table -->
+    <section class="ui-card wide" aria-labelledby="g-table">
+      <h2 class="ui-card__title" id="g-table">Table</h2>
+      <div class="states">
+        <span class="state">Ranked</span><table class="ui-table"><thead><tr><th scope="col">#</th><th scope="col" class="ui-table__figure">Time</th><th scope="col" class="ui-table__figure">3BV/s</th><th scope="col">Date</th><th scope="col">Board code</th></tr></thead><tbody><tr><td class="ui-table__rank">1</td><td class="ui-table__figure">48.213 s</td><td class="ui-table__figure">2.45</td><td class="ui-table__date">9 Oct 2026</td><td class="ui-table__code">EN-9C41D07A-247-1486</td></tr><tr><td class="ui-table__rank">2</td><td class="ui-table__figure">49.907 s</td><td class="ui-table__figure">2.38</td><td class="ui-table__date">16 Oct 2026</td><td class="ui-table__code">EN-1F3A0C22-247-0B1D</td></tr></tbody></table>
+        <span class="state">Recent games</span><table class="ui-table ui-table--recent"><thead><tr><th scope="col">Date</th><th scope="col">Outcome</th><th scope="col" class="ui-table__figure">Time</th></tr></thead><tbody><tr><td class="ui-table__date">16 Oct 2026 14:02</td><td><span class="ui-chip ui-chip--won">Won</span></td><td class="ui-table__figure">51.744 s</td></tr><tr><td class="ui-table__date">16 Oct 2026 13:48</td><td><span class="ui-chip ui-chip--lost">Lost</span></td><td class="ui-table__figure">23.410 s</td></tr><tr><td class="ui-table__date">16 Oct 2026 13:40</td><td><span class="ui-chip ui-chip--muted">Abandoned</span></td><td class="ui-table__figure">8.102 s</td></tr></tbody></table>
+        <span class="state">Details</span><table class="ui-table"><tbody><tr><th scope="row">Clicks</th><td>128</td></tr><tr><th scope="row">Next target</th><td>47.380 s</td></tr><tr><th scope="row">Win rate</th><td>64%</td></tr></tbody></table>
+      </div>
+    </section>
+    <!-- /component: table -->
 
     <!-- components: shared layout -->
     <section class="ui-card wide" aria-labelledby="g-frame">
@@ -473,7 +491,8 @@
           <tr><th scope="row">Next target</th><td>Beat 47.380 s for a new best · streak 8</td></tr>
           <tr><th scope="row">Win rate</th><td>64% · completed games 71% · longest streak 12</td></tr>
         </tbody></table>
-        <div class="ui-code"><span class="ui-code__label">Board code</span><code class="ui-code__value">EN-9C41D07A-247-1486</code><button type="button" class="ui-button ui-button--secondary" data-copy="code" aria-label="Copy the board code EN-9C41D07A-247-1486">Copy</button><button type="button" class="ui-button ui-button--secondary" data-copy="link" aria-label="Copy the challenge link of board EN-9C41D07A-247-1486">Copy link</button></div>
+        <div class="ui-section-label"><h3 class="ui-section-label__text">Board code</h3></div>
+        <div class="ui-code"><code class="ui-code__value">EN-9C41D07A-247-1486</code><button type="button" class="ui-button ui-button--secondary" data-copy="code" aria-label="Copy the board code EN-9C41D07A-247-1486">Copy</button><button type="button" class="ui-button ui-button--secondary" data-copy="link" aria-label="Copy the challenge link of board EN-9C41D07A-247-1486">Copy link</button></div>
       </div>
       <footer class="ui-frame__foot">
         <div class="ui-actions ui-actions--row"><button type="button" class="ui-button ui-button--secondary">Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"><kbd class="ui-key-hint__key">Esc</kbd></span></button></div>

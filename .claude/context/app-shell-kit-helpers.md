@@ -69,12 +69,13 @@ those binders follow is [app-shell-kit.md](app-shell-kit.md).
   `'err'`, or null for a plain line again) its `ui-note--<tone>` class and
   `icon` (a name or null) its `data-icon` and icon; either left out keeps
   what `el` has. Returns `el`.
-- The code chip (`.ui-code`, `ui-code--compact` in a table row):
+- The code chip (`.ui-code`):
   `boardLink(code, location)` → `<origin><path>#board=<code>`;
   `copyBoardCode({kind, code, clipboard, location, select, toast})` →
   Promise of whether it copied (a refusal selects the code and toasts
-  `COPY_FALLBACK`, else `COPIED[kind]`); `createCodeChip(doc, {label,
-  compact})`; `bindCodeChip(root, {onCopy})` → `{show(code | null), code}`.
+  `COPY_FALLBACK`, else `COPIED[kind]`); `createCodeChip(doc)` — the chip
+  ([app-shell-kit.md](app-shell-kit.md) holds its shape); `bindCodeChip(root, {onCopy})` →
+  `{show(code | null), code}`.
 - The figures panel: `bindFigures(panel)` → `{show(figures, names?)}`
   writes the panel's `.ui-figure[data-figure]` rows from the live figures
   model's `{text, detail, progress}` per figure (`js/shell/live-figures.js`

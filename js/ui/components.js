@@ -607,31 +607,22 @@ export async function copyBoardCode({ kind, code, clipboard, location, select = 
 }
 
 /**
- * A code chip (`.ui-code`): the board code with Copy and Copy link. createCodeChip(doc, { label?,
- * compact? }) builds one — label the visible label ('Board code'; none on a compact chip, the table
- * row's) — and bindCodeChip(root, { onCopy }) binds one in the markup or built: show(code) fills
- * it, null hides it; each button calls onCopy({ kind, code, select }), select() selecting the code
- * text for a refused clipboard (copyBoardCode). Both buttons are native buttons, named for what
- * they copy.
+ * A code chip (`.ui-code`): the board code with Copy and Copy link. createCodeChip(doc) builds the
+ * one shape every caller shows — the code, then the two quiet small buttons with their copy and link
+ * icons; its "Board code" label is a section label the screen sets outside it — and
+ * bindCodeChip(root, { onCopy }) binds one in the markup or built: show(code) fills it, null hides
+ * it; each button calls onCopy({ kind, code, select }), select() selecting the code text for a
+ * refused clipboard (copyBoardCode). Both buttons are native buttons, named for what they copy.
  */
-export function createCodeChip(doc, { label = 'Board code', compact = false } = {}) {
+export function createCodeChip(doc) {
   const root = doc.createElement('div');
-  root.className = compact ? 'ui-code ui-code--compact' : 'ui-code';
-  if (label && !compact) {
-    const l = doc.createElement('span');
-    l.className = 'ui-code__label';
-    l.textContent = label;
-    root.append(l);
-  }
+  root.className = 'ui-code';
   const value = doc.createElement('code');
   value.className = 'ui-code__value';
   root.append(value);
-  for (const [kind, text] of [['code', 'Copy'], ['link', 'Copy link']]) {
-    const b = doc.createElement('button');
-    b.type = 'button';
-    b.className = 'ui-button ui-button--secondary';
-    b.dataset.copy = kind;
-    b.textContent = text;
+  for (const [kind, label, icon] of [['code', 'Copy', 'copy'], ['link', 'Copy link', 'link']]) {
+    const b = createButton(doc, { label, icon, variant: 'quiet', size: 'sm' });
+    b.setAttribute('data-copy', kind);
     root.append(b);
   }
   return root;

@@ -92,7 +92,7 @@
 // createReplayListView; the 2D | 3D switch (#records-mode, a kit segmented choice whose two options
 // are in the markup) shows content.mode and calls onMode(mode); a best and a recent game whose
 // watch is set get a Watch button calling onWatch(id), every recent game, Top 10 and library row its
-// board code as a compact code chip whose Copy and Copy link call onCopy, a recent game its outcome
+// board code as a code chip whose Copy and Copy link call onCopy, a recent game its outcome
 // as a kit chip (outcomeChip), a counter its label from the content (a Daily board's days in a row),
 // and the games list gains its Replay column while content.canWatch; the picker is a kit segmented
 // choice whose options are rebuilt only when the board list changes; the chart (createHistoryChart over

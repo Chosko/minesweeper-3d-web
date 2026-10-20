@@ -111,7 +111,9 @@ export const KIT_CATALOGUE = Object.freeze([
       part('detail', '.ui-stat__detail', { optional: true }),
     ],
   }),
+  // Plain by default; ui-stat--warm the cream tile on its edge.
   component('ui-stat--tile', {
+    variants: ['ui-stat--warm'],
     parts: [
       part('label', '.ui-stat--tile .ui-stat__label'),
       part('value', '.ui-stat--tile .ui-stat__value'),
@@ -119,13 +121,8 @@ export const KIT_CATALOGUE = Object.freeze([
       part('badge', '.ui-stat--tile .ui-chip', { optional: true, as: 'ui-chip' }),
     ],
   }),
-  component('ui-code', {
-    variants: ['ui-code--compact'],
-    parts: [
-      part('label', '.ui-code__label', { optional: true }),
-      part('value', '.ui-code__value'),
-    ],
-  }),
+  // One shape for every caller: the code and two quiet small buttons; its label a section label outside it.
+  component('ui-code', { parts: [part('value', '.ui-code__value')] }),
   // The pager's buttons are secondary buttons and take that component's states.
   component('ui-pager', {
     parts: [
@@ -240,7 +237,16 @@ export const KIT_CATALOGUE = Object.freeze([
     ],
   }),
   component('ui-table', {
-    parts: [part('heading', '.ui-table th'), part('cell', '.ui-table td'), part('figure', '.ui-table__figure', { optional: true })],
+    variants: ['ui-table--recent'],
+    parts: [
+      part('heading', '.ui-table th'),
+      part('label', '.ui-table th[scope="row"]', { optional: true }),
+      part('cell', '.ui-table td'),
+      part('figure', '.ui-table__figure', { optional: true }),
+      part('rank', '.ui-table__rank', { optional: true }),
+      part('date', '.ui-table--recent .ui-table__date', { optional: true }),
+      part('code', '.ui-table__code', { optional: true }),
+    ],
   }),
   // A short notice, polite and transient, at the bottom centre.
   component('ui-toast', { parts: [part('icon', '.ui-toast__icon'), part('text', '.ui-toast__text')] }),
