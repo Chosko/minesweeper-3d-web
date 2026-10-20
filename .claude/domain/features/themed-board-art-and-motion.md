@@ -22,9 +22,11 @@ player for that motion, so a theme is written once and both modes show it.
 In scope (m2b-themes):
 
 - **The theme board module's shape** — the part of the theme contract
-  (`theme-system`) that styles boards: tile and cube palette, number colours
-  1–26, number font, sky and fog, tile drawing style and its parameters,
-  cell motion per cell event.
+  (`theme-system`) that styles boards: tile and cube palette, the Classic 2D
+  number colours 1–8 and the 3D number colours 1–26 as separate lists,
+  number font, sky and fog, tile drawing style and its parameters, the
+  Classic 2D marked start cell, the Classic 2D end effect, cell motion per
+  cell event.
 - **Tile drawing styles** — the shared tile recipe grows from one fixed
   look into a small set of named drawing styles, each with parameters. This
   milestone ships two: **bevel** (a raised face framed by a thin edge and
@@ -33,14 +35,23 @@ In scope (m2b-themes):
   flat inside its edge, with no slope — the recipe's look today is one
   setting of it) and **flat** (a face with no slope: the closed face with a
   light top band and a dark bottom edge, the revealed face flush with a
-  hairline). A theme picks one style for its Classic 2D tiles and one for
-  its 3D cubes.
+  hairline of constant width in CSS pixels at every tile size, the pressed
+  shade and the exploded tile's border as widths from the module). A theme
+  picks one style for its Classic 2D tiles and one for its 3D cubes.
 - **Classic 2D tiles** — the tile painter and its cache draw from the
   active theme's board module and style, and redraw on theme change. The
   module sets the tile's corner radius and the gap between tiles as
   fractions of the tile size, so both scale with it; the cursor ring's
   radius follows the tile's, and the board frame's radius scales with the
-  tile too.
+  tile too. The cursor ring draws outside the tile, covering none of its
+  face, on a layer of its own, so it moves without redrawing a cell. The
+  marked start cell is drawn from the module's marked face — in the game,
+  the menu preview and the Daily preview.
+- **The board frame** — a plain frame whose padding is the module's gap,
+  around every Classic 2D board: the game, the menu preview, the Daily
+  preview (on the screen's body, with no scene panel behind it) and the
+  replay viewer, which fits the whole board in its board area. On a phone a
+  board too large to fit scrolls in a rounded viewport with no frame.
 - **3D cubes** — the tile atlas is generated from the active theme's
   palette and 3D style, every state and number 0–26 included, never shipped
   as a picture, and rebuilt on theme change; the selection outline, the
@@ -48,6 +59,13 @@ In scope (m2b-themes):
   tint and the confetti colours come from the board module. A painted slope is
   lit the same way on every face of a cube, top faces included.
 - **Sky, fog and background** — from the board module, replacing the sky
+  tokens. The theme stylesheet's scene tokens are named for the sky they
+  match (zenith, horizon, nadir) and the scene's ink, and board tokens the
+  canvas does not draw are retired once nothing reads them.
+- **The Classic 2D end effect** — the win confetti, the win wave (each tile
+  bumped in scale and lightened, clipped to its rounded face) and the loss
+  wave (each tile snapping to its revealed face with an overshoot and a
+  flash) take their colours and values from the board module, not from
   tokens.
 - **Cell motion** — per theme, per cell event (press, release, reveal,
   flag, unflag, chord press, solved pulse), from the fixed motion
@@ -59,12 +77,14 @@ In scope (m2b-themes):
   differ by relief as well as colour; its flag, and its numbers 1–8 in the
   glyph style and colours the game draws today in the light look (weight,
   outline, shadow), set in Rubik, the theme's self-hosted font; every value
-  — palette, numbers 1–26 in both modes, sky and fog, both styles'
+  — palette, both number lists, sky and fog, both styles'
   parameters, the cursor ring and the marked start cell, the selection
   outline, its glow line and the selected face's tint, the confetti
-  colours, and the cell motion with the solved pulse — from the
-  canvas's *J-BoardSheet* (2D) and *J-3DSheet* (3D) artboards, passing the
-  board conformance checks unchanged.
+  colours, the Classic 2D end effect, and the cell motion with the solved
+  pulse, its press, release, reveal, flag, unflag and chord press keyframed
+  on the opacity, flip, scale and brightness tracks as the canvas draws
+  them — from the canvas's *J-BoardSheet* (2D) and *J-3DSheet* (3D)
+  artboards, passing the board conformance checks unchanged.
 - **The board conformance checks** that `theme-system`'s conformance tests
   run for every theme.
 
@@ -75,7 +95,9 @@ Non-goals:
 - New motion ingredients beyond the vocabulary below, and motion for
   anything that is not a cell event: the end-of-game waves, confetti and
   shake, and the flash of the cubes a flag click on a number changes, keep
-  their current behaviour, drawn in the theme's palette.
+  their current behaviour, drawn in the theme's palette — the Classic 2D
+  end effect reading it from the board module (**The Classic 2D end
+  effect** above).
 - Changing the 3D mode's controls, pick rules, view modes or rules.
 - Hexagonal, triangle and Surface tiles, and the colour-blind-safe number
   set — deferred to `m6-launch`.
@@ -107,7 +129,10 @@ reads a stylesheet or imports a theme.
   through gains named drawing styles. Each style draws the same set of
   faces — closed, sunk (closed at full depth), revealed — and the same
   glyphs — number, flag, mine, exploded mine, wrong-flag cross — from the
-  palette and parameters it is given, at any size, and accepts a **depth**
+  palette and parameters it is given, at any size, in both modes alike
+  (the mine's spikes ending in round knobs, the wrong-flag cross in its own
+  colour, a two-digit 3D number set at a single digit's height and
+  narrowed to fit), and accepts a **depth**
   from 0 (flat) to 1 (fully raised) so the depth motion ingredient can draw
   in-between faces; a depth keyframe past 1 is an overshoot, drawn fully
   raised. The styles are the table `STYLES` of `js/tile-art.js` — `bevel`
@@ -160,7 +185,10 @@ reads a stylesheet or imports a theme.
   canvas from the cached tile images, transformed per the player's values;
   the board canvas shows the cell's slot empty for the animation's length,
   so a growing or moving cell overlaps its neighbours cleanly and nothing
-  on the board canvas is redrawn per frame. The layer is a second canvas
+  on the board canvas is redrawn per frame. Every track of the vocabulary
+  draws there — offset, scale, flip, brightness and opacity in every
+  style, the flat one included; the 3D motion mesh honours the same tracks
+  where the renderer supports them. The layer is a second canvas
   (class `board-motion`) over the board canvas, taking no input. Depth
   draws from cached in-between faces at a few fixed steps — `DEPTH_STEPS`
   in `js/classic2d/tile-skin.js`, from flat to fully raised, the nearest
@@ -187,12 +215,16 @@ reads a stylesheet or imports a theme.
   documents —
   - *palette*: closed face, closed edge and highlight, sunk face, revealed
     face and border, flag (pole and cloth), mine, exploded ground, wrong-flag
-    cross, board ground, 3D confetti colours;
+    cross, board ground, the confetti colours of both modes, and the
+    Classic 2D faces the style does not derive, the marked start cell among
+    them;
   - *cursor*, *selection*, *mark*: the Classic 2D cursor ring; the 3D
     selection outline, its inner glow line and the selected face's tint;
     the 3D marked-cell tint;
-  - *numbers*: 26 colours, 1 to 26 — Classic 2D uses 1–8, 3D all 26; the
-    number font family and weight;
+  - *numbers*: two lists — the Classic 2D colours 1 to 8 and the 3D colours
+    1 to 26; the number font family and weight;
+  - the Classic 2D end effect's win and loss wave values, its confetti
+    drawn from the palette's confetti colours;
   - *sky*: horizon, zenith and nadir, and the fog colour (the horizon when
     absent);
   - *drawing style*: per mode — Classic 2D tiles (`style2d`) and 3D cubes
@@ -240,7 +272,7 @@ reads a stylesheet or imports a theme.
   position. No input waits for an animation, and a second event on an
   animating cell restarts it from the new state.
 - **Board conformance checks** (run by `theme-system`'s tests for every
-  theme) — every palette entry, 26 number colours, a shipped style with all
+  theme) — every palette entry, both number lists, a shipped style with all
   its parameters for each mode, an entry for every cell event — a motion description
   built only from the vocabulary with a positive duration, or none; each number colour at least 4.5:1
   against every point of its theme's revealed face; closed and revealed
