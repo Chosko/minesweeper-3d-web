@@ -88,7 +88,10 @@ sheet:
 - **Drawing style** — for each mode, the shipped style in `STYLES` whose
   construction the sample tiles show (a sloped bevel, or a flat face with a
   light band and a dark edge), with its parameters measured from the sample
-  as fractions of the tile, plus, in 2D, `gap` and `frameRadius`. A bevel
+  in the unit `STYLES` gives each — a fraction of the tile, or drawing units
+  (CSS pixels on a Classic 2D tile) for a width constant at every tile size,
+  such as the flat style's `hairline` and `border` — plus, in 2D, `gap` and
+  `frameRadius` as fractions of the tile. A bevel
   side the sheet draws in a colour no mix of the face with its light or dark
   bevel gives is that `#rrggbb` colour. A tile no shipped style draws within
   its parameters is a stop.

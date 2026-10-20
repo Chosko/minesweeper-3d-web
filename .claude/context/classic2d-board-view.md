@@ -79,8 +79,8 @@ cell motion, the end effect — is
 - **The engine is the source.** The view keeps no cell state; every tile is
   read from the game (`cellState` / `cellNumber`) when drawn.
 - **Board module.** The view reads the skin's board module (`board()`):
-  `style2d.params.gap` and `radius`, `palette.boardGround`, `cursor` and
-  `motion`. A hand-off of a new module drops every animation, lays the
+  `style2d.params.gap`, `radius` and `frameRadius`, `palette.boardGround`,
+  `cursor`, `end2d` and `motion`. A hand-off of a new module drops every animation, lays the
   board out again (its gap may change) and repaints it.
 - **Pitch.** Tiles sit one pitch apart, the tile plus the gap in whole
   pixels (none without a gap), inside the view rectangle, filled with the

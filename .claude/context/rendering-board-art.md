@@ -10,7 +10,7 @@ time-driven extras are [rendering-effects.md](rendering-effects.md).
 
 | File | Responsibility |
 | --- | --- |
-| `js/textures.js` | procedural tile atlas: every tile drawn on a 2D canvas through the shared tile recipe (`js/tile-art.js`, [classic2d-tile-skin.md](classic2d-tile-skin.md)) in the board module's 3D style from its 3D palette, numbers and number font, packed into one `THREE.DataArrayTexture` (one layer per tile); it holds no colour of its own |
+| `js/textures.js` | procedural tile atlas: every tile drawn on a 2D canvas through the shared tile recipe (`js/tile-art.js`, [classic2d-tile-skin.md](classic2d-tile-skin.md)) in the board module's 3D style from its 3D palette, `numbers3d` and number font, packed into one `THREE.DataArrayTexture` (one layer per tile); it holds no colour of its own |
 | `js/render.js` | `BoardRenderer`'s board module hand-off (`setBoard`) and its pure derivations |
 
 ## Public API

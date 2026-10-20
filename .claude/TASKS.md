@@ -1331,7 +1331,7 @@ Feature: in-game-layout
 
 ## 246. Update documentation for feature `themed-board-art-and-motion`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/app-shell-board-module.md, .claude/context/app-shell-themes.md, .claude/context/classic2d-tile-skin.md, .claude/context/classic2d-tile-motion.md, .claude/context/classic2d-board-motion.md, .claude/context/classic2d-board-view.md, .claude/context/rendering-board-art.md, .claude/context/app-shell-menu.md, .claude/context/app-shell-daily.md, .claude/context/replay-viewers.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/themed-board-art-and-motion.md
 Preconditions: 224, 225, 226, 227

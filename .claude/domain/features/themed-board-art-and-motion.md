@@ -152,11 +152,13 @@ reads a stylesheet or imports a theme.
   frame, its ground between tiles, the gap and the cursor ring's colour and
   radius come from the theme too — the frame as the kit component
   `ui-board-frame` styled by the theme stylesheet, its radius the custom
-  property `--board-frame-radius`, which the shell sets to the 2D style's
-  `frameRadius` × the tile; the gap and the cursor ring from the board
+  property `--board-frame-radius`, set at every layout of the board to the
+  2D style's `frameRadius` × the tile; the gap and the cursor ring from the board
   module. The board view lays tiles out on
   the tile size plus the gap, and hit-tests a cell's whole slot, gap
-  included.
+  included. The cursor ring draws on the ring layer, a canvas of its own
+  (class `board-ring`) over the motion layer, taking no input; the marked start
+  cell is a tile state of its own, the skin's `marked` tile.
 - **3D tile atlas and scene.** The atlas is built from the board module's
   3D style —
   one layer per state and per number 0–26, plus the sunk closed face the
@@ -187,8 +189,9 @@ reads a stylesheet or imports a theme.
   so a growing or moving cell overlaps its neighbours cleanly and nothing
   on the board canvas is redrawn per frame. Every track of the vocabulary
   draws there — offset, scale, flip, brightness and opacity in every
-  style, the flat one included; the 3D motion mesh honours the same tracks
-  where the renderer supports them. The layer is a second canvas
+  style, the flat one included; the 3D motion mesh draws every track too,
+  on the events the 3D game reports, which never include press, release
+  or chord press. The layer is a second canvas
   (class `board-motion`) over the board canvas, taking no input. Depth
   draws from cached in-between faces at a few fixed steps — `DEPTH_STEPS`
   in `js/classic2d/tile-skin.js`, from flat to fully raised, the nearest
@@ -217,14 +220,17 @@ reads a stylesheet or imports a theme.
     face and border, flag (pole and cloth), mine, exploded ground, wrong-flag
     cross, board ground, the confetti colours of both modes, and the
     Classic 2D faces the style does not derive, the marked start cell among
-    them;
-  - *cursor*, *selection*, *mark*: the Classic 2D cursor ring; the 3D
-    selection outline, its inner glow line and the selected face's tint;
+    them (`palette.faces2d.marked`, with its dashed ring's colour `ring`);
+  - *cursor*, *selection*, *mark*: the Classic 2D cursor ring, drawn
+    outside the tile round an inner band of its own colour and width; the
+    3D selection outline, its inner glow line and the selected face's tint;
     the 3D marked-cell tint;
-  - *numbers*: two lists — the Classic 2D colours 1 to 8 and the 3D colours
-    1 to 26; the number font family and weight;
-  - the Classic 2D end effect's win and loss wave values, its confetti
-    drawn from the palette's confetti colours;
+  - *numbers*: two lists — `numbers2d`, the Classic 2D colours 1 to 8, and
+    `numbers3d`, the 3D colours 1 to 26; the number font family and weight;
+  - *end2d*: the Classic 2D end effect's waves — the light a wave mixes a
+    tile toward, the win wave's peak scale and mix, the loss wave's
+    starting scale and flash — its confetti drawn from the palette's
+    confetti colours;
   - *sky*: horizon, zenith and nadir, and the fog colour (the horizon when
     absent);
   - *drawing style*: per mode — Classic 2D tiles (`style2d`) and 3D cubes
@@ -274,8 +280,10 @@ reads a stylesheet or imports a theme.
 - **Board conformance checks** (run by `theme-system`'s tests for every
   theme) — every palette entry, both number lists, a shipped style with all
   its parameters for each mode, an entry for every cell event — a motion description
-  built only from the vocabulary with a positive duration, or none; each number colour at least 4.5:1
-  against every point of its theme's revealed face; closed and revealed
+  built only from the vocabulary with a positive duration, or none; each 3D
+  number colour at least 4.5:1 against every point of the 3D revealed face,
+  and each Classic 2D number against the 2D revealed face and its shade (the
+  hairline round a flat face holds no glyph); closed and revealed
   faces distinguishable by more than colour (relief or border); the
   cursor ring and selection outline at least 3:1 against both faces.
 - **Minimum size** — every state and number stays legible down to the
