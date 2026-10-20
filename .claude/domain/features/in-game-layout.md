@@ -25,7 +25,13 @@ In scope (m2b-themes):
   (`shared-screen-layout`): the head with the mode and board title and
   Pause with its key hint; the counter strip with mines left, Restart and
   the timer; the board in its themed frame; the side panel; the foot line
-  (board size, mine count and no-guess).
+  (board size, mine count and no-guess). The window hugs its content and
+  centres on the page; the board starts just under the counter strip,
+  left-aligned at the strip's width; the figures column is flat, with no
+  surface of its own, after a divider. On a phone the board sits directly
+  under the counter strip with the Tap choice under it; held sideways, the
+  board takes the left edge and a right column holds the mines, the time,
+  Restart and the Tap choice.
 - **Counter readouts** — new kit components: the counter readout
   `ui-counter` (its `digits` and an optional `icon` as parts), so a theme
   can draw it as plain figures, LED digits on black or anything between,
@@ -34,21 +40,32 @@ In scope (m2b-themes):
   detail line, the 3BV's progress bar as `ui-figure--progress`), with an
   optional head bar (title and an action) and a foot for the controls
   reminder. The timer and mine-counter formats and limits are unchanged
-  (`screen-components` § Overlay bar).
+  (`screen-components` § Overlay bar); a negative mine counter is drawn in
+  the danger colour. The counters, the figures, the titles and the touch
+  buttons follow the frame's size steps (`shared-screen-layout`), in the
+  Classic 2D window and the 3D overlay alike.
 - **Restart in the strip** — the shared restart of `game-shell`, with its
   confirmation rule unchanged.
 - **Live figures** — derived each time the game's counts change, never on
   a timer tick except where the elapsed time is part of the figure:
   - *3BV* — 3BV solved over the board's 3BV, with a progress bar;
   - *pace vs PB* — how far ahead of or behind the personal best's pace the
-    game is, shown only when this board has a personal best time;
+    game is (*ahead of* or *behind* the time), shown only when this board
+    has a personal best time;
   - *3BV/s* — 3BV solved per elapsed second, with the board's best 3BV/s
-    as its detail line;
-  - *clicks* — the counted clicks, with the live efficiency as its detail
-    line;
+    as its *PB* detail line; the dash placeholder until time has elapsed;
+  - *clicks* — the counted clicks, with the live *efficiency* (in lower
+    case) as its detail line;
   - *flags* — flags placed, with mines left as its detail line.
 - **Controls reminder** — the side panel's foot lists the board's main
   bindings for the active input device, from the bindings source.
+- **First-use hint strip** — laid over the board column without refitting
+  the board, every input shown in a key box with no separators, never
+  overlapping the figures panel when that panel sits under the board; on
+  touch it names tap, long-press and the mode's chord gesture.
+- **Tap choice** — on touch, the Reveal / Flag choice for a tap is a
+  two-option segmented choice (*Tap: Reveal*, *Tap: Flag*) under the
+  board; touch input reads its value.
 - **3D game** — the 3D overlay keeps the full-window scene and takes the
   same parts, over the scene on their own themed surfaces: the flags
   counter, Restart and the timer at the top centre; on the right, the
@@ -60,7 +77,16 @@ In scope (m2b-themes):
   counters and Restart at the top centre and Pause an icon button at the
   top right; in portrait the title and Pause bar sits on top with the
   counters below; both keep the full name, and the touch hint strip wraps
-  onto a second line rather than overflowing.
+  onto a second line rather than overflowing. The aimed-cell readout
+  carries outline cube and flag icons in the text colour; the crosshair
+  draws its arms only while a cell is targeted, with no ring; the
+  off-screen arrow sits by the crosshair; the HUD key strip's labels are in
+  ink; the touch stick is drawn at rest and follows the thumb while used.
+- **Learn 3D** — its own play layout: a head with the title and Pause, a
+  strip with mines and Restart only, no figures panel, and the lesson's
+  prompt in its own strip with the step count. Its end cards carry a
+  *Learn 3D* label above the title, ink body text, a line on a loss as well
+  as on a win, and the icons the canvas draws.
 - **Replay viewer** — shows the same live figures for the replayed game
   beside its playback controls, from the replay's frames.
 
