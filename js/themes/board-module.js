@@ -53,7 +53,8 @@
 //     rotation    the angle in degrees about the track's `axis` [x, y, z]; with `flip: true` the
 //                 cell shows its state before the event until the track's midpoint (halfway from
 //                 its first to its last keyframe) and its state after from then on — a flip whose
-//                 angle stays 0 is a cut from one face to the other at that point
+//                 angle stays 0 is a cut from one face to the other at that point, and a flip of
+//                 one keyframe cuts at it (one at the duration shows the state before throughout)
 //     depth       the drawing style's depth, 0 flat to 1 fully raised; a keyframe past 1 is an
 //                 overshoot, which the tile recipe draws fully raised
 //     brightness  1 the drawn colour; above 1 a lift toward white by the excess, below 1 a

@@ -118,6 +118,17 @@ test('a flip midpoint is halfway between its first and last keyframe, not the du
   assert.equal(p.valuesAt(1000 + 60).get(5).face, 'flag');
 });
 
+test('a flip of one keyframe cuts at that keyframe: one at the duration shows the before state throughout', () => {
+  const { p } = player();
+  const cutAt = (at) => track('rotation', [{ at, value: 0 }], { axis: [1, 0, 0], flip: true });
+  p.start(5, 'reveal', 'closed', 'revealed', linear(160, [cutAt(60)]));
+  assert.equal(p.valuesAt(1000 + 59).get(5).face, 'closed');
+  assert.equal(p.valuesAt(1000 + 60).get(5).face, 'revealed');
+  p.start(6, 'press', 'closed', 'sunk', linear(90, [cutAt(90), track('scale', [{ at: 0, value: 1 }, { at: 90, value: 0.96 }])]));
+  assert.equal(p.valuesAt(1000 + 89).get(6).face, 'closed');
+  assert.equal(p.valuesAt(1000 + 90).has(6), false, 'then the after state, once the animation ends');
+});
+
 test('without a flip the cell shows its after state throughout', () => {
   const { p } = player();
   p.start(6, 'press', 'closed', 'sunk', linear(90, [track('depth', [{ at: 0, value: 1 }, { at: 90, value: 0 }])]));

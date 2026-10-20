@@ -66,6 +66,20 @@ returns the unsubscribe.
   the cursor ring and selection outline at least 3:1 against the closed and
   revealed faces; and an entry for every cell event, a motion description
   built only from the vocabulary or `null`.
+- **Motion tracks.** A cell event's description keys the vocabulary's
+  tracks — offset, scale, rotation and its flip, depth, brightness and
+  opacity, each as the head comment of `js/themes/board-module.js` defines
+  it — and the cell motion player
+  ([classic2d-tile-motion.md](classic2d-tile-motion.md)) answers each per
+  frame. How the 2D motion layer draws them is
+  [classic2d-board-motion.md](classic2d-board-motion.md); the 3D motion
+  mesh draws them all on the events it plays — reveal, flag, unflag and
+  the solved pulse, never press, release or chord press, which the 3D game
+  does not report ([rendering-effects.md](rendering-effects.md)).
+  *Joyful tiles* keys J-BoardSheet's motion rows: press and chord press
+  move, shrink and dim the closed face and cut to the pressed face as they
+  end, release springs back from that pressed pose, reveal fades and lifts
+  the cell open from it, flag and unflag add their brightness.
 - **The board frame.** `ui-board-frame` is the kit's frame a Classic 2D
   board sits in; each theme stylesheet styles it, its corner radius the
   custom property `--board-frame-radius`, which the shell sets from the

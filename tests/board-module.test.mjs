@@ -12,6 +12,7 @@ import { STYLES, mix } from '../js/tile-art.js';
 import { MIN_TILE_SIZE } from '../js/classic2d/tile-skin.js';
 import { THEMES } from '../js/themes/registry.js';
 import { BOARD as JOYFUL } from '../themes/joyful-tiles/board.js';
+import { createCellMotion } from '../js/cell-motion.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const JOYFUL_ENTRY = THEMES.find((t) => t.id === 'joyful-tiles');
@@ -207,6 +208,66 @@ test('Joyful tiles animates every cell event from the board sheet\'s keyframes a
   assert.equal(JOYFUL.motion.solvedPulse.duration, 450);
   const scale = JOYFUL.motion.solvedPulse.tracks.find((t) => t.property === 'scale');
   assert.equal(Math.max(...scale.keyframes.map((k) => k.value)), 1.15, 'the reference pulse peaks at 1.15');
+});
+
+// Each Joyful tiles cell event played on the player, sampled at the board sheet's keyframe times:
+// the face shown, offset y (in tiles: 3 px at a 56 px tile ≈ .054), scale, brightness and opacity.
+function joyfulAt(event, ms) {
+  const p = createCellMotion({ now: () => 0 });
+  p.start(0, event, 'before', 'after', JOYFUL.motion[event]);
+  const v = p.valuesAt(ms).get(0);
+  return v && { face: v.face, y: v.offset.y, scale: v.scale, brightness: v.brightness, opacity: v.opacity };
+}
+const pose = (event, ms, expected) => {
+  const v = joyfulAt(event, ms);
+  for (const [k, want] of Object.entries(expected)) {
+    if (k === 'face') assert.equal(v.face, want, `${event} at ${ms} ms: face`);
+    else assert.ok(Math.abs(v[k] - want) < 1e-6, `${event} at ${ms} ms: ${k} ${v[k]} ≠ ${want}`);
+  }
+};
+const REST = { y: 0, scale: 1, brightness: 1, opacity: 1 };
+const PRESSED_POSE = { y: 0.054, scale: 0.96 };
+
+test('Joyful tiles keys the board sheet\'s press, release and chord press on offset, scale, brightness and the face cut', () => {
+  pose('press', 0, { face: 'before', ...REST });
+  pose('press', 45, { face: 'before', y: 0.04, scale: 0.98, brightness: 0.97 });
+  pose('press', 89, { face: 'before' });
+  pose('release', 0, { ...PRESSED_POSE, brightness: 1 });
+  pose('release', 90, { y: -0.02, scale: 1.03, brightness: 1.04 });
+  pose('chordPress', 0, { face: 'before', ...REST });
+  pose('chordPress', 89, { face: 'before' });
+  for (const event of ['press', 'chordPress']) {
+    const cut = JOYFUL.motion[event].tracks.find((t) => t.property === 'rotation' && t.flip);
+    assert.ok(cut, `${event} cuts from the closed face to the pressed face`);
+    assert.equal(cut.keyframes[0].at + cut.keyframes.at(-1).at, 2 * 90, `${event} cuts at the pressed face's 90 ms`);
+    const last = (property) => JOYFUL.motion[event].tracks.find((t) => t.property === property).keyframes.at(-1);
+    assert.deepEqual([last('offset').at, last('offset').value.y], [90, 0.054], `${event} ends in the pressed pose`);
+    assert.deepEqual([last('scale').at, last('scale').value], [90, 0.96]);
+  }
+  const brightness = JOYFUL.motion.chordPress.tracks.find((t) => t.property === 'brightness').keyframes.at(-1);
+  assert.deepEqual([brightness.at, brightness.value], [90, 0.96]);
+  const releaseEnd = JOYFUL.motion.release.tracks.filter((t) => t.property !== 'depth').map((t) => t.keyframes.at(-1));
+  assert.ok(releaseEnd.every((k) => k.at === 140 && (k.value === 1 || k.value?.y === 0)), 'release rests at 140 ms');
+});
+
+test('Joyful tiles keys the board sheet\'s reveal, flag and unflag on opacity and brightness, cuts as shipped', () => {
+  pose('reveal', 0, { face: 'before', ...PRESSED_POSE, brightness: 1, opacity: 1 });
+  pose('reveal', 59, { face: 'before' });
+  pose('reveal', 60, { face: 'after', y: 0, opacity: 0.6, scale: 0.82, brightness: 1.12 });
+  pose('reveal', 120, { opacity: 1, brightness: 1.04, scale: 1.04 });
+  pose('flag', 79, { face: 'before' });
+  pose('flag', 80, { face: 'after', y: -0.15, scale: 1.18, brightness: 1.08 });
+  pose('unflag', 59, { face: 'before' });
+  pose('unflag', 60, { face: 'after', scale: 0.9, brightness: 1.06 });
+  for (const [event, end] of [['reveal', 160], ['flag', 180], ['unflag', 120]]) {
+    for (const t of JOYFUL.motion[event].tracks.filter((x) => x.property !== 'rotation')) {
+      const k = t.keyframes.at(-1);
+      assert.ok(k.at <= end && (k.value === 1 || k.value?.y === 0), `${event}.${t.property} rests by ${end} ms`);
+    }
+  }
+  const easings = Object.fromEntries(['press', 'release', 'reveal', 'flag', 'unflag', 'chordPress'].map((e) => [e, JOYFUL.motion[e].easing.join()]));
+  const OUT = '0.2,0.8,0.2,1', SPRING = '0.34,1.56,0.64,1';
+  assert.deepEqual(easings, { press: OUT, release: SPRING, reveal: SPRING, flag: SPRING, unflag: OUT, chordPress: OUT });
 });
 
 test('every value of Joyful tiles\' board module names the artboard it came from', () => {

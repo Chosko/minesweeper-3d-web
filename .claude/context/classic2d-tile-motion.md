@@ -30,11 +30,14 @@ tile looks is [classic2d-tile-skin.md](classic2d-tile-skin.md).
 
 - **Cell motion.** Each track interpolates its keyframes with the
   description's easing applied per keyframe segment, as a CSS animation's
-  timing function is, holding its end values outside them. A flip
-  (rotation with `flip: true`) shows `before` until halfway between its
-  first and last keyframe and `after` from then on; without a flip a cell
-  shows `after` throughout, and a property no track animates rests (depth
-  `null`, the face's own). An animation past its duration leaves the
+  timing function is, holding its end values outside them. The tracks are
+  the board module's vocabulary: offset, scale, rotation, depth, brightness
+  and opacity, each answered per frame. A flip (rotation with `flip: true`)
+  shows `before` until halfway between its first and last keyframe — at
+  the keyframe itself for a flip of one, so one at the duration shows
+  `before` until the animation ends — and `after` from then on; without a
+  flip a cell shows `after` throughout, and a property no track animates
+  rests (depth `null`, the face's own). An animation past its duration leaves the
   player, so the cell shows `after`. A second `start` on an animating cell
   restarts it; a `null` description, or a new cell past the cap, starts
   nothing and drops the cell's running animation, so it shows its new

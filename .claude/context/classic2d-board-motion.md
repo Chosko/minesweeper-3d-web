@@ -56,10 +56,11 @@ view's layout, fit rule, scrolling, redraw and `mountBoardView` are
   drawing them, and Classic 2D has no solved pulse. Only cells in view
   start an event. While a cell animates its slot is drawn as bare ground
   and the layer draws the cell from the tile cache — centred on its tile,
-  offset, scaled and turned per the player's values, at its opacity, its
-  brightness a lighter or darker second pass, its depth the cache's
-  nearest step — clipped to the view; when it settles the board draws it
-  again. Nothing on the board canvas is redrawn per frame, and the layer
+  offset, scaled and turned per the player's values, the face its flip
+  shows, at its opacity, its brightness a second pass over the painted cell
+  alone (toward white above 1, toward black below), its depth the cache's
+  nearest step (which the flat style draws no differently) — clipped to
+  the view; when it settles the board draws it again. Nothing on the board canvas is redrawn per frame, and the layer
   requests frames only while a cell animates. Motion is visual only:
   hit-testing, the game and every input stay on the logical slot.
   `setGame`, hiding the board, a hand-off of board art and `dropMotion()`

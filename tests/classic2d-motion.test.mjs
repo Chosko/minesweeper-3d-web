@@ -44,7 +44,7 @@ function fakeContext(name) {
       if (prop === 'createLinearGradient') return () => ({ addColorStop() {} });
       if (prop === 'getTransform') return () => ({ a: 1 });
       if (prop === 'measureText') return () => ({ width: 5, actualBoundingBoxAscent: 5, actualBoundingBoxDescent: 0 });
-      return (...args) => { calls.push({ op: prop, args, fill: target.fillStyle }); };
+      return (...args) => { calls.push({ op: prop, args, fill: target.fillStyle, alpha: target.globalAlpha, composite: target.globalCompositeOperation }); };
     },
     set(target, prop, value) { target[prop] = value; return true; },
   });
@@ -78,7 +78,7 @@ function fakeSkinFactory(board = JOYFUL) {
   out.createSkin = ({ redraw }) => {
     out.redraw = redraw;
     return {
-      drawTile(ctx, x, y, size, state, number, ratio, depth = null) { out.draws.push({ ctx: ctx.name, x, y, size, state, number, ratio, depth }); },
+      drawTile(ctx, x, y, size, state, number, ratio, depth = null) { out.draws.push({ ctx: ctx.name, x, y, size, state, number, ratio, depth, alpha: ctx.globalAlpha }); },
       board: () => board,
       dispose() {},
     };
@@ -242,13 +242,78 @@ test('the layer draws each animating cell transformed by the player\'s values: s
   assert.ok(Math.abs(last[4] - (rect.x + tile / 2)) < 1);
 });
 
+test('a press moves, shrinks and dims the closed face in the flat style, its pressed face only at the cut', () => {
+  const h = makeView();
+  assert.equal(JOYFUL.style2d.name, 'flat');
+  h.view.setPressed([0], 'press');
+  step(h, 45); // the board sheet's 45 ms: offset y .04, scale .98, brightness .97, the closed face
+  const { tile } = h.view.layout;
+  const rect = h.view.cellRect(0);
+  const last = h.layerCanvas.ctx.calls.filter((c) => c.op === 'setTransform').at(-1).args;
+  assert.ok(Math.abs(last[0] - 0.98) < 0.005, `scale ${last[0]}`);
+  assert.ok(Math.abs(last[5] - (rect.y + tile / 2 + 0.04 * tile)) < 0.5, 'the offset is drawn in the flat style');
+  assert.deepEqual(layerDraws(h).map((d) => d.state), ['closed'], 'the closed face until the cut');
+  const dim = h.layerCanvas.ctx.calls.filter((c) => c.op === 'fillRect' && c.composite === 'source-atop');
+  assert.equal(dim.length, 1);
+  assert.equal(dim[0].fill, '#000000');
+  assert.ok(Math.abs(dim[0].alpha - 0.03) < 0.005, `darkened by the factor: ${dim[0].alpha}`);
+});
+
 test('depth is handed to the tile cache, which draws its nearest step', () => {
   const h = makeView();
   h.view.setPressed([0], 'chordPress');
   step(h, 45);
   const d = layerDraws(h)[0];
-  assert.equal(d.state, 'pressed');
+  assert.equal(d.state, 'closed', 'the chord press shows the closed face until its cut');
   assert.ok(d.depth > 0 && d.depth < 1, `the chord press animates depth: ${d.depth}`);
+});
+
+test('the layer draws brightness above 1 as a lift toward white and below 1 as a darkening, at the opacity', () => {
+  const canvas = fakeCanvas('layer');
+  const frames = fakeFrames();
+  const painted = [];
+  const layer = createMotionLayer({
+    canvas, frames, now: () => 0,
+    place: () => ({ x: 0, y: 0, size: 10 }),
+    paint: (ctx) => painted.push({ alpha: ctx.globalAlpha, composite: ctx.globalCompositeOperation }),
+  });
+  layer.resize(100, 50, 1);
+  const held = (brightness, opacity) => ({
+    duration: 100, easing: 'linear',
+    tracks: [{ property: 'brightness', keyframes: [{ at: 0, value: brightness }] }, { property: 'opacity', keyframes: [{ at: 0, value: opacity }] }],
+  });
+  const second = () => canvas.ctx.calls.filter((c) => c.op === 'fillRect' && c.composite !== 'source-over');
+  for (const [brightness, opacity, fill, alpha] of [[1.12, 0.6, '#ffffff', 0.12], [1.45, 1, '#ffffff', 0.45], [0.96, 1, '#000000', 0.04]]) {
+    painted.length = 0;
+    canvas.ctx.calls.length = 0;
+    layer.start(1, 'reveal', 'closed', 'revealed', held(brightness, opacity));
+    layer.frame();
+    assert.deepEqual(painted, [{ alpha: opacity, composite: 'source-over' }], 'the cell is painted once, at its opacity');
+    const pass = second();
+    assert.equal(pass.length, 1, `brightness ${brightness}: one pass over the painted cell`);
+    assert.equal(pass[0].composite, 'source-atop', 'only over the cell itself');
+    assert.equal(pass[0].fill, fill, `brightness ${brightness} mixes toward ${fill}`);
+    assert.ok(Math.abs(pass[0].alpha - alpha) < 1e-9, `by ${alpha}: ${pass[0].alpha}`);
+  }
+  painted.length = 0;
+  canvas.ctx.calls.length = 0;
+  layer.start(1, 'reveal', 'closed', 'revealed', held(1, 1));
+  layer.frame();
+  assert.equal(second().length, 0, 'brightness 1 draws the colour as it is');
+  assert.equal(painted.length, 1);
+});
+
+test('a reveal fades and lifts the cell open: the board sheet\'s opacity and brightness on the layer', () => {
+  const h = makeView();
+  const r = h.game.reveal(h.grid.index(7, 1)); // a number beside the mines: one cell changes
+  h.view.update([...r.changed]);
+  step(h, 60);
+  const [drawn] = layerDraws(h);
+  assert.equal(drawn.state, 'revealed');
+  assert.ok(Math.abs(drawn.alpha - 0.6) < 1e-6, `at the sheet's opacity .6: ${drawn.alpha}`);
+  const lift = h.layerCanvas.ctx.calls.filter((c) => c.op === 'fillRect' && c.composite === 'source-atop');
+  assert.equal(lift.length, 1);
+  assert.equal(lift[0].fill, '#ffffff', 'brightness 1.12 lifts toward white');
 });
 
 test('the pressed set reports press, release and chord press, each from and to the right face', () => {

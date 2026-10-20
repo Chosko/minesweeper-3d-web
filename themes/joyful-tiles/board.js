@@ -12,9 +12,11 @@ function freeze(o) {
 const INK = '#16204a'; /* J-Tokens --color-ink */
 const EASE_OUT = [0.2, 0.8, 0.2, 1]; /* J-Tokens --easing-out */
 const EASE_SPRING = [0.34, 1.56, 0.64, 1]; /* J-Tokens --easing-spring */
-/* A flip whose angle stays 0: the cell cuts from its state before the event to its state after
-   at the track's midpoint, halfway between these two keyframes. */
-const cut = (end) => ({ property: 'rotation', axis: [1, 0, 0], flip: true, keyframes: [{ at: 0, value: 0 }, { at: end, value: 0 }] }); /* J-BoardSheet face change */
+/* A flip whose angle stays 0, of one keyframe: the cell cuts from its state before the event to its
+   state after at `at`; one at the duration shows the state before until the animation ends. */
+const cut = (at) => ({ property: 'rotation', axis: [1, 0, 0], flip: true, keyframes: [{ at, value: 0 }] }); /* J-BoardSheet face change */
+/* An offset straight down the tile, in tiles: 3 px at the sheet's 56 px tile is .054. */
+const y = (v) => ({ x: 0, y: v }); /* J-BoardSheet translateY over the 56 px tile */
 
 export const BOARD = freeze({
   palette: {
@@ -90,8 +92,11 @@ export const BOARD = freeze({
       duration: 90, /* J-BoardSheet Press · 90 ms */
       easing: EASE_OUT, /* J-BoardSheet Press · easing-out */
       tracks: [
+        cut(90), /* J-BoardSheet Press: the closed face with its band at 45 ms, the pressed face at 90 ms */
         { property: 'depth', keyframes: [{ at: 0, value: 1 }, { at: 45, value: 0.5 }, { at: 90, value: 0 }] }, /* J-BoardSheet Press depth 1 → .5 → 0 */
-        { property: 'offset', keyframes: [{ at: 0, value: { x: 0, y: 0 } }, { at: 45, value: { x: 0, y: 0.04 } }] }, /* J-BoardSheet Press offset y .04 */
+        { property: 'offset', keyframes: [{ at: 0, value: y(0) }, { at: 45, value: y(0.04) }, { at: 90, value: y(0.054) }] }, /* J-BoardSheet Press translateY 2 px → 3 px */
+        { property: 'scale', keyframes: [{ at: 0, value: 1 }, { at: 45, value: 0.98 }, { at: 90, value: 0.96 }] }, /* J-BoardSheet Press scale .98 → .96 */
+        { property: 'brightness', keyframes: [{ at: 0, value: 1 }, { at: 45, value: 0.97 }, { at: 90, value: 1 }] }, /* J-BoardSheet Press brightness .97 → 1 */
       ],
     },
     release: {
@@ -99,40 +104,49 @@ export const BOARD = freeze({
       easing: EASE_SPRING, /* J-BoardSheet Release · easing-spring */
       tracks: [
         { property: 'depth', keyframes: [{ at: 0, value: 0 }, { at: 90, value: 1.1 }, { at: 140, value: 1 }] }, /* J-BoardSheet Release depth 0 → 1.1 → 1 */
-        { property: 'scale', keyframes: [{ at: 0, value: 1 }, { at: 90, value: 1.03 }, { at: 140, value: 1 }] }, /* J-BoardSheet Release scale 1.03 */
+        { property: 'offset', keyframes: [{ at: 0, value: y(0.054) }, { at: 90, value: y(-0.02) }, { at: 140, value: y(0) }] }, /* J-BoardSheet Release from the pressed pose, translateY −.02, rest */
+        { property: 'scale', keyframes: [{ at: 0, value: 0.96 }, { at: 90, value: 1.03 }, { at: 140, value: 1 }] }, /* J-BoardSheet Release scale .96 → 1.03 → rest */
+        { property: 'brightness', keyframes: [{ at: 0, value: 1 }, { at: 90, value: 1.04 }, { at: 140, value: 1 }] }, /* J-BoardSheet Release brightness 1.04 */
       ],
     },
     reveal: {
       duration: 160, /* J-BoardSheet Reveal · 160 ms */
       easing: EASE_SPRING, /* J-BoardSheet Reveal · easing-spring */
       tracks: [
-        cut(120), /* J-BoardSheet Reveal: the revealed face from 60 ms */
-        { property: 'scale', keyframes: [{ at: 0, value: 1 }, { at: 60, value: 0.82 }, { at: 120, value: 1.04 }, { at: 160, value: 1 }] }, /* J-BoardSheet Reveal scale .82 → 1.04 → 1 */
-        { property: 'brightness', keyframes: [{ at: 0, value: 1 }, { at: 60, value: 1.12 }, { at: 160, value: 1 }] }, /* J-BoardSheet Reveal brightness 1.12 */
+        cut(60), /* J-BoardSheet Reveal: the revealed face from 60 ms */
+        { property: 'offset', keyframes: [{ at: 0, value: y(0.054) }, { at: 60, value: y(0) }] }, /* J-BoardSheet Reveal from the pressed pose */
+        { property: 'scale', keyframes: [{ at: 0, value: 0.96 }, { at: 60, value: 0.82 }, { at: 120, value: 1.04 }, { at: 160, value: 1 }] }, /* J-BoardSheet Reveal scale .96 → .82 → 1.04 → rest */
+        { property: 'brightness', keyframes: [{ at: 0, value: 1 }, { at: 60, value: 1.12 }, { at: 120, value: 1.04 }, { at: 160, value: 1 }] }, /* J-BoardSheet Reveal brightness 1.12 → 1.04 → rest */
+        { property: 'opacity', keyframes: [{ at: 0, value: 1 }, { at: 60, value: 0.6 }, { at: 120, value: 1 }, { at: 160, value: 1 }] }, /* J-BoardSheet Reveal opacity .6 → 1 */
       ],
     },
     flag: {
       duration: 180, /* J-BoardSheet Flag · 180 ms */
       easing: EASE_SPRING, /* J-BoardSheet Flag · easing-spring */
       tracks: [
-        cut(160), /* J-BoardSheet Flag: the flag face from 80 ms */
-        { property: 'offset', keyframes: [{ at: 0, value: { x: 0, y: 0 } }, { at: 80, value: { x: 0, y: -0.15 } }, { at: 140, value: { x: 0, y: 0.02 } }, { at: 180, value: { x: 0, y: 0 } }] }, /* J-BoardSheet Flag offset y −.15 → .02 → rest */
+        cut(80), /* J-BoardSheet Flag: the flag face from 80 ms */
+        { property: 'offset', keyframes: [{ at: 0, value: y(0) }, { at: 80, value: y(-0.15) }, { at: 140, value: y(0.02) }, { at: 180, value: y(0) }] }, /* J-BoardSheet Flag offset y −.15 → .02 → rest */
         { property: 'scale', keyframes: [{ at: 0, value: 1 }, { at: 80, value: 1.18 }, { at: 140, value: 0.97 }, { at: 180, value: 1 }] }, /* J-BoardSheet Flag scale 1.18 → .97 → rest */
+        { property: 'brightness', keyframes: [{ at: 0, value: 1 }, { at: 80, value: 1.08 }, { at: 180, value: 1 }] }, /* J-BoardSheet Flag brightness 1.08 */
       ],
     },
     unflag: {
       duration: 120, /* J-BoardSheet Unflag · 120 ms */
       easing: EASE_OUT, /* J-BoardSheet Unflag · easing-out */
       tracks: [
-        cut(120), /* J-BoardSheet Unflag: the closed face from 60 ms */
+        cut(60), /* J-BoardSheet Unflag: the closed face from 60 ms */
         { property: 'scale', keyframes: [{ at: 0, value: 1 }, { at: 60, value: 0.9 }, { at: 120, value: 1 }] }, /* J-BoardSheet Unflag scale .9 → rest */
+        { property: 'brightness', keyframes: [{ at: 0, value: 1 }, { at: 60, value: 1.06 }, { at: 120, value: 1 }] }, /* J-BoardSheet Unflag brightness 1.06 */
       ],
     },
     chordPress: {
       duration: 90, /* J-BoardSheet Chord press · 90 ms */
       easing: EASE_OUT, /* J-BoardSheet Chord press · easing-out */
       tracks: [
+        cut(90), /* J-BoardSheet Chord press: each closed neighbour, the pressed face at 90 ms */
         { property: 'depth', keyframes: [{ at: 0, value: 1 }, { at: 90, value: 0 }] }, /* J-BoardSheet Chord press depth 0 */
+        { property: 'offset', keyframes: [{ at: 0, value: y(0) }, { at: 90, value: y(0.054) }] }, /* J-BoardSheet Chord press translateY 3 px */
+        { property: 'scale', keyframes: [{ at: 0, value: 1 }, { at: 90, value: 0.96 }] }, /* J-BoardSheet Chord press scale .96 */
         { property: 'brightness', keyframes: [{ at: 0, value: 1 }, { at: 90, value: 0.96 }] }, /* J-BoardSheet Chord press brightness .96 */
       ],
     },

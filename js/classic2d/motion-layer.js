@@ -33,7 +33,9 @@
 //
 // A cell is drawn centred on its tile at the offset (in tile sizes), scaled, and turned by the
 // rotation as seen face on — a turn about the screen's axis in the plane, about a board axis as a
-// foreshortening —, at the opacity, its brightness a lighter or darker second pass over it.
+// foreshortening —, at the opacity, its brightness a second pass over the painted cell alone: above 1
+// a mix toward white by the excess, below 1 toward black by the shortfall (the board module's
+// brightness).
 import { createCellMotion } from '../cell-motion.js';
 
 const REVEALED_STATES = new Set(['revealed', 'mine', 'exploded']);
@@ -93,14 +95,10 @@ export function createMotionLayer({
     const half = -size / 2;
     ctx.globalAlpha = v.opacity;
     paint(ctx, cell, v.face, half, half, size, v.depth);
-    if (v.brightness > 1) {
-      ctx.globalCompositeOperation = 'lighter';
-      ctx.globalAlpha = v.opacity * Math.min(1, v.brightness - 1);
-      paint(ctx, cell, v.face, half, half, size, v.depth);
-    } else if (v.brightness < 1) {
+    if (v.brightness !== 1) {
       ctx.globalCompositeOperation = 'source-atop';
-      ctx.globalAlpha = Math.min(1, 1 - v.brightness);
-      ctx.fillStyle = '#000000';
+      ctx.globalAlpha = Math.min(1, Math.abs(v.brightness - 1));
+      ctx.fillStyle = v.brightness > 1 ? '#ffffff' : '#000000';
       ctx.fillRect(half, half, size, size);
     }
     ctx.globalCompositeOperation = 'source-over';

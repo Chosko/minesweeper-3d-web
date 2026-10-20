@@ -1121,7 +1121,7 @@ Feature: themed-board-art-and-motion
 
 ## 225. Board module motion tracks: opacity, flip, scale and brightness
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/themes/board-module.js, js/cell-motion.js, js/tile-art.js, themes/joyful-tiles/board.js, .claude/context/classic2d-tile-motion.md, .claude/context/app-shell-board-module.md
 Preconditions: 224
