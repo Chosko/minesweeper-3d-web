@@ -726,7 +726,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on named struck step 16; lacked the order against task 177, which edits the same files; replaced by step 70.
 
-## [~] 70. Implement task 178 — Live figures in the replay viewer
+## [x] 70. Implement task 178 — Live figures in the replay viewer
 
 Depends on: 18, 61, 67, 69
 
@@ -740,6 +740,8 @@ Context:
 /task-implement 178 --review
 ```
 
+Done: 2026-10-20, commit `ffaf336` (10 files, +226/-49). The replay figures panel shows from 1200 px wide only (hidden at 1024 × 768 and on phones), as the artboards draw; `figuresLine` moved to `js/shell/live-figures.js`. A pre-existing flaky test in `tests/classic2d-mode.test.mjs` ("a few moves on a board with a best") fails on `main` too.
+
 ## [x] 23. Implement task 179 — Update documentation for feature `in-game-layout`
 
 Depends on: 18, 19, 20, 21, 22
@@ -752,13 +754,14 @@ Context: none
 
 Done: struck — for a parallel run its Depends on named struck steps 21, 22; lacked the edges to tasks 177, 178, its preconditions; lacked the order against task 173, which edits the same files; replaced by step 71.
 
-## [ ] 71. Implement task 179 — Update documentation for feature `in-game-layout`
+## [~] 71. Implement task 179 — Update documentation for feature `in-game-layout`
 
 Depends on: 18, 66, 67, 68, 69, 70
 
 Context:
 - 2026-10-19 (from step 68): the Classic 2D window ids are `c2d-time`, `c2d-mines-left`, `c2d-clicks`, `c2d-size` (foot line) and `c2d-pause`; `hud-swap`/`hud-tap` moved into the window; Expert scrolls below 1280 × 800. Context files for the Classic 2D window were left for this task.
 - 2026-10-19 (from step 69): `.claude/context/app-shell-ui.md`, `mode3d-session.md` and `testing.md` still describe the old 3D overlay bar; `#hud-size` is now `#hud-title`, and `measureContrast` moved to `tests/helpers/contrast.mjs`.
+- 2026-10-20 (from step 70): `.claude/context/replay-playback.md` does not yet mention `#replay-main` or `#rp-figures`; `figuresLine` now lives in `js/shell/live-figures.js` (re-exported from `js/ui.js`).
 
 ```prompt
 /task-implement 179 --review
