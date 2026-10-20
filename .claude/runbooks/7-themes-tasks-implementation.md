@@ -919,7 +919,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against tasks 172, 177, which edit the same files; replaced by step 77.
 
-## [~] 77. Implement task 186 — 3D cell motion: motion mesh, event sources and the solved pulse as a cell event
+## [x] 77. Implement task 186 — 3D cell motion: motion mesh, event sources and the solved pulse as a cell event
 
 Depends on: 74, 75
 
@@ -932,11 +932,14 @@ Context:
 /task-implement 186 --review
 ```
 
-## [ ] 78. Implement task 213 — 3D selection glow line, selected-face tint and confetti colours drawn from the board module
+Done: 2026-10-20, commit `4889948` (6 files, +592/-128). Brightness above 1 is drawn as a lift toward white by the excess (below 1 it multiplies), departing from the feature document's "multiplier"; the solved pulse now plays through the one motion mesh. Premise wrong: the event sources live in the renderer (`BoardRenderer.sync()`), so `js/shell/mode-3d.js` and `js/replay/viewer-3d.js` are unchanged. `MOTION_CAP` stays 256 after re-measuring.
+
+## [~] 78. Implement task 213 — 3D selection glow line, selected-face tint and confetti colours drawn from the board module
 
 Depends on: 72, 74, 77
 
-Context: none
+Context:
+- 2026-10-20 (from step 77): animating cubes are hidden by a per-cell flag (the state texture's B channel); the solved pulse plays through the motion mesh; brightness above 1 is a lift toward white by the excess.
 
 ```prompt
 /task-implement 213 --review
@@ -963,6 +966,7 @@ Context:
 - 2026-10-20 (from step 73): context files `classic2d-tile-skin.md`, `classic2d-board-view.md` and `app-shell-kit.md` still describe the pre-module design; also document the pitch units in `js/replay/sampler-2d.js` and drop the `js/classic2d/tile-skin.js` comment claiming Expert fits 1024 px. `palette.faces2d.marked` is unused (the start cell is still a `--color-success` ring).
 - 2026-10-20 (from step 74): `.claude/context/rendering.md`, `app-shell-kit.md` and `INDEX.md` still describe `setScenePalette` and the unthemed atlas; the renderer now has `setBoard(board)` and the atlas gains an `L_SUNK` layer at the end.
 - 2026-10-20 (from step 76): record the Classic 2D depth steps (0, 0.25, 0.5, 0.75, 1, cached in `js/classic2d/tile-skin.js`), the `board-motion` second canvas, and that what depth means on a bevel-style 2D pressed face is undecided (Joyful uses flat).
+- 2026-10-20 (from step 77): record the brightness contract — above 1 is a lift toward white by the excess, below 1 a multiplier — in the feature document and `js/themes/board-module.js`'s vocabulary comment; the solved pulse is merged into the one motion mesh (`pulseEnvelope`, `PULSE_*` and `_pulses` are gone), which `.claude/context/rendering-effects.md` still describes.
 
 ```prompt
 /task-implement 187 --review
