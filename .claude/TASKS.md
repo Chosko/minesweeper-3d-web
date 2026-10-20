@@ -740,7 +740,7 @@ Feature: themed-board-art-and-motion
 
 ## 213. 3D selection glow line, selected-face tint and confetti colours drawn from the board module
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/render.js, tests/render-3d-selection.test.mjs, tests/render-3d-feedback.test.mjs
 Preconditions: 181, 183

@@ -15,10 +15,10 @@
 // A replay's Show 3BV tints each cube from a second RGBA8 data texture (setRegionTint), mixed over its
 // tile by the texel's alpha; off by default.
 // Everything it draws in colour comes from the board module the shell hands in (setBoard): the tile
-// atlas, the sky, fog and clear colour, the selection outline and the marked start cell's tint; its
-// cell motion too.
+// atlas, the sky, fog and clear colour, the selection (outline, glow line, face tint), the marked start
+// cell's tint and the win confetti's colours; its cell motion too.
 // Visual extras (all shader-side, driven by a few uniforms): per-face shading, distance fog toward
-// the fog colour, crisp tile borders, a pulsing outline on the selected cube, and end-of-game
+// the fog colour, crisp tile borders, an outline with a pulsing glow line on the selected cube, and end-of-game
 // ripples (win: pulse wave + unflagged mines shown as flags + confetti; loss: reveal wave from the
 // exploded cell + wrong-flag tiles + camera shake). The state texture's A channel stores the cell's
 // previous layer + 1 for cells whose tile changes in an end-of-game wave (0 = none).
@@ -333,6 +333,9 @@ uniform float uSelGlow;
 uniform float uMarkPulse; // 0..1: the mark's pulse, a first reveal off a forced start cell
 uniform vec3 uSelOutline; // the selection outline's colour
 uniform vec2 uSelWidth;   // its width: a share of the face, and a floor in screen pixels
+uniform vec3 uSelGlowColor; // the glow line inside the outline
+uniform float uSelGlowWidth; // its width in screen pixels
+uniform vec3 uSelTint;    // multiplies the selected face's colour
 uniform vec3 uMarkTint;   // the marked start cell's tint
 uniform vec2 uMarkMix;    // its share of the face at rest, and at the peak of its pulse
 uniform vec3 uFog; // near, far, max amount
@@ -352,7 +355,7 @@ ${SKY_GLSL}
 void main() {
   vec4 col = texture(uTiles, vec3(vUv, vLayer));
   if (vSunk > 0.0) col = mix(col, texture(uTiles, vec3(vUv, ${glslFloat(L_SUNK)})), vSunk); // a depth motion's blend
-  vec3 rgb = col.rgb * mix(vec3(1.0), vec3(1.0, 0.8, 0.8), vTint);
+  vec3 rgb = col.rgb * mix(vec3(1.0), uSelTint, vTint);
   // distance to the face border (uv units) and its screen-space rate
   float e = min(min(vUv.x, 1.0 - vUv.x), min(vUv.y, 1.0 - vUv.y));
   float fw = max(length(fwidth(vUv)), 1e-5);
@@ -362,12 +365,15 @@ void main() {
   rgb *= 1.0 - 0.38 * line * (1.0 - smoothstep(0.04, 0.14, fw));
   rgb *= 1.0 - 0.06 * (1.0 - smoothstep(0.0, 0.06, e));
   rgb *= mix(vShade, 1.0, 0.5 * vTint);
-  // selected cube: glowing outline (max(a share of the face, a few pixels) wide on screen) + faint emissive
+  // selected cube: an outline max(a share of the face, a few pixels) wide on screen, and inside it a
+  // glow line uSelGlowWidth pixels wide that pulses with uSelGlow
   if (vTint > 0.5) {
     float w = max(uSelWidth.x, uSelWidth.y * fw);
-    float o = 1.0 - smoothstep(w, w + 1.5 * fw, e);
-    rgb = mix(rgb, uSelOutline, o * (0.55 + 0.45 * uSelGlow));
-    rgb += vec3(0.16, 0.06, 0.07) * uSelGlow * (1.0 - o);
+    float o = 1.0 - smoothstep(w, w + fw, e);
+    float gw = w + uSelGlowWidth * fw;
+    float g = (1.0 - smoothstep(gw, gw + fw, e)) * (1.0 - o);
+    rgb = mix(rgb, uSelGlowColor, g * (0.55 + 0.45 * uSelGlow));
+    rgb = mix(rgb, uSelOutline, o);
   }
   // the marked start cell a pre-generated board waits for: tinted, its border too
   rgb = mix(rgb, uMarkTint, mix(uMarkMix.x, uMarkMix.y, uMarkPulse) * vMark);
@@ -467,6 +473,27 @@ void main() {
   outColor = vec4(vCol * (0.75 + 0.25 * vSpin), vFade);
 }`;
 
+/**
+ * The selection uniforms a board module gives (js/themes/board-module.js `selection`): the outline and
+ * the glow line inside it as [r, g, b] in 0..1, the outline's width [share of the face, floor in px],
+ * the glow line's width in px and the tint multiplying the selected face's colour.
+ */
+export function selectionUniforms(board) {
+  const s = board.selection;
+  return {
+    outline: unitRgb(s.outline), width: [s.width.face, s.width.px],
+    glow: unitRgb(s.glow), glowWidth: s.glowWidth, tint: [...s.tint],
+  };
+}
+
+/** The confetti's per-piece colours, [r, g, b] in 0..1 for each of `count` pieces: the module's confetti palette cycled. */
+export function confettiColours(board, count) {
+  const pal = board.palette.confetti.map(unitRgb);
+  const col = new Float32Array(count * 3);
+  for (let p = 0; p < count; p++) col.set(pal[p % pal.length], p * 3);
+  return col;
+}
+
 // Back-to-front order for transparent cubes.
 // For equal cubes on a regular lattice, a cube A can overlap B on screen only if some ray from the
 // camera passes through A's lattice cell before B's; lattice cells crossed by such a ray have
@@ -475,8 +502,9 @@ void main() {
 // painter's order, and with quantized integer keys it is a single O(n) counting sort.
 const SORT_BUCKETS = 1 << 16;
 
-// A board module's `#rrggbb` as [r, g, b], 0–255.
+// A board module's `#rrggbb` as [r, g, b]: 0–255, and 0–1.
 const hexRgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+const unitRgb = (hex) => hexRgb(hex).map((v) => v / 255);
 
 export class BoardRenderer {
   constructor(canvas) {
@@ -516,6 +544,9 @@ export class BoardRenderer {
       uMarkPulse: { value: 0 },
       uSelOutline: { value: new THREE.Vector3() },
       uSelWidth: { value: new THREE.Vector2() },
+      uSelGlowColor: { value: new THREE.Vector3() },
+      uSelGlowWidth: { value: 1 },
+      uSelTint: { value: new THREE.Vector3(1, 1, 1) },
       uMarkTint: { value: new THREE.Vector3() },
       uMarkMix: { value: new THREE.Vector2() },
       uShift: { value: 0 },
@@ -615,13 +646,9 @@ export class BoardRenderer {
   }
 
   _buildConfetti() {
+    // Colours come from the board module (setBoard); black until the shell hands one in.
     const seed = new Float32Array(CONF_N * 4), col = new Float32Array(CONF_N * 3), pos = new Float32Array(CONF_N * 3);
-    const pal = [[1, 0.25, 0.3], [1, 0.78, 0.15], [0.2, 0.75, 0.35], [0.25, 0.55, 1], [0.75, 0.35, 0.95], [1, 0.5, 0.15], [0.1, 0.8, 0.85]];
-    for (let p = 0; p < CONF_N; p++) {
-      for (let q = 0; q < 4; q++) seed[p * 4 + q] = Math.random();
-      const c = pal[p % pal.length];
-      col.set(c, p * 3);
-    }
+    for (let p = 0; p < CONF_N * 4; p++) seed[p] = Math.random();
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     g.setAttribute('aSeed', new THREE.BufferAttribute(seed, 4));
@@ -641,9 +668,9 @@ export class BoardRenderer {
   /**
    * Draw the scene from `board`, a theme's board module (js/themes/board-module.js): its atlas, rebuilt
    * from the module's 3D style and palette; the sky gradient, the fog (the horizon unless the module names
-   * one) and the clear colour (the horizon) from its sky; the selection outline and the marked start
-   * cell's tint from its palette; the cell motion from its motion descriptions, a running one dropped. The
-   * same module again changes nothing. The caller requests the redraw.
+   * one) and the clear colour (the horizon) from its sky; the selection (outline, glow line, face tint),
+   * the marked start cell's tint and the confetti colours; the cell motion from its motion descriptions,
+   * a running one dropped. The same module again changes nothing. The caller requests the redraw.
    */
   setBoard(board) {
     if (board === this.board) return;
@@ -662,8 +689,15 @@ export class BoardRenderer {
     put(this.skyPalette.uSkyNadir, sky.nadir);
     put(this.skyPalette.uSkyFog, fog);
     this.renderer.setClearColor(parseInt(sky.horizon.slice(1), 16), 1);
-    put(this.uniforms.uSelOutline, board.selection.outline);
-    this.uniforms.uSelWidth.value.set(board.selection.width.face, board.selection.width.px);
+    const sel = selectionUniforms(board);
+    this.uniforms.uSelOutline.value.set(...sel.outline);
+    this.uniforms.uSelWidth.value.set(...sel.width);
+    this.uniforms.uSelGlowColor.value.set(...sel.glow);
+    this.uniforms.uSelGlowWidth.value = sel.glowWidth;
+    this.uniforms.uSelTint.value.set(...sel.tint);
+    const conf = this.confetti.geometry.getAttribute('aColor');
+    conf.array.set(confettiColours(board, CONF_N));
+    conf.needsUpdate = true;
     put(this.uniforms.uMarkTint, board.mark.tint);
     this.uniforms.uMarkMix.value.set(board.mark.mix, board.mark.pulseMix);
   }

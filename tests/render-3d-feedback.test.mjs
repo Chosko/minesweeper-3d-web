@@ -3,8 +3,8 @@
 // pulse — brighter and larger, then fading out — after the engine hides it, the theme's solved-pulse
 // cell motion (tests/render-3d-motion.test.mjs covers the motion mesh); the drawing is checked in a
 // browser through `__ms`. The scene is
-// drawn from the board module the shell hands in: the atlas, the sky and fog, the selection outline
-// and the marked start cell's tint.
+// drawn from the board module the shell hands in: the atlas, the sky and fog, the selection — outline,
+// glow line and face tint —, the marked start cell's tint and the win confetti's colours.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -56,7 +56,7 @@ test('the renderer takes a board module: it rebuilds its atlas and sky on one, i
   assert.match(setBoard, /createTileTexture\(board\)|_buildAtlas\(board\)/, 'the atlas is rebuilt from it');
   assert.match(setBoard, /board\.sky/, 'the sky comes from it');
   assert.match(setBoard, /sky\.fog \?\? sky\.horizon/, 'the fog defaults to the horizon');
-  assert.match(setBoard, /board\.selection/, 'the selection outline comes from it');
+  assert.match(setBoard, /selectionUniforms\(board\)/, 'the selection comes from it');
   assert.match(setBoard, /board\.mark/, 'the marked start cell\'s tint comes from it');
   const frag = RENDER.slice(RENDER.indexOf('const FRAG ='), RENDER.indexOf('const SKY_VERT'));
   assert.doesNotMatch(frag, /vec3\(1\.0, 0\.27, 0\.42\)|vec3\(0\.18, 0\.72, 0\.36\)/, 'no constant outline or mark colour');
@@ -343,6 +343,114 @@ test('in a browser, switching theme in a 3D game changes the atlas and the sky a
     assert.notDeepEqual(after.top, before.top, 'its bevel too');
     assert.deepEqual(after.game, before.game, 'the game is untouched');
     assert.equal(after.mode, before.mode);
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+// J-3DSheet's selection and confetti (page "Joyful tiles", panels "Selection, start cell, view modes,
+// waves" and "Confetti").
+const J3D_SEL = { outline: '#16204a', glow: '#ffc93c', tint: [1, 0.86, 0.84] };
+const J3D_CONFETTI = ['#ff6b6b', '#ffc93c', '#49c6b8', '#78aaf8', '#6d4ee8', '#ffffff', '#ff8c42'];
+const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+
+test('in a browser, a selected cube under Joyful tiles samples as J-3DSheet: navy outline, a yellow glow line inside it, a coral-tinted face', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1000, height: 650 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu' && !!globalThis.__ms.renderer.board);
+    await page.evaluate(() => { globalThis.__ms.start(6, 1, 1, 2, [0, 3]); globalThis.__ms.forcePlay(); });
+    // The camera straight in front of the closed cube 2, a few cubes away, aimed at its centre.
+    const px = await page.evaluate(() => {
+      const ms = globalThis.__ms, r = ms.renderer;
+      const [x, y, z] = ms.cellCenter(2);
+      ms.moveTo(x, y, z + 16);
+      if (ms.aimAt(2) !== 2) throw new Error('cell 2 could not be aimed at');
+      r._selAnim = false; // the aim's glow settled: its steady value
+      const gl = r.renderer.getContext(), pr = r.renderer.getPixelRatio(), out = new Uint8Array(4);
+      const c = r.cellScreen(2);
+      const at = (x, y) => {
+        gl.readPixels(Math.floor(x), Math.floor(gl.drawingBufferHeight - y - 1), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, out);
+        return [out[0], out[1], out[2]];
+      };
+      const cx = c.x * pr, cy = c.y * pr;
+      r.render();
+      const row = [];
+      for (let dx = 0; dx < 220 * pr; dx++) row.push(at(cx + dx, cy));
+      r.setSelected(-1);
+      r.render();
+      const plain = at(cx, cy);
+      r.setSelected(2);
+      return { row, plain, pr };
+    });
+    // The selected face is the plain face × the tint, give or take the selection's lighter face shade:
+    // one common factor over the three channels.
+    const face = px.row[0];
+    const k = face.map((v, i) => v / (px.plain[i] * J3D_SEL.tint[i]));
+    assert.ok(Math.max(...k) - Math.min(...k) <= 0.03 && Math.min(...k) >= 0.97 && Math.max(...k) <= 1.08,
+      `the selected face ${face} is the plain face ${px.plain} × the tint ${J3D_SEL.tint} (${k.map((v) => v.toFixed(3))})`);
+    const outline = rgb(J3D_SEL.outline);
+    const o = px.row.findIndex((p) => dist(p, outline) <= 6);
+    assert.ok(o > 0, `the outline in ${J3D_SEL.outline} along the face's middle row: ${JSON.stringify(px.row.slice(0, 120))}`);
+    const run = px.row.slice(o).findIndex((p) => dist(p, outline) > 6);
+    assert.ok(run >= Math.floor(3 * px.pr) - 1, `the outline at least 3 px wide (${run} device px)`);
+    // Just inside the outline, the glow line: one pixel nearer its colour than the outline's or the face's.
+    const glow = rgb(J3D_SEL.glow);
+    const inside = px.row.slice(Math.max(0, o - 3 * px.pr), o);
+    const best = inside.reduce((a, p) => (dist(p, glow) < dist(a, glow) ? p : a));
+    assert.ok(dist(best, glow) < dist(best, outline) && dist(best, glow) < dist(best, face),
+      `a glow line in ${J3D_SEL.glow} inside the outline: ${JSON.stringify(inside)}`);
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, a frame of the win confetti under Joyful tiles shows J-3DSheet\'s seven colours', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1000, height: 650 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu' && !!globalThis.__ms.renderer.board);
+    // A row of six, mines at 0 and 3: revealing 1, 2 and 5 (which opens 4) wins.
+    await page.evaluate(() => { globalThis.__ms.start(6, 1, 1, 2, [0, 3]); globalThis.__ms.forcePlay(); });
+    for (const c of [1, 2, 5]) {
+      await page.evaluate((cell) => {
+        if (globalThis.__ms.aimAt(cell) !== cell) throw new Error(`cell ${cell} could not be aimed at`);
+        globalThis.__ms.click('left');
+      }, c);
+    }
+    await page.waitForFunction(() => globalThis.__ms.game.state === 'won' && globalThis.__ms.renderer.confetti.visible);
+    await page.waitForTimeout(500); // the burst spread out
+    // The confetti's own colours: each piece is its colour × (0.75 to 1) as it flips.
+    const found = await page.evaluate((palette) => {
+      const r = globalThis.__ms.renderer;
+      r.render();
+      const gl = r.renderer.getContext(), w = gl.drawingBufferWidth, h = gl.drawingBufferHeight;
+      const buf = new Uint8Array(w * h * 4);
+      gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+      const want = palette.map((hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)));
+      const seen = want.map(() => 0);
+      for (let p = 0; p < w * h * 4; p += 4) {
+        want.forEach((c, k) => {
+          const m = Math.max(...c), s = Math.max(buf[p], buf[p + 1], buf[p + 2]) / m;
+          if (s < 0.74 || s > 1.01) return;
+          if (c.every((v, i) => Math.abs(v * s - buf[p + i]) <= 2)) seen[k]++;
+        });
+      }
+      return seen;
+    }, J3D_CONFETTI);
+    J3D_CONFETTI.forEach((hex, k) => assert.ok(found[k] > 0, `confetti in ${hex}: ${found}`));
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
