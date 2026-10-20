@@ -274,7 +274,7 @@ Tasks: 180, 181, 182, 183, 184, 185, 186, 187, 213
 
 ## shared-screen-layout — The redesigned shared layout: screen frame, main menu, board choice and the other screens
 
-Status: [DONE]
+Status: [ITERATED]
 Doc: .claude/domain/features/shared-screen-layout.md
 Source: product-design.md § Visual design system (m2b-themes)
 Tasks: 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 206, 209, 210, 211, 212
