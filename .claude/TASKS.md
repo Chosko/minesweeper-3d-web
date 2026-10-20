@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 244
+Last task number: 245
 
 ---
 
@@ -1181,6 +1181,7 @@ Status: [MISSING]
 Target: claude
 Files: css/style.css, js/classic2d/board-view.js, themes/joyful-tiles/theme.css, index.html, .claude/context/app-shell-2d.md, .claude/context/classic2d-board-view.md
 Preconditions: 223, 227
+Feature: in-game-layout
 
 ---
 
@@ -1190,6 +1191,7 @@ Status: [MISSING]
 Target: claude
 Files: css/style.css, js/settings/bindings.js, index.html, js/ui.js, .claude/context/app-shell-help.md, .claude/context/classic2d-input.md
 Preconditions: 231
+Feature: in-game-layout
 
 ---
 
@@ -1229,6 +1231,7 @@ Status: [MISSING]
 Target: claude
 Files: css/style.css, js/ui.js, index.html, .claude/context/mode3d-learn.md
 Preconditions: 235
+Feature: in-game-layout
 
 ---
 
@@ -1308,5 +1311,15 @@ Target: claude
 Files: .claude/context/app-shell-kit.md, .claude/context/app-shell-kit-helpers.md, .claude/context/app-shell-menu.md, .claude/context/app-shell-daily.md, .claude/context/app-shell-2d.md, .claude/context/app-shell-3d.md, .claude/context/app-shell-3d-play.md, .claude/context/app-shell-pause.md, .claude/context/app-shell-results.md, .claude/context/app-shell-ui.md, .claude/context/app-shell-help.md, .claude/context/settings-bindings.md, .claude/context/settings-page.md, .claude/context/records-screen.md, .claude/context/records-screen-view.md, .claude/context/records-library-view.md, .claude/context/records-board-code.md, .claude/context/replay-viewer-screen.md, .claude/context/replay-viewers.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/shared-screen-layout.md
 Preconditions: 218, 219, 220, 221, 222, 223, 228, 229, 230, 233, 234, 235, 237, 238, 239, 240, 241, 242
 Feature: shared-screen-layout
+
+---
+
+## 245. Update documentation for feature `in-game-layout`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/app-shell-2d.md, .claude/context/app-shell-3d.md, .claude/context/app-shell-3d-play.md, .claude/context/app-shell-help.md, .claude/context/app-shell-ui.md, .claude/context/classic2d-board-view.md, .claude/context/classic2d-input.md, .claude/context/settings-bindings.md, .claude/context/mode3d-learn.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/in-game-layout.md
+Preconditions: 231, 232, 236
+Feature: in-game-layout
 
 ---
