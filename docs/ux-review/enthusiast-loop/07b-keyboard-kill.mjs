@@ -16,7 +16,7 @@ await page.keyboard.press('Escape');
 // ---- E. keyboard on closed cells
 await page.click('#menu-entry-classic-2d');
 if (await page.isChecked('#c2d-noguess')) await page.click('#c2d-noguess');
-await page.click('#c2d-choice [data-size="beginner"]');
+await page.click('#c2d-choice [data-size="beginner"]'); await page.click('#c2d-play');
 await setSeed(page, 104);
 const centres = await centres2D(page, 9, 9);
 const g3 = mines2D({ width: 9, height: 9, mines: 10, firstClick: 0, noGuess: false, seed: 104 });
@@ -59,7 +59,7 @@ log('E. mode', await mode(page));
 
 // ---- G. kill 6 s after a win
 await page.click('#menu-entry-classic-2d');
-await page.click('#c2d-choice [data-size="beginner"]');
+await page.click('#c2d-choice [data-size="beginner"]'); await page.click('#c2d-play');
 const before = await counters(page, KEY_B);
 await playNF(page, { W: 9, H: 9, M: 10, seed: 105, fc: 40, noGuess: false, label: 'b3', delayMs: 120, prefix: '07b' });
 const mem = await counters(page, KEY_B);
@@ -73,7 +73,7 @@ page = await openPage(context);
 log('G. before', JSON.stringify(before), 'in memory after win', JSON.stringify(mem), 'after kill 6 s later + relaunch', JSON.stringify(await counters(page, KEY_B)));
 // ---- H. kill 20 s after a win, with the page idle on the results screen
 await page.click('#menu-entry-classic-2d');
-await page.click('#c2d-choice [data-size="beginner"]');
+await page.click('#c2d-choice [data-size="beginner"]'); await page.click('#c2d-play');
 await playNF(page, { W: 9, H: 9, M: 10, seed: 106, fc: 40, noGuess: false, label: 'b4', delayMs: 120, prefix: '07b' });
 const mem2 = await counters(page, KEY_B);
 await sleep(20000);

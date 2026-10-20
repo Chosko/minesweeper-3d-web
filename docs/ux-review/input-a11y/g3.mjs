@@ -25,7 +25,7 @@ await page.focus('#menu-entry-classic-2d'); await press(BTN.A); await sleep(300)
 log('2D choice DOWN walk:', await walk(BTN.DOWN, 7));
 log('2D choice UP walk:', await walk(BTN.UP, 7));
 await page.focus('#c2d-choice [data-size="expert"]'); log('from Expert RIGHT:', await walk(BTN.RIGHT, 3));
-await page.focus('#c2d-start'); log('from Start DOWN:', await walk(BTN.DOWN, 2)); 
+await page.focus('#c2d-play'); log('from Start DOWN:', await walk(BTN.DOWN, 2)); 
 await page.focus('#c2d-mines'); log('from Mines DOWN:', await walk(BTN.DOWN, 2));
 await page.focus('#c2d-width'); log('from Width LEFT/DOWN:', await walk(BTN.DOWN, 2));
 await press(BTN.B); await sleep(300);
@@ -37,7 +37,7 @@ await page.focus('#set-theme [aria-checked="true"]'); log('from Theme DOWN:', aw
 await press(BTN.B); await sleep(300);
 // 4. Win a 2x1 with keyboard so Records has bests + replays; then Records pad walk
 await page.focus('#menu-entry-classic-2d'); await page.keyboard.press('Enter'); await sleep(300);
-await page.fill('#c2d-width', '2'); await page.fill('#c2d-height', '1'); await page.fill('#c2d-mines', '1'); await page.click('#c2d-start'); await sleep(600);
+await page.click('#c2d-choice [data-size="custom"]'); await page.fill('#c2d-width', '2'); await page.fill('#c2d-height', '1'); await page.fill('#c2d-mines', '1'); await page.click('#c2d-play'); await sleep(600);
 await page.keyboard.press('Space'); await sleep(1500); log('mode', await mode(page));
 await page.focus('#r-records'); await press(BTN.A); await sleep(800); log('records focus', (await focused(page)).replace(/\n/g, ' '));
 log('records DOWN walk:', await walk(BTN.DOWN, 8));
@@ -46,7 +46,7 @@ await page.focus('#records-picker [aria-checked="true"]'); log('from picker RIGH
 await shot(page, 'g3-01-records-walk');
 await press(BTN.B); await sleep(300); log('B →', await mode(page));
 // 5. Results walk with pad (play again quickly)
-await page.focus('#menu-entry-classic-2d'); await press(BTN.A); await sleep(300); await page.focus('#c2d-start'); await press(BTN.A); await sleep(600);
+await page.focus('#menu-entry-classic-2d'); await press(BTN.A); await sleep(300); await page.focus('#c2d-play'); await press(BTN.A); await sleep(600);
 await press(BTN.A); await sleep(1500); log('results?', await mode(page), (await focused(page)).replace(/\n/g, ' '));
 log('results RIGHT walk:', await walk(BTN.RIGHT, 4)); log('results DOWN walk:', await walk(BTN.DOWN, 2));
 // Watch replay with pad and drive it
@@ -57,7 +57,7 @@ await press(BTN.RB); await press(BTN.LB); log('replay walk RIGHT:', await walk(B
 await press(BTN.B); await sleep(400); log('B →', await mode(page));
 await press(BTN.B); await sleep(400); log('B →', await mode(page));
 // 6. 3D: held-A suppression on ready → playing; LT+RT chord with frame gaps; Y (Ctrl) chip
-await page.focus('#menu-entry-3d'); await press(BTN.A); await sleep(300); await page.focus('#board-choice [data-preset="6,6,6,10"]'); await press(BTN.A); await sleep(800);
+await page.focus('#menu-entry-3d'); await press(BTN.A); await sleep(300); await page.focus('#board-choice [data-preset="6,6,6,10"]'); await press(BTN.A); await page.focus('#bc-play'); await press(BTN.A); await sleep(800);
 log('ready', await mode(page));
 await set(BTN.A, true); await frames(4); const y0 = await page.evaluate(() => __ms.info().cam.y); await sleep(600); const y1 = await page.evaluate(() => __ms.info().cam.y); await set(BTN.A, false); await frames(2);
 log('held A across ready→playing: mode', await mode(page), 'cam y', y0, '→', y1, '(moved up while held?', y1 > y0 + 0.01, ')');

@@ -2,13 +2,13 @@ import { launch, shot, mode, visText } from './lib.mjs';
 const { browser, page } = await launch();
 const info = () => page.evaluate(() => ({ text: document.getElementById('c2d-info')?.textContent.trim(), cls: document.getElementById('c2d-info')?.className, w: document.getElementById('c2d-width').value, h: document.getElementById('c2d-height').value, m: document.getElementById('c2d-mines').value }));
 await page.click('#menu-entry-classic-2d'); await page.waitForTimeout(500);
-const setCustom = async (w, h, m) => { await page.fill('#c2d-width', String(w)); await page.fill('#c2d-height', String(h)); if (m !== undefined) await page.fill('#c2d-mines', String(m)); await page.waitForTimeout(150); return info(); };
+const setCustom = async (w, h, m) => { await page.click('#c2d-choice [data-size="custom"]'); await page.fill('#c2d-width', String(w)); await page.fill('#c2d-height', String(h)); if (m !== undefined) await page.fill('#c2d-mines', String(m)); await page.waitForTimeout(150); return info(); };
 console.log('empty w', await setCustom('', 5, 1));
 console.log('5x5 m0', await setCustom(5, 5, 0));
 console.log('5x5 m24', await setCustom(5, 5, 24));
 console.log('5x5 m25', await setCustom(5, 5, 25));
 await shot(page, '11-c2d-custom-5x5-25');
-await page.click('#c2d-start'); await page.waitForTimeout(300);
+await page.click('#c2d-play'); await page.waitForTimeout(300);
 console.log('after start invalid mode', await mode(page), 'focused', await page.evaluate(() => document.activeElement?.id));
 console.log('placeholders', await page.evaluate(() => ['c2d-width','c2d-height','c2d-mines'].map(id => { const e = document.getElementById(id); return [id, e.placeholder, e.min, e.max, e.type, e.inputMode]; })));
 console.log('noguess', await page.evaluate(() => { const el = document.querySelector('#c2d-choice input[type=checkbox], #c2d-choice [role=switch]'); return el ? { id: el.id, tag: el.tagName, checked: el.checked ?? el.getAttribute('aria-checked'), label: document.querySelector(`label[for="${el.id}"]`)?.textContent, title: el.title, describedBy: el.getAttribute('aria-describedby') } : 'none'; }));
@@ -27,7 +27,7 @@ console.log('noguess after click', await page.evaluate(() => { const el = docume
 await shot(page, '12-c2d-choice-noguess-on');
 // Large no-guess custom: 100x100 with 2480 mines
 await setCustom(100, 100, 2480);
-await page.click('#c2d-start'); await page.waitForTimeout(800);
+await page.click('#c2d-play'); await page.waitForTimeout(800);
 console.log('after start 100x100 ng mode', await mode(page));
 console.log('innerText body (before click):\n' + await page.evaluate(() => document.body.innerText));
 await shot(page, '13-c2d-100x100-ng-before-click');

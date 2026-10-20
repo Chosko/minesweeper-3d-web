@@ -7,7 +7,7 @@ for (const vp of [{ width: 1366, height: 650 }, { width: 1366, height: 768 }, { 
   const page = await openPage(context);
   await page.click('#menu-entry-classic-2d');
   if (await page.isChecked('#c2d-noguess')) await page.click('#c2d-noguess');
-  await page.click('#c2d-choice [data-size="expert"]');
+  await page.click('#c2d-choice [data-size="expert"]'); await page.click('#c2d-play');
   await sleep(300);
   const info = await page.evaluate(async () => {
     const { boardLayout } = await import('/js/classic2d/board-view.js');

@@ -5,7 +5,7 @@ const errors = []; page.on('pageerror', e => errors.push(e.message));
 let ctxMenu = 0; await page.exposeFunction('__ctx', () => ctxMenu++);
 await page.goto(URL); await ready(page);
 await page.evaluate(() => document.addEventListener('contextmenu', (e) => { if (!e.defaultPrevented) __ctx(); }));
-await page.click('#menu-entry-classic-2d'); await sleep(300); await page.click('#c2d-choice [data-size="beginner"]'); await sleep(500);
+await page.click('#menu-entry-classic-2d'); await sleep(300); await page.click('#c2d-choice [data-size="beginner"]'); await page.click('#c2d-play'); await sleep(500);
 const box = await page.evaluate(() => { const r = document.querySelector('#c2d-board canvas').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
 const tile = box.w / 9; const at = (c, r) => [box.x + tile * (c + 0.5), box.y + tile * (r + 0.5)];
 const hud = () => page.evaluate(() => ({ t: document.getElementById('hud-time').textContent, m: document.getElementById('hud-mines').textContent, started: __ms.modes.state.started, mode: __ms.state.mode }));
@@ -40,7 +40,7 @@ log('pause cursor on overlay', await page.evaluate(() => getComputedStyle(docume
 await page.click('#p-menu'); await sleep(200); await page.click('#p-confirm-yes'); await sleep(400);
 // large custom board 100x100 for scrolling with wheel and shift-drag
 await page.click('#menu-entry-classic-2d'); await sleep(300);
-await page.fill('#c2d-width', '60'); await page.fill('#c2d-height', '60'); await page.fill('#c2d-mines', '10'); await page.click('#c2d-start'); await sleep(800);
+await page.click('#c2d-choice [data-size="custom"]'); await page.fill('#c2d-width', '60'); await page.fill('#c2d-height', '60'); await page.fill('#c2d-mines', '10'); await page.click('#c2d-play'); await sleep(800);
 log('60x60 layout', await page.evaluate(() => { const r = document.querySelector('#c2d-board canvas').getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height), tile: Math.round(r.width / 60), x: Math.round(r.x), y: Math.round(r.y) }; }));
 await shot(page, 'm-05-60x60');
 await page.mouse.move(640, 440); await page.mouse.wheel(0, 500); await sleep(300);

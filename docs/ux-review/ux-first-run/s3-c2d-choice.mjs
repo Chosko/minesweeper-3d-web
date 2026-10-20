@@ -1,13 +1,13 @@
 import { launch, shot, mode, visText } from './lib.mjs';
 const { browser, page } = await launch();
-const info = () => page.evaluate(() => ({ text: document.getElementById('c2d-info')?.textContent.trim(), cls: document.getElementById('c2d-info')?.className, startDisabled: document.getElementById('c2d-start')?.disabled, w: document.getElementById('c2d-width').value, h: document.getElementById('c2d-height').value, m: document.getElementById('c2d-mines').value }));
+const info = () => page.evaluate(() => ({ text: document.getElementById('c2d-info')?.textContent.trim(), cls: document.getElementById('c2d-info')?.className, startDisabled: document.getElementById('c2d-play')?.disabled, w: document.getElementById('c2d-width').value, h: document.getElementById('c2d-height').value, m: document.getElementById('c2d-mines').value }));
 await page.click('#menu-entry-classic-2d'); await page.waitForTimeout(500);
 console.log('mode', await mode(page));
 console.log(JSON.stringify(await visText(page, '#c2d-choice'), null, 1));
 console.log('focused', await page.evaluate(() => document.activeElement?.id || document.activeElement?.dataset?.size));
 console.log('initial custom', await info());
 await shot(page, '10-c2d-choice');
-const setCustom = async (w, h, m) => { await page.fill('#c2d-width', String(w)); await page.fill('#c2d-height', String(h)); if (m !== undefined) await page.fill('#c2d-mines', String(m)); await page.waitForTimeout(150); return info(); };
+const setCustom = async (w, h, m) => { await page.click('#c2d-choice [data-size="custom"]'); await page.fill('#c2d-width', String(w)); await page.fill('#c2d-height', String(h)); if (m !== undefined) await page.fill('#c2d-mines', String(m)); await page.waitForTimeout(150); return info(); };
 console.log('1x1', await setCustom(1, 1, 1));
 await shot(page, '11-c2d-custom-1x1');
 console.log('1x1 m0', await setCustom(1, 1, 0));
@@ -23,7 +23,7 @@ console.log('5x5 m24', await setCustom(5, 5, 24));
 console.log('5x5 m25', await setCustom(5, 5, 25));
 await shot(page, '11-c2d-custom-5x5-25');
 // Try start with invalid: what happens
-await page.click('#c2d-start'); await page.waitForTimeout(300);
+await page.click('#c2d-play'); await page.waitForTimeout(300);
 console.log('after start invalid mode', await mode(page), 'focused', await page.evaluate(() => document.activeElement?.id));
 // placeholders / hints
 console.log('placeholders', await page.evaluate(() => ['c2d-width','c2d-height','c2d-mines'].map(id => { const e = document.getElementById(id); return [id, e.placeholder, e.min, e.max, e.type, e.inputMode, document.querySelector(`label[for="${id}"]`)?.textContent]; })));

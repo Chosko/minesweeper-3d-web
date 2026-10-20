@@ -2,8 +2,8 @@ import { launch, shot, mode, visText } from './lib.mjs';
 const { browser, page } = await launch();
 await page.click('#menu-entry-classic-2d'); await page.waitForTimeout(300);
 await page.evaluate(() => document.getElementById('c2d-noguess').click());
-await page.fill('#c2d-width', '100'); await page.fill('#c2d-height', '100'); await page.fill('#c2d-mines', '2480');
-await page.click('#c2d-start'); await page.waitForTimeout(800);
+await page.click('#c2d-choice [data-size="custom"]'); await page.fill('#c2d-width', '100'); await page.fill('#c2d-height', '100'); await page.fill('#c2d-mines', '2480');
+await page.click('#c2d-play'); await page.waitForTimeout(800);
 const box = await page.locator('#c2d-board canvas').boundingBox();
 await page.mouse.click(box.x + 200, box.y + 200);
 // click more cells while generating: do they do anything?

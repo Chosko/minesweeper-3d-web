@@ -113,7 +113,7 @@ async function finish(label) {
 // ---- Standard Cube Expert
 if (await page.isChecked('#bc-noguess')) await page.click('#bc-noguess');
 await setSeed(page, 777);
-await page.click('#board-choice [data-preset="12,12,8,130"]');
+await page.click('#board-choice [data-preset="12,12,8,130"]'); await page.click('#bc-play');
 await sleep(500);
 await enter();
 await shot(page, '04-expert-closed');
@@ -167,7 +167,7 @@ await page.click('#menu-entry-3d');
 if (!(await page.isChecked('#bc-noguess'))) await page.click('#bc-noguess');
 await shot(page, '04-3d-choice-noguess');
 await setSeed(page, 4242);
-await page.click('#board-choice [data-preset="12,12,8,130"]');
+await page.click('#board-choice [data-preset="12,12,8,130"]'); await page.click('#bc-play');
 await sleep(500);
 await enter();
 await firstClick('ng1');

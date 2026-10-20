@@ -7,7 +7,7 @@ await frames(page, 3);
 await shot(page, '02-board-choice');
 
 // pick Cube Beginner through the real button
-await page.click('[data-preset="6,6,6,10"]');
+await page.click('[data-preset="6,6,6,10"]'); await page.click('#bc-play');
 await frames(page, 3);
 console.log('mode after preset click:', await page.evaluate(() => globalThis.__ms.state.mode));
 await shot(page, '03-ready-card');

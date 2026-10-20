@@ -3,7 +3,7 @@ const { browser, page } = await launch();
 await page.evaluate(() => globalThis.__ms.settings.set('theme', 'dark')); await page.waitForTimeout(400);
 await page.click('#menu-entry-classic-2d'); await page.waitForTimeout(300);
 await shot(page, '83-c2d-choice-dark');
-await page.click('#c2d-choice [data-size="expert"]'); await page.waitForTimeout(800);
+await page.click('#c2d-choice [data-size="expert"]'); await page.click('#c2d-play'); await page.waitForTimeout(800);
 await shot(page, '82-c2d-expert-dark');
 await page.keyboard.press('Escape'); await page.waitForTimeout(300);
 await shot(page, '82-c2d-paused-dark');
@@ -12,7 +12,7 @@ if (!(await page.evaluate(() => document.getElementById('pause-confirm').classLi
 await page.waitForTimeout(300);
 await page.click('#menu-entry-3d'); await page.waitForTimeout(300);
 await shot(page, '83-3d-choice-dark');
-await page.click('#board-choice [data-preset="6,6,6,10"]'); await page.waitForTimeout(800);
+await page.click('#board-choice [data-preset="6,6,6,10"]'); await page.click('#bc-play'); await page.waitForTimeout(800);
 await shot(page, '84-3d-ready-dark');
 await page.mouse.click(640, 400); await page.waitForTimeout(500);
 await page.evaluate(() => { globalThis.__ms.aimAt([2,2,0]); globalThis.__ms.click('left'); }); await page.waitForTimeout(1200);

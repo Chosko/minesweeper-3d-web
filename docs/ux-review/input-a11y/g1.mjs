@@ -49,7 +49,7 @@ await shot(page, 'g-04-custom-pad');
 await press(BTN.B); await sleep(200); log('B →', await mode(page));
 // Start cube beginner
 await page.focus('#menu-entry-3d'); await press(BTN.A); await sleep(300);
-await page.focus('#board-choice [data-preset="6,6,6,10"]'); await press(BTN.A); await sleep(800);
+await page.focus('#board-choice [data-preset="6,6,6,10"]'); await press(BTN.A); await page.focus('#bc-play'); await press(BTN.A); await sleep(800);
 log('ready', await mode(page), 'focus', await focused(page));
 await shot(page, 'g-05-ready-pad');
 log('ready-pad text', await page.evaluate(() => document.getElementById('ready-pad').innerText.replace(/\n+/g,' | ')));

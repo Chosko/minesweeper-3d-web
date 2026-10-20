@@ -31,7 +31,7 @@ await press(BTN.LEFT); await set(BTN.A, true); await frames(3); await shot(page,
 await press(BTN.START); await sleep(300); await page.focus('#p-menu'); await press(BTN.A); await sleep(200); log('confirm focus', await f()); await page.focus('#p-confirm-yes'); await press(BTN.A); await sleep(500); log('→', await mode(page), await f());
 // win a 2x1 (keyboard fill) then replay with pad
 await page.focus('#menu-entry-classic-2d'); await page.keyboard.press('Enter'); await sleep(300);
-await page.fill('#c2d-width', '2'); await page.fill('#c2d-height', '1'); await page.fill('#c2d-mines', '1'); await page.click('#c2d-start'); await sleep(600);
+await page.click('#c2d-choice [data-size="custom"]'); await page.fill('#c2d-width', '2'); await page.fill('#c2d-height', '1'); await page.fill('#c2d-mines', '1'); await page.click('#c2d-play'); await sleep(600);
 await page.keyboard.press('Space'); await sleep(1800); log('results', await mode(page), await f());
 await press(BTN.RIGHT); log('RIGHT →', await f()); await press(BTN.A); await sleep(1500); log('replay', await mode(page), 'focus', await f());
 const rp = () => page.evaluate(() => ({ play: document.getElementById('rp-play').textContent, pos: document.getElementById('rp-position').textContent, speed: document.querySelector('#rp-speed [aria-checked=true]').textContent, end: document.getElementById('replay-end').textContent }));
@@ -45,7 +45,7 @@ log('replay RIGHT walk:', [await (async () => { await press(BTN.RIGHT); return f
 await shot(page, 'g4-05-replay-pad');
 await press(BTN.B); await sleep(400); log('B →', await mode(page), await f());
 // 3D pause card with pad: text shows keyboard controls?
-await press(BTN.B); await sleep(300); await page.focus('#menu-entry-3d'); await press(BTN.A); await sleep(300); await page.focus('#board-choice [data-preset="6,6,6,10"]'); await press(BTN.A); await sleep(800); await press(BTN.A); await sleep(600);
+await press(BTN.B); await sleep(300); await page.focus('#menu-entry-3d'); await press(BTN.A); await sleep(300); await page.focus('#board-choice [data-preset="6,6,6,10"]'); await press(BTN.A); await page.focus('#bc-play'); await press(BTN.A); await sleep(800); await press(BTN.A); await sleep(600);
 log('3D playing', await mode(page), 'hud tools text', await page.evaluate(() => document.querySelector('.hud-tools').innerText.replace(/\n+/g, ' | ')), 'hint-h', await page.evaluate(() => document.getElementById('hint-h').innerText.replace(/\n+/g, ' ')), 'hint visible', await page.evaluate(() => !document.getElementById('hint-h').classList.contains('hidden')));
 await press(BTN.START); await sleep(300); log('pause dl', await page.evaluate(() => document.querySelector('#pause dl.controls').innerText.replace(/\n+/g, ' | ')));
 log('errors', errors);

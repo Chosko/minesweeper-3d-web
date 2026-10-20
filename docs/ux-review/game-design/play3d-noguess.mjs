@@ -8,7 +8,7 @@ async function startPreset(preset, noguess) {
   if ((await mode(page)) !== 'board-choice') { await page.goto('http://127.0.0.1:8080/index.html'); await page.waitForFunction(() => globalThis.__ms !== undefined); await sleep(500); await page.click('#menu-entry-3d'); await sleep(300); }
   const checked = await page.evaluate(() => document.getElementById('bc-noguess').checked);
   if (checked !== noguess) await page.click('#bc-noguess');
-  await page.click(`[data-preset="${preset}"]`); await sleep(400);
+  await page.click(`[data-preset="${preset}"]`); await page.click('#bc-play'); await sleep(400);
   await page.evaluate(() => globalThis.__ms.forcePlay()); await sleep(300);
 }
 

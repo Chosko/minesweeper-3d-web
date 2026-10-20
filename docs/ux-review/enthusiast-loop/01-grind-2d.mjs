@@ -100,7 +100,7 @@ async function playAgainByEnter(label) {
 await page.click('#menu-entry-classic-2d');
 await shot(page, '01-c2d-choice-first');
 if (await page.isChecked('#c2d-noguess')) await page.click('#c2d-noguess');
-await page.click('#c2d-choice [data-size="expert"]');
+await page.click('#c2d-choice [data-size="expert"]'); await page.click('#c2d-play');
 log('mode after Expert:', await mode(page));
 await shot(page, '01-expert-closed');
 log('hud:', await page.evaluate(() => [document.getElementById('hud-time').textContent, document.getElementById('hud-mines').textContent, document.getElementById('hud-size').textContent]));
@@ -123,7 +123,7 @@ await shot(page, '01-menu-returning');
 await page.click('#menu-entry-classic-2d');
 await shot(page, '01-c2d-choice-returning');
 if (!(await page.isChecked('#c2d-noguess'))) await page.click('#c2d-noguess');
-await page.click('#c2d-choice [data-size="expert"]');
+await page.click('#c2d-choice [data-size="expert"]'); await page.click('#c2d-play');
 for (const [i, seed] of [[0, 2024], [1, 55555], [2, 8080]].entries()) {
   const r = await playNF({ seed, fc: 7 * W + 15, noGuess: true, label: `ng${i + 1}`, delayMs: 60 + 15 * i });
   if (!r) { log('no-guess generation failed for seed', seed); await shot(page, `01-ng${i + 1}-failure`); log(await page.evaluate(() => document.getElementById('c2d-status')?.innerText)); break; }

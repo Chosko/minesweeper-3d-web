@@ -5,7 +5,7 @@ const lock = () => page.evaluate(() => !!document.pointerLockElement);
 const confirmVisible = () => page.evaluate(() => !document.getElementById('pause-confirm').classList.contains('hidden'));
 const log = (...a) => console.log(...a);
 await page.click('#menu-entry-3d'); await page.waitForTimeout(300);
-await page.click('#board-choice [data-preset="6,6,6,10"]'); await page.waitForTimeout(800);
+await page.click('#board-choice [data-preset="6,6,6,10"]'); await page.click('#bc-play'); await page.waitForTimeout(800);
 await page.mouse.click(640, 400); await page.waitForTimeout(600);
 // A1: pause before first click, Restart -> what state?
 await page.keyboard.press('Escape'); await page.waitForTimeout(300);

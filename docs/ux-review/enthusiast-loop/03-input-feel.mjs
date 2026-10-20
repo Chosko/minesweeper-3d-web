@@ -6,7 +6,7 @@ const context = await launch({ fresh: false });
 const page = await openPage(context);
 await page.click('#menu-entry-classic-2d');
 if (await page.isChecked('#c2d-noguess')) await page.click('#c2d-noguess');
-await page.click('#c2d-choice [data-size="expert"]');
+await page.click('#c2d-choice [data-size="expert"]'); await page.click('#c2d-play');
 const seed = 12345, fc = 7 * W + 15;
 await setSeed(page, seed);
 const centres = await centres2D(page, W, H);

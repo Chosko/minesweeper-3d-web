@@ -1,8 +1,8 @@
 import { launch, shot, mode } from './lib.mjs';
 const { browser, page } = await launch();
 await page.click('#menu-entry-classic-2d'); await page.waitForTimeout(300);
-await page.fill('#c2d-width', '1'); await page.fill('#c2d-height', '1'); await page.fill('#c2d-mines', '0');
-await page.click('#c2d-start'); await page.waitForTimeout(800);
+await page.click('#c2d-choice [data-size="custom"]'); await page.fill('#c2d-width', '1'); await page.fill('#c2d-height', '1'); await page.fill('#c2d-mines', '0');
+await page.click('#c2d-play'); await page.waitForTimeout(800);
 let box = await page.locator('#c2d-board canvas').boundingBox();
 await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2); await page.waitForTimeout(2500);
 console.log('mode', await mode(page));
@@ -16,7 +16,7 @@ await page.click('#menu-entry-classic-2d'); await page.waitForTimeout(300);
 console.log('choice focus', await page.evaluate(() => document.activeElement?.id || document.activeElement?.dataset?.size), 'fields', await page.evaluate(() => [document.getElementById('c2d-width').value, document.getElementById('c2d-height').value, document.getElementById('c2d-mines').value]));
 await shot(page, '93-c2d-choice-after-custom');
 // Beginner game, win not possible quickly; check a Beginner loss then Play again lands directly on a fresh board
-await page.click('#c2d-choice [data-size="beginner"]'); await page.waitForTimeout(600);
+await page.click('#c2d-choice [data-size="beginner"]'); await page.click('#c2d-play'); await page.waitForTimeout(600);
 box = await page.locator('#c2d-board canvas').boundingBox();
 const cell = box.height / 9; const x0 = box.x + (box.width - 9 * cell) / 2;
 const cells = []; for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) cells.push([c, r]);

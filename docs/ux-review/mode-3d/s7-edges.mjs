@@ -73,7 +73,7 @@ await page.click('#menu-entry-3d'); await frames(page, 2);
 await shot(page, '85-board-choice-returning');
 console.log('board choice last-played:', await page.evaluate(() => [...document.querySelectorAll('[data-preset][data-last]')].map((b) => b.innerText.replace(/\n/g, ' / '))));
 await page.click('#bc-noguess');
-await page.click('[data-preset="6,6,6,10"]');
+await page.click('[data-preset="6,6,6,10"]'); await page.click('#bc-play');
 await frames(page, 3);
 console.log('ready card text with no-guess:', await page.evaluate(() => document.getElementById('ready-board').textContent), 'hud size:', await page.evaluate(() => document.getElementById('hud-size').textContent));
 await shot(page, '86-ready-noguess');
@@ -81,7 +81,7 @@ await shot(page, '86-ready-noguess');
 await page.click('#ready-back'); await frames(page, 2);
 console.log('after ready Back:', await page.evaluate(() => globalThis.__ms.state.mode));
 // a game paused before the first click: pause card text
-await page.click('[data-preset="6,6,6,10"]'); await frames(page, 2);
+await page.click('[data-preset="6,6,6,10"]'); await page.click('#bc-play'); await frames(page, 2);
 await forcePlay(page);
 await page.evaluate(() => globalThis.__ms.pause()); await frames(page, 2);
 console.log('pause before first click:', await page.evaluate(() => document.getElementById('pause-card').innerText.split('\n').slice(0, 3).join(' | ')));

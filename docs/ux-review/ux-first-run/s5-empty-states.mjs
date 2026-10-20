@@ -34,7 +34,7 @@ try {
   await shot(p2, '41-storage-blocked-records');
   await p2.keyboard.press('Escape');
   await p2.click('#menu-entry-classic-2d'); await p2.waitForTimeout(300);
-  await p2.click('#c2d-choice [data-size="beginner"]'); await p2.waitForTimeout(600);
+  await p2.click('#c2d-choice [data-size="beginner"]'); await p2.click('#c2d-play'); await p2.waitForTimeout(600);
   const box = await p2.locator('#c2d-board canvas').boundingBox();
   await p2.mouse.click(box.x + box.width/2, box.y + box.height/2); await p2.waitForTimeout(1500);
   console.log('game with blocked storage:\n' + await p2.evaluate(() => document.body.innerText));

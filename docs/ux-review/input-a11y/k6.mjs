@@ -2,7 +2,7 @@ import { launch, URL, ready, focused, mode, shot, sleep, log } from './helpers.m
 const browser = await launch();
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 await page.goto(URL); await ready(page);
-await page.click('#menu-entry-classic-2d'); await sleep(300); await page.click('#c2d-choice [data-size="beginner"]'); await sleep(500);
+await page.click('#menu-entry-classic-2d'); await sleep(300); await page.click('#c2d-choice [data-size="beginner"]'); await page.click('#c2d-play'); await sleep(500);
 await page.keyboard.press('h'); await sleep(300);
 log('2D: H → help visible', await page.evaluate(() => !document.getElementById('help').classList.contains('hidden')), 'help text', await page.evaluate(() => document.getElementById('help').innerText.replace(/\n+/g, ' | ').slice(0, 200)));
 await shot(page, 'k6-2d-h');

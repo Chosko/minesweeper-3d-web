@@ -14,7 +14,7 @@ let page = await openPage(context);
 log('A. Beginner games before:', JSON.stringify(await counters(page, KEY_B)));
 await page.click('#menu-entry-classic-2d');
 if (await page.isChecked('#c2d-noguess')) await page.click('#c2d-noguess');
-await page.click('#c2d-choice [data-size="beginner"]');
+await page.click('#c2d-choice [data-size="beginner"]'); await page.click('#c2d-play');
 await playNF(page, { W: 9, H: 9, M: 10, seed: 101, fc: 40, noGuess: false, label: 'b1', delayMs: 120, prefix: '07' });
 log('A. after b1 (in memory):', JSON.stringify(await counters(page, KEY_B)));
 await sleep(500);
@@ -27,7 +27,7 @@ context = await launch({ fresh: false });
 page = await openPage(context);
 log('A. after hard kill + relaunch:', JSON.stringify(await counters(page, KEY_B)));
 await page.click('#menu-entry-classic-2d');
-await page.click('#c2d-choice [data-size="beginner"]');
+await page.click('#c2d-choice [data-size="beginner"]'); await page.click('#c2d-play');
 await playNF(page, { W: 9, H: 9, M: 10, seed: 102, fc: 40, noGuess: false, label: 'b2', delayMs: 120, prefix: '07' });
 log('A. after b2 (in memory):', JSON.stringify(await counters(page, KEY_B)));
 await context.close();
@@ -38,7 +38,7 @@ log('A. after graceful close + relaunch:', JSON.stringify(await counters(page, K
 // ---------- B. leave guard and the in-progress marker
 log('B. Expert before:', JSON.stringify(await counters(page, KEY_E)), 'overall 2D:', JSON.stringify(await page.evaluate(() => globalThis.__ms.records.overall?.('classic-2d') ?? globalThis.__ms.records.counters?.('classic-2d'))));
 await page.click('#menu-entry-classic-2d');
-await page.click('#c2d-choice [data-size="expert"]');
+await page.click('#c2d-choice [data-size="expert"]'); await page.click('#c2d-play');
 await setSeed(page, 12345);
 const W = 30, H = 16;
 let centres = await centres2D(page, W, H);
@@ -95,7 +95,7 @@ log('C. 2D choice preselected:', await page.evaluate(() => { document.getElement
 await shot(page, '07-c2d-choice-dark');
 
 // ---------- D. pause integrity on Beginner: pause 3 s mid-game
-await page.click('#c2d-choice [data-size="beginner"]');
+await page.click('#c2d-choice [data-size="beginner"]'); await page.click('#c2d-play');
 await setSeed(page, 103);
 centres = await centres2D(page, 9, 9);
 const g2 = mines2D({ width: 9, height: 9, mines: 10, firstClick: 40, noGuess: false, seed: 103 });

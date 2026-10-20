@@ -1042,7 +1042,7 @@ Preconditions: 214
 
 ## 217. UX-review scripts follow the current board-choice markup
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: docs/ux-review/enthusiast-loop/, docs/ux-review/game-design/, docs/ux-review/input-a11y/, docs/ux-review/mode-3d/, docs/ux-review/ux-first-run/
 Preconditions: 214

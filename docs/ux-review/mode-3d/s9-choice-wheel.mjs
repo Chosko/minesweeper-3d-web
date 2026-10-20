@@ -7,7 +7,7 @@ await page.keyboard.press('Enter'); await frames(page, 3);
 console.log('after Enter: mode', await page.evaluate(() => globalThis.__ms.state.mode), 'board', await page.evaluate(() => document.getElementById('ready-board').textContent));
 // go back and play Beginner via UI, then return to the choice
 await page.click('#ready-back'); await frames(page, 2);
-await page.click('[data-preset="6,6,6,10"]'); await frames(page, 2);
+await page.click('[data-preset="6,6,6,10"]'); await page.click('#bc-play'); await frames(page, 2);
 await page.click('#ready-btn'); await sleep(400);
 await page.evaluate(() => { const m = globalThis.__ms; m.aimAt(m.selected()); m.click('left'); });
 await page.waitForFunction(() => globalThis.__ms.state.started, null, { timeout: 30000 });

@@ -1,7 +1,7 @@
 import { launch, shot, mode } from './lib.mjs';
 const { browser, page } = await launch();
 await page.click('#menu-entry-classic-2d'); await page.waitForTimeout(300);
-await page.click('#c2d-choice [data-size="beginner"]'); await page.waitForTimeout(800);
+await page.click('#c2d-choice [data-size="beginner"]'); await page.click('#c2d-play'); await page.waitForTimeout(800);
 const t0 = Date.now();
 await page.mouse.click(637, 440);
 const t1 = Date.now();

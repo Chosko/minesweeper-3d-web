@@ -4,7 +4,7 @@ for (let i = 0; i < 4; i++) {
   if (await mode(page) !== 'menu') { await page.keyboard.press('Escape'); await page.waitForTimeout(200); if (await mode(page) === 'paused') { await page.click('#p-menu'); await page.waitForTimeout(200); const c = await page.evaluate(() => !document.getElementById('pause-confirm').classList.contains('hidden')); if (c) await page.click('#p-confirm-yes'); } }
   await page.waitForTimeout(300);
   await page.click('#menu-entry-classic-2d'); await page.waitForTimeout(300);
-  await page.click('#c2d-choice [data-size="beginner"]'); await page.waitForTimeout(800);
+  await page.click('#c2d-choice [data-size="beginner"]'); await page.click('#c2d-play'); await page.waitForTimeout(800);
   const box = await page.locator('#c2d-board canvas').boundingBox();
   const cell = box.height / 9; const x0 = box.x + (box.width - 9 * cell) / 2;
   const col = 2 + i, row = 1 + i;

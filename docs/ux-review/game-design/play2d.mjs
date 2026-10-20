@@ -13,7 +13,7 @@ async function startBoard(size, noguess) {
   if ((await mode(page)) !== 'classic-2d-choice') { await page.click('#menu-entry-classic-2d'); await sleep(300); }
   const checked = await page.evaluate(() => document.getElementById('c2d-noguess').checked);
   if (checked !== noguess) await page.click('#c2d-noguess');
-  await page.click(`#c2d-choice [data-size="${size}"]`); await sleep(500);
+  await page.click(`#c2d-choice [data-size="${size}"]`); await page.click('#c2d-play'); await sleep(500);
   const box = await page.locator('#c2d-board canvas').boundingBox();
   return box;
 }

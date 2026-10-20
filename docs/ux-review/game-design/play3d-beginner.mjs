@@ -11,7 +11,7 @@ console.log('custom defaults:', await page.evaluate(() => ['c-x','c-y','c-z','c-
 await shot(page, '02-3d-board-choice');
 
 // Cube Beginner, no-guess OFF (default)
-await page.click('[data-preset="6,6,6,10"]');
+await page.click('[data-preset="6,6,6,10"]'); await page.click('#bc-play');
 await sleep(500);
 console.log('mode after preset:', await mode(page));
 console.log('ready text:', await page.evaluate(() => document.getElementById('ready').innerText));

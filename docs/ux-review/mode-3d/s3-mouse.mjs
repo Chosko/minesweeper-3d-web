@@ -3,7 +3,7 @@ import { launch, shot, frames, sleep, info } from './lib.mjs';
 
 const { browser, page } = await launch();
 await page.click('#menu-entry-3d');
-await page.click('[data-preset="6,6,6,10"]');
+await page.click('[data-preset="6,6,6,10"]'); await page.click('#bc-play');
 await frames(page, 2);
 await page.click('#ready-btn');
 await sleep(500);

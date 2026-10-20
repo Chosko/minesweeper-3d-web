@@ -3,7 +3,7 @@ const { browser, page } = await launch();
 const hud = () => page.evaluate(() => document.querySelector('.ui-overlay-bar')?.innerText.replace(/\n/g,' '));
 for (let i = 0; i < 4; i++) {
   await page.click('#menu-entry-classic-2d'); await page.waitForTimeout(300);
-  await page.click('#c2d-choice [data-size="beginner"]'); await page.waitForTimeout(800);
+  await page.click('#c2d-choice [data-size="beginner"]'); await page.click('#c2d-play'); await page.waitForTimeout(800);
   console.log(`run ${i} fresh hud: ${await hud()}`);
   await page.mouse.click(637, 440); await page.waitForTimeout(1200);
   const px = await page.evaluate(({x, y}) => { const c = document.querySelector('#c2d-board canvas'); const r = c.getBoundingClientRect(); return [...c.getContext('2d').getImageData(Math.round(x - r.left), Math.round(y - r.top), 1, 1).data]; }, {x: 637, y: 440});

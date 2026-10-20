@@ -1,7 +1,7 @@
 import { launch, shot, mode, visText } from './lib.mjs';
 const { browser, page } = await launch();
 await page.click('#menu-entry-classic-2d'); await page.waitForTimeout(300);
-await page.click('#c2d-choice [data-size="beginner"]'); await page.waitForTimeout(800);
+await page.click('#c2d-choice [data-size="beginner"]'); await page.click('#c2d-play'); await page.waitForTimeout(800);
 console.log('mode', await mode(page));
 console.log('body text:\n' + await page.evaluate(() => document.body.innerText));
 await shot(page, '20-c2d-beginner-fresh');
@@ -49,7 +49,7 @@ await page.click('#menu-entry-classic-2d'); await page.waitForTimeout(300);
 console.log('choice focused', await page.evaluate(() => document.activeElement?.id || document.activeElement?.dataset?.size), 'noguess', await page.evaluate(() => document.getElementById('c2d-noguess').checked));
 await shot(page, '25-c2d-choice-return');
 // Play again path from results: start another beginner, then results -> Play again
-await page.click('#c2d-choice [data-size="beginner"]'); await page.waitForTimeout(500);
+await page.click('#c2d-choice [data-size="beginner"]'); await page.click('#c2d-play'); await page.waitForTimeout(500);
 await page.mouse.click(...at(4, 4)); await page.waitForTimeout(500);
 // restart during game: confirmation?
 await page.keyboard.press('Escape'); await page.waitForTimeout(200);

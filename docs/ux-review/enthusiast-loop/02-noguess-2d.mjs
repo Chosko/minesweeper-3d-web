@@ -10,7 +10,7 @@ await page.click('#menu-entry-classic-2d');
 console.log('preselected:', await page.evaluate(() => document.querySelector('#c2d-choice [data-size][data-last]')?.dataset.size), 'no-guess checked:', await page.isChecked('#c2d-noguess'));
 if (!(await page.isChecked('#c2d-noguess'))) await page.click('#c2d-noguess');
 await shot(page, '02-c2d-choice-noguess');
-await page.click('#c2d-choice [data-size="expert"]');
+await page.click('#c2d-choice [data-size="expert"]'); await page.click('#c2d-play');
 console.log('hud:', await page.evaluate(() => [document.getElementById('hud-time').textContent, document.getElementById('hud-mines').textContent, document.getElementById('hud-size').textContent]));
 const seeds = [2024, 55555, 8080];
 for (let i = 0; i < seeds.length; i++) {

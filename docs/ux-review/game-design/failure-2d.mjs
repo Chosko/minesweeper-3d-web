@@ -6,13 +6,13 @@ const text = (sel) => page.evaluate((s) => document.querySelector(s)?.innerText?
 // 2D custom at the mine cap, no-guess: find a size where no-guess fails. Try the densest allowed boards.
 for (const [w, h] of [[9, 9], [5, 5], [4, 4], [3, 3], [8, 8]]) {
   if ((await mode(page)) !== 'classic-2d-choice') { await page.click('#menu-entry-classic-2d'); await sleep(300); }
-  await page.fill('#c2d-width', String(w)); await page.fill('#c2d-height', String(h)); await page.fill('#c2d-mines', '999'); await sleep(100);
+  await page.click('#c2d-choice [data-size="custom"]'); await page.fill('#c2d-width', String(w)); await page.fill('#c2d-height', String(h)); await page.fill('#c2d-mines', '999'); await sleep(100);
   const info = await text('#c2d-info');
   const cap = Number((info.match(/to (\d+)/) || [])[1] || 0);
   await page.fill('#c2d-mines', String(cap)); await sleep(100);
   console.log(`\n2D ${w}x${h}: info "${info}" → cap ${cap}, now: "${await text('#c2d-info')}"`);
   if (!(await page.evaluate(() => document.getElementById('c2d-noguess').checked))) await page.click('#c2d-noguess');
-  await page.click('#c2d-start'); await sleep(400);
+  await page.click('#c2d-play'); await sleep(400);
   if ((await mode(page)) !== 'classic-2d') { console.log('  did not start:', await text('#c2d-info')); continue; }
   const box = await page.locator('#c2d-board canvas').boundingBox();
   const t1 = Date.now();

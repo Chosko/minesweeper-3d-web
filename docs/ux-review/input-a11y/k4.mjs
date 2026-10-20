@@ -18,7 +18,7 @@ log('landmarks', await page.evaluate(() => [...document.querySelectorAll('main, 
 log('hidden overlays use', await page.evaluate(() => getComputedStyle(document.getElementById('settings')).display));
 log('canvas label', await page.evaluate(() => document.getElementById('scene').getAttribute('aria-label')), 'canvas role', await page.evaluate(() => document.getElementById('scene').getAttribute('role')));
 // Go 2D: board canvas semantics
-await page.click('#menu-entry-classic-2d'); await sleep(300); await page.click('#c2d-choice [data-size="beginner"]'); await sleep(500);
+await page.click('#menu-entry-classic-2d'); await sleep(300); await page.click('#c2d-choice [data-size="beginner"]'); await page.click('#c2d-play'); await sleep(500);
 log('2D board canvas', await page.evaluate(() => { const c = document.querySelector('#c2d-board canvas'); return { role: c.getAttribute('role'), label: c.getAttribute('aria-label'), tabindex: c.getAttribute('tabindex'), text: c.textContent }; }));
 log('hud aria-live', await page.evaluate(() => document.getElementById('hud').getAttribute('aria-live')), 'hud-time label', await page.evaluate(() => document.getElementById('hud-time').closest('[role=group]').getAttribute('aria-labelledby')));
 log('2D visible kbd hints', await page.evaluate(() => [...document.querySelectorAll('#hud kbd, #hud .kbd-hint')].filter(e => e.offsetParent !== null).map(e => e.textContent)));
@@ -36,7 +36,7 @@ await page.keyboard.press('Escape'); await sleep(200); log('Esc on confirm → m
 await page.focus('#p-menu'); await page.keyboard.press('Enter'); await sleep(200); await page.focus('#p-confirm-yes'); await page.keyboard.press('Enter'); await sleep(600);
 log('after confirm →', await mode(page), 'focus', await focused(page));
 // Results Esc → menu, and focus restore from Records back to results
-await page.click('#menu-entry-classic-2d'); await sleep(300); await page.fill('#c2d-width', '2'); await page.fill('#c2d-height', '1'); await page.fill('#c2d-mines', '1'); await page.click('#c2d-start'); await sleep(600);
+await page.click('#menu-entry-classic-2d'); await sleep(300); await page.click('#c2d-choice [data-size="custom"]'); await page.fill('#c2d-width', '2'); await page.fill('#c2d-height', '1'); await page.fill('#c2d-mines', '1'); await page.click('#c2d-play'); await sleep(600);
 await page.keyboard.press('Space'); await sleep(1500); log('results', await mode(page), 'live regions', await page.evaluate(() => [...document.querySelectorAll('[aria-live], [role=status], [role=alert]')].filter(e => e.offsetParent !== null).map(e => `${e.id}:${e.textContent.trim().slice(0,30)}`)));
 await page.focus('#r-records'); await page.keyboard.press('Enter'); await sleep(600); await page.keyboard.press('Escape'); await sleep(400);
 log('Records → Esc → ', await mode(page), 'focus restored to', await focused(page));

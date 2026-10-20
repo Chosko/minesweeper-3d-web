@@ -5,7 +5,7 @@ const text = (sel) => page.evaluate((s) => document.querySelector(s)?.innerText?
 
 await page.click('#menu-entry-3d'); await sleep(300);
 if (!(await page.evaluate(() => document.getElementById('bc-noguess').checked))) await page.click('#bc-noguess');
-await page.click('[data-preset="6,6,6,10"]'); await sleep(400);
+await page.click('[data-preset="6,6,6,10"]'); await page.click('#bc-play'); await sleep(400);
 await page.evaluate(() => globalThis.__ms.forcePlay()); await sleep(300);
 await page.evaluate(() => { const g = globalThis.__ms.game; globalThis.__ms.aimAt(g.idx(3, 3, 0)); globalThis.__ms.click('left'); });
 await page.waitForFunction(() => globalThis.__ms.modes.state.started, null, { timeout: 30000 });

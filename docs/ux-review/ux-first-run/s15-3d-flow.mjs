@@ -3,7 +3,7 @@ const { browser, page } = await launch();
 const body = () => page.evaluate(() => document.body.innerText);
 const confirmVisible = () => page.evaluate(() => !document.getElementById('pause-confirm').classList.contains('hidden'));
 await page.click('#menu-entry-3d'); await page.waitForTimeout(300);
-await page.click('#board-choice [data-preset="6,6,6,10"]'); await page.waitForTimeout(800);
+await page.click('#board-choice [data-preset="6,6,6,10"]'); await page.click('#bc-play'); await page.waitForTimeout(800);
 await page.mouse.click(640, 400); await page.waitForTimeout(800);
 console.log('mode', await mode(page), 'lock', await page.evaluate(() => !!document.pointerLockElement));
 console.log('game keys', await page.evaluate(() => Object.keys(globalThis.__ms.game || {})));
@@ -21,16 +21,16 @@ console.log('mode', await mode(page));
 await page.click('#menu-entry-3d'); await page.waitForTimeout(300);
 console.log('3D choice focus on return', await page.evaluate(() => document.activeElement?.dataset?.preset || document.activeElement?.id));
 // Esc on ready card and Back on ready card
-await page.click('#board-choice [data-preset="6,6,6,10"]'); await page.waitForTimeout(800);
+await page.click('#board-choice [data-preset="6,6,6,10"]'); await page.click('#bc-play'); await page.waitForTimeout(800);
 await page.keyboard.press('Escape'); await page.waitForTimeout(300);
 console.log('Esc on ready card -> mode', await mode(page));
-await page.click('#board-choice [data-preset="6,6,6,10"]'); await page.waitForTimeout(800);
+await page.click('#board-choice [data-preset="6,6,6,10"]'); await page.click('#bc-play'); await page.waitForTimeout(800);
 const backSel = await page.evaluate(() => [...document.querySelectorAll('button')].find(b => b.offsetParent && b.textContent.trim() === 'Back' && b.id !== 'board-choice-back')?.id);
 console.log('ready back id', backSel);
 await page.click('#' + backSel); await page.waitForTimeout(300);
 console.log('Back on ready card -> mode', await mode(page));
 // Play: click to play, first reveal, then resume from pause -> is the "Click to play" card shown again?
-await page.click('#board-choice [data-preset="6,6,6,10"]'); await page.waitForTimeout(800);
+await page.click('#board-choice [data-preset="6,6,6,10"]'); await page.click('#bc-play'); await page.waitForTimeout(800);
 await page.mouse.click(640, 400); await page.waitForTimeout(500);
 await page.evaluate(() => { globalThis.__ms.aimAt([0, 0, 0]); globalThis.__ms.click('left'); }); await page.waitForTimeout(1500);
 console.log('started', await page.evaluate(() => globalThis.__ms.modes.state.started), 'game state', await page.evaluate(() => globalThis.__ms.game.state));

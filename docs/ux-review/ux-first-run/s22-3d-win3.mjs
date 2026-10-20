@@ -4,12 +4,12 @@ const body = () => page.evaluate(() => document.body.innerText);
 const lock = () => page.evaluate(() => !!document.pointerLockElement);
 const log = (...a) => console.log(...a);
 await page.click('#menu-entry-3d'); await page.waitForTimeout(300);
-await page.click('#board-choice [data-preset="6,6,6,10"]'); await page.waitForTimeout(800);
+await page.click('#board-choice [data-preset="6,6,6,10"]'); await page.click('#bc-play'); await page.waitForTimeout(800);
 await page.keyboard.press('Escape'); await page.waitForTimeout(300);
 log('Esc on ready card -> mode', await mode(page));
 while (await mode(page) !== 'menu') { await page.keyboard.press('Escape'); await page.waitForTimeout(300); log('  Esc ->', await mode(page)); }
 await page.click('#menu-entry-3d'); await page.waitForTimeout(300);
-await page.click('#board-choice [data-preset="6,6,6,10"]'); await page.waitForTimeout(800);
+await page.click('#board-choice [data-preset="6,6,6,10"]'); await page.click('#bc-play'); await page.waitForTimeout(800);
 const backId = await page.evaluate(() => [...document.querySelectorAll('button')].find(b => b.offsetParent && b.textContent.trim() === 'Back' && b.id !== 'board-choice-back')?.id);
 await page.click('#' + backId); await page.waitForTimeout(300);
 log('Back (' + backId + ') on ready card -> mode', await mode(page));

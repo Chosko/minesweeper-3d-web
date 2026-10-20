@@ -18,9 +18,9 @@ async function run(devName, tag, landscape) {
   log('choice overflow', await overflow(), 'small targets', JSON.stringify(await small()));
   await shot('02-c2d-choice');
   // custom field tap -> keyboard type
-  await page.tap('#c2d-width'); await page.keyboard.press('Control+a'); await page.keyboard.type('8'); log('width typed', await page.evaluate(() => document.getElementById('c2d-width').value));
+  await page.tap('#c2d-choice [data-size="custom"]'); await page.tap('#c2d-width'); await page.keyboard.press('Control+a'); await page.keyboard.type('8'); log('width typed', await page.evaluate(() => document.getElementById('c2d-width').value));
   await page.tap('#c2d-noguess'); log('noguess after tap', await page.evaluate(() => document.getElementById('c2d-noguess').checked)); await page.tap('#c2d-noguess');
-  await page.tap('#c2d-choice [data-size="beginner"]'); await sleep(600); log('tap Beginner →', await mode());
+  await page.tap('#c2d-choice [data-size="beginner"]'); await page.tap('#c2d-play'); await sleep(600); log('tap Beginner →', await mode());
   await shot('03-c2d-board');
   log('board', await page.evaluate(() => { const c = document.querySelector('#c2d-board canvas'); const r = c.getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height), x: Math.round(r.x), y: Math.round(r.y), tile: Math.round(r.width / 9) }; }));
   const hud = () => page.evaluate(() => ({ t: document.getElementById('hud-time').textContent, m: document.getElementById('hud-mines').textContent, st: __ms.modes.state }));
@@ -42,7 +42,7 @@ async function run(devName, tag, landscape) {
   await shot('06-pause');
   await page.tap('#p-menu'); await sleep(300); if (await page.evaluate(() => !document.getElementById('pause-confirm').classList.contains('hidden'))) await page.tap('#p-confirm-yes'); await sleep(500); log('→', await mode());
   // Expert board: scroll/pan
-  await page.tap('#menu-entry-classic-2d'); await sleep(300); await page.tap('#c2d-choice [data-size="expert"]'); await sleep(600);
+  await page.tap('#menu-entry-classic-2d'); await sleep(300); await page.tap('#c2d-choice [data-size="expert"]'); await page.tap('#c2d-play'); await sleep(600);
   log('expert board', await page.evaluate(() => { const c = document.querySelector('#c2d-board canvas'); const r = c.getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height), tile: Math.round(r.width / 30), scrolls: r.width > innerWidth }; }));
   await shot('07-expert');
   // swipe
@@ -56,7 +56,7 @@ async function run(devName, tag, landscape) {
   // 3D
   await page.tap('#menu-entry-3d'); await sleep(400); log('tap 3D →', await mode()); log('3d choice overflow', await overflow(), 'small', JSON.stringify(await small()));
   await shot('09-3d-choice');
-  await page.tap('#board-choice [data-preset="6,6,6,10"]'); await sleep(800); log('tap Beginner →', await mode(), 'ready msg', await page.evaluate(() => document.getElementById('ready-msg').textContent));
+  await page.tap('#board-choice [data-preset="6,6,6,10"]'); await page.tap('#bc-play'); await sleep(800); log('tap Beginner →', await mode(), 'ready msg', await page.evaluate(() => document.getElementById('ready-msg').textContent));
   await shot('10-3d-ready');
   await page.tap('#ready-btn'); await sleep(1200); log('tap Click to play →', await mode(), 'msg', await page.evaluate(() => document.getElementById('ready-msg').textContent));
   await shot('11-3d-after-tap');

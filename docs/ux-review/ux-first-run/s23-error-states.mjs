@@ -9,7 +9,7 @@ const args = ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swif
   page.on('pageerror', (e) => console.log('PAGEERROR', e.message));
   await page.goto('http://127.0.0.1:8080/index.html'); await page.waitForFunction(() => globalThis.__ms !== undefined); await page.waitForTimeout(1000);
   await page.click('#menu-entry-3d'); await page.waitForTimeout(300);
-  await page.click('#board-choice [data-preset="6,6,6,10"]'); await page.waitForTimeout(800);
+  await page.click('#board-choice [data-preset="6,6,6,10"]'); await page.click('#bc-play'); await page.waitForTimeout(800);
   await page.mouse.click(640, 400); await page.waitForTimeout(1500);
   console.log('lock denied: mode', await mode(page), 'lock', await page.evaluate(() => !!document.pointerLockElement));
   console.log('body:\n' + (await page.evaluate(() => document.body.innerText)).slice(0, 500));
