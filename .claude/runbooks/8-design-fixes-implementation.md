@@ -52,7 +52,7 @@ Context: none
 
 Done: 2026-10-20, commit `f167ac2` (48 files, +92/-92). Premise wrong: the hint list missed many scripts; every Classic 2D preset click now also clicks Play. Scripts still stall on drift no task covers yet: custom boards the game now refuses, and `#hint-h`, `#p-restart`, the 2D `#hud-pause` and a removed 3D preset.
 
-## [~] 5. Implement task 218 — Kit buttons: md size, key hint ink, quiet variant, latched toggles, danger variant
+## [x] 5. Implement task 218 — Kit buttons: md size, key hint ink, quiet variant, latched toggles, danger variant
 
 Depends on: 1
 
@@ -61,6 +61,8 @@ Context: none
 ```prompt
 /task-implement 218 --review
 ```
+
+Done: 2026-10-20, commit `e0548f7` (16 files, +298/-48). Premise wrong: the danger variant already existed; only Delete replay and Reset all data moved to it. Only the four named toggles became latched quiet toggles (their on state reuses the catalogue's `chosen`); Tap: Reveal/Flag and the replay's Sound stay secondary. Show 3BV keeps a stale `aria-pressed` into the next replay (pre-existing, no task).
 
 ## [x] 6. Implement task 219 — Kit form controls: switch, switch row, slider fill, number field, invalid state, focus halo
 
