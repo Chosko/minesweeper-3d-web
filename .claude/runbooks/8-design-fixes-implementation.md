@@ -116,7 +116,7 @@ Context:
 
 Done: 2026-10-20, commit `7aa48f0` (17 files, +465/-120). Decisions: the phone label-over-value stacking applies only to a `ui-table` without `thead`; a worse difference shows in muted ink (`results-screen.md` updated); `ui-code__label` styling is gone, so the Results and Daily chips' inline "Board code" label renders unstyled until tasks 237 and 229.
 
-## [~] 10. Implement task 223 — Kit frames: head and foot steps, white action foot, message cards, scrims, status cards
+## [x] 10. Implement task 223 — Kit frames: head and foot steps, white action foot, message cards, scrims, status cards
 
 Depends on: 5, 7
 
@@ -127,6 +127,8 @@ Context:
 ```prompt
 /task-implement 223 --review
 ```
+
+Done: 2026-10-20, commit `da401db` (27 files, +485/-139). Decisions: the placeholder and replay-failure titles take the message card's type; `#hud-tap` hides behind the pause, ready and results cards; results-foot padding lives in the theme. Open: a failed replay clears its figures to "—" and the phone-landscape action-foot height are unchecked against the canvas.
 
 ## [x] 11. Implement task 224 — Board module: 2D numbers, 2D end effect from the module, theme token cleanup
 
@@ -183,6 +185,7 @@ Depends on: 7, 10
 Context:
 - 2026-10-20 (from step 14): task 227 left the menu's preview tile size unpinned — at 1024×768 it draws 27 px where the criteria give 23, and the Daily focus 28 px / 933 px wide against 27 px / about 872 px; this task's layout should pin them.
 - 2026-10-20 (from step 7): task 220's icons come from `ICONS` in `js/ui/components.js`; markup names one with `data-icon="<name>"` and `applyIcons(root)` draws it, script-built buttons use `createButton(doc, {label, icon, …})` or `setButtonIcon`. Nothing in the game calls `applyIcons` yet — the first screen task that adds `data-icon` to `index.html` must call it from `js/main.js`.
+- 2026-10-20 (from step 10): `js/main.js` already calls `applyIcons(document.body)` (task 221), so the step-7 note's "must call it" is satisfied — do not add a second call.
 
 ```prompt
 /task-implement 228 --review
@@ -255,6 +258,7 @@ Depends on: 7, 10, 20
 
 Context:
 - 2026-10-20 (from step 7): task 220's icons come from `ICONS` in `js/ui/components.js`; markup names one with `data-icon="<name>"` and `applyIcons(root)` draws it, script-built buttons use `createButton(doc, {label, icon, …})` or `setButtonIcon`. Nothing in the game calls `applyIcons` yet — the first screen task that adds `data-icon` to `index.html` must call it from `js/main.js`.
+- 2026-10-20 (from step 10): `js/main.js` already calls `applyIcons(document.body)` (task 221), so the step-7 note's "must call it" is satisfied — do not add a second call.
 
 ```prompt
 /task-implement 235 --review
@@ -281,7 +285,7 @@ Context:
 /task-implement 237 --review
 ```
 
-## [ ] 25. Implement task 238 — Records screen to the canvas
+## [~] 25. Implement task 238 — Records screen to the canvas
 
 Depends on: 8, 9
 
@@ -297,6 +301,7 @@ Depends on: 9, 10, 14
 
 Context:
 - 2026-10-20 (from step 14): task 227 left the replay viewer's tile size unpinned — at 1920×1080 it draws 40 px where the criteria give 34; the viewer always fits the whole board (down to a 1 px tile) and this task's layout should pin the size.
+- 2026-10-20 (from step 10): task 223 leaves a failed replay's figures panel cleared to "—" (only ticks and pause marks stay) and keeps speed and Show 3BV enabled; check the figures against the canvas's J-Replay-states "Failure".
 
 ```prompt
 /task-implement 239 --review
