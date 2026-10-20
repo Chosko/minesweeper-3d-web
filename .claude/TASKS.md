@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 243
+Last task number: 244
 
 ---
 
@@ -1055,6 +1055,7 @@ Status: [MISSING]
 Target: claude
 Files: css/components.css, themes/joyful-tiles/theme.css, css/style.css, js/ui/kit-catalogue.js, dev/components.html, index.html, js/settings/page.js, tests/components.test.mjs, .claude/context/app-shell-kit.md
 Preconditions: 214
+Feature: shared-screen-layout
 
 ---
 
@@ -1064,6 +1065,7 @@ Status: [MISSING]
 Target: claude
 Files: css/components.css, themes/joyful-tiles/theme.css, js/ui/components.js, js/ui/kit-catalogue.js, dev/components.html, js/classic2d/board-choice.js, js/mode3d/board-choice.js, tests/components.test.mjs, .claude/context/app-shell-kit.md
 Preconditions: 214
+Feature: shared-screen-layout
 
 ---
 
@@ -1073,6 +1075,7 @@ Status: [MISSING]
 Target: claude
 Files: js/ui/components.js, js/ui/kit-catalogue.js, css/components.css, dev/components.html, tests/components.test.mjs, .claude/context/app-shell-kit.md
 Preconditions: 218
+Feature: shared-screen-layout
 
 ---
 
@@ -1082,6 +1085,7 @@ Status: [MISSING]
 Target: claude
 Files: css/components.css, themes/joyful-tiles/theme.css, index.html, js/shell/pause.js, js/ui.js, js/records/replay-list.js, js/settings/page.js, js/settings/reset.js, js/classic2d/board-choice.js, js/mode3d/board-choice.js, js/ui/kit-catalogue.js, dev/components.html, .claude/context/app-shell-kit.md
 Preconditions: 218, 220
+Feature: shared-screen-layout
 
 ---
 
@@ -1091,6 +1095,7 @@ Status: [MISSING]
 Target: claude
 Files: themes/joyful-tiles/theme.css, css/components.css, js/ui/components.js, js/ui/kit-catalogue.js, dev/components.html, tests/components.test.mjs, .claude/context/app-shell-kit.md
 Preconditions: 218, 220
+Feature: shared-screen-layout
 
 ---
 
@@ -1100,6 +1105,7 @@ Status: [MISSING]
 Target: claude
 Files: css/components.css, themes/joyful-tiles/theme.css, css/style.css, index.html, js/ui.js, js/replay/viewer.js, .claude/context/app-shell-kit.md, .claude/context/app-shell-ui.md
 Preconditions: 218, 220
+Feature: shared-screen-layout
 
 ---
 
@@ -1145,6 +1151,7 @@ Status: [MISSING]
 Target: claude
 Files: css/style.css, themes/joyful-tiles/theme.css, css/components.css, index.html, js/shell/menu.js, js/ui.js, .claude/context/app-shell-menu.md
 Preconditions: 220, 223
+Feature: shared-screen-layout
 
 ---
 
@@ -1154,6 +1161,7 @@ Status: [MISSING]
 Target: claude
 Files: index.html, js/shell/daily.js, js/ui.js, css/style.css, themes/joyful-tiles/theme.css, .claude/context/app-shell-daily.md
 Preconditions: 222, 223, 227, 228
+Feature: shared-screen-layout
 
 ---
 
@@ -1163,6 +1171,7 @@ Status: [MISSING]
 Target: claude
 Files: index.html, css/style.css, themes/joyful-tiles/theme.css, css/components.css, js/classic2d/board-choice.js, js/mode3d/board-choice.js, .claude/context/app-shell-2d.md, .claude/context/app-shell-3d.md
 Preconditions: 219, 221, 222, 223
+Feature: shared-screen-layout
 
 ---
 
@@ -1190,6 +1199,7 @@ Status: [MISSING]
 Target: claude
 Files: js/settings/bindings.js, js/settings/page.js, index.html, css/style.css, themes/joyful-tiles/theme.css, .claude/context/settings-bindings.md, .claude/context/app-shell-help.md
 Preconditions: 223
+Feature: shared-screen-layout
 
 ---
 
@@ -1199,6 +1209,7 @@ Status: [MISSING]
 Target: claude
 Files: index.html, js/ui.js, js/shell/pause.js, css/components.css, .claude/context/app-shell-pause.md
 Preconditions: 221, 233
+Feature: shared-screen-layout
 
 ---
 
@@ -1208,6 +1219,7 @@ Status: [MISSING]
 Target: claude
 Files: index.html, css/style.css, themes/joyful-tiles/theme.css, js/touch-3d.js, dev/components.html, .claude/context/app-shell-3d.md, .claude/context/app-shell-3d-play.md
 Preconditions: 220, 223, 233
+Feature: shared-screen-layout
 
 ---
 
@@ -1226,6 +1238,7 @@ Status: [MISSING]
 Target: claude
 Files: index.html, js/results/view.js, css/style.css, themes/joyful-tiles/theme.css, js/shell/first-use.js, .claude/context/app-shell-results.md
 Preconditions: 222, 223
+Feature: shared-screen-layout
 
 ---
 
@@ -1235,6 +1248,7 @@ Status: [MISSING]
 Target: claude
 Files: index.html, css/style.css, js/records/screen.js, js/records/replay-list.js, js/records/history-chart.js, themes/joyful-tiles/theme.css, .claude/context/records-screen-view.md, .claude/context/records-library-view.md
 Preconditions: 221, 222
+Feature: shared-screen-layout
 
 ---
 
@@ -1244,6 +1258,7 @@ Status: [MISSING]
 Target: claude
 Files: index.html, css/style.css, themes/joyful-tiles/theme.css, css/components.css, js/replay/viewer.js, js/replay/viewer-2d.js, .claude/context/replay-viewer-screen.md, .claude/context/replay-viewers.md
 Preconditions: 222, 223, 227
+Feature: shared-screen-layout
 
 ---
 
@@ -1253,6 +1268,7 @@ Status: [MISSING]
 Target: claude
 Files: css/style.css, themes/joyful-tiles/theme.css, js/settings/page.js, index.html, tests/settings-page.test.mjs, .claude/context/settings-page.md
 Preconditions: 215, 219, 221
+Feature: shared-screen-layout
 
 ---
 
@@ -1262,6 +1278,7 @@ Status: [MISSING]
 Target: claude
 Files: index.html, css/components.css, css/style.css, themes/joyful-tiles/theme.css, .claude/context/app-shell-ui.md
 Preconditions: 223
+Feature: shared-screen-layout
 
 ---
 
@@ -1271,6 +1288,7 @@ Status: [MISSING]
 Target: claude
 Files: js/themes/applier.js, js/main.js, js/records/board-code.js, js/classic2d/board-choice.js, js/mode3d/board-choice.js, js/ui.js, index.html, js/results/view.js, js/shell/live-figures.js, .claude/context/records-board-code.md
 Preconditions: 230, 237
+Feature: shared-screen-layout
 
 ---
 
@@ -1280,5 +1298,15 @@ Status: [MISSING]
 Target: claude
 Files: dev/components.html, js/ui/kit-catalogue.js, tests/components.test.mjs, .claude/context/app-shell-kit.md
 Preconditions: 218, 219, 220, 221, 222, 223
+
+---
+
+## 244. Update documentation for feature `shared-screen-layout`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/app-shell-kit.md, .claude/context/app-shell-kit-helpers.md, .claude/context/app-shell-menu.md, .claude/context/app-shell-daily.md, .claude/context/app-shell-2d.md, .claude/context/app-shell-3d.md, .claude/context/app-shell-3d-play.md, .claude/context/app-shell-pause.md, .claude/context/app-shell-results.md, .claude/context/app-shell-ui.md, .claude/context/app-shell-help.md, .claude/context/settings-bindings.md, .claude/context/settings-page.md, .claude/context/records-screen.md, .claude/context/records-screen-view.md, .claude/context/records-library-view.md, .claude/context/records-board-code.md, .claude/context/replay-viewer-screen.md, .claude/context/replay-viewers.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/shared-screen-layout.md
+Preconditions: 218, 219, 220, 221, 222, 223, 228, 229, 230, 233, 234, 235, 237, 238, 239, 240, 241, 242
+Feature: shared-screen-layout
 
 ---
