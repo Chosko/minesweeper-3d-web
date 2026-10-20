@@ -1515,9 +1515,10 @@ function showPauseCard(note = '') {
   input.exitLock();
   if (SHELL.current !== 'paused') SHELL.go('paused', { data: { note } });
 }
-/** While the pause card shows the board is hidden, in every mode. */
+/** While the pause card shows the board is hidden, in every mode, and the 3D cell motion is dropped. */
 function setBoardHidden(on) {
   canvas.style.visibility = on ? 'hidden' : '';
+  if (on) renderer?.dropMotion();
   if (MODES.active === 'classic-2d') mode2d.hideBoard(on);
 }
 /** Whether the active game is over (the pause card then leads with Play again). */

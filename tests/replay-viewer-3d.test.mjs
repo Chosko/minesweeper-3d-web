@@ -392,14 +392,15 @@ test('[slow] in a browser, a recorded 3D replay plays from its fixture through t
     for (const k of ['x', 'y', 'z']) assert.ok(Math.abs(got[k] - want[k]) < 1e-6, `camera ${k} unmoved by the player`);
 
     // Playback shows the "solved" pulse of the numbers it hides (two at 6559 ms); a seek drops it at once.
-    const pulses = () => page.evaluate(() => globalThis.__ms.renderer._pulses.size);
+    const pulses = () => page.evaluate(() => [...globalThis.__ms.renderer.motion.valuesAt(performance.now()).values()].filter((m) => m.event === 'solvedPulse').length);
     // A frame stalled past the pulse can miss it under load: play over the hides again until one is seen.
     let seen = false;
     for (let attempt = 0; attempt < 5 && !seen; attempt++) {
       await page.evaluate(() => { const v = globalThis.__ms.replayViewer; v.seek(6300); if (!v.state.playing) v.command('toggle'); });
       const outcome = await page.waitForFunction(() => {
         const v = globalThis.__ms.replayViewer;
-        if (globalThis.__ms.renderer._pulses.size > 0) { v.seek(4000); return 'seen'; }
+        const r = globalThis.__ms.renderer;
+        if ([...r.motion.valuesAt(performance.now()).values()].some((m) => m.event === 'solvedPulse')) { v.seek(4000); return 'seen'; }
         return v.state.time > 7200 ? 'missed' : false;
       }, null, { polling: 'raf', timeout: patience(5000) });
       seen = (await outcome.jsonValue()) === 'seen';

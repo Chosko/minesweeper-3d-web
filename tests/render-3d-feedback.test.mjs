@@ -1,7 +1,8 @@
 // 3D small feedback in the renderer: Ctrl draws hidden cells as ghosts at GHOST_ALPHA in the
 // transparent pass instead of opaque, and a number the player could see plays a short "solved"
-// pulse — brighter and larger, then fading out — after the engine hides it. The pulse envelope is a
-// pure function of elapsed time; the drawing is checked in a browser through `__ms`. The scene is
+// pulse — brighter and larger, then fading out — after the engine hides it, the theme's solved-pulse
+// cell motion (tests/render-3d-motion.test.mjs covers the motion mesh); the drawing is checked in a
+// browser through `__ms`. The scene is
 // drawn from the board module the shell hands in: the atlas, the sky and fog, the selection outline
 // and the marked start cell's tint.
 import { test } from 'node:test';
@@ -20,13 +21,13 @@ const THREE_URL = pathToFileURL(join(ROOT, 'vendor/three/three.module.min.js')).
 register(`data:text/javascript,${encodeURIComponent(`export async function resolve(s, c, next) {
   return s === 'three' ? { url: ${JSON.stringify(THREE_URL)}, shortCircuit: true } : next(s, c);
 }`)}`);
-const {
-  GHOST_ALPHA, pulseEnvelope, PULSE_GLOW_S, PULSE_FADE_S, PULSE_SCALE, PULSE_BRIGHT,
-} = await import('../js/render.js');
+const { GHOST_ALPHA } = await import('../js/render.js');
 const TEX = await import('../js/textures.js');
+const { createCellMotion } = await import('../js/cell-motion.js');
+const { BOARD } = await import('../themes/joyful-tiles/board.js');
 const RENDER = read('js/render.js');
 const TEXTURES = read('js/textures.js');
-const TOTAL = PULSE_GLOW_S + PULSE_FADE_S;
+const PULSE = BOARD.motion.solvedPulse;
 
 // ---------------------------------------------------------------- the board module
 
@@ -85,45 +86,43 @@ test('the opaque list leaves hidden cells to the transparent pass under Ctrl, an
   assert.match(toggles, /t\.ctrl !== ctrl/, 'a Ctrl change re-sorts the transparent list');
 });
 
-// ---------------------------------------------------------------- the pulse envelope
+// ---------------------------------------------------------------- the solved pulse
 
-test('the pulse envelope rises, then fades out to nothing in under half a second', () => {
-  assert.ok(TOTAL < 0.5, `${TOTAL} s in all`);
-  assert.ok(PULSE_GLOW_S >= 0.2 && PULSE_GLOW_S <= 0.3, 'the pulse itself lasts 0.2 to 0.3 s');
-  assert.ok(Math.abs(PULSE_FADE_S - 0.2) < 1e-9, 'the fade about 0.2 s');
-  assert.ok(PULSE_SCALE > 1 && PULSE_BRIGHT > 0, 'it grows and brightens');
-  assert.deepEqual(pulseEnvelope(0), { scale: 1, bright: 0, alpha: 1, done: false }, 'it starts as the cube was');
-  const peak = pulseEnvelope(PULSE_GLOW_S / 2);
-  assert.ok(Math.abs(peak.scale - PULSE_SCALE) < 1e-9 && Math.abs(peak.bright - PULSE_BRIGHT) < 1e-9, 'its peak');
-  assert.equal(peak.alpha, 1);
-  let prev = pulseEnvelope(0);
-  for (let t = 0.01; t <= PULSE_GLOW_S / 2; t += 0.01) {
-    const e = pulseEnvelope(t);
-    assert.ok(e.scale >= prev.scale && e.bright >= prev.bright, `rising at ${t}`);
-    prev = e;
+test('the solved pulse rises, then fades out to nothing in under half a second', () => {
+  assert.ok(PULSE.duration <= 500, `${PULSE.duration} ms in all`);
+  let clock = 0;
+  const player = createCellMotion({ now: () => clock });
+  const at = (t) => player.valuesAt(t).get(1);
+  player.start(1, 'solvedPulse', 'number', 'number', PULSE);
+  assert.deepEqual([at(0).scale, at(0).brightness, at(0).opacity], [1, 1, 1], 'it starts as the cube was');
+  let prev = at(0), peak = 0;
+  for (let t = 10; t <= 250; t += 10) {
+    const v = at(t);
+    assert.ok(v.scale >= prev.scale && v.brightness >= prev.brightness && v.opacity === 1, `rising and whole at ${t}`);
+    prev = v;
+    peak = t;
   }
-  prev = pulseEnvelope(PULSE_GLOW_S);
-  assert.equal(prev.alpha, 1, 'whole until the fade');
-  for (let t = PULSE_GLOW_S + 0.01; t < TOTAL; t += 0.01) {
-    const e = pulseEnvelope(t);
-    assert.ok(e.alpha < prev.alpha && e.alpha > 0, `fading at ${t}`);
-    assert.equal(e.done, false);
-    prev = e;
+  assert.ok(prev.scale > 1 && prev.brightness > 1, `it grows and brightens by ${peak} ms`);
+  for (let t = 260; t < PULSE.duration; t += 10) {
+    const v = at(t);
+    assert.ok(v.opacity <= prev.opacity && v.opacity > 0, `fading at ${t}`);
+    prev = v;
   }
-  assert.deepEqual(pulseEnvelope(TOTAL), { scale: 1, bright: 0, alpha: 0, done: true }, 'gone at the end');
-  assert.equal(pulseEnvelope(5).done, true);
-  assert.deepEqual(pulseEnvelope(-1), pulseEnvelope(0), 'no time before the start');
+  assert.ok(at(PULSE.duration - 10).opacity < 1, 'it fades');
+  assert.equal(player.valuesAt(PULSE.duration).size, 0, 'gone at the end');
+  assert.equal(player.animating(PULSE.duration), false);
+  clock = 0;
 });
 
 test('pulses start when a visible number hides, end with the game\'s loss or a seek, and keep the effects ticking', () => {
   const sync = RENDER.slice(RENDER.indexOf('  sync('), RENDER.indexOf('  /**\n   * Opaque instance list.'));
-  assert.match(sync, /was === K_NUMBER/, 'only a number the player could see');
-  assert.match(sync, /this\._pulses\.delete\(i\)/, 'a cell shown again drops its pulse');
-  assert.match(sync, /if \(seek\) this\._dropPulses\(\)/, 'a seek drops every pulse');
-  assert.match(sync, /g\.state === 'lost'\) \{ this\._dropPulses\(\); this\._beginLoss\(dirty\)/, 'a loss drops them for its wave');
-  assert.match(RENDER, /isAnimating\(\) \{\n {4}return [^\n]*this\._pulses\.size > 0/, 'render-on-demand draws while one runs');
-  const tick = RENDER.slice(RENDER.indexOf('  _tickPulses('), RENDER.indexOf('\n  }\n', RENDER.indexOf('  _tickPulses(')));
-  assert.match(tick, /for \(const \[i, t0\] of this\._pulses\)/, 'each frame visits the pulsing cells only');
+  assert.match(sync, /cellEvent\(was, K\[i\]\)/, 'a number the player could see that hid is a solved pulse (cellEvent)');
+  assert.match(sync, /this\._startMotion\(i, event,/, 'a cell shown again plays no event, which drops its pulse');
+  assert.match(sync, /if \(seek\) this\.dropMotion\(\)/, 'a seek drops every pulse');
+  assert.match(sync, /g\.state === 'lost'\) \{ this\.dropMotion\(\); this\._beginLoss\(dirty\)/, 'a loss drops them for its wave');
+  assert.match(RENDER, /isAnimating\(\) \{\n {4}return [^\n]*this\.motion\.animating\(/, 'render-on-demand draws while one runs');
+  const tick = RENDER.slice(RENDER.indexOf('  _tickMotion('), RENDER.indexOf('\n  }\n', RENDER.indexOf('  _tickMotion(')));
+  assert.match(tick, /for \(const \[i, v\] of values\)/, 'each frame visits the pulsing cells only');
   assert.doesNotMatch(tick, /this\.n\b|< n;/, 'never the whole board');
 });
 
@@ -160,7 +159,7 @@ test('[slow] in a browser, Ctrl draws hidden cells as transparent ghosts and a h
     const ms = (fn, arg) => page.evaluate(fn, arg);
     const frames = () => ms(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
     const stats = async () => { await frames(); return ms(() => ({ ...globalThis.__ms.renderer.stats })); };
-    const pulses = () => ms(() => globalThis.__ms.renderer._pulses.size);
+    const pulses = () => ms(() => [...globalThis.__ms.renderer.motion.valuesAt(performance.now()).values()].filter((v) => v.event === 'solvedPulse').length);
     const act = (cell, type) => ms(([c, k]) => {
       if (globalThis.__ms.aimAt(c) !== c) throw new Error(`cell ${c} could not be aimed at`);
       globalThis.__ms.click(k);
@@ -191,13 +190,9 @@ test('[slow] in a browser, Ctrl draws hidden cells as transparent ghosts and a h
       };
       requestAnimationFrame(poll);
     }));
-    const { glow, fade } = await ms(async () => {
-      const m = await import('/js/render.js');
-      return { glow: m.PULSE_GLOW_S, fade: m.PULSE_FADE_S };
-    });
     assert.ok(length > 0, 'isAnimating() was true, then false');
-    assert.ok(length >= (glow + fade) * 1000, `not before the pulse has played (${Math.round(length)} ms)`);
-    assert.ok(length <= (glow + fade) * 1000 + 2 * gap + 50, `but with it, give or take a frame (${Math.round(length)} ms, frames up to ${Math.round(gap)} ms apart)`);
+    assert.ok(length >= PULSE.duration, `not before the pulse has played (${Math.round(length)} ms)`);
+    assert.ok(length <= PULSE.duration + 2 * gap + 50, `but with it, give or take a frame (${Math.round(length)} ms, frames up to ${Math.round(gap)} ms apart)`);
     assert.equal(await ms(() => globalThis.__ms.game.unlinked[1]), 1, 'the engine hid the cell at once');
     assert.notEqual(await ms(() => globalThis.__ms.aimAt(1)), 1, 'and picking passes through it');
     await ms(() => globalThis.__ms.aimAt(0));
@@ -227,7 +222,7 @@ test('[slow] in a browser, Ctrl draws hidden cells as transparent ghosts and a h
     await act(0, 'right'); // unflag during the pulse
     await frames();
     assert.equal(await pulses(), 0, 'the pulse is dropped');
-    assert.equal(await ms(() => globalThis.__ms.renderer.meshPulse.visible), false, 'and no longer drawn');
+    assert.equal(await ms(() => globalThis.__ms.renderer.meshMotion.visible), false, 'and no longer drawn');
     const shown = await stats();
     assert.deepEqual([shown.opaque, shown.trans], [6, 0], 'the 1 is drawn normally');
 

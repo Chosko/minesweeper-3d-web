@@ -770,7 +770,7 @@ Feature: themed-board-art-and-motion
 
 ## 186. 3D cell motion: motion mesh, event sources and the solved pulse as a cell event
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/render.js, js/shell/mode-3d.js, js/replay/viewer-3d.js, tests/render-3d-feedback.test.mjs, tests/render-3d-motion.test.mjs
 Preconditions: 183, 184

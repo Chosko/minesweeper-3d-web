@@ -5,15 +5,18 @@
 //  - transparent pass: cells that may be faded (Shift / Space), shown as ghosts (hidden cells under
 //    Ctrl, at GHOST_ALPHA) or turned to glass near the camera (FLY_THROUGH_ALPHA), sorted back-to-front,
 //    shader keeps only the ones whose alpha is < 1
-//  - pulse pass: the few numbers just hidden, playing their "solved" pulse (pulseEnvelope) over the rest
+//  - motion pass: the few cubes playing a cell event's motion — reveal, flag, unflag and the "solved" pulse
+//    of a number just hidden — from the theme's descriptions through the cell motion player
+//    (js/cell-motion.js), each cube's ordinary instance hidden meanwhile
 //  - flash pass: the cubes a flag click on a number just flagged or unflagged (flashEnvelope), drawn
 //    with no depth test so a cube behind others shows through them
-// Per-cell state lives in a small RGBA8 data texture (layer, kind) fetched by cell index, so
+// Per-cell state lives in a small RGBA8 data texture (layer, kind, animating) fetched by cell index, so
 // selection / Shift / Space changes only touch uniforms (no per-frame O(n) JS work).
 // A replay's Show 3BV tints each cube from a second RGBA8 data texture (setRegionTint), mixed over its
 // tile by the texel's alpha; off by default.
 // Everything it draws in colour comes from the board module the shell hands in (setBoard): the tile
-// atlas, the sky, fog and clear colour, the selection outline and the marked start cell's tint.
+// atlas, the sky, fog and clear colour, the selection outline and the marked start cell's tint; its
+// cell motion too.
 // Visual extras (all shader-side, driven by a few uniforms): per-face shading, distance fog toward
 // the fog colour, crisp tile borders, a pulsing outline on the selected cube, and end-of-game
 // ripples (win: pulse wave + unflagged mines shown as flags + confetti; loss: reveal wave from the
@@ -21,7 +24,8 @@
 // previous layer + 1 for cells whose tile changes in an end-of-game wave (0 = none).
 import * as THREE from 'three';
 import { boxDepth, SPACE_NEAR_ALPHA, SPACE_FLOOR_ALPHA, SPACE_FALLOFF } from './readability.js';
-import { atlasTexture, createTileTexture, L_CLOSED, L_FLAG, L_MINE, L_MINE_EXPLODED, L_NUM0, L_WRONG_FLAG } from './textures.js';
+import { atlasTexture, createTileTexture, L_CLOSED, L_FLAG, L_MINE, L_MINE_EXPLODED, L_NUM0, L_WRONG_FLAG, L_SUNK } from './textures.js';
+import { createCellMotion, MOTION_CAP } from './cell-motion.js';
 import { FLY_THROUGH_DIST } from './picking.js';
 import { SPACING_START } from './input.js';
 import { SCHEMA } from './settings/schema.js';
@@ -48,13 +52,52 @@ export function flyThroughAlpha(dist) {
   return FLY_THROUGH_ALPHA + (1 - FLY_THROUGH_ALPHA) * f;
 }
 
-// The "solved" pulse a number plays once the engine has hidden it: the cube brightens and grows for
-// PULSE_GLOW_S (peaking at PULSE_BRIGHT toward white and PULSE_SCALE halfway), then fades out over
-// PULSE_FADE_S and is gone. Visual only: the cell is hidden and unpickable from the action on.
-export const PULSE_GLOW_S = 0.25;
-export const PULSE_FADE_S = 0.2;
-export const PULSE_SCALE = 1.15;
-export const PULSE_BRIGHT = 0.45;
+// Cell motion. A change sync() sees plays the theme's motion
+// description for its cell event (cellEvent): reveal, flag and unflag from the engine's change list,
+// the "solved" pulse when a number the player could see hides. Visual only: the engine has already
+// applied the action, so the game, picking, the timer and a replay never wait for it — a hidden
+// number is unpickable from the action on, while its pulse plays.
+
+/** The cell event a change of a cube's kind is, or null for one that plays nothing. */
+export function cellEvent(was, kind) {
+  if (was === K_CLOSED) return kind === K_FLAG ? 'flag' : kind === K_CLOSED ? null : 'reveal';
+  if (was === K_FLAG) return kind === K_CLOSED ? 'unflag' : null;
+  return was === K_NUMBER && kind === K_HIDDEN ? 'solvedPulse' : null;
+}
+
+// The cube's size in world units (createCubeGeometry): motion offsets are in cube sizes.
+const CUBE = 4;
+
+/**
+ * One motion mesh instance from the player's values for a cell (js/cell-motion.js valuesAt, `face`
+ * being { layer, kind }) seen through `camera`: the scale; `bright`, the brightness as the shader
+ * takes it — above 1 a lift toward white by the excess (the reference "solved" pulse's ×1.45 is 45 %
+ * toward white), below 1 a darkening by the factor, as a negative lift; the opacity as `alpha`; the
+ * face's atlas layer and kind; the offset in world units, x along the camera's screen right, y down
+ * the screen as in 2D and z toward the camera; the rotation's axis in the same frame, normalised, and
+ * its angle in radians; and `sunk`, how far a closed face blends toward the sunk face as its depth
+ * goes from fully raised (1, or an overshoot past it) to flat (0).
+ */
+export function motionInstance(v, camera) {
+  const e = camera.matrixWorld.elements;
+  const world = (x, y, z) => [0, 1, 2].map((k) => x * e[k] - y * e[4 + k] + z * e[8 + k]);
+  const { x, y, z } = v.offset;
+  const [ax, ay, az] = v.rotation.axis;
+  const axis = world(ax, ay, az);
+  const len = Math.hypot(...axis);
+  const depth = v.depth;
+  return {
+    scale: v.scale,
+    bright: v.brightness - 1,
+    alpha: v.opacity,
+    layer: v.face.layer,
+    kind: v.face.kind,
+    offset: world(x * CUBE, y * CUBE, z * CUBE),
+    axis: len > 0 ? axis.map((c) => c / len) : [0, 0, 1],
+    angle: (v.rotation.angle * Math.PI) / 180,
+    sunk: depth === null || v.face.layer !== L_CLOSED ? 0 : 1 - Math.min(1, Math.max(0, depth)),
+  };
+}
 
 // The flash of the cubes a flag click on a revealed number flagged or unflagged: for FLASH_S the cube
 // glows toward white up to FLASH_BRIGHT and FLASH_ALPHA halfway, over every cube in front of it, then
@@ -73,18 +116,6 @@ export function flashEnvelope(t) {
   if (s >= FLASH_S) return { scale: 1, bright: 0, alpha: 0, done: true };
   const k = Math.sin((Math.PI * s) / FLASH_S);
   return { scale: 1 + (FLASH_SCALE - 1) * k, bright: FLASH_BRIGHT * k, alpha: FLASH_ALPHA * k, done: false };
-}
-
-/** The pulse at `t` seconds since it started: the cube's scale, brightness (0..1 toward white), alpha, and whether it is over. */
-export function pulseEnvelope(t) {
-  const s = Math.max(0, t);
-  if (s < PULSE_GLOW_S) {
-    const k = Math.sin((Math.PI * s) / PULSE_GLOW_S);
-    return { scale: 1 + (PULSE_SCALE - 1) * k, bright: PULSE_BRIGHT * k, alpha: 1, done: false };
-  }
-  const f = (s - PULSE_GLOW_S) / PULSE_FADE_S;
-  if (f >= 1) return { scale: 1, bright: 0, alpha: 0, done: true };
-  return { scale: 1, bright: 0, alpha: (1 - f) * (1 - f), done: false };
 }
 
 // Cube geometry exactly as Cube.cs (corners of [-3,1]^3, shifted by +1 so the cube is centred).
@@ -150,8 +181,14 @@ precision highp float;
 precision highp int;
 in float aIdx;
 in float aShade;
-#if defined(PULSE) || defined(FLASH)
-in vec3 aPulse; // the effect's scale, brightness and alpha (pulseEnvelope, flashEnvelope)
+#if defined(FLASH)
+in vec3 aPulse; // the flash's scale, brightness and alpha (flashEnvelope)
+#endif
+#if defined(MOTION)
+in vec4 aMotion;       // scale, brightness (a lift toward white, or a darkening when negative), opacity, the face's layer
+in vec4 aMotionOffset; // the offset in world units, the face's kind
+in vec4 aMotionRot;    // the rotation's world axis and its angle in radians
+in float aMotionSunk;  // how far the face blends toward the sunk closed face
 #endif
 uniform sampler2D uState;
 uniform sampler2D uRegion; // Show 3BV's per-cell tint (rgb, mix in a), while uRegionOn
@@ -191,6 +228,12 @@ out float vFlash;
 out float vDist;
 out float vDirY;
 flat out vec4 vRegion;
+out float vSunk;
+// p turned by angle about the unit axis (Rodrigues)
+vec3 turn(vec3 p, vec3 axis, float angle) {
+  float c = cos(angle), s = sin(angle);
+  return p * c + cross(axis, p) * s + axis * dot(axis, p) * (1.0 - c);
+}
 void main() {
   int idx = int(aIdx + 0.5);
   int X = int(uDims.x + 0.5), Y = int(uDims.y + 0.5);
@@ -201,11 +244,17 @@ void main() {
   vec3 c = vec3(float(i), float(j), float(k));
   float scale = 1.0, flash = 0.0;
   bool shrinking = false;
-#if defined(PULSE)
-  kind = 2; // a hidden number playing its pulse: drawn as the number it was, under the same view modes
+  vec3 local = position;
+  vSunk = 0.0;
+#if defined(MOTION)
+  // an animating cube: drawn as the face the player shows, under the same view modes
+  layer = int(aMotion.w + 0.5); kind = int(aMotionOffset.w + 0.5);
+  local = turn(position, aMotionRot.xyz, aMotionRot.w);
+  vSunk = aMotionSunk;
 #elif defined(FLASH)
   // a flashing cube: drawn as its tile now, under every view mode (below)
 #else
+  if (st.b > 0.5) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; } // animating: drawn by the motion pass
   if (uEff > 0.5) {
     int oldL = int(st.a * 255.0 + 0.5) - 1;
     float local = uEffT - length(c - uEffOrigin) * uEffDelay;
@@ -240,8 +289,8 @@ void main() {
   else if (kind == 2) { if (uSpace > 0.5) a = spaceAlpha(depth); else if (uShift > 0.5 && !sel) a = 0.2; }
   else if (kind == 4) { vis = uCtrl > 0.5 || shrinking; if (uCtrl > 0.5) a = ${GHOST_ALPHA}; }
   a = min(a, flyAlpha(centre));
-#if defined(PULSE)
-  scale = aPulse.x; flash = aPulse.y; a *= aPulse.z; sel = false;
+#if defined(MOTION)
+  scale = aMotion.x; flash = aMotion.y; a *= aMotion.z; sel = false;
   bool want = a > 0.0;
 #elif defined(FLASH)
   scale = aPulse.x; flash = aPulse.y; a = aPulse.z; vis = true; sel = false;
@@ -254,7 +303,12 @@ void main() {
   bool want = uPass < 0.5 ? a > 0.99 : (a < 0.99 && (uPass < 1.5 ? (!emphOn || near) : (emphOn && !near)));
 #endif
   if (!vis || !want || scale <= 0.001) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
-  vec4 mv = modelViewMatrix * vec4(position * scale + centre, 1.0);
+#if defined(MOTION)
+  vec3 placed = local * scale + centre + aMotionOffset.xyz;
+#else
+  vec3 placed = local * scale + centre;
+#endif
+  vec4 mv = modelViewMatrix * vec4(placed, 1.0);
   gl_Position = projectionMatrix * mv;
   vUv = uv;
   vLayer = float(layer);
@@ -266,7 +320,7 @@ void main() {
   vRegion = uRegionOn > 0.5 ? texelFetch(uRegion, ivec2(idx % ${STATE_W}, idx / ${STATE_W}), 0) : vec4(0.0);
   vFlash = flash;
   vDist = length(mv.xyz);
-  vec3 world = (modelMatrix * vec4(position * scale + centre, 1.0)).xyz;
+  vec3 world = (modelMatrix * vec4(placed, 1.0)).xyz;
   vDirY = normalize(world - cameraPosition).y;
 }`;
 
@@ -292,10 +346,12 @@ in float vFlash;
 in float vDist;
 in float vDirY;
 flat in vec4 vRegion;
+in float vSunk;
 out vec4 outColor;
 ${SKY_GLSL}
 void main() {
   vec4 col = texture(uTiles, vec3(vUv, vLayer));
+  if (vSunk > 0.0) col = mix(col, texture(uTiles, vec3(vUv, ${glslFloat(L_SUNK)})), vSunk); // a depth motion's blend
   vec3 rgb = col.rgb * mix(vec3(1.0), vec3(1.0, 0.8, 0.8), vTint);
   // distance to the face border (uv units) and its screen-space rate
   float e = min(min(vUv.x, 1.0 - vUv.x), min(vUv.y, 1.0 - vUv.y));
@@ -316,7 +372,7 @@ void main() {
   // the marked start cell a pre-generated board waits for: tinted, its border too
   rgb = mix(rgb, uMarkTint, mix(uMarkMix.x, uMarkMix.y, uMarkPulse) * vMark);
   rgb = mix(rgb, vRegion.rgb, vRegion.a); // a replay's Show 3BV
-  rgb = mix(rgb, vec3(1.0), vFlash);
+  rgb = vFlash < 0.0 ? rgb * (1.0 + vFlash) : mix(rgb, vec3(1.0), vFlash); // toward white, or darker for a motion's dimming
   float f = uFog.z * smoothstep(uFog.x, uFog.y, vDist) * (1.0 - 0.85 * vTint);
   rgb = mix(rgb, fogColor(vDirY), f);
   outColor = vec4(min(rgb, vec3(1.0)), vAlpha);
@@ -497,8 +553,8 @@ export class BoardRenderer {
     this.matTransBack.blendDst = THREE.OneMinusSrcAlphaFactor;
     this.matTransBack.blendSrcAlpha = THREE.OneFactor;
     this.matTransBack.blendDstAlpha = THREE.OneMinusSrcAlphaFactor;
-    this.matPulse = mk(1);
-    this.matPulse.defines = { PULSE: '' };
+    this.matMotion = mk(1);
+    this.matMotion.defines = { MOTION: '' };
     this.matFlash = mk(1);
     this.matFlash.defines = { FLASH: '' };
     this.matFlash.depthTest = false; // seen through the cubes in front of it
@@ -506,11 +562,15 @@ export class BoardRenderer {
     this.meshOpaque = null;
     this.meshTrans = null;
     this.meshTransBack = null;
-    // The effect meshes drawn after the board, each with its instance list and per-cube envelope.
-    this._pulseFx = { mat: this.matPulse, order: 2, cap: 0, mesh: null };
+    // The flash mesh drawn after the board, with its instance list and per-cube envelope.
     this._flashFx = { mat: this.matFlash, order: 3, cap: 0, mesh: null };
-    this._pulses = new Map(); // cell index -> start (s) of its "solved" pulse
     this._flashes = new Map(); // cell index -> start (s) of its flash
+    // Cell motion: the player on the renderer's clock (ms), its mesh after the transparent pass, and the
+    // cells whose ordinary instance it hides (the state texture's B channel).
+    this.clock = () => performance.now();
+    this.motion = createCellMotion({ now: () => this.clock() });
+    this._motionFx = null;
+    this._motionCells = new Set();
     this.game = null;
     this.spacing = 1.1;
     this.toggles = { shift: false, space: false, ctrl: false };
@@ -582,10 +642,12 @@ export class BoardRenderer {
    * Draw the scene from `board`, a theme's board module (js/themes/board-module.js): its atlas, rebuilt
    * from the module's 3D style and palette; the sky gradient, the fog (the horizon unless the module names
    * one) and the clear colour (the horizon) from its sky; the selection outline and the marked start
-   * cell's tint from its palette. The same module again changes nothing. The caller requests the redraw.
+   * cell's tint from its palette; the cell motion from its motion descriptions, a running one dropped. The
+   * same module again changes nothing. The caller requests the redraw.
    */
   setBoard(board) {
     if (board === this.board) return;
+    this.dropMotion();
     this.board = board;
     const old = this.tiles;
     this.tiles = createTileTexture(board);
@@ -669,7 +731,8 @@ export class BoardRenderer {
     this._lastState = game.state;
     this.uniforms.uPlaying.value = game.state === 'playing' ? 1 : 0;
     this._eff = null; this._conf = null; this._shake = null; this._snap = null; this._wrong = null; this._effHidden = false;
-    this._pulses.clear();
+    this.motion.dropAll();
+    this._motionCells.clear();
     this._flashes.clear();
     this.uniforms.uEff.value = 0;
     this.confetti.visible = false;
@@ -690,7 +753,7 @@ export class BoardRenderer {
     this.meshTransBack.renderOrder = -1;
     this.meshOpaque.renderOrder = 0;
     this.meshTrans.renderOrder = 1;
-    this._buildFx(this._pulseFx, 32);
+    this._buildMotion();
     this._buildFx(this._flashFx, 32);
 
     // sort scratch
@@ -718,16 +781,33 @@ export class BoardRenderer {
       this.stateTex.dispose();
       this.meshOpaque = this.meshTrans = this.meshTransBack = null;
     }
-    for (const fx of [this._pulseFx, this._flashFx]) {
-      if (fx.mesh) { this.scene.remove(fx.mesh); fx.mesh.geometry.dispose(); fx.mesh = null; fx.cap = 0; }
+    for (const fx of [this._motionFx, this._flashFx]) {
+      if (fx?.mesh) { this.scene.remove(fx.mesh); fx.mesh.geometry.dispose(); fx.mesh = null; fx.cap = 0; }
     }
-    this._pulses.clear();
+    this.motion.dropAll();
+    this._motionCells.clear();
     this._flashes.clear();
     this.game = null;
   }
 
-  /** The "solved" pulse's mesh (null without a board). */
-  get meshPulse() { return this._pulseFx.mesh; }
+  /** The cell motion's mesh (null without a board). */
+  get meshMotion() { return this._motionFx?.mesh ?? null; }
+
+  /** The motion mesh: drawn after the transparent pass, with room for every cube the player animates at once. */
+  _buildMotion() {
+    const cap = MOTION_CAP;
+    const g = this.baseGeo.clone();
+    const attr = (size) => new THREE.InstancedBufferAttribute(new Float32Array(cap * size), size).setUsage(THREE.DynamicDrawUsage);
+    const attrs = { aIdx: attr(1), aMotion: attr(4), aMotionOffset: attr(4), aMotionRot: attr(4), aMotionSunk: attr(1) };
+    for (const [name, a] of Object.entries(attrs)) g.setAttribute(name, a);
+    g.instanceCount = 0;
+    const mesh = new THREE.Mesh(g, this.matMotion);
+    mesh.frustumCulled = false;
+    mesh.renderOrder = 2;
+    mesh.visible = false;
+    this.scene.add(mesh);
+    this._motionFx = { cap, attrs, mesh };
+  }
 
   /** An effect mesh, drawn after the transparent pass in its order, with room for `cap` cubes. */
   _buildFx(fx, cap) {
@@ -771,13 +851,14 @@ export class BoardRenderer {
   }
 
   /**
-   * Pull changes from the game (call once per frame; cheap when nothing changed). With `seek`, the changes
-   * come from a replay's seek, not from play: every running pulse is dropped and none starts.
+   * Pull changes from the game (call once per frame; cheap when nothing changed). A change made in play
+   * (a replay's playback included) and not by a loss starts its cell's motion (cellEvent). With `seek`,
+   * the changes come from a replay's seek, not from play: every running motion is dropped and none starts.
    */
   sync({ seek = false } = {}) {
     const g = this.game;
     if (!g) return false;
-    if (seek) this._dropPulses();
+    if (seek) this.dropMotion();
     if (g.version === this._seenVersion) return false;
     this._seenVersion = g.version;
     const dirty = g.consumeDirty();
@@ -785,18 +866,22 @@ export class BoardRenderer {
     this._lastState = g.state;
     this.uniforms.uPlaying.value = g.state === 'playing' ? 1 : 0;
     if (prev === 'playing' && g.state !== 'playing') this._dropFlashes(); // the end of the game
-    if (prev === 'playing' && g.state === 'lost') { this._dropPulses(); this._beginLoss(dirty); }
+    if (prev === 'playing' && g.state === 'lost') { this.dropMotion(); this._beginLoss(dirty); }
     else if (prev === 'playing' && g.state === 'won') this._beginWin();
     else if (prev !== 'playing' && g.state === 'playing') this._endEffects(); // a replay seeking back before its end
     this._snap = null;
-    // A number the player could see that this action hid starts its pulse; a cell shown again drops its own.
-    const pulse = !seek && prev === 'playing' && g.state !== 'lost';
-    const K = this.kind, now = performance.now() / 1000;
+    // Each changed cell plays its cell event, from the face it showed to the one it shows now; a number
+    // that hid pulses as the number it was. A change that is no event drops the cell's motion, and so does
+    // the winning action's reveal, whose cubes the win wave plays.
+    const play = !seek && prev === 'playing' && g.state !== 'lost';
+    const K = this.kind, D = this.stateData;
     for (let t = 0; t < dirty.length; t++) {
-      const i = dirty[t], was = K[i];
+      const i = dirty[t], was = K[i], wasLayer = D[i * 4];
       this._writeCell(i);
-      if (K[i] !== K_HIDDEN) this._pulses.delete(i);
-      else if (pulse && was === K_NUMBER) this._pulses.set(i, now);
+      const change = play ? cellEvent(was, K[i]) : null;
+      const event = change === 'solvedPulse' || g.state === 'playing' ? change : null;
+      const before = event && { layer: wasLayer, kind: was };
+      this._startMotion(i, event, before, event === 'solvedPulse' ? before : event && { layer: D[i * 4], kind: K[i] });
     }
     if (g.explodedIdx >= 0) this._writeCell(g.explodedIdx);
     this.stateTex.needsUpdate = true;
@@ -907,10 +992,66 @@ export class BoardRenderer {
 
   _clearOldLayers() { const D = this.stateData; for (let o = 3; o < D.length; o += 4) D[o] = 0; }
 
-  /** Drops every running "solved" pulse at once. */
-  _dropPulses() {
-    this._pulses.clear();
-    if (this._pulseFx.mesh) this._commitFx(this._pulseFx, 0);
+  /**
+   * Starts cell `i`'s motion for `event` (cellEvent) from the face `before` to the face `after`
+   * ({ layer, kind }), as the theme's description for it says; a null event, or a theme that leaves
+   * the event still, drops the cell's running motion so it shows its new state at once.
+   */
+  _startMotion(i, event, before, after) {
+    const description = event ? this.board?.motion?.[event] ?? null : null;
+    this.motion.start(i, event, before, after, description);
+  }
+
+  /** Drops every running cell motion at once, the cubes shown as they are: a seek, a loss, a pause hiding the board, a theme change. */
+  dropMotion() {
+    this.motion.dropAll();
+    if (this.game) this._showMotionCells(new Map());
+    if (this._motionFx?.mesh) this._commitMotion(0);
+  }
+
+  /** Hides the ordinary instance of each cell in `values` and shows again those that stopped animating. */
+  _showMotionCells(values) {
+    const D = this.stateData, cells = this._motionCells;
+    let changed = false;
+    for (const i of cells) if (!values.has(i)) { D[i * 4 + 2] = 0; cells.delete(i); changed = true; }
+    for (const i of values.keys()) if (!cells.has(i)) { D[i * 4 + 2] = 255; cells.add(i); changed = true; }
+    if (changed) this.stateTex.needsUpdate = true;
+  }
+
+  _commitMotion(count) {
+    const { attrs, mesh } = this._motionFx;
+    for (const a of Object.values(attrs)) {
+      a.clearUpdateRanges();
+      if (count > 0) a.addUpdateRange(0, count * a.itemSize);
+      a.needsUpdate = true;
+    }
+    mesh.geometry.instanceCount = count;
+    mesh.visible = count > 0;
+  }
+
+  /**
+   * Advances the cell motion to `nowMs` on the renderer's clock: the player's values for each animating
+   * cell, drawn back-to-front on the motion mesh, the cells' ordinary instances hidden meanwhile.
+   * Visits the animating cells only.
+   */
+  _tickMotion(nowMs) {
+    const values = this.motion.valuesAt(nowMs);
+    this._showMotionCells(values);
+    if (values.size === 0) { if (this._motionFx.mesh.visible) this._commitMotion(0); return; }
+    this.camera.updateMatrixWorld();
+    const live = [];
+    for (const [i, v] of values) live.push({ i, m: motionInstance(v, this.camera), d: this._camDist2(i) });
+    live.sort((a, b) => b.d - a.d); // farthest first
+    const { aIdx, aMotion, aMotionOffset, aMotionRot, aMotionSunk } = this._motionFx.attrs;
+    for (let c = 0; c < live.length; c++) {
+      const { i, m } = live[c], o = c * 4;
+      aIdx.array[c] = i;
+      aMotion.array.set([m.scale, m.bright, m.alpha, m.layer], o);
+      aMotionOffset.array.set([...m.offset, m.kind], o);
+      aMotionRot.array.set([...m.axis, m.angle], o);
+      aMotionSunk.array[c] = m.sunk;
+    }
+    this._commitMotion(live.length);
   }
 
   /** Drops every running flash at once. */
@@ -950,21 +1091,6 @@ export class BoardRenderer {
   }
 
   /**
-   * Advances the pulses: each cube's envelope from its start, the finished ones dropped, the rest drawn
-   * back-to-front. Visits the pulsing cells only.
-   */
-  _tickPulses(now) {
-    if (this._pulses.size === 0) { if (this._pulseFx.mesh.visible) this._commitFx(this._pulseFx, 0); return; }
-    const live = [];
-    for (const [i, t0] of this._pulses) {
-      const e = pulseEnvelope(now - t0);
-      if (e.done) { this._pulses.delete(i); continue; }
-      live.push({ i, e, d: this._camDist2(i) });
-    }
-    this._drawFx(this._pulseFx, live);
-  }
-
-  /**
    * Flashes the cubes `cells` — the ones a flag click on a revealed number just flagged or unflagged —
    * for FLASH_S, drawn over every cube in front of them. Only while the game is played; setGame and the
    * end of the game drop running flashes.
@@ -976,7 +1102,7 @@ export class BoardRenderer {
     for (const i of cells) this._flashes.set(i, now);
   }
 
-  /** Advances the flashes as _tickPulses the pulses. Visits the flashing cells only. */
+  /** Advances the flashes: each cube's envelope from its start, the finished ones dropped, the rest drawn back-to-front. Visits the flashing cells only. */
   _tickFlashes(now) {
     if (this._flashes.size === 0) { if (this._flashFx.mesh.visible) this._commitFx(this._flashFx, 0); return; }
     const live = [];
@@ -1038,9 +1164,9 @@ export class BoardRenderer {
     return true;
   }
 
-  /** True while a time-based effect (mark pulse, selection pulse, "solved" pulse, flash, end-of-game wave, confetti, shake) needs frames. */
+  /** True while a time-based effect (mark pulse, selection pulse, cell motion, flash, end-of-game wave, confetti, shake) needs frames. */
   isAnimating() {
-    return this._selAnim || this._markPulse !== null || this._eff !== null || this._conf !== null || this._shake !== null || this._pulses.size > 0 || this._flashes.size > 0;
+    return this._selAnim || this._markPulse !== null || this._eff !== null || this._conf !== null || this._shake !== null || this.motion.animating(this.clock()) || this._flashes.size > 0;
   }
 
   setToggles(shift, space, ctrl) {
@@ -1277,7 +1403,7 @@ export class BoardRenderer {
     const cam = this.camera;
     const now = performance.now() / 1000;
     this._tickEffects(now);
-    if (this.game) { this._tickPulses(now); this._tickFlashes(now); }
+    if (this.game) { this._tickMotion(this.clock()); this._tickFlashes(now); }
     // far plane large enough for the whole board (original clipped at 300)
     const dist = cam.position.length();
     const R = this.boardRadius();
