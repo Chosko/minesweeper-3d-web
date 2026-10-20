@@ -33,8 +33,10 @@
 //            board, its trail and the press rings, in canvas CSS pixels.
 //   overlay  { paint(rects), clear() } — Show 3BV's paint: rects [{ x, y, size, tint }] in canvas CSS
 //            pixels, tint as js/replay/viewer.js regionTints.
-//   draw(frame, { playing }) a simulator frame: redraws the cells it changed, moves the focus ring to
-//            the recorded cursor and the pointer to its position at the frame's time (pointerAt, at
+//   draw(frame, { playing }) a simulator frame: redraws the cells it changed — playing their cell
+//            events (reveal, flag, unflag) when playback drew the frame; a seek drops the running ones
+//            and starts none —, moves the focus ring to the recorded cursor and the pointer to its
+//            position at the frame's time (pointerAt, at
 //            the replay's sampling interval), with its trail when playback drew the frame and none
 //            otherwise (a seek clears it); on a board that scrolls, the view follows the pointer's
 //            cell, else the cursor's.
@@ -183,7 +185,8 @@ export function createViewer2D({ view, sim, pointer, overlay = null }) {
         const follow = cellOf(p) >= 0 ? cellOf(p) : cursor;
         if (follow >= 0) view.ensureVisible(follow);
       }
-      view.update(frame.changed);
+      if (!playing) view.dropMotion?.();
+      view.update(frame.changed, { motion: playing });
       view.setCursor(cursor);
       point = p;
       trail = playing ? trailPoints(track, frame.time) : [];

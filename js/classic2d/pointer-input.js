@@ -21,7 +21,8 @@
 // createPointerInput({ graph, game, onPress, onAction, rules?, active? }) → input
 //   graph     the cell graph (degree / neighbour), for a number's neighbours.
 //   game      () → the engine game, read for cellState / cellNumber.
-//   onPress   (cells) → called with the cells to show pressed whenever that set changes.
+//   onPress   (cells, event) → called with the cells to show pressed whenever that set changes, and
+//             their cell event: chordPress for a number's neighbours, else press.
 //   onAction  (kind, c) → kind 'reveal' | 'toggleFlag' | 'chord', the session's method names.
 //   active    () → false while the board takes no input; nothing is pressed or sent then, and a
 //             press begun then is ignored through its release.
@@ -58,12 +59,14 @@ export function createPointerInput({ graph, game, onPress, onAction, rules = poi
   let both = false; // left + right during this left hold
   let cancelled = false;
   let shown = [];
+  let pressEvent = 'press'; // the feedback's cell event: chordPress for a number's neighbours
 
   const reveals = (b) => rules.revealInputs.includes(NAMES[b]);
   const revealHeld = () => held.some((h, b) => h && reveals(b));
   const isNumber = (state, c) => state === CELL.REVEALED && game().cellNumber(c) > 0;
 
   function feedback() {
+    pressEvent = 'press';
     if (!revealHeld() || cancelled || cell < 0 || !active()) return [];
     const g = game();
     const state = g.cellState(cell);
@@ -71,6 +74,7 @@ export function createPointerInput({ graph, game, onPress, onAction, rules = poi
     if (state === CELL.FLAGGED) return rules.pressFeedback.flagged === 'cell' ? [cell] : [];
     if (isNumber(state, cell) && rules.pressFeedback.number === 'closed-unflagged-neighbours') {
       const out = [];
+      pressEvent = 'chordPress';
       for (let k = 0, d = graph.degree(cell); k < d; k++) {
         const nb = graph.neighbour(cell, k);
         if (g.cellState(nb) === CELL.CLOSED) out.push(nb);
@@ -84,7 +88,7 @@ export function createPointerInput({ graph, game, onPress, onAction, rules = poi
     const next = feedback();
     if (next.length === shown.length && next.every((c, i) => c === shown[i])) return;
     shown = next;
-    onPress([...next]);
+    onPress([...next], pressEvent);
   }
 
   function send(kind, c) {
@@ -169,7 +173,7 @@ export function mountPointerInput({ view, session, graph = session.setup.grid.gr
     game: () => session.game,
     rules,
     active: () => PLAYABLE.has(session.state) && !session.paused,
-    onPress: (cells) => view.setPressed(cells),
+    onPress: (cells, event) => view.setPressed(cells, event),
     onAction: (kind, c) => session[kind](c),
   });
 

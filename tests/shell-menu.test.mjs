@@ -973,7 +973,7 @@ test('in a browser without WebGL 2, the shell starts with a static background, 3
     await page.click('#c2d-choice [data-size="beginner"]');
     await page.click('#c2d-play');
     assert.equal(await mode(), 'classic-2d');
-    const box = await page.locator('#c2d-board canvas').boundingBox();
+    const box = await page.locator('#c2d-board canvas').first().boundingBox();
     const cell = (i) => [box.x + (box.width / 9) * ((i % 9) + 0.5), box.y + (box.height / 9) * (Math.floor(i / 9) + 0.5)];
     await page.mouse.click(...cell(40));
     await page.waitForFunction(() => globalThis.__ms.modes.state.started, null, { timeout: patience(5000) });
@@ -1015,7 +1015,7 @@ test('in a browser without WebGL 2, the shell starts with a static background, 3
     await page.waitForSelector('#records-replays-table [data-act="watch"]', { timeout: patience(5000) });
     await page.click('#records-replays-table [data-act="watch"]');
     await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready', null, { timeout: patience(5000) });
-    assert.equal(await ms(() => document.querySelectorAll('#replay-board canvas').length), 1, 'the 2D board view is mounted');
+    assert.equal(await ms(() => document.querySelectorAll('#replay-board canvas:not(.board-motion)').length), 1, 'the 2D board view is mounted');
     await page.click('#rp-back');
     assert.equal(await mode(), 'records');
     await page.click('#records-mode [data-value="3d"]');

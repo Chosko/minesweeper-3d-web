@@ -433,11 +433,13 @@ function removeWebGL2() {
   HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : getContext.call(this, type, ...rest); };
 }
 
-// Runs in the page: the drawn face of a Beginner tile (col, row), sampled at its centre, as the
-// tile face of the active board module it matches ('closed', 'pressed', 'revealed') or the raw
-// colour. A shaded face is sampled halfway along its shading, from its colour to its shade.
+// Runs in the page: the drawn face of a Beginner tile (col, row), sampled at its centre once its cell
+// motion has settled (the board draws an animating cell's slot empty), as the tile face of the
+// active board module it matches ('closed', 'pressed', 'revealed') or the raw colour. A shaded face
+// is sampled halfway along its shading, from its colour to its shade.
 async function tileFill([col, row]) {
   const { BOARD_ART } = await import('/js/classic2d/tile-skin.js');
+  while (globalThis.__ms.board2D.motion?.cells.length) await new Promise(requestAnimationFrame);
   const canvas = document.querySelector('#c2d-board canvas');
   const box = canvas.getBoundingClientRect();
   const layout = globalThis.__ms.board2D.layout;
@@ -494,7 +496,7 @@ test('fidelity in a browser: press feedback and releasing off the pressed cell o
     assert.equal(await fill(5, 4), 'pressed', 'the cell moved onto shows pressed');
 
     // ...moving off the board un-presses it, and releasing there does nothing.
-    const box = await page.locator('#c2d-board canvas').boundingBox();
+    const box = await page.locator('#c2d-board canvas').first().boundingBox();
     await page.mouse.move(box.x + 2, box.y + 2, { steps: 2 });
     assert.equal(await fill(5, 4), 'closed', 'off the board nothing is pressed');
     await page.mouse.up();

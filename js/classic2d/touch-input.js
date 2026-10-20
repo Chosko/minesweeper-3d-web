@@ -80,14 +80,17 @@ export function createTouchInput({
 
   const isNumber = (state, c) => state === CELL.REVEALED && game().cellNumber(c) > 0;
 
+  let pressEvent = 'press'; // the feedback's cell event: chordPress for a number's neighbours
+
   function setPressed(next) {
     if (next.length === shown.length && next.every((c, i) => c === shown[i])) return;
     shown = next;
-    onPress([...next]);
+    onPress([...next], pressEvent);
   }
 
   // The feedback the mouse shows for a reveal press on cell c, for a tap that would reveal or chord.
   function feedback(c) {
+    pressEvent = 'press';
     if (c < 0) return [];
     const g = game();
     const state = g.cellState(c);
@@ -95,6 +98,7 @@ export function createTouchInput({
     if (state === CELL.FLAGGED) return !flagMode() && rules.pressFeedback.flagged === 'cell' ? [c] : [];
     if (isNumber(state, c) && rules.pressFeedback.number === 'closed-unflagged-neighbours') {
       const out = [];
+      pressEvent = 'chordPress';
       for (let k = 0, d = graph.degree(c); k < d; k++) {
         const nb = graph.neighbour(c, k);
         if (g.cellState(nb) === CELL.CLOSED) out.push(nb);
@@ -238,7 +242,7 @@ export function mountTouchInput({
     active: () => PLAYABLE.has(session.state) && !session.paused,
     scrolls: () => !!view.layout.scrolls,
     vibrate: () => { try { win.navigator?.vibrate?.(VIBRATE_MS); } catch { /* no vibration */ } },
-    onPress: (cells) => view.setPressed(cells),
+    onPress: (cells, event) => view.setPressed(cells, event),
     onAction: (kind, c) => session[kind](c),
     onPan: (dx, dy) => { if (view.pan(dx, dy)) onUserScroll(); },
     onPinchStart: (mid) => { zoomFrom = { tile: view.layout.tile, point: view.boardPoint(mid.x, mid.y) }; },

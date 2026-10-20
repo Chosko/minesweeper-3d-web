@@ -282,7 +282,9 @@ test('the cache pre-renders every state and number once, and a redraw is only im
   const board = fakeContext();
   skin.drawTile(board, 0, 0, 30, 'closed', 0, 1);
   const prerendered = canvases.made.length;
-  assert.equal(prerendered, mod.TILE_STATES.length - 1 + 9 + 1, 'one image per non-revealed state, per revealed 0–8, and the placeholder');
+  const depths = 3 * (mod.DEPTH_STEPS.length - 1); // closed, pressed and flagged at each step short of 1
+  assert.equal(prerendered, mod.TILE_STATES.length - 1 + 9 + 1 + depths,
+    'one image per non-revealed state, per revealed 0–8, per raised state at each depth step, and the placeholder');
   for (const c of canvases.made) assert.deepEqual([c.width, c.height], [30, 30]);
   const before = board.calls.length;
   for (const state of mod.TILE_STATES) for (let n = 0; n <= 8; n++) skin.drawTile(board, n * 30, 0, 30, state, n, 1);

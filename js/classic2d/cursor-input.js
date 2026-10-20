@@ -23,7 +23,8 @@
 //                    delay?, interval?, start? })
 //   grid      the square grid (width, height, graph).
 //   game      () → the engine game, read for cellState / cellNumber.
-//   onPress   (cells) → the cells to show pressed, whenever that set changes.
+//   onPress   (cells, event) → the cells to show pressed, whenever that set changes, and their cell
+//             event: chordPress for a number's neighbours, else press.
 //   onAction  (kind, c) → kind 'reveal' | 'toggleFlag' | 'chord', the session's method names.
 //   onCursor  (c) → the cursor moved to cell c.
 //   onUse     () → a cursor input was used while the board takes input: a direction held (key,
@@ -112,6 +113,7 @@ export function createCursorInput({
   let downCell = -1; // the cell the press started on, for releaseOffCell 'cancel'
   let cancelled = false;
   let shown = [];
+  let pressEvent = 'press'; // the feedback's cell event: chordPress for a number's neighbours
   const padHeld = new Set();
   const stickHeld = new Set();
 
@@ -119,6 +121,7 @@ export function createCursorInput({
   const isNumber = (state, c) => state === CELL.REVEALED && game().cellNumber(c) > 0;
 
   function feedback() {
+    pressEvent = 'press';
     if (!pressing() || cancelled || !active()) return [];
     const g = game();
     const state = g.cellState(cell);
@@ -126,6 +129,7 @@ export function createCursorInput({
     if (state === CELL.FLAGGED) return rules.pressFeedback.flagged === 'cell' ? [cell] : [];
     if (chordOnly && isNumber(state, cell) && rules.pressFeedback.number === 'closed-unflagged-neighbours') {
       const out = [];
+      pressEvent = 'chordPress';
       for (let k = 0, d = graph.degree(cell); k < d; k++) {
         const nb = graph.neighbour(cell, k);
         if (g.cellState(nb) === CELL.CLOSED) out.push(nb);
@@ -139,7 +143,7 @@ export function createCursorInput({
     const next = feedback();
     if (next.length === shown.length && next.every((c, i) => c === shown[i])) return;
     shown = next;
-    onPress([...next]);
+    onPress([...next], pressEvent);
   }
 
   function send(kind, c) {
@@ -315,7 +319,7 @@ export function mountCursorInput({ view, session, grid = session.setup.grid, win
     interval,
     onPadCue,
     start,
-    onPress: (cells) => view.setPressed(cells),
+    onPress: (cells, event) => view.setPressed(cells, event),
     onAction: (kind, c) => session[kind](c),
     onCursor: (c) => {
       if (!ringShown) return;

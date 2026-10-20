@@ -930,6 +930,7 @@ async function mountBoard({ cols, rows, scroll }) {
   view.setGame(game);
   view.update(game.reveal(0).changed);
   view.update(game.toggleFlag(grid.index(cols - 1, 0)).changed);
+  while (view.motion.cells.length) await new Promise(requestAnimationFrame); // the cell motion settles
   if (scroll) view.scrollTo(scroll.x, scroll.y);
   const ctx = view.canvas.getContext('2d');
   const dpr = view.pixelRatio;
@@ -1144,10 +1145,11 @@ test('in a browser, switching between Joyful tiles and a fixture theme mid-game 
     });
     await page.waitForFunction(() => globalThis.__ms.board2D?.layout && globalThis.__boardArt.BOARD_ART.current());
     // The first reveal, in the middle of the board, opens a region.
-    const box = await page.locator('#c2d-board canvas').boundingBox();
+    const box = await page.locator('#c2d-board canvas').first().boundingBox();
     const at = await page.evaluate(() => { const r = globalThis.__ms.board2D.cellRect(40); return { x: r.x + r.size / 2, y: r.y + r.size / 2 }; });
     await page.mouse.click(box.x + at.x, box.y + at.y);
     await page.waitForFunction(() => globalThis.__ms.modes.state.started && globalThis.__ms.game2D.cellState(40) === 'revealed');
+    await page.waitForFunction(() => globalThis.__ms.board2D.motion.cells.length === 0); // the cell motion settles
     await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
 
     const joyful = await page.evaluate(boardSeen);

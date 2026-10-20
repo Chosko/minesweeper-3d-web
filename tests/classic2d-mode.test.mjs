@@ -1336,7 +1336,7 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
     await page.click('#c2d-play');
     assert.equal(await mode(), 'classic-2d');
     assert.equal(await ms(() => globalThis.__ms.modes.active), 'classic-2d');
-    const box = await page.locator('#c2d-board canvas').boundingBox();
+    const box = await page.locator('#c2d-board canvas').first().boundingBox();
     assert.ok(box && box.width > 0, 'the board canvas shows');
     const edge = await ms(() => {
       const l = globalThis.__ms.board2D.layout;
@@ -1795,7 +1795,7 @@ test('in a browser, at 1024 × 768 with a mouse: the Classic 2D pause card in tw
       await page.evaluate(() => globalThis.__ms.modes.start('classic-2d', { size: 'expert', noGuess: false }));
       await page.waitForFunction(() => globalThis.__ms.board2D);
       // The first click starts the game, so a restart asks first.
-      const board = await page.locator('#c2d-board canvas').boundingBox();
+      const board = await page.locator('#c2d-board canvas').first().boundingBox();
       await page.mouse.click(board.x + board.width / 2, board.y + board.height / 2);
       await page.waitForFunction(() => globalThis.__ms.modes.state.started);
       await page.click('#c2d-pause');

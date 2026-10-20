@@ -18,7 +18,19 @@
 // hidden (gone once scrolled to that edge) and a thin scroll bar per overflowing axis, its length
 // and place the visible part's (clipMarks).
 //
-// createBoardView({ canvas, grid, createSkin?, token?, scale?, frame?, minTile?, onLayout? }) → view
+// Cell motion: a view given a `layer` canvas plays the active board module's cell motion on it
+// (js/classic2d/motion-layer.js): the cell events of the pressed set — press or the event setPressed
+// names for the cells gaining the press, release for the closed cells losing it — and of the
+// engine's change lists update() draws — reveal, flag, unflag (changeEvent); a loss's change list
+// starts none and drops any running on its cells, the end effect drawing it, and Classic 2D has no
+// solved pulse. Only cells in view
+// start an event. While a cell animates its slot is drawn empty, the layer drawing the cell; when
+// it settles the board draws it again. Motion is visual only: hit-testing, the game and every input
+// stay on the logical slot. setGame, hiding the board, a hand-off of board art (a theme change) and
+// dropMotion() (a replay's seek) drop every animation.
+//
+// createBoardView({ canvas, grid, createSkin?, token?, scale?, frame?, minTile?, onLayout?, layer?,
+//                   frames?, now?, onMotion? }) → view
 //   canvas      a <canvas> or anything with width, height, style and getContext('2d').
 //   grid        the square grid (js/engine/square-grid.js): width, height, index, colRow.
 //   createSkin  ({ redraw }) → skin with drawTile, dispose and optionally board() (the board module
@@ -32,11 +44,16 @@
 //   minTile     the fit rule's smallest tile, MIN_TILE_SIZE when not given; a smaller one lets a
 //               board that is shown and not played fit whole instead of scrolling.
 //   onLayout    (layout) → after every refit, the new layout.
+//   layer       the motion layer's canvas, over the board canvas at the same size; none, no motion.
+//   frames, now the layer's frame scheduler ({ request, cancel }, the `timers` option's animation
+//               frames by default) and clock (ms, performance.now by default).
+//   onMotion    ({ cell, event, before, after }) → each cell event the layer started.
 //
 //   resize(width, height, pixelRatio)  the area in CSS pixels; repaints when anything changed.
 //   setScale(scale)      refits at another board scale and repaints when the tile changes.
 //   setGame(game)        the engine game whose cellState / cellNumber are drawn; repaints.
-//   update(changed)      repaints only the cells listed (an action's `changed`).
+//   update(changed, { motion = true }?)  repaints only the cells listed (an action's `changed`),
+//                        each first starting its cell event unless motion is false (a seek).
 //   repaint()            repaints the whole visible board.
 //   cellAt(x, y)         the cell under a canvas position in CSS pixels, or -1.
 //   cellRect(c)          { x, y, size } of a cell's tile in canvas CSS pixels.
@@ -52,8 +69,12 @@
 //                        scroll clamped; true when the tile or the scroll changed. A new view opens
 //                        at the fit rule's tile.
 //   setHidden(hidden)    a hidden board shows the background only (the game is paused).
-//   setPressed(cells)    the cells a held button presses (js/classic2d/pointer-input.js); a closed
-//                        one is drawn in the skin's pressed state. setGame clears them.
+//   setPressed(cells, event = 'press')  the cells a held button presses
+//                        (js/classic2d/pointer-input.js), `event` press or chordPress (a number's
+//                        neighbours); a closed one is drawn in the skin's pressed state. setGame
+//                        clears them.
+//   dropMotion()         drops every running animation, the cells drawn in their state.
+//   motion               the motion layer (has, cells, frame), or null without one.
 //   setCursor(c)         the keyboard and controller cursor (js/classic2d/cursor-input.js), drawn
 //                        as a focus ring inside cell c's tile — the board module's ring, its colour,
 //                        width and hairline, its corners following the tile's; -1 for none.
@@ -74,6 +95,7 @@
 //   layout, pixelRatio, hidden, pressed, cursor, mark, markPulse, effect, scale, canvas, dispose()
 
 import { MIN_TILE_SIZE, createTileSkin } from './tile-skin.js';
+import { createMotionLayer, changeEvent } from './motion-layer.js';
 import { token as readerToken } from '../tokens.js';
 import { roundRect } from '../tile-art.js';
 import { CELL, PHASE } from '../engine/rules.js';
@@ -93,6 +115,9 @@ export const START_MARK = '--color-success';
 /** The mark's pulse: how many times its ring changes, and how far apart. */
 export const MARK_PULSE_STEPS = 6;
 export const MARK_PULSE_MS = 120;
+
+/** The class of the motion layer's canvas mountBoardView puts over the board's. */
+export const MOTION_LAYER_CLASS = 'board-motion';
 
 /** The key a pointer drag must hold to pan the board instead of playing it. */
 export const PAN_MODIFIER = 'shiftKey';
@@ -244,7 +269,8 @@ export function cellAtLayout(layout, scroll, cols, rows, x, y) {
 
 export function createBoardView({
   canvas, grid, createSkin = createTileSkin, token = readerToken, scale: initialScale = DEFAULT_BOARD_SCALE, frame = null,
-  minTile = MIN_TILE_SIZE, onLayout = () => {}, timers = globalThis,
+  minTile = MIN_TILE_SIZE, onLayout = () => {}, timers = globalThis, layer = null, onMotion = () => {},
+  frames = { request: (fn) => timers.requestAnimationFrame(fn), cancel: (id) => timers.cancelAnimationFrame(id) }, now,
 } = {}) {
   if (!canvas || typeof canvas.getContext !== 'function') throw new TypeError('createBoardView needs a canvas');
   if (!grid || !Number.isInteger(grid.width) || !Number.isInteger(grid.height)) throw new TypeError('createBoardView needs a square grid');
@@ -276,7 +302,7 @@ export function createBoardView({
   // The skin first, so the first layout has its gap; a hand-off lays the board out again (its gap
   // may change) and repaints.
   let skin = null;
-  skin = createSkin({ redraw: () => { if (sized) refit(layout.width, layout.height); } });
+  skin = createSkin({ redraw: () => { motion?.dropAll(); if (sized) refit(layout.width, layout.height); } });
   let layout = fit(0, 0);
   let ratio = 1;
   let sized = false;
@@ -292,6 +318,31 @@ export function createBoardView({
   let effectT = 0; // the moment of it drawn, in ms
   let pulse = null; // the pulse colour, read with each effect frame
   const scroll = { x: 0, y: 0 };
+
+  // Whether cell c's tile is at least partly in view.
+  function inView(c) {
+    const col = c % cols;
+    const x = tileX(col);
+    const y = tileY((c - col) / cols);
+    const t = layout.tile;
+    return !(x <= layout.viewX - t || y <= layout.viewY - t || x >= layout.viewX + layout.viewWidth || y >= layout.viewY + layout.viewHeight);
+  }
+
+  const motion = layer ? createMotionLayer({
+    canvas: layer,
+    frames,
+    ...(now ? { now } : {}),
+    place: (c) => (inView(c) ? cellRect(c) : null),
+    paint: (lctx, c, face, x, y, size, depth) => skin.drawTile(lctx, x, y, size, face, game?.cellNumber(c) ?? 0, ratio, depth),
+    clip: () => (layout.scrolls ? { x: layout.viewX, y: layout.viewY, width: layout.viewWidth, height: layout.viewHeight } : null),
+    onSettle: (cells) => draw(cells),
+  }) : null;
+
+  // Starts cell c's `event` from face `before` to `after`, as the board module describes it.
+  function animate(c, event, before, after) {
+    if (!motion || !inView(c)) return;
+    if (motion.start(c, event, before, after, boardOf()?.motion?.[event] ?? null)) onMotion({ cell: c, event, before, after });
+  }
 
   const tileX = (col) => layout.offsetX + col * layout.pitch - scroll.x;
   const tileY = (row) => layout.offsetY + row * layout.pitch - scroll.y;
@@ -380,16 +431,18 @@ export function createBoardView({
     const x = tileX(col);
     const y = tileY(row);
     const t = layout.tile;
-    if (x <= layout.viewX - t || y <= layout.viewY - t || x >= layout.viewX + layout.viewWidth || y >= layout.viewY + layout.viewHeight) return false;
+    if (!inView(c)) return false;
     let state = game.cellState(c);
     if (effect) state = shownState(effect, c, state, effectT);
     else if (game.phase === PHASE.WON) state = wonState(state);
-    // A rounded tile leaves its corners to the ground: lay it again under the tile it replaces.
-    if (boardOf()?.style2d?.params?.radius > 0) {
+    const moving = motion?.has(c);
+    // A rounded tile leaves its corners to the ground: lay it again under the tile it replaces. An
+    // animating cell's slot is the ground alone, the layer drawing the cell.
+    if (moving || boardOf()?.style2d?.params?.radius > 0) {
       ctx.fillStyle = ground();
       ctx.fillRect(x, y, t, t);
     }
-    skin.drawTile(ctx, x, y, t, state === CELL.CLOSED && pressed.has(c) ? PRESSED : state, game.cellNumber(c), ratio);
+    if (!moving) skin.drawTile(ctx, x, y, t, state === CELL.CLOSED && pressed.has(c) ? PRESSED : state, game.cellNumber(c), ratio);
     if (effect) drawPulse(ctx, x, y, t, pulseAlpha(effect, c, effectT), pulse ?? (pulse = token(PULSE_COLOR)));
     if (c === mark && c !== cursor) {
       ring(x, y, t, token(START_MARK), { hairline: false });
@@ -433,7 +486,26 @@ export function createBoardView({
     ctx.restore();
   }
 
-  function update(changed) {
+  // The cells of an engine change list: each starts its cell event (none with `motion` false, and
+  // a loss's drops any running on its cells), then is drawn.
+  function update(changed, { motion: play = true } = {}) {
+    if (!sized || hidden || !game) return;
+    if (motion && game.phase === PHASE.LOST) {
+      for (let i = 0; i < changed.length; i++) motion.drop(changed[i]);
+    } else if (play && motion) {
+      for (let i = 0; i < changed.length; i++) {
+        const c = changed[i];
+        if (!(c >= 0 && c < count)) continue;
+        const after = game.cellState(c);
+        const e = changeEvent(after, pressed.has(c));
+        if (e) animate(c, e.event, e.before, after);
+      }
+    }
+    draw(changed);
+  }
+
+  // Draws the cells listed, in view, with the marks over them.
+  function draw(changed) {
     if (!sized || hidden || !game) return;
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     ctx.save();
@@ -475,6 +547,7 @@ export function createBoardView({
     if (sized && w === layout.width && h === layout.height && pixelRatio === ratio) return;
     sized = true;
     ratio = pixelRatio;
+    motion?.resize(w, h, ratio);
     canvas.width = Math.round(w * ratio);
     canvas.height = Math.round(h * ratio);
     if (canvas.style) {
@@ -561,19 +634,32 @@ export function createBoardView({
     get zoomRange() { return rangeOf(layout.width, layout.height); },
     resize,
     setScale,
+    get motion() { return motion; },
     setGame(next) {
+      motion?.dropAll();
       game = next ?? null;
       pressed = new Set();
       effect = null;
       repaint();
     },
-    /** Shows `cells` pressed, redrawing only the cells that gain or lose the press. */
-    setPressed(cells) {
+    /**
+     * Shows `cells` pressed, redrawing only the cells that gain or lose the press: a closed cell
+     * gaining it plays `event` (press or chordPress), one losing it a release.
+     */
+    setPressed(cells, event = 'press') {
       const next = new Set(cells);
-      const touched = [...pressed].filter((c) => !next.has(c));
-      for (const c of next) if (!pressed.has(c)) touched.push(c);
+      const lost = [...pressed].filter((c) => !next.has(c));
+      const gained = [...next].filter((c) => !pressed.has(c));
       pressed = next;
-      update(touched);
+      if (motion && game && sized && !hidden) {
+        for (const c of lost) if (game.cellState(c) === CELL.CLOSED) animate(c, 'release', PRESSED, CELL.CLOSED);
+        for (const c of gained) if (game.cellState(c) === CELL.CLOSED) animate(c, event, CELL.CLOSED, PRESSED);
+      }
+      draw([...lost, ...gained]);
+    },
+    /** Drops every running animation (a replay's seek), drawing those cells in their state. */
+    dropMotion() {
+      if (motion) draw(motion.dropAll());
     },
     /** Moves the focus ring to cell c (-1 hides it), redrawing the cells it leaves and enters. */
     setCursor(c) {
@@ -581,7 +667,7 @@ export function createBoardView({
       if (next === cursor) return;
       const touched = [cursor, next];
       cursor = next;
-      update(touched);
+      draw(touched);
     },
     /** Marks cell c as the start cell a pre-generated board waits for (-1 for none), redrawing the cells it leaves and enters. */
     setMark(c) {
@@ -589,7 +675,7 @@ export function createBoardView({
       if (next === mark) return;
       const touched = [mark, next];
       mark = next;
-      update(touched);
+      draw(touched);
     },
     /** The mark pulses: its ring thickens and thins MARK_PULSE_STEPS times. */
     pulseMark() {
@@ -598,11 +684,11 @@ export function createBoardView({
       const step = () => {
         markPulse = steps % 2 === 0;
         steps -= 1;
-        if (mark >= 0) update([mark]);
+        if (mark >= 0) draw([mark]);
         pulseTimer = steps > 0 ? timers.setTimeout(step, MARK_PULSE_MS) : null;
         if (steps <= 0) {
           markPulse = false;
-          if (mark >= 0) update([mark]);
+          if (mark >= 0) draw([mark]);
         }
       };
       step();
@@ -629,10 +715,12 @@ export function createBoardView({
     setHidden(next) {
       const was = hidden;
       hidden = Boolean(next);
+      if (hidden) motion?.dropAll();
       if (hidden !== was) repaint();
     },
     dispose() {
       if (pulseTimer !== null) timers.clearTimeout(pulseTimer);
+      motion?.dispose();
       skin.dispose();
       game = null;
     },
@@ -640,7 +728,8 @@ export function createBoardView({
 }
 
 // Browser wiring: a canvas filling `container` (above whatever the container already holds, such as
-// a frame drawn behind the board), sized on container resize and device pixel ratio change,
+// a frame drawn behind the board) with the motion layer's canvas right after it, over it at the same
+// place and size and taking no input, sized on container resize and device pixel ratio change,
 // scrolled by the wheel and panned by dragging with PAN_MODIFIER held; onUserScroll() follows each
 // scroll the player made that way. Returns the view with destroy(), which removes the canvas and
 // every listener.
@@ -650,11 +739,19 @@ export function mountBoardView({ container, grid, win = globalThis, onUserScroll
   canvas.style.position = 'relative';
   canvas.style.touchAction = 'none';
   container.append(canvas);
-  const view = createBoardView({ canvas, grid, ...options });
+  const layer = win.document.createElement('canvas');
+  layer.className = MOTION_LAYER_CLASS;
+  layer.setAttribute('aria-hidden', 'true');
+  Object.assign(layer.style, { display: 'block', position: 'absolute', pointerEvents: 'none' });
+  canvas.after(layer);
+  const frames = { request: (fn) => win.requestAnimationFrame(fn), cancel: (id) => win.cancelAnimationFrame(id) };
+  const view = createBoardView({ canvas, grid, layer, frames, ...options });
 
   const fit = () => {
     const box = container.getBoundingClientRect();
     view.resize(box.width, box.height, win.devicePixelRatio || 1);
+    layer.style.left = `${canvas.offsetLeft}px`;
+    layer.style.top = `${canvas.offsetTop}px`;
   };
   const observer = new win.ResizeObserver(fit);
   observer.observe(container);
@@ -710,6 +807,7 @@ export function mountBoardView({ container, grid, win = globalThis, onUserScroll
       canvas.removeEventListener('pointercancel', onUp);
       view.dispose();
       canvas.remove();
+      layer.remove();
     },
   });
 }

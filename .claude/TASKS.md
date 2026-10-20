@@ -760,7 +760,7 @@ Feature: themed-board-art-and-motion
 
 ## 185. Classic 2D cell motion: motion layer and event sources
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/classic2d/board-view.js, js/classic2d/motion-layer.js, js/classic2d/pointer-input.js, js/classic2d/cursor-input.js, js/classic2d/session.js, js/replay/viewer-2d.js, tests/classic2d-motion.test.mjs, tests/classic2d-fidelity.test.mjs
 Preconditions: 182, 184

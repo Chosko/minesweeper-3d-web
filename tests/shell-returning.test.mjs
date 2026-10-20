@@ -224,7 +224,7 @@ test('in a browser, both board choices\' bests follow the records and the switch
     await page.click('#c2d-choice [data-size="expert"]');
     await page.click('#c2d-play');
     assert.equal(await mode(), 'classic-2d');
-    const canvas = await page.locator('#c2d-board canvas').boundingBox();
+    const canvas = await page.locator('#c2d-board canvas').first().boundingBox();
     await page.mouse.click(canvas.x + canvas.width / 2, canvas.y + canvas.height / 2);
     await page.waitForFunction(() => document.getElementById('menu-entry-classic-2d').hasAttribute('data-last'));
     await page.keyboard.press('Escape');

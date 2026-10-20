@@ -795,7 +795,7 @@ test('in a browser, the Classic 2D generating card cancels by Cancel and Esc, an
     const shown = (id) => ms((i) => { const el = document.getElementById(i); return !el.closest('.hidden') && el.getBoundingClientRect().width > 0; }, id);
     const active = () => ms(() => document.activeElement?.id);
     const clickBoard = async () => {
-      const box = await page.locator('#c2d-board canvas').boundingBox();
+      const box = await page.locator('#c2d-board canvas').first().boundingBox();
       await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
     };
     const open = async () => {
@@ -922,7 +922,7 @@ test('in a browser, F2 and the controller\'s Start + Y restart a Classic 2D game
     const START = 9;
     const Y = 3;
     const begin = async () => {
-      const box = await page.locator('#c2d-board canvas').boundingBox();
+      const box = await page.locator('#c2d-board canvas').first().boundingBox();
       await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
       await page.waitForFunction(() => globalThis.__ms.modes.state.started);
     };
