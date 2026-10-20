@@ -162,7 +162,7 @@ Context: none
 /task-implement 227 --review
 ```
 
-Done: 2026-10-20, commits `4408553`, `f9e0595` (24 files, +399/-147). Decisions: previews and the replay viewer mount with `framed: true` and the view builds the frame; a scrolling board shows no frame and is clipped at `--board-viewport-radius`; the replay viewer always fits the whole board; the menu (1024×768) and replay (1920×1080) preview tile sizes are left unpinned for tasks 228 and 239.
+Done: 2026-10-20, commits `4408553`, `f9e0595` (24 files, +405/-153). Decisions: previews and the replay viewer mount with `framed: true` and the view builds the frame; a scrolling board shows no frame and is clipped at `--board-viewport-radius`; the replay viewer always fits the whole board; the menu (1024×768) and replay (1920×1080) preview tile sizes are left unpinned for tasks 228 and 239.
 
 ## [ ] 15. Implement task 228 — Main menu: mode entries, scene panel, per-size layout, build label and scroll
 
@@ -346,7 +346,7 @@ Context: none
 /task-implement 245 --review
 ```
 
-## [ ] 33. Implement task 246 — Update documentation for feature `themed-board-art-and-motion`
+## [x] 33. Implement task 246 — Update documentation for feature `themed-board-art-and-motion`
 
 Depends on: 11, 12, 13, 14
 
@@ -357,6 +357,8 @@ Context:
 ```prompt
 /task-implement 246 --review
 ```
+
+Done: 2026-10-20, commit `a0771f1` (7 files, +41/-30).
 
 ## [ ] 34. Implement task 247 — Update documentation for feature `theme-system`
 
