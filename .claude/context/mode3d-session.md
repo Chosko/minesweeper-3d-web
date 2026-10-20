@@ -67,6 +67,18 @@ DOM-free.
   screen change away from `playing`, resuming on return (`sync3D`). The
   timer is Classic 2D's `createTimer`, started when the first reveal is
   applied; a pause during generation counts from the board's arrival.
+- **The overlay's feed.** The 3D overlay ([app-shell-ui.md](app-shell-ui.md)
+  § 3D overlay) reads the session every frame from `js/main.js`'s frame
+  loop: `ui.updateHud` gets the session's timer (`S.time` from
+  `elapsedMs()`), mines left and counted clicks, frozen from `S.endState`
+  once the game ended; `FIGURES_3D`, a `createFiguresFeed`
+  (`js/shell/mode-3d.js`), gets `counts()` (null before the board
+  arrives), the flags placed, the board's mines and the elapsed time, and
+  feeds `ui.updateFigures3D` at once when 3BV, 3BV solved, the counted
+  clicks or the flags change and otherwise only on the elapsed time's new
+  second. `showBoard3D` names the board in the overlay's title and reads
+  its bests from the records store once per board, none for Learn 3D or a
+  board no record can name, and resets the feed.
 - **Recording.** Each closed box opens a recorder (`startRecording`,
   [replay.md](replay.md)), which `restart()` discards and `leave()` stops.
   When the board arrives the early flags are recorded in order, then the
@@ -83,6 +95,8 @@ DOM-free.
   — what the 3D session records and the camera and view-mode sampling.
 - [../domain/features/board-generation.md](../domain/features/board-generation.md)
   — the request, the no-guess failure rule and the attempt budget.
+- [../domain/features/in-game-layout.md](../domain/features/in-game-layout.md)
+  — the 3D overlay and the live figures it shows.
 
 ## CROSS-REFERENCES
 
@@ -98,9 +112,14 @@ DOM-free.
   session's `reveal` / `toggleFlag` / `chord`.
 - [replay.md](replay.md) — the recorder.
 - [testing.md](testing.md) — `tests/mode3d-session.test.mjs`,
-  `tests/replay-3d.test.mjs`.
+  `tests/replay-3d.test.mjs`; `tests/shell-mode-3d.test.mjs` the figures
+  feed and its wiring, `tests/components-game3d.test.mjs` the overlay in
+  a browser.
 
 ## WHEN TO READ THE SOURCE
 
 - Changing a session state, event or the first-click flow (`createSession`
   and its head comment in `session.js`).
+- Changing what the overlay is fed or when: `createFiguresFeed` in
+  `js/shell/mode-3d.js`, `showBoard3D` and the frame loop's `updateHud` /
+  `FIGURES_3D.push` in `js/main.js`.

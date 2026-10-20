@@ -8,7 +8,7 @@ bindings source `js/settings/bindings.js` — the help panel, the active
 device those surfaces follow, and the first-use hints
 (`js/shell/first-use.js`, pure; its `shell.firstUse` document and rules in
 its head comment) with their wiring in `js/main.js`. The `UI` class's API,
-the overlay bar and the controller menus are [app-shell-ui.md](app-shell-ui.md).
+the counters, live figures and the controller menus are [app-shell-ui.md](app-shell-ui.md).
 
 ## PUBLIC API
 

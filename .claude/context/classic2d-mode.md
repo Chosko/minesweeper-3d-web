@@ -1,13 +1,13 @@
-# Classic 2D — mode, sound, end delay and end effect
+# Classic 2D — mode, game window, sound, end delay and end effect
 
 ## OVERVIEW
 
-`js/classic2d/mode.js` puts the Classic 2D game behind the game shell's
-mode contract: one session, board view, pointer / cursor inputs and
-movement sampler per game, the overlay feed, the sound cue of every action,
-pause by hiding the board, the generation client and pre-generation, and
-the end delay with its end effect (`js/classic2d/end-effect.js`). DOM-free:
-the shell hands in its flow and its sound sink. The area overview is
+`js/classic2d/mode.js` puts the Classic 2D game behind the game shell's mode
+contract: one session, board view, pointer / cursor inputs and movement
+sampler per game, the game window's feed, the sound cue of every action,
+pause by hiding the board, the generation client and pre-generation, and the
+end delay with its end effect (`js/classic2d/end-effect.js`). DOM-free: the
+shell hands in its flow and its sound sink. The area overview is
 [classic2d.md](classic2d.md).
 
 ## PUBLIC API
@@ -26,12 +26,13 @@ the shell hands in its flow and its sound sink. The area overview is
   minesLeft}`, `boardHidden`, `boardView` (for the debug hook); the
   contract's optional `replay(summary)` is the session's.
 - `flow` is `{openBoardChoice(choice), show(), container(), hud({seconds,
-  minesLeft, clicks}), board({width, height, mines, noGuess}),
-  generating(shown), progress?(p|null), failed(failure|null), hint?(text), scale?(),
-  frame?(), layout?(layout), scrolled?(), padCue?(kind)}` — `board` once
-  per game and again when `playStandard()` turns no-guess off; `padCue`
-  the cursor input's `onPadCue` (`'press'` | `'flag'`), which the shell
-  answers with a rumble ([app-shell-3d-play.md](app-shell-3d-play.md)).
+  minesLeft, clicks}), figures?(input, {tick}), board({width, height, mines,
+  noGuess, identity}), generating(shown), progress?(p|null),
+  failed(failure|null), hint?(text), scale?(), frame?(), layout?(layout),
+  scrolled?(), padCue?(kind)}` — `board` once per game and again when
+  `playStandard()` turns no-guess off; `padCue` the cursor input's
+  `onPadCue` (`'press'` | `'flag'`), which the shell answers with a rumble
+  ([app-shell-3d-play.md](app-shell-3d-play.md)).
 - `mount` defaults to `{board: mountBoardView, pointer: mountPointerInput,
   cursor: mountCursorInput, touch: mountTouchInput, sampler:
   mountSampler2D}`; without `touch` no touch input, without `sampler` no
@@ -57,13 +58,24 @@ the shell hands in its flow and its sound sink. The area overview is
 - **Start.** `start` normalises the choice, saves it as the last board
   choice and mounts a fresh view, inputs and sampler. The inputs see the
   session through a gate that reads paused while the board is hidden and
-  redraws what an action before the first reveal changed (the session
-  emits no event then). The view opens at `flow.scale()` inside
-  `flow.frame()`, measured again at every refit, reports each layout to `flow.layout` (the shell places
-  the panel) and each player scroll to `flow.scrolled`. `tick()` drives the
-  sampler every frame, with the cursor's ring cell beside the view (-1
-  when hidden). The session's `changed` redraws the listed cells and
-  pushes the overlay; its board arriving reports started and can-pause.
+  redraws what an action before the first reveal changed (the session emits
+  no event then). The view opens at `flow.scale()` inside `flow.frame()`,
+  measured again at every refit, reports each layout to `flow.layout` (the
+  shell places the panel) and each player scroll to `flow.scrolled`.
+  `tick()` drives the sampler every frame, with the cursor's ring cell
+  beside the view (-1 when hidden). The session's `changed` redraws the
+  listed cells and pushes the window's feed; its board arriving reports
+  started and can-pause.
+- **The window's feed.** `flow.hud` gets the timer, mines left and clicks
+  when any changed; `flow.figures` the live figures' input (`counts()`,
+  flags, mines, `elapsedMs()`) on every count change, else on the timer's
+  new second (`tick`).
+- **Game window** (`#c2d`, ids in [app-shell-ui.md](app-shell-ui.md)): head
+  (Swap clicks, title, Pause), body (counter strip over the board area, the
+  Reveal / Flag switch on a coarse pointer, the live figures panel with the
+  controls reminder), foot (size, mines, no-guess). The fit rule works in
+  the room that chrome leaves; too narrow for both, the panel moves under
+  the board, and on a phone it hides (`#c2d` in `css/style.css`).
 - **Sound.** Every action the gate passes on — mouse, keyboard or
   controller — plays the 3D game's cue for its outcome (`cue` in
   `mode.js`), read from the engine's changed cells and the game's phase:
@@ -103,37 +115,36 @@ the shell hands in its flow and its sound sink. The area overview is
   farthest by `WAVE_SHARE` of the delay. A loss's changed tiles keep their
   pre-loss tile until reached; a win's pulse brightens each tile as it
   passes, its closed mines turn to flags, and its confetti bursts from the
-  origin and falls over the board's rectangle. How the view draws it is in
-  [classic2d-board-view.md](classic2d-board-view.md).
+  origin and falls over the board's rectangle (drawn by the board view).
 
 ## DOMAIN DEPENDENCIES
 
 - [../domain/features/classic-2d-square-play.md](../domain/features/classic-2d-square-play.md)
-  — the sound of each action and the mode.
+  — the sound of each action and the mode;
+  [../domain/features/in-game-layout.md](../domain/features/in-game-layout.md)
+  — the game window.
 - [../domain/features/replay-recording.md](../domain/features/replay-recording.md)
   — the replay on the mode's reports.
 
 ## CROSS-REFERENCES
 
-- [classic2d-session.md](classic2d-session.md) — the session the mode holds.
-- [classic2d-board-view.md](classic2d-board-view.md),
-  [classic2d-input.md](classic2d-input.md) — what the mode mounts.
+- [classic2d-session.md](classic2d-session.md) — its session;
+  [classic2d-board-view.md](classic2d-board-view.md), [classic2d-input.md](classic2d-input.md) — what it mounts.
 - [app-shell.md](app-shell.md) — the mode host;
   [app-shell-2d.md](app-shell-2d.md) — the flow, `main.js` handing in `sfx`
   and the button swap; [app-shell-pause.md](app-shell-pause.md) — the end
   delay's skip.
-- [generation.md](generation.md) — the client and `pregenerate`.
-- [replay-samplers.md](replay-samplers.md) — the 2D movement sampler the mode mounts.
-- [audio.md](audio.md) — the `sfx` cues and their volume and mute.
-- [testing.md](testing.md) — `tests/classic2d-mode.test.mjs` the mode, its
-  end delay and the cue each action plays;
-  `tests/classic2d-end-effect.test.mjs` the end effect;
-  `tests/replay-2d.test.mjs` the replay on the mode's reports.
+- [generation.md](generation.md) — the client and `pregenerate`;
+  [replay-samplers.md](replay-samplers.md) — the 2D sampler the mode
+  mounts; [audio.md](audio.md) — the `sfx` cues, volume and mute.
+- [testing.md](testing.md) — `tests/classic2d-mode.test.mjs` the mode, end
+  delay, cues, figures feed and window in a browser;
+  `tests/classic2d-end-effect.test.mjs`, `tests/replay-2d.test.mjs` the
+  end effect and the replay on the mode's reports.
 
 ## WHEN TO READ THE SOURCE
 
-- Tuning the end effect — the wave's speed, the pulse, the confetti — or
-  the 2D end delay (`end-effect.js`; `END_DELAY_MS` and the `finished`
-  handler in `mode.js`).
+- Tuning the end effect (wave speed, pulse, confetti) or the 2D end delay
+  (`end-effect.js`; `END_DELAY_MS` and the `finished` handler in `mode.js`).
 - Changing which cue an action plays (`cue` and `act` in `mode.js`; the 3D
   game's mapping it mirrors is `onAction` in `js/main.js`).

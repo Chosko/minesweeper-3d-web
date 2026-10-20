@@ -67,8 +67,15 @@ area overview is [classic2d.md](classic2d.md).
   A board that fits is centred with its frame and never scrolls; one that
   does not keeps `MIN_TILE_SIZE`, fills the area inside the frame, starts
   at its top-left corner and scrolls on the overflowing axis only. In play
-  the frame is the panel's (the shell's `panelFrame2D`); the replay viewer
-  has none.
+  the area is the game window's board area `#c2d-board`: the room its
+  chrome — the head, the counter strip, the figures panel beside or under
+  the board, the foot line — leaves, so the window reduces the space the
+  fit rule works in and a board that fits a bare window may scroll in it
+  (Expert does in the smaller desktop windows); the frame is the board's
+  themed frame, an inset on every side (the shell's `panelFrame2D`). The
+  replay viewer's area is its stage, with no frame. The window's
+  composition and where its panel goes on a narrow window are
+  [classic2d-mode.md](classic2d-mode.md) § Game window.
 - **Redraw.** `update(changed)` draws only the listed cells in view,
   through the skin's `drawTile`. A full repaint happens on a new size or
   pixel ratio, a scale change, `setGame`, a scroll, showing a hidden board
@@ -108,6 +115,8 @@ area overview is [classic2d.md](classic2d.md).
   hidden while paused.
 - [../domain/features/square-tile-skin.md](../domain/features/square-tile-skin.md)
   — the minimum tile size.
+- [../domain/features/in-game-layout.md](../domain/features/in-game-layout.md)
+  — the game window whose board area the fit rule works in.
 
 ## CROSS-REFERENCES
 
@@ -118,7 +127,8 @@ area overview is [classic2d.md](classic2d.md).
 - [engine.md](engine.md) — the square grid's index layout and the
   `changed` lists.
 - [app-shell-kit.md](app-shell-kit.md), [app-shell-2d.md](app-shell-2d.md) — the board tokens and the shell's panel
-  frame.
+  frame; [app-shell-ui.md](app-shell-ui.md) — `panelFrame2D` and
+  `placePanel2D`.
 - [testing.md](testing.md) — `tests/classic2d-view.test.mjs` the board view
   and its end-effect drawing.
 

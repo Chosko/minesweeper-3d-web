@@ -59,28 +59,36 @@ Viewer (`js/replay/viewer.js`)
   "Replay · Classic 2D · Intermediate" (the board as the records name it);
   both handed to `view.ready({ …, code, title })`.
 - `clockText(ms)` (`"13.342"`, seconds to the thousandth, truncated),
-  `overlayFigures(frame, ms)`, `endLine(check)`, `seekStep(duration)`,
+  `overlayFigures(frame, ms)` (the bar's clock, mines, 3BV and 3BV/s),
+  `replayFigures(frame, ms, bests)` (the panel's live figures),
+  `endLine(check)`, `seekStep(duration)`,
   `pauseMarks(pauses, duration, leadIn?)`, `pausesText`,
   `seekTicks(actions, duration, leadIn, px)` (one tick per action, merged
   under a pixel within its kind), `actionCue(kind, outcome)` (the game's
   sound cue for an action), `regionTints(partition, graph, cycle?)` (Show
   3BV's paint of `bbbvPartition`, [engine.md](engine.md)).
-- `createReplayViewer({library, router, view, viewers?, sound?, files?})` →
+- `createReplayViewer({library, router, view, viewers?, sound?, files?,
+  bests?})` →
   `show({replay?, replayId?, file?, returnTo?})`, `hide()`, `tick(ms)`,
   `command`, `seek`, `setSpeed`, `download()`, `openFile(file)`, `key`,
   `pad`, `back()`, `defaultFocus()` (Play once ready, the failure card's
   Back once failed, the frame's Back while opening), `setScale`, `state`.
   `viewers` maps a graph kind to a mount; default `{square:
   mountViewer2D}`; `sound` is the sfx sink, `files.save(bytes, name)` the
-  download.
+  download, `bests(board)` the board's bests (`RECORDS.bests`);
+  `state.live` is `replayFigures` at the playback position.
 - `createReplayView({root, win?, onCommand, onSpeed, onSeek, onBack,
   onDownload?, onOpen?, onCopy?})` → the `#replay` binder (its ids in the
   head comment): a `ui-frame` on the backdrop (`#replay-frame`; Back
   `#rp-back` and the title `#replay-title` in its head), whose body holds
   the overlay bar of figures with the code chip `#rp-code` (Copy and Copy
-  link call `onCopy`; hidden while loading, failed or with no code), the
-  board area `#replay-stage`, which takes the room the figures and the
-  controls leave, with the message card over it, and the controls (the
+  link call `onCopy`; hidden while loading, failed or with no code), then
+  `#replay-main`: the board area `#replay-stage`, which takes the room the
+  bar, the panel and the controls leave, with the message card over it,
+  and beside it the figures panel `#rp-figures` (`bindFigures`,
+  `bindFiguresLive`; dashes while no replay plays; hidden with the code
+  chip on the narrower windows); then
+  the controls (the
   seek bar, transport, speed, the toggles — `#rp-camera` in 3D only —,
   the end line with its outcome chip, Download, Open replay file, the key
   line `#rp-keys`). While a replay opens or has failed the controls stay
@@ -121,6 +129,11 @@ Viewer (`js/replay/viewer.js`)
   lands, none for those it crosses. With sound on (kept for the session),
   each action reached going forward at 2× or slower plays `actionCue`, as
   does a step or a forward seek onto an action.
+- **Live figures.** The panel shows the live figures model of the playback
+  position (the frame's counts, flags and mines, the game time), so it
+  follows a seek either way, against `bests(header.board)` read each time a
+  replay opens — the bests stored now; none, or a throwing `bests`, shows
+  no pace and no best.
 - **A shell screen, not a mode.** The viewer plays no game, records nothing,
   keeps nothing in the library, is never paused; a replay still loading when
   the screen closes is dropped.
@@ -132,6 +145,8 @@ Viewer (`js/replay/viewer.js`)
   contracts, the measured snapshot interval.
 - [../domain/features/shared-screen-layout.md](../domain/features/shared-screen-layout.md)
   — the viewer in the frame.
+- [../domain/features/in-game-layout.md](../domain/features/in-game-layout.md)
+  — the replayed game's live figures.
 
 ## CROSS-REFERENCES
 
@@ -155,8 +170,9 @@ Viewer (`js/replay/viewer.js`)
 - Changing seeking, the snapshot constants or what a frame reports: the head
   comment of `simulator.js` and `goTo` / `changedCells`; the constants come
   from feature replay-playback § Snapshot interval.
-- Changing a control, a key or button, the overlay, the timeline or the
-  failure lines: the head comment of `viewer.js` and the `replay` wiring in
-  `js/main.js`.
+- Changing a control, a key or button, the overlay, the figures panel, the
+  timeline or the failure lines: the head comment of `viewer.js` and the
+  `replay` wiring in `js/main.js`; the panel's place by window size, the
+  `#replay-main` and `#rp-figures` rules of `css/style.css`.
 - Changing which action plays which sound: `actionCue`, beside the 3D
   game's `actionSounds` and Classic 2D's cue map it mirrors.

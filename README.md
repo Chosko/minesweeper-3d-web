@@ -61,7 +61,7 @@ and play; the right side also shows your best time, 3BV/s and efficiency on that
 | `Esc` | Pause |
 | `F2` | Restart: a new board of the same choice |
 
-**Swap clicks**, beside Pause on the board, trades the left and right buttons for presses that
+**Swap clicks**, at the top left of the game window, trades the left and right buttons for presses that
 start on a closed or flagged cell — left flags on the press, right reveals on the release — so
 you can flag and chord with the left button alone. Revealed cells, the keyboard and the
 controller keep their roles; the toggle lasts until the page reloads.
@@ -330,8 +330,12 @@ and rumbles on an explosion. Some browsers only start sound after a key press or
 
 - **Interface:** a main menu of modes and places with a preview of the selected entry, and a
   board choice per mode with presets, your bests and a custom-board form (cell count, mine limit
-  and validation hints). The HUD shows time, mines left, clicks and board size, with indicators for the
-  Shift/Space/Ctrl view modes. There is an in-game controls panel (`H`), and a results screen
+  and validation hints). In a game, a counter strip shows mines left, **Restart** and the time, and
+  a side panel shows live figures — 3BV solved with a progress bar, your pace against your best time
+  on the board, 3BV/s, clicks with efficiency, and flags — above a reminder of the main controls; the
+  replay viewer shows the same figures for the replayed game. In Classic 2D the panel moves under the
+  board on a narrow window; on a phone the figures are not shown. The 3D game adds indicators for
+  the Shift/Space/Ctrl view modes. There is an in-game controls panel (`H`), and a results screen
   after every game.
 - **Pause menu** (`Esc`): resume, go back to the start view (3D), restart or return to the main menu.
 - **Settings:** mouse sensitivity (0.25×–3×), invert mouse Y, volume, the 3D neighbour count and
@@ -410,8 +414,8 @@ on purpose:
 - **Draw distance:** the far plane grows with the board instead of being clipped at 300 units.
 - **Minor timing changes the player cannot see:** auto-hiding and the win check run right after each
   action instead of once per frame.
-- **Touch:** Classic 2D plays by touch. A tap reveals, or flags while the overlay bar's Reveal / Flag
-  switch (shown on a touch screen) is on Flag; a 400 ms long-press flags, with a short vibration; a
+- **Touch:** Classic 2D plays by touch. A tap reveals, or flags while the Reveal / Flag switch under the
+  board (shown on a touch screen) is on Flag; a 400 ms long-press flags, with a short vibration; a
   tap on a number chords. One finger pans a board larger than the screen, two fingers pan and pinch
   to zoom between the smallest tile and the whole board. 3D plays by touch on a touch-only device
   too ([Touch](#touch)): a left-thumb stick, a look drag, tap, long-press and two-finger tap on the

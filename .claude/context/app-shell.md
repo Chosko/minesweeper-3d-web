@@ -17,7 +17,7 @@ others:
 | [app-shell-2d.md](app-shell-2d.md) | the Classic 2D mode's wiring: `FLOW_2D`, button swap, board area and panel, status card, controller |
 | [app-shell-results.md](app-shell-results.md) | results flow and view, Watch replay and Watch best, Look at the board |
 | [app-shell-replay.md](app-shell-replay.md) | the replay viewer route, replay files, the 3D replay scene and its free camera |
-| [app-shell-ui.md](app-shell-ui.md) | `js/ui.js` (`UI`), HUD overlay bar, aimed-cell readout, controller menus |
+| [app-shell-ui.md](app-shell-ui.md) | `js/ui.js` (`UI`), each mode's counters and live figures, the Classic 2D window's and the 3D overlay's parts, aimed-cell readout, controller menus |
 | [app-shell-help.md](app-shell-help.md) | help surfaces from the bindings source, help panel, active device, first-use hints |
 | [app-shell-kit.md](app-shell-kit.md) | component kit, tokens, theme, scene palette, gallery, deploy files |
 | [app-shell-markup.md](app-shell-markup.md) | kit-built screens' markup in `index.html` and the ids the shell wires, `css/style.css`, pointer sizes |

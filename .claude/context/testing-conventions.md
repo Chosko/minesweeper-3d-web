@@ -60,8 +60,9 @@ change trips. Where tests go and how the suite runs is
 - **Contrast** is checked from parsed tokens for every registered theme
   (`theme-conformance.test.mjs`) and for *Joyful tiles*' own pairs
   (`tokens.test.mjs`)
-  and in the page (`measureContrast` in `components.test.mjs`: 4.5:1, or 3:1
-  for large text and accent labels, over each run's effective background).
+  and in the page (`measureContrast`, `tests/helpers/contrast.mjs`, run
+  through `page.evaluate`: 4.5:1, or 3:1 for large text and accent labels,
+  over each run's effective background).
 - **Timing slack** (`tests/helpers/timing.mjs`): a performance budget
   (e.g. 100×100×100, 1000 mines: build and open < 2 s) is asserted through
   `timed(budget, fn)` — up to three attempts, the fastest counting, against

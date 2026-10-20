@@ -1,13 +1,14 @@
-# App shell — `UI`, HUD, help surfaces, first-use hints, controller menus
+# App shell — `UI`, HUD, game window counters and live figures, controller menus
 
 ## OVERVIEW
 
 Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
 Covers `js/ui.js` — DOM only, no game rules: class `UI`, board-settings
-clamping and the board lines; it formats the overlay bar with the kit
-helpers, fills the Settings page from `js/settings/page.js` and every help
-surface from `js/settings/bindings.js` — and, in `js/main.js`, the HUD and
-the controller's menu navigation. The help surfaces, the active device and
+clamping, the board lines and titles; it writes each mode's counters with
+the kit helpers and its live figures through the live figures model, fills
+the Settings page from `js/settings/page.js` and every help surface from
+`js/settings/bindings.js` — and, in `js/main.js`, the HUD and the
+controller's menu navigation. The help surfaces, the active device and
 the first-use hints are [app-shell-help.md](app-shell-help.md).
 
 ## PUBLIC API
@@ -18,7 +19,10 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
   1×1×1 board clamps to 0); `startGame` clamps with it.
 - `fmtDims`, `pauseLine(time, minesLeft)`, `NO_MOUSE_MSG`, `TOUCH_MSG`,
   `boardLine3D(s, {mines?})` (`"6 × 6 × 6 · 10 mines · no-guess"`),
-  `boardLine2D({width, height, noGuess})` (`"30 × 16 · no-guess"`).
+  `boardLine2D` (`"30 × 16 · no-guess"`); Classic 2D's `boardTitle2D`
+  (`"Classic 2D · Expert"`) and foot line `boardFoot2D`; 3D's `boardTitle3D`
+  (`"3D · Cube Intermediate"`) and `shortTitle3D` (`"3D"`); `PANEL_INSET`;
+  `figuresLine` (re-exported).
 - `UI(cb)` — callbacks are named after the control they serve
   (`onMenuEntry`, `onBack`, `onReady*`, `onResume`, `onRestart`,
   `onMainMenu`, `onPause`, `onToggleSwap`, `onToggleTap`,
@@ -33,18 +37,19 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
     `showReplay` / `hideReplay` (`body.replaying`: no HUD, view chips, tools
     strip, help, hint strip or toast shows or appears over the viewer),
     `replayRing(x, y, kind)` (a 3D replay's press ring on `#replay`);
-  - Classic 2D: `setSwap`, `setTapMode('reveal' | 'flag')`, `panelFrame2D()` (`PANEL_INSET` 9 px,
-    bar height + `PANEL_GAP` 8 px on top), `placePanel2D(rect)`,
-    `setBoard2D`, `setBoardStatus`; 3D `setBoardStatus3D` (progress drawn by
-    `progressLine`);
+  - Classic 2D: `setSwap`, `setTapMode('reveal' | 'flag')`,
+    `panelFrame2D()` (`PANEL_INSET` all round), `placePanel2D(rect)`,
+    `setBoard2D`, `updateFigures2D(input, {tick, bests})`,
+    `setBoardStatus`; 3D `setBoardStatus3D` (progress by `progressLine`);
   - menu: `setLastMode` (the Last played chip), `setEntryUnavailable`,
     `setBuild` (the build label);
   - confirmations: `showConfirm({message, confirmLabel}, onYes, onNo)`,
     `isConfirmOpen`, `closeConfirm`, `closeResetConfirm` (→ false when none
     is open);
-  - HUD: `setBoard` ("Learn 3D" for the guided board), `setTimed(on)` (the
-    overlay timer and the pause card's time, off on Learn 3D),
-    `updateHud(time, minesLeft, clicks?)`, `setModes`,
+  - HUD: `setBoard` (the 3D title and the pause card's board line),
+    `setTimed(on)` (off on Learn 3D), `updateHud(time, minesLeft,
+    clicks?)`, `updateFigures3D(input, {tick, bests})`, `overlayBottom3D()`
+    (the overlay's top row's bottom, for the touch zones), `setModes`,
     `setCrosshair`, `setArrow(angle|null)`, `setReadout(r|null)`,
     `setSpacing(v)` (the 3D tools strip's spacing readout), `setSound(muted)`;
   - Learn 3D: `showLearnEnd(won)` / `hideLearnEnd()` (the `#learn-end`
@@ -58,31 +63,45 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
     `[data-camera]` movement line follow the Camera setting), `flash`,
     `toast(msg, ms)` (the text into `#toast-text`, the icon kept), `setNoMouse(on, touch)`, `setTouch3D(on)` (the touch ready card and the help's touch rows, `_bindDevice`), `setTouchModes(modes)`, `setStick(view|null)`, `openControls` / `closeControls` /
     `isControlsOpen`, `isPauseVisible`, `setReadyMessage`.
-  HUD writes (`updateHud`, `setArrow`, `setReadout`) touch the DOM only on
-  change.
+  HUD writes (`updateHud`, `updateFigures*`, `setArrow`, `setReadout`)
+  touch the DOM only on change.
 
 ## INTERNAL PATTERNS
 
-- **Overlay bar** (`#hud .ui-overlay-bar.hud-bar`): `#hud-time`
-  (`formatOverlayTime`, stops at `999` while `S.time` keeps counting),
-  `#hud-mines` (`formatMineCount`, `.negative` below zero, widened past
-  three digits by `mineCounterDigits`), `#hud-clicks` (counted clicks,
-  wasted included: 2D from the `hud` feed, 3D from `clicks3D()` or the
-  frozen `S.endState.clicks`), the board size, then `#hud-pause`. Its
-  click and the controller's START/BACK in play (through `padClick`) all
-  pause through that one control. `#hud-swap` ("Swap clicks",
-  `aria-pressed`) shows only in Classic 2D (hidden by `showPause` and by
-  `#hud:not(.hud--2d) #hud-swap`), never under `(pointer: coarse)`, and
-  never takes focus (its `mousedown` is prevented), so Space and Enter keep
-  playing. `#hud-tap` (the Reveal / Flag switch, "Tap: Reveal" /
-  "Tap: Flag", `aria-pressed` on Flag) works the same way but shows only
-  under `(pointer: coarse)` in Classic 2D, with a 44 px hit area; `main.js`
-  flips `mode2d.setTapMode` and writes it back with `setTapMode`. Over the
-  3D scene the bar has its own raised surface; in Classic 2D it is the top
-  edge of the board's framed panel and wraps onto more rows inside the
-  widest panel (`width: max-content`, `max-width` the board area less the
-  panel inset), so a phone keeps every control on screen;
-  `panelFrame2D` measures the height it is placed at, again at each refit.
+- **Counters.** Each mode's `ui-counter-strip`: mines left
+  (`formatMineCount`, `data-negative` below zero, widened past three digits
+  by `mineCounterDigits`), Restart (`#c2d-restart` / `#hud-restart`, never
+  taking focus) and the timer (`formatOverlayTime`, stops at `999`).
+  `updateHud` writes the Classic 2D window's (`#c2d-mines-left`,
+  `#c2d-time`) while it shows, else the 3D overlay's (`#hud-mines`,
+  `#hud-time`), and the Clicks figure (`#c2d-clicks`, `#hud-clicks`: counted
+  clicks, wasted included).
+- **Live figures.** `updateFigures2D` / `3D` run the live figures model
+  (`liveFigures`, `js/shell/live-figures.js`: 3BV with its progress, pace vs
+  PB, 3BV/s, clicks with efficiency, flags with mines left; the dash
+  placeholder for a figure not yet computable) against the board's bests
+  `js/main.js` reads once per game, and write the panel through
+  `bindFigures`: on a count change each changed figure and the live part's
+  `figuresLine` (`bindFiguresLive`), on the timer's second (`tick`) only
+  pace and 3BV/s. Each panel's foot (`#c2d-reminder`, `#hud-reminder`) is
+  the mode's `reminderKeys` for the active device.
+- **Classic 2D window** (`#c2d`; `showClassic2D` marks `#hud` `hud--2d`,
+  hiding the 3D overlay): `#hud-swap` (Swap clicks, `aria-pressed`, never
+  under `(pointer: coarse)`, never taking focus), the title `#c2d-title` and
+  Pause `#c2d-pause` in its head; `#hud-tap` under the board (the Reveal /
+  Flag switch, "Tap: Reveal" / "Tap: Flag", only under `(pointer: coarse)`,
+  a 44 px hit area; `main.js` flips `mode2d.setTapMode` and writes it back
+  with `setTapMode`); the foot line `#c2d-size`. Its layout:
+  [classic2d-mode.md](classic2d-mode.md) § Game window.
+- **3D overlay** (`#hud-overlay`): the counter strip `#hud-counters` at the
+  top centre, the figures panel `#hud-figures` on the right headed by the
+  title `#hud-title` and Pause `#hud-pause`, each on its own surface over
+  the sky. The title's full name is its tooltip and accessible name; it
+  drops the board (`shortTitle3D`) when the name overflows its line —
+  measured, refitted on resize and once the fonts load. Learn 3D hides the
+  timer and, by `hud-figures--untimed`, pace and 3BV/s. START pauses through
+  `#hud-pause` (`#c2d-pause` in Classic 2D). Layouts by window size:
+  `css/components.css`'s head comment (*3D game overlay*).
 - **Aimed-cell readout** `#aim-readout` sits below and right of the
   crosshair, clear of the off-screen arrow `#crosshair-arrow`: a cube icon
   and `#aim-cubes`, then `#aim-flag-part` only while there are flags.
@@ -102,7 +121,9 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
 ## DOMAIN DEPENDENCIES
 
 - [../domain/features/screen-components.md](../domain/features/screen-components.md)
-  — the overlay bar's display formats.
+  — the counters' display formats.
+- [../domain/features/in-game-layout.md](../domain/features/in-game-layout.md)
+  — the game window, the 3D overlay and the live figures.
 - [../domain/features/settings.md](../domain/features/settings.md) — the
   Settings page and the pause-card shortcuts.
 - [../domain/features/game-shell.md](../domain/features/game-shell.md) —
@@ -115,11 +136,15 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
   [settings-page.md](settings-page.md) — Settings page markup and binder.
 - [input-controller.md](input-controller.md) — the navigation layer;
   [app-shell-navigation.md](app-shell-navigation.md) — the focus walk.
-- [testing.md](testing.md) — `tests/components.test.mjs` (overlay bar),
+- [app-shell-kit.md](app-shell-kit.md) — the in-game components.
+- [testing.md](testing.md) — `tests/components.test.mjs`,
+  `tests/components-game3d.test.mjs`, `tests/live-figures.test.mjs`,
   `tests/settings-*.test.mjs`, `tests/shell-pad-walk.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 
 - Adding a HUD element or overlay: markup, `UI.el`, a `--z-*` layer, a
   router screen and a `LAYER_SCREEN` entry.
+- Changing a figure's wording or format: the head comment of
+  `js/shell/live-figures.js`.
 - Changing controller mapping in menus: `padMenus`.

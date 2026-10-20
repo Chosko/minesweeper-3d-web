@@ -10,7 +10,7 @@ tokens, theme and deploy files are [app-shell-kit.md](app-shell-kit.md).
 | File | Responsibility |
 | ---- | -------------- |
 | `index.html` | every overlay as static markup toggled by `.hidden`; importmap `three` → `vendor/three/three.module.min.js` (r186, no build step); a module `onerror` shows `.fatal` |
-| `css/style.css` | shell styling: fixed layers, each screen's placement in its frame (the main menu's grid, the board choices' and Daily's window under the wordmark, Records', Settings', the placeholder's and the replay viewer's window, the results frame's head, tiles and action bar, the ready card's columns) and what each gives way at the smaller window sizes and on a phone, the scene panel's canvas (`body.scene-off`, `body.scene-front`), the Classic 2D board area and panel, the replay layer (`replay--scene` transparent over the 3D scene; the recorded pointer and its trail, press rings, Show 3BV's 2D canvas; `body.replaying` hides the view chips, tools strip, hint strip and toast), the controller's hints (`[data-pad-hint]`, visible only under `body.pad-nav`, their room kept; `[data-pad-hinted]` rows), the menu-screen and translucent backdrops, the results scrim over the 3D scene, the look's hint (`.look-hint`), the ready card's placement (`.ready-body`), the Learn 3D step (`.hint-step`), the help/controls/ctx-lost overlays, the toast's place and the message pages' (`.fatal`, `.noscript`, `.not-found`: the card's width and its margin from the window's edges), the 3D touch stick and toolbar, HUD placement; declares no custom property |
+| `css/style.css` | shell styling: fixed layers, each screen's placement in its frame (the main menu's grid, the board choices' and Daily's window under the wordmark, Records', Settings', the placeholder's and the replay viewer's window, the results frame's head, tiles and action bar, the ready card's columns) and what each gives way at the smaller window sizes and on a phone, the scene panel's canvas (`body.scene-off`, `body.scene-front`), the Classic 2D game window (its board area and panel, the figures panel beside or under the board or hidden, the phone layouts), the replay layer (`replay--scene` transparent over the 3D scene; the recorded pointer and its trail, press rings, Show 3BV's 2D canvas; `body.replaying` hides the view chips, tools strip, hint strip and toast), the controller's hints (`[data-pad-hint]`, visible only under `body.pad-nav`, their room kept; `[data-pad-hinted]` rows), the menu-screen and translucent backdrops, the results scrim over the 3D scene, the look's hint (`.look-hint`), the ready card's placement (`.ready-body`), the Learn 3D step (`.hint-step`), the help/controls/ctx-lost overlays, the toast's place and the message pages' (`.fatal`, `.noscript`, `.not-found`: the card's width and its margin from the window's edges), the 3D touch stick and toolbar, the 3D overlay's placement (the counter strip, the figures panel, the phone layouts) and the HUD's; declares no custom property |
 
 `index.html` head order: `css/tokens.css`, `css/components.css`,
 `css/style.css`, `js/theme.js` (which appends the theme stylesheet), then
@@ -76,9 +76,10 @@ bind.
     `#r-again` at the end ([app-shell-results.md](app-shell-results.md));
   - replay viewer `#replay` (its ids: [replay-playback.md](replay-playback.md)):
     the frame `#replay-frame` with `#rp-back` and `#replay-title`, the
-    figures bar with the code chip and the outcome `#replay-end`, the board
-    area `#replay-stage` holding `#replay-board` and the card
-    `#replay-message`, `#replay-controls` (seek bar with pause marks and
+    figures bar with the code chip and the outcome `#replay-end`,
+    `#replay-main` — the board area `#replay-stage` holding
+    `#replay-board` and the card `#replay-message`, beside the figures
+    panel `#rp-figures` —, `#replay-controls` (seek bar with pause marks and
     action ticks, transport, speed, toggles, the key line, Download, Open
     replay file); the hidden file input `#replay-file`;
   - status cards `#c2d-status` (beside the board) and `#m3d-status`,
@@ -105,8 +106,11 @@ bind.
     stylesheet, then `.noscript`, the same card titled `#noscript-title`),
     styled without JavaScript through the root's static `data-theme`;
     `404.html`'s `.not-found` is the same card ([app-shell-kit.md](app-shell-kit.md)).
-  `#c2d` is the 2D board layer: `#c2d-board` holds the panel `#c2d-panel`
-  behind the canvas; `#c2d.c2d--hint` gives the hint strip room below.
+  `#c2d` is the Classic 2D game window (its ids:
+  [app-shell-ui.md](app-shell-ui.md) § Classic 2D window): `#c2d-board`
+  holds the panel `#c2d-panel` behind the canvas; `#c2d.c2d--hint` gives
+  the hint strip room below. `#hud` holds the 3D overlay `#hud-overlay`
+  (§ 3D overlay there), hidden under `hud--2d`.
 - **Pointer sizes.** The text minimums hold on every pointer, in the
   top-level rules: `ui-stat__label` 12 px (one step above `--font-size-xs`,
   which stays 11 px) and `kbd` `max(11px, 0.78em)`. Only the 44 px hit areas
@@ -114,7 +118,8 @@ bind.
   coarse)` block — the kit's gives `ui-toggle__input` and
   `ui-checkbox__input` a 44 px hit square (`::after`) and `ui-slider__input`
   a 44 px height; the shell's shows `#hud-tap` in Classic 2D at 44 px, gives
-  `#hud-pause` a 44 px band (`::after`), `#touch-modes` buttons 44 px and
+  `#hud-pause`, `#hud-restart` and `#c2d-restart` a 44 px band (`::after`),
+  `#touch-modes` buttons 44 px and
   every main menu entry at least 44 px, and hides `#hud-swap`. Every
   fine-pointer hit area stays as above (`tests/components.test.mjs` pins
   both).

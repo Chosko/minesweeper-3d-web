@@ -26,9 +26,14 @@ In scope (m2b-themes):
   Pause with its key hint; the counter strip with mines left, Restart and
   the timer; the board in its themed frame; the side panel; the foot line
   (board size, mine count and no-guess).
-- **Counter readouts** — new kit components (digits and icon as parts), so
-  a theme can draw them as plain figures, LED digits on black or anything
-  between. The timer and mine-counter formats and limits are unchanged
+- **Counter readouts** — new kit components: the counter readout
+  `ui-counter` (its `digits` and an optional `icon` as parts), so a theme
+  can draw it as plain figures, LED digits on black or anything between,
+  in the `ui-counter-strip` with Restart between the two counters; and the
+  figures panel `ui-figures` of `ui-figure` rows (label, figure, optional
+  detail line, the 3BV's progress bar as `ui-figure--progress`), with an
+  optional head bar (title and an action) and a foot for the controls
+  reminder. The timer and mine-counter formats and limits are unchanged
   (`screen-components` § Overlay bar).
 - **Restart in the strip** — the shared restart of `game-shell`, with its
   confirmation rule unchanged.
@@ -83,15 +88,18 @@ board view in [classic2d-board-view.md](../../context/classic2d-board-view.md).
   window: head, counter strip, board area, side panel, foot. The board area
   keeps the board view's fit rule, minimum tile size and scrolling; the
   window's chrome reduces the space the fit rule works in, and the side
-  panel moves under the board when the window is too narrow for both, and
-  may be hidden on a narrow or mobile window
+  panel moves under the board, its figures in a row, below 1024 px wide,
+  and is hidden on a phone — narrower than 720 px, or held sideways at
+  500 px high or less
   ([shared-screen-layout.md](./shared-screen-layout.md) § Interfaces and
   contracts, **Window sizes**).
-- **Live figures model.** A small DOM-free module that turns the game's
-  counts (3BV, 3BV solved, clicks, flags, mines), the elapsed time and the
-  board's bests into the figures and their detail lines. Both modes and the
-  replay viewer feed it; the overlay writes a figure only when its text
-  changes.
+- **Live figures model.** A small DOM-free module,
+  `js/shell/live-figures.js`, that turns the game's counts (3BV, 3BV
+  solved, clicks, flags, mines), the elapsed time and the board's bests
+  into the figures and their detail lines; a figure the inputs cannot yet
+  produce — no time elapsed, no click, no 3BV yet — shows the dash
+  placeholder, never `NaN` or `Infinity`. Both modes and the replay viewer
+  feed it; the overlay writes a figure only when its text changes.
 - **Pace vs PB.** The best time's pace prorated by progress: the elapsed
   time minus the personal best time scaled by the share of the board's 3BV
   already solved. Negative is ahead. It needs no stored history beyond the

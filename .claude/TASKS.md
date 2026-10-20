@@ -690,7 +690,7 @@ Feature: in-game-layout
 
 ## 179. Update documentation for feature `in-game-layout`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/app-shell-ui.md, .claude/context/app-shell-kit.md, .claude/context/classic2d-board-view.md, .claude/context/classic2d-mode.md, .claude/context/mode3d-session.md, .claude/context/replay-playback.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md, .claude/domain/features/in-game-layout.md
 Preconditions: 174, 175, 176, 177, 178

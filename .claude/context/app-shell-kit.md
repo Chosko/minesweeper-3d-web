@@ -11,7 +11,7 @@ The screens' markup in `index.html` and the shell stylesheet are
 | `css/components.css` | the component kit's structure (base stylesheet): `ui-*` classes, layout, sizes, the hidden default of every decoration slot; its head comment is the catalogue (element, role, accessible name, markup pattern, states, focus contract, screens built from them) |
 | `js/ui/kit-catalogue.js` | the kit catalogue as data (DOM-free): every component and composition, its parts, each interactive part's states as the selectors a theme styles, its decoration slots; `CONTRAST_ROLES`; `REQUIRED_TOKENS`, the token set every theme declares |
 | `js/ui/components.js` | the kit's behaviour helpers; imports nothing, binders touch only the elements handed in, so it runs under Node with stub elements |
-| `dev/components.html` | the kit gallery (development only): every catalogued component in every state (`data-force` previews) and every decoration slot, the overlay bar, the results layout `#g-results`, under the theme picked in `#g-theme` or named by `?theme=<id>` (unknown → the default) |
+| `dev/components.html` | the kit gallery (development only): every catalogued component in every state (`data-force` previews) and every decoration slot, the overlay bar, the counters and the figures panel (with and without its progress bar and pace row, and with its head bar), the results layout `#g-results`, under the theme picked in `#g-theme` or named by `?theme=<id>` (unknown → the default) |
 | `css/tokens.css` | the structural tokens only (base stylesheet): `--space-*`, `--z-*`, `--font-numeric-tabular`; nothing per-theme |
 | `js/themes/registry.js` | the theme registry (DOM-free): `THEMES` in catalogue order, the default id, the lookup; the one place a theme is registered |
 | `js/themes/board-module.js` | the board module's shape (head comment: palette, numbers, font, sky, a drawing style per mode, cursor ring, 3D selection and start-cell tint, motion per cell event and the motion vocabulary) and the board conformance checks (DOM-free) |
@@ -26,9 +26,11 @@ The screens' markup in `index.html` and the shell stylesheet are
 
 `js/ui/components.js`
 - `formatOverlayTime(seconds)` (three digits, stops at `'999'`),
-  `formatMineCount(minesLeft)` (kept at -99), `mineCounterDigits(mines)`
-  (at least 3; past 3 `UI.setBoard` / `setBoard2D` set `#hud-mines`'
-  `min-width` in `ch`).
+  `formatMineCount(minesLeft)` (three digits, a negative count's minus in
+  the first, kept at -99), `mineCounterDigits(mines)` (at least 3; past 3
+  `UI.setBoard` / `setBoard2D` set the mine counter's digits' `min-width`
+  in `ch`) — the formats of every counter readout and the replay viewer's
+  bar.
 - `formatSliderValue(value, {format, step, max, unit})`, `decimalsOf(step)`.
 - `segmentedTargetIndex(disabled, current, key, {horizontal?})`,
   `segmentedState(count, selected)`.
@@ -60,11 +62,19 @@ The screens' markup in `index.html` and the shell stylesheet are
   compact})`; `bindCodeChip(root, {onCopy})` → `{show(code | null), code}`.
 - `bindCodeField({input, button, info, resolve, onPlay, prompt?})` →
   `{refresh(), clear()}`: the board choices' code field, validated live.
-- The figures panel's live part (`.ui-figures__live`, a polite live region
-  the base hides; the figures themselves and the counter readouts are never
-  live): `bindFiguresLive(panel, {interval?})` → `{announce(text), stop()}`
-  writes it at most once per `LIVE_FIGURES_INTERVAL`, the latest
-  held text winning, an unchanged text not written again.
+- The figures panel: `bindFigures(panel)` → `{show(figures, names?)}`
+  writes the panel's `.ui-figure[data-figure]` rows from the live figures
+  model's `{text, detail, progress}` per figure (`js/shell/live-figures.js`
+  `FIGURES`) — the named ones, or every one — each part only when its text
+  changes; a null figure (pace with no best, or before the first 3BV) hides,
+  a null detail hides its line, the progress bar's fill and
+  `aria-valuenow` take the share solved. Its live part
+  (`.ui-figures__live`, a polite live region the base hides; the figures
+  themselves and the counter readouts are never live):
+  `bindFiguresLive(panel, {interval?})` → `{announce(text), stop()}` writes
+  it at most once per `LIVE_FIGURES_INTERVAL`, the latest held text
+  winning, an unchanged text not written again. The Classic 2D window, the
+  3D overlay and the replay viewer each bind their panel with both.
 
 `js/themes/registry.js` — `THEMES` (frozen entries `{id, name, stylesheet,
 boardModule, fonts: [{family, licence, files: [{weight, style, path}]}],
@@ -96,7 +106,14 @@ layout's components: `ui-button--danger`, `ui-wordmark`, `ui-backdrop`,
 `ui-list-row`, `ui-scene-panel` (`stage`, `tag`, `card`, `badge`, `name`,
 `note`; variant `ui-scene-panel--live`), `ui-divider`, `ui-tabs`,
 `ui-checkbox`, `ui-table`, `ui-toast`, a message `ui-card`'s `icon`, and
-the compositions `ui-mode-list`, `ui-options`, `ui-key-hints`, `ui-list`.
+the compositions `ui-mode-list`, `ui-options`, `ui-key-hints`, `ui-list`;
+and the in-game components: the counter readout `ui-counter` (`icon`,
+optional, and `digits`; `data-negative` below zero), `ui-counter-strip`
+(the counters at its ends, `restart` between them), the live figure
+`ui-figure` (`label`, `value`, `detail`, `bar`, `fill`; variant
+`ui-figure--progress`) and the figures panel `ui-figures` (`head`,
+`title`, `action` — the optional head bar —, `body`, `foot` with the
+controls reminder, `live`).
 
 `js/theme.js` — `globalThis.msThemeBoot` `{id, fellBackFrom, link, ready}`
 (`ready` resolves once the active stylesheet loaded, rejects when the
@@ -209,10 +226,11 @@ getStyle, theme, dev?, log?})`.
   ([app-shell-3d.md](app-shell-3d.md) § Scene panel), or a card with an
   entry's badge.
 - **Screens** composed in the kit — the main menu, both board choices,
-  Daily, the placeholder, Records, Settings, the board status cards, the
-  pause card with its confirmation, the 3D ready card, the context-lost
-  card, the Learn 3D end card, the results screen, the replay viewer, the
-  toast, the fatal card, the no-JavaScript notice and the 404 page — are
+  Daily, the placeholder, Records, Settings, the Classic 2D game window,
+  the 3D game overlay, the board status cards, the pause card with its
+  confirmation, the 3D ready card, the context-lost card, the Learn 3D end
+  card, the results screen, the replay viewer, the toast, the fatal card,
+  the no-JavaScript notice and the 404 page — are
   each described, element by element and by window size, at the end of the
   head comment of `css/components.css`; the gallery shows the results
   layout. Their markup, the ids the shell wires and the pointer sizes are
@@ -232,6 +250,9 @@ getStyle, theme, dev?, log?})`.
 - [../domain/features/shared-screen-layout.md](../domain/features/shared-screen-layout.md)
   — the shared layout's components, the selected state, the screen frame,
   the scene panel and every screen composed in them.
+- [../domain/features/in-game-layout.md](../domain/features/in-game-layout.md)
+  — the counter readouts, the figures panel and the in-game screens built
+  from them.
 
 ## CROSS-REFERENCES
 
@@ -239,10 +260,13 @@ getStyle, theme, dev?, log?})`.
 - [settings.md](settings.md) — the theme setting driving `setTheme`, the
   settings document `readStoredTheme` reads, the theme list.
 - [app-shell-markup.md](app-shell-markup.md) — the screens built from the kit.
+- [app-shell-ui.md](app-shell-ui.md) — the `UI` methods that feed the
+  counters and the figures panels.
 - [testing.md](testing.md) — `tests/theme-registry.test.mjs`,
   `tests/theme-conformance.test.mjs`, `tests/tokens.test.mjs`,
   `tests/theme.test.mjs`, `tests/components.test.mjs` (kit, helpers, screens,
-  contrast).
+  contrast), `tests/components-game3d.test.mjs` (the 3D overlay in a
+  browser).
 
 ## WHEN TO READ THE SOURCE
 

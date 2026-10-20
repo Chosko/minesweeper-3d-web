@@ -52,7 +52,7 @@ presses and releases Enter and ' through `input.actions` as their keys do;
   keys, and the help surfaces show the touch rows (`TOUCH_DEVICE`,
   [settings-bindings.md](settings-bindings.md)). `touch3D` (`createTouch3D`,
   [input.md](input.md)) is mounted on the canvas only while `COARSE_ONLY`,
-  zones from `touchZone3D` (below the overlay bar): it drives the page's
+  zones from `touchZone3D` (below the overlay's top row, `ui.overlayBottom3D()`): it drives the page's
   `mouse`, `view3D().look`, `setSpacing` through `spacingStep` (pinch), and
   the frame loop's `applyTouchStick` (Fly: `moveAxes`; Orbit: the dolly);
   `ui.setStick` draws the stick each frame. `syncTouch3D` (every router

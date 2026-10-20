@@ -127,7 +127,7 @@ not a new state machine. The area overview is [classic2d.md](classic2d.md).
   `GamepadReader` poll and the shell's Back buttons left unmapped.
 - [testing.md](testing.md) — `tests/classic2d-pointer.test.mjs`,
   `tests/classic2d-button-swap.test.mjs` (with the mount's use of it and
-  the overlay bar's toggle), `tests/classic2d-cursor.test.mjs`,
+  the game window's Swap clicks toggle), `tests/classic2d-cursor.test.mjs`,
   `tests/classic2d-fidelity.test.mjs` (the inputs against the fidelity
   observations), `tests/replay-2d.test.mjs` (the sampler).
 
