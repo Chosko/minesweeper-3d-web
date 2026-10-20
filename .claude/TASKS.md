@@ -1271,7 +1271,7 @@ Feature: shared-screen-layout
 
 ## 240. Settings screen to the canvas
 
-Status: [MISSING]
+Status: [PARKED]
 Target: claude
 Files: css/style.css, themes/joyful-tiles/theme.css, js/settings/page.js, index.html, tests/settings-page.test.mjs, .claude/context/settings-page.md
 Preconditions: 215, 219, 221
