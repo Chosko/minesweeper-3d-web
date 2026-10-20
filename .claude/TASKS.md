@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 214
+Last task number: 216
 
 ---
 
@@ -1018,6 +1018,24 @@ Feature: shared-screen-layout
 Status: [MISSING]
 Target: claude
 Files: tests/render-3d-flag-flash.test.mjs, tests/classic2d-mode.test.mjs, tests/classic2d-view.test.mjs, tests/theme.test.mjs, tests/components.test.mjs, tests/helpers/timing.mjs, .claude/external/affected-tests.mjs, tests/affected-tests.test.mjs, .claude/context/testing.md, .claude/context/testing-conventions.md
+Preconditions: none
+
+---
+
+## 215. Settings page tests hold with more than one shipped theme
+
+Status: [MISSING]
+Target: claude
+Files: tests/settings-page.test.mjs, js/settings/page.js
+Preconditions: none
+
+---
+
+## 216. Theme switch keeps every font weight the new theme declares loaded in Chromium
+
+Status: [MISSING]
+Target: claude
+Files: js/themes/applier.js, tests/theme.test.mjs, tests/fixtures/themes/fixture-theme.js, tests/fixtures/themes/fixture-dusk/, .claude/context/app-shell-kit.md, .claude/context/testing.md
 Preconditions: none
 
 ---
