@@ -1024,7 +1024,7 @@ Preconditions: none
 
 ## 215. Settings page tests hold with more than one shipped theme
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: tests/settings-page.test.mjs, js/settings/page.js
 Preconditions: 214

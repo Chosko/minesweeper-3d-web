@@ -16,11 +16,13 @@
 // The swatch's colours are read from the theme's stylesheet text (themeSwatchColors) without
 // applying it, so a theme not in use shows its swatch once its stylesheet is fetched.
 //
-// settingControl(key)          → { key, kind: 'slider' | 'toggle' | 'segmented', label, inverted?, list?, … }.
-// settingControlHtml(key, v?, { labelledBy? }) → the control's kit markup showing v (default: the
-//                                schema default), carrying data-setting="key"; ids are `set-<key>`.
+// settingControl(key, { themes? }) → { key, kind: 'slider' | 'toggle' | 'segmented', label, inverted?, list?, … };
+//                                the theme's options are `themes` (default THEMES), one per entry in
+//                                its order.
+// settingControlHtml(key, v?, { labelledBy?, themes? }) → the control's kit markup showing v (default:
+//                                the schema default), carrying data-setting="key"; ids are `set-<key>`.
 //                                With labelledBy, a choice shows no label of its own and takes its
-//                                name from that element.
+//                                name from that element; `themes` is settingControl's.
 // settingsPageHtml()           → one kit column composition (ui-columns, #settings-columns) of the
 //                                SETTINGS_COLUMNS, each a ui-column stacking its sections (ui-panel,
 //                                data-section naming it, under its ui-section-label): a section per
@@ -146,7 +148,7 @@ const entryOf = (key) => {
   return SCHEMA[key];
 };
 
-export function settingControl(key) {
+export function settingControl(key, { themes = THEMES } = {}) {
   const entry = entryOf(key);
   const control = { key, kind: KINDS[entry.type], label: SETTING_LABELS[key] ?? key };
   if (entry.type === 'boolean' && INVERTED.has(key)) control.inverted = true;
@@ -155,7 +157,7 @@ export function settingControl(key) {
     return { ...control, min: entry.min * scale, max: entry.max * scale, step, format, scale, unit };
   }
   if (key === 'theme') {
-    return { ...control, list: true, options: THEMES.map((t) => ({ value: t.id, label: t.name })) };
+    return { ...control, list: true, options: themes.map((t) => ({ value: t.id, label: t.name })) };
   }
   if (entry.type === 'choice') {
     return { ...control, options: entry.values.map((value) => ({ value, label: CHOICE_LABELS[value] ?? value })) };
@@ -165,8 +167,8 @@ export function settingControl(key) {
 
 const sliderValue = (c, v) => String(Number((v * c.scale).toFixed(decimalsOf(c.step))));
 
-export function settingControlHtml(key, value = SCHEMA[key]?.default, { labelledBy = null } = {}) {
-  const c = settingControl(key);
+export function settingControlHtml(key, value = SCHEMA[key]?.default, { labelledBy = null, themes = THEMES } = {}) {
+  const c = settingControl(key, { themes });
   const id = `set-${key}`;
   if (c.kind === 'slider') {
     const v = sliderValue(c, value);

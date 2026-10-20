@@ -26,15 +26,16 @@ Page (`js/settings/page.js`)
   stack of section ids (Controls and Audio, Graphics and Theme, Bindings
   and Data); `SETTING_NOTES` — the settings noted "3D" under their name;
   `CONTROLS_ACTION`.
-- `settingControl(key)` → `{ key, kind: 'slider' | 'toggle' | 'segmented',
+- `settingControl(key, { themes? })` → `{ key, kind: 'slider' | 'toggle' | 'segmented',
   label, … }` by schema type; `SLIDERS` adds a number's step, format,
   scale (volume shows 0–100 %) and unit (the field of view's `°`, carried
   as `data-unit`); a toggle in `INVERTED` (`muted`) shows on
   while its value is false; the theme is a segmented control with `list:
-  true` and one option per `THEMES` entry, rendered as a
+  true` and one option per entry of `themes` (default `THEMES`, the
+  parameter a test feeds a longer list through), rendered as a
   `ui-segmented--list` whose options each lead with a
   `.ui-segmented__swatch`.
-- `settingControlHtml(key, value?, { labelledBy? })` — the control's kit
+- `settingControlHtml(key, value?, { labelledBy?, themes? })` — the control's kit
   markup, root carrying `data-setting="<key>"`, ids `set-<key>`.
 - `settingsPageHtml()` — one `ui-columns` (`#settings-columns`) of the
   `SETTINGS_COLUMNS`, each a `ui-column` stacking its sections (a

@@ -17,7 +17,7 @@ import {
   bindSettingControls, bindResetPanel, RESET_MESSAGE, SWATCH_TOKENS, themeSwatchColors, swatchBackground,
 } from '../js/settings/page.js';
 import { EXPORT_LINE } from '../js/records/export.js';
-import { THEMES, registerTheme } from '../js/themes/registry.js';
+import { THEMES, DEFAULT_THEME_ID, registerTheme, themeById } from '../js/themes/registry.js';
 import { FOCUSABLE } from '../js/shell/navigation.js';
 import { FIXTURE_THEME } from './fixtures/themes/fixture-theme.js';
 import { browserSuite } from './helpers/browser.mjs';
@@ -31,6 +31,16 @@ const tick = () => new Promise((r) => setTimeout(r, 0));
 // The test-only second theme: a registered id the theme setting accepts.
 registerTheme(FIXTURE_THEME);
 const FIXTURE_ID = FIXTURE_THEME.id;
+const DEFAULT_THEME = themeById(DEFAULT_THEME_ID);
+// The theme lists the theme-list assertions hold for: the registry's, and two themes — the default
+// and the fixture — standing in for a registry with a second shipped theme. THEMES stays as shipped.
+const THEME_LISTS = [['the registry', THEMES], ['two themes', Object.freeze([DEFAULT_THEME, FIXTURE_THEME])]];
+
+// The rows of a generated theme list, each [id, name, checked]; every row must carry its swatch.
+const themeRows = (html) => [...html.matchAll(/<button type="button" role="radio" aria-checked="(true|false)" class="ui-segmented__option" data-value="([^"]+)">(<span class="ui-segmented__swatch" aria-hidden="true"><\/span>)?([^<]+)<\/button>/g)]
+  .map((m) => { assert.ok(m[3], `${m[2]} leads with its swatch`); return [m[2], m[4], m[1] === 'true']; });
+// What a theme list of `themes` showing `active` holds: one row per entry, in the list's order.
+const expectedRows = (themes, active) => themes.map((t) => [t.id, t.name, t.id === active]);
 
 async function loadedStore(data) {
   const storage = createStorage({ backend: createMemoryBackend() });
@@ -319,6 +329,12 @@ test('the Theme section says Theme once: its list has no label of its own and is
   const theme = html.slice(html.indexOf('id="set-sec-theme"'), html.indexOf('</section>', html.indexOf('id="set-sec-theme"')));
   assert.equal(theme.replace(/data-theme[a-z-]*/g, '').split('Theme').length - 1, 1, 'one visible Theme');
   assert.match(theme, /<div class="ui-segmented ui-segmented--list" role="radiogroup" aria-labelledby="set-sec-theme" data-setting="theme" id="set-theme">/);
+  assert.ok(theme.includes(settingControlHtml('theme', undefined, { labelledBy: 'set-sec-theme' })), 'the section holds the generated list');
+  for (const [name, themes] of THEME_LISTS) {
+    const list = settingControlHtml('theme', undefined, { labelledBy: 'set-sec-theme', themes });
+    assert.match(list, /^<div class="ui-segmented ui-segmented--list" role="radiogroup" aria-labelledby="set-sec-theme"/, `${name}: no label of its own`);
+    assert.deepEqual(themeRows(list), expectedRows(themes, DEFAULT_THEME_ID), `${name}: its rows`);
+  }
   for (const s of SETTINGS_SECTIONS.filter((x) => x.id !== 'theme')) {
     for (const key of s.settings) assert.ok(html.includes(settingControlHtml(key)), `${key} keeps its label`);
   }
@@ -334,7 +350,10 @@ test('each control\'s kind and range come from its schema entry', () => {
   for (const key of ['invertY', 'fullscreen', 'muted']) assert.equal(settingControl(key).kind, 'toggle');
   assert.equal(settingControl('theme').kind, 'segmented');
   assert.equal(settingControl('theme').list, true, 'the theme is a list of rows');
-  assert.deepEqual(settingControl('theme').options, THEMES.map((t) => ({ value: t.id, label: t.name })));
+  for (const [name, themes] of THEME_LISTS) {
+    const control = name === 'the registry' ? settingControl('theme') : settingControl('theme', { themes });
+    assert.deepEqual(control.options, themes.map((t) => ({ value: t.id, label: t.name })), `${name}: one option per theme`);
+  }
   assert.deepEqual(settingControl('renderResolution').options.map((o) => o.value), SCHEMA.renderResolution.values);
   assert.deepEqual(settingControl('renderResolution').options.map((o) => o.label), ['Auto', 'Sharp', 'Fast']);
   const scale = settingControl('boardScale');
@@ -354,9 +373,11 @@ test('the page markup is kit components only, one bound control per setting', ()
   assert.match(settingControlHtml('volume'), /min="0" max="100" step="1" value="70" data-format="percent" data-scale="100"/);
   assert.match(settingControlHtml('invertY'),
     /^<label class="ui-toggle" data-setting="invertY"><input type="checkbox" role="switch" id="set-invertY" class="ui-toggle__input"><span class="ui-toggle__label">[^<]+<\/span><\/label>$/);
-  const theme = settingControlHtml('theme');
-  assert.match(theme, /<div class="ui-segmented ui-segmented--list" role="radiogroup" aria-labelledby="set-theme-label" data-setting="theme" id="set-theme">/);
-  assert.match(theme, /<button type="button" role="radio" aria-checked="true" class="ui-segmented__option" data-value="joyful-tiles"><span class="ui-segmented__swatch" aria-hidden="true"><\/span>Joyful tiles<\/button>/);
+  for (const [name, themes] of THEME_LISTS) {
+    const theme = settingControlHtml('theme', undefined, { themes });
+    assert.match(theme, /^<p class="ui-text" id="set-theme-label">Theme<\/p><div class="ui-segmented ui-segmented--list" role="radiogroup" aria-labelledby="set-theme-label" data-setting="theme" id="set-theme">(<button [^>]+><span class="ui-segmented__swatch" aria-hidden="true"><\/span>[^<]+<\/button>)+<\/div>$/, `${name}: kit rows only`);
+    assert.deepEqual(themeRows(theme), expectedRows(themes, DEFAULT_THEME_ID), `${name}: the default theme checked by default`);
+  }
   const classes = [...html.matchAll(/class="([^"]+)"/g)].flatMap((m) => m[1].split(/\s+/));
   for (const c of classes) assert.ok(c.startsWith('ui-') || c === 'hidden', `kit class only (and the shell's hidden), got ${c}`);
   for (const s of SETTINGS_SECTIONS) {
@@ -700,7 +721,7 @@ const themeList = (ids) => {
 };
 
 // A theme applier double: current(), setTheme(id) settled by the test, onThemeChange.
-function fakeApplier(active = 'joyful-tiles') {
+function fakeApplier(active = DEFAULT_THEME_ID) {
   const listeners = new Set();
   const pending = [];
   return {
@@ -721,23 +742,31 @@ function fakeApplier(active = 'joyful-tiles') {
 const checked = (list) => list.rows.filter((r) => r.option.attrs['aria-checked'] === 'true').map((r) => r.id);
 
 test('the theme list is the registry\'s themes in catalogue order, each a row with its name and a swatch, the stored one checked', () => {
-  const html = settingControlHtml('theme', 'joyful-tiles');
-  const rows = [...html.matchAll(/<button type="button" role="radio" aria-checked="(true|false)" class="ui-segmented__option" data-value="([^"]+)"><span class="ui-segmented__swatch" aria-hidden="true"><\/span>([^<]+)<\/button>/g)];
-  assert.deepEqual(rows.map((m) => [m[2], m[3]]), [...THEMES].sort((a, b) => a.order - b.order).map((t) => [t.id, t.name]), 'every registered theme, in order, by name');
-  assert.deepEqual(rows.filter((m) => m[1] === 'true').map((m) => m[2]), ['joyful-tiles'], 'the active one checked, named by its text to assistive technology');
+  assert.deepEqual(THEMES, [...THEMES].sort((a, b) => a.order - b.order), 'the registry is in catalogue order');
+  for (const [name, themes] of THEME_LISTS) {
+    const html = name === 'the registry' ? settingControlHtml('theme', DEFAULT_THEME_ID) : settingControlHtml('theme', DEFAULT_THEME_ID, { themes });
+    assert.deepEqual(themeRows(html), expectedRows(themes, DEFAULT_THEME_ID), `${name}: every theme, in order, by name, the stored one checked`);
+    assert.equal(themeRows(html).filter((r) => r[2]).length, 1, `${name}: exactly one checked, named by its text to assistive technology`);
+    for (const t of themes) {
+      assert.deepEqual(themeRows(settingControlHtml('theme', t.id, { themes })), expectedRows(themes, t.id), `${name}: ${t.id} stored, ${t.id} checked`);
+    }
+    assert.doesNotMatch(html, /Light|Dark/);
+  }
   assert.doesNotMatch(read('js/settings/page.js'), /joyful-tiles|Joyful tiles/, 'the page names no theme: the list reads the registry');
-  assert.doesNotMatch(html, /Light|Dark/);
+  assert.ok(Object.isFrozen(THEMES) && !THEMES.some((t) => t.id === FIXTURE_ID), 'the registry stays as shipped');
 });
 
 test('each theme row is a native button the keyboard and the controller reach; Up and Down move between rows, Left and Right step the choice', async () => {
-  const html = settingControlHtml('theme', 'joyful-tiles');
   assert.ok(FOCUSABLE.split(',').map((x) => x.trim()).includes('button'), 'the controller\'s navigation collects buttons');
-  assert.equal(html.match(/<button /g).length, THEMES.length, 'every row a button');
-  assert.doesNotMatch(html, /disabled|tabindex="-1"[^>]*aria-checked="true"/);
+  for (const [name, themes] of THEME_LISTS) {
+    const html = settingControlHtml('theme', DEFAULT_THEME_ID, { themes });
+    assert.equal(html.match(/<button /g).length, themes.length, `${name}: every row a button`);
+    assert.doesNotMatch(html, /disabled|tabindex="-1"[^>]*aria-checked="true"/);
+  }
 
   const store = await loadedStore();
-  const applier = fakeApplier('joyful-tiles');
-  const list = themeList(['joyful-tiles', FIXTURE_ID]);
+  const applier = fakeApplier(DEFAULT_THEME_ID);
+  const list = themeList([DEFAULT_THEME_ID, FIXTURE_ID]);
   bindSettingControls([list.root], store, { theme: applier, themeSheet: async () => '' });
   const press = (row, key) => {
     let prevented = false;
@@ -748,7 +777,7 @@ test('each theme row is a native button the keyboard and the controller reach; U
     assert.equal(press(row, key), false, `${key} is left to the shell's focus move`);
   }
   assert.deepEqual(applier.calls, [], 'Up and Down pick nothing');
-  assert.deepEqual(checked(list), ['joyful-tiles']);
+  assert.deepEqual(checked(list), [DEFAULT_THEME_ID]);
   assert.equal(press(0, 'ArrowRight'), true, 'Right steps the choice');
   assert.deepEqual(applier.calls, [FIXTURE_ID]);
 });
@@ -767,7 +796,7 @@ test('the swatch reads its colours from the theme\'s own tokens, without applyin
 
 test('a bound theme list fills each swatch once its theme\'s stylesheet is fetched', async () => {
   const store = await loadedStore();
-  const list = themeList(['joyful-tiles', FIXTURE_ID]);
+  const list = themeList([DEFAULT_THEME_ID, FIXTURE_ID]);
   const fetched = [];
   let release;
   const gate = new Promise((r) => { release = r; });
@@ -775,12 +804,12 @@ test('a bound theme list fills each swatch once its theme\'s stylesheet is fetch
     theme: fakeApplier(),
     themeSheet: async (entry) => { fetched.push(entry.stylesheet); await gate; return read(entry.stylesheet); },
   });
-  assert.deepEqual(fetched, ['themes/joyful-tiles/theme.css', FIXTURE_THEME.stylesheet], 'each theme\'s own stylesheet');
+  assert.deepEqual(fetched, [DEFAULT_THEME.stylesheet, FIXTURE_THEME.stylesheet], 'each theme\'s own stylesheet');
   assert.deepEqual(list.rows[1].swatch.style.props, {}, 'nothing before the stylesheet arrives');
   release();
   await tick();
   await tick();
-  assert.deepEqual(list.rows[0].swatch.style.props, { background: swatchBackground(themeSwatchColors(read('themes/joyful-tiles/theme.css'), 'joyful-tiles')) });
+  assert.deepEqual(list.rows[0].swatch.style.props, { background: swatchBackground(themeSwatchColors(read(DEFAULT_THEME.stylesheet), DEFAULT_THEME_ID)) });
   assert.match(list.rows[1].swatch.style.props.background, /#1d2233/, 'the fixture\'s surface');
   assert.equal(swatchBackground({ '--color-ground': '#111111', '--color-ink': '#222222' }),
     'linear-gradient(90deg, #111111 0% 25%, transparent 25% 50%, transparent 50% 75%, #222222 75% 100%)', 'a stripe per token, in order, blank where undeclared');
@@ -792,14 +821,14 @@ test('a bound theme list fills each swatch once its theme\'s stylesheet is fetch
 
 test('picking a theme row applies it through the applier and saves it once the switch resolves', async () => {
   const store = await loadedStore();
-  const applier = fakeApplier('joyful-tiles');
+  const applier = fakeApplier(DEFAULT_THEME_ID);
   const changed = [];
-  const list = themeList(['joyful-tiles', FIXTURE_ID]);
+  const list = themeList([DEFAULT_THEME_ID, FIXTURE_ID]);
   bindSettingControls([list.root], store, { theme: applier, themeSheet: async () => '', onUserChange: (k) => changed.push(k) });
-  assert.deepEqual(checked(list), ['joyful-tiles'], 'the active theme selected');
+  assert.deepEqual(checked(list), [DEFAULT_THEME_ID], 'the active theme selected');
   list.rows[1].option.fire('click');
   assert.deepEqual(applier.calls, [FIXTURE_ID], 'the applier\'s setTheme, at once');
-  assert.equal(store.get('theme'), 'joyful-tiles', 'not saved before the switch resolves');
+  assert.equal(store.get('theme'), DEFAULT_THEME_ID, 'not saved before the switch resolves');
   applier.settle('ok');
   await tick();
   await tick();
@@ -810,34 +839,34 @@ test('picking a theme row applies it through the applier and saves it once the s
 
 test('a failed switch leaves the selection on the current theme and saves nothing', async () => {
   const store = await loadedStore();
-  const applier = fakeApplier('joyful-tiles');
-  const list = themeList(['joyful-tiles', FIXTURE_ID]);
+  const applier = fakeApplier(DEFAULT_THEME_ID);
+  const list = themeList([DEFAULT_THEME_ID, FIXTURE_ID]);
   bindSettingControls([list.root], store, { theme: applier, themeSheet: async () => '' });
   list.rows[1].option.fire('click');
   assert.deepEqual(checked(list), [FIXTURE_ID], 'the pick shows while the switch runs');
   applier.settle('fail');
   await tick();
   await tick();
-  assert.deepEqual(checked(list), ['joyful-tiles'], 'back on the current theme');
+  assert.deepEqual(checked(list), [DEFAULT_THEME_ID], 'back on the current theme');
   assert.equal(list.rows[0].option.tabIndex, 0, 'which is the tab stop again');
-  assert.equal(store.get('theme'), 'joyful-tiles');
+  assert.equal(store.get('theme'), DEFAULT_THEME_ID);
 });
 
 test('the theme list follows the active theme: a switch made elsewhere moves the selection', async () => {
   const store = await loadedStore();
   const applier = fakeApplier(FIXTURE_ID);
-  const list = themeList(['joyful-tiles', FIXTURE_ID]);
+  const list = themeList([DEFAULT_THEME_ID, FIXTURE_ID]);
   const unbind = bindSettingControls([list.root], store, { theme: applier, themeSheet: async () => '' });
   assert.deepEqual(checked(list), [FIXTURE_ID], 'the applier\'s active theme, whatever the store holds');
-  applier.setTheme('joyful-tiles');
+  applier.setTheme(DEFAULT_THEME_ID);
   applier.settle('ok');
   await tick();
-  assert.deepEqual(checked(list), ['joyful-tiles']);
+  assert.deepEqual(checked(list), [DEFAULT_THEME_ID]);
   unbind();
   applier.setTheme(FIXTURE_ID);
   applier.settle('ok');
   await tick();
-  assert.deepEqual(checked(list), ['joyful-tiles'], 'unbind stops following');
+  assert.deepEqual(checked(list), [DEFAULT_THEME_ID], 'unbind stops following');
 });
 
 test('the shell hands the Settings page the theme applier', () => {
@@ -866,7 +895,7 @@ test('Settings\' Back is the frame head\'s Main menu with its key hint, in view 
   assert.ok(page.indexOf('id="settings-back"') < page.indexOf('id="settings-body"'), 'the head comes before the body');
   const css = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
   assert.doesNotMatch(css, /#settings-actions|#settings \{[^}]*scroll-padding/, 'no sticky row of its own: the frame keeps its head in view');
-  assert.doesNotMatch(read('themes/joyful-tiles/theme.css'), /#settings-actions/);
+  for (const t of THEMES) assert.doesNotMatch(read(t.stylesheet), /#settings-actions/, `${t.id} adds no row either`);
   assert.match(css, /#settings-frame \{ width: 1640px; height: 100%; \}/, 'the window at the canvas\'s size, bounded by the backdrop');
   assert.match(read('js/ui.js'), /for \(const id of \[[^\]]*'settings'[^\]]*\]\) showKeyHints\(/, 'its key hint follows the active device');
 });
@@ -966,7 +995,7 @@ test('in a browser: Settings from the menu, the theme list with its swatches, an
     const theme = () => ms(() => document.documentElement.getAttribute('data-theme'));
     const setting = (key) => ms((k) => globalThis.__ms.settings.get(k), key);
 
-    assert.equal(await theme(), 'joyful-tiles');
+    assert.equal(await theme(), DEFAULT_THEME_ID);
     await page.click('#menu-entry-settings');
     assert.equal(await mode(), 'settings');
     assert.equal(await active(), 'set-lookSensitivity', 'the declared default focus');
@@ -996,17 +1025,21 @@ test('in a browser: Settings from the menu, the theme list with its swatches, an
     // from its theme's tokens once the stylesheet is fetched; a pick of a row applies and saves it.
     const rows = () => ms(() => [...document.querySelectorAll('#set-theme .ui-segmented__option')]
       .map((o) => [o.dataset.value, o.textContent, o.getAttribute('aria-checked')]));
-    assert.deepEqual(await rows(), [['joyful-tiles', 'Joyful tiles', 'true']]);
-    await page.waitForFunction(() => getComputedStyle(document.querySelector('#set-theme .ui-segmented__swatch')).backgroundImage.includes('gradient'),
-      null, { timeout: patience(5000) });
-    assert.match(await ms(() => getComputedStyle(document.querySelector('#set-theme .ui-segmented__swatch')).backgroundImage), /^linear-gradient\(90deg, rgb\(255, 246, 232\) 0%/, 'the ground colour first');
-    assert.ok(await ms(() => document.querySelector('#set-theme .ui-segmented__swatch').getBoundingClientRect().width) > 0, 'the swatch is drawn');
-    await page.click('#set-theme [data-value="joyful-tiles"]');
-    assert.equal(await theme(), 'joyful-tiles');
-    assert.equal(await setting('theme'), 'joyful-tiles');
-    await page.focus('#set-theme [data-value="joyful-tiles"]');
+    const shipped = THEMES.map((t) => [t.id, t.name, String(t.id === DEFAULT_THEME_ID)]);
+    assert.deepEqual(await rows(), shipped);
+    const defaultRow = `#set-theme [data-value="${DEFAULT_THEME_ID}"]`;
+    const defaultSwatch = `${defaultRow} .ui-segmented__swatch`;
+    await page.waitForFunction((sel) => getComputedStyle(document.querySelector(sel)).backgroundImage.includes('gradient'),
+      defaultSwatch, { timeout: patience(5000) });
+    const ground = themeSwatchColors(read(DEFAULT_THEME.stylesheet), DEFAULT_THEME_ID)['--color-ground'].match(/[0-9a-f]{2}/gi).map((h) => parseInt(h, 16));
+    assert.ok((await ms((sel) => getComputedStyle(document.querySelector(sel)).backgroundImage, defaultSwatch)).startsWith(`linear-gradient(90deg, rgb(${ground.join(', ')}) 0%`), 'the ground colour first');
+    assert.ok(await ms((sel) => document.querySelector(sel).getBoundingClientRect().width, defaultSwatch) > 0, 'the swatch is drawn');
+    await page.click(defaultRow);
+    assert.equal(await theme(), DEFAULT_THEME_ID);
+    assert.equal(await setting('theme'), DEFAULT_THEME_ID);
+    await page.focus(defaultRow);
     await page.keyboard.press('Enter');
-    assert.deepEqual(await rows(), [['joyful-tiles', 'Joyful tiles', 'true']], 'the keyboard picks a row too');
+    assert.deepEqual(await rows(), shipped, 'the keyboard picks a row too');
 
     // Keyboard: arrows on the slider and the segmented choice, Space on a toggle.
     await page.focus('#set-lookSensitivity');
@@ -1212,8 +1245,8 @@ test('in a browser, Reset all data turns a played profile back into a new player
     await Promise.all([page.waitForEvent('load'), page.click('#set-reset-yes')]);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
     assert.equal(await mode(), 'menu');
-    assert.equal(await ms(() => document.documentElement.getAttribute('data-theme')), 'joyful-tiles');
-    assert.equal(await ms(() => globalThis.__ms.settings.get('theme')), 'joyful-tiles');
+    assert.equal(await ms(() => document.documentElement.getAttribute('data-theme')), DEFAULT_THEME_ID);
+    assert.equal(await ms(() => globalThis.__ms.settings.get('theme')), DEFAULT_THEME_ID);
     assert.equal(await ms(() => globalThis.__ms.settings.get('camera')), 'fly');
     assert.equal(await ms(() => globalThis.__ms.settings.get('lookSensitivity')), 1, 'every setting at its default: nothing carried over');
     assert.equal(await ms(() => document.querySelector('[data-entry][data-last]')), null, 'no Last played mark');
