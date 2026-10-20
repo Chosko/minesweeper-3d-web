@@ -819,7 +819,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against tasks 175, 176, 177, 180, which edit the same files; replaced by step 73.
 
-## [~] 73. Implement task 182 — Classic 2D tiles drawn from the active theme's board module
+## [x] 73. Implement task 182 — Classic 2D tiles drawn from the active theme's board module
 
 Depends on: 3, 69, 72
 
@@ -829,6 +829,8 @@ Context:
 ```prompt
 /task-implement 182 --review
 ```
+
+Done: 2026-10-20, commit `abbafb7` (33 files, +932/-518). Boards gain a `gap` and `pitch` (tile + gap); fit, replay samples and pointer maths count in pitches, so Joyful boards are slightly smaller and Expert scrolls at 1366 × 650. The frame is a new kit component `ui-board-frame`. Premise wrong: the fidelity tests could not pass unchanged — their measurement helpers moved onto the pitch (assertions unchanged).
 
 ## [x] 27. Implement task 183 — 3D cubes, numbers and sky drawn from the active theme's board module
 
@@ -842,11 +844,12 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against tasks 158, 164, 180, 182, which edit the same files; replaced by step 74.
 
-## [ ] 74. Implement task 183 — 3D cubes, numbers and sky drawn from the active theme's board module
+## [~] 74. Implement task 183 — 3D cubes, numbers and sky drawn from the active theme's board module
 
 Depends on: 3, 72, 73
 
-Context: none
+Context:
+- 2026-10-20 (from step 73): the Classic 2D tiles no longer read the `--color-tile-*` tokens or `--color-number-8`; they are still declared in the theme and pinned by `tests/tokens.test.mjs` (its `SKIN_KEPT` comment is now stale) — retire them here if this task edits those files. The board art hand-off lives in `js/shell/board-art.js`; the fixture theme `fixture-dusk` has a complete board module.
 
 ```prompt
 /task-implement 183 --review
@@ -888,12 +891,13 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against tasks 172, 176, which edit the same files; replaced by step 76.
 
-## [ ] 76. Implement task 185 — Classic 2D cell motion: motion layer and event sources
+## [~] 76. Implement task 185 — Classic 2D cell motion: motion layer and event sources
 
 Depends on: 73, 75
 
 Context:
 - 2026-10-19 (from step 75): `MOTION_CAP` (256) was measured on a stand-in 2D motion layer with `dev/measure-cell-motion.mjs`; the player has an injectable `now()` clock, and a `null` description or a cell past the cap drops any running animation on that cell.
+- 2026-10-20 (from step 73): Classic 2D boards have a `gap` and a `pitch` (tile + gap); a cell's slot is its tile plus the gap after it, and replay samples, `boardPoint` and `pointerPixel` count in pitches. The cursor ring is drawn inside its tile.
 
 ```prompt
 /task-implement 185 --review
@@ -951,6 +955,7 @@ Depends on: 24, 71, 72, 73, 74, 75, 76, 77, 78
 
 Context:
 - 2026-10-19 (from step 6): `.claude/domain/features/theme-system.md` records the placeholder board module and the to-do board-check test; remove those two sentences once `themed-board-art-and-motion` replaces them.
+- 2026-10-20 (from step 73): context files `classic2d-tile-skin.md`, `classic2d-board-view.md` and `app-shell-kit.md` still describe the pre-module design; also document the pitch units in `js/replay/sampler-2d.js` and drop the `js/classic2d/tile-skin.js` comment claiming Expert fits 1024 px. `palette.faces2d.marked` is unused (the start cell is still a `--color-success` ring).
 
 ```prompt
 /task-implement 187 --review
