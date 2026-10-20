@@ -51,7 +51,7 @@ Non-goals:
 
 - The 3D cube tiles. The recipe is shared; the 3D atlas, number colours
   and palette are `themed-board-art-and-motion`'s
-  ([rendering.md](../../context/rendering.md)).
+  ([rendering-board-art.md](../../context/rendering-board-art.md)).
 - Hexagonal and triangle tiles, and Surface tiles — deferred to `m6-launch`.
 - A colour-blind-safe number set, unless the base number colours already
   meet it — deferred to `m6-launch`.

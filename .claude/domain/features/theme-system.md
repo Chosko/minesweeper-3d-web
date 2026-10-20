@@ -102,7 +102,8 @@ It replaces the theme parts of `design-tokens-and-themes`, `screen-components`
 and `settings` as built in m1 (the token sheet, the theme applier and token
 reader, and the kit stylesheet: [app-shell-themes.md](../../context/app-shell-themes.md),
 [app-shell-kit.md](../../context/app-shell-kit.md),
-[settings.md](../../context/settings.md)).
+[settings.md](../../context/settings.md),
+[settings-appliers.md](../../context/settings-appliers.md)).
 
 - **Theme registry.** One module listing every theme, in catalogue order.
   It is the only place a theme is registered: the settings choice, the

@@ -73,7 +73,8 @@ bundler, Canvas 2D for Classic 2D and DOM screens in the game shell (see
   active theme and lets a consumer subscribe to theme changes. It reads the
   active theme's computed values rather than holding a second copy of them.
 - **Board module handed in.** The 3D renderer
-  ([rendering.md](../../context/rendering.md)) reads no token and never
+  ([rendering.md](../../context/rendering.md); its board module hand-off
+  [rendering-board-art.md](../../context/rendering-board-art.md)) reads no token and never
   subscribes to theme changes. The shell hands it the active theme's board
   module at start-up and on every theme change, from which it draws its
   sky, fog, clear colour, tiles and numbers —

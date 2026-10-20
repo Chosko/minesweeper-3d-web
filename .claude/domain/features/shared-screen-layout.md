@@ -176,8 +176,9 @@ Non-goals:
 Built within the recorded technical direction — plain DOM, static markup
 toggled by class, no framework (see
 [technical-direction.md](../technical-direction.md)); the current shell and
-kit are described in [app-shell.md](../../context/app-shell.md) and
-[app-shell-kit.md](../../context/app-shell-kit.md).
+kit are described in [app-shell.md](../../context/app-shell.md),
+[app-shell-kit.md](../../context/app-shell-kit.md) and
+[app-shell-kit-helpers.md](../../context/app-shell-kit-helpers.md).
 
 - **Kit additions.** Each new component is a documented markup pattern in
   the kit catalogue, with structure in the base stylesheet and every visual
