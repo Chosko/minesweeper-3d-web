@@ -844,7 +844,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against tasks 158, 164, 180, 182, which edit the same files; replaced by step 74.
 
-## [~] 74. Implement task 183 — 3D cubes, numbers and sky drawn from the active theme's board module
+## [x] 74. Implement task 183 — 3D cubes, numbers and sky drawn from the active theme's board module
 
 Depends on: 3, 72, 73
 
@@ -854,6 +854,8 @@ Context:
 ```prompt
 /task-implement 183 --review
 ```
+
+Done: 2026-10-20, commit `82548ed` (15 files, +375/-407). The renderer takes the module through `setBoard(board)` via the board art hand-off, so the 3D scene, like Classic 2D, waits for the number font; the unread `--color-tile-*` tokens, `--color-number-8` and `--color-scene-*` are retired (the scene panel now reads `--color-panel-*`).
 
 ## [x] 28. Implement task 184 — Cell motion player
 
@@ -915,13 +917,14 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against tasks 172, 177, which edit the same files; replaced by step 77.
 
-## [ ] 77. Implement task 186 — 3D cell motion: motion mesh, event sources and the solved pulse as a cell event
+## [~] 77. Implement task 186 — 3D cell motion: motion mesh, event sources and the solved pulse as a cell event
 
 Depends on: 74, 75
 
 Context:
 - 2026-10-19 (from step 72): the board module writes the solved pulse's "toward white" 25 % / 45 % as brightness ×1.25 / ×1.45, which saturates a number glyph rather than whitening it; handle this when replaying the pulse.
 - 2026-10-19 (from step 75): `MOTION_CAP` (256) was measured on a stand-in 3D mesh; re-run `node dev/measure-cell-motion.mjs` against the real motion mesh and adjust the cap if the 3D side is heavier than the stand-in.
+- 2026-10-20 (from step 74): the renderer takes the board module through `setBoard(board)` (atlas, sky, fog, clear colour, selection outline, start-cell tint); the atlas gains a sunk-face layer `L_SUNK` at the end; the end waves and flag flash still mix toward white per J-3DSheet.
 
 ```prompt
 /task-implement 186 --review
@@ -956,6 +959,7 @@ Depends on: 24, 71, 72, 73, 74, 75, 76, 77, 78
 Context:
 - 2026-10-19 (from step 6): `.claude/domain/features/theme-system.md` records the placeholder board module and the to-do board-check test; remove those two sentences once `themed-board-art-and-motion` replaces them.
 - 2026-10-20 (from step 73): context files `classic2d-tile-skin.md`, `classic2d-board-view.md` and `app-shell-kit.md` still describe the pre-module design; also document the pitch units in `js/replay/sampler-2d.js` and drop the `js/classic2d/tile-skin.js` comment claiming Expert fits 1024 px. `palette.faces2d.marked` is unused (the start cell is still a `--color-success` ring).
+- 2026-10-20 (from step 74): `.claude/context/rendering.md`, `app-shell-kit.md` and `INDEX.md` still describe `setScenePalette` and the unthemed atlas; the renderer now has `setBoard(board)` and the atlas gains an `L_SUNK` layer at the end.
 
 ```prompt
 /task-implement 187 --review
