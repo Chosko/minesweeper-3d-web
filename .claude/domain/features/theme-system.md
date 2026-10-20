@@ -62,7 +62,9 @@ In scope (m2b-themes):
 - **Conformance tests** — every registered theme passes them; a theme that
   fails is not a theme.
 - **The component gallery per theme** — the development gallery renders
-  every component in every state under any registered theme.
+  every component in every state under any registered theme, every part
+  the canvas's components artboard draws and the Settings theme list
+  among them.
 
 Non-goals:
 
@@ -176,8 +178,10 @@ reader, and the kit stylesheet: [app-shell-themes.md](../../context/app-shell-th
   Records history chart): it reads the active theme's computed tokens and
   notifies on theme change. Board renderers read the board module instead.
 - **Settings theme list.** The Settings page's Theme section becomes a list
-  of the registry's themes in catalogue order, each with its name and a
-  small swatch drawn from its tokens, the active one selected. Picking one
+  of the registry's themes in catalogue order, each a separate raised card
+  with its name and a small striped swatch drawn from its tokens (ground,
+  head, accent fill, blue and teal), the active one in the selected look
+  with a check. Picking one
   applies it at once. The list reads the registry, so a theme added by the
   skill appears with no change to the page.
 - **Conformance tests.** Run for every registered theme, in the ordinary
@@ -202,8 +206,11 @@ reader, and the kit stylesheet: [app-shell-themes.md](../../context/app-shell-th
   exercises the run-time switch.
 - **Component gallery.** The development gallery takes a theme from the
   registry (a picker and a query parameter), renders every component in
-  every state and every decoration slot under it, and is what the theme
-  skill screenshots for comparison with the artboards.
+  every state and every decoration slot under it, with no part overlapping
+  another, and is what the theme skill screenshots for comparison with the
+  artboards. It shows every part the canvas's components artboard draws,
+  and keeps the parts the artboard does not draw as kit coverage; the kit
+  catalogue lists every part the gallery shows.
 
 ## Data and state
 
