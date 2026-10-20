@@ -4,7 +4,8 @@
 
 The component kit's behaviour (`js/ui/components.js`): the counter formats,
 the binders of sliders, segmented choices, tabs, the one selected control,
-key hints, the pager, the code chip and the figures panel. The catalogue
+key hints, the pager, the icon set with the button's leading icon, the code
+chip and the figures panel. The catalogue
 those binders follow is [app-shell-kit.md](app-shell-kit.md).
 
 | File | Responsibility |
@@ -49,6 +50,19 @@ those binders follow is [app-shell-kit.md](app-shell-kit.md).
   pages and Last (`data-page`), the current page `aria-current="page"` and
   `aria-disabled` (still focusable, so a pager button that becomes disabled
   hands focus to it).
+- The icon set: `ICONS` (frozen, name → `{stroke, shapes: [[tag, attrs],
+  …]}`), the kit's one source of the canvas's stroke icons on a 24 px grid,
+  each drawn in `currentColor`; the catalogue head in `css/components.css`
+  names them. `iconMarkup(name)` (svg text), `createIcon(doc, name)` (an
+  `svg.ui-icon[data-icon]`, `aria-hidden`, in the SVG namespace) — an
+  unknown name throws. The leading-icon slot:
+  `setButtonIcon(button, name | null)` puts the icon before the label (or
+  removes it); `applyIcons(root)` draws the icon of every
+  `.ui-button[data-icon]` in markup that has none yet;
+  `createButton(doc, {label, icon?, variant?, size?, iconOnly?})` builds a
+  kit button. How an icon and its button are named is
+  [app-shell-kit.md](app-shell-kit.md)'s. Nothing in the game
+  calls `applyIcons` until a screen's markup carries `data-icon`.
 - The code chip (`.ui-code`, `ui-code--compact` in a table row):
   `boardLink(code, location)` → `<origin><path>#board=<code>`;
   `copyBoardCode({kind, code, clipboard, location, select, toast})` →

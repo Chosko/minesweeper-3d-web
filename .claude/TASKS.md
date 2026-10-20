@@ -1071,7 +1071,7 @@ Feature: shared-screen-layout
 
 ## 220. Kit icon set and leading-icon slot
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/ui/components.js, js/ui/kit-catalogue.js, css/components.css, dev/components.html, tests/components.test.mjs, .claude/context/app-shell-kit.md
 Preconditions: 218

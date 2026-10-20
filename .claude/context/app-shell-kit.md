@@ -14,7 +14,7 @@ screens' markup in `index.html` and the shell stylesheet are
 | ---- | -------------- |
 | `css/components.css` | the component kit's structure (base stylesheet): `ui-*` classes, layout, sizes, the hidden default of every decoration slot; its head comment is the catalogue (element, role, accessible name, markup pattern, states, focus contract, screens built from them) |
 | `js/ui/kit-catalogue.js` | the kit catalogue as data (DOM-free): every component and composition, its parts, each interactive part's states as the selectors a theme styles, its decoration slots; `CONTRAST_ROLES`; `REQUIRED_TOKENS`, the token set every theme declares |
-| `dev/components.html` | the kit gallery (development only): every catalogued component in every state (`data-force` previews) and every decoration slot, the overlay bar, the counters and the figures panel (with and without its progress bar and pace row, and with its head bar), the results layout `#g-results`, under the theme picked in `#g-theme` or named by `?theme=<id>` (unknown → the default) |
+| `dev/components.html` | the kit gallery (development only): every catalogued component in every state (`data-force` previews) and every decoration slot, the icon set and a button of each size with its icon, the overlay bar, the counters and the figures panel (with and without its progress bar and pace row, and with its head bar), the results layout `#g-results`, under the theme picked in `#g-theme` or named by `?theme=<id>` (unknown → the default) |
 
 ## PUBLIC API
 
@@ -47,7 +47,8 @@ optional, and `digits`; `data-negative` below zero), `ui-counter-strip`
 `ui-figure` (`label`, `value`, `detail`, `bar`, `fill`; variant
 `ui-figure--progress`) and the figures panel `ui-figures` (`head`,
 `title`, `action` — the optional head bar —, `body`, `foot` with the
-controls reminder, `live`).
+controls reminder, `live`); and the icon `ui-icon`, a composition the
+control around it inks.
 
 ## INTERNAL PATTERNS
 
@@ -82,6 +83,18 @@ controls reminder, `live`).
   ([app-shell-ui.md](app-shell-ui.md)).
   `data-force` previews a state (gallery only). Only the selected segmented
   option is in the Tab order.
+- **The icon set and the leading-icon slot.** Every icon comes from one
+  source, `ICONS` in `js/ui/components.js`
+  ([app-shell-kit-helpers.md](app-shell-kit-helpers.md)), the canvas's
+  stroke icons path for path, drawn in `currentColor` so the button's ink
+  colours them. A button's icon sits before its label, set off by the
+  button's gap; the slot's sizes by button size (sm and md, lg, a code
+  chip's buttons) are the base's `.ui-icon` rules. The icon is
+  `aria-hidden` and the label stays the name; an icon-only button carries
+  `aria-label`. The helpers that draw an icon into a button are
+  [app-shell-kit-helpers.md](app-shell-kit-helpers.md)'s. The icons already
+  in `index.html` (Restart, Pause, Swap clicks) are inline svg outside the
+  set.
 - **The slider's fill.** The theme draws a slider's track filled from its
   start to the thumb by `--slider-fill`, which the kit's fill updater
   (`bindSliderFill`, [app-shell-kit-helpers.md](app-shell-kit-helpers.md))

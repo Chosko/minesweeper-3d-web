@@ -290,6 +290,9 @@ export const KIT_CATALOGUE = Object.freeze([
   composition('ui-options'),
   composition('ui-key-hints'),
   composition('ui-list'),
+  // The icon set's glyph (ICONS in js/ui/components.js), sized by the button's leading-icon slot. It
+  // draws in currentColor, so the control around it inks it and no theme rule of its own is needed.
+  composition('ui-icon'),
 ]);
 
 // The contrast contract's token roles: body text on each surface token at least 4.5:1, large text

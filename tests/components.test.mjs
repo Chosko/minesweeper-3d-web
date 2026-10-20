@@ -8,7 +8,7 @@ import {
   decimalsOf, formatSliderValue, segmentedTargetIndex, segmentedState,
   bindSlider, bindSliderFill, sliderFill, bindSegmented, bindTabs, initComponents, formatOverlayTime, formatMineCount, mineCounterDigits, pagerState, PAGER_WINDOW,
   boardLink, copyBoardCode, bindCodeChip, COPY_FALLBACK, COPIED, bindSelectOnHover, SELECT_ON_HOVER,
-  bindFiguresLive, LIVE_FIGURES_INTERVAL, bindFigures,
+  bindFiguresLive, LIVE_FIGURES_INTERVAL, bindFigures, ICONS, iconMarkup, createIcon, setButtonIcon, createButton, applyIcons,
 } from '../js/ui/components.js';
 import { KIT_CATALOGUE, REQUIRED_TOKENS } from '../js/ui/kit-catalogue.js';
 import { KEY_HINTS, keyHintKeys, reminderKeys } from '../js/settings/bindings.js';
@@ -78,7 +78,7 @@ const COMPONENTS = {
 };
 // Screen compositions: layout-only classes the screens are assembled with.
 const COMPOSITIONS = ['ui-screen', 'ui-row', 'ui-grid', 'ui-heading', 'ui-text', 'ui-actions', 'ui-stat-row', 'ui-columns',
-  'ui-mode-list', 'ui-options', 'ui-key-hints', 'ui-list'];
+  'ui-mode-list', 'ui-options', 'ui-key-hints', 'ui-list', 'ui-icon'];
 // The controls whose hover and focus are one selected state.
 const SELECTABLE = '.ui-button, .ui-menu__item, .ui-mode-entry, .ui-option';
 const STATES = ['hover', 'active', 'focus', 'disabled'];
@@ -1771,7 +1771,210 @@ test('in a browser, the gallery renders in Joyful tiles, with its fonts, and its
   }
 });
 
+// ---------------------------------------------------------------- the icon set and the leading-icon slot
 
+// The canvas's stroke icons, path for path (J-Components and the screens draw them).
+const CANVAS_ICONS = {
+  'arrow-left': [['path', { d: 'M19 12H5M11 6l-6 6 6 6' }]],
+  play: [['path', { d: 'M7 4l12 8-12 8z' }]],
+  pause: [['rect', { x: '6', y: '4', width: '4', height: '16', rx: '1' }], ['rect', { x: '14', y: '4', width: '4', height: '16', rx: '1' }]],
+  restart: [['path', { d: 'M3 12a9 9 0 1 0 3-6.7' }], ['path', { d: 'M3 4v5h5' }]],
+  refresh: [['path', { d: 'M21 12a9 9 0 1 1-3-6.7' }], ['path', { d: 'M21 4v5h-5' }]],
+  copy: [['rect', { x: '8', y: '8', width: '12', height: '12', rx: '2' }], ['path', { d: 'M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3' }]],
+  link: [['path', { d: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1' }], ['path', { d: 'M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1' }]],
+  chart: [['path', { d: 'M3 3v18h18' }], ['path', { d: 'M7 15l4-5 3 3 5-7' }]],
+  shuffle: [['path', { d: 'M3 6h4l10 12h4M3 18h4l3-3.6M14 9.6L17 6h4M18 3l3 3-3 3M18 15l3 3-3 3' }]],
+  grid: [['rect', { x: '3', y: '3', width: '18', height: '18', rx: '2' }], ['path', { d: 'M9 3v18M15 3v18M3 9h18M3 15h18' }]],
+  speaker: [['path', { d: 'M4 9h4l5-4v14l-5-4H4z' }], ['path', { d: 'M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12' }]],
+  camera: [['path', { d: 'M4 8h3l2-3h6l2 3h3v11H4z' }], ['circle', { cx: '12', cy: '13', r: '3.5' }]],
+  download: [['path', { d: 'M12 3v12M7 10l5 5 5-5M4 21h16' }]],
+  upload: [['path', { d: 'M4 20h16M12 16V4M7 9l5-5 5 5' }]],
+  trash: [['path', { d: 'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3' }]],
+  mouse: [['rect', { x: '6', y: '3', width: '12', height: '18', rx: '6' }], ['path', { d: 'M12 7v4' }]],
+  hand: [['path', { d: 'M8 13V5a1.5 1.5 0 0 1 3 0v6M11 11V4a1.5 1.5 0 0 1 3 0v7M14 11V5.5a1.5 1.5 0 0 1 3 0V14a7 7 0 0 1-7 7h-.5a6 6 0 0 1-4.6-2.2L3 16a1.6 1.6 0 0 1 2.4-2.1L8 16' }]],
+  cube: [['path', { d: 'M12 2l9 5v10l-9 5-9-5V7z' }], ['path', { d: 'M12 12l9-5M12 12v10M12 12L3 7' }]],
+  pin: [['path', { d: 'M9 3h6l-1 6 4 4H6l4-4z' }], ['path', { d: 'M12 13v8' }]],
+  check: [['path', { d: 'M5 12l5 5 9-10' }]],
+  info: [['circle', { cx: '12', cy: '12', r: '9' }], ['path', { d: 'M12 11v6M12 7.5v.5' }]],
+  warning: [['path', { d: 'M12 3l10 18H2z' }], ['path', { d: 'M12 10v5M12 18v.5' }]],
+};
+
+// A document of stub elements: enough of the DOM for the icon and button helpers under Node.
+function stubDocument() {
+  const doc = {};
+  const element = (ns, tag) => {
+    const el = {
+      namespaceURI: ns, localName: tag, ownerDocument: doc, attrs: {}, children: [], parentNode: null, textContent: '',
+      classList: { contains: (c) => (el.attrs.class ?? '').split(/\s+/).includes(c) },
+      setAttribute(k, v) { el.attrs[k] = String(v); },
+      getAttribute(k) { return el.attrs[k] ?? null; },
+      hasAttribute(k) { return k in el.attrs; },
+      removeAttribute(k) { delete el.attrs[k]; },
+      append(...nodes) { for (const n of nodes) { if (typeof n === 'string') { el.textContent += n; continue; } n.parentNode = el; el.children.push(n); } },
+      prepend(n) { n.parentNode = el; el.children.unshift(n); },
+      remove() { const p = el.parentNode; if (p) p.children.splice(p.children.indexOf(el), 1); el.parentNode = null; },
+      querySelector(sel) { return el.querySelectorAll(sel)[0] ?? null; },
+      querySelectorAll(sel) {
+        const out = [];
+        const match = (n) => (sel === ':scope > .ui-icon' ? n.parentNode === el && n.classList.contains('ui-icon') : sel === '.ui-button[data-icon]' ? n.classList.contains('ui-button') && 'data-icon' in n.attrs : false);
+        const walk = (n) => { for (const c of n.children) { if (match(c)) out.push(c); walk(c); } };
+        walk(el);
+        return out;
+      },
+      get firstChild() { return el.children[0] ?? null; },
+    };
+    Object.defineProperty(el, 'className', { get: () => el.attrs.class ?? '', set: (v) => { el.attrs.class = v; } });
+    Object.defineProperty(el, 'type', { get: () => el.attrs.type ?? '', set: (v) => { el.attrs.type = v; } });
+    Object.defineProperty(el, 'dataset', { get: () => new Proxy({}, { get: (_, k) => el.attrs[`data-${String(k)}`] }) });
+    return el;
+  };
+  doc.createElement = (tag) => element('http://www.w3.org/1999/xhtml', tag);
+  doc.createElementNS = (ns, tag) => element(ns, tag);
+  return doc;
+}
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+test('the icon set holds the canvas\'s stroke icons path for path, each drawn in currentColor on a 24 px grid', () => {
+  for (const [name, shapes] of Object.entries(CANVAS_ICONS)) {
+    assert.ok(ICONS[name], `the set holds ${name}`);
+    assert.deepEqual(ICONS[name].shapes.map(([tag, attrs]) => [tag, { ...attrs }]), shapes, `${name} is the canvas's, path for path`);
+  }
+  assert.ok(Object.isFrozen(ICONS) && Object.values(ICONS).every((i) => Object.isFrozen(i)), 'the set is frozen data');
+  for (const [name, icon] of Object.entries(ICONS)) {
+    assert.equal(icon.stroke, name === 'check' ? 3 : name === 'close' ? 2.6 : 2.3, `${name}'s stroke is the canvas's`);
+    const svg = iconMarkup(name);
+    assert.match(svg, /^<svg class="ui-icon" data-icon="[\w-]+" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="[\d.]+" stroke-linecap="round" stroke-linejoin="round">/, `${name} draws in currentColor`);
+    assert.doesNotMatch(svg, /#[0-9a-f]{3,8}\b|rgb|width="\d+px"/i, `${name} carries no colour of its own`);
+  }
+  assert.equal(iconMarkup('arrow-left'), '<svg class="ui-icon" data-icon="arrow-left" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>');
+  assert.throws(() => iconMarkup('nope'), /no icon named nope/);
+});
+
+test('createIcon builds an icon in the SVG namespace, hidden from assistive technology', () => {
+  const doc = stubDocument();
+  const svg = createIcon(doc, 'pause');
+  assert.equal(svg.namespaceURI, SVG_NS);
+  assert.equal(svg.localName, 'svg');
+  assert.deepEqual(svg.attrs, { class: 'ui-icon', 'data-icon': 'pause', 'aria-hidden': 'true', focusable: 'false', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2.3', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' });
+  assert.deepEqual(svg.children.map((c) => [c.namespaceURI, c.localName, c.attrs]), [
+    [SVG_NS, 'rect', { x: '6', y: '4', width: '4', height: '16', rx: '1' }],
+    [SVG_NS, 'rect', { x: '14', y: '4', width: '4', height: '16', rx: '1' }],
+  ]);
+  assert.throws(() => createIcon(doc, 'nope'), /no icon named nope/);
+});
+
+test('a button takes a leading icon before its label and keeps the label as its name; an icon-only button is named by aria-label', () => {
+  const doc = stubDocument();
+  const play = createButton(doc, { label: 'Play', icon: 'play', variant: 'primary', size: 'lg' });
+  assert.equal(play.localName, 'button');
+  assert.equal(play.type, 'button');
+  assert.equal(play.className, 'ui-button ui-button--primary ui-button--lg');
+  assert.equal(play.children[0].attrs['data-icon'], 'play', 'the icon leads');
+  assert.equal(play.children[0].attrs['aria-hidden'], 'true');
+  assert.equal(play.textContent, 'Play', 'the label is the name');
+  assert.equal(play.getAttribute('aria-label'), null, 'a labelled button needs no aria-label');
+  assert.equal(createButton(doc, { label: 'Records' }).className, 'ui-button ui-button--secondary', 'secondary md by default, no icon');
+  assert.equal(createButton(doc, { label: 'Records' }).children.length, 0);
+  const trash = createButton(doc, { label: 'Delete replay', icon: 'trash', variant: 'quiet', size: 'sm', iconOnly: true });
+  assert.equal(trash.getAttribute('aria-label'), 'Delete replay', 'an icon-only button is named');
+  assert.equal(trash.textContent, '', 'and shows no text');
+  assert.equal(trash.children.length, 1);
+  assert.throws(() => createButton(doc, { label: '', icon: 'trash', iconOnly: true }), /needs a label/);
+  // setButtonIcon replaces the leading icon, or removes it.
+  const swap = setButtonIcon(play, 'restart');
+  assert.equal(play.children.length, 1, 'one leading icon');
+  assert.equal(play.children[0], swap);
+  assert.equal(swap.attrs['data-icon'], 'restart');
+  assert.equal(setButtonIcon(play, null), null);
+  assert.equal(play.children.length, 0, 'no icon');
+  // applyIcons fills every .ui-button[data-icon] in markup, once.
+  const root = doc.createElement('div');
+  const marked = doc.createElement('button');
+  marked.className = 'ui-button ui-button--secondary';
+  marked.setAttribute('data-icon', 'chart');
+  marked.append('Records');
+  root.append(marked);
+  applyIcons(root);
+  applyIcons(root);
+  assert.deepEqual(marked.children.map((c) => c.attrs['data-icon']), ['chart'], 'its icon, once');
+  assert.equal(marked.textContent, 'Records');
+});
+
+test('the leading-icon slot: 18 px before the label with the button\'s 10 px gap, 24 px on a large button, 14 px on a code chip\'s buttons', () => {
+  const slot = (sel) => RULES.filter(([x]) => x === sel).map(([, b]) => b).join(';');
+  assert.match(slot('.ui-icon'), /flex:\s*none/);
+  assert.match(slot('.ui-icon'), /width:\s*18px;\s*height:\s*18px/);
+  assert.match(slot('.ui-button--lg > .ui-icon'), /width:\s*24px;\s*height:\s*24px/);
+  assert.match(slot('.ui-code .ui-button > .ui-icon'), /width:\s*14px;\s*height:\s*14px/);
+  assert.match(slot('.ui-button'), /gap:\s*10px/, 'the button\'s own gap sets the icon off its label');
+  assert.match(slot('.ui-button'), /align-items:\s*center/);
+  const head = RAW.match(/^\/\*([\s\S]*?)\*\//)[1];
+  assert.match(head, /ui-icon — the icon set/, 'the catalogue documents the icon set');
+  for (const name of Object.keys(ICONS)) assert.ok(head.includes(name), `the catalogue names ${name}`);
+  const icon = KIT_CATALOGUE.find((c) => c.name === 'ui-icon');
+  assert.ok(icon, 'the kit catalogue declares the icon');
+  assert.equal(icon.kind, 'composition', 'drawn in its control\'s ink, so no theme rule of its own');
+});
+
+test('the gallery shows the icon set, a button of each size with its icon, a code chip\'s icons and an icon-only button', () => {
+  assert.match(GALLERY, /import \{[^}]*\bICONS\b[^}]*\bapplyIcons\b[^}]*\} from '\.\.\/js\/ui\/components\.js'/, 'the gallery draws from the one icon source');
+  assert.ok(TAGS.some((t) => t.attrs.id === 'g-icon-set'), 'the set has its place');
+  const iconed = TAGS.filter((t) => hasClasses(t, '.ui-button') && t.attrs['data-icon']);
+  for (const [size, pred] of [['sm', (t) => hasClasses(t, '.ui-button--sm')], ['md', (t) => !hasClasses(t, '.ui-button--sm') && !hasClasses(t, '.ui-button--lg')], ['lg', (t) => hasClasses(t, '.ui-button--lg')]]) {
+    assert.ok(iconed.some(pred), `a ${size} button with an icon`);
+  }
+  const chip = section(GALLERY, '<!-- component: code chip -->', '<!-- /component: code chip -->');
+  assert.match(chip, /data-copy="code"[^>]*data-icon="copy"/, 'Copy carries the copy icon');
+  assert.match(chip, /data-copy="link"[^>]*data-icon="link"/, 'Copy link the link icon');
+  const only = iconed.filter((t) => t.attrs['data-icon'] === 'trash' && t.attrs['aria-label']);
+  assert.ok(only.length > 0, 'an icon-only button, named');
+});
+
+test('in a browser, the gallery\'s icons fill the slot: 18 px on sm and md, 24 px on lg, 14 px on a chip, in the button\'s ink and out of its name', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+    await page.goto(`${base}/dev/components.html`);
+    await page.evaluate(() => globalThis.galleryReady);
+    const got = await page.evaluate(() => {
+      const measure = (b) => {
+        const i = b.querySelector(':scope > .ui-icon');
+        const r = i.getBoundingClientRect();
+        const label = [...b.childNodes].find((n) => n.nodeType === 3 && n.textContent.trim());
+        const range = document.createRange();
+        if (label) range.selectNodeContents(label);
+        return {
+          w: r.width, h: r.height, first: b.firstElementChild === i, hidden: i.getAttribute('aria-hidden'),
+          stroke: getComputedStyle(i).stroke, ink: getComputedStyle(b).color,
+          gap: label ? Math.round(range.getBoundingClientRect().left - r.right) : null,
+        };
+      };
+      const pick = (sel) => measure(document.querySelector(sel));
+      return {
+        sm: pick('#g-icon-buttons .ui-button--sm[data-icon]'),
+        md: pick('#g-icon-buttons .ui-button[data-icon]:not(.ui-button--sm):not(.ui-button--lg):not([aria-label])'),
+        lg: pick('#g-icon-buttons .ui-button--lg[data-icon]'),
+        chip: pick('.ui-code [data-copy="code"]'),
+        only: { ...pick('#g-icon-buttons [aria-label][data-icon="trash"]'), name: document.querySelector('#g-icon-buttons [aria-label][data-icon="trash"]').getAttribute('aria-label') },
+        set: [...document.querySelectorAll('#g-icon-set .ui-icon')].map((i) => i.dataset.icon),
+      };
+    });
+    for (const [name, size] of [['sm', 18], ['md', 18], ['lg', 24], ['chip', 14], ['only', 18]]) {
+      const g = got[name];
+      assert.deepEqual([g.w, g.h], [size, size], `${name}: ${size} px icon`);
+      assert.ok(g.first, `${name}: the icon leads`);
+      assert.equal(g.hidden, 'true', `${name}: hidden from assistive technology`);
+      assert.equal(g.stroke, g.ink, `${name}: drawn in the button's ink`);
+      if (name !== 'only') assert.equal(g.gap, 10, `${name}: the button's 10 px gap before the label`);
+    }
+    assert.equal(got.only.name, 'Delete replay');
+    assert.deepEqual(got.set, Object.keys(ICONS), 'the gallery shows the whole set');
+  } finally {
+    await browser.close();
+  }
+});
 
 // ---------------------------------------------------------------- the shared layout's components
 

@@ -1,6 +1,7 @@
 // Behaviour helpers for the component kit (css/components.css): the slider's
 // value display and fill, the segmented choice's and the tabs' selection, the one selected control
-// under a moving mouse, the key hints, the figures panel's live part, the pager and the code chip. The logic is plain
+// under a moving mouse, the key hints, the figures panel's live part, the pager, the icon set with
+// the button's leading icon, and the code chip. The logic is plain
 // functions; the binders touch only the elements they are handed, so the
 // module needs no document and runs under Node with stub elements.
 
@@ -425,6 +426,120 @@ export function bindFiguresLive(panel, { interval = LIVE_FIGURES_INTERVAL } = {}
       held = null;
     },
   };
+}
+
+// ---------------------------------------------------------------- the icon set
+
+const icon = (stroke, ...shapes) => Object.freeze({
+  stroke,
+  shapes: Object.freeze(shapes.map(([tag, attrs]) => Object.freeze([tag, Object.freeze(attrs)]))),
+});
+const p = (d) => ['path', { d }];
+
+/**
+ * The kit's one icon source: the canvas's stroke icons on a 24 px grid, path for path, by name —
+ * { stroke (the stroke width), shapes: [[tag, attrs], …] }. Every icon draws in currentColor.
+ */
+export const ICONS = Object.freeze({
+  'arrow-left': icon(2.3, p('M19 12H5M11 6l-6 6 6 6')),
+  play: icon(2.3, p('M7 4l12 8-12 8z')),
+  pause: icon(2.3, ['rect', { x: '6', y: '4', width: '4', height: '16', rx: '1' }], ['rect', { x: '14', y: '4', width: '4', height: '16', rx: '1' }]),
+  restart: icon(2.3, p('M3 12a9 9 0 1 0 3-6.7'), p('M3 4v5h5')),
+  refresh: icon(2.3, p('M21 12a9 9 0 1 1-3-6.7'), p('M21 4v5h-5')),
+  'skip-back': icon(2.3, p('M6 5v14M19 5l-10 7 10 7z')),
+  'skip-forward': icon(2.3, p('M18 5v14M5 5l10 7-10 7z')),
+  copy: icon(2.3, ['rect', { x: '8', y: '8', width: '12', height: '12', rx: '2' }], p('M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3')),
+  link: icon(2.3, p('M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1'), p('M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1')),
+  chart: icon(2.3, p('M3 3v18h18'), p('M7 15l4-5 3 3 5-7')),
+  shuffle: icon(2.3, p('M3 6h4l10 12h4M3 18h4l3-3.6M14 9.6L17 6h4M18 3l3 3-3 3M18 15l3 3-3 3')),
+  grid: icon(2.3, ['rect', { x: '3', y: '3', width: '18', height: '18', rx: '2' }], p('M9 3v18M15 3v18M3 9h18M3 15h18')),
+  cube: icon(2.3, p('M12 2l9 5v10l-9 5-9-5V7z'), p('M12 12l9-5M12 12v10M12 12L3 7')),
+  film: icon(2.3, ['rect', { x: '3', y: '4', width: '18', height: '16', rx: '2' }], p('M3 9h18M3 15h18M8 4v16M16 4v16')),
+  trophy: icon(2.3, p('M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0z'), p('M7 6H4a2 2 0 0 0 0 4h3M17 6h3a2 2 0 0 1 0 4h-3')),
+  eye: icon(2.3, p('M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z'), ['circle', { cx: '12', cy: '12', r: '3' }]),
+  swap: icon(2.3, p('M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7')),
+  speaker: icon(2.3, p('M4 9h4l5-4v14l-5-4H4z'), p('M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12')),
+  camera: icon(2.3, p('M4 8h3l2-3h6l2 3h3v11H4z'), ['circle', { cx: '12', cy: '13', r: '3.5' }]),
+  download: icon(2.3, p('M12 3v12M7 10l5 5 5-5M4 21h16')),
+  upload: icon(2.3, p('M4 20h16M12 16V4M7 9l5-5 5 5')),
+  trash: icon(2.3, p('M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3')),
+  pin: icon(2.3, p('M9 3h6l-1 6 4 4H6l4-4z'), p('M12 13v8')),
+  mouse: icon(2.3, ['rect', { x: '6', y: '3', width: '12', height: '18', rx: '6' }], p('M12 7v4')),
+  hand: icon(2.3, p('M8 13V5a1.5 1.5 0 0 1 3 0v6M11 11V4a1.5 1.5 0 0 1 3 0v7M14 11V5.5a1.5 1.5 0 0 1 3 0V14a7 7 0 0 1-7 7h-.5a6 6 0 0 1-4.6-2.2L3 16a1.6 1.6 0 0 1 2.4-2.1L8 16')),
+  check: icon(3, p('M5 12l5 5 9-10')),
+  close: icon(2.6, p('M6 6l12 12M18 6L6 18')),
+  info: icon(2.3, ['circle', { cx: '12', cy: '12', r: '9' }], p('M12 11v6M12 7.5v.5')),
+  warning: icon(2.3, p('M12 3l10 18H2z'), p('M12 10v5M12 18v.5')),
+});
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+function iconOf(name) {
+  const found = Object.hasOwn(ICONS, name) ? ICONS[name] : null;
+  if (!found) throw new Error(`no icon named ${name}`);
+  return found;
+}
+
+// The svg element's attributes: the slot's class, hidden from assistive technology, the button's ink.
+const iconAttrs = (name, { stroke }) => [
+  ['class', 'ui-icon'], ['data-icon', name], ['aria-hidden', 'true'], ['focusable', 'false'], ['viewBox', '0 0 24 24'],
+  ['fill', 'none'], ['stroke', 'currentColor'], ['stroke-width', String(stroke)], ['stroke-linecap', 'round'], ['stroke-linejoin', 'round'],
+];
+
+/** The icon `name` as svg markup. */
+export function iconMarkup(name) {
+  const found = iconOf(name);
+  const attrs = (list) => list.map(([k, v]) => ` ${k}="${v}"`).join('');
+  return `<svg${attrs(iconAttrs(name, found))}>${found.shapes.map(([tag, a]) => `<${tag}${attrs(Object.entries(a))}/>`).join('')}</svg>`;
+}
+
+/** The icon `name` as an svg element of `doc`. */
+export function createIcon(doc, name) {
+  const found = iconOf(name);
+  const svg = doc.createElementNS(SVG_NS, 'svg');
+  for (const [k, v] of iconAttrs(name, found)) svg.setAttribute(k, v);
+  for (const [tag, attrs] of found.shapes) {
+    const shape = doc.createElementNS(SVG_NS, tag);
+    for (const [k, v] of Object.entries(attrs)) shape.setAttribute(k, v);
+    svg.append(shape);
+  }
+  return svg;
+}
+
+/**
+ * The leading-icon slot: puts the icon `name` before `button`'s label, replacing the icon it led
+ * with, or removes it (name null). The label stays the button's name. Returns the icon or null.
+ */
+export function setButtonIcon(button, name) {
+  for (const old of button.querySelectorAll(':scope > .ui-icon')) old.remove();
+  if (name === null || name === undefined) return null;
+  const svg = createIcon(button.ownerDocument, name);
+  button.prepend(svg);
+  return svg;
+}
+
+/** Fills every `.ui-button[data-icon]` under `root` that has no icon yet with its leading icon. */
+export function applyIcons(root) {
+  for (const button of root.querySelectorAll('.ui-button[data-icon]')) {
+    if (button.querySelector(':scope > .ui-icon')) continue;
+    setButtonIcon(button, button.getAttribute('data-icon'));
+  }
+}
+
+/**
+ * A kit button: createButton(doc, { label, icon?, variant ('primary' | 'secondary' (default) |
+ * 'quiet' | 'danger'), size ('sm' | 'lg'; none is md), iconOnly? }). The icon leads the label; an
+ * icon-only button shows no text and is named by aria-label.
+ */
+export function createButton(doc, { label, icon: name = null, variant = 'secondary', size = null, iconOnly = false }) {
+  if (iconOnly && !label) throw new Error('an icon-only button needs a label for its name');
+  const b = doc.createElement('button');
+  b.type = 'button';
+  b.className = `ui-button ui-button--${variant}${size ? ` ui-button--${size}` : ''}`;
+  if (iconOnly) b.setAttribute('aria-label', label);
+  else b.append(label);
+  if (name) setButtonIcon(b, name);
+  return b;
 }
 
 // ---------------------------------------------------------------- the code chip

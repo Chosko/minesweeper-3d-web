@@ -35,6 +35,9 @@
     .board-frame-demo .ui-board-frame { inset: 0; }
     #g-labels > * + *, #g-rows > * + * { margin-top: var(--space-4); }
     .message-demo { margin-top: var(--space-6); }
+    .icon-set { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: var(--space-3); margin: 0 0 var(--space-4); }
+    .icon-set figure { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); margin: 0; font-size: var(--font-size-sm); }
+    .icon-set .ui-icon { width: 24px; height: 24px; }
     /* the in-game components */
     .figures-row { align-items: stretch; margin-top: var(--space-6); }
     .figures-demo { width: 300px; min-height: 560px; }
@@ -250,8 +253,8 @@
     <section class="ui-card wide" aria-labelledby="g-code">
       <h2 class="ui-card__title" id="g-code">Code chip</h2>
       <div class="states">
-        <span class="state">Board code</span><div class="ui-code"><span class="ui-code__label">Board code</span><code class="ui-code__value">EN-20261011-184A</code><button type="button" class="ui-button ui-button--secondary" data-copy="code" aria-label="Copy the board code EN-20261011-184A">Copy</button><button type="button" class="ui-button ui-button--secondary" data-copy="link" aria-label="Copy the challenge link of board EN-20261011-184A">Copy link</button></div>
-        <span class="state">Compact, a table row's</span><div class="ui-code ui-code--compact"><code class="ui-code__value">8X8X8M40N-9C41D07A-292-1A7F</code><button type="button" class="ui-button ui-button--secondary" data-copy="code" aria-label="Copy the board code 8X8X8M40N-9C41D07A-292-1A7F">Copy</button><button type="button" class="ui-button ui-button--secondary" data-copy="link" aria-label="Copy the challenge link of board 8X8X8M40N-9C41D07A-292-1A7F">Copy link</button></div>
+        <span class="state">Board code</span><div class="ui-code"><span class="ui-code__label">Board code</span><code class="ui-code__value">EN-20261011-184A</code><button type="button" class="ui-button ui-button--secondary" data-copy="code" data-icon="copy" aria-label="Copy the board code EN-20261011-184A">Copy</button><button type="button" class="ui-button ui-button--secondary" data-copy="link" data-icon="link" aria-label="Copy the challenge link of board EN-20261011-184A">Copy link</button></div>
+        <span class="state">Compact, a table row's</span><div class="ui-code ui-code--compact"><code class="ui-code__value">8X8X8M40N-9C41D07A-292-1A7F</code><button type="button" class="ui-button ui-button--secondary" data-copy="code" data-icon="copy" aria-label="Copy the board code 8X8X8M40N-9C41D07A-292-1A7F">Copy</button><button type="button" class="ui-button ui-button--secondary" data-copy="link" data-icon="link" aria-label="Copy the challenge link of board 8X8X8M40N-9C41D07A-292-1A7F">Copy link</button></div>
       </div>
     </section>
     <!-- /component: code chip -->
@@ -388,6 +391,16 @@
         <span class="state">Toggle on</span><div><button type="button" class="ui-button ui-button--quiet ui-button--sm" aria-pressed="true">Show 3BV</button></div>
       </div>
     </section>
+    <section class="ui-card wide" aria-labelledby="g-icons">
+      <h2 class="ui-card__title" id="g-icons">Icon set and leading icon</h2>
+      <div class="icon-set" id="g-icon-set"></div>
+      <div class="states" id="g-icon-buttons">
+        <span class="state">Small</span><div><button type="button" class="ui-button ui-button--secondary ui-button--sm" data-icon="arrow-left">Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"><kbd class="ui-key-hint__key">Esc</kbd></span></button> <button type="button" class="ui-button ui-button--quiet ui-button--sm" data-icon="download">Export history (CSV)</button></div>
+        <span class="state">Medium</span><div><button type="button" class="ui-button ui-button--secondary" data-icon="chart">Records</button> <button type="button" class="ui-button ui-button--primary" data-icon="refresh">Retry</button></div>
+        <span class="state">Large</span><div><button type="button" class="ui-button ui-button--primary ui-button--lg" data-icon="play">Play again <span class="ui-key-hint" data-action="select" aria-hidden="true"><kbd class="ui-key-hint__key">Enter</kbd></span></button></div>
+        <span class="state">Icon only</span><div><button type="button" class="ui-button ui-button--quiet ui-button--sm" data-icon="trash" aria-label="Delete replay"></button></div>
+      </div>
+    </section>
     <section class="ui-card" aria-labelledby="g-messages">
       <h2 class="ui-card__title" id="g-messages">Toast and message card</h2>
       <div class="ui-toast" role="status" aria-live="polite"><svg class="ui-toast__icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg><span class="ui-toast__text">Settings could not be saved in this browser. They last until you close the page.</span></div>
@@ -458,7 +471,7 @@
   </div>
 
   <script type="module">
-    import { initComponents, bindSelectOnHover } from '../js/ui/components.js';
+    import { initComponents, bindSelectOnHover, ICONS, applyIcons, createIcon } from '../js/ui/components.js';
     import { THEMES } from '../js/themes/registry.js';
     import { themeApplier } from '../js/themes/applier.js';
     import { bindBoardArt } from '../js/shell/board-art.js';
@@ -483,6 +496,17 @@
       }
       return id;
     };
+
+    // The icon set, drawn from its one source, and every button's leading icon.
+    const set = document.getElementById('g-icon-set');
+    for (const name of Object.keys(ICONS)) {
+      const figure = document.createElement('figure');
+      const caption = document.createElement('figcaption');
+      caption.textContent = name;
+      figure.append(createIcon(document, name), caption);
+      set.append(figure);
+    }
+    applyIcons(document);
 
     initComponents(document);
     bindSelectOnHover(document);

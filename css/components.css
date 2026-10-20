@@ -10,7 +10,8 @@
    keeps a slider's fill in step with its value; bindSelectOnHover(root)
    moves focus to the button, menu entry, mode entry or board option the mouse
    moves over; showKeyHints(root, keysFor) fills the key hints;
-   bindFiguresLive(panel) writes a figures panel's live part).
+   bindFiguresLive(panel) writes a figures panel's live part;
+   applyIcons(root) draws each button's leading icon).
    js/ui/kit-catalogue.js declares the components below as data
    (classes, parts, states, decoration slots) and changes with this comment.
    Changing a class name or a markup pattern below is a breaking change for
@@ -87,6 +88,26 @@
    A button's key hint sits inside it after its text, out of its name:
      <span class="ui-key-hint" data-action="select" aria-hidden="true">
        <kbd class="ui-key-hint__key">Enter</kbd></span>
+
+   ui-icon — the icon set: the canvas's stroke icons, one source
+   (ICONS in js/ui/components.js): arrow-left, play, pause, restart,
+   refresh, skip-back, skip-forward, copy, link, chart, shuffle, grid,
+   cube, film, trophy, eye, swap, speaker, camera, download, upload,
+   trash, pin, mouse, hand, check, close, info, warning. Each draws in
+   currentColor, so it takes the ink of the control around it.
+     Element: <svg class="ui-icon" data-icon="<name>" aria-hidden="true"
+                focusable="false" viewBox="0 0 24 24" …>…</svg>
+     Role:    none (hidden from assistive technology)
+     Name:    none
+   A button's leading icon sits before its label, set off by the
+   button's gap: 18px on sm and md buttons, 24px on ui-button--lg, 14px on
+   a code chip's buttons. The label stays the button's name; an
+   icon-only button (the Records replays' delete) carries aria-label.
+   In markup a button names its icon, applyIcons(root) draws it:
+     <button type="button" class="ui-button ui-button--primary"
+       data-icon="play">Play</button>
+   A script builds one with createButton(doc, {label, icon, variant,
+   size, iconOnly}) or sets one with setButtonIcon(button, name).
 
    ui-menu — vertical menu list
      Element: <div class="ui-menu" role="group" aria-label="…">
@@ -985,6 +1006,11 @@
 .ui-button:disabled { cursor: not-allowed; }
 .ui-button--sm { min-height: 38px; padding: 7px 13px; font-size: 15px; }
 .ui-button--lg { min-height: 62px; padding: 15px 28px; font-size: var(--font-size-xl); }
+
+/* ---------- icon set: the leading-icon slot ---------- */
+.ui-icon { display: block; flex: none; width: 18px; height: 18px; }
+.ui-button--lg > .ui-icon { width: 24px; height: 24px; }
+.ui-code .ui-button > .ui-icon { width: 14px; height: 14px; }
 
 /* ---------- menu list ---------- */
 .ui-menu {
