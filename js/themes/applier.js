@@ -2,7 +2,8 @@
 // state, globalThis.msThemeBoot), imports the active theme's board module and hands it to its
 // subscribers — no renderer imports a theme directly — and switches themes with no unstyled or
 // half-applied frame: the new stylesheet, board module and fonts load first, and only then does the
-// root attribute flip, the old stylesheet go and the subscribers hear of it.
+// root attribute flip and the old stylesheet go; the fonts load once more, since removing a
+// stylesheet unloads every @font-face face in Chromium, and only then do the subscribers hear of it.
 //
 // createThemeApplier({ doc, boot, base?, importModule?, lookup?, onError? }) →
 //   current()                 the active theme id
@@ -70,11 +71,16 @@ export function createThemeApplier({
     }
   }
 
+  // Every font file `entry` declares, loaded.
+  function loadFonts(entry) {
+    const specs = entry.fonts.flatMap((f) => f.files.map((file) => `${file.style} ${file.weight} 1em "${f.family}"`));
+    return Promise.all(specs.map((spec) => doc.fonts.load(spec)));
+  }
+
   // The board module and the fonts of `entry`, loaded.
   async function prepare(entry) {
     const mod = await importModule(url(entry.boardModule));
-    const specs = entry.fonts.flatMap((f) => f.files.map((file) => `${file.style} ${file.weight} 1em "${f.family}"`));
-    await Promise.all(specs.map((spec) => doc.fonts.load(spec)));
+    await loadFonts(entry);
     return mod;
   }
 
@@ -97,6 +103,10 @@ export function createThemeApplier({
     activeLink = link;
     active = entry.id;
     board = mod;
+    // A stylesheet leaving the page makes Chromium rebuild every @font-face face, the new theme's
+    // too, unloaded: load them again (from the cache) before anyone hears of the switch. The theme
+    // is applied by now, so a failure here is reported, not undone.
+    try { await loadFonts(entry); } catch (e) { onError(e); }
     emit();
   }
 

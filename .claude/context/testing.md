@@ -107,9 +107,12 @@ Data beside the tests:
   confidence), cited by the reference profile's markers and the fidelity
   tests.
 - `tests/fixtures/themes/` — test-only themes, never in the registry's
-  `THEMES`: `fixture-theme.js` is the entry of `fixture-dusk/`, which the
-  run-time switch tests register with `registerTheme`; `broken-themes.js` lists the `broken/` themes, each one
-  defect the conformance checks must catch.
+  `THEMES`, which the run-time switch tests register with `registerTheme`:
+  `fixture-theme.js` holds the entry of `fixture-dusk/`, which declares no
+  fonts, and of `fixture-fonts/`, which declares two weights of a font
+  served from its own `fonts/` and borrows `fixture-dusk/`'s board module,
+  for the switch's font loading; `broken-themes.js` lists the `broken/`
+  themes, each one defect the conformance checks must catch.
 - `tests/fixtures/replays/` — recorded `.msrp` games listed in `index.json`,
   written only by `node dev/measure-replays.mjs --write-fixtures` when the
   format changes, never by a test.

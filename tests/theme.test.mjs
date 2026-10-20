@@ -309,8 +309,32 @@ test('a switch loads the stylesheet, imports the board module and loads its font
   assert.equal(applier.board(), handed[0]);
   log.length = 0;
   assert.equal(await applier.setTheme(THEME_ID), THEME_ID);
-  assert.equal(log.indexOf(`flip ${THEME_ID}`) > log.findIndex((l) => l.startsWith('font ')), true, 'the fonts load before the flip');
-  assert.deepEqual(log.slice(-2), [`remove ${FIXTURE_ID}`, `notify ${THEME_ID}`]);
+  const fonts = themeById(THEME_ID).fonts.flatMap((f) => f.files.map((file) => `font ${file.style} ${file.weight} 1em "${f.family}"`));
+  const flip = log.indexOf(`flip ${THEME_ID}`);
+  const removed = log.indexOf(`remove ${FIXTURE_ID}`);
+  assert.deepEqual(log.slice(0, flip).filter((l) => l.startsWith('font ')), fonts, 'every declared font file loads before the flip');
+  assert.equal(removed, flip + 1, 'the old sheet goes with the flip');
+  // A stylesheet leaving the page rebuilds the faces it declared unloaded in Chromium: the new
+  // theme's fonts load again before anyone hears of the switch.
+  assert.deepEqual(log.slice(removed + 1), [...fonts, `notify ${THEME_ID}`]);
+});
+
+test('fonts that fail to load again after the old sheet goes are reported, and the switch still completes', async () => {
+  const { applier, errors, notices, notice, root, sheets, doc } = applierOf();
+  await applier.start({ notice });
+  await applier.setTheme(FIXTURE_ID);
+  const load = doc.fonts.load;
+  let calls = 0;
+  const declared = themeById(THEME_ID).fonts.flatMap((f) => f.files).length;
+  doc.fonts.load = async (spec) => { if (++calls > declared) throw new Error('font failed'); return load(spec); };
+  let heard = null;
+  applier.onThemeChange((id) => { heard = id; });
+  assert.equal(await applier.setTheme(THEME_ID), THEME_ID);
+  assert.equal(root.getAttribute('data-theme'), THEME_ID);
+  assert.deepEqual(sheets(), [THEME_ID]);
+  assert.equal(heard, THEME_ID);
+  assert.deepEqual(notices, [], 'the theme is applied, so the player is told nothing');
+  assert.equal(errors.length, 1, 'the failure is reported once');
 });
 
 test('setTheme of the active theme, light, dark or an unknown id changes nothing', async () => {
@@ -484,6 +508,72 @@ test('in a browser, a switch between Joyful tiles and the fixture theme never sh
       const want = s.theme === THEME_ID ? TOKENS.get('--color-ink') : FIXTURE_TOKENS.get('--color-ink');
       assert.equal(s.ink, want, `${s.why}: the page is styled by ${s.theme}`);
     }
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, a switch leaves every font file the active theme declares loaded, drawn or not, across switches away and back', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 800, height: 600 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`${base}/dev/components.html`);
+    const result = await page.evaluate(async (fixturePath) => {
+      const { registerTheme, themeById } = await import('/js/themes/registry.js');
+      const { FONTS_FIXTURE_THEME } = await import(fixturePath);
+      const { themeApplier } = await import('/js/themes/applier.js');
+      registerTheme(FONTS_FIXTURE_THEME);
+      const applier = themeApplier();
+      await applier.start();
+      const root = document.documentElement;
+      const frames = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      // Every declared file's state once the switch's style changes have run: check() for its spec and
+      // the status of each FontFace in document.fonts matching its family, weight and style.
+      const fontsOf = async (id) => {
+        getComputedStyle(root).getPropertyValue('--color-ink');
+        await frames();
+        return themeById(id).fonts.flatMap((f) => f.files.map((file) => {
+          const spec = `${file.style} ${file.weight} 1em "${f.family}"`;
+          const faces = [...document.fonts].filter((face) => face.family.replace(/"/g, '') === f.family
+            && String(face.weight) === String(file.weight) && face.style === file.style);
+          return { spec, check: document.fonts.check(spec), statuses: faces.map((face) => face.status) };
+        }));
+      };
+      const steps = [];
+      for (const id of [FONTS_FIXTURE_THEME.id, 'joyful-tiles', FONTS_FIXTURE_THEME.id]) {
+        await applier.setTheme(id);
+        steps.push({ id, active: applier.current(), fonts: await fontsOf(id) });
+      }
+      // Text in a weight nothing on the page has drawn: "Fixture Sans" is used whatever the fallback
+      // named after it, so two different fallbacks measure the same.
+      const ctx = document.createElement('canvas').getContext('2d');
+      const width = (font) => { ctx.font = font; return ctx.measureText('Minesweeper 0123456789').width; };
+      const drawn = {
+        serif: width('800 40px "Fixture Sans", serif'),
+        mono: width('800 40px "Fixture Sans", monospace'),
+        bareSerif: width('800 40px serif'),
+        bareMono: width('800 40px monospace'),
+      };
+      return { steps, drawn };
+    }, '/tests/fixtures/themes/fixture-theme.js');
+
+    assert.deepEqual(result.steps.map((s) => s.active), ['fixture-fonts', THEME_ID, 'fixture-fonts']);
+    assert.equal(result.steps[0].fonts.length, 2, 'the fixture theme declares two weights');
+    for (const { id, fonts } of result.steps) {
+      for (const f of fonts) {
+        assert.ok(f.check, `${id}: document.fonts.check(${f.spec}) once the switch resolved`);
+        assert.ok(f.statuses.length > 0, `${id}: ${f.spec} has a FontFace`);
+        assert.ok(f.statuses.every((s) => s === 'loaded'), `${id}: every FontFace for ${f.spec} is loaded (${f.statuses})`);
+      }
+    }
+    const { drawn } = result;
+    assert.notEqual(drawn.bareSerif, drawn.bareMono, 'the two fallbacks measure differently');
+    assert.equal(drawn.serif, drawn.mono, 'the undrawn weight draws in the theme\'s font, with no fallback');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

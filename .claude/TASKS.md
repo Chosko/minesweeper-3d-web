@@ -1033,7 +1033,7 @@ Preconditions: 214
 
 ## 216. Theme switch keeps every font weight the new theme declares loaded in Chromium
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/themes/applier.js, tests/theme.test.mjs, tests/fixtures/themes/fixture-theme.js, tests/fixtures/themes/fixture-dusk/, .claude/context/app-shell-themes.md, .claude/context/testing.md
 Preconditions: 214

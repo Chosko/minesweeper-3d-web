@@ -90,9 +90,13 @@ getStyle, theme, dev?, log?})`.
   the settings store owns the preference.
 - **Switching.** `js/main.js` calls `start()` once. A switch appends the new
   stylesheet, imports its board module and loads its fonts
-  (`document.fonts.load`), and only then flips `data-theme`, removes the old
-  `<link>` and notifies; switches queue, each after the previous one
-  settles; `setTheme` of the active theme does nothing.
+  (`document.fonts.load`), and only then flips `data-theme` and removes the
+  old `<link>`. Removing a stylesheet makes Chromium rebuild every
+  `@font-face` face unloaded, so the switch loads every font file the new
+  theme declares again, from the cache, and only then notifies — a failure
+  of that second load goes to `onError` and the switch still completes.
+  Switches queue, each after the previous one settles; `setTheme` of the
+  active theme does nothing.
 - **Failure contract.** A non-default theme that fails at start-up falls
   back to the default and `notice(START_FALLBACK)` tells the player once (a
   toast in `js/main.js`); a failed switch keeps the current theme, rejects

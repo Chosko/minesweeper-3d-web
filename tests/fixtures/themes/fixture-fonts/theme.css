@@ -1,0 +1,11 @@
+/* Test-only theme, never shipped: the theme a run-time switch's font loading is exercised with. It
+   declares two weights of a font served from its own folder (Rubik's files, under the family name
+   "Fixture Sans" and Rubik's licence), and no rule uses either weight. The tests register it from
+   tests/fixtures/themes/fixture-theme.js. */
+@font-face { font-family: "Fixture Sans"; font-style: normal; font-weight: 500; font-display: swap; src: url("fonts/fixture-sans-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Fixture Sans"; font-style: normal; font-weight: 800; font-display: swap; src: url("fonts/fixture-sans-800-normal.woff2") format("woff2"); }
+
+:root[data-theme="fixture-fonts"] {
+  --color-ink: #2b1d0e;
+  --color-surface: #f4ead8;
+}
