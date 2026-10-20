@@ -15,7 +15,7 @@ Context: none
 
 Done: 2026-10-20, commit `b99a4b4` (13 files, +625/-399). Premise wrong: the slow tier is still not reliable — `render-3d-feedback`'s `[slow]` Ctrl-ghost test failed in both slow runs and `shell-focus-containment` timed out once, outside this task's files; only the classic2d mid-game theme-switch flake reproduced (fixed seed), the other two named theme-switch tests never failed and no product change was made for them.
 
-## [ ] 2. Implement task 215 — Settings page tests hold with more than one shipped theme
+## [x] 2. Implement task 215 — Settings page tests hold with more than one shipped theme
 
 Depends on: 1
 
@@ -25,7 +25,9 @@ Context: none
 /task-implement 215 --review
 ```
 
-## [ ] 3. Implement task 216 — Theme switch keeps every font weight the new theme declares loaded in Chromium
+Done: 2026-10-20, commit `c544e97` (4 files, +94/-58).
+
+## [~] 3. Implement task 216 — Theme switch keeps every font weight the new theme declares loaded in Chromium
 
 Depends on: 1
 
@@ -36,7 +38,7 @@ Context:
 /task-implement 216 --review
 ```
 
-## [ ] 4. Implement task 217 — UX-review scripts follow the current board-choice markup
+## [~] 4. Implement task 217 — UX-review scripts follow the current board-choice markup
 
 Depends on: 1
 
@@ -46,7 +48,7 @@ Context: none
 /task-implement 217 --review
 ```
 
-## [ ] 5. Implement task 218 — Kit buttons: md size, key hint ink, quiet variant, latched toggles, danger variant
+## [~] 5. Implement task 218 — Kit buttons: md size, key hint ink, quiet variant, latched toggles, danger variant
 
 Depends on: 1
 
