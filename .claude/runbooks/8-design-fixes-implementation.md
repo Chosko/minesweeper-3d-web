@@ -102,7 +102,7 @@ Context:
 
 Done: 2026-10-20, commit `788aeeb` (38 files, +594/-182). Decisions: `js/main.js` now calls `applyIcons(document.body)`; the Records delete confirmation keeps its `deleteMessage` wording; a board code from the other mode stays valid (only a refused code is invalid); the reset-failure line and `settings.md` changed together.
 
-## [~] 9. Implement task 222 — Kit surfaces: plain stat tile, muted panel, tables, pager, code chip
+## [x] 9. Implement task 222 — Kit surfaces: plain stat tile, muted panel, tables, pager, code chip
 
 Depends on: 5, 7
 
@@ -113,6 +113,8 @@ Context:
 ```prompt
 /task-implement 222 --review
 ```
+
+Done: 2026-10-20, commit `7aa48f0` (17 files, +465/-120). Decisions: the phone label-over-value stacking applies only to a `ui-table` without `thead`; a worse difference shows in muted ink (`results-screen.md` updated); `ui-code__label` styling is gone, so the Results and Daily chips' inline "Board code" label renders unstyled until tasks 237 and 229.
 
 ## [~] 10. Implement task 223 — Kit frames: head and foot steps, white action foot, message cards, scrims, status cards
 
@@ -190,7 +192,8 @@ Context:
 
 Depends on: 9, 10, 14, 15
 
-Context: none
+Context:
+- 2026-10-20 (from step 9): task 222 removed the `ui-code__label` styling, so the inline "Board code" label inside this screen's chip in `index.html` renders unstyled until this task moves it out as a section label.
 
 ```prompt
 /task-implement 229 --review
@@ -271,7 +274,8 @@ Context: none
 
 Depends on: 9, 10
 
-Context: none
+Context:
+- 2026-10-20 (from step 9): task 222 removed the `ui-code__label` styling, so the inline "Board code" label inside this screen's chip in `index.html` renders unstyled until this task moves it out as a section label.
 
 ```prompt
 /task-implement 237 --review
@@ -298,7 +302,7 @@ Context:
 /task-implement 239 --review
 ```
 
-## [ ] 27. Implement task 240 — Settings screen to the canvas
+## [~] 27. Implement task 240 — Settings screen to the canvas
 
 Depends on: 2, 6, 8
 
