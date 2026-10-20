@@ -40,7 +40,7 @@ Context:
 
 Done: 2026-10-20, commit `504b397` (10 files, +247/-14). Decision: the applier re-loads the new theme's declared fonts after removing the old stylesheet, and a failed re-load goes to the error handler without undoing the switch; `tests/components-pause.test.mjs`'s contrast test is flaky on the base too.
 
-## [~] 4. Implement task 217 — UX-review scripts follow the current board-choice markup
+## [x] 4. Implement task 217 — UX-review scripts follow the current board-choice markup
 
 Depends on: 1
 
@@ -49,6 +49,8 @@ Context: none
 ```prompt
 /task-implement 217 --review
 ```
+
+Done: 2026-10-20, commit `f167ac2` (48 files, +92/-92). Premise wrong: the hint list missed many scripts; every Classic 2D preset click now also clicks Play. Scripts still stall on drift no task covers yet: custom boards the game now refuses, and `#hint-h`, `#p-restart`, the 2D `#hud-pause` and a removed 3D preset.
 
 ## [~] 5. Implement task 218 — Kit buttons: md size, key hint ink, quiet variant, latched toggles, danger variant
 
@@ -110,7 +112,7 @@ Context: none
 /task-implement 223 --review
 ```
 
-## [ ] 11. Implement task 224 — Board module: 2D numbers, 2D end effect from the module, theme token cleanup
+## [~] 11. Implement task 224 — Board module: 2D numbers, 2D end effect from the module, theme token cleanup
 
 Depends on: 1
 
