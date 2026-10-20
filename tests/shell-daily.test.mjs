@@ -389,6 +389,46 @@ test('the shell routes the Daily screen, pre-generates when the menu shows and s
 
 // ---------------------------------------------------------------- in a browser
 
+test('in a browser, the Daily screen\'s Classic 2D preview is the whole board in its frame on the screen\'s body, with no scene panel behind it', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    // [width, height, the board's tile] per artboard (J-Daily-xl, -l, -m)
+    for (const [width, height, tile] of [[1920, 1080, 17], [1366, 768, 16], [1024, 768, 15]]) {
+      const page = await browser.newPage({ viewport: { width, height } });
+      await page.addInitScript(() => {
+        const get = HTMLCanvasElement.prototype.getContext;
+        HTMLCanvasElement.prototype.getContext = function (kind, ...rest) { return kind === 'webgl2' ? null : get.call(this, kind, ...rest); };
+      });
+      await page.goto(`${base}/index.html`);
+      await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
+      await page.click('#menu-entry-daily');
+      const got = await page.waitForFunction(() => {
+        const panel = document.getElementById('daily-preview');
+        const frame = panel.querySelector('[data-preview="daily"]:not([hidden]) > .ui-board-frame');
+        if (!frame || frame.classList.contains('hidden') || frame.getBoundingClientRect().width === 0) return null;
+        const r = frame.getBoundingClientRect();
+        const box = panel.getBoundingClientRect();
+        const style = getComputedStyle(panel);
+        return {
+          shows: panel.dataset.shows, background: style.backgroundImage, colour: style.backgroundColor, shadow: style.boxShadow,
+          inside: r.left >= box.left - 0.5 && r.right <= box.right + 0.5 && r.top >= box.top - 0.5 && r.bottom <= box.bottom + 0.5,
+          width: Math.round(r.width),
+        };
+      }).then((h) => h.jsonValue());
+      const label = `${width} × ${height}`;
+      assert.deepEqual([got.shows, got.background, got.colour, got.shadow], ['daily', 'none', 'rgba(0, 0, 0, 0)', 'none'], `${label}: no dark scene panel behind the board`);
+      assert.equal(got.inside, true, `${label}: the whole board in the panel`);
+      const at = Array.from({ length: 60 }, (_, i) => i + 1).find((x) => 30 * x + 31 * Math.round(x * 0.09) === got.width);
+      assert.ok(at && Math.abs(at - tile) <= 2, `${label}: the Expert board at about ${tile} px (${at})`);
+      await page.close();
+    }
+  } finally {
+    await browser.close();
+  }
+});
+
 test('in a browser, the menu pre-generates today\'s Expert, Daily plays it on the marked cell, and leaving it uses the day\'s attempt', async (t) => {
   const env = await suite.open(t);
   if (!env) return;

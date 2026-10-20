@@ -5,10 +5,11 @@
 //
 // Fit rule: the tile is the largest whole size at which the board fits the area left inside the
 // frame, at most the board scale's cap (tileCap) and never below MIN_TILE_SIZE (minTile, for a board
-// shown and not played: the main menu's preview fits whole at any tile). A board that fits
+// shown and not played: the main menu's preview fits whole at any tile). The board frame
+// (BOARD_FRAME) pads the board by the gap on every side, counted in the fit. A board that fits
 // is centred, frame and all, and never scrolls; one that does not keeps the minimum tile, fills the
-// area, starts at its top-left corner and scrolls (wheel, drag with the pan modifier, ensureVisible
-// for the cursor). Tiles sit one pitch apart — the tile plus the gap the skin's board module sets,
+// area inside the frame's fixed part with no gap padding — a viewport with no frame —, starts at its
+// top-left corner and scrolls (wheel, drag with the pan modifier, ensureVisible for the cursor). Tiles sit one pitch apart — the tile plus the gap the skin's board module sets,
 // a fraction of the tile rounded to whole pixels, none without one — inside the view rectangle
 // (layout.viewX, viewY, viewWidth, viewHeight), which is filled with the board module's ground (the
 // board background token while the skin has no module); the fit rule counts the gaps, and a cell's
@@ -38,9 +39,10 @@
 //               createTileSkin, whose hand-off callback lays the board out again and repaints it.
 //   token       the token reader's token(name); defaults to js/tokens.js.
 //   scale       a BOARD_SCALES value, DEFAULT_BOARD_SCALE when not given.
-//   frame       { top, right, bottom, left, minWidth } in CSS pixels: the room a page's frame
-//               takes around the view (minWidth the frame's smallest width); none by default.
-//               A function returning one is called again at every refit (resize, setScale).
+//   frame       { top, right, bottom, left, minWidth, gaps }: the room a page's frame takes around
+//               the view — a fixed part in CSS pixels, plus `gaps` of the module's gap on every side
+//               of a board that fits (BOARD_FRAME) —, minWidth the frame's smallest width; none by
+//               default. A function returning one is called again at every refit (resize, setScale).
 //   minTile     the fit rule's smallest tile, MIN_TILE_SIZE when not given; a smaller one lets a
 //               board that is shown and not played fit whole instead of scrolling.
 //   onLayout    (layout) → after every refit, the new layout.
@@ -60,7 +62,8 @@
 //   cellAt(x, y)         the cell under a canvas position in CSS pixels, or -1.
 //   cellRect(c)          { x, y, size } of a cell's tile in canvas CSS pixels.
 //   scroll, scrollTo(x, y), scrollBy(dx, dy), pan(dx, dy), wheel(event), ensureVisible(c)
-//   layout               boardLayout's: tile, gap and pitch (tile + gap) among the rest.
+//   layout               boardLayout's: tile, gap and pitch (tile + gap), the frame's inset and
+//                        radius (the module's frameRadius × the tile) among the rest.
 //   zoomRange            { min, max }: the touch zoom's tiles, MIN_TILE_SIZE to the fit-to-view tile
 //                        (the whole board in the area inside the frame), whichever is larger.
 //   boardPoint(x, y)     { u, v }: the board point under a canvas position, in pitches (cell c's
@@ -143,7 +146,10 @@ const PRESSED = 'pressed';
 const MARKED = 'marked';
 const LINE = 1;
 const PAGE = 2;
-const NO_FRAME = Object.freeze({ top: 0, right: 0, bottom: 0, left: 0, minWidth: 0 });
+const NO_FRAME = Object.freeze({ top: 0, right: 0, bottom: 0, left: 0, minWidth: 0, gaps: 0 });
+
+/** The board frame (the kit's ui-board-frame) every Classic 2D board sits in: the module's gap on every side. */
+export const BOARD_FRAME = Object.freeze({ gaps: 1 });
 
 /** The largest tile a board scale allows: TILE_CAP at 100 %, 1.25 × it at 125 %, none at Fit. */
 export function tileCap(scale = DEFAULT_BOARD_SCALE) {
@@ -157,17 +163,18 @@ export function gapPx(tile, gap = 0) {
   return gap > 0 ? Math.round(tile * gap) : 0;
 }
 
-/** How far n tiles of `tile` px and the gaps between them reach. */
-const spanOf = (n, tile, gap) => n * tile + (n - 1) * gapPx(tile, gap);
+/** How far n tiles of `tile` px and the gaps between them reach, plus `edges` more gaps (a frame's). */
+const spanOf = (n, tile, gap, edges = 0) => n * tile + (n - 1 + edges) * gapPx(tile, gap);
 
 /**
  * The largest whole tile size at which cols × rows, with the gaps between tiles (`gap`, a fraction
- * of the tile), fits width × height, at most `max` and never below `min`.
+ * of the tile) and `edges` more gaps along each axis (a frame padded by the gap), fits
+ * width × height, at most `max` and never below `min`.
  */
-export function fitTileSize(cols, rows, width, height, min = MIN_TILE_SIZE, max = Infinity, gap = 0) {
+export function fitTileSize(cols, rows, width, height, min = MIN_TILE_SIZE, max = Infinity, gap = 0, edges = 0) {
   let fit = Math.floor(Math.min(width / cols, height / rows));
   if (!Number.isFinite(fit)) return min;
-  while (fit > min && (spanOf(cols, fit, gap) > width || spanOf(rows, fit, gap) > height)) fit--;
+  while (fit > min && (spanOf(cols, fit, gap, edges) > width || spanOf(rows, fit, gap, edges) > height)) fit--;
   return Math.max(min, Math.min(max, fit));
 }
 
@@ -175,30 +182,40 @@ const frameOf = (frame) => ({ ...NO_FRAME, ...(frame ?? {}) });
 
 /**
  * Where the board sits in an area (the canvas): tile size, the gap between tiles (`gap` a fraction
- * of the tile) and the pitch, board size, the view rectangle it shows through — centred with its
- * frame when the board fits, the area inside the frame when it scrolls — the board's offsets (its
- * top-left corner at scroll 0) and the scroll range.
+ * of the tile) and the pitch, board size, the frame's inset on each side (`inset`: its fixed part,
+ * plus its gaps around a board that fits with them) and corner radius (`frameRadius` a fraction of
+ * the tile, in whole pixels), the view rectangle it shows through — centred with its frame when the board
+ * fits, the area inside the frame when it scrolls — the board's offsets (its top-left corner at
+ * scroll 0) and the scroll range.
  */
-export function boardLayout({ cols, rows, width, height, min = MIN_TILE_SIZE, max = Infinity, frame, gap = 0 }) {
+export function boardLayout({ cols, rows, width, height, min = MIN_TILE_SIZE, max = Infinity, frame, gap = 0, frameRadius = 0 }) {
   const f = frameOf(frame);
-  const availWidth = Math.max(0, width - f.left - f.right);
-  const availHeight = Math.max(0, height - f.top - f.bottom);
-  const tile = fitTileSize(cols, rows, availWidth, availHeight, min, max, gap);
+  const roomWidth = Math.max(0, width - f.left - f.right);
+  const roomHeight = Math.max(0, height - f.top - f.bottom);
+  const tile = fitTileSize(cols, rows, roomWidth, roomHeight, min, max, gap, 2 * f.gaps);
   const space = gapPx(tile, gap);
   const boardWidth = spanOf(cols, tile, gap);
   const boardHeight = spanOf(rows, tile, gap);
+  // The frame's gaps pad a board that fits with them; a board that does not scrolls with none.
+  const padded = space * f.gaps;
+  const pad = boardWidth + 2 * padded <= roomWidth && boardHeight + 2 * padded <= roomHeight ? padded : 0;
+  const inset = Object.freeze({ top: f.top + pad, right: f.right + pad, bottom: f.bottom + pad, left: f.left + pad });
+  const availWidth = Math.max(0, width - inset.left - inset.right);
+  const availHeight = Math.max(0, height - inset.top - inset.bottom);
   const maxScrollX = Math.max(0, boardWidth - availWidth);
   const maxScrollY = Math.max(0, boardHeight - availHeight);
   const viewWidth = Math.min(boardWidth, availWidth);
   const viewHeight = Math.min(boardHeight, availHeight);
-  const viewX = maxScrollX ? f.left : f.left + Math.floor((availWidth - viewWidth) / 2);
-  const viewY = maxScrollY ? f.top : Math.floor((height - viewHeight - f.top - f.bottom) / 2) + f.top;
+  const viewX = maxScrollX ? inset.left : inset.left + Math.floor((availWidth - viewWidth) / 2);
+  const viewY = maxScrollY ? inset.top : Math.floor((height - viewHeight - inset.top - inset.bottom) / 2) + inset.top;
   return Object.freeze({
     width,
     height,
     tile,
     gap: space,
     pitch: tile + space,
+    inset,
+    frameRadius: Math.round(frameRadius * tile),
     boardWidth,
     boardHeight,
     viewX,
@@ -214,13 +231,14 @@ export function boardLayout({ cols, rows, width, height, min = MIN_TILE_SIZE, ma
 }
 
 /**
- * The frame's rectangle around a layout's view, in canvas CSS pixels: the view widened by the frame
- * on each side, at least frame.minWidth wide (centred on the view) and never wider than the area.
+ * The frame's rectangle around a layout's view, in canvas CSS pixels: the view widened by the
+ * layout's frame inset on each side, at least frame.minWidth wide (centred on the view) and never
+ * wider than the area.
  */
 export function panelRect(layout, frame) {
-  const f = frameOf(frame);
+  const f = layout.inset ?? frameOf(frame);
   const natural = layout.viewWidth + f.left + f.right;
-  const width = Math.min(layout.width, Math.max(natural, f.minWidth));
+  const width = Math.min(layout.width, Math.max(natural, frameOf(frame).minWidth));
   const x = Math.max(0, Math.min(layout.width - width, layout.viewX - f.left - Math.floor((width - natural) / 2)));
   return { x, y: layout.viewY - f.top, width, height: layout.viewHeight + f.top + f.bottom };
 }
@@ -292,17 +310,18 @@ export function createBoardView({
   // it: the gap and corner radius as fractions of the tile, the ground and the cursor ring.
   const boardOf = () => skin?.board?.() ?? null;
   const gapOf = () => boardOf()?.style2d?.params?.gap ?? 0;
-  // The zoom range for an area: MIN_TILE_SIZE to the tile at which the whole board fits, either way round.
+  const frameRadiusOf = () => boardOf()?.style2d?.params?.frameRadius ?? 0;
+  // The zoom range for an area: MIN_TILE_SIZE to the tile at which the whole board fits in its frame, either way round.
   const rangeOf = (width, height) => {
-    const whole = Math.max(1, fitTileSize(cols, rows, width - f.left - f.right, height - f.top - f.bottom, 1, Infinity, gapOf()) || 1);
+    const whole = Math.max(1, fitTileSize(cols, rows, width - f.left - f.right, height - f.top - f.bottom, 1, Infinity, gapOf(), 2 * f.gaps) || 1);
     return { min: Math.min(MIN_TILE_SIZE, whole), max: Math.max(MIN_TILE_SIZE, whole) };
   };
   const clampTile = (tile, range) => Math.max(range.min, Math.min(range.max, Math.round(tile)));
   const fit = (width, height) => {
-    const gap = gapOf();
-    if (zoomTile === null) return boardLayout({ cols, rows, width, height, min: minTile, max: tileCap(scale), frame: f, gap });
+    const options = { cols, rows, width, height, frame: f, gap: gapOf(), frameRadius: frameRadiusOf() };
+    if (zoomTile === null) return boardLayout({ ...options, min: minTile, max: tileCap(scale) });
     zoomTile = clampTile(zoomTile, rangeOf(width, height));
-    return boardLayout({ cols, rows, width, height, min: zoomTile, max: zoomTile, frame: f, gap });
+    return boardLayout({ ...options, min: zoomTile, max: zoomTile });
   };
   // The skin first, so the first layout has its gap; a hand-off lays the board out again (its gap
   // may change) and repaints.
@@ -761,9 +780,37 @@ export function createBoardView({
 // a frame drawn behind the board) with the motion layer's canvas and then the ring layer's right
 // after it, over it at the same place and size and taking no input, sized on container resize and device pixel ratio change,
 // scrolled by the wheel and panned by dragging with PAN_MODIFIER held; onUserScroll() follows each
-// scroll the player made that way. Returns the view with destroy(), which removes the canvas and
-// every listener.
-export function mountBoardView({ container, grid, win = globalThis, onUserScroll = () => {}, ...options }) {
+// scroll the player made that way. While the board scrolls the container carries data-board-clipped
+// and its canvases are clipped to the view, rounded at the theme's --board-viewport-radius.
+// `framed`: the view mounts its own board frame — a ui-board-frame first in the container, laid out
+// in BOARD_FRAME unless `frame` is given, placed at panelRect with its corner radius
+// (--board-frame-radius) at every layout and hidden while the board scrolls.
+// Returns the view with destroy(), which removes what it added and every listener.
+export function mountBoardView({ container, grid, win = globalThis, onUserScroll = () => {}, framed = false, onLayout = () => {}, ...options }) {
+  let frameEl = null;
+  if (framed) {
+    frameEl = win.document.createElement('div');
+    frameEl.className = 'ui-board-frame hidden';
+    frameEl.setAttribute('aria-hidden', 'true');
+    container.prepend(frameEl);
+  }
+  const laidOut = (layout) => {
+    container.toggleAttribute('data-board-clipped', layout.scrolls);
+    if (frameEl) {
+      const rect = panelRect(layout);
+      Object.assign(frameEl.style, {
+        left: `${canvas.offsetLeft + rect.x}px`, top: `${canvas.offsetTop + rect.y}px`, width: `${rect.width}px`, height: `${rect.height}px`,
+      });
+      frameEl.style.setProperty('--board-frame-radius', `${layout.frameRadius}px`);
+      frameEl.classList.toggle('hidden', layout.scrolls);
+    }
+    // A clipped board's viewport is the view, rounded at the theme's --board-viewport-radius.
+    const clip = layout.scrolls
+      ? `inset(${layout.viewY}px ${layout.width - layout.viewX - layout.viewWidth}px ${layout.height - layout.viewY - layout.viewHeight}px ${layout.viewX}px round var(--board-viewport-radius, 0px))`
+      : '';
+    for (const c of [canvas, layer, overlay]) c.style.clipPath = clip;
+    onLayout(layout);
+  };
   const canvas = win.document.createElement('canvas');
   canvas.style.display = 'block';
   canvas.style.position = 'relative';
@@ -780,7 +827,7 @@ export function mountBoardView({ container, grid, win = globalThis, onUserScroll
   Object.assign(overlay.style, { display: 'block', position: 'absolute', pointerEvents: 'none' });
   layer.after(overlay);
   const frames = { request: (fn) => win.requestAnimationFrame(fn), cancel: (id) => win.cancelAnimationFrame(id) };
-  const view = createBoardView({ canvas, grid, layer, overlay, frames, ...options });
+  const view = createBoardView({ canvas, grid, layer, overlay, frames, ...options, frame: options.frame ?? (framed ? BOARD_FRAME : null), onLayout: laidOut });
 
   const fit = () => {
     const box = container.getBoundingClientRect();
@@ -846,6 +893,8 @@ export function mountBoardView({ container, grid, win = globalThis, onUserScroll
       canvas.remove();
       layer.remove();
       overlay.remove();
+      frameEl?.remove();
+      container.removeAttribute('data-board-clipped');
     },
   });
 }

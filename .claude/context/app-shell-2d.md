@@ -17,10 +17,10 @@ themselves are [classic2d.md](classic2d.md).
   board choice (loaded at boot by `mode2d.loadChoice()`); `show` routes to
   `classic-2d`, whose Back is `backGame`.
 - **Board area and panel.** The board area is `#c2d-board`; the board opens
-  at the `boardScale` setting (`scale`) inside the board's frame (`frame`,
-  `ui.panelFrame2D()`, measured at every refit). Each refit
-  places the panel through `layout` (`panelRect`, `ui.placePanel2D`) and
-  tells whether the board scrolls: the first clipped board shows the
+  at the `boardScale` setting (`scale`) inside the board frame (`frame`,
+  `BOARD_FRAME`). Each refit places the frame through `layout`
+  (`panelRect`, `ui.placePanel2D` with the layout's `frameRadius`; none on a
+  clipped board) and tells whether the board scrolls: the first clipped board shows the
   one-time scroll hint until dismissed or scrolled (`scrolled`), kept as
   `scrollHint` in `shell.firstUse` ([app-shell-help.md](app-shell-help.md)
   § First-use hints). A `boardScale` change reaches the open board and the

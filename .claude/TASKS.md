@@ -1141,7 +1141,7 @@ Feature: themed-board-art-and-motion
 
 ## 227. Board frame and framed previews
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: themes/joyful-tiles/theme.css, js/ui.js, js/shell/menu-preview.js, js/shell/daily.js, js/replay/viewer-2d.js, index.html, css/style.css, .claude/context/classic2d-board-view.md, .claude/context/replay-viewers.md
 Preconditions: 224

@@ -1187,9 +1187,11 @@
 }
 :root[data-theme="joyful-tiles"] .ui-board-frame {
   border-radius: var(--board-frame-radius);
-  background: var(--color-surface);
-  box-shadow: inset 0 0 0 2px var(--color-border), 0 var(--edge-md) 0 var(--color-edge), var(--elevation-1);
+  background: var(--color-board-frame);
+  box-shadow: inset 0 0 0 2px var(--color-border);
 }
+/* a board too large for its area scrolls in a rounded viewport, with no frame */
+:root[data-theme="joyful-tiles"] [data-board-clipped] { --board-viewport-radius: 14px; }
 :root[data-theme="joyful-tiles"] #hud-mines.negative { color: var(--color-danger); }
 
 /* the replay viewer: the recorded pointer and its trail, the press rings */

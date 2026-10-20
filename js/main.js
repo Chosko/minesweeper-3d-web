@@ -39,7 +39,7 @@ import { createResultsFlow } from './results/flow.js';
 import { createReplayLibrary } from './replay/library.js';
 import { createReplayViewer, createReplayView } from './replay/viewer.js';
 import { mountViewer2D } from './replay/viewer-2d.js';
-import { panelRect, mountBoardView } from './classic2d/board-view.js';
+import { panelRect, mountBoardView, BOARD_FRAME } from './classic2d/board-view.js';
 import { createViewer3D } from './replay/viewer-3d.js';
 import { REPLAY_SCREEN } from './records/replay-list.js';
 import { createResultsView, resultsContent, resultsEnter, LOOK_REFUSED } from './results/view.js';
@@ -624,16 +624,14 @@ function learnViews(shift, ctrl) {
 // its screens. The last board choice is a platform-storage document; the board's bests, which the
 // live figures compare against, are read from the records store once per game.
 const LAST_CHOICE_2D = createLastChoice({ storage });
-/** The board frame's corner radius at a tile size: the active board module's frame radius, a fraction of the tile. */
-const boardFrameRadius = (tile) => Math.round((BOARD_ART.current()?.board.style2d.params.frameRadius ?? 0) * tile);
 let bests2D = null;
 const FLOW_2D = {
   openBoardChoice: (choice) => SHELL.go('classic-2d-choice', { data: { choice } }),
   show: () => SHELL.go('classic-2d'),
   container: () => document.getElementById('c2d-board'),
   scale: () => SETTINGS.get('boardScale'),
-  frame: () => ui.panelFrame2D(),
-  layout: (layout) => { ui.placePanel2D(panelRect(layout, ui.panelFrame2D()), boardFrameRadius(layout.tile)); clipped2D(layout.scrolls); },
+  frame: () => BOARD_FRAME,
+  layout: (layout) => { ui.placePanel2D(layout.scrolls ? null : panelRect(layout), layout.frameRadius); clipped2D(layout.scrolls); },
   scrolled: () => scrolled2D(),
   hud: ({ seconds, minesLeft, clicks }) => ui.updateHud(seconds, minesLeft, clicks),
   figures: (input, { tick }) => ui.updateFigures2D(input, { tick, bests: bests2D }),
@@ -723,7 +721,7 @@ const DAILY_PREVIEW = bindMenuPreview({
   stage: document.getElementById('daily-preview-stage'),
   tag: document.getElementById('daily-preview-tag'),
   iconOf: (entry) => document.querySelector(`#menu-entry-${entry} .ui-mode-entry__icon > svg`),
-  mountBoard: ({ container, grid }) => mountBoardView({ container, grid, minTile: 1 }),
+  mountBoard: ({ container, grid }) => mountBoardView({ container, grid, minTile: 1, framed: true }),
   boardOf: () => {
     const daily = dailyPreview();
     return { key: daily.date, ...dailyBoard2D(daily) };
@@ -1268,7 +1266,7 @@ const MENU_PREVIEW = bindMenuPreview({
   stage: document.getElementById('menu-preview-stage'),
   tag: document.getElementById('menu-preview-tag'),
   iconOf: (entry) => document.querySelector(`#menu-entry-${entry} .ui-mode-entry__icon > svg`),
-  mountBoard: ({ container, grid }) => mountBoardView({ container, grid, minTile: 1 }),
+  mountBoard: ({ container, grid }) => mountBoardView({ container, grid, minTile: 1, framed: true }),
   boardOf: (kind) => {
     if (kind === 'board') return { key: 'demo', ...DEMO_2D };
     const daily = dailyPreview();

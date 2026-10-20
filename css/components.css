@@ -549,10 +549,13 @@
      Element: <div class="ui-board-frame" aria-hidden="true"></div>
      Role:    none (decoration)
      Name:    none
-     Layout:  placed by the shell around the board (absolute, at the
-              rectangle board-view.js panelRect gives); its corner radius
-              is --board-frame-radius, which the shell sets on it from the
-              board module's frame radius, so it scales with the tile.
+     Layout:  placed around the board (absolute, at the rectangle
+              board-view.js panelRect gives: the board padded by the
+              module's gap), by the shell in the game and by the board
+              view mounted framed elsewhere, hidden while the board
+              scrolls; its corner radius is --board-frame-radius, set on
+              it from the board module's frame radius, so it scales with
+              the tile.
 
    ui-divider — a rule between groups
      Element: <hr class="ui-divider">; between columns

@@ -21,7 +21,7 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
   `boardLine3D(s, {mines?})` (`"6 × 6 × 6 · 10 mines · no-guess"`),
   `boardLine2D` (`"30 × 16 · no-guess"`); Classic 2D's `boardTitle2D`
   (`"Classic 2D · Expert"`) and foot line `boardFoot2D`; 3D's `boardTitle3D`
-  (`"3D · Cube Intermediate"`) and `shortTitle3D` (`"3D"`); `PANEL_INSET`;
+  (`"3D · Cube Intermediate"`) and `shortTitle3D` (`"3D"`);
   `figuresLine` (re-exported).
 - `UI(cb)` — callbacks are named after the control they serve
   (`onMenuEntry`, `onBack`, `onReady*`, `onResume`, `onRestart`,
@@ -38,7 +38,7 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
     strip, help, hint strip or toast shows or appears over the viewer),
     `replayRing(x, y, kind)` (a 3D replay's press ring on `#replay`);
   - Classic 2D: `setSwap`, `setTapMode('reveal' | 'flag')`,
-    `panelFrame2D()` (`PANEL_INSET` all round), `placePanel2D(rect, radius)` (the board frame at `rect`, its corner radius set as `--board-frame-radius`),
+    `placePanel2D(rect, radius)` (the board frame at `rect`, its corner radius set as `--board-frame-radius`; a null `rect` hides it),
     `setBoard2D`, `updateFigures2D(input, {tick, bests})`,
     `setBoardStatus`; 3D `setBoardStatus3D` (progress by `progressLine`);
   - menu: `setLastMode` (the Last played chip), `setEntryUnavailable`,

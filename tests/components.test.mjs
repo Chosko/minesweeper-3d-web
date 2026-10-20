@@ -613,18 +613,22 @@ test('the Classic 2D game window is built from catalogued components: head with 
   assert.ok(!HUD.includes('id="c2d-'), 'the window is not part of the 3D overlay');
 });
 
-test('the Classic 2D window\'s board sits in the board frame, an inset all round, its radius following the tile; the 3D game\'s overlay stays the 3D game\'s', () => {
+test('every Classic 2D board sits in the board frame: white, a 2 px inner border and no edge, padded by the module\'s gap, its radius following the tile; a clipped board scrolls in a rounded viewport; the 3D game\'s overlay stays the 3D game\'s', () => {
   const style = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
   assert.match(CSS, /\.ui-board-frame \{ position: absolute; \}/, 'the base places the board frame');
   const panel = themeRulesFor('.ui-board-frame').map(([, b]) => b).join(';');
-  assert.match(panel, /box-shadow\s*:\s*inset 0 0 0 2px var\(--color-border\)/, 'its frame');
-  assert.match(panel, /background\s*:\s*var\(--color-surface\)/, 'on the surface, opaque');
+  assert.match(panel, /box-shadow\s*:\s*inset 0 0 0 2px var\(--color-border\)\s*(;|$)/, 'its frame: the 2 px inner border alone, no drop edge and no elevation');
+  assert.match(panel, /background\s*:\s*var\(--color-board-frame\)/, 'white, the board frame\'s colour');
   assert.match(panel, /border-radius\s*:\s*var\(--board-frame-radius\)/, 'its corners the radius the shell sets from the board module');
+  assert.doesNotMatch(panel, /padding/, 'its padding is the layout\'s, the module\'s gap');
   assert.match(read('js/ui.js'), /setProperty\('--board-frame-radius', `\$\{radius\}px`\)/, 'placePanel2D sets it');
+  assert.match(read('js/classic2d/board-view.js'), /setProperty\('--board-frame-radius', `\$\{layout\.frameRadius\}px`\)/, 'a mounted frame sets it too');
+  const clipped = themeRulesFor('[data-board-clipped]').map(([, b]) => b).join(';');
+  assert.match(clipped, /--board-viewport-radius\s*:\s*14px/, 'a clipped board: a radius-14 viewport');
+  assert.match(read('js/classic2d/board-view.js'), /round var\(--board-viewport-radius, 0px\)/, 'the view rounds its clip at it');
   assert.match(style, /#hud\.hud--2d #hud-overlay \{ display: none; \}/, 'the 3D game\'s overlay never shows over the Classic 2D window');
   const ui = read('js/ui.js');
-  assert.match(ui, /export const PANEL_INSET = 9;/, 'the frame: 1 px border and --space-2 inside it');
-  assert.match(ui, /panelFrame2D\(\) \{\s*return \{ top: PANEL_INSET, right: PANEL_INSET, bottom: PANEL_INSET, left: PANEL_INSET \};/, 'the same inset on every side');
+  assert.doesNotMatch(ui, /PANEL_INSET|panelFrame2D/, 'no fixed inset: the frame\'s padding comes from the board module');
 });
 
 test('bindFigures writes each figure only when its text changes, hides a figure the model cannot give and a missing detail, and fills the progress bar', () => {
@@ -2759,6 +2763,8 @@ for (const [size, device, place] of WINDOW_SIZES) {
       await ms(() => globalThis.__ms.modes.start('classic-2d', { size: 'custom', custom: { width: 100, height: 60, mines: 600 }, noGuess: false }));
       await page.waitForFunction(() => !document.getElementById('hint-strip').classList.contains('hidden'));
       assert.equal(await ms(() => document.getElementById('hint-strip-text').textContent), touch ? 'Drag to pan · pinch to zoom' : 'Wheel scrolls · Shift+wheel sideways');
+      assert.deepEqual(await ms(() => [document.getElementById('c2d-panel').classList.contains('hidden'), /round 14px\)$/.test(getComputedStyle(globalThis.__ms.board2D.canvas).clipPath)]),
+        [true, true], `${size}: a clipped board scrolls in a radius-14 viewport with no frame`);
       await check(`${size} scroll hint`, { min: 5 });
 
       // Intermediate in play.
@@ -2766,6 +2772,24 @@ for (const [size, device, place] of WINDOW_SIZES) {
       await page.waitForFunction(() => globalThis.__ms.board2D);
       await press(120);
       await page.waitForFunction(() => globalThis.__ms.modes.state.started);
+      const framed = await ms(() => {
+        const v = globalThis.__ms.board2D;
+        const p = document.getElementById('c2d-panel');
+        const r = p.getBoundingClientRect();
+        const c = v.canvas.getBoundingClientRect();
+        return { l: { ...v.layout }, hidden: p.classList.contains('hidden'), x: r.x - c.x, y: r.y - c.y, width: r.width, height: r.height, radius: getComputedStyle(p).borderTopLeftRadius, clip: v.canvas.style.clipPath, round: /round 14px\)$/.test(getComputedStyle(v.canvas).clipPath) };
+      });
+      if (!framed.l.scrolls) {
+        const pad = framed.l.gap;
+        assert.deepEqual([framed.hidden, framed.x, framed.y, framed.width, framed.height], [false, framed.l.viewX - pad, framed.l.viewY - pad, framed.l.viewWidth + 2 * pad, framed.l.viewHeight + 2 * pad],
+          `${size}: Intermediate in its frame, padded by the module's gap`);
+        assert.equal(framed.radius, `${Math.round(framed.l.tile * 0.3)}px`, `${size}: the frame's radius is the tile × .3`);
+      } else {
+        // A board clipped on one axis or both: the viewport is the view itself, rounded, with no frame.
+        const { viewX, viewY, viewWidth, viewHeight, width, height } = framed.l;
+        assert.deepEqual([framed.hidden, framed.clip, framed.round], [true, `inset(${viewY}px ${width - viewX - viewWidth}px ${height - viewY - viewHeight}px ${viewX}px round var(--board-viewport-radius, 0px))`, true],
+          `${size}: Intermediate clipped in a radius-14 viewport, the view's own rectangle`);
+      }
       if (!touch) {
         // The H help panel beside the window.
         await page.keyboard.press('KeyH');

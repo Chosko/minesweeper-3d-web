@@ -49,7 +49,9 @@ is the head comment of `css/components.css` (*Daily*); its ids are
   `DAILY_VIEW` fills `#daily` on its router screen (`DAILY_SCREEN`, default
   focus the selected mode's entry, the first playable one on a first show);
   each selection shows `DAILY_PREVIEW` (`bindMenuPreview` over
-  `#daily-preview`, [app-shell-menu.md](app-shell-menu.md)), and the 3D one
+  `#daily-preview`, [app-shell-menu.md](app-shell-menu.md)): the Classic 2D
+  board in its board frame on the screen's body, the panel showing none of
+  itself (`#daily-preview[data-shows="daily"]`), and the 3D one
   puts today's closed cube with its marked start cube in the renderer
   (`showDailyScene`), drawn in front of the frame through its scene panel.
   `playDaily` refuses a used attempt, takes the held board and starts

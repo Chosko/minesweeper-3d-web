@@ -290,8 +290,8 @@ kbd {
    the board column — the counter strip over the board area, which takes the room left — then the
    figures panel beside it; below the kit's 1024 px breakpoint the panel moves under the board, and on
    a phone it hides so the board keeps its room. The board sits centred in the board area in its
-   framed panel (UI.placePanel2D from the board view's layout); a board that does not fit fills the
-   area and scrolls. The 3D game's overlay bar never shows over the window. */
+   board frame (UI.placePanel2D from the board view's layout); a board that does not fit fills the
+   area with no frame and scrolls. The 3D game's overlay bar never shows over the window. */
 #c2d { position: fixed; inset: 0; padding: var(--space-4) var(--space-4) 52px; }
 #c2d-frame { width: 100%; height: 100%; max-width: 1600px; }
 #c2d-frame > .ui-frame__head { min-height: 56px; }
@@ -514,7 +514,8 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
    smaller desktop windows. On a phone: one full-bleed column, no wordmark, no bests and no summary,
    the bar pinned at the bottom and the column scrolling above it. The Daily screen (#daily) is the
    Classic 2D board choice's composition: every mode on the left, the selected one's board in its
-   scene panel, its state and code on the right; on a phone no preview either. */
+   scene panel — the Classic 2D board framed on the body, the panel showing none of itself —, its
+   state and code on the right; on a phone no preview either. */
 #c2d-choice, #board-choice { flex-direction: column; justify-content: flex-start; padding: 0 var(--space-5); overflow: hidden; }
 #c2d-choice-top, #board-choice-top { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; }
 #board-choice-top { flex: none; }
@@ -537,6 +538,7 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
 #daily-preview { flex: none; aspect-ratio: 16 / 9; min-height: 0; }
 #daily-preview-stage > [data-preview] { position: absolute; inset: var(--space-4); display: grid; place-items: center; }
 #daily-preview-stage > [data-preview][hidden] { display: none; }
+#daily-preview[data-shows="daily"] { background: none; box-shadow: none; }
 #daily-status { flex-wrap: wrap; align-items: center; gap: var(--space-3); }
 #c2d-choice-detail > :where([data-settings], [data-bests], [data-code-panel], form),
 #board-choice-detail > :where([data-settings], [data-bests], [data-code-panel], [data-learn-panel], form),

@@ -39,8 +39,6 @@ export function pauseLine(time, minesLeft, { timed = true } = {}) {
   return timed ? `Time ${formatTime(Math.round(time * 1000))} · ${mines}` : mines;
 }
 const NO_GUESS = ' · no-guess';
-/** The Classic 2D board's frame: its 1 px border and the --space-2 (8 px) inside it, on every side of the board. */
-export const PANEL_INSET = 9;
 /** A 3D board as the overlay bar, the ready card (with `mines`) and the pause card name it. */
 export function boardLine3D(s, { mines = false } = {}) {
   const count = mines ? ` · ${s.mines} mine${s.mines === 1 ? '' : 's'}` : '';
@@ -435,16 +433,14 @@ export class UI {
     this.el.hudTap.setAttribute('aria-pressed', flag ? 'true' : 'false');
     this.el.hudTap.textContent = flag ? 'Tap: Flag' : 'Tap: Reveal';
   }
-  /** The room the board's frame takes around the board (js/classic2d/board-view.js frame): the inset on every side. */
-  panelFrame2D() {
-    return { top: PANEL_INSET, right: PANEL_INSET, bottom: PANEL_INSET, left: PANEL_INSET };
-  }
   /**
    * The board's frame (the kit's ui-board-frame) at `rect` in the board area (board-view.js panelRect),
-   * its corner radius `radius` CSS pixels, which the theme stylesheet reads as --board-frame-radius.
+   * its corner radius `radius` CSS pixels, which the theme stylesheet reads as --board-frame-radius;
+   * a null rect hides it (a clipped board has no frame).
    */
   placePanel2D(rect, radius = 0) {
     const panel = this.el.c2dPanel;
+    if (!rect) { panel.classList.add('hidden'); return; }
     Object.assign(panel.style, { left: `${rect.x}px`, top: `${rect.y}px`, width: `${rect.width}px`, height: `${rect.height}px` });
     panel.style.setProperty('--board-frame-radius', `${radius}px`);
     panel.classList.remove('hidden');

@@ -1268,8 +1268,8 @@ test('the shell registers the mode, routes its screens and reaches the board wit
 test('the shell hands the board its scale, frame and panel, keeps the scale live and shows the scroll hint once', () => {
   const flow = MAIN.slice(MAIN.indexOf('const FLOW_2D = {'), MAIN.indexOf('const board2d ='));
   assert.match(flow, /scale: \(\) => SETTINGS\.get\('boardScale'\)/, 'a new board opens at the setting');
-  assert.match(flow, /frame: \(\) => ui\.panelFrame2D\(\)/, 'the board\'s frame inset');
-  assert.match(flow, /layout: \(layout\) => \{ ui\.placePanel2D\(panelRect\(layout, ui\.panelFrame2D\(\)\), boardFrameRadius\(layout\.tile\)\); clipped2D\(layout\.scrolls\); \}/, 'each refit places the board\'s frame, its radius following the tile');
+  assert.match(flow, /frame: \(\) => BOARD_FRAME/, 'the board\'s frame, padded by the module\'s gap');
+  assert.match(flow, /layout: \(layout\) => \{ ui\.placePanel2D\(layout\.scrolls \? null : panelRect\(layout\), layout\.frameRadius\); clipped2D\(layout\.scrolls\); \}/, 'each refit places the board\'s frame, its radius following the tile, and a clipped board none');
   assert.match(flow, /figures: \(input, \{ tick \}\) => ui\.updateFigures2D\(input, \{ tick, bests: bests2D \}\)/, 'the live figures, with the bests read at the game\'s start');
   assert.match(MAIN, /bests2D = RECORDS\.bests\(b\.identity\)/, 'the board\'s bests read once per game from the records store');
   assert.match(flow, /scrolled: \(\) => scrolled2D\(\)/);
@@ -1605,13 +1605,15 @@ test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800: Expert in the w
           assert.equal(g.layout.scrolls, false, `${at}: Expert fits with no scrolling`);
           assert.deepEqual([g.layout.viewWidth, g.layout.viewHeight], [30 * g.layout.tile + 29 * g.layout.gap, 16 * g.layout.tile + 15 * g.layout.gap], `${at}: no clipped cell`);
         }
-        assert.ok(g.panel.x >= g.area.x - 0.5 && g.panel.x + g.panel.width <= g.area.x + g.area.width + 0.5, `${at}: the board's frame inside the area`);
-        assert.ok(g.panel.y >= g.area.y - 0.5 && g.panel.y + g.panel.height <= g.area.y + g.area.height + 0.5, `${at}: the board's frame inside the area`);
+        if (!g.layout.scrolls) {
+          assert.ok(g.panel.x >= g.area.x - 0.5 && g.panel.x + g.panel.width <= g.area.x + g.area.width + 0.5, `${at}: the board's frame inside the area`);
+          assert.ok(g.panel.y >= g.area.y - 0.5 && g.panel.y + g.panel.height <= g.area.y + g.area.height + 0.5, `${at}: the board's frame inside the area`);
+          assert.match(await ms(() => getComputedStyle(document.getElementById('c2d-panel')).backgroundColor), /^rgb\(/, `${at}: the board's frame is an opaque surface`);
+        }
         assert.ok(g.strip.y + g.strip.height <= g.areaTop + g.layout.viewY, `${at}: the counter strip above the board`);
         assert.ok(g.pause.y + g.pause.height <= g.strip.y && g.pause.x + g.pause.width <= g.frame.x + g.frame.width, `${at}: Pause in the window's head`);
         assert.ok(g.frame.x >= 0 && g.frame.x + g.frame.width <= viewport.width && g.frame.y + g.frame.height <= viewport.height, `${at}: the window inside the screen`);
         assert.deepEqual(await ms(() => ['c2d-time', 'c2d-mines-left', 'c2d-clicks'].map((id) => document.getElementById(id).textContent)), ['000', '099', '0']);
-        assert.match(await ms(() => getComputedStyle(document.getElementById('c2d-panel')).backgroundColor), /^rgb\(/, `${at}: the board's frame is an opaque surface`);
 
         // A mouse player: the first click plays, and no ring is ever drawn.
         const cx = g.areaLeft + g.layout.viewX + g.layout.viewWidth / 2;
@@ -1629,9 +1631,11 @@ test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800: Expert in the w
         // at 1280 × 800.
         await start(STANDARD.beginner);
         const b = await geometry();
-        const room = Math.min(b.area.width, b.area.height) - 2 * 9;
-        assert.ok(b.layout.tile <= 48 && 9 * b.layout.tile + 8 * b.layout.gap <= room, `${at}: Beginner fits at ${b.layout.tile} px`);
-        assert.ok(9 * (b.layout.tile + 1) + 8 * Math.round((b.layout.tile + 1) * b.layout.gap / b.layout.tile) > room || b.layout.tile === 48, `${at}: at the largest tile that fits`);
+        const room = Math.min(b.area.width, b.area.height);
+        const span = (tile) => 9 * tile + 10 * Math.round(tile * 0.09); // the tiles, the gaps between them and the frame's gap all round
+        assert.ok(b.layout.tile <= 48 && span(b.layout.tile) <= room, `${at}: Beginner fits at ${b.layout.tile} px`);
+        assert.ok(span(b.layout.tile + 1) > room || b.layout.tile === 48, `${at}: at the largest tile that fits`);
+        assert.deepEqual([b.panel.width, b.panel.height], [b.layout.viewWidth + 2 * b.layout.gap, b.layout.viewHeight + 2 * b.layout.gap], `${at}: the frame pads the board by its gap`);
         if (viewport.width === 1280) assert.equal(b.layout.tile, 48, `${at}: Beginner at 48 px`);
 
         // A clipped custom board: the shadow, the scroll bar and the one-time hint.
@@ -1639,7 +1643,9 @@ test('in a browser, at 1024 × 768, 1366 × 650 and 1280 × 800: Expert in the w
         const c = await geometry();
         assert.equal(c.layout.scrolls, true, `${at}: a 100 × 60 board scrolls`);
         assert.equal(c.layout.tile, 26, `${at}: at the floor`);
-        assert.ok(Math.abs(c.panel.width - c.area.width) <= 1, `${at}: the board's frame fills the area`);
+        assert.equal(await ms(() => document.getElementById('c2d-panel').classList.contains('hidden')), true, `${at}: a clipped board has no frame`);
+        assert.match(await ms(() => getComputedStyle(globalThis.__ms.board2D.canvas).clipPath), /round 14px\)$/, `${at}: it scrolls in a rounded viewport`);
+        assert.deepEqual([c.layout.viewX, c.layout.viewY, c.layout.viewWidth, c.layout.viewHeight], [0, 0, c.layout.width, c.layout.height], `${at}: the viewport fills the area`);
         await page.waitForFunction(() => !document.getElementById('hint-strip').classList.contains('hidden'));
         assert.equal(await ms(() => document.getElementById('hint-strip-text').textContent), 'Wheel scrolls · Shift+wheel sideways');
         const marks = await ms(() => {

@@ -53,8 +53,9 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
 - `bindMenuPreview({panel, stage, tag, iconOf, mountBoard, boardOf})` →
   `{show(preview), shown}` over a `ui-scene-panel`: a board view per board
   kind, mounted once and kept in its own `[data-preview]` layer; the panel
-  `ui-scene-panel--live` only for `scene`; a card (badge, name, note) for
-  `badge`. The Daily screen reuses it.
+  `ui-scene-panel--live` only for `scene` and carrying the kind as
+  `data-shows`; a card (badge, name, note) for `badge`. The Daily screen
+  reuses it.
 
 `js/shell/returning.js`
 - `boardBests(board, records)` → `[{stat, label, value, note}]`: the
@@ -95,7 +96,8 @@ ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
   (`focusin` → `showPreview`, the focused entry's or, with none focused,
   the opening entry's): `menuPreview` gives the kind and `previewOf` names
   the Daily preview's date. The Classic 2D boards are drawn by
-  `mountBoardView` ([classic2d-board-view.md](classic2d-board-view.md));
+  `mountBoardView`, `framed`: each whole board in its board frame inside
+  the panel ([classic2d-board-view.md](classic2d-board-view.md));
   the 3D one is the demo board the renderer draws into the panel
   ([app-shell-3d.md](app-shell-3d.md) § Scene panel), drawn only while that
   preview shows.

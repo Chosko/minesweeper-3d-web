@@ -38,8 +38,8 @@
 //            and starts none —, moves the focus ring to the recorded cursor and the pointer to its
 //            position at the frame's time (pointerAt, at
 //            the replay's sampling interval), with its trail when playback drew the frame and none
-//            otherwise (a seek clears it); on a board that scrolls, the view follows the pointer's
-//            cell, else the cursor's.
+//            otherwise (a seek clears it); on a view that scrolls (one mountViewer2D never mounts),
+//            the view follows the pointer's cell, else the cursor's.
 //   still()  playback paused: the trail goes, the pointer stays.
 //   press(actions) a press ring for each action [{ time, kind, cell }]: on the recorded pointer at
 //            its time when the pointer was on the acted cell, else on the cell's centre (a keyboard
@@ -52,8 +52,9 @@
 //            refits and repaints, and the pointer follows.
 //
 // mountViewer2D({ container, sim, scale?, win? }) → the viewer plus destroy(): the board view
-// mounted in container at the board scale (js/classic2d/board-view.js mountBoardView, no play
-// input; the play floor, cap and scale, with no frame), the pointer, its trail and the press rings
+// mounted in container in its board frame (js/classic2d/board-view.js mountBoardView, framed, no
+// play input), the whole board fitted in the container at any tile up to the board scale's cap, so
+// it never scrolls, the pointer, its trail and the press rings
 // as elements over it (.replay-pointer, .replay-trail, .replay-ring--<kind>, coloured from tokens),
 // and Show 3BV as a canvas over the board view made the first time it shows.
 
@@ -222,7 +223,7 @@ const TINT_TOKENS = ['--color-replay-bbbv-1', '--color-replay-bbbv-2', '--color-
 
 export function mountViewer2D({ container, sim, scale, win = globalThis }) {
   const doc = win.document;
-  const view = mountBoardView({ container, grid: sim.grid, scale, win });
+  const view = mountBoardView({ container, grid: sim.grid, scale, win, framed: true, minTile: 1 });
   const mark = (className) => {
     const node = doc.createElement('div');
     node.className = className;

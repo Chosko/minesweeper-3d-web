@@ -163,6 +163,7 @@ test('the preview binder shows each preview: a board view mounted once per board
   assert.equal(mounts.length, 1);
   assert.deepEqual([mounts[0].container, mounts[0].grid, mounts[0].games, mounts[0].marks], [layer('board'), boards.board.grid, ['demo-game'], [-1]]);
   assert.deepEqual(shownLayers(), ['board']);
+  assert.equal(panel.dataset.shows, 'board', 'the panel names what it shows, for a screen\'s own styling of it');
 
   preview.show({ kind: 'scene', tag: '3D · Demo board 7 × 7 × 7' });
   assert.equal(panel.classList.contains('ui-scene-panel--live'), true, 'the 3D scene draws through the panel');
@@ -172,6 +173,7 @@ test('the preview binder shows each preview: a board view mounted once per board
   assert.equal(panel.classList.contains('ui-scene-panel--live'), false);
   assert.deepEqual([mounts.length, mounts[1].grid, mounts[1].games, mounts[1].marks], [2, boards.daily.grid, ['daily-game'], [7]], 'the daily board, its start cell marked');
   assert.deepEqual(shownLayers(), ['daily']);
+  assert.equal(panel.dataset.shows, 'daily');
 
   preview.show({ kind: 'board', tag: 'Classic 2D · Intermediate' });
   assert.equal(mounts.length, 2, 'each board view is mounted once');
@@ -182,6 +184,7 @@ test('the preview binder shows each preview: a board view mounted once per board
 
   preview.show({ kind: 'badge', entry: 'quit', label: 'Quit', note: 'Desktop build only', locked: true });
   assert.deepEqual(shownLayers(), ['card']);
+  assert.equal(panel.dataset.shows, 'badge');
   const [card] = layer('card').children;
   assert.equal(card.className, 'ui-scene-panel__card');
   const [badge, name, note] = card.children;
@@ -692,6 +695,50 @@ test('in a browser, the menu fits each window: the title\'s size, the entries as
         assert.ok(Math.abs(m.list[0] - m.preview[0]) <= 1 && Math.abs(m.list[1] - m.preview[1]) <= 1 && Math.abs(m.last - m.list[1]) <= 1,
           `${label}: the entries together as tall as the preview (${m.list}, last ${m.last} vs ${m.preview})`);
       }
+      await context.close();
+    }
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, the menu\'s Classic 2D and Daily previews draw the whole board in the board frame, padded by its gap, at each window size', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    // [width, height, the Classic 2D preview's tile, the Daily preview's tile] per artboard (J-Menu-xl, -l; J-Menu-extra);
+    // at 1024 × 768 the tile is the menu's panel's to set, the frame's alone checked.
+    for (const [width, height, classic, daily] of [[1920, 1080, 41, 27], [1366, 768, 27, null], [1024, 768, null, null]]) {
+      const context = await browser.newContext({ viewport: { width, height } });
+      const page = await context.newPage();
+      await page.goto(`${base}/index.html?still-backdrop`);
+      await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu' && document.activeElement?.id === 'menu-entry-classic-2d');
+      const framed = (kind) => page.waitForFunction((k) => {
+        const layer = document.querySelector(`#menu-preview-stage > [data-preview="${k}"]:not([hidden])`);
+        const frame = layer?.querySelector(':scope > .ui-board-frame');
+        if (!frame || frame.classList.contains('hidden')) return null;
+        const r = frame.getBoundingClientRect();
+        const box = layer.getBoundingClientRect();
+        if (r.width === 0 || layer.querySelector('canvas').style.width !== `${Math.round(box.width)}px`) return null; // laid out in the layer as it stands
+        return {
+          width: Math.round(r.width), height: Math.round(r.height),
+          inside: r.left >= box.left - 0.5 && r.right <= box.right + 0.5 && r.top >= box.top - 0.5 && r.bottom <= box.bottom + 0.5,
+          background: getComputedStyle(frame).backgroundColor, radius: parseFloat(getComputedStyle(frame).borderTopLeftRadius),
+        };
+      }, kind).then((h) => h.jsonValue());
+      // The tile a frame of n columns was laid out at: n tiles, the gaps between them and a gap either side.
+      const tileOf = (n, w) => Array.from({ length: 80 }, (_, i) => i + 1).find((tile) => n * tile + (n + 1) * Math.round(tile * 0.09) === w);
+      const label = `${width} × ${height}`;
+      const c = await framed('board');
+      const ct = tileOf(16, c.width);
+      assert.ok(ct && (classic === null || Math.abs(ct - classic) <= 2), `${label}: the Classic 2D preview at about ${classic} px (${ct})`);
+      assert.deepEqual([c.inside, c.height, c.background, Math.round(c.radius)], [true, c.width, 'rgb(255, 255, 255)', Math.round(ct * 0.3)], `${label}: the whole Intermediate board in its white frame`);
+      await page.focus('#menu-entry-daily');
+      const d = await framed('daily');
+      const dt = tileOf(30, d.width);
+      assert.ok(dt && d.inside, `${label}: the whole daily Expert board in its frame (${dt} px)`);
+      if (daily !== null) assert.ok(Math.abs(dt - daily) <= 2 && Math.abs(d.width - 872) <= 70, `${label}: the Daily preview at about ${daily} px, about 872 px wide (${dt}, ${d.width})`);
       await context.close();
     }
   } finally {

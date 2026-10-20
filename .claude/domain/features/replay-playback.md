@@ -110,13 +110,11 @@ and is never paused into hiding the board.
   hidden with its cursor event's -1 (`replay-recording`), and a recording
   made before the ring could hide shows no ring until its first cursor
   event after its opening one. The ring at any seek position is the one
-  straight playback shows there. The board fits the area between the
-  overlay and the playback controls, both measured from their real sizes,
-  with the same minimum tile, cap and board-scale setting as play
-  (`classic-2d-square-play` § Architecture, "Board view") and no frame;
-  the view follows the recorded pointer or cursor only on a board that
-  does not fit, which shows the same shadows and scroll bars as in play,
-  and never scrolls a board that fits.
+  straight playback shows there. The whole board fits the area between
+  the overlay and the playback controls, both measured from their real
+  sizes, in its board frame (`themed-board-art-and-motion`), at any tile up
+  to the board-scale setting's cap (`classic-2d-square-play` §
+  Architecture, "Board view"), so it never scrolls.
 - **3D viewer.** The 3D renderer over the simulator's 3D state view, with
   the camera placed from the recorded position and direction by the
   movement interpolation, and the recorded view mode applied, while *Free

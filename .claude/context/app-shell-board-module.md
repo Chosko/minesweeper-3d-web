@@ -80,10 +80,11 @@ returns the unsubscribe.
   move, shrink and dim the closed face and cut to the pressed face as they
   end, release springs back from that pressed pose, reveal fades and lifts
   the cell open from it, flag and unflag add their brightness.
-- **The board frame.** `ui-board-frame` is the kit's frame a Classic 2D
-  board sits in; each theme stylesheet styles it, its corner radius the
-  custom property `--board-frame-radius`, which the shell sets from the
-  board module ([classic2d-board-view.md](classic2d-board-view.md)).
+- **The board frame.** `ui-board-frame` is the kit's frame every Classic
+  2D board sits in, padded by the module's gap; each theme stylesheet
+  styles it, its corner radius the custom property `--board-frame-radius`,
+  set from the board module, and gives a clipped board's viewport its
+  radius (`--board-viewport-radius` on `[data-board-clipped]`) ([classic2d-board-view.md](classic2d-board-view.md)).
 - **The Classic 2D end effect** (`js/classic2d/end-effect.js`) reads no
   token: its waves' scale and light are the module's `end2d`, its confetti
   `palette.confetti`, its light clipped to the `style2d` corner radius

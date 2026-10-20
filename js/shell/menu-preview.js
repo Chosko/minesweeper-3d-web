@@ -11,13 +11,15 @@
 // bindMenuPreview({ panel, stage, tag, iconOf, mountBoard, boardOf }) → { show(preview), shown }:
 //   panel, stage, tag    the ui-scene-panel, its stage and its tag;
 //   iconOf(entry)        the entry's icon, an element the card's badge takes a copy of;
-//   mountBoard({ container, grid }) → a mounted Classic 2D board view (js/classic2d/board-view.js
-//                        mountBoardView), asked once per board kind, the first time it shows;
+//   mountBoard({ container, grid }) → a mounted Classic 2D board view in its board frame
+//                        (js/classic2d/board-view.js mountBoardView, framed), asked once per board
+//                        kind, the first time it shows;
 //   boardOf(kind)        → { key, grid, game, mark? } for 'board' and 'daily'; a board whose key
 //                        changed (a new day) is handed to its view again.
-//   show(preview)        shows `preview`: the panel is ui-scene-panel--live only for 'scene', the tag
-//                        names the board (hidden for a card and for an empty tag); `shown` is the
-//                        preview showing.
+//   show(preview)        shows `preview`: the panel is ui-scene-panel--live only for 'scene' and
+//                        carries the preview's kind as data-shows (a screen's own styling of it: the
+//                        Daily screen's board on its body), the tag names the board (hidden for a
+//                        card and for an empty tag); `shown` is the preview showing.
 // The board views stay mounted, each in its own [data-preview] layer of the stage, hidden while
 // another preview shows.
 
@@ -125,6 +127,7 @@ export function bindMenuPreview({ panel, stage, tag, iconOf, mountBoard, boardOf
       shown = preview;
       for (const l of layers.values()) l.el.hidden = true;
       panel.classList.toggle('ui-scene-panel--live', preview.kind === 'scene');
+      panel.dataset.shows = preview.kind;
       tag.textContent = preview.kind === 'badge' ? preview.label : (preview.tag ?? '');
       tag.classList.toggle('hidden', preview.kind === 'badge' || !preview.tag);
       if (preview.kind === 'board' || preview.kind === 'daily') showBoard(preview.kind);

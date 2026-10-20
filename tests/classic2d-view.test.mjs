@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import {
   fitTileSize, gapPx, boardLayout, cellAtLayout, createBoardView, PAN_MODIFIER, BOARD_BACKGROUND, BOARD_SHADOW, BOARD_SCROLLBAR,
   BOARD_SCALES, DEFAULT_BOARD_SCALE, TILE_CAP, tileCap, panelRect, clipMarks, SCROLLBAR, CURSOR_RING, MARK_PULSE_STEPS, MARK_PULSE_MS,
-  MOTION_LAYER_CLASS, RING_LAYER_CLASS,
+  MOTION_LAYER_CLASS, RING_LAYER_CLASS, BOARD_FRAME,
 } from '../js/classic2d/board-view.js';
 import { SCHEMA } from '../js/settings/schema.js';
 import { MIN_TILE_SIZE } from '../js/classic2d/tile-skin.js';
@@ -149,9 +149,8 @@ test('the board scale caps the tile: 48 px at 100 % (the default), 60 px at 125 
   assert.equal(view.layout.tile, 48);
 });
 
-// The panel's frame as the Classic 2D screen takes it (js/ui.js panelFrame2D): a 1 px border and
-// 8 px inside it on every side, the readouts on the top edge (a 48 px row stands in for the
-// measured one, a little taller than it) and 8 px between them and the board.
+// A frame of fixed insets, as a page may give one: 9 px on every side, readouts on the top edge (a
+// 48 px row) and 8 px between them and the board, at least 520 px wide.
 const FRAME = Object.freeze({ top: 9 + 48 + 8, right: 9, bottom: 9, left: 9, minWidth: 520 });
 const area = (w, h) => ({ width: w - 32, height: h - 32 }); // the window less its 16 px margins
 
@@ -211,6 +210,33 @@ test('a clipped board fills the area inside the frame and the panel fills the ar
   assert.equal(at(8, FRAME.top + 5), -1, 'the frame is no cell');
   assert.equal(at(20, FRAME.top - 1), -1, 'the readouts\' edge is no cell');
   assert.equal(at(992 - 9, 100), -1, 'nor the right frame, where tiles run on under it');
+});
+
+test('the board frame pads a fitted board by the module\'s gap on every side, counted in the fit, its radius a fraction of the tile; a clipped board takes no frame', () => {
+  assert.deepEqual({ ...BOARD_FRAME }, { gaps: 1 }, 'one gap of padding all round');
+  const { gap, frameRadius } = JOYFUL.style2d.params;
+  for (const [tile, pad] of [[48, 4], [28, 3], [26, 2]]) {
+    const l = boardLayout({ cols: 9, rows: 9, width: 1000, height: 900, max: tile, frame: BOARD_FRAME, gap, frameRadius });
+    assert.equal(l.tile, tile);
+    assert.equal(l.gap, pad, `${tile} px: a ${pad} px gap`);
+    assert.deepEqual(l.inset, { top: pad, right: pad, bottom: pad, left: pad }, `${tile} px: the frame pads by the gap`);
+    assert.equal(l.frameRadius, Math.round(tile * frameRadius), `${tile} px: the frame's radius is the tile × the module's frame radius`);
+    const span = 9 * tile + 8 * pad;
+    assert.equal(l.viewX, pad + Math.floor((1000 - 2 * pad - span) / 2), 'centred with its frame');
+    assert.deepEqual(panelRect(l), { x: l.viewX - pad, y: l.viewY - pad, width: span + 2 * pad, height: span + 2 * pad }, 'the frame around the view');
+  }
+  // The fit counts the frame: a board exactly as wide as its tiles, gaps and frame fits at that tile, a pixel less does not.
+  const exact = 9 * 48 + 8 * 4 + 2 * 4;
+  assert.equal(boardLayout({ cols: 9, rows: 9, width: exact, height: exact, max: 48, frame: BOARD_FRAME, gap }).tile, 48);
+  assert.equal(boardLayout({ cols: 9, rows: 9, width: exact - 1, height: exact, max: 48, frame: BOARD_FRAME, gap }).tile, 47);
+  // A board too large for its area at the floor scrolls in a viewport with no frame: the view fills the area.
+  const clipped = boardLayout({ cols: 100, rows: 100, width: 992, height: 736, max: 48, frame: BOARD_FRAME, gap, frameRadius });
+  assert.equal(clipped.scrolls, true);
+  assert.deepEqual(clipped.inset, { top: 0, right: 0, bottom: 0, left: 0 }, 'no frame round a clipped board');
+  assert.deepEqual([clipped.viewX, clipped.viewY, clipped.viewWidth, clipped.viewHeight], [0, 0, 992, 736]);
+  // The view lays the board out in the frame from its module's gap and frame radius.
+  const { view } = makeView({ cols: 9, rows: 9, width: 600, height: 500, scale: '100', frame: BOARD_FRAME, board: JOYFUL });
+  assert.deepEqual([view.layout.tile, view.layout.inset.left, view.layout.frameRadius], [48, 4, 14]);
 });
 
 test('a fitted board is centred with nothing to scroll; a larger one starts at the edge and scrolls', () => {

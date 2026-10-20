@@ -25,8 +25,10 @@ DOM-free at import.
   {playing}), place(), setScale(scale), press(actions), still(),
   showBbbv(tints), repaint(), destroy()}`; `pointer` is `{place, hide,
   trail?, ring?}` in canvas CSS pixels, `overlay` `{paint(rects), clear()}`.
-- `mountViewer2D({container, sim, scale?, win?})` — the board view at the
-  board scale (no play input, no frame), the pointer, trail and rings as
+- `mountViewer2D({container, sim, scale?, win?})` — the board view in its
+  board frame, the whole board fitted in the container at any tile up to
+  the board scale's cap, so it never scrolls (no play input), the pointer,
+  trail and rings as
   elements (`.replay-pointer`, `.replay-trail`, `.replay-ring--<kind>`,
   coloured from tokens), Show 3BV as a canvas made the first time it shows.
 
@@ -48,8 +50,9 @@ DOM-free at import.
   cells' events (reveal, flag, unflag) on a frame playback drew; a seek
   drops the running ones and starts none. The cursor ring
   shows only while the recorded cursor is a cell (an older recording's
-  opening cell counts as -1); a board that scrolls follows the pointer's
-  cell, else the cursor's; a board that fits never scrolls. The board scale
+  opening cell counts as -1); a view that scrolls — one `mountViewer2D`
+  never mounts — follows the pointer's cell, else the cursor's; a board
+  that fits never scrolls. The board scale
   reaches the view through `setScale`. The pointer trails its last
   `TRAIL_MS` only on frames playback drew; a seek or `still()` clears it.
 - **Press rings.** 2D: on the recorded pointer when it was on the acted

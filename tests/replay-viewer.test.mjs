@@ -1052,8 +1052,9 @@ test('in a browser, the viewer fills its frame at every supported window size wi
       globalThis.__ms.watch({ replay: bytes, returnTo: { screen: 'menu' } });
     });
     await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready', null, { timeout: patience(5000) });
-    // [width, height, the code chip shows, the key line shows, the figures panel shows]
-    for (const [width, height, code, keys, figures] of [[1920, 1080, true, true, true], [1366, 768, true, true, true], [1024, 768, false, true, false], [390, 844, false, false, false], [844, 390, false, false, false]]) {
+    // [width, height, the code chip shows, the key line shows, the figures panel shows, the Intermediate board's tile (J-Replay-l, -m, -p);
+    // at 1920 × 1080 the tile is the board area's to set, the frame's fit alone checked]
+    for (const [width, height, code, keys, figures, tile] of [[1920, 1080, true, true, true, null], [1366, 768, true, true, true, 24], [1024, 768, false, true, false, 24], [390, 844, false, false, false, 19], [844, 390, false, false, false, null]]) {
       await page.setViewportSize({ width, height });
       await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
       const got = await page.evaluate(() => {
@@ -1072,6 +1073,25 @@ test('in a browser, the viewer fills its frame at every supported window size wi
         };
       });
       assert.deepEqual(got, { scroll: true, frame: true, board: true, play: true, code, keys, figures }, `${width} × ${height}`);
+      // The whole board fits the board area, in its frame: no clipping, no scroll bars.
+      const framed = await page.evaluate(() => {
+        const el = document.querySelector('#replay-board > .ui-board-frame');
+        const area = document.getElementById('replay-board').getBoundingClientRect();
+        const r = el?.getBoundingClientRect();
+        return el && {
+          shown: !el.classList.contains('hidden') && r.width > 0,
+          inside: r.left >= area.left - 0.5 && r.right <= area.right + 0.5 && r.top >= area.top - 0.5 && r.bottom <= area.bottom + 0.5,
+          clipped: document.getElementById('replay-board').hasAttribute('data-board-clipped'),
+          width: Math.round(r.width),
+        };
+      });
+      assert.ok(framed, `${width} × ${height}: the board sits in the board frame`);
+      assert.deepEqual([framed.shown, framed.inside, framed.clipped], [true, true, false], `${width} × ${height}: the whole board in its frame, nothing clipped`);
+      if (tile !== null) {
+        // The frame is 16 tiles, the 15 gaps between them and a gap either side: the tile it was laid out at.
+        const at = Array.from({ length: 60 }, (_, t) => t + 1).find((t) => 16 * t + 17 * Math.round(t * 0.09) === framed.width);
+        assert.ok(at && Math.abs(at - tile) <= 2, `${width} × ${height}: Intermediate at about ${tile} px (${at})`);
+      }
     }
     await page.setViewportSize({ width: 1920, height: 1080 });
     await page.evaluate(() => globalThis.__ms.replayViewer.seek(6826));
