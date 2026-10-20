@@ -9,7 +9,7 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
 
 | File | Responsibility | Context file |
 | --- | --- | --- |
-| `js/mode3d/learn.js` | Learn 3D: the guided board `LEARN_BOARD`, `lessonCells`, `learnChoice` and the prompt sequence `createLearnPrompts`. DOM-free. | this file |
+| `js/mode3d/learn.js` | Learn 3D: the guided board `LEARN_BOARD`, `lessonCells`, `learnChoice` and the prompt sequence `createLearnPrompts`. DOM-free. | [mode3d-learn.md](mode3d-learn.md) |
 | `js/mode3d/board-choice.js` | The presets, custom validation, Random fill, the no-guess switch with its cell-count limit and side-of-2 rule, the last 3D choice's document name, and `bindBoardChoice` over `#board-choice`. Helpers DOM-free; the binder touches only the elements it is handed. | this file |
 | `js/mode3d/session.js` | The 3D game on the shared engine (`create3DGame`) and the game session (`createSession`): closed box, flags before the first reveal, the first reveal's board, generating, failure offer, timer, pause, restart, leave, replay recorder. DOM-free. | [mode3d-session.md](mode3d-session.md) |
 | `js/shell/mode-3d.js` | The adapter (`create3DMode`) behind the mode contract: end delay, summaries, sealed replays, the movement sampler, pre-generation for Play again. DOM-free. | [mode3d-adapter.md](mode3d-adapter.md) |
@@ -60,28 +60,6 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
   reads and what each option shows; the binder never reads the records
   itself.
 
-`js/mode3d/learn.js`
-- `LEARN_BOARD` — frozen `{X, Y, Z, mines, seed, generatorVersion,
-  startCell, minePositions, proofNumber, lessonNumber, lessonMine}`: the
-  lesson box, 4 × 4 × 3 · 4 outside the presets, seed 75, start cell 26 (the marked centre cell),
-  P 36, L 25, M 40; `LEARN_TITLE` 'Learn 3D'.
-- `lessonCells(view, startCell)` → `{proofNumber, lessonNumber, lessonMine}`
-  or null: the board conditions after the first reveal (not won, a cube
-  hidden, a 1 with one closed neighbour M, another 1 L nearest the start
-  with M and another closed cube).
-- `learnChoice()` → `{X, Y, Z, mines, minePositions, noGuess: false, learn:
-  true, forced: {startCell, seed, learn: true}}`: a fixed board with the
-  session's forced, marked start cell ([mode3d-session.md](mode3d-session.md)).
-- `LEARN_PROMPTS` (`start`, `shift`, `ctrl`, `flag`, `chord`, `rest`),
-  `LEARN_HINTS` (each prompt's `HINT_TEXT` name,
-  [settings-bindings.md](settings-bindings.md)), `learnStepOf(hint)` (a
-  step prompt's "1 / 4", null for the start and the rest);
-  `createLearnPrompts({lessonNumber, lessonMine})` → `current`,
-  `done(name)`, `tinted`, `started()`, `shift(selected)`, `ctrl()`,
-  `flagged(cells)`, `chorded(cell, revealed)`, `lessonClosed(count)` (L's
-  closed, unflagged neighbour count; 0 completes the chord prompt);
-  `closedAround(view, cell)` → that count on a 3D state view.
-
 ## INTERNAL PATTERNS
 
 - **Two no-guess switches.** The presets' switch (`data-noguess="presets"`)
@@ -94,15 +72,8 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
   mine in one of them is always a guess. The limit is read from the one
   exported constant; `dev/measure-noguess-3d.mjs` is the measurement
   behind it.
-- **Learn 3D.** The guided board's mine positions are committed, found by
-  `dev/find-learn-3d.mjs` (the first seed from 1 whose no-guess board meets
-  `lessonCells`), so a later `GENERATOR_VERSION` changes no lesson. Each
-  prompt is done by its action at any time after the first reveal and
-  skipped when its turn comes; the chord prompt is also done once L has no
-  closed, unflagged neighbour, since a chord on L can then open nothing; L
-  carries the start-cell tint during prompts 1 and 4, M during prompt 3. Starting it saves no choice and moves
-  no "Last played" mark; the shell's wiring is
-  [app-shell-3d.md](app-shell-3d.md).
+- **Learn 3D** is the first option, with no preset: the guided board, its
+  prompts and its end are [mode3d-learn.md](mode3d-learn.md).
 - **Last board choice.** `js/main.js` keeps it with the shell's
   `createLastBoardChoice` (`js/shell/menu.js`) in the `mode3d.lastChoice`
   document, loaded before the first screen; a stored choice
@@ -120,9 +91,6 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
   (`held`). The First box sizes (4 × 4 × 3 · 4, 5 × 5 × 3 · 6) are no
   preset: the records and replays played on them read as custom boards
   ([records.md](records.md)).
-- **Learn 3D's end.** A win offers *Play Cube Intro* — an ordinary pick of
-  Cube Intro, saved as the last choice — a loss *Try again*
-  ([app-shell-3d.md](app-shell-3d.md) § End sequence).
 
 ## DOMAIN DEPENDENCIES
 
@@ -137,6 +105,7 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
 
 - [mode3d-session.md](mode3d-session.md), [mode3d-adapter.md](mode3d-adapter.md) — the session and the adapter
   the chosen board is handed to.
+- [mode3d-learn.md](mode3d-learn.md) — Learn 3D's guided board and prompts.
 - [classic2d.md](classic2d.md) — `NOGUESS_DENSITY_HINT` and the density
   hint text.
 - [app-shell-menu.md](app-shell-menu.md) — the board choices' wiring in
@@ -145,7 +114,7 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
   in.
 - [records.md](records.md) — `PRESETS_3D`, kept equal to `PRESETS` by a test.
 - [testing.md](testing.md) — `tests/mode3d-board-choice.test.mjs`,
-  `tests/mode3d-noguess-limit.test.mjs`, `tests/mode3d-learn.test.mjs`.
+  `tests/mode3d-noguess-limit.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 
@@ -157,5 +126,3 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
   read its head comment before touching `NOGUESS_CELL_LIMIT`.
 - Changing the board choice screen's hooks (`bindBoardChoice`'s head
   comment).
-- Changing the guided board or its prompts: `learn.js`'s head comment; a
-  changed board re-runs `node dev/find-learn-3d.mjs`.

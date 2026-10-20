@@ -8,8 +8,9 @@ camera moves while a 3D game plays: action dispatch and its feedback
 (sound, rumble, flash), keyboard-only play, touch play on a coarse-only
 device, the controller in play, the Camera setting's Fly and Orbit, the
 camera aids, spacing and render on demand. The 3D game's flow — adapter,
-entering play, pointer lock, status card, session, ready card, Learn 3D and
-the end sequence — is [app-shell-3d.md](app-shell-3d.md); the input objects
+entering play, pointer lock, ready card — is [app-shell-3d.md](app-shell-3d.md);
+its status card, session, Learn 3D and the end sequence are
+[app-shell-3d-session.md](app-shell-3d-session.md); the input objects
 themselves are [input.md](input.md) and [input-camera.md](input-camera.md).
 
 ## PUBLIC API
@@ -127,8 +128,8 @@ presses and releases Enter and ' through `input.actions` as their keys do;
 
 ## CROSS-REFERENCES
 
-- [app-shell-3d.md](app-shell-3d.md) — the 3D game's flow these inputs run
-  inside (`endDelay`, `board3d`, `stopPlayInput`'s callers).
+- [app-shell-3d.md](app-shell-3d.md), [app-shell-3d-session.md](app-shell-3d-session.md) — the 3D
+  game's flow these inputs run inside (`endDelay`, `board3d`, `stopPlayInput`'s callers).
 - [input.md](input.md) — `Input` callbacks, `KeyActions`, the touch machine;
   [input-camera.md](input-camera.md) — `FlyCamera`, `OrbitCamera`,
   `KeyLook`, picking, spawn pose.

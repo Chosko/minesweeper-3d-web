@@ -16,7 +16,7 @@ touch side is [input.md](input.md), the camera and picking
 
 Which pad button maps to what (`handlePad`), the one owner of `inert` and
 the focus walk (`navStep`) live in `js/main.js` ([app-shell.md](app-shell.md),
-[app-shell-navigation.md](app-shell-navigation.md)).
+[app-shell-focus.md](app-shell-focus.md)).
 
 ## PUBLIC API
 

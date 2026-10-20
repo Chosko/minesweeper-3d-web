@@ -1,4 +1,4 @@
-# App shell — main menu, its preview, last choices, Daily and board codes
+# App shell — main menu, its preview and last choices
 
 ## OVERVIEW
 
@@ -8,11 +8,11 @@ placeholder, the opening selection, what each entry's preview shows, the
 last mode played and each mode's last board choice),
 `js/shell/menu-preview.js` (the preview binder and its Classic 2D boards),
 `js/shell/returning.js` (the board choices' bests, as text; pure, over the
-records' queries it is handed), `js/shell/daily.js` and
-`js/shell/challenge.js`, and their wiring in `js/main.js`. The screens'
-compositions are the head comment of `css/components.css` (*Main menu*,
-*Daily*, *Coming soon*); their ids are
-[app-shell-markup.md](app-shell-markup.md) § Screens.
+records' queries it is handed), and their wiring in `js/main.js`. The Daily
+screen and board codes (`js/shell/daily.js`, `js/shell/challenge.js`) are
+[app-shell-daily.md](app-shell-daily.md). The screens' compositions are the
+head comment of `css/components.css` (*Main menu*, *Coming soon*); their
+ids are [app-shell-markup.md](app-shell-markup.md) § Screens.
 
 ## PUBLIC API
 
@@ -63,35 +63,6 @@ compositions are the head comment of `css/components.css` (*Main menu*,
   board and its no-guess twin are separate boards. Both board choices'
   `bests`.
 
-`js/shell/daily.js` (its head comment is the contract)
-- `DAILY_SCREEN` = `'daily'`, `NOT_PLAYED`, `LOST`; `dailyIdentity(id)`,
-  `countedAttempt(records, id, date)` — the first daily game of that date
-  on the row's Daily board.
-- `dailyRows({records, replays?, now?, unavailable?})` → per daily board
-  `{id, mode, label, board, line, date, dateLabel, code, state, result,
-  current, longest, streak, canPlay, attempt, watch, reason}`; `result` a
-  won row's time in the standard time format (`formatTime`, *Won 48.213 s*).
-- `dailyModes({records, replays?, now?, unavailable?, entries?})` → one
-  entry per mode of `MENU_ENTRIES` in menu order, `{mode, label, daily,
-  line, title, summary, note, canPlay}`, `daily` null (*Coming soon*) for a
-  mode with no daily board; `dailyPanel(entry, {missing?})` → its preview
-  (`daily`, `scene`, `still` or `badge`); `dailyPreview(now?)` → the menu's
-  Daily preview `{board, startCell, date, dateLabel, tag}`.
-- `createDailyBoards({clients})` → `{prepare(records, now?), take(code),
-  has(code)}`: today's unused boards pre-generated through each mode's
-  client, held by code; `take` hands one over once.
-- `bindDailyScreen({root, onPlay, onWatch, onBack, onCopy?, onSelect?})` →
-  `{show(entries), select(mode), selected, defaultFocus()}` over `#daily`.
-
-`js/shell/challenge.js`
-- `resolveCode(text, {today, mode?})` → `{kind: 'refused' | 'daily' |
-  'challenge', …}`; `otherModeHint(mode)`; `gameStart({board, seed,
-  startCell, daily?, pregenerated?})` → `{mode, choice}` (2D `fixed`, 3D
-  `forced`); `freeStart(board)`; `boardHash(hash)`;
-  `createChallengeLinks({location, history, onDaily, onChallenge,
-  onRefused, started, unavailable?, toast?})` → `{start(), hashchange()}`;
-  `STARTED_TOAST`.
-
 ## INTERNAL PATTERNS
 
 - **Entries.** Each `ui-mode-entry` (`#menu-entry-<id>`, `data-entry`) is
@@ -128,29 +99,14 @@ compositions are the head comment of `css/components.css` (*Main menu*,
   the 3D one is the demo board the renderer draws into the panel
   ([app-shell-3d.md](app-shell-3d.md) § Scene panel), drawn only while that
   preview shows.
-- **Daily and challenges in `js/main.js`.** `DAILY_BOARDS_HELD` (clients:
-  `mode2d.client`, `GEN_3D` given WebGL 2) is prepared on every menu show;
-  `DAILY_VIEW` fills `#daily` on its router screen (`DAILY_SCREEN`, default
-  focus the selected mode's entry, the first playable one on a first show);
-  each selection shows `DAILY_PREVIEW` (`bindMenuPreview` over
-  `#daily-preview`), and the 3D one puts today's closed cube with its marked
-  start cube in the renderer (`showDailyScene`), drawn in front of the frame
-  through its scene panel. `playDaily` refuses a used attempt, takes the
-  held board and starts through `startForced` (`MODES.start`, then
-  `enterPlay3D` for 3D); `playChallenge` the same from a parsed code. Both
-  board choices' code fields go through `checkCode` / `playCode` (today's
-  daily code routes to `daily`), and `LINKS` follows `#board=` links. A
-  daily or challenge saves no last choice; the results flow's Play again
-  after one, once its mode was left, starts `freeStart(summary.board)`,
-  whose 2D choice carries `remember: false`, so it saves none either. A
-  challenge route's parse has no `daily`: another day's daily code is a
-  challenge.
 - **Board choices.** `showChoice2D` / `showChoice3D` show the last board
   choice (`LAST_CHOICE_2D`, `LAST_CHOICE_3D`); each binder's `bests` is
   `boardBests` over `RECORDS`, `RECORDS.onChange` refreshes both, and
   Records opens the Records screen on the chosen board, keeping the
   screen's `state()` (`held2D`, `held3D`) for the way back. The binders are
-  [classic2d.md](classic2d.md) and [mode3d.md](mode3d.md).
+  [classic2d.md](classic2d.md) and [mode3d.md](mode3d.md); their code
+  fields go through [app-shell-daily.md](app-shell-daily.md)'s `checkCode`
+  / `playCode`.
 - **Key hints and build label.** `#menu-hints` holds the move and select
   hints for the active device (no Back); `ui.setBuild(buildLabel(VERSION))`
   fills `#menu-build`; `#touch-note` shows on a coarse-only device.
@@ -160,18 +116,18 @@ compositions are the head comment of `css/components.css` (*Main menu*,
 - [../domain/features/game-shell.md](../domain/features/game-shell.md) — the
   main menu's entries and routes, its placeholder and the last mode played.
 - [../domain/features/shared-screen-layout.md](../domain/features/shared-screen-layout.md)
-  — the menu's, the board choices' and the Daily screen's layout.
+  — the menu's and the board choices' layout.
 
 ## CROSS-REFERENCES
 
+- [app-shell-daily.md](app-shell-daily.md) — the Daily screen, which
+  reuses the preview binder, and board codes.
 - [platform.md](platform.md) — the storage interface the last mode and last
   board choices save through.
-- [records-store.md](records-store.md) — the bests and the history the
-  board choices and the Daily screen read.
+- [records-store.md](records-store.md) — the bests the board choices read.
 - [app-shell-kit.md](app-shell-kit.md) — the mode entry, scene panel and
   board option components.
-- [testing.md](testing.md) — `tests/shell-*.test.mjs` (menu, returning,
-  daily, challenge).
+- [testing.md](testing.md) — `tests/shell-*.test.mjs` (menu, returning).
 
 ## WHEN TO READ THE SOURCE
 
@@ -179,6 +135,5 @@ compositions are the head comment of `css/components.css` (*Main menu*,
   `ui-mode-entry` in `#menu`, a router screen and a `LAYER_SCREEN` entry
   ([app-shell-ui.md](app-shell-ui.md) § Controller menus); the
   `ui-mode-list` takes it with no change to the menu's composition.
-- Changing what a preview shows: `menuPreview`, `dailyPanel` and the head
-  comment of `js/shell/menu-preview.js`.
-- Changing the Daily screen: the head comment of `js/shell/daily.js`.
+- Changing what a preview shows: `menuPreview` and the head comment of
+  `js/shell/menu-preview.js`.

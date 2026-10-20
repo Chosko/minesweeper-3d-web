@@ -49,10 +49,10 @@ bind.
     their `data-*` hooks, not the ids;
   - Daily `#daily` (the board choices' markup, `#daily-modes` of
     `#daily-entry-<mode>`, `#daily-preview`, `#daily-code`, `#daily-watch`,
-    `#daily-play`; [app-shell-menu.md](app-shell-menu.md));
+    `#daily-play`; [app-shell-daily.md](app-shell-daily.md));
   - placeholder `#coming-soon` (`#coming-soon-menu` in the head,
     `#coming-soon-title`, `#coming-soon-back`); Records `#records` (the view
-    and its ids: [records-screen.md](records-screen.md); the switch
+    and its ids: [records-screen-view.md](records-screen-view.md); the switch
     `#records-mode` in the frame's head, the switch and the picker each in
     a `data-pad-hinted` row between `data-pad-glyph` hints); Settings
     `#settings` (Back `#settings-back` in the head `#settings-actions`, the

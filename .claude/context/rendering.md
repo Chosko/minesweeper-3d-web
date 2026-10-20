@@ -5,15 +5,15 @@
 Draws the 3D board with three.js: every cube comes from instanced meshes sharing one cube geometry,
 with per-cell state in a data texture and all visual effects in GLSL3 shaders. Also draws the sky
 gradient with the ground grid below the board. Everything it draws in colour comes from the active
-theme's board module, which the shell hands in. The time-driven extras — cell motion (the "solved"
-pulse among its events), flash, end-of-game waves, confetti, shake, ground grid — and the replay and
-end-of-game behaviour are in [rendering-effects.md](rendering-effects.md). `js/render.js`'s head
-comment lists its passes.
+theme's board module, which the shell hands in: the hand-off, the tile atlas (`js/textures.js`) and
+what is drawn from the module are [rendering-board-art.md](rendering-board-art.md). The time-driven
+extras — cell motion (the "solved" pulse among its events), flash, end-of-game waves, confetti,
+shake, ground grid — and the replay and end-of-game behaviour are in
+[rendering-effects.md](rendering-effects.md). `js/render.js`'s head comment lists its passes.
 
 | File | Responsibility |
 | --- | --- |
 | `js/render.js` | `BoardRenderer`: cube geometry, cell/sky/confetti shaders, opaque and transparent instance lists, back-to-front sort, the board module hand-off (`setBoard`), effects and cell motion, the selection, the target rectangle it draws into |
-| `js/textures.js` | procedural tile atlas: every tile drawn on a 2D canvas through the shared tile recipe (`js/tile-art.js`, [classic2d-tile-skin.md](classic2d-tile-skin.md)) in the board module's 3D style from its 3D palette, numbers and number font, packed into one `THREE.DataArrayTexture` (one layer per tile); it holds no colour of its own |
 | `js/readability.js` | the 3D readability aids' pure functions: the aimed-cell readout ([app-shell-3d-play.md](app-shell-3d-play.md)) and, read here, Space's depth dimming — `spaceAlpha(d)` (`SPACE_NEAR_ALPHA` 0.7, `SPACE_FLOOR_ALPHA` 0.1, `SPACE_FALLOFF` 3, interpolated into `VERT`) and `boxDepth(cam, box)`, the camera's lattice distance from the box's nearest face |
 
 ## Public API
@@ -34,12 +34,8 @@ comment lists its passes.
   `MARK_PULSE_COUNT` times over `MARK_PULSE_S` through `uMarkPulse`, kept animating by
   `isAnimating()`; → whether there is a mark), `boardRadius()` (far plane, fog, confetti size),
   `setPixelRatio(pr)` (→ `false` when unchanged; main then skips the redraw), `resize()`.
-- Board art: `setBoard(board)` — a theme's board module: rebuilds the atlas from it, sets the sky,
-  fog and clear colour, the selection, the marked-cell tint and the confetti colours, and drops any
-  running cell motion; the same module again changes nothing; the caller requests the redraw.
-  The `board` field holds it (null until the first) and `scenePalette` its sky as `{horizon, zenith,
-  nadir, fog}` 0–255 channels. `selectionUniforms(board)` → `{outline, width, glow, glowWidth,
-  tint}` and `confettiColours(board, count)` are the pure derivations it uses.
+- Board art: `setBoard(board)`, the `board` and `scenePalette` fields, `selectionUniforms`,
+  `confettiColours` — [rendering-board-art.md](rendering-board-art.md).
 - Target rectangle: `setTarget(rect | null)` — `{x, y, width, height}` in CSS pixels from the
   window's top left, the rectangle a screen's scene panel gives, or null for the full window
   (→ `false` when unchanged; the caller redraws); `target` reads it back (a copy, or null).
@@ -56,14 +52,6 @@ comment lists its passes.
   `flyThroughAlpha(dist)` (the shader's `flyAlpha`; the distance is `FLY_THROUGH_DIST`, [input-camera.md](input-camera.md)),
   the flash constants ([rendering-effects.md](rendering-effects.md)).
   Node imports the module only with `three` resolved to `vendor/three/` (the test's resolve hook).
-
-`js/textures.js`:
-- `TILE`; layers `L_CLOSED`, `L_FLAG`, `L_MINE`, `L_MINE_EXPLODED`, `L_NUM0` (number n →
-  `L_NUM0 + n`, n = 0..26), `L_WRONG_FLAG`, `L_SUNK` (the closed face fully pressed in, which a depth
-  motion blends toward, after every other layer), `LAYERS`.
-- `createTileTexture(board)` (browser only), `drawLayer(ctx, layer, board)`, `atlasTexture(data?)`
-  (the texture over a layer buffer, all transparent when omitted — the atlas until a module
-  arrives).
 
 ## Internal patterns
 
@@ -106,9 +94,6 @@ comment lists its passes.
   is added. Either list re-sorts only when `_transDirty` or the camera moved.
 - **Geometry and UVs** are copied from `Cube.cs`; triangles are emitted as (v0, v2, v1) to flip XNA
   winding. Atlas rows are top-first and `flipY = false`, so v = 0 is the image top.
-- **Colour.** Tiles and state use `NoColorSpace`; shaders output raw sRGB. Number colours are the
-  board module's, which the board conformance checks hold to 4.5:1 against every point of the
-  revealed face ([app-shell-board-module.md](app-shell-board-module.md)).
 - **Target rectangle.** The drawing buffer always spans the window; `resize()` sets the viewport,
   the scissor and the camera aspect to the target, WebGL's y counted from the bottom, and turns the
   scissor test off with no target. With a target, `render()` first clears the whole canvas to
@@ -120,25 +105,6 @@ comment lists its passes.
   ([settings.md](settings.md) states `pixelRatioFor`): `js/main.js::applyPixelRatio` computes it
   for the board shown and calls `setPixelRatio` at each new board and on every setting change. The
   renderer never reads the setting.
-- **Drawn from the board module.** The shell (`js/shell/scene-palette.js`) calls `setBoard` with the
-  active theme's board module at start-up and on every theme change, once its number font has
-  loaded ([app-shell-board-module.md](app-shell-board-module.md)); until then the atlas is transparent and the sky
-  black. From the module come: the atlas, every layer drawn through `js/tile-art.js` in `style3d`
-  from `palette.faces3d`, the flag, mine and cross, `numbers` and the number font — the slope
-  painted into the texture, so it reads lit from the same corner on every face, top faces included;
-  the sky gradient's horizon, zenith and nadir from `sky`, the fog toward `sky.fog` (the horizon
-  when absent) and the clear colour the horizon, the ground grid's ink still derived from the
-  horizon ([rendering-effects.md](rendering-effects.md)); the selection — the outline in
-  `selection.outline` at the larger of `width.face` of the face and `width.px` screen pixels, a
-  `glowWidth`-pixel line of `selection.glow` inside it pulsing with `uSelGlow`, and the selected
-  face's colour multiplied by `selection.tint` (`uSelOutline`, `uSelWidth`, `uSelGlowColor`,
-  `uSelGlowWidth`, `uSelTint`); the marked start cell's tint `mark.tint` mixed in at `mark.mix`,
-  `mark.pulseMix` at its pulse's peak; the confetti colours `palette.confetti`, cycled over the
-  pieces; and the cell motion descriptions. A theme change rebuilds all of it with no change to the
-  game. The renderer holds no colour of its own for any of these, never reads a token, imports a
-  theme or subscribes to theme changes (`tests/theme.test.mjs`, `tests/tokens.test.mjs`,
-  `tests/render-3d-selection.test.mjs`). The Classic 2D tile skin draws through the same recipe from
-  the same module's 2D half ([classic2d-tile-skin.md](classic2d-tile-skin.md)).
 
 ## Domain dependencies
 
@@ -152,15 +118,15 @@ comment lists its passes.
   the web port draws the theme's sky instead, handed in by the shell — unlit textured cubes, centred grid); the
   web port's fly-through glass (a "Web port:" note under *Controls*).
 - [../domain/features/themed-board-art-and-motion.md](../domain/features/themed-board-art-and-motion.md)
-  — the atlas, sky, selection and confetti from the board module, and cell motion.
+  — cell motion; the board module's part is [rendering-board-art.md](rendering-board-art.md)'s.
 - [../domain/INDEX.md](../domain/INDEX.md) — product and feature design for visual extras.
 
 ## Cross-references
 
 - [rendering-effects.md](rendering-effects.md) — cell motion and the solved pulse, flash, waves,
   ground grid, the replay-driven camera and the end of a 3D game.
-- [app-shell-board-module.md](app-shell-board-module.md) — the board module's shape and checks, and the scene's
-  hand-off `js/shell/scene-palette.js`.
+- [rendering-board-art.md](rendering-board-art.md) — the board module hand-off, the tile atlas
+  `js/textures.js` and every colour drawn from the module.
 - [engine-3d.md](engine-3d.md) — the 3D state view this area reads.
 - [app-shell.md](app-shell.md) — `js/main.js` owns the renderer: `sync`/`render` per frame,
   `snapshotBeforeAction` before reveals, `isAnimating`, the pixel ratio, `stats` via `__ms`.
@@ -168,25 +134,15 @@ comment lists its passes.
 - [input-camera.md](input-camera.md) — the camera feeds `camera`; picking must use the same pitch and
   Space/hidden visibility rules. [input.md](input.md) — modifier state feeds `setToggles`.
 - [app-shell-replay.md](app-shell-replay.md) — the replay scene's tints, rings and wrong flags.
-- [classic2d-tile-skin.md](classic2d-tile-skin.md) — the Classic 2D tile skin and the shared tile recipe.
 - [testing.md](testing.md) — `tests/render-3d-feedback.test.mjs` (`GHOST_ALPHA`, ghosts in
-  `stats.trans`, the target rectangle, the atlas's layers and *Joyful tiles*' sampled atlas,
-  selection and confetti, a theme switch in a 3D game), `tests/render-3d-selection.test.mjs` (the
-  selection uniforms and confetti colours from the module), `tests/camera-flight.test.mjs` (the
-  fly-through constants and the near-camera list), `tests/tile-art.test.mjs` (the drawing styles),
-  `tests/settings-appliers.test.mjs` (`pixelRatioFor`); verification is visual via Playwright.
+  `stats.trans`, the target rectangle), `tests/camera-flight.test.mjs` (the fly-through constants
+  and the near-camera list), `tests/settings-appliers.test.mjs` (`pixelRatioFor`); verification is
+  visual via Playwright.
 
 ## When to read the source
 
 - Changing what a cell looks like or its alpha under Shift/Space/Ctrl (vertex shader `VERT`,
   `_writeCell`, `_rebuildOpaque`, `_applyShiftOpaque`, `_updateTransparent` must stay in step).
-- Adding a tile (new layer in `js/textures.js` before `L_SUNK`'s place at the end, bump `LAYERS`,
-  map it in `_writeCell`).
-- Changing how an atlas tile is drawn: the geometry is `js/tile-art.js`, shared with the Classic 2D
-  tiles and pinned by `tests/tile-art.test.mjs`; the colours and style are the theme's board module
-  (`drawLayer`).
-- Changing what the renderer takes from a board module (`setBoard`, `selectionUniforms`,
-  `confettiColours`, the selection branch of `FRAG`).
 - Debugging transparency artefacts or sort cost (`_updateTransparent`).
 - Changing cell indexing, board dimension limits (state texture height) or spacing math.
 - Drawing into a part of the window (`setTarget`, `resize`, the transparent clear in `render`).

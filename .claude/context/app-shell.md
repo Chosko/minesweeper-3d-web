@@ -9,10 +9,10 @@ others:
 | File | Covers |
 | ---- | ------ |
 | this file | `js/main.js` as a whole, mode host, context loss, no-WebGL 2 path, start-up loading, storage, `__ms` |
-| [app-shell-navigation.md](app-shell-navigation.md) | router and back stack, session history and the browser's Back, Back inputs, default focus, overlay focus containment, the focus walk |
+| [app-shell-navigation.md](app-shell-navigation.md), [app-shell-focus.md](app-shell-focus.md) | router and back stack, session history and the browser's Back, Back inputs; default focus, overlay focus containment, the focus walk |
 | [app-shell-pause.md](app-shell-pause.md) | pause controller, confirmations, restart keys, hand-offs, leave-page guard, both modes' end delay and its skip |
-| [app-shell-menu.md](app-shell-menu.md) | main menu, placeholder, last mode and last board choices, the returning player's surfaces |
-| [app-shell-3d.md](app-shell-3d.md) | the 3D game's flow: adapter flow, entering play, ready card and pointer lock, board status card, session, Learn 3D, end sequence |
+| [app-shell-menu.md](app-shell-menu.md), [app-shell-daily.md](app-shell-daily.md) | main menu, placeholder, last mode and last board choices, the returning player's surfaces; the Daily screen, board codes and `#board=` links |
+| [app-shell-3d.md](app-shell-3d.md), [app-shell-3d-session.md](app-shell-3d-session.md) | the 3D game's flow: adapter flow, entering play, ready card and pointer lock, scene panel; session, board status card, Learn 3D, end sequence |
 | [app-shell-3d-play.md](app-shell-3d-play.md) | the 3D game's play inputs and camera: actions and rumble, keyboard-only, touch and controller play, the Camera setting's Fly and Orbit, camera aids, spacing, render on demand |
 | [app-shell-2d.md](app-shell-2d.md) | the Classic 2D mode's wiring: `FLOW_2D`, button swap, board area and panel, status card, controller |
 | [app-shell-results.md](app-shell-results.md) | results flow and view, Watch replay and Watch best, Look at the board |

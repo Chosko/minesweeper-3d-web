@@ -118,7 +118,7 @@ permits; they must not alter any rule above.
   becomes the renderer's selection; the renderer fades the glass within `FLY_THROUGH_DIST`.
 - [app-shell-3d-play.md](app-shell-3d-play.md) — `view3D()`, `setCameraMode`, `setSpacing`, `placeAtSpawn`, the
   frame loop that runs `KeyLook` and the orbit's dolly.
-- [settings.md](settings.md) — `applyLook` (sensitivity, invert Y), `applyCamera` (the mode).
+- [settings-appliers.md](settings-appliers.md) — `applyLook` (sensitivity, invert Y), `applyCamera` (the mode).
 - [input-controller.md](input-controller.md) — the sticks that feed `moveAxes` / `lookAxes`.
 - [testing.md](testing.md) — `tests/camera-flight.test.mjs` (forward vector, spacing step, toggle and
   camera scaling, fly-through pick rule), `tests/camera-orbit.test.mjs`, `tests/camera-spawn.test.mjs`,

@@ -17,7 +17,7 @@ chart, which draws on the canvas it is handed.
 | `js/records/summary.js` | Summary builder, derived stats, best eligibility. | here |
 | `js/records/model.js` | Records model: bests, per-mode counters, history, comparison, the records format step. No storage. | [records-store.md](records-store.md) |
 | `js/records/store.js` | Records store: the only writer of the personal records and the game-in-progress marker; storage handed in. | [records-store.md](records-store.md) |
-| `js/records/screen.js` | Records screen content, controller and `#records` binder. | [records-screen.md](records-screen.md) |
+| `js/records/screen.js` | Records screen content, controller and `#records` binder. | [records-screen.md](records-screen.md), [records-screen-view.md](records-screen-view.md) |
 | `js/records/replay-list.js` | Library view: the board's kept replays, pin, Watch, Download, Open replay file. | [records-library-view.md](records-library-view.md) |
 | `js/records/history-chart.js` | History charts on a canvas and the lists' paging. | [records-history.md](records-history.md) |
 

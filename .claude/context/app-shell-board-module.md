@@ -83,7 +83,7 @@ returns the unsubscribe.
 
 - [app-shell-themes.md](app-shell-themes.md) — the applier that imports
   the module and notifies `bindBoardArt`.
-- [rendering.md](rendering.md) — `setBoard` and what the 3D scene draws from
+- [rendering-board-art.md](rendering-board-art.md) — `setBoard` and what the 3D scene draws from
   the module; [classic2d-tile-skin.md](classic2d-tile-skin.md) — `BOARD_ART`
   and the Classic 2D tile skin.
 - [classic2d-board-view.md](classic2d-board-view.md) — the board frame's

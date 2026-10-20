@@ -30,7 +30,7 @@ are listed in [app-shell.md](app-shell.md) § PUBLIC API.
   records nothing; its sound toggle plays the game's cues through the
   master volume. `ui.showReplay` hides the game's HUD, help, hint strip and
   toast. `LAYER_SCREEN` maps `#replay` to `replay`, one of the overlays that
-  contain focus ([app-shell-navigation.md](app-shell-navigation.md)). The
+  contain focus ([app-shell-focus.md](app-shell-focus.md)). The
   board scale setting reaches the viewer's 2D board (`setScale`), and
   `mountReplay2D` mounts at it.
 - **Replay files.** `REPLAY_FILES` = `{save: saveReplayFile, pick:

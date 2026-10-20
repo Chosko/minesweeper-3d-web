@@ -6,12 +6,12 @@
 the fit rule with its floor, the board scale's cap and a page's frame, the
 layout on the tile and the board module's gap, the panel's rectangle,
 hit-testing, per-cell redraw from the engine's change lists, scrolling and
-panning with a clipped board's shadows and scroll bars, the hidden board
-while paused, pressed feedback, the focus ring, the marked start cell, the
-cell events it plays, the end effect's drawing, and `mountBoardView`, the
-browser wiring around it. `js/classic2d/motion-layer.js` is the motion
-layer the view plays cell motion on. Both DOM-free at import. The area
-overview is [classic2d.md](classic2d.md).
+panning with a clipped board's shadows and scroll bars, the touch zoom,
+the hidden board while paused, and `mountBoardView`, the browser wiring
+around it. DOM-free at import. What it draws over its tiles — pressed
+feedback, rings, cell motion, the end effect — is
+[classic2d-board-motion.md](classic2d-board-motion.md); the area overview
+[classic2d.md](classic2d.md).
 
 ## PUBLIC API
 
@@ -34,27 +34,19 @@ overview is [classic2d.md](classic2d.md).
 - `clipMarks(layout, scroll)` → `{left, right, top, bottom, barX, barY}`;
   `SHADOW_DEPTH` (12), `SCROLLBAR` (`{thickness: 4, inset: 2}`).
 - `cellAtLayout(layout, scroll, cols, rows, x, y)` → cell index or -1.
-- Tokens: `BOARD_SHADOW`, `BOARD_SCROLLBAR`, `START_MARK`
-  (`--color-success`, the marked start cell's ring, under the cursor's);
-  `BOARD_BACKGROUND` (`--color-board-frame`) and `CURSOR_RING`
-  (`--color-tile-cursor`) only while the skin has no board module, whose
-  `palette.boardGround` and `cursor` take their place. `PAN_MODIFIER`
-  (`shiftKey`), `MOTION_LAYER_CLASS` (`board-motion`).
+- Tokens: `BOARD_SHADOW`, `BOARD_SCROLLBAR`; `BOARD_BACKGROUND`
+  (`--color-board-frame`) only while the skin has no board module, whose
+  `palette.boardGround` takes its place. `PAN_MODIFIER` (`shiftKey`).
 - `createBoardView({canvas, grid, createSkin, token, scale, frame, minTile,
   onLayout, layer, frames, now, onMotion})` (`frame` an object, or a
-  function measured again at every refit; `layer` the motion layer's
-  canvas, none for no motion; `onMotion({cell, event, before, after})` each
-  cell event started) → `{resize(width, height, pixelRatio),
-  setScale(scale), scale, setGame(game), update(changed, {motion}),
-  repaint(), cellAt(x, y), cellRect(c), scroll, scrollTo, scrollBy, pan(dx,
-  dy), wheel(event) → taken, ensureVisible(c) → scrolled,
-  setHidden(hidden), hidden, setPressed(cells, event = 'press'), pressed,
-  dropMotion(), motion, setCursor(c), cursor, setMark(c), mark,
-  pulseMark() (the ring thickens and thins `MARK_PULSE_STEPS` times,
-  `MARK_PULSE_MS` apart, on the `timers` option — a first reveal off a
-  forced start cell), markPulse,
-  showEffect(effect, t), effect, layout, pixelRatio, canvas, dispose}` —
-  `grid` the square grid ([engine.md](engine.md)); `createSkin` defaults to
+  function measured again at every refit) → `{resize(width, height,
+  pixelRatio), setScale(scale), scale, setGame(game), update(changed,
+  {motion}), repaint(), cellAt(x, y), cellRect(c), scroll, scrollTo,
+  scrollBy, pan(dx, dy), wheel(event) → taken, ensureVisible(c) →
+  scrolled, setHidden(hidden), hidden, layout, pixelRatio, canvas,
+  dispose}` plus the feedback, ring, motion and effect members of
+  [classic2d-board-motion.md](classic2d-board-motion.md); `grid` the
+  square grid ([engine.md](engine.md)); `createSkin` defaults to
   `createTileSkin`, `token` to the token reader. Positions are canvas CSS
   pixels.
 - Touch zoom: `zoomRange` → `{min, max}` (`MIN_TILE_SIZE` and the
@@ -67,16 +59,6 @@ overview is [classic2d.md](classic2d.md).
   size and taking no input, refitted on container resize and
   device-pixel-ratio change, scrolled by the wheel and panned by a
   primary-button drag with `PAN_MODIFIER` held.
-
-`js/classic2d/motion-layer.js`
-- `changeEvent(state, pressed)` → `{event, before}` or null: the cell event
-  of an engine change list's cell from its state after the change — reveal
-  (from closed, pressed or flagged), flag, unflag.
-- `createMotionLayer({canvas, place, paint, frames, clip?, onSettle?,
-  now?, cap?})` → `{start(cell, event, before, after, description),
-  drop(cell), has(cell), cells, frame(), dropAll() → cells, resize(width,
-  height, pixelRatio), dispose()}` over the cell motion player
-  ([classic2d-tile-skin.md](classic2d-tile-skin.md)).
 
 ## INTERNAL PATTERNS
 
@@ -131,78 +113,38 @@ overview is [classic2d.md](classic2d.md).
   clamped to the new range), puts the board point under the anchor and
   clamps the scroll, then repaints and reports the layout. The mode mounts
   a fresh view per game, so every game opens at the fit rule.
-- **Pressed feedback.** `setPressed` redraws only cells that gain or lose
-  the press; a pressed cell draws as `pressed` only while closed, and
-  `setGame` clears the set.
-- **Focus ring.** Stroked inside its own tile after the tile, so a cell
-  redraw moves or hides it; `setCursor` redraws only the cells it leaves
-  and enters. With a board module it is the module's ring — its colour,
-  width and inner hairline, its corners following the tile's radius;
-  without one a square ring in `CURSOR_RING`. The marked start cell's ring
-  takes the same shape in `START_MARK`, without the hairline.
-- **Cell motion.** With a `layer`, the view plays the board module's cell
-  motion on the motion layer: press or chord press for the cells gaining
-  the pressed set and release for closed cells losing it, and reveal, flag
-  and unflag for an `update`'s change list (`changeEvent`); a loss's change
-  list starts none and drops any running on its cells, the end effect
-  drawing them, and Classic 2D has no solved pulse. Only cells in view
-  start an event. While a cell animates its slot is drawn as bare ground
-  and the layer draws the cell from the tile cache — centred on its tile,
-  offset, scaled and turned per the player's values, at its opacity, its
-  brightness a lighter or darker second pass, its depth the cache's
-  nearest step — clipped to the view; when it settles the board draws it
-  again. Nothing on the board canvas is redrawn per frame, and the layer
-  requests frames only while a cell animates. Motion is visual only:
-  hit-testing, the game and every input stay on the logical slot.
-  `setGame`, hiding the board, a hand-off of board art and `dropMotion()`
-  (a replay's seek) drop every animation; `update(changed, {motion:
-  false})` starts none.
 - **Hidden.** While hidden (the game paused) a repaint draws the
   background only and `update` draws nothing.
-- **End effect drawing.** Over the skin's static tiles: tiles from
-  `shownState`, the pulse after each tile, the confetti after all tiles
-  clipped to the view; a full repaint draws the same moment. Without an
-  effect a won game's closed tiles are drawn as flags (`wonState`). The
-  effect itself is in [classic2d-mode.md](classic2d-mode.md).
 
 ## DOMAIN DEPENDENCIES
 
 - [../domain/features/classic-2d-square-play.md](../domain/features/classic-2d-square-play.md)
   — fitting, scrolling or panning, hit-testing, per-cell redraw, the board
   hidden while paused.
-- [../domain/features/square-tile-skin.md](../domain/features/square-tile-skin.md)
-  — the minimum tile size.
+- [../domain/features/square-tile-skin.md](../domain/features/square-tile-skin.md) — the minimum tile size.
 - [../domain/features/themed-board-art-and-motion.md](../domain/features/themed-board-art-and-motion.md)
-  — the gap, the corner radius, the board frame, the cursor ring and the
-  2D motion layer.
+  — the gap, the corner radius and the board frame.
 - [../domain/features/in-game-layout.md](../domain/features/in-game-layout.md)
   — the game window whose board area the fit rule works in.
 
 ## CROSS-REFERENCES
 
+- [classic2d-board-motion.md](classic2d-board-motion.md) — feedback,
+  rings, cell motion and the end effect's drawing.
 - [classic2d-tile-skin.md](classic2d-tile-skin.md) — the skin the view
-  draws through, its depth steps, `MIN_TILE_SIZE` and the cell motion
-  player the layer drives.
+  draws through and `MIN_TILE_SIZE`.
 - [classic2d-input.md](classic2d-input.md) — the inputs that drive the
   pressed set, the cursor and the pan.
-- [engine.md](engine.md) — the square grid's index layout and the
-  `changed` lists.
+- [engine.md](engine.md) — the square grid's index layout, `changed` lists.
 - [app-shell-board-module.md](app-shell-board-module.md), [app-shell-2d.md](app-shell-2d.md) — the board module, the board frame
   component, the board tokens and the shell's panel frame;
   [app-shell-ui.md](app-shell-ui.md) — `panelFrame2D` and `placePanel2D`.
-- [testing.md](testing.md) — `tests/classic2d-view.test.mjs` the board view,
-  its pitch and its end-effect drawing; `tests/classic2d-motion.test.mjs`
-  the motion layer and its event sources.
+- [testing.md](testing.md) — `tests/classic2d-view.test.mjs` the view, pitch.
 
 ## WHEN TO READ THE SOURCE
 
 - Changing the fit rule, the cap, the gap, the frame, the layout, the
   marks or what triggers a full repaint (`boardLayout`, `gapPx`,
   `panelRect`, `clipMarks`, `repaint`, `resize`, `setScale`).
-- Changing which cell events the board plays or how an animating cell is
-  drawn (`animate`, `update`, `setPressed`, `drawCell`;
-  `js/classic2d/motion-layer.js` `drawCell`).
-- Changing how the end effect is drawn (`showEffect`, `drawCell`,
-  `drawEffectLayer`).
 - Adding board input that competes with panning (`mountBoardView`'s pointer
   and wheel listeners, `PAN_MODIFIER`).

@@ -1,10 +1,11 @@
-# Settings — schema, store, appliers
+# Settings — schema and store
 
 ## OVERVIEW
 
 The player's settings: one schema declaring every setting, one store holding
 the validated values and persisting them through platform storage, the
-appliers that carry each value to its owner, the Settings page with Reset
+appliers that carry each value to its owner
+([settings-appliers.md](settings-appliers.md)), the Settings page with Reset
 all data ([settings-page.md](settings-page.md)) and the bindings source every
 help surface reads ([settings-bindings.md](settings-bindings.md)). Every
 module is DOM-free; `js/main.js` wires them ([app-shell.md](app-shell.md)).
@@ -14,7 +15,7 @@ Each module's head comment states its full contract.
 | --- | --- |
 | `js/settings/schema.js` | each setting's key, type, range or values, default; drives both validation and the page's controls, so a setting is added here and nowhere else |
 | `js/settings/store.js` | load at start-up, the document's format steps, validated writes, whole-document saves, change notification, the one-time `ms3d.*` carry-over; knows none of the appliers |
-| `js/settings/appliers.js` | each setting's effect, applied by its owner subscribing to the store; the render-resolution pixel-ratio rule |
+| `js/settings/appliers.js` | each setting's effect, applied by its owner subscribing to the store; the render-resolution pixel-ratio rule ([settings-appliers.md](settings-appliers.md)) |
 | `js/settings/page.js` | the Settings page, the Data panel's binder, the control binder ([settings-page.md](settings-page.md)) |
 | `js/settings/reset.js` | Reset all data ([settings-page.md](settings-page.md)) |
 | `js/settings/bindings.js` | the bindings source and the active device ([settings-bindings.md](settings-bindings.md)) |
@@ -59,17 +60,8 @@ Each module's head comment states its full contract.
     called throws.
   - `onChange(key, fn)` → unsubscribe; `fn(value, key)` after each change
     and once with the loaded value. An unknown key throws everywhere.
-- Appliers (each returns its unsubscribe): `pixelRatioFor(resolution,
-  devicePixelRatio, cells)` — `auto` the device ratio capped at 2, at 1.5
-  above 20³ cells and 1 above 50³; `sharp` the full device ratio; `fast` 1.
-  `applyTheme(store, theme)` (the theme applier's `setTheme`; a rejected
-  switch is left to the applier, which has told the player), `applyAudio`, `applyLook`, `applyCamera(store, setMode)`
-  (`setMode('fly' | 'orbit')`), `applyResolution`,
-  `applyFullscreen(store, { doc, enter, exit })`, `applyFieldOfView(store,
-  { camera, redraw })` (the renderer's `THREE.PerspectiveCamera`; `js/main.js`'s
-  `redraw` sets `needRender`), and `applySettings(store, { theme?, sfx?,
-  camera?, cameraMode?, resolution?, fullscreen?, fieldOfView? })` for all
-  at once.
+- Appliers, `pixelRatioFor` and `applySettings`:
+  [settings-appliers.md](settings-appliers.md).
 
 ## INTERNAL PATTERNS
 
@@ -87,33 +79,10 @@ Each module's head comment states its full contract.
   document) maps a stored `light` or `dark` to `joyful-tiles`, leaving every
   other value as it was; `js/theme.js` and the applier's `themeIdFor` map
   them the same way.
-- **Theme list.** The Settings page's Theme section is a
-  `ui-segmented--list`: one row per `THEMES` entry in catalogue order, its
-  name after a swatch striped from that theme's own tokens, read from its
-  stylesheet's text without applying it. The active theme is selected; a
-  pick calls the applier's `setTheme` and saves the setting once the switch
-  resolves, and a failed switch puts the selection back on the active
-  theme. It reads the registry, so a new theme appears with no page change
-  ([settings-page.md](settings-page.md)).
-- **No reduced-motion setting.** There is no settings field, root marker
-  or preference read for reduced motion until `m7-after-launch`: the base
-  stylesheet's shipped `@media (prefers-reduced-motion: reduce)` rule
-  (`css/style.css`), which stops every DOM animation and transition, is the
-  one reduced-motion behaviour, and cell motion on the boards ignores the
-  preference.
 - **One owner per value.** The store is the only holder: the sound module
   starts at its own defaults and keeps no copy, the camera's fields are
   written only by `applyLook` and its mode only by `applyCamera`, and the
   theme script reads the document but never writes it.
-- **Fullscreen follows the browser.** Setting it calls `enter()` / `exit()`
-  synchronously, inside the gesture that set it, only when the browser is in
-  the other state. On `fullscreenchange`, and when `enter()` or `exit()`
-  throws or rejects, the store is set to whether `doc.fullscreenElement` is
-  set. F in play sets the setting; `js/main.js`'s `enterFullscreen` also
-  takes Keyboard Lock.
-- **Resolution.** `js/main.js`'s `applyPixelRatio(n)` remembers the cell
-  count of the board shown (game or menu demo) and calls `pixelRatioFor`
-  with the current setting; the resolution applier re-runs it on change.
 - **Carry-over.** Only when `storage.load` returns no document and reported
   no load trouble: each legacy key is read the old owner's way (sensitivity
   `parseFloat`, volume `Number`, both clamped; booleans true only on `'1'`;
@@ -129,13 +98,14 @@ Each module's head comment states its full contract.
   settings, their ranges and defaults, the store's read/write/subscribe and
   failure contracts, the start-up order, the carry-over and the page.
 - [../domain/features/theme-system.md](../domain/features/theme-system.md)
-  — the theme preference, its carry-over, the theme applier the setting
-  drives and the theme list.
+  — the theme preference and its carry-over.
 - [../domain/features/platform-storage.md](../domain/features/platform-storage.md)
   — the versioned document the store saves.
 
 ## CROSS-REFERENCES
 
+- [settings-appliers.md](settings-appliers.md) — each setting's applier,
+  the theme list, fullscreen and the render resolution.
 - [settings-page.md](settings-page.md) — the page, the control binder, the
   Data panel and Reset all data.
 - [settings-bindings.md](settings-bindings.md) — the bindings source and the
@@ -145,21 +115,17 @@ Each module's head comment states its full contract.
   script and the theme applier.
 - [platform.md](platform.md) — `register`/`load`/`save` and the browser key
   format `js/theme.js` reads.
-- [audio.md](audio.md) — `setVolume`, `setMuted`, the module's defaults.
-- [rendering.md](rendering.md) — `BoardRenderer.setPixelRatio`, its `camera`'s `fov`.
-- [input-camera.md](input-camera.md) — `FlyCamera.sensitivity` / `invertY`; `OrbitCamera`, the Camera setting's Orbit.
+- [audio.md](audio.md) — the sound module's defaults.
 - [testing.md](testing.md) — `tests/settings-store.test.mjs`,
-  `tests/settings-appliers.test.mjs`, `tests/settings-page.test.mjs`.
+  `tests/settings-page.test.mjs`.
 
 ## WHEN TO READ THE SOURCE
 
 - Adding a setting: `SCHEMA`, then its section, label and (for a number) a
   `SLIDERS` entry in `page.js` ([settings-page.md](settings-page.md)), and
-  its applier; a setting that changes the stored shape bumps
+  its applier ([settings-appliers.md](settings-appliers.md)); a setting that changes the stored shape bumps
   `SETTINGS_VERSION` with an upgrade step.
 - Changing load, carry-over, the format steps or save-failure behaviour:
   `doLoad`, `readLegacy`, `UPGRADES` and `persist` in `store.js`; a format
   step that maps a theme is mirrored in `js/theme.js` and
   `js/themes/applier.js`.
-- Fullscreen state drifting from the browser: `applyFullscreen` and the
-  `enterFullscreen` / `exitFullscreen` pair in `js/main.js`.

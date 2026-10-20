@@ -45,7 +45,7 @@ grammar)
 - [records.md](records.md) — the board identity a code carries, the summary
   `codeOf` reads.
 - [generation.md](generation.md) — the seed and `GENERATOR_VERSION`.
-- [app-shell-menu.md](app-shell-menu.md) — the Daily screen, board codes in
+- [app-shell-daily.md](app-shell-daily.md) — the Daily screen, board codes in
   the board choices and `#board=` links.
 - [testing.md](testing.md) — `tests/records-board-code.test.mjs`.
 

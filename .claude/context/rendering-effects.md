@@ -7,7 +7,7 @@ the cubes — reveal, flag, unflag and the "solved" pulse of a number that hides
 cubes a flag click on a number changes, the win and loss waves with confetti and camera shake, the
 ground grid below the board; and how the renderer behaves under a 3D replay and at the end of a 3D
 game. All live in `js/render.js`, cell motion on the player `js/cell-motion.js`
-([classic2d-tile-skin.md](classic2d-tile-skin.md)); each effect needs frames, so `isAnimating()`
+([classic2d-tile-motion.md](classic2d-tile-motion.md)); each effect needs frames, so `isAnimating()`
 stays true while any runs.
 
 ## Public API
@@ -110,7 +110,7 @@ stays true while any runs.
 
 - [rendering.md](rendering.md) — the renderer's API, passes, state texture and sky palette.
 - [app-shell-replay.md](app-shell-replay.md) — the replay viewer route and its frame-loop tick;
-  [app-shell-3d.md](app-shell-3d.md) — the end sequence; [app-shell-3d-play.md](app-shell-3d-play.md) — render on demand.
+  [app-shell-3d-session.md](app-shell-3d-session.md) — the end sequence; [app-shell-3d-play.md](app-shell-3d-play.md) — render on demand.
 - [replay-viewers.md](replay-viewers.md) — the 3D viewer whose state view and recorded camera the renderer draws.
 - [audio.md](audio.md) — no direct link; win/loss sounds fire alongside the waves from main.
 - [testing.md](testing.md) — `tests/render-3d-motion.test.mjs` (cell events, motion instances, the

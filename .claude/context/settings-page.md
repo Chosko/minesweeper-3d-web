@@ -48,7 +48,7 @@ Page (`js/settings/page.js`)
   `#set-export-text` (`EXPORT_LINE`), the nothing-to-export line
   `#set-export-note`, buttons `#set-export-csv` and `#set-export-json`,
   bound in `js/main.js` by `bindExportActions` over `RECORDS_EXPORT` and
-  refreshed on each show of the page ([records-screen.md](records-screen.md))
+  refreshed on each show of the page ([records-screen-view.md](records-screen-view.md))
   — then warning line `#set-reset-note`, button `#set-reset`, hidden confirmation
   `#set-reset-confirm` with `#set-reset-yes` / `#set-reset-no`);
   `bindingsSectionHtml(glyphs?, camera?, {mode?, device?})` — the

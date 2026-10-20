@@ -113,7 +113,7 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
   controls-modal toggle calls `layerChanged`, which suppresses buttons held
   at the last poll until released and resets the menu repeats. The D-pad
   (`padNav`) and the arrow keys (`keyNav`) move focus through `navStep`
-  ([app-shell-navigation.md](app-shell-navigation.md) § Focus walk); the
+  ([app-shell-focus.md](app-shell-focus.md) § Focus walk); the
   arrows leave an arrow the focused control owns (`keepsArrow`) or handled
   (`defaultPrevented`), and focus through `keyFocus`, which drops
   `pad-nav` so `:focus-visible` shows.
@@ -135,7 +135,7 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
   device and first-use hints these methods serve;
   [settings-page.md](settings-page.md) — Settings page markup and binder.
 - [input-controller.md](input-controller.md) — the navigation layer;
-  [app-shell-navigation.md](app-shell-navigation.md) — the focus walk.
+  [app-shell-focus.md](app-shell-focus.md) — the focus walk.
 - [app-shell-kit.md](app-shell-kit.md) — the in-game components.
 - [testing.md](testing.md) — `tests/components.test.mjs`,
   `tests/components-game3d.test.mjs`, `tests/live-figures.test.mjs`,

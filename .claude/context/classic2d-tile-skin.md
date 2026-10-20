@@ -2,8 +2,9 @@
 
 ## OVERVIEW
 
-How a Classic 2D tile looks, and how a cell moves. The area overview is
-[classic2d.md](classic2d.md).
+How a Classic 2D tile looks. The area overview is
+[classic2d.md](classic2d.md); how a cell moves, the cell motion player
+`js/cell-motion.js`, is [classic2d-tile-motion.md](classic2d-tile-motion.md).
 
 - `js/classic2d/tile-skin.js` — the stateless tile painter, the tile cache
   that pre-renders every state and number (and the raised states at each
@@ -18,11 +19,6 @@ How a Classic 2D tile looks, and how a cell moves. The area overview is
   faces at any size and depth, and the number, mine and flag glyphs and the
   wrong-flag cross, every colour and parameter an argument. It imports
   nothing and touches no DOM.
-- `js/cell-motion.js` — the cell motion player both renderers use: the
-  running cell animations a theme's motion descriptions play
-  ([app-shell-board-module.md](app-shell-board-module.md), the board module's `motion`), and
-  each animating cell's values per frame. It imports nothing and touches no
-  DOM, game state, timer, replay, setting or media query.
 
 ## PUBLIC API
 
@@ -61,19 +57,6 @@ How a Classic 2D tile looks, and how a cell moves. The area overview is
   `drawFlagGlyph`, `drawCross`; `NUMBER_FONT` (the fallback stack behind a
   theme's number font), `shade`, `mix`, `roundRect`, `tileBands`.
 
-`js/cell-motion.js`
-- `createCellMotion({now, cap})` → `{start(cell, event, before, after,
-  description), valuesAt(time), dropAll(), animating(time)}` — `now` is the
-  clock in ms (`performance.now` by default), `cap` defaults to
-  `MOTION_CAP`. `start` answers whether an animation started; `valuesAt`
-  maps each animating cell to `{event, face, scale, offset {x, y, z},
-  rotation {axis, angle}, depth, brightness, opacity}`, `face` being the
-  `before` or `after` the caller passed; `animating` defaults its time to
-  `now()`.
-- `MOTION_CAP` — how many cells animate at once.
-- `easingFunction(easing)`, `cubicBezier(x1, y1, x2, y2)` — a description's
-  easing as a function of progress.
-
 ## INTERNAL PATTERNS
 
 - **Drawing styles.** `bevel` is a raised face inside a thin edge framed
@@ -95,7 +78,7 @@ How a Classic 2D tile looks, and how a cell moves. The area overview is
   device pixel (from the context's scale), so every band is whole device
   pixels. `palette.faces2d.marked` is carried by the module but not drawn:
   the marked start cell is the board view's ring
-  ([classic2d-board-view.md](classic2d-board-view.md)).
+  ([classic2d-board-motion.md](classic2d-board-motion.md)).
 - **Placeholder.** An unknown state, a number outside 0–8, or no board
   module paints `FALLBACK_COLOR` with a black cross — visibly wrong on
   purpose.
@@ -121,27 +104,13 @@ How a Classic 2D tile looks, and how a cell moves. The area overview is
   colour: every colour, parameter and the number font are the board
   module's, which the board conformance checks hold to the contrast and
   legibility contract ([app-shell-board-module.md](app-shell-board-module.md)).
-- **Cell motion.** Each track interpolates its keyframes with the
-  description's easing applied per keyframe segment, as a CSS animation's
-  timing function is, holding its end values outside them. A flip
-  (rotation with `flip: true`) shows `before` until halfway between its
-  first and last keyframe and `after` from then on; without a flip a cell
-  shows `after` throughout, and a property no track animates rests (depth
-  `null`, the face's own). An animation past its duration leaves the
-  player, so the cell shows `after`. A second `start` on an animating cell
-  restarts it; a `null` description, or a new cell past the cap, starts
-  nothing and drops the cell's running animation, so it shows its new
-  state at once. `MOTION_CAP` is measured by `dev/measure-cell-motion.mjs`,
-  a flood reveal on a 100 × 100 board, and the module's head comment holds
-  the measurement and the rule that picks it.
 
 ## DOMAIN DEPENDENCIES
 
 - [../domain/features/square-tile-skin.md](../domain/features/square-tile-skin.md)
   — the states, the paint call, the cache and the minimum tile size.
 - [../domain/features/themed-board-art-and-motion.md](../domain/features/themed-board-art-and-motion.md)
-  — the drawing styles, the board module the skin draws from, the hand-off,
-  the cell motion player, the motion description and its vocabulary.
+  — the drawing styles, the board module the skin draws from, the hand-off.
 
 ## CROSS-REFERENCES
 
@@ -151,10 +120,13 @@ How a Classic 2D tile looks, and how a cell moves. The area overview is
 - [rendering.md](rendering.md) — the 3D tile atlas, drawn through the same
   `js/tile-art.js` in the module's 3D style.
 - [classic2d-board-view.md](classic2d-board-view.md) — the view that owns a
-  skin.
+  skin; [classic2d-board-motion.md](classic2d-board-motion.md) — the motion
+  layer that draws from the cache's depth steps.
+- [classic2d-tile-motion.md](classic2d-tile-motion.md) — the cell motion
+  player.
 - [testing.md](testing.md) — `tests/tile-art.test.mjs` the drawing styles;
   `tests/tile-skin.test.mjs` the painter, cache, hand-off and
-  `MIN_TILE_SIZE`; `tests/cell-motion.test.mjs` the cell motion player.
+  `MIN_TILE_SIZE`.
 
 ## WHEN TO READ THE SOURCE
 
@@ -167,8 +139,6 @@ How a Classic 2D tile looks, and how a cell moves. The area overview is
   `js/themes/board-module.js`).
 - Changing the cache key, the depth steps or what invalidates the cache
   (`drawTile`, `build`, the `art.onChange` subscription).
-- Changing how motion is interpolated or capped (`js/cell-motion.js`);
-  re-run `node dev/measure-cell-motion.mjs` before changing `MOTION_CAP`.
 - A legibility failure in the browser test: read its per-tile glyph pixel
   counts and saved screenshots before changing a board module value or
   glyph geometry.

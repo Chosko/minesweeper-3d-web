@@ -3,15 +3,17 @@
 ## OVERVIEW
 
 Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
-Covers how `js/main.js` runs the 3D game's flow: the adapter's flow
+Covers how `js/main.js` leads the 3D game into play: the adapter's flow
 `FLOW_3D`, entering play, the ready card and its pointer-lock fallback
 (`js/shell/lock-fallback.js`, pure), lockless and drag-to-look play, the
-board status card, the session, Learn 3D's wiring and the end sequence. The
-play inputs and the camera — action dispatch, keyboard-only and touch play,
-the controller in play, the Camera setting's Fly and Orbit, the camera
-aids, spacing and render on demand — are
-[app-shell-3d-play.md](app-shell-3d-play.md). The 3D board choice, session
-and adapter (`js/shell/mode-3d.js`) themselves are [mode3d.md](mode3d.md).
+scene panel and `sync3D`. The session, the board status card, Learn 3D's
+wiring and the end sequence are
+[app-shell-3d-session.md](app-shell-3d-session.md). The play inputs and the
+camera — action dispatch, keyboard-only and touch play, the controller in
+play, the Camera setting's Fly and Orbit, the camera aids, spacing and
+render on demand — are [app-shell-3d-play.md](app-shell-3d-play.md). The 3D
+board choice, session and adapter (`js/shell/mode-3d.js`) themselves are
+[mode3d.md](mode3d.md).
 
 ## PUBLIC API
 
@@ -28,7 +30,8 @@ and adapter (`js/shell/mode-3d.js`) themselves are [mode3d.md](mode3d.md).
   routes to `board-choice` (filled from `LAST_CHOICE_3D`; Learn 3D, the
   four cube presets, Custom and Insert Board Code, a First box size played
   as a custom board — [mode3d.md](mode3d.md)); `start` is
-  `startGame`; `pause` shows the pause card; `resume` is `resumeGame`;
+  `startGame` ([app-shell-3d-session.md](app-shell-3d-session.md));
+  `pause` shows the pause card; `resume` is `resumeGame`;
   `restart` starts a session of the same board (no-guess off once the
   player took the failed board's standard offer) and enters play through
   `enterPlay3D`; `leave` is `leaveGame` (leaves the session, releases lock
@@ -68,17 +71,6 @@ and adapter (`js/shell/mode-3d.js`) themselves are [mode3d.md](mode3d.md).
   by `leaveGame`) is the input's `isDragLook` ([input.md](input.md)) and
   `body.drag-look`; while set, resume, restart and Play again stay in
   drag-to-look play.
-- **Board status card.** `board3d` holds `{generating, failure, progress}`
-  from the session's events and, each frame the card shows, its progress
-  (`progress3D` redraws without moving focus). `showStatus3D` shows
-  `#m3d-status` while `playing`, and a failure's offer while `paused` too;
-  a failure exits lock and focuses the offer (`statusFocus`,
-  [app-shell-2d.md](app-shell-2d.md)); the generating card focuses
-  Cancel unless the focus is already on one of its buttons. `retry3D`
-  answers the offer and re-enters play, from the pause card too;
-  `standardFromWait3D` is the generating card's Play a standard board (the
-  session's `playStandard()`); Main menu is `PAUSE.toMenu()`. While the card
-  shows, the controller goes to `padStatus3D`.
 - **Scene panel.** `syncScenePanel` (every router change, window resize,
   the Daily body's scroll, and a `ResizeObserver` on the panel's stage)
   hands `renderer.setTarget` the rectangle of the shown screen's live
@@ -95,74 +87,36 @@ and adapter (`js/shell/mode-3d.js`) themselves are [mode3d.md](mode3d.md).
 - **`sync3D`** (every router change) resumes the session on `playing` and
   pauses it elsewhere, so board input runs only in play; it refreshes the
   status card.
-- **Session.** `startGame(settings, pregenerated?)` leaves the previous
-  session, opens one (`createSession` over `GEN_3D`; `__ms` mine positions
-  give a fixed board; Learn 3D's `learnChoice()` a fixed board with its
-  forced start), subscribes to its events (`mark` → `renderer.setMark`) and
-  returns it. `S.play` is the session, `S.game` its 3D state view, which
-  every board reader uses; `S.started` is set at the session's `started`.
-  `board3dChoice`, the board a restart plays again, keeps the guided board's
-  mine positions and `learn`.
 - **Ready card.** `showReady` gets `rules` (the "How 3D works" block) and
   `learn` (the `#ready-learn` line "New to 3D? Learn 3D walks you through a
   small box." with `#ready-learn-btn` → `startLearn`, outside the Click to
   play button) while `FIRST_USE.rules3D`; neither on the guided board's own card,
   and the line only before the game started.
-- **Learn 3D.** `startLearn()` (the board choice's `onLearn`, the ready
-  card's line, `__ms.learn()`) starts `learnChoice()` (`js/mode3d/learn.js`)
-  and saves nothing. `S.learn` holds the guided game's prompt sequence
-  (`createLearnPrompts`), null otherwise; `ui.setTimed(false)` hides the
-  timer. `refreshHints` shows its prompt in the hint strip in play
-  (`LEARN_HINTS`, after its step `#hint-strip-step` from `learnStepOf`, no
-  close button); `learnAction` feeds flags and chords
-  from `onAction`, and after every action while the game is on L's closed,
-  unflagged neighbour count (`closedAround`), which skips the chord prompt
-  at 0; `learnViews` the Shift and Ctrl the frame loop reads (Ctrl also
-  `FIRST_USE.once('autoHideToast')`), and `learnChanged` redraws the
-  strip and puts the start-cell tint (`renderer.setMark`) on the prompt's
-  cell. `noteAutoHide`, `aimHint` and the 3D first-use strip stay quiet.
-  `learnGame()` gives the first-use state its `{learn, won}` and keeps the
-  game out of `LAST_MODE` and the menu's last-mode mark.
-- **End sequence.** The session's `finished` runs `endGame`, which freezes
-  `S.endState = {state, time, minesLeft, clicks}` (`minesLeft` from before
-  the final action, as the original froze; `clicks` from `clicks3D()`) and
-  plays the win sound; HUD, pause card and timer read it once set (until
-  then `S.time` is `S.play.elapsedMs()`). During the end delay nothing else
-  acts: `Input.isActive`, `canAct` and `canLook` are false, the frame loop moves no camera and
-  changes no view mode, `handlePad` only releases held controls. After it
-  the adapter releases lock and reports finished
-  ([app-shell-pause.md](app-shell-pause.md) § End delay). A null summary
-  ends the guided board on the `learn-end` screen (`#learn-end`, Play Cube
-  Intro → `playCubeIntro`, an ordinary pick saved as the last choice, or Try
-  again → `PAUSE.restart`; Back to board choice) and the debug hook's fixed
-  board on the pause card.
+
 ## DOMAIN DEPENDENCIES
 
 - [../domain/features/3d-play-flow.md](../domain/features/3d-play-flow.md) —
-  presets, generating state, timer start, the 3D mode's reports.
+  presets, the ready card, pointer lock and its fallback.
 - [../domain/features/3d-results-records-screens.md](../domain/features/3d-results-records-screens.md)
-  — the 3D end sequence, the results over the scene and the look.
+  — the results over the scene and the look.
 - ORIGINAL_SPEC "Controls" — the start pose and the return to it.
 
 ## CROSS-REFERENCES
 
+- [app-shell-3d-session.md](app-shell-3d-session.md) — the session,
+  board status card, Learn 3D and end sequence.
 - [mode3d.md](mode3d.md), [engine-3d.md](engine-3d.md) (the 3D state view),
   [generation.md](generation.md) (`GEN_3D`).
 - [app-shell-3d-play.md](app-shell-3d-play.md) — the play inputs, camera
   and render on demand.
-- [rendering.md](rendering.md) — `setGame`, `setMark`, `sync`.
+- [rendering.md](rendering.md) — `setTarget`, `setGame`, `sync`.
 - [input.md](input.md) — `Input`'s lock callbacks and `isDragLook`.
-- [audio.md](audio.md) — the win sound.
-- [testing.md](testing.md) — `tests/mode3d-*.test.mjs` (wiring, end
-  sequence, the results over the scene and the look), the pointer-lock fallback tests.
+- [testing.md](testing.md) — `tests/mode3d-*.test.mjs` (wiring), the
+  pointer-lock fallback tests.
 
 ## WHEN TO READ THE SOURCE
 
-- Changing the 3D end-of-game flow or the frozen HUD (`endGame`,
-  `S.endState`, the `MODES.on('finished')` Learn 3D end card and fixed
-  board's pause card),
-  the board status card (`showStatus3D`, `retry3D`) or how the session's
-  timer follows the screens (`sync3D`).
+- Changing how the session's timer follows the screens (`sync3D`).
 - Changing the ready card, the lock refusal messages or lockless entry:
   `showReady`, `LOCK_FALLBACK`, `enterPlay3D`, `enterDragLook`.
 - Changing where the scene draws on a screen with a scene panel:

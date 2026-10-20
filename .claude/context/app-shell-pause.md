@@ -74,7 +74,7 @@ Both modules are pure; their rules are documented in their head comments.
   and so does a game outside the records (`unrecorded`, the shell's
   `mode3d.learn`: the Learn 3D guided game), with no toast. The guided
   game's end goes to the Learn 3D end card (`learn-end`,
-  [app-shell-3d.md](app-shell-3d.md)), not the results screen.
+  [app-shell-3d-session.md](app-shell-3d-session.md)), not the results screen.
 - **Restart keys.** `restartKey(code, e)` in `onKey` (after the 3D `Home` /
   `R` camera return), through `restartInput`, never with Ctrl/Alt/Meta:
   `F2` (default always prevented) → `PAUSE.restart('key')`; `R` on `results`
@@ -108,7 +108,7 @@ Both modules are pure; their rules are documented in their head comments.
   The same listeners feed `LOOK_END`, which ends the look at a finished 3D
   board ([app-shell-results.md](app-shell-results.md) § Look at the board).
   The finished report then routes to `results` at once. The 3D-specific
-  freeze during the delay: [app-shell-3d.md](app-shell-3d.md) § End sequence.
+  freeze during the delay: [app-shell-3d-session.md](app-shell-3d-session.md) § End sequence.
 
 ## DOMAIN DEPENDENCIES
 

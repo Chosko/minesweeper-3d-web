@@ -83,7 +83,7 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
 - [settings-bindings.md](settings-bindings.md) — bindings source, active
   device, hint texts.
 - [platform.md](platform.md) — the `shell.firstUse` document's storage.
-- [app-shell-3d.md](app-shell-3d.md) — Learn 3D's prompts in the hint strip.
+- [app-shell-3d-session.md](app-shell-3d-session.md) — Learn 3D's prompts in the hint strip.
 - [input.md](input.md) — Space's tap-toggle the hints name.
 - [testing.md](testing.md) — `tests/shell-help.test.mjs`,
   `tests/shell-first-use.test.mjs`.
