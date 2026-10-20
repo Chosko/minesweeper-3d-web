@@ -88,7 +88,7 @@ Context: none
 
 Done: 2026-10-20, commit `b20dc22` (9 files, +411/-13). Decisions: one icon set, `ICONS` in `js/ui/components.js`, drawn from `data-icon` by `applyIcons(root)` or through `createButton`/`setButtonIcon`; nothing calls `applyIcons` yet; the code chip's icons are left to task 222.
 
-## [ ] 8. Implement task 221 — Kit feedback parts: confirm box, warn and err notes
+## [x] 8. Implement task 221 — Kit feedback parts: confirm box, warn and err notes
 
 Depends on: 5, 7
 
@@ -100,7 +100,9 @@ Context:
 /task-implement 221 --review
 ```
 
-## [ ] 9. Implement task 222 — Kit surfaces: plain stat tile, muted panel, tables, pager, code chip
+Done: 2026-10-20, commit `788aeeb` (38 files, +594/-182). Decisions: `js/main.js` now calls `applyIcons(document.body)`; the Records delete confirmation keeps its `deleteMessage` wording; a board code from the other mode stays valid (only a refused code is invalid); the reset-failure line and `settings.md` changed together.
+
+## [~] 9. Implement task 222 — Kit surfaces: plain stat tile, muted panel, tables, pager, code chip
 
 Depends on: 5, 7
 
@@ -112,7 +114,7 @@ Context:
 /task-implement 222 --review
 ```
 
-## [ ] 10. Implement task 223 — Kit frames: head and foot steps, white action foot, message cards, scrims, status cards
+## [~] 10. Implement task 223 — Kit frames: head and foot steps, white action foot, message cards, scrims, status cards
 
 Depends on: 5, 7
 
