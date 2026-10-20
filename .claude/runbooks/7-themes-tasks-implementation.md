@@ -934,7 +934,7 @@ Context:
 
 Done: 2026-10-20, commit `4889948` (6 files, +592/-128). Brightness above 1 is drawn as a lift toward white by the excess (below 1 it multiplies), departing from the feature document's "multiplier"; the solved pulse now plays through the one motion mesh. Premise wrong: the event sources live in the renderer (`BoardRenderer.sync()`), so `js/shell/mode-3d.js` and `js/replay/viewer-3d.js` are unchanged. `MOTION_CAP` stays 256 after re-measuring.
 
-## [~] 78. Implement task 213 — 3D selection glow line, selected-face tint and confetti colours drawn from the board module
+## [x] 78. Implement task 213 — 3D selection glow line, selected-face tint and confetti colours drawn from the board module
 
 Depends on: 72, 74, 77
 
@@ -944,6 +944,8 @@ Context:
 ```prompt
 /task-implement 213 --review
 ```
+
+Done: 2026-10-20, commit `07c3adc` (4 files, +251/-24). The selection outline is now drawn solid and the old pulse drives the new glow line instead; the renderer's built-in warm selection glow is removed.
 
 ## [x] 31. Implement task 187 — Update documentation for feature `themed-board-art-and-motion`
 
@@ -957,7 +959,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the edge to task 213, its precondition; lacked the order against tasks 173, 179, which edit the same files; replaced by step 79.
 
-## [ ] 79. Implement task 187 — Update documentation for feature `themed-board-art-and-motion`
+## [~] 79. Implement task 187 — Update documentation for feature `themed-board-art-and-motion`
 
 Depends on: 24, 71, 72, 73, 74, 75, 76, 77, 78
 
@@ -967,6 +969,7 @@ Context:
 - 2026-10-20 (from step 74): `.claude/context/rendering.md`, `app-shell-kit.md` and `INDEX.md` still describe `setScenePalette` and the unthemed atlas; the renderer now has `setBoard(board)` and the atlas gains an `L_SUNK` layer at the end.
 - 2026-10-20 (from step 76): record the Classic 2D depth steps (0, 0.25, 0.5, 0.75, 1, cached in `js/classic2d/tile-skin.js`), the `board-motion` second canvas, and that what depth means on a bevel-style 2D pressed face is undecided (Joyful uses flat).
 - 2026-10-20 (from step 77): record the brightness contract — above 1 is a lift toward white by the excess, below 1 a multiplier — in the feature document and `js/themes/board-module.js`'s vocabulary comment; the solved pulse is merged into the one motion mesh (`pulseEnvelope`, `PULSE_*` and `_pulses` are gone), which `.claude/context/rendering-effects.md` still describes.
+- 2026-10-20 (from step 78): `.claude/context/rendering.md` still says the selection outline and effects are the same under every theme; the selected cube's outline, glow line and face tint, and the win confetti colours, now come from the board module.
 
 ```prompt
 /task-implement 187 --review
