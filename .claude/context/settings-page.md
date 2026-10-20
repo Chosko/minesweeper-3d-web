@@ -24,8 +24,7 @@ Page (`js/settings/page.js`)
   (`muted`, `volume`); `SETTING_LABELS` (`muted` reads Sound),
   `CHOICE_LABELS`; `SETTINGS_COLUMNS` — the widest window's columns, each a
   stack of section ids (Controls and Audio, Graphics and Theme, Bindings
-  and Data); `SETTING_NOTES` — the settings noted "3D" under their name;
-  `CONTROLS_ACTION`.
+  and Data); `SETTING_NOTES` — the settings noted "3D" under their name.
 - `settingControl(key, { themes? })` → `{ key, kind: 'slider' | 'toggle' | 'segmented',
   label, … }` by schema type; `SLIDERS` adds a number's step, format,
   scale (volume shows 0–100 %) and unit (the field of view's `°`, carried
@@ -33,24 +32,25 @@ Page (`js/settings/page.js`)
   while its value is false; the theme is a segmented control with `list:
   true` and one option per entry of `themes` (default `THEMES`, the
   parameter a test feeds a longer list through), rendered as a
-  `ui-segmented--list` whose options each lead with a
-  `.ui-segmented__swatch`.
+  `ui-segmented--list` of cards, each leading with a
+  `.ui-segmented__swatch` and ending in a check `ui-icon` the chosen card
+  shows.
 - `settingControlHtml(key, value?, { labelledBy?, themes? })` — the control's kit
   markup, root carrying `data-setting="<key>"`, ids `set-<key>`.
 - `settingsPageHtml()` — one `ui-columns` (`#settings-columns`) of the
   `SETTINGS_COLUMNS`, each a `ui-column` stacking its sections (a
   `ui-panel` with `data-section`, under its `ui-section-label`; each
   setting a `ui-row` of its name and its control): the four setting
-  sections, Controls ending in the Controls action `#set-controls` (it
-  opens the controls reference), the Bindings panel (the Mode and Device
+  sections, the Bindings panel (the Mode and Device
   choices `#set-bind-mode`, `#set-bind-device` over the list
   `#settings-bindings`, filled by `bindingsSectionHtml`), and the Data
-  panel (`#settings-data`: first the export — its line
-  `#set-export-text` (`EXPORT_LINE`), the nothing-to-export line
-  `#set-export-note`, buttons `#set-export-csv` and `#set-export-json`,
-  bound in `js/main.js` by `bindExportActions` over `RECORDS_EXPORT` and
-  refreshed on each show of the page ([records-screen-view.md](records-screen-view.md))
-  — then button `#set-reset`, under it the hidden err note `#set-reset-note`,
+  panel (`#settings-data`, its parts in `#set-data-body`: first the export
+  — its line `#set-export-text` (`EXPORT_LINE`) and the small buttons
+  `#set-export-csv` and `#set-export-json` with their download icons,
+  bound in `js/main.js` by `bindExportActions` over `RECORDS_EXPORT` with no
+  note line and refreshed on each show of the page
+  ([records-screen-view.md](records-screen-view.md)) — then button
+  `#set-reset` with its trash icon, under it the hidden err note `#set-reset-note`,
   and the hidden confirm box `#set-reset-confirm` with `#set-reset-yes`
   (its trash icon) beside `#set-reset-no`);
   `bindingsSectionHtml(glyphs?, camera?, {mode?, device?})` — the
@@ -58,6 +58,15 @@ Page (`js/settings/page.js`)
   keyboard; a device the mode does not list falls back to its first), 3D's
   rows for the Camera setting's `camera`; `UI` redraws it on each Mode or
   Device change.
+- `SETTINGS_LAYOUTS` — the columns by window size, widest first, each
+  `{ media, columns }`: the `SETTINGS_COLUMNS` from the xl step, Controls,
+  Graphics and Audio beside Theme, Data and Bindings from the kit
+  breakpoint, one stack in the phone's order (Controls, Graphics, Theme,
+  Audio, Bindings, Data) below it; `settingsColumnsFor(matches)`;
+  `placeSettingsSections(root, columns)` moves the sections into one
+  `ui-column` per stack, keeping the focus; `bindSettingsLayout(root,
+  { matchMedia? })` → unbind places them for the window and on every
+  media change (`UI` binds it once the page is built).
 - `bindResetPanel({ open, panel, yes, no, note }, { reset })` → `{ isOpen,
   close, clear }`: the confirmation opens with focus on Cancel; confirming
   disables both buttons and calls `reset()` once, a failure closing the
@@ -73,7 +82,8 @@ Page (`js/settings/page.js`)
   each swatch is filled from `themeSheet(entry)` → Promise of the
   stylesheet's text (default: fetched from the site root), a failure leaving
   it blank.
-- `SWATCH_TOKENS` (ground, surface, accent fill, ink),
+- `SWATCH_TOKENS` (ground, head, accent fill, blue, teal — each in
+  `REQUIRED_TOKENS`),
   `themeSwatchColors(cssText, id)` → `{ token: value }` from the theme's
   `:root[data-theme="<id>"]` token block, `swatchBackground(colors)` → a
   stripe per token.
@@ -90,11 +100,15 @@ Reset (`js/settings/reset.js`)
 ## INTERNAL PATTERNS
 
 - **The page** (`css/components.css` head comment, *Settings page*) is a
-  `ui-frame` on the backdrop, Back ("Main menu", `#settings-back`) in its
-  head and no foot. The sections sit in three columns on the largest
-  windows, two from the kit breakpoint and one below it, regrouped by
-  placement alone (`css/style.css`); on a phone the Device choice spans the
-  panel, each option wrapping its label.
+  `ui-frame` inset on the backdrop at the canvas's size for each window
+  step (`css/style.css`), Back (`#settings-back`, "Main menu" with its arrow
+  icon, "Back" on a phone, named "Back to Main menu") in its head and no
+  foot. The sections stand in independent stacks, three on the largest
+  windows, two from the kit breakpoint and one below it, which
+  `SETTINGS_LAYOUTS` places; each setting row is ruled above. On a phone
+  the Device choice spans the panel, each option wrapping its label, and
+  the exports stack. With the shipped 3D bindings list the largest window's
+  body scrolls; the opening Classic 2D list fits.
 - **Controls are bound by `data-setting`.** The page's generated controls
   and the pause card's Sound, volume, sensitivity and invert-Y shortcuts
   (the last two only on a 3D game's pause card) all carry `data-setting`,
@@ -113,8 +127,8 @@ Reset (`js/settings/reset.js`)
   guard's `reloading` and calls `location.reload()`; `UI`'s `onResetAll`
   runs it.
 - **Back closes the confirmation first.** `UI.closeResetConfirm()` (→ false
-  when none is open, or the page is hidden) comes after `closeControls` and
-  `closeConfirm` in `shellBack` and `historyBack`, so Esc, the controller's
+  when none is open, or the page is hidden) comes after `closeConfirm` in
+  `shellBack` and `historyBack`, so Esc, the controller's
   Back and the browser's Back close it before leaving the page;
   `showSettings` opens the page with it closed.
 

@@ -3,6 +3,7 @@
 :root[data-theme="fixture-dusk"] {
   --color-ink: #f0e6d2;
   --color-surface: #1d2233;
+  --color-head: #c8964a;
   --color-tile-revealed: #40506a;
   --color-tile-revealed-shade: #202a3c;
   --color-tile-closed: #8a5cc8;

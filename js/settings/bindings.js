@@ -1,6 +1,6 @@
 // The bindings source: each mode's controls per input device, as shown read-only by the Settings
-// page (js/settings/page.js) and by the in-game help surfaces (js/ui.js): the pause card, the main
-// menu's Controls panel, the H panel, the HUD strip and the first-use hint strips. One table, so
+// page (js/settings/page.js) and by the in-game help surfaces (js/ui.js): the pause card, the H
+// panel, the HUD strip and the first-use hint strips. One table, so
 // they never disagree; rebinding is not offered here. DOM-free.
 //
 // A row is [input, action]. In either text, `[Key]` is a keyboard key and `{name}` a controller

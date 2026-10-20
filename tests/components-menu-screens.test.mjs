@@ -1,5 +1,5 @@
 // The main menu and the screens it opens in a browser, readable under the contrast contract: the menu with its
-// focus walk and previews, Settings and its Controls panel, the replay viewer, Records, Daily, both board choices
+// focus walk and previews, Settings, the replay viewer, Records, Daily, both board choices
 // and the placeholder; the __ms hook's surface and the menu scene's sky.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -90,7 +90,7 @@ test('in a browser, the menu and the screens it opens meet the contrast contract
       await check(page, '#menu-preview', `menu-preview-${id}`, 1);
     }
 
-    // The Settings page in its frame, then its Controls panel: the theme's surface on its scrim, readable.
+    // The Settings page in its frame, readable.
     await page.click('#menu-entry-settings');
     await check(page, '#settings-frame', 'settings');
     // The replay viewer in its frame: the figures, the board area and the controls, readable.
@@ -103,14 +103,6 @@ test('in a browser, the menu and the screens it opens meet the contrast contract
     await check(page, '#replay-frame', 'replay');
     await page.evaluate(() => globalThis.__ms.replayViewer.command('end'));
     await check(page, '#replay-controls', 'replay-end');
-    await page.keyboard.press('Escape');
-    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
-    await page.click('#menu-entry-settings');
-    await page.click('#set-controls');
-    assert.equal(await page.evaluate(() => document.getElementById('controls-modal').classList.contains('hidden')), false);
-    await check(page, '#controls-modal .modal-card', 'controls');
-    await page.click('#controls-close');
-    assert.equal(await page.evaluate(() => document.getElementById('controls-modal').classList.contains('hidden')), true);
     await page.keyboard.press('Escape');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
 

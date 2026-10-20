@@ -21,8 +21,7 @@ document and every query). The `UI` methods these surfaces use (`setDevice`,
 ## INTERNAL PATTERNS
 
 - **One bindings source.** The help panel's list and foot line, the pause
-  card's list, the HUD strip `#hud-tools`, the hint strip, the main menu's
-  Controls panel (`#controls-tabs`, Classic 2D | 3D) and the Settings
+  card's list, the HUD strip `#hud-tools`, the hint strip and the Settings
   page's bindings are all drawn from `js/settings/bindings.js`
   ([settings-bindings.md](settings-bindings.md)); edit a binding's text in `BINDINGS` only.
   They show the mode the last screen method set (`showReady` /

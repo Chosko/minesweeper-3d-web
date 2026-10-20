@@ -11,10 +11,11 @@
 //
 // A toggle in INVERTED shows on while its boolean is false: Sound is on while `muted` is false.
 //
-// The theme is a list (ui-segmented--list): one row per theme of the registry (js/themes/registry.js
-// THEMES, in catalogue order), its display name after a swatch drawn from that theme's own tokens.
-// The swatch's colours are read from the theme's stylesheet text (themeSwatchColors) without
-// applying it, so a theme not in use shows its swatch once its stylesheet is fetched.
+// The theme is a list (ui-segmented--list): one card per theme of the registry (js/themes/registry.js
+// THEMES, in catalogue order), its display name after a swatch drawn from that theme's own tokens and
+// before a check icon the chosen card shows. The swatch's colours are read from the theme's
+// stylesheet text (themeSwatchColors) without applying it, so a theme not in use shows its swatch
+// once its stylesheet is fetched.
 //
 // settingControl(key, { themes? }) → { key, kind: 'slider' | 'toggle' | 'segmented', label, inverted?, list?, … };
 //                                the theme's options are `themes` (default THEMES), one per entry in
@@ -27,22 +28,28 @@
 //                                SETTINGS_COLUMNS, each a ui-column stacking its sections (ui-panel,
 //                                data-section naming it, under its ui-section-label): a section per
 //                                SETTINGS_SECTIONS entry, each setting a ui-row of its control and,
-//                                for a SETTING_NOTES entry, its muted note — the Controls section
-//                                ending in the Controls action (#set-controls, CONTROLS_ACTION),
-//                                which opens the controls reference — the bindings panel (the Mode
-//                                and Device choices, #set-bind-mode and #set-bind-device, then the
-//                                list, #settings-bindings, filled by bindingsSectionHtml) and the
-//                                Data panel (#settings-data): first the export — its line
-//                                (EXPORT_LINE), the hidden nothing-to-export line and "Export history
-//                                (CSV)" and "Export all (JSON)" (bound by bindExportActions,
-//                                js/records/export.js) — then a rule, the reset's line, the "Reset
-//                                all data…" button, under it the hidden failure (an err note), and
-//                                the hidden confirmation (a confirm box: RESET_MESSAGE, Reset all
-//                                data with its trash icon beside Cancel). A control whose label is
-//                                its section's title is named by the section label. The columns are
-//                                the widest window's; narrower windows regroup the sections by
-//                                placement alone (css/style.css), and a section SETTINGS_COLUMNS does
-//                                not list joins the last column.
+//                                for a SETTING_NOTES entry, its muted note — the bindings panel (the
+//                                Mode and Device choices, #set-bind-mode and #set-bind-device, then
+//                                the list, #settings-bindings, filled by bindingsSectionHtml) and the
+//                                Data panel (#settings-data, its parts in #set-data-body): first the
+//                                export — its line (EXPORT_LINE) and the small "Export history (CSV)"
+//                                and "Export all (JSON)" with their download icons (bound by
+//                                bindExportActions, js/records/export.js) — then a rule, the reset's
+//                                line, the "Reset all data…" button with its trash icon, under it the
+//                                hidden failure (an err note), and the hidden confirmation (a confirm
+//                                box: RESET_MESSAGE, Reset all data with its trash icon beside
+//                                Cancel). A control whose label is its section's title is named by
+//                                the section label. The columns are the widest window's.
+// SETTINGS_LAYOUTS             → the page's columns by window size, widest first: each { media, columns },
+//                                media the query the window matches (null: any window), columns a
+//                                stack of section ids per column.
+// settingsColumnsFor(matches)  → the first layout's columns whose media `matches(media)` holds.
+// placeSettingsSections(root, columns) → moves root's sections (#settings-columns) into one ui-column
+//                                per stack, in their order: independent stacks, never shared rows. A
+//                                section the columns do not list joins the last column; focus inside
+//                                stays where it was, scrolled into view.
+// bindSettingsLayout(root, { matchMedia? }) → unbind: places the sections for the window now and on
+//                                every change of a layout's media.
 // bindingsSectionHtml(glyphs?, camera?, { mode?, device? }) → the bindings list (dl.controls) of one
 //                                mode (default Classic 2D) for one input device (default the keyboard;
 //                                one the mode does not list falls back to its first), controller
@@ -70,7 +77,7 @@ import { SCHEMA } from './schema.js';
 import { THEMES, themeById } from '../themes/registry.js';
 import { SITE_ROOT } from '../themes/applier.js';
 import { BINDING_MODES, bindingDevices, bindingRows, bindingsListHtml } from './bindings.js';
-import { formatSliderValue, decimalsOf, segmentedState, bindSegmented, bindSliderFill, setNote } from '../ui/components.js';
+import { formatSliderValue, decimalsOf, segmentedState, bindSegmented, bindSliderFill, setNote, iconMarkup } from '../ui/components.js';
 import { EXPORT_LINE } from '../records/export.js';
 import { RESET_FAILURE } from './reset.js';
 
@@ -118,11 +125,54 @@ export const SETTINGS_COLUMNS = Object.freeze([
   Object.freeze(['bindings', 'data']),
 ]);
 
+/** The page's columns by window size, widest first: three where a column holds a slider row, two from the kit breakpoint, then one in the phone's order. */
+export const SETTINGS_LAYOUTS = Object.freeze([
+  Object.freeze({ media: '(min-width: 1700px)', columns: SETTINGS_COLUMNS }),
+  Object.freeze({ media: '(min-width: 1024px)', columns: Object.freeze([Object.freeze(['controls', 'graphics', 'audio']), Object.freeze(['theme', 'data', 'bindings'])]) }),
+  Object.freeze({ media: null, columns: Object.freeze([Object.freeze(['controls', 'graphics', 'theme', 'audio', 'bindings', 'data'])]) }),
+]);
+
+export function settingsColumnsFor(matches) {
+  return SETTINGS_LAYOUTS.find((l) => l.media === null || matches(l.media)).columns;
+}
+
+export function placeSettingsSections(root, columns) {
+  const doc = root.ownerDocument;
+  const focused = doc.activeElement && root.contains(doc.activeElement) ? doc.activeElement : null;
+  const sections = new Map([...root.querySelectorAll('[data-section]')].map((s) => [s.getAttribute('data-section'), s]));
+  const listed = new Set(columns.flat());
+  const stacks = columns.map((ids, i) => [...ids, ...(i === columns.length - 1 ? [...sections.keys()].filter((id) => !listed.has(id)) : [])]);
+  const old = [...root.children];
+  for (const ids of stacks) {
+    const column = doc.createElement('div');
+    column.className = 'ui-column';
+    for (const id of ids) if (sections.has(id)) column.append(sections.get(id));
+    root.append(column);
+  }
+  for (const el of old) el.remove();
+  if (focused && doc.activeElement !== focused) focused.focus(); // back in view in its new place
+}
+
+export function bindSettingsLayout(root, { matchMedia = globalThis.matchMedia } = {}) {
+  const queries = SETTINGS_LAYOUTS.filter((l) => l.media).map((l) => matchMedia(l.media));
+  const byMedia = new Map(SETTINGS_LAYOUTS.filter((l) => l.media).map((l, i) => [l.media, queries[i]]));
+  let shown = null;
+  const place = () => {
+    const columns = settingsColumnsFor((media) => byMedia.get(media).matches);
+    if (columns === shown) return;
+    shown = columns;
+    placeSettingsSections(root, columns);
+  };
+  for (const q of queries) q.addEventListener('change', place);
+  place();
+  return () => { for (const q of queries) q.removeEventListener('change', place); };
+}
+
 /** A setting's muted note beside its name: the settings only the 3D game uses. */
 export const SETTING_NOTES = Object.freeze({ lookSensitivity: '3D', camera: '3D', fieldOfView: '3D' });
 
-/** The tokens a theme's swatch shows, in stripe order: its ground, surface, accent and ink. */
-export const SWATCH_TOKENS = Object.freeze(['--color-ground', '--color-surface', '--color-accent-fill', '--color-ink']);
+/** The tokens a theme's swatch shows, in stripe order: its ground, head, accent fill, blue and teal. */
+export const SWATCH_TOKENS = Object.freeze(['--color-ground', '--color-head', '--color-accent-fill', '--color-blue', '--color-teal']);
 
 export function themeSwatchColors(cssText, id) {
   const scope = `:root[data-theme="${id}"]`;
@@ -188,14 +238,12 @@ export function settingControlHtml(key, value = SCHEMA[key]?.default, { labelled
       + `<span class="ui-toggle__label">${c.label}</span></label>`;
   }
   const swatch = c.list ? '<span class="ui-segmented__swatch" aria-hidden="true"></span>' : '';
-  const options = c.options.map((o) => `<button type="button" role="radio" aria-checked="${o.value === value}" class="ui-segmented__option" data-value="${o.value}">${swatch}${o.label}</button>`);
+  const check = c.list ? iconMarkup('check') : '';
+  const options = c.options.map((o) => `<button type="button" role="radio" aria-checked="${o.value === value}" class="ui-segmented__option" data-value="${o.value}">${swatch}${o.label}${check}</button>`);
   const label = labelledBy ? '' : `<p class="ui-text" id="${id}-label">${c.label}</p>`;
   const cls = c.list ? 'ui-segmented ui-segmented--list' : 'ui-segmented';
   return `${label}<div class="${cls}" role="radiogroup" aria-labelledby="${labelledBy ?? `${id}-label`}" data-setting="${key}" id="${id}">${options.join('')}</div>`;
 }
-
-/** The Controls section's action: the controls reference, each mode's bindings, in a panel over the page. */
-export const CONTROLS_ACTION = 'Controls';
 
 const sectionLabel = (id, title) => `<div class="ui-section-label"><h3 class="ui-section-label__text" id="set-sec-${id}">${title}</h3></div>`;
 const sectionOpen = (id, extra = '') => `<section class="ui-panel ui-actions"${extra} data-section="${id}" aria-labelledby="set-sec-${id}">`;
@@ -221,11 +269,9 @@ function bindingsPanelHtml() {
 }
 
 export function settingsPageHtml() {
-  const action = (id) => (id === 'controls'
-    ? `<button type="button" class="ui-button ui-button--secondary" id="set-controls">${CONTROLS_ACTION}</button>` : '');
   const panels = new Map(SETTINGS_SECTIONS.map((s) => [s.id, `${sectionOpen(s.id)}${sectionLabel(s.id, s.title)}`
     + `${s.settings.map((k) => (SETTING_LABELS[k] === s.title
-      ? settingControlHtml(k, undefined, { labelledBy: `set-sec-${s.id}` }) : settingRowHtml(k))).join('')}${action(s.id)}</section>`]));
+      ? settingControlHtml(k, undefined, { labelledBy: `set-sec-${s.id}` }) : settingRowHtml(k))).join('')}</section>`]));
   panels.set('bindings', bindingsPanelHtml());
   panels.set('data', dataPanelHtml());
   const listed = new Set(SETTINGS_COLUMNS.flat());
@@ -238,22 +284,21 @@ export const RESET_MESSAGE = 'Delete your records, game history, replays, settin
 
 // The Data panel: the place of everything about the player's stored data.
 function dataPanelHtml() {
-  return `${sectionOpen('data', ' id="settings-data"')}${sectionLabel('data', 'Data')}`
+  return `${sectionOpen('data', ' id="settings-data"')}${sectionLabel('data', 'Data')}<div class="ui-actions" id="set-data-body">`
     + `<p class="ui-text ui-text--muted" id="set-export-text">${EXPORT_LINE}</p>`
-    + '<p class="ui-text ui-text--muted hidden" id="set-export-note" role="status"></p>'
-    + '<div class="ui-actions ui-actions--row">'
-    + '<button type="button" class="ui-button ui-button--secondary" id="set-export-csv">Export history (CSV)</button>'
-    + '<button type="button" class="ui-button ui-button--secondary" id="set-export-json">Export all (JSON)</button>'
+    + '<div class="ui-actions ui-actions--row" id="set-export-actions">'
+    + '<button type="button" class="ui-button ui-button--secondary ui-button--sm" id="set-export-csv" data-icon="download">Export history (CSV)</button>'
+    + '<button type="button" class="ui-button ui-button--secondary ui-button--sm" id="set-export-json" data-icon="download">Export all (JSON)</button>'
     + '</div><hr class="ui-divider">'
-    + '<p class="ui-text ui-text--muted">Delete everything the game keeps in this browser and start over as a new player.</p>'
-    + '<button type="button" class="ui-button ui-button--secondary" id="set-reset">Reset all data…</button>'
+    + '<p class="ui-text">Delete everything the game keeps in this browser and start over as a new player.</p>'
+    + '<button type="button" class="ui-button ui-button--secondary" id="set-reset" data-icon="trash">Reset all data…</button>'
     + '<p class="ui-note ui-note--err hidden" id="set-reset-note" role="status" data-icon="warning"><span class="ui-note__text"></span></p>'
     + '<div class="ui-confirm hidden" id="set-reset-confirm" role="alertdialog" aria-labelledby="set-reset-text">'
     + `<p class="ui-confirm__text" id="set-reset-text">${RESET_MESSAGE}</p>`
     + '<div class="ui-actions ui-actions--row">'
     + '<button type="button" class="ui-button ui-button--danger" id="set-reset-yes" data-icon="trash">Reset all data</button>'
     + '<button type="button" class="ui-button ui-button--secondary" id="set-reset-no">Cancel</button>'
-    + '</div></div></section>';
+    + '</div></div></div></section>';
 }
 
 export function bindResetPanel({ open, panel, yes, no, note }, { reset }) {

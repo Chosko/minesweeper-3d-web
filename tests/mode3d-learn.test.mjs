@@ -293,7 +293,7 @@ test('index.html holds the Learn 3D entry first on the 3D board choice, the read
   assert.ok(learn > 0 && learn < board.indexOf('data-preset="6'), 'above the presets');
   assert.match(board, /data-learn>[\s\S]*?Learn 3D[\s\S]*?A guided 4 &times; 4 &times; 3 box</);
   assert.match(board, /<div id="bc-learn-panel"[^>]*>[\s\S]*?keeps no records[\s\S]*?How 3D works/, 'what it is, on the right when chosen');
-  const ready = INDEX.slice(INDEX.indexOf('<section id="ready"'), INDEX.indexOf('<!-- Controls modal'));
+  const ready = INDEX.slice(INDEX.indexOf('<section id="ready"'), INDEX.indexOf('<!-- WebGL context lost -->'));
   assert.match(ready, /id="ready-learn"[^>]*hidden[\s\S]*New to 3D\? Learn 3D walks you through a small box\.[\s\S]*id="ready-learn-btn"[^>]*>Learn 3D</);
   assert.ok(ready.indexOf('id="ready-learn"') > ready.indexOf('</button>'), 'outside the card\'s own button');
   assert.match(INDEX, /<section id="learn-end" class="overlay hidden"[\s\S]*?id="learn-end-title"[\s\S]*?id="learn-end-line"[\s\S]*?id="learn-end-primary"[\s\S]*?id="learn-end-back"[^>]*>Back to board choice</);

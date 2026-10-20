@@ -84,8 +84,8 @@ Both modules are pure; their rules are documented in their head comments.
   (`resultsEnter`, [app-shell-results.md](app-shell-results.md)). `handlePad`
   reads Start + Y after the end delay's skip: Y pressed while Start is held
   (read unsuppressed) → `PAUSE.restart('pad')`, then `layerChanged()`.
-  `restartBlocked()` — an end delay, an open confirmation or the controls
-  modal — stops all three.
+  `restartBlocked()` — an end delay or an open confirmation — stops all
+  three.
 - **Hand-offs.** `PAUSE.attach(name, listener)`: `finished` and `abandoned`
   with the sealed replay beside the summary; `inProgress` at game started,
   at every pause of a started, unfinished game and on `pagehide`. The

@@ -873,10 +873,10 @@ test('in a browser, at 1280 × 800 and 390 × 844, the Top 10 opens, both charts
     await page.addInitScript(removeWebGL2);
     await page.goto(`${base}/index.html`);
     await page.waitForFunction(() => globalThis.__ms !== undefined);
-    // Settings first: nothing recorded, so the export is offered but disabled, with its line.
+    // Settings first: nothing recorded, so the export is offered but disabled, with no line of its own.
     await page.click('#menu-entry-settings');
     assert.deepEqual(await page.evaluate(() => ['set-export-csv', 'set-export-json'].map((id) => document.getElementById(id).disabled)), [true, true]);
-    assert.equal(await page.evaluate(() => document.getElementById('set-export-note').textContent), 'Nothing to export yet: no game is recorded.');
+    assert.equal(await page.evaluate(() => document.getElementById('set-export-note')), null);
     await page.keyboard.press('Escape');
     await page.evaluate(() => {
       const now = Date.now();

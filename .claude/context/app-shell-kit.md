@@ -26,7 +26,7 @@ option's or a latched toggle's `chosen`; every other control's `hover` and `focu
 and the number field's `invalid` — `is-invalid`, the refused value a board
 choice's Custom form marks), `CONTRAST_ROLES` (`surfaces`, `bodyText`,
 `largeText`), `REQUIRED_TOKENS` (with `--slider-fill`, the slider's filled
-share the kit sets). Beside the m1 kit, the catalogue holds the switch row
+share the kit sets, and the Settings theme swatch's tokens). Beside the m1 kit, the catalogue holds the switch row
 `ui-switchrow` (`text`, `label`, `help`, optional, and `switch`, the kit's
 switch: label and help on the left, the switch at the right edge, the label
 inked while the switch is locked) and the shared layout's components: `ui-button--danger`, `ui-button--quiet`

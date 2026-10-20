@@ -70,9 +70,10 @@ test('css/tokens.css keeps only structural tokens: spacing, z-layers and tabular
 
 test('the z-layers stack the overlays in order', () => {
   const z = (n) => Number(BASE.get(`--z-${n}`));
-  const order = ['hud', 'help', 'flash', 'overlay', 'modal', 'context-lost', 'toast', 'fatal'];
+  const order = ['hud', 'help', 'flash', 'overlay', 'context-lost', 'toast', 'fatal'];
   for (let i = 1; i < order.length; i++) assert.ok(z(order[i]) > z(order[i - 1]), `${order[i]} above ${order[i - 1]}`);
   assert.equal(BASE.get('--z-banner'), undefined, 'no layer for the removed end banner');
+  assert.equal(BASE.get('--z-modal'), undefined, 'no layer for a modal: none is left');
 });
 
 // ---------- Joyful tiles: the canvas's token block ----------
@@ -276,7 +277,7 @@ test('the 3D renderer reads no token: the shell hands it the board module', () =
 
 // ---------- the scrims over the scene, read from the theme ----------
 test('the overlays over the scene and the context-lost screen read the theme\'s scrims, with no hard-coded tint', () => {
-  assert.match(THEME_CSS, /:is\(#pause, #ready, #results, #learn-end, \.modal\) \{[^}]*background: var\(--color-backdrop\)/);
+  assert.match(THEME_CSS, /:is\(#pause, #ready, #results, #learn-end\) \{[^}]*background: var\(--color-backdrop\)/);
   assert.match(THEME_CSS, /#ctx-lost \{[^}]*background: var\(--color-backdrop-strong\)/);
   assert.match(THEME_CSS, /#results\.results--over3d \{[^}]*background: var\(--color-backdrop-strong\)/);
   assert.match(THEME_CSS, /\.ui-card \{[^}]*background: var\(--color-surface\)/, 'the ready and context-lost cards are kit cards, on the surface');

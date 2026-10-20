@@ -26,7 +26,7 @@ The module's head comment states its full contract.
 ## INTERNAL PATTERNS
 
 - **Theme list.** The Settings page's Theme section is a
-  `ui-segmented--list`: one row per `THEMES` entry in catalogue order, its
+  `ui-segmented--list`: one card per `THEMES` entry in catalogue order, its
   name after a swatch striped from that theme's own tokens, read from its
   stylesheet's text without applying it. The active theme is selected; a
   pick calls the applier's `setTheme` and saves the setting once the switch

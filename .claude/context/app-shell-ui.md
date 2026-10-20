@@ -28,8 +28,7 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
   `onMainMenu`, `onPause`, `onToggleSwap`, `onToggleTap`,
   `onDismissHint(mode, kind)`, `on{Retry,Standard,OfferMenu,Cancel}{2D,3D}`,
   `onStandardWait3D`, `onLearnEnd(won)`, `onLearnBack`, `onBackToStart`,
-  `onResetAll`, `onLayer` — the Controls modal opened or closed, for the
-  containment). Method groups:
+  `onResetAll`, `onTouchMode`). Method groups:
   - screens: `showMenu`, `showBoardChoice`, `showBoardChoice2D`,
     `showComingSoon(title)`, `showDaily`, `showRecords`, `showSettings`, `showReady(board, msg,
     {rules, blocked})`, `setReadyPending`, `showPlaying`, `showClassic2D`,
@@ -61,8 +60,7 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
     `[data-pad-glyph]` slot, the Records screen's LB / RB and LT / RT hints),
     `setCamera('fly' | 'orbit')` (the 3D rows and the ready card's
     `[data-camera]` movement line follow the Camera setting), `flash`,
-    `toast(msg, ms)` (the text into `#toast-text`, the icon kept), `setNoMouse(on, touch)`, `setTouch3D(on)` (the touch ready card and the help's touch rows, `_bindDevice`), `setTouchModes(modes)`, `setStick(view|null)`, `openControls` / `closeControls` /
-    `isControlsOpen`, `isPauseVisible`, `setReadyMessage`.
+    `toast(msg, ms)` (the text into `#toast-text`, the icon kept), `setNoMouse(on, touch)`, `setTouch3D(on)` (the touch ready card and the help's touch rows, `_bindDevice`), `setTouchModes(modes)`, `setStick(view|null)`, `isPauseVisible`, `setReadyMessage`.
   HUD writes (`updateHud`, `updateFigures*`, `setArrow`, `setReadout`)
   touch the DOM only on change.
 
@@ -109,8 +107,8 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
   [app-shell-help.md](app-shell-help.md).
 - **Controller menus.** `LAYER_SCREEN` maps each overlay to its screen,
   topmost first; the topmost visible, non-inert one takes input
-  (`topLayer`), focusing `SHELL.defaultFocus`. Every router change and
-  controls-modal toggle calls `layerChanged`, which suppresses buttons held
+  (`topLayer`), focusing `SHELL.defaultFocus`. Every router change calls
+  `layerChanged`, which suppresses buttons held
   at the last poll until released and resets the menu repeats. The D-pad
   (`padNav`) and the arrow keys (`keyNav`) move focus through `navStep`
   ([app-shell-focus.md](app-shell-focus.md) § Focus walk); the

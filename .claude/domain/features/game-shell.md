@@ -147,8 +147,8 @@ it generalises.
 - **Shell navigation.** Keyboard and controller navigation for every shell
   screen, built on the existing controller reader and spatial focus search
   ([input-controller.md](../../context/input-controller.md)): the topmost visible layer takes
-  input; while an overlay is open (the Controls modal, the pause card, the
-  results card, the replay viewer) the rest of the page is inert, the status
+  input; while an overlay is open (the pause card, the results card, the
+  replay viewer) the rest of the page is inert, the status
   toast excepted, and Tab wraps at its edges where `inert` is unavailable;
   the pause confirmation contains the pause card the same way; each screen
   declares its default focus, and buttons held across a screen change are
@@ -220,8 +220,8 @@ it generalises.
   the pause card with the question showing — and no toast shows. A restart
   before the first click, while the first board is generated or after the
   end abandons nothing and neither asks nor shows the toast. `F2` and
-  Start + Y do nothing during the 3D end delay, while a confirmation or the
-  controls modal shows, or on a screen with no game; `R` and `Home` in 3D
+  Start + Y do nothing during the 3D end delay, while a confirmation shows,
+  or on a screen with no game; `R` and `Home` in 3D
   play keep returning the camera to the start view. On the Learn 3D guided
   game, which counts as no loss, restart proceeds at once with no
   confirmation and no toast, whatever the setting, and opens the guided

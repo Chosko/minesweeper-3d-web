@@ -13,9 +13,11 @@ import {
   BINDING_MODES, BINDING_DEVICES, TOUCH_DEVICE, bindingDevices, BINDINGS, bindingRows, bindingsListHtml, bindingsHtml,
 } from '../js/settings/bindings.js';
 import {
-  SETTINGS_SECTIONS, SETTINGS_COLUMNS, SETTING_LABELS, SETTING_NOTES, CONTROLS_ACTION, settingControl, settingControlHtml, settingsPageHtml, bindingsSectionHtml,
+  SETTINGS_SECTIONS, SETTINGS_COLUMNS, SETTINGS_LAYOUTS, SETTING_LABELS, SETTING_NOTES, settingControl, settingControlHtml, settingsPageHtml, bindingsSectionHtml,
+  settingsColumnsFor, placeSettingsSections, bindSettingsLayout,
   bindSettingControls, bindResetPanel, RESET_MESSAGE, SWATCH_TOKENS, themeSwatchColors, swatchBackground,
 } from '../js/settings/page.js';
+import { iconMarkup } from '../js/ui/components.js';
 import { EXPORT_LINE } from '../js/records/export.js';
 import { THEMES, DEFAULT_THEME_ID, registerTheme, themeById } from '../js/themes/registry.js';
 import { FOCUSABLE } from '../js/shell/navigation.js';
@@ -36,9 +38,15 @@ const DEFAULT_THEME = themeById(DEFAULT_THEME_ID);
 // and the fixture — standing in for a registry with a second shipped theme. THEMES stays as shipped.
 const THEME_LISTS = [['the registry', THEMES], ['two themes', Object.freeze([DEFAULT_THEME, FIXTURE_THEME])]];
 
-// The rows of a generated theme list, each [id, name, checked]; every row must carry its swatch.
-const themeRows = (html) => [...html.matchAll(/<button type="button" role="radio" aria-checked="(true|false)" class="ui-segmented__option" data-value="([^"]+)">(<span class="ui-segmented__swatch" aria-hidden="true"><\/span>)?([^<]+)<\/button>/g)]
-  .map((m) => { assert.ok(m[3], `${m[2]} leads with its swatch`); return [m[2], m[4], m[1] === 'true']; });
+// The cards of a generated theme list, each [id, name, checked]; every card must carry its swatch and
+// end in the check icon its chosen state shows.
+const CHECK = iconMarkup('check');
+const themeRows = (html) => [...html.matchAll(/<button type="button" role="radio" aria-checked="(true|false)" class="ui-segmented__option" data-value="([^"]+)">(<span class="ui-segmented__swatch" aria-hidden="true"><\/span>)?([^<]+)(<svg[^>]*>.*?<\/svg>)?<\/button>/g)]
+  .map((m) => {
+    assert.ok(m[3], `${m[2]} leads with its swatch`);
+    assert.equal(m[5], CHECK, `${m[2]} ends in the check icon`);
+    return [m[2], m[4], m[1] === 'true'];
+  });
 // What a theme list of `themes` showing `active` holds: one row per entry, in the list's order.
 const expectedRows = (themes, active) => themes.map((t) => [t.id, t.name, t.id === active]);
 
@@ -375,7 +383,7 @@ test('the page markup is kit components only, one bound control per setting', ()
     /^<label class="ui-toggle" data-setting="invertY"><input type="checkbox" role="switch" id="set-invertY" class="ui-toggle__input"><span class="ui-toggle__label">[^<]+<\/span><\/label>$/);
   for (const [name, themes] of THEME_LISTS) {
     const theme = settingControlHtml('theme', undefined, { themes });
-    assert.match(theme, /^<p class="ui-text" id="set-theme-label">Theme<\/p><div class="ui-segmented ui-segmented--list" role="radiogroup" aria-labelledby="set-theme-label" data-setting="theme" id="set-theme">(<button [^>]+><span class="ui-segmented__swatch" aria-hidden="true"><\/span>[^<]+<\/button>)+<\/div>$/, `${name}: kit rows only`);
+    assert.match(theme, /^<p class="ui-text" id="set-theme-label">Theme<\/p><div class="ui-segmented ui-segmented--list" role="radiogroup" aria-labelledby="set-theme-label" data-setting="theme" id="set-theme">(<button [^>]+><span class="ui-segmented__swatch" aria-hidden="true"><\/span>[^<]+<svg class="ui-icon" data-icon="check"[^>]*>.*?<\/svg><\/button>)+<\/div>$/, `${name}: kit cards only`);
     assert.deepEqual(themeRows(theme), expectedRows(themes, DEFAULT_THEME_ID), `${name}: the default theme checked by default`);
   }
   const classes = [...html.matchAll(/class="([^"]+)"/g)].flatMap((m) => m[1].split(/\s+/));
@@ -428,20 +436,126 @@ test('the page is one column composition generated from the sections, in the wid
     .map((col) => [...col.matchAll(/<section class="[^"]*"[^>]* data-section="(\w+)" aria-labelledby="set-sec-\1"/g)].map((m) => m[1]));
   assert.deepEqual(columns, SETTINGS_COLUMNS, 'each column stacks its sections');
   assert.doesNotMatch(html, /ui-columns__span|ui-grid/, 'one composition, nothing across it');
-  assert.doesNotMatch(read('js/settings/page.js'), /@media|1024/, 'no layout code of its own');
 });
 
-test('narrower windows regroup the sections by placement alone: two columns from 1024 px, then one in the phone\'s order', () => {
-  const kit = read('css/components.css').replace(/\/\*[\s\S]*?\*\//g, '');
-  const block = kit.slice(kit.indexOf('@media (min-width: 1024px)'));
-  assert.match(block.slice(0, block.indexOf('\n}')),
-    /#settings-columns \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\); grid-template-areas: "controls theme" "graphics data" "audio bindings"; \}/,
-    'the canvas\'s two columns, inside the kit\'s one breakpoint');
+test('each window step stacks the sections in its own independent columns: three from 1700 px, two from 1024 px, then one in the phone\'s order', () => {
+  assert.deepEqual(SETTINGS_LAYOUTS.map((l) => [l.media, l.columns]), [
+    ['(min-width: 1700px)', SETTINGS_COLUMNS],
+    ['(min-width: 1024px)', [['controls', 'graphics', 'audio'], ['theme', 'data', 'bindings']]],
+    [null, [['controls', 'graphics', 'theme', 'audio', 'bindings', 'data']]],
+  ]);
+  const ids = [...SETTINGS_SECTIONS.map((s) => s.id), 'bindings', 'data'].sort();
+  for (const l of SETTINGS_LAYOUTS) assert.deepEqual(l.columns.flat().sort(), ids, `${l.media}: every section once`);
+  const at = (width) => settingsColumnsFor((media) => width >= Number(media.match(/\d+/)[0]));
+  assert.deepEqual(at(1920), SETTINGS_COLUMNS);
+  assert.equal(at(1700).length, 3);
+  assert.deepEqual(at(1440), SETTINGS_LAYOUTS[1].columns, 'between the l step and 1700 px: two stacks, so a slider row keeps its name');
+  assert.deepEqual(at(1366), SETTINGS_LAYOUTS[1].columns, 'l: two stacks');
+  assert.deepEqual(at(1024), SETTINGS_LAYOUTS[1].columns, 'm: two stacks');
+  assert.deepEqual(at(1023), SETTINGS_LAYOUTS[2].columns, 'below the kit breakpoint: one');
   const css = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
-  assert.match(css, /@media \(max-width: 1599px\) \{ #settings-columns > \.ui-column \{ display: contents; \} \}/, 'below the widest windows the columns let their sections be placed');
-  assert.match(css, /@media \(min-width: 1600px\) \{ #settings-columns \{ grid-template-columns: repeat\(3, minmax\(0, 1fr\)\); grid-template-areas: none; \} \}/, 'three columns on the widest windows');
-  assert.match(css, /@media \(max-width: 1023px\) \{[^}]*#settings-columns \{ grid-template-areas: "controls" "graphics" "theme" "audio" "bindings" "data"; \}/, 'one column in the phone\'s order');
-  for (const id of SETTINGS_COLUMNS.flat()) assert.match(css, new RegExp(`#settings-columns \\[data-section="${id}"\\] \\{ grid-area: ${id}; \\}`), `${id} names its area`);
+  assert.match(css, /#settings-columns \{ grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax\(0, 1fr\);/, 'one grid column per stack, however many the window takes');
+  assert.doesNotMatch(css, /#settings-columns( \[data-section[^\]]*\])? \{[^}]*grid-(area|template-areas)|#settings-columns > \.ui-column \{[^}]*display: contents/, 'no shared grid rows: nothing placed across stacks');
+  assert.doesNotMatch(read('css/components.css'), /#settings-columns/, 'the kit places no Settings section');
+});
+
+// A minimal DOM for the placement: elements with children, a class, a data-section and focus.
+class LayoutEl {
+  constructor(doc, attrs = {}) { this.ownerDocument = doc; this.attrs = attrs; this.children = []; this.parent = null; this.className = attrs.class ?? ''; }
+  getAttribute(k) { return this.attrs[k] ?? null; }
+  append(el) {
+    el.parent?.children.splice(el.parent.children.indexOf(el), 1);
+    el.parent = this;
+    this.children.push(el);
+    if (this.ownerDocument.activeElement === el) this.ownerDocument.activeElement = null; // a moved element loses the focus
+  }
+  remove() { this.parent?.children.splice(this.parent.children.indexOf(this), 1); this.parent = null; }
+  contains(el) { for (let e = el; e; e = e.parent) if (e === this) return true; return false; }
+  querySelectorAll() { return this.children.flatMap((c) => [...(c.attrs['data-section'] ? [c] : []), ...c.querySelectorAll()]); }
+  focus() { this.ownerDocument.activeElement = this; }
+}
+function layoutRoot() {
+  const doc = { activeElement: null, createElement: () => new LayoutEl(doc) };
+  const root = new LayoutEl(doc, { id: 'settings-columns' });
+  for (const ids of SETTINGS_COLUMNS) {
+    const col = new LayoutEl(doc, { class: 'ui-column' });
+    for (const id of ids) col.append(new LayoutEl(doc, { 'data-section': id }));
+    root.append(col);
+  }
+  const stacks = () => root.children.map((c) => [c.className, ...c.children.map((x) => x.getAttribute('data-section'))]);
+  return { doc, root, stacks };
+}
+
+test('placing the sections moves each into its stack, one ui-column per stack, keeping the focus where it was', () => {
+  const { doc, root, stacks } = layoutRoot();
+  const theme = root.querySelectorAll().find((x) => x.getAttribute('data-section') === 'theme');
+  theme.focus();
+  placeSettingsSections(root, SETTINGS_LAYOUTS[1].columns);
+  assert.deepEqual(stacks(), [['ui-column', 'controls', 'graphics', 'audio'], ['ui-column', 'theme', 'data', 'bindings']]);
+  assert.equal(doc.activeElement, theme, 'the focused section keeps the focus');
+  placeSettingsSections(root, [['controls', 'graphics']]);
+  assert.deepEqual(stacks(), [['ui-column', 'controls', 'graphics', 'audio', 'theme', 'data', 'bindings']], 'an unlisted section joins the last stack');
+});
+
+test('the layout follows the window: placed at once, and again whenever a step\'s media query changes', () => {
+  const { root, stacks } = layoutRoot();
+  let width = 1366;
+  const queries = new Map();
+  const matchMedia = (media) => {
+    const q = {
+      listeners: [],
+      get matches() { return width >= Number(media.match(/\d+/)[0]); },
+      addEventListener(_, fn) { this.listeners.push(fn); },
+      removeEventListener(_, fn) { this.listeners = this.listeners.filter((f) => f !== fn); },
+    };
+    queries.set(media, q);
+    return q;
+  };
+  const resize = (w) => { width = w; for (const q of queries.values()) for (const fn of q.listeners) fn(); };
+  const shown = () => stacks().map((c) => c.slice(1));
+  const unbind = bindSettingsLayout(root, { matchMedia });
+  assert.deepEqual([...queries.keys()], ['(min-width: 1700px)', '(min-width: 1024px)']);
+  assert.deepEqual(shown(), SETTINGS_LAYOUTS[1].columns, 'l: two stacks at once');
+  resize(1920);
+  assert.deepEqual(shown(), SETTINGS_COLUMNS);
+  resize(390);
+  assert.deepEqual(shown(), SETTINGS_LAYOUTS[2].columns);
+  unbind();
+  resize(1920);
+  assert.deepEqual(shown(), SETTINGS_LAYOUTS[2].columns, 'unbind stops following');
+  assert.match(read('js/ui.js'), /\$\('settings-body'\)\.innerHTML = settingsPageHtml\(\);[\s\S]{0,120}bindSettingsLayout\(\$\('settings-columns'\)\)/, 'the page binds it once built');
+});
+
+test('each step\'s frame sits inset on the backdrop at the canvas\'s size, with its body padding and gaps', () => {
+  const css = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const settings = css.slice(css.indexOf('#settings {'), css.indexOf('#records-chart'));
+  const step = (query) => { const at = settings.indexOf(`@media ${query} {`); return settings.slice(at, settings.indexOf('\n}', at)); };
+  assert.match(settings, /^#settings \{ padding: 66px max\(32px, calc\(\(100% - 1640px\) \/ 2\)\) 74px; \}\n#settings-frame \{ width: 1640px; height: 940px; \}\n#settings-body \{ padding: 24px; \}/, 'xl: 1640 × 940 at 140 / 66 on 1920 × 1080, never inset more than it takes to keep that width, body 24');
+  assert.match(settings, /#settings-columns \{[^}]* gap: 24px; \}\n#settings-columns > \.ui-column \{ gap: 24px; \}/, 'xl: the stack gap equals the column gap');
+  assert.match(step('(max-width: 1439px)'), /#settings \{ padding: 24px 32px 32px; \}\s+#settings-frame \{ width: 1302px; height: 712px; \}\s+#settings-body \{ padding: 18px; \}\s+#settings-columns, #settings-columns > \.ui-column \{ gap: 18px; \}/, 'l');
+  assert.match(step('(max-width: 1199px)'), /#settings \{ padding: 16px 20px 24px; \}\s+#settings-frame \{ width: 984px; height: 728px; \}\s+#settings-body \{ padding: 14px; \}\s+#settings-columns, #settings-columns > \.ui-column \{ gap: 14px; \}/, 'm');
+  assert.match(step('(max-width: 719px)'), /#settings-body \{ padding: 14px 14px 30px; \}\s+#settings-columns, #settings-columns > \.ui-column \{ gap: 16px; \}/, 'phone');
+});
+
+test('every setting row is ruled above, padded 10px 0, its name 16px bold and its "3D" note 13px muted', () => {
+  const css = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.match(css, /#settings-columns \[data-setting-row\] \{[^}]*padding: 10px 0; \}/);
+  assert.match(css, /#settings-columns \[data-setting-row\] :is\(\.ui-slider__label, \.ui-toggle__label, \.ui-text\) \{ grid-area: 1 \/ 1; font-size: 16px; font-weight: var\(--font-weight-bold\); \}/);
+  assert.match(css, /#settings-columns \[data-setting-row\] > \.ui-text--muted \{[^}]*font-size: 13px;/);
+  assert.match(css, /#settings-columns \.ui-panel \{ gap: 0;/, 'rows touch: the rule and padding space them');
+  assert.match(read('themes/joyful-tiles/theme.css'), /#settings-columns \[data-setting-row\] \{ border-top: 1px solid var\(--color-line\); \}/, 'the rule, under the section label too');
+});
+
+test('the theme list is separate raised cards, the chosen one blue with its check, each swatch five stripes', () => {
+  const kit = read('css/components.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.match(kit, /\.ui-segmented--list \{[^}]*gap: 10px;[^}]*\}/);
+  assert.match(kit, /\.ui-segmented--list \.ui-segmented__option \{[^}]*padding: 10px 12px;[^}]*font-size: 17px;[^}]*font-weight: var\(--font-weight-heavy\);/);
+  assert.match(kit, /\.ui-segmented--list \.ui-segmented__option:not\(\[aria-checked="true"\]\) > \.ui-icon \{ display: none; \}/, 'only the chosen card shows its check');
+  assert.match(kit, /\.ui-segmented__swatch \{[^}]*width: 80px;[^}]*height: 28px;/, 'five stripes of 16 × 28');
+  const theme = read('themes/joyful-tiles/theme.css');
+  assert.match(theme, /\.ui-segmented--list \.ui-segmented__option \{[^}]*border-radius: 14px;[^}]*box-shadow: inset 0 -2px 0 var\(--color-edge-inset\), 0 3px 0 var\(--color-edge\);/);
+  assert.match(theme, /\.ui-segmented--list \.ui-segmented__option\[aria-checked="true"\] \{[^}]*background: var\(--color-blue\);[^}]*color: var\(--color-blue-on\);[^}]*box-shadow: inset 0 3px 0 var\(--highlight\), 0 4px 0 var\(--color-blue-edge\);/);
+  assert.match(theme, /\.ui-segmented__swatch \{[^}]*border-radius: 8px;[^}]*box-shadow: 0 0 0 2px var\(--color-surface\);/);
 });
 
 // ---------------------------------------------------------------- the Data panel and Reset all data
@@ -452,28 +566,31 @@ test('the page ends, after Bindings, with a Data panel: the export offered first
   const data = html.indexOf('id="set-sec-data"');
   assert.ok(bindings > 0 && data > bindings, 'Data comes after Bindings');
   const panel = html.slice(html.lastIndexOf('<section', data));
-  assert.match(panel, /^<section class="ui-panel ui-actions" id="settings-data" data-section="data" aria-labelledby="set-sec-data"><div class="ui-section-label"><h3 class="ui-section-label__text" id="set-sec-data">Data<\/h3><\/div>/);
-  assert.match(panel, /<p class="ui-text ui-text--muted">[^<]*this browser[^<]*<\/p>/, 'one line saying what the action does');
-  assert.match(panel, /<button type="button" class="ui-button ui-button--secondary" id="set-reset">Reset all data…<\/button>/);
-  assert.match(panel, /<button type="button" class="ui-button ui-button--secondary" id="set-reset">Reset all data…<\/button><p class="ui-note ui-note--err hidden" id="set-reset-note" role="status" data-icon="warning"><span class="ui-note__text"><\/span><\/p>/,
-    'the failure, an err note with its warning icon, under the Reset button');
-  assert.ok(panel.trimEnd().endsWith('</section></div></div>'), 'the page ends with it, closing its column and the composition');
+  assert.match(panel, /^<section class="ui-panel ui-actions" id="settings-data" data-section="data" aria-labelledby="set-sec-data"><div class="ui-section-label"><h3 class="ui-section-label__text" id="set-sec-data">Data<\/h3><\/div><div class="ui-actions" id="set-data-body">/);
+  assert.match(panel, /<p class="ui-text">[^<]*this browser[^<]*<\/p>/, 'one line in ink saying what the action does');
+  assert.match(panel, /<button type="button" class="ui-button ui-button--secondary" id="set-reset" data-icon="trash">Reset all data…<\/button><p class="ui-note ui-note--err hidden" id="set-reset-note" role="status" data-icon="warning"><span class="ui-note__text"><\/span><\/p>/,
+    'the md Reset button with its trash icon, and the failure, an err note with its warning icon, under it');
+  assert.ok(panel.trimEnd().endsWith('</div></section></div></div>'), 'the page ends with it, closing its column and the composition');
   assert.ok(panel.includes(`<p class="ui-text ui-text--muted" id="set-export-text">${EXPORT_LINE}</p>`), 'a line saying what the exports save');
-  assert.match(EXPORT_LINE, /CSV/);
-  assert.match(EXPORT_LINE, /JSON/);
-  assert.match(panel, /<p class="ui-text ui-text--muted hidden" id="set-export-note" role="status"><\/p>/, 'the nothing-to-export line, hidden');
-  const csv = panel.indexOf('<button type="button" class="ui-button ui-button--secondary" id="set-export-csv">Export history (CSV)</button>');
-  const json = panel.indexOf('<button type="button" class="ui-button ui-button--secondary" id="set-export-json">Export all (JSON)</button>');
+  assert.equal(EXPORT_LINE, 'Save every recorded game as a spreadsheet, or the history and the list of kept replays as one file.');
+  assert.doesNotMatch(panel, /set-export-note|Nothing to export/, 'no nothing-to-export line');
+  const csv = panel.indexOf('<button type="button" class="ui-button ui-button--secondary ui-button--sm" id="set-export-csv" data-icon="download">Export history (CSV)</button>');
+  const json = panel.indexOf('<button type="button" class="ui-button ui-button--secondary ui-button--sm" id="set-export-json" data-icon="download">Export all (JSON)</button>');
   const reset = panel.indexOf('id="set-reset"');
   assert.ok(csv > 0 && json > csv && reset > json, 'Export history (CSV), then Export all (JSON), then Reset all data…: an export is offered first');
   const rule = panel.indexOf('<hr class="ui-divider">');
   assert.ok(rule > json && rule < reset, 'a rule between the export and the reset');
+  const css = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.match(css, /#set-data-body > \.ui-text \{ font-size: 15px; \}/, 'both lines 15px');
+  assert.match(css, /#set-data-body > \.ui-button \{ align-self: flex-start; \}/, 'Reset all data… at its own width');
+  const phone = css.slice(css.indexOf('@media (max-width: 719px)', css.indexOf('#settings-frame')));
+  assert.match(phone.slice(0, phone.indexOf('\n}')), /#set-export-actions \{ flex-direction: column; align-items: flex-start; \}/, 'the exports stack on a phone');
 });
 
 test('the Settings export actions are bound to the one records export, refreshed each time the page shows', () => {
   const main = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
   assert.match(main, /const RECORDS_EXPORT = createRecordsExport\(\{ records: RECORDS, replays: REPLAYS \}\)/);
-  assert.match(main, /const SETTINGS_EXPORT = bindExportActions\(\{[\s\S]*?set-export-csv[\s\S]*?set-export-json[\s\S]*?set-export-note[\s\S]*?\}, \{ onExport: \(format\) => RECORDS_EXPORT\.save\(format\) \}\)/);
+  assert.match(main, /const SETTINGS_EXPORT = bindExportActions\(\{\s*csv: document\.getElementById\('set-export-csv'\), json: document\.getElementById\('set-export-json'\),\s*\}, \{ onExport: \(format\) => RECORDS_EXPORT\.save\(format\) \}\)/, 'no note line');
   assert.match(main, /settings: \{[^\n]*SETTINGS_EXPORT\.show\(RECORDS_EXPORT\.hasGames\(\)\)/);
 });
 
@@ -600,7 +717,7 @@ test('the shell wires the reset: the replay library\'s load awaited, the reload 
   assert.match(MAIN, /onResetAll: \(\) => RESET\.run\(\)/);
   for (const fn of ['shellBack', 'historyBack']) {
     const body = MAIN.slice(MAIN.indexOf(`function ${fn}(`));
-    assert.match(body.slice(0, body.indexOf('\n}')), /ui\.closeControls\(\) \|\| ui\.closeConfirm\(\) \|\| ui\.closeResetConfirm\(\)/, fn);
+    assert.match(body.slice(0, body.indexOf('\n}')), /ui\.closeConfirm\(\) \|\| ui\.closeResetConfirm\(\)/, fn);
   }
   const UI = read('js/ui.js');
   assert.match(UI, /bindResetPanel\(/);
@@ -792,13 +909,13 @@ test('each theme row is a native button the keyboard and the controller reach; U
 test('the swatch reads its colours from the theme\'s own tokens, without applying the theme', () => {
   const css = read('themes/joyful-tiles/theme.css');
   const colors = themeSwatchColors(css, 'joyful-tiles');
+  assert.deepEqual(SWATCH_TOKENS, ['--color-ground', '--color-head', '--color-accent-fill', '--color-blue', '--color-teal'], 'five stripes: ground, head, accent fill, blue, teal');
   for (const token of SWATCH_TOKENS) assert.match(colors[token], /^#[0-9a-f]{6}$/i, `${token} from the token block`);
-  assert.equal(colors['--color-ground'], '#fff6e8');
+  assert.deepEqual(SWATCH_TOKENS.map((t) => colors[t]), ['#fff6e8', '#ffc93c', '#ff6b6b', '#3563d8', '#49c6b8'], 'the canvas\'s Joyful tiles swatch');
   assert.deepEqual(themeSwatchColors(css, 'fixture-dusk'), {}, 'another theme\'s scope reads nothing');
   const fixture = themeSwatchColors(read('tests/fixtures/themes/fixture-dusk/theme.css'), FIXTURE_ID);
-  assert.equal(fixture['--color-surface'], '#1d2233');
-  assert.equal(fixture['--color-ink'], '#f0e6d2');
-  assert.deepEqual(themeSwatchColors(':root[data-theme="a"] .ui-card { --color-ink: #000000; }', 'a'), {}, 'only the token block, not a component rule');
+  assert.equal(fixture['--color-head'], '#c8964a');
+  assert.deepEqual(themeSwatchColors(':root[data-theme="a"] .ui-card { --color-head: #000000; }', 'a'), {}, 'only the token block, not a component rule');
 });
 
 test('a bound theme list fills each swatch once its theme\'s stylesheet is fetched', async () => {
@@ -817,9 +934,9 @@ test('a bound theme list fills each swatch once its theme\'s stylesheet is fetch
   await tick();
   await tick();
   assert.deepEqual(list.rows[0].swatch.style.props, { background: swatchBackground(themeSwatchColors(read(DEFAULT_THEME.stylesheet), DEFAULT_THEME_ID)) });
-  assert.match(list.rows[1].swatch.style.props.background, /#1d2233/, 'the fixture\'s surface');
-  assert.equal(swatchBackground({ '--color-ground': '#111111', '--color-ink': '#222222' }),
-    'linear-gradient(90deg, #111111 0% 25%, transparent 25% 50%, transparent 50% 75%, #222222 75% 100%)', 'a stripe per token, in order, blank where undeclared');
+  assert.match(list.rows[1].swatch.style.props.background, /#c8964a/, 'the fixture\'s head');
+  assert.equal(swatchBackground({ '--color-ground': '#111111', '--color-teal': '#222222' }),
+    'linear-gradient(90deg, #111111 0% 20%, transparent 20% 40%, transparent 40% 60%, transparent 60% 80%, #222222 80% 100%)', 'a stripe per token, in order, blank where undeclared');
   const failing = themeList([FIXTURE_ID]);
   assert.doesNotThrow(() => bindSettingControls([failing.root], store, { theme: fakeApplier(), themeSheet: () => Promise.reject(new Error('offline')) }));
   await tick();
@@ -895,30 +1012,31 @@ test('index.html holds the Settings page in a screen frame on the backdrop, its 
   assert.match(read('js/ui.js'), /settingsPageHtml\(\)/);
 });
 
-test('Settings\' Back is the frame head\'s Main menu with its key hint, in view while the body scrolls', () => {
+test('Settings\' Back is the frame head\'s "← Main menu" with its key hint, "Back" on a phone, in view while the body scrolls', () => {
   const page = between(INDEX, '<!-- Settings -->', '<!-- Records -->');
-  assert.match(page, /<div class="ui-frame__start" id="settings-actions"><button type="button" id="settings-back" class="ui-button ui-button--secondary ui-button--sm" data-back>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>/,
-    'one Back, at the start of the head');
+  assert.match(page, /<div class="ui-frame__start" id="settings-actions"><button type="button" id="settings-back" class="ui-button ui-button--secondary ui-button--sm" data-back data-icon="arrow-left" aria-label="Back to Main menu"><span id="settings-back-wide">Main menu<\/span><span id="settings-back-narrow">Back<\/span> <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>/,
+    'one Back, at the start of the head, its arrow icon and both labels, named for where it goes');
   assert.ok(page.indexOf('id="settings-back"') < page.indexOf('id="settings-body"'), 'the head comes before the body');
   const css = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
   assert.doesNotMatch(css, /#settings-actions|#settings \{[^}]*scroll-padding/, 'no sticky row of its own: the frame keeps its head in view');
   for (const t of THEMES) assert.doesNotMatch(read(t.stylesheet), /#settings-actions/, `${t.id} adds no row either`);
-  assert.match(css, /#settings-frame \{ width: 1640px; height: 100%; \}/, 'the window at the canvas\'s size, bounded by the backdrop');
+  assert.match(css, /#settings-back-narrow \{ display: none; \}/, '"Back" only on a phone');
   assert.match(read('js/ui.js'), /for \(const id of \[[^\]]*'settings'[^\]]*\]\) showKeyHints\(/, 'its key hint follows the active device');
 });
 
-test('on a phone the frame is full-bleed and the bindings device choice spans the width, each option wrapping its label', () => {
+test('on a phone the frame is full-bleed, Back reads "Back" and the bindings device choice spans the width, each option wrapping its label', () => {
   const css = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
   const phone = css.slice(css.indexOf('@media (max-width: 719px)', css.indexOf('#settings-frame')));
   const block = phone.slice(0, phone.indexOf('\n}'));
-  assert.match(block, /#settings-frame \{ width: 100%; border-radius: 0; box-shadow: none; \}/);
+  assert.match(block, /#settings-frame \{ width: 100%; height: 100%; border-radius: 0; box-shadow: none; \}/);
+  assert.match(block, /#settings-back-wide \{ display: none; \}\s+#settings-back-narrow \{ display: inline; \}/);
   assert.match(block, /#set-bind-device \{ display: flex; width: 100%; \}/);
   assert.match(block, /#set-bind-device > \.ui-segmented__option \{ flex: 1 1 0; min-width: 0; padding-inline: var\(--space-2\); white-space: normal; \}/);
 });
 
-test('the Settings choices and the Controls panel\'s tabs take only Left and Right, so Up and Down move focus', () => {
+test('the Settings choices take only Left and Right, so Up and Down move focus', () => {
   assert.match(read('js/settings/page.js'), /bindSegmented\(root, \{\s*horizontal: true,/);
-  assert.match(read('js/ui.js'), /bindSegmented\(\$\('controls-tabs'\), \{ horizontal: true,/);
+  for (const id of ['set-bind-mode', 'set-bind-device']) assert.match(read('js/ui.js'), new RegExp(`bindSegmented\\(\\$\\('${id}'\\), \\{ horizontal: true,`));
 });
 
 test('the pause card\'s sensitivity, invert Y and volume are bound to the store; the main menu holds no setting', () => {
@@ -943,16 +1061,15 @@ test('on the pause card Sound comes first, then Volume, and M still toggles it; 
   assert.match(MAIN, /code === 'KeyM'\) toggleSound\(\)/);
 });
 
-test('the Controls section ends in the Controls action, which opens the controls reference and gives the focus back on close', () => {
+test('the Controls section ends with its settings: no Controls action and no controls modal duplicate the bindings panel', () => {
   const html = settingsPageHtml();
-  const controls = html.slice(html.indexOf('id="set-sec-controls"'), html.indexOf('id="set-sec-graphics"'));
-  assert.match(controls, /data-setting="confirmRestart"[\s\S]*<button type="button" class="ui-button ui-button--secondary" id="set-controls">Controls<\/button><\/section>/,
-    'after the section\'s settings');
-  assert.equal(CONTROLS_ACTION, 'Controls');
-  assert.equal([...html.matchAll(/id="set-controls"/g)].length, 1);
+  const controls = html.slice(html.indexOf('id="set-sec-controls"'), html.indexOf('</section>', html.indexOf('id="set-sec-controls"')));
+  assert.match(controls, /data-setting-row="confirmRestart">[\s\S]*<\/div>$/, 'the last setting closes the section');
+  assert.doesNotMatch(html, /id="set-controls"/);
+  assert.doesNotMatch(INDEX, /controls-modal|controls-tabs|controls-close/, 'no controls modal');
   const ui = read('js/ui.js');
-  assert.match(ui, /\$\('set-controls'\)\.addEventListener\('click', \(\) => this\.openControls\(\)\)/);
-  assert.match(ui.slice(ui.indexOf('  closeControls() {')), /this\._controlsOpener\?\.isConnected \? this\._controlsOpener : \$\('set-controls'\)/, 'the focus returns to what opened it');
+  assert.doesNotMatch(ui, /openControls|closeControls|isControlsOpen|controls-modal|set-controls/);
+  assert.doesNotMatch(MAIN, /openControls|closeControls|isControlsOpen|controls-modal/);
   assert.doesNotMatch(ui, /menu-help/, 'the main menu has no Controls button');
 });
 
@@ -1009,7 +1126,7 @@ test('in a browser: Settings from the menu, the theme list with its swatches, an
     assert.ok(await ms(() => !document.getElementById('settings').classList.contains('hidden')));
     assert.ok(await ms(() => document.getElementById('menu').classList.contains('hidden')));
     const headings = await ms(() => [...document.querySelectorAll('#settings-body h3')].map((h) => h.textContent));
-    assert.deepEqual(headings, ['Controls', 'Audio', 'Graphics', 'Theme', 'Bindings', 'Data'], 'the columns\' sections, in order');
+    assert.deepEqual(headings, ['Controls', 'Graphics', 'Audio', 'Theme', 'Data', 'Bindings'], 'the two stacks\' sections, in order');
     assert.equal(await ms(() => document.querySelectorAll('#settings-body dl.controls').length), 1, 'one bindings list');
 
     // The bindings panel: Classic 2D with the active device first; each pick lists that mode and device.
@@ -1272,35 +1389,7 @@ test('in a browser, Reset all data turns a played profile back into a new player
   }
 });
 
-test('in a browser, the Settings page\'s Controls action opens the controls reference over it, and Esc gives the focus back', async (t) => {
-  const env = await suite.open(t);
-  if (!env) return;
-  const { browser, base } = env;
-  try {
-    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.addInitScript(removeWebGL2);
-    await page.goto(`${base}/index.html`);
-    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
-    await page.click('#menu-entry-settings');
-    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'settings');
-    await page.click('#set-controls');
-    assert.equal(await page.evaluate(() => document.getElementById('controls-modal').classList.contains('hidden')), false, 'the controls reference opens');
-    assert.equal(await page.evaluate(() => document.activeElement.id), 'controls-close');
-    assert.ok(await page.evaluate(() => document.getElementById('controls-body').textContent.length > 50), 'each mode\'s bindings');
-    assert.equal(await page.evaluate(() => document.getElementById('settings').inert), true, 'the page is inert behind it');
-    await page.keyboard.press('Escape');
-    assert.equal(await page.evaluate(() => document.getElementById('controls-modal').classList.contains('hidden')), true, 'Esc closes it');
-    assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'settings', 'and leaves the page as it was');
-    assert.equal(await page.evaluate(() => document.activeElement.id), 'set-controls', 'the focus returns to the action');
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
-});
-
-test('in a browser, the Settings page takes the canvas\'s columns at each window size, never scrolls sideways, and its phone device choice wraps', async (t) => {
+test('in a browser, the Settings page takes the canvas\'s frame and columns at each window size, never scrolls sideways, and its phone device choice wraps', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -1324,21 +1413,64 @@ test('in a browser, the Settings page takes the canvas\'s columns at each window
       const body = document.getElementById('settings-body');
       const wide = [document.documentElement, document.getElementById('settings'), document.getElementById('settings-frame'), body]
         .filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.id || e.tagName);
-      return { columns: [...columns.entries()].sort((a, b) => a[0] - b[0]).map(([, ids]) => ids), wide, scrolls: getComputedStyle(body).overflowY };
+      const frame = document.getElementById('settings-frame').getBoundingClientRect();
+      // Independent stacks: in each column, a section starts right under the one above it.
+      const stackGaps = [...document.querySelectorAll('#settings-columns > .ui-column')].flatMap((col) => {
+        const rects = [...col.children].map((s) => s.getBoundingClientRect());
+        return rects.slice(1).map((r, i) => Math.round(r.top - rects[i].bottom));
+      });
+      return {
+        columns: [...columns.entries()].sort((a, b) => a[0] - b[0]).map(([, ids]) => ids),
+        wide,
+        scrolls: getComputedStyle(body).overflowY,
+        overflow: body.scrollHeight - body.clientHeight,
+        frame: [Math.round(frame.left), Math.round(frame.top), Math.round(frame.width), Math.round(frame.height)],
+        gap: getComputedStyle(document.getElementById('settings-columns')).columnGap,
+        stackGaps: [...new Set(stackGaps)],
+        back: document.getElementById('settings-back').innerText.trim(),
+        // A setting's name never runs into its control: the name ends before the value or the control starts.
+        squeezed: [...document.querySelectorAll('[data-setting-row]')].filter((row) => {
+          const name = row.querySelector('.ui-slider__label, .ui-toggle__label, .ui-text:not(.ui-text--muted)');
+          const control = row.querySelector('.ui-slider__value, .ui-toggle__input, .ui-segmented');
+          const range = document.createRange();
+          range.selectNodeContents(name);
+          return range.getBoundingClientRect().right > control.getBoundingClientRect().left + 0.5;
+        }).map((row) => row.dataset.settingRow),
+      };
     });
     const cases = [
-      [1920, 1080, [['controls', 'audio'], ['graphics', 'theme'], ['bindings', 'data']]],
-      [1366, 768, [['controls', 'graphics', 'audio'], ['theme', 'data', 'bindings']]],
-      [1024, 768, [['controls', 'graphics', 'audio'], ['theme', 'data', 'bindings']]],
-      [390, 844, [['controls', 'graphics', 'theme', 'audio', 'bindings', 'data']]],
+      [1920, 1080, [['controls', 'audio'], ['graphics', 'theme'], ['bindings', 'data']], [140, 66, 1640, 940], 24, 'Main menu'],
+      [1700, 960, [['controls', 'audio'], ['graphics', 'theme'], ['bindings', 'data']], [32, 66, 1636, 820], 24, 'Main menu'],
+      [1440, 900, [['controls', 'graphics', 'audio'], ['theme', 'data', 'bindings']], [32, 66, 1376, 760], 24, 'Main menu'],
+      [1366, 768, [['controls', 'graphics', 'audio'], ['theme', 'data', 'bindings']], [32, 24, 1302, 712], 18, 'Main menu'],
+      [1024, 768, [['controls', 'graphics', 'audio'], ['theme', 'data', 'bindings']], [20, 16, 984, 728], 14, 'Main menu'],
+      [390, 844, [['controls', 'graphics', 'theme', 'audio', 'bindings', 'data']], [0, 0, 390, 844], 16, 'Back'],
     ];
-    for (const [width, height, columns] of cases) {
+    for (const [width, height, columns, frame, gap, back] of cases) {
       await page.setViewportSize({ width, height });
+      // The stacks follow the window's media queries, which report the resize at the next frame.
+      await page.waitForFunction((n) => document.querySelectorAll('#settings-columns > .ui-column').length === n, columns.length, { timeout: patience(5000) });
       const l = await layout();
       assert.deepEqual(l.columns, columns, `${width} × ${height}: the canvas's columns`);
+      assert.deepEqual(l.frame, frame, `${width} × ${height}: the canvas's frame`);
+      assert.equal(l.gap, `${gap}px`, `${width} × ${height}: the column gap`);
+      assert.deepEqual(l.stackGaps, [gap], `${width} × ${height}: independent stacks, the stack gap equal to the column gap`);
+      assert.match(l.back, new RegExp(`^${back}`), `${width} × ${height}: Back reads ${back}`);
       assert.deepEqual(l.wide, [], `${width} × ${height}: nothing scrolls sideways`);
+      assert.deepEqual(l.squeezed, [], `${width} × ${height}: every setting's name clear of its control`);
       assert.equal(l.scrolls, 'auto', `${width} × ${height}: the frame's body scrolls vertically`);
+      if (width === 1920) assert.ok(l.overflow <= 0, `the largest window fits everything without scrolling, the opening Classic 2D bindings shown (${l.overflow}px over)`);
     }
+    assert.equal(await page.evaluate(() => document.getElementById('settings-back').getAttribute('aria-label')), 'Back to Main menu');
+    // The phone: the exports stack, each a small button with its download icon.
+    const exports = await page.evaluate(() => ['set-export-csv', 'set-export-json'].map((id) => {
+      const b = document.getElementById(id);
+      const r = b.getBoundingClientRect();
+      return { left: Math.round(r.left), top: Math.round(r.top), icon: b.querySelector(':scope > .ui-icon')?.dataset.icon, font: getComputedStyle(b).fontSize };
+    }));
+    assert.equal(exports[0].left, exports[1].left, 'the exports stack');
+    assert.ok(exports[1].top > exports[0].top);
+    assert.deepEqual(exports.map((e) => [e.icon, e.font]), [['download', '15px'], ['download', '15px']]);
     // The phone: the device choice spans the panel, "Keyboard and mouse" on two lines inside its option.
     await page.click('#set-bind-mode [data-value="3d"]');
     const device = await page.evaluate(() => {
@@ -1359,6 +1491,55 @@ test('in a browser, the Settings page takes the canvas\'s columns at each window
     assert.deepEqual(device.options.map((o) => [o.label, o.inside]), [['Keyboard and mouse', true], ['Controller', true], ['Touch', true]], 'each label inside its option');
     assert.equal(device.options[0].lines, 2, '"Keyboard and mouse" wraps onto two lines');
     assert.deepEqual((await layout()).wide, [], 'nothing overflows the screen');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, the Settings rows, theme cards and Data panel take the canvas\'s look', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(removeWebGL2);
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu');
+    await page.click('#menu-entry-settings');
+    const look = await page.evaluate(() => {
+      const css = (el, ...props) => props.map((p) => getComputedStyle(el)[p]);
+      const row = document.querySelector('[data-setting-row="lookSensitivity"]');
+      const card = document.querySelector('#set-theme .ui-segmented__option[aria-checked="true"]');
+      const swatch = card.querySelector('.ui-segmented__swatch').getBoundingClientRect();
+      return {
+        row: css(row, 'paddingTop', 'paddingBottom', 'borderTopWidth', 'borderTopColor'),
+        name: css(row.querySelector('.ui-slider__label'), 'fontSize', 'fontWeight'),
+        note: css(row.querySelector('.ui-text--muted'), 'fontSize'),
+        rows: [...document.querySelectorAll('[data-setting-row]')].every((r) => getComputedStyle(r).borderTopWidth === '1px'),
+        card: css(card, 'borderRadius', 'paddingTop', 'paddingLeft', 'backgroundColor', 'color', 'fontSize', 'fontWeight'),
+        check: [...document.querySelectorAll('#set-theme .ui-segmented__option')].map((o) => !!o.querySelector('.ui-icon')?.getClientRects().length),
+        swatch: [Math.round(swatch.width), Math.round(swatch.height)],
+        exportLine: css(document.getElementById('set-export-text'), 'fontSize'),
+        exportButton: [...css(document.getElementById('set-export-csv'), 'fontSize', 'minHeight'), document.querySelector('#set-export-csv > .ui-icon')?.dataset.icon],
+        reset: [...css(document.getElementById('set-reset'), 'fontSize'), document.querySelector('#set-reset > .ui-icon')?.dataset.icon,
+          document.getElementById('set-reset').getBoundingClientRect().width < document.getElementById('set-data-body').getBoundingClientRect().width],
+        controls: !!document.getElementById('set-controls'),
+      };
+    });
+    assert.deepEqual(look.row, ['10px', '10px', '1px', 'rgb(243, 220, 160)'], 'padding 10px 0, ruled in --color-line');
+    assert.ok(look.rows, 'every setting row is ruled');
+    assert.deepEqual(look.name, ['16px', '700']);
+    assert.deepEqual(look.note, ['13px']);
+    assert.deepEqual(look.card, ['14px', '10px', '12px', 'rgb(53, 99, 216)', 'rgb(255, 255, 255)', '17px', '800'], 'the chosen card: blue, blue-on, name 17px/800');
+    assert.deepEqual(look.check, THEMES.map((th) => th.id === DEFAULT_THEME_ID), 'the check on the chosen card only');
+    assert.deepEqual(look.swatch, [80, 28]);
+    assert.deepEqual(look.exportLine, ['15px']);
+    assert.deepEqual(look.exportButton, ['15px', '38px', 'download']);
+    assert.deepEqual(look.reset, ['17px', 'trash', true], 'Reset all data… md, with its trash icon, at its own width');
+    assert.equal(look.controls, false, 'no Controls action');
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

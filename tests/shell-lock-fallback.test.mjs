@@ -69,7 +69,7 @@ test('the counter is pure: no DOM and no storage', () => {
 const INDEX = read('index.html');
 const MAIN = read('js/main.js');
 const UI_SRC = read('js/ui.js');
-const READY = INDEX.slice(INDEX.indexOf('<section id="ready"'), INDEX.indexOf('<!-- Controls modal'));
+const READY = INDEX.slice(INDEX.indexOf('<section id="ready"'), INDEX.indexOf('<!-- WebGL context lost -->'));
 
 test('the ready card holds the drag-to-look offer and the controller line outside the click-to-play button', () => {
   const card = READY.slice(READY.indexOf('<button id="ready-btn"'), READY.indexOf('</button>', READY.indexOf('<button id="ready-btn"')));

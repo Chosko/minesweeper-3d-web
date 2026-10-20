@@ -178,6 +178,12 @@ test('the export actions: both call the one exporter; disabled with a line when 
   els.csv.click();
   els.json.click();
   assert.deepEqual(asked, ['csv', 'json']);
+  const bare = { csv: element(), json: element() };
+  const noLine = bindExportActions(bare, { onExport: () => {} });
+  noLine.show(false);
+  assert.deepEqual([bare.csv.disabled, bare.json.disabled], [true, true], 'without a note line only the buttons follow');
+  noLine.show(true);
+  assert.deepEqual([bare.csv.disabled, bare.json.disabled], [false, false]);
 });
 
 test('the export module reads through the summary derivations and keeps no rank, no storage write', () => {

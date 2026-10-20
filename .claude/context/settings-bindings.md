@@ -5,7 +5,7 @@
 `js/settings/bindings.js` is the one table of each mode's controls per input
 device, read by the Settings page's Bindings panel
 ([settings-page.md](settings-page.md)) and by every help surface in
-`js/ui.js` — the pause card, the Controls panel the Settings page opens, the H panel,
+`js/ui.js` — the pause card, the H panel,
 the HUD strip, the first-use hint strips and the one-time hints — plus the
 active device those surfaces follow. DOM-free; rebinding is not offered.
 The module's head comment lists every function.
@@ -60,8 +60,7 @@ The module's head comment lists every function.
 - **Bindings are one table.** The Settings page shows one mode × device at
   a time, picked by its Mode and Device choices; the pause card, the H
   panel with its foot line and the HUD strip show the active mode's rows
-  for the active device, the Controls panel
-  the rows of its Classic 2D | 3D tab for the active device, and the hint
+  for the active device, and the hint
   strip its mode's strip — on a coarse-only device all of them touch's,
   unless a controller is in use (`UI._bindDevice`,
   [app-shell-help.md](app-shell-help.md)). A row's text is edited in `BINDINGS` (`HUD_STRIP`, `HINT_STRIP`,

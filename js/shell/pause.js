@@ -23,7 +23,7 @@
 //
 // The restart inputs (restartInput): F2 and the controller's Start + Y restart in play and on the
 // pause card (RESTART_SCREENS); R on the results screen is Play again; nothing elsewhere, nor while
-// the shell blocks them (the 3D end delay, an open confirmation or controls modal).
+// the shell blocks them (the 3D end delay or an open confirmation).
 //
 // Hand-offs, the attachment points later features fill (attach(name, listener)):
 //   finished(summary, mode, replay)   every finished game; the results flow (js/results/flow.js)

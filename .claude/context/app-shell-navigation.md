@@ -69,15 +69,15 @@ are [app-shell-ui.md](app-shell-ui.md) § Controller menus.
   `start` stamps the base entry at boot from the navigation entry's type.
   The URL never changes; a reload opens the menu.
 - **The browser's Back** (and a mouse's back button) is `historyBack`, run
-  by `HISTORY` on a `popstate` back: nothing during an end delay; the
-  controls modal or either confirmation closes first; the board (`playing`,
+  by `HISTORY` on a `popstate` back: nothing during an end delay; any
+  confirmation closes first; the board (`playing`,
   `classic-2d`) pauses through `pauseGame('button')`; the pause card of an
   unfinished game and a started game's ready card hold the game; anything
   else is `SHELL.back('history')`. `HISTORY` restores the consumed entry
   when the stack did not shrink.
 - **Back inputs.** `shellBack(source)` does nothing during an end delay,
-  else closes the controls modal, the pause confirmation or Reset all
-  data's confirmation first, then calls `SHELL.back`. Esc (`isBackKey`)
+  else closes the pause confirmation, Reset all data's confirmation or the
+  Records screen's Delete confirmation first, then calls `SHELL.back`. Esc (`isBackKey`)
   reaches it through `Input`'s `onKey`; the board choices', placeholder's
   and Settings page's Back buttons through `onBack`, the Records screen's
   `#records-back` through its view's `onBack`; controller back buttons

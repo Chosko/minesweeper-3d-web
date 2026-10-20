@@ -72,7 +72,7 @@ the focus walk (`navStep`) live in `js/main.js` ([app-shell.md](app-shell.md),
   processed before connects. LT/RT use `triggerHeld`. All helpers tolerate NaN / missing fields.
 - **Shell navigation sits between the reader and every action.** `handlePad` calls
   `nav.update(p.held)` each poll and reads buttons only through `nav.held` / `nav.pressed`; every
-  screen change and controls-modal toggle calls `screenChanged()`, so a button held through the
+  screen change calls `screenChanged()`, so a button held through the
   change is ignored until released. Back is `isBackKey` from the keyboard and `backButtons(screen)`
   from the controller (B is Back only off the board, where it moves down); both, and the
   browser's Back, resolve through the router ([app-shell-navigation.md](app-shell-navigation.md)). The arrow keys take

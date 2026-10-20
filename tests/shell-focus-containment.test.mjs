@@ -1,6 +1,6 @@
 // Focus containment in overlays (js/main.js through js/shell/navigation.js inertSections / tabWrap):
-// in a browser, Tab and Shift+Tab never leave the open overlay — the Controls modal, the pause card,
-// the pause confirmation, the results card and the replay viewer over a finished Classic 2D board —
+// in a browser, Tab and Shift+Tab never leave the open overlay — the pause card, the pause
+// confirmation, the results card and the replay viewer over a finished Classic 2D board —
 // with `inert` and again with `inert` removed from the page's prototype (the Tab wrap); a faked
 // controller's D-pad never leaves the confirmation; and each overlay's focus restore on close.
 // Skipped when Playwright or Chromium is unavailable.
@@ -77,39 +77,12 @@ async function open(browser, base, { inert }) {
 for (const inert of [true, false]) {
   const how = inert ? 'with inert' : 'without inert (the Tab wrap)';
 
-  test(`[slow] in a browser ${how}, focus stays inside the Controls modal, the pause card and its confirmation, and is restored on close`, async (t) => {
+  test(`[slow] in a browser ${how}, focus stays inside the pause card and its confirmation, and is restored on close`, async (t) => {
     const env = await suite.open(t);
     if (!env) return;
     const { browser, base } = env;
     try {
       const { page, errors, ms, frames, tap, mode, focused, isInert, tabWalk } = await open(browser, base, { inert });
-
-      // The Controls modal over the Settings page: the page behind it is inert; Tab never reaches it.
-      await page.click('#menu-entry-settings');
-      assert.equal(await mode(), 'settings');
-      await page.click('#set-controls');
-      assert.equal(await focused(), 'controls-close');
-      if (inert) assert.equal(await isInert('settings'), true, 'the Settings page is inert behind the Controls modal');
-      assert.equal(await isInert('toast'), false, 'the toast stays live');
-      await tabWalk('#controls-modal', false);
-      await tabWalk('#controls-modal', true);
-      // Every way out focuses the page's Controls action, and the page is live again.
-      await page.keyboard.press('Escape');
-      assert.equal(await focused(), 'set-controls', 'Esc');
-      assert.equal(await isInert('settings'), false, 'the page is live again');
-      assert.equal(await mode(), 'settings', 'Esc closed the modal only');
-      await page.click('#set-controls');
-      await page.click('#controls-close');
-      assert.equal(await focused(), 'set-controls', 'the close button');
-      await page.click('#set-controls');
-      await page.mouse.click(4, 4);
-      assert.equal(await ms(() => document.getElementById('controls-modal').classList.contains('hidden')), true);
-      assert.equal(await focused(), 'set-controls', 'a backdrop click');
-      await page.click('#set-controls');
-      await frames(2);
-      await tap(BTN.B);
-      assert.equal(await ms(() => document.getElementById('controls-modal').classList.contains('hidden')), true);
-      assert.equal(await focused(), 'set-controls', 'the controller');
 
       // The pause card of a started 3D game: the overlay bar (its Pause button) and the boards are inert.
       await ms(() => {
@@ -123,6 +96,7 @@ for (const inert of [true, false]) {
       assert.equal(await focused(), 'p-resume');
       if (inert) for (const id of ['hud', 'c2d', 'menu', 'scene']) assert.equal(await isInert(id), true, `#${id} is inert behind the pause card`);
       assert.equal(await isInert('pause'), false);
+      assert.equal(await isInert('toast'), false, 'the toast stays live');
       await tabWalk('#pause', false, ['#hud-pause']);
       await tabWalk('#pause', true, ['#hud-pause']);
 

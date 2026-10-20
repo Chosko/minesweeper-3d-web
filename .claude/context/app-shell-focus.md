@@ -39,7 +39,7 @@ are [app-shell-navigation.md](app-shell-navigation.md)'s; `focusMove`,
   (every router change and focus hand-off, and any `class` change through
   a `MutationObserver`) makes every other top-level section inert behind
   the open overlay — the topmost visible layer when it is one of
-  `CONTAINED` (`controls-modal`, `pause`, `learn-end`, `results`, `replay`),
+  `CONTAINED` (`pause`, `learn-end`, `results`, `replay`),
   the toast kept live — and the rest of the pause card inert behind its
   confirmation (`cardBeside`: the confirmation's siblings and its column's,
   up to the card). The walk (`padFocusables`) skips inert subtrees, and a layer

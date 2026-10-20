@@ -1121,7 +1121,8 @@ test('each Back that Esc triggers holds its back key hint, and no "Esc: Back" te
   assert.doesNotMatch(read('css/style.css'), /data-esc-hint|\.esc-row/);
   assert.doesNotMatch(THEME_RAW, /data-esc-hint|\.esc-row/);
   assert.match(html, /id="p-menu"[^>]*>Main menu<\/button>/, 'none in the pause card\'s Main menu, where Esc resumes');
-  for (const id of ['c2d-choice-back', 'board-choice-back', 'daily-back', 'coming-soon-menu', 'r-menu', 'settings-back', 'ctx-lost-menu']) {
+  assert.match(html, /id="settings-back"[^>]*><span id="settings-back-wide">Main menu<\/span><span id="settings-back-narrow">Back<\/span> <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/, 'the Back holds its key hint (#settings-back)');
+  for (const id of ['c2d-choice-back', 'board-choice-back', 'daily-back', 'coming-soon-menu', 'r-menu', 'ctx-lost-menu']) {
     assert.match(html, new RegExp(`id="${id}"[^>]*>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>`), `the Back holds its key hint (#${id})`);
   }
   for (const id of ['coming-soon-back', 'records-back', 'rp-back', 'replay-message-back', 'ready-back']) {
@@ -1367,7 +1368,7 @@ test('the column composition has one breakpoint, 1024 px, stated once, used by R
   const block = CSS.slice(CSS.indexOf('@media (min-width: 1024px)'));
   assert.match(block.slice(0, block.indexOf('\n}')), /#records-columns \{ grid-template-columns: [^}]+ auto [^}]+; \}/, 'Records\' rule between its columns, inside the one breakpoint');
   assert.match(INDEX, /<section class="ui-frame" id="settings-frame" aria-labelledby="settings-title">[\s\S]*?<div class="ui-frame__body" id="settings-body"><\/div>/);
-  assert.match(block.slice(0, block.indexOf('\n}')), /#settings-columns \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/, 'Settings\' two columns, inside the one breakpoint');
+  assert.match(read('js/settings/page.js'), /media: '\(min-width: 1024px\)', columns: /, 'Settings\' two stacks from the same breakpoint, placed by the page');
 });
 
 test('the gallery shows the stat tile, the pager in each state and the column composition', () => {
@@ -2165,7 +2166,7 @@ test('the gallery marks the shared layout\'s components; the main menu, both boa
   const records = screens.slice(screens.indexOf('<section id="records"'), screens.indexOf('<section id="replay"'));
   const settings = screens.slice(screens.indexOf('<section id="settings"'), screens.indexOf('<section id="records"'));
   const replay = screens.slice(screens.indexOf('<section id="replay"'), screens.indexOf('<section id="results"'));
-  const ready = screens.slice(screens.indexOf('<section id="ready"'), screens.indexOf('<section id="controls-modal"'));
+  const ready = screens.slice(screens.indexOf('<section id="ready"'), screens.indexOf('<section id="ctx-lost"'));
   const ctxLost = screens.slice(screens.indexOf('<section id="ctx-lost"'), screens.indexOf('<section id="settings"'));
   const learnEnd = screens.slice(screens.indexOf('<section id="learn-end"'), screens.indexOf('<section id="pause"'));
   const noscript = screens.slice(screens.indexOf('<noscript>'), screens.indexOf('</noscript>'));

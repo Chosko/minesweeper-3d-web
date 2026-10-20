@@ -1,5 +1,5 @@
 // Mode-aware help: the one bindings component per mode × device, the active device, the pause card's
-// mode-dependent controls and look settings, the Settings page's Controls panel and its tabs, H and M in
+// mode-dependent controls and look settings, the Settings page's bindings panel and its mode choice, H and M in
 // Classic 2D, the HUD strip, Space as tap-toggle as well as hold, and " · no-guess" on the ready
 // card, the overlay bar's readout and the pause card.
 import { test } from 'node:test';
@@ -158,26 +158,21 @@ const MAIN = read('js/main.js');
 const UI = read('js/ui.js');
 const between = (src, start, end) => src.slice(src.indexOf(start), src.indexOf(end, src.indexOf(start)));
 
-test('the pause card, the Controls panel and the H panel have no hard-coded bindings list', () => {
+test('the pause card, the Settings bindings panel and the H panel have no hard-coded bindings list', () => {
   const pause = between(INDEX, '<section id="pause"', '<noscript>');
   assert.match(pause, /<dl id="pause-controls" class="controls"><\/dl>/);
   assert.doesNotMatch(pause, /<dt>/, 'the 3D list is gone from the markup');
   assert.match(pause, /<p id="pause-board" class="ui-text">/, 'the pause card names the board');
-  const modal = between(INDEX, '<section id="controls-modal"', '</section>');
-  assert.match(modal, /<div id="controls-tabs" class="ui-segmented" role="radiogroup" aria-label="Mode">/);
-  assert.match(modal, /data-value="classic-2d">Classic 2D<\/button>/);
-  assert.match(modal, /data-value="3d"[^>]*>3D<\/button>/);
-  assert.match(modal, /<dl id="controls-body" class="controls"><\/dl>/);
-  assert.doesNotMatch(modal + INDEX, /id="modal-pad"|id="help-pad"/);
+  assert.doesNotMatch(INDEX, /id="modal-pad"|id="help-pad"|id="controls-modal"/);
   const help = between(INDEX, '<aside id="help"', '</aside>');
   assert.match(help, /<dl class="controls"><\/dl>/);
   assert.match(help, /<p id="help-foot" class="help-foot"><\/p>/);
-  assert.doesNotMatch(UI, /cloneNode/, 'the Controls panel is not a copy of the help list');
+  assert.doesNotMatch(UI, /cloneNode/, 'no surface is a copy of the help list');
   assert.doesNotMatch(UI, /bindingRows\('3d', 'keyboard'\)/, 'no surface is fixed to the 3D keyboard rows');
   assert.match(UI, /bindingsHtml\(/);
 });
 
-test('on a touch device Classic 2D\'s touch rows reach the H panel, the pause card and the Controls panel as 3D\'s do; no table is read for touch without a touch entry', () => {
+test('on a touch device Classic 2D\'s touch rows reach the H panel and the pause card as 3D\'s do; no table is read for touch without a touch entry', () => {
   const touch2d = text(bindingsHtml('classic-2d', 'touch'));
   assert.match(touch2d, /Long-press/);
   assert.match(touch2d, /Tap a number/);
@@ -185,7 +180,6 @@ test('on a touch device Classic 2D\'s touch rows reach the H panel, the pause ca
   assert.doesNotMatch(touch2d, /Move the cursor|Look around/, 'neither the keyboard rows nor a 3D row');
   assert.match(UI, /this\.el\.helpList\.innerHTML = bindingsHtml\(this\._mode, this\._bindDevice\(this\._mode\)/);
   assert.match(UI, /this\.el\.pauseControls\.innerHTML = bindingsHtml\(this\._mode, this\._bindDevice\(this\._mode\)/);
-  assert.match(UI, /this\.el\.controlsBody\.innerHTML = bindingsHtml\(this\._controlsTab, this\._bindDevice\(this\._controlsTab\)/);
   // The foot line, the HUD strip, the mode's hint strip and the scroll hint follow the same device.
   assert.match(UI, /helpFootHtml\(this\._mode, this\._bindDevice\(this\._mode\),/);
   assert.match(UI, /hudStripHtml\(this\._mode, this\._bindDevice\(this\._mode\),/);
@@ -269,7 +263,7 @@ test('none of the help panel, the HUD strip and the hint strip shows in the repl
 
 // ---------------------------------------------------------------- browser
 
-test('in a browser: the Controls panel tabs, H, M and the HUD strip in Classic 2D, and each mode\'s pause card', async (t) => {
+test('in a browser: the Settings bindings panel\'s modes, H, M and the HUD strip in Classic 2D, and each mode\'s pause card', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
   const { browser, base } = env;
@@ -284,17 +278,14 @@ test('in a browser: the Controls panel tabs, H, M and the HUD strip in Classic 2
     const shown = (id) => ms((i) => { const el = document.getElementById(i); return !!el && !el.classList.contains('hidden') && el.getClientRects().length > 0; }, id);
     const textOf = (sel) => ms((s) => document.querySelector(s).textContent, sel);
 
-    // The Settings page's Controls panel: Classic 2D and 3D tabs.
+    // The Settings page's bindings panel: Classic 2D, then 3D.
     await page.click('#menu-entry-settings');
-    await page.click('#set-controls');
-    assert.ok(await shown('controls-modal'));
-    assert.match(await textOf('#controls-body'), /Move the cursor/, 'Classic 2D first');
-    assert.match(await textOf('#controls-body'), /Help/, 'H is named');
-    await page.click('#controls-tabs [data-value="3d"]');
-    assert.match(await textOf('#controls-body'), /Look around/);
-    assert.doesNotMatch(await textOf('#controls-body'), /Move the cursor/);
-    await page.keyboard.press('Escape');
-    assert.equal(await shown('controls-modal'), false);
+    assert.ok(await shown('settings-bindings'));
+    assert.match(await textOf('#settings-bindings'), /Move the cursor/, 'Classic 2D first');
+    assert.match(await textOf('#settings-bindings'), /Help/, 'H is named');
+    await page.click('#set-bind-mode [data-value="3d"]');
+    assert.match(await textOf('#settings-bindings'), /Look around/);
+    assert.doesNotMatch(await textOf('#settings-bindings'), /Move the cursor/);
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'menu');
 
@@ -414,11 +405,12 @@ test('in a browser: the controller as the active device redraws every shown surf
     assert.doesNotMatch(await textOf('#pause-controls'), /Fly \/ look around/);
     assert.match(await textOf('#hud-tools'), /H help/);
     await ms(() => globalThis.__ms.pauser.toMenu());
-    // The Settings page's Controls panel follows the device too.
-    await ms(() => { document.getElementById('menu-entry-settings').click(); document.getElementById('set-controls').click(); });
-    assert.doesNotMatch(await textOf('#controls-body'), /D-pad/);
+    // The Settings page's bindings panel opens on the active device too.
+    await ms(() => document.getElementById('menu-entry-settings').click());
+    assert.doesNotMatch(await textOf('#settings-bindings'), /D-pad/);
     await tap(BTN.DOWN);
-    assert.match(await textOf('#controls-body'), /D-pad/);
+    await ms(() => { document.getElementById('settings-back').click(); document.getElementById('menu-entry-settings').click(); });
+    assert.match(await textOf('#settings-bindings'), /D-pad/);
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

@@ -334,7 +334,7 @@ export const REQUIRED_TOKENS = Object.freeze([
   '--color-replay-bbbv-1', '--color-replay-bbbv-2', '--color-replay-bbbv-3', '--color-replay-bbbv-4',
   '--color-replay-bbbv-5', '--color-replay-bbbv-6', '--color-replay-bbbv-isolated',
   // the Settings theme list's swatch (js/settings/page.js SWATCH_TOKENS) beyond the contrast roles
-  '--color-accent-fill',
+  '--color-head', '--color-accent-fill', '--color-blue', '--color-teal',
   // a slider's filled share of its range, which the kit sets on the input (bindSliderFill); a theme
   // declares it before the kit first sets it
   '--slider-fill',

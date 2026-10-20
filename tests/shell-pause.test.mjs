@@ -340,7 +340,7 @@ test('the restart inputs: F2 and Start + Y in play and on the pause card, R on t
   for (const screen of RESTART_SCREENS) {
     assert.equal(restartInput('F2', { screen }), 'restart', `F2 on ${screen}`);
     assert.equal(restartInput('pad', { screen }), 'restart', `Start + Y on ${screen}`);
-    assert.equal(restartInput('F2', { screen, blocked: true }), null, 'nothing during the 3D end delay, a confirmation or the controls modal');
+    assert.equal(restartInput('F2', { screen, blocked: true }), null, 'nothing during the 3D end delay or a confirmation');
     assert.equal(restartInput('KeyR', { screen }), null, 'R keeps the 3D camera\'s back to start in play');
   }
   assert.equal(restartInput('KeyR', { screen: 'results' }), 'playAgain');
