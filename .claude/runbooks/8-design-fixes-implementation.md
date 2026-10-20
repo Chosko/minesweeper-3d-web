@@ -76,7 +76,7 @@ Context: none
 
 Done: 2026-10-20, commits `f6d1394`, `0cd4696` (23 files, +563/-118). Premise wrong: styling the board option on `:focus-visible` alone does not work in Chromium after a mouse click; `js/main.js` now sets `body.pointer-nav` on mouse input and the theme keys the selected look on it. The focus halo is `!important`; `STATES` gains `invalid` and `REQUIRED_TOKENS` `--slider-fill`.
 
-## [~] 7. Implement task 220 — Kit icon set and leading-icon slot
+## [x] 7. Implement task 220 — Kit icon set and leading-icon slot
 
 Depends on: 5
 
@@ -86,11 +86,14 @@ Context: none
 /task-implement 220 --review
 ```
 
+Done: 2026-10-20, commit `b20dc22` (9 files, +411/-13). Decisions: one icon set, `ICONS` in `js/ui/components.js`, drawn from `data-icon` by `applyIcons(root)` or through `createButton`/`setButtonIcon`; nothing calls `applyIcons` yet; the code chip's icons are left to task 222.
+
 ## [ ] 8. Implement task 221 — Kit feedback parts: confirm box, warn and err notes
 
 Depends on: 5, 7
 
-Context: none
+Context:
+- 2026-10-20 (from step 7): task 220's icons come from `ICONS` in `js/ui/components.js`; markup names one with `data-icon="<name>"` and `applyIcons(root)` draws it, script-built buttons use `createButton(doc, {label, icon, …})` or `setButtonIcon`. Nothing in the game calls `applyIcons` yet — the first screen task that adds `data-icon` to `index.html` must call it from `js/main.js`.
 
 ```prompt
 /task-implement 221 --review
@@ -100,7 +103,8 @@ Context: none
 
 Depends on: 5, 7
 
-Context: none
+Context:
+- 2026-10-20 (from step 7): task 220's icons come from `ICONS` in `js/ui/components.js`; markup names one with `data-icon="<name>"` and `applyIcons(root)` draws it, script-built buttons use `createButton(doc, {label, icon, …})` or `setButtonIcon`. Nothing in the game calls `applyIcons` yet — the first screen task that adds `data-icon` to `index.html` must call it from `js/main.js`. The code chip's 14px icons were left to this task: `createCodeChip` adds none yet.
 
 ```prompt
 /task-implement 222 --review
@@ -110,7 +114,8 @@ Context: none
 
 Depends on: 5, 7
 
-Context: none
+Context:
+- 2026-10-20 (from step 7): task 220's icons come from `ICONS` in `js/ui/components.js`; markup names one with `data-icon="<name>"` and `applyIcons(root)` draws it, script-built buttons use `createButton(doc, {label, icon, …})` or `setButtonIcon`. Nothing in the game calls `applyIcons` yet — the first screen task that adds `data-icon` to `index.html` must call it from `js/main.js`.
 
 ```prompt
 /task-implement 223 --review
@@ -170,6 +175,8 @@ Depends on: 7, 10
 
 Context:
 - 2026-10-20 (from step 14): task 227 left the menu's preview tile size unpinned — at 1024×768 it draws 27 px where the criteria give 23, and the Daily focus 28 px / 933 px wide against 27 px / about 872 px; this task's layout should pin them.
+
+- 2026-10-20 (from step 7): task 220's icons come from `ICONS` in `js/ui/components.js`; markup names one with `data-icon="<name>"` and `applyIcons(root)` draws it, script-built buttons use `createButton(doc, {label, icon, …})` or `setButtonIcon`. Nothing in the game calls `applyIcons` yet — the first screen task that adds `data-icon` to `index.html` must call it from `js/main.js`.
 
 ```prompt
 /task-implement 228 --review
@@ -239,7 +246,8 @@ Context: none
 
 Depends on: 7, 10, 20
 
-Context: none
+Context:
+- 2026-10-20 (from step 7): task 220's icons come from `ICONS` in `js/ui/components.js`; markup names one with `data-icon="<name>"` and `applyIcons(root)` draws it, script-built buttons use `createButton(doc, {label, icon, …})` or `setButtonIcon`. Nothing in the game calls `applyIcons` yet — the first screen task that adds `data-icon` to `index.html` must call it from `js/main.js`.
 
 ```prompt
 /task-implement 235 --review
