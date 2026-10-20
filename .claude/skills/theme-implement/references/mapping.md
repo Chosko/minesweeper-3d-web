@@ -96,8 +96,8 @@ sheet:
   passes the board conformance contrast check against every point of the
   revealed face; each is named in the report with its value. A drawn number
   that fails that check is not adjusted: it is a question (attended) or a stop
-  (unattended), naming the number, as a failing token pair is. The tile
-  tokens `--color-number-1`…`8` carry the 2D sheet's numbers.
+  (unattended), naming the number, as a failing token pair is. The number
+  tokens of `REQUIRED_TOKENS` carry the 2D sheet's numbers.
 - **Glyphs** — flag, mine, wrong-flag cross and number shadow as drawn; an
   undrawn mine and cross take the theme's ink and danger colours.
 - **Font** — the number font: one of the theme's own faces, at the weight the
@@ -106,7 +106,7 @@ sheet:
   on the sheets.
 - **Sky** — horizon, zenith and nadir from the 3D sheet's panel; with no 3D
   panel, from the page backdrop. The fog is the horizon unless the sheet
-  draws its own. The `--color-scene-*` tokens carry the same stops.
+  draws its own.
 - **Motion** — see below.
 
 The 2D tile tokens of `REQUIRED_TOKENS` carry the same values as the

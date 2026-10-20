@@ -1,7 +1,9 @@
-// 3D small feedback in the renderer (task 126, P-29 and P-35): Ctrl draws hidden cells as ghosts at
-// GHOST_ALPHA in the transparent pass instead of opaque, and a number the player could see plays a
-// short "solved" pulse — brighter and larger, then fading out — after the engine hides it. The pulse
-// envelope is a pure function of elapsed time; the drawing is checked in a browser through `__ms`.
+// 3D small feedback in the renderer: Ctrl draws hidden cells as ghosts at GHOST_ALPHA in the
+// transparent pass instead of opaque, and a number the player could see plays a short "solved"
+// pulse — brighter and larger, then fading out — after the engine hides it. The pulse envelope is a
+// pure function of elapsed time; the drawing is checked in a browser through `__ms`. The scene is
+// drawn from the board module the shell hands in: the atlas, the sky and fog, the selection outline
+// and the marked start cell's tint.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -21,8 +23,48 @@ register(`data:text/javascript,${encodeURIComponent(`export async function resol
 const {
   GHOST_ALPHA, pulseEnvelope, PULSE_GLOW_S, PULSE_FADE_S, PULSE_SCALE, PULSE_BRIGHT,
 } = await import('../js/render.js');
+const TEX = await import('../js/textures.js');
 const RENDER = read('js/render.js');
+const TEXTURES = read('js/textures.js');
 const TOTAL = PULSE_GLOW_S + PULSE_FADE_S;
+
+// ---------------------------------------------------------------- the board module
+
+test('the atlas keeps its layer order and adds the sunk closed face after it', () => {
+  assert.deepEqual([TEX.L_CLOSED, TEX.L_FLAG, TEX.L_MINE, TEX.L_MINE_EXPLODED, TEX.L_NUM0], [0, 1, 2, 3, 4]);
+  assert.equal(TEX.L_WRONG_FLAG, TEX.L_NUM0 + 27, 'numbers 0–26, then the wrong flag');
+  assert.equal(TEX.L_SUNK, TEX.L_NUM0 + 28, 'then the sunk closed face');
+  assert.equal(TEX.LAYERS, TEX.L_SUNK + 1);
+  assert.equal(TEX.drawLayer.length, 3, 'drawLayer(ctx, layer, board)');
+  assert.equal(TEX.createTileTexture.length, 1, 'createTileTexture(board)');
+});
+
+test('the atlas holds no palette and no picture: every colour is the board module\'s, drawn through the recipe', () => {
+  const code = TEXTURES.replace(/\/\/.*$/gm, '');
+  assert.doesNotMatch(code, /#[0-9a-f]{3,8}\b|rgba?\(/i, 'no colour of its own');
+  assert.doesNotMatch(code, /\bImage\(|\.png|\.webp|fetch\(|import\s*\(/, 'no shipped picture');
+  assert.match(code, /from '\.\/tile-art\.js'/, 'drawn through the shared recipe');
+  assert.match(code, /board\.style3d/, 'in the theme\'s 3D style');
+  assert.match(code, /board\.palette\.faces3d/, 'with the theme\'s 3D faces');
+});
+
+test('the renderer takes a board module: it rebuilds its atlas and sky on one, imports no theme and holds no palette', () => {
+  assert.doesNotMatch(RENDER, /from '\.\/(themes|shell\/scene-palette|tokens)/, 'imports no theme, no token reader');
+  const setBoard = RENDER.slice(RENDER.indexOf('\n  setBoard(board) {'), RENDER.indexOf('\n  }\n', RENDER.indexOf('\n  setBoard(board) {')));
+  assert.ok(setBoard.length > 20, 'setBoard(board) is defined');
+  assert.match(setBoard, /createTileTexture\(board\)|_buildAtlas\(board\)/, 'the atlas is rebuilt from it');
+  assert.match(setBoard, /board\.sky/, 'the sky comes from it');
+  assert.match(setBoard, /sky\.fog \?\? sky\.horizon/, 'the fog defaults to the horizon');
+  assert.match(setBoard, /board\.selection/, 'the selection outline comes from it');
+  assert.match(setBoard, /board\.mark/, 'the marked start cell\'s tint comes from it');
+  const frag = RENDER.slice(RENDER.indexOf('const FRAG ='), RENDER.indexOf('const SKY_VERT'));
+  assert.doesNotMatch(frag, /vec3\(1\.0, 0\.27, 0\.42\)|vec3\(0\.18, 0\.72, 0\.36\)/, 'no constant outline or mark colour');
+  assert.match(frag, /uSelOutline/, 'the outline in the theme\'s colour');
+  assert.match(frag, /max\(uSelWidth\.x, uSelWidth\.y \* fw\)/, 'and width: max(face × the face, px)');
+  assert.match(frag, /mix\(rgb, uMarkTint, mix\(uMarkMix\.x, uMarkMix\.y, uMarkPulse\) \* vMark\)/, 'the mark tint, its mix swelling to its pulse mix');
+  const ground = RENDER.slice(RENDER.indexOf('const SKY_FRAG'));
+  assert.match(ground, /dot\(uSkyHorizon, vec3\(0\.2126, 0\.7152, 0\.0722\)\)/, 'the ground grid keeps deriving its ink from the horizon');
+});
 
 // ---------------------------------------------------------------- the ghosts
 
@@ -198,6 +240,114 @@ test('[slow] in a browser, Ctrl draws hidden cells as transparent ghosts and a h
     assert.equal(await ms(() => globalThis.__ms.game.state), 'lost');
     assert.equal(await pulses(), 0, 'the loss drops the pulse');
     assert.equal(await ms(() => globalThis.__ms.renderer._eff?.type), 'loss', 'its wave runs');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+// ---------------------------------------------------------------- in a browser: the board module
+
+// J-3DSheet's atlas: the closed cube's thin edge and four lit sides round its face, the revealed cube
+// flat cream inside its edge (page "Joyful tiles").
+const J3D = {
+  edge: '#4a7bdb', top: '#b3d0fc', left: '#98befa', right: '#5e92ec', bottom: '#5385e4', face: '#78aaf8',
+  revealedEdge: '#ddd3c1', revealed: '#f3f0ea',
+};
+const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+const near = (got, hex, what) => {
+  const want = rgb(hex);
+  assert.ok(got.every((v, i) => Math.abs(v - want[i]) <= 2), `${what}: ${got} is ${hex} (${want})`);
+};
+
+test('in a browser, the Joyful tiles atlas samples as J-3DSheet: bevelled closed and flagged cubes, flat revealed cubes', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage();
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`${base}/index.html?still-backdrop`);
+    const px = await page.evaluate(async () => {
+      const tex = await import('/js/textures.js');
+      const { BOARD } = await import('/themes/joyful-tiles/board.js');
+      const canvas = document.createElement('canvas');
+      canvas.width = tex.TILE;
+      canvas.height = tex.TILE;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      const S = tex.TILE;
+      const at = { edge: [S / 2, 3], top: [S / 2, 13], left: [13, S / 2], right: [S - 13, S / 2], bottom: [S / 2, S - 13], face: [S / 2, S / 2] };
+      const sample = (layer) => {
+        tex.drawLayer(ctx, layer, BOARD);
+        const out = {};
+        for (const [k, [x, y]] of Object.entries(at)) out[k] = [...ctx.getImageData(Math.floor(x), Math.floor(y), 1, 1).data].slice(0, 3);
+        return out;
+      };
+      return { closed: sample(tex.L_CLOSED), flag: sample(tex.L_FLAG), sunk: sample(tex.L_SUNK), zero: sample(tex.L_NUM0) };
+    });
+    for (const side of ['edge', 'top', 'left', 'right', 'bottom', 'face']) near(px.closed[side], J3D[side], `closed ${side}`);
+    for (const side of ['edge', 'top', 'left', 'right', 'bottom']) near(px.flag[side], J3D[side], `flagged ${side}`);
+    near(px.sunk.top, J3D.bottom, 'the sunk face turns its top side over');
+    near(px.sunk.bottom, J3D.top, 'and its bottom side');
+    near(px.zero.edge, J3D.revealedEdge, 'revealed edge');
+    for (const side of ['top', 'left', 'right', 'bottom', 'face']) near(px.zero[side], J3D.revealed, `revealed flat at the ${side}`);
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, switching theme in a 3D game changes the atlas and the sky and nothing in the game', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1000, height: 650 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`${base}/index.html`);
+    await page.waitForFunction(() => globalThis.__ms?.state.mode === 'menu' && !!globalThis.__ms.renderer.board);
+    const look = () => page.evaluate(async () => {
+      const tex = await import('/js/textures.js');
+      const r = globalThis.__ms.renderer;
+      const g = globalThis.__ms.game;
+      const { data } = r.tiles.image;
+      const S = tex.TILE;
+      const texel = (layer, x, y) => [...data.subarray((layer * S * S + y * S + x) * 4, (layer * S * S + y * S + x) * 4 + 3)];
+      return {
+        sky: r.scenePalette, closed: texel(tex.L_CLOSED, S / 2, S / 2), top: texel(tex.L_CLOSED, S / 2, 13),
+        game: { state: g.state, version: g.version, flagged: [...g.flagged].join(''), number: [...g.number].join(',') },
+        mode: globalThis.__ms.state.mode,
+      };
+    });
+    // A 3D game with one cell revealed.
+    await page.evaluate(() => { globalThis.__ms.start(6, 1, 1, 2, [0, 3]); globalThis.__ms.forcePlay(); });
+    await page.evaluate(() => {
+      const c = 1;
+      if (globalThis.__ms.aimAt(c) !== c) throw new Error('cell could not be aimed at');
+      globalThis.__ms.click('left');
+    });
+    const before = await look();
+    assert.deepEqual(before.sky.horizon, [0x2b, 0x3f, 0x8a], 'Joyful tiles\' horizon');
+    assert.deepEqual(before.sky.fog, [0x2b, 0x3f, 0x8a], 'its fog');
+    near(before.closed, J3D.face, 'Joyful tiles\' closed face');
+    await page.evaluate(async () => {
+      const { registerTheme } = await import('/js/themes/registry.js');
+      const { FIXTURE_THEME } = await import('/tests/fixtures/themes/fixture-theme.js');
+      const { themeApplier } = await import('/js/themes/applier.js');
+      registerTheme(FIXTURE_THEME);
+      await themeApplier().setTheme(FIXTURE_THEME.id);
+    });
+    await page.waitForFunction(() => globalThis.__ms.renderer.board?.fixture === 'fixture-dusk');
+    const after = await look();
+    assert.deepEqual(after.sky.horizon, [0x33, 0x41, 0x5d], 'the fixture\'s horizon');
+    assert.deepEqual(after.sky.zenith, [0x0b, 0x14, 0x24], 'its zenith');
+    assert.deepEqual(after.sky.fog, after.sky.horizon, 'a module with no fog fogs toward its horizon');
+    assert.notDeepEqual(after.closed, before.closed, 'the atlas is rebuilt');
+    assert.notDeepEqual(after.top, before.top, 'its bevel too');
+    assert.deepEqual(after.game, before.game, 'the game is untouched');
+    assert.equal(after.mode, before.mode);
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

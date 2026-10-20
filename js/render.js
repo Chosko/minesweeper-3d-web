@@ -12,14 +12,16 @@
 // selection / Shift / Space changes only touch uniforms (no per-frame O(n) JS work).
 // A replay's Show 3BV tints each cube from a second RGBA8 data texture (setRegionTint), mixed over its
 // tile by the texel's alpha; off by default.
+// Everything it draws in colour comes from the board module the shell hands in (setBoard): the tile
+// atlas, the sky, fog and clear colour, the selection outline and the marked start cell's tint.
 // Visual extras (all shader-side, driven by a few uniforms): per-face shading, distance fog toward
-// the sky colour, crisp tile borders, a pulsing outline on the selected cube, and end-of-game
+// the fog colour, crisp tile borders, a pulsing outline on the selected cube, and end-of-game
 // ripples (win: pulse wave + unflagged mines shown as flags + confetti; loss: reveal wave from the
 // exploded cell + wrong-flag tiles + camera shake). The state texture's A channel stores the cell's
 // previous layer + 1 for cells whose tile changes in an end-of-game wave (0 = none).
 import * as THREE from 'three';
 import { boxDepth, SPACE_NEAR_ALPHA, SPACE_FLOOR_ALPHA, SPACE_FALLOFF } from './readability.js';
-import { createTileTexture, L_CLOSED, L_FLAG, L_MINE, L_MINE_EXPLODED, L_NUM0, L_WRONG_FLAG } from './textures.js';
+import { atlasTexture, createTileTexture, L_CLOSED, L_FLAG, L_MINE, L_MINE_EXPLODED, L_NUM0, L_WRONG_FLAG } from './textures.js';
 import { FLY_THROUGH_DIST } from './picking.js';
 import { SPACING_START } from './input.js';
 import { SCHEMA } from './settings/schema.js';
@@ -129,15 +131,19 @@ function createCubeGeometry() {
 }
 
 // Sky: vertical gradient from the horizon stop (dominant near the horizon) toward the zenith stop above
-// and the nadir stop below. Also used as the fog colour. The stops are the scene palette the shell hands
-// in (setScenePalette); the renderer holds no colour of its own for them.
+// and the nadir stop below. The fog fades toward the same gradient with the fog colour at its horizon,
+// which is the horizon unless the board module names a fog. The stops are the board module's sky
+// (setBoard); the renderer holds no colour of its own for them.
 const SKY_GLSL = /* glsl */ `
 uniform vec3 uSkyHorizon;
 uniform vec3 uSkyZenith;
 uniform vec3 uSkyNadir;
-vec3 skyColor(float y) {
-  return y > 0.0 ? mix(uSkyHorizon, uSkyZenith, smoothstep(0.0, 1.0, y)) : mix(uSkyHorizon, uSkyNadir, smoothstep(0.0, 0.8, -y));
-}`;
+uniform vec3 uSkyFog;
+vec3 gradient(vec3 horizon, float y) {
+  return y > 0.0 ? mix(horizon, uSkyZenith, smoothstep(0.0, 1.0, y)) : mix(horizon, uSkyNadir, smoothstep(0.0, 0.8, -y));
+}
+vec3 skyColor(float y) { return gradient(uSkyHorizon, y); }
+vec3 fogColor(float y) { return gradient(uSkyFog, y); }`;
 
 const VERT = /* glsl */ `
 precision highp float;
@@ -271,6 +277,10 @@ precision highp sampler2DArray;
 uniform sampler2DArray uTiles;
 uniform float uSelGlow;
 uniform float uMarkPulse; // 0..1: the mark's pulse, a first reveal off a forced start cell
+uniform vec3 uSelOutline; // the selection outline's colour
+uniform vec2 uSelWidth;   // its width: a share of the face, and a floor in screen pixels
+uniform vec3 uMarkTint;   // the marked start cell's tint
+uniform vec2 uMarkMix;    // its share of the face at rest, and at the peak of its pulse
 uniform vec3 uFog; // near, far, max amount
 in vec2 vUv;
 flat in float vLayer;
@@ -296,19 +306,19 @@ void main() {
   rgb *= 1.0 - 0.38 * line * (1.0 - smoothstep(0.04, 0.14, fw));
   rgb *= 1.0 - 0.06 * (1.0 - smoothstep(0.0, 0.06, e));
   rgb *= mix(vShade, 1.0, 0.5 * vTint);
-  // selected cube: glowing outline (at least ~3px wide on screen) + faint emissive
+  // selected cube: glowing outline (max(a share of the face, a few pixels) wide on screen) + faint emissive
   if (vTint > 0.5) {
-    float w = max(0.06, 3.0 * fw);
+    float w = max(uSelWidth.x, uSelWidth.y * fw);
     float o = 1.0 - smoothstep(w, w + 1.5 * fw, e);
-    rgb = mix(rgb, vec3(1.0, 0.27, 0.42), o * (0.55 + 0.45 * uSelGlow));
+    rgb = mix(rgb, uSelOutline, o * (0.55 + 0.45 * uSelGlow));
     rgb += vec3(0.16, 0.06, 0.07) * uSelGlow * (1.0 - o);
   }
-  // the marked start cell a pre-generated board waits for: tinted green, its border too
-  rgb = mix(rgb, vec3(0.18, 0.72, 0.36), (0.5 + 0.4 * uMarkPulse) * vMark);
+  // the marked start cell a pre-generated board waits for: tinted, its border too
+  rgb = mix(rgb, uMarkTint, mix(uMarkMix.x, uMarkMix.y, uMarkPulse) * vMark);
   rgb = mix(rgb, vRegion.rgb, vRegion.a); // a replay's Show 3BV
   rgb = mix(rgb, vec3(1.0), vFlash);
   float f = uFog.z * smoothstep(uFog.x, uFog.y, vDist) * (1.0 - 0.85 * vTint);
-  rgb = mix(rgb, skyColor(vDirY), f);
+  rgb = mix(rgb, fogColor(vDirY), f);
   outColor = vec4(min(rgb, vec3(1.0)), vAlpha);
 }`;
 
@@ -409,6 +419,9 @@ void main() {
 // painter's order, and with quantized integer keys it is a single O(n) counting sort.
 const SORT_BUCKETS = 1 << 16;
 
+// A board module's `#rrggbb` as [r, g, b], 0–255.
+const hexRgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+
 export class BoardRenderer {
   constructor(canvas) {
     this.canvas = canvas;
@@ -419,15 +432,17 @@ export class BoardRenderer {
     this.camera = new THREE.PerspectiveCamera(SCHEMA.fieldOfView.default, 1, 1, 1000); // the field of view setting's applier owns fov
     this.camera.rotation.order = 'YXZ';
 
-    this.tiles = createTileTexture();
+    this.tiles = atlasTexture(); // blank until the shell hands in a board module
+    this.board = null;
     this._noRegion = new THREE.DataTexture(new Uint8Array(4), 1, 1, THREE.RGBAFormat, THREE.UnsignedByteType);
     this._noRegion.needsUpdate = true;
     this.regionTex = null;
-    // The sky stops, shared by the cube shader (fog) and the sky shader; black until the shell hands in a palette.
+    // The sky stops, shared by the cube shader (fog) and the sky shader; black until the shell hands in a board module.
     this.skyPalette = {
       uSkyHorizon: { value: new THREE.Vector3() },
       uSkyZenith: { value: new THREE.Vector3() },
       uSkyNadir: { value: new THREE.Vector3() },
+      uSkyFog: { value: new THREE.Vector3() },
     };
     this.scenePalette = null;
     this.uniforms = {
@@ -443,6 +458,10 @@ export class BoardRenderer {
       uMark: { value: new THREE.Vector3(-10, -10, -10) },
       uHasMark: { value: 0 },
       uMarkPulse: { value: 0 },
+      uSelOutline: { value: new THREE.Vector3() },
+      uSelWidth: { value: new THREE.Vector2() },
+      uMarkTint: { value: new THREE.Vector3() },
+      uMarkMix: { value: new THREE.Vector2() },
       uShift: { value: 0 },
       uSpace: { value: 0 },
       uCtrl: { value: 0 },
@@ -560,17 +579,31 @@ export class BoardRenderer {
   }
 
   /**
-   * Set the scene palette, each stop [r, g, b] 0–255: the sky gradient, the fog colour it fades toward and
-   * the clear colour (the horizon). The caller requests the redraw.
+   * Draw the scene from `board`, a theme's board module (js/themes/board-module.js): its atlas, rebuilt
+   * from the module's 3D style and palette; the sky gradient, the fog (the horizon unless the module names
+   * one) and the clear colour (the horizon) from its sky; the selection outline and the marked start
+   * cell's tint from its palette. The same module again changes nothing. The caller requests the redraw.
    */
-  setScenePalette({ horizon, zenith, nadir }) {
-    this.scenePalette = { horizon: [...horizon], zenith: [...zenith], nadir: [...nadir] };
-    const put = (u, [r, g, b]) => u.value.set(r / 255, g / 255, b / 255);
-    put(this.skyPalette.uSkyHorizon, horizon);
-    put(this.skyPalette.uSkyZenith, zenith);
-    put(this.skyPalette.uSkyNadir, nadir);
-    const [r, g, b] = horizon.map((v) => Math.max(0, Math.min(255, Math.round(v))));
-    this.renderer.setClearColor((r << 16) | (g << 8) | b, 1);
+  setBoard(board) {
+    if (board === this.board) return;
+    this.board = board;
+    const old = this.tiles;
+    this.tiles = createTileTexture(board);
+    this.uniforms.uTiles.value = this.tiles;
+    old.dispose();
+    const sky = board.sky;
+    const fog = sky.fog ?? sky.horizon;
+    this.scenePalette = { horizon: hexRgb(sky.horizon), zenith: hexRgb(sky.zenith), nadir: hexRgb(sky.nadir), fog: hexRgb(fog) };
+    const put = (u, hex) => u.value.set(...hexRgb(hex).map((v) => v / 255));
+    put(this.skyPalette.uSkyHorizon, sky.horizon);
+    put(this.skyPalette.uSkyZenith, sky.zenith);
+    put(this.skyPalette.uSkyNadir, sky.nadir);
+    put(this.skyPalette.uSkyFog, fog);
+    this.renderer.setClearColor(parseInt(sky.horizon.slice(1), 16), 1);
+    put(this.uniforms.uSelOutline, board.selection.outline);
+    this.uniforms.uSelWidth.value.set(board.selection.width.face, board.selection.width.px);
+    put(this.uniforms.uMarkTint, board.mark.tint);
+    this.uniforms.uMarkMix.value.set(board.mark.mix, board.mark.pulseMix);
   }
 
   /** Set the drawing buffer's pixel ratio and resize to it; false when it already had that ratio. */

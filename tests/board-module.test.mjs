@@ -66,6 +66,7 @@ const BROKEN = [
   ['a relief thinner than a pixel at the minimum tile size', (b) => { b.style2d.params.band = 0.01; b.style2d.params.edge = 0.01; }, ['legible', 'style2d']],
   ['a number font the theme does not ship', (b) => { b.font.weight = 300; }, ['font', 'font']],
   ['a missing sky colour', (b) => { delete b.sky.zenith; }, ['sky', 'sky.zenith']],
+  ['a start-cell tint the 3D renderer cannot read', (b) => { b.mark.tint = 'rgb(73, 198, 184)'; }, ['palette', 'mark.tint']],
 ];
 
 for (const [name, breakIt, [check, subject]] of BROKEN) {

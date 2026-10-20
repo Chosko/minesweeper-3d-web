@@ -443,7 +443,7 @@ function showFatal() {
   document.body.append(document.getElementById('fatal-card').content.cloneNode(true));
 }
 const THEME = themeApplier();
-// The Classic 2D tile skin draws from the active board module, handed over once its number font loads.
+// The Classic 2D tile skin and the 3D scene draw from the active board module, handed over once its number font loads.
 bindBoardArt({ applier: THEME, fonts: document.fonts });
 THEME.start({ notice: (text) => ui.toast(text, 4000) }).catch(() => showFatal());
 
@@ -2142,10 +2142,10 @@ const stats = { renders: 0, skipped: 0 };
 
 // Render on demand: skip the GL draw when nothing visible changed.
 let needRender = true;
-// The 3D scene's sky, fog and background follow the theme: the active theme's palette is handed to the
-// renderer now and on every theme change, so the demo board, a game, the pause card and the 3D replay
-// all switch at once.
-if (WEBGL2) bindScenePalette({ token, onThemeChange, renderer, onApplied: () => { needRender = true; } });
+// The 3D scene follows the theme: the active board module — atlas, sky, fog and background — is handed to
+// the renderer once its number font has loaded, and again on every theme change, so the demo board, a
+// game, the pause card and the 3D replay all switch at once.
+if (WEBGL2) bindScenePalette({ art: BOARD_ART, renderer, onApplied: () => { needRender = true; } });
 let lastSig = '';
 let lastEnd = null;
 let animUntil = 0; // keep drawing for a while after the game ends (end-of-game effects)

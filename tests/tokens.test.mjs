@@ -77,7 +77,9 @@ test('the z-layers stack the overlays in order', () => {
 
 // ---------- Joyful tiles: the canvas's token block ----------
 // J-Tokens, the canvas artboard the theme's tokens come from: every one, with its value. Its spacing
-// scale is not here: spacing is structural, the base's (css/tokens.css).
+// scale is not here: spacing is structural, the base's (css/tokens.css). Nor are its sky stops and its
+// number 8, which no screen reads as a token: the board module carries the sky and the numbers
+// (themes/joyful-tiles/board.js).
 const J_TOKENS = {
   '--color-ground': '#fff6e8', '--color-ground-dot': '#dcc9ad',
   '--color-surface': '#ffffff', '--color-surface-raised': '#fff6e8', '--color-surface-sunk': '#fbf1df',
@@ -97,12 +99,11 @@ const J_TOKENS = {
   '--color-locked': '#ece5d8', '--color-locked-edge': '#d8cdb9', '--color-locked-ink': '#5a6385',
   '--color-focus-ring': '#16204a', '--color-focus-halo': '#ffc93c',
   '--color-backdrop': 'rgba(22, 32, 74, 0.55)', '--color-backdrop-strong': 'rgba(14, 22, 64, 0.72)',
-  '--color-scene-zenith': '#0e1640', '--color-scene-horizon': '#2b3f8a', '--color-scene-nadir': '#1a265f', '--color-scene-ink': '#dfe6ff',
   '--color-tile-closed-top': '#a9c9fb', '--color-tile-closed-edge': '#2b56b5',
   '--color-tile-open': '#f3f0ea', '--color-tile-open-border': '#ddd3c1', '--color-tile-boom': '#ff6b6b', '--color-tile-boom-edge': '#c9403f',
   '--color-tile-mark': '#49c6b8',
   '--color-number-1': '#1565c0', '--color-number-2': '#2b742f', '--color-number-3': '#c32727', '--color-number-4': '#1a237e',
-  '--color-number-5': '#8d1c1c', '--color-number-6': '#00717c', '--color-number-7': '#212121', '--color-number-8': '#666666',
+  '--color-number-5': '#8d1c1c', '--color-number-6': '#00717c', '--color-number-7': '#212121',
   '--color-replay-reveal': '#3563d8', '--color-replay-flag': '#b8323a', '--color-replay-chord': '#0d7064', '--color-replay-pointer': '#16204a', '--color-replay-pause': '#c9930c',
   '--color-confetti-1': '#ff6b6b', '--color-confetti-2': '#ffc93c', '--color-confetti-3': '#49c6b8', '--color-confetti-4': '#78aaf8', '--color-confetti-5': '#6d4ee8',
   '--highlight': 'rgba(255, 255, 255, 0.32)', '--veil': 'rgba(255, 255, 255, 0.22)', '--shade-soft': 'rgba(22, 32, 74, 0.06)', '--shade-press': 'rgba(22, 32, 74, 0.2)',
@@ -118,9 +119,9 @@ const J_TOKENS = {
   '--easing-out': 'cubic-bezier(.2, .8, .2, 1)', '--easing-spring': 'cubic-bezier(.34, 1.56, .64, 1)',
   '--touch-target': '44px',
 };
-// The canvas's tile tokens that share a name with the 2D tile skin's palette: the skin keeps its own
-// until the board module draws the tiles (themed-board-art-and-motion).
-const SKIN_KEPT = ['--color-tile-closed', '--color-tile-pressed', '--color-tile-cursor', '--color-board-frame'];
+// The canvas's tile tokens the theme declares with values of its own: the 2D board view's cursor ring
+// and frame, and the aimed-cell readout's cube.
+const SKIN_KEPT = ['--color-tile-closed', '--color-tile-cursor', '--color-board-frame'];
 
 const norm = (v) => v.replace(/\s+/g, ' ').replace(/\s*,\s*/g, ', ').toLowerCase();
 
@@ -191,80 +192,31 @@ test('Joyful tiles: the scrims are translucent, so the scene shows dimmed behind
   }
 });
 
-// ---------- the 2D tile skin's palette ----------
-const TILE_TOKENS = [
-  '--color-tile-closed', '--color-tile-cursor', '--color-tile-pressed', '--color-tile-revealed',
-  '--color-tile-flagged', '--color-tile-flag', '--color-tile-mine', '--color-tile-mine-glyph',
-  '--color-tile-exploded', '--color-tile-wrong-flag', '--color-tile-wrong-flag-mark',
-  // the cube-face recipe (js/tile-art.js): the raised face's rim, bevel and shading, the
-  // revealed and exploded faces' rim, edge and shading, the flag cloth's shading
-  '--color-tile-rim', '--color-tile-bevel-light', '--color-tile-bevel-dark', '--color-tile-face-shade',
-  '--color-tile-revealed-rim', '--color-tile-revealed-edge', '--color-tile-revealed-shade',
-  '--color-tile-exploded-edge', '--color-tile-exploded-shade', '--color-tile-flag-shade',
-  '--color-board-frame', '--color-board-gap',
+// ---------- the board tokens ----------
+// What the screens still read of the board's colours as tokens: the 2D board view's frame, gap and
+// cursor ring, its end effect's win pulse, the aimed-cell readout's cube, and the number colours the
+// end effect's confetti takes. The tiles and cubes draw from the board module.
+const TILE_TOKENS = ['--color-tile-closed', '--color-tile-cursor', '--color-tile-bevel-light', '--color-board-frame', '--color-board-gap'];
+const NUMBER_TOKENS = Array.from({ length: 7 }, (_, i) => `--color-number-${i + 1}`);
+// The tile skin's palette, which the board module replaced: no theme declares it.
+const RETIRED_TILE_TOKENS = [
+  '--color-tile-rim', '--color-tile-bevel-dark', '--color-tile-flagged', '--color-tile-face-shade',
+  '--color-tile-gloss', '--color-tile-gloss-fade', '--color-tile-pressed',
+  '--color-tile-revealed-rim', '--color-tile-revealed-edge', '--color-tile-revealed', '--color-tile-revealed-shade',
+  '--color-tile-mine', '--color-tile-wrong-flag', '--color-tile-exploded', '--color-tile-exploded-edge', '--color-tile-exploded-shade',
+  '--color-tile-number-shadow', '--color-tile-mine-glyph', '--color-tile-mine-highlight',
+  '--color-tile-flag', '--color-tile-flag-shade', '--color-tile-flag-shadow',
+  '--color-tile-wrong-flag-mark', '--color-tile-wrong-flag-outline', '--color-number-8',
 ];
-// The recipe's translucent layers: the gloss and its fade, the mine's highlight, the flag
-// cloth's and the number's shadows, the wrong-flag cross's outline.
-const TILE_LAYER_TOKENS = [
-  '--color-tile-gloss', '--color-tile-gloss-fade', '--color-tile-mine-highlight', '--color-tile-flag-shadow',
-  '--color-tile-number-shadow', '--color-tile-wrong-flag-outline',
-];
-const NUMBER_TOKENS = Array.from({ length: 8 }, (_, i) => `--color-number-${i + 1}`);
 
-test('the tile skin\'s tokens cover every state, the cube-face recipe, the board frame and gap, and numbers 1–8', () => {
+test('the board tokens are opaque and the seven number colours distinct', () => {
   for (const name of [...TILE_TOKENS, ...NUMBER_TOKENS]) assert.equal(color(name)[3], 1, `${name} is opaque`);
-  for (const name of TILE_LAYER_TOKENS) assert.doesNotThrow(() => color(name), `${name} is a colour`);
   const numbers = new Set(NUMBER_TOKENS.map((n) => THEME.get(n).toLowerCase()));
-  assert.equal(numbers.size, 8, 'the eight number colours are distinct');
+  assert.equal(numbers.size, 7, 'the seven number colours are distinct');
 });
 
-// The 3D atlas's own palette (js/textures.js ATLAS), read from its source: the 3D
-// renderer imports three.js and stays unthemed, so it is never imported here.
-const ATLAS_SRC = read('../js/textures.js');
-const ATLAS = (() => {
-  const at = ATLAS_SRC.indexOf('const ATLAS = Object.freeze({');
-  assert.ok(at >= 0, 'js/textures.js declares its literal ATLAS palette');
-  const body = ATLAS_SRC.slice(at, ATLAS_SRC.indexOf('});', at));
-  return new Map([...body.matchAll(/(\w+): '([^']+)'/g)].map((m) => [m[1], m[2]]));
-})();
-
-test('the 2D tile looks like the 3D cube: each recipe token is the 3D atlas colour', async () => {
-  const { shade } = await import('../js/tile-art.js');
-  const FACE_SHADE = -0.06; // the atlas shades a revealed face 6% darker toward its bottom-right
-  const same = {
-    '--color-tile-rim': 'rim', '--color-tile-bevel-light': 'bevelLight', '--color-tile-bevel-dark': 'bevelDark',
-    '--color-tile-closed': 'face', '--color-tile-flagged': 'face', '--color-tile-face-shade': 'faceShade',
-    '--color-tile-gloss': 'gloss', '--color-tile-gloss-fade': 'glossFade',
-    '--color-tile-revealed-rim': 'revealedRim', '--color-tile-revealed-edge': 'revealedEdge',
-    '--color-tile-revealed': 'revealed', '--color-tile-mine': 'revealed', '--color-tile-wrong-flag': 'revealed',
-    '--color-tile-exploded': 'exploded', '--color-tile-exploded-edge': 'explodedEdge',
-    '--color-tile-mine-glyph': 'mine', '--color-tile-mine-highlight': 'mineHighlight',
-    '--color-tile-flag': 'flag', '--color-tile-flag-shade': 'flagShade', '--color-tile-flag-shadow': 'flagShadow',
-    '--color-tile-number-shadow': 'numberShadow',
-    '--color-tile-wrong-flag-mark': 'wrongFlagMark', '--color-tile-wrong-flag-outline': 'wrongFlagOutline',
-  };
-  for (const [name, key] of Object.entries(same)) {
-    assert.ok(ATLAS.has(key), `the atlas palette has ${key}`);
-    assert.deepEqual(color(name), parseColor(ATLAS.get(key)), `${name} is the atlas's ${key}`);
-  }
-  assert.equal(THEME.get('--color-tile-revealed-shade'), shade(ATLAS.get('revealed'), FACE_SHADE), 'the revealed face shades as the atlas does');
-  assert.equal(THEME.get('--color-tile-exploded-shade'), shade(ATLAS.get('exploded'), FACE_SHADE), 'the exploded face shades as the atlas does');
-});
-
-test('every number colour meets 4.5:1 on every point of the shaded revealed face', () => {
-  for (const face of ['--color-tile-revealed', '--color-tile-revealed-shade']) {
-    for (const n of NUMBER_TOKENS) {
-      const r = contrast(color(n), color(face));
-      assert.ok(r >= 4.5, `${n} on ${face}: ${r.toFixed(2)}:1`);
-    }
-  }
-});
-
-test('closed and revealed differ by relief and border: a bevel lit and shaded, a rim unlike the revealed rim', () => {
-  const lum = (name) => luminance(color(name));
-  assert.ok(lum('--color-tile-bevel-light') > lum('--color-tile-closed'), 'the lit bevel is lighter than the face');
-  assert.ok(lum('--color-tile-bevel-dark') < lum('--color-tile-face-shade'), 'the dark bevel is darker than the face');
-  assert.notDeepEqual(color('--color-tile-rim'), color('--color-tile-revealed-rim'), 'the rims differ');
+test('the tile skin\'s palette is retired: the board module draws the tiles', () => {
+  for (const name of RETIRED_TILE_TOKENS) assert.ok(!THEME.has(name), `Joyful tiles no longer declares ${name}`);
 });
 
 test('a scrolling board\'s shadow and scroll bar are translucent tokens; the bar meets 3:1 on every tile face the board module draws', () => {
@@ -281,23 +233,23 @@ test('a scrolling board\'s shadow and scroll bar are translucent tokens; the bar
   }
 });
 
-test('the cursor ring meets 3:1 on the lit bevel it covers and every tile face it can sit on', () => {
+test('the cursor ring meets 3:1 on the closed tile tokens it can sit on', () => {
   const ring = color('--color-tile-cursor');
-  for (const bg of ['--color-tile-bevel-light', '--color-tile-closed', '--color-tile-face-shade', '--color-tile-pressed', '--color-tile-revealed']) {
+  for (const bg of ['--color-tile-bevel-light', '--color-tile-closed']) {
     const r = contrast(ring, color(bg));
     assert.ok(r >= 3, `--color-tile-cursor on ${bg}: ${r.toFixed(2)}:1`);
   }
 });
 
-// ---------- the 3D scene: themed sky, theme-independent cubes ----------
-test('the sky stops are opaque and dark under the scene ink', () => {
-  for (const name of ['--color-scene-horizon', '--color-scene-zenith', '--color-scene-nadir']) {
+// ---------- the scene panel's night sky; the 3D scene reads no token ----------
+test('the scene panel\'s night sky is opaque and dark under the panel ink', () => {
+  for (const name of ['--color-panel-night', '--color-panel-glow']) {
     assert.equal(color(name)[3], 1, `${name} is opaque`);
-    assert.ok(contrast(color('--color-scene-ink'), color(name)) >= 4.5, `--color-scene-ink reads on ${name}`);
+    assert.ok(contrast(color('--color-panel-ink'), color(name)) >= 4.5, `--color-panel-ink reads on ${name}`);
   }
 });
 
-test('the 3D renderer reads no token: the shell hands it the scene palette', () => {
+test('the 3D renderer reads no token: the shell hands it the board module', () => {
   for (const f of ['../js/render.js', '../js/textures.js', '../js/tile-art.js']) {
     assert.doesNotMatch(read(f), /--color-|data-theme|getPropertyValue/, f);
   }

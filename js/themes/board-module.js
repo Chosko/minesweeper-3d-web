@@ -119,7 +119,8 @@ function checkPalette(b) {
     const ok = path === 'palette.confetti' ? Array.isArray(v) && v.length > 0 && v.every(isColour)
       : path === 'selection.tint' ? Array.isArray(v) && v.length === 3 && v.every(isNumber)
         : /\.(width|px|tile|face|glowWidth|mix|pulseMix)$/.test(path) && !/^palette\./.test(path) ? isNumber(v)
-          : isColour(v);
+          : path === 'mark.tint' ? isHex(v)
+            : isColour(v);
     if (!ok) out.push(problem('palette', path));
   }
   return out;

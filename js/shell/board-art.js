@@ -1,7 +1,8 @@
 // The board art hand-off on the shell's side: the active theme's board module goes to the Classic
-// 2D tile skin's hand-off (js/classic2d/tile-skin.js BOARD_ART) at start-up and on every theme
-// change, and only once the module's number font has loaded, so no tile is drawn or cached in a
-// fallback font. A switch another overtakes before its font loads is never handed over.
+// 2D tile skin's hand-off (js/classic2d/tile-skin.js BOARD_ART), which the 3D scene's hand-off
+// (js/shell/scene-palette.js) reads too, at start-up and on every theme change, and only once the
+// module's number font has loaded, so no tile is drawn or cached in a fallback font. A switch
+// another overtakes before its font loads is never handed over.
 //
 // bindBoardArt({ applier, fonts, art?, onError? }) → unsubscribe
 //   applier   the theme applier (js/themes/applier.js): onThemeChange(listener(id, module)),

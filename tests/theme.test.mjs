@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import vm from 'node:vm';
 import { createTokenReader, FALLBACK_COLOR } from '../js/tokens.js';
-import { SCENE_TOKENS, parseRgb, scenePalette, bindScenePalette } from '../js/shell/scene-palette.js';
+import { parseRgb, bindScenePalette } from '../js/shell/scene-palette.js';
+import { REQUIRED_TOKENS } from '../js/ui/kit-catalogue.js';
+import { BOARD as JOYFUL_BOARD } from '../themes/joyful-tiles/board.js';
 import { THEMES, DEFAULT_THEME_ID, registerTheme, themeById } from '../js/themes/registry.js';
 import { createThemeApplier, themeIdFor, START_FALLBACK, SWITCH_FAILED } from '../js/themes/applier.js';
 import { SETTINGS_VERSION } from '../js/settings/store.js';
@@ -474,7 +476,7 @@ test('in a browser, a switch between Joyful tiles and the fixture theme never sh
     assert.equal(result.final, FIXTURE_ID);
     assert.deepEqual(result.sheets, [FIXTURE_ID], 'the old stylesheet is removed');
     assert.deepEqual(result.handed.map(([id]) => id), [FIXTURE_ID, THEME_ID, FIXTURE_ID]);
-    assert.deepEqual(result.handed[0][1], { fixture: FIXTURE_ID }, 'the fixture\'s board module is handed on');
+    assert.equal(result.handed[0][1]?.fixture, FIXTURE_ID, 'the fixture\'s board module is handed on');
     assert.ok(result.snapshots.length > 3);
     for (const s of result.snapshots) {
       assert.ok([THEME_ID, FIXTURE_ID].includes(s.theme), `${s.why}: one theme on the root (${s.theme})`);
@@ -637,20 +639,19 @@ test('an unknown token logs nothing outside development', () => {
 
 test('js/tokens.js holds no second copy of the token values', () => {
   const src = read('../js/tokens.js');
-  for (const name of ['--color-ink', '--color-accent', '--color-ground', '--color-scene-horizon']) {
+  for (const name of ['--color-ink', '--color-accent', '--color-ground', '--color-head']) {
     assert.ok(!src.includes(TOKENS.get(name)), `tokens.js does not contain ${TOKENS.get(name)}`);
   }
 });
 
-test('the 3D renderer never subscribes to theme changes: the shell hands it the scene palette', () => {
+test('the 3D renderer never subscribes to theme changes or imports a theme: the shell hands it the board module', () => {
   for (const f of ['../js/render.js', '../js/textures.js', '../js/tile-art.js']) {
-    assert.doesNotMatch(read(f), /onThemeChange|msTheme|tokens\.js|scene-palette/, f);
+    assert.doesNotMatch(read(f), /onThemeChange|msTheme|tokens\.js|scene-palette|board-art/, f);
+    for (const [, from] of read(f).matchAll(/^\s*import\b[^;]*?from\s*'([^']+)'/gm)) assert.doesNotMatch(from, /themes\//, `${f} imports no theme`);
   }
 });
 
-// ---------- the 3D scene palette (js/shell/scene-palette.js) ----------
-const rgbOf = (name) => parseRgb(TOKENS.get(name));
-
+// ---------- the 3D scene's board module hand-off (js/shell/scene-palette.js) ----------
 test('parseRgb reads hex and rgb() token values as 0–255 channels', () => {
   assert.deepEqual(parseRgb('#0f1a2e'), [15, 26, 46]);
   assert.deepEqual(parseRgb(' #fff '), [255, 255, 255]);
@@ -660,60 +661,66 @@ test('parseRgb reads hex and rgb() token values as 0–255 channels', () => {
   assert.deepEqual(parseRgb('nonsense'), [255, 0, 255], 'an unreadable value shows as the fallback colour');
 });
 
-test('the scene palette names the sky\'s three stops, each declared by the theme stylesheet', () => {
-  assert.deepEqual(Object.keys(SCENE_TOKENS), ['horizon', 'zenith', 'nadir']);
-  for (const name of Object.values(SCENE_TOKENS)) assert.ok(TOKENS.has(name), `the theme declares ${name}`);
-});
+// A board art hand-off (js/classic2d/tile-skin.js createBoardArt's shape) the test drives.
+function fakeArt(initial = null) {
+  let art = initial;
+  const listeners = new Set();
+  return {
+    current: () => art,
+    set(id, board) { art = { id, board }; for (const l of [...listeners]) l(art); },
+    onChange(l) { listeners.add(l); return () => listeners.delete(l); },
+  };
+}
 
-test('scenePalette reads the active theme\'s sky through the token reader', () => {
-  const { r } = reader();
-  assert.deepEqual(scenePalette(r.token), {
-    horizon: rgbOf(SCENE_TOKENS.horizon), zenith: rgbOf(SCENE_TOKENS.zenith), nadir: rgbOf(SCENE_TOKENS.nadir),
-  });
-  assert.deepEqual(scenePalette(r.token).horizon, [0x2b, 0x3f, 0x8a], 'Joyful tiles\' horizon');
-});
-
-test('the shell hands the renderer the active theme\'s sky at start-up and on every theme change', () => {
-  const { r, theme } = reader();
+test('the shell hands the renderer the board module already handed over, then each one after it', () => {
+  const art = fakeArt({ id: THEME_ID, board: JOYFUL_BOARD });
   const set = [];
   let redraws = 0;
-  const renderer = { setScenePalette: (p) => set.push(p) };
-  const off = bindScenePalette({ token: r.token, onThemeChange: r.onThemeChange, renderer, onApplied: () => redraws++ });
-  assert.equal(set.length, 1, 'set once at start-up');
-  assert.deepEqual(set[0].zenith, rgbOf(SCENE_TOKENS.zenith));
-  assert.equal(redraws, 1, 'a redraw is requested at start-up');
-  theme.emit(THEME_ID);
-  assert.equal(set.length, 2, 'set again on a theme change');
-  assert.equal(redraws, 2, 'a redraw is requested on the theme change');
+  const renderer = { setBoard: (b) => set.push(b) };
+  const off = bindScenePalette({ art, renderer, onApplied: () => redraws++ });
+  assert.deepEqual(set, [JOYFUL_BOARD], 'handed at once');
+  assert.equal(redraws, 1, 'a redraw is requested at once');
+  const other = { fixture: true };
+  art.set(FIXTURE_ID, other);
+  assert.deepEqual(set, [JOYFUL_BOARD, other], 'handed again on each hand-off');
+  assert.equal(redraws, 2);
   off();
-  theme.emit(THEME_ID);
+  art.set(THEME_ID, JOYFUL_BOARD);
   assert.equal(set.length, 2, 'unsubscribed');
 });
 
-test('js/main.js binds the scene palette to the renderer through the token reader and requests a redraw', () => {
-  const main = read('../js/main.js');
-  assert.match(main, /import\s*\{[^}]*\btoken\b[^}]*\bonThemeChange\b[^}]*\}\s*from\s*'\.\/tokens\.js'/, 'main.js imports the token reader');
-  assert.match(main, /import\s*\{[^}]*\bbindScenePalette\b[^}]*\}\s*from\s*'\.\/shell\/scene-palette\.js'/);
-  assert.match(main, /bindScenePalette\(\{[^}]*token[^}]*onThemeChange[^}]*renderer[^}]*onApplied:\s*\(\)\s*=>\s*\{?\s*needRender\s*=\s*true/,
-    'the shell binds the renderer and requests a redraw on every palette change');
+test('before the first hand-off the shell hands the renderer nothing', () => {
+  const art = fakeArt();
+  const set = [];
+  bindScenePalette({ art, renderer: { setBoard: (b) => set.push(b) } });
+  assert.deepEqual(set, []);
+  art.set(THEME_ID, JOYFUL_BOARD);
+  assert.deepEqual(set, [JOYFUL_BOARD]);
 });
 
-test('the renderer draws the sky, fog and clear colour from the palette it is handed, not from constants', () => {
+test('js/shell/scene-palette.js reads no token: the sky comes from the board module', () => {
+  const src = read('../js/shell/scene-palette.js');
+  assert.doesNotMatch(src, /--color-|tokens\.js|\btoken\(/, 'no token read');
+});
+
+test('js/main.js binds the renderer to the board art hand-off and requests a redraw', () => {
+  const main = read('../js/main.js');
+  assert.match(main, /import\s*\{[^}]*\bbindScenePalette\b[^}]*\}\s*from\s*'\.\/shell\/scene-palette\.js'/);
+  assert.match(main, /bindScenePalette\(\{[^}]*art:\s*BOARD_ART[^}]*renderer[^}]*onApplied:\s*\(\)\s*=>\s*\{?\s*needRender\s*=\s*true/,
+    'the shell binds the renderer to the hand-off and requests a redraw on every board module');
+});
+
+test('the --color-scene-* tokens are retired: no theme stylesheet declares one and none is required', () => {
+  for (const [css, id] of [[THEME_CSS, THEME_ID], [FIXTURE_CSS, FIXTURE_ID]]) assert.doesNotMatch(css, /--color-scene-/, id);
+  assert.deepEqual(REQUIRED_TOKENS.filter((n) => n.startsWith('--color-scene-')), []);
+});
+
+test('the renderer draws the sky, fog and clear colour from the board module it is handed, not from constants', () => {
   const src = read('../js/render.js');
-  assert.match(src, /setScenePalette\(/, 'the renderer exposes a palette setter');
+  assert.match(src, /\n  setBoard\(board\) \{/, 'the renderer takes a board module');
   assert.doesNotMatch(src, /setClearColor\(0x/, 'no constant clear colour');
   const sky = src.slice(src.indexOf('const SKY_GLSL'), src.indexOf('const VERT'));
   assert.doesNotMatch(sky, /vec3\(\s*\d/, 'the sky gradient carries no constant colour');
-  assert.match(sky, /uniform vec3 uSkyHorizon[\s\S]*uniform vec3 uSkyZenith[\s\S]*uniform vec3 uSkyNadir/);
-  assert.match(src, /rgb = mix\(rgb, skyColor\(vDirY\), f\)/, 'the fog still fades toward the sky colour');
-});
-
-test('only the sky is themed: the tiles, numbers, selection outline and effects keep one look', () => {
-  assert.doesNotMatch(read('../js/textures.js'), /setScenePalette|uSky|scene-palette/, 'the tile atlas is not themed');
-  assert.doesNotMatch(read('../js/tile-art.js'), /setScenePalette|uSky|scene-palette/, 'the recipe the atlas draws through is not themed');
-  const src = read('../js/render.js');
-  const at = src.indexOf('\n  setScenePalette(');
-  assert.ok(at >= 0, 'the renderer defines setScenePalette');
-  const setter = src.slice(at, src.indexOf('\n  }\n', at));
-  assert.doesNotMatch(setter, /uTiles|uSelGlow|uEff|createTileTexture|confUniforms/, 'the palette setter touches only the sky');
+  assert.match(sky, /uniform vec3 uSkyHorizon[\s\S]*uniform vec3 uSkyZenith[\s\S]*uniform vec3 uSkyNadir[\s\S]*uniform vec3 uSkyFog/);
+  assert.match(src, /rgb = mix\(rgb, fogColor\(vDirY\), f\)/, 'the fog fades toward the fog colour');
 });

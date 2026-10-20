@@ -99,13 +99,12 @@
   --color-locked-edge: #d8cdb9;
   --color-locked-ink: #5a6385;
 
-  /* the 3D scene's sky stops, also its fog and clear colour */
-  --color-scene-zenith: #0e1640;
-  --color-scene-horizon: #2b3f8a;
-  --color-scene-nadir: #1a265f;
-  --color-scene-ink: #dfe6ff;
+  /* the scene panel's night sky and the ink on it */
+  --color-panel-night: #0e1640;
+  --color-panel-glow: #2b3f8a;
+  --color-panel-ink: #dfe6ff;
 
-  /* the canvas's own board tokens, beside the tile skin's palette below */
+  /* the canvas's own board tokens */
   --color-tile-closed-top: #a9c9fb;
   --color-tile-closed-edge: #2b56b5;
   --color-tile-open: #f3f0ea;
@@ -114,41 +113,18 @@
   --color-tile-boom-edge: #c9403f;
   --color-tile-mark: #49c6b8;
 
-  /* the 2D tile skin's palette (js/tile-art.js recipe; the 3D atlas's colours), kept until the
-     board module draws the tiles */
-  --color-tile-rim: #21407a;
+  /* the board colours the screens read as tokens: the 2D end effect's win pulse, the aimed-cell
+     readout's cube, the 2D board view's cursor ring and frame; the tiles and cubes draw from the
+     board module */
   --color-tile-bevel-light: #9cc4ff;
-  --color-tile-bevel-dark: #2b5cb8;
   --color-tile-closed: #6fa3f7;
-  --color-tile-flagged: #6fa3f7;
-  --color-tile-face-shade: #3f78e0;
-  --color-tile-gloss: rgba(255, 255, 255, 0.35);
-  --color-tile-gloss-fade: rgba(255, 255, 255, 0);
-  --color-tile-pressed: #c9dbf7;
-  --color-tile-revealed-rim: #8f9bb0;
-  --color-tile-revealed-edge: #c4cfdd;
-  --color-tile-revealed: #eef3fa;
-  --color-tile-mine: #eef3fa;
-  --color-tile-wrong-flag: #eef3fa;
-  --color-tile-revealed-shade: #e0e4eb;
-  --color-tile-exploded: #ff5a4f;
-  --color-tile-exploded-edge: #b3261e;
-  --color-tile-exploded-shade: #f0554a;
-  --color-tile-number-shadow: rgba(0, 0, 0, 0.12);
-  --color-tile-mine-glyph: #1b1b1b;
-  --color-tile-mine-highlight: rgba(255, 255, 255, 0.85);
-  --color-tile-flag: #ff3b30;
-  --color-tile-flag-shade: #c4161c;
-  --color-tile-flag-shadow: rgba(0, 0, 0, 0.25);
-  --color-tile-wrong-flag-mark: #d50000;
-  --color-tile-wrong-flag-outline: rgba(255, 255, 255, 0.95);
   --color-tile-cursor: #14233f;
   --color-board-frame: #2b5cb8;
   --color-board-gap: #9fb7dd;
   --color-board-shadow: rgba(16, 32, 61, 0.55);
   --color-board-scrollbar: rgba(16, 32, 61, 0.75);
 
-  /* numbers 1–8 on the revealed tile */
+  /* numbers 1–7: the 2D end effect's confetti */
   --color-number-1: #1565c0;
   --color-number-2: #2b742f;
   --color-number-3: #c32727;
@@ -156,7 +132,6 @@
   --color-number-5: #8d1c1c;
   --color-number-6: #00717c;
   --color-number-7: #212121;
-  --color-number-8: #666666;
 
   /* the replay viewer: action marks, the paused span, the recorded pointer, Show 3BV's tints */
   --color-replay-reveal: #3563d8;
@@ -866,12 +841,12 @@
 /* ---------- scene panel: the night sky in a rounded frame on a hard yellow edge ---------- */
 :root[data-theme="joyful-tiles"] .ui-scene-panel {
   border-radius: 24px;
-  background-color: var(--color-scene-zenith);
-  background-image: radial-gradient(ellipse at 55% 40%, var(--color-scene-horizon) 0%, var(--color-scene-zenith) 78%);
+  background-color: var(--color-panel-night);
+  background-image: radial-gradient(ellipse at 55% 40%, var(--color-panel-glow) 0%, var(--color-panel-night) 78%);
   box-shadow: inset 0 -2px 0 var(--color-edge-inset), 0 10px 0 var(--color-head-edge), var(--elevation-2);
 }
 :root[data-theme="joyful-tiles"] .ui-scene-panel__stage { border-radius: inherit; color: var(--color-ink-inverse); }
-:root[data-theme="joyful-tiles"] .ui-scene-panel__tag { color: var(--color-scene-ink); font-family: var(--font-family-mono); }
+:root[data-theme="joyful-tiles"] .ui-scene-panel__tag { color: var(--color-panel-ink); font-family: var(--font-family-mono); }
 
 /* the 3D scene drawn from beneath: no sky of the panel's own over it, the frame still drawn */
 :root[data-theme="joyful-tiles"] .ui-scene-panel--live { background: none; }
@@ -893,7 +868,7 @@
 :root[data-theme="joyful-tiles"] .ui-scene-panel__badge[data-entry="daily"] { --f: var(--color-violet); --e: var(--color-violet-edge); }
 :root[data-theme="joyful-tiles"] .ui-scene-panel__badge[data-unavailable] { --f: var(--color-locked); --e: var(--color-locked-edge); box-shadow: 0 10px 0 var(--e); }
 :root[data-theme="joyful-tiles"] .ui-scene-panel__name { color: var(--color-ink-inverse); }
-:root[data-theme="joyful-tiles"] .ui-scene-panel__note { color: var(--color-scene-ink); }
+:root[data-theme="joyful-tiles"] .ui-scene-panel__note { color: var(--color-panel-ink); }
 
 /* ---------- divider ---------- */
 :root[data-theme="joyful-tiles"] .ui-divider { background: var(--color-line); }

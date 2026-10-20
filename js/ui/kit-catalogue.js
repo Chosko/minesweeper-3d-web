@@ -287,7 +287,7 @@ export const CONTRAST_ROLES = Object.freeze({
 // The required token set: every token a theme stylesheet must declare, because something outside
 // the theme reads it — the base stylesheets (css/components.css, css/style.css), the screens'
 // scripts that draw from tokens (the Records chart, the 2D board view and its end effect, the
-// replay viewer, the scene palette) — plus the contrast roles above. The Classic 2D tiles read none:
+// replay viewer) — plus the contrast roles above. The Classic 2D tiles and the 3D scene read none:
 // they draw from the theme's board module. The conformance tests and the theme skill read this one
 // list; tests/theme-conformance.test.mjs keeps it equal to those reads.
 export const REQUIRED_TOKENS = Object.freeze([
@@ -309,8 +309,6 @@ export const REQUIRED_TOKENS = Object.freeze([
   // the replay viewer's Show 3BV tints
   '--color-replay-bbbv-1', '--color-replay-bbbv-2', '--color-replay-bbbv-3', '--color-replay-bbbv-4',
   '--color-replay-bbbv-5', '--color-replay-bbbv-6', '--color-replay-bbbv-isolated',
-  // the 3D scene's sky
-  '--color-scene-zenith', '--color-scene-horizon', '--color-scene-nadir',
   // the Settings theme list's swatch (js/settings/page.js SWATCH_TOKENS) beyond the contrast roles
   '--color-accent-fill',
 ]);

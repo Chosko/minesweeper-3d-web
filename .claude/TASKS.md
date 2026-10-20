@@ -730,7 +730,7 @@ Feature: themed-board-art-and-motion
 
 ## 183. 3D cubes, numbers and sky drawn from the active theme's board module
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/textures.js, js/render.js, js/shell/scene-palette.js, js/main.js, themes/joyful-tiles/theme.css, tests/render-3d-feedback.test.mjs, tests/theme.test.mjs, tests/tokens.test.mjs
 Preconditions: 159, 181

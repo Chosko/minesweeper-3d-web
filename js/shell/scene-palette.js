@@ -1,15 +1,12 @@
-// The 3D scene's themed palette: the sky gradient's three stops, which are also the fog colour and
-// the clear colour. The shell reads them through the token reader and hands them to the renderer,
-// which never reads tokens or subscribes to theme changes itself. The cube tiles, number colours,
-// selection outline and end-of-game effects are not themed.
+// The 3D scene's board art hand-off on the shell's side: the active theme's board module goes to the
+// renderer's setBoard — its atlas, its sky, fog and clear colour, its selection outline and marked-cell
+// tint — at start-up and on every theme change. It rides the board art hand-off (js/shell/board-art.js),
+// which hands a module over only once its number font has loaded, so no atlas is drawn in a fallback
+// font. The renderer never reads tokens, imports a theme or subscribes to theme changes itself.
 
-export const SCENE_TOKENS = {
-  horizon: '--color-scene-horizon',
-  zenith: '--color-scene-zenith',
-  nadir: '--color-scene-nadir',
-};
+import { BOARD_ART } from '../classic2d/tile-skin.js';
 
-// The token reader's visible fallback colour, so an unreadable stop is noticed instead of blending in.
+// The token reader's visible fallback colour, so an unreadable value is noticed instead of blending in.
 const UNREADABLE = [255, 0, 255];
 
 /** A token value (`#rgb`, `#rrggbb`, `rgb()` or `rgba()`) as [r, g, b] channels 0–255; alpha is dropped. */
@@ -25,22 +22,16 @@ export function parseRgb(value) {
   return [...UNREADABLE];
 }
 
-/** The active theme's scene palette, { horizon, zenith, nadir }, read through `token(name)`. */
-export function scenePalette(token) {
-  const out = {};
-  for (const [stop, name] of Object.entries(SCENE_TOKENS)) out[stop] = parseRgb(token(name));
-  return out;
-}
-
 /**
- * Hand the renderer the active theme's palette now and on every theme change; `onApplied` runs after
- * each hand-off (the shell requests a redraw there). Returns the unsubscribe.
+ * Hand the renderer the board module `art` holds now, if any, and each one handed over after it;
+ * `onApplied` runs after each hand-off (the shell requests a redraw there). Returns the unsubscribe.
  */
-export function bindScenePalette({ token, onThemeChange, renderer, onApplied = () => {} }) {
-  const apply = () => {
-    renderer.setScenePalette(scenePalette(token));
+export function bindScenePalette({ art = BOARD_ART, renderer, onApplied = () => {} }) {
+  const apply = (current) => {
+    if (!current?.board) return;
+    renderer.setBoard(current.board);
     onApplied();
   };
-  apply();
-  return onThemeChange(apply);
+  apply(art.current());
+  return art.onChange(apply);
 }
