@@ -94,6 +94,7 @@ Depends on: 5, 7
 
 Context:
 - 2026-10-20 (from step 7): task 220's icons come from `ICONS` in `js/ui/components.js`; markup names one with `data-icon="<name>"` and `applyIcons(root)` draws it, script-built buttons use `createButton(doc, {label, icon, …})` or `setButtonIcon`. Nothing in the game calls `applyIcons` yet — the first screen task that adds `data-icon` to `index.html` must call it from `js/main.js`.
+- 2026-10-20: the run paused with this step mid-implementation (code and tests written, full suite and `--review` round not run). The work is a WIP commit on branch `wt/runbook-8-step-8` (pushed), with a handoff at `.claude/sessions/2026-10-20-runbook-8-step-8-task-221-handoff.md` on that branch. Resume from it: soft-reset the WIP commit, finish verification and the review round, then make the task's one commit.
 
 ```prompt
 /task-implement 221 --review
@@ -105,6 +106,7 @@ Depends on: 5, 7
 
 Context:
 - 2026-10-20 (from step 7): task 220's icons come from `ICONS` in `js/ui/components.js`; markup names one with `data-icon="<name>"` and `applyIcons(root)` draws it, script-built buttons use `createButton(doc, {label, icon, …})` or `setButtonIcon`. Nothing in the game calls `applyIcons` yet — the first screen task that adds `data-icon` to `index.html` must call it from `js/main.js`. The code chip's 14px icons were left to this task: `createCodeChip` adds none yet.
+- 2026-10-20: the run paused with this step mid-implementation (code and tests written, full suite and `--review` round not run). The work is a WIP commit on branch `wt/runbook-8-step-9` (pushed), with a handoff at `.claude/sessions/2026-10-20-runbook-8-step-9-task-222-handoff.md` on that branch. Resume from it: soft-reset the WIP commit, finish verification and the review round, then make the task's one commit.
 
 ```prompt
 /task-implement 222 --review
@@ -116,6 +118,7 @@ Depends on: 5, 7
 
 Context:
 - 2026-10-20 (from step 7): task 220's icons come from `ICONS` in `js/ui/components.js`; markup names one with `data-icon="<name>"` and `applyIcons(root)` draws it, script-built buttons use `createButton(doc, {label, icon, …})` or `setButtonIcon`. Nothing in the game calls `applyIcons` yet — the first screen task that adds `data-icon` to `index.html` must call it from `js/main.js`.
+- 2026-10-20: the run paused with this step mid-implementation (code and tests written, full suite and `--review` round not run). The work is a WIP commit on branch `wt/runbook-8-step-10` (pushed), with a handoff at `.claude/sessions/2026-10-20-runbook-8-step-10-task-223-handoff.md` on that branch. Resume from it: soft-reset the WIP commit, finish verification and the review round, then make the task's one commit.
 
 ```prompt
 /task-implement 223 --review
