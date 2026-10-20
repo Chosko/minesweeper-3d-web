@@ -81,6 +81,21 @@ test('a change under js/classic2d/ selects the tests reaching it, not the 3D ren
   assert.ok(!picked.includes('engine-rules'));
 });
 
+test('the browser files split out of components.test.mjs are selected by every change that selects it', () => {
+  const split = ['components-ready', 'components-learn-end', 'components-menu-screens', 'components-pause'].map((n) => `tests/${n}.test.mjs`);
+  const reached = [...importClosure('tests/components.test.mjs', ROOT)].filter((f) => f.startsWith('js/'));
+  assert.ok(reached.includes('js/ui.js') && reached.includes('js/ui/components.js'));
+  for (const f of split) {
+    assert.ok(testFiles(ROOT).includes(f) && isBrowserTest(f, ROOT), `${f} is a browser test file`);
+    const closure = importClosure(f, ROOT);
+    assert.deepEqual(reached.filter((r) => !closure.has(r)), [], `${f} reaches what components.test.mjs reaches`);
+  }
+  for (const changed of ['js/ui.js', 'js/ui/components.js', 'js/shell/navigation.js']) {
+    const picked = selectTests([changed], ROOT);
+    for (const f of ['tests/components.test.mjs', ...split]) assert.ok(picked.includes(f), `${changed} selects ${f}`);
+  }
+});
+
 test('the shell smoke set is one browser test file per screen, each present', () => {
   assert.ok(SHELL_SMOKE.length >= 8 && SHELL_SMOKE.length < testFiles(ROOT).filter((f) => isBrowserTest(f, ROOT)).length / 2, 'small');
   for (const f of SHELL_SMOKE) assert.ok(testFiles(ROOT).includes(f) && isBrowserTest(f, ROOT), `${f} is a browser test file`);

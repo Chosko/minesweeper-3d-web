@@ -1015,7 +1015,7 @@ Feature: shared-screen-layout
 
 ## 214. Full test runs reliable again: the stale counter test, the random first click, the theme-switch flakes and the slow components file
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: tests/render-3d-flag-flash.test.mjs, tests/classic2d-mode.test.mjs, tests/classic2d-view.test.mjs, tests/theme.test.mjs, tests/components.test.mjs, tests/helpers/timing.mjs, .claude/external/affected-tests.mjs, tests/affected-tests.test.mjs, .claude/context/testing.md, .claude/context/testing-conventions.md
 Preconditions: none

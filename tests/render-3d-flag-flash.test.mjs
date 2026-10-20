@@ -11,6 +11,7 @@ import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { browserSuite } from './helpers/browser.mjs';
 import { TIME_SLACK, patience } from './helpers/timing.mjs';
+import { formatMineCount } from '../js/ui/components.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const suite = browserSuite();
@@ -162,7 +163,7 @@ test('[slow] in a browser, a flag click on a number flashes the cubes it changed
     for (const theme of ['joyful-tiles']) {
       await frames();
       const c = await ms(minesColour);
-      assert.equal(c.text, '-3');
+      assert.equal(c.text, formatMineCount(-3), 'the counter readout\'s own form');
       assert.equal(c.negative, true);
       assert.deepEqual(c.fg, c.danger, `${theme}: the mines figure shows in --color-danger`);
       assert.ok(c.ratio >= 4.5, `${theme}: ${c.ratio.toFixed(2)}:1 against the overlay bar`);
@@ -173,7 +174,7 @@ test('[slow] in a browser, a flag click on a number flashes the cubes it changed
     assert.equal(await flashes(), 7, 'the undo flashes the cubes it unflagged');
     await frames();
     const back = await ms(minesColour);
-    assert.equal(back.text, '4');
+    assert.equal(back.text, formatMineCount(4));
     assert.notDeepEqual(back.fg, back.danger, 'back above zero: the normal colour');
     await page.waitForFunction(() => globalThis.__ms.renderer._flashes.size === 0, null, { timeout: patience(3000) });
     await act(7, 'right');

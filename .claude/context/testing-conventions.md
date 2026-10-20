@@ -57,17 +57,24 @@ helper is [testing-browser.md](testing-browser.md)'s.
   (`tokens.test.mjs`)
   and in the page (`measureContrast`, `tests/helpers/contrast.mjs`, run
   through `page.evaluate`: 4.5:1, or 3:1 for large text and accent labels,
-  over each run's effective background).
+  over each run's effective background). The same helper holds
+  `focusShows`, the focused-control look, and `checkCard`, a card over the
+  3D scene readable and within the window.
+- **Readouts are expected in their formatter's form**: a test asserting a
+  counter's text takes it from the display helper that formats it
+  (`formatMineCount`, `formatOverlayTime`), never a restated literal.
 - **Timing slack** (`tests/helpers/timing.mjs`): a performance budget
   (e.g. 100×100×100, 1000 mines: build and open < 2 s) is asserted through
   `timed(budget, fn)` — up to three attempts, the fastest counting, against
   the budget × `TIME_SLACK`, so work several times over its budget still
   fails. A frame-bound upper bound multiplies only its frame slop by
   `TIME_SLACK`; a lower bound stays exact. A wait for a state polls
-  (`waitForFunction`) with a timeout of `patience(ms)`; a fixed window is for
-  proving something does not happen. Two short settle sleeps remain, in
-  `shell-history` (Back's entries settling) and `shell-lock-fallback` (the
-  refusal's second signal).
+  (`waitForFunction`) with a timeout of `patience(ms)`; a focused control's
+  look is read once its own transitions have finished
+  (`getAnimations()`); a fixed window is for proving something does not
+  happen. Two short settle sleeps remain: Back's entries settling
+  (`shell-history`) and the pointer-lock refusal's second signal
+  (`shell-lock-fallback`, `components-ready`).
   `MS_TIME_SLACK` sets the factor (default 2, at least 1).
 - Untested by Node beyond static and stub checks: most of `js/render.js`,
   `js/textures.js`, `js/picking.js`, `js/ui.js`, `js/main.js`, the WebAudio

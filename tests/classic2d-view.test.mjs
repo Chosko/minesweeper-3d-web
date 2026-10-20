@@ -23,6 +23,7 @@ import { createGameWithMines, CELL } from '../js/engine/rules.js';
 import { REFERENCE_PROFILE } from '../js/engine/profiles.js';
 import { createEndEffect, reachMs, WIN, LOSS, PULSE_COLOR, CONFETTI_COLORS } from '../js/classic2d/end-effect.js';
 import { END_DELAY_MS } from '../js/classic2d/mode.js';
+import { createSession } from '../js/classic2d/session.js';
 import { browserSuite } from './helpers/browser.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -1128,6 +1129,22 @@ function boardSeen() {
   };
 }
 
+// The board the mid-game theme switch plays: Beginner with its seed fixed, so the first click in the
+// middle opens an area every run — a revealed blank and a closed tile to sample — and the game goes on.
+const SWITCH_BOARD = Object.freeze({
+  choice: Object.freeze({ size: 'beginner', noGuess: false }),
+  fixed: Object.freeze({ startCell: 40, seed: 3 }),
+});
+
+test('the board the mid-game theme switch plays opens an area on its first click and leaves closed cells', () => {
+  const s = createSession({ choice: SWITCH_BOARD.choice, client: { request() { throw new Error('a standard board asks no worker'); }, cancel() {} }, fixed: SWITCH_BOARD.fixed });
+  s.reveal(SWITCH_BOARD.fixed.startCell);
+  assert.equal(s.state, 'playing');
+  assert.equal(s.game.cellNumber(SWITCH_BOARD.fixed.startCell), 0, 'the first click opens an area');
+  const states = Array.from({ length: 81 }, (_, c) => s.game.cellState(c));
+  assert.ok(states.filter((x) => x === 'revealed').length > 1 && states.includes('closed'));
+});
+
 test('in a browser, switching between Joyful tiles and a fixture theme mid-game redraws the tiles, the gap and the frame in each, with no state change', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
@@ -1139,12 +1156,12 @@ test('in a browser, switching between Joyful tiles and a fixture theme mid-game 
     await page.addInitScript(removeWebGL2);
     await page.goto(`${base}/index.html`);
     await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
-    await page.evaluate(async () => {
+    await page.evaluate(async (board) => {
       globalThis.__boardArt = await import('/js/classic2d/tile-skin.js');
-      globalThis.__ms.modes.start('classic-2d', { size: 'beginner', noGuess: false });
-    });
+      globalThis.__ms.modes.start('classic-2d', { ...board.choice, fixed: board.fixed });
+    }, SWITCH_BOARD);
     await page.waitForFunction(() => globalThis.__ms.board2D?.layout && globalThis.__boardArt.BOARD_ART.current());
-    // The first reveal, in the middle of the board, opens a region.
+    // The first reveal, in the middle of the board, opens an area.
     const box = await page.locator('#c2d-board canvas').first().boundingBox();
     const at = await page.evaluate(() => { const r = globalThis.__ms.board2D.cellRect(40); return { x: r.x + r.size / 2, y: r.y + r.size / 2 }; });
     await page.mouse.click(box.x + at.x, box.y + at.y);

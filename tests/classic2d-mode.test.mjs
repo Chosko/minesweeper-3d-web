@@ -11,6 +11,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createClassic2DMode, MODE_ID, END_DELAY_MS } from '../js/classic2d/mode.js';
+import { createSession } from '../js/classic2d/session.js';
 import { WIN, LOSS } from '../js/classic2d/end-effect.js';
 import {
   CHOICE_SIZES, CUSTOM_HINT, CODE_PROMPT, customStatus, customInfo, readChoice, sizeLabel, boardLine, mineDensity, densityHintShown,
@@ -1348,7 +1349,7 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
     assert.equal(await ms(() => document.getElementById('c2d-mines-left').textContent), '099');
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
     await page.waitForFunction(() => globalThis.__ms.modes.state.started);
-    await page.waitForFunction(() => document.getElementById('c2d-time').textContent !== '000', null, { timeout: 10000 });
+    await page.waitForFunction(() => document.getElementById('c2d-time').textContent !== '000', null, { timeout: patience(5000) });
 
     // Pause hides the board; resume brings it back.
     await page.keyboard.press('Escape');
@@ -1952,6 +1953,29 @@ test('in a browser, a Classic 2D Beginner game played by mouse and by keyboard c
   }
 });
 
+// The board "a few moves on a board with a best" plays: a 16 × 16 board of 10 mines, its seed fixed
+// so the first click on its start cell opens an area every run and the game goes on.
+const BEST_BOARD = Object.freeze({
+  choice: Object.freeze({ size: 'custom', custom: Object.freeze({ width: 16, height: 16, mines: 10 }), noGuess: false }),
+  fixed: Object.freeze({ startCell: 136, seed: 1 }),
+  bbbv: 7,
+});
+
+test('the board with a best opens an area on its first click and leaves a game to play', () => {
+  const s = createSession({ choice: BEST_BOARD.choice, client: { request() { throw new Error('a standard board asks no worker'); }, cancel() {} }, fixed: BEST_BOARD.fixed });
+  s.reveal(BEST_BOARD.fixed.startCell);
+  assert.equal(s.state, 'playing', 'not a first-click win');
+  assert.equal(s.game.cellNumber(BEST_BOARD.fixed.startCell), 0, 'the first click opens an area');
+  const counts = s.counts();
+  assert.equal(counts.bbbv, BEST_BOARD.bbbv);
+  assert.equal(counts.bbbvSolved, 1);
+  let closed = -1;
+  for (let c = 0; c < 256 && closed < 0; c++) if (s.game.cellState(c) === 'closed') closed = c;
+  assert.ok(closed >= 0, 'a closed cell is left to flag');
+  s.toggleFlag(closed);
+  assert.equal(s.state, 'playing', 'the flag leaves the game going');
+});
+
 test('in a browser, a few moves on a board with a best: the figures panel follows the game, pace against the best shows once a 3BV is solved, and the figures are never live', async (t) => {
   const env = await suite.open(t);
   if (!env) return;
@@ -1964,15 +1988,15 @@ test('in a browser, a few moves on a board with a best: the figures panel follow
     await page.goto(`${base}/index.html`);
     await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
     const ms = (fn, arg) => page.evaluate(fn, arg);
-    // A best on a 16 × 16 board of 10 mines, whose first click opens an area: 30 s and 0.67 3BV/s.
-    await ms(async () => {
+    // A best on BEST_BOARD, its 3BV won in 10.5 s: 0.67 3BV/s.
+    await ms(async (bbbv) => {
       const { buildSummary } = await import('/js/records/summary.js');
       const none = { effective: 0, wasted: 0 };
       const board = { mode: 'classic-2d', grid: 'square', width: 16, height: 16, mines: 10, noGuess: false };
-      const engine = { outcome: 'won', mineCount: 10, bbbv: 20, bbbvSolved: 20, clicks: { reveal: { effective: 20, wasted: 0 }, flag: none, chord: none } };
-      globalThis.__ms.records.record(buildSummary({ engine, elapsedMs: 30000, board, seed: 1, generatorVersion: 1 }));
-    });
-    await ms(() => globalThis.__ms.modes.start('classic-2d', { size: 'custom', custom: { width: 16, height: 16, mines: 10 }, noGuess: false }));
+      const engine = { outcome: 'won', mineCount: 10, bbbv, bbbvSolved: bbbv, clicks: { reveal: { effective: bbbv, wasted: 0 }, flag: none, chord: none } };
+      globalThis.__ms.records.record(buildSummary({ engine, elapsedMs: 10500, board, seed: 1, generatorVersion: 1 }));
+    }, BEST_BOARD.bbbv);
+    await ms((board) => globalThis.__ms.modes.start('classic-2d', { ...board.choice, fixed: board.fixed }), BEST_BOARD);
     await page.waitForFunction(() => globalThis.__ms.board2D);
     const figures = () => ms(() => Object.fromEntries([...document.querySelectorAll('#c2d-figures .ui-figure[data-figure]')].map((f) => [f.dataset.figure, {
       shown: !f.classList.contains('hidden'),
@@ -1994,23 +2018,23 @@ test('in a browser, a few moves on a board with a best: the figures panel follow
       const box = v.canvas.getBoundingClientRect();
       return { x: box.x + r.x + r.size / 2, y: box.y + r.y + r.size / 2 };
     }, c);
-    const first = await cell(136);
+    const first = await cell(BEST_BOARD.fixed.startCell);
     await page.mouse.click(first.x, first.y);
-    await page.waitForFunction(() => globalThis.__ms.modes.state.started);
-    await page.waitForFunction(() => document.querySelector('#c2d-figures [data-figure="clicks"] .ui-figure__value').textContent === '1');
+    await page.waitForFunction(() => globalThis.__ms.modes.state.started, null, { timeout: patience(5000) });
+    await page.waitForFunction(() => document.querySelector('#c2d-figures [data-figure="clicks"] .ui-figure__value').textContent === '1', null, { timeout: patience(5000) });
     const closed = await ms(() => { const g = globalThis.__ms.game2D; for (let c = 0; c < 256; c++) if (g.cellState(c) === 'closed') return c; return -1; });
     assert.ok(closed >= 0, 'a closed cell is left');
     const flag = await cell(closed);
     await page.mouse.click(flag.x, flag.y, { button: 'right' });
-    await page.waitForFunction(() => document.querySelector('#c2d-figures [data-figure="flags"] .ui-figure__value').textContent === '1');
+    await page.waitForFunction(() => document.querySelector('#c2d-figures [data-figure="flags"] .ui-figure__value').textContent === '1', null, { timeout: patience(5000) });
     const after = await figures();
     assert.equal(after.flags.detail, '9 mines left');
     assert.equal(after.clicks.value, '2', 'both clicks counted');
     assert.match(after.clicks.detail, /^Efficiency /);
-    assert.doesNotMatch(after.bbbv.value, /^0 \//, 'the first click solved some 3BV');
+    assert.equal(after.bbbv.value, `1 / ${BEST_BOARD.bbbv}`, 'the first click\'s opening is one 3BV of the board\'s');
     assert.equal(after.pace.shown, true, 'pace against the best once a 3BV is solved');
     assert.match(after.pace.value, /^[−+]?\d+\.\d{3} s$/);
-    assert.equal(after.pace.detail, 'Best 30.000 s');
+    assert.equal(after.pace.detail, 'Best 10.500 s');
     const fill = await ms(() => document.querySelector('#c2d-figures .ui-figure__fill').style.width);
     assert.match(fill, /^\d+%$/);
     assert.notEqual(fill, '0%', 'the bar fills as 3BV is solved');

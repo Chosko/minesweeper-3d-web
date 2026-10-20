@@ -2,6 +2,36 @@
 // text run with its contrast ratio against the background layers under it, composited down to the
 // first opaque one (white when none is), and the minimum the contrast contract sets for its size —
 // 3:1 for large text, 4.5:1 otherwise; plus the focus state of each [data-force~="focus"] control.
+// focusShows reads one such focus state; checkCard asserts a card over the 3D scene readable and
+// within the window.
+import assert from 'node:assert/strict';
+
+// A focused control's look: a button, menu entry or board option shows its selected state (moved level
+// with the surface, no outline); any other control a focus ring.
+export const focusShows = (f) => (f.selectable ? f.style === 'none' && f.transform !== 'none' : f.style !== 'none' && f.width >= 2);
+
+/**
+ * Asserts the card at `selector` in `page` readable — at least three of its own text runs measured,
+ * none below the contrast contract — and never wider than the window, once two frames have drawn.
+ */
+export async function checkCard(page, selector, label) {
+  const ms = (fn, arg) => page.evaluate(fn, arg);
+  await ms(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+  const { runs } = await ms(measureContrast);
+  const own = await ms((sel) => [...document.querySelectorAll(`${sel} *`)]
+    .filter((e) => [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()))
+    .map((e) => e.textContent.trim().slice(0, 30)), selector);
+  const mine = runs.filter((r) => own.includes(r.text));
+  assert.ok(mine.length >= 3, `${label}: its text is measured (${mine.length})`);
+  const failing = mine.filter((r) => r.ratio < r.min).map((r) => `${r.text}: ${r.ratio.toFixed(2)}:1 < ${r.min}`);
+  assert.deepEqual(failing, [], `${label}: text below the contrast contract`);
+  const fit = await ms((sel) => {
+    const box = document.querySelector(sel).getBoundingClientRect();
+    return { page: document.documentElement.scrollWidth <= innerWidth, card: box.left >= 0 && box.right <= innerWidth + 0.5 };
+  }, selector);
+  assert.deepEqual(fit, { page: true, card: true }, `${label}: no sideways scroll`);
+}
+
 export function measureContrast() {
   const parse = (v) => {
     const m = v.match(/rgba?\(([^)]+)\)/);
