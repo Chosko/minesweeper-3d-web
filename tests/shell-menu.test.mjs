@@ -721,18 +721,23 @@ test('in a browser, the menu\'s Classic 2D and Daily previews draw the whole boa
         const r = frame.getBoundingClientRect();
         const box = layer.getBoundingClientRect();
         if (r.width === 0 || layer.querySelector('canvas').style.width !== `${Math.round(box.width)}px`) return null; // laid out in the layer as it stands
+        // Settled: the same frame on two polls running, the menu's own layout done moving.
+        const key = `${k} ${r.x} ${r.y} ${r.width} ${r.height} ${box.width} ${box.height}`;
+        const same = globalThis.__framePoll === key;
+        globalThis.__framePoll = key;
+        if (!same) return null;
         return {
           width: Math.round(r.width), height: Math.round(r.height),
           inside: r.left >= box.left - 0.5 && r.right <= box.right + 0.5 && r.top >= box.top - 0.5 && r.bottom <= box.bottom + 0.5,
           background: getComputedStyle(frame).backgroundColor, radius: parseFloat(getComputedStyle(frame).borderTopLeftRadius),
         };
-      }, kind).then((h) => h.jsonValue());
+      }, kind, { polling: 100 }).then((h) => h.jsonValue());
       // The tile a frame of n columns was laid out at: n tiles, the gaps between them and a gap either side.
       const tileOf = (n, w) => Array.from({ length: 80 }, (_, i) => i + 1).find((tile) => n * tile + (n + 1) * Math.round(tile * 0.09) === w);
       const label = `${width} × ${height}`;
       const c = await framed('board');
       const ct = tileOf(16, c.width);
-      assert.ok(ct && (classic === null || Math.abs(ct - classic) <= 2), `${label}: the Classic 2D preview at about ${classic} px (${ct})`);
+      assert.ok(ct && (classic === null || Math.abs(ct - classic) <= 2), `${label}: the Classic 2D preview at about ${classic} px (${ct}, frame ${c.width} px)`);
       assert.deepEqual([c.inside, c.height, c.background, Math.round(c.radius)], [true, c.width, 'rgb(255, 255, 255)', Math.round(ct * 0.3)], `${label}: the whole Intermediate board in its white frame`);
       await page.focus('#menu-entry-daily');
       const d = await framed('daily');

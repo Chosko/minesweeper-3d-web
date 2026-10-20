@@ -410,13 +410,18 @@ test('in a browser, the Daily screen\'s Classic 2D preview is the whole board in
         if (!frame || frame.classList.contains('hidden') || frame.getBoundingClientRect().width === 0) return null;
         const r = frame.getBoundingClientRect();
         const box = panel.getBoundingClientRect();
+        // Settled: the same frame on two polls running.
+        const key = `${r.x} ${r.y} ${r.width} ${r.height} ${box.width} ${box.height}`;
+        const same = globalThis.__framePoll === key;
+        globalThis.__framePoll = key;
+        if (!same) return null;
         const style = getComputedStyle(panel);
         return {
           shows: panel.dataset.shows, background: style.backgroundImage, colour: style.backgroundColor, shadow: style.boxShadow,
           inside: r.left >= box.left - 0.5 && r.right <= box.right + 0.5 && r.top >= box.top - 0.5 && r.bottom <= box.bottom + 0.5,
           width: Math.round(r.width),
         };
-      }).then((h) => h.jsonValue());
+      }, null, { polling: 100 }).then((h) => h.jsonValue());
       const label = `${width} × ${height}`;
       assert.deepEqual([got.shows, got.background, got.colour, got.shadow], ['daily', 'none', 'rgba(0, 0, 0, 0)', 'none'], `${label}: no dark scene panel behind the board`);
       assert.equal(got.inside, true, `${label}: the whole board in the panel`);
