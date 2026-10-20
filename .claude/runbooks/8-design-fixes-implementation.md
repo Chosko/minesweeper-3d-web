@@ -27,7 +27,7 @@ Context: none
 
 Done: 2026-10-20, commit `c544e97` (4 files, +94/-58).
 
-## [~] 3. Implement task 216 — Theme switch keeps every font weight the new theme declares loaded in Chromium
+## [x] 3. Implement task 216 — Theme switch keeps every font weight the new theme declares loaded in Chromium
 
 Depends on: 1
 
@@ -37,6 +37,8 @@ Context:
 ```prompt
 /task-implement 216 --review
 ```
+
+Done: 2026-10-20, commit `504b397` (10 files, +247/-14). Decision: the applier re-loads the new theme's declared fonts after removing the old stylesheet, and a failed re-load goes to the error handler without undoing the switch; `tests/components-pause.test.mjs`'s contrast test is flaky on the base too.
 
 ## [~] 4. Implement task 217 — UX-review scripts follow the current board-choice markup
 
@@ -58,7 +60,7 @@ Context: none
 /task-implement 218 --review
 ```
 
-## [ ] 6. Implement task 219 — Kit form controls: switch, switch row, slider fill, number field, invalid state, focus halo
+## [~] 6. Implement task 219 — Kit form controls: switch, switch row, slider fill, number field, invalid state, focus halo
 
 Depends on: 1
 
