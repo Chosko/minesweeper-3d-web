@@ -1,19 +1,20 @@
-# Testing — conventions, oracles, browser environment, tripwires
+# Testing — conventions, oracles, tripwires
 
 ## OVERVIEW
 
 How the suite's tests are written and what they must not be bent to pass:
 the testing policy, the oracles, seeded randomness, fakes, static checks,
-the local server, contrast and timing slack, and the browser environment
-the Playwright layer runs in — plus the tests that an unrelated-looking
-change trips. Where tests go and how the suite runs is
-[testing.md](testing.md).
+contrast and timing slack — plus the tests that an unrelated-looking change
+trips. The browser layer — the local server, the environment Playwright runs
+in, inputs and fixed boards, `__ms` — is
+[testing-browser.md](testing-browser.md); where tests go and how the suite
+runs is [testing.md](testing.md).
 
 ## PUBLIC API
 
 `tests/helpers/timing.mjs` — `timed(budget, fn)`, `patience(ms)`,
-`TIME_SLACK`; `tests/helpers/browser.mjs` — `browserSuite`, `serveRoot`,
-`SWIFTSHADER_ARGS` ([testing.md](testing.md) describes their use).
+`TIME_SLACK` ([testing.md](testing.md) describes their use); the browser
+helper is [testing-browser.md](testing-browser.md)'s.
 
 ## INTERNAL PATTERNS
 
@@ -51,12 +52,6 @@ change trips. Where tests go and how the suite runs is
   `index.html` between marker comments, so keep those markers when editing.
   `js/theme.js` runs in a `node:vm` context with a stub root; tests importing
   `js/render.js` register a resolve hook mapping `three` to `vendor/three/`.
-- **Local static server**: the helper's `serveRoot()` — an in-process
-  `node:http` server on a free port over the repo root (ES modules fail on
-  `file://`). Artefact
-  screenshots (`components.test.mjs`) are taken only with `MS_SHOTS=1` set,
-  into a `mkdtemp` directory; without it a theme's look is compared through
-  computed colours, and the contrast checks run either way.
 - **Contrast** is checked from parsed tokens for every registered theme
   (`theme-conformance.test.mjs`) and for *Joyful tiles*' own pairs
   (`tokens.test.mjs`)
@@ -74,50 +69,9 @@ change trips. Where tests go and how the suite runs is
   `shell-history` (Back's entries settling) and `shell-lock-fallback` (the
   refusal's second signal).
   `MS_TIME_SLACK` sets the factor (default 2, at least 1).
-- **Input that a round trip cannot stretch.** An input whose meaning
-  depends on how long it is held is completed inside the browser, never
-  across a test-to-page round trip, which on a loaded machine passes any
-  threshold: a faked controller's tap is pressed and released in the page
-  within one animation frame (the shell's frame loop polls first), so menu
-  auto-repeat never fires (`shell-pad-walk`, `shell-menu`); a touch tap or
-  one-finger drag is a gesture the browser synthesizes
-  (`Input.synthesizeTapGesture`, `Input.synthesizeScrollGesture`), so the
-  400 ms long-press never sees it (`classic2d-touch`, the 3D look in
-  `shell-mode-3d`).
-- **A browser test that needs a game state plays a fixed board** — fixed
-  mines or a fixed seed that reaches it (a loss, not a first-click win),
-  pinned by a fast test beside it; a stubbed generation worker answers only
-  the test's own board, so the start-up's daily pre-generation never takes
-  its place (`shell-mode-3d`).
 - Untested by Node beyond static and stub checks: most of `js/render.js`,
   `js/textures.js`, `js/picking.js`, `js/ui.js`, `js/main.js`, the WebAudio
   output — verify these in the browser.
-
-Browser environment:
-- Playwright is installed globally (`/opt/node22/lib/node_modules/playwright`,
-  browsers in `PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers`); resolve it via
-  `NODE_PATH` or an absolute import. Do not run `playwright install`.
-- 3D needs WebGL 2 without a GPU: Chromium launches with `--use-gl=angle
-  --use-angle=swiftshader --enable-unsafe-swiftshader` (the helper's
-  `SWIFTSHADER_ARGS`). No-WebGL checks add an init script making
-  `getContext('webgl2')` return null to their own page, so they share the
-  file's flagged browser.
-- The menu screens' orbiting 3D backdrop redraws every frame and drops
-  SwiftShader to about 10 fps, slowing every `requestAnimationFrame` wait,
-  screenshot and `browser.close()`. A browser test that loads `index.html`
-  for a 2D, screen or menu subject keeps it out of the way: where 3D is
-  irrelevant it adds the WebGL-2-refusing init script (`removeWebGL2`,
-  defined in each such file); where it needs WebGL 2 present (it opens the
-  3D board choice, starts a 3D game or asserts on the 3D entry) it loads
-  `index.html?still-backdrop` (the hook in [app-shell.md](app-shell.md)),
-  which draws the backdrop once per change. The 3D gameplay test files, the
-  no-WebGL path's own tests and the backdrop's own test (`shell-menu`) load
-  the page as a player does.
-- 3D tests and ad-hoc scripts drive `window.__ms`. Headless has no pointer
-  lock: `__ms.start(...)`, `__ms.forcePlay()`, then `aimAt` and `click`.
-  Mutators refresh synchronously, so `selected()` / `info()` are valid at
-  once; pixels need the next animation frame. `pickWith` compares DDA
-  against brute-force picking.
 
 ## DOMAIN DEPENDENCIES
 
@@ -134,8 +88,8 @@ Gameplay fidelity to the original is the overriding rule; tests enforce it.
 
 - [testing.md](testing.md) — running the suite, the tiers, the shared
   browser helper, where each test goes.
-- [app-shell.md](app-shell.md) — `window.__ms`, the surface Playwright
-  drives.
+- [testing-browser.md](testing-browser.md) — the local server, the
+  browser environment, `window.__ms`.
 
 ## WHEN TO READ THE SOURCE
 
@@ -150,8 +104,6 @@ Gameplay fidelity to the original is the overriding rule; tests enforce it.
   read its head comment before moving the constant.
 - A contrast failure: read `measureContrast` or the token parser and the
   saved screenshots before changing a token.
-- An `__ms` member not in [app-shell.md](app-shell.md): read the end of
-  `js/main.js`.
 - `tests/shell-pad-walk.test.mjs` walks the board choices and Records
   control by control with a faked controller: moving, adding or hiding a
   control on those screens, or changing `navStep` / `pickInDirection`,

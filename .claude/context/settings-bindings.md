@@ -44,7 +44,7 @@ The module's head comment lists every function.
 - `KEY_HINTS` (`move`, `select`, `back`, `restart`, each per device, none
   on touch), `keyHintKeys(action, device, glyphs?)` → `[{text, pad}]`: the
   keys or buttons a screen's `ui-key-hint` shows beside an action
-  (`showKeyHints`, [app-shell-kit.md](app-shell-kit.md)).
+  (`showKeyHints`, [app-shell-kit-helpers.md](app-shell-kit-helpers.md)).
 - `createActiveDevice({ onChange })` → `current` (`'keyboard'` |
   `'controller'`), `input('pad' | 'keyboard' | 'pointer')`,
   `connected(on)`: the controller while the last input came from a

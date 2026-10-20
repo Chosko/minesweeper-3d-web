@@ -153,8 +153,8 @@ Export (`js/records/export.js`)
 - [app-shell.md](app-shell.md) — `RECORDS_PAGE`;
   [app-shell-navigation.md](app-shell-navigation.md) — the `records` route,
   Back; [app-shell-results.md](app-shell-results.md) — the results formats
-  and `NOTES`; [app-shell-kit.md](app-shell-kit.md) — the token reader, the
-  `#records` markup.
+  and `NOTES`; [app-shell-themes.md](app-shell-themes.md) — the token reader;
+  [app-shell-markup.md](app-shell-markup.md) — the `#records` markup.
 - [testing.md](testing.md) — `tests/records-screen*.test.mjs`,
   `tests/records-export.test.mjs`, `tests/shell-pad-walk.test.mjs` (the
   controller on Records).

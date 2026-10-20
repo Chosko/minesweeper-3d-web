@@ -108,7 +108,7 @@ comment lists its passes.
   winding. Atlas rows are top-first and `flipY = false`, so v = 0 is the image top.
 - **Colour.** Tiles and state use `NoColorSpace`; shaders output raw sRGB. Number colours are the
   board module's, which the board conformance checks hold to 4.5:1 against every point of the
-  revealed face ([app-shell-kit.md](app-shell-kit.md)).
+  revealed face ([app-shell-board-module.md](app-shell-board-module.md)).
 - **Target rectangle.** The drawing buffer always spans the window; `resize()` sets the viewport,
   the scissor and the camera aspect to the target, WebGL's y counted from the bottom, and turns the
   scissor test off with no target. With a target, `render()` first clears the whole canvas to
@@ -122,7 +122,7 @@ comment lists its passes.
   renderer never reads the setting.
 - **Drawn from the board module.** The shell (`js/shell/scene-palette.js`) calls `setBoard` with the
   active theme's board module at start-up and on every theme change, once its number font has
-  loaded ([app-shell-kit.md](app-shell-kit.md)); until then the atlas is transparent and the sky
+  loaded ([app-shell-board-module.md](app-shell-board-module.md)); until then the atlas is transparent and the sky
   black. From the module come: the atlas, every layer drawn through `js/tile-art.js` in `style3d`
   from `palette.faces3d`, the flag, mine and cross, `numbers` and the number font — the slope
   painted into the texture, so it reads lit from the same corner on every face, top faces included;
@@ -159,7 +159,7 @@ comment lists its passes.
 
 - [rendering-effects.md](rendering-effects.md) — cell motion and the solved pulse, flash, waves,
   ground grid, the replay-driven camera and the end of a 3D game.
-- [app-shell-kit.md](app-shell-kit.md) — the board module's shape and checks, and the scene's
+- [app-shell-board-module.md](app-shell-board-module.md) — the board module's shape and checks, and the scene's
   hand-off `js/shell/scene-palette.js`.
 - [engine-3d.md](engine-3d.md) — the 3D state view this area reads.
 - [app-shell.md](app-shell.md) — `js/main.js` owns the renderer: `sync`/`render` per frame,

@@ -60,7 +60,7 @@ Stats (`js/records/stats.js`)
 - [records-screen.md](records-screen.md) — the screen that reads these.
 - [app-shell-results.md](app-shell-results.md) — `gameRank` behind the
   results screen's rank.
-- [app-shell-kit.md](app-shell-kit.md) — the token reader.
+- [app-shell-themes.md](app-shell-themes.md) — the token reader.
 - [testing.md](testing.md) — `tests/records-history.test.mjs`,
   `tests/records-stats.test.mjs`.
 

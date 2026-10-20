@@ -9,7 +9,7 @@ How a Classic 2D tile looks, and how a cell moves. The area overview is
   that pre-renders every state and number (and the raised states at each
   depth step), the board art hand-off `BOARD_ART`, and the shared minimum
   tile size. Every tile is drawn from the active theme's board module
-  (`js/themes/board-module.js`, [app-shell-kit.md](app-shell-kit.md)): its
+  (`js/themes/board-module.js`, [app-shell-board-module.md](app-shell-board-module.md)): its
   Classic 2D drawing style, palette and number font. It holds no palette,
   imports no theme and reads no stylesheet. DOM-free at import.
 - `js/tile-art.js` — the shared tile recipe both boards draw through (the
@@ -20,7 +20,7 @@ How a Classic 2D tile looks, and how a cell moves. The area overview is
   nothing and touches no DOM.
 - `js/cell-motion.js` — the cell motion player both renderers use: the
   running cell animations a theme's motion descriptions play
-  ([app-shell-kit.md](app-shell-kit.md), the board module's `motion`), and
+  ([app-shell-board-module.md](app-shell-board-module.md), the board module's `motion`), and
   each animating cell's values per frame. It imports nothing and touches no
   DOM, game state, timer, replay, setting or media query.
 
@@ -42,7 +42,7 @@ How a Classic 2D tile looks, and how a cell moves. The area overview is
 - `createBoardArt()` → `{current(), set(id, board), onChange(listener)}` —
   a board art hand-off: the module last handed over as `{id, board}` (null
   until the first) and its subscribers. `BOARD_ART` is the page's one, which
-  the shell feeds (`js/shell/board-art.js`, [app-shell-kit.md](app-shell-kit.md))
+  the shell feeds (`js/shell/board-art.js`, [app-shell-board-module.md](app-shell-board-module.md))
   and every skin and the 3D scene's hand-off read.
 - `createTileSkin({art, createCanvas, redraw})` → `{paintTile, drawTile(ctx,
   x, y, size, state, number, pixelRatio = 1, depth = null), board(),
@@ -120,7 +120,7 @@ How a Classic 2D tile looks, and how a cell moves. The area overview is
 - **No second palette.** Neither the skin nor the recipe holds a literal
   colour: every colour, parameter and the number font are the board
   module's, which the board conformance checks hold to the contrast and
-  legibility contract ([app-shell-kit.md](app-shell-kit.md)).
+  legibility contract ([app-shell-board-module.md](app-shell-board-module.md)).
 - **Cell motion.** Each track interpolates its keyframes with the
   description's easing applied per keyframe segment, as a CSS animation's
   timing function is, holding its end values outside them. A flip
@@ -145,9 +145,9 @@ How a Classic 2D tile looks, and how a cell moves. The area overview is
 
 ## CROSS-REFERENCES
 
-- [app-shell-kit.md](app-shell-kit.md) — owns the board module's shape and
-  checks, the theme applier and `js/shell/board-art.js`, which feeds
-  `BOARD_ART`; `js/tokens.js` (`FALLBACK_COLOR`).
+- [app-shell-board-module.md](app-shell-board-module.md) — owns the board module's shape and
+  checks and `js/shell/board-art.js`, which feeds `BOARD_ART`;
+  [app-shell-themes.md](app-shell-themes.md) — the theme applier, `js/tokens.js` (`FALLBACK_COLOR`).
 - [rendering.md](rendering.md) — the 3D tile atlas, drawn through the same
   `js/tile-art.js` in the module's 3D style.
 - [classic2d-board-view.md](classic2d-board-view.md) — the view that owns a

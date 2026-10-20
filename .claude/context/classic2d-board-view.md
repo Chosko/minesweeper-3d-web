@@ -187,7 +187,7 @@ overview is [classic2d.md](classic2d.md).
   pressed set, the cursor and the pan.
 - [engine.md](engine.md) — the square grid's index layout and the
   `changed` lists.
-- [app-shell-kit.md](app-shell-kit.md), [app-shell-2d.md](app-shell-2d.md) — the board module, the board frame
+- [app-shell-board-module.md](app-shell-board-module.md), [app-shell-2d.md](app-shell-2d.md) — the board module, the board frame
   component, the board tokens and the shell's panel frame;
   [app-shell-ui.md](app-shell-ui.md) — `panelFrame2D` and `placePanel2D`.
 - [testing.md](testing.md) — `tests/classic2d-view.test.mjs` the board view,

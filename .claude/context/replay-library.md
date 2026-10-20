@@ -11,7 +11,7 @@ others. `js/main.js` builds the one library (`REPLAYS`) over the platform
 `storage` and `blobStore`; the results flow adds to it
 ([app-shell-results.md](app-shell-results.md)), the Records screen's library view lists and
 pins ([records-library-view.md](records-library-view.md)), and the viewer reads bytes
-([replay-playback.md](replay-playback.md)).
+([replay-viewer-screen.md](replay-viewer-screen.md)).
 
 ## PUBLIC API
 

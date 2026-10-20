@@ -54,7 +54,7 @@ Remembered view (`js/records/view-prefs.js`)
   the replay that had it.
 - **Watch opens the viewer.** Watch shows only when the router registers
   `REPLAY_SCREEN`, and on a best or a game only when its replay is kept;
-  `watch(id)` routes to the viewer ([replay-playback.md](replay-playback.md))
+  `watch(id)` routes to the viewer ([replay-viewer-screen.md](replay-viewer-screen.md))
   with the Records screen on its board to return to.
 - **Files.** With the shell's `files` (`{save, pick}`), a row's Download
   saves the stored bytes (`library.bytes`) under its `file` name

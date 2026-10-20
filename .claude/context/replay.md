@@ -8,7 +8,7 @@ board's mines, the rules version, every action with its time and the
 player's movement, sealed at the end of the game and handed on beside its
 summary. The library keeps it ([replay-library.md](replay-library.md)); the
 viewer verifies it and plays it back on the engine
-([replay-playback.md](replay-playback.md)), so nothing depends on the
+([replay-playback.md](replay-playback.md), [replay-viewer-screen.md](replay-viewer-screen.md)), so nothing depends on the
 generator. All of `js/replay/` is DOM-free apart from the 2D sampler's
 browser wiring, the viewer's binder and the 2D viewer's mount.
 
@@ -22,9 +22,9 @@ browser wiring, the viewer's binder and the 2D viewer's mount.
 | `js/replay/simulator.js` | Replay played on the engine, seeking with snapshots; `openReplay`. | [replay-playback.md](replay-playback.md) |
 | `js/replay/verify.js` | Verifier against the check values. | [replay-playback.md](replay-playback.md) |
 | `js/replay/clock.js` | Playback clock. | [replay-playback.md](replay-playback.md) |
-| `js/replay/viewer.js` | Replay viewer screen and the `#replay` binder. | [replay-playback.md](replay-playback.md) |
-| `js/replay/viewer-2d.js` | 2D viewer: read-only board view, recorded pointer and cursor. | [replay-playback.md](replay-playback.md) |
-| `js/replay/viewer-3d.js` | 3D viewer: recorded camera and view mode. | [replay-playback.md](replay-playback.md) |
+| `js/replay/viewer.js` | Replay viewer screen and the `#replay` binder. | [replay-viewer-screen.md](replay-viewer-screen.md) |
+| `js/replay/viewer-2d.js` | 2D viewer: read-only board view, recorded pointer and cursor. | [replay-viewers.md](replay-viewers.md) |
+| `js/replay/viewer-3d.js` | 3D viewer: recorded camera and view mode. | [replay-viewers.md](replay-viewers.md) |
 
 Wiring: the sessions own their recorder and the modes their sampler
 ([classic2d-session.md](classic2d-session.md), [classic2d-mode.md](classic2d-mode.md),
@@ -110,7 +110,7 @@ which adds it to the library once its summary is recorded ([app-shell-results.md
 ## CROSS-REFERENCES
 
 - [replay-samplers.md](replay-samplers.md) — the 2D and 3D movement samplers.
-- [replay-library.md](replay-library.md), [replay-playback.md](replay-playback.md).
+- [replay-library.md](replay-library.md), [replay-playback.md](replay-playback.md), [replay-viewer-screen.md](replay-viewer-screen.md).
 - [engine.md](engine.md) — `CLICK_KINDS`, rule profiles and versions, the
   state arrays the digest reads.
 - [records.md](records.md) — board identity, `boardKey`, the summary record.

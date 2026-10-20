@@ -6,7 +6,7 @@ Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
 Covers the replay viewer's wiring in `js/main.js`: the `replay` route and
 its entry points, replay file download and import, the controller on the
 viewer, the frame-loop tick, and the 3D replay scene with its recorded and
-free cameras. The viewer itself is [replay-playback.md](replay-playback.md)
+free cameras. The viewer itself is [replay-viewer-screen.md](replay-viewer-screen.md)
 and its board viewers [replay-viewers.md](replay-viewers.md); the results
 screen that opens it is [app-shell-results.md](app-shell-results.md).
 
@@ -78,7 +78,7 @@ are listed in [app-shell.md](app-shell.md) § PUBLIC API.
 
 ## CROSS-REFERENCES
 
-- [replay-playback.md](replay-playback.md) — `createReplayViewer`,
+- [replay-viewer-screen.md](replay-viewer-screen.md) — `createReplayViewer`,
   `createReplayView`, `REPLAY_PAD`; [replay-viewers.md](replay-viewers.md)
   — `createViewer3D`'s scene contract, `mountViewer2D`.
 - [replay-library.md](replay-library.md) — `REPLAYS`.

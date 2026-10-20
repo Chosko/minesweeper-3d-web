@@ -4,8 +4,9 @@
 
 Part of the app shell ([app-shell.md](app-shell.md) is the core and map).
 Covers the kit-built screens' static markup in `index.html` and the ids the
-shell wires, and the shell stylesheet `css/style.css`. The component kit,
-tokens, theme and deploy files are [app-shell-kit.md](app-shell-kit.md).
+shell wires, and the shell stylesheet `css/style.css`. The component kit is
+[app-shell-kit.md](app-shell-kit.md); tokens, themes and deploy files are
+[app-shell-themes.md](app-shell-themes.md).
 
 | File | Responsibility |
 | ---- | -------------- |
@@ -14,7 +15,7 @@ tokens, theme and deploy files are [app-shell-kit.md](app-shell-kit.md).
 
 `index.html` head order: `css/tokens.css`, `css/components.css`,
 `css/style.css`, `js/theme.js` (which appends the theme stylesheet), then
-the module graph ([app-shell-kit.md](app-shell-kit.md)).
+the module graph ([app-shell-themes.md](app-shell-themes.md)).
 
 ## PUBLIC API
 
@@ -74,7 +75,7 @@ bind.
     `#results-code`, `#results-note`, and the foot `#results-actions`:
     `#r-menu` at the start, `#r-watch`, `#r-watch-best`, `#r-records`,
     `#r-again` at the end ([app-shell-results.md](app-shell-results.md));
-  - replay viewer `#replay` (its ids: [replay-playback.md](replay-playback.md)):
+  - replay viewer `#replay` (its ids: [replay-viewer-screen.md](replay-viewer-screen.md)):
     the frame `#replay-frame` with `#rp-back` and `#replay-title`, the
     figures bar with the code chip and the outcome `#replay-end`,
     `#replay-main` — the board area `#replay-stage` holding
@@ -105,7 +106,7 @@ bind.
     no-JavaScript notice, the one `<noscript>` (the default theme's
     stylesheet, then `.noscript`, the same card titled `#noscript-title`),
     styled without JavaScript through the root's static `data-theme`;
-    `404.html`'s `.not-found` is the same card ([app-shell-kit.md](app-shell-kit.md)).
+    `404.html`'s `.not-found` is the same card ([app-shell-themes.md](app-shell-themes.md)).
   `#c2d` is the Classic 2D game window (its ids:
   [app-shell-ui.md](app-shell-ui.md) § Classic 2D window): `#c2d-board`
   holds the panel `#c2d-panel` behind the canvas; `#c2d.c2d--hint` gives
@@ -134,8 +135,8 @@ bind.
 
 ## CROSS-REFERENCES
 
-- [app-shell-kit.md](app-shell-kit.md) — the catalogue every screen follows,
-  the tokens `css/style.css` reads.
+- [app-shell-kit.md](app-shell-kit.md) — the catalogue every screen follows;
+  [app-shell-themes.md](app-shell-themes.md) — the tokens `css/style.css` reads.
 - [app-shell-ui.md](app-shell-ui.md) — `UI.el`, which binds these ids.
 - [testing.md](testing.md) — `tests/components.test.mjs` (screens, the
   pointer sizes).

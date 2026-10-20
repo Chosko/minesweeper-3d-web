@@ -27,7 +27,7 @@ Each module's head comment states its full contract.
 | `fullscreen` | boolean | | false | browser fullscreen |
 | `renderResolution` | choice | `auto`, `sharp`, `fast` | `auto` | 3D renderer pixel ratio |
 | `boardScale` | choice | `fit`, `100`, `125` | `100` | the Classic 2D tile's cap (`js/classic2d/board-view.js` `tileCap`): the open board (`mode2d.setScale`) and the replay viewer's 2D board (`REPLAY_VIEWER.setScale`), wired in `js/main.js` |
-| `theme` | choice | an id of the theme registry (`js/themes/registry.js`) | `joyful-tiles` | the theme applier's `setTheme` ([app-shell-kit.md](app-shell-kit.md)) |
+| `theme` | choice | an id of the theme registry (`js/themes/registry.js`) | `joyful-tiles` | the theme applier's `setTheme` ([app-shell-themes.md](app-shell-themes.md)) |
 | `volume` | number | 0–1 | 0.7 | `sfx.setVolume` |
 | `muted` | boolean | | false | `sfx.setMuted`, the HUD strip (`UI.setSound`), the Sound switch of the page and the pause card (on while false) |
 | `aimReadout` | boolean | | true | "3D neighbour count": the aimed-cell readout beside the crosshair, read each frame by `updateReadout` in `js/main.js` ([app-shell-3d-play.md](app-shell-3d-play.md)) |
@@ -77,7 +77,7 @@ Each module's head comment states its full contract.
   theme straight from the saved document (`localStorage` key
   `ms3d:doc:settings`, `{ version, data }`, at the current version or the
   one before the format step), mapping it as the format step does, so the
-  first paint is already the stored theme ([app-shell-kit.md](app-shell-kit.md)).
+  first paint is already the stored theme ([app-shell-themes.md](app-shell-themes.md)).
   `js/main.js` then starts the theme applier, creates the store, starts
   `load()`, calls `applySettings` and `bindSettingControls`, and awaits the
   load before `showMainMenu()`; the load's notification applies every value
@@ -141,7 +141,7 @@ Each module's head comment states its full contract.
 - [settings-bindings.md](settings-bindings.md) — the bindings source and the
   active device.
 - [app-shell.md](app-shell.md) — wiring in `js/main.js`.
-- [app-shell-kit.md](app-shell-kit.md) — the theme registry, the pre-paint
+- [app-shell-themes.md](app-shell-themes.md) — the theme registry, the pre-paint
   script and the theme applier.
 - [platform.md](platform.md) — `register`/`load`/`save` and the browser key
   format `js/theme.js` reads.

@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-The board viewers the replay viewer screen ([replay-playback.md](replay-playback.md))
+The board viewers the replay viewer screen ([replay-viewer-screen.md](replay-viewer-screen.md))
 mounts for a replay's graph kind: each draws simulator frames, places the
 recorded pointer or camera, shows press rings and Show 3BV's tints. Both are
 DOM-free at import.
@@ -77,7 +77,7 @@ DOM-free at import.
 
 ## CROSS-REFERENCES
 
-- [replay-playback.md](replay-playback.md) — the screen that mounts them,
+- [replay-viewer-screen.md](replay-viewer-screen.md) — the screen that mounts them,
   `regionTints`, the commands that call `setFree` and `showBbbv`.
 - [replay.md](replay.md) — the movement streams these invert; [replay-samplers.md](replay-samplers.md) — the samplers.
 - [engine-3d.md](engine-3d.md) — the 3D state view.
