@@ -25,7 +25,7 @@ export const BOARD = freeze({
       sunk: { rim: '#2b56b5', bevelLight: '#a9c9fb', bevelDark: 'rgba(22,32,74,0.2)', face: '#6b9ef2' }, /* J-BoardSheet .t.p (tile-pressed, shade-press) */
       revealed: { rim: '#ddd3c1', edge: '#ddd3c1', face: '#f3f0ea' }, /* J-BoardSheet .t.o (tile-open, -open-border) */
       exploded: { rim: '#c9403f', edge: '#c9403f', face: '#ff6b6b' }, /* J-BoardSheet .t.b (tile-boom, -boom-edge) */
-      marked: { rim: '#2a9488', bevelLight: 'rgba(255,255,255,0.32)', bevelDark: '#2a9488', face: '#49c6b8' }, /* J-BoardSheet .t.mk (tile-mark, highlight, teal-edge) */
+      marked: { rim: '#2a9488', bevelLight: 'rgba(255,255,255,0.32)', bevelDark: '#2a9488', face: '#49c6b8', ring: INK }, /* J-BoardSheet .t.mk (tile-mark, highlight, teal-edge) and its dashed ink ring */
     },
     faces3d: {
       closed: { rim: '#4a7bdb', bevelLight: '#b3d0fc', bevelDark: '#5385e4', face: '#78aaf8' }, /* J-3DSheet atlas: edge, top and bottom bevel, face */
@@ -34,8 +34,8 @@ export const BOARD = freeze({
       exploded: { rim: '#c9403f', edge: '#c9403f', face: '#ff6b6b' }, /* J-3DSheet atlas: the exploded mine's coral face and edge */
     },
     flag: { base: '#1b1b1b', shadow: 'rgba(0,0,0,0.25)', cloth: '#ff3b30', clothShade: '#c4161c' }, /* J-BoardSheet flag (the game's final flag glyph) */
-    mine: { body: INK, highlight: 'rgba(255,255,255,0.85)' }, /* J-BoardSheet mine in ink */
-    cross: { outline: 'rgba(255,255,255,0.95)', mark: '#b42a2a' }, /* J-BoardSheet wrong-flag cross in danger (J-Tokens --color-danger) */
+    mine: { body: INK, highlight: '#ffffff' }, /* J-BoardSheet mine in ink, its knobbed spikes, an opaque white highlight */
+    cross: { outline: 'rgba(255,255,255,0.95)', mark: '#c62f2f' }, /* J-BoardSheet wrong-flag cross in its own red */
     numberShadow: 'rgba(0,0,0,0.12)', /* J-BoardSheet number glyph shadow */
     boardGround: '#ffffff', /* J-BoardSheet .j-board (board-frame) between the tiles */
     confetti: ['#ff6b6b', '#ffc93c', '#49c6b8', '#78aaf8', '#6d4ee8', '#ffffff', '#ff8c42'], /* J-3DSheet confetti: coral, yellow, teal, blue, violet, white, orange */
@@ -57,7 +57,9 @@ export const BOARD = freeze({
     params: {
       band: 0.1, /* J-BoardSheet .t.c light top band, tile × .1 */
       edge: 0.1, /* J-BoardSheet .t.c dark bottom edge, tile × .1 */
-      hairline: 1 / 48, /* J-BoardSheet .t.o 1 px hairline at the 48 px tile */
+      press: 0.08, /* J-BoardSheet .t.p inset pressed shade, tile × .08 */
+      hairline: 1, /* J-BoardSheet .t.o 1 px hairline at every tile size */
+      border: 2, /* J-BoardSheet .t.b 2 px exploded tile border */
       radius: 0.15, /* J-BoardSheet corner radius, tile × .15 */
       gap: 0.09, /* J-BoardSheet gap, 9 % of the tile */
       frameRadius: 0.3, /* J-BoardSheet .j-board radius, tile × .3 */
@@ -73,7 +75,7 @@ export const BOARD = freeze({
       sides: { top: 1, right: '#5e92ec', bottom: -1, left: 0.536 }, /* J-3DSheet lit from the top left: right #5e92ec as drawn, left #98befa mixed from the face */
     },
   },
-  cursor: { color: INK, inner: '#ffffff', width: 3, radius: { tile: 0.15, px: 3 } }, /* J-BoardSheet .t.cur: 3 px navy ring, white hairline, radius tile × .15 + 3 px */
+  cursor: { color: INK, inner: '#ffffff', width: 3, innerWidth: 2, radius: { tile: 0.15, px: 3 } }, /* J-BoardSheet .t.cur: 3 px navy ring round a 2 px white band, 3 px outside the tile, radius tile × .15 + 3 px */
   selection: {
     outline: INK, /* J-3DSheet selection outline --color-ink */
     width: { face: 0.06, px: 3 }, /* J-3DSheet max(0.06 face, 3 px) */

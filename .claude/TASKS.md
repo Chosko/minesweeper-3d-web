@@ -1131,7 +1131,7 @@ Feature: themed-board-art-and-motion
 
 ## 226. 2D tile art: glyphs, hairline, start cell, flat widths and the cursor ring outside the tile
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/tile-art.js, themes/joyful-tiles/board.js, js/classic2d/board-view.js, js/classic2d/tile-skin.js, .claude/context/classic2d-board-view.md, .claude/context/rendering-board-art.md
 Preconditions: 224

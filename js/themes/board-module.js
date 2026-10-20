@@ -6,7 +6,8 @@
 // or `rgba()`, and must be `#rrggbb` wherever a contrast check reads it):
 //   palette
 //     faces2d   recipe palettes (js/tile-art.js) for the Classic 2D style — closed, sunk (pressed),
-//               revealed, exploded, and marked (the marked start cell's closed face)
+//               revealed, exploded, and marked (the marked start cell's closed face, plus ring:
+//               its dashed ring's colour, any CSS colour)
 //     faces3d   the same for the 3D style — closed, sunk, revealed, exploded
 //               (closed, sunk and marked take rim, bevelLight, bevelDark, face; revealed and
 //               exploded take rim, edge, face; any face may add faceShade, gloss and glossFade;
@@ -21,13 +22,14 @@
 //   numbers3d   numbers3d[1..26] (index 0 unused): the 3D number colours
 //   font        the number font: { family, weight }, one of the theme's self-hosted faces
 //   sky         { horizon, zenith, nadir, fog? } — the fog is the horizon when absent
-//   style2d     { name, params } — a drawing style of js/tile-art.js `STYLES` with its parameters,
-//               plus `gap` (between tiles) and `frameRadius` (the board frame's corner radius),
-//               every length a fraction of the tile
+//   style2d     { name, params } — a drawing style of js/tile-art.js `STYLES` with its parameters
+//               (each in the unit the style gives it), plus `gap` (between tiles) and `frameRadius`
+//               (the board frame's corner radius), both fractions of the tile
 //   style3d     { name, params } — the 3D cubes' style and its parameters
 //               (a bevel side is a shade from -1 to 1 or a `#rrggbb` colour — js/tile-art.js)
-//   cursor      the Classic 2D cursor ring: color, inner (its hairline, any CSS colour), width in
-//               px, radius { tile, px } — the corner radius is tile × size + px
+//   cursor      the Classic 2D cursor ring, drawn outside the tile: color and width in px (the ring,
+//               round a band of inner (any CSS colour) innerWidth px wide), radius { tile, px } — the
+//               band's outer edge is px outside the tile, its corner radius tile × size + px
 //   selection   the 3D aimed cube: outline, width { face, px } — max(face × the face, px) —, glow
 //               (the line inside the outline), glowWidth in px, tint [r, g, b] multiplying the
 //               selected face's colour
@@ -89,7 +91,8 @@ export const BOARD_ENTRIES = Object.freeze([
   'palette.mine.body', 'palette.mine.highlight',
   'palette.cross.outline', 'palette.cross.mark',
   'palette.numberShadow', 'palette.boardGround', 'palette.confetti',
-  'cursor.color', 'cursor.inner', 'cursor.width', 'cursor.radius.tile', 'cursor.radius.px',
+  'palette.faces2d.marked.ring',
+  'cursor.color', 'cursor.inner', 'cursor.width', 'cursor.innerWidth', 'cursor.radius.tile', 'cursor.radius.px',
   'selection.outline', 'selection.width.face', 'selection.width.px', 'selection.glow', 'selection.glowWidth', 'selection.tint',
   'mark.tint', 'mark.mix', 'mark.pulseMix',
   'end2d.light', 'end2d.win.scale', 'end2d.win.mix', 'end2d.loss.scale', 'end2d.loss.flash',
@@ -128,7 +131,7 @@ function checkPalette(b) {
     const v = at(b, path);
     const ok = path === 'palette.confetti' ? Array.isArray(v) && v.length > 0 && v.every(isColour)
       : path === 'selection.tint' ? Array.isArray(v) && v.length === 3 && v.every(isNumber)
-        : /\.(width|px|tile|face|glowWidth|mix|pulseMix|scale|flash)$/.test(path) && !/^palette\./.test(path) ? isNumber(v)
+        : /\.(width|innerWidth|px|tile|face|glowWidth|mix|pulseMix|scale|flash)$/.test(path) && !/^palette\./.test(path) ? isNumber(v)
           : path === 'mark.tint' || path === 'end2d.light' ? isHex(v)
             : isColour(v);
     if (!ok) out.push(problem('palette', path));

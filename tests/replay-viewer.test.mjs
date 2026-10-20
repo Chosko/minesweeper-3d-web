@@ -883,7 +883,7 @@ test('in a browser without WebGL 2, a 2D replay plays and a 3D replay says it ne
 
     await watch(WON);
     await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready', null, { timeout: patience(5000) });
-    assert.equal(await page.evaluate(() => document.querySelectorAll('#replay-board canvas:not(.board-motion)').length), 1, 'the 2D board view is mounted');
+    assert.equal(await page.evaluate(() => document.querySelectorAll('#replay-board canvas:not(.board-motion):not(.board-ring)').length), 1, 'the 2D board view is mounted');
     await page.click('#rp-speed [data-value="4"]');
     await page.click('#rp-play');
     await page.waitForFunction(() => globalThis.__ms.replayViewer.state.ended, null, { timeout: patience(3000) });

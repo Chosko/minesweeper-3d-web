@@ -198,11 +198,13 @@ function bevelRevealed(ctx, S, q, p, depth, px) {
 }
 
 // ---- flat: a face with a light top band and a dark bottom edge; revealed flush ----
-// Parameters, as fractions of the size: `band` the light top band, `edge` the
-// dark bottom edge, `hairline` the revealed face's border, `radius` the corner
-// radius. Depth changes nothing it draws; a sunk face is flat, its dark edge
-// along the top.
-const FLAT = Object.freeze({ band: 0.1, edge: 0.1, hairline: 1 / 48, radius: 0.15 });
+// Parameters: as fractions of the size, `band` the light top band, `edge` the
+// dark bottom edge, `press` the sunk face's inset shade along its top and
+// `radius` the corner radius; in drawing units (CSS pixels on a Classic 2D
+// tile), so constant at every size, `hairline` the revealed face's border and
+// `border` the exploded tile's (see explodedParams). Depth changes nothing it
+// draws; a sunk face is flat, its shade in bevelDark.
+const FLAT = Object.freeze({ band: 0.1, edge: 0.1, press: 0.08, hairline: 1, border: 2, radius: 0.15 });
 
 function flatClosed(ctx, S, q, p, depth, px) {
   clipped(ctx, S, q.radius, () => {
@@ -218,17 +220,17 @@ function flatClosed(ctx, S, q, p, depth, px) {
 
 function flatSunk(ctx, S, q, p, depth, px) {
   clipped(ctx, S, q.radius, () => {
-    const edge = snap(S * q.edge, px);
+    const shade = snap(S * q.press, px);
     ctx.fillStyle = p.face;
     ctx.fillRect(0, 0, S, S);
     ctx.fillStyle = p.bevelDark;
-    ctx.fillRect(0, 0, S, edge);
+    ctx.fillRect(0, 0, S, shade);
   });
 }
 
 function flatRevealed(ctx, S, q, p, depth, px) {
   clipped(ctx, S, q.radius, () => {
-    const h = snap(S * q.hairline, px);
+    const h = snap(q.hairline, px);
     ctx.fillStyle = p.rim;
     ctx.fillRect(0, 0, S, S);
     ctx.fillStyle = p.face;
@@ -271,6 +273,13 @@ export function drawFace(ctx, size, face, { style = 'bevel', params, palette, de
   drawing[face]?.(ctx, size, q, palette, clamp01(depth), px);
 }
 
+// The parameters a style draws the exploded tile's revealed face with: its
+// `border`, when it has one, as the hairline; a style without one draws the
+// exploded face as its revealed face.
+export function explodedParams(params) {
+  return params?.border === undefined ? params : { ...params, hairline: params.border };
+}
+
 // Today's cube face, the bevel at full depth: the closed face, the face sunk
 // in under a held press, and the revealed face.
 export function drawRaisedFace(ctx, S, p, px) { drawFace(ctx, S, 'closed', { palette: p, px }); }
@@ -278,13 +287,13 @@ export function drawSunkenFace(ctx, S, p, px) { drawFace(ctx, S, 'sunk', { palet
 export function drawRevealedFace(ctx, S, p, px) { drawFace(ctx, S, 'revealed', { palette: p, px }); }
 
 // Number n in its colour at the heavy weight, under a darker outline of its own
-// hue and over a soft drop shadow, its glyph box centred on the tile; numbers
-// of two digits are narrowed to fit. `font`, when given, is the face to set it
+// hue and over a soft drop shadow, its glyph box centred on the tile; a number
+// of two digits is set at the same height and narrowed to fit. `font`, when given, is the face to set it
 // in, NUMBER_FONT standing behind it.
 // p: { color, shadow, font? { family, weight } }
 export function drawNumberGlyph(ctx, S, n, p) {
   const txt = String(n);
-  const size = txt.length === 1 ? S * 0.68 : S * 0.62;
+  const size = S * 0.68;
   ctx.font = p.font ? `${p.font.weight} ${size}px "${p.font.family}", ${NUMBER_FONT}` : `800 ${size}px ${NUMBER_FONT}`;
   ctx.textAlign = 'center';
   // Measure against the alphabetic baseline (the glyph box metrics are relative to the current
@@ -311,21 +320,23 @@ export function drawNumberGlyph(ctx, S, n, p) {
   ctx.restore();
 }
 
-// The mine: eight spikes round a round body, with a highlight up and left.
+// The mine: a round body and eight spikes, each ending in a round knob, three
+// quarters of the tile from knob to knob, with a highlight up and left.
 // p: { body, highlight }
 export function drawMineGlyph(ctx, S, p) {
-  const c = S / 2, r = S * 0.24;
+  const c = S / 2, r = S * 0.24, knob = S * 0.055, reach = S * 0.375 - knob;
   ctx.save();
   ctx.translate(c, c);
   ctx.strokeStyle = p.body;
-  ctx.lineCap = 'round';
+  ctx.fillStyle = p.body;
+  ctx.lineCap = 'butt';
   ctx.lineWidth = S * 0.05;
   for (let a = 0; a < 8; a++) {
     const t = (a * Math.PI) / 4;
-    const len = a % 2 ? r * 1.38 : r * 1.55;
-    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(t) * len, Math.sin(t) * len); ctx.stroke();
+    const x = Math.cos(t) * reach, y = Math.sin(t) * reach;
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(x, y); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y, knob, 0, Math.PI * 2); ctx.fill();
   }
-  ctx.fillStyle = p.body;
   ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = p.highlight;
   ctx.beginPath(); ctx.arc(-r * 0.35, -r * 0.35, r * 0.24, 0, Math.PI * 2); ctx.fill();
@@ -353,16 +364,31 @@ export function drawFlagGlyph(ctx, S, p) {
   ctx.restore();
 }
 
-// The wrong-flag cross: two strokes corner to corner in the mark colour over a
-// wider outline.
+// The wrong-flag cross: two butt-ended strokes corner to corner in the mark
+// colour over a wider outline.
 // p: { outline, mark }
 export function drawCross(ctx, S, p) {
   const a = S * 0.22, b = S * 0.78;
   ctx.save();
-  ctx.lineCap = 'round';
-  for (const [w, c] of [[S * 0.13, p.outline], [S * 0.075, p.mark]]) {
+  ctx.lineCap = 'butt';
+  for (const [w, c] of [[S * 0.10, p.outline], [S * 0.057, p.mark]]) {
     ctx.lineWidth = w; ctx.strokeStyle = c;
     ctx.beginPath(); ctx.moveTo(a, a); ctx.lineTo(b, b); ctx.moveTo(b, a); ctx.lineTo(a, b); ctx.stroke();
   }
+  ctx.restore();
+}
+
+// The marked start cell's ring: a dashed circle whose outer edge is 0.22 of
+// the tile in from every side, `width` drawing units wide (two by default).
+// p: { color, width? }
+export function drawMarkRing(ctx, S, p) {
+  const w = p.width ?? 2;
+  ctx.save();
+  ctx.strokeStyle = p.color;
+  ctx.lineWidth = w;
+  ctx.setLineDash([2 * w, 1.5 * w]);
+  ctx.beginPath();
+  ctx.arc(S / 2, S / 2, Math.max(0, S * (0.5 - 0.22) - w / 2), 0, Math.PI * 2);
+  ctx.stroke();
   ctx.restore();
 }

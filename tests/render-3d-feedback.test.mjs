@@ -49,6 +49,45 @@ test('the atlas holds no palette and no picture: every colour is the board modul
   assert.match(code, /board\.palette\.faces3d/, 'with the theme\'s 3D faces');
 });
 
+// A Canvas 2D context recording each call with the fill and stroke styles in force.
+function recordingContext() {
+  const calls = [];
+  const state = { fillStyle: '#000000', strokeStyle: '#000000', lineWidth: 1, font: '', lineCap: 'butt' };
+  return new Proxy(state, {
+    get(target, prop) {
+      if (prop === 'calls') return calls;
+      if (prop === 'createLinearGradient') return () => ({ addColorStop() {} });
+      if (prop === 'measureText') return (text) => ({ width: 60 * String(text).length, actualBoundingBoxAscent: 120, actualBoundingBoxDescent: 0 });
+      if (prop in target) return target[prop];
+      return (...args) => calls.push({ op: prop, args, fill: target.fillStyle, stroke: target.strokeStyle });
+    },
+    set(target, prop, value) { target[prop] = value; calls.push({ op: `set:${String(prop)}`, args: [value] }); return true; },
+  });
+}
+
+test('the atlas draws the Joyful tiles glyphs: the knobbed ink mine, the cross in its own red, two-digit numbers at a single digit\'s height', () => {
+  for (const layer of [TEX.L_MINE, TEX.L_MINE_EXPLODED]) {
+    const ctx = recordingContext();
+    TEX.drawLayer(ctx, layer, BOARD);
+    const knobs = ctx.calls.filter((c) => c.op === 'arc' && Math.hypot(c.args[0], c.args[1]) > TEX.TILE * 0.25);
+    assert.equal(knobs.length, 8, `layer ${layer}: eight knobs`);
+    assert.ok(knobs.every((c) => c.fill === '#16204a'), `layer ${layer}: in ink`);
+    const reach = Math.max(...knobs.map((c) => Math.hypot(c.args[0], c.args[1]) + c.args[2]));
+    assert.ok(Math.abs(TEX.TILE / 2 - reach - 31) <= 1 && Math.abs(TEX.TILE / 2 + reach - 224) <= 1.5, `layer ${layer}: the glyph box runs 31-224`);
+    assert.ok(ctx.calls.some((c) => c.op === 'arc' && c.fill === '#ffffff'), `layer ${layer}: an opaque white highlight`);
+  }
+  const cross = recordingContext();
+  TEX.drawLayer(cross, TEX.L_WRONG_FLAG, BOARD);
+  assert.equal(cross.calls.filter((c) => c.op === 'stroke').at(-1).stroke, '#c62f2f', 'the cross in its own red');
+  assert.equal(cross.calls.filter((c) => c.op === 'set:lineCap').at(-1).args[0], 'butt', 'with butt ends');
+  for (const n of [9, 10, 26]) {
+    const ctx = recordingContext();
+    TEX.drawLayer(ctx, TEX.L_NUM0 + n, BOARD);
+    const font = ctx.calls.filter((c) => c.op === 'set:font').at(-1).args[0];
+    assert.match(font, new RegExp(`^800 ${TEX.TILE * 0.68}px "Rubik"`), `${n} set at 0.68 of the tile`);
+  }
+});
+
 test('the renderer takes a board module: it rebuilds its atlas and sky on one, imports no theme and holds no palette', () => {
   assert.doesNotMatch(RENDER, /from '\.\/(themes|shell\/scene-palette|tokens)/, 'imports no theme, no token reader');
   const setBoard = RENDER.slice(RENDER.indexOf('\n  setBoard(board) {'), RENDER.indexOf('\n  }\n', RENDER.indexOf('\n  setBoard(board) {')));

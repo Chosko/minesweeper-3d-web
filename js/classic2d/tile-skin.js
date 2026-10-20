@@ -9,7 +9,7 @@
 // layout and hit-testing; the skin owns appearance only.
 
 import { FALLBACK_COLOR } from '../tokens.js';
-import { drawFace, drawNumberGlyph, drawMineGlyph, drawFlagGlyph, drawCross } from '../tile-art.js';
+import { drawFace, drawNumberGlyph, drawMineGlyph, drawFlagGlyph, drawCross, drawMarkRing, explodedParams } from '../tile-art.js';
 
 // The smallest tile size the Classic 2D renderer allows, shared with it: the
 // readable floor a board shrinks to before it scrolls (the fit rule never goes
@@ -17,9 +17,10 @@ import { drawFace, drawNumberGlyph, drawMineGlyph, drawFlagGlyph, drawCross } fr
 // (tests/tile-skin.test.mjs).
 export const MIN_TILE_SIZE = 26;
 
-// The rules engine's cell states (js/engine/rules.js CELL) plus `pressed`,
-// the renderer's feedback under a held click or chord.
-export const TILE_STATES = Object.freeze(['closed', 'pressed', 'revealed', 'flagged', 'mine', 'exploded', 'wrong-flag']);
+// The rules engine's cell states (js/engine/rules.js CELL) plus the renderer's own two: `pressed`,
+// its feedback under a held click or chord, and `marked`, the closed start cell a pre-generated
+// board waits for.
+export const TILE_STATES = Object.freeze(['closed', 'pressed', 'revealed', 'flagged', 'mine', 'exploded', 'wrong-flag', 'marked']);
 
 // The depths the cache holds the raised states at — the closed, pressed and flagged faces — for the
 // cell motion's depth (js/classic2d/motion-layer.js): a depth draws from the nearest step, 1 the
@@ -84,8 +85,9 @@ function devicePixel(ctx) {
 
 // Paints one tile of `state` (and `number` when revealed) at x, y, size CSS pixels from `board`, a
 // theme's board module: its Classic 2D style and parameters, its 2D faces, flag, mine and cross,
-// and its 2D numbers in its number font; `depth` (0 flat to 1 fully raised) is the closed, pressed and
-// flagged faces' style depth.
+// and its 2D numbers in its number font — the exploded tile with the style's exploded parameters
+// (explodedParams), the marked start cell its marked face under the dashed ring; `depth` (0 flat to
+// 1 fully raised) is the closed, pressed and flagged faces' style depth.
 export function paintTileWith(board, ctx, x, y, size, state, number, depth = 1) {
   if (!board || !TILE_STATES.includes(state) || (state === 'revealed' && !validNumber(number))) {
     placeholder(ctx, x, y, size);
@@ -94,7 +96,7 @@ export function paintTileWith(board, ctx, x, y, size, state, number, depth = 1) 
   const { style2d: style, palette } = board;
   const faces = palette.faces2d;
   const px = devicePixel(ctx);
-  const face = (name, colours) => drawFace(ctx, size, name, { style: style.name, params: style.params, palette: colours, px, depth });
+  const face = (name, colours, params = style.params) => drawFace(ctx, size, name, { style: style.name, params, palette: colours, px, depth });
   ctx.save();
   ctx.translate(x, y);
   switch (state) {
@@ -117,8 +119,12 @@ export function paintTileWith(board, ctx, x, y, size, state, number, depth = 1) 
       drawMineGlyph(ctx, size, palette.mine);
       break;
     case 'exploded':
-      face('revealed', faces.exploded);
+      face('revealed', faces.exploded, explodedParams(style.params));
       drawMineGlyph(ctx, size, palette.mine);
+      break;
+    case 'marked':
+      face('closed', faces.marked);
+      drawMarkRing(ctx, size, { color: faces.marked.ring });
       break;
     case 'wrong-flag':
       face('revealed', faces.revealed);

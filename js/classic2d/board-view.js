@@ -30,7 +30,7 @@
 // dropMotion() (a replay's seek) drop every animation.
 //
 // createBoardView({ canvas, grid, createSkin?, token?, scale?, frame?, minTile?, onLayout?, layer?,
-//                   frames?, now?, onMotion? }) → view
+//                   overlay?, frames?, now?, onMotion?, timers? }) → view
 //   canvas      a <canvas> or anything with width, height, style and getContext('2d').
 //   grid        the square grid (js/engine/square-grid.js): width, height, index, colRow.
 //   createSkin  ({ redraw }) → skin with drawTile, dispose and optionally board() (the board module
@@ -45,6 +45,8 @@
 //               board that is shown and not played fit whole instead of scrolling.
 //   onLayout    (layout) → after every refit, the new layout.
 //   layer       the motion layer's canvas, over the board canvas at the same size; none, no motion.
+//   overlay     the ring layer's canvas, over the motion layer at the same size, which the cursor
+//               ring is drawn on; none, no cursor ring.
 //   frames, now the layer's frame scheduler ({ request, cancel }, the `timers` option's animation
 //               frames by default) and clock (ms, performance.now by default).
 //   onMotion    ({ cell, event, before, after }) → each cell event the layer started.
@@ -76,15 +78,16 @@
 //   dropMotion()         drops every running animation, the cells drawn in their state.
 //   motion               the motion layer (has, cells, frame), or null without one.
 //   setCursor(c)         the keyboard and controller cursor (js/classic2d/cursor-input.js), drawn
-//                        as a focus ring inside cell c's tile — the board module's ring, its colour,
-//                        width and hairline, its corners following the tile's; -1 for none.
-//   setMark(c)           the marked start cell a pre-generated board waits for, drawn as a ring
-//                        inside cell c's tile in the cursor ring's style, in START_MARK, under the
-//                        cursor ring; -1 for none.
-//   pulseMark()          the mark pulses: its ring thickens and thins MARK_PULSE_STEPS times,
-//                        MARK_PULSE_MS apart, on the view's timers — a first reveal off a forced
-//                        start cell (js/classic2d/session.js START_HINT). markPulse is whether the
-//                        ring is thick now.
+//                        as a focus ring outside cell c's tile on the ring layer — the board module's
+//                        ring round its inner band, its corners following the tile's — covering none
+//                        of the tile's face and moving without redrawing a cell; -1 for none.
+//   setMark(c)           the marked start cell a pre-generated board waits for: while closed, cell c
+//                        is drawn as the skin's marked tile (the module's marked face under its
+//                        dashed ring); -1 for none.
+//   pulseMark()          the mark pulses: its ring is drawn twice as wide and back MARK_PULSE_STEPS
+//                        times, MARK_PULSE_MS apart, on the view's timers — a first reveal off a
+//                        forced start cell (js/classic2d/session.js START_HINT). markPulse is whether
+//                        the ring is wide now.
 //   showEffect(effect, t)  the end effect (js/classic2d/end-effect.js) at t ms: repaints the board
 //                        with each tile as the effect shows it (a loss's pre-loss tiles before its
 //                        wave arrives), each tile under its wave and the confetti over the
@@ -93,12 +96,12 @@
 //                        draws that moment. showEffect(null) repaints the board in its end state.
 //                        The effect never touches the game: every tile is still read from it.
 //   A won game's unflagged mines (its closed cells) are drawn as flags, the skin's static tile.
-//   layout, pixelRatio, hidden, pressed, cursor, mark, markPulse, effect, scale, canvas, dispose()
+//   layout, pixelRatio, hidden, pressed, cursor, mark, markPulse, effect, scale, canvas, overlay, dispose()
 
 import { MIN_TILE_SIZE, createTileSkin } from './tile-skin.js';
 import { createMotionLayer, changeEvent } from './motion-layer.js';
 import { token as readerToken } from '../tokens.js';
-import { roundRect } from '../tile-art.js';
+import { roundRect, drawMarkRing } from '../tile-art.js';
 import { CELL, PHASE } from '../engine/rules.js';
 import {
   shownState, wonState, waveAt, confettiAt, drawWave, drawConfetti,
@@ -110,15 +113,14 @@ export const BOARD_BACKGROUND = '--color-board-frame';
 /** The design token the cursor's focus ring is drawn in while the skin has no board module. */
 export const CURSOR_RING = '--color-tile-cursor';
 
-/** The design token the marked start cell's ring is drawn in: an existing token, apart from the cursor's. */
-export const START_MARK = '--color-success';
-
 /** The mark's pulse: how many times its ring changes, and how far apart. */
 export const MARK_PULSE_STEPS = 6;
 export const MARK_PULSE_MS = 120;
 
 /** The class of the motion layer's canvas mountBoardView puts over the board's. */
 export const MOTION_LAYER_CLASS = 'board-motion';
+/** The class of the ring layer's canvas mountBoardView puts over the motion layer's. */
+export const RING_LAYER_CLASS = 'board-ring';
 
 /** The key a pointer drag must hold to pan the board instead of playing it. */
 export const PAN_MODIFIER = 'shiftKey';
@@ -138,6 +140,7 @@ export const SHADOW_DEPTH = 12;
 export const SCROLLBAR = Object.freeze({ thickness: 4, inset: 2 });
 
 const PRESSED = 'pressed';
+const MARKED = 'marked';
 const LINE = 1;
 const PAGE = 2;
 const NO_FRAME = Object.freeze({ top: 0, right: 0, bottom: 0, left: 0, minWidth: 0 });
@@ -270,7 +273,7 @@ export function cellAtLayout(layout, scroll, cols, rows, x, y) {
 
 export function createBoardView({
   canvas, grid, createSkin = createTileSkin, token = readerToken, scale: initialScale = DEFAULT_BOARD_SCALE, frame = null,
-  minTile = MIN_TILE_SIZE, onLayout = () => {}, timers = globalThis, layer = null, onMotion = () => {},
+  minTile = MIN_TILE_SIZE, onLayout = () => {}, timers = globalThis, layer = null, overlay = null, onMotion = () => {},
   frames = { request: (fn) => timers.requestAnimationFrame(fn), cancel: (id) => timers.cancelAnimationFrame(id) }, now,
 } = {}) {
   if (!canvas || typeof canvas.getContext !== 'function') throw new TypeError('createBoardView needs a canvas');
@@ -279,6 +282,7 @@ export function createBoardView({
   const rows = grid.height;
   const count = cols * rows;
   const ctx = canvas.getContext('2d');
+  const octx = overlay ? overlay.getContext('2d') : null;
 
   let scale = BOARD_SCALES.includes(initialScale) ? initialScale : DEFAULT_BOARD_SCALE;
   let zoomTile = null; // a touch zoom's tile, or null for the fit rule's
@@ -398,33 +402,47 @@ export function createBoardView({
 
   const ground = () => boardOf()?.palette?.boardGround ?? token(BOARD_BACKGROUND);
 
-  // A ring inside the tile at x, y of `t` px, `w` wide, in `colour`: the board module's ring with
-  // its hairline inside it, its corners following the tile's — concentric with the ring the module
-  // describes (radius tile × radius.tile + radius.px, radius.px outside the tile), drawn inside the
-  // tile so a cell's redraw moves or hides it — or, without a module, a square ring a twelfth of the
-  // tile wide.
-  function ring(x, y, t, colour, { wide = 1, hairline = true } = {}) {
+  // The ring layer: cleared, then the cursor's ring drawn round its tile while the board shows it —
+  // the board module's ring, `width` px wide with its outer band of `inner` innerWidth px inside it,
+  // the band's outer edge radius.px outside the tile and its corners tile × radius.tile + radius.px,
+  // or, without a module, a square ring in CURSOR_RING a twelfth of the tile wide just outside it —
+  // clipped to the view on a board that scrolls.
+  function drawRing() {
+    if (!octx || !sized) return;
+    octx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    octx.clearRect(0, 0, layout.width, layout.height);
+    if (hidden || !game || cursor < 0 || !inView(cursor)) return;
+    const { x, y, size: t } = cellRect(cursor);
+    octx.save();
+    if (layout.scrolls) {
+      octx.beginPath();
+      octx.rect(layout.viewX, layout.viewY, layout.viewWidth, layout.viewHeight);
+      octx.clip();
+    }
     const look = boardOf()?.cursor;
     if (!look) {
-      const w = Math.max(2, Math.round(t / 12)) * wide;
-      ctx.strokeStyle = colour;
-      ctx.lineWidth = w;
-      ctx.strokeRect(x + w / 2, y + w / 2, t - w, t - w);
-      return;
+      const w = Math.max(2, Math.round(t / 12));
+      octx.strokeStyle = token(CURSOR_RING);
+      octx.lineWidth = w;
+      octx.strokeRect(x - w / 2, y - w / 2, t + w, t + w);
+    } else {
+      const out = look.radius.px;
+      const corner = t * look.radius.tile + out;
+      // A band whose centre line runs `d` px out from the band's box (negative: inside it).
+      const band = (d, width, style) => {
+        octx.strokeStyle = style;
+        octx.lineWidth = width;
+        roundRect(octx, x - out - d, y - out - d, t + 2 * (out + d), t + 2 * (out + d), Math.max(0, corner + d));
+        octx.stroke();
+      };
+      band(look.width / 2, look.width, look.color);
+      band(-look.innerWidth / 2, look.innerWidth, look.inner);
     }
-    const w = look.width * wide;
-    const corner = t * look.radius.tile;
-    const stroke = (inset, width, style) => {
-      ctx.strokeStyle = style;
-      ctx.lineWidth = width;
-      roundRect(ctx, x + inset, y + inset, t - 2 * inset, t - 2 * inset, Math.max(0, corner - inset));
-      ctx.stroke();
-    };
-    stroke(w / 2, w, colour);
-    if (hairline) stroke(w + 0.5, 1, look.inner);
+    octx.restore();
   }
 
-  // Paints cell c's tile and the ring on it; returns false when it is out of view.
+  // Paints cell c's tile (the marked tile for the closed start cell, its ring wide while it pulses);
+  // returns false when it is out of view.
   function drawCell(c) {
     const col = c % cols;
     const row = (c - col) / cols;
@@ -444,15 +462,20 @@ export function createBoardView({
       ctx.fillRect(x, y, t, t);
     }
     if (!moving) {
-      const paint = () => skin.drawTile(ctx, x, y, t, state === CELL.CLOSED && pressed.has(c) ? PRESSED : state, game.cellNumber(c), ratio);
+      let shown = state;
+      if (state === CELL.CLOSED && pressed.has(c)) shown = PRESSED;
+      else if (state === CELL.CLOSED && c === mark && !effect) shown = MARKED;
+      const paint = () => skin.drawTile(ctx, x, y, t, shown, game.cellNumber(c), ratio);
       if (effect) drawWave(ctx, x, y, t, waveAt(effect, c, now, effectT, boardOf()?.end2d), boardOf(), paint);
       else paint();
+      const ring = boardOf()?.palette?.faces2d?.marked?.ring;
+      if (shown === MARKED && markPulse && ring) {
+        ctx.save();
+        ctx.translate(x, y);
+        drawMarkRing(ctx, t, { color: ring, width: 4 });
+        ctx.restore();
+      }
     }
-    if (c === mark && c !== cursor) {
-      ring(x, y, t, token(START_MARK), { hairline: false });
-      if (markPulse) ring(x, y, t, token(START_MARK), { wide: 2, hairline: false });
-    }
-    if (c === cursor) ring(x, y, t, boardOf()?.cursor?.color ?? token(CURSOR_RING));
     return true;
   }
 
@@ -463,6 +486,7 @@ export function createBoardView({
     ctx.fillStyle = ground();
     ctx.fillRect(layout.viewX, layout.viewY, layout.viewWidth, layout.viewHeight);
     marks = null;
+    drawRing();
     if (hidden || !game) return;
     const p = layout.pitch;
     const c0 = Math.max(0, Math.floor(scroll.x / p));
@@ -553,11 +577,13 @@ export function createBoardView({
     sized = true;
     ratio = pixelRatio;
     motion?.resize(w, h, ratio);
-    canvas.width = Math.round(w * ratio);
-    canvas.height = Math.round(h * ratio);
-    if (canvas.style) {
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${h}px`;
+    for (const c of overlay ? [canvas, overlay] : [canvas]) {
+      c.width = Math.round(w * ratio);
+      c.height = Math.round(h * ratio);
+      if (c.style) {
+        c.style.width = `${w}px`;
+        c.style.height = `${h}px`;
+      }
     }
     refit(w, h);
   }
@@ -625,6 +651,7 @@ export function createBoardView({
 
   return {
     get canvas() { return canvas; },
+    get overlay() { return overlay; },
     get layout() { return layout; },
     get pixelRatio() { return ratio; },
     get hidden() { return hidden; },
@@ -666,13 +693,12 @@ export function createBoardView({
     dropMotion() {
       if (motion) draw(motion.dropAll());
     },
-    /** Moves the focus ring to cell c (-1 hides it), redrawing the cells it leaves and enters. */
+    /** Moves the focus ring to cell c (-1 hides it), redrawing the ring layer alone. */
     setCursor(c) {
       const next = Number.isInteger(c) && c >= 0 && c < count ? c : -1;
       if (next === cursor) return;
-      const touched = [cursor, next];
       cursor = next;
-      draw(touched);
+      drawRing();
     },
     /** Marks cell c as the start cell a pre-generated board waits for (-1 for none), redrawing the cells it leaves and enters. */
     setMark(c) {
@@ -682,7 +708,7 @@ export function createBoardView({
       mark = next;
       draw(touched);
     },
-    /** The mark pulses: its ring thickens and thins MARK_PULSE_STEPS times. */
+    /** The mark pulses: its ring widens and narrows MARK_PULSE_STEPS times. */
     pulseMark() {
       if (pulseTimer !== null) timers.clearTimeout(pulseTimer);
       let steps = MARK_PULSE_STEPS;
@@ -732,8 +758,8 @@ export function createBoardView({
 }
 
 // Browser wiring: a canvas filling `container` (above whatever the container already holds, such as
-// a frame drawn behind the board) with the motion layer's canvas right after it, over it at the same
-// place and size and taking no input, sized on container resize and device pixel ratio change,
+// a frame drawn behind the board) with the motion layer's canvas and then the ring layer's right
+// after it, over it at the same place and size and taking no input, sized on container resize and device pixel ratio change,
 // scrolled by the wheel and panned by dragging with PAN_MODIFIER held; onUserScroll() follows each
 // scroll the player made that way. Returns the view with destroy(), which removes the canvas and
 // every listener.
@@ -748,14 +774,21 @@ export function mountBoardView({ container, grid, win = globalThis, onUserScroll
   layer.setAttribute('aria-hidden', 'true');
   Object.assign(layer.style, { display: 'block', position: 'absolute', pointerEvents: 'none' });
   canvas.after(layer);
+  const overlay = win.document.createElement('canvas');
+  overlay.className = RING_LAYER_CLASS;
+  overlay.setAttribute('aria-hidden', 'true');
+  Object.assign(overlay.style, { display: 'block', position: 'absolute', pointerEvents: 'none' });
+  layer.after(overlay);
   const frames = { request: (fn) => win.requestAnimationFrame(fn), cancel: (id) => win.cancelAnimationFrame(id) };
-  const view = createBoardView({ canvas, grid, layer, frames, ...options });
+  const view = createBoardView({ canvas, grid, layer, overlay, frames, ...options });
 
   const fit = () => {
     const box = container.getBoundingClientRect();
     view.resize(box.width, box.height, win.devicePixelRatio || 1);
-    layer.style.left = `${canvas.offsetLeft}px`;
-    layer.style.top = `${canvas.offsetTop}px`;
+    for (const l of [layer, overlay]) {
+      l.style.left = `${canvas.offsetLeft}px`;
+      l.style.top = `${canvas.offsetTop}px`;
+    }
   };
   const observer = new win.ResizeObserver(fit);
   observer.observe(container);
@@ -812,6 +845,7 @@ export function mountBoardView({ container, grid, win = globalThis, onUserScroll
       view.dispose();
       canvas.remove();
       layer.remove();
+      overlay.remove();
     },
   });
 }

@@ -40,8 +40,10 @@ time-driven extras are [rendering-effects.md](rendering-effects.md).
   active theme's board module at start-up and on every theme change, once its number font has
   loaded ([app-shell-board-module.md](app-shell-board-module.md)); until then the atlas is transparent and the sky
   black. From the module come: the atlas, every layer drawn through `js/tile-art.js` in `style3d`
-  from `palette.faces3d` (a bevel side a shade or an exact colour), the flag, mine and cross,
-  `numbers3d` and the number font — the slope
+  from `palette.faces3d` (a bevel side a shade or an exact colour, the exploded mine's face with the
+  style's `explodedParams`), the flag, the knobbed mine and the cross,
+  `numbers3d` (two digits set at a single digit's height, narrowed to fit) and the number font —
+  the glyphs the Classic 2D tiles draw, from the same recipe — the slope
   painted into the texture, so it reads lit from the same corner on every face, top faces included;
   the sky gradient's horizon, zenith and nadir from `sky`, the fog toward `sky.fog` (the horizon
   when absent) and the clear colour the horizon, the ground grid's ink still derived from the

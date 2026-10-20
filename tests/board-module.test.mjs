@@ -39,6 +39,7 @@ test('the palette entries cover every entry the feature document lists', () => {
     'palette.faces3d.closed.face', 'palette.faces3d.revealed.face', 'palette.faces3d.exploded.face',
     'palette.flag.base', 'palette.flag.cloth', 'palette.mine.body', 'palette.cross.mark', 'palette.boardGround',
     'palette.confetti', 'end2d.light', 'end2d.win.scale', 'end2d.win.mix', 'end2d.loss.scale', 'end2d.loss.flash', 'cursor.color', 'cursor.radius.tile', 'cursor.radius.px',
+    'palette.faces2d.marked.ring', 'cursor.inner', 'cursor.innerWidth',
     'selection.outline', 'selection.width.face', 'selection.width.px', 'selection.glow', 'selection.tint', 'mark.tint',
   ]) assert.ok(BOARD_ENTRIES.includes(path), path);
 });
@@ -47,6 +48,9 @@ test('the palette entries cover every entry the feature document lists', () => {
 
 const BROKEN = [
   ['a missing palette entry', (b) => { delete b.palette.flag.cloth; }, ['palette', 'palette.flag.cloth']],
+  ['a marked start cell without its ring', (b) => { delete b.palette.faces2d.marked.ring; }, ['palette', 'palette.faces2d.marked.ring']],
+  ['a cursor ring without its inner band\'s width', (b) => { b.cursor.innerWidth = '2px'; }, ['palette', 'cursor.innerWidth']],
+  ['a flat style without its pressed shade', (b) => { delete b.style2d.params.press; }, ['style', 'style2d.params.press']],
   ['a missing 2D face palette', (b) => { delete b.palette.faces2d.revealed; }, ['palette', 'palette.faces2d.revealed.face']],
   ['a low-contrast 3D number', (b) => { b.numbers3d[3] = '#c8bfb0'; }, ['contrast', 'numbers3d[3]']],
   ['only 25 3D number colours', (b) => { b.numbers3d.length = 26; }, ['numbers', 'numbers3d[26]']],
@@ -130,6 +134,12 @@ test('Joyful tiles draws flat 2D tiles with a radius and gap that scale with the
   assert.equal(f.sunk.face, '#6b9ef2');
   assert.equal(f.exploded.face, '#ff6b6b');
   assert.equal(f.marked.face, '#49c6b8');
+  assert.equal(f.marked.ring, '#16204a', 'J-BoardSheet .t.mk::before: a dashed ink ring');
+  assert.deepEqual([params.press, params.hairline, params.border], [0.08, 1, 2], 'J-BoardSheet .t.p tile × .08, .t.o 1px, .t.b 2px');
+  assert.deepEqual([JOYFUL.cursor.width, JOYFUL.cursor.inner, JOYFUL.cursor.innerWidth], [3, '#ffffff', 2], 'J-BoardSheet .t.cur: a 3px ring round a 2px white band');
+  assert.equal(JOYFUL.palette.mine.body, '#16204a', 'the mine in ink');
+  assert.equal(JOYFUL.palette.mine.highlight, '#ffffff', 'its highlight opaque white');
+  assert.equal(JOYFUL.palette.cross.mark, '#c62f2f', 'the wrong-flag cross in its own red, not --color-danger');
 });
 
 test('Joyful tiles draws "Bevel 5 %" 3D cubes', () => {

@@ -400,9 +400,11 @@ function fakeCanvas() {
 function ringView(rows = CORNER) {
   const { grid, game } = board(rows);
   const canvas = fakeCanvas();
+  const overlay = fakeCanvas();
   const draws = [];
   const view = createBoardView({
     canvas,
+    overlay,
     grid,
     token: (name) => (name === CURSOR_RING ? '#0000ff' : '#123456'),
     createSkin: () => ({
@@ -412,38 +414,38 @@ function ringView(rows = CORNER) {
   });
   view.resize(500, 400, 1);
   view.setGame(game);
-  return { grid, game, view, canvas, draws };
+  return { grid, game, view, canvas, overlay, draws };
 }
 
 const rings = (canvas) => canvas.ctx.calls.filter((c) => c.op === 'strokeRect' && c.stroke === '#0000ff');
 
-test('the board view draws the cursor as a focus ring from the tile-cursor token, redrawing only the two cells a move touches', () => {
+test('the board view draws the cursor as a focus ring from the tile-cursor token on its ring layer, outside the tile, redrawing no cell', () => {
   assert.equal(CURSOR_RING, '--color-tile-cursor');
   const css = readFileSync(join(ROOT, 'themes/joyful-tiles/theme.css'), 'utf8');
   assert.match(css, new RegExp(`${CURSOR_RING}:`), 'the token exists');
   const v = ringView();
   assert.equal(v.view.cursor, -1, 'no cursor until one is set');
-  assert.equal(rings(v.canvas).length, 0);
+  assert.equal(rings(v.overlay).length, 0);
   v.draws.length = 0;
   v.view.setCursor(v.grid.index(2, 2));
   assert.equal(v.view.cursor, v.grid.index(2, 2));
-  assert.deepEqual(v.draws.map((d) => d.c), [v.grid.index(2, 2)]);
-  assert.equal(rings(v.canvas).length, 1);
-  const [x, y, w, hgt] = rings(v.canvas)[0].args;
+  assert.deepEqual(v.draws, [], 'no cell redrawn');
+  assert.equal(rings(v.canvas).length, 0, 'nothing stroked on the board');
+  assert.equal(rings(v.overlay).length, 1);
+  const [x, y, w, hgt] = rings(v.overlay)[0].args;
   const r = v.view.cellRect(v.grid.index(2, 2));
-  assert.ok(x >= r.x && y >= r.y && x + w <= r.x + r.size && y + hgt <= r.y + r.size, 'inside its own tile');
-  v.draws.length = 0;
-  v.canvas.ctx.calls.length = 0;
+  assert.ok(x < r.x && y < r.y && x + w > r.x + r.size && y + hgt > r.y + r.size, 'round its tile, outside it');
+  v.overlay.ctx.calls.length = 0;
   v.view.setCursor(v.grid.index(3, 2));
-  assert.deepEqual(v.draws.map((d) => d.c).sort((a, b) => a - b), [v.grid.index(2, 2), v.grid.index(3, 2)]);
-  assert.equal(rings(v.canvas).length, 1, 'only the new cell carries the ring');
-  v.canvas.ctx.calls.length = 0;
+  assert.deepEqual(v.draws, [], 'a move redraws no cell either');
+  assert.equal(rings(v.overlay).length, 1, 'only the new cell carries the ring');
+  v.overlay.ctx.calls.length = 0;
   v.view.repaint();
-  assert.equal(rings(v.canvas).length, 1, 'a full repaint keeps the ring');
+  assert.equal(rings(v.overlay).length, 1, 'a full repaint keeps the ring');
   v.view.setHidden(true);
-  v.canvas.ctx.calls.length = 0;
+  v.overlay.ctx.calls.length = 0;
   v.view.setCursor(v.grid.index(1, 1));
-  assert.equal(rings(v.canvas).length, 0, 'a hidden board draws no ring');
+  assert.equal(rings(v.overlay).length, 0, 'a hidden board draws no ring');
 });
 
 // ---------- the browser wiring ----------
@@ -786,19 +788,37 @@ test('in a browser, the cursor ring an arrow key moves is the board module\'s an
         const { BOARD_ART } = await import('/js/classic2d/tile-skin.js');
         const { cursor, palette } = BOARD_ART.current().board;
         const { view } = globalThis.__play;
-        const ctx = view.canvas.getContext('2d');
-        // The middle of a tile's left side, where the ring is drawn.
-        const band = (c) => {
+        const board = view.canvas.getContext('2d');
+        const layer = view.overlay;
+        const ring = layer.getContext('2d');
+        const ratio = view.pixelRatio;
+        const at = (ctx, x, y) => [...ctx.getImageData(Math.floor(x * ratio), Math.floor(y * ratio), 1, 1).data];
+        // Along the middle of a tile's left side: the ring's centre line, its white band's, and the tile's own edge.
+        const sides = (c) => {
           const r = view.cellRect(c);
-          return [...ctx.getImageData(Math.floor(r.x + cursor.width / 2), Math.floor(r.y + r.size / 2), 1, 1).data.slice(0, 3)];
+          const y = r.y + r.size / 2;
+          return {
+            ring: at(ring, r.x - cursor.radius.px - cursor.width / 2, y),
+            band: at(ring, r.x - cursor.radius.px + cursor.innerWidth / 2, y),
+            onFace: at(ring, r.x + 1, y),
+            face: at(board, r.x + 1, y).slice(0, 3),
+          };
         };
         const hex = (v) => [1, 3, 5].map((i) => parseInt(v.slice(i, i + 2), 16));
-        return { cursor: view.cursor, ring: band(view.cursor), neighbour: band(view.cursor + 1), colour: hex(cursor.color), face: hex(palette.faces2d.closed.face) };
+        return {
+          cursor: view.cursor, layerClass: layer.className, layerSize: [layer.width, layer.height, view.canvas.width, view.canvas.height],
+          at: sides(view.cursor), neighbour: sides(view.cursor + 1),
+          colour: hex(cursor.color), inner: hex(cursor.inner), face: hex(palette.faces2d.closed.face),
+        };
       });
       assert.equal(seen.cursor, 10, `${theme}: the arrows moved the cursor to (1, 1)`);
-      assert.deepEqual(seen.neighbour, seen.face, `${theme}: a closed tile's side is its face`);
-      assert.deepEqual(seen.ring, seen.colour, `${theme}: the ring in the board module's colour`);
-      assert.notDeepEqual(seen.ring, seen.neighbour, `${theme}: the ring differs from its neighbour's side`);
+      assert.equal(seen.layerClass, 'board-ring', `${theme}: drawn on the ring layer`);
+      assert.deepEqual(seen.layerSize.slice(0, 2), seen.layerSize.slice(2), `${theme}: the layer is the board canvas's size`);
+      assert.deepEqual(seen.at.ring, [...seen.colour, 255], `${theme}: the ring in the board module's colour, outside the tile`);
+      assert.deepEqual(seen.at.band, [...seen.inner, 255], `${theme}: its white band inside it, still outside the tile`);
+      assert.equal(seen.at.onFace[3], 0, `${theme}: the ring covers none of the tile's face`);
+      assert.deepEqual(seen.at.face, seen.face, `${theme}: the cursor's tile shows its own face to its edge`);
+      assert.equal(seen.neighbour.ring[3], 0, `${theme}: no ring round the neighbour`);
       assert.deepEqual(errors, []);
       await page.close();
     }

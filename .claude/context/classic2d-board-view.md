@@ -8,8 +8,9 @@ layout on the tile and the board module's gap, the panel's rectangle,
 hit-testing, per-cell redraw from the engine's change lists, scrolling and
 panning with a clipped board's shadows and scroll bars, the touch zoom,
 the hidden board while paused, and `mountBoardView`, the browser wiring
-around it. DOM-free at import. What it draws over its tiles — pressed
-feedback, rings, cell motion, the end effect — is
+around it. DOM-free at import. What it draws over and for its tiles —
+pressed feedback, the cursor ring on its own layer, the marked start cell,
+cell motion, the end effect — is
 [classic2d-board-motion.md](classic2d-board-motion.md); the area overview
 [classic2d.md](classic2d.md).
 
@@ -38,7 +39,7 @@ feedback, rings, cell motion, the end effect — is
   (`--color-board-frame`) only while the skin has no board module, whose
   `palette.boardGround` takes its place. `PAN_MODIFIER` (`shiftKey`).
 - `createBoardView({canvas, grid, createSkin, token, scale, frame, minTile,
-  onLayout, layer, frames, now, onMotion})` (`frame` an object, or a
+  onLayout, layer, overlay, frames, now, onMotion, timers})` (`frame` an object, or a
   function measured again at every refit) → `{resize(width, height,
   pixelRatio), setScale(scale), scale, setGame(game), update(changed,
   {motion}), repaint(), cellAt(x, y), cellRect(c), scroll, scrollTo,
@@ -54,9 +55,9 @@ feedback, rings, cell motion, the end effect — is
   `boardPoint(x, y)` → `{u, v}` in pitches, `zoom(tile, x, y, point?)` →
   changed.
 - `mountBoardView({container, grid, win, onUserScroll, ...})` → the view
-  plus `destroy()`: a canvas filling `container` and the motion layer's
-  canvas (`.board-motion`) right after it, over it at the same place and
-  size and taking no input, refitted on container resize and
+  plus `destroy()`: a canvas filling `container`, then the motion layer's
+  canvas (`.board-motion`) and the ring layer's (`.board-ring`) right after
+  it, each over it at the same place and size and taking no input, refitted on container resize and
   device-pixel-ratio change, scrolled by the wheel and panned by a
   primary-button drag with `PAN_MODIFIER` held.
 
@@ -101,7 +102,8 @@ feedback, rings, cell motion, the end effect — is
   and a theme change (the skin's `redraw` callback). On a scrolling board
   drawing is clipped to the view, and a redrawn tile under a shadow or bar
   gets its part of them back. The canvas is sized in device pixels with a
-  `setTransform(ratio…)`; all drawing is in CSS pixels.
+  `setTransform(ratio…)`, the ring layer sized with it; all drawing is in
+  CSS pixels.
 - **Scrolling.** Whole CSS pixels clamped to `0..maxScroll`, re-clamped on
   resize. The wheel scrolls only a board that overflows (a line is a tile,
   a page is the view, shift turns vertical horizontal); `ensureVisible`

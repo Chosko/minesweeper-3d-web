@@ -2,9 +2,9 @@
 
 ## OVERVIEW
 
-What the Classic 2D board view draws over its tiles: pressed feedback, the
-focus ring and the marked start cell, the cell events it plays on the
-motion layer, and the end effect's drawing. `js/classic2d/board-view.js`
+What the Classic 2D board view draws over and for its tiles: pressed
+feedback, the focus ring on the ring layer and the marked start cell, the
+cell events it plays on the motion layer, and the end effect's drawing. `js/classic2d/board-view.js`
 holds the view's side of each; `js/classic2d/motion-layer.js` is the
 motion layer the view plays cell motion on. Both DOM-free at import. The
 view's layout, fit rule, scrolling, redraw and `mountBoardView` are
@@ -16,16 +16,17 @@ view's layout, fit rule, scrolling, redraw and `mountBoardView` are
 `js/classic2d/board-view.js` (the view's other members are
 [classic2d-board-view.md](classic2d-board-view.md) `createBoardView`'s)
 - `createBoardView`'s `layer` (the motion layer's canvas, none for no
-  motion) and `onMotion({cell, event, before, after})` (each cell event
-  started); `setPressed(cells, event = 'press')`, `pressed`,
-  `dropMotion()`, `motion`, `setCursor(c)`, `cursor`, `setMark(c)`,
-  `mark`, `pulseMark()` (the ring thickens and thins `MARK_PULSE_STEPS`
-  times, `MARK_PULSE_MS` apart, on the `timers` option — a first reveal off
-  a forced start cell), `markPulse`, `showEffect(effect, t)`, `effect`.
-- Tokens: `START_MARK` (`--color-success`, the marked start cell's ring,
-  under the cursor's); `CURSOR_RING` (`--color-tile-cursor`) only while the
-  skin has no board module, whose `cursor` takes its place.
-  `MOTION_LAYER_CLASS` (`board-motion`).
+  motion), `overlay` (the ring layer's canvas, none for no cursor ring)
+  and `onMotion({cell, event, before, after})` (each cell event started);
+  `setPressed(cells, event = 'press')`, `pressed`, `dropMotion()`,
+  `motion`, `setCursor(c)`, `cursor`, `overlay`, `setMark(c)`, `mark`,
+  `pulseMark()` (the mark's ring drawn twice as wide and back
+  `MARK_PULSE_STEPS` times, `MARK_PULSE_MS` apart, on the `timers` option —
+  a first reveal off a forced start cell), `markPulse`,
+  `showEffect(effect, t)`, `effect`.
+- Tokens: `CURSOR_RING` (`--color-tile-cursor`) only while the skin has no
+  board module, whose `cursor` takes its place. `MOTION_LAYER_CLASS`
+  (`board-motion`), `RING_LAYER_CLASS` (`board-ring`).
 
 `js/classic2d/motion-layer.js`
 - `changeEvent(state, pressed)` → `{event, before}` or null: the cell event
@@ -42,12 +43,23 @@ view's layout, fit rule, scrolling, redraw and `mountBoardView` are
 - **Pressed feedback.** `setPressed` redraws only cells that gain or lose
   the press; a pressed cell draws as `pressed` only while closed, and
   `setGame` clears the set.
-- **Focus ring.** Stroked inside its own tile after the tile, so a cell
-  redraw moves or hides it; `setCursor` redraws only the cells it leaves
-  and enters. With a board module it is the module's ring — its colour,
-  width and inner hairline, its corners following the tile's radius;
-  without one a square ring in `CURSOR_RING`. The marked start cell's ring
-  takes the same shape in `START_MARK`, without the hairline.
+- **Focus ring.** Drawn outside its tile on the ring layer, a canvas over
+  the motion layer at the board canvas's size, so it covers none of the
+  tile's face and moves without redrawing a cell: `setCursor` clears the
+  layer and draws the ring at the new cell, and every full repaint (a
+  scroll, a resize, a theme change, hiding the board) draws it again,
+  clipped to the view on a board that scrolls and absent while the board
+  is hidden or the cursor out of view. With a board module it is the
+  module's `cursor` — the ring round its inner band, the band's outer edge
+  `radius.px` outside the tile and its corners `radius.tile` × the tile
+  plus `radius.px`; without one a square ring in `CURSOR_RING` just outside
+  the tile.
+- **Marked start cell.** While closed and not pressed the marked cell is
+  drawn as the skin's `marked` tile — the module's marked face under its
+  dashed ring ([classic2d-tile-skin.md](classic2d-tile-skin.md)) — in the
+  game, the menu preview and the Daily preview alike, all through
+  `setMark`; any other state draws as itself. During `pulseMark` the ring
+  is drawn again over the tile, twice as wide, on the board canvas.
 - **Cell motion.** With a `layer`, the view plays the board module's cell
   motion on the motion layer: press or chord press for the cells gaining
   the pressed set and release for closed cells losing it, and reveal, flag
@@ -103,5 +115,5 @@ view's layout, fit rule, scrolling, redraw and `mountBoardView` are
   `js/classic2d/motion-layer.js` `drawCell`).
 - Changing how the end effect is drawn (`showEffect`, `drawCell`,
   `drawEffectLayer`).
-- Changing the focus ring or the start mark's ring and pulse (`setCursor`,
-  `setMark`, `pulseMark`).
+- Changing the focus ring or the start mark and its pulse (`drawRing`,
+  `setCursor`, `drawCell`, `setMark`, `pulseMark`).

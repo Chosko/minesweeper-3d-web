@@ -2,8 +2,8 @@
 // per board scale, the frame and the panel around the board, Expert and Beginner at the windows
 // the game must fit — hit-testing in a fitted and a scrolled board, per-cell redraw from the
 // engine's change lists through the tile skin, full repaints on resize, pixel-ratio, scale and
-// theme change, scrolling and panning, a clipped board's shadows and scroll bars, the focus ring's
-// redraws, the hidden board while paused, and in a browser the board drawn in the theme, repainted on
+// theme change, scrolling and panning, a clipped board's shadows and scroll bars, the focus ring on
+// its own layer outside the tile, the marked start cell, the hidden board while paused, and in a browser the board drawn in the theme, repainted on
 // a theme switch, and the Classic 2D screen at the windows it must fit.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -14,7 +14,8 @@ import { fileURLToPath } from 'node:url';
 
 import {
   fitTileSize, gapPx, boardLayout, cellAtLayout, createBoardView, PAN_MODIFIER, BOARD_BACKGROUND, BOARD_SHADOW, BOARD_SCROLLBAR,
-  BOARD_SCALES, DEFAULT_BOARD_SCALE, TILE_CAP, tileCap, panelRect, clipMarks, SCROLLBAR, CURSOR_RING, START_MARK,
+  BOARD_SCALES, DEFAULT_BOARD_SCALE, TILE_CAP, tileCap, panelRect, clipMarks, SCROLLBAR, CURSOR_RING, MARK_PULSE_STEPS, MARK_PULSE_MS,
+  MOTION_LAYER_CLASS, RING_LAYER_CLASS,
 } from '../js/classic2d/board-view.js';
 import { SCHEMA } from '../js/settings/schema.js';
 import { MIN_TILE_SIZE } from '../js/classic2d/tile-skin.js';
@@ -48,7 +49,7 @@ function fakeContext() {
       }
       return (...args) => { calls.push({ op: prop, args, fill: target.fillStyle, stroke: target.strokeStyle }); };
     },
-    set(target, prop, value) { target[prop] = value; return true; },
+    set(target, prop, value) { target[prop] = value; calls.push({ op: `set:${String(prop)}`, args: [value] }); return true; },
   });
 }
 
@@ -97,12 +98,13 @@ function makeView({ cols = 9, rows = 9, width = 600, height = 500, pixelRatio = 
     dark: { '--color-board-frame': '#222222', '--color-board-shadow': '#333333', '--color-board-scrollbar': '#444444', '--color-tile-cursor': '#0000ff', '--color-success': '#00aa00' },
   };
   let theme = 'light';
+  const overlay = fakeCanvas();
   const view = createBoardView({
-    canvas, grid, createSkin: skin.createSkin, scale, frame, onLayout,
+    canvas, grid, createSkin: skin.createSkin, scale, frame, onLayout, overlay,
     token: token ?? ((name) => tokenMap(tokens[theme])(name)),
   });
   view.resize(width, height, pixelRatio);
-  return { grid, canvas, skin, view, setTheme: (t) => { theme = t; } };
+  return { grid, canvas, overlay, skin, view, setTheme: (t) => { theme = t; } };
 }
 
 const M = MIN_TILE_SIZE;
@@ -637,61 +639,95 @@ test('the view draws the shadows and bars only on a board that scrolls, and keep
 
   canvas.ctx.calls.length = 0;
   const edgeCell = grid.index(99, 3); // in the right column, under the vertical bar
-  view.setCursor(edgeCell);
+  view.update([edgeCell]);
   assert.ok(barFills(canvas).length >= 1, 'a redrawn tile under a bar gets its part of the bar back');
   canvas.ctx.calls.length = 0;
-  view.setCursor(grid.index(80, 10)); // the old one under the bar, the new one clear of every mark
+  view.update([edgeCell, grid.index(80, 10)]); // one under the bar, one clear of every mark
   const clips = canvas.ctx.calls.filter((c) => c.op === 'rect').length;
   assert.ok(clips >= 2, 'the marks are clipped to the tiles redrawn');
 });
 
-test('the focus ring: setCursor redraws only the cells it leaves and enters, and -1 hides it, redrawing one cell', () => {
-  const { view, canvas, skin, grid } = makeView();
+test('the focus ring is drawn on the ring layer, outside its tile: setCursor redraws no cell, and -1 clears it', () => {
+  const { view, canvas, overlay, skin, grid } = makeView();
   view.setGame(beginnerGame().game);
-  const rings = () => canvas.ctx.calls.filter((c) => c.op === 'strokeRect' && c.stroke === '#0000ff');
+  const rings = () => overlay.ctx.calls.filter((c) => c.op === 'strokeRect' && c.stroke === '#0000ff');
   skin.draws.length = 0;
   canvas.ctx.calls.length = 0;
   view.setCursor(grid.index(2, 2));
-  assert.deepEqual([skin.draws.length, rings().length], [1, 1], 'showing it: one cell');
-  skin.draws.length = 0;
-  canvas.ctx.calls.length = 0;
+  assert.equal(view.cursor, grid.index(2, 2));
+  assert.deepEqual([skin.draws.length, canvas.ctx.calls.length], [0, 0], 'moving it redraws nothing on the board');
+  assert.equal(rings().length, 1, 'one ring, in the cursor token while the skin has no module');
+  const [x, y, w, h] = rings()[0].args;
+  const r = view.cellRect(grid.index(2, 2));
+  const lw = Math.max(2, Math.round(r.size / 12));
+  assert.deepEqual([x, y, w, h], [r.x - lw / 2, r.y - lw / 2, r.size + lw, r.size + lw], 'a square ring just outside the tile');
+  overlay.ctx.calls.length = 0;
+  view.setCursor(grid.index(3, 2));
+  assert.equal(overlay.ctx.calls.filter((c) => c.op === 'clearRect').length, 1, 'the layer is cleared');
+  assert.equal(rings().length, 1, 'and the ring drawn at the new cell alone');
+  assert.equal(skin.draws.length, 0, 'still no cell redrawn');
+  overlay.ctx.calls.length = 0;
   view.setCursor(-1);
   assert.equal(view.cursor, -1);
-  assert.deepEqual([skin.draws.length, rings().length], [1, 0], 'hiding it: its cell only, with no ring');
-  assert.deepEqual([skin.draws[0].x, skin.draws[0].y], [52 + 2 * 55, 2 + 2 * 55]);
-  skin.draws.length = 0;
+  assert.deepEqual([skin.draws.length, rings().length, overlay.ctx.calls.filter((c) => c.op === 'clearRect').length], [0, 0, 1], 'hiding it clears the layer');
+  overlay.ctx.calls.length = 0;
   view.setCursor(-1);
-  assert.equal(skin.draws.length, 0, 'hidden again: nothing');
+  assert.equal(overlay.ctx.calls.length, 0, 'hidden again: nothing');
 });
 
-test('the start-cell mark: a ring in the cursor ring\'s style from an existing token, redrawn on its cells only, under the cursor', () => {
-  assert.equal(START_MARK, '--color-success', 'an existing design token, apart from the cursor ring\'s');
-  const themeCss = readFileSync(new URL('../themes/joyful-tiles/theme.css', import.meta.url), 'utf8');
-  assert.match(themeCss, /--color-success:/, 'the theme declares it');
-  const { view, canvas, skin, grid } = makeView();
-  view.setGame(beginnerGame().game);
-  const marks = () => canvas.ctx.calls.filter((c) => c.op === 'strokeRect' && c.stroke === '#00aa00');
-  const rings = () => canvas.ctx.calls.filter((c) => c.op === 'strokeRect' && c.stroke === '#0000ff');
+test('the ring layer follows the board: sized with it, redrawn on a repaint and a scroll, clipped to a scrolled view, empty while hidden', () => {
+  const { view, overlay, grid } = makeView({ cols: 100, rows: 100, width: 1334, height: 656, pixelRatio: 2 });
+  assert.deepEqual([overlay.width, overlay.height, overlay.style.width, overlay.style.height], [2668, 1312, '1334px', '656px'], 'the board canvas\'s size');
+  const game = createGameWithMines({ graph: grid.graph, ...REF, mines: [grid.index(99, 99)], dimensions: { width: 100, height: 100 } });
+  view.setGame(game);
+  const c = grid.index(3, 3);
+  view.setCursor(c);
+  const ring = () => overlay.ctx.calls.filter((x) => x.op === 'strokeRect' && x.stroke === '#0000ff').at(-1)?.args;
+  const before = ring();
+  overlay.ctx.calls.length = 0;
+  view.scrollBy(10, 0);
+  assert.equal(ring()[0], before[0] - 10, 'a scroll moves the ring with its cell');
+  const clip = overlay.ctx.calls.find((x) => x.op === 'rect');
+  const l = view.layout;
+  assert.deepEqual(clip?.args, [l.viewX, l.viewY, l.viewWidth, l.viewHeight], 'clipped to the view');
+  overlay.ctx.calls.length = 0;
+  view.setHidden(true);
+  assert.equal(ring(), undefined, 'a hidden board draws no ring');
+  view.setCursor(grid.index(4, 4));
+  assert.equal(ring(), undefined);
+  view.setHidden(false);
+  assert.ok(ring(), 'back with the board');
+});
+
+test('the marked start cell is drawn as the skin\'s marked tile while closed, redrawn on its cells only, the cursor beside it', () => {
+  const { view, canvas, overlay, skin, grid } = makeView();
+  const { game } = beginnerGame();
+  view.setGame(game);
   assert.equal(view.mark, -1, 'no mark without a pre-generated board');
   skin.draws.length = 0;
-  canvas.ctx.calls.length = 0;
   const centre = grid.index(4, 4);
   view.setMark(centre);
   assert.equal(view.mark, centre);
-  assert.deepEqual([skin.draws.length, marks().length], [1, 1], 'one cell redrawn, with its ring');
-  const cursorRing = (() => { canvas.ctx.calls.length = 0; view.setCursor(grid.index(2, 2)); return rings()[0]; })();
-  const markRing = (() => { canvas.ctx.calls.length = 0; view.repaint(); return marks()[0]; })();
-  assert.equal(markRing.args[2], cursorRing.args[2], 'the cursor ring\'s size and inset');
-  assert.equal(markRing.args[0] - (52 + 4 * 55), cursorRing.args[0] - (52 + 2 * 55), 'the same inset in its tile');
-  // the cursor on the mark draws the cursor's ring alone
-  canvas.ctx.calls.length = 0;
+  assert.deepEqual(skin.draws.map((d) => d.state), ['marked'], 'one cell redrawn, as the marked tile');
+  skin.draws.length = 0;
+  view.repaint();
+  assert.deepEqual(skin.draws.filter((d) => d.state === 'marked').length, 1, 'a repaint keeps it');
+  assert.ok(!canvas.ctx.calls.some((c) => c.op === 'strokeRect' || c.op === 'stroke'), 'no ring stroked over the board');
+  skin.draws.length = 0;
   view.setCursor(centre);
-  assert.deepEqual([marks().length, rings().length], [0, 1]);
-  view.setCursor(-1);
-  canvas.ctx.calls.length = 0;
+  assert.equal(skin.draws.length, 0, 'the cursor on the mark leaves the tile alone');
+  assert.equal(overlay.ctx.calls.filter((c) => c.op === 'strokeRect').length, 1, 'its ring is on the layer');
+  view.setPressed([centre]);
+  assert.equal(skin.draws.at(-1).state, 'pressed', 'a held press shows the pressed tile');
+  view.setPressed([]);
+  assert.equal(skin.draws.at(-1).state, 'marked', 'and the mark again on release');
+  game.reveal(centre);
+  skin.draws.length = 0;
+  view.update([centre]);
+  assert.notEqual(skin.draws[0].state, 'marked', 'a revealed start cell is drawn as revealed');
   skin.draws.length = 0;
   view.setMark(-1);
-  assert.deepEqual([view.mark, skin.draws.length, marks().length], [-1, 1, 0], 'the first click takes it away, redrawing its cell');
+  assert.deepEqual([view.mark, skin.draws.length], [-1, 1], 'the first click takes it away, redrawing its cell');
   skin.draws.length = 0;
   view.setMark(-1);
   assert.equal(skin.draws.length, 0);
@@ -850,8 +886,8 @@ function boardSkinFactory(params) {
   const make = out.createSkin;
   const moduleOf = (p) => ({
     style2d: { name: 'flat', params: { radius: 0, gap: 0, frameRadius: 0, ...p } },
-    palette: { boardGround: '#fefefe' },
-    cursor: { color: '#0a0a0a', inner: '#f0f0f0', width: 3, radius: { tile: 0.15, px: 3 } },
+    palette: { boardGround: '#fefefe', faces2d: { marked: { ring: '#123456' } } },
+    cursor: { color: '#0a0a0a', inner: '#f0f0f0', width: 3, innerWidth: 2, radius: { tile: 0.15, px: 3 } },
   });
   let board = moduleOf(params);
   out.createSkin = (options) => Object.assign(make(options), { board: () => board });
@@ -862,10 +898,11 @@ function boardSkinFactory(params) {
 function boardModuleView({ cols = 9, rows = 9, width = 600, height = 500, params = { gap: 0.09, radius: 0.15 }, frame, onLayout, scale = 'fit' } = {}) {
   const grid = createSquareGrid(cols, rows);
   const canvas = fakeCanvas();
+  const overlay = fakeCanvas();
   const skin = boardSkinFactory(params);
-  const view = createBoardView({ canvas, grid, createSkin: skin.createSkin, scale, frame, onLayout, token: tokenMap({ '--color-board-frame': '#111111', '--color-success': '#00aa00' }) });
+  const view = createBoardView({ canvas, grid, createSkin: skin.createSkin, scale, frame, onLayout, overlay, token: tokenMap({ '--color-board-frame': '#111111' }) });
   view.resize(width, height, 1);
-  return { grid, canvas, skin, view };
+  return { grid, canvas, overlay, skin, view };
 }
 
 test('tiles sit one pitch apart, the tile plus the module\'s gap, and the fit rule counts the gaps', () => {
@@ -919,21 +956,58 @@ test('the ground is the module\'s, and a rounded tile is laid on fresh ground wh
   assert.equal(square.canvas.ctx.calls.filter((c) => c.op === 'fillRect').length, 0, 'a square tile covers its old self: no ground under it');
 });
 
-test('the cursor ring is the module\'s: its colour, width and hairline, its corners following the tile\'s', () => {
-  const { view, canvas, grid } = boardModuleView({ scale: '100' });
+test('the cursor ring is the module\'s, outside the tile: the ring 3-6 px out round a white band 1-3 px out, its corner the tile\'s plus 3 px, none of the face covered', () => {
+  const { view, canvas, overlay, grid } = boardModuleView({ scale: '100' });
   view.setGame(beginnerGame().game);
   canvas.ctx.calls.length = 0;
   const c = grid.index(4, 4);
   view.setCursor(c);
+  assert.equal(canvas.ctx.calls.length, 0, 'the board canvas is untouched');
   const r = view.cellRect(c);
-  const strokes = canvas.ctx.calls.filter((x) => x.op === 'stroke');
-  assert.deepEqual(strokes.map((x) => x.stroke), ['#0a0a0a', '#f0f0f0'], 'the ring, then its hairline inside it');
-  const corners = canvas.ctx.calls.filter((x) => x.op === 'arcTo');
-  const tileCorner = 48 * 0.15;
-  assert.equal(corners[0].args[4], tileCorner - 1.5, 'the ring\'s centre line runs concentric with the tile\'s corner');
-  const start = canvas.ctx.calls.find((x) => x.op === 'moveTo');
-  assert.equal(start.args[1], r.y + 1.5, 'inside the tile: half the ring\'s width in');
-  assert.ok(!canvas.ctx.calls.some((x) => x.op === 'strokeRect'), 'no square ring');
+  const strokes = overlay.ctx.calls.filter((x) => x.op === 'stroke');
+  assert.deepEqual(strokes.map((x) => x.stroke), ['#0a0a0a', '#f0f0f0'], 'the ring, then its white band inside it');
+  const starts = overlay.ctx.calls.filter((x) => x.op === 'moveTo').map((x) => x.args[1] - r.y);
+  assert.deepEqual(starts, [-4.5, -2], 'centre lines: the ring 4.5 px out (3 wide: 3-6 px), the band 2 px out (2 wide: 1-3 px)');
+  const widths = overlay.ctx.calls.filter((x) => x.op === 'set:lineWidth').map((x) => x.args[0]);
+  assert.deepEqual(widths, [3, 2]);
+  const corners = overlay.ctx.calls.filter((x) => x.op === 'arcTo').map((x) => x.args[4]);
+  const corner = 48 * 0.15 + 3;
+  assert.deepEqual([corners[0], corners[4]], [corner + 1.5, corner - 1], 'concentric with the ring\'s corner, tile × .15 + 3 px');
+  assert.ok(!overlay.ctx.calls.some((x) => x.op === 'strokeRect'), 'no square ring');
+});
+
+test('the mark pulses on the board: its ring drawn twice as wide, MARK_PULSE_STEPS times MARK_PULSE_MS apart, then plain', () => {
+  const grid = createSquareGrid(9, 9);
+  const canvas = fakeCanvas();
+  const skin = boardSkinFactory({ gap: 0.09, radius: 0.15 });
+  const timers = [];
+  const view = createBoardView({
+    canvas, grid, createSkin: skin.createSkin, scale: '100', overlay: fakeCanvas(),
+    timers: { setTimeout: (fn, ms) => { timers.push({ fn, ms }); return timers.length; }, clearTimeout() {} },
+    token: tokenMap({}),
+  });
+  view.resize(600, 500, 1);
+  view.setGame(beginnerGame().game);
+  const centre = grid.index(4, 4);
+  view.setMark(centre);
+  const wide = () => canvas.ctx.calls.filter((c) => c.op === 'stroke' && c.stroke === '#123456');
+  canvas.ctx.calls.length = 0;
+  view.pulseMark();
+  assert.equal(view.markPulse, true);
+  assert.equal(wide().length, 1, 'the ring in the marked face\'s ring colour');
+  const r = view.cellRect(centre);
+  assert.deepEqual(canvas.ctx.calls.filter((c) => c.op === 'translate').at(-1).args, [r.x, r.y], 'on the start cell');
+  assert.deepEqual(canvas.ctx.calls.find((c) => c.op === 'arc').args.slice(0, 2), [24, 24], 'centred on its tile');
+  assert.ok(canvas.ctx.calls.some((c) => c.op === 'set:lineWidth' && c.args[0] === 4), 'twice the tile\'s ring width');
+  let steps = 1;
+  while (timers.length) {
+    const { fn, ms } = timers.shift();
+    assert.equal(ms, MARK_PULSE_MS);
+    fn();
+    steps += 1;
+  }
+  assert.equal(steps, MARK_PULSE_STEPS);
+  assert.equal(view.markPulse, false, 'ending plain');
 });
 
 test('a hand-off with a new gap lays the board out again and reports it', () => {

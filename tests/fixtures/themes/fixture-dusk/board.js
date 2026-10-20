@@ -16,7 +16,7 @@ const EXPLODED = { rim: '#33415d', edge: '#7a1712', face: '#b3261e', faceShade: 
 export const BOARD = freeze({
   fixture: 'fixture-dusk',
   palette: {
-    faces2d: { closed: RAISED, sunk: SUNK, revealed: REVEALED, exploded: EXPLODED, marked: { ...RAISED, face: '#2f8a7e' } },
+    faces2d: { closed: RAISED, sunk: SUNK, revealed: REVEALED, exploded: EXPLODED, marked: { ...RAISED, face: '#2f8a7e', ring: '#e6edf8' } },
     faces3d: { closed: RAISED, sunk: SUNK, revealed: REVEALED, exploded: EXPLODED },
     flag: { base: '#e6edf8', shadow: 'rgba(0,0,0,0.35)', cloth: '#ff7b7b', clothShade: '#e04a4a' },
     mine: { body: '#e6edf8', highlight: 'rgba(255,255,255,0.9)' },
@@ -36,7 +36,7 @@ export const BOARD = freeze({
   sky: { horizon: '#33415d', zenith: '#0b1424', nadir: '#141d31' },
   style2d: { name: 'bevel', params: { edge: 1 / 64, slope: 0.075, revealedEdge: 3 / 64, radius: 0, sides: { top: 1, right: -1, bottom: -1, left: 1 }, gap: 0, frameRadius: 0 } },
   style3d: { name: 'bevel', params: { edge: 1 / 64, slope: 0.075, revealedEdge: 3 / 64, radius: 0, sides: { top: 1, right: -1, bottom: -1, left: 1 } } },
-  cursor: { color: '#ffd54f', inner: '#0b1424', width: 2, radius: { tile: 0, px: 0 } },
+  cursor: { color: '#ffd54f', inner: '#0b1424', width: 2, innerWidth: 1, radius: { tile: 0, px: 0 } },
   selection: { outline: '#ffd54f', width: { face: 0.06, px: 3 }, glow: '#ffffff', glowWidth: 1, tint: [1, 1, 1] },
   mark: { tint: '#2f8a7e', mix: 0.5, pulseMix: 0.9 },
   end2d: { light: '#ffffff', win: { scale: 1.1, mix: 0.3 }, loss: { scale: 0.7, flash: 0.4 } },

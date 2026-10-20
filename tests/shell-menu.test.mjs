@@ -1015,7 +1015,7 @@ test('in a browser without WebGL 2, the shell starts with a static background, 3
     await page.waitForSelector('#records-replays-table [data-act="watch"]', { timeout: patience(5000) });
     await page.click('#records-replays-table [data-act="watch"]');
     await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready', null, { timeout: patience(5000) });
-    assert.equal(await ms(() => document.querySelectorAll('#replay-board canvas:not(.board-motion)').length), 1, 'the 2D board view is mounted');
+    assert.equal(await ms(() => document.querySelectorAll('#replay-board canvas:not(.board-motion):not(.board-ring)').length), 1, 'the 2D board view is mounted');
     await page.click('#rp-back');
     assert.equal(await mode(), 'records');
     await page.click('#records-mode [data-value="3d"]');

@@ -16,8 +16,9 @@ How a Classic 2D tile looks. The area overview is
 - `js/tile-art.js` — the shared tile recipe both boards draw through (the
   3D atlas, [rendering.md](rendering.md), and every Classic 2D tile): the
   named drawing styles (`STYLES`) that draw the closed, sunk and revealed
-  faces at any size and depth, and the number, mine and flag glyphs and the
-  wrong-flag cross, every colour and parameter an argument. It imports
+  faces at any size and depth, and the number, mine and flag glyphs, the
+  wrong-flag cross and the start cell's ring, every colour and parameter an
+  argument. It imports
   nothing and touches no DOM.
 
 ## PUBLIC API
@@ -26,8 +27,9 @@ How a Classic 2D tile looks. The area overview is
 - `MIN_TILE_SIZE` — the floor a board shrinks to before it scrolls,
   shared by the skin, the view and the board conformance checks.
 - `TILE_STATES` — `closed`, `pressed`, `revealed`, `flagged`, `mine`,
-  `exploded`, `wrong-flag`: the engine's cell states
-  ([engine.md](engine.md), `CELL`) plus `pressed`.
+  `exploded`, `wrong-flag`, `marked`: the engine's cell states
+  ([engine.md](engine.md), `CELL`) plus `pressed` and `marked` (the closed
+  start cell a pre-generated board waits for).
 - `DEPTH_STEPS`, `depthStep(depth)` — the depths the cache holds the
   raised states (closed, pressed, flagged) at, and the step nearest a
   depth (1, the face's own, for none).
@@ -53,9 +55,13 @@ How a Classic 2D tile looks. The area overview is
   `FACES` (`closed`, `sunk`, `revealed`) in a style, its parameters filling
   the style's defaults, at a depth from 0 (flat) to 1 (fully raised); `px`
   one device pixel, to snap every band.
+- `explodedParams(params)` — a style's parameters for the exploded tile's
+  revealed face: its `border` as the hairline, unchanged for a style
+  without one.
 - `drawNumberGlyph(ctx, S, n, {color, shadow, font?})`, `drawMineGlyph`,
-  `drawFlagGlyph`, `drawCross`; `NUMBER_FONT` (the fallback stack behind a
-  theme's number font), `shade`, `mix`, `roundRect`, `tileBands`.
+  `drawFlagGlyph`, `drawCross`, `drawMarkRing(ctx, S, {color, width?})`;
+  `NUMBER_FONT` (the fallback stack behind a theme's number font), `shade`,
+  `mix`, `roundRect`, `tileBands`.
 
 ## INTERNAL PATTERNS
 
@@ -65,20 +71,31 @@ How a Classic 2D tile looks. The area overview is
   slope's width scaled by the depth, so depth 0 is flat; a sunk face turns
   each shade over (a colour mirrored through the face), and the
   revealed face is flat inside its edge. `flat` is a face with a light top
-  band and a dark bottom edge, the sunk face its dark edge along the top
-  and the revealed face flush inside a hairline; depth changes nothing it
-  draws. Either style takes a corner radius (a fraction of the size) that
-  clips the tile to a rounded square. An unknown style draws the first one
-  with its own parameters and is reported once in development.
+  band and a dark bottom edge (fractions of the size), the sunk face an
+  inset shade along its top (`press`, a fraction of the size) and the
+  revealed face flush inside a hairline whose width, like the exploded
+  tile's `border`, is in drawing units — CSS pixels on a Classic 2D tile, so
+  constant at every tile size; depth changes nothing it draws. Either style
+  takes a corner radius (a fraction of the size) that clips the tile to a
+  rounded square. An unknown style draws the first one with its own
+  parameters and is reported once in development.
+- **Glyphs.** The mine is a round body with eight spikes ending in round
+  knobs, three quarters of the tile from knob to knob, under its highlight;
+  the wrong-flag cross two butt-ended strokes in its own colour over a
+  wider outline; a number of one or two digits is set at the same height,
+  a wide one narrowed to fit; the start cell's ring a dashed circle inside
+  the tile. Their proportions are the recipe's, their colours the
+  caller's.
 - **Painter.** Each state is a face of the module's `style2d` from its
   `palette.faces2d`: closed and flagged the closed face, pressed the sunk
   face, revealed / mine / wrong flag the revealed face, exploded the
-  revealed face in its `exploded` colours; numbers are the glyph in
-  `numbers2d[n]` set in the module's number font, zero none; the flag, mine
-  and cross take their palette entries. The painter passes the recipe one
-  device pixel (from the context's scale), so every band is whole device
-  pixels. `palette.faces2d.marked` is carried by the module but not drawn:
-  the marked start cell is the board view's ring
+  revealed face in its `exploded` colours with `explodedParams`, marked the
+  closed face in `palette.faces2d.marked` under the start cell's ring in its
+  `ring` colour; numbers are the glyph in `numbers2d[n]` set in the
+  module's number font, zero none; the flag, mine and cross take their
+  palette entries. The painter passes the recipe one device pixel (from the
+  context's scale), so every band is whole device pixels. The board view
+  draws the marked tile for its marked cell
   ([classic2d-board-motion.md](classic2d-board-motion.md)).
 - **Placeholder.** An unknown state, a number outside 0–8, or no board
   module paints `FALLBACK_COLOR` with a black cross — visibly wrong on

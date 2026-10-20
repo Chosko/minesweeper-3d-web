@@ -134,7 +134,7 @@ test('the recipe exports a style table, bevel first, and one draw entry point fo
   }
   assert.deepEqual(Object.keys(art.STYLES.bevel.params).sort(), ['edge', 'radius', 'revealedEdge', 'sides', 'slope']);
   assert.deepEqual(Object.keys(art.STYLES.bevel.params.sides).sort(), ['bottom', 'left', 'right', 'top']);
-  assert.deepEqual(Object.keys(art.STYLES.flat.params).sort(), ['band', 'edge', 'hairline', 'radius']);
+  assert.deepEqual(Object.keys(art.STYLES.flat.params).sort(), ['band', 'border', 'edge', 'hairline', 'press', 'radius']);
 });
 
 test('mix blends two hex colours, exactly the first at 0 and the second at 1', async () => {
@@ -277,7 +277,7 @@ test('a corner radius clips either style to a rounded tile that scales with its 
 
 // ---------------------------------------------------------------- flat
 
-test('flat draws the closed face with a light top band and a dark bottom edge, the revealed face flush inside a hairline', async () => {
+test('flat draws the closed face with a light top band and a dark bottom edge, the revealed face flush inside a hairline of constant width', async () => {
   const art = await artModule();
   const params = art.STYLES.flat.params;
   for (const S of SIZES) {
@@ -299,16 +299,37 @@ test('flat draws the closed face with a light top band and a dark bottom edge, t
       const rf = fills(revealed);
       assert.deepEqual(rf.map((c) => c.fill), [REVEALED.rim, REVEALED.face], `${S}px: the hairline, then the face flush inside it`);
       const inset = revealed.calls.filter((c) => c.op === 'moveTo').at(-1).args[1];
-      assert.ok(inset >= px && Math.abs(inset - S * params.hairline) <= px, `${S}px: the hairline is ${params.hairline} of the tile, at least a device pixel`);
+      assert.equal(inset, params.hairline, `${S}px at ${1 / px}x: the hairline is ${params.hairline} drawing unit (one CSS px) at every tile size`);
       // Closed and revealed differ by more than colour: the closed face carries bands, the revealed a border.
       assert.ok(!rf.some((c) => [CLOSED.bevelLight, CLOSED.bevelDark].includes(c.fill)), `${S}px: no bands on the revealed face`);
       assert.notDeepEqual(closed.calls.map((c) => c.op), revealed.calls.map((c) => c.op), `${S}px: closed and revealed are drawn differently, not just recoloured`);
     }
   }
-  const sunk = fakeContext();
-  art.drawFace(sunk, 48, 'sunk', { style: 'flat', palette: SUNK, px: 1 });
-  assert.equal(fills(sunk)[0].fill, SUNK.face, 'the sunk face is the pressed colour');
-  assert.ok(!fills(sunk).some((c) => c.fill === SUNK.bevelLight), 'a sunk face carries no light band');
+  for (const S of SIZES) {
+    const sunk = fakeContext();
+    art.drawFace(sunk, S, 'sunk', { style: 'flat', palette: SUNK, px: 1 });
+    assert.equal(fills(sunk)[0].fill, SUNK.face, `${S}px: the sunk face is the pressed colour`);
+    assert.ok(!fills(sunk).some((c) => c.fill === SUNK.bevelLight), `${S}px: a sunk face carries no light band`);
+    const shade = fills(sunk).find((c) => c.fill === SUNK.bevelDark);
+    assert.deepEqual(shade.args.slice(0, 3), [0, 0, S], `${S}px: the pressed shade runs along the top`);
+    assert.ok(Math.abs(shade.args[3] - S * params.press) <= 0.5, `${S}px: the pressed shade is ${params.press} of the tile, not the closed face's band`);
+  }
+});
+
+test('the exploded tile takes the style\'s border as its revealed face\'s hairline: flat\'s 2 px, bevel unchanged', async () => {
+  const art = await artModule();
+  const flat = art.STYLES.flat.params;
+  assert.equal(flat.hairline, 1, 'the revealed hairline: one drawing unit');
+  assert.equal(flat.border, 2, 'the exploded border: two');
+  assert.deepEqual(art.explodedParams(flat), { ...flat, hairline: flat.border });
+  for (const px of [1, 0.5]) {
+    const ctx = fakeContext();
+    art.drawFace(ctx, 26, 'revealed', { style: 'flat', params: art.explodedParams(flat), palette: REVEALED, px });
+    assert.equal(ctx.calls.filter((c) => c.op === 'moveTo').at(-1).args[1], flat.border, `at ${1 / px}x: the face sits inside a 2 px border`);
+  }
+  const bevel = art.STYLES.bevel.params;
+  assert.equal(art.explodedParams(bevel), bevel, 'a style with no border draws the exploded face as its revealed one');
+  assert.equal(art.explodedParams(undefined), undefined);
 });
 
 test('flat ignores depth: every depth draws the same face', async () => {
@@ -323,6 +344,76 @@ test('flat ignores depth: every depth draws the same face', async () => {
       assert.deepEqual(at(0), at(1), `flat ${face}, radius ${radius}: depth 0 is depth 1`);
       assert.deepEqual(at(0.4), at(1), `flat ${face}, radius ${radius}: depth 0.4 is depth 1`);
     }
+  }
+});
+
+// ---------------------------------------------------------------- glyphs
+
+test('the mine: a round body, eight spikes each ending in a round knob, spanning three quarters of the tile, and its highlight', async () => {
+  const art = await artModule();
+  for (const S of [26, 48, 256]) {
+    const ctx = fakeContext();
+    art.drawMineGlyph(ctx, S, { body: '#16204a', highlight: '#ffffff' });
+    const centre = ctx.calls.find((c) => c.op === 'translate').args;
+    assert.deepEqual(centre, [S / 2, S / 2], `${S}px: centred on the tile`);
+    const arcs = ctx.calls.filter((c) => c.op === 'arc');
+    const knobs = arcs.filter((c) => Math.hypot(c.args[0], c.args[1]) > S * 0.25);
+    assert.equal(knobs.length, 8, `${S}px: eight knobs`);
+    assert.ok(knobs.every((c) => c.fill === '#16204a'), `${S}px: the knobs in the body colour`);
+    const reach = Math.max(...knobs.map((c) => Math.hypot(c.args[0], c.args[1]) + c.args[2]));
+    assert.ok(Math.abs(2 * reach / S - 0.75) < 0.01, `${S}px: knob to knob, the mine spans 0.75 of the tile (${(2 * reach / S).toFixed(3)})`);
+    // The atlas's 256 px tile: the glyph's box runs from 31 to 224.
+    if (S === 256) assert.ok(Math.abs(S / 2 - reach - 31) <= 1 && Math.abs(S / 2 + reach - 224) <= 1.5, `256px: the box is 31-224 (${S / 2 - reach}-${S / 2 + reach})`);
+    const strokes = ctx.calls.filter((c) => c.op === 'stroke');
+    assert.equal(strokes.length, 8, `${S}px: eight spikes`);
+    const highlight = arcs.filter((c) => c.fill === '#ffffff');
+    assert.equal(highlight.length, 1, `${S}px: one highlight in its colour`);
+  }
+});
+
+test('the wrong-flag cross: two butt-ended strokes in the cross colour about 0.057 of the tile wide over an outline about 0.10 wide', async () => {
+  const art = await artModule();
+  for (const S of [26, 48, 256]) {
+    const ctx = fakeContext();
+    art.drawCross(ctx, S, { outline: '#ffffff', mark: '#c62f2f' });
+    const widths = ctx.calls.filter((c) => c.op === 'set:lineWidth').map((c) => c.args[0] / S);
+    assert.equal(widths.length, 2, `${S}px: an outline, then the mark`);
+    assert.ok(Math.abs(widths[0] - 0.10) < 0.005, `${S}px: the outline is about 0.10 of the tile (${widths[0].toFixed(3)})`);
+    assert.ok(Math.abs(widths[1] - 0.057) < 0.003, `${S}px: the mark is about 0.057 of the tile (${widths[1].toFixed(3)})`);
+    assert.deepEqual(ctx.calls.filter((c) => c.op === 'stroke').map((c) => c.stroke), ['#ffffff', '#c62f2f'], `${S}px: the outline, then the mark in its own colour`);
+    assert.deepEqual(ctx.calls.filter((c) => c.op === 'set:lineCap').map((c) => c.args[0]), ['butt'], `${S}px: butt ends`);
+  }
+});
+
+test('a number of one or two digits is set at the same height, 0.68 of the tile; a wide one is narrowed to fit', async () => {
+  const art = await artModule();
+  for (const n of [1, 8, 10, 26]) {
+    const ctx = fakeContext();
+    art.drawNumberGlyph(ctx, 256, n, { color: '#135bad', shadow: 'rgba(0,0,0,0.12)' });
+    assert.match(ctx.font, new RegExp(`^800 ${256 * 0.68}px `), `${n} at 0.68 of the tile`);
+  }
+  const measured = fakeContext();
+  art.drawNumberGlyph(measured, 20, 26, { color: '#135bad', shadow: 'rgba(0,0,0,0.12)' });
+  const squeeze = measured.calls.find((c) => c.op === 'scale');
+  assert.ok(squeeze.args[0] < 1, 'a glyph wider than the tile allows is narrowed');
+});
+
+test('the start-cell ring: a dashed circle inside the tile, its edge 0.22 of the tile in, in the colour and width given', async () => {
+  const art = await artModule();
+  for (const [S, width] of [[26, 2], [48, 2], [48, 4]]) {
+    const ctx = fakeContext();
+    art.drawMarkRing(ctx, S, { color: '#16204a', width });
+    const arc = ctx.calls.find((c) => c.op === 'arc');
+    assert.deepEqual(arc.args.slice(0, 2), [S / 2, S / 2], `${S}px: centred on the tile`);
+    assert.ok(Math.abs(arc.args[2] + width / 2 - S * (0.5 - 0.22)) < 1e-9, `${S}px: the ring's outer edge is 0.22 of the tile in`);
+    assert.ok(ctx.calls.find((c) => c.op === 'setLineDash').args[0].length >= 2, `${S}px: dashed`);
+    assert.equal(ctx.calls.find((c) => c.op === 'stroke').stroke, '#16204a');
+    assert.ok(ctx.calls.some((c) => c.op === 'set:lineWidth' && c.args[0] === width), `${S}px: ${width} wide`);
+    assert.equal(ctx.calls.at(-1).op, 'restore', `${S}px: the dash ends with the ring`);
+  }  for (const S of [1, 2, 3]) {
+    const tiny = fakeContext();
+    art.drawMarkRing(tiny, S, { color: '#16204a' });
+    assert.ok(tiny.calls.find((c) => c.op === 'arc').args[2] >= 0, `${S}px: a tile too small for the ring draws no negative radius`);
   }
 });
 

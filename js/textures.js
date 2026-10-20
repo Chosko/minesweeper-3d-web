@@ -5,7 +5,7 @@
 // Row 0 of every layer is the TOP of the drawn image, so a UV with v = 0 samples the top
 // (matches the XNA convention used by the original Cube.cs UVs).
 import * as THREE from 'three';
-import { drawFace, drawNumberGlyph, drawMineGlyph, drawFlagGlyph, drawCross } from './tile-art.js';
+import { drawFace, drawNumberGlyph, drawMineGlyph, drawFlagGlyph, drawCross, explodedParams } from './tile-art.js';
 
 export const TILE = 256;
 export const L_CLOSED = 0;
@@ -18,8 +18,9 @@ export const L_WRONG_FLAG = L_NUM0 + 27; // loss screen: flag placed on a non-mi
 export const L_SUNK = L_NUM0 + 28; // the closed face fully pressed in, which a depth motion blends towards
 export const LAYERS = L_NUM0 + 29;
 
-// A face of the board module's 3D style, from its 3D palette, unsnapped.
-const face = (ctx, board, name, palette) => drawFace(ctx, TILE, name, { style: board.style3d.name, params: board.style3d.params, palette });
+// A face of the board module's 3D style, from its 3D palette, unsnapped; `params` the style's own
+// unless given (the exploded tile's, explodedParams).
+const face = (ctx, board, name, palette, params = board.style3d.params) => drawFace(ctx, TILE, name, { style: board.style3d.name, params, palette });
 
 /** Draws one layer of `board`'s atlas onto a 2D context of size TILE x TILE. */
 export function drawLayer(ctx, layer, board) {
@@ -30,7 +31,7 @@ export function drawLayer(ctx, layer, board) {
   else if (layer === L_SUNK) face(ctx, board, 'sunk', faces.sunk);
   else if (layer === L_FLAG) { face(ctx, board, 'closed', faces.closed); drawFlagGlyph(ctx, TILE, flag); }
   else if (layer === L_MINE) { face(ctx, board, 'revealed', faces.revealed); drawMineGlyph(ctx, TILE, mine); }
-  else if (layer === L_MINE_EXPLODED) { face(ctx, board, 'revealed', faces.exploded); drawMineGlyph(ctx, TILE, mine); }
+  else if (layer === L_MINE_EXPLODED) { face(ctx, board, 'revealed', faces.exploded, explodedParams(board.style3d.params)); drawMineGlyph(ctx, TILE, mine); }
   else if (layer === L_WRONG_FLAG) { face(ctx, board, 'revealed', faces.revealed); drawFlagGlyph(ctx, TILE, flag); drawCross(ctx, TILE, cross); }
   else {
     const n = layer - L_NUM0;

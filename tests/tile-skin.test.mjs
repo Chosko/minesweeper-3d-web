@@ -95,12 +95,13 @@ async function makeSkin(mod, { art, redraw = () => {} } = {}) {
 
 // ---------------------------------------------------------------- state dispatch
 
-test('the visual states are the engine cell states plus pressed', async () => {
+test('the visual states are the engine cell states plus pressed and the marked start cell', async () => {
   const { TILE_STATES } = await skinModule();
   const { CELL } = await import('../js/engine/rules.js');
   for (const s of Object.values(CELL)) assert.ok(TILE_STATES.includes(s), `${s} is a tile state`);
   assert.ok(TILE_STATES.includes('pressed'));
-  assert.equal(TILE_STATES.length, Object.values(CELL).length + 1);
+  assert.ok(TILE_STATES.includes('marked'));
+  assert.equal(TILE_STATES.length, Object.values(CELL).length + 2);
 });
 
 // Every colour a state draws with, from its board module.
@@ -116,6 +117,7 @@ function stateColours(b) {
     mine: [...face(f.revealed), ...Object.values(p.mine)],
     exploded: [...face(f.exploded), ...Object.values(p.mine)],
     'wrong-flag': [...face(f.revealed), ...Object.values(p.flag), ...Object.values(p.cross)],
+    marked: face(f.marked),
   };
 }
 
@@ -128,7 +130,7 @@ test('each state paints from its board module\'s palette, in each theme, at its 
       const used = colours(ctx);
       // The flat style's face draws no bevel slopes: every colour it does draw is the module's.
       for (const c of used) assert.ok(wanted.includes(c), `${name}: ${state} draws ${c}, a colour of its module`);
-      assert.ok(used.has(b.palette.faces2d[{ closed: 'closed', flagged: 'closed', pressed: 'sunk', exploded: 'exploded' }[state] ?? 'revealed'].face), `${name}: ${state} draws its face`);
+      assert.ok(used.has(b.palette.faces2d[{ closed: 'closed', flagged: 'closed', pressed: 'sunk', exploded: 'exploded', marked: 'marked' }[state] ?? 'revealed'].face), `${name}: ${state} draws its face`);
       assert.ok(!used.has(FALLBACK_COLOR), `${name}: ${state} is no placeholder`);
       const at = ctx.calls.findIndex((c) => c.op === 'translate');
       assert.deepEqual(ctx.calls[at].args, [10, 20], `${name}: ${state} is drawn at the tile's position`);
@@ -150,7 +152,11 @@ test('each state draws through the shared tile recipe in the module\'s Classic 2
       pressed: (ctx, s, px) => face(ctx, s, px, 'sunk', f.sunk),
       flagged: (ctx, s, px) => { face(ctx, s, px, 'closed', f.closed); art.drawFlagGlyph(ctx, s, flag); },
       mine: (ctx, s, px) => { face(ctx, s, px, 'revealed', f.revealed); art.drawMineGlyph(ctx, s, mine); },
-      exploded: (ctx, s, px) => { face(ctx, s, px, 'revealed', f.exploded); art.drawMineGlyph(ctx, s, mine); },
+      exploded: (ctx, s, px) => {
+        art.drawFace(ctx, s, 'revealed', { style: b.style2d.name, params: art.explodedParams(b.style2d.params), palette: f.exploded, px });
+        art.drawMineGlyph(ctx, s, mine);
+      },
+      marked: (ctx, s, px) => { face(ctx, s, px, 'closed', f.marked); art.drawMarkRing(ctx, s, { color: f.marked.ring }); },
       'wrong-flag': (ctx, s, px) => {
         face(ctx, s, px, 'revealed', f.revealed);
         art.drawFlagGlyph(ctx, s, flag);
@@ -202,6 +208,46 @@ test('under Joyful tiles the tiles are the flat style with its corner radius: a 
   const fills = open.calls.filter((c) => c.op === 'fillRect' || c.op === 'fill').map((c) => c.fill);
   assert.deepEqual(fills, [f.revealed.rim, f.revealed.face], 'the revealed face: its hairline, then the face inside it');
   assert.ok(!colours(open).has(f.closed.bevelLight) && !colours(open).has(f.closed.bevelDark), 'no relief on the revealed face');
+  const pressed = fakeContext();
+  paintTileWith(JOYFUL, pressed, 0, 0, 48, 'pressed', 0);
+  assert.deepEqual(pressed.calls.filter((c) => c.op === 'fillRect').map((c) => [c.fill, ...c.args]), [
+    [f.sunk.face, 0, 0, 48, 48],
+    [f.sunk.bevelDark, 0, 0, 48, Math.round(48 * JOYFUL.style2d.params.press)],
+  ], 'the pressed face: its face under an inset shade along the top, the module\'s press width');
+});
+
+test('under Joyful tiles the revealed hairline is one CSS px at every tile size and pixel ratio, the exploded tile\'s border two', async () => {
+  const { paintTileWith } = await skinModule();
+  const f = JOYFUL.palette.faces2d;
+  assert.deepEqual([JOYFUL.style2d.params.hairline, JOYFUL.style2d.params.border, JOYFUL.style2d.params.press], [1, 2, 0.08], 'J-BoardSheet .t.o 1px, .t.b 2px, .t.p tile × .08');
+  for (const size of [26, 48, 60]) {
+    for (const ratio of [1, 2]) {
+      for (const [state, width, colour] of [['revealed', 1, f.revealed.face], ['mine', 1, f.revealed.face], ['exploded', 2, f.exploded.face]]) {
+        const ctx = fakeContext();
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+        paintTileWith(JOYFUL, ctx, 0, 0, size, state, 0);
+        const faceAt = ctx.calls.findIndex((c) => c.op === 'fill' && c.fill === colour);
+        const inset = ctx.calls.slice(0, faceAt).filter((c) => c.op === 'moveTo').at(-1).args[1];
+        assert.equal(inset, width, `${state} at ${size}px x${ratio}: the face sits ${width} CSS px in`);
+      }
+    }
+  }
+});
+
+test('the marked start cell is the module\'s marked face: the closed face in its colours under a dashed ring', async () => {
+  const { paintTileWith } = await skinModule();
+  for (const [name, b] of Object.entries(BOARDS)) {
+    const m = b.palette.faces2d.marked;
+    const ctx = fakeContext();
+    paintTileWith(b, ctx, 0, 0, 48, 'marked', 0);
+    assert.ok(filledWith(ctx).has(m.face), `${name}: the marked face`);
+    assert.ok(!filledWith(ctx).has(b.palette.faces2d.closed.face), `${name}: not the closed face`);
+    const ring = ctx.calls.filter((c) => c.op === 'stroke');
+    assert.deepEqual(ring.map((c) => c.stroke), [m.ring], `${name}: one ring in the marked face's ring colour`);
+    assert.ok(ctx.calls.some((c) => c.op === 'setLineDash' && c.args[0].length > 0), `${name}: dashed`);
+  }
+  assert.equal(JOYFUL.palette.faces2d.marked.face, '#49c6b8', 'J-BoardSheet .t.mk teal');
+  assert.equal(JOYFUL.palette.faces2d.marked.ring, '#16204a', 'J-BoardSheet .t.mk::before ink');
 });
 
 test('a theme with no gap and no radius draws its tiles square, as the recipe\'s bevel draws them', async () => {
