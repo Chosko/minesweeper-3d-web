@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 216
+Last task number: 227
 
 ---
 
@@ -1037,5 +1037,104 @@ Status: [MISSING]
 Target: claude
 Files: js/themes/applier.js, tests/theme.test.mjs, tests/fixtures/themes/fixture-theme.js, tests/fixtures/themes/fixture-dusk/, .claude/context/app-shell-themes.md, .claude/context/testing.md
 Preconditions: none
+
+---
+
+## 217. UX-review scripts follow the current board-choice markup
+
+Status: [MISSING]
+Target: claude
+Files: docs/ux-review/enthusiast-loop/, docs/ux-review/game-design/, docs/ux-review/input-a11y/, docs/ux-review/mode-3d/, docs/ux-review/ux-first-run/
+Preconditions: none
+
+---
+
+## 218. Kit buttons: md size, key hint ink, quiet variant, latched toggles, danger variant
+
+Status: [MISSING]
+Target: claude
+Files: css/components.css, themes/joyful-tiles/theme.css, css/style.css, js/ui/kit-catalogue.js, dev/components.html, index.html, js/settings/page.js, tests/components.test.mjs, .claude/context/app-shell-kit.md
+Preconditions: 214
+
+---
+
+## 219. Kit form controls: switch, switch row, slider fill, number field, invalid state, focus halo
+
+Status: [MISSING]
+Target: claude
+Files: css/components.css, themes/joyful-tiles/theme.css, js/ui/components.js, js/ui/kit-catalogue.js, dev/components.html, js/classic2d/board-choice.js, js/mode3d/board-choice.js, tests/components.test.mjs, .claude/context/app-shell-kit.md
+Preconditions: 214
+
+---
+
+## 220. Kit icon set and leading-icon slot
+
+Status: [MISSING]
+Target: claude
+Files: js/ui/components.js, js/ui/kit-catalogue.js, css/components.css, dev/components.html, tests/components.test.mjs, .claude/context/app-shell-kit.md
+Preconditions: 218
+
+---
+
+## 221. Kit feedback parts: confirm box, warn and err notes
+
+Status: [MISSING]
+Target: claude
+Files: css/components.css, themes/joyful-tiles/theme.css, index.html, js/shell/pause.js, js/ui.js, js/records/replay-list.js, js/settings/page.js, js/settings/reset.js, js/classic2d/board-choice.js, js/mode3d/board-choice.js, js/ui/kit-catalogue.js, dev/components.html, .claude/context/app-shell-kit.md
+Preconditions: 218, 220
+
+---
+
+## 222. Kit surfaces: plain stat tile, muted panel, tables, pager, code chip
+
+Status: [MISSING]
+Target: claude
+Files: themes/joyful-tiles/theme.css, css/components.css, js/ui/components.js, js/ui/kit-catalogue.js, dev/components.html, tests/components.test.mjs, .claude/context/app-shell-kit.md
+Preconditions: 218, 220
+
+---
+
+## 223. Kit frames: head and foot steps, white action foot, message cards, scrims, status cards
+
+Status: [MISSING]
+Target: claude
+Files: css/components.css, themes/joyful-tiles/theme.css, css/style.css, index.html, js/ui.js, js/replay/viewer.js, .claude/context/app-shell-kit.md, .claude/context/app-shell-ui.md
+Preconditions: 218, 220
+
+---
+
+## 224. Board module: 2D numbers, 2D end effect from the module, theme token cleanup
+
+Status: [MISSING]
+Target: claude
+Files: js/themes/board-module.js, themes/joyful-tiles/board.js, js/classic2d/tile-skin.js, js/classic2d/end-effect.js, themes/joyful-tiles/theme.css, tests/theme-conformance.test.mjs, .claude/context/app-shell-board-module.md, .claude/context/app-shell-themes.md
+Preconditions: 214
+
+---
+
+## 225. Board module motion tracks: opacity, flip, scale and brightness
+
+Status: [MISSING]
+Target: claude
+Files: js/themes/board-module.js, js/cell-motion.js, js/tile-art.js, themes/joyful-tiles/board.js, .claude/context/classic2d-tile-motion.md, .claude/context/app-shell-board-module.md
+Preconditions: 224
+
+---
+
+## 226. 2D tile art: glyphs, hairline, start cell, flat widths and the cursor ring outside the tile
+
+Status: [MISSING]
+Target: claude
+Files: js/tile-art.js, themes/joyful-tiles/board.js, js/classic2d/board-view.js, js/classic2d/tile-skin.js, .claude/context/classic2d-board-view.md, .claude/context/rendering-board-art.md
+Preconditions: 224
+
+---
+
+## 227. Board frame and framed previews
+
+Status: [MISSING]
+Target: claude
+Files: themes/joyful-tiles/theme.css, js/ui.js, js/shell/menu-preview.js, js/shell/daily.js, js/replay/viewer-2d.js, index.html, css/style.css, .claude/context/classic2d-board-view.md, .claude/context/replay-viewers.md
+Preconditions: 224
 
 ---
