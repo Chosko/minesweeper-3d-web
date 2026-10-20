@@ -45,13 +45,14 @@ shell hands in its flow and its sound sink. The area overview is
   contract.
 
 `js/classic2d/end-effect.js`
-- `WIN`, `LOSS`, `WAVE_STEP_MS` (60), `WAVE_SHARE` (0.6), `PULSE`
-  (`{peakMs, widthMs, alpha}`), `PULSE_COLOR` (`--color-tile-bevel-light`),
-  `CONFETTI_COLORS` (`--color-number-1`…`-7`), `CONFETTI_COUNT`.
+- `WIN`, `LOSS`, `WAVE_STEP_MS`, `WAVE_SHARE`, `WIN_WAVE`
+  (`{peakMs, widthMs}`), `LOSS_SNAP_MS`, `CONFETTI_COUNT`.
 - `createEndEffect({kind, cols, rows, origin, duration, random?})`,
-  `reachMs`, `preLossState`, `wonState`, `shownState`, `pulseAlpha`,
-  `confettiAt(effect, t, {width, height, tile})`, `done`, `drawPulse`,
-  `drawConfetti`. The module head comment is the contract.
+  `reachMs`, `preLossState`, `wonState`, `shownState`,
+  `waveAt(effect, c, state, t, end2d)` → `{scale, flash}` or null,
+  `confettiAt(effect, t, {width, height, tile})`, `done`,
+  `drawWave(ctx, x, y, size, wave, board, paint)`, `drawConfetti`. The
+  module head comment is the contract.
 
 ## INTERNAL PATTERNS
 
@@ -113,9 +114,14 @@ shell hands in its flow and its sound sink. The area overview is
 - **End effect.** Each tile is reached at a delay proportional to its
   distance in tiles from the origin, at most `WAVE_STEP_MS` per tile, the
   farthest by `WAVE_SHARE` of the delay. A loss's changed tiles keep their
-  pre-loss tile until reached; a win's pulse brightens each tile as it
-  passes, its closed mines turn to flags, and its confetti bursts from the
-  origin and falls over the board's rectangle (drawn by the board view).
+  pre-loss tile until reached, then snap to their revealed face from the
+  board module's `end2d.loss.scale` with an overshoot (the 3D loss wave's
+  curve, over `LOSS_SNAP_MS`) under its `end2d.loss.flash` of the light; a
+  win's wave bumps each tile to `end2d.win.scale` and mixes it
+  `end2d.win.mix` toward `end2d.light` as it passes (the 3D win wave's
+  timing, `WIN_WAVE`), its closed mines turn to flags, and its confetti in
+  the module's `palette.confetti` bursts from the origin and falls over the
+  board's rectangle. The board view draws it; the module reads no token.
 
 ## DOMAIN DEPENDENCIES
 
@@ -144,7 +150,7 @@ shell hands in its flow and its sound sink. The area overview is
 
 ## WHEN TO READ THE SOURCE
 
-- Tuning the end effect (wave speed, pulse, confetti) or the 2D end delay
+- Tuning the end effect (wave speed, wave shape, confetti) or the 2D end delay
   (`end-effect.js`; `END_DELAY_MS` and the `finished` handler in `mode.js`).
 - Changing which cue an action plays (`cue` and `act` in `mode.js`; the 3D
   game's mapping it mirrors is `onAction` in `js/main.js`).

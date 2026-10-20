@@ -10,9 +10,10 @@
 
    Source: the canvas's J-Tokens artboard (the token block, its contrast
    pairs) and J-Components artboard (every component in every state). The 2D
-   tile skin and the 3D scene keep their own palettes until the board module
-   takes them over (themed-board-art-and-motion): the tile, number, board and
-   Show 3BV tokens below are those palettes; the sky stops are the theme's.
+   tiles, the 3D scene and the 2D end effect draw from the theme's board
+   module (board.js, themed-board-art-and-motion); the board, number and
+   scene tokens below carry the same canvas values for the screens that read
+   them as tokens.
 
    On buttons, menu entries, mode entries and board options the selected
    state is the focused state: raised at rest, level with the surface when
@@ -99,32 +100,29 @@
   --color-locked-edge: #d8cdb9;
   --color-locked-ink: #5a6385;
 
-  /* the scene panel's night sky and the ink on it */
-  --color-panel-night: #0e1640;
-  --color-panel-glow: #2b3f8a;
-  --color-panel-ink: #dfe6ff;
+  /* the scene: the sky's zenith, horizon and nadir (the scene panel's sky) and the ink on it */
+  --color-scene-zenith: #0e1640;
+  --color-scene-horizon: #2b3f8a;
+  --color-scene-nadir: #1a265f;
+  --color-scene-ink: #dfe6ff;
 
-  /* the canvas's own board tokens */
+  /* the board: the 2D board view's frame and cursor ring and the aimed-cell readout's cube read
+     these; the scrolling board's marks are the theme's own */
+  --color-tile-closed: #78aaf8;
   --color-tile-closed-top: #a9c9fb;
   --color-tile-closed-edge: #2b56b5;
+  --color-tile-pressed: #6b9ef2;
   --color-tile-open: #f3f0ea;
   --color-tile-open-border: #ddd3c1;
   --color-tile-boom: #ff6b6b;
   --color-tile-boom-edge: #c9403f;
   --color-tile-mark: #49c6b8;
-
-  /* the board colours the screens read as tokens: the 2D end effect's win pulse, the aimed-cell
-     readout's cube, the 2D board view's cursor ring and frame; the tiles and cubes draw from the
-     board module */
-  --color-tile-bevel-light: #9cc4ff;
-  --color-tile-closed: #6fa3f7;
-  --color-tile-cursor: #14233f;
-  --color-board-frame: #2b5cb8;
-  --color-board-gap: #9fb7dd;
+  --color-tile-cursor: #16204a;
+  --color-board-frame: #ffffff;
   --color-board-shadow: rgba(16, 32, 61, 0.55);
   --color-board-scrollbar: rgba(16, 32, 61, 0.75);
 
-  /* numbers 1–7: the 2D end effect's confetti */
+  /* numbers 1–8 */
   --color-number-1: #1565c0;
   --color-number-2: #2b742f;
   --color-number-3: #c32727;
@@ -132,6 +130,7 @@
   --color-number-5: #8d1c1c;
   --color-number-6: #00717c;
   --color-number-7: #212121;
+  --color-number-8: #666666;
 
   /* the replay viewer: action marks, the paused span, the recorded pointer, Show 3BV's tints */
   --color-replay-reveal: #3563d8;
@@ -209,6 +208,8 @@
 /* ---------- page ---------- */
 :root[data-theme="joyful-tiles"] body {
   font-family: var(--font-family-sans);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.25;
   color: var(--color-ink);
   background-color: var(--color-ground);
   background-image: radial-gradient(circle, var(--color-ground-dot) 1.6px, transparent 1.7px);
@@ -841,12 +842,12 @@
 /* ---------- scene panel: the night sky in a rounded frame on a hard yellow edge ---------- */
 :root[data-theme="joyful-tiles"] .ui-scene-panel {
   border-radius: 24px;
-  background-color: var(--color-panel-night);
-  background-image: radial-gradient(ellipse at 55% 40%, var(--color-panel-glow) 0%, var(--color-panel-night) 78%);
+  background-color: var(--color-scene-zenith);
+  background-image: radial-gradient(ellipse at 55% 40%, var(--color-scene-horizon) 0%, var(--color-scene-zenith) 78%);
   box-shadow: inset 0 -2px 0 var(--color-edge-inset), 0 10px 0 var(--color-head-edge), var(--elevation-2);
 }
 :root[data-theme="joyful-tiles"] .ui-scene-panel__stage { border-radius: inherit; color: var(--color-ink-inverse); }
-:root[data-theme="joyful-tiles"] .ui-scene-panel__tag { color: var(--color-panel-ink); font-family: var(--font-family-mono); }
+:root[data-theme="joyful-tiles"] .ui-scene-panel__tag { color: var(--color-scene-ink); font-family: var(--font-family-mono); }
 
 /* the 3D scene drawn from beneath: no sky of the panel's own over it, the frame still drawn */
 :root[data-theme="joyful-tiles"] .ui-scene-panel--live { background: none; }
@@ -868,7 +869,7 @@
 :root[data-theme="joyful-tiles"] .ui-scene-panel__badge[data-entry="daily"] { --f: var(--color-violet); --e: var(--color-violet-edge); }
 :root[data-theme="joyful-tiles"] .ui-scene-panel__badge[data-unavailable] { --f: var(--color-locked); --e: var(--color-locked-edge); box-shadow: 0 10px 0 var(--e); }
 :root[data-theme="joyful-tiles"] .ui-scene-panel__name { color: var(--color-ink-inverse); }
-:root[data-theme="joyful-tiles"] .ui-scene-panel__note { color: var(--color-panel-ink); }
+:root[data-theme="joyful-tiles"] .ui-scene-panel__note { color: var(--color-scene-ink); }
 
 /* ---------- divider ---------- */
 :root[data-theme="joyful-tiles"] .ui-divider { background: var(--color-line); }

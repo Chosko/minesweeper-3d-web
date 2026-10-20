@@ -87,8 +87,9 @@
 //                        ring is thick now.
 //   showEffect(effect, t)  the end effect (js/classic2d/end-effect.js) at t ms: repaints the board
 //                        with each tile as the effect shows it (a loss's pre-loss tiles before its
-//                        wave arrives), the win pulse over the tiles and the confetti over the
-//                        board's rectangle, clipped to the view; every redraw until the next call
+//                        wave arrives), each tile under its wave and the confetti over the
+//                        board's rectangle, clipped to the view, all from the skin's board module
+//                        (none without one); every redraw until the next call
 //                        draws that moment. showEffect(null) repaints the board in its end state.
 //                        The effect never touches the game: every tile is still read from it.
 //   A won game's unflagged mines (its closed cells) are drawn as flags, the skin's static tile.
@@ -100,7 +101,7 @@ import { token as readerToken } from '../tokens.js';
 import { roundRect } from '../tile-art.js';
 import { CELL, PHASE } from '../engine/rules.js';
 import {
-  shownState, wonState, pulseAlpha, confettiAt, drawPulse, drawConfetti, PULSE_COLOR, CONFETTI_COLORS,
+  shownState, wonState, waveAt, confettiAt, drawWave, drawConfetti,
 } from './end-effect.js';
 
 /** The design token the board's ground is filled with while the skin has no board module. */
@@ -316,7 +317,6 @@ export function createBoardView({
   let marks = null; // the scrolled board's marks for the current layout and scroll, or null
   let effect = null; // the end effect playing, or null
   let effectT = 0; // the moment of it drawn, in ms
-  let pulse = null; // the pulse colour, read with each effect frame
   const scroll = { x: 0, y: 0 };
 
   // Whether cell c's tile is at least partly in view.
@@ -432,7 +432,8 @@ export function createBoardView({
     const y = tileY(row);
     const t = layout.tile;
     if (!inView(c)) return false;
-    let state = game.cellState(c);
+    const now = game.cellState(c);
+    let state = now;
     if (effect) state = shownState(effect, c, state, effectT);
     else if (game.phase === PHASE.WON) state = wonState(state);
     const moving = motion?.has(c);
@@ -442,8 +443,11 @@ export function createBoardView({
       ctx.fillStyle = ground();
       ctx.fillRect(x, y, t, t);
     }
-    if (!moving) skin.drawTile(ctx, x, y, t, state === CELL.CLOSED && pressed.has(c) ? PRESSED : state, game.cellNumber(c), ratio);
-    if (effect) drawPulse(ctx, x, y, t, pulseAlpha(effect, c, effectT), pulse ?? (pulse = token(PULSE_COLOR)));
+    if (!moving) {
+      const paint = () => skin.drawTile(ctx, x, y, t, state === CELL.CLOSED && pressed.has(c) ? PRESSED : state, game.cellNumber(c), ratio);
+      if (effect) drawWave(ctx, x, y, t, waveAt(effect, c, now, effectT, boardOf()?.end2d), boardOf(), paint);
+      else paint();
+    }
     if (c === mark && c !== cursor) {
       ring(x, y, t, token(START_MARK), { hairline: false });
       if (markPulse) ring(x, y, t, token(START_MARK), { wide: 2, hairline: false });
@@ -478,11 +482,12 @@ export function createBoardView({
 
   // The end effect's confetti over the board's rectangle, clipped to the part in view.
   function drawEffectLayer() {
+    const colours = boardOf()?.palette?.confetti;
     const pieces = confettiAt(effect, effectT, { width: layout.boardWidth, height: layout.boardHeight, tile: layout.tile });
-    if (!pieces.length) return;
+    if (!pieces.length || !colours?.length) return;
     ctx.save();
     clipTo(layout.viewX, layout.viewY, layout.viewWidth, layout.viewHeight);
-    drawConfetti(ctx, pieces, CONFETTI_COLORS.map((name) => token(name)), tileX(0), tileY(0));
+    drawConfetti(ctx, pieces, colours, tileX(0), tileY(0));
     ctx.restore();
   }
 
@@ -699,7 +704,6 @@ export function createBoardView({
     showEffect(next, t = 0) {
       effect = next ?? null;
       effectT = t;
-      pulse = null; // read again each frame: the theme may have changed
       repaint();
     },
     cellAt: (x, y) => cellAtLayout(layout, scroll, cols, rows, x, y),

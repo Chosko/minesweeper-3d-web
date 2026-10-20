@@ -70,6 +70,18 @@ getStyle, theme, dev?, log?})`.
   a custom property declared in another base stylesheet, a read of an
   undeclared token and a required token a theme lacks. Fixed layers use the
   `--z-*` tokens.
+- ***Joyful tiles*' tokens** are its canvas's J-Tokens block, values
+  included (`tests/tokens.test.mjs`): the board tokens (`--color-tile-*`,
+  `--color-board-frame`, `--color-number-1`…`-8`) hold the board module's
+  values, read only where a screen draws a board colour as a token (the 2D
+  board view's ground and cursor ring, the aimed-cell readout's cube); the
+  scene tokens (`--color-scene-zenith`, `-horizon`, `-nadir`, `-ink`) are
+  the board module's sky stops and the ink on them, which the scene panel
+  draws; its body sets the base text in `--font-weight-regular`. A board
+  token the canvas lacks is not declared once nothing reads it; the
+  scrolling board's marks, the replay pointer's outline, Show 3BV's tints
+  and `--board-frame-radius` stay while the board view, the replay viewer
+  and the board frame read them.
 - **Head order.** `index.html` loads `css/tokens.css`,
   `css/components.css` and `css/style.css`, the gallery only the first two;
   each then runs `js/theme.js`, which appends the theme's `<link

@@ -1,8 +1,9 @@
 // Classic 2D end effect (js/classic2d/end-effect.js): the 3D win and loss effects at board scale —
 // the loss wave's per-tile reach time from the exploded tile, scaled so the farthest tile is reached
 // within the 2D end delay on Beginner, Expert and a 100 × 100 board, the pre-loss tiles shown until
-// it arrives, the win pulse's origin, the confetti bounded to the board's rectangle, and the effect
-// done at the end of the delay. DOM-free.
+// it arrives, each wave's scale and light from the board module, drawn clipped to the rounded tile,
+// the confetti in the module's colours bounded to the board's rectangle, and the effect done at the
+// end of the delay. DOM-free.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -10,14 +11,16 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  createEndEffect, reachMs, preLossState, wonState, shownState, pulseAlpha, confettiAt, done, drawPulse, drawConfetti,
-  WIN, LOSS, WAVE_STEP_MS, CONFETTI_COLORS, PULSE_COLOR,
+  createEndEffect, reachMs, preLossState, wonState, shownState, waveAt, confettiAt, done, drawWave, drawConfetti,
+  WIN, LOSS, WAVE_STEP_MS, WIN_WAVE, LOSS_SNAP_MS,
 } from '../js/classic2d/end-effect.js';
 import { END_DELAY_MS } from '../js/classic2d/mode.js';
 import { END_DELAY_MS as END_DELAY_3D_MS } from '../js/shell/mode-3d.js';
 import { CELL } from '../js/engine/rules.js';
+import { BOARD as JOYFUL } from '../themes/joyful-tiles/board.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const END2D = JOYFUL.end2d;
 
 const BOARDS = { beginner: [9, 9], expert: [30, 16], huge: [100, 100] };
 const corners = (cols, rows) => [0, cols - 1, (rows - 1) * cols, rows * cols - 1];
@@ -83,27 +86,62 @@ test('a tile the loss changed keeps its pre-loss tile until the wave reaches it,
   assert.equal(shownState(win, far, CELL.REVEALED, 0), CELL.REVEALED);
 });
 
-test('the win pulse starts at the last action\'s cell and spreads from it', () => {
+test('the win wave starts at the last action\'s cell and spreads from it, each tile bumped in scale and lightened by the module\'s values', () => {
   const [cols, rows] = BOARDS.expert;
   const origin = 8 * cols + 20;
   const e = createEndEffect({ kind: WIN, cols, rows, origin, duration: END_DELAY_MS, random: seeded() });
   assert.equal(e.origin, origin);
-  assert.equal(pulseAlpha(e, origin, 0), 0, 'nothing before the wave has left');
+  assert.equal(waveAt(e, origin, CELL.REVEALED, 0, END2D), null, 'nothing before the wave has left');
   const strongest = (c) => {
-    let best = { t: -1, a: 0 };
-    for (let t = 0; t < END_DELAY_MS; t += 5) { const a = pulseAlpha(e, c, t); if (a > best.a) best = { t, a }; }
+    let best = { t: -1, scale: 1, flash: 0 };
+    for (let t = 0; t < END_DELAY_MS; t += 5) { const w = waveAt(e, c, CELL.REVEALED, t, END2D); if (w && w.scale > best.scale) best = { t, ...w }; }
     return best;
   };
   const here = strongest(origin);
   const near = strongest(origin + 3);
   const far = strongest(0);
-  assert.ok(here.a > 0 && near.a > 0 && far.a > 0, 'every tile brightens');
-  assert.ok(here.t < near.t && near.t < far.t, `the pulse passes the origin first (${here.t}, ${near.t}, ${far.t} ms)`);
+  assert.ok(here.scale > 1 && near.scale > 1 && far.scale > 1, 'every tile bumps');
+  assert.ok(here.t < near.t && near.t < far.t, `the wave passes the origin first (${here.t}, ${near.t}, ${far.t} ms)`);
   assert.ok(far.t < END_DELAY_MS, 'and reaches the farthest tile within the delay');
-  assert.equal(pulseAlpha(e, 0, END_DELAY_MS), 0, 'gone at the end of the delay');
+  assert.ok(Math.abs(here.t - WIN_WAVE.peakMs) <= 5, 'its peak WIN_WAVE.peakMs after the wave arrives');
+  assert.ok(Math.abs(here.scale - END2D.win.scale) < 0.01, `at its peak the tile is at the module's scale (${here.scale})`);
+  assert.ok(Math.abs(here.flash - END2D.win.mix) < 0.01, `and mixed the module's share toward its light (${here.flash})`);
+  for (const t of [here.t - 60, here.t + 60]) {
+    const w = waveAt(e, origin, CELL.REVEALED, t, END2D);
+    assert.ok(Math.abs((w.scale - 1) / (END2D.win.scale - 1) - w.flash / END2D.win.mix) < 1e-9, 'scale and lightening rise and fall together');
+  }
+  assert.equal(waveAt(e, 0, CELL.REVEALED, END_DELAY_MS, END2D), null, 'gone at the end of the delay');
   const loss = createEndEffect({ kind: LOSS, cols, rows, origin, duration: END_DELAY_MS });
-  assert.equal(pulseAlpha(loss, origin, here.t), 0, 'a loss has no pulse');
-  assert.deepEqual(confettiAt(loss, 300, { width: 900, height: 480, tile: 30 }), [], 'nor confetti');
+  assert.equal(waveAt(loss, origin + 1, CELL.REVEALED, here.t, END2D), null, 'a loss leaves a tile it did not change still');
+  assert.deepEqual(confettiAt(loss, 300, { width: 900, height: 480, tile: 30 }), [], 'and throws no confetti');
+});
+
+test('the loss wave snaps each tile the loss changed to its revealed face, from the module\'s scale with an overshoot, under the module\'s flash fading out', () => {
+  const [cols, rows] = BOARDS.expert;
+  const origin = 5 * cols + 7;
+  const e = createEndEffect({ kind: LOSS, cols, rows, origin, duration: END_DELAY_MS });
+  const c = origin + 4;
+  const reach = reachMs(e, c);
+  assert.equal(waveAt(e, c, CELL.MINE, reach - 1, END2D), null, 'nothing before the wave reaches it');
+  const first = waveAt(e, c, CELL.MINE, reach, END2D);
+  assert.ok(Math.abs(first.scale - END2D.loss.scale) < 1e-9, `it arrives at the module's scale (${first.scale})`);
+  assert.ok(Math.abs(first.flash - END2D.loss.flash) < 1e-9, `under the module's flash (${first.flash})`);
+  let peak = 0;
+  let lastFlash = first.flash;
+  for (let t = reach; t < reach + LOSS_SNAP_MS; t += 5) {
+    const w = waveAt(e, c, CELL.MINE, t, END2D);
+    peak = Math.max(peak, w.scale);
+    assert.ok(w.flash <= lastFlash + 1e-9, 'the flash only fades');
+    lastFlash = w.flash;
+  }
+  assert.ok(peak > 1, `it overshoots its size before settling (${peak.toFixed(3)})`);
+  assert.equal(waveAt(e, c, CELL.MINE, reach + LOSS_SNAP_MS, END2D), null, 'settled LOSS_SNAP_MS after the wave reaches it');
+  assert.ok(waveAt(e, c, CELL.WRONG_FLAG, reach + 10, END2D), 'a wrong flag snaps too');
+  assert.equal(waveAt(e, c, CELL.REVEALED, reach + 10, END2D), null, 'a tile the loss did not change stays still');
+  for (const [name, [w, h]] of Object.entries(BOARDS)) {
+    const big = createEndEffect({ kind: LOSS, cols: w, rows: h, origin: 0, duration: END_DELAY_MS });
+    assert.ok(reachMs(big, w * h - 1) + LOSS_SNAP_MS < END_DELAY_MS, `${name}: the farthest tile has settled before the delay ends`);
+  }
 });
 
 test('a win effect without a known origin starts at the board\'s centre', () => {
@@ -124,7 +162,7 @@ test('the confetti falls over the board\'s own rectangle, never outside it, and 
         for (const p of pieces) {
           assert.ok(p.x >= 0 && p.x <= width && p.y >= 0 && p.y <= height, `${cols}×${rows}: a piece at ${p.x}, ${p.y} is inside ${width} × ${height}`);
           assert.ok(p.size > 0 && p.alpha > 0 && p.alpha <= 1);
-          assert.ok(p.color >= 0 && p.color < CONFETTI_COLORS.length);
+          assert.ok(Number.isInteger(p.color) && p.color >= 0, 'a colour index into the module\'s confetti colours');
         }
       }
       assert.ok(shown > 0, `${cols}×${rows}: confetti shows during the delay`);
@@ -143,22 +181,50 @@ test('the effect reports itself done at the end of the delay', () => {
   assert.throws(() => createEndEffect({ kind: 'draw', cols: 9, rows: 9, origin: 0, duration: 1000 }), RangeError);
 });
 
-test('drawing reads the colours it is handed: the pulse and the confetti take design tokens', () => {
+test('a tile\'s wave is drawn about its centre, its light clipped to the rounded tile, never a square over its corners and the ground', () => {
   const calls = [];
   const ctx = new Proxy({}, {
     get: (target, prop) => (prop in target ? target[prop] : (...args) => calls.push([prop, args, target.fillStyle, target.globalAlpha])),
     set: (target, prop, value) => { target[prop] = value; return true; },
   });
-  drawPulse(ctx, 10, 20, 30, 0.4, '#abcdef');
-  assert.deepEqual(calls.find((c) => c[0] === 'fillRect'), ['fillRect', [10, 20, 30, 30], '#abcdef', 0.4]);
+  let painted = 0;
+  drawWave(ctx, 10, 20, 40, { scale: 1.2, flash: 0.4 }, JOYFUL, () => { painted++; calls.push(['paint']); });
+  assert.equal(painted, 1, 'the tile is painted once');
+  const ops = calls.map((c) => c[0]);
+  assert.ok(ops.indexOf('scale') < ops.indexOf('paint'), 'scaled before it is painted');
+  assert.deepEqual(calls.find((c) => c[0] === 'scale')[1], [1.2, 1.2]);
+  assert.deepEqual(calls.find((c) => c[0] === 'translate')[1], [30, 40], 'about the tile\'s centre');
+  assert.ok(!ops.includes('fillRect'), 'no square');
+  const corners = calls.filter((c) => c[0] === 'arcTo');
+  assert.ok(corners.length === 4 && corners.every((c) => Math.abs(c[1][4] - 40 * JOYFUL.style2d.params.radius) < 1e-9), 'the light follows the tile\'s rounded corners');
+  const fill = calls.find((c) => c[0] === 'fill');
+  assert.equal(fill[2], JOYFUL.end2d.light, 'in the module\'s light');
+  assert.equal(fill[3], 0.4, 'at the wave\'s share');
+  assert.ok(ops.indexOf('paint') < ops.indexOf('fill'), 'over the tile');
+  assert.equal(ops[0], 'save');
+  assert.equal(ops.at(-1), 'restore');
   calls.length = 0;
-  drawPulse(ctx, 0, 0, 30, 0, '#abcdef');
-  assert.equal(calls.length, 0, 'no pulse, nothing drawn');
+  painted = 0;
+  drawWave(ctx, 10, 20, 40, null, JOYFUL, () => { painted++; });
+  assert.equal(painted, 1, 'no wave: the tile alone');
+  assert.ok(!calls.some((c) => c[0] === 'scale' || c[0] === 'fill'), 'unscaled and unlit');
+});
+
+test('the confetti is drawn in the colours it is handed: the board module\'s', () => {
+  const calls = [];
+  const ctx = new Proxy({}, {
+    get: (target, prop) => (prop in target ? target[prop] : (...args) => calls.push([prop, args, target.fillStyle, target.globalAlpha])),
+    set: (target, prop, value) => { target[prop] = value; return true; },
+  });
   drawConfetti(ctx, [{ x: 5, y: 6, size: 8, angle: 0, color: 8, alpha: 0.5 }], ['#111111', '#222222'], 100, 200);
   assert.deepEqual(calls.find((c) => c[0] === 'translate')[1], [105, 206], 'from the board\'s corner');
   assert.equal(calls.find((c) => c[0] === 'fillRect')[2], '#111111');
-  assert.equal(PULSE_COLOR.startsWith('--color-'), true);
-  assert.equal(CONFETTI_COLORS.every((t) => /^--color-number-\d$/.test(t)), true, 'the number tokens, themed');
+  const e = createEndEffect({ kind: WIN, cols: 9, rows: 9, origin: 40, duration: END_DELAY_MS, random: seeded() });
+  const pieces = confettiAt(e, 200, { width: 9 * 32, height: 9 * 32, tile: 32 });
+  calls.length = 0;
+  drawConfetti(ctx, pieces, JOYFUL.palette.confetti, 0, 0);
+  const used = new Set(calls.filter((c) => c[0] === 'fillRect').map((c) => c[2]));
+  assert.ok(used.size > 1 && [...used].every((c) => JOYFUL.palette.confetti.includes(c)), 'Joyful tiles\' confetti colours');
 });
 
 test('the module is DOM-free and holds no literal colour', () => {
@@ -166,4 +232,5 @@ test('the module is DOM-free and holds no literal colour', () => {
   assert.doesNotMatch(src, /\b(document|window|requestAnimationFrame|performance)\b/);
   assert.doesNotMatch(src, /#[0-9a-f]{3,8}\b|rgba?\(/i);
   assert.doesNotMatch(src, /from ['"][^'"]*(three|tokens)/);
+  assert.doesNotMatch(src, /--color-/, 'it reads no design token: every colour and value is the board module\'s');
 });

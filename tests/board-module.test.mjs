@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import {
   CELL_EVENTS, MOTION_PROPERTIES, NAMED_EASINGS, FACE_ENTRIES, BOARD_ENTRIES, checkBoardModule,
 } from '../js/themes/board-module.js';
-import { STYLES } from '../js/tile-art.js';
+import { STYLES, mix } from '../js/tile-art.js';
 import { MIN_TILE_SIZE } from '../js/classic2d/tile-skin.js';
 import { THEMES } from '../js/themes/registry.js';
 import { BOARD as JOYFUL } from '../themes/joyful-tiles/board.js';
@@ -37,7 +37,7 @@ test('the palette entries cover every entry the feature document lists', () => {
     'palette.faces2d.sunk.face', 'palette.faces2d.revealed.face', 'palette.faces2d.revealed.rim',
     'palette.faces3d.closed.face', 'palette.faces3d.revealed.face', 'palette.faces3d.exploded.face',
     'palette.flag.base', 'palette.flag.cloth', 'palette.mine.body', 'palette.cross.mark', 'palette.boardGround',
-    'palette.confetti', 'cursor.color', 'cursor.radius.tile', 'cursor.radius.px',
+    'palette.confetti', 'end2d.light', 'end2d.win.scale', 'end2d.win.mix', 'end2d.loss.scale', 'end2d.loss.flash', 'cursor.color', 'cursor.radius.tile', 'cursor.radius.px',
     'selection.outline', 'selection.width.face', 'selection.width.px', 'selection.glow', 'selection.tint', 'mark.tint',
   ]) assert.ok(BOARD_ENTRIES.includes(path), path);
 });
@@ -47,8 +47,14 @@ test('the palette entries cover every entry the feature document lists', () => {
 const BROKEN = [
   ['a missing palette entry', (b) => { delete b.palette.flag.cloth; }, ['palette', 'palette.flag.cloth']],
   ['a missing 2D face palette', (b) => { delete b.palette.faces2d.revealed; }, ['palette', 'palette.faces2d.revealed.face']],
-  ['a low-contrast number', (b) => { b.numbers[3] = '#c8bfb0'; }, ['contrast', 'numbers[3]']],
-  ['only 25 number colours', (b) => { b.numbers.length = 26; }, ['numbers', 'numbers[26]']],
+  ['a low-contrast 3D number', (b) => { b.numbers3d[3] = '#c8bfb0'; }, ['contrast', 'numbers3d[3]']],
+  ['only 25 3D number colours', (b) => { b.numbers3d.length = 26; }, ['numbers', 'numbers3d[26]']],
+  ['a low-contrast 2D number', (b) => { b.numbers2d[2] = '#c8bfb0'; }, ['contrast', 'numbers2d[2]']],
+  ['only 7 2D number colours', (b) => { b.numbers2d.length = 8; }, ['numbers', 'numbers2d[8]']],
+  ['a 2D number too faint on the 2D revealed face', (b) => { b.palette.faces2d.revealed.face = '#5c6bc0'; }, ['contrast', 'numbers2d[1]']],
+  ['a missing 2D end effect value', (b) => { delete b.end2d.win.scale; }, ['palette', 'end2d.win.scale']],
+  ['a 2D end effect light the canvas cannot fill with', (b) => { b.end2d.light = 'white'; }, ['palette', 'end2d.light']],
+  ['a bevel side that is neither a shade nor a colour', (b) => { b.style3d.params.sides.right = 'blue'; }, ['style', 'style3d.params.sides']],
   ['an unknown style', (b) => { b.style2d.name = 'glass'; }, ['style', 'style2d']],
   ['a missing 3D style', (b) => { delete b.style3d; }, ['style', 'style3d']],
   ['a style missing one of its parameters', (b) => { delete b.style3d.params.slope; }, ['style', 'style3d.params.slope']],
@@ -59,7 +65,7 @@ const BROKEN = [
   ['a keyframe past the duration', (b) => { b.motion.unflag.tracks[0].keyframes.push({ at: 999, value: 1 }); }, ['motion', 'motion.unflag.tracks[0]']],
   ['a missing cell event', (b) => { delete b.motion.chordPress; }, ['motion', 'motion.chordPress']],
   ['a closed face that differs from the revealed one by colour alone', (b) => { b.style3d.params.slope = 0; }, ['relief', 'style3d']],
-  ['a revealed face the number contrast cannot be measured on', (b) => { b.palette.faces3d.revealed.face = 'rgba(243,240,234,1)'; b.numbers[3] = '#e8e0d0'; }, ['contrast', 'numbers[3]']],
+  ['a revealed face the number contrast cannot be measured on', (b) => { b.palette.faces3d.revealed.face = 'rgba(243,240,234,1)'; b.numbers3d[3] = '#e8e0d0'; }, ['contrast', 'numbers3d[3]']],
   ['a cursor ring in a colour the contrast cannot be measured on', (b) => { b.cursor.color = 'rgba(240,236,230,1)'; }, ['contrast', 'cursor.color']],
   ['a cursor ring too faint on the revealed face', (b) => { b.cursor.color = '#e6e0d6'; }, ['contrast', 'cursor.color']],
   ['a selection outline too faint on the closed face', (b) => { b.selection.outline = '#80b0f8'; }, ['contrast', 'selection.outline']],
@@ -138,10 +144,48 @@ test('Joyful tiles draws "Bevel 5 %" 3D cubes', () => {
   assert.deepEqual({ ...JOYFUL.sky }, { horizon: '#2b3f8a', zenith: '#0e1640', nadir: '#1a265f', fog: '#2b3f8a' });
 });
 
+test('each number list is measured on its own mode\'s revealed face: the 3D list on every point of it, the 2D list on the face its glyph sits on', () => {
+  const board = copy();
+  board.palette.faces3d.revealed.face = '#5c6bc0';
+  let problems = checkBoardModule(board, { fonts: JOYFUL_ENTRY.fonts });
+  assert.ok(has(problems, 'contrast', 'numbers3d[1]'), 'the 3D list on the 3D face');
+  assert.ok(!problems.some((p) => p.subject.startsWith('numbers2d')), 'the 2D list is not measured on the 3D face');
+  const rim = copy();
+  rim.palette.faces3d.revealed.rim = '#5c6bc0';
+  assert.ok(has(checkBoardModule(rim, { fonts: JOYFUL_ENTRY.fonts }), 'contrast', 'numbers3d[1]'), 'the 3D list on the 3D border too');
+  const hairline = copy();
+  hairline.palette.faces2d.revealed.rim = '#5c6bc0';
+  hairline.palette.faces2d.revealed.edge = '#5c6bc0';
+  problems = checkBoardModule(hairline, { fonts: JOYFUL_ENTRY.fonts });
+  assert.ok(!problems.some((p) => p.subject.startsWith('numbers2d')), 'the 2D hairline holds no glyph');
+});
+
+test('Joyful tiles carries the board sheet\'s 2D numbers: the --color-number-1..8 tokens', () => {
+  assert.equal(JOYFUL.numbers2d.length, 9);
+  assert.equal(JOYFUL.numbers2d[0], null);
+  assert.deepEqual(JOYFUL.numbers2d.slice(1), ['#1565c0', '#2b742f', '#c32727', '#1a237e', '#8d1c1c', '#00717c', '#212121', '#666666']);
+});
+
+test('Joyful tiles carries the 3D sheet\'s Classic 2D end effect: a win wave bumping and lightening each tile, a loss wave snapping it in with a flash', () => {
+  const e = JOYFUL.end2d;
+  assert.equal(e.light, '#ffffff');
+  assert.deepEqual({ ...e.win }, { scale: 1.2, mix: 0.4 });
+  assert.deepEqual({ ...e.loss }, { scale: 0.55, flash: 0.55 });
+});
+
+test('Joyful tiles\' closed cube is lit from the top left with the 3D sheet\'s exact side colours', () => {
+  const c = JOYFUL.palette.faces3d.closed;
+  const { sides } = JOYFUL.style3d.params;
+  assert.equal(sides.top, 1, 'top: the light bevel');
+  assert.equal(sides.bottom, -1, 'bottom: the dark bevel');
+  assert.equal(sides.right, '#5e92ec', 'right: the sheet\'s colour, which no mix of the face and the dark bevel gives');
+  assert.equal(mix(c.face, c.bevelLight, sides.left), '#98befa', 'left: mixed from the face');
+});
+
 test('Joyful tiles carries the 3D sheet\'s numbers, selection and confetti', () => {
-  assert.equal(JOYFUL.numbers.length, 27);
-  assert.deepEqual(JOYFUL.numbers.slice(1, 9), ['#135bad', '#26692a', '#ac2626', '#1a237e', '#8d1c1c', '#00656f', '#212121', '#5c5c5c']);
-  assert.equal(JOYFUL.numbers[26], '#256a08');
+  assert.equal(JOYFUL.numbers3d.length, 27);
+  assert.deepEqual(JOYFUL.numbers3d.slice(1, 9), ['#135bad', '#26692a', '#ac2626', '#1a237e', '#8d1c1c', '#00656f', '#212121', '#5c5c5c']);
+  assert.equal(JOYFUL.numbers3d[26], '#256a08');
   assert.deepEqual({ ...JOYFUL.font }, { family: 'Rubik', weight: 800 });
   const s = JOYFUL.selection;
   assert.equal(s.outline, '#16204a');

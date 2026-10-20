@@ -25,7 +25,8 @@ export const BOARD = freeze({
     boardGround: '#0b1424',
     confetti: ['#82b1ff', '#81c784', '#ff8a80'],
   },
-  numbers: [
+  numbers2d: [null, '#a0c4ff', '#9ad29d', '#ffa49b', '#c5b3e3', '#ffbfa9', '#7adbe8', '#f4f6f8', '#b8bfc9'],
+  numbers3d: [
     null,
     '#82b1ff', '#81c784', '#ff8a80', '#b39ddb', '#ffab91', '#4dd0e1', '#eceff1', '#a0a8b4',
     '#82b1ff', '#81c784', '#ff8a80', '#b39ddb', '#ffab91', '#4dd0e1', '#eceff1', '#a0a8b4', '#82b1ff',
@@ -38,5 +39,6 @@ export const BOARD = freeze({
   cursor: { color: '#ffd54f', inner: '#0b1424', width: 2, radius: { tile: 0, px: 0 } },
   selection: { outline: '#ffd54f', width: { face: 0.06, px: 3 }, glow: '#ffffff', glowWidth: 1, tint: [1, 1, 1] },
   mark: { tint: '#2f8a7e', mix: 0.5, pulseMix: 0.9 },
+  end2d: { light: '#ffffff', win: { scale: 1.1, mix: 0.3 }, loss: { scale: 0.7, flash: 0.4 } },
   motion: { press: null, release: null, reveal: null, flag: null, unflag: null, chordPress: null, solvedPulse: null },
 });

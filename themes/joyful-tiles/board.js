@@ -1,8 +1,8 @@
 /* Joyful tiles board module: everything the Classic 2D tile skin and the 3D renderer draw this theme
    with, in the shape js/themes/board-module.js documents (feature themed-board-art-and-motion). Every value is the canvas's (page "Joyful
-   tiles"): the 2D tiles and the cell motion from J-BoardSheet, the 3D cubes ("Bevel 5 %"), numbers,
-   sky, selection, start-cell tint, confetti and solved pulse from J-3DSheet, colours and easings
-   named by token from J-Tokens. The theme applier loads it and hands it to its subscribers. */
+   tiles"): the 2D tiles, their numbers and the cell motion from J-BoardSheet, the 3D cubes ("Bevel
+   5 %"), their numbers, sky, selection, start-cell tint, confetti, solved pulse and win and loss
+   waves from J-3DSheet, colours and easings named by token from J-Tokens. The theme applier loads it and hands it to its subscribers. */
 
 function freeze(o) {
   for (const v of Object.values(o)) if (v && typeof v === 'object') freeze(v);
@@ -38,7 +38,11 @@ export const BOARD = freeze({
     boardGround: '#ffffff', /* J-BoardSheet .j-board (board-frame) between the tiles */
     confetti: ['#ff6b6b', '#ffc93c', '#49c6b8', '#78aaf8', '#6d4ee8', '#ffffff', '#ff8c42'], /* J-3DSheet confetti: coral, yellow, teal, blue, violet, white, orange */
   },
-  numbers: [
+  numbers2d: [
+    null, /* J-BoardSheet numbers start at 1 */
+    '#1565c0', '#2b742f', '#c32727', '#1a237e', '#8d1c1c', '#00717c', '#212121', '#666666', /* J-BoardSheet numbers 1–8 (J-Tokens --color-number-1..8) */
+  ],
+  numbers3d: [
     null, /* J-3DSheet numbers start at 1 */
     '#135bad', '#26692a', '#ac2626', '#1a237e', '#8d1c1c', '#00656f', '#212121', '#5c5c5c', /* J-3DSheet numbers 1–8 */
     '#761895', '#5b5f07', '#166187', '#a10c44', '#186912', '#3810d1', '#874e16', '#086854', '#a21b98', /* J-3DSheet numbers 9–17 */
@@ -64,7 +68,7 @@ export const BOARD = freeze({
       slope: 0.05, /* J-3DSheet bevel 5 % of the face wide */
       revealedEdge: 0.028, /* J-3DSheet revealed cubes: the 2.8 % edge, no slope */
       radius: 0, /* J-3DSheet cube faces meet edge to edge */
-      sides: { top: 1, right: -0.67, bottom: -1, left: 0.536 }, /* J-3DSheet lit from the top left: right #5e92ec, left #98befa mixed from the face */
+      sides: { top: 1, right: '#5e92ec', bottom: -1, left: 0.536 }, /* J-3DSheet lit from the top left: right #5e92ec as drawn, left #98befa mixed from the face */
     },
   },
   cursor: { color: INK, inner: '#ffffff', width: 3, radius: { tile: 0.15, px: 3 } }, /* J-BoardSheet .t.cur: 3 px navy ring, white hairline, radius tile × .15 + 3 px */
@@ -76,6 +80,11 @@ export const BOARD = freeze({
     tint: [1, 0.86, 0.84], /* J-3DSheet face tint × (1, .86, .84) toward coral */
   },
   mark: { tint: '#49c6b8', mix: 0.55, pulseMix: 0.9 }, /* J-3DSheet start cell: --color-tile-mark, mix .55 swelling to .9 */
+  end2d: {
+    light: '#ffffff', /* J-3DSheet win and loss waves mix toward white */
+    win: { scale: 1.2, mix: 0.4 }, /* J-3DSheet win wave: scale bump to 1.2, mix .4 toward white */
+    loss: { scale: 0.55, flash: 0.55 }, /* J-3DSheet loss wave: snap in from .55 with an overshoot, .55 white flash */
+  },
   motion: {
     press: {
       duration: 90, /* J-BoardSheet Press · 90 ms */

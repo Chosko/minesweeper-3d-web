@@ -800,9 +800,10 @@ test('js/main.js binds the renderer to the board art hand-off and requests a red
     'the shell binds the renderer to the hand-off and requests a redraw on every board module');
 });
 
-test('the --color-scene-* tokens are retired: no theme stylesheet declares one and none is required', () => {
-  for (const [css, id] of [[THEME_CSS, THEME_ID], [FIXTURE_CSS, FIXTURE_ID]]) assert.doesNotMatch(css, /--color-scene-/, id);
+test('no --color-scene-* token is required: the 3D scene draws its sky from the board module, and a theme\'s scene tokens are its stylesheet\'s own', () => {
   assert.deepEqual(REQUIRED_TOKENS.filter((n) => n.startsWith('--color-scene-')), []);
+  assert.doesNotMatch(FIXTURE_CSS, /--color-scene-/, FIXTURE_ID);
+  for (const f of ['js/render.js', 'js/textures.js', 'js/shell/scene-palette.js']) assert.doesNotMatch(read(`../${f}`), /--color-scene-/, f);
 });
 
 test('the renderer draws the sky, fog and clear colour from the board module it is handed, not from constants', () => {

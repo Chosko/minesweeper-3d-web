@@ -1111,7 +1111,7 @@ Feature: shared-screen-layout
 
 ## 224. Board module: 2D numbers, 2D end effect from the module, theme token cleanup
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/themes/board-module.js, themes/joyful-tiles/board.js, js/classic2d/tile-skin.js, js/classic2d/end-effect.js, themes/joyful-tiles/theme.css, tests/theme-conformance.test.mjs, .claude/context/app-shell-board-module.md, .claude/context/app-shell-themes.md
 Preconditions: 214

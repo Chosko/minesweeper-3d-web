@@ -84,7 +84,7 @@ function devicePixel(ctx) {
 
 // Paints one tile of `state` (and `number` when revealed) at x, y, size CSS pixels from `board`, a
 // theme's board module: its Classic 2D style and parameters, its 2D faces, flag, mine and cross,
-// and its numbers in its number font; `depth` (0 flat to 1 fully raised) is the closed, pressed and
+// and its 2D numbers in its number font; `depth` (0 flat to 1 fully raised) is the closed, pressed and
 // flagged faces' style depth.
 export function paintTileWith(board, ctx, x, y, size, state, number, depth = 1) {
   if (!board || !TILE_STATES.includes(state) || (state === 'revealed' && !validNumber(number))) {
@@ -106,7 +106,7 @@ export function paintTileWith(board, ctx, x, y, size, state, number, depth = 1) 
       break;
     case 'revealed':
       face('revealed', faces.revealed);
-      if (number > 0) drawNumberGlyph(ctx, size, number, { color: board.numbers[number], shadow: palette.numberShadow, font: board.font });
+      if (number > 0) drawNumberGlyph(ctx, size, number, { color: board.numbers2d[number], shadow: palette.numberShadow, font: board.font });
       break;
     case 'flagged':
       face('closed', faces.closed);

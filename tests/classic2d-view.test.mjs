@@ -21,7 +21,8 @@ import { MIN_TILE_SIZE } from '../js/classic2d/tile-skin.js';
 import { createSquareGrid } from '../js/engine/square-grid.js';
 import { createGameWithMines, CELL } from '../js/engine/rules.js';
 import { REFERENCE_PROFILE } from '../js/engine/profiles.js';
-import { createEndEffect, reachMs, WIN, LOSS, PULSE_COLOR, CONFETTI_COLORS } from '../js/classic2d/end-effect.js';
+import { createEndEffect, reachMs, WIN, LOSS } from '../js/classic2d/end-effect.js';
+import { BOARD as JOYFUL } from '../themes/joyful-tiles/board.js';
 import { END_DELAY_MS } from '../js/classic2d/mode.js';
 import { createSession } from '../js/classic2d/session.js';
 import { browserSuite } from './helpers/browser.mjs';
@@ -57,12 +58,14 @@ function fakeCanvas() {
 }
 
 // A skin recording every tile it draws, and the redraw callback the view hands it.
-function fakeSkinFactory() {
+// `board`, when given, is the board module the skin draws from.
+function fakeSkinFactory(board = null) {
   const out = { draws: [], redraw: null, disposed: false };
   out.createSkin = ({ redraw }) => {
     out.redraw = redraw;
     return {
       drawTile(ctx, x, y, size, state, number, ratio) { out.draws.push({ x, y, size, state, number, ratio }); },
+      ...(board ? { board: () => board } : {}),
       dispose() { out.disposed = true; },
     };
   };
@@ -85,10 +88,10 @@ function beginnerGame() {
 }
 
 // A view at the Fit scale unless one is given: the fit rule's own numbers, with no cap.
-function makeView({ cols = 9, rows = 9, width = 600, height = 500, pixelRatio = 1, token, scale = 'fit', frame, onLayout } = {}) {
+function makeView({ cols = 9, rows = 9, width = 600, height = 500, pixelRatio = 1, token, scale = 'fit', frame, onLayout, board } = {}) {
   const grid = createSquareGrid(cols, rows);
   const canvas = fakeCanvas();
-  const skin = fakeSkinFactory();
+  const skin = fakeSkinFactory(board);
   const tokens = {
     light: { '--color-board-frame': '#111111', '--color-board-shadow': '#333333', '--color-board-scrollbar': '#444444', '--color-tile-cursor': '#0000ff', '--color-success': '#00aa00' },
     dark: { '--color-board-frame': '#222222', '--color-board-shadow': '#333333', '--color-board-scrollbar': '#444444', '--color-tile-cursor': '#0000ff', '--color-success': '#00aa00' },
@@ -392,8 +395,30 @@ test('during a loss\'s end effect each tile the loss changed keeps its pre-loss 
   assert.equal(view.effect, null, 'no effect left running');
 });
 
-test('a win\'s end effect brightens the tiles the pulse is passing and throws confetti over the board\'s own rectangle only', () => {
-  const { view, skin, canvas, grid } = makeView({ token: (name) => (name === PULSE_COLOR ? '#fefefe' : CONFETTI_COLORS.includes(name) ? '#c0ffee' : '#111111') });
+// Joyful tiles' module with a light and confetti colour the tests can pick out of the drawing.
+function effectBoard() {
+  const b = structuredClone(JOYFUL);
+  b.end2d.light = '#fefefe';
+  b.palette.confetti = ['#c0ffee'];
+  return b;
+}
+// The tile each fill of the wave's light covers: the corner of the rounded rectangle before it.
+function lightFills(canvas, light) {
+  const out = [];
+  let corner = null;
+  let scale = 1;
+  for (const c of canvas.ctx.calls) {
+    if (c.op === 'scale') scale = c.args[0];
+    if (c.op === 'restore') scale = 1;
+    if (c.op === 'moveTo') corner = c.args;
+    if (c.op === 'fill' && c.fill === light) out.push({ corner, scale });
+  }
+  return out;
+}
+
+test('a win\'s end effect bumps and lightens the tiles the wave is passing, clipped to each rounded tile, and throws the module\'s confetti over the board\'s own rectangle only', () => {
+  const board = effectBoard();
+  const { view, skin, canvas, grid } = makeView({ board, token: () => '#111111' });
   const { game } = beginnerGame();
   view.setGame(game);
   for (let c = 0; c < 81 && game.phase !== 'won'; c++) if (game.cellState(c) === CELL.CLOSED && c % 9 !== 8 && c !== grid.index(7, 0)) game.reveal(c);
@@ -407,17 +432,22 @@ test('a win\'s end effect brightens the tiles the pulse is passing and throws co
   view.showEffect(effect, 140);
   assert.equal(skin.draws.length, 81, 'the end-state tiles are the skin\'s static tiles');
   assert.equal(drawnStates(view, skin, grid).get(mine), CELL.CLOSED, 'a mine the wave has not reached is still closed');
-  const pulses = canvas.ctx.calls.filter((c) => c.op === 'fillRect' && c.fill === '#fefefe');
+  const lit = lightFills(canvas, '#fefefe');
   const at = view.cellRect(origin);
-  assert.ok(pulses.some((c) => c.args[0] === at.x && c.args[1] === at.y), 'the pulse brightens the origin first');
+  const r = at.size * board.style2d.params.radius;
+  const here = lit.find((f) => Math.abs(f.corner[0] - (at.x + r)) < 1e-9 && Math.abs(f.corner[1] - at.y) < 1e-9);
+  assert.ok(here, 'the wave lightens the origin first, in a rounded rectangle on its tile');
+  assert.ok(Math.abs(here.scale - board.end2d.win.scale) < 0.01, `bumped to the module's scale (${here.scale})`);
   const far = view.cellRect(grid.index(8, 8));
-  assert.equal(pulses.some((c) => c.args[0] === far.x && c.args[1] === far.y), false, 'not yet the far corner');
+  assert.equal(lit.some((f) => Math.abs(f.corner[1] - far.y) < 1e-9 && Math.abs(f.corner[0] - (far.x + r)) < 1e-9), false, 'not yet the far corner');
+  assert.equal(canvas.ctx.calls.some((c) => c.op === 'fillRect' && c.fill === '#fefefe'), false, 'no square over the tile\'s corners and the ground');
   const pieces = canvas.ctx.calls.filter((c) => c.op === 'fillRect' && c.fill === '#c0ffee');
-  assert.ok(pieces.length > 0, 'confetti is drawn');
+  assert.ok(pieces.length > 0, 'confetti is drawn in the module\'s colours');
   const clip = canvas.ctx.calls.findLast((c) => c.op === 'rect');
   const { viewX, viewY, viewWidth, viewHeight } = view.layout;
   assert.deepEqual(clip.args, [viewX, viewY, viewWidth, viewHeight], 'clipped to the board\'s rectangle in view');
-  for (const t of canvas.ctx.calls.filter((c) => c.op === 'translate')) {
+  const confettiFrom = canvas.ctx.calls.indexOf(clip);
+  for (const t of canvas.ctx.calls.slice(confettiFrom).filter((c) => c.op === 'translate')) {
     assert.ok(t.args[0] >= viewX && t.args[0] <= viewX + viewWidth && t.args[1] >= viewY && t.args[1] <= viewY + viewHeight, 'each piece over the board');
   }
   skin.draws.length = 0;
@@ -426,11 +456,36 @@ test('a win\'s end effect brightens the tiles the pulse is passing and throws co
   canvas.ctx.calls.length = 0;
   skin.draws.length = 0;
   view.showEffect(null);
-  assert.equal(canvas.ctx.calls.some((c) => c.op === 'fillRect' && (c.fill === '#fefefe' || c.fill === '#c0ffee')), false, 'nothing of the effect is left');
+  assert.equal(canvas.ctx.calls.some((c) => (c.op === 'fillRect' || c.op === 'fill') && (c.fill === '#fefefe' || c.fill === '#c0ffee')), false, 'nothing of the effect is left');
+  assert.equal(canvas.ctx.calls.some((c) => c.op === 'scale'), false, 'every tile at its own size');
   const shown = drawnStates(view, skin, grid);
   for (let c = 0; c < 81; c++) {
     assert.equal(shown.get(c), game.cellState(c) === CELL.CLOSED ? CELL.FLAGGED : game.cellState(c), `cell ${c}: the won board's end state, every unflagged mine a flag`);
   }
+});
+
+test('a loss\'s end effect snaps each tile the loss changed in from the module\'s scale under its flash, and leaves the others still', () => {
+  const board = effectBoard();
+  const { view, canvas, grid } = makeView({ board, token: () => '#111111' });
+  const { game } = beginnerGame();
+  view.setGame(game);
+  game.toggleFlag(grid.index(6, 8)); // a flag on a safe cell, so the flood leaves the game running
+  game.reveal(grid.index(0, 0));
+  const boom = grid.index(8, 4);
+  game.reveal(boom);
+  assert.equal(game.cellState(boom), CELL.EXPLODED);
+  const effect = createEndEffect({ kind: LOSS, cols: 9, rows: 9, origin: boom, duration: END_DELAY_MS });
+  const mineNear = grid.index(8, 3);
+  canvas.ctx.calls.length = 0;
+  view.showEffect(effect, reachMs(effect, mineNear));
+  const lit = lightFills(canvas, '#fefefe');
+  const at = view.cellRect(mineNear);
+  const r = at.size * board.style2d.params.radius;
+  const near = lit.find((f) => Math.abs(f.corner[0] - (at.x + r)) < 1e-9 && Math.abs(f.corner[1] - at.y) < 1e-9);
+  assert.ok(near, 'the mine the wave reaches flashes on its rounded tile');
+  assert.ok(Math.abs(near.scale - board.end2d.loss.scale) < 1e-9, `from the module's scale (${near.scale})`);
+  const open = view.cellRect(grid.index(0, 0));
+  assert.equal(lit.some((f) => Math.abs(f.corner[0] - (open.x + r)) < 1e-9 && Math.abs(f.corner[1] - open.y) < 1e-9), false, 'a tile the loss did not change does not flash');
 });
 
 test('a hidden board draws no effect', () => {

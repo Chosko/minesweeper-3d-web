@@ -77,7 +77,8 @@ function clipped(ctx, S, radius, draw) {
 // the shade of each slope, from -1 (bevelDark) through 0 (the face) to 1
 // (bevelLight) — a sunk face turns each one over, and a shade between the
 // three mixes the face with bevelLight or bevelDark, which must then be
-// `#rrggbb`; `radius` the corner radius.
+// `#rrggbb` — or a `#rrggbb` colour the closed face draws as it is and the
+// sunk face turns over through its own face; `radius` the corner radius.
 const BEVEL = Object.freeze({
   edge: 1 / 64,
   slope: 0.075,
@@ -103,7 +104,9 @@ export function tileBands(size, px) {
 
 const SIDES = ['top', 'right', 'bottom', 'left'];
 
-function sideShade(p, s) {
+function sideShade(p, s, sign) {
+  if (typeof s === 'string') return sign > 0 ? s : mix(p.face, s, -1);
+  s *= sign;
   if (s >= 1) return p.bevelLight;
   if (s <= -1) return p.bevelDark;
   if (s === 0) return p.face;
@@ -148,7 +151,7 @@ function slopes(ctx, S, r, b, rim, shades) {
   }
 }
 
-const bevelShades = (q, p, sign) => SIDES.map((side) => sideShade(p, sign * q.sides[side]));
+const bevelShades = (q, p, sign) => SIDES.map((side) => sideShade(p, q.sides[side], sign));
 
 function bevelClosed(ctx, S, q, p, depth, px) {
   clipped(ctx, S, q.radius, () => {

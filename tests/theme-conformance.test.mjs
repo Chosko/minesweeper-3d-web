@@ -405,9 +405,6 @@ test('the required token set is what the base stylesheets and the screens read, 
     for (const [, name] of src.matchAll(/'(--[a-z][\w-]*)'/g)) reads.add(name);
     for (const [, name] of src.matchAll(/\b(?:color|raised|revealed)\(token, '([\w-]+)'\)/g)) reads.add(`--color-${name}`);
   }
-  // The end effect reads its confetti's number colours by number.
-  assert.match(read('js/classic2d/end-effect.js'), /\[1, 2, 3, 4, 5, 6, 7\]\.map\(\(n\) => `--color-number-\$\{n\}`\)/);
-  for (let n = 1; n <= 7; n++) reads.add(`--color-number-${n}`);
   for (const list of Object.values(CONTRAST_ROLES)) for (const name of list) reads.add(name);
   assert.deepEqual([...REQUIRED_TOKENS].sort(), [...reads].sort());
   assert.equal(new Set(REQUIRED_TOKENS).size, REQUIRED_TOKENS.length, 'each token listed once');

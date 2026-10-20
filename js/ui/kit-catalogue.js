@@ -286,9 +286,9 @@ export const CONTRAST_ROLES = Object.freeze({
 
 // The required token set: every token a theme stylesheet must declare, because something outside
 // the theme reads it — the base stylesheets (css/components.css, css/style.css), the screens'
-// scripts that draw from tokens (the Records chart, the 2D board view and its end effect, the
-// replay viewer) — plus the contrast roles above. The Classic 2D tiles and the 3D scene read none:
-// they draw from the theme's board module. The conformance tests and the theme skill read this one
+// scripts that draw from tokens (the Records chart, the 2D board view, the replay viewer) — plus
+// the contrast roles above. The Classic 2D tiles, their end effect and the 3D scene read none: they
+// draw from the theme's board module. The conformance tests and the theme skill read this one
 // list; tests/theme-conformance.test.mjs keeps it equal to those reads.
 export const REQUIRED_TOKENS = Object.freeze([
   // type, read by the base stylesheets and the Records chart
@@ -298,11 +298,7 @@ export const REQUIRED_TOKENS = Object.freeze([
   // surfaces, ink and status: the contrast roles and the Records chart
   ...new Set([...CONTRAST_ROLES.surfaces, ...CONTRAST_ROLES.bodyText, ...CONTRAST_ROLES.largeText, '--color-border']),
   // the 2D board view (its ground and cursor ring while its skin holds no board module, its marks)
-  // and its end effect (the win pulse, the confetti in number colours)
   '--color-board-frame', '--color-board-shadow', '--color-board-scrollbar', '--color-tile-cursor',
-  '--color-tile-bevel-light',
-  '--color-number-1', '--color-number-2', '--color-number-3', '--color-number-4',
-  '--color-number-5', '--color-number-6', '--color-number-7',
   // the board frame's corner radius, which the shell sets on the frame from the board module; a
   // theme declares the frame's radius before the shell first sets it
   '--board-frame-radius',

@@ -113,7 +113,7 @@ test('the Joyful tiles folder holds no remote URL and only the fonts the registr
 test('the Joyful tiles board module is frozen and fills the board module\'s shape', async () => {
   const mod = await import(pathToFileURL(join(ROOT, themeById('joyful-tiles').boardModule)).href);
   assert.ok(Object.isFrozen(mod.BOARD));
-  assert.deepEqual(Object.keys(mod.BOARD).sort(), ['cursor', 'font', 'mark', 'motion', 'numbers', 'palette', 'selection', 'sky', 'style2d', 'style3d']);
+  assert.deepEqual(Object.keys(mod.BOARD).sort(), ['cursor', 'end2d', 'font', 'mark', 'motion', 'numbers2d', 'numbers3d', 'palette', 'selection', 'sky', 'style2d', 'style3d']);
   assert.match(read('themes/joyful-tiles/board.js'), /themed-board-art-and-motion/, 'its header names the owning feature');
 });
 

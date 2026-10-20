@@ -88,22 +88,28 @@ sheet:
 - **Drawing style** — for each mode, the shipped style in `STYLES` whose
   construction the sample tiles show (a sloped bevel, or a flat face with a
   light band and a dark edge), with its parameters measured from the sample
-  as fractions of the tile, plus, in 2D, `gap` and `frameRadius`. A tile no
-  shipped style draws within its parameters is a stop.
-- **Numbers** — each number the sheets draw, as drawn. Every number past
-  those takes the 3D mode's reference hue (`js/textures.js`, the hues the
-  unthemed atlas starts from), adjusted in lightness, hue kept, until it
-  passes the board conformance contrast check against every point of the
-  revealed face; each is named in the report with its value. A drawn number
-  that fails that check is not adjusted: it is a question (attended) or a stop
-  (unattended), naming the number, as a failing token pair is. The number
-  tokens of `REQUIRED_TOKENS` carry the 2D sheet's numbers.
+  as fractions of the tile, plus, in 2D, `gap` and `frameRadius`. A bevel
+  side the sheet draws in a colour no mix of the face with its light or dark
+  bevel gives is that `#rrggbb` colour. A tile no shipped style draws within
+  its parameters is a stop.
+- **Numbers** — two lists: `numbers2d`, the 2D sheet's numbers 1–8 as
+  drawn, and `numbers3d`, the 3D sheet's numbers as drawn. Every 3D number
+  past those the sheet draws takes the 3D mode's reference hue
+  (`js/textures.js`, the hues the unthemed atlas starts from), adjusted in
+  lightness, hue kept, until it passes the board conformance contrast check
+  against every point of the 3D revealed face; each is named in the report with its value.
+  A drawn number that fails that check is not adjusted: it is a question
+  (attended) or a stop (unattended), naming the number, as a failing token
+  pair is.
 - **Glyphs** — flag, mine, wrong-flag cross and number shadow as drawn; an
   undrawn mine and cross take the theme's ink and danger colours.
 - **Font** — the number font: one of the theme's own faces, at the weight the
   sheet's numbers use.
 - **Board ground, cursor, selection, start-cell mark, confetti** — as drawn
   on the sheets.
+- **Classic 2D end effect** (`end2d`) — the 3D sheet's win and loss waves:
+  the light a wave mixes toward, the win wave's peak scale and mix, the loss
+  wave's starting scale and flash.
 - **Sky** — horizon, zenith and nadir from the 3D sheet's panel; with no 3D
   panel, from the page backdrop. The fog is the horizon unless the sheet
   draws its own.

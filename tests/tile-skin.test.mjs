@@ -160,7 +160,7 @@ test('each state draws through the shared tile recipe in the module\'s Classic 2
     for (let n = 0; n <= 8; n++) {
       recipes[`revealed-${n}`] = (ctx, s, px) => {
         face(ctx, s, px, 'revealed', f.revealed);
-        if (n > 0) art.drawNumberGlyph(ctx, s, n, { color: b.numbers[n], shadow: numberShadow, font: b.font });
+        if (n > 0) art.drawNumberGlyph(ctx, s, n, { color: b.numbers2d[n], shadow: numberShadow, font: b.font });
       };
     }
     for (const ratio of [1, 2]) {
@@ -224,15 +224,24 @@ test('a revealed number is the glyph in the module\'s number colour and font, ou
       const text = ctx.calls.filter((c) => c.op === 'fillText');
       assert.deepEqual(text.map((c) => c.args[0]), [String(n), String(n)], `${name}: a shadow and the glyph for ${n}`);
       assert.equal(text[0].fill, b.palette.numberShadow, `${name}: ${n}'s shadow`);
-      assert.equal(text[1].fill, b.numbers[n], `${name}: ${n} in the module's number colour`);
+      assert.equal(text[1].fill, b.numbers2d[n], `${name}: ${n} in the module's 2D number colour`);
       const outline = ctx.calls.filter((c) => c.op === 'strokeText');
-      assert.equal(outline[0].stroke, shade(b.numbers[n], NUMBER_OUTLINE), `${name}: ${n}'s outline is its own hue, darker`);
+      assert.equal(outline[0].stroke, shade(b.numbers2d[n], NUMBER_OUTLINE), `${name}: ${n}'s outline is its own hue, darker`);
       assert.equal(ctx.font, `${b.font.weight} ${26 * 0.68}px "${b.font.family}", ${NUMBER_FONT}`, `${name}: ${n} in the module's number font`);
     }
     const empty = fakeContext();
     paintTileWith(b, empty, 0, 0, 24, 'revealed', 0);
     assert.equal(empty.calls.filter((c) => c.op === 'fillText' || c.op === 'strokeText').length, 0, `${name}: revealed empty has no glyph`);
   }
+});
+
+test('Classic 2D draws its numbers from the module\'s 2D list, never the 3D one: Joyful tiles\' 1 is the board sheet\'s blue', async () => {
+  const { paintTileWith } = await skinModule();
+  const ctx = fakeContext();
+  paintTileWith(JOYFUL, ctx, 0, 0, 26, 'revealed', 1);
+  const glyph = ctx.calls.filter((c) => c.op === 'fillText')[1];
+  assert.equal(glyph.fill, '#1565c0', 'J-BoardSheet\'s 1');
+  assert.notEqual(glyph.fill, JOYFUL.numbers3d[1], 'not J-3DSheet\'s 1');
 });
 
 test('the wrong flag is the flag under the cross on the revealed face, and no mine', async () => {
@@ -552,7 +561,7 @@ async function drawAllStates([size, ratio, id, module]) {
   tiles.forEach(([s, n], i) => skin.drawTile(ctx, gap + i * (size + gap), gap, size, s, n, ratio));
   const parse = (hex) => [1, 3, 5].map((i) => parseInt(hex.trim().slice(i, i + 2), 16));
   const out = tiles.map(([s, n], i) => {
-    const wanted = (s === 'revealed' ? (n ? [BOARD.numbers[n]] : []) : (glyph[s] ?? [])).map(parse);
+    const wanted = (s === 'revealed' ? (n ? [BOARD.numbers2d[n]] : []) : (glyph[s] ?? [])).map(parse);
     const data = ctx.getImageData((gap + i * (size + gap)) * ratio, gap * ratio, size * ratio, size * ratio).data;
     let hits = 0;
     for (let p = 0; p < data.length; p += 4) {

@@ -35,7 +35,7 @@ export function drawLayer(ctx, layer, board) {
   else {
     const n = layer - L_NUM0;
     face(ctx, board, 'revealed', faces.revealed);
-    if (n > 0) drawNumberGlyph(ctx, TILE, n, { color: board.numbers[n], shadow: board.palette.numberShadow, font: board.font });
+    if (n > 0) drawNumberGlyph(ctx, TILE, n, { color: board.numbers3d[n], shadow: board.palette.numberShadow, font: board.font });
   }
 }
 

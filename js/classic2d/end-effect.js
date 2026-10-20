@@ -6,13 +6,16 @@
 //
 // Both waves start at an origin cell and reach each tile at a delay proportional to its distance
 // from it, in tiles: at most WAVE_STEP_MS per tile, as the 3D waves, and less on a large board, so
-// the wave reaches the board's farthest tile at WAVE_SHARE of the end delay at the latest.
-//   win    a pulse spreading from the last action's cell — each tile brightens as the wave passes it
-//          (pulseAlpha) and an unflagged mine turns into its end-state flag (wonState) — and
-//          confetti bursting from that cell and falling over the board's own rectangle
-//          (confettiAt), never outside it.
+// the wave reaches the board's farthest tile at WAVE_SHARE of the end delay at the latest. Their
+// values and colours are the board module's `end2d` and confetti colours (js/themes/board-module.js);
+// it reads no design token.
+//   win    a wave spreading from the last action's cell — each tile bumps in scale and mixes toward
+//          the module's light as the wave passes it (waveAt), and an unflagged mine turns into its
+//          end-state flag (wonState) — and confetti bursting from that cell and falling over the
+//          board's own rectangle (confettiAt), never outside it.
 //   loss   a reveal wave from the exploded tile: each tile the loss changed keeps its pre-loss tile
-//          (preLossState) until the wave reaches it (shownState).
+//          (preLossState) until the wave reaches it (shownState), then snaps to its revealed face
+//          from the module's scale with an overshoot under the module's flash (waveAt).
 //
 // createEndEffect({ kind, cols, rows, origin, duration, random? }) → effect
 //   kind      WIN | LOSS
@@ -23,15 +26,21 @@
 // preLossState(state)                the tile a cell showed before the loss changed it
 // wonState(state)                    the tile a won board shows: a closed cell (a mine) as a flag
 // shownState(effect, c, state, t)    the tile cell c, in `state` on the game, shows at t
-// pulseAlpha(effect, c, t)           the win pulse's strength over cell c at t, 0 … PULSE.alpha
+// waveAt(effect, c, state, t, end2d) → { scale, flash } | null: the wave over cell c, in `state` on
+//                                    the game, at t — the tile's scale about its centre and its share
+//                                    of the light — from the module's `end2d`; null while it is still
 // confettiAt(effect, t, { width, height, tile }) → [{ x, y, size, angle, color, alpha }]: the
 //                                    pieces in view, in board CSS pixels from its top-left corner,
-//                                    each inside width × height; color indexes CONFETTI_COLORS
+//                                    each inside width × height; color indexes the module's
+//                                    confetti colours, wrapping round
 // done(effect, t)                    the effect has played out: t ≥ duration
-// drawPulse(ctx, x, y, size, alpha, colour), drawConfetti(ctx, pieces, colours, x, y)
-//                                    draw onto a Canvas 2D context, the board's corner at x, y
+// drawWave(ctx, x, y, size, wave, board, paint)  one tile at x, y under its wave: paint() draws the
+//                                    tile, scaled about its centre, then the light over it, clipped
+//                                    to the tile's rounded corners (the module's style2d radius)
+// drawConfetti(ctx, pieces, colours, x, y)  the pieces in `colours`, the board's corner at x, y
 
 import { CELL } from '../engine/rules.js';
+import { roundRect } from '../tile-art.js';
 
 export const WIN = 'win';
 export const LOSS = 'loss';
@@ -40,11 +49,10 @@ export const LOSS = 'loss';
 export const WAVE_STEP_MS = 60;
 /** The share of the end delay by which a wave has reached the board's farthest tile. */
 export const WAVE_SHARE = 0.6;
-/** The win pulse over a tile: its peak after the wave reaches it, its width and its strength. */
-export const PULSE = Object.freeze({ peakMs: 140, widthMs: 100, alpha: 0.45 });
-/** The design tokens the pulse and the confetti are drawn in (read by the board view). */
-export const PULSE_COLOR = '--color-tile-bevel-light';
-export const CONFETTI_COLORS = Object.freeze([1, 2, 3, 4, 5, 6, 7].map((n) => `--color-number-${n}`));
+/** The win wave over a tile: its peak after the wave reaches it and its width (the 3D win wave's). */
+export const WIN_WAVE = Object.freeze({ peakMs: 140, widthMs: 100 });
+/** How long a tile the loss changed takes to snap in once the wave reaches it (the 3D WAVE_CELL_S). */
+export const LOSS_SNAP_MS = 300;
 /** How many confetti pieces a win throws. */
 export const CONFETTI_COUNT = 140;
 
@@ -68,7 +76,7 @@ export function createEndEffect({ kind, cols, rows, origin, duration, random = M
   const pieces = [];
   if (kind === WIN) {
     for (let i = 0; i < CONFETTI_COUNT; i++) {
-      pieces.push({ dir: random() * Math.PI * 2, rise: random(), speed: random(), late: random(), spin: random(), size: random(), color: i % CONFETTI_COLORS.length });
+      pieces.push({ dir: random() * Math.PI * 2, rise: random(), speed: random(), late: random(), spin: random(), size: random(), color: i });
     }
   }
   return Object.freeze({ kind, cols, rows, origin: o, originCol: oc, originRow: or, duration, step, pieces: Object.freeze(pieces) });
@@ -97,13 +105,27 @@ export function shownState(effect, c, state, t) {
   return reached ? wonState(state) : state;
 }
 
-/** The win pulse's strength over cell c at t: a bump PULSE.peakMs after the wave reaches it. */
-export function pulseAlpha(effect, c, t) {
-  if (effect.kind !== WIN || t >= effect.duration) return 0;
+/**
+ * The wave over cell c, in `state` on the game, at t, from the board module's `end2d`: a win bumps
+ * every tile WIN_WAVE.peakMs after the wave reaches it, to end2d.win.scale and end2d.win.mix of the
+ * light at the peak; a loss snaps a tile it changed in from end2d.loss.scale, overshooting before it
+ * settles at LOSS_SNAP_MS (the 3D loss wave's curve), under end2d.loss.flash of the light fading out.
+ * Null while the tile is still.
+ */
+export function waveAt(effect, c, state, t, end2d) {
+  if (!end2d || t >= effect.duration) return null;
   const local = t - reachMs(effect, c);
-  if (local <= 0) return 0;
-  const a = PULSE.alpha * Math.exp(-(((local - PULSE.peakMs) / PULSE.widthMs) ** 2));
-  return a < 0.01 ? 0 : a;
+  if (effect.kind === WIN) {
+    if (local <= 0) return null;
+    const b = Math.exp(-(((local - WIN_WAVE.peakMs) / WIN_WAVE.widthMs) ** 2));
+    if (b < 0.01) return null;
+    return { scale: 1 + (end2d.win.scale - 1) * b, flash: end2d.win.mix * b };
+  }
+  if (preLossState(state) === state || local < 0 || local >= LOSS_SNAP_MS) return null;
+  const p = local / LOSS_SNAP_MS;
+  const q = p - 1;
+  const settle = 1 + 2.2 * q * q * q + 1.2 * q * q; // 0 at the start, past 1 midway, 1 at the end
+  return { scale: end2d.loss.scale + (1 - end2d.loss.scale) * settle, flash: end2d.loss.flash * (1 - p) };
 }
 
 /** Whether the effect has played out. */
@@ -138,13 +160,27 @@ export function confettiAt(effect, t, { width, height, tile }) {
   return out;
 }
 
-/** Brightens one tile at x, y by the pulse's alpha. */
-export function drawPulse(ctx, x, y, size, alpha, colour) {
-  if (!(alpha > 0)) return;
+/**
+ * One tile at x, y, `size` px under its wave (waveAt; null for none): paint() draws the tile, scaled
+ * about its centre, then the module's light at the wave's share over it, clipped to the tile's
+ * rounded corners (the module's style2d radius), never over its corners or the ground.
+ */
+export function drawWave(ctx, x, y, size, wave, board, paint) {
   ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.fillStyle = colour;
-  ctx.fillRect(x, y, size, size);
+  if (wave) {
+    const cx = x + size / 2;
+    const cy = y + size / 2;
+    ctx.translate(cx, cy);
+    ctx.scale(wave.scale, wave.scale);
+    ctx.translate(-cx, -cy);
+  }
+  paint();
+  if (wave?.flash > 0 && board?.end2d) {
+    ctx.globalAlpha = wave.flash;
+    ctx.fillStyle = board.end2d.light;
+    roundRect(ctx, x, y, size, size, size * (board.style2d?.params?.radius ?? 0));
+    ctx.fill();
+  }
   ctx.restore();
 }
 

@@ -16,14 +16,16 @@
 //     cross     the wrong-flag cross: outline (any CSS colour), mark
 //     numberShadow  the number glyph's shadow (any CSS colour)
 //     boardGround   the Classic 2D board's ground between tiles
-//     confetti  the 3D win confetti's colours
-//   numbers     numbers[1..26] (index 0 unused): Classic 2D draws 1–8, 3D all 26
+//     confetti  the win confetti's colours, in both modes
+//   numbers2d   numbers2d[1..8] (index 0 unused): the Classic 2D number colours
+//   numbers3d   numbers3d[1..26] (index 0 unused): the 3D number colours
 //   font        the number font: { family, weight }, one of the theme's self-hosted faces
 //   sky         { horizon, zenith, nadir, fog? } — the fog is the horizon when absent
 //   style2d     { name, params } — a drawing style of js/tile-art.js `STYLES` with its parameters,
 //               plus `gap` (between tiles) and `frameRadius` (the board frame's corner radius),
 //               every length a fraction of the tile
 //   style3d     { name, params } — the 3D cubes' style and its parameters
+//               (a bevel side is a shade from -1 to 1 or a `#rrggbb` colour — js/tile-art.js)
 //   cursor      the Classic 2D cursor ring: color, inner (its hairline, any CSS colour), width in
 //               px, radius { tile, px } — the corner radius is tile × size + px
 //   selection   the 3D aimed cube: outline, width { face, px } — max(face × the face, px) —, glow
@@ -31,6 +33,11 @@
 //               selected face's colour
 //   mark        the 3D marked start cell: tint, mix (its share of the face), pulseMix (at the
 //               peak of its pulse)
+//   end2d       the Classic 2D end effect's waves (js/classic2d/end-effect.js): light (the
+//               `#rrggbb` colour a wave mixes a tile toward); win { scale (each tile's peak
+//               scale), mix (its peak share of the light) }; loss { scale (a tile the loss changed
+//               snaps in from, with an overshoot), flash (its share of the light as the wave
+//               arrives, fading out) }; the confetti is the palette's
 //   motion      one entry per cell event (CELL_EVENTS): a motion description, or null to leave
 //               the event still
 //
@@ -84,6 +91,7 @@ export const BOARD_ENTRIES = Object.freeze([
   'cursor.color', 'cursor.inner', 'cursor.width', 'cursor.radius.tile', 'cursor.radius.px',
   'selection.outline', 'selection.width.face', 'selection.width.px', 'selection.glow', 'selection.glowWidth', 'selection.tint',
   'mark.tint', 'mark.mix', 'mark.pulseMix',
+  'end2d.light', 'end2d.win.scale', 'end2d.win.mix', 'end2d.loss.scale', 'end2d.loss.flash',
 ]);
 
 // The entries of the parameters of each style that set the closed face's relief, which the
@@ -119,17 +127,27 @@ function checkPalette(b) {
     const v = at(b, path);
     const ok = path === 'palette.confetti' ? Array.isArray(v) && v.length > 0 && v.every(isColour)
       : path === 'selection.tint' ? Array.isArray(v) && v.length === 3 && v.every(isNumber)
-        : /\.(width|px|tile|face|glowWidth|mix|pulseMix)$/.test(path) && !/^palette\./.test(path) ? isNumber(v)
-          : path === 'mark.tint' ? isHex(v)
+        : /\.(width|px|tile|face|glowWidth|mix|pulseMix|scale|flash)$/.test(path) && !/^palette\./.test(path) ? isNumber(v)
+          : path === 'mark.tint' || path === 'end2d.light' ? isHex(v)
             : isColour(v);
     if (!ok) out.push(problem('palette', path));
   }
   return out;
 }
 
+// Each mode's number list: its key, its last number, the faces its glyphs sit on and the points of
+// the revealed face it is measured against — the 2D list its face and shade (the hairline round a
+// flat 2D face holds no glyph), the 3D list every point, its border included.
+const NUMBER_LISTS = Object.freeze([
+  ['numbers2d', 8, 'faces2d', ['face', 'faceShade']],
+  ['numbers3d', 26, 'faces3d', ['rim', 'edge', 'face', 'faceShade']],
+]);
+
 function checkNumbers(b) {
   const out = [];
-  for (let n = 1; n <= 26; n++) if (!isHex(b.numbers?.[n])) out.push(problem('numbers', `numbers[${n}]`));
+  for (const [key, last] of NUMBER_LISTS) {
+    for (let n = 1; n <= last; n++) if (!isHex(b[key]?.[n])) out.push(problem('numbers', `${key}[${n}]`));
+  }
   return out;
 }
 
@@ -148,7 +166,8 @@ function checkSky(b) {
 }
 
 // A shipped style with every one of its parameters (and, in 2D, the gap and the frame radius);
-// a bevel whose sides mix shades needs `#rrggbb` faces to mix.
+// a bevel side is a shade from -1 to 1 or a `#rrggbb` colour, and a bevel whose sides mix shades —
+// or turn a colour over on the sunk face — needs `#rrggbb` faces to mix.
 function checkStyle(b, key, faces, extra) {
   const s = b[key];
   if (!isObject(s) || !STYLES[s.name] || !isObject(s.params)) return [problem('style', key)];
@@ -156,11 +175,12 @@ function checkStyle(b, key, faces, extra) {
   const shipped = STYLES[s.name].params;
   for (const p of [...Object.keys(shipped), ...extra]) {
     const v = s.params[p];
-    const ok = p === 'sides' ? isObject(v) && Object.keys(shipped.sides).every((k) => isNumber(v[k]) && v[k] >= -1 && v[k] <= 1) : isNumber(v) && v >= 0;
+    const side = (x) => (isNumber(x) && x >= -1 && x <= 1) || isHex(x);
+    const ok = p === 'sides' ? isObject(v) && Object.keys(shipped.sides).every((k) => side(v[k])) : isNumber(v) && v >= 0;
     if (!ok) out.push(problem('style', `${key}.params.${p}`));
   }
   const sides = s.params.sides;
-  if (isObject(sides) && Object.values(sides).some((v) => isNumber(v) && v !== Math.trunc(v))) {
+  if (isObject(sides) && Object.values(sides).some((v) => (isNumber(v) && v !== Math.trunc(v)) || isHex(v))) {
     const palettes = b.palette?.[faces] ?? {};
     for (const face of ['closed', 'sunk', 'marked']) {
       for (const k of ['face', 'bevelLight', 'bevelDark']) {
@@ -183,24 +203,22 @@ function checkRelief(b, key, minTileSize) {
   };
 }
 
-// Every point a revealed face draws, in each mode: its border, its face and any shade of it.
-function revealedPoints(b) {
-  const points = [];
-  for (const faces of ['faces2d', 'faces3d']) {
-    const p = b.palette?.[faces]?.revealed ?? {};
-    for (const k of ['rim', 'edge', 'face', 'faceShade']) if (p[k] !== undefined) points.push(p[k]);
-  }
-  return points;
+// The points of a mode's revealed face a number list is measured against.
+function revealedPoints(b, faces, keys) {
+  const p = b.palette?.[faces]?.revealed ?? {};
+  return keys.map((k) => p[k]).filter((v) => v !== undefined);
 }
 
 function checkContrast(b) {
   const out = [];
   // A colour the contrast cannot be measured on (not `#rrggbb`) fails it.
   const below = (ink, grounds, min) => !isHex(ink) || grounds.some((g) => !isHex(g) || contrast(ink, g) < min);
-  const revealed = revealedPoints(b);
-  for (let n = 1; n <= 26; n++) {
-    const c = b.numbers?.[n];
-    if (c !== undefined && below(c, revealed, 4.5)) out.push(problem('contrast', `numbers[${n}]`));
+  for (const [key, last, faces, keys] of NUMBER_LISTS) {
+    const revealed = revealedPoints(b, faces, keys);
+    for (let n = 1; n <= last; n++) {
+      const c = b[key]?.[n];
+      if (c !== undefined && below(c, revealed, 4.5)) out.push(problem('contrast', `${key}[${n}]`));
+    }
   }
   for (const [path, faces] of [['cursor.color', 'faces2d'], ['selection.outline', 'faces3d']]) {
     const ink = at(b, path);

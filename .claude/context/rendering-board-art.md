@@ -34,13 +34,14 @@ time-driven extras are [rendering-effects.md](rendering-effects.md).
 ## Internal patterns
 
 - **Colour.** Tiles and state use `NoColorSpace`; shaders output raw sRGB. Number colours are the
-  board module's, which the board conformance checks hold to 4.5:1 against every point of the
-  revealed face ([app-shell-board-module.md](app-shell-board-module.md)).
+  board module's 3D list, which the board conformance checks hold to 4.5:1 against every point of
+  the 3D revealed face ([app-shell-board-module.md](app-shell-board-module.md)).
 - **Drawn from the board module.** The shell (`js/shell/scene-palette.js`) calls `setBoard` with the
   active theme's board module at start-up and on every theme change, once its number font has
   loaded ([app-shell-board-module.md](app-shell-board-module.md)); until then the atlas is transparent and the sky
   black. From the module come: the atlas, every layer drawn through `js/tile-art.js` in `style3d`
-  from `palette.faces3d`, the flag, mine and cross, `numbers` and the number font — the slope
+  from `palette.faces3d` (a bevel side a shade or an exact colour), the flag, mine and cross,
+  `numbers3d` and the number font — the slope
   painted into the texture, so it reads lit from the same corner on every face, top faces included;
   the sky gradient's horizon, zenith and nadir from `sky`, the fog toward `sky.fog` (the horizon
   when absent) and the clear colour the horizon, the ground grid's ink still derived from the

@@ -77,9 +77,7 @@ test('the z-layers stack the overlays in order', () => {
 
 // ---------- Joyful tiles: the canvas's token block ----------
 // J-Tokens, the canvas artboard the theme's tokens come from: every one, with its value. Its spacing
-// scale is not here: spacing is structural, the base's (css/tokens.css). Nor are its sky stops and its
-// number 8, which no screen reads as a token: the board module carries the sky and the numbers
-// (themes/joyful-tiles/board.js).
+// scale is not here: spacing is structural, the base's (css/tokens.css).
 const J_TOKENS = {
   '--color-ground': '#fff6e8', '--color-ground-dot': '#dcc9ad',
   '--color-surface': '#ffffff', '--color-surface-raised': '#fff6e8', '--color-surface-sunk': '#fbf1df',
@@ -101,9 +99,11 @@ const J_TOKENS = {
   '--color-backdrop': 'rgba(22, 32, 74, 0.55)', '--color-backdrop-strong': 'rgba(14, 22, 64, 0.72)',
   '--color-tile-closed-top': '#a9c9fb', '--color-tile-closed-edge': '#2b56b5',
   '--color-tile-open': '#f3f0ea', '--color-tile-open-border': '#ddd3c1', '--color-tile-boom': '#ff6b6b', '--color-tile-boom-edge': '#c9403f',
-  '--color-tile-mark': '#49c6b8',
+  '--color-tile-mark': '#49c6b8', '--color-tile-closed': '#78aaf8', '--color-tile-pressed': '#6b9ef2', '--color-tile-cursor': '#16204a',
+  '--color-board-frame': '#ffffff',
   '--color-number-1': '#1565c0', '--color-number-2': '#2b742f', '--color-number-3': '#c32727', '--color-number-4': '#1a237e',
-  '--color-number-5': '#8d1c1c', '--color-number-6': '#00717c', '--color-number-7': '#212121',
+  '--color-number-5': '#8d1c1c', '--color-number-6': '#00717c', '--color-number-7': '#212121', '--color-number-8': '#666666',
+  '--color-scene-zenith': '#0e1640', '--color-scene-horizon': '#2b3f8a', '--color-scene-nadir': '#1a265f', '--color-scene-ink': '#dfe6ff',
   '--color-replay-reveal': '#3563d8', '--color-replay-flag': '#b8323a', '--color-replay-chord': '#0d7064', '--color-replay-pointer': '#16204a', '--color-replay-pause': '#c9930c',
   '--color-confetti-1': '#ff6b6b', '--color-confetti-2': '#ffc93c', '--color-confetti-3': '#49c6b8', '--color-confetti-4': '#78aaf8', '--color-confetti-5': '#6d4ee8',
   '--highlight': 'rgba(255, 255, 255, 0.32)', '--veil': 'rgba(255, 255, 255, 0.22)', '--shade-soft': 'rgba(22, 32, 74, 0.06)', '--shade-press': 'rgba(22, 32, 74, 0.2)',
@@ -119,10 +119,6 @@ const J_TOKENS = {
   '--easing-out': 'cubic-bezier(.2, .8, .2, 1)', '--easing-spring': 'cubic-bezier(.34, 1.56, .64, 1)',
   '--touch-target': '44px',
 };
-// The canvas's tile tokens the theme declares with values of its own: the 2D board view's cursor ring
-// and frame, and the aimed-cell readout's cube.
-const SKIN_KEPT = ['--color-tile-closed', '--color-tile-cursor', '--color-board-frame'];
-
 const norm = (v) => v.replace(/\s+/g, ' ').replace(/\s*,\s*/g, ', ').toLowerCase();
 
 test('Joyful tiles declares every token of the canvas\'s J-Tokens block, with its value', () => {
@@ -132,7 +128,6 @@ test('Joyful tiles declares every token of the canvas\'s J-Tokens block, with it
       assert.deepEqual(parseColor(THEME.get(name)), parseColor(value), `${name} is ${value}`);
     } else assert.equal(norm(THEME.get(name)), norm(value), `${name} is ${value}`);
   }
-  for (const name of SKIN_KEPT) assert.ok(THEME.has(name), `declares the tile skin's ${name}`);
 });
 
 test('the theme declares every token the base stylesheets and the screens read', () => {
@@ -193,29 +188,39 @@ test('Joyful tiles: the scrims are translucent, so the scene shows dimmed behind
 });
 
 // ---------- the board tokens ----------
-// What the screens still read of the board's colours as tokens: the 2D board view's frame, gap and
-// cursor ring, its end effect's win pulse, the aimed-cell readout's cube, and the number colours the
-// end effect's confetti takes. The tiles and cubes draw from the board module.
-const TILE_TOKENS = ['--color-tile-closed', '--color-tile-cursor', '--color-tile-bevel-light', '--color-board-frame', '--color-board-gap'];
-const NUMBER_TOKENS = Array.from({ length: 7 }, (_, i) => `--color-number-${i + 1}`);
-// The tile skin's palette, which the board module replaced: no theme declares it.
+// J-Tokens' board tokens: the 2D board view's frame and cursor ring and the aimed-cell readout's cube
+// read them; the tiles, cubes, numbers and end effect draw from the board module, which carries the
+// same values (the 2D numbers are its 2D list).
+const TILE_TOKENS = ['--color-tile-closed', '--color-tile-pressed', '--color-tile-cursor', '--color-board-frame'];
+const NUMBER_TOKENS = Array.from({ length: 8 }, (_, i) => `--color-number-${i + 1}`);
+// Board tokens the canvas does not have: the tile skin's palette, which the board module replaced,
+// and the board colours nothing reads once the board module draws them. No theme declares them.
 const RETIRED_TILE_TOKENS = [
   '--color-tile-rim', '--color-tile-bevel-dark', '--color-tile-flagged', '--color-tile-face-shade',
-  '--color-tile-gloss', '--color-tile-gloss-fade', '--color-tile-pressed',
+  '--color-tile-gloss', '--color-tile-gloss-fade',
   '--color-tile-revealed-rim', '--color-tile-revealed-edge', '--color-tile-revealed', '--color-tile-revealed-shade',
   '--color-tile-mine', '--color-tile-wrong-flag', '--color-tile-exploded', '--color-tile-exploded-edge', '--color-tile-exploded-shade',
   '--color-tile-number-shadow', '--color-tile-mine-glyph', '--color-tile-mine-highlight',
   '--color-tile-flag', '--color-tile-flag-shade', '--color-tile-flag-shadow',
-  '--color-tile-wrong-flag-mark', '--color-tile-wrong-flag-outline', '--color-number-8',
+  '--color-tile-wrong-flag-mark', '--color-tile-wrong-flag-outline',
+  '--color-tile-bevel-light', '--color-board-gap',
 ];
 
-test('the board tokens are opaque and the seven number colours distinct', () => {
+test('the board tokens are opaque and the eight number colours distinct', () => {
   for (const name of [...TILE_TOKENS, ...NUMBER_TOKENS]) assert.equal(color(name)[3], 1, `${name} is opaque`);
   const numbers = new Set(NUMBER_TOKENS.map((n) => THEME.get(n).toLowerCase()));
-  assert.equal(numbers.size, 7, 'the seven number colours are distinct');
+  assert.equal(numbers.size, 8, 'the eight number colours are distinct');
 });
 
-test('the tile skin\'s palette is retired: the board module draws the tiles', () => {
+test('the number tokens are the board module\'s 2D list, and the tile tokens its 2D faces', () => {
+  for (let n = 1; n <= 8; n++) assert.equal(THEME.get(`--color-number-${n}`).toLowerCase(), JOYFUL_BOARD.numbers2d[n], `--color-number-${n}`);
+  assert.equal(THEME.get('--color-tile-closed').toLowerCase(), JOYFUL_BOARD.palette.faces2d.closed.face);
+  assert.equal(THEME.get('--color-tile-pressed').toLowerCase(), JOYFUL_BOARD.palette.faces2d.sunk.face);
+  assert.equal(THEME.get('--color-board-frame').toLowerCase(), JOYFUL_BOARD.palette.boardGround);
+  assert.equal(THEME.get('--color-tile-cursor').toLowerCase(), JOYFUL_BOARD.cursor.color);
+});
+
+test('the board tokens the canvas lacks are retired: the board module draws the tiles', () => {
   for (const name of RETIRED_TILE_TOKENS) assert.ok(!THEME.has(name), `Joyful tiles no longer declares ${name}`);
 });
 
@@ -235,18 +240,32 @@ test('a scrolling board\'s shadow and scroll bar are translucent tokens; the bar
 
 test('the cursor ring meets 3:1 on the closed tile tokens it can sit on', () => {
   const ring = color('--color-tile-cursor');
-  for (const bg of ['--color-tile-bevel-light', '--color-tile-closed']) {
+  for (const bg of ['--color-tile-closed-top', '--color-tile-closed']) {
     const r = contrast(ring, color(bg));
     assert.ok(r >= 3, `--color-tile-cursor on ${bg}: ${r.toFixed(2)}:1`);
   }
 });
 
-// ---------- the scene panel's night sky; the 3D scene reads no token ----------
-test('the scene panel\'s night sky is opaque and dark under the panel ink', () => {
-  for (const name of ['--color-panel-night', '--color-panel-glow']) {
+// ---------- the scene tokens: the sky the scene panel draws; the 3D scene reads no token ----------
+test('the scene tokens are the board module\'s sky, opaque and dark under the scene ink', () => {
+  for (const stop of ['zenith', 'horizon', 'nadir']) {
+    const name = `--color-scene-${stop}`;
     assert.equal(color(name)[3], 1, `${name} is opaque`);
-    assert.ok(contrast(color('--color-panel-ink'), color(name)) >= 4.5, `--color-panel-ink reads on ${name}`);
+    assert.equal(THEME.get(name).toLowerCase(), JOYFUL_BOARD.sky[stop], `${name} is the sky's ${stop}`);
+    assert.ok(contrast(color('--color-scene-ink'), color(name)) >= 4.5, `--color-scene-ink reads on ${name}`);
   }
+  for (const old of ['--color-panel-night', '--color-panel-glow', '--color-panel-ink']) {
+    assert.ok(!THEME.has(old), `${old} is renamed`);
+    assert.doesNotMatch(THEME_CSS, new RegExp(`var\\(${old}\\)`), `nothing reads ${old}`);
+  }
+});
+
+test('Joyful tiles sets its base text in the regular weight at a line height of 1.25', () => {
+  const body = THEME_CSS.match(/:root\[data-theme="joyful-tiles"\] body \{([^}]*)\}/);
+  assert.ok(body, 'a body rule');
+  assert.match(body[1], /font-weight:\s*var\(--font-weight-regular\)/);
+  assert.match(body[1], /line-height:\s*1\.25\b/);
+  assert.equal(THEME.get('--font-weight-regular'), '500');
 });
 
 test('the 3D renderer reads no token: the shell hands it the board module', () => {

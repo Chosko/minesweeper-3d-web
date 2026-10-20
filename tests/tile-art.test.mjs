@@ -211,6 +211,19 @@ test('bevel lights each of its four sides with its own shade', async () => {
   assert.ok(!fills(ring).some((c) => c.fill === CLOSED.bevelDark), 'no side is dark');
 });
 
+test('a bevel side may be a colour: the closed face draws it exactly, the sunk face turns it over through the face', async () => {
+  const art = await artModule();
+  const S = 64;
+  const p = PALETTES.closed;
+  const sides = { top: 1, right: '#5e92ec', bottom: -1, left: 0 };
+  const closed = fakeContext();
+  art.drawFace(closed, S, 'closed', { style: 'bevel', params: { ...art.STYLES.bevel.params, sides }, palette: p, depth: 1, px: 1 });
+  assert.equal(paths(closed).slice(0, 4)[1].fill, '#5e92ec', 'the right slope in its own colour');
+  const sunk = fakeContext();
+  art.drawFace(sunk, S, 'sunk', { style: 'bevel', params: { ...art.STYLES.bevel.params, sides }, palette: PALETTES.sunk, depth: 1, px: 1 });
+  assert.equal(paths(sunk).slice(0, 4)[1].fill, art.mix(PALETTES.sunk.face, '#5e92ec', -1), 'the sunk face mirrors it through its own face');
+});
+
 test('bevel raises closed faces by depth, from flat at 0 to fully raised at 1; revealed faces take no slope at any depth', async () => {
   const art = await artModule();
   const S = 64;

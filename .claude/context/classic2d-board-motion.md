@@ -65,9 +65,12 @@ view's layout, fit rule, scrolling, redraw and `mountBoardView` are
   `setGame`, hiding the board, a hand-off of board art and `dropMotion()`
   (a replay's seek) drop every animation; `update(changed, {motion:
   false})` starts none.
-- **End effect drawing.** Over the skin's static tiles: tiles from
-  `shownState`, the pulse after each tile, the confetti after all tiles
-  clipped to the view; a full repaint draws the same moment. Without an
+- **End effect drawing.** Over the skin's static tiles: each tile from
+  `shownState`, drawn through `drawWave` with its `waveAt` from the skin's
+  board module — scaled about its centre, its light clipped to the rounded
+  tile — then the confetti in the module's colours after all tiles, clipped
+  to the view; without a module the tiles alone. A full repaint draws the
+  same moment. Without an
   effect a won game's closed tiles are drawn as flags (`wonState`). The
   effect itself is in [classic2d-mode.md](classic2d-mode.md).
 

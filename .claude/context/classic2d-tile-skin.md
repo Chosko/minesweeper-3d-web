@@ -61,8 +61,9 @@ How a Classic 2D tile looks. The area overview is
 
 - **Drawing styles.** `bevel` is a raised face inside a thin edge framed
   by four sloped sides, each side its own shade from the face toward
-  `bevelLight` or `bevelDark` (`sides`), the slope's width scaled by the
-  depth, so depth 0 is flat; a sunk face turns each shade over, and the
+  `bevelLight` or `bevelDark` or an exact `#rrggbb` colour (`sides`), the
+  slope's width scaled by the depth, so depth 0 is flat; a sunk face turns
+  each shade over (a colour mirrored through the face), and the
   revealed face is flat inside its edge. `flat` is a face with a light top
   band and a dark bottom edge, the sunk face its dark edge along the top
   and the revealed face flush inside a hairline; depth changes nothing it
@@ -73,7 +74,7 @@ How a Classic 2D tile looks. The area overview is
   `palette.faces2d`: closed and flagged the closed face, pressed the sunk
   face, revealed / mine / wrong flag the revealed face, exploded the
   revealed face in its `exploded` colours; numbers are the glyph in
-  `numbers[n]` set in the module's number font, zero none; the flag, mine
+  `numbers2d[n]` set in the module's number font, zero none; the flag, mine
   and cross take their palette entries. The painter passes the recipe one
   device pixel (from the context's scale), so every band is whole device
   pixels. `palette.faces2d.marked` is carried by the module but not drawn:

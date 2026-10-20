@@ -11,7 +11,7 @@ renderer.
 
 | File | Responsibility |
 | ---- | -------------- |
-| `js/themes/board-module.js` | the board module's shape (head comment: palette, numbers, font, sky, a drawing style per mode with the 2D gap and frame radius, cursor ring, 3D selection and start-cell tint, confetti colours, motion per cell event and the motion vocabulary) and the board conformance checks (DOM-free) |
+| `js/themes/board-module.js` | the board module's shape (head comment: palette, the 2D and 3D number lists, font, sky, a drawing style per mode with the 2D gap and frame radius, cursor ring, 3D selection and start-cell tint, confetti colours, the Classic 2D end effect's waves, motion per cell event and the motion vocabulary) and the board conformance checks (DOM-free) |
 | `js/shell/board-art.js` | the board art hand-off on the shell's side: the active board module to `BOARD_ART` ([classic2d-tile-skin.md](classic2d-tile-skin.md)) at start-up and on every theme change, once its number font has loaded |
 | `js/shell/scene-palette.js` | the 3D scene's hand-off: the module `BOARD_ART` holds to the renderer's `setBoard` |
 
@@ -53,11 +53,16 @@ returns the unsubscribe.
   shape is the head comment of `js/themes/board-module.js`, its values each
   theme's `board.js`. `checkBoardModule` is the board case of the
   conformance suite (`tests/theme-conformance.test.mjs`) for every
-  registered theme: every palette entry; 26 number colours; the number font
-  one of the theme's registered fonts; the sky; a shipped style with all
-  its parameters per mode (the 2D one with its gap and frame radius); the
-  closed face's relief above zero and at least a pixel at `MIN_TILE_SIZE`;
-  each number at least 4.5:1 against every point of both revealed faces;
+  registered theme: every palette entry, the Classic 2D end effect's values
+  (`end2d`) among them; both number lists, `numbers2d` (1–8, the Classic 2D
+  tiles') and `numbers3d` (1–26, the 3D atlas'); the number font one of the
+  theme's registered fonts; the sky; a shipped style with all its
+  parameters per mode (the 2D one with its gap and frame radius; a bevel
+  side a shade or a `#rrggbb` colour); the closed face's relief above zero
+  and at least a pixel at `MIN_TILE_SIZE`; each number at least 4.5:1
+  against its own mode's revealed face — a 3D number against every point of
+  it, its border included, a 2D number against the face and its shade (the
+  hairline round a flat 2D face holds no glyph);
   the cursor ring and selection outline at least 3:1 against the closed and
   revealed faces; and an entry for every cell event, a motion description
   built only from the vocabulary or `null`.
@@ -65,6 +70,10 @@ returns the unsubscribe.
   board sits in; each theme stylesheet styles it, its corner radius the
   custom property `--board-frame-radius`, which the shell sets from the
   board module ([classic2d-board-view.md](classic2d-board-view.md)).
+- **The Classic 2D end effect** (`js/classic2d/end-effect.js`) reads no
+  token: its waves' scale and light are the module's `end2d`, its confetti
+  `palette.confetti`, its light clipped to the `style2d` corner radius
+  ([classic2d-mode.md](classic2d-mode.md)).
 - **The 3D scene** (`js/render.js`, `js/textures.js`, `js/tile-art.js`)
   never reads tokens or subscribes to theme changes: its atlas, sky, fog,
   clear colour, selection, marked-cell tint, confetti colours and cell
