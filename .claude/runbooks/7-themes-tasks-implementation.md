@@ -959,7 +959,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the edge to task 213, its precondition; lacked the order against tasks 173, 179, which edit the same files; replaced by step 79.
 
-## [~] 79. Implement task 187 — Update documentation for feature `themed-board-art-and-motion`
+## [x] 79. Implement task 187 — Update documentation for feature `themed-board-art-and-motion`
 
 Depends on: 24, 71, 72, 73, 74, 75, 76, 77, 78
 
@@ -974,6 +974,8 @@ Context:
 ```prompt
 /task-implement 187 --review
 ```
+
+Done: 2026-10-20, commit `3a77d6e` (23 files, +548/-293). Premise wrong: the pitch units were already documented in `js/replay/sampler-2d.js`. The bevel-depth question is recorded as what the code does, not as a design; `MOTION_CAP` and `DEPTH_STEPS` are named rather than given values.
 
 ## [x] 32. Implement task 188 — The theme-implement skill
 
@@ -1011,7 +1013,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against task 187, which edits the same files; replaced by step 81.
 
-## [ ] 81. Implement task 189 — Update documentation for feature `theme-implement-skill`
+## [~] 81. Implement task 189 — Update documentation for feature `theme-implement-skill`
 
 Depends on: 79, 80
 
