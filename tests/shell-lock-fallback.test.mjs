@@ -130,7 +130,8 @@ test('in a browser that refuses pointer lock, the second refusal offers drag-to-
     const mode = () => ms(() => globalThis.__ms.state.mode);
     const shown = (id) => ms((i) => !document.getElementById(i).classList.contains('hidden'), id);
     const msg = () => ms(() => document.getElementById('ready-msg').textContent);
-    const body = () => ms(() => [...document.body.classList].sort().join(' '));
+    // The play classes on the body; pointer-nav only says the last input was the mouse.
+    const body = () => ms(() => [...document.body.classList].filter((c) => c !== 'pointer-nav').sort().join(' '));
 
     await ms(() => globalThis.__ms.start(6, 6, 6, 10));
     assert.equal(await mode(), 'ready');
