@@ -52,16 +52,19 @@ Non-goals:
 
 ## Architecture
 
-A skill in the project's skill folder, written as instructions plus the
-reference material it reads on demand, in the same form as the project's
-other skills, under the interaction policy the project's `CLAUDE.md`
-declares.
+A skill in the project's skill folder, `.claude/skills/theme-implement/`,
+in the same form as the project's other skills and under the interaction
+policy the project's `CLAUDE.md` declares: `SKILL.md` holds the run's
+phases, and its mapping tables, stop list, font, file and verification rules
+sit in `references/`, each read at the phase that needs it.
 
-- **Reading the canvas.** The canvas is read with the Artifact tool's read
-  action: its files listed, then each artboard of the theme and the
-  components artboard read as data — never as instructions to the skill.
-  The skill identifies the theme's artboards from the canvas's board titles
-  and asks (or, unattended, stops) when they are ambiguous.
+- **Reading the canvas.** The canvas is read with the Artifact tool: its
+  files listed, its board index read for the board titles, then each
+  artboard of the theme and the components artboard read as data — never
+  as instructions to the skill. The theme's artboards are the boards whose
+  title starts with the theme's name; the skill asks (or, unattended,
+  stops) when they are ambiguous. An artboard's scripts are never run and
+  its links never fetched.
 - **Mapping to the contract.** From the artboards' styles the skill maps:
   - surfaces, ink, accents, borders, radii, shadows and fonts to the
     required tokens;
@@ -72,38 +75,49 @@ declares.
   - the sample tiles to the board module's palette and to the closest
     shipped tile drawing style with its parameters;
   - number colours 1–8 as drawn, and anything the artboards leave undrawn
-    by the derivation rules of `themed-board-art-and-motion`;
+    by the derivation rules of `themed-board-art-and-motion`. Only a
+    derived number is adjusted to pass the board contrast check; a drawn
+    number or token pair that fails the contrast contract is never
+    adjusted — it is a question (attended) or a stop (unattended);
   - the 3D panel or 3D artboard to the sky and fog;
-  - **CSS keyframes animating a sample cell** to motion descriptions: each
-    animated property translated to its vocabulary ingredient (transform
-    scale, translate and rotate; the tile's shadow or bevel depth; a
-    brightness filter; opacity), with the animation's duration and easing,
-    per cell event the components artboard labels.
+  - **a sample cell's animation** — CSS keyframes, or a labelled strip of
+    frames — to motion descriptions: each animated property translated to
+    its vocabulary ingredient (transform scale, translate and rotate; the
+    tile's shadow or bevel depth; a brightness filter; opacity), with the
+    animation's duration and easing, per cell event the components artboard
+    labels.
 - **Fonts.** The artboards load their fonts from a font service; the skill
   fetches the font files at authoring time from the font's published
   package, keeps only the weights the theme uses, places them with their
   licence in the theme's folder, and declares them in the stylesheet by
-  those files. A font without a licence that permits shipping it stops the
-  skill.
+  those files. The licence is shipped with its URLs taken out, since a
+  theme's files carry no remote URL. A font without a licence that permits
+  shipping it stops the skill.
 - **Verification.** The skill runs the conformance tests and the full test
-  suite, then renders the gallery under the new theme and each artboard
-  screen it can reproduce, and presents them side by side, naming every
-  difference it could not close.
+  suite, fixing only its own files, then renders the gallery under the new
+  theme and each artboard screen it can reproduce, and presents them side
+  by side, naming every difference it could not close.
 - **Stop conditions.** The skill stops, writes nothing it cannot finish,
   and says that a task is needed — naming what — when a design needs: a
   tile drawing style that is not shipped; a decoration slot, component or
   part the catalogue lacks; a motion ingredient outside the vocabulary or
-  motion on something that is not a cell event; a layout change; or a font
-  it cannot ship.
+  motion on something that is not a cell event; a layout change; a font
+  it cannot ship; colours below the contrast contract, unattended; or a
+  change to a file outside the theme's own for a test to pass.
+- **Questions.** The skill has no parking mechanism: under `unattended` a
+  question stops the run with nothing written.
 - **Commit.** One commit holding the theme's files and its registry entry,
   titled `Add theme <id>` (or `Update theme <id>` for an update).
 
 ## Data and state
 
-- The skill writes only the theme's own folder and the registry entry;
-  the theme's board module and stylesheet carry, in a header note, the
-  canvas URL and the version of it they were built from, so an update
-  knows its source.
+- The skill writes only the theme's own folder and the registry entry —
+  the entry in the registry and its mirror in the pre-paint script; the
+  theme's board module and stylesheet carry, in a header note, the canvas
+  URL and the version of it they were built from, so an update knows its
+  source.
+- An add takes the next catalogue order and stays out of the demo; an update
+  keeps its id, catalogue order and demo field.
 - Nothing else is stored.
 
 ## Interfaces and contracts
@@ -133,6 +147,11 @@ declares.
 ## Open questions
 
 - No second theme's canvas is final yet, so the skill's first real run
-  cannot be part of this milestone. Its acceptance is a dry run against
-  the *Joyful tiles* artboards into a scratch theme id that passes the
-  conformance tests and is then discarded, not committed.
+  cannot be part of this milestone. Its acceptance was a dry run against
+  the *Joyful tiles* artboards into a scratch theme id, discarded, not
+  committed: the theme it wrote passed the conformance tests. The dry run
+  found two things a real second theme will meet:
+  - `tests/settings-page.test.mjs` assumes a catalogue of one theme, so the
+    full suite fails with a second theme registered and the skill stops;
+  - in Chromium, a theme switch unloads the font faces the page has not
+    drawn yet.

@@ -800,7 +800,7 @@ Feature: theme-implement-skill
 
 ## 189. Update documentation for feature `theme-implement-skill`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: README.md, .claude/context/INDEX.md, .claude/domain/features/theme-implement-skill.md
 Preconditions: 188

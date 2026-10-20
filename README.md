@@ -461,6 +461,21 @@ save their screenshots to a temporary directory. Timing assertions get slack on 
 budgets and wait timeouts (default 2, at least 1). Playwright is found as a local package or as a
 global install beside the Node binary, on Windows and POSIX layouts alike.
 
+## Themes
+
+A theme is a folder under `themes/<id>/` — its stylesheet, its board module and its fonts with
+their licences — and its entry in the theme registry, `js/themes/registry.js`. A theme is added, or
+updated from a newer version of its design, with the project's `theme-implement` Claude skill from
+its Claude Design canvas, with no backlog task:
+
+```
+/theme-implement <canvas-url> <theme-id> [name="<display name>"]
+```
+
+The skill writes the theme to the theme contract, passes the conformance tests and the full suite,
+and commits the theme; when the design needs something the contract cannot express, it stops,
+writing nothing, and names the task needed.
+
 ## Project structure
 
 ```
