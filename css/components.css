@@ -131,6 +131,9 @@
               role="alert" and opens with its badge,
               <span class="ui-card__icon" aria-hidden="true"><svg>…</svg></span>,
               the danger sign on the danger fill.
+     Layout:  a column, its badge, title, ui-text line and actions an even
+              gap apart; a title and a line directly in the card take the
+              message card's type, the line in ink.
 
    ui-panel — sunken surface grouping content inside a card
      Element: <div class="ui-panel">…</div>
@@ -359,6 +362,7 @@
 
    ui-spinner — a wait in progress (a board being generated)
      Element: <span class="ui-spinner" aria-hidden="true"></span>
+     Size:    the canvas's spinner size, a ring beside the title it waits with.
      Role:    none (decorative; the card's title names the wait)
      Name:    none
      Motion:  the kit's one animation, a steady turn timed from the motion
@@ -493,7 +497,16 @@
      Foot:    a status line, <p class="ui-frame__status">…</p>, or a bottom
               bar: <p class="ui-frame__summary">…</p> (the selection
               summarised) beside a ui-actions ui-actions--row; a frame
-              without a foot leaves it out.
+              without a foot leaves it out. A screen's action bar (the
+              board choices, Daily, results) is the white action foot,
+              <footer class="ui-frame__foot ui-frame__foot--action">: the
+              surface under a ruled line, roomier, its summary larger; on a
+              phone a bottom bar with its actions on the right. The game
+              window keeps the head-coloured foot.
+     Steps:   the head and foot, their titles and the small buttons follow
+              the window-size steps the theme holds — desktop, compact (the
+              smaller desktop windows) and touch (a phone upright or
+              sideways); the title stays on one line at every step.
      Slot:    window-chrome, the frame's title-bar decoration (a title bar's
               decorative buttons), hidden unless a theme draws it.
      Layout:  sized to its content, never wider or taller than its
@@ -770,9 +783,10 @@
    Coming soon (index.html #coming-soon): the one placeholder every menu
      entry whose screen has not landed routes to; ui-backdrop holding a
      ui-frame (Main menu, a secondary button with its back key hint; the
-     entry's name as title) whose body centres a ui-card__title "Coming
-     soon", a ui-text--muted line and Back (secondary, with its back key
-     hint). On a phone the frame is full-bleed. Default focus: Back.
+     entry's name as title) whose body centres the message card's column:
+     a larger ui-card__title "Coming soon", a ui-text line and Back
+     (secondary, with its back key hint). On a phone the frame is
+     full-bleed. Default focus: Back.
    Records (index.html #records): ui-backdrop holding a ui-frame (Back, a
      secondary button with its back key hint, returning one step; the
      title; at the end the 2D | 3D switch as a ui-segmented choice
@@ -918,14 +932,17 @@
      at the top centre and Pause an icon button at the top right; the touch
      hint strip wraps under them.
      Default focus: none (the scene takes the keys).
-   Board status (index.html #c2d-status over the Classic 2D board, and
-     #m3d-status over the 3D box): ui-card ui-screen while a slow first
-     click generates its no-guess board, a ui-row of the ui-spinner beside
-     the title and its ui-text--muted progress line ("candidate 14 · 6 s"),
-     then ui-actions--row (Cancel, Play a standard board); after a failed
-     no-guess board the title, a ui-text--muted line and ui-actions--row
-     (Retry primary, Play a standard board, Main menu). It sits above the
-     pause card. Default focus: Cancel; on the offer Retry, or Play a
+   Board status (index.html #c2d-status centred on the Classic 2D board
+     column, and #m3d-status over the 3D box): ui-card ui-screen while a
+     slow first click generates its no-guess board, a ui-row of the
+     ui-spinner beside the title and its ui-text--muted progress line
+     ("candidate 14 · 6 s", in the mono face), then ui-actions--row
+     (Cancel, Play a standard board); after a failed no-guess board the
+     title, a ui-text line and ui-actions--row (Retry primary with the
+     refresh icon, Play a standard board, Main menu — or Back alone, with
+     the arrow icon, for a board that is never replaced). It sits above
+     the pause card. Over the 3D box it lays a scrim over the scene, the
+     HUD hidden. Default focus: Cancel; on the offer Retry, or Play a
      standard board after a second failure in a row.
    Pause card (index.html #pause): ui-card ui-screen ui-screen--wide
      holding a ui-columns--two of, in order, a ui-column (the title, the
@@ -958,10 +975,10 @@
      rows; the fullscreen tip. Narrower below 1200 px; on a phone held
      sideways the actions and the lists sit in two columns. Default
      focus: Click to play.
-   Context lost (index.html #ctx-lost): ui-card ui-screen on the strong
-     scrim, its title, a ui-text line and ui-actions--row (Click to
-     reload primary; Main menu with its back key hint). Default focus:
-     Click to reload.
+   Context lost (index.html #ctx-lost): a message ui-card at the canvas's width,
+     ui-screen on the scrim, its title, a ui-text line and ui-actions--row
+     (Click to reload primary, with the refresh icon; Main menu). Default
+     focus: Click to reload.
    Learn 3D end card (index.html #learn-end): ui-card ui-screen over the
      guided board's stopped scene, holding the "Learn 3D"
      ui-section-label, the outcome title, a ui-text--muted line (the
@@ -1004,10 +1021,11 @@
      Main menu shows no key hint (results--look, css/style.css). On a phone
      the tiles go two by two, the code chip stacks, Play again runs full
      width, the secondary actions sit in pairs and Main menu comes last; the
-     body scrolls. Default focus: Play again. Over Classic 2D the finished
-     board shows behind it; over a 3D game the finished board is drawn
-     dimmed behind it, on a translucent scrim (results--over3d,
-     css/style.css).
+     body scrolls. Default focus: Play again. It sits on the scrim, the
+     same over both modes: behind it only the finished board — the Classic
+     2D window's board and title, or the 3D scene — shows, the HUD and the
+     window's other parts hidden, as behind the 3D ready card and the pause
+     card (css/style.css).
    Replay viewer (index.html #replay, filled by js/replay/viewer.js): ui-backdrop
      holding a ui-frame (#replay-frame) that fills it: Back (a small secondary
      button with its back key hint) and the title, "Replay · <mode> · <board>"
@@ -1018,7 +1036,9 @@
      area, taking the room left, with a ui-card over it while the replay opens
      (the ui-spinner beside its title) or when it cannot play (its
      ui-card__title, a ui-text reason and ui-actions--row with Back, secondary
-     with its back key hint), and beside it a ui-figures panel of the live
+     with its back key hint — a replay whose header reads keeps the frame's
+     title, its seek bar's ticks and marks, and the speed choice, Show 3BV
+     and Download enabled), and beside it a ui-figures panel of the live
      figures at the playback position (3BV with its bar, Pace vs PB, 3BV/s,
      Clicks, Flags), its live part the one polite region; then the playback
      controls: the seek bar as a
@@ -1120,19 +1140,30 @@
 }
 
 /* ---------- surfaces ---------- */
-.ui-card { padding: var(--space-6); }
+.ui-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px 26px;
+}
 .ui-card__title {
   margin: 0 0 var(--space-4);
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-heavy);
 }
 .ui-card__title:last-child { margin-bottom: 0; }
+/* A message card's own title and line: the card's gap sets them apart. */
+.ui-card > .ui-card__title {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.1;
+}
+.ui-card > .ui-text { line-height: 1.4; }
 .ui-card__icon {
   display: grid;
   place-items: center;
   width: 56px;
   height: 56px;
-  margin-bottom: var(--space-4);
 }
 .ui-panel { padding: var(--space-4); }
 .ui-panel--muted {
@@ -1525,9 +1556,10 @@
 /* ---------- spinner ---------- */
 .ui-spinner {
   display: block;
+  flex: none;
   align-self: center;
-  width: var(--space-8);
-  height: var(--space-8);
+  width: 44px;
+  height: 44px;
 }
 
 /* ---------- decoration slots: hidden unless a theme styles one into view ---------- */
@@ -1568,10 +1600,13 @@
 .ui-frame__start, .ui-frame__end { display: flex; align-items: center; gap: var(--space-2); white-space: nowrap; }
 .ui-frame__end { justify-content: flex-end; }
 .ui-frame__title {
+  min-width: 0;
   margin: 0;
+  overflow: hidden;
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-heavy);
   text-align: center;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .ui-frame__body {
@@ -1866,7 +1901,7 @@
 .ui-screen {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: 14px;
   width: min(560px, 100%);
   margin: auto;
 }

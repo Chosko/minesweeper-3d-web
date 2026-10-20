@@ -25,7 +25,8 @@ replay file open it ([app-shell-replay.md](app-shell-replay.md),
   `REPLAY_KEY_LINE`, `SEEK_STEP_MIN_MS` (100),
   `MAX_REPLAY_FILE_BYTES` (16 MB), `BBBV_TINTS` (6), `LEAD_IN_MS`.
 - `prepareReplay({replay?, replayId?, file?}, {library})` → Promise of
-  `{ok, sim, bytes}` or a failure; `replayId` is fetched with
+  `{ok, sim, bytes}` or a failure — one that does not reproduce still
+  carries its `sim` and `bytes`; `replayId` is fetched with
   `library.bytes`, a `file` read unless over the cap.
 - `replayCode(replay)` → the game's board code in its game form, from the
   header's board, seed and generator version and the first reveal action
@@ -65,8 +66,13 @@ replay file open it ([app-shell-replay.md](app-shell-replay.md),
   transport, speed, the toggles — `#rp-camera` in 3D only —, the end line
   with its outcome chip, Download, Open replay file, the key line
   `#rp-keys`). While a replay opens or has failed the controls stay in
-  place, those that need a replay disabled. The composition, by window
-  size, is the head comment of `css/components.css` (*Replay viewer*).
+  place, those that need a replay disabled. A failed replay whose header
+  reads (no viewer for its board, or it does not reproduce) is handed to
+  `view.failed(message, known)` as its title and timeline: the frame keeps
+  the title, the seek bar its marks and ticks, and the speed choice, Show
+  3BV and Download stay enabled, `download()` saving it. The composition,
+  by window size, is the head comment of `css/components.css` (*Replay
+  viewer*).
 
 ## INTERNAL PATTERNS
 

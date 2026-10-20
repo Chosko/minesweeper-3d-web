@@ -1101,7 +1101,7 @@ Feature: shared-screen-layout
 
 ## 223. Kit frames: head and foot steps, white action foot, message cards, scrims, status cards
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: css/components.css, themes/joyful-tiles/theme.css, css/style.css, index.html, js/ui.js, js/replay/viewer.js, .claude/context/app-shell-kit.md, .claude/context/app-shell-ui.md
 Preconditions: 218, 220

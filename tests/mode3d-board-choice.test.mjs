@@ -415,7 +415,7 @@ test('index.html builds the 3D board choice from kit components, as the Classic 
   assert.doesNotMatch(read('css/components.css'), /Double layer|bc-double/, 'no double layer group in the styles');
 
   // Right: Learn 3D's panel, the settings with both switches, the custom form, the bests, the code panel.
-  const right = between(BOARD, '<div class="ui-column" id="board-choice-detail">', '<footer class="ui-frame__foot">');
+  const right = between(BOARD, '<div class="ui-column" id="board-choice-detail">', '<footer class="ui-frame__foot ui-frame__foot--action">');
   const lesson = between(right, '<div id="bc-learn-panel"', '<div id="bc-settings"');
   assert.match(lesson, /^<div id="bc-learn-panel" class="hidden" data-learn-panel>\s*<div class="ui-section-label"><h3 class="ui-section-label__text">Learn 3D<\/h3><span class="ui-section-label__aside">keeps no records<\/span><\/div>/);
   assert.deepEqual([...lesson.matchAll(/<p class="ui-text">([^<]+)<\/p>/g)].map((m) => m[1]), [
@@ -456,7 +456,7 @@ test('index.html builds the 3D board choice from kit components, as the Classic 
   assert.doesNotMatch(BOARD, /bc-code-play|Play this board|data-esc-hint/, 'the code is played with Play; Back carries its key hint');
 
   // The bottom bar: the summary, Records and Play with its Enter hint.
-  const foot = between(BOARD, '<footer class="ui-frame__foot">', '</footer>');
+  const foot = between(BOARD, '<footer class="ui-frame__foot ui-frame__foot--action">', '</footer>');
   assert.match(foot, /<p class="ui-frame__summary" id="bc-summary" data-summary><\/p>\s*<div class="ui-actions ui-actions--row">\s*<button type="button" id="bc-records" class="ui-button ui-button--secondary" data-records>Records<\/button>\s*<button type="button" id="bc-play" class="ui-button ui-button--primary ui-button--lg" data-play>Play <span class="ui-key-hint" data-action="select" aria-hidden="true"><\/span><\/button>/);
   for (const [, cls] of BOARD.matchAll(/class="([^"]+)"/g)) {
     for (const c of cls.split(/\s+/)) assert.ok(c.startsWith('ui-') || ['overlay', 'hidden'].includes(c), `kit class: ${c}`);

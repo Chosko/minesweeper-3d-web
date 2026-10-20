@@ -75,10 +75,10 @@ the screen's markup is [app-shell-markup.md](app-shell-markup.md) § Screens.
   ignored. A throwing recording still routes, with no comparison and
   `saved` false; `notSaved` marks the first results screen of a session
   whose records store is unavailable.
-- **Over the board.** The screen shows over the finished Classic 2D board;
-  over a 3D game on a dimmed translucent scrim (`#results.results--over3d`)
-  with the 3D scene drawn behind it on demand only (`shouldRender`) while
-  `lookable()`, else the ordinary blurred surface; a
+- **Over the board.** The screen shows on the scrim over the finished
+  board, the same over both modes, with only the board or the scene behind
+  it ([app-shell-ui.md](app-shell-ui.md) § Behind a card); over a 3D game
+  the scene is drawn on demand only (`shouldRender`) while `lookable()`; a
   finished 3D game is never returned to.
 - **Look at the board** (the `look` screen, `#look` its hint line). A 3D
   card's *Look at the board* (`openLook`) and Back on it (`resultsBack`;

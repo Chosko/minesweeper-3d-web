@@ -40,7 +40,10 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
   - Classic 2D: `setSwap`, `setTapMode('reveal' | 'flag')`,
     `placePanel2D(rect, radius)` (the board frame at `rect`, its corner radius set as `--board-frame-radius`; a null `rect` hides it),
     `setBoard2D`, `updateFigures2D(input, {tick, bests})`,
-    `setBoardStatus`; 3D `setBoardStatus3D` (progress by `progressLine`);
+    `setBoardStatus` (the card centred on the board column `#c2d-main`,
+    `_centreStatus2D`, again on every `placePanel2D`); 3D `setBoardStatus3D`
+    (progress by `progressLine`); on either a failure offering nothing
+    shows Back alone, with the arrow icon;
   - menu: `setLastMode` (the Last played chip), `setEntryUnavailable`,
     `setBuild` (the build label);
   - confirmations: `showConfirm({title, message, confirmLabel}, onYes, onNo)`,
@@ -102,6 +105,12 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
   timer and, by `hud-figures--untimed`, pace and 3BV/s. START pauses through
   `#hud-pause` (`#c2d-pause` in Classic 2D). Layouts by window size:
   `css/components.css`'s head comment (*3D game overlay*).
+- **Behind a card.** While the 3D ready card (not pending), the pause card
+  or the results show, `#hud` is hidden — the 3D overlay, the key strip,
+  the hint strip — and the Classic 2D window keeps its board and title
+  alone; while the 3D board status card shows, `#hud` is hidden under its
+  scrim. `css/style.css` does it from those screens' visibility
+  (`body:has(…)`); `UI` toggles nothing for it.
 - **Aimed-cell readout** `#aim-readout` sits below and right of the
   crosshair, clear of the off-screen arrow `#crosshair-arrow`: a cube icon
   and `#aim-cubes`, then `#aim-flag-part` only while there are flags.

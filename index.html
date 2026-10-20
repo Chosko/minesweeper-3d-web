@@ -85,7 +85,7 @@
           </div>
         </div>
       </div>
-      <footer class="ui-frame__foot">
+      <footer class="ui-frame__foot ui-frame__foot--action">
         <p class="ui-frame__summary" id="c2d-summary" data-summary></p>
         <div class="ui-actions ui-actions--row">
           <button type="button" id="c2d-records" class="ui-button ui-button--secondary" data-records>Records</button>
@@ -140,13 +140,13 @@
         <p id="c2d-progress" class="ui-text ui-text--muted hidden"></p>
       </div>
     </div>
-    <p id="c2d-status-text" class="ui-text ui-text--muted hidden"></p>
+    <p id="c2d-status-text" class="ui-text hidden"></p>
     <div id="c2d-wait" class="ui-actions ui-actions--row">
       <button type="button" id="c2d-cancel" class="ui-button ui-button--secondary">Cancel</button>
       <button type="button" id="c2d-wait-standard" class="ui-button ui-button--secondary">Play a standard board</button>
     </div>
     <div id="c2d-offer" class="ui-actions ui-actions--row hidden">
-      <button type="button" id="c2d-retry" class="ui-button ui-button--primary">Retry</button>
+      <button type="button" id="c2d-retry" class="ui-button ui-button--primary" data-icon="refresh">Retry</button>
       <button type="button" id="c2d-standard" class="ui-button ui-button--secondary">Play a standard board</button>
       <button type="button" id="c2d-offer-menu" class="ui-button ui-button--secondary">Main menu</button>
     </div>
@@ -161,13 +161,13 @@
         <p id="m3d-progress" class="ui-text ui-text--muted hidden"></p>
       </div>
     </div>
-    <p id="m3d-status-text" class="ui-text ui-text--muted hidden"></p>
+    <p id="m3d-status-text" class="ui-text hidden"></p>
     <div id="m3d-wait" class="ui-actions ui-actions--row">
       <button type="button" id="m3d-cancel" class="ui-button ui-button--secondary">Cancel</button>
       <button type="button" id="m3d-wait-standard" class="ui-button ui-button--secondary">Play a standard board</button>
     </div>
     <div id="m3d-offer" class="ui-actions ui-actions--row hidden">
-      <button type="button" id="m3d-retry" class="ui-button ui-button--primary">Retry</button>
+      <button type="button" id="m3d-retry" class="ui-button ui-button--primary" data-icon="refresh">Retry</button>
       <button type="button" id="m3d-standard" class="ui-button ui-button--secondary">Play a standard board</button>
       <button type="button" id="m3d-offer-menu" class="ui-button ui-button--secondary">Main menu</button>
     </div>
@@ -329,7 +329,7 @@
           </div>
         </div>
       </div>
-      <footer class="ui-frame__foot">
+      <footer class="ui-frame__foot ui-frame__foot--action">
         <p class="ui-frame__summary" id="bc-summary" data-summary></p>
         <div class="ui-actions ui-actions--row">
           <button type="button" id="bc-records" class="ui-button ui-button--secondary" data-records>Records</button>
@@ -351,7 +351,7 @@
       <div class="ui-frame__body" id="coming-soon-body">
         <div class="ui-column" id="coming-soon-panel">
           <h3 class="ui-card__title" id="coming-soon-heading">Coming soon</h3>
-          <p id="coming-soon-text" class="ui-text ui-text--muted">This part of the game is coming soon.</p>
+          <p id="coming-soon-text" class="ui-text">This part of the game is coming soon.</p>
           <button type="button" id="coming-soon-back" class="ui-button ui-button--secondary">Back <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>
         </div>
       </div>
@@ -426,8 +426,8 @@
       <h2 class="ui-card__title" id="ctx-lost-title">Graphics context lost</h2>
       <p class="ui-text" id="ctx-lost-text">The browser stopped the 3D view. Reloading restores it.</p>
       <div class="ui-actions ui-actions--row">
-        <button type="button" id="ctx-lost-btn" class="ui-button ui-button--primary">Click to reload</button>
-        <button type="button" id="ctx-lost-menu" class="ui-button ui-button--secondary">Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>
+        <button type="button" id="ctx-lost-btn" class="ui-button ui-button--primary" data-icon="refresh">Click to reload</button>
+        <button type="button" id="ctx-lost-menu" class="ui-button ui-button--secondary">Main menu</button>
       </div>
     </section>
   </section>
@@ -677,7 +677,7 @@
         <div id="results-code" class="ui-code hidden"><span class="ui-code__label">Board code</span><code class="ui-code__value"></code><button type="button" id="results-copy" class="ui-button ui-button--secondary" data-copy="code">Copy</button><button type="button" id="results-copy-link" class="ui-button ui-button--secondary" data-copy="link">Copy link</button></div>
         <p id="results-note" class="ui-text ui-text--warning hidden" role="status"></p>
       </div>
-      <footer class="ui-frame__foot" id="results-actions">
+      <footer class="ui-frame__foot ui-frame__foot--action" id="results-actions">
         <div class="ui-actions ui-actions--row" id="results-actions-start">
           <button type="button" id="r-menu" class="ui-button ui-button--secondary">Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>
         </div>
@@ -725,7 +725,7 @@
           <div class="ui-code" id="daily-code" data-code><span class="ui-code__label">Board code</span><code class="ui-code__value"></code><button type="button" id="daily-copy" class="ui-button ui-button--secondary" data-copy="code">Copy</button><button type="button" id="daily-copy-link" class="ui-button ui-button--secondary" data-copy="link">Copy link</button></div>
         </div>
       </div>
-      <footer class="ui-frame__foot">
+      <footer class="ui-frame__foot ui-frame__foot--action">
         <p class="ui-frame__summary" id="daily-summary" data-summary></p>
         <div class="ui-actions ui-actions--row">
           <button type="button" id="daily-watch" class="ui-button ui-button--secondary hidden" data-watch>Watch replay</button>

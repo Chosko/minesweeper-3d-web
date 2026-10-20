@@ -4,7 +4,7 @@
 // (js/settings/bindings.js) for the active mode and the active device (the controller in the
 // connected controller's glyphs).
 import {
-  formatOverlayTime, formatMineCount, mineCounterDigits, bindSegmented, segmentedState, showKeyHints, bindFigures, bindFiguresLive, setNote,
+  formatOverlayTime, formatMineCount, mineCounterDigits, bindSegmented, segmentedState, showKeyHints, bindFigures, bindFiguresLive, setNote, setButtonIcon,
 } from './ui/components.js';
 import { GLYPHS } from './gamepad.js';
 import { bindingsHtml, hudStripHtml, hintStripHtml, helpFootHtml, hintText, keyHintKeys, reminderKeys } from './settings/bindings.js';
@@ -440,10 +440,11 @@ export class UI {
    */
   placePanel2D(rect, radius = 0) {
     const panel = this.el.c2dPanel;
-    if (!rect) { panel.classList.add('hidden'); return; }
+    if (!rect) { panel.classList.add('hidden'); this._centreStatus2D(); return; }
     Object.assign(panel.style, { left: `${rect.x}px`, top: `${rect.y}px`, width: `${rect.width}px`, height: `${rect.height}px` });
     panel.style.setProperty('--board-frame-radius', `${radius}px`);
     panel.classList.remove('hidden');
+    this._centreStatus2D(); // the board area moved or resized: the status card follows its column
   }
   /** The Classic 2D board the window's title and foot line and the pause card name; { width, height, mines, noGuess, identity }. */
   setBoard2D(board) { this._board2D(board); this._sizeMines(board.mines, this.el.c2dMines); }
@@ -481,9 +482,9 @@ export class UI {
    * The generating card shows a progress line under its title ("candidate 14 · 6 s", from
    * `progress` { candidates, seconds }), a spinner, Cancel and Play a standard board; a failure
    * shows the offer — Retry, Play a standard board, Main menu; a failure offering nothing (a daily's or
-   * a challenge's board, never replaced by another) says so and shows Back alone, and while `forced`
-   * the generating card offers no standard board. Either card sits
-   * above the pause card.
+   * a challenge's board, never replaced by another) says so and shows Back alone, with the arrow icon,
+   * and while `forced` the generating card offers no standard board. Either card sits above the pause
+   * card; the Classic 2D one is centred on the board column.
    */
   _boardStatus(prefix, { generating = false, failure = null, progress = null, forced = false } = {}) {
     const on = generating || !!failure;
@@ -499,12 +500,24 @@ export class UI {
         : 'No no-guess board was found for this first click. Try again, or play a standard board of the same size.';
     $(`${prefix}-retry`).classList.toggle('hidden', fixed);
     $(`${prefix}-standard`).classList.toggle('hidden', fixed);
-    $(`${prefix}-offer-menu`).textContent = fixed ? 'Back' : 'Main menu';
+    const menu = $(`${prefix}-offer-menu`);
+    menu.textContent = fixed ? 'Back' : 'Main menu';
+    setButtonIcon(menu, fixed ? 'arrow-left' : null);
     $(`${prefix}-wait-standard`).classList.toggle('hidden', !!forced); // a forced board is never swapped for a standard one
     el('StatusText').classList.toggle('hidden', !failure);
     el('Spinner').classList.toggle('hidden', !!failure);
     el('Wait').classList.toggle('hidden', !!failure);
     el('Offer').classList.toggle('hidden', !failure);
+    if (prefix === 'c2d') this._centreStatus2D();
+  }
+  /** The Classic 2D status card centred on the board column (#c2d-main) while it shows; the stylesheet's window centre otherwise. */
+  _centreStatus2D() {
+    const card = this.el.c2dStatus;
+    if (card.classList.contains('hidden')) return;
+    const r = this.el.c2d.classList.contains('hidden') ? null : $('c2d-main')?.getBoundingClientRect();
+    const placed = !!r && r.width > 0 && r.height > 0;
+    card.style.left = placed ? `${r.left + r.width / 2}px` : '';
+    card.style.top = placed ? `${r.top + r.height / 2}px` : '';
   }
   /**
    * The 3D ready card: its board, a message, the "How 3D works" block while `rules` is set, the

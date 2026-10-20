@@ -726,7 +726,7 @@ test('the results screen is the kit composition: one framed column — header ba
   assert.equal((RESULTS_HTML.match(/<span class="ui-chip ui-chip--best hidden">New best<\/span>/g) ?? []).length, 3, 'a New best badge on each comparable tile');
   assert.match(RESULTS_HTML, /<progress id="rs-progress" max="1" value="0" aria-labelledby="rs-bbbvSolved-label"><\/progress>/, '3BV solved carries its progress bar');
   assert.match(RESULTS_HTML, /<table id="results-details" class="ui-table">/);
-  assert.match(RESULTS_HTML, /<footer class="ui-frame__foot" id="results-actions">/);
+  assert.match(RESULTS_HTML, /<footer class="ui-frame__foot ui-frame__foot--action" id="results-actions">/);
   const buttons = [...RESULTS_HTML.matchAll(/<button type="button" id="(r-[a-z-]+)" class="ui-button ([^"]+)">([^<]+)</g)]
     .map((m) => [m[1], m[2], m[3].trim()]);
   assert.deepEqual(buttons, [

@@ -1151,7 +1151,7 @@ test('each Back that Esc triggers holds its back key hint, and no "Esc: Back" te
   assert.doesNotMatch(read('css/style.css'), /data-esc-hint|\.esc-row/);
   assert.doesNotMatch(THEME_RAW, /data-esc-hint|\.esc-row/);
   assert.match(html, /id="p-menu"[^>]*>Main menu<\/button>/, 'none in the pause card\'s Main menu, where Esc resumes');
-  for (const id of ['c2d-choice-back', 'board-choice-back', 'daily-back', 'coming-soon-menu', 'r-menu', 'settings-back', 'ctx-lost-menu']) {
+  for (const id of ['c2d-choice-back', 'board-choice-back', 'daily-back', 'coming-soon-menu', 'r-menu', 'settings-back']) {
     assert.match(html, new RegExp(`id="${id}"[^>]*>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>`), `the Back holds its key hint (#${id})`);
   }
   for (const id of ['coming-soon-back', 'records-back', 'rp-back', 'replay-message-back', 'ready-back']) {
@@ -1166,7 +1166,7 @@ test('one vocabulary: Back returns one step, Main menu goes to the menu, and no 
   for (const id of ['c2d-offer-menu', 'm3d-offer-menu', 'p-menu']) {
     assert.match(html, new RegExp(`id="${id}"[^>]*>Main menu</button>`), `#${id} reads Main menu`);
   }
-  assert.match(html, /id="ctx-lost-menu"[^>]*>Main menu </, '#ctx-lost-menu reads Main menu');
+  assert.match(html, /id="ctx-lost-menu"[^>]*>Main menu</, '#ctx-lost-menu reads Main menu');
   assert.match(html, /id="r-menu"[^>]*>Main menu </, '#r-menu reads Main menu');
   for (const f of ['js/ui.js', 'js/main.js', 'js/settings/bindings.js', 'js/settings/page.js', 'js/shell/pause.js', 'js/results/view.js', 'dev/components.html']) {
     assert.doesNotMatch(read(f), /Back to menu/, `${f} says Main menu`);
@@ -2407,7 +2407,7 @@ test('the gallery marks the shared layout\'s components; the main menu, both boa
   for (const cls of ['ui-card', 'ui-screen', 'ui-button--lg', 'ui-button--sm', 'ui-key-hint', 'ui-section-label', 'ui-panel--muted', 'ui-banner', 'ui-note--warn']) {
     assert.match(ready, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the 3D ready card uses ${cls}`);
   }
-  for (const cls of ['ui-card', 'ui-screen', 'ui-card__title', 'ui-actions--row', 'ui-key-hint']) {
+  for (const cls of ['ui-card', 'ui-screen', 'ui-card__title', 'ui-actions--row']) {
     assert.match(ctxLost, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the context-lost card uses ${cls}`);
   }
   for (const cls of ['ui-card', 'ui-screen', 'ui-section-label', 'ui-card__title', 'ui-button--lg', 'ui-key-hint']) {
@@ -3618,4 +3618,147 @@ test('in a browser, a board choice opened by the mouse keeps its chosen option a
   } finally {
     await browser.close();
   }
+});
+
+// ---------------------------------------------------------------- kit frames: size steps, the white action foot, message cards, scrims, status cards
+
+// The canvas's window-size steps: compact for the smaller desktop windows (1366 × 768, 1024 × 768),
+// touch for the phone sizes upright or sideways.
+const COMPACT_STEP = '(max-width: 1439px), (max-height: 820px)';
+const TOUCH_QUERY = TOUCH_STEP.slice('@media '.length);
+// The rules of every @media block of exactly `query` in `css`, as [selector, body] pairs, the theme's scope taken off.
+function mediaRules(css, query) {
+  const out = [];
+  const opener = `@media ${query} {`;
+  for (let i = css.indexOf(opener); i >= 0; i = css.indexOf(opener, i + 1)) {
+    let depth = 1;
+    let j = i + opener.length;
+    for (; depth > 0 && j < css.length; j++) {
+      if (css[j] === '{') depth++;
+      else if (css[j] === '}') depth--;
+    }
+    out.push(...rules(css.slice(i + opener.length, j - 1)));
+  }
+  return out.map(([sel, body]) => [sel.split(SCOPE).join('').trim(), body]);
+}
+// The bodies of the rules whose selector list holds `sel` whole.
+const bodyOf = (list, sel) => list.filter(([s]) => splitTop(s, ',').map((x) => x.trim()).includes(sel)).map(([, b]) => b).join(';');
+function splitTop(s, sep) {
+  const out = [];
+  let depth = 0;
+  let from = 0;
+  for (let i = 0; i < s.length; i++) {
+    if (s[i] === '(') depth++;
+    else if (s[i] === ')') depth--;
+    else if (s[i] === sep && depth === 0) { out.push(s.slice(from, i)); from = i + 1; }
+  }
+  out.push(s.slice(from));
+  return out;
+}
+const footOf = (id) => {
+  const start = INDEX.indexOf(`<section id="${id}"`);
+  const at = INDEX.indexOf('<footer', start);
+  return INDEX.slice(at, INDEX.indexOf('>', at) + 1);
+};
+
+test('the frame\'s head and foot follow the canvas\'s size steps — desktop, compact, touch — their values in the theme', () => {
+  const head = bodyOf(THEME_RULES, '.ui-frame__head');
+  assert.match(head, /min-height: 64px;/);
+  assert.match(head, /padding: 10px 16px;/);
+  assert.match(bodyOf(THEME_RULES, '.ui-frame__end'), /gap: 10px;/, 'the head\'s actions 10 px apart');
+  assert.match(bodyOf(THEME_RULES, '.ui-frame__foot'), /padding: 8px 22px;/);
+  assert.match(bodyOf(THEME_RULES, '.ui-frame__title'), /font-size: 20px;/);
+  const compact = mediaRules(THEME_CSS, COMPACT_STEP);
+  assert.match(bodyOf(compact, '.ui-frame__head'), /min-height: 56px;\s*padding: 8px 14px;/, 'the compact head');
+  assert.match(bodyOf(compact, '.ui-frame__title'), /font-size: 18px;/);
+  const touch = mediaRules(THEME_CSS, TOUCH_QUERY);
+  assert.match(bodyOf(touch, '.ui-frame__head'), /min-height: 60px;\s*padding: 8px 10px;/, 'the touch head');
+  assert.match(bodyOf(touch, '.ui-frame__title'), /font-size: 17px;/);
+  assert.match(bodyOf(touch, '.ui-button--sm'), /min-height: 44px;/, 'a small button a finger tall; the md button already is');
+  assert.ok(THEME_CSS.indexOf(`@media ${COMPACT_STEP}`) >= 0 && THEME_CSS.indexOf(`@media ${COMPACT_STEP}`) < THEME_CSS.lastIndexOf(`@media ${TOUCH_QUERY}`),
+    'the touch step comes after the compact one, so a phone held sideways takes it');
+  const title = bodyOf(RULES, '.ui-frame__title');
+  assert.match(title, /white-space: nowrap;/, 'the title on one line at every step');
+  assert.match(title, /text-overflow: ellipsis;/);
+  // The game window's head takes the same steps: no head size of its own.
+  assert.doesNotMatch(STYLE, /#c2d-frame > \.ui-frame__head \{[^}]*(min-height|padding)/, 'the Classic 2D window\'s head follows the steps');
+  assert.doesNotMatch(STYLE, /#c2d-title \{[^}]*font-size/, 'and so does its title');
+  assert.doesNotMatch(STYLE, /#replay-title \{[^}]*white-space: normal/, 'the replay viewer\'s title stays on one line on a phone');
+});
+
+test('the white action foot: board choices, Daily and results end in a white bar, the game window keeps its yellow foot', () => {
+  const frame = KIT_CATALOGUE.find((c) => c.name === 'ui-frame');
+  assert.ok(frame.variants.includes('ui-frame__foot--action'), 'the foot variant is catalogued');
+  assert.match(RAW.match(/^\/\*([\s\S]*?)\*\//)[1], /ui-frame__foot--action/, 'and documented in the catalogue');
+  assert.match(GALLERY, /class="ui-frame__foot ui-frame__foot--action"/, 'and shown in the gallery');
+  for (const id of ['c2d-choice', 'board-choice', 'daily', 'results']) assert.match(footOf(id), /class="ui-frame__foot ui-frame__foot--action"/, `#${id}'s foot is the action foot`);
+  assert.doesNotMatch(WINDOW_2D, /ui-frame__foot--action/, 'the game window keeps the yellow foot');
+  const foot = bodyOf(THEME_RULES, '.ui-frame__foot--action');
+  assert.match(foot, /border-top: 2px solid var\(--color-line\);/);
+  assert.match(foot, /background: var\(--color-surface\);/);
+  assert.match(foot, /padding: 14px 24px 18px;/);
+  assert.match(bodyOf(THEME_RULES, '.ui-frame__foot--action .ui-frame__summary'), /font-size: 16px;[^;]*\s*font-weight: var\(--font-weight-bold\);/, 'the summary 16 px bold');
+  assert.match(bodyOf(mediaRules(THEME_CSS, COMPACT_STEP), '.ui-frame__foot--action'), /padding: 10px 20px 14px;/);
+  const phone = bodyOf(mediaRules(THEME_CSS, TOUCH_QUERY), '.ui-frame__foot--action');
+  assert.match(phone, /min-height: 92px;/, 'a bottom bar 92 px tall on a phone');
+  assert.match(phone, /justify-content: flex-end;/, 'its actions on the right');
+  assert.match(phone, /box-shadow: 0 -10px 20px -12px var\(--shade-press\);/);
+  // The results foot, the action bar, is roomier.
+  assert.match(bodyOf(THEME_RULES, '#results-actions'), /padding: 16px 28px 20px;/);
+  assert.match(bodyOf(mediaRules(THEME_CSS, COMPACT_STEP), '#results-actions'), /padding: 14px 22px 18px;/);
+  assert.match(bodyOf(mediaRules(THEME_CSS, TOUCH_QUERY), ':is(.ui-frame__foot--action, #results-actions)'), /padding: 0 16px;/, 'and on a phone the bar like the others');
+  assert.doesNotMatch(STYLE, /#results-actions \{[^}]*padding/, 'its paddings are the theme\'s');
+  assert.doesNotMatch(STYLE, /#c2d-frame > \.ui-frame__foot \{[^}]*padding/, 'the game window\'s foot follows the steps');
+});
+
+test('the message card: ink text, the canvas\'s type, and an even 14 px gap between badge, title, text and actions', () => {
+  const card = bodyOf(RULES, '.ui-card');
+  assert.match(card, /display: flex;\s*flex-direction: column;\s*gap: 14px;\s*padding: 24px 26px;/);
+  assert.doesNotMatch(bodyOf(RULES, '.ui-card__icon'), /margin/, 'the gap sets the badge off, not a margin');
+  assert.match(bodyOf(RULES, '.ui-card > .ui-card__title'), /margin: 0;\s*font-size: 28px;\s*line-height: 1\.1;/);
+  assert.match(bodyOf(RULES, '.ui-card > .ui-text'), /line-height: 1\.4;/);
+  assert.match(bodyOf(RULES, '.ui-screen'), /gap: 14px;/, 'a card column keeps the card\'s gap');
+  assert.doesNotMatch(STYLE, /:is\(\.fatal, \.noscript, \.not-found\) > \.ui-card > \.ui-text \{/, 'the message pages\' line takes the gap, no margin');
+  // The placeholder: its title 36 px, its line in ink.
+  assert.match(bodyOf(rules(STYLE), '#coming-soon-heading'), /margin: 0;\s*font-size: 36px;\s*line-height: 1\.1;/);
+  assert.match(bodyOf(rules(STYLE), '#coming-soon-text'), /line-height: 1\.4;/);
+  // The replay failure card: its title, in a row with the spinner, takes the message card's type.
+  assert.match(bodyOf(rules(STYLE), '#replay-message > .ui-row > .ui-card__title'), /margin: 0;\s*font-size: 28px;\s*line-height: 1\.1;/);
+  assert.match(INDEX, /<p id="coming-soon-text" class="ui-text">/);
+  assert.match(bodyOf(rules(STYLE), '#coming-soon-panel'), /gap: 14px;/);
+  // The context-lost card: 480 px, Click to reload with the refresh icon, Main menu with no Esc key hint.
+  assert.match(bodyOf(rules(STYLE), '#ctx-lost > .ui-card'), /width: min\(480px, 100%\);/);
+  assert.match(INDEX, /<button type="button" id="ctx-lost-btn" class="ui-button ui-button--primary" data-icon="refresh">Click to reload<\/button>/);
+  assert.match(INDEX, /<button type="button" id="ctx-lost-menu" class="ui-button ui-button--secondary">Main menu<\/button>/);
+});
+
+test('the scrim: the plain backdrop colour, no blur, the same over 2D and 3D; behind the ready card, the pause card and results only the board or the scene and the window\'s title', () => {
+  const scrim = bodyOf(THEME_RULES, ':is(#pause, #ready, #results, #learn-end, #ctx-lost, .modal)');
+  assert.match(scrim, /background: var\(--color-backdrop\);/);
+  assert.doesNotMatch(THEME_CSS, /backdrop-filter/, 'no blur over any screen');
+  assert.doesNotMatch(THEME_CSS, /var\(--color-backdrop-strong\)/, 'no stronger scrim over 3D or a lost context');
+  assert.doesNotMatch(THEME_CSS, /#results\.results--over3d/, 'the results over 3D take the one scrim');
+  const behind = ':is(#ready:not(.hidden):not(.ready--pending), #pause:not(.hidden), #results:not(.hidden))';
+  assert.match(bodyOf(rules(STYLE), `body:has(> ${behind}) #hud`), /visibility: hidden;/, 'the HUD, the 3D overlay and its figures panel go');
+  const chrome = bodyOf(rules(STYLE), `body:has(> ${behind}) #c2d-frame :is(.ui-frame__start, .ui-frame__end, #c2d-counters, #c2d-figures, #c2d-divider, .ui-frame__foot, #hud-tap)`);
+  assert.match(chrome, /visibility: hidden;/, 'the Classic 2D window keeps its board and its title alone');
+});
+
+test('the board status cards: centred on the board column, the canvas\'s spinner, progress and failure line, Retry and Back with their icons, a scrim in 3D', () => {
+  assert.match(bodyOf(RULES, '.ui-spinner'), /width: 44px;\s*height: 44px;/);
+  assert.match(bodyOf(THEME_RULES, '.ui-spinner'), /border: 5px solid/);
+  assert.match(bodyOf(rules(STYLE), ':is(#c2d-status, #m3d-status) > .ui-row'), /gap: var\(--space-4\);/, 'a 16 px gap between the spinner and the title');
+  assert.match(bodyOf(rules(STYLE), ':is(#c2d-status, #m3d-status) .ui-card__title'), /margin: 0;\s*font-size: var\(--font-size-xl\);/);
+  assert.match(bodyOf(rules(STYLE), ':is(#c2d-progress, #m3d-progress)'), /margin: 4px 0 0;\s*font-size: 15px;/);
+  assert.match(bodyOf(THEME_RULES, ':is(#c2d-progress, #m3d-progress)'), /font-family: var\(--font-family-mono\);/, 'the progress line in the mono face');
+  for (const p of ['c2d', 'm3d']) {
+    assert.match(INDEX, new RegExp(`<p id="${p}-status-text" class="ui-text hidden"></p>`), `#${p}-status-text in ink`);
+    assert.match(INDEX, new RegExp(`<button type="button" id="${p}-retry" class="ui-button ui-button--primary" data-icon="refresh">Retry</button>`), `#${p}-retry carries the refresh icon`);
+  }
+  const ui = read('js/ui.js');
+  assert.match(ui, /setButtonIcon\(menu, fixed \? 'arrow-left' : null\)/, 'a fixed board\'s Back carries the arrow icon, Main menu none');
+  assert.match(ui, /_centreStatus2D\(\)/, 'the Classic 2D card is placed on the board column');
+  // In 3D: a scrim over the scene, and no HUD, figures or hint strip behind the card.
+  assert.match(bodyOf(THEME_RULES, '#m3d-status'), /0 0 0 100vmax var\(--color-backdrop\)/);
+  assert.match(bodyOf(rules(STYLE), 'body:has(> #m3d-status:not(.hidden)) #hud'), /visibility: hidden;/);
 });

@@ -364,7 +364,7 @@ test('index.html holds the Daily screen in the board choice composition: wordmar
   assert.deepEqual(modes.map((m) => [m[1], m[2]]), MENU_ENTRIES.filter((e) => e.mode).map((e) => [e.mode, e.mode]), 'one option per mode, in menu order');
   assert.match(DAILY_HTML, /<figure class="ui-scene-panel" id="daily-preview"/);
   assert.match(DAILY_HTML, /<div class="ui-code" id="daily-code" data-code>/);
-  assert.match(DAILY_HTML, /<footer class="ui-frame__foot">\s*<p class="ui-frame__summary" id="daily-summary" data-summary><\/p>/);
+  assert.match(DAILY_HTML, /<footer class="ui-frame__foot ui-frame__foot--action">\s*<p class="ui-frame__summary" id="daily-summary" data-summary><\/p>/);
   assert.match(DAILY_HTML, /id="daily-watch" class="ui-button ui-button--secondary hidden" data-watch>Watch replay<\/button>/);
   assert.match(DAILY_HTML, /id="daily-play" class="ui-button ui-button--primary ui-button--lg" data-play>Play <span class="ui-key-hint" data-action="select" aria-hidden="true"><\/span><\/button>/);
   assert.doesNotMatch(DAILY_HTML, /ui-card/, 'no card');

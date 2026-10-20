@@ -742,19 +742,60 @@
   box-shadow: inset 0 -2px 0 var(--color-line), 0 10px 0 var(--color-head-edge), var(--elevation-2);
 }
 :root[data-theme="joyful-tiles"] .ui-frame__head {
+  min-height: 64px;
+  padding: 10px 16px;
   border-bottom: 2px solid var(--color-head-edge);
   background: var(--color-head);
   color: var(--color-ink);
 }
+:root[data-theme="joyful-tiles"] .ui-frame__end { gap: 10px; }
 :root[data-theme="joyful-tiles"] .ui-frame__title { font-size: 20px; color: var(--color-ink); }
 :root[data-theme="joyful-tiles"] .ui-frame__body { color: var(--color-ink); scrollbar-color: var(--color-edge) transparent; }
 :root[data-theme="joyful-tiles"] .ui-frame__foot {
+  padding: 8px 22px;
   border-top: 2px solid var(--color-head-edge);
   background: var(--color-head);
   color: var(--color-ink);
 }
 :root[data-theme="joyful-tiles"] :is(.ui-frame__status, .ui-frame__summary) { font-size: 15px; color: var(--color-ink); }
 :root[data-theme="joyful-tiles"] .ui-frame__summary { font-weight: var(--font-weight-bold); }
+/* the white action foot of a screen's actions (board choices, Daily, results): the surface under a ruled line */
+:root[data-theme="joyful-tiles"] .ui-frame__foot--action {
+  padding: 14px 24px 18px;
+  border-top: 2px solid var(--color-line);
+  background: var(--color-surface);
+}
+:root[data-theme="joyful-tiles"] .ui-frame__foot--action .ui-frame__summary {
+  font-size: 16px;
+  font-weight: var(--font-weight-bold);
+}
+/* the results foot, the action bar, roomier */
+:root[data-theme="joyful-tiles"] #results-actions { padding: 16px 28px 20px; }
+/* the frame's size steps: compact on the smaller desktop windows, touch on a phone upright or sideways */
+@media (max-width: 1439px), (max-height: 820px) {
+  :root[data-theme="joyful-tiles"] .ui-frame__head {
+    min-height: 56px;
+    padding: 8px 14px;
+  }
+  :root[data-theme="joyful-tiles"] .ui-frame__title { font-size: 18px; }
+  :root[data-theme="joyful-tiles"] .ui-frame__foot--action { padding: 10px 20px 14px; }
+  :root[data-theme="joyful-tiles"] #results-actions { padding: 14px 22px 18px; }
+}
+@media (max-width: 719px), (max-height: 500px) and (orientation: landscape) {
+  :root[data-theme="joyful-tiles"] .ui-frame__head {
+    min-height: 60px;
+    padding: 8px 10px;
+  }
+  :root[data-theme="joyful-tiles"] .ui-frame__title { font-size: 17px; }
+  :root[data-theme="joyful-tiles"] .ui-button--sm { min-height: 44px; }
+  /* on a phone the action foot is a bottom bar, its actions on the right */
+  :root[data-theme="joyful-tiles"] .ui-frame__foot--action {
+    min-height: 92px;
+    justify-content: flex-end;
+    box-shadow: 0 -10px 20px -12px var(--shade-press);
+  }
+  :root[data-theme="joyful-tiles"] :is(.ui-frame__foot--action, #results-actions) { padding: 0 16px; }
+}
 
 /* ---------- mode entry: its accent fill (--f), drop edge (--e) and text (--o); places neutral ---------- */
 :root[data-theme="joyful-tiles"] .ui-mode-entry {
@@ -1134,22 +1175,12 @@
   outline-offset: 3px;
 }
 
-/* overlays laid over the scene: a navy scrim; the menu screens sit on the scene itself */
-:root[data-theme="joyful-tiles"] :is(#pause, #ready, #results, #learn-end, .modal) {
-  background: var(--color-backdrop);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-}
-:root[data-theme="joyful-tiles"] #results.results--over3d {
-  background: var(--color-backdrop-strong);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-:root[data-theme="joyful-tiles"] #ctx-lost {
-  background: var(--color-backdrop-strong);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
+/* overlays laid over the game: one plain navy scrim, unblurred, over 2D and 3D alike; the menu screens sit on the scene itself */
+:root[data-theme="joyful-tiles"] :is(#pause, #ready, #results, #learn-end, #ctx-lost, .modal) { background: var(--color-backdrop); }
+/* the 3D board status card lays the scrim over the scene around it */
+:root[data-theme="joyful-tiles"] #m3d-status { box-shadow: inset 0 -2px 0 var(--color-line), 0 8px 0 var(--color-head-edge), var(--elevation-2), 0 0 0 100vmax var(--color-backdrop); }
+/* a board status card's progress line in the mono face */
+:root[data-theme="joyful-tiles"] :is(#c2d-progress, #m3d-progress) { font-family: var(--font-family-mono); }
 :root[data-theme="joyful-tiles"] .look-hint {
   border-radius: var(--radius-md);
   background: var(--color-surface);

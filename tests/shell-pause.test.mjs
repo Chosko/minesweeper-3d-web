@@ -821,6 +821,10 @@ test('in a browser, the Classic 2D generating card cancels by Cancel and Esc, an
     assert.equal(await shown('c2d-cancel'), true, 'and Cancel');
     assert.equal(await shown('c2d-offer'), false);
     assert.equal(await active(), 'c2d-cancel', 'Cancel takes the focus');
+    const centres = await ms(() => [document.getElementById('c2d-status'), document.getElementById('c2d-main')]
+      .map((e) => { const r = e.getBoundingClientRect(); return [Math.round(r.left + r.width / 2), Math.round(r.top + r.height / 2)]; }));
+    assert.ok(Math.abs(centres[0][0] - centres[1][0]) <= 1 && Math.abs(centres[0][1] - centres[1][1]) <= 1,
+      `the card is centred on the board column, not the window (${JSON.stringify(centres)})`);
     // Esc cancels it instead of pausing: back to the closed board, nothing reported.
     await page.keyboard.press('Escape');
     assert.equal(await mode(), 'classic-2d', 'Esc does not pause while a board is generated');
@@ -838,6 +842,9 @@ test('in a browser, the Classic 2D generating card cancels by Cancel and Esc, an
     await page.click('#c2d-pause');
     assert.equal(await mode(), 'paused');
     assert.equal(await shown('c2d-status'), false, 'the generating card does not show over the pause card');
+    assert.deepEqual(await ms(() => ['c2d-counters', 'c2d-figures', 'c2d-pause', 'c2d-size', 'hud-tools', 'hud-tap', 'c2d-title', 'c2d-board']
+      .map((id) => getComputedStyle(document.getElementById(id)).visibility)), ['hidden', 'hidden', 'hidden', 'hidden', 'hidden', 'hidden', 'visible', 'visible'],
+    'behind the pause card the window shows its board and its title alone');
     await page.click('#p-resume');
     assert.equal(await mode(), 'classic-2d');
     assert.equal(await shown('c2d-status'), true);

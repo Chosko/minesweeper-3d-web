@@ -33,7 +33,8 @@ inked while the switch is locked) and the shared layout's components: `ui-button
 (variant `ui-button--sm`; `chosen` while a latched toggle is on),
 `ui-wordmark`, `ui-backdrop`,
 `ui-frame` (parts `head`, `back`, `title`, `action`, `body`, `foot`,
-`status`, `summary`; slot `window-chrome`), `ui-mode-entry` (`entry`,
+`status`, `summary`; variant `ui-frame__foot--action`, the white action
+foot; slot `window-chrome`), `ui-mode-entry` (`entry`,
 `icon`, `label`, `reason`, `last`, `lock`), `ui-option` (`option`,
 `badge`, `name`, `last`, `meta`, `size`, `density`, `check`; variant
 `ui-option--learn`), `ui-section-label`, `ui-key-hint`, `ui-chip`,
@@ -96,9 +97,10 @@ control around it inks.
   chip's buttons) are the base's `.ui-icon` rules. The icon is
   `aria-hidden` and the label stays the name; an icon-only button carries
   `aria-label`. The helpers that draw an icon into a button are
-  [app-shell-kit-helpers.md](app-shell-kit-helpers.md)'s. The icons already
-  in `index.html` (Restart, Pause, Swap clicks) are inline svg outside the
-  set.
+  [app-shell-kit-helpers.md](app-shell-kit-helpers.md)'s; a button in
+  `index.html` names its set icon with `data-icon`. The icons inline in
+  `index.html` (Restart, Pause, Swap clicks, the message cards' badges and
+  the fatal card's Reload) are svg outside the set.
 - **The confirm box and the notes.** Every confirmation is a `ui-confirm`
   — the danger fill, an optional heading, its text, then a
   `ui-actions--row` of the danger action beside Cancel: the pause card's,
@@ -134,11 +136,21 @@ control around it inks.
   action), a body that scrolls vertically while head and foot stay in
   view, and a foot — a status line, or a bottom bar of the selection's
   summary beside the screen's actions; the `window-chrome` slot is hidden
-  unless a theme draws it. A `ui-scene-panel` is a framed region a mode's
+  unless a theme draws it. The head and foot, their titles and the small
+  buttons follow the window-size steps — desktop, compact for the smaller
+  desktop windows, touch for a phone upright or sideways — whose values the
+  theme stylesheet holds; the title stays on one line. A screen's bar of
+  actions (the board choices, Daily, results) is the white action foot
+  `ui-frame__foot--action`, a bottom bar on a phone; the Classic 2D game
+  window keeps the head-coloured foot. A `ui-scene-panel` is a framed region a mode's
   own renderer draws into: a Classic 2D board view, the 3D scene through
   the renderer's target rectangle while the panel is `--live`
   ([app-shell-3d.md](app-shell-3d.md) § Scene panel), or a card with an
   entry's badge.
+- **The message card.** A `ui-card` is a column, its badge, title, line and
+  actions an even gap apart; the title and line directly in it take the
+  message card's type, the line in ink. The cards over the game sit on one
+  scrim, the theme's backdrop colour unblurred, over 2D and 3D alike.
 - **Screens** composed in the kit — the main menu, both board choices,
   Daily, the placeholder, Records, Settings, the Classic 2D game window,
   the 3D game overlay, the board status cards, the pause card with its

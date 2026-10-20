@@ -30,7 +30,9 @@ mine positions) is listed in [app-shell.md](app-shell.md) § PUBLIC API.
 - **Board status card.** `board3d` holds `{generating, failure, progress}`
   from the session's events and, each frame the card shows, its progress
   (`progress3D` redraws without moving focus). `showStatus3D` shows
-  `#m3d-status` while `playing`, and a failure's offer while `paused` too;
+  `#m3d-status` — on a scrim over the scene, the HUD hidden
+  ([app-shell-ui.md](app-shell-ui.md) § Behind a card) — while `playing`,
+  and a failure's offer while `paused` too;
   a failure exits lock and focuses the offer (`statusFocus`,
   [app-shell-2d.md](app-shell-2d.md)); the generating card focuses
   Cancel unless the focus is already on one of its buttons. `retry3D`

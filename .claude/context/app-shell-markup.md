@@ -11,7 +11,7 @@ shell wires, and the shell stylesheet `css/style.css`. The component kit is
 | File | Responsibility |
 | ---- | -------------- |
 | `index.html` | every overlay as static markup toggled by `.hidden`; importmap `three` → `vendor/three/three.module.min.js` (r186, no build step); a module `onerror` shows `.fatal` |
-| `css/style.css` | shell styling: fixed layers, each screen's placement in its frame (the main menu's grid, the board choices' and Daily's window under the wordmark, Records', Settings', the placeholder's and the replay viewer's window, the results frame's head, tiles and action bar, the ready card's columns) and what each gives way at the smaller window sizes and on a phone, the scene panel's canvas (`body.scene-off`, `body.scene-front`), the Classic 2D game window (its board area and panel, the figures panel beside or under the board or hidden, the phone layouts), the replay layer (`replay--scene` transparent over the 3D scene; the recorded pointer and its trail, press rings, Show 3BV's 2D canvas; `body.replaying` hides the view chips, tools strip, hint strip and toast), the controller's hints (`[data-pad-hint]`, visible only under `body.pad-nav`, their room kept; `[data-pad-hinted]` rows), the menu-screen and translucent backdrops, the results scrim over the 3D scene, the look's hint (`.look-hint`), the ready card's placement (`.ready-body`), the Learn 3D step (`.hint-step`), the help/controls/ctx-lost overlays, the toast's place and the message pages' (`.fatal`, `.noscript`, `.not-found`: the card's width and its margin from the window's edges), the 3D touch stick and toolbar, the 3D overlay's placement (the counter strip, the figures panel, the phone layouts) and the HUD's; declares no custom property |
+| `css/style.css` | shell styling: fixed layers, each screen's placement in its frame (the main menu's grid, the board choices' and Daily's window under the wordmark, Records', Settings', the placeholder's and the replay viewer's window, the results frame's head, tiles and action bar, the ready card's columns) and what each gives way at the smaller window sizes and on a phone, the scene panel's canvas (`body.scene-off`, `body.scene-front`), the Classic 2D game window (its board area and panel, the figures panel beside or under the board or hidden, the phone layouts), the replay layer (`replay--scene` transparent over the 3D scene; the recorded pointer and its trail, press rings, Show 3BV's 2D canvas; `body.replaying` hides the view chips, tools strip, hint strip and toast), the controller's hints (`[data-pad-hint]`, visible only under `body.pad-nav`, their room kept; `[data-pad-hinted]` rows), the menu-screen and translucent backdrops, the HUD and the game window's chrome hidden behind the ready card, the pause card, the results and the 3D status card, the board status cards' placement and parts, the look's hint (`.look-hint`), the ready card's placement (`.ready-body`), the Learn 3D step (`.hint-step`), the help/controls/ctx-lost overlays, the toast's place and the message pages' (`.fatal`, `.noscript`, `.not-found`: the card's width and its margin from the window's edges), the 3D touch stick and toolbar, the 3D overlay's placement (the counter strip, the figures panel, the phone layouts) and the HUD's; declares no custom property |
 
 `index.html` head order: `css/tokens.css`, `css/components.css`,
 `css/style.css`, `js/theme.js` (which appends the theme stylesheet), then
@@ -83,10 +83,12 @@ bind.
     panel `#rp-figures` —, `#replay-controls` (seek bar with pause marks and
     action ticks, transport, speed, toggles, the key line, Download, Open
     replay file); the hidden file input `#replay-file`;
-  - status cards `#c2d-status` (beside the board) and `#m3d-status`,
-    stacked above the pause card: progress line, `ui-spinner`, Cancel and
-    Play a standard board (`#…-wait`, `#…-wait-standard`), the offer
-    (`#…-offer`);
+  - status cards `#c2d-status` (centred on the board column by `UI`) and
+    `#m3d-status`, stacked above the pause card: progress line,
+    `ui-spinner`, Cancel and Play a standard board (`#…-wait`,
+    `#…-wait-standard`), the failure line `#…-status-text`, the offer
+    (`#…-offer`: `#…-retry` with the refresh icon, `#…-standard`,
+    `#…-offer-menu`);
   - the cards over the 3D scene, each a `ui-card ui-screen`: the ready
     card `#ready` (`.ready-body`; `.ready-main` — `#ready-back` with its
     back key hint, `#ready-board`, `#ready-msg`, `#ready-btn` around
@@ -95,7 +97,7 @@ bind.
     `ui-panel--muted` `#ready-rules`, `.ready-keys`, `.ready-touch`,
     `#ready-pad`, the tip — one column ordered as J-Ready draws it, two
     side by side on a phone held sideways); the context-lost card
-    `#ctx-lost` (`#ctx-lost-btn`, `#ctx-lost-menu`); the Learn 3D end card
+    `#ctx-lost` (`#ctx-lost-btn` with the refresh icon, `#ctx-lost-menu`); the Learn 3D end card
     `#learn-end` (`#learn-end-title`, `#learn-end-line`,
     `#learn-end-primary` around `#learn-end-primary-label` and its select
     key hint, `#learn-end-back`);

@@ -416,7 +416,7 @@ test('the placeholder screen is a screen frame on the backdrop: Main menu with i
   assert.match(SOON, /<section class="ui-frame" id="coming-soon-frame" aria-labelledby="coming-soon-title">\s*<div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"><\/div>/);
   assert.match(SOON, /<div class="ui-frame__start"><button type="button" id="coming-soon-menu" class="ui-button ui-button--secondary ui-button--sm" data-back>Main menu <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>\s*<h2 class="ui-frame__title" id="coming-soon-title">Coming soon<\/h2>\s*<div class="ui-frame__end"><\/div>/,
     'the head: Main menu, the title the shell sets to the mode, no action');
-  assert.match(SOON, /<h3 class="ui-card__title" id="coming-soon-heading">Coming soon<\/h3>\s*<p id="coming-soon-text" class="ui-text ui-text--muted">This part of the game is coming soon\.<\/p>/);
+  assert.match(SOON, /<h3 class="ui-card__title" id="coming-soon-heading">Coming soon<\/h3>\s*<p id="coming-soon-text" class="ui-text">This part of the game is coming soon\.<\/p>/);
   assert.match(SOON, /<button type="button" id="coming-soon-back" class="ui-button ui-button--secondary">Back <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/);
   assert.doesNotMatch(SOON, /ui-card ui-screen|data-esc-hint/, 'no card: the frame, its Back holding its key hint');
   const ui = read('js/ui.js');

@@ -276,13 +276,12 @@ test('the 3D renderer reads no token: the shell hands it the board module', () =
 
 // ---------- the scrims over the scene, read from the theme ----------
 test('the overlays over the scene and the context-lost screen read the theme\'s scrims, with no hard-coded tint', () => {
-  assert.match(THEME_CSS, /:is\(#pause, #ready, #results, #learn-end, \.modal\) \{[^}]*background: var\(--color-backdrop\)/);
-  assert.match(THEME_CSS, /#ctx-lost \{[^}]*background: var\(--color-backdrop-strong\)/);
-  assert.match(THEME_CSS, /#results\.results--over3d \{[^}]*background: var\(--color-backdrop-strong\)/);
+  assert.match(THEME_CSS, /:is\(#pause, #ready, #results, #learn-end, #ctx-lost, \.modal\) \{[^}]*background: var\(--color-backdrop\)/,
+    'one scrim, over 2D and 3D and a lost context alike');
   assert.match(THEME_CSS, /\.ui-card \{[^}]*background: var\(--color-surface\)/, 'the ready and context-lost cards are kit cards, on the surface');
   assert.doesNotMatch(THEME_CSS, /\.ready-card/, 'no one-off card of their own');
   const style = strip(read('../css/style.css'));
-  assert.doesNotMatch(style, /:[^;{}]*(rgba?\(|#[0-9a-f]{3,8}\b)/i, 'css/style.css carries no tint');
+  assert.doesNotMatch(style, /\{[^}]*:[^;{}]*(rgba?\(|#[0-9a-f]{3,8}\b)/i, 'css/style.css carries no tint in any declaration');
 });
 
 // ---------- replay viewer marks ----------

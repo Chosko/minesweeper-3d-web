@@ -49,8 +49,8 @@
 // flow's watch), watchBest whether Watch best shows (the flow's watchBest, the best's replay id or
 // null), compact whether the secondary actions take their small size (beside Watch best, so the
 // bar stays one row); look is whether Look at the board shows and over3d whether the screen shows
-// on the dimmed translucent surface over the 3D scene — both a 3D game's, whose finished board is
-// drawn dimmed behind the screen, as the Classic 2D board stays visible behind it.
+// over the 3D scene — both a 3D game's; the finished board, 2D or 3D, shows behind the screen's
+// scrim.
 //
 // createResultsView({ root, onPlayAgain, onWatch?, onWatchBest?, onRecords, onMenu, onLook?, onCopy? }) →
 // { show(content), hide(), noteLook(text) }: fills the #results markup by id and calls back on its

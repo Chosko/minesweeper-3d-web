@@ -295,7 +295,6 @@ kbd {
    area with no frame and scrolls. The 3D game's overlay bar never shows over the window. */
 #c2d { position: fixed; inset: 0; padding: var(--space-4) var(--space-4) 52px; }
 #c2d-frame { width: 100%; height: 100%; max-width: 1600px; }
-#c2d-frame > .ui-frame__head { min-height: 56px; }
 #c2d-body { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(220px, 260px); padding: 0; overflow: hidden; }
 #c2d-main { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; min-height: 0; padding: var(--space-4); }
 #c2d-counters { flex: none; }
@@ -311,10 +310,8 @@ kbd {
 #hud.hud--2d #hint-strip { left: 50%; transform: translateX(-50%); bottom: 116px; }
 @media (max-height: 820px) {
   #c2d { padding-top: var(--space-2); padding-bottom: 46px; }
-  #c2d-frame > .ui-frame__head { min-height: 48px; padding-block: var(--space-1); }
   #c2d-main { gap: var(--space-2); padding: var(--space-2) var(--space-3); }
   #c2d-counters { padding-block: var(--space-1); }
-  #c2d-frame > .ui-frame__foot { padding-block: var(--space-1); }
   #c2d-figures .ui-figures__body { padding-block: var(--space-3); }
   #c2d-figures .ui-figure { padding-block: 7px; }
   #hud.hud--2d .hud-tools { bottom: 6px; }
@@ -337,7 +334,6 @@ kbd {
   #c2d-figures, #c2d-divider, #hud.hud--2d .hud-tools { display: none; }
   #c2d-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
   #c2d-frame > .ui-frame__head { grid-template-columns: auto minmax(0, 1fr) auto; }
-  #c2d-title { overflow: hidden; text-overflow: ellipsis; font-size: var(--font-size-md); }
   #hud.hud--2d #hint-strip { bottom: 52px; }
 }
 /* On a coarse pointer the Reveal / Flag switch sits under the board in a portrait window: the hint strip clears it. */
@@ -354,9 +350,19 @@ kbd {
   #c2d-counters { grid-column: 2; grid-row: 1; flex-direction: column; align-items: stretch; }
   #hud-tap { grid-column: 2; grid-row: 2; }
 }
-/* A board status card (generating, or a failed board's offer) sits above the pause card, centred on
-   the board at the canvas's width and never past a phone's. */
+/* A board status card (generating, or a failed board's offer) sits above the pause card at the canvas's
+   width and never past a phone's, centred on the board: the 3D box in the window's centre, the Classic 2D
+   board column where UI places it (UI._centreStatus2D). The spinner 16 px from its title and progress line. */
 #c2d-status, #m3d-status { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: calc(var(--z-overlay) + 1); width: min(480px, calc(100vw - 2 * var(--space-4))); box-sizing: border-box; }
+:is(#c2d-status, #m3d-status) > .ui-row { gap: var(--space-4); flex-wrap: nowrap; }
+:is(#c2d-status, #m3d-status) .ui-card__title { margin: 0; font-size: var(--font-size-xl); }
+:is(#c2d-progress, #m3d-progress) { margin: 4px 0 0; font-size: 15px; }
+/* Behind the 3D ready card, the pause card and the results only the board or the scene shows, and the
+   Classic 2D window's title: the HUD with the 3D overlay, and the window's other parts, go; behind the 3D
+   board status card the HUD goes too. */
+body:has(> :is(#ready:not(.hidden):not(.ready--pending), #pause:not(.hidden), #results:not(.hidden))) #hud { visibility: hidden; }
+body:has(> :is(#ready:not(.hidden):not(.ready--pending), #pause:not(.hidden), #results:not(.hidden))) #c2d-frame :is(.ui-frame__start, .ui-frame__end, #c2d-counters, #c2d-figures, #c2d-divider, .ui-frame__foot, #hud-tap) { visibility: hidden; }
+body:has(> #m3d-status:not(.hidden)) #hud { visibility: hidden; }
 /* The replay viewer (#replay): its window fills the backdrop; the body stacks the counters, the board
    area with the figures panel beside it, which take the room left, and the controls. The 2D board view
    fits the board area; a 3D replay's scene is the full window behind it (replay--scene), the panel on
@@ -375,6 +381,7 @@ kbd {
 #replay-board { position: absolute; inset: 0; overflow: hidden; }
 #replay-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(480px, calc(100% - 2 * var(--space-4))); box-sizing: border-box; }
 #replay-message > .ui-row { align-items: center; flex-wrap: nowrap; }
+#replay-message > .ui-row > .ui-card__title { margin: 0; font-size: 28px; line-height: 1.1; }
 #replay-controls { flex: none; display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
 #replay.replay--scene #replay-controls { padding: var(--space-3) var(--space-4); }
 /* The seek bar on one row between its label and the position; on a phone under them. */
@@ -400,7 +407,7 @@ kbd {
   .replay-bar .ui-stat__value { font-size: var(--font-size-md); }
   #replay-frame > .ui-frame__head { grid-template-columns: auto minmax(0, 1fr); }
   #replay-frame .ui-frame__end { display: none; }
-  #replay-title { white-space: normal; text-align: start; }
+  #replay-title { text-align: start; }
   #replay-controls .ui-slider { grid-template-columns: 1fr auto auto; }
   #replay-controls .replay-seek { grid-column: 1 / -1; grid-row: auto; }
   .replay-keys, .replay-key-hint { display: none; }
@@ -571,7 +578,9 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
    centring its line and Back; on a phone the window is full-bleed. */
 #coming-soon-frame { width: 900px; height: 560px; }
 #coming-soon-body { display: grid; place-items: center; }
-#coming-soon-panel { align-items: center; max-width: 460px; text-align: center; }
+#coming-soon-panel { align-items: center; gap: 14px; max-width: 460px; text-align: center; }
+#coming-soon-heading { margin: 0; font-size: 36px; line-height: 1.1; }
+#coming-soon-text { line-height: 1.4; }
 @media (max-width: 1439px) { #coming-soon-frame { width: 820px; height: 520px; } }
 @media (max-width: 1199px) { #coming-soon-frame { width: 760px; } }
 @media (max-width: 719px) {
@@ -599,7 +608,6 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
 /* The fatal card, the no-JavaScript notice and the 404 page: a message card on a backdrop filling the page. */
 .fatal, .noscript, .not-found { position: fixed; inset: 0; z-index: var(--z-fatal); padding: 12px; }
 :is(.fatal, .noscript, .not-found) > .ui-card { width: min(560px, 100%); }
-:is(.fatal, .noscript, .not-found) > .ui-card > .ui-text { margin: 0 0 var(--space-4); }
 
 @media (max-width: 760px) {
   .controls.compact { grid-template-columns: max-content 1fr; }
@@ -611,6 +619,7 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
 
 /* ---------- WebGL context lost ---------- */
 #ctx-lost { z-index: var(--z-context-lost); }
+#ctx-lost > .ui-card { width: min(480px, 100%); }
 
 /* ---------- game controller ---------- */
 .pad-note { margin: 0 0 10px; padding: 6px 10px; font-size: 12px; font-weight: var(--font-weight-bold); }

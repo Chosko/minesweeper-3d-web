@@ -60,10 +60,12 @@
 //   mark `cycle`, a mine -1.
 //
 // createReplayViewer({ library, router, view, viewers?, sound?, files?, bests? }) → viewer
-//   view     the screen binder: open(), close(), loading(), failed(message), ready({ duration,
+//   view     the screen binder: open(), close(), loading(), failed(message, known), ready({ duration,
 //            leadIn, kind, pauses, actions, code, title }) → the board area, render(state); pauses are
 //            the header's pause spans, actions the replay's [{ time, kind }], code replayCode's, title
-//            replayTitle's.
+//            replayTitle's; known, on a failure, is a replay whose header reads but that cannot play
+//            (no viewer for its board, or it does not reproduce) as { duration, leadIn, pauses,
+//            actions, title }, else null.
 //   viewers  { [graph kind]: ({ container, sim }) → { draw(frame, { playing }), place?(),
 //            setScale?(scale), press?(actions), still?(), showBbbv?(tints), setFree?(on),
 //            destroy() } }: draw is told whether playback drew the frame (a seek did not); place()
@@ -104,8 +106,9 @@
 //            crosses. With sound on, each action playback reaches going forward at 2× or slower
 //            plays its cue (actionCue), as does a step or a seek forward onto an action; nothing
 //            else plays one.
-//   download() saves the replay playing (its bytes, under js/records/replay-list.js
-//            replayFileName) through files.save → the name, or null when none plays.
+//   download() saves the replay shown (its bytes, under js/records/replay-list.js
+//            replayFileName) through files.save → the name, or null when none plays or a failed one
+//            did not read.
 //   openFile(file) shows that file, Back going where this replay's Back went.
 //   key(code) → whether REPLAY_KEYS took it; pad(pressed) → whether a REPLAY_PAD button was pressed,
 //            `pressed(button)` the shell's held-suppressed press test.
@@ -135,7 +138,8 @@
 // alternative #rp-pauses-text. While a replay loads or has failed the controls stay in place, every one
 // that needs a replay disabled (Sound and Open replay file still work), and nothing of one shown earlier
 // stays: the figures and the panel's figures read DASH and the position, the seek bar, its marks and
-// ticks and the end line are cleared. A 3D replay marks #replay replay--scene, which lets the full-window 3D scene behind it show.
+// ticks and the end line are cleared. A failed replay whose header reads keeps its title, its seek
+// bar's marks and ticks, and the speed choice, Show 3BV and Download enabled. A 3D replay marks #replay replay--scene, which lets the full-window 3D scene behind it show.
 // While it shows, REPLAY_KEYS typed anywhere but in a field reach onCommand; Space and Enter on a
 // button keep their own click.
 
@@ -329,8 +333,8 @@ export async function prepareReplay({ replay, replayId, file } = {}, { library }
     return failure('unreadable');
   }
   if (checked.result === 'refused') return failure(checked.reason === REFUSAL.NEWER ? 'newer' : 'unreadable');
-  if (!checked.ok) return failure('unreproducible');
   const bytes = input instanceof ArrayBuffer ? new Uint8Array(input) : isBytes(input) ? input : encodeReplay(input);
+  if (!checked.ok) return { ...failure('unreproducible'), sim: createSimulator(input), bytes };
   return { ok: true, sim: createSimulator(input), bytes };
 }
 
@@ -346,6 +350,7 @@ export function createReplayViewer({ library, router, view, viewers = { square: 
   let returnTo = null;
   let sim = null;
   let bytes = null;
+  let known = null; // a failed replay whose header reads: its decoded replay, for its title, timeline and download
   let clock = null; // over the timeline: game time is clock.time - LEAD_IN_MS
   let board = null;
   let frame = null;
@@ -415,6 +420,7 @@ export function createReplayViewer({ library, router, view, viewers = { square: 
     board = null;
     sim = null;
     bytes = null;
+    known = null;
     clock = null;
     frame = null;
     frameAt = null;
@@ -489,7 +495,11 @@ export function createReplayViewer({ library, router, view, viewers = { square: 
       if (!prepared.ok || !mount) {
         status = 'failed';
         message = !prepared.ok ? prepared.message : graphKind === 'box' ? FAILURES.webgl2 : FAILURES.unsupported;
-        view.failed(message);
+        if (prepared.sim) {
+          known = prepared.sim.replay;
+          bytes = prepared.bytes;
+        }
+        view.failed(message, prepared.sim ? knownTimeline(prepared.sim) : null);
         refocus();
         return;
       }
@@ -553,8 +563,9 @@ export function createReplayViewer({ library, router, view, viewers = { square: 
       render();
     },
     download() {
-      if (status !== 'ready' || !bytes) return null;
-      const { header } = sim.replay;
+      const replay = status === 'ready' ? sim.replay : status === 'failed' ? known : null;
+      if (!replay || !bytes) return null;
+      const { header } = replay;
       const name = replayFileName(boardKey(header.board), header.endedAt);
       files?.save(bytes, name);
       return name;
@@ -584,6 +595,15 @@ export function createReplayViewer({ library, router, view, viewers = { square: 
     },
   };
   return viewer;
+}
+
+// What a failed replay whose header reads keeps on the screen: its title and its timeline.
+function knownTimeline(sim) {
+  const { replay } = sim;
+  return {
+    duration: sim.duration, leadIn: LEAD_IN_MS, pauses: replay.header.pauses,
+    actions: replay.actions.map(({ time, kind }) => ({ time, kind })), title: replayTitle(replay),
+  };
 }
 
 export function replayTitle(replay) {
@@ -628,8 +648,10 @@ export function createReplayView({
   const figures = panel ? bindFigures(panel) : null;
   const said = panel ? bindFiguresLive(panel) : null;
   const options = [...el.speed.querySelectorAll('.ui-segmented__option')];
-  // The controls that need a replay: disabled while one opens or has failed.
+  // The controls that need a replay: disabled while one opens or has failed. A failed replay whose header
+  // reads leaves enabled those that need only the replay: the speed choice, Show 3BV and Download.
   const needReplay = [el.prev, el.play, el.next, el.seek, el.showBbbv, el.camera, el.download, ...options];
+  const needHeader = [el.showBbbv, el.download, ...options];
   const doc = root.ownerDocument;
   const shown = {};
   const set = (key, node, text) => { if (shown[key] !== text) { node.textContent = text; shown[key] = text; } };
@@ -744,6 +766,22 @@ export function createReplayView({
 
   const pressed = (node, on) => node.setAttribute('aria-pressed', String(on));
 
+  // The seek bar's pause marks, their text alternative and the action ticks of a replay's timeline.
+  const showTimeline = ({ duration, leadIn, pauses, actions }) => {
+    el.pauses.replaceChildren(...pauseMarks(pauses, duration, leadIn).map(({ left, width }) => {
+      const mark = doc.createElement('span');
+      mark.className = 'replay-pause';
+      mark.style.left = `${left}%`;
+      mark.style.width = `${width}%`;
+      return mark;
+    }));
+    el.pausesText.textContent = pausesText(pauses);
+    el.pausesText.hidden = pauses.length === 0;
+    timeline = { duration, leadIn, actions };
+    tickWidth = -1;
+    refit();
+  };
+
   return {
     open() {
       root.classList.remove('hidden');
@@ -761,7 +799,14 @@ export function createReplayView({
       timeline = null;
     },
     loading() { code?.show(null); card('Opening the replay…', '', false); },
-    failed(message) { code?.show(null); card('This replay cannot be played', message, true); },
+    failed(message, known = null) {
+      code?.show(null);
+      card('This replay cannot be played', message, true);
+      if (!known) return;
+      set('title', el.title, known.title);
+      showTimeline(known);
+      for (const node of needHeader) node.disabled = false;
+    },
     ready({ duration, leadIn = 0, kind, pauses = [], actions = [], code: boardCode = null, title = TITLE }) {
       code?.show(boardCode);
       set('title', el.title, title);
@@ -773,19 +818,8 @@ export function createReplayView({
       el.seek.step = String(step);
       el.seek.min = String(-leadIn);
       el.seek.max = String(Math.ceil((duration + leadIn) / step) * step - leadIn); // the clock clamps past the end
-      el.pauses.replaceChildren(...pauseMarks(pauses, duration, leadIn).map(({ left, width }) => {
-        const mark = doc.createElement('span');
-        mark.className = 'replay-pause';
-        mark.style.left = `${left}%`;
-        mark.style.width = `${width}%`;
-        return mark;
-      }));
-      el.pausesText.textContent = pausesText(pauses);
-      el.pausesText.hidden = pauses.length === 0;
-      timeline = { duration, leadIn, actions };
+      showTimeline({ duration, leadIn, pauses, actions });
       keyLine(kind);
-      tickWidth = -1;
-      refit();
       return el.board;
     },
     render(state) {

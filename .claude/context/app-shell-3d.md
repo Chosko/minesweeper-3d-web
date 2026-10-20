@@ -87,7 +87,9 @@ board choice, session and adapter (`js/shell/mode-3d.js`) themselves are
 - **`sync3D`** (every router change) resumes the session on `playing` and
   pauses it elsewhere, so board input runs only in play; it refreshes the
   status card.
-- **Ready card.** `showReady` gets `rules` (the "How 3D works" block) and
+- **Ready card.** The HUD is hidden behind it
+  ([app-shell-ui.md](app-shell-ui.md) § Behind a card). `showReady` gets
+  `rules` (the "How 3D works" block) and
   `learn` (the `#ready-learn` line "New to 3D? Learn 3D walks you through a
   small box." with `#ready-learn-btn` → `startLearn`, outside the Click to
   play button) while `FIRST_USE.rules3D`; neither on the guided board's own card,

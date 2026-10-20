@@ -1190,7 +1190,7 @@ test('index.html builds the Classic 2D board choice from kit components: the tit
   assert.doesNotMatch(left, /ui-menu|data-detail|3BV|Best /, 'no detail lines: no 3BV and no best on an option');
 
   // Right: the settings, the custom form, the bests, the code panel.
-  const right = between(CHOICE, '<div class="ui-column" id="c2d-choice-detail">', '<footer class="ui-frame__foot">');
+  const right = between(CHOICE, '<div class="ui-column" id="c2d-choice-detail">', '<footer class="ui-frame__foot ui-frame__foot--action">');
   assert.match(right, /<div id="c2d-settings" data-settings>\s*<div class="ui-section-label"><h3 class="ui-section-label__text">Board settings<\/h3><\/div>\s*<label class="ui-toggle"><input type="checkbox" role="switch" id="c2d-noguess" class="ui-toggle__input" data-noguess><span class="ui-toggle__label">No-guess<\/span><\/label>/);
   assert.ok(right.includes(`<p id="c2d-noguess-help" class="ui-text ui-text--muted">${NOGUESS_HELP_TEXT}</p>`));
   assert.ok(right.indexOf('data-density-hint') > right.indexOf('c2d-noguess-help') && right.indexOf('data-density-hint') < right.indexOf('<form id="c2d-custom"'), 'the density hint under the switch');
@@ -1222,7 +1222,7 @@ test('index.html builds the Classic 2D board choice from kit components: the tit
   assert.doesNotMatch(CHOICE, /c2d-code-play|Play this board/, 'the code is played with Play');
 
   // The bottom bar: the summary, Records and Play with its Enter hint.
-  const foot = between(CHOICE, '<footer class="ui-frame__foot">', '</footer>');
+  const foot = between(CHOICE, '<footer class="ui-frame__foot ui-frame__foot--action">', '</footer>');
   assert.match(foot, /<p class="ui-frame__summary" id="c2d-summary" data-summary><\/p>\s*<div class="ui-actions ui-actions--row">\s*<button type="button" id="c2d-records" class="ui-button ui-button--secondary" data-records>Records<\/button>\s*<button type="button" id="c2d-play" class="ui-button ui-button--primary ui-button--lg" data-play>Play <span class="ui-key-hint" data-action="select" aria-hidden="true"><\/span><\/button>/);
   for (const [, cls] of CHOICE.matchAll(/class="([^"]+)"/g)) {
     for (const c of cls.split(/\s+/)) assert.ok(c.startsWith('ui-') || ['overlay', 'hidden'].includes(c), `kit class: ${c}`);
@@ -1363,7 +1363,8 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
     const before = Number(await ms(() => document.getElementById('c2d-time').textContent));
     const card = async () => Number((await ms(() => document.getElementById('pause-sub').textContent)).match(/^Time (\d+)\./)[1]);
     const cardBefore = await card();
-    await page.waitForFunction(([hud, sub]) => Number(document.getElementById('c2d-time').textContent) > hud
+    // Two ticks of the clock: the pause lasts at least a second.
+    await page.waitForFunction(([hud, sub]) => Number(document.getElementById('c2d-time').textContent) > hud + 1
       && Number(document.getElementById('pause-sub').textContent.match(/^Time (\d+)\./)[1]) > sub, [before, cardBefore], { timeout: patience(5000) });
     assert.equal(await mode(), 'paused', 'still paused');
     assert.ok(Number(await ms(() => document.getElementById('c2d-time').textContent)) > before, 'the timer runs while paused');
@@ -1385,7 +1386,7 @@ test('in a browser, menu → Classic 2D → Expert → first click → pause →
     assert.equal(abandoned[0].summary.board.width, 30);
     assert.ok(abandoned[0].summary.elapsedMs >= 1000);
     assert.equal(abandoned[0].summary.pauses, 2, 'two pauses: the one resumed, and the one left from');
-    assert.ok(abandoned[0].summary.pausedMs >= 1200);
+    assert.ok(abandoned[0].summary.pausedMs >= 1000, `the paused time counts the second-long pause (${abandoned[0].summary.pausedMs})`);
 
     // The board choice reopens on the last choice; the abandoned game set no best.
     await page.click('#menu-entry-classic-2d');

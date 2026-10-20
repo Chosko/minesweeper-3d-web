@@ -157,7 +157,9 @@ export const KIT_CATALOGUE = Object.freeze([
   // The game's title: three words on one line, each in its own accent.
   component('ui-wordmark', { parts: [part('word', '.ui-wordmark__word')] }),
   component('ui-backdrop'),
+  // The white action foot (ui-frame__foot--action) ends a screen's bar of actions; the game window keeps the plain foot.
   component('ui-frame', {
+    variants: ['ui-frame__foot--action'],
     parts: [
       part('head', '.ui-frame__head'),
       part('back', '.ui-frame__start .ui-button', { optional: true, as: 'ui-button--secondary' }),

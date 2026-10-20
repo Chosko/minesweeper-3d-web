@@ -400,7 +400,7 @@ function fakeScreen() {
     open() { log.push('open'); },
     close() { log.push('close'); },
     loading() { log.push('loading'); },
-    failed(message) { log.push(['failed', message]); },
+    failed(message, known = null) { log.push(['failed', message]); screen.known = known; },
     ready(info) { log.push(['ready', info]); return screen.container; },
     render(state) { screen.last = state; },
   };
@@ -520,6 +520,30 @@ test('a replay with no viewer for its board says it cannot be played here', asyn
   await viewer.show({ replay: blobOf(WON) });
   assert.deepEqual(view.log.at(-1), ['failed', FAILURES.unsupported]);
   assert.match(FAILURES.unsupported, /cannot be played here yet/);
+});
+
+test('a replay whose header reads but cannot play keeps its frame title and timeline, and can still be downloaded', async () => {
+  const saved = [];
+  const files = { save: (bytes, name) => saved.push(name) };
+  // No viewer for its board: the replay itself reads.
+  const { viewer, view } = viewerOver({ viewers: {}, files });
+  await viewer.show({ replay: blobOf(WON) });
+  assert.deepEqual(view.log.at(-1), ['failed', FAILURES.unsupported]);
+  assert.equal(view.known.title, 'Replay · Classic 2D · Beginner', 'the frame keeps the replay\'s title');
+  assert.deepEqual([view.known.duration, view.known.leadIn, view.known.pauses, view.known.actions.length], [9971, LEAD_IN_MS, [], 28], 'and its seek bar\'s ticks');
+  assert.match(viewer.download(), /\.msrp$/, 'Download still saves the file');
+  assert.equal(saved.length, 1);
+  // A replay that does not reproduce: its header still reads.
+  const tampered = decodeReplay(blobOf(WON));
+  tampered.check.digest ^= 1;
+  await viewer.show({ replay: encodeReplay(tampered) });
+  assert.deepEqual(view.log.at(-1), ['failed', FAILURES.unreproducible]);
+  assert.equal(view.known.title, 'Replay · Classic 2D · Beginner');
+  // A replay that does not read at all: nothing to keep.
+  await viewer.show({ replay: new Uint8Array([9, 9]) });
+  assert.deepEqual(view.log.at(-1), ['failed', FAILURES.unreadable]);
+  assert.equal(view.known, null);
+  assert.equal(viewer.download(), null, 'nothing to download');
 });
 
 test('a 3D replay with no 3D viewer to offer (no WebGL 2) says why, Back still works, and a 2D replay still plays', async () => {
@@ -1028,6 +1052,20 @@ test('[slow] in a browser, a recorded 2D replay plays from its fixture through t
       [DASH, DASH, DASH, DASH], 'nothing of the replay played before');
     assert.deepEqual(await page.evaluate(() => [document.getElementById('rp-position').textContent, document.querySelectorAll('#rp-ticks .replay-tick, #rp-pauses .replay-pause').length,
       document.getElementById('replay-end').classList.contains('hidden')]), ['', 0, true], 'the bar is cleared');
+    // A replay that reads but does not reproduce keeps its title and timeline, and what still works stays enabled.
+    await page.keyboard.press('Escape');
+    await page.evaluate(async () => {
+      const { decodeReplay, encodeReplay } = await import('/js/replay/format.js');
+      const r = decodeReplay(new Uint8Array(await (await fetch('/tests/fixtures/replays/2d-beginner-won.msrp')).arrayBuffer()));
+      r.check.digest ^= 1;
+      globalThis.__ms.watch({ replay: encodeReplay(r), returnTo: { screen: 'menu' } });
+    });
+    await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'failed', null, { timeout: patience(5000) });
+    assert.equal(await text('replay-title'), 'Replay · Classic 2D · Beginner', 'the frame keeps its title');
+    assert.deepEqual(await page.evaluate(() => ['rp-show-bbbv', 'rp-download'].filter((id) => document.getElementById(id).disabled)), [], 'Show 3BV and Download stay enabled');
+    assert.equal(await page.evaluate(() => [...document.querySelectorAll('#rp-speed [role="radio"]')].some((o) => o.disabled)), false, 'and the speed choice');
+    assert.ok(await page.evaluate(() => document.querySelectorAll('#rp-ticks .replay-tick').length) > 0, 'the seek bar keeps its ticks');
+    assert.deepEqual(await page.evaluate(() => ['rp-prev', 'rp-play', 'rp-next', 'rp-seek'].filter((id) => !document.getElementById(id).disabled)), [], 'playing it stays off');
     await page.keyboard.press('Escape');
     assert.equal(await page.evaluate(() => globalThis.__ms.state.mode), 'menu');
     assert.deepEqual(errors, []);
