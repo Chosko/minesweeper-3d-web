@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 246
+Last task number: 247
 
 ---
 
@@ -1305,6 +1305,7 @@ Status: [MISSING]
 Target: claude
 Files: dev/components.html, js/ui/kit-catalogue.js, tests/components.test.mjs, .claude/context/app-shell-kit.md
 Preconditions: 218, 219, 220, 221, 222, 223
+Feature: theme-system
 
 ---
 
@@ -1335,5 +1336,15 @@ Target: claude
 Files: .claude/context/app-shell-board-module.md, .claude/context/app-shell-themes.md, .claude/context/classic2d-tile-skin.md, .claude/context/classic2d-tile-motion.md, .claude/context/classic2d-board-motion.md, .claude/context/classic2d-board-view.md, .claude/context/rendering-board-art.md, .claude/context/app-shell-menu.md, .claude/context/app-shell-daily.md, .claude/context/replay-viewers.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/themed-board-art-and-motion.md
 Preconditions: 224, 225, 226, 227
 Feature: themed-board-art-and-motion
+
+---
+
+## 247. Update documentation for feature `theme-system`
+
+Status: [MISSING]
+Target: claude
+Files: .claude/context/app-shell-kit.md, .claude/context/app-shell-themes.md, .claude/context/settings-page.md, .claude/context/testing.md, .claude/context/INDEX.md, .claude/domain/features/theme-system.md
+Preconditions: 243
+Feature: theme-system
 
 ---

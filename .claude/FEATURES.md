@@ -256,10 +256,10 @@ Tasks: 111, 112, 113, 114
 
 ## theme-system — Theme registry and contract, per-theme stylesheets and fonts, the Settings theme list and conformance tests
 
-Status: [ITERATED]
+Status: [PLANNED]
 Doc: .claude/domain/features/theme-system.md
 Source: product-design.md § Visual design system (m2b-themes)
-Tasks: 157, 158, 159, 160, 161, 162
+Tasks: 157, 158, 159, 160, 161, 162, 243, 247
 
 ---
 
