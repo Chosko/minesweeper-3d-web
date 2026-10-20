@@ -1,6 +1,6 @@
 # Runbooks
 
-Last runbook number: 7
+Last runbook number: 8
 
 ---
 
@@ -31,5 +31,15 @@ File: .claude/runbooks/7-themes-tasks-implementation.md
 Created: 2026-10-13
 Source: /runbook-create interview (runbook themes-planning step 8)
 Steps: 81/81
+
+---
+
+## 8. design-fixes-implementation — Implement the design-fix tasks 214–247: test reliability, kit, board module, screens, copy, gallery, then each feature's documentation
+
+Status: [PENDING]
+File: .claude/runbooks/8-design-fixes-implementation.md
+Created: 2026-10-20
+Source: /runbook-create interview
+Steps: 0/34
 
 ---
