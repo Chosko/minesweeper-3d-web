@@ -62,7 +62,7 @@ Context: none
 /task-implement 218 --review
 ```
 
-## [~] 6. Implement task 219 — Kit form controls: switch, switch row, slider fill, number field, invalid state, focus halo
+## [x] 6. Implement task 219 — Kit form controls: switch, switch row, slider fill, number field, invalid state, focus halo
 
 Depends on: 1
 
@@ -71,6 +71,8 @@ Context: none
 ```prompt
 /task-implement 219 --review
 ```
+
+Done: 2026-10-20, commits `f6d1394`, `0cd4696` (23 files, +563/-118). Premise wrong: styling the board option on `:focus-visible` alone does not work in Chromium after a mouse click; `js/main.js` now sets `body.pointer-nav` on mouse input and the theme keys the selected look on it. The focus halo is `!important`; `STATES` gains `invalid` and `REQUIRED_TOKENS` `--slider-fill`.
 
 ## [ ] 7. Implement task 220 — Kit icon set and leading-icon slot
 
