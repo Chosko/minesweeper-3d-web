@@ -487,7 +487,7 @@ test('the confirmation names every kind of data that goes, says it cannot be und
   const confirm = html.slice(html.indexOf('id="set-reset-confirm"') - 60);
   assert.match(confirm, /<div class="ui-panel ui-actions hidden" id="set-reset-confirm" role="alertdialog" aria-labelledby="set-reset-text">/);
   assert.ok(confirm.includes(`<p class="ui-text" id="set-reset-text">${RESET_MESSAGE}</p>`));
-  assert.match(confirm, /<button type="button" class="ui-button ui-button--primary" id="set-reset-yes">Reset all data<\/button>/);
+  assert.match(confirm, /<button type="button" class="ui-button ui-button--danger" id="set-reset-yes">Reset all data<\/button>/);
   assert.match(confirm, /<button type="button" class="ui-button ui-button--secondary" id="set-reset-no">Cancel<\/button>/);
 });
 

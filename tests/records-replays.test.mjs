@@ -510,7 +510,7 @@ test('the records screen holds the Replays tab\'s panel: pinned-first checkbox, 
   assert.match(panel, /<nav id="records-replays-pager" class="ui-pager hidden" aria-label="[^"]+"><\/nav>/, 'the kit pager');
   assert.ok(panel.includes('<div id="records-replays-confirm" class="ui-panel ui-actions hidden" role="alertdialog" aria-labelledby="records-replays-confirm-text">'
     + '<p id="records-replays-confirm-text" class="ui-text"></p>'
-    + '<button type="button" id="records-replays-yes" class="ui-button ui-button--primary">Delete replay</button>'
+    + '<button type="button" id="records-replays-yes" class="ui-button ui-button--danger">Delete replay</button>'
     + '<button type="button" id="records-replays-no" class="ui-button ui-button--secondary">Cancel</button></div>'), 'the confirmation, in the pause card\'s style');
 });
 

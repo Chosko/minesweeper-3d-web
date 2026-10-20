@@ -247,7 +247,7 @@ function dataPanelHtml() {
     + '<button type="button" class="ui-button ui-button--secondary" id="set-reset">Reset all data…</button>'
     + '<div class="ui-panel ui-actions hidden" id="set-reset-confirm" role="alertdialog" aria-labelledby="set-reset-text">'
     + `<p class="ui-text" id="set-reset-text">${RESET_MESSAGE}</p>`
-    + '<button type="button" class="ui-button ui-button--primary" id="set-reset-yes">Reset all data</button>'
+    + '<button type="button" class="ui-button ui-button--danger" id="set-reset-yes">Reset all data</button>'
     + '<button type="button" class="ui-button ui-button--secondary" id="set-reset-no">Cancel</button>'
     + '</div></section>';
 }

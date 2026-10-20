@@ -237,7 +237,7 @@
   color: var(--color-ink);
   box-shadow: inset 0 -2px 0 var(--color-edge-inset), 0 var(--edge-sm) 0 var(--color-edge);
 }
-/* a latched toggle (aria-pressed): Swap clicks, Tap: Flag, the touch view modes, the replay's tools */
+/* a secondary button latched (aria-pressed): Tap: Flag, the replay's Sound */
 :root[data-theme="joyful-tiles"] .ui-button--secondary[aria-pressed="true"] {
   background: var(--color-blue);
   color: var(--color-blue-on);
@@ -352,7 +352,57 @@
   box-shadow: 0 var(--edge-sm) 0 var(--color-locked-edge);
   transform: none;
 }
-/* a key hint inside a button: its keys in the button's ink */
+/* the quiet button: a flat surface ringed by the border, no drop edge; selected sunk in place, pressed 2 px down */
+:root[data-theme="joyful-tiles"] .ui-button--quiet {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: inset 0 0 0 2px var(--color-border);
+}
+:root[data-theme="joyful-tiles"] .ui-button--quiet:focus,
+:root[data-theme="joyful-tiles"] .ui-button--quiet:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-button--quiet:focus,
+:root[data-theme="joyful-tiles"] .ui-button--quiet[data-force~="focus"] {
+  outline: none;
+  transform: none;
+  background: var(--color-surface-sunk);
+  box-shadow: inset 0 0 0 2px var(--color-edge);
+}
+:root[data-theme="joyful-tiles"] .ui-button--quiet:active:not(:disabled),
+:root[data-theme="joyful-tiles"] .ui-button--quiet[data-force~="active"] {
+  outline: none;
+  transform: translateY(2px);
+  background: var(--color-surface-sunk);
+  box-shadow: inset 0 0 0 2px var(--color-edge);
+}
+:root[data-theme="joyful-tiles"] .ui-button--quiet:disabled,
+:root[data-theme="joyful-tiles"] .ui-button--quiet[aria-pressed="true"]:disabled {
+  background: var(--color-locked);
+  color: var(--color-locked-ink);
+  box-shadow: none;
+  transform: none;
+}
+/* a latched toggle (a quiet button with aria-pressed) on: drawn as the primary button */
+:root[data-theme="joyful-tiles"] .ui-button--quiet[aria-pressed="true"] {
+  background: var(--color-accent-fill);
+  color: var(--color-accent-on);
+  box-shadow: inset 0 3px 0 var(--highlight), 0 var(--edge-sm) 0 var(--color-accent-edge);
+}
+:root[data-theme="joyful-tiles"] .ui-button--quiet[aria-pressed="true"]:focus,
+:root[data-theme="joyful-tiles"] .ui-button--quiet[aria-pressed="true"]:focus-visible,
+:root[data-theme="joyful-tiles"] body.pad-nav .ui-button--quiet[aria-pressed="true"]:focus,
+:root[data-theme="joyful-tiles"] .ui-button--quiet[aria-pressed="true"][data-force~="focus"] {
+  transform: translateY(var(--edge-sm));
+  background: var(--color-accent-fill);
+  box-shadow: inset 0 3px 0 var(--highlight);
+}
+:root[data-theme="joyful-tiles"] .ui-button--quiet[aria-pressed="true"]:active:not(:disabled),
+:root[data-theme="joyful-tiles"] .ui-button--quiet[aria-pressed="true"][data-force~="active"] {
+  transform: translateY(calc(var(--edge-sm) + 2px));
+  background: var(--color-accent-fill);
+  box-shadow: inset 0 4px 0 var(--shade-press), inset 0 0 0 1px var(--shade-soft);
+}
+/* a key hint inside a button: the hint and its keys in the button's own ink */
+:root[data-theme="joyful-tiles"] .ui-button .ui-key-hint { color: inherit; }
 :root[data-theme="joyful-tiles"] .ui-button .ui-key-hint__key { border-color: currentColor; color: inherit; }
 
 /* ---------- menu list: board options (raised cards) and the main menu's entries (accent fills) ---------- */

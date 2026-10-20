@@ -1783,7 +1783,7 @@ function measurePauseCard() {
   };
 }
 // The pause card's font sizes with a fine pointer, which its two columns leave as they are.
-const PAUSE_FONTS_FINE = Object.freeze({ title: 24, status: 16, button: 16, slider: 16, switch: 16, heading: 13, list: 14, keyName: 14, kbd: 11, statLabel: null });
+const PAUSE_FONTS_FINE = Object.freeze({ title: 24, status: 16, button: 17, slider: 16, switch: 16, heading: 13, list: 14, keyName: 14, kbd: 11, statLabel: null });
 
 test('in a browser, at 1024 × 768 with a mouse: the Classic 2D pause card in two columns fits the window, no text shrinks, and below 1024 px it stays one column in its order', async (t) => {
   const env = await suite.open(t);

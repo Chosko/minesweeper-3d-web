@@ -551,7 +551,7 @@ test('the records screen is the kit composition: picker, figures, overall, empty
     tab('recent', true), tab('top', false), tab('replays', false), tab('leaderboards', false),
     option('time', true), option('bbbvPerSecond', false), option('efficiency', false),
     '<button type="button" id="records-replays-open" class="ui-button ui-button--secondary ui-button--sm hidden">',
-    '<button type="button" id="records-replays-yes" class="ui-button ui-button--primary">',
+    '<button type="button" id="records-replays-yes" class="ui-button ui-button--danger">',
     '<button type="button" id="records-replays-no" class="ui-button ui-button--secondary">',
   ]);
 });

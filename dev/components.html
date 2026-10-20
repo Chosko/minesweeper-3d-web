@@ -55,6 +55,7 @@
         <span class="state">Disabled</span><div><button type="button" class="ui-button ui-button--primary" disabled>Play</button></div>
         <span class="state">Small</span><div><button type="button" class="ui-button ui-button--primary ui-button--sm">Play</button></div>
         <span class="state">Large</span><div><button type="button" class="ui-button ui-button--primary ui-button--lg">Play</button></div>
+        <span class="state">Key hint</span><div><button type="button" class="ui-button ui-button--primary" id="g-keyed-primary">Play <span class="ui-key-hint" data-action="select" aria-hidden="true"><kbd class="ui-key-hint__key">Enter</kbd></span></button></div>
       </div>
     </section>
 
@@ -67,6 +68,7 @@
         <span class="state">Disabled</span><div><button type="button" class="ui-button ui-button--secondary" disabled>Back</button></div>
         <span class="state">Small</span><div><button type="button" class="ui-button ui-button--secondary ui-button--sm">Back</button></div>
         <span class="state">Large</span><div><button type="button" class="ui-button ui-button--secondary ui-button--lg">Back</button></div>
+        <span class="state">Key hint</span><div><button type="button" class="ui-button ui-button--secondary" id="g-keyed-secondary">Back <span class="ui-key-hint" data-action="back" aria-hidden="true"><kbd class="ui-key-hint__key">Esc</kbd></span></button></div>
       </div>
     </section>
 
@@ -179,9 +181,9 @@
       <p class="ui-text ui-text--muted">The view-modes toolbar (Space latched) and the stick, pushed forward.</p>
       <div class="touch-row">
         <div class="touch-modes" role="toolbar" aria-label="View modes" aria-orientation="vertical">
-          <button type="button" class="ui-button ui-button--secondary" data-mode="shift" aria-pressed="false">Shift</button>
-          <button type="button" class="ui-button ui-button--secondary" data-mode="space" aria-pressed="true">Space</button>
-          <button type="button" class="ui-button ui-button--secondary" data-mode="ctrl" aria-pressed="false">Ctrl</button>
+          <button type="button" class="ui-button ui-button--quiet ui-button--sm" data-mode="shift" aria-pressed="false">Shift</button>
+          <button type="button" class="ui-button ui-button--quiet ui-button--sm" data-mode="space" aria-pressed="true">Space</button>
+          <button type="button" class="ui-button ui-button--quiet ui-button--sm" data-mode="ctrl" aria-pressed="false">Ctrl</button>
         </div>
         <div class="stick-box" aria-hidden="true"><div class="touch-stick"><span class="touch-stick__knob"></span></div></div>
       </div>
@@ -373,6 +375,17 @@
         <span class="state">Selected</span><div><button type="button" class="ui-button ui-button--danger" data-force="focus">Delete replay</button></div>
         <span class="state">Pressed</span><div><button type="button" class="ui-button ui-button--danger" data-force="active">Delete replay</button></div>
         <span class="state">Disabled</span><div><button type="button" class="ui-button ui-button--danger" disabled>Delete replay</button></div>
+      </div>
+    </section>
+    <section class="ui-card" aria-labelledby="g-quiet">
+      <h2 class="ui-card__title" id="g-quiet">Quiet button and latched toggle</h2>
+      <div class="states">
+        <span class="state">At rest</span><div><button type="button" class="ui-button ui-button--quiet">Watch</button> <button type="button" class="ui-button ui-button--quiet ui-button--sm">Watch</button></div>
+        <span class="state">Selected</span><div><button type="button" class="ui-button ui-button--quiet" data-force="focus">Watch</button> <button type="button" class="ui-button ui-button--quiet ui-button--sm" data-force="focus">Watch</button></div>
+        <span class="state">Pressed</span><div><button type="button" class="ui-button ui-button--quiet" data-force="active">Watch</button> <button type="button" class="ui-button ui-button--quiet ui-button--sm" data-force="active">Watch</button></div>
+        <span class="state">Disabled</span><div><button type="button" class="ui-button ui-button--quiet" disabled>Watch</button> <button type="button" class="ui-button ui-button--quiet ui-button--sm" disabled>Watch</button></div>
+        <span class="state">Toggle off</span><div><button type="button" class="ui-button ui-button--quiet ui-button--sm" aria-pressed="false">Show 3BV</button></div>
+        <span class="state">Toggle on</span><div><button type="button" class="ui-button ui-button--quiet ui-button--sm" aria-pressed="true">Show 3BV</button></div>
       </div>
     </section>
     <section class="ui-card" aria-labelledby="g-messages">

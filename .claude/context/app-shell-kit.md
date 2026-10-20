@@ -22,14 +22,16 @@ screens' markup in `index.html` and the shell stylesheet are
 selector, base, variants, parts, slots}`; a part `{name, selector, optional,
 interactive, states, as}`; a slot `{name, selector}`), `STATES` (a
 selectable part's `default`, `selected`, `pressed`, `disabled`, and a board
-option's `chosen`; every other control's `hover` and `focused`, `checked`,
+option's or a latched toggle's `chosen`; every other control's `hover` and `focused`, `checked`,
 and the number field's `invalid` — `is-invalid`, the refused value a board
 choice's Custom form marks), `CONTRAST_ROLES` (`surfaces`, `bodyText`,
 `largeText`), `REQUIRED_TOKENS` (with `--slider-fill`, the slider's filled
 share the kit sets). Beside the m1 kit, the catalogue holds the switch row
 `ui-switchrow` (`text`, `label`, `help`, optional, and `switch`, the kit's
 switch: label and help on the left, the switch at the right edge, the label
-inked while the switch is locked) and the shared layout's components: `ui-button--danger`, `ui-wordmark`, `ui-backdrop`,
+inked while the switch is locked) and the shared layout's components: `ui-button--danger`, `ui-button--quiet`
+(variant `ui-button--sm`; `chosen` while a latched toggle is on),
+`ui-wordmark`, `ui-backdrop`,
 `ui-frame` (parts `head`, `back`, `title`, `action`, `body`, `foot`,
 `status`, `summary`; slot `window-chrome`), `ui-mode-entry` (`entry`,
 `icon`, `label`, `reason`, `last`, `lock`), `ui-option` (`option`,
@@ -61,10 +63,14 @@ controls reminder, `live`).
   or `<a>`. Buttons, menu entries, mode entries and board options have one
   selected state — hover and focus alike, no outline; *Joyful tiles* draws
   them raised at rest, level when selected, sunk when pressed, flat when
-  disabled — and `bindSelectOnHover` keeps it on one control at a time; a
-  board option's chosen state (`aria-pressed`, a fill and a check) is
-  drawn apart from selected, and the selected mode entry is taller, with a
-  bigger icon and label; every other control keeps its own hover,
+  disabled, except the quiet button, flat with a border ring and sunk in
+  place when selected — and `bindSelectOnHover` keeps it on one control at
+  a time. A board option's chosen state (`aria-pressed`, a fill and a
+  check) is drawn apart from selected, and so is a latched toggle's: a
+  quiet small button carrying `aria-pressed`, drawn as the primary button
+  while on. A key hint inside a button takes the button's own ink. The
+  selected mode entry is taller, with a bigger icon and label. Every other
+  control keeps its own hover,
   `:active`, `:focus-visible` (and `body.pad-nav :focus`) and disabled
   states, ringed from `--color-focus-ring` with the `--color-focus-halo`
   halo, which replaces a control's own inset border while it is focused. A

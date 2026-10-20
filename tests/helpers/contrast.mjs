@@ -7,8 +7,11 @@
 import assert from 'node:assert/strict';
 
 // A focused control's look: a button, menu entry or board option shows its selected state (moved level
-// with the surface, no outline); any other control a focus ring.
-export const focusShows = (f) => (f.selectable ? f.style === 'none' && f.transform !== 'none' : f.style !== 'none' && f.width >= 2);
+// with the surface, or — a quiet button — sunk in place, its fill or ring changed; no outline); any other
+// control a focus ring.
+export const focusShows = (f) => (f.selectable
+  ? f.style === 'none' && (f.transform !== 'none' || f.restyled === true)
+  : f.style !== 'none' && f.width >= 2);
 
 /**
  * Asserts the card at `selector` in `page` readable — at least three of its own text runs measured,
@@ -74,7 +77,15 @@ export function measureContrast() {
   }
   const focus = [...document.querySelectorAll('[data-force~="focus"]')].map((el) => {
     const s = getComputedStyle(el);
-    return { cls: el.className, selectable: el.matches('.ui-button, .ui-menu__item, .ui-mode-entry, .ui-option'), style: s.outlineStyle, width: parseFloat(s.outlineWidth), transform: s.transform };
+    const f = { cls: el.className, selectable: el.matches('.ui-button, .ui-menu__item, .ui-mode-entry, .ui-option'), style: s.outlineStyle, width: parseFloat(s.outlineWidth), transform: s.transform };
+    // Restyled: its fill or its ring differs from the same control at rest.
+    const look = () => `${s.backgroundColor} ${s.boxShadow}`;
+    const forced = look();
+    const force = el.getAttribute('data-force');
+    el.removeAttribute('data-force');
+    f.restyled = look() !== forced;
+    el.setAttribute('data-force', force);
+    return f;
   });
   return { runs: out, focus };
 }

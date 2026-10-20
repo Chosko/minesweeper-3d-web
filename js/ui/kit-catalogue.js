@@ -14,9 +14,9 @@
 // States. On buttons, menu entries, mode entries and board options hover and focus are one
 // `selected` state (screen-components § Scope and non-goals), so those parts carry default,
 // selected, pressed and disabled, and a board option also `chosen`, the board it holds, apart from
-// selected. Every other control carries default, hover, pressed, focused and disabled, plus
-// `checked` where it holds a chosen value (a switch, a checkbox, a segmented option, a tab) and
-// `invalid` where a screen marks a refused value (the number field).
+// selected, as does a latched toggle while latched on. Every other control carries default, hover,
+// pressed, focused and disabled, plus `checked` where it holds a chosen value (a switch, a checkbox,
+// a segmented option, a tab) and `invalid` where a screen marks a refused value (the number field).
 
 export const STATES = Object.freeze(['default', 'hover', 'pressed', 'focused', 'selected', 'checked', 'chosen', 'invalid', 'disabled']);
 
@@ -150,6 +150,12 @@ export const KIT_CATALOGUE = Object.freeze([
   component('ui-button--danger', {
     base: 'ui-button',
     parts: [selectable('button', '.ui-button--danger')],
+  }),
+  // A row or chip action; with aria-pressed a latched toggle, `chosen` while latched on.
+  component('ui-button--quiet', {
+    base: 'ui-button',
+    variants: ['ui-button--sm'],
+    parts: [selectable('button', '.ui-button--quiet', { chosen: '.ui-button--quiet[aria-pressed="true"]' })],
   }),
   // The game's title: three words on one line, each in its own accent.
   component('ui-wordmark', { parts: [part('word', '.ui-wordmark__word')] }),

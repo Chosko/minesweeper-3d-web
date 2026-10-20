@@ -1051,7 +1051,7 @@ Preconditions: 214
 
 ## 218. Kit buttons: md size, key hint ink, quiet variant, latched toggles, danger variant
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: css/components.css, themes/joyful-tiles/theme.css, css/style.css, js/ui/kit-catalogue.js, dev/components.html, index.html, js/settings/page.js, tests/components.test.mjs, .claude/context/app-shell-kit.md
 Preconditions: 214

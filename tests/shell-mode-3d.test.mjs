@@ -1164,7 +1164,7 @@ test('in a browser at 1024 × 768 with a mouse: a 3D game\'s pause card in two c
     };
   };
   // The card's font sizes with a fine pointer, which its two columns leave as they are.
-  const FONTS = { title: 24, status: 16, button: 16, slider: 16, switch: 16, heading: 13, list: 14, keyName: 14, kbd: 11, statLabel: null };
+  const FONTS = { title: 24, status: 16, button: 17, slider: 16, switch: 16, heading: 13, list: 14, keyName: 14, kbd: 11, statLabel: null };
   const fits = (m, at) => {
     assert.ok(m.columns, `${at}: the card composed with ui-screen--wide and a ui-columns--two`);
     assert.ok(m.card.top >= 0 && m.card.left >= 0 && m.card.right <= 1024 && m.card.bottom <= 768,

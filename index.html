@@ -101,7 +101,7 @@
     <section class="ui-frame" id="c2d-frame" aria-labelledby="c2d-title">
       <div class="ui-frame__chrome" data-slot="window-chrome" aria-hidden="true"></div>
       <header class="ui-frame__head">
-        <div class="ui-frame__start"><button type="button" id="hud-swap" class="ui-button ui-button--secondary ui-button--sm" aria-pressed="false" data-no-focus title="Swap left and right click on closed cells"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>Swap clicks</button></div>
+        <div class="ui-frame__start"><button type="button" id="hud-swap" class="ui-button ui-button--quiet ui-button--sm" aria-pressed="false" data-no-focus title="Swap left and right click on closed cells"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>Swap clicks</button></div>
         <h2 class="ui-frame__title" id="c2d-title">Classic 2D</h2>
         <div class="ui-frame__end"><button type="button" id="c2d-pause" class="ui-button ui-button--primary ui-button--sm" aria-label="Pause game"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>Pause <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button></div>
       </header>
@@ -211,9 +211,9 @@
     <div id="touch-3d">
       <div id="touch-stick" class="touch-stick" aria-hidden="true"><span id="touch-stick-knob" class="touch-stick__knob"></span></div>
       <div id="touch-modes" class="touch-modes" role="toolbar" aria-label="View modes" aria-orientation="vertical">
-        <button type="button" class="ui-button ui-button--secondary" data-mode="shift" aria-pressed="false" data-no-focus title="Neighbours only">Shift</button>
-        <button type="button" class="ui-button ui-button--secondary" data-mode="space" aria-pressed="false" data-no-focus title="Aim through numbers">Space</button>
-        <button type="button" class="ui-button ui-button--secondary" data-mode="ctrl" aria-pressed="false" data-no-focus title="Show hidden cells">Ctrl</button>
+        <button type="button" class="ui-button ui-button--quiet ui-button--sm" data-mode="shift" aria-pressed="false" data-no-focus title="Neighbours only">Shift</button>
+        <button type="button" class="ui-button ui-button--quiet ui-button--sm" data-mode="space" aria-pressed="false" data-no-focus title="Aim through numbers">Space</button>
+        <button type="button" class="ui-button ui-button--quiet ui-button--sm" data-mode="ctrl" aria-pressed="false" data-no-focus title="Show hidden cells">Ctrl</button>
       </div>
     </div>
     <!-- end of touch controls -->
@@ -544,7 +544,7 @@
                   <tbody id="records-replays-body"></tbody>
                 </table>
                 <nav id="records-replays-pager" class="ui-pager hidden" aria-label="Replays pages"></nav>
-                <div id="records-replays-confirm" class="ui-panel ui-actions hidden" role="alertdialog" aria-labelledby="records-replays-confirm-text"><p id="records-replays-confirm-text" class="ui-text"></p><button type="button" id="records-replays-yes" class="ui-button ui-button--primary">Delete replay</button><button type="button" id="records-replays-no" class="ui-button ui-button--secondary">Cancel</button></div>
+                <div id="records-replays-confirm" class="ui-panel ui-actions hidden" role="alertdialog" aria-labelledby="records-replays-confirm-text"><p id="records-replays-confirm-text" class="ui-text"></p><button type="button" id="records-replays-yes" class="ui-button ui-button--danger">Delete replay</button><button type="button" id="records-replays-no" class="ui-button ui-button--secondary">Cancel</button></div>
               </div>
               <div id="records-leaderboards" class="ui-panel ui-panel--muted hidden" role="tabpanel" aria-labelledby="records-tab-leaderboards">
                 <h4 class="ui-heading">Leaderboards are coming soon</h4>
@@ -623,9 +623,9 @@
               <button type="button" role="radio" aria-checked="false" class="ui-segmented__option" data-value="2" tabindex="-1">2&times;</button>
               <button type="button" role="radio" aria-checked="false" class="ui-segmented__option" data-value="4" tabindex="-1">4&times;</button>
             </div>
-            <button type="button" id="rp-show-bbbv" class="ui-button ui-button--secondary ui-button--sm" aria-pressed="false">Show 3BV</button>
+            <button type="button" id="rp-show-bbbv" class="ui-button ui-button--quiet ui-button--sm" aria-pressed="false">Show 3BV</button>
             <button type="button" id="rp-sound" class="ui-button ui-button--secondary ui-button--sm" aria-pressed="false">Sound</button>
-            <button type="button" id="rp-camera" class="ui-button ui-button--secondary ui-button--sm hidden" aria-pressed="false">Free camera</button>
+            <button type="button" id="rp-camera" class="ui-button ui-button--quiet ui-button--sm hidden" aria-pressed="false">Free camera</button>
           </div>
           <div class="ui-row replay-foot">
             <div id="rp-keys" class="ui-key-hints replay-keys"></div>

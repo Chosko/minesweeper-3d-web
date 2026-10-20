@@ -53,6 +53,7 @@ const COMPONENTS = {
   'ui-code': { interactive: false },
   // the shared layout's components
   'ui-button--danger': { interactive: true, selectable: true, control: '.ui-button.ui-button--danger' },
+  'ui-button--quiet': { interactive: true, selectable: true, control: '.ui-button.ui-button--quiet' },
   'ui-backdrop': { interactive: false },
   'ui-frame': { interactive: false },
   'ui-mode-entry': { interactive: true, selectable: true, control: '.ui-mode-entry' },
@@ -1473,7 +1474,7 @@ test('the 3D touch toolbar: three toggle buttons of the kit, Shift, Space and Ct
   const buttons = t.filter((x) => x.tag === 'button');
   assert.deepEqual(buttons.map((b) => b.attrs['data-mode']), ['shift', 'space', 'ctrl']);
   for (const b of buttons) {
-    assert.ok(hasClasses(b, '.ui-button.ui-button--secondary'), 'a kit button');
+    assert.ok(hasClasses(b, '.ui-button.ui-button--quiet.ui-button--sm'), 'a latched toggle: a quiet small button');
     assert.equal(b.attrs.type, 'button');
     assert.equal(b.attrs['aria-pressed'], 'false', 'a toggle, off at first');
   }
@@ -1489,7 +1490,7 @@ test('touch play: the toolbar and the stick show only in touch play, the toolbar
   const body = (needle) => top.filter(([sel]) => sel.includes(needle)).map(([, b]) => b).join(';');
   assert.match(body('#touch-3d'), /display:\s*none/, 'hidden unless in touch play');
   assert.match(style, /body\.touch-play #touch-3d\s*\{[^}]*display:\s*block/, 'shown in touch play');
-  assert.match(themeRulesFor('.ui-button--secondary[aria-pressed="true"]').map(([, b]) => b).join(';'), /background:\s*var\(--color-blue\)/, 'the pressed state is visible');
+  assert.match(themeRulesFor('.ui-button--quiet[aria-pressed="true"]').map(([, b]) => b).join(';'), /background:\s*var\(--color-accent-fill\)/, 'the pressed state is visible');
   assert.match(style, /body\.touch-play #scene\s*\{[^}]*touch-action:\s*none/, 'no browser scroll or zoom on the scene in touch play');
   assert.match(style, /body\.touch-play #scene\s*\{[^}]*user-select:\s*none/, 'no text selection');
   assert.match(style, /body\.touch-play #scene\s*\{[^}]*-webkit-touch-callout:\s*none/, 'no long-press menu');
@@ -1582,6 +1583,152 @@ test('in a browser with a mouse, labels and key caps reach their minimum sizes a
     });
     assert.ok(kbd.size >= 11, `key cap ${kbd.size}`);
     assert.equal(kbd.tap, 'none', 'no Reveal / Flag switch for a mouse');
+  } finally {
+    await browser.close();
+  }
+});
+
+// ---------------------------------------------------------------- buttons: md size, key hints, quiet, latched toggles, danger
+
+const buttonBase = (sel) => RULES.filter(([x]) => x === sel).map(([, b]) => b).join(';');
+const buttonTheme = (sel) => THEME_RULES.filter(([x]) => x.split(',').map((y) => y.trim()).includes(sel)).map(([, b]) => b).join(';');
+
+test('the default button is the canvas\'s md size, and every size takes its gap and line height', () => {
+  const md = buttonBase('.ui-button');
+  assert.match(md, /font-size:\s*17px/);
+  assert.match(md, /padding:\s*10px 18px/);
+  assert.match(md, /min-height:\s*46px/);
+  assert.match(md, /gap:\s*10px/);
+  assert.match(md, /line-height:\s*1\.1\b/);
+  assert.match(buttonTheme('.ui-button'), /font-weight:\s*var\(--font-weight-heavy\)/, 'weight 800');
+  for (const size of ['.ui-button--sm', '.ui-button--lg']) {
+    assert.doesNotMatch(buttonBase(size), /gap|line-height/, `${size} keeps the md gap and line height`);
+  }
+  assert.match(buttonBase('.ui-button--sm'), /min-height:\s*38px;\s*padding:\s*7px 13px;\s*font-size:\s*15px/, 'sm keeps its size');
+  assert.match(buttonBase('.ui-button--lg'), /min-height:\s*62px;\s*padding:\s*15px 28px/, 'lg keeps its size');
+  const speed = rules(STYLE).filter(([sel]) => sel === '#rp-speed .ui-segmented__option').map(([, b]) => b).join(';');
+  assert.match(speed, /font-size:\s*15px/, 'the replay speed options are 15 px');
+  assert.match(speed, /padding:\s*7px 14px/);
+});
+
+test('a key hint inside a button takes the button\'s own ink, its key a current-colour border and max(11px, .72em)', () => {
+  assert.match(buttonBase('.ui-button .ui-key-hint__key'), /font-size:\s*max\(11px,\s*0?\.72em\)/);
+  assert.match(buttonTheme('.ui-button .ui-key-hint'), /color:\s*(currentColor|inherit)/, 'the hint is not muted inside a button');
+  const key = buttonTheme('.ui-button .ui-key-hint__key');
+  assert.match(key, /color:\s*inherit/);
+  assert.match(key, /border-color:\s*currentColor/);
+  assert.match(buttonTheme('.ui-key-hint__key'), /border:\s*1\.5px solid currentColor/);
+});
+
+test('the quiet button: a white surface ringed by the border, no drop edge; selected sunk with no lift; pressed 2 px down', () => {
+  const rest = buttonTheme('.ui-button--quiet');
+  assert.match(rest, /background:\s*var\(--color-surface\)/);
+  assert.match(rest, /color:\s*var\(--color-ink\)/);
+  assert.match(rest, /box-shadow:\s*inset 0 0 0 2px var\(--color-border\)\s*(;|$)/, 'a ring and no drop edge');
+  const selected = buttonTheme('.ui-button--quiet:focus');
+  assert.match(selected, /transform:\s*none/, 'no lift');
+  assert.match(selected, /background:\s*var\(--color-surface-sunk\)/);
+  assert.match(selected, /box-shadow:\s*inset 0 0 0 2px var\(--color-edge\)/);
+  assert.match(buttonTheme('.ui-button--quiet[data-force~="active"]'), /transform:\s*translateY\(2px\)/);
+  assert.match(buttonTheme('.ui-button--quiet:disabled'), /color:\s*var\(--color-locked-ink\)/);
+  assert.match(buttonTheme('.ui-button--quiet[aria-pressed="true"]:disabled'), /background:\s*var\(--color-locked\)/, 'a disabled toggle draws locked, latched on or off');
+  const q = KIT_CATALOGUE.find((c) => c.name === 'ui-button--quiet');
+  assert.ok(q, 'the catalogue declares the quiet button');
+  assert.deepEqual(q.variants, ['ui-button--sm']);
+  assert.deepEqual(Object.keys(q.parts[0].states), ['default', 'selected', 'pressed', 'disabled', 'chosen'], 'its latched state is chosen');
+  assert.equal(q.parts[0].states.chosen, '.ui-button--quiet[aria-pressed="true"]');
+  const shown = TAGS.filter((t) => hasClasses(t, '.ui-button.ui-button--quiet'));
+  for (const sm of [false, true]) {
+    const sized = shown.filter((t) => hasClasses(t, '.ui-button--sm') === sm && t.attrs['aria-pressed'] === undefined);
+    const tag = sm ? 'sm' : 'md';
+    assert.ok(sized.some((t) => !t.attrs['data-force'] && !('disabled' in t.attrs)), `the gallery shows a quiet ${tag} at rest`);
+    for (const f of ['focus', 'active']) assert.ok(sized.some((t) => t.attrs['data-force'] === f), `the gallery shows a quiet ${tag} ${f}`);
+    assert.ok(sized.some((t) => 'disabled' in t.attrs), `the gallery shows a quiet ${tag} disabled`);
+  }
+});
+
+test('a latched toggle is a quiet small button off and a primary one on: Swap clicks, the touch view modes, Show 3BV and Free camera', () => {
+  const on = buttonTheme('.ui-button--quiet[aria-pressed="true"]');
+  assert.match(on, /background:\s*var\(--color-accent-fill\)/, 'coral when on');
+  assert.match(on, /color:\s*var\(--color-accent-on\)/, 'ink text');
+  assert.match(on, /0 var\(--edge-sm\) 0 var\(--color-accent-edge\)/, 'its accent edge');
+  const idx = tags(INDEX);
+  const toggle = (pred, label) => {
+    const found = idx.filter(pred);
+    assert.ok(found.length > 0, `index.html holds ${label}`);
+    for (const b of found) {
+      assert.ok(hasClasses(b, '.ui-button.ui-button--quiet.ui-button--sm'), `${label} is a quiet small button`);
+      assert.ok(!hasClasses(b, '.ui-button--secondary'), `${label} is no secondary button`);
+      assert.equal(b.attrs['aria-pressed'], 'false', `${label} is a toggle, off at first`);
+    }
+  };
+  toggle((t) => t.attrs.id === 'hud-swap', 'Swap clicks');
+  toggle((t) => t.tag === 'button' && ['shift', 'space', 'ctrl'].includes(t.attrs['data-mode']), 'the touch view modes');
+  toggle((t) => t.attrs.id === 'rp-show-bbbv', 'Show 3BV');
+  toggle((t) => t.attrs.id === 'rp-camera', 'Free camera');
+  const latched = TAGS.filter((t) => hasClasses(t, '.ui-button.ui-button--quiet.ui-button--sm') && t.attrs['aria-pressed']);
+  assert.ok(latched.some((t) => t.attrs['aria-pressed'] === 'true'), 'the gallery shows a toggle latched on');
+  assert.ok(latched.some((t) => t.attrs['aria-pressed'] === 'false'), 'and one off');
+});
+
+test('the danger button: the danger fill, white text, a dark-red drop edge; Delete replay and Reset all data confirm with it', () => {
+  const rest = buttonTheme('.ui-button--danger');
+  assert.match(rest, /background:\s*var\(--color-danger\)/);
+  assert.match(rest, /color:\s*var\(--color-ink-inverse\)/);
+  assert.match(rest, /0 var\(--edge-sm\) 0 var\(--color-danger-edge\)/);
+  const html = tags(INDEX);
+  const yes = html.find((t) => t.attrs.id === 'records-replays-yes');
+  assert.ok(yes && hasClasses(yes, '.ui-button.ui-button--danger') && !hasClasses(yes, '.ui-button--primary'), 'Delete replay is a danger button');
+  assert.match(read('js/settings/page.js'), /class="ui-button ui-button--danger" id="set-reset-yes"/, 'Reset all data is a danger button');
+});
+
+test('in a browser, the gallery\'s buttons draw as the canvas: the md size, key hints in the button\'s ink, quiet, latched and danger', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+    await page.goto(`${base}/dev/components.html`);
+    await page.evaluate(() => document.fonts.ready);
+    const got = await page.evaluate(() => {
+      const cs = (sel) => getComputedStyle(document.querySelector(sel));
+      const box = (sel) => document.querySelector(sel).getBoundingClientRect();
+      const md = cs('#g-primary ~ .states .ui-button--primary:not(.ui-button--sm):not(.ui-button--lg)');
+      const keyIn = (sel) => { const k = document.querySelector(`${sel} .ui-key-hint__key`); const s = getComputedStyle(k); return { color: s.color, border: s.borderTopColor, width: s.borderTopWidth, size: parseFloat(s.fontSize), button: getComputedStyle(k.closest('.ui-button')).color }; };
+      const q = (sel) => { const s = cs(sel); return { bg: s.backgroundColor, color: s.color, shadow: s.boxShadow, transform: s.transform }; };
+      return {
+        md: { size: md.fontSize, weight: md.fontWeight, padding: md.padding, gap: md.columnGap, lineHeight: md.lineHeight, height: box('#g-primary ~ .states .ui-button--primary:not(.ui-button--sm):not(.ui-button--lg)').height },
+        primaryKey: keyIn('#g-keyed-primary'),
+        secondaryKey: keyIn('#g-keyed-secondary'),
+        quiet: q('#g-quiet ~ .states .ui-button--quiet:not([data-force]):not([disabled]):not([aria-pressed])'),
+        quietSelected: q('#g-quiet ~ .states .ui-button--quiet[data-force="focus"]:not([aria-pressed])'),
+        latchedOff: q('#g-quiet ~ .states .ui-button--quiet[aria-pressed="false"]'),
+        latchedOn: q('#g-quiet ~ .states .ui-button--quiet[aria-pressed="true"]'),
+        danger: q('#g-danger ~ .states .ui-button--danger:not([data-force]):not([disabled])'),
+      };
+    });
+    assert.deepEqual([got.md.size, got.md.weight, got.md.padding, got.md.gap], ['17px', '800', '10px 18px', '10px']);
+    assert.ok(Math.abs(parseFloat(got.md.lineHeight) - 18.7) < 0.05, `line-height 1.1 (${got.md.lineHeight})`);
+    assert.ok(got.md.height >= 46, `min-height 46 (${got.md.height})`);
+    for (const [name, k] of [['primary', got.primaryKey], ['secondary', got.secondaryKey]]) {
+      assert.equal(k.color, 'rgb(22, 32, 74)', `the key on ${name} in ink`);
+      assert.equal(k.color, k.button, `the key on ${name} in the button's own colour`);
+      assert.equal(k.border, k.color, `its border in the same colour on ${name}`);
+      assert.ok(parseFloat(k.width) >= 1, `a border drawn on ${name} (1.5px declared, snapped to the device pixel: ${k.width})`);
+      assert.ok(Math.abs(k.size - Math.max(11, 17 * 0.72)) < 0.05, `key size max(11px, .72em) on ${name} (${k.size})`);
+    }
+    assert.equal(got.quiet.bg, 'rgb(255, 255, 255)');
+    assert.equal(got.quiet.shadow, 'rgb(236, 226, 208) 0px 0px 0px 2px inset', 'a 2 px border ring, no drop edge');
+    assert.equal(got.quietSelected.transform, 'none', 'no lift when selected');
+    assert.equal(got.quietSelected.bg, 'rgb(251, 241, 223)');
+    assert.equal(got.quietSelected.shadow, 'rgb(214, 198, 171) 0px 0px 0px 2px inset');
+    assert.deepEqual([got.latchedOff.bg, got.latchedOff.shadow], [got.quiet.bg, got.quiet.shadow], 'a latched toggle off is a quiet button');
+    assert.equal(got.latchedOn.bg, 'rgb(255, 107, 107)', 'on: coral');
+    assert.equal(got.latchedOn.color, 'rgb(22, 32, 74)', 'ink text');
+    assert.match(got.latchedOn.shadow, /rgb\(201, 64, 63\) 0px 4px 0px/, 'its 4 px accent edge');
+    assert.equal(got.danger.bg, 'rgb(180, 42, 42)');
+    assert.equal(got.danger.color, 'rgb(255, 255, 255)');
+    assert.match(got.danger.shadow, /rgb\(125, 28, 28\) 0px 4px 0px/, 'a dark-red drop edge');
   } finally {
     await browser.close();
   }
