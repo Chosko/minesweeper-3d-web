@@ -136,7 +136,7 @@ Context: none
 
 Done: 2026-10-20, commit `5921b67` (10 files, +201/-33). Premise wrong: the contract and player already had scale, flip, brightness and opacity; the change is brightness as a mix toward white/black in `motion-layer.js` plus Joyful keyframes. Press and chord press now cut to the pressed face at 90 ms, and a press held past 90 ms jumps back to rest (no task yet).
 
-## [~] 13. Implement task 226 — 2D tile art: glyphs, hairline, start cell, flat widths and the cursor ring outside the tile
+## [x] 13. Implement task 226 — 2D tile art: glyphs, hairline, start cell, flat widths and the cursor ring outside the tile
 
 Depends on: 11
 
@@ -146,7 +146,9 @@ Context: none
 /task-implement 226 --review
 ```
 
-## [ ] 14. Implement task 227 — Board frame and framed previews
+Done: 2026-10-20, commit `f150d4d` (20 files, +627/-242). Decisions: the cursor ring sits on a third `board-ring` canvas passed as `createBoardView`'s `overlay` option; the start cell is a new `marked` tile state (a flagged or pressed start cell draws as flagged/pressed); flat `hairline` is now in CSS px; mine glyph proportions are the agent's own, since the canvas sprites could not be fetched.
+
+## [~] 14. Implement task 227 — Board frame and framed previews
 
 Depends on: 11
 
@@ -342,6 +344,7 @@ Depends on: 11, 12, 13, 14
 
 Context:
 - 2026-10-20 (from step 11): task 224 narrowed the 2D number contrast rule to the 2D revealed face and its shade only (the 3D list keeps every point of the revealed face); `themed-board-art-and-motion.md` still says "every point of its theme's revealed face" and must record it. It also split `numbers` into `numbers2d`/`numbers3d`, added the `end2d` module entry, and let a bevel side be an exact `#rrggbb`.
+- 2026-10-20 (from step 13): task 226 added board-module entries `palette.faces2d.marked.ring`, `cursor.innerWidth` and flat-style `press`/`border`, changed flat `hairline` to CSS px, made the start cell a `marked` tile state, and moved the cursor ring to a `board-ring` overlay canvas.
 
 ```prompt
 /task-implement 246 --review
