@@ -71,10 +71,11 @@ In scope (m2b-themes):
     the pause card's (*Leave this game?*, for Restart and Main menu alike),
     the Records replay delete (an inline row of the replays table) and
     Settings' *Reset all data*;
-  - the **warn and err notes** — filled lines with a leading info glyph:
-    warn for the Custom refusals, the 3D no-guess reason, the density hint,
-    a board code from the other mode and the 3D pointer-lock refusal; err
-    for a refused board code and the Settings reset failure;
+  - the **warn and err notes** — filled lines with a leading info or
+    warning glyph: warn for the Custom refusals, the 3D no-guess reason,
+    the density hint, a board code from the other mode and the 3D
+    pointer-lock refusal; err for a refused board code and the Settings
+    reset failure;
   - the **muted panel** — a sunk surface with no border and no drop, for
     the Custom form, the Learn 3D explanation and the Records overall
     block;

@@ -46,7 +46,9 @@ Remembered view (`js/records/view-prefs.js`)
   or pinned first under the filter, remembered in `records.view` (loaded at
   start-up, saved on each change), `PAGE_SIZE` per page under a kit pager;
   Pin adds the hand pin, Unpin clears every reason. Delete opens
-  `#records-replays-confirm` in place of the list (focus on Cancel); Cancel
+  `#records-replays-confirm`, a `ui-confirm--row`, in a table row under that
+  replay's, one cell across every column, the list staying around it (focus
+  on Cancel; another row's Delete moves it there); Cancel
   and Back (`RECORDS_PAGE.closeConfirm()` in `shellBack` / `historyBack`)
   return focus to that row's Delete; confirming calls `library.remove`, then
   focus goes to the Delete of the row in its place, else the previous row's,

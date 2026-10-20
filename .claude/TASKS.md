@@ -1081,7 +1081,7 @@ Feature: shared-screen-layout
 
 ## 221. Kit feedback parts: confirm box, warn and err notes
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: css/components.css, themes/joyful-tiles/theme.css, index.html, js/shell/pause.js, js/ui.js, js/records/replay-list.js, js/settings/page.js, js/settings/reset.js, js/classic2d/board-choice.js, js/mode3d/board-choice.js, js/ui/kit-catalogue.js, dev/components.html, .claude/context/app-shell-kit.md
 Preconditions: 218, 220

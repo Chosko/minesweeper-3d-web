@@ -29,6 +29,8 @@
 //                            'Board code · paste a code to play'.
 //   bestsTitle({ selected, custom, noGuess })  'Intermediate · no-guess · your bests', or the custom
 //                            board's line in place of the name.
+//   showCodeLine(line, field, r)  draws the code field's line for code.resolve's answer r (below),
+//                            on both board choice screens.
 //
 // bindBoardChoice({ root, onStart, onBack, onRecords?, code?, bests? }) → { show, state, refresh, destroy }
 //   root      the screen's element: the options [data-size] (beginner, intermediate, expert, custom,
@@ -59,9 +61,11 @@
 //   refresh() redraws the bests (the shell's records changed).
 //   onRecords(identity) Records: the chosen board's records identity (board-setup.js boardSetup),
 //             or null with no board chosen (a code, a refused custom board).
-//   code      { resolve, onPlay }: resolve(text) → { ok, reason?, text?, label? } validates the code
-//             live — its line shows CODE_PROMPT while empty, a refused code's reason as a warning,
-//             an accepted one's `text`, and the summary its `label`; onPlay(text) plays it.
+//   code      { resolve, onPlay }: resolve(text) → { ok, reason?, otherMode?, text?, label? } validates
+//             the code live — its line (showCodeLine) shows CODE_PROMPT while empty, a refused code's
+//             reason (a code of the other mode's as a warn note, any other as an err note with the
+//             field invalid), an accepted one's `text`, and the summary its `label`; onPlay(text)
+//             plays it.
 //   bests     (identity) → [{ stat, label, value, note }]: the board's three bests as text, read
 //             through the records' queries by the shell (js/shell/returning.js boardBests).
 
@@ -69,6 +73,7 @@ import {
   STANDARD_SIZES, validateCustom, maxMines, normaliseChoice, aboveDensityHint, DENSITY_HINT_TEXT, boardSetup,
 } from './board-setup.js';
 import { CUSTOM_LIMITS } from '../engine/profiles.js';
+import { setNote } from '../ui/components.js';
 
 /** The code field's info line while nothing is typed, on both board choice screens. */
 export const CODE_PROMPT = 'Paste a board code to play that exact board.';
@@ -147,6 +152,24 @@ export function bestsTitle({ selected, custom, noGuess }) {
   return `${name}${noGuess ? NO_GUESS : ''} · your bests`;
 }
 
+/**
+ * The code field's line for `r`, code.resolve's answer (null while empty): CODE_PROMPT as a muted
+ * line, an accepted code's text in the success colour, a code of the other mode a warn note, a
+ * refused one an err note with the field marked invalid. Both board choice screens draw it.
+ */
+export function showCodeLine(line, field, r) {
+  const refused = !!r && !r.ok && !r.otherMode;
+  const tone = !r || r.ok ? null : r.otherMode ? 'warn' : 'err';
+  setNote(line, !r ? CODE_PROMPT : r.ok ? r.text ?? '' : r.reason, { tone, icon: tone === 'warn' ? 'info' : tone ? 'warning' : null });
+  line.classList.toggle('ui-text', !tone);
+  line.classList.toggle('ui-text--muted', !r);
+  line.classList.toggle('ui-text--success', !!r?.ok);
+  if (!field) return;
+  field.classList.toggle('is-invalid', refused);
+  if (refused) field.setAttribute('aria-invalid', 'true');
+  else field.removeAttribute('aria-invalid');
+}
+
 export function bindBoardChoice({ root, onStart, onBack, onRecords = null, code = null, bests = null }) {
   const options = [...root.querySelectorAll('[data-size]')];
   const option = (size) => options.find((b) => b.dataset.size === size);
@@ -168,7 +191,7 @@ export function bindBoardChoice({ root, onStart, onBack, onRecords = null, code 
   const random = $('[data-random]');
   const back = $('[data-back]');
   const customMeta = $('[data-custom-meta]');
-  hint.textContent = DENSITY_HINT_TEXT;
+  setNote(hint, DENSITY_HINT_TEXT);
   let selected = 'beginner';
   let last = null;
 
@@ -198,7 +221,7 @@ export function bindBoardChoice({ root, onStart, onBack, onRecords = null, code 
     const isCode = selected === 'code';
     info.textContent = customInfo(c);
     info.classList.toggle('hidden', !info.textContent);
-    refusal.textContent = s.ok ? '' : s.text;
+    setNote(refusal, s.ok ? '' : s.text);
     refusal.classList.toggle('hidden', s.ok);
     if (s.max !== null) inputs[2].max = String(Math.max(1, s.max));
     for (const [i, name] of ['width', 'height', 'mines'].entries()) {
@@ -211,11 +234,7 @@ export function bindBoardChoice({ root, onStart, onBack, onRecords = null, code 
       customMeta.textContent = isCustom && ints(c) ? (s.ok ? `${boardLine(c)} · ${mineDensity(c)}` : boardLine(c)) : CUSTOM_HINT;
     }
     const r = isCode ? codeResult() : null;
-    if (codeInfo) {
-      codeInfo.textContent = !r ? CODE_PROMPT : r.ok ? r.text ?? '' : r.reason;
-      codeInfo.classList.toggle('ui-text--warning', !!r && !r.ok);
-      codeInfo.classList.toggle('ui-text--muted', !r || r.ok);
-    }
+    if (codeInfo) showCodeLine(codeInfo, codeInput, r);
     settings.classList.toggle('hidden', isCode);
     form.classList.toggle('hidden', !isCustom);
     bestsBox?.classList.toggle('hidden', isCode);

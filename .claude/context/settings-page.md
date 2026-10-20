@@ -50,8 +50,9 @@ Page (`js/settings/page.js`)
   `#set-export-note`, buttons `#set-export-csv` and `#set-export-json`,
   bound in `js/main.js` by `bindExportActions` over `RECORDS_EXPORT` and
   refreshed on each show of the page ([records-screen-view.md](records-screen-view.md))
-  — then warning line `#set-reset-note`, button `#set-reset`, hidden confirmation
-  `#set-reset-confirm` with `#set-reset-yes` / `#set-reset-no`);
+  — then button `#set-reset`, under it the hidden err note `#set-reset-note`,
+  and the hidden confirm box `#set-reset-confirm` with `#set-reset-yes`
+  (its trash icon) beside `#set-reset-no`);
   `bindingsSectionHtml(glyphs?, camera?, {mode?, device?})` — the
   `dl.controls` of one mode for one device (default Classic 2D and the
   keyboard; a device the mode does not list falls back to its first), 3D's
@@ -59,8 +60,8 @@ Page (`js/settings/page.js`)
   Device change.
 - `bindResetPanel({ open, panel, yes, no, note }, { reset })` → `{ isOpen,
   close, clear }`: the confirmation opens with focus on Cancel; confirming
-  disables both buttons and calls `reset()` once, a failure's message
-  replacing the confirmation on the warning line; `close()` → false when
+  disables both buttons and calls `reset()` once, a failure closing the
+  confirmation and writing its message in the err note (`setNote`); `close()` → false when
   closed, true and nothing done while the reset runs.
 - `bindSettingControls(elements, store, { onUserChange?, theme?,
   themeSheet? })` → unbind. Each root carrying `data-setting` shows the
@@ -84,7 +85,7 @@ Reset (`js/settings/reset.js`)
 - `createReset({ storage, blobStore, legacy?, waitFor?, reload })` →
   `{ run }`; `run()` → `{ ok: true }` after `reload()`, or `{ ok: false,
   failed, message }` (`failed` from `'documents'`, `'replays'`, `'keys'`)
-  with no reload. Never rejects. `failureMessage(failed)` — that message.
+  with no reload, `message` always `RESET_FAILURE`. Never rejects.
 
 ## INTERNAL PATTERNS
 

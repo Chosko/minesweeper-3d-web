@@ -56,13 +56,19 @@ those binders follow is [app-shell-kit.md](app-shell-kit.md).
   names them. `iconMarkup(name)` (svg text), `createIcon(doc, name)` (an
   `svg.ui-icon[data-icon]`, `aria-hidden`, in the SVG namespace) — an
   unknown name throws. The leading-icon slot:
-  `setButtonIcon(button, name | null)` puts the icon before the label (or
-  removes it); `applyIcons(root)` draws the icon of every
-  `.ui-button[data-icon]` in markup that has none yet;
-  `createButton(doc, {label, icon?, variant?, size?, iconOnly?})` builds a
-  kit button. How an icon and its button are named is
-  [app-shell-kit.md](app-shell-kit.md)'s. Nothing in the game
-  calls `applyIcons` until a screen's markup carries `data-icon`.
+  `setButtonIcon(button, name | null)` puts the icon before the label — or
+  a note's text — (or removes it); `applyIcons(root)` draws the icon of
+  every `.ui-button[data-icon]` and `.ui-note[data-icon]` in markup that
+  has none yet, and `js/main.js` calls it on the page once the `UI` has
+  built the Settings page; `createButton(doc, {label, icon?, variant?,
+  size?, iconOnly?})` builds a kit button. How an icon and its button are
+  named is [app-shell-kit.md](app-shell-kit.md)'s.
+- The note: `setNote(el, text, {tone?, icon?})` writes `text` into `el`'s
+  `.ui-note__text` after its leading icon (making the text part on first
+  use, in place of any plain text), `tone` (`NOTE_TONES`: `'warn'`,
+  `'err'`, or null for a plain line again) its `ui-note--<tone>` class and
+  `icon` (a name or null) its `data-icon` and icon; either left out keeps
+  what `el` has. Returns `el`.
 - The code chip (`.ui-code`, `ui-code--compact` in a table row):
   `boardLink(code, location)` → `<origin><path>#board=<code>`;
   `copyBoardCode({kind, code, clipboard, location, select, toast})` →

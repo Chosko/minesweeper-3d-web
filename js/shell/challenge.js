@@ -5,7 +5,7 @@
 // resolveCode(text, { today, mode?, parse? }) → what the code opens:
 //   { kind: 'refused', reason }   parseBoardCode's refusal (js/records/board-code.js), or — with
 //                                 `mode`, a board choice's own — a code of the other mode, with a
-//                                 hint naming the right one (otherModeHint);
+//                                 hint naming the right one (otherModeHint) and `otherMode` its mode;
 //   { kind: 'daily', id, parsed } today's code of a daily board (today YYYYMMDD): the Daily screen
 //                                 opens instead, so the counted attempt rules hold;
 //   { kind: 'challenge', parsed } any other code: a challenge in parsed.board.mode — its parse
@@ -47,7 +47,7 @@ export function resolveCode(text, { today = dateText(), mode = null, parse = par
   if (!parsed.ok) return { kind: 'refused', reason: parsed.reason };
   const daily = parsed.daily === today ? dailyBoardOf(parsed.board) : null;
   if (daily) return { kind: 'daily', id: daily.id, parsed };
-  if (mode && parsed.board.mode !== mode) return { kind: 'refused', reason: otherModeHint(parsed.board.mode) };
+  if (mode && parsed.board.mode !== mode) return { kind: 'refused', reason: otherModeHint(parsed.board.mode), otherMode: parsed.board.mode };
   const { daily: _date, ...challenge } = parsed;
   return { kind: 'challenge', parsed: challenge };
 }

@@ -82,7 +82,8 @@ test('the ready card holds the drag-to-look offer and the controller line outsid
   assert.ok(READY.indexOf('id="ready-back"') < READY.indexOf('id="ready-btn"'), 'Back sits in the card\'s head, above Click to play');
   assert.ok(READY.indexOf('id="ready-btn"') < READY.indexOf('id="ready-blocked"'), 'the offer comes under Click to play');
   assert.ok(READY.indexOf('id="ready-msg"') < READY.indexOf('id="ready-btn"'), 'the refusal\'s message above it');
-  assert.match(READY, /<p id="ready-msg" class="ui-text ui-text--warning[^"]*"><\/p>/, 'the message is a warning line');
+  assert.match(READY, /<p id="ready-msg" class="ui-note ui-note--warn ready-msg hidden" data-icon="info"><span class="ui-note__text"><\/span><\/p>/, 'the message is a warn note with its info icon, hidden while empty');
+  assert.match(UI_SRC, /setNote\(this\.el\.readyMsg, msg\)\.classList\.toggle\('hidden', !msg\)/, 'the card writes it and shows it only with a message');
 });
 
 test('the shell counts refusals on the ready card and offers drag-to-look from the second', () => {

@@ -37,8 +37,9 @@
 //   Download (onDownload(id)), Pin / Unpin and Delete buttons and, when list.canWatch, its Watch
 //   button, the range caption and the kit pager
 //   (bindPager; onPage(page)). A rebuilt list keeps focus on the button of the replay that had it.
-//   Delete shows the confirmation (#records-replays-confirm: the row's deleteMessage, Delete replay,
-//   Cancel) in place of the list, focus on Cancel; Cancel or closeConfirm() (Back) hides it and
+//   Delete shows the confirmation (#records-replays-confirm, a confirm box row: the row's
+//   deleteMessage, Delete replay, Cancel) in a table row under that replay's, one cell across every
+//   column, focus on Cancel; Delete on another row moves it there; Cancel or closeConfirm() (Back) hides it and
 //   focuses that row's Delete again; Delete replay hides it and calls onDelete(id), and the next list
 //   shown puts focus on the Delete of the row in its place, else the previous row's, else the Pinned
 //   first checkbox. closeConfirm() → false when none is open; hide() closes it without moving focus.
@@ -148,13 +149,19 @@ export function createReplayListView({
   const $ = (id) => root.querySelector(`#${id}`);
   const doc = root.ownerDocument;
   const toggle = $('records-pinned-first');
-  const toggleRow = toggle.closest('.ui-row') ?? toggle.closest('.ui-checkbox') ?? toggle;
   const body = $('records-replays-body');
   const table = $('records-replays-table');
   const empty = $('records-replays-empty');
   const caption = $('records-replays-page');
   const confirm = $('records-replays-confirm');
   const confirmText = $('records-replays-confirm-text');
+  // The confirmation asks inline: a row of the table under the replay's own, one cell across every
+  // column; closed, it waits hidden in its place in the markup.
+  const home = { parent: confirm.parentNode, next: confirm.nextSibling };
+  const confirmRow = doc.createElement('tr');
+  const confirmCell = doc.createElement('td');
+  confirmCell.colSpan = table.querySelectorAll('thead th').length;
+  confirmRow.append(confirmCell);
   const yes = $('records-replays-yes');
   const no = $('records-replays-no');
   const pager = bindPager($('records-replays-pager'), { onPage: (page) => onPage(page), name: 'replays' });
@@ -176,15 +183,22 @@ export function createReplayListView({
     return b;
   };
   const deleteButtons = () => [...body.querySelectorAll('button[data-act="delete"]')];
-  // The list, its tools row (Pinned first, Open replay file) and its pager show unless the confirmation stands in their place.
+  // The list, its tools row (Pinned first, Open replay file) and its pager; the open confirmation's row
+  // under the replay it asks about.
   const layout = () => {
-    const open = asking !== null;
-    confirm.classList.toggle('hidden', !open);
-    toggleRow.classList.toggle('hidden', open);
-    empty.classList.toggle('hidden', open || !last?.empty);
-    table.classList.toggle('hidden', open || !!last?.empty);
-    openFile?.classList.toggle('hidden', open || !last?.canOpen);
-    if (last) pager.show(open ? { ...last.pager, hidden: true } : last.pager);
+    const row = asking === null ? null : deleteButtons().find((b) => b.dataset.id === asking)?.closest('tr');
+    if (row) {
+      if (confirm.parentNode !== confirmCell) confirmCell.append(confirm);
+      row.after(confirmRow);
+    } else {
+      if (confirm.parentNode === confirmCell) home.parent.insertBefore(confirm, home.next);
+      confirmRow.remove();
+    }
+    confirm.classList.toggle('hidden', !row);
+    empty.classList.toggle('hidden', !last?.empty);
+    table.classList.toggle('hidden', !!last?.empty);
+    openFile?.classList.toggle('hidden', !last?.canOpen);
+    if (last) pager.show(last.pager);
   };
   function close({ focus = true } = {}) {
     if (asking === null) return false;
@@ -213,7 +227,8 @@ export function createReplayListView({
 
   return {
     show(list) {
-      const focused = body.contains(doc.activeElement) ? doc.activeElement.dataset : null;
+      const inConfirm = confirm.contains(doc.activeElement);
+      const focused = body.contains(doc.activeElement) && !inConfirm ? doc.activeElement.dataset : null;
       last = list;
       if (asking !== null && !list.rows.some((r) => r.id === asking)) close({ focus: false });
       toggle.checked = list.pinnedFirst;
@@ -239,7 +254,8 @@ export function createReplayListView({
         return tr;
       }));
       layout();
-      if (afterDelete !== null && asking === null && !list.rows.some((r) => r.id === afterDelete.id)) {
+      if (inConfirm && asking !== null) (confirm.contains(doc.activeElement) ? doc.activeElement : no).focus({ preventScroll: true });
+      else if (afterDelete !== null && asking === null && !list.rows.some((r) => r.id === afterDelete.id)) {
         const dels = deleteButtons();
         const at = list.page < afterDelete.page ? dels.length - 1 : Math.min(afterDelete.index, dels.length - 1);
         (dels[at] ?? toggle).focus({ preventScroll: true });

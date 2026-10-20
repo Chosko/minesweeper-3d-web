@@ -36,8 +36,9 @@
 //                                (EXPORT_LINE), the hidden nothing-to-export line and "Export history
 //                                (CSV)" and "Export all (JSON)" (bound by bindExportActions,
 //                                js/records/export.js) — then a rule, the reset's line, the "Reset
-//                                all data…" button, the hidden confirmation (RESET_MESSAGE, Reset all
-//                                data, Cancel) and the hidden warning line. A control whose label is
+//                                all data…" button, under it the hidden failure (an err note), and
+//                                the hidden confirmation (a confirm box: RESET_MESSAGE, Reset all
+//                                data with its trash icon beside Cancel). A control whose label is
 //                                its section's title is named by the section label. The columns are
 //                                the widest window's; narrower windows regroup the sections by
 //                                placement alone (css/style.css), and a section SETTINGS_COLUMNS does
@@ -60,16 +61,18 @@
 // bindResetPanel({ open, panel, yes, no, note }, { reset }) → { isOpen, close, clear }. The Data
 //   panel's elements: `open` shows the confirmation `panel` in its place with focus on Cancel
 //   (`no`); Cancel or close() hides it and focuses `open` again. Confirming (`yes`) calls reset()
-//   once → Promise of { ok } (the page reloads) or { ok: false, message }, which replaces the
-//   confirmation by the warning line `note`; the action stays available. close() → false when
-//   nothing is open; clear() closes it and the warning, without moving focus.
+//   once → Promise of { ok } (the page reloads) or { ok: false, message }, which closes the
+//   confirmation and shows the message in the err note `note` (RESET_FAILURE when the reset threw);
+//   the action stays available. close() → false when nothing is open; clear() closes it and the
+//   note, without moving focus.
 
 import { SCHEMA } from './schema.js';
 import { THEMES, themeById } from '../themes/registry.js';
 import { SITE_ROOT } from '../themes/applier.js';
 import { BINDING_MODES, bindingDevices, bindingRows, bindingsListHtml } from './bindings.js';
-import { formatSliderValue, decimalsOf, segmentedState, bindSegmented, bindSliderFill } from '../ui/components.js';
+import { formatSliderValue, decimalsOf, segmentedState, bindSegmented, bindSliderFill, setNote } from '../ui/components.js';
 import { EXPORT_LINE } from '../records/export.js';
+import { RESET_FAILURE } from './reset.js';
 
 export const SETTINGS_SECTIONS = Object.freeze([
   Object.freeze({ id: 'controls', title: 'Controls', settings: Object.freeze(['lookSensitivity', 'invertY', 'camera', 'confirmRestart']) }),
@@ -243,13 +246,14 @@ function dataPanelHtml() {
     + '<button type="button" class="ui-button ui-button--secondary" id="set-export-json">Export all (JSON)</button>'
     + '</div><hr class="ui-divider">'
     + '<p class="ui-text ui-text--muted">Delete everything the game keeps in this browser and start over as a new player.</p>'
-    + '<p class="ui-text ui-text--warning hidden" id="set-reset-note" role="status"></p>'
     + '<button type="button" class="ui-button ui-button--secondary" id="set-reset">Reset all data…</button>'
-    + '<div class="ui-panel ui-actions hidden" id="set-reset-confirm" role="alertdialog" aria-labelledby="set-reset-text">'
-    + `<p class="ui-text" id="set-reset-text">${RESET_MESSAGE}</p>`
-    + '<button type="button" class="ui-button ui-button--danger" id="set-reset-yes">Reset all data</button>'
+    + '<p class="ui-note ui-note--err hidden" id="set-reset-note" role="status" data-icon="warning"><span class="ui-note__text"></span></p>'
+    + '<div class="ui-confirm hidden" id="set-reset-confirm" role="alertdialog" aria-labelledby="set-reset-text">'
+    + `<p class="ui-confirm__text" id="set-reset-text">${RESET_MESSAGE}</p>`
+    + '<div class="ui-actions ui-actions--row">'
+    + '<button type="button" class="ui-button ui-button--danger" id="set-reset-yes" data-icon="trash">Reset all data</button>'
     + '<button type="button" class="ui-button ui-button--secondary" id="set-reset-no">Cancel</button>'
-    + '</div></section>';
+    + '</div></div></section>';
 }
 
 export function bindResetPanel({ open, panel, yes, no, note }, { reset }) {
@@ -288,7 +292,7 @@ export function bindResetPanel({ open, panel, yes, no, note }, { reset }) {
     yes.disabled = false;
     no.disabled = false;
     if (result?.ok) return; // the page reloads
-    note.textContent = result?.message ?? 'Your data could not be deleted.';
+    setNote(note, result?.message ?? RESET_FAILURE);
     show(note, true);
     close();
   });

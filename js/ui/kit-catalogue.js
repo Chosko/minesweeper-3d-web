@@ -244,6 +244,15 @@ export const KIT_CATALOGUE = Object.freeze([
   }),
   // A short notice, polite and transient, at the bottom centre.
   component('ui-toast', { parts: [part('icon', '.ui-toast__icon'), part('text', '.ui-toast__text')] }),
+  // A confirmation: a danger-filled box, its optional heading, its text, then a ui-actions--row of the
+  // danger action and Cancel; --row lays it on one line, filling a table row's cell.
+  component('ui-confirm', {
+    variants: ['ui-confirm--row'],
+    parts: [part('title', '.ui-confirm__title', { optional: true }), part('text', '.ui-confirm__text')],
+  }),
+  // A filled line led by an icon of the set (ui-icon, in the note's ink): --warn a refusal or a hint,
+  // --err a refused value or a failure.
+  component('ui-note', { variants: ['ui-note--warn', 'ui-note--err'] }),
 
   // The in-game components (in-game-layout). A counter readout: its digits and an icon a theme may
   // hide, so a theme draws plain figures, LED digits or anything between; data-negative marks a count
@@ -279,7 +288,7 @@ export const KIT_CATALOGUE = Object.freeze([
   composition('ui-row'),
   composition('ui-grid'),
   composition('ui-heading'),
-  composition('ui-text', { variants: ['ui-text--muted', 'ui-text--warning'] }),
+  composition('ui-text', { variants: ['ui-text--muted', 'ui-text--warning', 'ui-text--success'] }),
   composition('ui-actions', { variants: ['ui-actions--row'] }),
   composition('ui-stat-row', { variants: ['ui-stat-row--tiles'] }),
   composition('ui-columns', {

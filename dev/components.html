@@ -406,6 +406,20 @@
       <div class="ui-toast" role="status" aria-live="polite"><svg class="ui-toast__icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg><span class="ui-toast__text">Settings could not be saved in this browser. They last until you close the page.</span></div>
       <section class="ui-card message-demo" aria-labelledby="g-message-title"><span class="ui-card__icon" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/></svg></span><h2 class="ui-card__title" id="g-message-title">Cannot start Minesweeper 3D</h2><p class="ui-text">The game files failed to load. Check your connection and reload the page.</p><div class="ui-actions ui-actions--row"><button type="button" class="ui-button ui-button--primary">Reload</button></div></section>
     </section>
+    <!-- component: feedback -->
+    <section class="ui-card wide" aria-labelledby="g-feedback-title" id="g-feedback">
+      <h2 class="ui-card__title" id="g-feedback-title">Confirm box and notes</h2>
+      <div class="states">
+        <span class="state">With heading</span><div class="ui-confirm" role="alertdialog" aria-labelledby="g-confirm-title"><h3 class="ui-confirm__title" id="g-confirm-title">Leave this game?</h3><p class="ui-confirm__text">This game will count as a loss.</p><div class="ui-actions ui-actions--row"><button type="button" class="ui-button ui-button--danger">Confirm</button><button type="button" class="ui-button ui-button--secondary">Cancel</button></div></div>
+        <span class="state">Text only</span><div class="ui-confirm" role="alertdialog" aria-labelledby="g-confirm-text"><p class="ui-confirm__text" id="g-confirm-text">Delete your records, game history, replays and settings from this browser? This cannot be undone.</p><div class="ui-actions ui-actions--row"><button type="button" class="ui-button ui-button--danger" data-icon="trash">Reset all data</button><button type="button" class="ui-button ui-button--secondary">Cancel</button></div></div>
+        <span class="state">Table row</span><div><table class="ui-table"><thead><tr><th scope="col">Date</th><th scope="col" class="ui-table__figure">Time</th><th scope="col">Actions</th></tr></thead><tbody><tr><td>16 Oct 2026 13:40</td><td class="ui-table__figure">47.380 s</td><td><button type="button" class="ui-button ui-button--quiet ui-button--sm" data-icon="trash" aria-label="Delete replay"></button></td></tr><tr><td colspan="3"><div class="ui-confirm ui-confirm--row" role="alertdialog" aria-labelledby="g-confirm-row"><p class="ui-confirm__text" id="g-confirm-row">Delete the replay of 16 Oct 2026 13:40?</p><div class="ui-actions ui-actions--row"><button type="button" class="ui-button ui-button--danger ui-button--sm" data-icon="trash">Delete replay</button><button type="button" class="ui-button ui-button--secondary ui-button--sm">Cancel</button></div></div></td></tr></tbody></table></div>
+        <span class="state">Warn, a notice</span><div><p class="ui-note ui-note--warn" data-icon="info"><span class="ui-note__text">This is a 3D board code. Paste it in the 3D board choice.</span></p></div>
+        <span class="state">Warn, a refusal</span><div><p class="ui-note ui-note--warn" data-icon="warning"><span class="ui-note__text">Mines must be a whole number from 1 to 99 on a 30 × 16 board.</span></p></div>
+        <span class="state">Err</span><div><p class="ui-note ui-note--err" data-icon="warning"><span class="ui-note__text">This code is incomplete: it is missing its last part.</span></p></div>
+        <span class="state">Accepted code</span><div><p class="ui-text ui-text--success">Intermediate · a challenge, not eligible for bests</p></div>
+      </div>
+    </section>
+    <!-- /component: feedback -->
     <!-- /components: shared layout -->
 
     <!-- components: in-game -->

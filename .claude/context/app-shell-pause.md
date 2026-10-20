@@ -13,7 +13,8 @@ Both modules are pure; their rules are documented in their head comments.
 `js/shell/pause.js`
 - `PAUSE_SOURCES` (`key`, `pad`, `button`, `blur`, `hidden`), `AUTO_SOURCES`
   (`blur`, `hidden`), `HAND_OFFS` (`finished`, `abandoned`, `inProgress`),
-  `CONFIRMATIONS` (`restart`, `menu`: `{action, message, confirmLabel}`),
+  `CONFIRMATIONS` (`restart`, `menu`: `{action, title, message,
+  confirmLabel}`, both asking the same),
   `RESTART_NOTICE`, `RESTART_SCREENS` (`playing`, `classic-2d`, `paused`).
 - `restartInput(input, {screen, blocked?})` → `'restart'` for `'F2'` or
   `'pad'` (Start + Y) on a `RESTART_SCREENS` screen, `'playAgain'` for
@@ -65,8 +66,9 @@ Both modules are pure; their rules are documented in their head comments.
   page's controls (`data-setting`: Sound, volume, then the look controls
   on a 3D game's card only) through `bindSettingControls`.
 - **Confirmation.** Back to menu during a started, unfinished game calls
-  `confirm` → `ui.showConfirm` on the pause card (`#pause-confirm` in place
-  of `#pause-actions`, its action `#p-confirm-yes` a `ui-button--danger`);
+  `confirm` → `ui.showConfirm` on the pause card (`#pause-confirm`, a
+  `ui-confirm` with its heading, in place of `#pause-actions`, its action
+  `#p-confirm-yes` a `ui-button--danger`);
   Back or Cancel closes it. Restart of such a game
   proceeds at once, the page's first one toasting `RESTART_NOTICE`
   (`restarted`); under the `confirmRestart` setting (`askRestart`) it

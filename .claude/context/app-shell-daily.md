@@ -35,7 +35,8 @@ is the head comment of `css/components.css` (*Daily*); its ids are
 
 `js/shell/challenge.js`
 - `resolveCode(text, {today, mode?})` → `{kind: 'refused' | 'daily' |
-  'challenge', …}`; `otherModeHint(mode)`; `gameStart({board, seed,
+  'challenge', …}`, a code of the other mode refused with `otherMode` its
+  mode; `otherModeHint(mode)`; `gameStart({board, seed,
   startCell, daily?, pregenerated?})` → `{mode, choice}` (2D `fixed`, 3D
   `forced`); `freeStart(board)`; `boardHash(hash)`;
   `createChallengeLinks({location, history, onDaily, onChallenge,

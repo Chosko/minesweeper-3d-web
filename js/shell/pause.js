@@ -45,10 +45,14 @@ export const PAUSE_SOURCES = Object.freeze(['key', 'pad', 'button', 'blur', 'hid
 export const AUTO_SOURCES = Object.freeze(['blur', 'hidden']);
 /** The hand-offs a feature can attach to. */
 export const HAND_OFFS = Object.freeze(['finished', 'abandoned', 'inProgress']);
-/** The confirmations back to menu, and restart under "Always ask", ask during a started, unfinished game. */
+/**
+ * The confirmations back to menu, and restart under "Always ask", ask during a started, unfinished
+ * game, both alike: the heading, the line and the confirm button's label.
+ */
+const ASK = { title: 'Leave this game?', message: 'This game will count as a loss.', confirmLabel: 'Confirm' };
 export const CONFIRMATIONS = Object.freeze({
-  restart: Object.freeze({ action: 'restart', message: 'Restart this game? It will count as a loss.', confirmLabel: 'Restart' }),
-  menu: Object.freeze({ action: 'menu', message: 'Leave this game for the main menu? It will count as a loss.', confirmLabel: 'Main menu' }),
+  restart: Object.freeze({ action: 'restart', ...ASK }),
+  menu: Object.freeze({ action: 'menu', ...ASK }),
 });
 /** What the shell says once per session, at the first restart that abandons a game. */
 export const RESTART_NOTICE = 'That game counted as a loss. Turn on "Always ask before restarting" in Settings to be asked first.';

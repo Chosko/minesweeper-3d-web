@@ -87,14 +87,15 @@
 //   refresh() redraws the bests (the shell's records changed).
 //   onRecords(board) Records: the chosen board as boardOf gives it, or null with no board chosen
 //             (Learn 3D, a code, a refused custom board).
-//   code      { resolve, onPlay }: resolve(text) → { ok, reason?, text?, label? } validates the code
+//   code      { resolve, onPlay }: resolve(text) → { ok, reason?, otherMode?, text?, label? } validates the code
 //             live, as Classic 2D's.
 //   bests     (board) → [{ stat, label, value, note }]: the board's ({ X, Y, Z, mines, noGuess })
 //             three bests as text, read through the records' queries by the shell
 //             (js/shell/returning.js boardBests).
 
 import { aboveDensityHint, DENSITY_HINT_TEXT } from '../classic2d/board-setup.js';
-import { CODE_PROMPT } from '../classic2d/board-choice.js';
+import { showCodeLine } from '../classic2d/board-choice.js';
+import { setNote } from '../ui/components.js';
 import { LEARN_BOARD, LEARN_TITLE } from './learn.js';
 
 export const DIM_MIN = 1;
@@ -286,7 +287,7 @@ export function bindBoardChoice({ root, onStart, onLearn, onBack, onRecords = nu
   const random = $('[data-random]');
   const back = $('[data-back]');
   const customMeta = $('[data-custom-meta]');
-  hint.textContent = DENSITY_HINT_TEXT;
+  setNote(hint, DENSITY_HINT_TEXT);
   let selected = DEFAULT_CHOICE.size;
   let last = null;
   let wanted = false; // the custom board's no-guess choice, kept while the board does not offer it
@@ -325,7 +326,7 @@ export function bindBoardChoice({ root, onStart, onLearn, onBack, onRecords = nu
     info.classList.toggle('hidden', !info.textContent);
     info.classList.toggle('ui-text--warning', large(c));
     info.classList.toggle('ui-text--muted', !large(c));
-    refusal.textContent = s.ok ? '' : s.text;
+    setNote(refusal, s.ok ? '' : s.text);
     refusal.classList.toggle('hidden', s.ok);
     if (s.max !== null) inputs[3].max = String(Math.max(1, s.max));
     for (const [i, f] of FIELDS.entries()) {
@@ -337,16 +338,12 @@ export function bindBoardChoice({ root, onStart, onLearn, onBack, onRecords = nu
     const available = s.max === null || noGuessAvailable(board);
     noGuess.disabled = !available;
     noGuess.checked = available && wanted;
-    reason.textContent = available ? '' : noGuessReason(board);
+    setNote(reason, available ? '' : noGuessReason(board));
     reason.classList.toggle('hidden', available);
     hint.classList.toggle('hidden', !densityHintShown(c, noGuess.checked));
     if (customMeta) customMeta.textContent = isCustom && ints(c) ? (s.ok ? `${boxLine(c)} · ${mineDensity(c)}` : boxLine(c)) : CUSTOM_HINT;
     const r = isCode ? codeResult() : null;
-    if (codeInfo) {
-      codeInfo.textContent = !r ? CODE_PROMPT : r.ok ? r.text ?? '' : r.reason;
-      codeInfo.classList.toggle('ui-text--warning', !!r && !r.ok);
-      codeInfo.classList.toggle('ui-text--muted', !r || r.ok);
-    }
+    if (codeInfo) showCodeLine(codeInfo, codeInput, r);
     learnPanel?.classList.toggle('hidden', !isLearn);
     settings.classList.toggle('hidden', !isBoard());
     presetSettings?.classList.toggle('hidden', isCustom);

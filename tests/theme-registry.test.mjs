@@ -170,7 +170,7 @@ test('the kit catalogue declares every component the stylesheet head documents',
     'ui-overlay-bar', 'ui-screen', 'ui-row', 'ui-grid', 'ui-heading', 'ui-text', 'ui-actions', 'ui-stat-row', 'ui-columns',
     'ui-button--danger', 'ui-backdrop', 'ui-frame', 'ui-mode-entry', 'ui-option', 'ui-section-label', 'ui-key-hint',
     'ui-chip', 'ui-list-row', 'ui-scene-panel', 'ui-divider', 'ui-tabs', 'ui-checkbox', 'ui-table', 'ui-toast',
-    'ui-mode-list', 'ui-options', 'ui-key-hints', 'ui-list'];
+    'ui-mode-list', 'ui-options', 'ui-key-hints', 'ui-list', 'ui-confirm', 'ui-note'];
   for (const name of documented) {
     assert.ok(HEAD.includes(name), `the head documents ${name}`);
     assert.ok(KIT_CATALOGUE.some((c) => c.className === name), `the catalogue declares ${name}`);

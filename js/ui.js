@@ -4,7 +4,7 @@
 // (js/settings/bindings.js) for the active mode and the active device (the controller in the
 // connected controller's glyphs).
 import {
-  formatOverlayTime, formatMineCount, mineCounterDigits, bindSegmented, segmentedState, showKeyHints, bindFigures, bindFiguresLive,
+  formatOverlayTime, formatMineCount, mineCounterDigits, bindSegmented, segmentedState, showKeyHints, bindFigures, bindFiguresLive, setNote,
 } from './ui/components.js';
 import { GLYPHS } from './gamepad.js';
 import { bindingsHtml, hudStripHtml, hintStripHtml, helpFootHtml, hintText, keyHintKeys, reminderKeys } from './settings/bindings.js';
@@ -94,7 +94,7 @@ export class UI {
       controlsModal: $('controls-modal'),
       pause: $('pause'), pauseTitle: $('pause-title'), pauseSub: $('pause-sub'),
       resume: $('p-resume'), home: $('p-home'), restart: $('p-restart'), restartLabel: $('p-restart').querySelector('[data-label]'), pauseMenu: $('p-menu'), pauseActions: $('pause-actions'),
-      confirm: $('pause-confirm'), confirmText: $('pause-confirm-text'), confirmYes: $('p-confirm-yes'),
+      confirm: $('pause-confirm'), confirmTitle: $('pause-confirm-title'), confirmText: $('pause-confirm-text'), confirmYes: $('p-confirm-yes'),
       chipShift: $('chip-shift'), chipSpace: $('chip-space'), chipCtrl: $('chip-ctrl'),
       c2dChoice: $('c2d-choice'), c2d: $('c2d'), c2dBoard: $('c2d-board'), c2dPanel: $('c2d-panel'), c2dStatus: $('c2d-status'),
       c2dTitle: $('c2d-title'), c2dSize: $('c2d-size'), c2dMines: $('c2d-mines-left'), c2dTime: $('c2d-time'), c2dFigures: $('c2d-figures'),
@@ -520,7 +520,7 @@ export class UI {
     this.el.ready.classList.remove('hidden', 'ready--pending');
     this.el.hud.classList.remove('hidden');
     this.el.readyBoard.textContent = settings.learn ? LEARN_TITLE : boardLine3D(settings, { mines: true });
-    this.el.readyMsg.textContent = msg;
+    setNote(this.el.readyMsg, msg).classList.toggle('hidden', !msg);
     this.el.readyRules.classList.toggle('hidden', !rules);
     this.el.readyLearn.classList.toggle('hidden', !learn);
     this.el.readyBlocked.classList.toggle('hidden', !blocked);
@@ -533,7 +533,7 @@ export class UI {
    * showReady (a refusal's message) shows it.
    */
   setReadyPending(on) { this.el.ready.classList.toggle('ready--pending', !!on); }
-  setReadyMessage(msg) { this.el.readyMsg.textContent = msg; }
+  setReadyMessage(msg) { setNote(this.el.readyMsg, msg).classList.toggle('hidden', !msg); }
   showPlaying() {
     this._hideMenus();
     this._hide2D();
@@ -665,8 +665,9 @@ export class UI {
   hideLearnEnd() { this.el.learnEnd.classList.add('hidden'); }
   isPauseVisible() { return !this.el.pause.classList.contains('hidden'); }
   /** Ask on the pause card, in place of its actions: onYes on confirm, onNo on Cancel or Back. */
-  showConfirm({ message, confirmLabel }, onYes, onNo) {
+  showConfirm({ title, message, confirmLabel }, onYes, onNo) {
     this._confirm = { onYes, onNo };
+    this.el.confirmTitle.textContent = title;
     this.el.confirmText.textContent = message;
     this.el.confirmYes.textContent = confirmLabel;
     this.el.pauseActions.classList.add('hidden');

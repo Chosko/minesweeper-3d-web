@@ -57,7 +57,11 @@ board; the skin owns how a tile looks.
   fallbackCustom?)`, `densityHintShown(custom, noGuess)`,
   `choiceSummary({selected, custom, noGuess, code})` (the bottom bar's
   line), `bestsTitle({selected, custom, noGuess})`; `CODE_PROMPT`, the code
-  field's empty line on both board choices.
+  field's empty line on both board choices; `showCodeLine(line, field, r)`,
+  the code field's line on both board choices for `code.resolve`'s answer:
+  the prompt muted, an accepted code `ui-text--success`, a code of the
+  other mode (`r.otherMode`) a warn note, any other refused code an err
+  note with the field `is-invalid`.
 - `bindBoardChoice({root, onStart, onBack, onRecords?, code?, bests?})` →
   `{show(choice, {played, held}), state(), refresh(), destroy()}` over
   `#c2d-choice`: the options `[data-size]` (`beginner`, `intermediate`,
@@ -87,7 +91,7 @@ board; the skin owns how a tile looks.
 - **The board choice screen** (`css/components.css` head comment, *Classic
   2D board choice*): the options on the left; on the right a preset's
   no-guess switch and the board's three bests, Custom's switch, form,
-  Random and refusal line with the bests for that size, or Insert Board
+  Random and refusal (a warn note) with the bests for that size, or Insert Board
   Code's field alone; the bottom bar's summary, Records and Play. Choosing
   an option is a click (a tap, the controller's A); Enter plays. The info
   line, refusal line, density hint, bests, summary and Play follow the

@@ -106,9 +106,11 @@ settings handling for the shell's UI module and the sound module ([app-shell.md]
   replay library's start-up load, then clears every document and kept-aside
   copy (`platform-storage`'s clear), every replay blob and the carried-over
   legacy keys with the old first-use key, and reloads the page, so every
-  owner starts from nothing as a new player's game does. A part that cannot
-  be deleted is named in a warning line in place of the confirmation, the
-  rest is still cleared, nothing reloads and the action stays available.
+  owner starts from nothing as a new player's game does. When any part
+  cannot be deleted, an error line under the action says the data could
+  not be deleted and asks the player to close the game's other tabs and
+  try again; the rest is still cleared, nothing reloads and the action
+  stays available.
 - **Pause-card shortcuts.** The pause card keeps quick access to volume in
   both modes, and to look sensitivity and invert Y on a 3D game's pause card
   only, bound to the same store.

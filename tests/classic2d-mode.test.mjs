@@ -1194,6 +1194,8 @@ test('index.html builds the Classic 2D board choice from kit components: the tit
   assert.match(right, /<div id="c2d-settings" data-settings>\s*<div class="ui-section-label"><h3 class="ui-section-label__text">Board settings<\/h3><\/div>\s*<label class="ui-toggle"><input type="checkbox" role="switch" id="c2d-noguess" class="ui-toggle__input" data-noguess><span class="ui-toggle__label">No-guess<\/span><\/label>/);
   assert.ok(right.includes(`<p id="c2d-noguess-help" class="ui-text ui-text--muted">${NOGUESS_HELP_TEXT}</p>`));
   assert.ok(right.indexOf('data-density-hint') > right.indexOf('c2d-noguess-help') && right.indexOf('data-density-hint') < right.indexOf('<form id="c2d-custom"'), 'the density hint under the switch');
+  assert.match(right, /<p id="c2d-density-hint" class="ui-note ui-note--warn hidden" data-icon="warning" data-density-hint><span class="ui-note__text"><\/span><\/p>\s*<\/div>/,
+    'the density hint, a warn note with its warning icon, inside the board settings');
   const form = right.slice(right.indexOf('<form id="c2d-custom"'), right.indexOf('</form>'));
   assert.match(form, /^<form id="c2d-custom" class="ui-panel hidden"/, 'the form shows for Custom only');
   for (const f of ['width', 'height', 'mines']) {
@@ -1204,7 +1206,7 @@ test('index.html builds the Classic 2D board choice from kit components: the tit
   const [info, random, refusal] = ['data-info', 'id="c2d-random"', 'data-refusal'].map((x) => form.indexOf(x));
   assert.ok(info > form.indexOf('id="c2d-mines"') && random > info && refusal > random, 'the fields, the info line, Random, the refusal line');
   assert.match(form, /<button type="button" id="c2d-random" class="ui-button ui-button--secondary ui-button--sm" data-random>Random<\/button>/);
-  assert.match(form, /<p id="c2d-refusal" class="ui-text ui-text--warning hidden" data-refusal><\/p>/);
+  assert.match(form, /<p id="c2d-refusal" class="ui-note ui-note--warn hidden" data-icon="warning" data-refusal><span class="ui-note__text"><\/span><\/p>/, 'the refusal, a warn note with its warning icon');
   assert.doesNotMatch(CHOICE, /c2d-start|type="submit"/, 'Play starts a custom board');
   const bests = right.slice(right.indexOf('<div id="c2d-bests"'), right.indexOf('<div id="c2d-code-panel"'));
   assert.ok(right.indexOf('<div id="c2d-bests"') > right.indexOf('</form>'), 'the bests under the form');
@@ -1215,6 +1217,7 @@ test('index.html builds the Classic 2D board choice from kit components: the tit
   const panel = right.slice(right.indexOf('<div id="c2d-code-panel"'));
   assert.match(panel, /^<div id="c2d-code-panel" class="hidden" role="group" aria-labelledby="c2d-code-title" data-code-panel>/);
   assert.match(panel, /<input id="c2d-code" data-code-field class="ui-field__input" type="text"/);
+  assert.match(panel, /<input id="c2d-code"[^>]* placeholder="EN-…">/, 'the canvas\'s placeholder');
   assert.ok(panel.includes(`<p id="c2d-code-info" class="ui-text ui-text--muted" data-code-info>${CODE_PROMPT}</p>`));
   assert.doesNotMatch(CHOICE, /c2d-code-play|Play this board/, 'the code is played with Play');
 
@@ -1480,12 +1483,23 @@ test('in a browser, the board choice: a click chooses, Play or Enter plays; the 
     assert.equal(await text('c2d-code-info'), CODE_PROMPT);
     assert.equal(await text('c2d-summary'), 'Board code · paste a code to play');
     assert.equal(await ms(() => document.getElementById('c2d-play').disabled), true);
+    const codeLine = () => ms(() => {
+      const line = document.getElementById('c2d-code-info');
+      const field = document.getElementById('c2d-code');
+      return { cls: line.className, icon: line.querySelector(':scope > .ui-icon')?.dataset.icon ?? null, invalid: field.classList.contains('is-invalid'), aria: field.getAttribute('aria-invalid') };
+    });
+    assert.deepEqual(await codeLine(), { cls: 'ui-text ui-text--muted', icon: null, invalid: false, aria: null }, 'the prompt: a muted line');
     await page.fill('#c2d-code', 'nonsense');
-    assert.equal(await ms(() => document.getElementById('c2d-code-info').classList.contains('ui-text--warning')), true);
+    assert.deepEqual(await codeLine(), { cls: 'ui-note ui-note--err', icon: 'warning', invalid: true, aria: 'true' }, 'a refused code: an err note, the field invalid');
+    const other = await ms(async () => (await import('/js/records/board-code.js')).encodeBoardCode({ board: { mode: '3d', width: 6, height: 6, depth: 6, mines: 10, noGuess: false }, seed: 9, startCell: 129, generatorVersion: 1 }));
+    await page.fill('#c2d-code', other);
+    assert.deepEqual(await codeLine(), { cls: 'ui-note ui-note--warn', icon: 'info', invalid: false, aria: null }, 'a code of the other mode: a warn note, the field left valid');
+    assert.match(await text('c2d-code-info'), /3D board code/);
     assert.equal(await ms(() => document.getElementById('c2d-play').disabled), true);
     const code = await ms(async () => (await import('/js/records/board-code.js')).encodeBoardCode({ board: { mode: 'classic-2d', grid: 'square', width: 16, height: 16, mines: 40, noGuess: true }, seed: 3, startCell: 40, generatorVersion: 1 }));
     await page.fill('#c2d-code', code);
     assert.equal(await ms(() => document.getElementById('c2d-play').disabled), false);
+    assert.deepEqual(await codeLine(), { cls: 'ui-text ui-text--success', icon: null, invalid: false, aria: null }, 'an accepted code: the success line');
     assert.equal(await text('c2d-summary'), 'Board code · Intermediate · no-guess');
     await page.click('#c2d-play');
     assert.equal(await mode(), 'classic-2d', 'Play plays the code\'s challenge');

@@ -508,10 +508,11 @@ test('the records screen holds the Replays tab\'s panel: pinned-first checkbox, 
   for (const h of REPLAY_HEADERS) assert.ok(panel.includes(`<th scope="col">${h}</th>`), `header ${h}`);
   assert.match(panel, /<caption class="ui-text ui-text--muted" id="records-replays-page"><\/caption>/, 'the range caption');
   assert.match(panel, /<nav id="records-replays-pager" class="ui-pager hidden" aria-label="[^"]+"><\/nav>/, 'the kit pager');
-  assert.ok(panel.includes('<div id="records-replays-confirm" class="ui-panel ui-actions hidden" role="alertdialog" aria-labelledby="records-replays-confirm-text">'
-    + '<p id="records-replays-confirm-text" class="ui-text"></p>'
-    + '<button type="button" id="records-replays-yes" class="ui-button ui-button--danger">Delete replay</button>'
-    + '<button type="button" id="records-replays-no" class="ui-button ui-button--secondary">Cancel</button></div>'), 'the confirmation, in the pause card\'s style');
+  assert.ok(panel.includes('<div id="records-replays-confirm" class="ui-confirm ui-confirm--row hidden" role="alertdialog" aria-labelledby="records-replays-confirm-text">'
+    + '<p id="records-replays-confirm-text" class="ui-confirm__text"></p><div class="ui-actions ui-actions--row">'
+    + '<button type="button" id="records-replays-yes" class="ui-button ui-button--danger ui-button--sm" data-icon="trash">Delete replay</button>'
+    + '<button type="button" id="records-replays-no" class="ui-button ui-button--secondary ui-button--sm">Cancel</button></div></div>'),
+  'the confirmation, a confirm box row: Delete replay (danger, small, its trash icon), then Cancel');
 });
 
 test('the shell hands the records screen the replay library and the router, and reports replays not saved', () => {
@@ -638,7 +639,8 @@ test('in a browser, the replays panel lists, pins by keyboard keeping focus, fil
 
     // Delete asks first, in the replays panel; Cancel and Back change nothing and return to that row's Delete.
     const confirm = () => page.evaluate((s) => ({
-      open: !document.querySelector(`${s} #records-replays-confirm`).classList.contains('hidden'),
+      open: !document.querySelector(`${s} #records-replays-confirm`).classList.contains('hidden')
+        && document.querySelector(`${s} #records-replays-body`).contains(document.querySelector(`${s} #records-replays-confirm`)),
       text: document.querySelector(`${s} #records-replays-confirm-text`).textContent,
       focus: document.activeElement?.id || { ...document.activeElement?.dataset },
     }), T);
@@ -648,6 +650,20 @@ test('in a browser, the replays panel lists, pins by keyboard keeping focus, fil
     assert.equal(c.open, true);
     assert.match(c.text, /^Delete the replay of 1 Oct 2026 \d\d:\d\d, lost\? It is pinned by hand\. This cannot be undone\.$/);
     assert.equal(c.focus, 'records-replays-no', 'focus moves to Cancel');
+    // It asks inline: a table row under the replay's own, one cell across every column.
+    assert.deepEqual(await page.evaluate((s) => {
+      const box = document.querySelector(`${s} #records-replays-confirm`);
+      const row = box.closest('tr');
+      return { above: row.previousElementSibling?.querySelector('button[data-act="delete"]')?.dataset.id, cells: row.cells.length, span: row.cells[0].colSpan,
+        heads: document.querySelectorAll(`${s} #records-replays-table thead th`).length, rows: document.querySelectorAll(`${s} #records-replays-body tr`).length };
+    }, T), { above: 'b', cells: 1, span: 8, heads: 8, rows: 3 });
+    // The box fills its cell: no table cell padding around it, no row-button margin on its buttons.
+    assert.deepEqual(await page.evaluate((s) => {
+      const box = document.querySelector(`${s} #records-replays-confirm`);
+      const cell = getComputedStyle(box.closest('td'));
+      return { cell: [cell.paddingTop, cell.paddingRight, cell.paddingBottom, cell.paddingLeft],
+        buttons: [...box.querySelectorAll('.ui-button')].map((b) => getComputedStyle(b).margin) };
+    }, T), { cell: ['0px', '0px', '0px', '0px'], buttons: ['0px', '0px'] });
     await page.keyboard.press('Enter');
     c = await confirm();
     assert.equal(c.open, false);
@@ -657,11 +673,10 @@ test('in a browser, the replays panel lists, pins by keyboard keeping focus, fil
     c = await confirm();
     assert.deepEqual([c.open, c.focus], [false, { id: 'b', act: 'delete' }]);
     assert.equal((await rows()).length, 2, 'nothing changed');
-    // The confirmation stands in place of the whole tools row; another tab closes it, so nothing waits on a hidden question.
+    // The list stays around the inline row; another tab closes it, so nothing waits on a hidden question.
     await page.keyboard.press('Enter');
     assert.equal((await confirm()).open, true);
-    assert.equal(await page.evaluate((s) => document.querySelector(`${s} #records-pinned-first`).closest('.ui-row').getClientRects().length, T), 0,
-      'the Pinned first label hides with its box');
+    assert.equal(await page.evaluate((s) => document.querySelector(`${s} #records-replays-table`).getClientRects().length > 0, T), true, 'the table stays');
     await page.evaluate(() => globalThis.__t.screen.setTab('recent'));
     assert.equal(await page.evaluate(() => globalThis.__t.screen.confirmOpen), false, 'leaving the Replays tab closes the confirmation');
     await page.evaluate(() => globalThis.__t.screen.setTab('replays'));

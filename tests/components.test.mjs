@@ -9,6 +9,7 @@ import {
   bindSlider, bindSliderFill, sliderFill, bindSegmented, bindTabs, initComponents, formatOverlayTime, formatMineCount, mineCounterDigits, pagerState, PAGER_WINDOW,
   boardLink, copyBoardCode, bindCodeChip, COPY_FALLBACK, COPIED, bindSelectOnHover, SELECT_ON_HOVER,
   bindFiguresLive, LIVE_FIGURES_INTERVAL, bindFigures, ICONS, iconMarkup, createIcon, setButtonIcon, createButton, applyIcons,
+  setNote, NOTE_TONES,
 } from '../js/ui/components.js';
 import { KIT_CATALOGUE, REQUIRED_TOKENS } from '../js/ui/kit-catalogue.js';
 import { KEY_HINTS, keyHintKeys, reminderKeys } from '../js/settings/bindings.js';
@@ -70,6 +71,8 @@ const COMPONENTS = {
   'ui-checkbox': { interactive: true, control: '.ui-checkbox__input' },
   'ui-table': { interactive: false },
   'ui-toast': { interactive: false },
+  'ui-confirm': { interactive: false },
+  'ui-note': { interactive: false },
   // the in-game components
   'ui-counter': { interactive: false },
   'ui-counter-strip': { interactive: false },
@@ -1143,8 +1146,8 @@ test('one vocabulary: Back returns one step, Main menu goes to the menu, and no 
 test('Restart discards an unfinished game; Play again starts the same choice once it ended; the help names only the restart keys', () => {
   const ui = read('js/ui.js');
   assert.match(ui, /this\.el\.restartLabel\.textContent = ended \? 'Play again' : 'Restart';/, 'the pause card swaps them on the moment');
-  assert.match(read('js/shell/pause.js'), /message: 'Restart this game\? It will count as a loss\.', confirmLabel: 'Restart'/);
-  assert.match(read('js/shell/pause.js'), /'Leave this game for the main menu\? It will count as a loss\.'/);
+  assert.match(read('js/shell/pause.js'), /restart: Object\.freeze\(\{ action: 'restart', \.\.\.ASK \}\)/);
+  assert.match(read('js/shell/pause.js'), /const ASK = \{ title: 'Leave this game\?', message: 'This game will count as a loss\.', confirmLabel: 'Confirm' \};/);
   assert.match(read('index.html'), /id="r-again"[^>]*>Play again </);
   const lines = read('js/settings/bindings.js').split('\n').filter((l) => /Restart|Play again|New game/.test(l));
   assert.ok(lines.length > 0 && lines.every((l) => /^\s*\['(\[F2\]|\{start\} \+ \{y\})', 'Restart: a new board of the same choice'\],$/.test(l)),
@@ -1805,7 +1808,13 @@ function stubDocument() {
   const element = (ns, tag) => {
     const el = {
       namespaceURI: ns, localName: tag, ownerDocument: doc, attrs: {}, children: [], parentNode: null, textContent: '',
-      classList: { contains: (c) => (el.attrs.class ?? '').split(/\s+/).includes(c) },
+      classList: {
+        contains: (c) => (el.attrs.class ?? '').split(/\s+/).includes(c),
+        toggle: (c, on) => {
+          const list = (el.attrs.class ?? '').split(/\s+/).filter((x) => x && x !== c);
+          el.attrs.class = (on ? [...list, c] : list).join(' ');
+        },
+      },
       setAttribute(k, v) { el.attrs[k] = String(v); },
       getAttribute(k) { return el.attrs[k] ?? null; },
       hasAttribute(k) { return k in el.attrs; },
@@ -1816,7 +1825,9 @@ function stubDocument() {
       querySelector(sel) { return el.querySelectorAll(sel)[0] ?? null; },
       querySelectorAll(sel) {
         const out = [];
-        const match = (n) => (sel === ':scope > .ui-icon' ? n.parentNode === el && n.classList.contains('ui-icon') : sel === '.ui-button[data-icon]' ? n.classList.contains('ui-button') && 'data-icon' in n.attrs : false);
+        const match = (n) => (sel === ':scope > .ui-icon' ? n.parentNode === el && n.classList.contains('ui-icon')
+          : sel === ':scope > .ui-note__text' ? n.parentNode === el && n.classList.contains('ui-note__text')
+            : sel === '.ui-button[data-icon], .ui-note[data-icon]' ? (n.classList.contains('ui-button') || n.classList.contains('ui-note')) && 'data-icon' in n.attrs : false);
         const walk = (n) => { for (const c of n.children) { if (match(c)) out.push(c); walk(c); } };
         walk(el);
         return out;
@@ -1976,6 +1987,143 @@ test('in a browser, the gallery\'s icons fill the slot: 18 px on sm and md, 24 p
   }
 });
 
+// ---------------------------------------------------------------- the feedback parts: the confirm box and the notes
+
+const baseRule = (sel) => RULES.filter(([x]) => x === sel).map(([, b]) => b).join(';');
+const themeRule = (sel) => THEME_RULES.filter(([x]) => x === sel).map(([, b]) => b).join(';');
+
+test('the confirm box: the danger fill, radius 16, 16px 18px padding, a 12 px gap, no border and no drop; 17 px bold ink text, a 24 px heading, its actions side by side', () => {
+  assert.match(baseRule('.ui-confirm'), /display:\s*flex;\s*flex-direction:\s*column/);
+  assert.match(baseRule('.ui-confirm'), /gap:\s*var\(--space-3\)/);
+  assert.match(baseRule('.ui-confirm'), /padding:\s*var\(--space-4\) 18px/);
+  assert.match(baseRule('.ui-confirm__text'), /font-size:\s*17px;\s*font-weight:\s*var\(--font-weight-bold\)/);
+  assert.match(baseRule('.ui-confirm__title'), /font-size:\s*24px/);
+  assert.match(baseRule('.ui-confirm .ui-actions'), /gap:\s*10px/, 'the danger action beside Cancel, 10 px apart');
+  assert.match(baseRule('.ui-confirm--row'), /flex-direction:\s*row;\s*flex-wrap:\s*wrap;\s*align-items:\s*center/, 'the row variant lays its text and actions on one line');
+  assert.match(baseRule('.ui-table td:has(> .ui-confirm--row)'), /padding:\s*0/, 'the row variant fills its table cell');
+  const box = themeRule('.ui-confirm');
+  assert.match(box, /background:\s*var\(--color-danger-fill\)/);
+  assert.match(box, /border-radius:\s*var\(--radius-lg\)/);
+  assert.doesNotMatch(box, /box-shadow|border:/, 'no border and no drop');
+  for (const part of ['.ui-confirm__title', '.ui-confirm__text']) assert.match(themeRulesFor(part).map(([, b]) => b).join(';'), /color:\s*var\(--color-ink\)/, part);
+  const head = RAW.match(/^\/\*([\s\S]*?)\*\//)[1];
+  assert.match(head, /ui-confirm — /, 'the catalogue documents the confirm box');
+  const confirm = KIT_CATALOGUE.find((c) => c.name === 'ui-confirm');
+  assert.deepEqual(confirm.variants, ['ui-confirm--row']);
+  assert.deepEqual(confirm.parts.map((p) => [p.name, p.optional]), [['title', true], ['text', false]]);
+  assert.match(themeRule('.ui-confirm--row'), /border-radius:\s*0/, 'a table row of the fill, square');
+});
+
+test('the warn and err notes: radius 8, 6px 10px padding, 14 px bold, a 16 px leading icon; warn in the warning ink on its fill, err in the danger colour on its fill', () => {
+  assert.match(baseRule('.ui-note'), /display:\s*flex/);
+  assert.match(baseRule('.ui-note'), /gap:\s*var\(--space-2\)/);
+  assert.match(baseRule('.ui-note'), /padding:\s*6px 10px/);
+  assert.match(baseRule('.ui-note'), /font-size:\s*14px;\s*font-weight:\s*var\(--font-weight-bold\)/);
+  assert.match(baseRule('.ui-note > .ui-icon'), /width:\s*16px;\s*height:\s*16px/);
+  assert.match(themeRule('.ui-note'), /border-radius:\s*var\(--radius-sm\)/);
+  assert.match(themeRule('.ui-note--warn'), /background:\s*var\(--color-warning-fill\);\s*color:\s*var\(--color-warning\)/);
+  assert.match(themeRule('.ui-note--err'), /background:\s*var\(--color-danger-fill\);\s*color:\s*var\(--color-danger\)/);
+  assert.match(baseRule('.ui-text--success'), /font-weight:\s*var\(--font-weight-bold\)/, 'a valid code\'s line is bold');
+  assert.match(themeRule('.ui-text--success'), /color:\s*var\(--color-success\)/, 'in the success colour');
+  const note = KIT_CATALOGUE.find((c) => c.name === 'ui-note');
+  assert.deepEqual(note.variants, ['ui-note--warn', 'ui-note--err']);
+  assert.deepEqual(note.parts, [], 'its icon is the kit\'s, in the note\'s ink; its text is plain');
+  assert.deepEqual(KIT_CATALOGUE.find((c) => c.name === 'ui-text').variants, ['ui-text--muted', 'ui-text--warning', 'ui-text--success']);
+  assert.deepEqual(NOTE_TONES, ['warn', 'err']);
+});
+
+test('setNote writes a note\'s text after its leading icon and sets its tone and icon; applyIcons draws a marked note\'s icon', () => {
+  const doc = stubDocument();
+  const line = doc.createElement('p');
+  line.className = 'ui-text ui-text--muted';
+  line.textContent = 'Paste a board code to play that exact board.';
+  setNote(line, 'This is a 3D board code.', { tone: 'warn', icon: 'info' });
+  assert.equal(line.className, 'ui-text ui-text--muted ui-note ui-note--warn', 'the line becomes a warn note');
+  assert.deepEqual(line.children.map((c) => c.attrs.class), ['ui-icon', 'ui-note__text'], 'its icon leads its text');
+  assert.equal(line.children[0].attrs['data-icon'], 'info');
+  assert.equal(line.getAttribute('data-icon'), 'info');
+  assert.equal(line.children[1].textContent, 'This is a 3D board code.');
+  setNote(line, 'This code is incomplete.', { tone: 'err', icon: 'warning' });
+  assert.equal(line.className, 'ui-text ui-text--muted ui-note ui-note--err');
+  assert.deepEqual(line.children.map((c) => c.attrs['data-icon'] ?? c.attrs.class), ['warning', 'ui-note__text'], 'one icon, replaced');
+  setNote(line, 'A valid code.', { tone: null, icon: null });
+  assert.equal(line.className, 'ui-text ui-text--muted', 'a plain line again');
+  assert.deepEqual(line.children.map((c) => c.attrs.class), ['ui-note__text'], 'with no icon');
+  assert.equal(line.getAttribute('data-icon'), null);
+  // A marked note in markup keeps its tone and icon; only its text changes.
+  const root = doc.createElement('div');
+  const refusal = doc.createElement('p');
+  refusal.className = 'ui-note ui-note--warn';
+  refusal.setAttribute('data-icon', 'warning');
+  root.append(refusal);
+  applyIcons(root);
+  assert.deepEqual(refusal.children.map((c) => c.attrs['data-icon']), ['warning'], 'applyIcons draws a note\'s icon');
+  setNote(refusal, 'Mines must be a whole number from 1 to 99.');
+  assert.deepEqual(refusal.children.map((c) => c.attrs['data-icon'] ?? c.attrs.class), ['warning', 'ui-note__text']);
+  setNote(refusal, 'Height must be a whole number.');
+  assert.equal(refusal.children.length, 2, 'the text part is reused');
+  assert.equal(refusal.children[1].textContent, 'Height must be a whole number.');
+  assert.equal(refusal.className, 'ui-note ui-note--warn');
+});
+
+test('the gallery shows the confirm box, with and without its heading and as a table row, and both notes with their icons', () => {
+  const part = section(GALLERY, '<!-- component: feedback -->', '<!-- /component: feedback -->');
+  assert.ok(part.length > 0, 'the gallery has the feedback parts');
+  const t = tags(part);
+  const boxes = t.filter((x) => hasClasses(x, '.ui-confirm'));
+  assert.ok(boxes.some((x) => !hasClasses(x, '.ui-confirm--row')), 'a confirm box');
+  assert.ok(boxes.some((x) => hasClasses(x, '.ui-confirm--row')), 'the row variant');
+  assert.ok(t.some((x) => hasClasses(x, '.ui-confirm__title')), 'a heading');
+  assert.match(part, /<td colspan="\d+"><div class="ui-confirm ui-confirm--row"/, 'the row variant in a table row');
+  assert.match(part, /<div class="ui-actions ui-actions--row"><button type="button" class="ui-button ui-button--danger">Confirm<\/button><button type="button" class="ui-button ui-button--secondary">Cancel<\/button><\/div>/, 'Confirm, then Cancel');
+  for (const [tone, icon] of [['warn', 'info'], ['warn', 'warning'], ['err', 'warning']]) {
+    assert.ok(t.some((x) => hasClasses(x, `.ui-note.ui-note--${tone}`) && x.attrs['data-icon'] === icon), `a ${tone} note with the ${icon} icon`);
+  }
+  assert.ok(t.some((x) => hasClasses(x, '.ui-text.ui-text--success')), 'a valid code\'s line');
+});
+
+test('in a browser, the gallery\'s confirm box and notes draw as J-Components does', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+    await page.goto(`${base}/dev/components.html`);
+    await page.evaluate(() => globalThis.galleryReady);
+    const got = await page.evaluate(() => {
+      const cs = (el) => getComputedStyle(el);
+      const box = document.querySelector('#g-feedback .ui-confirm:not(.ui-confirm--row)');
+      const note = (sel) => {
+        const el = document.querySelector(sel);
+        const s = cs(el);
+        const i = el.querySelector(':scope > .ui-icon').getBoundingClientRect();
+        return { bg: s.backgroundColor, ink: s.color, radius: s.borderRadius, padding: s.padding, size: s.fontSize, weight: s.fontWeight, icon: [i.width, i.height], first: el.firstElementChild.classList.contains('ui-icon') };
+      };
+      const token = (n) => { const d = document.createElement('div'); d.style.color = `var(${n})`; document.body.append(d); const c = cs(d).color; d.remove(); return c; };
+      const actions = [...box.querySelectorAll('.ui-actions .ui-button')].map((b) => b.getBoundingClientRect());
+      return {
+        box: { bg: cs(box).backgroundColor, radius: cs(box).borderRadius, padding: cs(box).padding, gap: cs(box).rowGap, shadow: cs(box).boxShadow, border: cs(box).borderTopWidth },
+        text: { size: cs(box.querySelector('.ui-confirm__text')).fontSize, weight: cs(box.querySelector('.ui-confirm__text')).fontWeight, ink: cs(box.querySelector('.ui-confirm__text')).color },
+        title: cs(box.querySelector('.ui-confirm__title')).fontSize,
+        sideBySide: actions.length === 2 && Math.abs(actions[0].top - actions[1].top) < 1 && actions[0].right < actions[1].left,
+        warn: note('#g-feedback .ui-note--warn'),
+        err: note('#g-feedback .ui-note--err'),
+        tokens: { dangerFill: token('--color-danger-fill'), danger: token('--color-danger'), warningFill: token('--color-warning-fill'), warning: token('--color-warning'), ink: token('--color-ink') },
+      };
+    });
+    assert.deepEqual(got.box, { bg: got.tokens.dangerFill, radius: '16px', padding: '16px 18px', gap: '12px', shadow: 'none', border: '0px' });
+    assert.deepEqual(got.text, { size: '17px', weight: '700', ink: got.tokens.ink });
+    assert.equal(got.title, '24px');
+    assert.ok(got.sideBySide, 'the danger action, then Cancel, side by side');
+    assert.match(read('js/main.js'), /applyIcons\(document\.body\)/, 'the game draws the icons its markup names');
+    for (const [name, bg, ink] of [['warn', got.tokens.warningFill, got.tokens.warning], ['err', got.tokens.dangerFill, got.tokens.danger]]) {
+      assert.deepEqual(got[name], { bg, ink, radius: '8px', padding: '6px 10px', size: '14px', weight: '700', icon: [16, 16], first: true }, `the ${name} note`);
+    }
+  } finally {
+    await browser.close();
+  }
+});
+
 // ---------------------------------------------------------------- the shared layout's components
 
 const LAYOUT = section(GALLERY, '<!-- components: shared layout -->', '<!-- /components: shared layout -->');
@@ -2027,7 +2175,7 @@ test('the gallery marks the shared layout\'s components; the main menu, both boa
     assert.match(game2d, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the Classic 2D game window uses ${cls}`);
   }
   for (const html of [noscript, fatal]) for (const cls of ['ui-backdrop', 'ui-card', 'ui-card__icon', 'ui-card__title']) assert.match(html, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the message cards use ${cls}`);
-  for (const cls of ['ui-card', 'ui-screen', 'ui-button--lg', 'ui-button--sm', 'ui-key-hint', 'ui-section-label', 'ui-panel--muted', 'ui-banner', 'ui-text--warning']) {
+  for (const cls of ['ui-card', 'ui-screen', 'ui-button--lg', 'ui-button--sm', 'ui-key-hint', 'ui-section-label', 'ui-panel--muted', 'ui-banner', 'ui-note--warn']) {
     assert.match(ready, new RegExp(`class="[^"]*\\b${cls}(?![\\w-])`), `the 3D ready card uses ${cls}`);
   }
   for (const cls of ['ui-card', 'ui-screen', 'ui-card__title', 'ui-actions--row', 'ui-key-hint']) {

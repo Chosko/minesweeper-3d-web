@@ -429,8 +429,8 @@ test('index.html builds the 3D board choice from kit components, as the Classic 
   assert.ok(settings.includes(`<p id="bc-noguess-help" class="ui-text ui-text--muted">${NOGUESS_HELP_TEXT}</p>`));
   assert.equal(NOGUESS_HELP_TEXT, 'Solvable by logic alone, no 50/50 guesses. Separate records.');
   const customSettings = settings.slice(settings.indexOf('<div id="bc-custom-settings"'));
-  assert.match(customSettings, /^<div id="bc-custom-settings" class="hidden" data-custom-settings>\s*<p id="c-noguess-reason" class="ui-text ui-text--warning hidden" data-noguess-reason><\/p>\s*<label class="ui-toggle"><input type="checkbox" role="switch" id="c-noguess" class="ui-toggle__input" data-noguess="custom"><span class="ui-toggle__label">No-guess<\/span><\/label>\s*<p id="c-noguess-help" class="ui-text ui-text--muted">Keeps separate records\.<\/p>\s*<p id="c-density-hint" class="ui-text ui-text--muted hidden" data-density-hint><\/p>/,
-    'the custom switch under its reason line, over the density hint');
+  assert.match(customSettings, /^<div id="bc-custom-settings" class="hidden" data-custom-settings>\s*<p id="c-noguess-reason" class="ui-note ui-note--warn hidden" data-icon="info" data-noguess-reason><span class="ui-note__text"><\/span><\/p>\s*<label class="ui-toggle"><input type="checkbox" role="switch" id="c-noguess" class="ui-toggle__input" data-noguess="custom"><span class="ui-toggle__label">No-guess<\/span><\/label>\s*<p id="c-noguess-help" class="ui-text ui-text--muted">Keeps separate records\.<\/p>\s*<p id="c-density-hint" class="ui-note ui-note--warn hidden" data-icon="warning" data-density-hint><span class="ui-note__text"><\/span><\/p>/,
+    'the custom switch under its reason line (a warn note, the info icon), over the density hint (a warn note, the warning icon)');
   const form = right.slice(right.indexOf('<form id="custom"'), right.indexOf('</form>'));
   assert.match(form, /^<form id="custom" class="ui-panel hidden" aria-label="Custom board" novalidate>/, 'the form shows for Custom only');
   for (const [f, id] of [['X', 'c-x'], ['Y', 'c-y'], ['Z', 'c-z'], ['mines', 'c-m']]) {
@@ -442,7 +442,7 @@ test('index.html builds the 3D board choice from kit components, as the Classic 
   assert.ok(info > form.indexOf('id="c-m"') && random > info && refusal > random, 'the fields, the info line, Random, the refusal line');
   assert.match(form, /<p id="c-info" class="ui-text ui-text--muted" data-info>/);
   assert.match(form, /<button type="button" id="c-random" class="ui-button ui-button--secondary ui-button--sm" data-random>Random<\/button>/);
-  assert.match(form, /<p id="c-refusal" class="ui-text ui-text--warning hidden" data-refusal><\/p>/);
+  assert.match(form, /<p id="c-refusal" class="ui-note ui-note--warn hidden" data-icon="warning" data-refusal><span class="ui-note__text"><\/span><\/p>/, 'the refusal, a warn note with its warning icon');
   assert.doesNotMatch(BOARD, /c-start|type="submit"/, 'Play starts a custom board');
   const bests = between(right, '<div id="bc-bests"', '<div id="bc-code-panel"');
   assert.ok(right.indexOf('<div id="bc-bests"') > right.indexOf('</form>'), 'the bests under the form');
@@ -672,6 +672,7 @@ test('both board choices hold a board code field wired to the shell, played with
   for (const [section, prefix] of [['<section id="board-choice"', 'bc'], ['<section id="c2d-choice"', 'c2d']]) {
     const part = html.slice(html.indexOf(section), html.indexOf('</section>\n  </section>', html.indexOf(section)));
     assert.match(part, new RegExp(`<input id="${prefix}-code" data-code-field class="ui-field__input" type="text"`));
+    assert.match(part, new RegExp(`<input id="${prefix}-code"[^>]* placeholder="EN-…">`), 'the canvas\'s placeholder');
     assert.match(part, new RegExp(`<p id="${prefix}-code-info" class="ui-text ui-text--muted" data-code-info>${CODE_PROMPT}</p>`));
   }
   assert.doesNotMatch(html, /data-code-play|Play this board/, 'no button of its own');
@@ -693,7 +694,8 @@ test('in a browser, a board code in a board choice: validated live, the other mo
     const ms = (fn, arg) => page.evaluate(fn, arg);
     const field = (prefix) => ms((p) => ({
       info: document.getElementById(`${p}-code-info`).textContent,
-      warn: document.getElementById(`${p}-code-info`).classList.contains('ui-text--warning'),
+      line: document.getElementById(`${p}-code-info`).className,
+      invalid: document.getElementById(`${p}-code`).classList.contains('is-invalid'),
       disabled: document.getElementById(`${p}-play`).disabled,
     }), prefix);
     const two = encodeBoardCode({ board: { mode: 'classic-2d', grid: 'square', width: 9, height: 9, mines: 10, noGuess: false }, seed: 3, startCell: 40, generatorVersion: 1 });
@@ -704,13 +706,14 @@ test('in a browser, a board code in a board choice: validated live, the other mo
     const shown = (id) => ms((i) => { const e = document.getElementById(i); return !e.closest('.hidden') && e.getBoundingClientRect().height > 0; }, id);
     assert.deepEqual(await Promise.all(['bc-learn-panel', 'bc-settings', 'custom', 'bc-bests', 'bc-code-panel'].map(shown)), [false, false, false, false, true], 'only the code field');
     assert.equal(await ms(() => document.getElementById('bc-summary').textContent), 'Board code · paste a code to play');
-    assert.deepEqual(await field('bc'), { info: CODE_PROMPT, warn: false, disabled: true });
+    assert.deepEqual(await field('bc'), { info: CODE_PROMPT, line: 'ui-text ui-text--muted', invalid: false, disabled: true });
     await page.fill('#bc-code', 'nonsense');
-    assert.deepEqual(await field('bc'), { info: CODE_REASONS.malformed, warn: true, disabled: true });
+    assert.deepEqual(await field('bc'), { info: CODE_REASONS.malformed, line: 'ui-note ui-note--err', invalid: true, disabled: true }, 'refused: an err note, the field invalid');
     await page.fill('#bc-code', two);
-    assert.deepEqual(await field('bc'), { info: otherModeHint('classic-2d'), warn: true, disabled: true });
+    assert.deepEqual(await field('bc'), { info: otherModeHint('classic-2d'), line: 'ui-note ui-note--warn', invalid: false, disabled: true }, 'the other mode: a warn note');
     await page.fill('#bc-code', three.toLowerCase());
     assert.equal((await field('bc')).disabled, false);
+    assert.equal((await field('bc')).line, 'ui-text ui-text--success', 'accepted: the success line');
     assert.match((await field('bc')).info, /^Cube Intro · a challenge, not eligible for bests$/);
     assert.equal(await ms(() => document.getElementById('bc-summary').textContent), 'Board code · Cube Intro');
     await page.click('#bc-play');

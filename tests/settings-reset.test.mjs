@@ -7,7 +7,7 @@ import { createBlobStore } from '../js/platform/blob-store.js';
 import { createMemoryBlobStore } from '../js/platform/memory-blob-store.js';
 import { createReplayLibrary, LIBRARY_DOC } from '../js/replay/library.js';
 import { LEGACY_KEYS } from '../js/settings/store.js';
-import { createReset, RESET_KEYS, FIRST_USE_LEGACY_KEY } from '../js/settings/reset.js';
+import { createReset, RESET_KEYS, FIRST_USE_LEGACY_KEY, RESET_FAILURE } from '../js/settings/reset.js';
 
 const raw = (version, data) => JSON.stringify({ version, data });
 const bytes = (n) => new Uint8Array([n, n + 1, n + 2]);
@@ -118,6 +118,10 @@ test('with storage unavailable for the session, the reset still clears what exis
   assert.equal(f.memory.documents.size, 0);
 });
 
+test('a failed reset says one line, whatever part failed: the data could not be deleted, close the game\'s other tabs and try again', () => {
+  assert.equal(RESET_FAILURE, 'The data could not be deleted. Close other tabs of the game and try again.');
+});
+
 test('documents that cannot be cleared: the failure is said, the rest is cleared, no reload', async () => {
   const f = fixture();
   const storage = { ...f.storage, clear: async () => ({ ok: false, reason: 'write-failed' }) };
@@ -125,7 +129,7 @@ test('documents that cannot be cleared: the failure is said, the rest is cleared
   const result = await reset.run();
   assert.equal(result.ok, false);
   assert.deepEqual(result.failed, ['documents']);
-  assert.match(result.message, /^Records, game history, settings, last board choices and first-use hints could not be deleted\. The rest was deleted\.$/);
+  assert.equal(result.message, RESET_FAILURE);
   assert.equal(f.reloads.length, 0);
   assert.equal(f.implementation.blobs.size, 0, 'the replays went');
   assert.deepEqual([...f.keys.map.keys()], [...Object.keys(UNREAD), 'other-app'], 'the keys went');
@@ -138,7 +142,7 @@ test('replays that cannot be listed or deleted: the failure is said, the rest is
     const result = await reset.run();
     assert.equal(result.ok, false);
     assert.deepEqual(result.failed, ['replays'], JSON.stringify(blobs));
-    assert.equal(result.message, 'Replays could not be deleted. The rest was deleted.');
+    assert.equal(result.message, RESET_FAILURE);
     assert.equal(f.reloads.length, 0);
     assert.equal(f.memory.documents.size, 0, 'the documents went');
   }
@@ -159,7 +163,7 @@ test('a legacy key whose removal throws is a failure: the old settings stay, no 
   const reset = createReset({ storage: f.storage, blobStore: f.blobStore, legacy: f.keys, reload: f.reload });
   const result = await reset.run();
   assert.deepEqual(result.failed, ['keys']);
-  assert.equal(result.message, 'Old settings could not be deleted. The rest was deleted.');
+  assert.equal(result.message, RESET_FAILURE);
   assert.equal(f.reloads.length, 0);
   assert.ok(!f.keys.map.has('ms3d.muted'), 'the other keys went');
 });

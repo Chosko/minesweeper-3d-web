@@ -83,6 +83,10 @@ test('the pause sources, the automatic ones, the hand-offs and the confirmations
   assert.deepEqual([...HAND_OFFS], ['finished', 'abandoned', 'inProgress']);
   for (const c of Object.values(CONFIRMATIONS)) assert.match(c.message, /count as a loss/);
   assert.deepEqual(Object.keys(CONFIRMATIONS), ['restart', 'menu']);
+  // Restart and Main menu ask the same: the canvas's heading, its line and its plain Confirm.
+  for (const [action, c] of Object.entries(CONFIRMATIONS)) {
+    assert.deepEqual({ ...c }, { action, title: 'Leave this game?', message: 'This game will count as a loss.', confirmLabel: 'Confirm' }, action);
+  }
 });
 
 // ---------------------------------------------------------------- pause rules
@@ -524,13 +528,15 @@ test('the leave-page guard is a listener armed and disarmed by the controller', 
   assert.doesNotMatch(MAIN, /addEventListener\('beforeunload', \(e\)/, 'no always-on beforeunload handler');
 });
 
-test('the pause card holds the confirmation built from kit classes: its message, then the action as danger beside Cancel', () => {
+test('the pause card holds the confirmation in a confirm box: its heading and message, then the action as danger beside Cancel', () => {
   const html = read('index.html');
   const card = html.slice(html.indexOf('<section id="pause"'), html.indexOf('<noscript>'));
   const confirm = card.slice(card.indexOf('id="pause-confirm"'), card.indexOf('<aside id="pause-list"'));
   assert.ok(card.includes('id="pause-confirm"'), 'a confirmation panel in the pause card');
-  assert.match(confirm, /<p id="pause-confirm-text" class="ui-text">[^<]*<\/p>\s*<div class="ui-actions ui-actions--row">\s*<button id="p-confirm-yes" class="ui-button ui-button--danger" type="button">Confirm<\/button>\s*<button id="p-confirm-no" class="ui-button ui-button--secondary" type="button">Cancel<\/button>/,
-    'the message, then the action (danger) and Cancel side by side');
+  assert.match(confirm, /^id="pause-confirm" class="ui-confirm hidden" role="alertdialog" aria-labelledby="pause-confirm-title" aria-describedby="pause-confirm-text">/, 'a confirm box, named by its heading');
+  assert.match(confirm, /<h3 id="pause-confirm-title" class="ui-confirm__title">Leave this game\?<\/h3>\s*<p id="pause-confirm-text" class="ui-confirm__text">This game will count as a loss\.<\/p>\s*<div class="ui-actions ui-actions--row">\s*<button id="p-confirm-yes" class="ui-button ui-button--danger" type="button">Confirm<\/button>\s*<button id="p-confirm-no" class="ui-button ui-button--secondary" type="button">Cancel<\/button>/,
+    'the heading and message, then the action (danger) and Cancel side by side');
+  assert.match(read('js/ui.js'), /this\.el\.confirmTitle\.textContent = title;/, 'the card writes the confirmation\'s heading');
   assert.match(MAIN, /paused: \{[^\n]*'#p-confirm-no'/, 'an open confirmation focuses Cancel');
   // Cancel or Back refocuses through the router's hand-off, which lifts the confirmation's containment first.
   assert.match(MAIN, /ui\.showConfirm\(request, proceed, \(\) => SHELL\.refocus\(\)\)/, 'Cancel refocuses the card\'s default');

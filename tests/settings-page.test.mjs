@@ -455,7 +455,8 @@ test('the page ends, after Bindings, with a Data panel: the export offered first
   assert.match(panel, /^<section class="ui-panel ui-actions" id="settings-data" data-section="data" aria-labelledby="set-sec-data"><div class="ui-section-label"><h3 class="ui-section-label__text" id="set-sec-data">Data<\/h3><\/div>/);
   assert.match(panel, /<p class="ui-text ui-text--muted">[^<]*this browser[^<]*<\/p>/, 'one line saying what the action does');
   assert.match(panel, /<button type="button" class="ui-button ui-button--secondary" id="set-reset">Reset all data…<\/button>/);
-  assert.match(panel, /<p class="ui-text ui-text--warning hidden" id="set-reset-note" role="status"><\/p>/);
+  assert.match(panel, /<button type="button" class="ui-button ui-button--secondary" id="set-reset">Reset all data…<\/button><p class="ui-note ui-note--err hidden" id="set-reset-note" role="status" data-icon="warning"><span class="ui-note__text"><\/span><\/p>/,
+    'the failure, an err note with its warning icon, under the Reset button');
   assert.ok(panel.trimEnd().endsWith('</section></div></div>'), 'the page ends with it, closing its column and the composition');
   assert.ok(panel.includes(`<p class="ui-text ui-text--muted" id="set-export-text">${EXPORT_LINE}</p>`), 'a line saying what the exports save');
   assert.match(EXPORT_LINE, /CSV/);
@@ -485,10 +486,10 @@ test('the confirmation names every kind of data that goes, says it cannot be und
   assert.doesNotMatch(RESET_MESSAGE, /export|loss/i);
   const html = settingsPageHtml();
   const confirm = html.slice(html.indexOf('id="set-reset-confirm"') - 60);
-  assert.match(confirm, /<div class="ui-panel ui-actions hidden" id="set-reset-confirm" role="alertdialog" aria-labelledby="set-reset-text">/);
-  assert.ok(confirm.includes(`<p class="ui-text" id="set-reset-text">${RESET_MESSAGE}</p>`));
-  assert.match(confirm, /<button type="button" class="ui-button ui-button--danger" id="set-reset-yes">Reset all data<\/button>/);
-  assert.match(confirm, /<button type="button" class="ui-button ui-button--secondary" id="set-reset-no">Cancel<\/button>/);
+  assert.match(confirm, /<div class="ui-confirm hidden" id="set-reset-confirm" role="alertdialog" aria-labelledby="set-reset-text">/, 'a confirm box');
+  assert.ok(confirm.includes(`<p class="ui-confirm__text" id="set-reset-text">${RESET_MESSAGE}</p>`));
+  assert.match(confirm, /<div class="ui-actions ui-actions--row"><button type="button" class="ui-button ui-button--danger" id="set-reset-yes" data-icon="trash">Reset all data<\/button><button type="button" class="ui-button ui-button--secondary" id="set-reset-no">Cancel<\/button><\/div><\/div>/,
+    'the danger md action with its trash icon beside Cancel');
 });
 
 // A fake element with a class list and focus, for the Data panel's binder.
@@ -515,8 +516,11 @@ function panelFake() {
   };
   const els = {
     open: el('set-reset'), panel: el('set-reset-confirm', 'hidden'), yes: el('set-reset-yes'), no: el('set-reset-no'),
-    note: el('set-reset-note', 'hidden'),
+    note: el('set-reset-note', 'ui-note ui-note--err hidden'),
   };
+  // The note's text part, which the binder writes (setNote).
+  els.note.text = { textContent: '' };
+  els.note.querySelector = (sel) => (sel === ':scope > .ui-note__text' ? els.note.text : null);
   return { els, focused: () => focused };
 }
 
@@ -554,7 +558,7 @@ test('Back (close) closes the open confirmation first and returns focus; with no
 
 test('confirming runs the reset once; a failure replaces the confirmation with the warning and the action stays', async () => {
   const { els, focused } = panelFake();
-  const results = [{ ok: false, failed: ['replays'], message: 'Replays could not be deleted. The rest was deleted.' }, { ok: true }];
+  const results = [{ ok: false, failed: ['replays'], message: 'The data could not be deleted. Close other tabs of the game and try again.' }, { ok: true }];
   let runs = 0;
   const panel = bindResetPanel(els, { reset: async () => results[runs++] });
   els.open.click();
@@ -564,7 +568,7 @@ test('confirming runs the reset once; a failure replaces the confirmation with t
   assert.equal(runs, 1);
   assert.equal(panel.isOpen(), false);
   assert.equal(els.note.hidden, false);
-  assert.equal(els.note.textContent, 'Replays could not be deleted. The rest was deleted.');
+  assert.equal(els.note.text.textContent, 'The data could not be deleted. Close other tabs of the game and try again.');
   assert.equal(els.open.hidden, false, 'the action stays available');
   assert.equal(els.open.disabled, false);
   assert.equal(focused(), 'set-reset');
@@ -583,7 +587,7 @@ test('a reset that throws is said as a failure, never left hanging', async () =>
   await tick();
   assert.equal(panel.isOpen(), false);
   assert.equal(els.note.hidden, false);
-  assert.match(els.note.textContent, /could not be deleted/);
+  assert.equal(els.note.text.textContent, 'The data could not be deleted. Close other tabs of the game and try again.');
 });
 
 test('the shell wires the reset: the replay library\'s load awaited, the reload flagged, Back closes the confirmation first', () => {

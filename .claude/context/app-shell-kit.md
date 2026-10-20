@@ -14,7 +14,7 @@ screens' markup in `index.html` and the shell stylesheet are
 | ---- | -------------- |
 | `css/components.css` | the component kit's structure (base stylesheet): `ui-*` classes, layout, sizes, the hidden default of every decoration slot; its head comment is the catalogue (element, role, accessible name, markup pattern, states, focus contract, screens built from them) |
 | `js/ui/kit-catalogue.js` | the kit catalogue as data (DOM-free): every component and composition, its parts, each interactive part's states as the selectors a theme styles, its decoration slots; `CONTRAST_ROLES`; `REQUIRED_TOKENS`, the token set every theme declares |
-| `dev/components.html` | the kit gallery (development only): every catalogued component in every state (`data-force` previews) and every decoration slot, the icon set and a button of each size with its icon, the overlay bar, the counters and the figures panel (with and without its progress bar and pace row, and with its head bar), the results layout `#g-results`, under the theme picked in `#g-theme` or named by `?theme=<id>` (unknown → the default) |
+| `dev/components.html` | the kit gallery (development only): every catalogued component in every state (`data-force` previews) and every decoration slot, the icon set and a button of each size with its icon, the confirm box (with its heading, text only, and as a table row) and the notes, the overlay bar, the counters and the figures panel (with and without its progress bar and pace row, and with its head bar), the results layout `#g-results`, under the theme picked in `#g-theme` or named by `?theme=<id>` (unknown → the default) |
 
 ## PUBLIC API
 
@@ -39,7 +39,9 @@ inked while the switch is locked) and the shared layout's components: `ui-button
 `ui-option--learn`), `ui-section-label`, `ui-key-hint`, `ui-chip`,
 `ui-list-row`, `ui-scene-panel` (`stage`, `tag`, `card`, `badge`, `name`,
 `note`; variant `ui-scene-panel--live`), `ui-divider`, `ui-tabs`,
-`ui-checkbox`, `ui-table`, `ui-toast`, a message `ui-card`'s `icon`, and
+`ui-checkbox`, `ui-table`, `ui-toast`, the confirm box `ui-confirm`
+(`title`, optional, and `text`; variant `ui-confirm--row`), the note
+`ui-note` (variants `ui-note--warn`, `ui-note--err`), a message `ui-card`'s `icon`, and
 the compositions `ui-mode-list`, `ui-options`, `ui-key-hints`, `ui-list`;
 and the in-game components: the counter readout `ui-counter` (`icon`,
 optional, and `digits`; `data-negative` below zero), `ui-counter-strip`
@@ -95,6 +97,18 @@ control around it inks.
   [app-shell-kit-helpers.md](app-shell-kit-helpers.md)'s. The icons already
   in `index.html` (Restart, Pause, Swap clicks) are inline svg outside the
   set.
+- **The confirm box and the notes.** Every confirmation is a `ui-confirm`
+  — the danger fill, an optional heading, its text, then a
+  `ui-actions--row` of the danger action beside Cancel: the pause card's,
+  Settings' Reset all data, and the Records replay delete as a
+  `ui-confirm--row` filling a table row's one cell. A refusal, a hint or a
+  notice is a `ui-note--warn`, a refused value or a failure a
+  `ui-note--err`, each led by an icon of the set named by its `data-icon`
+  (the info icon for a notice, the warning icon for a refusal or a
+  failure) in the note's ink; a script writes its text with `setNote`
+  ([app-shell-kit-helpers.md](app-shell-kit-helpers.md)), which also turns
+  the board code field's line between a plain line and a note. An
+  accepted code's line is `ui-text--success`.
 - **The slider's fill.** The theme draws a slider's track filled from its
   start to the thumb by `--slider-fill`, which the kit's fill updater
   (`bindSliderFill`, [app-shell-kit-helpers.md](app-shell-kit-helpers.md))

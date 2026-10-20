@@ -43,7 +43,7 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
     `setBoardStatus`; 3D `setBoardStatus3D` (progress by `progressLine`);
   - menu: `setLastMode` (the Last played chip), `setEntryUnavailable`,
     `setBuild` (the build label);
-  - confirmations: `showConfirm({message, confirmLabel}, onYes, onNo)`,
+  - confirmations: `showConfirm({title, message, confirmLabel}, onYes, onNo)`,
     `isConfirmOpen`, `closeConfirm`, `closeResetConfirm` (→ false when none
     is open);
   - HUD: `setBoard` (the 3D title and the pause card's board line),

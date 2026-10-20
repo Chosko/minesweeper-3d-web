@@ -43,7 +43,7 @@ import { panelRect, mountBoardView, BOARD_FRAME } from './classic2d/board-view.j
 import { createViewer3D } from './replay/viewer-3d.js';
 import { REPLAY_SCREEN } from './records/replay-list.js';
 import { createResultsView, resultsContent, resultsEnter, LOOK_REFUSED } from './results/view.js';
-import { copyBoardCode } from './ui/components.js';
+import { copyBoardCode, applyIcons } from './ui/components.js';
 import { DAILY_SCREEN, dailyModes, dailyPanel, createDailyBoards, bindDailyScreen, countedAttempt, dailyPreview } from './shell/daily.js';
 import { resolveCode, gameStart, freeStart, createChallengeLinks } from './shell/challenge.js';
 import { dailyGame, dateText } from './records/board-code.js';
@@ -424,6 +424,8 @@ const ui = new UI({
 });
 ui.setNoMouse(NO_MOUSE, COARSE_ONLY);
 ui.setTouch3D(COARSE_ONLY);
+// The icons the screens' markup names (data-icon), the Settings page's included once the UI built it.
+applyIcons(document.body);
 
 // ---------- active device ----------
 // The controller while the last input came from a connected controller, else the keyboard and
@@ -775,7 +777,7 @@ function playChallenge({ board, seed, startCell }, source) { startForced(gameSta
 /** A board choice's code field, validated live: the reason a code is refused, or what it opens. */
 function checkCode(text, mode) {
   const r = resolveCode(text, { mode });
-  if (r.kind === 'refused') return { ok: false, reason: r.reason };
+  if (r.kind === 'refused') return { ok: false, reason: r.reason, otherMode: !!r.otherMode };
   if (r.kind === 'daily') return { ok: true, text: 'Today\'s daily board — it opens the Daily screen.', label: 'Today\'s daily board' };
   return { ok: true, text: `${boardLabel(r.parsed.board)} · a challenge, not eligible for bests`, label: boardLabel(r.parsed.board) };
 }

@@ -57,7 +57,7 @@
             <div class="ui-section-label"><h3 class="ui-section-label__text">Board settings</h3></div>
             <label class="ui-toggle"><input type="checkbox" role="switch" id="c2d-noguess" class="ui-toggle__input" data-noguess><span class="ui-toggle__label">No-guess</span></label>
             <p id="c2d-noguess-help" class="ui-text ui-text--muted">Solvable by logic alone, no 50/50 guesses. Separate records.</p>
-            <p id="c2d-density-hint" class="ui-text ui-text--muted hidden" data-density-hint></p>
+            <p id="c2d-density-hint" class="ui-note ui-note--warn hidden" data-icon="warning" data-density-hint><span class="ui-note__text"></span></p>
           </div>
           <form id="c2d-custom" class="ui-panel hidden" aria-label="Custom board" novalidate>
             <div class="ui-row">
@@ -67,7 +67,7 @@
             </div>
             <p id="c2d-info" class="ui-text ui-text--muted" data-info>480 cells &middot; up to 99 mines</p>
             <div class="ui-actions ui-actions--row"><button type="button" id="c2d-random" class="ui-button ui-button--secondary ui-button--sm" data-random>Random</button></div>
-            <p id="c2d-refusal" class="ui-text ui-text--warning hidden" data-refusal></p>
+            <p id="c2d-refusal" class="ui-note ui-note--warn hidden" data-icon="warning" data-refusal><span class="ui-note__text"></span></p>
           </form>
           <div id="c2d-bests" data-bests>
             <hr class="ui-divider">
@@ -80,7 +80,7 @@
           </div>
           <div id="c2d-code-panel" class="hidden" role="group" aria-labelledby="c2d-code-title" data-code-panel>
             <div class="ui-section-label"><h3 class="ui-section-label__text" id="c2d-code-title">Board code</h3></div>
-            <label class="ui-field"><span class="ui-field__label">Code</span><input id="c2d-code" data-code-field class="ui-field__input" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+            <label class="ui-field"><span class="ui-field__label">Code</span><input id="c2d-code" data-code-field class="ui-field__input" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="EN-…"></label>
             <p id="c2d-code-info" class="ui-text ui-text--muted" data-code-info>Paste a board code to play that exact board.</p>
           </div>
         </div>
@@ -296,10 +296,10 @@
               <p id="bc-noguess-help" class="ui-text ui-text--muted">Solvable by logic alone, no 50/50 guesses. Separate records.</p>
             </div>
             <div id="bc-custom-settings" class="hidden" data-custom-settings>
-              <p id="c-noguess-reason" class="ui-text ui-text--warning hidden" data-noguess-reason></p>
+              <p id="c-noguess-reason" class="ui-note ui-note--warn hidden" data-icon="info" data-noguess-reason><span class="ui-note__text"></span></p>
               <label class="ui-toggle"><input type="checkbox" role="switch" id="c-noguess" class="ui-toggle__input" data-noguess="custom"><span class="ui-toggle__label">No-guess</span></label>
               <p id="c-noguess-help" class="ui-text ui-text--muted">Keeps separate records.</p>
-              <p id="c-density-hint" class="ui-text ui-text--muted hidden" data-density-hint></p>
+              <p id="c-density-hint" class="ui-note ui-note--warn hidden" data-icon="warning" data-density-hint><span class="ui-note__text"></span></p>
             </div>
           </div>
           <form id="custom" class="ui-panel hidden" aria-label="Custom board" novalidate>
@@ -311,7 +311,7 @@
             </div>
             <p id="c-info" class="ui-text ui-text--muted" data-info>1,000 cells &middot; up to 999 mines</p>
             <div class="ui-actions ui-actions--row"><button type="button" id="c-random" class="ui-button ui-button--secondary ui-button--sm" data-random>Random</button></div>
-            <p id="c-refusal" class="ui-text ui-text--warning hidden" data-refusal></p>
+            <p id="c-refusal" class="ui-note ui-note--warn hidden" data-icon="warning" data-refusal><span class="ui-note__text"></span></p>
           </form>
           <div id="bc-bests" data-bests>
             <hr class="ui-divider">
@@ -324,7 +324,7 @@
           </div>
           <div id="bc-code-panel" class="hidden" role="group" aria-labelledby="bc-code-title" data-code-panel>
             <div class="ui-section-label"><h3 class="ui-section-label__text" id="bc-code-title">Board code</h3></div>
-            <label class="ui-field"><span class="ui-field__label">Code</span><input id="bc-code" data-code-field class="ui-field__input" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+            <label class="ui-field"><span class="ui-field__label">Code</span><input id="bc-code" data-code-field class="ui-field__input" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="EN-…"></label>
             <p id="bc-code-info" class="ui-text ui-text--muted" data-code-info>Paste a board code to play that exact board.</p>
           </div>
         </div>
@@ -366,7 +366,7 @@
           <button type="button" id="ready-back" class="ui-button ui-button--secondary ui-button--sm">Back <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>
           <span id="ready-board" class="ready-board">9 &times; 9 &times; 1 &middot; 10 mines</span>
         </div>
-        <p id="ready-msg" class="ui-text ui-text--warning ready-msg"></p>
+        <p id="ready-msg" class="ui-note ui-note--warn ready-msg hidden" data-icon="info"><span class="ui-note__text"></span></p>
         <button id="ready-btn" class="ui-button ui-button--primary ui-button--lg ready-play" type="button"><span class="ready-title" id="ready-title">Click to play</span></button>
         <div id="ready-blocked" class="ready-blocked hidden" role="group" aria-label="Play without mouse capture">
           <button type="button" id="ready-drag" class="ui-button ui-button--primary">Play with drag-to-look</button>
@@ -544,7 +544,7 @@
                   <tbody id="records-replays-body"></tbody>
                 </table>
                 <nav id="records-replays-pager" class="ui-pager hidden" aria-label="Replays pages"></nav>
-                <div id="records-replays-confirm" class="ui-panel ui-actions hidden" role="alertdialog" aria-labelledby="records-replays-confirm-text"><p id="records-replays-confirm-text" class="ui-text"></p><button type="button" id="records-replays-yes" class="ui-button ui-button--danger">Delete replay</button><button type="button" id="records-replays-no" class="ui-button ui-button--secondary">Cancel</button></div>
+                <div id="records-replays-confirm" class="ui-confirm ui-confirm--row hidden" role="alertdialog" aria-labelledby="records-replays-confirm-text"><p id="records-replays-confirm-text" class="ui-confirm__text"></p><div class="ui-actions ui-actions--row"><button type="button" id="records-replays-yes" class="ui-button ui-button--danger ui-button--sm" data-icon="trash">Delete replay</button><button type="button" id="records-replays-no" class="ui-button ui-button--secondary ui-button--sm">Cancel</button></div></div>
               </div>
               <div id="records-leaderboards" class="ui-panel ui-panel--muted hidden" role="tabpanel" aria-labelledby="records-tab-leaderboards">
                 <h4 class="ui-heading">Leaderboards are coming soon</h4>
@@ -767,8 +767,9 @@
             <button id="p-restart" class="ui-button ui-button--secondary" type="button"><span data-label>Restart</span> <span class="ui-key-hint" data-action="restart" aria-hidden="true"></span></button>
             <button id="p-menu" class="ui-button ui-button--secondary" type="button">Main menu</button>
           </div>
-          <div id="pause-confirm" class="ui-panel ui-actions hidden" role="alertdialog" aria-labelledby="pause-confirm-text">
-            <p id="pause-confirm-text" class="ui-text">This game will count as a loss.</p>
+          <div id="pause-confirm" class="ui-confirm hidden" role="alertdialog" aria-labelledby="pause-confirm-title" aria-describedby="pause-confirm-text">
+            <h3 id="pause-confirm-title" class="ui-confirm__title">Leave this game?</h3>
+            <p id="pause-confirm-text" class="ui-confirm__text">This game will count as a loss.</p>
             <div class="ui-actions ui-actions--row">
               <button id="p-confirm-yes" class="ui-button ui-button--danger" type="button">Confirm</button>
               <button id="p-confirm-no" class="ui-button ui-button--secondary" type="button">Cancel</button>

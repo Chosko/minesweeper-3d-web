@@ -46,7 +46,7 @@ test('a code opens a challenge in its mode; today\'s daily code opens the Daily 
 });
 
 test('a board choice refuses the other mode\'s code with a hint naming the right one', () => {
-  assert.deepEqual(resolveCode(code3D, { today: '20261011', mode: 'classic-2d' }), { kind: 'refused', reason: otherModeHint('3d') });
+  assert.deepEqual(resolveCode(code3D, { today: '20261011', mode: 'classic-2d' }), { kind: 'refused', reason: otherModeHint('3d'), otherMode: '3d' }, 'marked as the other mode\'s');
   assert.equal(otherModeHint('3d'), 'This is a 3D board code — enter it on the 3D board choice.');
   assert.equal(resolveCode(code2D, { today: '20261011', mode: 'classic-2d' }).kind, 'challenge');
   assert.equal(resolveCode(code2D, { today: '20261011', mode: '3d' }).reason, otherModeHint('classic-2d'));
@@ -161,6 +161,7 @@ test('a board choice\'s code says what it opens and names its board for the summ
   const check = MAIN.slice(MAIN.indexOf('function checkCode('), MAIN.indexOf('function playCode('));
   assert.ok(check.includes("if (r.kind === 'daily') return { ok: true, text: 'Today\\'s daily board — it opens the Daily screen.', label: 'Today\\'s daily board' };"));
   assert.match(check, /return \{ ok: true, text: `\$\{boardLabel\(r\.parsed\.board\)\} · a challenge, not eligible for bests`, label: boardLabel\(r\.parsed\.board\) \}/);
+  assert.ok(check.includes("if (r.kind === 'refused') return { ok: false, reason: r.reason, otherMode: !!r.otherMode };"), 'the other mode\'s code is told apart from a refused one');
   const index = read('index.html');
   for (const [start, end, option, binder] of [
     ['<section id="c2d-choice"', '<!-- Classic 2D board -->', /<button type="button" class="ui-option" aria-pressed="false" data-size="code" id="c2d-code-option">/, 'js/classic2d/board-choice.js'],

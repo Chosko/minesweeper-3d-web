@@ -128,6 +128,8 @@ kbd {
 :is(#records-games, #records-replays-table, #records-top-table, #records-averages-table) :is(th, td):first-child { text-align: left; }
 #rec-time .ui-button, #rec-bbbvPerSecond .ui-button, #rec-efficiency .ui-button, :is(#records-replays-table, #records-top-table) td .ui-button { white-space: nowrap; }
 #records-replays-table td .ui-button { margin: var(--space-1) 0 var(--space-1) var(--space-2); }
+#records-replays-table td:has(> .ui-confirm--row) { padding: 0; }
+#records-replays-table .ui-confirm .ui-button { margin: 0; }
 #records-export-note { flex-basis: 100%; }
 #records-averages-table :is(th, td) { white-space: nowrap; padding-inline: var(--space-1); }
 :is(#records-games, #records-replays-table, #records-top-table) td[data-label="Time"] { white-space: nowrap; }
@@ -214,7 +216,7 @@ kbd {
 }
 
 /* ---------- the 3D ready card ---------- */
-/* A kit card over the scene: Back with its key hint beside the board line, the refusal's warning line,
+/* A kit card over the scene: Back with its key hint beside the board line, the refusal's warn note,
    Click to play as the one large action, the drag-to-look offer once the lock is blocked, the "How 3D
    works" panel, the Learn 3D line, then the device's key list in rows and the fullscreen tip. Narrower
    below a 1200 px window; on a phone held sideways the actions and the lists sit side by side. On a
@@ -241,7 +243,6 @@ kbd {
 .ready-touch { display: none; }
 .ready--touch .ready-keys, .ready--touch .ready-tip { display: none; }
 .ready-tip { font-size: var(--font-size-xs); }
-.ready-msg:empty { display: none; }
 @media (max-width: 1199px) { .ready-body { width: min(560px, 100%); } }
 @media (max-width: 719px) { .ready-body { padding: var(--space-4); } }
 @media (max-height: 500px) and (orientation: landscape) {

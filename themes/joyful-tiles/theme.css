@@ -499,6 +499,17 @@
   box-shadow: inset 0 0 0 2px var(--color-border), 0 var(--edge-md) 0 var(--color-edge);
 }
 :root[data-theme="joyful-tiles"] .ui-panel--muted { background: var(--color-surface-sunk); }
+/* the confirm box: the danger fill, no border and no drop; a table row of it, square */
+:root[data-theme="joyful-tiles"] .ui-confirm {
+  border-radius: var(--radius-lg);
+  background: var(--color-danger-fill);
+}
+:root[data-theme="joyful-tiles"] .ui-confirm--row { border-radius: 0; }
+:root[data-theme="joyful-tiles"] .ui-confirm__title, :root[data-theme="joyful-tiles"] .ui-confirm__text { color: var(--color-ink); }
+/* the notes: warn in the warning ink on its fill, err in the danger colour on its fill */
+:root[data-theme="joyful-tiles"] .ui-note { border-radius: var(--radius-sm); }
+:root[data-theme="joyful-tiles"] .ui-note--warn { background: var(--color-warning-fill); color: var(--color-warning); }
+:root[data-theme="joyful-tiles"] .ui-note--err { background: var(--color-danger-fill); color: var(--color-danger); }
 :root[data-theme="joyful-tiles"] .ui-toast {
   border-radius: var(--radius-lg);
   background: var(--color-ink);
@@ -1057,6 +1068,7 @@
 :root[data-theme="joyful-tiles"] .ui-text { color: var(--color-ink); }
 :root[data-theme="joyful-tiles"] .ui-text--muted { color: var(--color-ink-muted); }
 :root[data-theme="joyful-tiles"] .ui-text--warning { color: var(--color-warning); }
+:root[data-theme="joyful-tiles"] .ui-text--success { color: var(--color-success); }
 
 /* ---------- replay seek bar ---------- */
 :root[data-theme="joyful-tiles"] .replay-seek::before { border-radius: var(--radius-pill); background: var(--color-line); }

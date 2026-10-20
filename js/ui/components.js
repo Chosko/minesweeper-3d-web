@@ -1,7 +1,7 @@
 // Behaviour helpers for the component kit (css/components.css): the slider's
 // value display and fill, the segmented choice's and the tabs' selection, the one selected control
 // under a moving mouse, the key hints, the figures panel's live part, the pager, the icon set with
-// the button's leading icon, and the code chip. The logic is plain
+// the button's and the note's leading icon, the note's text, and the code chip. The logic is plain
 // functions; the binders touch only the elements they are handed, so the
 // module needs no document and runs under Node with stub elements.
 
@@ -507,8 +507,9 @@ export function createIcon(doc, name) {
 }
 
 /**
- * The leading-icon slot: puts the icon `name` before `button`'s label, replacing the icon it led
- * with, or removes it (name null). The label stays the button's name. Returns the icon or null.
+ * The leading-icon slot: puts the icon `name` before `button`'s label — or a note's text — replacing
+ * the icon it led with, or removes it (name null). The label stays the button's name. Returns the
+ * icon or null.
  */
 export function setButtonIcon(button, name) {
   for (const old of button.querySelectorAll(':scope > .ui-icon')) old.remove();
@@ -518,12 +519,44 @@ export function setButtonIcon(button, name) {
   return svg;
 }
 
-/** Fills every `.ui-button[data-icon]` under `root` that has no icon yet with its leading icon. */
+/** Fills every `.ui-button[data-icon]` and `.ui-note[data-icon]` under `root` that has no icon yet with its leading icon. */
 export function applyIcons(root) {
-  for (const button of root.querySelectorAll('.ui-button[data-icon]')) {
+  for (const button of root.querySelectorAll('.ui-button[data-icon], .ui-note[data-icon]')) {
     if (button.querySelector(':scope > .ui-icon')) continue;
     setButtonIcon(button, button.getAttribute('data-icon'));
   }
+}
+
+/** The note tones: ui-note--warn (a refusal, a hint) and ui-note--err (a refused code, a failure). */
+export const NOTE_TONES = Object.freeze(['warn', 'err']);
+
+/**
+ * A note's text: setNote(el, text, { tone?, icon? }) writes `text` into el's .ui-note__text, after its
+ * leading icon (made on first use, in place of any plain text el held). `tone` ('warn' | 'err' |
+ * null) makes el that note, or a plain line again with null; `icon` (a name or null) sets its leading
+ * icon and data-icon. Either left out keeps what el has.
+ */
+export function setNote(el, text, { tone, icon } = {}) {
+  let span = el.querySelector(':scope > .ui-note__text');
+  if (!span) {
+    span = el.ownerDocument.createElement('span');
+    span.className = 'ui-note__text';
+    el.textContent = '';
+    for (const old of el.querySelectorAll(':scope > .ui-icon')) old.remove();
+    el.append(span);
+    if (icon === undefined && el.getAttribute('data-icon')) setButtonIcon(el, el.getAttribute('data-icon'));
+  }
+  span.textContent = text;
+  if (tone !== undefined) {
+    el.classList.toggle('ui-note', !!tone);
+    for (const t of NOTE_TONES) el.classList.toggle(`ui-note--${t}`, tone === t);
+  }
+  if (icon !== undefined) {
+    if (icon) el.setAttribute('data-icon', icon);
+    else el.removeAttribute('data-icon');
+    setButtonIcon(el, icon);
+  }
+  return el;
 }
 
 /**

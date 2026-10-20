@@ -16,8 +16,9 @@
 //
 //   run() → Promise of { ok: true } once reload() was called, or { ok: false, failed, message }
 //           where failed lists what could not be deleted ('documents', 'replays', 'keys') and
-//           message says so for the player. Every part is attempted whatever fails before it, and
-//           nothing reloads after a failure, so the player can try again. Never rejects.
+//           message is RESET_FAILURE, the one line the player is told whatever failed. Every part is
+//           attempted whatever fails before it, and nothing reloads after a failure, so the player
+//           can try again. Never rejects.
 
 import { LEGACY_KEYS } from './store.js';
 
@@ -31,11 +32,8 @@ export const FIRST_USE_LEGACY_KEY = 'ms3d.hintH.done';
  */
 export const RESET_KEYS = Object.freeze([...Object.values(LEGACY_KEYS), FIRST_USE_LEGACY_KEY]);
 
-const FAILURE_LINES = Object.freeze({
-  documents: 'Records, game history, settings, last board choices and first-use hints could not be deleted.',
-  replays: 'Replays could not be deleted.',
-  keys: 'Old settings could not be deleted.',
-});
+/** What the player is told when any part of a reset fails. */
+export const RESET_FAILURE = 'The data could not be deleted. Close other tabs of the game and try again.';
 
 const browserLegacy = {
   remove(key) {
@@ -48,12 +46,6 @@ const browserLegacy = {
     local?.removeItem(key);
   },
 };
-
-export function failureMessage(failed) {
-  const lines = failed.map((part) => FAILURE_LINES[part]);
-  if (failed.length < Object.keys(FAILURE_LINES).length) lines.push('The rest was deleted.');
-  return lines.join(' ');
-}
 
 export function createReset({ storage, blobStore, legacy = browserLegacy, waitFor = () => {}, reload }) {
   async function clearDocuments() {
@@ -104,7 +96,7 @@ export function createReset({ storage, blobStore, legacy = browserLegacy, waitFo
     if (!(await clearDocuments())) failed.push('documents');
     if (!(await clearReplays())) failed.push('replays');
     if (!clearKeys()) failed.push('keys');
-    if (failed.length > 0) return { ok: false, failed, message: failureMessage(failed) };
+    if (failed.length > 0) return { ok: false, failed, message: RESET_FAILURE };
     reload();
     return { ok: true };
   }
