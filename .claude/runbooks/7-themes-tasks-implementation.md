@@ -754,7 +754,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on named struck steps 21, 22; lacked the edges to tasks 177, 178, its preconditions; lacked the order against task 173, which edits the same files; replaced by step 71.
 
-## [~] 71. Implement task 179 — Update documentation for feature `in-game-layout`
+## [x] 71. Implement task 179 — Update documentation for feature `in-game-layout`
 
 Depends on: 18, 66, 67, 68, 69, 70
 
@@ -766,6 +766,8 @@ Context:
 ```prompt
 /task-implement 179 --review
 ```
+
+Done: 2026-10-20, commit `d4783dd` (18 files, +278/-153). Premise wrong: the feature document's Open questions section was already gone, so there were no artboards to drop from it.
 
 ## [x] 24. Implement task 180 — Tile recipe drawing styles: flat and bevel, with corner radius and depth
 
