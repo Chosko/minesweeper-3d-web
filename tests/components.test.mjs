@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import {
   decimalsOf, formatSliderValue, segmentedTargetIndex, segmentedState,
   bindSlider, bindSegmented, bindTabs, initComponents, formatOverlayTime, formatMineCount, mineCounterDigits, pagerState, PAGER_WINDOW,
-  boardLink, copyBoardCode, bindCodeChip, COPY_FALLBACK, COPIED, bindCodeField, bindSelectOnHover, SELECT_ON_HOVER,
+  boardLink, copyBoardCode, bindCodeChip, COPY_FALLBACK, COPIED, bindSelectOnHover, SELECT_ON_HOVER,
   bindFiguresLive, LIVE_FIGURES_INTERVAL, bindFigures,
 } from '../js/ui/components.js';
 import { KIT_CATALOGUE } from '../js/ui/kit-catalogue.js';
@@ -999,38 +999,6 @@ test('code chip: the challenge link, Copy and Copy link through the clipboard, a
   copy.click();
   link.click();
   assert.deepEqual(calls, [['code', 'B-00000000-40-1ABC', 'function'], ['link', 'B-00000000-40-1ABC', 'function']]);
-});
-
-test('code field: validated live as the custom forms are; Play and Enter play an accepted code only', () => {
-  const node = () => {
-    const n = { value: '', textContent: '', disabled: false, classes: new Set(), listeners: {} };
-    n.classList = { toggle: (c, on) => { if (on) n.classes.add(c); else n.classes.delete(c); } };
-    n.addEventListener = (t, f) => { (n.listeners[t] ??= []).push(f); };
-    n.fire = (t, ev = {}) => { for (const f of n.listeners[t] ?? []) f({ preventDefault() { ev.prevented = true; }, ...ev }); return ev; };
-    return n;
-  };
-  const [input, button, info] = [node(), node(), node()];
-  const played = [];
-  const field = bindCodeField({
-    input, button, info, prompt: 'Paste a code',
-    resolve: (t) => (t === 'GOOD' ? { ok: true, text: 'Beginner' } : { ok: false, reason: 'Not a code.' }),
-    onPlay: (t) => played.push(t),
-  });
-  assert.deepEqual([info.textContent, button.disabled, info.classes.has('ui-text--warning')], ['Paste a code', true, false]);
-  input.value = ' bad ';
-  input.fire('input');
-  assert.deepEqual([info.textContent, button.disabled, info.classes.has('ui-text--warning')], ['Not a code.', true, true]);
-  button.fire('click');
-  assert.deepEqual(played, [], 'a refused code does not play');
-  input.value = 'GOOD ';
-  input.fire('input');
-  assert.deepEqual([info.textContent, button.disabled, info.classes.has('ui-text--muted')], ['Beginner', false, true]);
-  button.fire('click');
-  assert.equal(input.fire('keydown', { key: 'Enter' }).prevented, true);
-  input.fire('keydown', { key: 'a' });
-  assert.deepEqual(played, ['GOOD', 'GOOD']);
-  field.clear();
-  assert.deepEqual([input.value, info.textContent, button.disabled], ['', 'Paste a code', true]);
 });
 
 test('bindSlider shows the formatted value and follows input', () => {

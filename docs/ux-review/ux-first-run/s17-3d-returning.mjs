@@ -65,9 +65,10 @@ log('menu badges', await page.evaluate(() => [...document.querySelectorAll('#men
 await shot(page, '76-menu-returning');
 // A8: Play again loop until a win on 2x2x2 with 1 mine
 await page.click('#menu-entry-3d'); await page.waitForTimeout(300);
+await page.click('#board-choice [data-preset="custom"]');
 for (const [id, v] of [['c-x', 2], ['c-y', 2], ['c-z', 2], ['c-m', 1]]) await page.fill('#' + id, String(v));
 log('2x2x2 info', await page.evaluate(() => document.getElementById('c-info').textContent));
-await page.click('#c-start'); await page.waitForTimeout(800);
+await page.click('#bc-play'); await page.waitForTimeout(800);
 log('mode', await mode(page));
 await page.mouse.click(640, 400); await page.waitForTimeout(500);
 let won = false;

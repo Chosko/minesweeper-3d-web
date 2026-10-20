@@ -5,6 +5,7 @@ const text = (sel) => page.evaluate((s) => document.querySelector(s)?.innerText?
 
 // 3D custom board, dense, no-guess: 5 x 5 x 5 with 90 mines (72 %).
 await page.click('#menu-entry-3d'); await sleep(300);
+await page.click('#board-choice [data-preset="custom"]');
 await page.fill('#c-x', '5'); await page.fill('#c-y', '5'); await page.fill('#c-z', '5'); await page.fill('#c-m', '90');
 console.log('custom info:', await text('#c-info'), '| reason:', await text('#c-noguess-reason'), '| custom noguess disabled?', await page.evaluate(() => document.getElementById('c-noguess').disabled));
 await page.click('#c-noguess');
@@ -16,7 +17,7 @@ console.log('27000 cells reason:', await text('#c-noguess-reason'), 'disabled', 
 await shot(page, '40-3d-custom-noguess-disabled');
 await page.fill('#c-x', '5'); await page.fill('#c-y', '5'); await page.fill('#c-z', '5'); await page.fill('#c-m', '90'); await sleep(100);
 console.log('5x5x5/90 reason:', await text('#c-noguess-reason'), 'checked', await page.evaluate(() => document.getElementById('c-noguess').checked));
-await page.click('#c-start'); await sleep(400);
+await page.click('#bc-play'); await sleep(400);
 console.log('mode:', await mode(page), 'ready:', await text('#ready-board'));
 await page.evaluate(() => globalThis.__ms.forcePlay()); await sleep(300);
 await page.evaluate(() => globalThis.__ms.aimAt(globalThis.__ms.game.idx(2, 2, 0)));

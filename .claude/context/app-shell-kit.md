@@ -61,8 +61,6 @@ The screens' markup in `index.html` and the shell stylesheet are
   Promise of whether it copied (a refusal selects the code and toasts
   `COPY_FALLBACK`, else `COPIED[kind]`); `createCodeChip(doc, {label,
   compact})`; `bindCodeChip(root, {onCopy})` → `{show(code | null), code}`.
-- `bindCodeField({input, button, info, resolve, onPlay, prompt?})` →
-  `{refresh(), clear()}`: the board choices' code field, validated live.
 - The figures panel: `bindFigures(panel)` → `{show(figures, names?)}`
   writes the panel's `.ui-figure[data-figure]` rows from the live figures
   model's `{text, detail, progress}` per figure (`js/shell/live-figures.js`

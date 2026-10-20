@@ -15,8 +15,9 @@ const backId = await page.evaluate(() => [...document.querySelectorAll('button')
 await page.click('#' + backId); await page.waitForTimeout(300);
 log('Back (' + backId + ') on ready card -> mode', await mode(page));
 // 3x3x3 with 1 mine
+await page.click('#board-choice [data-preset="custom"]');
 for (const [id, v] of [['c-x', 3], ['c-y', 3], ['c-z', 3], ['c-m', 1]]) await page.fill('#' + id, String(v));
-await page.click('#c-start'); await page.waitForTimeout(800);
+await page.click('#bc-play'); await page.waitForTimeout(800);
 await page.mouse.click(640, 400); await page.waitForTimeout(500);
 log('mode', await mode(page), 'lock', await lock());
 let won = false;

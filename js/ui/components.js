@@ -1,6 +1,6 @@
 // Behaviour helpers for the component kit (css/components.css): the slider's
 // value display, the segmented choice's and the tabs' selection, the one selected control
-// under a moving mouse, the key hints, the figures panel's live part, the pager, the code chip and the board code field. The logic is plain
+// under a moving mouse, the key hints, the figures panel's live part, the pager and the code chip. The logic is plain
 // functions; the binders touch only the elements they are handed, so the
 // module needs no document and runs under Node with stub elements.
 
@@ -474,43 +474,5 @@ export function bindCodeChip(root, { onCopy = () => {} } = {}) {
       }
       root.classList.toggle('hidden', code === null);
     },
-  };
-}
-
-/**
- * A board code field (a ui-field text input, a "Play this board" button and an info line), validated
- * live as the custom forms are: bindCodeField({ input, button, info, resolve, onPlay, prompt? }) →
- * { refresh(), clear() }. resolve(text) → { ok, reason?, text? } for the trimmed text: nothing typed
- * shows `prompt` and disables the button; a refused code shows its reason as a warning and disables
- * it; an accepted one shows its `text` and enables it. The button, or Enter in the field, calls
- * onPlay(text) for an accepted code.
- */
-export function bindCodeField({ input, button, info, resolve, onPlay, prompt = '' }) {
-  let accepted = false;
-  const refresh = () => {
-    const text = String(input.value ?? '').trim();
-    const r = text ? resolve(text) : null;
-    accepted = !!r?.ok;
-    button.disabled = !accepted;
-    const line = !r ? prompt : r.ok ? r.text ?? '' : r.reason;
-    info.textContent = line;
-    info.classList.toggle('ui-text--warning', !!r && !r.ok);
-    info.classList.toggle('ui-text--muted', !r || r.ok);
-  };
-  const play = () => {
-    refresh();
-    if (accepted) onPlay(String(input.value).trim());
-  };
-  input.addEventListener('input', refresh);
-  input.addEventListener('keydown', (event) => {
-    if (event.key !== 'Enter') return;
-    event.preventDefault();
-    play();
-  });
-  button.addEventListener('click', play);
-  refresh();
-  return {
-    refresh,
-    clear() { input.value = ''; refresh(); },
   };
 }

@@ -108,7 +108,7 @@ export const LAST_CHOICE_DOC = 'mode3d.lastChoice';
 export const LAST_CHOICE_VERSION = 1;
 
 // The presets in menu order. The cube steps aim at about ×2.5 to ×3 in 3BV; measured ×2.9, ×1.9 and
-// ×3.0 (js/records/typical-bbbv.js). Cube Beginner's mine count is measured by
+// ×3.0 (dev/measure-typical-bbbv.mjs). Cube Beginner's mine count is measured by
 // dev/measure-first-box-3d.mjs (no-guess, the first click on the marked start cell, 100 seeds a count):
 //   Cube Beginner, 20 mines — of 16 to 20 (every seed generates, median 3BV left at least 40), the one
 //     whose first click opens nearest 60 % of the safe cells: 60.5 %, median 3BV left 57.

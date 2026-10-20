@@ -153,8 +153,8 @@ renderer and the pointer-lock flow ([app-shell-3d.md](app-shell-3d.md)).
   (`PRESETS`, `validateCustom`, `normaliseChoice` in `board-choice.js`; the
   `data-preset` markup in `index.html`, one unlabelled group). A changed
   preset re-runs `node dev/measure-first-box-3d.mjs` (the measured count)
-  and `node dev/measure-typical-bbbv.mjs`, whose lines go into
-  `js/records/typical-bbbv.js`.
+  and `node dev/measure-typical-bbbv.mjs` (the cube steps' 3BV ratios in
+  the presets' head comment).
 - Changing the no-guess limit: re-run `node dev/measure-noguess-3d.mjs` and
   read its head comment before touching `NOGUESS_CELL_LIMIT`.
 - Changing the board choice screen's hooks (`bindBoardChoice`'s head

@@ -1,15 +1,14 @@
 // The returning player's surface: the board's bests on both board choices, over a records model built
-// here; the typical 3BV table; that the main menu keeps no Play again and no session strip and the
+// here; that the main menu keeps no Play again and no session strip and the
 // board options no detail line; and a browser run of them.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createBoardIdentity, STANDARD_BOARDS, PRESETS_3D } from '../js/records/board.js';
+import { createBoardIdentity } from '../js/records/board.js';
 import { buildSummary } from '../js/records/summary.js';
 import { createRecordsModel } from '../js/records/model.js';
-import { TYPICAL_BBBV, typicalBbbv, typicalBbbvKey } from '../js/records/typical-bbbv.js';
 import * as RETURNING from '../js/shell/returning.js';
 
 const { boardBests, NO_BEST } = RETURNING;
@@ -39,41 +38,6 @@ function model(games) {
   for (const g of games) m.record(game(g));
   return m;
 }
-
-// ---------------------------------------------------------------- typical 3BV
-
-test('every named board has a typical 3BV, keyed by its size and mines, the same with and without no-guess', () => {
-  for (const { width, height, mines } of STANDARD_BOARDS) {
-    for (const noGuess of [false, true]) {
-      const v = typicalBbbv(square(width, height, mines, noGuess));
-      assert.ok(Number.isInteger(v) && v > 0, `${width} × ${height} · ${mines} has a typical 3BV`);
-    }
-  }
-  for (const { width, height, depth, mines } of PRESETS_3D) {
-    for (const noGuess of [false, true]) {
-      const v = typicalBbbv(box(width, height, depth, mines, noGuess));
-      assert.ok(Number.isInteger(v) && v > 0, `${width} × ${height} × ${depth} · ${mines} has a typical 3BV`);
-    }
-  }
-  assert.equal(Object.keys(TYPICAL_BBBV).length, STANDARD_BOARDS.length + PRESETS_3D.length, 'one entry per named board, nothing else');
-  assert.equal(typicalBbbvKey(EXPERT), '30x16:99');
-  assert.equal(typicalBbbvKey(CUBE_INT), '8x8x8:40');
-  assert.equal(typicalBbbv(square(20, 12, 50)), null, 'a custom board has none');
-  assert.equal(typicalBbbv(box(10, 10, 10, 101)), null, 'a preset whose mines change has no entry until it is measured again');
-  assert.equal(typicalBbbv(box(10, 10, 11, 100)), null, 'nor one whose size changes');
-  assert.equal(typicalBbbv(box(12, 12, 8, 130)), null, 'the former Cube Expert is no named board');
-  assert.ok(Object.isFrozen(TYPICAL_BBBV));
-});
-
-test('the typical 3BV table is measured: its head comment names the script, which generates through the worker\'s generate', () => {
-  const head = read('js/records/typical-bbbv.js').match(/^(\/\/.*\n)+/)[0];
-  assert.match(head, /dev\/measure-typical-bbbv\.mjs/);
-  const script = read('dev/measure-typical-bbbv.mjs');
-  assert.match(script, /import \{[^}]*\bgenerate\b[^}]*\} from '\.\.\/js\/generation\/generate\.js'/);
-  assert.match(script, /STANDARD_BOARDS/);
-  assert.match(script, /PRESETS_3D/);
-  assert.match(script, /noGuess: true/, 'no-guess on, the board choices\' default');
-});
 
 // ---------------------------------------------------------------- the board's bests
 

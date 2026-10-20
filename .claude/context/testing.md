@@ -114,7 +114,7 @@ Data beside the tests:
   written only by `node dev/measure-replays.mjs --write-fixtures` when the
   format changes, never by a test.
 - `dev/measure-*.mjs` — measurements, not tests, behind `NOGUESS_CELL_LIMIT`,
-  `TYPICAL_BBBV`, the Cube Beginner preset's mine count
+  the cube presets' 3BV ratios (`measure-typical-bbbv.mjs`), the Cube Beginner preset's mine count
   (`measure-first-box-3d.mjs`), the replay sampler constants and
   `MOTION_CAP` (`measure-cell-motion.mjs`); each head
   comment says how to read it. `dev/find-learn-3d.mjs` is the search behind

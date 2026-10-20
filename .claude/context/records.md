@@ -13,7 +13,6 @@ chart, which draws on the canvas it is handed.
 | File | Responsibility | Detail in |
 | ---- | -------------- | --------- |
 | `js/records/board.js` | Board identity (2D and 3D forms), key, parser, label, standard boards, cube 3D presets. Imports nothing. | here |
-| `js/records/typical-bbbv.js` | Measured typical 3BV per named board. Imports nothing. | here |
 | `js/records/board-code.js` | Board codes (encode, parse, check), the daily seed and the two daily boards. | [records-board-code.md](records-board-code.md) |
 | `js/records/summary.js` | Summary builder, derived stats, best eligibility. | here |
 | `js/records/model.js` | Records model: bests, per-mode counters, history, comparison, the records format step. No storage. | [records-store.md](records-store.md) |
@@ -53,12 +52,6 @@ Board identity (`js/records/board.js`; its header documents the key format)
   size included.
 - Every function validates through `createBoardIdentity`, so any object with
   a form's fields works and an impossible one throws.
-
-Typical 3BV (`js/records/typical-bbbv.js`)
-- `TYPICAL_BBBV` keyed `<w>x<h>:<mines>` / `<w>x<h>x<d>:<mines>`,
-  `typicalBbbvKey`, `typicalBbbv(board)` → value or null; medians printed by
-  `dev/measure-typical-bbbv.mjs`. A board and its no-guess twin share the
-  entry; a changed preset has none.
 
 Summary (`js/records/summary.js`)
 - `buildSummary({ engine, outcome?, elapsedMs, pauses?, board, seed,

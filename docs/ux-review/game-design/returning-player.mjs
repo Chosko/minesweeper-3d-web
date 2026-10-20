@@ -5,10 +5,11 @@ const text = (sel) => page.evaluate((s) => document.querySelector(s)?.innerText?
 
 async function start3DCustom(x, y, z, m, noguess) {
   if ((await mode(page)) !== 'board-choice') { if ((await mode(page)) !== 'menu') { await page.goto('http://127.0.0.1:8080/index.html'); await page.waitForFunction(() => globalThis.__ms !== undefined); await sleep(500); } await page.click('#menu-entry-3d'); await sleep(300); }
+  await page.click('#board-choice [data-preset="custom"]');
   await page.fill('#c-x', String(x)); await page.fill('#c-y', String(y)); await page.fill('#c-z', String(z)); await page.fill('#c-m', String(m));
   const checked = await page.evaluate(() => document.getElementById('c-noguess').checked);
   if (checked !== noguess) await page.click('#c-noguess');
-  await page.click('#c-start'); await sleep(400);
+  await page.click('#bc-play'); await sleep(400);
   await page.evaluate(() => globalThis.__ms.forcePlay()); await sleep(300);
 }
 async function firstClick() {

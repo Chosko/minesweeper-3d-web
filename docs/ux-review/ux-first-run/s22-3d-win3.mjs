@@ -13,8 +13,9 @@ await page.click('#board-choice [data-preset="6,6,6,10"]'); await page.waitForTi
 const backId = await page.evaluate(() => [...document.querySelectorAll('button')].find(b => b.offsetParent && b.textContent.trim() === 'Back' && b.id !== 'board-choice-back')?.id);
 await page.click('#' + backId); await page.waitForTimeout(300);
 log('Back (' + backId + ') on ready card -> mode', await mode(page));
+await page.click('#board-choice [data-preset="custom"]');
 for (const [id, v] of [['c-x', 2], ['c-y', 2], ['c-z', 2], ['c-m', 1]]) await page.fill('#' + id, String(v));
-await page.click('#c-start'); await page.waitForTimeout(800);
+await page.click('#bc-play'); await page.waitForTimeout(800);
 await page.mouse.click(640, 400); await page.waitForTimeout(500);
 log('mode', await mode(page), 'lock', await lock());
 log('numbers before click', await page.evaluate(() => { const g = globalThis.__ms.game; const out = []; for (let i = 0; i < g.n; i++) { try { out.push(g.number[i]); } catch (e) { out.push('err'); } } return out; }));
