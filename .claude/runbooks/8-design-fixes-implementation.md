@@ -3,7 +3,7 @@
 Created: 2026-10-20 · Source: /runbook-create interview · Model: opus
 Last step number: 34
 
-## [ ] 1. Implement task 214 — Full test runs reliable again: the stale counter test, the random first click, the theme-switch flakes and the slow components file
+## [x] 1. Implement task 214 — Full test runs reliable again: the stale counter test, the random first click, the theme-switch flakes and the slow components file
 
 Depends on: none
 
@@ -12,6 +12,8 @@ Context: none
 ```prompt
 /task-implement 214 --review
 ```
+
+Done: 2026-10-20, commit `b99a4b4` (13 files, +625/-399). Premise wrong: the slow tier is still not reliable — `render-3d-feedback`'s `[slow]` Ctrl-ghost test failed in both slow runs and `shell-focus-containment` timed out once, outside this task's files; only the classic2d mid-game theme-switch flake reproduced (fixed seed), the other two named theme-switch tests never failed and no product change was made for them.
 
 ## [ ] 2. Implement task 215 — Settings page tests hold with more than one shipped theme
 
@@ -27,7 +29,8 @@ Context: none
 
 Depends on: 1
 
-Context: none
+Context:
+- 2026-10-20 (from step 1): task 214 found no cause for the `classic2d-view` large-scrolled and `theme.test.mjs` theme-switch flakes (never reproduced) and changed no product code for them; it did not cover the font unload.
 
 ```prompt
 /task-implement 216 --review
