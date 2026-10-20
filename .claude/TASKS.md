@@ -1,6 +1,6 @@
 # Tasks
 
-Last task number: 213
+Last task number: 214
 
 ---
 
@@ -1010,5 +1010,14 @@ Target: claude
 Files: index.html, 404.html, js/ui.js, js/main.js, tests/components.test.mjs, tests/shell-router.test.mjs
 Preconditions: 163
 Feature: shared-screen-layout
+
+---
+
+## 214. Full test runs reliable again: the stale counter test, the random first click, the theme-switch flakes and the slow components file
+
+Status: [MISSING]
+Target: claude
+Files: tests/render-3d-flag-flash.test.mjs, tests/classic2d-mode.test.mjs, tests/classic2d-view.test.mjs, tests/theme.test.mjs, tests/components.test.mjs, tests/helpers/timing.mjs, .claude/external/affected-tests.mjs, tests/affected-tests.test.mjs, .claude/context/testing.md, .claude/context/testing-conventions.md
+Preconditions: none
 
 ---
