@@ -112,7 +112,7 @@ Context: none
 /task-implement 223 --review
 ```
 
-## [~] 11. Implement task 224 — Board module: 2D numbers, 2D end effect from the module, theme token cleanup
+## [x] 11. Implement task 224 — Board module: 2D numbers, 2D end effect from the module, theme token cleanup
 
 Depends on: 1
 
@@ -121,6 +121,8 @@ Context: none
 ```prompt
 /task-implement 224 --review
 ```
+
+Done: 2026-10-20, commit `d43ceec` (29 files, +526/-214). Premises wrong: the canvas's 2D number colours fail the old every-point contrast rule, so the 2D list is now checked against the 2D revealed face and its shade only; the right bevel is not on the face–bevelDark line, so `tile-art.js` takes an exact bevel colour (Joyful's pressed 3D right slope becomes #92c2ff). The number list is split into `numbers2d`/`numbers3d` and a new `end2d` entry added.
 
 ## [ ] 12. Implement task 225 — Board module motion tracks: opacity, flip, scale and brightness
 
@@ -336,7 +338,8 @@ Context: none
 
 Depends on: 11, 12, 13, 14
 
-Context: none
+Context:
+- 2026-10-20 (from step 11): task 224 narrowed the 2D number contrast rule to the 2D revealed face and its shade only (the 3D list keeps every point of the revealed face); `themed-board-art-and-motion.md` still says "every point of its theme's revealed face" and must record it. It also split `numbers` into `numbers2d`/`numbers3d`, added the `end2d` module entry, and let a bevel side be an exact `#rrggbb`.
 
 ```prompt
 /task-implement 246 --review
