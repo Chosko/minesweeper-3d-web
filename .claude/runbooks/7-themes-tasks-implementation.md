@@ -1013,7 +1013,7 @@ Context: none
 
 Done: struck — for a parallel run its Depends on lacked the order against task 187, which edits the same files; replaced by step 81.
 
-## [~] 81. Implement task 189 — Update documentation for feature `theme-implement-skill`
+## [x] 81. Implement task 189 — Update documentation for feature `theme-implement-skill`
 
 Depends on: 79, 80
 
@@ -1023,6 +1023,8 @@ Context:
 ```prompt
 /task-implement 189 --review
 ```
+
+Done: 2026-10-20, commit `785bea7` (3 files, +65/-31).
 
 ## [x] 34. Implement task 204 — Daily screen won time in the standard time format
 
