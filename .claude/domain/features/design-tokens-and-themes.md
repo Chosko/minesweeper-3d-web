@@ -69,15 +69,15 @@ bundler, Canvas 2D for Classic 2D and DOM screens in the game shell (see
 - **Theme applier** — [theme-system](./theme-system.md) § Architecture,
   *Theme applier*.
 - **Token reader.** A module for non-DOM consumers — the Classic 2D Canvas
-  renderer, and the shell reading the 3D scene's sky — that returns the resolved value of a named token for the
+  renderer — that returns the resolved value of a named token for the
   active theme and lets a consumer subscribe to theme changes. It reads the
   active theme's computed values rather than holding a second copy of them.
-- **Scene palette handed in.** The 3D renderer
+- **Board module handed in.** The 3D renderer
   ([rendering.md](../../context/rendering.md)) reads no token and never
-  subscribes to theme changes. The shell reads the sky tokens through the
-  token reader at start-up and on every theme change and hands the renderer
-  the active theme's sky, which it draws as the sky gradient, the fog colour
-  and the clear colour; its tiles and numbers are not tokenised.
+  subscribes to theme changes. The shell hands it the active theme's board
+  module at start-up and on every theme change, from which it draws its
+  sky, fog, clear colour, tiles and numbers —
+  [themed-board-art-and-motion](./themed-board-art-and-motion.md).
 
 ## Data and state
 

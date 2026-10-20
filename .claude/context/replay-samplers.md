@@ -22,7 +22,10 @@ builds `createSampler3D` ([mode3d-adapter.md](mode3d-adapter.md),
 
 Samplers
 - `sampler-2d.js`: `SAMPLE_INTERVAL_MS` (50), `SAMPLE_STEPS` (64),
-  `boardPoint`, `createSampler2D({session, point, interval?})`,
+  `boardPoint` (a canvas position in pitches from the board's top-left
+  corner — a pitch is a cell's tile and the gap after it, so the whole
+  part is the cell under it in any theme — in steps of 1/`SAMPLE_STEPS`),
+  `createSampler2D({session, point, interval?})`,
   `mountSampler2D({view, session, win?, interval?})`.
 - `sampler-3d.js`: `SAMPLE_INTERVAL_MS` (100), `POSITION_STEPS` (16),
   `ANGLE_STEPS` (8192), `VIEW_MODE` (`shift` 1, `space` 2, `ctrl` 4),

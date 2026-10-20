@@ -42,8 +42,9 @@ are listed in [app-shell.md](app-shell.md) § PUBLIC API.
   chip's Copy and Copy link go through `copyCode`.
 - **Frame loop.** While `replay` shows the loop calls `REPLAY_VIEWER.tick`;
   before it, on a 3D replay whose time moved (`replay3d.time`: a seek, step,
-  Home/End) it calls `renderer.sync({seek: true})` so no "solved" pulse
-  starts for the jump ([rendering-effects.md](rendering-effects.md)).
+  Home/End) it calls `renderer.sync({seek: true})`, which drops every
+  running cell motion and starts none for the jump
+  ([rendering-effects.md](rendering-effects.md)).
 - **Controller.** On `replay` the controller goes to `padReplay`:
   `REPLAY_PAD` buttons to the viewer, the rest navigates the screen as a
   menu; with the free camera on, the left stick flies (it does not

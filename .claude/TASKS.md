@@ -780,7 +780,7 @@ Feature: themed-board-art-and-motion
 
 ## 187. Update documentation for feature `themed-board-art-and-motion`
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: .claude/context/classic2d-tile-skin.md, .claude/context/classic2d-board-view.md, .claude/context/rendering.md, .claude/context/rendering-effects.md, .claude/context/app-shell-kit.md, .claude/context/replay-playback.md, .claude/context/testing.md, .claude/context/INDEX.md, README.md, .claude/domain/features/themed-board-art-and-motion.md, .claude/domain/features/square-tile-skin.md
 Preconditions: 180, 181, 182, 183, 184, 185, 186, 213

@@ -45,7 +45,7 @@ In scope (m2b-themes):
   palette and 3D style, every state and number 0–26 included, never shipped
   as a picture, and rebuilt on theme change; the selection outline, the
   glow line inside it and the selected face's tint, the marked start cell's
-  tint and the confetti colours come from the palette. A painted slope is
+  tint and the confetti colours come from the board module. A painted slope is
   lit the same way on every face of a cube, top faces included.
 - **Sky, fog and background** — from the board module, replacing the sky
   tokens.
@@ -106,30 +106,39 @@ reads a stylesheet or imports a theme.
   faces — closed, sunk (closed at full depth), revealed — and the same
   glyphs — number, flag, mine, exploded mine, wrong-flag cross — from the
   palette and parameters it is given, at any size, and accepts a **depth**
-  between flat and fully raised so the depth motion ingredient can draw
-  in-between faces. It reads no theme and no token: the caller passes
-  everything.
+  from 0 (flat) to 1 (fully raised) so the depth motion ingredient can draw
+  in-between faces; a depth keyframe past 1 is an overshoot, drawn fully
+  raised. The styles are the table `STYLES` of `js/tile-art.js` — `bevel`
+  first, the one an unknown name falls back to, then `flat` — drawn through
+  one entry point, `drawFace`. It reads no theme and no token: the caller
+  passes everything.
 - **Board art hand-off.** The shell subscribes to `theme-system`'s theme
   change, waits for the theme's number font, and hands the active board
-  module to the Classic 2D tile skin and to the 3D renderer, as it hands
-  the scene palette today.
+  module to the Classic 2D tile skin and to the 3D renderer:
+  `js/shell/board-art.js` sets the hand-off `BOARD_ART`
+  (`js/classic2d/tile-skin.js`) that every tile skin reads, and
+  `js/shell/scene-palette.js` passes each module it holds to the renderer's
+  `setBoard`.
 - **Classic 2D tile skin.** Paints each tile state through the recipe with
   the theme's style, palette and number font; its cache is keyed by theme as
   well as size and pixel ratio, and dropped on theme change. The board
   frame, its ground between tiles, the gap and the cursor ring's colour and
-  radius come from the theme too — the frame as a kit component styled by
-  the theme stylesheet, its radius following the tile size; the gap and
-  the cursor ring from the board module. The board view lays tiles out on
+  radius come from the theme too — the frame as the kit component
+  `ui-board-frame` styled by the theme stylesheet, its radius the custom
+  property `--board-frame-radius`, which the shell sets to the 2D style's
+  `frameRadius` × the tile; the gap and the cursor ring from the board
+  module. The board view lays tiles out on
   the tile size plus the gap, and hit-tests a cell's whole slot, gap
   included.
 - **3D tile atlas and scene.** The atlas is built from the board module's
   3D style —
   one layer per state and per number 0–26, plus the sunk closed face the
-  depth ingredient blends towards — and rebuilt when the theme changes. The
+  depth ingredient blends towards (`L_SUNK`, after the others) — and
+  rebuilt when the theme changes. The
   sky gradient, fog and clear colour come from the board module's sky; the
   ground grid keeps deriving its ink from the horizon. The selection
   outline, its inner glow line, the selected face's tint, the marked-cell
-  tint and the confetti colours come from the palette.
+  tint and the confetti colours come from the board module.
 - **Cell motion player.** One DOM-free module both renderers use. It holds
   the running cell animations: started by a cell event with the cell, the
   event, the visual state before and after, and the theme's description for
@@ -138,21 +147,30 @@ reads a stylesheet or imports a theme.
   opacity). It drops every animation on a new board, a seek, a pause hiding
   the board and a theme change, and it caps how many cells animate at once — past the cap a cell simply shows its new
   state — so a flood reveal on a 100 × 100 board costs nothing extra. The
-  cap is measured and set during implementation.
+  player is `js/cell-motion.js`; its interface is `start(cell, event,
+  before, after, description)`, `valuesAt(time)`, `dropAll()` and
+  `animating()`. The cap, `MOTION_CAP`, is measured by
+  `dev/measure-cell-motion.mjs` on a flood reveal of a 100 × 100 board in
+  both renderers, the heavier of the two — the 2D motion layer — deciding
+  it; the module's head comment holds the measurement and the frame budget
+  that picks it.
 - **2D motion layer.** Animating cells are drawn on a layer above the board
   canvas from the cached tile images, transformed per the player's values;
   the board canvas shows the cell's slot empty for the animation's length,
   so a growing or moving cell overlaps its neighbours cleanly and nothing
-  on the board canvas is redrawn per frame. Depth draws from cached
-  in-between faces at a few fixed steps. Frames run only while a cell
-  animates.
+  on the board canvas is redrawn per frame. The layer is a second canvas
+  (class `board-motion`) over the board canvas, taking no input. Depth
+  draws from cached in-between faces at a few fixed steps — `DEPTH_STEPS`
+  in `js/classic2d/tile-skin.js`, from flat to fully raised, the nearest
+  step drawn. Frames run only while a cell animates.
 - **3D motion mesh.** Animating cubes are drawn by one more instanced mesh,
-  as the "solved" pulse and the flash are today, with per-instance scale,
-  offset, rotation, brightness, opacity, the face shown and the depth
-  blend; the cube's ordinary instance is hidden while it animates. The
-  current "solved" pulse becomes the solved-pulse cell event, played from
-  the theme's description; its rules — visual only, the cube already hidden
-  to picking, dropped on a loss and on a seek — are unchanged.
+  as the flash is, with per-instance scale, offset, rotation, brightness,
+  opacity, the face shown and the depth blend; the cube's ordinary instance
+  is hidden while it animates. The "solved" pulse is the solved-pulse cell
+  event, played from the theme's description on the same motion mesh —
+  there is no separate pulse mesh; its rules — visual only, the cube
+  already hidden to picking, dropped on a loss and on a seek — are
+  unchanged.
 - **Event sources.** Each mode reports cell events from what it already
   knows: the Classic 2D pointer and cursor inputs' pressed set (press,
   release, chord press), the engine's change lists (reveal, flag, unflag),
@@ -162,21 +180,26 @@ reads a stylesheet or imports a theme.
 
 ## Data and state
 
-- **Board module (per theme, static)** —
+- **Board module (per theme, static)** — `themes/<id>/board.js`, exporting
+  `BOARD`, in the shape the head comment of `js/themes/board-module.js`
+  documents —
   - *palette*: closed face, closed edge and highlight, sunk face, revealed
     face and border, flag (pole and cloth), mine, exploded ground, wrong-flag
-    cross, board ground, cursor ring, 3D selection outline, its inner glow
-    line and the selected face's tint, 3D marked-cell tint, 3D confetti
-    colours;
+    cross, board ground, 3D confetti colours;
+  - *cursor*, *selection*, *mark*: the Classic 2D cursor ring; the 3D
+    selection outline, its inner glow line and the selected face's tint;
+    the 3D marked-cell tint;
   - *numbers*: 26 colours, 1 to 26 — Classic 2D uses 1–8, 3D all 26; the
     number font family and weight;
   - *sky*: horizon, zenith and nadir, and the fog colour (the horizon when
     absent);
-  - *drawing style*: per mode — Classic 2D tiles and 3D cubes — the style's
-    name and its parameters, the Classic 2D one with the corner radius and
-    the gap as fractions of the tile;
-  - *motion*: one description per cell event, or none for an event the
-    theme leaves still.
+  - *drawing style*: per mode — Classic 2D tiles (`style2d`) and 3D cubes
+    (`style3d`) — the style's name and its parameters, the Classic 2D one
+    with the corner radius, the gap and the board frame's radius as
+    fractions of the tile;
+  - *motion*: one description per cell event — `press`, `release`,
+    `reveal`, `flag`, `unflag`, `chordPress`, `solvedPulse` — or `null` for
+    an event the theme leaves still.
 - **Motion description** — a duration, an easing (a named curve or a cubic
   Bézier), and one or more tracks, each a property from the vocabulary with
   its keyframed values:
@@ -186,8 +209,9 @@ reads a stylesheet or imports a theme.
   - *rotation* — an axis and an angle; a **flip** is a rotation that shows
     the state before the event until its midpoint and the state after it
     from then on;
-  - *depth* — the drawing style's depth, flat to fully raised;
-  - *brightness* — a multiplier on the drawn colour;
+  - *depth* — the drawing style's depth, 0 flat to 1 fully raised;
+  - *brightness* — 1 the drawn colour; above 1 a lift toward white by the
+    excess, below 1 a multiplier on the drawn colour;
   - *opacity*.
   A cell shows its state after the event once the animation ends, and at
   any point a flip passes its midpoint.

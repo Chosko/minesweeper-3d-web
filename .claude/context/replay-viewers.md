@@ -19,7 +19,8 @@ DOM-free at import.
 `viewer-2d.js`
 - `TRAIL_MS` (150), `TRAIL_STEP_MS` (25); `movementTrack(movement,
   interval?)`, `pointerAt(track, t)`, `cursorAt(track, t)`,
-  `pointerPixel(layout, scroll, point)`, `trailPoints(track, t, ms?)`.
+  `pointerPixel(layout, scroll, point)` (a sample in pitches to canvas
+  pixels), `trailPoints(track, t, ms?)`.
 - `createViewer2D({view, sim, pointer, overlay?})` → `{track, draw(frame,
   {playing}), place(), setScale(scale), press(actions), still(),
   showBbbv(tints), repaint(), destroy()}`; `pointer` is `{place, hide,
@@ -43,7 +44,9 @@ DOM-free at import.
   camera hold the earlier one until one sampling interval before the later,
   then interpolate linearly; after the last sample they hold it. Cursor and
   view mode are events and switch at their times.
-- **2D playback.** The board view redraws from `changed`; the cursor ring
+- **2D playback.** The board view redraws from `changed`, playing the
+  cells' events (reveal, flag, unflag) on a frame playback drew; a seek
+  drops the running ones and starts none. The cursor ring
   shows only while the recorded cursor is a cell (an older recording's
   opening cell counts as -1); a board that scrolls follows the pointer's
   cell, else the cursor's; a board that fits never scrolls. The board scale
@@ -52,6 +55,11 @@ DOM-free at import.
 - **Press rings.** 2D: on the recorded pointer when it was on the acted
   cell, else on the cell's centre (a keyboard or controller click). 3D: on
   the acted cell's projection through the replay camera (`scene.ring`).
+- **3D cell motion.** The renderer plays the replayed changes' cell
+  events as in play, the solved pulse included, and the shell's frame loop
+  syncs a seek with `seek: true`, which drops them
+  ([app-shell-replay.md](app-shell-replay.md),
+  [rendering-effects.md](rendering-effects.md)).
 - **Show 3BV.** The tints (`regionTints`) are painted per cell and kept
   through seeks, refits and (2D, `repaint`) a theme change; null clears.
 - **3D playback.** On Follow the camera is the recorded pose with the

@@ -345,9 +345,12 @@ and rumbles on an explosion. Some browsers only start sound after a key press or
   from this browser, after a confirmation, and starts the game again as a new player's.
 - **Sound:** synthesized sound effects (Web Audio, no audio files) for revealing, flagging,
   chording, actions that change nothing, explosions and wins. They can be muted.
-- **Visual polish:** procedurally drawn tiles with a distinct colour for each number from 1 to 26, a
-  sky gradient, distance fog, per-face shading and crisp tile borders. The aimed cube gets a pulsing
-  outline. Winning plays a pulse wave and confetti. Losing plays a reveal wave from the exploded
+- **Visual polish:** both boards are drawn in the chosen theme: procedurally drawn tiles and cubes
+  in the theme's colours and tile style, a distinct colour for each number from 1 to 26, the theme's
+  sky gradient and distance fog, per-face shading and crisp tile borders. Cells move as the theme
+  describes when you press, reveal, flag or unflag them, and a solved 3D number pulses before it
+  hides. The aimed cube gets an outline with a pulsing glow line. Winning plays a pulse wave and
+  confetti in the theme's colours. Losing plays a reveal wave from the exploded
   cell, a screen flash and camera shake, and marks wrong flags. A slowly orbiting demo board is the
   main menu's 3D preview and sits behind the screens the menu opens.
 - **Performance:**

@@ -1,4 +1,4 @@
-# App shell — component kit, themes, tokens, scene palette, deploy files
+# App shell — component kit, themes, board modules, tokens, deploy files
 
 ## OVERVIEW
 
@@ -14,12 +14,13 @@ The screens' markup in `index.html` and the shell stylesheet are
 | `dev/components.html` | the kit gallery (development only): every catalogued component in every state (`data-force` previews) and every decoration slot, the overlay bar, the counters and the figures panel (with and without its progress bar and pace row, and with its head bar), the results layout `#g-results`, under the theme picked in `#g-theme` or named by `?theme=<id>` (unknown → the default) |
 | `css/tokens.css` | the structural tokens only (base stylesheet): `--space-*`, `--z-*`, `--font-numeric-tabular`; nothing per-theme |
 | `js/themes/registry.js` | the theme registry (DOM-free): `THEMES` in catalogue order, the default id, the lookup; the one place a theme is registered |
-| `js/themes/board-module.js` | the board module's shape (head comment: palette, numbers, font, sky, a drawing style per mode, cursor ring, 3D selection and start-cell tint, motion per cell event and the motion vocabulary) and the board conformance checks (DOM-free) |
+| `js/themes/board-module.js` | the board module's shape (head comment: palette, numbers, font, sky, a drawing style per mode with the 2D gap and frame radius, cursor ring, 3D selection and start-cell tint, confetti colours, motion per cell event and the motion vocabulary) and the board conformance checks (DOM-free) |
 | `themes/<id>/` | one theme: `theme.css` (its stylesheet: tokens, every catalogued part and state, `@font-face`, DOM animation, every rule under `:root[data-theme="<id>"]`), `board.js` (its board module), `fonts/` (its `woff2` files and their licences) |
 | `js/theme.js` | classic pre-paint script: maps the stored theme, inserts its stylesheet render-blocking, sets root `data-theme`, exposes `globalThis.msThemeBoot` |
 | `js/themes/applier.js` | the run-time theme applier: takes over from `js/theme.js`, loads and switches themes, hands the board module to subscribers |
 | `js/tokens.js` | token reader for consumers that cannot read stylesheets, chiefly Canvas |
-| `js/shell/scene-palette.js` | the 3D scene's themed sky from the `--color-scene-*` tokens |
+| `js/shell/board-art.js` | the board art hand-off on the shell's side: the active board module to `BOARD_ART` ([classic2d-tile-skin.md](classic2d-tile-skin.md)) at start-up and on every theme change, once its number font has loaded |
+| `js/shell/scene-palette.js` | the 3D scene's hand-off: the module `BOARD_ART` holds to the renderer's `setBoard` |
 | `404.html`, `CNAME`, `.nojekyll` | GitHub Pages: the not-found page (the fatal card's composition, "Page not found." and a link to `/`; the base and default theme stylesheets from the site root, no script, no remote file), `minesweeper3d.chosko.com`, files served as-is |
 
 ## PUBLIC API
@@ -135,11 +136,20 @@ held: `token(name)` (with or without `--`; unknown →
 `onThemeChange(listener)` (the applier's), `createTokenReader({root,
 getStyle, theme, dev?, log?})`.
 
-`js/shell/scene-palette.js` — `SCENE_TOKENS` (`{horizon, zenith, nadir}`),
-`parseRgb(value)` (fallback `[255, 0, 255]`), `scenePalette(token)`,
-`bindScenePalette({token, onThemeChange, renderer, onApplied?})` → calls
-`renderer.setScenePalette` now and on every theme change (`js/main.js` sets
-`needRender` in `onApplied`); returns the unsubscribe.
+`js/shell/board-art.js` — `numberFontSpec(font)` (`<weight> 1em
+"<family>"`), `bindBoardArt({applier, fonts, art?, onError?})` → hands the
+applier's active module to `art` (`BOARD_ART` by default) at once when the
+applier has started, then on every theme change, each only after
+`fonts.load` resolves for its number font; a switch another overtakes
+before its font loads is never handed over. Returns the unsubscribe.
+`js/main.js` binds it before the applier starts.
+
+`js/shell/scene-palette.js` — `parseRgb(value)` (`#rgb`, `#rrggbb`, `rgb()`
+or `rgba()` as channels, fallback `[255, 0, 255]`),
+`bindScenePalette({art?, renderer, onApplied?})` → calls
+`renderer.setBoard` with the module `art` holds now, if any, and each one
+handed over after it (`js/main.js` sets `needRender` in `onApplied`);
+returns the unsubscribe.
 
 ## INTERNAL PATTERNS
 
@@ -204,16 +214,39 @@ getStyle, theme, dev?, log?})`.
   `<link>` and notifies; switches queue, each after the previous one
   settles; `setTheme` of the active theme does nothing.
 - **Board module hand-off.** The applier imports the active theme's
-  `board.js` at start-up and on every switch and hands it to
-  `onThemeChange` listeners; no renderer imports a theme.
+  `board.js` (its export `BOARD`) at start-up and on every switch and
+  hands it to `onThemeChange` listeners. `bindBoardArt` is the one
+  listener that feeds the boards: it waits for the module's number font,
+  then sets `BOARD_ART`, which the Classic 2D tile skins read and
+  `bindScenePalette` passes to the 3D renderer's `setBoard`, so no tile or
+  atlas is drawn in a fallback font. No renderer imports a theme, reads a
+  stylesheet or subscribes to the applier.
+- **The board module.** Everything both boards draw a theme with — its
+  shape is the head comment of `js/themes/board-module.js`, its values each
+  theme's `board.js`. `checkBoardModule` is the board case of the
+  conformance suite (`tests/theme-conformance.test.mjs`) for every
+  registered theme: every palette entry; 26 number colours; the number font
+  one of the theme's registered fonts; the sky; a shipped style with all
+  its parameters per mode (the 2D one with its gap and frame radius); the
+  closed face's relief above zero and at least a pixel at `MIN_TILE_SIZE`;
+  each number at least 4.5:1 against every point of both revealed faces;
+  the cursor ring and selection outline at least 3:1 against the closed and
+  revealed faces; and an entry for every cell event, a motion description
+  built only from the vocabulary or `null`.
+- **The board frame.** `ui-board-frame` is the kit's frame a Classic 2D
+  board sits in; each theme stylesheet styles it, its corner radius the
+  custom property `--board-frame-radius`, which the shell sets from the
+  board module ([classic2d-board-view.md](classic2d-board-view.md)).
 - **Failure contract.** A non-default theme that fails at start-up falls
   back to the default and `notice(START_FALLBACK)` tells the player once (a
   toast in `js/main.js`); a failed switch keeps the current theme, rejects
   and tells `SWITCH_FAILED` once; the default failing rejects `start()` and
   `js/main.js` shows index.html's `#fatal-card`.
 - **The 3D scene** (`js/render.js`, `js/textures.js`, `js/tile-art.js`)
-  never reads tokens or subscribes to theme changes: sky, fog and clear
-  colour come from `bindScenePalette`; tiles and effects keep one palette.
+  never reads tokens or subscribes to theme changes: its atlas, sky, fog,
+  clear colour, selection, marked-cell tint, confetti colours and cell
+  motion all come from the board module `bindScenePalette` hands it
+  ([rendering.md](rendering.md)).
 - **The screen frame.** Every non-game screen is a `ui-frame` on a
   `ui-backdrop`, sized to its content and never larger than the window: a
   head (Back with its back key hint, the title centred, an optional
@@ -242,6 +275,9 @@ getStyle, theme, dev?, log?})`.
   — the registry, the theme contract, the kit catalogue, base and theme
   stylesheets, fonts, the applier and its failure contract, conformance
   tests and the per-theme gallery.
+- [../domain/features/themed-board-art-and-motion.md](../domain/features/themed-board-art-and-motion.md)
+  — the board module's shape, the board checks, the hand-off and the board
+  frame.
 - [../domain/features/design-tokens-and-themes.md](../domain/features/design-tokens-and-themes.md)
   — token names, the contrast contract, the token reader.
 - [../domain/features/screen-components.md](../domain/features/screen-components.md)
@@ -256,15 +292,19 @@ getStyle, theme, dev?, log?})`.
 
 ## CROSS-REFERENCES
 
-- [rendering.md](rendering.md) — `setScenePalette` and the unthemed atlas.
+- [rendering.md](rendering.md) — `setBoard` and what the 3D scene draws from
+  the module; [classic2d-tile-skin.md](classic2d-tile-skin.md) — `BOARD_ART`
+  and the Classic 2D tile skin.
 - [settings.md](settings.md) — the theme setting driving `setTheme`, the
   settings document `readStoredTheme` reads, the theme list.
 - [app-shell-markup.md](app-shell-markup.md) — the screens built from the kit.
 - [app-shell-ui.md](app-shell-ui.md) — the `UI` methods that feed the
   counters and the figures panels.
 - [testing.md](testing.md) — `tests/theme-registry.test.mjs`,
-  `tests/theme-conformance.test.mjs`, `tests/tokens.test.mjs`,
-  `tests/theme.test.mjs`, `tests/components.test.mjs` (kit, helpers, screens,
+  `tests/theme-conformance.test.mjs`, `tests/board-module.test.mjs`,
+  `tests/tokens.test.mjs`, `tests/theme.test.mjs` (the applier and the 3D
+  scene's hand-off), `tests/tile-skin.test.mjs` (`bindBoardArt`),
+  `tests/components.test.mjs` (kit, helpers, screens,
   contrast), `tests/components-game3d.test.mjs` (the 3D overlay in a
   browser).
 

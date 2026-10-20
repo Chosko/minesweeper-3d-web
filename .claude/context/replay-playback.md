@@ -124,6 +124,14 @@ Viewer (`js/replay/viewer.js`)
   seek bar steps 1% (at least `SEEK_STEP_MIN_MS`), marks paused spans and
   ticks every action. At the end the final board stays with the end line;
   play restarts from the start position.
+- **Cell motion.** A frame playback drew plays its changed cells' cell
+  events in the theme's motion, as play does — reveal, flag and unflag in
+  2D (the 2D viewer's `draw(frame, {playing: true})`), those and the
+  "solved" pulse in 3D (the renderer's `sync`). A seek, a step, Home or End
+  draws its frame without them: the 2D viewer drops the running motion and
+  starts none, and the shell syncs the 3D renderer with `seek: true`, which
+  does the same ([replay-viewers.md](replay-viewers.md),
+  [app-shell-replay.md](app-shell-replay.md)).
 - **Press rings and cues.** Each action playback reaches going forward shows
   its press ring; a seek or step shows the rings of the actions where it
   lands, none for those it crosses. With sound on (kept for the session),

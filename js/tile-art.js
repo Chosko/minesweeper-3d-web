@@ -3,9 +3,10 @@
 // the two modes read as one game. A face is drawn through `drawFace` in one of
 // the named drawing styles (`STYLES`) with its parameters, and the glyphs over
 // it by their own functions, each in a `size` × `size` box at the context's
-// origin, at any size, with every colour passed in by the caller: the atlas
-// brings its own unthemed palette, the 2D skin its tile and number tokens. This
-// module imports nothing, reads no token and touches no DOM.
+// origin, at any size, with every colour passed in by the caller: both callers
+// pass the active theme's board module's (js/themes/board-module.js) — the atlas
+// its 3D style and palette, the 2D skin its Classic 2D ones. This module
+// imports nothing, reads no token and touches no DOM.
 //
 // The bevel style's own parameters are the proportions of the 256 px atlas
 // face. `px`, when given, is one device pixel in drawing units: every band then

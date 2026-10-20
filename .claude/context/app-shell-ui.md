@@ -38,7 +38,7 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
     strip, help, hint strip or toast shows or appears over the viewer),
     `replayRing(x, y, kind)` (a 3D replay's press ring on `#replay`);
   - Classic 2D: `setSwap`, `setTapMode('reveal' | 'flag')`,
-    `panelFrame2D()` (`PANEL_INSET` all round), `placePanel2D(rect)`,
+    `panelFrame2D()` (`PANEL_INSET` all round), `placePanel2D(rect, radius)` (the board frame at `rect`, its corner radius set as `--board-frame-radius`),
     `setBoard2D`, `updateFigures2D(input, {tick, bests})`,
     `setBoardStatus`; 3D `setBoardStatus3D` (progress by `progressLine`);
   - menu: `setLastMode` (the Last played chip), `setEntryUnavailable`,

@@ -152,9 +152,6 @@ reader, and the kit stylesheet: [app-shell-kit.md](../../context/app-shell-kit.m
   fog, the tile drawing style and its parameters, the number font, and the
   cell motion descriptions. Its shape and its consumers are
   `themed-board-art-and-motion`'s; this feature loads it and hands it on.
-  Until that feature writes it, a theme's board module is an empty, frozen
-  description no renderer reads, and the sky stays in the theme stylesheet
-  as the scene tokens the shell hands the 3D renderer.
 - **Theme fonts.** Each theme's font files sit in the theme's own folder
   with their licence. The theme stylesheet declares them; because a browser
   fetches a declared font only when a loaded stylesheet uses it, a theme's
@@ -199,9 +196,8 @@ reader, and the kit stylesheet: [app-shell-kit.md](../../context/app-shell-kit.m
   - in a browser: the gallery renders under the theme with no missing
     font, no failed file and no console error.
 
-  Until `themed-board-art-and-motion` defines the board checks, each
-  theme's board case is a to-do test. A test-only fixture theme, registered
-  by the tests and never shipped, exercises the run-time switch.
+  A test-only fixture theme, registered by the tests and never shipped,
+  exercises the run-time switch.
 - **Component gallery.** The development gallery takes a theme from the
   registry (a picker and a query parameter), renders every component in
   every state and every decoration slot under it, and is what the theme

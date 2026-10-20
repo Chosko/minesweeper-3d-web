@@ -12,11 +12,9 @@ import { FALLBACK_COLOR } from '../tokens.js';
 import { drawFace, drawNumberGlyph, drawMineGlyph, drawFlagGlyph, drawCross } from '../tile-art.js';
 
 // The smallest tile size the Classic 2D renderer allows, shared with it: the
-// readable floor a board shrinks to before it scrolls. With it an Expert board
-// (30 × 16) fits, inside the framed panel with 16px margins, every window
-// 1024px wide whose height leaves room for 16 rows at it (tests/tile-skin.test.mjs
-// measures the window). Every state and number stays legible at it in every
-// theme (the same test).
+// readable floor a board shrinks to before it scrolls (the fit rule never goes
+// below it). Every state and number stays legible at it in every theme
+// (tests/tile-skin.test.mjs).
 export const MIN_TILE_SIZE = 26;
 
 // The rules engine's cell states (js/engine/rules.js CELL) plus `pressed`,

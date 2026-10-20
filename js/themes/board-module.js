@@ -49,7 +49,8 @@
 //                 angle stays 0 is a cut from one face to the other at that point
 //     depth       the drawing style's depth, 0 flat to 1 fully raised; a keyframe past 1 is an
 //                 overshoot, which the tile recipe draws fully raised
-//     brightness  a multiplier on the drawn colour
+//     brightness  1 the drawn colour; above 1 a lift toward white by the excess, below 1 a
+//                 multiplier on the drawn colour
 //     opacity     0 to 1
 //   A cell shows its state after the event once the animation ends.
 import { STYLES } from '../tile-art.js';
