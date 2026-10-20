@@ -20,10 +20,16 @@ those binders follow is [app-shell-kit.md](app-shell-kit.md).
   `UI.setBoard` / `setBoard2D` set the mine counter's digits' `min-width`
   in `ch`) — the formats of every counter readout and the replay viewer's
   bar.
-- `formatSliderValue(value, {format, step, max, unit})`, `decimalsOf(step)`.
+- `formatSliderValue(value, {format, step, max, unit})`, `decimalsOf(step)`,
+  `sliderFill(value, min, max)` (the share of the range up to the value,
+  0–1, clamped; an absent min or max the native 0 or 100).
 - `segmentedTargetIndex(disabled, current, key, {horizontal?})`,
   `segmentedState(count, selected)`.
-- `bindSlider(root)`, `bindSegmented(group, {onChange, horizontal?})`
+- `bindSliderFill(input)` — the fill updater: sets `--slider-fill` on the
+  input on every input event and on every `value` a script sets (it hands
+  the input's own `value` property on), so a programmatic change moves the
+  fill too.
+- `bindSlider(root)` (the value and the fill), `bindSegmented(group, {onChange, horizontal?})`
   (`horizontal` leaves Up/Down to the shell's focus moves),
   `bindTabs(list, {onChange})` (a `ui-tabs` tablist, Left / Right select,
   the selected tab alone in the Tab order), `bindSelectOnHover(root)` (the

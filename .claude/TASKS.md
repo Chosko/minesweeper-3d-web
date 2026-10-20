@@ -1061,7 +1061,7 @@ Feature: shared-screen-layout
 
 ## 219. Kit form controls: switch, switch row, slider fill, number field, invalid state, focus halo
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: css/components.css, themes/joyful-tiles/theme.css, js/ui/components.js, js/ui/kit-catalogue.js, dev/components.html, js/classic2d/board-choice.js, js/mode3d/board-choice.js, tests/components.test.mjs, .claude/context/app-shell-kit.md
 Preconditions: 214

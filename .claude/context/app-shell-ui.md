@@ -116,7 +116,10 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
   ([app-shell-focus.md](app-shell-focus.md) § Focus walk); the
   arrows leave an arrow the focused control owns (`keepsArrow`) or handled
   (`defaultPrevented`), and focus through `keyFocus`, which drops
-  `pad-nav` so `:focus-visible` shows.
+  `pad-nav` so `:focus-visible` shows. Mouse input sets `body.pointer-nav`
+  and drops `pad-nav`; any key drops `pointer-nav`, which the theme reads
+  to draw a board option selected only by a key, the controller or the
+  pointer over it.
 
 ## DOMAIN DEPENDENCIES
 

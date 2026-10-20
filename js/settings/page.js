@@ -68,7 +68,7 @@ import { SCHEMA } from './schema.js';
 import { THEMES, themeById } from '../themes/registry.js';
 import { SITE_ROOT } from '../themes/applier.js';
 import { BINDING_MODES, bindingDevices, bindingRows, bindingsListHtml } from './bindings.js';
-import { formatSliderValue, decimalsOf, segmentedState, bindSegmented } from '../ui/components.js';
+import { formatSliderValue, decimalsOf, segmentedState, bindSegmented, bindSliderFill } from '../ui/components.js';
 import { EXPORT_LINE } from '../records/export.js';
 
 export const SETTINGS_SECTIONS = Object.freeze([
@@ -331,11 +331,12 @@ function bindSlider(root, key, store, changed) {
     changed(key);
   };
   input.addEventListener('input', onInput);
+  const unfill = bindSliderFill(input);
   const off = store.onChange(key, (v) => {
     input.value = String(Number((v * scale).toFixed(decimalsOf(step))));
     show();
   });
-  return () => { off(); input.removeEventListener('input', onInput); };
+  return () => { off(); unfill(); input.removeEventListener('input', onInput); };
 }
 
 function bindToggle(root, key, store, changed) {

@@ -42,7 +42,7 @@ comment), not by its class name — and for each of its parts:
 
 - its styles at rest become the part's rule, under the part's selector;
 - each state the artboard shows (its label: hover, pressed, focused,
-  selected, checked, chosen, disabled) becomes the rule under that state's
+  selected, checked, chosen, invalid, disabled) becomes the rule under that state's
   selector list from `KIT_CATALOGUE`, every selector of the list;
 - a state the artboard does not show takes the nearest shown state's look
   by the catalogue's rule for that control (buttons, menu entries, mode

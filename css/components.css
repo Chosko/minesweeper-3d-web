@@ -6,7 +6,8 @@
    active theme's stylesheet (themes/<id>/theme.css, every rule scoped to
    :root[data-theme="<id>"]) draws every part and state named below.
    Behaviour helpers live in js/ui/components.js (initComponents(root) binds
-   every slider, segmented choice and tablist under root; bindSelectOnHover(root)
+   every slider, segmented choice and tablist under root; bindSliderFill(input)
+   keeps a slider's fill in step with its value; bindSelectOnHover(root)
    moves focus to the button, menu entry, mode entry or board option the mouse
    moves over; showKeyHints(root, keysFor) fills the key hints;
    bindFiguresLive(panel) writes a figures panel's live part).
@@ -24,7 +25,10 @@
    that leave the keys to the board) is not focused by the mouse. They have:
    at rest, selected, pressed (:active) and disabled (the native `disabled`
    attribute; aria-disabled="true" on a mode entry); a board option also has chosen (aria-pressed="true"), drawn
-   apart from selected. Every other interactive control has: at rest,
+   apart from selected, and is selected by the pointer only while the
+   pointer is over it (body.pointer-nav: the last input was the mouse), so
+   one a screen focuses when opened by the mouse keeps its resting look.
+   Every other interactive control has: at rest,
    hover, pressed (:active), focused (:focus-visible for keyboard,
    body.pad-nav :focus for the controller) and disabled.
 
@@ -128,6 +132,21 @@
      Role:    switch (state from the native checked)
      Name:    the wrapping label's text
 
+   ui-switchrow — a setting's switch in a row: its label and help on the left
+     Element: <div class="ui-switchrow">
+                <span class="ui-switchrow__text">
+                  <label class="ui-switchrow__label" for="ID">…</label>
+                  <span class="ui-switchrow__help" id="ID-help">…</span>
+                </span>
+                <input type="checkbox" role="switch" id="ID" class="ui-toggle__input"
+                       aria-describedby="ID-help">
+              </div>
+              the help line is optional (no aria-describedby without it)
+     Role:    switch (native checkbox), the kit's switch
+     Name:    label[for]; the help line its description
+     Layout:  the label over its help line on the left, the switch at the
+              row's right edge; a locked switch leaves the label in its ink.
+
    ui-slider — range with its value shown
      Element: <div class="ui-slider">
                 <label class="ui-slider__label" for="ID">…</label>
@@ -138,7 +157,12 @@
               </div>
      Role:    slider (native)
      Name:    label[for]
-     Helper:  bindSlider writes the formatted value into the output.
+     Layout:  the label over a row of the track and, after it, the value.
+     Helper:  bindSlider writes the formatted value into the output and
+              keeps the fill (bindSliderFill): --slider-fill on the input,
+              the share of its range up to the value, which the theme draws
+              from the track's start to the thumb, set on every input and
+              on every value a script sets.
 
    ui-segmented — one choice among a few (sizes, options)
      Element: <div class="ui-segmented" role="radiogroup" aria-label="…">
@@ -236,8 +260,8 @@
               </label>
      Role:    spinbutton (native)
      Name:    the wrapping label's text
-     Flag:    data-adjusted on the input marks a value the screen just
-              corrected (warning border).
+     Invalid: is-invalid with aria-invalid="true" on the input marks a value
+              the screen refuses (the Custom refusals).
 
    ui-link — inline link inside text
      Element: <a class="ui-link" href="…">…</a>
@@ -1007,8 +1031,8 @@
   appearance: none;
   position: relative;
   flex: none;
-  width: 44px;
-  height: 24px;
+  width: 60px;
+  height: 34px;
   margin: 0;
   border: 0;
   cursor: pointer;
@@ -1016,31 +1040,56 @@
 .ui-toggle__input::before {
   content: "";
   position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 16px;
-  height: 16px;
+  top: 5px;
+  left: 5px;
+  width: 24px;
+  height: 24px;
 }
-.ui-toggle__input:checked::before { left: 24px; }
+.ui-toggle__input:checked::before { left: 31px; }
 .ui-toggle__input:disabled { cursor: not-allowed; }
 .ui-toggle:has(.ui-toggle__input:disabled) { cursor: not-allowed; }
+
+/* ---------- switch row ---------- */
+.ui-switchrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.ui-switchrow__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ui-switchrow__label {
+  font-size: 18px;
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+.ui-switchrow__help { font-size: 14px; }
 
 /* ---------- slider ---------- */
 .ui-slider {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--space-2) var(--space-3);
+  row-gap: var(--space-2);
+  column-gap: 14px;
 }
-.ui-slider__label { font-size: var(--font-size-md); font-weight: var(--font-weight-regular); }
+.ui-slider__label { grid-column: 1 / -1; font-size: var(--font-size-md); font-weight: var(--font-weight-regular); }
 .ui-slider__value {
+  grid-area: 2 / 2;
+  box-sizing: border-box;
+  min-width: 64px;
+  text-align: right;
   font-variant-numeric: var(--font-numeric-tabular);
-  font-size: var(--font-size-md);
+  font-size: 16px;
   font-weight: var(--font-weight-bold);
 }
 .ui-slider__input {
   appearance: none;
-  grid-column: 1 / -1;
+  grid-area: 2 / 1;
   width: 100%;
   height: 28px;
   margin: 0;
@@ -1050,11 +1099,11 @@
 .ui-slider__input::-moz-range-track { height: 8px; }
 .ui-slider__input::-webkit-slider-thumb {
   appearance: none;
-  width: 20px;
-  height: 20px;
-  margin-top: -6px;
+  width: 26px;
+  height: 26px;
+  margin-top: -9px;
 }
-.ui-slider__input::-moz-range-thumb { width: 20px; height: 20px; }
+.ui-slider__input::-moz-range-thumb { width: 26px; height: 26px; }
 .ui-slider__input:disabled { cursor: not-allowed; }
 
 /* ---------- segmented choice ---------- */
@@ -1069,9 +1118,9 @@
   appearance: none;
   min-height: 36px;
   margin: 0;
-  padding: var(--space-2) var(--space-4);
+  padding: 7px 14px;
   border: 0;
-  font-size: var(--font-size-sm);
+  font-size: 15px;
   font-weight: var(--font-weight-bold);
   cursor: pointer;
 }
@@ -1103,11 +1152,12 @@
 }
 .ui-field__input {
   appearance: none;
+  box-sizing: border-box;
   width: 96px;
-  min-height: 44px;
+  height: 48px;
   margin: 0;
-  padding: var(--space-2) var(--space-3);
-  font-size: var(--font-size-md);
+  padding: 0 14px;
+  font-size: 19px;
   font-weight: var(--font-weight-bold);
   font-variant-numeric: var(--font-numeric-tabular);
   user-select: text;
@@ -1496,8 +1546,8 @@
 .ui-chip {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-1) 9px;
+  gap: 6px;
+  padding: 3px 8px;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
   line-height: 1.2;
@@ -1595,7 +1645,7 @@
   appearance: none;
   min-height: 40px;
   margin: 0;
-  padding: var(--space-2) 14px;
+  padding: 9px 14px;
   border: 0;
   font-size: 15px;
   font-weight: var(--font-weight-bold);
@@ -1607,8 +1657,9 @@
 .ui-checkbox {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-3);
-  font-size: var(--font-size-md);
+  gap: 8px;
+  font-size: 15px;
+  font-weight: var(--font-weight-bold);
   cursor: pointer;
 }
 .ui-checkbox__input {
@@ -1671,10 +1722,10 @@
 }
 .ui-heading {
   margin: 0 0 var(--space-2);
-  font-size: var(--font-size-sm);
+  font-size: 13px;
   font-weight: var(--font-weight-bold);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.2em;
 }
 .ui-text {
   margin: 0;
@@ -1720,6 +1771,12 @@
   #records-columns { grid-template-columns: clamp(400px, 31vw, 600px) auto minmax(0, 1fr); }
   /* Settings' sections in the canvas's two columns (css/style.css places them). */
   #settings-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "controls theme" "graphics data" "audio bindings"; }
+}
+
+/* ---------- the touch step: the phone sizes, upright or sideways ---------- */
+@media (max-width: 719px), (max-height: 500px) and (orientation: landscape) {
+  .ui-toggle__input { width: 64px; height: 38px; }
+  .ui-toggle__input::before { width: 28px; height: 28px; }
 }
 
 /* ---------- focused state ----------

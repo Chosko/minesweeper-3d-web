@@ -429,7 +429,10 @@ ui.setTouch3D(COARSE_ONLY);
 // The controller while the last input came from a connected controller, else the keyboard and
 // mouse; every help surface follows it.
 const DEVICE = createActiveDevice({ onChange: (d) => ui.setDevice(d) });
-window.addEventListener('keydown', () => DEVICE.input('keyboard'), true);
+window.addEventListener('keydown', () => {
+  DEVICE.input('keyboard');
+  document.body.classList.remove('pointer-nav');
+}, true);
 /** A poll with a press or a stick off its deadzone: the controller is in use. */
 function padUsed(p) {
   return p.pressed.some(Boolean) || Math.hypot(p.ls[0], p.ls[1]) > STICK_DEADZONE || Math.hypot(p.rs[0], p.rs[1]) > STICK_DEADZONE;
@@ -1929,6 +1932,8 @@ for (const t of ['mousedown', 'mousemove']) {
   window.addEventListener(t, () => {
     DEVICE.input('pointer');
     if (document.body.classList.contains('pad-nav')) document.body.classList.remove('pad-nav');
+    // A screen opened by the pointer focuses its default control without drawing a board option selected.
+    if (!document.body.classList.contains('pointer-nav')) document.body.classList.add('pointer-nav');
   }, true);
 }
 

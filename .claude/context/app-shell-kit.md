@@ -22,10 +22,14 @@ screens' markup in `index.html` and the shell stylesheet are
 selector, base, variants, parts, slots}`; a part `{name, selector, optional,
 interactive, states, as}`; a slot `{name, selector}`), `STATES` (a
 selectable part's `default`, `selected`, `pressed`, `disabled`, and a board
-option's `chosen`; every other control's `hover` and `focused`, and
-`checked`), `CONTRAST_ROLES` (`surfaces`, `bodyText`, `largeText`),
-`REQUIRED_TOKENS`. Beside the m1 kit, the catalogue holds the shared
-layout's components: `ui-button--danger`, `ui-wordmark`, `ui-backdrop`,
+option's `chosen`; every other control's `hover` and `focused`, `checked`,
+and the number field's `invalid` — `is-invalid`, the refused value a board
+choice's Custom form marks), `CONTRAST_ROLES` (`surfaces`, `bodyText`,
+`largeText`), `REQUIRED_TOKENS` (with `--slider-fill`, the slider's filled
+share the kit sets). Beside the m1 kit, the catalogue holds the switch row
+`ui-switchrow` (`text`, `label`, `help`, optional, and `switch`, the kit's
+switch: label and help on the left, the switch at the right edge, the label
+inked while the switch is locked) and the shared layout's components: `ui-button--danger`, `ui-wordmark`, `ui-backdrop`,
 `ui-frame` (parts `head`, `back`, `title`, `action`, `body`, `foot`,
 `status`, `summary`; slot `window-chrome`), `ui-mode-entry` (`entry`,
 `icon`, `label`, `reason`, `last`, `lock`), `ui-option` (`option`,
@@ -62,8 +66,21 @@ controls reminder, `live`).
   drawn apart from selected, and the selected mode entry is taller, with a
   bigger icon and label; every other control keeps its own hover,
   `:active`, `:focus-visible` (and `body.pad-nav :focus`) and disabled
-  states, ringed from `--color-focus-ring`. `data-force` previews a state
-  (gallery only). Only the selected segmented option is in the Tab order.
+  states, ringed from `--color-focus-ring` with the `--color-focus-halo`
+  halo, which replaces a control's own inset border while it is focused. A
+  board option is selected by a key's focus (`:focus-visible` outside
+  `body.pointer-nav`), the controller's, or, while the pointer is in use,
+  by being the focused option under it — so one its screen focuses when
+  opened by the mouse keeps its resting look. The shell sets
+  `pointer-nav` on mouse input and drops it on a key
+  ([app-shell-ui.md](app-shell-ui.md)).
+  `data-force` previews a state (gallery only). Only the selected segmented
+  option is in the Tab order.
+- **The slider's fill.** The theme draws a slider's track filled from its
+  start to the thumb by `--slider-fill`, which the kit's fill updater
+  (`bindSliderFill`, [app-shell-kit-helpers.md](app-shell-kit-helpers.md))
+  sets on the input; the kit's slider binder and the Settings and pause
+  controls' binder both install it.
 - **The screen frame.** Every non-game screen is a `ui-frame` on a
   `ui-backdrop`, sized to its content and never larger than the window: a
   head (Back with its back key hint, the title centred, an optional

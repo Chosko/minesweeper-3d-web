@@ -455,6 +455,7 @@ const SHOWS = {
   disabled: off,
   checked: (t) => 'checked' in t.attrs || t.attrs['aria-checked'] === 'true' || t.attrs['aria-selected'] === 'true',
   chosen: (t) => t.attrs['aria-pressed'] === 'true',
+  invalid: (t) => classes(t).includes('is-invalid'),
 };
 
 test('the gallery renders every catalogued component, every interactive part in every state, and every decoration slot', () => {

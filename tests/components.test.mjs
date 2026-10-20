@@ -6,11 +6,11 @@ import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import {
   decimalsOf, formatSliderValue, segmentedTargetIndex, segmentedState,
-  bindSlider, bindSegmented, bindTabs, initComponents, formatOverlayTime, formatMineCount, mineCounterDigits, pagerState, PAGER_WINDOW,
+  bindSlider, bindSliderFill, sliderFill, bindSegmented, bindTabs, initComponents, formatOverlayTime, formatMineCount, mineCounterDigits, pagerState, PAGER_WINDOW,
   boardLink, copyBoardCode, bindCodeChip, COPY_FALLBACK, COPIED, bindSelectOnHover, SELECT_ON_HOVER,
   bindFiguresLive, LIVE_FIGURES_INTERVAL, bindFigures,
 } from '../js/ui/components.js';
-import { KIT_CATALOGUE } from '../js/ui/kit-catalogue.js';
+import { KIT_CATALOGUE, REQUIRED_TOKENS } from '../js/ui/kit-catalogue.js';
 import { KEY_HINTS, keyHintKeys, reminderKeys } from '../js/settings/bindings.js';
 import { GLYPHS } from '../js/gamepad.js';
 import { UI, boardTitle3D, shortTitle3D, figuresLine } from '../js/ui.js';
@@ -39,6 +39,7 @@ const COMPONENTS = {
   'ui-card': { interactive: false },
   'ui-panel': { interactive: false },
   'ui-toggle': { interactive: true, control: '.ui-toggle__input' },
+  'ui-switchrow': { interactive: false },
   'ui-slider': { interactive: true, control: '.ui-slider__input' },
   'ui-segmented': { interactive: true, control: '.ui-segmented__option' },
   'ui-stat': { interactive: false },
@@ -194,8 +195,15 @@ test('every interactive component has its states in the theme: buttons, menu ent
     assert.match(own, /:disabled|\[aria-disabled="true"\]/, `${name} disabled`);
     if (c.selectable) {
       const cls = c.control.split('.').pop();
-      assert.match(own, new RegExp(`(^|\\s)\\.${cls}:focus,`), `${name} selected while focused, by any input`);
-      assert.doesNotMatch(own, /:hover/, `${name} has no hover look of its own`);
+      if (cls === 'ui-option') {
+        // A board option opened by pointer keeps its resting look: selected on keyboard focus only.
+        assert.match(own, /(^|\s)\.ui-option:focus-visible,/, `${name} selected on keyboard focus`);
+        const plain = own.split(/,|\n/).map((s) => s.trim()).filter((s) => /^\.ui-option\S*:focus$/.test(s));
+        assert.deepEqual(plain, [], `${name} is not selected by a pointer's focus`);
+        assert.match(own, /body:not\(\.pointer-nav\) \.ui-option:focus-visible,/, `${name}: a key's focus selects it outside pointer use`);
+        assert.match(own, /body\.pointer-nav \.ui-option:focus:hover,/, `${name}: the mouse selects the option it focused, under the pointer`);
+      } else assert.match(own, new RegExp(`(^|\\s)\\.${cls}:focus,`), `${name} selected while focused, by any input`);
+      assert.doesNotMatch(own.replace(/:focus:hover/g, ''), /:hover/, `${name} has no hover look of its own`);
     } else {
       assert.match(own, /:hover/, `${name} hover`);
       assert.match(own, /:focus-visible/, `${name} keyboard focus`);
@@ -932,6 +940,8 @@ class FakeEl {
     this.tabIndex = 0;
     this.dispatched = [];
     this.focused = false;
+    const props = {};
+    this.style = { setProperty: (n, v) => { props[n] = String(v); }, getPropertyValue: (n) => props[n] ?? '' };
   }
   getAttribute(n) { return n in this.attrs ? this.attrs[n] : null; }
   setAttribute(n, v) { this.attrs[n] = String(v); }
@@ -1016,6 +1026,38 @@ test('bindSlider shows the formatted value and follows input', () => {
   input.value = '1';
   input.fire('input');
   assert.equal(output.textContent, '0.75×', 'unbind stops updates');
+});
+
+test('sliderFill: the share of the range from its minimum to the value, clamped, the native 0–100 range by default', () => {
+  assert.equal(sliderFill('25', '0', '100'), 0.25);
+  assert.equal(sliderFill('1', '0.25', '3'), 0.2727);
+  assert.equal(sliderFill('70', null, null), 0.7, 'a range input is 0–100 by default');
+  assert.equal(sliderFill('-5', '0', '10'), 0);
+  assert.equal(sliderFill('12', '0', '10'), 1);
+  assert.equal(sliderFill('3', '3', '3'), 0, 'an empty range is unfilled');
+});
+
+test('the slider fill: the kit sets --slider-fill on the input and keeps it in step on input and on a value set by a script', () => {
+  const input = new FakeEl({ class: 'ui-slider__input', value: '0.5', min: '0', max: '1', step: '0.05' });
+  const unbind = bindSliderFill(input);
+  assert.equal(input.style.getPropertyValue('--slider-fill'), '0.5');
+  input.value = '0.75';
+  assert.equal(input.style.getPropertyValue('--slider-fill'), '0.75', 'a value set by a script moves the fill');
+  assert.equal(input.value, '0.75', 'and is still the value');
+  input.style.setProperty('--slider-fill', 'stale');
+  input.fire('input');
+  assert.equal(input.style.getPropertyValue('--slider-fill'), '0.75', 'an input event redraws it');
+  unbind();
+  input.value = '0.1';
+  assert.equal(input.value, '0.1', 'unbind leaves the value working');
+  assert.equal(input.style.getPropertyValue('--slider-fill'), '0.75', 'unbind stops updates');
+  // The kit's slider binder and the Settings controls' binder both keep the fill.
+  const root = new FakeEl({ class: 'ui-slider' });
+  const ranged = new FakeEl({ class: 'ui-slider__input', value: '30', min: '0', max: '100' });
+  root.children.push(ranged, new FakeEl({ class: 'ui-slider__value' }));
+  bindSlider(root);
+  assert.equal(ranged.style.getPropertyValue('--slider-fill'), '0.3');
+  assert.match(read('js/settings/page.js'), /bindSliderFill\(input\)/, 'the Settings and pause sliders fill too');
 });
 
 test('bindSegmented selects on click and arrow keys, skips disabled options and reports changes', () => {
@@ -1411,9 +1453,9 @@ test('the Classic 2D window lays the figures panel beside the board, under it be
 test('on a fine pointer every hit area the coarse rules touch is as it was', () => {
   const top = rules(topLevel(CSS));
   const body = (sel) => top.filter(([s]) => s === sel).map(([, b]) => b).join(';');
-  assert.match(body('.ui-toggle__input'), /width: 44px;[\s\S]*height: 24px;/);
+  assert.match(body('.ui-toggle__input'), /width: 60px;[\s\S]*height: 34px;/);
   assert.match(body('.ui-slider__input'), /height: 28px;/);
-  assert.match(body('.ui-slider__input::-webkit-slider-thumb'), /width: 20px;[\s\S]*height: 20px;/);
+  assert.match(body('.ui-slider__input::-webkit-slider-thumb'), /width: 26px;[\s\S]*height: 26px;/);
   assert.doesNotMatch(topLevel(CSS), /\.ui-toggle__input::after\s*\{/, 'the 44 px switch square only under the coarse rule');
   assert.doesNotMatch(topLevel(STYLE), /#hud-tap[^{]*\{[^}]*display:\s*(inline-)?(flex|block)/, 'the switch shows only under the coarse rule');
   assert.doesNotMatch(topLevel(STYLE), /#touch-modes \.ui-button[^{]*\{[^}]*44px/, 'the touch toolbar keeps its fine-pointer size');
@@ -1848,7 +1890,7 @@ test('the base gives the frame, backdrop and slots their structure: the frame bo
 });
 
 test('the theme draws the mode entry taller when selected, the chosen board option as a fill and check apart from selected, and no hover on either', () => {
-  const focusRules = (cls) => THEME_RULES.filter(([sel]) => sel.includes(`.${cls}:focus,`) && sel.includes(`.${cls}[data-force~="focus"]`)).map(([, b]) => b).join(';');
+  const focusRules = (cls) => THEME_RULES.filter(([sel]) => /:focus(-visible)?,/.test(sel) && sel.includes(`.${cls}:focus`) && sel.includes(`.${cls}[data-force~="focus"]`)).map(([, b]) => b).join(';');
   assert.match(focusRules('ui-mode-entry'), /flex-grow:\s*1\.45/, 'the selected entry takes a larger share of the list');
   assert.match(focusRules('ui-mode-entry'), /min-height:/, 'and is taller');
   assert.ok(THEME_RULES.some(([sel, b]) => sel.includes('.ui-mode-entry:focus .ui-mode-entry__label') && /font-size:\s*var\(--font-size-2xl\)/.test(b)), 'with a bigger label');
@@ -2590,3 +2632,239 @@ for (const [size, device, place] of WINDOW_SIZES) {
     }
   });
 }
+
+// ---------------------------------------------------------------- form controls as J-Components draws them
+
+// The touch step: the phone sizes, held upright or sideways.
+const TOUCH_STEP = '@media (max-width: 719px), (max-height: 500px) and (orientation: landscape)';
+const touchStep = (css) => [...css.matchAll(/@media \(max-width: 719px\), \(max-height: 500px\) and \(orientation: landscape\) \{([\s\S]*?)\n\}/g)].map((m) => m[1]).join('\n');
+// Every kit control whose focus is a ring rather than a selected state.
+const RINGED = ['.ui-toggle__input', '.ui-slider__input', '.ui-segmented__option', '.ui-field__input', '.ui-link', '.ui-tabs__tab', '.ui-checkbox__input'];
+
+test('the switch: 60 × 34 with a 24 px knob at 5 px, at 31 px when on; 64 × 38 with a 28 px knob at the touch step', () => {
+  const top = rules(topLevel(CSS));
+  const body = (sel) => top.filter(([s]) => s === sel).map(([, b]) => b).join(';');
+  assert.match(body('.ui-toggle__input'), /width: 60px;[\s\S]*height: 34px;/);
+  assert.match(body('.ui-toggle__input::before'), /top: 5px;[\s\S]*left: 5px;[\s\S]*width: 24px;[\s\S]*height: 24px;/);
+  assert.match(body('.ui-toggle__input:checked::before'), /left: 31px;/);
+  assert.ok(CSS.includes(TOUCH_STEP), 'the base names the touch step');
+  const touch = rules(touchStep(CSS));
+  const tb = (sel) => touch.filter(([s]) => s === sel).map(([, b]) => b).join(';');
+  assert.match(tb('.ui-toggle__input'), /width: 64px;[\s\S]*height: 38px;/);
+  assert.match(tb('.ui-toggle__input::before'), /width: 28px;[\s\S]*height: 28px;/);
+});
+
+test('the switch row: the label over its help line on the left, the switch at the right edge; catalogued, styled and in the gallery, its label inked when the switch is locked', () => {
+  const head = RAW.match(/^\/\*([\s\S]*?)\*\//)[1];
+  assert.match(head, /ui-switchrow — /, 'the head documents the switch row');
+  const row = kit('ui-switchrow');
+  assert.ok(row && row.kind === 'component', 'the catalogue holds the switch row');
+  assert.deepEqual(row.parts.map((p) => [p.name, p.optional]), [['text', false], ['label', false], ['help', true], ['switch', false]]);
+  assert.equal(kitPart('ui-switchrow', 'switch').as, 'ui-toggle', 'its switch is the kit\'s switch');
+  assert.match(baseBody('.ui-switchrow'), /display:\s*flex/);
+  assert.match(baseBody('.ui-switchrow'), /justify-content:\s*space-between/, 'the switch at the right edge');
+  assert.match(baseBody('.ui-switchrow__text'), /flex-direction:\s*column/, 'the label over its help line');
+  assert.match(baseBody('.ui-switchrow__label'), /font-size:\s*18px/);
+  assert.match(baseBody('.ui-switchrow__label'), /font-weight:\s*var\(--font-weight-bold\)/);
+  assert.match(baseBody('.ui-switchrow__help'), /font-size:\s*14px/);
+  assert.match(themeBody('.ui-switchrow__label'), /color:\s*var\(--color-ink\)/);
+  assert.match(themeBody('.ui-switchrow__help'), /color:\s*var\(--color-ink-muted\)/);
+  assert.ok(!THEME_RULES.some(([sel, b]) => sel.includes('ui-switchrow') && /--color-locked-ink/.test(b)), 'a locked switch leaves its row\'s label inked');
+  const rows = within(LAYOUT_TAGS, '.ui-switchrow');
+  assert.ok(rows.length >= 2, 'the gallery shows the switch row');
+  const parts = rows.map((r) => inside(LAYOUT, LAYOUT_TAGS, r));
+  for (const p of parts) {
+    const label = within(p, '.ui-switchrow__label')[0];
+    const input = within(p, '.ui-toggle__input')[0];
+    assert.ok(label.tag === 'label' && input && label.attrs.for === input.attrs.id, 'the label names the switch');
+    assert.equal(input.attrs.role, 'switch');
+    const help = within(p, '.ui-switchrow__help')[0];
+    if (help) assert.equal(input.attrs['aria-describedby'], help.attrs.id, 'the help line describes the switch');
+  }
+  assert.ok(parts.some((p) => within(p, '.ui-toggle__input').some((i) => 'disabled' in i.attrs)), 'a row with its switch locked');
+  assert.ok(parts.some((p) => within(p, '.ui-switchrow__help').length === 0), 'a row with no help line');
+});
+
+test('the slider: an 8 px track filled in the teal edge from the start to the thumb by --slider-fill, a 26 px thumb, the value after the track under the label', () => {
+  for (const track of ['::-webkit-slider-runnable-track', '::-moz-range-track']) {
+    const body = themeBody(`.ui-slider__input${track}`);
+    assert.match(body, /linear-gradient\(to right, var\(--color-teal-edge\) [^,]*var\(--slider-fill\)[^,]*, var\(--color-line\)/, `${track}: the fill, then the line`);
+    assert.match(baseBody(`.ui-slider__input${track}`), /height: 8px/);
+  }
+  assert.match(THEME_RAW, /--slider-fill:\s*0;/, 'the theme declares the fill before the kit sets it');
+  assert.ok(REQUIRED_TOKENS.includes('--slider-fill'), 'every theme declares it');
+  assert.match(baseBody('.ui-slider__input::-moz-range-thumb'), /width: 26px; height: 26px;/);
+  const slider = baseBody('.ui-slider');
+  assert.match(slider, /grid-template-columns:\s*minmax\(0, 1fr\) auto/);
+  assert.match(slider, /column-gap:\s*14px/);
+  assert.match(baseBody('.ui-slider__label'), /grid-column:\s*1 \/ -1/, 'the label over the row');
+  assert.match(baseBody('.ui-slider__input'), /grid-area:\s*2 \/ 1/, 'the track first on the row');
+  const value = baseBody('.ui-slider__value');
+  assert.match(value, /grid-area:\s*2 \/ 2/, 'the value after it');
+  assert.match(value, /min-width:\s*64px/);
+  assert.match(value, /text-align:\s*right/);
+  assert.match(value, /font-size:\s*16px/);
+  assert.match(read('js/ui/components.js'), /setProperty\('--slider-fill'/, 'the kit sets it');
+});
+
+test('the number field: 48 px high, 0 14 px padding, 19 px mono bold, radius 12, a 2 px border; refused, is-invalid in the danger colour with its fill as a halo', () => {
+  const input = baseBody('.ui-field__input');
+  assert.match(input, /height:\s*48px/);
+  assert.match(input, /padding:\s*0 14px/);
+  assert.match(input, /font-size:\s*19px/);
+  assert.match(input, /font-weight:\s*var\(--font-weight-bold\)/);
+  const drawn = themeBody('.ui-field__input');
+  assert.match(drawn, /border:\s*2px solid var\(--color-field-border\)/);
+  assert.match(drawn, /border-radius:\s*var\(--radius-md\)/);
+  const invalid = themeBody('.ui-field__input.is-invalid');
+  assert.match(invalid, /border-color:\s*var\(--color-danger\)/);
+  assert.match(invalid, /box-shadow:\s*0 0 0 3px var\(--color-danger-fill\)/);
+  assert.equal(kitPart('ui-field', 'input').states.invalid, '.ui-field__input.is-invalid', 'the catalogue holds the invalid state');
+  const shown = TAGS.filter((t) => hasClasses(t, '.ui-field__input.is-invalid'));
+  assert.ok(shown.length > 0 && shown.every((t) => t.attrs['aria-invalid'] === 'true'), 'the gallery shows it, marked aria-invalid');
+  for (const f of ['css/components.css', 'themes/joyful-tiles/theme.css', 'dev/components.html', 'js/classic2d/board-choice.js', 'js/mode3d/board-choice.js']) {
+    assert.doesNotMatch(read(f), /data-adjusted/, `${f}: no adjusted state`);
+  }
+  for (const f of ['js/classic2d/board-choice.js', 'js/mode3d/board-choice.js']) {
+    assert.match(read(f), /classList\.toggle\('is-invalid', /, `${f} marks the refused field is-invalid`);
+  }
+});
+
+test('the small controls: segmented option, checkbox, badge, tab and section heading at J-Components\' metrics, no strike-through on a locked option or tab', () => {
+  const option = baseBody('.ui-segmented__option');
+  assert.match(option, /padding:\s*7px 14px/);
+  assert.match(option, /font-size:\s*15px/);
+  assert.match(option, /font-weight:\s*var\(--font-weight-bold\)/);
+  assert.match(themeBody('.ui-segmented__option'), /border-radius:\s*10px/);
+  for (const sel of ['.ui-segmented__option:disabled', '.ui-tabs__tab:disabled']) {
+    assert.match(themeBody(sel), /color:\s*var\(--color-locked-ink\)/, `${sel} in the locked ink`);
+    assert.doesNotMatch(themeBody(sel), /line-through/, `${sel} is not struck through`);
+  }
+  const box = baseBody('.ui-checkbox');
+  assert.match(box, /gap:\s*8px/);
+  assert.match(box, /font-size:\s*15px/);
+  assert.match(box, /font-weight:\s*var\(--font-weight-bold\)/);
+  const chip = baseBody('.ui-chip');
+  assert.match(chip, /padding:\s*3px 8px/);
+  assert.match(chip, /gap:\s*6px/);
+  assert.match(themeBody('.ui-chip'), /letter-spacing:\s*0\.06em/);
+  assert.match(baseBody('.ui-tabs__tab'), /padding:\s*9px 14px/);
+  const selected = themeBody('.ui-tabs__tab[aria-selected="true"]');
+  assert.match(selected, /color:\s*var\(--color-ink\)/);
+  assert.match(selected, /border-bottom-color:\s*var\(--color-accent\)/);
+  assert.match(themeBody('.ui-tabs__tab'), /border-bottom:\s*3px solid transparent/, 'a 3 px underline');
+  assert.doesNotMatch(selected, /background/, 'no fill on the selected tab');
+  assert.match(baseBody('.ui-heading'), /font-size:\s*13px/);
+  assert.match(themeBody('.ui-heading'), /letter-spacing:\s*0\.2em/);
+});
+
+test('the focus ring: every ringed control takes the switch\'s — a 3 px navy outline at offset 4 and the 10 px yellow halo, no inset border while focused', () => {
+  for (const cls of RINGED) {
+    const ring = THEME_RULES.filter(([sel]) => sel.split(',').map((s) => s.trim()).includes(`${cls}:focus-visible`)).map(([, b]) => b).join(';');
+    assert.match(ring, /outline:\s*3px solid var\(--color-focus-ring\)/, `${cls}: the outline`);
+    assert.match(ring, /outline-offset:\s*4px/, `${cls}: at offset 4`);
+    assert.match(ring, /box-shadow:\s*0 0 0 10px var\(--color-focus-halo\) !important\s*(;|$)/, `${cls}: the halo alone, over its hover and pressed looks`);
+    for (const sel of [`body.pad-nav ${cls}:focus`, `${cls}[data-force~="focus"]`]) {
+      assert.ok(THEME_RULES.some(([s, b]) => s.split(',').map((x) => x.trim()).includes(sel) && /--color-focus-halo/.test(b)), `${sel} shows it too`);
+    }
+  }
+  assert.ok(!THEME_RULES.some(([sel, b]) => /:focus|data-force~="focus"/.test(sel) && /9px var\(--color-focus-halo\)/.test(b)), 'no 9 px halo remains');
+});
+
+test('in a browser, the form controls draw as J-Components does: the switch and its knob, the slider\'s fill following a script, the invalid field, the halo on every ringed control', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`${base}/dev/components.html`);
+    await page.evaluate(() => globalThis.galleryReady);
+    const drawn = await page.evaluate((ringed) => {
+      const box = (e) => { const r = e.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; };
+      const on = document.querySelector('[aria-labelledby="g-toggle"] .ui-toggle__input:checked');
+      const off = document.querySelector('[aria-labelledby="g-toggle"] .ui-toggle__input:not(:checked):not([data-force]):not(:disabled)');
+      const knob = (e) => { const c = getComputedStyle(e, '::before'); return [c.left, c.width]; };
+      const slider = document.querySelector('#sl-1');
+      const fill = () => slider.style.getPropertyValue('--slider-fill');
+      const before = fill();
+      slider.value = slider.max;
+      const after = fill();
+      const invalid = getComputedStyle(document.querySelector('.ui-field__input.is-invalid'));
+      const rings = ringed.map((cls) => {
+        const e = document.querySelector(`${cls}[data-force~="focus"]`);
+        const c = getComputedStyle(e);
+        return [cls, c.outlineWidth, c.outlineOffset, c.boxShadow];
+      });
+      const row = document.querySelector('.ui-switchrow');
+      const label = row.querySelector('.ui-switchrow__label');
+      const sw = row.querySelector('.ui-toggle__input');
+      const locked = [...document.querySelectorAll('.ui-switchrow')].find((r) => r.querySelector('.ui-toggle__input:disabled'));
+      return {
+        switch: box(off), knobs: [knob(off), knob(on)], before, after,
+        invalid: [invalid.borderTopColor, invalid.boxShadow, invalid.height],
+        rings,
+        row: { switchRight: Math.round(row.getBoundingClientRect().right - sw.getBoundingClientRect().right), labelLeft: label.getBoundingClientRect().left < sw.getBoundingClientRect().left },
+        lockedInk: [getComputedStyle(locked.querySelector('.ui-switchrow__label')).color, getComputedStyle(label).color],
+      };
+    }, RINGED);
+    assert.deepEqual(drawn.switch, [60, 34]);
+    assert.deepEqual(drawn.knobs, [['5px', '24px'], ['31px', '24px']]);
+    assert.ok(Number(drawn.before) > 0 && Number(drawn.before) < 1, `the gallery's slider is partly filled (${drawn.before})`);
+    assert.equal(drawn.after, '1', 'a value set by a script fills the track to the end');
+    assert.deepEqual(drawn.invalid, ['rgb(180, 42, 42)', 'rgb(255, 225, 222) 0px 0px 0px 3px', '48px']);
+    for (const [cls, width, offset, shadow] of drawn.rings) {
+      assert.deepEqual([width, offset, shadow], ['3px', '4px', 'rgb(255, 201, 60) 0px 0px 0px 10px'], `${cls} focused`);
+    }
+    assert.equal(drawn.row.switchRight, 0, 'the switch at the row\'s right edge');
+    assert.ok(drawn.row.labelLeft, 'the label on its left');
+    assert.equal(drawn.lockedInk[0], drawn.lockedInk[1], 'a locked row\'s label keeps its ink');
+    // A focused switch under the pointer keeps its halo.
+    const forcedSwitch = '[aria-labelledby="g-toggle"] .ui-toggle__input[data-force~="focus"]';
+    await page.locator(forcedSwitch).hover();
+    assert.equal(await page.evaluate((s) => getComputedStyle(document.querySelector(s)).boxShadow, forcedSwitch), 'rgb(255, 201, 60) 0px 0px 0px 10px', 'hovered, the focused switch keeps its halo');
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    const touch = await page.evaluate(() => {
+      const e = document.querySelector('[aria-labelledby="g-toggle"] .ui-toggle__input:checked');
+      const r = e.getBoundingClientRect();
+      return [Math.round(r.width), Math.round(r.height), getComputedStyle(e, '::before').width, getComputedStyle(e, '::before').left];
+    });
+    assert.deepEqual(touch, [64, 38, '28px', '31px'], 'the touch step\'s switch');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('in a browser, a board choice opened by the mouse keeps its chosen option at rest; a key\'s focus, or the pointer over it, selects it', async (t) => {
+  const env = await suite.open(t);
+  if (!env) return;
+  const { browser, base } = env;
+  try {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`${base}/index.html?still-backdrop`);
+    await page.waitForFunction(() => document.getElementById('menu-entry-classic-2d')?.getBoundingClientRect().width > 0, null, { timeout: patience(20000) });
+    await page.click('#menu-entry-classic-2d');
+    await page.waitForFunction(() => document.activeElement?.classList.contains('ui-option'), null, { timeout: patience(10000) });
+    // Let the option's own transition finish before reading its look.
+    const look = async () => { await page.waitForTimeout(400); return page.evaluate(() => { const e = document.activeElement; return { chosen: e.getAttribute('aria-pressed'), transform: getComputedStyle(e).transform }; }); };
+    const opened = await look();
+    assert.deepEqual(opened, { chosen: 'true', transform: 'none' }, 'opened by the mouse, the chosen option keeps its resting drop');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowUp');
+    const keyed = await look();
+    assert.notEqual(keyed.transform, 'none', 'a key\'s focus selects the option');
+    const box = await page.evaluate(() => { const r = document.activeElement.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
+    await page.mouse.move(box.x, box.y);
+    await page.mouse.move(box.x + 2, box.y);
+    const hovered = await look();
+    assert.notEqual(hovered.transform, 'none', 'the mouse over the focused option selects it');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});

@@ -1,5 +1,5 @@
 // Behaviour helpers for the component kit (css/components.css): the slider's
-// value display, the segmented choice's and the tabs' selection, the one selected control
+// value display and fill, the segmented choice's and the tabs' selection, the one selected control
 // under a moving mouse, the key hints, the figures panel's live part, the pager and the code chip. The logic is plain
 // functions; the binders touch only the elements they are handed, so the
 // module needs no document and runs under Node with stub elements.
@@ -29,6 +29,18 @@ export function formatSliderValue(value, { format = 'number', step, max, unit = 
   }
   const text = v.toFixed(decimalsOf(step));
   return format === 'multiplier' ? `${text}×${unit}` : `${text}${unit}`;
+}
+
+/**
+ * The share of a range input's range from its minimum to `value`, 0 to 1 (four decimals), clamped;
+ * an absent min or max is the native range's 0 or 100, and an empty range is unfilled.
+ */
+export function sliderFill(value, min, max) {
+  const lo = min === null || min === undefined || min === '' ? 0 : Number(min);
+  const hi = max === null || max === undefined || max === '' ? 100 : Number(max);
+  const v = Number(value);
+  if (!(hi > lo) || !Number.isFinite(v)) return 0;
+  return Math.round(Math.min(1, Math.max(0, (v - lo) / (hi - lo))) * 10000) / 10000;
 }
 
 const STEP = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
@@ -120,11 +132,38 @@ const CustomEventShim = globalThis.CustomEvent ?? class {
   constructor(type, init = {}) { Object.assign(this, { type, bubbles: !!init.bubbles, detail: init.detail }); }
 };
 
-/** Keeps `.ui-slider__value` showing the formatted value of `.ui-slider__input`. Returns unbind. */
+/**
+ * Keeps a `.ui-slider__input`'s fill in step with its value: sets `--slider-fill` (sliderFill) on the
+ * input, which the theme draws the track's fill from, on every input event and on every value a
+ * script sets. Returns unbind.
+ */
+export function bindSliderFill(input) {
+  const update = () => {
+    input.style.setProperty('--slider-fill', String(sliderFill(input.value, input.getAttribute('min'), input.getAttribute('max'))));
+  };
+  // A script's `input.value = …` fires no event: the input's own value property hands it on.
+  let owner = input;
+  let desc;
+  while (owner && !(desc = Object.getOwnPropertyDescriptor(owner, 'value'))) owner = Object.getPrototypeOf(owner);
+  let held = input.value;
+  const get = desc?.get ? () => desc.get.call(input) : () => held;
+  const set = desc?.set ? (v) => desc.set.call(input, v) : (v) => { held = v; };
+  Object.defineProperty(input, 'value', { configurable: true, enumerable: true, get, set(v) { set(v); update(); } });
+  input.addEventListener('input', update);
+  update();
+  return () => {
+    input.removeEventListener('input', update);
+    if (desc?.get) delete input.value;
+    else Object.defineProperty(input, 'value', { configurable: true, enumerable: true, writable: true, value: held });
+  };
+}
+
+/** Keeps `.ui-slider__value` showing the formatted value of `.ui-slider__input`, and its fill. Returns unbind. */
 export function bindSlider(root) {
   const input = root.querySelector('.ui-slider__input');
   const output = root.querySelector('.ui-slider__value');
   if (!input || !output) return () => {};
+  const unfill = bindSliderFill(input);
   const show = () => {
     output.textContent = formatSliderValue(input.value, {
       format: input.getAttribute('data-format') ?? undefined,
@@ -135,7 +174,7 @@ export function bindSlider(root) {
   };
   show();
   input.addEventListener('input', show);
-  return () => input.removeEventListener('input', show);
+  return () => { input.removeEventListener('input', show); unfill(); };
 }
 
 /**

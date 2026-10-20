@@ -812,7 +812,7 @@ test('in a browser with a mouse at 1280 × 800, the Classic 2D window, the menu,
     const ms = (fn, arg) => page.evaluate(fn, arg);
     assert.equal(await ms(() => document.getElementById('touch-note').classList.contains('hidden')), true, 'no touch note with a mouse');
 
-    // Settings: a switch stays 44 × 24, a slider 28 px tall with its 20 px thumb.
+    // Settings: a switch stays 60 × 34, a slider 28 px tall with its 26 px thumb.
     await page.click('#menu-entry-settings');
     const sizes = await ms(() => {
       const shown = (sel) => [...document.querySelectorAll(`#settings ${sel}`)].map((e) => e.getBoundingClientRect()).find((r) => r.width > 0);
@@ -820,7 +820,7 @@ test('in a browser with a mouse at 1280 × 800, the Classic 2D window, the menu,
       const slider = shown('.ui-slider__input');
       return { toggle: [toggle.width, toggle.height], slider: slider.height };
     });
-    assert.deepEqual(sizes, { toggle: [44, 24], slider: 28 });
+    assert.deepEqual(sizes, { toggle: [60, 34], slider: 28 });
     await page.keyboard.press('Escape');
 
     await page.click('#menu-entry-classic-2d');

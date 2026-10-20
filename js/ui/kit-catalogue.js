@@ -15,9 +15,10 @@
 // `selected` state (screen-components § Scope and non-goals), so those parts carry default,
 // selected, pressed and disabled, and a board option also `chosen`, the board it holds, apart from
 // selected. Every other control carries default, hover, pressed, focused and disabled, plus
-// `checked` where it holds a chosen value (a switch, a checkbox, a segmented option, a tab).
+// `checked` where it holds a chosen value (a switch, a checkbox, a segmented option, a tab) and
+// `invalid` where a screen marks a refused value (the number field).
 
-export const STATES = Object.freeze(['default', 'hover', 'pressed', 'focused', 'selected', 'checked', 'chosen', 'disabled']);
+export const STATES = Object.freeze(['default', 'hover', 'pressed', 'focused', 'selected', 'checked', 'chosen', 'invalid', 'disabled']);
 
 const focus = (sel) => `${sel}:focus-visible, body.pad-nav ${sel}:focus`;
 
@@ -80,6 +81,15 @@ export const KIT_CATALOGUE = Object.freeze([
       part('label', '.ui-toggle__label'),
     ],
   }),
+  // A switch with its label over an optional help line (its text) on the left; the switch is the kit's switch.
+  component('ui-switchrow', {
+    parts: [
+      part('text', '.ui-switchrow__text'),
+      part('label', '.ui-switchrow__label'),
+      part('help', '.ui-switchrow__help', { optional: true }),
+      part('switch', '.ui-switchrow .ui-toggle__input', { as: 'ui-toggle' }),
+    ],
+  }),
   component('ui-slider', {
     parts: [
       part('label', '.ui-slider__label'),
@@ -126,7 +136,7 @@ export const KIT_CATALOGUE = Object.freeze([
   component('ui-field', {
     parts: [
       part('label', '.ui-field__label'),
-      control('input', '.ui-field__input'),
+      control('input', '.ui-field__input', { invalid: '.ui-field__input.is-invalid' }),
     ],
   }),
   component('ui-link', {
@@ -307,4 +317,7 @@ export const REQUIRED_TOKENS = Object.freeze([
   '--color-replay-bbbv-5', '--color-replay-bbbv-6', '--color-replay-bbbv-isolated',
   // the Settings theme list's swatch (js/settings/page.js SWATCH_TOKENS) beyond the contrast roles
   '--color-accent-fill',
+  // a slider's filled share of its range, which the kit sets on the input (bindSliderFill); a theme
+  // declares it before the kit first sets it
+  '--slider-fill',
 ]);

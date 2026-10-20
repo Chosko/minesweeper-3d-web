@@ -65,7 +65,8 @@ Page (`js/settings/page.js`)
 - `bindSettingControls(elements, store, { onUserChange?, theme?,
   themeSheet? })` → unbind. Each root carrying `data-setting` shows the
   store's value (loaded and every change made elsewhere) and writes the
-  player's change at once. Given the theme applier (`theme`), the theme list
+  player's change at once; a slider's fill follows its value through the
+  kit's `bindSliderFill`. Given the theme applier (`theme`), the theme list
   shows the active theme instead and a pick calls `setTheme(id)`, saving the
   setting once the switch resolves, a failed one putting the selection back;
   each swatch is filled from `themeSheet(entry)` → Promise of the

@@ -555,7 +555,7 @@ test('in a browser, the custom board validates, the switch follows the limit and
     await page.fill('#c-y', '0');
     assert.equal(await refusal(), 'Height must be a whole number from 1 to 100.');
     assert.equal(await info(), '', 'no size line while a side is out of range');
-    assert.ok(await ms(() => document.getElementById('c-y').hasAttribute('data-adjusted')));
+    assert.ok(await ms(() => document.getElementById('c-y').classList.contains('is-invalid')), 'the refused field is marked invalid');
     assert.equal(await ms(() => document.getElementById('c-y').getAttribute('aria-invalid')), 'true');
     await page.fill('#c-y', '1');
     await page.fill('#c-x', '1');

@@ -1461,6 +1461,8 @@ test('in a browser, the board choice: a click chooses, Play or Enter plays; the 
     assert.equal(await ms(() => document.getElementById('c2d-play').disabled), true);
     assert.equal(await shown('c2d-refusal'), true);
     assert.equal(await ms(() => document.getElementById('c2d-mines').getAttribute('aria-invalid')), 'true');
+    assert.equal(await ms(() => document.getElementById('c2d-mines').classList.contains('is-invalid')), true, 'the refused field is marked invalid');
+    assert.equal(await ms(() => document.querySelectorAll('#c2d-choice .ui-field__input.is-invalid').length), 1, 'and only it');
     assert.equal(await text('c2d-summary'), 'Custom · 30 × 16 · 400 mines', 'the refused board summarised');
     for (let i = 0; i < 5; i++) {
       await page.click('#c2d-random');
@@ -1468,6 +1470,7 @@ test('in a browser, the board choice: a click chooses, Play or Enter plays; the 
       assert.ok(f.every(Number.isInteger) && f[0] * f[1] >= 2 && f[2] >= 1 && f[2] < f[0] * f[1], `a valid board: ${f}`);
       assert.equal(await ms(() => document.getElementById('c2d-play').disabled), false);
       assert.equal(await shown('c2d-refusal'), false);
+      assert.equal(await ms(() => document.querySelectorAll('#c2d-choice .ui-field__input.is-invalid').length), 0, 'no field marked invalid');
       assert.equal(await text('c2d-info'), `${(f[0] * f[1]).toLocaleString('en-US')} ${f[0] * f[1] === 1 ? 'cell' : 'cells'} · up to ${maxMines(f[0], f[1]).toLocaleString('en-US')} ${maxMines(f[0], f[1]) === 1 ? 'mine' : 'mines'}`);
     }
 

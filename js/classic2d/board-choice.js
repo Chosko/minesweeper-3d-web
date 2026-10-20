@@ -202,7 +202,7 @@ export function bindBoardChoice({ root, onStart, onBack, onRecords = null, code 
     refusal.classList.toggle('hidden', s.ok);
     if (s.max !== null) inputs[2].max = String(Math.max(1, s.max));
     for (const [i, name] of ['width', 'height', 'mines'].entries()) {
-      inputs[i].toggleAttribute('data-adjusted', s.field === name);
+      inputs[i].classList.toggle('is-invalid', s.field === name);
       if (s.field === name) inputs[i].setAttribute('aria-invalid', 'true');
       else inputs[i].removeAttribute('aria-invalid');
     }

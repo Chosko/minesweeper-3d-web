@@ -615,6 +615,8 @@ class FakeEl {
     this.checked = false;
     this.disabled = false;
     this.tabIndex = 0;
+    const props = {};
+    this.style = { setProperty: (n, v) => { props[n] = String(v); }, getPropertyValue: (n) => props[n] ?? '' };
   }
   getAttribute(n) { return n in this.attrs ? this.attrs[n] : null; }
   setAttribute(n, v) { this.attrs[n] = String(v); }
@@ -667,6 +669,7 @@ test('bound controls show the store\'s values, also the loaded ones', async () =
   await store.set('invertY', false);
   assert.equal(vol.input.value, '50');
   assert.equal(vol.output.textContent, '50%');
+  assert.equal(vol.input.style.getPropertyValue('--slider-fill'), '0.5', 'the fill follows the store');
   assert.deepEqual(theme.options.map((o) => o.attrs['aria-checked']), ['true', 'false', 'false']);
   assert.equal(inv.input.checked, false);
 });

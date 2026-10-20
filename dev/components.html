@@ -138,7 +138,7 @@
         <span class="state">Hover</span><div><label class="ui-field"><span class="ui-field__label">Height</span><input type="number" class="ui-field__input" min="1" max="100" step="1" value="10" data-force="hover"></label></div>
         <span class="state">Pressed</span><div><label class="ui-field"><span class="ui-field__label">Depth</span><input type="number" class="ui-field__input" min="1" max="100" step="1" value="10" data-force="active"></label></div>
         <span class="state">Focused</span><div><label class="ui-field"><span class="ui-field__label">Mines</span><input type="number" class="ui-field__input" min="1" max="1000" step="1" value="25" data-force="focus"></label></div>
-        <span class="state">Adjusted</span><div><label class="ui-field"><span class="ui-field__label">Mines</span><input type="number" class="ui-field__input" min="1" max="1000" step="1" value="1000" data-adjusted></label></div>
+        <span class="state">Invalid</span><div><label class="ui-field"><span class="ui-field__label">Mines</span><input type="number" class="ui-field__input is-invalid" min="1" max="1000" step="1" value="1000" aria-invalid="true"></label></div>
         <span class="state">Disabled</span><div><label class="ui-field"><span class="ui-field__label">Mines</span><input type="number" class="ui-field__input" min="1" max="1000" step="1" value="25" disabled></label></div>
       </div>
     </section>
@@ -354,6 +354,15 @@
         <span class="state">Pressed</span><div><label class="ui-checkbox"><input type="checkbox" class="ui-checkbox__input" data-force="active" checked><span class="ui-checkbox__label">Pinned first</span></label></div>
         <span class="state">Focused</span><div><label class="ui-checkbox"><input type="checkbox" class="ui-checkbox__input" data-force="focus"><span class="ui-checkbox__label">Pinned first</span></label></div>
         <span class="state">Disabled</span><div><label class="ui-checkbox"><input type="checkbox" class="ui-checkbox__input" disabled><span class="ui-checkbox__label">Pinned first</span></label></div>
+      </div>
+    </section>
+
+    <section class="ui-card" aria-labelledby="g-switchrow">
+      <h2 class="ui-card__title" id="g-switchrow">Switch row</h2>
+      <div class="states">
+        <span class="state">On, with help</span><div class="ui-switchrow"><span class="ui-switchrow__text"><label class="ui-switchrow__label" for="g-sr-1">No-guess</label><span class="ui-switchrow__help" id="g-sr-1-help">Every board solvable by logic</span></span><input type="checkbox" role="switch" class="ui-toggle__input" id="g-sr-1" aria-describedby="g-sr-1-help" checked></div>
+        <span class="state">Off</span><div class="ui-switchrow"><span class="ui-switchrow__text"><label class="ui-switchrow__label" for="g-sr-2">Sound</label></span><input type="checkbox" role="switch" class="ui-toggle__input" id="g-sr-2"></div>
+        <span class="state">Locked</span><div class="ui-switchrow"><span class="ui-switchrow__text"><label class="ui-switchrow__label" for="g-sr-3">No-guess</label><span class="ui-switchrow__help" id="g-sr-3-help">Not on a side of 2 cells</span></span><input type="checkbox" role="switch" class="ui-toggle__input" id="g-sr-3" aria-describedby="g-sr-3-help" disabled></div>
       </div>
     </section>
 

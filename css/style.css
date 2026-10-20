@@ -379,6 +379,7 @@ kbd {
 /* The seek bar on one row between its label and the position; on a phone under them. */
 #replay-controls .ui-slider { grid-template-columns: auto minmax(0, 1fr) auto auto; }
 #replay-controls .replay-seek { grid-column: 2; grid-row: 1; }
+#replay-controls :is(.ui-slider__label, .ui-slider__value) { grid-area: auto; }
 .replay-tools { flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
 .replay-transport { flex-wrap: nowrap; gap: var(--space-2); }
 .replay-files { flex: none; flex-wrap: nowrap; gap: var(--space-2); margin-inline-start: auto; }
