@@ -1035,7 +1035,7 @@ Preconditions: none
 
 Status: [MISSING]
 Target: claude
-Files: js/themes/applier.js, tests/theme.test.mjs, tests/fixtures/themes/fixture-theme.js, tests/fixtures/themes/fixture-dusk/, .claude/context/app-shell-kit.md, .claude/context/testing.md
+Files: js/themes/applier.js, tests/theme.test.mjs, tests/fixtures/themes/fixture-theme.js, tests/fixtures/themes/fixture-dusk/, .claude/context/app-shell-themes.md, .claude/context/testing.md
 Preconditions: none
 
 ---
