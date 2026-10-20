@@ -76,7 +76,7 @@ Context: none
 
 Done: 2026-10-20, commits `f6d1394`, `0cd4696` (23 files, +563/-118). Premise wrong: styling the board option on `:focus-visible` alone does not work in Chromium after a mouse click; `js/main.js` now sets `body.pointer-nav` on mouse input and the theme keys the selected look on it. The focus halo is `!important`; `STATES` gains `invalid` and `REQUIRED_TOKENS` `--slider-fill`.
 
-## [ ] 7. Implement task 220 — Kit icon set and leading-icon slot
+## [~] 7. Implement task 220 — Kit icon set and leading-icon slot
 
 Depends on: 5
 
@@ -152,7 +152,7 @@ Context: none
 
 Done: 2026-10-20, commit `f150d4d` (20 files, +627/-242). Decisions: the cursor ring sits on a third `board-ring` canvas passed as `createBoardView`'s `overlay` option; the start cell is a new `marked` tile state (a flagged or pressed start cell draws as flagged/pressed); flat `hairline` is now in CSS px; mine glyph proportions are the agent's own, since the canvas sprites could not be fetched.
 
-## [~] 14. Implement task 227 — Board frame and framed previews
+## [x] 14. Implement task 227 — Board frame and framed previews
 
 Depends on: 11
 
@@ -162,11 +162,14 @@ Context: none
 /task-implement 227 --review
 ```
 
+Done: 2026-10-20, commits `4408553`, `f9e0595` (24 files, +399/-147). Decisions: previews and the replay viewer mount with `framed: true` and the view builds the frame; a scrolling board shows no frame and is clipped at `--board-viewport-radius`; the replay viewer always fits the whole board; the menu (1024×768) and replay (1920×1080) preview tile sizes are left unpinned for tasks 228 and 239.
+
 ## [ ] 15. Implement task 228 — Main menu: mode entries, scene panel, per-size layout, build label and scroll
 
 Depends on: 7, 10
 
-Context: none
+Context:
+- 2026-10-20 (from step 14): task 227 left the menu's preview tile size unpinned — at 1024×768 it draws 27 px where the criteria give 23, and the Daily focus 28 px / 933 px wide against 27 px / about 872 px; this task's layout should pin them.
 
 ```prompt
 /task-implement 228 --review
@@ -276,7 +279,8 @@ Context: none
 
 Depends on: 9, 10, 14
 
-Context: none
+Context:
+- 2026-10-20 (from step 14): task 227 left the replay viewer's tile size unpinned — at 1920×1080 it draws 40 px where the criteria give 34; the viewer always fits the whole board (down to a 1 px tile) and this task's layout should pin the size.
 
 ```prompt
 /task-implement 239 --review
