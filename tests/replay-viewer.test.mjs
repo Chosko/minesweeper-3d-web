@@ -12,8 +12,9 @@ import { SPEEDS, DEFAULT_SPEED, LEAD_IN_MS, createPlaybackClock } from '../js/re
 import { movementTrack, pointerAt, cursorAt, pointerPixel, createViewer2D, trailPoints, TRAIL_MS } from '../js/replay/viewer-2d.js';
 import {
   FAILURES, COMMANDS, REPLAY_KEYS, REPLAY_PAD, REPLAY_KEY_LINE, SEEK_STEP_MIN_MS, MAX_REPLAY_FILE_BYTES, seekStep, clockText, overlayFigures, endLine,
-  pauseMarks, pausesText, seekTicks, actionCue, regionTints, prepareReplay, createReplayViewer, replayCode, replayTitle,
+  pauseMarks, pausesText, seekTicks, actionCue, regionTints, prepareReplay, createReplayViewer, replayCode, replayTitle, replayFigures,
 } from '../js/replay/viewer.js';
+import { FIGURES, liveFigures, figuresLine } from '../js/shell/live-figures.js';
 import { encodeBoardCode, parseBoardCode } from '../js/records/board-code.js';
 import { replayFileName } from '../js/records/replay-list.js';
 import { boardKey } from '../js/records/board.js';
@@ -429,10 +430,10 @@ function fakeViewers() {
   };
   return { drawn, made, pressed, how, calls, square: board('square'), box: board('box') };
 }
-function viewerOver({ library = fakeLibrary(), viewers = fakeViewers(), sound = null, files = null } = {}) {
+function viewerOver({ library = fakeLibrary(), viewers = fakeViewers(), sound = null, files = null, bests } = {}) {
   const view = fakeScreen();
   const router = fakeRouter();
-  const viewer = createReplayViewer({ library, router, view, viewers, sound, files });
+  const viewer = createReplayViewer({ library, router, view, viewers, sound, files, bests });
   return { viewer, view, router, viewers };
 }
 const RETURN = { screen: 'records', data: { boardKey: 'classic-2d:square:9x9:10:guess' } };
@@ -710,6 +711,67 @@ test('the controls are operable by keyboard and controller', async () => {
   assert.equal(viewer.pad(() => false), false, 'nothing pressed is left to menu navigation');
 });
 
+// ---------------------------------------------------------------- the live figures
+
+test('the live figures follow the playback position, a seek back or forward included, from the frame\'s counts and the replay clock', async () => {
+  const stored = { time: { value: 9000 }, bbbvPerSecond: { value: 2 } };
+  const asked = [];
+  const { viewer, view } = viewerOver({ bests: (board) => { asked.push(board); return stored; } });
+  await viewer.show({ replay: blobOf(WON) });
+  assert.deepEqual(asked, [createSimulator(blobOf(WON)).replay.header.board], 'the bests of the replay\'s board');
+  const at = () => Object.fromEntries(FIGURES.map((name) => [name, view.last.live[name] && [view.last.live[name].text, view.last.live[name].detail]]));
+  assert.deepEqual(at(), {
+    bbbv: ['0 / 15', null], pace: null, rate: [DASH, 'Best 2.00'], clicks: ['0', `Efficiency ${DASH}`], flags: ['0', '10 mines left'],
+  }, 'the start position: nothing solved, no time elapsed');
+  viewer.seek(5000);
+  assert.deepEqual(at(), {
+    bbbv: ['7 / 15', null], pace: ['+0.800 s', 'Best 9.000 s'], rate: ['1.40', 'Best 2.00'], clicks: ['19', 'Efficiency 36.8%'], flags: ['3', '7 mines left'],
+  }, '5 s in: behind the best\'s pace');
+  assert.equal(view.last.live.bbbv.progress, 7 / 15);
+  viewer.seek(3932);
+  assert.deepEqual(at(), {
+    bbbv: ['7 / 15', null], pace: ['\u22120.268 s', 'Best 9.000 s'], rate: ['1.78', 'Best 2.00'], clicks: ['15', 'Efficiency 46.7%'], flags: ['2', '8 mines left'],
+  }, 'a seek back: the figures of the earlier frame, ahead of the pace');
+  assert.equal(view.last.live.pace.ahead, true);
+  viewer.command('end');
+  assert.deepEqual(at(), {
+    bbbv: ['15 / 15', null], pace: ['+0.971 s', 'Best 9.000 s'], rate: ['1.50', 'Best 2.00'], clicks: ['28', 'Efficiency 53.6%'], flags: ['5', '5 mines left'],
+  }, 'a seek forward to the end');
+  viewer.command('start');
+  assert.equal(view.last.live.bbbv.text, '0 / 15', 'back at the start position');
+});
+
+test('the figures compare against the bests stored now, read each time a replay opens; a board with none shows no pace and no best', async () => {
+  let stored = { time: null, bbbvPerSecond: null };
+  const { viewer, view } = viewerOver({ bests: () => stored });
+  await viewer.show({ replay: blobOf(WON) });
+  viewer.seek(5000);
+  assert.equal(view.last.live.pace, null, 'no best time, no pace');
+  assert.equal(view.last.live.rate.detail, null, 'no best 3BV/s line');
+  stored = { time: { value: 4000 }, bbbvPerSecond: { value: 3.5 } };
+  await viewer.show({ replay: blobOf(WON) });
+  viewer.seek(5000);
+  assert.deepEqual([view.last.live.pace.detail, view.last.live.rate.detail], ['Best 4.000 s', 'Best 3.50'], 'the bests as they stand when the replay opens');
+  const { viewer: plain, view: shown } = viewerOver({ bests: () => { throw new Error('no records'); } });
+  await plain.show({ replay: blobOf(WON) });
+  plain.seek(5000);
+  assert.equal(shown.last.live.pace, null, 'records that cannot be read: no bests');
+  const { viewer: bare, view: none } = viewerOver();
+  await bare.show({ replay: blobOf(WON) });
+  bare.seek(5000);
+  assert.deepEqual([none.last.live.bbbv.text, none.last.live.pace], ['7 / 15', null], 'no bests source: the figures without the bests');
+});
+
+test('the replay\'s figures are the live figures model fed with the frame\'s counts and the game time', () => {
+  const sim = createSimulator(blobOf(LOST));
+  const frame = sim.seek(6826);
+  const bests = { time: { value: 30000 }, bbbvPerSecond: { value: 1.5 } };
+  assert.deepEqual(replayFigures(frame, 6826, bests), liveFigures({
+    bbbv: 59, bbbvSolved: 12, clicks: frame.clicks, flags: 1, mines: 40, elapsedMs: 6826, bests,
+  }));
+  assert.equal(figuresLine(replayFigures(frame, 6826, bests)), '3BV 12 / 59, 39 mines left', 'the line the panel announces');
+});
+
 test('a lost replay ends on the loss view with its recorded time', async () => {
   const { viewer, view, viewers } = viewerOver();
   await viewer.show({ replay: blobOf(LOST) });
@@ -738,7 +800,7 @@ test('the viewer screen is kit markup: a screen frame holding the overlay, the b
   const at = INDEX.indexOf('<!-- Replay viewer -->');
   assert.ok(at > 0, 'index.html has the replay viewer section');
   const html = INDEX.slice(at, INDEX.indexOf('<!-- /Replay viewer -->'));
-  for (const id of ['replay', 'replay-frame', 'replay-title', 'replay-body', 'replay-stage', 'rp-play-label', 'rp-clock', 'rp-mines', 'rp-bbbv', 'rp-rate', 'rp-back', 'replay-board', 'replay-message', 'replay-message-text',
+  for (const id of ['replay', 'replay-frame', 'replay-title', 'replay-body', 'replay-main', 'replay-stage', 'rp-figures', 'rp-play-label', 'rp-clock', 'rp-mines', 'rp-bbbv', 'rp-rate', 'rp-back', 'replay-board', 'replay-message', 'replay-message-text',
     'replay-message-back', 'replay-controls', 'rp-play', 'rp-prev', 'rp-next', 'rp-speed', 'rp-seek', 'rp-pauses', 'rp-pauses-text', 'replay-end',
     'rp-ticks', 'rp-keys', 'rp-show-bbbv', 'rp-sound', 'rp-camera', 'rp-download', 'rp-open', 'replay-file']) {
     assert.match(html, new RegExp(`id="${id}"`), `#${id}`);
@@ -746,8 +808,16 @@ test('the viewer screen is kit markup: a screen frame holding the overlay, the b
   assert.match(html, /<section id="replay" class="ui-backdrop hidden" aria-label="Replay">\s*<section class="ui-frame" id="replay-frame" aria-labelledby="replay-title">/, 'a screen frame on the backdrop');
   assert.match(html, /<header class="ui-frame__head">\s*<div class="ui-frame__start"><button type="button" id="rp-back" class="ui-button ui-button--secondary ui-button--sm">Back <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button><\/div>\s*<h2 class="ui-frame__title" id="replay-title">Replay<\/h2>/,
     'its head: Back with its key hint, then the title');
-  assert.match(html, /<div class="ui-frame__body" id="replay-body">\s*<div class="ui-overlay-bar replay-bar"[\s\S]*<div id="replay-stage">\s*<div id="replay-board"><\/div>\s*<section id="replay-message"[\s\S]*<div id="replay-controls"/,
-    'its body: the figures, the board area with the message over it, then the controls');
+  assert.match(html, /<div class="ui-frame__body" id="replay-body">\s*<div class="ui-overlay-bar replay-bar"[\s\S]*<div id="replay-main">\s*<div id="replay-stage">\s*<div id="replay-board"><\/div>\s*<section id="replay-message"[\s\S]*<section class="ui-figures" id="rp-figures"[\s\S]*<div id="replay-controls"/,
+    'its body: the counters, the board area with the message over it and the figures panel beside it, then the controls');
+  const panel = html.slice(html.indexOf('id="rp-figures"'), html.indexOf('</section>', html.indexOf('id="rp-figures"')));
+  assert.match(html, /<section class="ui-figures" id="rp-figures" aria-label="Live figures">/, 'a figures panel named for its figures');
+  for (const name of FIGURES) assert.match(panel, new RegExp(`<div class="ui-figure[^"]*"[^>]*data-figure="${name}"`), `the ${name} figure`);
+  assert.match(panel, /data-figure="bbbv"[^>]*>[\s\S]*?class="ui-figure__bar" role="progressbar"/, '3BV with its progress bar');
+  assert.match(panel, /<p class="ui-figures__live" role="status" aria-live="polite" aria-atomic="true"><\/p>/, 'its live part is the one polite region');
+  assert.doesNotMatch(panel.replace(/<p class="ui-figures__live"[^>]*>/, ''), /aria-live/, 'no figure is a live region');
+  const classes = [...panel.matchAll(/class="([^"]*)"/g)].flatMap((m) => m[1].split(/\s+/)).filter(Boolean);
+  for (const c of classes) assert.match(c, /^(ui-figures?(__[a-z]+)?(--[a-z]+)?|hidden)$/, `${c}: catalogued components only`);
   assert.match(html, /id="replay-message" class="ui-card hidden"[\s\S]*?<span id="replay-message-spinner" class="ui-spinner" aria-hidden="true"><\/span>/, 'opening shows the spinner');
   assert.match(html, /id="replay-message-back" class="ui-button ui-button--secondary">Back <span class="ui-key-hint" data-action="back" aria-hidden="true"><\/span><\/button>/, 'the failure card\'s Back with its key hint');
   assert.match(html, /id="rp-play" class="ui-button ui-button--primary"><span id="rp-play-label">Play<\/span> <span class="ui-key-hint replay-key-hint" aria-hidden="true"><kbd class="ui-key-hint__key">Space<\/kbd><\/span><\/button>/,
@@ -883,7 +953,7 @@ test('[slow] in a browser, a recorded 2D replay plays from its fixture through t
     assert.equal(await text('rp-play-label'), 'Play again', 'at the end Play plays it again');
     assert.equal(await text('rp-clock'), '09.971');
     assert.equal(await text('rp-bbbv'), '15 / 15');
-    assert.equal(await text('rp-mines'), '5');
+    assert.equal(await text('rp-mines'), '005', 'the three-digit mine counter');
     assert.equal(await page.evaluate(() => document.getElementById('replay-end').classList.contains('hidden')), false);
 
     // The keyboard: Home goes to the start, ArrowRight steps one action, Space plays.
@@ -982,16 +1052,17 @@ test('in a browser, the viewer fills its frame at every supported window size wi
       globalThis.__ms.watch({ replay: bytes, returnTo: { screen: 'menu' } });
     });
     await page.waitForFunction(() => globalThis.__ms.replayViewer.state.status === 'ready', null, { timeout: patience(5000) });
-    // [width, height, the code chip shows, the key line shows]
-    for (const [width, height, code, keys] of [[1920, 1080, true, true], [1366, 768, true, true], [1024, 768, false, true], [390, 844, false, false], [844, 390, false, false]]) {
+    // [width, height, the code chip shows, the key line shows, the figures panel shows]
+    for (const [width, height, code, keys, figures] of [[1920, 1080, true, true, true], [1366, 768, true, true, true], [1024, 768, false, true, false], [390, 844, false, false, false], [844, 390, false, false, false]]) {
       await page.setViewportSize({ width, height });
       await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
       const got = await page.evaluate(() => {
         const r = (id) => document.getElementById(id).getBoundingClientRect();
         const body = document.getElementById('replay-body');
-        const [frame, board, play] = ['replay-frame', 'replay-board', 'rp-play'].map(r);
+        const [frame, board, play, panel] = ['replay-frame', 'replay-board', 'rp-play', 'rp-figures'].map(r);
         const shows = (id) => document.getElementById(id).checkVisibility();
         return {
+          figures: shows('rp-figures') && panel.left >= board.right && panel.right <= frame.right && panel.bottom <= frame.bottom,
           scroll: document.documentElement.scrollWidth <= innerWidth && body.scrollWidth <= body.clientWidth,
           frame: frame.left >= 0 && frame.right <= innerWidth && frame.top >= 0 && frame.bottom <= innerHeight,
           board: board.width > 100 && board.height > 100 && board.left >= frame.left && board.right <= frame.right,
@@ -1000,8 +1071,16 @@ test('in a browser, the viewer fills its frame at every supported window size wi
           keys: shows('rp-keys'),
         };
       });
-      assert.deepEqual(got, { scroll: true, frame: true, board: true, play: true, code, keys }, `${width} × ${height}`);
+      assert.deepEqual(got, { scroll: true, frame: true, board: true, play: true, code, keys, figures }, `${width} × ${height}`);
     }
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.evaluate(() => globalThis.__ms.replayViewer.seek(6826));
+    const panel = await page.evaluate(() => {
+      const text = (sel) => document.querySelector(`#rp-figures ${sel}`).textContent;
+      return { bbbv: text('[data-figure="bbbv"] .ui-figure__value'), clicks: text('[data-figure="clicks"] .ui-figure__value'), flags: text('[data-figure="flags"] .ui-figure__detail') };
+    });
+    assert.deepEqual(panel, { bbbv: '12 / 59', clicks: '17', flags: '39 mines left' }, 'the panel follows a seek');
+    await page.waitForFunction(() => document.querySelector('#rp-figures .ui-figures__live').textContent === '3BV 12 / 59, 39 mines left', null, { timeout: patience(3000) });
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

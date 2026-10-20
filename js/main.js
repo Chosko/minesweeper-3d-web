@@ -1064,13 +1064,15 @@ function mountReplay3D({ sim }) {
 
 // ---------- replay viewer ----------
 // A shell screen over the replay library: it verifies the replay, then plays it on its own board
-// view; it reports nothing to records, keeps nothing in the library and never pauses; its sound
-// toggle plays the game's cues through the master volume. Back is the screen it came from.
+// view; it reports nothing to records — its live figures read the board's bests as stored now —,
+// keeps nothing in the library and never pauses; its sound toggle plays the game's cues through the
+// master volume. Back is the screen it came from.
 const REPLAY_VIEWER = createReplayViewer({
   library: REPLAYS,
   router: SHELL,
   sound: sfx,
   files: REPLAY_FILES,
+  bests: (board) => RECORDS.bests(board),
   view: createReplayView({
     root: document.getElementById('replay'),
     onCommand: (name) => REPLAY_VIEWER.command(name),

@@ -12,7 +12,7 @@ import { settingsPageHtml, bindingsSectionHtml, bindResetPanel } from './setting
 import { DIM_MIN, DIM_MAX } from './mode3d/board-choice.js';
 import { LEARN_TITLE, learnStepOf } from './mode3d/learn.js';
 import { formatTime } from './results/view.js';
-import { liveFigures } from './shell/live-figures.js';
+import { liveFigures, figuresLine } from './shell/live-figures.js';
 import { standardBoard, preset3D, createBoardIdentity, MODE_3D } from './records/board.js';
 import { readoutText } from './readability.js';
 
@@ -68,8 +68,8 @@ export function boardTitle3D(s) {
 }
 /** The title with the board dropped, the mode alone ("3D"), for a bar too narrow for the full name; a title with no board part is its own. */
 export const shortTitle3D = (title) => title.split(' · ')[0];
-/** What a figures panel's live part says when the game's counts change: the 3BV solved and the mines left. */
-export const figuresLine = (f) => `3BV ${f.bbbv.text}, ${f.flags.detail}`;
+/** What a figures panel's live part says when the game's counts change (js/shell/live-figures.js). */
+export { figuresLine };
 
 export const NO_MOUSE_MSG = 'Minesweeper 3D needs a mouse and keyboard — open it on a desktop browser.';
 /** The menu's note on a coarse-only device, where both modes play by touch. */

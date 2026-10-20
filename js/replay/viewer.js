@@ -28,6 +28,9 @@
 // overlayFigures(frame, ms) → { clock, mines, bbbv, rate }: the clock, mines left in the overlay's
 //   counter format, "3BV solved / 3BV" and 3BV/s so far (3BV solved over the replay time, two
 //   decimals; DASH at 0), read from a simulator frame at game time ms (≥ 0).
+// replayFigures(frame, ms, bests) → the live figures (js/shell/live-figures.js liveFigures) of a
+//   simulator frame at game time ms (≥ 0): its 3BV, 3BV solved and clicks, the flags placed and the
+//   board's mines, against the board's bests (null for none).
 // endLine(check) → { outcome, time, text }: the outcome and the recorded time in the results screen's
 //   time format (js/results/view.js formatTime), shown once the replay reaches its end.
 // pauseMarks(pauses, duration, leadIn?) → [{ left, width }]: each of the header's paused spans as a
@@ -56,7 +59,7 @@
 //   so openings sharing a border number differ while the cycle allows, each isolated number the
 //   mark `cycle`, a mine -1.
 //
-// createReplayViewer({ library, router, view, viewers?, sound?, files? }) → viewer
+// createReplayViewer({ library, router, view, viewers?, sound?, files?, bests? }) → viewer
 //   view     the screen binder: open(), close(), loading(), failed(message), ready({ duration,
 //            leadIn, kind, pauses, actions, code, title }) → the board area, render(state); pauses are
 //            the header's pause spans, actions the replay's [{ time, kind }], code replayCode's, title
@@ -75,6 +78,10 @@
 //   sound    the sound sink (js/audio.js's sfx: reveal, flag, chord, noop, explode, win), so the
 //            master volume and mute apply; without one the viewer is silent.
 //   files    { save(bytes, name) }, the shell's download.
+//   bests    (board) → the board's bests as the records store holds them ({ time, bbbvPerSecond }),
+//            called with the replay header's board each time a replay opens, so the live figures
+//            compare against the bests stored now, not those of when the game was played; without
+//            it, or when it throws, the figures show no pace and no best.
 //   show({ replay?, replayId?, file?, returnTo? }) → Promise once the replay plays or has failed;
 //            returnTo the { screen, data } Back goes to (the main menu when none). The replay starts
 //            paused at the start position, at 1×, Show 3BV off and the camera on Follow.
@@ -105,18 +112,21 @@
 //   back()   routes to returnTo. defaultFocus() → the screen's default focus target: Play once the
 //            replay is ready, the failure card's Back once it failed, the frame's Back while it opens.
 //   state    { status: 'closed' | 'loading' | 'ready' | 'failed', message, kind, time (game time,
-//            negative through the lead-in), duration, leadIn, playing, speed, ended, figures, end,
-//            bbbv, sound, camera ('follow' | 'free' in 3D, else null) } — what render(state) is
-//            handed.
+//            negative through the lead-in), duration, leadIn, playing, speed, ended, figures, live
+//            (replayFigures at the playback position), end, bbbv, sound, camera ('follow' | 'free' in
+//            3D, else null) } — what render(state) is handed.
 //
 // createReplayView({ root, win?, onCommand, onSpeed, onSeek, onBack, onDownload?, onOpen?, onCopy? }) → the
 // view above, filling #replay by id: a screen frame on the backdrop (#replay-frame), its head Back
 // (#rp-back) and title (#replay-title: "Replay" until a replay is ready, then replayTitle's); its body
 // the overlay bar of figures (#rp-clock, #rp-mines, #rp-bbbv, #rp-rate) with the code chip #rp-code
-// (its Copy and Copy link call onCopy; hidden while loading, failed or with no code), the board area
-// #replay-board in #replay-stage, which takes the room the figures and the controls leave, the message
-// card over it (#replay-message: the spinner while a replay opens, the reason and its Back
-// #replay-message-back when it cannot play), and the controls #replay-controls — the seek bar #rp-seek
+// (its Copy and Copy link call onCopy; hidden while loading, failed or with no code), then #replay-main:
+// the board area #replay-board in #replay-stage, which takes the room the bar, the panel and the
+// controls leave, the message card over it (#replay-message: the spinner while a replay opens, the
+// reason and its Back #replay-message-back when it cannot play), and beside it the figures panel
+// #rp-figures — the live figures of the playback position (js/ui/components.js bindFigures), its live
+// part announcing figuresLine through bindFiguresLive, so only a change of the counts is heard; then
+// the controls #replay-controls — the seek bar #rp-seek
 // over the timeline with its pause marks #rp-pauses and its action ticks #rp-ticks, the position
 // #rp-position; #rp-prev, #rp-play (its label #rp-play-label: Play, Pause, or Play again at the end),
 // #rp-next, the speed choice #rp-speed, the toggles #rp-show-bbbv, #rp-sound and #rp-camera (3D only),
@@ -124,8 +134,8 @@
 // #rp-download, #rp-open; the key line #rp-keys (REPLAY_KEY_LINE as key hints) and the pauses' text
 // alternative #rp-pauses-text. While a replay loads or has failed the controls stay in place, every one
 // that needs a replay disabled (Sound and Open replay file still work), and nothing of one shown earlier
-// stays: the figures read DASH and the position, the seek bar, its marks and ticks and the end line are
-// cleared. A 3D replay marks #replay replay--scene, which lets the full-window 3D scene behind it show.
+// stays: the figures and the panel's figures read DASH and the position, the seek bar, its marks and
+// ticks and the end line are cleared. A 3D replay marks #replay replay--scene, which lets the full-window 3D scene behind it show.
 // While it shows, REPLAY_KEYS typed anywhere but in a field reach onCommand; Space and Enter on a
 // button keep their own click.
 
@@ -134,7 +144,8 @@ import { verify } from './verify.js';
 import { encodeReplay } from './format.js';
 import { createPlaybackClock, SPEEDS, LEAD_IN_MS } from './clock.js';
 import { mountViewer2D } from './viewer-2d.js';
-import { formatMineCount, bindSegmented, bindCodeChip } from '../ui/components.js';
+import { formatMineCount, bindSegmented, bindCodeChip, bindFigures, bindFiguresLive } from '../ui/components.js';
+import { liveFigures, figuresLine } from '../shell/live-figures.js';
 import { codeOf } from '../records/board-code.js';
 import { formatTime, formatRate, DASH } from '../results/view.js';
 import { BTN } from '../gamepad.js';
@@ -201,6 +212,13 @@ export function overlayFigures(frame, ms) {
     bbbv: `${frame.bbbvSolved} / ${frame.bbbv}`,
     rate: ms > 0 ? formatRate(frame.bbbvSolved / (ms / 1000)) : DASH,
   };
+}
+
+export function replayFigures(frame, ms, bests = null) {
+  const mines = frame.game.mineCount;
+  return liveFigures({
+    bbbv: frame.bbbv, bbbvSolved: frame.bbbvSolved, clicks: frame.clicks, flags: mines - frame.minesLeft, mines, elapsedMs: ms, bests,
+  });
 }
 
 export function endLine(check) {
@@ -318,10 +336,10 @@ export async function prepareReplay({ replay, replayId, file } = {}, { library }
 
 const CLOSED = Object.freeze({
   status: 'closed', message: null, kind: null, time: 0, duration: 0, leadIn: LEAD_IN_MS, playing: false, speed: 1, ended: false,
-  figures: null, end: null, bbbv: false, camera: null,
+  figures: null, live: null, end: null, bbbv: false, camera: null,
 });
 
-export function createReplayViewer({ library, router, view, viewers = { square: mountViewer2D }, sound = null, files = null }) {
+export function createReplayViewer({ library, router, view, viewers = { square: mountViewer2D }, sound = null, files = null, bests = null }) {
   let opening = 0; // which show() is current; a stale load is dropped
   let status = 'closed';
   let message = null;
@@ -337,6 +355,7 @@ export function createReplayViewer({ library, router, view, viewers = { square: 
   let tints = null;
   let free = false;
   let soundOn = false; // kept for the session
+  let boardBests = null; // the replay's board's bests, read as it opens
 
   const refocus = () => { if (router.current === REPLAY_SCREEN) router.refocus(); };
   const kind = () => sim?.replay.header.graph.kind ?? null;
@@ -346,9 +365,10 @@ export function createReplayViewer({ library, router, view, viewers = { square: 
   function state() {
     if (status !== 'ready') return { ...CLOSED, status, message, sound: soundOn };
     const g = gameTime();
+    const at = Math.max(0, g);
     return {
       status, message: null, kind: kind(), time: g, duration: sim.duration, leadIn: LEAD_IN_MS, playing: clock.playing,
-      speed: clock.speed, ended: clock.ended, figures: overlayFigures(frame, Math.max(0, g)),
+      speed: clock.speed, ended: clock.ended, figures: overlayFigures(frame, at), live: replayFigures(frame, at, boardBests),
       end: clock.ended ? endLine(sim.replay.check) : null, bbbv, sound: soundOn, camera: kind() === 'box' ? (free ? 'free' : 'follow') : null,
     };
   }
@@ -402,6 +422,16 @@ export function createReplayViewer({ library, router, view, viewers = { square: 
     bbbv = false;
     tints = null;
     free = false;
+    boardBests = null;
+  }
+
+  function readBests(board) {
+    if (!bests) return null;
+    try {
+      return bests(board) ?? null;
+    } catch {
+      return null;
+    }
   }
 
   function step(dir) {
@@ -465,6 +495,7 @@ export function createReplayViewer({ library, router, view, viewers = { square: 
       }
       sim = prepared.sim;
       bytes = prepared.bytes;
+      boardBests = readBests(sim.replay.header.board);
       clock = createPlaybackClock({ duration: sim.duration + LEAD_IN_MS });
       const { graph, pauses } = sim.replay.header;
       const actions = sim.replay.actions.map(({ time, kind: k }) => ({ time, kind: k }));
@@ -570,6 +601,11 @@ export function replayCode(replay) {
 const IN_FIELD = 'input, select, textarea';
 /** The frame's title until a replay is ready. */
 const TITLE = 'Replay';
+/** The figures panel while no replay plays: every figure DASH, no pace. */
+const NO_FIGURES = Object.freeze({
+  bbbv: { text: DASH, detail: null, progress: 0 }, pace: null, rate: { text: DASH, detail: null },
+  clicks: { text: DASH, detail: null }, flags: { text: DASH, detail: null },
+});
 /** The end line's chip for each outcome (js/replay/viewer.js endLine), else ui-chip--muted. */
 const END_CHIPS = Object.freeze({ Won: 'ui-chip--won', Lost: 'ui-chip--lost' });
 
@@ -588,6 +624,9 @@ export function createReplayView({
     download: $('rp-download'), open: $('rp-open'),
   };
   const code = $('rp-code') ? bindCodeChip($('rp-code'), { onCopy: (c) => onCopy(c) }) : null;
+  const panel = $('rp-figures');
+  const figures = panel ? bindFigures(panel) : null;
+  const said = panel ? bindFiguresLive(panel) : null;
   const options = [...el.speed.querySelectorAll('.ui-segmented__option')];
   // The controls that need a replay: disabled while one opens or has failed.
   const needReplay = [el.prev, el.play, el.next, el.seek, el.showBbbv, el.camera, el.download, ...options];
@@ -651,6 +690,8 @@ export function createReplayView({
     timeline = null;
     tickWidth = -1;
     for (const [key, node] of [['clock', el.clock], ['mines', el.mines], ['bbbv', el.bbbv], ['rate', el.rate]]) set(key, node, DASH);
+    figures?.show(NO_FIGURES);
+    said?.stop();
     set('position', el.position, '');
     set('play', el.playLabel, 'Play');
     set('title', el.title, TITLE);
@@ -712,6 +753,7 @@ export function createReplayView({
     close() {
       win.removeEventListener('keydown', onKey);
       sizes?.disconnect();
+      said?.stop();
       root.classList.add('hidden');
       root.classList.remove('replay--scene');
       el.message.classList.add('hidden');
@@ -754,6 +796,10 @@ export function createReplayView({
       set('mines', el.mines, f.mines);
       set('bbbv', el.bbbv, f.bbbv);
       set('rate', el.rate, f.rate);
+      if (state.live) {
+        figures?.show(state.live);
+        said?.announce(figuresLine(state.live));
+      }
       set('play', el.playLabel, state.playing ? 'Pause' : state.ended ? 'Play again' : 'Play');
       set('position', el.position, `${f.clock} / ${clockText(state.duration)}`);
       if (!seeking && Number(el.seek.value) !== Math.round(state.time)) el.seek.value = String(Math.round(state.time));
@@ -772,6 +818,7 @@ export function createReplayView({
     destroy() {
       win.removeEventListener('keydown', onKey);
       sizes?.disconnect();
+      said?.stop();
       for (const u of unbind) u();
     },
   };

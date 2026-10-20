@@ -20,6 +20,9 @@
 //
 // changedFigures(previous, next) names the figures whose text or detail differ, or that appeared
 // or disappeared, so the overlay writes only those; with no previous figures every one changed.
+//
+// figuresLine(figures) → the line a figures panel's live part announces, "3BV 12 / 59, 39 mines
+// left": the 3BV figure and the flags figure's detail.
 
 import { countedClicks, bbbvPerSecond, efficiency } from '../records/summary.js';
 import { DASH, MINUS, formatTime, formatRate, formatEfficiency } from '../results/view.js';
@@ -64,3 +67,5 @@ export function changedFigures(previous, next) {
     return a.text !== b.text || a.detail !== b.detail;
   });
 }
+
+export const figuresLine = (f) => `3BV ${f.bbbv.text}, ${f.flags.detail}`;

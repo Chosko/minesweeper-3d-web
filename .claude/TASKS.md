@@ -680,7 +680,7 @@ Feature: in-game-layout
 
 ## 178. Live figures in the replay viewer
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/replay/viewer.js, js/replay/simulator.js, index.html, tests/replay-viewer.test.mjs, tests/replay-viewer-3d.test.mjs
 Preconditions: 172, 174, 175

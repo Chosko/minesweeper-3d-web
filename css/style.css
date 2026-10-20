@@ -357,16 +357,21 @@ kbd {
 /* A board status card (generating, or a failed board's offer) sits above the pause card, centred on
    the board at the canvas's width and never past a phone's. */
 #c2d-status, #m3d-status { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: calc(var(--z-overlay) + 1); width: min(480px, calc(100vw - 2 * var(--space-4))); box-sizing: border-box; }
-/* The replay viewer (#replay): its window fills the backdrop; the body stacks the figures, the board
-   area, which takes the room left, and the controls. The 2D board view fits the board area; a 3D
-   replay's scene is the full window behind it (replay--scene). On the smaller desktop windows the code
-   chip gives way; on a phone the window is full-bleed and the key line gives way too; on a phone held
-   sideways the board takes the left and the figures, seek bar and transport the right. */
+/* The replay viewer (#replay): its window fills the backdrop; the body stacks the counters, the board
+   area with the figures panel beside it, which take the room left, and the controls. The 2D board view
+   fits the board area; a 3D replay's scene is the full window behind it (replay--scene), the panel on
+   its own surface over it. On the smaller desktop windows the code chip and the figures panel give
+   way; on a phone the window is full-bleed and the key line gives way too; on a phone held sideways
+   the board takes the left and the counters, seek bar and transport the right. */
 #replay { position: fixed; inset: 0; z-index: var(--z-overlay); }
 #replay-frame { width: 100%; height: 100%; }
 #replay-body { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-3) var(--space-6); }
 .replay-bar { flex: none; flex-wrap: wrap; align-self: flex-start; max-width: 100%; box-sizing: border-box; }
-#replay-stage { position: relative; flex: 1 1 auto; min-height: 160px; }
+#replay-main { display: flex; flex: 1 1 auto; gap: var(--space-4); min-height: 160px; }
+#replay-stage { position: relative; flex: 1 1 auto; min-width: 0; }
+#rp-figures { flex: none; width: 280px; align-self: flex-start; max-height: 100%; box-sizing: border-box; }
+#rp-figures .ui-figures__body { min-height: 0; overflow-y: auto; }
+#rp-figures .ui-figure__value { white-space: nowrap; }
 #replay-board { position: absolute; inset: 0; overflow: hidden; }
 #replay-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(480px, calc(100% - 2 * var(--space-4))); box-sizing: border-box; }
 #replay-message > .ui-row { align-items: center; flex-wrap: nowrap; }
@@ -382,7 +387,8 @@ kbd {
 .replay-foot { flex-wrap: nowrap; align-items: center; gap: var(--space-2) var(--space-4); }
 .replay-keys { flex: 1 1 auto; min-width: 0; flex-wrap: wrap; gap: var(--space-1) var(--space-3); font-size: var(--font-size-sm); }
 .replay-foot > .replay-pauses-text { margin: 0; }
-@media (max-width: 1199px) { #rp-code { display: none; } }
+@media (max-width: 1599px) { #rp-figures { width: 230px; } }
+@media (max-width: 1199px) { #rp-code, #rp-figures { display: none; } }
 @media (max-height: 820px) { #replay { padding: var(--space-2) var(--space-4); } }
 @media (max-width: 719px) {
   #replay { padding: 0; }
@@ -403,7 +409,8 @@ kbd {
   #replay { padding: 0; }
   #replay-frame { border-radius: 0; box-shadow: none; }
   #replay-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); gap: var(--space-2) var(--space-4); padding: var(--space-2) var(--space-3); }
-  #replay-stage { grid-column: 1; grid-row: 1 / -1; min-height: 0; }
+  #replay-main { grid-column: 1; grid-row: 1 / -1; min-height: 0; }
+  #rp-figures { display: none; }
   .replay-bar { grid-column: 2; grid-row: 1; gap: var(--space-3); }
   #replay-controls { grid-column: 2; grid-row: 2; }
   #replay-controls .ui-slider { grid-template-columns: 1fr auto auto; }

@@ -872,7 +872,10 @@
      area, taking the room left, with a ui-card over it while the replay opens
      (the ui-spinner beside its title) or when it cannot play (its
      ui-card__title, a ui-text reason and ui-actions--row with Back, secondary
-     with its back key hint); then the playback controls: the seek bar as a
+     with its back key hint), and beside it a ui-figures panel of the live
+     figures at the playback position (3BV with its bar, Pace vs PB, 3BV/s,
+     Clicks, Flags), its live part the one polite region; then the playback
+     controls: the seek bar as a
      ui-slider whose track carries a .replay-pause mark per paused span
      (--color-replay-pause) and a .replay-tick per action
      (--color-replay-reveal, -flag, -chord), its row carrying the
@@ -886,8 +889,8 @@
      Open replay file. While a replay opens or has failed the controls stay,
      those that need a replay disabled. A 3D
      replay's scene is the full window behind the frame, whose window lets it
-     through, the controls keeping a surface of their own. Below 1200 px the
-     code chip gives way; on a phone the frame is full-bleed and the key line
+     through, the controls and the figures panel keeping a surface of their
+     own. Below 1200 px the code chip and the figures panel give way; on a phone the frame is full-bleed and the key line
      gives way; on a phone held sideways the board takes the left of the body.
      Default focus: Play; the failure card's Back; the frame's Back while the
      replay opens.

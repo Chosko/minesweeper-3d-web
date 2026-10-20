@@ -577,14 +577,26 @@
           <div id="rp-code" class="ui-code ui-code--compact hidden"><code class="ui-code__value"></code><button type="button" id="rp-copy" class="ui-button ui-button--secondary" data-copy="code">Copy</button><button type="button" id="rp-copy-link" class="ui-button ui-button--secondary" data-copy="link">Copy link</button></div>
           <span id="replay-end" class="replay-end hidden" role="status"><span id="replay-end-outcome" class="ui-chip"></span> <span id="replay-end-time" class="ui-text"></span></span>
         </div>
-        <div id="replay-stage">
-          <div id="replay-board"></div>
-          <section id="replay-message" class="ui-card hidden" aria-labelledby="replay-message-title" role="status">
-            <div class="ui-row"><span id="replay-message-spinner" class="ui-spinner" aria-hidden="true"></span><h2 class="ui-card__title" id="replay-message-title">Opening the replay&hellip;</h2></div>
-            <p id="replay-message-text" class="ui-text hidden"></p>
-            <div id="replay-message-actions" class="ui-actions ui-actions--row hidden">
-              <button type="button" id="replay-message-back" class="ui-button ui-button--secondary">Back <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>
+        <div id="replay-main">
+          <div id="replay-stage">
+            <div id="replay-board"></div>
+            <section id="replay-message" class="ui-card hidden" aria-labelledby="replay-message-title" role="status">
+              <div class="ui-row"><span id="replay-message-spinner" class="ui-spinner" aria-hidden="true"></span><h2 class="ui-card__title" id="replay-message-title">Opening the replay&hellip;</h2></div>
+              <p id="replay-message-text" class="ui-text hidden"></p>
+              <div id="replay-message-actions" class="ui-actions ui-actions--row hidden">
+                <button type="button" id="replay-message-back" class="ui-button ui-button--secondary">Back <span class="ui-key-hint" data-action="back" aria-hidden="true"></span></button>
+              </div>
+            </section>
+          </div>
+          <section class="ui-figures" id="rp-figures" aria-label="Live figures">
+            <div class="ui-figures__body">
+              <div class="ui-figure ui-figure--progress" role="group" aria-labelledby="rp-fig-bbbv" data-figure="bbbv"><span class="ui-figure__label" id="rp-fig-bbbv">3BV</span><span class="ui-figure__value">&mdash;</span><span class="ui-figure__bar" role="progressbar" aria-labelledby="rp-fig-bbbv" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="ui-figure__fill" style="width: 0%"></span></span></div>
+              <div class="ui-figure hidden" role="group" aria-labelledby="rp-fig-pace" data-figure="pace"><span class="ui-figure__label" id="rp-fig-pace">Pace vs PB</span><span class="ui-figure__value">&mdash;</span><span class="ui-figure__detail"></span></div>
+              <div class="ui-figure" role="group" aria-labelledby="rp-fig-rate" data-figure="rate"><span class="ui-figure__label" id="rp-fig-rate">3BV/s</span><span class="ui-figure__value">&mdash;</span><span class="ui-figure__detail"></span></div>
+              <div class="ui-figure" role="group" aria-labelledby="rp-fig-clicks" data-figure="clicks"><span class="ui-figure__label" id="rp-fig-clicks">Clicks</span><span class="ui-figure__value">&mdash;</span><span class="ui-figure__detail"></span></div>
+              <div class="ui-figure" role="group" aria-labelledby="rp-fig-flags" data-figure="flags"><span class="ui-figure__label" id="rp-fig-flags">Flags</span><span class="ui-figure__value">&mdash;</span><span class="ui-figure__detail"></span></div>
             </div>
+            <p class="ui-figures__live" role="status" aria-live="polite" aria-atomic="true"></p>
           </section>
         </div>
         <div id="replay-controls" role="group" aria-label="Playback">

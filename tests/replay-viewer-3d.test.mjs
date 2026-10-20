@@ -243,6 +243,28 @@ test('a viewer that leaves the screen while it mounts is dropped', async () => {
   assert.deepEqual(destroyed, [1], 'the mounted viewer is destroyed');
 });
 
+test('a 3D replay shows the live figures of its frame, following a seek forward and back, against the box\'s bests stored now', async () => {
+  const asked = [];
+  let last = null;
+  const view = { open() {}, close() {}, loading() {}, failed() {}, ready: () => ({}), render(state) { last = state; } };
+  const router = { current: REPLAY_SCREEN, go() {}, refocus() {} };
+  const viewer = createReplayViewer({
+    library: null, router, view,
+    viewers: { box: () => ({ draw() {}, destroy() {} }) },
+    bests: (board) => { asked.push(board); return { time: { value: 20000 }, bbbvPerSecond: { value: 0.5 } }; },
+  });
+  await viewer.show({ replay: blobOf(CUBE) });
+  assert.deepEqual(asked, [createSimulator(blobOf(CUBE)).replay.header.board], 'the box board\'s bests');
+  const at = () => ['bbbv', 'clicks', 'flags'].map((name) => [last.live[name].text, last.live[name].detail]);
+  viewer.seek(6559);
+  assert.deepEqual(at(), [['4 / 35', null], ['8', 'Efficiency 50.0%'], ['1', '9 mines left']]);
+  assert.deepEqual([last.live.pace.text, last.live.rate.text, last.live.rate.detail], ['+4.273 s', '0.61', 'Best 0.50']);
+  viewer.seek(5000);
+  assert.deepEqual(at(), [['1 / 35', null], ['5', 'Efficiency 20.0%'], ['0', '10 mines left']], 'a seek back');
+  viewer.seek(13578);
+  assert.deepEqual(at(), [['11 / 35', null], ['14', 'Efficiency 78.6%'], ['1', '9 mines left']], 'the end');
+});
+
 test('a 3D replay opens on the scene: the screen lets the 3D scene show', () => {
   const src = read('js/replay/viewer.js');
   assert.match(src, /replay--scene/, 'the view marks a 3D replay');
