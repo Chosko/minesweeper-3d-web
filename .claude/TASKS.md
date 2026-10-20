@@ -1027,7 +1027,7 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: tests/settings-page.test.mjs, js/settings/page.js
-Preconditions: none
+Preconditions: 214
 
 ---
 
@@ -1036,7 +1036,7 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: js/themes/applier.js, tests/theme.test.mjs, tests/fixtures/themes/fixture-theme.js, tests/fixtures/themes/fixture-dusk/, .claude/context/app-shell-themes.md, .claude/context/testing.md
-Preconditions: none
+Preconditions: 214
 
 ---
 
@@ -1045,7 +1045,7 @@ Preconditions: none
 Status: [MISSING]
 Target: claude
 Files: docs/ux-review/enthusiast-loop/, docs/ux-review/game-design/, docs/ux-review/input-a11y/, docs/ux-review/mode-3d/, docs/ux-review/ux-first-run/
-Preconditions: none
+Preconditions: 214
 
 ---
 

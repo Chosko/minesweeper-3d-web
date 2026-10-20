@@ -15,7 +15,7 @@ Context: none
 
 ## [ ] 2. Implement task 215 — Settings page tests hold with more than one shipped theme
 
-Depends on: none
+Depends on: 1
 
 Context: none
 
@@ -25,7 +25,7 @@ Context: none
 
 ## [ ] 3. Implement task 216 — Theme switch keeps every font weight the new theme declares loaded in Chromium
 
-Depends on: none
+Depends on: 1
 
 Context: none
 
@@ -35,7 +35,7 @@ Context: none
 
 ## [ ] 4. Implement task 217 — UX-review scripts follow the current board-choice markup
 
-Depends on: none
+Depends on: 1
 
 Context: none
 
