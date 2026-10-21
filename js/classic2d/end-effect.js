@@ -4,22 +4,25 @@
 // DOM-free and stateless over time: an effect is made once at the game's end and asked about any
 // moment t, in milliseconds since the end.
 //
-// Both waves start at an origin cell and reach each tile at a delay proportional to its distance
-// from it, in tiles: at most WAVE_STEP_MS per tile, as the 3D waves, and less on a large board, so
-// the wave reaches the board's farthest tile at WAVE_SHARE of the end delay at the latest. Their
+// Both waves start at an origin cell and reach each tile at a delay proportional to the distance
+// between their centres on the board's grid geometry (js/geometry/index.js), in tiles: at most
+// WAVE_STEP_MS per tile, as the 3D waves, and less on a large board, so the wave reaches the board's
+// farthest tile at WAVE_SHARE of the end delay at the latest. Their
 // values and colours are the board module's `end2d` and confetti colours (js/themes/board-module.js);
 // it reads no design token.
 //   win    a wave spreading from the last action's cell — each tile bumps in scale and mixes toward
 //          the module's light as the wave passes it (waveAt), and an unflagged mine turns into its
-//          end-state flag (wonState) — and confetti bursting from that cell and falling over the
-//          board's own rectangle (confettiAt), never outside it.
+//          end-state flag (wonState) — and confetti bursting from that cell's centre and falling
+//          over the board's extent (confettiAt), never outside it.
 //   loss   a reveal wave from the exploded tile: each tile the loss changed keeps its pre-loss tile
 //          (preLossState) until the wave reaches it (shownState), then snaps to its revealed face
 //          from the module's scale with an overshoot under the module's flash (waveAt).
 //
-// createEndEffect({ kind, cols, rows, origin, duration, random? }) → effect
+// createEndEffect({ kind, geometry?, cols?, rows?, origin, duration, random? }) → effect
 //   kind      WIN | LOSS
-//   origin    the cell the wave starts at, as the square grid indexes it (col + cols × row)
+//   geometry  the board's grid geometry; the square geometry of a cols × rows board when not given
+//   origin    the cell the wave starts at; the cell at the middle of the board's extent when it is
+//             none of the board's
 //   duration  the end delay in ms
 //   random    () → [0, 1), the confetti's seeds; Math.random by default
 // reachMs(effect, c)                 when the wave reaches cell c: 0 at the origin
@@ -29,9 +32,10 @@
 // waveAt(effect, c, state, t, end2d) → { scale, flash } | null: the wave over cell c, in `state` on
 //                                    the game, at t — the tile's scale about its centre and its share
 //                                    of the light — from the module's `end2d`; null while it is still
-// confettiAt(effect, t, { width, height, tile }) → [{ x, y, size, angle, color, alpha }]: the
-//                                    pieces in view, in board CSS pixels from its top-left corner,
-//                                    each inside width × height; color indexes the module's
+// confettiAt(effect, t, { tile, gap?, width?, height? }) → [{ x, y, size, angle, color, alpha }]:
+//                                    the pieces in view, in board CSS pixels from its top-left
+//                                    corner, each inside width × height — the geometry's extent at
+//                                    the tile and gap when not given; color indexes the module's
 //                                    confetti colours, wrapping round
 // done(effect, t)                    the effect has played out: t ≥ duration
 // drawWave(ctx, x, y, size, wave, board, paint)  one tile at x, y under its wave: paint() draws the
@@ -41,6 +45,7 @@
 
 import { CELL } from '../engine/rules.js';
 import { roundRect } from '../tile-art.js';
+import { createGeometry } from '../geometry/index.js';
 
 export const WIN = 'win';
 export const LOSS = 'loss';
@@ -65,13 +70,17 @@ export function preLossState(state) {
   return state;
 }
 
-export function createEndEffect({ kind, cols, rows, origin, duration, random = Math.random }) {
+export function createEndEffect({ kind, geometry = null, cols, rows, origin, duration, random = Math.random }) {
   if (kind !== WIN && kind !== LOSS) throw new RangeError(`unknown end effect "${kind}"`);
-  const count = cols * rows;
-  const o = Number.isInteger(origin) && origin >= 0 && origin < count ? origin : Math.floor(rows / 2) * cols + Math.floor(cols / 2);
-  const oc = o % cols;
-  const or = (o - oc) / cols;
-  const far = Math.hypot(Math.max(oc, cols - 1 - oc), Math.max(or, rows - 1 - or));
+  const geo = geometry ?? createGeometry('square', cols, rows);
+  const count = geo.count;
+  const unit = geo.extent(1, 0);
+  const o = Number.isInteger(origin) && origin >= 0 && origin < count ? origin : geo.cellAt(unit.width / 2, unit.height / 2, 1, 0);
+  // Each cell's centre on a board of unit tiles with no gap: distances in tiles.
+  const centres = Object.freeze(Array.from({ length: count }, (_, c) => Object.freeze(geo.centre(c, 1, 0))));
+  const from = centres[o];
+  let far = 0;
+  for (const p of centres) far = Math.max(far, Math.hypot(p.x - from.x, p.y - from.y));
   const step = far > 0 ? Math.min(WAVE_STEP_MS, (duration * WAVE_SHARE) / far) : 0;
   const pieces = [];
   if (kind === WIN) {
@@ -79,14 +88,14 @@ export function createEndEffect({ kind, cols, rows, origin, duration, random = M
       pieces.push({ dir: random() * Math.PI * 2, rise: random(), speed: random(), late: random(), spin: random(), size: random(), color: i });
     }
   }
-  return Object.freeze({ kind, cols, rows, origin: o, originCol: oc, originRow: or, duration, step, pieces: Object.freeze(pieces) });
+  return Object.freeze({ kind, geometry: geo, origin: o, centres, duration, step, pieces: Object.freeze(pieces) });
 }
 
-/** When the wave reaches cell c, in ms since the end: 0 at the origin, proportional to the distance. */
+/** When the wave reaches cell c, in ms since the end: 0 at the origin, proportional to the distance between their centres. */
 export function reachMs(effect, c) {
-  const col = c % effect.cols;
-  const row = (c - col) / effect.cols;
-  return Math.hypot(col - effect.originCol, row - effect.originRow) * effect.step;
+  const p = effect.centres[c];
+  const o = effect.centres[effect.origin];
+  return Math.hypot(p.x - o.x, p.y - o.y) * effect.step;
 }
 
 /** The tile a won board shows for a cell: every cell still closed at a win is a mine, shown flagged. */
@@ -132,15 +141,17 @@ export function waveAt(effect, c, state, t, end2d) {
 export function done(effect, t) { return t >= effect.duration; }
 
 /**
- * The confetti at t over a board width × height CSS pixels with `tile` pixel tiles: each piece
- * bursts from the origin's tile, slows and falls; a piece outside the board's rectangle is not in
- * view and left out. Fades over the last FADE_SHARE of the delay; none after it.
+ * The confetti at t over a board width × height CSS pixels — the geometry's extent at `tile` pixel
+ * tiles and `gap` when not given: each piece bursts from the origin's centre, slows and falls; a
+ * piece outside the board's extent is not in view and left out. Fades over the last FADE_SHARE of
+ * the delay; none after it.
  */
-export function confettiAt(effect, t, { width, height, tile }) {
-  if (effect.kind !== WIN || t < 0 || t >= effect.duration || !(width > 0 && height > 0)) return [];
+export function confettiAt(effect, t, { tile, gap = 0, width, height }) {
+  if (effect.kind !== WIN || t < 0 || t >= effect.duration) return [];
+  if (width === undefined || height === undefined) ({ width, height } = effect.geometry.extent(tile, gap));
+  if (!(width > 0 && height > 0)) return [];
   const span = Math.max(width, height);
-  const x0 = (effect.originCol + 0.5) * tile;
-  const y0 = (effect.originRow + 0.5) * tile;
+  const { x: x0, y: y0 } = effect.geometry.centre(effect.origin, tile, gap);
   const fadeFrom = effect.duration * (1 - FADE_SHARE);
   const alpha = t <= fadeFrom ? 1 : Math.max(0, (effect.duration - t) / (effect.duration - fadeFrom));
   const out = [];

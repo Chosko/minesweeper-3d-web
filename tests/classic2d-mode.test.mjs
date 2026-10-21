@@ -538,6 +538,10 @@ test('the board plays the end effect through the delay, from the last action\'s 
   assert.equal(effect.kind, WIN);
   assert.equal(effect.origin, 2, 'the win pulse starts at the last action\'s cell');
   assert.equal(effect.duration, END_DELAY_MS);
+  const geometry = won.board().options.geometry;
+  assert.equal(geometry.kind, 'square');
+  assert.equal(effect.geometry, geometry, 'the effect runs on the board view\'s geometry');
+  assert.equal(won.cursor().geometry, geometry, 'the cursor moves on the board view\'s geometry');
   assert.equal(t0, 0);
   won.clock.advance(250);
   won.mode.tick();
@@ -552,6 +556,7 @@ test('the board plays the end effect through the delay, from the last action\'s 
   const [loss] = lost.board().effects[0];
   assert.equal(loss.kind, LOSS);
   assert.equal(loss.origin, 0, 'the loss wave starts at the exploded tile');
+  assert.equal(loss.geometry, lost.board().options.geometry);
   lost.mode.finishNow();
   assert.deepEqual(lost.board().effects.at(-1), [null, undefined], 'cut short, the board is drawn in its end state at once');
 });

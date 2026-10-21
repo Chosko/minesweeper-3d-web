@@ -49,10 +49,10 @@ shell hands in its flow and its sound sink. The area overview is
 `js/classic2d/end-effect.js`
 - `WIN`, `LOSS`, `WAVE_STEP_MS`, `WAVE_SHARE`, `WIN_WAVE`
   (`{peakMs, widthMs}`), `LOSS_SNAP_MS`, `CONFETTI_COUNT`.
-- `createEndEffect({kind, cols, rows, origin, duration, random?})`,
+- `createEndEffect({kind, geometry?, cols?, rows?, origin, duration, random?})`,
   `reachMs`, `preLossState`, `wonState`, `shownState`,
   `waveAt(effect, c, state, t, end2d)` → `{scale, flash}` or null,
-  `confettiAt(effect, t, {width, height, tile})`, `done`,
+  `confettiAt(effect, t, {tile, gap?, width?, height?})`, `done`,
   `drawWave(ctx, x, y, size, wave, board, paint)`, `drawConfetti`. The
   module head comment is the contract.
 
@@ -119,7 +119,8 @@ shell hands in its flow and its sound sink. The area overview is
   the session's own choice. `hideBoard` pauses the session with the board
   (a no-op before the first click or after the end) and drops held inputs.
 - **End effect.** Each tile is reached at a delay proportional to its
-  distance in tiles from the origin, at most `WAVE_STEP_MS` per tile, the
+  distance in tiles from the origin, between cell centres on the board's
+  grid geometry, at most `WAVE_STEP_MS` per tile, the
   farthest by `WAVE_SHARE` of the delay. A loss's changed tiles keep their
   pre-loss tile until reached, then snap to their revealed face from the
   board module's `end2d.loss.scale` with an overshoot (the 3D loss wave's
@@ -127,8 +128,8 @@ shell hands in its flow and its sound sink. The area overview is
   win's wave bumps each tile to `end2d.win.scale` and mixes it
   `end2d.win.mix` toward `end2d.light` as it passes (the 3D win wave's
   timing, `WIN_WAVE`), its closed mines turn to flags, and its confetti in
-  the module's `palette.confetti` bursts from the origin and falls over the
-  board's rectangle. The board view draws it; the module reads no token.
+  the module's `palette.confetti` bursts from the origin's centre and falls
+  over the geometry's extent. The board view draws it; the module reads no token.
 
 ## DOMAIN DEPENDENCIES
 

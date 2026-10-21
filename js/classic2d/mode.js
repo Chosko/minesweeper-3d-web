@@ -1,7 +1,8 @@
-// Classic 2D mode: the game session (js/classic2d/session.js), the board view — on the square geometry
-// of the game's grid (js/geometry/index.js) — and its pointer, touch and cursor inputs behind the
-// game shell's mode contract (js/shell/mode-host.js). DOM-free: the shell
-// hands in its flow; the mounts default to the browser ones and are only called by start().
+// Classic 2D mode: the game session (js/classic2d/session.js), the board view and its pointer, touch
+// and cursor inputs — the view, the cursor and the end effect on the square geometry of the game's
+// grid (js/geometry/index.js) — behind the game shell's mode contract (js/shell/mode-host.js).
+// DOM-free: the shell hands in its flow; the mounts default to the browser ones and are only called
+// by start().
 //
 // createClassic2DMode(report, { flow, lastChoice, createClient?, mount?, sound?, clock?, randomSeed?,
 //                               generatingDelayMs?, place?, buttonSwap? }) → mode
@@ -90,7 +91,8 @@
 // arrives. At a win or a loss it reports canPause(false) at once and the end delay runs (`ending`
 // true): for END_DELAY_MS, on the clock and so whether or not frames are drawn, the board plays
 // the end effect (js/classic2d/end-effect.js) — the win pulse from the last action's cell and
-// confetti, or the loss reveal wave from the exploded tile — then is drawn in its end state, and
+// confetti, or the loss reveal wave from the exploded tile nearest it by the distance between cell
+// centres — then is drawn in its end state, and
 // the mode reports finished(summary, replay) once, with the game's summary and replay at its end.
 // During the delay a pause is ignored and the board takes no action; finishNow() ends it at once
 // (any press of the player's, the page going away), so the game is reported finished, never left
@@ -146,12 +148,14 @@ const globalClock = {
 };
 
 // The exploded tile nearest the last action's cell (a chord can open more than one mine).
-function explodedNear(game, cols, count, last) {
+function explodedNear(game, geometry, last) {
   let best = -1;
   let bestD = Infinity;
-  for (let c = 0; c < count; c++) {
+  const from = last < 0 ? null : geometry.centre(last, 1, 0);
+  for (let c = 0; c < geometry.count; c++) {
     if (game.cellState(c) !== CELL.EXPLODED) continue;
-    const d = last < 0 ? 0 : Math.hypot((c % cols) - (last % cols), Math.floor(c / cols) - Math.floor(last / cols));
+    const at = from && geometry.centre(c, 1, 0);
+    const d = from ? Math.hypot(at.x - from.x, at.y - from.y) : 0;
     if (d < bestD) { best = c; bestD = d; }
   }
   return best;
@@ -282,10 +286,11 @@ export function createClassic2DMode(report, {
     flow.show();
     const { width, height, mines, noGuess } = session.setup;
     flow.board({ width, height, mines, noGuess, identity: session.identity });
+    const geometry = createGeometry('square', width, height);
     const view = mount.board({
       container: flow.container(),
       grid: session.setup.grid,
-      geometry: createGeometry('square', width, height),
+      geometry,
       scale: flow.scale?.(),
       frame: flow.frame && (() => flow.frame()),
       onLayout: (layout) => flow.layout?.(layout),
@@ -324,7 +329,7 @@ export function createClassic2DMode(report, {
     });
     const pointer = mount.pointer({ view, session: gate, ...(buttonSwap ? { swap: buttonSwap } : {}) });
     const cursor = mount.cursor({
-      view: cursorView, session: gate, onPadCue: (kind) => flow.padCue?.(kind), ...(session.fixed ? { start: session.fixed.startCell } : {}),
+      view: cursorView, session: gate, geometry, onPadCue: (kind) => flow.padCue?.(kind), ...(session.fixed ? { start: session.fixed.startCell } : {}),
     });
     const touch = mount.touch
       ? mount.touch({ view, session: gate, flagMode: () => tapMode === 'flag', onUserScroll: () => flow.scrolled?.() })
@@ -338,10 +343,9 @@ export function createClassic2DMode(report, {
         const g = game;
         if (g?.session !== session) return;
         pregenerateNext(session);
-        const { width: cols, height: rows } = session.setup;
         const won = session.state === SESSION_STATE.WON;
-        const origin = won ? last : explodedNear(session.game, cols, cols * rows, last);
-        const effect = createEndEffect({ kind: won ? WIN : LOSS, cols, rows, origin, duration: END_DELAY_MS });
+        const origin = won ? last : explodedNear(session.game, geometry, last);
+        const effect = createEndEffect({ kind: won ? WIN : LOSS, geometry, origin, duration: END_DELAY_MS });
         g.ending = { summary, replay, effect, t0: time.now(), handle: time.setTimeout(() => finish(g), END_DELAY_MS) };
         view.showEffect(effect, 0);
       }),

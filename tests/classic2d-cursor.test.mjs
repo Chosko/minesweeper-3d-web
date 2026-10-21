@@ -455,7 +455,7 @@ function key(type, code, props = {}) {
   return Object.assign(event, { code, repeat: false, ctrlKey: false, altKey: false, metaKey: false, ...props });
 }
 
-function wiring({ state = 'playing', rows = CORNER } = {}) {
+function wiring({ state = 'playing', rows = CORNER, geometry = null } = {}) {
   const { grid, game } = board(rows);
   const win = new EventTarget();
   const frames = [];
@@ -482,7 +482,7 @@ function wiring({ state = 'playing', rows = CORNER } = {}) {
     toggleFlag: (c) => { asked.push(['toggleFlag', c]); return game.toggleFlag(c); },
     chord: (c) => { asked.push(['chord', c]); return game.chord(c); },
   };
-  const mounted = mountCursorInput({ view, session, win });
+  const mounted = mountCursorInput({ view, session, win, ...(geometry ? { geometry } : {}) });
   const runFrames = (until) => {
     while (frames.length && time < until) {
       time += 16;
@@ -639,6 +639,89 @@ test('mounted: destroy removes every listener', () => {
   w.win.dispatchEvent(key('keyup', 'Space'));
   w.view.canvas.dispatchEvent(new Event('mousedown'));
   assert.deepEqual([w.asked, w.cursorCalls, ev.defaultPrevented], [[], [], false]);
+});
+
+// ---------- the grid geometry ----------
+
+// A geometry of the CORNER board's size whose cursor steps two cells along the index to the right
+// or left and has no up or down: a stand-in for a grid whose moves are not the square's. Logs
+// every query.
+function skipping(width = 5, height = 4) {
+  const count = width * height;
+  const asked = [];
+  return {
+    asked,
+    kind: 'skip', width, height, count,
+    neighbour(c, direction) {
+      asked.push([c, direction]);
+      if (direction === 'right') return c + 2 < count ? c + 2 : -1;
+      if (direction === 'left') return c - 2 >= 0 ? c - 2 : -1;
+      if (direction === 'up' || direction === 'down') return -1;
+      throw new RangeError(direction);
+    },
+  };
+}
+
+test('the cursor moves by the geometry\'s neighbour query, one query a step, and stops where it answers none', () => {
+  const geometry = skipping();
+  const h = harness(CORNER, { geometry });
+  h.input.move(1, 0);
+  assert.equal(h.input.cell, 2, 'right is the geometry\'s right');
+  assert.deepEqual(geometry.asked, [[0, 'right']]);
+  h.input.move(3, 0);
+  assert.equal(h.input.cell, 8, 'three steps, three queries');
+  assert.deepEqual(h.moves, [2, 8], 'a move of several steps reports its last cell once');
+  h.input.move(20, 0);
+  assert.equal(h.input.cell, 18, 'stopped at the last cell the geometry answers');
+  h.input.move(-1, 0);
+  assert.equal(h.input.cell, 16);
+  const before = h.moves.length;
+  h.input.move(0, 1);
+  h.input.move(0, -3);
+  assert.equal(h.input.cell, 16, 'no neighbour up or down: the cursor stays');
+  assert.equal(h.moves.length, before, 'and reports nothing');
+  assert.ok(geometry.asked.some(([, d]) => d === 'up') && geometry.asked.some(([, d]) => d === 'down'), 'it asked');
+});
+
+test('held directions and the controller move by the geometry too', () => {
+  const geometry = skipping();
+  const h = harness(CORNER, { geometry, delay: 380, interval: 60 });
+  h.input.hold('k', 'right');
+  h.input.tick(1000);
+  assert.equal(h.input.cell, 2);
+  h.input.tick(1380);
+  assert.equal(h.input.cell, 4, 'the auto-repeat steps by the geometry');
+  h.input.let('k', 'right');
+  h.input.pad(poll([BTN.LEFT]), 2000);
+  assert.equal(h.input.cell, 2, 'the d-pad\'s left is the geometry\'s left');
+});
+
+test('a geometry built for another size than the grid is refused', () => {
+  assert.throws(() => harness(CORNER, { geometry: skipping(4, 4) }), RangeError);
+});
+
+test('mounted: the cursor moves on the geometry it is handed', () => {
+  const geometry = skipping();
+  const w = wiring({ geometry });
+  w.win.dispatchEvent(key('keydown', 'ArrowRight'));
+  w.win.dispatchEvent(key('keyup', 'ArrowRight'));
+  assert.deepEqual(w.cursorCalls, [0, 2], 'shown on its cell, then moved to the geometry\'s right');
+  assert.deepEqual(geometry.asked, [[0, 'right']]);
+});
+
+test('the cursor input reads no column or row arithmetic of its own', () => {
+  const src = readFileSync(join(ROOT, 'js', 'classic2d', 'cursor-input.js'), 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+  assert.doesNotMatch(src, /%\s*cols|\/\s*cols|cols\s*\*|\bcols\b|\brows\b/, 'no col + cols × row indexing');
+  assert.match(src, /\.neighbour\(/, 'it asks the geometry');
+});
+
+test('pointer and touch inputs reach cells only through the view\'s hit-testing, with no column or row arithmetic', () => {
+  for (const file of ['pointer-input.js', 'touch-input.js']) {
+    const src = readFileSync(join(ROOT, 'js', 'classic2d', file), 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+    assert.doesNotMatch(src, /\b(cols|rows|pitch|width|height)\b|%|Math\.floor/, `${file}: no grid arithmetic`);
+    assert.match(src, /view\.cellAt\(/, `${file}: the cell under a point is the view's`);
+    assert.doesNotMatch(src, /geometry\/|square-grid/, `${file}: no geometry or grid of its own`);
+  }
 });
 
 test('the module is DOM-free at import and independent of three.js and js/input.js', () => {

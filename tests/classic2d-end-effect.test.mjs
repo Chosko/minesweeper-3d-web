@@ -12,12 +12,13 @@ import { fileURLToPath } from 'node:url';
 
 import {
   createEndEffect, reachMs, preLossState, wonState, shownState, waveAt, confettiAt, done, drawWave, drawConfetti,
-  WIN, LOSS, WAVE_STEP_MS, WIN_WAVE, LOSS_SNAP_MS,
+  WIN, LOSS, WAVE_STEP_MS, WAVE_SHARE, WIN_WAVE, LOSS_SNAP_MS,
 } from '../js/classic2d/end-effect.js';
 import { END_DELAY_MS } from '../js/classic2d/mode.js';
 import { END_DELAY_MS as END_DELAY_3D_MS } from '../js/shell/mode-3d.js';
 import { CELL } from '../js/engine/rules.js';
 import { BOARD as JOYFUL } from '../themes/joyful-tiles/board.js';
+import { createGeometry } from '../js/geometry/index.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const END2D = JOYFUL.end2d;
@@ -225,6 +226,100 @@ test('the confetti is drawn in the colours it is handed: the board module\'s', (
   drawConfetti(ctx, pieces, JOYFUL.palette.confetti, 0, 0);
   const used = new Set(calls.filter((c) => c[0] === 'fillRect').map((c) => c[2]));
   assert.ok(used.size > 1 && [...used].every((c) => JOYFUL.palette.confetti.includes(c)), 'Joyful tiles\' confetti colours');
+});
+
+// ---------- the grid geometry ----------
+
+// A two-cell-wide geometry whose cell centres are not on a square lattice: cell c sits at
+// (c % 2 + (row odd ? 0.5 : 0), row × 0.75), as a column of offset rows would.
+function offsetGeometry(width = 2, height = 6) {
+  const count = width * height;
+  const centre = (c, tile = 1) => {
+    const col = c % width;
+    const row = (c - col) / width;
+    return { x: (col + 0.5 + (row % 2 ? 0.5 : 0)) * tile, y: (row * 0.75 + 0.5) * tile };
+  };
+  return {
+    kind: 'offset', width, height, count,
+    centre: (c, tile = 1) => (Number.isInteger(c) && c >= 0 && c < count ? centre(c, tile) : null),
+    extent: (tile) => ({ width: (width + 0.5) * tile, height: ((height - 1) * 0.75 + 1) * tile }),
+    cellAt: (x, y) => {
+      let best = -1;
+      let bestD = Infinity;
+      for (let c = 0; c < count; c++) {
+        const p = centre(c);
+        const d = Math.hypot(p.x - x, p.y - y);
+        if (d < bestD) { best = c; bestD = d; }
+      }
+      return best;
+    },
+  };
+}
+
+test('on the square geometry every reach time and confetti piece equals the cols × rows effect\'s', () => {
+  for (const [cols, rows] of Object.values(BOARDS)) {
+    const geometry = createGeometry('square', cols, rows);
+    for (const origin of [...corners(cols, rows), cols + 1, -1]) {
+      for (const kind of [WIN, LOSS]) {
+        const plain = createEndEffect({ kind, cols, rows, origin, duration: END_DELAY_MS, random: seeded(7) });
+        const on = createEndEffect({ kind, geometry, origin, duration: END_DELAY_MS, random: seeded(7) });
+        assert.equal(on.origin, plain.origin);
+        // Today's reach: the column and row distance from the origin, the farthest tile at WAVE_SHARE of the delay at most.
+        const oc = plain.origin % cols;
+        const or = (plain.origin - oc) / cols;
+        const far = Math.hypot(Math.max(oc, cols - 1 - oc), Math.max(or, rows - 1 - or));
+        const step = Math.min(WAVE_STEP_MS, (END_DELAY_MS * WAVE_SHARE) / far);
+        for (let c = 0; c < cols * rows; c++) {
+          const today = Math.hypot((c % cols) - oc, Math.floor(c / cols) - or) * step;
+          assert.equal(reachMs(on, c), today, `${cols}×${rows} from ${origin}: cell ${c}`);
+          assert.equal(reachMs(plain, c), today);
+        }
+        if (kind === WIN) {
+          for (const p of confettiAt(on, 0, { width: cols * 32, height: rows * 32, tile: 32 })) {
+            assert.deepEqual([p.x, p.y], [(oc + 0.5) * 32, (or + 0.5) * 32], 'the burst from the origin tile as today');
+          }
+        }
+        for (const tile of [26, 32, 48]) {
+          const area = { width: cols * tile, height: rows * tile, tile };
+          for (let t = 0; t < END_DELAY_MS; t += 50) assert.deepEqual(confettiAt(on, t, area), confettiAt(plain, t, area));
+        }
+      }
+    }
+  }
+});
+
+test('the waves travel by the distance between the geometry\'s cell centres', () => {
+  const geometry = offsetGeometry();
+  const e = createEndEffect({ kind: LOSS, geometry, origin: 0, duration: END_DELAY_MS });
+  const dist = (c) => Math.hypot(geometry.centre(c).x - geometry.centre(0).x, geometry.centre(c).y - geometry.centre(0).y);
+  assert.equal(reachMs(e, 0), 0);
+  let far = 0;
+  for (let c = 1; c < geometry.count; c++) {
+    assert.ok(Math.abs(reachMs(e, c) / dist(c) - reachMs(e, 1) / dist(1)) < 1e-9, `cell ${c}: proportional to its centre's distance`);
+    far = Math.max(far, reachMs(e, c));
+  }
+  assert.ok(far > 0 && far < END_DELAY_MS, 'the farthest centre is reached within the delay');
+  assert.ok(Math.abs(reachMs(e, 2) - reachMs(e, 1) * dist(2) / dist(1)) < 1e-9, 'the offset row\'s cell is reached by its centre, not its column');
+  const middle = createEndEffect({ kind: WIN, geometry, origin: -1, duration: END_DELAY_MS });
+  const ext = geometry.extent(1);
+  assert.equal(middle.origin, geometry.cellAt(ext.width / 2, ext.height / 2), 'no origin: the cell at the middle of the extent');
+});
+
+test('the confetti bursts from the origin\'s centre and covers the geometry\'s extent', () => {
+  const geometry = offsetGeometry();
+  const tile = 40;
+  const origin = 7;
+  const e = createEndEffect({ kind: WIN, geometry, origin, duration: END_DELAY_MS, random: () => 0.5 });
+  const { width, height } = geometry.extent(tile);
+  const first = confettiAt(e, 0, { tile });
+  assert.ok(first.length > 0);
+  const centre = geometry.centre(origin, tile);
+  for (const p of first) assert.ok(Math.abs(p.y - centre.y) < 1e-9 && Math.abs(p.x - centre.x) <= tile * 0.3, 'bursting from the origin\'s centre');
+  for (let t = 0; t < END_DELAY_MS; t += 25) {
+    const without = confettiAt(e, t, { tile });
+    assert.deepEqual(without, confettiAt(e, t, { width, height, tile }), 'with no rectangle given, the geometry\'s extent');
+    for (const p of without) assert.ok(p.x >= 0 && p.x <= width && p.y >= 0 && p.y <= height);
+  }
 });
 
 test('the module is DOM-free and holds no literal colour', () => {

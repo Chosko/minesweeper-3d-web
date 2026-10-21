@@ -37,6 +37,8 @@
 // suppressed over the board, held buttons dropped on blur. A shift + primary press on a board that
 // scrolls belongs to the view's pan (PAN_MODIFIER) and is ignored here. `swap`
 // (js/classic2d/button-swap.js) translates each physical button before the state machine sees it.
+// The cell under the pointer is the view's hit-test (view.cellAt, on the board's grid geometry);
+// the input does no column or row arithmetic.
 
 import { getRuleProfile, REFERENCE_PROFILE } from '../engine/profiles.js';
 import { CELL } from '../engine/rules.js';

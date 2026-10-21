@@ -19,9 +19,13 @@
 // same profile markers as the pointer input (pointerRules): the press follows the cursor and the
 // release acts where it is.
 //
-// createCursorInput({ grid, game, onPress, onAction, onCursor?, onUse?, onPadCue?, rules?, active?,
-//                    delay?, interval?, start? })
-//   grid      the square grid (width, height, graph).
+// createCursorInput({ grid, geometry?, game, onPress, onAction, onCursor?, onUse?, onPadCue?, rules?,
+//                    active?, delay?, interval?, start? })
+//   grid      the board's cell graph provider (width, height, graph).
+//   geometry  the board's grid geometry (js/geometry/index.js), the square geometry of the grid's
+//             size when not given; one built for another size than the grid is a RangeError. Each
+//             step up, down, left or right is its neighbour query, and the cursor stops where it
+//             answers none.
 //   game      () → the engine game, read for cellState / cellNumber.
 //   onPress   (cells, event) → the cells to show pressed, whenever that set changes, and their cell
 //             event: chordPress for a number's neighbours, else press.
@@ -37,7 +41,9 @@
 //   start     the cell the cursor starts on: 0 by default, a forced start cell's on a daily or a
 //             challenge (js/classic2d/session.js).
 //
-//   cell, setCell(c), move(dx, dy)     the cursor, clamped to the board.
+//   cell, setCell(c), move(dx, dy)     the cursor; move takes |dx| steps right (left when
+//                                      negative), then |dy| down (up), each stopping at the board's
+//                                      edge, and reports the cell it ends on once.
 //   hold(source, dir), let(source, dir) a direction ('up' | 'down' | 'left' | 'right') held or let
 //                                      go by an input source (a key code, a pad button, the stick).
 //   tick(now)                          moves for the held directions, with auto-repeat.
@@ -47,7 +53,7 @@
 //   reset()                            forgets every held input without firing (focus loss, pause).
 //   holding, moving                    whether a button / a direction is held.
 //
-// mountCursorInput({ view, session, grid?, win?, rules?, delay?, interval?, onPadCue?, start? }) → { input, pad,
+// mountCursorInput({ view, session, grid?, geometry?, win?, rules?, delay?, interval?, onPadCue?, start? }) → { input, pad,
 // shown, destroy() }: keys on the page (`win`) — the system key repeat ignored, a held direction
 // repeated on animation frames — and held inputs dropped on blur. pad(poll, now?) is for the
 // shell's controller poll. Keys with Ctrl, Alt or Meta and every key not in CURSOR_KEYS are left
@@ -60,6 +66,7 @@
 import { BTN, Repeat, stickCurve } from '../gamepad.js';
 import { CELL } from '../engine/rules.js';
 import { pointerRules } from './pointer-input.js';
+import { createGeometry } from '../geometry/index.js';
 
 /** Key codes and what they do on the board. */
 export const CURSOR_KEYS = Object.freeze({
@@ -98,16 +105,19 @@ const PAD_SOURCES = new Set(Object.keys(PAD_MAP).map(padSource));
 const TRIGGER_SOURCES = new Set([BTN.LT, BTN.RT].map(padSource));
 
 export function createCursorInput({
-  grid, game, onPress, onAction, onCursor = () => {}, onUse = () => {}, onPadCue = () => {}, rules = pointerRules(),
-  active = () => true, delay, interval, start = 0,
+  grid, geometry = null, game, onPress, onAction, onCursor = () => {}, onUse = () => {}, onPadCue = () => {},
+  rules = pointerRules(), active = () => true, delay, interval, start = 0,
 }) {
-  const cols = grid.width;
-  const rows = grid.height;
+  const geo = geometry ?? createGeometry('square', grid.width, grid.height);
+  if (geo.width !== grid.width || geo.height !== grid.height) {
+    throw new RangeError(`a ${geo.width} × ${geo.height} geometry for a ${grid.width} × ${grid.height} grid`);
+  }
+  const count = geo.count;
   const graph = grid.graph;
   const dirs = Object.fromEntries(DIRECTIONS.map((d) => [d, new Set()]));
   const repeats = Object.fromEntries(DIRECTIONS.map((d) => [d, new Repeat(delay, interval)]));
   const held = Object.fromEntries(BUTTONS.map((b) => [b, new Set()]));
-  let cell = Number.isInteger(start) && start >= 0 && start < grid.width * grid.height ? start : 0;
+  let cell = Number.isInteger(start) && start >= 0 && start < count ? start : 0;
   let chordOnly = false; // a chord input or reveal + flag during this press
   let chordButton = false; // a chord input during this press
   let downCell = -1; // the cell the press started on, for releaseOffCell 'cancel'
@@ -169,17 +179,26 @@ export function createCursorInput({
   }
 
   function setCell(c) {
-    if (!Number.isInteger(c) || c < 0 || c >= cols * rows || c === cell) return;
+    if (!Number.isInteger(c) || c < 0 || c >= count || c === cell) return;
     cell = c;
     if (pressing() && rules.releaseOffCell === 'cancel' && c !== downCell) cancelled = true;
     onCursor(c);
     refresh();
   }
 
+  // `n` steps in `direction` from c by the geometry's neighbour query, stopping where it answers none.
+  function walk(c, direction, n) {
+    for (let i = 0; i < n; i++) {
+      const next = geo.neighbour(c, direction);
+      if (next < 0) break;
+      c = next;
+    }
+    return c;
+  }
+
   function move(dx, dy) {
-    const col = Math.min(cols - 1, Math.max(0, (cell % cols) + dx));
-    const row = Math.min(rows - 1, Math.max(0, Math.floor(cell / cols) + dy));
-    setCell(col + cols * row);
+    const across = walk(cell, dx < 0 ? 'left' : 'right', Math.abs(dx));
+    setCell(walk(across, dy < 0 ? 'up' : 'down', Math.abs(dy)));
   }
 
   function hold(source, dir) {
@@ -306,12 +325,15 @@ export function createCursorInput({
 
 const PLAYABLE = new Set(['ready', 'playing']);
 
-export function mountCursorInput({ view, session, grid = session.setup.grid, win = globalThis, rules, delay, interval, onPadCue, start }) {
+export function mountCursorInput({
+  view, session, grid = session.setup.grid, geometry, win = globalThis, rules, delay, interval, onPadCue, start,
+}) {
   const active = () => PLAYABLE.has(session.state) && !session.paused;
   const now = () => win.performance.now();
   let ringShown = false;
   const input = createCursorInput({
     grid,
+    geometry,
     game: () => session.game,
     rules,
     active,

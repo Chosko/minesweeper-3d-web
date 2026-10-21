@@ -50,7 +50,7 @@ not a new state machine. The area overview is [classic2d.md](classic2d.md).
 `js/classic2d/cursor-input.js`
 - `CURSOR_KEYS` (key code → `up`/`down`/`left`/`right`/`reveal`/`flag`/
   `chord`), `PAD_MAP` (`BTN` index → the same), `STICK_THRESHOLD`.
-- `createCursorInput({grid, game, onPress, onAction, onCursor?, onUse?,
+- `createCursorInput({grid, geometry?, game, onPress, onAction, onCursor?, onUse?,
   onPadCue?, rules?, active?, delay?, interval?, start?})` → `{cell, setCell(c), move(dx, dy),
   hold(source, dir), let(source, dir), tick(now), down(source, button),
   up(source, button), pad(poll, now), reset(), holding, moving}` —
@@ -61,8 +61,8 @@ not a new state machine. The area overview is [classic2d.md](classic2d.md).
   never report); `poll` a
   `GamepadReader` poll after the shell's held-button suppression
   ([input-controller.md](input-controller.md)).
-- `mountCursorInput({view, session, grid?, win?, rules?, delay?,
-  interval?, onPadCue?})` → `{input, pad(poll, now?), shown, destroy()}`.
+- `mountCursorInput({view, session, grid?, geometry?, win?, rules?, delay?,
+  interval?, onPadCue?, start?})` → `{input, pad(poll, now?), shown, destroy()}`.
 
 ## INTERNAL PATTERNS
 
@@ -103,7 +103,10 @@ not a new state machine. The area overview is [classic2d.md](classic2d.md).
   flag held together are left + right, chording when `chordInputs` has
   `left+right`. B, Start and Back are the shell's and unmapped. Press
   feedback and a held press under a moving cursor read the same profile
-  markers as the pointer input. Directions repeat through `Repeat`, the
+  markers as the pointer input. Each step up, down, left or right is the
+  board's grid geometry's `neighbour` query (the square geometry of the
+  grid's size when none is handed in; one of another size is a
+  `RangeError`), and the cursor stops where it answers none. Directions repeat through `Repeat`, the
   left stick through `stickCurve` past `STICK_THRESHOLD`; the mount ignores
   the system key repeat and ticks on animation frames while a direction key
   is held; the controller reaches it only through `pad(poll)`, called from

@@ -1381,7 +1381,7 @@ Feature: flat-grid-geometry
 
 ## 251. Cursor moves and end effect on the grid geometry
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: js/classic2d/cursor-input.js, js/classic2d/end-effect.js, js/classic2d/pointer-input.js, js/classic2d/touch-input.js, js/classic2d/mode.js, tests/classic2d-cursor.test.mjs, tests/classic2d-end-effect.test.mjs
 Preconditions: 249

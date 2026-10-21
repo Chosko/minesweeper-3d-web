@@ -41,7 +41,9 @@
 // left alone), panning through view.pan and zooming through view.zoom about the pinch's midpoint,
 // the board point under the midpoint at the start kept under it; onUserScroll() follows each pan
 // or zoom. The vibration is the page's navigator.vibrate, where it exists. Input is taken only
-// while the session is ready or playing and not paused, as the mouse's is.
+// while the session is ready or playing and not paused, as the mouse's is. The cell under a finger
+// is the view's hit-test (view.cellAt, on the board's grid geometry); the input does no column or
+// row arithmetic.
 
 import { CELL } from '../engine/rules.js';
 import { pointerRules } from './pointer-input.js';
