@@ -32,7 +32,8 @@ Done: 2026-10-21, commit `e531af6` (13 files, +325/-124). `boardPoint` (touch-zo
 
 Depends on: 2
 
-Context: none
+Context:
+- 2026-10-21 the previous agent on this step was interrupted mid-task and cannot resume; this step's worktree holds its uncommitted partial work for this same task (the task already [IN PROGRESS] there). The user asked for that work to be finished: at the dirty-tree prompt, keep the partial work and fold it into the task's commit, then continue from it rather than starting over.
 
 ```prompt
 /task-implement 250 --review
@@ -42,7 +43,8 @@ Context: none
 
 Depends on: 2
 
-Context: none
+Context:
+- 2026-10-21 the previous agent on this step was interrupted mid-task and cannot resume; this step's worktree holds its uncommitted partial work for this same task (the task already [IN PROGRESS] there). The user asked for that work to be finished: at the dirty-tree prompt, keep the partial work and fold it into the task's commit, then continue from it rather than starting over.
 
 ```prompt
 /task-implement 251 --review
@@ -75,22 +77,26 @@ Context:
 
 Depends on: none
 
-Context: none
+Context:
+- 2026-10-21 the previous agent on this step was interrupted mid-task and cannot resume; this step's worktree holds its uncommitted partial work for this same task (the task already [IN PROGRESS] there). The user asked for that work to be finished: at the dirty-tree prompt, keep the partial work and fold it into the task's commit, then continue from it rather than starting over.
 
 ```prompt
 /task-implement 254 --review
 ```
 
-## [ ] 8. Implement task 255 — Hexagon geometry
+## [x] 8. Implement task 255 — Hexagon geometry
 
 Depends on: 1
 
 Context:
 - 2026-10-21 (from step 2): the board view's repaint walks only the cells between the viewport's top-left and bottom-right corners plus one row either side, so it assumes cells are numbered row by row — this geometry must number its cells the same way.
+- 2026-10-21 the previous agent on this step was interrupted mid-task and cannot resume; this step's worktree holds its uncommitted partial work for this same task (the task already [IN PROGRESS] there). The user asked for that work to be finished: at the dirty-tree prompt, keep the partial work and fold it into the task's commit, then continue from it rather than starting over.
 
 ```prompt
 /task-implement 255 --review
 ```
+
+Done: 2026-10-21, commit `3a5e47d` (4 files, +460/-4). Odd columns sit half a row step, (tile + gap) / 2, lower — not "half a tile" as the feature document says — the only offset that keeps facing sides one gap apart; a press anywhere in the board's rectangle goes to the nearest tile centre.
 
 ## [ ] 9. Implement task 256 — Hexagon boards, limits, identity and board-code token
 
@@ -106,7 +112,8 @@ Context: none
 
 Depends on: 7, 8, 9
 
-Context: none
+Context:
+- 2026-10-21 (from step 8): the hexagon geometry lowers odd columns by half a row step, (tile + gap) / 2, not "half a tile" as the hexagon-grid feature document says; it hit-tests a press anywhere in the board rectangle to the nearest tile centre (ties to the lower index) — bring the document in line.
 
 ```prompt
 /task-implement 257 --review
