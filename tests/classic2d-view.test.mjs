@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import {
   fitTileSize, gapPx, boardLayout, cellAtLayout, createBoardView, PAN_MODIFIER, BOARD_BACKGROUND, BOARD_SHADOW, BOARD_SCROLLBAR,
   BOARD_SCALES, DEFAULT_BOARD_SCALE, TILE_CAP, tileCap, panelRect, clipMarks, SCROLLBAR, CURSOR_RING, MARK_PULSE_STEPS, MARK_PULSE_MS,
-  MOTION_LAYER_CLASS, RING_LAYER_CLASS, BOARD_FRAME,
+  MOTION_LAYER_CLASS, RING_LAYER_CLASS, BOARD_FRAME, boardExtent,
 } from '../js/classic2d/board-view.js';
 import { SCHEMA } from '../js/settings/schema.js';
 import { MIN_TILE_SIZE } from '../js/classic2d/tile-skin.js';
@@ -237,6 +237,31 @@ test('the board frame pads a fitted board by the module\'s gap on every side, co
   // The view lays the board out in the frame from its module's gap and frame radius.
   const { view } = makeView({ cols: 9, rows: 9, width: 600, height: 500, scale: '100', frame: BOARD_FRAME, board: JOYFUL });
   assert.deepEqual([view.layout.tile, view.layout.inset.left, view.layout.frameRadius], [48, 4, 14]);
+});
+
+test('a board\'s extent is the room it takes of its area: the frame\'s rectangle of a board that fits, the view of one that scrolls; an area of exactly that size lays it out at the same tile with nothing left over', () => {
+  const { gap, frameRadius } = JOYFUL.style2d.params;
+  // J-Game2D-xl: Intermediate at 42 px with a 4 px gap, 740 px square in its frame; -l and -m at 28 / 3, 499 px.
+  for (const [width, height, tile, side] of [[1600, 753, 42, 740], [1000, 514, 28, 499]]) {
+    const l = boardLayout({ cols: 16, rows: 16, width, height, max: 48, frame: BOARD_FRAME, gap, frameRadius });
+    assert.equal(l.tile, tile);
+    assert.deepEqual(boardExtent(l), { width: side, height: side }, `${tile} px: the frame's rectangle`);
+    assert.deepEqual(boardExtent(l), { width: panelRect(l).width, height: panelRect(l).height });
+    const hug = boardLayout({ cols: 16, rows: 16, ...boardExtent(l), max: 48, frame: BOARD_FRAME, gap, frameRadius });
+    assert.deepEqual([hug.tile, hug.viewX, hug.viewY, hug.scrolls], [tile, hug.gap, hug.gap, false], `${tile} px: the same board in its extent, at its corner`);
+  }
+  // J-Game2D-p: Intermediate at the floor, clipped across a 358 px wide area, its own height down it.
+  const phone = boardLayout({ cols: 16, rows: 16, width: 358, height: 590, max: 48, frame: BOARD_FRAME, gap, frameRadius });
+  assert.equal(phone.scrolls, true);
+  assert.deepEqual(boardExtent(phone), { width: 358, height: 16 * M + 15 * 2 }, 'the room\'s width, the board\'s height');
+  const again = boardLayout({ cols: 16, rows: 16, ...boardExtent(phone), max: 48, frame: BOARD_FRAME, gap, frameRadius });
+  assert.deepEqual([again.tile, again.maxScrollX, again.maxScrollY], [M, phone.maxScrollX, 0], 'the same viewport in its extent');
+  // The view answers it at the fit rule's tile in any area, whatever area it is laid out in.
+  const { view } = makeView({ cols: 16, rows: 16, width: 300, height: 300, scale: '100', frame: BOARD_FRAME, board: JOYFUL });
+  assert.deepEqual(view.extent(1600, 753), { width: 740, height: 740 });
+  assert.deepEqual(view.extent(358, 590), boardExtent(phone));
+  view.zoom(40, 10, 10);
+  assert.deepEqual(view.extent(1600, 753), { width: 740, height: 740 }, 'a touch zoom aside');
 });
 
 test('a fitted board is centred with nothing to scroll; a larger one starts at the edge and scrolls', () => {

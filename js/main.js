@@ -633,7 +633,8 @@ const FLOW_2D = {
   container: () => document.getElementById('c2d-board'),
   scale: () => SETTINGS.get('boardScale'),
   frame: () => BOARD_FRAME,
-  layout: (layout) => { ui.placePanel2D(layout.scrolls ? null : panelRect(layout), layout.frameRadius); clipped2D(layout.scrolls); },
+  mounted: (view) => ui.sizeBoard2D((width, height) => view.extent(width, height)),
+  layout: (layout) => { ui.placePanel2D(layout.scrolls ? null : panelRect(layout), layout.frameRadius); clipped2D(layout.scrolls); sizeSoon2D(); },
   scrolled: () => scrolled2D(),
   hud: ({ seconds, minesLeft, clicks }) => ui.updateHud(seconds, minesLeft, clicks),
   figures: (input, { tick }) => ui.updateFigures2D(input, { tick, bests: bests2D }),
@@ -648,6 +649,15 @@ const FLOW_2D = {
   hint: (text) => ui.toast(text, 2500), // a first reveal off a daily's or a challenge's marked start cell
   padCue: (kind) => padRumble(kind === 'flag' ? PAD_FLAG : PAD_PRESS), // a trigger's press cue, a flag's double pulse
 };
+// The game window hugs its board (UI.sizeBoard2D): its board area is sized as each board view
+// opens, whenever the window's room changes, and a frame after a refit, which may change the
+// board's extent (a board scale, a theme's gap) — never inside the board's own resize callback.
+const size2D = () => { const v = mode2d.boardView; if (v) ui.sizeBoard2D((width, height) => v.extent(width, height)); };
+let sizing2D = 0;
+function sizeSoon2D() {
+  if (!sizing2D) sizing2D = requestAnimationFrame(() => { sizing2D = 0; size2D(); });
+}
+new ResizeObserver(size2D).observe(document.getElementById('c2d'));
 const board2d = { generating: false, failure: null, progress: null };
 /** The Classic 2D board status card as it stands; whether it shows. */
 function drawStatus2D() {

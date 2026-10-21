@@ -96,7 +96,7 @@ export class UI {
       resume: $('p-resume'), home: $('p-home'), restart: $('p-restart'), restartLabel: $('p-restart').querySelector('[data-label]'), pauseMenu: $('p-menu'), pauseActions: $('pause-actions'),
       confirm: $('pause-confirm'), confirmTitle: $('pause-confirm-title'), confirmText: $('pause-confirm-text'), confirmYes: $('p-confirm-yes'),
       chipShift: $('chip-shift'), chipSpace: $('chip-space'), chipCtrl: $('chip-ctrl'),
-      c2dChoice: $('c2d-choice'), c2d: $('c2d'), c2dBoard: $('c2d-board'), c2dPanel: $('c2d-panel'), c2dStatus: $('c2d-status'),
+      c2dChoice: $('c2d-choice'), c2d: $('c2d'), c2dBoard: $('c2d-board'), c2dStage: $('c2d-stage'), c2dPanel: $('c2d-panel'), c2dStatus: $('c2d-status'),
       c2dTitle: $('c2d-title'), c2dSize: $('c2d-size'), c2dMines: $('c2d-mines-left'), c2dTime: $('c2d-time'), c2dFigures: $('c2d-figures'),
       c2dReminder: $('c2d-reminder'),
       c2dStatusTitle: $('c2d-status-title'), c2dStatusText: $('c2d-status-text'), c2dOffer: $('c2d-offer'),
@@ -454,6 +454,41 @@ export class UI {
     panel.style.setProperty('--board-frame-radius', `${radius}px`);
     panel.classList.remove('hidden');
     this._centreStatus2D(); // the board area moved or resized: the status card follows its column
+  }
+  /**
+   * The Classic 2D window hugs its board: the board area (#c2d-stage) takes the board's extent in
+   * the room the window's chrome leaves it, `extent(width, height)` the board view's
+   * (board-view.js). The room is measured with the window at its largest (#c2d.c2d--measure, the
+   * area taking what the chrome leaves) and the area sized at once, in one task, so nothing paints
+   * in between; whatever the stage keeps around the board's container (the hint strip's room)
+   * stays around it. Measured at its largest, the window's chrome can be shorter than at the
+   * board's width (the figures row under the board wraps more): the area gives back what the body
+   * then overflows. Returns whether the area's size changed; a hidden window is left as it is.
+   */
+  sizeBoard2D(extent) {
+    const { c2d, c2dStage: stage, c2dBoard: board } = this.el;
+    if (c2d.classList.contains('hidden')) return false;
+    const before = [stage.style.width, stage.style.height];
+    stage.style.width = '';
+    stage.style.height = '';
+    c2d.classList.add('c2d--measure');
+    const s = stage.getBoundingClientRect();
+    const b = board.getBoundingClientRect();
+    c2d.classList.remove('c2d--measure');
+    if (!(b.width > 0 && b.height > 0)) {
+      [stage.style.width, stage.style.height] = before;
+      return false;
+    }
+    const place = (height) => {
+      const e = extent(b.width, height);
+      stage.style.width = `${Math.round(e.width + s.width - b.width)}px`;
+      stage.style.height = `${Math.round(e.height + s.height - b.height)}px`;
+    };
+    place(b.height);
+    const body = stage.closest('.ui-frame__body');
+    const over = body ? body.scrollHeight - body.clientHeight : 0;
+    if (over > 0) place(b.height - over);
+    return stage.style.width !== before[0] || stage.style.height !== before[1];
   }
   /** The Classic 2D board the window's title and foot line and the pause card name; { width, height, mines, noGuess, identity }. */
   setBoard2D(board) { this._board2D(board); this._sizeMines(board.mines, this.el.c2dMines); }

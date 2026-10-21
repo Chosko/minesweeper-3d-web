@@ -39,6 +39,10 @@ cell motion, the end effect — is
 - `panelRect(layout, frame)` → `{x, y, width, height}` — the frame around
   the view, its `inset` on each side, at least `frame.minWidth` wide, never
   wider than the area.
+- `boardExtent(layout)` → `{width, height}` — the room the layout's board
+  takes of its area: the frame's rectangle of a board that fits, the view of
+  one that scrolls; an area of exactly that size lays it out at the same
+  tile with nothing left over.
 - `clipMarks(layout, scroll)` → `{left, right, top, bottom, barX, barY}`;
   `SHADOW_DEPTH` (12), `SCROLLBAR` (`{thickness: 4, inset: 2}`).
 - `cellAtLayout(layout, scroll, cols, rows, x, y)` → cell index or -1.
@@ -51,8 +55,9 @@ cell motion, the end effect — is
   pixelRatio), setScale(scale), scale, setGame(game), update(changed,
   {motion}), repaint(), cellAt(x, y), cellRect(c), scroll, scrollTo,
   scrollBy, pan(dx, dy), wheel(event) → taken, ensureVisible(c) →
-  scrolled, setHidden(hidden), hidden, layout, pixelRatio, canvas,
-  dispose}` plus the feedback, ring, motion and effect members of
+  scrolled, setHidden(hidden), hidden, layout, extent(width, height),
+  pixelRatio, canvas, dispose}` (`extent` the `boardExtent` of the fit
+  rule's layout in a width × height area, a touch zoom aside) plus the feedback, ring, motion and effect members of
   [classic2d-board-motion.md](classic2d-board-motion.md); `grid` the
   square grid ([engine.md](engine.md)); `createSkin` defaults to
   `createTileSkin`, `token` to the token reader. Positions are canvas CSS
@@ -61,8 +66,9 @@ cell motion, the end effect — is
   fit-to-view tile, the whole board inside the frame, whichever is larger),
   `boardPoint(x, y)` → `{u, v}` in pitches, `zoom(tile, x, y, point?)` →
   changed.
-- `mountBoardView({container, grid, win, onUserScroll, framed, ...})` → the
-  view plus `destroy()`: a canvas filling `container`, then the motion
+- `mountBoardView({container, grid, win, onUserScroll, framed, onMount,
+  ...})` → the view plus `destroy()`: `onMount(view)` first, before the
+  first fit, so the page can size the container to the board; a canvas filling `container`, then the motion
   layer's canvas (`.board-motion`) and the ring layer's (`.board-ring`)
   right after it, each over it at the same place and size and taking no
   input, refitted on container resize and
@@ -98,12 +104,13 @@ cell motion, the end effect — is
   the floor, fills the area with no frame, starts at its top-left corner
   and scrolls on the overflowing axis only, in a viewport — the view —
   rounded at the theme's `--board-viewport-radius` (set on
-  `[data-board-clipped]`). In play the area is the game window's board
-  area `#c2d-board`: the room its chrome — the head, the counter strip, the
-  figures panel beside or under the board, the foot line — leaves, so the
-  window reduces the space the fit rule works in and a board that fits a
-  bare window may scroll in it (Expert does in the smaller desktop
-  windows).
+  `[data-board-clipped]`). In play the fit rule works in the room the game
+  window's chrome — the head, the counter strip, the figures panel beside
+  or under the board, the foot line — leaves, so a board that fits a bare
+  window may scroll in it (Expert does in the smaller desktop windows);
+  the window hugs its board, its board area `#c2d-board` sized to the
+  board's extent in that room, so a board that fits sits at the area's
+  corner with nothing to centre ([app-shell-2d.md](app-shell-2d.md)).
 - **Board frame.** Every Classic 2D board — the game, the menu's previews,
   the Daily preview and the replay viewer — sits in the kit's board frame
   component `ui-board-frame`, padded by the module's gap on every side

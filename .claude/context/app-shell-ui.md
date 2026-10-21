@@ -39,6 +39,7 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
     `replayRing(x, y, kind)` (a 3D replay's press ring on `#replay`);
   - Classic 2D: `setSwap`, `setTapMode('reveal' | 'flag')`,
     `placePanel2D(rect, radius)` (the board frame at `rect`, its corner radius set as `--board-frame-radius`; a null `rect` hides it),
+    `sizeBoard2D(extent)` (the board area `#c2d-stage` at the board's extent in the room the window's chrome leaves, measured under `#c2d.c2d--measure`; → whether it changed),
     `setBoard2D`, `updateFigures2D(input, {tick, bests})`,
     `setBoardStatus` (the card centred on the board column `#c2d-main`,
     `_centreStatus2D`, again on every `placePanel2D`); 3D `setBoardStatus3D`
@@ -96,6 +97,12 @@ the first-use hints are [app-shell-help.md](app-shell-help.md).
   a 44 px hit area; `main.js` flips `mode2d.setTapMode` and writes it back
   with `setTapMode`); the foot line `#c2d-size`. Its layout:
   [classic2d-mode.md](classic2d-mode.md) § Game window.
+- **HUD density.** The counter digits, the figures' values and spacing, the
+  panel titles and the touch buttons follow the frame's size steps
+  (desktop, compact, touch) in the Classic 2D window and the 3D overlay
+  alike: the sizes are the theme stylesheet's, its in-game readouts' steps
+  after the readouts' own rules; the 3D touch toolbar's buttons take the
+  coarse rule's size in `css/style.css`.
 - **3D overlay** (`#hud-overlay`): the counter strip `#hud-counters` at the
   top centre, the figures panel `#hud-figures` on the right headed by the
   title `#hud-title` and Pause `#hud-pause`, each on its own surface over

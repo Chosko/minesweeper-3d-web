@@ -1181,7 +1181,7 @@ Feature: shared-screen-layout
 
 ## 231. Classic 2D window layout and HUD density
 
-Status: [MISSING]
+Status: [DONE]
 Target: claude
 Files: css/style.css, js/classic2d/board-view.js, themes/joyful-tiles/theme.css, index.html, .claude/context/app-shell-2d.md, .claude/context/classic2d-board-view.md
 Preconditions: 223, 227

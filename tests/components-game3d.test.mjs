@@ -14,14 +14,15 @@ const SHOTS = process.env.MS_SHOTS === '1';
 
 // The 3D game's overlay at each artboard size (J-Game3D-xl, -l, -m, -p, -ls and J-Game3D-states): every part
 // in its place on its own surface, readable over any sky the theme draws.
+// Each size's HUD density: the counter digits, the panel's title, a figure's value and the 3BV's, a figure's top padding, Restart's height.
 const GAME_3D_SIZES = [
-  ['xl', { viewport: { width: 1920, height: 1080 } }, 300],
-  ['l', { viewport: { width: 1366, height: 768 } }, 290],
-  ['m', { viewport: { width: 1024, height: 768 } }, 280],
-  ['p', { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, null],
-  ['ls', { viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true }, null],
+  ['xl', { viewport: { width: 1920, height: 1080 } }, 300, ['34px', '17px', '28px', '16px', '11px', 38]],
+  ['l', { viewport: { width: 1366, height: 768 } }, 290, ['28px', '15px', '23px', '23px', '8px', 38]],
+  ['m', { viewport: { width: 1024, height: 768 } }, 280, ['28px', '15px', '23px', '23px', '8px', 38]],
+  ['p', { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, null, ['26px', '16px', null, null, null, 44]],
+  ['ls', { viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true }, null, ['26px', '15px', null, null, null, 44]],
 ];
-for (const [size, device, panelWidth] of GAME_3D_SIZES) {
+for (const [size, device, panelWidth, density] of GAME_3D_SIZES) {
   test(`in a browser, the 3D game's overlay at ${size} (${device.viewport.width} × ${device.viewport.height}): the counters at the top centre, the panel or the phone's title and Pause, every readout on its own surface and the contrast contract met`, async (t) => {
     const env = await suite.open(t);
     if (!env) return;
@@ -62,6 +63,19 @@ for (const [size, device, panelWidth] of GAME_3D_SIZES) {
         };
       });
       assert.ok(g.scroll, `${size}: no sideways scroll`);
+      const sizes = await ms(() => {
+        const font = (sel) => getComputedStyle(document.querySelector(sel)).fontSize;
+        const figure = document.querySelector('#hud-figures [data-figure="rate"]');
+        const shown = figure.getBoundingClientRect().width > 0;
+        return [font('#hud-time'), font('#hud-title'), shown ? font('#hud-figures [data-figure="rate"] .ui-figure__value') : null,
+          shown ? font('#hud-figures [data-figure="bbbv"] .ui-figure__value') : null, shown ? getComputedStyle(figure).paddingTop : null,
+          document.getElementById('hud-restart').getBoundingClientRect().height];
+      });
+      assert.deepEqual(sizes, density, `${size}: the HUD's counters, title, figures and Restart at the size step's density`);
+      if (touch) {
+        const modes = await ms(() => [...document.querySelectorAll('#touch-modes .ui-button')].map((b) => { const r = b.getBoundingClientRect(); return [r.width >= 76, r.height >= 44, getComputedStyle(b).fontSize]; }));
+        assert.deepEqual(modes, [[true, true, '15px'], [true, true, '15px'], [true, true, '15px']], `${size}: the view-mode buttons at least 76 × 44, 15 px`);
+      }
       assert.deepEqual([g.tip, g.name], ['3D · Cube Intermediate', '3D · Cube Intermediate'], `${size}: the full name is the title's tooltip and name`);
       assert.ok(Math.abs((g.strip.x + g.strip.right) / 2 - vw / 2) < 2, `${size}: the counters centred (${g.strip.x}..${g.strip.right})`);
       if (panelWidth) {

@@ -678,6 +678,11 @@ test('the board opens at the board scale setting inside the panel\'s frame; its 
   assert.deepEqual(flow.layouts, [layout], 'each refit places the panel');
   board().options.onUserScroll();
   assert.equal(flow.scrolls, 1, 'a scroll by the player is reported, for the one-time scroll hint');
+  const mounted = [];
+  flow.mounted = (v) => mounted.push(v);
+  const view = { extent: () => ({ width: 1, height: 1 }) };
+  board().options.onMount(view);
+  assert.deepEqual(mounted, [view], 'the fresh view reaches the shell before its first fit, to size the board area to its extent');
   mode.setScale('fit');
   assert.deepEqual(board().scales, ['fit'], 'a setting change refits the live board');
   mode.leave();
@@ -1289,7 +1294,10 @@ test('the shell hands the board its scale, frame and panel, keeps the scale live
   const flow = MAIN.slice(MAIN.indexOf('const FLOW_2D = {'), MAIN.indexOf('const board2d ='));
   assert.match(flow, /scale: \(\) => SETTINGS\.get\('boardScale'\)/, 'a new board opens at the setting');
   assert.match(flow, /frame: \(\) => BOARD_FRAME/, 'the board\'s frame, padded by the module\'s gap');
-  assert.match(flow, /layout: \(layout\) => \{ ui\.placePanel2D\(layout\.scrolls \? null : panelRect\(layout\), layout\.frameRadius\); clipped2D\(layout\.scrolls\); \}/, 'each refit places the board\'s frame, its radius following the tile, and a clipped board none');
+  assert.match(flow, /layout: \(layout\) => \{ ui\.placePanel2D\(layout\.scrolls \? null : panelRect\(layout\), layout\.frameRadius\); clipped2D\(layout\.scrolls\); sizeSoon2D\(\); \}/, 'each refit places the board\'s frame, its radius following the tile, and a clipped board none, and sizes the window a frame later');
+  assert.match(flow, /mounted: \(view\) => ui\.sizeBoard2D\(\(width, height\) => view\.extent\(width, height\)\)/, 'each fresh view sizes the window to its board before its first fit');
+  assert.match(flow, /new ResizeObserver\(size2D\)\.observe\(document\.getElementById\('c2d'\)\)/, 'and so does a change of the window\'s room');
+  assert.match(flow, /requestAnimationFrame\(\(\) => \{ sizing2D = 0; size2D\(\); \}\)/, 'a refit sizes it on the next frame, never inside the board\'s resize callback');
   assert.match(flow, /figures: \(input, \{ tick \}\) => ui\.updateFigures2D\(input, \{ tick, bests: bests2D \}\)/, 'the live figures, with the bests read at the game\'s start');
   assert.match(MAIN, /bests2D = RECORDS\.bests\(b\.identity\)/, 'the board\'s bests read once per game from the records store');
   assert.match(flow, /scrolled: \(\) => scrolled2D\(\)/);

@@ -322,52 +322,70 @@ kbd {
 .controls.compact { grid-template-columns: max-content 1fr max-content 1fr; font-size: 13px; }
 
 /* ---------- Classic 2D game window ---------- */
-/* The window covers the 3D scene on its backdrop, with room below it for the HUD strip. Its body is
-   the board column — the counter strip over the board area, which takes the room left — then the
-   figures panel beside it; below the kit's 1024 px breakpoint the panel moves under the board, and on
-   a phone it hides so the board keeps its room. The board sits centred in the board area in its
-   board frame (UI.placePanel2D from the board view's layout); a board that does not fit fills the
-   area with no frame and scrolls. The 3D game's overlay bar never shows over the window. */
-#c2d { position: fixed; inset: 0; padding: var(--space-4) var(--space-4) 52px; }
-#c2d-frame { width: 100%; height: 100%; max-width: 1600px; }
-#c2d-body { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(220px, 260px); padding: 0; overflow: hidden; }
-#c2d-main { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; min-height: 0; padding: var(--space-4); }
+/* The window covers the 3D scene on its backdrop and hugs its content, centred in the room above the
+   HUD strip: its body is the board column — the counter strip, then the board area 12 px under it,
+   left-aligned and sized to the board's extent (UI.sizeBoard2D, measured with the window at its
+   largest under #c2d.c2d--measure, where the area takes the room the chrome leaves) — then a divider
+   and the flat figures column. Below the kit's 1024 px breakpoint the figures move under the board,
+   and on a phone they hide and the window is full-bleed, the board area still its board's extent.
+   The board sits in its board frame (UI.placePanel2D from the board view's layout); a board that
+   does not fit scrolls in the room it is given. The 3D game's overlay bar never shows over it. */
+#c2d { position: fixed; inset: 0; padding: 33px var(--space-4) 83px; }
+#c2d-frame { flex: none; }
+#c2d-body { display: grid; grid-template-columns: auto auto 300px; padding: 0; overflow: hidden; }
+#c2d-main { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; min-height: 0; padding: 22px; }
 #c2d-counters { flex: none; }
-#c2d-stage { position: relative; flex: 1 1 auto; min-height: 0; }
+#c2d-stage { position: relative; flex: none; align-self: flex-start; }
 #c2d-board { position: absolute; inset: 0; overflow: hidden; }
-#c2d-figures { min-height: 0; overflow-y: auto; }
+#c2d-divider { width: 2px; }
+/* The figures column takes the board column's height, never setting it: it scrolls when taller. */
+#c2d-figures { min-height: 0; overflow-y: auto; contain: size; }
+#c2d-figures .ui-figures__body { padding: 22px 26px; }
 #c2d-figures .ui-figure__value { white-space: nowrap; }
 #c2d-size { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#c2d.c2d--measure #c2d-frame { width: 100%; height: 100%; }
+#c2d.c2d--measure #c2d-body { grid-template-columns: minmax(0, 1fr) auto 300px; }
+#c2d.c2d--measure #c2d-stage { flex: 1 1 auto; align-self: stretch; }
 #hud.hud--2d #hud-overlay { display: none; }
 /* The HUD strip sits centred below the window. */
-#hud.hud--2d .hud-tools { top: auto; right: auto; bottom: 10px; left: 50%; transform: translateX(-50%); }
+#hud.hud--2d .hud-tools { top: auto; right: auto; bottom: 25px; left: 50%; transform: translateX(-50%); }
 /* The first-use hint strip sits in the room the board area leaves it at the board column's foot (#c2d.c2d--hint). */
 #hud.hud--2d #hint-strip { left: 50%; transform: translateX(-50%); bottom: 116px; }
+@media (max-width: 1439px), (max-height: 820px) {
+  #c2d-body { grid-template-columns: auto auto 260px; }
+  #c2d.c2d--measure #c2d-body { grid-template-columns: minmax(0, 1fr) auto 260px; }
+  #c2d-main { padding: var(--space-4); }
+  #c2d-figures .ui-figures__body { padding: var(--space-4) var(--space-5); }
+}
+@media (max-width: 1199px) {
+  #c2d-body { grid-template-columns: auto auto 232px; }
+  #c2d.c2d--measure #c2d-body { grid-template-columns: minmax(0, 1fr) auto 232px; }
+  #c2d-main { padding: 14px; }
+  #c2d-figures .ui-figures__body { padding: 14px 18px; }
+}
 @media (max-height: 820px) {
-  #c2d { padding-top: var(--space-2); padding-bottom: 46px; }
-  #c2d-main { gap: var(--space-2); padding: var(--space-2) var(--space-3); }
-  #c2d-counters { padding-block: var(--space-1); }
-  #c2d-figures .ui-figures__body { padding-block: var(--space-3); }
-  #c2d-figures .ui-figure { padding-block: 7px; }
-  #hud.hud--2d .hud-tools { bottom: 6px; }
+  #c2d { padding-top: 13px; padding-bottom: 64px; }
+  #hud.hud--2d .hud-tools { bottom: 8px; }
   #hud.hud--2d #hint-strip { bottom: 96px; }
 }
 @media (max-width: 1023px) {
-  #c2d-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  #c2d-body, #c2d.c2d--measure #c2d-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
   #c2d-divider { display: none; }
-  #c2d-figures { overflow: visible; }
+  #c2d-figures { overflow: visible; contain: inline-size; }
   #c2d-figures .ui-figures__body { flex-direction: row; flex-wrap: wrap; align-items: flex-start; gap: 0 var(--space-5); padding: var(--space-2) var(--space-4); }
   #c2d-figures .ui-figure { flex: 1 1 96px; padding: var(--space-1) 0; border-top: 0; }
   #c2d-figures .ui-figures__foot { flex: 1 1 100%; flex-direction: row; margin-top: 0; padding-top: var(--space-2); }
   #c2d-figures .ui-figures__foot .ui-key-hints { flex-direction: row; flex-wrap: wrap; gap: var(--space-1) var(--space-4); }
 }
-/* A phone: the window full-bleed, no figures panel and no HUD strip; held sideways, the counters and
-   the Reveal / Flag switch stand beside the board. */
+/* A phone: the window full-bleed, no figures panel and no HUD strip; upright, the board under the
+   counter strip and the Reveal / Flag switch under the board; held sideways, the board at the left
+   edge and a column beside it of the mines, the time, Restart and the switch. */
 @media (max-width: 719px), (max-height: 500px) and (orientation: landscape) {
   #c2d { padding: 0; }
-  #c2d-frame { border-radius: 0; box-shadow: none; }
+  #c2d-frame { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
   #c2d-figures, #c2d-divider, #hud.hud--2d .hud-tools { display: none; }
-  #c2d-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+  #c2d-body, #c2d.c2d--measure #c2d-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+  #c2d-main { padding: var(--space-3) var(--space-4); }
   #c2d-frame > .ui-frame__head { grid-template-columns: auto minmax(0, 1fr) auto; }
   #hud.hud--2d #hint-strip { bottom: 52px; }
 }
@@ -380,9 +398,12 @@ kbd {
   #hud.hud--2d #hint-strip { bottom: 104px; }
 }
 @media (max-height: 500px) and (orientation: landscape) {
-  #c2d-main { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto minmax(0, 1fr); gap: var(--space-2) var(--space-3); }
+  #c2d-main { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); gap: 10px var(--space-3); padding: 10px var(--space-3); }
+  #c2d.c2d--measure #c2d-main { grid-template-columns: minmax(0, 1fr) auto; }
   #c2d-stage { grid-column: 1; grid-row: 1 / -1; }
-  #c2d-counters { grid-column: 2; grid-row: 1; flex-direction: column; align-items: stretch; }
+  #c2d-counters { grid-column: 2; grid-row: 1; flex-direction: column; align-items: stretch; gap: 10px; padding: var(--space-3); }
+  #c2d-counters > .ui-counter:last-child { order: 1; flex-direction: row-reverse; justify-content: flex-end; }
+  #c2d-restart { order: 2; }
   #hud-tap { grid-column: 2; grid-row: 2; }
 }
 /* A board status card (generating, or a failed board's offer) sits above the pause card at the canvas's
@@ -494,7 +515,6 @@ body.touch-play .hud-figures { max-height: calc(100vh - 2 * 208px); }
 }
 @media (max-width: 1439px) {
   .hud-figures { width: 290px; }
-  .hud-figures .ui-figures__title { font-size: var(--font-size-sm); }
   #hud:not(.hud--2d) ~ #help { right: 338px; }
 }
 @media (max-width: 1199px) {
@@ -757,16 +777,14 @@ body.lockless.drag-look #scene:active { cursor: grabbing; }
   .hud-counters, .hud-figures { position: static; transform: none; width: auto; }
   .hud-figures { order: -1; }
   .hud-figures .ui-figures__head { padding: 8px 8px 8px 20px; }
-  .hud-figures .ui-figures__title { font-size: var(--font-size-md); }
   #hud:not(.hud--2d) #hint-strip { top: 150px; bottom: auto; }
   #hud:not(.hud--2d) #mode-chips { bottom: 190px; }
 }
 @media (max-height: 500px) and (orientation: landscape) {
   .hud-counters { top: 10px; gap: var(--space-3); }
-  #hud-counters .ui-counter__digits { font-size: 28px; }
   .hud-figures { top: 10px; left: 12px; right: 12px; width: auto; transform: none; overflow: visible; pointer-events: none; }
   .hud-figures .ui-figures__head { padding: 0; }
-  .hud-figures .ui-figures__title { flex: none; display: flex; align-items: center; height: 48px; padding: 0 16px; font-size: var(--font-size-sm); overflow: visible; }
+  .hud-figures .ui-figures__title { flex: none; display: flex; align-items: center; height: 48px; padding: 0 16px; overflow: visible; }
   #hud-pause { width: 48px; height: 48px; min-height: 48px; padding: 0; gap: 0; font-size: 0; pointer-events: auto; }
   #hud-pause .ui-key-hint { display: none; }
   #hud:not(.hud--2d) .touch-modes { bottom: 20px; }
@@ -785,5 +803,5 @@ body.lockless.drag-look #scene:active { cursor: grabbing; }
   #hud-restart::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 22px); height: 44px; }
   #c2d-restart::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 22px); height: 44px; }
   #c2d-pause::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 22px); height: 44px; }
-  #touch-modes .ui-button { min-width: 44px; min-height: 44px; padding: var(--space-2) var(--space-3); }
+  #touch-modes .ui-button { min-width: 76px; min-height: 44px; }
 }

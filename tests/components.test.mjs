@@ -1684,14 +1684,73 @@ test('coarse pointers get 44 px switch and slider targets inside (pointer: coars
   assert.ok(styleCoarse.some(([sel, body]) => sel.trim() === '#hud-swap' && /display:\s*none/.test(body)), 'no Swap clicks on a coarse-only device');
 });
 
-test('the Classic 2D window lays the figures panel beside the board, under it below 1024 px, and hides it on a phone; Swap clicks hides only under the coarse rule', () => {
-  const top = rules(topLevel(STYLE));
-  const body = (sel) => top.filter(([s]) => s.trim() === sel).map(([, b]) => b).join(';');
-  assert.match(body('#c2d-body'), /grid-template-columns:\s*minmax\(0, 1fr\) auto/, 'the board column, then the divider and the panel');
-  assert.match(STYLE, /@media \(max-width: 1023px\) \{[^@]*#c2d-body \{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/, 'one column below the kit\'s breakpoint: the panel under the board');
-  assert.match(STYLE, /@media \(max-width: 719px\), \(max-height: 500px\) and \(orientation: landscape\) \{[^@]*#c2d-figures[^{]*\{[^}]*display: none/, 'a phone hides the panel so the board keeps its room');
-  const hides = top.filter(([s, b]) => s.includes('#hud-swap') && /display:\s*none/.test(b)).map(([s]) => s.trim());
+// The bodies of the rules of `css` whose selector is exactly `sel`: at the top level, or in every @media block of exactly `query`.
+const ruleIn = (css, query = null) => {
+  const list = query ? mediaRules(css, query) : rules(topLevel(css)).map(([x, body]) => [x.split(SCOPE).join('').trim(), body]);
+  return (sel) => list.filter(([x]) => x === sel).map(([, body]) => body).join(';');
+};
+
+test('the Classic 2D window hugs its content: the board column, a 2 px divider and the flat figures column 300 / 260 / 232 px wide, the board area the board\'s extent 12 px under the counter strip, measured with the window at its largest; under the board below 1024 px, hidden on a phone; Swap clicks hides only under the coarse rule', () => {
+  const top = ruleIn(STYLE);
+  assert.match(top('#c2d'), /padding:\s*33px var\(--space-4\) 83px/, 'centred in the room above the HUD strip');
+  assert.doesNotMatch(top('#c2d-frame'), /width|height/, 'no fill-the-viewport width or height, no max-width');
+  assert.doesNotMatch(STYLE, /#c2d-frame \{[^}]*max-width:\s*1600px/, 'no 1600 px cap');
+  assert.match(top('#c2d-body'), /grid-template-columns:\s*auto auto 300px/, 'the board column as wide as its board, the divider, the figures column');
+  assert.match(top('#c2d-main'), /gap:\s*var\(--space-3\)/, 'the board 12 px under the counter strip');
+  assert.match(top('#c2d-main'), /padding:\s*22px/);
+  assert.match(top('#c2d-stage'), /flex:\s*none/, 'the board area is sized, never stretched');
+  assert.match(top('#c2d-stage'), /align-self:\s*flex-start/, 'left-aligned under the strip');
+  assert.match(top('#c2d-divider'), /width:\s*2px/);
+  assert.match(top('#c2d-figures'), /contain:\s*size/, 'the figures column never sets the window\'s height');
+  assert.match(top('#c2d-figures .ui-figures__body'), /padding:\s*22px 26px/);
+  // Measuring: the window at its largest, the board area taking the room the chrome leaves.
+  assert.match(top('#c2d.c2d--measure #c2d-frame'), /width:\s*100%;\s*height:\s*100%/);
+  assert.match(top('#c2d.c2d--measure #c2d-body'), /grid-template-columns:\s*minmax\(0, 1fr\) auto 300px/);
+  assert.match(top('#c2d.c2d--measure #c2d-stage'), /flex:\s*1 1 auto;\s*align-self:\s*stretch/);
+  // The size steps: J-Game2D-l (the compact step) and -m.
+  const compact = ruleIn(STYLE, COMPACT_STEP);
+  assert.match(compact('#c2d-body'), /grid-template-columns:\s*auto auto 260px/);
+  assert.match(compact('#c2d-main'), /padding:\s*var\(--space-4\)/, 'main padding 16 at l');
+  assert.match(compact('#c2d-figures .ui-figures__body'), /padding:\s*var\(--space-4\) var\(--space-5\)/, 'figures padding 16px 20px at l');
+  const m = ruleIn(STYLE, '(max-width: 1199px)');
+  assert.match(m('#c2d-body'), /grid-template-columns:\s*auto auto 232px/);
+  assert.match(m('#c2d-main'), /padding:\s*14px/, 'main padding 14 at m');
+  assert.match(m('#c2d-figures .ui-figures__body'), /padding:\s*14px 18px/);
+  assert.match(ruleIn(STYLE, '(max-height: 820px)')('#c2d'), /padding-top:\s*13px;\s*padding-bottom:\s*64px/);
+  assert.doesNotMatch(STYLE, /#c2d-counters \{[^}]*padding-block/, 'the counter strip keeps the kit\'s 8px 14px');
+  assert.match(STYLE, /@media \(max-width: 1023px\) \{[^@]*#c2d-body, #c2d\.c2d--measure #c2d-body \{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/, 'one column below the kit\'s breakpoint: the panel under the board');
+  // A phone: full-bleed, no figures; held sideways the board at the left, then mines, time, Restart and the switch.
+  const phone = ruleIn(STYLE, TOUCH_QUERY);
+  assert.match(phone('#c2d-figures, #c2d-divider, #hud.hud--2d .hud-tools'), /display:\s*none/, 'a phone hides the panel so the board keeps its room');
+  assert.match(phone('#c2d-frame'), /width:\s*100%;\s*height:\s*100%/, 'full-bleed');
+  assert.match(phone('#c2d-main'), /padding:\s*var\(--space-3\) var\(--space-4\)/, 'the board viewport 358 px wide at 390 px');
+  const side = ruleIn(STYLE, '(max-height: 500px) and (orientation: landscape)');
+  assert.match(side('#c2d-main'), /grid-template-columns:\s*auto minmax\(0, 1fr\)/, 'the board as wide as its extent, the column the rest');
+  assert.match(side('#c2d.c2d--measure #c2d-main'), /grid-template-columns:\s*minmax\(0, 1fr\) auto/);
+  assert.match(side('#c2d-counters > .ui-counter:last-child'), /order:\s*1;\s*flex-direction:\s*row-reverse/, 'the time under the mines, its clock first');
+  assert.match(side('#c2d-restart'), /order:\s*2/, 'Restart after both counters');
+  const hides = rules(topLevel(STYLE)).filter(([sel, b]) => sel.includes('#hud-swap') && /display:\s*none/.test(b)).map(([sel]) => sel.trim());
   assert.deepEqual(hides, [], 'a fine pointer shows it on the Classic 2D window');
+});
+
+test('the in-game readouts follow the frame\'s size steps in Joyful tiles, in the Classic 2D window and the 3D overlay alike: counter digits 34 / 28 / 26 px, figure values 23 px and figures padded 8px 0 when compact, the figures title 17 / 15 / 16 px; the Classic 2D figures column flat; the negative counter red', () => {
+  const compact = ruleIn(THEME_CSS, COMPACT_STEP);
+  const phone = ruleIn(THEME_CSS, TOUCH_QUERY);
+  assert.match(themeRulesFor('.ui-counter__digits').map(([, b]) => b).join(';'), /font-size:\s*34px/);
+  assert.match(compact('.ui-counter__digits'), /font-size:\s*28px/);
+  assert.match(phone('.ui-counter__digits'), /font-size:\s*26px/);
+  assert.match(compact(':is(.ui-figure__value, .ui-figure--progress .ui-figure__value)'), /font-size:\s*23px/, 'the 3BV value too');
+  assert.match(compact('.ui-figure'), /padding:\s*8px 0/);
+  assert.match(compact('.ui-figures__title'), /font-size:\s*15px/);
+  assert.match(phone('.ui-figures__title'), /font-size:\s*16px/);
+  assert.match(ruleIn(THEME_CSS, '(max-height: 500px) and (orientation: landscape)')('.hud-figures .ui-figures__title'), /font-size:\s*15px/, 'the sideways phone\'s title pill');
+  // The steps come after the rules they step, so they win at equal weight.
+  const at = (needle) => THEME_CSS.indexOf(needle);
+  assert.ok(at(`@media ${COMPACT_STEP} {\n  :root[data-theme="joyful-tiles"] .ui-counter__digits`) > at(':root[data-theme="joyful-tiles"] .ui-figure--progress .ui-figure__value {'), 'the readouts\' steps after the readouts');
+  assert.doesNotMatch(STYLE, /\.ui-counter__digits \{[^}]*font-size/, 'no counter size of the page\'s own');
+  assert.doesNotMatch(STYLE, /\.hud-figures \.ui-figures__title \{[^}]*font-size/, 'no title size of the page\'s own');
+  assert.match(themeRulesFor('#c2d-figures').map(([, b]) => b).join(';'), /background:\s*none;\s*box-shadow:\s*none/, 'the Classic 2D figures column has no surface of its own');
+  assert.match(themeRulesFor('.ui-counter[data-negative] .ui-counter__digits').map(([, b]) => b).join(';'), /color:\s*var\(--color-danger\)/, 'a negative mine counter in the danger colour');
 });
 
 test('on a fine pointer every hit area the coarse rules touch is as it was', () => {
@@ -1727,7 +1786,7 @@ test('the 3D touch toolbar: three toggle buttons of the kit, Shift, Space and Ct
   assert.ok(t.some((x) => x.attrs.id === 'touch-stick-knob'));
 });
 
-test('touch play: the toolbar and the stick show only in touch play, the toolbar\'s buttons 44 px on a coarse pointer, its pressed state visible', () => {
+test('touch play: the toolbar and the stick show only in touch play, the toolbar\'s buttons 76 × 44 px on a coarse pointer, its pressed state visible', () => {
   const style = read('css/style.css').replace(/\/\*[\s\S]*?\*\//g, '');
   const top = rules(topLevel(style));
   const body = (needle) => top.filter(([sel]) => sel.includes(needle)).map(([, b]) => b).join(';');
@@ -1739,7 +1798,7 @@ test('touch play: the toolbar and the stick show only in touch play, the toolbar
   assert.match(style, /body\.touch-play #scene\s*\{[^}]*-webkit-touch-callout:\s*none/, 'no long-press menu');
   assert.match(body('#touch-stick'), /pointer-events:\s*none/, 'the stick takes no touch');
   const coarse = rules(coarseBlocks(style));
-  assert.ok(coarse.some(([sel, b]) => sel.includes('#touch-modes .ui-button') && /min-width:\s*44px/.test(b) && /min-height:\s*44px/.test(b)), 'the toolbar\'s 44 px hit areas');
+  assert.ok(coarse.some(([sel, b]) => sel.includes('#touch-modes .ui-button') && /min-width:\s*76px/.test(b) && /min-height:\s*44px/.test(b)), 'the toolbar\'s 76 × 44 px buttons');
   assert.ok(coarse.some(([sel, b]) => sel.includes('#hud-pause::after') && /height:\s*44px/.test(b)), 'the pause button takes a touch in a 44 px band, the bar\'s layout unchanged');
   assert.doesNotMatch(topLevel(style), /#hud-pause[^{]*\{[^}]*44px/, 'a fine pointer keeps the pause button\'s size');
 });
@@ -3238,7 +3297,7 @@ test('in a browser, the counter strip and the figures panel draw in Joyful tiles
       };
     });
     assert.match(got.digits, /^"?JetBrains Mono/);
-    assert.equal(got.size, '34px');
+    assert.equal(got.size, '28px', 'the compact step at 1100 px wide');
     assert.equal(got.negative, 'rgb(180, 42, 42)', `a negative count in danger (${got.danger})`);
     assert.equal(got.strip, 'rgb(255, 255, 255)', 'the strip on the surface');
     assert.match(got.value, /^"?JetBrains Mono/);
@@ -3306,10 +3365,11 @@ for (const [size, device, place] of WINDOW_SIZES) {
         };
       });
       const touch = !!device.hasTouch;
-      // A click (a tap on a touch screen) on cell c of the open board.
+      // A click (a tap on a touch screen) on cell c of the open board, scrolled into view first.
       const press = async (c) => {
         const at = await ms((i) => {
           const v = globalThis.__ms.board2D;
+          v.ensureVisible(i);
           const r = v.cellRect(i);
           const box = v.canvas.getBoundingClientRect();
           return { x: box.x + r.x + r.size / 2, y: box.y + r.y + r.size / 2 };
@@ -3347,6 +3407,7 @@ for (const [size, device, place] of WINDOW_SIZES) {
       });
       await page.waitForFunction(() => document.getElementById('c2d-mines-left').textContent === '-05');
       assert.equal(await ms(() => document.getElementById('c2d-mines-left').closest('.ui-counter').hasAttribute('data-negative')), true, `${size}: the counter marks a negative count`);
+      assert.equal(await ms(() => getComputedStyle(document.getElementById('c2d-mines-left')).color), 'rgb(180, 42, 42)', `${size}: a negative counter stays red`);
       await check(`${size} negative counter`, { min: touch ? 5 : 10 });
 
       // A clipped board's scroll hint, worded for the device.
@@ -3386,6 +3447,126 @@ for (const [size, device, place] of WINDOW_SIZES) {
         await page.waitForFunction(() => !document.getElementById('help').classList.contains('hidden'));
         await check(`${size} help panel`);
         await page.keyboard.press('KeyH');
+      }
+      assert.deepEqual(errors, [], `${size}: no page errors`);
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+// J-Game2D-xl, -l, -m, -p and -ls: Intermediate in the game window, as the artboards draw it.
+const ARTBOARDS_2D = [
+  ['xl', { viewport: { width: 1920, height: 1080 } }, { window: [417, 1086, 964], column: 784, board: 740, figures: 300, padding: '22px 26px', digits: '34px', value: '28px', bbbv: '16px', figure: '11px' }],
+  ['l', { viewport: { width: 1366, height: 768 } }, { window: [286.5, 793, 691], column: 531, board: 499, figures: 260, padding: '16px 20px', digits: '28px', value: '23px', bbbv: '23px', figure: '8px' }],
+  ['m', { viewport: { width: 1024, height: 768 } }, { window: [131.5, 761, 687], column: 527, board: 499, figures: 232, padding: '14px 18px', digits: '28px', value: '23px', bbbv: '23px', figure: '8px' }],
+  ['narrow', { viewport: { width: 1000, height: 700 } }, { digits: '28px', under: true }],
+  ['p', { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, { digits: '26px' }],
+  ['ls', { viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true }, { digits: '26px' }],
+];
+for (const [size, device, want] of ARTBOARDS_2D) {
+  test(`in a browser, the Classic 2D window at ${size} (${device.viewport.width} × ${device.viewport.height}) ${want.under ? 'below the 1024 px step, no artboard' : `as J-Game2D-${size} draws it`}: Intermediate under the counter strip, the window hugging it`, async (t) => {
+    const env = await suite.open(t);
+    if (!env) return;
+    const { browser, base } = env;
+    const context = await browser.newContext({ ...device, deviceScaleFactor: 1 });
+    try {
+      const page = await context.newPage();
+      const errors = [];
+      page.on('pageerror', (e) => errors.push(e.message));
+      await page.addInitScript(noWebGL);
+      await page.goto(`${base}/index.html?still-backdrop`);
+      await page.waitForFunction(() => globalThis.__ms !== undefined && globalThis.__ms.state.mode === 'menu');
+      const ms = (fn, arg) => page.evaluate(fn, arg);
+      // The window settles once its board area holds still across two frames.
+      const settle = () => page.waitForFunction(() => {
+        const now = JSON.stringify([document.getElementById('c2d-stage').getBoundingClientRect(), globalThis.__ms.board2D?.layout]);
+        const same = globalThis.__lastStage === now;
+        globalThis.__lastStage = now;
+        return same && !!globalThis.__ms.board2D;
+      }, null, { polling: 'raf' });
+      await ms(async () => {
+        const { BOARD_ART } = await import('/js/classic2d/tile-skin.js');
+        while (!BOARD_ART.current()) await new Promise((r) => setTimeout(r, 20));
+        await document.fonts.ready;
+        globalThis.__ms.modes.start('classic-2d', { size: 'intermediate', noGuess: false });
+      });
+      await settle();
+      // The first-use hint strips (a clipped board's scroll hint, the touch hint) keep a room of their own under the
+      // board, which the artboards do not draw: dismissed here one after the other, the board takes its room back.
+      for (let i = 0; i < 4 && await ms(() => !document.getElementById('hint-strip').classList.contains('hidden')); i++) {
+        await ms(() => document.getElementById('hint-strip-close').click());
+        await ms(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+      }
+      assert.equal(await ms(() => document.getElementById('c2d').classList.contains('c2d--hint')), false, `${size}: no hint strip left`);
+      await settle();
+      const g = await ms(() => {
+        const box = (el) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, width: r.width, height: r.height }; };
+        const $ = (id) => document.getElementById(id);
+        const style = (el, prop) => getComputedStyle(el)[prop];
+        const counters = [...$('c2d-counters').querySelectorAll('.ui-counter')];
+        return {
+          frame: box($('c2d-frame')), main: box($('c2d-main')), strip: box($('c2d-counters')), stage: box($('c2d-stage')), panel: box($('c2d-panel')),
+          figures: box($('c2d-figures')), divider: box($('c2d-divider')), restart: box($('c2d-restart')), tap: box($('hud-tap')), foot: box($('c2d-size')),
+          mines: box(counters[0]), time: box(counters[1]), clock: box(counters[1].querySelector('.ui-counter__icon')), timeDigits: box($('c2d-time')),
+          layout: { ...globalThis.__ms.board2D.layout },
+          // The head's own width: its title between two equal side columns (Swap clicks, Pause), gaps and padding.
+          head: (() => {
+            const h = $('c2d-frame').querySelector('.ui-frame__head');
+            const c = getComputedStyle(h);
+            const w = (sel) => h.querySelector(sel).getBoundingClientRect().width;
+            return 2 * Math.max(w('.ui-frame__start > *'), w('.ui-frame__end > *')) + w('.ui-frame__title') + 2 * parseFloat(c.columnGap) + parseFloat(c.paddingLeft) + parseFloat(c.paddingRight);
+          })(),
+          padding: style($('c2d-figures').querySelector('.ui-figures__body'), 'padding'),
+          surface: [style($('c2d-figures'), 'backgroundColor'), style($('c2d-figures'), 'boxShadow')],
+          line: [style($('c2d-divider'), 'backgroundColor'), getComputedStyle(document.documentElement).getPropertyValue('--color-line').trim()],
+          digits: style($('c2d-time'), 'fontSize'),
+          value: style(document.querySelector('#c2d-figures [data-figure="rate"] .ui-figure__value'), 'fontSize'),
+          bbbv: style(document.querySelector('#c2d-figures [data-figure="bbbv"] .ui-figure__value'), 'fontSize'),
+          figure: style(document.querySelector('#c2d-figures [data-figure="rate"]'), 'paddingTop'),
+        };
+      });
+      const near = (a, b, slack = 1) => Math.abs(a - b) <= slack;
+      assert.equal(g.digits, want.digits, `${size}: the counter digits`);
+      if (size !== 'ls') assert.ok(near(g.stage.y, g.strip.bottom + 12, 0.5), `${size}: the board 12 px under the counter strip (${g.stage.y}, ${g.strip.bottom})`);
+      if (want.window) {
+        const [left, width, height] = want.window;
+        assert.ok(near(g.frame.x, left) && near(g.frame.width, width), `${size}: the window ${width} px wide at ${left} (${g.frame.x}, ${g.frame.width})`);
+        assert.ok(g.frame.height <= height + 1 && g.frame.height >= height - 16, `${size}: the window hugs its content, about ${height} px tall (${g.frame.height})`);
+        assert.ok(near(g.frame.y + g.frame.height / 2, (device.viewport.height - 50) / 2, 2), `${size}: centred in the room above the HUD strip (${g.frame.y})`);
+        assert.ok(near(g.main.width, want.column), `${size}: the board column ${want.column} px (${g.main.width})`);
+        assert.equal(g.layout.scrolls, false, `${size}: Intermediate fits`);
+        assert.deepEqual([g.stage.width, g.stage.height, g.panel.width, g.panel.x, g.panel.y], [want.board, want.board, want.board, g.strip.x, g.stage.y], `${size}: the board fills the column, left-aligned at the strip's width`);
+        assert.ok(near(g.strip.width, want.board), `${size}: the strip as wide as the board`);
+        assert.ok(near(g.divider.width, 2, 0) && g.line[0] !== 'rgba(0, 0, 0, 0)', `${size}: a 2 px divider in the line colour`);
+        assert.ok(near(g.figures.width, want.figures) && near(g.figures.x, g.divider.right) && near(g.figures.right, g.frame.right), `${size}: the figures column the ${want.figures} px remainder (${g.figures.width})`);
+        assert.equal(g.padding, want.padding, `${size}: the figures column's padding`);
+        assert.deepEqual(g.surface, ['rgba(0, 0, 0, 0)', 'none'], `${size}: the figures column flat, no surface`);
+        assert.deepEqual([g.value, g.bbbv, g.figure], [want.value, want.bbbv, want.figure], `${size}: the figures' values and spacing`);
+        assert.equal(g.restart.height, 38, `${size}: Restart at the small button's height`);
+      } else if (want.under) {
+        // Below 1024 px the figures row wraps under the board: the board column still sets the window's width.
+        assert.ok(g.figures.y >= g.stage.bottom - 0.5, `${size}: the figures under the board`);
+        assert.ok(near(g.frame.width, g.main.width) && g.frame.width <= Math.max(g.stage.width + 28, g.head) + 1, `${size}: the window as wide as its board column or its head, never its figures row (${g.frame.width}, ${g.stage.width}, ${g.head})`);
+        assert.ok(g.frame.bottom <= device.viewport.height && g.foot.bottom <= g.frame.bottom + 0.5, `${size}: the window whole on the screen`);
+      } else if (size === 'p') {
+        assert.deepEqual([g.frame.x, g.frame.y, g.frame.width, g.frame.height], [0, 0, 390, 844], `${size}: the window full-bleed`);
+        assert.deepEqual([g.stage.x, g.stage.width], [16, 358], `${size}: the board viewport across the window`);
+        assert.equal(g.stage.height, g.layout.boardHeight, `${size}: as tall as the board, scrolling sideways (${g.stage.height})`);
+        assert.ok(g.layout.scrolls && g.layout.maxScrollY === 0, `${size}: Intermediate scrolls sideways only`);
+        assert.ok(near(g.tap.y, g.stage.bottom + 12, 0.5), `${size}: the Tap switch right under the board`);
+        assert.ok(g.foot.y - g.tap.bottom > 60, `${size}: spare room at the bottom (${g.foot.y - g.tap.bottom})`);
+        assert.equal(g.restart.height, 44, `${size}: Restart 44 px tall`);
+      } else {
+        assert.deepEqual([g.frame.width, g.frame.height], [844, 390], `${size}: the window full-bleed`);
+        assert.ok(near(g.stage.x, 12, 0) && g.stage.width === g.layout.boardWidth && g.stage.y === g.strip.y, `${size}: the board viewport at the left edge, as wide as the board (${g.stage.x}, ${g.stage.width})`);
+        assert.ok(g.layout.scrolls && g.layout.maxScrollX === 0, `${size}: Intermediate scrolls down only`);
+        assert.ok(near(g.strip.x, g.stage.right + 12) && near(g.strip.right, 844 - 12) && g.strip.width > 340, `${size}: the right column fills the rest (${g.strip.width})`);
+        assert.ok(g.mines.bottom <= g.time.y && g.time.bottom <= g.restart.y, `${size}: the mines, then the time, then Restart`);
+        assert.ok(g.clock.right <= g.timeDigits.x, `${size}: the clock icon before the digits`);
+        assert.ok(near(g.restart.width, g.strip.width - 24), `${size}: Restart full width (${g.restart.width})`);
+        assert.ok(g.tap.y >= g.strip.bottom && near(g.tap.x, g.strip.x), `${size}: the Tap switch under them`);
+        assert.equal(g.restart.height, 44, `${size}: Restart 44 px tall`);
       }
       assert.deepEqual(errors, [], `${size}: no page errors`);
     } finally {

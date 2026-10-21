@@ -18,7 +18,15 @@ themselves are [classic2d.md](classic2d.md).
   `classic-2d`, whose Back is `backGame`.
 - **Board area and panel.** The board area is `#c2d-board`; the board opens
   at the `boardScale` setting (`scale`) inside the board frame (`frame`,
-  `BOARD_FRAME`). Each refit places the frame through `layout`
+  `BOARD_FRAME`). The window hugs its board: `ui.sizeBoard2D` measures the
+  room its chrome leaves with the window at its largest (`c2d--measure`)
+  and sizes `#c2d-stage` to the view's `extent` there, keeping the room the
+  stage holds around `#c2d-board` (the hint strip's) and giving back what
+  the body then overflows (below 1024 px the figures row under the board
+  wraps at the board's width, never setting the window's) — at each fresh view
+  before its first fit (`mounted`), on every change of `#c2d`'s size (a
+  `ResizeObserver`), and a frame after each refit (`sizeSoon2D`, never
+  inside the board's own resize callback). Each refit places the frame through `layout`
   (`panelRect`, `ui.placePanel2D` with the layout's `frameRadius`; none on a
   clipped board) and tells whether the board scrolls: the first clipped board shows the
   one-time scroll hint until dismissed or scrolled (`scrolled`), kept as

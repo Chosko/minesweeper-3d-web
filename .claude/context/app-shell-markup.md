@@ -112,7 +112,8 @@ bind.
   `#c2d` is the Classic 2D game window (its ids:
   [app-shell-ui.md](app-shell-ui.md) § Classic 2D window): `#c2d-board`
   holds the panel `#c2d-panel` behind the canvas; `#c2d.c2d--hint` gives
-  the hint strip room below. `#hud` holds the 3D overlay `#hud-overlay`
+  the hint strip room below; `#c2d.c2d--measure` lays the window out at its
+  largest for `UI.sizeBoard2D` to measure the board's room. `#hud` holds the 3D overlay `#hud-overlay`
   (§ 3D overlay there), hidden under `hud--2d`.
 - **Pointer sizes.** The text minimums hold on every pointer, in the
   top-level rules: `ui-stat__label` 12 px (one step above `--font-size-xs`,
@@ -122,7 +123,7 @@ bind.
   `ui-checkbox__input` a 44 px hit square (`::after`) and `ui-slider__input`
   a 44 px height; the shell's shows `#hud-tap` in Classic 2D at 44 px, gives
   `#hud-pause`, `#hud-restart` and `#c2d-restart` a 44 px band (`::after`),
-  `#touch-modes` buttons 44 px, and hides `#hud-swap` (every main menu
+  `#touch-modes` buttons 76 × 44 px, and hides `#hud-swap` (every main menu
   entry is at least 44 px on any pointer, [app-shell-menu.md](app-shell-menu.md)). Every
   fine-pointer hit area stays as above (`tests/components.test.mjs` pins
   both).

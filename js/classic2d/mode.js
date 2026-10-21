@@ -17,6 +17,9 @@
 //                 layout(layout)?          the board view's layout after every refit, to place
 //                                          the panel (board-view.js panelRect) and to tell a
 //                                          board that scrolls
+//                 mounted(view)?           each game's fresh board view, before its first fit
+//                                          (mountBoardView's onMount): to size the area container()
+//                                          is to the board's extent (board-view.js extent)
 //                 scrolled()?              the player scrolled the board (wheel or pan)
 //                 hud({ seconds, minesLeft, clicks })  the window's timer, mine counter and
 //                                          click count (the session's clicks())
@@ -284,6 +287,7 @@ export function createClassic2DMode(report, {
       frame: flow.frame && (() => flow.frame()),
       onLayout: (layout) => flow.layout?.(layout),
       onUserScroll: () => flow.scrolled?.(),
+      onMount: (v) => flow.mounted?.(v),
     });
     view.setGame(session.game);
     view.setMark(session.markedCell);

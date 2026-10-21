@@ -64,6 +64,8 @@
 //   scroll, scrollTo(x, y), scrollBy(dx, dy), pan(dx, dy), wheel(event), ensureVisible(c)
 //   layout               boardLayout's: tile, gap and pitch (tile + gap), the frame's inset and
 //                        radius (the module's frameRadius × the tile) among the rest.
+//   extent(width, height)  boardExtent of the fit rule's layout in an area of width × height: the
+//                        room the board would take there (a touch zoom aside).
 //   zoomRange            { min, max }: the touch zoom's tiles, MIN_TILE_SIZE to the fit-to-view tile
 //                        (the whole board in the area inside the frame), whichever is larger.
 //   boardPoint(x, y)     { u, v }: the board point under a canvas position, in pitches (cell c's
@@ -241,6 +243,17 @@ export function panelRect(layout, frame) {
   const width = Math.min(layout.width, Math.max(natural, frameOf(frame).minWidth));
   const x = Math.max(0, Math.min(layout.width - width, layout.viewX - f.left - Math.floor((width - natural) / 2)));
   return { x, y: layout.viewY - f.top, width, height: layout.viewHeight + f.top + f.bottom };
+}
+
+/**
+ * The room a layout's board takes of its area, in CSS pixels: the view and the frame's inset on
+ * each side — the frame's rectangle of a board that fits, the view alone of one that scrolls. An
+ * area of exactly that size lays the board out at the same tile with nothing left over, so a
+ * window that hugs its board sizes the board's area to it (js/ui.js sizeBoard2D).
+ */
+export function boardExtent(layout) {
+  const { inset } = layout;
+  return { width: layout.viewWidth + inset.left + inset.right, height: layout.viewHeight + inset.top + inset.bottom };
 }
 
 /**
@@ -683,6 +696,12 @@ export function createBoardView({
     get scroll() { return { x: scroll.x, y: scroll.y }; },
     /** The touch zoom's tile range for the current area: { min, max }. */
     get zoomRange() { return rangeOf(layout.width, layout.height); },
+    /** The room the board takes of a width × height area at the fit rule's tile: { width, height }. */
+    extent(width, height) {
+      const w = Math.max(0, Math.round(width));
+      const h = Math.max(0, Math.round(height));
+      return boardExtent(boardLayout({ cols, rows, width: w, height: h, frame: f, gap: gapOf(), min: minTile, max: tileCap(scale) }));
+    },
     resize,
     setScale,
     get motion() { return motion; },
@@ -785,8 +804,10 @@ export function createBoardView({
 // `framed`: the view mounts its own board frame — a ui-board-frame first in the container, laid out
 // in BOARD_FRAME unless `frame` is given, placed at panelRect with its corner radius
 // (--board-frame-radius) at every layout and hidden while the board scrolls.
+// onMount(view) runs once the view exists and before its first fit, so the page can size the
+// container to the board (the view's extent) and the first layout is already the board's.
 // Returns the view with destroy(), which removes what it added and every listener.
-export function mountBoardView({ container, grid, win = globalThis, onUserScroll = () => {}, framed = false, onLayout = () => {}, ...options }) {
+export function mountBoardView({ container, grid, win = globalThis, onUserScroll = () => {}, framed = false, onLayout = () => {}, onMount = () => {}, ...options }) {
   let frameEl = null;
   if (framed) {
     frameEl = win.document.createElement('div');
@@ -878,6 +899,7 @@ export function mountBoardView({ container, grid, win = globalThis, onUserScroll
   canvas.addEventListener('pointermove', onMove);
   canvas.addEventListener('pointerup', onUp);
   canvas.addEventListener('pointercancel', onUp);
+  onMount(view);
   fit();
 
   return Object.assign(Object.create(view), {

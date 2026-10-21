@@ -28,9 +28,11 @@ shell hands in its flow and its sound sink. The area overview is
 - `flow` is `{openBoardChoice(choice), show(), container(), hud({seconds,
   minesLeft, clicks}), figures?(input, {tick}), board({width, height, mines,
   noGuess, identity}), generating(shown), progress?(p|null),
-  failed(failure|null), hint?(text), scale?(), frame?(), layout?(layout),
-  scrolled?(), padCue?(kind)}` — `board` once per game and again when
-  `playStandard()` turns no-guess off; `padCue` the cursor input's
+  failed(failure|null), hint?(text), scale?(), frame?(), mounted?(view),
+  layout?(layout), scrolled?(), padCue?(kind)}` — `board` once per game and again when
+  `playStandard()` turns no-guess off; `mounted` each fresh view before its
+  first fit (`mountBoardView`'s `onMount`), for the shell to size the board
+  area to the board's extent; `padCue` the cursor input's
   `onPadCue` (`'press'` | `'flag'`), which the shell answers with a rumble
   ([app-shell-3d-play.md](app-shell-3d-play.md)).
 - `mount` defaults to `{board: mountBoardView, pointer: mountPointerInput,
@@ -73,10 +75,15 @@ shell hands in its flow and its sound sink. The area overview is
   new second (`tick`).
 - **Game window** (`#c2d`, ids in [app-shell-ui.md](app-shell-ui.md)): head
   (Swap clicks, title, Pause), body (counter strip over the board area, the
-  Reveal / Flag switch on a coarse pointer, the live figures panel with the
-  controls reminder), foot (size, mines, no-guess). The fit rule works in
-  the room that chrome leaves; too narrow for both, the panel moves under
-  the board, and on a phone it hides (`#c2d` in `css/style.css`).
+  Reveal / Flag switch on a coarse pointer, the flat live figures column
+  with the controls reminder), foot (size, mines, no-guess). The window
+  hugs its content, centred above the HUD strip: the fit rule works in the
+  room the chrome leaves, and the board area takes the board's extent in
+  it, left-aligned under the counter strip ([app-shell-2d.md](app-shell-2d.md)
+  § Board area and panel). Too narrow for both, the panel moves under the
+  board; on a phone it hides and the window is full-bleed, the board held
+  sideways at the left edge beside a column of the counters, Restart and
+  the switch (`#c2d` in `css/style.css`).
 - **Sound.** Every action the gate passes on — mouse, keyboard or
   controller — plays the 3D game's cue for its outcome (`cue` in
   `mode.js`), read from the engine's changed cells and the game's phase:
